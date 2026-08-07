@@ -158,6 +158,22 @@
 
 /* Show visualizer — promoted out of the row of identical transport buttons (music-plan.md §2.8).
    Same accent language as the play bar's button so the two read as one control in two places. */
+/* The lyrics heading carries its options button on the right. */
+.music-np-subhead--tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+/* Deliberately quieter than the visualizer pill next to it: favoriting is a frequent, low-stakes
+   gesture, and only the filled state earns colour. */
+.music-np-heart--on {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  font-weight: 600;
+}
+
 .music-np-vizbtn {
   color: var(--accent);
   background: var(--accent-soft);

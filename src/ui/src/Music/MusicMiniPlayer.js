@@ -4,6 +4,7 @@ import { useMusicPlayer } from "./MusicPlayerContext";
 import MusicAlbumArt from "./MusicAlbumArt";
 import MusicVisualizer from "./MusicVisualizer";
 import MusicLyricsPane from "./MusicLyricsPane";
+import MusicLyricsSettingsButton, { LYRICS_DEFAULTS } from "./MusicLyricsSettings";
 import MusicPlaylistPickerModal from "../Pages/Music/MusicPlaylistPickerModal";
 import "./MusicMiniPlayer.css";
 
@@ -139,6 +140,13 @@ function MusicMiniPlayer() {
   if (!player || !player.current) return null;
   const { current, error, queue, index, visualizerOn, lyricsOn } = player;
   const effectiveDuration = duration || current.durationSec || 0;
+  const favorited = !!player.isFavorite?.(current.id);
+  const lyricsSettings = player.lyricsSettings || LYRICS_DEFAULTS;
+  // Offered only while lyrics are actually on screen — a panel of lyrics controls on a bar with no
+  // lyrics under it is the same dead control the Lyrics button avoids on Now Playing.
+  const lyricsTools = lyricsOn ? (
+    <MusicLyricsSettingsButton settings={lyricsSettings} onChange={player.setLyricsSetting} />
+  ) : null;
 
   return (
     <>
@@ -148,12 +156,21 @@ function MusicMiniPlayer() {
         style={barHeight ? { bottom: barHeight } : undefined}
         data-testid="music-visualizer-overlay"
       >
-        <MusicVisualizer player={player} onClose={player.closeVisualizer} />
+        <MusicVisualizer player={player} onClose={player.closeVisualizer} lyricsTools={lyricsTools} />
         {/* Lyrics ON TOP of Butterchurn when both switches are on — one overlay, not two
             fighting for the same space. */}
         {lyricsOn && (
-          <div className="music-lyrics-over-viz" data-testid="music-lyrics-over-visualizer">
-            <MusicLyricsPane trackId={current.id} position={position} variant="overlay" />
+          <div
+            className={`music-lyrics-over-viz${lyricsSettings.scrim ? "" : " music-lyrics-over-viz--plain"}`}
+            data-testid="music-lyrics-over-visualizer"
+          >
+            <MusicLyricsPane
+              trackId={current.id}
+              position={position}
+              variant="overlay"
+              settings={lyricsSettings}
+              playing={playing}
+            />
           </div>
         )}
       </div>
@@ -165,8 +182,19 @@ function MusicMiniPlayer() {
         style={barHeight ? { bottom: barHeight } : undefined}
         data-testid="music-lyrics-overlay"
       >
-        <button className="music-lyrics-overlay-close" onClick={player.closeLyrics} aria-label="Hide lyrics">✕</button>
-        <MusicLyricsPane trackId={current.id} position={position} variant="overlay" />
+        {/* No visualizer strip to hang them off in this mode, so the options sit with the close
+            button — the panel's only other control. */}
+        <div className="music-lyrics-overlay-tools">
+          <MusicLyricsSettingsButton settings={lyricsSettings} onChange={player.setLyricsSetting} />
+          <button className="music-lyrics-overlay-close" onClick={player.closeLyrics} aria-label="Hide lyrics">✕</button>
+        </div>
+        <MusicLyricsPane
+          trackId={current.id}
+          position={position}
+          variant="overlay"
+          settings={lyricsSettings}
+          playing={playing}
+        />
       </div>
     )}
     <div className="music-miniplayer" data-testid="music-miniplayer" ref={barRef}>
@@ -194,6 +222,21 @@ function MusicMiniPlayer() {
           </div>
         </div>
       </div>
+
+      {/* A SIBLING of the info block, not a child: the info block is itself a button that navigates
+          to Now Playing, and a button inside a button is invalid markup that swallows this click.
+          Sits here — right after the title, Spotify's placement — because the heart is about the
+          track you can see, not about the transport. */}
+      <button
+        className={`music-miniplayer-btn music-miniplayer-heart${favorited ? " music-miniplayer-heart--on" : ""}`}
+        onClick={() => player.toggleFavorite(current.id)}
+        aria-pressed={favorited}
+        aria-label={favorited ? "Remove from Favorites" : "Add to Favorites"}
+        title={favorited ? "In your Favorites" : "Add to your Favorites"}
+        data-testid="music-favorite-toggle"
+      >
+        {favorited ? "♥" : "♡"}
+      </button>
 
       <div className="music-miniplayer-transport">
         <button className="music-miniplayer-btn" onClick={player.prev} aria-label="Previous track">⏮</button>

@@ -1,0 +1,214 @@
+/* Lyrics display options — the "Aa" button and its panel.
+
+   Three hosts, two surfaces. The visualizer's control strip and the lyrics panel above the play bar
+   are dark in BOTH themes (a GL canvas and the sidebar palette), while the Now Playing lyrics
+   heading follows the content-area tokens and is light in the default theme. So the geometry is
+   shared and only the colours fork, on .mlset--dark / .mlset--page. Stating one and hoping is how a
+   control ends up white-on-white on exactly one of the three. */
+
+.mlset {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+}
+
+.mlset-btn {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 5px 9px;
+  border-radius: 5px;
+  letter-spacing: 0.3px;
+  border: 1px solid transparent;
+}
+
+/* Opens upward: its host strip sits at the bottom of the visualizer, and the space above it is the
+   only space there is. z-index clears the lyrics layer, which is a later sibling of the strip and
+   would otherwise swallow both the panel and its clicks. */
+.mlset-panel {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  z-index: 5;
+  width: 272px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 13px;
+  border-radius: 10px;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+  text-align: left;
+  /* The visualizer strip fades to 25% until hover; the panel must not inherit that or it would go
+     unreadable the moment the pointer moved into it. */
+  opacity: 1;
+}
+
+.mlset-head {
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.mlset-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mlset-row--off { opacity: 0.45; }
+
+.mlset-label {
+  flex: none;
+  width: 76px;
+}
+
+.mlset-row input[type="range"] {
+  flex: 1 1 auto;
+  min-width: 0;
+  accent-color: var(--accent);
+}
+
+.mlset-value {
+  flex: none;
+  width: 38px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.mlset-choices {
+  display: flex;
+  flex: 1 1 auto;
+  gap: 4px;
+  min-width: 0;
+}
+
+.mlset-chip {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 4px 2px;
+  border-radius: 5px;
+  font-size: 11px;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.mlset-chip:disabled { cursor: default; }
+
+.mlset-chip--on,
+.mlset-chip--on:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.mlset-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.mlset-check input { margin-top: 2px; accent-color: var(--accent); flex: none; }
+
+.mlset-check em {
+  display: block;
+  font-style: normal;
+  font-size: 11px;
+  margin-top: 1px;
+}
+
+.mlset-note {
+  font-size: 10.5px;
+  line-height: 1.35;
+}
+
+/* ── On a dark surface (visualizer strip, lyrics panel) ─────────────────────
+   Absolute light-on-dark values rather than theme tokens: both hosts are dark in EVERY theme, so
+   the content-area tokens would be the wrong contrast in the default one. */
+.mlset--dark .mlset-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+.mlset--dark .mlset-btn:hover { background: rgba(255, 255, 255, 0.18); }
+.mlset--dark .mlset-btn--on { background: var(--accent); border-color: var(--accent); }
+
+.mlset--dark .mlset-panel {
+  background: rgba(12, 14, 20, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.mlset--dark .mlset-head { color: rgba(255, 255, 255, 0.5); }
+.mlset--dark .mlset-label,
+.mlset--dark .mlset-value { color: rgba(255, 255, 255, 0.6); }
+.mlset--dark .mlset-check em { color: rgba(255, 255, 255, 0.45); }
+.mlset--dark .mlset-note { color: rgba(255, 255, 255, 0.4); }
+
+.mlset--dark .mlset-chip {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.mlset--dark .mlset-chip:hover:not(:disabled):not(.mlset-chip--on) {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+/* ── On the page (Now Playing's lyrics heading) ─────────────────────────────
+   Content-area tokens, so it follows whatever theme is on. */
+.mlset--page .mlset-btn {
+  background: var(--card-surface);
+  border-color: var(--card-border);
+  color: var(--text-secondary);
+}
+
+.mlset--page .mlset-btn:hover { color: var(--text-primary); border-color: var(--accent); }
+
+.mlset--page .mlset-btn--on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.mlset--page .mlset-panel {
+  background: var(--card-surface);
+  border: 1px solid var(--card-border);
+  color: var(--text-primary);
+}
+
+.mlset--page .mlset-head,
+.mlset--page .mlset-label,
+.mlset--page .mlset-value { color: var(--text-secondary); }
+.mlset--page .mlset-check em,
+.mlset--page .mlset-note { color: var(--text-muted); }
+
+.mlset--page .mlset-chip {
+  border-color: var(--card-border);
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.mlset--page .mlset-chip:hover:not(:disabled):not(.mlset-chip--on) {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+/* On a phone the panel would run off the right edge of a narrow strip; pin it to the viewport
+   instead and let it use the width it has. */
+@media (max-width: 560px) {
+  .mlset-panel {
+    position: fixed;
+    right: 10px;
+    left: 10px;
+    width: auto;
+    bottom: calc(var(--music-miniplayer-height, 72px) + 60px);
+  }
+}

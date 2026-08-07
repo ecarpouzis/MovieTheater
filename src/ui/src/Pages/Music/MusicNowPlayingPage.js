@@ -4,6 +4,7 @@ import { useMusicPlayer } from "../../Music/MusicPlayerContext";
 import MusicAlbumArt from "../../Music/MusicAlbumArt";
 import MusicLyricsPane from "../../Music/MusicLyricsPane";
 import MusicVisualizer from "../../Music/MusicVisualizer";
+import MusicLyricsSettingsButton, { LYRICS_DEFAULTS } from "../../Music/MusicLyricsSettings";
 import "./MusicNowPlaying.css";
 
 // ── Now Playing (music-plan.md §2.6/§2.7/§2.8) ──────────────────────────────
@@ -69,13 +70,24 @@ export default function MusicNowPlayingPage({ userData }) {
   }
 
   const effectiveDuration = duration || current.durationSec || 0;
+  const favorited = !!player.isFavorite?.(current.id);
+  const lyricsSettings = player.lyricsSettings || LYRICS_DEFAULTS;
+  // This page always shows the lyrics column, so the options are always live here — unlike the play
+  // bar, where they appear only while the Lyrics switch is on. Two hosts, two surfaces: the
+  // visualizer strip is dark over the canvas, the heading takes the content-area tokens.
+  const vizLyricsTools = (
+    <MusicLyricsSettingsButton settings={lyricsSettings} onChange={player.setLyricsSetting} tone="dark" />
+  );
+  const paneLyricsTools = (
+    <MusicLyricsSettingsButton settings={lyricsSettings} onChange={player.setLyricsSetting} tone="page" />
+  );
 
   return (
     <div className="music-np" data-testid="music-now-playing">
       <div className="music-np-stage">
         <div className="music-np-artwrap">
           {visualizerOn ? (
-            <MusicVisualizer player={player} onClose={player.closeVisualizer} />
+            <MusicVisualizer player={player} onClose={player.closeVisualizer} lyricsTools={vizLyricsTools} />
           ) : (
             <MusicAlbumArt
               albumId={current.albumId}
@@ -96,6 +108,16 @@ export default function MusicNowPlayingPage({ userData }) {
             {formatTime(position)} / {formatTime(effectiveDuration)}
           </div>
           <div className="music-np-actions">
+            {/* The same switch the play bar's heart flips — both read player.favoriteIds, so
+                favoriting here fills the bar's heart at once and vice versa. */}
+            <button
+              className={`music-playlist-btn music-np-heart${favorited ? " music-np-heart--on" : ""}`}
+              onClick={() => player.toggleFavorite(current.id)}
+              aria-pressed={favorited}
+              data-testid="music-favorite-toggle-np"
+            >
+              {favorited ? "♥ Favorited" : "♡ Favorite"}
+            </button>
             <button className="music-playlist-btn" onClick={player.prev}>⏮ Prev</button>
             <button className="music-playlist-btn" onClick={player.toggle}>
               {player.playing ? "⏸ Pause" : "▶ Play"}
@@ -131,8 +153,19 @@ export default function MusicNowPlayingPage({ userData }) {
       </div>
 
       <div className="music-np-lyricswrap">
-        <h3 className="music-np-subhead">Lyrics</h3>
-        <MusicLyricsPane trackId={current.id} position={position} />
+        {/* The same options button as the visualizer strip, so the column is adjustable on this page
+            even with the visualizer switched off — otherwise the only way to reach the settings
+            would be to turn Butterchurn on. */}
+        <h3 className="music-np-subhead music-np-subhead--tools">
+          Lyrics
+          {paneLyricsTools}
+        </h3>
+        <MusicLyricsPane
+          trackId={current.id}
+          position={position}
+          settings={lyricsSettings}
+          playing={!!player.playing}
+        />
       </div>
     </div>
   );

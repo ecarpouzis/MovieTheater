@@ -68,12 +68,20 @@ export default function MusicPlaylistsPage({ userData }) {
 
   function card(p) {
     return (
-      <div className="music-playlist-card" key={p.id} data-testid="music-playlist-card">
-        <div className="music-playlist-card-name" title={p.name}>{p.name}</div>
+      <div
+        className={`music-playlist-card${p.isFavorites ? " music-playlist-card--favorites" : ""}`}
+        key={p.id}
+        data-testid="music-playlist-card"
+      >
+        <div className="music-playlist-card-name" title={p.name}>
+          {p.isFavorites && <span className="music-playlist-card-heart" aria-hidden="true">♥</span>}
+          {p.name}
+        </div>
         <div className="music-playlist-card-sub" title={(p.trackTitles || []).join(", ")}>
           {p.count} track{p.count === 1 ? "" : "s"}
+          {p.isFavorites ? " · only yours" : ""}
           {!p.isOwner && p.ownerName ? ` · shared by ${p.ownerName}` : ""}
-          {p.isOwner && p.sharedWith > 0 ? ` · shared with ${p.sharedWith}` : ""}
+          {p.isOwner && !p.isFavorites && p.sharedWith > 0 ? ` · shared with ${p.sharedWith}` : ""}
           {p.trackTitles && p.trackTitles.length > 0 ? ` · ${p.trackTitles.join(", ")}` : ""}
         </div>
         <div className="music-playlist-card-actions">
@@ -100,7 +108,8 @@ export default function MusicPlaylistsPage({ userData }) {
 
       {!loading && playlists.length === 0 && (
         <p className="music-empty">
-          No playlists yet. Add tracks to one from any album or song row in the library.
+          No playlists yet. Add tracks to one from any album or song row in the library — or hit the
+          ♥ in the player while something&apos;s playing, and a Favorites list appears here.
         </p>
       )}
 

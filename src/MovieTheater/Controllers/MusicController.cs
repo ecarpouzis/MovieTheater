@@ -356,10 +356,18 @@ namespace MovieTheater.Controllers
         /// deciding who else gets in (LoadOwnedPlaylistAsync) — both are irreversible for everyone
         /// else holding a share, so a member must not be able to do them.
         /// </remarks>
+        /// <remarks>
+        /// The share clause deliberately excludes a favorites list: those are one person's by
+        /// definition, so their privacy is a property of the QUERY rather than of the Share verb
+        /// remembering to refuse. Sharing one is refused there too, but if a grant ever existed —
+        /// written by hand, or by a future verb nobody thought to guard — it still would not open
+        /// this door.
+        /// </remarks>
         private async Task<MusicPlaylist?> LoadAccessiblePlaylistAsync(int id, int userId) =>
             await movieDb.MusicPlaylists.FirstOrDefaultAsync(p =>
                 p.Id == id && (p.UserId == userId
-                    || movieDb.MusicPlaylistShares.Any(sh => sh.PlaylistId == p.Id && sh.UserId == userId)));
+                    || (!p.IsFavorites
+                        && movieDb.MusicPlaylistShares.Any(sh => sh.PlaylistId == p.Id && sh.UserId == userId))));
 
         /// <summary>Keeps the caller's order, drops ids that aren't real tracks (a stale client list
         /// must never be able to write a dangling FK).</summary>
@@ -428,6 +436,7 @@ namespace MovieTheater.Controllers
                 .Select(p => new
                 {
                     p.Id, p.Name, p.CreatedUtc,
+                    p.IsFavorites,
                     isOwner = p.UserId == userId.Value,
                     ownerName = p.User.Username,
                     sharedWith = movieDb.MusicPlaylistShares.Count(sh => sh.PlaylistId == p.Id),
@@ -446,7 +455,12 @@ namespace MovieTheater.Controllers
                 .ToListAsync();
             var byPlaylist = rows.GroupBy(r => r.PlaylistId).ToDictionary(g => g.Key, g => g.ToList());
 
-            var result = playlists.Select(p =>
+            // Favorites first: it's the one list the user never made and always has, so it reads as the
+            // shelf everything else sits under rather than as whichever playlist happens to be newest.
+            var result = playlists
+                .OrderByDescending(p => p.IsFavorites)
+                .ThenByDescending(p => p.Id)
+                .Select(p =>
             {
                 var items = byPlaylist.GetValueOrDefault(p.Id) ?? new();
                 return new
@@ -455,6 +469,7 @@ namespace MovieTheater.Controllers
                     name = p.Name,
                     createdUtc = p.CreatedUtc,
                     count = items.Count,
+                    isFavorites = p.IsFavorites,
                     p.isOwner,
                     p.ownerName,
                     p.sharedWith,
@@ -491,7 +506,9 @@ namespace MovieTheater.Controllers
                 })
                 .ToListAsync();
 
-            return Ok(new { id = playlist.Id, name = playlist.Name, items });
+            // isFavorites so the manage modal can drop the controls this list doesn't have (rename,
+            // share, delete) rather than offering them and letting the server refuse.
+            return Ok(new { id = playlist.Id, name = playlist.Name, isFavorites = playlist.IsFavorites, items });
         }
 
         public class PlaylistTracksRequest
@@ -553,6 +570,9 @@ namespace MovieTheater.Controllers
             var playlist = await LoadAccessiblePlaylistAsync(id, userId.Value);
             if (playlist == null) return NotFound(new { message = "Playlist not found." });
 
+            if (playlist.IsFavorites)
+                return BadRequest(new { message = "Your Favorites list can't be renamed." });
+
             var name = (request?.Name ?? "").Trim();
             if (name.Length == 0)
                 return BadRequest(new { message = "A name is required." });
@@ -569,10 +589,151 @@ namespace MovieTheater.Controllers
             var playlist = await LoadOwnedPlaylistAsync(id, userId.Value);
             if (playlist == null) return NotFound(new { message = "Playlist not found." });
 
+            // Favorites is a fixture of the account, not something you made — emptying it is the
+            // supported way to clear it, and it comes straight back the next time a heart is clicked.
+            if (playlist.IsFavorites)
+                return BadRequest(new { message = "Your Favorites list can't be deleted." });
+
             // Items cascade with the playlist (§2.2); the tracks themselves are Restrict and untouched.
             movieDb.MusicPlaylists.Remove(playlist);
             await movieDb.SaveChangesAsync();
             return Ok(new { deleted = true });
+        }
+
+        // ── Favorites (the heart in the play bar) ────────────────────────────────────────────────
+        // One list per account, flagged on the ordinary playlist table so it plays, shuffles, reorders
+        // and shows up in the manager with no new machinery. What the flag takes AWAY is what makes it
+        // favorites: it can't be shared, renamed or deleted, so it stays exactly one person's forever.
+        //
+        // Created lazily, on the first heart. A GET that writes rows would mint an empty Favorites for
+        // every account that ever loaded the player, so the list simply doesn't exist until it's used —
+        // and the client treats "no list" as "nothing favorited", which is the same thing.
+
+        private const string FavoritesName = "Favorites";
+
+        private Task<MusicPlaylist?> LoadFavoritesAsync(int userId) =>
+            movieDb.MusicPlaylists.FirstOrDefaultAsync(p => p.UserId == userId && p.IsFavorites);
+
+        /// <summary>The caller's favorites list, creating it if this is their first one.</summary>
+        /// <remarks>
+        /// Two hearts clicked at once on a fresh account both see "no list" and both try to insert.
+        /// The filtered unique index makes the loser throw rather than mint a second Favorites; it then
+        /// re-reads the winner's row, so a double click is a no-op instead of a 500 and a mess.
+        /// </remarks>
+        private async Task<MusicPlaylist> GetOrCreateFavoritesAsync(int userId)
+        {
+            var existing = await LoadFavoritesAsync(userId);
+            if (existing != null) return existing;
+
+            var playlist = new MusicPlaylist
+            {
+                UserId = userId,
+                Name = FavoritesName,
+                IsFavorites = true,
+                CreatedUtc = DateTime.UtcNow,
+            };
+            movieDb.MusicPlaylists.Add(playlist);
+            try
+            {
+                await movieDb.SaveChangesAsync();
+                return playlist;
+            }
+            catch (DbUpdateException)
+            {
+                movieDb.Entry(playlist).State = EntityState.Detached;
+                var winner = await LoadFavoritesAsync(userId);
+                if (winner == null) throw; // not the race after all — a real write failure, so surface it
+                return winner;
+            }
+        }
+
+        /// <summary>Every favorited track id, so the player can draw a filled or empty heart without a
+        /// round trip per song. Asked once a session; friends-scale lists are a few KB of ints.</summary>
+        [HttpGet("/API/Music/Favorites")]
+        public async Task<IActionResult> Favorites()
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+
+            var playlist = await LoadFavoritesAsync(userId.Value);
+            if (playlist == null)
+                return Ok(new { playlistId = (int?)null, trackIds = Array.Empty<int>() });
+
+            var trackIds = await movieDb.MusicPlaylistItems.AsNoTracking()
+                .Where(i => i.PlaylistId == playlist.Id)
+                .OrderBy(i => i.Position).ThenBy(i => i.Id)
+                .Select(i => i.TrackId)
+                .ToListAsync();
+            return Ok(new { playlistId = (int?)playlist.Id, trackIds });
+        }
+
+        public class FavoriteRequest
+        {
+            public int TrackId { get; set; }
+            public bool Favorite { get; set; }
+        }
+
+        /// <summary>Heart or un-heart one track. Idempotent in both directions — the client sends the
+        /// state it wants, not a flip, so a double-tap or a stale UI can't invert the result.</summary>
+        [HttpPost("/API/Music/Favorite")]
+        public async Task<IActionResult> SetFavorite([FromBody] FavoriteRequest request)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+            if (request == null) return BadRequest(new { message = "Invalid request." });
+
+            if (!request.Favorite)
+            {
+                // Un-hearting an account with no favorites list is already true; don't create one to
+                // say so.
+                var existing = await LoadFavoritesAsync(userId.Value);
+                if (existing == null)
+                    return Ok(new { favorite = false, count = 0, playlistId = (int?)null });
+
+                var rows = await movieDb.MusicPlaylistItems
+                    .Where(i => i.PlaylistId == existing.Id && i.TrackId == request.TrackId)
+                    .ToListAsync();
+                if (rows.Count > 0)
+                {
+                    // Positions are left with a hole. Order is all that's read (Position, then Id), and
+                    // re-densifying would rewrite every later row on each un-heart; the manage modal's
+                    // Save closes the gaps whenever the list is next edited by hand.
+                    movieDb.MusicPlaylistItems.RemoveRange(rows);
+                    await movieDb.SaveChangesAsync();
+                }
+                return Ok(new
+                {
+                    favorite = false,
+                    count = await movieDb.MusicPlaylistItems.CountAsync(i => i.PlaylistId == existing.Id),
+                    playlistId = (int?)existing.Id,
+                });
+            }
+
+            var track = await movieDb.MusicTracks.AsNoTracking()
+                .FirstOrDefaultAsync(t => t.Id == request.TrackId);
+            if (track == null) return NotFound(new { message = "No such track." });
+
+            var favorites = await GetOrCreateFavoritesAsync(userId.Value);
+            var already = await movieDb.MusicPlaylistItems
+                .AnyAsync(i => i.PlaylistId == favorites.Id && i.TrackId == track.Id);
+            if (!already)
+            {
+                int nextPos = 1 + (await movieDb.MusicPlaylistItems
+                    .Where(i => i.PlaylistId == favorites.Id)
+                    .MaxAsync(i => (int?)i.Position) ?? -1);
+                movieDb.MusicPlaylistItems.Add(new MusicPlaylistItem
+                {
+                    PlaylistId = favorites.Id, TrackId = track.Id, Position = nextPos,
+                });
+                await movieDb.SaveChangesAsync();
+            }
+
+            return Ok(new
+            {
+                favorite = true,
+                count = await movieDb.MusicPlaylistItems.CountAsync(i => i.PlaylistId == favorites.Id),
+                playlistId = (int?)favorites.Id,
+            });
         }
 
         // ── Sharing (music-plan.md §2.4) ─────────────────────────────────────────────────────────
@@ -622,6 +783,8 @@ namespace MovieTheater.Controllers
             if (userId == null) return Unauthorized();
             var playlist = await LoadOwnedPlaylistAsync(id, userId.Value);   // owner only
             if (playlist == null) return NotFound(new { message = "Playlist not found." });
+            if (playlist.IsFavorites)
+                return BadRequest(new { message = "Favorites are private — they can't be shared." });
 
             var wanted = (request?.UserIds ?? new List<int>())
                 .Where(u => u != userId.Value)                                // sharing with yourself is a no-op

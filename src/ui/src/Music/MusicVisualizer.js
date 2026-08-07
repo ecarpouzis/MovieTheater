@@ -93,7 +93,7 @@ function unwrapModule(module, member) {
   return module?.default ?? module;
 }
 
-export default function MusicVisualizer({ player, onClose }) {
+export default function MusicVisualizer({ player, onClose, lyricsTools = null }) {
   const wrapRef = useRef(null);
   const canvasRef = useRef(null);
   const vizRef = useRef(null);
@@ -514,6 +514,11 @@ export default function MusicVisualizer({ player, onClose }) {
       )}
 
       <div className="music-viz-controls">
+        {/* Whatever the caller wants to hang off this strip — in practice the lyrics display options,
+            which belong here because this bar is what's on screen when the words are over the
+            canvas. A node rather than a flag: the visualizer stays ignorant of lyrics, and the
+            surface that knows whether any are showing decides whether to offer the button. */}
+        {lyricsTools}
         <button onClick={() => step(-1)} title="Previous preset (←)" aria-label="Previous preset">◀</button>
         <button onClick={() => step(1)} title="Next preset (→)" aria-label="Next preset">▶</button>
         {/* Text glyphs, not emoji — the rest of the music UI (⏮ ⏸ ▶ ⏭ ◉ ♪ ☰ ✕) is monochrome, and

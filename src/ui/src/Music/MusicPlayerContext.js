@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { MovieAPI } from "../MovieAPI";
 import { useMediaSession } from "../useMediaSession";
 import MusicMiniPlayer from "./MusicMiniPlayer";
+import { LYRICS_DEFAULTS, normalizeLyricsSettings } from "./MusicLyricsSettings";
 
 // ── The site's first persistent player (music-plan.md §2.6) ─────────────────
 // Every video player dies on route change; music must not. The provider mounts ONCE in App.js
@@ -42,6 +43,18 @@ export function shuffled(tracks, rand = Math.random) {
     [out[i], out[j]] = [out[j], out[i]];
   }
   return out;
+}
+
+/// One favorited-id set, plus or minus one track. Exported and pure so the optimistic write and its
+/// rollback are literally the same function called with opposite intents — hand-written inverses are
+/// how a failed request ends up leaving a filled heart over a favorite the server never took.
+/// Always returns a NEW Set: mutating in place keeps the reference identical, and React would then
+/// re-render nothing.
+export function withFavorite(ids, trackId, favorite) {
+  const next = new Set(ids);
+  if (favorite) next.add(trackId);
+  else next.delete(trackId);
+  return next;
 }
 
 // ── Failure recovery (a stream that dies mid-song) ──────────────────────────
@@ -90,6 +103,7 @@ export function recoveryDecision({ attempts, consecutiveFailures, hasNext }) {
 
 const VOLUME_KEY = "music.volume"; // arcade-style namespaced localStorage key
 const LYRICS_KEY = "music.lyrics"; // on-screen lyrics toggle, remembered across routes/reloads
+const LYRICS_DISPLAY_KEY = "music.lyrics.display"; // size/font/scrim/follow — see MusicLyricsSettings
 const QUEUE_KEY = "music.queue";   // { queue, index } — restored PAUSED on reload (§Phase 7)
 const QUEUE_PERSIST_MAX = 500;     // bounds what a runaway "queue everything" can put in localStorage
 
@@ -114,6 +128,21 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   const [lyricsOn, setLyricsOn] = useState(
     () => { try { return window.localStorage.getItem(LYRICS_KEY) === "1"; } catch { return false; } }
   );
+  // HOW the lyrics look, as opposed to whether they're on: size, font, backdrop, follow. Kept here
+  // beside the on/off switch because the same three surfaces read both, and normalized on the way in
+  // so a stale or hand-edited storage value can't leave the pane unreadable.
+  const [lyricsSettings, setLyricsSettings] = useState(() => {
+    try {
+      return normalizeLyricsSettings(JSON.parse(window.localStorage.getItem(LYRICS_DISPLAY_KEY)));
+    } catch {
+      return { ...LYRICS_DEFAULTS };
+    }
+  });
+  // Favorited track ids. Held HERE rather than fetched per surface because three different places
+  // draw the same heart (the play bar, Now Playing, and the manager's Favorites card) and they must
+  // agree the instant one of them is clicked. One fetch per session; a Set so the bar's per-render
+  // lookup is O(1) rather than a scan of a list that only grows.
+  const [favoriteIds, setFavoriteIds] = useState(() => new Set());
   const audioRef = useRef(null);
   // Guards the async Start round-trip: a fast next/next must only apply the LAST track's URL.
   const loadSeqRef = useRef(0);
@@ -154,6 +183,41 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   }, [enabled]);
 
   const isPlayable = useCallback((t) => trackIsPlayable(t, canTranscode), [canTranscode]);
+
+  // ── Favorites ──────────────────────────────────────────────────────────────
+  // Loaded once, alongside capabilities. A failure leaves the set empty, which draws every heart
+  // hollow — wrong, but harmless and self-correcting on the next toggle, whereas guessing full would
+  // show tracks as favorited that aren't.
+  useEffect(() => {
+    if (!enabled) return undefined;
+    let cancelled = false;
+    MovieAPI.getMusicFavorites()
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!cancelled && data) setFavoriteIds(new Set(data.trackIds || []));
+      })
+      .catch(() => { /* hearts stay hollow until a toggle says otherwise */ });
+    return () => { cancelled = true; };
+  }, [enabled]);
+
+  const isFavorite = useCallback((trackId) => favoriteIds.has(trackId), [favoriteIds]);
+
+  /// Heart / un-heart a track. Optimistic, because the heart is a one-click gesture and a round trip
+  /// of dead time is exactly what makes one feel broken — but it ROLLS BACK on failure rather than
+  /// leaving a filled heart over a favorite the server never recorded.
+  const toggleFavorite = useCallback((trackId) => {
+    if (!enabled || trackId == null) return;
+    // Read the intent from state, NOT from inside the updater below: an updater runs during the next
+    // render, so anything it assigns is still unset by the time the request is sent.
+    const want = !favoriteIds.has(trackId);
+    setFavoriteIds((prev) => withFavorite(prev, trackId, want));
+    MovieAPI.setMusicFavorite(trackId, want)
+      .then((r) => {
+        if (r.ok) return;
+        throw new Error(String(r.status));
+      })
+      .catch(() => setFavoriteIds((prev) => withFavorite(prev, trackId, !want)));
+  }, [enabled, favoriteIds]);
 
   // Mirrors, so the failure handlers (which run from element events and an interval, never from
   // render) can read the live track without every one of them re-binding on each change.
@@ -492,6 +556,16 @@ export function MusicPlayerProvider({ children, enabled = true }) {
     try { window.localStorage.setItem(LYRICS_KEY, "0"); } catch { /* private mode */ }
   }, []);
 
+  /// One field at a time — every control in the panel edits exactly one, and a whole-object setter
+  /// would make each of them responsible for preserving the other four.
+  const setLyricsSetting = useCallback((key, value) => {
+    setLyricsSettings((prev) => {
+      const next = normalizeLyricsSettings({ ...prev, [key]: value });
+      try { window.localStorage.setItem(LYRICS_DISPLAY_KEY, JSON.stringify(next)); } catch { /* private mode */ }
+      return next;
+    });
+  }, []);
+
   /// Queue the same tracks in random order. Filters through isPlayable first so a shuffle can't
   /// stall on a format this server won't stream.
   const shuffleTracks = useCallback((tracks) => {
@@ -537,8 +611,8 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   });
 
   const value = useMemo(
-    () => ({ queue, index, current, playing, error, audioRef, canTranscode, isPlayable, playTracks, enqueue, next, prev, toggle, seek, playAt, removeAt, stop, setVolume, ensureAudioGraph, visualizerOn, toggleVisualizer, closeVisualizer, lyricsOn, toggleLyrics, closeLyrics, shuffleTracks }),
-    [queue, index, current, playing, error, canTranscode, isPlayable, playTracks, enqueue, next, prev, toggle, seek, playAt, removeAt, stop, setVolume, ensureAudioGraph, visualizerOn, toggleVisualizer, closeVisualizer, lyricsOn, toggleLyrics, closeLyrics, shuffleTracks]
+    () => ({ queue, index, current, playing, error, audioRef, canTranscode, isPlayable, playTracks, enqueue, next, prev, toggle, seek, playAt, removeAt, stop, setVolume, ensureAudioGraph, visualizerOn, toggleVisualizer, closeVisualizer, lyricsOn, toggleLyrics, closeLyrics, shuffleTracks, favoriteIds, isFavorite, toggleFavorite, lyricsSettings, setLyricsSetting }),
+    [queue, index, current, playing, error, canTranscode, isPlayable, playTracks, enqueue, next, prev, toggle, seek, playAt, removeAt, stop, setVolume, ensureAudioGraph, visualizerOn, toggleVisualizer, closeVisualizer, lyricsOn, toggleLyrics, closeLyrics, shuffleTracks, favoriteIds, isFavorite, toggleFavorite, lyricsSettings, setLyricsSetting]
   );
 
   return (

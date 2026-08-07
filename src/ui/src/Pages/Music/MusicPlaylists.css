@@ -25,6 +25,19 @@
 .mplman { display: flex; flex-direction: column; gap: 12px; }
 .mplman-loading { display: flex; justify-content: center; padding: 40px 0; }
 
+/* Stands in for the name field on the Favorites list, which has no name to edit. Reads as a heading
+   rather than a disabled input — a greyed-out textbox invites you to try. */
+.mplman-fixed-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--accent);
+}
+
+.mplman-fixed-name span {
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
 .mplman-empty {
   color: var(--text-secondary);
   font-size: 13px;
@@ -125,6 +138,22 @@
 }
 
 .music-playlist-card:hover { box-shadow: var(--card-shadow-hover); }
+
+/* Favorites is the one card nobody made and everybody has, and the server always sorts it first —
+   a tinted edge says "this one is different" without giving it a whole different shape. */
+.music-playlist-card--favorites {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--card-border));
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--accent) 7%, var(--card-surface)),
+    var(--card-surface) 60%
+  );
+}
+
+.music-playlist-card-heart {
+  color: var(--accent);
+  margin-right: 6px;
+}
 
 .music-playlist-card-name {
   font-weight: 600;

@@ -42,9 +42,13 @@
 
 .music-np-lyrics-empty span { color: var(--text-muted); font-size: 12px; }
 
+/* Every lyric size is stated as a base times --music-lyrics-scale (set inline from the display
+   settings, defaulting to 1). Multiplying keeps each surface's own base — the overlay's lines are
+   bigger than the Now Playing column's, and both shrink on a phone — where a single flat font-size
+   from the setting would collapse all of that into one number. */
 .music-np-line {
   margin: 0 0 10px;
-  font-size: 15px;
+  font-size: calc(15px * var(--music-lyrics-scale, 1));
   line-height: 1.4;
   color: var(--text-muted);
   transition: color 0.2s ease, transform 0.2s ease;
@@ -58,8 +62,10 @@
 
 .music-np-plain {
   margin: 0;
-  font-family: var(--font-sans);
-  font-size: 14px;
+  /* inherit, not var(--font-sans): the chosen lyrics font is set on the pane, and a <pre> would
+     otherwise fall back to the UA's monospace default and ignore it. */
+  font-family: inherit;
+  font-size: calc(14px * var(--music-lyrics-scale, 1));
   line-height: 1.55;
   color: var(--text-secondary);
   white-space: pre-wrap;

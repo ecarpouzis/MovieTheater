@@ -134,6 +134,25 @@ function deleteMusicPlaylist(id) {
   return fetch(`/API/Music/Playlist/${id}/Delete`, { method: "post" });
 }
 
+// ── Favorites ───────────────────────────────────────────────────────────────
+// The heart in the play bar. Server-side it's an ordinary playlist carrying the IsFavorites flag,
+// which is what makes it un-shareable, un-renameable and permanent.
+
+// Every favorited track id: { playlistId, trackIds }. playlistId is null until the first heart —
+// the list is created lazily, and "no list" means "nothing favorited".
+function getMusicFavorites() {
+  return fetch("/API/Music/Favorites", { method: "get" });
+}
+
+// Sends the state it WANTS, not a flip, so a double-tap can't invert the result.
+function setMusicFavorite(trackId, favorite) {
+  return fetch("/API/Music/Favorite", {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ trackId, favorite }),
+  });
+}
+
 // Posters are on-disk files keyed by id, and the Movie / Series / MiscVideo id spaces overlap (a single
 // id can be both a Movie and a Series), so each non-movie kind has its own route namespace or they'd serve
 // each other's poster. Movies keep /Image; series use /SeriesImage; misc videos use /MiscImage (no version).
@@ -1431,6 +1450,8 @@ const MovieAPI = {
   shareMusicPlaylist,
   unshareMusicPlaylist,
   getMusicShareTargets,
+  getMusicFavorites,
+  setMusicFavorite,
 };
 
 export { MovieAPI };

@@ -452,6 +452,17 @@ namespace MovieTheater.Db
 
             modelBuilder.Entity<MusicPlaylist>()
                 .HasIndex(p => p.UserId);
+            // At most ONE favorites list per user. Filtered so it constrains only the flagged rows —
+            // an ordinary unique index on (UserId, IsFavorites) would cap everyone at a single normal
+            // playlist too. The heart's get-or-create races with itself on a double click, and this is
+            // what makes the loser fail loudly instead of quietly minting a second Favorites.
+            // ⚠ A filtered index requires SET QUOTED_IDENTIFIER ON for any session that writes to this
+            // table — fine for EF/SqlClient, which sets it, but sqlcmd defaults it OFF, so a hand-run
+            // INSERT/UPDATE against MusicPlaylist needs the SET first.
+            modelBuilder.Entity<MusicPlaylist>()
+                .HasIndex(p => p.UserId, "IX_MusicPlaylist_Favorites")
+                .HasFilter("[IsFavorites] = 1")
+                .IsUnique();
             // Restrict on User to avoid multiple-cascade-path errors (same stance as MoviePlaybackProgress).
             modelBuilder.Entity<MusicPlaylist>()
                 .HasOne(p => p.User)

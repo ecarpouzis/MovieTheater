@@ -59,6 +59,10 @@ export default function MusicPlaylistManageModal({ playlistId, open, onClose, on
   const [origName, setOrigName] = useState("");
   const [items, setItems] = useState([]);
   const [busy, setBusy] = useState(false);
+  // The Favorites list is the same table with a flag, so it reorders and empties like any other —
+  // but it can't be renamed, shared or deleted (the server refuses all three). Those controls are
+  // dropped rather than shown-and-rejected.
+  const [isFavorites, setIsFavorites] = useState(false);
   // Sharing (music-plan.md §2.4). `access` carries who owns it and who it's shared with; a member
   // sees the roster but only the owner gets the add/remove controls.
   const [access, setAccess] = useState(null);
@@ -80,6 +84,7 @@ export default function MusicPlaylistManageModal({ playlistId, open, onClose, on
         if (!data) throw new Error();
         setName(data.name || "");
         setOrigName(data.name || "");
+        setIsFavorites(!!data.isFavorites);
         // A track can legitimately appear twice in a playlist, so the sortable key is
         // id+ordinal, not the bare track id (dnd-kit needs unique ids).
         setItems((data.items || []).map((it, i) => ({ ...it, key: `${it.id}-${i}` })));
@@ -104,7 +109,7 @@ export default function MusicPlaylistManageModal({ playlistId, open, onClose, on
     setBusy(true);
     try {
       const trimmed = (name || "").trim();
-      if (trimmed && trimmed !== origName) {
+      if (!isFavorites && trimmed && trimmed !== origName) {
         const rr = await MovieAPI.renameMusicPlaylist(playlistId, trimmed);
         if (!rr.ok) throw new Error();
       }
@@ -172,15 +177,32 @@ export default function MusicPlaylistManageModal({ playlistId, open, onClose, on
   const addable = targets.filter((t) => !sharedIds.has(t.id));
 
   return (
-    <Modal open={open} onCancel={onClose} footer={null} width={560} title="Edit playlist" destroyOnHidden>
+    <Modal
+      open={open}
+      onCancel={onClose}
+      footer={null}
+      width={560}
+      title={isFavorites ? "Favorites" : "Edit playlist"}
+      destroyOnHidden
+    >
       {loading ? (
         <div className="mplman-loading"><Spin /></div>
       ) : (
         <div className="mplman" data-testid="music-playlist-manage">
-          <Input value={name} maxLength={200} onChange={(e) => setName(e.target.value)} placeholder="Playlist name" />
+          {isFavorites ? (
+            <div className="mplman-fixed-name">
+              ♥ Favorites <span>· only you can see or change this list</span>
+            </div>
+          ) : (
+            <Input value={name} maxLength={200} onChange={(e) => setName(e.target.value)} placeholder="Playlist name" />
+          )}
 
           {items.length === 0 ? (
-            <div className="mplman-empty">This playlist is empty. Add tracks from an album or a song row.</div>
+            <div className="mplman-empty">
+              {isFavorites
+                ? "Nothing favorited yet. Hit the ♥ in the player while a song is playing."
+                : "This playlist is empty. Add tracks from an album or a song row."}
+            </div>
           ) : (
             <DndContext
               sensors={sensors}
@@ -198,7 +220,7 @@ export default function MusicPlaylistManageModal({ playlistId, open, onClose, on
             </DndContext>
           )}
 
-          {access && (
+          {access && !isFavorites && (
             <div className="mplman-share">
               <div className="mplman-share-head">
                 Shared with
@@ -239,7 +261,7 @@ export default function MusicPlaylistManageModal({ playlistId, open, onClose, on
           )}
 
           <div className="mplman-actions">
-            {isOwner && (
+            {isOwner && !isFavorites && (
               <Popconfirm title="Delete this playlist?" okText="Delete" cancelText="Keep" onConfirm={remove}>
                 <Button danger disabled={busy}>Delete</Button>
               </Popconfirm>

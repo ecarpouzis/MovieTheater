@@ -94,6 +94,11 @@ function MusicAlbumModal({ albumId, onClose, onAddToPlaylist }) {
                 <Button disabled={!playable} onClick={() => player.shuffleTracks(toQueueEntries())}>
                   🔀 Shuffle
                 </Button>
+              </div>
+              {/* A second row rather than one wrapping row: Play and Shuffle start listening now,
+                  Queue and Playlist put the album somewhere for later. Left to wrap on its own, the
+                  break landed between the two "add it to something" buttons and grouped them wrong. */}
+              <div className="music-album-detail-actions music-album-detail-actions--more">
                 <Button disabled={!playable} onClick={() => player.enqueue(toQueueEntries())}>
                   + Queue
                 </Button>

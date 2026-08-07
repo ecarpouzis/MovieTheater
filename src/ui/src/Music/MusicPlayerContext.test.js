@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { trackIsPlayable, shuffled, recoveryDecision, diagnoseStreamUrl } from "./MusicPlayerContext";
+import { trackIsPlayable, shuffled, recoveryDecision, diagnoseStreamUrl, withFavorite } from "./MusicPlayerContext";
 
 // The player used to gate on `!t.requiresTranscode` inline, in four separate places. That greyed
 // out every non-native codec even though the gateway has always had an ffmpeg route and
@@ -147,5 +147,42 @@ describe("diagnoseStreamUrl", () => {
   // A host that serves the bytes fine points the finger back at the browser/codec.
   it("distinguishes a healthy host from a playable file", async () => {
     expect(await diagnoseStreamUrl("http://x/s/t/MusicFile", answering(200))).toMatch(/couldn't play it/);
+  });
+});
+
+// The heart writes optimistically and rolls back if the request fails. Both directions go through
+// withFavorite, so what these pin is that it really is its own inverse — a hand-written rollback is
+// exactly how you end up with a filled heart over a favorite the server never recorded.
+describe("withFavorite", () => {
+  it("adds a track that wasn't favorited", () => {
+    expect([...withFavorite(new Set([1, 2]), 3, true)].sort()).toEqual([1, 2, 3]);
+  });
+
+  it("removes a track that was", () => {
+    expect([...withFavorite(new Set([1, 2, 3]), 2, false)].sort()).toEqual([1, 3]);
+  });
+
+  it("is idempotent in both directions", () => {
+    expect([...withFavorite(new Set([1]), 1, true)]).toEqual([1]);
+    expect([...withFavorite(new Set([1]), 2, false)]).toEqual([1]);
+  });
+
+  // The rollback path: applying !want must land back exactly where it started, whichever way the
+  // toggle went.
+  it("undoes itself exactly", () => {
+    const before = new Set([4, 5, 6]);
+    for (const [id, want] of [[7, true], [5, false]]) {
+      const after = withFavorite(before, id, want);
+      expect([...withFavorite(after, id, !want)].sort()).toEqual([...before].sort());
+    }
+  });
+
+  // A mutated-in-place Set is reference-identical, so React bails on the update and the heart never
+  // changes colour — the bug this returns a copy to avoid.
+  it("returns a new Set and leaves the original alone", () => {
+    const before = new Set([1]);
+    const after = withFavorite(before, 2, true);
+    expect(after).not.toBe(before);
+    expect([...before]).toEqual([1]);
   });
 });

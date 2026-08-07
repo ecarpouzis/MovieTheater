@@ -87,6 +87,29 @@
 
 .music-miniplayer-play { font-size: 19px; }
 
+/* The heart sits between the title and the transport, so it must not drift with the track name's
+   length — flex:none keeps it put. Hollow it reads as a muted affordance; filled it's the one spot
+   of accent colour on this side of the bar. Both glyphs are the same width, so toggling doesn't
+   shift the transport by a pixel. */
+.music-miniplayer-heart {
+  flex: none;
+  font-size: 17px;
+  color: var(--sidebar-text-muted);
+  transition: color 120ms ease, transform 120ms ease;
+}
+
+.music-miniplayer-heart:hover { color: var(--sidebar-text); }
+.music-miniplayer-heart--on,
+.music-miniplayer-heart--on:hover { color: var(--accent); }
+/* A small kick on the way in — the only feedback that the click landed, since the request is
+   optimistic and there is nothing else to watch. */
+.music-miniplayer-heart--on { transform: scale(1.08); }
+
+@media (prefers-reduced-motion: reduce) {
+  .music-miniplayer-heart { transition: none; }
+  .music-miniplayer-heart--on { transform: none; }
+}
+
 .music-miniplayer-seek {
   display: flex;
   align-items: center;
@@ -286,6 +309,10 @@
   .music-miniplayer-volume { display: none; }
 
   .music-miniplayer-info { min-width: 0; flex: 1 1 auto; order: 1; }
+  /* Same order as the info block so it stays glued to the title (equal order falls back to source
+     order). Without this it defaults to 0 and jumps ahead of everything, landing the heart at the
+     very start of the bar. */
+  .music-miniplayer-heart { order: 1; padding: 6px 8px; font-size: 19px; }
   .music-miniplayer-transport { order: 2; flex: none; }
 
   .music-miniplayer-seek {
@@ -339,6 +366,20 @@
   to   { opacity: 1; transform: none; }
 }
 
+/* The panel's controls, floated over its top-right corner. The pane scrolls underneath, so these
+   need their own stacking level and their own hit area. */
+.music-lyrics-overlay-tools {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.music-lyrics-overlay-tools .music-lyrics-overlay-close { position: static; top: auto; right: auto; }
+
 .music-lyrics-overlay-close {
   position: absolute;
   top: 6px;
@@ -362,7 +403,13 @@
   position: absolute;
   inset: 0;
   display: flex;
-  align-items: flex-end;
+  /* stretch, NOT flex-end. A flex item that overflows its container while aligned to the END spills
+     off the START edge — above the top of the screen — and nothing can scroll it back, because the
+     overflow belongs to the flex container rather than to the scroll box. Measured before the fix:
+     the pane's top sat at -36px and line 1 at -18px with the box scrolled fully to 0, which is
+     exactly "you can't see the first lines however hard you scroll". Stretching makes the pane
+     exactly the container's height, so all of its overflow is its own and therefore scrollable. */
+  align-items: stretch;
   justify-content: center;
   pointer-events: none;
   /* Bottom padding clears the preset controls sitting at the bottom of the canvas — otherwise the
@@ -370,6 +417,10 @@
   padding: 0 16px 62px;
   background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.5) 40%, rgba(0, 0, 0, 0.26) 100%);
 }
+
+/* "Dark backdrop" off (lyrics display options): the words keep their shadow, the preset keeps its
+   colours. Only the scrim goes — the layer still has to be here to hold the pane. */
+.music-lyrics-over-viz--plain { background: none; }
 
 .music-lyrics-over-viz .music-np-lyrics--overlay {
   pointer-events: auto;
@@ -379,12 +430,32 @@
      Without it max-height stayed `none`: the lines grew straight off the top of the screen, only
      the last few were reachable, and the follow-the-song scroll had nothing to scroll. */
   max-height: 100%;
+  height: 100%;
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.85);
 }
 
-.music-lyrics-over-viz .music-np-line { font-size: 17px; margin-bottom: 12px; }
+/* Headroom at both ends of a timed lyric, so the FIRST and LAST lines can sit in the middle of the
+   screen like every line between them. Without it the centring scroll clamps at 0 and the opening
+   lines read pinned to the top edge — which is also where the scrim is thinnest and the words are
+   hardest to see. As a percentage of the pane's own (definite) height, so it tracks the window.
+   Timed lyrics only: an untimed block has no line to centre, and the padding would just open with a
+   screen of nothing. */
+.music-lyrics-over-viz .music-np-lyrics--synced::before,
+.music-lyrics-over-viz .music-np-lyrics--synced::after {
+  content: "";
+  display: block;
+  height: 38%;
+}
+
+.music-lyrics-over-viz .music-np-line {
+  font-size: calc(17px * var(--music-lyrics-scale, 1));
+  margin-bottom: 12px;
+}
 /* Over a moving preset the active line has to win on more than colour alone. */
-.music-lyrics-over-viz .music-np-line--active { transform: none; font-size: 19px; }
+.music-lyrics-over-viz .music-np-line--active {
+  transform: none;
+  font-size: calc(19px * var(--music-lyrics-scale, 1));
+}
 
 /* The panel mode is bounded by the same number as its container: a percentage would resolve against
    an auto height (i.e. to `none`) and the panel would clip its overflow instead of scrolling it. */
@@ -394,6 +465,9 @@
   .music-lyrics-overlay { max-height: 42vh; }
   .music-lyrics-overlay .music-np-lyrics--overlay { max-height: 42vh; }
   .music-lyrics-over-viz { padding-bottom: 56px; }
-  .music-lyrics-over-viz .music-np-line { font-size: 16px; }
-  .music-lyrics-over-viz .music-np-line--active { font-size: 18px; }
+  .music-lyrics-over-viz .music-np-line { font-size: calc(16px * var(--music-lyrics-scale, 1)); }
+  .music-lyrics-over-viz .music-np-line--active { font-size: calc(18px * var(--music-lyrics-scale, 1)); }
+  /* Less headroom on a short screen: 38% of a phone viewport is most of the readable area. */
+  .music-lyrics-over-viz .music-np-lyrics--synced::before,
+  .music-lyrics-over-viz .music-np-lyrics--synced::after { height: 30%; }
 }
