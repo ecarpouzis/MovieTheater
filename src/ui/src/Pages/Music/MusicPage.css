@@ -312,59 +312,106 @@
   overflow-y: auto;
 }
 
-/* ── The album sheet stops where the player bar starts ───────────────────────
-   Browsing an album is exactly when you want the transport: skip a track, scrub,
-   pick the next thing. A modal that covers the bar makes "close this first" the
-   price of touching the music, which is backwards. So the dialog AND its mask end
-   at the top of the bar (--music-miniplayer-height, published by MusicMiniPlayer —
-   0px when nothing is playing, so with no music this is a normal full-height
-   sheet). The bar's own z-index is below the modal's, but it no longer has to win:
-   nothing is drawn over it. */
+/* ════════════════════════════════════════════════════════════════════════════
+   THE ALBUM SHEET
+
+   Modelled on the arcade dialog shell (Pages/Arcade/ArcadeModal.css), which solved
+   this exact set of problems for a TV browser. Same four moves, one difference:
+
+   1. IT FILLS THE SPACE ABOVE THE PLAY BAR — all of it, at every size. It used to
+      be a 560px card floating in the middle of a 4K screen with a 55vh tracklist
+      inside it, which wasted the screen and made a 23-track album a scrolling
+      peephole.
+   2. THE HERO IS PINNED, THE TRACKLIST SCROLLS. Play/Shuffle/Queue/Playlist stay
+      on screen however long the album, and — because the list starts below the
+      hero — its scrollbar can never reach the corner antd parks the ✕ in. That
+      collision (scroll track behind the close button, ungrabbable) is the bug
+      this rebuild exists to end.
+   3. A READABLE COLUMN. Full-bleed is not the same as stretched: content is capped
+      and centred, so a 2000px-wide sheet reads as a designed page rather than a
+      tracklist smeared across a TV.
+   4. IT IS DRIVEABLE WITHOUT A POINTER. A d-pad moves focus and there is no cursor
+      to show where it went, so everything focusable gets one unmistakable ring.
+
+   The difference: the bottom bound is the PLAY BAR, not the viewport. Browsing an
+   album is exactly when you want the transport — skip a track, scrub, pick the next
+   thing — so the dialog and its mask both stop at the top of the bar
+   (--music-miniplayer-height, published by MusicMiniPlayer; 0px with nothing
+   playing, which makes this an ordinary full-height sheet).
+   ════════════════════════════════════════════════════════════════════════════ */
+
 .music-album-modal-root .ant-modal-mask,
 .music-album-modal.ant-modal-wrap {
   bottom: var(--music-miniplayer-height, 0px);
 }
 
-/* Bound the card to the space that's left and hand the scrolling to the body, so a
-   long tracklist can't push the dialog down behind the bar. */
+.music-album-modal.ant-modal-wrap {
+  /* The readable column, and the gutter that is its floor on a narrow screen. `100%`
+     in the pad resolves against whichever element USES it (custom properties
+     substitute at the use site), i.e. the hero and the tracklist — both exactly the
+     sheet's width. Straight out of the arcade shell. */
+  --music-sheet-measure: 900px;
+  --music-sheet-gutter: clamp(16px, 2.4vw, 30px);
+  --music-sheet-pad: max(var(--music-sheet-gutter), calc((100% - var(--music-sheet-measure)) / 2));
+  padding: 0;
+  /* The tracklist owns the scrolling; the wrap must not add a second scroller. */
+  overflow: hidden;
+}
+
+.music-album-modal.ant-modal-wrap .ant-modal {
+  top: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  vertical-align: top;
+}
+
+/* An explicit calc, not `height: 100%`: the wrap is a centring layout and .ant-modal
+   is auto-height, so a percentage here resolves against nothing and collapses. */
 .music-album-modal.ant-modal-wrap .ant-modal-container {
   display: flex;
   flex-direction: column;
-  max-height: calc(100vh - var(--music-miniplayer-height, 0px) - 100px);
-  max-height: calc(100dvh - var(--music-miniplayer-height, 0px) - 100px);
+  height: calc(100vh - var(--music-miniplayer-height, 0px));
+  height: calc(100dvh - var(--music-miniplayer-height, 0px));
+  max-height: calc(100dvh - var(--music-miniplayer-height, 0px));
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
 
+/* The body is a flex COLUMN, not merely a bounded box: the detail below needs a
+   definite height to shrink against, and `height: 100%` cannot give it one — a
+   percentage against a flex item whose own height came from flexing resolves to
+   auto, and the tracklist then grows to its full content height and scrolls
+   nothing. Making this a flex container hands the child a real size. */
 .music-album-modal.ant-modal-wrap .ant-modal-body {
   flex: 1 1 auto;
-  /* Load-bearing: a flex item's default `min-height: auto` refuses to shrink below
-     its content, so without this the tracklist grows the card past the bound above. */
   min-height: 0;
-  /* The body does NOT scroll — the tracklist does. antd's close button is absolutely positioned in
-     the container's top-right corner, and the body reaches that same corner, so a body-owned
-     scrollbar runs directly underneath the ✕: on a big screen the top of the scroll track sits
-     behind the button, where it can't be grabbed. Handing the scroll to the tracklist starts the
-     track below the hero instead, ~150px clear of the button, and pins the artwork and the Play
-     row while a long album scrolls — which is what you want on a TV anyway. */
-  overflow: hidden;
-  /* A flex COLUMN, not just a bounded box: the detail below has to inherit a definite height to
-     shrink against, and `height: 100%` can't give it one — a percentage against a flex item whose
-     own height came from flexing resolves to auto, and the tracklist then grows to its full content
-     height and scrolls nothing. Making this a flex container hands the child a real size. */
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  padding: 0;
 }
 
-/* One scroller, not two nested ones — the tracklist owns it here, and the chain above it has to
-   pass the height down: every ancestor is a flex column with min-height:0, or the default
-   `min-height: auto` lets the list grow the card straight past the bound. */
 .music-album-modal.ant-modal-wrap .music-album-detail {
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
+  /* Load-bearing at every level of this chain: a flex item's default
+     `min-height: auto` refuses to shrink below its content. */
   min-height: 0;
 }
 
-.music-album-modal.ant-modal-wrap .music-album-detail-head { flex: none; }
+/* Pinned. The trailing padding always clears the ✕ — the one place the hero and the
+   close button can still collide is a narrow sheet, where the column is the screen. */
+.music-album-modal.ant-modal-wrap .music-album-detail-head {
+  flex: none;
+  margin: 0;
+  padding: 26px var(--music-sheet-pad) 20px;
+  padding-inline-end: max(60px, var(--music-sheet-pad));
+  border-bottom: 1px solid var(--card-border);
+}
 
 .music-album-modal.ant-modal-wrap .music-album-detail-tracks {
   flex: 1 1 auto;
@@ -372,34 +419,85 @@
   max-height: none;
   overflow-y: auto;
   overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 10px var(--music-sheet-pad) 28px;
 }
 
-/* Phone: edge-to-edge sheet in the space above the bar. */
+/* Floating over content rather than a header, so it takes the arcade's contrast chip
+   — a bare glyph over album art is unreadable about half the time. */
+.music-album-modal.ant-modal-wrap .ant-modal-close {
+  top: 10px;
+  inset-inline-end: 10px;
+  z-index: 2;
+}
+
+.music-album-modal.ant-modal-wrap .ant-modal-close-x {
+  width: 42px;
+  height: 42px;
+  line-height: 42px;
+  font-size: 17px;
+  color: #fff;
+  background: rgba(20, 20, 24, 0.62);
+  border-radius: 50%;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.music-album-modal.ant-modal-wrap .ant-modal-close:hover .ant-modal-close-x {
+  color: #fff;
+  background: rgba(20, 20, 24, 0.85);
+}
+
+/* A TV drives this with a d-pad: focus moves and nothing shows where it went.
+   :focus-visible, so a mouse click never draws it. */
+.music-album-modal.ant-modal-wrap :focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* The sheet has room the old 560px card never did, so the hero stops being a
+   thumbnail. Sized in CSS (not JS as the arcade does) because this art is a plain
+   background-image box, not a component that needs pixel props. */
+@media (min-width: 1000px) and (min-height: 700px) {
+  .music-album-modal.ant-modal-wrap .music-album-hero {
+    width: 200px;
+    height: 200px;
+    font-size: 48px;
+  }
+  /* Centred, not top-aligned: once the cover is 200px+ the metadata column is barely
+     half its height, and flex-start left a dead band of white between the buttons and
+     the rule that made the whole header read as broken. */
+  .music-album-modal.ant-modal-wrap .music-album-detail-head {
+    gap: 24px;
+    align-items: center;
+  }
+  .music-album-modal.ant-modal-wrap .music-album-detail-title { font-size: 27px; }
+  .music-album-modal.ant-modal-wrap .music-album-detail-sub { font-size: 14px; }
+}
+
+@media (min-width: 1700px) and (min-height: 900px) {
+  .music-album-modal.ant-modal-wrap { --music-sheet-measure: 1040px; }
+  .music-album-modal.ant-modal-wrap .music-album-hero {
+    width: 248px;
+    height: 248px;
+    font-size: 58px;
+  }
+  .music-album-modal.ant-modal-wrap .music-album-detail-title { font-size: 32px; }
+  /* Rows sized for a screen you're across the room from. */
+  .music-album-modal.ant-modal-wrap .music-song-row { padding: 11px 12px; }
+  .music-album-modal.ant-modal-wrap .music-song-title { font-size: 15px; }
+}
+
+/* Phone: the hero shrinks so the tracklist — the reason the sheet is open — starts
+   on the first screen rather than below a square of artwork. */
 @media (max-width: 640px) {
-  .music-album-modal.ant-modal-wrap {
-    padding: 0;
-    overflow: hidden; /* the body scrolls; the wrap must not add a second scroller */
+  .music-album-modal.ant-modal-wrap .music-album-hero {
+    width: 92px;
+    height: 92px;
+    font-size: 26px;
   }
-
-  .music-album-modal.ant-modal-wrap .ant-modal {
-    top: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    width: 100vw !important;
-    max-width: 100vw !important;
-    vertical-align: top;
-  }
-
-  .music-album-modal.ant-modal-wrap .ant-modal-container {
-    height: calc(100vh - var(--music-miniplayer-height, 0px));
-    height: calc(100dvh - var(--music-miniplayer-height, 0px));
-    max-height: calc(100dvh - var(--music-miniplayer-height, 0px));
-    border-radius: 0;
-    box-shadow: none;
-  }
-
-  /* The hero shrinks so the tracklist — the reason the sheet is open — starts on
-     the first screen rather than below a 132px square. */
-  .music-album-hero { width: 92px; height: 92px; font-size: 26px; }
-  .music-album-detail-title { font-size: 17px; }
+  .music-album-modal.ant-modal-wrap .music-album-detail-title { font-size: 17px; }
+  .music-album-modal.ant-modal-wrap .music-album-detail-head { padding-block: 16px 14px; }
+  .music-album-modal.ant-modal-wrap .ant-modal-close { top: 4px; inset-inline-end: 4px; }
 }

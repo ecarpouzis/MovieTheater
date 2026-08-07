@@ -241,6 +241,7 @@ namespace MovieTheater.Music
                         existing.DurationSec = tags2.DurationSec;
                         existing.BitrateKbps = tags2.BitrateKbps;
                         existing.SampleRateHz = tags2.SampleRateHz;
+                        existing.Channels = tags2.Channels;
                         existing.HasEmbeddedArt = tags2.HasEmbeddedArt;
                         existing.MissingSinceUtc = null;
                     }
@@ -271,6 +272,7 @@ namespace MovieTheater.Music
                     Codec = codec,
                     BitrateKbps = tags.BitrateKbps,
                     SampleRateHz = tags.SampleRateHz,
+                    Channels = tags.Channels,
                     TagArtist = Truncate(tags.Artist, 400),
                     TagAlbum = Truncate(tags.Album, 400),
                     HasEmbeddedArt = tags.HasEmbeddedArt,
@@ -382,8 +384,16 @@ namespace MovieTheater.Music
 
         private sealed record TagData(
             string? Title, string? Artist, string? Album, int? TrackNo, int? DiscNo,
-            double? DurationSec, int? BitrateKbps, int? SampleRateHz, bool HasEmbeddedArt,
+            double? DurationSec, int? BitrateKbps, int? SampleRateHz, int? Channels, bool HasEmbeddedArt,
             string? UnsyncedLyrics, string? SyncedLrc);
+
+        /// <summary>Channel count from the decoded stream properties, 0 when the format wouldn't say.
+        /// Shared with the backfill so both spellings of "how many channels" can't drift.</summary>
+        internal static int ReadChannels(ATL.Track t)
+        {
+            var n = t.ChannelsArrangement?.NbChannels ?? 0;
+            return n > 0 && n <= 16 ? n : 0;
+        }
 
         /// <summary>Reads a file's tags via ATL. A corrupt/unreadable file is counted, not fatal —
         /// the track still ingests from its filename.</summary>
@@ -410,6 +420,7 @@ namespace MovieTheater.Music
                     DurationSec: t.DurationMs > 0 ? t.DurationMs / 1000.0 : (double?)null,
                     BitrateKbps: t.Bitrate > 0 ? (int?)t.Bitrate : null,
                     SampleRateHz: t.SampleRate > 0 ? (int?)Math.Round((double)t.SampleRate) : null,
+                    Channels: ReadChannels(t),
                     HasEmbeddedArt: t.EmbeddedPictures != null && t.EmbeddedPictures.Count > 0,
                     UnsyncedLyrics: unsynced,
                     SyncedLrc: lrc);
@@ -417,7 +428,9 @@ namespace MovieTheater.Music
             catch
             {
                 tagErrors++;
-                return new TagData(null, null, null, null, null, null, null, null, false, null, null);
+                // Channels 0, not null: the file was unreadable, so the backfill would fail on it too —
+                // record the sentinel now rather than leaving it to be retried on every future pass.
+                return new TagData(null, null, null, null, null, null, null, null, 0, false, null, null);
             }
         }
 

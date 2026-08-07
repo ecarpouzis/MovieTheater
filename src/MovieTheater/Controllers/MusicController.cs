@@ -104,6 +104,12 @@ namespace MovieTheater.Controllers
                 transcoded = transcode,
                 mimeType = transcode ? "audio/mpeg" : MusicMimeTypes.FromExtension(track.Extension),
                 durationSec = track.DurationSec,
+                // How many channels the browser will actually decode, so the player can size its Web
+                // Audio destination to match. The transcode lane re-encodes to mp3, which tops out at
+                // stereo, so a surround source served that way really is 2 by the time it lands.
+                // 0/null (never backfilled, or a file that wouldn't say) means "don't know" — the
+                // player leaves the destination at its stereo default.
+                channels = transcode ? 2 : track.Channels,
                 title = track.Title,
                 artist = track.Artist.Name,
                 album = track.Album?.Title,

@@ -63,6 +63,13 @@ namespace MovieTheater.Db
 
         public int? SampleRateHz { get; set; }
 
+        /// <summary>Channel count of the source file (2 = stereo, 6 = 5.1). The player sizes the Web
+        /// Audio destination to this so the visualizer graph carries surround through instead of
+        /// down-mixing it — and, just as importantly, leaves a stereo track at 2 so the OS/receiver
+        /// upmixer still sees a 2-channel stream. 0 means "read the file and it wouldn't tell us",
+        /// a sentinel that stops the backfill retrying it forever; null means not yet backfilled.</summary>
+        public int? Channels { get; set; }
+
         /// <summary>Raw tag artist, kept verbatim for later reconciliation — folder identity wins (§2.3).</summary>
         [MaxLength(400)]
         public string? TagArtist { get; set; }

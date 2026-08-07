@@ -95,6 +95,17 @@ export async function diagnoseStreamUrl(url, doFetch = fetch) {
 /// that must terminate: every path either makes progress (retry with a fresh URL, or move on) or
 /// stops, and no input combination loops. "stop" is the backstop for a dead gateway — without it, a
 /// server that fails everything would walk the whole queue at speed, briefly, and call it playback.
+/// How wide to open the Web Audio output for a track of `channels` on a device that can emit at most
+/// `maxChannelCount`. Pulled out as a pure function because the rule is counter-intuitive enough to
+/// be "simplified" into a bug — see applyOutputChannels for why widening unconditionally is wrong.
+export function outputChannelCount(channels, maxChannelCount) {
+  const max = maxChannelCount > 0 ? maxChannelCount : 2;
+  // Only a source that actually HAS more than two channels earns a wider output. Unknown (0, null,
+  // undefined, or a bogus value) means stereo, which is also the safe pre-existing behaviour.
+  if (!(channels > 2)) return 2;
+  return Math.min(channels, max);
+}
+
 export function recoveryDecision({ attempts, consecutiveFailures, hasNext }) {
   if (attempts < RECOVERIES_PER_TRACK) return "retry";
   if (consecutiveFailures + 1 >= MAX_CONSECUTIVE_FAILURES) return "stop";
@@ -167,6 +178,9 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   const failTrackRef = useRef(() => {});
   // The URL the element was last given, so a failure can ask the host what it actually said.
   const lastUrlRef = useRef(null);
+  // Channel count of the loaded track, from Stream/Start. Kept in a ref because the graph may be
+  // built LONG after the track loaded (the visualizer opens mid-song) and has to size itself then.
+  const trackChannelsRef = useRef(0);
 
   const current = index >= 0 && index < queue.length ? queue[index] : null;
 
@@ -223,6 +237,36 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   // render) can read the live track without every one of them re-binding on each change.
   currentRef.current = current;
 
+  // Size the graph's output to the track so the visualizer can't collapse surround to stereo.
+  //
+  // AudioDestinationNode defaults to channelCount 2 with channelCountMode "explicit", which means it
+  // DOWN-MIXES whatever reaches it. That is a real trap here: createMediaElementSource reroutes the
+  // element permanently, so opening the visualizer once folds every later track to stereo for the
+  // rest of the session — visualizer closed or not.
+  //
+  // The fix is to size the destination to the SOURCE, not to maxChannelCount. Pinning it wide open
+  // would be worse than the bug: a stereo track fed to a 6-channel destination is up-mixed by the
+  // "speakers" rules into L, R and four silent channels, so Chrome hands Windows a 5.1 stream whose
+  // centre and surrounds are digital silence — and the OS/receiver upmixer, the only thing that puts
+  // stereo music into those speakers at all, sees a stream that is already 5.1 and stays out of it.
+  // So: surround sources get their real width, stereo stays at 2 and keeps the upmix path intact.
+  //
+  // channelInterpretation stays "speakers" deliberately — on a 7.1 file played through a 5.1 device
+  // we clamp to 6, and "speakers" folds it properly where "discrete" would just drop the extra pair.
+  const applyOutputChannels = useCallback(() => {
+    const graph = audioGraphRef.current;
+    if (!graph) return; // no graph yet: ensureAudioGraph applies this when it builds one
+    const dest = graph.audioContext.destination;
+    const want = outputChannelCount(trackChannelsRef.current, dest.maxChannelCount);
+    if (dest.channelCount === want) return;
+    try {
+      dest.channelCount = want;
+    } catch {
+      // Assigning above maxChannelCount throws IndexSizeError, and some engines refuse the write
+      // outright. Either way the previous (working) value stands — audio keeps playing, just folded.
+    }
+  }, []);
+
   // Fetch a fresh signed URL and put it on the element. Shared by the track-change effect and by
   // recovery, which differ only in where they resume from — a re-mint is exactly a load, and having
   // two spellings of it is how the two paths would drift.
@@ -239,6 +283,10 @@ export function MusicPlayerProvider({ children, enabled = true }) {
         if (seq !== loadSeqRef.current) return; // superseded by a newer pick
         setError(null);
         lastUrlRef.current = data.url; // kept for diagnoseStreamUrl if this load dies
+        // Before the element gets the source, not after: the destination's width should already be
+        // right when the first buffer is decoded, so no part of the track is folded on the way in.
+        trackChannelsRef.current = Number(data.channels) || 0;
+        applyOutputChannels();
         audio.src = data.url;
         if (resumeAt > 0) {
           // currentTime can only be set once the element knows the media's shape.
@@ -261,7 +309,7 @@ export function MusicPlayerProvider({ children, enabled = true }) {
         // not reaching the speakers. It goes through the same bounded recovery.
         failTrackRef.current(body?.message || "This track can't be played.");
       });
-  }, []);
+  }, [applyOutputChannels]);
 
   // Load + play whenever the current track changes. The signed URL comes from Stream/Start;
   // the <audio> element then streams straight off the gateway (Range requests, native decode).
@@ -520,18 +568,24 @@ export function MusicPlayerProvider({ children, enabled = true }) {
         const source = audioContext.createMediaElementSource(audio);
         const analyser = audioContext.createAnalyser();
         analyser.fftSize = 2048;
+        // Two INDEPENDENT connections from the same source. The analyser branch folds its input down
+        // for the FFT, but that fold is local to the branch and cannot reach the destination — which
+        // is why the visualizer still works on a surround track without costing it any channels.
         source.connect(analyser);
         source.connect(audioContext.destination);
         audioGraphRef.current = { audioContext, source, analyser };
       } catch {
         return null; // no Web Audio here — the caller shows the fallback message
       }
+      // The graph usually appears mid-song, so the track that is ALREADY playing has to re-assert
+      // its width — otherwise opening the visualizer on a 5.1 track folds it until the next track.
+      applyOutputChannels();
     }
 
     const graph = audioGraphRef.current;
     if (graph.audioContext.state === "suspended") graph.audioContext.resume().catch(() => {});
     return graph;
-  }, []);
+  }, [applyOutputChannels]);
 
   /// Must be called FROM the click handler: ensureAudioGraph resumes the AudioContext, and a
   /// browser only honours that inside a user gesture — an effect a tick later is not one.

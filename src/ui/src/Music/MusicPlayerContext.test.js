@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { trackIsPlayable, shuffled, recoveryDecision, diagnoseStreamUrl, withFavorite } from "./MusicPlayerContext";
+import { trackIsPlayable, shuffled, recoveryDecision, diagnoseStreamUrl, withFavorite, outputChannelCount } from "./MusicPlayerContext";
 
 // The player used to gate on `!t.requiresTranscode` inline, in four separate places. That greyed
 // out every non-native codec even though the gateway has always had an ffmpeg route and
@@ -184,5 +184,46 @@ describe("withFavorite", () => {
     const after = withFavorite(before, 2, true);
     expect(after).not.toBe(before);
     expect([...before]).toEqual([1]);
+  });
+});
+
+// Opening the visualizer routes the <audio> element through a Web Audio graph permanently, and
+// AudioDestinationNode defaults to 2 channels in "explicit" mode — so before this rule existed, one
+// visualizer open folded every later track to stereo for the rest of the session. The fix is NOT
+// "open the output as wide as the device allows": pinning a stereo track to 6 channels makes the
+// browser emit 5.1 with four silent channels, which stops the OS/receiver upmixer from ever
+// engaging. These pin both halves of that.
+describe("outputChannelCount", () => {
+  it("leaves stereo at 2 even on a 5.1-capable device", () => {
+    expect(outputChannelCount(2, 6)).toBe(2);
+  });
+
+  it("carries a surround source through at its real width", () => {
+    expect(outputChannelCount(6, 6)).toBe(6);
+  });
+
+  // Assigning above maxChannelCount throws IndexSizeError, so the clamp is load-bearing, not tidy.
+  it("clamps a wider source to what the device can emit", () => {
+    expect(outputChannelCount(8, 6)).toBe(6);
+  });
+
+  // Unknown must mean stereo: a track the backfill hasn't reached yet, or a format that wouldn't
+  // report, has to behave exactly as it did before this feature existed.
+  it("treats unknown as stereo", () => {
+    for (const unknown of [0, null, undefined, NaN, -1]) {
+      expect(outputChannelCount(unknown, 6)).toBe(2);
+    }
+  });
+
+  // Mono is up-mixed to L/R by the "speakers" rules, which is what we want — narrowing the output to
+  // 1 would hand the OS a mono stream instead.
+  it("does not narrow below stereo for a mono source", () => {
+    expect(outputChannelCount(1, 6)).toBe(2);
+  });
+
+  // A device that reports nothing useful must not produce a 0-channel destination.
+  it("survives a device that reports no max", () => {
+    expect(outputChannelCount(6, 0)).toBe(2);
+    expect(outputChannelCount(6, undefined)).toBe(2);
   });
 });
