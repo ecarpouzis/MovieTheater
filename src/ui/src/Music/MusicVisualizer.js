@@ -514,11 +514,6 @@ export default function MusicVisualizer({ player, onClose, lyricsTools = null })
       )}
 
       <div className="music-viz-controls">
-        {/* Whatever the caller wants to hang off this strip — in practice the lyrics display options,
-            which belong here because this bar is what's on screen when the words are over the
-            canvas. A node rather than a flag: the visualizer stays ignorant of lyrics, and the
-            surface that knows whether any are showing decides whether to offer the button. */}
-        {lyricsTools}
         <button onClick={() => step(-1)} title="Previous preset (←)" aria-label="Previous preset">◀</button>
         <button onClick={() => step(1)} title="Next preset (→)" aria-label="Next preset">▶</button>
         {/* Text glyphs, not emoji — the rest of the music UI (⏮ ⏸ ▶ ⏭ ◉ ♪ ☰ ✕) is monochrome, and
@@ -567,6 +562,16 @@ export default function MusicVisualizer({ player, onClose, lyricsTools = null })
           {isFullscreen ? "⤡" : "⛶"}
         </button>
         {onClose && <button onClick={onClose} title="Close visualizer" aria-label="Close visualizer">✕</button>}
+
+        {/* Whatever the caller wants to hang off this strip — in practice the lyrics display options,
+            which belong here because this bar is what's on screen when the words are over the canvas.
+            A node rather than a flag: the visualizer stays ignorant of lyrics, and the surface that
+            knows whether any are showing decides whether to offer the button.
+
+            LAST, and pushed to the far right by margin-left:auto. The strip runs the full width of the
+            screen while its buttons cluster at the left, so this is where the room actually is — and
+            a right-anchored panel needs a right-hand button, or it opens off the edge of the screen. */}
+        {lyricsTools}
       </div>
     </div>
   );

@@ -12,6 +12,12 @@
   flex: none;
 }
 
+/* In the visualizer's control strip: hard right. That strip spans the whole window while its buttons
+   bunch up on the left, so the right is the only part of it with room — and the panel below opens
+   leftward from its button's right edge, which is only on-screen if the button is on that side. It
+   sat first-in-the-strip at first, and the panel opened straight off the left of the screen. */
+.music-viz-controls .mlset { margin-left: auto; }
+
 .mlset-btn {
   cursor: pointer;
   font-size: 12px;
@@ -32,6 +38,8 @@
   bottom: calc(100% + 8px);
   z-index: 5;
   width: 272px;
+  /* Never wider than the window, whatever it's anchored to. */
+  max-width: calc(100vw - 20px);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -199,6 +207,22 @@
 .mlset--page .mlset-chip:hover:not(:disabled):not(.mlset-chip--on) {
   border-color: var(--accent);
   color: var(--text-primary);
+}
+
+/* ── Host: the lyrics panel above the play bar ──────────────────────────────
+   Its button sits at the TOP of a box that clips its overflow, so the default upward panel was
+   drawn entirely outside that box and painted nowhere — the button looked completely dead. Measured
+   before the fix: 270 of 270px above the overlay's top edge, and a hit test at the panel's own
+   centre returned <body>.
+
+   Fixed rather than absolute-and-downward: the overlay's height follows its content, so a track with
+   only a few lines gives a shallow box that would clip a downward panel just as thoroughly. Pinned
+   above the play bar it cannot be clipped by anything, whatever the lyric. */
+.music-lyrics-overlay-tools .mlset-panel {
+  position: fixed;
+  top: auto;
+  bottom: calc(var(--music-miniplayer-height, 72px) + 10px);
+  right: 14px;
 }
 
 /* On a phone the panel would run off the right edge of a narrow strip; pin it to the viewport

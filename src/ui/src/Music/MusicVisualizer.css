@@ -115,8 +115,10 @@
 @media (hover: none) {
   .music-viz-controls { opacity: 1; z-index: 2; }
   .music-viz-controls button { font-size: 17px; padding: 7px 11px; }
-  /* The name button is text, not an icon — the thumb-sized icon rule above would blow it up. */
-  .music-viz-name { font-size: 12px; padding: 5px 8px; }
+  /* The name button is text, not an icon — the thumb-sized icon rule above would blow it up.
+     Needs the parent in the selector to outscore that rule's (0,1,1); as a bare class it lost, and
+     the name has been rendering at icon size on every touchscreen since. */
+  .music-viz-controls .music-viz-name { font-size: 12px; padding: 5px 8px; }
   .music-viz-name-author { font-size: 10.5px; }
 }
 
@@ -158,7 +160,11 @@
    A <select> can't carry ~1,750 options usefully (and it can't be searched), so the picker became
    a panel and this is the button that opens it. It takes the strip's spare width and shows what's
    playing, because in a 1,750-preset library "what am I even looking at" is the first question. */
-.music-viz-name {
+/* `.music-viz-controls .music-viz-name`, not `.music-viz-name`: the strip's own
+   `.music-viz-controls button { flex: none }` scores (0,1,1) against this rule's (0,1,0) and was
+   quietly winning, so the name never grew and every control bunched into the left few hundred
+   pixels of a full-width bar. The `flex: 1 1 auto` here had been dead since it was written. */
+.music-viz-controls .music-viz-name {
   flex: 1 1 auto;
   min-width: 0;
   text-align: left;

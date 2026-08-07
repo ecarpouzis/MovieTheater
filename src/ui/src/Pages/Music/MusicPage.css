@@ -339,14 +339,39 @@
   /* Load-bearing: a flex item's default `min-height: auto` refuses to shrink below
      its content, so without this the tracklist grows the card past the bound above. */
   min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  /* The body does NOT scroll — the tracklist does. antd's close button is absolutely positioned in
+     the container's top-right corner, and the body reaches that same corner, so a body-owned
+     scrollbar runs directly underneath the ✕: on a big screen the top of the scroll track sits
+     behind the button, where it can't be grabbed. Handing the scroll to the tracklist starts the
+     track below the hero instead, ~150px clear of the button, and pins the artwork and the Play
+     row while a long album scrolls — which is what you want on a TV anyway. */
+  overflow: hidden;
+  /* A flex COLUMN, not just a bounded box: the detail below has to inherit a definite height to
+     shrink against, and `height: 100%` can't give it one — a percentage against a flex item whose
+     own height came from flexing resolves to auto, and the tracklist then grows to its full content
+     height and scrolls nothing. Making this a flex container hands the child a real size. */
+  display: flex;
+  flex-direction: column;
 }
 
-/* One scroller, not two nested ones — the body owns it here. */
+/* One scroller, not two nested ones — the tracklist owns it here, and the chain above it has to
+   pass the height down: every ancestor is a flex column with min-height:0, or the default
+   `min-height: auto` lets the list grow the card straight past the bound. */
+.music-album-modal.ant-modal-wrap .music-album-detail {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.music-album-modal.ant-modal-wrap .music-album-detail-head { flex: none; }
+
 .music-album-modal.ant-modal-wrap .music-album-detail-tracks {
+  flex: 1 1 auto;
+  min-height: 0;
   max-height: none;
-  overflow: visible;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 /* Phone: edge-to-edge sheet in the space above the bar. */
