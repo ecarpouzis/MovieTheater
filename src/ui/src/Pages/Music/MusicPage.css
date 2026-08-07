@@ -340,12 +340,27 @@
    playing, which makes this an ordinary full-height sheet).
    ════════════════════════════════════════════════════════════════════════════ */
 
-.music-album-modal-root .ant-modal-mask,
-.music-album-modal.ant-modal-wrap {
+/* Both selectors name the root class AND antd's own, giving (0,3,0). antd emits these as
+   `.ant-modal-root .ant-modal-mask` / `-wrap` at (0,3,0)… no: at (0,2,0) — but it injects them at
+   RUNTIME, after this bundle is in the document, so a tie on specificity loses on source order.
+   With the old two-class selectors this whole block was being discarded, which is why the mask and
+   the wrap both still ran to the bottom of the screen. */
+.music-album-modal-root.ant-modal-root .ant-modal-mask,
+.music-album-modal-root.ant-modal-root .ant-modal-wrap {
   bottom: var(--music-miniplayer-height, 0px);
+  /* Releasing the height is what makes that `bottom` mean anything on the mask. antd styles it
+     `position: fixed; inset: 0; height: 100%` — with BOTH `top` and `height` set the box is
+     over-constrained and `bottom` is ignored outright, so the mask covered the play bar with a
+     45%-black wash however low we put its bottom edge. Invisible while the dialog was a small card,
+     since the whole page behind it was dimmed anyway; the moment the sheet covered everything else
+     that wash on the bar was the only mask still showing, and read as a drop-shadow over the
+     transport. (Harmless on the wrap, which antd gives no height.) */
+  height: auto;
 }
 
-.music-album-modal.ant-modal-wrap {
+/* Same (0,3,0) trick: antd's `.ant-modal-root .ant-modal-wrap { overflow: auto }` would otherwise
+   tie this and win on injection order, leaving a second scroller behind the sheet. */
+.music-album-modal-root.ant-modal-root .ant-modal-wrap {
   /* The readable column, and the gutter that is its floor on a narrow screen. `100%`
      in the pad resolves against whichever element USES it (custom properties
      substitute at the use site), i.e. the hero and the tracklist — both exactly the

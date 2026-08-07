@@ -104,6 +104,15 @@
   backdrop-filter: blur(4px);
   opacity: 0.25;
   transition: opacity 0.2s ease;
+  /* Above the lyrics layer, which is a LATER SIBLING of .music-viz and therefore paints over this
+     strip by default. The strip itself was fine — the lyrics wrap is pointer-events:none and the
+     pane is padded 62px clear of the bottom — but the lyrics options panel opens ~270px UPWARD from
+     here, straight into the pane, which does take pointer events. Measured at 1366px wide: 53px of
+     the panel's left edge was covered and the "Dark backdrop" checkbox hit-tested to a lyric line;
+     at 1200px, 136px was covered and the font chips went with it. Clicking one landed outside the
+     panel, so the setting never applied and the dismiss handler shut the popup — "the options do
+     nothing". The touch rule below already did this, for exactly this reason. */
+  z-index: 2;
 }
 
 .music-viz:hover .music-viz-controls,
@@ -111,9 +120,10 @@
 
 /* There is no hover on a touchscreen, so a hover-reveal control strip is a control strip that never
    appears — it just sat there at 25% with tap targets sized for a mouse. Show it, and size it for a
-   thumb. z-index keeps it above the lyrics layer, which is a later sibling. */
+   thumb. (The z-index that used to live here is now on the base rule — it is needed at every
+   pointer type, not just touch.) */
 @media (hover: none) {
-  .music-viz-controls { opacity: 1; z-index: 2; }
+  .music-viz-controls { opacity: 1; }
   .music-viz-controls button { font-size: 17px; padding: 7px 11px; }
   /* The name button is text, not an icon — the thumb-sized icon rule above would blow it up.
      Needs the parent in the selector to outscore that rule's (0,1,1); as a bare class it lost, and
