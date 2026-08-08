@@ -1,5 +1,26 @@
 # Stuntman round 2 — frame jitter + level-4 AI turn bug (OVERNIGHT 2026-08-08)
 
+## ✅ SHIPPED ~05:15 — summary for the morning
+- **AI fix LIVE**: `pcsx2_softfloat` (scope All, VU0 interpreter) delivered per-game to every
+  Stuntman room via ArcadeGameProfile row 7 + regenerated game-overrides.json. Core
+  v2.0.0-c98d183 (soft-float PS2Float + int_fallback routing) on BOTH GL workers. Verified in a
+  real room: `[game-override] option pcsx2_softfloat=enabled`, reconcile READ, driving **59.9
+  ticks/s, 0 slowTicks, meanTick ~9.4ms** (43% headroom), no audio derives, clean teardown.
+- **ERIC'S TEST**: open Stuntman normally from your account, load your "Level 4" snapshot
+  in-room (📂 Load snapshot — lobby Resume is a known-broken no-op for PS2, see below), and run
+  the chase corner. The option arrives automatically; nothing to configure. If the lead car
+  still deviates, grab the room code + time so the log can be checked for the DERIVED re-pin.
+- Jitter: no vertical bob exists in the delivered paraLLEl-GS stream (probed 5×, incl. driving).
+  If you still see the frame jump, tell me the exact moment/screen — next probe is client frame
+  PACING, not vertical offset. The 08-05 "runs slow" rooms were your GSdx renderer arms — GSdx
+  is structurally wrong for this title (xfer packet storm, ~452k transfers/5s, API-independent).
+- Rollback if anything is off: cores dirs have `pcsx2_custom_libretro.dll.pre-softfloat-20260808`;
+  profile row 7 CoreOptionsJson back to NULL; recycle workers via .stop sentinel.
+- Fleet state: 3 workers up + supervised (orphans replaced), watchdog on, /status 3 free.
+- Open follow-ups (tasked): sticky one-sided audio re-pin (worker), PS2 lobby-resume 5s restore
+  (worker), catalog regen for the ⚙ UI (extractor harness regression), upstream-report the
+  MSVC bitfield bug found in PR #12001.
+
 **Mission (Eric, overnight, autonomous):** Stuntman (SLUS-20250, ArcadeGame 60439) still runs poorly:
 (1) frame jitter — frame visibly jumps up and down (classic PS2 interlace bob; "known PS2 config
 issue we're just starting to be able to modify"), (2) level-4 AI can't take a turn (PCSX2 #2990,
