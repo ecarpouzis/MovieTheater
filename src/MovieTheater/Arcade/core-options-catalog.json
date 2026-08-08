@@ -26380,7 +26380,7 @@
     "pcsx2": {
       "dll": "pcsx2_custom_libretro.dll",
       "libraryName": "LRPS2",
-      "libraryVersion": "v2.0.0-c98d183",
+      "libraryVersion": "v2.0.0-34a5cc1",
       "source": "SET_CORE_OPTIONS_V2_INTL",
       "options": [
         {
@@ -27145,6 +27145,24 @@
           "desc": "Uncaps the framerate if a patch for the game can be found inside the internal database. This can turn a 30fps game into 60fps locked, or stabilize the framerate. You might have to increase EE Cycle Rate in combination with this for a stable locked framerate. 60fps PAL-to-NTSC does what it says if it can find a patch, otherwise it will just try to use the default uncapped framerate patch (50fps for PAL, 60fps for NTSC)",
           "category": "performance",
           "coreCategory": "emulation"
+        },
+        {
+          "key": "pcsx2_pgs_field_fullres",
+          "label": "paraLLEl Full-height field scanout (Restart)",
+          "values": [
+            {
+              "token": "disabled",
+              "label": "disabled"
+            },
+            {
+              "token": "enabled",
+              "label": "enabled"
+            }
+          ],
+          "default": "disabled",
+          "desc": "Only applies to paraLLEl-GS with High-res scanout, and only to games that render interlaced fields (FFMD=1) during gameplay. Those normally scan out at an odd half height (e.g. 1280x447), which then has to be stretched. This presents them at full, even frame height (e.g. 1280x896) instead, and stops the image size flipping as the game moves between field gameplay and progressive menus. Aspect ratio is unchanged. Progressive and promoted-progressive content is not affected. Requires at least 8x SSAA, since it resolves the extra vertical super samples the scanout would otherwise average away; below that it falls back automatically.",
+          "category": "video",
+          "coreCategory": "video"
         },
         {
           "key": "pcsx2_softfloat",

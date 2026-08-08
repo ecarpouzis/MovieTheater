@@ -1,5 +1,123 @@
 # Stuntman round 2 — frame jitter + level-4 AI turn bug (OVERNIGHT 2026-08-08)
 
+## ~15:20 OPEN CYCLE (deploy pending: accumulated core+worker set)
+- Textures FIXED via config: Stuntman profile = softfloat + field_fullres + 16x SSAA + ss_tex
+  (plate legible, locked 60; ss_tex is the bigger texture lever — 16x still averages pairs
+  vertically). Motion "re-blur breathing" = adaptive-deinterlace bob softening, EXPECTED,
+  tunable via MOTION_LO/HI in field_merge.frag (rebake).
+- Mid-play RESET bug root-caused: boot-restore attempt 2 (22s) fires over live gameplay when
+  attempt 1 landed early (warm worker) — restore agent implementing INPUT-CANCEL (player input
+  since attempt 1 ⇒ skip attempt 2) + weighing removal of the in-room-load re-fire.
+- Stale loading-frame: core builder's ping-pong fix (8eebae8) removes the demonstrated
+  mechanism (recycled-pool memory presented before merge write lands); the fork's Round-4
+  serial instrumentation proves emit order is CORRECT → residual suspicion is DOWNSTREAM:
+  **the DUP path (handleDup re-pushing a slot whose serial advanced; DUP-PIN guard
+  nano_vk_zc_last_serial :1515 exists for the gc idle case) — ASSIGN TO FORK OWNER (restore
+  agent) after its input-cancel lands.** Completion semaphore being implemented as robustness
+  (safe design: fresh Granite semaphore/frame, deferred destroy; worker wait path verified
+  correct and needs NO change; NOT the demonstrated cause — serials ordered).
+- Deploy set when ready: core (ping-pong + semaphore + everything) + worker (input-cancel).
+
+## ✅ ~14:45 PHASE 3 SHIPPED — THE FULL-FIDELITY ENDGAME (core v2.0.0-e3b9c0a, deployed both
+## workers, guard snapshotted, patch artifact regenerated, pushed 90734b0)
+## Motion-adaptive temporal merge of the aligned 4×-resolved fields: same-phase motion detection
+## (f0v f2, f1v f3 — comparing phases directly would flag real inter-field detail as motion; 4
+## history entries, RESOLVED fields retained never merged output to avoid IIR smear), static =
+## 0.5*(f0+f1) weave, motion = newest field, smoothstepped (fastmad's 0.04/0.06 thresholds);
+## scene cuts saturate the motion term → bob (no special case); history dropped on geometry
+## change/mode exit; no GS-thread serialization (history images already READ_ONLY_OPTIMAL via
+## the always-true intermediate pass; ImageHandle retention = the anti-recycle mechanism).
+## ACCEPTANCE: static screen meanFrameDiff 0.007, 0 shifts/571 frames (baseline era 0.28-0.5,
+## defect era 0.5-0.9), full sharpness retained, no combing post-crash frame. Tuning lever if
+## slow pans ever soften: MOTION_LO/HI in field_merge.frag (rebake). AWAITING ERIC'S EYES.
+
+## ~14:35 SHADER PROJECT: Phase 1 ✓ (toolchain byte-identical repro; parallel-gs is PURE
+## upstream df08ccf — always diff --strip-trailing-cr, CRLF fakes a 10k-line fork; spirv-tools
+## pin = the fragile link; PARALLEL_GS_STANDALONE=ON means LIBRARY mode, slangmosh needs OFF).
+## Phase 2 ✓ BUILT+DEPLOYED (core v2.0.0-2589468, 11,618,816 B): true 4× resolve — 8x SSAA
+## slice table derived+cross-validated (each output pixel = exactly ONE sample; slice =
+## BASE+(sy&1)+2*sx+4*(sy>>1)); field offset = EXACT 2 texels; 16x = 2 samples/texel headroom;
+## shader edit as shader-patches/0001-*.patch in the lrps2 tree, rebake offline-reproducible.
+## ACCEPTANCE: SHARPEST image yet (real detail gain), position+grid clean — but probe reads
+## HIGHER alternation (0.805/0.884, ±1 both-signed): the exact resolve exposes TRUE field
+## content twitter that the 2:1 blend was low-passing. Phase 3 COMMISSIONED (the convergence):
+## motion-adaptive temporal merge (fastmad approach) of consecutive 4×-resolved fields —
+## static=weave (GSdx-reference stability + full detail), moving=newest field; scene-cut +
+## first-frame fallback to bob; watch recycled_image_pool lifetime for the field-history image.
+
+## ~13:30 STATE — ONE PATH REMAINS (Eric mandate: FULL fidelity, no fallbacks)
+- ✅ ONE-CLICK RESUME SHIPPED+VERIFIED: worker 4aaba95 = boot-restore attempt 2 at 22s + Save()
+  held while restore pending (the site's 2s pre-warm save was overwriting the seeded .dat AND
+  vetoing the retry — the entire "load it twice" era). Live proof: lobby resume → Level 4
+  in-engine, log shows "save skipped: boot-restore pending" + both attempts done. Covers plain
+  Continue too. Trade-off: human saves in first 22s of resumed ps2 rooms are held (logged).
+- ⚠ TASK-SCHEDULER RESTART RACE (deploy trap, hit ~13:20): RestartCount=999/PT1M auto-restarts
+  the runner ~1min after schtasks /End — it can respawn workers onto the OLD binary before a
+  slow build finishes. After any /End→build→/Run window, VERIFY worker StartTime > binary
+  mtime; recovery = sentinel recycle (runners alive, they respawn onto the new exe).
+- 🔨 IN PROGRESS (the single remaining fidelity path): parallel-gs shader toolchain lift —
+  vendor upstream shader sources + slangmosh bake (D:\Arcade\build\parallel-gs-upstream),
+  toolchain-proof gate (reproduce slangmosh.hpp at df08ccf), then TRUE 4× vertical resolve in
+  sample_circuit from the real 8x-SSAA samples (y_log2=2 CONFIRMED at our live setting) →
+  exact texel field placement, no compensation, no 2:1 blend shimmer. Eric's GSdx observation
+  = the fidelity reference (GSdx deinterlacer = stable full-height; GSdx speed = unusable,
+  xfer storm). NO more constant sweeps (comp0/1/2 all fail differently — 2:1 blit makes a
+  clean constant impossible; sweep tokens to be removed by the shader work). Notes:
+  D:\Arcade\build\lrps2\SHADER-TOOLCHAIN-NOTES.md.
+
+## BLUR ROOT CAUSE FOUND ~12:30 (investigation agent, full report in transcript)
+- **Gameplay = FFMD=1 field rendering → 1280×447 output** (odd height, chroma half-shift);
+  menus/FMV = FFMD=0 → promoted progressive 896. force_progressive only cancels interlace when
+  FFMD=0 (gs_renderer.cpp:4123/:4179 guarded by alternative_sampling). field_aware_rendering
+  (FFMD&&INT) does image_info.height-- (:4745) = the 447 fingerprint; ceiling 6173=447-class,
+  12373=896 — the log tells which mode a room ran.
+- **The vibration = vp.y -= 1.0f when !info.phase** (gs_renderer.cpp:4819/:4852) = whole frame
+  moves 1 line of 447 EVERY frame at 60Hz ≈ 2.4 physical px — Eric's perception exactly. It's
+  COMPENSATION for a game-side half-pixel field jitter that may not exist here (parity A/B
+  running: shimmer differs between Automatic and Bob BFF ⇒ game jitters/parity bug; identical ⇒
+  compensation spurious).
+- **FIX CHOSEN: core option (option 3+2): blit field to stable even 1280×896 at scanout**
+  (image_info.height = mode_height << 2 at :4742, viewports ×4 at :4812/:4845, drop the phase
+  shift + height--). ~5-6 lines, gated, per-game via profile row. Bonus: kills 896↔447 mode
+  flips → fewer zero-copy REALLOCs with frames in flight = the STRONGEST white-flash candidate
+  (log shows 213 reallocs, [zc-instr] REALLOC lines with slots in flight; GSRendererPGS.cpp:598
+  keeps only last_vsync_image alive — recycled while encoder reads = flash).
+- Config landmines CONFIRMED: pcrtc_antiblur must stay ENABLED (feeds horizontal-res adaptation
+  + raw scanout fast path; inert for the vertical issue); **pcsx2_pgs_ssaa BELOW 8x silently
+  kills high_res_scanout entirely** (needs both sampling_rate log2s nonzero; 2x=(0,1), 4x
+  non-ordered=(0,2) fail the gate at :4227). Deinterlace-mode under PGS = parity XOR only;
+  "Off" INVERTS phase (does not disable). Upstream parallel-gs (ee049c6) has NOTHING waiting —
+  we vendor df08ccf, 3 cosmetic commits behind.
+- EE no-interlacing patch: would have to be authored from scratch (not in the 64-serial
+  hardcoded table; cheats_ni path dead; pnach/external-GameIndex delivery paths DO exist
+  no-rebuild: pcsx2_enable_cheats + <DataRoot>/cheats/76CBC428.pnach, or use_external_gameindex
+  which IS wired in this port at main.cpp:2643 with EnablePatches default true — contradicts
+  the July "dead code" note, re-verify before relying). Not pursued: doubles GS fill.
+
+## ✅ BLUR FIX SHIPPED + VERIFIED 6/6 (~12:35, room PPFWCQ, core v2.0.0-ee1cbd0)
+pcsx2_pgs_field_fullres enabled for Stuntman (profile row 7 + manifests): field gameplay now a
+STABLE EVEN 1280x896 — one geom line all room (0x0→896), ZERO 896↔447 flips, ZERO zero-copy
+REALLOCs (was 213 in the 447 era — the lead white-flash suspect structurally eliminated),
+ceiling 12373, probes bob-free (alternations=0; weak one-sided -1s = the scaled compensation's
+sub-line bias, expected), sharpness plainly visible (TC digits razor, speedo ticks resolved),
+pace at baseline (59.9-60.0, 0 slowTicks, meanTick 6.97ms), PROVEN audio latch, clean close.
+Bounded known edge: bottom ~2-3 native rows black (vacated-rows clamp, reads as letterbox).
+⚠ meanFrameDiff baseline at 896 = ~0.5-0.55 (finer row sampling), don't read as drift.
+Bench-probe agent note: two node PIDs from 02:50 predate the run (the MCP servers) — not strays.
+
+## PARITY A/B VERDICT (~12:15, 5 arms, cross-worker confound closed)
+**The game FIELD-JITTERS and PGS's default-parity compensation is CORRECT — the shipped stream
+is perfectly stable** (as-is: 0 integer shifts / ~1400 frames, meanFrameDiff 0.28-0.50; Bob BFF
+= instant alternating ±2-row bob, meanFrameDiff 1.34+, ghosted stills = POSITIVE CONTROL proving
+the probe catches a real bob). ⇒ NEVER ship a pcsx2_deinterlace_mode value for Stuntman ("Off"
+and *BFF INTRODUCE the bob — parity XOR is LIVE under PGS, correcting the earlier "inert"
+verdict). ⇒ The core patch must KEEP the phase compensation (scaled): option 2 is DEAD, option 3
+amended — pcsx2_pgs_field_fullres being built (blit field scanout to stable even 1280x896,
+compensation preserved at scaled magnitude, menus un-affected via field_aware_rendering gate).
+Eric's residual blur = 447-line client upscale (fixed by the blit) ± interlace TWITTER
+(alternate-scanline detail alternation — position-stable; if shimmer persists post-blit, that's
+the remaining suspect; a temporal blend would need the slangmosh shader toolchain — later).
+
 ## ✅ MORNING FOLLOW-UP SHIPPED ~09:40 — pacer derivation fixes (fork 0de72c3, deployed)
 Health-gate (rate windows only count at full pace) + proven-declaration immunity (a core that
 ever delivered ≈declared at pace is immune to downward derivation for the session). Worker

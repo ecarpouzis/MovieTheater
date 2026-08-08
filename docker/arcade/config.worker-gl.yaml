@@ -773,10 +773,20 @@ emulator:
           #
           # 22 s: comfortably past the first game frame, comfortably before a player gives up. The worker
           # keeps the 5 s attempt (free, and it wins outright on a fast-booting title) and re-fires the
-          # SAME bytes once at this mark — which is exactly the second click, and idempotent. The same
-          # value also arms the in-room Load button: a press inside the window applies immediately AND
-          # re-fires once at 22 s; a press after it behaves exactly as before. A deliberate Save or a
-          # hard Reset in between cancels the re-fire (never clobber what the player just did).
+          # SAME bytes once at this mark — which is exactly the second click, and idempotent.
+          #
+          # Two guards ride with the window, both from live regressions on 2026-08-08:
+          #   * SAVES ARE HELD until the last attempt has run. The site's ~2 s pre-warm save (t=106) was
+          #     serializing the BIOS screen over the seeded snapshot before the 5 s restore could read
+          #     it — which is why Resume still failed after the re-fire shipped. Inside this window the
+          #     .dat IS the player's save; nothing may overwrite it, including a human Save press
+          #     (logged; at that age the live state is seconds from the seed anyway).
+          #   * ATTEMPT 2 IS CANCELLED BY PLAYER INPUT. On a warm worker attempt 1 succeeds and the
+          #     player drives off; re-restoring at 22 s stalled the room and silently threw the race
+          #     back to the load point. A restore that arrives too late is worse than one that never
+          #     fires. The in-room Load button is NOT auto-re-fired for the same reason — the player
+          #     can see it and press it again, and the save hold keeps the bytes intact so it works.
+          # Raising this widens BOTH guards; don't set it far past the core's first game frame.
           # 0 / unset = the old single-attempt behaviour, which is what every other core still gets.
           bootRestoreRetrySec: 22
           # noAutoSaveStates (2026-08-01) — REPLACES `noSaveStates: true`, which was set here on

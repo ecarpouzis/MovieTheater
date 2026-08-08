@@ -45,7 +45,7 @@ wrong. A crash or timeout is RECORDED as such and never read as "this core has n
 | `o2em_libretro.dll` | `o2em` | yes | **ok** | `SET_CORE_OPTIONS_INTL` | 10 | O2EM (1.18 e03d3be) |
 | `opera_libretro.dll` | `opera` | yes | **ok** | `SET_CORE_OPTIONS_V2_INTL` | 17 | Opera (1.0.0 5a4eb96) |
 | `parallel_n64_libretro.dll` | `parallel_n64` | yes | **ok** | `SET_CORE_OPTIONS_V2` | 94 | ParaLLEl N64 (1.0 3981986) |
-| `pcsx2_custom_libretro.dll` | `pcsx2` | yes | **ok-after-retro_init** | `SET_CORE_OPTIONS_V2_INTL` | 67 | LRPS2 (v2.0.0-c98d183) |
+| `pcsx2_custom_libretro.dll` | `pcsx2` | yes | **ok-after-retro_init** | `SET_CORE_OPTIONS_V2_INTL` | 68 | LRPS2 (v2.0.0-34a5cc1) |
 | `pcsx2_libretro.dll` | `pcsx2` | no | **ok-after-retro_init** | `SET_CORE_OPTIONS_V2_INTL` | 64 | LRPS2 (v2.0.0-b03969a) |
 | `pcsx_rearmed_libretro.dll` | `pcsx_rearmed` | yes | **ok** | `SET_CORE_OPTIONS_V2_INTL` | 53 | PCSX-ReARMed (r26 050981b) |
 | `picodrive_libretro.dll` | `picodrive` | yes | **ok** | `SET_CORE_OPTIONS_V2_INTL` | 21 | PicoDrive (2.05-f0d4a01) |
@@ -135,7 +135,7 @@ vs `flycast_libretro.dll` (88 options, outcome ok):
 
 vs `pcsx2_libretro.dll` (64 options, outcome ok-after-retro_init):
 
-- only on the deployed build (3): `pcsx2_softfloat`, `pcsx2_softfloat_scope`, `pcsx2_softfloat_vu0micro`
+- only on the deployed build (4): `pcsx2_pgs_field_fullres`, `pcsx2_softfloat`, `pcsx2_softfloat_scope`, `pcsx2_softfloat_vu0micro`
 - only on the other build (0): —
 - different token lists (0): —
 - different defaults (0): 
@@ -159,7 +159,7 @@ vs `ppsspp_libretro.dll` (75 options, outcome ok):
 | `dolphin` | fold | 99 | 0 | 0 | 0 | 0 | 0 |
 | `dosbox_pure` | fold | 48 | 48 | 0 | 0 | 0 | 0 |
 | `fbneo` | fold | 41 | 0 | 0 | 0 | 0 | 0 |
-| `flycast` | fold | 89 | 90 | 1 | 0 | 0 | 0 |
+| `flycast` | fold | 90 | 90 | 0 | 0 | 0 | 0 |
 | `freechaf` | fold | 1 | 1 | 0 | 0 | 0 | 0 |
 | `freeintv` | fold | 2 | 2 | 0 | 0 | 0 | 0 |
 | `gearcoleco` | fold | 7 | 7 | 0 | 0 | 0 | 0 |
@@ -178,7 +178,7 @@ vs `ppsspp_libretro.dll` (75 options, outcome ok):
 | `o2em` | fold | 10 | 10 | 0 | 0 | 0 | 0 |
 | `opera` | fold | 17 | 17 | 0 | 0 | 0 | 0 |
 | `parallel_n64` | hand-only | — | — | 0 | 0 | 0 | 0 |
-| `pcsx2` | fold | 64 | 67 | 3 | 0 | 0 | 0 |
+| `pcsx2` | fold | 67 | 68 | 1 | 0 | 0 | 0 |
 | `pcsx_rearmed` | fold | 53 | 53 | 0 | 0 | 0 | 0 |
 | `picodrive` | fold | 21 | 21 | 0 | 0 | 0 | 0 |
 | `pokemini` | fold | 13 | 13 | 0 | 0 | 0 | 0 |
@@ -204,15 +204,6 @@ vs `ppsspp_libretro.dll` (75 options, outcome ok):
 
 - ⚠ extraction no-options-before-content — OLD catalog block carried over verbatim
 
-### `flycast`
-
-- added keys (1): `reicast_mt_sort_key`
-- label drift (old label KEPT for reviewability) (3):
-  - reicast_per_content_vmus: `Per-Game Visual Memory Units/Systems (VMU)` (kept) vs core's `Per-Game VMUs`
-  - reicast_vmu_sound: `Visual Memory Units/Systems (VMU) Sounds` (kept) vs core's `VMU Sounds`
-  - reicast_show_vmu_screen_settings: `Show Visual Memory Unit/System (VMU) Display Settings` (kept) vs core's `Show VMU Display Settings`
-- hand-authored ranges preserved: `reicast_sh4clock`
-
 ### `melondsds`
 
 - ⚠ hand-only: not written to the catalog
@@ -225,7 +216,7 @@ vs `ppsspp_libretro.dll` (75 options, outcome ok):
 
 ### `pcsx2`
 
-- added keys (3): `pcsx2_softfloat`, `pcsx2_softfloat_vu0micro`, `pcsx2_softfloat_scope`
+- added keys (1): `pcsx2_pgs_field_fullres`
 
 ### `scummvm`
 
