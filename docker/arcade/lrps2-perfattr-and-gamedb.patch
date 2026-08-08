@@ -473,13 +473,27 @@ index 0000000..2bc8adf
 +if errorlevel 1 exit /b 1
 +"%CMAKE%" --build bld --target pcsx2_libretro --parallel 14
 diff --git a/libretro/libretro_core_options.h b/libretro/libretro_core_options.h
-index 1f832e8..264b658 100644
+index 1f832e8..2a8824a 100644
 --- a/libretro/libretro_core_options.h
 +++ b/libretro/libretro_core_options.h
-@@ -620,6 +620,50 @@ struct retro_core_option_v2_definition option_defs_us[] = {
+@@ -620,6 +620,64 @@ struct retro_core_option_v2_definition option_defs_us[] = {
        },
        "disabled"
     },
++   {
++      "pcsx2_pgs_field_fullres",
++      "Video > paraLLEl Full-height field scanout (Restart)",
++      "paraLLEl Full-height field scanout (Restart)",
++      "Only applies to paraLLEl-GS with High-res scanout, and only to games that render interlaced fields (FFMD=1) during gameplay. Those normally scan out at an odd half height (e.g. 1280x447), which then has to be stretched. This presents them at full, even frame height (e.g. 1280x896) instead, and stops the image size flipping as the game moves between field gameplay and progressive menus. Aspect ratio is unchanged. Progressive and promoted-progressive content is not affected.",
++      NULL,
++      "video",
++      {
++         { "disabled", NULL },
++         { "enabled", NULL },
++         { NULL, NULL },
++      },
++      "disabled"
++   },
 +   {
 +      "pcsx2_softfloat",
 +      "Emulation > Deterministic FP (Soft-Float FPU+COP2) (Restart)",
@@ -528,7 +542,7 @@ index 1f832e8..264b658 100644
        "pcsx2_enable_hw_hacks",
        "HW Hacks > Enable Manual Hardware Renderer Fixes (Not Recommended)",
 diff --git a/libretro/main.cpp b/libretro/main.cpp
-index 1a145b2..6c169fd 100644
+index 1a145b2..974d1ec 100644
 --- a/libretro/main.cpp
 +++ b/libretro/main.cpp
 @@ -25,6 +25,7 @@
@@ -539,7 +553,15 @@ index 1a145b2..6c169fd 100644
  #include "../pcsx2/Counters.h"
  #include "../pcsx2/Host.h"
  
-@@ -157,6 +158,7 @@ static bool setting_force_sprite_position      = false;
+@@ -111,6 +112,7 @@ static int setting_native_scaling              = 0;
+ static u8 setting_plugin_type                  = 0;
+ static u8 setting_pgs_super_sampling           = 0;
+ static u8 setting_pgs_high_res_scanout         = 0;
++static u8 setting_pgs_field_fullres            = 0;
+ static u8 setting_pgs_disable_mipmaps          = 0;
+ static u8 setting_pgs_ss_tex                   = 0;
+ static u8 setting_pgs_deblur                   = 0;
+@@ -157,6 +159,7 @@ static bool setting_force_sprite_position      = false;
  static bool setting_pcrtc_screen_offsets       = false;
  static bool setting_disable_interlace_offset   = false;
  static bool setting_shared_memory_cards        = true;
@@ -547,7 +569,7 @@ index 1a145b2..6c169fd 100644
  
  static bool setting_show_parallel_options      = true;
  static bool setting_show_gsdx_options          = true;
-@@ -420,6 +422,53 @@ static void check_variables(bool first_run)
+@@ -420,6 +423,53 @@ static void check_variables(bool first_run)
  			bool fast_cdvd = !strcmp(var.value, "enabled");
  			s_settings_interface.SetBoolValue("EmuCore/Speedhacks", "fastCDVD", fast_cdvd);
  		}
@@ -601,7 +623,23 @@ index 1a145b2..6c169fd 100644
  	}
  
  	if (setting_plugin_type == PLUGIN_PGS)
-@@ -2278,8 +2327,75 @@ void retro_run(void)
+@@ -474,6 +524,15 @@ static void check_variables(bool first_run)
+ 			}
+ 		}
+ 
++		// Restart-only: this changes the scanout image geometry, so it must not be flipped
++		// while a VM is running. Written on first_run only, like pcsx2_softfloat.
++		var.key = "pcsx2_pgs_field_fullres";
++		if (first_run && environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
++		{
++			setting_pgs_field_fullres = !strcmp(var.value, "enabled");
++			s_settings_interface.SetUIntValue("EmuCore/GS", "pgsFieldFullRes", setting_pgs_field_fullres);
++		}
++
+ 		var.key = "pcsx2_pgs_high_res_scanout";
+ 		if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+ 		{
+@@ -2278,8 +2337,75 @@ void retro_run(void)
  	if (cpu_thread_state.load(std::memory_order_acquire) == VMState::Paused)
  		cpu_thread_resume();
  
@@ -731,7 +769,7 @@ index b750590..7a2e63e 100644
  	R3000A.h
  	R5900.h
 diff --git a/pcsx2/Config.h b/pcsx2/Config.h
-index e8807ba..bcf2213 100644
+index e8807ba..bb4cfe1 100644
 --- a/pcsx2/Config.h
 +++ b/pcsx2/Config.h
 @@ -382,6 +382,19 @@ struct Pcsx2Config
@@ -766,7 +804,18 @@ index e8807ba..bcf2213 100644
  		}
  
  		bool operator!=(const RecompilerOptions& right) const
-@@ -955,6 +971,32 @@ namespace EmuFolders
+@@ -531,6 +547,10 @@ struct Pcsx2Config
+ 		s8 OverrideTextureBarriers = -1;
+ 		u8 PGSSuperSampling = 0;
+ 		u8 PGSHighResScanout = 0;
++		// Scan field-rendered (FFMD=1) content out at full frame height instead of the
++		// half-height odd geometry the field path otherwise produces. Only has any effect
++		// where field-aware rendering is active; progressive/promoted modes are untouched.
++		u8 PGSFieldFullRes = 0;
+ 		u8 PGSDisableMipmaps = 0;
+ 		u8 PGSSuperSampleTextures = 0;
+ 		u8 PGSSharpBackbuffer = 0;
+@@ -955,6 +975,32 @@ namespace EmuFolders
  #define CHECK_FPU_EXTRA_OVERFLOW (EmuConfig.Cpu.Recompiler.fpuExtraOverflow) // If enabled, Operands are checked for infinities before being used in the FPU recs
  #define CHECK_FPU_FULL (EmuConfig.Cpu.Recompiler.fpuFullMode)
  
@@ -1380,6 +1429,133 @@ index 0d4f817..9318479 100644
  		GSDeviceOGL::GetInstance()->CommitClear(this, true);
  
  		const u32 pitch = Common::AlignUpPow2(m_r_w << m_int_shift, TEXTURE_UPLOAD_PITCH_ALIGNMENT);
+diff --git a/pcsx2/GS/Renderers/parallel-gs/GSRendererPGS.cpp b/pcsx2/GS/Renderers/parallel-gs/GSRendererPGS.cpp
+index 9d8613c..94f3f65 100644
+--- a/pcsx2/GS/Renderers/parallel-gs/GSRendererPGS.cpp
++++ b/pcsx2/GS/Renderers/parallel-gs/GSRendererPGS.cpp
+@@ -504,6 +504,7 @@ void GSRendererPGS::VSync(u32 field, bool registers_written)
+ 	info.adapt_to_internal_horizontal_resolution = GSConfig.PCRTCAntiBlur;
+ 	info.raw_circuit_scanout                     = true;
+ 	info.high_resolution_scanout                 = GSConfig.PGSHighResScanout != 0;
++	info.field_full_res_scanout                  = GSConfig.PGSFieldFullRes != 0;
+ 	auto vsync                                   = iface.vsync(info);
+ 
+ 	auto stats = iface.consume_flush_stats();
+diff --git a/pcsx2/GS/parallel-gs/gs/gs_interface.hpp b/pcsx2/GS/parallel-gs/gs/gs_interface.hpp
+index 9f05da8..ec6e3ba 100644
+--- a/pcsx2/GS/parallel-gs/gs/gs_interface.hpp
++++ b/pcsx2/GS/parallel-gs/gs/gs_interface.hpp
+@@ -192,6 +192,16 @@ struct VSyncInfo
+ 	// For best results, force_progressive must also be used.
+ 	bool high_resolution_scanout;
+ 
++	// When field-aware rendering is active (FFMD=1 interlaced content under high-resolution
++	// scanout), scan the field out at full frame height instead of the half-height geometry
++	// the field path otherwise produces. Field content then lands on a stable, even image
++	// size (e.g. 1280x896 rather than 1280x447), which avoids a half-height upscale on the
++	// consumer side and stops the image size flipping as the game moves between field and
++	// progressive modes. The half-scanline field phase compensation is preserved, scaled to
++	// the new geometry. Has no effect unless field-aware rendering is active, so progressive
++	// and promoted-progressive modes (menus, FMV) are untouched.
++	bool field_full_res_scanout;
++
+ 	// If using interlaced, defer any attempt to deinterlace and just return the raw output as-is with phase information.
+ 	// User is responsible for deinterlacing in whatever way is appropriate.
+ 	bool skip_deinterlace;
+diff --git a/pcsx2/GS/parallel-gs/gs/gs_renderer.cpp b/pcsx2/GS/parallel-gs/gs/gs_renderer.cpp
+index adde6bb..90f832a 100644
+--- a/pcsx2/GS/parallel-gs/gs/gs_renderer.cpp
++++ b/pcsx2/GS/parallel-gs/gs/gs_renderer.cpp
+@@ -4737,14 +4737,33 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
+ 		}
+ 	}
+ 
++	// Vertical scale from CRTC scanlines to output lines. Normally 1 without high-resolution
++	// scanout and 2 with it. In field-full-res mode we double it once more so that field
++	// content lands on a full, even frame height (e.g. 224 CRTC lines -> 896) instead of the
++	// half-height odd geometry below (448 - 1 = 447). Horizontal scale is deliberately left
++	// alone: only the vertical axis is halved by field rendering.
++	//
++	// This is the single source of truth for the vertical scale -- the circuit viewports and
++	// the field phase compensation below both derive from it, so the geometry cannot drift
++	// apart between here and there.
++	uint32_t scanout_scale_y = 1u << int(high_resolution_scanout);
++	const bool field_full_res = field_aware_rendering && info.field_full_res_scanout;
++	if (field_full_res)
++		scanout_scale_y *= 2;
++
+ 	result.internal_width = mode_width;
+ 	result.internal_height = mode_height;
+ 	image_info.width = mode_width << int(high_resolution_scanout);
+-	image_info.height = mode_height << int(high_resolution_scanout);
++	image_info.height = mode_height * scanout_scale_y;
+ 
+-	if (field_aware_rendering)
++	if (field_aware_rendering && !field_full_res)
+ 	{
+ 		// Avoid a one line flicker due to field rendering.
++		// Not needed in field-full-res mode: there the whole point is an even, stable height,
++		// and the extra vertical headroom means the phase-shifted field no longer runs the
++		// bottom line off the end of the image. The attachment is cleared to the background
++		// colour before any draw and the circuits are sampled through LinearClamp, so the
++		// edge rows resolve to background or a clamped edge texel -- never undefined data.
+ 		image_info.height--;
+ 	}
+ 
+@@ -4811,13 +4830,22 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
+ 
+ 			if (high_resolution_scanout)
+ 			{
++				// Vertical scale is scanout_scale_y (2 normally, 4 in field-full-res mode);
++				// horizontal is always 2, since field rendering only halves the vertical axis.
++				const float scale_y = float(scanout_scale_y);
++
+ 				vp.x *= 2.0f;
+-				vp.y *= 2.0f;
+ 				vp.width *= 2.0f;
+-				vp.height *= 2.0f;
+-
++				vp.y *= scale_y;
++				vp.height *= scale_y;
++
++				// Field phase compensation. The game jitters its fields by half a CRTC
++				// scanline, and this cancels it; measured stable at default parity, and
++				// inverting the parity provably reintroduces a bob, so it must be preserved.
++				// The correction is half a CRTC scanline expressed in output lines, so it
++				// scales with the vertical scale: 1.0 at 2x (unchanged), 2.0 at 4x.
+ 				if (field_aware_rendering && !info.phase)
+-					vp.y -= 1.0f;
++					vp.y -= scale_y * 0.5f;
+ 			}
+ 
+ 			cmd.set_viewport(vp);
+@@ -4844,13 +4872,22 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
+ 
+ 			if (high_resolution_scanout)
+ 			{
++				// Vertical scale is scanout_scale_y (2 normally, 4 in field-full-res mode);
++				// horizontal is always 2, since field rendering only halves the vertical axis.
++				const float scale_y = float(scanout_scale_y);
++
+ 				vp.x *= 2.0f;
+-				vp.y *= 2.0f;
+ 				vp.width *= 2.0f;
+-				vp.height *= 2.0f;
+-
++				vp.y *= scale_y;
++				vp.height *= scale_y;
++
++				// Field phase compensation. The game jitters its fields by half a CRTC
++				// scanline, and this cancels it; measured stable at default parity, and
++				// inverting the parity provably reintroduces a bob, so it must be preserved.
++				// The correction is half a CRTC scanline expressed in output lines, so it
++				// scales with the vertical scale: 1.0 at 2x (unchanged), 2.0 at 4x.
+ 				if (field_aware_rendering && !info.phase)
+-					vp.y -= 1.0f;
++					vp.y -= scale_y * 0.5f;
+ 			}
+ 
+ 			cmd.set_viewport(vp);
 diff --git a/pcsx2/MTGS.cpp b/pcsx2/MTGS.cpp
 index 01e7e53..bf9cf55 100644
 --- a/pcsx2/MTGS.cpp
@@ -2352,7 +2528,7 @@ index 0000000..5c60b47
 +    static u8 DetermineMacException(u8 mode, u32 acc, bool acc_oflw, bool moflw, s32 msign, u32& addsubres, bool& oflw, bool& uflw);
 +};
 diff --git a/pcsx2/Pcsx2Config.cpp b/pcsx2/Pcsx2Config.cpp
-index e19cab2..3e7af09 100644
+index e19cab2..4fa7e74 100644
 --- a/pcsx2/Pcsx2Config.cpp
 +++ b/pcsx2/Pcsx2Config.cpp
 @@ -214,6 +214,12 @@ Pcsx2Config::RecompilerOptions::RecompilerOptions()
@@ -2382,6 +2558,22 @@ index e19cab2..3e7af09 100644
  }
  
  bool Pcsx2Config::CpuOptions::CpusChanged(const CpuOptions& right) const
+@@ -486,6 +499,7 @@ bool Pcsx2Config::GSOptions::OptionsAreEqual(const GSOptions& right) const
+ 		OpEqu(Adapter) &&
+ 		OpEqu(PGSSuperSampling) &&
+ 		OpEqu(PGSHighResScanout) &&
++		OpEqu(PGSFieldFullRes) &&
+ 		OpEqu(PGSDisableMipmaps) &&
+ 		OpEqu(PGSSharpBackbuffer) &&
+ 		OpEqu(PGSSuperSampleTextures)
+@@ -531,6 +545,7 @@ void Pcsx2Config::GSOptions::LoadSave(SettingsWrapper& wrap)
+ 	SettingsWrapBitBoolEx(AutoFlushSW, "autoflush_sw");
+ 	SettingsWrapIntEnumEx(PGSSuperSampling, "pgsSuperSampling");
+ 	SettingsWrapIntEnumEx(PGSHighResScanout, "pgsHighResScanout");
++	SettingsWrapIntEnumEx(PGSFieldFullRes, "pgsFieldFullRes");
+ 	SettingsWrapIntEnumEx(PGSDisableMipmaps, "pgsDisableMipmaps");
+ 	SettingsWrapIntEnumEx(PGSSuperSampleTextures, "pgsSuperSampleTextures");
+ 	SettingsWrapIntEnumEx(PGSSharpBackbuffer, "pgsSharpBackbuffer");
 diff --git a/pcsx2/PerfAttr.h b/pcsx2/PerfAttr.h
 new file mode 100644
 index 0000000..5c1c2b6
