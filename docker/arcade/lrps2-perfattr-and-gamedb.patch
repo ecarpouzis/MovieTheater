@@ -1,9 +1,9 @@
 diff --git a/SOFTFLOAT-PORT-NOTES.md b/SOFTFLOAT-PORT-NOTES.md
 new file mode 100644
-index 0000000..379ebd0
+index 0000000..a890c22
 --- /dev/null
 +++ b/SOFTFLOAT-PORT-NOTES.md
-@@ -0,0 +1,414 @@
+@@ -0,0 +1,492 @@
 +# Soft-float (PS2Float) port — implementation log
 +
 +Branch `stuntman-softfloat`, off `movietheater-lrps2` @ `2cf344b`.
@@ -348,6 +348,84 @@ index 0000000..379ebd0
 +observable part of the recompiler. The ~3.9 ms of div/sqrt is where any remaining effort
 +belongs.
 +
++---
++
++## paraLLEl-GS field-full-res scanout (`pcsx2_pgs_field_fullres`)
++
++Separate feature, same branch. Stuntman renders gameplay as FFMD=1 fields, which scan out at an
++odd half height (1280x447) while menus run 1280x896. Enabling the option makes field content
++scan out at full even height by doubling the vertical CRTC->output scale from 2 to 4
++(224 CRTC lines -> 896), then cropping to **894**. Horizontal scale and `internal_*`/`mode_*`
++are untouched, so 4:3 is preserved. Progressive/promoted content is unaffected (the gate is
++`field_aware_rendering`, which needs FFMD && INT), and menus stay at 896.
++
++Confirmed live: AI fix correct, **white flashes gone** (the 896<->447 flip was driving the
++zero-copy REALLOCs), sharpness good.
++
++### The two follow-up defects, and what they taught
++
++**Vacated rows.** The phase compensation shifts the phase-0 field *up*, so on that phase the
++viewport stopped short of the image bottom and those rows kept the render pass's clear colour.
++That reads black on a dark scene and **white wherever BGCOLOR is bright** (the pause screen),
++alternating at 30Hz because only one phase shifts.
++
++The first attempt cropped the image to 894, and **that was wrong** for a reason worth
++remembering: menus produce 896, so a 894 gameplay image reintroduces exactly the geometry flip
++this mode exists to remove. *Any* size delta renegotiates caps and reallocates the zero-copy
++pool (76 transitions per room in the logs) — the white-flash mechanism. Geometry stability is a
++hard constraint, and "the delta is only two rows" buys nothing.
++
++The shipped fix keeps the image at **896 always** and instead scissors *both* phases short of
++the rows neither can share, leaving a constant two-row background band at the bottom that is
++byte-identical across phases. Two rows rather than one keeps it correct whether the
++compensation is one or two output rows. The top edge needs no equivalent — the compensation
++only ever shifts upward.
++
++The scissor is safe by construction: `begin_render_pass` resets the scissor to the render area
++via `init_viewport_scissor`, this render pass contains nothing but the two circuit blits, and
++`set_opaque_sprite_state`/`set_program` touch no viewport or scissor state. It neither inherits
++nor leaks state.
++
++Finally, the band is forced to **black** by a rect-scoped `clear_quad` over exactly those two
++rows, placed after both blits. Stable was not sufficient — BGCOLOR is bright on many screens
++(the pause screen is why this was reported at all), so the band has to read as letterbox.
++Note this is deliberately *not* done by changing `rp.clear_color`: that colour is also what
++shows through wherever a game's circuits genuinely do not cover the image, and that background
++is supposed to be BGCOLOR. Only these two rows are ours to blacken. The two mechanisms are
++independent — `vkCmdClearAttachments` ignores the scissor, so the scissor keeps the blits off
++those rows and the clear decides their colour.
++
++**The compensation does not scale.** Scaling it to `2.0f` at 4x overshot by exactly one output
++row (probe: one-sided weak -1 shifts; human: bouncing text). It is one output row at any scale.
++
++### ⚠ Load-bearing finding: there is no half-line to recover in FFMD mode
++
++The obvious principled fix — carry the full-precision field offset from
++`off_y = (DY + phase_offset) >> 1` into the viewport instead of approximating it with a
++constant — **does not apply here**. `compute_circuit_rect()` sets
++
++```
++rect.phase_offset = alternative_sampling ? ((display.DY ^ phase) & 1) : 0;
++```
++
++and `alternative_sampling = is_interlaced && !FFMD`. Field-aware rendering requires FFMD, so in
++exactly the mode this feature targets `phase_offset` is **identically zero**, `off_y` is
++**phase-independent**, and the `>>1` discards only a static `DY & 1` — never a per-field
++half-line. The entire field displacement is the `vp.y` compensation. Do not spend time on that
++route again.
++
++### Unresolved tension worth knowing
++
++Geometric derivation says the correction should be half a field line = 2 output rows at 4x
++(a field line is 4 output rows there, and the circuit texture is 2 texels per field line, so a
++half-field-line is 1 texel = 2 output rows). Measurement says 1. Three independent derivations
++gave 2; the probe and human eyes both gave 1, so the measurement ships. The unexplained gap
++means one of the premises above is wrong — most likely "the correction equals half a field
++line". If this ever needs revisiting, the discriminating experiment is to run the option at 4x
++with the compensation forced to 0, 1 and 2 and read the probe's shift count for each: a clean
++zero at exactly one value confirms it is a fixed display-space offset, while a value that
++tracks the scale would vindicate the geometric model.
++
 +## Things to review / watch
 +
 +* **The COP2 fallback is deliberately all-or-nothing over the `mode & 0x10` set.**
@@ -473,10 +551,10 @@ index 0000000..2bc8adf
 +if errorlevel 1 exit /b 1
 +"%CMAKE%" --build bld --target pcsx2_libretro --parallel 14
 diff --git a/libretro/libretro_core_options.h b/libretro/libretro_core_options.h
-index 1f832e8..2a8824a 100644
+index 1f832e8..66bb0e6 100644
 --- a/libretro/libretro_core_options.h
 +++ b/libretro/libretro_core_options.h
-@@ -620,6 +620,64 @@ struct retro_core_option_v2_definition option_defs_us[] = {
+@@ -620,6 +620,66 @@ struct retro_core_option_v2_definition option_defs_us[] = {
        },
        "disabled"
     },
@@ -484,12 +562,14 @@ index 1f832e8..2a8824a 100644
 +      "pcsx2_pgs_field_fullres",
 +      "Video > paraLLEl Full-height field scanout (Restart)",
 +      "paraLLEl Full-height field scanout (Restart)",
-+      "Only applies to paraLLEl-GS with High-res scanout, and only to games that render interlaced fields (FFMD=1) during gameplay. Those normally scan out at an odd half height (e.g. 1280x447), which then has to be stretched. This presents them at full, even frame height (e.g. 1280x896) instead, and stops the image size flipping as the game moves between field gameplay and progressive menus. Aspect ratio is unchanged. Progressive and promoted-progressive content is not affected.",
++      "Only applies to paraLLEl-GS with High-res scanout, and only to games that render interlaced fields (FFMD=1) during gameplay. Those normally scan out at an odd half height (e.g. 1280x447), which then has to be stretched. This presents them at full, even frame height (e.g. 1280x896) instead, and stops the image size flipping as the game moves between field gameplay and progressive menus. Aspect ratio is unchanged. Progressive and promoted-progressive content is not affected. The 'comp' variants only change how far the interlaced field phase is compensated, in output rows, for comparing which looks steadiest; 'enabled' is comp 1.",
 +      NULL,
 +      "video",
 +      {
 +         { "disabled", NULL },
 +         { "enabled", NULL },
++         { "enabled (comp 0)", NULL },
++         { "enabled (comp 2)", NULL },
 +         { NULL, NULL },
 +      },
 +      "disabled"
@@ -542,7 +622,7 @@ index 1f832e8..2a8824a 100644
        "pcsx2_enable_hw_hacks",
        "HW Hacks > Enable Manual Hardware Renderer Fixes (Not Recommended)",
 diff --git a/libretro/main.cpp b/libretro/main.cpp
-index 1a145b2..974d1ec 100644
+index 1a145b2..012a529 100644
 --- a/libretro/main.cpp
 +++ b/libretro/main.cpp
 @@ -25,6 +25,7 @@
@@ -623,23 +703,34 @@ index 1a145b2..974d1ec 100644
  	}
  
  	if (setting_plugin_type == PLUGIN_PGS)
-@@ -474,6 +524,15 @@ static void check_variables(bool first_run)
+@@ -474,6 +524,26 @@ static void check_variables(bool first_run)
  			}
  		}
  
 +		// Restart-only: this changes the scanout image geometry, so it must not be flipped
 +		// while a VM is running. Written on first_run only, like pcsx2_softfloat.
++		// 0 = off, 1 = on with a 1-row phase compensation (the plain "enabled" default),
++		// 2 = on with 0 rows, 3 = on with 2 rows. The comp variants exist so the contested
++		// compensation magnitude can be swept per room without another core build.
 +		var.key = "pcsx2_pgs_field_fullres";
 +		if (first_run && environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
 +		{
-+			setting_pgs_field_fullres = !strcmp(var.value, "enabled");
++			if (!strcmp(var.value, "enabled"))
++				setting_pgs_field_fullres = 1;
++			else if (!strcmp(var.value, "enabled (comp 0)"))
++				setting_pgs_field_fullres = 2;
++			else if (!strcmp(var.value, "enabled (comp 2)"))
++				setting_pgs_field_fullres = 3;
++			else
++				setting_pgs_field_fullres = 0;
++
 +			s_settings_interface.SetUIntValue("EmuCore/GS", "pgsFieldFullRes", setting_pgs_field_fullres);
 +		}
 +
  		var.key = "pcsx2_pgs_high_res_scanout";
  		if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
  		{
-@@ -2278,8 +2337,75 @@ void retro_run(void)
+@@ -2278,8 +2348,75 @@ void retro_run(void)
  	if (cpu_thread_state.load(std::memory_order_acquire) == VMState::Paused)
  		cpu_thread_resume();
  
@@ -1430,22 +1521,26 @@ index 0d4f817..9318479 100644
  
  		const u32 pitch = Common::AlignUpPow2(m_r_w << m_int_shift, TEXTURE_UPLOAD_PITCH_ALIGNMENT);
 diff --git a/pcsx2/GS/Renderers/parallel-gs/GSRendererPGS.cpp b/pcsx2/GS/Renderers/parallel-gs/GSRendererPGS.cpp
-index 9d8613c..94f3f65 100644
+index 9d8613c..f576e6f 100644
 --- a/pcsx2/GS/Renderers/parallel-gs/GSRendererPGS.cpp
 +++ b/pcsx2/GS/Renderers/parallel-gs/GSRendererPGS.cpp
-@@ -504,6 +504,7 @@ void GSRendererPGS::VSync(u32 field, bool registers_written)
+@@ -504,6 +504,11 @@ void GSRendererPGS::VSync(u32 field, bool registers_written)
  	info.adapt_to_internal_horizontal_resolution = GSConfig.PCRTCAntiBlur;
  	info.raw_circuit_scanout                     = true;
  	info.high_resolution_scanout                 = GSConfig.PGSHighResScanout != 0;
++	// PGSFieldFullRes doubles as the phase-compensation selector so the value can be swept
++	// without a rebuild: 0 = off, 1 = on with 1 row (the default), 2 = on with 0, 3 = on with 2.
 +	info.field_full_res_scanout                  = GSConfig.PGSFieldFullRes != 0;
++	info.field_full_res_phase_comp               = GSConfig.PGSFieldFullRes == 2 ? 0 :
++	                                               GSConfig.PGSFieldFullRes == 3 ? 2 : 1;
  	auto vsync                                   = iface.vsync(info);
  
  	auto stats = iface.consume_flush_stats();
 diff --git a/pcsx2/GS/parallel-gs/gs/gs_interface.hpp b/pcsx2/GS/parallel-gs/gs/gs_interface.hpp
-index 9f05da8..ec6e3ba 100644
+index 9f05da8..ea222f9 100644
 --- a/pcsx2/GS/parallel-gs/gs/gs_interface.hpp
 +++ b/pcsx2/GS/parallel-gs/gs/gs_interface.hpp
-@@ -192,6 +192,16 @@ struct VSyncInfo
+@@ -192,6 +192,23 @@ struct VSyncInfo
  	// For best results, force_progressive must also be used.
  	bool high_resolution_scanout;
  
@@ -1459,14 +1554,21 @@ index 9f05da8..ec6e3ba 100644
 +	// and promoted-progressive modes (menus, FMV) are untouched.
 +	bool field_full_res_scanout;
 +
++	// Field phase compensation for field_full_res_scanout, in OUTPUT rows. Only consulted when
++	// field_full_res_scanout is active; the legacy 2x path always uses its own 1.0f. Exposed
++	// because the correct value is contested: the geometry argues 2 (a whole circuit texel at
++	// 4x), a shift probe measured 1, and the two differ in kind -- an odd number of rows is
++	// half a texel, which swaps the linear-filter blend weights between the two field phases.
++	int field_full_res_phase_comp;
++
  	// If using interlaced, defer any attempt to deinterlace and just return the raw output as-is with phase information.
  	// User is responsible for deinterlacing in whatever way is appropriate.
  	bool skip_deinterlace;
 diff --git a/pcsx2/GS/parallel-gs/gs/gs_renderer.cpp b/pcsx2/GS/parallel-gs/gs/gs_renderer.cpp
-index adde6bb..90f832a 100644
+index adde6bb..6ba6b8b 100644
 --- a/pcsx2/GS/parallel-gs/gs/gs_renderer.cpp
 +++ b/pcsx2/GS/parallel-gs/gs/gs_renderer.cpp
-@@ -4737,14 +4737,33 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
+@@ -4737,14 +4737,53 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
  		}
  	}
  
@@ -1484,6 +1586,24 @@ index adde6bb..90f832a 100644
 +	if (field_full_res)
 +		scanout_scale_y *= 2;
 +
++	// Rows at the bottom of the merged image that field-full-res mode refuses to draw into.
++	//
++	// The phase compensation shifts the phase-0 field up by one output row, so that phase's
++	// viewport cannot reach the last row while phase 1's can. Left alone, that row alternates
++	// between real content and the render pass clear colour at 30Hz -- the reported white line
++	// (it is BGCOLOR, so it reads black on a dark scene and white on the pause screen).
++	//
++	// The image height cannot simply be cropped: it must stay equal to the 896 the progressive
++	// menus produce, or every transition reallocates the zero-copy pool. So instead both
++	// phases are scissored short of these rows, leaving a constant background band that is
++	// byte-identical on both phases. Two rows rather than one keeps it correct whether the
++	// compensation ends up at one or two output rows.
++	static constexpr uint32_t FIELD_FULL_RES_DEAD_ROWS = 2;
++
++	// Phase compensation in output rows. The legacy 2x path keeps its long-standing 1.0f;
++	// only field-full-res mode takes the configurable value, so the off-path is untouched.
++	const float phase_comp = field_full_res ? float(info.field_full_res_phase_comp) : 1.0f;
++
  	result.internal_width = mode_width;
  	result.internal_height = mode_height;
  	image_info.width = mode_width << int(high_resolution_scanout);
@@ -1494,15 +1614,36 @@ index adde6bb..90f832a 100644
 +	if (field_aware_rendering && !field_full_res)
  	{
  		// Avoid a one line flicker due to field rendering.
-+		// Not needed in field-full-res mode: there the whole point is an even, stable height,
-+		// and the extra vertical headroom means the phase-shifted field no longer runs the
-+		// bottom line off the end of the image. The attachment is cleared to the background
-+		// colour before any draw and the circuits are sampled through LinearClamp, so the
-+		// edge rows resolve to background or a clamped edge texel -- never undefined data.
++		//
++		// Deliberately NOT done in field-full-res mode. Changing the image height there would
++		// make gameplay a different size from the 896 the progressive menus produce, and any
++		// size change at all renegotiates caps and reallocates the zero-copy pool on every
++		// menu/level transition -- which is the white-flash mechanism this mode exists to
++		// remove. Geometry must stay identical across every phase of a room, so the bottom
++		// rows are handled with a scissor at draw time instead (see FIELD_FULL_RES_DEAD_ROWS).
  		image_info.height--;
  	}
  
-@@ -4811,13 +4830,22 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
+@@ -4792,6 +4831,18 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
+ 		start_ts = cmd.write_timestamp(VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
+ 
+ 	cmd.begin_render_pass(rp);
++
++	// Scissor both circuit blits short of the rows the phase compensation cannot cover on
++	// both phases, so they stay at the clear colour regardless of phase. begin_render_pass
++	// has just reset the scissor to the full render area (init_viewport_scissor), and this
++	// render pass contains nothing but the two blits below, so this neither inherits nor
++	// leaks any scissor state.
++	if (field_full_res && merged->get_height() > FIELD_FULL_RES_DEAD_ROWS)
++	{
++		cmd.set_scissor({{ 0, 0 },
++		                 { merged->get_width(), merged->get_height() - FIELD_FULL_RES_DEAD_ROWS }});
++	}
++
+ 	cmd.set_opaque_sprite_state();
+ 
+ 	if (SLBG == PMODEBits::SLBG_ALPHA_BLEND_CIRCUIT2 && circuit2)
+@@ -4811,13 +4862,38 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
  
  			if (high_resolution_scanout)
  			{
@@ -1518,18 +1659,34 @@ index adde6bb..90f832a 100644
 +				vp.y *= scale_y;
 +				vp.height *= scale_y;
 +
-+				// Field phase compensation. The game jitters its fields by half a CRTC
-+				// scanline, and this cancels it; measured stable at default parity, and
-+				// inverting the parity provably reintroduces a bob, so it must be preserved.
-+				// The correction is half a CRTC scanline expressed in output lines, so it
-+				// scales with the vertical scale: 1.0 at 2x (unchanged), 2.0 at 4x.
++				// Field phase compensation, in OUTPUT rows -- deliberately NOT scaled with
++				// scale_y. It cancels a real game-side field jitter (measured stable at
++				// default parity; inverting parity provably reintroduces a bob), so it must
++				// be preserved, but it is a display/sampling-space correction rather than a
++				// CRTC-space one.
++				//
++				// The magnitude is contested and configurable in field-full-res mode only
++				// (phase_comp); the legacy 2x path is pinned to its long-standing 1.0f.
++				//
++				// It cannot be derived from off_y: in FFMD mode compute_circuit_rect() sets
++				// phase_offset = 0 unconditionally (gated on alternative_sampling, i.e.
++				// INT && !FFMD), so off_y is phase-independent and carries no half-line for a
++				// full-precision placement to recover.
++				//
++				// Beware that the value is not just a position. The circuit texture is scaled
++				// by a fixed 2, not by scanout_scale_y, so at 4x the blit is a 2:1 linear
++				// upscale and ONE output row is HALF a texel. An odd compensation therefore
++				// swaps the filter blend weights between the two field phases (.25/.75 vs
++				// .75/.25) -- invisible to a shift probe, but visible as edge shimmer on
++				// moving content. An even value keeps the sampling grid identical on both
++				// phases. That is why 1 measured correct positionally yet still bounced.
  				if (field_aware_rendering && !info.phase)
 -					vp.y -= 1.0f;
-+					vp.y -= scale_y * 0.5f;
++					vp.y -= phase_comp;
  			}
  
  			cmd.set_viewport(vp);
-@@ -4844,13 +4872,22 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
+@@ -4844,13 +4920,38 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
  
  			if (high_resolution_scanout)
  			{
@@ -1545,17 +1702,61 @@ index adde6bb..90f832a 100644
 +				vp.y *= scale_y;
 +				vp.height *= scale_y;
 +
-+				// Field phase compensation. The game jitters its fields by half a CRTC
-+				// scanline, and this cancels it; measured stable at default parity, and
-+				// inverting the parity provably reintroduces a bob, so it must be preserved.
-+				// The correction is half a CRTC scanline expressed in output lines, so it
-+				// scales with the vertical scale: 1.0 at 2x (unchanged), 2.0 at 4x.
++				// Field phase compensation, in OUTPUT rows -- deliberately NOT scaled with
++				// scale_y. It cancels a real game-side field jitter (measured stable at
++				// default parity; inverting parity provably reintroduces a bob), so it must
++				// be preserved, but it is a display/sampling-space correction rather than a
++				// CRTC-space one.
++				//
++				// The magnitude is contested and configurable in field-full-res mode only
++				// (phase_comp); the legacy 2x path is pinned to its long-standing 1.0f.
++				//
++				// It cannot be derived from off_y: in FFMD mode compute_circuit_rect() sets
++				// phase_offset = 0 unconditionally (gated on alternative_sampling, i.e.
++				// INT && !FFMD), so off_y is phase-independent and carries no half-line for a
++				// full-precision placement to recover.
++				//
++				// Beware that the value is not just a position. The circuit texture is scaled
++				// by a fixed 2, not by scanout_scale_y, so at 4x the blit is a 2:1 linear
++				// upscale and ONE output row is HALF a texel. An odd compensation therefore
++				// swaps the filter blend weights between the two field phases (.25/.75 vs
++				// .75/.25) -- invisible to a shift probe, but visible as edge shimmer on
++				// moving content. An even value keeps the sampling grid identical on both
++				// phases. That is why 1 measured correct positionally yet still bounced.
  				if (field_aware_rendering && !info.phase)
 -					vp.y -= 1.0f;
-+					vp.y -= scale_y * 0.5f;
++					vp.y -= phase_comp;
  			}
  
  			cmd.set_viewport(vp);
+@@ -4884,6 +4985,27 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
+ 		}
+ 	}
+ 
++	// Force the dead rows to black rather than leaving them at the BGCOLOR clear. They are
++	// already phase-stable thanks to the scissor above, but a stable band still has to read as
++	// letterbox: BGCOLOR is bright on plenty of screens (the pause screen is why this exists),
++	// and a permanent white strip is worse than a flickering one is bad.
++	//
++	// Deliberately a rect-scoped clear rather than changing rp.clear_color: the clear colour is
++	// also what shows through wherever a game's circuits genuinely do not cover the image, and
++	// that background is supposed to be BGCOLOR. Only these two rows are ours to blacken.
++	// Alpha stays 0, matching the RGB-only initialisation of rp.clear_color above.
++	if (field_full_res && merged->get_height() > FIELD_FULL_RES_DEAD_ROWS)
++	{
++		VkClearRect clear_rect = {};
++		clear_rect.rect.offset = { 0, int32_t(merged->get_height() - FIELD_FULL_RES_DEAD_ROWS) };
++		clear_rect.rect.extent = { merged->get_width(), FIELD_FULL_RES_DEAD_ROWS };
++		clear_rect.baseArrayLayer = 0;
++		clear_rect.layerCount = 1;
++
++		const VkClearValue black = {};
++		cmd.clear_quad(0, clear_rect, black, VK_IMAGE_ASPECT_COLOR_BIT);
++	}
++
+ 	cmd.end_render_pass();
+ 
+ 	const bool need_intermediate_pass = priv.extwrite.WRITE || is_interlaced || force_deinterlace;
 diff --git a/pcsx2/MTGS.cpp b/pcsx2/MTGS.cpp
 index 01e7e53..bf9cf55 100644
 --- a/pcsx2/MTGS.cpp

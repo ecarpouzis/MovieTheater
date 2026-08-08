@@ -760,6 +760,25 @@ emulator:
           # retro_unload_game (proven: the cache grew 71→98→101 across clean room-closes WITH this hack on).
           # The real cache-persist bug is elsewhere (see arcade-stuntman-audio-skip memory).
           hacks: [skip_hw_context_destroy, skip_boot_restore]
+          # bootRestoreRetrySec (2026-08-08) — THE FIX for "lobby Resume does nothing on PS2".
+          #
+          # skip_boot_restore above defers the state restore to a fixed 5 s (patch 0032b). That is the
+          # right mark for a core that is warm by then; PCSX2 is not. Fastboot is still in the BIOS /
+          # ELF load at t+5 s — Stuntman's first game frame lands ~20-25 s in — so the state unserializes
+          # into a pre-game VM, the continuing boot stomps it, and RestoreGameState returns nil anyway:
+          # the log says "deferred boot-restore done" while the player watches the attract loop. Every
+          # lobby Resume and named-snapshot start on ps2 was a silent no-op (diagnosed 2026-08-08; Eric's
+          # 08-05 45 s room was him hitting it). The in-room 📂 Load button failed identically when
+          # pressed early, which is where the "just click Load twice" habit came from.
+          #
+          # 22 s: comfortably past the first game frame, comfortably before a player gives up. The worker
+          # keeps the 5 s attempt (free, and it wins outright on a fast-booting title) and re-fires the
+          # SAME bytes once at this mark — which is exactly the second click, and idempotent. The same
+          # value also arms the in-room Load button: a press inside the window applies immediately AND
+          # re-fires once at 22 s; a press after it behaves exactly as before. A deliberate Save or a
+          # hard Reset in between cancels the re-fire (never clobber what the player just did).
+          # 0 / unset = the old single-attempt behaviour, which is what every other core still gets.
+          bootRestoreRetrySec: 22
           # noAutoSaveStates (2026-08-01) — REPLACES `noSaveStates: true`, which was set here on
           # 2026-07-22 and took a working feature down with it.
           #

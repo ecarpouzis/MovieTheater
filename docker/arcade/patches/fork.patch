@@ -2451,7 +2451,7 @@ index 0000000..d83f053
 +	}
 +}
 diff --git a/pkg/config/emulator.go b/pkg/config/emulator.go
-index baf701e..30b4638 100644
+index baf701e..9549e87 100644
 --- a/pkg/config/emulator.go
 +++ b/pkg/config/emulator.go
 @@ -17,6 +17,53 @@ type Emulator struct {
@@ -2508,7 +2508,7 @@ index baf701e..30b4638 100644
  }
  
  type LibretroConfig struct {
-@@ -69,24 +116,122 @@ func (lrp LibretroRemoteRepo) Guess() (LibretroRepoMapInfo, error) {
+@@ -69,24 +116,138 @@ func (lrp LibretroRemoteRepo) Guess() (LibretroRepoMapInfo, error) {
  		errors.New("core mapping not found for " + runtime.GOOS + ":" + runtime.GOARCH)
  }
  
@@ -2597,7 +2597,23 @@ index baf701e..30b4638 100644
 +	// serialize on an explicit Save, or once on the way out of a room, is a cost the player asked for
 +	// and gets something back for. So the timer harvests the card only; everything else serializes.
 +	NoAutoSaveStates bool
-+	NonBlockingSave  bool
++	// BootRestoreRetrySec re-fires the boot-window state restore ONCE more at this room age, in
++	// seconds (0 = off, and every core that doesn't set it behaves exactly as before).
++	//
++	// It exists because a resume can "succeed" into a machine that isn't running the game yet. Under
++	// the skip_boot_restore hack the restore is deferred to a fixed 5 s (patch 0032b) — the right mark
++	// for a core that is warm by then, and far too early for PS2: PCSX2 fastboot is still in the BIOS /
++	// ELF load at t+5 s (Stuntman's first game frame lands ~20-25 s in), so the state unserializes into
++	// a pre-game VM, the continuing boot stomps it, and RestoreGameState returns nil — the log claims
++	// "done" while the player sits in the attract loop. Lobby Resume and named-snapshot starts were a
++	// silent no-op on ps2 for that whole window, and the in-room Load button had the same failure if
++	// you pressed it early. Players learned to click Load TWICE; this is that second click, automated.
++	//
++	// Re-applying the same bytes is idempotent (Frontend.Load reads the file fresh, unserializes, then
++	// re-asserts the .srm card), and it is exactly the manual double-load that provably works. Set it
++	// to comfortably past the core's first game frame.
++	BootRestoreRetrySec int
++	NonBlockingSave     bool
 +	// Rewind arms the in-memory savestate ring for this core: while a room is live the worker
 +	// snapshots the machine state every RewindStepFrames frames (emulator goroutine, between
 +	// ticks), and a held rewind (t=115) walks back through those snapshots at real-time speed.
@@ -2638,7 +2654,7 @@ index baf701e..30b4638 100644
  	MaxThreads      int
  	UniqueSaveDir   bool
  	UsesLibCo       bool
-@@ -128,6 +273,9 @@ func (e Emulator) GetEmulator(rom string, path string) string {
+@@ -128,6 +289,9 @@ func (e Emulator) GetEmulator(rom string, path string) string {
  	return found
  }
  
@@ -11458,10 +11474,10 @@ index 0000000..6dd8a84
 +	atomic.StoreUintptr(&a.winHwnd, 0)
 +}
 diff --git a/pkg/worker/caged/libretro/caged.go b/pkg/worker/caged/libretro/caged.go
-index f3553b1..82912c8 100644
+index f3553b1..8859549 100644
 --- a/pkg/worker/caged/libretro/caged.go
 +++ b/pkg/worker/caged/libretro/caged.go
-@@ -1,102 +1,129 @@
+@@ -1,102 +1,135 @@
 -package libretro
 -
 -import (
@@ -11641,6 +11657,12 @@ index f3553b1..82912c8 100644
 +func (c *Caged) NotifyFastForward(on bool) { c.base.NotifyFastForward(on) }
 +func (c *Caged) NotifyReset()           { c.base.NotifyReset() }
 +
++// ArmBootRestoreRetry re-fires an in-room Load (t=107) once more at the core's BootRestoreRetrySec
++// mark when the press landed while the machine was still booting — the automated second Load click.
++// Routed to the base frontend (the restore, the room clock and the config field all live there), not
++// the decorated Emulator. No-op on every core without the field set, and past the mark.
++func (c *Caged) ArmBootRestoreRetry(reason string) { c.base.armBootRestoreRetry(reason) }
++
 +// SetFastForward / SetRewind route the time controls (t=114/115) to the root frontend, past any
 +// recording/cloud decorators — the pacing loop and the rewind ring both live there.
 +func (c *Caged) SetFastForward(on bool) { c.base.SetFastForward(on) }
@@ -11694,10 +11716,10 @@ index f3553b1..82912c8 100644
 +func (c *Caged) Close()                           { c.Emulator.Close() }
 +func (c *Caged) IsSupported() error               { return c.base.IsSupported() }
 diff --git a/pkg/worker/caged/libretro/frontend.go b/pkg/worker/caged/libretro/frontend.go
-index 6974d59..b3330c3 100644
+index 6974d59..ecbdbf9 100644
 --- a/pkg/worker/caged/libretro/frontend.go
 +++ b/pkg/worker/caged/libretro/frontend.go
-@@ -1,578 +1,2300 @@
+@@ -1,578 +1,2486 @@
 -package libretro
 -
 -import (
@@ -12457,6 +12479,27 @@ index 6974d59..b3330c3 100644
 +	rewindCapSumMs   float64  // their total wall cost
 +	rewindCapMaxMs   float64  // the worst one
 +	ffLastVideoNs    int64    // last frame pushed downstream while fast-forwarding (throttle)
++
++	// ── Boot-window restore retry (config BootRestoreRetrySec) ───────────────────────────────
++	// A state restore that lands while the machine is still BOOTING is silently thrown away by
++	// the boot that continues over it (see config.LibretroCoreConfig.BootRestoreRetrySec). For a
++	// core that is slow to reach its first game frame we re-fire the restore once more at
++	// bootRestoreRetrySec into the room — the automated version of the second Load click players
++	// taught themselves to make.
++	//
++	// runStartNs anchors "room age" at the start of the emulator loop. bootRetryArmed keeps it to
++	// ONE pending re-fire per room (they would all restore the same bytes). bootRetryCancel is set
++	// by anything that makes re-applying old bytes wrong — a deliberate Save, a hard Reset — and is
++	// cleared again by a fresh restore intent. All three are touched from the coordinator's command
++	// goroutine as well as the emulator loop, hence atomics.
++	// bootRetryDone flips when the LAST restore attempt of the room has run (or been vetoed), which is
++	// what ends the save hold in Save(). Without it "pending" would have no end and a room's saves
++	// would be suppressed forever.
++	bootRestoreRetrySec int
++	runStartNs          atomic.Int64
++	bootRetryArmed      atomic.Bool
++	bootRetryCancel     atomic.Bool
++	bootRetryDone       atomic.Bool
 +}
 +
 +// rewindFreeMax bounds the recycle list. The ring only ever evicts from the front, so a couple of
@@ -12577,6 +12620,10 @@ index 6974d59..b3330c3 100644
 +		f.log.Info().Msgf("%v: audio-mastered pacing (the audio clock may outrun the fps floor)", emu)
 +	}
 +	f.NoAutoSaveStates = conf.NoAutoSaveStates
++	f.bootRestoreRetrySec = conf.BootRestoreRetrySec
++	if conf.BootRestoreRetrySec > 0 {
++		f.log.Info().Msgf("%v: boot-window restores re-fire once at %ds (this core is still booting when the first restore lands)", emu, conf.BootRestoreRetrySec)
++	}
 +	if conf.NoSaveStates {
 +		f.log.Info().Msgf("%v: save-states are off for this core; progress lives on the memory card", emu)
 +	} else if conf.NoAutoSaveStates {
@@ -12792,6 +12839,88 @@ index 6974d59..b3330c3 100644
 +	}
 +}
 +
++// bootRestoreDelay is the historical warm-VM mark for the deferred boot restore (patch 0032b):
++// long enough that a core which boots fast is running the game, short enough that a player who
++// asked to resume doesn't watch a logo first. It stays the FIRST attempt on every core.
++const bootRestoreDelay = 5 * time.Second
++
++// bootRestoreAttempt runs one deferred boot restore and says which attempt it was, so a log can be
++// read after the fact: the whole PS2 bug was a success line that meant nothing.
++func (f *Frontend) bootRestoreAttempt(n, of int) {
++	if err := f.RestoreGameState(); err != nil {
++		f.log.Error().Err(err).Msgf("deferred boot-restore (attempt %d/%d) failed; continuing unsaved", n, of)
++	} else {
++		f.log.Info().Msgf("deferred boot-restore (attempt %d/%d) done (warm-VM resume)", n, of)
++	}
++}
++
++// bootRestorePending reports that this room seeded a state and has a boot-window restore still to
++// come — the window in which the .dat on disk is the PLAYER'S SAVE and the live VM is not yet the
++// game. Save() holds off while it is true; see the note there for why.
++//
++// Three conditions, all required: a re-fire is armed, it hasn't run yet, and the room is still
++// inside the window. The last one is a hard bound, not a nicety — an armed flag that somehow never
++// cleared must not suppress a room's saves for the rest of its life.
++func (f *Frontend) bootRestorePending() bool {
++	if f.bootRestoreRetrySec <= 0 || !f.bootRetryArmed.Load() || f.bootRetryDone.Load() {
++		return false
++	}
++	start := f.runStartNs.Load()
++	if start == 0 {
++		return false
++	}
++	return time.Since(time.Unix(0, start)) < time.Duration(f.bootRestoreRetrySec)*time.Second
++}
++
++// armBootRestoreRetry schedules ONE extra RestoreGameState at the bootRestoreRetrySec mark when a
++// restore has just been applied inside the boot window — the automated second Load click.
++//
++// It is a no-op for every core without BootRestoreRetrySec set, and a no-op once the room is past
++// the mark: a load pressed at t+40 s on a PS2 room behaves exactly as it did before this existed.
++// Called from the t=107 handler (an explicit in-room Load), which applies the restore immediately
++// first — the immediate apply is what already happens today, it is free when the VM is warm, and
++// deferring it instead would make the button look dead for up to bootRestoreRetrySec.
++func (f *Frontend) armBootRestoreRetry(reason string) {
++	sec := f.bootRestoreRetrySec
++	if sec <= 0 {
++		return
++	}
++	start := f.runStartNs.Load()
++	if start == 0 {
++		return // the emulator loop hasn't started; there is no boot window to be inside of
++	}
++	age := time.Since(time.Unix(0, start))
++	wait := time.Duration(sec)*time.Second - age
++	if wait <= 0 {
++		return // past the boot window — the machine is running the game, one restore is the answer
++	}
++	// A fresh restore intent supersedes an earlier Save/Reset veto.
++	f.bootRetryCancel.Store(false)
++	if !f.bootRetryArmed.CompareAndSwap(false, true) {
++		f.log.Info().Msgf("%s at room age %.1fs: a boot-window re-fire is already pending", reason, age.Seconds())
++		return
++	}
++	f.log.Info().Msgf("%s at room age %.1fs is inside the boot window; re-firing it once at %ds", reason, age.Seconds(), sec)
++	done := f.done
++	go func() {
++		select {
++		case <-done:
++			return
++		case <-time.After(wait):
++		}
++		defer f.bootRetryDone.Store(true) // last attempt either way — release the save hold
++		if f.bootRetryCancel.Load() {
++			f.log.Info().Msgf("boot-window restore re-fire skipped: the player reset since")
++			return
++		}
++		if err := f.RestoreGameState(); err != nil {
++			f.log.Error().Err(err).Msgf("boot-window restore re-fire failed")
++		} else {
++			f.log.Info().Msgf("boot-window restore re-fired (the state now lands in a running game)")
++		}
++	}()
++}
++
 +func (f *Frontend) Start() {
 +	f.log.Debug().Msgf("frontend start")
 +	if f.nano.Stopped.Load() {
@@ -12812,6 +12941,12 @@ index 6974d59..b3330c3 100644
 +	f.done = make(chan struct{})
 +	f.doneEvt = make(chan struct{})
 +	f.nano.LastFrameTime = time.Now()
++	// Room age zero: the core is loaded and the machine is about to start running. Every
++	// boot-window restore deadline is measured from here (see bootRestoreRetrySec).
++	f.runStartNs.Store(time.Now().UnixNano())
++	f.bootRetryArmed.Store(false)
++	f.bootRetryCancel.Store(false)
++	f.bootRetryDone.Store(false)
 +
 +	defer func() {
 +		// FIRST, before anything that can take the process down with it (patch 0041). Both steps
@@ -12878,18 +13013,49 @@ index 6974d59..b3330c3 100644
 +	}
 +	f.log.Info().Msg("[boot] SAVE_RAM done")
 +
++	// The 5 s mark stays as attempt 1 — it is correct for every core that is warm by then, and on the
++	// slow ones it is harmless (the boot simply overwrites it). BootRestoreRetrySec adds attempt 2 for
++	// a core whose first GAME frame is still seconds away at t+5 (ps2: PCSX2 fastboot is in the BIOS /
++	// ELF load there, game-live ~20-25 s), which is why lobby Resume read as a no-op on PS2: the state
++	// landed in a pre-game VM and the continuing boot stomped it, while RestoreGameState still returned
++	// nil so the log said "done". Restoring the same bytes a second time is idempotent and is precisely
++	// the manual double-Load that works.
 +	if f.HasSave() && f.nano.SkipBootRestore() {
++		retrySec := f.bootRestoreRetrySec
++		of := 1
++		if retrySec > 0 {
++			of = 2
++			// Claim the room's single re-fire slot now, so an early in-room Load press adds a log line
++			// rather than a third restore.
++			f.bootRetryArmed.Store(true)
++		}
++		done := f.done
 +		go func() {
 +			select {
-+			case <-f.done:
++			case <-done:
 +				return
-+			case <-time.After(5 * time.Second):
++			case <-time.After(bootRestoreDelay):
 +			}
-+			if err := f.RestoreGameState(); err != nil {
-+				f.log.Error().Err(err).Msg("deferred boot-restore failed; continuing unsaved")
-+			} else {
-+				f.log.Info().Msg("deferred boot-restore done (warm-VM resume)")
++			f.bootRestoreAttempt(1, of)
++			if of == 1 {
++				return
 +			}
++			wait := time.Duration(retrySec)*time.Second - bootRestoreDelay
++			if wait > 0 {
++				select {
++				case <-done:
++					return
++				case <-time.After(wait):
++				}
++			}
++			// Whatever happens next, this is the LAST restore this room will fire on its own — release
++			// the save hold (see bootRestorePending) either way.
++			defer f.bootRetryDone.Store(true)
++			if f.bootRetryCancel.Load() {
++				f.log.Info().Msgf("deferred boot-restore (attempt 2/2) skipped: the player reset since attempt 1")
++				return
++			}
++			f.bootRestoreAttempt(2, of)
 +		}()
 +	}
 +	if f.HasSave() && !f.nano.SkipBootRestore() && !f.NoSaveStates {
@@ -14131,7 +14297,16 @@ index 6974d59..b3330c3 100644
 +func (f *Frontend) IsPortrait() bool              { return f.nano.IsPortrait() }
 +func (f *Frontend) KbMouseSupport() bool          { return f.nano.KbMouseSupport() }
 +func (f *Frontend) PixFormat() uint32             { return f.nano.Video.PixFmt.C }
-+func (f *Frontend) Reset()                        { f.mu.Lock(); defer f.mu.Unlock(); f.nano.Reset() }
++
++// Reset hard-resets the machine. It also vetoes a pending boot-window re-fire: the player asked for
++// a fresh boot, so dropping a resumed state on them seconds later would be the opposite of that.
++func (f *Frontend) Reset() {
++	f.bootRetryCancel.Store(true)
++	f.mu.Lock()
++	defer f.mu.Unlock()
++	f.nano.Reset()
++}
++
 +func (f *Frontend) RestoreGameState() error       { return f.Load() }
 +func (f *Frontend) Rotation() uint                { return f.nano.Rot }
 +func (f *Frontend) SRAMPath() string              { return f.storage.GetSRAMPath() }
@@ -14318,6 +14493,39 @@ index 6974d59..b3330c3 100644
 +
 +// Save writes the current state to the filesystem.
 +func (f *Frontend) Save() error {
++	// HOLD every save while a boot-window restore is still pending (see bootRestorePending). Inside
++	// that window the .dat on disk IS the state the player asked to resume, and the live VM is a
++	// half-booted machine — so a serialize here cannot record progress, it can only overwrite the
++	// seed with BIOS-screen bytes. The restore that follows would then faithfully restore the intro.
++	//
++	// This is not hypothetical: the site fires a pre-warm save (t=106) about 2 s after play starts to
++	// make sure a fresh game has a .dat to continue from. On a RESUMED ps2 room that landed between
++	// the seed and the 5 s restore and clobbered it — which is why lobby Resume still failed after the
++	// re-fire shipped. The pre-warm's own purpose is void here anyway: a room that seeded a state
++	// already has the .dat it exists to create.
++	//
++	// It is also why this branch must NOT set the cancel veto. The veto means "the player deliberately
++	// wrote a newer state, don't undo it"; a save we refused to perform wrote nothing, so vetoing on it
++	// would kill attempt 2 and leave the player in the intro — the exact bug, one layer down.
++	//
++	// DELIBERATE TRADE-OFF: a HUMAN pressing Save in the first BootRestoreRetrySec of a resumed room
++	// is skipped too, with a log line. At that age the machine has barely reached the game, so the
++	// current state is within seconds of the seed that is already on disk — a bad save is a much worse
++	// outcome than a redundant one refused. Only a room that seeded a state is ever in this window;
++	// on a brand-new game nothing is armed and the pre-warm behaves exactly as it always has.
++	//
++	// nil, not an error: nothing failed and nothing is missing from disk, so the site should not see
++	// a save error toast for a save it did not need.
++	if f.bootRestorePending() {
++		f.log.Info().Msgf("save skipped: boot-restore pending (attempt 2 at %ds) — the live .dat holds the seeded state, the VM is still booting", f.bootRestoreRetrySec)
++		return nil
++	}
++
++	// Past the window (or nothing was seeded): a real save. Veto any re-fire still scheduled — once
++	// the state file has been rewritten, "restore the same bytes again" no longer means what it meant
++	// when the re-fire was scheduled, and it would throw away what the player just saved.
++	f.bootRetryCancel.Store(true)
++
 +	f.mu.Lock()
 +	defer f.mu.Unlock()
 +
@@ -89513,10 +89721,10 @@ index 2840a0e..aa70436 100644
  			c.log.Warn().Msgf("unhandled packet type %v", x.T)
  		}
 diff --git a/pkg/worker/coordinatorhandlers.go b/pkg/worker/coordinatorhandlers.go
-index 6972cc7..bf4321e 100644
+index 6972cc7..2665d7e 100644
 --- a/pkg/worker/coordinatorhandlers.go
 +++ b/pkg/worker/coordinatorhandlers.go
-@@ -1,310 +1,743 @@
+@@ -1,310 +1,749 @@
 -package worker
 -
 -import (
@@ -90535,6 +90743,12 @@ index 6972cc7..bf4321e 100644
 +	// (which restores through Frontend.Load directly and never hits this handler), so it can't false-taint
 +	// a fresh Continue.
 +	emu.NotifySaveStateLoaded()
++	// ...and if that press landed while the machine was still BOOTING, the boot is about to stomp the
++	// state we just applied and the player will see the intro instead of their save (the PS2 "load it
++	// twice" habit). Re-fire it once at the core's BootRestoreRetrySec mark. The taint above is NOT
++	// repeated — the re-fire restores the same bytes and is the same intent, not a second save-scum —
++	// and this is a no-op for every core without the field set, and for a press past the mark.
++	emu.ArmBootRestoreRetry("in-room Load")
 +	return api.OkPacket
 +}
 +
