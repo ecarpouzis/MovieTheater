@@ -1099,6 +1099,44 @@ while ($true) {
             }
         }
 
+        # -- J) TAILSCALE-RANGE PEER (policy, Eric 2026-08-08: Tailscale carries phone-RDP ONLY --
+        # nothing the site serves may ever traverse it). Defense layers already in place: firewall
+        # rules (Tailscale iface = RDP-only) + pion filters in the worker (SetIPFilter/
+        # SetRemoteIPFilter/SetInterfaceFilter reject 100.64.0.0/10 incl. prflx). This check is the
+        # MONITOR: if a worker log ever shows a selected peer in the CGNAT range (abr summary-peer
+        # dev=100.64-127.x -- the 2026-08-08 sighting was Ziggy's OWN tailscale addr pairing samehost)
+        # or the worker's own "ice: REJECTED Tailscale-range" WARN, say so loudly and raise the admin
+        # popup. Reuses the PatchedArtifactAlert channel deliberately (finding id names the class);
+        # a dedicated endpoint can replace it if this ever fires enough to matter.
+        try {
+            $tsHits = CachedLogScan 'tailscale-peer' @((WorkerLogPath 8446), (WorkerLogPath 8447)) {
+                param($paths)
+                $found = @()
+                foreach ($p in $paths) {
+                    if (-not (Test-Path $p)) { continue }
+                    $tail = Get-Content $p -Tail 300 -ErrorAction SilentlyContinue
+                    $found += @($tail | Where-Object {
+                        $_ -match 'dev=100\.(6[4-9]|[7-9][0-9]|1[0-1][0-9]|12[0-7])\.' -or
+                        $_ -match 'REJECTED Tailscale-range' })
+                }
+                ,$found
+            }
+            foreach ($hit in @($tsHits)) {
+                $key = $hit.Trim()
+                if (-not $script:tsAlerted) { $script:tsAlerted = @{} }
+                if (-not $script:tsAlerted.ContainsKey($key)) {
+                    $script:tsAlerted[$key] = $true
+                    Log ("check J: TAILSCALE-RANGE TRAFFIC SIGHTED (policy: RDP only!): {0}" -f $key)
+                    $body = @{ Ok = $false; RawJson = '{}'; Findings = @(@{
+                        Id = 'net-tailscale-pair'; Status = 'DRIFT'; Path = 'WebRTC peer path'
+                        Detail = $key; StockName = $false }) } | ConvertTo-Json -Depth 5 -Compress
+                    PostSiteAlert '/API/Arcade/Internal/PatchedArtifactAlert' $body 'check J' | Out-Null
+                }
+            }
+        } catch {
+            Log ("check J error (tailscale watch): {0}" -f $_.Exception.Message)
+        }
+
         # Tidy strike entries for PIDs that no longer exist.
         foreach ($k in @($strikes.Keys)) { if (-not $livePids[$k]) { $strikes.Remove($k) | Out-Null } }
     } catch {

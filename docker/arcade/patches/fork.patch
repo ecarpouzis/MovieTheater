@@ -4502,7 +4502,7 @@ index 53c3a2d..e5db5d0 100644
  			zerolog.TimestampFieldName,
  			"pid",
 diff --git a/pkg/network/webrtc/factory.go b/pkg/network/webrtc/factory.go
-index 99e02b8..515f52d 100644
+index 99e02b8..71e278e 100644
 --- a/pkg/network/webrtc/factory.go
 +++ b/pkg/network/webrtc/factory.go
 @@ -3,19 +3,45 @@ package webrtc
@@ -4608,7 +4608,7 @@ index 99e02b8..515f52d 100644
  	if conf.HasPortRange() {
  		if err = s.SetEphemeralUDPPortRange(conf.IcePorts.Min, conf.IcePorts.Max); err != nil {
  			return
-@@ -56,21 +125,75 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
+@@ -56,57 +125,298 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
  	}
  	if conf.HasSinglePort() {
  		var l any
@@ -4671,6 +4671,13 @@ index 99e02b8..515f52d 100644
 +			if ip == "" {
 +				continue
 +			}
++			// Never advertise a tailnet address, whichever role it would have taken. ICEIPMAP is the one
++			// place the worker publishes an address it was TOLD rather than one it discovered, so a
++			// copied .env is all it would take to hand every browser a 100.x to dial.
++			if isTailscaleAddr(net.ParseIP(ip)) {
++				log.Warn().Msgf("ice: REFUSING to advertise Tailscale-range ICEIPMAP entry %s — site traffic must never traverse Tailscale", ip)
++				continue
++			}
 +			if isLocalInterfaceIP(ip) {
 +				log.Info().Msgf("ICE map: %s is a local interface — riding natural host candidates (not mapped)", ip)
 +				continue
@@ -4689,7 +4696,67 @@ index 99e02b8..515f52d 100644
  	}
  
  	s.SetICEMulticastDNSMode(ice.MulticastDNSModeDisabled)
-@@ -90,23 +213,114 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
+ 	s.EnableSCTPZeroChecksum(true)
+-	if len(conf.IpFilter) > 0 {
+-		s.SetIPFilter(func(i net.IP) (keep bool) {
++
++	// ── TAILSCALE / CGNAT IS NEVER A MEDIA PATH (policy, not configuration) ──────────────────────
++	// The arcade's WebRTC must never traverse Tailscale. It is a mesh VPN built for remote admin, not
++	// for 12 Mbit of 60 fps video: every packet takes an extra userspace hop (and off-LAN, a DERP
++	// relay), which is latency and jitter added to the one thing in this stack that cannot absorb any.
++	//
++	// It happened on 2026-08-08: a room paired SAMEHOST over Ziggy's own Tailscale address
++	// (`abr summary-peer dev=100.100.38.103/prflx`) — the machine talking to itself through the VPN.
++	// And note the type: PRFLX. That pair was never offered in an SDP; pion MINTED it from the source
++	// address of an inbound STUN binding request. Filtering candidates browser-side, or trimming what
++	// we advertise, therefore cannot prevent this — the address only has to appear as a packet SOURCE.
++	// Both directions have to be closed, in the agent, which is what the three filters below do.
++	//
++	// Deliberately NOT config-driven (unlike IpFilter/IpFilterRemote, which still apply on top): this
++	// is a standing rule, and a rule that can be switched off in a yaml is one that will be, silently,
++	// on some future host whose config was copied before the rule existed.
++	s.SetInterfaceFilter(func(name string) (keep bool) {
++		if isTailscaleInterface(name) {
++			logTailscaleRejectOnce(log, "local interface", name)
++			return false
++		}
++		return true
++	})
++	// Belt AND braces: the interface filter is by NAME, which varies by platform (tailscale0 on Linux,
++	// "Tailscale" on Windows, a utun on macOS) — the CIDR check catches the address however it arrives,
++	// including through an interface we failed to recognise.
++	s.SetIPFilter(func(i net.IP) (keep bool) {
++		if isTailscaleAddr(i) {
++			logTailscaleRejectOnce(log, "local candidate", i.String())
++			return false
++		}
++		if len(conf.IpFilter) > 0 {
+ 			return filterIP(i, conf.IpFilter)
+-		})
+-	}
+-	if len(conf.IpFilterRemote) > 0 {
+-		s.SetRemoteIPFilter(func(i net.IP) (keep bool) {
++		}
++		return true
++	})
++	// The remote half, and the one that actually closes the observed hole. pion routes EVERY remote
++	// candidate through this — including a prflx candidate minted in handleInbound from a binding
++	// request's source address (ice/v4 agent.go: addRemoteCandidate -> shouldAcceptRemoteCandidate).
++	// Rejecting there makes handleInbound drop the request outright, so no pair is ever formed.
++	s.SetRemoteIPFilter(func(i net.IP) (keep bool) {
++		if isTailscaleAddr(i) {
++			logTailscaleRejectOnce(log, "remote/prflx candidate", i.String())
++			return false
++		}
++		if len(conf.IpFilterRemote) > 0 {
+ 			return filterIP(i, conf.IpFilterRemote)
+-		})
+-	}
++		}
++		return true
++	})
+ 
+ 	if mod != nil {
  		mod(m, i, &s)
  	}
  
@@ -4810,6 +4877,55 @@ index 99e02b8..515f52d 100644
 +		}
 +	}
 +	return false
++}
++
++// ── Tailscale exclusion helpers (see the policy block in NewApiFactory) ──────────────────────────
++
++var (
++	// 100.64.0.0/10 — RFC 6598 shared address space, which is the range Tailscale hands out to every
++	// node (Ziggy's own is 100.100.38.103). Matching the RANGE rather than a list of node addresses is
++	// the point: nodes come and go and their addresses are assigned by the tailnet, not by us.
++	cgnat4 = &net.IPNet{IP: net.IPv4(100, 64, 0, 0).To4(), Mask: net.CIDRMask(10, 32)}
++	// fd7a:115c:a1e0::/48 — Tailscale's IPv6 ULA prefix, the v6 half of the same tailnet.
++	tailscale6 = &net.IPNet{
++		IP:   net.IP{0xfd, 0x7a, 0x11, 0x5c, 0xa1, 0xe0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
++		Mask: net.CIDRMask(48, 128),
++	}
++)
++
++// isTailscaleAddr reports whether an address belongs to the tailnet, by range. Both families.
++func isTailscaleAddr(i net.IP) bool {
++	if i == nil {
++		return false
++	}
++	if v4 := i.To4(); v4 != nil {
++		return cgnat4.Contains(v4)
++	}
++	return tailscale6.Contains(i)
++}
++
++// isTailscaleInterface matches the adapter by name across platforms: "tailscale0" (Linux),
++// "Tailscale" (the Windows friendly name Go reports), "ts0"/"ts1" (some setups). macOS names its
++// utunN with no hint at all, which is exactly why the address-range filter exists alongside this.
++func isTailscaleInterface(name string) bool {
++	n := strings.ToLower(strings.TrimSpace(name))
++	if strings.Contains(n, "tailscale") {
++		return true
++	}
++	return len(n) == 3 && strings.HasPrefix(n, "ts") && n[2] >= '0' && n[2] <= '9'
++}
++
++// tailscaleRejects de-dupes the WARN below. The remote filter runs on every inbound binding request —
++// a peer retrying through the VPN would otherwise write a line every few tens of milliseconds — but the
++// event has to be LOUD the first time, because a silently-dropped candidate looks exactly like a
++// connectivity bug and someone will eventually be debugging that instead of reading this.
++var tailscaleRejects sync.Map
++
++func logTailscaleRejectOnce(log *logger.Logger, what, addr string) {
++	if _, seen := tailscaleRejects.LoadOrStore(what+"|"+addr, struct{}{}); seen {
++		return
++	}
++	log.Warn().Msgf("ice: REJECTED Tailscale-range %s %s — site traffic must never traverse Tailscale", what, addr)
  }
  
  func filterIP(i net.IP, filter []string) bool {
@@ -11717,7 +11833,7 @@ index f3553b1..82912c8 100644
 +func (c *Caged) Close()                           { c.Emulator.Close() }
 +func (c *Caged) IsSupported() error               { return c.base.IsSupported() }
 diff --git a/pkg/worker/caged/libretro/frontend.go b/pkg/worker/caged/libretro/frontend.go
-index 6974d59..8ed2729 100644
+index 6974d59..b616f14 100644
 --- a/pkg/worker/caged/libretro/frontend.go
 +++ b/pkg/worker/caged/libretro/frontend.go
 @@ -1,578 +1,2524 @@
@@ -13421,16 +13537,16 @@ index 6974d59..8ed2729 100644
 +				// Live audio debt: how far real time has run past where the audio the core produced says
 +				// it should be. Positive = the client is owed samples that do not exist yet.
 +				deficitNs := os.Nanotime() - (audioEpoch + int64(float64(audioFrames)/sr*1e9))
-+				vcb, vnull := f.nano.TakeVideoFrames()
++				vcb, vnull, vcoal := f.nano.TakeVideoFrames()
 +				f.log.Info().Msgf(
-+					"pace-diag: ticks/s=%.1f audio/s=%.0f silence/s=%.0f video/s=%.1f vnull/s=%.1f maxTick=%.1fms slowTicks(>20ms)=%d "+
++					"pace-diag: ticks/s=%.1f audio/s=%.0f silence/s=%.0f video/s=%.1f vnull/s=%.1f vcoal/s=%.1f maxTick=%.1fms slowTicks(>20ms)=%d "+
 +						"meanTick=%.2fms noSleep=%.1f%% deficit=%.1fms maxDeficit=%.1fms forgiven=%d",
 +					float64(diagTicks)/winSec,
 +					// audio/s is the CORE's own production — the injected silence is netted back out so
 +					// this number keeps meaning what every past reading of it meant.
 +					float64(audioFrames-diagAudioBase-diagSilence)/winSec,
 +					float64(diagSilence)/winSec,
-+					float64(vcb)/winSec, float64(vnull)/winSec,
++					float64(vcb)/winSec, float64(vnull)/winSec, float64(vcoal)/winSec,
 +					float64(diagMaxTickNs)/1e6, diagSlow,
 +					float64(diagSumTickNs)/float64(max(diagTicks, 1))/1e6,
 +					100*float64(diagNoSleep)/float64(max(diagTicks, 1)),
@@ -17265,7 +17381,7 @@ index 669862d..b5e229a 100644
 +    return ok;
 +}
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.go b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
-index 17f10fc..73900b7 100644
+index 17f10fc..47a6181 100644
 --- a/pkg/worker/caged/libretro/nanoarch/nanoarch.go
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
 @@ -4,9 +4,11 @@ import (
@@ -17978,14 +18094,16 @@ index 17f10fc..73900b7 100644
  	if n.LibCo {
  		C.same_thread(retroRun)
  	} else {
-@@ -427,10 +870,46 @@ func (n *Nanoarch) Run() {
+@@ -425,12 +868,52 @@ func (n *Nanoarch) Run() {
+ 			runtime.UnlockOSThread()
+ 		}
  	}
- }
- 
--func (n *Nanoarch) IsSupported() error                  { return graphics.RGFWTryInit() }
--func (n *Nanoarch) IsGL() bool                          { return n.Video.gl.enabled }
--func (n *Nanoarch) IsStopped() bool                     { return n.Stopped.Load() }
--func (n *Nanoarch) InputRetropad(port int, data []byte) { n.retropad.SetInput(port, data) }
++	// The tick is over: emit the ONE frame it produced (see the coalescing note in video_cb). Still the
++	// emulator thread, still inside Frontend.Tick — downstream sees the same frame on the same goroutine
++	// it always did, only after retro_run has finished deciding what the frame is.
++	n.flushPendingVideo()
++}
++
 +func (n *Nanoarch) IsSupported() error { return graphics.RGFWTryInit() }
 +func (n *Nanoarch) IsGL() bool         { return n.Video.gl.enabled }
 +
@@ -18018,8 +18136,12 @@ index 17f10fc..73900b7 100644
 +		return
 +	}
 +	n.retropad.SetInput(port, data)
-+}
-+
+ }
+ 
+-func (n *Nanoarch) IsSupported() error                  { return graphics.RGFWTryInit() }
+-func (n *Nanoarch) IsGL() bool                          { return n.Video.gl.enabled }
+-func (n *Nanoarch) IsStopped() bool                     { return n.Stopped.Load() }
+-func (n *Nanoarch) InputRetropad(port int, data []byte) { n.retropad.SetInput(port, data) }
 +// RequestDisk queues a multi-disc swap to image index i; applied on the emulator thread in Run (patch 0005).
 +func (n *Nanoarch) RequestDisk(i int) {
 +	if i >= 0 {
@@ -18029,7 +18151,7 @@ index 17f10fc..73900b7 100644
  func (n *Nanoarch) InputKeyboard(_ int, data []byte) {
  	if n.keyboardCb == nil {
  		return
-@@ -512,13 +991,47 @@ const (
+@@ -512,13 +995,47 @@ const (
  )
  
  // SaveState returns emulator internal state.
@@ -18081,7 +18203,7 @@ index 17f10fc..73900b7 100644
  	} else {
  		rez = bool(C.bridge_retro_serialize(retroSerialize, unsafe.Pointer(&data[0]), size))
  	}
-@@ -536,11 +1049,37 @@ func RestoreSaveState(st State) error {
+@@ -536,11 +1053,37 @@ func RestoreSaveState(st State) error {
  		return errors.New("empty load state")
  	}
  
@@ -18120,7 +18242,7 @@ index 17f10fc..73900b7 100644
  	} else {
  		rez = bool(C.bridge_retro_unserialize(retroUnserialize, unsafe.Pointer(&st[0]), size))
  	}
-@@ -581,6 +1120,24 @@ func memoryData(id C.uint) unsafe.Pointer {
+@@ -581,6 +1124,24 @@ func memoryData(id C.uint) unsafe.Pointer {
  	return C.bridge_retro_get_memory_data(retroGetMemoryData, id)
  }
  
@@ -18145,7 +18267,7 @@ index 17f10fc..73900b7 100644
  // ptSaveRam return SRAM memory pointer if core supports it or nil.
  func ptSaveRAM() *mem {
  	ptr, size := memoryData(C.RETRO_MEMORY_SAVE_RAM), memorySize(C.RETRO_MEMORY_SAVE_RAM)
-@@ -613,6 +1170,8 @@ var (
+@@ -613,6 +1174,8 @@ var (
  	retroGetSystemInfo           unsafe.Pointer
  	retroInit                    unsafe.Pointer
  	retroLoadGame                unsafe.Pointer
@@ -18154,7 +18276,7 @@ index 17f10fc..73900b7 100644
  	retroReset                   unsafe.Pointer
  	retroRun                     unsafe.Pointer
  	retroSetAudioSample          unsafe.Pointer
-@@ -630,11 +1189,71 @@ var (
+@@ -630,11 +1193,71 @@ var (
  	retroUnserialize             unsafe.Pointer
  )
  
@@ -18226,7 +18348,7 @@ index 17f10fc..73900b7 100644
  
  	// some frames can be rendered slower or faster than internal 1/fps core tick
  	// so track actual frame render time for proper RTP packet timestamps
-@@ -658,6 +1277,32 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
+@@ -658,6 +1281,32 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
  		return
  	}
  
@@ -18259,7 +18381,7 @@ index 17f10fc..73900b7 100644
  	// calculate real frame width in pixels from packed data (realWidth >= width)
  	// some cores or games output zero pitch, i.e. N64 Mupen
  	bpp := Nan0.Video.PixFmt.BPP
-@@ -668,10 +1313,64 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
+@@ -668,10 +1317,64 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
  	bytes := packed * height
  
  	var data_ []byte
@@ -18324,7 +18446,7 @@ index 17f10fc..73900b7 100644
  		// if Libretro renders frame with OpenGL context
  		data_ = graphics.ReadFramebuffer(bytes, width, height)
  	}
-@@ -680,7 +1379,104 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
+@@ -680,7 +1383,174 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
  	// also we have an option of xN output frame magnification
  	// so, it may be rescaled
  
@@ -18335,7 +18457,70 @@ index 17f10fc..73900b7 100644
 +		dumpFrame(data_, width, height, packed, bpp, int(Nan0.Video.PixFmt.C), data == C.RETRO_HW_FRAME_BUFFER_VALID)
 +	}
 +
-+	Nan0.Handlers.OnVideo(data_, dt, FrameInfo{W: width, H: height, Stride: packed, Tex: texID, Serial: texSerial})
++	fi := FrameInfo{W: width, H: height, Stride: packed, Tex: texID, Serial: texSerial}
++
++	// ── ONE FRAME PER retro_run (frame coalescing) ────────────────────────────────────────────────
++	// The libretro contract is one presented frame per retro_run, and everything downstream assumes it:
++	// the pacer times one tick per frame, and the RTP timestamps come off that clock. LRPS2 breaks it
++	// when it has to catch up — it runs TWO internal vsyncs inside one retro_run and calls video_cb
++	// twice. Measured in the user's room at a specific, reproducible corner:
++	//
++	//   pace-diag: ticks/s=57.8 ... video/s=108.8 maxTick=131ms
++	//
++	// ~49 extra frames in one 5 s window, exactly at that turn, with video/s == ticks/s everywhere else.
++	// Both frames get encoded with crowded timestamps and the client renders the burst out of order —
++	// which is what "an isolated old frame after the countdown" actually was. Codec-independent and
++	// location-locked, which is what ruled out the RTP/concealment theories.
++	//
++	// So hold the frame and let the NEXT one in the same tick replace it, emitting once from Run(). The
++	// last frame of a catch-up batch is the newest content by construction; the earlier ones are the
++	// stale mid-stream-in presents the player was seeing.
++	//
++	// Scope is deliberately narrow, and free where the contract is already honoured:
++	//   * only the nano Vulkan zero-copy path (Tex+Serial). Its pixels live in a pool slot WE own until
++	//     release, so holding them past the callback is safe. The software and M1-readback paths hand up
++	//     an unsafe.Slice over core/staging memory that is only valid inside the callback — those emit
++	//     immediately, exactly as before, and cannot be deferred.
++	//   * the superseded frame's slot is handed straight back with nano_vk_zc_release. This is why the
++	//     drop happens AFTER capture rather than before: the blit already consumed the core's set_image
++	//     semaphore in the normal way (no orphaned wait), and the slot returns to the free list instead
++	//     of leaking — the failure mode that froze fast-forward rooms for a whole session.
++	//   * one callback per tick (every healthy core, every healthy tick) stores and flushes: no release,
++	//     no counter, no branch beyond the nil check in Run.
++	if texID != 0 && texSerial != 0 {
++		if pendVideo.valid {
++			if pendVideo.info.Tex != 0 {
++				C.nano_vk_zc_release(C.uint(pendVideo.info.Tex))
++			}
++			videoCbCoalesced.Add(1)
++		}
++		pendVideo = pendingVideo{valid: true, dt: dt, info: fi}
++		return
++	}
++
++	Nan0.Handlers.OnVideo(data_, dt, fi)
++}
++
++// pendingVideo holds the zero-copy frame captured this retro_run until the tick ends (see the coalescing
++// note in video_cb). Emulator-thread only: video_cb runs inside retro_run, which Run() blocks on, so the
++// two never overlap — the same serialisation every other Nan0 global here relies on.
++type pendingVideo struct {
++	valid bool
++	dt    time.Duration
++	info  FrameInfo
++}
++
++var pendVideo pendingVideo
++
++// flushPendingVideo emits the tick's surviving frame. Data is nil by construction: a zero-copy frame's
++// pixels are the texture, never a Go slice.
++func (n *Nanoarch) flushPendingVideo() {
++	if !pendVideo.valid {
++		return
++	}
++	p := pendVideo
++	pendVideo = pendingVideo{}
++	n.Handlers.OnVideo(nil, p.dt, p.info)
 +}
 +
 +// audioClockFrames accumulates audio frames (per channel) produced since the last read. The frontend
@@ -18354,9 +18539,16 @@ index 17f10fc..73900b7 100644
 +var videoCbFrames atomic.Int64
 +var videoCbNull atomic.Int64
 +
-+// TakeVideoFrames returns and resets (video_cb calls, NULL-frame subset) since the last call.
-+func (n *Nanoarch) TakeVideoFrames() (int64, int64) {
-+	return videoCbFrames.Swap(0), videoCbNull.Swap(0)
++// videoCbCoalesced counts frames DROPPED because the core presented more than one inside a single
++// retro_run (see the coalescing note in video_cb). pace-diag prints it as vcoal/s. It is the number
++// that makes a catch-up burst show up in the log instead of on the player's screen: a nonzero vcoal/s
++// window is the core running two vsyncs a tick, and it should pair with video/s > ticks/s.
++var videoCbCoalesced atomic.Int64
++
++// TakeVideoFrames returns and resets (video_cb calls, NULL-frame subset, coalesced drops) since the
++// last call.
++func (n *Nanoarch) TakeVideoFrames() (int64, int64, int64) {
++	return videoCbFrames.Swap(0), videoCbNull.Swap(0), videoCbCoalesced.Swap(0)
 +}
 +
 +// ZcTexCurrent (dup-pin): reports whether GL texture tex is still the live zero-copy slot holding serial.
@@ -18430,7 +18622,7 @@ index 17f10fc..73900b7 100644
  }
  
  //export coreAudioSampleBatch
-@@ -688,6 +1484,9 @@ func coreAudioSampleBatch(data unsafe.Pointer, frames C.size_t) C.size_t {
+@@ -688,6 +1558,9 @@ func coreAudioSampleBatch(data unsafe.Pointer, frames C.size_t) C.size_t {
  	if Nan0.Stopped.Load() {
  		return frames
  	}
@@ -18440,7 +18632,7 @@ index 17f10fc..73900b7 100644
  	Nan0.Handlers.OnAudio(data, int(frames)<<1)
  
  	// Audio buffer status for the core (e.g. mGBA frameskip).
-@@ -739,7 +1538,13 @@ func coreGetCurrentFramebuffer() C.uintptr_t { return (C.uintptr_t)(graphics.GlF
+@@ -739,7 +1612,13 @@ func coreGetCurrentFramebuffer() C.uintptr_t { return (C.uintptr_t)(graphics.GlF
  
  //export coreGetProcAddress
  func coreGetProcAddress(sym *C.char) C.retro_proc_address_t {
@@ -18455,7 +18647,7 @@ index 17f10fc..73900b7 100644
  }
  
  //export coreEnvironment
-@@ -748,9 +1553,43 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -748,9 +1627,43 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  	// see core_environment_cgo
  
  	switch cmd {
@@ -18499,7 +18691,7 @@ index 17f10fc..73900b7 100644
  		if isGeometryDifferent(av.geometry) {
  			geometryChange(av.geometry)
  		}
-@@ -788,6 +1627,12 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -788,6 +1701,12 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  	case C.RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY:
  		*(**C.char)(data) = Nan0.cSaveDirectory
  		return true
@@ -18512,7 +18704,7 @@ index 17f10fc..73900b7 100644
  	case C.RETRO_ENVIRONMENT_SET_MESSAGE:
  		// only with the Libretro debug mode
  		if Nan0.log.GetLevel() < logger.InfoLevel {
-@@ -797,12 +1642,48 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -797,12 +1716,48 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  			return true
  		}
  		return false
@@ -18561,7 +18753,7 @@ index 17f10fc..73900b7 100644
  		if v, ok := Nan0.options[key]; ok {
  			// make Go strings null-terminated copies ;_;
  			Nan0.options[key] = v + "\x00"
-@@ -816,14 +1697,93 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -816,14 +1771,93 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  			return true
  		}
  		return false
@@ -18656,7 +18848,7 @@ index 17f10fc..73900b7 100644
  	case C.RETRO_ENVIRONMENT_SET_CONTROLLER_INFO:
  		if Nan0.log.GetLevel() > logger.DebugLevel {
  			return false
-@@ -851,7 +1811,18 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -851,7 +1885,18 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  		return true
  	case C.RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK:
  		Nan0.log.Debug().Msgf("Keyboard event callback was set")
@@ -18676,7 +18868,7 @@ index 17f10fc..73900b7 100644
  		return true
  	case C.RETRO_ENVIRONMENT_SET_AUDIO_BUFFER_STATUS_CALLBACK:
  		if data == nil {
-@@ -869,11 +1840,31 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -869,11 +1914,31 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  		Nan0.log.Info().Uint("latency_ms", uint(latency)).Msg("audio latency requested")
  		return true
  	}
@@ -18708,7 +18900,7 @@ index 17f10fc..73900b7 100644
  	var context graphics.Context
  	switch Nan0.Video.hw.context_type {
  	case C.RETRO_HW_CONTEXT_NONE:
-@@ -911,6 +1902,25 @@ func initVideo() {
+@@ -911,6 +1976,25 @@ func initVideo() {
  		if err != nil {
  			panic(err)
  		}
@@ -18734,7 +18926,7 @@ index 17f10fc..73900b7 100644
  	})
  
  	if Nan0.log.GetLevel() < logger.InfoLevel {
-@@ -918,12 +1928,31 @@ func initVideo() {
+@@ -918,12 +2002,31 @@ func initVideo() {
  	}
  }
  
@@ -18766,7 +18958,7 @@ index 17f10fc..73900b7 100644
  		if err := Nan0.glCtx.Deinit(); err != nil {
  			Nan0.log.Error().Err(err).Msg("deinit fail")
  		}
-@@ -932,9 +1961,237 @@ func deinitVideo() {
+@@ -932,9 +2035,237 @@ func deinitVideo() {
  	Nan0.Video.gl.autoCtx = false
  	Nan0.hackSkipHwContextDestroy = false
  	Nan0.hackSkipSameThreadSave = false
@@ -19004,7 +19196,7 @@ index 17f10fc..73900b7 100644
  type limit struct {
  	d  time.Duration
  	t  *time.Timer
-@@ -958,6 +2215,11 @@ func (d *limit) push(f func()) {
+@@ -958,6 +2289,11 @@ func (d *limit) push(f func()) {
  func geometryChange(geom C.struct_retro_game_geometry) {
  	Nan0.limiter(func() {
  		old := Nan0.sys.av.geometry

@@ -1,5 +1,23 @@
 # Stuntman round 2 — frame jitter + level-4 AI turn bug (OVERNIGHT 2026-08-08)
 
+## ~15:50 THE OUT-OF-ORDER FRAMES: ROOT-CAUSED (catch-up double-present) + TAILSCALE POLICY
+- Eric's h264 A/B killed the AV1-concealment theory: same garbage frames, SAME TURN as the
+  slowdown every run = content-locked, server-side. Smoking gun in his room's pace-diag:
+  **ticks/s=57.8 video/s=108.8 maxTick=131ms** — the core presents TWO vsyncs per retro_run
+  when catching up after the streaming-stall at that turn (~49 extra frames/5s window); worker
+  encodes both → timestamp-crowded bursts → client renders out of order. Codec-independent.
+  FIX (queued, fork): coalesce to ONE frame per tick at the video sink (keep last; count via
+  pace-diag; mind zc slot/semaphore leak for uncommitted set_images). The slowdown itself =
+  the known deterministic streaming-burst class (July round-3), now minor (~57 t/s dips).
+- **TAILSCALE POLICY (Eric): tailscale = phone-RDP ONLY, nothing site-wide may traverse it.**
+  His room had paired samehost via Ziggy's OWN tailscale addr (100.100.38.103, prflx — formed
+  from probe SOURCE addresses, so client candidate filtering can't fully prevent it).
+  SHIPPED: 3 firewall rules (elevated, Eric-approved UAC): Tailscale iface = block inbound TCP
+  except 3389, block ALL inbound UDP, block ALL outbound (RDP replies are stateful; block
+  beats allow in WFP — never block-all+allow-RDP). IN FLIGHT (fork): pion SetIPFilter/
+  SetInterfaceFilter excluding Tailscale/100.64.0.0/10 + remote-pair rejection if the API
+  allows. TODO: watchdog check greping worker logs for dev=100.64-127.x peers → loud alert.
+
 ## ~15:20 OPEN CYCLE (deploy pending: accumulated core+worker set)
 - Textures FIXED via config: Stuntman profile = softfloat + field_fullres + 16x SSAA + ss_tex
   (plate legible, locked 60; ss_tex is the bigger texture lever — 16x still averages pairs
