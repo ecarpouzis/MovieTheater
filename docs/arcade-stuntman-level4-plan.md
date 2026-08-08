@@ -1,5 +1,17 @@
 # Stuntman round 2 — frame jitter + level-4 AI turn bug (OVERNIGHT 2026-08-08)
 
+## ✅ MORNING FOLLOW-UP SHIPPED ~09:40 — pacer derivation fixes (fork 0de72c3, deployed)
+Health-gate (rate windows only count at full pace) + proven-declaration immunity (a core that
+ever delivered ≈declared at pace is immune to downward derivation for the session). Worker
+rebuilt via dev.build-local recipe (go version -m stamps 0de72c37333f, clean), deployed to both
+GL workers (backup bin\worker.pre-audiogate.exe), fork.patch re-exported + compile-proven,
+branch pushed. Smoke room JGJG7N: PROVEN latch fired 7s in ("48000 Hz PROVEN, derivation
+disabled"), a −1.9% scene-load dip did NOT re-pin (the old trap, exercised live), softfloat
+delivery + paraLLEl-GS default + 60fps driving + clean close all re-verified on the new binary.
+Defaults confirmed for Eric's launch: profile row 7 RenderProfile/HwContext NULL → system
+default parallel_gs (paraLLEl-GS on Vulkan, first-listed/default in ArcadeRendererProfiles) +
+CoreOptionsJson pcsx2_softfloat=enabled (scope All / vu0micro interpreter via core defaults).
+
 ## ✅ SHIPPED ~05:15 — summary for the morning
 - **AI fix LIVE**: `pcsx2_softfloat` (scope All, VU0 interpreter) delivered per-game to every
   Stuntman room via ArcadeGameProfile row 7 + regenerated game-overrides.json. Core
