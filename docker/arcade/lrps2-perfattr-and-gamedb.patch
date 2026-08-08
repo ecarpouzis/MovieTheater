@@ -1692,10 +1692,19 @@ index 0d4f817..9318479 100644
  
  		const u32 pitch = Common::AlignUpPow2(m_r_w << m_int_shift, TEXTURE_UPLOAD_PITCH_ALIGNMENT);
 diff --git a/pcsx2/GS/Renderers/parallel-gs/GSRendererPGS.cpp b/pcsx2/GS/Renderers/parallel-gs/GSRendererPGS.cpp
-index 9d8613c..f2d3fa5 100644
+index 9d8613c..279674d 100644
 --- a/pcsx2/GS/Renderers/parallel-gs/GSRendererPGS.cpp
 +++ b/pcsx2/GS/Renderers/parallel-gs/GSRendererPGS.cpp
-@@ -18,6 +18,13 @@ using namespace Granite;
+@@ -8,6 +8,8 @@
+ #include "muglm/muglm_impl.hpp"
+ #include "PerformanceMetrics.h"
+ #include "common/Console.h"
++#include "common/FileSystem.h"
++#include "common/Path.h"
+ #include "logging.hpp"
+ #include <stdarg.h>
+ 
+@@ -18,6 +20,56 @@ using namespace Granite;
  static retro_hw_render_interface_vulkan *hw_render_iface;
  static std::unique_ptr<Vulkan::Context> vulkan_ctx;
  static ImageHandle last_vsync_image;
@@ -1706,12 +1715,60 @@ index 9d8613c..f2d3fa5 100644
 +static constexpr unsigned NUM_COMPLETION_SEMAPHORES = 8;
 +static VkSemaphore completion_semaphores[NUM_COMPLETION_SEMAPHORES];
 +static unsigned completion_semaphore_index;
++
++// ---- paraLLEl-GS pipeline cache -----------------------------------------------------------------
++//
++// Granite CAN load and store a VkPipelineCache, but only through Device::init_pipeline_cache(), whose
++// file-backed half lives behind GRANITE_VULKAN_SYSTEM_HANDLES and Granite's own filesystem. This build
++// defines neither, so device.cpp:973 called an empty function and legacy_pipeline_cache -- the cache
++// handed to every pipeline creation -- stayed VK_NULL_HANDLE. Every pipeline was therefore compiled
++// with NO Vulkan pipeline cache at all, so nothing was reused within a session, let alone across
++// rooms. That is what produced repeated 120 ms "Stalled compile (compute, ...) (mode: sync)" hitches
++// at the same point of a track, every single room.
++//
++// So we drive the PUBLIC serialization API ourselves, which needs no Granite filesystem and flips no
++// Granite feature flag. Granite already does the safety work: the blob it produces carries the
++// pipelineCacheUUID plus a hash of the payload, and on load it falls back to a fresh cache on either
++// a UUID mismatch (driver/GPU changed) or a hash mismatch (truncated or corrupt file). A bad file can
++// only cost us a recompile, never a crash.
++static std::string pipeline_cache_path;
++static size_t pipeline_cache_written_size;
++static unsigned pipeline_cache_check_counter;
++
++// Cheap enough to run every few seconds; a compile is a rare event.
++static constexpr unsigned PIPELINE_CACHE_CHECK_INTERVAL = 300;
++
++static void save_pipeline_cache(Vulkan::Device &dev)
++{
++	if (pipeline_cache_path.empty())
++		return;
++
++	const size_t size = dev.get_pipeline_cache_size();
++	if (size == 0 || size == pipeline_cache_written_size)
++		return;
++
++	std::vector<u8> buffer(size);
++	if (!dev.get_pipeline_cache_data(buffer.data(), buffer.size()))
++		return;
++
++	// Written straight to the final path deliberately. A temp-and-rename would be tidier, but this
++	// tree's FileSystem has no rename, and the property that matters is already guaranteed upstream:
++	// Granite hashes the payload and rejects a mismatch on load, so the worst a half-written file can
++	// do is cost one recompile. Adding a hand-rolled rename would be more moving parts for no safety.
++	if (FileSystem::WriteBinaryFile(pipeline_cache_path.c_str(), buffer.data(), buffer.size()))
++		pipeline_cache_written_size = size;
++}
  extern retro_environment_t environ_cb;
  extern retro_video_refresh_t video_cb;
  extern retro_log_printf_t log_cb;
-@@ -186,6 +193,21 @@ u8 *GSRendererPGS::GetRegsMem()
+@@ -185,7 +237,26 @@ u8 *GSRendererPGS::GetRegsMem()
+ 
  GSRendererPGS::~GSRendererPGS()
  {
++	// Final flush, for anything compiled since the last periodic write. Best effort by design: the
++	// periodic writes above are what the persistence actually rests on.
++	save_pipeline_cache(dev);
++
  	last_vsync_image.reset();
 +
 +	// Destroy the retained completion semaphores while `dev` is still alive -- it is a member, so
@@ -1731,7 +1788,44 @@ index 9d8613c..f2d3fa5 100644
  }
  
  struct ParsedSuperSampling
-@@ -504,6 +526,7 @@ void GSRendererPGS::VSync(u32 field, bool registers_written)
+@@ -216,6 +287,36 @@ bool GSRendererPGS::Init()
+ 		return false;
+ 
+ 	dev.set_context(*vulkan_ctx);
++
++	// Give paraLLEl-GS a real pipeline cache, seeded from disk when we have one. Unconditionally
++	// calling this is what creates legacy_pipeline_cache at all -- see the note at the top of this
++	// file. Even with no file to load, that alone stops a pipeline being recompiled from scratch
++	// every time it is needed within a session.
++	pipeline_cache_path.clear();
++	pipeline_cache_written_size = 0;
++	pipeline_cache_check_counter = 0;
++
++	if (!GSConfig.DisableShaderCache && !EmuFolders::Cache.empty())
++		pipeline_cache_path = Path::Combine(EmuFolders::Cache, "parallel_gs_pipeline_cache.bin");
++
++	{
++		std::optional<std::vector<u8>> cache_data;
++		if (!pipeline_cache_path.empty())
++			cache_data = FileSystem::ReadBinaryFile(pipeline_cache_path.c_str());
++
++		if (cache_data.has_value() && !cache_data->empty())
++		{
++			// Granite validates the pipelineCacheUUID and a payload hash, falling back to a fresh
++			// cache on either mismatch, so a stale or corrupt file costs a recompile, not a crash.
++			dev.init_pipeline_cache(cache_data->data(), cache_data->size());
++			pipeline_cache_written_size = cache_data->size();
++		}
++		else
++		{
++			dev.init_pipeline_cache(nullptr, 0);
++		}
++	}
++
+ 	// We'll cycle through a lot of these.
+ 	dev.init_frame_contexts(12);
+ 	dev.set_queue_lock([]() {
+@@ -504,6 +605,7 @@ void GSRendererPGS::VSync(u32 field, bool registers_written)
  	info.adapt_to_internal_horizontal_resolution = GSConfig.PCRTCAntiBlur;
  	info.raw_circuit_scanout                     = true;
  	info.high_resolution_scanout                 = GSConfig.PGSHighResScanout != 0;
@@ -1739,7 +1833,7 @@ index 9d8613c..f2d3fa5 100644
  	auto vsync                                   = iface.vsync(info);
  
  	auto stats = iface.consume_flush_stats();
-@@ -588,7 +611,57 @@ void GSRendererPGS::VSync(u32 field, bool registers_written)
+@@ -588,7 +690,57 @@ void GSRendererPGS::VSync(u32 field, bool registers_written)
  			if (geom_changed)
  				environ_cb(RETRO_ENVIRONMENT_SET_GEOMETRY, &geom);
  
@@ -1798,6 +1892,24 @@ index 9d8613c..f2d3fa5 100644
  			video_cb(RETRO_HW_FRAME_BUFFER_VALID, new_base_width, new_base_height, 0);
  			/* Do not unregister the image after video_cb: the frontend
  			 * may reuse the pointer for cached-frame replays during
+@@ -605,6 +757,17 @@ void GSRendererPGS::VSync(u32 field, bool registers_written)
+ 	}
+ 
+ 	dev.next_frame_context();
++
++	// Persist newly compiled pipelines as we go rather than only at teardown. With
++	// skip_hw_context_destroy set the shutdown path is not guaranteed to run, and a cache that only
++	// writes on a clean exit is the cache that is always empty on the next room -- which is exactly
++	// the failure being fixed. Cheap: a size query every few seconds, and a write only when a
++	// compile has actually grown the cache.
++	if (++pipeline_cache_check_counter >= PIPELINE_CACHE_CHECK_INTERVAL)
++	{
++		pipeline_cache_check_counter = 0;
++		save_pipeline_cache(dev);
++	}
+ }
+ 
+ void GSRendererPGS::Transfer(const u8* mem, u32 size)
 diff --git a/pcsx2/GS/parallel-gs/gs/gs_interface.hpp b/pcsx2/GS/parallel-gs/gs/gs_interface.hpp
 index 9f05da8..ec6e3ba 100644
 --- a/pcsx2/GS/parallel-gs/gs/gs_interface.hpp

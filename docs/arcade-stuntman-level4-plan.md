@@ -1,5 +1,20 @@
 # Stuntman round 2 — frame jitter + level-4 AI turn bug (OVERNIGHT 2026-08-08)
 
+## ~16:10 THE TURN, FINAL ROOT CAUSE: PGS SYNC PIPELINE COMPILES (fix in flight)
+Eric's persistent same-turn slowdown+out-of-sequence frames (surviving coalescer: vcoal=0,
+video/s==ticks/s, all counters clean) = paraLLEl-GS/Granite SYNCHRONOUS compute-pipeline
+compiles at first sight of the turn's effects: "Stalled compile (compute, 816e78...): 120589us
+(mode: sync)" + maxTick 123-138ms windows, 45 slowTicks — EVERY room (pipelines don't persist
+across rooms). The stall-burst cadence is what reads as out-of-sequence; earlier mechanisms
+(double-present, pool staleness, SVC-dropped keyframes, AV1 no-resync) were each real and are
+each fixed, but this is the remaining trigger. Core builder investigating Granite pipeline-
+cache persistence (Fossilize/VkPipelineCache — likely an unwired cache dir) + async compile
+("mode: sync" implies async exists). Persistence = turn stalls once EVER; async = never.
+Cache design mind: GL cache handle-leak lesson, skip_hw_context_destroy (write-at-compile,
+not at-teardown), driver-keyed, corrupt-cache must rebuild not crash. DEPLOY PENDING.
+Verification once deployed: room 1 = turn stalls once (compiles logged, cache writes); room 2+
+= ZERO Stalled-compile at the turn, maxTick <25ms, Eric sees clean cadence.
+
 ## ~15:50 THE OUT-OF-ORDER FRAMES: ROOT-CAUSED (catch-up double-present) + TAILSCALE POLICY
 - Eric's h264 A/B killed the AV1-concealment theory: same garbage frames, SAME TURN as the
   slowdown every run = content-locked, server-side. Smoking gun in his room's pace-diag:
