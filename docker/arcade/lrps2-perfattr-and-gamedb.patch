@@ -1,3 +1,362 @@
+diff --git a/SOFTFLOAT-PORT-NOTES.md b/SOFTFLOAT-PORT-NOTES.md
+new file mode 100644
+index 0000000..3a5b63d
+--- /dev/null
++++ b/SOFTFLOAT-PORT-NOTES.md
+@@ -0,0 +1,353 @@
++# Soft-float (PS2Float) port — implementation log
++
++Branch `stuntman-softfloat`, off `movietheater-lrps2` @ `2cf344b`.
++
++Goal: make Stuntman (SLUS-20250) level-4 recorded-input chase playback deterministic, by
++emulating the PS2 FPU/VU floating point bit-exactly instead of using the host SSE units.
++This is a backport of **PCSX2 PR #12001** (`GitHubProUser67:soft-float-int` — adds
++`pcsx2/PS2Float.cpp/.h` and rewrites the COP1 + VU *interpreters* to use it) combined with
++**Goatman13's `int_fallback_fpu_cop2` routing** (described in PCSX2 issue #2990 — the
++recompilers hand the affected opcodes to those interpreter bodies).
++
++Everything is behind a new core option and is **off by default**. With the option off the
++core is behaviourally identical to `2cf344b` for every game.
++
++---
++
++## Core options (libretro)
++
++| token | values | default |
++| --- | --- | --- |
++| `pcsx2_softfloat` | `disabled` / `enabled` | `disabled` |
++| `pcsx2_softfloat_scope` | `All` / `Add/Sub + Mul` / `Add/Sub only` / `Div/Sqrt only` | `All` |
++| `pcsx2_softfloat_vu0micro` | `interpreter` / `recompiler` | `interpreter` |
++
++### What each knob actually gates (read this before designing an arm)
++
++`pcsx2_softfloat_scope` **narrows COP1 only.**
++
++* COP1 (`iFPU.cpp`) tests the mask **per op**, so a narrow scope genuinely leaves ops on the
++  recompiler: `Add/Sub + Mul` keeps `DIV_S/SQRT_S/RSQRT_S` recompiled; `Add/Sub only` also
++  keeps `MUL_S/MULA_S` and the whole MADD/MSUB family (they need both bits).
++* COP2 (`microVU_Macro.inl`) tests `CHECK_VU_SOFT(0)` for **non-zero**, so *any* scope routes
++  all 75 ops to the interpreter. The per-family guards inside `VUops.cpp` then pick PS2Float
++  vs the original hard-float body — i.e. scope changes the math, not the routing.
++* `pcsx2_softfloat_vu0micro` is independent of scope and of the mask.
++
++`pcsx2_softfloat_vu0micro` decides only whether VU0 **micro** programs (CALLMS) run on
++`CpuIntVU0`. COP2 **macro** mode is diverted to the soft-float interpreter either way.
++
++Both are read **once**, in `check_variables(first_run == true)` in `libretro/main.cpp`, before
++`VMManager::ApplySettings()` and the VM boot. They are *Restart* options by nature: the
++recompilers bake the routing decision into the blocks they emit, so flipping them mid-run
++would leave stale blocks. They are not re-read in the `check_variables(false)` path.
++
++`pcsx2_softfloat` and `pcsx2_softfloat_scope` map onto three new
++`Pcsx2Config::RecompilerOptions` fields, written as `EmuCore/CPU/Recompiler` ints:
++
++* `fpuSoftFloat` — EE COP1
++* `vu0SoftFloat` — COP2 macro mode + VU0 micro programs
++* `vu1SoftFloat` — **always written as 0**. VU1 is graphics-only; soft-floating it would
++  cost a great deal for no gain on this bug.
++
++The value is a mask of `SOFT_FLOAT_ADDSUB (0x1)` / `SOFT_FLOAT_MUL (0x2)` /
++`SOFT_FLOAT_DIVSQRT (0x4)`, exactly as upstream. The `_scope` option exists only because the
++PR already carried that granularity; `All` (7) is the accurate setting.
++
++## What is routed where, when enabled
++
++* **EE FPU (COP1)** — the recompiler emits a call to the COP1 interpreter op for
++  `ADD_S ADDA_S SUB_S SUBA_S MUL_S MULA_S MADD_S MADDA_S MSUB_S MSUBA_S DIV_S SQRT_S RSQRT_S`
++  (13 ops). `ABS_S NEG_S MOV_S MAX_S MIN_S C_EQ C_LE C_LT CVT_S CVT_W` stay recompiled — the
++  PR does not change their arithmetic, so there is nothing to gain and a real cost to pay.
++* **COP2 / VU0 macro mode** — the recompiler emits a call to the COP2 interpreter entry point
++  for **all 75 ops whose `REC_COP2_mVU0` mode has bit `0x10`** (writes status/mac): the whole
++  ADD/ADDA/SUB/SUBA/MUL/MULA/MADD/MADDA/MSUB/MSUBA families incl. every `.i/.q/.x/.y/.z/.w`
++  broadcast, plus `OPMULA OPMSUB DIV SQRT RSQRT`. `MAX/MINI/CLIP/ABS/ITOF/FTOI/MOVE/MR32` and
++  the integer ops stay in macro mode.
++* **VU0 micro programs (CALLMS/CALLMSR)** — `CpuVU0` is switched to `CpuIntVU0` **only if
++  `pcsx2_softfloat_vu0micro = interpreter`** (the default). This is driven through the stock
++  `EnableVU0` setting from `libretro/main.cpp`, so all the existing plumbing applies:
++  `microVU0` stays reserved and is explicitly `Reset()` by `ClearCPUExecutionCaches`, because
++  COP2 macro mode still emits through it for the ops that are *not* diverted.
++* **VU1** — untouched, fully recompiled.
++
++---
++
++## Files
++
++| file | what |
++| --- | --- |
++| `pcsx2/PS2Float.cpp/.h` | **new**, vendored from the PR (see deviations) |
++| `pcsx2/CMakeLists.txt` | adds the two files |
++| `pcsx2/Config.h` | `vu0/vu1/fpuSoftFloat` fields, `SOFT_FLOAT_*`, `CHECK_{VU,FPU}_SOFT*` |
++| `pcsx2/Pcsx2Config.cpp` | ctor defaults + `LoadSave` |
++| `pcsx2/x86/iCore.h` | `FLUSH_SOFTFLOAT_COP1` / `FLUSH_SOFTFLOAT_COP2` |
++| `pcsx2/FPU.cpp` | PR's COP1 interpreter rewrite (applied unconditionally, gated internally by `CHECK_FPU_SOFT_*`) |
++| `pcsx2/VUops.cpp` | PR's VU interpreter rewrite, **re-derived** — see below |
++| `pcsx2/x86/iR5900.h` | new `FPURECOMPILE_CONSTCODE_SOFT` macro |
++| `pcsx2/x86/iFPU.cpp` | 13 COP1 ops switched to it |
++| `pcsx2/x86/microVU_Macro.inl` | new `REC_COP2_mVU0_SOFT` macro; 75 ops switched to it |
++| `libretro/libretro_core_options.h`, `libretro/main.cpp` | the two options |
++
++---
++
++## Applied clean from the PR
++
++* `pcsx2/PS2Float.cpp` and `PS2Float.h` — the arithmetic core is byte-for-byte upstream.
++* `pcsx2/FPU.cpp` — every hunk applied essentially verbatim: `checkOverflowUnderflowSoft`,
++  `checkDivideByZeroInvalidSoft`, `fpuCompareFull`, the six `fpuAccurate*` helpers, and the
++  13 op bodies (`ADD_S ADDA_S SUB_S SUBA_S MUL_S MULA_S MADD_S MADDA_S MSUB_S MSUBA_S DIV_S
++  SQRT_S RSQRT_S`) plus the PR's `CVT_S` and `C_cond_S` tweaks.
++* The `Config.h` `SOFT_FLOAT_*` / `CHECK_*` macro block — same names, same semantics.
++
++## Re-derived, and why
++
++### 1. `PS2Float` — three C++17 adaptations (mechanical)
++
++The PR targets a C++20 tree with a `common/BitUtils.h` this fork does not have.
++
++* `std::bit_cast` (C++20) → a `ps2f_bit_cast` memcpy helper in `PS2Float.h`. Two call sites:
++  `PS2Float(float)` and `ToDouble()`. This tree is `cxx_std_17` (`pcsx2/CMakeLists.txt:12`).
++* `common/BitUtils.h` does not exist here. Its three used symbols
++  (`normalizeAmounts`, `BitScanReverse`, `CountLeadingSignBits`) are reproduced in a
++  `PS2FloatBits` namespace at the top of `PS2Float.cpp`; `CountLeadingSignBits` just forwards
++  to this tree's existing `count_leading_sign_bits` in `common/MathUtils.h`.
++* `Console.Error` needs an explicit `#include "../common/Console.h"` here.
++
++**No arithmetic was changed.** Diff `pcsx2/PS2Float.cpp` against
++`https://raw.githubusercontent.com/GitHubProUser67/pcsx2/soft-float-int/pcsx2/PS2Float.cpp`
++to confirm — the only differences are the include block, the `PS2FloatBits` block, the three
++`Common::` → `PS2FloatBits::` renames and the one `bit_cast` rename.
++
++### 2. `Config.h` — the soft-float fields are NOT bitfields in the union
++
++Upstream declares them inside the `bitset` union as `unsigned int vu0SoftFloat : 3;` etc.
++**That is broken under MSVC** and would have shipped silently: MSVC starts a fresh storage
++unit whenever a bitfield's declared *type* changes, so appending `unsigned int`-typed bits
++after the existing `bool`-typed ones grows the union from 4 to 8 bytes. Consequences:
++`bitset = 0` in `RecompilerOptions()` would leave the soft-float fields **uninitialised**, and
++`operator==` (which compares `bitset`) would not see them at all. Verified empirically on this
++toolchain (MSVC 14.51) with a standalone repro before changing the design.
++
++They are therefore three plain `u8` members outside the union, explicitly zeroed in the ctor
++and explicitly compared in `operator==`.
++
++### 3. `Pcsx2Config.cpp` — no `EntryFlagsBitfield`
++
++The PR adds `SettingsWrapper::EntryFlagsBitfield` to `common/` so the Qt UI can store one bool
++per flag. We store the mask itself with the existing `EntryBitfield` (keys `vu0SoftFloat` /
++`vu1SoftFloat` / `fpuSoftFloat` under `EmuCore/CPU/Recompiler`), masked with `SOFT_FLOAT_ALL`
++on load. `common/SettingsWrapper.*` is untouched. The PR's `pcsx2-qt` hunks are N/A.
++
++### 4. `pcsx2/VUops.cpp` — the whole VU half had to be re-expressed
++
++This is the substantive divergence. Upstream has already refactored the VU interpreter into
++`applyBinaryMACOp<Fn, MACOpDst>` / `applyTernaryMACOp<...>` templates plus a separate
++`pcsx2/VUflags.cpp`; the PR simply adds `applyAccurate*` template siblings and PS2Float
++overloads of `VU_MAC{x,y,z,w}_UPDATE`. **This fork predates that refactor**: `VUops.cpp` is
++4763 lines of longhand per-component code, there is no `VUflags.cpp`, no `MACOpDst`, no
++`_getDst<>`, and `VU_MAC{x,y,z,w}_UPDATE` are *macros* (`VUops.cpp:72-75`) forwarding to a
++single `VU_MAC_UPDATE(int, VURegs*, float)`.
++
++What was re-derived (all in one block inserted just above `vuADD_TriAceHack`):
++
++* **`VU_MAC_UPDATE(int, VURegs*, PS2Float)`** — a body-for-body port of the PR's
++  `VUflags.cpp` `VU_MAC_UPDATE(s32, VURegs*, PS2Float)`. Because the `VU_MAC*_UPDATE` macros
++  expand to a plain function call, adding this *overload* routes all ~300 existing call sites
++  automatically via ordinary overload resolution — nothing else had to change about them.
++* **`IsOverflowSet(VURegs*, int shift)`** — port of the PR's `VUflags.cpp` helper.
++* **`vuSoftIndex(VURegs*)`** — the PR writes `(VU == &VU1) ? 1 : 0`; this fork names the
++  register files `vuRegs[0]` / `vuRegs[1]`.
++* **`vuSoftBinaryMAC<Fn>` / `vuSoftTernaryMAC<Fn>` / `vuSoftAccTernaryMAC<Fn>`** — these
++  collapse the PR's six `applyAccurate*` templates into three. The PR needs separate
++  plain/Broadcast variants because its `Fn` reads `VU->VF[_Ft_]` itself; ours takes the four
++  "other operand" lanes as arguments, so the broadcast form is just "pass the same value four
++  times". `MACOpDst`/`_getDst<>` are replaced by an explicit `VECTOR* dst` argument (and
++  `vuSoftDstFd()` for the `_Fd_ == 0 → RDzero` rule this fork open-codes in every function).
++  The per-lane sequence (`_X`→`VU_MACx_UPDATE`/`VU_MACx_CLEAR`, … , then `VU_STAT_UPDATE`) is
++  identical to the PR's.
++* **`_vuAccurateOpADD/SUB/MUL/MADD/MSUB/MADDA/MSUBA`** — verbatim from the PR (including
++  `accfloat.of = oflw` before `MulAddAcc`/`MulSubAcc`). The PR's unused, and arguably buggy,
++  `vuAccurateMulAddAcc`/`vuAccurateMulSubAcc` free functions (`acc = oflw;` assigns a bool to
++  a `PS2Float`) were **not** ported — the PR does not call them either.
++
++**Every site where math was re-derived rather than copied** (all are "same operation, this
++fork's spelling"; the PS2Float call itself is always the PR's):
++
++1. **The 70 FMAC op functions** `_vu{ADD,SUB,MUL}{,i,q,x,y,z,w}`,
++   `_vu{ADD,SUB,MUL}A{,i,q,x,y,z,w}`, `_vu{MADD,MSUB}{,i,q,x,y,z,w}`,
++   `_vu{MADD,MSUB}A{,i,q,x,y,z,w}`. Upstream routes these through `vuADDbc`-style shared
++   helpers; this fork has 70 separate longhand bodies. Each got **one** guard line inserted as
++   the first statement, e.g.
++   `if (VU_SOFT_ADDSUB) { vuSoftBinaryMAC<_vuAccurateOpADD>(VU, vuSoftDstFd(VU), VU_SOFT_BC_Z); return; }`
++   The original body is left completely untouched below it. Guard conditions match the PR:
++   ADD/SUB → `CHECK_VU_SOFT_ADDSUB`, MUL → `CHECK_VU_SOFT_MUL`,
++   MADD/MSUB (incl. the A forms) → both.
++2. **`_vuADDi`** additionally has this fork's `CHECK_VUADDSUBHACK` (TriAce) branch. The soft
++   guard is placed *before* it, i.e. soft-float wins over the TriAce hack — same precedence
++   the PR ends up with (it replaces `vuADDbc_addsubhack` dispatch with the soft check first).
++3. **`_vuOPMULA` / `_vuOPMSUB`** — hand-written soft branches (3 lanes, no `_X.._W` mask, `.w`
++   untouched), mirroring the PR's versions exactly but using this fork's `RDzero` rule.
++4. **`_vuDIV` / `_vuSQRT` / `_vuRSQRT`** — hand-written soft branches. Structurally identical
++   to the PR's (`IsZero()`, `MIN/MAX_FLOATING_POINT_VALUE`, `ToDouble() < 0.0` for the sign
++   test, `statusflag` 0x10/0x20 bits, `Div`/`Sqrt`/`Rsqrt`). The one shape difference: this
++   fork's `_vuSQRT` has no zero special-case in the hard-float path either, matching upstream.
++5. **`_vuERCPR` / `_vuESQRT` / `_vuERSQRT`** — one-line soft branches calling
++   `PS2Float::ERCPR/ESQRT/ERSQRT`, same as the PR.
++
++**Not ported** from the PR's VUops hunks: the cosmetic whitespace churn in `_vuEATAN*`,
++`_vuESUM`, `_vuEEXP`, and the deletion of `vuADD_TriAceHack` (this fork still uses it in the
++non-soft `_vuADDi` path, and `CHECK_VUADDSUBHACK` is a live gamefix here).
++
++### 5. Recompiler routing — not in the PR at all
++
++PR #12001 only touches interpreters; on its own it does nothing while the recompilers are on.
++The routing is the `int_fallback_fpu_cop2` idea (#2990), implemented here as:
++
++* `FPURECOMPILE_CONSTCODE_SOFT(fn, xmminfo, softcheck)` in `x86/iR5900.h`, modelled on this
++  tree's existing `REC_FPUFUNC`.
++* `REC_COP2_mVU0_SOFT(f, opName, mode)` in `x86/microVU_Macro.inl`, modelled on this tree's
++  existing `INTERPRETATE_COP2_FUNC` (already used for `CALLMS`/`CALLMSR`, i.e. the
++  proven-correct way to hand a COP2 slot to the interpreter in this fork).
++
++Both checks are plain C++ `if`s evaluated at **block-compile time**, so with the option off
++the emitted code is byte-for-byte what it was before and there is zero emulation-time cost.
++
++Both use **narrow flush masks** (`FLUSH_SOFTFLOAT_COP1` / `FLUSH_SOFTFLOAT_COP2` in
++`x86/iCore.h`) rather than `FLUSH_INTERPRETER` (`0xfff`), and the COP2 one calls `xFastCall`
++directly instead of `recCall` (which would apply `0xfff` internally) and emits no per-op
++cycle store. Rationale and the two pre-flight checks are in the flush-cost section below.
++
++---
++
++---
++
++## Measured cost, and the flush work that followed
++
++Benched on the level-4 driving arm, paraLLEl-GS, baseline = this branch with the option off
++(60.0 ticks/s, meanTick 6.92 ms):
++
++| arm | result | delta |
++| --- | --- | --- |
++| `pcsx2_softfloat = disabled` | 60.0 ticks/s, 6.92 ms | baseline |
++| `enabled`, scope `All` | 54.3 ticks/s, 12.22 ms | **+5.30 ms** |
++| `enabled`, scope `Add/Sub + Mul` | 59.9 flat, slowTicks 0 | **+1.44 ms** |
++
++The `Add/Sub + Mul` arm is the decisive one. It keeps **all 75 COP2 ops routed** through the
++interpreter and **keeps VU0 on `CpuIntVU0`**, and still costs only +1.44 ms. So:
++
++* **Routing/flush overhead + the VU0 interpreter together are ~1.44 ms** — *not* the
++  dominant cost. My initial hypothesis that per-op `FLUSH_INTERPRETER` would dominate was
++  wrong; recorded here so nobody re-derives it.
++* **The remaining ~3.9 ms is div/sqrt**: COP1 `DIV_S/SQRT_S/RSQRT_S` routing plus PS2Float's
++  `Div`/`Sqrt`/`Rsqrt`. That is unsurprising in hindsight — `PS2Float::Div` is an iterative
++  CSA radix divider (`DOI 10.1109/ARITH.1995.465363`), tens of iterations per call, versus
++  one `divss`.
++
++Even at +1.44 ms the results-screen replay path was heavy enough to trip the worker's 2%
++audio derivation (re-pinned 48000 → 46749), so trimming the fixed overhead is still worth
++having. Hence the flush work:
++
++**`FLUSH_SOFTFLOAT_COP1` = `FLUSH_FREE_XMM | FLUSH_PC | FLUSH_CODE`**
++**`FLUSH_SOFTFLOAT_COP2` = `FLUSH_FREE_XMM | FLUSH_FREE_VU0 | FLUSH_PC | FLUSH_CODE`**
++
++versus `FLUSH_INTERPRETER` (`0xfff`), which additionally does `FLUSH_ALL_X86 |
++FLUSH_FREE_TEMP_X86 | FLUSH_FREE_NONTEMP_X86 | FLUSH_CONSTANT_REGS` — i.e. it threw away the
++entire EE register allocation and constant propagation at *every* diverted opcode. Two
++pre-flight checks made this safe:
++
++1. **The call ABI is safe with any mask.** `iFlushCall` (`x86/ix86-32/iR5900-32.cpp:969-994`)
++   frees caller-saved GPRs *and* caller-saved XMMs unconditionally, outside every flag test.
++   The mask only controls what *additional* state is flushed.
++2. **No COP2 interpreter entry reads EE GPRs.** All 114 `cpuRegs.*` references in the `V*`
++   wrappers are `cpuRegs.code` (hence `FLUSH_CODE` is mandatory — it is *not* in
++   `FLUSH_FOR_POSSIBLE_MICRO_EXEC`, and the old code got it only via `recCall`'s `0xfff`).
++   The `_vu*` bodies reference `cpuRegs` zero times. Same for COP1: those 13 ops touch only
++   `fpuRegs`/`fpuRegs.fprc`.
++
++Freeing also routes through `mVUFreeCOP2XMMreg`/`mVUFreeCOP2GPR` (`iCore.cpp:719,731`,
++`iCore-32.cpp:441`), so microVU0's COP2 register cache is properly invalidated. And the COP2
++mask is a strict superset of `FLUSH_FOR_POSSIBLE_MICRO_EXEC`, which the `CALLMS` fallback
++already depends on before executing arbitrary VU0 code — so it is provably at least as safe
++as the path this fork already shipped.
++
++Also dropped from the COP2 path: `xADD(ptr64[&cpuRegs.cycle], scaleblockcycles_clear())`.
++That exists so `CALLMS` can sync VU timing before running a micro program; a plain FMAC needs
++no such sync, and it forced a mid-block cycle reconciliation plus a memory RMW per opcode.
++Cycles now accumulate to block end exactly as they do on the recompiled path. (`microVU.cpp`
++object shrank ~49 KB across the 75 macro expansions, which is the change taking effect.)
++
++**Not yet measured.** The flush change and the `vu0micro` split are hypothesis-driven; the
++next bench should A/B them.
++
++## Things to review / watch
++
++* **The COP2 fallback is deliberately all-or-nothing over the `mode & 0x10` set.**
++  `setupMacroOp`/`endMacroOp` implement a protocol where a *denormalized* status flag can live
++  in `vuRegs[0].VI[REG_STATUS_FLAG]` between two consecutive macro ops, driven by
++  `EEINST_COP2_{,DE}NORMALIZE_STATUS_FLAG` from `iR5900Analysis.cpp`. Diverting **every** op
++  that writes status/mac keeps this coherent (nobody writes a denormalized flag, nobody reads
++  one back; the interpreter's `SYNCMSFLAGS()` always leaves it normalized). Diverting only a
++  subset — e.g. only ADD/MUL but not MADD — would corrupt flags. If anyone later wants finer
++  granularity here, this is the trap.
++* **`CVT_S` and `C_cond_S` in `FPU.cpp` changed unconditionally** (the PR does the same). They
++  are inert in practice: those two opcodes are never routed to the interpreter, and the full
++  EE interpreter (`CHECK_EEREC == false`) is unreachable from libretro. Flagged in case a
++  future full-interpreter mode appears.
++* **`vu1SoftFloat` is wired but never set to non-zero.** All the VU-side code honours it, so
++  enabling VU1 soft-float later is a one-line change in `libretro/main.cpp` — but note VU1 is
++  the *recompiled* path used for graphics and would also need `EnableVU1` forced off.
++* **`pcsx2_softfloat_scope` cannot currently narrow the COP2 routed set**, and making it do so
++  is not a small change — DIV/SQRT/RSQRT are mode `0x112`, so they sit inside the `mode & 0x10`
++  flag-protocol set described below. Cherry-picking them would need `CHECK_VU_FLAGHACK`
++  (`EmuConfig.Speedhacks.vuFlagHack`) forced off first, so that `setupMacroOp` always
++  denormalizes from memory and `endMacroOp` always normalizes, making a mixed
++  interpreted/macro set coherent. That trade costs speed on the ops that stay in macro mode.
++* **If div/sqrt cost has to come down further**, the options in rough order of effort are:
++  (1) leave COP1 `DIV_S/SQRT_S/RSQRT_S` recompiled via `scope` and check whether Stuntman's
++  determinism survives; (2) the `vuFlagHack` route above, to keep COP2 div/sqrt in macro mode
++  too; (3) a soft-float *recompiled* path that emits calls to `PS2Float::*` with operands kept
++  in registers, removing the flush entirely and leaving only the software math.
++* **Perf is expected to be bad when enabled.** Every EE FPU arithmetic op and every COP2 FMAC
++  becomes a flushed call into C++, and VU0 micro programs lose the recompiler. Measure before
++  shipping this for Stuntman; if it is too slow, the `_scope` option is the first lever
++  (Stuntman's `dyStepRunge*` physics is add/sub + mul dominated).
++* **Not touched, deliberately:** `GameDatabaseBuiltin.cpp`, `GameIndex.yaml`, `iFPUd.cpp`
++  (the `CHECK_FPU_FULL` double path), any default setting.
++
++---
++
++## Build
++
++`build-core.bat` (CMake + Ninja + MSVC, `CMAKE_POLICY_VERSION_MINIMUM=3.5`), build tree `bld/`.
++
++* Output: `D:\Arcade\build\lrps2\bld\libretro\pcsx2_libretro.dll`.
++  * V0 (`5ff4f9c`): 11,611,136 bytes.
++  * V1+V2 (`c98d183`): **11,606,528 bytes**. Note the SHA256 is **not** stable across
++    rebuilds of identical source — MSVC stamps a timestamp/PDB signature into the header, so
++    two builds of the same commit give the same length but different hashes. Verify a
++    deployment by length + the commit it was built from, not by hash alone.
++  * Pre-port deployed core was 11,317,760, so the port is **+2.6%**.
++* All 620 C++ TUs compile with `/O2 /Ob2 /DNDEBUG -std:c++17 -MT` (grepped out of
++  `bld/build.ninja`; also visible on the raw `cl.exe` line for `PS2Float.cpp`). The Dolphin
++  "Release without /O2" trap does not apply — no `CMAKE_CXX_FLAGS_RELEASE` override was added.
++* `dumpbin /exports` shows the usual 25 entry points including `retro_run`, `retro_init`,
++  `retro_load_game`.
++* **Not deployed.** Nothing under `D:\ArcadeStorage` was touched and no worker/task was
++  recycled.
++
++## Suggested next arms
++
++Regression gate first: with `pcsx2_softfloat = disabled`, confirm a couple of non-Stuntman
++titles behave exactly as before. Then, off this one build:
++
++| arm | `softfloat` | `scope` | `vu0micro` | isolates |
++| --- | --- | --- | --- | --- |
++| C1 | enabled | `All` | `interpreter` | V1 flush saving vs the +5.30 ms `All` arm |
++| C2 | enabled | `All` | `recompiler` | **(b)** exactly — cost of the VU0 micro interpreter |
++| C3 | enabled | `Add/Sub + Mul` | `recompiler` | cheapest arm that still has bit-exact COP2 macro |
++
++C3 is the current best candidate for holding 59.94. The open accuracy question it answers:
++whether Stuntman's chase determinism needs VU0 *micro* and div/sqrt bit-exactness at all, or
++only COP2 macro add/sub/mul.
 diff --git a/bin/resources/GameIndex.yaml b/bin/resources/GameIndex.yaml
 index 2416d52..2ac8214 100644
 --- a/bin/resources/GameIndex.yaml
@@ -52,8 +411,63 @@ index 0000000..2bc8adf
 +"%CMAKE%" -S . -B bld -G Ninja -DLIBRETRO=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -DCMAKE_POLICY_VERSION_MINIMUM=3.5
 +if errorlevel 1 exit /b 1
 +"%CMAKE%" --build bld --target pcsx2_libretro --parallel 14
+diff --git a/libretro/libretro_core_options.h b/libretro/libretro_core_options.h
+index 1f832e8..264b658 100644
+--- a/libretro/libretro_core_options.h
++++ b/libretro/libretro_core_options.h
+@@ -620,6 +620,50 @@ struct retro_core_option_v2_definition option_defs_us[] = {
+       },
+       "disabled"
+    },
++   {
++      "pcsx2_softfloat",
++      "Emulation > Deterministic FP (Soft-Float FPU+COP2) (Restart)",
++      "Deterministic FP (Soft-Float FPU+COP2) (Restart)",
++      "Emulates the PS2's floating-point units bit-exactly in software (PS2Float) instead of using the host SSE units. Fixes a small number of games whose physics/AI depend on the PS2's non-IEEE rounding - Stuntman's recorded chase playback is the known case. Costs a lot of speed, so leave it off unless a game needs it. Applies to the EE FPU (COP1) and to VU0 (COP2 macro mode + VU0 micro programs); VU1 is untouched.",
++      NULL,
++      "emulation",
++      {
++         { "disabled", NULL },
++         { "enabled", NULL },
++         { NULL, NULL },
++      },
++      "disabled"
++   },
++   {
++      "pcsx2_softfloat_vu0micro",
++      "Emulation > Deterministic FP: VU0 Micro Programs (Restart)",
++      "Deterministic FP: VU0 Micro Programs (Restart)",
++      "Only applies when Deterministic FP is enabled. 'Interpreter' also runs VU0 micro programs (CALLMS) bit-exactly, which is the accurate choice but costs a lot. 'Recompiler' leaves them on microVU0 while COP2 macro mode stays bit-exact - much faster, and correct for games whose affected math is macro-mode only.",
++      NULL,
++      "emulation",
++      {
++         { "interpreter", NULL },
++         { "recompiler", NULL },
++         { NULL, NULL },
++      },
++      "interpreter"
++   },
++   {
++      "pcsx2_softfloat_scope",
++      "Emulation > Deterministic FP Scope (Restart)",
++      "Deterministic FP Scope (Restart)",
++      "Which operations the soft-float path covers when Deterministic FP is enabled. 'All' is the accurate choice; the narrower scopes trade accuracy for speed.",
++      NULL,
++      "emulation",
++      {
++         { "All", NULL },
++         { "Add/Sub + Mul", NULL },
++         { "Add/Sub only", NULL },
++         { "Div/Sqrt only", NULL },
++         { NULL, NULL },
++      },
++      "All"
++   },
+    {
+       "pcsx2_enable_hw_hacks",
+       "HW Hacks > Enable Manual Hardware Renderer Fixes (Not Recommended)",
 diff --git a/libretro/main.cpp b/libretro/main.cpp
-index 1a145b2..3671110 100644
+index 1a145b2..6c169fd 100644
 --- a/libretro/main.cpp
 +++ b/libretro/main.cpp
 @@ -25,6 +25,7 @@
@@ -64,7 +478,69 @@ index 1a145b2..3671110 100644
  #include "../pcsx2/Counters.h"
  #include "../pcsx2/Host.h"
  
-@@ -2278,8 +2279,75 @@ void retro_run(void)
+@@ -157,6 +158,7 @@ static bool setting_force_sprite_position      = false;
+ static bool setting_pcrtc_screen_offsets       = false;
+ static bool setting_disable_interlace_offset   = false;
+ static bool setting_shared_memory_cards        = true;
++static bool setting_softfloat                  = false;
+ 
+ static bool setting_show_parallel_options      = true;
+ static bool setting_show_gsdx_options          = true;
+@@ -420,6 +422,53 @@ static void check_variables(bool first_run)
+ 			bool fast_cdvd = !strcmp(var.value, "enabled");
+ 			s_settings_interface.SetBoolValue("EmuCore/Speedhacks", "fastCDVD", fast_cdvd);
+ 		}
++
++		// Soft-float (PS2Float) -- backport of PCSX2 PR #12001 + the "int_fallback_fpu_cop2"
++		// routing from PCSX2 issue #2990. Boot-time only: the recompilers bake the routing
++		// decision into the blocks they emit, so this must not change while a VM is running.
++		// Default (0) leaves every code path exactly as it was.
++		setting_softfloat = false;
++		var.key = "pcsx2_softfloat";
++		if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
++			setting_softfloat = !strcmp(var.value, "enabled");
++
++		int softfloat_mask = 0;
++		if (setting_softfloat)
++		{
++			softfloat_mask = SOFT_FLOAT_ALL;
++
++			var.key = "pcsx2_softfloat_scope";
++			if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
++			{
++				if (!strcmp(var.value, "Add/Sub + Mul"))
++					softfloat_mask = SOFT_FLOAT_ADDSUB | SOFT_FLOAT_MUL;
++				else if (!strcmp(var.value, "Add/Sub only"))
++					softfloat_mask = SOFT_FLOAT_ADDSUB;
++				else if (!strcmp(var.value, "Div/Sqrt only"))
++					softfloat_mask = SOFT_FLOAT_DIVSQRT;
++			}
++		}
++
++		// FPU = EE COP1, vu0 = COP2 macro mode + the VU0 interpreter. VU1 is graphics-only and
++		// stays fully recompiled -- soft-floating it would cost a great deal for no gain.
++		s_settings_interface.SetIntValue("EmuCore/CPU/Recompiler", "fpuSoftFloat", softfloat_mask);
++		s_settings_interface.SetIntValue("EmuCore/CPU/Recompiler", "vu0SoftFloat", softfloat_mask);
++		s_settings_interface.SetIntValue("EmuCore/CPU/Recompiler", "vu1SoftFloat", 0);
++
++		// VU0 *micro*-mode executor. COP2 macro mode is diverted to the soft-float interpreter
++		// by the mask above no matter what; this only decides whether CALLMS programs are
++		// interpreted too. Independent knob because the two are state-coherent either way, and
++		// because interpreting micro mode is by far the more expensive half. Always written
++		// explicitly so the value is deterministic; with soft-float off it is always true,
++		// which is the stock default.
++		bool vu0_micro_rec = !setting_softfloat;
++		if (setting_softfloat)
++		{
++			var.key = "pcsx2_softfloat_vu0micro";
++			if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
++				vu0_micro_rec = !strcmp(var.value, "recompiler");
++		}
++		s_settings_interface.SetBoolValue("EmuCore/CPU/Recompiler", "EnableVU0", vu0_micro_rec);
+ 	}
+ 
+ 	if (setting_plugin_type == PLUGIN_PGS)
+@@ -2278,8 +2327,75 @@ void retro_run(void)
  	if (cpu_thread_state.load(std::memory_order_acquire) == VMState::Paused)
  		cpu_thread_resume();
  
@@ -173,6 +649,532 @@ index 271acb9..ea5827e 100644
  	}
  	else if (ext_length == 2)
  	{
+diff --git a/pcsx2/CMakeLists.txt b/pcsx2/CMakeLists.txt
+index b750590..7a2e63e 100644
+--- a/pcsx2/CMakeLists.txt
++++ b/pcsx2/CMakeLists.txt
+@@ -99,6 +99,7 @@ set(pcsx2Sources
+ 	MultitapProtocol.cpp
+ 	Patch.cpp
+ 	Pcsx2Config.cpp
++	PS2Float.cpp
+ 	PerformanceMetrics.cpp
+ 	R3000A.cpp
+ 	R3000AInterpreter.cpp
+@@ -162,6 +163,7 @@ set(pcsx2Headers
+ 	MemoryTypes.h
+ 	MultitapProtocol.h
+ 	Patch.h
++	PS2Float.h
+ 	PerformanceMetrics.h
+ 	R3000A.h
+ 	R5900.h
+diff --git a/pcsx2/Config.h b/pcsx2/Config.h
+index e8807ba..bcf2213 100644
+--- a/pcsx2/Config.h
++++ b/pcsx2/Config.h
+@@ -382,6 +382,19 @@ struct Pcsx2Config
+ 			};
+ 		};
+ 
++		// Soft-float (PS2Float) masks -- see SOFT_FLOAT_* in the CHECK_* block below.
++		// Backport of PCSX2 PR #12001 (GitHubProUser67:soft-float-int). Zero = off, which
++		// is the default and leaves every existing code path untouched.
++		//
++		// These deliberately live OUTSIDE the bitset union. Upstream declares them as
++		// "unsigned int : 3" bitfields inside it, but MSVC gives a bitfield a fresh storage
++		// unit whenever the declared type changes, so appending int-typed bits after the
++		// bool-typed ones grows the union to 8 bytes: "bitset = 0" would then leave them
++		// uninitialised and operator== would ignore them. Verified on this toolchain.
++		u8 vu0SoftFloat;
++		u8 vu1SoftFloat;
++		u8 fpuSoftFloat;
++
+ 		RecompilerOptions();
+ 		void ApplySanityCheck();
+ 
+@@ -389,7 +402,10 @@ struct Pcsx2Config
+ 
+ 		bool operator==(const RecompilerOptions& right) const
+ 		{
+-			return bitset == right.bitset;
++			return bitset == right.bitset
++				&& vu0SoftFloat == right.vu0SoftFloat
++				&& vu1SoftFloat == right.vu1SoftFloat
++				&& fpuSoftFloat == right.fpuSoftFloat;
+ 		}
+ 
+ 		bool operator!=(const RecompilerOptions& right) const
+@@ -955,6 +971,32 @@ namespace EmuFolders
+ #define CHECK_FPU_EXTRA_OVERFLOW (EmuConfig.Cpu.Recompiler.fpuExtraOverflow) // If enabled, Operands are checked for infinities before being used in the FPU recs
+ #define CHECK_FPU_FULL (EmuConfig.Cpu.Recompiler.fpuFullMode)
+ 
++//------------ Soft-float (PS2Float) -- backport of PCSX2 PR #12001 -------------
++// These are bit masks, not bools. Zero (the default) means "unchanged behaviour":
++// every recompiler path and every interpreter path behaves exactly as before.
++#define SOFT_FLOAT_ADDSUB  0x1
++#define SOFT_FLOAT_MUL     0x2
++#define SOFT_FLOAT_DIVSQRT 0x4
++#define SOFT_FLOAT_ALL     (SOFT_FLOAT_ADDSUB | SOFT_FLOAT_MUL | SOFT_FLOAT_DIVSQRT)
++
++#define CHECK_VU_SOFT_ADDSUB(vunum) ((((vunum) == 0) ? EmuConfig.Cpu.Recompiler.vu0SoftFloat : EmuConfig.Cpu.Recompiler.vu1SoftFloat) & SOFT_FLOAT_ADDSUB)
++#define CHECK_VU_SOFT_MUL(vunum) ((((vunum) == 0) ? EmuConfig.Cpu.Recompiler.vu0SoftFloat : EmuConfig.Cpu.Recompiler.vu1SoftFloat) & SOFT_FLOAT_MUL)
++#define CHECK_VU_SOFT_DIVSQRT(vunum) ((((vunum) == 0) ? EmuConfig.Cpu.Recompiler.vu0SoftFloat : EmuConfig.Cpu.Recompiler.vu1SoftFloat) & SOFT_FLOAT_DIVSQRT)
++#define CHECK_VU_SOFT(vunum) (((vunum) == 0) ? EmuConfig.Cpu.Recompiler.vu0SoftFloat : EmuConfig.Cpu.Recompiler.vu1SoftFloat)
++
++#define CHECK_FPU_SOFT_ADDSUB (EmuConfig.Cpu.Recompiler.fpuSoftFloat & SOFT_FLOAT_ADDSUB)
++#define CHECK_FPU_SOFT_MUL (EmuConfig.Cpu.Recompiler.fpuSoftFloat & SOFT_FLOAT_MUL)
++#define CHECK_FPU_SOFT_DIVSQRT (EmuConfig.Cpu.Recompiler.fpuSoftFloat & SOFT_FLOAT_DIVSQRT)
++#define CHECK_FPU_SOFT (EmuConfig.Cpu.Recompiler.fpuSoftFloat)
++
++// NOTE: the VU0 *micro*-mode executor is NOT derived from the soft-float mask. COP2 macro
++// mode is diverted to the soft-float interpreter by REC_COP2_mVU0_SOFT regardless, while
++// VU0 micro programs (CALLMS) follow plain EnableVU0 -- which the libretro frontend drives
++// from pcsx2_softfloat_vu0micro. The two are independent: all VU0 state lives in vuRegs[0]
++// in memory, and every path that can enter micro mode already flushes to it, so an
++// interpreted-macro + recompiled-micro mix is coherent. Interpreting micro mode buys
++// accuracy (there is no soft-float recompiler), not correctness.
++
+ //------------ EE Recompiler defines - Comment to disable a recompiler ---------------
+ 
+ #define SHIFT_RECOMPILE // Speed majorly reduced if disabled
+diff --git a/pcsx2/FPU.cpp b/pcsx2/FPU.cpp
+index 2f1744e..6a31047 100644
+--- a/pcsx2/FPU.cpp
++++ b/pcsx2/FPU.cpp
+@@ -16,6 +16,7 @@
+ #include <cmath>
+ 
+ #include "Common.h"
++#include "PS2Float.h"
+ 
+ // Helper Macros
+ //****************************************************************
+@@ -99,6 +100,21 @@ static bool checkUnderflow(u32& xReg, u32 cFlagsToSet) {
+ 	return false;
+ }
+ 
++// Soft-float (PS2Float) equivalents of checkOverflow/checkUnderflow: PS2Float carries the
++// exception state with the result, so there is nothing to sniff out of the raw bits.
++static bool checkOverflowUnderflowSoft(PS2Float xReg, u32 cFlagsToSet, bool oflw)
++{
++	if ((oflw && xReg.of) || (!oflw && xReg.uf))
++	{
++		_ContVal_ |= (cFlagsToSet);
++		return true;
++	}
++	else if (cFlagsToSet & FPUflagO)
++		_ContVal_ &= oflw ? ~FPUflagO : ~FPUflagU;
++
++	return false;
++}
++
+ __fi u32 fp_max(u32 a, u32 b)
+ {
+ 	return ((s32)a < 0 && (s32)b < 0) ? std::min<s32>(a, b) : std::max<s32>(a, b);
+@@ -125,6 +141,22 @@ static bool checkDivideByZero(u32& xReg, u32 yDivisorReg, u32 zDividendReg, u32
+ 	return false;
+ }
+ 
++static bool checkDivideByZeroInvalidSoft(PS2Float xReg, u32 cFlagsToSet1, u32 cFlagsToSet2)
++{
++	if (xReg.dz)
++	{
++		_ContVal_ |= cFlagsToSet1;
++		return true;
++	}
++	else if (xReg.iv)
++	{
++		_ContVal_ |= cFlagsToSet2;
++		return true;
++	}
++
++	return false;
++}
++
+ /*	Clears the "Cause Flags" of the Control/Status Reg
+ 	The "EE Core Users Manual" implies that all the Cause flags are cleared every instruction...
+ 	But, the "EE Core Instruction Set Manual" says that only certain Cause Flags are cleared
+@@ -146,7 +178,7 @@ static bool checkDivideByZero(u32& xReg, u32 yDivisorReg, u32 zDividendReg, u32
+ #else
+ // Used for Comparing; This compares if the floats are exactly the same.
+ 	#define C_cond_S(cond) {  \
+-	   _ContVal_ = ( fpuDouble(_FsValUl_) cond fpuDouble(_FtValUl_) ) ?  \
++	   _ContVal_ = ( fpuCompareFull(_FsValUl_) cond fpuCompareFull(_FtValUl_) ) ?  \
+ 				   ( _ContVal_ | FPUflagC ) :  \
+ 				   ( _ContVal_ & ~FPUflagC );  \
+ 	}
+@@ -188,21 +220,83 @@ float fpuDouble(u32 f)
+ 	return *(float*)&f;
+ }
+ 
++// Integer-domain compare that matches the recompiler's (and the hardware's) exact compare,
++// including denormals-are-zero. Used by C_cond_S.
++static s32 fpuCompareFull(u32 f)
++{
++	if (!(f & 0x7f800000))
++		f = 0;
++	// If f is negative, flip the non-sign bits so integer compares work like fp compares
++	if (f & 0x80000000)
++		f ^= 0x7fffffff;
++	return static_cast<s32>(f);
++}
++
++static __fi PS2Float fpuAccurateAdd(u32 a, u32 b)
++{
++	return PS2Float(a).Add(PS2Float(b));
++}
++
++static __fi PS2Float fpuAccurateSub(u32 a, u32 b)
++{
++	return PS2Float(a).Sub(PS2Float(b));
++}
++
++static __fi PS2Float fpuAccurateMul(u32 a, u32 b)
++{
++	return PS2Float(a).Mul(PS2Float(b));
++}
++
++static __fi PS2Float fpuAccurateDiv(u32 a, u32 b)
++{
++	return PS2Float(a).Div(PS2Float(b));
++}
++
++static __fi PS2Float fpuAccurateMulAdd(u32 a, u32 b, u32 c)
++{
++	return PS2Float(a).MulAdd(PS2Float(b), PS2Float(c));
++}
++
++static __fi PS2Float fpuAccurateMulSub(u32 a, u32 b, u32 c)
++{
++	return PS2Float(a).MulSub(PS2Float(b), PS2Float(c));
++}
++
+ void ABS_S() {
+ 	_FdValUl_ = _FsValUl_ & 0x7fffffff;
+ 	clearFPUFlags( FPUflagO | FPUflagU );
+ }
+ 
+ void ADD_S() {
+-	_FdValf_  = fpuDouble( _FsValUl_ ) + fpuDouble( _FtValUl_ );
+-	if (checkOverflow( _FdValUl_, FPUflagO | FPUflagSO)) return;
+-	checkUnderflow( _FdValUl_, FPUflagU | FPUflagSU);
++	if (CHECK_FPU_SOFT_ADDSUB)
++	{
++		PS2Float addres = fpuAccurateAdd(_FsValUl_, _FtValUl_);
++		_FdValUl_ = addres.raw;
++		if (checkOverflowUnderflowSoft(addres, FPUflagO | FPUflagSO, true)) return;
++		checkOverflowUnderflowSoft(addres, FPUflagU | FPUflagSU, false);
++	}
++	else
++	{
++		_FdValf_  = fpuDouble( _FsValUl_ ) + fpuDouble( _FtValUl_ );
++		if (checkOverflow( _FdValUl_, FPUflagO | FPUflagSO)) return;
++		checkUnderflow( _FdValUl_, FPUflagU | FPUflagSU);
++	}
+ }
+ 
+ void ADDA_S() {
+-	_FAValf_  = fpuDouble( _FsValUl_ ) + fpuDouble( _FtValUl_ );
+-	if (checkOverflow( _FAValUl_, FPUflagO | FPUflagSO)) return;
+-	checkUnderflow( _FAValUl_, FPUflagU | FPUflagSU);
++	if (CHECK_FPU_SOFT_ADDSUB)
++	{
++		PS2Float addres = fpuAccurateAdd(_FsValUl_, _FtValUl_);
++		_FAValUl_ = addres.raw;
++		if (checkOverflowUnderflowSoft(addres, FPUflagO | FPUflagSO, true)) return;
++		checkOverflowUnderflowSoft(addres, FPUflagU | FPUflagSU, false);
++	}
++	else
++	{
++		_FAValf_  = fpuDouble( _FsValUl_ ) + fpuDouble( _FtValUl_ );
++		if (checkOverflow( _FAValUl_, FPUflagO | FPUflagSO)) return;
++		checkUnderflow( _FAValUl_, FPUflagU | FPUflagSU);
++	}
+ }
+ 
+ void BC1F() {
+@@ -255,6 +349,7 @@ void CTC1() {
+ 
+ void CVT_S() {
+ 	_FdValf_ = (float)_FsValSl_;
++	_FdValf_ = fpuDouble(_FdValUl_);
+ }
+ 
+ void CVT_W() {
+@@ -265,9 +360,19 @@ void CVT_W() {
+ 
+ void DIV_S() {
+ 	if (checkDivideByZero( _FdValUl_, _FtValUl_, _FsValUl_, FPUflagD | FPUflagSD, FPUflagI | FPUflagSI)) return;
+-	_FdValf_ = fpuDouble( _FsValUl_ ) / fpuDouble( _FtValUl_ );
+-	if (checkOverflow( _FdValUl_, 0)) return;
+-	checkUnderflow( _FdValUl_, 0);
++	else if (CHECK_FPU_SOFT_DIVSQRT)
++	{
++		PS2Float divres = fpuAccurateDiv(_FsValUl_, _FtValUl_);
++		_FdValUl_ = divres.raw;
++		if (checkOverflowUnderflowSoft(divres, FPUflagO | FPUflagSO, true)) return;
++		checkOverflowUnderflowSoft(divres, FPUflagU | FPUflagSU, false);
++	}
++	else
++	{
++		_FdValf_ = fpuDouble( _FsValUl_ ) / fpuDouble( _FtValUl_ );
++		if (checkOverflow( _FdValUl_, 0)) return;
++		checkUnderflow( _FdValUl_, 0);
++	}
+ }
+ 
+ /*	The Instruction Set manual has an overly complicated way of
+@@ -275,17 +380,37 @@ void DIV_S() {
+ 	method provides a similar outcome and is faster. (cottonvibes)
+ */
+ void MADD_S() {
+-	FPRreg temp;
+-	temp.f = fpuDouble( _FsValUl_ ) * fpuDouble( _FtValUl_ );
+-	_FdValf_  = fpuDouble( _FAValUl_ ) + fpuDouble( temp.UL );
+-	if (checkOverflow( _FdValUl_, FPUflagO | FPUflagSO)) return;
+-	checkUnderflow( _FdValUl_, FPUflagU | FPUflagSU);
++	if (CHECK_FPU_SOFT_ADDSUB && CHECK_FPU_SOFT_MUL)
++	{
++		PS2Float fmacres = fpuAccurateMulAdd(_FAValUl_, _FsValUl_, _FtValUl_);
++		_FdValUl_ = fmacres.raw;
++		if (checkOverflowUnderflowSoft(fmacres, FPUflagO | FPUflagSO, true)) return;
++		checkOverflowUnderflowSoft(fmacres, FPUflagU | FPUflagSU, false);
++	}
++	else
++	{
++		FPRreg temp;
++		temp.f = fpuDouble( _FsValUl_ ) * fpuDouble( _FtValUl_ );
++		_FdValf_  = fpuDouble( _FAValUl_ ) + fpuDouble( temp.UL );
++		if (checkOverflow( _FdValUl_, FPUflagO | FPUflagSO)) return;
++		checkUnderflow( _FdValUl_, FPUflagU | FPUflagSU);
++	}
+ }
+ 
+ void MADDA_S() {
+-	_FAValf_ += fpuDouble( _FsValUl_ ) * fpuDouble( _FtValUl_ );
+-	if (checkOverflow( _FAValUl_, FPUflagO | FPUflagSO)) return;
+-	checkUnderflow( _FAValUl_, FPUflagU | FPUflagSU);
++	if (CHECK_FPU_SOFT_ADDSUB && CHECK_FPU_SOFT_MUL)
++	{
++		PS2Float fmacres = fpuAccurateMulAdd(_FAValUl_, _FsValUl_, _FtValUl_);
++		_FAValUl_ = fmacres.raw;
++		if (checkOverflowUnderflowSoft(fmacres, FPUflagO | FPUflagSO, true)) return;
++		checkOverflowUnderflowSoft(fmacres, FPUflagU | FPUflagSU, false);
++	}
++	else
++	{
++		_FAValf_ += fpuDouble( _FsValUl_ ) * fpuDouble( _FtValUl_ );
++		if (checkOverflow( _FAValUl_, FPUflagO | FPUflagSO)) return;
++		checkUnderflow( _FAValUl_, FPUflagU | FPUflagSU);
++	}
+ }
+ 
+ void MAX_S() {
+@@ -308,17 +433,37 @@ void MOV_S() {
+ }
+ 
+ void MSUB_S() {
+-	FPRreg temp;
+-	temp.f = fpuDouble( _FsValUl_ ) * fpuDouble( _FtValUl_ );
+-	_FdValf_  = fpuDouble( _FAValUl_ ) - fpuDouble( temp.UL );
+-	if (checkOverflow( _FdValUl_, FPUflagO | FPUflagSO)) return;
+-	checkUnderflow( _FdValUl_, FPUflagU | FPUflagSU);
++	if (CHECK_FPU_SOFT_ADDSUB && CHECK_FPU_SOFT_MUL)
++	{
++		PS2Float fmacres = fpuAccurateMulSub(_FAValUl_, _FsValUl_, _FtValUl_);
++		_FdValUl_ = fmacres.raw;
++		if (checkOverflowUnderflowSoft(fmacres, FPUflagO | FPUflagSO, true)) return;
++		checkOverflowUnderflowSoft(fmacres, FPUflagU | FPUflagSU, false);
++	}
++	else
++	{
++		FPRreg temp;
++		temp.f = fpuDouble( _FsValUl_ ) * fpuDouble( _FtValUl_ );
++		_FdValf_  = fpuDouble( _FAValUl_ ) - fpuDouble( temp.UL );
++		if (checkOverflow( _FdValUl_, FPUflagO | FPUflagSO)) return;
++		checkUnderflow( _FdValUl_, FPUflagU | FPUflagSU);
++	}
+ }
+ 
+ void MSUBA_S() {
+-	_FAValf_ -= fpuDouble( _FsValUl_ ) * fpuDouble( _FtValUl_ );
+-	if (checkOverflow( _FAValUl_, FPUflagO | FPUflagSO)) return;
+-	checkUnderflow( _FAValUl_, FPUflagU | FPUflagSU);
++	if (CHECK_FPU_SOFT_ADDSUB && CHECK_FPU_SOFT_MUL)
++	{
++		PS2Float fmacres = fpuAccurateMulSub(_FAValUl_, _FsValUl_, _FtValUl_);
++		_FAValUl_ = fmacres.raw;
++		if (checkOverflowUnderflowSoft(fmacres, FPUflagO | FPUflagSO, true)) return;
++		checkOverflowUnderflowSoft(fmacres, FPUflagU | FPUflagSU, false);
++	}
++	else
++	{
++		_FAValf_ -= fpuDouble( _FsValUl_ ) * fpuDouble( _FtValUl_ );
++		if (checkOverflow( _FAValUl_, FPUflagO | FPUflagSO)) return;
++		checkUnderflow( _FAValUl_, FPUflagU | FPUflagSU);
++	}
+ }
+ 
+ void MTC1() {
+@@ -326,15 +471,35 @@ void MTC1() {
+ }
+ 
+ void MUL_S() {
+-	_FdValf_  = fpuDouble( _FsValUl_ ) * fpuDouble( _FtValUl_ );
+-	if (checkOverflow( _FdValUl_, FPUflagO | FPUflagSO)) return;
+-	checkUnderflow( _FdValUl_, FPUflagU | FPUflagSU);
++	if (CHECK_FPU_SOFT_MUL)
++	{
++		PS2Float mulres = fpuAccurateMul(_FsValUl_, _FtValUl_);
++		_FdValUl_ = mulres.raw;
++		if (checkOverflowUnderflowSoft(mulres, FPUflagO | FPUflagSO, true)) return;
++		checkOverflowUnderflowSoft(mulres, FPUflagU | FPUflagSU, false);
++	}
++	else
++	{
++		_FdValf_  = fpuDouble( _FsValUl_ ) * fpuDouble( _FtValUl_ );
++		if (checkOverflow( _FdValUl_, FPUflagO | FPUflagSO)) return;
++		checkUnderflow( _FdValUl_, FPUflagU | FPUflagSU);
++	}
+ }
+ 
+ void MULA_S() {
+-	_FAValf_  = fpuDouble( _FsValUl_ ) * fpuDouble( _FtValUl_ );
+-	if (checkOverflow( _FAValUl_, FPUflagO | FPUflagSO)) return;
+-	checkUnderflow( _FAValUl_, FPUflagU | FPUflagSU);
++	if (CHECK_FPU_SOFT_MUL)
++	{
++		PS2Float mulres = fpuAccurateMul(_FsValUl_, _FtValUl_);
++		_FAValUl_ = mulres.raw;
++		if (checkOverflowUnderflowSoft(mulres, FPUflagO | FPUflagSO, true)) return;
++		checkOverflowUnderflowSoft(mulres, FPUflagU | FPUflagSU, false);
++	}
++	else
++	{
++		_FAValf_  = fpuDouble( _FsValUl_ ) * fpuDouble( _FtValUl_ );
++		if (checkOverflow( _FAValUl_, FPUflagO | FPUflagSO)) return;
++		checkUnderflow( _FAValUl_, FPUflagU | FPUflagSU);
++	}
+ }
+ 
+ void NEG_S() {
+@@ -343,47 +508,90 @@ void NEG_S() {
+ }
+ 
+ void RSQRT_S() {
+-	FPRreg temp;
+ 	clearFPUFlags(FPUflagD | FPUflagI);
+ 
+-	if ( ( _FtValUl_ & 0x7F800000 ) == 0 ) { // Ft is zero (Denormals are Zero)
+-		_ContVal_ |= FPUflagD | FPUflagSD;
+-		_FdValUl_ = ( _FtValUl_ & 0x80000000 ) | posFmax;
+-		return;
++	if (CHECK_FPU_SOFT_DIVSQRT)
++	{
++		PS2Float rsqrtres = PS2Float(_FsValUl_).Rsqrt(_FtValUl_);
++		_FdValUl_ = rsqrtres.raw;
++		if (checkDivideByZeroInvalidSoft(rsqrtres, FPUflagD | FPUflagSD, FPUflagI | FPUflagSI)) return;
++		if (checkOverflowUnderflowSoft(rsqrtres, FPUflagO | FPUflagSO, true)) return;
++		checkOverflowUnderflowSoft(rsqrtres, FPUflagU | FPUflagSU, false);
+ 	}
+-	else if ( _FtValUl_ & 0x80000000 ) { // Ft is negative
+-		_ContVal_ |= FPUflagI | FPUflagSI;
+-		temp.f = sqrt( fabs( fpuDouble( _FtValUl_ ) ) );
+-		_FdValf_ = fpuDouble( _FsValUl_ ) / fpuDouble( temp.UL );
++	else
++	{
++		FPRreg temp;
++
++		if ( ( _FtValUl_ & 0x7F800000 ) == 0 ) { // Ft is zero (Denormals are Zero)
++			_ContVal_ |= FPUflagD | FPUflagSD;
++			_FdValUl_ = ( _FtValUl_ & 0x80000000 ) | posFmax;
++			return;
++		}
++		else if ( _FtValUl_ & 0x80000000 ) { // Ft is negative
++			_ContVal_ |= FPUflagI | FPUflagSI;
++			temp.f = sqrt( fabs( fpuDouble( _FtValUl_ ) ) );
++			_FdValf_ = fpuDouble( _FsValUl_ ) / fpuDouble( temp.UL );
++		}
++		else { _FdValf_ = fpuDouble( _FsValUl_ ) / sqrt( fpuDouble( _FtValUl_ ) ); } // Ft is positive and not zero
++
++		if (checkOverflow( _FdValUl_, 0)) return;
++		checkUnderflow( _FdValUl_, 0);
+ 	}
+-	else { _FdValf_ = fpuDouble( _FsValUl_ ) / sqrt( fpuDouble( _FtValUl_ ) ); } // Ft is positive and not zero
+-
+-	if (checkOverflow( _FdValUl_, 0)) return;
+-	checkUnderflow( _FdValUl_, 0);
+ }
+ 
+ void SQRT_S() {
+ 	clearFPUFlags(FPUflagI | FPUflagD);
+ 
+-	if ( ( _FtValUl_ & 0x7F800000 ) == 0 ) // If Ft = +/-0
+-		_FdValUl_ = _FtValUl_ & 0x80000000;// result is 0
+-	else if ( _FtValUl_ & 0x80000000 ) { // If Ft is Negative
++	if (CHECK_FPU_SOFT_DIVSQRT)
++	{
++		PS2Float sqrtres = PS2Float(_FtValUl_).Sqrt();
++		_FdValUl_ = sqrtres.raw;
++		if (checkDivideByZeroInvalidSoft(sqrtres, FPUflagD | FPUflagSD, FPUflagI | FPUflagSI)) return;
++		if (checkOverflowUnderflowSoft(sqrtres, FPUflagO | FPUflagSO, true)) return;
++		checkOverflowUnderflowSoft(sqrtres, FPUflagU | FPUflagSU, false);
++	}
++	else if ((_FtValUl_ & 0x7F800000) == 0) // If Ft = +/-0
++		_FdValUl_ = _FtValUl_ & 0x80000000; // result is 0
++	else if (_FtValUl_ & 0x80000000)
++	{
++		// If Ft is Negative
+ 		_ContVal_ |= FPUflagI | FPUflagSI;
+-		_FdValf_ = sqrt( fabs( fpuDouble( _FtValUl_ ) ) );
+-	} else
+-		_FdValf_ = sqrt( fpuDouble( _FtValUl_ ) ); // If Ft is Positive
++		_FdValf_ = sqrt(fabs(fpuDouble(_FtValUl_)));
++	}
++	else
++		_FdValf_ = sqrt(fpuDouble(_FtValUl_)); // If Ft is Positive
+ }
+ 
+ void SUB_S() {
+-	_FdValf_  = fpuDouble( _FsValUl_ ) - fpuDouble( _FtValUl_ );
+-	if (checkOverflow( _FdValUl_, FPUflagO | FPUflagSO)) return;
+-	checkUnderflow( _FdValUl_, FPUflagU | FPUflagSU);
++	if (CHECK_FPU_SOFT_ADDSUB)
++	{
++		PS2Float subres = fpuAccurateSub(_FsValUl_, _FtValUl_);
++		_FdValUl_ = subres.raw;
++		if (checkOverflowUnderflowSoft(subres, FPUflagO | FPUflagSO, true)) return;
++		checkOverflowUnderflowSoft(subres, FPUflagU | FPUflagSU, false);
++	}
++	else
++	{
++		_FdValf_  = fpuDouble( _FsValUl_ ) - fpuDouble( _FtValUl_ );
++		if (checkOverflow( _FdValUl_, FPUflagO | FPUflagSO)) return;
++		checkUnderflow( _FdValUl_, FPUflagU | FPUflagSU);
++	}
+ }
+ 
+ void SUBA_S() {
+-	_FAValf_  = fpuDouble( _FsValUl_ ) - fpuDouble( _FtValUl_ );
+-	if (checkOverflow( _FAValUl_, FPUflagO | FPUflagSO)) return;
+-	checkUnderflow( _FAValUl_, FPUflagU | FPUflagSU);
++	if (CHECK_FPU_SOFT_ADDSUB)
++	{
++		PS2Float subres = fpuAccurateSub(_FsValUl_, _FtValUl_);
++		_FAValUl_ = subres.raw;
++		if (checkOverflowUnderflowSoft(subres, FPUflagO | FPUflagSO, true)) return;
++		checkOverflowUnderflowSoft(subres, FPUflagU | FPUflagSU, false);
++	}
++	else
++	{
++		_FAValf_  = fpuDouble( _FsValUl_ ) - fpuDouble( _FtValUl_ );
++		if (checkOverflow( _FAValUl_, FPUflagO | FPUflagSO)) return;
++		checkUnderflow( _FAValUl_, FPUflagU | FPUflagSU);
++	}
+ }
+ 
+ }	// End Namespace COP1
 diff --git a/pcsx2/GS/GSState.cpp b/pcsx2/GS/GSState.cpp
 index b20a00f..9fdd817 100644
 --- a/pcsx2/GS/GSState.cpp
@@ -371,6 +1373,954 @@ index 01e7e53..bf9cf55 100644
  			if (mtvu_mode)
  				mtvu_lock.lock();
  		}
+diff --git a/pcsx2/PS2Float.cpp b/pcsx2/PS2Float.cpp
+new file mode 100644
+index 0000000..553ea8b
+--- /dev/null
++++ b/pcsx2/PS2Float.cpp
+@@ -0,0 +1,761 @@
++// SPDX-FileCopyrightText: 2002-2024 PCSX2 Dev Team
++// SPDX-License-Identifier: GPL-3.0+
++
++#include <stdexcept>
++#include <cmath>
++#include <string>
++#include <sstream>
++#include <iomanip>
++#include <iostream>
++#include "common/Pcsx2Defs.h"
++#include "common/MathUtils.h"
++#include "../common/Console.h"
++#include "PS2Float.h"
++#include "Common.h"
++
++// LRPS2 backport note: upstream PR #12001 puts these three helpers in common/BitUtils.h,
++// a header this tree does not have. They are reproduced verbatim here (CountLeadingSignBits
++// simply forwards to this tree's count_leading_sign_bits in common/MathUtils.h).
++namespace PS2FloatBits
++{
++	static constexpr s32 normalizeAmounts[] = {
++		0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 8, 8, 8, 8, 8, 8, 8, 16, 16, 16, 16, 16, 16, 16, 16, 24, 24, 24, 24, 24, 24, 24};
++
++	__fi static s32 BitScanReverse(u32 b)
++	{
++		if (b == 0)
++			return -1;
++
++#ifdef _MSC_VER
++		unsigned long index;
++		::_BitScanReverse(&index, b);
++		return static_cast<s32>(index);
++#else
++		return static_cast<s32>(31 - __builtin_clz(b));
++#endif
++	}
++
++	__fi static u32 CountLeadingSignBits(s32 n)
++	{
++		return count_leading_sign_bits(n);
++	}
++} // namespace PS2FloatBits
++
++//****************************************************************
++// Radix Divisor
++// Algorithm reference: DOI 10.1109/ARITH.1995.465363
++//****************************************************************
++
++struct CSAResult
++{
++	u32 sum;
++	u32 carry;
++};
++
++static struct CSAResult CSA(u32 a, u32 b, u32 c)
++{
++	u32 u = a ^ b;
++	u32 h = (a & b) | (u & c);
++	u32 l = u ^ c;
++	return {l, h << 1};
++}
++
++static s32 quotientSelect(struct CSAResult current)
++{
++	// Note: Decimal point is between bits 24 and 25
++	u32 mask = (1 << 24) - 1; // Bit 23 needs to be or'd in instead of added
++	s32 test = ((current.sum & ~mask) + current.carry) | (current.sum & mask);
++	if (test >= 1 << 23)
++	{ // test >= 0.25
++		return 1;
++	}
++	else if (test < (s32)(~0u << 24))
++	{ // test < -0.5
++		return -1;
++	}
++	else
++	{
++		return 0;
++	}
++}
++
++static u32 mantissa(u32 x)
++{
++	return (x & 0x7fffff) | 0x800000;
++}
++
++static u32 exponent(u32 x)
++{
++	return (x >> 23) & 0xff;
++}
++
++//****************************************************************
++// Booth Multiplier
++//****************************************************************
++
++struct BoothRecode
++{
++	u32 data;
++	u32 negate;
++};
++
++struct AddResult
++{
++	u32 lo;
++	u32 hi;
++};
++
++static BoothRecode Booth(u32 a, u32 b, u32 bit)
++{
++	u32 test = (bit ? b >> (bit * 2 - 1) : b << 1) & 7;
++	a <<= (bit * 2);
++	a += (test == 3 || test == 4) ? a : 0;
++	u32 neg = (test >= 4 && test <= 6) ? ~0u : 0;
++	u32 pos = 1 << (bit * 2);
++	a ^= (neg & -pos);
++	a &= (test >= 1 && test <= 6) ? ~0u : 0;
++	return {a, neg & pos};
++}
++
++static AddResult Add3(u32 a, u32 b, u32 c)
++{
++	u32 u = a ^ b;
++	return {u ^ c, ((u & c) | (a & b)) << 1};
++}
++
++static u64 MulMantissa(u32 a, u32 b)
++{
++	u64 full = static_cast<u64>(a) * static_cast<u64>(b);
++	BoothRecode b0 = Booth(a, b, 0);
++	BoothRecode b1 = Booth(a, b, 1);
++	BoothRecode b2 = Booth(a, b, 2);
++	BoothRecode b3 = Booth(a, b, 3);
++	BoothRecode b4 = Booth(a, b, 4);
++	BoothRecode b5 = Booth(a, b, 5);
++	BoothRecode b6 = Booth(a, b, 6);
++	BoothRecode b7 = Booth(a, b, 7);
++
++	// First cycle
++	AddResult t0 = Add3(b1.data, b2.data, b3.data);
++	AddResult t1 = Add3(b4.data & ~0x7ffu, b5.data & ~0xfffu, b6.data);
++	// A few adds get skipped, squeeze them back in
++	t1.hi |= b6.negate | (b5.data & 0x800);
++	b7.data |= (b5.data & 0x400) + b5.negate;
++
++	// Second cycle
++	AddResult t2 = Add3(b0.data, t0.lo, t0.hi);
++	AddResult t3 = Add3(b7.data, t1.lo, t1.hi);
++
++	// Third cycle
++	AddResult t4 = Add3(t2.hi, t3.lo, t3.hi);
++
++	// Fourth cycle
++	AddResult t5 = Add3(t2.lo, t4.lo, t4.hi);
++
++	// Discard bits and sum
++	t5.hi += b7.negate;
++	t5.lo &= ~0x7fffu;
++	t5.hi &= ~0x7fffu;
++	u32 ps2lo = t5.lo + t5.hi;
++	return full - ((ps2lo ^ full) & 0x8000);
++}
++
++//****************************************************************
++// Float Processor
++//****************************************************************
++
++PS2Float PS2Float::Add(PS2Float addend)
++{
++	if (IsDenormalized() || addend.IsDenormalized())
++	{
++		bool sign = DetermineAdditionOperationSign(*this, addend);
++
++		if (IsDenormalized() && !addend.IsDenormalized())
++			return PS2Float(sign, addend.Exponent(), addend.Mantissa());
++		else if (!IsDenormalized() && addend.IsDenormalized())
++			return PS2Float(sign, Exponent(), Mantissa());
++		else if (IsDenormalized() && addend.IsDenormalized())
++		{
++			if (!Sign() || !addend.Sign())
++				return PS2Float(false, 0, 0);
++			else if (Sign() && addend.Sign())
++				return PS2Float(true, 0, 0);
++			else
++				Console.Error("Unhandled addition operation flags");
++		}
++		else
++			Console.Error("Both numbers are not denormalized");
++
++		return PS2Float(0);
++	}
++
++	u32 a = raw;
++	u32 b = addend.raw;
++
++	//exponent difference
++	s32 exp_diff = Exponent() - addend.Exponent();
++
++	//diff = 1 .. 24, expt < expd
++	if (exp_diff > 0 && exp_diff < 25)
++	{
++		exp_diff = exp_diff - 1;
++		b = (MIN_FLOATING_POINT_VALUE << exp_diff) & b;
++	}
++
++	//diff = -24 .. -1 , expd < expt
++	else if (exp_diff < 0 && exp_diff > -25)
++	{
++		exp_diff = -exp_diff;
++		exp_diff = exp_diff - 1;
++		a = a & (MIN_FLOATING_POINT_VALUE << exp_diff);
++	}
++
++	return PS2Float(a).DoAdd(PS2Float(b));
++}
++
++PS2Float PS2Float::Sub(PS2Float subtrahend)
++{
++	if (IsDenormalized() || subtrahend.IsDenormalized())
++	{
++		bool sign = DetermineSubtractionOperationSign(*this, subtrahend);
++
++		if (IsDenormalized() && !subtrahend.IsDenormalized())
++			return PS2Float(sign, subtrahend.Exponent(), subtrahend.Mantissa());
++		else if (!IsDenormalized() && subtrahend.IsDenormalized())
++			return PS2Float(sign, Exponent(), Mantissa());
++		else if (IsDenormalized() && subtrahend.IsDenormalized())
++		{
++			if (!Sign() || subtrahend.Sign())
++				return PS2Float(false, 0, 0);
++			else if (Sign() && !subtrahend.Sign())
++				return PS2Float(true, 0, 0);
++			else
++				Console.Error("Unhandled subtraction operation flags");
++		}
++		else
++			Console.Error("Both numbers are not denormalized");
++
++		return PS2Float(0);
++	}
++
++	u32 a = raw;
++	u32 b = subtrahend.raw;
++
++	//exponent difference
++	s32 exp_diff = Exponent() - subtrahend.Exponent();
++
++	//diff = 1 .. 24, expt < expd
++	if (exp_diff > 0 && exp_diff < 25)
++	{
++		exp_diff = exp_diff - 1;
++		b = (MIN_FLOATING_POINT_VALUE << exp_diff) & b;
++	}
++
++	//diff = -24 .. -1 , expd < expt
++	else if (exp_diff < 0 && exp_diff > -25)
++	{
++		exp_diff = -exp_diff;
++		exp_diff = exp_diff - 1;
++		a = a & (MIN_FLOATING_POINT_VALUE << exp_diff);
++	}
++
++	return PS2Float(a).DoAdd(PS2Float(b).Negate());
++}
++
++PS2Float PS2Float::Mul(PS2Float mulend)
++{
++	if (IsDenormalized() || mulend.IsDenormalized() || IsZero() || mulend.IsZero())
++		return PS2Float(DetermineMultiplicationDivisionOperationSign(*this, mulend), 0, 0);
++
++	return DoMul(mulend);
++}
++
++PS2Float PS2Float::MulAdd(PS2Float opsend, PS2Float optend)
++{
++	PS2Float mulres = opsend.Mul(optend);
++	PS2Float addres = Add(mulres);
++	u32 rawres = addres.raw;
++	bool oflw = addres.of;
++	bool uflw = addres.uf;
++	DetermineMacException(3, raw, of, mulres.of, mulres.Sign() ? 1 : 0, rawres, oflw, uflw);
++	PS2Float result = PS2Float(rawres);
++	result.of = oflw;
++	result.uf = uflw;
++	return result;
++}
++
++PS2Float PS2Float::MulAddAcc(PS2Float opsend, PS2Float optend)
++{
++	PS2Float mulres = opsend.Mul(optend);
++	PS2Float addres = Add(mulres);
++	u32 rawres = addres.raw;
++	bool oflw = addres.of;
++	bool uflw = addres.uf;
++	DetermineMacException(8, raw, of, mulres.of, mulres.Sign() ? 1 : 0, rawres, oflw, uflw);
++	raw = rawres;
++	of = oflw;
++	PS2Float result = PS2Float(rawres);
++	result.of = oflw;
++	result.uf = uflw;
++	return result;
++}
++
++PS2Float PS2Float::MulSub(PS2Float opsend, PS2Float optend)
++{
++	PS2Float mulres = opsend.Mul(optend);
++	PS2Float subres = Sub(mulres);
++	u32 rawres = subres.raw;
++	bool oflw = subres.of;
++	bool uflw = subres.uf;
++	DetermineMacException(4, raw, of, mulres.of, mulres.Sign() ? 1 : 0, rawres, oflw, uflw);
++	PS2Float result = PS2Float(rawres);
++	result.of = oflw;
++	result.uf = uflw;
++	return result;
++}
++
++PS2Float PS2Float::MulSubAcc(PS2Float opsend, PS2Float optend)
++{
++	PS2Float mulres = opsend.Mul(optend);
++	PS2Float subres = Sub(mulres);
++	u32 rawres = subres.raw;
++	bool oflw = subres.of;
++	bool uflw = subres.uf;
++	DetermineMacException(9, raw, of, mulres.of, mulres.Sign() ? 1 : 0, rawres, oflw, uflw);
++	raw = rawres;
++	of = oflw;
++	PS2Float result = PS2Float(rawres);
++	result.of = oflw;
++	result.uf = uflw;
++	return result;
++}
++
++PS2Float PS2Float::Div(PS2Float divend)
++{
++	u32 a = raw;
++	u32 b = divend.raw;
++	if (((a & 0x7F800000) == 0) && ((b & 0x7F800000) != 0))
++	{
++		u32 floatResult = 0;
++		floatResult &= PS2Float::MAX_FLOATING_POINT_VALUE;
++		floatResult |= (u32)(((s32)(b >> 31) != (s32)(a >> 31)) ? 1 : 0 & 1) << 31;
++		return PS2Float(floatResult);
++	}
++	if (((a & 0x7F800000) != 0) && ((b & 0x7F800000) == 0))
++	{
++		u32 floatResult = PS2Float::MAX_FLOATING_POINT_VALUE;
++		floatResult &= PS2Float::MAX_FLOATING_POINT_VALUE;
++		floatResult |= (u32)(((s32)(b >> 31) != (s32)(a >> 31)) ? 1 : 0 & 1) << 31;
++		PS2Float result = PS2Float(floatResult);
++		result.dz = true;
++		return result;
++	}
++	if (((a & 0x7F800000) == 0) && ((b & 0x7F800000) == 0))
++	{
++		u32 floatResult = PS2Float::MAX_FLOATING_POINT_VALUE;
++		floatResult &= PS2Float::MAX_FLOATING_POINT_VALUE;
++		floatResult |= (u32)(((s32)(b >> 31) != (s32)(a >> 31)) ? 1 : 0 & 1) << 31;
++		PS2Float result = PS2Float(floatResult);
++		result.iv = true;
++		return result;
++	}
++	u32 am = mantissa(a) << 2;
++	u32 bm = mantissa(b) << 2;
++	struct CSAResult current = {am, 0};
++	u32 quotient = 0;
++	int quotientBit = 1;
++	for (int i = 0; i < 25; i++)
++	{
++		quotient = (quotient << 1) + quotientBit;
++		u32 add = quotientBit > 0 ? ~bm : quotientBit < 0 ? bm : 0;
++		current.carry += quotientBit > 0;
++		struct CSAResult csa = CSA(current.sum, current.carry, add);
++		quotientBit = quotientSelect(quotientBit ? csa : current);
++		current.sum = csa.sum << 1;
++		current.carry = csa.carry << 1;
++	}
++	u32 sign = ((a ^ b) & 0x80000000);
++	u32 Dvdtexp = exponent(a);
++	u32 Dvsrexp = exponent(b);
++	s32 cexp = Dvdtexp - Dvsrexp + 126;
++	if (quotient >= (1 << 24))
++	{
++		cexp += 1;
++		quotient >>= 1;
++	}
++	if (Dvdtexp == 0 && Dvsrexp == 0)
++	{
++		PS2Float result = PS2Float(sign | PS2Float::MAX_FLOATING_POINT_VALUE);
++		result.iv = true;
++		return result;
++	}
++	else if (Dvdtexp == 0 || Dvsrexp != 0)
++	{
++		if (Dvdtexp == 0 && Dvsrexp != 0) { return PS2Float(sign); }
++	}
++	else
++	{
++		PS2Float result = PS2Float(sign | PS2Float::MAX_FLOATING_POINT_VALUE);
++		result.dz = true;
++		return result;
++	}
++	if (cexp > 255)
++	{
++		PS2Float result = PS2Float(sign | PS2Float::MAX_FLOATING_POINT_VALUE);
++		result.of = true;
++		return result;
++	}
++	else if (cexp < 1)
++	{
++		PS2Float result = PS2Float(sign);
++		result.uf = true;
++		return result;
++	}
++	return (quotient & 0x7fffff) | (cexp << 23) | sign;
++}
++
++PS2Float PS2Float::Sqrt()
++{
++	u32 a = raw;
++	if ((a & 0x7F800000) == 0)
++	{
++		PS2Float result = PS2Float(0);
++		result.iv = ((a >> 31) & 1) != 0;
++		return result;
++	}
++	u32 m = mantissa(a) << 1;
++	if (!(a & 0x800000)) // If exponent is odd after subtracting bias of 127
++		m <<= 1;
++	struct CSAResult current = {m, 0};
++	u32 quotient = 0;
++	s32 quotientBit = 1;
++	for (s32 i = 0; i < 25; i++)
++	{
++		// Adding n to quotient adds n * (2*quotient + n) to quotient^2
++		// (which is what we need to subtract from the remainder)
++		u32 adjust = quotient + (quotientBit << (24 - i));
++		quotient += quotientBit << (25 - i);
++		u32 add = quotientBit > 0 ? ~adjust : quotientBit < 0 ? adjust : 0;
++		current.carry += quotientBit > 0;
++		struct CSAResult csa = CSA(current.sum, current.carry, add);
++		quotientBit = quotientSelect(quotientBit ? csa : current);
++		current.sum = csa.sum << 1;
++		current.carry = csa.carry << 1;
++	}
++	s32 Dvdtexp = exponent(a);
++	if (Dvdtexp == 0)
++		return PS2Float(0);
++	Dvdtexp = (Dvdtexp + 127) >> 1;
++	PS2Float result = PS2Float(((quotient >> 2) & 0x7fffff) | (Dvdtexp << 23));
++	if (Sign())
++	{
++		if (result.Sign())
++			result = result.Negate();
++		result.iv = true;
++	}
++	return result;
++}
++
++PS2Float PS2Float::Rsqrt(PS2Float other)
++{
++	PS2Float sqrt = PS2Float(false, other.Exponent(), other.Mantissa()).Sqrt();
++	PS2Float div = Div(sqrt);
++	PS2Float result = PS2Float(div.raw);
++	result.dz = sqrt.dz || div.dz;
++	result.iv = sqrt.iv || div.iv;
++	result.of = div.of;
++	result.uf = div.uf;
++	return result;
++}
++
++PS2Float PS2Float::ERCPR()
++{
++	return PS2Float(ONE).Div(*this);
++}
++
++PS2Float PS2Float::ESQRT()
++{
++	return Sqrt();
++}
++
++PS2Float PS2Float::ESQUR()
++{
++	return Mul(*this);
++}
++
++PS2Float PS2Float::ERSQRT()
++{
++	return PS2Float(ONE).Rsqrt(*this);
++}
++
++bool PS2Float::IsDenormalized()
++{
++	return Exponent() == 0;
++}
++
++bool PS2Float::IsZero()
++{
++	return Abs() == 0;
++}
++
++u32 PS2Float::Abs()
++{
++	return (raw & MAX_FLOATING_POINT_VALUE);
++}
++
++PS2Float PS2Float::Negate()
++{
++	return PS2Float(raw ^ SIGNMASK);
++}
++
++s32 PS2Float::CompareTo(PS2Float other)
++{
++	s32 selfTwoComplementVal = (s32)Abs();
++	if (Sign())
++		selfTwoComplementVal = -selfTwoComplementVal;
++
++	s32 otherTwoComplementVal = (s32)other.Abs();
++	if (other.Sign())
++		otherTwoComplementVal = -otherTwoComplementVal;
++
++	if (selfTwoComplementVal < otherTwoComplementVal)
++		return -1;
++	else if (selfTwoComplementVal == otherTwoComplementVal)
++		return 0;
++	else
++		return 1;
++}
++
++s32 PS2Float::CompareOperands(PS2Float other)
++{
++	u32 selfTwoComplementVal = Abs();
++	u32 otherTwoComplementVal = other.Abs();
++
++	if (selfTwoComplementVal < otherTwoComplementVal)
++		return -1;
++	else if (selfTwoComplementVal == otherTwoComplementVal)
++		return 0;
++	else
++		return 1;
++}
++
++double PS2Float::ToDouble()
++{
++	return ps2f_bit_cast<double>(((u64)Sign() << 63) | ((((u64)Exponent() - BIAS) + 1023ULL) << 52) | ((u64)Mantissa() << 29));
++}
++
++std::string PS2Float::ToString()
++{
++	double res = ToDouble();
++
++	u32 value = raw;
++	std::ostringstream oss;
++	oss << std::fixed << std::setprecision(6);
++
++	if (IsDenormalized())
++	{
++		oss << "Denormalized(" << res << ")";
++	}
++	else if (value == MAX_FLOATING_POINT_VALUE)
++	{
++		oss << "Fmax(" << res << ")";
++	}
++	else if (value == MIN_FLOATING_POINT_VALUE)
++	{
++		oss << "-Fmax(" << res << ")";
++	}
++	else
++	{
++		oss << "PS2Float(" << res << ")";
++	}
++
++	return oss.str();
++}
++
++PS2Float PS2Float::DoAdd(PS2Float other)
++{
++	u8 selfExponent = Exponent();
++	s32 resExponent = selfExponent - other.Exponent();
++
++	if (resExponent < 0)
++		return other.DoAdd(*this);
++	else if (resExponent >= 25)
++		return *this;
++
++	const u8 roundingMultiplier = 6;
++
++	// http://graphics.stanford.edu/~seander/bithacks.html#ConditionalNegate
++	u32 sign1 = (u32)((s32)raw >> 31);
++	s32 selfMantissa = (s32)(((Mantissa() | 0x800000) ^ sign1) - sign1);
++	u32 sign2 = (u32)((s32)other.raw >> 31);
++	s32 otherMantissa = (s32)(((other.Mantissa() | 0x800000) ^ sign2) - sign2);
++
++	s32 man = (selfMantissa << roundingMultiplier) + ((otherMantissa << roundingMultiplier) >> resExponent);
++	s32 absMan = abs(man);
++	if (absMan == 0)
++		return PS2Float(0);
++
++	s32 rawExp = selfExponent - roundingMultiplier;
++
++	s32 amount = PS2FloatBits::normalizeAmounts[PS2FloatBits::CountLeadingSignBits(absMan)];
++	rawExp -= amount;
++	absMan <<= amount;
++
++	s32 msbIndex = PS2FloatBits::BitScanReverse(absMan >> MANTISSA_BITS);
++	rawExp += msbIndex;
++	absMan >>= msbIndex;
++
++	if (rawExp > 255)
++	{
++		PS2Float result = man < 0 ? Min() : Max();
++		result.of = true;
++		return result;
++	}
++	else if (rawExp < 1)
++	{
++		PS2Float result = PS2Float(man < 0, 0, 0);
++		result.uf = true;
++		return result;
++	}
++
++	return PS2Float(((u32)man & SIGNMASK) | (u32)rawExp << MANTISSA_BITS | ((u32)absMan & 0x7FFFFF));
++}
++
++PS2Float PS2Float::DoMul(PS2Float other)
++{
++	u8 selfExponent = Exponent();
++	u8 otherExponent = other.Exponent();
++	u32 selfMantissa = Mantissa() | 0x800000;
++	u32 otherMantissa = other.Mantissa() | 0x800000;
++	u32 sign = (raw ^ other.raw) & SIGNMASK;
++
++	s32 resExponent = selfExponent + otherExponent - 127;
++	u32 resMantissa = (u32)(MulMantissa(selfMantissa, otherMantissa) >> MANTISSA_BITS);
++
++	if (resMantissa > 0xFFFFFF)
++	{
++		resMantissa >>= 1;
++		resExponent++;
++	}
++
++	if (resExponent > 255)
++	{
++		PS2Float result = PS2Float(sign | MAX_FLOATING_POINT_VALUE);
++		result.of = true;
++		return result;
++	}
++	else if (resExponent < 1)
++	{
++		PS2Float result = PS2Float(sign);
++		result.uf = true;
++		return result;
++	}
++
++	return PS2Float(sign | (u32)(resExponent << MANTISSA_BITS) | (resMantissa & 0x7FFFFF));
++}
++
++u8 PS2Float::Clip(u32 f1, u32 f2, bool& cplus, bool& cminus)
++{
++	bool resultPlus = false;
++	bool resultMinus = false;
++	u32 a;
++
++	if ((f1 & 0x7F800000) == 0)
++	{
++		f1 &= 0xFF800000;
++	}
++
++	a = f1;
++
++	if ((f2 & 0x7F800000) == 0)
++	{
++		f2 &= 0xFF800000;
++	}
++
++	f1 = f1 & MAX_FLOATING_POINT_VALUE;
++	f2 = f2 & MAX_FLOATING_POINT_VALUE;
++
++	if ((-1 < (int)a) && (f2 < f1))
++		resultPlus = true;
++
++	cplus = resultPlus;
++
++	if (((int)a < 0) && (f2 < f1))
++		resultMinus = true;
++
++	cminus = resultMinus;
++
++	return 0;
++}
++
++bool PS2Float::DetermineMultiplicationDivisionOperationSign(PS2Float a, PS2Float b)
++{
++	return a.Sign() ^ b.Sign();
++}
++
++bool PS2Float::DetermineAdditionOperationSign(PS2Float a, PS2Float b)
++{
++	return a.CompareOperands(b) >= 0 ? a.Sign() : b.Sign();
++}
++
++bool PS2Float::DetermineSubtractionOperationSign(PS2Float a, PS2Float b)
++{
++	return a.CompareOperands(b) >= 0 ? a.Sign() : !b.Sign();
++}
++
++u8 PS2Float::DetermineMacException(u8 mode, u32 acc, bool acc_oflw, bool moflw, s32 msign, u32& addsubres, bool& oflw, bool& uflw)
++{
++	bool roundToMax;
++
++	if ((mode == 3) || (mode == 8))
++		roundToMax = msign == 0;
++	else
++	{
++		if ((mode != 4) && (mode != 9))
++		{
++			Console.Error("Unhandled MacFlag operation flags");
++			return 1;
++		}
++
++		roundToMax = msign != 0;
++	}
++
++	if (!acc_oflw)
++	{
++		if (moflw)
++		{
++			if (roundToMax)
++			{
++				addsubres = MAX_FLOATING_POINT_VALUE;
++				uflw = false;
++				oflw = true;
++			}
++			else
++			{
++				addsubres = MIN_FLOATING_POINT_VALUE;
++				uflw = false;
++				oflw = true;
++			}
++		}
++	}
++	else if (!moflw)
++	{
++		addsubres = acc;
++		uflw = false;
++		oflw = true;
++	}
++	else if (roundToMax)
++	{
++		addsubres = MAX_FLOATING_POINT_VALUE;
++		uflw = false;
++		oflw = true;
++	}
++	else
++	{
++		addsubres = MIN_FLOATING_POINT_VALUE;
++		uflw = false;
++		oflw = true;
++	}
++
++	return 0;
++}
+diff --git a/pcsx2/PS2Float.h b/pcsx2/PS2Float.h
+new file mode 100644
+index 0000000..5c60b47
+--- /dev/null
++++ b/pcsx2/PS2Float.h
+@@ -0,0 +1,144 @@
++// SPDX-FileCopyrightText: 2002-2024 PCSX2 Dev Team
++// SPDX-License-Identifier: GPL-3.0+
++
++#pragma once
++
++#include <cstring>
++
++// LRPS2 backport note: the upstream PR (PCSX2 #12001) targets a C++20 tree and uses
++// std::bit_cast. This tree is built as C++17 (pcsx2/CMakeLists.txt: cxx_std_17), so the
++// two bit_cast uses are replaced by this memcpy helper, which every compiler we build
++// with folds to a plain move.
++template <typename To, typename From>
++__fi static To ps2f_bit_cast(const From& from)
++{
++	static_assert(sizeof(To) == sizeof(From), "ps2f_bit_cast size mismatch");
++	To to;
++	std::memcpy(&to, &from, sizeof(To));
++	return to;
++}
++
++class PS2Float
++{
++public:
++	static constexpr u8 BIAS = 127;
++	static constexpr u8 MANTISSA_BITS = 23;
++	static constexpr u32 SIGNMASK = 0x80000000;
++	static constexpr u32 MAX_FLOATING_POINT_VALUE = 0x7FFFFFFF;
++	static constexpr u32 MIN_FLOATING_POINT_VALUE = 0xFFFFFFFF;
++	static constexpr u32 ONE = 0x3F800000;
++	static constexpr u32 MIN_ONE = 0xBF800000;
++
++	bool dz = false;
++	bool iv = false;
++	bool of = false;
++	bool uf = false;
++
++	u32 raw;
++
++	constexpr u32 Mantissa() const { return raw & 0x7FFFFF; }
++	constexpr u8 Exponent() const { return (raw >> 23) & 0xFF; }
++	constexpr bool Sign() const { return ((raw >> 31) & 1) != 0; }
++
++	__fi PS2Float(s32 value)
++		: raw((u32)value)
++	{
++	}
++
++	__fi PS2Float(u32 value)
++		: raw(value)
++	{
++	}
++
++	__fi PS2Float(float value)
++		: raw(ps2f_bit_cast<u32>(value))
++	{
++	}
++
++	__fi PS2Float(bool sign, u8 exponent, u32 mantissa)
++		: raw((sign ? 1u : 0u) << 31 |
++			  (u32)(exponent << MANTISSA_BITS) |
++			  (mantissa & 0x7FFFFF))
++	{
++	}
++
++	__fi static PS2Float Max()
++	{
++		return PS2Float(MAX_FLOATING_POINT_VALUE);
++	}
++
++	__fi static PS2Float Min()
++	{
++		return PS2Float(MIN_FLOATING_POINT_VALUE);
++	}
++
++	__fi static PS2Float One()
++	{
++		return PS2Float(ONE);
++	}
++
++	__fi static PS2Float MinOne()
++	{
++		return PS2Float(MIN_ONE);
++	}
++
++	static u8 Clip(u32 f1, u32 f2, bool& cplus, bool& cminus);
++
++	PS2Float Add(PS2Float addend);
++
++	PS2Float Sub(PS2Float subtrahend);
++
++	PS2Float Mul(PS2Float mulend);
++
++	PS2Float MulAdd(PS2Float opsend, PS2Float optend);
++
++	PS2Float MulAddAcc(PS2Float opsend, PS2Float optend);
++
++	PS2Float MulSub(PS2Float opsend, PS2Float optend);
++
++	PS2Float MulSubAcc(PS2Float opsend, PS2Float optend);
++
++	PS2Float Div(PS2Float divend);
++
++	PS2Float Sqrt();
++
++	PS2Float Rsqrt(PS2Float other);
++
++	PS2Float ERCPR();
++
++	PS2Float ESQRT();
++
++	PS2Float ESQUR();
++
++	PS2Float ERSQRT();
++
++	bool IsDenormalized();
++
++	bool IsZero();
++
++	u32 Abs();
++
++	PS2Float Negate();
++
++	s32 CompareTo(PS2Float other);
++
++	s32 CompareOperands(PS2Float other);
++
++	double ToDouble();
++
++	std::string ToString();
++
++protected:
++private:
++	PS2Float DoAdd(PS2Float other);
++
++	PS2Float DoMul(PS2Float other);
++
++	static bool DetermineMultiplicationDivisionOperationSign(PS2Float a, PS2Float b);
++
++	static bool DetermineAdditionOperationSign(PS2Float a, PS2Float b);
++
++	static bool DetermineSubtractionOperationSign(PS2Float a, PS2Float b);
++
++    static u8 DetermineMacException(u8 mode, u32 acc, bool acc_oflw, bool moflw, s32 msign, u32& addsubres, bool& oflw, bool& uflw);
++};
+diff --git a/pcsx2/Pcsx2Config.cpp b/pcsx2/Pcsx2Config.cpp
+index e19cab2..3e7af09 100644
+--- a/pcsx2/Pcsx2Config.cpp
++++ b/pcsx2/Pcsx2Config.cpp
+@@ -214,6 +214,12 @@ Pcsx2Config::RecompilerOptions::RecompilerOptions()
+ {
+ 	bitset = 0;
+ 
++	// Soft-float off by default: with these at zero every FPU/VU code path -- recompiled
++	// and interpreted -- behaves exactly as it did before the PS2Float backport.
++	vu0SoftFloat = 0;
++	vu1SoftFloat = 0;
++	fpuSoftFloat = 0;
++
+ 	// All recs are enabled by default.
+ 
+ 	EnableEE = true;
+@@ -312,6 +318,13 @@ void Pcsx2Config::RecompilerOptions::LoadSave(SettingsWrapper& wrap)
+ 	SettingsWrapBitBool(fpuOverflow);
+ 	SettingsWrapBitBool(fpuExtraOverflow);
+ 	SettingsWrapBitBool(fpuFullMode);
++
++	// Soft-float masks (PCSX2 PR #12001 backport). Upstream stores one bool per flag via a
++	// new SettingsWrapper::EntryFlagsBitfield helper; we store the mask itself, because the
++	// only frontend that writes them is libretro and it writes a whole mask at once.
++	vu0SoftFloat = static_cast<u8>(wrap.EntryBitfield(CURRENT_SETTINGS_SECTION, "vu0SoftFloat", vu0SoftFloat, vu0SoftFloat) & SOFT_FLOAT_ALL);
++	vu1SoftFloat = static_cast<u8>(wrap.EntryBitfield(CURRENT_SETTINGS_SECTION, "vu1SoftFloat", vu1SoftFloat, vu1SoftFloat) & SOFT_FLOAT_ALL);
++	fpuSoftFloat = static_cast<u8>(wrap.EntryBitfield(CURRENT_SETTINGS_SECTION, "fpuSoftFloat", fpuSoftFloat, fpuSoftFloat) & SOFT_FLOAT_ALL);
+ }
+ 
+ bool Pcsx2Config::CpuOptions::CpusChanged(const CpuOptions& right) const
 diff --git a/pcsx2/PerfAttr.h b/pcsx2/PerfAttr.h
 new file mode 100644
 index 0000000..5c1c2b6
@@ -450,3 +2400,1296 @@ index 0000000..5c1c2b6
 +		}
 +	};
 +} // namespace PerfAttr
+diff --git a/pcsx2/VUops.cpp b/pcsx2/VUops.cpp
+index 76d4466..e588d2d 100644
+--- a/pcsx2/VUops.cpp
++++ b/pcsx2/VUops.cpp
+@@ -1,5 +1,6 @@
+ #include "Common.h"
+ #include "VUops.h"
++#include "PS2Float.h"
+ #include "GS.h"
+ #include "Gif_Unit.h"
+ #include "MTVU.h"
+@@ -483,6 +484,139 @@ static float vuDouble(u32 f)
+ 	return *(float*)&f;
+ }
+ 
++// ---------------------------------------------------------------------------------------
++//  Soft-float (PS2Float) support -- backport of PCSX2 PR #12001 (GitHubProUser67).
++//
++//  Upstream keeps the VU MAC-flag update in pcsx2/VUflags.cpp and adds a PS2Float overload
++//  of VU_MAC_UPDATE there. This tree has no VUflags.cpp: the flag update lives right above
++//  as VU_MAC_UPDATE() with the VU_MAC{x,y,z,w}_UPDATE macros forwarding to it. Because those
++//  macros expand to a plain function call, adding a PS2Float *overload* of VU_MAC_UPDATE is
++//  enough to route them -- ordinary overload resolution picks the right one per call site.
++//  Body is a verbatim port of the PR's VU_MAC_UPDATE(s32, VURegs*, PS2Float).
++// ---------------------------------------------------------------------------------------
++static __ri u32 VU_MAC_UPDATE(int shift, VURegs* VU, PS2Float f)
++{
++	bool isUnderflow = false;
++
++	u32 v = f.raw;
++
++	if (v & PS2Float::SIGNMASK)
++		VU->macflag |= 0x0010 << shift;
++	else
++		VU->macflag &= ~(0x0010 << shift);
++
++	if (f.uf)
++	{
++		isUnderflow = true;
++		VU->macflag = (VU->macflag & ~(0x1000 << shift)) | (0x0101 << shift);
++	}
++
++	if (f.IsZero())
++	{
++		VU->macflag = (VU->macflag & ~(0x1100 << shift)) | (0x0001 << shift);
++		return v;
++	}
++	else if (f.of) { VU->macflag = (VU->macflag & ~(0x0101 << shift)) | (0x1000 << shift); }
++	else if (!isUnderflow) { VU->macflag = (VU->macflag & ~(0x1101 << shift)); }
++
++	return v;
++}
++
++// PR equivalent: IsOverflowSet() in VUflags.cpp.
++static __fi bool IsOverflowSet(VURegs* VU, int shift)
++{
++	return (VU->macflag & (0x1000 << shift)) != 0;
++}
++
++// PR uses "(VU == &VU1) ? 1 : 0"; this tree names the register files vuRegs[0]/vuRegs[1].
++static __fi int vuSoftIndex(const VURegs* VU)
++{
++	return (VU == &vuRegs[1]) ? 1 : 0;
++}
++
++#define VU_SOFT_ADDSUB  (CHECK_VU_SOFT_ADDSUB(vuSoftIndex(VU)))
++#define VU_SOFT_MUL     (CHECK_VU_SOFT_MUL(vuSoftIndex(VU)))
++#define VU_SOFT_DIVSQRT (CHECK_VU_SOFT_DIVSQRT(vuSoftIndex(VU)))
++#define VU_SOFT_FMAC    (VU_SOFT_ADDSUB && VU_SOFT_MUL)
++
++static __fi PS2Float _vuAccurateOpADD(u32 fs, u32 ft) { return PS2Float(fs).Add(PS2Float(ft)); }
++static __fi PS2Float _vuAccurateOpSUB(u32 fs, u32 ft) { return PS2Float(fs).Sub(PS2Float(ft)); }
++static __fi PS2Float _vuAccurateOpMUL(u32 fs, u32 ft) { return PS2Float(fs).Mul(PS2Float(ft)); }
++
++static __fi PS2Float _vuAccurateOpMADD(u32 acc, u32 fs, u32 ft)
++{
++	return PS2Float(acc).MulAdd(PS2Float(fs), PS2Float(ft));
++}
++
++static __fi PS2Float _vuAccurateOpMSUB(u32 acc, u32 fs, u32 ft)
++{
++	return PS2Float(acc).MulSub(PS2Float(fs), PS2Float(ft));
++}
++
++static __fi PS2Float _vuAccurateOpMADDA(u32 acc, u32 fs, u32 ft, bool oflw)
++{
++	PS2Float accfloat = PS2Float(acc);
++	accfloat.of = oflw;
++	return accfloat.MulAddAcc(PS2Float(fs), PS2Float(ft));
++}
++
++static __fi PS2Float _vuAccurateOpMSUBA(u32 acc, u32 fs, u32 ft, bool oflw)
++{
++	PS2Float accfloat = PS2Float(acc);
++	accfloat.of = oflw;
++	return accfloat.MulSubAcc(PS2Float(fs), PS2Float(ft));
++}
++
++// PR's applyAccurateBinaryMACOp / ...Broadcast collapsed into one helper: this tree has no
++// MACOpDst/_getDst<> template machinery (it predates the upstream refactor), so the
++// destination and the four "other operand" lanes are passed in explicitly. Feeding the same
++// value into all four lanes reproduces the broadcast form exactly.
++template <PS2Float (*Fn)(u32, u32)>
++static __fi void vuSoftBinaryMAC(VURegs* VU, VECTOR* dst, u32 bx, u32 by, u32 bz, u32 bw)
++{
++	if (_X) { dst->i.x = VU_MACx_UPDATE(VU, Fn(VU->VF[_Fs_].i.x, bx)); } else VU_MACx_CLEAR(VU);
++	if (_Y) { dst->i.y = VU_MACy_UPDATE(VU, Fn(VU->VF[_Fs_].i.y, by)); } else VU_MACy_CLEAR(VU);
++	if (_Z) { dst->i.z = VU_MACz_UPDATE(VU, Fn(VU->VF[_Fs_].i.z, bz)); } else VU_MACz_CLEAR(VU);
++	if (_W) { dst->i.w = VU_MACw_UPDATE(VU, Fn(VU->VF[_Fs_].i.w, bw)); } else VU_MACw_CLEAR(VU);
++	VU_STAT_UPDATE(VU);
++}
++
++// PR's applyAccurateTernaryMACOp / ...Broadcast.
++template <PS2Float (*Fn)(u32, u32, u32)>
++static __fi void vuSoftTernaryMAC(VURegs* VU, VECTOR* dst, u32 bx, u32 by, u32 bz, u32 bw)
++{
++	if (_X) { dst->i.x = VU_MACx_UPDATE(VU, Fn(VU->ACC.i.x, VU->VF[_Fs_].i.x, bx)); } else VU_MACx_CLEAR(VU);
++	if (_Y) { dst->i.y = VU_MACy_UPDATE(VU, Fn(VU->ACC.i.y, VU->VF[_Fs_].i.y, by)); } else VU_MACy_CLEAR(VU);
++	if (_Z) { dst->i.z = VU_MACz_UPDATE(VU, Fn(VU->ACC.i.z, VU->VF[_Fs_].i.z, bz)); } else VU_MACz_CLEAR(VU);
++	if (_W) { dst->i.w = VU_MACw_UPDATE(VU, Fn(VU->ACC.i.w, VU->VF[_Fs_].i.w, bw)); } else VU_MACw_CLEAR(VU);
++	VU_STAT_UPDATE(VU);
++}
++
++// PR's applyAccurateAccumulatorTernaryMACOp / ...Broadcast (MADDA/MSUBA only: the accumulator
++// forms feed the previous per-lane overflow bit back into the soft-float FMAC).
++template <PS2Float (*Fn)(u32, u32, u32, bool)>
++static __fi void vuSoftAccTernaryMAC(VURegs* VU, u32 bx, u32 by, u32 bz, u32 bw)
++{
++	if (_X) { VU->ACC.i.x = VU_MACx_UPDATE(VU, Fn(VU->ACC.i.x, VU->VF[_Fs_].i.x, bx, IsOverflowSet(VU, 3))); } else VU_MACx_CLEAR(VU);
++	if (_Y) { VU->ACC.i.y = VU_MACy_UPDATE(VU, Fn(VU->ACC.i.y, VU->VF[_Fs_].i.y, by, IsOverflowSet(VU, 2))); } else VU_MACy_CLEAR(VU);
++	if (_Z) { VU->ACC.i.z = VU_MACz_UPDATE(VU, Fn(VU->ACC.i.z, VU->VF[_Fs_].i.z, bz, IsOverflowSet(VU, 1))); } else VU_MACz_CLEAR(VU);
++	if (_W) { VU->ACC.i.w = VU_MACw_UPDATE(VU, Fn(VU->ACC.i.w, VU->VF[_Fs_].i.w, bw, IsOverflowSet(VU, 0))); } else VU_MACw_CLEAR(VU);
++	VU_STAT_UPDATE(VU);
++}
++
++static __fi VECTOR* vuSoftDstFd(VURegs* VU)
++{
++	return (_Fd_ == 0) ? &RDzero : &VU->VF[_Fd_];
++}
++
++#define VU_SOFT_BC_FT VU->VF[_Ft_].i.x, VU->VF[_Ft_].i.y, VU->VF[_Ft_].i.z, VU->VF[_Ft_].i.w
++#define VU_SOFT_BC_I  VU->VI[REG_I].UL, VU->VI[REG_I].UL, VU->VI[REG_I].UL, VU->VI[REG_I].UL
++#define VU_SOFT_BC_Q  VU->VI[REG_Q].UL, VU->VI[REG_Q].UL, VU->VI[REG_Q].UL, VU->VI[REG_Q].UL
++#define VU_SOFT_BC_X  VU->VF[_Ft_].i.x, VU->VF[_Ft_].i.x, VU->VF[_Ft_].i.x, VU->VF[_Ft_].i.x
++#define VU_SOFT_BC_Y  VU->VF[_Ft_].i.y, VU->VF[_Ft_].i.y, VU->VF[_Ft_].i.y, VU->VF[_Ft_].i.y
++#define VU_SOFT_BC_Z  VU->VF[_Ft_].i.z, VU->VF[_Ft_].i.z, VU->VF[_Ft_].i.z, VU->VF[_Ft_].i.z
++#define VU_SOFT_BC_W  VU->VF[_Ft_].i.w, VU->VF[_Ft_].i.w, VU->VF[_Ft_].i.w, VU->VF[_Ft_].i.w
++
+ static __fi float vuADD_TriAceHack(u32 a, u32 b)
+ {
+ 	// On VU0 TriAce Games use ADDi and expects these bit-perfect results:
+@@ -536,6 +670,7 @@ void __fi _vuABS(VURegs* VU)
+ 
+ static __fi void _vuADD(VURegs* VU)
+ {
++	if (VU_SOFT_ADDSUB) { vuSoftBinaryMAC<_vuAccurateOpADD>(VU, vuSoftDstFd(VU), VU_SOFT_BC_FT); return; }
+ 	VECTOR* dst;
+ 	if (_Fd_ == 0)
+ 		dst = &RDzero;
+@@ -552,6 +687,7 @@ static __fi void _vuADD(VURegs* VU)
+ 
+ static __fi void _vuADDi(VURegs* VU)
+ {
++	if (VU_SOFT_ADDSUB) { vuSoftBinaryMAC<_vuAccurateOpADD>(VU, vuSoftDstFd(VU), VU_SOFT_BC_I); return; }
+ 	VECTOR* dst;
+ 	if (_Fd_ == 0)
+ 		dst = &RDzero;
+@@ -577,6 +713,7 @@ static __fi void _vuADDi(VURegs* VU)
+ 
+ static __fi void _vuADDq(VURegs* VU)
+ {
++	if (VU_SOFT_ADDSUB) { vuSoftBinaryMAC<_vuAccurateOpADD>(VU, vuSoftDstFd(VU), VU_SOFT_BC_Q); return; }
+ 	VECTOR* dst;
+ 	if (_Fd_ == 0)
+ 		dst = &RDzero;
+@@ -593,6 +730,7 @@ static __fi void _vuADDq(VURegs* VU)
+ 
+ static __fi void _vuADDx(VURegs* VU)
+ {
++	if (VU_SOFT_ADDSUB) { vuSoftBinaryMAC<_vuAccurateOpADD>(VU, vuSoftDstFd(VU), VU_SOFT_BC_X); return; }
+ 	float ftx;
+ 	VECTOR* dst;
+ 	if (_Fd_ == 0)
+@@ -610,6 +748,7 @@ static __fi void _vuADDx(VURegs* VU)
+ 
+ static __fi void _vuADDy(VURegs* VU)
+ {
++	if (VU_SOFT_ADDSUB) { vuSoftBinaryMAC<_vuAccurateOpADD>(VU, vuSoftDstFd(VU), VU_SOFT_BC_Y); return; }
+ 	float fty;
+ 	VECTOR* dst;
+ 	if (_Fd_ == 0)
+@@ -627,6 +766,7 @@ static __fi void _vuADDy(VURegs* VU)
+ 
+ static __fi void _vuADDz(VURegs* VU)
+ {
++	if (VU_SOFT_ADDSUB) { vuSoftBinaryMAC<_vuAccurateOpADD>(VU, vuSoftDstFd(VU), VU_SOFT_BC_Z); return; }
+ 	float ftz;
+ 	VECTOR* dst;
+ 	if (_Fd_ == 0)
+@@ -644,6 +784,7 @@ static __fi void _vuADDz(VURegs* VU)
+ 
+ static __fi void _vuADDw(VURegs* VU)
+ {
++	if (VU_SOFT_ADDSUB) { vuSoftBinaryMAC<_vuAccurateOpADD>(VU, vuSoftDstFd(VU), VU_SOFT_BC_W); return; }
+ 	float ftw;
+ 	VECTOR* dst;
+ 	if (_Fd_ == 0)
+@@ -660,6 +801,7 @@ static __fi void _vuADDw(VURegs* VU)
+ }
+ 
+ static __fi void _vuADDA(VURegs*  VU) {
++	if (VU_SOFT_ADDSUB) { vuSoftBinaryMAC<_vuAccurateOpADD>(VU, &VU->ACC, VU_SOFT_BC_FT); return; }
+ 	if (_X){ VU->ACC.i.x = VU_MACx_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.x) + vuDouble(VU->VF[_Ft_].i.x)); } else VU_MACx_CLEAR(VU);
+ 	if (_Y){ VU->ACC.i.y = VU_MACy_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.y) + vuDouble(VU->VF[_Ft_].i.y)); } else VU_MACy_CLEAR(VU);
+ 	if (_Z){ VU->ACC.i.z = VU_MACz_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.z) + vuDouble(VU->VF[_Ft_].i.z)); } else VU_MACz_CLEAR(VU);
+@@ -669,6 +811,7 @@ static __fi void _vuADDA(VURegs*  VU) {
+ 
+ static __fi void _vuADDAi(VURegs* VU)
+ {
++	if (VU_SOFT_ADDSUB) { vuSoftBinaryMAC<_vuAccurateOpADD>(VU, &VU->ACC, VU_SOFT_BC_I); return; }
+ 	float ti = vuDouble(VU->VI[REG_I].UL);
+ 
+ 	if (_X){ VU->ACC.i.x = VU_MACx_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.x) + ti); } else VU_MACx_CLEAR(VU);
+@@ -680,6 +823,7 @@ static __fi void _vuADDAi(VURegs* VU)
+ 
+ static __fi void _vuADDAq(VURegs* VU)
+ {
++	if (VU_SOFT_ADDSUB) { vuSoftBinaryMAC<_vuAccurateOpADD>(VU, &VU->ACC, VU_SOFT_BC_Q); return; }
+ 	float tf = vuDouble(VU->VI[REG_Q].UL);
+ 
+ 	if (_X){ VU->ACC.i.x = VU_MACx_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.x) + tf); } else VU_MACx_CLEAR(VU);
+@@ -691,6 +835,7 @@ static __fi void _vuADDAq(VURegs* VU)
+ 
+ static __fi void _vuADDAx(VURegs* VU)
+ {
++	if (VU_SOFT_ADDSUB) { vuSoftBinaryMAC<_vuAccurateOpADD>(VU, &VU->ACC, VU_SOFT_BC_X); return; }
+ 	float tx = vuDouble(VU->VF[_Ft_].i.x);
+ 
+ 	if (_X){ VU->ACC.i.x = VU_MACx_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.x) + tx); } else VU_MACx_CLEAR(VU);
+@@ -702,6 +847,7 @@ static __fi void _vuADDAx(VURegs* VU)
+ 
+ static __fi void _vuADDAy(VURegs* VU)
+ {
++	if (VU_SOFT_ADDSUB) { vuSoftBinaryMAC<_vuAccurateOpADD>(VU, &VU->ACC, VU_SOFT_BC_Y); return; }
+ 	float ty = vuDouble(VU->VF[_Ft_].i.y);
+ 
+ 	if (_X){ VU->ACC.i.x = VU_MACx_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.x) + ty); } else VU_MACx_CLEAR(VU);
+@@ -713,6 +859,7 @@ static __fi void _vuADDAy(VURegs* VU)
+ 
+ static __fi void _vuADDAz(VURegs* VU)
+ {
++	if (VU_SOFT_ADDSUB) { vuSoftBinaryMAC<_vuAccurateOpADD>(VU, &VU->ACC, VU_SOFT_BC_Z); return; }
+ 	float tz = vuDouble(VU->VF[_Ft_].i.z);
+ 
+ 	if (_X){ VU->ACC.i.x = VU_MACx_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.x) + tz); } else VU_MACx_CLEAR(VU);
+@@ -724,6 +871,7 @@ static __fi void _vuADDAz(VURegs* VU)
+ 
+ static __fi void _vuADDAw(VURegs* VU)
+ {
++	if (VU_SOFT_ADDSUB) { vuSoftBinaryMAC<_vuAccurateOpADD>(VU, &VU->ACC, VU_SOFT_BC_W); return; }
+ 	float tw = vuDouble(VU->VF[_Ft_].i.w);
+ 
+ 	if (_X){ VU->ACC.i.x = VU_MACx_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.x) + tw); } else VU_MACx_CLEAR(VU);
+@@ -736,6 +884,7 @@ static __fi void _vuADDAw(VURegs* VU)
+ 
+ static __fi void _vuSUB(VURegs* VU)
+ {
++	if (VU_SOFT_ADDSUB) { vuSoftBinaryMAC<_vuAccurateOpSUB>(VU, vuSoftDstFd(VU), VU_SOFT_BC_FT); return; }
+ 	VECTOR* dst;
+ 	if (_Fd_ == 0)
+ 		dst = &RDzero;
+@@ -751,6 +900,7 @@ static __fi void _vuSUB(VURegs* VU)
+ 
+ static __fi void _vuSUBi(VURegs* VU)
+ {
++	if (VU_SOFT_ADDSUB) { vuSoftBinaryMAC<_vuAccurateOpSUB>(VU, vuSoftDstFd(VU), VU_SOFT_BC_I); return; }
+ 	VECTOR* dst;
+ 	if (_Fd_ == 0)
+ 		dst = &RDzero;
+@@ -766,6 +916,7 @@ static __fi void _vuSUBi(VURegs* VU)
+ 
+ static __fi void _vuSUBq(VURegs* VU)
+ {
++	if (VU_SOFT_ADDSUB) { vuSoftBinaryMAC<_vuAccurateOpSUB>(VU, vuSoftDstFd(VU), VU_SOFT_BC_Q); return; }
+ 	VECTOR* dst;
+ 	if (_Fd_ == 0)
+ 		dst = &RDzero;
+@@ -781,6 +932,7 @@ static __fi void _vuSUBq(VURegs* VU)
+ 
+ static __fi void _vuSUBx(VURegs* VU)
+ {
++	if (VU_SOFT_ADDSUB) { vuSoftBinaryMAC<_vuAccurateOpSUB>(VU, vuSoftDstFd(VU), VU_SOFT_BC_X); return; }
+ 	float ftx;
+ 	VECTOR* dst;
+ 	if (_Fd_ == 0)
+@@ -798,6 +950,7 @@ static __fi void _vuSUBx(VURegs* VU)
+ 
+ static __fi void _vuSUBy(VURegs* VU)
+ {
++	if (VU_SOFT_ADDSUB) { vuSoftBinaryMAC<_vuAccurateOpSUB>(VU, vuSoftDstFd(VU), VU_SOFT_BC_Y); return; }
+ 	float fty;
+ 	VECTOR* dst;
+ 	if (_Fd_ == 0)
+@@ -815,6 +968,7 @@ static __fi void _vuSUBy(VURegs* VU)
+ 
+ static __fi void _vuSUBz(VURegs* VU)
+ {
++	if (VU_SOFT_ADDSUB) { vuSoftBinaryMAC<_vuAccurateOpSUB>(VU, vuSoftDstFd(VU), VU_SOFT_BC_Z); return; }
+ 	float ftz;
+ 	VECTOR* dst;
+ 	if (_Fd_ == 0)
+@@ -832,6 +986,7 @@ static __fi void _vuSUBz(VURegs* VU)
+ 
+ static __fi void _vuSUBw(VURegs* VU)
+ {
++	if (VU_SOFT_ADDSUB) { vuSoftBinaryMAC<_vuAccurateOpSUB>(VU, vuSoftDstFd(VU), VU_SOFT_BC_W); return; }
+ 	float ftw;
+ 	VECTOR* dst;
+ 	if (_Fd_ == 0)
+@@ -849,6 +1004,7 @@ static __fi void _vuSUBw(VURegs* VU)
+ 
+ 
+ static __fi void _vuSUBA(VURegs*  VU) {
++	if (VU_SOFT_ADDSUB) { vuSoftBinaryMAC<_vuAccurateOpSUB>(VU, &VU->ACC, VU_SOFT_BC_FT); return; }
+ 	if (_X){ VU->ACC.i.x = VU_MACx_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.x) - vuDouble(VU->VF[_Ft_].i.x)); } else VU_MACx_CLEAR(VU);
+ 	if (_Y){ VU->ACC.i.y = VU_MACy_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.y) - vuDouble(VU->VF[_Ft_].i.y)); } else VU_MACy_CLEAR(VU);
+ 	if (_Z){ VU->ACC.i.z = VU_MACz_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.z) - vuDouble(VU->VF[_Ft_].i.z)); } else VU_MACz_CLEAR(VU);
+@@ -857,6 +1013,7 @@ static __fi void _vuSUBA(VURegs*  VU) {
+ }
+ 
+ static __fi void _vuSUBAi(VURegs*  VU) {
++	if (VU_SOFT_ADDSUB) { vuSoftBinaryMAC<_vuAccurateOpSUB>(VU, &VU->ACC, VU_SOFT_BC_I); return; }
+ 	if (_X){ VU->ACC.i.x = VU_MACx_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.x) - vuDouble(VU->VI[REG_I].UL)); } else VU_MACx_CLEAR(VU);
+ 	if (_Y){ VU->ACC.i.y = VU_MACy_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.y) - vuDouble(VU->VI[REG_I].UL)); } else VU_MACy_CLEAR(VU);
+ 	if (_Z){ VU->ACC.i.z = VU_MACz_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.z) - vuDouble(VU->VI[REG_I].UL)); } else VU_MACz_CLEAR(VU);
+@@ -865,6 +1022,7 @@ static __fi void _vuSUBAi(VURegs*  VU) {
+ }
+ 
+ static __fi void _vuSUBAq(VURegs*  VU) {
++	if (VU_SOFT_ADDSUB) { vuSoftBinaryMAC<_vuAccurateOpSUB>(VU, &VU->ACC, VU_SOFT_BC_Q); return; }
+ 	if (_X){ VU->ACC.i.x = VU_MACx_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.x) - vuDouble(VU->VI[REG_Q].UL)); } else VU_MACx_CLEAR(VU);
+ 	if (_Y){ VU->ACC.i.y = VU_MACy_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.y) - vuDouble(VU->VI[REG_Q].UL)); } else VU_MACy_CLEAR(VU);
+ 	if (_Z){ VU->ACC.i.z = VU_MACz_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.z) - vuDouble(VU->VI[REG_Q].UL)); } else VU_MACz_CLEAR(VU);
+@@ -874,6 +1032,7 @@ static __fi void _vuSUBAq(VURegs*  VU) {
+ 
+ static __fi void _vuSUBAx(VURegs* VU)
+ {
++	if (VU_SOFT_ADDSUB) { vuSoftBinaryMAC<_vuAccurateOpSUB>(VU, &VU->ACC, VU_SOFT_BC_X); return; }
+ 	float tx = vuDouble(VU->VF[_Ft_].i.x);
+ 
+ 	if (_X){ VU->ACC.i.x = VU_MACx_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.x) - tx); } else VU_MACx_CLEAR(VU);
+@@ -885,6 +1044,7 @@ static __fi void _vuSUBAx(VURegs* VU)
+ 
+ static __fi void _vuSUBAy(VURegs* VU)
+ {
++	if (VU_SOFT_ADDSUB) { vuSoftBinaryMAC<_vuAccurateOpSUB>(VU, &VU->ACC, VU_SOFT_BC_Y); return; }
+ 	float ty = vuDouble(VU->VF[_Ft_].i.y);
+ 
+ 	if (_X){ VU->ACC.i.x = VU_MACx_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.x) - ty); } else VU_MACx_CLEAR(VU);
+@@ -896,6 +1056,7 @@ static __fi void _vuSUBAy(VURegs* VU)
+ 
+ static __fi void _vuSUBAz(VURegs* VU)
+ {
++	if (VU_SOFT_ADDSUB) { vuSoftBinaryMAC<_vuAccurateOpSUB>(VU, &VU->ACC, VU_SOFT_BC_Z); return; }
+ 	float tz = vuDouble(VU->VF[_Ft_].i.z);
+ 
+ 	if (_X){ VU->ACC.i.x = VU_MACx_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.x) - tz); } else VU_MACx_CLEAR(VU);
+@@ -907,6 +1068,7 @@ static __fi void _vuSUBAz(VURegs* VU)
+ 
+ static __fi void _vuSUBAw(VURegs* VU)
+ {
++	if (VU_SOFT_ADDSUB) { vuSoftBinaryMAC<_vuAccurateOpSUB>(VU, &VU->ACC, VU_SOFT_BC_W); return; }
+ 	float tw = vuDouble(VU->VF[_Ft_].i.w);
+ 
+ 	if (_X){ VU->ACC.i.x = VU_MACx_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.x) - tw); } else VU_MACx_CLEAR(VU);
+@@ -918,6 +1080,7 @@ static __fi void _vuSUBAw(VURegs* VU)
+ 
+ static __fi void _vuMUL(VURegs* VU)
+ {
++	if (VU_SOFT_MUL) { vuSoftBinaryMAC<_vuAccurateOpMUL>(VU, vuSoftDstFd(VU), VU_SOFT_BC_FT); return; }
+ 	VECTOR* dst;
+ 	if (_Fd_ == 0)
+ 		dst = &RDzero;
+@@ -933,6 +1096,7 @@ static __fi void _vuMUL(VURegs* VU)
+ 
+ static __fi void _vuMULi(VURegs* VU)
+ {
++	if (VU_SOFT_MUL) { vuSoftBinaryMAC<_vuAccurateOpMUL>(VU, vuSoftDstFd(VU), VU_SOFT_BC_I); return; }
+ 	VECTOR* dst;
+ 	if (_Fd_ == 0)
+ 		dst = &RDzero;
+@@ -948,6 +1112,7 @@ static __fi void _vuMULi(VURegs* VU)
+ 
+ static __fi void _vuMULq(VURegs* VU)
+ {
++	if (VU_SOFT_MUL) { vuSoftBinaryMAC<_vuAccurateOpMUL>(VU, vuSoftDstFd(VU), VU_SOFT_BC_Q); return; }
+ 	VECTOR* dst;
+ 	if (_Fd_ == 0)
+ 		dst = &RDzero;
+@@ -963,6 +1128,7 @@ static __fi void _vuMULq(VURegs* VU)
+ 
+ static __fi void _vuMULx(VURegs* VU)
+ {
++	if (VU_SOFT_MUL) { vuSoftBinaryMAC<_vuAccurateOpMUL>(VU, vuSoftDstFd(VU), VU_SOFT_BC_X); return; }
+ 	float ftx;
+ 	VECTOR* dst;
+ 	if (_Fd_ == 0)
+@@ -981,6 +1147,7 @@ static __fi void _vuMULx(VURegs* VU)
+ 
+ static __fi void _vuMULy(VURegs* VU)
+ {
++	if (VU_SOFT_MUL) { vuSoftBinaryMAC<_vuAccurateOpMUL>(VU, vuSoftDstFd(VU), VU_SOFT_BC_Y); return; }
+ 	float fty;
+ 	VECTOR* dst;
+ 	if (_Fd_ == 0)
+@@ -998,6 +1165,7 @@ static __fi void _vuMULy(VURegs* VU)
+ 
+ static __fi void _vuMULz(VURegs* VU)
+ {
++	if (VU_SOFT_MUL) { vuSoftBinaryMAC<_vuAccurateOpMUL>(VU, vuSoftDstFd(VU), VU_SOFT_BC_Z); return; }
+ 	float ftz;
+ 	VECTOR* dst;
+ 	if (_Fd_ == 0)
+@@ -1015,6 +1183,7 @@ static __fi void _vuMULz(VURegs* VU)
+ 
+ static __fi void _vuMULw(VURegs* VU)
+ {
++	if (VU_SOFT_MUL) { vuSoftBinaryMAC<_vuAccurateOpMUL>(VU, vuSoftDstFd(VU), VU_SOFT_BC_W); return; }
+ 	float ftw;
+ 	VECTOR* dst;
+ 	if (_Fd_ == 0)
+@@ -1032,6 +1201,7 @@ static __fi void _vuMULw(VURegs* VU)
+ 
+ 
+ static __fi void _vuMULA(VURegs*  VU) {
++	if (VU_SOFT_MUL) { vuSoftBinaryMAC<_vuAccurateOpMUL>(VU, &VU->ACC, VU_SOFT_BC_FT); return; }
+ 	if (_X){ VU->ACC.i.x = VU_MACx_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.x) * vuDouble(VU->VF[_Ft_].i.x)); } else VU_MACx_CLEAR(VU);
+ 	if (_Y){ VU->ACC.i.y = VU_MACy_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.y) * vuDouble(VU->VF[_Ft_].i.y)); } else VU_MACy_CLEAR(VU);
+ 	if (_Z){ VU->ACC.i.z = VU_MACz_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.z) * vuDouble(VU->VF[_Ft_].i.z)); } else VU_MACz_CLEAR(VU);
+@@ -1040,6 +1210,7 @@ static __fi void _vuMULA(VURegs*  VU) {
+ }
+ 
+ static __fi void _vuMULAi(VURegs*  VU) {
++	if (VU_SOFT_MUL) { vuSoftBinaryMAC<_vuAccurateOpMUL>(VU, &VU->ACC, VU_SOFT_BC_I); return; }
+ 	if (_X){ VU->ACC.i.x = VU_MACx_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.x) * vuDouble(VU->VI[REG_I].UL)); } else VU_MACx_CLEAR(VU);
+ 	if (_Y){ VU->ACC.i.y = VU_MACy_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.y) * vuDouble(VU->VI[REG_I].UL)); } else VU_MACy_CLEAR(VU);
+ 	if (_Z){ VU->ACC.i.z = VU_MACz_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.z) * vuDouble(VU->VI[REG_I].UL)); } else VU_MACz_CLEAR(VU);
+@@ -1048,6 +1219,7 @@ static __fi void _vuMULAi(VURegs*  VU) {
+ }
+ 
+ static __fi void _vuMULAq(VURegs*  VU) {
++	if (VU_SOFT_MUL) { vuSoftBinaryMAC<_vuAccurateOpMUL>(VU, &VU->ACC, VU_SOFT_BC_Q); return; }
+ 	if (_X){ VU->ACC.i.x = VU_MACx_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.x) * vuDouble(VU->VI[REG_Q].UL)); } else VU_MACx_CLEAR(VU);
+ 	if (_Y){ VU->ACC.i.y = VU_MACy_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.y) * vuDouble(VU->VI[REG_Q].UL)); } else VU_MACy_CLEAR(VU);
+ 	if (_Z){ VU->ACC.i.z = VU_MACz_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.z) * vuDouble(VU->VI[REG_Q].UL)); } else VU_MACz_CLEAR(VU);
+@@ -1056,6 +1228,7 @@ static __fi void _vuMULAq(VURegs*  VU) {
+ }
+ 
+ static __fi void _vuMULAx(VURegs*  VU) {
++	if (VU_SOFT_MUL) { vuSoftBinaryMAC<_vuAccurateOpMUL>(VU, &VU->ACC, VU_SOFT_BC_X); return; }
+ 	if (_X){ VU->ACC.i.x = VU_MACx_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.x) * vuDouble(VU->VF[_Ft_].i.x)); } else VU_MACx_CLEAR(VU);
+ 	if (_Y){ VU->ACC.i.y = VU_MACy_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.y) * vuDouble(VU->VF[_Ft_].i.x)); } else VU_MACy_CLEAR(VU);
+ 	if (_Z){ VU->ACC.i.z = VU_MACz_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.z) * vuDouble(VU->VF[_Ft_].i.x)); } else VU_MACz_CLEAR(VU);
+@@ -1064,6 +1237,7 @@ static __fi void _vuMULAx(VURegs*  VU) {
+ }
+ 
+ static __fi void _vuMULAy(VURegs*  VU) {
++	if (VU_SOFT_MUL) { vuSoftBinaryMAC<_vuAccurateOpMUL>(VU, &VU->ACC, VU_SOFT_BC_Y); return; }
+ 	if (_X){ VU->ACC.i.x = VU_MACx_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.x) * vuDouble(VU->VF[_Ft_].i.y)); } else VU_MACx_CLEAR(VU);
+ 	if (_Y){ VU->ACC.i.y = VU_MACy_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.y) * vuDouble(VU->VF[_Ft_].i.y)); } else VU_MACy_CLEAR(VU);
+ 	if (_Z){ VU->ACC.i.z = VU_MACz_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.z) * vuDouble(VU->VF[_Ft_].i.y)); } else VU_MACz_CLEAR(VU);
+@@ -1073,6 +1247,7 @@ static __fi void _vuMULAy(VURegs*  VU) {
+ 
+ static __fi void _vuMULAz(VURegs* VU)
+ {
++	if (VU_SOFT_MUL) { vuSoftBinaryMAC<_vuAccurateOpMUL>(VU, &VU->ACC, VU_SOFT_BC_Z); return; }
+ 	if (_X){ VU->ACC.i.x = VU_MACx_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.x) * vuDouble(VU->VF[_Ft_].i.z)); } else VU_MACx_CLEAR(VU);
+ 	if (_Y){ VU->ACC.i.y = VU_MACy_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.y) * vuDouble(VU->VF[_Ft_].i.z)); } else VU_MACy_CLEAR(VU);
+ 	if (_Z){ VU->ACC.i.z = VU_MACz_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.z) * vuDouble(VU->VF[_Ft_].i.z)); } else VU_MACz_CLEAR(VU);
+@@ -1081,6 +1256,7 @@ static __fi void _vuMULAz(VURegs* VU)
+ }
+ 
+ static __fi void _vuMULAw(VURegs*  VU) {
++	if (VU_SOFT_MUL) { vuSoftBinaryMAC<_vuAccurateOpMUL>(VU, &VU->ACC, VU_SOFT_BC_W); return; }
+ 	if (_X){ VU->ACC.i.x = VU_MACx_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.x) * vuDouble(VU->VF[_Ft_].i.w)); } else VU_MACx_CLEAR(VU);
+ 	if (_Y){ VU->ACC.i.y = VU_MACy_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.y) * vuDouble(VU->VF[_Ft_].i.w)); } else VU_MACy_CLEAR(VU);
+ 	if (_Z){ VU->ACC.i.z = VU_MACz_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.z) * vuDouble(VU->VF[_Ft_].i.w)); } else VU_MACz_CLEAR(VU);
+@@ -1090,6 +1266,7 @@ static __fi void _vuMULAw(VURegs*  VU) {
+ 
+ static __fi void _vuMADD(VURegs* VU)
+ {
++	if (VU_SOFT_FMAC) { vuSoftTernaryMAC<_vuAccurateOpMADD>(VU, vuSoftDstFd(VU), VU_SOFT_BC_FT); return; }
+ 	VECTOR* dst;
+ 	if (_Fd_ == 0)
+ 		dst = &RDzero;
+@@ -1106,6 +1283,7 @@ static __fi void _vuMADD(VURegs* VU)
+ 
+ static __fi void _vuMADDi(VURegs* VU)
+ {
++	if (VU_SOFT_FMAC) { vuSoftTernaryMAC<_vuAccurateOpMADD>(VU, vuSoftDstFd(VU), VU_SOFT_BC_I); return; }
+ 	VECTOR* dst;
+ 	if (_Fd_ == 0)
+ 		dst = &RDzero;
+@@ -1121,6 +1299,7 @@ static __fi void _vuMADDi(VURegs* VU)
+ 
+ static __fi void _vuMADDq(VURegs* VU)
+ {
++	if (VU_SOFT_FMAC) { vuSoftTernaryMAC<_vuAccurateOpMADD>(VU, vuSoftDstFd(VU), VU_SOFT_BC_Q); return; }
+ 	VECTOR* dst;
+ 	if (_Fd_ == 0)
+ 		dst = &RDzero;
+@@ -1136,6 +1315,7 @@ static __fi void _vuMADDq(VURegs* VU)
+ 
+ static __fi void _vuMADDx(VURegs* VU)
+ {
++	if (VU_SOFT_FMAC) { vuSoftTernaryMAC<_vuAccurateOpMADD>(VU, vuSoftDstFd(VU), VU_SOFT_BC_X); return; }
+ 	float ftx;
+ 	VECTOR* dst;
+ 	if (_Fd_ == 0)
+@@ -1153,6 +1333,7 @@ static __fi void _vuMADDx(VURegs* VU)
+ 
+ static __fi void _vuMADDy(VURegs* VU)
+ {
++	if (VU_SOFT_FMAC) { vuSoftTernaryMAC<_vuAccurateOpMADD>(VU, vuSoftDstFd(VU), VU_SOFT_BC_Y); return; }
+ 	float fty;
+ 	VECTOR* dst;
+ 	if (_Fd_ == 0)
+@@ -1170,6 +1351,7 @@ static __fi void _vuMADDy(VURegs* VU)
+ 
+ static __fi void _vuMADDz(VURegs* VU)
+ {
++	if (VU_SOFT_FMAC) { vuSoftTernaryMAC<_vuAccurateOpMADD>(VU, vuSoftDstFd(VU), VU_SOFT_BC_Z); return; }
+ 	float ftz;
+ 	VECTOR* dst;
+ 	if (_Fd_ == 0)
+@@ -1187,6 +1369,7 @@ static __fi void _vuMADDz(VURegs* VU)
+ 
+ static __fi void _vuMADDw(VURegs* VU)
+ {
++	if (VU_SOFT_FMAC) { vuSoftTernaryMAC<_vuAccurateOpMADD>(VU, vuSoftDstFd(VU), VU_SOFT_BC_W); return; }
+ 	float ftw;
+ 	VECTOR* dst;
+ 	if (_Fd_ == 0)
+@@ -1203,6 +1386,7 @@ static __fi void _vuMADDw(VURegs* VU)
+ }
+ 
+ static __fi void _vuMADDA(VURegs*  VU) {
++	if (VU_SOFT_FMAC) { vuSoftAccTernaryMAC<_vuAccurateOpMADDA>(VU, VU_SOFT_BC_FT); return; }
+     if (_X) VU->ACC.i.x = VU_MACx_UPDATE(VU, vuDouble(VU->ACC.i.x) + (vuDouble(VU->VF[_Fs_].i.x) * vuDouble(VU->VF[_Ft_].i.x))); else VU_MACx_CLEAR(VU);
+     if (_Y) VU->ACC.i.y = VU_MACy_UPDATE(VU, vuDouble(VU->ACC.i.y) + (vuDouble(VU->VF[_Fs_].i.y) * vuDouble(VU->VF[_Ft_].i.y))); else VU_MACy_CLEAR(VU);
+     if (_Z) VU->ACC.i.z = VU_MACz_UPDATE(VU, vuDouble(VU->ACC.i.z) + (vuDouble(VU->VF[_Fs_].i.z) * vuDouble(VU->VF[_Ft_].i.z))); else VU_MACz_CLEAR(VU);
+@@ -1212,6 +1396,7 @@ static __fi void _vuMADDA(VURegs*  VU) {
+ 
+ static __fi void _vuMADDAi(VURegs* VU)
+ {
++	if (VU_SOFT_FMAC) { vuSoftAccTernaryMAC<_vuAccurateOpMADDA>(VU, VU_SOFT_BC_I); return; }
+ 	float ti = vuDouble(VU->VI[REG_I].UL);
+ 
+     if (_X) VU->ACC.i.x = VU_MACx_UPDATE(VU, vuDouble(VU->ACC.i.x) + ( vuDouble(VU->VF[_Fs_].i.x) * ti)); else VU_MACx_CLEAR(VU);
+@@ -1223,6 +1408,7 @@ static __fi void _vuMADDAi(VURegs* VU)
+ 
+ static __fi void _vuMADDAq(VURegs* VU)
+ {
++	if (VU_SOFT_FMAC) { vuSoftAccTernaryMAC<_vuAccurateOpMADDA>(VU, VU_SOFT_BC_Q); return; }
+ 	float tq = vuDouble(VU->VI[REG_Q].UL);
+ 
+     if (_X) VU->ACC.i.x = VU_MACx_UPDATE(VU, vuDouble(VU->ACC.i.x) + ( vuDouble(VU->VF[_Fs_].i.x) * tq)); else VU_MACx_CLEAR(VU);
+@@ -1233,6 +1419,7 @@ static __fi void _vuMADDAq(VURegs* VU)
+ }
+ 
+ static __fi void _vuMADDAx(VURegs*  VU) {
++	if (VU_SOFT_FMAC) { vuSoftAccTernaryMAC<_vuAccurateOpMADDA>(VU, VU_SOFT_BC_X); return; }
+     if (_X) VU->ACC.i.x = VU_MACx_UPDATE(VU, vuDouble(VU->ACC.i.x) + ( vuDouble(VU->VF[_Fs_].i.x) * vuDouble(VU->VF[_Ft_].i.x))); else VU_MACx_CLEAR(VU);
+     if (_Y) VU->ACC.i.y = VU_MACy_UPDATE(VU, vuDouble(VU->ACC.i.y) + ( vuDouble(VU->VF[_Fs_].i.y) * vuDouble(VU->VF[_Ft_].i.x))); else VU_MACy_CLEAR(VU);
+     if (_Z) VU->ACC.i.z = VU_MACz_UPDATE(VU, vuDouble(VU->ACC.i.z) + ( vuDouble(VU->VF[_Fs_].i.z) * vuDouble(VU->VF[_Ft_].i.x))); else VU_MACz_CLEAR(VU);
+@@ -1241,6 +1428,7 @@ static __fi void _vuMADDAx(VURegs*  VU) {
+ }
+ 
+ static __fi void _vuMADDAy(VURegs*  VU) {
++	if (VU_SOFT_FMAC) { vuSoftAccTernaryMAC<_vuAccurateOpMADDA>(VU, VU_SOFT_BC_Y); return; }
+ 	if (_X) VU->ACC.i.x = VU_MACx_UPDATE(VU, vuDouble(VU->ACC.i.x) + ( vuDouble(VU->VF[_Fs_].i.x) * vuDouble(VU->VF[_Ft_].i.y))); else VU_MACx_CLEAR(VU);
+     if (_Y) VU->ACC.i.y = VU_MACy_UPDATE(VU, vuDouble(VU->ACC.i.y) + ( vuDouble(VU->VF[_Fs_].i.y) * vuDouble(VU->VF[_Ft_].i.y))); else VU_MACy_CLEAR(VU);
+     if (_Z) VU->ACC.i.z = VU_MACz_UPDATE(VU, vuDouble(VU->ACC.i.z) + ( vuDouble(VU->VF[_Fs_].i.z) * vuDouble(VU->VF[_Ft_].i.y))); else VU_MACz_CLEAR(VU);
+@@ -1249,6 +1437,7 @@ static __fi void _vuMADDAy(VURegs*  VU) {
+ }
+ 
+ static __fi void _vuMADDAz(VURegs*  VU) {
++	if (VU_SOFT_FMAC) { vuSoftAccTernaryMAC<_vuAccurateOpMADDA>(VU, VU_SOFT_BC_Z); return; }
+     if (_X) VU->ACC.i.x = VU_MACx_UPDATE(VU, vuDouble(VU->ACC.i.x) + ( vuDouble(VU->VF[_Fs_].i.x) * vuDouble(VU->VF[_Ft_].i.z))); else VU_MACx_CLEAR(VU);
+     if (_Y) VU->ACC.i.y = VU_MACy_UPDATE(VU, vuDouble(VU->ACC.i.y) + ( vuDouble(VU->VF[_Fs_].i.y) * vuDouble(VU->VF[_Ft_].i.z))); else VU_MACy_CLEAR(VU);
+     if (_Z) VU->ACC.i.z = VU_MACz_UPDATE(VU, vuDouble(VU->ACC.i.z) + ( vuDouble(VU->VF[_Fs_].i.z) * vuDouble(VU->VF[_Ft_].i.z))); else VU_MACz_CLEAR(VU);
+@@ -1257,6 +1446,7 @@ static __fi void _vuMADDAz(VURegs*  VU) {
+ }
+ 
+ static __fi void _vuMADDAw(VURegs*  VU) {
++	if (VU_SOFT_FMAC) { vuSoftAccTernaryMAC<_vuAccurateOpMADDA>(VU, VU_SOFT_BC_W); return; }
+     if (_X) VU->ACC.i.x = VU_MACx_UPDATE(VU, vuDouble(VU->ACC.i.x) + ( vuDouble(VU->VF[_Fs_].i.x) * vuDouble(VU->VF[_Ft_].i.w))); else VU_MACx_CLEAR(VU);
+     if (_Y) VU->ACC.i.y = VU_MACy_UPDATE(VU, vuDouble(VU->ACC.i.y) + ( vuDouble(VU->VF[_Fs_].i.y) * vuDouble(VU->VF[_Ft_].i.w))); else VU_MACy_CLEAR(VU);
+     if (_Z) VU->ACC.i.z = VU_MACz_UPDATE(VU, vuDouble(VU->ACC.i.z) + ( vuDouble(VU->VF[_Fs_].i.z) * vuDouble(VU->VF[_Ft_].i.w))); else VU_MACz_CLEAR(VU);
+@@ -1266,6 +1456,7 @@ static __fi void _vuMADDAw(VURegs*  VU) {
+ 
+ static __fi void _vuMSUB(VURegs* VU)
+ {
++	if (VU_SOFT_FMAC) { vuSoftTernaryMAC<_vuAccurateOpMSUB>(VU, vuSoftDstFd(VU), VU_SOFT_BC_FT); return; }
+ 	VECTOR* dst;
+ 	if (_Fd_ == 0)
+ 		dst = &RDzero;
+@@ -1281,6 +1472,7 @@ static __fi void _vuMSUB(VURegs* VU)
+ 
+ static __fi void _vuMSUBi(VURegs* VU)
+ {
++	if (VU_SOFT_FMAC) { vuSoftTernaryMAC<_vuAccurateOpMSUB>(VU, vuSoftDstFd(VU), VU_SOFT_BC_I); return; }
+ 	float ti = vuDouble(VU->VI[REG_I].UL);
+ 	VECTOR* dst;
+ 	if (_Fd_ == 0)
+@@ -1297,6 +1489,7 @@ static __fi void _vuMSUBi(VURegs* VU)
+ 
+ static __fi void _vuMSUBq(VURegs* VU)
+ {
++	if (VU_SOFT_FMAC) { vuSoftTernaryMAC<_vuAccurateOpMSUB>(VU, vuSoftDstFd(VU), VU_SOFT_BC_Q); return; }
+ 	float tq = vuDouble(VU->VI[REG_Q].UL);
+ 	VECTOR* dst;
+ 	if (_Fd_ == 0)
+@@ -1314,6 +1507,7 @@ static __fi void _vuMSUBq(VURegs* VU)
+ 
+ static __fi void _vuMSUBx(VURegs* VU)
+ {
++	if (VU_SOFT_FMAC) { vuSoftTernaryMAC<_vuAccurateOpMSUB>(VU, vuSoftDstFd(VU), VU_SOFT_BC_X); return; }
+ 	float ftx;
+ 	VECTOR* dst;
+ 	if (_Fd_ == 0)
+@@ -1332,6 +1526,7 @@ static __fi void _vuMSUBx(VURegs* VU)
+ 
+ static __fi void _vuMSUBy(VURegs* VU)
+ {
++	if (VU_SOFT_FMAC) { vuSoftTernaryMAC<_vuAccurateOpMSUB>(VU, vuSoftDstFd(VU), VU_SOFT_BC_Y); return; }
+ 	float fty;
+ 	VECTOR* dst;
+ 	if (_Fd_ == 0)
+@@ -1350,6 +1545,7 @@ static __fi void _vuMSUBy(VURegs* VU)
+ 
+ static __fi void _vuMSUBz(VURegs* VU)
+ {
++	if (VU_SOFT_FMAC) { vuSoftTernaryMAC<_vuAccurateOpMSUB>(VU, vuSoftDstFd(VU), VU_SOFT_BC_Z); return; }
+ 	float ftz;
+ 	VECTOR* dst;
+ 	if (_Fd_ == 0)
+@@ -1367,6 +1563,7 @@ static __fi void _vuMSUBz(VURegs* VU)
+ 
+ static __fi void _vuMSUBw(VURegs* VU)
+ {
++	if (VU_SOFT_FMAC) { vuSoftTernaryMAC<_vuAccurateOpMSUB>(VU, vuSoftDstFd(VU), VU_SOFT_BC_W); return; }
+ 	float ftw;
+ 	VECTOR * dst;
+     if (_Fd_ == 0) dst = &RDzero;
+@@ -1382,6 +1579,7 @@ static __fi void _vuMSUBw(VURegs* VU)
+ 
+ 
+ static __fi void _vuMSUBA(VURegs*  VU) {
++	if (VU_SOFT_FMAC) { vuSoftAccTernaryMAC<_vuAccurateOpMSUBA>(VU, VU_SOFT_BC_FT); return; }
+     if (_X) VU->ACC.i.x = VU_MACx_UPDATE(VU, vuDouble(VU->ACC.i.x) - ( vuDouble(VU->VF[_Fs_].i.x) * vuDouble(VU->VF[_Ft_].i.x))); else VU_MACx_CLEAR(VU);
+     if (_Y) VU->ACC.i.y = VU_MACy_UPDATE(VU, vuDouble(VU->ACC.i.y) - ( vuDouble(VU->VF[_Fs_].i.y) * vuDouble(VU->VF[_Ft_].i.y))); else VU_MACy_CLEAR(VU);
+     if (_Z) VU->ACC.i.z = VU_MACz_UPDATE(VU, vuDouble(VU->ACC.i.z) - ( vuDouble(VU->VF[_Fs_].i.z) * vuDouble(VU->VF[_Ft_].i.z))); else VU_MACz_CLEAR(VU);
+@@ -1390,6 +1588,7 @@ static __fi void _vuMSUBA(VURegs*  VU) {
+ }
+ 
+ static __fi void _vuMSUBAi(VURegs*  VU) {
++	if (VU_SOFT_FMAC) { vuSoftAccTernaryMAC<_vuAccurateOpMSUBA>(VU, VU_SOFT_BC_I); return; }
+     if (_X) VU->ACC.i.x = VU_MACx_UPDATE(VU, vuDouble(VU->ACC.i.x) - ( vuDouble(VU->VF[_Fs_].i.x) * vuDouble(VU->VI[REG_I].UL))); else VU_MACx_CLEAR(VU);
+     if (_Y) VU->ACC.i.y = VU_MACy_UPDATE(VU, vuDouble(VU->ACC.i.y) - ( vuDouble(VU->VF[_Fs_].i.y) * vuDouble(VU->VI[REG_I].UL))); else VU_MACy_CLEAR(VU);
+     if (_Z) VU->ACC.i.z = VU_MACz_UPDATE(VU, vuDouble(VU->ACC.i.z) - ( vuDouble(VU->VF[_Fs_].i.z) * vuDouble(VU->VI[REG_I].UL))); else VU_MACz_CLEAR(VU);
+@@ -1398,6 +1597,7 @@ static __fi void _vuMSUBAi(VURegs*  VU) {
+ }
+ 
+ static __fi void _vuMSUBAq(VURegs*  VU) {
++	if (VU_SOFT_FMAC) { vuSoftAccTernaryMAC<_vuAccurateOpMSUBA>(VU, VU_SOFT_BC_Q); return; }
+     if (_X) VU->ACC.i.x = VU_MACx_UPDATE(VU, vuDouble(VU->ACC.i.x) - ( vuDouble(VU->VF[_Fs_].i.x) * vuDouble(VU->VI[REG_Q].UL))); else VU_MACx_CLEAR(VU);
+     if (_Y) VU->ACC.i.y = VU_MACy_UPDATE(VU, vuDouble(VU->ACC.i.y) - ( vuDouble(VU->VF[_Fs_].i.y) * vuDouble(VU->VI[REG_Q].UL))); else VU_MACy_CLEAR(VU);
+     if (_Z) VU->ACC.i.z = VU_MACz_UPDATE(VU, vuDouble(VU->ACC.i.z) - ( vuDouble(VU->VF[_Fs_].i.z) * vuDouble(VU->VI[REG_Q].UL))); else VU_MACz_CLEAR(VU);
+@@ -1407,6 +1607,7 @@ static __fi void _vuMSUBAq(VURegs*  VU) {
+ 
+ static __fi void _vuMSUBAx(VURegs* VU)
+ {
++	if (VU_SOFT_FMAC) { vuSoftAccTernaryMAC<_vuAccurateOpMSUBA>(VU, VU_SOFT_BC_X); return; }
+ 	float tx = vuDouble(VU->VF[_Ft_].i.x);
+ 
+     if (_X) VU->ACC.i.x = VU_MACx_UPDATE(VU, vuDouble(VU->ACC.i.x) - ( vuDouble(VU->VF[_Fs_].i.x) * tx)); else VU_MACx_CLEAR(VU);
+@@ -1418,6 +1619,7 @@ static __fi void _vuMSUBAx(VURegs* VU)
+ 
+ static __fi void _vuMSUBAy(VURegs* VU)
+ {
++	if (VU_SOFT_FMAC) { vuSoftAccTernaryMAC<_vuAccurateOpMSUBA>(VU, VU_SOFT_BC_Y); return; }
+ 	float ty = vuDouble(VU->VF[_Ft_].i.y);
+ 
+     if (_X) VU->ACC.i.x = VU_MACx_UPDATE(VU, vuDouble(VU->ACC.i.x) - ( vuDouble(VU->VF[_Fs_].i.x) * ty)); else VU_MACx_CLEAR(VU);
+@@ -1429,6 +1631,7 @@ static __fi void _vuMSUBAy(VURegs* VU)
+ 
+ static __fi void _vuMSUBAz(VURegs* VU)
+ {
++	if (VU_SOFT_FMAC) { vuSoftAccTernaryMAC<_vuAccurateOpMSUBA>(VU, VU_SOFT_BC_Z); return; }
+ 	float tz = vuDouble(VU->VF[_Ft_].i.z);
+ 
+     if (_X) VU->ACC.i.x = VU_MACx_UPDATE(VU, vuDouble(VU->ACC.i.x) - ( vuDouble(VU->VF[_Fs_].i.x) * tz)); else VU_MACx_CLEAR(VU);
+@@ -1440,6 +1643,7 @@ static __fi void _vuMSUBAz(VURegs* VU)
+ 
+ static __fi void _vuMSUBAw(VURegs* VU)
+ {
++	if (VU_SOFT_FMAC) { vuSoftAccTernaryMAC<_vuAccurateOpMSUBA>(VU, VU_SOFT_BC_W); return; }
+ 	float tw = vuDouble(VU->VF[_Ft_].i.w);
+ 
+     if (_X) VU->ACC.i.x = VU_MACx_UPDATE(VU, vuDouble(VU->ACC.i.x) - ( vuDouble(VU->VF[_Fs_].i.x) * tw)); else VU_MACx_CLEAR(VU);
+@@ -1606,6 +1810,15 @@ static __fi void _vuMINIw(VURegs* VU)
+ 
+ static __fi void _vuOPMULA(VURegs* VU)
+ {
++	if (VU_SOFT_MUL)
++	{
++		VU->ACC.i.x = VU_MACx_UPDATE(VU, _vuAccurateOpMUL(VU->VF[_Fs_].i.y, VU->VF[_Ft_].i.z));
++		VU->ACC.i.y = VU_MACy_UPDATE(VU, _vuAccurateOpMUL(VU->VF[_Fs_].i.z, VU->VF[_Ft_].i.x));
++		VU->ACC.i.z = VU_MACz_UPDATE(VU, _vuAccurateOpMUL(VU->VF[_Fs_].i.x, VU->VF[_Ft_].i.y));
++		VU_STAT_UPDATE(VU);
++		return;
++	}
++
+ 	VU->ACC.i.x = VU_MACx_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.y) * vuDouble(VU->VF[_Ft_].i.z));
+ 	VU->ACC.i.y = VU_MACy_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.z) * vuDouble(VU->VF[_Ft_].i.x));
+ 	VU->ACC.i.z = VU_MACz_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.x) * vuDouble(VU->VF[_Ft_].i.y));
+@@ -1614,6 +1827,17 @@ static __fi void _vuOPMULA(VURegs* VU)
+ 
+ static __fi void _vuOPMSUB(VURegs* VU)
+ {
++	if (VU_SOFT_MUL)
++	{
++		VECTOR* sdst = vuSoftDstFd(VU);
++
++		sdst->i.x = VU_MACx_UPDATE(VU, _vuAccurateOpMSUB(VU->ACC.i.x, VU->VF[_Fs_].i.y, VU->VF[_Ft_].i.z));
++		sdst->i.y = VU_MACy_UPDATE(VU, _vuAccurateOpMSUB(VU->ACC.i.y, VU->VF[_Fs_].i.z, VU->VF[_Ft_].i.x));
++		sdst->i.z = VU_MACz_UPDATE(VU, _vuAccurateOpMSUB(VU->ACC.i.z, VU->VF[_Fs_].i.x, VU->VF[_Ft_].i.y));
++		VU_STAT_UPDATE(VU);
++		return;
++	}
++
+ 	VECTOR* dst;
+ 	float ftx, fty, ftz;
+ 	float fsx, fsy, fsz;
+@@ -1756,6 +1980,33 @@ static __fi void _vuCLIP(VURegs* VU)
+ 
+ static __fi void _vuDIV(VURegs* VU)
+ {
++	if (VU_SOFT_DIVSQRT)
++	{
++		PS2Float sft = PS2Float(VU->VF[_Ft_].UL[_Ftf_]);
++		PS2Float sfs = PS2Float(VU->VF[_Fs_].UL[_Fsf_]);
++
++		VU->statusflag &= ~0x30;
++
++		if (sft.IsZero())
++		{
++			if (sfs.IsZero())
++				VU->statusflag |= 0x10;
++			else
++				VU->statusflag |= 0x20;
++
++			if ((VU->VF[_Ft_].UL[_Ftf_] & 0x80000000) ^
++				(VU->VF[_Fs_].UL[_Fsf_] & 0x80000000))
++				VU->q.UL = PS2Float::MIN_FLOATING_POINT_VALUE;
++			else
++				VU->q.UL = PS2Float::MAX_FLOATING_POINT_VALUE;
++		}
++		else
++		{
++			VU->q.UL = sfs.Div(sft).raw;
++		}
++		return;
++	}
++
+ 	float ft = vuDouble(VU->VF[_Ft_].UL[_Ftf_]);
+ 	float fs = vuDouble(VU->VF[_Fs_].UL[_Fsf_]);
+ 
+@@ -1783,6 +2034,18 @@ static __fi void _vuDIV(VURegs* VU)
+ 
+ static __fi void _vuSQRT(VURegs* VU)
+ {
++	if (VU_SOFT_DIVSQRT)
++	{
++		PS2Float sft = PS2Float(VU->VF[_Ft_].UL[_Ftf_]);
++
++		VU->statusflag &= ~0x30;
++
++		if (sft.ToDouble() < 0.0)
++			VU->statusflag |= 0x10;
++		VU->q.UL = sft.Sqrt().raw;
++		return;
++	}
++
+ 	float ft = vuDouble(VU->VF[_Ft_].UL[_Ftf_]);
+ 
+ 	VU->statusflag &= ~0x30;
+@@ -1795,6 +2058,46 @@ static __fi void _vuSQRT(VURegs* VU)
+ 
+ static __fi void _vuRSQRT(VURegs* VU)
+ {
++	if (VU_SOFT_DIVSQRT)
++	{
++		PS2Float sft = PS2Float(VU->VF[_Ft_].UL[_Ftf_]);
++		PS2Float sfs = PS2Float(VU->VF[_Fs_].UL[_Fsf_]);
++
++		VU->statusflag &= ~0x30;
++
++		if (sft.IsZero())
++		{
++			VU->statusflag |= 0x20;
++
++			if (!sfs.IsZero())
++			{
++				if ((VU->VF[_Ft_].UL[_Ftf_] & 0x80000000) ^
++					(VU->VF[_Fs_].UL[_Fsf_] & 0x80000000))
++					VU->q.UL = PS2Float::MIN_FLOATING_POINT_VALUE;
++				else
++					VU->q.UL = PS2Float::MAX_FLOATING_POINT_VALUE;
++			}
++			else
++			{
++				if ((VU->VF[_Ft_].UL[_Ftf_] & 0x80000000) ^
++					(VU->VF[_Fs_].UL[_Fsf_] & 0x80000000))
++					VU->q.UL = 0x80000000;
++				else
++					VU->q.UL = 0;
++
++				VU->statusflag |= 0x10;
++			}
++		}
++		else
++		{
++			if (sft.ToDouble() < 0.0)
++				VU->statusflag |= 0x10;
++
++			VU->q.UL = sfs.Rsqrt(sft).raw;
++		}
++		return;
++	}
++
+ 	float ft = vuDouble(VU->VF[_Ft_].UL[_Ftf_]);
+ 	float fs = vuDouble(VU->VF[_Fs_].UL[_Fsf_]);
+ 	float temp;
+@@ -2523,6 +2826,12 @@ static __ri void _vuESUM(VURegs* VU)
+ 
+ static __ri void _vuERCPR(VURegs* VU)
+ {
++	if (VU_SOFT_DIVSQRT)
++	{
++		VU->p.UL = PS2Float(VU->VF[_Fs_].UL[_Fsf_]).ERCPR().raw;
++		return;
++	}
++
+ 	float p = vuDouble(VU->VF[_Fs_].UL[_Fsf_]);
+ 
+ 	if (p != 0)
+@@ -2533,6 +2842,12 @@ static __ri void _vuERCPR(VURegs* VU)
+ 
+ static __ri void _vuESQRT(VURegs* VU)
+ {
++	if (VU_SOFT_DIVSQRT)
++	{
++		VU->p.UL = PS2Float(VU->VF[_Fs_].UL[_Fsf_]).ESQRT().raw;
++		return;
++	}
++
+ 	float p = vuDouble(VU->VF[_Fs_].UL[_Fsf_]);
+ 
+ 	if (p >= 0)
+@@ -2543,6 +2858,12 @@ static __ri void _vuESQRT(VURegs* VU)
+ 
+ static __ri void _vuERSQRT(VURegs* VU)
+ {
++	if (VU_SOFT_DIVSQRT)
++	{
++		VU->p.UL = PS2Float(VU->VF[_Fs_].UL[_Fsf_]).ERSQRT().raw;
++		return;
++	}
++
+ 	float p = vuDouble(VU->VF[_Fs_].UL[_Fsf_]);
+ 
+ 	if (p >= 0)
+diff --git a/pcsx2/x86/iCore.h b/pcsx2/x86/iCore.h
+index 89a5b7f..0302afb 100644
+--- a/pcsx2/x86/iCore.h
++++ b/pcsx2/x86/iCore.h
+@@ -306,5 +306,24 @@ int _allocIfUsedFPUtoXMM(int fpureg, int mode);
+ #define FLUSH_INTERPRETER  0xfff
+ #define FLUSH_FULLVTLB 0x000
+ 
++/* Soft-float (PS2Float) interpreter fallbacks -- see FPURECOMPILE_CONSTCODE_SOFT and
++   REC_COP2_mVU0_SOFT. These are hot: with the option on, they run on every COP1 arithmetic
++   op and every COP2 FMAC/FDIV op, so FLUSH_INTERPRETER (0xfff) is far too blunt -- it would
++   destroy the whole EE register allocation and constant propagation at each one.
++   What the callees actually touch, verified by inspection:
++     - COP1 ADD_S..RSQRT_S: fpuRegs / fpuRegs.fprc in memory, plus cpuRegs.code. No EE GPRs.
++     - COP2 VADD..VRSQRT:   vuRegs[0] in memory, plus cpuRegs.code. No EE GPRs (every
++                            cpuRegs reference in the V* wrappers is cpuRegs.code).
++   FLUSH_CODE is therefore mandatory, and FLUSH_FREE_XMM/FLUSH_FREE_VU0 are needed to write
++   back and invalidate the cached FPU/VU register state (freeing also routes through
++   mVUFreeCOP2XMMreg/mVUFreeCOP2GPR, which clears microVU0's COP2 cache). FLUSH_PC is kept
++   because it costs one immediate store at most once per instruction. Note the COP2 mask is
++   a strict superset of FLUSH_FOR_POSSIBLE_MICRO_EXEC, which the CALLMS fallback already
++   relies on before executing arbitrary VU0 code.
++   Caller-saved GPRs/XMMs are freed by iFlushCall unconditionally, independent of the mask,
++   so the call ABI is safe here. */
++#define FLUSH_SOFTFLOAT_COP1 (FLUSH_FREE_XMM | FLUSH_PC | FLUSH_CODE)
++#define FLUSH_SOFTFLOAT_COP2 (FLUSH_FREE_XMM | FLUSH_FREE_VU0 | FLUSH_PC | FLUSH_CODE)
++
+ /* No freeing, used when callee won't destroy XMM regs */
+ #define FLUSH_NODESTROY (FLUSH_CONSTANT_REGS | FLUSH_FLUSH_XMM | FLUSH_ALL_X86)
+diff --git a/pcsx2/x86/iFPU.cpp b/pcsx2/x86/iFPU.cpp
+index 2f98d2e..e4228d2 100644
+--- a/pcsx2/x86/iFPU.cpp
++++ b/pcsx2/x86/iFPU.cpp
+@@ -662,14 +662,14 @@ void recADD_S_xmm(int info)
+ 	fpuFloat(recCommutativeOp(info, EEREC_D, 0));
+ }
+ 
+-FPURECOMPILE_CONSTCODE(ADD_S, XMMINFO_WRITED | XMMINFO_READS | XMMINFO_READT);
++FPURECOMPILE_CONSTCODE_SOFT(ADD_S, XMMINFO_WRITED | XMMINFO_READS | XMMINFO_READT, CHECK_FPU_SOFT_ADDSUB);
+ 
+ void recADDA_S_xmm(int info)
+ {
+ 	fpuFloat(recCommutativeOp(info, EEREC_ACC, 0));
+ }
+ 
+-FPURECOMPILE_CONSTCODE(ADDA_S, XMMINFO_WRITEACC | XMMINFO_READS | XMMINFO_READT);
++FPURECOMPILE_CONSTCODE_SOFT(ADDA_S, XMMINFO_WRITEACC | XMMINFO_READS | XMMINFO_READT, CHECK_FPU_SOFT_ADDSUB);
+ //------------------------------------------------------------------
+ 
+ //------------------------------------------------------------------
+@@ -1119,7 +1119,7 @@ void recDIV_S_xmm(int info)
+ 	_freeXMMreg(t0reg);
+ }
+ 
+-FPURECOMPILE_CONSTCODE(DIV_S, XMMINFO_WRITED | XMMINFO_READS | XMMINFO_READT);
++FPURECOMPILE_CONSTCODE_SOFT(DIV_S, XMMINFO_WRITED | XMMINFO_READS | XMMINFO_READT, CHECK_FPU_SOFT_DIVSQRT);
+ //------------------------------------------------------------------
+ 
+ 
+@@ -1322,14 +1322,14 @@ void recMADD_S_xmm(int info)
+ 	recMADDtemp(info, EEREC_D);
+ }
+ 
+-FPURECOMPILE_CONSTCODE(MADD_S, XMMINFO_WRITED | XMMINFO_READACC | XMMINFO_READS | XMMINFO_READT);
++FPURECOMPILE_CONSTCODE_SOFT(MADD_S, XMMINFO_WRITED | XMMINFO_READACC | XMMINFO_READS | XMMINFO_READT, CHECK_FPU_SOFT_ADDSUB && CHECK_FPU_SOFT_MUL);
+ 
+ void recMADDA_S_xmm(int info)
+ {
+ 	recMADDtemp(info, EEREC_ACC);
+ }
+ 
+-FPURECOMPILE_CONSTCODE(MADDA_S, XMMINFO_WRITEACC | XMMINFO_READACC | XMMINFO_READS | XMMINFO_READT);
++FPURECOMPILE_CONSTCODE_SOFT(MADDA_S, XMMINFO_WRITEACC | XMMINFO_READACC | XMMINFO_READS | XMMINFO_READT, CHECK_FPU_SOFT_ADDSUB && CHECK_FPU_SOFT_MUL);
+ //------------------------------------------------------------------
+ 
+ 
+@@ -1533,14 +1533,14 @@ void recMSUB_S_xmm(int info)
+ 	recMSUBtemp(info, EEREC_D);
+ }
+ 
+-FPURECOMPILE_CONSTCODE(MSUB_S, XMMINFO_WRITED | XMMINFO_READACC | XMMINFO_READS | XMMINFO_READT);
++FPURECOMPILE_CONSTCODE_SOFT(MSUB_S, XMMINFO_WRITED | XMMINFO_READACC | XMMINFO_READS | XMMINFO_READT, CHECK_FPU_SOFT_ADDSUB && CHECK_FPU_SOFT_MUL);
+ 
+ void recMSUBA_S_xmm(int info)
+ {
+ 	recMSUBtemp(info, EEREC_ACC);
+ }
+ 
+-FPURECOMPILE_CONSTCODE(MSUBA_S, XMMINFO_WRITEACC | XMMINFO_READACC | XMMINFO_READS | XMMINFO_READT);
++FPURECOMPILE_CONSTCODE_SOFT(MSUBA_S, XMMINFO_WRITEACC | XMMINFO_READACC | XMMINFO_READS | XMMINFO_READT, CHECK_FPU_SOFT_ADDSUB && CHECK_FPU_SOFT_MUL);
+ //------------------------------------------------------------------
+ 
+ 
+@@ -1552,14 +1552,14 @@ void recMUL_S_xmm(int info)
+ 	fpuFloat(recCommutativeOp(info, EEREC_D, 1));
+ }
+ 
+-FPURECOMPILE_CONSTCODE(MUL_S, XMMINFO_WRITED | XMMINFO_READS | XMMINFO_READT);
++FPURECOMPILE_CONSTCODE_SOFT(MUL_S, XMMINFO_WRITED | XMMINFO_READS | XMMINFO_READT, CHECK_FPU_SOFT_MUL);
+ 
+ void recMULA_S_xmm(int info)
+ {
+ 	fpuFloat(recCommutativeOp(info, EEREC_ACC, 1));
+ }
+ 
+-FPURECOMPILE_CONSTCODE(MULA_S, XMMINFO_WRITEACC | XMMINFO_READS | XMMINFO_READT);
++FPURECOMPILE_CONSTCODE_SOFT(MULA_S, XMMINFO_WRITEACC | XMMINFO_READS | XMMINFO_READT, CHECK_FPU_SOFT_MUL);
+ //------------------------------------------------------------------
+ 
+ 
+@@ -1649,7 +1649,7 @@ void recSUB_S_xmm(int info)
+ 	recSUBop(info, EEREC_D);
+ }
+ 
+-FPURECOMPILE_CONSTCODE(SUB_S, XMMINFO_WRITED | XMMINFO_READS | XMMINFO_READT);
++FPURECOMPILE_CONSTCODE_SOFT(SUB_S, XMMINFO_WRITED | XMMINFO_READS | XMMINFO_READT, CHECK_FPU_SOFT_ADDSUB);
+ 
+ 
+ void recSUBA_S_xmm(int info)
+@@ -1657,7 +1657,7 @@ void recSUBA_S_xmm(int info)
+ 	recSUBop(info, EEREC_ACC);
+ }
+ 
+-FPURECOMPILE_CONSTCODE(SUBA_S, XMMINFO_WRITEACC | XMMINFO_READS | XMMINFO_READT);
++FPURECOMPILE_CONSTCODE_SOFT(SUBA_S, XMMINFO_WRITEACC | XMMINFO_READS | XMMINFO_READT, CHECK_FPU_SOFT_ADDSUB);
+ //------------------------------------------------------------------
+ 
+ 
+@@ -1706,7 +1706,7 @@ void recSQRT_S_xmm(int info)
+ 		xLDMXCSR(ptr32[&EmuConfig.Cpu.FPUFPCR.bitmask]);
+ }
+ 
+-FPURECOMPILE_CONSTCODE(SQRT_S, XMMINFO_WRITED | XMMINFO_READT);
++FPURECOMPILE_CONSTCODE_SOFT(SQRT_S, XMMINFO_WRITED | XMMINFO_READT, CHECK_FPU_SOFT_DIVSQRT);
+ //------------------------------------------------------------------
+ 
+ 
+@@ -1798,7 +1798,7 @@ void recRSQRT_S_xmm(int info)
+ 	_freeXMMreg(t0reg);
+ }
+ 
+-FPURECOMPILE_CONSTCODE(RSQRT_S, XMMINFO_WRITED | XMMINFO_READS | XMMINFO_READT);
++FPURECOMPILE_CONSTCODE_SOFT(RSQRT_S, XMMINFO_WRITED | XMMINFO_READS | XMMINFO_READT, CHECK_FPU_SOFT_DIVSQRT);
+ 
+ #endif // FPU_RECOMPILE
+ 
+diff --git a/pcsx2/x86/iR5900.h b/pcsx2/x86/iR5900.h
+index 773bbed..318d28b 100644
+--- a/pcsx2/x86/iR5900.h
++++ b/pcsx2/x86/iR5900.h
+@@ -179,6 +179,26 @@ void eeRecompileCodeRC2(R5900FNPTR constcode, R5900FNPTR_INFO noconstcode, int x
+ 			eeFPURecompileCode(rec##fn##_xmm, R5900::Interpreter::OpcodeImpl::COP1::fn, xmminfo); \
+ 	}
+ 
++// Soft-float (PS2Float) routing -- backport of PCSX2 PR #12001 + Goatman13's
++// "int_fallback_fpu_cop2" approach (PCSX2 issue #2990). `softcheck` is evaluated at block
++// *compile* time, so when the option is off this emits byte-for-byte the same code as
++// FPURECOMPILE_CONSTCODE above and costs nothing at emulation time. When it is on, the
++// block calls the COP1 interpreter op, whose body is the soft-float implementation.
++#define FPURECOMPILE_CONSTCODE_SOFT(fn, xmminfo, softcheck) \
++	void rec##fn(void) \
++	{ \
++		if (softcheck) \
++		{ \
++			iFlushCall(FLUSH_SOFTFLOAT_COP1); \
++			xFastCall((void*)(uptr)R5900::Interpreter::OpcodeImpl::COP1::fn); \
++			return; \
++		} \
++		if (CHECK_FPU_FULL) \
++			eeFPURecompileCode(DOUBLE::rec##fn##_xmm, R5900::Interpreter::OpcodeImpl::COP1::fn, xmminfo); \
++		else \
++			eeFPURecompileCode(rec##fn##_xmm, R5900::Interpreter::OpcodeImpl::COP1::fn, xmminfo); \
++	}
++
+ // rd = rs op rt (all regs need to be in xmm)
+ int eeRecompileCodeXMM(int xmminfo);
+ void eeFPURecompileCode(R5900FNPTR_INFO xmmcode, R5900FNPTR fpucode, int xmminfo);
+diff --git a/pcsx2/x86/microVU_Macro.inl b/pcsx2/x86/microVU_Macro.inl
+index 3eb7bca..da4301e 100644
+--- a/pcsx2/x86/microVU_Macro.inl
++++ b/pcsx2/x86/microVU_Macro.inl
+@@ -155,6 +155,57 @@ bool mVUIsReservedCOP2(int hostreg)
+ 		recCall(V##f); \
+ 	}
+ 
++// Soft-float (PS2Float) routing for the COP2 (VU0 macro-mode) FMAC/FDIV ops -- backport of
++// PCSX2 PR #12001 plus Goatman13's "int_fallback_fpu_cop2" approach (PCSX2 issue #2990).
++//
++// The check runs at block *compile* time, so with the option off this macro emits byte-for-
++// byte what REC_COP2_mVU0 emitted before. With it on, the op is handed to the COP2
++// interpreter entry point (VUops.cpp V##f -> _vu##f), whose body is the soft-float path.
++//
++// Unlike INTERPRETATE_COP2_FUNC (which exists for CALLMS, i.e. "this may execute arbitrary
++// VU0 code"), this deliberately does NOT go through recCall() and does NOT emit a per-op
++// cycle store:
++//   - recCall() would apply FLUSH_INTERPRETER (0xfff), throwing away the entire EE register
++//     allocation and constant propagation at every one of the 75 diverted opcodes. These
++//     callees touch only vuRegs[0] and cpuRegs.code, so FLUSH_SOFTFLOAT_COP2 is sufficient
++//     and lets EE GPRs stay live across the call. See the note in iCore.h.
++//   - scaleblockcycles_clear() exists so CALLMS can sync VU timing before running a micro
++//     program. A plain FMAC needs no such sync, and calling it here forced a mid-block cycle
++//     reconciliation plus a memory RMW per opcode. Dropping it lets cycles accumulate to the
++//     end of the block exactly as they do for the recompiled REC_COP2_mVU0 path.
++//
++// IMPORTANT: this variant is used for *exactly* the ops whose mode has bit 0x10 (writes
++// status/mac). setupMacroOp/endMacroOp implement a "denormalized status flag lives in
++// memory between two macro ops" protocol driven by EEINST_COP2_{,DE}NORMALIZE_STATUS_FLAG.
++// Diverting every 0x10 op at once keeps that protocol coherent: no macro op writes a
++// denormalized flag and no macro op reads one back, and the interpreter's SYNCMSFLAGS()
++// always leaves VI[REG_STATUS_FLAG] normalized. Diverting only *some* of them would break it.
++#define REC_COP2_mVU0_SOFT(f, opName, mode) \
++	void recV##f(void) \
++	{ \
++		if (CHECK_VU_SOFT(0)) \
++		{ \
++			iFlushCall(FLUSH_SOFTFLOAT_COP2); \
++			xFastCall((void*)(uptr)V##f); \
++			return; \
++		} \
++		int _mode = (mode); \
++		setupMacroOp(_mode, opName); \
++		if (_mode & 4) \
++		{ \
++			mVU_##f(microVU0, 0); \
++			if (!microVU0.prog.IRinfo.info[0].lOp.isNOP) \
++			{ \
++				mVU_##f(microVU0, 1); \
++			} \
++		} \
++		else \
++		{ \
++			mVU_##f(microVU0, 1); \
++		} \
++		endMacroOp(_mode); \
++	}
++
+ //------------------------------------------------------------------
+ // Macro VU - Instructions
+ //------------------------------------------------------------------
+@@ -181,48 +232,48 @@ REC_COP2_mVU0(FTOI0,  "FTOI0",  0x0);
+ REC_COP2_mVU0(FTOI4,  "FTOI4",  0x0);
+ REC_COP2_mVU0(FTOI12, "FTOI12", 0x0);
+ REC_COP2_mVU0(FTOI15, "FTOI15", 0x0);
+-REC_COP2_mVU0(ADD,    "ADD",    0x110);
+-REC_COP2_mVU0(ADDi,   "ADDi",   0x110);
+-REC_COP2_mVU0(ADDq,   "ADDq",   0x111);
+-REC_COP2_mVU0(ADDx,   "ADDx",   0x110);
+-REC_COP2_mVU0(ADDy,   "ADDy",   0x110);
+-REC_COP2_mVU0(ADDz,   "ADDz",   0x110);
+-REC_COP2_mVU0(ADDw,   "ADDw",   0x110);
+-REC_COP2_mVU0(ADDA,   "ADDA",   0x110);
+-REC_COP2_mVU0(ADDAi,  "ADDAi",  0x110);
+-REC_COP2_mVU0(ADDAq,  "ADDAq",  0x111);
+-REC_COP2_mVU0(ADDAx,  "ADDAx",  0x110);
+-REC_COP2_mVU0(ADDAy,  "ADDAy",  0x110);
+-REC_COP2_mVU0(ADDAz,  "ADDAz",  0x110);
+-REC_COP2_mVU0(ADDAw,  "ADDAw",  0x110);
+-REC_COP2_mVU0(SUB,    "SUB",    0x110);
+-REC_COP2_mVU0(SUBi,   "SUBi",   0x110);
+-REC_COP2_mVU0(SUBq,   "SUBq",   0x111);
+-REC_COP2_mVU0(SUBx,   "SUBx",   0x110);
+-REC_COP2_mVU0(SUBy,   "SUBy",   0x110);
+-REC_COP2_mVU0(SUBz,   "SUBz",   0x110);
+-REC_COP2_mVU0(SUBw,   "SUBw",   0x110);
+-REC_COP2_mVU0(SUBA,   "SUBA",   0x110);
+-REC_COP2_mVU0(SUBAi,  "SUBAi",  0x110);
+-REC_COP2_mVU0(SUBAq,  "SUBAq",  0x111);
+-REC_COP2_mVU0(SUBAx,  "SUBAx",  0x110);
+-REC_COP2_mVU0(SUBAy,  "SUBAy",  0x110);
+-REC_COP2_mVU0(SUBAz,  "SUBAz",  0x110);
+-REC_COP2_mVU0(SUBAw,  "SUBAw",  0x110);
+-REC_COP2_mVU0(MUL,    "MUL",    0x110);
+-REC_COP2_mVU0(MULi,   "MULi",   0x110);
+-REC_COP2_mVU0(MULq,   "MULq",   0x111);
+-REC_COP2_mVU0(MULx,   "MULx",   0x110);
+-REC_COP2_mVU0(MULy,   "MULy",   0x110);
+-REC_COP2_mVU0(MULz,   "MULz",   0x110);
+-REC_COP2_mVU0(MULw,   "MULw",   0x110);
+-REC_COP2_mVU0(MULA,   "MULA",   0x110);
+-REC_COP2_mVU0(MULAi,  "MULAi",  0x110);
+-REC_COP2_mVU0(MULAq,  "MULAq",  0x111);
+-REC_COP2_mVU0(MULAx,  "MULAx",  0x110);
+-REC_COP2_mVU0(MULAy,  "MULAy",  0x110);
+-REC_COP2_mVU0(MULAz,  "MULAz",  0x110);
+-REC_COP2_mVU0(MULAw,  "MULAw",  0x110);
++REC_COP2_mVU0_SOFT(ADD,    "ADD",    0x110);
++REC_COP2_mVU0_SOFT(ADDi,   "ADDi",   0x110);
++REC_COP2_mVU0_SOFT(ADDq,   "ADDq",   0x111);
++REC_COP2_mVU0_SOFT(ADDx,   "ADDx",   0x110);
++REC_COP2_mVU0_SOFT(ADDy,   "ADDy",   0x110);
++REC_COP2_mVU0_SOFT(ADDz,   "ADDz",   0x110);
++REC_COP2_mVU0_SOFT(ADDw,   "ADDw",   0x110);
++REC_COP2_mVU0_SOFT(ADDA,   "ADDA",   0x110);
++REC_COP2_mVU0_SOFT(ADDAi,  "ADDAi",  0x110);
++REC_COP2_mVU0_SOFT(ADDAq,  "ADDAq",  0x111);
++REC_COP2_mVU0_SOFT(ADDAx,  "ADDAx",  0x110);
++REC_COP2_mVU0_SOFT(ADDAy,  "ADDAy",  0x110);
++REC_COP2_mVU0_SOFT(ADDAz,  "ADDAz",  0x110);
++REC_COP2_mVU0_SOFT(ADDAw,  "ADDAw",  0x110);
++REC_COP2_mVU0_SOFT(SUB,    "SUB",    0x110);
++REC_COP2_mVU0_SOFT(SUBi,   "SUBi",   0x110);
++REC_COP2_mVU0_SOFT(SUBq,   "SUBq",   0x111);
++REC_COP2_mVU0_SOFT(SUBx,   "SUBx",   0x110);
++REC_COP2_mVU0_SOFT(SUBy,   "SUBy",   0x110);
++REC_COP2_mVU0_SOFT(SUBz,   "SUBz",   0x110);
++REC_COP2_mVU0_SOFT(SUBw,   "SUBw",   0x110);
++REC_COP2_mVU0_SOFT(SUBA,   "SUBA",   0x110);
++REC_COP2_mVU0_SOFT(SUBAi,  "SUBAi",  0x110);
++REC_COP2_mVU0_SOFT(SUBAq,  "SUBAq",  0x111);
++REC_COP2_mVU0_SOFT(SUBAx,  "SUBAx",  0x110);
++REC_COP2_mVU0_SOFT(SUBAy,  "SUBAy",  0x110);
++REC_COP2_mVU0_SOFT(SUBAz,  "SUBAz",  0x110);
++REC_COP2_mVU0_SOFT(SUBAw,  "SUBAw",  0x110);
++REC_COP2_mVU0_SOFT(MUL,    "MUL",    0x110);
++REC_COP2_mVU0_SOFT(MULi,   "MULi",   0x110);
++REC_COP2_mVU0_SOFT(MULq,   "MULq",   0x111);
++REC_COP2_mVU0_SOFT(MULx,   "MULx",   0x110);
++REC_COP2_mVU0_SOFT(MULy,   "MULy",   0x110);
++REC_COP2_mVU0_SOFT(MULz,   "MULz",   0x110);
++REC_COP2_mVU0_SOFT(MULw,   "MULw",   0x110);
++REC_COP2_mVU0_SOFT(MULA,   "MULA",   0x110);
++REC_COP2_mVU0_SOFT(MULAi,  "MULAi",  0x110);
++REC_COP2_mVU0_SOFT(MULAq,  "MULAq",  0x111);
++REC_COP2_mVU0_SOFT(MULAx,  "MULAx",  0x110);
++REC_COP2_mVU0_SOFT(MULAy,  "MULAy",  0x110);
++REC_COP2_mVU0_SOFT(MULAz,  "MULAz",  0x110);
++REC_COP2_mVU0_SOFT(MULAw,  "MULAw",  0x110);
+ REC_COP2_mVU0(MAX,    "MAX",    0x0);
+ REC_COP2_mVU0(MAXi,   "MAXi",   0x0);
+ REC_COP2_mVU0(MAXx,   "MAXx",   0x0);
+@@ -235,45 +286,45 @@ REC_COP2_mVU0(MINIx,  "MINIx",  0x0);
+ REC_COP2_mVU0(MINIy,  "MINIy",  0x0);
+ REC_COP2_mVU0(MINIz,  "MINIz",  0x0);
+ REC_COP2_mVU0(MINIw,  "MINIw",  0x0);
+-REC_COP2_mVU0(MADD,   "MADD",   0x110);
+-REC_COP2_mVU0(MADDi,  "MADDi",  0x110);
+-REC_COP2_mVU0(MADDq,  "MADDq",  0x111);
+-REC_COP2_mVU0(MADDx,  "MADDx",  0x110);
+-REC_COP2_mVU0(MADDy,  "MADDy",  0x110);
+-REC_COP2_mVU0(MADDz,  "MADDz",  0x110);
+-REC_COP2_mVU0(MADDw,  "MADDw",  0x110);
+-REC_COP2_mVU0(MADDA,  "MADDA",  0x110);
+-REC_COP2_mVU0(MADDAi, "MADDAi", 0x110);
+-REC_COP2_mVU0(MADDAq, "MADDAq", 0x111);
+-REC_COP2_mVU0(MADDAx, "MADDAx", 0x110);
+-REC_COP2_mVU0(MADDAy, "MADDAy", 0x110);
+-REC_COP2_mVU0(MADDAz, "MADDAz", 0x110);
+-REC_COP2_mVU0(MADDAw, "MADDAw", 0x110);
+-REC_COP2_mVU0(MSUB,   "MSUB",   0x110);
+-REC_COP2_mVU0(MSUBi,  "MSUBi",  0x110);
+-REC_COP2_mVU0(MSUBq,  "MSUBq",  0x111);
+-REC_COP2_mVU0(MSUBx,  "MSUBx",  0x110);
+-REC_COP2_mVU0(MSUBy,  "MSUBy",  0x110);
+-REC_COP2_mVU0(MSUBz,  "MSUBz",  0x110);
+-REC_COP2_mVU0(MSUBw,  "MSUBw",  0x110);
+-REC_COP2_mVU0(MSUBA,  "MSUBA",  0x110);
+-REC_COP2_mVU0(MSUBAi, "MSUBAi", 0x110);
+-REC_COP2_mVU0(MSUBAq, "MSUBAq", 0x111);
+-REC_COP2_mVU0(MSUBAx, "MSUBAx", 0x110);
+-REC_COP2_mVU0(MSUBAy, "MSUBAy", 0x110);
+-REC_COP2_mVU0(MSUBAz, "MSUBAz", 0x110);
+-REC_COP2_mVU0(MSUBAw, "MSUBAw", 0x110);
+-REC_COP2_mVU0(OPMULA, "OPMULA", 0x110);
+-REC_COP2_mVU0(OPMSUB, "OPMSUB", 0x110);
++REC_COP2_mVU0_SOFT(MADD,   "MADD",   0x110);
++REC_COP2_mVU0_SOFT(MADDi,  "MADDi",  0x110);
++REC_COP2_mVU0_SOFT(MADDq,  "MADDq",  0x111);
++REC_COP2_mVU0_SOFT(MADDx,  "MADDx",  0x110);
++REC_COP2_mVU0_SOFT(MADDy,  "MADDy",  0x110);
++REC_COP2_mVU0_SOFT(MADDz,  "MADDz",  0x110);
++REC_COP2_mVU0_SOFT(MADDw,  "MADDw",  0x110);
++REC_COP2_mVU0_SOFT(MADDA,  "MADDA",  0x110);
++REC_COP2_mVU0_SOFT(MADDAi, "MADDAi", 0x110);
++REC_COP2_mVU0_SOFT(MADDAq, "MADDAq", 0x111);
++REC_COP2_mVU0_SOFT(MADDAx, "MADDAx", 0x110);
++REC_COP2_mVU0_SOFT(MADDAy, "MADDAy", 0x110);
++REC_COP2_mVU0_SOFT(MADDAz, "MADDAz", 0x110);
++REC_COP2_mVU0_SOFT(MADDAw, "MADDAw", 0x110);
++REC_COP2_mVU0_SOFT(MSUB,   "MSUB",   0x110);
++REC_COP2_mVU0_SOFT(MSUBi,  "MSUBi",  0x110);
++REC_COP2_mVU0_SOFT(MSUBq,  "MSUBq",  0x111);
++REC_COP2_mVU0_SOFT(MSUBx,  "MSUBx",  0x110);
++REC_COP2_mVU0_SOFT(MSUBy,  "MSUBy",  0x110);
++REC_COP2_mVU0_SOFT(MSUBz,  "MSUBz",  0x110);
++REC_COP2_mVU0_SOFT(MSUBw,  "MSUBw",  0x110);
++REC_COP2_mVU0_SOFT(MSUBA,  "MSUBA",  0x110);
++REC_COP2_mVU0_SOFT(MSUBAi, "MSUBAi", 0x110);
++REC_COP2_mVU0_SOFT(MSUBAq, "MSUBAq", 0x111);
++REC_COP2_mVU0_SOFT(MSUBAx, "MSUBAx", 0x110);
++REC_COP2_mVU0_SOFT(MSUBAy, "MSUBAy", 0x110);
++REC_COP2_mVU0_SOFT(MSUBAz, "MSUBAz", 0x110);
++REC_COP2_mVU0_SOFT(MSUBAw, "MSUBAw", 0x110);
++REC_COP2_mVU0_SOFT(OPMULA, "OPMULA", 0x110);
++REC_COP2_mVU0_SOFT(OPMSUB, "OPMSUB", 0x110);
+ REC_COP2_mVU0(CLIP,   "CLIP",   0x108);
+ 
+ //------------------------------------------------------------------
+ // Macro VU - Redirect Lower Instructions
+ //------------------------------------------------------------------
+ 
+-REC_COP2_mVU0(DIV,   "DIV",   0x112);
+-REC_COP2_mVU0(SQRT,  "SQRT",  0x112);
+-REC_COP2_mVU0(RSQRT, "RSQRT", 0x112);
++REC_COP2_mVU0_SOFT(DIV,   "DIV",   0x112);
++REC_COP2_mVU0_SOFT(SQRT,  "SQRT",  0x112);
++REC_COP2_mVU0_SOFT(RSQRT, "RSQRT", 0x112);
+ REC_COP2_mVU0(IADD,  "IADD",  0x104);
+ REC_COP2_mVU0(IADDI, "IADDI", 0x104);
+ REC_COP2_mVU0(IAND,  "IAND",  0x104);
