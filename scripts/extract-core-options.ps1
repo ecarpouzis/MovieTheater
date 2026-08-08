@@ -55,6 +55,15 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+# pwsh 7+ REQUIRED. Under Windows PowerShell 5.1 every child extraction is misclassified
+# crashed-after-capture (0 ok / 42 needing attention) and CatalogBuilder then carries the old
+# catalog blocks verbatim — a regen that silently changes nothing. Cost a night on 2026-08-08:
+# the deployed cores had new options, the "regenerated" catalog didn't, and the drift check kept
+# firing. Fail loudly instead.
+if ($PSVersionTable.PSVersion.Major -lt 7) {
+    throw "extract-core-options.ps1 requires PowerShell 7+ (pwsh). Under 5.1 all child extractions misclassify as crashed and the catalog silently keeps its old blocks. Re-run: pwsh -File scripts/extract-core-options.ps1"
+}
+
 $repo = Split-Path -Parent $PSScriptRoot
 $tool = Join-Path $PSScriptRoot 'extract-core-options'
 if (-not $OutDir)  { $OutDir  = Join-Path $repo 'artifacts\core-options-extract' }
