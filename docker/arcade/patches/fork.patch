@@ -11694,10 +11694,10 @@ index f3553b1..82912c8 100644
 +func (c *Caged) Close()                           { c.Emulator.Close() }
 +func (c *Caged) IsSupported() error               { return c.base.IsSupported() }
 diff --git a/pkg/worker/caged/libretro/frontend.go b/pkg/worker/caged/libretro/frontend.go
-index 6974d59..b273c48 100644
+index 6974d59..b3330c3 100644
 --- a/pkg/worker/caged/libretro/frontend.go
 +++ b/pkg/worker/caged/libretro/frontend.go
-@@ -1,578 +1,2246 @@
+@@ -1,578 +1,2300 @@
 -package libretro
 -
 -import (
@@ -12992,6 +12992,15 @@ index 6974d59..b273c48 100644
 +	var ratePrevObserved float64
 +	rateAdoptions := 0
 +	rateWinDirty := false // a warp/fill/stall happened in this window -> its average is meaningless
++	// Health-gate + proven-declaration state (2026-08-08, the Stuntman results-replay trap:
++	// docs/arcade-stuntman-level4-plan.md). rateWinTicks = retro_run ticks inside the current rate
++	// window; a window where the loop did NOT keep pace is evidence about LOAD, not about the core's
++	// clock, and must never be adopted. declRateProven latches once the core has delivered ≈its
++	// declared rate while keeping pace — after that, any downward "derivation" can only be load.
++	var rateWinTicks int64
++	declRateProven := false
++	prevDeclaredRate := 0.0
++	rateSuppressLogs := 0
 +
 +	// pace-diag: every 5s, log what the emulator actually produced — ticks/s, audio frames/s (should
 +	// track the core's sample rate), the worst single retro_run of the window, and how many ticks blew
@@ -13063,6 +13072,7 @@ index 6974d59..b273c48 100644
 +			tick0 := os.Nanotime()
 +			f.Tick()
 +			tickDur := os.Nanotime() - tick0
++			rateWinTicks++
 +
 +			// Record the ring OUTSIDE any warp: never while rewinding (we'd re-record what we
 +			// just walked back over), and not during FF (a serialize per step is exactly the
@@ -13086,6 +13096,7 @@ index 6974d59..b273c48 100644
 +				audioFrames = 0
 +				rateWinStart = audioEpoch
 +				rateWinFrames = 0
++				rateWinTicks = 0
 +				ratePrevObserved = 0
 +			}
 +
@@ -13103,22 +13114,65 @@ index 6974d59..b273c48 100644
 +				steady := ratePrevObserved > 0 && absf(observed-ratePrevObserved)/observed < rateAgree
 +				wrong := absf(observed-sr)/sr > rateAdoptMin
 +
++				// A changed DECLARATION voids the proof — a real SET_SYSTEM_AV_INFO rate change is a
++				// new claim to verify. (Our own derivation changes sr, never the declaration.)
++				if declared != prevDeclaredRate {
++					declRateProven = false
++					prevDeclaredRate = declared
++				}
++				// HEALTH GATE (2026-08-08): a window is evidence about the core's CLOCK only if the
++				// loop kept pace while measuring it. A core temporarily too slow to hit its fps
++				// delivers proportionally fewer samples — that is load. Adopting it pins the pacer at
++				// the slow rate FOREVER: the pacer then targets the derived rate, the core obeys, so
++				// observed==target from then on and no evidence of recovery can ever accumulate (the
++				// Stuntman results-replay trap, docs/arcade-stuntman-level4-plan.md). Kept pace =
++				// ticks within 0.5% of what the frame time implies (the audio-master pull may run
++				// ≤2% fast, so ≥ is fine).
++				healthy := targetFrameTimeNs > 0 &&
++					float64(rateWinTicks) >= float64(el)/float64(targetFrameTimeNs)*(1-rateAdoptMin)
++				// PROVEN DECLARATION: a core that has EVER delivered ≈its declared rate at full pace
++				// has a correct declaration — disable derivation for the session. The chronic
++				// mis-clockers this feature exists for (PPSSPP 44100→~43850, parallel_n64
++				// 32040→~31230) never pass this bar, so they keep their fix.
++				if !rateWinDirty && healthy && declared > 0 && !declRateProven &&
++					absf(observed-declared)/declared <= rateAdoptMin {
++					declRateProven = true
++					f.log.Info().Msgf(
++						"[audio] declared sample rate %.0f Hz PROVEN (delivered %.1f at full pace) — rate derivation disabled for this session",
++						declared, observed)
++				}
++
 +				if !rateWinDirty && sane && steady && wrong && rateAdoptions < rateAdoptMax {
-+					rateAdoptions++
-+					hz := int(observed + 0.5)
-+					f.log.Warn().Msgf(
-+						"[audio] DERIVED true sample rate %d Hz (core declares %.0f, pacer had %.0f, %.2f%% off) "+
-+							"— adopting: pacer re-times and the appsrc/resampler re-cap. A declared-vs-delivered "+
-+							"error beyond audioPullMax (%.0f%%) cannot be paced away and is heard as crackle.",
-+						hz, declared, sr, (observed-sr)/sr*100, audioPullMax*100)
-+					// Installing the override changes what AudioSampleRate() returns, so branch (1) picks
-+					// it up on the next tick (re-pinning the clock) and room.go's per-batch comparison
-+					// re-caps the pipeline via ReconfigureAudio. One write, both consumers.
-+					f.nano.SetDerivedAudioSampleRate(hz)
++					if declRateProven || !healthy {
++						reason := "loop below pace this window (measuring load, not the clock)"
++						if declRateProven {
++							reason = "declaration already proven at full pace"
++						}
++						// First few only: a long heavy stretch would otherwise print this every 3s.
++						if rateSuppressLogs < 3 {
++							rateSuppressLogs++
++							f.log.Info().Msgf(
++								"[audio] rate derivation SUPPRESSED (observed %.1f vs pacer %.0f): %s",
++								observed, sr, reason)
++						}
++					} else {
++						rateAdoptions++
++						hz := int(observed + 0.5)
++						f.log.Warn().Msgf(
++							"[audio] DERIVED true sample rate %d Hz (core declares %.0f, pacer had %.0f, %.2f%% off) "+
++								"— adopting: pacer re-times and the appsrc/resampler re-cap. A declared-vs-delivered "+
++								"error beyond audioPullMax (%.0f%%) cannot be paced away and is heard as crackle.",
++							hz, declared, sr, (observed-sr)/sr*100, audioPullMax*100)
++						// Installing the override changes what AudioSampleRate() returns, so branch (1) picks
++						// it up on the next tick (re-pinning the clock) and room.go's per-batch comparison
++						// re-caps the pipeline via ReconfigureAudio. One write, both consumers.
++						f.nano.SetDerivedAudioSampleRate(hz)
++					}
 +				}
 +				ratePrevObserved = observed
 +				rateWinStart = os.Nanotime()
 +				rateWinFrames = 0
++				rateWinTicks = 0
 +				rateWinDirty = false
 +			}
 +
