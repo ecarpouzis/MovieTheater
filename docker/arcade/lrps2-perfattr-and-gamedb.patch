@@ -1,9 +1,9 @@
 diff --git a/SOFTFLOAT-PORT-NOTES.md b/SOFTFLOAT-PORT-NOTES.md
 new file mode 100644
-index 0000000..3a5b63d
+index 0000000..379ebd0
 --- /dev/null
 +++ b/SOFTFLOAT-PORT-NOTES.md
-@@ -0,0 +1,353 @@
+@@ -0,0 +1,414 @@
 +# Soft-float (PS2Float) port — implementation log
 +
 +Branch `stuntman-softfloat`, off `movietheater-lrps2` @ `2cf344b`.
@@ -286,6 +286,67 @@ index 0000000..3a5b63d
 +
 +**Not yet measured.** The flush change and the `vu0micro` split are hypothesis-driven; the
 +next bench should A/B them.
++
++---
++
++## Live corruption incident (2026-08-08) — root cause was OPMSUB, not the flush
++
++Symptom on the deployed V1+V2 core: Stuntman physics exploding — cars and objects launched
++into space and twirling away after a snapshot load, respawns landing in random places.
++
++**Root cause: `_vuOPMSUB`'s soft branch clobbered its own source registers.** `VOPMSUB` is a
++cross product, so every lane reads components it does not write:
++
++```
++dst.x = ACC.x - Fs.y * Ft.z
++dst.y = ACC.y - Fs.z * Ft.x
++dst.z = ACC.z - Fs.x * Ft.y
++```
++
++Reading `VF[_Fs_]`/`VF[_Ft_]` inline while storing lane by lane means that with the ordinary
++in-place idiom (`_Fd_ == _Fs_` or `_Fd_ == _Ft_`) the store to `.x` destroys an operand the
++`.y`/`.z` lanes still need. Garbage cross products are garbage rotations, which is exactly
++the reported symptom. The hard-float path in the same function snapshots all six operands
++into locals first for precisely this reason, and so does the upstream PR — that snapshot was
++lost when the branch was collapsed. Fixed by restoring it.
++
++This bug was present in **every** build including V0, so it is unrelated to the flush work.
++
++**Audit of the same hazard class across the whole port** (do not re-derive this):
++
++* The three soft templates write lane N while reading only lane N of `VF[_Fs_]`/`ACC`. Same
++  component, and the RHS is fully evaluated before the assignment, so in-place `_Fd_ == _Fs_`
++  is safe.
++* Broadcast operands are passed as by-value function arguments, so they are evaluated at the
++  call site before any store — that is what makes every `.i/.q/.x/.y/.z/.w` form safe.
++* `OPMULA` is the only other cross-lane op, and it writes `ACC`, which can never alias a `VF`
++  register.
++* COP1 ops are scalar and compute into a `PS2Float` temp before storing.
++* **`OPMSUB` was the only aliasing hazard in the port.**
++
++### Re-audit of the V1 flush masks (they were reverted, but the reasoning stands)
++
++The narrow masks were suspected and reverted under time pressure. On re-reading, **the call
++ABI concern was unfounded**: `iFlushCall` (`x86/ix86-32/iR5900-32.cpp:969-994`) frees
++caller-saved GPRs and XMMs in an `if` that tests `xRegisterBase::IsCallerSaved(i)` /
++`xRegisterSSE::IsCallerSaved(i)` **first, outside every mask test** — the mask only selects
++what *additional* state is freed. And `IsCallerSaved` is correct for this target
++(`common/emitter/x86types.h:618` — under `_WIN32`, `id <= 2 || (id >= 8 && id <= 11)`, i.e.
++RAX/RCX/RDX/R8-R11, plus XMM0-5). So a narrower mask cannot leave a live value in a register
++the callee is allowed to clobber.
++
++What the narrow masks genuinely dropped was `FLUSH_CONSTANT_REGS`, `FLUSH_ALL_X86` and
++`FLUSH_FREE_{TEMP,NONTEMP}_X86` — i.e. EE GPRs stayed cached in callee-saved registers with
++memory possibly stale. That is only a hazard if the callee reads guest GPRs from memory, and
++the COP1/COP2 interpreter entries verifiably do not (every `cpuRegs.*` reference in the `V*`
++wrappers is `cpuRegs.code`).
++
++**Verdict: V1 is unconvicted, not exonerated** — it shipped in the same DLL as the OPMSUB bug,
++so the two could not be separated from the field report. **Do not retry it.** B1 already
++proved the entire routing + VU0-interpreter overhead is only +1.44 ms, so V1's *maximum*
++possible benefit is a fraction of that, against a nonzero risk in the hottest, least
++observable part of the recompiler. The ~3.9 ms of div/sqrt is where any remaining effort
++belongs.
 +
 +## Things to review / watch
 +
@@ -2401,7 +2462,7 @@ index 0000000..5c1c2b6
 +	};
 +} // namespace PerfAttr
 diff --git a/pcsx2/VUops.cpp b/pcsx2/VUops.cpp
-index 76d4466..e588d2d 100644
+index 76d4466..144c13a 100644
 --- a/pcsx2/VUops.cpp
 +++ b/pcsx2/VUops.cpp
 @@ -1,5 +1,6 @@
@@ -3127,7 +3188,7 @@ index 76d4466..e588d2d 100644
  	VU->ACC.i.x = VU_MACx_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.y) * vuDouble(VU->VF[_Ft_].i.z));
  	VU->ACC.i.y = VU_MACy_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.z) * vuDouble(VU->VF[_Ft_].i.x));
  	VU->ACC.i.z = VU_MACz_UPDATE(VU, vuDouble(VU->VF[_Fs_].i.x) * vuDouble(VU->VF[_Ft_].i.y));
-@@ -1614,6 +1827,17 @@ static __fi void _vuOPMULA(VURegs* VU)
+@@ -1614,6 +1827,29 @@ static __fi void _vuOPMULA(VURegs* VU)
  
  static __fi void _vuOPMSUB(VURegs* VU)
  {
@@ -3135,9 +3196,21 @@ index 76d4466..e588d2d 100644
 +	{
 +		VECTOR* sdst = vuSoftDstFd(VU);
 +
-+		sdst->i.x = VU_MACx_UPDATE(VU, _vuAccurateOpMSUB(VU->ACC.i.x, VU->VF[_Fs_].i.y, VU->VF[_Ft_].i.z));
-+		sdst->i.y = VU_MACy_UPDATE(VU, _vuAccurateOpMSUB(VU->ACC.i.y, VU->VF[_Fs_].i.z, VU->VF[_Ft_].i.x));
-+		sdst->i.z = VU_MACz_UPDATE(VU, _vuAccurateOpMSUB(VU->ACC.i.z, VU->VF[_Fs_].i.x, VU->VF[_Ft_].i.y));
++		// Snapshot all six operands BEFORE storing anything. OPMSUB is a cross product, so
++		// every lane reads components it does not write: with the common in-place idiom
++		// (_Fd_ == _Fs_ or _Fd_ == _Ft_) the store to .x clobbers an operand that the .y/.z
++		// lanes still need. The hard-float path below does this for the same reason, as does
++		// the upstream PR. Reading inline here corrupted cross products -> rotations.
++		const u32 sftx = VU->VF[_Ft_].i.x;
++		const u32 sfty = VU->VF[_Ft_].i.y;
++		const u32 sftz = VU->VF[_Ft_].i.z;
++		const u32 sfsx = VU->VF[_Fs_].i.x;
++		const u32 sfsy = VU->VF[_Fs_].i.y;
++		const u32 sfsz = VU->VF[_Fs_].i.z;
++
++		sdst->i.x = VU_MACx_UPDATE(VU, _vuAccurateOpMSUB(VU->ACC.i.x, sfsy, sftz));
++		sdst->i.y = VU_MACy_UPDATE(VU, _vuAccurateOpMSUB(VU->ACC.i.y, sfsz, sftx));
++		sdst->i.z = VU_MACz_UPDATE(VU, _vuAccurateOpMSUB(VU->ACC.i.z, sfsx, sfty));
 +		VU_STAT_UPDATE(VU);
 +		return;
 +	}
@@ -3145,7 +3218,7 @@ index 76d4466..e588d2d 100644
  	VECTOR* dst;
  	float ftx, fty, ftz;
  	float fsx, fsy, fsz;
-@@ -1756,6 +1980,33 @@ static __fi void _vuCLIP(VURegs* VU)
+@@ -1756,6 +1992,33 @@ static __fi void _vuCLIP(VURegs* VU)
  
  static __fi void _vuDIV(VURegs* VU)
  {
@@ -3179,7 +3252,7 @@ index 76d4466..e588d2d 100644
  	float ft = vuDouble(VU->VF[_Ft_].UL[_Ftf_]);
  	float fs = vuDouble(VU->VF[_Fs_].UL[_Fsf_]);
  
-@@ -1783,6 +2034,18 @@ static __fi void _vuDIV(VURegs* VU)
+@@ -1783,6 +2046,18 @@ static __fi void _vuDIV(VURegs* VU)
  
  static __fi void _vuSQRT(VURegs* VU)
  {
@@ -3198,7 +3271,7 @@ index 76d4466..e588d2d 100644
  	float ft = vuDouble(VU->VF[_Ft_].UL[_Ftf_]);
  
  	VU->statusflag &= ~0x30;
-@@ -1795,6 +2058,46 @@ static __fi void _vuSQRT(VURegs* VU)
+@@ -1795,6 +2070,46 @@ static __fi void _vuSQRT(VURegs* VU)
  
  static __fi void _vuRSQRT(VURegs* VU)
  {
@@ -3245,7 +3318,7 @@ index 76d4466..e588d2d 100644
  	float ft = vuDouble(VU->VF[_Ft_].UL[_Ftf_]);
  	float fs = vuDouble(VU->VF[_Fs_].UL[_Fsf_]);
  	float temp;
-@@ -2523,6 +2826,12 @@ static __ri void _vuESUM(VURegs* VU)
+@@ -2523,6 +2838,12 @@ static __ri void _vuESUM(VURegs* VU)
  
  static __ri void _vuERCPR(VURegs* VU)
  {
@@ -3258,7 +3331,7 @@ index 76d4466..e588d2d 100644
  	float p = vuDouble(VU->VF[_Fs_].UL[_Fsf_]);
  
  	if (p != 0)
-@@ -2533,6 +2842,12 @@ static __ri void _vuERCPR(VURegs* VU)
+@@ -2533,6 +2854,12 @@ static __ri void _vuERCPR(VURegs* VU)
  
  static __ri void _vuESQRT(VURegs* VU)
  {
@@ -3271,7 +3344,7 @@ index 76d4466..e588d2d 100644
  	float p = vuDouble(VU->VF[_Fs_].UL[_Fsf_]);
  
  	if (p >= 0)
-@@ -2543,6 +2858,12 @@ static __ri void _vuESQRT(VURegs* VU)
+@@ -2543,6 +2870,12 @@ static __ri void _vuESQRT(VURegs* VU)
  
  static __ri void _vuERSQRT(VURegs* VU)
  {
@@ -3284,35 +3357,6 @@ index 76d4466..e588d2d 100644
  	float p = vuDouble(VU->VF[_Fs_].UL[_Fsf_]);
  
  	if (p >= 0)
-diff --git a/pcsx2/x86/iCore.h b/pcsx2/x86/iCore.h
-index 89a5b7f..0302afb 100644
---- a/pcsx2/x86/iCore.h
-+++ b/pcsx2/x86/iCore.h
-@@ -306,5 +306,24 @@ int _allocIfUsedFPUtoXMM(int fpureg, int mode);
- #define FLUSH_INTERPRETER  0xfff
- #define FLUSH_FULLVTLB 0x000
- 
-+/* Soft-float (PS2Float) interpreter fallbacks -- see FPURECOMPILE_CONSTCODE_SOFT and
-+   REC_COP2_mVU0_SOFT. These are hot: with the option on, they run on every COP1 arithmetic
-+   op and every COP2 FMAC/FDIV op, so FLUSH_INTERPRETER (0xfff) is far too blunt -- it would
-+   destroy the whole EE register allocation and constant propagation at each one.
-+   What the callees actually touch, verified by inspection:
-+     - COP1 ADD_S..RSQRT_S: fpuRegs / fpuRegs.fprc in memory, plus cpuRegs.code. No EE GPRs.
-+     - COP2 VADD..VRSQRT:   vuRegs[0] in memory, plus cpuRegs.code. No EE GPRs (every
-+                            cpuRegs reference in the V* wrappers is cpuRegs.code).
-+   FLUSH_CODE is therefore mandatory, and FLUSH_FREE_XMM/FLUSH_FREE_VU0 are needed to write
-+   back and invalidate the cached FPU/VU register state (freeing also routes through
-+   mVUFreeCOP2XMMreg/mVUFreeCOP2GPR, which clears microVU0's COP2 cache). FLUSH_PC is kept
-+   because it costs one immediate store at most once per instruction. Note the COP2 mask is
-+   a strict superset of FLUSH_FOR_POSSIBLE_MICRO_EXEC, which the CALLMS fallback already
-+   relies on before executing arbitrary VU0 code.
-+   Caller-saved GPRs/XMMs are freed by iFlushCall unconditionally, independent of the mask,
-+   so the call ABI is safe here. */
-+#define FLUSH_SOFTFLOAT_COP1 (FLUSH_FREE_XMM | FLUSH_PC | FLUSH_CODE)
-+#define FLUSH_SOFTFLOAT_COP2 (FLUSH_FREE_XMM | FLUSH_FREE_VU0 | FLUSH_PC | FLUSH_CODE)
-+
- /* No freeing, used when callee won't destroy XMM regs */
- #define FLUSH_NODESTROY (FLUSH_CONSTANT_REGS | FLUSH_FLUSH_XMM | FLUSH_ALL_X86)
 diff --git a/pcsx2/x86/iFPU.cpp b/pcsx2/x86/iFPU.cpp
 index 2f98d2e..e4228d2 100644
 --- a/pcsx2/x86/iFPU.cpp
@@ -3431,7 +3475,7 @@ index 2f98d2e..e4228d2 100644
  #endif // FPU_RECOMPILE
  
 diff --git a/pcsx2/x86/iR5900.h b/pcsx2/x86/iR5900.h
-index 773bbed..318d28b 100644
+index 773bbed..fcabcbf 100644
 --- a/pcsx2/x86/iR5900.h
 +++ b/pcsx2/x86/iR5900.h
 @@ -179,6 +179,26 @@ void eeRecompileCodeRC2(R5900FNPTR constcode, R5900FNPTR_INFO noconstcode, int x
@@ -3448,7 +3492,7 @@ index 773bbed..318d28b 100644
 +	{ \
 +		if (softcheck) \
 +		{ \
-+			iFlushCall(FLUSH_SOFTFLOAT_COP1); \
++			iFlushCall(FLUSH_INTERPRETER); \
 +			xFastCall((void*)(uptr)R5900::Interpreter::OpcodeImpl::COP1::fn); \
 +			return; \
 +		} \
@@ -3462,10 +3506,10 @@ index 773bbed..318d28b 100644
  int eeRecompileCodeXMM(int xmminfo);
  void eeFPURecompileCode(R5900FNPTR_INFO xmmcode, R5900FNPTR fpucode, int xmminfo);
 diff --git a/pcsx2/x86/microVU_Macro.inl b/pcsx2/x86/microVU_Macro.inl
-index 3eb7bca..da4301e 100644
+index 3eb7bca..dd8006b 100644
 --- a/pcsx2/x86/microVU_Macro.inl
 +++ b/pcsx2/x86/microVU_Macro.inl
-@@ -155,6 +155,57 @@ bool mVUIsReservedCOP2(int hostreg)
+@@ -155,6 +155,46 @@ bool mVUIsReservedCOP2(int hostreg)
  		recCall(V##f); \
  	}
  
@@ -3475,18 +3519,6 @@ index 3eb7bca..da4301e 100644
 +// The check runs at block *compile* time, so with the option off this macro emits byte-for-
 +// byte what REC_COP2_mVU0 emitted before. With it on, the op is handed to the COP2
 +// interpreter entry point (VUops.cpp V##f -> _vu##f), whose body is the soft-float path.
-+//
-+// Unlike INTERPRETATE_COP2_FUNC (which exists for CALLMS, i.e. "this may execute arbitrary
-+// VU0 code"), this deliberately does NOT go through recCall() and does NOT emit a per-op
-+// cycle store:
-+//   - recCall() would apply FLUSH_INTERPRETER (0xfff), throwing away the entire EE register
-+//     allocation and constant propagation at every one of the 75 diverted opcodes. These
-+//     callees touch only vuRegs[0] and cpuRegs.code, so FLUSH_SOFTFLOAT_COP2 is sufficient
-+//     and lets EE GPRs stay live across the call. See the note in iCore.h.
-+//   - scaleblockcycles_clear() exists so CALLMS can sync VU timing before running a micro
-+//     program. A plain FMAC needs no such sync, and calling it here forced a mid-block cycle
-+//     reconciliation plus a memory RMW per opcode. Dropping it lets cycles accumulate to the
-+//     end of the block exactly as they do for the recompiled REC_COP2_mVU0 path.
 +//
 +// IMPORTANT: this variant is used for *exactly* the ops whose mode has bit 0x10 (writes
 +// status/mac). setupMacroOp/endMacroOp implement a "denormalized status flag lives in
@@ -3499,8 +3531,9 @@ index 3eb7bca..da4301e 100644
 +	{ \
 +		if (CHECK_VU_SOFT(0)) \
 +		{ \
-+			iFlushCall(FLUSH_SOFTFLOAT_COP2); \
-+			xFastCall((void*)(uptr)V##f); \
++			iFlushCall(FLUSH_FOR_POSSIBLE_MICRO_EXEC); \
++			xADD(ptr64[&cpuRegs.cycle], scaleblockcycles_clear()); \
++			recCall(V##f); \
 +			return; \
 +		} \
 +		int _mode = (mode); \
@@ -3523,7 +3556,7 @@ index 3eb7bca..da4301e 100644
  //------------------------------------------------------------------
  // Macro VU - Instructions
  //------------------------------------------------------------------
-@@ -181,48 +232,48 @@ REC_COP2_mVU0(FTOI0,  "FTOI0",  0x0);
+@@ -181,48 +221,48 @@ REC_COP2_mVU0(FTOI0,  "FTOI0",  0x0);
  REC_COP2_mVU0(FTOI4,  "FTOI4",  0x0);
  REC_COP2_mVU0(FTOI12, "FTOI12", 0x0);
  REC_COP2_mVU0(FTOI15, "FTOI15", 0x0);
@@ -3614,7 +3647,7 @@ index 3eb7bca..da4301e 100644
  REC_COP2_mVU0(MAX,    "MAX",    0x0);
  REC_COP2_mVU0(MAXi,   "MAXi",   0x0);
  REC_COP2_mVU0(MAXx,   "MAXx",   0x0);
-@@ -235,45 +286,45 @@ REC_COP2_mVU0(MINIx,  "MINIx",  0x0);
+@@ -235,45 +275,45 @@ REC_COP2_mVU0(MINIx,  "MINIx",  0x0);
  REC_COP2_mVU0(MINIy,  "MINIy",  0x0);
  REC_COP2_mVU0(MINIz,  "MINIz",  0x0);
  REC_COP2_mVU0(MINIw,  "MINIw",  0x0);
