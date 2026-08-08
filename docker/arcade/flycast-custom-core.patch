@@ -1,3 +1,129 @@
+diff --git a/core/hw/pvr/ta_ctx.h b/core/hw/pvr/ta_ctx.h
+index dd2a143..4c27469 100644
+--- a/core/hw/pvr/ta_ctx.h
++++ b/core/hw/pvr/ta_ctx.h
+@@ -416,6 +416,11 @@ void ta_set_list_type(u32 listType);
+ void ta_parse_reset();
+ void getRegionTileAddrAndSize(u32& address, u32& size);
+ 
++// MovieTheater (custom core): which scalar keys a translucent triangle in sortTriangles().
++// 0 = stock (min z = farthest vertex). See the MtSortKey enum in ta_util.cpp; set from
++// libretro.cpp via the reicast_mt_sort_key core option.
++extern int mtSortKeyMode;
++
+ void sortTriangles(rend_context& ctx, RenderPass& pass, const RenderPass& previousPass);
+ void sortPolyParams(std::vector<PolyParam>& polys, int first, int end, rend_context& ctx);
+ void fix_texture_bleeding(const std::vector<PolyParam>& polys, int first, int end, rend_context& ctx);
+diff --git a/core/hw/pvr/ta_util.cpp b/core/hw/pvr/ta_util.cpp
+index d9ed2b4..d527e16 100644
+--- a/core/hw/pvr/ta_util.cpp
++++ b/core/hw/pvr/ta_util.cpp
+@@ -19,6 +19,8 @@
+ #include "ta_ctx.h"
+ #include "pvr_mem.h"
+ #include <algorithm>
++#include <cmath>
++#include <cstring>
+ #include <glm/glm.hpp>
+ #include <glm/gtc/type_ptr.hpp>
+ 
+@@ -47,9 +49,84 @@ struct IndexTrig
+ 	f32 z;
+ };
+ 
++// ── MovieTheater (custom core): switchable per-triangle sort KEY ──────────────────────────────
++//
++// Stock flycast keys each translucent triangle on minZ() — the MINIMUM of the three vertices' z,
++// where z is 1/W (ta_vtx.cpp vert_cvt_base_), so larger = NEARER. The key is therefore each
++// triangle's single FARTHEST vertex, and std::stable_sort orders farthest-first (painter's).
++//
++// That one scalar is the whole mechanism: for the translucent list the pipeline runs depth-test
++// GREATER_OR_EQUAL with depth WRITE DISABLED (pipeline.cpp), so translucent-vs-translucent
++// visibility is decided purely by draw order. An extremum key compares two points that can be
++// nowhere near where the two triangles actually overlap on screen, which is upstream
++// flyinghead/flycast#100 ("Accurate Per strip/Per triangle", still open) and is what mangles
++// Sonic Adventure's face — the mouth/muzzle decals lose the sort to the geometry they sit on,
++// and flip in and out frame-to-frame as the head rotates.
++//
++// This does not pretend to be an exact solution (that needs Newell-style splitting or per-pixel
++// OIT). It makes the KEY selectable so the right one can be MEASURED against a real scene rather
++// than argued about, and so a per-game override can pin whichever wins. Mode 0 is stock, bit-for-
++// bit, and is the default — nothing changes unless a room asks for it.
++enum MtSortKey
++{
++	MTSK_MIN = 0,       // stock: farthest vertex
++	MTSK_MEAN,          // centroid of 1/W — the ordinary painter's key
++	MTSK_MAX,           // nearest vertex
++	MTSK_MIN_TIE,       // stock key, quantized so near-equal depths compare EQUAL
++	MTSK_MEAN_TIE,      // centroid, quantized likewise
++	MTSK_MEAN_TIE_COARSE,
++	// Diagnostic: no reordering at all. Every key is equal, so std::stable_sort leaves the list in
++	// SUBMISSION order (PolyParam order, then strip order). This is not a shipping candidate — it
++	// answers the question the whole ladder hinges on: does the game's own draw order render the
++	// face correctly? If yes, the fix is to stop the scalar reordering geometry it cannot resolve.
++	// If no, the game depends on the PVR's real per-pixel autosort and only OIT can be right.
++	MTSK_NONE,
++};
++int mtSortKeyMode = MTSK_MIN;
++
++// Collapse depths that differ only in the low mantissa bits onto one value. IEEE-754 positive
++// floats are monotonic in their bit pattern, so masking N low bits buckets them with constant
++// RELATIVE precision. The point is std::stable_sort: keys that compare EQUAL keep their original
++// submission order, and for a decal lying on a surface that submission order is the artist's
++// intent — the depth difference between them is real but far below the accuracy this scalar key
++// can resolve, so ordering by it is noise, and noise is exactly what makes the mouth flicker.
++static inline float quantizeZ(float z, int dropBits)
++{
++	if (!(z > 0.f) || !std::isfinite(z))
++		return z;
++	u32 u;
++	memcpy(&u, &z, sizeof(u));
++	u &= ~((1u << dropBits) - 1u);
++	float r;
++	memcpy(&r, &u, sizeof(r));
++	return r;
++}
++
++static inline float mtSortKey(float a, float b, float c)
++{
++	switch (mtSortKeyMode)
++	{
++	case MTSK_MEAN:
++		return (a + b + c) * (1.f / 3.f);
++	case MTSK_MAX:
++		return std::max(std::max(a, b), c);
++	case MTSK_MIN_TIE:
++		return quantizeZ(std::min(std::min(a, b), c), 12);
++	case MTSK_MEAN_TIE:
++		return quantizeZ((a + b + c) * (1.f / 3.f), 12);
++	case MTSK_MEAN_TIE_COARSE:
++		return quantizeZ((a + b + c) * (1.f / 3.f), 16);
++	case MTSK_NONE:
++		return 0.f;
++	case MTSK_MIN:
++	default:
++		return std::min(std::min(a, b), c);
++	}
++}
++
+ static float minZ(const Vertex *v, const u32 *mod)
+ {
+-	return std::min(std::min(v[mod[0]].z, v[mod[1]].z), v[mod[2]].z);
++	return mtSortKey(v[mod[0]].z, v[mod[1]].z, v[mod[2]].z);
+ }
+ 
+ static bool operator<(const IndexTrig& left, const IndexTrig& right)
+@@ -113,7 +190,9 @@ void sortTriangles(rend_context& ctx, RenderPass& pass, const RenderPass& previo
+ 				if (pp->isNaomi2())
+ 				{
+ 					float z2 = getProjectedZ(v2, ctx.matrices[pp->mvMatrix].mat);
+-					triangleList.back().z = std::min(z0, std::min(z1, z2));
++					// Naomi2's projected z is -1/z and can be NEGATIVE, which quantizeZ passes
++					// through untouched — the tie modes are therefore inert here by design.
++					triangleList.back().z = mtSortKey(z0, z1, z2);
+ 					z0 = z1;
+ 					z1 = z2;
+ 				}
 diff --git a/core/rend/vulkan/vk_context_lr.cpp b/core/rend/vulkan/vk_context_lr.cpp
 index 1e8fbeb..eef737c 100644
 --- a/core/rend/vulkan/vk_context_lr.cpp
@@ -105,3 +231,110 @@ index 3726b98..afc8a5f 100644
  };
  
  const VkApplicationInfo* VkGetApplicationInfo();
+diff --git a/core/windows/fault_handler.cpp b/core/windows/fault_handler.cpp
+index ceed7f0..bf60de1 100644
+--- a/core/windows/fault_handler.cpp
++++ b/core/windows/fault_handler.cpp
+@@ -154,6 +154,31 @@ static LONG WINAPI exceptionHandler(EXCEPTION_POINTERS *ep)
+ #endif
+ 
+ 	ERROR_LOG(COMMON, "[GPF] Thread:%s PC %p unhandled access to %p", getThreadName(), (void *)context.pc, address);
++	{
++		// MovieTheater diag: print the faulting module + RVA so addr2line can resolve the source line
++		// under ASLR (the RelWithDebInfo core loads at a randomized base). RVA = PC - moduleBase.
++		auto printModRva = [](const char *tag, uintptr_t addr) {
++			HMODULE mod = nullptr;
++			if (addr && GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
++					(LPCSTR)addr, &mod) && mod) {
++				char modname[MAX_PATH] = {0};
++				GetModuleFileNameA(mod, modname, MAX_PATH);
++				ERROR_LOG(COMMON, "[GPF] %s=%p module=%s base=%p RVA=%p", tag, (void *)addr, modname,
++						(void *)mod, (void *)(addr - (uintptr_t)mod));
++			} else {
++				ERROR_LOG(COMMON, "[GPF] %s=%p (not in a loaded module)", tag, (void *)addr);
++			}
++		};
++		printModRva("PC", (uintptr_t)context.pc);
++		// A call through a garbage function pointer faults at instruction-fetch of the target, so RSP
++		// still points at the pushed RETURN address = the caller (inside flycast, resolvable). Walk a
++		// few stack slots so a resolvable caller frame is found even past a leaf with no call.
++		uintptr_t *sp = (uintptr_t *)context.rsp;
++		for (int i = 0; sp && i < 12; i++) {
++			char tag[24]; snprintf(tag, sizeof(tag), "RET[%d]", i);
++			printModRva(tag, sp[i]);
++		}
++	}
+ 	if (prevExceptionHandler != nullptr)
+ 		prevExceptionHandler(ep);
+ 
+diff --git a/shell/libretro/libretro.cpp b/shell/libretro/libretro.cpp
+index a4444c9..d09976a 100644
+--- a/shell/libretro/libretro.cpp
++++ b/shell/libretro/libretro.cpp
+@@ -58,6 +58,7 @@
+ #include "hw/maple/maple_if.h"
+ #include "hw/pvr/pvr_regs.h"
+ #include "hw/pvr/Renderer_if.h"
++#include "hw/pvr/ta_ctx.h"   // MovieTheater: mtSortKeyMode
+ #include "hw/naomi/naomi_cart.h"
+ #include "hw/naomi/card_reader.h"
+ #include "LogManager.h"
+@@ -885,6 +886,24 @@ static void update_variables(bool first_startup)
+ 		coin_limit = atoi(var.value);
+ 	}
+ 
++	// MovieTheater (custom core): per-triangle alpha sort KEY. Read every update so a per-game
++	// override takes effect on the next room without a core rebuild. Unknown/absent = stock.
++	var.key = CORE_OPTION_NAME "_mt_sort_key";
++	var.value = nullptr;
++	if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
++	{
++		int mode = 0;
++		if (!strcmp(var.value, "mean"))                  mode = 1;
++		else if (!strcmp(var.value, "max"))              mode = 2;
++		else if (!strcmp(var.value, "min-tie"))          mode = 3;
++		else if (!strcmp(var.value, "mean-tie"))         mode = 4;
++		else if (!strcmp(var.value, "mean-tie-coarse"))  mode = 5;
++		else if (!strcmp(var.value, "none (diagnostic)")) mode = 6;
++		if (mode != mtSortKeyMode)
++			NOTICE_LOG(RENDERER, "MT alpha sort key = %s (mode %d)", var.value, mode);
++		mtSortKeyMode = mode;
++	}
++
+ 	var.key = CORE_OPTION_NAME "_alpha_sorting";
+ 	var.value = nullptr;
+ 	RenderType previous_renderer = config::RendererType;
+diff --git a/shell/libretro/libretro_core_options.h b/shell/libretro/libretro_core_options.h
+index 8c58e74..72aa9a0 100644
+--- a/shell/libretro/libretro_core_options.h
++++ b/shell/libretro/libretro_core_options.h
+@@ -389,6 +389,29 @@ struct retro_core_option_v2_definition option_defs_us[] = {
+       "per-triangle (normal)",
+ #endif
+    },
++   {
++      /* MovieTheater (custom core): which scalar keys a triangle in the per-triangle alpha sort.
++       * Stock flycast uses the triangle's FARTHEST vertex, which is upstream flycast#100 and is
++       * what mangles Sonic Adventure's face. "min" is stock and is the default — this option
++       * exists so the alternatives can be measured against a real scene and pinned per game. */
++      CORE_OPTION_NAME "_mt_sort_key",
++      "Alpha Sort Key (MovieTheater)",
++      NULL,
++      "Which depth value keys each triangle in per-triangle alpha sorting. 'min' is stock flycast. The 'tie' variants collapse near-equal depths so co-planar decals keep their submitted order.",
++      NULL,
++      "video",
++      {
++         { "min (stock)",      "Farthest vertex (stock)" },
++         { "mean",             "Centroid" },
++         { "max",              "Nearest vertex" },
++         { "min-tie",          "Farthest vertex, co-planar ties kept" },
++         { "mean-tie",         "Centroid, co-planar ties kept" },
++         { "mean-tie-coarse",  "Centroid, co-planar ties kept (coarse)" },
++         { "none (diagnostic)", "No reordering — submitted order (diagnostic)" },
++         { NULL, NULL },
++      },
++      "min (stock)",
++   },
+ #if defined(HAVE_OIT) || defined(HAVE_VULKAN) || defined(HAVE_D3D11)
+    {
+       CORE_OPTION_NAME "_oit_abuffer_size",

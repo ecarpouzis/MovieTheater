@@ -8,3 +8,7 @@
 # -text = never convert line endings on checkin or checkout. The bytes committed are the bytes
 # restored, which is the only thing that makes this patch a usable backup.
 docker/arcade/patches/*.patch -text
+# Same reasoning, same hazard, different directory: flycast-custom-core.patch is the rebuild path for
+# flycast_custom_libretro.dll and had NO rule until 2026-08-08 — it sat one `git checkout` away from
+# the identical breakage. Any generated patch under docker/arcade belongs here.
+docker/arcade/*.patch -text
