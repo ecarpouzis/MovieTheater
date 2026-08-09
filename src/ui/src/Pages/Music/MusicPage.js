@@ -257,8 +257,10 @@ function MusicPage({ userData }) {
     history.push({ pathname: "/music", search: p.toString() ? `?${p.toString()}` : "" });
   }
 
-  function playSearchSong(i) {
-    const tracks = songResults.map((t) => ({
+  // The queue-entry shape lives in one place per list so "play from here" and "add this one to the
+  // queue" can never drift into building different entries for the same track.
+  function searchSongEntries() {
+    return songResults.map((t) => ({
       id: t.id,
       title: t.title,
       artist: t.artistName,
@@ -267,11 +269,10 @@ function MusicPage({ userData }) {
       durationSec: t.durationSec,
       requiresTranscode: t.requiresTranscode,
     }));
-    player.playTracks(tracks, i);
   }
 
-  function playLooseTracks(i) {
-    const tracks = artistDetail.looseTracks.map((t) => ({
+  function looseTrackEntries() {
+    return artistDetail.looseTracks.map((t) => ({
       id: t.id,
       title: t.title,
       artist: artistDetail.name,
@@ -280,7 +281,14 @@ function MusicPage({ userData }) {
       requiresTranscode: t.requiresTranscode,
       missing: t.missing,
     }));
-    player.playTracks(tracks, i);
+  }
+
+  function playSearchSong(i) {
+    player.playTracks(searchSongEntries(), i);
+  }
+
+  function playLooseTracks(i) {
+    player.playTracks(looseTrackEntries(), i);
   }
 
   if (gated) {
@@ -317,6 +325,7 @@ function MusicPage({ userData }) {
                 time={formatTime(t.durationSec)}
                 disabled={!player.isPlayable(t)}
                 onPlay={() => playSearchSong(i)}
+                onQueue={() => player.enqueue([searchSongEntries()[i]])}
                 onAdd={() => openPicker([{ id: t.id, title: t.title }], t.title)}
               />
             ))}
@@ -400,6 +409,7 @@ function MusicPage({ userData }) {
                     time={formatTime(t.durationSec)}
                     disabled={!player.isPlayable(t)}
                     onPlay={() => playLooseTracks(i)}
+                    onQueue={() => player.enqueue([looseTrackEntries()[i]])}
                     onAdd={() => openPicker([{ id: t.id, title: t.title }], t.title)}
                   />
                 ))}

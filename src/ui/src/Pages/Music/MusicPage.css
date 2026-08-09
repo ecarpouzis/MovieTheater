@@ -216,7 +216,9 @@
 
 .music-song-item:last-child { border-bottom: none; }
 .music-song-item .music-song-row { flex: 1 1 auto; min-width: 0; border-bottom: none; }
-.music-song-item .music-add-btn { padding-right: 12px; }
+/* Only the LAST trailing button carries the row's right padding — scoping this to .music-add-btn
+   generally would put a 12px gap between ☰ and ＋ and float them apart. */
+.music-song-item .music-add-btn:last-child { padding-right: 12px; }
 .music-song-row:hover:not(:disabled) { background: var(--accent-soft); }
 .music-song-row:disabled { opacity: 0.45; cursor: not-allowed; }
 

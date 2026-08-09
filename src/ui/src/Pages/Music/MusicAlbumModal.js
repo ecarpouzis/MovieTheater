@@ -137,6 +137,7 @@ function MusicAlbumModal({ albumId, onClose, onAddToPlaylist }) {
                     ? "This format can't be streamed yet"
                     : t.title}
                 onPlay={() => player.playTracks(toQueueEntries(), i)}
+                onQueue={() => player.enqueue([toQueueEntries()[i]])}
                 onAdd={onAddToPlaylist ? () => onAddToPlaylist([{ id: t.id, title: t.title }], t.title) : undefined}
               />
             ))}

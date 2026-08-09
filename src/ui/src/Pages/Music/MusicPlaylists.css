@@ -200,7 +200,12 @@
   padding: 2px 4px;
 }
 
-.music-add-btn:hover { color: var(--accent); }
+.music-add-btn:hover:not(:disabled) { color: var(--accent); }
+.music-add-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* "Add to queue" sits left of the ＋ and is the denser of the two glyphs, so it needs a touch
+   less size to sit on the same optical weight. */
+.music-queue-btn { font-size: 12px; }
 
 /* ── Sharing (music-plan.md §2.4) ───────────────────────────────────────────
    A share is collaborative, so the roster is visible to everyone with access; only the owner
