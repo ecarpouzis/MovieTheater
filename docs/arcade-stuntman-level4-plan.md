@@ -1,5 +1,105 @@
 # Stuntman round 2 — frame jitter + level-4 AI turn bug (OVERNIGHT 2026-08-08)
 
+## ❌ ~23:30 STRICT-REFS DID NOT FIX THE STALE FRAME — the encoder DPB was NOT the mechanism
+Room MRJ6EQ (worker-gl-2, 9 min idle on attract/menus, spectator reel **22,965 frames**,
+`reel-strictrefs-run1/`). Scanner: **4 A-B-A detections, and looking at them settles it** —
+exhibit `anomaly-sheet-strictrefs-run1.png`:
+- **pf0004514 mt=91.977, ratio 0.004 — A REAL STALE FRAME.** Neighbours A and C are both the
+  static STUNTMAN title card (dAC=0.36); B is a car-crash frame whose nearest twin is
+  **pf0004046 at mt=81.943 — +10.034 s / +464 frames back, pixel diff 0.21.**
+- pf0015198 ratio 0.000: the title card spliced between two *identical* black frames, twin
+  4.6 s away — same family, probable second instance.
+- pf0018479 (0.409) and pf0019721 (0.366) are a white scene-cut flash and a muzzle-flash —
+  the legitimate one-frame-flash false positives the skill warns about. NOT defects.
+⇒ **VERDICT: FAIL.** ~1-2 genuine insertions / 23k frames (was 9 / ~24k pre-fix — lower, but the
+mechanism is alive). The plugin was definitely in force: `gst-inspect nvh264enc/nvav1enc` shows
+`strict-refs` (default true) and the room's worker (pid 45228) had
+`D:\msys64\ucrt64\lib\gstreamer-1.0\libgstnvcodec.dll` (1,479,565 B, mtime 23:11:19) mapped —
+workers connected at 23:11:24, *after* the DLL landed. Nothing in the fork sets the property, so
+there is no `strict-refs` line to grep; the module check above is the proof.
+⇒ **NEXT SUSPECT (as the plan already predicted): the zc slot handed to the encoder.** A 464-frame-old
+picture cannot be a legal reference under a bounded DPB, so the encoder was most likely handed a
+*recycled image* and encoded it correctly. Room evidence to chase: `[zc-stat] dup(pin=123)` with
+`reallocs=0`, `inflight` briefly 5/8 at 23:19:15 (`serials[5396..5400 span=4]`) — the dup-pin path
+is where a slot can be re-presented. Room health was otherwise clean: geom one line all room
+(1280x896), ceiling 12373, `[ts-mono] violations=0`, no crash, `abr: summary` normal.
+⚠ Caveat for the next run: with two browsers on the box the spectator flapped `abr: peer layer`
+1↔0 repeatedly, so much of the back half of this reel was recorded at layer 0 (30 fps base only).
+A cleaner run wants the reel client alone on the room.
+
+## ✅ ~23:39 N64 PIPELINE-CACHE PERSISTENCE: BOTH CORES PASS (full write→load cycle, live)
+- **parallel_n64 (b4bd60/b4dfc60) PASS** — room 23:32:48 on worker-gl-2:
+  `paraLLEl-RDP: loading 4 MB pipeline cache from ...\parallel_n64\cache\parallel_rdp_pipeline_cache.bin
+  (5015239 bytes)` → `Initializing pipeline cache` → streamed 1280x960 → at close
+  `wrote 10 MB pipeline cache. (10678996 bytes)`. Cache grows and survives. `abr: summary`
+  atCeilPct=99 cuts=0 starves=0, no crash.
+- **mupen64plus_next (15ad6c3) PASS** — proven as a two-room cycle on worker-gl-2 (its mupen cache
+  dir was empty; worker-gl's 4.5 MB from 21:06 was on the other box): room 23:37:21
+  `no pipeline cache file at ...\mupen64plus_next\cache\... -- starting fresh` → close
+  `wrote 8 MB pipeline cache. (9156100 bytes)`; room 23:39:20 `loading 8 MB pipeline cache ...
+  (9156100 bytes)` + reached Playing. `[WARN]: Disabling pipeline cache control.` prints on every
+  parallel-RDP boot and is unrelated (VK cache-control ext, pre-existing).
+- Housekeeping done: `ArcadeGameProfile` row 33 (`TEMP pipeline-cache verify`) DELETED (guarded on
+  the Notes text), `ArcadeGame` 60439 `MaxPlayers` back to **1**.
+- ⚠ **"Diddy Kong Racing" is a 5-way lobby collision** and the first card is a dud. All five region
+  variants carry the identical title, and `.arcade-card` first = **id 18243 (USA non-Rev-A)**, which
+  dies with `error="couldn't find game Diddy Kong Racing (USA) (En,Fr) in system n64"` →
+  coordinator `malformed game start response; slot released` → the room never binds a worker and the
+  harness reads it as a **Playing-tag timeout**. That is the same failure as the earlier attempt this
+  session — it is NOT a boot hang. The verified-good entry is **id 3, `(USA) (En,Fr) (Rev A)`**; the
+  ROM for 18243 does exist on R: so this is a JIT-staging/library gap worth a separate look
+  (the gateway also logged `RomCache evicted game 3 (cold >7d)` minutes earlier).
+
+## ⏸ ~23:50 TASK 7 (Stuntman no-interlacing patch): AUTHORED + DELIVERY PROVEN, PATCH CONTENT WRONG
+**Delivery path is SOLVED and needs no rebuild.** `pcsx2_enable_cheats=enabled` (profile
+CoreOptionsJson) + `<worker>\libretro\system\pcsx2\cheats\76CBC428.pnach` works end-to-end in this
+fork — worker log: `Found Cheats file: '76CBC428.pnach'` → `Loaded 8 Cheats` → `8 cheat patches are
+active.` (`VMManager::LoadPatches` → `LoadPatchesFromDir(crc, EmuFolders::Cheats, "Cheats")`,
+`EnableCheats` set at main.cpp:1133). The `cheats_ni` folder path exists too but
+`EnableNoInterlacingPatches` is never set anywhere in the libretro port, so that branch is dead;
+`pcsx2_nointerlacing_hint` only gates the 52-serial hardcoded table in `libretro/patches.cpp`.
+
+**Where the patch came from.** No community NI patch exists for this title (PCSX2/pcsx2_patches
+ships only a widescreen `SLUS-20250_76CBC428.pnach`). So it was derived from the ELF: extracted
+`SLUS_202.50` straight out of the CSO without decompressing the disc
+(`.claude/skills/test-roms/cso-extract.py` — CISO index + ISO9660 walk; the disc's block size is
+16 KB, not 2 KB), confirmed against the boot log (`Game CRC = 0x76CBC428, EntryPoint = 0x00100008`,
+ELF loads at 0x100000 / file offset 0x1000). The game reaches `SetGsCrt` only via the libgraph
+`sceGsResetGraph` at **0x0023F4F8**, which tail-jumps (`j`, not `jal` — that is why a jal search
+finds nothing) to the syscall-2 stub at **0x002583A0** with `a0=inter, a1=omode, a2=ffmd` taken from
+its own `a1/a2/a3`. Five call sites, all with `a0(mode)=0`:
+
+| call site | inter (a1) | omode (a2) | ffmd (a3) |
+|---|---|---|---|
+| 0x0011FD5C | 0 | 2 (NTSC) | 1 |
+| 0x001D01FC | **1** | 2 | 1 |
+| 0x00202DD0 | **1** | var | 0 |
+| 0x00220CFC | **1** | 3 | 1 |
+| 0x00220D1C | **1** | 2 | 1 |
+
+**Result: both variants BLACK-SCREEN the game.** Variant A (force `a1=0` *and* `a3=0`, 8 patches)
+and Variant B (force `a1=0` only, 4 patches, the classic asasega form) each boot to luma **0** and
+stay there — v1..b3 snaps at t=40..100 s all luma 0, `shots3/`, `shots4/`. The control is
+unambiguous: the *unpatched* clean boot of the same room type had luma 69 / 128 / 70 / 100 at
+t=15/30/45/60 s (`/tmp/hold1.log`, room MRJ6EQ). So this is not "black is usually not a hang".
+**But the patch IS landing and IS doing what it says:** with `field_fullres` off, gameplay is
+1280x**447** un-patched (control run, room HWW7UD, ceiling 6173) and the patched clean boot reports
+one stable 1280x**448** (ceiling 6186) — 448 = 447 without `field_aware_rendering`'s `height--`,
+i.e. `FFMD && INT` went false. The interlace flag is being cleared; what breaks is everything
+downstream of it (the game's DISPLAY DH/MAGV and dispenv are still set for the interlaced raster,
+so the scanout has nothing valid to read).
+**Conclusion / next step for Eric's eyes:** the SetGsCrt argument is the wrong lever for this title.
+A working NI patch here has to patch the game's *own* video-mode setup (its dispenv / DISPLAY1-2
+writes) alongside the interlace bit, or target the game's mode variable rather than the libgraph
+call. Everything needed to continue is in `D:\ArcadeStorage\scratch\stuntman\`: the extracted ELF,
+`mipsdis.py` (EE disassembler), both pnach variants under `pnach-not-deployed\`, and
+`prof7_test.sql` / `prof7_restore.sql`.
+**Nothing was left armed.** The pnach files are OUT of both workers' `cheats` dirs, profile row 7 is
+back to exactly `{"pcsx2_softfloat":"enabled","pcsx2_pgs_field_fullres":"enabled",
+"pcsx2_pgs_ssaa":"16x SSAA (can high-res)","pcsx2_pgs_ss_tex":"enabled"}`, MaxPlayers=1, no live
+rooms, no Playwright processes. `pcsx2_pgs_field_fullres` was NOT changed — it stays, and it should:
+with no working NI patch there is no evidence to drop it.
+
 ## 🎯 ~20:30 PROFILE VERDICT (Eric drove the loop 3x on instrumented core e272813): UPLOAD/DISPATCH STORM CONFIRMED
 pgs-prof caught every crossing. THE stall frame (run 1, 20:26:22): **total=356.6ms =
 upload 163.1ms (1494 ops / 194.2 MB) + binning 81.2 + shading 55.5 + texcache 40.1**,
