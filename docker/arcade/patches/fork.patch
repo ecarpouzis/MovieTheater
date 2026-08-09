@@ -5084,10 +5084,10 @@ index 0000000..19267ba
 +}
 diff --git a/pkg/network/webrtc/svc.go b/pkg/network/webrtc/svc.go
 new file mode 100644
-index 0000000..143e62c
+index 0000000..83173dd
 --- /dev/null
 +++ b/pkg/network/webrtc/svc.go
-@@ -0,0 +1,287 @@
+@@ -0,0 +1,316 @@
 +package webrtc
 +
 +import (
@@ -5184,6 +5184,35 @@ index 0000000..143e62c
 +// a knob that silently halves every player's frame rate must never be discoverable only by staring
 +// at fps, and env vars outlive the session that set them.
 +func ForcedLayer() int { return int(svcForceLayer) }
++
++// svcNoPeerDrop keeps the encoder layered but stops the SENDER from ever skipping a frame for a
++// peer, when CLOUD_GAME_SVC_NO_PEER_DROP is set to anything but "0"/"false". SVC encoding stays on
++// (the pyramid still costs nothing to produce); ABR simply falls back to its bitrate-only lever.
++//
++// It exists as a one-restart bisector for the class of bug where a peer is shown a PRISTINE frame of
++// old content carrying a new timestamp. Skipping a frame that carried a reference-slot update is the
++// textbook way to produce that, so "turn the skipping off and see whether it stops" has to be one
++// env var away — not a rebuild, and above all not a rollback of the ladder itself.
++//
++// 2026-08-08 says this is NOT the cause of the artefact we have (8 of 9 spectator-reel anomalies
++// landed while every peer was at the top layer and nothing was being skipped at all), so it stays
++// DEFAULT OFF: it is an instrument, not a fix. Read once at startup, same as svcForceLayer — a knob
++// on the per-frame hot path has no business being re-read 60 times a second.
++var svcNoPeerDrop = func() bool {
++	v, ok := os.LookupEnv("CLOUD_GAME_SVC_NO_PEER_DROP")
++	if !ok {
++		return false
++	}
++	switch strings.ToLower(strings.TrimSpace(v)) {
++	case "", "0", "false", "no", "off":
++		return false
++	}
++	return true
++}()
++
++// PeerDropDisabled reports whether per-peer layer skipping has been switched off. Exported for the
++// same reason ForcedLayer is: a worker running with its ladder half-disabled must say so in the log.
++func PeerDropDisabled() bool { return svcNoPeerDrop }
 +
 +// h264TemporalID reads which temporal layer an H.264 access unit belongs to.
 +//
@@ -5586,7 +5615,7 @@ index 0000000..53b1fd8
 +	}
 +}
 diff --git a/pkg/network/webrtc/webrtc.go b/pkg/network/webrtc/webrtc.go
-index b342b6b..9caad1d 100644
+index b342b6b..d3273fa 100644
 --- a/pkg/network/webrtc/webrtc.go
 +++ b/pkg/network/webrtc/webrtc.go
 @@ -4,11 +4,15 @@ import (
@@ -5605,7 +5634,7 @@ index b342b6b..9caad1d 100644
  	"github.com/pion/webrtc/v4"
  	"github.com/pion/webrtc/v4/pkg/media"
  )
-@@ -16,21 +20,116 @@ import (
+@@ -16,21 +20,130 @@ import (
  type Peer struct {
  	api *ApiFactory
  	c   *webrtc.PeerConnection
@@ -5676,6 +5705,20 @@ index b342b6b..9caad1d 100644
 +	vDrops  atomic.Int64
 +	vLogged atomic.Int64
 +
++	// ── [ts-mono] video RTP timestamp monotonicity probe ──────────────────────────────────────────
++	// A spectator's rVFC caught meta.mediaTime going BACKWARD by 64/72/8 ms during Stuntman, at the
++	// level reload and in the warehouse zone. Either WE emit a non-monotonic sample clock or the
++	// reordering is downstream of us; nothing short of watching the last value we hand pion can tell
++	// those apart. Pion advances the track's RTP timestamp by each sample's Duration, so the clock we
++	// are handing it is the running sum of the durations below — and it can only go backwards if a
++	// duration is negative. tsAccumNs is that sum, in ns, touched ONLY by videoSender (one goroutine
++	// per peer), so it needs no synchronisation. The counters are atomic because Disconnect reads them.
++	tsAccumNs    int64
++	tsViolations atomic.Int64
++	tsMaxRegress atomic.Int64
++	tsLogged     atomic.Int64
++	tsSamples    atomic.Int64
++
 +	// Who this peer IS, for the ABR link-stat mirror (Phase 0 instrumentation). Both arrive on the
 +	// per-peer InitWebrtcStream message — the only browser->worker message every peer sends for
 +	// itself (t=104 is creator-only and room-wide, so a joiner's device could never ride it).
@@ -5722,7 +5765,7 @@ index b342b6b..9caad1d 100644
  var DefaultDataChannelParams = webrtc.DataChannelInit{
  	ID:             new(uint16),
  	Negotiated:     new(true),
-@@ -45,23 +144,29 @@ func New(log *logger.Logger, api *ApiFactory) *Peer {
+@@ -45,23 +158,29 @@ func New(log *logger.Logger, api *ApiFactory) *Peer {
  			Str(logger.DirectionField, "").
  			Str(logger.ClientField, ""),
  	)
@@ -5755,7 +5798,7 @@ index b342b6b..9caad1d 100644
  		return
  	}
  
-@@ -96,6 +201,35 @@ func (p *Peer) NewConnection(vCodec string, signaller func(ice *string)) (err er
+@@ -96,6 +215,35 @@ func (p *Peer) NewConnection(vCodec string, signaller func(ice *string)) (err er
  
  	p.c.OnDataChannel(func(ch *webrtc.DataChannel) { p.log.Debug().Msgf("rtc [chan] [%s] remote", ch.Label()) })
  
@@ -5791,7 +5834,7 @@ index b342b6b..9caad1d 100644
  	aCodec := "opus"
  	if err = p.InitMedia(vCodec, aCodec); err != nil {
  		return
-@@ -143,8 +277,41 @@ func (p *Peer) OfferAnswer(offer bool) (string, error) {
+@@ -143,8 +291,41 @@ func (p *Peer) OfferAnswer(offer bool) (string, error) {
  	return encoded, nil
  }
  
@@ -5833,7 +5876,7 @@ index b342b6b..9caad1d 100644
  		candidate, err := fromJson[webrtc.ICECandidateInit](*ice)
  		if err != nil {
  			return err
-@@ -153,6 +320,17 @@ func (p *Peer) HandleSignal(ice, sdp *string) error {
+@@ -153,6 +334,17 @@ func (p *Peer) HandleSignal(ice, sdp *string) error {
  		return p.c.AddICECandidate(candidate)
  	}
  	if sdp != nil {
@@ -5851,7 +5894,7 @@ index b342b6b..9caad1d 100644
  		answer, err := fromJson[webrtc.SessionDescription](*sdp)
  		if err != nil {
  			return err
-@@ -176,6 +354,13 @@ func newTrack(id string, label string, codec string) (*webrtc.TrackLocalStaticSa
+@@ -176,6 +368,13 @@ func newTrack(id string, label string, codec string) (*webrtc.TrackLocalStaticSa
  		mime = webrtc.MimeTypeVP8
  	case "video/vp9":
  		mime = webrtc.MimeTypeVP9
@@ -5865,7 +5908,7 @@ index b342b6b..9caad1d 100644
  	default:
  		return nil, fmt.Errorf("unsupported codec %s:%s", id, codec)
  	}
-@@ -221,17 +406,108 @@ func (p *Peer) Channel(label string, conf *webrtc.DataChannelInit, onMessage fun
+@@ -221,17 +420,128 @@ func (p *Peer) Channel(label string, conf *webrtc.DataChannelInit, onMessage fun
  }
  
  func (p *Peer) SendAudio(dat []byte, dur time.Duration) {
@@ -5930,7 +5973,7 @@ index b342b6b..9caad1d 100644
 +				return
 +			}
 +			dur := f.dur
-+			if svcLayers.Load() > 1 {
++			if svcLayers.Load() > 1 && !svcNoPeerDrop {
 +				maxL := p.maxLayer.Load()
 +				if svcForceLayer >= 0 && svcForceLayer < maxL {
 +					maxL = svcForceLayer // diagnostic override (see svc.go)
@@ -5957,6 +6000,26 @@ index b342b6b..9caad1d 100644
 +			if pending := p.pendingNanos.Swap(0); pending > 0 {
 +				dur += time.Duration(pending) // carry forward everything skipped since our last send
 +			}
++			// [ts-mono] The last point where a video sample still has a timestamp we control. Pion
++			// derives the RTP timestamp by accumulating Duration, so a non-positive duration here is
++			// the ONLY way this track's clock can stall or run backwards — and a backwards clock is
++			// exactly what the client's rVFC reported. Rate-limited to one line per 120 violations so
++			// a pathological stretch cannot turn into a log storm.
++			prev := p.tsAccumNs
++			p.tsAccumNs += int64(dur)
++			p.tsSamples.Add(1)
++			if int64(dur) <= 0 {
++				n := p.tsViolations.Add(1)
++				if reg := -int64(dur); reg > p.tsMaxRegress.Load() {
++					p.tsMaxRegress.Store(reg)
++				}
++				if n-p.tsLogged.Load() >= 120 || n == 1 {
++					p.tsLogged.Store(n)
++					p.log.Error().Msgf(
++						"[ts-mono] VIDEO timestamp REGRESSION track=%s prev=%d now=%d delta=%dns (%.1f frames) violations=%d",
++						p.videoTrackID(), prev, p.tsAccumNs, int64(dur), float64(dur)/float64(16*time.Millisecond), n)
++				}
++			}
 +			if v := p.v; v != nil {
 +				if err := p.send(f.data, dur, v.WriteSample); err != nil {
 +					p.log.Error().Err(err).Send()
@@ -5976,10 +6039,30 @@ index b342b6b..9caad1d 100644
  func (p *Peer) SendData(data []byte) { _ = p.d.Send(data) }
  
  func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) error) error {
-@@ -250,6 +526,22 @@ func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) e
+@@ -249,7 +559,42 @@ func (p *Peer) send(data []byte, duration time.Duration, fn func(media.Sample) e
+ 	return nil
  }
  
++// videoTrackID names the track for the [ts-mono] lines; "?" when the track is already gone.
++func (p *Peer) videoTrackID() string {
++	if v := p.v; v != nil {
++		return v.ID()
++	}
++	return "?"
++}
++
++// tsMonoSummary is the per-peer close line. Always emitted (a clean room saying violations=0 is the
++// evidence that exonerates the worker; silence would prove nothing).
++func (p *Peer) tsMonoSummary() {
++	if p.tsSamples.Load() == 0 {
++		return // no video ever flowed on this peer
++	}
++	p.log.Info().Msgf("[ts-mono] summary room=%s track=%s violations=%d maxRegression=%dns samples=%d",
++		p.username, p.videoTrackID(), p.tsViolations.Load(), p.tsMaxRegress.Load(), p.tsSamples.Load())
++}
++
  func (p *Peer) Disconnect() {
++	p.tsMonoSummary()
 +	// Stop this peer's video sender first: it is the only thing still touching the tracks, and a
 +	// closed PeerConnection would make every queued write fail noisily. Closing vqStop (rather than
 +	// vq) is safe against the media thread still enqueueing — a send on a full channel just drops.
@@ -5999,7 +6082,7 @@ index b342b6b..9caad1d 100644
  	if p.c == nil {
  		return
  	}
-@@ -261,6 +553,15 @@ func (p *Peer) Disconnect() {
+@@ -261,6 +606,15 @@ func (p *Peer) Disconnect() {
  }
  
  func (p *Peer) InitMedia(vCodec string, aCodec string) (err error) {
@@ -6015,7 +6098,7 @@ index b342b6b..9caad1d 100644
  	if p.v, err = newTrack("video", "video", vCodec); err != nil {
  		return err
  	}
-@@ -274,20 +575,48 @@ func (p *Peer) InitMedia(vCodec string, aCodec string) (err error) {
+@@ -274,20 +628,48 @@ func (p *Peer) InitMedia(vCodec string, aCodec string) (err error) {
  	if _, err = p.c.AddTransceiverFromTrack(p.v, sendOnly); err != nil {
  		return err
  	}
@@ -6067,7 +6150,7 @@ index b342b6b..9caad1d 100644
  			}
  		}()
  	}
-@@ -313,3 +642,211 @@ func toJson[T any](data T) (string, error) {
+@@ -313,3 +695,211 @@ func toJson[T any](data T) (string, error) {
  	}
  	return string(b), nil
  }
@@ -11994,10 +12077,10 @@ index f3553b1..82912c8 100644
 +func (c *Caged) Close()                           { c.Emulator.Close() }
 +func (c *Caged) IsSupported() error               { return c.base.IsSupported() }
 diff --git a/pkg/worker/caged/libretro/frontend.go b/pkg/worker/caged/libretro/frontend.go
-index 6974d59..b616f14 100644
+index 6974d59..86ce40b 100644
 --- a/pkg/worker/caged/libretro/frontend.go
 +++ b/pkg/worker/caged/libretro/frontend.go
-@@ -1,578 +1,2524 @@
+@@ -1,578 +1,2654 @@
 -package libretro
 -
 -import (
@@ -12811,7 +12894,9 @@ index 6974d59..b616f14 100644
 +	noData    = func([]byte) {}
 +	noVideo   = func(app.Video) {}
 +	videoPool sync.Pool
-+	lastFrame *app.Video
++	// lastFrame points at lastFrameVal, never at a pooled object (see handleVideo). Emulator-thread only.
++	lastFrame    *app.Video
++	lastFrameVal app.Video
 +)
 +
 +// NewFrontend implements Emulator interface for a Libretro frontend.
@@ -13072,8 +13157,15 @@ index 6974d59..b616f14 100644
 +	fr.Frame.Stride = int(fi.Stride)
 +	fr.Duration = delta
 +
-+	lastFrame = fr
 +	f.onVideo(*fr)
++
++	// Keep a VALUE copy, not the pooled pointer. `lastFrame = fr` aliased an object that is handed
++	// straight back to videoPool on the next line, so the next handleVideo mutated the very struct
++	// handleDup reads its Tex/Serial out of. It happened to stay self-consistent (same goroutine, both
++	// fields written together), but "the dup guard reads a recycled object" is not a property to leave
++	// standing next to a refcount.
++	lastFrameVal = *fr
++	lastFrame = &lastFrameVal
 +
 +	videoPool.Put(fr)
 +}
@@ -13087,7 +13179,13 @@ index 6974d59..b616f14 100644
 +	// same texture id — so re-pushing a stale borrowed slot encodes the wrong frame. If this is a zc frame
 +	// (Serial != 0) and its slot no longer holds this exact serial, SKIP the dup: a skipped dup is harmless
 +	// (the encoder just repeats its last frame). Readback frames (Serial 0) own their pixels — always safe.
-+	if lastFrame.Frame.Serial != 0 && !f.nano.ZcTexCurrent(lastFrame.Frame.Tex, lastFrame.Frame.Serial) {
++	// ...and the check alone was not enough. Re-pushing wraps the texture in a SECOND GstBuffer with its
++	// own release notify, so the slot gets released TWICE for one acquisition: the first release freed it
++	// while the second buffer was still in the encoder, and the next frame's blit rewrote the image
++	// underneath — the encoder then emitted newer pixels inside an older frame. That is the
++	// out-of-sequence frame, and it fires precisely when the encoder is holding the slot, i.e. under
++	// load. ZcDupPin checks AND takes the reference the second buffer needs, atomically.
++	if lastFrame.Frame.Serial != 0 && !f.nano.ZcDupPin(lastFrame.Frame.Tex, lastFrame.Frame.Serial) {
 +		return
 +	}
 +	f.onVideo(*lastFrame)
@@ -13482,6 +13580,13 @@ index 6974d59..b616f14 100644
 +	declRateProven := false
 +	prevDeclaredRate := 0.0
 +	rateSuppressLogs := 0
++	// Two-sided adoption state (see audioRateDecide). adoptedHz is the override we installed, 0 when
++	// none; the run counters give the K-window hysteresis that stops a borderline core flapping between
++	// two rates every 3 s. K windows of 3 s = 9 s of agreement before anything moves back.
++	const rateRederiveMove = 0.01 // emuRate must sit ≥1% off the adopted value to re-derive
++	const rateHysteresisK = 3
++	adoptedHz := 0
++	revertRun, rederiveRun := 0, 0
 +
 +	// pace-diag: every 5s, log what the emulator actually produced — ticks/s, audio frames/s (should
 +	// track the core's sample rate), the worst single retro_run of the window, and how many ticks blew
@@ -13648,8 +13753,54 @@ index 6974d59..b616f14 100644
 +						// it up on the next tick (re-pinning the clock) and room.go's per-batch comparison
 +						// re-caps the pipeline via ReconfigureAudio. One write, both consumers.
 +						f.nano.SetDerivedAudioSampleRate(hz)
++						adoptedHz = hz
++						revertRun, rederiveRun = 0, 0
 +					}
 +				}
++
++				// ── The way BACK (2026-08-08) ─────────────────────────────────────────────────
++				// Everything above can only ever move the rate away from the declaration, and once it
++				// has, `observed` is pinned to the new target by the pacer itself — so without this the
++				// adoption is permanent for the session even when it was wrong. Judged on emuRate,
++				// which the pacer cannot influence (see audioRateDecide).
++				emuRate := emuRateOf(rateWinFrames, rateWinTicks, f.nano.VideoFramerate())
++				if !rateWinDirty && adoptedHz > 0 {
++					switch audioRateDecide(emuRate, declared, float64(adoptedHz), rateAdoptMin, rateRederiveMove) {
++					case audioRateRevert:
++						rederiveRun = 0
++						revertRun++
++						if revertRun >= rateHysteresisK {
++							f.log.Warn().Msgf(
++								"[audio] DERIVED rate REVERTED to the declared %.0f Hz (was %d; emulated-time rate %.1f "+
++									"has matched the declaration for %d windows) — the earlier adoption was measuring "+
++									"load, not the core's clock",
++								declared, adoptedHz, emuRate, revertRun)
++							f.nano.SetDerivedAudioSampleRate(0)
++							adoptedHz = 0
++							revertRun, rederiveRun = 0, 0
++							ratePrevObserved = 0
++						}
++					case audioRateRederive:
++						revertRun = 0
++						rederiveRun++
++						if rederiveRun >= rateHysteresisK && rateAdoptions < rateAdoptMax {
++							hz := int(emuRate + 0.5)
++							rateAdoptions++
++							f.log.Warn().Msgf(
++								"[audio] DERIVED rate RE-DERIVED %d -> %d Hz (emulated-time rate %.1f, %.2f%% off the "+
++									"adopted value for %d windows) — adoption is two-sided; opus stays at 48000 and the "+
++									"resampler absorbs the change",
++								adoptedHz, hz, emuRate, (emuRate-float64(adoptedHz))/float64(adoptedHz)*100, rederiveRun)
++							f.nano.SetDerivedAudioSampleRate(hz)
++							adoptedHz = hz
++							revertRun, rederiveRun = 0, 0
++							ratePrevObserved = 0
++						}
++					default:
++						revertRun, rederiveRun = 0, 0
++					}
++				}
++
 +				ratePrevObserved = observed
 +				rateWinStart = os.Nanotime()
 +				rateWinFrames = 0
@@ -15099,6 +15250,170 @@ index 6974d59..b616f14 100644
 +		return -x
 +	}
 +	return x
++}
++
++// ── Making rate adoption two-sided ────────────────────────────────────────────────────────────────
++//
++// The wall-clock measurement (`observed` in Start) cannot detect recovery once a rate has been
++// adopted, and the reason is a feedback loop, not a missing comparison: the pacer TARGETS the adopted
++// rate, the core obeys, so observed converges to the adopted value and stays there. The code's own
++// comment names it ("no evidence of recovery can ever accumulate"). Any reversion rule written against
++// `observed` is therefore unfalsifiable — it would never fire.
++//
++// So reversion is judged on a statistic the pacer cannot influence: samples per TICK. A core emits a
++// fixed number of samples per emulated frame; pacing changes how fast frames happen in wall time, not
++// how many samples each one carries. Multiplying by the core's fps gives the rate per second of
++// EMULATED time, which is the core's real clock — invariant to load and to our own pacing.
++//
++//	genuinely mis-clocked core  -> emuRate stays off declared (PPSSPP ~43850 vs 44100): adoption correct
++//	core that was merely slow   -> emuRate sits AT declared while wall-clock observed sagged: revert
++//
++// That is also a strictly better version of the health gate's question, which is why it can be trusted
++// after adoption when the health gate can no longer see anything.
++
++// emuRateOf converts one measurement window into the core's rate per second of emulated time.
++// Returns 0 when the window cannot support a verdict (no ticks, no framerate).
++func emuRateOf(frames, ticks int64, fps float64) float64 {
++	if ticks <= 0 || frames <= 0 || fps <= 0 {
++		return 0
++	}
++	return float64(frames) / float64(ticks) * fps
++}
++
++type audioRateVerdict int
++
++const (
++	audioRateHold     audioRateVerdict = iota // the adopted rate still matches the core's real clock
++	audioRateRevert                           // the core's real clock is the DECLARED rate: drop the override
++	audioRateRederive                         // the real clock moved: adopt emuRate instead
++)
++
++// audioRateDecide judges one pacing-invariant window against the currently adopted rate.
++//
++//	emuRate  samples per second of emulated time (emuRateOf)
++//	declared what the core announced
++//	adopted  the override currently installed (the pacer's sr)
++//	tol      "close enough to be the same rate" (rateAdoptMin, 0.5%)
++//	move     how far emuRate must sit from `adopted` before re-deriving (1%)
++//
++// Reverting is checked FIRST and with the looser test, because going back to the core's own
++// declaration is always the safer of the two outcomes.
++func audioRateDecide(emuRate, declared, adopted, tol, move float64) audioRateVerdict {
++	if emuRate <= 0 || declared <= 0 || adopted <= 0 {
++		return audioRateHold
++	}
++	if absf(emuRate-declared)/declared <= tol {
++		if absf(adopted-declared)/declared <= tol {
++			return audioRateHold // already effectively at the declaration
++		}
++		return audioRateRevert
++	}
++	if absf(emuRate-adopted)/adopted >= move {
++		return audioRateRederive
++	}
++	return audioRateHold
++}
+diff --git a/pkg/worker/caged/libretro/frontend_audiorate_test.go b/pkg/worker/caged/libretro/frontend_audiorate_test.go
+new file mode 100644
+index 0000000..90ee779
+--- /dev/null
++++ b/pkg/worker/caged/libretro/frontend_audiorate_test.go
+@@ -0,0 +1,96 @@
++package libretro
++
++import "testing"
++
++// The whole point of emuRate is that it does NOT move when pacing does — that invariance is what makes
++// reversion decidable after an adoption has already re-timed the pacer.
++func TestEmuRateIsInvariantToPacing(t *testing.T) {
++	const fps = 60.0
++	// A core emitting 800 samples per frame is a 48000 Hz core, whether we run its frames fast or slow.
++	for _, ticks := range []int64{180, 150, 90} { // 3s at full pace, at 83%, at 50%
++		got := emuRateOf(ticks*800, ticks, fps)
++		if absf(got-48000) > 0.5 {
++			t.Fatalf("ticks=%d: emuRate=%.1f, want 48000", ticks, got)
++		}
++	}
++}
++
++func TestEmuRateGuards(t *testing.T) {
++	for _, c := range []struct{ frames, ticks int64; fps float64 }{
++		{0, 180, 60}, {144000, 0, 60}, {144000, 180, 0}, {144000, -1, 60},
++	} {
++		if got := emuRateOf(c.frames, c.ticks, c.fps); got != 0 {
++			t.Fatalf("%+v: want 0, got %.1f", c, got)
++		}
++	}
++}
++
++func TestAudioRateDecide(t *testing.T) {
++	const tol, move = 0.005, 0.01
++	cases := []struct {
++		name                       string
++		emuRate, declared, adopted float64
++		want                       audioRateVerdict
++	}{
++		{
++			// The Stuntman trap: we adopted 43509 while the loop was struggling, but the core was
++			// always a 48000 core in emulated time. This is the case the old code could never see.
++			name: "slow-load adoption is reverted", emuRate: 48000, declared: 48000, adopted: 43509,
++			want: audioRateRevert,
++		},
++		{
++			// PPSSPP genuinely runs ~43850 against a 44100 declaration. Adoption must STICK.
++			name: "genuine mis-clock holds", emuRate: 43850, declared: 44100, adopted: 43850,
++			want: audioRateHold,
++		},
++		{
++			name: "parallel_n64 genuine mis-clock holds", emuRate: 31230, declared: 32040, adopted: 31230,
++			want: audioRateHold,
++		},
++		{
++			// The core's real clock moved away from what we adopted, and not back to the declaration.
++			name: "real clock moved: re-derive", emuRate: 42000, declared: 48000, adopted: 43509,
++			want: audioRateRederive,
++		},
++		{
++			// Upward, which the old one-sided path could never do.
++			name: "real clock moved upward: re-derive", emuRate: 45000, declared: 48000, adopted: 43509,
++			want: audioRateRederive,
++		},
++		{
++			// Inside the dead band: neither at the declaration nor far enough from the adopted value.
++			name: "small drift holds", emuRate: 43700, declared: 48000, adopted: 43509,
++			want: audioRateHold,
++		},
++		{
++			name: "already at declaration holds", emuRate: 48000, declared: 48000, adopted: 48000,
++			want: audioRateHold,
++		},
++		{name: "no measurement holds", emuRate: 0, declared: 48000, adopted: 43509, want: audioRateHold},
++		{name: "no declaration holds", emuRate: 48000, declared: 0, adopted: 43509, want: audioRateHold},
++		{name: "no adoption holds", emuRate: 48000, declared: 48000, adopted: 0, want: audioRateHold},
++	}
++	for _, c := range cases {
++		t.Run(c.name, func(t *testing.T) {
++			if got := audioRateDecide(c.emuRate, c.declared, c.adopted, tol, move); got != c.want {
++				t.Fatalf("emu=%.0f decl=%.0f adopted=%.0f: got %d, want %d",
++					c.emuRate, c.declared, c.adopted, got, c.want)
++			}
++		})
++	}
++}
++
++// A revert must not immediately re-adopt the value it just left: reverting sets the override to the
++// declaration, and audioRateDecide must then hold rather than oscillate.
++func TestAudioRateNoFlapAfterRevert(t *testing.T) {
++	const tol, move = 0.005, 0.01
++	emu, decl := 48000.0, 48000.0
++	adopted := 43509.0
++	if got := audioRateDecide(emu, decl, adopted, tol, move); got != audioRateRevert {
++		t.Fatalf("first pass: got %d, want revert", got)
++	}
++	adopted = decl // what the revert installs
++	if got := audioRateDecide(emu, decl, adopted, tol, move); got != audioRateHold {
++		t.Fatalf("after revert: got %d, want hold (flapping)", got)
++	}
 +}
 diff --git a/pkg/worker/caged/libretro/frontend_bootrestore_test.go b/pkg/worker/caged/libretro/frontend_bootrestore_test.go
 new file mode 100644
@@ -17542,7 +17857,7 @@ index 669862d..b5e229a 100644
 +    return ok;
 +}
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.go b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
-index 17f10fc..47a6181 100644
+index 17f10fc..78fcd4f 100644
 --- a/pkg/worker/caged/libretro/nanoarch/nanoarch.go
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
 @@ -4,9 +4,11 @@ import (
@@ -18263,8 +18578,12 @@ index 17f10fc..47a6181 100644
 +	// emulator thread, still inside Frontend.Tick — downstream sees the same frame on the same goroutine
 +	// it always did, only after retro_run has finished deciding what the frame is.
 +	n.flushPendingVideo()
-+}
-+
+ }
+ 
+-func (n *Nanoarch) IsSupported() error                  { return graphics.RGFWTryInit() }
+-func (n *Nanoarch) IsGL() bool                          { return n.Video.gl.enabled }
+-func (n *Nanoarch) IsStopped() bool                     { return n.Stopped.Load() }
+-func (n *Nanoarch) InputRetropad(port int, data []byte) { n.retropad.SetInput(port, data) }
 +func (n *Nanoarch) IsSupported() error { return graphics.RGFWTryInit() }
 +func (n *Nanoarch) IsGL() bool         { return n.Video.gl.enabled }
 +
@@ -18297,12 +18616,8 @@ index 17f10fc..47a6181 100644
 +		return
 +	}
 +	n.retropad.SetInput(port, data)
- }
- 
--func (n *Nanoarch) IsSupported() error                  { return graphics.RGFWTryInit() }
--func (n *Nanoarch) IsGL() bool                          { return n.Video.gl.enabled }
--func (n *Nanoarch) IsStopped() bool                     { return n.Stopped.Load() }
--func (n *Nanoarch) InputRetropad(port int, data []byte) { n.retropad.SetInput(port, data) }
++}
++
 +// RequestDisk queues a multi-disc swap to image index i; applied on the emulator thread in Run (patch 0005).
 +func (n *Nanoarch) RequestDisk(i int) {
 +	if i >= 0 {
@@ -18607,7 +18922,7 @@ index 17f10fc..47a6181 100644
  		// if Libretro renders frame with OpenGL context
  		data_ = graphics.ReadFramebuffer(bytes, width, height)
  	}
-@@ -680,7 +1383,174 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
+@@ -680,7 +1383,193 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
  	// also we have an option of xN output frame magnification
  	// so, it may be rescaled
  
@@ -18723,6 +19038,25 @@ index 17f10fc..47a6181 100644
 +	return C.nano_vk_zc_tex_current(C.uint(tex), C.ulonglong(serial)) != 0
 +}
 +
++// ZcDupPin is ZcTexCurrent plus a reference, taken atomically. Use it — not ZcTexCurrent — whenever the
++// borrowed texture is about to be PUSHED again, because every push wraps it in its own GstBuffer with
++// its own release notify. Without the extra reference the first of those releases frees the slot while
++// the second buffer is still in the encoder, and the next frame's blit overwrites it: the out-of-sequence
++// frame. True => the reference is held and the caller MUST push (or call ZcDupUnpin).
++func (n *Nanoarch) ZcDupPin(tex uint32, serial uint64) bool {
++	if serial == 0 || tex == 0 {
++		return false
++	}
++	return C.nano_vk_zc_dup_pin(C.uint(tex), C.ulonglong(serial)) != 0
++}
++
++// ZcDupUnpin returns a reference taken by ZcDupPin when the push it was taken for never happened.
++func (n *Nanoarch) ZcDupUnpin(tex uint32) {
++	if tex != 0 {
++		C.nano_vk_zc_dup_unpin(C.uint(tex))
++	}
++}
++
 +// geomLogOn (D): the [geom-f] per-mode-change geometry log is ALWAYS ON — it fires on-CHANGE only, so
 +// steady-state volume is ~0, and the pathological case (rapid mode-flipping = the flicker suspect) is
 +// exactly the evidence we want captured. A symptom session therefore needs ZERO setup from the player.
@@ -18783,7 +19117,7 @@ index 17f10fc..47a6181 100644
  }
  
  //export coreAudioSampleBatch
-@@ -688,6 +1558,9 @@ func coreAudioSampleBatch(data unsafe.Pointer, frames C.size_t) C.size_t {
+@@ -688,6 +1577,9 @@ func coreAudioSampleBatch(data unsafe.Pointer, frames C.size_t) C.size_t {
  	if Nan0.Stopped.Load() {
  		return frames
  	}
@@ -18793,7 +19127,7 @@ index 17f10fc..47a6181 100644
  	Nan0.Handlers.OnAudio(data, int(frames)<<1)
  
  	// Audio buffer status for the core (e.g. mGBA frameskip).
-@@ -739,7 +1612,13 @@ func coreGetCurrentFramebuffer() C.uintptr_t { return (C.uintptr_t)(graphics.GlF
+@@ -739,7 +1631,13 @@ func coreGetCurrentFramebuffer() C.uintptr_t { return (C.uintptr_t)(graphics.GlF
  
  //export coreGetProcAddress
  func coreGetProcAddress(sym *C.char) C.retro_proc_address_t {
@@ -18808,7 +19142,7 @@ index 17f10fc..47a6181 100644
  }
  
  //export coreEnvironment
-@@ -748,9 +1627,43 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -748,9 +1646,43 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  	// see core_environment_cgo
  
  	switch cmd {
@@ -18852,7 +19186,7 @@ index 17f10fc..47a6181 100644
  		if isGeometryDifferent(av.geometry) {
  			geometryChange(av.geometry)
  		}
-@@ -788,6 +1701,12 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -788,6 +1720,12 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  	case C.RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY:
  		*(**C.char)(data) = Nan0.cSaveDirectory
  		return true
@@ -18865,7 +19199,7 @@ index 17f10fc..47a6181 100644
  	case C.RETRO_ENVIRONMENT_SET_MESSAGE:
  		// only with the Libretro debug mode
  		if Nan0.log.GetLevel() < logger.InfoLevel {
-@@ -797,12 +1716,48 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -797,12 +1735,48 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  			return true
  		}
  		return false
@@ -18914,7 +19248,7 @@ index 17f10fc..47a6181 100644
  		if v, ok := Nan0.options[key]; ok {
  			// make Go strings null-terminated copies ;_;
  			Nan0.options[key] = v + "\x00"
-@@ -816,14 +1771,93 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -816,14 +1790,93 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  			return true
  		}
  		return false
@@ -19009,7 +19343,7 @@ index 17f10fc..47a6181 100644
  	case C.RETRO_ENVIRONMENT_SET_CONTROLLER_INFO:
  		if Nan0.log.GetLevel() > logger.DebugLevel {
  			return false
-@@ -851,7 +1885,18 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -851,7 +1904,18 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  		return true
  	case C.RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK:
  		Nan0.log.Debug().Msgf("Keyboard event callback was set")
@@ -19029,7 +19363,7 @@ index 17f10fc..47a6181 100644
  		return true
  	case C.RETRO_ENVIRONMENT_SET_AUDIO_BUFFER_STATUS_CALLBACK:
  		if data == nil {
-@@ -869,11 +1914,31 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -869,11 +1933,31 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  		Nan0.log.Info().Uint("latency_ms", uint(latency)).Msg("audio latency requested")
  		return true
  	}
@@ -19061,7 +19395,7 @@ index 17f10fc..47a6181 100644
  	var context graphics.Context
  	switch Nan0.Video.hw.context_type {
  	case C.RETRO_HW_CONTEXT_NONE:
-@@ -911,6 +1976,25 @@ func initVideo() {
+@@ -911,6 +1995,25 @@ func initVideo() {
  		if err != nil {
  			panic(err)
  		}
@@ -19087,7 +19421,7 @@ index 17f10fc..47a6181 100644
  	})
  
  	if Nan0.log.GetLevel() < logger.InfoLevel {
-@@ -918,12 +2002,31 @@ func initVideo() {
+@@ -918,12 +2021,31 @@ func initVideo() {
  	}
  }
  
@@ -19119,7 +19453,7 @@ index 17f10fc..47a6181 100644
  		if err := Nan0.glCtx.Deinit(); err != nil {
  			Nan0.log.Error().Err(err).Msg("deinit fail")
  		}
-@@ -932,9 +2035,237 @@ func deinitVideo() {
+@@ -932,9 +2054,237 @@ func deinitVideo() {
  	Nan0.Video.gl.autoCtx = false
  	Nan0.hackSkipHwContextDestroy = false
  	Nan0.hackSkipSameThreadSave = false
@@ -19357,7 +19691,7 @@ index 17f10fc..47a6181 100644
  type limit struct {
  	d  time.Duration
  	t  *time.Timer
-@@ -958,6 +2289,11 @@ func (d *limit) push(f func()) {
+@@ -958,6 +2308,11 @@ func (d *limit) push(f func()) {
  func geometryChange(geom C.struct_retro_game_geometry) {
  	Nan0.limiter(func() {
  		old := Nan0.sys.av.geometry
@@ -19370,7 +19704,7 @@ index 17f10fc..47a6181 100644
  
  		if Nan0.Video.gl.enabled && (old.max_width != geom.max_width || old.max_height != geom.max_height) {
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.h b/pkg/worker/caged/libretro/nanoarch/nanoarch.h
-index 2479d0c..47c25f4 100644
+index 2479d0c..63831ee 100644
 --- a/pkg/worker/caged/libretro/nanoarch/nanoarch.h
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.h
 @@ -5,6 +5,8 @@ void bridge_call(void *f);
@@ -19382,7 +19716,7 @@ index 2479d0c..47c25f4 100644
  bool bridge_retro_serialize(void *f, void *data, size_t size);
  size_t bridge_retro_serialize_size(void *f);
  bool bridge_retro_unserialize(void *f, void *data, size_t size);
-@@ -32,13 +34,52 @@ void init_video_cgo();
+@@ -32,13 +34,54 @@ void init_video_cgo();
  void deinit_video_cgo();
  
  void same_thread(void *f);
@@ -19421,6 +19755,8 @@ index 2479d0c..47c25f4 100644
 +void nano_vk_zc_skip(void);
 +unsigned long long nano_vk_zc_last_serial(void);
 +int nano_vk_zc_tex_current(unsigned tex, unsigned long long serial);
++int nano_vk_zc_dup_pin(unsigned tex, unsigned long long serial);
++void nano_vk_zc_dup_unpin(unsigned tex);
 +int nano_vk_zc_release(unsigned texid);
 +void nano_vk_zc_teardown(void);
 +int nano_vk_probe_zerocopy(void);
@@ -19438,10 +19774,10 @@ index 2479d0c..47c25f4 100644
  #endif
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch_vulkan.c b/pkg/worker/caged/libretro/nanoarch/nanoarch_vulkan.c
 new file mode 100644
-index 0000000..dfa8059
+index 0000000..16afb16
 --- /dev/null
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch_vulkan.c
-@@ -0,0 +1,1956 @@
+@@ -0,0 +1,2026 @@
 +// MovieTheater arcade — Vulkan-capture frontend (M1: readback path).
 +//
 +// Lets the CloudRetro worker host libretro cores that render with RETRO_HW_CONTEXT_VULKAN
@@ -19707,6 +20043,11 @@ index 0000000..dfa8059
 +    VkFence                 zc_fence[NANO_VK_ZC_SLOTS];
 +    VkCommandBuffer         zc_cmd[NANO_VK_ZC_SLOTS];
 +    int                     zc_free[NANO_VK_ZC_SLOTS];    // 1 = free (GStreamer not holding it)
++    // How many GstBuffers currently wrap this slot's texture. It is NOT always 1: handleDup re-pushes
++    // the SAME texture as a second, independent GstBuffer, and every pushed buffer carries its own
++    // zc_tex_released destroy-notify. Freeing on the FIRST release therefore handed a still-referenced
++    // slot back to the free list, and the next blit overwrote pixels the encoder had not read yet.
++    int                     zc_refs[NANO_VK_ZC_SLOTS];
 +    int                     zc_submitted[NANO_VK_ZC_SLOTS]; // 1 = fence pending (needs a wait before reuse)
 +    VkCommandPool           zc_cmd_pool;
 +    // One retired generation kept alive across a geometry flip so a texture GStreamer still holds is
@@ -19761,6 +20102,8 @@ index 0000000..dfa8059
 +    unsigned long long set_cmdbuf;  // core called set_command_buffers (alt frame handover)
 +    unsigned long long sem_setimg_waited; // zc submit waited on a set_image semaphore (core provided one)
 +    unsigned long long sem_setimg_none;   // zc submit proceeded with NO set_image semaphore (unsignaled read risk)
++    unsigned long long dup_pinned;  // dup re-pushed a still-live slot and took a 2nd reference for it
++    unsigned long long dup_skipped; // dup was skipped: the slot had been reused/freed since (DUP-PIN)
 +    unsigned long long stat_frame;  // last frame_serial at which the always-on [zc-stat] line was emitted
 +    unsigned last_w, last_h;        // last geometry seen by nano_vk_zc_frame
 +    unsigned sub16_w, sub16_h;      // last sub-16px geometry dropped
@@ -20941,6 +21284,7 @@ index 0000000..dfa8059
 +        CloseHandle(sem_handle);
 +
 +        vk.zc_free[i] = 1;
++        vk.zc_refs[i] = 0; // fresh gen: nothing downstream references these images yet
 +        vk.zc_submitted[i] = 0;
 +    }
 +    vk.zc_w = w; vk.zc_h = h;
@@ -20987,6 +21331,51 @@ index 0000000..dfa8059
 +    }
 +    pthread_mutex_unlock(&vk.zc_mutex);
 +    return ok;
++}
++
++// DUP-PIN v2 (2026-08-08): check AND take a reference, atomically.
++//
++// nano_vk_zc_tex_current alone was not enough, and the gap is the out-of-sequence frame we have been
++// chasing. When it returned 1, handleDup pushed the SAME texture id a second time — and zc_push wraps
++// every push in a NEW GstBuffer with its OWN zc_tex_released destroy-notify. So one slot, two buffers,
++// TWO releases. The first release freed the slot while the second buffer was still queued in the
++// encoder, the next nano_vk_zc_frame handed that slot out, and its blit rewrote the image the encoder
++// had yet to read. The frame that came out carried NEWER pixels than the frames around it: time going
++// backwards, mid-stream, with the pool, the pacer and the emit order all reporting perfectly healthy.
++//
++// It fires exactly when the encoder is holding the slot — i.e. under load — which is why it is worst
++// at the heavy turn and why every server-side ordering probe exonerated itself.
++//
++// So the dup takes a real reference. Returns 1 only if the slot still holds this exact content AND the
++// reference was taken; the caller must then push (each push consumes exactly one reference via its
++// buffer's release). 0 => skip the dup, as before.
++int nano_vk_zc_dup_pin(unsigned tex, unsigned long long serial) {
++    if (!vk.zc_mutex_init || tex == 0) return 0;
++    int ok = 0;
++    pthread_mutex_lock(&vk.zc_mutex);
++    for (int i = 0; i < NANO_VK_ZC_SLOTS; i++) {
++        if (vk.zc_tex[i] == (GLuint)tex && !vk.zc_free[i] && vk.zc_serial[i] == serial && vk.zc_refs[i] > 0) {
++            vk.zc_refs[i]++;
++            vk_dbg.dup_pinned++;
++            ok = 1;
++            break;
++        }
++    }
++    if (!ok) vk_dbg.dup_skipped++;
++    pthread_mutex_unlock(&vk.zc_mutex);
++    return ok;
++}
++
++// Give back a reference taken by nano_vk_zc_dup_pin when the push it was taken for never happened
++// (pipeline mid-reinit, appsrc gone). Without this the slot would be pinned forever and the pool would
++// bleed a slot per failed dup until it exhausted and the picture froze.
++void nano_vk_zc_dup_unpin(unsigned tex) {
++    if (!vk.zc_mutex_init || tex == 0) return;
++    pthread_mutex_lock(&vk.zc_mutex);
++    for (int i = 0; i < NANO_VK_ZC_SLOTS; i++) {
++        if (vk.zc_tex[i] == (GLuint)tex && vk.zc_refs[i] > 1) { vk.zc_refs[i]--; break; }
++    }
++    pthread_mutex_unlock(&vk.zc_mutex);
 +}
 +
 +// Build the import context's GL function table, the Vulkan command pool + fences, and the initial pool.
@@ -21087,7 +21476,7 @@ index 0000000..dfa8059
 +    int idx = -1;
 +    pthread_mutex_lock(&vk.zc_mutex);
 +    for (int i = 0; i < NANO_VK_ZC_SLOTS; i++) {
-+        if (vk.zc_free[i]) { idx = i; vk.zc_free[i] = 0; break; }
++        if (vk.zc_free[i]) { idx = i; vk.zc_free[i] = 0; vk.zc_refs[i] = 1; break; } // one ref = the buffer this frame will be pushed as
 +    }
 +    pthread_mutex_unlock(&vk.zc_mutex);
 +    if (idx < 0) { vk_dbg.r_noslot++; return 0; } // encoder holds every slot; dup this frame
@@ -21109,9 +21498,15 @@ index 0000000..dfa8059
 +        for (int i = 0; i < NANO_VK_ZC_SLOTS; i++)
 +            if (!vk.zc_free[i]) { nheld++; uint64_t s = vk.zc_serial[i]; if (!lo || s < lo) lo = s; if (s > hi) hi = s; }
 +        double blk_mean = vk_dbg.zc_block_n ? vk_dbg.zc_block_sum_ms / (double)vk_dbg.zc_block_n : 0.0;
-+        VKLOG(RETRO_LOG_INFO, "[zc-stat] emit=%llu inflight=%d/%d serials[%llu..%llu span=%llu] setimg_sem(waited=%llu none=%llu) reallocs=%llu block(mean=%.2fms max=%.2fms n=%llu)\n",
-+              (unsigned long long)vk.frame_serial, nheld, NANO_VK_ZC_SLOTS,
++        // refs= total outstanding GstBuffer references across held slots. It should equal `inflight` in
++        // steady state; refs > inflight means dups are pinning slots for a second buffer, which is the
++        // case that used to corrupt frame order before the refcount existed.
++        int nrefs = 0;
++        for (int i = 0; i < NANO_VK_ZC_SLOTS; i++) nrefs += vk.zc_refs[i];
++        VKLOG(RETRO_LOG_INFO, "[zc-stat] emit=%llu inflight=%d/%d refs=%d serials[%llu..%llu span=%llu] dup(pin=%llu skip=%llu) setimg_sem(waited=%llu none=%llu) reallocs=%llu block(mean=%.2fms max=%.2fms n=%llu)\n",
++              (unsigned long long)vk.frame_serial, nheld, NANO_VK_ZC_SLOTS, nrefs,
 +              (unsigned long long)lo, (unsigned long long)hi, (unsigned long long)(hi > lo ? hi - lo : 0),
++              vk_dbg.dup_pinned, vk_dbg.dup_skipped,
 +              vk_dbg.sem_setimg_waited, vk_dbg.sem_setimg_none, (unsigned long long)vk.realloc_count,
 +              blk_mean, vk_dbg.zc_block_max_ms, vk_dbg.zc_block_n);
 +        vk_dbg.zc_block_sum_ms = 0.0; vk_dbg.zc_block_max_ms = 0.0; vk_dbg.zc_block_n = 0;
@@ -21211,7 +21606,7 @@ index 0000000..dfa8059
 +    vk.num_wait_sems = 0;
 +    if (r != VK_SUCCESS) {
 +        VKLOG(RETRO_LOG_ERROR, "zero-copy: blit submit failed: %d\n", r);
-+        pthread_mutex_lock(&vk.zc_mutex); vk.zc_free[idx] = 1; pthread_mutex_unlock(&vk.zc_mutex);
++        pthread_mutex_lock(&vk.zc_mutex); vk.zc_free[idx] = 1; vk.zc_refs[idx] = 0; pthread_mutex_unlock(&vk.zc_mutex);
 +        return 0;
 +    }
 +    vk.zc_submitted[idx] = 1;
@@ -21241,20 +21636,31 @@ index 0000000..dfa8059
 +// retired gen), 0 otherwise (a long-gone gen — ignore, like graphics.ReleaseZeroCopyTexture).
 +int nano_vk_zc_release(unsigned texid) {
 +    if (!vk.zc_mutex_init || texid == 0) return 0;
-+    int owned = 0; uint64_t rel_serial = 0;
++    int owned = 0, freed = 0; uint64_t rel_serial = 0;
 +    pthread_mutex_lock(&vk.zc_mutex);
 +    for (int i = 0; i < NANO_VK_ZC_SLOTS; i++) {
-+        if (vk.zc_tex[i] == (GLuint)texid) { vk.zc_free[i] = 1; owned = 1; rel_serial = vk.zc_serial[i]; break; }
++        if (vk.zc_tex[i] == (GLuint)texid) {
++            owned = 1; rel_serial = vk.zc_serial[i];
++            // Drop ONE reference. A dup pushed this same texture as a second buffer, so this release may
++            // be the first of two — freeing here would hand a slot the encoder is still reading back to
++            // the free list, and the next blit would rewrite it underneath. Free only at zero.
++            if (vk.zc_refs[i] > 0) vk.zc_refs[i]--;
++            if (vk.zc_refs[i] == 0) { vk.zc_free[i] = 1; freed = 1; }
++            break;
++        }
 +    }
 +    if (!owned && vk.zc_retired_valid) {
 +        for (int i = 0; i < NANO_VK_ZC_SLOTS; i++)
-+            if (vk.zc_r_tex[i] == (GLuint)texid) { owned = 1; rel_serial = vk.zc_r_serial[i]; break; } // retired gen freed wholesale later
++            if (vk.zc_r_tex[i] == (GLuint)texid) { owned = 1; freed = 1; rel_serial = vk.zc_r_serial[i]; break; } // retired gen freed wholesale later; terminal for ordering purposes
 +    }
 +    // INSTR: release order = the proxy for "encoder consumed this frame". GStreamer frees a slot after the
 +    // encoder+muxer finished with its frame, so releases SHOULD be in serial order. A lower serial freed
 +    // after a higher one = an old frame reached the encoder LATE (stale/reordered) — the direct smoking gun.
++    // With refcounting a dup's release is not the frame finishing — only the LAST release is. Gate the
++    // order check on `freed` so a dup no longer reports itself as a stale arrival (retired-gen releases
++    // keep their old behaviour: they are always terminal).
 +    unsigned long long disorder_now = 0, gap = 0;
-+    if (rel_serial) {
++    if (rel_serial && freed) {
 +        if (rel_serial < vk.last_released_serial) { vk.release_disorder++; disorder_now = vk.release_disorder; gap = vk.last_released_serial - rel_serial; }
 +        else vk.last_released_serial = rel_serial;
 +    }
@@ -90235,10 +90641,10 @@ index 2840a0e..aa70436 100644
  			c.log.Warn().Msgf("unhandled packet type %v", x.T)
  		}
 diff --git a/pkg/worker/coordinatorhandlers.go b/pkg/worker/coordinatorhandlers.go
-index 6972cc7..66a7962 100644
+index 6972cc7..1b1b7f0 100644
 --- a/pkg/worker/coordinatorhandlers.go
 +++ b/pkg/worker/coordinatorhandlers.go
-@@ -1,310 +1,749 @@
+@@ -1,310 +1,754 @@
 -package worker
 -
 -import (
@@ -90785,6 +91191,11 @@ index 6972cc7..66a7962 100644
 +		if fl := webrtc.ForcedLayer(); fl >= 0 {
 +			w.log.Warn().Msgf("Temporal SVC: CLOUD_GAME_SVC_FORCE_LAYER=%d — EVERY peer is capped at layer %d, "+
 +				"regardless of its link. Diagnostic only; unset it and recycle this worker", fl, fl)
++		}
++		if layers > 1 && webrtc.PeerDropDisabled() {
++			w.log.Warn().Msg("Temporal SVC: CLOUD_GAME_SVC_NO_PEER_DROP is set — the encoder still layers, " +
++				"but NO peer's frames are ever skipped, so ABR has only its bitrate lever and a weak peer " +
++				"drags the room again. Diagnostic only; unset it and recycle this worker")
 +		}
 +
 +		if gameInfo.System == caged.CaptureSystem {
@@ -91720,10 +92131,10 @@ index 0000000..d76fe6d
 +}
 diff --git a/pkg/worker/media/glzerocopy.go b/pkg/worker/media/glzerocopy.go
 new file mode 100644
-index 0000000..be84e8e
+index 0000000..4958101
 --- /dev/null
 +++ b/pkg/worker/media/glzerocopy.go
-@@ -0,0 +1,303 @@
+@@ -0,0 +1,321 @@
 +package media
 +
 +// GL zero-copy for hardware-rendered libretro cores (n64/gc/ps2/psp/dc).
@@ -91873,7 +92284,13 @@ index 0000000..be84e8e
 +// graphics.zerocopy — already a GPU-side copy of the core's frame, so the core is free to render the
 +// next one immediately.
 +static void zc_push(GstAppSrc *src, unsigned int texid, int w, int h, unsigned long long durNs) {
-+	if (!zc_shared || !src || !texid) return;
++	// Every bail-out below must release the slot. The texture is checked out of a pool whose ONLY return
++	// path is the destroy-notify on the buffer we are about to build — bail before building it and the
++	// slot never comes back. Eight of those and the room's video freezes while the core runs on happily.
++	if (!zc_shared || !src || !texid) {
++		if (texid) zc_tex_released((gpointer) (guintptr) texid);
++		return;
++	}
 +
 +	// Renegotiate the source caps when the core's frame size changes at runtime — the SAME fix
 +	// pushVideoBuf (gstreamer.go) already carries for the CPU path, which the GL path needs just as
@@ -91917,7 +92334,7 @@ index 0000000..be84e8e
 +	GstGLVideoAllocationParams *params = gst_gl_video_allocation_params_new_wrapped_texture(
 +		zc_shared, NULL, &vinfo, 0, NULL, GST_GL_TEXTURE_TARGET_2D, GST_GL_RGBA,
 +		(guint) texid, (gpointer) (guintptr) texid, zc_tex_released);
-+	if (!params) { gst_object_unref(alloc); return; }
++	if (!params) { gst_object_unref(alloc); zc_tex_released((gpointer) (guintptr) texid); return; }
 +
 +	// Allocate the ONE plane directly rather than gst_gl_memory_setup_buffer(): that helper wants a
 +	// per-plane `wrapped_data` array and asserts 'wrapped_data != NULL' without it (every frame died on
@@ -91927,7 +92344,8 @@ index 0000000..be84e8e
 +		(GstGLBaseMemoryAllocator *) alloc, (GstGLAllocationParams *) params);
 +	gst_gl_allocation_params_free((GstGLAllocationParams *) params);
 +	gst_object_unref(alloc);
-+	if (!mem) return;
++	// gst_gl_base_memory_alloc consumed `params`; on failure nothing carries the notify, so release here.
++	if (!mem) { zc_tex_released((gpointer) (guintptr) texid); return; }
 +
 +	GstBuffer *buf = gst_buffer_new();
 +	gst_buffer_append_memory(buf, mem);
@@ -92023,15 +92441,26 @@ index 0000000..be84e8e
 +// pushGLTexture hands one pool texture to the encoder. No download, no upload, no conversion.
 +func (g *GstMediaPipe) pushGLTexture(texID uint32, w, h int, durNs uint64) {
 +	if g.v == nil || g.v.source == nil {
++		// No appsrc to push into means no GstBuffer, which means no release notify — hand the slot back
++		// here or it is gone for the rest of the room.
++		graphics.ReleaseZeroCopyTexture(texID)
 +		return
 +	}
 +	C.zc_push(g.v.src(), C.uint(texID), C.int(w), C.int(h), C.ulonglong(durNs))
 +}
++
++// releaseZeroCopyFrame returns a texture frame's pool slot when the frame is dropped before it can be
++// wrapped in a GstBuffer. No-op for CPU frames, which own their pixels.
++func releaseZeroCopyFrame(v Video) {
++	if v.Frame.Tex != 0 {
++		graphics.ReleaseZeroCopyTexture(v.Frame.Tex)
++	}
++}
 diff --git a/pkg/worker/media/gstreamer.go b/pkg/worker/media/gstreamer.go
-index 4a6171f..f974cb6 100644
+index 4a6171f..d657ff9 100644
 --- a/pkg/worker/media/gstreamer.go
 +++ b/pkg/worker/media/gstreamer.go
-@@ -1,579 +1,1107 @@
+@@ -1,579 +1,1150 @@
 -package media
 -
 -import (
@@ -92694,7 +93123,18 @@ index 4a6171f..f974cb6 100644
 +	gst_app_src_push_buffer(src, buf);
 +}
 +
-+static inline guint64 bufDuration(GstBuffer *buf) { return GST_BUFFER_DURATION(buf); }
++// bufDuration returns the encoded frame's duration, or 0 when the encoder left it unset.
++//
++// The bare GST_BUFFER_DURATION was a live trap: an unset duration is GST_CLOCK_TIME_NONE
++// (0xFFFFFFFFFFFFFFFF), and Go turns that guint64 into time.Duration(-1) — a NEGATIVE duration handed
++// to pion, which advances the track's RTP timestamp by exactly that. One is imperceptible; the point
++// is that it is the only route by which our sample clock can move BACKWARD at all, which is what the
++// client's rVFC reported. Reporting 0 keeps the clock stalled rather than reversed, and the [ts-mono]
++// probe in webrtc.go counts it either way.
++static inline guint64 bufDuration(GstBuffer *buf) {
++	guint64 d = GST_BUFFER_DURATION(buf);
++	return GST_CLOCK_TIME_IS_VALID(d) ? d : 0;
++}
 +
 +// pushAudioBuf copies audio data into a new buffer.
 +static inline void pushAudioBuf(GstAppSrc *src, void *data, gsize len) {
@@ -92828,8 +93268,8 @@ index 4a6171f..f974cb6 100644
 +	AudioSrcHz     int
 +	// audioBuiltHz: the rate the audio pipeline was actually built at (initAudio). A live re-cap
 +	// (ReconfigureAudio) is only valid when a resampler is present, i.e. the room was built at a
-+	// non-48000 rate; if it was built at 48000 there is no audioresample and re-capping to a non-opus
-+	// rate would break the pipeline, so we log-and-skip that (essentially-never) case.
++	// non-48000 rate. Crossing the 48000 boundary in either direction changes whether the resampler
++	// stage exists at all, so that case REBUILDS instead of re-capping — see ReconfigureAudio.
 +	audioBuiltHz   int
 +	VideoVFR       bool
 +	VideoFPS       float64
@@ -93029,15 +93469,33 @@ index 4a6171f..f974cb6 100644
 +	if hz <= 0 || hz == g.AudioSrcHz || g.a == nil {
 +		return
 +	}
-+	if g.audioBuiltHz == 48000 {
-+		// No resampler in the pipeline (built straight-to-opus at 48000); re-capping to a non-opus rate
-+		// would fail to link. This case does not occur for the libretro cores that hot-switch rates
-+		// (all boot at 32029/44100); log so we'd see it if a new core ever hit it.
-+		g.log.Warn().Msgf("[audio] core sample_rate %d->%d but pipeline built at 48000 (no resampler) — NOT re-capped; would need a rebuild", g.AudioSrcHz, hz)
++	if g.audioBuiltHz == 48000 || hz == 48000 {
++		// There is no resampler to re-cap against (a 48000-built pipeline goes straight into opus), or
++		// we are going back TO 48000, where the pipeline should have no resampler at all. Either way
++		// re-capping cannot express it — so REBUILD the audio pipeline at the new rate.
++		//
++		// This used to be a log-and-give-up, and that refusal was the whole one-sided-adoption bug: a
++		// 48000-declaring core (LRPS2) could have its pacer re-timed by the rate derivation while its
++		// pipeline stayed pinned at 48000, so the samples reached opus labelled with a rate they were
++		// not produced at — a pitch/speed shift that lasted the rest of the session and could never
++		// correct itself.
++		//
++		// A rebuild costs a short audio gap, which is why it is not the default path: rate derivation
++		// fires at most rateAdoptMax times per session, and a gap once beats a session-long pitch shift.
++		g.log.Warn().Msgf("[audio] core sample_rate %d -> %d needs a different resampler stage — rebuilding the audio pipeline", g.AudioSrcHz, hz)
 +		g.AudioSrcHz = hz
++		old := g.a
++		if old != nil {
++			old.stop()
++			old.destroy()
++		}
++		g.a = nil
++		if err := g.initAudio(); err != nil {
++			g.log.Error().Err(err).Msgf("[audio] rebuild at %d Hz FAILED — the room has no audio pipeline", hz)
++		}
 +		return
 +	}
-+	g.log.Info().Msgf("[audio] core sample_rate changed %d -> %d; re-capping appsrc (was pinned = timeline drift)", g.AudioSrcHz, hz)
++	g.log.Info().Msgf("[audio] core sample_rate changed %d -> %d; re-capping appsrc (resampler holds opus at 48000)", g.AudioSrcHz, hz)
 +	g.AudioSrcHz = hz
 +	C.reconfAudioCaps(g.a.src(), C.gint(hz))
 +}
@@ -93299,12 +93757,19 @@ index 4a6171f..f974cb6 100644
 +}
 +
 +func (g *GstMediaPipe) ProcessVideo(v Video, cb func([]byte, time.Duration)) {
++	// A zero-copy texture frame OWNS a pool slot, and the ONLY thing that ever gives one back is the
++	// release notify on the GstBuffer we wrap it in. Every early return below therefore has to hand the
++	// slot back by hand, or the pool bleeds one slot per dropped frame and the picture freezes for the
++	// rest of the session once all 8 are gone (the fast-forward failure mode, reached through a
++	// different door: a pipeline Reinit while the core keeps presenting).
 +	if g.reinit.Load() {
++		releaseZeroCopyFrame(v)
 +		return
 +	}
 +	// Zero-copy owns its own source; no raw frame should ever arrive here. room.NewRoom wires
 +	// SetVideoCb unconditionally, so guard rather than trust that nothing calls us.
 +	if p := g.v; p == nil || p.zeroCopy {
++		releaseZeroCopyFrame(v)
 +		return
 +	}
 +
@@ -93569,6 +94034,13 @@ index 4a6171f..f974cb6 100644
 +	build.Grow(384)
 +	build.write("appsrc name=audio_src is-live=true ")
 +	build.writef("caps=audio/x-raw,format=S16LE,rate=%d,channels=2,layout=interleaved ", srcHz)
++	// The resampler is inserted ONLY when the rate differs from opus's 48000.
++	//
++	// Making it unconditional was tried first (it would have made the appsrc rate freely re-cappable)
++	// and REVERTED: TestProcessAudio times out, because a quality-10 kaiser with sinc-filter-mode=full
++	// holds samples back for its filter kernel even at a 1:1 ratio. That is real added latency on every
++	// honest 48000 core to buy flexibility only a mis-clocking core needs. The 48000 case gets that
++	// flexibility from ReconfigureAudio's rebuild instead.
 +	if srcHz != 48_000 {
 +		m, q := "kaiser", 10
 +		switch conf.Audio.Resampler {

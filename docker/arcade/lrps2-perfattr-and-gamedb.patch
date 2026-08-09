@@ -1,9 +1,9 @@
 diff --git a/SHADER-TOOLCHAIN-NOTES.md b/SHADER-TOOLCHAIN-NOTES.md
 new file mode 100644
-index 0000000..4adc693
+index 0000000..e1d9c10
 --- /dev/null
 +++ b/SHADER-TOOLCHAIN-NOTES.md
-@@ -0,0 +1,178 @@
+@@ -0,0 +1,490 @@
 +# paraLLEl-GS shader toolchain — running log
 +
 +Goal: a **true 4× vertical resolve** in paraLLEl-GS's scanout, so that in field-full-res mode the
@@ -113,6 +113,63 @@ index 0000000..4adc693
 +
 +---
 +
++---
++
++## paraLLEl-GS pipeline cache — and why async compile is NOT available
++
++**The bug:** this build had **no Vulkan pipeline cache at all**. Granite creates
++`legacy_pipeline_cache` — the cache passed to every pipeline creation — only inside the public
++`Device::init_pipeline_cache(data, size)`. Its only caller is the private file-loading overload
++(`device.cpp:973`), whose whole body is behind `#ifdef GRANITE_VULKAN_SYSTEM_HANDLES` and also
++needs Granite's filesystem for `"cache://pipeline_cache.bin"`. Our build defines neither
++(`build.ninja` carries only `-DGRANITE_SHIPPING`), so that call compiled to nothing and the
++handle stayed `VK_NULL_HANDLE` forever. Hence repeated 120 ms
++`Stalled compile (compute, ...) (mode: sync)` hitches at the same corner in *every* room.
++
++Fixed by driving the public serialization API from `GSRendererPGS` against
++`<EmuFolders::Cache>/parallel_gs_pipeline_cache.bin`. Granite already keys the blob by
++`pipelineCacheUUID` and hashes the payload, falling back to a fresh cache on either mismatch, so
++a stale/corrupt file costs a recompile and never a crash.
++
++**Async compile does not exist in this vendored Granite.** `CompileMode::AsyncThread` occurs in
++exactly one place in the whole tree — `command_buffer.cpp:1027` — and only to suppress the stall
++log:
++
++```cpp
++bool stall = time_ns >= 5 * 1000 * 1000 && mode != CommandBuffer::CompileMode::AsyncThread;
++```
++
++It is never passed to a pipeline build. `flush_compute_pipeline()` picks only `Sync` or
++`FailOnCompileRequired` (`:1613`), and the sole non-blocking entry,
++`flush_pipeline_state_without_blocking()`, is declared but never called by parallel-gs.
++
++So "enable async" would mean writing the async machinery, not flipping a flag. It would also be
++the wrong trade here: these are the **compute pipelines that do the actual GS rasterization**
++(`ubershader.comp`, `binning.comp`, `vram_copy.comp`, `upload.comp`). Skipping a pending dispatch
++does not drop a cosmetic effect, it drops the rendering and leaves VRAM inconsistent. Persistence
++already reduces the stall to once ever per variant per machine. Do not revisit async without a
++much stronger reason.
++
++## ⚠ The same bug is almost certainly in the N64 cores (separate fix cycle)
++
++Checked read-only against the shipped DLLs, since the mupen source is not on this box (built from
++a shallow clone per `mupen64plus-next-core-build`, then removed). Both
++`mupen64plus_next_libretro.dll` and `parallel_n64_libretro.dll`:
++
++| probe | result | meaning |
++| --- | --- | --- |
++| `"Stalled compile"` | present | same Granite family and instrumentation |
++| `Vulkan::Device::init_pipeline_cache` symbols | present | same Granite pipeline-cache code compiled in |
++| `"cache://pipeline_cache.bin"` | **absent** | the `GRANITE_VULKAN_SYSTEM_HANDLES` file path is compiled out |
++| any pipeline-cache filename string | **none at all** | nothing loads or saves a cache file |
++
++For comparison our fixed core now contains `parallel_gs_pipeline_cache.bin`.
++
++**Certain:** neither N64 core persists a pipeline cache to disk. **Highly likely:** neither
++creates a `VkPipelineCache` at all, by the same structural argument as above — the public
++overload's only in-Granite caller is the compiled-out private one. Proving the second point needs
++the source. This would explain the historical N64 hitch reports. Do not fix it from this cycle.
++
 +## PHASE 2 — THE FIX ✅ implemented
 +
 +### The sample layout (the load-bearing derivation)
@@ -182,6 +239,261 @@ index 0000000..4adc693
 +apply it to a clean upstream checkout at `df08ccf`, build `slangmosh` per Phase 1, run
 +`gs/slangmosh.sh`'s command, and copy `slangmosh.hpp` into the tree. `slangmosh_iface.hpp` is
 +unchanged by this edit (no new shaders or variants) and should stay untouched.
++
++## 2026-08-08 - GS-thread section profiler (INSTRUMENTATION ONLY, no behaviour change)
++
++Stuntman stalls the GS thread 120-400 ms per frame in a burst every time one specific corner is
++crossed. A warm in-memory `VkPipelineCache` reproduces the stall identically on a second run in the
++same room, so pipeline compilation is exonerated and the profile has to name the real cost center.
++
++New files: `pcsx2/GS/parallel-gs/gs/gs_profiler.{hpp,cpp}` (added to that dir's `CMakeLists.txt`).
++
++`ProfScope` charges **exclusive** ("self") time: whatever nested scopes consumed is handed back to
++the parent rather than double counted, so an umbrella function and its leaves can both be
++instrumented without inflating the total. `ProfTopScope` wraps a parallel-gs *public* entry point and
++only accumulates at depth 0, so the GS thread's idle time between GIF packets is never charged to a
++frame. All state is plain (non-atomic) on purpose: only the MTGS thread ever touches it.
++
++`total` is the wall time the GS thread spent inside parallel-gs this frame; `other` is that minus the
++sum of the named sections.
++
++### Instrumentation points
++
++| section | sites |
++| --- | --- |
++| top / frame boundary | `gs_interface.cpp` `flush()`, `gif_transfer()`, `read_transfer_fifo()`, `vsync()` (the frame closes here) |
++| `upload` | `gs_interface.cpp` `flush_pending_transfer()`; `gs_renderer.cpp` `flush_transfer()`, `flush_cache_upload()`, `upload_texture()`, `flush_host_vram_copy()`, `flush_readback()`, `copy_vram()` |
++| `texcache` | `gs_interface.cpp` `handle_clut_upload()`; `gs_renderer.cpp` `flush_palette_upload()`, `update_palette_cache()`, `create_cached_texture()`, `copy_cached_texture()`, `dispatch_texture_analysis()` |
++| `binning` | `dispatch_triangle_setup()`, `dispatch_single_sample_heuristic()`, `dispatch_binning()` |
++| `shading` | `dispatch_shading()`, `dispatch_shading_commands()`, `dispatch_read_aliased_depth_passes()` |
++| `submit` | `flush_submit()` |
++| `wait` (every GS-thread block) | `wait_timeline()`, `drain_compilation_tasks()`, `device->next_frame_context()` in `flush_submit()`, `device->wait_idle()` in `invalidate_super_sampling_state()` |
++| `alloc` | `allocate_device_scratch()`, `reserve_attribute_scratch()`, `get_bindless_pool()`, `pull_image_handle_from_slab()`, `flush_slab_cache()` |
++| `scanout` | `GSRenderer::vsync()`, `field_full_res_merge()`, `fastmad_deinterlace()` |
++
++Counters: `upload_ops`/`upload_bytes` at the three host-side write sites only (host->local GIF
++transfer, texture upload, host->VRAM block copy) - `copy_vram()` is deliberately *not* counted, it is
++the inner half of the first of those and would double count. `dispatches` at all 15 real
++`dispatch`/`dispatch_indirect` call sites. `submits` at all 9 `device->submit*` call sites.
++
++### Emission
++
++Threshold 40 ms of `total`. Nothing is formatted below it, so a normal frame costs two
++`steady_clock` reads and a few integer adds per scope and nothing else. On a trigger, the three
++preceding frames are dumped first (from a 4-deep ring) so a build-up is visible:
++
++```
++pgs-prof-pre: total=15.9ms upload=1.2ms(31ops/2.1MB) texcache=... binning=... shading=... submit=... wait=... alloc=... scanout=... other=... disp=812 sub=9
++pgs-prof: total=213.4ms upload=180.1ms(42ops/38.2MB) ...
++```
++
++Route is `LOGI` -> `Util::interface_log` -> `LibretroLog` -> `log_cb`, i.e. exactly what the rest of
++parallel-gs already uses. **Verified, not assumed**: the existing `Using image slab size of %llu
++MiB.` LOGI from `gs_renderer.cpp` appears 38 times in the live `glworker.log`, so parallel-gs
++INFO-level lines demonstrably survive to the worker log. `Util::set_thread_logging_interface` is
++thread-local and was deliberately left untouched for that reason.
++
++### Trap hit while doing this
++
++The insertions were applied mechanically, and three of them landed as the body of a braceless `if` -
++`if (direct_cmd) device->submit(direct_cmd);` and the `if/else` around the two `upload_texture`
++dispatches. That silently makes the submit unconditional (a real behaviour change) and breaks the
++`else`. Fixed by adding braces. Any future mechanical instrumentation pass over this tree must scan
++for that pattern before building; the `else` one fails to compile, the `if (direct_cmd)` one does
++not.
++
++## 2026-08-08 - the pipeline-cache LOAD crash: it was never the cache, it was a null Device
++
++`7bd135e` made persistence work (`wrote 228 MB pipeline cache.` at room close). Loading that file on
++the next boot killed the worker instantly: `0xC0000005` READ of `0x824`, logged right after
++`loading 228 MB pipeline cache from '...'`.
++
++### How it was pinned down (this is the reusable part)
++
++The crashing binary has no PDB, and the instrumented build shifts every offset - but `bld-map/`
++still held a `/MAP` build from inside the crash window. Comparing raw `.text` bytes at the fault RVA
++between the deployed `pcsx2_custom_libretro.dll.pre-pgsprof-20260808` and the map build showed a
++constant **0xE0 shift**, and the bytes then matched exactly. That makes the map authoritative:
++
++| deployed RVA | map RVA | symbol |
++| --- | --- | --- |
++| `+0x4B7816` | `+0x4B7736` | `Vulkan::Device::supports_subgroup_size_log2` (+0x26) |
++| `+0x47B026` | `+0x47AF46` | `ParallelGS::GSRenderer::get_max_supported_super_sampling` |
++| `+0x492595` | `+0x4924B5` | `ParallelGS::GSInterface::set_super_sampling_rate` |
++| `+0x1CB09` | - | `IopBios.cpp` - stack garbage from the raw scan, ignore |
++
++The instruction at the fault is `cmp dword ptr [rcx+0x824], 0` - `ext.vk13_features.subgroupSizeControl`
++read through a **null `this`**. Fault address `0x824` is the member offset, exactly as reported. The
++earlier `e9e4c7e` crash at `+0x4B7736` was not "nearly the same code region", it was the **same
++instruction** in an unshifted build - one bug, seen twice.
++
++### Root cause
++
++`GSRenderer::device` is null until `GSRenderer::init()` succeeds (`gs_renderer.cpp:830`), and there
++is a path that reads it before that:
++
++* `GS.cpp:200` publishes `g_pgs_renderer` **before** calling `Init()` on it.
++* `MTGS::ApplySettings` (`MTGS.cpp:398`) calls `GSUpdateConfig` **directly on the EE thread** - it
++  does not go through the GS ring - and `GS.cpp:503` forwards that to `g_pgs_renderer->UpdateConfig()`.
++* `UpdateConfig` -> `GSInterface::set_super_sampling_rate` -> `GSRenderer::get_max_supported_super_sampling`
++  -> `device->supports_subgroup_size_log2(...)` with `device == nullptr`.
++
++So it is a race that has always existed, and the cache file did not cause it - **it widened the
++window**. A 240 MB load inside `Init()` is a 240 MB file read plus a 240 MB `Util::Hasher` pass plus
++`vkCreatePipelineCache` parsing 240 MB: seconds instead of microseconds. That is why persistence
++"introduced" a crash it had nothing to do with, and why it reproduced every single time.
++
++Second, independent route to the identical crash: `GSopen`'s failure path
++(`if (!OpenGSRenderer(...)) CloseGSDevice(true);`) left `g_pgs_renderer` pointing at a half-built
++renderer whose device is null. Fixed too.
++
++### Fix
++
++1. `gs_renderer.cpp` `get_max_supported_super_sampling()` returns `SuperSampling::X1` when `device`
++   is null instead of dereferencing. `GSInterface::init` applies the real rate once the device exists.
++2. `GSRendererPGS` gains `std::atomic<bool> initialized`, stored **release** as the last statement of
++   `Init()`; `UpdateConfig()` returns early on acquire-load false. Init reads the current `GSConfig`
++   itself, so a dropped early update loses nothing.
++3. `GS.cpp` `OpenGSRenderer` resets `g_pgs_renderer` when `Init()` fails.
++4. `Init()` returns false if `dev.get_device() == VK_NULL_HANDLE` after `set_context()`, so the load
++   is provably after full device init rather than assumed to be.
++
++### A cache FILE can no longer crash the core
++
++Granite's `[UUID][hash][driver blob]` framing is a fine second line but only that: it does not
++identify the core build, and it never checks the driver blob's own header. The file now carries a
++72-byte header of ours - magic, format version, **core build id** (`__DATE__ __TIME__` of that TU,
++hashed: shaders and spec-constant spaces change between builds), vendorID, deviceID, driverVersion,
++`pipelineCacheUUID`, exact payload length, FNV-1a payload hash - and every field is checked before a
++byte reaches the driver. Then the payload's inner `VkPipelineCacheHeaderVersionOne` is validated
++(`headerSize` in range, `headerVersion == ONE`, vendor/device/UUID match). Any failure logs the
++reason and starts fresh; nothing is repaired, nothing is deleted, nothing is partially applied.
++
++Bumping the format also retires every pre-header file automatically - the 240 MB blobs sitting on
++both workers start with the `pipelineCacheUUID`, not our magic, so they are rejected on sight. **No
++manual quarantine is needed for the live `parallel_gs_pipeline_cache.bin`.**
++
++The write path (`SavePipelineCache` at `CloseGSRenderer`) and `PIPELINE_CACHE_MAX_BYTES` are
++unchanged apart from prepending the header. 228 MB is close enough to the 384 MB cap to be worth
++pruning later; that is variant-explosion work, not crash work, and was deliberately left alone.
++
++### Profiler caveat (from the first Stuntman run with the instrumentation)
++
++The `upload=...(Nops/XMB)` counters record at **queue** time while the section time is charged at
++**flush** time, so a frame can show a large byte count with a small `upload=` (a 12 ms frame showed
++132 MB). Read ops/bytes as "queued this frame", not "paid for this frame". The verdict it produced
++still stands: crossing frame `upload=163ms(1494ops/194MB)` + `binning=81` + `shading=55` +
++`texcache=40`, `disp=6158 sub=130`; warm crossings are wait-dominated 40-50 ms frames at the same
++queue volume.
++
++## 2026-08-08 - mitigating the Stuntman turn: what the profile actually licenses
++
++The profile from the three-loop run, which is what everything below is decided against:
++
++| | total | upload | binning | shading | texcache | alloc | wait | disp | sub |
++| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
++| crossing (first sight) | 356.6 | **163.1** (1494 ops / 194.2 MB) | 81.2 | 55.5 | 40.1 | - | - | 6158 | 130 |
++| first-sight outlier | 119.4 | - | 42.4 | - | - | **49.1** | - | - | - |
++| crossing (warm, runs 2-3) | 40-50 | ~3.6 CPU total | | | | | **23** | 8316 | 130 |
++| normal frame | <10 | | | | | | | <1000 | 4 |
++
++The two crossings are **different problems wearing the same costume**. First sight is CPU-bound in our
++code. Warm is GPU-bound: the same queue volume goes out for ~3.6 ms of CPU and the frame still takes
++40-50 ms, all of it `wait`. So only work that REMOVES QUEUED WORK can help a warm crossing. Making our
++CPU side faster cannot; there is only 3.6 ms of it to win.
++
++### (3) Scratch pre-warm - IMPLEMENTED
++
++`GSRenderer::init()` now creates the four linear scratch buffers up front. The 119.4 ms frame was
++`alloc=49.1` + `binning=42.4`: the allocators hitting `!scratch.buffer` and creating their 32 MiB
++buffers for the first time, during a burst that also wanted the GPU. They get created on any
++non-trivial frame regardless, so this only moves the cost to room start. Expected: the 119 ms
++first-sight outlier goes away; **no effect on warm crossings**, which never allocate.
++
++⚠ The ReBAR scratch must be pre-warmed with a NON-NULL data pointer. `allocate_device_scratch` picks
++`LinkedDeviceHostPreferDevice` vs `Device` off `data`, so pre-warming with nullptr would create a
++device-local buffer the first real upload could not map — silently pushing every scratch write onto
++the async-transfer fallback. That is a performance regression that would have looked like a win.
++
++### (1) Redundant-upload elimination - MEASURED, NOT YET IMPLEMENTED, and that is deliberate
++
++This is the only direction that can help a warm crossing, and it is also the one that corrupts the
++picture if it is wrong. Nothing in the profile says the storm is REDUNDANT - 194 MB queued is a
++statement about volume, not about repetition. Building a VRAM-write skip on an unmeasured assumption
++is how you ship corrupted graphics.
++
++So this build measures the ceiling instead. Every host->local transfer is fingerprinted
++(bitbltbuf + trxpos + trxreg + the payload chunk, FNV-1a) into a per-frame 8192-slot open-addressed
++table, and `pgs-prof` now reports `upload=...(Nops/XMB dup=M/YMB)`. `dup` counts uploads that put
++IDENTICAL bytes in an IDENTICAL place in the same frame.
++
++**dup is an UPPER BOUND on what any skip could win**, because it ignores whether something wrote to
++that VRAM in between. A real skip can only do worse. Read the next crossing's line:
++
++* `dup` near 0 -> the storm is genuinely new data every time. Direction (1) is DEAD; do not build it.
++* `dup` large (say >60% of bytes) -> worth building, and only then.
++
++If it is worth building, the design is a per-page (4 MB / 8 KiB = 512 entries) tag of the last upload
++fingerprint plus a validity bit, skipping only when EVERY page of the destination rect still carries
++this exact tag. The correctness burden is the invalidation set, and it must be exhaustive: every
++writer of `buffers.gpu` has to clear the pages it touches - `copy_vram` (local->local as well as
++host->local), render-pass FB and Z writes, `flush_host_vram_copy`, the CPU `vram_upload<psm>` path,
++and `flush_qword_clears`. A conservative whole-table flush on any of those is trivially correct but
++almost certainly useless here: `binning=81 ms` says the storm is interleaved with draws, so a
++draw-granular invalidation would clear the table between nearly every pair of uploads. Page-granular
++is the only version that can work, and it is the version that can corrupt.
++
++### (2) The 130 submits - assessed, NOT implemented
++
++130 submits against 4 on a normal frame is ~20-30 `flush_submit` calls, and they come from
++`check_flush_stats` declaring memory pressure: 194 MB of queued scratch against
++`MaximumAllocatedScratchMemory` (100 MB), plus the image-memory and copy-count limits. Raising those
++thresholds would cut the submit count, but it buys latency with VRAM at exactly the moment the frame
++is already the most memory-hungry it will ever be, and the warm profile says submit time is not the
++cost - `wait` is. Cutting submit COUNT does not cut the work being waited on. Not worth the risk
++until (1) has been decided.
++
++### (4) Spreading the burst across frames - NOT VIABLE, and this is structural
++
++An upload must complete before any draw that samples it. The uploads in this burst are interleaved
++with 6158 dispatches in the same frame, so deferring an upload to the next frame means the draws that
++depend on it either render from stale VRAM (a visibly wrong world) or have to be deferred with it -
++which is just presenting the frame late, i.e. the stall we are trying to remove, relabelled. There is
++no version of this that is both correct and faster. Recording it here so it is not re-proposed.
++
++## VERDICT read off the next crossing (2026-08-08, Stuntman warehouse, live room)
++
++`dup` came back and it is **zero**:
++
++```
++pgs-prof: total=46.4ms upload=6.4ms(1480ops/187.7MB dup=1/0.0MB) texcache=5.0ms binning=2.3ms
++          shading=12.3ms submit=7.5ms wait=5.3ms alloc=0.3ms scanout=0.2ms other=7.0ms disp=6319 sub=163
++pgs-prof: total=53.8ms upload=5.2ms(1477ops/187.7MB dup=1/0.0MB) texcache=35.2ms ...
++pgs-prof: total=44.3ms upload=5.6ms(1461ops/187.4MB dup=0/0.0MB) wait=26.8ms ...     (previous run)
++```
++
++One duplicated upload out of ~1,480, **0.0 MB of 187.7 MB**. The storm is genuinely new data every
++time.
++
++**Direction (1) — the per-page upload-skip cache — is DEAD. Do not build it.** The measurement was
++built precisely so this decision would be made on a number rather than on intuition, and the number
++says the entire achievable win is one upload per frame. The exhaustive-invalidation burden described
++above (every writer of `buffers.gpu`, page-granular, corrupting if you miss one) would be paid for
++nothing. This is now the third of the four directions to be closed by measurement rather than by
++implementation; (2) and (4) were closed above.
++
++`upload` itself is only 5-6 ms of a 46-54 ms crossing. After the pipeline-cache load fix and the
++scratch pre-warm, warm crossings sit at **46-93 ms** with the cost spread across `shading`,
++`texcache` and `other` — there is no single hotspot left to attack, and anything further here is a
++broad optimisation problem, not a stall hunt.
++
++Unrelated but worth recording where the next person will look: the visible "the picture jumped
++back" complaint on this title, chased the same night, is **not** the core. Every presented frame of
++two live sessions was captured and scanned; the bad frames are pristine pictures seconds-to-a-minute
++old re-emitted by the video encoder's reference slots, with the emulator's `pace-diag` (`vcoal/s=0`,
++no tick spikes) and zero-copy stats (`dup(pin=2 skip=0)`, `reallocs=0`) clean throughout. Full
++write-up: `docs/arcade-stuntman-level4-plan.md` in the MovieTheater repo, section
++"2026-08-08 SESSION CLOSE".
 diff --git a/SOFTFLOAT-PORT-NOTES.md b/SOFTFLOAT-PORT-NOTES.md
 new file mode 100644
 index 0000000..a890c22
@@ -680,60 +992,6 @@ index 0000000..a890c22
 +C3 is the current best candidate for holding 59.94. The open accuracy question it answers:
 +whether Stuntman's chase determinism needs VU0 *micro* and div/sqrt bit-exactness at all, or
 +only COP2 macro add/sub/mul.
-diff --git a/bin/resources/GameIndex.yaml b/bin/resources/GameIndex.yaml
-index 2416d52..2ac8214 100644
---- a/bin/resources/GameIndex.yaml
-+++ b/bin/resources/GameIndex.yaml
-@@ -52979,10 +52979,17 @@ SLUS-20250:
-   name: "Stuntman"
-   region: "NTSC-U"
-   compat: 5
-+  # clampModes REMOVED (2026-07-15 evening arm): eeClampMode:3 costs ~5-9ms/frame on the EE thread —
-+  # exactly the margin between the post-priority-fix ~19ms heavy-scene ticks and the 16.6ms budget.
-+  # It existed only for the level-4 AI softlock (PCSX2 #2990), which clamp may not fix anyway
-+  # (untested). If level 4 softlocks at stock, that is a documented limitation, not a perf tax paid
-+  # on every frame of every mission. mtvu:0 also removed (measured: no effect on the collapse —
-+  # that was the Normal-priority E-core steering in the WORKER, not the emulator).
-   gameFixes:
-     - BlitInternalFPSHack # Fixes internal FPS detection.
-   gsHWFixes:
-     cpuSpriteRenderBW: 4 # Fixes textures.
-+    halfPixelOffset: 4 # Fixes misaligned post-processing (upstream master's entry; matters at 2x).
- SLUS-20251:
-   name: "Harvest Moon - Save the Homeland"
-   region: "NTSC-U"
-diff --git a/build-core.bat b/build-core.bat
-new file mode 100644
-index 0000000..2bc8adf
---- /dev/null
-+++ b/build-core.bat
-@@ -0,0 +1,26 @@
-+@echo off
-+rem Build pcsx2_libretro.dll (LRPS2) from source — CMake + Ninja + MSVC, mirroring
-+rem docker/arcade/dolphin-build-core.bat (the proven custom-core recipe on this box).
-+rem
-+rem WHY CMAKE, NOT THE LIBRETRO MAKEFILE (2026-07-15): the Makefile's windows_msvc2017_* branch is
-+rem vestigial — it lacks the Windows platform defines (-D__SSE4_1__, -D_WIN32_WINNT, HAVE_D3D11/12,
-+rem ZIP_STATIC...) that only its MinGW branch carries, and that branch's own comment says it "targets
-+rem full feature parity with the cmake LIBRETRO=ON Windows build" — i.e. CMake IS the canonical
-+rem Windows build. (The Makefile route died at common/VectorIntrin.h "requires at least SSE2".)
-+rem The stock nightly DLL imports no CRT DLL at all -> static /MT MSVC; match it.
-+rem
-+rem ⚠ Dolphin lesson (see dolphin-build-core.bat): verify /O2 + /DNDEBUG survive on every C++ TU
-+rem after any CMAKE_CXX_FLAGS_RELEASE override in the tree — a plain set() clobber ships a
-+rem no-optimization "Release" core that loses 50% of its speed invisibly.
-+set "PATH=%PATH%;C:\Program Files (x86)\Microsoft Visual Studio\Installer"
-+call "C:\Program Files\Microsoft Visual Studio\18\Community\Common7\Tools\VsDevCmd.bat" -arch=x64 -host_arch=x64 -no_logo
-+if errorlevel 1 exit /b 1
-+where cl || exit /b 1
-+set "CMAKE=C:\Users\Atoramos\AppData\Roaming\Python\Python313\site-packages\cmake\data\bin\cmake.exe"
-+set "PATH=%PATH%;C:\Users\Atoramos\AppData\Roaming\Python\Python313\Scripts"
-+cd /d D:\Arcade\build\lrps2
-+rem CMAKE_POLICY_VERSION_MINIMUM: the vendored 3rdparty (cpuinfo/clog) declares cmake_minimum_required
-+rem below 3.5, which CMake 4.x refuses outright; this flag is the documented escape hatch.
-+"%CMAKE%" -S . -B bld -G Ninja -DLIBRETRO=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -DCMAKE_POLICY_VERSION_MINIMUM=3.5
-+if errorlevel 1 exit /b 1
-+"%CMAKE%" --build bld --target pcsx2_libretro --parallel 14
 diff --git a/libretro/libretro_core_options.h b/libretro/libretro_core_options.h
 index 1f832e8..1ae41d6 100644
 --- a/libretro/libretro_core_options.h
@@ -804,18 +1062,10 @@ index 1f832e8..1ae41d6 100644
        "pcsx2_enable_hw_hacks",
        "HW Hacks > Enable Manual Hardware Renderer Fixes (Not Recommended)",
 diff --git a/libretro/main.cpp b/libretro/main.cpp
-index 1a145b2..974d1ec 100644
+index 3671110..974d1ec 100644
 --- a/libretro/main.cpp
 +++ b/libretro/main.cpp
-@@ -25,6 +25,7 @@
- #include "../pcsx2/CDVD/CDVD.h"
- #include "../pcsx2/USB/USB.h"
- #include "../pcsx2/MTVU.h"
-+#include "../pcsx2/PerfAttr.h"
- #include "../pcsx2/Counters.h"
- #include "../pcsx2/Host.h"
- 
-@@ -111,6 +112,7 @@ static int setting_native_scaling              = 0;
+@@ -112,6 +112,7 @@ static int setting_native_scaling              = 0;
  static u8 setting_plugin_type                  = 0;
  static u8 setting_pgs_super_sampling           = 0;
  static u8 setting_pgs_high_res_scanout         = 0;
@@ -823,7 +1073,7 @@ index 1a145b2..974d1ec 100644
  static u8 setting_pgs_disable_mipmaps          = 0;
  static u8 setting_pgs_ss_tex                   = 0;
  static u8 setting_pgs_deblur                   = 0;
-@@ -157,6 +159,7 @@ static bool setting_force_sprite_position      = false;
+@@ -158,6 +159,7 @@ static bool setting_force_sprite_position      = false;
  static bool setting_pcrtc_screen_offsets       = false;
  static bool setting_disable_interlace_offset   = false;
  static bool setting_shared_memory_cards        = true;
@@ -831,7 +1081,7 @@ index 1a145b2..974d1ec 100644
  
  static bool setting_show_parallel_options      = true;
  static bool setting_show_gsdx_options          = true;
-@@ -420,6 +423,53 @@ static void check_variables(bool first_run)
+@@ -421,6 +423,53 @@ static void check_variables(bool first_run)
  			bool fast_cdvd = !strcmp(var.value, "enabled");
  			s_settings_interface.SetBoolValue("EmuCore/Speedhacks", "fastCDVD", fast_cdvd);
  		}
@@ -885,7 +1135,7 @@ index 1a145b2..974d1ec 100644
  	}
  
  	if (setting_plugin_type == PLUGIN_PGS)
-@@ -474,6 +524,15 @@ static void check_variables(bool first_run)
+@@ -475,6 +524,15 @@ static void check_variables(bool first_run)
  			}
  		}
  
@@ -901,115 +1151,6 @@ index 1a145b2..974d1ec 100644
  		var.key = "pcsx2_pgs_high_res_scanout";
  		if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
  		{
-@@ -2278,8 +2337,75 @@ void retro_run(void)
- 	if (cpu_thread_state.load(std::memory_order_acquire) == VMState::Paused)
- 		cpu_thread_resume();
- 
--	MTGS::MainLoop(false);
-+	{
-+		// perf-attr: the whole GS drain for this tick (see PerfAttr.h round-2 note).
-+		PerfAttr::Timer pt(PerfAttr::mainloop_ns);
-+		MTGS::MainLoop(false);
-+	}
- 	upload_output_audio_buffer();
-+
-+	// perf-attr dump (Phase A instrumentation, see pcsx2/PerfAttr.h): every 300 frames (~5 s NTSC
-+	// at full speed; longer wall-clock when the core is slow) log where GS-side time went, formatted
-+	// to sit beside the worker's pace-diag lines. Counters reset on read.
-+	//
-+	// Round 3: wall + REAL CPU time of the two hot threads (GetThreadTimes) per window. This is the
-+	// discriminator the wait-based channels cannot provide (mainloop includes waiting for the EE):
-+	//   ee_cpu ~ wall  -> the EE thread is genuinely compute-bound
-+	//   gs_cpu ~ wall  -> the GS/libretro thread is genuinely compute-bound
-+	//   both  << wall while ticks sag -> neither is working: a scheduling/wait pathology
-+	{
-+		static unsigned s_perfattr_frames = 0;
-+		if (++s_perfattr_frames >= 300)
-+		{
-+			s_perfattr_frames = 0;
-+			constexpr double ms = 1.0 / 1000000.0;
-+			double wall_ms = 0.0, ee_cpu_ms = 0.0, gs_cpu_ms = 0.0;
-+			{
-+				static std::chrono::steady_clock::time_point s_prev_wall = std::chrono::steady_clock::now();
-+				const auto now = std::chrono::steady_clock::now();
-+				wall_ms = std::chrono::duration_cast<std::chrono::microseconds>(now - s_prev_wall).count() / 1000.0;
-+				s_prev_wall = now;
-+#ifdef _WIN32
-+				static unsigned long long s_prev_ee = 0, s_prev_gs = 0;
-+				auto cpu100 = [](HANDLE h) -> unsigned long long {
-+					FILETIME c, e, k, u;
-+					if (!GetThreadTimes(h, &c, &e, &k, &u))
-+						return 0;
-+					return ((static_cast<unsigned long long>(k.dwHighDateTime) << 32) | k.dwLowDateTime) +
-+					       ((static_cast<unsigned long long>(u.dwHighDateTime) << 32) | u.dwLowDateTime);
-+				};
-+				const unsigned long long ee = cpu_thread.joinable() ? cpu100(static_cast<HANDLE>(cpu_thread.native_handle())) : 0;
-+				const unsigned long long gs = cpu100(GetCurrentThread());
-+				ee_cpu_ms = (ee - s_prev_ee) / 10000.0;
-+				gs_cpu_ms = (gs - s_prev_gs) / 10000.0;
-+				s_prev_ee = ee;
-+				s_prev_gs = gs;
-+#endif
-+			}
-+			log_cb(RETRO_LOG_INFO,
-+				"[perf-attr] wall=%.0fms ee_cpu=%.0fms gs_cpu=%.0fms gsidle=%.0fms xfer=%.1fms(n=%llu) hash=%.1fms(n=%llu) mainloop=%.1fms vidpush=%.1fms vswait=%.1fms fifo=%.1fms(n=%llu) compile=%.1fms(n=%llu) binload=%.1fms(n=%llu) texmap=%.1fms(n=%llu) texunmap=%.1fms texupd=%.1fms(n=%llu)\n",
-+				wall_ms, ee_cpu_ms, gs_cpu_ms,
-+				PerfAttr::gsidle_ns.exchange(0) * ms,
-+				PerfAttr::xfer_ns.exchange(0) * ms,
-+				static_cast<unsigned long long>(PerfAttr::xfer_n.exchange(0)),
-+				PerfAttr::hash_ns.exchange(0) * ms,
-+				static_cast<unsigned long long>(PerfAttr::hash_n.exchange(0)),
-+				PerfAttr::mainloop_ns.exchange(0) * ms,
-+				PerfAttr::vidpush_ns.exchange(0) * ms,
-+				PerfAttr::vswait_ns.exchange(0) * ms,
-+				PerfAttr::fifowait_ns.exchange(0) * ms,
-+				static_cast<unsigned long long>(PerfAttr::fifowait_n.exchange(0)),
-+				PerfAttr::compile_ns.exchange(0) * ms,
-+				static_cast<unsigned long long>(PerfAttr::compile_n.exchange(0)),
-+				PerfAttr::binload_ns.exchange(0) * ms,
-+				static_cast<unsigned long long>(PerfAttr::binload_n.exchange(0)),
-+				PerfAttr::texmap_ns.exchange(0) * ms,
-+				static_cast<unsigned long long>(PerfAttr::texmap_n.exchange(0)),
-+				PerfAttr::texunmap_ns.exchange(0) * ms,
-+				PerfAttr::texupd_ns.exchange(0) * ms,
-+				static_cast<unsigned long long>(PerfAttr::texupd_n.exchange(0)));
-+		}
-+	}
- }
- 
- std::optional<WindowInfo> Host::AcquireRenderWindow(void)
-diff --git a/pcsx2/CDVD/InputIsoFile.cpp b/pcsx2/CDVD/InputIsoFile.cpp
-index 271acb9..ea5827e 100644
---- a/pcsx2/CDVD/InputIsoFile.cpp
-+++ b/pcsx2/CDVD/InputIsoFile.cpp
-@@ -13,6 +13,7 @@
-  *  If not, see <http://www.gnu.org/licenses/>.
-  */
- 
-+#include "../../common/Console.h"
- #include "../../common/Path.h"
- #include "../../common/StringUtil.h"
- 
-@@ -35,9 +36,17 @@ static std::unique_ptr<ThreadedFileReader> GetFileReader(const char *path)
- 		if (Strncasecmp(extension, "chd", 3) == 0)
- 			return std::make_unique<ChdFileReader>();
- 
--		if (       (Strncasecmp(extension, "cso", 3) == 0) 
-+		if (       (Strncasecmp(extension, "cso", 3) == 0)
- 			|| (Strncasecmp(extension, "zso", 3) == 0))
--			return std::make_unique<CsoFileReader>();
-+		{
-+			// Trust the magic, not the extension: the arcade gateway stages CSOs as raw
-+			// ISOs under the SAME .cso filename (PPSSPP/Dolphin sniff, so the name is the
-+			// cache's stable key). A file without a CISO/ZISO header reads flat.
-+			if (CsoFileReader::CanHandle(path, path))
-+				return std::make_unique<CsoFileReader>();
-+			Console.Warning("(GetFileReader) %s has no CISO header; reading as a raw image.", path);
-+			return std::make_unique<FlatFileReader>();
-+		}
- 	}
- 	else if (ext_length == 2)
- 	{
 diff --git a/pcsx2/CMakeLists.txt b/pcsx2/CMakeLists.txt
 index b750590..7a2e63e 100644
 --- a/pcsx2/CMakeLists.txt
@@ -1547,152 +1688,44 @@ index 2f1744e..6a31047 100644
  }
  
  }	// End Namespace COP1
-diff --git a/pcsx2/GS/GSState.cpp b/pcsx2/GS/GSState.cpp
-index b20a00f..9fdd817 100644
---- a/pcsx2/GS/GSState.cpp
-+++ b/pcsx2/GS/GSState.cpp
-@@ -23,6 +23,7 @@
- 
- #include "GSState.h"
- #include "GSUtil.h"
-+#include "PerfAttr.h"
- 
- int GSState::s_n = 0;
- int GSState::s_last_transfer_draw_n = 0;
-@@ -2200,6 +2201,8 @@ void GSState::ReadbackTextureCache()
- 
- void GSState::Transfer(const u8* mem, u32 size)
- {
-+	// perf-attr round 5: GIF path-3 transfers (texture/image DMA -> emulated-VRAM swizzle writes).
-+	PerfAttr::Timer pt(PerfAttr::xfer_ns, &PerfAttr::xfer_n);
- 	GIFPath& path = m_path[3];
- 
- 	while (size > 0)
-diff --git a/pcsx2/GS/Renderers/HW/GSTextureCache.cpp b/pcsx2/GS/Renderers/HW/GSTextureCache.cpp
-index 2c81bb2..de7cde4 100644
---- a/pcsx2/GS/Renderers/HW/GSTextureCache.cpp
-+++ b/pcsx2/GS/Renderers/HW/GSTextureCache.cpp
-@@ -13,6 +13,7 @@
- #include "common/Align.h"
- #include "common/Console.h"
- #include "common/HashCombine.h"
-+#include "PerfAttr.h"
- 
- #include "GSTextureCache.h"
- #include "GSTextureReplacements.h"
-@@ -993,6 +994,9 @@ GSTextureCache::Source* GSTextureCache::LookupDepthSource(const bool is_depth, c
- 
- GSTextureCache::Source* GSTextureCache::LookupSource(const bool is_color, const GIFRegTEX0& TEX0, const GIFRegTEXA& TEXA, const GIFRegCLAMP& CLAMP, const GSVector4i& r, const GSVector2i* lod, const bool possible_shuffle, const bool linear, const u32 frame_fbp, bool req_color, bool req_alpha)
- {
-+	// perf-attr round 5: the HW renderer's per-draw source lookup - hashing, cache management, and
-+	// (on miss) conversion. This whole layer does not exist on the SW renderer.
-+	PerfAttr::Timer pt(PerfAttr::hash_ns, &PerfAttr::hash_n);
- 	const GSLocalMemory::psm_t& psm_s = GSLocalMemory::m_psm[TEX0.PSM];
- 	//const GSLocalMemory::psm_t& cpsm = psm.pal > 0 ? GSLocalMemory::m_psm[TEX0.CPSM] : psm;
- 
-diff --git a/pcsx2/GS/Renderers/OpenGL/GLShaderCache.cpp b/pcsx2/GS/Renderers/OpenGL/GLShaderCache.cpp
-index 7d61634..1a65a61 100644
---- a/pcsx2/GS/Renderers/OpenGL/GLShaderCache.cpp
-+++ b/pcsx2/GS/Renderers/OpenGL/GLShaderCache.cpp
-@@ -19,6 +19,7 @@
- #include "GS/GS.h"
- 
- #include "Config.h"
-+#include "PerfAttr.h"
- #include "ShaderCacheVersion.h"
- 
- #include "common/Console.h"
-@@ -273,12 +274,25 @@ std::optional<GLProgram> GLShaderCache::GetProgram(const std::string_view vertex
- 		const std::string_view fragment_shader, const PreLinkCallback& callback)
- {
- 	if (!m_program_binary_supported || !m_blob_file)
-+	{
-+		// perf-attr: no usable disk cache -> every program is a true driver compile.
-+		PerfAttr::Timer pt(PerfAttr::compile_ns, &PerfAttr::compile_n);
- 		return CompileProgram(vertex_shader, fragment_shader, callback, false);
-+	}
- 
- 	const auto key = GetCacheKey(vertex_shader, fragment_shader);
- 	auto iter = m_index.find(key);
- 	if (iter == m_index.end())
-+	{
-+		// perf-attr: disk-cache MISS -> true GLSL driver compile (the slow path).
-+		PerfAttr::Timer pt(PerfAttr::compile_ns, &PerfAttr::compile_n);
- 		return CompileAndAddProgram(key, vertex_shader, fragment_shader, callback);
-+	}
-+
-+	// perf-attr: disk-cache HIT -> program-binary load. Individually fast (~ms) but BATCHED at scene
-+	// transitions, and re-paid every room because the in-memory program map is per-room. (The rare
-+	// failed-load fallthrough to Recreate below is counted here too - acceptable noise.)
-+	PerfAttr::Timer pt(PerfAttr::binload_ns, &PerfAttr::binload_n);
- 
- 	std::vector<u8> data(iter->second.blob_size);
- 	if (rfseek(m_blob_file, iter->second.file_offset, SEEK_SET) != 0 ||
-diff --git a/pcsx2/GS/Renderers/OpenGL/GSDeviceOGL.cpp b/pcsx2/GS/Renderers/OpenGL/GSDeviceOGL.cpp
-index 0d10dc2..711028b 100644
---- a/pcsx2/GS/Renderers/OpenGL/GSDeviceOGL.cpp
-+++ b/pcsx2/GS/Renderers/OpenGL/GSDeviceOGL.cpp
-@@ -26,6 +26,7 @@
- 
- #include "GS/GSState.h"
- #include "GS/GSUtil.h"
-+#include "PerfAttr.h"
- #include "GSDeviceOGL.h"
- #include "GLState.h"
- #include "Host.h"
-@@ -688,6 +689,9 @@ GSDevice::PresentResult GSDeviceOGL::BeginPresent(bool frame_skip)
- 
- void GSDeviceOGL::EndPresent()
- {
-+	// perf-attr: the frontend's video callback runs synchronously here - for the arcade worker
-+	// that is the GL zero-copy push (zc_push: GPU->GPU copy into the encoder's texture pool).
-+	PerfAttr::Timer pt(PerfAttr::vidpush_ns);
- 	if(m_current)
- 		video_cb(RETRO_HW_FRAME_BUFFER_VALID, m_current->GetWidth(), m_current->GetHeight(), 0);
- 	else
-diff --git a/pcsx2/GS/Renderers/OpenGL/GSTextureOGL.cpp b/pcsx2/GS/Renderers/OpenGL/GSTextureOGL.cpp
-index 0d4f817..9318479 100644
---- a/pcsx2/GS/Renderers/OpenGL/GSTextureOGL.cpp
-+++ b/pcsx2/GS/Renderers/OpenGL/GSTextureOGL.cpp
-@@ -18,6 +18,7 @@
- #include "GSTextureOGL.h"
- #include "GLState.h"
- #include "GS/GSExtra.h"
-+#include "PerfAttr.h"
- #include "common/Align.h"
- #include "common/AlignedMalloc.h"
- #include "common/StringUtil.h"
-@@ -185,6 +186,9 @@ bool GSTextureOGL::Update(const GSVector4i& r, const void* data, int pitch, int
- 	if (layer >= m_mipmap_levels)
- 		return true;
- 
-+	// perf-attr round 4: direct-path upload cost (caller-converted pixels -> GL).
-+	PerfAttr::Timer pt(PerfAttr::texupd_ns, &PerfAttr::texupd_n);
-+
- 	// Default upload path for the texture is the Map/Unmap
- 	// This path is mostly used for palette. But also for texture that could
- 	// overflow the pbo buffer
-@@ -240,6 +244,9 @@ bool GSTextureOGL::Map(GSMap& m, const GSVector4i* _r, int layer)
- 	if (layer >= m_mipmap_levels || IsCompressedFormat())
- 		return false;
- 
-+	// perf-attr round 4: stream-buffer acquisition (includes any fence wait on ring wrap).
-+	PerfAttr::Timer pt(PerfAttr::texmap_ns, &PerfAttr::texmap_n);
-+
- 	GSDeviceOGL::GetInstance()->CommitClear(this, true);
- 
- 	GSVector4i r = _r ? *_r : GSVector4i(0, 0, m_size.x, m_size.y);
-@@ -275,6 +282,8 @@ void GSTextureOGL::Unmap()
- {
- 	if (m_type == Type::Texture || m_type == Type::RenderTarget)
+diff --git a/pcsx2/GS/GS.cpp b/pcsx2/GS/GS.cpp
+index 10564d4..c8d8877 100644
+--- a/pcsx2/GS/GS.cpp
++++ b/pcsx2/GS/GS.cpp
+@@ -198,7 +198,16 @@ static bool OpenGSRenderer(GSRendererType renderer, u8* basemem)
+ 	if (renderer == GSRendererType::ParallelGS)
  	{
-+		// perf-attr round 4: glTexSubImage from the upload ring (the GL-driver share of an upload).
-+		PerfAttr::Timer pt(PerfAttr::texunmap_ns);
- 		GSDeviceOGL::GetInstance()->CommitClear(this, true);
+ 		g_pgs_renderer = std::make_unique<GSRendererPGS>(basemem);
+-		return g_pgs_renderer->Init();
++		if (g_pgs_renderer->Init())
++			return true;
++
++		// A failed Init must not leave the renderer reachable. GSopen's failure path only calls
++		// CloseGSDevice, so without this the global stays pointing at an object whose GSRenderer
++		// never got a Vulkan::Device -- and the next GSUpdateConfig dereferences it (0xC0000005 in
++		// Device::supports_subgroup_size_log2). Same null-device crash as the Init() race, reached
++		// a different way.
++		g_pgs_renderer.reset();
++		return false;
+ 	}
+ 	else
+ #endif
+@@ -220,6 +229,13 @@ static void CloseGSRenderer(void)
+ 	GSTextureReplacements::Shutdown();
  
- 		const u32 pitch = Common::AlignUpPow2(m_r_w << m_int_shift, TEXTURE_UPLOAD_PITCH_ALIGNMENT);
+ #ifdef HAVE_PARALLEL_GS
++	// Persist the pipeline cache BEFORE tearing the renderer down. Doing it here rather than in
++	// ~GSRendererPGS keeps every dependency provably alive: the renderer, its Vulkan::Device, and
++	// the context that owns the VkDevice (pgs_destroy_device runs later, from
++	// libretro_context_destroy, after MTGS::CloseGS has brought us through here).
++	if (g_pgs_renderer)
++		g_pgs_renderer->SavePipelineCache();
++
+ 	g_pgs_renderer.reset();
+ #endif
+ 
 diff --git a/pcsx2/GS/Renderers/parallel-gs/GSRendererPGS.cpp b/pcsx2/GS/Renderers/parallel-gs/GSRendererPGS.cpp
-index 9d8613c..279674d 100644
+index 9d8613c..586cbfa 100644
 --- a/pcsx2/GS/Renderers/parallel-gs/GSRendererPGS.cpp
 +++ b/pcsx2/GS/Renderers/parallel-gs/GSRendererPGS.cpp
 @@ -8,6 +8,8 @@
@@ -1704,7 +1737,7 @@ index 9d8613c..279674d 100644
  #include "logging.hpp"
  #include <stdarg.h>
  
-@@ -18,6 +20,56 @@ using namespace Granite;
+@@ -18,6 +20,274 @@ using namespace Granite;
  static retro_hw_render_interface_vulkan *hw_render_iface;
  static std::unique_ptr<Vulkan::Context> vulkan_ctx;
  static ImageHandle last_vsync_image;
@@ -1733,11 +1766,199 @@ index 9d8613c..279674d 100644
 +// only cost us a recompile, never a crash.
 +static std::string pipeline_cache_path;
 +static size_t pipeline_cache_written_size;
-+static unsigned pipeline_cache_check_counter;
 +
-+// Cheap enough to run every few seconds; a compile is a rare event.
-+static constexpr unsigned PIPELINE_CACHE_CHECK_INTERVAL = 300;
++// paraLLEl-GS's ubershader has a large spec-constant space, and each variant is its own pipeline
++// binary. One Stuntman session produced a 240 MB cache. Persisting is still worth it -- it is what
++// removes the 120 ms compile stalls -- but it has to be bounded, or a long-lived worker writes an
++// ever-growing file and then pays to read it back at every boot.
++static constexpr size_t PIPELINE_CACHE_MAX_BYTES = 384u * 1024u * 1024u;
 +
++// ---- the file must never be able to crash us ----------------------------------------------------
++//
++// Granite's own [UUID][hash][driver blob] framing is a good second line of defence, but it is only a
++// second line: it does not identify the core build, it does not check that the driver blob's own
++// header is intact, and a file that fails its hash check still reaches vkCreatePipelineCache with a
++// zeroed initialDataSize. A pipeline cache is attacker-shaped input in the sense that matters here --
++// it is a large opaque blob written by one process and parsed by a driver in another -- so we wrap it
++// in a header of our own and refuse to hand the driver a single byte that has not been proven.
++//
++// Everything that can invalidate a cache is in the header: our magic and format version, the core
++// build id (shaders, layouts and spec-constant spaces change between builds), the GPU identity, the
++// driver's pipelineCacheUUID, the exact payload length, and a hash of the payload. Any mismatch, any
++// truncation, any short read => log the reason and start fresh. There is no path from a bad file to a
++// crash, and none to a partial load.
++//
++// Bumping FORMAT_VERSION also retires every file written before this header existed, which is the
++// point: the 240 MB files already on the workers are exactly the ones that crashed.
++static constexpr char PIPELINE_CACHE_MAGIC[8] = { 'P', 'G', 'S', 'P', 'C', 'A', 'C', 'H' };
++static constexpr u32 PIPELINE_CACHE_FORMAT_VERSION = 1;
++
++struct PGSPipelineCacheHeader
++{
++	char magic[8];
++	u32 header_size;
++	u32 format_version;
++	u64 core_build_id;
++	u32 vendor_id;
++	u32 device_id;
++	u32 driver_version;
++	u32 reserved;
++	u8 cache_uuid[VK_UUID_SIZE];
++	u64 payload_size;
++	u64 payload_hash;
++};
++static_assert(sizeof(PGSPipelineCacheHeader) == 72, "pipeline cache header must be tightly packed");
++
++// Deliberately our own, and deliberately not Util::Hasher: this value is written to disk and compared
++// across core builds, so it must never silently change meaning because a vendored header changed.
++static u64 pgs_fnv1a(const void *data, size_t size)
++{
++	const auto *p = static_cast<const u8 *>(data);
++	u64 h = 0xcbf29ce484222325ull;
++	for (size_t i = 0; i < size; i++)
++	{
++		h ^= p[i];
++		h *= 0x100000001b3ull;
++	}
++	return h;
++}
++
++// Changes on every rebuild of this TU. Coarse on purpose: a cache is only ever worth reusing for the
++// exact binary that produced it, and a stale one costs a recompile we would otherwise never notice.
++static u64 pgs_core_build_id()
++{
++	static const char stamp[] = __DATE__ " " __TIME__;
++	return pgs_fnv1a(stamp, sizeof(stamp));
++}
++
++// Validates the driver's own blob header (VkPipelineCacheHeaderVersionOne, Vulkan spec 10.7) before
++// vkCreatePipelineCache parses it. This is the check that actually protects the driver.
++static bool pgs_validate_driver_blob(const u8 *blob, size_t size,
++                                     const VkPhysicalDeviceProperties &props, const char **reason)
++{
++	constexpr size_t VK_CACHE_HEADER_SIZE = 16 + VK_UUID_SIZE;
++	if (size < VK_CACHE_HEADER_SIZE)
++	{
++		*reason = "driver blob shorter than a Vulkan cache header";
++		return false;
++	}
++
++	u32 header_size, header_version, vendor_id, device_id;
++	memcpy(&header_size, blob + 0, sizeof(header_size));
++	memcpy(&header_version, blob + 4, sizeof(header_version));
++	memcpy(&vendor_id, blob + 8, sizeof(vendor_id));
++	memcpy(&device_id, blob + 12, sizeof(device_id));
++
++	if (header_size < VK_CACHE_HEADER_SIZE || header_size > size)
++	{
++		*reason = "driver blob header size out of range";
++		return false;
++	}
++	if (header_version != VK_PIPELINE_CACHE_HEADER_VERSION_ONE)
++	{
++		*reason = "driver blob header version is not ONE";
++		return false;
++	}
++	if (vendor_id != props.vendorID || device_id != props.deviceID)
++	{
++		*reason = "driver blob is for a different GPU";
++		return false;
++	}
++	if (memcmp(blob + 16, props.pipelineCacheUUID, VK_UUID_SIZE) != 0)
++	{
++		*reason = "driver blob pipelineCacheUUID mismatch";
++		return false;
++	}
++
++	return true;
++}
++
++// Returns the Granite payload ([UUID][hash][driver blob]) only when the whole file has been proven.
++// On any failure it sets *reason and returns false; the caller starts fresh. Never throws, never
++// reads out of bounds, and never partially applies.
++static bool pgs_validate_cache_file(const std::vector<u8> &file, const VkPhysicalDeviceProperties &props,
++                                    const u8 **payload_out, size_t *payload_size_out, const char **reason)
++{
++	if (file.size() < sizeof(PGSPipelineCacheHeader))
++	{
++		*reason = "file smaller than the header";
++		return false;
++	}
++
++	PGSPipelineCacheHeader header;
++	memcpy(&header, file.data(), sizeof(header));
++
++	if (memcmp(header.magic, PIPELINE_CACHE_MAGIC, sizeof(PIPELINE_CACHE_MAGIC)) != 0)
++	{
++		*reason = "not a paraLLEl-GS pipeline cache (written by an older core, or foreign)";
++		return false;
++	}
++	if (header.header_size != sizeof(PGSPipelineCacheHeader) ||
++	    header.format_version != PIPELINE_CACHE_FORMAT_VERSION)
++	{
++		*reason = "header size / format version mismatch";
++		return false;
++	}
++	if (header.core_build_id != pgs_core_build_id())
++	{
++		*reason = "written by a different core build";
++		return false;
++	}
++	if (header.vendor_id != props.vendorID || header.device_id != props.deviceID ||
++	    header.driver_version != props.driverVersion)
++	{
++		*reason = "GPU or driver version changed";
++		return false;
++	}
++	if (memcmp(header.cache_uuid, props.pipelineCacheUUID, VK_UUID_SIZE) != 0)
++	{
++		*reason = "pipelineCacheUUID changed";
++		return false;
++	}
++	if (header.payload_size != file.size() - sizeof(PGSPipelineCacheHeader))
++	{
++		*reason = "payload length disagrees with the file length (truncated or padded)";
++		return false;
++	}
++	if (header.payload_size > PIPELINE_CACHE_MAX_BYTES)
++	{
++		*reason = "payload over the size cap";
++		return false;
++	}
++
++	// Granite's framing sits inside our payload: [pipelineCacheUUID][Util::Hash][driver blob].
++	constexpr size_t GRANITE_FRAMING = VK_UUID_SIZE + sizeof(u64);
++	if (header.payload_size <= GRANITE_FRAMING)
++	{
++		*reason = "payload too small to hold a driver blob";
++		return false;
++	}
++
++	const u8 *payload = file.data() + sizeof(PGSPipelineCacheHeader);
++	if (pgs_fnv1a(payload, size_t(header.payload_size)) != header.payload_hash)
++	{
++		*reason = "payload hash mismatch (corrupt or half-written)";
++		return false;
++	}
++
++	if (!pgs_validate_driver_blob(payload + GRANITE_FRAMING,
++	                              size_t(header.payload_size) - GRANITE_FRAMING, props, reason))
++	{
++		return false;
++	}
++
++	*payload_out = payload;
++	*payload_size_out = size_t(header.payload_size);
++	return true;
++}
++
++// Writes the cache to disk. Called ONLY at teardown, never from the frame path.
++//
++// It used to run every 300 frames, which is what produced 400 ms maxTick spikes on a ~5 s cadence:
++// vkGetPipelineCacheData copies the whole cache and WriteBinaryFile writes it, and at 240 MB that is
++// far too much to do on the GS thread. Doing it once, while the room is already closing, costs
++// nothing anyone can perceive. The trade is that a hard kill loses that session's compiles -- an
++// acceptable price, and the reason this is not the only thing keeping the cache warm.
 +static void save_pipeline_cache(Vulkan::Device &dev)
 +{
 +	if (pipeline_cache_path.empty())
@@ -1747,27 +1968,66 @@ index 9d8613c..279674d 100644
 +	if (size == 0 || size == pipeline_cache_written_size)
 +		return;
 +
-+	std::vector<u8> buffer(size);
-+	if (!dev.get_pipeline_cache_data(buffer.data(), buffer.size()))
++	if (size > PIPELINE_CACHE_MAX_BYTES)
++	{
++		Console.WriteLn("paraLLEl-GS: pipeline cache is %zu MB, over the %zu MB cap -- not persisting it. "
++		                "The in-memory cache still works for this session.",
++		                size / (1024 * 1024), PIPELINE_CACHE_MAX_BYTES / (1024 * 1024));
 +		return;
++	}
++
++	std::vector<u8> buffer(sizeof(PGSPipelineCacheHeader) + size);
++	u8 *payload = buffer.data() + sizeof(PGSPipelineCacheHeader);
++	if (!dev.get_pipeline_cache_data(payload, size))
++		return;
++
++	const auto &props = dev.get_gpu_properties();
++	PGSPipelineCacheHeader header = {};
++	memcpy(header.magic, PIPELINE_CACHE_MAGIC, sizeof(PIPELINE_CACHE_MAGIC));
++	header.header_size = sizeof(header);
++	header.format_version = PIPELINE_CACHE_FORMAT_VERSION;
++	header.core_build_id = pgs_core_build_id();
++	header.vendor_id = props.vendorID;
++	header.device_id = props.deviceID;
++	header.driver_version = props.driverVersion;
++	memcpy(header.cache_uuid, props.pipelineCacheUUID, VK_UUID_SIZE);
++	header.payload_size = size;
++	header.payload_hash = pgs_fnv1a(payload, size);
++	memcpy(buffer.data(), &header, sizeof(header));
 +
 +	// Written straight to the final path deliberately. A temp-and-rename would be tidier, but this
 +	// tree's FileSystem has no rename, and the property that matters is already guaranteed upstream:
 +	// Granite hashes the payload and rejects a mismatch on load, so the worst a half-written file can
 +	// do is cost one recompile. Adding a hand-rolled rename would be more moving parts for no safety.
 +	if (FileSystem::WriteBinaryFile(pipeline_cache_path.c_str(), buffer.data(), buffer.size()))
++	{
 +		pipeline_cache_written_size = size;
++		Console.WriteLn("paraLLEl-GS: wrote %zu MB pipeline cache.", size / (1024 * 1024));
++	}
++	else
++	{
++		Console.Error("paraLLEl-GS: failed to write pipeline cache to '%s'.", pipeline_cache_path.c_str());
++	}
 +}
  extern retro_environment_t environ_cb;
  extern retro_video_refresh_t video_cb;
  extern retro_log_printf_t log_cb;
-@@ -185,7 +237,26 @@ u8 *GSRendererPGS::GetRegsMem()
+@@ -183,9 +453,35 @@ u8 *GSRendererPGS::GetRegsMem()
+ 	return reinterpret_cast<u8 *>(priv);
+ }
  
++void GSRendererPGS::SavePipelineCache()
++{
++	save_pipeline_cache(dev);
++}
++
  GSRendererPGS::~GSRendererPGS()
  {
-+	// Final flush, for anything compiled since the last periodic write. Best effort by design: the
-+	// periodic writes above are what the persistence actually rests on.
-+	save_pipeline_cache(dev);
++	// NOTE: the pipeline cache is deliberately NOT written here. SavePipelineCache() is called from
++	// CloseGSRenderer() just before this object is destroyed, while the Device and the Vulkan
++	// context are unambiguously alive. Reaching into the Device from a destructor left the whole
++	// thing one ordering assumption away from a teardown crash, and the ordering is not worth
++	// relying on when an explicit call site costs nothing.
 +
  	last_vsync_image.reset();
 +
@@ -1788,7 +2048,7 @@ index 9d8613c..279674d 100644
  }
  
  struct ParsedSuperSampling
-@@ -216,6 +287,36 @@ bool GSRendererPGS::Init()
+@@ -216,6 +512,98 @@ bool GSRendererPGS::Init()
  		return false;
  
  	dev.set_context(*vulkan_ctx);
@@ -1799,25 +2059,87 @@ index 9d8613c..279674d 100644
 +	// every time it is needed within a session.
 +	pipeline_cache_path.clear();
 +	pipeline_cache_written_size = 0;
-+	pipeline_cache_check_counter = 0;
 +
 +	if (!GSConfig.DisableShaderCache && !EmuFolders::Cache.empty())
 +		pipeline_cache_path = Path::Combine(EmuFolders::Cache, "parallel_gs_pipeline_cache.bin");
++
++	// Strictly after set_context(): that is what creates the VkDevice, reads gpu_props (whose
++	// pipelineCacheUUID we validate against) and stands up every manager. Asserted rather than
++	// assumed, because a load against a half-built Device is exactly the class of bug this whole
++	// block exists to close.
++	if (dev.get_device() == VK_NULL_HANDLE)
++	{
++		Console.Error("paraLLEl-GS: device is not initialized after set_context -- refusing to init.");
++		return false;
++	}
 +
 +	{
 +		std::optional<std::vector<u8>> cache_data;
 +		if (!pipeline_cache_path.empty())
 +			cache_data = FileSystem::ReadBinaryFile(pipeline_cache_path.c_str());
 +
-+		if (cache_data.has_value() && !cache_data->empty())
++		// Logged explicitly because whether the file is actually being picked up is not otherwise
++		// visible: Granite's own "Initializing pipeline cache." is the only signal, and across every
++		// boot so far the logs show only "Creating a fresh pipeline cache.", i.e. no load has ever
++		// been observed to succeed. These lines say which path was taken and how big the file was.
++		// Refuse an oversized file rather than hand it to vkCreatePipelineCache. The bound that stops
++		// us writing one has to stop us reading one too, or a file written before the cap existed
++		// (240 MB ones already sit on the workers) is still loaded -- a slow boot, and the least
++		// tested input the driver will ever see.
++		if (cache_data.has_value() &&
++		    cache_data->size() > PIPELINE_CACHE_MAX_BYTES + sizeof(PGSPipelineCacheHeader))
 +		{
-+			// Granite validates the pipelineCacheUUID and a payload hash, falling back to a fresh
-+			// cache on either mismatch, so a stale or corrupt file costs a recompile, not a crash.
-+			dev.init_pipeline_cache(cache_data->data(), cache_data->size());
-+			pipeline_cache_written_size = cache_data->size();
++			Console.WriteLn("paraLLEl-GS: ignoring %zu MB pipeline cache at '%s' -- over the %zu MB cap.",
++			                cache_data->size() / (1024 * 1024), pipeline_cache_path.c_str(),
++			                PIPELINE_CACHE_MAX_BYTES / (1024 * 1024));
++			cache_data.reset();
++		}
++
++		const u8 *payload = nullptr;
++		size_t payload_size = 0;
++		const char *reject_reason = nullptr;
++
++		if (cache_data.has_value() && !cache_data->empty() &&
++		    !pgs_validate_cache_file(*cache_data, dev.get_gpu_properties(),
++		                             &payload, &payload_size, &reject_reason))
++		{
++			// Rejected, never repaired and never deleted: leaving the file alone keeps it available
++			// for post-mortem, and the next successful close overwrites it anyway.
++			Console.WriteLn("paraLLEl-GS: rejecting %zu MB pipeline cache at '%s' -- %s. Starting fresh.",
++			                cache_data->size() / (1024 * 1024), pipeline_cache_path.c_str(), reject_reason);
++			cache_data.reset();
++			payload = nullptr;
++			payload_size = 0;
++		}
++
++		if (payload && payload_size)
++		{
++			Console.WriteLn("paraLLEl-GS: loading %zu MB pipeline cache from '%s'.",
++			                payload_size / (1024 * 1024), pipeline_cache_path.c_str());
++
++			// Validated in full above; Granite then re-checks the pipelineCacheUUID and its own
++			// payload hash underneath, so a bad file can only ever cost a recompile.
++			dev.init_pipeline_cache(payload, payload_size);
++			pipeline_cache_written_size = payload_size;
++		}
++		else if (pipeline_cache_path.empty())
++		{
++			// Split from the case below on purpose. These are different failures and conflating
++			// them is what makes a log ambiguous: this one means we never had a path to try,
++			// which would point at EmuFolders not being resolved yet at device init, or at
++			// DisableShaderCache. (Traced 2026-08-08: EmuFolders::LoadConfig runs at
++			// libretro/main.cpp:2093, well before libretro_select_hw_render at :2108, so under
++			// normal boot this branch means the shader cache is disabled, not an ordering bug.)
++			Console.WriteLn("paraLLEl-GS: pipeline cache persistence disabled: no cache dir at device init.");
++			dev.init_pipeline_cache(nullptr, 0);
 +		}
 +		else
 +		{
++			// reject_reason distinguishes "there was no file" from "there was one and we refused it",
++			// which is the difference between a first boot and a bug.
++			if (!reject_reason)
++				Console.WriteLn("paraLLEl-GS: no pipeline cache file at '%s' -- starting fresh.",
++				                pipeline_cache_path.c_str());
 +			dev.init_pipeline_cache(nullptr, 0);
 +		}
 +	}
@@ -1825,7 +2147,32 @@ index 9d8613c..279674d 100644
  	// We'll cycle through a lot of these.
  	dev.init_frame_contexts(12);
  	dev.set_queue_lock([]() {
-@@ -504,6 +605,7 @@ void GSRendererPGS::VSync(u32 field, bool registers_written)
+@@ -254,6 +642,9 @@ bool GSRendererPGS::Init()
+ 		(GSConfig.HWDownloadMode >= GSHardwareDownloadMode::Unsynchronized);
+ 	iface.set_hacks(hacks);
+ 
++	// Last statement on purpose: nothing off the GS ring may touch this object until every line
++	// above has run. Release-ordered so a reader that sees `true` also sees the initialized device.
++	initialized.store(true, std::memory_order_release);
+ 	return true;
+ }
+ 
+@@ -264,6 +655,14 @@ void GSRendererPGS::Reset(bool /*hardware_reset*/)
+ 
+ void GSRendererPGS::UpdateConfig()
+ {
++	// Reached from the EE thread via MTGS::ApplySettings -> GSUpdateConfig, which does not go
++	// through the GS ring and so can land while the GS thread is still inside Init(). See the note
++	// on `initialized`. Init() applies the current GSConfig itself, so there is nothing to lose by
++	// dropping an update that arrives before it: the settings this would have applied are read again
++	// at the end of Init().
++	if (!initialized.load(std::memory_order_acquire))
++		return;
++
+ 	auto parsed = parse_super_sampling_options(GSConfig.PGSSuperSampling);
+ 
+ 	if (parsed.super_sampling != current_super_sampling || parsed.ordered != current_ordered_super_sampling ||
+@@ -504,6 +903,7 @@ void GSRendererPGS::VSync(u32 field, bool registers_written)
  	info.adapt_to_internal_horizontal_resolution = GSConfig.PCRTCAntiBlur;
  	info.raw_circuit_scanout                     = true;
  	info.high_resolution_scanout                 = GSConfig.PGSHighResScanout != 0;
@@ -1833,7 +2180,7 @@ index 9d8613c..279674d 100644
  	auto vsync                                   = iface.vsync(info);
  
  	auto stats = iface.consume_flush_stats();
-@@ -588,7 +690,57 @@ void GSRendererPGS::VSync(u32 field, bool registers_written)
+@@ -588,7 +988,57 @@ void GSRendererPGS::VSync(u32 field, bool registers_written)
  			if (geom_changed)
  				environ_cb(RETRO_ENVIRONMENT_SET_GEOMETRY, &geom);
  
@@ -1892,24 +2239,152 @@ index 9d8613c..279674d 100644
  			video_cb(RETRO_HW_FRAME_BUFFER_VALID, new_base_width, new_base_height, 0);
  			/* Do not unregister the image after video_cb: the frontend
  			 * may reuse the pointer for cached-frame replays during
-@@ -605,6 +757,17 @@ void GSRendererPGS::VSync(u32 field, bool registers_written)
- 	}
+diff --git a/pcsx2/GS/Renderers/parallel-gs/GSRendererPGS.h b/pcsx2/GS/Renderers/parallel-gs/GSRendererPGS.h
+index 9bc3fdb..af82dc9 100644
+--- a/pcsx2/GS/Renderers/parallel-gs/GSRendererPGS.h
++++ b/pcsx2/GS/Renderers/parallel-gs/GSRendererPGS.h
+@@ -13,6 +13,7 @@
+ #include "wsi.hpp"
  
- 	dev.next_frame_context();
+ #include <libretro_vulkan.h>
++#include <atomic>
+ 
+ class GSRendererPGS final
+ {
+@@ -38,12 +39,22 @@ public:
+ 
+ 	u8 *GetRegsMem();
+ 
++	// Persist the Vulkan pipeline cache. Called explicitly at GS close, while this object, its
++	// Device and the Vulkan context are all provably alive -- never from the destructor chain.
++	void SavePipelineCache();
 +
-+	// Persist newly compiled pipelines as we go rather than only at teardown. With
-+	// skip_hw_context_destroy set the shutdown path is not guaranteed to run, and a cache that only
-+	// writes on a clean exit is the cache that is always empty on the next room -- which is exactly
-+	// the failure being fixed. Cheap: a size query every few seconds, and a write only when a
-+	// compile has actually grown the cache.
-+	if (++pipeline_cache_check_counter >= PIPELINE_CACHE_CHECK_INTERVAL)
-+	{
-+		pipeline_cache_check_counter = 0;
-+		save_pipeline_cache(dev);
-+	}
- }
+ private:
+ 	ParallelGS::PrivRegisterState *priv;
+ 	Vulkan::Device dev;
+ 	ParallelGS::GSInterface iface;
+ 	WindowInfo window_info = {};
  
- void GSRendererPGS::Transfer(const u8* mem, u32 size)
++	// GS.cpp publishes g_pgs_renderer BEFORE Init() runs, and MTGS::ApplySettings calls
++	// GSUpdateConfig -> UpdateConfig() straight from the EE thread rather than through the GS ring.
++	// Until Init() has finished, this object's GSRenderer has no Vulkan::Device and touching it is a
++	// null dereference. Everything reachable off-ring must check this first.
++	std::atomic<bool> initialized { false };
++
+ 	ParallelGS::SuperSampling current_super_sampling = ParallelGS::SuperSampling::X1;
+ 	bool current_ordered_super_sampling     = false;
+ 	bool current_super_sample_textures      = false;
+diff --git a/pcsx2/GS/parallel-gs/gs/CMakeLists.txt b/pcsx2/GS/parallel-gs/gs/CMakeLists.txt
+index 798e416..4459376 100644
+--- a/pcsx2/GS/parallel-gs/gs/CMakeLists.txt
++++ b/pcsx2/GS/parallel-gs/gs/CMakeLists.txt
+@@ -11,7 +11,8 @@ add_library(parallel-gs STATIC
+         gs_util.cpp gs_util.hpp
+         shaders/slangmosh_iface.hpp shaders/slangmosh.hpp
+         page_tracker.cpp page_tracker.hpp
+-        gs_renderer.cpp gs_renderer.hpp)
++        gs_renderer.cpp gs_renderer.hpp
++        gs_profiler.cpp gs_profiler.hpp)
+ target_compile_options(parallel-gs PRIVATE ${PARALLEL_GS_CXX_FLAGS})
+ target_link_libraries(parallel-gs PUBLIC granite-vulkan granite-math)
+ target_include_directories(parallel-gs PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+diff --git a/pcsx2/GS/parallel-gs/gs/gs_interface.cpp b/pcsx2/GS/parallel-gs/gs/gs_interface.cpp
+index 07105c7..efc76bc 100644
+--- a/pcsx2/GS/parallel-gs/gs/gs_interface.cpp
++++ b/pcsx2/GS/parallel-gs/gs/gs_interface.cpp
+@@ -5,6 +5,7 @@
+ 
+ #include "page_tracker.hpp"
+ #include "gs_interface.hpp"
++#include "gs_profiler.hpp"
+ #include "gs_util.hpp"
+ #include "shaders/swizzle_utils.h"
+ #include "muglm/muglm_impl.hpp"
+@@ -549,6 +550,7 @@ void GSInterface::rewrite_forwarded_clut_upload(
+ 
+ void GSInterface::handle_clut_upload(uint32_t ctx_index)
+ {
++	PGS_PROF_SCOPE(TexCache);
+ 	auto &ctx = registers.ctx[ctx_index];
+ 	auto &desc = ctx.tex0.desc;
+ 	bool load_clut = false;
+@@ -2978,6 +2980,7 @@ void GSInterface::check_pending_transfer()
+ 
+ void GSInterface::flush_pending_transfer(bool keep_alive)
+ {
++	PGS_PROF_SCOPE(Upload);
+ 	if (transfer_state.host_to_local_active &&
+ 	    transfer_state.host_to_local_payload.size() > transfer_state.last_flushed_qwords)
+ 	{
+@@ -3004,6 +3007,36 @@ void GSInterface::flush_pending_transfer(bool keep_alive)
+ 		transfer_state.copy.host_data_size = transfer_state.host_to_local_payload.size() * sizeof(uint64_t);
+ 		transfer_state.copy.host_data_size_offset = transfer_state.last_flushed_qwords * sizeof(uint64_t);
+ 		transfer_state.copy.host_data_size_required = transfer_state.required_qwords * sizeof(uint64_t);
++		PGS_PROF_UPLOAD_OP(transfer_state.copy.host_data_size - transfer_state.copy.host_data_size_offset);
++
++		// REDUNDANCY PROBE (measure only — nothing is skipped). Fingerprint = the full destination
++		// descriptor plus the payload chunk actually being sent. Two uploads with the same fingerprint
++		// in one frame put identical bytes in an identical place, so a redundant-upload skip could in
++		// principle drop the second. Whether it may is a separate question (something could have
++		// written that VRAM in between), which is exactly why this measures an upper bound instead of
++		// acting on it. The hash is FNV-1a over the chunk; at ~130 KB per op and ~1500 ops that is a
++		// couple of ms on the storm frames and nothing at all on normal ones.
++		{
++			const uint8_t *chunk = static_cast<const uint8_t *>(transfer_state.copy.host_data) +
++			                       transfer_state.copy.host_data_size_offset;
++			size_t chunk_size = transfer_state.copy.host_data_size - transfer_state.copy.host_data_size_offset;
++			uint64_t h = 0xcbf29ce484222325ull;
++			const uint64_t desc[3] = {
++				transfer_state.copy.bitbltbuf.bits,
++				transfer_state.copy.trxpos.bits,
++				transfer_state.copy.trxreg.bits,
++			};
++			for (unsigned i = 0; i < 3; i++)
++				for (unsigned b = 0; b < 8; b++)
++					{ h ^= uint8_t(desc[i] >> (b * 8)); h *= 0x100000001b3ull; }
++			for (size_t i = 0; i < chunk_size; i++)
++				{ h ^= chunk[i]; h *= 0x100000001b3ull; }
++			if (prof_upload_seen(h))
++			{
++				prof_frame.upload_dup_ops++;
++				prof_frame.upload_dup_bytes += chunk_size;
++			}
++		}
+ 
+ 		// This is an arbitrarily chosen value to deal with known problematic games.
+ 		constexpr uint32_t CopyCacheHazardLimit = 400;
+@@ -3149,6 +3182,7 @@ void GSInterface::flush_pending_transfer(bool keep_alive)
+ 
+ void GSInterface::read_transfer_fifo(void *data, uint32_t num_128b_words)
+ {
++	PGS_PROF_TOP();
+ 	uint32_t to_copy = std::min<uint32_t>(num_128b_words, transfer_state.fifo_readback_128b_size - transfer_state.fifo_readback_128b_offset);
+ 
+ 	if (to_copy)
+@@ -4256,6 +4290,7 @@ const void *GSInterface::map_vram_read(size_t offset, size_t size)
+ 
+ void GSInterface::flush()
+ {
++	PGS_PROF_TOP();
+ 	flush_pending_transfer(true);
+ 	uint64_t value = tracker.mark_submission_timeline();
+ 	renderer.flush_submit(value);
+@@ -4289,6 +4324,7 @@ void GSInterface::packed_ADONLY(const void *words, uint32_t num_loops)
+ 
+ void GSInterface::gif_transfer(uint32_t path_index, const void *data, size_t size)
+ {
++	PGS_PROF_TOP();
+ 	// Transfers are in units of 128 bits.
+ 	assert(path_index < 4);
+ 	assert(size % 16 == 0);
+@@ -4625,6 +4661,7 @@ void GSInterface::register_backbuffer_promotion_fbp(uint32_t fbp)
+ 
+ ScanoutResult GSInterface::vsync(const VSyncInfo &info_)
+ {
++	PGS_PROF_TOP_FRAME_END();
+ 	auto info = info_;
+ 	auto ffmd = priv_registers.smode2.FFMD;
+ 
 diff --git a/pcsx2/GS/parallel-gs/gs/gs_interface.hpp b/pcsx2/GS/parallel-gs/gs/gs_interface.hpp
 index 9f05da8..ec6e3ba 100644
 --- a/pcsx2/GS/parallel-gs/gs/gs_interface.hpp
@@ -1931,11 +2406,314 @@ index 9f05da8..ec6e3ba 100644
  	// If using interlaced, defer any attempt to deinterlace and just return the raw output as-is with phase information.
  	// User is responsible for deinterlacing in whatever way is appropriate.
  	bool skip_deinterlace;
+diff --git a/pcsx2/GS/parallel-gs/gs/gs_profiler.cpp b/pcsx2/GS/parallel-gs/gs/gs_profiler.cpp
+new file mode 100644
+index 0000000..6671052
+--- /dev/null
++++ b/pcsx2/GS/parallel-gs/gs/gs_profiler.cpp
+@@ -0,0 +1,103 @@
++// SPDX-License-Identifier: LGPL-3.0+
++//
++// See gs_profiler.hpp for why this exists. This file holds the accumulator state and the one place
++// that ever formats a string.
++
++#include "gs_profiler.hpp"
++#include "logging.hpp"
++#include <string.h>
++#include <stdio.h>
++
++namespace ParallelGS
++{
++FrameProfile prof_frame;
++uint64_t prof_child_ns;
++unsigned prof_depth;
++uint64_t prof_upload_hashes[PROF_UPLOAD_HASH_SLOTS];
++
++bool prof_upload_seen(uint64_t hash)
++{
++	if (hash == 0)
++		hash = 1; // 0 is the empty-slot marker
++	uint32_t idx = uint32_t(hash) & (PROF_UPLOAD_HASH_SLOTS - 1);
++	for (unsigned probe = 0; probe < 8; probe++)
++	{
++		uint64_t &slot = prof_upload_hashes[(idx + probe) & (PROF_UPLOAD_HASH_SLOTS - 1)];
++		if (slot == hash)
++			return true;
++		if (slot == 0)
++		{
++			slot = hash;
++			return false;
++		}
++	}
++	return false; // cluster full: report "new" rather than guess a duplicate
++}
++
++// A frame slower than this is by definition not a 60 Hz frame, so the emission cost is irrelevant
++// and the line is worth having. Normal frames never format anything.
++static constexpr uint64_t ProfTriggerNs = 40ull * 1000ull * 1000ull;
++
++// Last N completed frames, so a trigger can also show what led into it. The burst is reported as a
++// run of slow frames, and the frames immediately before it are where a build-up would be visible.
++static constexpr unsigned ProfRingSize = 4;
++static FrameProfile prof_ring[ProfRingSize];
++static uint64_t prof_frames_done;
++
++static double ms(uint64_t ns)
++{
++	return double(ns) / 1e6;
++}
++
++static void prof_emit(const char *prefix, const FrameProfile &f)
++{
++	uint64_t sum = 0;
++	for (unsigned i = 0; i < unsigned(ProfSection::Count); i++)
++		sum += f.self_ns[i];
++	const uint64_t other = f.active_ns > sum ? f.active_ns - sum : 0;
++
++	LOGI("%s total=%.1fms upload=%.1fms(%uops/%.1fMB dup=%u/%.1fMB) texcache=%.1fms binning=%.1fms shading=%.1fms "
++	     "submit=%.1fms wait=%.1fms alloc=%.1fms scanout=%.1fms other=%.1fms disp=%u sub=%u\n",
++	     prefix,
++	     ms(f.active_ns),
++	     ms(f.self_ns[unsigned(ProfSection::Upload)]),
++	     unsigned(f.upload_ops),
++	     double(f.upload_bytes) / (1024.0 * 1024.0),
++	     unsigned(f.upload_dup_ops),
++	     double(f.upload_dup_bytes) / (1024.0 * 1024.0),
++	     ms(f.self_ns[unsigned(ProfSection::TexCache)]),
++	     ms(f.self_ns[unsigned(ProfSection::Binning)]),
++	     ms(f.self_ns[unsigned(ProfSection::Shading)]),
++	     ms(f.self_ns[unsigned(ProfSection::Submit)]),
++	     ms(f.self_ns[unsigned(ProfSection::Wait)]),
++	     ms(f.self_ns[unsigned(ProfSection::Alloc)]),
++	     ms(f.self_ns[unsigned(ProfSection::Scanout)]),
++	     ms(other),
++	     unsigned(f.dispatches),
++	     unsigned(f.submits));
++}
++
++void prof_frame_end()
++{
++	const FrameProfile f = prof_frame;
++
++	if (f.active_ns >= ProfTriggerNs)
++	{
++		// The three frames preceding the trigger, oldest first.
++		for (unsigned back = 3; back >= 1; back--)
++		{
++			if (prof_frames_done < back)
++				continue;
++			prof_emit("pgs-prof-pre:", prof_ring[(prof_frames_done - back) % ProfRingSize]);
++		}
++		prof_emit("pgs-prof:", f);
++	}
++
++	prof_ring[prof_frames_done % ProfRingSize] = f;
++	prof_frames_done++;
++
++	memset(&prof_frame, 0, sizeof(prof_frame));
++	memset(prof_upload_hashes, 0, sizeof(prof_upload_hashes)); // 64 KiB memset once per frame
++	prof_child_ns = 0;
++}
++}
+diff --git a/pcsx2/GS/parallel-gs/gs/gs_profiler.hpp b/pcsx2/GS/parallel-gs/gs/gs_profiler.hpp
+new file mode 100644
+index 0000000..db9d126
+--- /dev/null
++++ b/pcsx2/GS/parallel-gs/gs/gs_profiler.hpp
+@@ -0,0 +1,144 @@
++// SPDX-License-Identifier: LGPL-3.0+
++//
++// paraLLEl-GS GS-thread section profiler (INSTRUMENTATION ONLY).
++//
++// Why this exists: Stuntman (PS2) stalls the GS thread 120-400 ms per frame in a burst, every time
++// one specific corner of one track is crossed. A warm in-memory VkPipelineCache reproduces the stall
++// identically on a second run in the same room, so pipeline compilation is exonerated. This measures
++// where the GS thread's wall time actually goes on those frames so the cost center can be named
++// rather than guessed at.
++//
++// Design constraints:
++//  * Zero behaviour change. Nothing here can alter what is submitted or when.
++//  * Zero measurable overhead on a normal <10 ms frame. Two steady_clock reads per scope, a handful
++//    of integer adds, and NO string formatting unless a frame actually trips the threshold.
++//  * Single-threaded by construction. Every counter below is touched only by the thread that drives
++//    parallel-gs (LRPS2's MTGS thread). No atomics, no locks - adding either would itself be a cost.
++//
++// Two scope kinds:
++//  * ProfTopScope wraps a parallel-gs PUBLIC entry point. Only the outermost one accumulates, so the
++//    GS thread's idle time between GIF packets is never charged to the frame.
++//  * ProfScope charges EXCLUSIVE ("self") time to one section: whatever nested scopes consumed is
++//    handed back to the parent instead of being double counted. That makes it safe to instrument an
++//    umbrella function and its leaves at the same time.
++
++#pragma once
++
++#include <chrono>
++#include <stdint.h>
++
++namespace ParallelGS
++{
++enum class ProfSection : unsigned
++{
++	Upload = 0,   // VRAM writes and texture upload processing (upload.comp / vram_copy.comp paths)
++	TexCache,     // palette (CLUT) and texture-cache maintenance
++	Binning,      // triangle setup + primitive binning
++	Shading,      // ubershader dispatch recording
++	Submit,       // vkQueueSubmit batching
++	Wait,         // every place the GS thread can BLOCK: timeline waits, compile drain, frame ctx
++	Alloc,        // scratch / descriptor / image-slab allocation
++	Scanout,      // vsync circuit sampling, deinterlace, field merge
++	Count
++};
++
++struct FrameProfile
++{
++	uint64_t self_ns[unsigned(ProfSection::Count)];
++	uint64_t active_ns;     // wall time spent inside parallel-gs entry points this frame
++	uint64_t upload_ops;
++	uint64_t upload_bytes;
++	// REDUNDANCY PROBE (2026-08-08). How much of the Stuntman upload storm is the game re-sending
++	// bytes it has already sent this frame, to the same place, in the same format. This is an UPPER
++	// BOUND on what a redundant-upload skip could ever eliminate: it ignores whether anything wrote
++	// to that VRAM in between, so a real skip can only ever do WORSE than this number. Measuring it
++	// costs a hash per upload and decides whether the (correctness-critical) skip is worth building.
++	uint64_t upload_dup_ops;
++	uint64_t upload_dup_bytes;
++	uint64_t dispatches;
++	uint64_t submits;
++};
++
++// Per-frame set of upload fingerprints, used only by the redundancy probe. Open-addressed, power of
++// two, no allocation, cleared once per frame. A full table simply stops reporting duplicates, which
++// biases the estimate DOWN — the safe direction for a number we are using to justify work.
++enum { PROF_UPLOAD_HASH_SLOTS = 8192 };
++extern uint64_t prof_upload_hashes[PROF_UPLOAD_HASH_SLOTS];
++
++// Records one upload fingerprint; returns true if this exact upload was already seen this frame.
++bool prof_upload_seen(uint64_t hash);
++
++// GS-thread-only state, deliberately plain (see header comment).
++extern FrameProfile prof_frame;
++extern uint64_t prof_child_ns;
++extern unsigned prof_depth;
++
++// Closes the frame: threshold check, log emission, ring rotation, reset.
++void prof_frame_end();
++
++using ProfClock = std::chrono::steady_clock;
++
++static inline uint64_t prof_ns_since(ProfClock::time_point start)
++{
++	return uint64_t(std::chrono::duration_cast<std::chrono::nanoseconds>(ProfClock::now() - start).count());
++}
++
++struct ProfScope
++{
++	explicit ProfScope(ProfSection s) noexcept
++		: section(s), saved_child(prof_child_ns), start(ProfClock::now())
++	{
++		prof_child_ns = 0;
++	}
++
++	~ProfScope() noexcept
++	{
++		const uint64_t elapsed = prof_ns_since(start);
++		// Exclusive time. prof_child_ns holds everything nested scopes already claimed.
++		prof_frame.self_ns[unsigned(section)] += elapsed - (prof_child_ns <= elapsed ? prof_child_ns : elapsed);
++		prof_child_ns = saved_child + elapsed;
++	}
++
++	ProfScope(const ProfScope &) = delete;
++	void operator=(const ProfScope &) = delete;
++
++	ProfSection section;
++	uint64_t saved_child;
++	ProfClock::time_point start;
++};
++
++struct ProfTopScope
++{
++	explicit ProfTopScope(bool frame_end_ = false) noexcept
++		: frame_end(frame_end_), outer(prof_depth++ == 0), start(ProfClock::now())
++	{
++		if (outer)
++			prof_child_ns = 0;
++	}
++
++	~ProfTopScope() noexcept
++	{
++		--prof_depth;
++		if (outer)
++			prof_frame.active_ns += prof_ns_since(start);
++		if (frame_end && prof_depth == 0)
++			prof_frame_end();
++	}
++
++	ProfTopScope(const ProfTopScope &) = delete;
++	void operator=(const ProfTopScope &) = delete;
++
++	bool frame_end;
++	bool outer;
++	ProfClock::time_point start;
++};
++}
++
++#define PGS_PROF_SCOPE(sect) ::ParallelGS::ProfScope pgs_prof_scope_ { ::ParallelGS::ProfSection::sect }
++#define PGS_PROF_TOP() ::ParallelGS::ProfTopScope pgs_prof_top_ { false }
++#define PGS_PROF_TOP_FRAME_END() ::ParallelGS::ProfTopScope pgs_prof_top_ { true }
++#define PGS_PROF_UPLOAD_OP(bytes) do { \
++	::ParallelGS::prof_frame.upload_ops++; \
++	::ParallelGS::prof_frame.upload_bytes += uint64_t(bytes); } while (0)
++#define PGS_PROF_DISPATCH() (void)(::ParallelGS::prof_frame.dispatches++)
++#define PGS_PROF_SUBMIT() (void)(::ParallelGS::prof_frame.submits++)
 diff --git a/pcsx2/GS/parallel-gs/gs/gs_renderer.cpp b/pcsx2/GS/parallel-gs/gs/gs_renderer.cpp
-index adde6bb..5f66bb2 100644
+index adde6bb..9c9565e 100644
 --- a/pcsx2/GS/parallel-gs/gs/gs_renderer.cpp
 +++ b/pcsx2/GS/parallel-gs/gs/gs_renderer.cpp
-@@ -786,6 +786,7 @@ bool GSRenderer::init(Vulkan::Device *device_, const GSOptions &options)
+@@ -12,6 +12,7 @@
+ #include "shaders/swizzle_utils.h"
+ #include "thread_id.hpp"
+ #include "gs_util.hpp"
++#include "gs_profiler.hpp"
+ #include "thread_name.hpp"
+ #include <utility>
+ #include <algorithm>
+@@ -333,16 +334,26 @@ void GSRenderer::invalidate_super_sampling_state(
+ 	cmd->barrier(VK_PIPELINE_STAGE_2_CLEAR_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
+ 	             VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT);
+ 	cmd->end_region();
++	PGS_PROF_SUBMIT();
+ 	device->submit(cmd);
+ 
+ 	init_phase_lut(sampling_rate_x_log2, sampling_rate_y_log2);
+ 
+ 	flush_slab_cache();
+-	device->wait_idle();
++	{ PGS_PROF_SCOPE(Wait); device->wait_idle(); }
+ }
+ 
+ SuperSampling GSRenderer::get_max_supported_super_sampling() const
+ {
++	// `device` is null until init() succeeds, and this is reachable before that: the frontend can
++	// call GSRendererPGS::UpdateConfig from the EE thread (MTGS::ApplySettings -> GSUpdateConfig,
++	// which does NOT go through the GS ring) while the GS thread is still inside Init(). That window
++	// is normally microseconds; loading a 228 MB pipeline cache widens it to seconds, which is what
++	// turned a latent race into a reliable 0xC0000005 at Device::supports_subgroup_size_log2.
++	// X1 is the safe answer -- GSInterface::init applies the real rate once the device exists.
++	if (!device)
++		return SuperSampling::X1;
++
+ 	SuperSampling max_ssaa = SuperSampling::X4;
+ 	if (device->supports_subgroup_size_log2(true, 3, 6))
+ 		max_ssaa = SuperSampling::X8;
+@@ -428,6 +439,7 @@ void GSRenderer::init_vram(const GSOptions &options)
+ 
+ void GSRenderer::drain_compilation_tasks()
+ {
++	PGS_PROF_SCOPE(Wait);
+ 	compilation_tasks_active = false;
+ 	for (auto &task : compilation_tasks)
+ 		if (task.valid())
+@@ -786,6 +798,7 @@ bool GSRenderer::init(Vulkan::Device *device_, const GSOptions &options)
  	sample_quad[0] = device_->request_program(shaders.quad, shaders.sample_circuit[0]);
  	sample_quad[1] = device_->request_program(shaders.quad, shaders.sample_circuit[1]);
  	weave_quad = device_->request_program(shaders.quad, shaders.weave);
@@ -1943,7 +2721,420 @@ index adde6bb..5f66bb2 100644
  
  	flush_submit(0);
  	// Descriptor indexing is a hard requirement, but timeline semaphore could be elided if really needed.
-@@ -4054,7 +4055,7 @@ void GSRenderer::transfer_overlap_barrier()
+@@ -858,6 +871,28 @@ bool GSRenderer::init(Vulkan::Device *device_, const GSOptions &options)
+ 	LOGI("Using max allocated image memory per flush of %llu MiB.\n",
+ 	     static_cast<unsigned long long>(max_allocated_image_memory_per_flush / (1024 * 1024)));
+ 
++	// SCRATCH PRE-WARM (2026-08-08). Measured, not guessed: the first crossing of the Stuntman corner
++	// produced a 119.4 ms frame whose profile was alloc=49.1 ms + binning=42.4 ms — the linear scratch
++	// allocators hitting `!scratch.buffer` and creating their 32 MiB buffers for the first time, in the
++	// middle of a burst that also wanted the GPU. The buffers are created on ANY non-trivial frame
++	// anyway, so this only moves the cost to room start, where nothing is on screen and nobody can
++	// perceive it. It cannot change rendering: it allocates exactly what the first real call would.
++	//
++	// Size 0 is deliberate — the allocators take max(size, DefaultScratchBufferSize), so a zero-size
++	// request creates the default-sized buffer and commits nothing. `&dummy` (not nullptr) matters for
++	// the ReBAR scratch: the data pointer is what selects LinkedDeviceHostPreferDevice over Device, so
++	// pre-warming with nullptr would create a device-local buffer that the first real upload could not
++	// map, silently pushing every scratch write onto the async-transfer fallback.
++	{
++		uint32_t dummy = 0;
++		allocate_device_scratch(0, buffers.rebar_scratch, &dummy);
++		allocate_device_scratch(0, buffers.device_scratch, nullptr);
++		reserve_attribute_scratch(0, buffers.pos_scratch);
++		reserve_attribute_scratch(0, buffers.attr_scratch);
++		reserve_attribute_scratch(0, buffers.prim_scratch);
++		LOGI("Pre-warmed scratch allocators (first-touch cost moved off the frame path).\n");
++	}
++
+ 	return true;
+ }
+ 
+@@ -929,6 +964,7 @@ void GSRenderer::flush_attribute_scratch(AttributeScratch &scratch)
+ 
+ void GSRenderer::reserve_attribute_scratch(VkDeviceSize size, AttributeScratch &scratch)
+ {
++	PGS_PROF_SCOPE(Alloc);
+ 	auto align = buffers.ssbo_alignment;
+ 	scratch.offset = align_offset(scratch.offset, align);
+ 
+@@ -968,6 +1004,7 @@ void GSRenderer::commit_attribute_scratch(VkDeviceSize size, AttributeScratch &s
+ 
+ VkDeviceSize GSRenderer::allocate_device_scratch(VkDeviceSize size, Scratch &scratch, const void *data)
+ {
++	PGS_PROF_SCOPE(Alloc);
+ 	// Trivial linear allocator. Reduces pressure on Granite allocator.
+ 	// It's important that we don't allocate too huge buffers here, then we don't get suballocation in Granite
+ 	// (which would be quite bad).
+@@ -1036,6 +1073,7 @@ GSRenderer::~GSRenderer()
+ 
+ void GSRenderer::wait_timeline(uint64_t value)
+ {
++	PGS_PROF_SCOPE(Wait);
+ 	std::unique_lock<std::mutex> holder{timeline_lock};
+ 	timeline_cond.wait(holder, [this, value]() {
+ 		return timeline_value.load(std::memory_order_relaxed) >= value;
+@@ -1077,11 +1115,13 @@ void GSRenderer::flush_qword_clears()
+ 
+ 	if (wgx <= device->get_gpu_properties().limits.maxComputeWorkGroupCount[0])
+ 	{
++		PGS_PROF_DISPATCH();
+ 		clear_cmd->dispatch(wgx, 1, 1);
+ 	}
+ 	else
+ 	{
+ 		// Shouldn't really happen, but if it does, just eat the extra dummy threads.
++		PGS_PROF_DISPATCH();
+ 		clear_cmd->dispatch(0xffff, (wgx + 0xfffe) / 0xffff, 1);
+ 	}
+ 
+@@ -1090,6 +1130,7 @@ void GSRenderer::flush_qword_clears()
+ 
+ void GSRenderer::flush_submit(uint64_t value)
+ {
++	PGS_PROF_SCOPE(Submit);
+ 	if (!device)
+ 		return;
+ 
+@@ -1121,6 +1162,7 @@ void GSRenderer::flush_submit(uint64_t value)
+ 	{
+ 		Vulkan::Semaphore sem;
+ 		async_transfer_cmd->end_region();
++		PGS_PROF_SUBMIT();
+ 		device->submit(async_transfer_cmd, nullptr, 1, &sem);
+ 		device->add_wait_semaphore(Vulkan::CommandBuffer::Type::Generic, std::move(sem),
+ 		                           VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, true);
+@@ -1134,6 +1176,7 @@ void GSRenderer::flush_submit(uint64_t value)
+ 		                   VK_ACCESS_INDIRECT_COMMAND_READ_BIT);
+ 
+ 		clear_cmd->end_region();
++		PGS_PROF_SUBMIT();
+ 		device->submit(clear_cmd);
+ 	}
+ 
+@@ -1144,6 +1187,7 @@ void GSRenderer::flush_submit(uint64_t value)
+ 		                            VK_ACCESS_2_SHADER_STORAGE_READ_BIT |
+ 		                            VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT |
+ 		                            VK_ACCESS_INDIRECT_COMMAND_READ_BIT);
++		PGS_PROF_SUBMIT();
+ 		device->submit(triangle_setup_cmd);
+ 	}
+ 
+@@ -1151,6 +1195,7 @@ void GSRenderer::flush_submit(uint64_t value)
+ 	{
+ 		heuristic_cmd->barrier(VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+ 		                       VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_STORAGE_READ_BIT);
++		PGS_PROF_SUBMIT();
+ 		device->submit(heuristic_cmd);
+ 	}
+ 
+@@ -1159,15 +1204,20 @@ void GSRenderer::flush_submit(uint64_t value)
+ 		binning_cmd->barrier(VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+ 		                     VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,
+ 		                     VK_ACCESS_2_SHADER_STORAGE_READ_BIT | VK_ACCESS_INDIRECT_COMMAND_READ_BIT);
++		PGS_PROF_SUBMIT();
+ 		device->submit(binning_cmd);
+ 	}
+ 
+ 	if (direct_cmd)
++	{
++		PGS_PROF_SUBMIT();
+ 		device->submit(direct_cmd);
++	}
+ 
+ 	if (value)
+ 	{
+ 		auto binary = device->request_timeline_semaphore_as_binary(*timeline, value);
++		PGS_PROF_SUBMIT();
+ 		device->submit_empty(Vulkan::CommandBuffer::Type::Generic, nullptr, binary.get());
+ 		{
+ 			std::lock_guard<std::mutex> holder{timeline_lock};
+@@ -1175,12 +1225,13 @@ void GSRenderer::flush_submit(uint64_t value)
+ 			timeline_cond.notify_all();
+ 		}
+ 		binary = device->request_timeline_semaphore_as_binary(*descriptor_timeline, next_descriptor_timeline_signal++);
++		PGS_PROF_SUBMIT();
+ 		device->submit_empty(Vulkan::CommandBuffer::Type::Generic, nullptr, binary.get());
+ 	}
+ 
+ 	// This is a delayed sync-point between CPU and GPU, and garbage collection can happen here.
+ 	drain_compilation_tasks_nonblock();
+-	device->next_frame_context();
++	{ PGS_PROF_SCOPE(Wait); device->next_frame_context(); }
+ 
+ 	log_timestamps();
+ 	check_bug_feedback();
+@@ -1277,6 +1328,7 @@ void GSRenderer::recycle_image_handle(Vulkan::ImageHandle image)
+ 
+ Vulkan::ImageHandle GSRenderer::copy_cached_texture(const Vulkan::Image &img, const VkRect2D &rect)
+ {
++	PGS_PROF_SCOPE(TexCache);
+ 	ensure_command_buffer(direct_cmd, Vulkan::CommandBuffer::Type::Generic);
+ 	auto &cmd = *direct_cmd;
+ 
+@@ -1316,6 +1368,7 @@ Vulkan::ImageHandle GSRenderer::copy_cached_texture(const Vulkan::Image &img, co
+ 
+ Vulkan::ImageHandle GSRenderer::create_cached_texture(const TextureDescriptor &desc)
+ {
++	PGS_PROF_SCOPE(TexCache);
+ 	if (!device)
+ 		return {};
+ 
+@@ -1498,6 +1551,7 @@ void GSRenderer::copy_blocks(Vulkan::CommandBuffer &cmd, const Vulkan::Buffer &d
+ 
+ void GSRenderer::flush_host_vram_copy(const uint32_t *block_indices, uint32_t num_indices)
+ {
++	PGS_PROF_SCOPE(Upload);
+ 	if (buffers.gpu == buffers.cpu)
+ 		return;
+ 
+@@ -1521,6 +1575,7 @@ void GSRenderer::flush_host_vram_copy(const uint32_t *block_indices, uint32_t nu
+ 	if (enable_timestamps)
+ 		start_ts = cmd.write_timestamp(VK_PIPELINE_STAGE_TRANSFER_BIT);
+ 
++	PGS_PROF_UPLOAD_OP(uint64_t(num_indices) * PGS_BLOCK_ALIGNMENT_BYTES);
+ 	copy_blocks(cmd, *buffers.gpu, *buffers.cpu, block_indices, num_indices, invalidate_super_sampling,
+ 	            PGS_BLOCK_ALIGNMENT_BYTES);
+ 	stats.num_copies++;
+@@ -1540,6 +1595,7 @@ void GSRenderer::flush_host_vram_copy(const uint32_t *block_indices, uint32_t nu
+ 
+ void GSRenderer::flush_readback(const uint32_t *page_indices, uint32_t num_indices)
+ {
++	PGS_PROF_SCOPE(Upload);
+ 	if (buffers.gpu == buffers.cpu)
+ 		return;
+ 
+@@ -1576,6 +1632,7 @@ void GSRenderer::ensure_command_buffer(Vulkan::CommandBufferHandle &cmd, Vulkan:
+ 
+ Vulkan::BindlessDescriptorPoolHandle GSRenderer::get_bindless_pool()
+ {
++	PGS_PROF_SCOPE(Alloc);
+ 	uint64_t progress = query_timeline(*descriptor_timeline);
+ 
+ 	if (!exhausted_descriptor_pools.empty() && progress >= exhausted_descriptor_pools.front().timeline)
+@@ -1897,6 +1954,7 @@ static bool render_pass_instance_might_field_render(const RenderPass &rp, uint32
+ 
+ void GSRenderer::dispatch_triangle_setup(Vulkan::CommandBuffer &cmd, const RenderPass &rp)
+ {
++	PGS_PROF_SCOPE(Binning);
+ 	struct Push
+ 	{
+ 		uint32_t num_primitives;
+@@ -1968,6 +2026,7 @@ void GSRenderer::dispatch_triangle_setup(Vulkan::CommandBuffer &cmd, const Rende
+ 	if (enable_timestamps)
+ 		start_ts = cmd.write_timestamp(VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+ 	cmd.checkpoint("triangle-setup");
++	PGS_PROF_DISPATCH();
+ 	cmd.dispatch((rp.num_primitives + 63) / 64, 1, 1);
+ 	if (enable_timestamps)
+ 	{
+@@ -1978,6 +2037,7 @@ void GSRenderer::dispatch_triangle_setup(Vulkan::CommandBuffer &cmd, const Rende
+ 
+ void GSRenderer::dispatch_single_sample_heuristic(Vulkan::CommandBuffer &cmd, const RenderPass &rp)
+ {
++	PGS_PROF_SCOPE(Binning);
+ 	cmd.set_specialization_constant_mask(1);
+ 	cmd.set_program(shaders.single_sample_heuristic);
+ 
+@@ -2033,6 +2093,7 @@ void GSRenderer::dispatch_single_sample_heuristic(Vulkan::CommandBuffer &cmd, co
+ 		}
+ 
+ 		cmd.push_constants(&push, 0, sizeof(push));
++		PGS_PROF_DISPATCH();
+ 		cmd.dispatch_indirect(*indirect_single_sample_heuristic.buffer, indirect_single_sample_heuristic.offset);
+ 	}
+ 
+@@ -2068,6 +2129,7 @@ void GSRenderer::set_hierarchical_binning_subgroup_config(Vulkan::CommandBuffer
+ void GSRenderer::dispatch_binning(Vulkan::CommandBuffer &cmd, const RenderPass &rp,
+                                   uint32_t instance, uint32_t base_primitive, uint32_t num_primitives)
+ {
++	PGS_PROF_SCOPE(Binning);
+ 	auto &inst = rp.instances[instance];
+ 
+ 	uint32_t hier_binning = get_target_hierarchical_binning(
+@@ -2133,6 +2195,7 @@ void GSRenderer::dispatch_binning(Vulkan::CommandBuffer &cmd, const RenderPass &
+ 	uint32_t tiles_x = align_coarse_tiles(inst.coarse_tiles_width, hier_binning) / hier_binning;
+ 	uint32_t tiles_y = align_coarse_tiles(inst.coarse_tiles_height, hier_binning) / hier_binning;
+ 	cmd.checkpoint("binning");
++	PGS_PROF_DISPATCH();
+ 	cmd.dispatch(tiles_x, tiles_y, 1);
+ 
+ 	if (enable_timestamps)
+@@ -2323,6 +2386,7 @@ void GSRenderer::dispatch_shading_commands(
+ 		Vulkan::CommandBuffer &cmd, const RenderPass &rp, uint32_t instance,
+ 		bool post_barrier, uint32_t base_primitive, uint32_t num_primitives)
+ {
++	PGS_PROF_SCOPE(Shading);
+ 	auto &inst = rp.instances[instance];
+ 
+ 	uint32_t stride = rp.debug_capture_stride ? rp.debug_capture_stride : num_primitives;
+@@ -2394,6 +2458,7 @@ void GSRenderer::dispatch_shading_commands(
+ 			                       *work_list_super_sample.buffer, work_list_super_sample.offset + 256, VK_WHOLE_SIZE);
+ 			if (debug)
+ 				cmd.insert_label("super-sample");
++			PGS_PROF_DISPATCH();
+ 			cmd.dispatch_indirect(*work_list_super_sample.buffer, work_list_super_sample.offset);
+ 		}
+ 
+@@ -2404,6 +2469,7 @@ void GSRenderer::dispatch_shading_commands(
+ 		                       VK_WHOLE_SIZE);
+ 		if (debug)
+ 			cmd.insert_label("single-sample");
++		PGS_PROF_DISPATCH();
+ 		cmd.dispatch_indirect(*work_list_single_sample.buffer, work_list_single_sample.offset);
+ 
+ 		if (post_barrier || debug)
+@@ -2421,6 +2487,7 @@ void GSRenderer::dispatch_read_aliased_depth_passes(Vulkan::CommandBuffer &cmd,
+                                                     uint32_t base_primitive,
+                                                     uint32_t next_lo_index, uint32_t num_primitives)
+ {
++	PGS_PROF_SCOPE(Shading);
+ 	auto bb = ivec4(INT_MAX, INT_MAX, INT_MIN, INT_MIN);
+ 
+ 	uint32_t half_gpu_size = buffers.gpu->get_create_info().size / 2;
+@@ -2489,6 +2556,7 @@ void GSRenderer::dispatch_read_aliased_depth_passes(Vulkan::CommandBuffer &cmd,
+ void GSRenderer::dispatch_shading(Vulkan::CommandBuffer &cmd, const RenderPass &rp, uint32_t instance,
+                                   uint32_t base_primitive, uint32_t num_primitives)
+ {
++	PGS_PROF_SCOPE(Shading);
+ 	cmd.begin_region("shading");
+ 	auto &inst = rp.instances[instance];
+ 
+@@ -2760,6 +2828,7 @@ void GSRenderer::emit_copy_vram(Vulkan::CommandBuffer &cmd,
+ 		if (num_wgs == MaxWorkgroups)
+ 		{
+ 			cmd.checkpoint("copy-vram");
++			PGS_PROF_DISPATCH();
+ 			cmd.dispatch(num_wgs, 1, 1);
+ 			max_wgs -= num_wgs;
+ 			work_items = cmd.allocate_typed_constant_data<uvec4>(1, 0, std::min<uint32_t>(MaxWorkgroups, max_wgs));
+@@ -2822,12 +2891,16 @@ void GSRenderer::emit_copy_vram(Vulkan::CommandBuffer &cmd,
+ 	if (num_wgs)
+ 	{
+ 		cmd.checkpoint("copy-vram");
++		PGS_PROF_DISPATCH();
+ 		cmd.dispatch(num_wgs, 1, 1);
+ 	}
+ }
+ 
+ void GSRenderer::copy_vram(const CopyDescriptor &desc, const PageRect &damage_rect)
+ {
++	// Time only, no op/byte counter: the host->local path already counted this transfer in
++	// GSInterface::flush_pending_transfer, and its dispatches are counted in emit_copy_vram.
++	PGS_PROF_SCOPE(Upload);
+ 	Vulkan::BufferBlockAllocation alloc = {};
+ 	stats.num_copy_threads += desc.trxreg.desc.RRW * desc.trxreg.desc.RRH;
+ 	if (stats.num_copy_threads > MaxPendingCopyThreads)
+@@ -3288,6 +3361,7 @@ Vulkan::ImageHandle GSRenderer::pull_image_handle_from_slab(
+ 	uint32_t width, uint32_t height,
+ 	uint32_t levels, uint32_t samples)
+ {
++	PGS_PROF_SCOPE(Alloc);
+ 	if (!Util::is_pow2(width) || !Util::is_pow2(height) || levels > 7 ||
+ 	    width > 1024 || height > 1024 || width == 0 || height == 0)
+ 	{
+@@ -3349,6 +3423,7 @@ void GSRenderer::move_image_handles_to_slab()
+ 
+ void GSRenderer::flush_slab_cache()
+ {
++	PGS_PROF_SCOPE(Alloc);
+ 	for (auto &l : recycled_image_pool)
+ 		for (auto &y : l)
+ 			for (auto &x : y)
+@@ -3399,6 +3474,7 @@ void GSRenderer::rewind_clut_instance(uint32_t index)
+ 
+ uint32_t GSRenderer::update_palette_cache(const PaletteUploadDescriptor &desc)
+ {
++	PGS_PROF_SCOPE(TexCache);
+ 	if (!last_clut_update_is_read && !palette_uploads.empty() &&
+ 	    desc.fully_replaces_clut_upload(palette_uploads.back()))
+ 	{
+@@ -3420,6 +3496,7 @@ uint32_t GSRenderer::update_palette_cache(const PaletteUploadDescriptor &desc)
+ 
+ void GSRenderer::dispatch_texture_analysis(Vulkan::CommandBuffer &cmd, const RenderPass &rp)
+ {
++	PGS_PROF_SCOPE(TexCache);
+ 	cmd.set_program(shaders.sampler_feedback);
+ 	memcpy(cmd.allocate_typed_constant_data<TextureAnalysis>(1, 0, texture_analysis.size()),
+ 	       texture_analysis.data(),
+@@ -3452,17 +3529,20 @@ void GSRenderer::dispatch_texture_analysis(Vulkan::CommandBuffer &cmd, const Ren
+ 	} push = { rp.num_primitives, uint32_t(texture_analysis.size()), ssaa_sample_offset };
+ 	cmd.push_constants(&push, 0, sizeof(push));
+ 	cmd.checkpoint("texture-analysis");
++	PGS_PROF_DISPATCH();
+ 	cmd.dispatch((rp.num_primitives + 255) / 256, 1, 1);
+ }
+ 
+ void GSRenderer::upload_texture(const TextureUpload &upload)
+ {
++	PGS_PROF_SCOPE(Upload);
+ 	auto &desc = upload.desc;
+ 	auto &img = *upload.image;
+ 	auto &scratch = upload.scratch;
+ 	auto &cmd = *direct_cmd;
+ 
+ 	uint32_t levels = img.get_create_info().levels;
++	PGS_PROF_UPLOAD_OP(uint64_t(img.get_width()) * img.get_height() * 4u);
+ 	cmd.set_program(shaders.upload[int(upload.desc.samples > 1)]);
+ 	if (scratch.buffer)
+ 		cmd.set_storage_buffer(0, 0, *scratch.buffer, scratch.offset, scratch.size);
+@@ -3571,9 +3651,15 @@ void GSRenderer::upload_texture(const TextureUpload &upload)
+ 		cmd.checkpoint("upload-texture");
+ 
+ 		if (upload.indirection.buffer)
++		{
++			PGS_PROF_DISPATCH();
+ 			cmd.dispatch_indirect(*upload.indirection.indirect, upload.indirection.indirect_offset);
++		}
+ 		else
++		{
++			PGS_PROF_DISPATCH();
+ 			cmd.dispatch((info.width + 7) / 8, (info.height + 7) / 8, img.get_create_info().layers);
++		}
+ 
+ 		if (levels > 1)
+ 		{
+@@ -3661,6 +3747,7 @@ void GSRenderer::init_luts()
+ 
+ void GSRenderer::flush_palette_upload()
+ {
++	PGS_PROF_SCOPE(TexCache);
+ 	if (palette_uploads.empty())
+ 		return;
+ 
+@@ -3770,6 +3857,7 @@ void GSRenderer::flush_palette_upload()
+ 					insert_label(cmd, "Split [%u, %u)", push.wg_offset, push.wg_offset + push.count);
+ 
+ 				cmd.checkpoint("flush-palette-upload");
++				PGS_PROF_DISPATCH();
+ 				cmd.dispatch(1, 1, 1);
+ 
+ 				if (out_of_order_read)
+@@ -3801,6 +3889,7 @@ void GSRenderer::flush_palette_upload()
+ 	if (device->consumes_debug_markers())
+ 		insert_label(cmd, "Split [%u, %u)", push.wg_offset, push.wg_offset + push.count);
+ 	cmd.checkpoint("flush-palette-upload");
++	PGS_PROF_DISPATCH();
+ 	cmd.dispatch(1, 1, 1);
+ 
+ 	if (enable_timestamps)
+@@ -3820,6 +3909,7 @@ void GSRenderer::flush_palette_upload()
+ 
+ void GSRenderer::flush_cache_upload()
+ {
++	PGS_PROF_SCOPE(Upload);
+ 	tracker.clear_cache_pages();
+ 
+ 	ensure_command_buffer(direct_cmd, Vulkan::CommandBuffer::Type::Generic);
+@@ -3865,6 +3955,7 @@ void GSRenderer::mark_shadow_page_sync(uint32_t page_index)
+ 
+ void GSRenderer::flush_transfer()
+ {
++	PGS_PROF_SCOPE(Upload);
+ 	tracker.clear_copy_pages();
+ 	total_stats.num_copy_threads += stats.num_copy_threads;
+ 	stats.num_copy_threads = 0;
+@@ -4054,7 +4145,7 @@ void GSRenderer::transfer_overlap_barrier()
  
  void GSRenderer::sample_crtc_circuit(Vulkan::CommandBuffer &cmd, const Vulkan::Image &img, const DISPFBBits &dispfb,
                                       const SamplingRect &rect, uint32_t super_samples,
@@ -1952,7 +3143,7 @@ index adde6bb..5f66bb2 100644
  {
  	cmd.image_barrier(img, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
  	                  0, 0, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
-@@ -4078,14 +4079,15 @@ void GSRenderer::sample_crtc_circuit(Vulkan::CommandBuffer &cmd, const Vulkan::I
+@@ -4078,14 +4169,15 @@ void GSRenderer::sample_crtc_circuit(Vulkan::CommandBuffer &cmd, const Vulkan::I
  	if (super_samples > 1)
  	{
  		valid_extent.width *= 2;
@@ -1970,7 +3161,15 @@ index adde6bb..5f66bb2 100644
  
  	struct Registers
  	{
-@@ -4356,6 +4358,32 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
+@@ -4190,6 +4282,7 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
+                                 uint32_t sampling_rate_x_log2, uint32_t sampling_rate_y_log2,
+                                 const Vulkan::Image *promoted1, const Vulkan::Image *promoted2)
+ {
++	PGS_PROF_SCOPE(Scanout);
+ 	if (!device)
+ 		return {};
+ 
+@@ -4356,6 +4449,32 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
  		return {};
  	}
  
@@ -2003,7 +3202,7 @@ index adde6bb..5f66bb2 100644
  	// It's possible the input had higher resolution.
  	// Make a fake mode in this case that has more lines to compensate.
  	if (promoted1)
-@@ -4537,10 +4565,10 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
+@@ -4537,10 +4656,10 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
  			if (high_resolution_scanout)
  			{
  				image_info.width *= 2;
@@ -2016,7 +3215,7 @@ index adde6bb..5f66bb2 100644
  			device->set_name(*circuit1, "Circuit1");
  		}
  
-@@ -4595,10 +4623,10 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
+@@ -4595,10 +4714,10 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
  			if (high_resolution_scanout)
  			{
  				image_info.width *= 2;
@@ -2029,7 +3228,7 @@ index adde6bb..5f66bb2 100644
  			device->set_name(*circuit2, "Circuit2");
  		}
  
-@@ -4737,14 +4765,66 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
+@@ -4737,14 +4856,66 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
  		}
  	}
  
@@ -2098,7 +3297,7 @@ index adde6bb..5f66bb2 100644
  		image_info.height--;
  	}
  
-@@ -4792,6 +4872,18 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
+@@ -4792,6 +4963,18 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
  		start_ts = cmd.write_timestamp(VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
  
  	cmd.begin_render_pass(rp);
@@ -2117,7 +3316,7 @@ index adde6bb..5f66bb2 100644
  	cmd.set_opaque_sprite_state();
  
  	if (SLBG == PMODEBits::SLBG_ALPHA_BLEND_CIRCUIT2 && circuit2)
-@@ -4811,13 +4903,38 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
+@@ -4811,13 +4994,38 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
  
  			if (high_resolution_scanout)
  			{
@@ -2160,7 +3359,7 @@ index adde6bb..5f66bb2 100644
  			}
  
  			cmd.set_viewport(vp);
-@@ -4844,13 +4961,38 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
+@@ -4844,13 +5052,38 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
  
  			if (high_resolution_scanout)
  			{
@@ -2203,7 +3402,7 @@ index adde6bb..5f66bb2 100644
  			}
  
  			cmd.set_viewport(vp);
-@@ -4884,6 +5026,27 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
+@@ -4884,6 +5117,27 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
  		}
  	}
  
@@ -2231,7 +3430,15 @@ index adde6bb..5f66bb2 100644
  	cmd.end_render_pass();
  
  	const bool need_intermediate_pass = priv.extwrite.WRITE || is_interlaced || force_deinterlace;
-@@ -5017,6 +5180,22 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
+@@ -4975,6 +5229,7 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
+ 			// Is the write-back filtered at all? Probably not, but whatever.
+ 			cmd.set_texture(0, 1, *view, Vulkan::StockSampler::NearestClamp);
+ 			cmd.checkpoint("ext-feedback");
++			PGS_PROF_DISPATCH();
+ 			cmd.dispatch((push.resolution.x + 7) / 8, (push.resolution.y + 7) / 8, 1);
+ 			cmd.barrier(VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+ 			            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+@@ -5017,6 +5272,22 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
  			field.reset();
  	}
  
@@ -2254,7 +3461,7 @@ index adde6bb..5f66bb2 100644
  	cmd.end_region();
  
  	if (enable_timestamps)
-@@ -5034,6 +5213,112 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
+@@ -5034,8 +5305,116 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
  	return result;
  }
  
@@ -2286,6 +3493,7 @@ index adde6bb..5f66bb2 100644
 +// is bob, which is never wrong, only less stable.
 +Vulkan::ImageHandle GSRenderer::field_full_res_merge(Vulkan::CommandBuffer &cmd, const VSyncInfo &info)
 +{
++	PGS_PROF_SCOPE(Scanout);
 +	for (auto &field : field_full_res_history)
 +		if (!field)
 +			return {};
@@ -2366,7 +3574,10 @@ index adde6bb..5f66bb2 100644
 +
  Vulkan::ImageHandle GSRenderer::fastmad_deinterlace(Vulkan::CommandBuffer &cmd, const VSyncInfo &vsync)
  {
++	PGS_PROF_SCOPE(Scanout);
  	auto image_info = Vulkan::ImageCreateInfo::immutable_2d_image(
+ 			vsync_last_fields[0]->get_width(), vsync_last_fields[0]->get_height() * 2, VK_FORMAT_R8G8B8A8_UNORM);
+ 	image_info.initial_layout = VK_IMAGE_LAYOUT_UNDEFINED;
 diff --git a/pcsx2/GS/parallel-gs/gs/gs_renderer.hpp b/pcsx2/GS/parallel-gs/gs/gs_renderer.hpp
 index ac90aff..9994ffe 100644
 --- a/pcsx2/GS/parallel-gs/gs/gs_renderer.hpp
@@ -4182,60 +5393,6 @@ index 0000000..2ba4c41
 ++
 ++    FragColor = vec4(mix(0.5 * (f0.rgb + f1), f0.rgb, motion), f0.a);
 ++}
-diff --git a/pcsx2/MTGS.cpp b/pcsx2/MTGS.cpp
-index 01e7e53..bf9cf55 100644
---- a/pcsx2/MTGS.cpp
-+++ b/pcsx2/MTGS.cpp
-@@ -14,6 +14,7 @@
-  */
- 
- #include "Common.h"
-+#include "PerfAttr.h"
- 
- #include <atomic>
- #include <cstring>
-@@ -122,7 +123,11 @@ void MTGS::PostVsyncStart()
- 	// the libretro topology, this WaitGS IS the frame-pacing mechanism: it
- 	// blocks cpu_thread until the libretro thread (= MTGS thread) drains
- 	// the ring through this VSYNC packet.
--	WaitGS(false);
-+	{
-+		// perf-attr: per-frame EE-blocked-on-GS time (the frame-pacing wait).
-+		PerfAttr::Timer pt(PerfAttr::vswait_ns);
-+		WaitGS(false);
-+	}
- 
- 	// Vsyncs should always start the GS thread, regardless of how little has actually be queued.
- 	s_sem_event.NotifyOfWork();
-@@ -148,7 +153,12 @@ void MTGS::InitAndReadFIFO(u8* mem, u32 qwc)
- 	tag.pointer                 = (uptr)mem;
- 
- 	s_WritePos.store((writepos + 1) & RINGBUFFERMASK, std::memory_order_release);
--	WaitGS(false);
-+	{
-+		// perf-attr: readback sync (Accurate hw_download / cpuSpriteRenderBW path) - the EE
-+		// stalls here until the GS drains the ring and services the FIFO read.
-+		PerfAttr::Timer pt(PerfAttr::fifowait_ns, &PerfAttr::fifowait_n);
-+		WaitGS(false);
-+	}
- }
- 
- void MTGS::TryOpenGS(void)
-@@ -190,7 +200,13 @@ void MTGS::MainLoop(bool flush_all)
- 		{
- 			if (mtvu_mode)
- 				mtvu_lock.unlock();
--			s_sem_event.WaitForWork();
-+			{
-+				// perf-attr round 5: idle time (incl. the WorkSema busy-spin) - subtract from gs_cpu
-+				// to get the GS thread's REAL work share. The spin was inflating gs_cpu by 1-3s per
-+				// 5s window (a paused game measured MORE gs_cpu than active driving).
-+				PerfAttr::Timer pt(PerfAttr::gsidle_ns);
-+				s_sem_event.WaitForWork();
-+			}
- 			if (mtvu_mode)
- 				mtvu_lock.lock();
- 		}
 diff --git a/pcsx2/PS2Float.cpp b/pcsx2/PS2Float.cpp
 new file mode 100644
 index 0000000..553ea8b
@@ -5200,85 +6357,6 @@ index e19cab2..4fa7e74 100644
  	SettingsWrapIntEnumEx(PGSDisableMipmaps, "pgsDisableMipmaps");
  	SettingsWrapIntEnumEx(PGSSuperSampleTextures, "pgsSuperSampleTextures");
  	SettingsWrapIntEnumEx(PGSSharpBackbuffer, "pgsSharpBackbuffer");
-diff --git a/pcsx2/PerfAttr.h b/pcsx2/PerfAttr.h
-new file mode 100644
-index 0000000..5c1c2b6
---- /dev/null
-+++ b/pcsx2/PerfAttr.h
-@@ -0,0 +1,73 @@
-+// Phase A instrumentation (MovieTheater arcade, docs/arcade-stuntman-plan.md, 2026-07-15).
-+//
-+// Attributes slow retro_run ticks to their cause. In this port's topology (see MTGS.cpp
-+// PostVsyncStart) retro_run IS the GS MainLoop, so GS-side work (shader compiles, program-binary
-+// loads) extends the tick directly, while the EE thread's WaitGS time measures how long the
-+// emulated CPU sat blocked on the GS. Four seams are sampled:
-+//   compile_*  - true GLSL driver compiles (GLShaderCache miss path)      [GS thread]
-+//   binload_*  - program-binary loads from gl_programs.bin (cache hits)   [GS thread]
-+//   vswait_ns  - per-frame WaitGS in MTGS::PostVsyncStart (frame pacing)  [EE thread]
-+//   fifowait_* - WaitGS in MTGS::InitAndReadFIFO (readback sync; the
-+//                cpuSpriteRenderBW / hw_download path)                    [EE thread]
-+// Dumped + reset every 300 frames (~5 s NTSC) by retro_run (libretro/main.cpp) as a
-+// "[perf-attr] ..." log line, designed to sit beside the worker's pace-diag lines.
-+//
-+// C++17 inline atomics: header-only on purpose - no build-system changes to carry.
-+#pragma once
-+#include <atomic>
-+#include <chrono>
-+#include <cstdint>
-+
-+namespace PerfAttr
-+{
-+	inline std::atomic<std::uint64_t> compile_ns{0}, compile_n{0};
-+	inline std::atomic<std::uint64_t> binload_ns{0}, binload_n{0};
-+	inline std::atomic<std::uint64_t> vswait_ns{0};
-+	inline std::atomic<std::uint64_t> fifowait_ns{0}, fifowait_n{0};
-+	// Round 2 (post-restart collapse attribution): split the GS drain itself.
-+	//   mainloop_ns - MTGS::MainLoop inside retro_run = the whole GS drain           [libretro thread]
-+	//   vidpush_ns  - the video_cb call in GSDeviceOGL::EndPresent = the WORKER's
-+	//                 zero-copy push (zc_push + GL copy), i.e. OUR pipeline's share  [libretro thread]
-+	// mainloop - vidpush - compile - binload ~= PCSX2's raw GS render work (draws,
-+	// texture uploads). Whichever side owns the post-restart 30-40ms/frame is the villain.
-+	inline std::atomic<std::uint64_t> mainloop_ns{0};
-+	inline std::atomic<std::uint64_t> vidpush_ns{0};
-+	// Round 4 (level-start texture-burst profile, GL HW renderer): split the GS thread's texture
-+	// work so the async-upload fix targets the measured hot spot, not a guess.
-+	//   texmap_*    - GSTextureOGL::Map    (stream-buffer acquisition, incl. fence waits on wrap)
-+	//   texunmap_ns - GSTextureOGL::Unmap  (glTexSubImage from the upload ring)
-+	//   texupd_*    - GSTextureOGL::Update (direct-path upload: caller-converted pixels -> GL)
-+	// gs_cpu minus these ~= draw/state/conversion work elsewhere on the GS thread.
-+	inline std::atomic<std::uint64_t> texmap_ns{0}, texmap_n{0};
-+	inline std::atomic<std::uint64_t> texunmap_ns{0};
-+	inline std::atomic<std::uint64_t> texupd_ns{0}, texupd_n{0};
-+	// Round 5: the texture-UPLOAD theory measured dead (texmap/texunmap/texupd ~0 in the burst while
-+	// gs_cpu ran 80% of wall). Split what actually remains on the GS thread:
-+	//   xfer_*    - GSState::Transfer (GIF texture DMA -> emulated-VRAM swizzle writes; CPU memwork
-+	//               present on BOTH renderers)
-+	//   hash_*    - GSTextureCache source lookup (HW-renderer-ONLY per-draw hash/cache work; absent
-+	//               on SW, which is the leading explanation for why SW cured the burst)
-+	//   gsidle_ns - MTGS WaitForWork (the busy-spin that contaminates gs_cpu; subtract it)
-+	inline std::atomic<std::uint64_t> xfer_ns{0}, xfer_n{0};
-+	inline std::atomic<std::uint64_t> hash_ns{0}, hash_n{0};
-+	inline std::atomic<std::uint64_t> gsidle_ns{0};
-+
-+	struct Timer
-+	{
-+		std::atomic<std::uint64_t>& ns;
-+		std::atomic<std::uint64_t>* n;
-+		std::chrono::steady_clock::time_point t0;
-+
-+		explicit Timer(std::atomic<std::uint64_t>& ns_, std::atomic<std::uint64_t>* n_ = nullptr)
-+			: ns(ns_), n(n_), t0(std::chrono::steady_clock::now()) {}
-+		~Timer()
-+		{
-+			ns.fetch_add(static_cast<std::uint64_t>(
-+				std::chrono::duration_cast<std::chrono::nanoseconds>(
-+					std::chrono::steady_clock::now() - t0).count()),
-+				std::memory_order_relaxed);
-+			if (n)
-+				n->fetch_add(1, std::memory_order_relaxed);
-+		}
-+	};
-+} // namespace PerfAttr
 diff --git a/pcsx2/VUops.cpp b/pcsx2/VUops.cpp
 index 76d4466..144c13a 100644
 --- a/pcsx2/VUops.cpp
