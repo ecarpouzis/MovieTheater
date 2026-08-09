@@ -1,3 +1,165 @@
+# 2026-08-09 (~03:15) — ROUND 3b: the fence moved to the ENCODER's thread (DEPLOYED, awaiting Eric's drive)
+
+> Status: **candidate deployed on both GL workers, NOT yet verified.** The gate below is Eric's to
+> run — it is a normal room, driven normally. Nothing here is claimed fixed until he says so.
+
+## Why the round-3 fix had to move
+
+The hand-off fence (039517a) was **correct and wrongly placed**. It waited on the blit fence inside
+`nano_vk_zc_frame`, i.e. **on the emulator's tick thread**, and the instrument it shipped with is
+what condemns that placement: `late=34026/36000` — **the blit is unsignalled at hand-off 94.5 % of
+the time.** That is not an exception path, it is the steady state, so the wait was charging the
+GPU's blit backlog to a 16.6 ms tick budget on essentially every frame. On an idle attract loop
+that measured 0.14 ms mean / 3.35 ms max and looked free. On Stuntman's chase district, where the
+blit queues behind heavy paraLLEl-GS work, that same backlog is emulation falling off pace — and it
+is implicated in the 45.5 t/s rooms. **A GPU wait on the tick thread is categorically the wrong
+place for one, however well it benchmarks on a static screen.** 039517a was reverted for exactly
+this; the staged binary `bin\worker.handoff-fence.exe` (38,991,239 B) is kept as the reference arm.
+
+## The design — why a consumer-side wait is free
+
+Fork commit **`acd9bd8`** (on `039517a`'s code; its instrumentation is kept and extended). The
+texture id now rides on the appsrc buffer as **qdata** (`mt-zc-texid`), and a
+`GST_PAD_PROBE_TYPE_BUFFER` probe on the **appsrc's src pad** (`zc_blit_probe`, `media/glzerocopy.go`)
+waits on that slot's fence before the buffer travels downstream. Same fence, same guarantee, one
+thread over. Three things make it sound, and they are all plain CPU ordering — **no new
+cross-context GL assumption is introduced anywhere** (that assumption *is* the original bug):
+
+1. **It strictly precedes every consumer.** `gst_app_src_push_buffer` only *enqueues*; the appsrc's
+   own `GstBaseSrc` task pops the buffer and calls `gst_pad_push`, and a BUFFER probe on that src
+   pad runs **inside** `gst_pad_push`, before the peer's chain function. The pipeline is
+   `appsrc ! glcolorscale ! queue ! capsfilter ! …`, so that peer is `glcolorscale` — the first
+   element that samples the texture — and it dispatches its GL work synchronously
+   (`gst_gl_context_thread_add` blocks its caller). The wait *happens-before* the sample.
+2. **It is not the tick thread.** The emulator returned from `nano_vk_zc_frame` the moment the blit
+   was submitted and is already inside the next `retro_run`. The blit drains **concurrently with
+   that emulation**, so the backlog overlaps the frame budget instead of adding to it. Blocking in
+   the probe delays the encode of one frame; the appsrc queue absorbs it (plain appsrc,
+   `block=false`, so a push never blocks the producer), and the 8-slot pool is the existing bounded
+   back-pressure if it ever cannot — a full pool makes `nano_vk_zc_frame` return 0 and the caller
+   `OnDup()`s, which is the pre-existing path.
+3. **The fence cannot be recycled underneath the probe.** Fences are per-slot and are reset only
+   when `nano_vk_zc_frame` re-acquires that slot, which requires refcount 0, which requires the
+   buffer's destroy-notify — and that cannot run while the probe still holds the buffer.
+
+**Slot lifetime (the requirement, and how it is met).** `zc_submitted[idx]` deliberately stays set
+at hand-off. The acquisition-time `WaitForFences` at the top of `nano_vk_zc_frame` is the pool's
+real invariant — a slot is never re-blitted while its previous blit is in flight — and it must
+survive a buffer that never reaches the probe at all (flush, pipeline reinit, teardown). So a slot
+becomes writable again only after **BOTH** the encoder's destroy-notify **AND** fence completion,
+probe or no probe. When the probe did run, that fence is already signalled and the acquisition wait
+costs nothing.
+
+Other properties: **no busy-spin** (one `WaitForFences`); the wait is **bounded at 1 s** purely so a
+driver fault cannot wedge the encoder's streaming thread forever — a timeout is a loud counter plus
+an ERROR line, never a silent fallback; `zc_mutex` is **never held across the wait** (slot resolved
+under the lock, waited outside); the **GL** zero-copy pool is unaffected (it already `glFinish`es on
+the producer side inside `CopyFrameToPool`, so its `ExternalWaitBlit` hook stays nil and the probe
+is a no-op). Teardown is safe because `deinitVideoVulkan` destroys the GStreamer pipeline
+(`GLContextGone`) **before** `nano_vk_zc_teardown` destroys the fences, so no probe can be in flight.
+
+## What is deployed where
+
+| thing | value |
+|---|---|
+| new `bin\worker.exe` (both GL workers) | **38,998,375 B**, sha256 `B5DDC993 9BE1F1EE EFABAA4D F002B98C 68C1C2AE 1C40F82B 1D1C7D04 5C0728C8` |
+| backup of the previous live binary | `bin\worker.pre-fence3.exe` — 38,987,569 B, sha256 `02317682…A1E26989` (the `5e0898f` build) |
+| identical staged copy | `bin\worker.candidate-fence3.exe` |
+| reverted round-3 arm (reference) | `bin\worker.handoff-fence.exe` — 38,991,239 B |
+| size delta vs 039517a's build | **+7,136 B = +0.018 %** (well inside the ±1 % sanity bound) |
+| GL worker 1 | `D:\ArcadeStorage\worker-gl`, port 8446, pid 51752 — **on the new binary** |
+| GL worker 2 | `D:\ArcadeStorage\worker-gl-2`, port 8447, pid 38560 — **on the new binary** |
+| capture lane | port 8448, `D:\ArcadeStorage\worker-capture\bin\worker.exe` (its OWN binary, sha `E668510D…`) — **untouched** |
+| core | lrps2 `2fe1510` — **untouched** |
+| `libgstnvcodec.dll` | pre-strict-refs, 1,478,029 B — **untouched** |
+
+Deploy method: rename-swap (`worker.exe` → `worker.pre-fence3.exe`, candidate copied in as
+`worker.exe`) — which never disturbs a running process — then `.stop` sentinels in both ConfDirs.
+Both GL workers were **idle with no live room** at the time (17.2 min and 7.5 min since their last
+log line; a live room emits `pace-diag` every 5 s), so nothing was interrupted. Both exited
+gracefully and the runners respawned in ~4 s on the new image; verified by **SHA-256 of the image
+each process actually has open**, not by filename or mtime.
+
+`pwsh scripts/verify-patched-artifacts.ps1 -Snapshot` → **green** (11 artifacts; only the snapshot
+timestamp moved, no patched bytes changed).
+
+## ⭐ ERIC'S VERIFICATION RECIPE — what to look for after you drive
+
+Drive a normal Stuntman room (your level-4 corner is the right content: it is the heavy GPU load
+that made the race bite in the first place). Then run these three greps. **The first proves the fix
+is armed and where the waits landed, the second proves the tick loop is untouched, the third is
+your eyes.**
+
+```powershell
+# 1. THE FIX IS ARMED, AND THE WAIT IS ON THE ENCODER'S THREAD (one line per ~600 frames / 10 s)
+Select-String -Path D:\ArcadeStorage\logs\glworker.log -Pattern 'encwait\(' | Select-Object -Last 20
+
+# 2. THE TICK LOOP IS UNTOUCHED
+Select-String -Path D:\ArcadeStorage\logs\glworker.log -Pattern 'pace-diag' | Select-Object -Last 20
+
+# 3. THE DEFECT EVENTS, NAMED INDIVIDUALLY (should exist; they are the mechanism being caught, not a failure)
+Select-String -Path D:\ArcadeStorage\logs\glworker.log -Pattern '\[zc-gen\]' | Select-Object -Last 20
+```
+(Use `glworker-2.log` if your room landed on worker 2. Which one you got is in the `abr: summary`
+line's `room=` / `user=Eric`.)
+
+### The line you are reading (grep 1)
+
+```
+[vk] [zc-stat] emit=… inflight=1/8 refs=1 serials[…] dup(…) setimg_sem(…) reallocs=0
+     block(mean=0.07ms max=1.97ms n=600)
+     handoff@enc(late=… cold=… maxage=…) encwait(mean=… max=… n=600 miss=0 timeout=0)
+```
+
+| field | meaning | **PASS** | **FAIL** |
+|---|---|---|---|
+| **the `encwait(` token exists at all** | the new binary is running and the probe is installed | present on every `[zc-stat]` | absent ⇒ old binary or the probe never armed — stop and say so |
+| `encwait n=` | waits performed **on the encoder thread** in the window | ≈ `600` (one per delivered frame) | `0` ⇒ buffers are not reaching the probe |
+| `encwait mean=` / `max=` | what the wait costs **the encoder**, not the emulator | anything — even multi-ms is fine here; this is the cost we deliberately moved | — |
+| `encwait timeout=` | fence missed the 1 s bound | **must be 0** | non-zero ⇒ driver fault, look for the `did not signal within 1s` ERROR line |
+| `encwait miss=` | buffer arrived after its slot was gone (retired generation after a geometry flip) | small, and only near `reallocs` bumps | large and growing ⇒ investigate |
+| `handoff@enc(late=…)` | how often the encoder beat the blit — **the bug being caught in the act** | **high is EXPECTED and GOOD** (~90 %+); each one is a stale frame that did *not* ship | `late=0` all room ⇒ suspicious, the probe is probably not resolving slots |
+| `block(mean= max=)` | the **emulator**-thread copy cost | should look like the pre-fence baseline (~0.07-0.16 ms mean) | if it now carries the blit backlog, the wait did not actually move |
+
+### The line that proves the tick loop is untouched (grep 2)
+
+```
+pace-diag: ticks/s=59.9 … maxTick=6.8ms slowTicks(>20ms)=0 meanTick=3.00ms …
+```
+
+**PASS: `ticks/s ≥ 59.5`, `slowTicks(>20ms)` at/near 0, and `meanTick` unchanged from the
+pre-fence baseline *for the same content*.** This is the whole point of the relocation, so it is the
+number that decides whether round 3b beat round 3. Compare like-for-like:
+
+- **idle attract / menus** — baseline `ticks/s=59.9-60.0 meanTick≈3.0ms slowTicks=0`
+- **chase district under load** — baseline `ticks/s≈58.9 meanTick≈14.97ms maxTick≈53.7ms
+  slowTicks≈119` (that is the *content's* price, measured on the pre-fence binary at 02:56).
+  **FAIL looks like `meanTick` climbing well past that, `slowTicks` inflating, or `ticks/s` sagging
+  toward the 45.5 t/s the tick-thread wait produced.**
+
+### Your eyes (grep 3 is supporting evidence, not the verdict)
+
+**"No out-of-order frames seen" is the gate.** No single old frame spliced into the stream, no
+10-seconds-ago picture on a static screen or a title card. `[zc-gen]` lines *should* appear — each
+one says "the encoder reached serial N before its blit landed; the slot still held serial M, which
+was X frames / Y.YYs old — unfenced, THAT is what would have been encoded." **Those lines are the
+fix working**, not the fix failing: they are the frames that would have shipped stale and now
+cannot. The failure signature is the opposite pairing — you *see* a stale frame while the log
+carries no matching `[zc-gen]`.
+
+Also worth a glance, unchanged expectations: `[ts-mono] summary … violations=0`, and
+`abr: summary … ceil=12373 cuts=0 starves=0`.
+
+## Follow-ups this leaves open
+- **Re-run the reel gate** (`spectate-probe.mjs --code <room> --reel-all` → `reel-anomaly-scan.py`,
+  ≥12k frames, zero A-B-A) against the new binary when convenient. Round 3's tick-thread arm already
+  passed it at 34,202 frames, so the reel is not what round 3b is being asked to prove — **pace under
+  load is** — but it is the cheap regression check that the ordering guarantee survived the move.
+- If pace is good and the picture is clean, `zc_sync_fence` ("layer 2") is now dead config and can
+  be deleted.
+
+---
+
 # Stuntman round 3 close-out (2026-08-09, autonomous)
 
 ## ✅ THE STALE FRAME IS FIXED — the encoder was sampling zc slots before their blit landed

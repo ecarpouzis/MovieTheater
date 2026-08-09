@@ -16587,10 +16587,10 @@ index ce2471b..00636f7 100644
  		return fmt.Errorf("rgfw: context not initialized")
 diff --git a/pkg/worker/caged/libretro/graphics/zerocopy.go b/pkg/worker/caged/libretro/graphics/zerocopy.go
 new file mode 100644
-index 0000000..8d1ef77
+index 0000000..1337656
 --- /dev/null
 +++ b/pkg/worker/caged/libretro/graphics/zerocopy.go
-@@ -0,0 +1,145 @@
+@@ -0,0 +1,162 @@
 +package graphics
 +
 +// GL zero-copy for hardware-rendered cores (n64/gc/ps2/psp/dc).
@@ -16686,6 +16686,23 @@ index 0000000..8d1ef77
 +// (media/glzerocopy.go's goReleaseZeroCopyTexture). This hook lets that release reach the Vulkan pool's
 +// free list; it returns true if it owned the texture. GL cores leave it nil and use zcPool below.
 +var ExternalRelease func(id uint32) bool
++
++// ExternalWaitBlit, when set, blocks until the GPU copy that filled texture `id` has actually landed.
++// The Vulkan zero-copy path (M2) sets it; GL cores leave it nil because their pool already does a
++// glFinish inside CopyFrameToPool, on the producer side, before the texture is ever handed over.
++//
++// It exists so the guarantee can be paid on the CONSUMER's thread instead of the emulator's: the
++// producer submits and returns, and the encoder's own streaming thread does the waiting immediately
++// before the first element samples the texture. Same ordering, none of it inside the tick budget.
++var ExternalWaitBlit func(id uint32)
++
++// WaitZeroCopyBlit is called from GStreamer's streaming thread (media/glzerocopy.go's pad probe) just
++// before a wrapped texture is pushed downstream. No-op for pools that sync on the producer side.
++func WaitZeroCopyBlit(id uint32) {
++	if ExternalWaitBlit != nil {
++		ExternalWaitBlit(id)
++	}
++}
 +
 +// ReleaseZeroCopyTexture returns a texture to the free list. Called from GStreamer's thread when it
 +// frees the buffer that wrapped it — that, and ONLY that, is what makes the texture safe to reuse.
@@ -17857,7 +17874,7 @@ index 669862d..b5e229a 100644
 +    return ok;
 +}
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.go b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
-index 17f10fc..78fcd4f 100644
+index 17f10fc..1004245 100644
 --- a/pkg/worker/caged/libretro/nanoarch/nanoarch.go
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
 @@ -4,9 +4,11 @@ import (
@@ -19453,7 +19470,7 @@ index 17f10fc..78fcd4f 100644
  		if err := Nan0.glCtx.Deinit(); err != nil {
  			Nan0.log.Error().Err(err).Msg("deinit fail")
  		}
-@@ -932,9 +2054,237 @@ func deinitVideo() {
+@@ -932,9 +2054,243 @@ func deinitVideo() {
  	Nan0.Video.gl.autoCtx = false
  	Nan0.hackSkipHwContextDestroy = false
  	Nan0.hackSkipSameThreadSave = false
@@ -19600,6 +19617,11 @@ index 17f10fc..78fcd4f 100644
 +		}
 +		// Route GStreamer's texture-release notifications (its thread) into our C free list.
 +		graphics.ExternalRelease = func(id uint32) bool { return C.nano_vk_zc_release(C.uint(id)) != 0 }
++		// And route the hand-off wait to the same pool. This is what makes the blit-completion
++		// guarantee cost the ENCODER's thread rather than the emulator's: the tick thread submits the
++		// blit and returns, GStreamer's streaming thread waits for it right before the first element
++		// samples the texture. See nano_vk_zc_wait_blit for why that ordering is sound.
++		graphics.ExternalWaitBlit = func(id uint32) { C.nano_vk_zc_wait_blit(C.uint(id)) }
 +	})
 +	return err
 +}
@@ -19632,6 +19654,7 @@ index 17f10fc..78fcd4f 100644
 +	//    Vulkan pool + GL imports (device still live, our WGL context still current), then the context.
 +	if Nan0.Video.vk.zcReady {
 +		graphics.ExternalRelease = nil
++		graphics.ExternalWaitBlit = nil // the pipeline is about to go; nothing may call into the pool
 +		if GLContextGone != nil {
 +			GLContextGone()
 +		}
@@ -19691,7 +19714,7 @@ index 17f10fc..78fcd4f 100644
  type limit struct {
  	d  time.Duration
  	t  *time.Timer
-@@ -958,6 +2308,11 @@ func (d *limit) push(f func()) {
+@@ -958,6 +2314,11 @@ func (d *limit) push(f func()) {
  func geometryChange(geom C.struct_retro_game_geometry) {
  	Nan0.limiter(func() {
  		old := Nan0.sys.av.geometry
@@ -19704,7 +19727,7 @@ index 17f10fc..78fcd4f 100644
  
  		if Nan0.Video.gl.enabled && (old.max_width != geom.max_width || old.max_height != geom.max_height) {
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.h b/pkg/worker/caged/libretro/nanoarch/nanoarch.h
-index 2479d0c..63831ee 100644
+index 2479d0c..e74521a 100644
 --- a/pkg/worker/caged/libretro/nanoarch/nanoarch.h
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.h
 @@ -5,6 +5,8 @@ void bridge_call(void *f);
@@ -19716,7 +19739,7 @@ index 2479d0c..63831ee 100644
  bool bridge_retro_serialize(void *f, void *data, size_t size);
  size_t bridge_retro_serialize_size(void *f);
  bool bridge_retro_unserialize(void *f, void *data, size_t size);
-@@ -32,13 +34,54 @@ void init_video_cgo();
+@@ -32,13 +34,58 @@ void init_video_cgo();
  void deinit_video_cgo();
  
  void same_thread(void *f);
@@ -19758,6 +19781,10 @@ index 2479d0c..63831ee 100644
 +int nano_vk_zc_dup_pin(unsigned tex, unsigned long long serial);
 +void nano_vk_zc_dup_unpin(unsigned tex);
 +int nano_vk_zc_release(unsigned texid);
++// Block until this slot's blit has landed. Called from the ENCODER's streaming thread (a pad probe on
++// the appsrc's src pad), never the emulator's — that placement is the whole point. See the comment on
++// the definition for the ordering proof.
++void nano_vk_zc_wait_blit(unsigned texid);
 +void nano_vk_zc_teardown(void);
 +int nano_vk_probe_zerocopy(void);
 +
@@ -19774,10 +19801,10 @@ index 2479d0c..63831ee 100644
  #endif
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch_vulkan.c b/pkg/worker/caged/libretro/nanoarch/nanoarch_vulkan.c
 new file mode 100644
-index 0000000..de7a0d8
+index 0000000..a2be4b8
 --- /dev/null
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch_vulkan.c
-@@ -0,0 +1,2103 @@
+@@ -0,0 +1,2212 @@
 +// MovieTheater arcade — Vulkan-capture frontend (M1: readback path).
 +//
 +// Lets the CloudRetro worker host libretro cores that render with RETRO_HW_CONTEXT_VULKAN
@@ -20109,14 +20136,22 @@ index 0000000..de7a0d8
 +    unsigned long long sem_setimg_none;   // zc submit proceeded with NO set_image semaphore (unsignaled read risk)
 +    unsigned long long dup_pinned;  // dup re-pushed a still-live slot and took a 2nd reference for it
 +    unsigned long long dup_skipped; // dup was skipped: the slot had been reused/freed since (DUP-PIN)
-+    // HAND-OFF FENCE (2026-08-09): frames whose blit had NOT completed by the time the texture would
-+    // have been handed to the encoder. Before the fix these were frames the encoder could sample
-+    // pre-blit — i.e. it would have encoded the slot's PREVIOUS content. `late_cold` counts the subset
-+    // where that previous content was more than a second old: those are the visible time-warps.
-+    unsigned long long blit_late;      // fence not yet signalled at hand-off (we now wait)
-+    unsigned long long blit_late_cold; // ...and the slot's previous content was >60 frames old
++    // HAND-OFF FENCE (2026-08-09): frames whose blit had NOT completed by the time the encoder's own
++    // thread reached the buffer. Without the wait these are exactly the frames the encoder samples
++    // pre-blit — i.e. it encodes the slot's PREVIOUS content. `late_cold` counts the subset where that
++    // previous content was more than a second old: those are the visible time-warps.
++    //
++    // ROUND 2 (consumer-side): every one of these is now written from the ENCODER's streaming thread
++    // (nano_vk_zc_wait_blit), not the emulator's, so they are read/reset under zc_mutex. `wait_n` is
++    // their own denominator — the tick-side `zc_block_n` no longer counts these waits, because the
++    // tick thread no longer performs them.
++    unsigned long long blit_late;         // fence not yet signalled when the consumer reached the buffer
++    unsigned long long blit_late_cold;    // ...and the slot's previous content was >60 frames old
 +    unsigned long long blit_late_max_age; // worst previous-content age (frames) among late hand-offs
-+    double             blit_wait_sum_ms;  // time spent in the hand-off fence wait (window)
++    unsigned long long blit_wait_n;       // consumer-side waits performed (window)
++    unsigned long long blit_wait_miss;    // buffer reached the consumer but its slot was already gone
++    unsigned long long blit_wait_timeout; // fence missed the liveness bound — MUST stay 0
++    double             blit_wait_sum_ms;  // consumer-thread time spent in the fence wait (window)
 +    double             blit_wait_max_ms;
 +    unsigned long long blit_gen_logged;   // [zc-gen] lines emitted (rate-limit bookkeeping)
 +    unsigned long long stat_frame;  // last frame_serial at which the always-on [zc-stat] line was emitted
@@ -21524,17 +21559,29 @@ index 0000000..de7a0d8
 +        // case that used to corrupt frame order before the refcount existed.
 +        int nrefs = 0;
 +        for (int i = 0; i < NANO_VK_ZC_SLOTS; i++) nrefs += vk.zc_refs[i];
-+        double fw_mean = vk_dbg.zc_block_n ? vk_dbg.blit_wait_sum_ms / (double)vk_dbg.zc_block_n : 0.0;
-+        VKLOG(RETRO_LOG_INFO, "[zc-stat] emit=%llu inflight=%d/%d refs=%d serials[%llu..%llu span=%llu] dup(pin=%llu skip=%llu) setimg_sem(waited=%llu none=%llu) reallocs=%llu block(mean=%.2fms max=%.2fms n=%llu) handoff(late=%llu cold=%llu maxage=%llu wait mean=%.2fms max=%.2fms)\n",
++        // The hand-off counters belong to the ENCODER's thread now, so snapshot-and-reset them under
++        // the mutex and log from the locals. Locking here (once per ~600 frames) can only ever wait on
++        // another thread's counter update — never on a fence wait, which is deliberately outside it.
++        unsigned long long h_late, h_cold, h_age, h_n, h_miss, h_to;
++        double h_sum, h_max;
++        pthread_mutex_lock(&vk.zc_mutex);
++        h_late = vk_dbg.blit_late; h_cold = vk_dbg.blit_late_cold; h_age = vk_dbg.blit_late_max_age;
++        h_n = vk_dbg.blit_wait_n; h_miss = vk_dbg.blit_wait_miss; h_to = vk_dbg.blit_wait_timeout;
++        h_sum = vk_dbg.blit_wait_sum_ms; h_max = vk_dbg.blit_wait_max_ms;
++        vk_dbg.blit_wait_sum_ms = 0.0; vk_dbg.blit_wait_max_ms = 0.0; vk_dbg.blit_wait_n = 0;
++        pthread_mutex_unlock(&vk.zc_mutex);
++        double fw_mean = h_n ? h_sum / (double)h_n : 0.0;
++        // `encwait(...)` is deliberately its own grep-able token, separate from the cumulative
++        // handoff counters: it is the per-window cost of the consumer-side wait and it is the number
++        // that says whether this fix is free. mean/max are the window; n is its denominator.
++        VKLOG(RETRO_LOG_INFO, "[zc-stat] emit=%llu inflight=%d/%d refs=%d serials[%llu..%llu span=%llu] dup(pin=%llu skip=%llu) setimg_sem(waited=%llu none=%llu) reallocs=%llu block(mean=%.2fms max=%.2fms n=%llu) handoff@enc(late=%llu cold=%llu maxage=%llu) encwait(mean=%.2fms max=%.2fms n=%llu miss=%llu timeout=%llu)\n",
 +              (unsigned long long)vk.frame_serial, nheld, NANO_VK_ZC_SLOTS, nrefs,
 +              (unsigned long long)lo, (unsigned long long)hi, (unsigned long long)(hi > lo ? hi - lo : 0),
 +              vk_dbg.dup_pinned, vk_dbg.dup_skipped,
 +              vk_dbg.sem_setimg_waited, vk_dbg.sem_setimg_none, (unsigned long long)vk.realloc_count,
 +              blk_mean, vk_dbg.zc_block_max_ms, vk_dbg.zc_block_n,
-+              vk_dbg.blit_late, vk_dbg.blit_late_cold, vk_dbg.blit_late_max_age,
-+              fw_mean, vk_dbg.blit_wait_max_ms);
++              h_late, h_cold, h_age, fw_mean, h_max, h_n, h_miss, h_to);
 +        vk_dbg.zc_block_sum_ms = 0.0; vk_dbg.zc_block_max_ms = 0.0; vk_dbg.zc_block_n = 0;
-+        vk_dbg.blit_wait_sum_ms = 0.0; vk_dbg.blit_wait_max_ms = 0.0;
 +    }
 +
 +    // Per-frame emu-thread block probe (gc-latency): time the whole copy CPU cost — slot-reuse fence
@@ -21662,37 +21709,28 @@ index 0000000..de7a0d8
 +    // screen for many seconds) get pulled in. Cold slot + late blit = a ten-second-old frame. That is
 +    // the 464-frame-old insert, and it is why static/idle screens are so over-represented.
 +    //
-+    // Waiting costs nothing when the GPU is keeping up (the fence is already signalled) and costs
-+    // exactly the GPU's backlog when it is not — which is the honest price of not shipping a frame that
-+    // has not been rendered. The block probe below reports it; `zc_sync_fence` is now redundant.
-+    {
-+        double _wt0 = nano_now_ms();
-+        vk.fn.WaitForFences(vk.device, 1, &fence, VK_TRUE, UINT64_MAX);
-+        double _wms = nano_now_ms() - _wt0;
-+        vk.zc_submitted[idx] = 0; // waited here; the acquisition-time wait has nothing left to do
-+        vk_dbg.blit_wait_sum_ms += _wms;
-+        if (_wms > vk_dbg.blit_wait_max_ms) vk_dbg.blit_wait_max_ms = _wms;
-+        // >50us means the fence was NOT already signalled — the window in which the old code could hand
-+        // the encoder the slot's previous content. Report it with the AGE of that content, because age
-+        // is what makes the difference between an invisible 2-frame slip and a visible time-warp.
-+        if (_wms > 0.05) {
-+            uint64_t prev = vk.zc_prev_serial[idx];
-+            uint64_t age  = (prev && vk.frame_serial > prev) ? (vk.frame_serial - prev) : 0;
-+            vk_dbg.blit_late++;
-+            if (age > vk_dbg.blit_late_max_age) vk_dbg.blit_late_max_age = age;
-+            if (age > 60) {
-+                vk_dbg.blit_late_cold++;
-+                // Log the first 20 and then one in 50: this is the actual defect event, and a stale
-+                // frame in a reel should now have a matching line here instead of a picture on screen.
-+                if (vk_dbg.blit_late_cold <= 20 || (vk_dbg.blit_late_cold % 50) == 0) {
-+                    vk_dbg.blit_gen_logged++;
-+                    VKLOG(RETRO_LOG_INFO, "[zc-gen] slot %d: blit landed %.2fms late for serial %llu; the slot still held serial %llu (%llu frames / %.2fs old) — pre-fix the encoder could have sampled THAT\n",
-+                          idx, _wms, (unsigned long long)vk.zc_serial[idx],
-+                          (unsigned long long)prev, (unsigned long long)age, (double)age / 60.0);
-+                }
-+            }
-+        }
-+    }
++    // WHERE THE WAIT LIVES (round 2, 2026-08-09 — this is the whole design):
++    //
++    // The first cut of this fix waited on the fence RIGHT HERE, on the emulator's tick thread. It was
++    // correct and it was measured cheap on idle menus (0.14 ms mean) — but the instrument it shipped
++    // with also showed late=34026/36000, i.e. the fence is NOT signalled at hand-off 94.5% of the time.
++    // That is not an exception path, it is the steady state: this wait costs the GPU's blit backlog on
++    // essentially EVERY frame. On Stuntman's chase district, where the blit queues behind heavy
++    // paraLLEl-GS work, that backlog goes straight into a 16.6 ms tick budget and the loop falls off
++    // pace. A GPU wait on the tick thread is categorically the wrong place for one, regardless of how
++    // it benchmarks on a static screen.
++    //
++    // So the wait moved to the CONSUMER: nano_vk_zc_wait_blit, called from a pad probe on the appsrc's
++    // src pad (media/glzerocopy.go), which runs on the encoder pipeline's own streaming thread — the
++    // thread that hands this very buffer to glcolorscale, the first element that samples the texture.
++    // Same guarantee, same fence, one thread over. The tick thread returns to retro_run immediately and
++    // emulates the next frame WHILE the blit drains, so the cost overlaps emulation instead of adding
++    // to it. See nano_vk_zc_wait_blit for the ordering proof.
++    //
++    // `zc_submitted[idx]` deliberately stays 1: the acquisition-time wait at the top of this function
++    // is the pool's real invariant (a slot is never re-blitted while its previous blit is in flight)
++    // and it must survive a buffer that never reaches the probe at all — a flush, a pipeline reinit, a
++    // teardown. When the probe did run, that fence is already signalled and the wait is free.
 +
 +    // Layer 1 (still required, no longer load-bearing for ordering): ACQUIRE the external image into
 +    // the GL share group. glWaitSemaphoreEXT names the texture's current layout, which is how
@@ -21706,6 +21744,104 @@ index 0000000..de7a0d8
 +
 +    vk_dbg.zc_tex++;
 +    return (unsigned)vk.zc_tex[idx];
++}
++
++// ── nano_vk_zc_wait_blit — the hand-off guarantee, paid on the CONSUMER's thread ──────────────────
++//
++// Called from a GST_PAD_PROBE_TYPE_BUFFER probe on the appsrc's src pad (media/glzerocopy.go,
++// zc_blit_probe). Blocks until this slot's blit has actually landed, so the encoder can never sample
++// a slot that still holds its PREVIOUS content — the stale-frame defect — while costing the emulator
++// thread nothing.
++//
++// WHY THIS THREAD (the ordering proof, and why it is not a repeat of the bug it replaces):
++//
++//   1. It runs strictly before any consumer. gst_app_src_push_buffer only ENQUEUES; the appsrc's own
++//      GstBaseSrc task pops the buffer and calls gst_pad_push, and a BUFFER probe on that src pad runs
++//      INSIDE gst_pad_push, before the peer's chain function. glcolorscale — the first element that
++//      samples the texture — is that peer, and it dispatches its GL work synchronously
++//      (gst_gl_context_thread_add blocks its caller until the GL thread is done). So this wait
++//      happens-before the sample, on plain CPU ordering. Nothing here assumes one GL context's command
++//      stream orders another's; that assumption IS the bug we are fixing, and it is gone.
++//
++//   2. It is not the tick thread. The emulator returned from nano_vk_zc_frame the moment the blit was
++//      submitted and is already inside the next retro_run. The blit drains CONCURRENTLY with that
++//      emulation, so the GPU's backlog overlaps the frame budget instead of consuming it. Blocking
++//      here delays only the encode of this one frame; the appsrc's queue absorbs it (a plain,
++//      non-leaky, non-blocking appsrc — see the pipeline build in gstreamer.go).
++//
++//   3. The fence cannot be recycled underneath us. Fences are per-SLOT and are reset+resubmitted only
++//      by nano_vk_zc_frame when it re-acquires that slot — which requires the slot to be free, which
++//      requires its refcount to reach zero, which happens only in the buffer's destroy-notify. That
++//      cannot run while this probe still holds the buffer. So `fence` is this frame's fence for the
++//      entire wait.
++//
++// If a buffer never reaches this probe (flush, reinit, teardown) nothing is left unguarded: the slot
++// still carries zc_submitted, and nano_vk_zc_frame's acquisition-time wait blocks before the slot can
++// be WRITTEN again. The pool invariant holds with or without us; this function is purely about what
++// the ENCODER is allowed to read.
++void nano_vk_zc_wait_blit(unsigned texid) {
++    if (!vk.zc_mutex_init || !vk.device || texid == 0) return;
++
++    VkFence fence = VK_NULL_HANDLE;
++    uint64_t prev = 0, cur = 0, at = 0;
++    int idx = -1;
++
++    // Resolve the slot under the lock, wait OUTSIDE it. Holding zc_mutex across a fence wait would
++    // block the emulator thread's slot acquisition on the very GPU backlog this design exists to keep
++    // off it — the same mistake one level down.
++    pthread_mutex_lock(&vk.zc_mutex);
++    for (int i = 0; i < NANO_VK_ZC_SLOTS; i++) {
++        if (vk.zc_tex[i] == (GLuint)texid && !vk.zc_free[i] && vk.zc_submitted[i] && vk.zc_fence[i]) {
++            idx = i; fence = vk.zc_fence[i];
++            prev = vk.zc_prev_serial[i]; cur = vk.zc_serial[i]; at = vk.frame_serial;
++            break;
++        }
++    }
++    // Not ours to wait on: a retired generation after a geometry flip, or a slot already released.
++    // Both are terminal for this buffer's ordering — count and move on, exactly as zc_release does.
++    if (idx < 0) vk_dbg.blit_wait_miss++;
++    pthread_mutex_unlock(&vk.zc_mutex);
++    if (idx < 0) return;
++
++    // A finite bound, not because the fence should ever miss it — a blit is one small transfer, and
++    // even a pathological paraLLEl-GS backlog is milliseconds — but so a driver fault can never wedge
++    // the encoder's streaming thread forever. A timeout is a LOUD counter, never a silent fallback.
++    double t0 = nano_now_ms();
++    VkResult wr = vk.fn.WaitForFences(vk.device, 1, &fence, VK_TRUE, 1000000000ull /* 1s */);
++    double ms = nano_now_ms() - t0;
++
++    uint64_t age = (prev && at > prev) ? (at - prev) : 0;
++    int log_gen = 0;
++    pthread_mutex_lock(&vk.zc_mutex);
++    vk_dbg.blit_wait_n++;
++    vk_dbg.blit_wait_sum_ms += ms;
++    if (ms > vk_dbg.blit_wait_max_ms) vk_dbg.blit_wait_max_ms = ms;
++    if (wr != VK_SUCCESS) vk_dbg.blit_wait_timeout++;
++    // >50us means the fence was NOT already signalled — the exact window in which the encoder would
++    // otherwise have sampled the slot's previous content. Report it with the AGE of that content,
++    // because age is the difference between an invisible 2-frame slip and a visible time-warp.
++    if (ms > 0.05) {
++        vk_dbg.blit_late++;
++        if (age > vk_dbg.blit_late_max_age) vk_dbg.blit_late_max_age = age;
++        if (age > 60) {
++            vk_dbg.blit_late_cold++;
++            // First 20, then one in 50: this is the actual defect event. A stale frame in a reel
++            // should now have a matching line HERE instead of a picture on screen.
++            if (vk_dbg.blit_late_cold <= 20 || (vk_dbg.blit_late_cold % 50) == 0) {
++                vk_dbg.blit_gen_logged++;
++                log_gen = 1;
++            }
++        }
++    }
++    pthread_mutex_unlock(&vk.zc_mutex);
++
++    if (log_gen)
++        VKLOG(RETRO_LOG_INFO, "[zc-gen] slot %d: encoder reached serial %llu %.2fms before its blit landed; the slot still held serial %llu (%llu frames / %.2fs old) — unfenced, THAT is what would have been encoded\n",
++              idx, (unsigned long long)cur, ms, (unsigned long long)prev,
++              (unsigned long long)age, (double)age / 60.0);
++    if (wr != VK_SUCCESS)
++        VKLOG(RETRO_LOG_ERROR, "[zc-gen] slot %d: blit fence did not signal within 1s (VkResult %d) — handing the encoder serial %llu UNFENCED\n",
++              idx, (int)wr, (unsigned long long)cur);
 +}
 +
 +// Return a slot to the free list (called from GStreamer's thread when it frees the wrapping buffer —
@@ -92208,10 +92344,10 @@ index 0000000..d76fe6d
 +}
 diff --git a/pkg/worker/media/glzerocopy.go b/pkg/worker/media/glzerocopy.go
 new file mode 100644
-index 0000000..4958101
+index 0000000..923f87c
 --- /dev/null
 +++ b/pkg/worker/media/glzerocopy.go
-@@ -0,0 +1,321 @@
+@@ -0,0 +1,390 @@
 +package media
 +
 +// GL zero-copy for hardware-rendered libretro cores (n64/gc/ps2/psp/dc).
@@ -92330,6 +92466,50 @@ index 0000000..4958101
 +	goReleaseZeroCopyTexture((unsigned int) (guintptr) user_data);
 +}
 +
++// ── HAND-OFF FENCE, CONSUMER SIDE ────────────────────────────────────────────────────────────────
++//
++// The Vulkan zero-copy pool (nanoarch_vulkan.c) fills a slot with a GPU blit and hands us the texture
++// as soon as that blit is SUBMITTED. Submitted is not done, and the semaphore the producer inserts
++// lives in the CORE's GL context, which orders nothing in ours. So without a real wait, glcolorscale —
++// the element immediately below this appsrc — can sample the slot before the blit executes and encode
++// whatever it held from its PREVIOUS use: a pristine, correctly-timestamped picture of another moment.
++//
++// The wait belongs HERE rather than in the producer. A pad probe on the appsrc's src pad runs on the
++// appsrc's own streaming task, inside gst_pad_push, before the peer's chain function — so it strictly
++// precedes every consumer of this buffer while the emulator thread is already emulating the next
++// frame. The GPU backlog overlaps emulation instead of being charged to a 16.6 ms tick budget.
++//
++// The texture id rides on the buffer as qdata (a plain integer on the mini-object — no meta type to
++// register, and it costs nothing when the pool has no wait to do).
++extern void goWaitZeroCopyBlit(unsigned int texid);
++
++static GQuark zc_texid_quark(void) {
++	static GQuark q = 0;
++	if (G_UNLIKELY(!q)) q = g_quark_from_static_string("mt-zc-texid");
++	return q;
++}
++
++static GstPadProbeReturn zc_blit_probe(GstPad *pad, GstPadProbeInfo *info, gpointer user_data) {
++	(void) pad; (void) user_data;
++	GstBuffer *buf = GST_PAD_PROBE_INFO_BUFFER(info);
++	if (buf) {
++		unsigned int texid = (unsigned int) (guintptr)
++			gst_mini_object_get_qdata(GST_MINI_OBJECT_CAST(buf), zc_texid_quark());
++		if (texid) goWaitZeroCopyBlit(texid);
++	}
++	return GST_PAD_PROBE_OK;
++}
++
++// Install the probe once, at pipeline build time, on the GL zero-copy appsrc only. Never on the CPU or
++// D3D11 heads: their frames carry no pool slot and no qdata, so the probe would be a pure cost.
++static void zc_install_blit_probe(GstElement *appsrc) {
++	if (!appsrc) return;
++	GstPad *pad = gst_element_get_static_pad(appsrc, "src");
++	if (!pad) return;
++	gst_pad_add_probe(pad, GST_PAD_PROBE_TYPE_BUFFER, zc_blit_probe, NULL, NULL);
++	gst_object_unref(pad);
++}
++
 +// zc_set_context gives the pipeline our display + app context, so its GL elements build a context that
 +// SHARES with the core's rather than creating an isolated one (whose texture ids would mean nothing).
 +static void zc_set_context(GstElement *pipeline) {
@@ -92430,6 +92610,12 @@ index 0000000..4958101
 +
 +	GST_BUFFER_DURATION(buf) = durNs;
 +
++	// Tag the buffer with its pool slot's texture id so zc_blit_probe can wait on that slot's blit
++	// fence on the way downstream. A dup re-pushes the same texture in its own buffer, so this is
++	// per-buffer and the probe simply waits twice on an already-signalled fence — free.
++	gst_mini_object_set_qdata(GST_MINI_OBJECT_CAST(buf), zc_texid_quark(),
++	                          (gpointer) (guintptr) texid, NULL);
++
 +	// NO GstGLSyncMeta. It looks like the right tool and it is a trap here: set_sync_point() drives
 +	// gst_gl_context_thread_add() on the context you give it, and the CORE's context is WRAPPED — it has
 +	// no thread of its own, so that trips
@@ -92471,6 +92657,25 @@ index 0000000..4958101
 +//export goReleaseZeroCopyTexture
 +func goReleaseZeroCopyTexture(texid C.uint) {
 +	graphics.ReleaseZeroCopyTexture(uint32(texid))
++}
++
++// goWaitZeroCopyBlit runs on the appsrc's streaming thread (zc_blit_probe), immediately before the
++// buffer reaches glcolorscale. It blocks until the pool's GPU copy into this texture has landed — the
++// guarantee that keeps the encoder off a slot still holding its previous content — paid here rather
++// than on the emulator thread that produced it.
++//
++//export goWaitZeroCopyBlit
++func goWaitZeroCopyBlit(texid C.uint) {
++	graphics.WaitZeroCopyBlit(uint32(texid))
++}
++
++// installGLBlitProbe arms the hand-off wait on a GL zero-copy appsrc. Build-time and idempotent per
++// pipeline; cgo preambles are per-file, so this wrapper is what lets gstreamer.go reach it.
++func installGLBlitProbe(src *gst.Element) {
++	if src == nil {
++		return
++	}
++	C.zc_install_blit_probe((*C.GstElement)(unsafe.Pointer(src.Instance())))
 +}
 +
 +// glZeroCopyReady reports whether the GL context has been wrapped successfully.
@@ -92534,10 +92739,10 @@ index 0000000..4958101
 +	}
 +}
 diff --git a/pkg/worker/media/gstreamer.go b/pkg/worker/media/gstreamer.go
-index 4a6171f..d657ff9 100644
+index 4a6171f..87a31ac 100644
 --- a/pkg/worker/media/gstreamer.go
 +++ b/pkg/worker/media/gstreamer.go
-@@ -1,579 +1,1150 @@
+@@ -1,579 +1,1157 @@
 -package media
 -
 -import (
@@ -94095,6 +94300,13 @@ index 4a6171f..d657ff9 100644
 +		}
 +		p.source = app.SrcFromElement(srcEl)
 +		p.srcPad = srcEl.GetStaticPad("src")
++		if glZeroCopy {
++			// Arm the hand-off fence wait on this appsrc's src pad. The buffers it carries are pool
++			// slots whose GPU copy may still be in flight; the probe blocks on that copy here, on
++			// GStreamer's streaming thread, so the emulator thread never pays for it. See
++			// zc_install_blit_probe in glzerocopy.go.
++			installGLBlitProbe(srcEl)
++		}
 +	}
 +
 +	go watchBus(pipeline, log)
