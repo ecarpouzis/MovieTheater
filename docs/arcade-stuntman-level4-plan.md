@@ -1,3 +1,164 @@
+# Stuntman round 3 close-out (2026-08-09, autonomous)
+
+## ✅ THE STALE FRAME IS FIXED — the encoder was sampling zc slots before their blit landed
+**Gate: a 34,202-frame idle-attract reel scans ZERO A-B-A anomalies.** (Baseline: 2 genuine / 22,965
+with strict-refs; 9 / ~24k before it. At the failing rate this reel should have produced ~3.)
+Reel `D:\ArcadeStorage\scratch\reel-handoff\reel-handoff-run1` (room OYQVAU, worker-gl, ONE peer so
+the whole run sat on the top temporal layer — 34,202 frames / 600 s ≈ 57 fps, vs the previous run's
+42 fps average after ABR flapped the spectator to layer 0). The strongest candidate in the entire
+reel scores **0.533** — far outside the ≤ 0.165 genuine cluster — and is a **muzzle flash**; the
+runner-up (0.708) is a second muzzle flash. Both were eyeballed (`check-sheet.png`). The bimodal
+separation the detector relies on is intact and nothing sits in the anomaly band.
+
+### The mechanism (and why every previous probe exonerated itself)
+`nano_vk_zc_frame` returned the slot's GL texture id the instant the blit was **submitted**, relying
+on `glWaitSemaphoreEXT` + `glFlush` to keep the encoder off it until the blit landed. That guarantee
+never existed:
+1. the semaphore wait is issued in the **core's** GL context, while GStreamer samples the texture
+   from **its own** context on its own thread. A wait in one context's command stream orders nothing
+   in another's — sharing an object does not share ordering (GL spec, Appendix D).
+2. `glFlush` means *submitted*, never *done*. The **GL** zero-copy pool (`graphics/zerocopy.go`) has
+   always used `glFinish` here for exactly this reason; the Vulkan path traded it for a flush.
+
+So `glcolorscale` — one element downstream of the appsrc — could sample the slot **before the blit
+executed** and encode whatever the slot held from its *previous* use. A complete, pristine,
+correctly-encoded picture of a different moment, carrying a fresh monotonic timestamp. That is why
+`[ts-mono]`, the refcounts, the pacer, the emit-order serials and the client were all clean: the
+defect is upstream of every one of them, and it is not a *reordering* at all.
+
+**Why it was rare, and why STATIC screens dominated every anomaly list.** The race is normally won —
+the blit is a small transfer and the consumer needs a thread wake-up first. It bites when the GPU is
+busy and the blit queues behind heavy paraLLEl-GS work, which is also when pipeline depth grows and
+**cold** slots get pulled in. The pool hands out the lowest free index, so on a shallow (idle-menu)
+pipeline slots 0-1 cycle every frame while 2-7 sit untouched for *seconds*. **Cold slot + late blit =
+a ten-second-old frame** — exactly `pf0004514`'s twin at -464 frames / -10.034 s.
+
+### The fix
+`pkg/worker/caged/libretro/nanoarch/nanoarch_vulkan.c` — host-wait the blit fence before handing the
+texture over (which is what `zc_sync_fence` / "layer 2" was always described as: the correctness
+reference). It is now unconditional, so `zc_sync_fence` is redundant. The semaphore wait + flush stay:
+they are still needed to ACQUIRE the external image into the GL share group, they are just no longer
+load-bearing for ordering. Cost is zero when the GPU is keeping up and exactly the GPU's backlog when
+it is not — the honest price of not shipping a frame that has not been rendered.
+
+### The instrument that proved it (kept, cheap, permanent)
+Each slot now remembers `zc_prev_serial` — the serial it held before the current acquisition, i.e.
+**precisely the picture the encoder would have sampled**. `[zc-stat]` gained
+`handoff(late= cold= maxage= wait mean= max=)`; `[zc-gen]` names individual events.
+
+Measured on the verification room (36,000 emitted frames):
+```
+handoff(late=34026 cold=101 maxage=4874 wait mean=0.14ms max=3.35ms)
+[zc-gen] slot 2: blit landed 0.19ms late for serial 1176; the slot still held serial 540
+         (636 frames / 10.60s old) - pre-fix the encoder could have sampled THAT
+[zc-gen] slot 3: blit landed 0.12ms late for serial 4981; the slot still held serial 107
+         (4874 frames / 81.23s old) - pre-fix the encoder could have sampled THAT
+```
+**94.5 % of frames were handed over with the blit still in flight**, and 101 of those would have
+exposed content older than a second — up to **81 seconds**. The 636-frame / 10.6 s line is the exact
+shape and magnitude of the observed defect, caught in the act. The observed artefact rate was far
+lower than 101 because the consumer still usually lost the race; the fix removes that third factor
+deterministically.
+
+**Cost: 0.14 ms/frame mean (0.8 % of a 16.6 ms budget), 3.35 ms worst.** Room health unchanged:
+`pace-diag ticks/s=59.9 video/s=59.9 vcoal/s=0.0 slowTicks=0 meanTick=3.4ms`,
+`abr: summary ... atCeilPct=99 cuts=0 starves=0`, `[ts-mono] violations=0 samples=35972`,
+`block(mean=0.07ms)` unchanged, `reallocs=0`, `dev=192.168.68.69` (LAN — no Tailscale traversal).
+
+### Deployed
+- `D:\Arcade\build\cloud-game-gl\bin\worker.exe` — **38,991,239 B**, sha256
+  `f9d129aa1396a19c20ab8d3fc16f936ada71db3bf7a8c5bb6d5928e08b42ab5a`, fork commit **039517a**
+  (= 6669378 + this fix). Backup of the previous live binary:
+  `bin\worker.pre-handoff-fence.exe` (38,987,569 B — the 5e0898f build); candidate copy kept as
+  `bin\worker.candidate-handoff.exe`. Rename-swap then `.stop` sentinels; both GL workers respawned
+  on it (PIDs 38588 / 42044). The **capture** worker runs its own binary
+  (`D:\ArcadeStorage\worker-capture\bin\worker.exe`) and was not touched.
+- `fork.patch` re-exported and **compile-proven** (`export-arcade-fork.ps1`: byte-exact git
+  round-trip, applies cleanly to 13852a7, builds from the patch alone); branch pushed
+  `6669378..039517a` to `github`.
+- Artifact guard `-Snapshot` green (11 artifacts, vault refreshed).
+
+### New instrument
+`.claude/skills/test-roms/reel-own-room.mjs` — creates a room and films every presented frame from
+that same page. Replaces the old two-browser reel (hold-room + spectate-probe): no temporary
+`MaxPlayers=2` DB edit, and one peer means no ABR layer flapping, so the whole reel records at the
+top layer. Output naming is identical (`pf<7>-mt<...>.jpg`), so `reel-anomaly-scan.py` is unchanged.
+
+## ✅ TASK C — "Diddy Kong Racing" row 18243: the ROW WAS FINE, the generated manifest was STALE
+Not a DB defect and not a bad path. `ArcadeGame` 18243 is structurally identical to the known-good
+row 3 (IsEnabled=1, RomPath `n64/Diddy Kong Racing (USA) (En,Fr).z64`, SourceArchivePath present on
+R:, file there, 12,582,912 B). What was missing was its entry in
+`docker/arcade/arcade-romcache.json` — the gateway's JIT manifest, last exported **2026-07-31 20:46**.
+`RomCache.Status()` returns `Ready` for a game it has never heard of ("not JIT-backed: nothing to
+prepare"), so nothing was ever staged, and the worker then failed with
+`couldn't find game Diddy Kong Racing (USA) (En,Fr) in system n64` -> `malformed game start response;
+slot released` -> the harness read it as a Playing-tag timeout. **18243 was the only id missing in its
+whole neighbourhood** (18235-18250 all present).
+
+Fix: re-ran `arcade-romcache-export`. The diff is **strictly additive — 11 games added, 0 removed, 0
+changed** (228, 246, 522, 4035, **18243**, 18785, 55830, 56010, 56011, 60554, 60782), dep closure at
+the documented healthy numbers (4269 games / 4566 dep refs). Verified live: the gateway logged
+`RomCache loaded 38445 JIT game(s)`, staged the ROM to `D:\ArcadeStorage\roms\n64`, and room 64L3L3
+booted it — `mupen64plus: Name: Diddy Kong Racing`, luma 97/132/119, `abr: summary ... cuts=0
+starves=0`, clean close. **No DB write was needed.**
+
+⚠ **The general lesson, worth more than the row**: `arcade-romcache.json` is a GENERATED artifact and
+it drifts SILENTLY. Enabling an `ArcadeGame` row (or setting its `SourceArchivePath`) without
+re-running `arcade-romcache-export` produces a card that looks perfectly normal in the lobby and dies
+at the worker. 11 games were in that state. Re-export after ANY change to
+`IsEnabled` / `SourceArchivePath`.
+⚠ Also: `--out` resolves against the CWD and `dotnet run --project` sets the CWD to the PROJECT dir,
+so a relative `docker/arcade/...` silently wrote `src/MovieTheater/docker/arcade/...`. Pass an
+ABSOLUTE path (the stray tree was removed).
+
+## ❌ TASK B (#7, Stuntman no-interlacing pnach) — two more derivations, still no pass. REVERTED.
+Nothing is left armed: both workers' `cheats` dirs are empty, profile row 7 is back to exactly
+`{"pcsx2_softfloat":"enabled","pcsx2_pgs_field_fullres":"enabled","pcsx2_pgs_ssaa":"16x SSAA (can
+high-res)","pcsx2_pgs_ss_tex":"enabled"}`. All variants sit in
+`D:\ArcadeStorage\scratch\stuntman\pnach-not-deployed\`.
+
+**What was found (this is the new ground).** The game has its own `sceGsPutDispEnv`-equivalent at
+**0x001D11C8**. It takes a 48-byte display-env struct (table base **0x0031ABA0**, in .bss) and writes
+it straight into the GS privileged registers:
+
+| struct offset | register |
+|---|---|
+| +0x00 | 0x12000000 PMODE |
+| +0x08 | **0x12000020 SMODE2** — INT (bit0), FFMD (bit1) |
+| +0x10 | 0x12000070 DISPFB1 |
+| +0x18 | 0x12000080 DISPLAY1 |
+| +0x20 | 0x12000090 DISPFB2 |
+| +0x28 | 0x120000A0 DISPLAY2 |
+
+`0x001D1218` is the `ld v0,8(t1)` that fetches SMODE2, two instructions before `sd v0,0(a2)`
+(a2 = 0x12000020). The struct is built at runtime by a helper at ~0x001D1148 from a template at
+0x0031AF30 plus a per-mode 32-byte table at 0x00319F00 — **all three are past the end of the ELF file
+(.bss)**, so the DISPLAY/DISPFB *values* cannot be derived statically; reading them needs a runtime
+memory view (desktop PCSX2 debugger).
+
+- **Variant C** — `patch=1,EE,001D1218,word,0000102D` (`daddu v0,zero,zero`: the game asserts
+  SMODE2 = 0 every time it sets its display env). **Does NOT black-screen** — unlike A and B the game
+  boots and plays normally (luma 69/127/73/94/53/84 vs the unpatched control 69/128/70/100) and the
+  raster went to a stable **1280x448** for as long as that value stood. But the game re-asserts an
+  interlaced SMODE2 through the SetGsCrt syscall on entering gameplay, and the raster returned to
+  **447**. So C is inert for gameplay — but it PROVES the game survives a progressive CRTC, i.e. the
+  black screen in A/B is NOT caused by clearing interlace per se.
+- **Variant D = B + C** (the plan doc's own prescription: the game's dispenv AND the interlace bit
+  together). Raster held a stable **1280x448** for the whole room — the interlace really is gone — but
+  the picture **intermittently blanks**: luma 0 at t=15/45/60/105/120 s, real picture (149 / 16 / 74)
+  at t=30/75/90. A broken raster, not a pass. Log evidence: `Loaded 1 Cheats` / `1 cheat patches are
+  active` for C, `[geom-f] core frame 1280x448` throughout D.
+
+**Verdict / next lever if this is ever picked up again.** What is still interlaced-shaped is the
+DISPLAY1/DISPLAY2 content (DH / MAGV / DY) the game computes for a field raster; patching SMODE2
+alone leaves the CRTC reading a window that is only valid half the time — which is exactly what the
+intermittent blanking looks like. Deriving those values needs the runtime struct at 0x0031ABA0, i.e.
+Eric's desktop PCSX2 build with the memory viewer, not static analysis. **This is optional work: the
+blur it targets is already solved at the renderer level** (`pcsx2_pgs_field_fullres` + the true 4x
+SSAA resolve + the motion-adaptive field merge, all shipped and verified). Recommend leaving it.
+
+---
+
 # Stuntman round 2 — frame jitter + level-4 AI turn bug (OVERNIGHT 2026-08-08)
 
 ## ❌ ~23:30 STRICT-REFS DID NOT FIX THE STALE FRAME — the encoder DPB was NOT the mechanism

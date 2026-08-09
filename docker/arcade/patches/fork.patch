@@ -19774,10 +19774,10 @@ index 2479d0c..63831ee 100644
  #endif
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch_vulkan.c b/pkg/worker/caged/libretro/nanoarch/nanoarch_vulkan.c
 new file mode 100644
-index 0000000..16afb16
+index 0000000..de7a0d8
 --- /dev/null
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch_vulkan.c
-@@ -0,0 +1,2026 @@
+@@ -0,0 +1,2103 @@
 +// MovieTheater arcade — Vulkan-capture frontend (M1: readback path).
 +//
 +// Lets the CloudRetro worker host libretro cores that render with RETRO_HW_CONTEXT_VULKAN
@@ -20072,6 +20072,11 @@ index 0000000..16afb16
 +    // "encoder consumed": a LOWER serial released after a higher one = a stale/reordered frame reached the
 +    // encoder late — the direct smoking gun. Retire-time in-flight count = frames queued across a flip.
 +    uint64_t                zc_serial[NANO_VK_ZC_SLOTS]; // serial stamped when the slot is filled
++    // CONTENT GENERATION (2026-08-09, the surviving stale-frame probe): the serial this slot held
++    // BEFORE the current acquisition — i.e. exactly the picture the encoder would sample if it read the
++    // texture before our blit landed. `frame_serial - zc_prev_serial[idx]` is the AGE of that stale
++    // content in frames, which is the number the reel measures (a 464-frame-old insert).
++    uint64_t                zc_prev_serial[NANO_VK_ZC_SLOTS];
 +    uint64_t                zc_r_serial[NANO_VK_ZC_SLOTS]; // serial carried into the retired gen (stale probe)
 +    uint64_t                frame_serial;                // monotonic; ++ per copied frame
 +    uint64_t                last_released_serial;        // highest serial GStreamer has released
@@ -20104,6 +20109,16 @@ index 0000000..16afb16
 +    unsigned long long sem_setimg_none;   // zc submit proceeded with NO set_image semaphore (unsignaled read risk)
 +    unsigned long long dup_pinned;  // dup re-pushed a still-live slot and took a 2nd reference for it
 +    unsigned long long dup_skipped; // dup was skipped: the slot had been reused/freed since (DUP-PIN)
++    // HAND-OFF FENCE (2026-08-09): frames whose blit had NOT completed by the time the texture would
++    // have been handed to the encoder. Before the fix these were frames the encoder could sample
++    // pre-blit — i.e. it would have encoded the slot's PREVIOUS content. `late_cold` counts the subset
++    // where that previous content was more than a second old: those are the visible time-warps.
++    unsigned long long blit_late;      // fence not yet signalled at hand-off (we now wait)
++    unsigned long long blit_late_cold; // ...and the slot's previous content was >60 frames old
++    unsigned long long blit_late_max_age; // worst previous-content age (frames) among late hand-offs
++    double             blit_wait_sum_ms;  // time spent in the hand-off fence wait (window)
++    double             blit_wait_max_ms;
++    unsigned long long blit_gen_logged;   // [zc-gen] lines emitted (rate-limit bookkeeping)
 +    unsigned long long stat_frame;  // last frame_serial at which the always-on [zc-stat] line was emitted
 +    unsigned last_w, last_h;        // last geometry seen by nano_vk_zc_frame
 +    unsigned sub16_w, sub16_h;      // last sub-16px geometry dropped
@@ -21188,6 +21203,7 @@ index 0000000..16afb16
 +        vk.zc_r_ready[i]    = vk.zc_ready[i];    vk.zc_ready[i]  = VK_NULL_HANDLE;
 +        vk.zc_r_gl_ready[i] = vk.zc_gl_ready[i]; vk.zc_gl_ready[i] = 0;
 +        vk.zc_r_serial[i]   = vk.zc_serial[i];   vk.zc_serial[i] = 0; // INSTR: carry serial into retired gen
++        vk.zc_prev_serial[i] = 0; // new gen: fresh images, no previous content to be stale about
 +    }
 +    vk.zc_retired_valid = 1;
 +}
@@ -21483,7 +21499,12 @@ index 0000000..16afb16
 +    // Record which slot serviced this frame's sync index, so wait_sync_index(cur_sync) — called by the
 +    // core the next time the ring lands on this index — blocks on this copy's fence (image-lifetime handshake).
 +    vk.sync_slot[cur_sync] = idx;
-+    // INSTR: stamp this slot with the next monotonic frame serial (frame-ordering probe).
++    // INSTR: stamp this slot with the next monotonic frame serial (frame-ordering probe), remembering
++    // the CONTENT GENERATION it is about to lose. The pool hands out the LOWEST free index, so on a
++    // shallow (static-screen) pipeline slots 0-1 cycle every frame while 2-7 stay cold for many
++    // seconds — and a cold slot's previous content is precisely the seconds-old picture the reel keeps
++    // catching. See the hand-off fence below for why that content could ever reach the encoder.
++    vk.zc_prev_serial[idx] = vk.zc_serial[idx];
 +    vk.zc_serial[idx] = ++vk.frame_serial;
 +
 +    // ALWAYS-ON periodic stats (~every 600 delivered frames / 10s) for ORGANIC-play diagnosis without
@@ -21503,13 +21524,17 @@ index 0000000..16afb16
 +        // case that used to corrupt frame order before the refcount existed.
 +        int nrefs = 0;
 +        for (int i = 0; i < NANO_VK_ZC_SLOTS; i++) nrefs += vk.zc_refs[i];
-+        VKLOG(RETRO_LOG_INFO, "[zc-stat] emit=%llu inflight=%d/%d refs=%d serials[%llu..%llu span=%llu] dup(pin=%llu skip=%llu) setimg_sem(waited=%llu none=%llu) reallocs=%llu block(mean=%.2fms max=%.2fms n=%llu)\n",
++        double fw_mean = vk_dbg.zc_block_n ? vk_dbg.blit_wait_sum_ms / (double)vk_dbg.zc_block_n : 0.0;
++        VKLOG(RETRO_LOG_INFO, "[zc-stat] emit=%llu inflight=%d/%d refs=%d serials[%llu..%llu span=%llu] dup(pin=%llu skip=%llu) setimg_sem(waited=%llu none=%llu) reallocs=%llu block(mean=%.2fms max=%.2fms n=%llu) handoff(late=%llu cold=%llu maxage=%llu wait mean=%.2fms max=%.2fms)\n",
 +              (unsigned long long)vk.frame_serial, nheld, NANO_VK_ZC_SLOTS, nrefs,
 +              (unsigned long long)lo, (unsigned long long)hi, (unsigned long long)(hi > lo ? hi - lo : 0),
 +              vk_dbg.dup_pinned, vk_dbg.dup_skipped,
 +              vk_dbg.sem_setimg_waited, vk_dbg.sem_setimg_none, (unsigned long long)vk.realloc_count,
-+              blk_mean, vk_dbg.zc_block_max_ms, vk_dbg.zc_block_n);
++              blk_mean, vk_dbg.zc_block_max_ms, vk_dbg.zc_block_n,
++              vk_dbg.blit_late, vk_dbg.blit_late_cold, vk_dbg.blit_late_max_age,
++              fw_mean, vk_dbg.blit_wait_max_ms);
 +        vk_dbg.zc_block_sum_ms = 0.0; vk_dbg.zc_block_max_ms = 0.0; vk_dbg.zc_block_n = 0;
++        vk_dbg.blit_wait_sum_ms = 0.0; vk_dbg.blit_wait_max_ms = 0.0;
 +    }
 +
 +    // Per-frame emu-thread block probe (gc-latency): time the whole copy CPU cost — slot-reuse fence
@@ -21611,16 +21636,68 @@ index 0000000..16afb16
 +    }
 +    vk.zc_submitted[idx] = 1;
 +
-+    if (vk.zc_sync_fence) {
-+        // Layer 2 (conservative / correctness reference): host-wait the blit fence before GL consumes.
-+        // Still strictly cheaper than M1's blit+copy+host-visibility chain (no copy, no map).
++    // ── HAND-OFF FENCE: the slot must actually CONTAIN this frame before anyone else can see it ────
++    //
++    // This is the fix for the surviving stale frames (2026-08-09). The old code returned the texture id
++    // the instant the blit was SUBMITTED, and leaned on `glWaitSemaphoreEXT` + `glFlush` below to keep
++    // the encoder off it until the blit landed. That does not hold, for two independent reasons:
++    //
++    //   1. The semaphore wait is issued in the CORE's GL context. GStreamer samples the texture from
++    //      its OWN context (zc_shared) on its own thread. A wait inserted in one context's command
++    //      stream orders nothing in another's — sharing an object does not share ordering. The GL spec
++    //      is explicit about this (Appendix D, "Shared Objects and Multiple Contexts").
++    //   2. Even within one context, glFlush means "submitted", never "done". The GL zero-copy pool
++    //      (graphics/zerocopy.go CopyFrameToPool) has always used glFinish here for exactly that
++    //      reason; the Vulkan path traded it for a flush and lost the guarantee with it.
++    //
++    // So the encoder's first consumer (glcolorscale, one element downstream of the appsrc) could sample
++    // the slot BEFORE the blit executed and encode whatever the slot held from its previous use. That
++    // is a complete, pristine, correctly-encoded picture of a DIFFERENT moment — which is exactly the
++    // artefact: single old frames spliced into a clean stream with monotonic timestamps, in both
++    // codecs, with no loss, no drops and no reordering anywhere we could measure.
++    //
++    // It is rare because the race is normally won: the blit is a small transfer and the consumer needs
++    // a thread wake-up first. It bites when the GPU is BUSY — the blit queues behind heavy paraLLEl-GS
++    // work — and that is also when pipeline depth grows and COLD slots (2..7, untouched on a static
++    // screen for many seconds) get pulled in. Cold slot + late blit = a ten-second-old frame. That is
++    // the 464-frame-old insert, and it is why static/idle screens are so over-represented.
++    //
++    // Waiting costs nothing when the GPU is keeping up (the fence is already signalled) and costs
++    // exactly the GPU's backlog when it is not — which is the honest price of not shipping a frame that
++    // has not been rendered. The block probe below reports it; `zc_sync_fence` is now redundant.
++    {
++        double _wt0 = nano_now_ms();
 +        vk.fn.WaitForFences(vk.device, 1, &fence, VK_TRUE, UINT64_MAX);
++        double _wms = nano_now_ms() - _wt0;
++        vk.zc_submitted[idx] = 0; // waited here; the acquisition-time wait has nothing left to do
++        vk_dbg.blit_wait_sum_ms += _wms;
++        if (_wms > vk_dbg.blit_wait_max_ms) vk_dbg.blit_wait_max_ms = _wms;
++        // >50us means the fence was NOT already signalled — the window in which the old code could hand
++        // the encoder the slot's previous content. Report it with the AGE of that content, because age
++        // is what makes the difference between an invisible 2-frame slip and a visible time-warp.
++        if (_wms > 0.05) {
++            uint64_t prev = vk.zc_prev_serial[idx];
++            uint64_t age  = (prev && vk.frame_serial > prev) ? (vk.frame_serial - prev) : 0;
++            vk_dbg.blit_late++;
++            if (age > vk_dbg.blit_late_max_age) vk_dbg.blit_late_max_age = age;
++            if (age > 60) {
++                vk_dbg.blit_late_cold++;
++                // Log the first 20 and then one in 50: this is the actual defect event, and a stale
++                // frame in a reel should now have a matching line here instead of a picture on screen.
++                if (vk_dbg.blit_late_cold <= 20 || (vk_dbg.blit_late_cold % 50) == 0) {
++                    vk_dbg.blit_gen_logged++;
++                    VKLOG(RETRO_LOG_INFO, "[zc-gen] slot %d: blit landed %.2fms late for serial %llu; the slot still held serial %llu (%llu frames / %.2fs old) — pre-fix the encoder could have sampled THAT\n",
++                          idx, _wms, (unsigned long long)vk.zc_serial[idx],
++                          (unsigned long long)prev, (unsigned long long)age, (double)age / 60.0);
++                }
++            }
++        }
 +    }
 +
-+    // Layer 1: order the slot into the GL share group. glWaitSemaphoreEXT inserts a GPU wait on the
-+    // imported ready semaphore (naming the texture's current layout), so GStreamer's shared context
-+    // samples only after the Vulkan blit's GPU signal. glFlush pushes the wait so it is visible before
-+    // the encoder's context binds the texture.
++    // Layer 1 (still required, no longer load-bearing for ordering): ACQUIRE the external image into
++    // the GL share group. glWaitSemaphoreEXT names the texture's current layout, which is how
++    // EXT_external_objects hands Vulkan-written memory to GL; the fence wait above is what guarantees
++    // the contents are there. glFlush pushes the acquire out.
 +    GLenum src_layout = GL_LAYOUT_SHADER_READ_ONLY_EXT;
 +    vk_dbg.sem_begin++;
 +    vk.gl.WaitSemaphoreEXT(vk.zc_gl_ready[idx], 0, NULL, 1, &vk.zc_tex[idx], &src_layout);
