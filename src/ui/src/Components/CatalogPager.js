@@ -1,4 +1,4 @@
-import { memo, useMemo } from "react";
+import { memo, useEffect, useMemo, useRef } from "react";
 import "./CatalogPager.css";
 
 // A catalog's faux-pagination strip, shared by the arcade lobby and the music library. "Faux" because
@@ -91,19 +91,38 @@ function CatalogPager({ mode, letters, total, pageSize, currentIndex, onJump, di
     () => (mode === "letters" ? [] : pageStrip(currentPage, totalPages)),
     [mode, currentPage, totalPages]
   );
+  // Computed before the early returns below so the hook order stays fixed.
+  const currentLetter = mode === "letters" ? activeLetter(strip, currentIndex) : null;
+
+  // The strip is one swipeable row (see the CSS), so on a phone most of the alphabet is off-screen.
+  // Keep the button the grid is currently under centred, or the readout is useless exactly when the
+  // strip is too narrow to show it: scroll past H and the active letter would sit off the right edge
+  // with no indication of where you are. Only when it actually overflows — while the whole alphabet
+  // fits, there is nothing to scroll and a scrollTo would be a no-op that still costs a layout read.
+  const railRef = useRef(null);
+  const activeRef = useRef(null);
+  useEffect(() => {
+    const rail = railRef.current;
+    const btn = activeRef.current;
+    if (!rail || !btn) return;
+    if (rail.scrollWidth <= rail.clientWidth + 1) return;
+    rail.scrollTo({
+      left: Math.max(0, btn.offsetLeft - (rail.clientWidth - btn.offsetWidth) / 2),
+      behavior: "smooth",
+    });
+  }, [currentLetter, currentPage, mode]);
 
   if (!total) return null;
   if (mode !== "letters" && totalPages <= 1) return null; // one page of results: nothing to seek to
 
-  const currentLetter = mode === "letters" ? activeLetter(strip, currentIndex) : null;
-
   return (
-    <nav className="catalog-pager" aria-label={mode === "letters" ? "Jump to letter" : "Jump to page"}>
+    <nav ref={railRef} className="catalog-pager" aria-label={mode === "letters" ? "Jump to letter" : "Jump to page"}>
       {mode === "letters"
         ? strip.map(({ letter, count, offset }) => (
             <button
               key={letter}
               type="button"
+              ref={letter === currentLetter ? activeRef : undefined}
               className={`catalog-pager__btn${letter === currentLetter ? " catalog-pager__btn--active" : ""}`}
               disabled={disabled || count === 0}
               title={count ? `${count.toLocaleString()} ${count === 1 ? itemNoun : `${itemNoun}s`}` : `No ${itemNoun}s`}
@@ -120,6 +139,7 @@ function CatalogPager({ mode, letters, total, pageSize, currentIndex, onJump, di
               <button
                 key={item.page}
                 type="button"
+                ref={item.page === currentPage ? activeRef : undefined}
                 className={`catalog-pager__btn${item.page === currentPage ? " catalog-pager__btn--active" : ""}`}
                 disabled={disabled}
                 aria-current={item.page === currentPage ? "true" : undefined}
