@@ -268,10 +268,20 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   // play() was refused on a hidden page during recovery. The listener is still there — retry the
   // play the moment the page is visible, instead of leaving a silently paused bar behind.
   const resumeOnWakeRef = useRef(false);
+  // Has the stored queue been read back yet? Until it has, an empty `queue` means "not loaded",
+  // not "cleared" — see the persist effect.
+  const hydratedRef = useRef(false);
+  // Which track's source is actually ON the element right now. Without this the player cannot tell
+  // "paused, holding this track" from "stranded, still holding the PREVIOUS track's spent URL" —
+  // and both `play()` and the wake retry then act on a source that can never produce audio again.
+  const loadedTrackIdRef = useRef(null);
   // Tracks written off back-to-back with no successful playback between them. Cleared by progress.
   const consecutiveFailuresRef = useRef(0);
   // Indirection for the mutual reference between loadTrack and failTrack.
   const failTrackRef = useRef(() => {});
+  // Same mirror trick for loadTrack: the wake handler and the play button both need to be able to
+  // re-drive a load that never landed, without re-binding on every render.
+  const loadTrackRef = useRef(() => {});
   // The URL the element was last given, so a failure can ask the host what it actually said.
   const lastUrlRef = useRef(null);
   // Channel count of the loaded track, from Stream/Start. Kept in a ref because the graph may be
@@ -384,6 +394,12 @@ export function MusicPlayerProvider({ children, enabled = true }) {
     // Start the stall clock at the load: a track that never produces a single timeupdate (the
     // gateway accepted the request and then said nothing) has to be recoverable too.
     progressRef.current = { sec: resumeAt, at: Date.now() };
+    // Arm the wake retry HERE, before the round trip — not only in play()'s catch below. The load
+    // that follows may never reach that catch: a page whose track has just ended is no longer
+    // playing audio, so it loses the exemption that kept it running in the background, and this
+    // fetch can simply not land until the phone is picked up again. Arming after the await is
+    // arming in code that a frozen renderer never reaches.
+    resumeOnWakeRef.current = autoplay && document.hidden;
     MovieAPI.startMusicTrack(track.id)
       .then((r) => (r.ok ? r.json() : r.json().catch(() => ({})).then((b) => Promise.reject(b))))
       .then((data) => {
@@ -395,6 +411,7 @@ export function MusicPlayerProvider({ children, enabled = true }) {
         trackChannelsRef.current = Number(data.channels) || 0;
         applyOutputChannels();
         audio.src = data.url;
+        loadedTrackIdRef.current = track.id;
         if (resumeAt > 0) {
           // currentTime can only be set once the element knows the media's shape.
           audio.addEventListener("loadedmetadata", () => {
@@ -490,6 +507,7 @@ export function MusicPlayerProvider({ children, enabled = true }) {
     if (!current) {
       audio.pause();
       audio.removeAttribute("src");
+      loadedTrackIdRef.current = null;
       resumeOnWakeRef.current = false;
       return;
     }
@@ -505,12 +523,12 @@ export function MusicPlayerProvider({ children, enabled = true }) {
       return;
     }
     handedOffRef.current = null; // a pick that jumped elsewhere: the stale claim can't outlive it
-    // Cleared HERE and not at the top of the effect. `ended` is not a discrete event, so React
-    // flushes the index change in a microtask — the same queue the play() rejection arrives on, with
-    // no guaranteed order between them. Clearing this before the hand-off branch could therefore
-    // wipe a resume flag that a refused play() had just set, in exactly the case it exists for: a
-    // hidden page. Nothing above this line sets it, and both paths that follow own it outright.
-    resumeOnWakeRef.current = false;
+    // The resume flag is NOT cleared here. It used to be, and that was the bug that stranded the
+    // album at a track boundary with no error and a dead play button: this line ran, then the load
+    // below never landed on a backgrounded phone, and the wake that would have rescued it found the
+    // flag already false. loadTrack sets the flag from the state it is actually loading in, and
+    // onPlay clears it once the element is genuinely playing — so it is owned by the two moments
+    // that know the truth, not by a pick that only knows the intent.
     loadTrack(current, { autoplay });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current?.id]);
@@ -564,6 +582,9 @@ export function MusicPlayerProvider({ children, enabled = true }) {
     if (!enabled) return;
     try {
       const raw = window.localStorage.getItem(QUEUE_KEY);
+      // Hydrated either way: "there was nothing stored" is just as final an answer as a restore,
+      // and both release the persist effect below.
+      hydratedRef.current = true;
       if (!raw) return;
       const saved = JSON.parse(raw);
       const tracks = Array.isArray(saved?.queue) ? saved.queue.filter((t) => t && t.id != null) : [];
@@ -580,6 +601,12 @@ export function MusicPlayerProvider({ children, enabled = true }) {
 
   // Persist every queue/position change. Cheap (a few KB) and synchronous, but bounded.
   useEffect(() => {
+    // NOT before the restore above has had its turn. `enabled` is `!!userData?.hasPassword` and
+    // App.js starts userData at null, so the provider's first render is ALWAYS disabled — the
+    // restore bails, and an unguarded persist then read the still-empty queue as "the listener has
+    // no queue" and deleted the stored one. The queue could never survive a reload, for anybody.
+    // An empty queue only means "cleared" once we know it isn't just "not loaded yet".
+    if (!hydratedRef.current) return;
     try {
       if (queue.length === 0) window.localStorage.removeItem(QUEUE_KEY);
       else window.localStorage.setItem(QUEUE_KEY, JSON.stringify({
@@ -694,6 +721,7 @@ export function MusicPlayerProvider({ children, enabled = true }) {
 
   // Kept in a ref so loadTrack — defined earlier, and deliberately dependency-free — can reach it.
   useEffect(() => { failTrackRef.current = failTrack; }, [failTrack]);
+  useEffect(() => { loadTrackRef.current = loadTrack; }, [loadTrack]);
 
   // The two moments the world changes back: the page becomes visible (the listener picked the phone
   // up) and the browser regains a network. Both fire whatever recovery was parked, so the session
@@ -704,7 +732,14 @@ export function MusicPlayerProvider({ children, enabled = true }) {
       if (document.hidden) return;
       if (resumeOnWakeRef.current) {
         resumeOnWakeRef.current = false;
-        audioRef.current?.play().catch(() => { /* still refused: the bar honestly shows Play */ });
+        const track = currentRef.current;
+        // Only play() the element if what it holds IS the current track. If the load that was
+        // supposed to fetch this track never landed while the page was frozen, the element is still
+        // sitting on the PREVIOUS track's spent URL — play()ing that either replays a finished song
+        // or rejects into a silent catch, which is how a wedged player looked healthy and did
+        // nothing. Re-drive the load instead: it is the step that never happened.
+        if (track && loadedTrackIdRef.current !== track.id) loadTrackRef.current(track, { autoplay: true });
+        else audioRef.current?.play().catch(() => { /* still refused: the bar honestly shows Play */ });
       }
       firePendingRecovery();
     };
@@ -786,13 +821,23 @@ export function MusicPlayerProvider({ children, enabled = true }) {
 
   const toggle = useCallback(() => {
     const audio = audioRef.current;
-    if (!audio || !audio.src) return;
+    if (!audio) return;
     // A recovery is waiting on a heartbeat or a wake — the tap IS the wake. Fire it now: what this
     // element holds is a dead source, and play() on a corpse either rejects or replays the error.
     if (pendingRecoveryRef.current) {
       firePendingRecovery();
       return;
     }
+    // The tap must never be a no-op. If the element holds nothing, or holds a track the queue has
+    // already moved past — a load that never landed on a backgrounded phone leaves exactly that —
+    // then play() would silently reject on a spent URL and the button would look broken. Load what
+    // the player actually says is current instead.
+    const track = currentRef.current;
+    if (track && (!audio.src || loadedTrackIdRef.current !== track.id)) {
+      loadTrackRef.current(track, { autoplay: true });
+      return;
+    }
+    if (!audio.src) return;
     if (audio.paused) audio.play().catch(() => {});
     else audio.pause();
   }, [firePendingRecovery]);
@@ -920,7 +965,12 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   }, []);
 
   // Keep `playing` truthful to the element (covers OS media keys, autoplay refusals, errors).
-  const onPlay = useCallback(() => setPlaying(true), []);
+  // Audio is coming out: whatever wake retry was armed has been made moot, and leaving it armed
+  // would fire a pointless play() on an already-playing element the next time the phone is picked up.
+  const onPlay = useCallback(() => {
+    resumeOnWakeRef.current = false;
+    setPlaying(true);
+  }, []);
   const onPause = useCallback(() => setPlaying(false), []);
   /// The track boundary. If the next track's URL is already in hand, the swap happens HERE —
   /// synchronously, inside the event handler — and `next()` only moves the index to match. See
@@ -939,6 +989,7 @@ export function MusicPlayerProvider({ children, enabled = true }) {
       applyOutputChannels();              // width set before the first buffer decodes, as in loadTrack
       progressRef.current = { sec: 0, at: Date.now() };
       audio.src = pre.url;
+      loadedTrackIdRef.current = upcoming.id;
       audio.play().catch(() => {
         // Same reading as loadTrack's: refused with nobody looking means retry on the next wake,
         // not that the listener has gone.
