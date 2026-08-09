@@ -1,0 +1,78 @@
+/* Playback diagnostics overlay (musicDiag). Sits above the dialog band (1400-1600) because it has
+   to be readable while a modal is open — that is often exactly when playback died. */
+
+.music-diag-tab {
+  position: fixed;
+  right: 8px;
+  bottom: calc(var(--music-bar-height, 96px) + 8px);
+  z-index: 2000;
+  background: rgba(180, 30, 30, 0.85);
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  cursor: pointer;
+}
+
+.music-diag {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  background: #12131a;
+  color: #e8e8ea;
+}
+
+.music-diag-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  border-bottom: 1px solid #2a2c38;
+}
+
+.music-diag-head strong { font-size: 14px; }
+.music-diag-count { color: #9aa; font-size: 12px; margin-right: auto; }
+
+.music-diag-head button {
+  background: #23252f;
+  color: #e8e8ea;
+  border: 1px solid #363948;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.music-diag-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 8px 0 24px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.music-diag-empty { padding: 16px 12px; color: #9aa; }
+
+.music-diag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 3px 12px;
+  border-bottom: 1px solid #1c1e27;
+}
+
+.music-diag-time { color: #6b7280; flex: none; }
+.music-diag-gap { color: #f0a020; flex: none; }      /* the frozen-renderer marker */
+.music-diag-hidden { color: #7a6ff0; flex: none; }
+.music-diag-event { color: #7ee0a0; flex: none; }
+.music-diag-event--bad { color: #ff6b6b; font-weight: 700; }
+/* The payload wraps rather than scrolls sideways: a URL tail cut off at the screen edge is the
+   thing you most need to read. */
+.music-diag-data { color: #b9c0d0; min-width: 0; overflow-wrap: anywhere; }

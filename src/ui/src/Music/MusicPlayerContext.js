@@ -1,5 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { MovieAPI } from "../MovieAPI";
+import { diagLog, snapshotAudio, diagEnabled, MEDIA_EVENTS } from "./musicDiag";
+import MusicDiagPanel from "./MusicDiagPanel";
 import { useMediaSession } from "../useMediaSession";
 import MusicMiniPlayer from "./MusicMiniPlayer";
 import { LYRICS_DEFAULTS, normalizeLyricsSettings } from "./MusicLyricsSettings";
@@ -400,10 +402,12 @@ export function MusicPlayerProvider({ children, enabled = true }) {
     // fetch can simply not land until the phone is picked up again. Arming after the await is
     // arming in code that a frozen renderer never reaches.
     resumeOnWakeRef.current = autoplay && document.hidden;
+    diagLog("load:start", { track: track.id, autoplay, resumeAt: Math.round(resumeAt) });
     MovieAPI.startMusicTrack(track.id)
       .then((r) => (r.ok ? r.json() : r.json().catch(() => ({})).then((b) => Promise.reject(b))))
       .then((data) => {
         if (seq !== loadSeqRef.current) return; // superseded by a newer pick
+        diagLog("load:minted", { track: track.id, url: (data.url || "").slice(-28) });
         setError(null);
         lastUrlRef.current = data.url; // kept for diagnoseStreamUrl if this load dies
         // Before the element gets the source, not after: the destination's width should already be
@@ -427,11 +431,13 @@ export function MusicPlayerProvider({ children, enabled = true }) {
           // the bar shows Play. On a HIDDEN page it means the browser wouldn't restart audio with
           // nobody looking — but the listener is still there, so retry on the next wake instead of
           // leaving a silently paused bar as the only trace.
+          diagLog("load:play-refused", { track: track.id, armWake: document.hidden });
           if (document.hidden) resumeOnWakeRef.current = true;
           setPlaying(false);
         });
       })
       .catch((body) => {
+        diagLog("load:failed", { track: track.id, why: String(body && body.message || body).slice(0, 80) });
         if (seq !== loadSeqRef.current) return;
         // Two different accounts land here. A rejected fetch (an Error) is the NETWORK's: the
         // request never got an answer, which on a sleeping phone means the radio napped — park-able.
@@ -564,6 +570,32 @@ export function MusicPlayerProvider({ children, enabled = true }) {
     audio.addEventListener("timeupdate", onTime);
     return () => audio.removeEventListener("timeupdate", onTime);
   }, [clearPendingRecovery, prefetchNext]);
+
+  // Every raw media event, recorded with the element's state at that instant (musicDiag). This is
+  // the only witness to a failure that happens with the screen off — `error` in particular carries
+  // the MediaError code, which is what separates "the file won't decode" from "the request for it
+  // never succeeded". Off unless ?diag=1, and it never touches playback.
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !diagEnabled()) return undefined;
+    const handlers = MEDIA_EVENTS.map((name) => {
+      const fn = () => diagLog(name, snapshotAudio(audio));
+      audio.addEventListener(name, fn);
+      return [name, fn];
+    });
+    const onVis = () => diagLog("visibility", { state: document.visibilityState, ...snapshotAudio(audio) });
+    const onOnline = () => diagLog("online", snapshotAudio(audio));
+    const onOffline = () => diagLog("offline", snapshotAudio(audio));
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    return () => {
+      handlers.forEach(([name, fn]) => audio.removeEventListener(name, fn));
+      document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+    };
+  }, []);
 
   // Restore volume once the element exists.
   useEffect(() => {
@@ -730,6 +762,7 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   useEffect(() => {
     const onWake = () => {
       if (document.hidden) return;
+      diagLog("wake", { armed: resumeOnWakeRef.current, loaded: loadedTrackIdRef.current, current: currentRef.current?.id ?? null });
       if (resumeOnWakeRef.current) {
         resumeOnWakeRef.current = false;
         const track = currentRef.current;
@@ -980,6 +1013,11 @@ export function MusicPlayerProvider({ children, enabled = true }) {
     const audio = audioRef.current;
     const upcoming = nextTrackRef.current;
     const pre = prefetchRef.current;
+    diagLog("boundary", {
+      upcoming: upcoming?.id ?? null,
+      prefetched: !!(pre?.url && pre.trackId === upcoming?.id),
+      hidden: document.hidden,
+    });
     if (audio && upcoming && pre?.url && pre.trackId === upcoming.id) {
       prefetchRef.current = null;
       handedOffRef.current = upcoming.id; // the effect below must not re-load what's already playing
@@ -1048,6 +1086,7 @@ export function MusicPlayerProvider({ children, enabled = true }) {
         onError={onError}
       />
       {enabled && <MusicMiniPlayer />}
+      <MusicDiagPanel />
     </MusicPlayerContext.Provider>
   );
 }
