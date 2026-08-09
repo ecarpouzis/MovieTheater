@@ -79,6 +79,17 @@ const TICK_LATE_MS = STALL_POLL_MS * 3;
 // Resume a shade EARLIER than where it died: the last second was being decoded when the stream
 // went, and landing exactly on it invites the same failure.
 const RESUME_REWIND_SEC = 1;
+// Budgeted retries wait before re-minting. Without a delay the budget is no budget at all: a
+// phone whose radio naps for one second rejects every fetch INSTANTLY, so 2 retries + a skip + the
+// next track's retries — the whole session — burned down in about a second, and the HEAD probe then
+// found a healthy host because the network was back by the time anyone asked it.
+const RETRY_BACKOFF_MS = [1000, 5000];
+// While parked (see shouldPark): how often to try again, and for how many tries. Browsers throttle
+// background timers to ≥1/min, so the real cadence while hidden is slower than this reads. The cap
+// keeps the loop finite; after it, only a wake or an `online` event retries — which means a phone
+// left unplugged all night does a bounded amount of work, and still heals the moment it's looked at.
+const PARKED_RETRY_MS = 20000;
+const PARKED_MAX_BEATS = 90;
 
 /// Ask the stream host what it actually said. "Playback failed." is what the player showed for every
 /// distinct prod outage this vertical has had — a gateway that couldn't SEE the files, an expired or
@@ -151,6 +162,25 @@ export function recoveryDecision({ attempts, consecutiveFailures, hasNext }) {
   return hasNext ? "skip" : "stop";
 }
 
+/// Is this failure the WORLD's fault rather than the stream's? A network-level failure on a hidden
+/// page or an offline browser means the phone is napping, not that the server is broken — and the
+/// listener is still listening. Spending the recovery budget there is how one Wi-Fi doze mid-album
+/// terminally stopped the session; parking (hold position, retry when the world changes) is what a
+/// native player does. A content-level failure (bad decode, refused token, unsupported format)
+/// parks nowhere: that file will be exactly as broken when the network returns.
+/// Exported and pure because it decides between "bounded budget that can end the session" and
+/// "patient loop that must not" — the wrong answer in either direction is invisible until nobody
+/// is watching.
+export function shouldPark({ networkLevel, hidden, offline }) {
+  return !!networkLevel && (!!hidden || !!offline);
+}
+
+/// How long a budgeted retry waits, by how many attempts this track has already spent. Clamped to
+/// the last entry so an out-of-range index can only slow down, never go undefined-instant.
+export function retryDelayMs(attemptsSpent) {
+  return RETRY_BACKOFF_MS[Math.min(Math.max(attemptsSpent, 0), RETRY_BACKOFF_MS.length - 1)];
+}
+
 const VOLUME_KEY = "music.volume"; // arcade-style namespaced localStorage key
 const LYRICS_KEY = "music.lyrics"; // on-screen lyrics toggle, remembered across routes/reloads
 const LYRICS_DISPLAY_KEY = "music.lyrics.display"; // size/font/scrim/follow — see MusicLyricsSettings
@@ -209,8 +239,18 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   // { sec, at } — where the playhead was, and when we last saw it move. Feeds the stall watchdog
   // and tells a retry where to resume.
   const progressRef = useRef({ sec: 0, at: 0 });
-  // { trackId, attempts, attemptedAtSec } — this track's spent recovery budget.
-  const recoveryRef = useRef({ trackId: null, attempts: 0, attemptedAtSec: 0 });
+  // { trackId, attempts, attemptedAtSec, parkBeats } — this track's spent recovery budget, and how
+  // many parked heartbeats it has used (see shouldPark; parking spends beats, never attempts).
+  const recoveryRef = useRef({ trackId: null, attempts: 0, attemptedAtSec: 0, parkBeats: 0 });
+  // The one recovery in flight: { trackId, timerId } — a budgeted retry waiting out its backoff, or
+  // a parked failure waiting for the world to change (timerId null once the heartbeat cap is spent:
+  // wake/online-only from then on). One at a time; while it exists, new failures and the watchdog
+  // hold their fire — re-judging a corpse a second time only burns budget the pending retry may
+  // be about to not need.
+  const pendingRecoveryRef = useRef(null);
+  // play() was refused on a hidden page during recovery. The listener is still there — retry the
+  // play the moment the page is visible, instead of leaving a silently paused bar behind.
+  const resumeOnWakeRef = useRef(false);
   // Tracks written off back-to-back with no successful playback between them. Cleared by progress.
   const consecutiveFailuresRef = useRef(0);
   // Indirection for the mutual reference between loadTrack and failTrack.
@@ -338,30 +378,72 @@ export function MusicPlayerProvider({ children, enabled = true }) {
           return;
         }
         audio.play().catch(() => {
-          // Autoplay refused (no user gesture yet) — leave it paused; the bar shows Play.
+          // Autoplay refused. In the foreground that means no user gesture yet — leave it paused;
+          // the bar shows Play. On a HIDDEN page it means the browser wouldn't restart audio with
+          // nobody looking — but the listener is still there, so retry on the next wake instead of
+          // leaving a silently paused bar as the only trace.
+          if (document.hidden) resumeOnWakeRef.current = true;
           setPlaying(false);
         });
       })
       .catch((body) => {
         if (seq !== loadSeqRef.current) return;
-        // A Start that refuses is the same class of failure as an element that errors: the track is
-        // not reaching the speakers. It goes through the same bounded recovery.
-        failTrackRef.current(body?.message || "This track can't be played.");
+        // Two different accounts land here. A rejected fetch (an Error) is the NETWORK's: the
+        // request never got an answer, which on a sleeping phone means the radio napped — park-able.
+        // An HTTP error body (a plain object) is the SERVER refusing, which no amount of waiting
+        // fixes; that spends budget like any other failure.
+        const neverAnswered = body instanceof Error;
+        failTrackRef.current(
+          neverAnswered ? "Playback stopped — the connection to the site dropped." : (body?.message || "This track can't be played."),
+          { networkLevel: neverAnswered }
+        );
       });
   }, [applyOutputChannels]);
+
+  // ── Pending recovery (one in flight, ever) ─────────────────────────────────
+  const clearPendingRecovery = useCallback(() => {
+    const pending = pendingRecoveryRef.current;
+    if (pending?.timerId) clearTimeout(pending.timerId);
+    pendingRecoveryRef.current = null;
+  }, []);
+
+  // Run the recovery that was waiting. Resume position is read NOW, not at schedule time — the
+  // playhead can't move while the stream is dead, and if it somehow did (the element healed itself),
+  // the fresher number is the right one.
+  const firePendingRecovery = useCallback(() => {
+    const pending = pendingRecoveryRef.current;
+    if (!pending) return;
+    clearPendingRecovery();
+    const track = currentRef.current;
+    if (!track || track.id !== pending.trackId) return; // the user moved on; nothing to revive
+    loadTrack(track, {
+      resumeAt: Math.max(0, progressRef.current.sec - RESUME_REWIND_SEC),
+      autoplay: true,
+    });
+  }, [clearPendingRecovery, loadTrack]);
+
+  // delayMs null = no heartbeat: the parked cap is spent, and only a wake or `online` event fires it.
+  const schedulePendingRecovery = useCallback((trackId, delayMs) => {
+    clearPendingRecovery();
+    const timerId = delayMs == null ? null : setTimeout(() => firePendingRecovery(), delayMs);
+    pendingRecoveryRef.current = { trackId, timerId };
+  }, [clearPendingRecovery, firePendingRecovery]);
 
   // Load + play whenever the current track changes. The signed URL comes from Stream/Start;
   // the <audio> element then streams straight off the gateway (Range requests, native decode).
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
+    // Whatever recovery the previous track had in flight dies with it.
+    clearPendingRecovery();
+    resumeOnWakeRef.current = false;
     if (!current) {
       audio.pause();
       audio.removeAttribute("src");
       return;
     }
     // A new pick is a clean slate: this track has spent none of its recovery budget.
-    recoveryRef.current = { trackId: current.id, attempts: 0, attemptedAtSec: 0 };
+    recoveryRef.current = { trackId: current.id, attempts: 0, attemptedAtSec: 0, parkBeats: 0 };
     const autoplay = !suppressAutoplayRef.current;
     suppressAutoplayRef.current = false;
     loadTrack(current, { autoplay });
@@ -376,17 +458,24 @@ export function MusicPlayerProvider({ children, enabled = true }) {
     const onTime = () => {
       const sec = audio.currentTime || 0;
       progressRef.current = { sec, at: Date.now() };
+      // The playhead is moving: whatever recovery was queued is for a stream that no longer needs
+      // one (an element that healed itself, or the retry that just took). Cancel it before it
+      // re-loads a working stream out from under the listener.
+      if (pendingRecoveryRef.current) clearPendingRecovery();
       // A track that has genuinely got going clears the "everything is failing" count…
       if (sec > 3) consecutiveFailuresRef.current = 0;
       // …and one that has run cleanly for a while earns its recovery budget back, so a long track
       // on a flaky link isn't written off for troubles it already recovered from. This can't spin:
       // refunding requires progress, and a failure loop makes none.
       const state = recoveryRef.current;
-      if (state.attempts > 0 && sec - state.attemptedAtSec > RECOVERY_RESET_SEC) state.attempts = 0;
+      if ((state.attempts > 0 || state.parkBeats > 0) && sec - state.attemptedAtSec > RECOVERY_RESET_SEC) {
+        state.attempts = 0;
+        state.parkBeats = 0;
+      }
     };
     audio.addEventListener("timeupdate", onTime);
     return () => audio.removeEventListener("timeupdate", onTime);
-  }, []);
+  }, [clearPendingRecovery]);
 
   // Restore volume once the element exists.
   useEffect(() => {
@@ -467,14 +556,27 @@ export function MusicPlayerProvider({ children, enabled = true }) {
 
   // Retry, skip, or give up — the single place a failed track is decided about. Element errors,
   // refused Starts and detected stalls all arrive here, so there is exactly one policy.
-  const failTrack = useCallback((message, { firstHand = false } = {}) => {
+  const failTrack = useCallback((message, { firstHand = false, networkLevel = false } = {}) => {
     const track = currentRef.current;
     if (!track) return; // nothing loaded (e.g. the element erroring as stop() clears its src)
+    if (pendingRecoveryRef.current) return; // a recovery is already queued for this failure
     if (recoveryRef.current.trackId !== track.id) {
-      recoveryRef.current = { trackId: track.id, attempts: 0, attemptedAtSec: 0 };
+      recoveryRef.current = { trackId: track.id, attempts: 0, attemptedAtSec: 0, parkBeats: 0 };
     }
     const state = recoveryRef.current;
     const hasNext = index + 1 < queue.length;
+
+    // The phone is napping, not the server failing. Hold position and wait for the world to
+    // change: a slow heartbeat while it lasts, and an immediate retry on wake or `online`. No
+    // budget is spent — the budget exists for a server that keeps refusing, and burning it on a
+    // Wi-Fi doze is how one bad second used to end the whole album.
+    if (shouldPark({ networkLevel, hidden: document.hidden, offline: navigator.onLine === false })) {
+      state.parkBeats += 1;
+      state.attemptedAtSec = progressRef.current.sec; // start the refund clock from here, not from 0:00
+      setError("Playback interrupted — waiting for the connection to come back.");
+      schedulePendingRecovery(track.id, state.parkBeats <= PARKED_MAX_BEATS ? PARKED_RETRY_MS : null);
+      return;
+    }
 
     switch (recoveryDecision({
       attempts: state.attempts,
@@ -482,14 +584,13 @@ export function MusicPlayerProvider({ children, enabled = true }) {
       hasNext,
     })) {
       case "retry":
+        // A fresh URL, resumed just behind where it died — a re-mint costs one round trip and is
+        // the only thing that helps when the old connection is what broke. After a short wait: an
+        // instant retry against a hiccup fails as instantly as the first attempt did, and two
+        // instant failures spend the whole budget inside the same bad second.
         state.attempts += 1;
         state.attemptedAtSec = progressRef.current.sec;
-        // A fresh URL, resumed just behind where it died — a re-mint costs one round trip and is
-        // the only thing that helps when the old connection is what broke.
-        loadTrack(track, {
-          resumeAt: Math.max(0, progressRef.current.sec - RESUME_REWIND_SEC),
-          autoplay: true,
-        });
+        schedulePendingRecovery(track.id, retryDelayMs(state.attempts - 1));
         return;
 
       case "skip":
@@ -519,10 +620,34 @@ export function MusicPlayerProvider({ children, enabled = true }) {
         });
       }
     }
-  }, [index, queue.length, loadTrack, next]);
+  }, [index, queue.length, schedulePendingRecovery, next]);
 
   // Kept in a ref so loadTrack — defined earlier, and deliberately dependency-free — can reach it.
   useEffect(() => { failTrackRef.current = failTrack; }, [failTrack]);
+
+  // The two moments the world changes back: the page becomes visible (the listener picked the phone
+  // up) and the browser regains a network. Both fire whatever recovery was parked, so the session
+  // heals the instant it CAN rather than on the next heartbeat — and a play() that was refused on a
+  // hidden page gets its retry, which only a visible page can grant.
+  useEffect(() => {
+    const onWake = () => {
+      if (document.hidden) return;
+      if (resumeOnWakeRef.current) {
+        resumeOnWakeRef.current = false;
+        audioRef.current?.play().catch(() => { /* still refused: the bar honestly shows Play */ });
+      }
+      firePendingRecovery();
+    };
+    // `online` fires on hidden pages too, and that's wanted: the music should come back while the
+    // phone is still in a pocket, not when it's finally looked at.
+    const onOnline = () => firePendingRecovery();
+    document.addEventListener("visibilitychange", onWake);
+    window.addEventListener("online", onOnline);
+    return () => {
+      document.removeEventListener("visibilitychange", onWake);
+      window.removeEventListener("online", onOnline);
+    };
+  }, [firePendingRecovery]);
 
   // Stall watchdog. There is no event for "the bytes stopped arriving and nobody said anything":
   // `stalled`/`waiting` fire inconsistently across browsers, and not at all when a connection dies
@@ -558,6 +683,9 @@ export function MusicPlayerProvider({ children, enabled = true }) {
       lastTick = now;
       const audio = audioRef.current;
       if (!audio || audio.paused || audio.ended || audio.seeking) return;
+      // A recovery is already queued (a backoff waiting out, or a park waiting on the world).
+      // Judging the same dead stream again would spend budget the pending retry may make moot.
+      if (pendingRecoveryRef.current) return;
       const verdict = stallVerdict({
         hidden: document.hidden,
         sinceTickMs: sinceTick,
@@ -568,7 +696,9 @@ export function MusicPlayerProvider({ children, enabled = true }) {
       // Re-arm before handing off, so a reload in flight isn't re-triggered on the next poll — and
       // so a page that has just woken judges the stream from now rather than from before it slept.
       progressRef.current = { ...progressRef.current, at: now };
-      if (verdict === "fail") failTrackRef.current("Playback stopped — the stream isn't answering.");
+      // networkLevel: the track was decoding fine until the bytes stopped — that's a connection's
+      // account, not a file's, so an offline browser parks it instead of spending budget.
+      if (verdict === "fail") failTrackRef.current("Playback stopped — the stream isn't answering.", { networkLevel: true });
     }, STALL_POLL_MS);
     return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -587,9 +717,15 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   const toggle = useCallback(() => {
     const audio = audioRef.current;
     if (!audio || !audio.src) return;
+    // A recovery is waiting on a heartbeat or a wake — the tap IS the wake. Fire it now: what this
+    // element holds is a dead source, and play() on a corpse either rejects or replays the error.
+    if (pendingRecoveryRef.current) {
+      firePendingRecovery();
+      return;
+    }
     if (audio.paused) audio.play().catch(() => {});
     else audio.pause();
-  }, []);
+  }, [firePendingRecovery]);
 
   const seek = useCallback((seconds) => {
     const audio = audioRef.current;
@@ -721,9 +857,14 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   // the same bounded recovery as everything else. The message is only reached once retries and a
   // skip are exhausted — it says what actually happened rather than the bare "Playback failed."
   const onError = useCallback(() => {
-    const reason = mediaErrorReason(audioRef.current?.error);
-    if (reason) failTrackRef.current(`Playback stopped — ${reason}.`, { firstHand: true });
-    else failTrackRef.current("Playback failed — the stream isn't answering.");
+    const err = audioRef.current?.error;
+    const reason = mediaErrorReason(err);
+    // MEDIA_ERR_NETWORK (2) is the element saying the connection went, which a sleeping phone does
+    // routinely — park-able. Decode (3) and format (4) failures are about the FILE and get no such
+    // patience: they will fail identically when the network returns.
+    const networkLevel = err?.code === 2;
+    if (reason) failTrackRef.current(`Playback stopped — ${reason}.`, { firstHand: true, networkLevel });
+    else failTrackRef.current("Playback failed — the stream isn't answering.", { networkLevel });
   }, []);
 
   // OS lock-screen / media-key card. The shared hook only touches standard HTMLMediaElement

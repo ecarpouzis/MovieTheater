@@ -42,6 +42,15 @@ function MusicMiniPlayer() {
   // The bar lives outside /music, so it carries its own playlist picker (music-plan.md Phase 3)
   // rather than reaching for the library page's one.
   const [pickerTracks, setPickerTracks] = useState(null);
+  // Whether the full error text is open in its sheet above the bar. The error line is one
+  // ellipsised row on a phone, and what the ellipsis eats is the diagnosis — the player goes to
+  // real trouble to say WHICH of a dropped connection, a refused token and an unplayable file this
+  // was, and a report of "an error that said something…" is this feature having not existed.
+  const [errorOpen, setErrorOpen] = useState(false);
+  const playerError = player?.error;
+  useEffect(() => {
+    if (!playerError) setErrorOpen(false); // recovered: the sheet must not outlive its message
+  }, [playerError]);
 
   const audioRef = player?.audioRef;
   const playing = !!player?.playing;
@@ -197,6 +206,22 @@ function MusicMiniPlayer() {
         />
       </div>
     )}
+    {/* The full error text, wrapped, above the bar. A sheet rather than un-truncating the line in
+        place: the bar's rows are load-bearing layout on a phone, and a three-line sentence in the
+        artist slot would shove the transport off it. */}
+    {error && errorOpen && (
+      <div
+        className="music-miniplayer-error-sheet"
+        style={barHeight ? { bottom: barHeight } : undefined}
+        onClick={() => setErrorOpen(false)}
+        role="button"
+        tabIndex={0}
+        data-testid="music-error-sheet"
+      >
+        {error}
+        <div className="music-miniplayer-error-sheet-hint">Tap to dismiss</div>
+      </div>
+    )}
     <div className="music-miniplayer" data-testid="music-miniplayer" ref={barRef}>
       {/* Clicking the track info opens the full player; with nothing loaded it falls back to the
           library (the bar doesn't render then, but the fallback keeps the intent explicit). */}
@@ -218,7 +243,20 @@ function MusicMiniPlayer() {
         <div className="music-miniplayer-titles">
           <div className="music-miniplayer-title" title={current.title}>{current.title}</div>
           <div className="music-miniplayer-artist" title={current.artist}>
-            {error ? <span className="music-miniplayer-error">{error}</span> : [current.artist, current.album].filter(Boolean).join(" — ")}
+            {/* A real <button>, and stopPropagation is load-bearing: the whole info block is a
+                click target that navigates to Now Playing, which would swallow the tap and hide
+                the one sentence the tap was for. */}
+            {error ? (
+              <button
+                className="music-miniplayer-error"
+                onClick={(e) => { e.stopPropagation(); setErrorOpen((o) => !o); }}
+                aria-expanded={errorOpen}
+                title="Show the full message"
+                data-testid="music-error-line"
+              >
+                {error}
+              </button>
+            ) : [current.artist, current.album].filter(Boolean).join(" — ")}
           </div>
         </div>
       </div>

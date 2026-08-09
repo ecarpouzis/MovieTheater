@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { trackIsPlayable, shuffled, recoveryDecision, diagnoseStreamUrl, withFavorite, outputChannelCount, HOST_HEALTHY, mediaErrorReason, stallVerdict } from "./MusicPlayerContext";
+import { trackIsPlayable, shuffled, recoveryDecision, diagnoseStreamUrl, withFavorite, outputChannelCount, HOST_HEALTHY, mediaErrorReason, stallVerdict, shouldPark, retryDelayMs } from "./MusicPlayerContext";
 
 // The player used to gate on `!t.requiresTranscode` inline, in four separate places. That greyed
 // out every non-native codec even though the gateway has always had an ffmpeg route and
@@ -210,6 +210,54 @@ describe("stallVerdict", () => {
     expect(tick({ sinceProgressMs: 20000, loading: true })).toBe("wait");
     expect(tick({ sinceProgressMs: 20000, loading: false })).toBe("fail");
     expect(tick({ sinceProgressMs: 50000, loading: true })).toBe("fail");
+  });
+});
+
+// The second way the walk-away bug came back: with the watchdog fixed, a REAL network hiccup while
+// the phone slept still burned the whole recovery budget — every fetch rejects instantly when the
+// radio naps, so 2 retries + a skip + the next track's retries all failed inside the same second,
+// and the session was terminally stopped by the time the network returned. Parking is the answer:
+// a network-level failure on a hidden or offline page spends no budget and waits for the world.
+describe("shouldPark", () => {
+  it("parks a network failure while the page is hidden", () => {
+    expect(shouldPark({ networkLevel: true, hidden: true, offline: false })).toBe(true);
+  });
+
+  it("parks a network failure while the browser says offline, even in the foreground", () => {
+    expect(shouldPark({ networkLevel: true, hidden: false, offline: true })).toBe(true);
+  });
+
+  // Visible + online + still failing is the one combination where the bounded budget is the right
+  // tool: the world is fine and the stream is not, and that path must terminate.
+  it("spends budget as before when the page is visible and online", () => {
+    expect(shouldPark({ networkLevel: true, hidden: false, offline: false })).toBe(false);
+  });
+
+  // A bad decode or a refused token will be exactly as broken when the network returns. Parking a
+  // content failure would wait forever for a change that changes nothing.
+  it("never parks a content-level failure, hidden or not", () => {
+    expect(shouldPark({ networkLevel: false, hidden: true, offline: true })).toBe(false);
+    expect(shouldPark({ networkLevel: false, hidden: false, offline: false })).toBe(false);
+  });
+
+  it("treats missing fields as false rather than throwing", () => {
+    expect(shouldPark({})).toBe(false);
+    expect(shouldPark({ networkLevel: true })).toBe(false);
+  });
+});
+
+// Budgeted retries wait before re-minting. The delays only matter relative to the failure they
+// answer: anything > 0 outlives an instant rejection, and the clamp means a miscounted attempt
+// index can only slow a retry down, never make it undefined-instant.
+describe("retryDelayMs", () => {
+  it("waits a beat on the first retry and longer on the second", () => {
+    expect(retryDelayMs(0)).toBeGreaterThan(0);
+    expect(retryDelayMs(1)).toBeGreaterThan(retryDelayMs(0));
+  });
+
+  it("clamps out-of-range attempt counts to a real delay", () => {
+    expect(retryDelayMs(99)).toBe(retryDelayMs(1));
+    expect(retryDelayMs(-1)).toBe(retryDelayMs(0));
   });
 });
 

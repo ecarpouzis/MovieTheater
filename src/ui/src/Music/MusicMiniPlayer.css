@@ -62,7 +62,48 @@
   text-overflow: ellipsis;
 }
 
-.music-miniplayer-error { color: #e8657f; }
+/* The error line is a button: the ellipsis eats exactly the part of the message that says what
+   went wrong, so the tap opens the full text in the sheet below. Styled back down to the line it
+   replaces — the affordance is the cursor and the sheet, not a button chrome. */
+.music-miniplayer-error {
+  display: block;
+  max-width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  text-align: left;
+  color: #e8657f;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The full message, wrapped, in a band above the bar — same anchoring as the lyrics overlay, so it
+   stops exactly where the bar starts however many rows the bar is wearing. */
+.music-miniplayer-error-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: var(--music-miniplayer-height, 72px);
+  z-index: 900;
+  background: var(--sidebar-bg);
+  border-top: 1px solid var(--sidebar-border);
+  color: #e8657f;
+  font-size: 13px;
+  line-height: 1.5;
+  padding: 12px 16px;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+  animation: music-lyrics-overlay-in 0.18s ease;
+}
+
+.music-miniplayer-error-sheet-hint {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--sidebar-text-muted);
+}
 
 .music-miniplayer-transport {
   display: flex;
