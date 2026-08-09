@@ -63,6 +63,16 @@ beforeEach(() => {
   playSpy = vi.fn(() => Promise.resolve());
   window.HTMLMediaElement.prototype.play = playSpy;
   window.HTMLMediaElement.prototype.pause = vi.fn();
+  // The player now DOWNLOADS a track before playing it, so tests need a fetch and object-URL
+  // environment. createObjectURL echoes the URL the bytes came from, so a deck's src says which
+  // track it is holding — `blob:https://gw/2` reads as "track 2's bytes, in memory".
+  global.fetch = vi.fn((u) => Promise.resolve({
+    ok: true,
+    headers: { get: () => "1024" },
+    blob: () => Promise.resolve({ size: 1024, __url: u }),
+  }));
+  global.URL.createObjectURL = (b) => `blob:${b.__url}`;
+  global.URL.revokeObjectURL = vi.fn();
   window.localStorage.clear();
 });
 

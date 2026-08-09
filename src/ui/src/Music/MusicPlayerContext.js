@@ -109,6 +109,12 @@ const PARKED_MAX_BEATS = 90;
 // Minting early is free: /API/Music/Stream/Start only signs a capability (no play count, no
 // server-side session) and the token is good for 6 hours.
 const PREFETCH_LEAD_SEC = 30;
+// Hold a whole track in memory rather than streaming it. Above this we fall back to streaming —
+// a 277 MB live set is not worth an OOM on a phone.
+const MAX_PRELOAD_BYTES = 120 * 1024 * 1024;
+// How far into a track we start downloading the next one. Early, deliberately: the whole track has
+// to be in memory before the phone goes to sleep, not 30 seconds before it is needed.
+const PRELOAD_START_SEC = 5;
 
 /// Ask the stream host what it actually said. "Playback failed." is what the player showed for every
 /// distinct prod outage this vertical has had — a gateway that couldn't SEE the files, an expired or
@@ -299,6 +305,7 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   // Which track the IDLE deck has buffered, or null. Distinct from prefetchRef (a URL in hand):
   // this one means the bytes are already decoded and ready to play.
   const deckLoadedRef = useRef(null);
+  const preloadAbortRef = useRef(null);
   // element -> MediaElementAudioSourceNode; both decks must be routed once the graph exists.
   const graphSourcesRef = useRef(new Map());
 
@@ -503,6 +510,79 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   /// slot pointing at some other track is simply replaced — the queue moved on under it.
   /// A failure clears the slot and says nothing: the hand-off just doesn't happen, and the ordinary
   /// load path runs on the track change exactly as it did before, error handling included.
+  // Blob URLs currently held by each deck, so they can be revoked the moment they stop being
+  // the thing playing. An un-revoked object URL pins its whole ArrayBuffer for the life of the page.
+  const deckBlobRef = useRef({ a: null, b: null });
+  const revokeDeck = useCallback((deck) => {
+    const url = deckBlobRef.current[deck];
+    if (url) {
+      try { URL.revokeObjectURL(url); } catch { /* already gone */ }
+      deckBlobRef.current[deck] = null;
+    }
+  }, []);
+
+  /**
+   * Put the next track on the idle deck — as BYTES WE ALREADY HOLD, not a URL to be streamed.
+   *
+   * This is the whole answer to playback dying on a sleeping phone. It was never really about
+   * format or file size: a 40 MB FLAC and an 11 MB mp3 both died mid-song. What they had in common
+   * was needing the network DURING playback — and a phone whose screen is off naps its radio, so an
+   * in-flight connection dies (MEDIA_ERR_NETWORK) or a fresh request never completes
+   * (MEDIA_ERR_SRC_NOT_SUPPORTED). Neither leaves a server-side trace, because neither ever
+   * reaches the server.
+   *
+   * Downloading the track while the page is awake and playing it from memory removes the
+   * dependency entirely: once the bytes are here, there is no connection left to lose. Bit-perfect
+   * — the file is byte-for-byte what is on disk, so FLAC stays FLAC and nothing is transcoded.
+   */
+  const installOnIdleDeck = useCallback((track, url) => {
+    const idle = idleEl();
+    const deck = idleDeck();
+    if (!idle) return;
+    const stream = (why) => {
+      // Fall back to ordinary streaming. Worse on a sleeping phone, but always correct.
+      try {
+        revokeDeck(deck);
+        idle.preload = "auto";
+        idle.src = url;
+        idle.volume = volumeOf();
+        idle.load();
+        deckLoadedRef.current = track.id;
+        diagLog("preload:stream", { track: track.id, deck, why });
+      } catch {
+        deckLoadedRef.current = null;
+      }
+    };
+    const controller = new AbortController();
+    preloadAbortRef.current?.abort();
+    preloadAbortRef.current = controller;
+    diagLog("preload:fetch", { track: track.id, deck });
+    fetch(url, { signal: controller.signal, credentials: "omit" })
+      .then((res) => {
+        if (!res.ok) throw new Error(`status ${res.status}`);
+        const len = Number(res.headers.get("content-length") || 0);
+        if (len > MAX_PRELOAD_BYTES) throw new Error("too big");
+        return res.blob();
+      })
+      .then((blob) => {
+        // A skip mid-download means these bytes are for a track nobody is about to play.
+        if (nextTrackRef.current?.id !== track.id) return;
+        revokeDeck(deck);
+        const objectUrl = URL.createObjectURL(blob);
+        deckBlobRef.current[deck] = objectUrl;
+        idle.preload = "auto";
+        idle.src = objectUrl;
+        idle.volume = volumeOf();
+        idle.load();
+        deckLoadedRef.current = track.id;
+        diagLog("preload:ready", { track: track.id, deck, mb: +(blob.size / 1048576).toFixed(1) });
+      })
+      .catch((e) => {
+        if (controller.signal.aborted) return;
+        stream(String(e?.message || e).slice(0, 40));
+      });
+  }, [idleEl, idleDeck, revokeDeck, volumeOf]);
+
   const prefetchNext = useCallback(() => {
     const track = nextTrackRef.current;
     if (!track) return;
@@ -518,24 +598,12 @@ export function MusicPlayerProvider({ children, enabled = true }) {
         // …and start BUFFERING it on the idle deck, which is the whole point: at the boundary the
         // bytes must already be here. This is why a sleeping phone can cross a track boundary now —
         // there is nothing left to fetch at the moment it has the least licence to fetch anything.
-        const idle = idleEl();
-        if (idle) {
-          try {
-            idle.preload = "auto";
-            idle.src = data.url;
-            idle.volume = volumeOf();
-            idle.load();
-            deckLoadedRef.current = track.id;
-            diagLog("preload:deck", { track: track.id, deck: idleDeck() });
-          } catch {
-            deckLoadedRef.current = null; // buffering is an optimisation; the boundary still has fallbacks
-          }
-        }
+        installOnIdleDeck(track, data.url);
       })
       .catch(() => {
         if (prefetchRef.current?.trackId === track.id) prefetchRef.current = null;
       });
-  }, [idleEl, idleDeck]);
+  }, [installOnIdleDeck]);
 
   // ── Pending recovery (one in flight, ever) ─────────────────────────────────
   const clearPendingRecovery = useCallback(() => {
@@ -624,11 +692,14 @@ export function MusicPlayerProvider({ children, enabled = true }) {
         state.attempts = 0;
         state.parkBeats = 0;
       }
-      // Near the end of the track, get the next one's URL in hand (see PREFETCH_LEAD_SEC). Driven
-      // off timeupdate rather than a timer on purpose: it's the one clock that can't run while the
-      // audio isn't, so this can never fire early on a paused or seeking element.
+      // Fetch the NEXT track as early as this one is properly under way. The old trigger was a 30s
+      // lead, which is plenty to mint a URL but nowhere near enough to download a track — and the
+      // download is the point: it has to finish while the page is still awake and allowed to use
+      // the network. Driven off timeupdate rather than a timer because it's the one clock that
+      // can't run while the audio isn't, so it never fires on a paused or seeking element.
       const duration = audio.duration;
-      if (Number.isFinite(duration) && duration > 0 && duration - sec <= PREFETCH_LEAD_SEC) prefetchNext();
+      const nearEnd = Number.isFinite(duration) && duration > 0 && duration - sec <= PREFETCH_LEAD_SEC;
+      if (sec >= PRELOAD_START_SEC || nearEnd) prefetchNext();
     };
     audio.addEventListener("timeupdate", onTime);
     return () => audio.removeEventListener("timeupdate", onTime);
@@ -659,6 +730,13 @@ export function MusicPlayerProvider({ children, enabled = true }) {
       window.removeEventListener("offline", onOffline);
     };
   }, [activeDeck]);
+
+  // Nothing may outlive the player: an object URL kept past unmount pins its buffer forever.
+  useEffect(() => () => {
+    preloadAbortRef.current?.abort();
+    revokeDeck("a");
+    revokeDeck("b");
+  }, [revokeDeck]);
 
   // Restore volume once the element exists.
   useEffect(() => {
@@ -1131,9 +1209,11 @@ export function MusicPlayerProvider({ children, enabled = true }) {
         if (document.hidden) resumeOnWakeRef.current = true;
         setPlaying(false);
       });
-      // Park the outgoing deck. Only pause it — clearing its src would fire `emptied`/`error` for
-      // a stream nobody is listening to, and it is about to be overwritten by the next preload.
+      // Park the outgoing deck and release the track it was holding. An object URL that is never
+      // revoked pins its whole ArrayBuffer for the life of the page — two 40 MB tracks per album
+      // side would be a leak measured in hundreds of megabytes on a phone.
       try { outgoing.pause(); } catch { /* already gone */ }
+      revokeDeck(nextDeck === "a" ? "b" : "a");
       next();
       return;
     }
@@ -1159,7 +1239,7 @@ export function MusicPlayerProvider({ children, enabled = true }) {
       });
     }
     next();
-  }, [applyOutputChannels, next, elFor, idleEl, idleDeck, syncActive, volumeOf]);
+  }, [applyOutputChannels, next, elFor, idleEl, idleDeck, syncActive, volumeOf, revokeDeck]);
   // The element gave up on this source. That used to end the listening session; now it goes through
   // the same bounded recovery as everything else. The message is only reached once retries and a
   // skip are exhausted — it says what actually happened rather than the bare "Playback failed."

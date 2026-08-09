@@ -58,6 +58,16 @@ beforeEach(() => {
   playSpy = vi.fn(() => Promise.resolve());
   window.HTMLMediaElement.prototype.play = playSpy;
   window.HTMLMediaElement.prototype.pause = vi.fn();
+  // The player now DOWNLOADS a track before playing it, so tests need a fetch and object-URL
+  // environment. createObjectURL echoes the URL the bytes came from, so a deck's src says which
+  // track it is holding — `blob:https://gw/2` reads as "track 2's bytes, in memory".
+  global.fetch = vi.fn((u) => Promise.resolve({
+    ok: true,
+    headers: { get: () => "1024" },
+    blob: () => Promise.resolve({ size: 1024, __url: u }),
+  }));
+  global.URL.createObjectURL = (b) => `blob:${b.__url}`;
+  global.URL.revokeObjectURL = vi.fn();
   // The player persists its queue, so without this a test mounts the PREVIOUS test's queue and
   // silently exercises a different path. "falls back to the ordinary load" was passing that way:
   // it restored track 2, spent the mocked failure on track 1, and then took the prefetch path it
@@ -83,16 +93,18 @@ describe("gapless hand-off at the track boundary", () => {
     expect(audio.src).toBe("https://gw/1");
     expect(api.startMusicTrack).toHaveBeenCalledTimes(1);
 
-    // Mid-track: nothing to prefetch yet — a whole album's URLs minted at once would be pointless
-    // work and would age the tokens for tracks nobody may reach.
+    // Right at the start, nothing yet: a whole album's URLs minted at once would be pointless work
+    // and would age tokens for tracks nobody may reach.
     await act(async () => {
-      fakePlayhead(audio, { currentTime: 10, duration: 100 });
+      fakePlayhead(audio, { currentTime: 1, duration: 100 });
       audio.dispatchEvent(new Event("timeupdate"));
     });
     expect(api.startMusicTrack).toHaveBeenCalledTimes(1);
 
+    // …but once this track is properly under way, EARLY — the next track has to be downloaded in
+    // full while the page is still awake, which a 30-second lead is nowhere near enough for.
     await act(async () => {
-      fakePlayhead(audio, { currentTime: 80, duration: 100 });
+      fakePlayhead(audio, { currentTime: 10, duration: 100 });
       audio.dispatchEvent(new Event("timeupdate"));
     });
     expect(api.startMusicTrack).toHaveBeenLastCalledWith(2);
@@ -111,7 +123,7 @@ describe("gapless hand-off at the track boundary", () => {
     // The live element is read through player.audioRef because the boundary is now a FLIP between
     // two decks — `audio` is the deck that just finished, and the next track is on the other one.
     audio.dispatchEvent(new Event("ended"));
-    expect(player.audioRef.current.src).toBe("https://gw/2");
+    expect(player.audioRef.current.src).toBe("blob:https://gw/2");
     expect(playSpy).toHaveBeenCalledTimes(1);
     expect(api.startMusicTrack).toHaveBeenCalledTimes(startsBefore);
 
@@ -120,7 +132,7 @@ describe("gapless hand-off at the track boundary", () => {
     await act(async () => {});
     expect(player.current.id).toBe(2);
     expect(api.startMusicTrack).toHaveBeenCalledTimes(startsBefore);
-    expect(player.audioRef.current.src).toBe("https://gw/2");
+    expect(player.audioRef.current.src).toBe("blob:https://gw/2");
   });
 
   it("falls back to the ordinary load when the prefetch never arrived", async () => {

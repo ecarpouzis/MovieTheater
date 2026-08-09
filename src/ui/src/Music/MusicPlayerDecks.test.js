@@ -54,6 +54,16 @@ beforeEach(() => {
   playSpy = vi.fn(() => Promise.resolve());
   window.HTMLMediaElement.prototype.play = playSpy;
   window.HTMLMediaElement.prototype.pause = vi.fn();
+  // The player now DOWNLOADS a track before playing it, so tests need a fetch and object-URL
+  // environment. createObjectURL echoes the URL the bytes came from, so a deck's src says which
+  // track it is holding — `blob:https://gw/2` reads as "track 2's bytes, in memory".
+  global.fetch = vi.fn((u) => Promise.resolve({
+    ok: true,
+    headers: { get: () => "1024" },
+    blob: () => Promise.resolve({ size: 1024, __url: u }),
+  }));
+  global.URL.createObjectURL = (b) => `blob:${b.__url}`;
+  global.URL.revokeObjectURL = vi.fn();
   window.HTMLMediaElement.prototype.load = vi.fn();
   window.localStorage.clear();   // a persisted queue must not leak between tests
 });
@@ -67,12 +77,13 @@ async function mountPlaying() {
   return { view, decks, live: () => player.audioRef.current };
 }
 
-/** Run the current track up to the prefetch lead so the next one gets buffered. */
+/** Let the current track get under way, which is what triggers downloading the next one. */
 async function runToPrefetch(el) {
   await act(async () => {
-    fakePlayhead(el, { currentTime: 80, duration: 100 });
+    fakePlayhead(el, { currentTime: 10, duration: 100 });
     el.dispatchEvent(new Event("timeupdate"));
   });
+  await act(async () => {});   // let the download settle
 }
 
 describe("A/B decks", () => {
@@ -87,8 +98,9 @@ describe("A/B decks", () => {
     const { decks, live } = await mountPlaying();
     await runToPrefetch(live());
     const [a, b] = decks();
-    expect(a.src).toBe("https://gw/1");   // still playing
-    expect(b.src).toBe("https://gw/2");   // already buffered
+    expect(a.src).toBe("https://gw/1");        // still playing, straight off the gateway
+    expect(global.fetch).toHaveBeenCalledWith("https://gw/2", expect.anything());
+    expect(b.src).toBe("blob:https://gw/2");   // …and track 2's BYTES are already in memory
   });
 
   it("crosses the boundary as a FLIP — no fetch and no src assignment", async () => {
@@ -102,7 +114,7 @@ describe("A/B decks", () => {
     live().dispatchEvent(new Event("ended"));
 
     expect(player.audioRef.current).toBe(b);          // deck flipped
-    expect(player.audioRef.current.src).toBe("https://gw/2");
+    expect(player.audioRef.current.src).toBe("blob:https://gw/2"); // playing from memory
     expect(playSpy).toHaveBeenCalledTimes(1);
     expect(api.startMusicTrack).toHaveBeenCalledTimes(startsBefore); // nothing fetched at the boundary
 
@@ -124,7 +136,21 @@ describe("A/B decks", () => {
     await act(async () => { b.dispatchEvent(new Event("ended")); });
     expect(player.audioRef.current).toBe(a);          // back to deck A
     expect(player.current.id).toBe(3);
-    expect(a.src).toBe("https://gw/3");
+    expect(a.src).toBe("blob:https://gw/3");
+  });
+
+  it("needs NO network at the boundary — the bytes are already here", async () => {
+    const { live } = await mountPlaying();
+    await runToPrefetch(live());
+    global.fetch.mockClear();
+    api.startMusicTrack.mockClear();
+
+    live().dispatchEvent(new Event("ended"));
+
+    // This is the property the whole design exists for: a sleeping phone cannot be asked for the
+    // network, so crossing a boundary must not require it.
+    expect(global.fetch).not.toHaveBeenCalled();
+    expect(api.startMusicTrack).not.toHaveBeenCalled();
   });
 
   it("ignores events from the idle deck — its loads are preparation, not playback", async () => {
