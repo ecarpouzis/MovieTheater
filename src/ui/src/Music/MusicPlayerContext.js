@@ -90,6 +90,23 @@ const RETRY_BACKOFF_MS = [1000, 5000];
 // left unplugged all night does a bounded amount of work, and still heals the moment it's looked at.
 const PARKED_RETRY_MS = 20000;
 const PARKED_MAX_BEATS = 90;
+// ── The track boundary (why gapless is a correctness feature, not a nicety) ──
+// Advancing a track used to be: `ended` → setIndex → effect → POST Stream/Start → await a signed
+// URL → src → play(). Every step after `ended` needs the PAGE to be running, and the page's licence
+// to run in the background is that it is playing audio — which, at that exact moment, it no longer
+// is. On a phone with the screen off the renderer is throttled the instant the element goes idle,
+// so the round trip lands late (or not until wake) and play() is then refused for having no audio
+// in flight: the album silently stops, and the next track starts when you pick the phone up. That
+// is the reported symptom, and it is NOT the stall watchdog (see stallVerdict) — nothing failed
+// here, the gap itself was the bug.
+//
+// So the URL for the next track is minted while the current one is still playing, and `ended`
+// installs it and calls play() SYNCHRONOUSLY, inside the event handler, with no await in between.
+// The element never goes idle for longer than a source swap, the page never loses its audio
+// licence, and React's index update follows behind as bookkeeping rather than as the mechanism.
+// Minting early is free: /API/Music/Stream/Start only signs a capability (no play count, no
+// server-side session) and the token is good for 6 hours.
+const PREFETCH_LEAD_SEC = 30;
 
 /// Ask the stream host what it actually said. "Playback failed." is what the player showed for every
 /// distinct prod outage this vertical has had — a gateway that couldn't SEE the files, an expired or
@@ -260,6 +277,16 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   // Channel count of the loaded track, from Stream/Start. Kept in a ref because the graph may be
   // built LONG after the track loaded (the visualizer opens mid-song) and has to size itself then.
   const trackChannelsRef = useRef(0);
+  // ── Gapless hand-off (see PREFETCH_LEAD_SEC) ───────────────────────────────
+  // Whatever is queued after the current track, readable from the `ended` handler without making
+  // that handler re-bind on every queue change.
+  const nextTrackRef = useRef(null);
+  // { trackId, url, channels } — the next track's signed URL, minted early. `url` is null while the
+  // mint is in flight, which also marks the slot as claimed so the poll doesn't re-request it.
+  const prefetchRef = useRef(null);
+  // The track whose source `ended` already installed. The track-change effect consumes this and
+  // skips its own load, rather than tearing a playing stream off the element to re-fetch its URL.
+  const handedOffRef = useRef(null);
 
   const current = index >= 0 && index < queue.length ? queue[index] : null;
 
@@ -315,6 +342,7 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   // Mirrors, so the failure handlers (which run from element events and an interval, never from
   // render) can read the live track without every one of them re-binding on each change.
   currentRef.current = current;
+  nextTrackRef.current = index >= 0 && index + 1 < queue.length ? queue[index + 1] : null;
 
   // Size the graph's output to the track so the visualizer can't collapse surround to stereo.
   //
@@ -400,6 +428,29 @@ export function MusicPlayerProvider({ children, enabled = true }) {
       });
   }, [applyOutputChannels]);
 
+  /// Mint the next track's URL now, so `ended` has one in hand. Idempotent per track and cheap to
+  /// call from a timeupdate: a slot claimed for this id (in flight or filled) is left alone, and a
+  /// slot pointing at some other track is simply replaced — the queue moved on under it.
+  /// A failure clears the slot and says nothing: the hand-off just doesn't happen, and the ordinary
+  /// load path runs on the track change exactly as it did before, error handling included.
+  const prefetchNext = useCallback(() => {
+    const track = nextTrackRef.current;
+    if (!track) return;
+    if (prefetchRef.current?.trackId === track.id) return;
+    prefetchRef.current = { trackId: track.id, url: null, channels: 0 };
+    MovieAPI.startMusicTrack(track.id)
+      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then((data) => {
+        // Still the track we claimed the slot for? A skip mid-mint means this URL is for something
+        // nobody is about to play, and writing it would hand `ended` the wrong song.
+        if (prefetchRef.current?.trackId !== track.id) return;
+        prefetchRef.current = { trackId: track.id, url: data.url, channels: Number(data.channels) || 0 };
+      })
+      .catch(() => {
+        if (prefetchRef.current?.trackId === track.id) prefetchRef.current = null;
+      });
+  }, []);
+
   // ── Pending recovery (one in flight, ever) ─────────────────────────────────
   const clearPendingRecovery = useCallback(() => {
     const pending = pendingRecoveryRef.current;
@@ -436,16 +487,30 @@ export function MusicPlayerProvider({ children, enabled = true }) {
     if (!audio) return;
     // Whatever recovery the previous track had in flight dies with it.
     clearPendingRecovery();
-    resumeOnWakeRef.current = false;
     if (!current) {
       audio.pause();
       audio.removeAttribute("src");
+      resumeOnWakeRef.current = false;
       return;
     }
     // A new pick is a clean slate: this track has spent none of its recovery budget.
     recoveryRef.current = { trackId: current.id, attempts: 0, attemptedAtSec: 0, parkBeats: 0 };
     const autoplay = !suppressAutoplayRef.current;
     suppressAutoplayRef.current = false;
+    // `ended` already put this track's source on the element and started it. Loading it again would
+    // undo the whole point of the hand-off — a fresh Stream/Start, a fresh src, and the silent gap
+    // back — so this effect only does the bookkeeping above and lets the audio run.
+    if (handedOffRef.current === current.id) {
+      handedOffRef.current = null;
+      return;
+    }
+    handedOffRef.current = null; // a pick that jumped elsewhere: the stale claim can't outlive it
+    // Cleared HERE and not at the top of the effect. `ended` is not a discrete event, so React
+    // flushes the index change in a microtask — the same queue the play() rejection arrives on, with
+    // no guaranteed order between them. Clearing this before the hand-off branch could therefore
+    // wipe a resume flag that a refused play() had just set, in exactly the case it exists for: a
+    // hidden page. Nothing above this line sets it, and both paths that follow own it outright.
+    resumeOnWakeRef.current = false;
     loadTrack(current, { autoplay });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current?.id]);
@@ -472,10 +537,15 @@ export function MusicPlayerProvider({ children, enabled = true }) {
         state.attempts = 0;
         state.parkBeats = 0;
       }
+      // Near the end of the track, get the next one's URL in hand (see PREFETCH_LEAD_SEC). Driven
+      // off timeupdate rather than a timer on purpose: it's the one clock that can't run while the
+      // audio isn't, so this can never fire early on a paused or seeking element.
+      const duration = audio.duration;
+      if (Number.isFinite(duration) && duration > 0 && duration - sec <= PREFETCH_LEAD_SEC) prefetchNext();
     };
     audio.addEventListener("timeupdate", onTime);
     return () => audio.removeEventListener("timeupdate", onTime);
-  }, [clearPendingRecovery]);
+  }, [clearPendingRecovery, prefetchNext]);
 
   // Restore volume once the element exists.
   useEffect(() => {
@@ -852,7 +922,32 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   // Keep `playing` truthful to the element (covers OS media keys, autoplay refusals, errors).
   const onPlay = useCallback(() => setPlaying(true), []);
   const onPause = useCallback(() => setPlaying(false), []);
-  const onEnded = useCallback(() => next(), [next]);
+  /// The track boundary. If the next track's URL is already in hand, the swap happens HERE —
+  /// synchronously, inside the event handler — and `next()` only moves the index to match. See
+  /// PREFETCH_LEAD_SEC for why every await between `ended` and `play()` is a chance for a sleeping
+  /// phone to stop the album.
+  const onEnded = useCallback(() => {
+    const audio = audioRef.current;
+    const upcoming = nextTrackRef.current;
+    const pre = prefetchRef.current;
+    if (audio && upcoming && pre?.url && pre.trackId === upcoming.id) {
+      prefetchRef.current = null;
+      handedOffRef.current = upcoming.id; // the effect below must not re-load what's already playing
+      loadSeqRef.current += 1;            // and any load still in flight for the old track is void
+      lastUrlRef.current = pre.url;
+      trackChannelsRef.current = pre.channels;
+      applyOutputChannels();              // width set before the first buffer decodes, as in loadTrack
+      progressRef.current = { sec: 0, at: Date.now() };
+      audio.src = pre.url;
+      audio.play().catch(() => {
+        // Same reading as loadTrack's: refused with nobody looking means retry on the next wake,
+        // not that the listener has gone.
+        if (document.hidden) resumeOnWakeRef.current = true;
+        setPlaying(false);
+      });
+    }
+    next();
+  }, [applyOutputChannels, next]);
   // The element gave up on this source. That used to end the listening session; now it goes through
   // the same bounded recovery as everything else. The message is only reached once retries and a
   // skip are exhausted — it says what actually happened rather than the bare "Playback failed."
