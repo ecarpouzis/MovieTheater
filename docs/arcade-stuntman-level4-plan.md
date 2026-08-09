@@ -1,7 +1,13 @@
-# 2026-08-09 (~03:15) — ROUND 3b: the fence moved to the ENCODER's thread (DEPLOYED, awaiting Eric's drive)
+# 2026-08-09 (~03:15) — ✅ ROUND 3b: the fence moved to the ENCODER's thread — VERIFIED, GROUND TRUTH
 
-> Status: **candidate deployed on both GL workers, NOT yet verified.** The gate below is Eric's to
-> run — it is a normal room, driven normally. Nothing here is claimed fixed until he says so.
+> **Status: PASSED. Eric, ~03:25, from his own driven room — "this is the best performance, a clean
+> picture, and no broken frames."** Fork `acd9bd8` pushed to `github`, site `1bbd485` on `master`,
+> both GL workers running it. **This is the baseline every future worker change starts from** — not
+> `039517a` (the tick-thread fence) and not `5e0898f`.
+>
+> One unrelated bug surfaced in the same room and was explicitly deprioritised by Eric: an in-game
+> PS2 save reported **"the wrong memory card is inserted."** Recorded with its log evidence and
+> first suspects in the `arcade-memory-card-vault` memory; it does not touch anything below.
 
 ## Why the round-3 fix had to move
 
@@ -83,7 +89,38 @@ each process actually has open**, not by filename or mtime.
 `pwsh scripts/verify-patched-artifacts.ps1 -Snapshot` → **green** (11 artifacts; only the snapshot
 timestamp moved, no patched bytes changed).
 
-## ⭐ ERIC'S VERIFICATION RECIPE — what to look for after you drive
+## ✅ THE VERDICT, AND THE MEASUREMENTS THAT CAME WITH IT
+
+Eric drove a normal Stuntman room (`sv-1-60439-0-ps2___Stuntman (USA)`, worker-gl, 03:18-03:23) and
+called it: **best performance, clean picture, no broken frames.** What the log recorded during that
+same room — keep these; they are the health signature every future regression is read against:
+
+```
+block(mean=0.04ms max=1.86ms n=600)   handoff@enc(late=4369 cold=10 maxage=4724)
+                                      encwait(mean=3.13ms max=35.16ms n=600 miss=0 timeout=0)
+pace-diag: ticks/s=59.2 … maxTick=31.8ms slowTicks(>20ms)=53 meanTick=11.61ms
+```
+
+**The cost moved rather than vanished, which is the whole thesis.** The emulator thread sits flat at
+`block(mean=0.04ms)` across every window — *lower* than the 0.16 ms pre-fence baseline — while
+~2.4-4.4 ms/frame of blit backlog now appears in `encwait` on the encoder's thread. That backlog is
+precisely what round 3 was charging to the tick budget. Pace came in at **59.0-60.1 t/s, meanTick
+~11.6 ms, slowTicks 32-53** on chase content, against a pre-fence baseline for the same content of
+58.9 t/s / 14.97 ms / 119 — so the relocation did not merely avoid a regression, it beat the arm it
+replaced. `timeout=0` and `miss=0` for the whole room.
+
+And the guarantee was load-bearing constantly: `late=4369` (~73% of frames), with the fence catching
+genuinely ancient content that would otherwise have shipped —
+
+```
+[zc-gen] slot 2: encoder reached serial 4783 0.51ms before its blit landed; the slot still held
+         serial 59 (4724 frames / 78.73s old) — unfenced, THAT is what would have been encoded
+```
+
+A **78-second-old** picture, one thread-wakeup away from being encoded as the current frame. Eleven
+such events in ~5 minutes of play, none of which reached the stream.
+
+## ⭐ VERIFICATION RECIPE — the regression check for next time
 
 Drive a normal Stuntman room (your level-4 corner is the right content: it is the heavy GPU load
 that made the race bite in the first place). Then run these three greps. **The first proves the fix
