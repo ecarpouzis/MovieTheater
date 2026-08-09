@@ -15,7 +15,19 @@ html {
 
 #root {
   width: 100%;
-  overflow-x: hidden;
+  /* `clip`, NOT `hidden` — and the difference is load-bearing on phones.
+     `overflow-x: hidden` with `overflow-y: visible` computes the y axis to `auto` (CSS overflow §3),
+     which makes #root a SCROLL CONTAINER. Below 768px .app-layout/.app-content give their scrolling
+     back to the window (see the media query below), so #root is then the nearest scrollport to
+     everything on the page — and it never scrolls, because its height is its content's. Every
+     `position: sticky; bottom: 0` descendant therefore resolves against a scrollport that cannot
+     move, and simply sits at the end of the document: the music library's A–Z strip was parked
+     ~2,400px below the fold of a 585-artist list, reported (2026-08-09) as "the letter buttons are
+     missing on this page". Desktop was fine the whole time — there .app-content is a real scrollport
+     and gets there first, which is exactly what made it look page-specific rather than viewport-specific.
+     `overflow: clip` clips identically but is explicitly NOT a scroll container, so sticky descendants
+     see the viewport again. Measured both ways on prod at 390px before changing this. */
+  overflow-x: clip;
 }
 
 /* First-letter grids + the browse "simple" 2-up card grid — plain CSS replacements for the antd
