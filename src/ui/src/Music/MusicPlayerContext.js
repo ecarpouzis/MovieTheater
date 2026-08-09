@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { MovieAPI } from "../MovieAPI";
 import { diagLog, snapshotAudio, diagEnabled, MEDIA_EVENTS } from "./musicDiag";
 import MusicDiagPanel from "./MusicDiagPanel";
@@ -277,6 +277,48 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   // "paused, holding this track" from "stranded, still holding the PREVIOUS track's spent URL" —
   // and both `play()` and the wake retry then act on a source that can never produce audio again.
   const loadedTrackIdRef = useRef(null);
+
+  // ── Two decks (A/B) ───────────────────────────────────────────────────────
+  // Gapless used to be one <audio> whose `src` was swapped at the boundary. That swap is the one
+  // operation a hidden page cannot survive: assigning a new source drops the element to
+  // HAVE_NOTHING, and a backgrounded page's entire licence to keep running is that it IS playing
+  // audio. Even done synchronously, playback still had to wait for bytes, and play() was refused.
+  //
+  // So the next track is buffered into the OTHER element while this one is still playing, and the
+  // boundary is a flip between two ready elements — no load, no network, nothing the browser can
+  // refuse for want of data. `audioRef` always points at whichever deck is live, so every other
+  // reader (the play bar, the Now Playing page, the watchdog) is unchanged.
+  const audioARef = useRef(null);
+  const audioBRef = useRef(null);
+  const deckRef = useRef("a");
+  // Mirrored as state on purpose: effects that addEventListener on the live element must re-bind
+  // when the deck flips. A ref alone leaves the timeupdate listener — and with it progress
+  // tracking, the stall watchdog's clock and the prefetch that feeds the NEXT boundary — attached
+  // to a deck that stopped playing an album ago.
+  const [activeDeck, setActiveDeck] = useState("a");
+  // Which track the IDLE deck has buffered, or null. Distinct from prefetchRef (a URL in hand):
+  // this one means the bytes are already decoded and ready to play.
+  const deckLoadedRef = useRef(null);
+  // element -> MediaElementAudioSourceNode; both decks must be routed once the graph exists.
+  const graphSourcesRef = useRef(new Map());
+
+  const elFor = useCallback((deck) => (deck === "a" ? audioARef.current : audioBRef.current), []);
+  const idleDeck = useCallback(() => (deckRef.current === "a" ? "b" : "a"), []);
+  const idleEl = useCallback(() => elFor(idleDeck()), [elFor, idleDeck]);
+  // The live element, and the ref every consumer already reads. Kept in sync on every render so a
+  // deck flip is invisible outside this file.
+  // The volume both decks must agree on — a flip that changes loudness is a bug the listener hears.
+  const volumeOf = useCallback(() => {
+    const live = elFor(deckRef.current);
+    if (live && Number.isFinite(live.volume)) return live.volume;
+    const stored = parseFloat(window.localStorage.getItem(VOLUME_KEY));
+    return Number.isFinite(stored) ? Math.min(Math.max(stored, 0), 1) : 1;
+  }, [elFor]);
+
+  const syncActive = useCallback(() => {
+    audioRef.current = elFor(deckRef.current);
+    return audioRef.current;
+  }, [elFor]);
   // Tracks written off back-to-back with no successful playback between them. Cleared by progress.
   const consecutiveFailuresRef = useRef(0);
   // Indirection for the mutual reference between loadTrack and failTrack.
@@ -350,6 +392,11 @@ export function MusicPlayerProvider({ children, enabled = true }) {
       })
       .catch(() => setFavoriteIds((prev) => withFavorite(prev, trackId, !want)));
   }, [enabled, favoriteIds]);
+
+  // audioRef must point at the live deck before anything reads it. A layout effect on every
+  // render (not just on flips) so it is right after the very first commit too, when both element
+  // refs go from null to real in the same pass.
+  useLayoutEffect(() => { syncActive(); });
 
   // Mirrors, so the failure handlers (which run from element events and an interval, never from
   // render) can read the live track without every one of them re-binding on each change.
@@ -468,11 +515,27 @@ export function MusicPlayerProvider({ children, enabled = true }) {
         // nobody is about to play, and writing it would hand `ended` the wrong song.
         if (prefetchRef.current?.trackId !== track.id) return;
         prefetchRef.current = { trackId: track.id, url: data.url, channels: Number(data.channels) || 0 };
+        // …and start BUFFERING it on the idle deck, which is the whole point: at the boundary the
+        // bytes must already be here. This is why a sleeping phone can cross a track boundary now —
+        // there is nothing left to fetch at the moment it has the least licence to fetch anything.
+        const idle = idleEl();
+        if (idle) {
+          try {
+            idle.preload = "auto";
+            idle.src = data.url;
+            idle.volume = volumeOf();
+            idle.load();
+            deckLoadedRef.current = track.id;
+            diagLog("preload:deck", { track: track.id, deck: idleDeck() });
+          } catch {
+            deckLoadedRef.current = null; // buffering is an optimisation; the boundary still has fallbacks
+          }
+        }
       })
       .catch(() => {
         if (prefetchRef.current?.trackId === track.id) prefetchRef.current = null;
       });
-  }, []);
+  }, [idleEl, idleDeck]);
 
   // ── Pending recovery (one in flight, ever) ─────────────────────────────────
   const clearPendingRecovery = useCallback(() => {
@@ -569,7 +632,7 @@ export function MusicPlayerProvider({ children, enabled = true }) {
     };
     audio.addEventListener("timeupdate", onTime);
     return () => audio.removeEventListener("timeupdate", onTime);
-  }, [clearPendingRecovery, prefetchNext]);
+  }, [clearPendingRecovery, prefetchNext, activeDeck]);
 
   // Every raw media event, recorded with the element's state at that instant (musicDiag). This is
   // the only witness to a failure that happens with the screen off — `error` in particular carries
@@ -595,7 +658,7 @@ export function MusicPlayerProvider({ children, enabled = true }) {
       window.removeEventListener("online", onOnline);
       window.removeEventListener("offline", onOffline);
     };
-  }, []);
+  }, [activeDeck]);
 
   // Restore volume once the element exists.
   useEffect(() => {
@@ -928,6 +991,7 @@ export function MusicPlayerProvider({ children, enabled = true }) {
         const source = audioContext.createMediaElementSource(audio);
         const analyser = audioContext.createAnalyser();
         analyser.fftSize = 2048;
+        graphSourcesRef.current.set(audio, source);
         // Two INDEPENDENT connections from the same source. The analyser branch folds its input down
         // for the FFT, but that fold is local to the branch and cannot reach the destination — which
         // is why the visualizer still works on a surround track without costing it any channels.
@@ -943,6 +1007,18 @@ export function MusicPlayerProvider({ children, enabled = true }) {
     }
 
     const graph = audioGraphRef.current;
+    // Route the OTHER deck through the same graph. createMediaElementSource may be called only once
+    // per element and permanently reroutes it, so a deck left unrouted would play silently the
+    // moment it became live — the visualizer would have muted every other track.
+    [audioARef.current, audioBRef.current].forEach((el) => {
+      if (!el || graphSourcesRef.current.has(el)) return;
+      try {
+        const src = graph.audioContext.createMediaElementSource(el);
+        src.connect(graph.analyser);
+        src.connect(graph.audioContext.destination);
+        graphSourcesRef.current.set(el, src);
+      } catch { /* already bound, or no Web Audio for this element */ }
+    });
     if (graph.audioContext.state === "suspended") graph.audioContext.resume().catch(() => {});
     return graph;
   }, [applyOutputChannels]);
@@ -992,32 +1068,79 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   }, [enabled, isPlayable]);
 
   const setVolume = useCallback((v) => {
+    // Both decks: the idle one is already buffering the next track and will become live at the
+    // boundary, and a flip that changes loudness is a bug the listener hears.
+    const other = idleEl();
+    if (other) other.volume = Math.min(Math.max(v, 0), 1);
     const audio = audioRef.current;
     if (audio) audio.volume = v;
     window.localStorage.setItem(VOLUME_KEY, String(v));
-  }, []);
+  }, [idleEl]);
 
   // Keep `playing` truthful to the element (covers OS media keys, autoplay refusals, errors).
   // Audio is coming out: whatever wake retry was armed has been made moot, and leaving it armed
   // would fire a pointless play() on an already-playing element the next time the phone is picked up.
-  const onPlay = useCallback(() => {
+  const onPlay = useCallback((e) => {
+    if (e && e.currentTarget && e.currentTarget !== elFor(deckRef.current)) return;
     resumeOnWakeRef.current = false;
     setPlaying(true);
-  }, []);
-  const onPause = useCallback(() => setPlaying(false), []);
+  }, [elFor]);
+  const onPause = useCallback((e) => {
+    if (e && e.currentTarget && e.currentTarget !== elFor(deckRef.current)) return;
+    setPlaying(false);
+  }, [elFor]);
   /// The track boundary. If the next track's URL is already in hand, the swap happens HERE —
   /// synchronously, inside the event handler — and `next()` only moves the index to match. See
   /// PREFETCH_LEAD_SEC for why every await between `ended` and `play()` is a chance for a sleeping
   /// phone to stop the album.
-  const onEnded = useCallback(() => {
+  const onEnded = useCallback((e) => {
+    // The idle deck reaching the end of something it was only buffering is not a track boundary.
+    if (e && e.currentTarget && e.currentTarget !== elFor(deckRef.current)) return;
     const audio = audioRef.current;
     const upcoming = nextTrackRef.current;
     const pre = prefetchRef.current;
+    const idle = idleEl();
+    const deckReady = !!(idle && upcoming && deckLoadedRef.current === upcoming.id && idle.src);
     diagLog("boundary", {
       upcoming: upcoming?.id ?? null,
+      deckReady,
+      deckState: idle ? idle.readyState : null,
       prefetched: !!(pre?.url && pre.trackId === upcoming?.id),
       hidden: document.hidden,
     });
+
+    // Best case: the next track is already buffered on the other deck. Flip to it — no src
+    // assignment, no load, no round trip. Just a play() on an element that already has the bytes.
+    if (deckReady) {
+      const outgoing = elFor(deckRef.current);
+      const nextDeck = idleDeck();
+      deckRef.current = nextDeck;
+      setActiveDeck(nextDeck);
+      const live = syncActive();
+      handedOffRef.current = upcoming.id; // the track-change effect must not re-load this
+      loadSeqRef.current += 1;            // any load still in flight for the old track is void
+      lastUrlRef.current = prefetchRef.current?.url || lastUrlRef.current;
+      trackChannelsRef.current = prefetchRef.current?.channels || 0;
+      applyOutputChannels();
+      progressRef.current = { sec: 0, at: Date.now() };
+      loadedTrackIdRef.current = upcoming.id;
+      deckLoadedRef.current = null;
+      prefetchRef.current = null;
+      live.volume = volumeOf();
+      live.play().catch(() => {
+        if (document.hidden) resumeOnWakeRef.current = true;
+        setPlaying(false);
+      });
+      // Park the outgoing deck. Only pause it — clearing its src would fire `emptied`/`error` for
+      // a stream nobody is listening to, and it is about to be overwritten by the next preload.
+      try { outgoing.pause(); } catch { /* already gone */ }
+      next();
+      return;
+    }
+
+    // Fallbacks, in order: a URL in hand (swap it onto the live deck synchronously), then an
+    // ordinary load driven by the index change. Both are worse than a flip, and both are kept
+    // because a boundary must never depend on the optimisation having worked.
     if (audio && upcoming && pre?.url && pre.trackId === upcoming.id) {
       prefetchRef.current = null;
       handedOffRef.current = upcoming.id; // the effect below must not re-load what's already playing
@@ -1036,11 +1159,18 @@ export function MusicPlayerProvider({ children, enabled = true }) {
       });
     }
     next();
-  }, [applyOutputChannels, next]);
+  }, [applyOutputChannels, next, elFor, idleEl, idleDeck, syncActive, volumeOf]);
   // The element gave up on this source. That used to end the listening session; now it goes through
   // the same bounded recovery as everything else. The message is only reached once retries and a
   // skip are exhausted — it says what actually happened rather than the bare "Playback failed."
-  const onError = useCallback(() => {
+  const onError = useCallback((e) => {
+    // A preload that fails is not a playback failure. Drop the buffered claim so the boundary falls
+    // back to a real load, and say nothing to the listener — their track is still playing fine.
+    if (e && e.currentTarget && e.currentTarget !== elFor(deckRef.current)) {
+      diagLog("preload:failed", { deck: e.currentTarget.dataset?.deck, track: deckLoadedRef.current });
+      deckLoadedRef.current = null;
+      return;
+    }
     const err = audioRef.current?.error;
     const reason = mediaErrorReason(err);
     // MEDIA_ERR_NETWORK (2) is the element saying the connection went, which a sleeping phone does
@@ -1049,7 +1179,7 @@ export function MusicPlayerProvider({ children, enabled = true }) {
     const networkLevel = err?.code === 2;
     if (reason) failTrackRef.current(`Playback stopped — ${reason}.`, { firstHand: true, networkLevel });
     else failTrackRef.current("Playback failed — the stream isn't answering.", { networkLevel });
-  }, []);
+  }, [elFor]);
 
   // OS lock-screen / media-key card. The shared hook only touches standard HTMLMediaElement
   // APIs, so the <audio> ref rides the videoRef parameter unchanged.
@@ -1077,8 +1207,21 @@ export function MusicPlayerProvider({ children, enabled = true }) {
       {children}
       {/* crossOrigin: required for the future Web Audio graph (visualizer §2.8) — a
           MediaElementAudioSourceNode over a CORS-tainted source outputs silence. */}
+      {/* Two decks. Only the live one is ever played; the other is buffering the next track.
+          Every handler ignores events from the idle deck — its loads, stalls and errors are
+          preparation, not playback, and must never be mistaken for the listener's stream. */}
       <audio
-        ref={audioRef}
+        ref={audioARef}
+        data-deck="a"
+        crossOrigin="anonymous"
+        onPlay={onPlay}
+        onPause={onPause}
+        onEnded={onEnded}
+        onError={onError}
+      />
+      <audio
+        ref={audioBRef}
+        data-deck="b"
         crossOrigin="anonymous"
         onPlay={onPlay}
         onPause={onPause}

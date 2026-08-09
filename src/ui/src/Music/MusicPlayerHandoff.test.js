@@ -58,6 +58,11 @@ beforeEach(() => {
   playSpy = vi.fn(() => Promise.resolve());
   window.HTMLMediaElement.prototype.play = playSpy;
   window.HTMLMediaElement.prototype.pause = vi.fn();
+  // The player persists its queue, so without this a test mounts the PREVIOUS test's queue and
+  // silently exercises a different path. "falls back to the ordinary load" was passing that way:
+  // it restored track 2, spent the mocked failure on track 1, and then took the prefetch path it
+  // was written to rule out.
+  window.localStorage.clear();
 });
 
 afterEach(() => {
@@ -103,8 +108,10 @@ describe("gapless hand-off at the track boundary", () => {
     playSpy.mockClear();
 
     // No await: this is the assertion that fails against a player which fetches on `ended`.
+    // The live element is read through player.audioRef because the boundary is now a FLIP between
+    // two decks — `audio` is the deck that just finished, and the next track is on the other one.
     audio.dispatchEvent(new Event("ended"));
-    expect(audio.src).toBe("https://gw/2");
+    expect(player.audioRef.current.src).toBe("https://gw/2");
     expect(playSpy).toHaveBeenCalledTimes(1);
     expect(api.startMusicTrack).toHaveBeenCalledTimes(startsBefore);
 
@@ -113,7 +120,7 @@ describe("gapless hand-off at the track boundary", () => {
     await act(async () => {});
     expect(player.current.id).toBe(2);
     expect(api.startMusicTrack).toHaveBeenCalledTimes(startsBefore);
-    expect(audio.src).toBe("https://gw/2");
+    expect(player.audioRef.current.src).toBe("https://gw/2");
   });
 
   it("falls back to the ordinary load when the prefetch never arrived", async () => {
@@ -127,7 +134,7 @@ describe("gapless hand-off at the track boundary", () => {
 
     await act(async () => { audio.dispatchEvent(new Event("ended")); });
     expect(player.current.id).toBe(2);
-    expect(audio.src).toBe("https://gw/2"); // minted the slow way, on the track change
+    expect(player.audioRef.current.src).toBe("https://gw/2"); // minted the slow way, on the track change
   });
 
   it("does not hand off a URL the queue has moved past", async () => {
