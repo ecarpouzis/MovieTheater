@@ -1,0 +1,223 @@
+--- a/sys/nvcodec/gstnvav1encoder.cpp
++++ b/sys/nvcodec/gstnvav1encoder.cpp
+@@ -100,6 +100,7 @@
+   PROP_INTRA_REFRESH_PERIOD,
+   PROP_INTRA_REFRESH_COUNT,
+   PROP_TEMPORAL_LAYERS,
++  PROP_STRICT_REFS,
+   PROP_B_FRAMES,
+ 
+   /* rate-control params */
+@@ -142,6 +143,7 @@
+ #define DEFAULT_INTRA_REFRESH_PERIOD 0
+ #define DEFAULT_INTRA_REFRESH_COUNT 0
+ #define DEFAULT_TEMPORAL_LAYERS   1
++#define DEFAULT_STRICT_REFS       TRUE
+ #define DEFAULT_B_FRAMES          0
+ #define DEFAULT_RATE_CONTROL      GST_NV_ENCODER_RC_MODE_DEFAULT
+ #define DEFAULT_QP                -1
+@@ -183,6 +185,7 @@
+   guint intra_refresh_period;
+   guint intra_refresh_count;
+   guint temporal_layers;
++  gboolean strict_refs;
+   guint bframes;
+ 
+   GstNvEncoderRCMode rc_mode;
+@@ -357,6 +360,12 @@
+           "referenced by it, so a sender may drop them per-receiver to shed bitrate without "
+           "breaking the reference chain",
+           1, 3, DEFAULT_TEMPORAL_LAYERS, param_flags));
++  g_object_class_install_property (object_class, PROP_STRICT_REFS,
++      g_param_spec_boolean ("strict-refs", "Strict References",
++          "Bound the DPB to exactly what the temporal ladder needs and forbid long-term "
++          "references, so no frame can ever predict from (or re-display) a picture older than "
++          "the previous base-layer frame. Set FALSE to restore the driver's AUTOSELECT DPB",
++          DEFAULT_STRICT_REFS, param_flags));
+   if (dev_caps->max_bframes > 0) {
+     g_object_class_install_property (object_class, PROP_B_FRAMES,
+         g_param_spec_uint ("bframes", "B Frames",
+@@ -550,6 +559,7 @@
+   self->intra_refresh_period = DEFAULT_INTRA_REFRESH_PERIOD;
+   self->intra_refresh_count = DEFAULT_INTRA_REFRESH_COUNT;
+   self->temporal_layers = DEFAULT_TEMPORAL_LAYERS;
++  self->strict_refs = DEFAULT_STRICT_REFS;
+   self->bframes = DEFAULT_B_FRAMES;
+   self->rc_mode = DEFAULT_RATE_CONTROL;
+   self->qp_const_i = DEFAULT_QP;
+@@ -770,6 +780,9 @@
+     case PROP_TEMPORAL_LAYERS:
+       update_uint (self, &self->temporal_layers, value, UPDATE_INIT_PARAM);
+       break;
++    case PROP_STRICT_REFS:
++      update_boolean (self, &self->strict_refs, value, UPDATE_INIT_PARAM);
++      break;
+     case PROP_B_FRAMES:
+       update_uint (self, &self->bframes, value, UPDATE_INIT_PARAM);
+       break;
+@@ -893,6 +906,9 @@
+     case PROP_TEMPORAL_LAYERS:
+       g_value_set_uint (value, self->temporal_layers);
+       break;
++    case PROP_STRICT_REFS:
++      g_value_set_boolean (value, self->strict_refs);
++      break;
+     case PROP_B_FRAMES:
+       g_value_set_uint (value, self->bframes);
+       break;
+@@ -1233,9 +1249,48 @@
+     av1_config->maxTemporalLayersMinus1 = self->temporal_layers - 1;
+   }
+ 
+-  av1_config->maxNumRefFramesInDPB = 0;
+-  av1_config->numFwdRefs = NV_ENC_NUM_REF_FRAMES_AUTOSELECT;
+-  av1_config->numBwdRefs = NV_ENC_NUM_REF_FRAMES_AUTOSELECT;
++  /* REFERENCE DISCIPLINE (2026-08-08). What this replaces: maxNumRefFramesInDPB = 0 (= "driver
++   * default", i.e. the full 8-slot AV1 DPB) + numFwdRefs = AUTOSELECT, with enableLTR/ltrNumFrames
++   * left at whatever the PRESET config handed us. Under gop-size=-1 there is no periodic IDR to
++   * ever flush that DPB, so a slot can hold one picture for the whole life of a room — and a frame
++   * that predicts from it with a null residual (or re-displays it outright) decodes to that
++   * picture, PRISTINE, carrying a brand-new timestamp.
++   *
++   * That is the artefact a spectator probe caught 9 times across two Stuntman runs on 2026-08-08:
++   * single frames of 4.2 s / 6.0 s / 20.2 s / 35.1 s / 53.6 s-old content spliced between two
++   * correct consecutive frames, with the sender's RTP clock provably monotonic ([ts-mono]
++   * violations=0 / 13376 samples) and 8 of the 9 landing when NO peer was dropping any layer.
++   *
++   * Strict layering fixes both halves at once:
++   *   maxNumRefFramesInDPB = numTemporalLayers  — one slot per layer, nothing left over to go stale
++   *   numFwdRefs = 1                            — a frame predicts from ONE picture, the most
++   *                                               recent in a layer <= its own
++   *   enableLTR = 0, ltrNumFrames = 0           — no long-term slot survives the ladder's rotation
++   * so the oldest picture anything can reference is the previous base-layer frame (<= 2 frames back
++   * at 3 layers). Dropping an upper layer is then reference-safe BY CONSTRUCTION — nothing below it
++   * could have referenced it — and a stale-reference re-emission, if one still happened, would
++   * reproduce a ~33 ms-old picture: invisible, instead of a six-second time warp.
++   *
++   * Cost is nil for this workload: realtime low-latency game encodes already predict from one
++   * frame, and multi-ref buys quality only over long static shots — which is exactly the content
++   * that made the stale slots in the first place. strict-refs=false restores the old behaviour for
++   * an A/B. */
++  if (self->strict_refs) {
++    GST_INFO_OBJECT (self,
++        "strict-refs: preset gave enableLTR=%u ltrNumFrames=%u maxNumRefFramesInDPB=%u; "
++        "pinning DPB=%u numFwdRefs=1, LTR off",
++        av1_config->enableLTR, av1_config->ltrNumFrames,
++        av1_config->maxNumRefFramesInDPB, MAX (self->temporal_layers, 1));
++    av1_config->maxNumRefFramesInDPB = MAX (self->temporal_layers, 1);
++    av1_config->numFwdRefs = NV_ENC_NUM_REF_FRAMES_1;
++    av1_config->numBwdRefs = NV_ENC_NUM_REF_FRAMES_AUTOSELECT;
++    av1_config->enableLTR = 0;
++    av1_config->ltrNumFrames = 0;
++  } else {
++    av1_config->maxNumRefFramesInDPB = 0;
++    av1_config->numFwdRefs = NV_ENC_NUM_REF_FRAMES_AUTOSELECT;
++    av1_config->numBwdRefs = NV_ENC_NUM_REF_FRAMES_AUTOSELECT;
++  }
+ 
+   GstVideoColorimetry cinfo;
+   if (GST_VIDEO_INFO_IS_YUV (info)) {
+--- a/sys/nvcodec/gstnvh264encoder.cpp
++++ b/sys/nvcodec/gstnvh264encoder.cpp
+@@ -90,6 +90,7 @@
+   /* encoding config */
+   PROP_GOP_SIZE,
+   PROP_TEMPORAL_LAYERS,
++  PROP_STRICT_REFS,
+   PROP_B_FRAMES,
+ 
+   /* rate-control params */
+@@ -139,6 +140,7 @@
+ #define DEFAULT_WEIGHTED_PRED     FALSE
+ #define DEFAULT_GOP_SIZE          75
+ #define DEFAULT_TEMPORAL_LAYERS   1
++#define DEFAULT_STRICT_REFS       TRUE
+ #define DEFAULT_B_FRAMES          0
+ #define DEFAULT_RATE_CONTROL      GST_NV_ENCODER_RC_MODE_DEFAULT
+ #define DEFAULT_QP                -1
+@@ -186,6 +188,7 @@
+ 
+   gint gop_size;
+   guint temporal_layers;
++  gboolean strict_refs;
+   guint bframes;
+ 
+   GstNvEncoderRCMode rc_mode;
+@@ -402,6 +405,12 @@
+           "odd frames). Frames above the base are not referenced by it, so a sender may drop "
+           "them per-receiver to halve the frame rate without breaking the reference chain",
+           1, 2, DEFAULT_TEMPORAL_LAYERS, param_flags));
++  g_object_class_install_property (object_class, PROP_STRICT_REFS,
++      g_param_spec_boolean ("strict-refs", "Strict References",
++          "Bound the DPB to exactly what the temporal ladder needs and forbid long-term "
++          "references, so no frame can ever predict from (or re-display) a picture older than "
++          "the previous base-layer frame. Set FALSE to restore the driver's default DPB",
++          DEFAULT_STRICT_REFS, param_flags));
+   if (dev_caps->max_bframes > 0) {
+     /**
+      * GstNvD3D11H264Enc:bframes:
+@@ -719,6 +728,7 @@
+   self->weighted_pred = DEFAULT_WEIGHTED_PRED;
+   self->gop_size = DEFAULT_GOP_SIZE;
+   self->temporal_layers = DEFAULT_TEMPORAL_LAYERS;
++  self->strict_refs = DEFAULT_STRICT_REFS;
+   self->bframes = DEFAULT_B_FRAMES;
+   self->rc_mode = DEFAULT_RATE_CONTROL;
+   self->qp_const = DEFAULT_QP;
+@@ -946,6 +956,9 @@
+     case PROP_TEMPORAL_LAYERS:
+       update_uint (self, &self->temporal_layers, value, UPDATE_INIT_PARAM);
+       break;
++    case PROP_STRICT_REFS:
++      update_boolean (self, &self->strict_refs, value, UPDATE_INIT_PARAM);
++      break;
+     case PROP_B_FRAMES:
+       update_uint (self, &self->bframes, value, UPDATE_INIT_PARAM);
+       break;
+@@ -1085,6 +1098,9 @@
+     case PROP_TEMPORAL_LAYERS:
+       g_value_set_uint (value, self->temporal_layers);
+       break;
++    case PROP_STRICT_REFS:
++      g_value_set_boolean (value, self->strict_refs);
++      break;
+     case PROP_B_FRAMES:
+       g_value_set_uint (value, self->bframes);
+       break;
+@@ -1699,6 +1715,36 @@
+     }
+   }
+ 
++  /* REFERENCE DISCIPLINE (2026-08-08) — the H.264 half of the nvav1enc block of the same name; read
++   * that one for the evidence. Same hole, same shape: maxNumRefFrames was never set (0 = "let the
++   * driver pick the DPB size"), numRefL0 was never set (AUTOSELECT), and enableLTR/ltrTrustMode
++   * came from the PRESET config. "LTR Trust" mode marks the first ltrNumFrames base-layer reference
++   * frames of each IDR interval as long-term — and gop-size=-1 means there is only ever ONE IDR
++   * interval, so those pictures would sit in the DPB, referenceable, for the entire life of a room.
++   *
++   * A frame that predicts from such a slot with a null residual decodes to that picture exactly:
++   * a pristine, minutes-old frame carrying a new timestamp, which is precisely what the spectator
++   * reels caught. Pinning the DPB to the ladder's depth with numRefL0=1 and LTR off leaves the
++   * previous base-layer frame as the oldest thing anything can reference (<= 2 frames back at 2
++   * layers), which also makes dropping the non-reference upper layer safe by construction.
++   *
++   * maxNumRefFrames must stay >= (maxTemporalLayers - 2) * 2 per the SDK; at our ceiling of 2
++   * layers that is 0, so numTemporalLayers is comfortably above the floor. strict-refs=false
++   * restores the old behaviour for an A/B. */
++  if (self->strict_refs) {
++    guint dpb = MAX (self->temporal_layers, 1);
++    GST_INFO_OBJECT (self,
++        "strict-refs: preset gave enableLTR=%u ltrTrustMode=%u ltrNumFrames=%u maxNumRefFrames=%u; "
++        "pinning DPB=%u numRefL0=1, LTR off",
++        h264_config->enableLTR, h264_config->ltrTrustMode, h264_config->ltrNumFrames,
++        h264_config->maxNumRefFrames, dpb);
++    h264_config->maxNumRefFrames = dpb;
++    h264_config->numRefL0 = NV_ENC_NUM_REF_FRAMES_1;
++    h264_config->enableLTR = 0;
++    h264_config->ltrNumFrames = 0;
++    h264_config->ltrTrustMode = 0;
++  }
++
+   h264_config->idrPeriod = config->gopLength;
+   h264_config->outputAUD = self->aud;
+   if (self->repeat_sequence_header) {

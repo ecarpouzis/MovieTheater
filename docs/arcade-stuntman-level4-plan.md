@@ -1,5 +1,107 @@
 # Stuntman round 2 — frame jitter + level-4 AI turn bug (OVERNIGHT 2026-08-08)
 
+## 🎯 ~20:30 PROFILE VERDICT (Eric drove the loop 3x on instrumented core e272813): UPLOAD/DISPATCH STORM CONFIRMED
+pgs-prof caught every crossing. THE stall frame (run 1, 20:26:22): **total=356.6ms =
+upload 163.1ms (1494 ops / 194.2 MB) + binning 81.2 + shading 55.5 + texcache 40.1**,
+disp=6158, sub=130 (a normal frame: disp≤1k, sub 4). Warm crossings (runs 2-3): same
+queued volume (1928 ops / 244.9 MB, disp=8316, sub=130) but CPU cheap (~3.6ms upload) —
+frames sit at 40-50ms dominated by **wait=23ms** (GPU absorbing the dispatch storm), plus
+60-140 slowTicks(>20ms) per crossing window (pace-diag maxTick 531.8ms run 1, ~25-45ms warm).
+Also one first-sight frame 119.4ms = alloc 49.1 + binning 42.4 (slab/scratch first-touch).
+⚠ Counter caveat for interpretation: ops/bytes are counted at QUEUE time, section time at
+flush — light frames can show huge byte counts (e.g. 12ms/132MB) that actually cost the
+NEXT flush. The verdict is unaffected: crossing the corner queues a couple hundred MB of
+GIF-path transfer re-uploads (the GSdx 452k-xfer storm, PGS cost model) + 6-8k compute
+dispatches in ~1-2 frames. Mitigation directions (NOT yet built): spread/async the upload
+burst, pre-warm slab allocs, or accept (warm cost is 40-50ms frames for ~1s).
+**SEPARATE FINDING: Eric sees out-of-sequence frames ALL THROUGHOUT (not just the turn) —
+NOT pace-explained: vcoal/s=0.0 the whole session, video/s==ticks/s (one emit per tick).
+Server pacing is clean ⇒ suspicion moves to the zc DUP/stale-slot path (task 5 audit) or
+client-side AV1/SVC. Eric offered spectate+burst-screenshot testing — take him up on it
+AFTER the zc audit names a mechanism.
+~20:45 ERIC A/B: SAME frame issues under H.264 ⇒ CODEC-INDEPENDENT (matches the 15:50
+h264 A/B on the turn-garbage). Client codec decode/reorder ruled out; defect is in the
+shared path: worker zc slot lifecycle → encoder input, RTP timestamping, or client render
+loop. zc audit promoted ahead of the audio-adoption task.**
+
+## ~17:15 GATE 4 RESOLVED: the 228MB cache LOAD **CRASHES the worker** (answer = none of a/b/c — it dies)
+Both workers crash-looped through the afternoon: "loading 228 MB pipeline cache from ..." →
+instant 0xC0000005 READ of 0x824 (null base + member offset) at pcsx2_custom_libretro.dll
++0x4B7816 — adjacent to the e9e4c7e-era +0x4B7736 (supports_subgroup_size_log2) = pipeline
+code against an uninitialized/dead Device, now on the LOAD path. Proven at 16:36:46 (worker 1)
+and 17:00:47 (worker 2, the OFCOM4-era file); more 0xC0000005 exits at 16:21/16:32/16:54/16:57.
+The earlier "Creating a fresh pipeline cache." line after OFCOM4's load line was this same
+death + runner respawn. MITIGATED 17:14: both caches quarantined as *.crash-7bd135e (worker-gl
+had re-written a fresh 228MB at 17:08:49 that would have crash-looped the next ps2 room).
+Fix assigned to core-builder agent alongside the stall instrumentation (JOB 2).
+
+## 🎯 ~17:15 DECISIVE (Eric's experiment): THE TURN STALL IS NOT COMPILES.
+Eric ran the turn TWICE in ONE room (Restart Stunt between) — identical slowdown + broken
+frames both attempts. The in-memory VkPipelineCache serves attempt 2, so compiles are
+EXONERATED as the driver (they were real passengers). The stall is CONTENT-DRIVEN GS work
+fired every time that corner is crossed — prime hypothesis: the level-chunk texture upload
+burst through PGS's compute upload path (upload.comp/vram ops), the paraLLEl-GS analog of the
+July GSdx xfer-storm verdict (same game behavior, different renderer cost model). The broken
+frames ride the stall cadence (established). NEXT SESSION'S MISSION: instrument/profile PGS at
+the turn — Granite timestamp markers or in-core timers around upload/binning/ubershader
+dispatch at that moment (the perf-attr pattern from July, now for PGS internals: which
+dispatch eats the 120-400ms), then fix per findings (async upload processing, splitting the
+burst across frames, or accepting-with-mitigation). Pipeline-cache persistence (gates below)
+is now a SECONDARY nice-to-have — do not let it distract from the upload-burst hunt.
+NOTE: Eric's repro protocol = lobby room → in-room Load (slot 99 = his Level 4 state) →
+drive to THE turn ~TC 10-15s in, restart-stunt to repeat. He tests on demand — ask him.
+
+## ⚡ HANDOFF ~17:10 (context exhausted) — persistence 3.5/4 gates green, ONE open question
+Core 7bd135e DEPLOYED both workers (write-at-CloseGSRenderer). PROVEN this hour on clean state:
+boots ✓, explicit no-file log ✓, "wrote 228 MB pipeline cache." at close ✓, worker SURVIVES
+close ✓ (zero crashes since 16:36 — those were e9e4c7e-era). GATE 4 IN FLIGHT: room OFCOM4
+printed "loading 228 MB pipeline cache from ..." (FIRST load in system history) but after ~2min
+had not reached Playing; last Granite line "Creating a fresh pipeline cache." (timestamp
+unverified — may be the PRIOR room's). OPEN: does the 228MB load (a) complete slowly (the
+flagged boot-cost concern → lower PIPELINE_CACHE_MAX_BYTES, one constant), (b) get REJECTED
+(UUID/hash → fresh; then why), or (c) hang? NEXT SESSION: check room OFCOM4's outcome in
+glworker-2.log (did it reach a game? worker exit?), read timestamps on loading-vs-fresh lines,
+then either cap-tune or send the finding to the core builder (agent context in this session's
+transcript; SHADER-TOOLCHAIN-NOTES.md + SOFTFLOAT-PORT-NOTES.md in the lrps2 tree carry all
+design history). STALE e9e4c7e-era caches quarantined as *.suspect-e9e4c7e (they KILLED boots
+— the crash was a pipeline compile against a dead Device, +0x4B7736 = supports_subgroup_size_
+log2, NOT the write path). Also outstanding: commit/push lrps2 patch artifact regen for
+7bd135e + guard -Snapshot (deployed DLL changed), Eric's turn test once gate 4 resolves.
+ERIC DIRECTIVE STANDS: no rollbacks, forward only, he TESTS (doesn't play).
+
+## ~16:55 ERIC DIRECTIVE: NO MORE ROLLBACKS, forward only until Stuntman done; he TESTS not
+## plays. e9e4c7e crashed 0xC0000005 at room close (cache write in destructor chain vs
+## pgs_destroy_device ordering — dev internals torn down); rolled back ONCE to 34a5cc1
+## (deployed, stable) before the directive. Builder implementing the FINAL persistence:
+## write at retro_unload_game (alive), load AFTER EmuFolders, cap+logging. Deploy IMMEDIATELY
+## on report (window pattern), verify in ONE scripted cycle: boot LOAD line + close WRITE line
+## + no crash + second boot loads grown file. Then Eric turn-tests. 240MB caches still on
+## disk both workers (34a5cc1 ignores them; the new build must load them).
+
+## ~16:45 CRANK N: teardown-write core (e9e4c7e) DEPLOYED; LOAD is init-order broken (fix in flight)
+Write moved to teardown-only + 384MB cap (async-write rejected: no lock for concurrent
+getData; teardown CONFIRMED to run past skip_hw_context_destroy). BUT the LOAD never fires:
+boot logs "Creating a fresh pipeline cache." with the 240MB file present and neither explicit
+load-log line prints ⇒ the load executes at device-init BEFORE EmuFolders::Cache resolves
+(empty-path case skipped SILENTLY — now to be logged). Fix in flight: defer/lazy the load
+past folders-init (merge or pre-first-frame recreate). Builder also confirmed: the two
+"mystery" cache files were Dolphin's + GSdx's own (unrelated); 240MB size real (ubershader
+spec-constant variants), per-worker. ACCEPTANCE unchanged: boot logs "loading NNN MB pipeline
+cache" + "Initializing pipeline cache.", room close logs "wrote NNN MB", Eric's turn clean on
+run 2 with NO 400ms-class maxTicks. Watch boot time on the 240MB read (cap is one constant).
+
+## ~16:30 CURRENT: cache killed the compiles; its WRITE is the new 400ms stall (fix in flight)
+Eric's room post-49ab178: Stalled-compile = ZERO (cache works) but maxTick 402/413/427ms on
+~5s cadence at the turn = the periodic persistence serializing the 240MB cache
+(vkGetPipelineCacheData + write) ON THE GS THREAD. Builder fixing: move write off frame path
+(background writer or room-close write), verify getData thread-safety vs pipeline creation,
+investigate 240MB-after-one-session (variant explosion? prune policy?) AND the second smaller
+pipeline-cache file on worker-gl (2.4MB, newer — if Granite is REJECTING the big file each
+boot and rebuilding, load-rejection churn is part of the story — check boot lines
+"Initializing pipeline cache" vs "creating a fresh"). DEPLOY PENDING = the closing fix.
+NOTE for resume-if-context-lost: deploy = disable-first window pattern; verify = Eric's turn
+twice (run1 may still stall once per NEW variant; run2 clean) + zero 400ms-class maxTicks.
+
 ## ~16:10 THE TURN, FINAL ROOT CAUSE: PGS SYNC PIPELINE COMPILES (fix in flight)
 Eric's persistent same-turn slowdown+out-of-sequence frames (surviving coalescer: vcoal=0,
 video/s==ticks/s, all counters clean) = paraLLEl-GS/Granite SYNCHRONOUS compute-pipeline
@@ -425,3 +527,227 @@ than now.
   renders progressive — kills bob at source; nointerlacing_hint is already default-on but log
   says no patch found for CRC 76CBC428 — verify which db that line refers to); (2)
   pcsx2_deinterlace_mode Adaptive/Blend IF it applies to PGS path; (3) PGS scanout/field options.
+
+---
+
+## 2026-08-08 SESSION CLOSE — the stale-frame hunt (spectator reels) and the fix built for it
+
+### What was actually wrong, in one line
+Single frames of **pristine, seconds-to-a-minute-old content** are spliced into an otherwise
+perfect stream, with the sender's clock provably monotonic. It is a **reference-slot** artefact at
+the codec layer, and it has **nothing to do with per-peer temporal-layer dropping**.
+
+### The instrument: spectator reels
+`spectate-probe.mjs --reel-all` joined each live room as a second seat and wrote **every presented
+frame** (`requestVideoFrameCallback`) to disk as `pf<7-digit presentedFrames>-mt<mediaTime>.jpg`;
+filename sort order IS presentation order. Two runs of Eric playing Stuntman (PS2, paraLLEl-GS,
+AV1 3 temporal layers over WebRTC):
+
+| reel | frames | mediaTime | room | worker log | wall clock |
+|---|---|---|---|---|---|
+| `reel-run1` | 6,315 | 0.056 - 118.590 s | QRPH4K | `glworker-2.log` from line 183590, `cid=d9r.ung` | room 21:50:50 -> 21:55:13; **reel t0 ~ 21:53:15.29** (3rd spectator peer) |
+| `reel-run2` | 12,412 | 0.046 - 228.401 s | 6Q7XCX | `glworker.log` from line 216991, `cid=d9r.7q0` | room 21:57:12 -> open; **reel t0 ~ 21:57:28.88** (2nd peer, `[ts-mono]` close 22:01:17.28) |
+
+Both t0 anchors are end-anchored off that peer's `[ts-mono] summary` line and agree with its
+`rtc (connected)` line to ~1.5 s.
+
+### Detector (`.claude/skills/test-roms/reel-anomaly-scan.py`)
+A-B-A at a 64x48 luma downscale: flag B when `dAB > 12` **and** `dBC > 12` **and**
+`dAC < 0.45 * min(dAB,dBC)` — B disagrees violently with both neighbours while the neighbours agree
+with each other. The separation is not marginal, it is **bimodal**: every true anomaly scores
+`dAC/min <= 0.165`, the strongest non-anomaly in either reel scores **1.33**. There is no threshold
+to tune; anything from 0.2 to 1.2 gives the same nine frames. Playwright was abandoned for this
+(it kept dying with "context destroyed by navigation" on `file://`); Python + PIL + numpy, with the
+decoded luma cached to `_luma64x48.npy`, scans 12k frames in ~40 s and re-scores instantly.
+
+**Sanity gate passed:** both user-confirmed exhibits (`pf0006112`, `pf0011214`) are flagged, and
+only 3 other frames in 12,412 join them.
+
+### FULL ANOMALY LISTS — 9 total, every one visually confirmed as a true positive
+
+**reel-run2 — 5 of 12,412 (1 in 2,482)**
+
+| pf | mediaTime | wall | ratio | what the frame shows | content age |
+|---|---|---|---|---|---|
+| 0000347 | 10.655 | 21:57:39.5 | 0.050 | **fully black** between two identical gameplay frames (TC 00:20:46 / 00:20:50) | pre-gameplay black, >=27 s |
+| 0006112 | 112.190 | 21:59:21.1 | 0.100 | gameplay TC **00:16:73** between 00:22:73 / 00:22:76 — *the user's exhibit* | +6.013 s |
+| 0008162 | 148.123 | 21:59:57.0 | 0.036 | the **PAUSE menu**, mid-gameplay (TC 00:23:53 / 00:23:56) | +35.132 s (pixel-identical to pf0006160) |
+| 0011214 | 203.465 | 22:00:52.3 | 0.153 | the **PAUSE menu**, mid-gameplay (TC 00:41:96 / 00:42:03) — *the user's 2nd exhibit* | +53.640 s (pixel-identical to pf0008261) |
+| 0011446 | 207.668 | 22:00:56.6 | 0.165 | gameplay TC **00:42:00** between 00:46:13 / 00:46:16 | +4.169 s |
+
+**reel-run1 — 4 of 6,315 (1 in 1,579)**
+
+| pf | mediaTime | wall | ratio | what the frame shows | content age |
+|---|---|---|---|---|---|
+| 0000801 | 19.211 | 21:53:34.5 | 0.142 | the **PAUSE menu**, mid-gameplay (TC 00:08:60 / 00:08:63) | older than the reel — from before this peer joined |
+| 0000894 | 21.127 | 21:53:36.4 | 0.134 | gameplay TC **00:08:63** between 00:10:40 / 00:10:43 | +1.899 s (pixel-identical to pf0000802) |
+| 0002929 | 58.160 | 21:54:13.5 | 0.025 | the **PAUSE menu**, mid-gameplay (TC 00:24:56 / 00:24:60) | +36.243 s |
+| 0004129 | 79.231 | 21:54:34.5 | 0.124 | the **PAUSE menu**, mid-gameplay (TC 00:08:73 / 00:08:76) | +20.188 s |
+
+Contact sheets: `.claude/skills/test-roms/anomaly-sheet-reel-run1.png` and `-run2.png` (A/B/C
+triples). One multi-frame run exists (`k=4`, pf0008163..66) and it is simply the real pause
+transition beginning 8 frames after the stale pause frame at pf0008162.
+
+**Shape of the population.** 6 of 9 are a *pause menu* or *black* — screens that are STATIC for
+many frames. 3 of 9 are ordinary gameplay from 1.9-6.0 s earlier. Half the anomalies are
+pixel-identical (`diff <= 0.22` at 64x48) to a specific earlier frame in the same reel. Nothing but
+a retained decoded picture can produce that.
+
+### CORRELATION VERDICT — the temporal-layer-dropping theory is REFUTED
+
+Layer decisions in the two rooms (`abr: peer layer X -> Y`, the ONLY layer log there is):
+
+```
+run2  21:57:14.66  peer 7 -> 2 (solo room)        21:57:29.66  peer 7 -> 1
+      21:57:33.66  peer 2 -> 1                    21:57:40.66  peer 1 -> 2
+      21:57:41.66  peer 1 -> 2      ... and NOTHING for the remaining 3.5 minutes
+run1  21:50:52.96  peer 7 -> 2      21:51:15.95 7->1   21:51:26.95 1->2
+      21:52:26.95  7 -> 1           21:52:37.95 1->2   21:52:39.95 2->1
+      21:52:47.95  1 -> 2           21:53:14.95 7->1   21:53:25.95 1->2   ... then nothing
+```
+
+- **8 of the 9 anomalies land in windows where every peer sat at the TOP layer** — no frame was
+  being skipped for anybody, anywhere. Only run2's black frame (21:57:39.5) falls inside a
+  layer-1 window, and that window closed 1.1 s later; with 9 events and ~8 % of the session spent
+  capped, one hit is what chance looks like.
+- **No congestion at all.** `abr: summary` for run1: `open=6000 ceil=12373 layers=3 ticks=261
+  rampTicks=2 atCeilPct=99 cuts=0`. Every `summary-peer` is `path=samehost sustained=12373`,
+  `rttMean <= 0.56 ms`. The room sat pinned at its ceiling for its whole life.
+- **No loss-repair activity.** Exactly ONE `video: PLI honored` per peer join in each room and
+  none in between — the decoders never asked for help, because the frames they got were *valid*,
+  just *wrong*.
+- **Nothing in the emulator.** `pace-diag` across both sessions: `ticks/s` 58-60, `vcoal/s = 0.0`
+  everywhere after boot, no `maxTick` spike near any anomaly. `[zc-stat]`: `inflight 1-2/8`,
+  `refs 1-2`, `dup(pin=2 skip=0)` for a whole 27-minute worker lifetime, `reallocs=0`.
+- **Intra-refresh phase cannot be tested from this data and was not.** The mediaTime->wall mapping
+  is good to ~+/-0.5 s = +/-30 encoder frames, which is wider than half the 120-frame refresh
+  period. Saying "it does/doesn't align with the wave" from these reels would be arithmetic theatre.
+
+**Therefore:** per-peer `WriteSample` skipping is not the cause, and rolling the SVC ladder back
+would not have fixed anything. Good — the directive was to keep it, and the evidence agrees.
+
+### What IS left, and the measurement that pointed at it
+A pristine picture from 53 seconds ago, decoded correctly, displayed with a fresh timestamp, in
+BOTH codecs, with no loss and no drops, can only come from a **decoded picture the encoder still
+had in its reference list**. Reading our own patched plugin:
+
+```c
+av1_config->maxNumRefFramesInDPB = 0;                        /* 0 = "driver default" = full 8-slot DPB */
+av1_config->numFwdRefs = NV_ENC_NUM_REF_FRAMES_AUTOSELECT;   /* up to 4: LAST, LAST2, LAST3, GOLDEN */
+/* h264: maxNumRefFrames and numRefL0 were never set at all */
+```
+
+With `gop-size=-1` there is **no periodic IDR to ever flush that DPB**. A slot — AV1's GOLDEN in
+particular, which is exactly the "long-lived anchor" slot — can hold one picture for the entire
+life of a room, and a frame predicted from it with a null residual decodes to that picture,
+pristine. That is a complete account of every observation, including why STATIC screens (pause
+menu, black) are over-represented: a static screen is precisely what a long-lived anchor gets set to.
+
+**MEASURED tonight, on the GPU, with the new build (this kills the LTR sub-theory):**
+```
+nvav1enc : strict-refs: preset gave enableLTR=0 ltrNumFrames=0 maxNumRefFramesInDPB=0
+nvh264enc: strict-refs: preset gave enableLTR=0 ltrTrustMode=0 ltrNumFrames=0 maxNumRefFrames=0
+```
+So it is NOT long-term-reference marking. It is the **unbounded DPB + multi-forward-ref** default.
+
+### FIX BUILT (nothing deployed)
+
+**1. `docker/arcade/patches/gst/0003-nvcodec-strict-refs.patch`** — new, applies on top of 0002.
+Adds a `strict-refs` boolean property (**default TRUE**) to BOTH `nvav1enc` and `nvh264enc`:
+
+| | AV1 (3 layers) | H.264 (2 layers) |
+|---|---|---|
+| DPB | `maxNumRefFramesInDPB = numTemporalLayers` (3) | `maxNumRefFrames = numTemporalLayers` (2) |
+| forward refs | `numFwdRefs = NV_ENC_NUM_REF_FRAMES_1` | `numRefL0 = NV_ENC_NUM_REF_FRAMES_1` |
+| long-term | `enableLTR = 0, ltrNumFrames = 0` | `enableLTR = ltrNumFrames = ltrTrustMode = 0` |
+
+The oldest picture anything can reference becomes the previous base-layer frame (<=2 frames back).
+Upper-layer drops are reference-safe **by construction**, and a stale-reference re-emission, if one
+still happened, would reproduce a ~33 ms-old picture — invisible — instead of a six-second time warp.
+It also logs what the preset handed it before overriding, so the next session can re-read the facts
+with one grep. `strict-refs=false` in the params string restores today's behaviour for an A/B.
+
+**Built and verified (worker.exe was NOT stopped; nothing was installed):**
+- artifact `D:\Arcade\build\gst-refsafe\gst-plugins-bad-1.28.4\bld2\sys\nvcodec\libgstnvcodec.dll`
+  — **1,479,565 bytes** (live/installed one is 1,478,029 and has zero occurrences of `strict-refs`).
+- `gst-inspect-1.0` against a private `GST_REGISTRY` + `GST_PLUGIN_PATH`: `strict-refs` present on
+  **both** elements, `Boolean. Default: true`, alongside the existing `temporal-layers` /
+  `intra-refresh-period` / `intra-refresh-count`.
+- **Live encodes with the exact production params succeeded (exit 0) and both ladders survive:**
+
+| | strict-refs=false | strict-refs=true |
+|---|---|---|
+| AV1 300 frames | 164,802 B, tid histogram `{0:75, 1:75, 2:150}` | 164,802 B, tid histogram `{0:75, 1:75, 2:150}` — **different md5**, same size |
+| H.264 300 frames | 135,590 B, `nal_ref_idc` 150 ref / 150 non-ref, strict `3,0,3,0...` | 131,135 B (**-3.3 %**), 150/150, strict `3,0,3,0...` |
+
+The H.264 sender identifies droppable frames BY `nal_ref_idc`, and the AV1 sender by the OBU
+extension `temporal_id`; both are untouched, so **the ladder is not harmed**.
+
+**2. `scripts/build-gst-nvcodec-patched.ps1`** — now applies 0002 **then** 0003 (order matters,
+0003 extends 0002's property tables), verifies `strict-refs` alongside the other three properties,
+and takes a new `-BuildOnly` switch that stops before touching the installed DLL. That switch is
+how tonight's artifact was produced with workers up; the install path still refuses to run against
+a live `worker.exe`, as it should.
+
+**3. Worker interim lever — `CLOUD_GAME_SVC_NO_PEER_DROP`** (fork commit on `movietheater-fork`,
+`pkg/network/webrtc/svc.go` + `webrtc.go` + `pkg/worker/coordinatorhandlers.go`). Set it and the
+encoder still produces the pyramid but the sender never skips a frame for anyone; ABR falls back to
+its bitrate lever. **DEFAULT OFF — it is an instrument, not a fix**, and tonight's correlation says
+it is not the cause. It exists so the next person can bisect that class of bug with one restart
+instead of a rebuild, and the worker WARNs at room open when it is set so nobody discovers it by
+staring at fps. Binary: `D:\Arcade\build\cloud-game-gl\bin\worker.candidate-refsafe.exe`,
+**38,988,679 bytes** (`go vet` clean, `-pgo=auto`, CGO `-g -O3`).
+
+### Other verdicts closed out tonight
+- **`[ts-mono]` is CLEAN.** `violations=0 maxRegression=0ns` over `samples=13376` (run2) and 2510 /
+  5036 / 6883 / 13338 (run1's four peers). The sender's RTP clock is not the problem, full stop.
+  The instrumentation stays — it is what makes "the timestamp is fine, the *picture* is wrong" a
+  fact rather than an opinion.
+- **The upload-redundancy theory is DEAD.** `pgs-prof` on the heaviest crossings:
+  `upload=6.4ms(1480ops/187.7MB dup=1/0.0MB)`. One duplicated upload out of 1,480, zero MB. A
+  per-page upload-skip cache (the one sketched in lrps2's `SHADER-TOOLCHAIN-NOTES.md`) has nothing
+  to win and a corruption risk to lose. **Do not build it.**
+- **Warm crossings are now 46-93 ms** (46.4 / 53.8 / 92.9 ms observed; one 155.3 ms cold) after the
+  pipeline-cache fix + scratch pre-warm. `disp~6320, sub~163` on those frames. The remaining cost
+  is spread across `shading`/`texcache`/`other`, not one hotspot.
+- The reels also measured something worth remembering: **~53 % (run1) / ~25 % (run2) of presented
+  frames are pixel-duplicates of their predecessor.** That is the 30 fps interlaced source arriving
+  through the field merge at 60 — normal, and it is why a naive "duplicate frame" metric can never
+  find this bug.
+
+### NEXT-SESSION CHECKLIST (nothing below was done tonight)
+
+**A. Deploy the encoder fix** — this is the one that matters.
+1. Stop BOTH worker tasks and confirm `localhost:8000/status` shows no live rooms. The DLL is
+   loaded by every running worker and cannot be replaced while one is up.
+2. `pwsh scripts/build-gst-nvcodec-patched.ps1` (no `-BuildOnly`). It rebuilds from a pristine tree,
+   re-vendors the SDK 13 header, applies 0002+0003, installs, and verifies all four properties.
+   Tonight's artifact can be copied instead, but re-running the script is the supported path.
+3. Restart the workers, open a Stuntman room, and grep the worker log for
+   `strict-refs: preset gave ...` — its absence means a stock DLL got restored and the whole thing
+   (SVC + intra-refresh included) is silently off.
+4. **Re-run the spectator reel** (`spectate-probe.mjs --code <room> --reel-all`, then
+   `reel-anomaly-scan.py`). ~2,000 presented frames per anomaly is the observed rate, so a
+   3-4 minute run with heavy spots (restart reload, warehouse content storm, pause/unpause) is the
+   right length to expect 4-6 events if the bug survives. **Zero anomalies over >=12k frames is the
+   pass criterion.** If it survives, the next suspect is the zero-copy slot handed to the encoder,
+   not the encoder's own DPB — instrument `glzerocopy.go` / `nanoarch_vulkan.c` to stamp each
+   emitted slot's serial into the frame and read it back off the reel.
+
+**B. Worker binary** — only if the encoder fix alone is not conclusive; the flag is diagnostic.
+`worker.candidate-refsafe.exe` deploys the usual way: `mv bin\worker.exe` aside, copy the candidate
+in as `bin\worker.exe`, then `touch` the `.stop` sentinel in **both** `D:\ArcadeStorage\worker-gl`
+and `worker-gl-2`. Workers exit consuming the sentinel and the runners respawn on the new exe in
+~4 s. Verify by HASH, not by timestamp.
+
+**C. Loose ends left open on purpose tonight**
+- **`ArcadeGame` Id 60439: revert `MaxPlayers` 2 -> 1.** It was raised so the spectator probe could
+  take a second seat. Stuntman is a 1-player title.
+- **Delete `ArcadeGameProfile` row Id 33** (`TEMP pipeline-cache verify`).
+- **N64 pipeline-cache live verification is still pending.** The cores are deployed to BOTH
+  workers' `assets\cores`; grep a live N64 room's log for the paraLLEl-RDP cache lines to confirm
+  the cache is being loaded and written.
+- **Live `worker.exe` is the `5e0898f` build** (38,987,569 B) — it already contains the zc-dup
+  refcount fix (10ff67a), the two-sided audio-rate fix (94f2324) and the `[ts-mono]` probe. The
+  audio fix IS live. `worker.candidate-refsafe.exe` is 5e0898f + tonight's SVC flag only.
+- Core DLLs (lrps2 `2fe1510`) are already deployed to both workers.

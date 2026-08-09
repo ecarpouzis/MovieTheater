@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Rebuilds the PATCHED GStreamer nvcodec plugin (libgstnvcodec.dll) — NVENC intra-refresh +
     AV1 temporal SVC — against the exact installed GStreamer.
@@ -24,6 +24,15 @@
     from the header; with a <13.0 driver the encoder would reject every config. Check with
     NvEncodeAPIGetMaxSupportedVersion (596.21 reports 13.0).
 
+      3. Reference discipline (`strict-refs`, patch 0003, default ON). Upstream leaves the DPB at the
+         driver's default and the forward-ref count at AUTOSELECT, so under our infinite GOP a
+         reference slot can hold one picture for the whole life of a room — and a frame predicted
+         from it with a null residual decodes to that picture, PRISTINE, with a brand-new timestamp.
+         That is the stale-frame artefact the 2026-08-08 spectator reels caught nine times. 0003
+         pins the DPB to the temporal ladder's depth, numFwdRefs/numRefL0 to 1, and LTR off, for
+         BOTH codecs. Verified: the AV1 tid histogram (75/75/150) and the H.264 nal_ref_idc
+         alternation (150 ref / 150 non-ref) are unchanged, so neither ladder is harmed.
+
     ⚠ RE-RUN AFTER ANY `pacman -Syu` THAT TOUCHES GSTREAMER — the upgrade silently restores the stock
     DLL and both features vanish (SVC rooms then fall back to plain 60fps for everyone; intra-refresh
     loss is worse — no keyframes at all unless gop-size is also changed back).
@@ -33,6 +42,10 @@
     patches/gst/0002-nvcodec-temporal-svc.patch. Do not apply both.
 #>
 param(
+    # Build the DLL and STOP — do not touch the installed plugin. Use this while workers are up:
+    # the install step deliberately refuses to run against a live worker, and a rebuilt artifact
+    # sitting on disk is what a next session actually wants to find.
+    [switch]$BuildOnly,
     [string]$Version = "",
     [string]$Ucrt64  = "D:\msys64\ucrt64",
     [string]$WorkDir = "D:\Arcade\build\gst",
@@ -44,9 +57,13 @@ $ErrorActionPreference = "Stop"
 $env:Path = "$Ucrt64\bin;$env:Path"
 
 $repo   = Split-Path $PSScriptRoot -Parent
-$patch  = Join-Path $repo "docker\arcade\patches\gst\0002-nvcodec-temporal-svc.patch"
+# Applied IN ORDER. 0003 depends on 0002 — it extends the same property tables.
+$patches = @(
+    (Join-Path $repo "docker\arcade\patches\gst\0002-nvcodec-temporal-svc.patch"),
+    (Join-Path $repo "docker\arcade\patches\gst\0003-nvcodec-strict-refs.patch")
+)
 $target = Join-Path $Ucrt64 "lib\gstreamer-1.0\libgstnvcodec.dll"
-if (-not (Test-Path $patch)) { throw "patch not found: $patch" }
+foreach ($p in $patches) { if (-not (Test-Path $p)) { throw "patch not found: $p" } }
 
 # The plugin must be built against the GStreamer that will load it.
 if (-not $Version) {
@@ -81,8 +98,10 @@ if ($maj.Matches[0].Groups[1].Value -ne "13") { throw "vendored header is not SD
 
 Push-Location $src
 try {
-    & patch -p1 --forward -i $patch
-    if ($LASTEXITCODE -ne 0) { throw "patch failed to apply" }
+    foreach ($p in $patches) {
+        & patch -p1 --forward -i $p
+        if ($LASTEXITCODE -ne 0) { throw "patch failed to apply: $p" }
+    }
 
     # Default auto features: a minimal -Dauto_features=disabled build produces a reduced in-tree
     # gstd3d11 that breaks the decoder half.
@@ -95,6 +114,14 @@ try {
 $dll = Join-Path $src "bld2\sys\nvcodec\libgstnvcodec.dll"
 if (-not (Test-Path $dll)) { throw "build produced no DLL" }
 
+if ($BuildOnly) {
+    Write-Host "BuildOnly: not installing. Artifact: $dll ($((Get-Item $dll).Length) bytes)"
+    Write-Host "To verify it WITHOUT installing, copy it — KEEPING THE FILENAME, gst derives the plugin"
+    Write-Host "name from it — into an empty dir, then point GST_PLUGIN_PATH and a private GST_REGISTRY"
+    Write-Host "at that dir and gst-inspect-1.0 nvav1enc / nvh264enc."
+    return
+}
+
 # The DLL is loaded by any running worker — it cannot be replaced while one is up.
 $live = Get-Process worker -ErrorAction SilentlyContinue
 if ($live) { throw "worker.exe is running (pids: $($live.Id -join ',')) — stop the worker tasks first, and check localhost:8000/status for live rooms before you do" }
@@ -106,7 +133,7 @@ Write-Host "installed: $target"
 
 # Prove BOTH features are actually exposed — a silently-stock DLL is the failure mode this guards.
 $props = & "$Ucrt64\bin\gst-inspect-1.0.exe" nvav1enc
-foreach ($p in @("temporal-layers", "intra-refresh-period", "intra-refresh-count")) {
+foreach ($p in @("temporal-layers", "intra-refresh-period", "intra-refresh-count", "strict-refs")) {
     if ($props -match [regex]::Escape($p)) { Write-Host "  verified: $p" }
     else { throw "installed plugin does NOT expose $p — the build or install did not take" }
 }

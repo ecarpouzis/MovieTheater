@@ -12,3 +12,10 @@ docker/arcade/patches/*.patch -text
 # flycast_custom_libretro.dll and had NO rule until 2026-08-08 — it sat one `git checkout` away from
 # the identical breakage. Any generated patch under docker/arcade belongs here.
 docker/arcade/*.patch -text
+# The two rules above are ANCHORED (a pattern with a slash is matched from this directory and * never
+# crosses one), so neither of them reached docker/arcade/patches/gst/ - the nvcodec patches that ARE
+# the rebuild path for libgstnvcodec.dll, i.e. for temporal SVC, intra-refresh and (2026-08-08) the
+# reference discipline. They sat one fresh clone away from the exact fork.patch breakage described
+# above. ** crosses directories, so this catches any generated patch under docker/arcade, wherever
+# someone files the next one.
+docker/arcade/**/*.patch -text
