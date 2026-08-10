@@ -104,6 +104,12 @@ namespace MovieTheater.Controllers
                 transcoded = transcode,
                 mimeType = transcode ? "audio/mpeg" : MusicMimeTypes.FromExtension(track.Extension),
                 durationSec = track.DurationSec,
+                // How big the file is, so the player can decide whether it dares STREAM it.
+                // Chrome's media buffer caps at 16 MiB - 32 KiB: anything larger is guaranteed to be
+                // evicted and re-requested part-way through the song (proved in Caddy's log as
+                // `Range: bytes=16744448-`), and a phone whose screen has gone off cannot service
+                // that re-request. The player downloads those in full before playing them instead.
+                sizeBytes = track.SizeBytes,
                 // How many channels the browser will actually decode, so the player can size its Web
                 // Audio destination to match. The transcode lane re-encodes to mp3, which tops out at
                 // stereo, so a surround source served that way really is 2 by the time it lands.

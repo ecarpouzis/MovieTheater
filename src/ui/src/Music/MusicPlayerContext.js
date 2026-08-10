@@ -115,6 +115,11 @@ const MAX_PRELOAD_BYTES = 120 * 1024 * 1024;
 // How far into a track we start downloading the next one. Early, deliberately: the whole track has
 // to be in memory before the phone goes to sleep, not 30 seconds before it is needed.
 const PRELOAD_START_SEC = 5;
+// Chrome's media buffer caps at 16 MiB - 32 KiB (16744448). A file bigger than that WILL be evicted
+// and re-requested part-way through the song — proved in Caddy's access log as a second request for
+// `bytes=16744448-` mid-track — and a phone whose screen has gone off cannot service that
+// re-request. Anything over this is downloaded in full before it is played, never streamed.
+const BUFFER_SAFE_BYTES = 15 * 1024 * 1024;
 
 /// Ask the stream host what it actually said. "Playback failed." is what the player showed for every
 /// distinct prod outage this vertical has had — a gateway that couldn't SEE the files, an expired or
@@ -302,10 +307,26 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   // tracking, the stall watchdog's clock and the prefetch that feeds the NEXT boundary — attached
   // to a deck that stopped playing an album ago.
   const [activeDeck, setActiveDeck] = useState("a");
+  // True while a track is being downloaded before it can start. The bar says so rather than
+  // leaving a dead-looking player: on a WAN uplink a 40 MB track is a real wait.
+  const [buffering, setBuffering] = useState(false);
   // Which track the IDLE deck has buffered, or null. Distinct from prefetchRef (a URL in hand):
   // this one means the bytes are already decoded and ready to play.
   const deckLoadedRef = useRef(null);
   const preloadAbortRef = useRef(null);
+  const liveFetchRef = useRef(null);
+
+  // Blob URLs currently held by each deck, so they can be revoked the moment they stop being
+  // the thing playing. An un-revoked object URL pins its whole ArrayBuffer for the life of the page.
+  const deckBlobRef = useRef({ a: null, b: null });
+  const revokeDeck = useCallback((deck) => {
+    const url = deckBlobRef.current[deck];
+    if (url) {
+      try { URL.revokeObjectURL(url); } catch { /* already gone */ }
+      deckBlobRef.current[deck] = null;
+    }
+  }, []);
+
   // element -> MediaElementAudioSourceNode; both decks must be routed once the graph exists.
   const graphSourcesRef = useRef(new Map());
 
@@ -440,6 +461,59 @@ export function MusicPlayerProvider({ children, enabled = true }) {
     }
   }, []);
 
+  // Download a track in full, then put the BYTES on the live deck. Used for anything over the
+  // buffer cap (see BUFFER_SAFE_BYTES). Nothing is transcoded — the blob is the file, byte for byte.
+  const fetchToDeck = useCallback((data, seq, { resumeAt, autoplay, track }) => {
+    const audio = audioRef.current;
+    const deck = deckRef.current;
+    setBuffering(true);
+    const controller = new AbortController();
+    liveFetchRef.current?.abort();
+    liveFetchRef.current = controller;
+    diagLog("load:download", { track: track.id, mb: +(data.sizeBytes / 1048576).toFixed(1) });
+    return fetch(data.url, { signal: controller.signal, credentials: "omit" })
+      .then((res) => {
+        if (!res.ok) throw new Error(`status ${res.status}`);
+        return res.blob();
+      })
+      .then((blob) => {
+        if (seq !== loadSeqRef.current) return;  // the listener moved on mid-download
+        revokeDeck(deck);
+        const objectUrl = URL.createObjectURL(blob);
+        deckBlobRef.current[deck] = objectUrl;
+        lastUrlRef.current = data.url;
+        trackChannelsRef.current = Number(data.channels) || 0;
+        applyOutputChannels();
+        audio.src = objectUrl;
+        loadedTrackIdRef.current = track.id;
+        setBuffering(false);
+        diagLog("load:downloaded", { track: track.id, mb: +(blob.size / 1048576).toFixed(1) });
+        if (resumeAt > 0) {
+          audio.addEventListener("loadedmetadata", () => {
+            try { audio.currentTime = resumeAt; } catch { /* unseekable */ }
+          }, { once: true });
+        }
+        if (!autoplay) { setPlaying(false); return; }
+        audio.play().catch(() => {
+          if (document.hidden) resumeOnWakeRef.current = true;
+          setPlaying(false);
+        });
+      })
+      .catch((e) => {
+        if (controller.signal.aborted || seq !== loadSeqRef.current) return;
+        setBuffering(false);
+        // A download that fails is not fatal: stream it the old way and let the ordinary recovery
+        // machinery deal with whatever happens next.
+        diagLog("load:download-failed", { track: track.id, why: String(e?.message || e).slice(0, 40) });
+        lastUrlRef.current = data.url;
+        trackChannelsRef.current = Number(data.channels) || 0;
+        applyOutputChannels();
+        audio.src = data.url;
+        loadedTrackIdRef.current = track.id;
+        if (autoplay) audio.play().catch(() => { if (document.hidden) resumeOnWakeRef.current = true; setPlaying(false); });
+      });
+  }, [applyOutputChannels, revokeDeck]);
+
   // Fetch a fresh signed URL and put it on the element. Shared by the track-change effect and by
   // recovery, which differ only in where they resume from — a re-mint is exactly a load, and having
   // two spellings of it is how the two paths would drift.
@@ -461,8 +535,15 @@ export function MusicPlayerProvider({ children, enabled = true }) {
       .then((r) => (r.ok ? r.json() : r.json().catch(() => ({})).then((b) => Promise.reject(b))))
       .then((data) => {
         if (seq !== loadSeqRef.current) return; // superseded by a newer pick
-        diagLog("load:minted", { track: track.id, url: (data.url || "").slice(-28) });
+        diagLog("load:minted", { track: track.id, url: (data.url || "").slice(-28), size: data.sizeBytes });
         setError(null);
+        // Too big to stream safely? Fetch the whole thing first. This costs a wait on the FIRST
+        // track of a session — every later one was already downloaded during the track before it —
+        // and it is the only way a file over the buffer cap survives the screen going off.
+        const size = Number(data.sizeBytes) || 0;
+        if (size > BUFFER_SAFE_BYTES && size <= MAX_PRELOAD_BYTES) {
+          return fetchToDeck(data, seq, { resumeAt, autoplay, track });
+        }
         lastUrlRef.current = data.url; // kept for diagnoseStreamUrl if this load dies
         // Before the element gets the source, not after: the destination's width should already be
         // right when the first buffer is decoded, so no part of the track is folded on the way in.
@@ -503,24 +584,13 @@ export function MusicPlayerProvider({ children, enabled = true }) {
           { networkLevel: neverAnswered }
         );
       });
-  }, [applyOutputChannels]);
+  }, [applyOutputChannels, fetchToDeck]);
 
   /// Mint the next track's URL now, so `ended` has one in hand. Idempotent per track and cheap to
   /// call from a timeupdate: a slot claimed for this id (in flight or filled) is left alone, and a
   /// slot pointing at some other track is simply replaced — the queue moved on under it.
   /// A failure clears the slot and says nothing: the hand-off just doesn't happen, and the ordinary
   /// load path runs on the track change exactly as it did before, error handling included.
-  // Blob URLs currently held by each deck, so they can be revoked the moment they stop being
-  // the thing playing. An un-revoked object URL pins its whole ArrayBuffer for the life of the page.
-  const deckBlobRef = useRef({ a: null, b: null });
-  const revokeDeck = useCallback((deck) => {
-    const url = deckBlobRef.current[deck];
-    if (url) {
-      try { URL.revokeObjectURL(url); } catch { /* already gone */ }
-      deckBlobRef.current[deck] = null;
-    }
-  }, []);
-
   /**
    * Put the next track on the idle deck — as BYTES WE ALREADY HOLD, not a URL to be streamed.
    *
@@ -1161,6 +1231,7 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   const onPlay = useCallback((e) => {
     if (e && e.currentTarget && e.currentTarget !== elFor(deckRef.current)) return;
     resumeOnWakeRef.current = false;
+    setBuffering(false);
     setPlaying(true);
   }, [elFor]);
   const onPause = useCallback((e) => {
@@ -1278,8 +1349,8 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   });
 
   const value = useMemo(
-    () => ({ queue, index, current, playing, error, audioRef, canTranscode, isPlayable, playTracks, enqueue, next, prev, toggle, seek, playAt, removeAt, stop, setVolume, ensureAudioGraph, visualizerOn, toggleVisualizer, closeVisualizer, lyricsOn, toggleLyrics, closeLyrics, shuffleTracks, favoriteIds, isFavorite, toggleFavorite, lyricsSettings, setLyricsSetting }),
-    [queue, index, current, playing, error, canTranscode, isPlayable, playTracks, enqueue, next, prev, toggle, seek, playAt, removeAt, stop, setVolume, ensureAudioGraph, visualizerOn, toggleVisualizer, closeVisualizer, lyricsOn, toggleLyrics, closeLyrics, shuffleTracks, favoriteIds, isFavorite, toggleFavorite, lyricsSettings, setLyricsSetting]
+    () => ({ queue, index, current, playing, error, buffering, audioRef, canTranscode, isPlayable, playTracks, enqueue, next, prev, toggle, seek, playAt, removeAt, stop, setVolume, ensureAudioGraph, visualizerOn, toggleVisualizer, closeVisualizer, lyricsOn, toggleLyrics, closeLyrics, shuffleTracks, favoriteIds, isFavorite, toggleFavorite, lyricsSettings, setLyricsSetting }),
+    [queue, index, current, playing, error, buffering, canTranscode, isPlayable, playTracks, enqueue, next, prev, toggle, seek, playAt, removeAt, stop, setVolume, ensureAudioGraph, visualizerOn, toggleVisualizer, closeVisualizer, lyricsOn, toggleLyrics, closeLyrics, shuffleTracks, favoriteIds, isFavorite, toggleFavorite, lyricsSettings, setLyricsSetting]
   );
 
   return (

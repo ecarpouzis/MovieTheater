@@ -50,7 +50,7 @@ let playSpy;
 beforeEach(() => {
   api.getMusicCapabilities.mockReturnValue(ok({ transcodeEnabled: true }));
   api.getMusicFavorites.mockReturnValue(ok({ trackIds: [] }));
-  api.startMusicTrack.mockImplementation((id) => ok({ trackId: id, url: `https://gw/${id}`, channels: 2 }));
+  api.startMusicTrack.mockImplementation((id) => ok({ trackId: id, url: `https://gw/${id}`, channels: 2, sizeBytes: 4 * 1024 * 1024 }));
   playSpy = vi.fn(() => Promise.resolve());
   window.HTMLMediaElement.prototype.play = playSpy;
   window.HTMLMediaElement.prototype.pause = vi.fn();
@@ -173,6 +173,29 @@ describe("A/B decks", () => {
     await act(async () => { live().dispatchEvent(new Event("ended")); });
     expect(player.current.id).toBe(2);
     expect(player.audioRef.current.src).toBe("https://gw/2");
+  });
+
+  it("never STREAMS a file over Chrome's buffer cap — it downloads it first", async () => {
+    // 40 MB, like the Caravan Palace FLAC that died mid-song. Chrome's buffer tops out at
+    // 16 MiB - 32 KiB, so streaming this guarantees a re-request for `bytes=16744448-` part-way
+    // through — which is exactly what Caddy's access log caught, and exactly what a phone with its
+    // screen off cannot answer.
+    api.startMusicTrack.mockImplementation((id) =>
+      ok({ trackId: id, url: `https://gw/${id}`, channels: 2, sizeBytes: 42163278 }));
+
+    const view = render(<MusicPlayerProvider enabled><Probe /></MusicPlayerProvider>);
+    await act(async () => { player.playTracks(TRACKS, 0); });
+    await act(async () => {});
+
+    expect(global.fetch).toHaveBeenCalledWith("https://gw/1", expect.anything());
+    expect(player.audioRef.current.src).toBe("blob:https://gw/1"); // bytes in hand, not a stream
+    view.unmount();
+  });
+
+  it("still streams a small file, so a 6 MB mp3 starts instantly", async () => {
+    const { live } = await mountPlaying();   // 4 MB in the default mock
+    expect(live().src).toBe("https://gw/1");
+    expect(global.fetch).not.toHaveBeenCalledWith("https://gw/1", expect.anything());
   });
 
   it("keeps both decks at the same volume, so a flip is never a jump in loudness", async () => {
