@@ -147,7 +147,7 @@ function MusicMiniPlayer() {
   }, [vizOverlayOpen]);
 
   if (!player || !player.current) return null;
-  const { current, error, queue, index, visualizerOn, lyricsOn } = player;
+  const { current, error, buffering, queue, index, visualizerOn, lyricsOn } = player;
   const effectiveDuration = duration || current.durationSec || 0;
   const favorited = !!player.isFavorite?.(current.id);
   const lyricsSettings = player.lyricsSettings || LYRICS_DEFAULTS;
@@ -256,6 +256,14 @@ function MusicMiniPlayer() {
               >
                 {error}
               </button>
+            ) : buffering ? (
+              // A big track is being fetched whole before it can play (it is over Chrome's media
+              // buffer cap, so streaming it would break mid-song). On a WAN uplink that is a real
+              // wait, and a bar that just sits there reads as broken — so it says what it is doing.
+              <span className="music-miniplayer-buffering" data-testid="music-buffering">
+                <span className="music-miniplayer-buffering-dot" />
+                Buffering…
+              </span>
             ) : [current.artist, current.album].filter(Boolean).join(" — ")}
           </div>
         </div>
@@ -284,7 +292,7 @@ function MusicMiniPlayer() {
         <button className="music-miniplayer-btn" onClick={player.next} aria-label="Next track">⏭</button>
       </div>
 
-      <div className="music-miniplayer-seek">
+      <div className={`music-miniplayer-seek${buffering ? " music-miniplayer-seek--buffering" : ""}`}>
         <span className="music-miniplayer-time">{formatTime(position)}</span>
         <input
           type="range"

@@ -512,3 +512,56 @@
   .music-lyrics-over-viz .music-np-lyrics--synced::before,
   .music-lyrics-over-viz .music-np-lyrics--synced::after { height: 30%; }
 }
+
+/* ── Buffering (music-plan.md §2.1) ──────────────────────────────────────────
+   Shown while a track too big to stream is being fetched whole. It occupies the
+   secondary line the error already uses — one voice, not two — and animates,
+   because a static "Buffering…" on a silent bar is indistinguishable from a
+   frozen one, which is the exact impression this exists to prevent. */
+
+.music-miniplayer-buffering {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+}
+
+.music-miniplayer-buffering-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: music-buffering-pulse 1s ease-in-out infinite;
+}
+
+@keyframes music-buffering-pulse {
+  0%, 100% { opacity: 0.25; transform: scale(0.8); }
+  50%      { opacity: 1;    transform: scale(1.15); }
+}
+
+/* The seek rail is the other thing a listener stares at while waiting, so it shows
+   activity too — a slow sweep along the track, not a fake position. */
+.music-miniplayer-seek--buffering input[type="range"] {
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--accent-soft) 35%,
+    var(--accent-soft) 65%,
+    transparent 100%
+  );
+  background-repeat: no-repeat;
+  background-size: 45% 100%;
+  animation: music-buffering-sweep 1.4s ease-in-out infinite;
+}
+
+@keyframes music-buffering-sweep {
+  0%   { background-position: -45% 0; }
+  100% { background-position: 145% 0; }
+}
+
+/* Anyone who has asked the OS for less motion gets the honest static version. */
+@media (prefers-reduced-motion: reduce) {
+  .music-miniplayer-buffering-dot,
+  .music-miniplayer-seek--buffering input[type="range"] { animation: none; }
+  .music-miniplayer-buffering-dot { opacity: 0.8; }
+}
