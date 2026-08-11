@@ -12,7 +12,16 @@ FLAC is NOT sleep-viable and takes the universal lane while hidden (the phone-pr
 `changeType` is what makes that legal). ENDURANCE RE-RUN PASSED 2026-08-11 15:50: 13m11s hidden,
 ZERO dry buffers, 10/10 hidden fetches, worst gap 270 ms — a page that keeps audio flowing keeps
 its execution; the 84 s gaps belonged to the dying run. Engine design still assumes the
-conservative 90 s. PHASE 1 GATE: PASSED. Phase 2 unlocked.**
+conservative 90 s. PHASE 1 GATE: PASSED. **PHASE 2 SHIPPED 2026-08-11 (commit e3ede0b), flag OFF:
+the engine (`MusicMseEngine.js`) + shared rules (`musicTreatments.js`) live behind
+`music.engine="mse"` / `?mse=1`, modelled as a THIRD DECK inside MusicPlayerContext. Desktop
+browser-verified: mp3 → flac-fMP4 → wma-transcode → 96 kHz flac crossed in ONE SourceBuffer,
+analyser fed throughout; flag off, decks byte-identical. Three live-found bugs are now guards in
+code: synchronous element claim (toggle-vs-start race detached the MediaSource), `bufferCeilingSec`
+takes min not max (quota is physics), and a low-water mark (no hysteresis = 80 fetches/track).
+KNOWN GAPS until Phase 3/4: progress bar reads queue-time and seek is wrong under the flag
+(timeline module owns it); fat tracks re-fetch ~3× on resume (lanes can't Range); real screen-off
+run of the ENGINE not yet done — that is the Phase 2 gate on the phone.**
 Companion to `music-plan.md`; cite sections from code the same way.
 
 ## Why
