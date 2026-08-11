@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { MovieAPI } from "../MovieAPI";
-import { diagLog, snapshotAudio, diagEnabled, MEDIA_EVENTS } from "./musicDiag";
+import { diagLog, snapshotAudio, diagEnabled, reportIncident, MEDIA_EVENTS } from "./musicDiag";
 import MusicDiagPanel from "./MusicDiagPanel";
 import { useMediaSession } from "../useMediaSession";
 import MusicMiniPlayer from "./MusicMiniPlayer";
@@ -914,6 +914,15 @@ export function MusicPlayerProvider({ children, enabled = true }) {
       state.parkBeats += 1;
       state.attemptedAtSec = progressRef.current.sec; // start the refund clock from here, not from 0:00
       setError("Playback interrupted — waiting for the connection to come back.");
+      // Report the FIRST beat only. Parking is a heartbeat: reporting every one would turn a
+      // two-minute Wi-Fi doze into a hundred rows saying the same thing.
+      if (state.parkBeats === 1) {
+        diagLog("park", { track: track.id, sec: Math.round(progressRef.current.sec), networkLevel });
+        reportIncident("park", {
+          summary: `parked: ${message}`.slice(0, 400),
+          trackId: track.id,
+        });
+      }
       schedulePendingRecovery(track.id, state.parkBeats <= PARKED_MAX_BEATS ? PARKED_RETRY_MS : null);
       return;
     }
@@ -1257,6 +1266,18 @@ export function MusicPlayerProvider({ children, enabled = true }) {
       prefetched: !!(pre?.url && pre.trackId === upcoming?.id),
       hidden: document.hidden,
     });
+    // A boundary crossed on a hidden page WITHOUT the next track already buffered is the exact
+    // shape of the bug that keeps coming back: every remaining path from here needs the network at
+    // the one moment the page has least licence to use it. Report it whether or not it goes on to
+    // fail, because the interesting question is why the deck wasn't ready — and by the time the
+    // failure is visible, the run-up has already scrolled out of anyone's reach.
+    if (upcoming && !deckReady && document.hidden) {
+      reportIncident("boundary", {
+        summary: `boundary while hidden with no buffered deck (upcoming ${upcoming.id}, `
+          + `prefetchUrl=${!!(pre?.url && pre.trackId === upcoming.id)})`,
+        trackId: upcoming.id,
+      });
+    }
 
     // Best case: the next track is already buffered on the other deck. Flip to it — no src
     // assignment, no load, no round trip. Just a play() on an element that already has the bytes.

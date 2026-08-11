@@ -12,3 +12,10 @@ import "@testing-library/jest-dom";
 // in this suite asserts on stylesheet-derived styles. (Blocking the style-tag insertion
 // instead corrupts React — it happens inside useInsertionEffect.)
 window.getComputedStyle = (el) => el.style;
+
+// The music player reports its own playback failures (musicDiag.reportIncident). Tests that
+// exercise a failure would otherwise make a REAL request to /API/Music/Incident — which shows up
+// as an unhandled NetworkError rejection from happy-dom's fetch, pollutes unrelated suites, and
+// could mask a genuine error. A no-op beacon keeps reporting on the code path being tested while
+// never touching the network. A test that wants to ASSERT on a report overrides this itself.
+navigator.sendBeacon = () => true;

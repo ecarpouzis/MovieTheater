@@ -9,10 +9,23 @@ beforeEach(() => { clearDiag(); setDiagEnabled(true); });
 afterEach(() => { setDiagEnabled(false); clearDiag(); });
 
 describe("musicDiag", () => {
-  it("records nothing at all when it is off — it must cost nothing in normal use", () => {
+  it("still records FAILURE events when it is off — the failure erases its own evidence", () => {
+    // This deliberately reverses the original rule ("records nothing at all when off"). That rule
+    // is why this bug went unrecorded for twenty-odd occurrences: the failure happens on a sleeping
+    // phone, the player then RECOVERS, and by the time anyone can look the moment is gone. Asking
+    // someone to have had diagnostics enabled beforehand never once produced a log.
     setDiagEnabled(false);
     expect(diagEnabled()).toBe(false);
     diagLog("boundary", { upcoming: 2 });
+    diagLog("park", { track: 7 });
+    expect(diagList().map((e) => e.event)).toEqual(["boundary", "park"]);
+  });
+
+  it("still ignores the media firehose when off — always-on must stay cheap", () => {
+    setDiagEnabled(false);
+    diagLog("timeupdate", {});
+    diagLog("canplaythrough", {});
+    diagLog("suspend", {});
     expect(diagList()).toHaveLength(0);
   });
 
@@ -61,5 +74,43 @@ describe("musicDiag", () => {
     const text = diagText();
     expect(text).toContain("error");
     expect(text).toContain("SRC_NOT_SUPPORTED");
+  });
+});
+
+describe("musicDiag self-reporting", () => {
+  it("survives the reload that the failure causes", async () => {
+    // The player recovers by reloading, which used to take the ring with it. The evidence has to
+    // outlive the page life that recorded it or there is nothing to read afterwards.
+    diagLog("park", { track: 42 });
+    const stored = JSON.parse(window.localStorage.getItem("music.diag.ring"));
+    expect(stored.some((e) => e.event === "park" && e.data.track === 42)).toBe(true);
+  });
+
+  it("posts the log itself, by beacon, without anyone being asked to catch it", async () => {
+    const sent = [];
+    navigator.sendBeacon = (url, blob) => { sent.push({ url, blob }); return true; };
+    const { reportIncident } = await import("./musicDiag");
+
+    diagLog("boundary", { upcoming: 9, deckReady: false });
+    expect(reportIncident("boundary", { summary: "no buffered deck", trackId: 9 })).toBe(true);
+
+    expect(sent).toHaveLength(1);
+    expect(sent[0].url).toBe("/API/Music/Incident");
+    const body = JSON.parse(await sent[0].blob.text());
+    expect(body.kind).toBe("boundary");
+    expect(body.trackId).toBe(9);
+    // The run-up is the point: a bare "it failed" says nothing the listener hadn't already said.
+    expect(body.events.some((e) => e.event === "boundary")).toBe(true);
+  });
+
+  it("rate-limits itself so a failure loop cannot become a flood", async () => {
+    const sent = [];
+    navigator.sendBeacon = () => { sent.push(1); return true; };
+    const { reportIncident } = await import("./musicDiag");
+
+    expect(reportIncident("park", { force: true })).toBe(true);
+    expect(reportIncident("park")).toBe(false);
+    expect(reportIncident("park")).toBe(false);
+    expect(sent).toHaveLength(1);
   });
 });

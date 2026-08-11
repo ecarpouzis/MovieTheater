@@ -13,11 +13,44 @@
 
 const MAX_ENTRIES = 500;
 const KEY = "music.diag";
+const RING_KEY = "music.diag.ring";
+// The ring has to survive the thing it is recording. When playback fails on a sleeping phone the
+// page is reloaded (by the browser, or by the listener) and an in-memory ring dies with it — which
+// is why every previous attempt to catch this asked someone to be looking at the exact moment, and
+// why that never once worked. Persisted, bounded, and small enough to write on every event.
+const PERSIST_ENTRIES = 200;
+
+// Events that are recorded even with diagnostics OFF. These are the ones that describe a failure
+// and its run-up; the raw media firehose stays behind ?diag=1.
+const ALWAYS = new Set([
+  "boundary", "error", "park", "recover", "wake", "give-up",
+  "preload:ready", "preload:stream", "preload:failed", "preload:fetch",
+  "load:failed", "load:minted", "load:download", "load:downloaded", "visibility",
+]);
 
 let enabled = false;
 let entries = [];
 let nextId = 1;
 const listeners = new Set();
+
+function persist() {
+  try {
+    const keep = entries.slice(-PERSIST_ENTRIES);
+    window.localStorage.setItem(RING_KEY, JSON.stringify(keep));
+  } catch { /* quota or private mode: the in-memory ring still works for this session */ }
+}
+
+function restore() {
+  try {
+    const raw = window.localStorage.getItem(RING_KEY);
+    if (!raw) return;
+    const prev = JSON.parse(raw);
+    if (Array.isArray(prev) && prev.length) {
+      entries = prev;
+      nextId = Math.max(...prev.map((e) => e.id || 0)) + 1;
+    }
+  } catch { /* unreadable ring is no ring */ }
+}
 
 // Resolve the flag once, at module load: ?diag= wins and is remembered, otherwise localStorage.
 try {
@@ -32,6 +65,10 @@ try {
 } catch {
   enabled = false;
 }
+
+// Bring back whatever the last page life recorded, so a reload doesn't erase the failure that
+// caused it.
+restore();
 
 export function diagEnabled() {
   return enabled;
@@ -82,7 +119,8 @@ function emit() {
  * timeupdate-adjacent paths.
  */
 export function diagLog(event, data) {
-  if (!enabled) return;
+  // Failure-shaped events are always recorded. Everything else needs ?diag=1.
+  if (!enabled && !ALWAYS.has(event)) return;
   entries.push({
     id: nextId++,
     at: Date.now(),
@@ -91,6 +129,7 @@ export function diagLog(event, data) {
     data: data || null,
   });
   if (entries.length > MAX_ENTRIES) entries = entries.slice(-MAX_ENTRIES);
+  persist();
   emit();
 }
 
@@ -100,7 +139,46 @@ export function diagList() {
 
 export function clearDiag() {
   entries = [];
+  try { window.localStorage.removeItem(RING_KEY); } catch { /* nothing to clear */ }
   emit();
+}
+
+// ── Self-reporting ──────────────────────────────────────────────────────────
+//
+// The player uploads its own log when playback fails. No flag, no panel, no asking anyone to be
+// holding the phone at the right second: by the time a person can look, the track has resumed and
+// the evidence is gone.
+//
+// sendBeacon because the interesting failures happen as the page is being frozen or unloaded — a
+// fetch() at that moment is exactly as likely to be dropped as the audio request that just failed.
+const REPORT_URL = "/API/Music/Incident";
+const REPORT_MIN_GAP_MS = 60000;   // one report a minute is plenty; a loop must not become a flood
+let lastReportAt = 0;
+
+export function reportIncident(kind, { summary = "", trackId = null, force = false } = {}) {
+  const now = Date.now();
+  if (!force && now - lastReportAt < REPORT_MIN_GAP_MS) return false;
+  lastReportAt = now;
+  const body = JSON.stringify({
+    kind,
+    summary: String(summary).slice(0, 400),
+    trackId,
+    userAgent: (typeof navigator !== "undefined" ? navigator.userAgent : "").slice(0, 400),
+    // Only the tail matters: the run-up to the failure, not the whole listening session.
+    events: entries.slice(-120),
+  });
+  try {
+    if (typeof navigator !== "undefined" && navigator.sendBeacon) {
+      // Type text/plain keeps it a CORS-simple request, so a freezing page never has to wait for
+      // a preflight it will not survive.
+      return navigator.sendBeacon(REPORT_URL, new Blob([body], { type: "text/plain" }));
+    }
+    fetch(REPORT_URL, { method: "POST", body, headers: { "Content-Type": "text/plain" }, keepalive: true })
+      .catch(() => { /* a failed report must never surface to the listener */ });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function subscribeDiag(fn) {

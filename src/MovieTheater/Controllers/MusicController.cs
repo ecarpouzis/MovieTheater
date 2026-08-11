@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Claims;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -49,6 +50,72 @@ namespace MovieTheater.Controllers
         {
             public int TrackId { get; set; }
         }
+
+        /// <summary>
+        /// Receives a playback failure report the player sends about itself.
+        /// </summary>
+        /// <remarks>
+        /// The music failures worth chasing happen on a phone with the screen off and then RECOVER,
+        /// so there is nothing left to look at by the time a person can look: the track resumed, the
+        /// page reloaded, and the in-memory log went with it. Every attempt to catch one by asking
+        /// the listener to be watching has failed, because the moment erases itself.
+        ///
+        /// <para>So the player reports unprompted. It arrives as a <c>sendBeacon</c> with
+        /// <c>text/plain</c> — deliberately a CORS-simple request, because the page making it is
+        /// being frozen and will not survive a preflight — which is why the body is read and parsed
+        /// here rather than model-bound.</para>
+        ///
+        /// <para>Anyone logged in may post: a report is only useful if the failing session can send
+        /// it, and the failing session is by definition an ordinary listener. The payload is capped
+        /// and the client rate-limits itself to one a minute.</para>
+        /// </remarks>
+        [HttpPost("/API/Music/Incident")]
+        public async Task<IActionResult> Incident()
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+
+            using var reader = new StreamReader(Request.Body);
+            var raw = await reader.ReadToEndAsync();
+            if (string.IsNullOrWhiteSpace(raw)) return BadRequest(new { message = "Empty report." });
+            // A runaway client must not be able to write unbounded rows.
+            if (raw.Length > 256 * 1024) raw = raw.Substring(0, 256 * 1024);
+
+            string kind = "unknown", summary = null, userAgent = null;
+            int? trackId = null;
+            try
+            {
+                using var doc = JsonDocument.Parse(raw);
+                var root = doc.RootElement;
+                if (root.TryGetProperty("kind", out var k)) kind = k.GetString() ?? "unknown";
+                if (root.TryGetProperty("summary", out var s)) summary = s.GetString();
+                if (root.TryGetProperty("userAgent", out var ua)) userAgent = ua.GetString();
+                if (root.TryGetProperty("trackId", out var t) && t.ValueKind == JsonValueKind.Number)
+                    trackId = t.GetInt32();
+            }
+            catch (JsonException)
+            {
+                // Keep it anyway: a report we can't parse is still evidence that something fired,
+                // and the raw payload is the part worth reading.
+                kind = "unparseable";
+            }
+
+            movieDb.MusicPlaybackIncidents.Add(new MusicPlaybackIncident
+            {
+                CreatedUtc = DateTime.UtcNow,
+                UserId = userId,
+                Kind = Truncate(kind, 40),
+                Summary = Truncate(summary, 400),
+                TrackId = trackId,
+                UserAgent = Truncate(userAgent, 400),
+                Payload = raw,
+            });
+            await movieDb.SaveChangesAsync();
+            return Ok(new { recorded = true });
+        }
+
+        private static string Truncate(string s, int max) =>
+            string.IsNullOrEmpty(s) ? s : (s.Length <= max ? s : s.Substring(0, max));
 
         /// <summary>What this server can actually play, so the UI stops greying out formats it
         /// could stream.</summary>

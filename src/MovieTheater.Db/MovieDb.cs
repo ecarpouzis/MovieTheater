@@ -450,6 +450,10 @@ namespace MovieTheater.Db
                 .HasForeignKey<MusicTrackLyrics>(l => l.TrackId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // Read newest-first, and "is this still happening?" is a count by kind over a date range.
+            modelBuilder.Entity<MusicPlaybackIncident>()
+                .HasIndex(i => new { i.CreatedUtc, i.Kind });
+
             modelBuilder.Entity<MusicPlaylist>()
                 .HasIndex(p => p.UserId);
             // At most ONE favorites list per user. Filtered so it constrains only the flagged rows —
@@ -562,6 +566,7 @@ namespace MovieTheater.Db
         public DbSet<MusicPlaylist> MusicPlaylists { get; set; }
         public DbSet<MusicPlaylistItem> MusicPlaylistItems { get; set; }
         public DbSet<MusicPlaylistShare> MusicPlaylistShares { get; set; }
+        public DbSet<MusicPlaybackIncident> MusicPlaybackIncidents { get; set; }
 
         public MovieDb(DbContextOptions<MovieDb> options)
             : base(options)
