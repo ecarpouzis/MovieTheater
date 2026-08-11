@@ -112,9 +112,20 @@ const PREFETCH_LEAD_SEC = 30;
 // Hold a whole track in memory rather than streaming it. Above this we fall back to streaming —
 // a 277 MB live set is not worth an OOM on a phone.
 const MAX_PRELOAD_BYTES = 120 * 1024 * 1024;
-// How far into a track we start downloading the next one. Early, deliberately: the whole track has
-// to be in memory before the phone goes to sleep, not 30 seconds before it is needed.
+// How far into a track we start preparing the next one. Early, deliberately.
 const PRELOAD_START_SEC = 5;
+// How long before the end the idle deck starts PLAYING (muted).
+//
+// This is the fix for the boundary that kept coming back, and it is about who does the work rather
+// than how early it is done. A JS `fetch()` is the first thing a backgrounded phone stops running,
+// so downloading the next track in script is the least reliable way to have it ready — the memory
+// download only ever worked because the screen was still on. A media element that is PLAYING is
+// fetched by the browser's own media stack, which is the same pipeline keeping the current track
+// alive with the screen off. So the next deck is started, muted, before the boundary: the bytes
+// arrive natively, and the page never reaches an instant with no audio in flight, which is the
+// whole of its licence to keep running. At `ended` the deck is already playing — it is rewound to
+// 0 and unmuted, which needs no network and no round trip.
+const PREROLL_LEAD_SEC = 8;
 // Chrome's media buffer caps at 16 MiB - 32 KiB (16744448). A file bigger than that WILL be evicted
 // and re-requested part-way through the song — proved in Caddy's access log as a second request for
 // `bytes=16744448-` mid-track — and a phone whose screen has gone off cannot service that
@@ -310,6 +321,9 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   // True while a track is being downloaded before it can start. The bar says so rather than
   // leaving a dead-looking player: on a WAN uplink a 40 MB track is a real wait.
   const [buffering, setBuffering] = useState(false);
+  // Which track the idle deck has been started (muted) for, or null. See PREROLL_LEAD_SEC.
+  const prerollRef = useRef(null);
+
   // Which track the IDLE deck has buffered, or null. Distinct from prefetchRef (a URL in hand):
   // this one means the bytes are already decoded and ready to play.
   const deckLoadedRef = useRef(null);
@@ -605,12 +619,13 @@ export function MusicPlayerProvider({ children, enabled = true }) {
    * dependency entirely: once the bytes are here, there is no connection left to lose. Bit-perfect
    * — the file is byte-for-byte what is on disk, so FLAC stays FLAC and nothing is transcoded.
    */
-  const installOnIdleDeck = useCallback((track, url) => {
+  const installOnIdleDeck = useCallback((track, url, sizeBytes = 0) => {
     const idle = idleEl();
     const deck = idleDeck();
     if (!idle) return;
     const stream = (why) => {
-      // Fall back to ordinary streaming. Worse on a sleeping phone, but always correct.
+      // Hand the URL to the ELEMENT and let the browser fetch it. Not a fallback any more: on a
+      // hidden page this is the only one of the two that actually runs.
       try {
         revokeDeck(deck);
         idle.preload = "auto";
@@ -623,6 +638,20 @@ export function MusicPlayerProvider({ children, enabled = true }) {
         deckLoadedRef.current = null;
       }
     };
+
+    // Who fetches decides whether this works at all.
+    //
+    // Downloading to memory in JS still earns its keep for a file bigger than Chrome's media
+    // buffer — such a file is evicted and re-requested part-way through the song, and a sleeping
+    // phone cannot service that re-request. But it only works while the page is AWAKE. Hidden, the
+    // fetch is exactly what gets throttled away, and the boundary then arrives with an empty deck.
+    // So: script downloads only when it can (visible) and only when it must (over the buffer cap).
+    // Otherwise the element does it, natively, which survives the screen going off.
+    if (document.hidden || !sizeBytes || sizeBytes <= BUFFER_SAFE_BYTES) {
+      stream(document.hidden ? "hidden" : "fits-buffer");
+      return;
+    }
+
     const controller = new AbortController();
     preloadAbortRef.current?.abort();
     preloadAbortRef.current = controller;
@@ -653,6 +682,40 @@ export function MusicPlayerProvider({ children, enabled = true }) {
       });
   }, [idleEl, idleDeck, revokeDeck, volumeOf]);
 
+  /// Start the idle deck playing, muted, so the browser fetches it natively and the page never
+  /// reaches an instant with no audio in flight. Idempotent per track.
+  const prerollIdleDeck = useCallback((upcomingId) => {
+    const idle = idleEl();
+    if (!idle || !idle.src) return;
+    if (prerollRef.current === upcomingId) return;
+    if (deckLoadedRef.current !== upcomingId) return;
+    prerollRef.current = upcomingId;
+    idle.muted = true;
+    const p = idle.play();
+    if (p && p.catch) {
+      p.catch(() => {
+        // Refused (no gesture yet, or the browser won't start a second stream). Nothing is lost:
+        // the boundary falls back to playing it in the handler exactly as before.
+        prerollRef.current = null;
+        diagLog("preroll:refused", { track: upcomingId });
+      });
+    }
+    diagLog("preroll", { track: upcomingId, hidden: document.hidden });
+  }, [idleEl]);
+
+  /// Undo a pre-roll whose boundary is no longer coming (a skip, a seek, a new pick).
+  const cancelPreroll = useCallback(() => {
+    if (prerollRef.current === null) return;
+    const idle = idleEl();
+    prerollRef.current = null;
+    if (!idle) return;
+    try {
+      idle.pause();
+      idle.currentTime = 0;
+      idle.muted = false;
+    } catch { /* the deck is being replaced anyway */ }
+  }, [idleEl]);
+
   const prefetchNext = useCallback(() => {
     const track = nextTrackRef.current;
     if (!track) return;
@@ -668,7 +731,7 @@ export function MusicPlayerProvider({ children, enabled = true }) {
         // …and start BUFFERING it on the idle deck, which is the whole point: at the boundary the
         // bytes must already be here. This is why a sleeping phone can cross a track boundary now —
         // there is nothing left to fetch at the moment it has the least licence to fetch anything.
-        installOnIdleDeck(track, data.url);
+        installOnIdleDeck(track, data.url, Number(data.sizeBytes) || 0);
       })
       .catch(() => {
         if (prefetchRef.current?.trackId === track.id) prefetchRef.current = null;
@@ -730,6 +793,9 @@ export function MusicPlayerProvider({ children, enabled = true }) {
       return;
     }
     handedOffRef.current = null; // a pick that jumped elsewhere: the stale claim can't outlive it
+    // …and a deck pre-rolled for a boundary that is no longer coming must be stopped, or it keeps
+    // playing (silently) underneath the track the listener actually picked.
+    cancelPreroll();
     // The resume flag is NOT cleared here. It used to be, and that was the bug that stranded the
     // album at a track boundary with no error and a dead play button: this line ran, then the load
     // below never landed on a backgrounded phone, and the wake that would have rescued it found the
@@ -770,10 +836,17 @@ export function MusicPlayerProvider({ children, enabled = true }) {
       const duration = audio.duration;
       const nearEnd = Number.isFinite(duration) && duration > 0 && duration - sec <= PREFETCH_LEAD_SEC;
       if (sec >= PRELOAD_START_SEC || nearEnd) prefetchNext();
+      // Close to the boundary, hand the fetching to the media stack: start the next deck muted so
+      // there is never a moment with no audio playing (see PREROLL_LEAD_SEC).
+      const upcomingId = nextTrackRef.current?.id;
+      if (upcomingId && Number.isFinite(duration) && duration > 0
+          && duration - sec <= PREROLL_LEAD_SEC) {
+        prerollIdleDeck(upcomingId);
+      }
     };
     audio.addEventListener("timeupdate", onTime);
     return () => audio.removeEventListener("timeupdate", onTime);
-  }, [clearPendingRecovery, prefetchNext, activeDeck]);
+  }, [clearPendingRecovery, prefetchNext, prerollIdleDeck, activeDeck]);
 
   // Every raw media event, recorded with the element's state at that instant (musicDiag). This is
   // the only witness to a failure that happens with the screen off — `error` in particular carries
@@ -1098,7 +1171,10 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   const seek = useCallback((seconds) => {
     const audio = audioRef.current;
     if (audio && Number.isFinite(seconds)) audio.currentTime = seconds;
-  }, []);
+    // A seek moves the boundary. A deck already pre-rolled for the old one would keep playing
+    // (silently) and drift away from the start it is supposed to be flipped to.
+    cancelPreroll();
+  }, [cancelPreroll]);
 
   const playAt = useCallback((i) => {
     setIndex((old) => {
@@ -1297,10 +1373,31 @@ export function MusicPlayerProvider({ children, enabled = true }) {
       deckLoadedRef.current = null;
       prefetchRef.current = null;
       live.volume = volumeOf();
-      live.play().catch(() => {
-        if (document.hidden) resumeOnWakeRef.current = true;
-        setPlaying(false);
-      });
+      // Pre-rolled? Then it is ALREADY playing and the page never went quiet. Rewind it to the
+      // start and unmute — both local operations on bytes the element already holds, with no
+      // play() to be refused and no network to be asked for at the one moment it can't be.
+      const wasPrerolled = prerollRef.current === upcoming.id;
+      prerollRef.current = null;
+      if (wasPrerolled) {
+        try { live.currentTime = 0; } catch { /* not seekable yet: it plays from where it is */ }
+        live.muted = false;
+        diagLog("boundary:preroll-flip", { track: upcoming.id, paused: live.paused });
+        setPlaying(true);
+        // A pre-roll that was paused out from under us (the browser reclaiming a second stream)
+        // still has to start; play() here is a no-op when it is already running.
+        if (live.paused) {
+          live.play().catch(() => {
+            if (document.hidden) resumeOnWakeRef.current = true;
+            setPlaying(false);
+          });
+        }
+      } else {
+        live.muted = false;
+        live.play().catch(() => {
+          if (document.hidden) resumeOnWakeRef.current = true;
+          setPlaying(false);
+        });
+      }
       // Park the outgoing deck and release the track it was holding. An object URL that is never
       // revoked pins its whole ArrayBuffer for the life of the page — two 40 MB tracks per album
       // side would be a leak measured in hundreds of megabytes on a phone.

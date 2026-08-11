@@ -123,7 +123,7 @@ describe("gapless hand-off at the track boundary", () => {
     // The live element is read through player.audioRef because the boundary is now a FLIP between
     // two decks — `audio` is the deck that just finished, and the next track is on the other one.
     audio.dispatchEvent(new Event("ended"));
-    expect(player.audioRef.current.src).toBe("blob:https://gw/2");
+    expect(player.audioRef.current.src).toBe("https://gw/2");
     expect(playSpy).toHaveBeenCalledTimes(1);
     expect(api.startMusicTrack).toHaveBeenCalledTimes(startsBefore);
 
@@ -132,7 +132,7 @@ describe("gapless hand-off at the track boundary", () => {
     await act(async () => {});
     expect(player.current.id).toBe(2);
     expect(api.startMusicTrack).toHaveBeenCalledTimes(startsBefore);
-    expect(player.audioRef.current.src).toBe("blob:https://gw/2");
+    expect(player.audioRef.current.src).toBe("https://gw/2");
   });
 
   it("falls back to the ordinary load when the prefetch never arrived", async () => {

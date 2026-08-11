@@ -99,8 +99,11 @@ describe("A/B decks", () => {
     await runToPrefetch(live());
     const [a, b] = decks();
     expect(a.src).toBe("https://gw/1");        // still playing, straight off the gateway
-    expect(global.fetch).toHaveBeenCalledWith("https://gw/2", expect.anything());
-    expect(b.src).toBe("blob:https://gw/2");   // …and track 2's BYTES are already in memory
+    // A file that FITS Chrome's media buffer is preloaded by the ELEMENT, not by script. A JS
+    // fetch is the first thing a backgrounded phone stops running, so it is used only where it
+    // earns its keep — a file too big for the buffer, see the test below.
+    expect(global.fetch).not.toHaveBeenCalledWith("https://gw/2", expect.anything());
+    expect(b.src).toBe("https://gw/2");         // …and track 2 is already buffering natively
   });
 
   it("crosses the boundary as a FLIP — no fetch and no src assignment", async () => {
@@ -114,7 +117,7 @@ describe("A/B decks", () => {
     live().dispatchEvent(new Event("ended"));
 
     expect(player.audioRef.current).toBe(b);          // deck flipped
-    expect(player.audioRef.current.src).toBe("blob:https://gw/2"); // playing from memory
+    expect(player.audioRef.current.src).toBe("https://gw/2"); // already buffered on the idle deck
     expect(playSpy).toHaveBeenCalledTimes(1);
     expect(api.startMusicTrack).toHaveBeenCalledTimes(startsBefore); // nothing fetched at the boundary
 
@@ -136,7 +139,7 @@ describe("A/B decks", () => {
     await act(async () => { b.dispatchEvent(new Event("ended")); });
     expect(player.audioRef.current).toBe(a);          // back to deck A
     expect(player.current.id).toBe(3);
-    expect(a.src).toBe("blob:https://gw/3");
+    expect(a.src).toBe("https://gw/3");
   });
 
   it("needs NO network at the boundary — the bytes are already here", async () => {
@@ -205,5 +208,76 @@ describe("A/B decks", () => {
     const [a, b] = decks();
     expect(a.volume).toBeCloseTo(0.25);
     expect(b.volume).toBeCloseTo(0.25);
+  });
+});
+
+// ── Who fetches, and the muted pre-roll ─────────────────────────────────────
+// The boundary kept failing on a sleeping phone even with two decks, because the next track was
+// being downloaded by a JS `fetch()` — and JS is exactly what a backgrounded page stops being
+// allowed to run. The element's own buffering is not script; it is the same pipeline that keeps
+// the current track playing with the screen off. So the fetching is handed to the element, and the
+// next deck is started (muted) before the boundary so the page never has an audio-less instant.
+describe("the boundary must not depend on JavaScript", () => {
+  it("lets the ELEMENT fetch when the page is hidden, even for a file over the buffer cap", async () => {
+    api.startMusicTrack.mockImplementation((id) =>
+      ok({ trackId: id, url: `https://gw/${id}`, channels: 2, sizeBytes: 42163278 }));
+    const { decks, live } = await mountPlaying();
+    Object.defineProperty(document, "hidden", { value: true, configurable: true });
+    global.fetch.mockClear();
+
+    await runToPrefetch(live());
+
+    const [, b] = decks();
+    // A 40 MB file is exactly the case the in-memory download exists for — but hidden, that fetch
+    // is the thing that does not land, and an empty deck at the boundary is the bug itself.
+    expect(global.fetch).not.toHaveBeenCalledWith("https://gw/2", expect.anything());
+    expect(b.src).toBe("https://gw/2");
+    Object.defineProperty(document, "hidden", { value: false, configurable: true });
+  });
+
+  it("still downloads a too-big file in script while the page is VISIBLE", async () => {
+    api.startMusicTrack.mockImplementation((id) =>
+      ok({ trackId: id, url: `https://gw/${id}`, channels: 2, sizeBytes: 42163278 }));
+    const { decks, live } = await mountPlaying();
+    await runToPrefetch(live());
+    const [, b] = decks();
+    // Awake, the download still earns its keep: a file over the buffer cap is evicted and
+    // re-requested mid-song, which a phone that falls asleep later cannot service.
+    expect(global.fetch).toHaveBeenCalledWith("https://gw/2", expect.anything());
+    expect(b.src).toBe("blob:https://gw/2");
+  });
+
+  it("starts the next deck playing MUTED before the boundary", async () => {
+    const { decks, live } = await mountPlaying();
+    await runToPrefetch(live());
+    const [, b] = decks();
+    playSpy.mockClear();
+
+    await act(async () => {
+      fakePlayhead(live(), { currentTime: 95, duration: 100 });   // inside PREROLL_LEAD_SEC
+      live().dispatchEvent(new Event("timeupdate"));
+    });
+
+    expect(playSpy).toHaveBeenCalledTimes(1);   // the IDLE deck was started
+    expect(b.muted).toBe(true);                 // silently
+  });
+
+  it("crosses a pre-rolled boundary with no play() at all — it is already playing", async () => {
+    const { decks, live } = await mountPlaying();
+    await runToPrefetch(live());
+    const [, b] = decks();
+    await act(async () => {
+      fakePlayhead(live(), { currentTime: 95, duration: 100 });
+      live().dispatchEvent(new Event("timeupdate"));
+    });
+    // The pre-rolled deck is playing; happy-dom won't flip `paused` for us, so say so explicitly.
+    Object.defineProperty(b, "paused", { value: false, configurable: true });
+    playSpy.mockClear();
+
+    live().dispatchEvent(new Event("ended"));
+
+    expect(player.audioRef.current).toBe(b);
+    expect(b.muted).toBe(false);                 // unmuted at the flip…
+    expect(playSpy).not.toHaveBeenCalled();      // …and never asked to start, so never refusable
   });
 });
