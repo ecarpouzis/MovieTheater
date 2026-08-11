@@ -1,12 +1,16 @@
 # Music: one continuous stream (MSE + fMP4)
 
-Plan for taking JavaScript out of the track boundary. Status: **Phase 0 done and deployed (site +
-gateway, 2026-08-11). The Phase 1 probe page is live at `/music/mse-probe` — one tap runs the whole
-gate walk-away style (server-picked tracks, automatic sequence, verdicts panel; no `?diag=1`, the
-route gates itself). Desktop Chrome pre-run PASSED: all three changeType joins continuous, quota
-measured 11.80 MB, mp4a.6B correctly refused. The GATE still needs the Android phone: screen-off
-fetch completion and the event census are the two verdicts everything below waits on. Phase 2 not
-started (forbidden until the gate passes).**
+Plan for taking JavaScript out of the track boundary. Status: **THE GATE RAN ON THE PHONE
+2026-08-11 (Android Chrome 150) AND THE CENTRAL BET HELD: fetches issued while hidden completed
+(2/2, 176 ms / 85 ms). All three changeType joins continuous on the phone, mp4a.6B refused, quota
+11.85 MB, worst hidden execution gap 84 s. The run also produced the missing design rule — the
+sleep-phase audio died when a 96 kHz FLAC (~0.3 MB/s) met the quota: 40 s of runway against an
+84 s gap ran dry, `waiting` fired, the silent page lost its audible exemption and froze. Rule:
+a treatment is sleep-viable only if `quota ÷ bitrate > worst execution gap` — ~1 Mbps ceiling on
+this phone. MP3 and universal AAC pass comfortably; 44.1 FLAC is borderline; hi-res bit-perfect
+FLAC is NOT sleep-viable and takes the universal lane while hidden (the phone-proven rate-switch
+`changeType` is what makes that legal). Remaining before Phase 2: a 10-minute endurance re-run
+with the sleep loop obeying this rule.**
 Companion to `music-plan.md`; cite sections from code the same way.
 
 ## Why
@@ -436,10 +440,22 @@ any handler, no `timeupdate` needed) → below target: append the next chunk / o
 fetch; at target: stop and wait for the next opportunity. Steady state asleep is a cycle of
 (execution opportunity → top up window → go quiet). The window target is
 `max(worst measured execution gap + one fetch time, next boundary) + margin`, capped by the
-SourceBuffer quota — for FLAC that cap is minutes of audio, which still dominates any plausible
-execution gap. `waiting` (buffer ran dry mid-play) is the failure signal, not a mechanism: its
+SourceBuffer quota. `waiting` (buffer ran dry mid-play) is the failure signal, not a mechanism: its
 handler appends whatever is in hand immediately AND files an incident, because reaching it means
 the arithmetic above was wrong somewhere and that must surface, not vanish into a recovered gap.
+And it is worse than a glitch: **a page whose audio has stopped loses its audible exemption and
+freezes**, so the first `waiting` while hidden is usually also the last execution — measured
+exactly so on the phone (2026-08-11: buffer dry → silence → frozen until wake).
+
+**The sleep-viability rule (measured on the phone, 2026-08-11): a treatment may be appended while
+hidden only if `quota ÷ bitrate > worst execution gap`, with margin.** Measured inputs: quota
+11.85 MB, worst hidden gap 84 s → ceiling ≈ 1 Mbps on this phone. Raw MP3 (~5 min of runway in
+quota) and universal AAC (~6 min) pass comfortably. 44.1 kHz FLAC (~70–95 s) is borderline —
+judge per-track by real bitrate (`SizeBytes / DurationSec`), never by format. Hi-res FLAC (~40 s
+of runway) is NOT sleep-viable: while hidden, any track whose bitrate breaks the ceiling is
+appended from the **universal lane** instead — the rate-switch `changeType` proven on the phone is
+what makes that switch legal — and bit-perfect appends resume once the page is visible again.
+Fidelity while watching, continuity while asleep.
 
 ### Deck route, asleep, forever (the floor)
 

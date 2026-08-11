@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  PROBE_STEPS, PROBE_TYPES, buildCapabilityMatrix, chunkRanges, describeCandidate, formatBytes,
+  ASSUMED_QUOTA_BYTES, DEFAULT_WORST_GAP_MS, PROBE_STEPS, PROBE_TYPES, buildCapabilityMatrix,
+  chunkRanges, describeCandidate, formatBytes, hiddenAdvance, hiddenElapsedMs, sleepLaneDecision,
   gapDistribution, hiddenFetchSummary, pushRing, summarizeRun, switchReasonFor, treatmentFor,
 } from "./MusicMseProbe";
 
@@ -154,6 +155,121 @@ describe("pushRing", () => {
     const second = pushRing(first, 2, 10);
     expect(first).toEqual([1]);
     expect(second).toEqual([1, 2]);
+  });
+});
+
+describe("sleepLaneDecision — the sleep-viability rule", () => {
+  // The measurements that produced the rule, from the phone on 2026-08-11.
+  const PHONE = { quotaBytes: 11.85 * 1024 * 1024, worstGapMs: 84000 };
+  const bitPerfect = { lane: "fmp4", url: "u/fmp4", mime: 'audio/mp4; codecs="flac"' };
+  const universal = { lane: "universal", url: "u/universal", mime: 'audio/mp4; codecs="mp4a.40.2"' };
+
+  // THE case that killed the last run: a 96 kHz FLAC at ~0.3 MB/s buys ~40 s of runway against an
+  // 84 s gap. It must not be appended bit-perfect while hidden.
+  it("demotes a hi-res FLAC to the universal lane", () => {
+    const d = sleepLaneDecision({
+      sizeBytes: 38418328, durationSec: 120.45, bitPerfect, universal, ...PHONE,
+    });
+    expect(d.treatment).toBe(universal);
+    expect(d.runwaySec).toBeLessThan(84);
+    expect(d.reason).toMatch(/> ceiling/);
+    expect(d.reason).toMatch(/universal/);
+  });
+
+  it("keeps an MP3 bit-perfect — it buys minutes of runway", () => {
+    const d = sleepLaneDecision({
+      sizeBytes: 1002666, durationSec: 61.86,
+      bitPerfect: { lane: "file", url: "u/file", mime: "audio/mpeg" }, universal, ...PHONE,
+    });
+    expect(d.treatment.lane).toBe("file");
+    expect(d.runwaySec).toBeGreaterThan(168);
+    expect(d.reason).toMatch(/≤ ceiling/);
+  });
+
+  // Judged by real bitrate, never by format: this 44.1 kHz FLAC is the borderline case the plan
+  // calls out, and at ~0.73 Mbps against a 0.56 Mbps ceiling it loses.
+  it("judges a 44.1 kHz FLAC on its bytes, not on being FLAC", () => {
+    const tight = sleepLaneDecision({ sizeBytes: 5027472, durationSec: 55.4, bitPerfect, universal, ...PHONE });
+    expect(tight.treatment).toBe(universal);
+    const roomy = sleepLaneDecision({ sizeBytes: 5027472, durationSec: 300, bitPerfect, universal, ...PHONE });
+    expect(roomy.treatment).toBe(bitPerfect);
+  });
+
+  it("uses the assumed quota and the 90 s gap floor before anything has been measured", () => {
+    const d = sleepLaneDecision({ sizeBytes: 1000000, durationSec: 60, bitPerfect, universal });
+    expect(d.quotaBytes).toBe(ASSUMED_QUOTA_BYTES);
+    expect(d.worstGapMs).toBe(DEFAULT_WORST_GAP_MS);
+  });
+
+  it("never lets a measured gap SHORTER than the floor loosen the rule", () => {
+    const d = sleepLaneDecision({ sizeBytes: 1, durationSec: 1, bitPerfect, universal, worstGapMs: 200 });
+    expect(d.worstGapMs).toBe(DEFAULT_WORST_GAP_MS);
+  });
+
+  // Rung 4: a gateway that does not serve the universal lane leaves nothing to demote TO. Keeping
+  // the bit-perfect lane and saying so beats silently substituting a URL that 404s.
+  it("keeps the bit-perfect lane, with a reason, when no universal lane is offered", () => {
+    const d = sleepLaneDecision({ sizeBytes: 38418328, durationSec: 120, bitPerfect, universal: null, ...PHONE });
+    expect(d.treatment).toBe(bitPerfect);
+    expect(d.reason).toMatch(/no universal lane/);
+  });
+
+  it("prefers universal when the bitrate cannot be computed at all", () => {
+    const d = sleepLaneDecision({ sizeBytes: 0, durationSec: 0, bitPerfect, universal, ...PHONE });
+    expect(d.treatment).toBe(universal);
+    expect(d.reason).toMatch(/unknown/);
+  });
+});
+
+describe("hiddenAdvance — the endurance clock", () => {
+  // Accumulated rather than derived, and this is the reason: the census is a bounded ring, and a
+  // busy run filled all 600 entries inside ~20 s. A total read off the ring said "20 s" after three
+  // minutes hidden, so the ten-minute criterion could never have been met.
+  it("adds the stretch that followed a hidden observation", () => {
+    let s = hiddenAdvance(null, 1000, true);
+    expect(s.totalMs).toBe(0);
+    s = hiddenAdvance(s, 61000, true);
+    expect(s.totalMs).toBe(60000);
+    s = hiddenAdvance(s, 121000, false);
+    expect(s.totalMs).toBe(120000);
+  });
+
+  it("does not accumulate while the page is visible", () => {
+    let s = hiddenAdvance(null, 1000, false);
+    s = hiddenAdvance(s, 500000, false);
+    expect(s.totalMs).toBe(0);
+  });
+
+  // The frozen stretch counts: being unable to run IS the screen-off time under test.
+  it("counts a long silence that followed a hidden observation", () => {
+    const s = hiddenAdvance(hiddenAdvance(null, 0, true), 600000, true);
+    expect(s.totalMs).toBe(600000);
+  });
+
+  it("survives a clock that goes backwards rather than subtracting time", () => {
+    const s = hiddenAdvance(hiddenAdvance(null, 10000, true), 5000, true);
+    expect(s.totalMs).toBe(0);
+  });
+});
+
+describe("hiddenElapsedMs", () => {
+  it("adds up the stretches that followed a hidden entry", () => {
+    expect(hiddenElapsedMs([
+      { at: 0, hidden: false }, { at: 1000, hidden: true }, { at: 61000, hidden: true },
+      { at: 91000, hidden: false }, { at: 99000, hidden: false },
+    ])).toBe(90000);
+  });
+
+  // The frozen stretch counts. That is the point: the page being unable to run IS the screen-off
+  // time the endurance criterion is about, and a counter the page meant to update later would have
+  // missed exactly it.
+  it("counts a long silence after a hidden entry", () => {
+    expect(hiddenElapsedMs([{ at: 0, hidden: true }, { at: 600000, hidden: false }])).toBe(600000);
+  });
+
+  it("is zero for an empty or never-hidden census", () => {
+    expect(hiddenElapsedMs([])).toBe(0);
+    expect(hiddenElapsedMs([{ at: 0, hidden: false }, { at: 5000, hidden: false }])).toBe(0);
   });
 });
 

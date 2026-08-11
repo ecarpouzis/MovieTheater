@@ -149,6 +149,119 @@ export function switchReasonFor(a, b) {
   return null;
 }
 
+// ── The sleep-viability rule (music-mse-plan.md §"MSE route, asleep, forever") ────────────────────
+// Measured on the phone 2026-08-11, and it is the rule that was missing when the sleep phase died:
+// a page whose audio stops loses its audible exemption and FREEZES, so the buffer must hold more
+// audio than the longest stretch the page can go without being allowed to run. The buffer's size is
+// capped by the SourceBuffer quota, so the runway a treatment buys is `quota ÷ bitrate` — and a
+// 96 kHz FLAC at ~0.3 MB/s bought 40 s against an 84 s execution gap. It went silent and never got
+// another instruction.
+//
+// So: bitrate is judged per TRACK from real bytes, never per format, and a track that breaks the
+// ceiling is appended from the universal lane (AAC ~256 kbps) instead while hidden. The phone-proven
+// rate-switch changeType is what makes that switch legal.
+
+/** Chrome's audio SourceBuffer quota, used only until probe 3 has measured the real one. */
+export const ASSUMED_QUOTA_BYTES = 12 * 1024 * 1024;
+/** Gap floor before the census has anything to say. The phone measured 84 s; assuming less than
+ *  this would license exactly the choice that killed the last run. */
+export const DEFAULT_WORST_GAP_MS = 90000;
+/** How many worst-gaps of runway a treatment must buy. One would be the bare edge of survival. */
+export const SLEEP_MARGIN = 2;
+
+export function formatBitrate(bytesPerSec) {
+  if (!(bytesPerSec > 0)) return "unknown";
+  return `${((bytesPerSec * 8) / 1e6).toFixed(2)} Mbps`;
+}
+
+/**
+ * Which lane a track should be appended from WHILE HIDDEN, and why in words.
+ *
+ * The "why" is not decoration: the verdict panel prints it, so a run that demotes a track to the
+ * universal lane can be seen doing so rather than inferred from a lane name. Pure and tested
+ * because this is the rule the phone paid for.
+ */
+export function sleepLaneDecision({ sizeBytes, durationSec, bitPerfect, universal, quotaBytes, worstGapMs }) {
+  const quota = quotaBytes > 0 ? quotaBytes : ASSUMED_QUOTA_BYTES;
+  const gapMs = Math.max(DEFAULT_WORST_GAP_MS, worstGapMs || 0);
+  const ceiling = quota / ((gapMs / 1000) * SLEEP_MARGIN);
+  const bytesPerSec = sizeBytes > 0 && durationSec > 0 ? sizeBytes / durationSec : 0;
+  const runwaySec = bytesPerSec > 0 ? quota / bytesPerSec : 0;
+  const base = {
+    bytesPerSec,
+    runwaySec: Math.round(runwaySec),
+    ceilingBytesPerSec: ceiling,
+    quotaBytes: quota,
+    worstGapMs: gapMs,
+  };
+
+  if (!bitPerfect && !universal) return { ...base, treatment: null, reason: "no lane at all" };
+  if (!universal) {
+    // Rung 4: the gateway has no universal lane (not redeployed, no ffmpeg). Keep the bit-perfect
+    // one and say so — an honest "this may not survive" beats a silent substitution.
+    return {
+      ...base,
+      treatment: bitPerfect,
+      reason: `${formatBitrate(bytesPerSec)} · no universal lane offered, kept ${bitPerfect.lane}`,
+    };
+  }
+  if (bytesPerSec > 0 && bytesPerSec < ceiling && bitPerfect) {
+    return {
+      ...base,
+      treatment: bitPerfect,
+      reason: `${formatBitrate(bytesPerSec)} ≤ ceiling ${formatBitrate(ceiling)} → ${bitPerfect.lane} (${Math.round(runwaySec)}s runway)`,
+    };
+  }
+  return {
+    ...base,
+    treatment: universal,
+    reason: bytesPerSec > 0
+      ? `${formatBitrate(bytesPerSec)} > ceiling ${formatBitrate(ceiling)} → universal (${Math.round(runwaySec)}s runway was not enough)`
+      : "bitrate unknown → universal",
+  };
+}
+
+/**
+ * How long this page has spent hidden, accumulated one event at a time.
+ *
+ * ⚠ It must be ACCUMULATED, not derived from the census, and that is not a style preference: the
+ * census is a bounded ring. Measured in the harness — a busy pump filled all 600 entries inside
+ * ~20 s, so a total derived from the ring read "20 s" after three minutes hidden, and the ten-minute
+ * criterion could never have been met however long the phone slept. The accumulator carries the
+ * whole run in three numbers.
+ *
+ * Freeze-proof for the same reason the census is: the state is written to storage at every event, so
+ * whatever the last event before a freeze saw is what survives — and the stretch after a hidden
+ * entry counts as hidden, frozen or not, because that is exactly the time being measured.
+ */
+export function hiddenAdvance(state, nowAt, nowHidden) {
+  const prev = state || HIDDEN_ZERO;
+  // `lastAt == null` (not 0) means "no previous observation" — a sentinel that cannot collide with a
+  // real timestamp. Math.max keeps a clock that jumps backwards from subtracting the run's history.
+  const totalMs = prev.lastHidden && prev.lastAt != null
+    ? prev.totalMs + Math.max(0, nowAt - prev.lastAt)
+    : prev.totalMs;
+  return { totalMs, lastAt: nowAt, lastHidden: !!nowHidden };
+}
+
+/** A clock that has observed nothing yet. */
+export const HIDDEN_ZERO = { totalMs: 0, lastAt: null, lastHidden: false };
+
+/** The same sum taken over a whole census — used to seed the accumulator from a restored ring, and
+ *  correct whenever the ring has not overflowed. */
+export function hiddenElapsedMs(census) {
+  const list = (census || []).filter((e) => e && typeof e.at === "number");
+  let total = 0;
+  for (let i = 1; i < list.length; i++) {
+    if (list[i - 1].hidden) total += list[i].at - list[i - 1].at;
+  }
+  return total;
+}
+
+/** Ten minutes of screen-off with no dry buffer. Less than this has already been survived by runs
+ *  that then died at T+4min, so a shorter bar would call the known failure a pass. */
+export const SLEEP_ENDURANCE_MS = 10 * 60 * 1000;
+
 /**
  * How a fetch is cut into appends. Chrome's audio SourceBuffer quota is on the order of 12 MB —
  * LESS THAN ONE LARGE FLAC — so "append the track" is never a single operation; the working unit is
@@ -331,6 +444,7 @@ export function describeCandidate(candidate) {
 const K_CENSUS = "music.mse.census";
 const K_FETCH = "music.mse.fetchlog";
 const K_RESULTS = "music.mse.results";
+const K_HIDDEN = "music.mse.hidden";   // { totalMs, lastAt, lastHidden } — see hiddenAdvance
 const CENSUS_MAX = 600;
 const FETCH_MAX = 300;
 
@@ -467,7 +581,14 @@ const QUOTA_CHUNK_BYTES = 512 * 1024;
 const JOIN_LEAD_SEC = 3;                    // start this far before the boundary — the test is the JOIN, not the track
 const JOIN_WATCH_MS = 25000;
 const SLEEP_FILL_BYTES = 4 * 1024 * 1024;   // per append cycle in the screen-off phase
-const SLEEP_TARGET_AHEAD_SEC = 60;          // top up whenever the buffer holds less than this ahead
+// Three minutes of RUNWAY, not one. The phone measured an 84 s execution gap while hidden, so a
+// 60 s target was under water before it started: the buffer has to outlast the longest stretch in
+// which the page is not allowed to run, twice over. Seconds, computed from buffered ranges — bytes
+// are the wrong unit the moment two tracks have different bitrates.
+const SLEEP_TARGET_AHEAD_SEC = 180;
+// A hard sanity cap on top of the quota-derived ceiling: no phone needs more than ten minutes of
+// audio in flight, and past this the appends are only evicting each other.
+const SLEEP_MAX_AHEAD_SEC = 600;
 const SLEEP_KEEP_BEHIND_SEC = 20;           // …and drop everything older, so 10 minutes costs what 1 does
 const SLEEP_PUMP_MS = 5000;
 
@@ -490,7 +611,11 @@ export default function MusicMseProbe() {
   const seqRef = useRef(0);
 
   const [results, setResults] = useState(() => loadJson(K_RESULTS, {}));
+  const resultsRef = useRef(results);
+  const quotaBytesRef = useRef(0);   // probe 3's measurement, fed into the sleep-viability rule
   const [census, setCensus] = useState(() => loadJson(K_CENSUS, []));
+  const [hiddenMs, setHiddenMs] = useState(() => loadJson(K_HIDDEN, { totalMs: 0 }).totalMs || 0);
+  const hiddenRef = useRef(loadJson(K_HIDDEN, HIDDEN_ZERO));
   const [fetchLog, setFetchLog] = useState(() => loadJson(K_FETCH, []));
   const [candidates, setCandidates] = useState(null);
   const [candidateError, setCandidateError] = useState(null);
@@ -551,18 +676,27 @@ export default function MusicMseProbe() {
     return () => { live = false; };
   }, [ensureCandidates]);
 
+  // ⚠ Writes localStorage SYNCHRONOUSLY, from a ref, before touching React state.
+  //
+  // The death this page now has to record is a `waiting` on a hidden page — and the page usually
+  // gets no further execution after one, because silent audio costs it the exemption that was
+  // letting it run at all. A result queued behind a state updater is a result that never lands: the
+  // last run died at T+4min and the panel still said RUNNING when it was picked up. So the ref is
+  // the source of truth and setState only refreshes what is on screen.
   const record = useCallback((key, value) => {
-    setResults((prev) => {
-      const next = { ...prev, [key]: { ...value, at: Date.now() } };
-      saveJson(K_RESULTS, next);
-      return next;
-    });
+    const next = { ...resultsRef.current, [key]: { ...value, at: Date.now() } };
+    resultsRef.current = next;
+    saveJson(K_RESULTS, next);
+    setResults(next);
+    return next;
   }, []);
 
   const logCensus = useCallback((event, data) => {
     const now = Date.now();
     const hidden = document.visibilityState === "hidden";
     censusRef.current = pushRing(censusRef.current, { at: now, event, hidden, data: data || null }, CENSUS_MAX);
+    // The endurance clock, advanced on every event and never derived from the (bounded) ring.
+    hiddenRef.current = hiddenAdvance(hiddenRef.current, now, hidden);
 
     // The ring is written to localStorage rather than only held in memory, because a census that
     // survives only to the end of a run is a census of the runs that ended well — which are not the
@@ -576,7 +710,9 @@ export default function MusicMseProbe() {
     if (hidden || now - lastPersistRef.current >= 1000) {
       lastPersistRef.current = now;
       saveJson(K_CENSUS, censusRef.current);
+      saveJson(K_HIDDEN, hiddenRef.current);
       setCensus(censusRef.current);
+      setHiddenMs(hiddenRef.current.totalMs);
     }
   }, []);
 
@@ -837,6 +973,10 @@ export default function MusicMseProbe() {
         }
       }
 
+      // The number the sleep-viability rule divides by. Kept in a ref because the sleep phase reads
+      // it a few hundred milliseconds later, inside the same run.
+      if (quotaAt === "QuotaExceededError") quotaBytesRef.current = appended;
+
       record("quota", {
         // A quota that is never reached is not a failure — it is a browser that took 24 MB × 40
         // without complaint, which is worth knowing and is not a reason to stop the gate.
@@ -876,10 +1016,36 @@ export default function MusicMseProbe() {
     setStep("screen-off phase");
     try {
       const minted = await mint(playable.map((t) => t.id));
-      const lanes = minted
-        .map((payload) => ({ payload, treatment: treatmentFor(payload, isTypeSupported) }))
-        .filter((l) => l.treatment);
+
+      // ── Apply the sleep-viability rule to every candidate ────────────────────────────────────
+      // The inputs are measurements from THIS run: probe 3's quota and the census's worst gap so
+      // far (floored, because a run that has not been asleep yet has not seen a real gap).
+      const quotaBytes = quotaBytesRef.current;
+      const worstGapMs = gapDistribution(censusRef.current).maxGapMs;
+      const lanes = minted.map((payload) => {
+        const bitPerfect = treatmentFor(payload, isTypeSupported);
+        const universal = payload.universalUrl && isTypeSupported('audio/mp4; codecs="mp4a.40.2"')
+          ? { lane: "universal", url: payload.universalUrl, mime: 'audio/mp4; codecs="mp4a.40.2"' }
+          : null;
+        const decision = sleepLaneDecision({
+          sizeBytes: payload.sizeBytes,
+          durationSec: payload.durationSec,
+          bitPerfect,
+          universal,
+          quotaBytes,
+          worstGapMs,
+        });
+        return {
+          payload,
+          treatment: decision.treatment,
+          // Carried so the verdict panel can show the rule working rather than assert that it did.
+          note: `${payload.title}: ${decision.reason}`,
+          decision,
+          dead: false,
+        };
+      }).filter((l) => l.treatment);
       if (lanes.length === 0) throw new Error("no supported treatment for any candidate");
+      lanes.forEach((l) => logCensus("sleep:lane", { note: l.note }));
 
       const session = await startSession(lanes[0].treatment.mime);
       const { sb } = session;
@@ -887,31 +1053,153 @@ export default function MusicMseProbe() {
       audio.muted = false;
       audio.volume = 1;
 
-      const state = { stopped: false, busy: false, i: 0, cycles: 0 };
+      const state = {
+        stopped: false, busy: false, i: 0, startedAt: Date.now(),
+        waitingWhileHidden: 0, lastAppendAt: Date.now(), lastAheadSec: 0, dead: false, passed: false, wantPlaying: false,
+      };
       pumpRef.current = state;
+
+      const aheadSec = () => bufferedEnd(sb) - (audio.currentTime || 0);
+
+      /** The sleep row, rewritten in place. Every write is synchronous (see record).
+       *  Once the endurance bar is cleared the row stays PASS — a later progress write must not
+       *  quietly demote a result that has already been earned. */
+      const writeSleep = (extra) => record("sleep", {
+        status: state.passed ? "pass" : "run",
+        verdict: state.passed
+          ? `PASS — ${formatMs(hiddenRef.current.totalMs)} hidden with no dry buffer`
+          : "RUNNING — turn the screen off and come back in 10 minutes",
+        lanes: lanes.map((l) => l.note),
+        quotaUsedBytes: quotaBytes || ASSUMED_QUOTA_BYTES,
+        quotaMeasured: quotaBytes > 0,
+        worstGapUsedMs: Math.max(DEFAULT_WORST_GAP_MS, worstGapMs),
+        startedAt: state.startedAt,
+        waitingWhileHidden: state.waitingWhileHidden,
+        bufferedAheadSec: Math.round(aheadSec()),
+        ...extra,
+      });
+
+      // ── Death, recorded as an outcome ────────────────────────────────────────────────────────
+      // A `waiting` on a hidden page is not a glitch to recover from: the audio has stopped, so the
+      // page has lost the audible exemption that was letting it run, and this handler is very likely
+      // the LAST code that executes before the freeze. The last run died exactly here and the panel
+      // still read RUNNING when the phone was picked up, because nothing wrote the death down.
+      // So the write happens first, synchronously, inside the handler — before any await, before any
+      // recovery attempt, before anything that could be scheduled and never run.
+      const noteDeath = (how) => {
+        const hidden = document.visibilityState === "hidden";
+        // state.stopped covers the deliberate teardown: OUR pause() must not read as a death.
+        if (!hidden || state.dead || state.stopped || !state.wantPlaying) return;
+        state.dead = true;
+        state.waitingWhileHidden += 1;
+        const now = Date.now();
+        record("sleep", {
+          status: "fail",
+          verdict: `FAIL — ${how} at T+${Math.round((now - state.startedAt) / 1000)}s while hidden`,
+          how,
+          diedAtMs: now,
+          elapsedSec: Math.round((now - state.startedAt) / 1000),
+          sinceLastAppendSec: Math.round((now - state.lastAppendAt) / 1000),
+          bufferedAheadAtDeathSec: Math.round(aheadSec() * 10) / 10,
+          playheadSec: Math.round((audio.currentTime || 0) * 10) / 10,
+          hiddenElapsedMs: hiddenRef.current.totalMs,
+          lanes: lanes.map((l) => l.note),
+          quotaUsedBytes: quotaBytes || ASSUMED_QUOTA_BYTES,
+          worstGapUsedMs: Math.max(DEFAULT_WORST_GAP_MS, worstGapMs),
+        });
+        logCensus("sleep:died", { how, aheadSec: Math.round(aheadSec() * 10) / 10 });
+      };
+
+      // Every way the audio can stop, not just the one that was expected. A dry buffer was how the
+      // phone died, but the thing being measured is "did the sound keep coming out" — an element
+      // that PAUSES with three minutes buffered has failed just as completely, and a probe that only
+      // watched `waiting` would have called that a healthy run. Whatever stopped it, the page then
+      // tries to start it again: recovery is worth attempting, and the FAIL is already written down
+      // so a recovery cannot erase the finding.
+      const onWaiting = () => noteDeath("buffer ran dry");
+      const onPause = () => { noteDeath("playback paused"); playOrReport(audio, 5000).then((o) => logCensus("sleep:resume", { o })); };
+      const onEnded = () => noteDeath("the stream ended");
+      const onError = () => noteDeath(`the element errored (${audio.error ? audio.error.code : "?"})`);
+      audio.addEventListener("waiting", onWaiting);
+      audio.addEventListener("stalled", onWaiting);
+      audio.addEventListener("pause", onPause);
+      audio.addEventListener("ended", onEnded);
+      audio.addEventListener("error", onError);
+
+      /** Ten minutes hidden with a buffer that never ran dry. Checked at every opportunity, because
+       *  the opportunity that crosses the line may be the last one the page gets. */
+      const checkEndurance = () => {
+        if (state.dead || state.stopped) return;
+        const hiddenMs = hiddenRef.current.totalMs;
+        if (hiddenMs >= SLEEP_ENDURANCE_MS && state.waitingWhileHidden === 0) {
+          state.passed = true;
+          record("sleep", {
+            status: "pass",
+            verdict: `PASS — ${formatMs(hiddenMs)} hidden with no dry buffer`,
+            hiddenElapsedMs: hiddenMs,
+            elapsedSec: Math.round((Date.now() - state.startedAt) / 1000),
+            lanes: lanes.map((l) => l.note),
+            quotaUsedBytes: quotaBytes || ASSUMED_QUOTA_BYTES,
+            worstGapUsedMs: Math.max(DEFAULT_WORST_GAP_MS, worstGapMs),
+            waitingWhileHidden: 0,
+          });
+        }
+      };
 
       // One cycle: evict what has been played, then fetch and append the next candidate. Both halves
       // matter — without eviction the quota ends the session in minutes, and the phase has to last
       // longer than a person's walk away.
       const cycle = async () => {
         if (state.stopped || state.busy || !sessionRef.current) return;
-        const ahead = bufferedEnd(sb) - (audio.currentTime || 0);
-        if (ahead > SLEEP_TARGET_AHEAD_SEC) return;
+        const hidden = document.visibilityState === "hidden";
+        // Pick the lane FIRST, because how far ahead is worth buffering depends on what is about to
+        // be appended: the quota is a byte budget, and only a bitrate turns it into seconds.
+        //
+        // Skip lanes that have proved unfetchable (a gateway without the universal lane 404s it).
+        let lane = null;
+        for (let n = 0; n < lanes.length; n++) {
+          const candidate = lanes[(state.i + n) % lanes.length];
+          if (!candidate.dead) { lane = candidate; break; }
+        }
+        if (!lane) {
+          state.stopped = true;
+          record("sleep", { status: "fail", verdict: "FAIL — every lane failed to fetch; nothing left to play" });
+          return;
+        }
+
+        // ⚠ While HIDDEN there is no low-water mark: every execution opportunity tops up, because the
+        // next one is not schedulable. But "top up" still has a ceiling, and the ceiling IS the
+        // quota — expressed in seconds of THIS lane's audio, since appending past what the buffer can
+        // hold only evicts what is already there. Measured without this: the pump issued ~6 fetches a
+        // second for as long as it was left running, which on a phone is a battery and radio bill for
+        // audio that could not be kept anyway, and against a cold gateway cache would be one ffmpeg
+        // encode per request.
+        const ceilingSec = Math.min(
+          SLEEP_MAX_AHEAD_SEC,
+          Math.max(SLEEP_TARGET_AHEAD_SEC, Math.round((lane.decision.runwaySec || 0) * 0.8)),
+        );
+        if (aheadSec() >= (hidden ? ceilingSec : SLEEP_TARGET_AHEAD_SEC)) { checkEndurance(); return; }
+
         state.busy = true;
         try {
           const keepFrom = (audio.currentTime || 0) - SLEEP_KEEP_BEHIND_SEC;
           if (keepFrom > 0) await removeRange(sb, 0, keepFrom);
+          state.i = (lanes.indexOf(lane) + 1) % lanes.length;
 
-          const lane = lanes[state.i % lanes.length];
-          state.i += 1;
-          if (state.i % lanes.length === 0) state.cycles += 1;
-
-          if (lane.treatment.mime !== sessionRef.current.mime) {
+          const switchReason = switchReasonFor(
+            { mime: sessionRef.current.mime, sampleRateHz: sessionRef.current.sampleRateHz, channels: sessionRef.current.channels },
+            { mime: lane.treatment.mime, sampleRateHz: lane.payload.sampleRateHz, channels: lane.payload.channels },
+          );
+          if (switchReason) {
             try {
+              // The rate-switch changeType proven on the phone — it is what makes demoting a hi-res
+              // track to the universal lane mid-buffer legal.
               sb.changeType(lane.treatment.mime);
               sessionRef.current.mime = lane.treatment.mime;
+              sessionRef.current.sampleRateHz = lane.payload.sampleRateHz;
+              sessionRef.current.channels = lane.payload.channels;
             } catch (e) {
-              logCensus("changeType:refused", { error: String(e && e.message ? e.message : e) });
+              logCensus("changeType:refused", { switchReason, error: String(e && e.message ? e.message : e) });
             }
           }
 
@@ -920,17 +1208,20 @@ export default function MusicMseProbe() {
           const hiddenAtIssue = document.visibilityState === "hidden";
           // Written BEFORE the fetch resolves. A fetch that never completes is THE finding, and it
           // leaves no trace at all unless its issue was recorded on its own.
-          logFetch({ seq, trackId: lane.payload.trackId, issuedAt, hiddenAtIssue, state: "issued" });
+          logFetch({
+            seq, trackId: lane.payload.trackId, lane: lane.treatment.lane, issuedAt, hiddenAtIssue,
+            aheadSec: Math.round(aheadSec()), state: "issued",
+          });
 
           let bytes = 0;
           let error = null;
           try {
-            state.lastBytes = 0;
             bytes = await fetchChunks(lane.treatment.url, {
               maxBytes: SLEEP_FILL_BYTES,
               onChunk: async (chunk) => {
                 try {
                   await appendChunk(sb, chunk);
+                  state.lastAppendAt = Date.now();
                 } catch (e) {
                   // Quota mid-cycle: drop more of what is behind and carry on. Stopping here would
                   // end the audio, which ends the measurement.
@@ -942,13 +1233,17 @@ export default function MusicMseProbe() {
             });
           } catch (e) {
             error = String(e && e.message ? e.message : e);
+            // One failure is enough to retire a lane: the failures here are 404 (lane not deployed)
+            // and CORS, neither of which gets better by being asked again — and asking again costs
+            // an execution window the page may not get back.
+            lane.dead = true;
           }
           state.lastError = error;
-          state.lastBytes = bytes;
           const completedAt = Date.now();
           logFetch({
             seq,
             trackId: lane.payload.trackId,
+            lane: lane.treatment.lane,
             issuedAt,
             completedAt,
             elapsedMs: completedAt - issuedAt,
@@ -958,6 +1253,9 @@ export default function MusicMseProbe() {
             error,
             state: error ? "failed" : "completed",
           });
+          state.lastAheadSec = aheadSec();
+          if (!state.dead) writeSleep({ bufferedAheadSec: Math.round(state.lastAheadSec) });
+          checkEndurance();
         } finally {
           state.busy = false;
         }
@@ -965,20 +1263,34 @@ export default function MusicMseProbe() {
 
       // Prime the buffer before playing: the phase must start with audio, not with a wait. If the
       // priming fetch brought back nothing there is no point starting a ten-minute walk-away — say
-      // why now, while someone is still holding the phone.
-      await cycle();
+      // why now, while someone is still holding the phone. Every lane gets a turn, because the first
+      // one may be a universal lane the gateway does not serve yet.
+      for (let n = 0; n < lanes.length && bufferedEnd(sb) <= 0 && !state.stopped; n++) {
+        // eslint-disable-next-line no-await-in-loop
+        await cycle();
+      }
       if (bufferedEnd(sb) <= 0) throw new Error(state.lastError || "no audio could be fetched to play");
       const playOutcome = await playOrReport(audio);
       logCensus("probe:playing", { bufferedSec: Math.round(bufferedEnd(sb)), playOutcome });
       if (playOutcome !== "playing") throw new Error(playOutcome);
+      // From here on, any stop is a death rather than us not having started yet.
+      state.wantPlaying = true;
 
-      // Three triggers, on purpose. The interval is the accelerator that only works awake; the media
-      // and SourceBuffer events are the ones the clock rule says survive a hidden page.
+      // Fill to the target before anyone walks away: the first hidden stretch is the one with no
+      // measured gap behind it, so it gets the biggest runway we can give it.
+      for (let n = 0; n < 8 && aheadSec() < SLEEP_TARGET_AHEAD_SEC && !state.stopped; n++) {
+        // eslint-disable-next-line no-await-in-loop
+        await cycle();
+      }
+
+      // Three kinds of trigger, on purpose. The interval is the accelerator that only works awake;
+      // the media and SourceBuffer events are the ones the clock rule says survive a hidden page.
       const onTrigger = () => { cycle(); };
       const timer = window.setInterval(onTrigger, SLEEP_PUMP_MS);
       audio.addEventListener("timeupdate", onTrigger);
       audio.addEventListener("waiting", onTrigger);
       audio.addEventListener("progress", onTrigger);
+      audio.addEventListener("playing", onTrigger);
       sb.addEventListener("updateend", onTrigger);
       document.addEventListener("visibilitychange", onTrigger);
       const prevDetach = session.detach;
@@ -987,18 +1299,19 @@ export default function MusicMseProbe() {
         audio.removeEventListener("timeupdate", onTrigger);
         audio.removeEventListener("waiting", onTrigger);
         audio.removeEventListener("progress", onTrigger);
+        audio.removeEventListener("playing", onTrigger);
+        audio.removeEventListener("waiting", onWaiting);
+        audio.removeEventListener("stalled", onWaiting);
+        audio.removeEventListener("pause", onPause);
+        audio.removeEventListener("ended", onEnded);
+        audio.removeEventListener("error", onError);
         try { sb.removeEventListener("updateend", onTrigger); } catch { /* gone with the source */ }
         document.removeEventListener("visibilitychange", onTrigger);
         prevDetach();
       };
 
       setPhase("sleeping");
-      record("sleep", {
-        status: "run",
-        verdict: "RUNNING — turn the screen off and come back in 10 minutes",
-        playing: lanes.map((l) => l.treatment.lane).join(" → "),
-        startedAt: Date.now(),
-      });
+      writeSleep({});
     } catch (e) {
       record("sleep", { status: "fail", verdict: `FAIL — ${String(e && e.message ? e.message : e)}` });
       teardown();
@@ -1015,10 +1328,13 @@ export default function MusicMseProbe() {
     censusRef.current = [];
     fetchLogRef.current = [];
     seqRef.current = 0;
+    hiddenRef.current = HIDDEN_ZERO;
     saveJson(K_CENSUS, []);
     saveJson(K_FETCH, []);
+    saveJson(K_HIDDEN, hiddenRef.current);
     setCensus([]);
     setFetchLog([]);
+    setHiddenMs(0);
     const fresh = { startedAt: Date.now() };
     saveJson(K_RESULTS, fresh);
     setResults(fresh);
@@ -1073,13 +1389,25 @@ export default function MusicMseProbe() {
     teardown();
     setPhase("idle");
     setStep(null);
-    record("sleep", { status: "run", verdict: "stopped by hand" });
+    // Annotate, never downgrade. A run that had already earned its PASS (or recorded its death) must
+    // not have that erased by the person who pressed Stop afterwards — which is exactly what would
+    // happen if this wrote an unconditional "run" row over the top.
+    const prev = resultsRef.current.sleep;
+    record("sleep", {
+      ...(prev || {}),
+      status: prev && (prev.status === "pass" || prev.status === "fail") ? prev.status : "skip",
+      verdict: prev && prev.verdict && prev.status !== "run"
+        ? `${prev.verdict} (stopped by hand afterwards)`
+        : "STOPPED by hand before the endurance bar was reached",
+      stoppedAt: Date.now(),
+    });
   }, [teardown, record]);
 
   const summary = useMemo(
     () => summarizeRun({ results, fetchLog, census }),
     [results, fetchLog, census],
   );
+  const sleepLanes = (results.sleep && results.sleep.lanes) || [];
 
   // The button waits for the tracks as well as the capability probe. The gate awaits them anyway,
   // but a button that can be pressed before the page knows what it will play is a button that
@@ -1109,6 +1437,17 @@ export default function MusicMseProbe() {
           Worst execution gap: <strong>{formatMs(summary.gap.maxGapMs)}</strong>
           {summary.gap.maxGapAfter ? ` (after ${summary.gap.maxGapAfter})` : ""}
         </div>
+        {/* The endurance clock. A returning user's first question is "did it run long enough?", and
+            the last run's answer to that was buried in a fetch log. */}
+        <div className="mse-probe-headline">
+          Screen-off so far: <strong>{formatMs(hiddenMs)}</strong> of {formatMs(SLEEP_ENDURANCE_MS)} needed
+          {hiddenMs >= SLEEP_ENDURANCE_MS ? " ✓" : ""}
+        </div>
+        {sleepLanes.length > 0 && (
+          <div className="mse-probe-lanes">
+            {sleepLanes.map((note) => <div key={note}>{note}</div>)}
+          </div>
+        )}
         <table className="mse-probe-table">
           <tbody>
             {summary.probes.map((p) => (
@@ -1131,8 +1470,13 @@ export default function MusicMseProbe() {
           <div className="mse-probe-banner-big">Now turn the screen off<br />and come back in 10 minutes.</div>
           <p>
             Audio will keep playing OUT LOUD — that is the test. A hidden page is only allowed to keep
-            running while it is making audible sound, so a muted run would measure nothing.
+            running while it is making audible sound, so a muted run would measure nothing. If the
+            music stops before you come back, that IS the failure, and the page will have written it
+            down.
           </p>
+          <div className="mse-probe-headline">
+            Screen-off so far: <strong>{formatMs(hiddenMs)}</strong> of {formatMs(SLEEP_ENDURANCE_MS)}
+          </div>
           <button onClick={stop}>Stop</button>
         </section>
       )}
