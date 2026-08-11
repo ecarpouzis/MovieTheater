@@ -322,22 +322,34 @@ export function createMseEngine({
       if (!payload) return false;
     }
 
-    const decision = appendTreatmentFor({
-      payload,
-      isTypeSupported: supports,
-      hidden: isHidden(),
-      quotaBytes,
-    });
-    if (!decision.treatment) {
-      // Nothing in the matrix will carry this track: hand the boundary to the deck path, which is
-      // the floor and must be prepared BEFORE the buffer runs out (§the invariant).
-      rung(7, { why: "no treatment", track: track.id });
-      state.deckNeededFor = track;
-      onDeckNeeded(track, payload);
-      finishStream();
-      return false;
+    // ⚠ A partial entry RESUMES on the treatment it started with — sticky, never recomputed. The
+    // lane decision exists only for NEW entries, for two reasons the first phone run paid for:
+    // (1) sequence-mode bytes must be contiguous, so a track begun on the fMP4 lane that went
+    // hidden mid-append would have its universal encode resumed at a byte offset that only means
+    // something in the fMP4 stream — corrupt audio or past-EOF either way; (2) re-evaluating on
+    // every pump logged "demoted" four times a SECOND for as long as the page stayed hidden,
+    // flooding the diag ring and evicting the evidence of whatever actually went wrong.
+    let treatment = already ? already.treatment : null;
+    let demotedWhy = null;
+    if (!already) {
+      const decision = appendTreatmentFor({
+        payload,
+        isTypeSupported: supports,
+        hidden: isHidden(),
+        quotaBytes,
+      });
+      if (!decision.treatment) {
+        // Nothing in the matrix will carry this track: hand the boundary to the deck path, which is
+        // the floor and must be prepared BEFORE the buffer runs out (§the invariant).
+        rung(7, { why: "no treatment", track: track.id });
+        state.deckNeededFor = track;
+        onDeckNeeded(track, payload);
+        finishStream();
+        return false;
+      }
+      treatment = decision.treatment;
+      if (decision.demoted) demotedWhy = decision.reason;
     }
-    if (decision.demoted) log("demoted", { track: track.id, why: decision.reason });
 
     // ⚠ How far ahead it is worth buffering WITH this track in it, decided ONCE per append entry and
     // checked before anything is fetched or switched.
@@ -359,16 +371,19 @@ export function createMseEngine({
     // small ceiling still gets topped up (half of it), so a fat track cannot starve.
     const lowWater = ceiling - Math.min(MIN_TOPUP_SEC, ceiling / 2);
     if (aheadSec() >= lowWater) return false;
+    // Logged here — after the "any work to do?" gate — so a demotion is one line per track, at the
+    // moment the entry is actually created, not once per execution opportunity.
+    if (demotedWhy) log("demoted", { track: track.id, why: demotedWhy });
 
     // The switch. Container/codec, sample rate OR channel count — the rate switch is the one the
     // phone proved needs it even when the MIME string is identical.
     const reason = switchReasonFor(
       { mime: state.mime, sampleRateHz: state.sampleRateHz, channels: state.channels },
-      { mime: decision.treatment.mime, sampleRateHz: payload.sampleRateHz, channels: payload.channels },
+      { mime: treatment.mime, sampleRateHz: payload.sampleRateHz, channels: payload.channels },
     );
     if (state.mime && reason && !already) {
       try {
-        state.sb.changeType(decision.treatment.mime);
+        state.sb.changeType(treatment.mime);
         log("changeType", { track: track.id, reason });
       } catch (e) {
         // Rung 2: the buffer refused the switch. The universal lane normalises the thing it refused,
@@ -380,7 +395,7 @@ export function createMseEngine({
         return false;
       }
     }
-    state.mime = decision.treatment.mime;
+    state.mime = treatment.mime;
     state.sampleRateHz = payload.sampleRateHz;
     state.channels = payload.channels;
 
@@ -390,7 +405,7 @@ export function createMseEngine({
       // Buffered-corrected: where this track will actually begin, read off the SourceBuffer rather
       // than trusted from a sum of DB durations that drifts over an hours-long queue.
       startSec: bufferedEnd(),
-      treatment: decision.treatment,
+      treatment,
       bytesAppended: 0,
       complete: false,
     };
@@ -399,7 +414,7 @@ export function createMseEngine({
     let stoppedShort = false;
     const bytesBefore = entry.bytesAppended;
     try {
-      const added = await fetchFrom(decision.treatment.url, entry.bytesAppended, async (chunk) => {
+      const added = await fetchFrom(treatment.url, entry.bytesAppended, async (chunk) => {
         if (state.destroyed) return false;
         const ok = await appendChunk(chunk);
         if (!ok) { stoppedShort = true; return false; }
@@ -410,13 +425,13 @@ export function createMseEngine({
         return true;
       });
       log("appended", {
-        track: track.id, lane: decision.treatment.lane, bytes: added,
+        track: track.id, lane: treatment.lane, bytes: added,
         ahead: Math.round(aheadSec()), partial: stoppedShort,
       });
     } catch (e) {
       // A failed lane fetch retires the treatment for this track, not the engine: rung 4 (the
       // gateway is behind the site) and CORS both look like this.
-      rung(4, { why: String(e && e.message ? e.message : e).slice(0, 60), track: track.id, lane: decision.treatment.lane });
+      rung(4, { why: String(e && e.message ? e.message : e).slice(0, 60), track: track.id, lane: treatment.lane });
       state.deckNeededFor = track;
       onDeckNeeded(track, payload);
       finishStream();

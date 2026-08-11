@@ -287,6 +287,36 @@ describe("the engine", () => {
     expect(seen.some((u) => u === "u/2/fmp4")).toBe(false);
   });
 
+  // ⚠ Regression (Eric's phone log, 2026-08-11 18:17): a PARTIAL entry resumes on the lane it
+  // started with. A hi-res flac begun bit-perfect while visible must NOT have its resume re-routed
+  // to the universal encode once hidden — the byte cursor only means something in the fMP4 stream —
+  // and the per-pump re-evaluation also logged "demoted" four times a second, flooding the diag
+  // ring and evicting the evidence of the actual failure.
+  it("resumes a partial append on its ORIGINAL lane after the screen goes off", async () => {
+    const hiRes = payload(1, {
+      mimeType: "audio/flac", fmp4Url: "u/1/fmp4", universalUrl: "u/1/universal",
+      sizeBytes: 38_000_000, durationSec: 120, sampleRateHz: 96000,
+    });
+    const seen = [];
+    installFetch(seen, { total: 38_000_000 });
+    let hidden = false;
+    const audio = fakeAudio();
+    const engine = createMseEngine({
+      audio, api: makeApi({ 1: hiRes }), mediaSourceCtor: FakeMediaSource,
+      isTypeSupported: () => true, isHidden: () => hidden,
+    });
+    await engine.start({ queue: [{ id: 1, durationSec: 120 }], index: 0 });
+    const entry = engine.inspect().appended[0];
+    expect(entry.complete).toBe(false);            // stopped at its quota-derived ceiling, mid-track
+    expect(entry.treatment.lane).toBe("fmp4");
+    seen.length = 0;
+    hidden = true;
+    audio.currentTime = 20;                        // drained past the low-water mark
+    await engine.pump();
+    expect(seen).toContain("u/1/fmp4");            // sticky: same stream, same byte cursor
+    expect(seen.some((u) => u.includes("universal"))).toBe(false);
+  });
+
   it("calls a changeType on a sample-rate switch even when the MIME is identical", async () => {
     const flac44 = payload(1, { mimeType: "audio/flac", fmp4Url: "u/1/fmp4", sampleRateHz: 44100 });
     const flac96 = payload(2, { mimeType: "audio/flac", fmp4Url: "u/2/fmp4", sampleRateHz: 96000 });
