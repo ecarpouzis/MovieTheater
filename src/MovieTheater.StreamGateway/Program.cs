@@ -180,6 +180,105 @@ app.MapMethods($"/s/{{token}}/{MusicStreamRoutes.Transcode}", new[] { "GET", "HE
     }
 });
 
+// ── Music fMP4 lane (Media Source Extensions) ────────────────────────────────────────────────────
+// The SAME audio in a fragmented-MP4 container, so the player can append tracks into one
+// SourceBuffer and a track boundary stops being a JavaScript event.
+//
+// ⚠ This is a REMUX. ffmpeg runs `-c:a copy`: the FLAC/MP3 frames are copied into moof/mdat boxes
+// without being decoded, so the audio is bit-identical to the file on disk and FLAC stays lossless.
+// The container is the only thing that changes, and only because MSE cannot accept a raw .flac.
+// It is I/O rather than CPU, so it is far cheaper than the transcode lane above — but it is still a
+// process per request, so it shares that lane's concurrency cap.
+//
+// Streaming stdout means no Range and no Content-Length; MSE does not need either, because the
+// player fetches the whole response and appends it.
+app.MapMethods($"/s/{{token}}/{MusicStreamRoutes.Fmp4}", new[] { "GET", "HEAD" }, async (HttpContext context, string token) =>
+{
+    if (musicRootFull == null || string.IsNullOrWhiteSpace(ffmpegPath))
+    {
+        context.Response.StatusCode = StatusCodes.Status404NotFound;
+        return;
+    }
+    if (!MusicCapabilityToken.TryValidate(secret, token, out var payload) || payload is null)
+    {
+        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+        return;
+    }
+
+    var full = Path.GetFullPath(Path.Combine(musicRootFull,
+        payload.RelativePath.Replace('/', Path.DirectorySeparatorChar)));
+    if (!full.StartsWith(musicRootFull.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar,
+            StringComparison.OrdinalIgnoreCase))
+    {
+        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+        return;
+    }
+    if (!File.Exists(full))
+    {
+        context.Response.StatusCode = StatusCodes.Status404NotFound;
+        return;
+    }
+
+    if (!await transcodeSlots.WaitAsync(TimeSpan.FromSeconds(2), context.RequestAborted))
+    {
+        context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+        context.Response.Headers["Retry-After"] = "5";
+        return;
+    }
+
+    try
+    {
+        context.Response.ContentType = "audio/mp4";
+        context.Response.Headers["Accept-Ranges"] = "none";
+        context.Response.Headers["Cache-Control"] = "private, no-store";
+        if (HttpMethods.IsHead(context.Request.Method)) return;
+
+        var psi = new System.Diagnostics.ProcessStartInfo(ffmpegPath)
+        {
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        };
+        // empty_moov + default_base_moof + frag_every_frame produce an initialisation segment
+        // followed by self-contained fragments — the shape MSE expects from a stream that is being
+        // written as it is read. `-c:a copy` is the whole point: no decode, no re-encode.
+        foreach (var arg in new[]
+        {
+            "-hide_banner", "-loglevel", "error", "-i", full,
+            "-map", "a:0", "-c:a", "copy", "-f", "mp4",
+            "-movflags", "empty_moov+default_base_moof+frag_keyframe+delay_moov",
+            "-frag_duration", "1000000",
+            "pipe:1",
+        })
+            psi.ArgumentList.Add(arg);
+
+        using var ffmpeg = System.Diagnostics.Process.Start(psi);
+        if (ffmpeg == null)
+        {
+            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+            return;
+        }
+        try
+        {
+            _ = ffmpeg.StandardError.ReadToEndAsync();
+            await ffmpeg.StandardOutput.BaseStream.CopyToAsync(context.Response.Body, 64 * 1024, context.RequestAborted);
+        }
+        catch (OperationCanceledException)
+        {
+            // The listener skipped or closed the tab — normal.
+        }
+        finally
+        {
+            try { if (!ffmpeg.HasExited) ffmpeg.Kill(entireProcessTree: true); } catch { }
+        }
+    }
+    finally
+    {
+        transcodeSlots.Release();
+    }
+});
+
 app.Map("/s/{token}/Videos/{**rest}", async (HttpContext context, string token, string rest) =>
 {
     if (!StreamCapabilityToken.TryValidate(secret, token, out var payload) || payload is null)
