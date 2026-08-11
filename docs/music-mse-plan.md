@@ -9,8 +9,10 @@ sleep-phase audio died when a 96 kHz FLAC (~0.3 MB/s) met the quota: 40 s of run
 a treatment is sleep-viable only if `quota ÷ bitrate > worst execution gap` — ~1 Mbps ceiling on
 this phone. MP3 and universal AAC pass comfortably; 44.1 FLAC is borderline; hi-res bit-perfect
 FLAC is NOT sleep-viable and takes the universal lane while hidden (the phone-proven rate-switch
-`changeType` is what makes that legal). Remaining before Phase 2: a 10-minute endurance re-run
-with the sleep loop obeying this rule.**
+`changeType` is what makes that legal). ENDURANCE RE-RUN PASSED 2026-08-11 15:50: 13m11s hidden,
+ZERO dry buffers, 10/10 hidden fetches, worst gap 270 ms — a page that keeps audio flowing keeps
+its execution; the 84 s gaps belonged to the dying run. Engine design still assumes the
+conservative 90 s. PHASE 1 GATE: PASSED. Phase 2 unlocked.**
 Companion to `music-plan.md`; cite sections from code the same way.
 
 ## Why
