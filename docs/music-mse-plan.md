@@ -1,12 +1,12 @@
 # Music: one continuous stream (MSE + fMP4)
 
-Plan for taking JavaScript out of the track boundary. Status: **Phase 0 done (both halves: gateway
-lanes incl. the universal AAC-fMP4 lane + cache, and the site's fmp4Url/universalUrl/StartBatch/
-fmp4Enabled). The Phase 1 probe page is BUILT (`/music/mse-probe`, gated by the `?diag=1`
-convention) but the GATE has not run: it needs the gateway redeployed on its host, the site
-deployed, and the probes run on the Android phone — screen-off fetch completion and the event
-census are the two verdicts everything below waits on. Phase 2 not started (forbidden until the
-gate passes).**
+Plan for taking JavaScript out of the track boundary. Status: **Phase 0 done and deployed (site +
+gateway, 2026-08-11). The Phase 1 probe page is live at `/music/mse-probe` — one tap runs the whole
+gate walk-away style (server-picked tracks, automatic sequence, verdicts panel; no `?diag=1`, the
+route gates itself). Desktop Chrome pre-run PASSED: all three changeType joins continuous, quota
+measured 11.80 MB, mp4a.6B correctly refused. The GATE still needs the Android phone: screen-off
+fetch completion and the event census are the two verdicts everything below waits on. Phase 2 not
+started (forbidden until the gate passes).**
 Companion to `music-plan.md`; cite sections from code the same way.
 
 ## Why
@@ -97,6 +97,13 @@ and Phase 1 re-proves the load-bearing rows in the browsers that matter anyway:
 | `changeType` mp4/flac → mpeg | OK |
 | alternating four times | OK |
 | `mode = "sequence"`, `timestampOffset` | available |
+| REAL BYTES (2026-08-11, probe page, desktop Chrome): mp3↔flac join, 44.1→96 kHz join, stereo→mono join | **all continuous, zero stalls** |
+| audio SourceBuffer quota (measured) | **11.80 MB** |
+| 96 kHz after 44.1 kHz appended with the SAME MIME and **no** `changeType` | **SourceBuffer errors ~200 KB in** |
+
+That last row is a load-bearing correction: `changeType` is required at every **sample-rate or
+channel-count** switch too, not only container/codec — the MIME string being identical proves
+nothing. The probe page's `switchReasonFor()` is the tested rule.
 
 That third row is load-bearing: **remuxing MP3 into MP4 would have broken every MP3 in the library.**
 The obvious "normalise everything to one container" design is wrong, and only cost one probe to find.
@@ -141,7 +148,9 @@ A playlist mixing formats freely must work. It does, and this is the mechanism:
 
 - **One** `SourceBuffer`, `mode = "sequence"` so appended tracks land back-to-back without computing
   timestamps.
-- **`changeType()` at every format switch.** Verified in both directions and alternating.
+- **`changeType()` at every switch of container/codec OR sample rate OR channel count** (the
+  measured rule — same-MIME rate switches error without it; see the results table). Verified in
+  both directions, alternating, and with real bytes across all three switch kinds.
 
 **Routing is capability-driven, not browser-shaped.** Each source format has an ordered list of
 candidate MSE *treatments*; at startup the engine probes each treatment with
@@ -287,8 +296,8 @@ section — small, but Phase 2 cannot start without it.
 
 **Phase 1 — prove the bytes, ON THE PHONE. GATE.**
 Deploy the gateway (NSSM on Ziggy — rebuild + redeploy required, see `stream-gateway-deploy-on-ziggy`;
-service paths are UNC, not `L:`). Then build a **committed probe page** — a dev-only route or a
-`?diag=1`-gated panel, so the test is "visit a URL on the phone", not a lab rig — that:
+service paths are UNC, not `L:`). Then build a **committed probe page** — BUILT: `/music/mse-probe`, a self-gating diagnostics route,
+one tap runs everything walk-away style with server-picked tracks — that:
 
 1. appends one real MP3 (raw) and one real FLAC-fMP4 (from the deployed lane) into one SourceBuffer
    with a `changeType` between them, and asserts **continuous playback across the join**;

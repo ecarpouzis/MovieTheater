@@ -71,6 +71,75 @@
   word-break: break-word;
 }
 
+/* The verdict panel. It is the first thing on the page and the only thing that has to be legible at
+   arm's length, because the moment it is read is the moment a phone is picked back up. */
+.mse-probe-verdicts {
+  border: 2px solid var(--border-color, rgba(128, 128, 128, 0.5));
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 18px;
+}
+
+.mse-probe-overall {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.mse-probe-verdicts--PASS { border-color: #2e9e4f; }
+.mse-probe-verdicts--PASS .mse-probe-overall { color: #2e9e4f; }
+.mse-probe-verdicts--FAIL { border-color: #b04141; }
+.mse-probe-verdicts--FAIL .mse-probe-overall { color: #b04141; }
+
+.mse-probe-status {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.mse-probe-status--pass { color: #2e9e4f; }
+.mse-probe-status--fail { color: #b04141; }
+.mse-probe-status--skip { opacity: 0.6; }
+.mse-probe-status--run { color: #c07a1f; }
+
+/* The walk-away instruction. Unmissable on purpose: it is read once, at arm's length, and then the
+   phone goes in a pocket. */
+.mse-probe-banner {
+  border: 2px solid #c07a1f;
+  border-radius: 10px;
+  padding: 16px;
+  text-align: center;
+}
+
+.mse-probe-banner-big {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.25;
+  margin-bottom: 10px;
+}
+
+.mse-probe-go {
+  display: block;
+  width: 100%;
+  padding: 18px 12px !important;
+  font-size: 18px !important;
+  font-weight: 700;
+}
+
+.mse-probe-fold {
+  opacity: 0.8;
+}
+
+.mse-probe-bad-text {
+  color: #b04141;
+}
+
+.mse-probe-raw {
+  font-size: 11px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  opacity: 0.8;
+}
+
 .mse-probe-slots {
   display: flex;
   flex-wrap: wrap;

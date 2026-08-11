@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  PROBE_TYPES, buildCapabilityMatrix, chunkRanges, formatBytes, gapDistribution, pushRing, treatmentFor,
+  PROBE_STEPS, PROBE_TYPES, buildCapabilityMatrix, chunkRanges, describeCandidate, formatBytes,
+  gapDistribution, hiddenFetchSummary, pushRing, summarizeRun, switchReasonFor, treatmentFor,
 } from "./MusicMseProbe";
 
 // The probe page's arithmetic and classification, tested without a MediaSource — which this
@@ -153,6 +154,132 @@ describe("pushRing", () => {
     const second = pushRing(first, 2, 10);
     expect(first).toEqual([1]);
     expect(second).toEqual([1, 2]);
+  });
+});
+
+describe("switchReasonFor", () => {
+  const flac44 = { mime: 'audio/mp4; codecs="flac"', sampleRateHz: 44100, channels: 2 };
+
+  it("names a codec/container change", () => {
+    expect(switchReasonFor({ ...flac44, mime: "audio/mpeg" }, flac44)).toBe("codec/container");
+  });
+
+  // The one that was measured the hard way: same MIME, different rate, and without a changeType the
+  // SourceBuffer errors out a couple of hundred KB in.
+  it("names a sample-rate change even though the MIME is identical", () => {
+    expect(switchReasonFor(flac44, { ...flac44, sampleRateHz: 96000 })).toBe("sample rate");
+  });
+
+  it("names a channel-count change", () => {
+    expect(switchReasonFor(flac44, { ...flac44, channels: 1 })).toBe("channel count");
+  });
+
+  it("is null when nothing differs — a changeType there would test something else", () => {
+    expect(switchReasonFor(flac44, { ...flac44 })).toBe(null);
+  });
+
+  it("does not invent a switch out of a missing value", () => {
+    expect(switchReasonFor({ mime: "audio/mpeg" }, { mime: "audio/mpeg" })).toBe(null);
+    expect(switchReasonFor(null, flac44)).toBe(null);
+  });
+});
+
+describe("hiddenFetchSummary", () => {
+  // The gate, as two numbers. A fetch issued while hidden that never comes back is the finding that
+  // falsifies the whole design, so "issued but neither completed nor failed" must be counted as its
+  // own thing rather than rounding into either.
+  const issued = (seq) => ({ seq, hiddenAtIssue: true, state: "issued" });
+  const done = (seq) => ({ seq, hiddenAtIssue: true, state: "completed" });
+  const failed = (seq) => ({ seq, hiddenAtIssue: true, state: "failed" });
+
+  it("passes when every hidden fetch came back", () => {
+    const s = hiddenFetchSummary([issued(1), done(1), issued(2), done(2)]);
+    expect(s).toMatchObject({ issued: 2, completed: 2, unanswered: 0, status: "pass" });
+  });
+
+  it("fails when none of them did — the design's central bet, lost", () => {
+    const s = hiddenFetchSummary([issued(1), issued(2)]);
+    expect(s).toMatchObject({ issued: 2, completed: 0, unanswered: 2, status: "fail" });
+  });
+
+  it("calls it partial when some landed", () => {
+    expect(hiddenFetchSummary([issued(1), done(1), issued(2)]).status).toBe("partial");
+  });
+
+  it("counts a hidden fetch once however many rows it wrote", () => {
+    expect(hiddenFetchSummary([issued(1), done(1)]).issued).toBe(1);
+  });
+
+  it("separates a failure from a silence", () => {
+    const s = hiddenFetchSummary([issued(1), failed(1)]);
+    expect(s).toMatchObject({ failed: 1, unanswered: 0, status: "fail" });
+  });
+
+  it("says nothing rather than passing when the phone was never asleep", () => {
+    expect(hiddenFetchSummary([{ seq: 1, hiddenAtIssue: false, state: "completed" }]).status).toBe("skip");
+    expect(hiddenFetchSummary([]).status).toBe("skip");
+  });
+});
+
+describe("summarizeRun", () => {
+  it("reads out one row per probe, in the order the gate runs them", () => {
+    const s = summarizeRun({ results: {}, fetchLog: [], census: [] });
+    expect(s.probes.map((p) => p.key)).toEqual(PROBE_STEPS.map((p) => p.key));
+    expect(s.probes.every((p) => p.status === "none")).toBe(true);
+    expect(s.overall).toBe("NO RESULT");
+  });
+
+  it("is INCOMPLETE while a run is still going", () => {
+    const s = summarizeRun({
+      results: { caps: { status: "pass", verdict: "PASS", at: 1 } },
+      fetchLog: [], census: [],
+    });
+    expect(s.overall).toBe("INCOMPLETE");
+  });
+
+  it("is FAIL the moment any probe fails, even with others still to run", () => {
+    const s = summarizeRun({
+      results: { caps: { status: "pass", at: 1 }, join: { status: "fail", verdict: "FAIL — x", at: 2 } },
+      fetchLog: [], census: [],
+    });
+    expect(s.overall).toBe("FAIL");
+  });
+
+  // A skipped probe is not a failure: a library with no mono file cannot answer the mono question,
+  // and that must not read as the browser having failed it.
+  it("passes when everything that could run did, and the rest were skipped", () => {
+    const results = {};
+    PROBE_STEPS.forEach((step, i) => {
+      results[step.key] = { status: i % 2 ? "skip" : "pass", verdict: "…", at: i };
+    });
+    expect(summarizeRun({ results, fetchLog: [], census: [] }).overall).toBe("PASS");
+  });
+
+  it("carries the two headline numbers", () => {
+    const s = summarizeRun({
+      results: {},
+      fetchLog: [{ seq: 1, hiddenAtIssue: true, state: "issued" }],
+      census: [{ at: 0, event: "a" }, { at: 30000, event: "b" }],
+    });
+    expect(s.hidden.issued).toBe(1);
+    expect(s.gap.maxGapMs).toBe(30000);
+  });
+});
+
+describe("describeCandidate", () => {
+  it("labels a candidate with the properties the probe is actually testing", () => {
+    expect(describeCandidate({
+      title: "Track", extension: ".flac", sampleRateHz: 96000, channels: 2, sizeBytes: 30 * 1024 * 1024,
+    })).toBe("Track — .flac · 96 kHz · 2 ch · 30.00 MB");
+  });
+
+  it("names mono as mono, because that is the whole point of that slot", () => {
+    expect(describeCandidate({ title: "T", extension: ".mp3", channels: 1, sizeBytes: 1024 }))
+      .toContain("mono");
+  });
+
+  it("says what an empty slot means rather than showing a blank", () => {
+    expect(describeCandidate(null)).toBe("none in this library");
   });
 });
 

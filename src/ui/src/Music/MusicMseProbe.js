@@ -1,29 +1,39 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { MovieAPI } from "../MovieAPI";
-import { diagEnabled, setDiagEnabled } from "./musicDiag";
+import { setDiagEnabled } from "./musicDiag";
 import "./MusicMseProbe.css";
 
 // ── Phase 1 of music-mse-plan.md: prove the bytes, ON THE PHONE ──────────────────────────────────
 //
 // This page is the plan's GATE. Everything past it (the MSE engine, the timeline module, eviction)
-// is forbidden until the five probes below have been run on the phone that actually fails — Android
-// Chrome — because every measurement taken so far was desktop Chromium and was API acceptance, not
-// playback. If probe 4 says a fetch issued while hidden never lands, the design is falsified and no
-// client engineering rescues it.
+// is forbidden until the probes below have run on the phone that actually fails — Android Chrome —
+// because every measurement taken so far was desktop Chromium and was API acceptance, not playback.
+// If the hidden-fetch probe says a fetch issued while the screen is off never lands, the design is
+// falsified and no client engineering rescues it.
 //
-// Why a committed page rather than a lab rig: the test has to be "visit a URL on the phone". A
-// scratchpad script can't be run on the device that has the bug, and the capability matrix at the
-// top is worth keeping forever — "what does browser X on phone Y get?" should be answerable by
-// visiting a URL and reading a table, which is how the general case stays measured instead of
-// assumed.
+// ── What the first version got wrong, and why this one is shaped like this ───────────────────────
+// It asked a person to pick tracks and then to run five probes in the right order, one tap at a
+// time. On the actual phone that read as a page whose buttons did nothing: the run buttons refused
+// to do anything until slots were filled, and the diagnostics gate in front of it all had a button
+// that could not work (it flipped a module flag that this component never re-read, so the page never
+// left the gate screen). The lesson is the same one the incident reporter already paid for: A TEST
+// THAT NEEDS A PERSON TO OPERATE IT DOES NOT GET RUN. So:
 //
-// Two rules this page inherits from the diag work that came before it (musicDiag.js):
+//   • the server picks the tracks (/API/Music/Probe/Candidates) — nobody knows by heart which of
+//     their files is the 96 kHz one;
+//   • there is ONE button, which runs everything in order and then puts the phone into the
+//     screen-off phase by itself;
+//   • the answer is a VERDICT panel, not a log to interpret;
+//   • and nothing is gated behind a flag that has to be discovered.
+//
+// ── Two rules inherited from the diag work that came before it (musicDiag.js) ────────────────────
 //   • EVIDENCE MUST SURVIVE. The interesting moments happen with the screen off, minutes before
 //     anyone can look, and the page may be reloaded or discarded in between. So every observation is
-//     written to localStorage AS IT HAPPENS, never accumulated in memory and rendered at the end.
+//     written to localStorage AS IT HAPPENS, timestamped, never accumulated in memory and rendered
+//     at the end.
 //   • NOTHING LOAD-BEARING RUNS ON A TIMER. Intervals stop firing (or arrive minutes late) on a
-//     hidden page; media and SourceBuffer events still fire. The pumps below are driven from both,
+//     hidden page; media and SourceBuffer events still fire. The pump below is driven from both,
 //     with the timer as an accelerator only — and the census exists precisely to measure how sparse
 //     the survivors are.
 
@@ -43,6 +53,16 @@ export const PROBE_TYPES = [
   { key: "flac", label: "FLAC in fMP4", mime: 'audio/mp4; codecs="flac"', note: "the fMP4 lane, -c:a copy, still lossless" },
   { key: "aac", label: "AAC in fMP4", mime: 'audio/mp4; codecs="mp4a.40.2"', note: "the universal lane — every MSE browser should take this" },
   { key: "mp3mp4", label: "MP3 in fMP4", mime: 'audio/mp4; codecs="mp4a.6B"', note: "THE TRAP — expected NO; a yes here is a finding", trap: true },
+];
+
+/** The probes, in the order the gate runs them, with the labels the verdict panel reads out. */
+export const PROBE_STEPS = [
+  { key: "caps", label: "Capability matrix" },
+  { key: "join", label: "MP3 ↔ FLAC join" },
+  { key: "joinHires", label: "96 kHz join" },
+  { key: "joinMono", label: "Mono join" },
+  { key: "quota", label: "SourceBuffer quota" },
+  { key: "sleep", label: "Screen-off phase" },
 ];
 
 /**
@@ -112,9 +132,28 @@ export function treatmentFor(payload, isTypeSupported = () => false) {
 }
 
 /**
+ * Does moving from track A to track B need a `changeType`, and because of what?
+ *
+ * ⚠ The MIME string is not the only thing that can change, and assuming it was cost this probe a
+ * false FAIL: appending a 96 kHz FLAC-fMP4 after a 44.1 kHz one — IDENTICAL MIME, so no changeType
+ * was called — made a real Chrome's SourceBuffer raise an error after about 200 KB. With the
+ * changeType it plays through. That is the plan's residual risk (the rate switch, not the codec
+ * switch) and its stated mitigation, so the rule is: a switch is any change of container/codec,
+ * sample rate, or channel count. Pure and tested because Phase 2 routes on it.
+ */
+export function switchReasonFor(a, b) {
+  if (!a || !b) return null;
+  if (a.mime !== b.mime) return "codec/container";
+  if ((a.sampleRateHz ?? null) !== (b.sampleRateHz ?? null)) return "sample rate";
+  if ((a.channels ?? null) !== (b.channels ?? null)) return "channel count";
+  return null;
+}
+
+/**
  * How a fetch is cut into appends. Chrome's audio SourceBuffer quota is on the order of 12 MB —
  * LESS THAN ONE LARGE FLAC — so "append the track" is never a single operation; the working unit is
- * a chunk. Probe 3 measures the real number and this is the arithmetic every append loop uses.
+ * a chunk. The quota probe measures the real number and this is the arithmetic every append loop
+ * uses.
  */
 export function chunkRanges(totalBytes, chunkBytes) {
   const total = Math.max(0, Math.floor(totalBytes || 0));
@@ -187,6 +226,65 @@ export function gapDistribution(entries) {
   };
 }
 
+/**
+ * THE GATE, as two numbers: of the fetches issued while the page was hidden, how many came back.
+ *
+ * This is the whole design's central bet — MSE moves fetching back into script, and the question is
+ * whether a backgrounded renderer is still allowed to complete one. A returning listener must be
+ * able to read the answer without interpreting rows, so the counting lives here and is tested.
+ */
+export function hiddenFetchSummary(fetchLog) {
+  const rows = fetchLog || [];
+  const issued = new Set(rows.filter((r) => r && r.hiddenAtIssue).map((r) => r.seq));
+  const completed = new Set(
+    rows.filter((r) => r && r.hiddenAtIssue && r.state === "completed").map((r) => r.seq),
+  );
+  const failed = new Set(
+    rows.filter((r) => r && r.hiddenAtIssue && r.state === "failed").map((r) => r.seq),
+  );
+  let status = "skip";
+  if (issued.size === 0) status = "skip";
+  else if (completed.size === issued.size) status = "pass";
+  else if (completed.size === 0) status = "fail";
+  else status = "partial";
+  return {
+    issued: issued.size,
+    completed: completed.size,
+    failed: failed.size,
+    // Issued, never answered, and not recorded as failed either: the exact shape of "the phone went
+    // to sleep holding the request", which is the failure the plan says would falsify the design.
+    unanswered: issued.size - completed.size - failed.size,
+    status,
+  };
+}
+
+/**
+ * Everything a returning user should be able to read in five seconds: one row per probe with
+ * PASS / FAIL / SKIPPED and why, plus the two headline numbers. Pure, so the panel that decides
+ * whether the gate passed can be tested without a browser that can play anything.
+ */
+export function summarizeRun({ results, fetchLog, census }) {
+  const map = results || {};
+  const probes = PROBE_STEPS.map((step) => {
+    const result = map[step.key];
+    return {
+      key: step.key,
+      label: step.label,
+      status: result ? result.status || "run" : "none",
+      detail: result ? result.verdict || result.detail || "" : "not run yet",
+      at: result ? result.at : null,
+    };
+  });
+  const hidden = hiddenFetchSummary(fetchLog);
+  const gap = gapDistribution(census);
+  const graded = probes.filter((p) => p.status === "pass" || p.status === "fail");
+  const overall = probes.some((p) => p.status === "fail") ? "FAIL"
+    : graded.length === 0 ? "NO RESULT"
+      : probes.some((p) => p.status === "none" || p.status === "run") ? "INCOMPLETE"
+        : "PASS";
+  return { probes, hidden, gap, overall };
+}
+
 /** Bounded append. Every ring on this page is persisted on every push, so it must not grow. */
 export function pushRing(list, entry, max) {
   const next = (list || []).concat([entry]);
@@ -200,21 +298,41 @@ export function formatBytes(n) {
   return `${(n / (1024 * 1024)).toFixed(2)} MB`;
 }
 
-function formatMs(ms) {
+export function formatMs(ms) {
   if (!(ms > 0)) return "0 ms";
-  return ms < 1000 ? `${Math.round(ms)} ms` : `${(ms / 1000).toFixed(1)} s`;
+  if (ms < 1000) return `${Math.round(ms)} ms`;
+  if (ms < 60000) return `${(ms / 1000).toFixed(1)} s`;
+  return `${Math.floor(ms / 60000)}m ${Math.round((ms % 60000) / 1000)}s`;
+}
+
+/** Wall-clock, seconds included: a ten-minute walk-away has to be auditable after the fact. */
+export function stamp(ms) {
+  if (!ms) return "";
+  const d = new Date(ms);
+  const p = (n) => String(n).padStart(2, "0");
+  return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+
+/** Describes a server-picked candidate the way probe 2 needs it labelled — the rate and channel
+ *  count ARE the measurement's label, so a slot filled by the wrong kind of file is visible. */
+export function describeCandidate(candidate) {
+  if (!candidate) return "none in this library";
+  const bits = [candidate.extension];
+  if (candidate.sampleRateHz) bits.push(`${Math.round(candidate.sampleRateHz / 100) / 10} kHz`);
+  if (candidate.channels) bits.push(candidate.channels === 1 ? "mono" : `${candidate.channels} ch`);
+  bits.push(formatBytes(candidate.sizeBytes));
+  return `${candidate.title} — ${bits.join(" · ")}`;
 }
 
 // ── Persistence ──────────────────────────────────────────────────────────────────────────────────
 // Namespaced like every other music key. Written on every observation, not at the end of a run: a
 // screen-off session that ends in a reload must still leave its evidence behind.
 
-const K_PICKS = "music.mse.picks";
 const K_CENSUS = "music.mse.census";
 const K_FETCH = "music.mse.fetchlog";
 const K_RESULTS = "music.mse.results";
 const CENSUS_MAX = 600;
-const FETCH_MAX = 200;
+const FETCH_MAX = 300;
 
 function loadJson(key, fallback) {
   try {
@@ -289,6 +407,22 @@ function appendChunk(sb, bytes) {
   });
 }
 
+/** remove() as a promise. Eviction is what makes an hours-long queue cost the same as a short one —
+ *  and what lets the screen-off phase play for as long as it is left alone. */
+function removeRange(sb, start, end) {
+  return new Promise((resolve) => {
+    if (!(end > start)) { resolve(); return; }
+    const done = () => { sb.removeEventListener("updateend", done); resolve(); };
+    sb.addEventListener("updateend", done);
+    try {
+      sb.remove(start, end);
+    } catch {
+      sb.removeEventListener("updateend", done);
+      resolve();
+    }
+  });
+}
+
 /** Attaches a fresh MediaSource to the element and resolves once it is open. */
 function openMediaSource(audio) {
   const ms = new window.MediaSource();
@@ -304,6 +438,22 @@ function openMediaSource(audio) {
   });
 }
 
+/**
+ * play() that ALWAYS settles, and says which way.
+ *
+ * Measured in a real browser: `await audio.play()` on an element whose buffer is empty (because the
+ * fetch that was meant to fill it failed) stays pending indefinitely — it is not rejected, it simply
+ * never resolves. That hung the screen-off phase with no verdict recorded at all, which is the one
+ * outcome a walk-away test may never have: a person comes back after ten minutes to a page that says
+ * nothing. An awaited promise with no timeout is a silent failure mode in any probe.
+ */
+async function playOrReport(audio, timeoutMs = 8000) {
+  return Promise.race([
+    audio.play().then(() => "playing", (e) => `play() refused: ${e && e.message}`),
+    new Promise((resolve) => setTimeout(() => resolve("play() never settled"), timeoutMs)),
+  ]);
+}
+
 function bufferedEnd(sb) {
   try {
     return sb.buffered.length ? sb.buffered.end(sb.buffered.length - 1) : 0;
@@ -316,6 +466,10 @@ const JOIN_PREFIX_BYTES = 3 * 1024 * 1024; // enough audio either side of the jo
 const QUOTA_CHUNK_BYTES = 512 * 1024;
 const JOIN_LEAD_SEC = 3;                    // start this far before the boundary — the test is the JOIN, not the track
 const JOIN_WATCH_MS = 25000;
+const SLEEP_FILL_BYTES = 4 * 1024 * 1024;   // per append cycle in the screen-off phase
+const SLEEP_TARGET_AHEAD_SEC = 60;          // top up whenever the buffer holds less than this ahead
+const SLEEP_KEEP_BEHIND_SEC = 20;           // …and drop everything older, so 10 minutes costs what 1 does
+const SLEEP_PUMP_MS = 5000;
 
 // Media events worth a census entry. `timeupdate` IS included here (unlike musicDiag's list, which
 // deliberately excludes it to keep its ring readable) because on this page its ABSENCE is the
@@ -328,42 +482,74 @@ const CENSUS_TICK_MS = 5000;
 
 export default function MusicMseProbe() {
   const audioRef = useRef(null);
-  const sessionRef = useRef(null);   // { ms, sb, mime, stop() }
+  const sessionRef = useRef(null);
   const censusRef = useRef([]);
   const fetchLogRef = useRef([]);
-  const pumpRef = useRef(null);      // the screen-off fetch pump's mutable state
+  const pumpRef = useRef(null);
   const lastPersistRef = useRef(0);  // see logCensus: the ring must not cost more than it measures
+  const seqRef = useRef(0);
 
-  const [picks, setPicks] = useState(() => loadJson(K_PICKS, {}));
   const [results, setResults] = useState(() => loadJson(K_RESULTS, {}));
   const [census, setCensus] = useState(() => loadJson(K_CENSUS, []));
   const [fetchLog, setFetchLog] = useState(() => loadJson(K_FETCH, []));
-  const [busy, setBusy] = useState(null);
-  const [query, setQuery] = useState("");
-  const [searchHits, setSearchHits] = useState([]);
-  const [slot, setSlot] = useState("a");
-  const [caps, setCapsState] = useState(null);
-  const [running, setRunning] = useState(false);
+  const [candidates, setCandidates] = useState(null);
+  const [candidateError, setCandidateError] = useState(null);
+  const [caps, setCaps] = useState(null);
+  const [phase, setPhase] = useState("idle");   // idle → running → sleeping (→ stopped)
+  const [step, setStep] = useState(null);
+  const [advanced, setAdvanced] = useState(false);
 
-  useEffect(() => {
-    censusRef.current = census;
-    fetchLogRef.current = fetchLog;
-    // Only on mount: these refs shadow state so the event handlers can push without re-subscribing.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Turn the diag ring on for the duration: this page is diagnostics, and a run that produces no
+  // musicDiag entries alongside its own is half a record. It is NOT a gate — the first version put a
+  // "turn diagnostics on" screen in front of the page, whose button flipped a module-level flag that
+  // this component never re-read, so the page never left that screen and every tap did nothing. A
+  // diagnostics ROUTE is its own gate; nobody arrives at this URL by accident.
+  useEffect(() => { setDiagEnabled(true); }, []);
 
   const isTypeSupported = useCallback((mime) => {
-    const MS = window.MediaSource || window.ManagedMediaSource;
-    return !!(MS && MS.isTypeSupported && MS.isTypeSupported(mime));
+    const MS = window.MediaSource;
+    try {
+      return !!(MS && MS.isTypeSupported && MS.isTypeSupported(mime));
+    } catch {
+      return false;
+    }
   }, []);
 
   useEffect(() => {
-    setCapsState(buildCapabilityMatrix({
-      isTypeSupported: (mime) => window.MediaSource.isTypeSupported(mime),
+    setCaps(buildCapabilityMatrix({
+      isTypeSupported,
       hasMediaSource: typeof window.MediaSource !== "undefined",
       hasManagedMediaSource: typeof window.ManagedMediaSource !== "undefined",
     }));
+  }, [isTypeSupported]);
+
+  // Candidates are fetched on mount, not on demand: by the time a thumb is on the button the page
+  // must already know what it is going to play.
+  //
+  // ⚠ And the gate AWAITS them (see ensureCandidates) rather than reading whatever state happened to
+  // have arrived. Measured in a real browser: a tap that lands before this fetch returns — which on
+  // a phone is every tap, because the page is opened and pressed immediately — ran the whole gate
+  // against an empty candidate set and reported "SKIPPED — the library has no track for this join"
+  // for all five probes, in the same second, over a library that had every one of them. A race that
+  // reports a confident wrong answer is worse than one that hangs.
+  const candidatesRef = useRef(null);
+  const ensureCandidates = useCallback(async () => {
+    if (candidatesRef.current) return candidatesRef.current;
+    const r = await MovieAPI.getMusicProbeCandidates();
+    if (!r.ok) throw new Error(`candidates answered ${r.status}`);
+    const body = await r.json();
+    candidatesRef.current = body;
+    setCandidates(body);
+    return body;
   }, []);
+
+  useEffect(() => {
+    let live = true;
+    ensureCandidates().catch((e) => {
+      if (live) setCandidateError(String(e && e.message ? e.message : e));
+    });
+    return () => { live = false; };
+  }, [ensureCandidates]);
 
   const record = useCallback((key, value) => {
     setResults((prev) => {
@@ -400,29 +586,6 @@ export default function MusicMseProbe() {
     setFetchLog(fetchLogRef.current);
   }, []);
 
-  // ── Track picking ──────────────────────────────────────────────────────────────────────────────
-  // Search by title, tap a result to fill the selected slot. Deliberately manual: only a person
-  // knows which of their tracks is the 96 kHz one, and the minted payload reports the rate back so a
-  // pick can be confirmed or rejected rather than assumed.
-  const runSearch = useCallback(async (q) => {
-    if (!q || q.trim().length < 2) { setSearchHits([]); return; }
-    try {
-      const r = await MovieAPI.searchMusicTracks(q.trim());
-      const body = await r.json();
-      setSearchHits(body.tracks || []);
-    } catch {
-      setSearchHits([]);
-    }
-  }, []);
-
-  const assign = useCallback((track) => {
-    setPicks((prev) => {
-      const next = { ...prev, [slot]: { id: track.id, title: track.title, artist: track.artistName } };
-      saveJson(K_PICKS, next);
-      return next;
-    });
-  }, [slot]);
-
   /** Mints through the BATCH endpoint — which also gives Phase 0's new route a real exerciser on the
    *  gate run, on the phone, rather than only ever being called by code that doesn't exist yet. */
   const mint = useCallback(async (ids) => {
@@ -450,7 +613,6 @@ export default function MusicMseProbe() {
       try { if (session.ms.readyState === "open") session.ms.endOfStream(); } catch { /* fine */ }
       if (session.detach) session.detach();
     }
-    setRunning(false);
   }, []);
 
   useEffect(() => teardown, [teardown]);
@@ -459,7 +621,6 @@ export default function MusicMseProbe() {
   const startSession = useCallback(async (mime) => {
     teardown();
     const audio = audioRef.current;
-    audio.crossOrigin = "anonymous";
     const ms = await openMediaSource(audio);
     const sb = ms.addSourceBuffer(mime);
     // "sequence" so appended tracks land back-to-back without computing timestamps — the mechanism
@@ -495,22 +656,33 @@ export default function MusicMseProbe() {
         document.removeEventListener("visibilitychange", onVisibility);
       },
     };
-    setRunning(true);
     return sessionRef.current;
   }, [logCensus, teardown]);
 
-  // ── Probe 1 / 2: real bytes across a changeType ────────────────────────────────────────────────
-  // One routine, two pickers. Probe 1 is the load-bearing pair (a real MP3 and a real FLAC); probe 2
-  // is the same join with a 96 kHz track and a mono track, which is where the residual risk lives —
-  // the plan's judgement is that the codec switch is fine and the SAMPLE RATE switch is the open
-  // question.
-  const runJoin = useCallback(async (slotA, slotB, key) => {
-    const a = picks[slotA];
-    const b = picks[slotB];
-    if (!a || !b) { record(key, { verdict: "skipped", detail: "pick two tracks first" }); return; }
-    setBusy(key);
+  // ── The join probe (used for MP3↔FLAC, 96 kHz and mono) ────────────────────────────────────────
+  // Appends a PREFIX of each track rather than the whole thing: a whole FLAC-fMP4 exceeds the ~12 MB
+  // quota, which would fail the probe for a reason that isn't the join. It is also exactly the shape
+  // Phase 2's append loop has.
+  const runJoin = useCallback(async (key, from, to) => {
+    if (!from || !to) {
+      record(key, {
+        status: "skip",
+        verdict: `SKIPPED — the library has no ${!from ? "first" : "second"} track for this join`,
+      });
+      return;
+    }
+    if (from.id === to.id) {
+      // The same file on both sides is not a join. Saying so is a result; running it and reporting
+      // PASS would be a measurement of nothing, dressed as the one that matters.
+      record(key, { status: "skip", verdict: "SKIPPED — only one candidate, so there is no switch to test" });
+      return;
+    }
+    setStep(`${PROBE_STEPS.find((s) => s.key === key).label}…`);
     try {
-      const [pa, pb] = await mint([a.id, b.id]);
+      const ids = from.id === to.id ? [from.id] : [from.id, to.id];
+      const minted = await mint(ids);
+      const pa = minted[0];
+      const pb = minted.length === 1 ? minted[0] : minted[1];
       const ta = treatmentFor(pa, isTypeSupported);
       const tb = treatmentFor(pb, isTypeSupported);
       if (!ta || !tb) throw new Error("no supported treatment for one of these tracks");
@@ -526,11 +698,21 @@ export default function MusicMseProbe() {
       });
       const boundary = bufferedEnd(sb);
 
-      // The switch itself. Same MIME on both sides (two universal-lane tracks, say) needs no
-      // changeType at all — calling it anyway would be testing a different thing than the queue does.
+      // The switch itself.
+      //
+      // ⚠ The MIME string is NOT the only thing that can change. Measured here, on a real Chrome:
+      // appending a 96 kHz FLAC-fMP4 after a 44.1 kHz one — identical MIME, so the first version of
+      // this probe called no changeType at all — makes the SourceBuffer raise an error after ~200 KB.
+      // That is precisely the plan's residual risk (the rate switch, not the codec switch), and
+      // `changeType` is its stated mitigation, so the probe has to actually perform it: a switch is
+      // any change of MIME, sample rate or channel count.
+      const switchReason = switchReasonFor(
+        { mime: ta.mime, sampleRateHz: pa.sampleRateHz, channels: pa.channels },
+        { mime: tb.mime, sampleRateHz: pb.sampleRateHz, channels: pb.channels },
+      );
       let changeTypeUsed = false;
       let changeTypeError = null;
-      if (tb.mime !== ta.mime) {
+      if (switchReason) {
         try {
           sb.changeType(tb.mime);
           changeTypeUsed = true;
@@ -559,16 +741,17 @@ export default function MusicMseProbe() {
       // avoid — so it is counted, not just tolerated.
       let waitingCount = 0;
       const onWaiting = () => { waitingCount += 1; };
+      audio.muted = false;
+      audio.currentTime = Math.max(0, boundary - JOIN_LEAD_SEC);
+      const playOutcome = await playOrReport(audio);
+      const played = playOutcome === "playing";
+      if (!played) appendError = appendError || playOutcome;
+      // Counting starts only once playback is under way. A SEEK fires `waiting` on its own — Chrome
+      // does it every time — and counting that reported "crossed, but the buffer went dry" on joins
+      // that were in fact continuous. A stall detector that fires on its own setup is worse than no
+      // stall detector: it condemns the healthy case.
       audio.addEventListener("waiting", onWaiting);
       audio.addEventListener("stalled", onWaiting);
-      audio.currentTime = Math.max(0, boundary - JOIN_LEAD_SEC);
-      let played = false;
-      try {
-        await audio.play();
-        played = true;
-      } catch (e) {
-        appendError = appendError || `play() refused: ${e && e.message}`;
-      }
 
       const target = Math.min(boundary + 1.5, total);
       const deadline = Date.now() + JOIN_WATCH_MS;
@@ -583,39 +766,42 @@ export default function MusicMseProbe() {
       audio.removeEventListener("stalled", onWaiting);
       audio.pause();
 
+      const passed = !changeTypeError && !appendError && crossed && waitingCount === 0;
       record(key, {
-        verdict: changeTypeError ? "changeType REFUSED"
-          : crossed && waitingCount === 0 ? "continuous across the join"
-            : crossed ? "crossed, but the buffer went dry"
-              : "did NOT cross the join",
-        a: `${a.title} — ${pa.mimeType} ${pa.sampleRateHz || "?"} Hz / ${pa.channels || "?"} ch → ${ta.lane}`,
-        b: `${b.title} — ${pb.mimeType} ${pb.sampleRateHz || "?"} Hz / ${pb.channels || "?"} ch → ${tb.lane}`,
+        status: passed ? "pass" : "fail",
+        verdict: changeTypeError ? "FAIL — changeType refused"
+          : appendError ? `FAIL — ${appendError}`
+            : crossed && waitingCount === 0 ? "PASS — continuous across the join"
+              : crossed ? "FAIL — crossed, but the buffer went dry"
+                : "FAIL — did not cross the join",
+        from: `${from.title} — ${pa.mimeType} ${pa.sampleRateHz || "?"} Hz / ${pa.channels || "?"} ch → ${ta.lane}`,
+        to: `${to.title} — ${pb.mimeType} ${pb.sampleRateHz || "?"} Hz / ${pb.channels || "?"} ch → ${tb.lane}`,
         appended: `${formatBytes(appendedA)} + ${formatBytes(appendedB)}`,
         boundarySec: Math.round(boundary * 100) / 100,
         bufferedSec: Math.round(total * 100) / 100,
         reachedSec: Math.round(reached * 100) / 100,
+        switchReason: switchReason || "none — nothing differed",
         changeTypeUsed,
-        changeTypeError,
         waitingCount,
-        appendError,
       });
     } catch (e) {
-      record(key, { verdict: "failed", detail: String(e && e.message ? e.message : e) });
+      record(key, { status: "fail", verdict: `FAIL — ${String(e && e.message ? e.message : e)}` });
     } finally {
-      setBusy(null);
       teardown();
     }
-  }, [picks, mint, isTypeSupported, startSession, record, teardown]);
+  }, [mint, isTypeSupported, startSession, record, teardown]);
 
-  // ── Probe 3: what the audio SourceBuffer quota actually is ─────────────────────────────────────
+  // ── The quota probe ────────────────────────────────────────────────────────────────────────────
   // Chrome's default is understood to be ~12 MB — less than one large FLAC — and every append-window
   // number in the plan is sized from the real value. Appends run with the element PAUSED AT ZERO on
   // purpose: Chrome evicts what is behind the playhead, so a playing element would quietly make room
   // and the measurement would come back as "no limit found".
-  const runQuota = useCallback(async () => {
-    const pick = picks.quota || picks.b || picks.a;
-    if (!pick) { record("quota", { verdict: "skipped", detail: "pick a track first" }); return; }
-    setBusy("quota");
+  const runQuota = useCallback(async (pick) => {
+    if (!pick) {
+      record("quota", { status: "skip", verdict: "SKIPPED — no candidate track" });
+      return;
+    }
+    setStep("SourceBuffer quota…");
     try {
       const [payload] = await mint([pick.id]);
       const treatment = treatmentFor(payload, isTypeSupported);
@@ -652,367 +838,404 @@ export default function MusicMseProbe() {
       }
 
       record("quota", {
+        // A quota that is never reached is not a failure — it is a browser that took 24 MB × 40
+        // without complaint, which is worth knowing and is not a reason to stop the gate.
+        status: "pass",
         verdict: quotaAt === "QuotaExceededError"
-          ? `quota reached at ${formatBytes(appended)}`
-          : quotaAt ? `append failed: ${quotaAt}` : `no limit hit after ${formatBytes(appended)}`,
+          ? `PASS — quota is ${formatBytes(appended)}`
+          : quotaAt ? `PASS (with a caveat) — append failed at ${formatBytes(appended)}: ${quotaAt}`
+            : `PASS — no limit hit after ${formatBytes(appended)}`,
         track: `${pick.title} → ${treatment.lane}`,
         appendedBytes: appended,
         bufferedSec: Math.round(bufferedEnd(sb) * 10) / 10,
-        chunkBytes: chunks[0] ? chunks[0].byteLength : 0,
         chunkCount: chunkRanges(appended, QUOTA_CHUNK_BYTES).length,
       });
     } catch (e) {
-      record("quota", { verdict: "failed", detail: String(e && e.message ? e.message : e) });
+      record("quota", { status: "fail", verdict: `FAIL — ${String(e && e.message ? e.message : e)}` });
     } finally {
-      setBusy(null);
       teardown();
     }
-  }, [picks, mint, isTypeSupported, startSession, record, teardown]);
+  }, [mint, isTypeSupported, startSession, record, teardown]);
 
-  // ── Probe 4 / 5: the screen-off session ────────────────────────────────────────────────────────
-  // THE gate. Track A plays from the SourceBuffer; meanwhile the page keeps issuing the fetch it
-  // would issue for track n+1, logging the moment each one is issued and the moment it completes. If
-  // those fetches stop landing once the screen goes off, the design is falsified — MSE moves fetching
-  // back into script, and this is the bet being called.
+  // ── The screen-off phase (the gate itself) ─────────────────────────────────────────────────────
+  // Audible MSE playback that keeps itself alive by fetching, cycling the candidates forever. Every
+  // top-up is a real "next track" fetch, logged at issue AND at completion with the page's visibility
+  // at both moments — so the question the plan calls the design's central bet is answered by the
+  // mechanism that has to survive rather than by a synthetic request alongside it.
   //
-  // The pump is driven from `updateend` and `timeupdate` as well as an interval, because the interval
-  // is the one trigger known NOT to survive a hidden page. The first successful fetch is APPENDED, so
-  // the boundary is crossed while hidden too; later ones are measurements and their bytes are
-  // discarded.
-  const startSleepSession = useCallback(async ({ pump }) => {
-    const a = picks.a;
-    const b = picks.b || picks.a;
-    if (!a) { record(pump ? "sleepFetch" : "census", { verdict: "skipped", detail: "pick track A first" }); return; }
-    setBusy(pump ? "sleepFetch" : "census");
+  // ⚠ AUDIBLE, NOT MUTED. A hidden page's licence to keep running is that it is playing audio the
+  // user can hear; Chrome's background exemption keys on audibility, so a muted element would make
+  // the whole measurement meaningless — it would be measuring a page that had already lost the
+  // licence for a different reason.
+  const startSleepPhase = useCallback(async (list) => {
+    const playable = (list || []).filter(Boolean);
+    if (playable.length === 0) {
+      record("sleep", { status: "skip", verdict: "SKIPPED — no candidate tracks to play" });
+      return;
+    }
+    setStep("screen-off phase");
     try {
-      const [pa, pb] = await mint(b.id === a.id ? [a.id] : [a.id, b.id]).then((r) => (r.length === 1 ? [r[0], r[0]] : r));
-      const ta = treatmentFor(pa, isTypeSupported);
-      const tb = treatmentFor(pb, isTypeSupported);
-      if (!ta) throw new Error("no supported treatment for track A");
-      if (pump && !tb) throw new Error("no supported treatment for track B — nothing to fetch");
+      const minted = await mint(playable.map((t) => t.id));
+      const lanes = minted
+        .map((payload) => ({ payload, treatment: treatmentFor(payload, isTypeSupported) }))
+        .filter((l) => l.treatment);
+      if (lanes.length === 0) throw new Error("no supported treatment for any candidate");
 
-      const session = await startSession(ta.mime);
+      const session = await startSession(lanes[0].treatment.mime);
       const { sb } = session;
       const audio = audioRef.current;
+      audio.muted = false;
+      audio.volume = 1;
 
-      // Fill with as much of A as the buffer will take. A QuotaExceeded here is not a failure of the
-      // session — it is the quota, which probe 3 measures properly; we simply stop filling and play
-      // what we have.
-      let stoppedBy = null;
-      try {
-        await fetchChunks(ta.url, {
-          onChunk: async (chunk) => {
-            if (stoppedBy) return;
-            try { await appendChunk(sb, chunk); } catch (e) { stoppedBy = e && e.name ? e.name : String(e); }
-          },
-        });
-      } catch (e) {
-        stoppedBy = stoppedBy || String(e && e.message ? e.message : e);
-      }
-      logCensus("probe:filled", { sec: Math.round(bufferedEnd(sb)), stoppedBy });
-
-      await audio.play();
-      logCensus("probe:playing", null);
-
-      if (!pump) {
-        record("census", {
-          verdict: "recording — turn the screen off, leave it, then come back",
-          track: `${a.title} → ${ta.lane}`,
-          bufferedSec: Math.round(bufferedEnd(sb)),
-        });
-        return;
-      }
-
-      const state = { stopped: false, inFlight: false, attempts: 0, appended: false, lastAt: 0 };
+      const state = { stopped: false, busy: false, i: 0, cycles: 0 };
       pumpRef.current = state;
 
-      const attempt = async () => {
-        if (state.stopped || state.inFlight || state.attempts >= 40) return;
-        if (Date.now() - state.lastAt < 5000) return;
-        state.inFlight = true;
-        state.lastAt = Date.now();
-        const seq = (state.attempts += 1);
-        const issuedAt = Date.now();
-        const hiddenAtIssue = document.visibilityState === "hidden";
-        // Written BEFORE the fetch resolves. A fetch that never completes is the finding, and it
-        // leaves no trace at all unless its issue was recorded on its own.
-        logFetch({ seq, issuedAt, hiddenAtIssue, state: "issued" });
-        let bytes = 0;
-        let error = null;
+      // One cycle: evict what has been played, then fetch and append the next candidate. Both halves
+      // matter — without eviction the quota ends the session in minutes, and the phase has to last
+      // longer than a person's walk away.
+      const cycle = async () => {
+        if (state.stopped || state.busy || !sessionRef.current) return;
+        const ahead = bufferedEnd(sb) - (audio.currentTime || 0);
+        if (ahead > SLEEP_TARGET_AHEAD_SEC) return;
+        state.busy = true;
         try {
-          bytes = await fetchChunks(tb.url, {
-            maxBytes: state.appended ? 512 * 1024 : Infinity,
-            onChunk: async (chunk) => {
-              // Only the first success is appended — after that the buffer would just fill up.
-              if (!state.appended) {
-                if (tb.mime !== session.mime) {
-                  try { sb.changeType(tb.mime); session.mime = tb.mime; } catch { /* recorded by the join probe */ }
+          const keepFrom = (audio.currentTime || 0) - SLEEP_KEEP_BEHIND_SEC;
+          if (keepFrom > 0) await removeRange(sb, 0, keepFrom);
+
+          const lane = lanes[state.i % lanes.length];
+          state.i += 1;
+          if (state.i % lanes.length === 0) state.cycles += 1;
+
+          if (lane.treatment.mime !== sessionRef.current.mime) {
+            try {
+              sb.changeType(lane.treatment.mime);
+              sessionRef.current.mime = lane.treatment.mime;
+            } catch (e) {
+              logCensus("changeType:refused", { error: String(e && e.message ? e.message : e) });
+            }
+          }
+
+          const seq = (seqRef.current += 1);
+          const issuedAt = Date.now();
+          const hiddenAtIssue = document.visibilityState === "hidden";
+          // Written BEFORE the fetch resolves. A fetch that never completes is THE finding, and it
+          // leaves no trace at all unless its issue was recorded on its own.
+          logFetch({ seq, trackId: lane.payload.trackId, issuedAt, hiddenAtIssue, state: "issued" });
+
+          let bytes = 0;
+          let error = null;
+          try {
+            state.lastBytes = 0;
+            bytes = await fetchChunks(lane.treatment.url, {
+              maxBytes: SLEEP_FILL_BYTES,
+              onChunk: async (chunk) => {
+                try {
+                  await appendChunk(sb, chunk);
+                } catch (e) {
+                  // Quota mid-cycle: drop more of what is behind and carry on. Stopping here would
+                  // end the audio, which ends the measurement.
+                  logCensus("append:refused", { name: e && e.name });
+                  const back = (audio.currentTime || 0) - 5;
+                  if (back > 0) await removeRange(sb, 0, back);
                 }
-                try { await appendChunk(sb, chunk); } catch { /* quota: the measurement is the fetch */ }
-              }
-            },
+              },
+            });
+          } catch (e) {
+            error = String(e && e.message ? e.message : e);
+          }
+          state.lastError = error;
+          state.lastBytes = bytes;
+          const completedAt = Date.now();
+          logFetch({
+            seq,
+            trackId: lane.payload.trackId,
+            issuedAt,
+            completedAt,
+            elapsedMs: completedAt - issuedAt,
+            hiddenAtIssue,
+            hiddenAtCompletion: document.visibilityState === "hidden",
+            bytes,
+            error,
+            state: error ? "failed" : "completed",
           });
-          if (!state.appended) state.appended = true;
-        } catch (e) {
-          error = String(e && e.message ? e.message : e);
+        } finally {
+          state.busy = false;
         }
-        const completedAt = Date.now();
-        logFetch({
-          seq,
-          issuedAt,
-          completedAt,
-          elapsedMs: completedAt - issuedAt,
-          hiddenAtIssue,
-          hiddenAtCompletion: document.visibilityState === "hidden",
-          bytes,
-          error,
-          state: error ? "failed" : "completed",
-        });
-        state.inFlight = false;
       };
 
+      // Prime the buffer before playing: the phase must start with audio, not with a wait. If the
+      // priming fetch brought back nothing there is no point starting a ten-minute walk-away — say
+      // why now, while someone is still holding the phone.
+      await cycle();
+      if (bufferedEnd(sb) <= 0) throw new Error(state.lastError || "no audio could be fetched to play");
+      const playOutcome = await playOrReport(audio);
+      logCensus("probe:playing", { bufferedSec: Math.round(bufferedEnd(sb)), playOutcome });
+      if (playOutcome !== "playing") throw new Error(playOutcome);
+
       // Three triggers, on purpose. The interval is the accelerator that only works awake; the media
-      // and SourceBuffer events are the ones the clock rule says survive.
-      const onTick = () => { attempt(); };
-      const timer = window.setInterval(onTick, 7000);
-      audio.addEventListener("timeupdate", onTick);
-      sb.addEventListener("updateend", onTick);
-      document.addEventListener("visibilitychange", onTick);
+      // and SourceBuffer events are the ones the clock rule says survive a hidden page.
+      const onTrigger = () => { cycle(); };
+      const timer = window.setInterval(onTrigger, SLEEP_PUMP_MS);
+      audio.addEventListener("timeupdate", onTrigger);
+      audio.addEventListener("waiting", onTrigger);
+      audio.addEventListener("progress", onTrigger);
+      sb.addEventListener("updateend", onTrigger);
+      document.addEventListener("visibilitychange", onTrigger);
       const prevDetach = session.detach;
       session.detach = () => {
         window.clearInterval(timer);
-        audio.removeEventListener("timeupdate", onTick);
-        try { sb.removeEventListener("updateend", onTick); } catch { /* gone with the source */ }
-        document.removeEventListener("visibilitychange", onTick);
+        audio.removeEventListener("timeupdate", onTrigger);
+        audio.removeEventListener("waiting", onTrigger);
+        audio.removeEventListener("progress", onTrigger);
+        try { sb.removeEventListener("updateend", onTrigger); } catch { /* gone with the source */ }
+        document.removeEventListener("visibilitychange", onTrigger);
         prevDetach();
       };
 
-      record("sleepFetch", {
-        verdict: "running — turn the screen off, wait a few minutes, then come back and read the log",
-        a: `${a.title} → ${ta.lane}`,
-        b: `${b.title} → ${tb ? tb.lane : "?"}`,
-        bufferedSec: Math.round(bufferedEnd(sb)),
+      setPhase("sleeping");
+      record("sleep", {
+        status: "run",
+        verdict: "RUNNING — turn the screen off and come back in 10 minutes",
+        playing: lanes.map((l) => l.treatment.lane).join(" → "),
+        startedAt: Date.now(),
       });
     } catch (e) {
-      record(pump ? "sleepFetch" : "census", { verdict: "failed", detail: String(e && e.message ? e.message : e) });
+      record("sleep", { status: "fail", verdict: `FAIL — ${String(e && e.message ? e.message : e)}` });
       teardown();
-    } finally {
-      setBusy(null);
+      setPhase("idle");
     }
-  }, [picks, mint, isTypeSupported, startSession, record, logCensus, logFetch, teardown]);
+  }, [mint, isTypeSupported, startSession, record, logCensus, logFetch, teardown]);
 
-  const gaps = useMemo(() => gapDistribution(census), [census]);
-  const hiddenFetches = useMemo(
-    () => fetchLog.filter((f) => f.hiddenAtIssue && f.state !== "issued"),
-    [fetchLog],
+  // ── The one button ─────────────────────────────────────────────────────────────────────────────
+  const runGate = useCallback(async () => {
+    setPhase("running");
+    // A run starts from empty. Two runs' evidence in one ring is worse than none: the gap
+    // distribution would span the time the phone spent between them, which is not a measurement of
+    // anything.
+    censusRef.current = [];
+    fetchLogRef.current = [];
+    seqRef.current = 0;
+    saveJson(K_CENSUS, []);
+    saveJson(K_FETCH, []);
+    setCensus([]);
+    setFetchLog([]);
+    const fresh = { startedAt: Date.now() };
+    saveJson(K_RESULTS, fresh);
+    setResults(fresh);
+
+    const matrix = buildCapabilityMatrix({
+      isTypeSupported,
+      hasMediaSource: typeof window.MediaSource !== "undefined",
+      hasManagedMediaSource: typeof window.ManagedMediaSource !== "undefined",
+    });
+    setCaps(matrix);
+    record("caps", {
+      status: matrix.anyTreatment ? "pass" : "fail",
+      verdict: matrix.anyTreatment
+        ? `PASS — ${matrix.rows.filter((r) => !r.trap && r.supported).map((r) => r.label).join(", ")}`
+        : "FAIL — this browser has no usable MSE treatment; it keeps the deck player (rung 7)",
+      trapAccepted: matrix.rows.some((r) => r.trap && r.supported),
+      managedMediaSource: matrix.hasManagedMediaSource,
+      userAgent: navigator.userAgent,
+    });
+
+    if (!matrix.anyTreatment) {
+      ["join", "joinHires", "joinMono", "quota", "sleep"].forEach((key) => record(key, {
+        status: "skip",
+        verdict: "SKIPPED — nothing to append into on this browser",
+      }));
+      setStep(null);
+      setPhase("idle");
+      return;
+    }
+
+    // Awaited, never read from state: see ensureCandidates for the race this closes.
+    let picks = {};
+    try {
+      picks = await ensureCandidates();
+    } catch (e) {
+      const why = `SKIPPED — the server would not name any tracks (${String(e && e.message ? e.message : e)})`;
+      ["join", "joinHires", "joinMono", "quota", "sleep"].forEach((key) => record(key, { status: "skip", verdict: why }));
+      setStep(null);
+      setPhase("idle");
+      return;
+    }
+    const base = picks.mp3 || picks.flac;
+    await runJoin("join", picks.mp3, picks.flac);
+    await runJoin("joinHires", picks.flac || base, picks.hires);
+    await runJoin("joinMono", base, picks.mono);
+    await runQuota(picks.flac || base);
+    await startSleepPhase([picks.mp3, picks.flac, picks.hires, picks.mono]);
+    setStep(null);
+  }, [ensureCandidates, isTypeSupported, record, runJoin, runQuota, startSleepPhase]);
+
+  const stop = useCallback(() => {
+    teardown();
+    setPhase("idle");
+    setStep(null);
+    record("sleep", { status: "run", verdict: "stopped by hand" });
+  }, [teardown, record]);
+
+  const summary = useMemo(
+    () => summarizeRun({ results, fetchLog, census }),
+    [results, fetchLog, census],
   );
-  const hiddenIssued = useMemo(
-    () => new Set(fetchLog.filter((f) => f.hiddenAtIssue).map((f) => f.seq)).size,
-    [fetchLog],
-  );
 
-  // Same gate as the diag panel (musicDiag.js): `?diag=1` turns it on and is remembered, so the test
-  // really is "visit a URL on the phone" — and the page stays out of the way of ordinary listening.
-  if (!diagEnabled()) {
-    return (
-      <div className="mse-probe">
-        <h1>MSE probe</h1>
-        <p>
-          Diagnostics are off. Add <code>?diag=1</code> to the URL, or:
-        </p>
-        <button onClick={() => setDiagEnabled(true)}>Turn diagnostics on</button>
-      </div>
-    );
-  }
-
+  // The button waits for the tracks as well as the capability probe. The gate awaits them anyway,
+  // but a button that can be pressed before the page knows what it will play is a button that
+  // reports an answer about a library it had not yet looked at.
+  const waitingForCandidates = !candidates && !candidateError;
+  const ready = phase === "idle" && !!caps && !waitingForCandidates;
   const slots = [
-    ["a", "A — an MP3"],
-    ["b", "B — a FLAC"],
-    ["hires", "96 kHz"],
+    ["mp3", "MP3"],
+    ["flac", "FLAC 44.1 kHz"],
+    ["hires", "FLAC > 48 kHz"],
     ["mono", "mono"],
-    ["quota", "big FLAC"],
   ];
 
   return (
     <div className="mse-probe">
-      <h1>MSE probe — Phase 1 gate</h1>
-      <p className="mse-probe-lede">
-        The gate for <code>music-mse-plan.md</code>: real bytes, real appends, on the phone that
-        actually fails. Everything is written to localStorage as it happens, so a reload does not
-        erase the run. Nothing here touches the music player — which means the player must be STOPPED
-        before a run, or two elements will be playing at once and the census will be measuring both.
-      </p>
+      <h1>MSE gate — music-mse-plan.md Phase 1</h1>
 
-      {/* The permanent capability reporter. */}
-      <section>
-        <h2>Capability matrix</h2>
-        {!caps ? <p>probing…</p> : (
-          <>
-            <table className="mse-probe-table">
-              <tbody>
-                {caps.rows.map((row) => (
-                  <tr key={row.key} className={row.trap && row.supported ? "mse-probe-bad" : undefined}>
-                    <td>{row.label}</td>
-                    <td><code>{row.mime}</code></td>
-                    <td className={row.supported ? "mse-probe-yes" : "mse-probe-no"}>
-                      {row.supported ? "supported" : "NO"}
-                    </td>
-                    <td className="mse-probe-note">{row.note}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <p className="mse-probe-note">
-              MediaSource: <strong>{caps.hasMediaSource ? "yes" : "NO"}</strong> · ManagedMediaSource:{" "}
-              <strong>{caps.hasManagedMediaSource ? "yes" : "no"}</strong> · any usable treatment:{" "}
-              <strong>{caps.anyTreatment ? "yes" : "NO — this browser keeps the deck player"}</strong>
-            </p>
-            <p className="mse-probe-note">{navigator.userAgent}</p>
-          </>
-        )}
-      </section>
-
-      <section>
-        <h2>Tracks</h2>
-        <div className="mse-probe-slots">
-          {slots.map(([key, label]) => (
-            <button
-              key={key}
-              className={slot === key ? "mse-probe-slot mse-probe-slot--on" : "mse-probe-slot"}
-              onClick={() => setSlot(key)}
-            >
-              {label}
-              <span>{picks[key] ? picks[key].title : "— none —"}</span>
-            </button>
-          ))}
+      {/* ── The verdicts, first, always. A returning listener has to understand the outcome without
+          reading a single row. ── */}
+      <section className={`mse-probe-verdicts mse-probe-verdicts--${summary.overall.replace(/\s/g, "")}`}>
+        <div className="mse-probe-overall">{summary.overall}</div>
+        <div className="mse-probe-headline">
+          Hidden fetches: <strong>{summary.hidden.completed} of {summary.hidden.issued}</strong> completed
+          {summary.hidden.unanswered > 0 ? ` · ${summary.hidden.unanswered} never answered` : ""}
         </div>
-        <div className="mse-probe-search">
-          <input
-            value={query}
-            placeholder="search titles, then tap a result to fill the selected slot"
-            onChange={(e) => { setQuery(e.target.value); runSearch(e.target.value); }}
-          />
+        <div className="mse-probe-headline">
+          Worst execution gap: <strong>{formatMs(summary.gap.maxGapMs)}</strong>
+          {summary.gap.maxGapAfter ? ` (after ${summary.gap.maxGapAfter})` : ""}
         </div>
-        <ul className="mse-probe-hits">
-          {searchHits.slice(0, 12).map((t) => (
-            <li key={t.id}>
-              <button onClick={() => assign(t)}>{t.title} — {t.artistName}</button>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section>
-        <h2>1 · Real bytes across a changeType</h2>
-        <p className="mse-probe-note">
-          Appends a prefix of A and a prefix of B into ONE SourceBuffer with a <code>changeType</code>{" "}
-          between, then plays across the join and watches the playhead cross it.
-        </p>
-        <button disabled={!!busy} onClick={() => runJoin("a", "b", "join")}>
-          {busy === "join" ? "running…" : "Run A → B join"}
-        </button>
-        <Result value={results.join} />
-      </section>
-
-      <section>
-        <h2>2 · The same join at 96 kHz, and mono</h2>
-        <p className="mse-probe-note">
-          The codec switch is measured fine; the SAMPLE RATE switch is the open question. The minted
-          payload reports each track&apos;s real rate and channel count, so a wrong pick shows up in the
-          result rather than silently passing.
-        </p>
-        <button disabled={!!busy} onClick={() => runJoin("a", "hires", "joinHires")}>
-          {busy === "joinHires" ? "running…" : "Run A → 96 kHz"}
-        </button>
-        <button disabled={!!busy} onClick={() => runJoin("a", "mono", "joinMono")}>
-          {busy === "joinMono" ? "running…" : "Run A → mono"}
-        </button>
-        <Result value={results.joinHires} label="96 kHz" />
-        <Result value={results.joinMono} label="mono" />
-      </section>
-
-      <section>
-        <h2>3 · SourceBuffer quota</h2>
-        <p className="mse-probe-note">
-          Chunk-appends with the element paused at zero (so nothing can be evicted) until
-          <code> QuotaExceededError</code>, and reports the bytes. Every append-window number in the
-          plan is sized from this.
-        </p>
-        <button disabled={!!busy} onClick={runQuota}>
-          {busy === "quota" ? "measuring…" : "Measure quota"}
-        </button>
-        <Result value={results.quota} />
-      </section>
-
-      <section>
-        <h2>4 · Screen-off fetch — the design&apos;s central bet</h2>
-        <p className="mse-probe-note">
-          Starts MSE playback of A, then keeps issuing the fetch for B and logging when each one was
-          issued and when it came back. Start it, turn the screen off, leave it a few minutes, then
-          come back and read the table. If fetches issued while hidden never complete, the design is
-          falsified and Phase 2 must not be built.
-        </p>
-        <button disabled={!!busy} onClick={() => startSleepSession({ pump: true })}>
-          {busy === "sleepFetch" ? "starting…" : "Start screen-off fetch test"}
-        </button>
-        {running && <button onClick={teardown}>Stop</button>}
-        <Result value={results.sleepFetch} />
-        <p className="mse-probe-note">
-          {fetchLog.length} attempts logged · {hiddenIssued} issued while hidden ·{" "}
-          <strong>{hiddenFetches.filter((f) => f.state === "completed").length} of those completed</strong>
-        </p>
-        <div className="mse-probe-log">
-          {fetchLog.slice(-40).map((f, i) => (
-            <div key={`${f.seq}-${f.state}-${i}`}>
-              <code>#{f.seq}</code> {f.state}
-              {f.hiddenAtIssue ? " [issued hidden]" : ""}
-              {f.elapsedMs != null ? ` ${formatMs(f.elapsedMs)}` : ""}
-              {f.bytes ? ` ${formatBytes(f.bytes)}` : ""}
-              {f.error ? ` — ${f.error}` : ""}
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section>
-        <h2>5 · Event census</h2>
-        <p className="mse-probe-note">
-          Every media event, <code>updateend</code>, interval tick and visibility change, timestamped.
-          The worst gap is the headline: it is the lookahead floor for every route in the plan.
-        </p>
-        <button disabled={!!busy} onClick={() => startSleepSession({ pump: false })}>
-          {busy === "census" ? "starting…" : "Play + record census"}
-        </button>
-        <button onClick={() => { censusRef.current = []; saveJson(K_CENSUS, []); setCensus([]); }}>
-          Clear census
-        </button>
-        <Result value={results.census} />
-        <p className="mse-probe-headline">
-          worst gap <strong>{formatMs(gaps.maxGapMs)}</strong>
-          {gaps.maxGapAfter ? ` (after ${gaps.maxGapAfter})` : ""} · median {formatMs(gaps.medianGapMs)} ·
-          p95 {formatMs(gaps.p95GapMs)} · {gaps.count} events over {formatMs(gaps.spanMs)}
-        </p>
         <table className="mse-probe-table">
           <tbody>
-            {gaps.buckets.map((b) => (
-              <tr key={b.label}><td>{b.label}</td><td>{b.count}</td></tr>
+            {summary.probes.map((p) => (
+              <tr key={p.key}>
+                <td className={`mse-probe-status mse-probe-status--${p.status}`}>
+                  {p.status === "pass" ? "PASS" : p.status === "fail" ? "FAIL"
+                    : p.status === "skip" ? "SKIP" : p.status === "run" ? "RUN" : "—"}
+                </td>
+                <td>{p.label}</td>
+                <td className="mse-probe-note">{p.detail}</td>
+                <td className="mse-probe-note">{stamp(p.at)}</td>
+              </tr>
             ))}
           </tbody>
         </table>
       </section>
 
+      {phase === "sleeping" && (
+        <section className="mse-probe-banner">
+          <div className="mse-probe-banner-big">Now turn the screen off<br />and come back in 10 minutes.</div>
+          <p>
+            Audio will keep playing OUT LOUD — that is the test. A hidden page is only allowed to keep
+            running while it is making audible sound, so a muted run would measure nothing.
+          </p>
+          <button onClick={stop}>Stop</button>
+        </section>
+      )}
+
+      {phase !== "sleeping" && (
+        <section>
+          <button
+            className="mse-probe-go"
+            disabled={!ready}
+            onClick={runGate}
+          >
+            {phase === "running" ? `Running… ${step || ""}`
+              : waitingForCandidates ? "choosing tracks…"
+                : "Run the whole gate"}
+          </button>
+          <p className="mse-probe-note">
+            One press runs everything — capability matrix, the joins, the quota — and then starts the
+            screen-off phase by itself. It plays audio out loud on purpose. Nothing else to do.
+          </p>
+          {candidateError && <p className="mse-probe-bad-text">Could not fetch candidates: {candidateError}</p>}
+        </section>
+      )}
+
+      <section>
+        <h2>What it will play</h2>
+        {!candidates && !candidateError && <p className="mse-probe-note">choosing tracks…</p>}
+        {candidates && (
+          <table className="mse-probe-table">
+            <tbody>
+              {slots.map(([key, label]) => (
+                <tr key={key}>
+                  <td>{label}</td>
+                  <td className="mse-probe-note">{describeCandidate(candidates[key])}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
+
+      {caps && (
+        <section>
+          <h2>Capability matrix</h2>
+          <table className="mse-probe-table">
+            <tbody>
+              {caps.rows.map((row) => (
+                <tr key={row.key} className={row.trap && row.supported ? "mse-probe-bad" : undefined}>
+                  <td>{row.label}</td>
+                  <td><code>{row.mime}</code></td>
+                  <td className={row.supported ? "mse-probe-yes" : "mse-probe-no"}>
+                    {row.supported ? "yes" : "NO"}
+                  </td>
+                  <td className="mse-probe-note">{row.note}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="mse-probe-note">
+            MediaSource: <strong>{caps.hasMediaSource ? "yes" : "NO"}</strong> · ManagedMediaSource:{" "}
+            <strong>{caps.hasManagedMediaSource ? "yes" : "no"}</strong>
+          </p>
+          <p className="mse-probe-note">{typeof navigator !== "undefined" ? navigator.userAgent : ""}</p>
+        </section>
+      )}
+
+      <section>
+        <button className="mse-probe-fold" onClick={() => setAdvanced((v) => !v)}>
+          {advanced ? "Hide" : "Show"} the raw record
+        </button>
+        {advanced && (
+          <>
+            <h2>Fetch log</h2>
+            <div className="mse-probe-log">
+              {fetchLog.slice(-60).map((f, i) => (
+                <div key={`${f.seq}-${f.state}-${i}`}>
+                  {stamp(f.issuedAt)} <code>#{f.seq}</code> {f.state}
+                  {f.hiddenAtIssue ? " [issued hidden]" : ""}
+                  {f.elapsedMs != null ? ` ${formatMs(f.elapsedMs)}` : ""}
+                  {f.bytes ? ` ${formatBytes(f.bytes)}` : ""}
+                  {f.error ? ` — ${f.error}` : ""}
+                </div>
+              ))}
+            </div>
+            <h2>Event census</h2>
+            <p className="mse-probe-note">
+              {summary.gap.count} events over {formatMs(summary.gap.spanMs)} · median{" "}
+              {formatMs(summary.gap.medianGapMs)} · p95 {formatMs(summary.gap.p95GapMs)}
+            </p>
+            <table className="mse-probe-table">
+              <tbody>
+                {summary.gap.buckets.map((b) => (
+                  <tr key={b.label}><td>{b.label}</td><td>{b.count}</td></tr>
+                ))}
+              </tbody>
+            </table>
+            <h2>Full results</h2>
+            <pre className="mse-probe-raw">{JSON.stringify(results, null, 1)}</pre>
+          </>
+        )}
+      </section>
+
       {/* One persistent element for every probe — the same shape the engine will have. */}
       <audio ref={audioRef} playsInline />
-    </div>
-  );
-}
-
-function Result({ value, label }) {
-  if (!value) return null;
-  return (
-    <div className="mse-probe-result">
-      <strong>{label ? `${label}: ` : ""}{value.verdict || value.detail}</strong>
-      <pre>{JSON.stringify(value, null, 1)}</pre>
     </div>
   );
 }

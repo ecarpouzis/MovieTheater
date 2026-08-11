@@ -224,6 +224,102 @@ namespace MovieTheater.Controllers
             };
         }
 
+        /// <summary>
+        /// Tracks for the MSE probe page to test itself with, chosen by the server
+        /// (music-mse-plan.md §Phase 1).
+        /// </summary>
+        /// <remarks>
+        /// The probe page's first version made a person pick the tracks, which was the wrong shape
+        /// twice over: the listener does not care WHICH track proves the browser can cross a
+        /// changeType, and picking a 96 kHz file by hand means knowing which of 40,000 tracks is one.
+        /// The gate has to be "open the page, press one thing, put the phone down" — so the choosing
+        /// happens here, where the columns that describe a file already are.
+        ///
+        /// <para>Each slot is nullable and the page skips that sub-probe with a reason when the
+        /// library has nothing to fill it: a collection with no mono file simply cannot answer the
+        /// mono question, and saying so is a result, not an error.</para>
+        ///
+        /// <para>Files are picked SMALL-ISH: the probe fetches them whole over a phone's connection,
+        /// so a 300 MB live set would measure the network rather than the browser. But not tiny —
+        /// a duration floor keeps out the 4-second interstitials and fragments, which would cross a
+        /// join before the measurement had begun.</para>
+        /// </remarks>
+        [HttpGet("/API/Music/Probe/Candidates")]
+        public async Task<IActionResult> ProbeCandidates()
+        {
+            // Only tracks that stream as-is: the probe is about MSE treatments, and a format that
+            // needs the mp3 transcode lane has no bit-perfect treatment to be testing.
+            var pool = movieDb.MusicTracks.AsNoTracking()
+                .Include(t => t.Artist)
+                .Where(t => t.MissingSinceUtc == null && !t.RequiresTranscode);
+
+            // Stereo first. 94% of the library is 44.1 kHz stereo, so a stereo mp3 makes the first
+            // join a CODEC switch and nothing else — pairing a mono mp3 with a stereo flac would
+            // silently make probe 1 a channel-count test too, and a failure would not say which of
+            // the two switches the buffer refused.
+            var mp3 = await PickProbeTrack(pool.Where(t => t.Extension == ".mp3" && t.Channels == 2), MinProbeBytes, 12_000_000)
+                      ?? await PickProbeTrack(pool.Where(t => t.Extension == ".mp3"), MinProbeBytes, 12_000_000);
+            // The bit-perfect FLAC row, deliberately at the library's ordinary rate (94% of it) so
+            // probe 1 measures a CODEC switch and nothing else.
+            var flac = await PickProbeTrack(
+                pool.Where(t => t.Extension == ".flac" && t.SampleRateHz == 44100 && t.Channels == 2),
+                5_000_000, 60_000_000);
+            // The rate switch, which is the residual risk: take the HIGHEST rate the library has,
+            // then the smallest file at it — a higher rate is a harder question, so a lower one
+            // passing would prove less.
+            var hires = await pool
+                .Where(t => t.SampleRateHz > 48000 && t.DurationSec >= MinProbeSeconds)
+                .OrderByDescending(t => t.SampleRateHz).ThenBy(t => t.SizeBytes)
+                .FirstOrDefaultAsync();
+            // A different file from the mp3 slot where the library allows it: the mono join has to be
+            // a join, and the same file on both sides tests nothing.
+            var monoPool = mp3 == null ? pool.Where(t => t.Channels == 1)
+                : pool.Where(t => t.Channels == 1 && t.Id != mp3.Id);
+            var mono = await PickProbeTrack(monoPool, MinProbeBytes, 60_000_000);
+
+            return Ok(new
+            {
+                mp3 = DescribeProbeTrack(mp3),
+                flac = DescribeProbeTrack(flac),
+                hires = DescribeProbeTrack(hires),
+                mono = DescribeProbeTrack(mono),
+            });
+        }
+
+        /// <summary>Long enough to be a track rather than a fragment — a join has to be crossed
+        /// mid-playback, and a 6-second file is over before the measurement starts.</summary>
+        private const double MinProbeSeconds = 45;
+
+        /// <summary>Below this a "track" is an intro, a silence file or a rip artefact.</summary>
+        private const long MinProbeBytes = 1_000_000;
+
+        /// <summary>Smallest file inside the preferred window; if the library has nothing in it, the
+        /// smallest that still clears the duration floor; else nothing at all.</summary>
+        private static async Task<MusicTrack?> PickProbeTrack(IQueryable<MusicTrack> pool, long minBytes, long maxBytes)
+        {
+            var longEnough = pool.Where(t => t.DurationSec >= MinProbeSeconds);
+            return await longEnough
+                       .Where(t => t.SizeBytes >= minBytes && t.SizeBytes <= maxBytes)
+                       .OrderBy(t => t.SizeBytes)
+                       .FirstOrDefaultAsync()
+                   ?? await longEnough.OrderBy(t => t.SizeBytes).FirstOrDefaultAsync();
+        }
+
+        /// <summary>What the page needs to name a candidate on screen and to judge whether it really
+        /// was the thing being tested — the rate and channel count are the labels on probe 2's
+        /// measurement, not decoration.</summary>
+        private static object? DescribeProbeTrack(MusicTrack? track) => track == null ? null : new
+        {
+            id = track.Id,
+            title = track.Title,
+            artist = track.Artist?.Name,
+            extension = track.Extension,
+            sampleRateHz = track.SampleRateHz,
+            channels = track.Channels,
+            sizeBytes = track.SizeBytes,
+            durationSec = track.DurationSec,
+        };
+
         [HttpPost("/API/Music/Stream/Start")]
         public async Task<IActionResult> Start([FromBody] StartRequest request)
         {

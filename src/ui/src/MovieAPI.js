@@ -54,6 +54,14 @@ function startMusicTracks(trackIds) {
   });
 }
 
+// Tracks for the MSE probe page to test itself with: { mp3, flac, hires, mono }, any of them null
+// when the library has nothing to fill that slot (music-mse-plan.md §Phase 1). The server chooses,
+// because the gate has to be "open the page, press one thing, put the phone down" — and nobody knows
+// by heart which of their tracks is the 96 kHz one.
+function getMusicProbeCandidates() {
+  return fetch("/API/Music/Probe/Candidates", { method: "get" });
+}
+
 // Lyrics for one track: { plainText, syncedLrc, source } or 404 when we have none (§2.7).
 function getMusicTrackLyrics(trackId) {
   return fetch(`/API/Music/Track/${trackId}/Lyrics`);
@@ -1450,6 +1458,7 @@ const MovieAPI = {
   searchMusicTracks,
   startMusicTrack,
   startMusicTracks,
+  getMusicProbeCandidates,
   getMusicTrackLyrics,
   getMusicAlbumArt,
   getMusicAlbumArtThumb,
