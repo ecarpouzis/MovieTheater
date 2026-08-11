@@ -68,12 +68,19 @@ app.MapGet("/healthz", () => Results.Text("ok"));
 // and serves bytes with Range support. Unconfigured hosts simply 404 the route.
 string? musicRoot = config["MusicRootDir"];
 string? musicRootFull = musicRoot == null ? null : Path.GetFullPath(musicRoot);
-app.MapMethods($"/s/{{token}}/{MusicStreamRoutes.File}", new[] { "GET", "HEAD" }, (HttpContext context, string token) =>
+
+// Every music lane resolves its file exactly the same way, so it is written once. The confinement
+// check is the security boundary for the whole music data plane — a signed token still must not be
+// able to name a path outside the root — and one copy per lane would be one place per lane for it to
+// drift. Returns the absolute path plus the root-relative path the token carried (the cache key
+// below is built from it), or a null path with the status the lane should answer:
+// 404 = this host serves no music, or the file is gone; 403 = token refused, or the path escaped.
+(string? Full, string Relative, int Status) ResolveMusicFile(string token)
 {
     if (musicRootFull == null)
-        return Results.NotFound();
+        return (null, "", StatusCodes.Status404NotFound);
     if (!MusicCapabilityToken.TryValidate(secret, token, out var payload) || payload is null)
-        return Results.StatusCode(StatusCodes.Status403Forbidden);
+        return (null, "", StatusCodes.Status403Forbidden);
 
     // Confinement: the resolved file must sit under the music root — a token is signed, but
     // defense-in-depth costs one string compare.
@@ -81,9 +88,17 @@ app.MapMethods($"/s/{{token}}/{MusicStreamRoutes.File}", new[] { "GET", "HEAD" }
         payload.RelativePath.Replace('/', Path.DirectorySeparatorChar)));
     if (!full.StartsWith(musicRootFull.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar,
             StringComparison.OrdinalIgnoreCase))
-        return Results.StatusCode(StatusCodes.Status403Forbidden);
+        return (null, "", StatusCodes.Status403Forbidden);
     if (!File.Exists(full))
-        return Results.NotFound();
+        return (null, "", StatusCodes.Status404NotFound);
+    return (full, payload.RelativePath, StatusCodes.Status200OK);
+}
+
+app.MapMethods($"/s/{{token}}/{MusicStreamRoutes.File}", new[] { "GET", "HEAD" }, (HttpContext context, string token) =>
+{
+    var (full, _, status) = ResolveMusicFile(token);
+    if (full == null)
+        return Results.StatusCode(status);
 
     // The token URL is stable for its lifetime, so the browser may cache/reuse it across seeks.
     context.Response.Headers["Cache-Control"] = "private, max-age=3600";
@@ -107,23 +122,10 @@ app.MapMethods($"/s/{{token}}/{MusicStreamRoutes.Transcode}", new[] { "GET", "HE
         context.Response.StatusCode = StatusCodes.Status404NotFound;
         return;
     }
-    if (!MusicCapabilityToken.TryValidate(secret, token, out var payload) || payload is null)
+    var (full, _, status) = ResolveMusicFile(token);
+    if (full == null)
     {
-        context.Response.StatusCode = StatusCodes.Status403Forbidden;
-        return;
-    }
-
-    var full = Path.GetFullPath(Path.Combine(musicRootFull,
-        payload.RelativePath.Replace('/', Path.DirectorySeparatorChar)));
-    if (!full.StartsWith(musicRootFull.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar,
-            StringComparison.OrdinalIgnoreCase))
-    {
-        context.Response.StatusCode = StatusCodes.Status403Forbidden;
-        return;
-    }
-    if (!File.Exists(full))
-    {
-        context.Response.StatusCode = StatusCodes.Status404NotFound;
+        context.Response.StatusCode = status;
         return;
     }
 
@@ -199,23 +201,23 @@ app.MapMethods($"/s/{{token}}/{MusicStreamRoutes.Fmp4}", new[] { "GET", "HEAD" }
         context.Response.StatusCode = StatusCodes.Status404NotFound;
         return;
     }
-    if (!MusicCapabilityToken.TryValidate(secret, token, out var payload) || payload is null)
+    var (full, _, status) = ResolveMusicFile(token);
+    if (full == null)
     {
-        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+        context.Response.StatusCode = status;
         return;
     }
 
-    var full = Path.GetFullPath(Path.Combine(musicRootFull,
-        payload.RelativePath.Replace('/', Path.DirectorySeparatorChar)));
-    if (!full.StartsWith(musicRootFull.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar,
-            StringComparison.OrdinalIgnoreCase))
+    // ⚠ FLAC only, and this refusal is load-bearing (music-mse-plan.md §"Mixed FLAC/MP3 queues").
+    // ffmpeg will cheerfully remux an mp3 into an fMP4 — and the result is MP3-in-MP4 (`mp4a.6B`),
+    // which Chrome is MEASURED not to support. Those bytes append into a SourceBuffer and then fail
+    // to play, i.e. a client routing bug would surface as a dead boundary mid-album rather than as a
+    // failed request. Refusing at fetch time makes it loud and lands the client on the ladder
+    // instead. 409 rather than 403: nothing is wrong with the capability, this lane just cannot
+    // carry this file — and the text says nothing about the file or where it lives.
+    if (!string.Equals(Path.GetExtension(full), ".flac", StringComparison.OrdinalIgnoreCase))
     {
-        context.Response.StatusCode = StatusCodes.Status403Forbidden;
-        return;
-    }
-    if (!File.Exists(full))
-    {
-        context.Response.StatusCode = StatusCodes.Status404NotFound;
+        context.Response.StatusCode = StatusCodes.Status409Conflict;
         return;
     }
 
@@ -275,6 +277,222 @@ app.MapMethods($"/s/{{token}}/{MusicStreamRoutes.Fmp4}", new[] { "GET", "HEAD" }
     }
     finally
     {
+        transcodeSlots.Release();
+    }
+});
+
+// ── Music universal lane (music-mse-plan.md §"What the incumbents do") ───────────────────────────
+// The bottom row of the treatment matrix: the audio RE-ENCODED to AAC in a fragmented MP4
+// (`mp4a.40.2`, 44.1 kHz, channels preserved) — the one shape every MSE browser accepts. It exists
+// so "this format has no MSE treatment" stops being a category: .wma, .ape, odd sample rates, and
+// MP3 on a Firefox whose MSE has no MP3 decoder all become appendable here, which turns the fragile
+// cross-engine boundary into a rare fallback instead of a routine event in a mixed queue. It also
+// gives a browser that refuses a changeType or a rate switch a homogeneous-session mode: run the
+// WHOLE queue through this lane and there are zero switches left to survive.
+//
+// ⚠ Unlike the two `-c:a copy` lanes this DECODES AND RE-ENCODES — it is not bit-perfect, and for a
+// FLAC it is lossy. That trade is the plan's, deliberately: measured against "playback that never
+// stops", continuity outranks fidelity wherever the bit-perfect route is the one that can stop. The
+// client only routes here when a bit-perfect treatment isn't proven.
+//
+// 256 kbps because that is what the incumbents ship at their top web tier and is transparent for
+// almost all material; -ar 44100 normalizes the rate (the switch a SourceBuffer may refuse), and no
+// -ac so channel count survives.
+string? universalCacheDir = config["MusicUniversalCacheDir"];
+// Generous on purpose: this is a bound to stop a runaway, not a working-set target. Unset dir = no
+// caching at all, which is still CORRECT — every request just re-encodes.
+long universalCacheMaxBytes =
+    (long)(int.TryParse(config["MusicUniversalCacheMaxMB"], out var ucmb) && ucmb > 0 ? ucmb : 20480) * 1024 * 1024;
+if (!string.IsNullOrWhiteSpace(universalCacheDir))
+{
+    try
+    {
+        Directory.CreateDirectory(universalCacheDir);
+        universalCacheDir = Path.GetFullPath(universalCacheDir);
+    }
+    catch
+    {
+        // An unusable cache directory must not take the lane down with it — it just means no cache.
+        universalCacheDir = null;
+    }
+}
+else universalCacheDir = null;
+
+// Where this file's universal encode lives, or null when caching is off. Keyed by (relative path,
+// mtime, lane): mtime is what makes a re-ripped or re-tagged file miss instead of serving the old
+// encode, and the lane is in the key so another lane can share the directory later without
+// colliding. Hashed rather than mirrored because a flat, fixed-length name has no path length,
+// character-set or layout problems of its own to solve.
+string? UniversalCachePath(string relativePath, string sourceFull)
+{
+    if (universalCacheDir == null) return null;
+    try
+    {
+        var key = $"{MusicStreamRoutes.Universal}|{relativePath.ToLowerInvariant()}|{File.GetLastWriteTimeUtc(sourceFull).Ticks}";
+        var hash = Convert.ToHexString(
+            System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(key)));
+        return Path.Combine(universalCacheDir, hash[..32] + ".mp4");
+    }
+    catch
+    {
+        return null;
+    }
+}
+
+// A cap, not an eviction policy — deliberately. Over the cap the lane simply stops ADDING to the
+// cache and keeps serving live encodes, so the failure mode of a full cache is "slower", never
+// "broken", and nothing here can ever delete a file it did not write. Measured per cache miss (a
+// miss already costs a 1–2 s encode, so an enumeration is noise) rather than kept in a counter that
+// would drift out of step with the directory.
+bool UniversalCacheHasRoom()
+{
+    if (universalCacheDir == null) return false;
+    try
+    {
+        return new DirectoryInfo(universalCacheDir).EnumerateFiles().Sum(f => f.Length) < universalCacheMaxBytes;
+    }
+    catch
+    {
+        return false;
+    }
+}
+
+app.MapMethods($"/s/{{token}}/{MusicStreamRoutes.Universal}", new[] { "GET", "HEAD" }, async (HttpContext context, string token) =>
+{
+    if (musicRootFull == null || string.IsNullOrWhiteSpace(ffmpegPath))
+    {
+        context.Response.StatusCode = StatusCodes.Status404NotFound;
+        return;
+    }
+    var (full, relative, status) = ResolveMusicFile(token);
+    if (full == null)
+    {
+        context.Response.StatusCode = status;
+        return;
+    }
+
+    // Cache hit: pure file serving, and Range comes free — which the streamed encode below cannot
+    // offer. This is why the cache ships WITH the lane rather than after it: unlike the remux lanes,
+    // every uncached request here is a real ~1–2 s of CPU, so the second play of anything (a repeat,
+    // a re-queue, a reload) must not pay it again.
+    var cachePath = UniversalCachePath(relative, full);
+    if (cachePath != null && File.Exists(cachePath))
+    {
+        context.Response.Headers["Cache-Control"] = "private, max-age=3600";
+        await Results.File(cachePath, "audio/mp4", enableRangeProcessing: true).ExecuteAsync(context);
+        return;
+    }
+
+    // Shares the transcode lane's cap: same reason (a whole ffmpeg process per request), and this
+    // one is the expensive kind. Over the cap the client retries rather than queuing.
+    if (!await transcodeSlots.WaitAsync(TimeSpan.FromSeconds(2), context.RequestAborted))
+    {
+        context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+        context.Response.Headers["Retry-After"] = "5";
+        return;
+    }
+
+    string? cacheTemp = null;
+    FileStream? cacheStream = null;
+    var encodeCompleted = false;
+    try
+    {
+        context.Response.ContentType = "audio/mp4";
+        context.Response.Headers["Accept-Ranges"] = "none";
+        context.Response.Headers["Cache-Control"] = "private, no-store";
+        if (HttpMethods.IsHead(context.Request.Method)) return;
+
+        if (cachePath != null && UniversalCacheHasRoom())
+        {
+            try
+            {
+                // Written to a temp name and renamed only on a clean exit. A killed encode (client
+                // skipped the track, ffmpeg died, the host rebooted) must never leave a half file
+                // sitting at the cache path, because nothing downstream could tell it from a whole
+                // one — it would just be a track that stops early, forever.
+                cacheTemp = $"{cachePath}.{Guid.NewGuid():N}.part";
+                cacheStream = new FileStream(cacheTemp, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+            }
+            catch
+            {
+                cacheTemp = null;
+                cacheStream = null;
+            }
+        }
+
+        var psi = new System.Diagnostics.ProcessStartInfo(ffmpegPath)
+        {
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        };
+        // Same fragmented-MP4 shape as the remux lane above (init segment + self-contained
+        // fragments, written as they are read) — only the codec arguments differ.
+        foreach (var arg in new[]
+        {
+            "-hide_banner", "-loglevel", "error", "-i", full,
+            "-map", "a:0", "-c:a", "aac", "-b:a", "256k", "-ar", "44100", "-f", "mp4",
+            "-movflags", "empty_moov+default_base_moof+frag_keyframe+delay_moov",
+            "-frag_duration", "1000000",
+            "pipe:1",
+        })
+            psi.ArgumentList.Add(arg);
+
+        using var ffmpeg = System.Diagnostics.Process.Start(psi);
+        if (ffmpeg == null)
+        {
+            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+            return;
+        }
+        try
+        {
+            _ = ffmpeg.StandardError.ReadToEndAsync();
+            // Tee'd by hand rather than CopyToAsync: the listener gets the bytes as they are encoded
+            // (no waiting for the whole track) and the cache gets the same bytes on the way past.
+            var buffer = new byte[64 * 1024];
+            var stdout = ffmpeg.StandardOutput.BaseStream;
+            int read;
+            while ((read = await stdout.ReadAsync(buffer, context.RequestAborted)) > 0)
+            {
+                await context.Response.Body.WriteAsync(buffer.AsMemory(0, read), context.RequestAborted);
+                // Not cancellable: an aborted request still wants the temp file closed tidily, and
+                // it is about to be deleted anyway.
+                if (cacheStream != null)
+                    await cacheStream.WriteAsync(buffer.AsMemory(0, read), CancellationToken.None);
+            }
+            await ffmpeg.WaitForExitAsync(context.RequestAborted);
+            encodeCompleted = ffmpeg.ExitCode == 0;
+        }
+        catch (OperationCanceledException)
+        {
+            // The listener skipped or closed the tab — normal.
+        }
+        finally
+        {
+            try { if (!ffmpeg.HasExited) ffmpeg.Kill(entireProcessTree: true); } catch { }
+        }
+    }
+    finally
+    {
+        if (cacheStream != null) await cacheStream.DisposeAsync();
+        if (cacheTemp != null)
+        {
+            try
+            {
+                if (encodeCompleted && cachePath != null)
+                    // Two concurrent misses for the same track each write their own temp and both
+                    // rename; identical bytes, last one wins. A rename that loses a race with a
+                    // reader just leaves the temp to be deleted below.
+                    File.Move(cacheTemp, cachePath, overwrite: true);
+                else
+                    File.Delete(cacheTemp);
+            }
+            catch
+            {
+                try { File.Delete(cacheTemp); } catch { /* nothing further to try */ }
+            }
+        }
         transcodeSlots.Release();
     }
 });

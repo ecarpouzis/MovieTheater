@@ -41,6 +41,19 @@ function startMusicTrack(trackId) {
   });
 }
 
+// The same thing for N tracks in one round trip: { tracks: [...same payload as above], skipped: [ids] }
+// (music-mse-plan.md §"URLs: minted while awake, never needed while asleep"). Minting is signing,
+// nothing more, so signing a queue's worth ahead of time is free — and the reason to want it is that
+// a mint is a JS fetch, which is the first thing a backgrounded phone stops being allowed to run.
+// Unknown/unplayable ids come back in `skipped` rather than failing the whole batch.
+function startMusicTracks(trackIds) {
+  return fetch("/API/Music/Stream/StartBatch", {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ trackIds }),
+  });
+}
+
 // Lyrics for one track: { plainText, syncedLrc, source } or 404 when we have none (§2.7).
 function getMusicTrackLyrics(trackId) {
   return fetch(`/API/Music/Track/${trackId}/Lyrics`);
@@ -1436,6 +1449,7 @@ const MovieAPI = {
   getMusicAlbum,
   searchMusicTracks,
   startMusicTrack,
+  startMusicTracks,
   getMusicTrackLyrics,
   getMusicAlbumArt,
   getMusicAlbumArtThumb,

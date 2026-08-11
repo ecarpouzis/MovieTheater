@@ -1,0 +1,149 @@
+/* Phase 1 probe page (music-mse-plan.md). Deliberately plain: it is read on a phone, at night, by
+   someone who has just turned the screen back on — so it is one narrow column of text with no
+   layout that can push a verdict off-screen, and it inherits the site's theme variables rather than
+   painting its own colours. */
+
+.mse-probe {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 16px 12px 120px; /* bottom padding clears the play bar, which is on every route */
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.mse-probe h1 {
+  font-size: 20px;
+  margin: 0 0 8px;
+}
+
+.mse-probe h2 {
+  font-size: 16px;
+  margin: 0 0 6px;
+}
+
+.mse-probe section {
+  margin: 22px 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-color, rgba(128, 128, 128, 0.35));
+}
+
+.mse-probe-lede {
+  opacity: 0.85;
+}
+
+.mse-probe button {
+  margin: 4px 6px 4px 0;
+  padding: 8px 12px;
+  font: inherit;
+  cursor: pointer;
+  border-radius: 6px;
+  border: 1px solid var(--border-color, rgba(128, 128, 128, 0.5));
+  background: transparent;
+  color: inherit;
+}
+
+.mse-probe button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.mse-probe-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 6px 0;
+}
+
+.mse-probe-table td {
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--border-color, rgba(128, 128, 128, 0.2));
+  vertical-align: top;
+  word-break: break-word;
+}
+
+.mse-probe-yes { color: #2e9e4f; font-weight: 600; }
+.mse-probe-no { color: #b04141; font-weight: 600; }
+/* A "supported" on the mp4a.6B row is a finding, not a pass — it must not read as a green tick. */
+.mse-probe-bad { outline: 2px solid #b04141; }
+
+.mse-probe-note {
+  opacity: 0.75;
+  font-size: 12px;
+  word-break: break-word;
+}
+
+.mse-probe-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.mse-probe-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  min-width: 130px;
+  flex: 1 1 130px;
+}
+
+.mse-probe-slot span {
+  font-size: 11px;
+  opacity: 0.7;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mse-probe-slot--on {
+  border-color: currentColor;
+  font-weight: 600;
+}
+
+.mse-probe-search input {
+  width: 100%;
+  padding: 8px;
+  margin-top: 8px;
+  font: inherit;
+  border-radius: 6px;
+  border: 1px solid var(--border-color, rgba(128, 128, 128, 0.5));
+  background: transparent;
+  color: inherit;
+}
+
+.mse-probe-hits {
+  list-style: none;
+  padding: 0;
+  margin: 6px 0 0;
+}
+
+.mse-probe-hits button {
+  width: 100%;
+  text-align: left;
+}
+
+.mse-probe-result {
+  margin: 8px 0;
+}
+
+.mse-probe-result pre {
+  font-size: 11px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  opacity: 0.8;
+  margin: 4px 0 0;
+}
+
+/* The census headline. It is the number the plan sizes lookaheads from, so it is the one thing on
+   this page that is bigger than body text. */
+.mse-probe-headline {
+  font-size: 15px;
+}
+
+.mse-probe-log {
+  font-size: 11px;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  max-height: 240px;
+  overflow-y: auto;
+  word-break: break-word;
+}

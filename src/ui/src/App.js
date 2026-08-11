@@ -32,6 +32,10 @@ const RatePage = lazy(() => import("./Pages/Rate/RatePage"));
 const MusicPage = lazy(() => import("./Pages/Music/MusicPage"));
 const MusicNowPlayingPage = lazy(() => import("./Pages/Music/MusicNowPlayingPage"));
 const MusicPlaylistsPage = lazy(() => import("./Pages/Music/MusicPlaylistsPage"));
+// The MSE probe page (music-mse-plan.md §Phase 1): the gate that has to be run on the phone that
+// actually fails, which is why it is a committed route rather than a scratchpad rig. Lazy like every
+// other non-landing page, and gated behind ?diag=1 inside itself.
+const MusicMseProbe = lazy(() => import("./Music/MusicMseProbe"));
 
 const storedUsername = window.localStorage.getItem("Username");
 const storedCardStyle = window.localStorage.getItem("CardStyle");
@@ -160,6 +164,11 @@ function App() {
                 unboundedly and pushed the library down the page. */}
             <Route path="/music/playlists" exact>
               <MusicPlaylistsPage userData={userData} />
+            </Route>
+            {/* Visit-a-URL-on-the-phone diagnostics, not a listening surface: it renders nothing but
+                an "on" button unless ?diag=1 has been used (the musicDiag convention). */}
+            <Route path="/music/mse-probe" exact>
+              <MusicMseProbe />
             </Route>
             <Route path="/arcade/room/:code" exact>
               <ArcadeRoomPage />

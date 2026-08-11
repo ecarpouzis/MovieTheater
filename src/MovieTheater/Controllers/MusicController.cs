@@ -51,6 +51,18 @@ namespace MovieTheater.Controllers
             public int TrackId { get; set; }
         }
 
+        /// <summary>N tracks in one round trip — the rolling pre-mint window's request
+        /// (music-mse-plan.md §"URLs: minted while awake, never needed while asleep").</summary>
+        public class StartBatchRequest
+        {
+            public List<int>? TrackIds { get; set; }
+        }
+
+        /// <summary>Bounds what one request can ask for. A queue is hundreds of tracks and the window
+        /// only ever needs the next few hours of it, so a cap costs the caller nothing and stops a
+        /// runaway client turning one POST into a full-catalog signing job.</summary>
+        private const int MaxBatchTracks = 200;
+
         /// <summary>
         /// Receives a playback failure report the player sends about itself.
         /// </summary>
@@ -130,8 +142,87 @@ namespace MovieTheater.Controllers
         {
             streamingConfigured = MusicConfigured,
             transcodeEnabled = config.MusicTranscodeEnabled,
+            // The MSE lanes (fMP4 remux + universal AAC-fMP4), advertised so the player can route
+            // without discovering them through a 404 (music-mse-plan.md §"Server work the phases
+            // need"). Same server-side condition as transcodeEnabled because it is the same
+            // prerequisite: both lanes are ffmpeg on the gateway.
+            //
+            // ⚠ A "yes" here is a statement about CONFIGURATION, not about the deployed gateway. The
+            // site deploys on push and the gateway does not, so a site that is ahead of its gateway
+            // will advertise a lane that 404s — which is exactly rung 4 of the plan's fallback
+            // ladder, and why the client must keep degrading quietly on a 404 regardless.
+            fmp4Enabled = config.MusicTranscodeEnabled,
         });
 
+        /// <summary>
+        /// The ONE spelling of a Stream/Start payload: minted for a single track and reused verbatim
+        /// by the batch endpoint.
+        /// </summary>
+        /// <remarks>
+        /// Two spellings of this object is how the batch response and the single response drift into
+        /// disagreeing about a field the player routes on — and the player would then behave
+        /// differently depending on which endpoint happened to mint the track.
+        ///
+        /// <para>All three lane URLs come from the SAME token (music-mse-plan.md §"Server work"):
+        /// the capability is lane-agnostic by design and the ROUTE picks the treatment, so offering
+        /// another lane costs one more string and no version skew with the gateway.</para>
+        /// </remarks>
+        private object BuildStartPayload(MusicTrack track, int userId)
+        {
+            var token = MusicCapabilityToken.Mint(config.StreamTokenSecret!, new MusicCapabilityToken.Payload(
+                userId, track.Id, track.RelativePath,
+                DateTimeOffset.UtcNow.ToUnixTimeSeconds() + TokenLifetimeSeconds));
+
+            // The ROUTE decides how the gateway serves the bytes, so the capability itself is
+            // unchanged (still 4 fields) — a browser-native format streams as a file with Range,
+            // an exotic one is piped through ffmpeg as mp3 (§Phase 7). Keeping the token identical
+            // is deliberate: no version skew between the site and the gateway.
+            var transcode = track.RequiresTranscode;
+
+            // fMP4 is minted for .flac and NOTHING else. MP3-in-MP4 (mp4a.6B) is measured
+            // unsupported in Chrome (music-mse-plan.md §"What is measured"), so an fMP4 URL for an
+            // mp3 is a URL whose bytes no browser can play — the plan's central trap. Withholding
+            // the URL is the site's half of that guard; the gateway rejects the route as well, so a
+            // routing bug fails loud at fetch time instead of as a SourceBuffer error at a boundary.
+            var isFlac = string.Equals(track.Extension, ".flac", StringComparison.OrdinalIgnoreCase);
+
+            return new
+            {
+                trackId = track.Id,
+                url = MusicStreamRoutes.Url(config.StreamGatewayBaseUrl!, token, transcode),
+                // Bit-perfect MSE: a container change only (-c:a copy), so FLAC stays lossless.
+                fmp4Url = isFlac ? MusicStreamRoutes.Fmp4Url(config.StreamGatewayBaseUrl!, token) : null,
+                // The bottom row of the treatment matrix, offered for EVERY track: the AAC-fMP4
+                // re-encode any MSE browser accepts. Minting it always is the point of the
+                // lane-agnostic token — the client picks a lane from its own capability probes, and
+                // a client that discovers mid-queue that it needs the universal treatment must not
+                // have to make a round trip (least of all on a sleeping phone) to get the URL.
+                universalUrl = MusicStreamRoutes.UniversalUrl(config.StreamGatewayBaseUrl!, token),
+                transcoded = transcode,
+                mimeType = transcode ? "audio/mpeg" : MusicMimeTypes.FromExtension(track.Extension),
+                durationSec = track.DurationSec,
+                // How big the file is, so the player can decide whether it dares STREAM it.
+                // Chrome's media buffer caps at 16 MiB - 32 KiB: anything larger is guaranteed to be
+                // evicted and re-requested part-way through the song (proved in Caddy's log as
+                // `Range: bytes=16744448-`), and a phone whose screen has gone off cannot service
+                // that re-request. The player downloads those in full before playing them instead.
+                sizeBytes = track.SizeBytes,
+                // How many channels the browser will actually decode, so the player can size its Web
+                // Audio destination to match. The transcode lane re-encodes to mp3, which tops out at
+                // stereo, so a surround source served that way really is 2 by the time it lands.
+                // 0/null (never backfilled, or a file that wouldn't say) means "don't know" — the
+                // player leaves the destination at its stereo default.
+                channels = transcode ? 2 : track.Channels,
+                // The residual risk in a mixed SourceBuffer is the sample RATE, not the codec
+                // (music-mse-plan.md §"Mixed FLAC/MP3 queues"): 94% of the library is 44.1 kHz, and
+                // a 96 kHz track is the switch a buffer may refuse. Shipped so a route decision — and
+                // Phase 1's rate-switch probe — can be about a known number rather than a guess.
+                sampleRateHz = track.SampleRateHz,
+                title = track.Title,
+                artist = track.Artist.Name,
+                album = track.Album?.Title,
+            };
+        }
 
         [HttpPost("/API/Music/Stream/Start")]
         public async Task<IActionResult> Start([FromBody] StartRequest request)
@@ -155,38 +246,67 @@ namespace MovieTheater.Controllers
             if (track.RequiresTranscode && !config.MusicTranscodeEnabled)
                 return StatusCode(409, new { message = "This format can't be streamed yet." });
 
-            var token = MusicCapabilityToken.Mint(config.StreamTokenSecret!, new MusicCapabilityToken.Payload(
-                userId.Value, track.Id, track.RelativePath,
-                DateTimeOffset.UtcNow.ToUnixTimeSeconds() + TokenLifetimeSeconds));
+            return Ok(BuildStartPayload(track, userId.Value));
+        }
 
-            // The ROUTE decides how the gateway serves the bytes, so the capability itself is
-            // unchanged (still 4 fields) — a browser-native format streams as a file with Range,
-            // an exotic one is piped through ffmpeg as mp3 (§Phase 7). Keeping the token identical
-            // is deliberate: no version skew between the site and the gateway.
-            var transcode = track.RequiresTranscode;
-            return Ok(new
+        /// <summary>
+        /// N track ids → N Stream/Start payloads, one round trip. The rolling pre-mint window's
+        /// request (music-mse-plan.md §"URLs: minted while awake, never needed while asleep").
+        /// </summary>
+        /// <remarks>
+        /// Minting is still exactly what it has always been — sign a capability; no play count, no
+        /// server-side session — which is why signing a queue's worth ahead of time is free. The
+        /// reason to want them ahead of time is the sleeping phone: a mint is a JS fetch, the least
+        /// reliable operation on a backgrounded renderer, so no route may be allowed to NEED one
+        /// while asleep. A 500-track queue becomes a handful of requests made while awake.
+        ///
+        /// <para>Unknown, missing and not-yet-streamable tracks are SKIPPED rather than failing the
+        /// batch: the window is filled from a queue that may contain any of those, and a queue with
+        /// one dead track in it must still get URLs for the other 199. The caller matches responses
+        /// to requests by <c>trackId</c> and treats an absent id as "no URL, fall back" — which is
+        /// what it must do for a 404 from the single endpoint anyway.</para>
+        /// </remarks>
+        [HttpPost("/API/Music/Stream/StartBatch")]
+        public async Task<IActionResult> StartBatch([FromBody] StartBatchRequest request)
+        {
+            if (request?.TrackIds == null)
+                return BadRequest(new { message = "Invalid request." });
+            if (!MusicConfigured)
+                return StatusCode(501, new { message = "Music streaming is not configured on this server." });
+
+            var userId = GetCurrentUserId();
+            if (userId == null)
+                return Unauthorized();
+
+            // Distinct, in the order asked for: the caller's order IS the queue order, and the window
+            // is filled front-first, so preserving it lets a truncated response still be useful.
+            var ids = request.TrackIds.Distinct().Take(MaxBatchTracks).ToList();
+            if (ids.Count == 0)
+                return Ok(new { tracks = Array.Empty<object>(), skipped = Array.Empty<int>() });
+
+            var tracks = await movieDb.MusicTracks
+                .Include(t => t.Artist)
+                .Include(t => t.Album)
+                .Where(t => ids.Contains(t.Id))
+                .ToDictionaryAsync(t => t.Id);
+
+            var payloads = new List<object>(ids.Count);
+            var skipped = new List<int>();
+            foreach (var id in ids)
             {
-                trackId = track.Id,
-                url = MusicStreamRoutes.Url(config.StreamGatewayBaseUrl!, token, transcode),
-                transcoded = transcode,
-                mimeType = transcode ? "audio/mpeg" : MusicMimeTypes.FromExtension(track.Extension),
-                durationSec = track.DurationSec,
-                // How big the file is, so the player can decide whether it dares STREAM it.
-                // Chrome's media buffer caps at 16 MiB - 32 KiB: anything larger is guaranteed to be
-                // evicted and re-requested part-way through the song (proved in Caddy's log as
-                // `Range: bytes=16744448-`), and a phone whose screen has gone off cannot service
-                // that re-request. The player downloads those in full before playing them instead.
-                sizeBytes = track.SizeBytes,
-                // How many channels the browser will actually decode, so the player can size its Web
-                // Audio destination to match. The transcode lane re-encodes to mp3, which tops out at
-                // stereo, so a surround source served that way really is 2 by the time it lands.
-                // 0/null (never backfilled, or a file that wouldn't say) means "don't know" — the
-                // player leaves the destination at its stereo default.
-                channels = transcode ? 2 : track.Channels,
-                title = track.Title,
-                artist = track.Artist.Name,
-                album = track.Album?.Title,
-            });
+                if (!tracks.TryGetValue(id, out var track)
+                    || track.MissingSinceUtc != null
+                    || (track.RequiresTranscode && !config.MusicTranscodeEnabled))
+                {
+                    skipped.Add(id);
+                    continue;
+                }
+                payloads.Add(BuildStartPayload(track, userId.Value));
+            }
+
+            // `skipped` is not an error list — it is the answer to "why is this id absent", which the
+            // client would otherwise have to infer from a hole in the response.
+            return Ok(new { tracks = payloads, skipped });
         }
 
         [HttpGet("/API/Music/Artists")]
