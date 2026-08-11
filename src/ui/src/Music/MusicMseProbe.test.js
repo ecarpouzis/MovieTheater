@@ -70,9 +70,17 @@ describe("treatmentFor", () => {
 
   // Rung 1 of the fallback ladder, and the reason routing is per-FORMAT rather than "is MediaSource
   // present": Firefox's MSE has no MP3 decoder, so its mp3s must take the universal treatment.
+  const onlyAac = (mime) => mime === 'audio/mp4; codecs="mp4a.40.2"';
   it("falls to universal when the bit-perfect treatment is unsupported", () => {
-    expect(treatmentFor(mp3, none).lane).toBe("universal");
-    expect(treatmentFor(flac, none).lane).toBe("universal");
+    expect(treatmentFor(mp3, onlyAac).lane).toBe("universal");
+    expect(treatmentFor(flac, onlyAac).lane).toBe("universal");
+  });
+
+  // …and when the universal row is refused too there is no MSE route at all. Offering it anyway
+  // would hand the engine a URL whose bytes this browser cannot decode; rung 7 is the decks.
+  it("returns null when even the universal treatment is unsupported", () => {
+    expect(treatmentFor(mp3, none)).toBe(null);
+    expect(treatmentFor(flac, none)).toBe(null);
   });
 
   it("falls to universal when the server minted no fMP4 URL", () => {

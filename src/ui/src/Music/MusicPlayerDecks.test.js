@@ -72,9 +72,13 @@ afterEach(() => { cleanup(); vi.clearAllMocks(); });
 
 async function mountPlaying() {
   const view = render(<MusicPlayerProvider enabled><Probe /></MusicPlayerProvider>);
-  const decks = () => [...view.container.querySelectorAll("audio")];
+  // The A/B decks only. A third <audio> is rendered for the MSE engine (music-mse-plan.md §Phase 2)
+  // and is inert with the flag off, which is the default this whole file exercises — but it must not
+  // be mistaken for a deck by tests that index into this list.
+  const decks = () => [...view.container.querySelectorAll('audio[data-deck="a"], audio[data-deck="b"]')];
+  const allElements = () => [...view.container.querySelectorAll("audio")];
   await act(async () => { player.playTracks(TRACKS, 0); });
-  return { view, decks, live: () => player.audioRef.current };
+  return { view, decks, allElements, live: () => player.audioRef.current };
 }
 
 /** Let the current track get under way, which is what triggers downloading the next one. */
@@ -88,8 +92,12 @@ async function runToPrefetch(el) {
 
 describe("A/B decks", () => {
   it("renders two decks and starts on the first", async () => {
-    const { decks, live } = await mountPlaying();
+    const { decks, allElements, live } = await mountPlaying();
     expect(decks()).toHaveLength(2);
+    // …plus the engine's element, which exists from mount (it can only ever be bound to the Web
+    // Audio graph once, so it cannot be created on demand) and is untouched while the flag is off.
+    expect(allElements()).toHaveLength(3);
+    expect(allElements().some((el) => el.dataset.deck === "mse" && !el.src)).toBe(true);
     expect(live().dataset.deck).toBe("a");
     expect(live().src).toBe("https://gw/1");
   });

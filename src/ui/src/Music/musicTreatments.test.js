@@ -1,0 +1,137 @@
+import { describe, expect, it } from "vitest";
+
+import {
+  MIME_AAC_FMP4, MIME_FLAC_FMP4, MIME_MPEG,
+  appendTreatmentFor, bufferCeilingSec, chooseEngineMode,
+} from "./musicTreatments";
+
+// The routing rules the Phase 2 engine plays by. The matrix half (treatmentFor, switchReasonFor,
+// sleepLaneDecision) is tested where it was measured, in MusicMseProbe.test.js — these are the two
+// rules the engine adds on top: the visibility-aware combination of them, and the flag.
+
+const mp3 = {
+  mimeType: MIME_MPEG, url: "u/file", universalUrl: "u/universal",
+  sizeBytes: 5_000_000, durationSec: 240, sampleRateHz: 44100, channels: 2,
+};
+const hiResFlac = {
+  mimeType: "audio/flac", url: "u/file", fmp4Url: "u/fmp4", universalUrl: "u/universal",
+  sizeBytes: 38_000_000, durationSec: 120, sampleRateHz: 96000, channels: 2,
+};
+const smallFlac = {
+  mimeType: "audio/flac", url: "u/file", fmp4Url: "u/fmp4", universalUrl: "u/universal",
+  sizeBytes: 20_000_000, durationSec: 600, sampleRateHz: 44100, channels: 2,
+};
+const all = () => true;
+
+describe("appendTreatmentFor — fidelity while watching, continuity while asleep", () => {
+  it("uses the bit-perfect lane while VISIBLE, even for a hi-res FLAC", () => {
+    const d = appendTreatmentFor({ payload: hiResFlac, isTypeSupported: all, hidden: false });
+    expect(d.treatment.lane).toBe("fmp4");
+    expect(d.treatment.mime).toBe(MIME_FLAC_FMP4);
+    expect(d.demoted).toBe(false);
+  });
+
+  // THE rule the phone paid for: 2.5 Mbps buys ~40 s of runway in an 11.5 MB quota, against an
+  // execution gap the design sizes at 90 s. Hidden, that track has to be AAC or the audio dies.
+  it("demotes a hi-res FLAC to the universal lane while HIDDEN", () => {
+    const d = appendTreatmentFor({ payload: hiResFlac, isTypeSupported: all, hidden: true });
+    expect(d.treatment.lane).toBe("universal");
+    expect(d.treatment.mime).toBe(MIME_AAC_FMP4);
+    expect(d.demoted).toBe(true);
+    expect(d.reason).toMatch(/> ceiling/);
+  });
+
+  it("keeps a low-bitrate track bit-perfect while hidden — the demotion is per-track, not per-format", () => {
+    const d = appendTreatmentFor({ payload: mp3, isTypeSupported: all, hidden: true });
+    expect(d.treatment.lane).toBe("file");
+    expect(d.demoted).toBe(false);
+    const flacTooBig = appendTreatmentFor({ payload: smallFlac, isTypeSupported: all, hidden: true });
+    // 20 MB over 600 s is 33 KB/s — under the ceiling, so a FLAC can absolutely stay lossless asleep.
+    expect(flacTooBig.treatment.lane).toBe("fmp4");
+  });
+
+  // Rung 1: per-FORMAT capability, which is what catches Firefox's MSE having no MP3 decoder.
+  it("routes an mp3 to the universal lane on a browser whose MSE won't decode MP3", () => {
+    const noMpeg = (mime) => mime !== MIME_MPEG;
+    const d = appendTreatmentFor({ payload: mp3, isTypeSupported: noMpeg, hidden: false });
+    expect(d.treatment.lane).toBe("universal");
+  });
+
+  it("has no treatment at all when the browser refuses every row (rung 7)", () => {
+    const d = appendTreatmentFor({ payload: mp3, isTypeSupported: () => false, hidden: false });
+    expect(d.treatment).toBe(null);
+  });
+
+  // Rung 4: a gateway that is behind the site mints no universal URL. Demoting to a lane that
+  // doesn't exist would be worse than keeping the one that does.
+  it("keeps the bit-perfect lane when the server offered no universal URL", () => {
+    const { universalUrl, ...noUniversal } = hiResFlac;
+    expect(universalUrl).toBe("u/universal");
+    const d = appendTreatmentFor({ payload: noUniversal, isTypeSupported: all, hidden: true });
+    expect(d.treatment.lane).toBe("fmp4");
+    expect(d.reason).toMatch(/no universal lane/);
+  });
+});
+
+describe("bufferCeilingSec", () => {
+  // Quota is a BYTE budget; only a bitrate turns it into the seconds an append loop can reason
+  // about. Without this the probe's pump issued ~6 fetches a second forever.
+  it("asks for the target when the quota can hold it", () => {
+    // 32 KB/s (256 kbps AAC) into 11.5 MB ≈ 360 s of runway, so the 180 s target is affordable.
+    const sec = bufferCeilingSec({ sizeBytes: 32000 * 300, durationSec: 300, quotaBytes: 11.5 * 1024 * 1024, targetSec: 180 });
+    expect(sec).toBe(180);
+  });
+
+  // The spin the browser found: a 38 MB hi-res FLAC holds ~36 s in an 11.5 MB quota, and an append
+  // loop asked for 180 s of it appends → QuotaExceeded → evicts → retries, forever.
+  it("drops BELOW the target for a track the quota cannot hold that much of", () => {
+    const sec = bufferCeilingSec({ sizeBytes: 38_000_000, durationSec: 120, quotaBytes: 11.5 * 1024 * 1024, targetSec: 180 });
+    expect(sec).toBeLessThan(40);
+    expect(sec).toBeGreaterThan(20);
+  });
+
+  it("falls back to the target when the bitrate is unknown", () => {
+    expect(bufferCeilingSec({ sizeBytes: 0, durationSec: 0, targetSec: 180 })).toBe(180);
+  });
+});
+
+describe("chooseEngineMode", () => {
+  const storage = () => {
+    const map = new Map();
+    return {
+      getItem: (k) => (map.has(k) ? map.get(k) : null),
+      setItem: (k, v) => map.set(k, v),
+      removeItem: (k) => map.delete(k),
+      map,
+    };
+  };
+
+  it("is OFF by default — the decks are the shipped player", () => {
+    expect(chooseEngineMode({ search: "", storage: storage(), supported: true })).toBe("decks");
+  });
+
+  it("?mse=1 turns it on and remembers, ?mse=0 turns it off and forgets", () => {
+    const s = storage();
+    expect(chooseEngineMode({ search: "?mse=1", storage: s, supported: true })).toBe("mse");
+    expect(s.getItem("music.engine")).toBe("mse");
+    expect(chooseEngineMode({ search: "", storage: s, supported: true })).toBe("mse");
+    expect(chooseEngineMode({ search: "?mse=0", storage: s, supported: true })).toBe("decks");
+    expect(s.getItem("music.engine")).toBe(null);
+  });
+
+  // The flag is a request, not an assertion: a browser that proves no treatment keeps the decks
+  // however loudly it is asked otherwise (rung 7).
+  it("refuses to turn on where nothing is supported", () => {
+    const s = storage();
+    expect(chooseEngineMode({ search: "?mse=1", storage: s, supported: false })).toBe("decks");
+  });
+
+  it("survives storage being unavailable (private mode)", () => {
+    const broken = {
+      getItem: () => { throw new Error("nope"); },
+      setItem: () => { throw new Error("nope"); },
+      removeItem: () => { throw new Error("nope"); },
+    };
+    expect(chooseEngineMode({ search: "?mse=1", storage: broken, supported: true })).toBe("decks");
+  });
+});

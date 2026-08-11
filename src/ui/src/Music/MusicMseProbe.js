@@ -2,7 +2,19 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { MovieAPI } from "../MovieAPI";
 import { setDiagEnabled } from "./musicDiag";
+import {
+  ASSUMED_QUOTA_BYTES, DEFAULT_WORST_GAP_MS, PROBE_TYPES,
+  buildCapabilityMatrix, formatBitrate, sleepLaneDecision, switchReasonFor, treatmentFor,
+} from "./musicTreatments";
 import "./MusicMseProbe.css";
+
+// The routing rules this page MEASURED now live in musicTreatments.js, because the Phase 2 engine
+// plays by exactly the same ones and a rule restated in two places is a rule that will disagree with
+// itself. Re-exported here so the page's own tests keep addressing them where they were proven.
+export {
+  ASSUMED_QUOTA_BYTES, DEFAULT_WORST_GAP_MS, PROBE_TYPES,
+  buildCapabilityMatrix, formatBitrate, sleepLaneDecision, switchReasonFor, treatmentFor,
+};
 
 // ── Phase 1 of music-mse-plan.md: prove the bytes, ON THE PHONE ──────────────────────────────────
 //
@@ -42,19 +54,6 @@ import "./MusicMseProbe.css";
 // answer are pure functions, so they can be tested without a MediaSource — which the test environment
 // does not have, and which no unit test should be pretending to have.
 
-/**
- * The treatment matrix's rows, as MIME strings to probe. Order is the plan's routing order, and the
- * last row is a TRAP being watched rather than a candidate: MP3-in-MP4 (`mp4a.6B`) is measured
- * unsupported in Chrome, which is why the fMP4 lane must never be asked for an mp3. If a browser
- * ever says yes to it, that is a finding, not a green light.
- */
-export const PROBE_TYPES = [
-  { key: "mpeg", label: "raw MP3", mime: "audio/mpeg", note: "the File lane, bit-perfect, no ffmpeg" },
-  { key: "flac", label: "FLAC in fMP4", mime: 'audio/mp4; codecs="flac"', note: "the fMP4 lane, -c:a copy, still lossless" },
-  { key: "aac", label: "AAC in fMP4", mime: 'audio/mp4; codecs="mp4a.40.2"', note: "the universal lane — every MSE browser should take this" },
-  { key: "mp3mp4", label: "MP3 in fMP4", mime: 'audio/mp4; codecs="mp4a.6B"', note: "THE TRAP — expected NO; a yes here is a finding", trap: true },
-];
-
 /** The probes, in the order the gate runs them, with the labels the verdict panel reads out. */
 export const PROBE_STEPS = [
   { key: "caps", label: "Capability matrix" },
@@ -64,162 +63,6 @@ export const PROBE_STEPS = [
   { key: "quota", label: "SourceBuffer quota" },
   { key: "sleep", label: "Screen-off phase" },
 ];
-
-/**
- * The capability matrix: what this browser says it will accept, plus whether it has MediaSource at
- * all and whether it has ManagedMediaSource (iPhone's restricted variant, the Phase 2 seam).
- *
- * Takes its probe function as an argument rather than reaching for `window.MediaSource` so the
- * assembly is testable; `isTypeSupported` is allowed to throw, because it does on some engines when
- * handed a codec string they don't parse, and a thrown probe means "no", never a broken page.
- */
-export function buildCapabilityMatrix({ isTypeSupported, hasMediaSource, hasManagedMediaSource }) {
-  const rows = PROBE_TYPES.map((type) => {
-    let supported = false;
-    if (hasMediaSource && typeof isTypeSupported === "function") {
-      try {
-        supported = !!isTypeSupported(type.mime);
-      } catch {
-        supported = false;
-      }
-    }
-    return { ...type, supported };
-  });
-  return {
-    rows,
-    hasMediaSource: !!hasMediaSource,
-    hasManagedMediaSource: !!hasManagedMediaSource,
-    // A browser that takes neither bit-perfect row nor the universal row has no MSE route at all and
-    // keeps today's deck player (ladder rung 7). Surfaced as a verdict so the table answers the
-    // question it exists to answer.
-    anyTreatment: rows.some((r) => !r.trap && r.supported),
-  };
-}
-
-/**
- * Which lane a minted Stream/Start payload should be fetched from — the plan's routing table, with
- * rung 1 of the fallback ladder built in: a source format whose bit-perfect treatment this browser
- * refuses (Firefox's MSE has no MP3 decoder) takes the universal treatment instead of falling to the
- * decks. Routing is by capability and payload, never by user-agent.
- *
- * Pure and tested because this is where the mp4a.6B trap would be sprung: an mp3 must never be
- * routed to `fmp4Url`, and the server refuses to mint one for anything but flac precisely so this
- * function cannot get it wrong twice.
- */
-export function treatmentFor(payload, isTypeSupported = () => false) {
-  if (!payload) return null;
-  const universal = payload.universalUrl
-    ? { lane: "universal", url: payload.universalUrl, mime: 'audio/mp4; codecs="mp4a.40.2"' }
-    : null;
-
-  let candidate = null;
-  if (payload.mimeType === "audio/mpeg") {
-    candidate = { lane: "file", url: payload.url, mime: "audio/mpeg" };
-  } else if (payload.mimeType === "audio/flac" && payload.fmp4Url) {
-    candidate = { lane: "fmp4", url: payload.fmp4Url, mime: 'audio/mp4; codecs="flac"' };
-  }
-
-  if (candidate && candidate.url) {
-    let ok = false;
-    try {
-      ok = !!isTypeSupported(candidate.mime);
-    } catch {
-      ok = false;
-    }
-    if (ok) return candidate;
-  }
-  return universal;
-}
-
-/**
- * Does moving from track A to track B need a `changeType`, and because of what?
- *
- * ⚠ The MIME string is not the only thing that can change, and assuming it was cost this probe a
- * false FAIL: appending a 96 kHz FLAC-fMP4 after a 44.1 kHz one — IDENTICAL MIME, so no changeType
- * was called — made a real Chrome's SourceBuffer raise an error after about 200 KB. With the
- * changeType it plays through. That is the plan's residual risk (the rate switch, not the codec
- * switch) and its stated mitigation, so the rule is: a switch is any change of container/codec,
- * sample rate, or channel count. Pure and tested because Phase 2 routes on it.
- */
-export function switchReasonFor(a, b) {
-  if (!a || !b) return null;
-  if (a.mime !== b.mime) return "codec/container";
-  if ((a.sampleRateHz ?? null) !== (b.sampleRateHz ?? null)) return "sample rate";
-  if ((a.channels ?? null) !== (b.channels ?? null)) return "channel count";
-  return null;
-}
-
-// ── The sleep-viability rule (music-mse-plan.md §"MSE route, asleep, forever") ────────────────────
-// Measured on the phone 2026-08-11, and it is the rule that was missing when the sleep phase died:
-// a page whose audio stops loses its audible exemption and FREEZES, so the buffer must hold more
-// audio than the longest stretch the page can go without being allowed to run. The buffer's size is
-// capped by the SourceBuffer quota, so the runway a treatment buys is `quota ÷ bitrate` — and a
-// 96 kHz FLAC at ~0.3 MB/s bought 40 s against an 84 s execution gap. It went silent and never got
-// another instruction.
-//
-// So: bitrate is judged per TRACK from real bytes, never per format, and a track that breaks the
-// ceiling is appended from the universal lane (AAC ~256 kbps) instead while hidden. The phone-proven
-// rate-switch changeType is what makes that switch legal.
-
-/** Chrome's audio SourceBuffer quota, used only until probe 3 has measured the real one. */
-export const ASSUMED_QUOTA_BYTES = 12 * 1024 * 1024;
-/** Gap floor before the census has anything to say. The phone measured 84 s; assuming less than
- *  this would license exactly the choice that killed the last run. */
-export const DEFAULT_WORST_GAP_MS = 90000;
-/** How many worst-gaps of runway a treatment must buy. One would be the bare edge of survival. */
-export const SLEEP_MARGIN = 2;
-
-export function formatBitrate(bytesPerSec) {
-  if (!(bytesPerSec > 0)) return "unknown";
-  return `${((bytesPerSec * 8) / 1e6).toFixed(2)} Mbps`;
-}
-
-/**
- * Which lane a track should be appended from WHILE HIDDEN, and why in words.
- *
- * The "why" is not decoration: the verdict panel prints it, so a run that demotes a track to the
- * universal lane can be seen doing so rather than inferred from a lane name. Pure and tested
- * because this is the rule the phone paid for.
- */
-export function sleepLaneDecision({ sizeBytes, durationSec, bitPerfect, universal, quotaBytes, worstGapMs }) {
-  const quota = quotaBytes > 0 ? quotaBytes : ASSUMED_QUOTA_BYTES;
-  const gapMs = Math.max(DEFAULT_WORST_GAP_MS, worstGapMs || 0);
-  const ceiling = quota / ((gapMs / 1000) * SLEEP_MARGIN);
-  const bytesPerSec = sizeBytes > 0 && durationSec > 0 ? sizeBytes / durationSec : 0;
-  const runwaySec = bytesPerSec > 0 ? quota / bytesPerSec : 0;
-  const base = {
-    bytesPerSec,
-    runwaySec: Math.round(runwaySec),
-    ceilingBytesPerSec: ceiling,
-    quotaBytes: quota,
-    worstGapMs: gapMs,
-  };
-
-  if (!bitPerfect && !universal) return { ...base, treatment: null, reason: "no lane at all" };
-  if (!universal) {
-    // Rung 4: the gateway has no universal lane (not redeployed, no ffmpeg). Keep the bit-perfect
-    // one and say so — an honest "this may not survive" beats a silent substitution.
-    return {
-      ...base,
-      treatment: bitPerfect,
-      reason: `${formatBitrate(bytesPerSec)} · no universal lane offered, kept ${bitPerfect.lane}`,
-    };
-  }
-  if (bytesPerSec > 0 && bytesPerSec < ceiling && bitPerfect) {
-    return {
-      ...base,
-      treatment: bitPerfect,
-      reason: `${formatBitrate(bytesPerSec)} ≤ ceiling ${formatBitrate(ceiling)} → ${bitPerfect.lane} (${Math.round(runwaySec)}s runway)`,
-    };
-  }
-  return {
-    ...base,
-    treatment: universal,
-    reason: bytesPerSec > 0
-      ? `${formatBitrate(bytesPerSec)} > ceiling ${formatBitrate(ceiling)} → universal (${Math.round(runwaySec)}s runway was not enough)`
-      : "bitrate unknown → universal",
-  };
-}
 
 /**
  * How long this page has spent hidden, accumulated one event at a time.

@@ -5,6 +5,8 @@ import MusicDiagPanel from "./MusicDiagPanel";
 import { useMediaSession } from "../useMediaSession";
 import MusicMiniPlayer from "./MusicMiniPlayer";
 import { LYRICS_DEFAULTS, normalizeLyricsSettings } from "./MusicLyricsSettings";
+import { createMseEngine } from "./MusicMseEngine";
+import { buildCapabilityMatrix, chooseEngineMode } from "./musicTreatments";
 
 // ── The site's first persistent player (music-plan.md §2.6) ─────────────────
 // Every video player dies on route change; music must not. The provider mounts ONCE in App.js
@@ -299,6 +301,10 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   // "paused, holding this track" from "stranded, still holding the PREVIOUS track's spent URL" —
   // and both `play()` and the wake retry then act on a source that can never produce audio again.
   const loadedTrackIdRef = useRef(null);
+  // The whole queue, readable from handlers (the engine appends ahead of the playhead).
+  const queueRef = useRef([]);
+  // Which track a cross-engine flip has prepared a deck for, or null.
+  const mseHandoffRef = useRef(null);
 
   // ── Two decks (A/B) ───────────────────────────────────────────────────────
   // Gapless used to be one <audio> whose `src` was swapped at the boundary. That swap is the one
@@ -312,6 +318,12 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   // reader (the play bar, the Now Playing page, the watchdog) is unchanged.
   const audioARef = useRef(null);
   const audioBRef = useRef(null);
+  // ── The third element: the MSE engine's (music-mse-plan.md §Phase 2) ───────────────────────────
+  // Modelled as a THIRD DECK rather than as a parallel player, and that is the whole integration
+  // trick: `deckRef.current === "mse"` makes `audioRef` point at it, so the play bar, the media
+  // session, the volume, the watchdog and the boundary machinery all keep working unchanged — and a
+  // cross-engine flip is the deck flip that already exists, with a different element on one side.
+  const audioMseRef = useRef(null);
   const deckRef = useRef("a");
   // Mirrored as state on purpose: effects that addEventListener on the live element must re-bind
   // when the deck flips. A ref alone leaves the timeupdate listener — and with it progress
@@ -344,7 +356,13 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   // element -> MediaElementAudioSourceNode; both decks must be routed once the graph exists.
   const graphSourcesRef = useRef(new Map());
 
-  const elFor = useCallback((deck) => (deck === "a" ? audioARef.current : audioBRef.current), []);
+  const elFor = useCallback((deck) => {
+    if (deck === "mse") return audioMseRef.current;
+    return deck === "a" ? audioARef.current : audioBRef.current;
+  }, []);
+  // Which deck the NEXT thing goes on. With the engine live ("mse") that is deck a — the engine's
+  // own boundaries are buffer continuations and need no idle deck at all; the only reason to prepare
+  // one is a cross-engine flip.
   const idleDeck = useCallback(() => (deckRef.current === "a" ? "b" : "a"), []);
   const idleEl = useCallback(() => elFor(idleDeck()), [elFor, idleDeck]);
   // The live element, and the ref every consumer already reads. Kept in sync on every render so a
@@ -444,6 +462,9 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   // render) can read the live track without every one of them re-binding on each change.
   currentRef.current = current;
   nextTrackRef.current = index >= 0 && index + 1 < queue.length ? queue[index + 1] : null;
+  // The whole queue, for the engine: it appends ahead of the playhead and must be able to read the
+  // list from a handler, not from a render.
+  queueRef.current = queue;
 
   // Size the graph's output to the track so the visualizer can't collapse surround to stereo.
   //
@@ -767,6 +788,126 @@ export function MusicPlayerProvider({ children, enabled = true }) {
     pendingRecoveryRef.current = { trackId, timerId };
   }, [clearPendingRecovery, firePendingRecovery]);
 
+  // ── The MSE engine (music-mse-plan.md §Phase 2) ────────────────────────────────────────────────
+  // OFF by default. The flag is read ONCE per session — not per track — because switching engines
+  // mid-queue is the one thing that would put a script event back at a boundary, which is the bug
+  // this whole design exists to remove.
+  const engineModeRef = useRef(null);
+  if (engineModeRef.current === null) {
+    let supported = false;
+    try {
+      const matrix = buildCapabilityMatrix({
+        isTypeSupported: (mime) => window.MediaSource.isTypeSupported(mime),
+        hasMediaSource: typeof window !== "undefined" && typeof window.MediaSource !== "undefined",
+        hasManagedMediaSource: typeof window !== "undefined" && typeof window.ManagedMediaSource !== "undefined",
+      });
+      supported = matrix.anyTreatment;
+    } catch { supported = false; }
+    engineModeRef.current = chooseEngineMode({
+      search: typeof window !== "undefined" ? window.location.search : "",
+      storage: window.localStorage,
+      supported,
+    });
+  }
+  const engineRef = useRef(null);
+  // Set once the engine has given up (a rung that exhausts MSE). From then on this session is a deck
+  // session — the floor, with all four shipped fixes intact. Cleared only by an explicit new pick,
+  // because that is a user gesture starting a fresh session rather than a boundary being crossed.
+  const mseFallbackRef = useRef(false);
+  // A MediaError kills the WHOLE MediaSource, not one track. Rung 6: rebuild once from where we are;
+  // a second death means the decks.
+  const mseErrorsRef = useRef(0);
+  const mseActive = useCallback(
+    () => engineModeRef.current === "mse" && !mseFallbackRef.current && !!engineRef.current,
+    [],
+  );
+
+  const destroyEngine = useCallback(() => {
+    const engine = engineRef.current;
+    engineRef.current = null;
+    if (engine) engine.destroy();
+  }, []);
+
+  /// Give up on MSE for the rest of this session and let the deck floor take it. Every caller has
+  /// already logged its rung; this is the one place that decides the session is over for the engine.
+  const fallBackToDecks = useCallback((why) => {
+    if (mseFallbackRef.current) return;
+    mseFallbackRef.current = true;
+    diagLog("mse:fallback", { why });
+    reportIncident("mse", { summary: `fell back to decks: ${why}`.slice(0, 400), trackId: currentRef.current?.id ?? null, force: true });
+    destroyEngine();
+    if (deckRef.current === "mse") {
+      deckRef.current = "a";
+      setActiveDeck("a");
+      syncActive();
+    }
+  }, [destroyEngine, syncActive]);
+
+  /// Start (or restart) the engine at the queue's current position. Restarting on a manual skip is
+  /// deliberate: the buffer holds the wrong part of the queue after a jump, and re-appending from
+  /// the new position is both simpler and cheaper than trying to splice.
+  const startEngine = useCallback((track, autoplay) => {
+    const el = audioMseRef.current;
+    if (!el) return false;
+    destroyEngine();
+    const engine = createMseEngine({
+      audio: el,
+      quotaBytes: undefined,
+      onAdvance: (trackId) => {
+        // The boundary as bookkeeping: audio is already playing the new track from the same buffer,
+        // and React is being told about it afterwards. handedOffRef is the existing signal that says
+        // "the source is already this track" — the deck path invented it for exactly this shape.
+        handedOffRef.current = trackId;
+        loadedTrackIdRef.current = trackId;
+        progressRef.current = { sec: el.currentTime || 0, at: Date.now() };
+        setIndex((i) => {
+          const at = queueRef.current.findIndex((t) => t.id === trackId);
+          return at >= 0 ? at : i;
+        });
+      },
+      onRung: (n, detail) => diagLog("mse:rung", { rung: n, ...(typeof detail === "object" ? detail : { detail }) }),
+      onDeckNeeded: (nextTrack, payload) => {
+        // The engine cannot carry the next track. Prepare the deck NOW — well before the buffer runs
+        // out — so the join is a pre-rolled flip and not a load at the boundary (§the invariant).
+        diagLog("mse:deck-needed", { track: nextTrack?.id ?? null });
+        if (nextTrack && payload?.url) installOnIdleDeck(nextTrack, payload.url, Number(payload.sizeBytes) || 0);
+        mseHandoffRef.current = nextTrack?.id ?? null;
+      },
+    });
+    engineRef.current = engine;
+    deckRef.current = "mse";
+    setActiveDeck("mse");
+    syncActive();
+    mseErrorsRef.current = 0;
+    // ⚠ Claim the element SYNCHRONOUSLY, before the engine's async start resolves. Measured in a
+    // real browser: a tap on Play in that window found `loadedTrackIdRef` still empty, decided the
+    // element was holding nothing, and ran the DECK load — which assigned a signed URL over the
+    // blob: src and detached the MediaSource out from under the engine. The engine then appended
+    // into a buffer nobody was listening to and re-fetched the same track ~2000 times.
+    loadedTrackIdRef.current = track.id;
+    lastUrlRef.current = null;
+    engine.start({ queue: queueRef.current, index: queueRef.current.findIndex((t) => t.id === track.id) })
+      .then(() => {
+        loadedTrackIdRef.current = track.id;
+        lastUrlRef.current = null;
+        if (!autoplay) { setPlaying(false); return; }
+        el.volume = volumeOf();
+        el.muted = false;
+        el.play().catch(() => {
+          if (document.hidden) resumeOnWakeRef.current = true;
+          setPlaying(false);
+        });
+      })
+      .catch((e) => {
+        // The engine could not even start (no treatment, no MediaSource, the first mint failed).
+        // That is rung 7 territory: hand the whole session to the decks, which is where it would
+        // have been without the flag.
+        fallBackToDecks(String(e && e.message ? e.message : e).slice(0, 80));
+        loadTrackRef.current(currentRef.current, { autoplay });
+      });
+    return true;
+  }, [destroyEngine, fallBackToDecks, installOnIdleDeck, syncActive, volumeOf]);
+
   // Load + play whenever the current track changes. The signed URL comes from Stream/Start;
   // the <audio> element then streams straight off the gateway (Range requests, native decode).
   useEffect(() => {
@@ -796,6 +937,12 @@ export function MusicPlayerProvider({ children, enabled = true }) {
     // …and a deck pre-rolled for a boundary that is no longer coming must be stopped, or it keeps
     // playing (silently) underneath the track the listener actually picked.
     cancelPreroll();
+    // The engine, when this session has one and hasn't given up on it. A jump lands here (the
+    // engine restarts at the new position); an advance the ENGINE made never does, because it set
+    // handedOffRef above and returned already.
+    if (engineModeRef.current === "mse" && !mseFallbackRef.current) {
+      if (startEngine(current, autoplay)) return;
+    }
     // The resume flag is NOT cleared here. It used to be, and that was the bug that stranded the
     // album at a track boundary with no error and a dead play button: this line ran, then the load
     // below never landed on a backgrounded phone, and the wake that would have rescued it found the
@@ -833,6 +980,14 @@ export function MusicPlayerProvider({ children, enabled = true }) {
       // download is the point: it has to finish while the page is still awake and allowed to use
       // the network. Driven off timeupdate rather than a timer because it's the one clock that
       // can't run while the audio isn't, so it never fires on a paused or seeking element.
+      // With the engine live, the next track is already IN the buffer (or being appended into it):
+      // there is no boundary to prepare a deck for, and downloading the track twice would be a
+      // second copy of every album on a phone's radio. The one exception is a cross-engine flip,
+      // which the engine announces through onDeckNeeded and which prepares the deck itself.
+      if (mseActive()) {
+        engineRef.current.pump();
+        return;
+      }
       const duration = audio.duration;
       const nearEnd = Number.isFinite(duration) && duration > 0 && duration - sec <= PREFETCH_LEAD_SEC;
       if (sec >= PRELOAD_START_SEC || nearEnd) prefetchNext();
@@ -846,7 +1001,30 @@ export function MusicPlayerProvider({ children, enabled = true }) {
     };
     audio.addEventListener("timeupdate", onTime);
     return () => audio.removeEventListener("timeupdate", onTime);
-  }, [clearPendingRecovery, prefetchNext, prerollIdleDeck, activeDeck]);
+  }, [clearPendingRecovery, prefetchNext, prerollIdleDeck, activeDeck, mseActive]);
+
+  // ── The engine's execution opportunities (§"The clock rule") ───────────────────────────────────
+  // `timeupdate` above is the awake accelerator; these are the triggers the plan says survive a
+  // hidden page — the completion of our own append, the element noticing it needs data, the page
+  // being looked at again — plus an interval that is admitted to be useless while asleep. Every one
+  // of them does ALL currently-possible work, because the next one is not schedulable.
+  useEffect(() => {
+    if (engineModeRef.current !== "mse") return undefined;
+    const el = audioMseRef.current;
+    if (!el) return undefined;
+    const pump = () => { if (mseActive()) engineRef.current.pump(); };
+    const events = ["progress", "waiting", "playing", "canplay", "stalled"];
+    events.forEach((name) => el.addEventListener(name, pump));
+    document.addEventListener("visibilitychange", pump);
+    window.addEventListener("online", pump);
+    const timer = setInterval(pump, 5000);
+    return () => {
+      events.forEach((name) => el.removeEventListener(name, pump));
+      document.removeEventListener("visibilitychange", pump);
+      window.removeEventListener("online", pump);
+      clearInterval(timer);
+    };
+  }, [mseActive]);
 
   // Every raw media event, recorded with the element's state at that instant (musicDiag). This is
   // the only witness to a failure that happens with the screen off — `error` in particular carries
@@ -879,7 +1057,8 @@ export function MusicPlayerProvider({ children, enabled = true }) {
     preloadAbortRef.current?.abort();
     revokeDeck("a");
     revokeDeck("b");
-  }, [revokeDeck]);
+    destroyEngine();
+  }, [revokeDeck, destroyEngine]);
 
   // Restore volume once the element exists.
   useEffect(() => {
@@ -936,6 +1115,10 @@ export function MusicPlayerProvider({ children, enabled = true }) {
 
   const playTracks = useCallback((tracks, startIndex = 0) => {
     if (!enabled) return;
+    // A deliberate new pick is a new session, so an engine that gave up on the LAST queue gets
+    // another turn. Mid-queue it stays given-up (see onEnded) — the difference is that this one is a
+    // user gesture, not a boundary.
+    mseFallbackRef.current = false;
     const playable = (tracks || []).filter(isPlayable);
     if (playable.length === 0) return;
     // startIndex referred to the ORIGINAL list; re-locate that track among the playable ones.
@@ -1127,6 +1310,21 @@ export function MusicPlayerProvider({ children, enabled = true }) {
       // Re-arm before handing off, so a reload in flight isn't re-triggered on the next poll — and
       // so a page that has just woken judges the stream from now rather than from before it slept.
       progressRef.current = { ...progressRef.current, at: now };
+      // ⚠ With the engine live, the deck recovery is the WRONG cure and an actively destructive one:
+      // it would assign a signed URL over the element's blob: src, which throws the whole MediaSource
+      // (and every buffered second of the queue) away. A stalled MSE element means the buffer ran
+      // dry, and the answer to that is to append — so pump, and report it, because reaching here
+      // means the window arithmetic was wrong somewhere and that must surface rather than vanish
+      // into a recovered gap.
+      if (verdict === "fail" && mseActive()) {
+        diagLog("mse:dry", { sec: Math.round(progressRef.current.sec) });
+        reportIncident("mse", {
+          summary: `buffer ran dry while ${document.hidden ? "hidden" : "visible"}`,
+          trackId: currentRef.current?.id ?? null,
+        });
+        engineRef.current.pump();
+        return;
+      }
       // networkLevel: the track was decoding fine until the bytes stopped — that's a connection's
       // account, not a file's, so an offline browser parks it instead of spending budget.
       if (verdict === "fail") failTrackRef.current("Playback stopped — the stream isn't answering.", { networkLevel: true });
@@ -1243,7 +1441,12 @@ export function MusicPlayerProvider({ children, enabled = true }) {
     // Route the OTHER deck through the same graph. createMediaElementSource may be called only once
     // per element and permanently reroutes it, so a deck left unrouted would play silently the
     // moment it became live — the visualizer would have muted every other track.
-    [audioARef.current, audioBRef.current].forEach((el) => {
+    // ⚠ ALL THREE elements, and the engine's is not optional. createMediaElementSource may be called
+    // only once per element and permanently reroutes it — so an element left unrouted plays SILENTLY
+    // the moment it becomes live. With the engine that is worse than with a deck: the MSE element
+    // carries the whole queue, so missing it here would mute the rest of the session at the first
+    // boundary and look exactly like the bug this design exists to remove.
+    [audioARef.current, audioBRef.current, audioMseRef.current].forEach((el) => {
       if (!el || graphSourcesRef.current.has(el)) return;
       try {
         const src = graph.audioContext.createMediaElementSource(el);
@@ -1293,6 +1496,7 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   /// stall on a format this server won't stream.
   const shuffleTracks = useCallback((tracks) => {
     if (!enabled) return;
+    mseFallbackRef.current = false;
     const playable = shuffled((tracks || []).filter(isPlayable));
     if (playable.length === 0) return;
     setQueue(playable);
@@ -1301,14 +1505,15 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   }, [enabled, isPlayable]);
 
   const setVolume = useCallback((v) => {
-    // Both decks: the idle one is already buffering the next track and will become live at the
-    // boundary, and a flip that changes loudness is a bug the listener hears.
-    const other = idleEl();
-    if (other) other.volume = Math.min(Math.max(v, 0), 1);
-    const audio = audioRef.current;
-    if (audio) audio.volume = v;
+    // EVERY element, not just the live one: the idle deck is already buffering the next track and
+    // the engine's element may be pre-rolled for a cross-engine flip. Any of them can become the
+    // thing playing at a boundary, and a flip that changes loudness is a bug the listener hears.
+    const clamped = Math.min(Math.max(v, 0), 1);
+    [audioARef.current, audioBRef.current, audioMseRef.current].forEach((el) => {
+      if (el) el.volume = clamped;
+    });
     window.localStorage.setItem(VOLUME_KEY, String(v));
-  }, [idleEl]);
+  }, []);
 
   // Keep `playing` truthful to the element (covers OS media keys, autoplay refusals, errors).
   // Audio is coming out: whatever wake retry was armed has been made moot, and leaving it armed
@@ -1360,6 +1565,17 @@ export function MusicPlayerProvider({ children, enabled = true }) {
     if (deckReady) {
       const outgoing = elFor(deckRef.current);
       const nextDeck = idleDeck();
+      // A cross-engine boundary (§the invariant). `ended` on the MSE element only ever arrives after
+      // the engine called endOfStream(), i.e. it decided it could not carry the next track — so the
+      // flip below IS the pre-rolled hand-off to the floor, and the rest of this session belongs to
+      // the decks. Coming BACK to the engine mid-queue is deliberately not attempted: restarting it
+      // at a boundary would put a load exactly where this design removed one.
+      if (deckRef.current === "mse") {
+        diagLog("mse:flip-to-deck", { track: upcoming?.id ?? null, deck: nextDeck, hidden: document.hidden });
+        mseFallbackRef.current = true;
+        destroyEngine();
+        mseHandoffRef.current = null;
+      }
       deckRef.current = nextDeck;
       setActiveDeck(nextDeck);
       const live = syncActive();
@@ -1428,7 +1644,7 @@ export function MusicPlayerProvider({ children, enabled = true }) {
       });
     }
     next();
-  }, [applyOutputChannels, next, elFor, idleEl, idleDeck, syncActive, volumeOf, revokeDeck]);
+  }, [applyOutputChannels, next, elFor, idleEl, idleDeck, syncActive, volumeOf, revokeDeck, destroyEngine]);
   // The element gave up on this source. That used to end the listening session; now it goes through
   // the same bounded recovery as everything else. The message is only reached once retries and a
   // skip are exhausted — it says what actually happened rather than the bare "Playback failed."
@@ -1440,6 +1656,22 @@ export function MusicPlayerProvider({ children, enabled = true }) {
       deckLoadedRef.current = null;
       return;
     }
+    // Rung 6: a MediaError no longer condemns one track — there is no `src` to swap, so it ends the
+    // whole MediaSource. Rebuild ONCE from the current track; a second death on the same session
+    // means the file or the browser is beating us and the decks take over.
+    if (mseActive()) {
+      mseErrorsRef.current += 1;
+      const track = currentRef.current;
+      diagLog("mse:element-error", { code: audioRef.current?.error?.code ?? null, attempt: mseErrorsRef.current });
+      if (mseErrorsRef.current <= 1 && track) {
+        reportIncident("mse", { summary: `MediaError ${audioRef.current?.error?.code ?? "?"} — rebuilding once`, trackId: track.id });
+        startEngine(track, true);
+      } else {
+        fallBackToDecks(`MediaError ${audioRef.current?.error?.code ?? "?"} twice`);
+        if (track) loadTrackRef.current(track, { autoplay: true });
+      }
+      return;
+    }
     const err = audioRef.current?.error;
     const reason = mediaErrorReason(err);
     // MEDIA_ERR_NETWORK (2) is the element saying the connection went, which a sleeping phone does
@@ -1448,7 +1680,7 @@ export function MusicPlayerProvider({ children, enabled = true }) {
     const networkLevel = err?.code === 2;
     if (reason) failTrackRef.current(`Playback stopped — ${reason}.`, { firstHand: true, networkLevel });
     else failTrackRef.current("Playback failed — the stream isn't answering.", { networkLevel });
-  }, [elFor]);
+  }, [elFor, mseActive, startEngine, fallBackToDecks]);
 
   // OS lock-screen / media-key card. The shared hook only touches standard HTMLMediaElement
   // APIs, so the <audio> ref rides the videoRef parameter unchanged.
@@ -1491,6 +1723,20 @@ export function MusicPlayerProvider({ children, enabled = true }) {
       <audio
         ref={audioBRef}
         data-deck="b"
+        crossOrigin="anonymous"
+        onPlay={onPlay}
+        onPause={onPause}
+        onEnded={onEnded}
+        onError={onError}
+      />
+      {/* The engine's element (§Phase 2). Always rendered, never used unless the flag is on: it must
+          exist before the engine starts (a MediaSource needs an element to attach to) and it must be
+          the SAME element for the session's whole life, since createMediaElementSource can only ever
+          bind it once. Its `ended` — which only fires after endOfStream() — is a cross-engine
+          boundary, and the deck flip machinery handles it because this is registered as a deck. */}
+      <audio
+        ref={audioMseRef}
+        data-deck="mse"
         crossOrigin="anonymous"
         onPlay={onPlay}
         onPause={onPause}
