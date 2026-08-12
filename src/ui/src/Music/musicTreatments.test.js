@@ -106,17 +106,19 @@ describe("chooseEngineMode", () => {
     };
   };
 
-  it("is OFF by default — the decks are the shipped player", () => {
-    expect(chooseEngineMode({ search: "", storage: storage(), supported: true })).toBe("decks");
+  // Phase 5: the phone gate passed, the timeline made it daily-usable, so the default flipped.
+  it("is the ENGINE by default where anything is supported", () => {
+    expect(chooseEngineMode({ search: "", storage: storage(), supported: true })).toBe("mse");
   });
 
-  it("?mse=1 turns it on and remembers, ?mse=0 turns it off and forgets", () => {
+  it("?mse=0 opts out and is REMEMBERED; ?mse=1 clears the opt-out", () => {
     const s = storage();
-    expect(chooseEngineMode({ search: "?mse=1", storage: s, supported: true })).toBe("mse");
-    expect(s.getItem("music.engine")).toBe("mse");
-    expect(chooseEngineMode({ search: "", storage: s, supported: true })).toBe("mse");
     expect(chooseEngineMode({ search: "?mse=0", storage: s, supported: true })).toBe("decks");
-    expect(s.getItem("music.engine")).toBe(null);
+    expect(s.getItem("music.engine")).toBe("decks");
+    // The escape hatch survives a plain reload — that is what makes it one.
+    expect(chooseEngineMode({ search: "", storage: s, supported: true })).toBe("decks");
+    expect(chooseEngineMode({ search: "?mse=1", storage: s, supported: true })).toBe("mse");
+    expect(chooseEngineMode({ search: "", storage: s, supported: true })).toBe("mse");
   });
 
   // The flag is a request, not an assertion: a browser that proves no treatment keeps the decks
@@ -124,6 +126,7 @@ describe("chooseEngineMode", () => {
   it("refuses to turn on where nothing is supported", () => {
     const s = storage();
     expect(chooseEngineMode({ search: "?mse=1", storage: s, supported: false })).toBe("decks");
+    expect(chooseEngineMode({ search: "", storage: s, supported: false })).toBe("decks");
   });
 
   it("survives storage being unavailable (private mode)", () => {
@@ -132,6 +135,9 @@ describe("chooseEngineMode", () => {
       setItem: () => { throw new Error("nope"); },
       removeItem: () => { throw new Error("nope"); },
     };
-    expect(chooseEngineMode({ search: "?mse=1", storage: broken, supported: true })).toBe("decks");
+    // The default needs no storage, and a query is honoured for the session it was typed in even
+    // though it cannot be remembered.
+    expect(chooseEngineMode({ search: "", storage: broken, supported: true })).toBe("mse");
+    expect(chooseEngineMode({ search: "?mse=0", storage: broken, supported: true })).toBe("decks");
   });
 });

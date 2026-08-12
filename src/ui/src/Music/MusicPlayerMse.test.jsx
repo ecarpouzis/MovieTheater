@@ -306,8 +306,18 @@ describe("the MSE engine inside the player", () => {
     expect(state === undefined || state === null || typeof state === "object").toBe(true);
   });
 
-  it("is off by default — no flag, no engine", async () => {
+  // Phase 5: the default flipped. A browser that proves a treatment gets the engine with no flag
+  // at all; the decks are the floor, not the default.
+  it("is ON by default where a treatment is supported", async () => {
     window.localStorage.clear();
+    const { el, live } = await mountPlaying();
+    expect(live()).toBe(el("mse"));
+    expect(api.startMusicTracks).toHaveBeenCalled();
+  });
+
+  it("honours the remembered ?mse=0 opt-out", async () => {
+    window.localStorage.clear();
+    window.localStorage.setItem("music.engine", "decks");
     const { el, live } = await mountPlaying();
     expect(live()).toBe(el("a"));
     expect(api.startMusicTrack).toHaveBeenCalled();

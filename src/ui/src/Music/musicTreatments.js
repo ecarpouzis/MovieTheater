@@ -252,28 +252,32 @@ export function bufferCeilingSec({ sizeBytes, durationSec, quotaBytes, targetSec
 export const ENGINE_KEY = "music.engine";
 
 /**
- * Which player this session gets. OFF by default and decided ONCE per session, never mid-queue:
- * `?mse=1` turns it on and is remembered, `?mse=0` turns it off and forgets — the same shape as
- * `?diag=1`, because it is the same job (a switch that has to be flippable from a phone with no
- * devtools).
+ * Which player this session gets. THE ENGINE, by default (Phase 5: the gate ran on the phone, the
+ * timeline made it fit for daily use, and continuity is the product) — decided ONCE per session,
+ * never mid-queue, because switching engines at a boundary is the one thing that would put a script
+ * event back where this design removed one.
  *
- * `supported` is the caller's capability verdict: a browser that proves no treatment gets the decks
- * however the flag is set, because the flag is a request, not an assertion (ladder rung 7).
+ * `?mse=0` opts out and is REMEMBERED (the escape hatch has to survive a reload to be one);
+ * `?mse=1` forces the engine on and clears an opt-out. Both flippable from a phone with no
+ * devtools, same shape as `?diag=1`.
+ *
+ * `supported` is the caller's capability verdict and it outranks everything: a browser that proves
+ * no treatment (no MediaSource at all, or an iPhone whose ManagedMediaSource seam is unbuilt) gets
+ * the decks however the default reads — the default is a request, not an assertion (ladder rung 7).
  */
 export function chooseEngineMode({ search, storage, supported }) {
-  let flagged = false;
+  if (!supported) return "decks";
+  let choice = null; // null = no explicit word from the listener → the default, which is the engine
   try {
     const q = new URLSearchParams(search || "").get("mse");
-    if (q === "1" || q === "0") {
-      flagged = q === "1";
-      if (flagged) storage.setItem(ENGINE_KEY, "mse");
-      else storage.removeItem(ENGINE_KEY);
-    } else {
-      flagged = storage.getItem(ENGINE_KEY) === "mse";
+    // The choice lands BEFORE the persist, so a private-mode storage that throws still honours the
+    // query for this session — it just cannot remember it.
+    if (q === "1") { choice = "mse"; storage.setItem(ENGINE_KEY, "mse"); }
+    else if (q === "0") { choice = "decks"; storage.setItem(ENGINE_KEY, "decks"); }
+    else {
+      const saved = storage.getItem(ENGINE_KEY);
+      if (saved === "mse" || saved === "decks") choice = saved;
     }
-  } catch {
-    flagged = false;
-  }
-  if (!flagged) return "decks";
-  return supported ? "mse" : "decks";
+  } catch { /* nothing persists; an unreadable opt-out cannot be honoured */ }
+  return choice === "decks" ? "decks" : "mse";
 }
