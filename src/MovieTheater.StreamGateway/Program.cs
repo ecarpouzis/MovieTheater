@@ -339,17 +339,40 @@ string? UniversalCachePath(string relativePath, string sourceFull)
     }
 }
 
-// A cap, not an eviction policy — deliberately. Over the cap the lane simply stops ADDING to the
-// cache and keeps serving live encodes, so the failure mode of a full cache is "slower", never
-// "broken", and nothing here can ever delete a file it did not write. Measured per cache miss (a
-// miss already costs a 1–2 s encode, so an enumeration is noise) rather than kept in a counter that
-// would drift out of step with the directory.
-bool UniversalCacheHasRoom()
+// The cap is enforced by LRU eviction, not by refusing to add: a cache that silently stops adding
+// at its cap turns back into an encode-per-request lane for every NEW track, forever — the exact
+// failure the cache exists to remove. Recency comes from touching LastWriteTimeUtc on every hit
+// (the files are write-once, so an untouched LastWrite would be the encode time and a nightly
+// favorite would evict as readily as a one-off), which keeps the signal under this code's control
+// instead of depending on NTFS access-time tracking being enabled. Deletion is guarded to files
+// THIS code plausibly wrote: the 32-hex-digit ".mp4" naming, plus ".part" temps a killed encode
+// strands once they have gone stale. A file that refuses to delete (an open reader) is skipped —
+// the next miss retries. Evicts down to 90% of the cap so one pass buys headroom for many adds
+// rather than re-running at the boundary on every miss. Measured per cache miss (a miss already
+// costs a 1–2 s encode, so an enumeration is noise) rather than kept in a counter that would
+// drift out of step with the directory.
+bool UniversalCacheMakeRoom()
 {
     if (universalCacheDir == null) return false;
     try
     {
-        return new DirectoryInfo(universalCacheDir).EnumerateFiles().Sum(f => f.Length) < universalCacheMaxBytes;
+        var dir = new DirectoryInfo(universalCacheDir);
+        var ours = dir.EnumerateFiles("*.mp4")
+            .Where(f => f.Name.Length == 36 && f.Name[..32].All(Uri.IsHexDigit))
+            .ToList();
+        foreach (var part in dir.EnumerateFiles("*.part"))
+        {
+            try { if (part.LastWriteTimeUtc < DateTime.UtcNow.AddDays(-1)) part.Delete(); } catch { /* still being written, or an open reader */ }
+        }
+        var total = ours.Sum(f => f.Length);
+        if (total < universalCacheMaxBytes) return true;
+        var floor = (long)(universalCacheMaxBytes * 0.9);
+        foreach (var file in ours.OrderBy(f => f.LastWriteTimeUtc))
+        {
+            if (total <= floor) break;
+            try { var len = file.Length; file.Delete(); total -= len; } catch { /* open reader; skip, retry next miss */ }
+        }
+        return total < universalCacheMaxBytes;
     }
     catch
     {
@@ -378,6 +401,9 @@ app.MapMethods($"/s/{{token}}/{MusicStreamRoutes.Universal}", new[] { "GET", "HE
     var cachePath = UniversalCachePath(relative, full);
     if (cachePath != null && File.Exists(cachePath))
     {
+        // Recency for the LRU eviction: write-once files never change on their own, so the touch is
+        // what separates "played every night" from "encoded once in March".
+        try { File.SetLastWriteTimeUtc(cachePath, DateTime.UtcNow); } catch { /* recency is best-effort */ }
         context.Response.Headers["Cache-Control"] = "private, max-age=3600";
         await Results.File(cachePath, "audio/mp4", enableRangeProcessing: true).ExecuteAsync(context);
         return;
@@ -402,7 +428,7 @@ app.MapMethods($"/s/{{token}}/{MusicStreamRoutes.Universal}", new[] { "GET", "HE
         context.Response.Headers["Cache-Control"] = "private, no-store";
         if (HttpMethods.IsHead(context.Request.Method)) return;
 
-        if (cachePath != null && UniversalCacheHasRoom())
+        if (cachePath != null && UniversalCacheMakeRoom())
         {
             try
             {
