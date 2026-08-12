@@ -1137,6 +1137,268 @@ function adminSetUserSetting(userId, settingKey, settingValue) {
   });
 }
 
+// ── Family photo album (docs/photos-plan.md §2.1) ─────────────────────────────
+// Every /API/Photos route sits behind the RequireFamilyAlbum policy, so a non-member gets 403 and an
+// anonymous caller 401 — callers must handle both rather than assuming the nav already filtered.
+function getPhotosStatus() {
+  return fetch("/API/Photos/Status", { cache: "no-store" });
+}
+
+// Keyset-paged (TakenAt DESC, Id DESC). `undated` is a SEPARATE shelf, not a filter on the same
+// stream — date-unknown items are never interleaved (§2.7), so the two modes carry their own cursors.
+function getPhotosTimeline({ beforeTakenAt, beforeId, take, undated, includeHidden } = {}) {
+  const params = new URLSearchParams();
+  if (beforeTakenAt) params.set("beforeTakenAt", beforeTakenAt);
+  if (beforeId) params.set("beforeId", beforeId);
+  if (take) params.set("take", take);
+  if (undated) params.set("undated", "true");
+  // The timeline excludes hidden items by default (§2.9); a member can ask to see them.
+  if (includeHidden) params.set("includeHidden", "true");
+  return fetch("/API/Photos/Timeline?" + params.toString(), { cache: "no-store" });
+}
+
+// includeHidden is honoured only for an admin (Phase 4 addendum); a member's request is ignored
+// rather than refused, so a stale tab gets the curated album instead of a probe-able 403.
+function getPhotosFolder({ path, skip, take, includeHidden } = {}) {
+  const params = new URLSearchParams();
+  if (path) params.set("path", path);
+  if (skip) params.set("skip", skip);
+  if (take) params.set("take", take);
+  if (includeHidden) params.set("includeHidden", "true");
+  return fetch("/API/Photos/Folders?" + params.toString(), { cache: "no-store" });
+}
+
+function getPhotoAsset(id) {
+  return fetch("/API/Photos/Asset/" + id, { cache: "no-store" });
+}
+
+function getPhotosIngestStatus() {
+  return fetch("/API/Photos/IngestStatus", { cache: "no-store" });
+}
+
+// ── Curation + albums (docs/photos-plan.md §2.9, §2.5) ────────────────────────
+// Curation is rows and flags only. Hiding excludes a photo from the timeline and from albums and
+// leaves it in the folder view; NOTHING here ever touches a file on disk.
+
+function photosPost(url, body) {
+  return fetch(url, {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body ?? {}),
+  });
+}
+
+function setPhotosHidden(ids, hidden) {
+  return photosPost("/API/Photos/Hide", { ids, hidden });
+}
+
+function getPhotosHideProposals(includeDecided) {
+  return fetch("/API/Photos/HideProposals?includeDecided=" + (includeDecided ? "true" : "false"), { cache: "no-store" });
+}
+
+function getPhotosHideProposal(batchId, { skip, take } = {}) {
+  const params = new URLSearchParams();
+  if (skip) params.set("skip", skip);
+  if (take) params.set("take", take);
+  return fetch(`/API/Photos/HideProposal/${encodeURIComponent(batchId)}?` + params.toString(), { cache: "no-store" });
+}
+
+// One action for a whole batch — §2.9's "human-confirmed batch-wise". Rejecting writes nothing.
+function decidePhotosHideProposal(batchId, decision) {
+  return photosPost(`/API/Photos/HideProposal/${encodeURIComponent(batchId)}/${decision}`);
+}
+
+function getPhotosIngestBatches() {
+  return fetch("/API/Photos/IngestBatches", { cache: "no-store" });
+}
+
+function approvePhotosIngestBatches({ groupKey, batchIds } = {}) {
+  return photosPost("/API/Photos/IngestBatches/Approve", { groupKey, batchIds });
+}
+
+function getPhotoAlbums() {
+  return fetch("/API/Photos/Albums", { cache: "no-store" });
+}
+
+function getPhotoAlbum(slug, { skip, take } = {}) {
+  const params = new URLSearchParams();
+  if (skip) params.set("skip", skip);
+  if (take) params.set("take", take);
+  return fetch(`/API/Photos/Album/${encodeURIComponent(slug)}?` + params.toString(), { cache: "no-store" });
+}
+
+// The slug is minted server-side; assetIds creates from a selection and fromFolder seeds from a
+// folder (which COPIES membership — the folder is never the album's identity).
+function createPhotoAlbum({ title, description, assetIds, fromFolder } = {}) {
+  return photosPost("/API/Photos/Albums", { title, description, assetIds, fromFolder });
+}
+
+function updatePhotoAlbum(id, body) {
+  return photosPost(`/API/Photos/Album/${id}/Update`, body);
+}
+
+function addToPhotoAlbum(id, { assetIds, fromFolder } = {}) {
+  return photosPost(`/API/Photos/Album/${id}/Add`, { assetIds, fromFolder });
+}
+
+function removeFromPhotoAlbum(id, assetIds) {
+  return photosPost(`/API/Photos/Album/${id}/Remove`, { assetIds });
+}
+
+// A PARTIAL list is fine: the ids sent take the front, everything else keeps its order behind them.
+function reorderPhotoAlbum(id, assetIds) {
+  return photosPost(`/API/Photos/Album/${id}/Reorder`, { assetIds });
+}
+
+// Rows only — an album has never held a file. The confirm is because it is hand-built curation.
+function deletePhotoAlbum(id) {
+  return photosPost(`/API/Photos/Album/${id}/Delete`, { confirm: true });
+}
+
+function getPhotoAssetAlbums(id) {
+  return fetch(`/API/Photos/Asset/${id}/Albums`, { cache: "no-store" });
+}
+
+// ── Duplicate review (docs/photos-plan.md §2.6) ───────────────────────────────
+// Member-visible, like the rest of curation. Variant pairs (RAW+JPEG, motion photos, Live Photos)
+// are settled by the grouping pass and are never listed here — they need no human, and asking which
+// of a RAW and its JPEG is "better" would collapse the half a browser can render.
+function getPhotoDupeGroups({ status, kind, skip, take } = {}) {
+  const params = new URLSearchParams();
+  if (status) params.set("status", status);
+  if (kind) params.set("kind", kind);
+  if (skip) params.set("skip", skip);
+  if (take) params.set("take", take);
+  return fetch("/API/Photos/DupeGroups?" + params.toString(), { cache: "no-store" });
+}
+
+// Picking a master collapses the other copies out of the timeline and albums immediately. Rows and
+// flags only: every copy is still on disk and still in the folder view.
+function resolvePhotoDupeGroup(id, masterAssetId) {
+  return photosPost(`/API/Photos/DupeGroup/${id}/Resolve`, { masterAssetId });
+}
+
+// "Not the same photo." The group survives as a tombstone so the grouping pass never re-proposes it.
+function rejectPhotoDupeGroup(id) {
+  return photosPost(`/API/Photos/DupeGroup/${id}/Reject`);
+}
+
+// ── People, tagging and the tag queue (docs/photos-plan.md §2.7, §2.8) ────────
+// People live in DB rows and nowhere else. Tags attach to a duplicate group's MASTER — the server
+// redirects and REPORTS that it did, so "I tagged three copies and got one tag" has an answer.
+// Suggestions never auto-confirm: confirm promotes the row, reject leaves a tombstone so a re-sync
+// does not propose the identical face again.
+function getPhotoPeople() {
+  return fetch("/API/Photos/People", { cache: "no-store" });
+}
+
+function createPhotoPerson({ name, birthYear } = {}) {
+  return photosPost("/API/Photos/People", { name, birthYear });
+}
+
+// Sending a name to a row whose name is EMPTY is what names an imported face cluster — the
+// highest-leverage action in the feature, because its suggestions are already pointed at that row.
+function updatePhotoPerson(id, body) {
+  return photosPost(`/API/Photos/Person/${id}/Update`, body);
+}
+
+// Maps an unnamed cluster onto someone who already exists instead of creating a second row.
+function mergePhotoPerson(id, intoPersonId) {
+  return photosPost(`/API/Photos/Person/${id}/MergeInto`, { intoPersonId });
+}
+
+function deletePhotoPerson(id) {
+  return photosPost(`/API/Photos/Person/${id}/Delete`, { confirm: true });
+}
+
+function getPhotoPerson(id) {
+  return fetch(`/API/Photos/Person/${id}`, { cache: "no-store" });
+}
+
+function getPhotoPersonTimeline(id, { skip, take, includeHidden } = {}) {
+  const params = new URLSearchParams();
+  if (skip) params.set("skip", skip);
+  if (take) params.set("take", take);
+  if (includeHidden) params.set("includeHidden", "true");
+  return fetch(`/API/Photos/Person/${id}/Timeline?` + params.toString(), { cache: "no-store" });
+}
+
+function getPhotoAssetTags(id) {
+  return fetch(`/API/Photos/Asset/${id}/Tags`, { cache: "no-store" });
+}
+
+// One endpoint for the lightbox picker and the batch action, because they are the same write. A
+// name instead of an id creates the person — the type-ahead's "add …" in one round trip.
+function addPhotoTags({ assetIds, familyPersonId, name } = {}) {
+  return photosPost("/API/Photos/Tags/Add", { assetIds, familyPersonId, name });
+}
+
+// An untag DELETES the row rather than leaving a tombstone: "wrong person" must not permanently bar
+// the right one from ever being suggested.
+function removePhotoTags({ assetIds, familyPersonId } = {}) {
+  return photosPost("/API/Photos/Tags/Remove", { assetIds, familyPersonId });
+}
+
+function confirmPhotoTag(tagId) {
+  return photosPost(`/API/Photos/Tag/${tagId}/Confirm`);
+}
+
+function rejectPhotoTag(tagId) {
+  return photosPost(`/API/Photos/Tag/${tagId}/Reject`);
+}
+
+// Wall-clock as typed (§2.7). A circa range never writes an exact date: a year is not a wall clock.
+function setPhotoAssetDate(id, body) {
+  return photosPost(`/API/Photos/Asset/${id}/Date`, body);
+}
+
+// mode: "suggested" (rows a sync proposed) or "untagged" (the manual lane, which works with no
+// sidecar deployed at all). Keyset-paged by id so accepting under the reviewer shifts nothing.
+function getPhotoTagQueue({ mode, afterId, take } = {}) {
+  const params = new URLSearchParams();
+  if (mode) params.set("mode", mode);
+  if (afterId) params.set("afterId", afterId);
+  if (take) params.set("take", take);
+  return fetch("/API/Photos/TagQueue?" + params.toString(), { cache: "no-store" });
+}
+
+// ── Family video playback (docs/photos-plan.md §2.3) ──────────────────────────
+// The server names the Jellyfin item from the ASSET id — the browser never sends one, so this stays
+// a family-gated endpoint rather than a media-server proxy. A 409 means "not synced yet": the file is
+// safe on disk and everything else about it works, it just cannot play.
+
+function startPhotoVideo(assetId, options = {}) {
+  return photosPost("/API/Photos/Video/Start", { assetId, ...options });
+}
+
+/** Admin: which family videos sit in folders Jellyfin RESERVES for extras and therefore drops. */
+function getPhotosJellyfinAudit() {
+  return fetch("/API/Photos/JellyfinAudit", { cache: "no-store" });
+}
+
+// ── Google mesh (docs/photos-plan.md §2.10) ───────────────────────────────────
+// Member-visible curation, like the hide proposals and the dupe review. The mesh itself runs as a
+// CLI pass over a Takeout archive; these only read what it decided and record one human answer.
+
+/** Match stats, per-rung counts, and what Google disagrees with the library about. */
+function getPhotosGoogleMesh() {
+  return fetch("/API/Photos/GoogleMesh", { cache: "no-store" });
+}
+
+/** The Google-only list: what the archive has and the library does not, with archive thumbnails. */
+function getPhotosGoogleOnly({ skip, take, includeIgnored } = {}) {
+  const params = new URLSearchParams();
+  if (skip) params.set("skip", skip);
+  if (take) params.set("take", take);
+  if (includeIgnored) params.set("includeIgnored", "true");
+  return fetch("/API/Photos/GoogleOnly?" + params.toString(), { cache: "no-store" });
+}
+
+/** Ignore Google-only items (excluding them from the download lane), or take that back. */
+function ignorePhotosGoogleItems(ids, ignored) {
+  return photosPost("/API/Photos/GoogleItems/Ignore", { ids, ignored });
+}
+
 // ── Library-ingest review (editor-gated; quarantined rows pending approval) ───
 // The bulk library ingest tags new rows with a ReviewBatch and hides them from
 // browse; these drive the on-site review queue that approves / rejects / corrects
@@ -1426,6 +1688,48 @@ const MovieAPI = {
   adminGetPatchedArtifacts,
   adminSetUserPassword,
   adminSetUserSetting,
+  getPhotosStatus,
+  getPhotosTimeline,
+  getPhotosFolder,
+  getPhotoAsset,
+  getPhotosIngestStatus,
+  setPhotosHidden,
+  getPhotosHideProposals,
+  getPhotosHideProposal,
+  decidePhotosHideProposal,
+  getPhotosIngestBatches,
+  approvePhotosIngestBatches,
+  getPhotoAlbums,
+  getPhotoAlbum,
+  createPhotoAlbum,
+  updatePhotoAlbum,
+  addToPhotoAlbum,
+  removeFromPhotoAlbum,
+  reorderPhotoAlbum,
+  deletePhotoAlbum,
+  getPhotoDupeGroups,
+  resolvePhotoDupeGroup,
+  rejectPhotoDupeGroup,
+  getPhotoAssetAlbums,
+  getPhotoPeople,
+  createPhotoPerson,
+  updatePhotoPerson,
+  mergePhotoPerson,
+  deletePhotoPerson,
+  getPhotoPerson,
+  getPhotoPersonTimeline,
+  getPhotoAssetTags,
+  addPhotoTags,
+  removePhotoTags,
+  confirmPhotoTag,
+  rejectPhotoTag,
+  setPhotoAssetDate,
+  getPhotoTagQueue,
+  startPhotoVideo,
+  getPhotosJellyfinAudit,
+  getPhotosGoogleMesh,
+  getPhotosGoogleOnly,
+  ignorePhotosGoogleItems,
   ingestReviewList,
   ingestReviewDetail,
   ingestReviewApprove,

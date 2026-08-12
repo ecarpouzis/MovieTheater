@@ -534,6 +534,30 @@ namespace MovieTheater.Services.Jellyfin
             GetAllItemsAsync("Folder", "Path", cancel);
 
         /// <summary>
+        /// The server's configured LIBRARIES and the on-disk folders each one covers
+        /// (<c>/Library/VirtualFolders</c>). Used for exactly one thing: letting the movie-side sync
+        /// resolve the family photo library's own locations into exclusion prefixes when
+        /// <c>PhotosJellyfinLibraryId</c> is set (docs/photos-plan.md §2.3). The item listings carry no
+        /// per-item library id, so this is the only way an id can widen a path-prefix exclusion.
+        ///
+        /// <para>Never called unless that setting is present, so the ordinary sync pays nothing for it.</para>
+        /// </summary>
+        public async Task<List<JellyfinVirtualFolder>> GetVirtualFoldersAsync(CancellationToken cancel = default)
+        {
+            EnsureConfigured();
+            return await httpClient.GetFromJsonAsync<List<JellyfinVirtualFolder>>("/Library/VirtualFolders", JsonOptions, cancel)
+                   ?? new List<JellyfinVirtualFolder>();
+        }
+
+        /// <summary>
+        /// Path-only listing of the video items in ONE library, for <c>photos-sync-jellyfin</c> (§2.3).
+        /// Scoped by ParentId so the family sync never enumerates the movie library — the mirror image
+        /// of the movie sync's exclusion, and the reason neither pass can see the other's files.
+        /// </summary>
+        public Task<List<JellyfinItem>> GetLibraryVideoItemsAsync(string libraryId, CancellationToken cancel = default) =>
+            GetVideoItemPathsUnderParentAsync(libraryId, cancel);
+
+        /// <summary>
         /// Path-only listing of video items under a folder/parent (recursive) — the SCOPED counterpart of
         /// <see cref="GetAllVideoItemPathsAsync"/>, so the re-link probe can poll a single shelf cheaply
         /// instead of re-listing the whole library every few seconds.
@@ -779,6 +803,19 @@ namespace MovieTheater.Services.Jellyfin
         public double? Progress { get; set; }
         public bool Found { get; set; }
         public bool IsRunning => string.Equals(State, "Running", System.StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>One configured Jellyfin library and the on-disk folders it covers
+    /// (<see cref="JellyfinApi.GetVirtualFoldersAsync"/>). Only the three fields the family-library
+    /// exclusion reads.</summary>
+    public class JellyfinVirtualFolder
+    {
+        public string? Name { get; set; }
+
+        /// <summary>The library's item id — what <c>PhotosJellyfinLibraryId</c> holds.</summary>
+        public string? ItemId { get; set; }
+
+        public List<string> Locations { get; set; } = new();
     }
 
     public class JellyfinItem

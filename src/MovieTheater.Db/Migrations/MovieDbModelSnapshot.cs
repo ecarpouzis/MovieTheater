@@ -1052,6 +1052,50 @@ namespace MovieTheater.Db.Migrations
                     b.ToTable("Episode");
                 });
 
+            modelBuilder.Entity("MovieTheater.Db.FamilyPerson", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("BirthYear")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("CoverAssetId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ImmichPersonId")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int?>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CoverAssetId");
+
+                    b.HasIndex("Name");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex(new[] { "ImmichPersonId" }, "IX_FamilyPerson_ImmichPersonId")
+                        .IsUnique()
+                        .HasFilter("[ImmichPersonId] IS NOT NULL");
+
+                    b.ToTable("FamilyPerson");
+                });
+
             modelBuilder.Entity("MovieTheater.Db.Genre", b =>
                 {
                     b.Property<int>("Id")
@@ -1959,6 +2003,522 @@ namespace MovieTheater.Db.Migrations
                     b.ToTable("Person");
                 });
 
+            modelBuilder.Entity("MovieTheater.Db.PhotoAlbum", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("CoverAssetId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("CreatedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("RangeEnd")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("RangeStart")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CoverAssetId");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("Slug")
+                        .IsUnique();
+
+                    b.ToTable("PhotoAlbum");
+                });
+
+            modelBuilder.Entity("MovieTheater.Db.PhotoAlbumEntry", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Caption")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("PhotoAlbumId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PhotoAssetId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PhotoAssetId");
+
+                    b.HasIndex("PhotoAlbumId", "PhotoAssetId")
+                        .IsUnique();
+
+                    b.HasIndex("PhotoAlbumId", "SortOrder");
+
+                    b.ToTable("PhotoAlbumEntry");
+                });
+
+            modelBuilder.Entity("MovieTheater.Db.PhotoAsset", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CameraMake")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("CameraModel")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<long?>("DHash")
+                        .HasColumnType("bigint");
+
+                    b.Property<double?>("DurationSec")
+                        .HasColumnType("float");
+
+                    b.Property<DateTime>("FileModifiedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("FirstSeenUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<double?>("GpsLat")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("GpsLon")
+                        .HasColumnType("float");
+
+                    b.Property<DateTime?>("HashUpdatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("Height")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("Hidden")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("ImmichAssetId")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("IngestBatch")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("IngestError")
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<string>("JellyfinItemId")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("int");
+
+                    b.Property<string>("LocationLabel")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<int>("LocationSource")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("MetadataUpdatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("MissingSinceUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("OriginalRenderable")
+                        .HasColumnType("bit");
+
+                    b.Property<long?>("PHash")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Path")
+                        .IsRequired()
+                        .HasMaxLength(850)
+                        .HasColumnType("nvarchar(850)");
+
+                    b.Property<string>("RawMetadataJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Sha256")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("TakenAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("TakenAtSource")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("TakenAtUtcRaw")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ThumbKey")
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<int>("ThumbState")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ThumbVariants")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTime?>("ThumbsUpdatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("Width")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("YearMax")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("YearMin")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IngestBatch");
+
+                    b.HasIndex("JellyfinItemId");
+
+                    b.HasIndex("MissingSinceUtc");
+
+                    b.HasIndex("PHash");
+
+                    b.HasIndex("Path")
+                        .IsUnique();
+
+                    b.HasIndex("Sha256");
+
+                    b.HasIndex("Hidden", "TakenAt")
+                        .IsDescending(false, true);
+
+                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("Hidden", "TakenAt"), new[] { "Path", "Kind", "Width", "Height", "DurationSec", "TakenAtSource", "MissingSinceUtc" });
+
+                    b.HasIndex(new[] { "Id" }, "IX_PhotoAsset_HashQueue")
+                        .HasFilter("[HashUpdatedUtc] IS NULL");
+
+                    b.HasIndex(new[] { "Id" }, "IX_PhotoAsset_MetadataQueue")
+                        .HasFilter("[MetadataUpdatedUtc] IS NULL");
+
+                    b.HasIndex(new[] { "Id" }, "IX_PhotoAsset_ThumbQueue")
+                        .HasFilter("[ThumbsUpdatedUtc] IS NULL");
+
+                    b.ToTable("PhotoAsset");
+                });
+
+            modelBuilder.Entity("MovieTheater.Db.PhotoCurationBatch", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AppliedCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("BatchId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<bool>("Complete")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Cursor")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<int?>("DecidedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("DecidedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DecidedByUserId");
+
+                    b.HasIndex("Kind", "BatchId")
+                        .IsUnique();
+
+                    b.HasIndex("Kind", "Status", "CreatedUtc");
+
+                    b.ToTable("PhotoCurationBatch");
+                });
+
+            modelBuilder.Entity("MovieTheater.Db.PhotoCurationBatchItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Path")
+                        .IsRequired()
+                        .HasMaxLength(850)
+                        .HasColumnType("nvarchar(850)");
+
+                    b.Property<int>("PhotoAssetId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PhotoCurationBatchId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Rule")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("Sha256")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PhotoAssetId");
+
+                    b.HasIndex("PhotoCurationBatchId", "PhotoAssetId")
+                        .IsUnique();
+
+                    b.ToTable("PhotoCurationBatchItem");
+                });
+
+            modelBuilder.Entity("MovieTheater.Db.PhotoDupeGroup", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ResolvedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ResolvedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ResolvedByUserId");
+
+                    b.HasIndex("Status", "Kind");
+
+                    b.ToTable("PhotoDupeGroup");
+                });
+
+            modelBuilder.Entity("MovieTheater.Db.PhotoDupeMember", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("IsMaster")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("PhotoAssetId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PhotoDupeGroupId")
+                        .HasColumnType("int");
+
+                    b.Property<double?>("Similarity")
+                        .HasColumnType("float");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PhotoAssetId", "IsMaster");
+
+                    b.HasIndex("PhotoDupeGroupId", "PhotoAssetId")
+                        .IsUnique();
+
+                    b.HasIndex(new[] { "PhotoDupeGroupId" }, "IX_PhotoDupeMember_Master")
+                        .IsUnique()
+                        .HasFilter("[IsMaster] = 1");
+
+                    b.ToTable("PhotoDupeMember");
+                });
+
+            modelBuilder.Entity("MovieTheater.Db.PhotoGoogleItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Disagreements")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("DownloadedPath")
+                        .HasMaxLength(850)
+                        .HasColumnType("nvarchar(850)");
+
+                    b.Property<DateTime>("FirstSeenUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("LastSeenUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("MatchDistance")
+                        .HasColumnType("int");
+
+                    b.Property<string>("MatchMethod")
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<int?>("MatchedPhotoAssetId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SidecarJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<long?>("SizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("TakenAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("TakeoutFileName")
+                        .IsRequired()
+                        .HasMaxLength(400)
+                        .HasColumnType("nvarchar(400)");
+
+                    b.Property<string>("TakeoutRelativePath")
+                        .HasMaxLength(850)
+                        .HasColumnType("nvarchar(850)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MatchedPhotoAssetId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("TakeoutFileName", "TakenAtUtc", "SizeBytes")
+                        .IsUnique()
+                        .HasFilter("[TakenAtUtc] IS NOT NULL AND [SizeBytes] IS NOT NULL");
+
+                    b.ToTable("PhotoGoogleItem");
+                });
+
+            modelBuilder.Entity("MovieTheater.Db.PhotoPersonTag", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<double?>("BoxH")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("BoxW")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("BoxX")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("BoxY")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("Confidence")
+                        .HasColumnType("float");
+
+                    b.Property<DateTime?>("ConfirmedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("FamilyPersonId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ImmichPersonId")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<int>("PhotoAssetId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Source")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FamilyPersonId", "Source");
+
+                    b.HasIndex("PhotoAssetId", "FamilyPersonId")
+                        .IsUnique();
+
+                    b.ToTable("PhotoPersonTag");
+                });
+
             modelBuilder.Entity("MovieTheater.Db.Playable", b =>
                 {
                     b.Property<int>("Id")
@@ -2707,6 +3267,23 @@ namespace MovieTheater.Db.Migrations
                     b.Navigation("Series");
                 });
 
+            modelBuilder.Entity("MovieTheater.Db.FamilyPerson", b =>
+                {
+                    b.HasOne("MovieTheater.Db.PhotoAsset", "CoverAsset")
+                        .WithMany()
+                        .HasForeignKey("CoverAssetId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("MovieTheater.Db.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("CoverAsset");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("MovieTheater.Db.MediaFile", b =>
                 {
                     b.HasOne("MovieTheater.Db.Playable", "Playable")
@@ -2921,6 +3498,129 @@ namespace MovieTheater.Db.Migrations
                     b.Navigation("Track");
                 });
 
+            modelBuilder.Entity("MovieTheater.Db.PhotoAlbum", b =>
+                {
+                    b.HasOne("MovieTheater.Db.PhotoAsset", "CoverAsset")
+                        .WithMany()
+                        .HasForeignKey("CoverAssetId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("MovieTheater.Db.User", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("CoverAsset");
+
+                    b.Navigation("CreatedByUser");
+                });
+
+            modelBuilder.Entity("MovieTheater.Db.PhotoAlbumEntry", b =>
+                {
+                    b.HasOne("MovieTheater.Db.PhotoAlbum", "PhotoAlbum")
+                        .WithMany("Entries")
+                        .HasForeignKey("PhotoAlbumId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MovieTheater.Db.PhotoAsset", "PhotoAsset")
+                        .WithMany()
+                        .HasForeignKey("PhotoAssetId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("PhotoAlbum");
+
+                    b.Navigation("PhotoAsset");
+                });
+
+            modelBuilder.Entity("MovieTheater.Db.PhotoCurationBatch", b =>
+                {
+                    b.HasOne("MovieTheater.Db.User", "DecidedByUser")
+                        .WithMany()
+                        .HasForeignKey("DecidedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("DecidedByUser");
+                });
+
+            modelBuilder.Entity("MovieTheater.Db.PhotoCurationBatchItem", b =>
+                {
+                    b.HasOne("MovieTheater.Db.PhotoAsset", "PhotoAsset")
+                        .WithMany()
+                        .HasForeignKey("PhotoAssetId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MovieTheater.Db.PhotoCurationBatch", "PhotoCurationBatch")
+                        .WithMany("Items")
+                        .HasForeignKey("PhotoCurationBatchId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PhotoAsset");
+
+                    b.Navigation("PhotoCurationBatch");
+                });
+
+            modelBuilder.Entity("MovieTheater.Db.PhotoDupeGroup", b =>
+                {
+                    b.HasOne("MovieTheater.Db.User", "ResolvedByUser")
+                        .WithMany()
+                        .HasForeignKey("ResolvedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("ResolvedByUser");
+                });
+
+            modelBuilder.Entity("MovieTheater.Db.PhotoDupeMember", b =>
+                {
+                    b.HasOne("MovieTheater.Db.PhotoAsset", "PhotoAsset")
+                        .WithMany()
+                        .HasForeignKey("PhotoAssetId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MovieTheater.Db.PhotoDupeGroup", "PhotoDupeGroup")
+                        .WithMany("Members")
+                        .HasForeignKey("PhotoDupeGroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PhotoAsset");
+
+                    b.Navigation("PhotoDupeGroup");
+                });
+
+            modelBuilder.Entity("MovieTheater.Db.PhotoGoogleItem", b =>
+                {
+                    b.HasOne("MovieTheater.Db.PhotoAsset", "MatchedPhotoAsset")
+                        .WithMany()
+                        .HasForeignKey("MatchedPhotoAssetId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("MatchedPhotoAsset");
+                });
+
+            modelBuilder.Entity("MovieTheater.Db.PhotoPersonTag", b =>
+                {
+                    b.HasOne("MovieTheater.Db.FamilyPerson", "FamilyPerson")
+                        .WithMany()
+                        .HasForeignKey("FamilyPersonId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MovieTheater.Db.PhotoAsset", "PhotoAsset")
+                        .WithMany()
+                        .HasForeignKey("PhotoAssetId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("FamilyPerson");
+
+                    b.Navigation("PhotoAsset");
+                });
+
             modelBuilder.Entity("MovieTheater.Db.PlaylistItem", b =>
                 {
                     b.HasOne("MovieTheater.Db.Channel", "Channel")
@@ -3100,6 +3800,21 @@ namespace MovieTheater.Db.Migrations
             modelBuilder.Entity("MovieTheater.Db.Person", b =>
                 {
                     b.Navigation("Credits");
+                });
+
+            modelBuilder.Entity("MovieTheater.Db.PhotoAlbum", b =>
+                {
+                    b.Navigation("Entries");
+                });
+
+            modelBuilder.Entity("MovieTheater.Db.PhotoCurationBatch", b =>
+                {
+                    b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("MovieTheater.Db.PhotoDupeGroup", b =>
+                {
+                    b.Navigation("Members");
                 });
 
             modelBuilder.Entity("MovieTheater.Db.Playable", b =>

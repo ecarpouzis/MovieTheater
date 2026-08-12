@@ -121,6 +121,128 @@ namespace MovieTheater.Services
         /// separate hosts — turning this on without that yields a 404 from the gateway.</summary>
         public bool MusicTranscodeEnabled { get; set; }
 
+        // ── Family photo album (docs/photos-plan.md §2.2/§2.5). Every surface degrades when these are
+        // unset — the CLI refuses to run and the token minter answers "not configured" — so a host that
+        // is not photo-adjacent simply does not offer the vertical. NO path here is ever hardcoded:
+        // the collection root differs per host and never appears in code (§6). ──
+
+        /// <summary>Root of the photo collection as THIS host mounts it. The ingest CLI walks it
+        /// (bounded per call, read-only) and stores every path root-relative, so the StreamGateway
+        /// resolves the same relative paths against its own mount.</summary>
+        public string? PhotosLibraryDir { get; set; }
+
+        /// <summary>Where the ingest WRITES its pre-generated derivatives (§2.2) — the same directory
+        /// the gateway serves as <c>PhotoThumbCacheDir</c>, as this host mounts it. Derived data:
+        /// deletable and rebuildable, sized for tens of GB at 100k photos.</summary>
+        public string? PhotosThumbCacheDir { get; set; }
+
+        /// <summary>IANA/Windows timezone id used to convert a source that supplies TRUE UTC (GPS
+        /// timestamps now; Takeout's photoTakenTime and video containers later) into the naive local
+        /// wall-clock <c>PhotoAsset.TakenAt</c> is defined as (§2.7). EXIF itself carries no timezone
+        /// and is taken as wall-clock directly. Default America/New_York.</summary>
+        public string? PhotosHomeTimeZone { get; set; }
+
+        /// <summary>Where the ingest drops its review artifacts — currently the ambiguous move/re-pair
+        /// list the walk refuses to auto-apply (§2.5). Kept with the other pipeline data under the
+        /// repo's <c>data/</c> convention and NEVER on the NAS (§2.11). Default <c>data/photos</c>.</summary>
+        public string? PhotosReportDir { get; set; }
+
+        /// <summary>
+        /// Item id of the DEDICATED family Jellyfin library (§2.3) — the one whose folders are the
+        /// video-bearing subtrees of the photo collection.
+        ///
+        /// <para>Two independent uses. <c>photos-sync-jellyfin</c> scopes its item sweep to it, so the
+        /// family sync never enumerates the movie library. And the MOVIE-side <c>sync-jellyfin</c> asks
+        /// Jellyfin for that library's on-disk locations and adds them to its exclusion prefixes — the
+        /// belt to the braces of <see cref="PhotosLibraryDir"/>, which already excludes the collection by
+        /// PATH. <b>The exclusion works with this unset</b>; the id only widens it to library roots the
+        /// configured photo root does not cover.</para>
+        /// </summary>
+        public string? PhotosJellyfinLibraryId { get; set; }
+
+        /// <summary>
+        /// The blast-radius ceiling on the movie-side <c>sync-jellyfin</c>, as a FRACTION of what the
+        /// server reported (0–1). A run that would exclude more than this share of the library as
+        /// "family", or stamp more than this share of the existing <c>MediaFile</c> rows as missing,
+        /// ABORTS and reports instead of writing.
+        ///
+        /// <para><b>Why a ceiling exists at all.</b> Both numbers are supposed to be small: the family
+        /// collection is a corner of the disk, and a healthy sync finds nearly every row it already has.
+        /// A misconfiguration makes them enormous rather than slightly wrong — a <c>PhotosLibraryDir</c>
+        /// that expands to a volume root excludes the whole library, and an unmounted share makes every
+        /// file on the NAS look deleted. Both then write across the entire table in one pass, and both
+        /// look like a successful sync in the log. <see cref="JellyfinFamilyExclusion.IsMeaningfulRoot"/>
+        /// refuses the specific volume-root shape; this is the outcome-shaped backstop for the shapes
+        /// nobody predicted.</para>
+        ///
+        /// <para>Deliberately conservative: half the library is far past anything a normal run does, so
+        /// the guard costs nothing on a healthy sync and cannot be tripped by ordinary churn. 0 or a
+        /// negative value disables it, for the deliberate case where an operator really is retiring most
+        /// of the catalogue and has said so.</para>
+        /// </summary>
+        public double JellyfinSyncMaxWriteFraction { get; set; } = 0.5;
+
+        /// <summary>
+        /// The floor beneath which <see cref="JellyfinSyncMaxWriteFraction"/> is not applied — a fraction
+        /// of a handful of rows means nothing, and a fresh or tiny library must not be un-syncable.
+        /// </summary>
+        public int JellyfinSyncGuardMinRows { get; set; } = 25;
+
+        /// <summary>
+        /// Root of an EXTRACTED Google Takeout archive for <c>photos-google-mesh</c> (§2.10). The Photos
+        /// Library API lost third-party read access in 2025, so a downloaded, unzipped archive is the
+        /// only lane left; this points at the directory it was extracted into.
+        ///
+        /// <para>Read-only, and unset by default like every other path here — no host is required to
+        /// have an archive staged, and the command refuses rather than guessing where one might be.</para>
+        /// </summary>
+        public string? PhotosGoogleTakeoutDir { get; set; }
+
+        /// <summary>
+        /// Destination for the download lane — <b>the one additive NAS write in this whole vertical</b>
+        /// (§2.10), and the only setting in this block that names a directory the pipeline WRITES INTO.
+        ///
+        /// <para><b>It has no default and never will.</b> <c>photos-google-mesh --download</c> refuses to
+        /// run when it is unset, refuses to run before the archive's match pass has fully drained, and
+        /// refuses to overwrite any path that already exists. Everything else in the vertical is a
+        /// database row; this is the single exception, it is opt-in per run, and it is separately
+        /// approved (§6).</para>
+        /// </summary>
+        public string? PhotosGoogleSyncDir { get; set; }
+
+        /// <summary>
+        /// Absolute path to <c>ffprobe</c> on the host that runs <c>photos-ingest --pass video</c>
+        /// (§2.3/§2.5 phase 2: "videos via ffprobe"). Unset means the video pass says so and does
+        /// nothing, exactly like an unconfigured thumb cache — no host is required to have it.
+        /// </summary>
+        /// <remarks>Names match the StreamGateway's existing <c>FfmpegPath</c> convention. Both binaries
+        /// are only ever run READ-ONLY against a collection file, with a bounded runtime and a kill on
+        /// timeout, and their stdout is parsed defensively rather than trusted (§6).</remarks>
+        public string? FfprobePath { get; set; }
+
+        /// <summary>Absolute path to <c>ffmpeg</c>, used only to grab a single poster frame per video
+        /// into the derivative cache (§2.3). See <see cref="FfprobePath"/>.</summary>
+        public string? FfmpegPath { get; set; }
+
+        // ── The Immich enrichment sidecar (§2.4). Headless, LAN-only, DISPOSABLE: it proposes, our DB
+        // decides. Both keys unset is the normal state on every host except the gateway-adjacent one
+        // that runs `photos-sync-immich`, and every surface degrades to fully-manual with them unset —
+        // no dead buttons, no errors, hand-tagging unchanged. ──
+
+        /// <summary>Base URL of the Immich API as THIS host reaches it (e.g. <c>http://immich-host:2283</c>).
+        /// Never internet-exposed and never surfaced to a browser: the site fetches face crops
+        /// server-side and caches them into the thumb cache, so a client never learns Immich exists.</summary>
+        public string? ImmichBaseUrl { get; set; }
+
+        /// <summary>API key for the single Immich user that owns the external library (§2.4). Sent as
+        /// the <c>x-api-key</c> header. Read-only in practice — the sync only ever GETs.</summary>
+        public string? ImmichApiKey { get; set; }
+
+        /// <summary>Optional: the Immich external-library id to restrict the asset sweep to. Unset means
+        /// "every asset the key can see", which is correct for the single-user, single-library
+        /// deployment the runbook describes (docs/photos-immich-setup.md).</summary>
+        public string? ImmichLibraryId { get; set; }
+
         public string? ImdbApiKey { get; set; }
 
         public string? TmdbApiKey { get; set; }

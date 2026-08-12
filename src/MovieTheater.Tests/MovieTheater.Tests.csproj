@@ -9,6 +9,11 @@
 
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <!-- The photo ingest pipeline is exercised end to end against a GENERATED fixture tree and a
+         throwaway SQLite file. Both are deliberate: the NAS is never read by a test, and the
+         configured SQL Server connection string IS the live shared production database. -->
+    <PackageReference Include="MetadataExtractor" Version="2.9.3" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.22" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
@@ -24,6 +29,12 @@
 
   <ItemGroup>
     <ProjectReference Include="..\MovieTheater.Services\MovieTheater.Services.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The family-album gate is ASP.NET authorization, so the suite needs the framework's
+         Authorization/Http/Mvc assemblies to exercise the real middleware over the real policy. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
   <ItemGroup>
@@ -56,6 +67,69 @@
          testing directly: it is what stops a search result that merely shares a name from being
          accepted as the album's cover. -->
     <Compile Include="..\MovieTheater\Music\MusicRemoteArt.cs" Link="Music\MusicRemoteArt.cs" />
+    <!-- The family-album gate and the controller it guards (docs/photos-plan.md §2.1). Both are
+         compiled in so the policy tests run the REAL requirement/handler and read the REAL
+         [Authorize] attribute off PhotosController — a re-declared copy would pass while the
+         shipped controller sat open. Neither file needs a database at test time: the gate's
+         UserSettings lookup is behind IFamilyAlbumMembership, which the tests substitute (the
+         configured connection string is the live shared DB and no test may reach it). -->
+    <Compile Include="..\MovieTheater\Photos\FamilyAlbumGate.cs" Link="Photos\FamilyAlbumGate.cs" />
+    <Compile Include="..\MovieTheater\Controllers\PhotosController.cs" Link="Photos\PhotosController.cs" />
+    <!-- The Phase 1 ingest pipeline, compiled from source for the same reason: the tests must drive
+         the SHIPPED walk/metadata/hash/thumb code, not a description of it. Everything here depends
+         only on BCL + EF + ImageSharp + MetadataExtractor — the CliFx command that wraps it is
+         deliberately NOT included, so the engine stays free of the CLI. -->
+    <Compile Include="..\MovieTheater\Photos\PhotoFileKinds.cs" Link="Photos\PhotoFileKinds.cs" />
+    <Compile Include="..\MovieTheater\Photos\PhotoWalkCursor.cs" Link="Photos\PhotoWalkCursor.cs" />
+    <Compile Include="..\MovieTheater\Photos\PhotoDates.cs" Link="Photos\PhotoDates.cs" />
+    <Compile Include="..\MovieTheater\Photos\PhotoMetadataReader.cs" Link="Photos\PhotoMetadataReader.cs" />
+    <Compile Include="..\MovieTheater\Photos\PhotoHashes.cs" Link="Photos\PhotoHashes.cs" />
+    <Compile Include="..\MovieTheater\Photos\PhotoThumbCache.cs" Link="Photos\PhotoThumbCache.cs" />
+    <Compile Include="..\MovieTheater\Photos\PhotoIngestPipeline.cs" Link="Photos\PhotoIngestPipeline.cs" />
+    <!-- Phase 2 curation (docs/photos-plan.md §2.9/§2.11), same reasoning: the suggested-hide
+         heuristics, the review-artifact store, album slugs and the export/import engine are all
+         driven from source. The CliFx commands that wrap them are again excluded, so the engines
+         stay free of the CLI. -->
+    <Compile Include="..\MovieTheater\Photos\PhotoCurationStore.cs" Link="Photos\PhotoCurationStore.cs" />
+    <Compile Include="..\MovieTheater\Photos\PhotoHideSuggestions.cs" Link="Photos\PhotoHideSuggestions.cs" />
+    <Compile Include="..\MovieTheater\Photos\PhotoSuggestHidePass.cs" Link="Photos\PhotoSuggestHidePass.cs" />
+    <Compile Include="..\MovieTheater\Photos\PhotoAlbumSlug.cs" Link="Photos\PhotoAlbumSlug.cs" />
+    <Compile Include="..\MovieTheater\Photos\PhotoCurationExportModel.cs" Link="Photos\PhotoCurationExportModel.cs" />
+    <Compile Include="..\MovieTheater\Photos\PhotoCurationExporter.cs" Link="Photos\PhotoCurationExporter.cs" />
+    <Compile Include="..\MovieTheater\Photos\PhotoCurationImporter.cs" Link="Photos\PhotoCurationImporter.cs" />
+    <!-- Phase 3 grouping (docs/photos-plan.md §2.6). The determinism and idempotency the whole lane is
+         judged on can only be measured by running the SHIPPED engine twice, so the master heuristic,
+         the BK-tree index, the variant rules and the three passes are all compiled from source; the
+         CliFx command that wraps them is again excluded. -->
+    <Compile Include="..\MovieTheater\Photos\PhotoDupeMasters.cs" Link="Photos\PhotoDupeMasters.cs" />
+    <Compile Include="..\MovieTheater\Photos\PhotoHashIndex.cs" Link="Photos\PhotoHashIndex.cs" />
+    <Compile Include="..\MovieTheater\Photos\PhotoVariantPairs.cs" Link="Photos\PhotoVariantPairs.cs" />
+    <Compile Include="..\MovieTheater\Photos\PhotoDupePass.cs" Link="Photos\PhotoDupePass.cs" />
+    <!-- Phase 4 people, tagging and the Immich sidecar (docs/photos-plan.md §2.4/§2.8). Same reason
+         again: the master-redirect on tags, the no-clobber suggestion rules and the sync's mapping are
+         claims about the SHIPPED code, so they are compiled from source. The Immich client itself lives
+         in MovieTheater.Services and arrives through the ProjectReference; the tests drive it against a
+         stand-in HTTP server and never a live instance. The CliFx command is excluded as always. -->
+    <Compile Include="..\MovieTheater\Photos\PhotoPersonTags.cs" Link="Photos\PhotoPersonTags.cs" />
+    <Compile Include="..\MovieTheater\Photos\PhotoFaceCrops.cs" Link="Photos\PhotoFaceCrops.cs" />
+    <Compile Include="..\MovieTheater\Photos\PhotoImmichSync.cs" Link="Photos\PhotoImmichSync.cs" />
+    <!-- Phase 5 videos (docs/photos-plan.md §2.3). The path translation, the sync's stamping and
+         clearing, the reserved-folder audit, the ffprobe parsing and the video ingest pass are all
+         claims about the SHIPPED code and are compiled from source. Both external dependencies are
+         behind seams — IPhotoJellyfinSource and IPhotoVideoTools — because no test, build or smoke may
+         contact the live media server or read the NAS. The CliFx command is excluded as always. -->
+    <Compile Include="..\MovieTheater\Photos\PhotoJellyfinPaths.cs" Link="Photos\PhotoJellyfinPaths.cs" />
+    <Compile Include="..\MovieTheater\Photos\PhotoJellyfinReservedFolders.cs" Link="Photos\PhotoJellyfinReservedFolders.cs" />
+    <Compile Include="..\MovieTheater\Photos\PhotoJellyfinSync.cs" Link="Photos\PhotoJellyfinSync.cs" />
+    <Compile Include="..\MovieTheater\Photos\PhotoVideoTools.cs" Link="Photos\PhotoVideoTools.cs" />
+    <Compile Include="..\MovieTheater\Photos\PhotoVideoPlayback.cs" Link="Photos\PhotoVideoPlayback.cs" />
+    <!-- Phase 6 the Google Takeout mesh (docs/photos-plan.md §2.10). Same reason once more: the
+         sidecar pairing rules, the three-rung matching cascade, the source-hierarchy backfill and the
+         download lane's three refusals are claims about the SHIPPED code. The archive and the download
+         destination are both generated temp directories — no test reads a real Takeout export and no
+         test writes anywhere near the collection. The CliFx command is excluded as always. -->
+    <Compile Include="..\MovieTheater\Photos\PhotoGoogleSidecar.cs" Link="Photos\PhotoGoogleSidecar.cs" />
+    <Compile Include="..\MovieTheater\Photos\PhotoGoogleMesh.cs" Link="Photos\PhotoGoogleMesh.cs" />
     <!-- The extracted per-core option catalog, embedded here too so the quality-preset tests can
          validate preset tokens against the FULL catalog (the hand-defined entries alone don't cover
          the extracted keys the presets pin). LoadExtracted finds it by resource-name suffix. -->

@@ -36,6 +36,10 @@ const MusicPlaylistsPage = lazy(() => import("./Pages/Music/MusicPlaylistsPage")
 // actually fails, which is why it is a committed route rather than a scratchpad rig. Lazy like every
 // other non-landing page, and gated behind ?diag=1 inside itself.
 const MusicMseProbe = lazy(() => import("./Music/MusicMseProbe"));
+// Family photo album (photos-plan.md §5 Phase 0). Its own chunk like every other section, and
+// deliberately routed for everyone: the route existing is not access, the RequireFamilyAlbum policy
+// on /API/Photos is — the page renders "family members only" when the server says so.
+const PhotosPage = lazy(() => import("./Pages/Photos/PhotosPage"));
 
 const storedUsername = window.localStorage.getItem("Username");
 const storedCardStyle = window.localStorage.getItem("CardStyle");
@@ -169,6 +173,9 @@ function App() {
                 an "on" button unless ?diag=1 has been used (the musicDiag convention). */}
             <Route path="/music/mse-probe" exact>
               <MusicMseProbe />
+            </Route>
+            <Route path="/photos" exact>
+              <PhotosPage userData={userData} />
             </Route>
             <Route path="/arcade/room/:code" exact>
               <ArcadeRoomPage />

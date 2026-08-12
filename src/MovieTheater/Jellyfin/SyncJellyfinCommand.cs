@@ -47,6 +47,13 @@ namespace MovieTheater.Jellyfin
 
             o.WriteLine($"Jellyfin: {report.ServerName} {report.Version}{(DryRun ? "   (dry-run)" : "")}");
             o.WriteLine($"Jellyfin media items (all types): {report.MovieItems}");
+            // §2.3: the family photo library is structurally excluded. Printed every run so the
+            // exclusion is visibly on, and so a misconfigured prefix is noticed here rather than by a
+            // home video turning up in the movie grid.
+            o.WriteLine(report.FamilyExclusionPrefixes.Count == 0
+                ? "Family photo library exclusion: NOT configured (set PhotosLibraryDir) — photos-plan.md §2.3"
+                : $"Family photo library excluded: {report.FamilyItemsExcluded} item(s) dropped under "
+                  + string.Join(" | ", report.FamilyExclusionPrefixes));
             o.WriteLine($"DB movies with a file path: {report.MoviesWithPath}" +
                         (DryRun ? "" : $"   existing MediaFile rows: {report.ExistingFileRows}"));
 

@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -22,6 +23,14 @@ namespace MovieTheater.Services.Jellyfin
     /// pass re-points any unmatched DB row to an untracked Jellyfin item when their (filename, size) match
     /// is UNIQUE 1:1 on both sides — so the title follows the file instead of going missing. Ambiguous or
     /// name-changed candidates are reported, never silently applied.
+    ///
+    /// <para><b>The family photo library is excluded before anything else happens</b>
+    /// (docs/photos-plan.md §2.3). Every item list this class obtains from Jellyfin passes through
+    /// <see cref="JellyfinFamilyExclusion"/> first, so a home video cannot become a
+    /// <see cref="MediaFile"/> — and since Movie, MiscVideo, channels, recommendations and the review
+    /// queue all read those rows, one filter at the source covers every downstream surface. The
+    /// exclusion is by PATH and needs no library id; the id, when configured, only adds that library's
+    /// own folders as further prefixes.</para>
     /// </summary>
     public class JellyfinSyncService
     {
@@ -53,10 +62,35 @@ namespace MovieTheater.Services.Jellyfin
             r.ServerName = info.ServerName;
             r.Version = info.Version;
 
+            // The family photo library is dropped HERE, at the source (§2.3), before any matching, move
+            // detection, extras placement or reporting can see it. Downstream code therefore needs no
+            // knowledge of it at all, which is what makes the guarantee hold for surfaces written later.
+            var family = await FamilyExclusionAsync(cancel);
+            r.FamilyExclusionPrefixes.AddRange(family.Prefixes);
+
             // One fetch of every leaf media item (Movie/Episode/Video), routed below PURELY by file path —
             // never by Jellyfin item type — so the sync is identical for typed and "homevideos" libraries.
-            var items = await jellyfin.GetAllVideoItemsAsync(cancel);
+            var reported = await jellyfin.GetAllVideoItemsAsync(cancel);
+            var items = family.Filter(reported, out var excludedItems);
+            r.FamilyItemsExcluded += excludedItems;
             r.MovieItems = items.Count;
+
+            // ── Blast-radius guard #1: the exclusion (§2.3) ──
+            // The family collection is a corner of the disk, so excluding most of the library is not a
+            // big exclusion, it is a BROKEN one — a PhotosLibraryDir that expands to a volume root, a
+            // library location Jellyfin reports as a share root. IsMeaningfulRoot refuses that specific
+            // shape at build time; this refuses the OUTCOME, which covers the shapes nobody predicted.
+            // Aborting before a single write is the whole point: an over-wide exclusion that runs to
+            // completion stamps the entire MediaFile table missing and reports a clean sync.
+            if (ExceedsWriteCeiling(excludedItems, reported.Count))
+            {
+                r.Aborted = $"Family exclusion would drop {excludedItems} of {reported.Count} Jellyfin items "
+                            + $"({Percent(excludedItems, reported.Count)}) — far more than a family collection. "
+                            + "Nothing was written. Check PhotosLibraryDir and PhotosJellyfinLibraryId against the "
+                            + $"prefixes in force: {string.Join(", ", family.Prefixes)}";
+                logger.LogError("Jellyfin sync ABORTED: {Reason}", r.Aborted);
+                return r;
+            }
 
             using var db = await dbFactory.CreateDbContextAsync(cancel);
             var movies = await db.Movies
@@ -270,6 +304,9 @@ namespace MovieTheater.Services.Jellyfin
                 foreach (var it in liveItems)
                 {
                     if (string.IsNullOrEmpty(it.Path)) continue;
+                    // Defence in depth: a row that already carries a family item id (from before the
+                    // exclusion shipped) must not be RESCUED back into the movie library by it.
+                    if (family.IsExcluded(it.Path)) { r.FamilyItemsExcluded++; continue; }
                     if (JellyfinPathMapper.TryTranslateToDb(it.Path, config.JellyfinPathMappings, out var dbPath, out _))
                         liveByPath[JellyfinPathMapper.NormalizeForCompare(dbPath)] = it;
                 }
@@ -329,6 +366,10 @@ namespace MovieTheater.Services.Jellyfin
             foreach (var ex in await jellyfin.GetAllExtraItemsAsync(cancel))
             {
                 if (string.IsNullOrEmpty(ex.Path)) continue;
+                // Extras come from their own sweep, so they need the family filter applied separately —
+                // and this is the sweep that would otherwise pick up a family folder Jellyfin classified
+                // as an extra because its name collides with a reserved one (§2.3's trap).
+                if (family.IsExcluded(ex.Path)) { r.FamilyItemsExcluded++; continue; }
                 if (!JellyfinPathMapper.TryTranslateToDb(ex.Path!, config.JellyfinPathMappings, out var dp, out _)) continue;
                 if (extraMapped.Contains(JellyfinPathMapper.NormalizeForCompare(dp))) continue;
                 var (owner, _) = OwnerOf(dp);
@@ -339,9 +380,27 @@ namespace MovieTheater.Services.Jellyfin
             }
 
             // Still unmatched after the move pass → stamp MissingSinceUtc (existing rows only).
+            var wouldStamp = existingFiles.Where(f => !matchedRows.Contains(f) && f.MissingSinceUtc == null).ToList();
+
+            // ── Blast-radius guard #2: the missing-stamp sweep ──
+            // A healthy run finds nearly every row it already had, so stamping most of the table is not a
+            // large gap — it is an unmounted share, a changed mapping, or a Jellyfin that answered with a
+            // partial library. Every one of those looks like a successful sync in the log, and every one
+            // of them takes the watch button off most of the site in a single pass. Refuse the WRITE and
+            // say so; the operator re-runs once the cause is fixed, and nothing had to be undone.
+            if (!dryRun && ExceedsWriteCeiling(wouldStamp.Count, existingFiles.Count))
+            {
+                r.Aborted = $"Would stamp {wouldStamp.Count} of {existingFiles.Count} file rows as missing "
+                            + $"({Percent(wouldStamp.Count, existingFiles.Count)}) — that is a broken run, not a "
+                            + "library that lost its files. Nothing was written. Check that the NAS is mounted, "
+                            + "that Jellyfin returned the whole library, and that JellyfinPathMappings still match.";
+                logger.LogError("Jellyfin sync ABORTED before writing: {Reason}", r.Aborted);
+                return r;
+            }
+
             if (!dryRun)
             {
-                foreach (var f in existingFiles.Where(f => !matchedRows.Contains(f))) f.MissingSinceUtc ??= now;
+                foreach (var f in wouldStamp) f.MissingSinceUtc = now;
                 if (staleKeyframeRows.Count > 0)
                     await ReExtractStaleKeyframesAsync(staleKeyframeRows, now, cancel);
                 await db.SaveChangesAsync(cancel);
@@ -471,10 +530,15 @@ namespace MovieTheater.Services.Jellyfin
                 return res;
             }
             var allItems = await jellyfin.GetVideoItemPathsUnderParentAsync(shelfItemId!, cancel);
+            var relinkFamily = await FamilyExclusionAsync(cancel);
             var shelfItems = new List<(JellyfinItem Item, string DbPath)>();
             foreach (var it in allItems)
             {
                 if (string.IsNullOrEmpty(it.Path)) continue;
+                // A movie shelf can never be under the photo root, so this filter should never fire —
+                // it is here because "should never" is not a guarantee, and this method WRITES a
+                // MediaFile row (§2.3).
+                if (relinkFamily.IsExcluded(it.Path)) continue;
                 if (!JellyfinPathMapper.TryTranslateToDb(it.Path!, config.JellyfinPathMappings, out var dp, out _)) continue;
                 var dn = JellyfinPathMapper.NormalizeForCompare(dp);
                 if (dn == shelfNorm || dn.StartsWith(shelfNorm + "\\")) shelfItems.Add((it, dp));
@@ -559,6 +623,12 @@ namespace MovieTheater.Services.Jellyfin
                 foreach (var sd in await jellyfin.GetItemsByIdsAsync(specials.Select(s => s.Id), cancel))
                 {
                     if (string.IsNullOrEmpty(sd.Path)) continue;
+                    // Special features arrive from their OWN sweep — by item id, not from the shelf
+                    // listing the loop above filtered — so the family exclusion has to be applied here
+                    // too. This is the §2.3 trap in its exact shape: a family folder whose name collides
+                    // with a reserved one ("Extras", "Featurettes"…) is what Jellyfin hands back as a
+                    // special feature, and this branch WRITES a MediaFile row.
+                    if (relinkFamily.IsExcluded(sd.Path)) continue;
                     if (!JellyfinPathMapper.TryTranslateToDb(sd.Path!, config.JellyfinPathMappings, out var sdp, out _)) continue;
                     if (!attachedNorms.Add(JellyfinPathMapper.NormalizeForCompare(sdp))) continue;
                     db.MediaFiles.Add(NewExtraRow(playableId, sdp, sd, now));
@@ -571,6 +641,76 @@ namespace MovieTheater.Services.Jellyfin
             logger.LogInformation("Re-linked movie {Id} '{Title}': {Old} → {New} (+{Extras} extras)",
                 movieId, movie.Title, recorded, newPath, res.ExtrasAdded.Count);
             return res;
+        }
+
+        // ── Blast-radius guards ──────────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Whether a would-be write touches an anomalous SHARE of what it was measured against — the one
+        /// check both guards above share.
+        ///
+        /// <para>Deliberately outcome-shaped rather than cause-shaped: it does not care WHY the number is
+        /// enormous, only that a sync whose normal answer is "a handful" has produced "most of the
+        /// table". Below <see cref="MovieTheaterConfiguration.JellyfinSyncGuardMinRows"/> it never fires,
+        /// because a fraction of a tiny library means nothing and a fresh install must stay syncable; a
+        /// ceiling of 0 or less disables it, for the operator who really is retiring the catalogue.</para>
+        /// </summary>
+        private bool ExceedsWriteCeiling(int affected, int total)
+        {
+            var ceiling = config.JellyfinSyncMaxWriteFraction;
+            if (ceiling <= 0) return false;
+            if (total < Math.Max(1, config.JellyfinSyncGuardMinRows)) return false;
+            return (double)affected / total > ceiling;
+        }
+
+        private static string Percent(int affected, int total) =>
+            total <= 0 ? "n/a" : ((double)affected / total).ToString("P0", CultureInfo.InvariantCulture);
+
+        // ── The family photo library's exclusion (docs/photos-plan.md §2.3) ──────────────────────────
+
+        private JellyfinFamilyExclusion? familyExclusion;
+
+        /// <summary>
+        /// The family-library exclusion for this service instance, built once and reused.
+        ///
+        /// <para>The prefixes come from <c>PhotosLibraryDir</c> — a fact about the collection, available
+        /// with no server round trip and correct before the Jellyfin library exists at all. When
+        /// <c>PhotosJellyfinLibraryId</c> is ALSO set, that library's own locations are asked for and
+        /// added; a failure to reach the server for that answer is logged and ignored rather than
+        /// aborting the sync, because the path prefixes alone already satisfy §2.3 and a sync that
+        /// refuses to run is not a safer outcome than one that excludes slightly less.</para>
+        /// </summary>
+        private async Task<JellyfinFamilyExclusion> FamilyExclusionAsync(CancellationToken cancel)
+        {
+            if (familyExclusion != null) return familyExclusion;
+
+            List<string>? locations = null;
+            var libraryId = config.PhotosJellyfinLibraryId;
+            if (!string.IsNullOrWhiteSpace(libraryId))
+            {
+                try
+                {
+                    var folders = await jellyfin.GetVirtualFoldersAsync(cancel);
+                    locations = folders
+                        .Where(f => string.Equals(f.ItemId, libraryId, StringComparison.OrdinalIgnoreCase))
+                        .SelectMany(f => f.Locations)
+                        .ToList();
+                    if (locations.Count == 0)
+                        logger.LogWarning("PhotosJellyfinLibraryId {Id} matched no Jellyfin library; the family exclusion " +
+                                          "is running on PhotosLibraryDir alone", libraryId);
+                }
+                catch (Exception e)
+                {
+                    logger.LogWarning(e, "Could not read Jellyfin's library locations for the family exclusion; " +
+                                         "falling back to the configured photo root");
+                }
+            }
+
+            familyExclusion = JellyfinFamilyExclusion.Build(config.PhotosLibraryDir, config.JellyfinPathMappings, locations);
+            if (familyExclusion.Configured)
+                logger.LogInformation("Family photo library excluded from the movie sync by {Count} path prefix(es)",
+                    familyExclusion.Prefixes.Count);
+            return familyExclusion;
         }
 
         /// <summary>The Jellyfin folder item id whose on-disk path equals <paramref name="shelfNorm"/> (an
@@ -755,6 +895,15 @@ namespace MovieTheater.Services.Jellyfin
         public int EpTotal { get; set; }
         public List<string> EpUntracked { get; } = new();
         public List<string> EpUntranslatable { get; } = new();
+
+        /// <summary>Jellyfin items dropped because they belong to the FAMILY photo library (§2.3). Not a
+        /// fault and not a gap — the number exists so the exclusion is visibly ON rather than assumed,
+        /// and so a sudden zero after the family library is created is noticeable.</summary>
+        public int FamilyItemsExcluded { get; set; }
+
+        /// <summary>The path prefixes that exclusion is running on, printed by the CLI. An exclusion
+        /// whose shape nobody can see is one nobody can tell is misconfigured.</summary>
+        public List<string> FamilyExclusionPrefixes { get; } = new();
 
         /// <summary>Jellyfin extras (featurettes/deleted scenes/etc.) attached to their owner movie this run.</summary>
         public int ExtrasAttached { get; set; }

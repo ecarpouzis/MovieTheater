@@ -513,6 +513,245 @@ namespace MovieTheater.Db
             // last few sessions, ignoring anything older than ~12h).
             modelBuilder.Entity<ArcadeLinkStat>()
                 .HasIndex(s => new { s.UserId, s.DeviceId, s.CreatedUtc });
+
+            ConfigurePhotos(modelBuilder);
+        }
+
+        /// <summary>
+        /// Family photo album (docs/photos-plan.md §3). Additive, own tables, and — per §6's privacy
+        /// invariant — joined to NOTHING global: no OData entity set, no search index, no AI-insight,
+        /// recommendation, channel or poster-mosaic input. These rows are reachable only through the
+        /// family-gated /API/Photos routes. Any future feature that wants photo data amends §6 first.
+        ///
+        /// <para>Delete behavior is Restrict on every edge into <see cref="PhotoAsset"/>, and Cascade
+        /// only from an aggregate root to its own child rows (group→members, album→entries). Curation
+        /// is years of irreplaceable human labor (§2.11), so nothing here removes rows as a side effect
+        /// — a vanished file is flagged, not deleted (§2.5).</para>
+        /// </summary>
+        private static void ConfigurePhotos(ModelBuilder modelBuilder)
+        {
+            // Content is identity, path is location (§2.5): Path is unique so the walk can upsert on it,
+            // and MUTABLE so a NAS folder reorganization re-points the existing row instead of orphaning
+            // every tag, date and album entry hanging off its id.
+            modelBuilder.Entity<PhotoAsset>()
+                .HasIndex(a => a.Path)
+                .IsUnique();
+
+            // The timeline is the primary browse surface (§1), and its page query is
+            // "WHERE Hidden = 0 ORDER BY TakenAt DESC" over the whole collection. Keyed to match that
+            // predicate + sort so a page SEEKS and range-scans in order, and covering the card columns
+            // (the INCLUDE rule already in use for the arcade lobby grid) so the page never leaves the
+            // index for the base table. Without the INCLUDE this is a full scan of a table that is
+            // planned to hold 50k–150k rows with a raw-metadata blob on each one.
+            //   ⚠ §3 names this column TakenAtUtc; it is TakenAt, because §2.7 settled the column on
+            //   naive local wall-clock and the UTC readout lives beside it in TakenAtUtcRaw.
+            modelBuilder.Entity<PhotoAsset>()
+                .HasIndex(a => new { a.Hidden, a.TakenAt })
+                .IsDescending(false, true)
+                .IncludeProperties(a => new { a.Path, a.Kind, a.Width, a.Height, a.DurationSec, a.TakenAtSource, a.MissingSinceUtc });
+
+            // Re-pairing moved files and exact-dupe grouping both start here. NOT unique — equal hashes
+            // are the entire point of §2.6 — and nullable until the hash pass has run over the row.
+            modelBuilder.Entity<PhotoAsset>()
+                .HasIndex(a => a.Sha256);
+
+            // Near-dupe grouping buckets on a hash prefix per run; this is what makes reading the
+            // hashed population cheap enough to build the BK-tree from.
+            modelBuilder.Entity<PhotoAsset>()
+                .HasIndex(a => a.PHash);
+
+            // The ingest-batch review queue (the ReviewBatch convention), and the drift report.
+            modelBuilder.Entity<PhotoAsset>()
+                .HasIndex(a => a.IngestBatch);
+            modelBuilder.Entity<PhotoAsset>()
+                .HasIndex(a => a.MissingSinceUtc);
+
+            // photos-sync-jellyfin stamps this by path and the gated stream-start reads it back (§2.3).
+            modelBuilder.Entity<PhotoAsset>()
+                .HasIndex(a => a.JellyfinItemId);
+
+            // The three ingest queues (§2.5 phases 2–4). Each pass asks the same two questions every
+            // batch — "the next N rows I have not stamped" and "how many are left" — so each gets a
+            // FILTERED index keyed on Id: it matches the queue predicate exactly, orders by the same
+            // column the cursor pages on, and SHRINKS TO EMPTY as the queue drains, which is the whole
+            // point (an unfiltered index on the stamp would stay full-sized forever to answer a question
+            // that ends up having no rows). Id ascending is the cursor ordering AND the query ordering —
+            // the cheats-import cursor bug rule, restated in code.
+            //   ⚠ Filtered indexes require SET QUOTED_IDENTIFIER ON in any session WRITING PhotoAsset.
+            //   EF/SqlClient set it; sqlcmd defaults it OFF, so a hand-run INSERT/UPDATE needs the SET.
+            modelBuilder.Entity<PhotoAsset>()
+                .HasIndex(a => a.Id, "IX_PhotoAsset_MetadataQueue")
+                .HasFilter("[MetadataUpdatedUtc] IS NULL");
+            modelBuilder.Entity<PhotoAsset>()
+                .HasIndex(a => a.Id, "IX_PhotoAsset_HashQueue")
+                .HasFilter("[HashUpdatedUtc] IS NULL");
+            modelBuilder.Entity<PhotoAsset>()
+                .HasIndex(a => a.Id, "IX_PhotoAsset_ThumbQueue")
+                .HasFilter("[ThumbsUpdatedUtc] IS NULL");
+
+            modelBuilder.Entity<FamilyPerson>()
+                .HasIndex(p => p.Name);
+            // Suggestion fan-out looks the cluster up by its Immich id; unique so naming the same
+            // cluster twice can't quietly mint a second person.
+            modelBuilder.Entity<FamilyPerson>()
+                .HasIndex(p => p.ImmichPersonId, "IX_FamilyPerson_ImmichPersonId")
+                .HasFilter("[ImmichPersonId] IS NOT NULL")
+                .IsUnique();
+            modelBuilder.Entity<FamilyPerson>()
+                .HasOne(p => p.User)
+                .WithMany()
+                .HasForeignKey(p => p.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<FamilyPerson>()
+                .HasOne(p => p.CoverAsset)
+                .WithMany()
+                .HasForeignKey(p => p.CoverAssetId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // One tag per (asset, person): a suggestion that a human confirms is the SAME row changing
+            // Source, never a second row beside it.
+            modelBuilder.Entity<PhotoPersonTag>()
+                .HasIndex(t => new { t.PhotoAssetId, t.FamilyPersonId })
+                .IsUnique();
+            // Person pages: "photos of X, newest first" — and the tag queue reads the pending rows by
+            // source. Both start from the person, so the person leads the key.
+            modelBuilder.Entity<PhotoPersonTag>()
+                .HasIndex(t => new { t.FamilyPersonId, t.Source });
+            modelBuilder.Entity<PhotoPersonTag>()
+                .HasOne(t => t.PhotoAsset)
+                .WithMany()
+                .HasForeignKey(t => t.PhotoAssetId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<PhotoPersonTag>()
+                .HasOne(t => t.FamilyPerson)
+                .WithMany()
+                .HasForeignKey(t => t.FamilyPersonId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // The review queue is "groups still pending, oldest first".
+            modelBuilder.Entity<PhotoDupeGroup>()
+                .HasIndex(g => new { g.Status, g.Kind });
+            modelBuilder.Entity<PhotoDupeGroup>()
+                .HasOne(g => g.ResolvedByUser)
+                .WithMany()
+                .HasForeignKey(g => g.ResolvedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<PhotoDupeMember>()
+                .HasIndex(m => new { m.PhotoDupeGroupId, m.PhotoAssetId })
+                .IsUnique();
+            // Browse collapses to masters, so the hot question is "is this asset a non-master?" — asked
+            // per card, which is why the asset leads here rather than the group.
+            modelBuilder.Entity<PhotoDupeMember>()
+                .HasIndex(m => new { m.PhotoAssetId, m.IsMaster });
+            // Exactly one master per group, enforced rather than trusted: the master pick is written
+            // from a review UI where a double-click is a race. Filtered so it constrains only the
+            // flagged rows (the MusicPlaylist favorites precedent).
+            //   ⚠ A filtered index requires SET QUOTED_IDENTIFIER ON for any session WRITING this table.
+            //   EF/SqlClient set it; sqlcmd defaults it OFF, so a hand-run INSERT/UPDATE needs the SET.
+            modelBuilder.Entity<PhotoDupeMember>()
+                .HasIndex(m => m.PhotoDupeGroupId, "IX_PhotoDupeMember_Master")
+                .HasFilter("[IsMaster] = 1")
+                .IsUnique();
+            modelBuilder.Entity<PhotoDupeMember>()
+                .HasOne(m => m.PhotoDupeGroup)
+                .WithMany(g => g.Members)
+                .HasForeignKey(m => m.PhotoDupeGroupId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<PhotoDupeMember>()
+                .HasOne(m => m.PhotoAsset)
+                .WithMany()
+                .HasForeignKey(m => m.PhotoAssetId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<PhotoAlbum>()
+                .HasIndex(a => a.Slug)
+                .IsUnique();
+            modelBuilder.Entity<PhotoAlbum>()
+                .HasOne(a => a.CoverAsset)
+                .WithMany()
+                .HasForeignKey(a => a.CoverAssetId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<PhotoAlbum>()
+                .HasOne(a => a.CreatedByUser)
+                .WithMany()
+                .HasForeignKey(a => a.CreatedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // An asset belongs to an album once; adding it again is a no-op, not a second row.
+            modelBuilder.Entity<PhotoAlbumEntry>()
+                .HasIndex(e => new { e.PhotoAlbumId, e.PhotoAssetId })
+                .IsUnique();
+            // The album page's own ordering.
+            modelBuilder.Entity<PhotoAlbumEntry>()
+                .HasIndex(e => new { e.PhotoAlbumId, e.SortOrder });
+            // "Which albums is this photo in?" — the lightbox asks it for every photo opened.
+            modelBuilder.Entity<PhotoAlbumEntry>()
+                .HasIndex(e => e.PhotoAssetId);
+            modelBuilder.Entity<PhotoAlbumEntry>()
+                .HasOne(e => e.PhotoAlbum)
+                .WithMany(a => a.Entries)
+                .HasForeignKey(e => e.PhotoAlbumId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<PhotoAlbumEntry>()
+                .HasOne(e => e.PhotoAsset)
+                .WithMany()
+                .HasForeignKey(e => e.PhotoAssetId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // (file name, taken time, size) is the Takeout identity — sidecars carry no stable Google
+            // id (§2.10). Unique, so re-running the mesh over next quarter's archive upserts these rows
+            // instead of duplicating them.
+            //   ⚠ Two of the three columns are nullable, so EF emits this with a
+            //   "WHERE TakenAtUtc IS NOT NULL AND SizeBytes IS NOT NULL" filter — an item whose sidecar
+            //   supplied neither is NOT constrained by the database. The mesh's upsert must therefore
+            //   look the row up before inserting rather than leaning on the index to catch a repeat.
+            modelBuilder.Entity<PhotoGoogleItem>()
+                .HasIndex(i => new { i.TakeoutFileName, i.TakenAtUtc, i.SizeBytes })
+                .IsUnique();
+            // The Google-only review list, and the "has the match pass fully drained?" check the
+            // download lane refuses to run without.
+            modelBuilder.Entity<PhotoGoogleItem>()
+                .HasIndex(i => i.Status);
+            modelBuilder.Entity<PhotoGoogleItem>()
+                .HasOne(i => i.MatchedPhotoAsset)
+                .WithMany()
+                .HasForeignKey(i => i.MatchedPhotoAssetId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Curation review state (§2.5 quarantine, §2.9 hide proposals). Phase 3 moved this out of
+            // JSON under PhotosReportDir and into rows, because prod's site pods cannot read the CLI
+            // host's report directory — a JSON-backed review surface is simply empty there.
+            // One batch per (kind, id): re-running a proposal pass with the same --batch-id APPENDS to
+            // the batch rather than minting a second one, and approving an ingest twice is a no-op.
+            modelBuilder.Entity<PhotoCurationBatch>()
+                .HasIndex(b => new { b.Kind, b.BatchId })
+                .IsUnique();
+            // The review surfaces ask exactly one question — "what is still pending, newest first".
+            modelBuilder.Entity<PhotoCurationBatch>()
+                .HasIndex(b => new { b.Kind, b.Status, b.CreatedUtc });
+            modelBuilder.Entity<PhotoCurationBatch>()
+                .HasOne(b => b.DecidedByUser)
+                .WithMany()
+                .HasForeignKey(b => b.DecidedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // An asset appears in a batch once; a re-run of the same pass must not stack duplicates.
+            modelBuilder.Entity<PhotoCurationBatchItem>()
+                .HasIndex(i => new { i.PhotoCurationBatchId, i.PhotoAssetId })
+                .IsUnique();
+            modelBuilder.Entity<PhotoCurationBatchItem>()
+                .HasIndex(i => i.PhotoAssetId);
+            modelBuilder.Entity<PhotoCurationBatchItem>()
+                .HasOne(i => i.PhotoCurationBatch)
+                .WithMany(b => b.Items)
+                .HasForeignKey(i => i.PhotoCurationBatchId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<PhotoCurationBatchItem>()
+                .HasOne(i => i.PhotoAsset)
+                .WithMany()
+                .HasForeignKey(i => i.PhotoAssetId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
 
         public DbSet<Movie> Movies { get; set; }
@@ -567,6 +806,22 @@ namespace MovieTheater.Db
         public DbSet<MusicPlaylistItem> MusicPlaylistItems { get; set; }
         public DbSet<MusicPlaylistShare> MusicPlaylistShares { get; set; }
         public DbSet<MusicPlaybackIncident> MusicPlaybackIncidents { get; set; }
+
+        // ── Family photo album (docs/photos-plan.md §3) ──────────────────────────────────────────
+        // §6 privacy invariant: these sets exist for the family-gated /API/Photos routes ONLY. They are
+        // not exposed through OData (the app registers no EDM entity sets — OData is opt-in per action
+        // via [EnableQuery] — so adding a DbSet here publishes nothing, and no photo action may ever
+        // carry that attribute).
+        public DbSet<PhotoAsset> PhotoAssets { get; set; }
+        public DbSet<FamilyPerson> FamilyPeople { get; set; }
+        public DbSet<PhotoPersonTag> PhotoPersonTags { get; set; }
+        public DbSet<PhotoDupeGroup> PhotoDupeGroups { get; set; }
+        public DbSet<PhotoDupeMember> PhotoDupeMembers { get; set; }
+        public DbSet<PhotoAlbum> PhotoAlbums { get; set; }
+        public DbSet<PhotoAlbumEntry> PhotoAlbumEntries { get; set; }
+        public DbSet<PhotoGoogleItem> PhotoGoogleItems { get; set; }
+        public DbSet<PhotoCurationBatch> PhotoCurationBatches { get; set; }
+        public DbSet<PhotoCurationBatchItem> PhotoCurationBatchItems { get; set; }
 
         public MovieDb(DbContextOptions<MovieDb> options)
             : base(options)

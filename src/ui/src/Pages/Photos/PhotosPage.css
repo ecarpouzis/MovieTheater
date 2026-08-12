@@ -1,0 +1,1219 @@
+/* Family photo album (docs/photos-plan.md §4). Tokens come from theme.css; nothing here overrides an
+   Ant Design rule, which keeps it clear of the runtime-CSS specificity trap that bites lazy-loaded
+   page stylesheets (their <style> lands after antd's, so an equal-specificity selector would win
+   here and lose on a hard refresh).
+
+   Bottom padding clears the persistent music mini-player: --music-miniplayer-height is published on
+   <html> by MusicMiniPlayer and is 0px when nothing is playing. */
+
+.photos-page {
+  padding: 20px 22px calc(40px + var(--music-miniplayer-height, 0px));
+  max-width: 1500px;
+  margin: 0 auto;
+}
+
+.photos-page .photos-title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  color: var(--text-primary);
+  margin: 0 0 6px;
+}
+
+.photos-page .photos-subtitle {
+  color: var(--text-muted);
+  font-size: 13px;
+  margin: 0 0 22px;
+}
+
+.photos-page .photos-panel {
+  background: var(--card-surface);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  box-shadow: var(--card-shadow);
+  padding: 26px;
+  max-width: 620px;
+}
+
+.photos-page .photos-panel-head {
+  font-family: var(--font-display);
+  font-size: 17px;
+  color: var(--text-primary);
+  margin: 0 0 10px;
+}
+
+.photos-page .photos-note {
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.55;
+  margin: 0 0 8px;
+}
+
+.photos-page .photos-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--card-border);
+}
+
+.photos-page .photos-count {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.photos-page .photos-count-value {
+  font-family: var(--font-display);
+  font-size: 20px;
+  color: var(--text-primary);
+}
+
+.photos-page .photos-count-label {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.photos-page .photos-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.photos-page .photos-button {
+  background: var(--card-surface);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 6px 12px;
+  text-decoration: none;
+}
+
+.photos-page .photos-sentinel {
+  display: flex;
+  justify-content: center;
+  min-height: 40px;
+  padding: 12px 0;
+}
+
+/* ── Justified grid ────────────────────────────────────────────────────────────────────────────
+   Absolute positioning inside a host of known height: the layout is computed in JS from stored
+   (already EXIF-oriented) dimensions, so every tile's box is known before a single image loads and
+   only the rows near the viewport are ever mounted. */
+.photos-page .photo-grid {
+  position: relative;
+  width: 100%;
+}
+
+.photos-page .photo-grid-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 6px;
+}
+
+.photos-page .photo-grid-header {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  font-family: var(--font-display);
+  font-size: 15px;
+  color: var(--text-primary);
+  height: 44px;
+}
+
+.photos-page .photo-tile {
+  position: relative;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--card-border);
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.photos-page .photo-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.photos-page .photo-tile-badge {
+  position: absolute;
+  right: 6px;
+  bottom: 4px;
+  color: #fff;
+  font-size: 12px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+/* A video the media server has never indexed (§2.3). Marked, not hidden: the file is on disk and
+   every other thing about it works. */
+.photos-page .photo-tile-badge-unsynced {
+  color: #ffd666;
+}
+
+.photos-page .photo-tile-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: var(--card-surface);
+  border: 1px dashed var(--card-border);
+  color: var(--text-muted);
+  font-size: 11px;
+  padding: 4px;
+}
+
+.photos-page .photo-tile-placeholder-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.photos-page .photo-tile-placeholder-mark {
+  font-size: 18px;
+}
+
+/* ── Folder browser ──────────────────────────────────────────────────────────────────────────── */
+.photos-page .photo-crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 8px 0 14px;
+}
+
+.photos-page .photo-crumb {
+  background: none;
+  border: 0;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px 4px;
+}
+
+.photos-page .photo-crumb + .photo-crumb::before {
+  content: "/";
+  margin-right: 6px;
+  color: var(--card-border);
+}
+
+.photos-page .photo-folder-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  margin: 0 0 18px;
+  padding: 0;
+}
+
+.photos-page .photo-folder {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  background: var(--card-surface);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 8px 12px;
+}
+
+.photos-page .photo-folder-count {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+/* ── Lightbox ────────────────────────────────────────────────────────────────────────────────── */
+.photo-lightbox .photo-lightbox-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-height: 72vh;
+  overflow: auto;
+}
+
+.photo-lightbox .photo-lightbox-image {
+  max-width: 100%;
+  max-height: 72vh;
+  cursor: zoom-in;
+}
+
+.photo-lightbox .photo-lightbox-image.zoomed {
+  max-width: none;
+  max-height: none;
+  cursor: zoom-out;
+}
+
+.photo-lightbox .photo-lightbox-nopreview {
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: 40px 0;
+}
+
+/* Family video playback (docs/photos-plan.md §2.3). The player fills the stage the image would have
+   taken, so switching between a photo and a video does not resize the modal under the viewer. */
+.photo-lightbox .photo-video {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.photo-lightbox .photo-video-element {
+  max-width: 100%;
+  max-height: 72vh;
+  background: #000;
+}
+
+.photo-lightbox .photo-video-error {
+  color: var(--error-text, #d4380d);
+}
+
+/* "Not yet synced" — an explained state, never a dead play button (§2.3). */
+.photo-lightbox .photo-video-unsynced {
+  text-align: center;
+  padding: 32px 16px;
+  max-width: 40em;
+}
+
+.photo-lightbox .photo-video-unsynced-mark {
+  display: block;
+  font-size: 32px;
+  opacity: 0.45;
+  margin-bottom: 8px;
+}
+
+.photo-lightbox .photo-lightbox-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.photo-lightbox .photos-button {
+  background: var(--card-surface);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 6px 12px;
+  text-decoration: none;
+}
+
+.photo-lightbox .photo-info {
+  margin-top: 14px;
+  max-height: 40vh;
+  overflow: auto;
+}
+
+.photo-lightbox .photo-info-facts {
+  display: grid;
+  grid-template-columns: minmax(120px, max-content) 1fr;
+  gap: 2px 14px;
+  margin: 0;
+  font-size: 12px;
+}
+
+.photo-lightbox .photo-info-fact {
+  display: contents;
+}
+
+.photo-lightbox .photo-info-facts dt {
+  color: var(--text-muted);
+}
+
+.photo-lightbox .photo-info-facts dd {
+  color: var(--text-primary);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.photo-lightbox .photo-info-exif {
+  margin-top: 14px;
+}
+
+.photo-lightbox .photo-info-exif summary {
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+/* ── Curation: selection mode, badges, review, albums (§2.9) ───────────────────────────────────
+   A hidden photo in the folder view is still a photo that is still on disk, so its badge is a
+   corner mark rather than a dimmed or greyed tile — curation must never read as damage. */
+.photos-page .photos-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 18px;
+  margin: 0 0 14px;
+}
+
+.photos-page .photos-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.photos-page .photo-tile-hidden {
+  position: absolute;
+  left: 4px;
+  bottom: 4px;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 3px;
+  color: #fff;
+  font-size: 10px;
+  letter-spacing: 0.03em;
+  padding: 1px 5px;
+  text-transform: uppercase;
+}
+
+.photos-page .photo-tile-check {
+  position: absolute;
+  right: 5px;
+  top: 5px;
+  width: 18px;
+  height: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font-size: 12px;
+  line-height: 16px;
+  text-align: center;
+}
+
+.photos-page .photo-tile-selected {
+  outline: 3px solid var(--accent, #4a9);
+  outline-offset: -3px;
+}
+
+.photos-page .photo-tile-selected .photo-tile-check {
+  background: var(--accent, #4a9);
+  border-color: var(--accent, #4a9);
+}
+
+.photos-page .photo-selection-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  background: var(--card-surface);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  margin: 0 0 14px;
+  padding: 8px 12px;
+}
+
+.photos-page .photo-selection-count {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-right: 4px;
+}
+
+/* ── Albums ───────────────────────────────────────────────────────────────────────────────────── */
+.photos-page .photo-album-new {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 18px;
+  max-width: 480px;
+}
+
+.photos-page .photo-album-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.photos-page .photo-album-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  background: var(--card-surface);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  color: var(--text-primary);
+  cursor: pointer;
+  overflow: hidden;
+  padding: 0 0 10px;
+  text-align: left;
+}
+
+.photos-page .photo-album-cover {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 4 / 3;
+  background: var(--card-border);
+  color: var(--text-muted);
+  overflow: hidden;
+}
+
+.photos-page .photo-album-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.photos-page .photo-album-card-title {
+  font-family: var(--font-display);
+  font-size: 14px;
+  padding: 0 10px;
+}
+
+.photos-page .photo-album-card-meta {
+  color: var(--text-muted);
+  font-size: 11px;
+  padding: 0 10px;
+}
+
+.photos-page .photo-album-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.photos-page .photo-album-editor {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 14px;
+  max-width: 720px;
+}
+
+.photo-album-picker .photo-album-new {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.photo-album-picker .photo-album-list {
+  list-style: none;
+  margin: 0;
+  max-height: 40vh;
+  overflow: auto;
+  padding: 0;
+}
+
+.photo-album-picker .photo-album-choice {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--card-border);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 8px 4px;
+  text-align: left;
+}
+
+.photo-album-picker .photo-album-count {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.photo-album-picker .photos-button {
+  background: var(--card-surface);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 6px 12px;
+  white-space: nowrap;
+}
+
+/* ── Review (suggested hides + unapproved ingests) ────────────────────────────────────────────── */
+.photos-page .photo-review section {
+  margin-bottom: 26px;
+}
+
+.photos-page .photo-review-batch {
+  background: var(--card-surface);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  margin: 0 0 14px;
+  max-width: 720px;
+  padding: 14px 16px;
+}
+
+.photos-page .photo-review-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.photos-page .photo-review-title {
+  font-family: var(--font-display);
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.photos-page .photo-review-count {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.photos-page .photo-review-rules {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+}
+
+.photos-page .photo-review-rules li {
+  display: flex;
+  gap: 6px;
+}
+
+.photos-page .photo-review-rule {
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
+.photos-page .photo-review-samples {
+  color: var(--text-muted);
+  font-size: 11px;
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  overflow-wrap: anywhere;
+}
+
+.photos-page .photo-review-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* ── Duplicate review (docs/photos-plan.md §2.6) ──────────────────────────── */
+/* The compare panes share one transform, so they must also share one box: two stages of different
+   heights would make the same zoom show different amounts of each photograph, which is the exact
+   comparison this surface exists to make possible. */
+
+.photos-page .photo-tile-group {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  background: rgba(0, 0, 0, 0.62);
+  border-radius: 3px;
+  color: #fff;
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  padding: 1px 5px;
+  pointer-events: none;
+}
+
+.photos-page .photo-tile-group.collapsed {
+  background: rgba(120, 90, 0, 0.75);
+}
+
+.photos-page .photo-dupes {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.photos-page .photo-dupes-head {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.photos-page .photo-dupes-position {
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 600;
+  margin-right: 10px;
+}
+
+.photos-page .photo-dupes-kind {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.photos-page .photo-dupes-nav,
+.photos-page .photo-dupes-zoom,
+.photos-page .photo-dupes-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.photos-page .photo-dupes-hint {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.photos-page .photo-dupes-panes {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.photos-page .photo-dupes-pane {
+  border: 2px solid transparent;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.photos-page .photo-dupes-pane.selected {
+  border-color: var(--accent, #4a90d9);
+}
+
+.photos-page .photo-dupes-stage {
+  align-items: center;
+  background: #000;
+  display: flex;
+  height: min(52vh, 460px);
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  touch-action: none;
+}
+
+.photos-page .photo-dupes-stage img {
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+  transform-origin: center center;
+  user-select: none;
+}
+
+.photos-page .photo-dupes-nopreview {
+  color: var(--text-muted);
+  font-size: 12px;
+  padding: 20px;
+  text-align: center;
+}
+
+.photos-page .photo-dupes-master {
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 3px;
+  color: #fff;
+  font-size: 10px;
+  padding: 2px 6px;
+  position: absolute;
+  right: 6px;
+  top: 6px;
+}
+
+.photos-page .photo-dupes-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 4px 0;
+}
+
+.photos-page .photo-dupes-name {
+  color: var(--text-primary);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.photos-page .photo-dupes-folder,
+.photos-page .photo-dupes-meta {
+  color: var(--text-muted);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+/* The lightbox is an antd Modal — it portals OUT of .photos-page, so these rules scope to the modal's
+   own class the way the rest of the lightbox already does. Scoping them to the page would leave them
+   inert (the lazy-page CSS trap's near relative). */
+.photo-lightbox .photo-lightbox-copies {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.photo-lightbox .photo-lightbox-copy {
+  background: transparent;
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.18));
+  border-radius: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 2px 8px;
+}
+
+.photo-lightbox .photo-lightbox-copy.current {
+  color: var(--text-primary);
+  cursor: default;
+}
+
+/* ── People, tagging and the tag queue (docs/photos-plan.md §2.7, §2.8) ──────────────────────────
+   Phase 4. Deliberately plain: these are working surfaces — a picker, a queue, a person list — and
+   the pictures are the only thing on the page that should ask for attention. */
+
+.photo-people-head {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.photo-people-list {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  list-style: none;
+  margin: 0 0 20px;
+  padding: 0;
+}
+
+.photo-person-card {
+  align-items: center;
+  background: var(--panel-bg, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
+  border-radius: 8px;
+  display: flex;
+  gap: 10px;
+  padding: 8px 10px;
+}
+
+.photo-person-open {
+  align-items: center;
+  background: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  flex: 1 1 auto;
+  gap: 10px;
+  min-width: 0;
+  padding: 0;
+  text-align: left;
+}
+
+.photo-person-face {
+  border-radius: 50%;
+  flex: 0 0 auto;
+  height: 44px;
+  object-fit: cover;
+  width: 44px;
+}
+
+.photo-person-face.placeholder {
+  background: var(--border-subtle, rgba(255, 255, 255, 0.12));
+  display: inline-block;
+}
+
+.photo-person-label {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.photo-person-name-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.photo-person-meta,
+.photo-person-count {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.photo-person-chips {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 14px;
+}
+
+.photo-person-chip,
+.photo-tag-chip {
+  align-items: center;
+  background: transparent;
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.18));
+  border-radius: 12px;
+  color: var(--text-primary);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 12px;
+  gap: 6px;
+  padding: 2px 10px;
+}
+
+/* A suggestion reads as a question, never as a fact: nothing in this vertical auto-confirms. */
+.photo-tag-chip.suggested {
+  border-style: dashed;
+  color: var(--text-muted);
+}
+
+.photo-tag-chip-remove {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0;
+}
+
+.photo-person-more {
+  display: flex;
+  justify-content: center;
+  padding: 16px 0;
+}
+
+.photo-person-editor-actions,
+.photo-date-row {
+  align-items: flex-end;
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.photo-field {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.photo-field > span {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+/* The type-ahead. The option list is positioned rather than floated in a portal so it cannot escape
+   a modal, which is where half of its uses live. */
+.photo-person-picker {
+  position: relative;
+}
+
+.photo-person-input {
+  background: transparent;
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.18));
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 12px;
+  padding: 4px 8px;
+  width: 100%;
+}
+
+.photo-person-options {
+  background: var(--panel-bg, #1c1c1c);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.18));
+  border-radius: 4px;
+  list-style: none;
+  margin: 2px 0 0;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 0;
+  position: absolute;
+  width: 100%;
+  z-index: 20;
+}
+
+.photo-person-option {
+  background: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  padding: 5px 8px;
+  text-align: left;
+  width: 100%;
+}
+
+.photo-person-option.highlighted {
+  background: var(--border-subtle, rgba(255, 255, 255, 0.12));
+}
+
+.photo-lightbox-tags,
+.photo-date-editor {
+  border-top: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
+  margin-top: 10px;
+  padding-top: 10px;
+}
+
+.photo-lightbox-tags {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.photo-lightbox-tags .photo-person-picker {
+  flex: 0 0 200px;
+}
+
+/* ── Tag queue ───────────────────────────────────────────────────────────────────────────────── */
+
+.photo-tag-queue-head {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.photo-tag-queue-modes {
+  display: flex;
+  gap: 6px;
+}
+
+.photos-button.active {
+  border-color: var(--text-primary);
+}
+
+.photo-tag-queue-position,
+.photo-tag-hint,
+.photo-tag-path {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.photo-tag-card {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 2fr) minmax(240px, 1fr);
+}
+
+@media (max-width: 800px) {
+  .photo-tag-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.photo-tag-stage {
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  justify-content: center;
+  max-height: 60vh;
+  overflow: hidden;
+}
+
+.photo-tag-side {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.photo-tag-path {
+  overflow-wrap: anywhere;
+}
+
+.photo-tag-suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.photo-tag-suggestion {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+}
+
+.photo-tag-crop {
+  border-radius: 4px;
+  height: 32px;
+  object-fit: cover;
+  width: 32px;
+}
+
+.photo-tag-name {
+  flex: 1 1 auto;
+  font-size: 12px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.photo-tag-actions {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+
+/* The face box, drawn over OUR derivative — the path that keeps the queue working with the sidecar
+   thrown away (§2.4). Fractions of the image, so one rectangle is right at every size. */
+.photo-face {
+  display: inline-block;
+  line-height: 0;
+  position: relative;
+}
+
+.photo-face-image {
+  max-height: 60vh;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.photo-face-box {
+  border: 2px solid rgba(255, 235, 130, 0.9);
+  border-radius: 2px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+  position: absolute;
+}
+
+.photo-face-nopreview {
+  color: var(--text-muted);
+  font-size: 12px;
+  padding: 24px;
+  text-align: center;
+}
+
+/* ── Google mesh review (docs/photos-plan.md §2.10) ───────────────────────────────────────────
+   The Google-only list shows pictures the library does NOT hold, thumbnailed out of the Takeout
+   archive into the derivative cache's own `google/` namespace. Deliberately a card list rather than
+   the justified grid: each row is read (a date, a caption, a decision), not scrolled past. */
+.photos-page .photo-google {
+  margin-top: 28px;
+}
+
+.photos-page .photo-google-subhead {
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: 15px;
+  margin: 18px 0 8px;
+}
+
+.photos-page .photo-google-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+}
+
+.photos-page .photo-google-stats li {
+  align-items: baseline;
+  color: var(--text-muted);
+  display: flex;
+  font-size: 12px;
+  gap: 6px;
+}
+
+.photos-page .photo-google-stat {
+  color: var(--text-primary);
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+}
+
+.photos-page .photo-google-listhead {
+  align-items: baseline;
+  display: flex;
+  gap: 16px;
+}
+
+.photos-page .photo-google-toggle {
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  font-size: 12px;
+  gap: 6px;
+}
+
+.photos-page .photo-google-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.photos-page .photo-google-card {
+  background: var(--card-surface);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+}
+
+/* An ignored item keeps its row and its picture — the decision is visible and reversible, which is
+   the whole difference between ignoring and deleting. */
+.photos-page .photo-google-card.is-ignored {
+  opacity: 0.55;
+}
+
+.photos-page .photo-google-card img,
+.photos-page .photo-google-placeholder {
+  aspect-ratio: 4 / 3;
+  background: var(--card-border);
+  border-radius: 6px;
+  object-fit: cover;
+  width: 100%;
+}
+
+.photos-page .photo-google-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.photos-page .photo-google-name {
+  color: var(--text-primary);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.photos-page .photo-google-date {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.photos-page .photo-google-desc {
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.4;
+}

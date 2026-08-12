@@ -1829,6 +1829,14 @@ namespace MovieTheater.Controllers
             bool enablePagination = bool.TryParse(Setting("EnablePagination"), out var parsedEnablePagination) && parsedEnablePagination;
             bool showBoardgameExpansions = bool.TryParse(Setting("ShowBoardgameExpansions"), out var parsedShowExpansions) && parsedShowExpansions;
             var comicSiteAccess = Setting("ComicSiteAccess");
+            // Family photo album membership (photos-plan.md §2.1). Surfaced only so the nav can hide
+            // /photos for non-members — the real gate is the RequireFamilyAlbum policy, re-checked
+            // server-side on every /API/Photos request. Not self-grantable: the key is absent from
+            // SelfServiceSettingKeys, so it can only be set through the admin surface.
+            var familyAlbum = string.Equals(
+                Setting(MovieTheater.Photos.FamilyAlbumGate.SettingKey),
+                MovieTheater.Photos.FamilyAlbumGate.SettingValue,
+                StringComparison.OrdinalIgnoreCase);
 
             // favorite channels — SettingValue is a JSON int array; parse defensively (empty on malformed)
             int[] favoriteChannels;
@@ -1848,7 +1856,7 @@ namespace MovieTheater.Controllers
             // false here, which is correct — they must set their password before they can administer.
             var isAdmin = IsAdminUsername(user.Username) && hasPassword;
 
-            return new { user.Username, moviesSeen, moviesToWatch, miscSeen, ratings, ratingAnchors, ageRestriction, cardStyle, canEditMovies, enablePagination, showBoardgameExpansions, comicSiteAccess, favoriteChannels, hasPassword, isAdmin };
+            return new { user.Username, moviesSeen, moviesToWatch, miscSeen, ratings, ratingAnchors, ageRestriction, cardStyle, canEditMovies, enablePagination, showBoardgameExpansions, comicSiteAccess, favoriteChannels, hasPassword, isAdmin, familyAlbum };
         }
 
         [HttpPost("/API/Logout")]

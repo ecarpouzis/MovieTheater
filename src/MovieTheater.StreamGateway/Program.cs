@@ -66,8 +66,9 @@ app.MapGet("/healthz", () => Results.Text("ok"));
 // ── Music (music-plan.md §2.1): token-gated direct file serving, no Jellyfin involved. The
 // capability carries the music-root-relative path; this route only confines it to MusicRootDir
 // and serves bytes with Range support. Unconfigured hosts simply 404 the route.
-string? musicRoot = config["MusicRootDir"];
-string? musicRootFull = musicRoot == null ? null : Path.GetFullPath(musicRoot);
+// ConfiguredRoot, not `!= null`: the binder answers a JSON null / empty setting with "" rather than
+// null, and Path.GetFullPath("") throws — at startup, taking every other lane down with it.
+string? musicRootFull = ConfiguredRoot.FullPathOrNull(config["MusicRootDir"]);
 
 // Every music lane resolves its file exactly the same way, so it is written once. The confinement
 // check is the security boundary for the whole music data plane — a signed token still must not be
@@ -523,6 +524,63 @@ app.MapMethods($"/s/{{token}}/{MusicStreamRoutes.Universal}", new[] { "GET", "HE
     }
 });
 
+// ── Family photos (photos-plan.md §2.2): token-gated file serving from two roots, and nothing else.
+// The gateway stays DUMB and DB-less — it never generates a derivative, so a missing thumb is a 404
+// and therefore a VISIBLE ingest gap rather than a lazy path that quietly costs a decode per request.
+// Unconfigured hosts 404 both routes, exactly like the music lanes.
+//
+// Two roots, and which one a request resolves against is decided by the ROUTE, never by the token:
+//   PhotoOriginal → PhotoRootDir      (the read-only collection; the gateway never writes to it)
+//   PhotoThumb    → PhotoThumbCacheDir (derived data the ingest wrote)
+// The token's Size field is carried for the site's own bookkeeping and is deliberately NOT used to
+// pick a root — one fewer way a signed token could be made to point somewhere it should not.
+// ConfiguredRoot, not `is string`: a JSON null binds to "" (not null), `is string` matches it, and
+// Path.GetFullPath("") THROWS. Every host that took the photos appsettings without configuring photos
+// would have lost the gateway at startup — movies and music with it (§2.2's "unconfigured hosts 404").
+string? photoRootFull = ConfiguredRoot.FullPathOrNull(config["PhotoRootDir"]);
+string? photoThumbFull = ConfiguredRoot.FullPathOrNull(config["PhotoThumbCacheDir"]);
+
+// Confinement is the security boundary for the whole photo data plane: a token is signed, but a
+// signed token must still not be able to name a path outside its root. Written once, used by both
+// routes. 404 = this host serves no photos, or the file is gone; 403 = token refused, or the path
+// escaped its root.
+(string? Full, int Status) ResolvePhotoFile(string token, string? rootFull)
+{
+    if (rootFull == null)
+        return (null, StatusCodes.Status404NotFound);
+    if (!PhotoCapabilityToken.TryValidate(secret, token, out var payload) || payload is null)
+        return (null, StatusCodes.Status403Forbidden);
+
+    var full = PhotoPathConfinement.Resolve(rootFull, payload.RelativePath);
+    if (full == null)
+        return (null, StatusCodes.Status403Forbidden);
+    if (!File.Exists(full))
+        return (null, StatusCodes.Status404NotFound);
+    return (full, StatusCodes.Status200OK);
+}
+
+app.MapMethods($"/s/{{token}}/{PhotoStreamRoutes.Thumb}", new[] { "GET", "HEAD" }, (HttpContext context, string token) =>
+{
+    var (full, status) = ResolvePhotoFile(token, photoThumbFull);
+    if (full == null)
+        return Results.StatusCode(status);
+
+    // Derivative names carry a content key, so a given URL's bytes never change — but the URL itself
+    // expires with its token, so the cache window is bounded by the capability either way.
+    context.Response.Headers["Cache-Control"] = "private, max-age=3600";
+    return Results.File(full, "image/webp", enableRangeProcessing: true);
+});
+
+app.MapMethods($"/s/{{token}}/{PhotoStreamRoutes.Original}", new[] { "GET", "HEAD" }, (HttpContext context, string token) =>
+{
+    var (full, status) = ResolvePhotoFile(token, photoRootFull);
+    if (full == null)
+        return Results.StatusCode(status);
+
+    context.Response.Headers["Cache-Control"] = "private, max-age=3600";
+    return Results.File(full, PhotoContentType(Path.GetExtension(full)), enableRangeProcessing: true);
+});
+
 app.Map("/s/{token}/Videos/{**rest}", async (HttpContext context, string token, string rest) =>
 {
     if (!StreamCapabilityToken.TryValidate(secret, token, out var payload) || payload is null)
@@ -550,6 +608,24 @@ app.Run();
 // Jellyfin item ids appear both dashed (URL path) and dashless (the stored id / token);
 // normalize so the confinement check matches either form.
 static string NormalizeItemId(string id) => id.Replace("-", "");
+
+// Content type for an ORIGINAL (photos-plan.md §2.2). Derivatives are always WebP and are typed at
+// their route. An unknown extension is served as a download rather than guessed at: the collection
+// holds RAW formats browsers have no opinion about, and a wrong image/* type makes a broken <img>
+// where octet-stream makes a working "Download original".
+static string PhotoContentType(string extension) => extension.ToLowerInvariant() switch
+{
+    ".jpg" or ".jpeg" or ".jpe" => "image/jpeg",
+    ".png" => "image/png",
+    ".gif" => "image/gif",
+    ".webp" => "image/webp",
+    ".bmp" => "image/bmp",
+    ".tif" or ".tiff" => "image/tiff",
+    ".heic" => "image/heic",
+    ".heif" => "image/heif",
+    ".avif" => "image/avif",
+    _ => "application/octet-stream",
+};
 
 /// <summary>
 /// Rewrites the proxied request: drops the /s/{token} prefix so the upstream path is

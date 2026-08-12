@@ -1,0 +1,91 @@
+# Immich as a headless, DISPOSABLE enrichment sidecar for the family photo album.
+# See docs/photos-immich-setup.md for the runbook this file belongs to, and docs/photos-plan.md §2.4
+# for why it is shaped this way.
+#
+# NOTHING in this file runs as part of a build, a test or a deploy. It is executed by a human, once,
+# on the LAN-only host that sits beside the collection.
+#
+# The three load-bearing choices, restated here because a copy of this file that loses them is
+# dangerous rather than merely different:
+#
+#   1. The library is mounted READ-ONLY over CIFS with a read-only NAS credential (:ro plus a
+#      read-only account). Immich is then PHYSICALLY incapable of modifying an original, whatever any
+#      UI mishap or upstream bug might try. That is the prime directive of the whole vertical.
+#   2. The version is PINNED. Immich moves fast and has broken external-library flows before; our
+#      client refuses a major version it has not been tested against rather than mis-parsing the API.
+#      Upgrade deliberately, one version at a time, and re-run the sync with --dry-run first.
+#   3. NOTHING is published to the internet. Ports bind to the LAN interface only, there is no
+#      reverse proxy, and the site never exposes Immich to a browser — face crops are fetched
+#      server-side and cached into our own derivative cache.
+#
+# Every credential below is a PLACEHOLDER. Put the real values in a .env file beside this one
+# (see .env.example) and never commit it.
+
+name: photos-immich
+
+services:
+  immich-server:
+    # PINNED. Do not use :release — an unattended upgrade is exactly the failure mode §2.4 warns about.
+    image: ghcr.io/immich-app/immich-server:v1.120.2
+    restart: unless-stopped
+    depends_on:
+      - immich-redis
+      - immich-database
+    env_file:
+      - .env
+    environment:
+      # Single user, single library: multi-user sharing makes Immich run its ML per user, which is
+      # pure waste for a household with one owner account.
+      IMMICH_LOG_LEVEL: log
+    volumes:
+      # The collection, READ-ONLY. This is the mount the external library points at.
+      - photos-library:/usr/src/app/external:ro
+      # Immich's own derivative store (thumbnails, previews, ML models). Derived data on local disk:
+      # deletable and rebuildable, exactly like our thumb cache. Budget for it — Immich previews
+      # everything it indexes.
+      - ./data/upload:/usr/src/app/upload
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      # LAN ONLY. Replace 0.0.0.0 with the host's LAN address; never expose this port publicly and
+      # never put it behind the public reverse proxy.
+      - "${IMMICH_BIND_ADDRESS}:2283:2283"
+
+  immich-machine-learning:
+    image: ghcr.io/immich-app/immich-machine-learning:v1.120.2
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      # The downloaded ML models. Large; keep them out of the container layer so an upgrade does not
+      # re-download them.
+      - ./data/model-cache:/cache
+
+  immich-redis:
+    image: docker.io/redis:6.2-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: redis-cli ping || exit 1
+
+  immich-database:
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.3.0-pgvectors0.2.0
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_DATABASE_NAME}
+      POSTGRES_INITDB_ARGS: '--data-checksums'
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+
+volumes:
+  # The read-only CIFS mount of the collection. The credential MUST be the read-only NAS account (the
+  # jellyfin-ro pattern), and `ro` appears in the mount options as well as on the service's :ro flag —
+  # belt and braces, because this is the one thing that must never be got wrong.
+  photos-library:
+    driver: local
+    driver_opts:
+      type: cifs
+      device: "//${NAS_HOST}/${NAS_SHARE}"
+      o: "username=${NAS_READONLY_USER},password=${NAS_READONLY_PASSWORD},ro,uid=1000,gid=1000,vers=3.0,file_mode=0444,dir_mode=0555"

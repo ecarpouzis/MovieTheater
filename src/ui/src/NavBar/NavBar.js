@@ -18,6 +18,7 @@ const AdminModal = lazy(() => import("./AdminModal"));
 const MyPlaylistsModal = lazy(() => import("../Pages/Tv/MyPlaylistsModal"));
 import useIsMobile from "../hooks/useIsMobile";
 import { loadTitleTypes, saveTitleTypes, loadSort, saveSort } from "../hooks/useMovieSearch";
+import useShowHiddenPhotos from "../hooks/useShowHiddenPhotos";
 // Section nav icons (light variants — the navbar sits on a dark ground). Dark variants for
 // light-background contexts live alongside in ../assets/icons/dark/.
 import movieTheaterIcon from "../assets/icons/movie-theater.svg";
@@ -26,6 +27,7 @@ import boardGamesIcon from "../assets/icons/board-games.svg";
 import comicsIcon from "../assets/icons/comics.svg";
 import arcadeIcon from "../assets/icons/joystick.svg";
 import musicIcon from "../assets/icons/music.svg";
+import photosIcon from "../assets/icons/photos.svg";
 
 function NavBar({
   search,
@@ -60,6 +62,10 @@ function NavBar({
   const hasHandledInitialLoadRef = useRef(false);
 
   const isMobile = useIsMobile();
+  // The admin show-hidden switch (photos-plan.md Phase 4 addendum). Held here rather than in the
+  // photos page because it describes the SESSION, not the view — and because Phase 4 moved it out of
+  // member reach entirely: any member may hide a photo, only an admin may see what was hidden.
+  const [showHiddenPhotos, setShowHiddenPhotos] = useShowHiddenPhotos();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
@@ -216,11 +222,12 @@ function NavBar({
   const isBoardGames = location.pathname.startsWith("/boardgames");
   const isArcade = location.pathname.startsWith("/arcade");
   const isMusic = location.pathname.startsWith("/music");
-  const isMovies = !isArcade && !isBoardGames && !isMusic;
+  const isPhotos = location.pathname.startsWith("/photos");
+  const isMovies = !isArcade && !isBoardGames && !isMusic && !isPhotos;
   // Arcade's rail carries a bare word-mark: its joystick glyph was dropped in the browse redesign.
   // The switcher menu still shows the icon, so the section stays recognisable there.
-  const sectionIcon = isArcade ? null : isBoardGames ? boardGamesIcon : isMusic ? musicIcon : movieTheaterIcon;
-  const sectionTitle = isArcade ? "Arcade" : isBoardGames ? "Board Games" : isMusic ? "Music" : "Movie Theater";
+  const sectionIcon = isArcade ? null : isBoardGames ? boardGamesIcon : isMusic ? musicIcon : isPhotos ? photosIcon : movieTheaterIcon;
+  const sectionTitle = isArcade ? "Arcade" : isBoardGames ? "Board Games" : isMusic ? "Music" : isPhotos ? "Photos" : "Movie Theater";
   const navThemeClass = isArcade ? " navbar-arcade-theme" : isBoardGames ? " navbar-boardgames-theme" : isMusic ? " navbar-music-theme" : "";
 
   // Publish the active feature to <html> so theme.css re-tints its tokens (accent, sidebar,
@@ -250,10 +257,32 @@ function NavBar({
     });
   }
 
+  // The photos section's one nav control (photos-plan.md §2.9 / Phase 4 addendum): reveal the assets
+  // a family member has hidden. Admin-only ON TOP of family membership — the same two-part test the
+  // server applies, restated here only so an unusable control is not drawn. It is a courtesy, never
+  // the gate: /API/Photos ignores includeHidden from a non-admin no matter what this checkbox says,
+  // which is why a member editing localStorage gains nothing.
+  const photosNavControls = isPhotos && userData?.familyAlbum && userData?.hasPassword && userData?.isAdmin && (
+    <div className="navbar-photos-controls">
+      <label className="navbar-photos-toggle">
+        <input
+          type="checkbox"
+          checked={showHiddenPhotos}
+          onChange={(e) => setShowHiddenPhotos(e.target.checked)}
+        />
+        Show hidden photos
+      </label>
+      <span className="navbar-photos-hint">
+        Hidden photos stay exactly where they are on disk — this only changes what the album shows.
+      </span>
+    </div>
+  );
+
   // Rail footer — theme row, then Log Out beneath it. Shared by the mobile drawer and the desktop
   // sider so the two can't drift.
   const navFooter = (
     <div className="navbar-footer">
+      {photosNavControls}
       <div className="navbar-theme-row">
         <span className="navbar-theme-label">{theme === "dark" ? "Dark" : "Light"} mode</span>
         {themeToggleButton}
@@ -292,6 +321,19 @@ function NavBar({
         <button className="navbar-section-item" onClick={() => history.push("/music")}>
           <img className="navbar-section-icon" src={musicIcon} alt="" /> Music
           <span className="navbar-hue-dot" style={{ background: "#C9484F" }} />
+        </button>
+      )}
+      {/* Family photo album (photos-plan.md §2.1): hidden by default and shown only to a
+          family-flagged user — including from admins, who are not implicitly members. Hiding the
+          entry is a courtesy, not the gate: every /API/Photos route re-checks the flag server-side,
+          so typing the URL gets a non-member a 403 and nothing else.
+          hasPassword mirrors the policy's second half (§3 Phase 0 addendum): the album additionally
+          requires a password-verified session, so showing the entry to a passwordless member would
+          only offer them a dead end. */}
+      {userData?.familyAlbum && userData?.hasPassword && (
+        <button className="navbar-section-item" onClick={() => history.push("/photos")}>
+          <img className="navbar-section-icon" src={photosIcon} alt="" /> Photos
+          <span className="navbar-hue-dot" style={{ background: "#7FA648" }} />
         </button>
       )}
       <button className="navbar-section-item" onClick={() => history.push("/boardgames")}>

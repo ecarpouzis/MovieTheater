@@ -140,6 +140,27 @@ function AdminModal({ open, onClose }) {
       .finally(() => setBusyUserId(null));
   };
 
+  // Family photo album membership (photos-plan.md §2.1). This is the only surface that grants it —
+  // it is absent from the self-service settings allow-list — and it is deliberately separate from
+  // ADMIN: an administrator is not implicitly in the family photos.
+  const toggleFamilyAlbum = (user, checked) => {
+    setBusyUserId(user.userId);
+    MovieAPI.adminSetUserSetting(user.userId, "FamilyAlbum", checked ? "true" : null)
+      .then((r) => r.json().then((body) => ({ ok: r.ok, body })))
+      .then(({ ok, body }) => {
+        if (!ok) {
+          message.error(body?.message ?? "Failed to update access.");
+          return;
+        }
+        patchUser(user.userId, { familyAlbum: checked });
+      })
+      .catch((error) => {
+        console.error("Error updating family album access:", error);
+        message.error("Failed to update access.");
+      })
+      .finally(() => setBusyUserId(null));
+  };
+
   return (
     <Modal
       open={open}
@@ -183,6 +204,14 @@ function AdminModal({ open, onClose }) {
                       onChange={(e) => toggleEditor(user, e.target.checked)}
                     >
                       Can edit
+                    </Checkbox>
+                    <Checkbox
+                      className="admin-editor-check"
+                      checked={user.familyAlbum}
+                      disabled={busy}
+                      onChange={(e) => toggleFamilyAlbum(user, e.target.checked)}
+                    >
+                      Family photos
                     </Checkbox>
                   </div>
                   <div className="admin-user-pw-row">

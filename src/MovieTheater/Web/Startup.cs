@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MovieTheater.Db;
+using MovieTheater.Photos;
 using Microsoft.AspNetCore.OData;
 using MovieTheater.Services;
 using MovieTheater.Services.ImdbApi;
@@ -132,7 +133,19 @@ namespace MovieTheater
             {
                 options.AddPolicy("StreamingUser", policy =>
                     policy.RequireAuthenticatedUser().RequireClaim("amr", "pwd"));
+
+                // Family photo album (photos-plan.md §2.1). Unlike StreamingUser this one cannot be a
+                // pure claim check: membership is a UserSettings row that an admin can revoke, and a
+                // 30-day cookie would otherwise carry a stale grant for a month. So it reads the flag
+                // per request — see FamilyAlbumGate for the memoization that keeps that to one query.
+                Photos.FamilyAlbumGate.AddPolicy(options);
             });
+            services.AddFamilyAlbumServices();
+            // Family video playback (photos-plan.md §2.3): mints a gateway capability for ONE video
+            // behind the gate above. Scoped like the controller that uses it; a host with no Jellyfin
+            // still resolves it and simply reports itself unconfigured, which the UI renders as no play
+            // button rather than a button that 501s.
+            services.AddScoped<Photos.IPhotoVideoPlayback, Photos.JellyfinPhotoVideoPlayback>();
 
             var proxyBuilder = services.AddReverseProxy();
             proxyBuilder.LoadFromConfig(config.RawConfiguration.GetSection("ReverseProxy"));

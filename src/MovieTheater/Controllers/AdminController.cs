@@ -102,6 +102,16 @@ namespace MovieTheater.Controllers
                 .ToListAsync();
             var editorSet = editorIds.ToHashSet();
 
+            // Family photo album membership (photos-plan.md §2.1) — this is its ONLY grant surface, and
+            // it is deliberately independent of isAdmin below: administering the site does not put you
+            // in the family photos.
+            var familyIds = await movieDb.UserSettings
+                .Where(s => s.SettingKey == Photos.FamilyAlbumGate.SettingKey
+                    && s.SettingValue == Photos.FamilyAlbumGate.SettingValue)
+                .Select(s => s.UserID)
+                .ToListAsync();
+            var familySet = familyIds.ToHashSet();
+
             var result = users.Select(u => new
             {
                 userId = u.UserID,
@@ -109,6 +119,7 @@ namespace MovieTheater.Controllers
                 lastLogin = u.LastLogin,
                 hasPassword = u.HasPassword,
                 canEditMovies = editorSet.Contains(u.UserID),
+                familyAlbum = familySet.Contains(u.UserID),
                 // Admin status is config-bound; surfaced read-only so the UI can badge it.
                 isAdmin = IsAdminUsername(u.Username),
             });
