@@ -30,7 +30,18 @@ climbed 43 s → steady 180 s; endOfStream on queue exhaustion, element drained 
 there, but the cross-engine deck handoff RELIES on the real `ended` after endOfStream(); guard
 this (treat near-end waiting-after-endedStream as ended) before Phase 5. Also observed: each
 hidden universal top-up re-ran ffmpeg on the gateway (piped stdout, no Range) — ~80 encodes in
-one night; setting `MusicUniversalCacheDir` in prod makes it one encode + cheap Range serves.**
+one night; setting `MusicUniversalCacheDir` in prod makes it one encode + cheap Range serves.
+PHASES 3+4 SHIPPED 2026-08-12 (commit 18f93e8): `musicTimeline.js` is THE elementTime ⇄
+(track, offset) mapping; `trackTime()` on the context feeds the bar, lyrics and Media Session;
+seek goes through tested `seekPlan` (in-buffer = native currentTime set; out-of-buffer =
+engine restart at the track, logged — piped lanes have no Range, so mid-track re-entry is
+physics, not a TODO). The queue-end guard is live (stall on ended stream at buffer end ⇒ real
+`ended`, same onEnded as the deck flip) and a finished queue is LATCHED so wake shows finished
+instead of restarting the last track at 0:00. Gateway universal cache LIVE same day with LRU
+eviction (hit-touch recency, evict-to-90% on miss over cap, only own-named files). REMAINING:
+Phase 5 flag-ON default (needs Eric's daily-use verdict + a phone pass over the new guard while
+genuinely hidden); deck hand-off under the guard untested (no natural no-treatment format with
+the universal lane up); seek-during-cross-engine-flip untested; MMS/iPhone seam unbuilt.**
 Companion to `music-plan.md`; cite sections from code the same way.
 
 ## Why
