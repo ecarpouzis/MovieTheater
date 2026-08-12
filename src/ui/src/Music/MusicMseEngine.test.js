@@ -58,9 +58,19 @@ class FakeMediaSource extends EventTarget {
   endOfStream() { this.readyState = "ended"; }
 }
 
-function fakeAudio() {
-  return { currentTime: 0, src: "", play: () => Promise.resolve(), pause: () => {} };
+/** An element that can be listened to and dispatched on — the engine binds the stall signals that
+ *  the queue-end guard watches, so a bag of properties is no longer an honest stand-in. */
+class FakeAudio extends EventTarget {
+  constructor() {
+    super();
+    this.currentTime = 0;
+    this.src = "";
+    this.readyState = 2;
+  }
+  play() { return Promise.resolve(); }
+  pause() {}
 }
+function fakeAudio() { return new FakeAudio(); }
 
 /** A Stream/Start payload, as the batch endpoint mints them. */
 function payload(id, over = {}) {
@@ -378,6 +388,49 @@ describe("the engine", () => {
     await engine.start({ queue, index: 0 }).catch(() => {});
     expect(beacons.length).toBe(1);
     expect(beacons[0].url).toBe("/API/Music/Incident");
+  });
+
+  // ── The queue-end guard (Phase 4, from the field run) ─────────────────────────────────────────
+  it("treats a stall at the end of an ended stream as `ended`, and only once", async () => {
+    const ended = [];
+    const audio = fakeAudio();
+    installFetch([]);
+    const engine = engineWith({ api: makeApi({}), audio, handlers: { onStreamEnded: () => ended.push(Date.now()) } });
+    await engine.start({ queue, index: 0 });
+    expect(engine.inspect().endedStream).toBe(true);   // the queue ran out, so we ended the stream
+
+    // The element drains and then fires `waiting` instead of `ended` — exactly what the phone did.
+    audio.currentTime = engine.timeline().bufferedEnd;
+    audio.dispatchEvent(new Event("waiting"));
+    expect(ended).toHaveLength(1);
+
+    // …and a second stall must not report a second ending.
+    audio.dispatchEvent(new Event("waiting"));
+    audio.dispatchEvent(new Event("stalled"));
+    expect(ended).toHaveLength(1);
+  });
+
+  it("does NOT call it the end when the stall is mid-queue", async () => {
+    const ended = [];
+    const audio = fakeAudio();
+    installFetch([]);
+    const engine = engineWith({ api: makeApi({}), audio, handlers: { onStreamEnded: () => ended.push(1) } });
+    await engine.start({ queue, index: 0 });
+    audio.currentTime = 5;                     // nowhere near the end of what is buffered
+    audio.dispatchEvent(new Event("waiting"));
+    expect(ended).toHaveLength(0);
+  });
+
+  it("exposes a timeline the mapping can read, with each track's start and duration", async () => {
+    installFetch([]);
+    const engine = engineWith({ api: makeApi({}) });
+    await engine.start({ queue, index: 0 });
+    const tl = engine.timeline();
+    expect(tl.entries.length).toBeGreaterThan(1);
+    expect(tl.entries[0]).toMatchObject({ trackId: 1, startSec: 0, durationSec: 200 });
+    expect(tl.entries[1].startSec).toBeGreaterThan(0);
+    expect(tl.bufferedEnd).toBeGreaterThan(0);
+    expect(tl.endedStream).toBe(true);
   });
 
   it("advances the index from the playhead, not from a render", async () => {

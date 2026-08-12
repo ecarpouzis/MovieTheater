@@ -32,10 +32,15 @@ export default function MusicNowPlayingPage({ userData }) {
   const audio = player?.audioRef?.current;
   const current = player?.current;
 
+  // Through the player's mapping, not off the element: under the MSE engine the element clock counts
+  // the whole queue, and lyrics are the consumer that notices a wrong offset first — a line at a
+  // time (music-mse-plan.md §Phase 3).
+  const trackTime = player?.trackTime;
   useEffect(() => {
     if (!audio) return undefined;
-    const onTime = () => setPosition(audio.currentTime || 0);
-    const onDuration = () => setDuration(Number.isFinite(audio.duration) ? audio.duration : 0);
+    const read = () => (trackTime ? trackTime() : { position: audio.currentTime || 0, duration: Number.isFinite(audio.duration) ? audio.duration : 0 });
+    const onTime = () => setPosition(read().position);
+    const onDuration = () => setDuration(read().duration);
     onTime();
     onDuration();
     audio.addEventListener("timeupdate", onTime);
@@ -46,7 +51,7 @@ export default function MusicNowPlayingPage({ userData }) {
       audio.removeEventListener("durationchange", onDuration);
       audio.removeEventListener("loadedmetadata", onDuration);
     };
-  }, [audio]);
+  }, [audio, trackTime]);
 
   // Streaming is password-only (§3.1). The route was previously reachable by URL for anyone —
   // harmless (the API 401s) but confusing; say so plainly instead.

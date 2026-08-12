@@ -10,9 +10,15 @@ import { useEffect, useRef } from "react";
 // play/pause/seek; TV wires play/pause/prev/next, no seek). Handlers are read through a ref so they never
 // go stale and we don't re-register every render. Position is driven by the <video> element's own events,
 // so there's no polling timer.
-export function useMediaSession({ videoRef, title, subtitle, poster, actions }) {
+export function useMediaSession({ videoRef, title, subtitle, poster, actions, positionOverride }) {
   const actionsRef = useRef(actions);
   actionsRef.current = actions;
+  // Optional, and only the music player passes it: with the MSE engine the element's clock counts a
+  // whole QUEUE, so the element's own numbers would put a 43-minute track on the lock screen with
+  // the scrubber creeping across all of it. When supplied and it answers, it wins
+  // (music-mse-plan.md §Phase 3). Read through a ref so it never goes stale and never re-registers.
+  const positionRef = useRef(positionOverride);
+  positionRef.current = positionOverride;
 
   useEffect(() => {
     if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return undefined;
@@ -42,12 +48,14 @@ export function useMediaSession({ videoRef, title, subtitle, poster, actions }) 
     const video = videoRef.current;
     const syncPosition = () => {
       if (!video) return;
-      const duration = video.duration;
+      const mapped = positionRef.current ? positionRef.current() : null;
+      const duration = mapped && mapped.duration > 0 ? mapped.duration : video.duration;
       if (!Number.isFinite(duration) || duration <= 0) return; // live/unknown — leave the scrubber alone
+      const position = mapped && mapped.duration > 0 ? mapped.position : (video.currentTime || 0);
       try {
         ms.setPositionState({
           duration,
-          position: Math.min(Math.max(video.currentTime || 0, 0), duration),
+          position: Math.min(Math.max(position || 0, 0), duration),
           playbackRate: video.playbackRate || 1,
         });
       } catch {

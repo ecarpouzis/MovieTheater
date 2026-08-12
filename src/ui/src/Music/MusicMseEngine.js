@@ -3,6 +3,7 @@ import { diagLog, reportIncident } from "./musicDiag";
 import {
   ASSUMED_QUOTA_BYTES, appendTreatmentFor, bufferCeilingSec, switchReasonFor,
 } from "./musicTreatments";
+import { isQueueEndStall } from "./musicTimeline";
 
 // ── Phase 2 of music-mse-plan.md: the engine, behind a flag ──────────────────────────────────────
 //
@@ -106,6 +107,7 @@ export function createMseEngine({
   onAdvance = () => {},
   onRung = () => {},
   onDeckNeeded = () => {},
+  onStreamEnded = () => {},
   onStateChange = () => {},
   now = () => Date.now(),
   isHidden = () => (typeof document !== "undefined" && document.visibilityState === "hidden"),
@@ -135,6 +137,7 @@ export function createMseEngine({
     deckNeededFor: null,
     quotaRetried: new Set(),
     reportedRung: false,
+    endedNotified: false,
     currentTrackId: null,
     lastError: null,
   };
@@ -172,6 +175,14 @@ export function createMseEngine({
     try {
       const sb = state.sb;
       return sb && sb.buffered.length ? sb.buffered.end(sb.buffered.length - 1) : 0;
+    } catch {
+      return 0;
+    }
+  };
+  const bufferedStart = () => {
+    try {
+      const sb = state.sb;
+      return sb && sb.buffered.length ? sb.buffered.start(0) : 0;
     } catch {
       return 0;
     }
@@ -402,6 +413,10 @@ export function createMseEngine({
     const entry = already || {
       ceilingSec: ceiling,
       trackId: track.id,
+      // Carried for the timeline module (Phase 3): the payload's duration is the best answer to
+      // "how long is this track", and the mapping falls back to the next entry's start when it is
+      // missing.
+      durationSec: Number(payload.durationSec) || 0,
       // Buffered-corrected: where this track will actually begin, read off the SourceBuffer rather
       // than trusted from a sum of DB durations that drifts over an hours-long queue.
       startSec: bufferedEnd(),
@@ -451,6 +466,46 @@ export function createMseEngine({
     return true;
   };
 
+  /**
+   * What the timeline module needs, as a stable accessor.
+   *
+   * Deliberately NOT inspect(): that one is a diagnostic snapshot which may grow or change shape,
+   * and the play bar reads this several times a second. Cheap, and the entries are copies so no
+   * consumer can reach into the engine's own records.
+   */
+  const timeline = () => ({
+    entries: state.appended.map((a) => ({
+      trackId: a.trackId, startSec: a.startSec, durationSec: a.durationSec, complete: a.complete,
+    })),
+    currentTime: audio ? audio.currentTime || 0 : 0,
+    bufferedStart: bufferedStart(),
+    bufferedEnd: bufferedEnd(),
+    endedStream: state.endedStream,
+  });
+
+  /**
+   * A stall on a stream we already ended, at the very end of the buffer, IS the end.
+   *
+   * Measured on the phone: after endOfStream() the element drained its last 161 s and then fired
+   * `waiting` rather than `ended`, and everything waiting on that `ended` waited forever. Fires once.
+   */
+  const checkQueueEndStall = () => {
+    if (state.endedNotified) return false;
+    if (!isQueueEndStall({
+      endedStream: state.endedStream,
+      currentTime: audio ? audio.currentTime || 0 : 0,
+      bufferedEnd: bufferedEnd(),
+    })) return false;
+    state.endedNotified = true;
+    log("queue-end-stall", {
+      at: Math.round(audio ? audio.currentTime || 0 : 0),
+      bufferedEnd: Math.round(bufferedEnd()),
+      readyState: audio ? audio.readyState : null,
+    });
+    onStreamEnded();
+    return true;
+  };
+
   /** End the stream so the element fires a REAL `ended` at the exact end of the audio — which is
    *  what lets the standard deck-flip machinery take over without the buffer ever running dry
    *  (§"Cross-engine joins, asleep"). */
@@ -489,6 +544,7 @@ export function createMseEngine({
     state.busy = true;
     try {
       syncIndex();
+      checkQueueEndStall();
       if (!isHidden()) await topUpMints();
       // Append until the window is full or there is nothing left to append. Bounded by the queue,
       // and each iteration either advances the cursor or stops.
@@ -550,6 +606,10 @@ export function createMseEngine({
     state.channels = payload.channels;
 
     sb.addEventListener("updateend", () => { pump(); });
+    // The guard's triggers: the events a drained element actually fires, plus the pump, because a
+    // hidden page may get no event at all and the queue end must still be noticed on the next
+    // opportunity the page is given.
+    ["waiting", "stalled", "pause", "ended"].forEach((name) => audio.addEventListener(name, checkQueueEndStall));
     await pump();
     log("started", { track: first?.id ?? null, lane: decision.treatment.lane, ahead: Math.round(aheadSec()) });
     return state.appended[0] || null;
@@ -574,6 +634,7 @@ export function createMseEngine({
     destroy,
     finishStream,
     evictBehind,
+    timeline,
     element: audio,
     /** Diagnostics + tests. Never used to drive playback — the engine reads its own refs. */
     inspect: () => ({

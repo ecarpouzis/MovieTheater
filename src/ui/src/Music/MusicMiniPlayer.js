@@ -60,13 +60,20 @@ function MusicMiniPlayer() {
   // is picked, audioRef.current can still be null (the ref attaches in the same commit), and a
   // `[audio]` dependency read at render time would never see it fill in. Re-running on the track id
   // guarantees a rebind for the life of the bar.
+  // Read through the player's mapping, never off the element. Under the MSE engine the element's
+  // clock counts the WHOLE QUEUE (one SourceBuffer, all tracks back to back), so `audio.currentTime`
+  // is 43-minute nonsense for a bar that is drawing one song; `trackTime()` is the same number on
+  // the deck path and the track-relative one under the engine (music-mse-plan.md §Phase 3).
+  const trackTime = player?.trackTime;
   useEffect(() => {
     const audio = audioRef?.current;
     if (!audio) return undefined;
+    const read = () => (trackTime ? trackTime() : { position: audio.currentTime || 0, duration: Number.isFinite(audio.duration) ? audio.duration : 0 });
     const onTime = () => {
-      if (!draggingRef.current) setPosition(audio.currentTime || 0);
+      if (!draggingRef.current) setPosition(read().position);
+      setDuration(read().duration);
     };
-    const onDuration = () => setDuration(Number.isFinite(audio.duration) ? audio.duration : 0);
+    const onDuration = () => setDuration(read().duration);
     onTime();
     onDuration(); // metadata may already be in before we got here
     audio.addEventListener("timeupdate", onTime);
@@ -77,7 +84,7 @@ function MusicMiniPlayer() {
       audio.removeEventListener("durationchange", onDuration);
       audio.removeEventListener("loadedmetadata", onDuration);
     };
-  }, [audioRef, currentId]);
+  }, [audioRef, currentId, trackTime]);
 
   // Safety net: while the element says it is playing, the bar must advance. timeupdate is the cheap
   // path, but it is not guaranteed — a throttled/backgrounded tab, a rebind that lost the race, or a
@@ -88,10 +95,13 @@ function MusicMiniPlayer() {
     if (!playing) return undefined;
     const id = setInterval(() => {
       const audio = audioRef?.current;
-      if (audio && !draggingRef.current) setPosition(audio.currentTime || 0);
+      if (!audio || draggingRef.current) return;
+      const read = trackTime ? trackTime() : { position: audio.currentTime || 0, duration: 0 };
+      setPosition(read.position);
+      if (read.duration) setDuration(read.duration);
     }, 500);
     return () => clearInterval(id);
-  }, [playing, audioRef]);
+  }, [playing, audioRef, trackTime]);
 
   // The drag latch must be released by something that ALWAYS fires. On a phone it frequently isn't
   // pointerup: the browser claims the gesture for a scroll and sends pointercancel instead, and the

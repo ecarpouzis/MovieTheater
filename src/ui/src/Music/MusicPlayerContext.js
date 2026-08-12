@@ -7,6 +7,7 @@ import MusicMiniPlayer from "./MusicMiniPlayer";
 import { LYRICS_DEFAULTS, normalizeLyricsSettings } from "./MusicLyricsSettings";
 import { createMseEngine } from "./MusicMseEngine";
 import { buildCapabilityMatrix, chooseEngineMode } from "./musicTreatments";
+import { seekPlan, trackTimeAt } from "./musicTimeline";
 
 // ── The site's first persistent player (music-plan.md §2.6) ─────────────────
 // Every video player dies on route change; music must not. The provider mounts ONCE in App.js
@@ -817,6 +818,13 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   // A MediaError kills the WHOLE MediaSource, not one track. Rung 6: rebuild once from where we are;
   // a second death means the decks.
   const mseErrorsRef = useRef(0);
+  // The queue played out. Latched so that WAKING UP does not restart the last track: on the phone
+  // (field run, 00:58) coming back to a finished queue silently re-started its last song at 0:00 and
+  // left it paused, which reads as a player that lost its place rather than one that finished.
+  const queueFinishedRef = useRef(false);
+  // Indirection for the engine's end-of-stream callback: onEnded is defined further down the file
+  // and the engine is created above it.
+  const endedRef = useRef(() => {});
   const mseActive = useCallback(
     () => engineModeRef.current === "mse" && !mseFallbackRef.current && !!engineRef.current,
     [],
@@ -866,6 +874,13 @@ export function MusicPlayerProvider({ children, enabled = true }) {
         });
       },
       onRung: (n, detail) => diagLog("mse:rung", { rung: n, ...(typeof detail === "object" ? detail : { detail }) }),
+      // The queue-end guard (Phase 4): a stall on an ended stream at the end of the buffer IS the
+      // end. Driven into the SAME handler the real `ended` event drives, because the cross-engine
+      // deck flip lives there and must not have a second, subtly different spelling.
+      onStreamEnded: () => {
+        diagLog("mse:ended-by-guard", { track: currentRef.current?.id ?? null, hidden: document.hidden });
+        endedRef.current({ currentTarget: audioMseRef.current });
+      },
       onDeckNeeded: (nextTrack, payload) => {
         // The engine cannot carry the next track. Prepare the deck NOW — well before the buffer runs
         // out — so the join is a pre-rolled flip and not a load at the boundary (§the invariant).
@@ -879,6 +894,7 @@ export function MusicPlayerProvider({ children, enabled = true }) {
     setActiveDeck("mse");
     syncActive();
     mseErrorsRef.current = 0;
+    queueFinishedRef.current = false;
     // ⚠ Claim the element SYNCHRONOUSLY, before the engine's async start resolves. Measured in a
     // real browser: a tap on Play in that window found `loadedTrackIdRef` still empty, decided the
     // element was holding nothing, and ran the DECK load — which assigned a signed URL over the
@@ -890,7 +906,16 @@ export function MusicPlayerProvider({ children, enabled = true }) {
       .then(() => {
         loadedTrackIdRef.current = track.id;
         lastUrlRef.current = null;
-        if (!autoplay) { setPlaying(false); return; }
+        if (!autoplay) {
+          // ⚠ Only if it is still true. `autoplay` is an intent from when this start was ORDERED,
+          // and the engine takes a moment to open its MediaSource and append — long enough for the
+          // listener to press Play, which they do, because the bar appears the instant the queue is
+          // restored. Asserting the stale intent here left the element playing with the button
+          // still showing ▶ for the rest of the session (measured in a browser: `play` and
+          // `playing` both fired, and React's state said paused).
+          if (el.paused) setPlaying(false);
+          return;
+        }
         el.volume = volumeOf();
         el.muted = false;
         el.play().catch(() => {
@@ -1115,6 +1140,7 @@ export function MusicPlayerProvider({ children, enabled = true }) {
 
   const playTracks = useCallback((tracks, startIndex = 0) => {
     if (!enabled) return;
+    queueFinishedRef.current = false;
     // A deliberate new pick is a new session, so an engine that gave up on the LAST queue gets
     // another turn. Mid-queue it stays given-up (see onEnded) — the difference is that this one is a
     // user gesture, not a boundary.
@@ -1238,7 +1264,14 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   useEffect(() => {
     const onWake = () => {
       if (document.hidden) return;
-      diagLog("wake", { armed: resumeOnWakeRef.current, loaded: loadedTrackIdRef.current, current: currentRef.current?.id ?? null });
+      diagLog("wake", { armed: resumeOnWakeRef.current, loaded: loadedTrackIdRef.current, current: currentRef.current?.id ?? null, finished: queueFinishedRef.current });
+      // A queue that finished stays finished. Waking is not a reason to play anything: the listener
+      // left it playing, it played to the end, and picking the phone up should show that — not the
+      // last track back at 0:00, which is what it did before this guard.
+      if (queueFinishedRef.current) {
+        firePendingRecovery();
+        return;
+      }
       if (resumeOnWakeRef.current) {
         resumeOnWakeRef.current = false;
         const track = currentRef.current;
@@ -1333,6 +1366,40 @@ export function MusicPlayerProvider({ children, enabled = true }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current?.id]);
 
+  /**
+   * Where we are IN THIS TRACK, and how long it is — the one mapping (music-mse-plan.md §Phase 3).
+   *
+   * Under the engine the element's clock counts QUEUE-seconds, because the whole queue is one
+   * SourceBuffer. Every consumer that reads `audio.currentTime` and means "how far into this song"
+   * has to come through here instead: the play bar, the elapsed/total labels, the lyrics scroller
+   * and the lock-screen scrubber. Without it the bar reads 43-minute positions and the lyrics scroll
+   * to the wrong line — which is why this, not the engine, was the blocker to using the flag daily.
+   *
+   * On the deck path it is exactly what it always was: one element, one track, one clock.
+   */
+  const trackTime = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio) return { position: 0, duration: 0 };
+    const elementTime = audio.currentTime || 0;
+    const engine = engineRef.current;
+    if (mseActive() && engine) {
+      const mapped = trackTimeAt(engine.timeline().entries, elementTime);
+      if (mapped) {
+        return {
+          position: mapped.offsetSec,
+          // The buffer's own answer first, then the catalog's — a track whose append is still in
+          // flight has no measured length yet, and showing 0:00 total for it would be worse than
+          // showing what the queue says.
+          duration: mapped.durationSec || Number(currentRef.current?.durationSec) || 0,
+        };
+      }
+    }
+    return {
+      position: elementTime,
+      duration: Number.isFinite(audio.duration) ? audio.duration : (Number(currentRef.current?.durationSec) || 0),
+    };
+  }, [mseActive]);
+
   const prev = useCallback(() => {
     const audio = audioRef.current;
     // Convention: past a few seconds in, "previous" restarts the track.
@@ -1344,6 +1411,7 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   }, []);
 
   const toggle = useCallback(() => {
+    queueFinishedRef.current = false;
     const audio = audioRef.current;
     if (!audio) return;
     // A recovery is waiting on a heartbeat or a wake — the tap IS the wake. Fire it now: what this
@@ -1368,13 +1436,45 @@ export function MusicPlayerProvider({ children, enabled = true }) {
 
   const seek = useCallback((seconds) => {
     const audio = audioRef.current;
-    if (audio && Number.isFinite(seconds)) audio.currentTime = seconds;
+    if (!audio || !Number.isFinite(seconds)) return;
+    const engine = engineRef.current;
+    if (mseActive() && engine) {
+      // `seconds` is TRACK-relative (it comes from a bar whose range is this track's duration), so
+      // it has to be mapped onto the queue clock before it means anything to the element.
+      const tl = engine.timeline();
+      const plan = seekPlan({
+        entries: tl.entries,
+        bufferedStart: tl.bufferedStart,
+        bufferedEnd: tl.bufferedEnd,
+        trackId: currentRef.current?.id,
+        offsetSec: seconds,
+      });
+      diagLog("mse:seek", { kind: plan.kind, to: Math.round(seconds), reason: plan.reason });
+      if (plan.kind === "inBuffer") {
+        // The case that must feel native, and it is: the bytes are already there, so this is a
+        // local operation on a buffered range — no fetch, no src, nothing refusable.
+        try { audio.currentTime = plan.elementTime; } catch { /* not seekable yet */ }
+        return;
+      }
+      if (plan.kind === "restart") {
+        // Out of the buffer. There is no way to ask these lanes for "this track from 2:30" — piped
+        // ffmpeg has no Range — so the honest move is to start the track again, which is exactly
+        // what a manual jump does. It lands at 0:00 of the track the thumb was dropped in; the bar
+        // snapping there is the truth. What it must never do is assign a src over the blob: URL or
+        // append at a position the buffer is not expecting.
+        const track = currentRef.current;
+        if (track) startEngine(track, true);
+      }
+      return;
+    }
+    audio.currentTime = seconds;
     // A seek moves the boundary. A deck already pre-rolled for the old one would keep playing
     // (silently) and drift away from the start it is supposed to be flipped to.
     cancelPreroll();
-  }, [cancelPreroll]);
+  }, [cancelPreroll, mseActive, startEngine]);
 
   const playAt = useCallback((i) => {
+    queueFinishedRef.current = false;
     setIndex((old) => {
       if (i === old) {
         const audio = audioRef.current;
@@ -1626,6 +1726,15 @@ export function MusicPlayerProvider({ children, enabled = true }) {
     // Fallbacks, in order: a URL in hand (swap it onto the live deck synchronously), then an
     // ordinary load driven by the index change. Both are worse than a flip, and both are kept
     // because a boundary must never depend on the optimisation having worked.
+    // Nothing to go to: the queue is done. Latch it, so a wake hours later comes back to a finished
+    // player rather than silently restarting the last song at 0:00 (field run, 00:58). `next()`
+    // below already stops playback; this is what stops the WAKE from undoing that.
+    if (!upcoming) {
+      queueFinishedRef.current = true;
+      resumeOnWakeRef.current = false;
+      diagLog("queue-finished", { track: currentRef.current?.id ?? null, engine: deckRef.current });
+    }
+
     if (audio && upcoming && pre?.url && pre.trackId === upcoming.id) {
       prefetchRef.current = null;
       handedOffRef.current = upcoming.id; // the effect below must not re-load what's already playing
@@ -1682,10 +1791,18 @@ export function MusicPlayerProvider({ children, enabled = true }) {
     else failTrackRef.current("Playback failed — the stream isn't answering.", { networkLevel });
   }, [elFor, mseActive, startEngine, fallBackToDecks]);
 
+  // The queue-end guard's landing point. The engine is created above `onEnded` is defined, so it
+  // calls through this ref — exactly the indirection failTrack/loadTrack already use. Without the
+  // assignment the guard fires, logs, and lands on a no-op: measured in a browser, where the drained
+  // stream was correctly identified as ended and then nothing happened at all.
+  useEffect(() => { endedRef.current = onEnded; }, [onEnded]);
+
   // OS lock-screen / media-key card. The shared hook only touches standard HTMLMediaElement
   // APIs, so the <audio> ref rides the videoRef parameter unchanged.
   useMediaSession({
     videoRef: audioRef,
+    // Per-TRACK position on the lock screen, not per-queue (music-mse-plan.md §Phase 3).
+    positionOverride: trackTime,
     title: current?.title,
     subtitle: current ? [current.artist, current.album].filter(Boolean).join(" — ") : "",
     poster: null,
@@ -1699,8 +1816,8 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   });
 
   const value = useMemo(
-    () => ({ queue, index, current, playing, error, buffering, audioRef, canTranscode, isPlayable, playTracks, enqueue, next, prev, toggle, seek, playAt, removeAt, stop, setVolume, ensureAudioGraph, visualizerOn, toggleVisualizer, closeVisualizer, lyricsOn, toggleLyrics, closeLyrics, shuffleTracks, favoriteIds, isFavorite, toggleFavorite, lyricsSettings, setLyricsSetting }),
-    [queue, index, current, playing, error, buffering, canTranscode, isPlayable, playTracks, enqueue, next, prev, toggle, seek, playAt, removeAt, stop, setVolume, ensureAudioGraph, visualizerOn, toggleVisualizer, closeVisualizer, lyricsOn, toggleLyrics, closeLyrics, shuffleTracks, favoriteIds, isFavorite, toggleFavorite, lyricsSettings, setLyricsSetting]
+    () => ({ queue, index, current, playing, error, buffering, audioRef, trackTime, canTranscode, isPlayable, playTracks, enqueue, next, prev, toggle, seek, playAt, removeAt, stop, setVolume, ensureAudioGraph, visualizerOn, toggleVisualizer, closeVisualizer, lyricsOn, toggleLyrics, closeLyrics, shuffleTracks, favoriteIds, isFavorite, toggleFavorite, lyricsSettings, setLyricsSetting }),
+    [queue, index, current, playing, error, buffering, trackTime, canTranscode, isPlayable, playTracks, enqueue, next, prev, toggle, seek, playAt, removeAt, stop, setVolume, ensureAudioGraph, visualizerOn, toggleVisualizer, closeVisualizer, lyricsOn, toggleLyrics, closeLyrics, shuffleTracks, favoriteIds, isFavorite, toggleFavorite, lyricsSettings, setLyricsSetting]
   );
 
   return (

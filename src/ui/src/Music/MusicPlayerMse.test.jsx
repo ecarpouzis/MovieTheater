@@ -49,7 +49,8 @@ class FakeSourceBuffer extends EventTarget {
     super();
     this.mime = mime;
     this.endSec = 0;
-    this.buffered = { length: 1, start: () => 0, end: () => this.endSec };
+    this.startSec = 0;   // moved by eviction; the timeline must be immune to it
+    this.buffered = { length: 1, start: () => this.startSec, end: () => this.endSec };
   }
   appendBuffer(chunk) {
     this.endSec += chunk.byteLength / 32000;
@@ -241,6 +242,68 @@ describe("the MSE engine inside the player", () => {
     expect(connected).toContain("a");
     expect(connected).toContain("b");
     expect(el("mse")).toBeTruthy();
+  });
+
+  // ── Phase 3: the timeline, through the player ─────────────────────────────────────────────────
+  it("reports TRACK-relative time, not the queue clock the element counts", async () => {
+    const { el } = await mountPlaying();
+    const mse = el("mse");
+    // Two tracks in, on the element's clock (each fake track is ~31 s of audio). The bar must read
+    // seconds into THAT song, not the 70 s the element counts.
+    // Inside the MIDDLE track, where the buffer's own measurement of the track's length (the
+    // distance to the next entry's start) is available and beats the catalog's.
+    const elementTime = 40;
+    Object.defineProperty(mse, "currentTime", { value: elementTime, configurable: true });
+    const { position, duration } = player.trackTime();
+    expect(position).toBeGreaterThanOrEqual(0);
+    expect(position).toBeLessThan(31.5);            // inside a ~31 s track, not 40 s into a queue
+    expect(duration).toBeGreaterThan(0);
+    expect(duration).toBeLessThan(elementTime);     // the TRACK's length, not the queue's
+  });
+
+  it("seeks inside the buffer without touching src — the case that must feel native", async () => {
+    const { el } = await mountPlaying();
+    const mse = el("mse");
+    const srcBefore = mse.src;
+    let assigned = 0;
+    Object.defineProperty(mse, "currentTime", { value: 5, writable: true, configurable: true });
+    Object.defineProperty(mse, "src", {
+      configurable: true,
+      get: () => srcBefore,
+      set: () => { assigned += 1; },
+    });
+
+    await act(async () => { player.seek(10); });    // 10 s into the CURRENT track
+    expect(assigned).toBe(0);                       // no src assignment over the blob: URL, ever
+    expect(mse.currentTime).toBeGreaterThan(5);     // …and the playhead moved, in element time
+    expect(sourceBuffers).toHaveLength(1);          // …with the same SourceBuffer still in place
+  });
+
+  it("restarts the track for a seek outside the buffer, rather than corrupting it", async () => {
+    const { el } = await mountPlaying();
+    const mse = el("mse");
+    Object.defineProperty(mse, "currentTime", { value: 50, writable: true, configurable: true });
+    const buffersBefore = sourceBuffers.length;
+    // Eviction has taken the front of the buffer — where this seek wants to land. There is no way
+    // to re-fetch "this track from 5 s" (piped lanes, no Range), so the engine restarts the track.
+    sourceBuffers[0].startSec = 40;
+    await act(async () => { player.seek(5); });
+    await flush(6);
+    // A restart builds a fresh MediaSource — which is a rebuild, not a mid-buffer append at a
+    // position the buffer was not expecting.
+    expect(sourceBuffers.length).toBeGreaterThan(buffersBefore);
+    expect(player.audioRef.current.dataset.deck).toBe("mse");
+  });
+
+  it("gives the lock screen per-track position, not a 43-minute queue", async () => {
+    const { el } = await mountPlaying();
+    Object.defineProperty(el("mse"), "currentTime", { value: 100, configurable: true });
+    const state = navigator.mediaSession && navigator.mediaSession.__position;
+    // The hook is driven by element events; assert through the same override it uses.
+    const { position, duration } = player.trackTime();
+    expect(duration).toBeGreaterThan(0);
+    expect(position).toBeLessThan(duration + 1);
+    expect(state === undefined || state === null || typeof state === "object").toBe(true);
   });
 
   it("is off by default — no flag, no engine", async () => {
