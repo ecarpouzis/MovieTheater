@@ -738,6 +738,28 @@ export function MusicPlayerProvider({ children, enabled = true }) {
     } catch { /* the deck is being replaced anyway */ }
   }, [idleEl]);
 
+  /// Park BOTH physical decks: pause them and release their blobs. The caller is the engine taking
+  /// (or re-taking) the session — the one moment nothing may be left audible underneath it. Not
+  /// optional: once deckRef says "mse", NOTHING can reach a playing deck — pause and Clear queue
+  /// touch the ACTIVE element only, cancelPreroll only the IDLE one, and the deck handlers
+  /// deliberately ignore a non-active element. A deck playing a downloaded blob needs no network
+  /// either, so left unparked it plays to the end of its track underneath the engine (measured:
+  /// incident 5, 2026-08-12 — the "two songs at once" report).
+  const parkDecks = useCallback(() => {
+    prerollRef.current = null;
+    ["a", "b"].forEach((deck) => {
+      const el = elFor(deck);
+      if (el) {
+        try {
+          el.pause();
+          el.muted = false;
+        } catch { /* the deck is being replaced anyway */ }
+      }
+      revokeDeck(deck);
+    });
+    deckLoadedRef.current = null;
+  }, [elFor, revokeDeck]);
+
   const prefetchNext = useCallback(() => {
     const track = nextTrackRef.current;
     if (!track) return;
@@ -934,6 +956,9 @@ export function MusicPlayerProvider({ children, enabled = true }) {
     deckRef.current = "mse";
     setActiveDeck("mse");
     syncActive();
+    // Silence the floor the engine is taking over from — AFTER the deckRef flip, so the pause and
+    // emptied events the parking fires land on elements the handlers already ignore.
+    parkDecks();
     mseErrorsRef.current = 0;
     queueFinishedRef.current = false;
     // ⚠ Claim the element SYNCHRONOUSLY, before the engine's async start resolves. Measured in a
@@ -945,6 +970,9 @@ export function MusicPlayerProvider({ children, enabled = true }) {
     lastUrlRef.current = null;
     engine.start({ queue: queueRef.current, index: queueRef.current.findIndex((t) => t.id === track.id) })
       .then(() => {
+        // A newer start owns the session now (rapid picks land here ~100 ms apart). The element,
+        // loadedTrackIdRef, and the autoplay decision are the newer engine's to claim, not this one's.
+        if (engineRef.current !== engine) return;
         loadedTrackIdRef.current = track.id;
         lastUrlRef.current = null;
         if (!autoplay) {
@@ -965,6 +993,12 @@ export function MusicPlayerProvider({ children, enabled = true }) {
         });
       })
       .catch((e) => {
+        // Superseded mid-setup: a second start assigned its own src over this engine's MediaSource,
+        // which detaches it and makes THIS one's addSourceBuffer throw. That is the race failing,
+        // not MSE — the newer engine is healthy and owns the session. Treating it as an engine
+        // failure latched the whole session onto the decks and destroyed the healthy engine
+        // (incident 5, 2026-08-12).
+        if (engineRef.current !== engine) return;
         // The engine could not even start (no treatment, no MediaSource, the first mint failed).
         // That is rung 7 territory: hand the whole session to the decks, which is where it would
         // have been without the flag.
@@ -972,7 +1006,7 @@ export function MusicPlayerProvider({ children, enabled = true }) {
         loadTrackRef.current(currentRef.current, { autoplay });
       });
     return true;
-  }, [destroyEngine, fallBackToDecks, installOnIdleDeck, syncActive, volumeOf]);
+  }, [destroyEngine, fallBackToDecks, installOnIdleDeck, parkDecks, syncActive, volumeOf]);
 
   // Load + play whenever the current track changes. The signed URL comes from Stream/Start;
   // the <audio> element then streams straight off the gateway (Range requests, native decode).

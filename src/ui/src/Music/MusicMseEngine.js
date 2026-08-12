@@ -611,6 +611,10 @@ export function createMseEngine({
     if (state.destroyed) return null;
 
     await topUpMints();
+    // Re-check after EVERY await, not just sourceopen: a newer start() destroys this engine and
+    // assigns its own src, which detaches this MediaSource — addSourceBuffer on it would throw and
+    // read as an engine failure when it is only supersession (incident 5, 2026-08-12).
+    if (state.destroyed) return null;
     const first = state.queue[state.appendCursor];
     const payload = first ? payloadFor(first.id) : null;
     const decision = payload
@@ -635,6 +639,7 @@ export function createMseEngine({
     // opportunity the page is given.
     ["waiting", "stalled", "pause", "ended"].forEach((name) => audio.addEventListener(name, checkQueueEndStall));
     await pump();
+    if (state.destroyed) return null;
     log("started", { track: first?.id ?? null, lane: decision.treatment.lane, ahead: Math.round(aheadSec()) });
     return state.appended[0] || null;
   };

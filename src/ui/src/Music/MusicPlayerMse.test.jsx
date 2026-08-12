@@ -44,6 +44,7 @@ function Probe() {
 // A MediaSource that accepts everything and grows its buffered range. It claims nothing about
 // decoding — that is what the phone is for — only that the engine's bookkeeping is driven by it.
 let sourceBuffers;
+let mediaSources;
 class FakeSourceBuffer extends EventTarget {
   constructor(mime) {
     super();
@@ -62,11 +63,20 @@ class FakeSourceBuffer extends EventTarget {
 class FakeMediaSource extends EventTarget {
   constructor() {
     super();
+    // The element hosts ONE MediaSource: attaching a new one detaches — closes — every previous
+    // one, and addSourceBuffer on a closed MediaSource throws. This is the real browser mechanism
+    // behind the supersession race (incident 5, 2026-08-12), so the fake must model it or the race
+    // tests below pass against broken code.
+    mediaSources.forEach((ms) => { ms.readyState = "closed"; });
+    mediaSources.push(this);
     this.readyState = "open";
     setTimeout(() => this.dispatchEvent(new Event("sourceopen")), 0);
   }
   static isTypeSupported() { return true; }
   addSourceBuffer(mime) {
+    if (this.readyState !== "open") {
+      throw new Error("Failed to execute 'addSourceBuffer' on 'MediaSource': The MediaSource's readyState is not 'open'.");
+    }
     const sb = new FakeSourceBuffer(mime);
     sourceBuffers.push(sb);
     return sb;
@@ -78,6 +88,7 @@ let playSpy;
 
 beforeEach(() => {
   sourceBuffers = [];
+  mediaSources = [];
   api.getMusicCapabilities.mockReturnValue(ok({ transcodeEnabled: true, fmp4Enabled: true }));
   api.getMusicFavorites.mockReturnValue(ok({ trackIds: [] }));
   api.startMusicTrack.mockImplementation((id) => ok({ trackId: id, url: `https://gw/${id}`, channels: 2, sizeBytes: 1024 }));
@@ -413,5 +424,88 @@ describe("the MSE engine inside the player", () => {
     expect(live()).toBe(el("a"));
     expect(api.startMusicTrack).toHaveBeenCalled();
     expect(api.startMusicTracks).not.toHaveBeenCalled();
+  });
+
+  // ── The "two songs at once" pair (incident 5, 2026-08-12) ─────────────────────────────────────
+  // A phone session fell to the deck floor, a deck downloaded its track as a blob and played it,
+  // and then a NEW pick brought the engine back — which took the "live" slot without silencing the
+  // deck. Nothing could reach it afterwards: pause and Clear queue touch the ACTIVE element only,
+  // and a blob needs no network, so it played underneath the engine to the end of its track.
+  it("parks a playing deck when the engine takes the session back — no second voice", async () => {
+    // Land on the deck floor the same way the field session did: a track the matrix can't carry
+    // flips the boundary onto deck a, and the session stays there.
+    api.startMusicTracks.mockImplementation((ids) => ok({
+      tracks: ids.map((id) => (id === 2
+        ? { trackId: 2, mimeType: "audio/x-ape", url: "https://gw/2/file", sizeBytes: 1000, durationSec: 100 }
+        : {
+          trackId: id, mimeType: "audio/mpeg", url: `https://gw/${id}/file`,
+          universalUrl: `https://gw/${id}/universal`, sizeBytes: 2_000_000, durationSec: 100,
+          sampleRateHz: 44100, channels: 2,
+        })),
+      skipped: [],
+    }));
+    const { el } = await mountPlaying();
+    await act(async () => { el("mse").dispatchEvent(new Event("ended")); });
+    expect(player.audioRef.current).toBe(el("a"));
+
+    // Deck a is the thing playing. A new pick hands the session to the engine — the deck MUST be
+    // paused by that takeover, because no later control can reach it.
+    const pauseA = vi.fn();
+    el("a").pause = pauseA;
+    api.startMusicTracks.mockImplementation((ids) => ok({
+      tracks: ids.map((id) => ({
+        trackId: id, mimeType: "audio/mpeg",
+        url: `https://gw/${id}/file`, universalUrl: `https://gw/${id}/universal`,
+        sizeBytes: 2_000_000, durationSec: 100, sampleRateHz: 44100, channels: 2,
+      })),
+      skipped: [],
+    }));
+    await act(async () => { player.playTracks(TRACKS, 0); });
+    await flush();
+
+    expect(player.audioRef.current).toBe(el("mse"));
+    expect(pauseA).toHaveBeenCalled();
+  });
+
+  it("survives two rapid picks: the superseded start neither falls back nor kills the winner", async () => {
+    const { el } = await mountPlaying();
+
+    // Pick #1, with its mint held open so the start is parked BETWEEN sourceopen and
+    // addSourceBuffer — the exact window the field race hit.
+    let releaseMint;
+    const mintBody = (ids) => ({
+      tracks: ids.map((id) => ({
+        trackId: id, mimeType: "audio/mpeg",
+        url: `https://gw/${id}/file`, universalUrl: `https://gw/${id}/universal`,
+        sizeBytes: 2_000_000, durationSec: 100, sampleRateHz: 44100, channels: 2,
+      })),
+      skipped: [],
+    });
+    api.startMusicTracks.mockImplementationOnce((ids) => new Promise((resolve) => {
+      releaseMint = () => resolve({ ok: true, json: () => Promise.resolve(mintBody(ids)) });
+    }));
+    // Two acts, deliberately: the effect that starts engine #1 runs as act exits, so its sourceopen
+    // timer needs a tick of its OWN before the second pick — otherwise the held mint lands on the
+    // wrong engine and there is no race to survive.
+    await act(async () => { player.playAt(1); });
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    expect(typeof releaseMint).toBe("function");    // engine #1 is parked mid-start, mint in flight
+
+    // Pick #2, 100 ms later in the field: a fresh engine takes the element. Attaching its
+    // MediaSource closes pick #1's (see FakeMediaSource) — pick #1 is now a corpse mid-start.
+    await act(async () => { player.playAt(2); });
+    await flush();
+    expect(player.audioRef.current).toBe(el("mse"));
+    expect(player.current.id).toBe(3);
+
+    // The corpse's mint finally lands. Before the fix this ran addSourceBuffer on the closed
+    // MediaSource, and the throw was treated as MSE failing: fallBackToDecks latched the session
+    // and destroyed the HEALTHY engine. It must die silently instead.
+    await act(async () => { releaseMint(); });
+    await flush();
+
+    expect(player.audioRef.current).toBe(el("mse"));
+    expect(player.current.id).toBe(3);
+    expect(api.startMusicTrack).not.toHaveBeenCalled();   // no deck load ever happened
   });
 });
