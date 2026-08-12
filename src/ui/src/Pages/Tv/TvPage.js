@@ -123,9 +123,18 @@ function TvPage({ userData }) {
   // 8 Mbps cap (see ABR_PROFILES). An adapt re-tunes the channel at the live offset (per-viewer —
   // never disturbs others on the channel).
   const abrProfile = abrProfileFor(quality);
+  // What the live stream is doing, read by the ABR state machine (set on every tune, below): whether
+  // the video is being copied — which freezes the climb, since nothing above a copy differs — and the
+  // source video's own bitrate, so a drop skips the rungs whose cap sits above it and would hand back
+  // that same copy. Dropping off a copy stays allowed: a channel viewer whose link can't carry it
+  // falls back to a transcode instead of buffering.
+  const videoCopiedRef = useRef(false);
+  const sourceVideoBpsRef = useRef(null);
   const { autoBps, autoBpsRef, handleStall, handleBandwidth, reseed } = useAdaptiveBitrate({
     qualityKeyRef: qualityRef,
     profile: abrProfile,
+    videoCopiedRef,
+    sourceVideoBpsRef,
     onAdapt: () => {
       const ch = channelRef.current;
       if (ch) tuneRef.current?.(ch);
@@ -468,6 +477,8 @@ function TvPage({ userData }) {
         setPlayingVideoCodec(session.videoCodec ?? null);
         setPlayingDirect(!!session.isDirectStream);
         setPlayingHls(session.isHls !== false);
+        videoCopiedRef.current = !!session.isDirectStream;
+        sourceVideoBpsRef.current = session.videoBitrateBps ?? null;
 
         const video = videoRef.current;
         if (!video) return;

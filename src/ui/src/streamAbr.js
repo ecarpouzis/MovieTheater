@@ -49,9 +49,16 @@ export const isAutoQuality = (key) => key === "auto" || key === "auto-mobile";
 export const abrProfileFor = (key) => ABR_PROFILES[key] || ABR_PROFILES.auto;
 
 // One rung down, clamped at the bottom (DIRECT_BPS → the top transcode rung, etc.).
-export function rungDown(bps) {
-  const next = ABR_LADDER.find((rung) => rung < (bps ?? DIRECT_BPS));
-  return next ?? BOTTOM;
+//
+// `sourceVideoBps` (the source video stream's own bitrate, reported by Stream/Start) skips the rungs
+// that would change nothing: the server can only re-encode into a ceiling BELOW the source, so a cap
+// above it hands back the identical copied video — dropping onto it costs a reload and delivers the
+// same bytes that were already stalling. On a 5.8 Mbps file the 12 and 8 Mbps rungs are both that,
+// so a stalling viewer would burn two restarts (~a minute) before the first rung that actually helps.
+// Unknown source bitrate → walk the ladder one rung at a time, as before.
+export function rungDown(bps, sourceVideoBps) {
+  const useful = (rung) => rung < (bps ?? DIRECT_BPS) && (!sourceVideoBps || rung <= sourceVideoBps);
+  return ABR_LADDER.find(useful) ?? BOTTOM;
 }
 
 export const isBottomRung = (bps) => (bps ?? DIRECT_BPS) <= BOTTOM;

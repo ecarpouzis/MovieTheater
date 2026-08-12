@@ -17,6 +17,11 @@ namespace MovieTheater.Services.Jellyfin
         public string? TranscodingUrl { get; set; }
         public bool SupportsDirectStream { get; set; }
         public bool SupportsDirectPlay { get; set; }
+        /// <summary>The audio track Jellyfin itself will play when the request pins none — its own
+        /// answer, not something to re-derive. On a file that flags several audio tracks default it
+        /// disagrees with "the first IsDefault stream", and this is the one that reaches ffmpeg (and
+        /// the one direct play is negotiated against). Null when Jellyfin didn't state a choice.</summary>
+        public int? DefaultAudioStreamIndex { get; set; }
         public List<string>? TranscodeReasons { get; set; }
         public List<JellyfinPlaybackStream> MediaStreams { get; set; } = new();
     }
@@ -27,8 +32,16 @@ namespace MovieTheater.Services.Jellyfin
         public string? Type { get; set; }
         public string? Codec { get; set; }
         public string? DisplayTitle { get; set; }
+        /// <summary>The raw track title from the container ("English (Commentary with …)"), before
+        /// Jellyfin decorates it with codec/channel/default suffixes. DisplayTitle normally embeds it,
+        /// but an untagged track can leave DisplayTitle codec-only, so keep the original to read too.</summary>
+        public string? Title { get; set; }
         public string? Language { get; set; }
         public int? Channels { get; set; }
+        /// <summary>Bits per second of this stream in the source file. Load-bearing for the video
+        /// stream: Jellyfin refuses to stream-copy a video into a ceiling below it, so this is what
+        /// decides whether a capped rung is a copy or a re-encode.</summary>
+        public long? BitRate { get; set; }
         public bool IsDefault { get; set; }
         public bool IsExternal { get; set; }
         public string? DeliveryUrl { get; set; }

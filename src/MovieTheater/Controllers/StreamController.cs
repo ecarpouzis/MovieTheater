@@ -63,11 +63,18 @@ namespace MovieTheater.Controllers
 
         // Director's commentary and audio-description tracks carry an English language tag too, so a
         // foreign film whose only English audio is a commentary must NOT auto-switch to it — that's a
-        // worse default than the original language. Excluded from the auto-pick; still hand-selectable.
+        // worse default than the original language. Nor may one be STARTED on: a disc that flags every
+        // audio track default (Space Jam's 4K rip flags both the feature and the commentary) leaves the
+        // choice to Jellyfin, which picked the commentary. Excluded from the auto-pick and escaped when
+        // it's what would play; still hand-selectable.
         private static bool IsCommentaryOrDescription(JellyfinPlaybackStream s)
         {
-            var title = s.DisplayTitle;
-            return title != null
+            // DisplayTitle normally embeds the raw Title, but a track Jellyfin couldn't decorate can
+            // leave it codec-only — read both so a tagged commentary is never missed.
+            return Mentions(s.DisplayTitle) || Mentions(s.Title);
+
+            static bool Mentions(string? title) =>
+                title != null
                 && (title.Contains("commentary", StringComparison.OrdinalIgnoreCase)
                     || title.Contains("description", StringComparison.OrdinalIgnoreCase));
         }
@@ -224,22 +231,38 @@ namespace MovieTheater.Controllers
 
             var source = info.MediaSources[0];
 
-            // The track that plays when nobody pins one: the container default, else the first.
-            // Direct play and an unpinned transcode both land on this track.
+            // The track that plays when nobody pins one. Jellyfin STATES its own choice in
+            // DefaultAudioStreamIndex, and that's the one that reaches ffmpeg and that direct play is
+            // negotiated against — so take it rather than re-deriving it. The two genuinely disagree:
+            // when a file flags more than one audio track default, "first IsDefault stream" is a guess,
+            // and on Space Jam's 4K rip (feature + commentary, both flagged default) Jellyfin answers
+            // with the COMMENTARY. Fall back to the old derivation only when it states nothing.
             var allAudioStreams = source.MediaStreams.Where(s => s.Type == "Audio").ToList();
-            var defaultAudioIndex = (allAudioStreams.FirstOrDefault(s => s.IsDefault) ?? allAudioStreams.FirstOrDefault())?.Index;
+            var defaultAudioIndex = source.DefaultAudioStreamIndex is int jellyfinDefault
+                    && allAudioStreams.Any(s => s.Index == jellyfinDefault)
+                ? jellyfinDefault
+                : (allAudioStreams.FirstOrDefault(s => s.IsDefault) ?? allAudioStreams.FirstOrDefault())?.Index;
 
-            // Which audio track should actually play: the caller's explicit pick, else the English
-            // auto-default — when the caller expressed no preference and the default track isn't
-            // English while a non-commentary English track exists, switch to it. Clients keep sending
-            // no preference, so the auto-default re-applies on every start (incl. each channel advance).
+            // Which audio track should actually play: the caller's explicit pick, else the auto-default.
+            // With no preference expressed, two things make the would-play track the wrong one to start
+            // on — it isn't English, or it IS English but it's a commentary/description — and the answer
+            // to both is the first plain English track. Failing that, escaping a commentary default to
+            // any plain track still beats opening on the commentary, while a merely foreign default is
+            // left alone (the original language beats no English at all). Clients keep sending no
+            // preference, so this re-applies on every start (incl. each channel advance).
             int? effectiveAudioIndex = request.AudioStreamIndex;
             if (effectiveAudioIndex == null && allAudioStreams.Count > 1)
             {
-                var playing = allAudioStreams.FirstOrDefault(s => s.IsDefault) ?? allAudioStreams[0];
-                if (!IsEnglish(playing)
-                    && allAudioStreams.FirstOrDefault(s => IsEnglish(s) && !IsCommentaryOrDescription(s)) is { } english)
-                    effectiveAudioIndex = english.Index;
+                var playing = allAudioStreams.FirstOrDefault(s => s.Index == defaultAudioIndex) ?? allAudioStreams[0];
+                if (!IsEnglish(playing) || IsCommentaryOrDescription(playing))
+                {
+                    var better = allAudioStreams.FirstOrDefault(s => IsEnglish(s) && !IsCommentaryOrDescription(s))
+                        ?? (IsCommentaryOrDescription(playing)
+                            ? allAudioStreams.FirstOrDefault(s => !IsCommentaryOrDescription(s))
+                            : null);
+                    if (better != null)
+                        effectiveAudioIndex = better.Index;
+                }
             }
 
             // A selection naming the track that would play anyway is a no-op: don't pin it, so the
@@ -304,10 +327,11 @@ namespace MovieTheater.Controllers
                 .Select(s => new { index = s.Index, label = s.DisplayTitle ?? s.Codec ?? $"Track {s.Index}", language = s.Language, channels = s.Channels })
                 .ToList();
 
-            // What's actually playing — an explicit/auto English pick, else the container default
-            // (or the first track) — so the player can highlight the live audio track in its menu.
-            var selectedAudioIndex = effectiveAudioIndex
-                ?? (audioStreamList.FirstOrDefault(s => s.IsDefault) ?? audioStreamList.FirstOrDefault())?.Index;
+            // What's actually playing — an explicit/auto pick, else the unpinned default resolved above
+            // — so the player can highlight the live audio track in its menu. Re-deriving the default
+            // here from IsDefault would reintroduce the disagreement with Jellyfin's own choice and
+            // highlight a track that isn't the one you're hearing.
+            var selectedAudioIndex = effectiveAudioIndex ?? defaultAudioIndex;
 
             var subtitleTracks = source.MediaStreams
                 .Where(s => s.Type == "Subtitle")
@@ -376,11 +400,17 @@ namespace MovieTheater.Controllers
                 }
                 var burningInSubtitle = burnInImageIndex != null;
 
-                // What Jellyfin would do left alone: copy the video unless it named a Video transcode
-                // reason (or we're burning a sub in, which necessarily re-encodes).
+                // Non-null on this branch: the guard above returns 502 when a non-direct-play source
+                // carries no TranscodingUrl, so the copy tests below always have a url to read.
+                var transcodingUrl = source.TranscodingUrl!;
+
+                // What Jellyfin would do left alone. Four independent ways the video is NOT copied,
+                // and all four must be asked — each catches a case the others miss (see the helpers;
+                // the reason list alone is wrong for three of them).
                 var wouldCopy = !burningInSubtitle
-                    && (source.TranscodeReasons == null
-                        || !source.TranscodeReasons.Any(r => r.Contains("Video", StringComparison.OrdinalIgnoreCase)));
+                    && !NamesVideoTranscodeReason(source)
+                    && BitrateCeilingAllowsVideoCopy(transcodingUrl, sourceVideoStream)
+                    && OutputCodecAllowsVideoCopy(transcodingUrl, sourceVideoCodec);
 
                 // Copy is safe from ANY join point since the 2026-08-02 keyframe backfill completed:
                 // the patched Jellyfin segments every copied session at the source's real keyframes
@@ -397,9 +427,8 @@ namespace MovieTheater.Controllers
                 // The transcoding url only carries the candidate list, so a copied H.264 source to
                 // an HEVC-capable client would otherwise misread "hevc".
                 outputVideoCodec = videoIsCopied
-                    ? sourceVideoCodec ?? VideoCodecFromTranscodingUrl(source.TranscodingUrl)
-                    : VideoCodecFromTranscodingUrl(source.TranscodingUrl);
-                var transcodingUrl = source.TranscodingUrl;
+                    ? sourceVideoCodec ?? VideoCodecFromTranscodingUrl(transcodingUrl)
+                    : VideoCodecFromTranscodingUrl(transcodingUrl);
                 // Forced re-encode: tell Jellyfin not to stream-copy the video (CanStreamCopyVideo
                 // short-circuits on this), so ffmpeg emits its own keyframes and a mid-program seek
                 // lands — copy-mode seeking depends on the source's own keyframe index, which some
@@ -436,6 +465,12 @@ namespace MovieTheater.Controllers
                 // The codec the player will actually receive (copied or encoded) — drives the
                 // "HEVC"/"Direct" readout and confirms §14.1 negotiation worked.
                 videoCodec = outputVideoCodec,
+                // The SOURCE video's own bitrate — the number that decides copy vs re-encode (Jellyfin
+                // won't copy a video into a ceiling below it). ABR needs it: every rung at or above it
+                // delivers the identical copied stream, so dropping onto one is a restart that changes
+                // nothing. Null when the source carries no measured bitrate (the ladder then walks
+                // rung by rung, as before).
+                videoBitrateBps = sourceVideoStream?.BitRate,
                 videoFrameRate,
                 audioTracks,
                 subtitleTracks,
@@ -652,14 +687,87 @@ namespace MovieTheater.Controllers
         /// <summary>The first VideoCodec Jellyfin chose for the HLS output (e.g. "hevc"/"h264"),
         /// read from the transcoding url's query — purely informational for the player readout.</summary>
         private static string? VideoCodecFromTranscodingUrl(string transcodingUrl)
+            => QueryValueFromTranscodingUrl(transcodingUrl, "VideoCodec")?.Split(',')[0] is { Length: > 0 } first
+                ? first : null;
+
+        private static string? QueryValueFromTranscodingUrl(string transcodingUrl, string key)
         {
             var queryStart = transcodingUrl.IndexOf('?');
             if (queryStart < 0)
                 return null;
-            var codec = transcodingUrl[(queryStart + 1)..]
+            var prefix = key + "=";
+            var param = transcodingUrl[(queryStart + 1)..]
                 .Split('&', StringSplitOptions.RemoveEmptyEntries)
-                .FirstOrDefault(p => p.StartsWith("VideoCodec=", StringComparison.OrdinalIgnoreCase));
-            return codec?["VideoCodec=".Length..].Split(',')[0] is { Length: > 0 } first ? first : null;
+                .FirstOrDefault(p => p.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+            return param?[prefix.Length..];
+        }
+
+        /// <summary>
+        /// Whether Jellyfin named a reason that forces the VIDEO to be re-encoded (as opposed to an
+        /// audio- or container-only reason, which leaves the video copied).
+        ///
+        /// Read from BOTH places it can appear, because the obvious one is empty: against 10.11
+        /// <c>MediaSource.TranscodeReasons</c> came back null for every case measured — including a
+        /// plain "VideoCodecNotSupported" — while the TranscodingUrl carried the real list in its
+        /// query. Reading only the media source silently answered "no video reason, so it's a copy"
+        /// for every HLS session ever started, which is how a full re-encode came to report itself as
+        /// a stream copy. The url's value is one comma-separated parameter, not a repeated one.
+        /// </summary>
+        private static bool NamesVideoTranscodeReason(JellyfinPlaybackMediaSource source)
+        {
+            var reasons = source.TranscodeReasons ?? new List<string>();
+            if (source.TranscodingUrl is { } url
+                && QueryValueFromTranscodingUrl(url, "TranscodeReasons") is { Length: > 0 } fromUrl)
+                reasons = reasons.Concat(Uri.UnescapeDataString(fromUrl).Split(',')).ToList();
+            return reasons.Any(r => r.Contains("Video", StringComparison.OrdinalIgnoreCase));
+        }
+
+        /// <summary>
+        /// Whether the bitrate ceiling Jellyfin picked still permits a video stream copy. It refuses to
+        /// copy a video into a ceiling below the source's own bitrate — it re-encodes instead, rescaling
+        /// and tone-mapping to fit — so a capped rung silently turns a copy into a full encode.
+        ///
+        /// Neither reason list detects that, which is why this compares numbers instead. Measured against
+        /// Space Jam's 4K rip (source video 20,371,866 bps, HEVC Main 10 HDR10, 3840x2076):
+        ///   VideoBitrate=7,616,000  → re-encoded, master advertises RESOLUTION=2560x1384 VIDEO-RANGE=SDR
+        ///   VideoBitrate=20,616,000 → copied,     master advertises RESOLUTION=3840x2076 VIDEO-RANGE=PQ
+        /// Yet <c>MediaSource.TranscodeReasons</c> was NULL for both, and the url's own reason read
+        /// "ContainerBitrateExceedsLimit" for both — true either way, since the container total exceeds
+        /// the cap whether the fix is to squeeze the video or only the (TrueHD) audio. Only the numbers
+        /// separate the two cases, the same way Jellyfin's own CanStreamCopyVideo does.
+        ///
+        /// Unknown either side (no VideoBitrate param, or a source with no measured bitrate) returns
+        /// true and leaves the verdict to the reason check, as before.
+        /// </summary>
+        private static bool BitrateCeilingAllowsVideoCopy(string transcodingUrl, JellyfinPlaybackStream? sourceVideoStream)
+        {
+            if (sourceVideoStream?.BitRate is not long sourceBps || sourceBps <= 0)
+                return true;
+            var requested = QueryValueFromTranscodingUrl(transcodingUrl, "VideoBitrate");
+            return !long.TryParse(requested, out var requestedBps) || requestedBps >= sourceBps;
+        }
+
+        /// <summary>
+        /// Whether the source's own video codec is among the output candidates Jellyfin negotiated.
+        /// A codec missing from that list cannot be stream-copied — it has to be re-encoded.
+        ///
+        /// This exists because the reason list is not merely misplaced, it is INCOMPLETE. Measured on
+        /// the same 4K HEVC file against an H.264-only client: at a 30 Mbps ceiling Jellyfin reported
+        /// "VideoCodecNotSupported", but at 21 Mbps it reported ONLY "ContainerBitrateExceedsLimit"
+        /// and dropped the codec reason entirely — while the master playlist showed a re-encode
+        /// either way. The bitrate test can't catch it (the ceiling clears the source), so without
+        /// this an H.264-only browser on a capped rung still reports a copy. The candidate list never
+        /// lies: it's what ffmpeg is allowed to emit.
+        /// </summary>
+        private static bool OutputCodecAllowsVideoCopy(string transcodingUrl, string? sourceVideoCodec)
+        {
+            if (string.IsNullOrEmpty(sourceVideoCodec))
+                return true;
+            var candidates = QueryValueFromTranscodingUrl(transcodingUrl, "VideoCodec");
+            if (string.IsNullOrEmpty(candidates))
+                return true;
+            return candidates.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Any(c => c.Trim().Equals(sourceVideoCodec, StringComparison.OrdinalIgnoreCase));
         }
 
         /// <summary>Removes the api_key query parameter Jellyfin embeds in relative urls — the
