@@ -38,10 +38,15 @@ engine restart at the track, logged — piped lanes have no Range, so mid-track 
 physics, not a TODO). The queue-end guard is live (stall on ended stream at buffer end ⇒ real
 `ended`, same onEnded as the deck flip) and a finished queue is LATCHED so wake shows finished
 instead of restarting the last track at 0:00. Gateway universal cache LIVE same day with LRU
-eviction (hit-touch recency, evict-to-90% on miss over cap, only own-named files). REMAINING:
-Phase 5 flag-ON default (needs Eric's daily-use verdict + a phone pass over the new guard while
-genuinely hidden); deck hand-off under the guard untested (no natural no-treatment format with
-the universal lane up); seek-during-cross-engine-flip untested; MMS/iPhone seam unbuilt.**
+eviction (hit-touch recency, evict-to-90% on miss over cap, only own-named files).
+PHASE 5 SHIPPED 2026-08-12 (commit 7ab06e3): **THE ENGINE IS THE DEFAULT PLAYER.** Every
+browser that proves a treatment gets MSE with no flag; `?mse=0` opts out and is remembered;
+`?mse=1` clears the opt-out; browsers proving nothing (no MediaSource; iPhone until the MMS
+seam is built) keep the decks automatically, and every in-session failure still falls to the
+deck floor with an incident filed — watch kind "mse" incidents for the rollout verdict.
+THE PLAN IS COMPLETE. Residual (not blockers, watched via incidents): deck hand-off driven by
+the queue-end guard untested in the field; seek during a cross-engine flip untested;
+MMS/iPhone seam unbuilt (iPhones ride the deck floor).**
 Companion to `music-plan.md`; cite sections from code the same way.
 
 ## Why
