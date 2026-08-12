@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { MovieAPI } from "../MovieAPI";
-import { setDiagEnabled } from "./musicDiag";
+import { setDiagEnabled, diagEnabled } from "./musicDiag";
 import {
   ASSUMED_QUOTA_BYTES, DEFAULT_WORST_GAP_MS, PROBE_TYPES,
   buildCapabilityMatrix, formatBitrate, sleepLaneDecision, switchReasonFor, treatmentFor,
@@ -472,7 +472,16 @@ export default function MusicMseProbe() {
   // "turn diagnostics on" screen in front of the page, whose button flipped a module-level flag that
   // this component never re-read, so the page never left that screen and every tap did nothing. A
   // diagnostics ROUTE is its own gate; nobody arrives at this URL by accident.
-  useEffect(() => { setDiagEnabled(true); }, []);
+  //
+  // FOR THE DURATION, though — `persist: false`, and off again on the way out. Persisting it meant
+  // that opening this page once left that browser recording every media event of every listening
+  // session afterwards, with no sign that it was and nothing to suggest turning it off. Anyone who
+  // wants it to stick has `?diag=1`, which is the switch that exists for exactly that.
+  useEffect(() => {
+    const was = diagEnabled();   // ...unless ?diag=1 was already on, in which case leave it on.
+    setDiagEnabled(true, { persist: false });
+    return () => setDiagEnabled(was, { persist: false });
+  }, []);
 
   const isTypeSupported = useCallback((mime) => {
     const MS = window.MediaSource;

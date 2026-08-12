@@ -114,3 +114,47 @@ describe("queue persistence across a reload", () => {
     expect(window.localStorage.getItem(QUEUE_KEY)).not.toBeNull();
   });
 });
+
+// ── …and the listener must be able to make it stop surviving ────────────────
+// The flip side of everything above: now that a queue follows you to the next session, being done
+// with one is a thing you have to be able to SAY. Before this there was no control that emptied it
+// by intent — only ✕-per-row, and a "Close player" button that reads as "hide the bar".
+describe("clearing the queue", () => {
+  it("empties the queue and the stored copy", async () => {
+    window.localStorage.setItem(QUEUE_KEY, JSON.stringify(SAVED));
+    render(<MusicPlayerProvider enabled><Probe /></MusicPlayerProvider>);
+    await act(async () => {});
+    expect(player.queue).toHaveLength(2);
+
+    await act(async () => { player.clearQueue(); });
+
+    expect(player.queue).toEqual([]);
+    expect(player.current).toBeFalsy();
+    expect(player.playing).toBe(false);
+    expect(window.localStorage.getItem(QUEUE_KEY)).toBeNull();
+  });
+
+  it("stays cleared across the reload it was issued to survive", async () => {
+    window.localStorage.setItem(QUEUE_KEY, JSON.stringify(SAVED));
+    const view = render(<MusicPlayerProvider enabled><Probe /></MusicPlayerProvider>);
+    await act(async () => {});
+    await act(async () => { player.clearQueue(); });
+    cleanup();
+    view.unmount?.();
+
+    render(<MusicPlayerProvider enabled><Probe /></MusicPlayerProvider>);
+    await act(async () => {});
+    expect(player.queue).toEqual([]);
+  });
+
+  it("removes the stored queue even before hydration has run", async () => {
+    // The persist effect is deliberately inert until the restore has had its turn, so on the
+    // provider's always-disabled first render it cannot be the thing that does the deleting. A
+    // clear issued in that window has to reach localStorage itself or the queue comes back.
+    window.localStorage.setItem(QUEUE_KEY, JSON.stringify(SAVED));
+    render(<MusicPlayerProvider enabled={false}><Probe /></MusicPlayerProvider>);
+    await act(async () => {});
+    await act(async () => { player.clearQueue(); });
+    expect(window.localStorage.getItem(QUEUE_KEY)).toBeNull();
+  });
+});

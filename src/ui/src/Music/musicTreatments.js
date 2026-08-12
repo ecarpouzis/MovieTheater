@@ -247,6 +247,39 @@ export function bufferCeilingSec({ sizeBytes, durationSec, quotaBytes, targetSec
   return Math.min(targetSec, Math.round((quota / bytesPerSec) * 0.8));
 }
 
+/** Never keep less than this behind the playhead — below it the buffer is useless for any scrub. */
+export const KEEP_BEHIND_MIN_SEC = 20;
+/** …and never more. Past ten minutes we would be hoarding memory nobody is going to scrub back into,
+ *  and on the compressed lanes the quota would happily let us. */
+export const KEEP_BEHIND_MAX_SEC = 600;
+
+/**
+ * How much ALREADY-PLAYED audio to keep in the buffer — the seek-backwards window.
+ *
+ * This used to be a flat 20 s, which is where "seeking goes back to the start of the song" came
+ * from: `seekPlan` can only honour a target that is still buffered, so a scrub further back than
+ * 20 s fell out of the buffer and restarted the track. Twenty seconds was never a considered
+ * number for the compressed lanes — a 128 kbps track buys ~700 s of runway from the same quota and
+ * we were throwing away all but 20 of it, for nothing.
+ *
+ * So: spend what the ahead window is not using. The ahead window is sized first and is not
+ * negotiable — it is the sleep-survival guarantee (`bufferCeilingSec`) and a seek is a comfort.
+ * The 0.9 leaves a margin so an append never has to race an eviction for the last few hundred KB.
+ *
+ * ⚠ On a fat bit-perfect track this correctly returns the floor and seeking still cannot be served
+ * from the buffer: 11.5 MB of quota holds 61 s of a 1568 kbps FLAC, and no arithmetic here makes
+ * that 297 s. That case is the seek detour's (MusicPlayerContext), not this function's.
+ */
+export function keepBehindSec({ sizeBytes, durationSec, quotaBytes, aheadSec }) {
+  const quota = quotaBytes > 0 ? quotaBytes : ASSUMED_QUOTA_BYTES;
+  const bytesPerSec = sizeBytes > 0 && durationSec > 0 ? sizeBytes / durationSec : 0;
+  // No idea how fat this track is: the old constant is the safe answer, not an optimistic one.
+  if (!(bytesPerSec > 0)) return KEEP_BEHIND_MIN_SEC;
+  const spentAhead = Math.max(0, aheadSec || 0) * bytesPerSec;
+  const affordableSec = (quota * 0.9 - spentAhead) / bytesPerSec;
+  return Math.max(KEEP_BEHIND_MIN_SEC, Math.min(KEEP_BEHIND_MAX_SEC, Math.floor(affordableSec)));
+}
+
 // ── The engine flag (music-mse-plan.md §Phase 2) ──────────────────────────────────────────────────
 
 export const ENGINE_KEY = "music.engine";

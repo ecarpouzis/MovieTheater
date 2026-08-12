@@ -270,6 +270,33 @@
 .music-miniplayer-queue-save:hover:not(:disabled) { background: var(--sidebar-pill-bg); }
 .music-miniplayer-queue-save:disabled { opacity: 0.45; cursor: not-allowed; }
 
+/* The header holds three things now, so the count takes the slack and the two buttons stay paired
+   at the right — space-between across three children would have stranded "Save" in the middle. */
+.music-miniplayer-queue-head > span:first-child { flex: 1 1 auto; }
+
+/* Same chrome as Save until it is armed: destructive, but not shouting at someone who only opened
+   the queue to look at it. The armed state is the one that earns the red. */
+.music-miniplayer-queue-clear {
+  background: none;
+  border: 1px solid var(--sidebar-input-border, var(--sidebar-border));
+  border-radius: 6px;
+  color: var(--sidebar-text);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 3px 8px;
+  white-space: nowrap;
+}
+
+.music-miniplayer-queue-clear:hover:not(:disabled) { background: var(--sidebar-pill-bg); color: #e8657f; }
+.music-miniplayer-queue-clear:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.music-miniplayer-queue-clear--armed,
+.music-miniplayer-queue-clear--armed:hover:not(:disabled) {
+  border-color: #e8657f;
+  color: #e8657f;
+  background: rgba(232, 101, 127, 0.12);
+}
+
 .music-miniplayer-queue-row {
   display: flex;
   align-items: center;

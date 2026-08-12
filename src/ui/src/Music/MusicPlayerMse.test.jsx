@@ -279,20 +279,111 @@ describe("the MSE engine inside the player", () => {
     expect(sourceBuffers).toHaveLength(1);          // …with the same SourceBuffer still in place
   });
 
-  it("restarts the track for a seek outside the buffer, rather than corrupting it", async () => {
+  it("takes a seek outside the buffer to a DECK, at the position asked for", async () => {
+    // This used to restart the engine at the track, which begins it again at 0:00 — the whole of
+    // "seeking Winterbreak goes back to the start of the song". On a 1568 kbps FLAC the 11.5 MB
+    // quota holds 61 s of a 297 s track, so most of the seek bar was outside the buffer and every
+    // scrub into it silently restarted the song. A seek proves the page is awake, so the honest
+    // answer is the deck, which holds the whole file and seeks natively.
     const { el } = await mountPlaying();
     const mse = el("mse");
     Object.defineProperty(mse, "currentTime", { value: 50, writable: true, configurable: true });
     const buffersBefore = sourceBuffers.length;
-    // Eviction has taken the front of the buffer — where this seek wants to land. There is no way
-    // to re-fetch "this track from 5 s" (piped lanes, no Range), so the engine restarts the track.
+    // Eviction has taken the front of the buffer — where this seek wants to land.
     sourceBuffers[0].startSec = 40;
     await act(async () => { player.seek(5); });
     await flush(6);
-    // A restart builds a fresh MediaSource — which is a rebuild, not a mid-buffer append at a
-    // position the buffer was not expecting.
-    expect(sourceBuffers.length).toBeGreaterThan(buffersBefore);
+
+    // No new MediaSource: the engine was torn down, not rebuilt at 0:00.
+    expect(sourceBuffers.length).toBe(buffersBefore);
+    // …and playback moved onto a real deck, which is the thing that can seek anywhere.
+    expect(player.audioRef.current.dataset.deck).not.toBe("mse");
+  });
+
+  /** Put the player on a deck by seeking somewhere the engine's buffer cannot reach. */
+  async function detour(el) {
+    const mse = el("mse");
+    Object.defineProperty(mse, "currentTime", { value: 50, writable: true, configurable: true });
+    sourceBuffers[0].startSec = 40;          // eviction took the front — where the seek wants to go
+    await act(async () => { player.seek(5); });
+    await flush(6);
+    expect(player.audioRef.current.dataset.deck).not.toBe("mse");
+    return player.audioRef.current;
+  }
+
+  /** Run the detoured deck up to the boundary so the prefetch and the pre-roll both fire. */
+  async function runToBoundary(live) {
+    Object.defineProperty(live, "duration", { value: 100, configurable: true });
+    Object.defineProperty(live, "currentTime", { value: 95, configurable: true });
+    await act(async () => { live.dispatchEvent(new Event("timeupdate")); });
+    await flush(6);
+  }
+
+  it("SLEEPS THROUGH a detoured boundary on the pre-rolled deck — no round trip with the screen off", async () => {
+    // The question this exists to answer: seek into a long track, put the phone down, and the track
+    // ends while the page is frozen. Handing back to the engine there would need a mint and an
+    // append — the exact round trip a sleeping phone cannot make, and the bug the engine was built
+    // to remove. So when the boundary arrives hidden, the pre-rolled deck flip wins instead.
+    const { el } = await mountPlaying();
+    const live = await detour(el);
+    await runToBoundary(live);
+
+    Object.defineProperty(document, "hidden", { value: true, configurable: true });
+    try {
+      const mintsBefore = api.startMusicTrack.mock.calls.length;
+      const buffersBefore = sourceBuffers.length;
+      await act(async () => { live.dispatchEvent(new Event("ended")); });
+      await flush(6);
+
+      // Audio moved to the OTHER deck, which was already holding the bytes…
+      expect(player.audioRef.current.dataset.deck).not.toBe("mse");
+      expect(player.index).toBe(1);
+      // …with no new MediaSource and no fresh mint at the boundary itself.
+      expect(sourceBuffers.length).toBe(buffersBefore);
+      expect(api.startMusicTrack.mock.calls.length).toBe(mintsBefore);
+    } finally {
+      Object.defineProperty(document, "hidden", { value: false, configurable: true });
+    }
+  });
+
+  it("…but hands back to the engine when that same boundary arrives AWAKE", async () => {
+    // Same setup, screen on. Now the fetch is safe, so the prepared deck is discarded and the index
+    // change restarts the engine — the detour costs one track, as intended.
+    const { el } = await mountPlaying();
+    const live = await detour(el);
+    await runToBoundary(live);
+
+    const buffersBefore = sourceBuffers.length;
+    // A fresh MediaSource starts its clock at 0. The stub left over from the seek would otherwise
+    // have the restarted engine read the playhead as already deep into the queue.
+    el("mse").currentTime = 0;
+    await act(async () => { live.dispatchEvent(new Event("ended")); });
+    await flush(10);
+
+    expect(player.index).toBe(1);
     expect(player.audioRef.current.dataset.deck).toBe("mse");
+    expect(sourceBuffers.length).toBeGreaterThan(buffersBefore);
+  });
+
+  it("hands the queue back to the engine at the next track — the detour is one track long", async () => {
+    // The cost of the detour has to stay bounded at one track. If a prepared deck were allowed to
+    // flip at the boundary it would set handedOffRef, the track-change effect would return early,
+    // and the engine would never come back — a scrub would have silently cost the rest of the
+    // queue its sleep survival.
+    const { el } = await mountPlaying();
+    const mse = el("mse");
+    Object.defineProperty(mse, "currentTime", { value: 50, writable: true, configurable: true });
+    sourceBuffers[0].startSec = 40;
+    await act(async () => { player.seek(5); });
+    await flush(6);
+    expect(player.audioRef.current.dataset.deck).not.toBe("mse");
+
+    const buffersBefore = sourceBuffers.length;
+    await act(async () => { player.next(); });
+    await flush(8);
+
+    expect(player.audioRef.current.dataset.deck).toBe("mse");
+    expect(sourceBuffers.length).toBeGreaterThan(buffersBefore);
   });
 
   it("gives the lock screen per-track position, not a 43-minute queue", async () => {

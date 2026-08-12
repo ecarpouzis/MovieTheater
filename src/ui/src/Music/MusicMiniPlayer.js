@@ -39,6 +39,10 @@ function MusicMiniPlayer() {
   // While the user drags the seek bar, the drag position wins over timeupdate ticks.
   const draggingRef = useRef(false);
   const [queueOpen, setQueueOpen] = useState(false);
+  // "Clear queue" is a two-tap control (see below). Closing the flyout disarms it, so the confirm
+  // can never be sitting there waiting the next time the queue is opened.
+  const [confirmClear, setConfirmClear] = useState(false);
+  useEffect(() => { if (!queueOpen) setConfirmClear(false); }, [queueOpen]);
   // The bar lives outside /music, so it carries its own playlist picker (music-plan.md Phase 3)
   // rather than reaching for the library page's one.
   const [pickerTracks, setPickerTracks] = useState(null);
@@ -397,6 +401,26 @@ function MusicMiniPlayer() {
               disabled={queue.length === 0}
             >
               ＋ Save as playlist
+            </button>
+            {/* The queue now outlives the session, so "I'm done with this" needed a control. ✕ Close
+                player empties it too, but it reads as "hide the bar" — and it is the wrong thing to
+                reach for when the bar is exactly what you want to keep. This says what it does. */}
+            <button
+              className={`music-miniplayer-queue-clear${confirmClear ? " music-miniplayer-queue-clear--armed" : ""}`}
+              onClick={() => {
+                // Two taps, because there is no undo and one mis-tap on a phone would drop a queue
+                // someone spent an evening building. Armed state lives only as long as the flyout.
+                if (!confirmClear) { setConfirmClear(true); return; }
+                setConfirmClear(false);
+                setQueueOpen(false);
+                player.clearQueue();
+                if (onNowPlaying) history.replace("/music");
+              }}
+              disabled={queue.length === 0}
+              title={confirmClear ? "Tap again to clear the queue" : "Clear the queue, including the saved copy"}
+              data-testid="music-queue-clear"
+            >
+              {confirmClear ? "Clear — sure?" : "🗑 Clear"}
             </button>
           </div>
           {queue.map((t, i) => (

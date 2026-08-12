@@ -1,7 +1,7 @@
 import { MovieAPI } from "../MovieAPI";
-import { diagLog, reportIncident } from "./musicDiag";
+import { diagLog } from "./musicDiag";
 import {
-  ASSUMED_QUOTA_BYTES, appendTreatmentFor, bufferCeilingSec, switchReasonFor,
+  ASSUMED_QUOTA_BYTES, appendTreatmentFor, bufferCeilingSec, keepBehindSec, switchReasonFor,
 } from "./musicTreatments";
 import { isQueueEndStall } from "./musicTimeline";
 
@@ -136,7 +136,6 @@ export function createMseEngine({
     endedStream: false,
     deckNeededFor: null,
     quotaRetried: new Set(),
-    reportedRung: false,
     endedNotified: false,
     currentTrackId: null,
     lastError: null,
@@ -144,19 +143,14 @@ export function createMseEngine({
 
   const log = (event, data) => diagLog(`mse:${event}`, data);
 
-  /** A rung of the fallback ladder was used. Logged always; the FIRST use in a session also files an
-   *  incident — routine rung use flooding the table would drown the signal it exists to carry. */
+  /** A rung of the fallback ladder was used. Logged only — a rung is the ladder WORKING, and it no
+   *  longer files an incident of its own. The report that matters is the one at the BOTTOM of the
+   *  ladder (`mse:fallback`, when the engine gives up and hands the queue to the decks); a row per
+   *  session saying "rung 2 was used and playback continued" is the noise, not the signal. Under
+   *  `?diag=1` every rung is still in the ring with its detail. */
   const rung = (n, detail) => {
     log(`rung${n}`, detail);
     onRung(n, detail);
-    if (!state.reportedRung) {
-      state.reportedRung = true;
-      reportIncident("mse", {
-        summary: `rung ${n}: ${typeof detail === "string" ? detail : JSON.stringify(detail || {})}`.slice(0, 400),
-        trackId: state.currentTrackId,
-        force: true,
-      });
-    }
   };
 
   /** Is the MediaSource still attached to the element?
@@ -208,8 +202,36 @@ export function createMseEngine({
     }
   });
 
-  const evictBehind = async (keepBehindSec = KEEP_BEHIND_SEC) => {
-    const cutoff = (audio ? audio.currentTime || 0 : 0) - keepBehindSec;
+  /**
+   * How far back to keep, for the track the playhead is currently inside.
+   *
+   * Derived per track rather than constant: the ahead window already spends what the quota allows
+   * on sleep survival, and whatever is left over is free to spend on being able to scrub backwards.
+   * See keepBehindSec — on a compressed lane this is hundreds of seconds, on a fat FLAC it is the
+   * 20 s floor because there is genuinely nothing spare.
+   */
+  const behindWindowSec = () => {
+    const t = audio ? audio.currentTime || 0 : 0;
+    // The engine's own trackAtTime, which hands back the append record itself — the timeline
+    // module's same-named mapping returns a position and is for consumers, not for this.
+    const entry = trackAtTime(state.appended, t);
+    if (!entry) return KEEP_BEHIND_SEC;
+    return keepBehindSec({
+      sizeBytes: entry.sizeBytes,
+      durationSec: entry.durationSec,
+      quotaBytes,
+      aheadSec: entry.ceilingSec,
+    });
+  };
+
+  /**
+   * `keepBehindSec: null` means "use the per-track window". A NUMBER is the caller overriding it,
+   * which only the QuotaExceeded path does — that one is freeing memory to survive the next append
+   * and must be allowed to take back the seek window it is competing with.
+   */
+  const evictBehind = async (keepSec = null) => {
+    const keep = keepSec == null ? behindWindowSec() : keepSec;
+    const cutoff = (audio ? audio.currentTime || 0 : 0) - keep;
     if (!(cutoff > 0)) return;
     try {
       await sbOp((sb) => sb.remove(0, cutoff));
@@ -413,6 +435,8 @@ export function createMseEngine({
     const entry = already || {
       ceilingSec: ceiling,
       trackId: track.id,
+      // Carried so the eviction window can be sized from this track's real bitrate (keepBehindSec).
+      sizeBytes: Number(payload.sizeBytes) || 0,
       // Carried for the timeline module (Phase 3): the payload's duration is the best answer to
       // "how long is this track", and the mapping falls back to the next entry's start when it is
       // missing.

@@ -9,7 +9,19 @@
 // lifecycle AND from every raw media event, and readable (and copyable) after the fact. Wall-clock
 // timestamps on purpose: the gap between two entries is how we see the renderer was frozen.
 //
-// OFF by default and a no-op when off — `?diag=1` turns it on and remembers, `?diag=0` turns it off.
+// ── THE SWITCH ──────────────────────────────────────────────────────────────
+// `?diag=1` on any page turns EVERYTHING back on and remembers it for that browser: the raw media
+// firehose, every routine lifecycle event, and the on-screen panel. `?diag=0` turns it back off.
+// That one switch is the whole re-enable story — nothing else needs editing to investigate the next
+// one of these. (The panel's "Off" button is the same switch.)
+//
+// With the switch off, this file is nearly silent BY DESIGN. The sleeping-phone bug it was built for
+// is fixed (see music-mse-engine / music-track-boundary-gap-stops-playback), and the run-up it used
+// to record — a boundary, three preload steps and four load steps PER TRACK, every wake — was a
+// localStorage write and a React notify per event, forever, on every listener's phone, to catch a
+// bug that no longer happens. What stays on is a TRIPWIRE, not a journal: the handful of genuinely
+// failure-shaped events below, plus the self-reports at the bottom. If the tripwire starts firing
+// again, `?diag=1` brings the journal back.
 
 const MAX_ENTRIES = 500;
 const KEY = "music.diag";
@@ -20,12 +32,20 @@ const RING_KEY = "music.diag.ring";
 // why that never once worked. Persisted, bounded, and small enough to write on every event.
 const PERSIST_ENTRIES = 200;
 
-// Events that are recorded even with diagnostics OFF. These are the ones that describe a failure
-// and its run-up; the raw media firehose stays behind ?diag=1.
+// Events recorded even with diagnostics OFF: the tripwire. Every one of these means something WENT
+// WRONG, so on a healthy session this set fires zero times and the ring costs nothing.
+//
+// Deliberately NOT here any more (they were, while the sleeping-phone bug was open): `boundary`,
+// `wake`, `visibility`, `recover`, and the routine `preload:ready|stream|fetch` /
+// `load:minted|download|downloaded` steps. Those fire once or more PER TRACK on a working player —
+// they were the run-up that made an incident readable, and they are exactly the excess this trims.
+// The cost of trimming them, stated plainly: an incident filed with the switch off now carries the
+// FAILURE and any earlier failures, but not the healthy steps that led up to it. That is the right
+// trade for a fixed bug — and `?diag=1` buys the run-up back the moment one recurs.
 const ALWAYS = new Set([
-  "boundary", "error", "park", "recover", "wake", "give-up",
-  "preload:ready", "preload:stream", "preload:failed", "preload:fetch",
-  "load:failed", "load:minted", "load:download", "load:downloaded", "visibility",
+  "error", "give-up", "park",
+  "load:failed", "preload:failed",
+  "mse:fallback", "mse:element-error", "mse:dry",
 ]);
 
 let enabled = false;
@@ -74,12 +94,21 @@ export function diagEnabled() {
   return enabled;
 }
 
-export function setDiagEnabled(on) {
+/**
+ * Turn recording on or off.
+ *
+ * `persist: false` sets the flag for THIS page life only. That exists for the MSE probe route,
+ * which wants full recording while it runs but must not leave every listener's browser logging
+ * forever because someone once opened a diagnostics URL on it.
+ */
+export function setDiagEnabled(on, { persist = true } = {}) {
   enabled = !!on;
-  try {
-    if (enabled) window.localStorage.setItem(KEY, "1");
-    else window.localStorage.removeItem(KEY);
-  } catch { /* private mode: the flag just won't survive a reload */ }
+  if (persist) {
+    try {
+      if (enabled) window.localStorage.setItem(KEY, "1");
+      else window.localStorage.removeItem(KEY);
+    } catch { /* private mode: the flag just won't survive a reload */ }
+  }
   emit();
 }
 
@@ -137,8 +166,11 @@ export function diagList() {
   return entries;
 }
 
+/** Empty the ring — and, with it, the session's report budget: "clear" means start fresh. */
 export function clearDiag() {
   entries = [];
+  lastReportAt = 0;
+  reportsSent = 0;
   try { window.localStorage.removeItem(RING_KEY); } catch { /* nothing to clear */ }
   emit();
 }
@@ -151,14 +183,26 @@ export function clearDiag() {
 //
 // sendBeacon because the interesting failures happen as the page is being frozen or unloaded — a
 // fetch() at that moment is exactly as likely to be dropped as the audio request that just failed.
+//
+// This stays on with the switch off, on purpose: a self-report is the ONLY way these ever get seen,
+// and asking Eric to catch one never worked in twenty-odd tries. What changed now that the bug is
+// fixed is the volume — see the two limits below and the once-per-session guards at the call sites.
 const REPORT_URL = "/API/Music/Incident";
 const REPORT_MIN_GAP_MS = 60000;   // one report a minute is plenty; a loop must not become a flood
+// ...and a minute apart is still 60 rows an hour. `force: true` was added to let the MSE paths jump
+// the gap, which meant a browser stuck in a fallback loop could write faster than the rate limit was
+// there to prevent. A whole-session ceiling is the limit that actually holds: force skips the GAP,
+// never this. Five reports is far more than enough to characterise one bad session.
+const REPORT_MAX_PER_SESSION = 5;
 let lastReportAt = 0;
+let reportsSent = 0;
 
 export function reportIncident(kind, { summary = "", trackId = null, force = false } = {}) {
   const now = Date.now();
+  if (reportsSent >= REPORT_MAX_PER_SESSION) return false;
   if (!force && now - lastReportAt < REPORT_MIN_GAP_MS) return false;
   lastReportAt = now;
+  reportsSent += 1;
   const body = JSON.stringify({
     kind,
     summary: String(summary).slice(0, 400),

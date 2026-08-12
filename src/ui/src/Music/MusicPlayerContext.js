@@ -818,6 +818,12 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   // A MediaError kills the WHOLE MediaSource, not one track. Rung 6: rebuild once from where we are;
   // a second death means the decks.
   const mseErrorsRef = useRef(0);
+  // The unbuffered-hidden-boundary tripwire has already fired this session. See onEnded.
+  const reportedBoundaryRef = useRef(false);
+  // The track currently being played off a DECK because the listener seeked somewhere the engine's
+  // buffer could not reach. Distinct from mseFallbackRef, which is the engine having GIVEN UP: this
+  // is a one-track detour and the engine comes back at the next boundary. See seekDetour.
+  const seekDetourRef = useRef(null);
   // The queue played out. Latched so that WAKING UP does not restart the last track: on the phone
   // (field run, 00:58) coming back to a finished queue silently re-started its last song at 0:00 and
   // left it paused, which reads as a player that lost its place rather than one that finished.
@@ -842,13 +848,48 @@ export function MusicPlayerProvider({ children, enabled = true }) {
     if (mseFallbackRef.current) return;
     mseFallbackRef.current = true;
     diagLog("mse:fallback", { why });
-    reportIncident("mse", { summary: `fell back to decks: ${why}`.slice(0, 400), trackId: currentRef.current?.id ?? null, force: true });
+    // The engine giving up entirely is worth a row. `force` is gone: this fires at most once per
+    // session anyway (the ref above guarantees it), so jumping the rate limit only ever let it
+    // compete with a genuine burst of other reports for the session budget.
+    reportIncident("mse", { summary: `fell back to decks: ${why}`.slice(0, 400), trackId: currentRef.current?.id ?? null });
     destroyEngine();
     if (deckRef.current === "mse") {
       deckRef.current = "a";
       setActiveDeck("a");
       syncActive();
     }
+  }, [destroyEngine, syncActive]);
+
+  /**
+   * Play THIS track off a deck so a seek the buffer can't serve can be honoured exactly — then give
+   * the queue back to the engine at the next track.
+   *
+   * Deliberately not `fallBackToDecks`: that is the engine having failed, is one-way for the whole
+   * session, and files an incident. Nothing has failed here. The engine's buffer is small because
+   * the quota is small (11.5 MB measured), and on a fat bit-perfect track that is simply less of the
+   * song than the seek bar covers — a limit, not a fault.
+   *
+   * ⚠ The cost, stated plainly: the deck downloads the whole file (55 MB for a 5-minute FLAC), and
+   * the boundary at the end of THIS track is an ordinary load rather than a pre-rolled flip, because
+   * the detour suppresses the prefetch so the index change can hand control back. That is one
+   * un-gapless boundary bought with a deliberate user gesture on a page that is demonstrably awake.
+   * `mseFallbackRef` stays FALSE throughout, which is what makes the track-change effect restart the
+   * engine — the sleep-survival guarantee is intact for the rest of the queue.
+   */
+  const seekDetour = useCallback((track, offsetSec, why) => {
+    diagLog("mse:seek-detour", { track: track.id, to: Math.round(offsetSec), why });
+    destroyEngine();
+    seekDetourRef.current = track.id;
+    // Off the engine's element and onto a real deck, exactly as the fallback does — but without the
+    // latch that would keep us here.
+    if (deckRef.current === "mse") {
+      deckRef.current = "a";
+      setActiveDeck("a");
+      syncActive();
+    }
+    // loadTrack already knows how to land at an offset: it waits for `loadedmetadata` before setting
+    // currentTime, on both the streamed and the downloaded-to-a-blob path.
+    loadTrackRef.current(track, { resumeAt: offsetSec, autoplay: true });
   }, [destroyEngine, syncActive]);
 
   /// Start (or restart) the engine at the queue's current position. Restarting on a manual skip is
@@ -949,6 +990,10 @@ export function MusicPlayerProvider({ children, enabled = true }) {
     }
     // A new pick is a clean slate: this track has spent none of its recovery budget.
     recoveryRef.current = { trackId: current.id, attempts: 0, attemptedAtSec: 0, parkBeats: 0 };
+    // A seek detour lasts exactly one track, and we have left that track — played out, skipped, or
+    // replaced by a different pick. Cleared HERE, above every early return below, because a detour
+    // flag that outlives its track would go on suppressing the prefetch for the rest of the session.
+    seekDetourRef.current = null;
     const autoplay = !suppressAutoplayRef.current;
     suppressAutoplayRef.current = false;
     // `ended` already put this track's source on the element and started it. Loading it again would
@@ -1013,6 +1058,9 @@ export function MusicPlayerProvider({ children, enabled = true }) {
         engineRef.current.pump();
         return;
       }
+      // NB: a seek detour does NOT skip this. The preparation is what makes a boundary survivable
+      // on a sleeping phone, and it must happen while the page is still awake enough to fetch —
+      // deciding whether to USE it belongs at the boundary, where the answer is known. See onEnded.
       const duration = audio.duration;
       const nearEnd = Number.isFinite(duration) && duration > 0 && duration - sec <= PREFETCH_LEAD_SEC;
       if (sec >= PRELOAD_START_SEC || nearEnd) prefetchNext();
@@ -1456,14 +1504,19 @@ export function MusicPlayerProvider({ children, enabled = true }) {
         try { audio.currentTime = plan.elementTime; } catch { /* not seekable yet */ }
         return;
       }
-      if (plan.kind === "restart") {
-        // Out of the buffer. There is no way to ask these lanes for "this track from 2:30" — piped
-        // ffmpeg has no Range — so the honest move is to start the track again, which is exactly
-        // what a manual jump does. It lands at 0:00 of the track the thumb was dropped in; the bar
-        // snapping there is the truth. What it must never do is assign a src over the blob: URL or
-        // append at a position the buffer is not expecting.
+      if (plan.kind === "restart" || plan.kind === "unavailable") {
+        // Out of the buffer, and the engine cannot fetch "this track from 2:30" — the lanes are
+        // piped ffmpeg with no Range, and a mid-file byte offset doesn't land on a frame boundary
+        // anyway. This USED to restart the engine at the track, which begins it again at 0:00, and
+        // that is the whole of "seeking goes back to the start of the song": on a 1568 kbps FLAC
+        // the quota holds 61 s of a 297 s track, so ~77% of the seek bar was out of buffer and
+        // every scrub into it silently restarted the song.
+        //
+        // A seek is proof the page is AWAKE, which is the one condition the engine's whole design
+        // exists to survive being without. So hand this track to a deck, which downloads the file
+        // and can seek anywhere natively, and let the engine have the queue back at the next track.
         const track = currentRef.current;
-        if (track) startEngine(track, true);
+        if (track) seekDetour(track, seconds, plan.reason);
       }
       return;
     }
@@ -1471,7 +1524,7 @@ export function MusicPlayerProvider({ children, enabled = true }) {
     // A seek moves the boundary. A deck already pre-rolled for the old one would keep playing
     // (silently) and drift away from the start it is supposed to be flipped to.
     cancelPreroll();
-  }, [cancelPreroll, mseActive, startEngine]);
+  }, [cancelPreroll, mseActive, seekDetour]);
 
   const playAt = useCallback((i) => {
     queueFinishedRef.current = false;
@@ -1495,6 +1548,27 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   }, []);
 
   const stop = useCallback(() => {
+    setQueue([]);
+    setIndex(-1);
+    setPlaying(false);
+  }, []);
+
+  /**
+   * Throw the queue away — including the stored copy.
+   *
+   * Distinct from `stop()` (which the ✕ "Close player" button calls) even though the state it leaves
+   * behind is the same, because the INTENT is different and one of them has to survive a reload.
+   * Since §Phase 7 the queue comes back on the next visit, so a queue you are done with is no longer
+   * something you can walk away from — it follows you to the next session, and the only control that
+   * shrank it was ✕-per-row. This is the "and don't bring it back" button.
+   *
+   * The persist effect below already removes the key on an empty queue; the explicit removal is
+   * belt-and-braces for the one case it can't cover — a clear issued before hydration has run, where
+   * that effect is deliberately inert and the stored queue would otherwise outlive the clear.
+   */
+  const clearQueue = useCallback(() => {
+    try { window.localStorage.removeItem(QUEUE_KEY); } catch { /* nothing stored to clear */ }
+    queueFinishedRef.current = false;
     setQueue([]);
     setIndex(-1);
     setPlaying(false);
@@ -1652,7 +1726,12 @@ export function MusicPlayerProvider({ children, enabled = true }) {
     // the one moment the page has least licence to use it. Report it whether or not it goes on to
     // fail, because the interesting question is why the deck wasn't ready — and by the time the
     // failure is visible, the run-up has already scrolled out of anyone's reach.
-    if (upcoming && !deckReady && document.hidden) {
+    //
+    // ONCE per session. This is the tripwire for a bug that is now fixed, and a tripwire only has to
+    // go off once to be answered: an hour of hidden playback in a state where the deck never gets
+    // ready would otherwise file a row per track, all of them saying the same sentence.
+    if (upcoming && !deckReady && document.hidden && !reportedBoundaryRef.current) {
+      reportedBoundaryRef.current = true;
       reportIncident("boundary", {
         summary: `boundary while hidden with no buffered deck (upcoming ${upcoming.id}, `
           + `prefetchUrl=${!!(pre?.url && pre.trackId === upcoming.id)})`,
@@ -1660,9 +1739,34 @@ export function MusicPlayerProvider({ children, enabled = true }) {
       });
     }
 
+    // ── Handing a seek detour back to the engine (see seekDetour) ─────────────────────────────────
+    // The detour is meant to last one track, and this boundary is where the engine takes the queue
+    // back. But restarting the engine costs a mint and an append — the exact round trip a sleeping
+    // phone cannot make, and the whole reason the engine exists. So the answer depends on something
+    // only knowable HERE:
+    //
+    //   • awake  → ignore whatever was prepared and fall through to next(), which changes the index,
+    //              which restarts the engine. The fetch is safe because somebody is holding the phone.
+    //   • asleep → take the pre-rolled flip. Audio continues with no round trip at all, and the
+    //              engine comes back at the listener's next pick instead. That leaves the rest of the
+    //              queue on the deck floor — the proven pre-engine player, all four fixes intact —
+    //              which is a downgrade, not a failure. Silence at 2am would be the failure.
+    //
+    // This is why the prefetch/preroll above is NOT suppressed during a detour: the preparation has
+    // to already exist by the time we get here, because a page that has just gone quiet cannot make
+    // it. Preparing and discarding costs one download; not preparing costs the album.
+    const detourHandBack = !!seekDetourRef.current && !document.hidden;
+    if (detourHandBack) {
+      // The idle deck may be pre-rolling MUTED right now. Left running it would play the next track
+      // underneath the engine's copy of it — cancelPreroll does not clear deckLoadedRef, hence the
+      // explicit guards below rather than relying on deckReady going false.
+      cancelPreroll();
+      diagLog("mse:seek-detour-end", { upcoming: upcoming?.id ?? null, deckReady });
+    }
+
     // Best case: the next track is already buffered on the other deck. Flip to it — no src
     // assignment, no load, no round trip. Just a play() on an element that already has the bytes.
-    if (deckReady) {
+    if (deckReady && !detourHandBack) {
       const outgoing = elFor(deckRef.current);
       const nextDeck = idleDeck();
       // A cross-engine boundary (§the invariant). `ended` on the MSE element only ever arrives after
@@ -1735,7 +1839,7 @@ export function MusicPlayerProvider({ children, enabled = true }) {
       diagLog("queue-finished", { track: currentRef.current?.id ?? null, engine: deckRef.current });
     }
 
-    if (audio && upcoming && pre?.url && pre.trackId === upcoming.id) {
+    if (audio && upcoming && pre?.url && pre.trackId === upcoming.id && !detourHandBack) {
       prefetchRef.current = null;
       handedOffRef.current = upcoming.id; // the effect below must not re-load what's already playing
       loadSeqRef.current += 1;            // and any load still in flight for the old track is void
@@ -1753,7 +1857,7 @@ export function MusicPlayerProvider({ children, enabled = true }) {
       });
     }
     next();
-  }, [applyOutputChannels, next, elFor, idleEl, idleDeck, syncActive, volumeOf, revokeDeck, destroyEngine]);
+  }, [applyOutputChannels, next, elFor, idleEl, idleDeck, syncActive, volumeOf, revokeDeck, destroyEngine, cancelPreroll]);
   // The element gave up on this source. That used to end the listening session; now it goes through
   // the same bounded recovery as everything else. The message is only reached once retries and a
   // skip are exhausted — it says what actually happened rather than the bare "Playback failed."
@@ -1816,8 +1920,8 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   });
 
   const value = useMemo(
-    () => ({ queue, index, current, playing, error, buffering, audioRef, trackTime, canTranscode, isPlayable, playTracks, enqueue, next, prev, toggle, seek, playAt, removeAt, stop, setVolume, ensureAudioGraph, visualizerOn, toggleVisualizer, closeVisualizer, lyricsOn, toggleLyrics, closeLyrics, shuffleTracks, favoriteIds, isFavorite, toggleFavorite, lyricsSettings, setLyricsSetting }),
-    [queue, index, current, playing, error, buffering, trackTime, canTranscode, isPlayable, playTracks, enqueue, next, prev, toggle, seek, playAt, removeAt, stop, setVolume, ensureAudioGraph, visualizerOn, toggleVisualizer, closeVisualizer, lyricsOn, toggleLyrics, closeLyrics, shuffleTracks, favoriteIds, isFavorite, toggleFavorite, lyricsSettings, setLyricsSetting]
+    () => ({ queue, index, current, playing, error, buffering, audioRef, trackTime, canTranscode, isPlayable, playTracks, enqueue, next, prev, toggle, seek, playAt, removeAt, stop, clearQueue, setVolume, ensureAudioGraph, visualizerOn, toggleVisualizer, closeVisualizer, lyricsOn, toggleLyrics, closeLyrics, shuffleTracks, favoriteIds, isFavorite, toggleFavorite, lyricsSettings, setLyricsSetting }),
+    [queue, index, current, playing, error, buffering, trackTime, canTranscode, isPlayable, playTracks, enqueue, next, prev, toggle, seek, playAt, removeAt, stop, clearQueue, setVolume, ensureAudioGraph, visualizerOn, toggleVisualizer, closeVisualizer, lyricsOn, toggleLyrics, closeLyrics, shuffleTracks, favoriteIds, isFavorite, toggleFavorite, lyricsSettings, setLyricsSetting]
   );
 
   return (

@@ -380,14 +380,19 @@ describe("the engine", () => {
   });
 
   // ── Incidents ─────────────────────────────────────────────────────────────────────────────────
-  it("reports the first rung use of a session, once", async () => {
+  it("does NOT file an incident for a rung — a rung is the ladder working", async () => {
+    // It used to, once per session, while the sleeping-phone bug was open. A rung means the engine
+    // stepped down and playback CONTINUED; the report worth having is the one at the bottom of the
+    // ladder, where the provider gives up on MSE entirely (`mse:fallback`). A row per session saying
+    // "rung 2 was used and everything carried on" is what buries that one.
     const beacons = [];
     navigator.sendBeacon = (url, blob) => { beacons.push({ url, blob }); return true; };
     installFetch([], { fail: (u) => u.includes("/file") });
-    const engine = engineWith({ api: makeApi({}) });
+    const rungs = [];
+    const engine = engineWith({ api: makeApi({}), handlers: { onRung: (n) => rungs.push(n) } });
     await engine.start({ queue, index: 0 }).catch(() => {});
-    expect(beacons.length).toBe(1);
-    expect(beacons[0].url).toBe("/API/Music/Incident");
+    expect(rungs.length).toBeGreaterThan(0);   // the ladder still reports itself to the provider
+    expect(beacons).toHaveLength(0);
   });
 
   // ── The queue-end guard (Phase 4, from the field run) ─────────────────────────────────────────

@@ -16,9 +16,21 @@ describe("musicDiag", () => {
     // someone to have had diagnostics enabled beforehand never once produced a log.
     setDiagEnabled(false);
     expect(diagEnabled()).toBe(false);
-    diagLog("boundary", { upcoming: 2 });
     diagLog("park", { track: 7 });
-    expect(diagList().map((e) => e.event)).toEqual(["boundary", "park"]);
+    diagLog("load:failed", { track: 7 });
+    diagLog("mse:dry", { sec: 91 });
+    expect(diagList().map((e) => e.event)).toEqual(["park", "load:failed", "mse:dry"]);
+  });
+
+  it("ignores the ROUTINE lifecycle when off — the tripwire is not a journal", () => {
+    // These were all always-on while the sleeping-phone bug was open. Each fires once or more PER
+    // TRACK on a healthy player, and each one costs a localStorage write and a subscriber notify.
+    // With that bug fixed they are the excess: ?diag=1 is what brings them back.
+    setDiagEnabled(false);
+    ["boundary", "wake", "recover", "visibility",
+     "preload:ready", "preload:stream", "preload:fetch",
+     "load:minted", "load:download", "load:downloaded"].forEach((e) => diagLog(e, {}));
+    expect(diagList()).toHaveLength(0);
   });
 
   it("still ignores the media firehose when off — always-on must stay cheap", () => {
@@ -27,6 +39,23 @@ describe("musicDiag", () => {
     diagLog("canplaythrough", {});
     diagLog("suspend", {});
     expect(diagList()).toHaveLength(0);
+  });
+
+  it("records everything again the moment the switch goes back on", () => {
+    // The whole point of trimming the always-on set is that ONE switch undoes it. If this fails,
+    // the next investigation starts by editing source, which is what the switch exists to avoid.
+    setDiagEnabled(true);
+    ["boundary", "wake", "preload:ready", "timeupdate"].forEach((e) => diagLog(e, {}));
+    expect(diagList()).toHaveLength(4);
+  });
+
+  it("can be turned on for one page life without following the browser around", () => {
+    // The MSE probe route flips this on for its run. Persisting it left every listener's browser
+    // recording every media event forever because someone once opened a diagnostics URL on it.
+    setDiagEnabled(false);
+    setDiagEnabled(true, { persist: false });
+    expect(diagEnabled()).toBe(true);
+    expect(window.localStorage.getItem("music.diag")).toBe(null);
   });
 
   it("keeps the ring bounded so a long session can't grow without limit", () => {
@@ -91,7 +120,7 @@ describe("musicDiag self-reporting", () => {
     navigator.sendBeacon = (url, blob) => { sent.push({ url, blob }); return true; };
     const { reportIncident } = await import("./musicDiag");
 
-    diagLog("boundary", { upcoming: 9, deckReady: false });
+    diagLog("error", { upcoming: 9, deckReady: false });
     expect(reportIncident("boundary", { summary: "no buffered deck", trackId: 9 })).toBe(true);
 
     expect(sent).toHaveLength(1);
@@ -99,8 +128,9 @@ describe("musicDiag self-reporting", () => {
     const body = JSON.parse(await sent[0].blob.text());
     expect(body.kind).toBe("boundary");
     expect(body.trackId).toBe(9);
-    // The run-up is the point: a bare "it failed" says nothing the listener hadn't already said.
-    expect(body.events.some((e) => e.event === "boundary")).toBe(true);
+    // Whatever the ring holds rides along. With the switch off that is the failures only; with it on
+    // it is the run-up too — either way the report is never a bare "it failed" with no context.
+    expect(body.events.some((e) => e.event === "error")).toBe(true);
   });
 
   it("rate-limits itself so a failure loop cannot become a flood", async () => {
@@ -112,5 +142,18 @@ describe("musicDiag self-reporting", () => {
     expect(reportIncident("park")).toBe(false);
     expect(reportIncident("park")).toBe(false);
     expect(sent).toHaveLength(1);
+  });
+
+  it("caps the whole session, which is the limit `force: true` used to walk straight past", async () => {
+    // The gap limit alone was never enough: the MSE paths passed force to jump it, so a browser
+    // stuck in a fallback loop could write rows faster than one a minute — the exact flood the
+    // limit existed to prevent. force skips the GAP; nothing skips the session ceiling.
+    const sent = [];
+    navigator.sendBeacon = () => { sent.push(1); return true; };
+    const { reportIncident } = await import("./musicDiag");
+
+    for (let i = 0; i < 20; i += 1) reportIncident("mse", { summary: `loop ${i}`, force: true });
+    expect(sent).toHaveLength(5);
+    expect(reportIncident("mse", { force: true })).toBe(false);
   });
 });

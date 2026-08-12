@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   MIME_AAC_FMP4, MIME_FLAC_FMP4, MIME_MPEG,
   appendTreatmentFor, bufferCeilingSec, chooseEngineMode,
+  keepBehindSec, KEEP_BEHIND_MIN_SEC, KEEP_BEHIND_MAX_SEC,
 } from "./musicTreatments";
 
 // The routing rules the Phase 2 engine plays by. The matrix half (treatmentFor, switchReasonFor,
@@ -92,6 +93,43 @@ describe("bufferCeilingSec", () => {
 
   it("falls back to the target when the bitrate is unknown", () => {
     expect(bufferCeilingSec({ sizeBytes: 0, durationSec: 0, targetSec: 180 })).toBe(180);
+  });
+});
+
+describe("keepBehindSec", () => {
+  // The seek-backwards window. It was a flat 20 s on every lane, which is where "seeking goes back
+  // to the start of the song" came from: seekPlan can only honour a target that is still buffered.
+  const QUOTA = 11.5 * 1024 * 1024;
+
+  it("spends the quota the ahead window is not using", () => {
+    // 16 KB/s (128 kbps): ~735 s of runway, of which the 180 s ahead window uses a quarter. Keeping
+    // 20 s behind out of that was throwing away the whole rest of the budget for nothing.
+    const sec = keepBehindSec({ sizeBytes: 16000 * 300, durationSec: 300, quotaBytes: QUOTA, aheadSec: 180 });
+    expect(sec).toBeGreaterThan(400);
+    expect(sec).toBeLessThanOrEqual(KEEP_BEHIND_MAX_SEC);
+  });
+
+  it("stops hoarding at the ceiling, however much room there is", () => {
+    // A tiny 64 kbps file could keep half an hour behind. Nobody scrubs back half an hour.
+    const sec = keepBehindSec({ sizeBytes: 8000 * 600, durationSec: 600, quotaBytes: QUOTA, aheadSec: 180 });
+    expect(sec).toBe(KEEP_BEHIND_MAX_SEC);
+  });
+
+  it("returns the floor for Winterbreak, because there is genuinely nothing spare", () => {
+    // The real track, from the DB: 1568 kbps FLAC, 4:57, 55.6 MB → 191.6 KB/s. 11.5 MB of quota is
+    // 61 s of it, and the 49 s ahead window has already spent nearly all of that. No arithmetic
+    // here can make a 297 s song seekable — that is what the seek detour exists for.
+    const sec = keepBehindSec({ sizeBytes: 55.6 * 1024 * 1024, durationSec: 297, quotaBytes: QUOTA, aheadSec: 49 });
+    expect(sec).toBe(KEEP_BEHIND_MIN_SEC);
+  });
+
+  it("never returns less than the floor, even when the ahead window has overspent", () => {
+    const sec = keepBehindSec({ sizeBytes: 300_000 * 300, durationSec: 300, quotaBytes: QUOTA, aheadSec: 180 });
+    expect(sec).toBe(KEEP_BEHIND_MIN_SEC);
+  });
+
+  it("keeps the old constant when the bitrate is unknown — a guess must not be optimistic", () => {
+    expect(keepBehindSec({ sizeBytes: 0, durationSec: 0, quotaBytes: QUOTA, aheadSec: 180 })).toBe(KEEP_BEHIND_MIN_SEC);
   });
 });
 
