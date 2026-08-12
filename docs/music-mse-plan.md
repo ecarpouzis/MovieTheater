@@ -20,8 +20,17 @@ analyser fed throughout; flag off, decks byte-identical. Three live-found bugs a
 code: synchronous element claim (toggle-vs-start race detached the MediaSource), `bufferCeilingSec`
 takes min not max (quota is physics), and a low-water mark (no hysteresis = 80 fetches/track).
 KNOWN GAPS until Phase 3/4: progress bar reads queue-time and seek is wrong under the flag
-(timeline module owns it); fat tracks re-fetch ~3× on resume (lanes can't Range); real screen-off
-run of the ENGINE not yet done — that is the Phase 2 gate on the phone.**
+(timeline module owns it); fat tracks re-fetch ~3× on resume (lanes can't Range).
+PHASE 2 GATE: PASSED ON THE PHONE 2026-08-11 ~20:01–20:44 (Android Chrome 150, `?mse=1`,
+build v2 with the sticky-lane fix): ~40 min hidden, NINE hidden track boundaries, zero stalls;
+fat FLAC resumed sticky on fMP4 (~22 s cadence, advancing cursor, ONE demote line per track);
+every subsequent ~1.8 Mbps track demoted once to universal, changeType at the switch, buffer
+climbed 43 s → steady 180 s; endOfStream on queue exhaustion, element drained its last 161 s.
+⚠ OPEN: at queue end the element fired `waiting` instead of `ended` after draining — harmless
+there, but the cross-engine deck handoff RELIES on the real `ended` after endOfStream(); guard
+this (treat near-end waiting-after-endedStream as ended) before Phase 5. Also observed: each
+hidden universal top-up re-ran ffmpeg on the gateway (piped stdout, no Range) — ~80 encodes in
+one night; setting `MusicUniversalCacheDir` in prod makes it one encode + cheap Range serves.**
 Companion to `music-plan.md`; cite sections from code the same way.
 
 ## Why
