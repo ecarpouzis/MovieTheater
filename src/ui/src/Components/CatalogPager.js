@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useRef } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import "./CatalogPager.css";
 
 // A catalog's faux-pagination strip, shared by the arcade lobby and the music library. "Faux" because
@@ -15,6 +15,11 @@ import "./CatalogPager.css";
 // beside it because Windows' filesystem is case-insensitive, so the two names are one file.
 
 export const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+
+/** How long a tapped letter is held before a hand scroll is allowed to release it. Long enough to
+ *  cover the drift of a real thumb tap and the settle of a smooth scroll; short enough that the
+ *  readout is honest again by the time anyone has read a card. */
+export const PIN_ARM_MS = 350;
 
 /** The full #, A–Z strip, with the caller's counts/offsets merged in (absent buckets → count 0). */
 export function letterStrip(letters) {
@@ -91,8 +96,46 @@ function CatalogPager({ mode, letters, total, pageSize, currentIndex, onJump, di
     () => (mode === "letters" ? [] : pageStrip(currentPage, totalPages)),
     [mode, currentPage, totalPages]
   );
+  // ── The tapped letter wins, until the reader takes over ────────────────────────────────────────
+  // The readout otherwise names whatever the grid's scroll-spy reports at the top of the list, and a
+  // GRID ROW holds `cols` cards — so a letter whose first card is not in column 0 shares its top row
+  // with the tail of the previous letter, and the spy (which reports the row's FIRST item) names that
+  // one. Tap M, get L. Reported 2026-08-13: "I tap a letter and the bar instead highlights the letter
+  // before it."
+  //
+  // The Long Box never hits this because its spy unit is a whole shelf, which cannot straddle a
+  // letter boundary — so it can afford to let the spy speak for the rail unconditionally. Ours can,
+  // so an explicit tap is held as the truth until the reader scrolls for themselves, at which point
+  // the honest readout comes back. Same wheel/touchmove/key trio the jump itself is cancelled by.
+  const [pinned, setPinned] = useState(null);
+  // A tap on a phone often carries a pixel or two of drift, and a smooth scroll settles over a few
+  // frames — both would fire a release immediately. Arm the listeners a beat later instead.
+  useEffect(() => {
+    if (!pinned) return undefined;
+    const release = () => setPinned(null);
+    const onKey = (e) => {
+      if (e.key?.startsWith("Arrow") || e.key === "PageUp" || e.key === "PageDown"
+          || e.key === "Home" || e.key === "End" || e.key === " ") release();
+    };
+    const arm = setTimeout(() => {
+      window.addEventListener("wheel", release, { passive: true, capture: true });
+      window.addEventListener("touchmove", release, { passive: true, capture: true });
+      window.addEventListener("keydown", onKey);
+    }, PIN_ARM_MS);
+    return () => {
+      clearTimeout(arm);
+      window.removeEventListener("wheel", release, { capture: true });
+      window.removeEventListener("touchmove", release, { capture: true });
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [pinned]);
+  // A different list (new filter, new shelf) or a switch to page mode: the pin describes a letter in
+  // a catalog that no longer exists.
+  useEffect(() => { setPinned(null); }, [letters, mode]);
+
   // Computed before the early returns below so the hook order stays fixed.
-  const currentLetter = mode === "letters" ? activeLetter(strip, currentIndex) : null;
+  const spyLetter = mode === "letters" ? activeLetter(strip, currentIndex) : null;
+  const currentLetter = mode === "letters" ? (pinned ?? spyLetter) : null;
 
   // The strip is one swipeable row (see the CSS), so on a narrow screen part of the alphabet is
   // off-screen and the active button has to be brought back to where it can be read.
@@ -142,7 +185,7 @@ function CatalogPager({ mode, letters, total, pageSize, currentIndex, onJump, di
               disabled={disabled || count === 0}
               title={count ? `${count.toLocaleString()} ${count === 1 ? itemNoun : `${itemNoun}s`}` : `No ${itemNoun}s`}
               aria-current={letter === currentLetter ? "true" : undefined}
-              onClick={() => onJump(offset)}
+              onClick={() => { setPinned(letter); onJump(offset); }}
             >
               {letter}
             </button>

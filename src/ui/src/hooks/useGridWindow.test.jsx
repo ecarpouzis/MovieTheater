@@ -21,6 +21,7 @@ const SHORT_H = 120;
 const TALL_H = 240;
 const COUNT = 400;
 const VIEWPORT_H = 600;
+const TOP_INSET = 48;
 
 /** Per-row heights, MUTABLE: a row growing after it has been measured is the whole point of the
  *  compensation test below (a placeholder slot becoming a real card). */
@@ -28,6 +29,10 @@ let heights;
 function resetHeights() {
   heights = Array.from({ length: COUNT }, (_, r) => (r < SHORT_ROWS ? SHORT_H : TALL_H));
 }
+
+/** Where scrollY must end up for `row` to sit AT the reading line — i.e. flush under the fixed bar,
+ *  not behind it. */
+const landingFor = (row) => Math.max(0, trueTop(row) - TOP_INSET);
 
 /** True top of a row in the virtual document — what the hook has to converge on, never told to it. */
 function trueTop(row) {
@@ -93,7 +98,12 @@ beforeEach(() => {
   });
 
   window.innerHeight = VIEWPORT_H;
-  window.scrollBy = (x, dy) => { scrollY += dy; };
+  // The phone layout: a fixed 48px bar the WINDOW scrolls underneath (index.css
+  // --content-top-inset). setupTests.js makes getComputedStyle return inline styles only, so the
+  // token has to be set inline on <html> for the hook to read it.
+  document.documentElement.style.setProperty("--content-top-inset", `${TOP_INSET}px`);
+  // A real scroller clamps; without this the harness reports impossible negatives.
+  window.scrollBy = (x, dy) => { scrollY = Math.max(0, scrollY + dy); };
   window.requestAnimationFrame = (fn) => setTimeout(() => fn(Date.now()), 0);
   window.cancelAnimationFrame = (id) => clearTimeout(id);
   window.localStorage.clear();
@@ -101,6 +111,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  document.documentElement.style.removeProperty("--content-top-inset");
   Element.prototype.getBoundingClientRect = realRect;
   window.getComputedStyle = realComputed;
   delete HTMLElement.prototype.offsetTop;
@@ -141,7 +152,7 @@ describe("useGridWindow.scrollToIndex", () => {
     // Within a couple of pixels of where row 150 actually starts. A single-pass version cannot get
     // here: the average measured off the first screenful is ~190px against a true 240px, so its one
     // guess lands thousands of pixels short.
-    expect(Math.abs(scrollY - trueTop(150))).toBeLessThanOrEqual(2);
+    expect(Math.abs(scrollY - landingFor(150))).toBeLessThanOrEqual(2);
   });
 
   it("does not need to move at all when the row is already at the top", async () => {
@@ -155,7 +166,7 @@ describe("useGridWindow.scrollToIndex", () => {
     const api = await mount();
     await act(async () => { api().scrollToIndex(COUNT + 500); });
     await frames();
-    expect(Math.abs(scrollY - trueTop(COUNT - 1))).toBeLessThanOrEqual(2);
+    expect(Math.abs(scrollY - landingFor(COUNT - 1))).toBeLessThanOrEqual(2);
   });
 
   it("can come back UP — the direction the whole fix exists for", async () => {
@@ -166,7 +177,7 @@ describe("useGridWindow.scrollToIndex", () => {
 
     await act(async () => { api().scrollToIndex(5); });
     await frames();
-    expect(Math.abs(scrollY - trueTop(5))).toBeLessThanOrEqual(2);
+    expect(Math.abs(scrollY - landingFor(5))).toBeLessThanOrEqual(2);
   });
 
   it("is inert on an empty list instead of throwing", async () => {
@@ -213,7 +224,7 @@ describe("useGridWindow.scrollToIndex", () => {
     await act(async () => { api().scrollToIndex(COUNT - 1); });
     await frames();
     const deep = scrollY;
-    expect(deep).toBeGreaterThan(trueTop(COUNT - 2) - 5);
+    expect(deep).toBeGreaterThan(landingFor(COUNT - 2) - 5);
 
     await act(async () => { api().scrollToIndex(0); });
     await frames();
@@ -232,6 +243,36 @@ describe("useGridWindow.scrollToIndex", () => {
     await frames();
     // The phase-1 estimate scroll still happened (it is synchronous), but the phase-2 landing was
     // abandoned — so the position is the estimate, not the exact row-300 top.
-    expect(Math.abs(scrollY - trueTop(300))).toBeGreaterThan(2);
+    expect(Math.abs(scrollY - landingFor(300))).toBeGreaterThan(2);
+  });
+  // ── The landing has to agree with the readout ─────────────────────────────────────────────────
+  // On a phone the window is the scroller and `.navbar-topbar` is a fixed, opaque 48px over the top
+  // of it. Landing a row at y=0 parks it BEHIND that bar — the reader sees the row after it and
+  // concludes the jump overshot. Both the landing and the active-row readout now measure from the
+  // same reading line, which is the whole fix: they cannot disagree by construction.
+  it("lands the target UNDER the fixed top bar, not behind it", async () => {
+    const api = await mount();
+    await act(async () => { api().scrollToIndex(150); });
+    await frames();
+
+    const el = document.querySelector('[data-row="150"]');
+    expect(el).toBeTruthy();
+    // Its top sits AT the bar's bottom edge, not at the viewport's.
+    expect(Math.abs(el.getBoundingClientRect().top - TOP_INSET)).toBeLessThanOrEqual(2);
+  });
+
+  it("reports the row it just landed on, not the one a sliver above the line", async () => {
+    const api = await mount();
+    await act(async () => { api().scrollToIndex(150); });
+    await frames();
+    // visibleStart is the first item of the row at the reading line. One row = one item here, so an
+    // exact landing must report exactly 150 — reading from the raw top edge instead would report 149
+    // the moment the scroll settled a fraction of a pixel high.
+    expect(api().visibleStart).toBe(150);
+
+    // …and a sub-pixel overshoot upward must not cost a whole row either.
+    await act(async () => { window.scrollBy(0, -0.4); window.dispatchEvent(new Event("scroll")); });
+    await frames(4);
+    expect(api().visibleStart).toBe(150);
   });
 });

@@ -6,6 +6,15 @@ const OVERSCAN = 1200; // px of extra content kept mounted above and below the v
  *  change mid-flight), stop waiting and let the ordinary compensation resume. The Long Box uses
  *  6 s for the same reason — a deep-$skip band fetch genuinely takes seconds. */
 const JUMP_DEADLINE_MS = 6000;
+/** How far a row may sit ABOVE the reading line and still be called the row at the top.
+ *
+ *  Without it the readout is decided by the top EDGE, and a half-pixel of the previous row hanging
+ *  over it wins — which on a phone (fractional device pixels, momentum scrolling) happens constantly
+ *  and reads as "the bar highlights the letter before the one I tapped". The Long Box's spy takes the
+ *  same precaution twice over: a `+1` slack on its band test (`y <= scroller.scrollTop + 1`) and a
+ *  reading LINE rather than an edge — `rootMargin: '0px 0px -98% 0px'`, i.e. only the top 2% of the
+ *  scrollport counts as "at the top". */
+const SPY_TOLERANCE = 2;
 const MIN_WINDOWED = 120; // below this, mounting the whole list is cheaper than windowing it
 const INITIAL_ITEMS = 48; // mounted on the first frame, before anything has been measured
 const FALLBACK_ROW_H = 260; // only used until the first row has actually been measured
@@ -92,11 +101,36 @@ export default function useGridWindow(count, { resetKey = "", contentKey = "", o
   // { index, deadline } while a jump is waiting for its target's real DOM. Owns scrollTop for as
   // long as it is set — see scrollToIndex.
   const pendingJumpRef = useRef(null);
+  const topInsetRef = useRef(0);
 
   const windowed = count >= minItems;
   const initial = { start: 0, end: Math.min(count, INITIAL_ITEMS), padTop: 0, padBottom: 0, visibleStart: 0, startRow: 0 };
   const [win, setWin] = useState(windowed ? initial : { ...initial, end: count });
   const winRef = useRef(win);
+
+  /**
+   * The y at which "the top of the list" actually is, in viewport coordinates.
+   *
+   * An INNER scroller (desktop's .app-content) already begins below every fixed thing, so its own
+   * rect top is the answer. When the WINDOW is the scroller (phones) it slides underneath fixed
+   * chrome — `.navbar-topbar`, 48px — and scrolling a row to y=0 parks it behind an opaque bar. The
+   * number lives in CSS (`--content-top-inset`, index.css) because it belongs to the layout that owns
+   * the bar; this hook only reads it, and only when the scroll root is re-resolved.
+   *
+   * BOTH the jump landing and the active-row readout are measured from this line, which is the point:
+   * when they were measured from different places they disagreed, and the disagreement is what
+   * highlighted the wrong letter.
+   */
+  const readTopInset = useCallback(() => {
+    if (rootRef.current) { topInsetRef.current = 0; return; }
+    try {
+      const raw = window.getComputedStyle(document.documentElement).getPropertyValue("--content-top-inset");
+      const px = parseFloat(raw);
+      topInsetRef.current = Number.isFinite(px) ? px : 0;
+    } catch { topInsetRef.current = 0; }
+  }, []);
+
+  const readingLine = useCallback(() => viewportBand(rootRef.current).top + topInsetRef.current, []);
 
   const buildPrefix = useCallback((totalRows) => {
     const avg = avgRowRef.current || FALLBACK_ROW_H;
@@ -151,9 +185,16 @@ export default function useGridWindow(count, { resetKey = "", contentKey = "", o
     }
 
     const band = viewportBand(rootRef.current);
+    // The mounted window keeps measuring from the raw edge — overscan is about what to KEEP IN THE
+    // DOM, and a row hidden behind the top bar still has to be mounted.
     const startRow = clamp(rowAtOffset(prefix, band.top - overscan - origin), 0, Math.max(0, totalRows - 1));
     const endRow = clamp(rowAtOffset(prefix, band.bottom + overscan - origin) + 1, startRow + 1, totalRows);
-    const visRow = clamp(rowAtOffset(prefix, band.top - origin), 0, Math.max(0, totalRows - 1));
+    // The READOUT measures from the reading line — the same line a jump lands on, plus a tolerance so
+    // a sliver of the previous row cannot claim the top. See SPY_TOLERANCE and readingLine().
+    const visRow = clamp(
+      rowAtOffset(prefix, (readingLine() + SPY_TOLERANCE) - origin),
+      0, Math.max(0, totalRows - 1),
+    );
 
     const next = {
       start: startRow * cols,
@@ -171,7 +212,7 @@ export default function useGridWindow(count, { resetKey = "", contentKey = "", o
       winRef.current = next;
       setWin(next);
     }
-  }, [count, overscan, buildPrefix]);
+  }, [count, overscan, buildPrefix, readingLine]);
 
   const schedule = useCallback(() => {
     if (rafRef.current) return;
@@ -217,6 +258,7 @@ export default function useGridWindow(count, { resetKey = "", contentKey = "", o
     const grid = gridRef.current;
     if (!host || !grid || !count) return;
     rootRef.current = getScrollParent(host);
+    readTopInset();
     const items = Array.from(grid.children);
     if (!items.length) return;
 
@@ -230,14 +272,14 @@ export default function useGridWindow(count, { resetKey = "", contentKey = "", o
     // Phase 1: the estimate. Enough to bring the row into the window; not claimed to be exact.
     const origin = items[0].getBoundingClientRect().top
       - prefix[clamp(winRef.current.startRow, 0, totalRows)];
-    const delta = (origin + prefix[row]) - viewportBand(rootRef.current).top;
+    const delta = (origin + prefix[row]) - readingLine();
     // The pending jump is armed even when the estimate needs no scroll: on a paged list the target
     // may be a placeholder right now, and phase 2 is what waits for the real card.
     pendingJumpRef.current = { index: wanted, deadline: Date.now() + JUMP_DEADLINE_MS };
     if (Math.abs(delta) > 1) nudgeScroll(rootRef.current, delta);
     dirtyRef.current = true;
     maintain();
-  }, [count, buildPrefix, maintain]);
+  }, [count, buildPrefix, maintain, readTopInset, readingLine]);
 
   // A new list (new search, or a pager jump): forget the measured rows and go back to the top.
   useLayoutEffect(() => {
@@ -270,6 +312,7 @@ export default function useGridWindow(count, { resetKey = "", contentKey = "", o
   useEffect(() => {
     if (!windowed) return undefined;
     rootRef.current = getScrollParent(hostRef.current);
+    readTopInset();
     const off = onAnyScroll(schedule);
     // ⚠ A hand scroll ABANDONS a pending jump (Long Box: the same wheel/touchmove/keydown trio).
     // Without it the landing effect can still be armed when the reader has started scrolling for
@@ -295,6 +338,7 @@ export default function useGridWindow(count, { resetKey = "", contentKey = "", o
         avgRowRef.current = FALLBACK_ROW_H;
         dirtyRef.current = true;
         rootRef.current = getScrollParent(hostRef.current);
+        readTopInset();  // the bar's height is breakpoint-dependent, so a resize can change it
         schedule();
       });
       ro.observe(grid);
@@ -308,7 +352,7 @@ export default function useGridWindow(count, { resetKey = "", contentKey = "", o
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       rafRef.current = 0;
     };
-  }, [windowed, schedule]);
+  }, [windowed, schedule, readTopInset]);
 
   // Measure the rows we just mounted, then re-derive the window if any estimate was wrong.
   useLayoutEffect(() => {
@@ -372,7 +416,7 @@ export default function useGridWindow(count, { resetKey = "", contentKey = "", o
     if (offset < 0 || offset >= grid.children.length) return;
     const el = grid.children[offset];
     if (!el) return;
-    const delta = el.getBoundingClientRect().top - viewportBand(rootRef.current).top;
+    const delta = el.getBoundingClientRect().top - readingLine();
     pendingJumpRef.current = null;
     if (Math.abs(delta) > 1) nudgeScroll(rootRef.current, delta);
     anchorRef.current = { startRow: win.startRow, padTop: win.padTop };

@@ -11,6 +11,12 @@ body {
 
 html {
   box-sizing: border-box;
+  /* How much fixed chrome the WINDOW scrolls underneath. Zero on desktop: the scroller there is
+     .app-content, whose own top edge is already below everything. On a phone the window is the
+     scroller and .navbar-topbar is `position: fixed; top: 0; height: 48px` over the top of it — so
+     anything that scrolls a target "to the top" has to mean 48px down, or it parks it behind an
+     opaque bar. Declared here, next to the bar that owns the number, and read by useGridWindow. */
+  --content-top-inset: 0px;
 }
 
 #root {
@@ -215,6 +221,11 @@ img {
 }
 
 @media (max-width: 768px) {
+  html {
+    /* The fixed top bar's height — see the token's declaration. */
+    --content-top-inset: 48px;
+  }
+
   .app-layout {
     height: auto;
     overflow: visible;
