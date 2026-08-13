@@ -277,6 +277,52 @@ describe("the tag queue", () => {
     await waitFor(() => expect(screen.getByText(/of 7$/)).toBeTruthy());
   });
 
+  it("stops reaching ahead once the server says there are no more pages", async () => {
+    // `nextCursor` is the LAST ID on the page and stays non-zero at the end of the queue, so a
+    // read-ahead keyed on the cursor alone re-requested the final page and appended the same
+    // photographs again — "2 of 2" quietly became "2 of 4". `hasMore` is the server's actual answer,
+    // and this is also what made the surface racy: those spurious pages were in flight while the
+    // reviewer was switching lanes.
+    render(<PhotoTagQueue people={people} />);
+    await screen.findByText("Vacation/photo5.jpg");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(calls.queue.filter((c) => c.afterId > 0)).toHaveLength(0);
+    expect(screen.getByText(/of 2$/)).toBeTruthy();
+  });
+
+  it("switching lanes while a read-ahead is in flight still loads the new lane", async () => {
+    // The in-flight guard used to swallow the lane change, leaving `state` on "loading" and the
+    // surface on a spinner that never resolved. A read-ahead is skippable; a reviewer asking for a
+    // different queue is not.
+    holdReadAhead = true;
+    readAheadPage = {
+      mode: "untagged",
+      items: [item(10, [])],
+      nextCursor: 10, hasMore: false, remaining: 0, total: 6,
+    };
+    queues.untagged = {
+      mode: "untagged",
+      items: [item(5, []), item(6, []), item(7, []), item(8, []), item(9, [])],
+      nextCursor: 9, hasMore: true, remaining: 1, total: 6,
+    };
+
+    render(<PhotoTagQueue people={people} />);
+    await screen.findByText("Vacation/photo5.jpg");
+    fireEvent.keyDown(window, { key: "ArrowRight" });
+    await waitFor(() => expect(calls.queue.filter((c) => c.afterId > 0)).toHaveLength(1));
+
+    fireEvent.click(screen.getByText("Suggestions"));
+    expect(await screen.findByText(/Subject A · 91%/)).toBeTruthy();
+
+    // And when the superseded page finally lands it does not push the old lane's photos into the
+    // new one.
+    releaseReadAhead();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(screen.queryByText("Vacation/photo10.jpg")).toBeNull();
+    expect(screen.getByText("Vacation/photo1.jpg")).toBeTruthy();
+  });
+
   it("an unnamed cluster reads as a group, never as a blank name", async () => {
     queues.suggested.items = [item(1, [suggestion(11, "", { unnamed: true })])];
     render(<PhotoTagQueue people={people} />);

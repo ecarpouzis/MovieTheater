@@ -825,6 +825,148 @@
   border-radius: 5px !important;
 }
 
+/* ============================================================================
+   Family album rail (docs/photos-plan.md §4).
+   /photos used to be handed the MOVIE rail — a title/actor/genre search over a
+   film library, on a page that has neither. This is an INDEX instead: the ways
+   into the album, each a real URL, each with the count beside it.
+   Typography is the section's own: no Space Grotesk, wide-tracked uppercase for
+   labels, and tabular figures for every number (the annotation on a contact
+   sheet, not a dashboard metric). Colours come from the photos tokens.
+   ============================================================================ */
+
+/* Two-line word-mark — the only section whose brand is more than a word. The second line is
+   suppressed in the mobile top bar, which is 48px tall and has no room for it. */
+.navbar-photos-wordmark {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.1;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.navbar-photos-wordmark-sub {
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  color: var(--sidebar-heading);
+  margin-top: 3px;
+}
+
+.navbar-title .navbar-photos-wordmark-sub {
+  display: none;
+}
+
+.navbar-photos-theme .navbar-caret {
+  margin-left: auto;
+  font-size: 11px;
+  opacity: 0.45;
+}
+
+.navbar-sider-header.navbar-photos-theme .navbar-sider-title {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.navbar-photos-theme .navbar-home-icon {
+  width: 20px;
+  height: 20px;
+  opacity: 0.9;
+}
+
+.navbar-photos-nav {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 12px 18px;
+}
+
+.navbar-photos-group + .navbar-photos-group {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--sidebar-border);
+}
+
+.navbar-photos-heading {
+  display: block;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--sidebar-heading);
+  padding: 10px 8px 8px;
+}
+
+/* Square, not pill: the section's rule is that a print has corners. The active row is marked by a
+   date-stamp coloured edge rather than a filled block, so the rail stays quiet while still
+   answering "where am I" at a glance. */
+.navbar-photos-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: none;
+  border: none;
+  border-left: 2px solid transparent;
+  color: var(--sidebar-text);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  padding: 8px 10px;
+  text-align: left;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.navbar-photos-link:hover {
+  background: var(--sidebar-pill-bg);
+  color: var(--sidebar-text-strong);
+}
+
+.navbar-photos-link:focus-visible {
+  outline: 2px solid var(--sidebar-link);
+  outline-offset: -2px;
+}
+
+.navbar-photos-link.is-active {
+  background: var(--nav-active-bg);
+  border-left-color: var(--sidebar-link);
+  color: var(--sidebar-text-strong);
+  font-weight: 600;
+}
+
+.navbar-photos-link-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.navbar-photos-count {
+  color: var(--sidebar-text-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+/* A count that is a QUESTION, not a size: the tag queue, the duplicate picks and the review pile are
+   all somebody's decision waiting. Stamped, so they read differently from the album's own totals. */
+.navbar-photos-count.is-waiting {
+  background: var(--accent-soft);
+  border-radius: 2px;
+  color: var(--sidebar-link);
+  padding: 1px 6px;
+}
+
+.navbar-photos-theme .navbar-photos-toggle {
+  color: var(--sidebar-text-strong);
+}
+
 /* The photos section's show-hidden switch (photos-plan.md Phase 4 addendum). Admin-only on top of
    family membership — and a courtesy only: the server ignores the request from anyone else. */
 .navbar-photos-controls {

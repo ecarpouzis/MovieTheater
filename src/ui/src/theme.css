@@ -201,6 +201,50 @@
   --nav-active-bg: rgba(201, 72, 79, 0.24);
 }
 
+/* Family photo album (docs/photos-plan.md §4) — "the album page".
+   The section's whole job is to get out of the way of photographs, so its surface is a warm,
+   slightly darkened paper rather than the movie side's cool grey: a print laid on it reads as
+   mounted instead of floating. The accent is the orange of the date a 90s camera burned into the
+   corner of a print — the section's one loud colour, spent on dates and active states only.
+
+   These tokens live here rather than on .photos-page because the section's lightbox and modals
+   PORTAL out of the page (antd renders them into <body>), and a token defined on the page root
+   would never reach them. data-feature is on <html>, so it reaches everything. */
+:root[data-feature="photos"] {
+  --accent: #b3611c;
+  --accent-soft: rgba(179, 97, 28, 0.14);
+  --content-bg: #e8e3d9;
+  --card-surface: #fbf9f5;
+  --card-border: #d7cfc1;
+  --card-shadow: 0 1px 2px rgba(60, 45, 25, 0.1);
+  --card-shadow-hover: 0 6px 18px rgba(60, 45, 25, 0.16);
+
+  --text-primary: #221d17;
+  --text-secondary: #574e43;
+  --text-muted: #8a8074;
+
+  --sidebar-bg: linear-gradient(180deg, #2c241b 0%, #1b1611 100%);
+  --sidebar-bg-elev: #362c21;
+  --sidebar-heading: #a3907a;
+  --sidebar-text-muted: #b0a08c;
+  --sidebar-text-strong: #f4efe4;
+  --sidebar-link: #e8a35a;
+  --sidebar-border: rgba(255, 240, 220, 0.1);
+  --sidebar-input-bg: #14100c;
+  --sidebar-input-border: rgba(255, 240, 220, 0.14);
+  --sidebar-pill-bg: rgba(255, 240, 220, 0.06);
+  --nav-active-bg: rgba(179, 97, 28, 0.2);
+
+  /* Section-only tokens. --photos-stamp is the date-stamp orange the timeline's month headers are
+     set in; --photos-well is the recessed page a print sits on; --photos-mount is the hairline that
+     makes a tile read as mounted rather than cut out. */
+  --photos-stamp: #a1560f;
+  --photos-rule: rgba(60, 45, 25, 0.22);
+  --photos-mount: rgba(60, 45, 25, 0.18);
+  --photos-well: #ded7ca;
+  --photos-tile-base: #d3cabb;
+}
+
 /* ── DARK theme: swap content-area surfaces only (§3b) ──────────────────── */
 :root[data-theme="dark"] {
   --card-surface: #1e2739;
@@ -231,6 +275,32 @@
   --content-bg: #1c1315;
   --card-surface: #2a1c1f;
 }
+/* Photos, dark: the shoebox the prints came out of. Warm near-black rather than the site's blue
+   ink, because a photograph laid on a cool dark surface picks up a cast that isn't in the print. */
+:root[data-theme="dark"][data-feature="photos"] {
+  --content-bg: #14110d;
+  --card-surface: #211b15;
+  --card-border: rgba(255, 236, 210, 0.1);
+  --card-shadow: none;
+  --card-shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.55);
+
+  --accent: #e08a3c;
+  --accent-soft: rgba(224, 138, 60, 0.18);
+
+  --text-primary: #f4efe6;
+  --text-secondary: #c3b8a8;
+  --text-muted: #8d8172;
+
+  --sidebar-bg: linear-gradient(180deg, #1f1913 0%, #14100c 100%);
+  --sidebar-bg-elev: #2a2219;
+
+  --photos-stamp: #e8a35a;
+  --photos-rule: rgba(255, 236, 210, 0.16);
+  --photos-mount: rgba(255, 236, 210, 0.1);
+  --photos-well: #1b1611;
+  --photos-tile-base: #2a231b;
+}
+
 :root[data-theme="dark"][data-feature="arcade"] {
   --content-bg: #140c1f;
   --card-surface: linear-gradient(180deg, #241834, #1a1029);

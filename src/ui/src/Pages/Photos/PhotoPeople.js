@@ -15,8 +15,19 @@ import { formatTaken } from "./PhotoLightbox";
 // Everything here is member-visible and member-editable. A shared family album whose people only one
 // person could edit would be one person's album.
 
-export default function PhotoPeople({ people, unnamed, loading, onReload, onOpenAsset, onChanged }) {
-  const [personId, setPersonId] = useState(null);
+// Which person you are looking at is a ROUTE (/photos/people/:id), not component state: a person's
+// page is the most linkable thing in the album, and it used to vanish on a refresh.
+export default function PhotoPeople({
+  people,
+  unnamed,
+  loading,
+  onReload,
+  onOpenAsset,
+  onChanged,
+  personId,
+  onOpenPerson,
+  onBackToPeople,
+}) {
   const [editing, setEditing] = useState(null);
   const [naming, setNaming] = useState(null);
 
@@ -24,9 +35,9 @@ export default function PhotoPeople({ people, unnamed, loading, onReload, onOpen
     return (
       <PhotoPersonPage
         id={personId}
-        onBack={() => setPersonId(null)}
+        onBack={onBackToPeople}
         onOpen={onOpenAsset}
-        onOpenPerson={setPersonId}
+        onOpenPerson={onOpenPerson}
       />
     );
   }
@@ -51,7 +62,7 @@ export default function PhotoPeople({ people, unnamed, loading, onReload, onOpen
       <ul className="photo-people-list">
         {people.map((person) => (
           <li key={person.id} className="photo-person-card">
-            <button type="button" className="photo-person-open" onClick={() => setPersonId(person.id)}>
+            <button type="button" className="photo-person-open" onClick={() => onOpenPerson?.(person.id)}>
               {person.faceCropUrl || person.coverUrl ? (
                 <img className="photo-person-face" src={person.faceCropUrl || person.coverUrl} alt="" />
               ) : (
@@ -186,7 +197,7 @@ function PersonEditor({ value, onClose, onSaved }) {
   };
 
   return (
-    <Modal open onCancel={onClose} footer={null} title={creating ? "Add a person" : "Edit person"} destroyOnHidden>
+    <Modal className="photos-modal" open onCancel={onClose} footer={null} title={creating ? "Add a person" : "Edit person"} destroyOnHidden>
       <div className="photo-person-editor">
         <label className="photo-field">
           <span>Name</span>
@@ -266,7 +277,7 @@ function NameClusterModal({ group, people, onClose, onDone }) {
   };
 
   return (
-    <Modal open onCancel={onClose} footer={null} title="Who is this?" destroyOnHidden>
+    <Modal className="photos-modal" open onCancel={onClose} footer={null} title="Who is this?" destroyOnHidden>
       <div className="photo-album-picker">
         <p className="photos-note">
           {group.suggestionCount.toLocaleString()} face

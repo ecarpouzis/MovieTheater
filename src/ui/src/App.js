@@ -174,7 +174,11 @@ function App() {
             <Route path="/music/mse-probe" exact>
               <MusicMseProbe />
             </Route>
-            <Route path="/photos" exact>
+            {/* NOT exact: the album's views are real sub-routes (/photos/albums/:slug,
+                /photos/people/:id, /photos/folders/<path>, …) so they deep-link, share and survive a
+                refresh. PhotosPage owns the inner Switch, which keeps the whole section in one
+                lazy chunk instead of one per view. */}
+            <Route path="/photos">
               <PhotosPage userData={userData} />
             </Route>
             <Route path="/arcade/room/:code" exact>

@@ -14,8 +14,11 @@ import PhotoGrid from "./PhotoGrid";
 // surface or it holds on none — a folder tab that quietly opted out would not be a rule, it would be
 // a longer route to the same pictures. The server ignores includeHidden from anyone else.
 
-export default function PhotoFolders({ onOpen, selection, onMakeAlbum, includeHidden = false }) {
-  const [path, setPath] = useState("");
+// Where you are in the tree is a ROUTE, not component state (/photos/folders/Vacation%202004/…):
+// a folder six levels into a device dump is exactly the kind of thing one family member sends
+// another, and it used to be unlinkable. `path` comes in, `onNavigate` goes out; nothing else about
+// how this browses changed.
+export default function PhotoFolders({ path = "", onNavigate, onOpen, selection, onMakeAlbum, includeHidden = false }) {
   const [folders, setFolders] = useState([]);
   const [items, setItems] = useState([]);
   const [state, setState] = useState("loading");
@@ -76,7 +79,7 @@ export default function PhotoFolders({ onOpen, selection, onMakeAlbum, includeHi
   return (
     <div className="photo-folders">
       <nav className="photo-crumbs">
-        <button type="button" className="photo-crumb" onClick={() => setPath("")}>
+        <button type="button" className="photo-crumb" onClick={() => onNavigate?.("")}>
           All folders
         </button>
         {segments.map((segment, index) => (
@@ -84,7 +87,7 @@ export default function PhotoFolders({ onOpen, selection, onMakeAlbum, includeHi
             type="button"
             className="photo-crumb"
             key={segment + index}
-            onClick={() => setPath(segments.slice(0, index + 1).join("/"))}
+            onClick={() => onNavigate?.(segments.slice(0, index + 1).join("/"))}
           >
             {segment}
           </button>
@@ -111,7 +114,7 @@ export default function PhotoFolders({ onOpen, selection, onMakeAlbum, includeHi
                   <button
                     type="button"
                     className="photo-folder"
-                    onClick={() => setPath(path ? `${path}/${folder.name}` : folder.name)}
+                    onClick={() => onNavigate?.(path ? `${path}/${folder.name}` : folder.name)}
                   >
                     <span className="photo-folder-name">{folder.name}</span>
                     <span className="photo-folder-count">{folder.count.toLocaleString()}</span>

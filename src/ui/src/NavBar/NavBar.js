@@ -10,6 +10,7 @@ import Login from "./Login";
 import BoardGameNavContent from "./BoardGameNavContent";
 import ArcadeNavContent from "./ArcadeNavContent";
 import MusicNavContent from "./MusicNavContent";
+import PhotosNavContent from "./PhotosNavContent";
 // Settings/admin modals only open on demand (and admin only for privileged users), so keep them out
 // of the entry bundle and load their chunks when first rendered.
 const UserSettingsModal = lazy(() => import("./UserSettingsModal"));
@@ -227,14 +228,39 @@ function NavBar({
   // Arcade's rail carries a bare word-mark: its joystick glyph was dropped in the browse redesign.
   // The switcher menu still shows the icon, so the section stays recognisable there.
   const sectionIcon = isArcade ? null : isBoardGames ? boardGamesIcon : isMusic ? musicIcon : isPhotos ? photosIcon : movieTheaterIcon;
-  const sectionTitle = isArcade ? "Arcade" : isBoardGames ? "Board Games" : isMusic ? "Music" : isPhotos ? "Photos" : "Movie Theater";
-  const navThemeClass = isArcade ? " navbar-arcade-theme" : isBoardGames ? " navbar-boardgames-theme" : isMusic ? " navbar-music-theme" : "";
+  // Photos is the one section whose word-mark is a NODE rather than a word: "Photos" alone reads as
+  // one more library next to Movie Theater, and the second line is what says whose album it is. Every
+  // other section still passes a plain string, so their markup is unchanged.
+  const photosWordmark = (
+    <span className="navbar-photos-wordmark">
+      Photos
+      <span className="navbar-photos-wordmark-sub">Family album</span>
+    </span>
+  );
+  const sectionTitle = isArcade ? "Arcade" : isBoardGames ? "Board Games" : isMusic ? "Music" : isPhotos ? photosWordmark : "Movie Theater";
+  const navThemeClass = isArcade
+    ? " navbar-arcade-theme"
+    : isBoardGames
+    ? " navbar-boardgames-theme"
+    : isMusic
+    ? " navbar-music-theme"
+    : isPhotos
+    ? " navbar-photos-theme"
+    : "";
 
   // Publish the active feature to <html> so theme.css re-tints its tokens (accent, sidebar,
   // content bg) per section. Runs on every route change.
   useEffect(() => {
-    document.documentElement.dataset.feature = isArcade ? "arcade" : isBoardGames ? "boardgames" : isMusic ? "music" : "movies";
-  }, [isArcade, isBoardGames, isMusic]);
+    document.documentElement.dataset.feature = isArcade
+      ? "arcade"
+      : isBoardGames
+      ? "boardgames"
+      : isMusic
+      ? "music"
+      : isPhotos
+      ? "photos"
+      : "movies";
+  }, [isArcade, isBoardGames, isMusic, isPhotos]);
 
   // Sun/moon light-dark toggle — present on every feature's header/top bar.
   const themeToggleButton = (
@@ -360,6 +386,13 @@ function NavBar({
     />
   ) : isMusic ? (
     <MusicNavContent
+      userData={userData}
+      onUserLoggedIn={onUserLoggedIn}
+      setSettingsModalOpen={setSettingsModalOpen}
+      setAdminModalOpen={setAdminModalOpen}
+    />
+  ) : isPhotos ? (
+    <PhotosNavContent
       userData={userData}
       onUserLoggedIn={onUserLoggedIn}
       setSettingsModalOpen={setSettingsModalOpen}

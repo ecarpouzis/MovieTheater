@@ -14,7 +14,7 @@ import { formatRange } from "./PhotoAlbums";
 // everything else keeps its order behind them), so what the UI promises and what the API does are
 // the same sentence.
 
-export default function PhotoAlbumDetail({ slug, onBack, onOpen }) {
+export default function PhotoAlbumDetail({ slug, onBack, onOpen, onTitle }) {
   const [album, setAlbum] = useState(null);
   const [items, setItems] = useState([]);
   const [state, setState] = useState("loading");
@@ -37,6 +37,9 @@ export default function PhotoAlbumDetail({ slug, onBack, onOpen }) {
         }
         const body = await response.json();
         setAlbum(body.album);
+        // The page's own <h1> carries the album's name (the section label moves up to the eyebrow),
+        // so the title is published rather than printed twice.
+        onTitle?.(body.album?.title ?? null);
         const cards = (body.items || []).map((entry) => entry.card);
         setItems((prev) => (append ? prev.concat(cards) : cards));
         skipRef.current = (append ? skipRef.current : 0) + cards.length;
@@ -48,7 +51,7 @@ export default function PhotoAlbumDetail({ slug, onBack, onOpen }) {
         inFlightRef.current = false;
       }
     },
-    [slug]
+    [slug, onTitle]
   );
 
   useEffect(() => {
@@ -110,7 +113,6 @@ export default function PhotoAlbumDetail({ slug, onBack, onOpen }) {
 
       <div className="photos-head">
         <div>
-          <h2 className="photos-panel-head">{album.title}</h2>
           <p className="photos-note">
             {items.length.toLocaleString()}
             {hasMore ? "+" : ""} shown{formatRange(album)}

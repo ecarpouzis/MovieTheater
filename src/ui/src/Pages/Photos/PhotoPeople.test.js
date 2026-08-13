@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { render, cleanup, screen, waitFor, fireEvent } from "@testing-library/react";
 import { vi, describe, it, expect, afterEach, beforeEach } from "vitest";
 
@@ -154,9 +155,24 @@ describe("the people list", () => {
   });
 });
 
+// Which person is open is a ROUTE now (/photos/people/:id) rather than component state, so the
+// parent owns it. This harness is the smallest stand-in for PhotosPage's router: it holds the id and
+// hands it back down, which is exactly what the route does.
+function PeopleHarness(props) {
+  const [personId, setPersonId] = useState(null);
+  return (
+    <PhotoPeople
+      {...props}
+      personId={personId}
+      onOpenPerson={setPersonId}
+      onBackToPeople={() => setPersonId(null)}
+    />
+  );
+}
+
 describe("a person page", () => {
   it("shows their photos and who else is in them", async () => {
-    render(<PhotoPeople people={[person(3, "Subject A")]} unnamed={[]} loading={false} onOpenAsset={() => {}} />);
+    render(<PeopleHarness people={[person(3, "Subject A")]} unnamed={[]} loading={false} onOpenAsset={() => {}} />);
     fireEvent.click(screen.getByText("Subject A"));
 
     await waitFor(() => expect(calls.person).toEqual([3]));
@@ -166,7 +182,7 @@ describe("a person page", () => {
   });
 
   it("a co-occurrence chip navigates to that person", async () => {
-    render(<PhotoPeople people={[person(3, "Subject A")]} unnamed={[]} loading={false} onOpenAsset={() => {}} />);
+    render(<PeopleHarness people={[person(3, "Subject A")]} unnamed={[]} loading={false} onOpenAsset={() => {}} />);
     fireEvent.click(screen.getByText("Subject A"));
     await screen.findByText(/Also with/);
 

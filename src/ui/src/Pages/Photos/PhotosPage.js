@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
-import { Segmented, Spin, Switch } from "antd";
+import { useEffect, useState } from "react";
+import { Switch as AntSwitch } from "antd";
+import { Route, Switch, useHistory, useLocation } from "react-router-dom";
 import { MovieAPI } from "../../MovieAPI";
 import PhotoTimeline from "./PhotoTimeline";
 import PhotoFolders from "./PhotoFolders";
@@ -11,7 +12,9 @@ import PhotoDupes from "./PhotoDupes";
 import PhotoPeople from "./PhotoPeople";
 import PhotoTagQueue from "./PhotoTagQueue";
 import PhotoSelectionBar from "./PhotoSelectionBar";
+import useIsMobile from "../../hooks/useIsMobile";
 import useShowHiddenPhotos from "../../hooks/useShowHiddenPhotos";
+import usePhotosAlbum, { photosNavViews, photosSection, photosViewLabel } from "../../hooks/usePhotosAlbum";
 import "./PhotosPage.css";
 
 // ── Family photo album (docs/photos-plan.md §4) ─────────────────────────────
@@ -19,33 +22,82 @@ import "./PhotosPage.css";
 // with (§2.7), the folder tree (§2.9), and the lightbox. Phase 2 adds curation — selection mode with
 // batch hide/unhide, albums, and the review surface for suggested-hide batches and unapproved
 // ingests. Phase 3 adds the duplicate review (§2.6), where a human picks which copy of a photograph
-// represents it; the timeline then collapses the rest behind that pick. People are a later phase.
+// represents it; the timeline then collapses the rest behind that pick. Phase 4 adds people, tagging
+// and the keyboard-first tag queue (§2.8), and moves show-hidden to the navbar, admin-only.
 //
-// Phase 4 adds people, tagging and the keyboard-first tag queue (§2.8) — and moves show-hidden out of
-// this toolbar entirely: any member may hide a photo, but only an admin may see what was hidden, and
-// the switch that reveals it now lives in the navbar (Phase 4 addendum).
+// The views used to be local state, which meant an album could not be linked to and a refresh always
+// landed back on the timeline. They are ROUTES now — /photos/albums/:slug, /photos/people/:id,
+// /photos/folders/<path> — and the navbar rail links them. Nothing about what a view DOES changed;
+// only where the answer to "which view" is stored.
 //
 // The nav hides /photos for non-members, but this page never assumes that filtering happened — a URL
 // can be typed or bookmarked. It asks the server, and the server's 403 is what it renders. That is
 // the §2.1 rule in miniature: the UI is not the gate, it just reports what the gate said.
 
-const VIEWS = [
-  { value: "timeline", label: "Timeline" },
-  { value: "undated", label: "Undated" },
-  { value: "folders", label: "Folders" },
-  { value: "albums", label: "Albums" },
-  { value: "people", label: "People" },
-  { value: "tag", label: "Tag queue" },
-  { value: "dupes", label: "Dupes" },
-  { value: "review", label: "Review" },
-];
+/** The folder view keeps its position in the URL, one path segment per folder, so a folder deep in a
+ *  device dump can be linked to. Each segment is encoded on its own — a folder name may contain any
+ *  character the filesystem allows, including the "/" that separates them here. */
+function folderPathFromUrl(pathname) {
+  const rest = String(pathname || "").replace(/^\/photos\/folders\/?/, "");
+  if (!rest) return "";
+  return rest
+    .split("/")
+    .filter(Boolean)
+    .map((segment) => {
+      try {
+        return decodeURIComponent(segment);
+      } catch {
+        return segment;
+      }
+    })
+    .join("/");
+}
+
+function folderUrl(path) {
+  if (!path) return "/photos/folders";
+  const encoded = path.split("/").filter(Boolean).map(encodeURIComponent).join("/");
+  return `/photos/folders/${encoded}`;
+}
+
+/** The album slug a /photos/albums/<slug> URL is on, or null anywhere else. */
+function albumSlugFromUrl(pathname) {
+  const match = /^\/photos\/albums\/([^/]+)/.exec(String(pathname || ""));
+  if (!match) return null;
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return match[1];
+  }
+}
+
+/**
+ * The open photograph, read out of ?photo=<id>.
+ *
+ * A family album's most-sent link is "look at THIS one", and until now the lightbox was local state
+ * that no URL could carry. Anything that is not a plain positive integer is treated as no photo at
+ * all — a mangled link asks the server for nothing rather than for "abc".
+ */
+function assetIdFromUrl(search) {
+  const raw = new URLSearchParams(search).get("photo");
+  if (!raw || !/^[0-9]+$/.test(raw)) return null;
+  const id = Number(raw);
+  return Number.isSafeInteger(id) && id > 0 ? id : null;
+}
 
 export default function PhotosPage({ userData }) {
-  const [status, setStatus] = useState(null);
-  const [state, setState] = useState("loading"); // loading | ready | denied | error
-  const [view, setView] = useState("timeline");
-  const [openAssetId, setOpenAssetId] = useState(null);
-  const [albumSlug, setAlbumSlug] = useState(null);
+  const history = useHistory();
+  const location = useLocation();
+  const isMobile = useIsMobile();
+
+  // The gate's answer and the people list, shared with the navbar rail so one status request feeds
+  // both (see hooks/usePhotosAlbum.js).
+  const { state, status, people, unnamed, peopleLoading, refresh, refreshPeople } = usePhotosAlbum({
+    username: userData?.username,
+  });
+
+  // The album detail page's title, lifted so the page's own <h1> can carry it — an album is a place,
+  // and "Albums" is the shelf it sits on rather than its name.
+  const [albumTitle, setAlbumTitle] = useState(null);
 
   // Curation state (§2.9). Selection mode is explicit: a click either opens a photo or selects it,
   // and which of those it does is never a guess about modifier keys.
@@ -57,62 +109,33 @@ export default function PhotosPage({ userData }) {
   // Bumped after any curation write so the browse lists re-fetch rather than showing a stale answer.
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // The people list (§2.8). Fetched once and shared with every picker: a family has tens of people,
-  // so the type-ahead filters in memory instead of asking per keystroke.
-  const [people, setPeople] = useState([]);
-  const [unnamed, setUnnamed] = useState([]);
-  const [peopleLoading, setPeopleLoading] = useState(true);
+  const view = photosSection(location.pathname);
+  const folderPath = folderPathFromUrl(location.pathname);
+  const albumSlug = albumSlugFromUrl(location.pathname);
+  const openAssetId = assetIdFromUrl(location.search);
 
-  const loadStatus = useCallback(() => {
-    return MovieAPI.getPhotosStatus()
-      .then((r) => {
-        // 401 (no session) and 403 (session, no membership or no password) are the same answer to
-        // the visitor — the page must not hint at which of them it was.
-        if (r.status === 401 || r.status === 403) {
-          setState("denied");
-          return null;
-        }
-        if (!r.ok) {
-          setState("error");
-          return null;
-        }
-        return r.json().then((body) => {
-          setStatus(body);
-          setState("ready");
-        });
-      })
-      .catch(() => setState("error"));
-  }, []);
-
-  const loadPeople = useCallback(() => {
-    return MovieAPI.getPhotoPeople()
-      .then((r) => (r.ok ? r.json() : null))
-      .then((body) => {
-        setPeople(body?.people || []);
-        setUnnamed(body?.unnamed || []);
-      })
-      .catch(() => {})
-      .finally(() => setPeopleLoading(false));
-  }, []);
-
+  // Leaving a view drops its selection, exactly as switching tabs used to.
   useEffect(() => {
-    loadStatus();
-  }, [loadStatus, userData?.username]);
+    setSelected([]);
+  }, [view]);
 
+  // A different album (or none) means the held title is somebody else's.
   useEffect(() => {
-    if (state === "ready") loadPeople();
-  }, [state, loadPeople]);
+    setAlbumTitle(null);
+  }, [albumSlug]);
 
   const changed = () => {
     setSelected([]);
     setRefreshKey((k) => k + 1);
-    loadStatus();
+    refresh();
   };
 
   if (state === "loading") {
     return (
-      <div className="photos-page">
-        <Spin size="large" />
+      <div className="photos-page photos-page--plate">
+        <AlbumPlate eyebrow="Family album" title="Opening the album">
+          <PhotoMountSkeleton />
+        </AlbumPlate>
       </div>
     );
   }
@@ -120,22 +143,23 @@ export default function PhotosPage({ userData }) {
   if (state === "denied") {
     // Deliberately says nothing about what is in there.
     return (
-      <div className="photos-page">
-        <h1 className="photos-title">Photos</h1>
-        <div className="photos-panel">
+      <div className="photos-page photos-page--plate">
+        <AlbumPlate eyebrow="Family album" title="Photos">
           <p className="photos-note">This area is limited to family members.</p>
-        </div>
+        </AlbumPlate>
       </div>
     );
   }
 
   if (state === "error") {
     return (
-      <div className="photos-page">
-        <h1 className="photos-title">Photos</h1>
-        <div className="photos-panel">
+      <div className="photos-page photos-page--plate">
+        <AlbumPlate eyebrow="Family album" title="Photos">
           <p className="photos-note">Could not reach the photo album just now.</p>
-        </div>
+          <button type="button" className="photos-button photos-button--stamp" onClick={refresh}>
+            Try again
+          </button>
+        </AlbumPlate>
       </div>
     );
   }
@@ -144,47 +168,17 @@ export default function PhotosPage({ userData }) {
 
   if (empty) {
     return (
-      <div className="photos-page">
-        <h1 className="photos-title">Photos</h1>
-        <p className="photos-subtitle">Family photo album</p>
-        <div className="photos-panel">
-          <h2 className="photos-panel-head">Nothing here yet</h2>
+      <div className="photos-page photos-page--plate">
+        <AlbumPlate eyebrow="Family album" title="Nothing here yet">
           <p className="photos-note">
             The album is set up but the collection has not been read in yet. Nothing has been copied,
             moved or changed on disk — and nothing ever will be: everything this section does is a row
             in the database.
           </p>
-        </div>
+        </AlbumPlate>
       </div>
     );
   }
-
-  // Google-only items (§2.10) count toward the Review tab's badge for the same reason the hide
-  // proposals do: they are a machine's proposal waiting on a family member's answer.
-  const reviewWaiting =
-    (status?.pendingHideProposals || 0) +
-    (status?.googleOnly || 0) +
-    (status?.admin ? status?.quarantinedBatches || 0 : 0);
-  const dupesWaiting = status?.pendingDupeGroups || 0;
-  const tagWaiting = (status?.pendingTagSuggestions || 0) + (unnamed.length > 0 ? unnamed.length : 0);
-  const views = VIEWS.filter((v) => {
-    if (v.value === "undated") return status?.undated > 0;
-    // The tag queue is the manual lane first (§2.4): it appears as soon as there is anything to tag,
-    // with or without a sidecar ever having run.
-    if (v.value === "tag") return (status?.untaggedPhotos || 0) > 0 || tagWaiting > 0;
-    // The review tab appears when there is something to review — or for an admin, who is the one who
-    // would go looking for it.
-    if (v.value === "review") return reviewWaiting > 0 || status?.admin;
-    // Duplicate review is member-visible curation, and it appears only once the grouping pass has
-    // actually proposed something.
-    if (v.value === "dupes") return dupesWaiting > 0;
-    return true;
-  }).map((v) => {
-    if (v.value === "review" && reviewWaiting > 0) return { ...v, label: `Review (${reviewWaiting})` };
-    if (v.value === "dupes" && dupesWaiting > 0) return { ...v, label: `Dupes (${dupesWaiting})` };
-    if (v.value === "tag" && tagWaiting > 0) return { ...v, label: `Tag queue (${tagWaiting})` };
-    return v;
-  });
 
   const selection = {
     active: selecting,
@@ -194,38 +188,74 @@ export default function PhotosPage({ userData }) {
 
   const browsing = view === "timeline" || view === "undated" || view === "folders";
 
+  // Opening and closing a photograph REPLACES the URL rather than pushing one. The lightbox is a
+  // look, not a place: pushing would make Back walk out of a browsing session one photo at a time,
+  // which is the behaviour every gallery that does it gets complained about for. Replace keeps the
+  // link shareable and keeps Back meaning "the view I came from".
+  const showAsset = (id) => {
+    const params = new URLSearchParams(location.search);
+    if (id == null) params.delete("photo");
+    else params.set("photo", String(id));
+    const search = params.toString();
+    history.replace({ pathname: location.pathname, search: search ? `?${search}` : "" });
+  };
+  const openAsset = (item) => showAsset(item.id);
+
   const makeAlbumFromFolder = async (path, name) => {
     const response = await MovieAPI.createPhotoAlbum({ title: name || path, fromFolder: path });
     if (!response.ok) return;
     const body = await response.json();
-    setAlbumSlug(body.album.slug);
-    setView("albums");
     changed();
+    history.push(`/photos/albums/${encodeURIComponent(body.album.slug)}`);
   };
+
+  // The album's counts, set as the annotation on a contact sheet: the figure in tabular mono, the
+  // thing it counts in small tracked capitals underneath.
+  const facts = [
+    ["photos", status.photos],
+    ["videos", status.videos],
+    ["undated", status.undated],
+    ["hidden", status.hidden],
+    ["copies collapsed", status.collapsed],
+  ].filter(([, value]) => value > 0);
 
   return (
     <div className="photos-page">
-      <div className="photos-head">
-        <div>
-          <h1 className="photos-title">Photos</h1>
-          <p className="photos-subtitle">
-            {status.photos.toLocaleString()} photos
-            {status.videos > 0 ? ` · ${status.videos.toLocaleString()} videos` : ""}
-            {status.undated > 0 ? ` · ${status.undated.toLocaleString()} undated` : ""}
-            {status.hidden > 0 ? ` · ${status.hidden.toLocaleString()} hidden` : ""}
-            {status.collapsed > 0 ? ` · ${status.collapsed.toLocaleString()} duplicate copies collapsed` : ""}
-          </p>
+      <header className="photos-head">
+        <div className="photos-head-titles">
+          {/* Inside an album the eyebrow becomes the shelf and the heading becomes the album — the
+              name a family gave it is the more useful of the two things to put in 21px capitals. */}
+          <p className="photos-eyebrow">{albumSlug ? "Albums" : "Family album"}</p>
+          <h1 className="photos-title">{albumSlug ? albumTitle || "Album" : photosViewLabel(view)}</h1>
         </div>
-        <Segmented
-          options={views}
-          value={view}
-          onChange={(next) => {
-            setView(next);
-            setAlbumSlug(null);
-            setSelected([]);
-          }}
-        />
-      </div>
+        <ul className="photos-facts">
+          {facts.map(([label, value]) => (
+            <li className="photos-fact" key={label}>
+              <span className="photos-fact-value">{value.toLocaleString()}</span>
+              <span className="photos-fact-label">{label}</span>
+            </li>
+          ))}
+        </ul>
+      </header>
+
+      {/* The rail carries the album's index. On a phone the rail is behind a hamburger, so the same
+          list rides along the top of the page instead — one navigation, two shapes. */}
+      {isMobile && (
+        <nav className="photos-tabs" aria-label="Album sections">
+          {photosNavViews(status, unnamed.length).map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              className={`photos-tab${view === item.key ? " is-active" : ""}`}
+              aria-current={view === item.key ? "page" : undefined}
+              onClick={() => history.push(item.path)}
+            >
+              {item.label}
+              {item.count != null && <span className="photos-tab-count">{item.count.toLocaleString()}</span>}
+            </button>
+          ))}
+        </nav>
+      )}
 
       {!status.dataPlane && (
         <p className="photos-note">
@@ -236,7 +266,7 @@ export default function PhotosPage({ userData }) {
       {browsing && (
         <div className="photos-toolbar">
           <label className="photos-toggle">
-            <Switch
+            <AntSwitch
               size="small"
               checked={selecting}
               onChange={(on) => {
@@ -260,85 +290,153 @@ export default function PhotosPage({ userData }) {
         <PhotoSelectionBar
           ids={selected}
           people={people}
-          onReloadPeople={loadPeople}
+          onReloadPeople={refreshPeople}
           onChanged={changed}
           onClear={() => setSelected([])}
         />
       )}
 
-      {view === "folders" && (
-        <PhotoFolders
-          key={`folders-${refreshKey}-${showHidden}`}
-          includeHidden={showHidden}
-          onOpen={(item) => setOpenAssetId(item.id)}
-          selection={selection}
-          onMakeAlbum={makeAlbumFromFolder}
-        />
-      )}
-
-      {(view === "timeline" || view === "undated") && (
-        <PhotoTimeline
-          key={`${view}-${refreshKey}-${showHidden}`}
-          undated={view === "undated"}
-          includeHidden={showHidden}
-          onOpen={(item) => setOpenAssetId(item.id)}
-          selection={selection}
-        />
-      )}
-
-      {view === "albums" &&
-        (albumSlug ? (
-          <PhotoAlbumDetail
-            slug={albumSlug}
-            onBack={() => {
-              setAlbumSlug(null);
-              changed();
-            }}
-            onOpen={(item) => setOpenAssetId(item.id)}
+      <Switch>
+        <Route path="/photos/undated">
+          <PhotoTimeline
+            key={`undated-${refreshKey}-${showHidden}`}
+            undated
+            includeHidden={showHidden}
+            onOpen={openAsset}
+            selection={selection}
           />
-        ) : (
-          <PhotoAlbums key={`albums-${refreshKey}`} onOpenAlbum={setAlbumSlug} />
-        ))}
+        </Route>
 
-      {/* onOpenAsset unwraps the id, exactly as every sibling surface above does: the person page's
-          grid hands its onOpen the whole CARD. Passing the setter raw stored a card OBJECT as the
-          open-asset id and the lightbox then asked the server for asset "[object Object]" — every
-          photo on every person page was unopenable. */}
-      {view === "people" && (
-        <PhotoPeople
-          key={`people-${refreshKey}`}
-          people={people}
-          unnamed={unnamed}
-          loading={peopleLoading}
-          onReload={loadPeople}
-          onOpenAsset={(item) => setOpenAssetId(item.id)}
-          onChanged={changed}
+        <Route path="/photos/folders">
+          <PhotoFolders
+            key={`folders-${refreshKey}-${showHidden}`}
+            path={folderPath}
+            onNavigate={(next) => history.push(folderUrl(next))}
+            includeHidden={showHidden}
+            onOpen={openAsset}
+            selection={selection}
+            onMakeAlbum={makeAlbumFromFolder}
+          />
+        </Route>
+
+        <Route
+          path="/photos/albums/:slug"
+          render={({ match }) => (
+            <PhotoAlbumDetail
+              slug={decodeURIComponent(match.params.slug)}
+              onTitle={setAlbumTitle}
+              onBack={() => {
+                changed();
+                history.push("/photos/albums");
+              }}
+              onOpen={openAsset}
+            />
+          )}
         />
-      )}
 
-      {view === "tag" && (
-        <PhotoTagQueue
-          key={`tag-${refreshKey}`}
-          people={people}
-          onReloadPeople={loadPeople}
-          onChanged={changed}
+        <Route path="/photos/albums">
+          <PhotoAlbums
+            key={`albums-${refreshKey}`}
+            onOpenAlbum={(slug) => history.push(`/photos/albums/${encodeURIComponent(slug)}`)}
+          />
+        </Route>
+
+        {/* onOpenAsset unwraps the id, exactly as every sibling surface above does: the person page's
+            grid hands its onOpen the whole CARD. Passing the setter raw stored a card OBJECT as the
+            open-asset id and the lightbox then asked the server for asset "[object Object]" — every
+            photo on every person page was unopenable. */}
+        <Route
+          path="/photos/people/:id"
+          render={({ match }) => (
+            <PhotoPeople
+              key={`people-${refreshKey}`}
+              personId={Number(match.params.id)}
+              onOpenPerson={(id) => history.push(`/photos/people/${id}`)}
+              onBackToPeople={() => history.push("/photos/people")}
+              people={people}
+              unnamed={unnamed}
+              loading={peopleLoading}
+              onReload={refreshPeople}
+              onOpenAsset={openAsset}
+              onChanged={changed}
+            />
+          )}
         />
-      )}
 
-      {view === "dupes" && <PhotoDupes key={`dupes-${refreshKey}`} onChanged={changed} />}
+        <Route path="/photos/people">
+          <PhotoPeople
+            key={`people-${refreshKey}`}
+            onOpenPerson={(id) => history.push(`/photos/people/${id}`)}
+            onBackToPeople={() => history.push("/photos/people")}
+            people={people}
+            unnamed={unnamed}
+            loading={peopleLoading}
+            onReload={refreshPeople}
+            onOpenAsset={openAsset}
+            onChanged={changed}
+          />
+        </Route>
 
-      {view === "review" && <PhotoReview key={`review-${refreshKey}`} admin={!!status.admin} onChanged={changed} />}
+        <Route path="/photos/tag">
+          <PhotoTagQueue key={`tag-${refreshKey}`} people={people} onReloadPeople={refreshPeople} onChanged={changed} />
+        </Route>
+
+        <Route path="/photos/dupes">
+          <PhotoDupes key={`dupes-${refreshKey}`} onChanged={changed} />
+        </Route>
+
+        <Route path="/photos/review">
+          <PhotoReview key={`review-${refreshKey}`} admin={!!status.admin} onChanged={changed} />
+        </Route>
+
+        <Route path="/photos">
+          <PhotoTimeline
+            key={`timeline-${refreshKey}-${showHidden}`}
+            includeHidden={showHidden}
+            onOpen={openAsset}
+            selection={selection}
+          />
+        </Route>
+      </Switch>
 
       <PhotoLightbox
         assetId={openAssetId}
-        onClose={() => setOpenAssetId(null)}
+        onClose={() => showAsset(null)}
+        // A link to a photo that is gone — or hidden from whoever followed it — drops back to the
+        // view it pointed at. Nothing is announced: a stale share is not the reader's mistake.
+        onUnavailable={() => showAsset(null)}
         onChanged={changed}
         // The lightbox is the exception to the unwrapping above: its "other copies" strip already
-        // hands back a plain id (member.card.id), so this one takes the setter raw.
-        onOpenAsset={setOpenAssetId}
+        // hands back a plain id (member.card.id), so this one takes it raw.
+        onOpenAsset={showAsset}
         people={people}
-        onReloadPeople={loadPeople}
+        onReloadPeople={refreshPeople}
       />
+    </div>
+  );
+}
+
+/** The album's first page — what a brand-new family member sees before there is anything to look at.
+ *  Deliberately the same plate for "opening", "not for you", "broken" and "empty": four different
+ *  sentences, one piece of furniture, so none of them reads as an error screen. */
+function AlbumPlate({ eyebrow, title, children }) {
+  return (
+    <div className="photos-plate">
+      <p className="photos-eyebrow">{eyebrow}</p>
+      <h1 className="photos-plate-title">{title}</h1>
+      {children}
+    </div>
+  );
+}
+
+/** Three empty mounts where the photographs will be. A spinner says "wait"; empty mounts say what
+ *  is coming, which is the more useful thing to say to somebody opening a family album. */
+function PhotoMountSkeleton() {
+  return (
+    <div className="photos-mounts" aria-hidden="true">
+      <span className="photos-mount" />
+      <span className="photos-mount" />
+      <span className="photos-mount" />
     </div>
   );
 }

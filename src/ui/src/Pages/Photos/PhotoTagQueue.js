@@ -24,17 +24,28 @@ export default function PhotoTagQueue({ people = [], onChanged, onReloadPeople }
   const [remaining, setRemaining] = useState(0);
   const [busy, setBusy] = useState(false);
   const cursorRef = useRef(0);
+  // Whether the SERVER says another page exists. `nextCursor` cannot answer that: it is the last id
+  // on the page and stays non-zero at the end of the queue, so a read-ahead keyed on the cursor alone
+  // re-requested the final page and appended the same photographs again — the reviewer meets cards
+  // they already decided on and the position counter stops meaning anything.
+  const hasMoreRef = useRef(false);
   // The same guard PhotoFolders and PhotoAlbumDetail use, and for a sharper reason here: the
   // read-ahead below fires from an effect that re-runs on every keystroke that moves `index`, while
   // the cursor only advances when a response comes BACK. Holding a key down under a slow round trip
-  // therefore fired the same page request several times and appended the same cards several times —
-  // the reviewer sees a photo they already decided on, and the "remaining" count stops meaning
-  // anything. One in-flight page at a time.
+  // therefore fired the same page request several times. One in-flight page at a time.
   const inFlightRef = useRef(false);
+  // Which request is the current one. A lane change SUPERSEDES whatever is in the air rather than
+  // waiting behind it, and the superseded response must not land in the new lane.
+  const requestRef = useRef(0);
 
   const load = useCallback(
     async (reset) => {
-      if (inFlightRef.current) return;
+      // A read-ahead is skippable — there is either one already running or no further page to get.
+      // A RESET is not: it is the reviewer asking for a different queue, and dropping it left the
+      // surface on a spinner that never resolved (switching lanes mid-read-ahead).
+      if (!reset && (inFlightRef.current || !hasMoreRef.current)) return;
+      const generation = requestRef.current + 1;
+      requestRef.current = generation;
       inFlightRef.current = true;
       try {
         const response = await MovieAPI.getPhotoTagQueue({
@@ -42,20 +53,24 @@ export default function PhotoTagQueue({ people = [], onChanged, onReloadPeople }
           afterId: reset ? 0 : cursorRef.current,
           take: PAGE,
         });
+        if (generation !== requestRef.current) return;
         if (!response.ok) {
           setState("error");
           return;
         }
         const body = await response.json();
+        if (generation !== requestRef.current) return;
         cursorRef.current = body.nextCursor || 0;
+        hasMoreRef.current = !!body.hasMore;
         setRemaining(body.remaining || 0);
         setItems((prev) => (reset ? body.items || [] : prev.concat(body.items || [])));
         if (reset) setIndex(0);
         setState("ready");
       } catch {
-        setState("error");
+        if (generation === requestRef.current) setState("error");
       } finally {
-        inFlightRef.current = false;
+        // Only the current request owns the flag; a superseded one must not clear the reset's.
+        if (generation === requestRef.current) inFlightRef.current = false;
       }
     },
     [mode]
@@ -63,6 +78,7 @@ export default function PhotoTagQueue({ people = [], onChanged, onReloadPeople }
 
   useEffect(() => {
     cursorRef.current = 0;
+    hasMoreRef.current = false;
     setState("loading");
     load(true);
   }, [load]);
@@ -73,7 +89,7 @@ export default function PhotoTagQueue({ people = [], onChanged, onReloadPeople }
   // Reach ahead before the reviewer runs out: a queue that stalls to fetch is a queue somebody stops
   // using. The site's infinite-scroll lesson, applied to a keyboard surface.
   useEffect(() => {
-    if (state === "ready" && items.length - index <= 4 && cursorRef.current > 0) load(false);
+    if (state === "ready" && items.length - index <= 4) load(false);
   }, [state, items.length, index, load]);
 
   const advance = useCallback(() => setIndex((i) => i + 1), []);

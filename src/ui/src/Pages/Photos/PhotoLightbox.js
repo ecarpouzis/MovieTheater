@@ -12,7 +12,7 @@ import PhotoVideo from "./PhotoVideo";
 // original when a browser can render it and the 3200px derivative when it cannot (§2.2's
 // OriginalRenderable rule), so the format list lives in one place instead of two.
 
-export default function PhotoLightbox({ assetId, onClose, onChanged, onOpenAsset, people = [], onReloadPeople }) {
+export default function PhotoLightbox({ assetId, onClose, onChanged, onOpenAsset, onUnavailable, people = [], onReloadPeople }) {
   const [detail, setDetail] = useState(null);
   const [state, setState] = useState("loading");
   const [zoomed, setZoomed] = useState(false);
@@ -31,16 +31,27 @@ export default function PhotoLightbox({ assetId, onClose, onChanged, onOpenAsset
     setState("loading");
     setZoomed(false);
     MovieAPI.getPhotoAsset(assetId)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((body) => {
-        if (cancelled) return;
-        if (!body) {
-          setState("error");
-          return;
+      .then((response) => {
+        if (cancelled) return undefined;
+        // A photo that is gone, or hidden from this member, is a 404 by design (the server refuses to
+        // say which). That is the ordinary fate of a link somebody shared last year — not an error to
+        // shout about. The album closes the lightbox and shows the view behind it, and the URL loses
+        // the parameter so a reload does not try again.
+        if (response.status === 404 || response.status === 403) {
+          setState("gone");
+          (onUnavailable || onClose)?.();
+          return undefined;
         }
-        setDetail(body);
-        setHidden(!!body.hidden);
-        setState("ready");
+        if (!response.ok) {
+          setState("error");
+          return undefined;
+        }
+        return response.json().then((body) => {
+          if (cancelled) return;
+          setDetail(body);
+          setHidden(!!body.hidden);
+          setState("ready");
+        });
       })
       .catch(() => {
         if (!cancelled) setState("error");
@@ -124,7 +135,7 @@ export default function PhotoLightbox({ assetId, onClose, onChanged, onOpenAsset
       width="90vw"
       centered
       destroyOnHidden
-      className="photo-lightbox"
+      className="photo-lightbox photos-modal"
       title={detail?.fileName || " "}
     >
       {state === "loading" && <Spin />}

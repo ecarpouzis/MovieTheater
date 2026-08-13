@@ -118,7 +118,7 @@ export function BatchTagModal({ open, ids, people, onReloadPeople, onClose, onDo
   };
 
   return (
-    <Modal open={open} onCancel={onClose} footer={null} title={`Tag ${ids.length} photo(s)`} destroyOnHidden>
+    <Modal className="photos-modal" open={open} onCancel={onClose} footer={null} title={`Tag ${ids.length} photo(s)`} destroyOnHidden>
       <div className="photo-album-picker">
         <p className="photos-note">
           Type a name. Anyone new is created for you, and the tag lands on every duplicate copy of each
@@ -188,7 +188,7 @@ export function AddToAlbumModal({ open, ids, onClose, onDone }) {
   };
 
   return (
-    <Modal open={open} onCancel={onClose} footer={null} title="Add to an album" destroyOnHidden>
+    <Modal className="photos-modal" open={open} onCancel={onClose} footer={null} title="Add to an album" destroyOnHidden>
       <div className="photo-album-picker">
         <div className="photo-album-new">
           <Input
