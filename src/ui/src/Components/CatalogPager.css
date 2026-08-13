@@ -43,6 +43,35 @@
 
 .catalog-pager::-webkit-scrollbar { display: none; } /* Chrome/Safari */
 
+/* ⚠ A hidden scrollbar on a horizontal strip is only honest where a finger can swipe it. With a
+   mouse there is no affordance at all — shift+wheel and nothing else — so once the strip had
+   scrolled (a jump used to centre the active letter) every letter to its left was unreachable, which
+   is exactly the "the letters before the one I clicked are gone" report. Where the pointer is fine,
+   give the scrollbar back: slim, in the strip's own colours, and only when it has somewhere to go. */
+@media (pointer: fine) {
+  .catalog-pager {
+    scrollbar-width: thin;
+    scrollbar-color: var(--card-border) transparent;
+  }
+
+  .catalog-pager::-webkit-scrollbar { display: block; height: 8px; }
+  .catalog-pager::-webkit-scrollbar-track { background: transparent; }
+
+  .catalog-pager::-webkit-scrollbar-thumb {
+    background: var(--card-border);
+    background-clip: content-box;
+    border: 2px solid transparent;
+    border-radius: 999px;
+  }
+}
+
+/* The alphabet EARNS the full width of the page. Left at their content size the 27 letters sat in a
+   ~800px huddle in the middle of a 1500px catalog — and, more than cosmetically, a strip that packs
+   itself tight is a strip that starts overflowing (and hiding its own start) at widths where the
+   letters would comfortably have fitted. Grow, never shrink: below the width where 27 buttons fit at
+   their minimum, this is inert and the row goes back to scrolling. */
+.catalog-pager--letters .catalog-pager__btn { flex: 1 0 auto; }
+
 .catalog-pager__btn {
   flex: 0 0 auto; /* never let 27 letters squeeze themselves into an unreadable row */
   min-width: 28px;

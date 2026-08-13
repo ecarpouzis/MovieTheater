@@ -94,29 +94,44 @@ function CatalogPager({ mode, letters, total, pageSize, currentIndex, onJump, di
   // Computed before the early returns below so the hook order stays fixed.
   const currentLetter = mode === "letters" ? activeLetter(strip, currentIndex) : null;
 
-  // The strip is one swipeable row (see the CSS), so on a phone most of the alphabet is off-screen.
-  // Keep the button the grid is currently under centred, or the readout is useless exactly when the
-  // strip is too narrow to show it: scroll past H and the active letter would sit off the right edge
-  // with no indication of where you are. Only when it actually overflows — while the whole alphabet
-  // fits, there is nothing to scroll and a scrollTo would be a no-op that still costs a layout read.
+  // The strip is one swipeable row (see the CSS), so on a narrow screen part of the alphabet is
+  // off-screen and the active button has to be brought back to where it can be read.
+  //
+  // ⚠ MINIMALLY, not centred. Centring was the original rule and it is what made "jump to M, then
+  // A–L are gone" a real complaint: the scrollbar is hidden on both engines, so on a desktop with a
+  // mouse there is no affordance at all for scrolling a horizontal strip back — centring M put half
+  // the alphabet somewhere the user could not get to. Nudging just far enough to reveal the button
+  // keeps every letter it did not have to hide, and the CSS below both stretches the strip (so it
+  // rarely overflows at all) and restores a real scrollbar where a pointer can use one.
   const railRef = useRef(null);
   const activeRef = useRef(null);
   useEffect(() => {
     const rail = railRef.current;
     const btn = activeRef.current;
     if (!rail || !btn) return;
-    if (rail.scrollWidth <= rail.clientWidth + 1) return;
-    rail.scrollTo({
-      left: Math.max(0, btn.offsetLeft - (rail.clientWidth - btn.offsetWidth) / 2),
-      behavior: "smooth",
-    });
+    if (rail.scrollWidth <= rail.clientWidth + 1) return; // fits: a scrollTo would be a no-op that still costs a layout read
+    const pad = 8; // don't leave the button flush against the edge it was just pulled past
+    const left = btn.offsetLeft - pad;
+    const right = btn.offsetLeft + btn.offsetWidth + pad;
+    let to = rail.scrollLeft;
+    if (left < rail.scrollLeft) to = left;
+    else if (right > rail.scrollLeft + rail.clientWidth) to = right - rail.clientWidth;
+    if (Math.abs(to - rail.scrollLeft) < 1) return; // already visible — leave the view where it is
+    rail.scrollTo({ left: Math.max(0, to), behavior: "smooth" });
   }, [currentLetter, currentPage, mode]);
 
   if (!total) return null;
   if (mode !== "letters" && totalPages <= 1) return null; // one page of results: nothing to seek to
 
   return (
-    <nav ref={railRef} className="catalog-pager" aria-label={mode === "letters" ? "Jump to letter" : "Jump to page"}>
+    <nav
+      ref={railRef}
+      /* The letters modifier is what lets the buttons share the full width of the strip. Page
+         numbers must NOT stretch: there are five of them and two ellipses, and spreading those
+         across a 1500px page reads as a broken layout rather than as an alphabet. */
+      className={`catalog-pager${mode === "letters" ? " catalog-pager--letters" : ""}`}
+      aria-label={mode === "letters" ? "Jump to letter" : "Jump to page"}
+    >
       {mode === "letters"
         ? strip.map(({ letter, count, offset }) => (
             <button
