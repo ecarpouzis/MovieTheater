@@ -858,11 +858,76 @@ export function MusicPlayerProvider({ children, enabled = true }) {
     [],
   );
 
+  /// At most one `park:live` report per session. The condition it watches is a stuck state, not an
+  /// event: an element that is playing where it must not be goes on being one on every subsequent
+  /// park, and a latch is what keeps a single fault from spending the whole session's report budget.
+  const reportedLiveParkRef = useRef(false);
+
+  /**
+   * The exact counterpart of parkDecks(), for the third deck: silence the engine's element, because
+   * the caller is a DECK taking the session over from it. Kept here as well as in the engine's own
+   * destroy() for the case the engine object has already gone — a double destroy, or a fallback that
+   * raced a supersession — where there would otherwise be nobody left holding the reference to an
+   * element that is still audibly playing.
+   *
+   * …and because it is a BACKSTOP, it is also the one honest place to CHECK the invariant instead of
+   * assuming it. By the time this runs, `engine.destroy()` has already paused the element; finding it
+   * still playing means the primary silencer did not do its job, and the listener is about to hear
+   * the song on top of itself with no control able to stop the second copy. That is the exact shape
+   * of both "two songs at once" reports (2026-08-12, 2026-08-13), and neither of them left a single
+   * row behind — the tripwire set is failure-shaped, and this failure looks like success from every
+   * angle the player could previously see. So it gets recorded and reported.
+   *
+   * ⚠ NOT symmetrical with parkDecks(), deliberately. There, a deck that is still sounding is the
+   * NORMAL case: parkDecks is the PRIMARY silencer on that path (startEngine flips deckRef to "mse"
+   * and then parks the floor it just took over from), and the idle deck may additionally be
+   * pre-rolling on purpose, muted. Reporting a sounding deck there would fire on every single engine
+   * takeover — noise, and a straight breach of the ALWAYS set's contract in the other direction.
+   * The asymmetry IS the signal: only here is the work already supposed to have been done.
+   */
+  const parkEngineDeck = useCallback(() => {
+    const el = audioMseRef.current;
+    if (!el) return;
+    // Wrapped whole: this runs from teardown and unmount paths, and a diagnostic must never be able
+    // to stop the park it is diagnosing. `el.paused === false` rather than `!el.paused` so a shim
+    // that doesn't implement the property reads as "no evidence", not as a violation.
+    try {
+      if (el.paused === false && !reportedLiveParkRef.current) {
+        reportedLiveParkRef.current = true;
+        const audio = snapshotAudio(el);
+        const detail = {
+          deckRef: deckRef.current,
+          engineAlive: !!engineRef.current,
+          track: currentRef.current?.id ?? null,
+          audio,
+        };
+        diagLog("park:live", detail);
+        // `force` skips the one-a-minute GAP, never the per-session ceiling (see musicDiag). Earned
+        // here in a way the repeating paths never earned it: the latch above means this can fire at
+        // most once, so it cannot flood — and being swallowed because some unrelated report happened
+        // forty seconds earlier would waste the only notice this fault will ever give.
+        reportIncident("mse", {
+          summary: `park found the engine's element still playing — deckRef=${detail.deckRef}, `
+            + `engineAlive=${detail.engineAlive}, t=${audio?.t ?? "?"}s, src=${audio?.src ?? "?"}`,
+          trackId: detail.track,
+          force: true,
+        });
+      }
+    } catch { /* a report must never be able to stop the park */ }
+    try { el.pause(); } catch { /* the element is being replaced anyway */ }
+  }, []);
+
   const destroyEngine = useCallback(() => {
     const engine = engineRef.current;
     engineRef.current = null;
     if (engine) engine.destroy();
-  }, []);
+    // ⚠ Unconditional, and AFTER the destroy. The engine's element holds up to a whole quota of
+    // decoded audio, and endOfStream() does not stop it playing — see MusicMseEngine.destroy(). Every
+    // caller of this function is "the engine is no longer the thing playing", so every caller wants
+    // the element silent; leaving it to the callers is how seekDetour and fallBackToDecks each grew
+    // their own second live source (2026-08-13: wake → scrub → pause left one copy running).
+    parkEngineDeck();
+  }, [parkEngineDeck]);
 
   /// Give up on MSE for the rest of this session and let the deck floor take it. Every caller has
   /// already logged its rung; this is the one place that decides the session is over for the engine.
@@ -874,12 +939,14 @@ export function MusicPlayerProvider({ children, enabled = true }) {
     // session anyway (the ref above guarantees it), so jumping the rate limit only ever let it
     // compete with a genuine burst of other reports for the session budget.
     reportIncident("mse", { summary: `fell back to decks: ${why}`.slice(0, 400), trackId: currentRef.current?.id ?? null });
-    destroyEngine();
+    // Flip before the teardown, for the reason spelled out in seekDetour: destroyEngine parks the
+    // engine's element, and that pause must land on an element the handlers already ignore.
     if (deckRef.current === "mse") {
       deckRef.current = "a";
       setActiveDeck("a");
       syncActive();
     }
+    destroyEngine();
   }, [destroyEngine, syncActive]);
 
   /**
@@ -900,8 +967,12 @@ export function MusicPlayerProvider({ children, enabled = true }) {
    */
   const seekDetour = useCallback((track, offsetSec, why) => {
     diagLog("mse:seek-detour", { track: track.id, to: Math.round(offsetSec), why });
-    destroyEngine();
-    seekDetourRef.current = track.id;
+    // ⚠ Flip FIRST, destroy second — the same ordering rule startEngine follows when it parks the
+    // decks ("AFTER the deckRef flip, so the pause and emptied events the parking fires land on
+    // elements the handlers already ignore"). destroyEngine now PAUSES the engine's element, and if
+    // that element were still the live deck when it happened, onPause would write setPlaying(false)
+    // over a scrub the listener is in the middle of.
+    //
     // Off the engine's element and onto a real deck, exactly as the fallback does — but without the
     // latch that would keep us here.
     if (deckRef.current === "mse") {
@@ -909,6 +980,8 @@ export function MusicPlayerProvider({ children, enabled = true }) {
       setActiveDeck("a");
       syncActive();
     }
+    destroyEngine();
+    seekDetourRef.current = track.id;
     // loadTrack already knows how to land at an offset: it waits for `loadedmetadata` before setting
     // currentTime, on both the streamed and the downloaded-to-a-blob path.
     loadTrackRef.current(track, { resumeAt: offsetSec, autoplay: true });
@@ -1016,6 +1089,13 @@ export function MusicPlayerProvider({ children, enabled = true }) {
     // Whatever recovery the previous track had in flight dies with it.
     clearPendingRecovery();
     if (!current) {
+      // The queue is gone (✕ Close player, Clear queue). Tear the engine down FIRST: `audio` is only
+      // the ACTIVE element, so a pause here silences the engine's element only while the engine
+      // happens to be live — and it leaves the engine OBJECT alive, still pumping appends into a
+      // MediaSource whose src is about to be pulled off underneath it. destroyEngine also parks the
+      // element, which is what covers the case where the active element is a detour deck and the
+      // engine's is the one still making noise.
+      destroyEngine();
       audio.pause();
       audio.removeAttribute("src");
       loadedTrackIdRef.current = null;
@@ -1712,6 +1792,40 @@ export function MusicPlayerProvider({ children, enabled = true }) {
     setPlaying(true);
   }, [enabled, isPlayable]);
 
+  /**
+   * Shuffle the queue that already EXISTS, without interrupting the song playing out of it.
+   *
+   * Distinct from shuffleTracks, which is "play this list, shuffled" and starts a new session at
+   * track 0. This one is the control in the queue flyout: the listener likes what is on, and wants
+   * the REST of it to come in a different order.
+   *
+   * So the pivot is the playing track. Everything up to and including it is left exactly where it
+   * is — `current` is `queue[index]`, and the load effect keys on `current.id`, so an untouched
+   * pivot means React re-renders a reordered list and the audio never learns anything happened.
+   * Moving the pivot to slot 0 would have been tidier to look at and would have thrown away the
+   * history that ⏮ walks back through.
+   *
+   * Two things outside React hold their own copy of what comes next, and both have to be told:
+   *   • the MSE engine appends ahead of the playhead from its OWN queue (it must be readable from a
+   *     handler, not a render), so without setQueue it keeps appending the old order. Audio already
+   *     IN the buffer stays there — at most one already-appended track still plays in its old slot,
+   *     which is the same "the boundary was already prepared" compromise a seek detour makes;
+   *   • a deck pre-rolled for the old next track is pointed at a song that may no longer be next,
+   *     and a pre-rolled deck flips in at the boundary without asking.
+   */
+  const shuffleQueue = useCallback(() => {
+    setQueue((q) => {
+      // Nothing playing yet (index -1, a restored-but-untouched queue): the whole list is ahead.
+      const pivot = index >= 0 && index < q.length ? index : -1;
+      const tail = shuffled(q.slice(pivot + 1));
+      if (tail.length < 2) return q; // nothing to reorder — don't churn state or the stored copy
+      const next = [...q.slice(0, pivot + 1), ...tail];
+      engineRef.current?.setQueue(next, pivot >= 0 ? pivot : 0);
+      return next;
+    });
+    cancelPreroll();
+  }, [index, cancelPreroll]);
+
   const setVolume = useCallback((v) => {
     // EVERY element, not just the live one: the idle deck is already buffering the next track and
     // the engine's element may be pre-rolled for a cross-engine flip. Any of them can become the
@@ -1954,8 +2068,8 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   });
 
   const value = useMemo(
-    () => ({ queue, index, current, playing, error, buffering, audioRef, trackTime, canTranscode, isPlayable, playTracks, enqueue, next, prev, toggle, seek, playAt, removeAt, stop, clearQueue, setVolume, ensureAudioGraph, visualizerOn, toggleVisualizer, closeVisualizer, lyricsOn, toggleLyrics, closeLyrics, shuffleTracks, favoriteIds, isFavorite, toggleFavorite, lyricsSettings, setLyricsSetting }),
-    [queue, index, current, playing, error, buffering, trackTime, canTranscode, isPlayable, playTracks, enqueue, next, prev, toggle, seek, playAt, removeAt, stop, clearQueue, setVolume, ensureAudioGraph, visualizerOn, toggleVisualizer, closeVisualizer, lyricsOn, toggleLyrics, closeLyrics, shuffleTracks, favoriteIds, isFavorite, toggleFavorite, lyricsSettings, setLyricsSetting]
+    () => ({ queue, index, current, playing, error, buffering, audioRef, trackTime, canTranscode, isPlayable, playTracks, enqueue, next, prev, toggle, seek, playAt, removeAt, stop, clearQueue, setVolume, ensureAudioGraph, visualizerOn, toggleVisualizer, closeVisualizer, lyricsOn, toggleLyrics, closeLyrics, shuffleTracks, shuffleQueue, favoriteIds, isFavorite, toggleFavorite, lyricsSettings, setLyricsSetting }),
+    [queue, index, current, playing, error, buffering, trackTime, canTranscode, isPlayable, playTracks, enqueue, next, prev, toggle, seek, playAt, removeAt, stop, clearQueue, setVolume, ensureAudioGraph, visualizerOn, toggleVisualizer, closeVisualizer, lyricsOn, toggleLyrics, closeLyrics, shuffleTracks, shuffleQueue, favoriteIds, isFavorite, toggleFavorite, lyricsSettings, setLyricsSetting]
   );
 
   return (

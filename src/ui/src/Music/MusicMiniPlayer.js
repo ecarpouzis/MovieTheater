@@ -402,6 +402,19 @@ function MusicMiniPlayer() {
             >
               ＋ Save as playlist
             </button>
+            {/* Shuffles what is still to come and leaves the current song playing (see
+                player.shuffleQueue). Sits next to Save because both act on the whole queue —
+                unlike Clear, which is the one that ends it. Needs three tracks to mean anything:
+                with two, "shuffle the rest" is a list of one. */}
+            <button
+              className="music-miniplayer-queue-shuffle"
+              onClick={() => player.shuffleQueue()}
+              disabled={queue.length - Math.max(index, 0) < 3}
+              title="Shuffle what's left of the queue"
+              data-testid="music-queue-shuffle"
+            >
+              🔀 Shuffle
+            </button>
             {/* The queue now outlives the session, so "I'm done with this" needed a control. ✕ Close
                 player empties it too, but it reads as "hide the bar" — and it is the wrong thing to
                 reach for when the bar is exactly what you want to keep. This says what it does. */}

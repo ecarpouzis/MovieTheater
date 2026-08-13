@@ -415,6 +415,51 @@ describe("the engine", () => {
     expect(ended).toHaveLength(1);
   });
 
+  // ── destroy() has to STOP the audio, not just stop feeding it ─────────────────────────────────
+  // endOfStream() is a promise that no more data is coming; the element then plays out everything
+  // already in the SourceBuffer — up to a whole quota of it (11.5 MB ≈ 95 s of a 950 kbps FLAC).
+  // Every caller that hands the session to a deck (seekDetour, fallBackToDecks, the unmount) called
+  // destroy() and walked away, so the engine's element kept playing UNDERNEATH the deck, in a place
+  // no control could reach it. Reported 2026-08-13: wake, scrub, pause, one copy played on.
+  it("PARKS its element on destroy — endOfStream is not a stop", async () => {
+    const audio = fakeAudio();
+    const paused = vi.spyOn(audio, "pause");
+    installFetch([]);
+    const engine = engineWith({ api: makeApi({}), audio });
+    await engine.start({ queue, index: 0 });
+    expect(paused).not.toHaveBeenCalled();     // nothing has taken over yet
+
+    engine.destroy();
+    expect(paused).toHaveBeenCalled();
+  });
+
+  it("does not announce the end of a queue it no longer owns", async () => {
+    // The hazard the park itself creates: `pause` is one of the queue-end guard's own triggers, so
+    // silencing the element could be mistaken for the queue running out, and the boundary handler
+    // would advance the track under the deck that just took over.
+    //
+    // ⚠ Honest about what this is: a PIN, not a reproduction. destroy() drops `state.sb` before it
+    // pauses, and isQueueEndStall refuses a bufferedEnd of 0, so the guard is already unreachable
+    // today — this test passes with the `state.destroyed` check and the removeEventListener taken
+    // back out. It is here because "pause before dropping the buffer" is exactly the kind of tidy
+    // reordering a later reader would make, and that reordering is what would arm the trap.
+    const ended = [];
+    const audio = fakeAudio();
+    installFetch([]);
+    const engine = engineWith({ api: makeApi({}), audio, handlers: { onStreamEnded: () => ended.push(1) } });
+    await engine.start({ queue, index: 0 });
+    expect(engine.inspect().endedStream).toBe(true);
+    audio.currentTime = engine.timeline().bufferedEnd;   // exactly where the guard fires
+
+    engine.destroy();
+    expect(ended).toHaveLength(0);
+
+    // …and it stays deaf afterwards: the listeners came off, and the destroyed flag backs that up.
+    audio.dispatchEvent(new Event("waiting"));
+    audio.dispatchEvent(new Event("pause"));
+    expect(ended).toHaveLength(0);
+  });
+
   it("does NOT call it the end when the stall is mid-queue", async () => {
     const ended = [];
     const audio = fakeAudio();

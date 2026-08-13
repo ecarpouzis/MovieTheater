@@ -141,6 +141,10 @@ export function createMseEngine({
     lastError: null,
   };
 
+  /** The element events that can mean "the buffer ran out at the end of an ended stream". Named
+   *  because destroy() has to take the SAME set back off again. */
+  const QUEUE_END_EVENTS = ["waiting", "stalled", "pause", "ended"];
+
   const log = (event, data) => diagLog(`mse:${event}`, data);
 
   /** A rung of the fallback ladder was used. Logged only — a rung is the ladder WORKING, and it no
@@ -514,6 +518,11 @@ export function createMseEngine({
    * `waiting` rather than `ended`, and everything waiting on that `ended` waited forever. Fires once.
    */
   const checkQueueEndStall = () => {
+    // A destroyed engine has no say in the session any more. It matters because destroy() PAUSES the
+    // element (see below) and `pause` is one of this guard's own triggers — an engine that has just
+    // been superseded would otherwise announce the end of a queue it no longer owns, and the
+    // boundary handler would advance the track under whoever took over.
+    if (state.destroyed) return false;
     if (state.endedNotified) return false;
     if (!isQueueEndStall({
       endedStream: state.endedStream,
@@ -637,7 +646,7 @@ export function createMseEngine({
     // The guard's triggers: the events a drained element actually fires, plus the pump, because a
     // hidden page may get no event at all and the queue end must still be noticed on the next
     // opportunity the page is given.
-    ["waiting", "stalled", "pause", "ended"].forEach((name) => audio.addEventListener(name, checkQueueEndStall));
+    QUEUE_END_EVENTS.forEach((name) => audio.addEventListener(name, checkQueueEndStall));
     await pump();
     if (state.destroyed) return null;
     log("started", { track: first?.id ?? null, lane: decision.treatment.lane, ahead: Math.round(aheadSec()) });
@@ -649,11 +658,33 @@ export function createMseEngine({
     if (Number.isInteger(index) && index >= 0) state.appendCursor = Math.max(state.appendCursor, index);
   };
 
+  /**
+   * Stop being the thing that is playing.
+   *
+   * ⚠ `endOfStream()` is NOT a stop — it is a promise that no more data is coming, and the element
+   * then plays out everything already in the SourceBuffer. That is up to a whole quota of audio
+   * (11.5 MB ≈ 95 s of a 950 kbps FLAC), and it kept playing after every caller that hands the
+   * session to a deck: seekDetour, fallBackToDecks, the unmount. The listener heard the song on top
+   * of itself, and could not stop the second copy — once `deckRef` says "a", NOTHING in the player
+   * can reach this element (pause and Clear queue touch the ACTIVE deck, cancelPreroll the IDLE
+   * one, and the deck handlers ignore an element that isn't live). Reported 2026-08-13: wake, scrub,
+   * pause, and one of the two copies played on.
+   *
+   * This is the mirror of parkDecks(): the engine already silences the decks it takes over FROM, and
+   * this is the same courtesy in the other direction. Pause only — the `src` is deliberately left
+   * alone, because assigning over a MediaSource blob URL detaches it and is its own documented trap;
+   * the next start() replaces it wholesale.
+   *
+   * The listeners come off FIRST: `pause` is one of checkQueueEndStall's triggers, so silencing the
+   * element must not be mistaken for the queue running out.
+   */
   const destroy = () => {
     state.destroyed = true;
+    if (audio) QUEUE_END_EVENTS.forEach((name) => audio.removeEventListener(name, checkQueueEndStall));
     try { if (state.ms && state.ms.readyState === "open") state.ms.endOfStream(); } catch { /* fine */ }
     state.sb = null;
     state.ms = null;
+    try { if (audio) audio.pause(); } catch { /* the element is being replaced anyway */ }
   };
 
   return {

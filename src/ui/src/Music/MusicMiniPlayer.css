@@ -230,27 +230,59 @@
   .music-miniplayer-viz { padding: 5px 9px; }
 }
 
-/* Queue flyout — anchored above the bar, scrolls internally. */
+/* Queue flyout — anchored above the bar, scrolls internally.
+   Every row ends in two icon buttons (＋ playlist, ✕ remove) hard against the right edge, and the
+   scrollbar lands in exactly that column: at the default 15-17px it was a hairline gutter between a
+   drag target and a destructive one, and a miss on either is a mistake with no undo. So the panel
+   pays for a real gutter — `padding-right` on a scroll container puts space BETWEEN the content and
+   the scrollbar — and draws its own thumb rather than accepting the OS's. The extra width that
+   bought is taken back off the panel: 380px was sized for titles that ellipsise at any width. */
 .music-miniplayer-queue {
   position: absolute;
   right: 10px;
   bottom: calc(100% + 6px);
-  width: min(380px, calc(100vw - 20px));
+  width: min(320px, calc(100vw - 20px));
   max-height: 50vh;
   overflow-y: auto;
   background: var(--sidebar-bg-elev);
   border: 1px solid var(--sidebar-border);
   border-radius: 10px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
-  padding: 6px;
+  padding: 6px 12px 6px 6px;
+  /* Reserve the track whether or not it is currently needed, so adding the third track to a queue
+     doesn't reflow every row by 10px. */
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;                                  /* Firefox */
+  scrollbar-color: var(--sidebar-border) transparent;
 }
 
+/* Chrome/Safari: a slim capsule with a transparent inset, so the thumb reads as part of the panel
+   instead of as an OS artefact pasted onto it. background-clip: content-box is what turns the
+   border into that inset — repeat it on :hover or the thumb goes full-width on the first mouseover. */
+.music-miniplayer-queue::-webkit-scrollbar { width: 10px; }
+.music-miniplayer-queue::-webkit-scrollbar-track { background: transparent; }
+
+.music-miniplayer-queue::-webkit-scrollbar-thumb {
+  background: var(--sidebar-border);
+  background-clip: content-box;
+  border: 3px solid transparent;
+  border-radius: 999px;
+}
+
+.music-miniplayer-queue::-webkit-scrollbar-thumb:hover {
+  background: var(--sidebar-text-muted);
+  background-clip: content-box;
+}
+
+/* Wraps on purpose: the head carries four things at 320px wide and a row that refuses to break
+   would either squeeze the labels to nothing or push Clear off the panel. */
 .music-miniplayer-queue-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding: 4px 8px 6px;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 4px 4px 6px;
   font-size: 11px;
   color: var(--sidebar-text-muted);
   border-bottom: 1px solid var(--sidebar-border);
@@ -269,6 +301,21 @@
 
 .music-miniplayer-queue-save:hover:not(:disabled) { background: var(--sidebar-pill-bg); }
 .music-miniplayer-queue-save:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* Same chrome as Save — it is the other whole-queue verb, and neither of them is destructive. */
+.music-miniplayer-queue-shuffle {
+  background: none;
+  border: 1px solid var(--sidebar-input-border, var(--sidebar-border));
+  border-radius: 6px;
+  color: var(--sidebar-text);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 3px 8px;
+  white-space: nowrap;
+}
+
+.music-miniplayer-queue-shuffle:hover:not(:disabled) { background: var(--sidebar-pill-bg); color: var(--accent); }
+.music-miniplayer-queue-shuffle:disabled { opacity: 0.45; cursor: not-allowed; }
 
 /* The header holds three things now, so the count takes the slack and the two buttons stay paired
    at the right — space-between across three children would have stranded "Save" in the middle. */
@@ -337,9 +384,11 @@
   text-overflow: ellipsis;
 }
 
+/* Narrower than it was, because the panel is: the title is the thing being read and the artist is
+   the disambiguator, so the title takes the width the panel gave up. */
 .music-miniplayer-queue-artist {
   flex: none;
-  max-width: 110px;
+  max-width: 84px;
   font-size: 11px;
   color: var(--sidebar-text-muted);
   white-space: nowrap;
@@ -353,7 +402,7 @@
   border: none;
   color: var(--sidebar-text-muted);
   cursor: pointer;
-  padding: 6px 8px;
+  padding: 6px;
   border-radius: 6px;
 }
 

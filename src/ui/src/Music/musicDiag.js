@@ -42,8 +42,15 @@ const PERSIST_ENTRIES = 200;
 // The cost of trimming them, stated plainly: an incident filed with the switch off now carries the
 // FAILURE and any earlier failures, but not the healthy steps that led up to it. That is the right
 // trade for a fixed bug — and `?diag=1` buys the run-up back the moment one recurs.
+//
+// `park:live` is the newest member and the most literal reading of the contract: it is only ever
+// recorded when parking an element that is REQUIRED to be silent finds it still playing. On a
+// healthy session that is impossible, so it costs nothing — and when it does fire it is the one
+// symptom the player has historically been blind to. The "two songs at once" bugs (2026-08-12 and
+// 2026-08-13) both ended with a live element nothing could reach, and neither wrote a single row,
+// because nothing had FAILED in any sense the other tripwires recognise.
 const ALWAYS = new Set([
-  "error", "give-up", "park",
+  "error", "give-up", "park", "park:live",
   "load:failed", "preload:failed",
   "mse:fallback", "mse:element-error", "mse:dry",
 ]);

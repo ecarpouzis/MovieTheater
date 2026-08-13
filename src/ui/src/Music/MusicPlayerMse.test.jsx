@@ -85,6 +85,18 @@ class FakeMediaSource extends EventTarget {
 }
 
 let playSpy;
+let pauseSpy;
+
+/**
+ * Is this element MAKING NOISE?
+ *
+ * jsdom/happy-dom never actually play, and the suite stubs play/pause on the prototype, so
+ * `el.paused` is a constant and says nothing. The stubs below therefore record the one fact the
+ * "two songs at once" bugs are about — which elements are live — onto the element itself.
+ * `sounding()` is that fact, and asserting it on ALL THREE decks is the only way to catch a source
+ * that is playing where nothing in the player can reach it any more.
+ */
+const sounding = (el) => el.__sounding === true;
 
 beforeEach(() => {
   sourceBuffers = [];
@@ -100,9 +112,18 @@ beforeEach(() => {
     })),
     skipped: [],
   }));
-  playSpy = vi.fn(() => Promise.resolve());
+  // `function`, not an arrow: `this` has to be the element these are called on, or `sounding()`
+  // cannot tell the three decks apart. They also keep `paused` truthful — the DOM shim never really
+  // plays, so a stub that only counted calls left `paused` permanently true, and `toggle()` (which
+  // reads it to decide which way to flip) would call play() where a browser would pause.
+  const setSounding = (el, on) => {
+    el.__sounding = on;
+    Object.defineProperty(el, "paused", { value: !on, configurable: true });
+  };
+  playSpy = vi.fn(function playStub() { setSounding(this, true); return Promise.resolve(); });
   window.HTMLMediaElement.prototype.play = playSpy;
-  window.HTMLMediaElement.prototype.pause = vi.fn();
+  pauseSpy = vi.fn(function pauseStub() { setSounding(this, false); });
+  window.HTMLMediaElement.prototype.pause = pauseSpy;
   window.HTMLMediaElement.prototype.load = vi.fn();
   global.fetch = vi.fn(async () => {
     let sent = 0;
@@ -507,5 +528,67 @@ describe("the MSE engine inside the player", () => {
     expect(player.audioRef.current).toBe(el("mse"));
     expect(player.current.id).toBe(3);
     expect(api.startMusicTrack).not.toHaveBeenCalled();   // no deck load ever happened
+  });
+  // ── Wake → scrub → pause: the second live source (reported 2026-08-13) ─────────────────────────
+  // Ten minutes into Big Data (FLAC, ~950 kbps ⇒ the 11.5 MB quota holds ~95 s), Eric woke the
+  // phone, scrubbed, and paused. The song played on top of itself and pause stopped only ONE copy.
+  //
+  // The engine's `destroy()` called `endOfStream()`, which is a promise that no more data is coming
+  // — NOT a stop. The element played out everything still in the SourceBuffer while seekDetour put a
+  // deck on top of it. And once deckRef says "a" the engine's element is unreachable: pause and
+  // Clear queue touch the ACTIVE deck, cancelPreroll the IDLE one, and every handler ignores an
+  // element that is not live. This is the mirror of the 2026-08-12 fix, which taught the ENGINE to
+  // park the decks; nothing had ever taught a DECK to park the engine.
+  describe("a deck taking over from the engine", () => {
+    it("parks the engine's element on a seek detour — endOfStream is not a stop", async () => {
+      const { el } = await mountPlaying();
+      expect(sounding(el("mse"))).toBe(true);        // the engine is the thing playing
+
+      const live = await detour(el);
+      expect(live.dataset.deck).not.toBe("mse");
+      expect(sounding(live)).toBe(true);             // the deck took over…
+      expect(sounding(el("mse"))).toBe(false);       // …and the engine went quiet. Two live sources
+                                                     // here IS the bug: the song on top of itself.
+    });
+
+    it("leaves NOTHING playing when the listener then hits pause", async () => {
+      const { el } = await mountPlaying();
+      const live = await detour(el);
+
+      await act(async () => { player.toggle(); });
+
+      // The reported symptom, exactly: pause reaches audioRef and nothing else, so a live engine
+      // element survived it and kept playing with no control able to stop it.
+      expect(sounding(live)).toBe(false);
+      expect([el("a"), el("b"), el("mse")].filter(sounding)).toEqual([]);
+    });
+
+    it("survives the full wake → scrub → pause sequence", async () => {
+      const { el } = await mountPlaying();
+      // The phone was asleep for the ten minutes before the scrub, then picked up. The wake is not
+      // what breaks it — it is only how a hand reaches the seek bar — but the sequence is the report
+      // and the report is what gets re-run.
+      Object.defineProperty(document, "visibilityState", { value: "hidden", configurable: true });
+      await act(async () => { document.dispatchEvent(new Event("visibilitychange")); });
+      Object.defineProperty(document, "visibilityState", { value: "visible", configurable: true });
+      await act(async () => { document.dispatchEvent(new Event("visibilitychange")); });
+      await flush(4);
+
+      const live = await detour(el);
+      await act(async () => { player.toggle(); });
+
+      expect([el("a"), el("b"), el("mse")].filter(sounding)).toEqual([]);
+      expect(live.dataset.deck).not.toBe("mse");
+    });
+
+    it("parks the engine's element when the queue is thrown away mid-stream", async () => {
+      // ✕ Close player / Clear queue only ever paused the ACTIVE element too, and left the engine
+      // OBJECT alive, still appending into a MediaSource whose src was about to be pulled off.
+      const { el } = await mountPlaying();
+      expect(sounding(el("mse"))).toBe(true);
+      await act(async () => { player.clearQueue(); });
+      await flush(4);
+      expect([el("a"), el("b"), el("mse")].filter(sounding)).toEqual([]);
+    });
   });
 });
