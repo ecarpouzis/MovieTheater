@@ -158,6 +158,58 @@ export default function useGridWindow(count, { resetKey = "", overscan = OVERSCA
     rafRef.current = requestAnimationFrame(maintain);
   }, [maintain]);
 
+  /**
+   * Put the row containing `index` at the top of the scrollport — WITHOUT truncating the list.
+   *
+   * This is what an A–Z jump should always have been. The music library used to "jump" by
+   * re-anchoring the rendered slice at the letter's offset, which meant everything before it stopped
+   * existing: tap J and there was no way to scroll back up into A–I (reported 2026-08-13). Since the
+   * whole catalog is already windowed, the list can simply stay whole and the jump can be a SCROLL.
+   *
+   * ⚠ It has to iterate. Rows that have never been mounted have never been measured, so the prefix
+   * that produces the target is part estimate — a single scroll lands near the letter, not on it.
+   * Each pass mounts and measures the rows it just landed among, corrects the prefix, and re-derives
+   * the target from a MOUNTED card's real position (never from our own estimates, the same rule
+   * `maintain` follows). On a uniform card grid that converges in one or two passes; the pass count
+   * is capped so a list whose heights genuinely never settle cannot spin.
+   *
+   * Native scroll anchoring would fight this exactly as it fights the re-measure compensation below
+   * — both are manual corrections — so this relies on the `overflow-anchor: none` that index.css
+   * already sets on <body> and .app-content. Do not remove it on their account.
+   */
+  const scrollToIndex = useCallback((index, { settle = 5 } = {}) => {
+    const host = hostRef.current;
+    if (!host || !count) return;
+    rootRef.current = getScrollParent(host);
+
+    let passes = 0;
+    const step = () => {
+      passes += 1;
+      const grid = gridRef.current;
+      if (!grid) return;
+      const items = Array.from(grid.children);
+      if (!items.length) return;
+      const cols = colsRef.current || measureCols(grid, items) || 1;
+      const totalRows = Math.max(1, Math.ceil(count / cols));
+      if (dirtyRef.current || prefixRef.current.length !== totalRows + 1) buildPrefix(totalRows);
+      const prefix = prefixRef.current;
+      const row = clamp(Math.floor(clamp(index, 0, count - 1) / cols), 0, totalRows - 1);
+
+      const anchorTop = items[0].getBoundingClientRect().top;
+      const origin = anchorTop - prefix[clamp(winRef.current.startRow, 0, totalRows)];
+      const band = viewportBand(rootRef.current);
+      const delta = (origin + prefix[row]) - band.top;
+
+      if (Math.abs(delta) <= 2 || passes > settle) return;
+      nudgeScroll(rootRef.current, delta);
+      // Mount + measure where we just landed, then look again.
+      dirtyRef.current = true;
+      maintain();
+      if (typeof requestAnimationFrame === "function") requestAnimationFrame(step);
+    };
+    step();
+  }, [count, buildPrefix, maintain]);
+
   // A new list (new search, or a pager jump): forget the measured rows and go back to the top.
   useLayoutEffect(() => {
     rowHRef.current.clear();
@@ -275,5 +327,7 @@ export default function useGridWindow(count, { resetKey = "", overscan = OVERSCA
     padBottom: win.padBottom,
     /** Index of the first item actually on screen (not counting overscan) — drives the arcade pager. */
     visibleStart: win.visibleStart,
+    /** Seek the scrollport to an item, leaving the list whole. See above. */
+    scrollToIndex,
   };
 }

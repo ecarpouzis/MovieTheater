@@ -5,6 +5,11 @@
   padding: 20px 22px 90px;
   max-width: 1500px;
   margin: 0 auto;
+  /* How far the A–Z strip reaches OUT of this page's horizontal padding (CatalogPager.css). The
+     page's own 22px less a 4px inset, so the strip is 36px wider than the card grid and still keeps
+     its rounded corners and shadow clear of the screen edge on a phone. Capped by the padding by
+     construction — it can never grow past the box .music-page already occupies. */
+  --catalog-pager-bleed: 18px;
 }
 
 .music-page--loading {

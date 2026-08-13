@@ -38,6 +38,9 @@
   display: flex;
   flex-direction: column;
   gap: 26px; /* vertical rhythm between main sections */
+  /* The A–Z / page strip reaches out of this padding (CatalogPager.css): our own inline padding less
+     a 4px inset, tracked per breakpoint below so it always stays inside the padding box. */
+  --catalog-pager-bleed: 36px;
 }
 
 /* ── Header row ──────────────────────────────────────────────────────────── */
@@ -213,6 +216,12 @@
 .arcade-more {
   text-align: center;
   padding: 28px 0 8px;
+}
+
+/* Same control, above the grid instead of below it — tighter, because it sits between the section
+   head and the first row rather than closing the list off. */
+.arcade-more--earlier {
+  padding: 0 0 4px;
 }
 
 /* ── Box art: natural aspect, one shared height, never cropped ───────────── */
@@ -912,6 +921,7 @@
   .arcade-page__inner {
     padding: 22px 18px 32px;
     gap: 20px;
+    --catalog-pager-bleed: 14px;
   }
   .arcade-title {
     font-size: 28px;
@@ -931,6 +941,7 @@
   .arcade-page__inner {
     padding: 14px 14px 28px;
     gap: 14px;
+    --catalog-pager-bleed: 10px;
   }
   .arcade-header {
     gap: 10px;

@@ -17,6 +17,20 @@
    rather than centring once it overflows, since a centred overflowing strip pushes its first letters
    past the start edge where no amount of scrolling can reach them. CatalogPager also scrolls the
    active button back into the middle as the grid moves under it. */
+/* ── The bleed ───────────────────────────────────────────────────────────────
+   The strip is WIDER than the column it sits under. Left inside the page's horizontal padding it
+   was exactly the width of the card grid, which read as an accident on a phone — and the width it
+   gave up is the width that decides how much of the alphabet you can see at once (~14 letters
+   instead of the whole thing).
+
+   Negative inline margins, driven by a variable each page sets to its OWN padding minus a small
+   inset. That keeps the mechanism in the shared component while the number stays with the layout
+   that knows it, and it can never overflow: the strip grows to at most the page's padding BOX,
+   which the page already occupies, so a centred max-width column stays centred and nothing spills
+   past the viewport (index.css clips #root's overflow-x, so a spill would be silently cut, not
+   scrollable). The inset is what keeps this looking deliberate rather than broken — at true
+   full-bleed the rounded corners and the drop shadow die against the screen edge. Sticky is
+   unaffected: negative margins move the box, the sticky constraint follows it. */
 .catalog-pager {
   position: sticky;
   bottom: var(--music-miniplayer-height, 0px);
@@ -27,6 +41,7 @@
   justify-content: safe center;
   gap: 4px;
   margin-top: 4px;
+  margin-inline: calc(-1 * var(--catalog-pager-bleed, 0px));
   padding: 8px 10px;
   border: 1px solid var(--card-border);
   border-radius: 10px;

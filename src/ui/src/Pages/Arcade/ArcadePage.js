@@ -335,7 +335,7 @@ export default function ArcadePage({ userData }) {
   // Only the rows near the viewport stay mounted; the rest of the loaded list's height is held by
   // spacers. An arcade card's height varies (box-art aspect, whether it has a version/cheats row), so
   // the hook measures rows rather than assuming a fixed one.
-  const { hostRef, gridRef, start, end, padTop, padBottom, visibleStart } = useGridWindow(games?.length || 0, {
+  const { hostRef, gridRef, start, end, padTop, padBottom, visibleStart, scrollToIndex } = useGridWindow(games?.length || 0, {
     resetKey: `${filterKey}:${startIndex}`,
   });
   // `.filter(Boolean)` guards the render, not the data: the grid maps to `key={game.key}`, so ONE
@@ -348,6 +348,35 @@ export default function ArcadePage({ userData }) {
     loadPage(Math.max(0, offset), true);
     sectionRef.current?.scrollIntoView({ block: "start" });
   }, [loadPage]);
+
+  // ── Reading back UP past a jump ───────────────────────────────────────────────────────────────
+  // The music library fixed this by never truncating: it holds its whole catalog, so a letter jump is
+  // just a scroll and everything before the letter is still above you. 17k arcade titles cannot be
+  // held, so the grid genuinely starts at `startIndex` and there is nothing above it to scroll to —
+  // this control is what puts something there.
+  //
+  // ⚠ Deliberately a BUTTON, not a top sentinel that prepends automatically. An automatic prepend has
+  // to hold the viewport still while the list grows above it, and with measured-height windowing the
+  // compensation is an estimate until the new rows have mounted and been measured — the classic
+  // prepend teleport, and it would fire while a thumb was mid-flick. Re-seating one page earlier and
+  // then deliberately landing on the card that WAS at the top has no such window: the scroll is the
+  // point rather than something to be cancelled out.
+  const landOnRef = useRef(null);
+  const revealEarlier = useCallback(() => {
+    const from = Math.max(0, startRef.current - PAGE_SIZE);
+    // Where the card currently at the top of the grid ends up once the page is re-seated at `from`.
+    landOnRef.current = Math.max(0, startRef.current - 1 - from);
+    loadPage(from, true);
+  }, [loadPage]);
+
+  // The landing, once the replaced page is actually on screen. Not inside revealEarlier: the rows to
+  // scroll to do not exist until the fetch resolves and React has committed them.
+  useEffect(() => {
+    if (landOnRef.current == null || !games || loading) return;
+    const at = landOnRef.current;
+    landOnRef.current = null;
+    scrollToIndex(Math.min(at, games.length - 1));
+  }, [games, loading, scrollToIndex]);
 
   // `cheats` are the ids the creator ticked on the card (arcade cheats feature). `controllerScheme`
   // is the GameCube-vs-Wiimote+Nunchuk picker (only shown for the two GC-native BrawlEx mods). Both
@@ -623,6 +652,15 @@ export default function ArcadePage({ userData }) {
               ) : <Empty description={anyFilter ? "No games match those filters." : "No games here yet."} />
           ) : (
             <>
+              {/* The way back up past a letter jump. Only when there IS something above: the lobby
+                  fetches pages, so unlike the music library it cannot simply keep the whole list. */}
+              {startIndex > 0 && (
+                <div className="arcade-more arcade-more--earlier">
+                  <Button onClick={revealEarlier} disabled={loading}>
+                    ↑ Earlier titles
+                  </Button>
+                </div>
+              )}
               <div ref={hostRef}>
                 {padTop > 0 && <div className="grid-spacer" style={{ height: padTop }} aria-hidden="true" />}
                 <div className="arcade-grid" ref={gridRef}>

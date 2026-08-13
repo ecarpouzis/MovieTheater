@@ -5,7 +5,6 @@ import { MovieAPI } from "../../MovieAPI";
 import { useMusicPlayer } from "../../Music/MusicPlayerContext";
 import MusicAlbumArt from "../../Music/MusicAlbumArt";
 import CatalogPager, { bucketsFor } from "../../Components/CatalogPager";
-import useInfiniteScroll from "../../hooks/useInfiniteScroll";
 import useGridWindow from "../../hooks/useGridWindow";
 import MusicAlbumModal from "./MusicAlbumModal";
 import MusicPlaylistPickerModal from "./MusicPlaylistPickerModal";
@@ -21,14 +20,19 @@ import "./MusicPlaylists.css";
 // URL is the state store (arcade convention): ?view=artists|albums, ?q=, ?artist=<id>.
 // Artists is the DEFAULT view — the shelf people browse by is the performer, not the album.
 //
-// The grid runs the same engine as the arcade lobby and Browse: one continuously appending list
-// (useInfiniteScroll's sentinel), only the rows near the viewport mounted (useGridWindow), and an
-// A–Z strip that SEEKS into it (CatalogPager) rather than paging it. The difference is where the
-// pages come from — the arcade fetches them, music already has the whole catalog and just reveals
-// more of it, so `loadMore` is a slice widening and a "jump" is free.
+// ── The grid: the WHOLE list, always ────────────────────────────────────────
+// The catalog is already in the browser, so the rendered list is simply all of it and useGridWindow
+// mounts only the rows near the viewport (the rest is reserved by two spacers). There is no paging
+// here, and deliberately no `startIndex`.
+//
+// There used to be. A letter jump re-anchored the rendered slice at that letter's offset, which is
+// what made "tap J and you cannot scroll up into A–I" (reported 2026-08-13): the earlier artists had
+// stopped existing, so there was nothing above to scroll to. Re-anchoring bought nothing the
+// windowing wasn't already giving — the only reason it existed is that the arcade, which shares this
+// pager, genuinely cannot render pages it has not fetched. Music can, so a jump is now what it
+// always looked like: a SCROLL into a list that stays whole (useGridWindow's scrollToIndex).
 
-const PAGE_STEP = 120; // cards revealed per scroll-triggered append
-const SENTINEL_STYLE = { height: 1 };
+const PAGE_STEP = 120; // only the pager's page-mode arithmetic; the letters mode ignores it
 const NO_ITEMS = [];
 
 // The shelves (MusicArtist.Kind). No ?kind= is the music library — the untagged rows, which is 771
@@ -109,10 +113,6 @@ function MusicPage({ userData }) {
   const [songResults, setSongResults] = useState(null);
   const [artistDetail, setArtistDetail] = useState(null);
   const [openAlbumId, setOpenAlbumId] = useState(null);
-  // The grid is ONE list the page seeks into: `startIndex` is the catalog index of the first card
-  // rendered (a pager jump re-anchors it) and `shown` is how far past it scrolling has revealed.
-  const [startIndex, setStartIndex] = useState(0);
-  const [shown, setShown] = useState(PAGE_STEP);
   const sectionRef = useRef(null);
   // Playlists (music-plan.md Phase 3): the shelf, plus the two modals it and the song rows drive.
   const [playlists, setPlaylists] = useState([]);
@@ -212,9 +212,6 @@ function MusicPage({ userData }) {
     return () => { alive = false; };
   }, [artistParam]);
 
-  // Reset paging whenever the visible set changes shape.
-  useEffect(() => { setStartIndex(0); setShown(PAGE_STEP); }, [view, q, kind, artistParam]);
-
   const lowerQ = q.toLowerCase();
   const filteredAlbums = useMemo(() => {
     if (!albums) return [];
@@ -236,24 +233,13 @@ function MusicPage({ userData }) {
   const drilledIn = Number.isInteger(artistParam);
   const gridItems = drilledIn ? NO_ITEMS : view === "artists" ? filteredArtists : filteredAlbums;
 
-  const loaded = Math.min(shown, Math.max(0, gridItems.length - startIndex));
-  const hasMore = startIndex + loaded < gridItems.length;
-  const loadMore = useCallback(() => setShown((s) => s + PAGE_STEP), []);
-  const { sentinelRef, recheck } = useInfiniteScroll({
-    enabled: gridItems.length > 0,
-    hasMore,
-    onLoadMore: loadMore,
-  });
-  // Re-check after an append without re-subscribing — keeps filling while the list is still shorter
-  // than the viewport, or while the user sits parked at the bottom.
-  useEffect(() => { recheck(); }, [loaded, recheck]);
-
-  const { hostRef, gridRef, start, end, padTop, padBottom, visibleStart } = useGridWindow(loaded, {
-    resetKey: `${kind}:${view}:${lowerQ}:${startIndex}`,
-  });
+  // The whole list, every time. `resetKey` names what makes it a DIFFERENT list — a shelf, a view or
+  // a search — and pointedly not a jump, because a jump does not change the list at all any more.
+  const { hostRef, gridRef, start, end, padTop, padBottom, visibleStart, scrollToIndex } =
+    useGridWindow(gridItems.length, { resetKey: `${kind}:${view}:${lowerQ}` });
   const visibleItems = useMemo(
-    () => gridItems.slice(startIndex + start, startIndex + end),
-    [gridItems, startIndex, start, end]
+    () => gridItems.slice(start, end),
+    [gridItems, start, end]
   );
 
   // A–Z buckets over the list as ordered by the server: artists by their sort name, albums by their
@@ -265,11 +251,12 @@ function MusicPage({ userData }) {
     [gridItems, view]
   );
 
+  // A jump is a SCROLL, not a re-slice. The list is untouched, so the letters before the one tapped
+  // are still above you — which is the whole point (2026-08-13: "I tapped J and couldn't get back to
+  // the artists before J").
   const jumpTo = useCallback((offset) => {
-    setStartIndex(Math.max(0, offset));
-    setShown(PAGE_STEP);
-    sectionRef.current?.scrollIntoView({ block: "start" });
-  }, []);
+    scrollToIndex(Math.max(0, offset));
+  }, [scrollToIndex]);
 
   function setParam(key, value) {
     const p = new URLSearchParams(location.search);
@@ -388,14 +375,14 @@ function MusicPage({ userData }) {
             </div>
             {padBottom > 0 && <div className="grid-spacer" style={{ height: padBottom }} aria-hidden="true" />}
           </div>
-          <div ref={sentinelRef} aria-hidden="true" style={SENTINEL_STYLE} />
-          {/* Seeks into the same continuous list; the active letter follows the grid as you scroll. */}
+          {/* Scrolls the same whole list; the active letter follows the grid as you scroll, and
+              everything before the letter you tapped is still up there. */}
           <CatalogPager
             mode="letters"
             letters={letters}
             total={gridItems.length}
             pageSize={PAGE_STEP}
-            currentIndex={startIndex + visibleStart}
+            currentIndex={visibleStart}
             onJump={jumpTo}
             itemNoun={view === "artists" ? "artist" : "album"}
           />

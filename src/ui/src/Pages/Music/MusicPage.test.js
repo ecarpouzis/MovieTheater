@@ -96,15 +96,45 @@ describe("MusicPage browse", () => {
     const b = screen.getByRole("button", { name: "B" });
     expect(b.disabled).toBe(false);
     fireEvent.click(b);
-
-    // Re-anchored at B — Air is behind us now, and the list runs on from there.
-    await waitFor(() => {
-      const names = [...container.querySelectorAll(".music-artist-card-name")].map((n) => n.textContent);
-      expect(names).toEqual(["The Beatles", "Nobody"]);
-    });
+    await waitFor(() => expect(container.querySelectorAll(".music-artist-card")).toHaveLength(3));
 
     // A letter no artist starts with isn't a place you can seek to.
     expect(screen.getByRole("button", { name: "Z" }).disabled).toBe(true);
+  });
+
+  // ⚠ THE regression. This test used to assert the opposite — that clicking B left `["The Beatles",
+  // "Nobody"]` rendered — because the jump re-anchored the list at the letter's offset and threw
+  // away everything before it. That is what Eric hit on 2026-08-13: "I tapped J and I couldn't get
+  // back to the artists before J". There was nothing above to scroll to, because they had stopped
+  // existing. The catalog is already in the browser, so the list now stays WHOLE and the jump is a
+  // scroll (useGridWindow's scrollToIndex).
+  it("keeps everything BEFORE the letter you tapped, so you can scroll back up to it", async () => {
+    const { container } = renderPage();
+    await waitFor(() => expect(container.querySelectorAll(".music-artist-card")).toHaveLength(3));
+
+    fireEvent.click(screen.getByRole("button", { name: "B" }));
+
+    await waitFor(() => {
+      const names = [...container.querySelectorAll(".music-artist-card-name")].map((n) => n.textContent);
+      // Air is still there, still FIRST — above the letter that was tapped, which is the whole point.
+      expect(names).toEqual(["Air", "The Beatles", "Nobody"]);
+    });
+
+    // …and jumping backwards is not a special case either: the list is untouched either way.
+    fireEvent.click(screen.getByRole("button", { name: "A" }));
+    await waitFor(() => {
+      const names = [...container.querySelectorAll(".music-artist-card-name")].map((n) => n.textContent);
+      expect(names).toEqual(["Air", "The Beatles", "Nobody"]);
+    });
+  });
+
+  it("still counts the whole catalog after a jump, not the tail of it", async () => {
+    // The heading's count came off the same slice the grid rendered, so a jump used to shrink it —
+    // "Artists 2" after tapping B, with no way to tell that from a filter having been applied.
+    const { container } = renderPage();
+    await screen.findByText("Artists");
+    fireEvent.click(screen.getByRole("button", { name: "B" }));
+    await waitFor(() => expect(container.querySelector(".music-count").textContent).toBe("3"));
   });
 });
 
