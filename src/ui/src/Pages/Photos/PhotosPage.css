@@ -1626,6 +1626,24 @@
 
 /* ── Phone ───────────────────────────────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
+  /* A centered antd modal taller than the phone's screen keeps its center and pushes its TOP —
+     and the close X with it — above the viewport edge, where no thumb can reach it. Capping the
+     panel at the dynamic viewport height (dvh: the URL-bar band is exactly where the X was
+     being lost; vh would still include it) keeps the top edge on screen no matter how tall a
+     portrait photo runs; the content scrolls inside the panel instead. Three classes, same
+     specificity story as the container rule above. */
+  .photos-modal.ant-modal .ant-modal-container {
+    max-height: calc(100dvh - 16px);
+    overflow-y: auto;
+  }
+
+  .photos-modal.ant-modal .ant-modal-close {
+    top: max(10px, env(safe-area-inset-top));
+    /* 44px is the minimum comfortable touch target; antd's default X is smaller. */
+    width: 44px;
+    height: 44px;
+  }
+
   .photos-page {
     padding: 18px 14px calc(40px + var(--music-miniplayer-height, 0px));
   }
