@@ -25,6 +25,9 @@ namespace MovieTheater.Photos
         {
             ".jpg", ".jpeg", ".jpe", ".png", ".gif", ".webp", ".bmp", ".tif", ".tiff",
             ".heic", ".heif", ".avif",
+            // Targa: game-era screenshots. Decodable by ImageSharp, not browser-renderable,
+            // so it thumbs normally and deep-zooms via the derivative like TIFF does.
+            ".tga",
             // RAW. Catalogued so a RAW+JPEG pair is visible to Phase 3's Variant grouping; not decoded.
             ".dng", ".cr2", ".cr3", ".nef", ".arw", ".orf", ".rw2", ".raf", ".srw", ".pef",
         };
