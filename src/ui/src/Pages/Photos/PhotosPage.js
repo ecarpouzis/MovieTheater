@@ -7,6 +7,7 @@ import PhotoFolders from "./PhotoFolders";
 import PhotoLightbox from "./PhotoLightbox";
 import PhotoAlbums from "./PhotoAlbums";
 import PhotoAlbumDetail from "./PhotoAlbumDetail";
+import PhotoGallery from "./PhotoGallery";
 import PhotoReview from "./PhotoReview";
 import PhotoDupes from "./PhotoDupes";
 import PhotoPeople from "./PhotoPeople";
@@ -84,6 +85,34 @@ function assetIdFromUrl(search) {
   return Number.isSafeInteger(id) && id > 0 ? id : null;
 }
 
+/**
+ * The three lines at the top of an album page (docs/photos-plan.md §2.12).
+ *
+ * Exported and pure because they are the whole of the museum treatment's LOGIC — which of two names
+ * leads, and whether the second one is printed at all — and asserting on that directly beats
+ * mounting a page to read an <h1>.
+ *
+ * The rules: the eyebrow names the shelf, so a gallery collection never claims to be a family album.
+ * An artist collection puts the ARTIST in the headline, because the artist is the more useful of the
+ * two things to set in 21px capitals, and drops the collection's own title to the subtitle — unless
+ * they are the same words, in which case there is nothing to say twice.
+ */
+export function albumEyebrow(albumSlug, meta) {
+  if (!albumSlug) return "Family album";
+  if (meta?.shelf !== "Archive") return "Albums";
+  return meta?.artistName ? "Gallery · Artist" : "Gallery";
+}
+
+export function albumHeadline(albumTitle, meta) {
+  return meta?.artistName || albumTitle || "Album";
+}
+
+export function albumSubtitle(albumTitle, meta) {
+  const artist = meta?.artistName;
+  if (!artist || !albumTitle || artist === albumTitle) return null;
+  return albumTitle;
+}
+
 export default function PhotosPage({ userData }) {
   const history = useHistory();
   const location = useLocation();
@@ -98,6 +127,11 @@ export default function PhotosPage({ userData }) {
   // The album detail page's title, lifted so the page's own <h1> can carry it — an album is a place,
   // and "Albums" is the shelf it sits on rather than its name.
   const [albumTitle, setAlbumTitle] = useState(null);
+  // §2.12: an album page's eyebrow says which shelf it is on, and an artist collection puts the
+  // ARTIST in the 21px capitals with the album's own title beneath. Both facts belong to the album,
+  // which only the detail component has loaded — so it publishes them the same way it publishes the
+  // title, rather than the head re-fetching the album to draw two words.
+  const [albumMeta, setAlbumMeta] = useState(null);
 
   // Curation state (§2.9). Selection mode is explicit: a click either opens a photo or selects it,
   // and which of those it does is never a guess about modifier keys.
@@ -122,6 +156,7 @@ export default function PhotosPage({ userData }) {
   // A different album (or none) means the held title is somebody else's.
   useEffect(() => {
     setAlbumTitle(null);
+    setAlbumMeta(null);
   }, [albumSlug]);
 
   const changed = () => {
@@ -216,17 +251,27 @@ export default function PhotosPage({ userData }) {
     ["videos", status.videos],
     ["undated", status.undated],
     ["hidden", status.hidden],
+    ["in the gallery", status.archived],
     ["copies collapsed", status.collapsed],
   ].filter(([, value]) => value > 0);
 
+  // The gallery — and any album that lives on its shelf — is drawn on the deeper mount tone. One
+  // modifier on the page root rather than a second stylesheet: it is the same room, lit differently.
+  const inGallery = view === "gallery" || albumMeta?.shelf === "Archive";
+
   return (
-    <div className="photos-page">
+    <div className={`photos-page${inGallery ? " photos-page--gallery" : ""}`}>
       <header className="photos-head">
         <div className="photos-head-titles">
           {/* Inside an album the eyebrow becomes the shelf and the heading becomes the album — the
               name a family gave it is the more useful of the two things to put in 21px capitals. */}
-          <p className="photos-eyebrow">{albumSlug ? "Albums" : "Family album"}</p>
-          <h1 className="photos-title">{albumSlug ? albumTitle || "Album" : photosViewLabel(view)}</h1>
+          <p className="photos-eyebrow">{albumEyebrow(albumSlug, albumMeta)}</p>
+          <h1 className="photos-title">{albumSlug ? albumHeadline(albumTitle, albumMeta) : photosViewLabel(view)}</h1>
+          {/* An artist collection prints the ARTIST above and the collection's own name here — but
+              only when they differ, so "Brom" titled "Brom" is not announced twice. */}
+          {albumSlug && albumSubtitle(albumTitle, albumMeta) && (
+            <p className="photos-subtitle">{albumSubtitle(albumTitle, albumMeta)}</p>
+          )}
         </div>
         <ul className="photos-facts">
           {facts.map(([label, value]) => (
@@ -319,15 +364,25 @@ export default function PhotosPage({ userData }) {
           />
         </Route>
 
+        <Route path="/photos/gallery">
+          <PhotoGallery
+            key={`gallery-${refreshKey}`}
+            onOpenAlbum={(slug) => history.push(`/photos/albums/${encodeURIComponent(slug)}`)}
+          />
+        </Route>
+
         <Route
           path="/photos/albums/:slug"
           render={({ match }) => (
             <PhotoAlbumDetail
               slug={decodeURIComponent(match.params.slug)}
               onTitle={setAlbumTitle}
+              onMeta={setAlbumMeta}
               onBack={() => {
                 changed();
-                history.push("/photos/albums");
+                // Back to the shelf this album is actually on (§2.12) — sending a gallery collection
+                // "back" to the family album index would be a dead end, since it is not listed there.
+                history.push(albumMeta?.shelf === "Archive" ? "/photos/gallery" : "/photos/albums");
               }}
               onOpen={openAsset}
             />

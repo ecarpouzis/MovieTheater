@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -109,7 +109,7 @@ namespace MovieTheater.Photos
                     .Take(pageSize)
                     .Select(a => new
                     {
-                        a.Id, a.Sha256, a.Path, a.SizeBytes, a.Hidden, a.TakenAt, a.TakenAtUtcRaw,
+                        a.Id, a.Sha256, a.Path, a.SizeBytes, a.Hidden, a.Shelf, a.TakenAt, a.TakenAtUtcRaw,
                         a.TakenAtSource, a.YearMin, a.YearMax, a.LocationLabel, a.LocationSource, a.IngestBatch,
                     })
                     .ToListAsync();
@@ -122,6 +122,10 @@ namespace MovieTheater.Photos
                         Path = a.Path,
                         SizeBytes = a.SizeBytes,
                         Hidden = a.Hidden,
+                        // Written only when it is not the default: a Gallery shelf is a fact worth
+                        // carrying, "this is on the timeline like everything else" is not, and an
+                        // export of 100k assets should not repeat it 100k times.
+                        Shelf = a.Shelf == PhotoShelf.Timeline ? null : a.Shelf.ToString(),
                         TakenAt = a.TakenAt,
                         TakenAtUtcRaw = a.TakenAtUtcRaw,
                         TakenAtSource = a.TakenAtSource.ToString(),
@@ -155,6 +159,11 @@ namespace MovieTheater.Photos
 
             return db.PhotoAssets.Where(a =>
                 a.Hidden
+                // §2.12: being on the Gallery shelf is itself curation — somebody decided this picture
+                // is art rather than family record. Usually the asset is an album member too and would
+                // have been caught by `referenced`, but a bare shelf move (no --album) has no other
+                // trace, and an export that dropped it would restore the memes onto the timeline.
+                || a.Shelf == PhotoShelf.Archive
                 || a.TakenAtSource == TakenAtSource.Manual
                 || a.TakenAtSource == TakenAtSource.Estimated
                 || a.TakenAtSource == TakenAtSource.GoogleSidecar
@@ -271,6 +280,7 @@ namespace MovieTheater.Photos
                     .Select(a => new
                     {
                         a.Id, a.Title, a.Slug, a.Description, a.RangeStart, a.RangeEnd, a.SortOrder, a.CreatedUtc,
+                        a.Shelf, a.ArtistName,
                         CreatedBy = a.CreatedByUser != null ? a.CreatedByUser.Username : null,
                         Cover = a.CoverAsset != null ? new { a.CoverAsset.Sha256, a.CoverAsset.Path } : null,
                     })
@@ -295,6 +305,8 @@ namespace MovieTheater.Photos
                         RangeStart = a.RangeStart,
                         RangeEnd = a.RangeEnd,
                         SortOrder = a.SortOrder,
+                        Shelf = a.Shelf == PhotoShelf.Timeline ? null : a.Shelf.ToString(),
+                        ArtistName = a.ArtistName,
                         CreatedByUserName = a.CreatedBy,
                         CreatedUtc = a.CreatedUtc,
                         Entries = byAlbum.TryGetValue(a.Id, out var rows)

@@ -131,6 +131,10 @@ export const PHOTO_VIEWS = [
   { key: "timeline", label: "Timeline", path: "/photos" },
   { key: "undated", label: "Undated", path: "/photos/undated" },
   { key: "albums", label: "Albums", path: "/photos/albums" },
+  // §2.12. "Gallery", not "Archive": the shelf's storage meaning is that it is off the timeline, but
+  // what the family opens is a room of pictures — art collections by artist, and the meme piles
+  // beside them. The column is still PhotoShelf.Archive; only the sign on the door reads Gallery.
+  { key: "gallery", label: "Gallery", path: "/photos/gallery" },
   { key: "folders", label: "Folders", path: "/photos/folders" },
   { key: "people", label: "People", path: "/photos/people" },
   { key: "tag", label: "Tag queue", path: "/photos/tag" },
@@ -173,6 +177,10 @@ export function photosNavGroups(status, unnamedCount = 0) {
     { ...VIEW_BY_KEY.timeline, count: status.assets ?? null },
     ...(status.undated > 0 ? [{ ...VIEW_BY_KEY.undated, count: status.undated }] : []),
     { ...VIEW_BY_KEY.albums, count: status.albums ?? null },
+    // Offered only once there is a Gallery to open (§2.12). A rail entry that leads to an empty room
+    // is worse than no entry: on a site where most families will never file anything as art, the
+    // default state of this section is "does not exist", and the count is what says so.
+    ...(status.archiveAlbums > 0 ? [{ ...VIEW_BY_KEY.gallery, count: status.archiveAlbums }] : []),
     { ...VIEW_BY_KEY.folders, count: null },
     { ...VIEW_BY_KEY.people, count: status.people ?? null },
   ];

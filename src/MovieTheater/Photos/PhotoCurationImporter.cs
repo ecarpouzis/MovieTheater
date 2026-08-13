@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -221,6 +221,17 @@ namespace MovieTheater.Photos
                 var changed = false;
 
                 if (row.Hidden != item.Hidden) { row.Hidden = item.Hidden; changed = true; section.Add(item.Hidden ? "hide" : "unhide"); }
+
+                // §2.12: an absent shelf is the Timeline, which is both the enum's default and what
+                // every export written before Phase 7 meant — so an older file restores unchanged
+                // rather than needing its own branch.
+                var exportedShelf = item.Shelf == null ? PhotoShelf.Timeline : ParseEnum(item.Shelf, PhotoShelf.Timeline);
+                if (row.Shelf != exportedShelf)
+                {
+                    row.Shelf = exportedShelf;
+                    changed = true;
+                    section.Add(exportedShelf == PhotoShelf.Archive ? "shelf-archive" : "shelf-timeline");
+                }
 
                 var exportedSource = ParseEnum(item.TakenAtSource, TakenAtSource.Unknown);
                 // §2.7: Manual outranks every automatic source and is never overwritten by one. A
@@ -455,6 +466,11 @@ namespace MovieTheater.Photos
                         RangeStart = item.RangeStart,
                         RangeEnd = item.RangeEnd,
                         SortOrder = item.SortOrder,
+                        // §2.12: which index the collection belongs on, and whose work it is. An older
+                        // export carries neither, which restores as a plain family album — what every
+                        // album written before Phase 7 was.
+                        Shelf = item.Shelf == null ? PhotoShelf.Timeline : ParseEnum(item.Shelf, PhotoShelf.Timeline),
+                        ArtistName = item.ArtistName,
                         CreatedUtc = item.CreatedUtc == default ? DateTime.UtcNow : item.CreatedUtc,
                     };
                     db.PhotoAlbums.Add(album);
@@ -482,6 +498,9 @@ namespace MovieTheater.Photos
                 if (album.RangeStart != item.RangeStart) { album.RangeStart = item.RangeStart; changed = true; }
                 if (album.RangeEnd != item.RangeEnd) { album.RangeEnd = item.RangeEnd; changed = true; }
                 if (album.SortOrder != item.SortOrder) { album.SortOrder = item.SortOrder; changed = true; }
+                var albumShelf = item.Shelf == null ? PhotoShelf.Timeline : ParseEnum(item.Shelf, PhotoShelf.Timeline);
+                if (album.Shelf != albumShelf) { album.Shelf = albumShelf; changed = true; }
+                if (album.ArtistName != item.ArtistName) { album.ArtistName = item.ArtistName; changed = true; }
                 if (coverId != null && album.CoverAssetId != coverId) { album.CoverAssetId = coverId; changed = true; }
 
                 foreach (var entry in item.Entries)

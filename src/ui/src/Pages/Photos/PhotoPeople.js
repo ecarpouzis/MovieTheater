@@ -320,6 +320,10 @@ function PhotoPersonPage({ id, onBack, onOpen, onOpenPerson }) {
   const [items, setItems] = useState([]);
   const [state, setState] = useState("loading");
   const [hasMore, setHasMore] = useState(false);
+  // §2.12: how many of this person's photographs are on the GALLERY shelf and therefore not on this
+  // page. Read from the timeline response rather than counted here, because the exclusion is the
+  // server's and only the server knows what it left out.
+  const [archived, setArchived] = useState(0);
 
   const load = useCallback(
     async (skip) => {
@@ -335,6 +339,7 @@ function PhotoPersonPage({ id, onBack, onOpen, onOpenPerson }) {
         }
         const body = await pageResponse.json();
         setItems((prev) => (skip === 0 ? body.items || [] : prev.concat(body.items || [])));
+        setArchived(body.archived || 0);
         setHasMore(!!body.hasMore);
         setState("ready");
       } catch {
@@ -371,6 +376,19 @@ function PhotoPersonPage({ id, onBack, onOpen, onOpenPerson }) {
           : ""}
         {detail?.suggestionCount ? ` · ${detail.suggestionCount} suggestion(s) waiting` : ""}
       </p>
+
+      {/* §2.12: a person page is a page of the family record, so gallery pictures are left off it —
+          somebody tagged in a meme was not thereby at that afternoon. But the exclusion has no
+          checkbox to reveal it (unlike hidden), so it is REPORTED: an omission nobody can see is
+          indistinguishable from data loss. Drawn only when there is something to say. */}
+      {archived > 0 && (
+        <p className="photo-person-archived">
+          <span className="photo-person-chip is-static">{archived.toLocaleString()} in the gallery</span>
+          <span className="photos-note">
+            Not shown here — they are art or memes rather than part of the family record.
+          </span>
+        </p>
+      )}
 
       {detail?.alsoWith?.length > 0 && (
         <div className="photo-person-chips">

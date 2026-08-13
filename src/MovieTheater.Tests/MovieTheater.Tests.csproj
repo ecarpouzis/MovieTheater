@@ -134,6 +134,13 @@
          test writes anywhere near the collection. The CliFx command is excluded as always. -->
     <Compile Include="..\MovieTheater\Photos\PhotoGoogleSidecar.cs" Link="Photos\PhotoGoogleSidecar.cs" />
     <Compile Include="..\MovieTheater\Photos\PhotoGoogleMesh.cs" Link="Photos\PhotoGoogleMesh.cs" />
+    <!-- Phase 7 the Gallery shelf (docs/photos-plan.md §2.12). Compiled from source for the reason
+         every pass above it is: the prefix/exclusion arithmetic, the group-coherent expansion and —
+         above all — IDEMPOTENCY are claims about the SHIPPED engine, and idempotency in particular
+         can only be measured by running the real thing twice against the same rows. The pass reads no
+         files at all, so the fixture it runs on is a database and nothing else. The CliFx command is
+         excluded as always. -->
+    <Compile Include="..\MovieTheater\Photos\PhotoShelfPass.cs" Link="Photos\PhotoShelfPass.cs" />
     <!-- The extracted per-core option catalog, embedded here too so the quality-preset tests can
          validate preset tokens against the FULL catalog (the hand-defined entries alone don't cover
          the extracted keys the presets pin). LoadExtracted finds it by resource-name suffix. -->

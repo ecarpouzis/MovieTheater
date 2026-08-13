@@ -91,6 +91,13 @@ namespace MovieTheater.Photos
 
         public bool Hidden { get; set; }
 
+        /// <summary>Phase 7 (§2.12): which shelf this asset was filed on. Additive, so it does not bump
+        /// the format version — an older export carries none, which reads as
+        /// <see cref="MovieTheater.Db.PhotoShelf.Timeline"/>, and that is true of every asset written
+        /// before the Gallery existed. Exported because filing a thousand memes off the timeline is
+        /// human labor of exactly the kind §2.11 exists to protect.</summary>
+        public string? Shelf { get; set; }
+
         public DateTime? TakenAt { get; set; }
 
         public DateTime? TakenAtUtcRaw { get; set; }
@@ -176,6 +183,14 @@ namespace MovieTheater.Photos
         public DateTime? RangeEnd { get; set; }
 
         public int SortOrder { get; set; }
+
+        /// <summary>Phase 7 (§2.12): which index this album belongs on. Additive; absent reads as the
+        /// family album shelf, which is what every album written before the Gallery was.</summary>
+        public string? Shelf { get; set; }
+
+        /// <summary>Phase 7 (§2.12): the artist, when this is an artist collection. Additive and
+        /// nullable in both directions — most albums have none, and that is not a missing value.</summary>
+        public string? ArtistName { get; set; }
 
         public string? CreatedByUserName { get; set; }
 

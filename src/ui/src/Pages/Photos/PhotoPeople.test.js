@@ -24,6 +24,9 @@ vi.mock("antd", async () => {
   };
 });
 
+// §2.12: how many of this person's photographs the server left off the page because they are on
+// the gallery shelf. Zero for almost everyone, which is why the chip is conditional.
+let archivedCount = 0;
 const calls = { create: [], update: [], merge: [], person: [], timeline: [] };
 const ok = (body) => Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(body) });
 
@@ -58,7 +61,7 @@ vi.mock("../../MovieAPI", () => ({
             gridUrl: "https://gateway.example/s/tok1/PhotoThumb",
           },
         ],
-        total: 1, skip: 0, hasMore: false, dataPlane: true,
+        total: 1, skip: 0, hasMore: false, dataPlane: true, archived: archivedCount,
       });
     },
   },
@@ -179,6 +182,24 @@ describe("a person page", () => {
     expect(await screen.findByText(/Also with/)).toBeTruthy();
     // The co-occurrence chip carries the count, which is what makes it worth clicking.
     expect(screen.getByText("3")).toBeTruthy();
+  });
+
+  it("says how many of their photos are in the gallery, and says nothing when none are", async () => {
+    // §2.12: the person timeline drops the gallery shelf — somebody tagged in a meme was not thereby
+    // at that afternoon — but the omission is REPORTED. An exclusion nobody can see is
+    // indistinguishable from data loss, and this one has no checkbox to reveal it.
+    archivedCount = 4;
+    render(<PeopleHarness people={[person(3, "Subject A")]} unnamed={[]} loading={false} onOpenAsset={() => {}} />);
+    fireEvent.click(screen.getByText("Subject A"));
+
+    expect(await screen.findByText("4 in the gallery")).toBeTruthy();
+
+    cleanup();
+    archivedCount = 0;
+    render(<PeopleHarness people={[person(3, "Subject A")]} unnamed={[]} loading={false} onOpenAsset={() => {}} />);
+    fireEvent.click(screen.getByText("Subject A"));
+    await screen.findByText(/Also with/);
+    expect(screen.queryByText(/in the gallery/)).toBeNull();
   });
 
   it("a co-occurrence chip navigates to that person", async () => {

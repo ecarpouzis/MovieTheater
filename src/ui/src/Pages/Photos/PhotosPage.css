@@ -1643,3 +1643,140 @@
     padding: 26px 22px 24px;
   }
 }
+
+/* ── The Gallery (docs/photos-plan.md §2.12) ──────────────────────────────────────────────────────
+   Art and memes, filed off the family timeline and given their own room.
+
+   The brief for this room: it must read as a DIFFERENT room without becoming a different design.
+   So nothing new is invented — no second palette, no second type scale. What changes is the LIGHT:
+   the page drops onto --photos-well, the recessed tone a print already sits on everywhere else in
+   this section, and the photographs are hung on it with far more air than the contact-sheet timeline
+   gives them. Warm paper for the family album, deeper mount for the gallery wall; the same album,
+   two ways of lighting it.
+
+   The tokens are the section's own (theme.css, :root[data-feature="photos"]) and they already flip
+   for dark mode, so this whole block inherits both themes without restating a single colour. */
+
+.photos-page--gallery {
+  background: var(--photos-well);
+  /* Pulled back out to the page's own gutters so the well reads as the wall behind the pictures
+     rather than as a panel floating on the page. */
+  box-shadow: 0 0 0 100vmax var(--photos-well);
+  clip-path: inset(0 -100vmax);
+}
+
+.photos-page .photo-gallery-shelf {
+  margin: 0 0 34px;
+}
+
+.photos-page .photo-gallery-shelf .photos-panel-head {
+  border-bottom: 1px solid var(--photos-rule);
+  color: var(--photos-stamp);
+  padding-bottom: 6px;
+}
+
+/* An artist's card carries a name rather than an event, so the name is what gets the emphasis — a
+   hairline in the stamp colour along the top edge, the way a label card is ruled. */
+.photos-page .photo-album-card.is-artist {
+  border-top: 2px solid var(--photos-stamp);
+}
+
+.photos-page .photo-album-card-sub {
+  color: var(--text-muted);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  padding: 0 2px;
+  text-transform: uppercase;
+}
+
+/* The album editor's shelf control. A <select> rather than a switch: there are two shelves today and
+   the phrasing has to survive a third. */
+.photos-page .photo-album-shelf {
+  align-items: center;
+  color: var(--text-secondary);
+  display: flex;
+  font-size: 11px;
+  gap: 8px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.photos-page .photo-album-shelf select {
+  background: var(--card-surface);
+  border: 1px solid var(--card-border);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 12px;
+  padding: 5px 8px;
+  text-transform: none;
+}
+
+/* ── The folder view's shelf badge ──────────────────────────────────────────────────────────────
+   Same corner-mark family as the hidden and duplicate-group marks: an explanation, never a dimmed
+   tile. A gallery picture in the folder view is still a photo that is still on disk. */
+
+.photos-page .photo-tile-shelf {
+  background: color-mix(in srgb, var(--photos-stamp) 82%, transparent);
+  bottom: 4px;
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  left: 4px;
+  letter-spacing: 0.1em;
+  padding: 1px 4px;
+  position: absolute;
+  pointer-events: none;
+  text-transform: uppercase;
+}
+
+/* ── The plaque ─────────────────────────────────────────────────────────────────────────────────
+   What a gallery puts BESIDE a painting rather than on it — so it sits under the tile in the gutter
+   the gallery layout opened up, not over the artwork. The title is filename-derived (nothing invents
+   a title, §2.7's stance about dates applied to names) and clamps to one line rather than pushing
+   the row out of the layout the virtualizer has already measured. */
+
+.photos-page .photo-grid--gallery .photo-tile {
+  overflow: visible;
+}
+
+.photos-page .photo-tile-plaque {
+  bottom: -21px;
+  display: flex;
+  gap: 6px;
+  left: 0;
+  position: absolute;
+  right: 0;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.photos-page .photo-tile-plaque-title {
+  color: var(--text-secondary);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.photos-page .photo-tile-plaque-artist {
+  color: var(--text-muted);
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ── The person page's "N in the gallery" chip (§2.12) ─────────────────────────────────────────── */
+
+.photos-page .photo-person-archived {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+
+.photos-page .photo-person-chip.is-static {
+  cursor: default;
+}

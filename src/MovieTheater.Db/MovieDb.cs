@@ -550,6 +550,31 @@ namespace MovieTheater.Db
                 .IsDescending(false, true)
                 .IncludeProperties(a => new { a.Path, a.Kind, a.Width, a.Height, a.DurationSec, a.TakenAtSource, a.MissingSinceUtc });
 
+            // Phase 7 (§2.12): the timeline now also says `AND Shelf = Timeline`, and the index above
+            // does not carry Shelf in its key OR its INCLUDE — so that predicate would become a residual
+            // the server can only evaluate after fetching the row, on the hottest query in the section.
+            //
+            // The obvious repair is to add Shelf to the existing key. It is not available: an index key
+            // cannot be extended in place, so that repair is a DROP and a CREATE, and Phase 7's migration
+            // is required to be purely additive against a live shared database. This is the additive
+            // spelling of the same fix — a SECOND covering index, keyed and INCLUDE-ing exactly as the
+            // first, FILTERED to the shelf the timeline reads. Three properties earn it:
+            //   · it matches the timeline/undated/person-page predicate exactly, so those pages seek;
+            //   · it SHRINKS as the archive grows, which is the same reason the three ingest queues are
+            //     filtered indexes rather than plain ones;
+            //   · the original stays for the surfaces that do NOT filter by shelf — the folder tree, and
+            //     an admin browsing with show-hidden on.
+            // The cost is honest: two covering indexes on one table means the metadata pass maintains
+            // both. That is a bounded, one-time-per-photo write against an unbounded, every-page read.
+            //   ⚠ Filtered index ⇒ SET QUOTED_IDENTIFIER ON in any session WRITING PhotoAsset. That
+            //   constraint already binds this table (three ingest queues above), so Phase 7 adds no new
+            //   operational rule — only one more index that depends on the one already in force.
+            modelBuilder.Entity<PhotoAsset>()
+                .HasIndex(a => new { a.Hidden, a.TakenAt }, "IX_PhotoAsset_TimelineShelf")
+                .IsDescending(false, true)
+                .HasFilter("[Shelf] = 0")
+                .IncludeProperties(a => new { a.Path, a.Kind, a.Width, a.Height, a.DurationSec, a.TakenAtSource, a.MissingSinceUtc });
+
             // Re-pairing moved files and exact-dupe grouping both start here. NOT unique — equal hashes
             // are the entire point of §2.6 — and nullable until the hash pass has run over the row.
             modelBuilder.Entity<PhotoAsset>()
@@ -667,6 +692,10 @@ namespace MovieTheater.Db
             modelBuilder.Entity<PhotoAlbum>()
                 .HasIndex(a => a.Slug)
                 .IsUnique();
+            // Phase 7 (§2.12) splits the album index in two by Shelf, and deliberately adds NO index for
+            // it: PhotoAlbum holds tens of rows, both indexes read the whole table either way, and an
+            // index whose only effect is to be maintained is a cost with no reader. Said out loud so the
+            // absence reads as a decision rather than an oversight.
             modelBuilder.Entity<PhotoAlbum>()
                 .HasOne(a => a.CoverAsset)
                 .WithMany()

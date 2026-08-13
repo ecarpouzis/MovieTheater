@@ -13,18 +13,34 @@ import { formatDuration } from "./PhotoVideo";
 
 const OVERSCAN = 1000;
 
-export default function PhotoGrid({ items, groupBySection = true, onOpen, emptyText, selection }) {
+// §2.12's museum treatment, as two numbers. Artwork is looked AT, one piece at a time, so a gallery
+// row is taller and the gutters are wide enough that two paintings never read as one diptych. The
+// family timeline keeps its dense contact-sheet packing, which is right for a hundred snapshots of
+// one afternoon and wrong for a wall.
+export const GALLERY_TARGET_ROW_HEIGHT = 300;
+export const GALLERY_GAP = 26;
+
+export default function PhotoGrid({
+  items,
+  groupBySection = true,
+  onOpen,
+  emptyText,
+  selection,
+  gallery = false,
+  plaqueArtist = null,
+}) {
   const hostRef = useRef(null);
   const rootRef = useRef(null);
   const rafRef = useRef(0);
   const [width, setWidth] = useState(0);
   const [range, setRange] = useState([0, 0]);
 
+  const gap = gallery ? GALLERY_GAP : DEFAULT_GAP;
   const { blocks, totalHeight } = width > 0
     ? buildBlocks(items, {
         containerWidth: width,
-        targetRowHeight: DEFAULT_TARGET_ROW_HEIGHT,
-        gap: DEFAULT_GAP,
+        targetRowHeight: gallery ? GALLERY_TARGET_ROW_HEIGHT : DEFAULT_TARGET_ROW_HEIGHT,
+        gap,
         groupBySection,
       })
     : { blocks: [], totalHeight: 0 };
@@ -82,7 +98,7 @@ export default function PhotoGrid({ items, groupBySection = true, onOpen, emptyT
 
   const [start, end] = range;
   return (
-    <div className="photo-grid" ref={hostRef} style={{ height: totalHeight }}>
+    <div className={`photo-grid${gallery ? " photo-grid--gallery" : ""}`} ref={hostRef} style={{ height: totalHeight }}>
       {blocks.slice(start, end).map((block) =>
         block.type === "header" ? (
           <div className="photo-grid-header" key={`h-${block.key}-${block.top}`} style={{ top: block.top }}>
@@ -91,7 +107,13 @@ export default function PhotoGrid({ items, groupBySection = true, onOpen, emptyT
         ) : (
           <div className="photo-grid-row" key={`r-${block.top}`} style={{ top: block.top, height: block.height }}>
             {block.tiles.map((tile) => (
-              <PhotoTile key={tile.item.id} tile={tile} onOpen={onOpen} selection={selection} />
+              <PhotoTile
+                key={tile.item.id}
+                tile={tile}
+                onOpen={onOpen}
+                selection={selection}
+                plaqueArtist={gallery ? plaqueArtist : null}
+              />
             ))}
           </div>
         )
@@ -137,7 +159,7 @@ export function videoBadge(item) {
  * and the hidden badge is a subtle corner mark rather than a dimmed tile: a hidden photo in the
  * folder view is still a photo that is still on disk (§2.9), and it must not read as broken.
  */
-function PhotoTile({ tile, onOpen, selection }) {
+function PhotoTile({ tile, onOpen, selection, plaqueArtist = null }) {
   const { item, width, height } = tile;
   const style = { width, height };
   const label = item.path?.split("/").pop() ?? "";
@@ -157,6 +179,15 @@ function PhotoTile({ tile, onOpen, selection }) {
       {item.hidden && (
         <span className="photo-tile-hidden" title="Hidden from the timeline and albums">
           hidden
+        </span>
+      )}
+      {/* §2.12's shelf badge, drawn on the FOLDER view where both shelves are shown together. Same
+          reasoning as the group mark beside it: on the "what is actually on disk" surface an absence
+          from the timeline is a mystery, and a two-word mark is the explanation. Suppressed inside a
+          gallery, where every picture is archived and the badge would be noise on all of them. */}
+      {item.shelf === "Archive" && !plaqueArtist && (
+        <span className="photo-tile-shelf" title="In the gallery — not on the family timeline">
+          gallery
         </span>
       )}
       {/* The §2.6 group badge. A small mark, never a dimmed tile: a collapsed copy in the folder view
@@ -203,6 +234,29 @@ function PhotoTile({ tile, onOpen, selection }) {
         </>
       )}
       {marks}
+      {/* The plaque (§2.12): what a gallery puts beside a painting rather than on it. The title is
+          derived from the filename because that is the only name these files have — nothing invents
+          one — and the artist is the collection's, since every piece on this wall is theirs. */}
+      {plaqueArtist && (
+        <span className="photo-tile-plaque">
+          <span className="photo-tile-plaque-title">{plaqueTitle(label)}</span>
+          <span className="photo-tile-plaque-artist">{plaqueArtist}</span>
+        </span>
+      )}
     </button>
   );
+}
+
+/**
+ * A filename made presentable for a plaque: the extension goes, separators become spaces, and any
+ * run of whitespace collapses.
+ *
+ * Deliberately NOT title-cased and not otherwise "improved". These names came off the internet and
+ * out of scanners, and a plaque that rewrote them would be inventing a title for a picture whose
+ * real one nobody recorded — the same reason §2.7 refuses to invent a date. Exported because it is
+ * the one piece of the museum treatment with a right and a wrong answer per input.
+ */
+export function plaqueTitle(fileName) {
+  const base = String(fileName || "").replace(/\.[^.]+$/, "");
+  return base.replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim() || String(fileName || "");
 }

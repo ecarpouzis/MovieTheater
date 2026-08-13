@@ -134,6 +134,25 @@ namespace MovieTheater.Controllers
         private IQueryable<PhotoAsset> VisibleAssets(IQueryable<PhotoAsset> query) =>
             IsCurrentUserAdmin() ? query : query.Where(a => !a.Hidden);
 
+        /// <summary>
+        /// The FAMILY RECORD: everything on the timeline shelf (§2.12). Written once and applied by the
+        /// timeline, the undated shelf and person pages, because those three are the surfaces that
+        /// answer "what happened in this family" — and art is not an answer to that question.
+        ///
+        /// <para><b>Deliberately NOT applied to the folder view or to album pages.</b> The folder view
+        /// is the "what is actually on disk" surface, so it shows every shelf and marks the archived
+        /// ones with a badge, exactly as it already shows collapsed duplicates and marks them. An album
+        /// renders whatever it contains regardless of shelf, which is the entire point of the Gallery:
+        /// a collection of an artist's work must show its artwork to a family member who opens it.</para>
+        ///
+        /// <para><b>There is no <c>includeArchive</c> opt-in, and that is the difference from
+        /// hidden.</b> Hidden is a privacy boundary with an admin override; a shelf is a filing
+        /// decision, and the way to see the other shelf is to go to it — the Gallery is a section, not
+        /// a checkbox.</para>
+        /// </summary>
+        private static IQueryable<PhotoAsset> TimelineShelf(IQueryable<PhotoAsset> query) =>
+            query.Where(a => a.Shelf == PhotoShelf.Timeline);
+
         // ── Status ───────────────────────────────────────────────────────────────────────────────
 
         /// <summary>
@@ -161,7 +180,15 @@ namespace MovieTheater.Controllers
                 // first day so drift is visible rather than discovered.
                 Missing = g.Sum(a => a.MissingSinceUtc != null ? 1 : 0),
                 Hidden = g.Sum(a => a.Hidden ? 1 : 0),
-                Undated = g.Sum(a => !a.Hidden && a.MissingSinceUtc == null && a.TakenAt == null ? 1 : 0),
+                // §2.12: what the Gallery holds. Counted over the same single scan as everything else
+                // here rather than as its own CountAsync — the whole reason this is a conditional sum.
+                Archived = g.Sum(a => a.Shelf == PhotoShelf.Archive ? 1 : 0),
+                // Both remaining counts now say TIMELINE SHELF, because both are read as "how much of
+                // the family record is X". Undated in particular drives whether the navbar offers the
+                // undated shelf at all, and offering a shelf that the timeline-shelf query then renders
+                // empty would be a rail entry leading nowhere.
+                Undated = g.Sum(a => !a.Hidden && a.MissingSinceUtc == null && a.TakenAt == null
+                                     && a.Shelf == PhotoShelf.Timeline ? 1 : 0),
                 // §2.3: a video with no Jellyfin item id is on disk, browsable and taggable, and simply
                 // cannot play — which is what the ⚠ on the Review tab counts against.
                 VideosSynced = g.Sum(a => a.Kind == PhotoAssetKind.Video && a.MissingSinceUtc == null
@@ -197,7 +224,18 @@ namespace MovieTheater.Controllers
             });
 
             var assets = asset.Total;
-            var albums = await movieDb.PhotoAlbums.CountAsync();
+            // §2.12 splits the album index in two. One grouped query, same reasoning as the asset
+            // counts: the navbar draws both rail entries from this response and a CountAsync each would
+            // be two round trips to answer one question.
+            var album = await CountsAsync(movieDb.PhotoAlbums, g => new AlbumCounts
+            {
+                Total = g.Count(),
+                Archive = g.Sum(a => a.Shelf == PhotoShelf.Archive ? 1 : 0),
+                // An archive album with an artist is an ARTIST COLLECTION; the Gallery index leads with
+                // them, so the count is what lets the rail say whether there is a gallery worth the name.
+                Artists = g.Sum(a => a.Shelf == PhotoShelf.Archive && a.ArtistName != null ? 1 : 0),
+            });
+            var albums = album.Total - album.Archive;
             var collapsed = await PhotoDupeMasters.CollapsedAssetIds(movieDb).CountAsync();
             var pendingTagSuggestions = await movieDb.PhotoPersonTags
                 .CountAsync(t => t.Source == PhotoTagSource.Suggested);
@@ -218,7 +256,13 @@ namespace MovieTheater.Controllers
                 hidden = asset.Hidden,
                 undated = asset.Undated,
                 people = person.Total,
+                // The FAMILY album index only (§2.12) — Gallery collections are counted beside it, not
+                // inside it, so the two rail entries add up to the album table rather than double-count
+                // part of it.
                 albums,
+                archived = asset.Archived,
+                archiveAlbums = album.Archive,
+                artistCollections = album.Artists,
                 pendingDupeGroups = dupe.Pending,
                 pendingNearGroups = dupe.PendingNear,
                 // Non-masters a settled group keeps out of the timeline (§2.6). Not a deletion and not
@@ -271,8 +315,16 @@ namespace MovieTheater.Controllers
             public int Videos { get; set; }
             public int Missing { get; set; }
             public int Hidden { get; set; }
+            public int Archived { get; set; }
             public int Undated { get; set; }
             public int VideosSynced { get; set; }
+        }
+
+        private sealed class AlbumCounts
+        {
+            public int Total { get; set; }
+            public int Archive { get; set; }
+            public int Artists { get; set; }
         }
 
         private sealed class PersonCounts
@@ -319,12 +371,14 @@ namespace MovieTheater.Controllers
         /// <para>Keyset, not OFFSET: an ingest running while someone browses shifts every offset, and
         /// the resulting skipped/repeated photos would look like data loss.</para>
         ///
-        /// <para><b>Three exclusions, all curation and none a deletion.</b> Hidden assets are out unless
+        /// <para><b>Four exclusions, all curation and none a deletion.</b> Hidden assets are out unless
         /// an ADMIN asks for them (<c>includeHidden</c>, gated by <see cref="ShowHidden"/> since Phase 4);
-        /// assets from an ingest batch nobody has approved are quarantined until someone does (§2.5); and
-        /// the non-master copies of a settled duplicate group are COLLAPSED to their master (§2.6), so one
-        /// photograph that exists three times on disk is one card here. All three are WHERE clauses over
-        /// rows that stay exactly where they are.</para>
+        /// assets from an ingest batch nobody has approved are quarantined until someone does (§2.5); the
+        /// non-master copies of a settled duplicate group are COLLAPSED to their master (§2.6), so one
+        /// photograph that exists three times on disk is one card here; and since Phase 7 the Gallery
+        /// shelf is out entirely (§2.12) — art and memes are not the family record, and unlike the other
+        /// three this one has NO opt-in here, because the way to see the Gallery is to open the Gallery.
+        /// All four are WHERE clauses over rows that stay exactly where they are.</para>
         /// </summary>
         [HttpGet("/API/Photos/Timeline")]
         public async Task<IActionResult> Timeline(
@@ -333,7 +387,9 @@ namespace MovieTheater.Controllers
         {
             take = Math.Clamp(take, 1, MaxTake);
             includeHidden = ShowHidden(includeHidden);
-            var query = movieDb.PhotoAssets.Where(a => a.MissingSinceUtc == null);
+            // §2.12: the shelf filter goes on FIRST so the filtered covering index
+            // (IX_PhotoAsset_TimelineShelf) is the obvious candidate for the whole predicate.
+            var query = TimelineShelf(movieDb.PhotoAssets).Where(a => a.MissingSinceUtc == null);
             if (!includeHidden) query = query.Where(a => !a.Hidden);
             if (!includeCollapsed)
             {
@@ -640,6 +696,58 @@ namespace MovieTheater.Controllers
         }
 
         /// <summary>
+        /// Move photographs between the family timeline and the Gallery (§2.12) — one card or a whole
+        /// selection, one round-trip either way.
+        ///
+        /// <para><b>Member work, at exactly hide's permission level.</b> Deciding that a picture is art
+        /// rather than family record is ordinary curation, and the class-level family gate is the whole
+        /// of the check — the same stance Phase 2 took for hiding and for the same reason: a shared
+        /// family album whose filing only one person may change is one person's album. (Hide's ADMIN
+        /// half is about SEEING the hidden pile, which is a different question and is unaffected here.)</para>
+        ///
+        /// <para><b>The move is GROUP-COHERENT</b> (see
+        /// <see cref="PhotoDupeMasters.GroupCoherentIdsAsync"/>): a settled duplicate group is one
+        /// photograph on the browse surfaces, so it changes shelf as a unit or the collapse breaks. The
+        /// number of extra rows that came along is REPORTED, because a member who moved six cards and
+        /// changed nine is owed the reason — the same courtesy the album and tag routes already pay for
+        /// master redirects.</para>
+        ///
+        /// <para>A flag, and only ever a flag (§6). Nothing is written, renamed, moved or deleted under
+        /// the collection root; the pictures are in the other section and can be sent back from it.</para>
+        /// </summary>
+        [HttpPost("/API/Photos/Shelf")]
+        public async Task<IActionResult> Shelf([FromBody] PhotoShelfRequest request)
+        {
+            if (request?.Ids == null || request.Ids.Count == 0) return BadRequest(new { message = "No assets selected." });
+            if (!Enum.TryParse<PhotoShelf>(request.Shelf, ignoreCase: true, out var shelf))
+                return BadRequest(new { message = "Unknown shelf." });
+
+            var ids = request.Ids.Distinct().Take(MaxBatchIds).ToList();
+            var expanded = await PhotoDupeMasters.GroupCoherentIdsAsync(movieDb, ids);
+            var alsoMoved = expanded.Count - ids.Count;
+
+            var rows = await movieDb.PhotoAssets.Where(a => expanded.Contains(a.Id)).ToListAsync();
+            var changed = 0;
+            foreach (var row in rows)
+            {
+                if (row.Shelf == shelf) continue;
+                row.Shelf = shelf;
+                changed++;
+            }
+            if (changed > 0) await movieDb.SaveChangesAsync();
+
+            return Json(new
+            {
+                requested = ids.Count,
+                matched = rows.Count,
+                changed,
+                // Group members dragged along by the coherence rule — never silent.
+                groupMembersIncluded = alsoMoved,
+                shelf = shelf.ToString(),
+            });
+        }
+
+        /// <summary>
         /// The suggested-hide proposals waiting for a verdict (§2.9), newest first, each with its rule
         /// breakdown and a handful of example paths.
         ///
@@ -878,19 +986,45 @@ namespace MovieTheater.Controllers
         // ── Albums (§2.9) ────────────────────────────────────────────────────────────────────────
 
         /// <summary>
-        /// The album index. Albums are DB rows, never folders: the tree holds device dumps and misc
-        /// piles that are not albums, so the folder view is a browse surface and a SEED, and the folder
-        /// is never an album's identity (§2.9).
+        /// The FAMILY album index. Albums are DB rows, never folders: the tree holds device dumps and
+        /// misc piles that are not albums, so the folder view is a browse surface and a SEED, and the
+        /// folder is never an album's identity (§2.9).
+        ///
+        /// <para>Since Phase 7 this is one of TWO indexes over the same table (§2.12): Gallery
+        /// collections live at <c>/API/Photos/Gallery</c> and are excluded here, so the family album
+        /// shelf stays a shelf of family albums. The DETAIL page is shared — an archive album is still
+        /// <c>/API/Photos/Album/{slug}</c> — so every link ever sent keeps working.</para>
         /// </summary>
         [HttpGet("/API/Photos/Albums")]
-        public async Task<IActionResult> Albums()
+        public Task<IActionResult> Albums() => AlbumIndexAsync(PhotoShelf.Timeline);
+
+        /// <summary>
+        /// The GALLERY index (§2.12): the art, meme and reference collections the timeline does not
+        /// carry, browsable by every family member — the section the owner asked for when they said
+        /// this material "isn't the timeline, put [it] in another section".
+        ///
+        /// <para><b>Artist collections lead.</b> An archive album carrying an
+        /// <see cref="PhotoAlbum.ArtistName"/> is a body of one person's work rather than a pile, and
+        /// the ordering says so before any card is drawn. Within each half the album's own sort order
+        /// still applies, so the shelf remains hand-arrangeable.</para>
+        /// </summary>
+        [HttpGet("/API/Photos/Gallery")]
+        public Task<IActionResult> Gallery() => AlbumIndexAsync(PhotoShelf.Archive);
+
+        private async Task<IActionResult> AlbumIndexAsync(PhotoShelf shelf)
         {
             var userId = GetCurrentUserId() ?? 0;
             var albums = await movieDb.PhotoAlbums
-                .OrderBy(a => a.SortOrder).ThenByDescending(a => a.CreatedUtc)
+                .Where(a => a.Shelf == shelf)
+                // Artist collections first on both shelves — a no-op on the family shelf, where nothing
+                // carries an artist, and the Gallery's whole ordering rule on the other. One expression
+                // rather than two query shapes that could drift apart.
+                .OrderByDescending(a => a.ArtistName != null ? 1 : 0)
+                .ThenBy(a => a.SortOrder).ThenByDescending(a => a.CreatedUtc)
                 .Select(a => new
                 {
                     a.Id, a.Title, a.Slug, a.Description, a.RangeStart, a.RangeEnd, a.SortOrder, a.CreatedUtc,
+                    a.Shelf, a.ArtistName,
                     count = a.Entries.Count,
                     cover = a.CoverAsset,
                     // Falls back to the first entry so a fresh album is not a grey box: a cover is a
@@ -912,9 +1046,12 @@ namespace MovieTheater.Controllers
                     rangeEnd = a.RangeEnd,
                     sortOrder = a.SortOrder,
                     createdUtc = a.CreatedUtc,
+                    shelf = a.Shelf.ToString(),
+                    artistName = a.ArtistName,
                     count = a.count,
                     coverUrl = ThumbUrl(a.cover ?? a.firstEntry, userId, PhotoStreamRoutes.SizeGrid),
                 }).ToList(),
+                shelf = shelf.ToString(),
                 dataPlane = DataPlaneConfigured,
             });
         }
@@ -927,6 +1064,12 @@ namespace MovieTheater.Controllers
         /// instead (see <c>AddAssetsAsync</c>), so only entries created before a group was settled can
         /// hit it — and showing a photo twice in one album is precisely what settling that group
         /// decided against.</para>
+        ///
+        /// <para><b>The SHELF is not filtered here at all</b> (§2.12), on either the album's shelf or
+        /// its members'. An album shows what it contains: a Gallery collection full of archive assets
+        /// renders every one of them to any family member, which is the whole reason the Gallery is a
+        /// section rather than a longer hide list. One URL serves both shelves, so a deep link minted
+        /// before Phase 7 resolves exactly as it did.</para>
         /// </summary>
         [HttpGet("/API/Photos/Album/{slug}")]
         public async Task<IActionResult> Album(string slug, int skip = 0, int take = DefaultTake,
@@ -1040,6 +1183,24 @@ namespace MovieTheater.Controllers
             if (request.RangeStartSet) album.RangeStart = request.RangeStart;
             if (request.RangeEndSet) album.RangeEnd = request.RangeEnd;
             if (request.SortOrder != null) album.SortOrder = request.SortOrder.Value;
+
+            // §2.12: the album's shelf, and the artist that turns a Gallery collection into a body of
+            // work. Moving an album between shelves moves the ALBUM only — its assets keep whatever
+            // shelf they were put on, because "which index this collection appears on" and "is this
+            // photograph part of the family record" are two different questions. The selection-bar
+            // action is the one that moves assets.
+            if (request.Shelf != null)
+            {
+                if (!Enum.TryParse<PhotoShelf>(request.Shelf, ignoreCase: true, out var shelf))
+                    return BadRequest(new { message = "Unknown shelf." });
+                album.Shelf = shelf;
+            }
+            if (request.ArtistNameSet)
+            {
+                var artist = request.ArtistName?.Trim();
+                if (artist != null && artist.Length > 256) artist = artist.Substring(0, 256);
+                album.ArtistName = string.IsNullOrWhiteSpace(artist) ? null : artist;
+            }
 
             if (request.CoverAssetId != null)
             {
@@ -1259,6 +1420,11 @@ namespace MovieTheater.Controllers
             sortOrder = album.SortOrder,
             coverAssetId = album.CoverAssetId,
             createdUtc = album.CreatedUtc,
+            // §2.12: which index this album sits on, and — when it is a Gallery collection of one
+            // person's work — whose. The page draws its eyebrow and its museum treatment from these two,
+            // so they travel with every album readout rather than being re-derived per surface.
+            shelf = album.Shelf.ToString(),
+            artistName = album.ArtistName,
         };
 
         // ── People (§2.8) ────────────────────────────────────────────────────────────────────────
@@ -1499,10 +1665,21 @@ namespace MovieTheater.Controllers
 
             var tagged = PhotoPersonTags.Affirmed(movieDb.PhotoPersonTags.Where(t => t.FamilyPersonId == id))
                 .Select(t => t.PhotoAssetId);
-            var query = movieDb.PhotoAssets.Where(a => a.MissingSinceUtc == null && tagged.Contains(a.Id));
-            if (!includeHidden) query = query.Where(a => !a.Hidden);
+            var all = movieDb.PhotoAssets.Where(a => a.MissingSinceUtc == null && tagged.Contains(a.Id));
+            // §2.12: a person page is a page of the family record, so the Gallery shelf is out of it —
+            // somebody tagged in a meme is not thereby part of that afternoon.
+            var query = TimelineShelf(all);
+            if (!includeHidden) { query = query.Where(a => !a.Hidden); all = all.Where(a => !a.Hidden); }
             var collapsed = PhotoDupeMasters.CollapsedAssetIds(movieDb);
             query = query.Where(a => !collapsed.Contains(a.Id));
+
+            // …but it is REPORTED rather than silent. An exclusion nobody can see is indistinguishable
+            // from data loss, and this one has no checkbox to reveal it (see TimelineShelf). The chip
+            // says how many of this person's photographs are on the other shelf, so the page is honest
+            // about being a filtered view of what it knows. Counted only when there is something to say.
+            var archived = await all.Where(a => a.Shelf == PhotoShelf.Archive)
+                .Where(a => !collapsed.Contains(a.Id))
+                .CountAsync();
 
             var total = await query.CountAsync();
             // Undated photographs of a person belong on the page, at the end, rather than on a separate
@@ -1521,6 +1698,9 @@ namespace MovieTheater.Controllers
                 skip,
                 hasMore = skip + rows.Count < total,
                 includeHidden,
+                // §2.12: "N archived" — the count-chip that keeps the shelf exclusion from being a
+                // silent one. Zero for almost every person, which is why the UI draws it only when set.
+                archived,
                 dataPlane = DataPlaneConfigured,
             });
         }
@@ -2606,6 +2786,11 @@ namespace MovieTheater.Controllers
             yearMax = a.YearMax,
             durationSec = a.DurationSec,
             hidden = a.Hidden,
+            // §2.12: which shelf this is on. Carried on every card because the FOLDER view shows both
+            // shelves and marks the archived ones — the same way it already shows collapsed duplicates
+            // and marks them, and for the same reason: on the "what is actually on disk" surface an
+            // absence is a mystery, whereas a badge is an explanation.
+            shelf = a.Shelf.ToString(),
             originalRenderable = a.OriginalRenderable,
             // The UI renders a deterministic placeholder from this rather than an <img> that will
             // 404: videos are Phase 5, and HEIC/RAW have no derivative in this build (§2.2).
@@ -2689,6 +2874,17 @@ namespace MovieTheater.Controllers
         public bool Hidden { get; set; } = true;
     }
 
+    public class PhotoShelfRequest
+    {
+        public List<int> Ids { get; set; } = new List<int>();
+
+        /// <summary>"Timeline" or "Archive" (§2.12). One endpoint for both directions, because sending
+        /// a picture to the Gallery and bringing it back are the same edit. A STRING rather than the
+        /// enum so an unrecognised value is a 400 with a message instead of a silent bind to 0 — which
+        /// would be the shelf that means "put it back on the family timeline".</summary>
+        public string Shelf { get; set; } = "";
+    }
+
     public class PhotoApproveBatchesRequest
     {
         /// <summary>Approve a whole display group at once — a chunked walk's markers reviewed as the one
@@ -2732,6 +2928,18 @@ namespace MovieTheater.Controllers
         public int? SortOrder { get; set; }
 
         public int? CoverAssetId { get; set; }
+
+        /// <summary>§2.12: "Timeline" (the family album index) or "Archive" (the Gallery). Absent leaves
+        /// it alone — a string rather than the enum so an unknown value is a 400 with a message instead
+        /// of a silent bind to 0, which would quietly pull a collection back out of the Gallery.</summary>
+        public string? Shelf { get; set; }
+
+        /// <summary>§2.12: the artist, when this is an artist collection. Empty clears it.</summary>
+        public string? ArtistName { get; set; }
+
+        /// <summary>Whether <see cref="ArtistName"/> was sent at all — clearing an artist and leaving it
+        /// alone are different instructions, and a nullable string cannot tell them apart.</summary>
+        public bool ArtistNameSet { get; set; }
     }
 
     public class PhotoAlbumMembershipRequest

@@ -35,6 +35,34 @@ export default function PhotoSelectionBar({ ids, onChanged, onClear, people = []
     }
   };
 
+  // §2.12: move the selection between the family timeline and the gallery. Member-permitted at
+  // exactly hide's level — deciding a picture is art rather than family record is ordinary curation.
+  // The server expands the move across settled duplicate groups and reports what it dragged along,
+  // which is said out loud here for the same reason the album and tag actions say it: a member who
+  // moved six cards and changed nine is owed the reason.
+  const setShelf = async (shelf) => {
+    setBusy(true);
+    try {
+      const response = await MovieAPI.setPhotosShelf(ids, shelf);
+      if (!response.ok) {
+        message.error("Could not move those photos.");
+        return;
+      }
+      const body = await response.json();
+      message.success(
+        `${body.changed} moved to the ${shelf === "Archive" ? "gallery" : "timeline"}.` +
+          (body.groupMembersIncluded
+            ? ` ${body.groupMembersIncluded} duplicate copies moved with them.`
+            : "")
+      );
+      onChanged?.();
+    } catch {
+      message.error("Could not move those photos.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div className="photo-selection-bar">
       <span className="photo-selection-count">{ids.length} selected</span>
@@ -43,6 +71,12 @@ export default function PhotoSelectionBar({ ids, onChanged, onClear, people = []
       </button>
       <button type="button" className="photos-button" disabled={busy} onClick={() => setHidden(false)}>
         Unhide
+      </button>
+      <button type="button" className="photos-button" disabled={busy} onClick={() => setShelf("Archive")}>
+        Send to gallery
+      </button>
+      <button type="button" className="photos-button" disabled={busy} onClick={() => setShelf("Timeline")}>
+        Return to timeline
       </button>
       <button type="button" className="photos-button" disabled={busy} onClick={() => setAlbumOpen(true)}>
         Add to album

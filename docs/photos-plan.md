@@ -1,11 +1,15 @@
 # Family Photo Album Plan
 
-**Status: BUILT — all six phases (0–5 plus the Phase 6 Google mesh) are implemented and green in the
-working tree, written 2026-08-12 from a shallow survey of the collection root, the music/streaming
-verticals as precedent, and current research on Immich and the Google Photos API.**
+**Status: BUILT — all eight phases (0–5, the Phase 6 Google mesh, and the Phase 7 Gallery shelf) are
+implemented and green in the working tree, written 2026-08-12 from a shallow survey of the collection
+root, the music/streaming verticals as precedent, and current research on Immich and the Google Photos
+API. Phases 0–6 are LIVE in production; Phase 7 is not, and must not deploy before its migration is
+applied.**
 
 **Awaiting, in this order:** the commit; a StreamGateway redeploy on its host (hand-deployed — `git
-push` does nothing to it); `scripts/photos-phase6-migration.sql` applied by the owner (three additive
+push` does nothing to it); `scripts/photos-phase7-migration.sql` applied by the owner **before Phase 7
+deploys** (three additive columns and one filtered index — see the Phase 7 addendum), and
+`scripts/photos-phase6-migration.sql` if it is still outstanding (three additive
 nullable columns, the first schema change since Phase 3 — see the Phase 6 addendum); the first real
 ingest run against the collection, human-supervised; the Immich sidecar deployment
 (`docs/photos-immich-setup.md`); and the dedicated Jellyfin family library plus its scan-then-sync.
@@ -306,6 +310,69 @@ answer.
 - Run it as the closing step of any heavy curation session and before any risky migration.
   Exports are NOT written to the NAS (no XMP sidecars, ever — that would be writing next to
   originals); they live with the other pipeline data under the repo's `data/` convention.
+
+### §2.12 Shelves: the Gallery is a place, not a longer hide list (Phase 7)
+
+The tree carries piles that are not the family record — art the owner collects, memes, reference
+scrap; §1 catalogued them under `Misc Pics` and the papercraft/reference folders. The owner's
+verdict on them, verbatim in intent: they "are not album material … remove them from the typical
+timeline … We'll want a place to store art and memes eventually, but it isn't the timeline, put them
+in another section."
+
+**`Hidden` was the nearest existing tool and is the wrong one.** Since the Phase 4 addendum the
+hidden pile is revealed only to an ADMIN, so hiding art would take it away from the family rather
+than relocate it. This is the opposite instruction. So a second, orthogonal axis:
+
+- **`PhotoShelf` on `PhotoAsset` AND on `PhotoAlbum`** — `Timeline = 0` (the family record) or
+  `Archive = 1` (the Gallery). The enum value keeps the STORAGE meaning ("off the timeline"); the
+  site's copy calls the section the **Gallery**, because what a family opens is a room of pictures.
+- **Shelf answers *which section*; Hidden answers *may a non-admin see it at all*.** They compose,
+  and **Hidden always wins** — an archived-and-hidden asset is admin-only everywhere, which is
+  exactly what the NWS corner of `SAMisc` needs.
+- **Where the shelf is excluded, and where it deliberately is not.** Out of the timeline, the undated
+  shelf and person pages. IN the folder view (with a small badge beside the hidden and duplicate-group
+  marks — it is the "what is actually on disk" surface, and there an absence is a mystery while a
+  badge is an explanation) and IN every album page regardless of either shelf, which is the entire
+  point: a Gallery collection must show its artwork to any family member who opens it.
+- **There is no `includeArchive` opt-in, and that is the difference from hidden.** Hidden is a privacy
+  boundary with an admin override; a shelf is a filing decision, and the way to see the other shelf is
+  to go to it.
+- **Person pages report what they left out.** Art is not the family record, so gallery pictures are off
+  a person's page — but the page carries an "N in the gallery" chip when any of their tagged assets are
+  archived. An exclusion nobody can see is indistinguishable from data loss, and unlike hidden this one
+  has no checkbox to reveal it.
+- **Shelf moves are GROUP-COHERENT** (`PhotoDupeMasters.GroupCoherentIdsAsync`). A settled duplicate
+  group (Resolved, or Pending+Exact — the same predicate `Collapsed` is built from) is ONE photograph on
+  the browse surfaces, so it changes shelf as a unit. Move only the master and the copies stay on the
+  timeline's books while collapsed behind a card that is gone; move only a copy — which is what the
+  folder view offers — and nothing visible happens at all. A pending NEAR group does not expand: nobody
+  has agreed those are the same picture. The number of rows dragged along is always REPORTED, the same
+  courtesy the album and tag routes pay for master redirects.
+- **Museum mode.** A `PhotoAlbum.ArtistName` (nullable) on an archive album makes it an **artist
+  collection** — the owner collects several. Its page is drawn as a wall: the artist in the headline,
+  the album's own title beneath only when the two differ, the deeper `--photos-well` mount tone, a
+  taller and airier justified grid, and a small plaque under each picture carrying a filename-derived
+  title plus the artist. The title is *derived, never invented* — the §2.7 stance about dates, applied
+  to names. Plain collections (memes, misc) keep the ordinary album treatment; the `/photos/gallery`
+  index leads with artist collections, then the rest.
+- **One album component, two shelves.** `/photos/albums` lists the family shelf, `/photos/gallery` the
+  archive shelf, and the DETAIL page stays `/photos/albums/{slug}` on both — so every link anyone ever
+  sent keeps working.
+- **`photos-shelf` (CLI, chunked/resumable/idempotent, `--sqlite` lane, `--dry-run`)** files a subtree
+  by root-relative `--path-prefix` with repeatable `--exclude-prefix`, optional `--album` (create-or-find
+  by TITLE — what the operator retypes — with the slug minted server-side), optional `--artist`, and an
+  optional one-directional `--hide`. These piles are identified by WHERE THEY ARE and by nothing on the
+  row, so the operator names the folder and the pass files it; no heuristic distinguishes a painting from
+  a photograph of a wall. Counters per rule: `{matched, shelved, already, album-entries-added, hidden,
+  group-coherent}`. Reads no files at all.
+- **Export/import carry both fields** (§2.11), additively — an absent shelf reads as `Timeline`, which is
+  what every row written before Phase 7 meant, so an older export stays importable. The exporter's
+  "assets worth carrying" predicate gained `Shelf == Archive`: a bare shelf move with no album has no
+  other trace, and an export that dropped it would restore the memes onto the timeline.
+
+**Future-facing (NOT built here):** an art-sourcing lane may later add publicly-sourcable works to
+artist collections; if it does, the additive, opt-in, never-overwriting NAS-write pattern from §2.10's
+download lane is the one that applies. Nothing in Phase 7 scrapes, sources or downloads anything.
 
 ## §3 Schema (new tables; EF migration in Phase 0)
 
@@ -765,6 +832,12 @@ lesson), and `DownloadedPath`. The decisions that needed making:
 - **Phase 6 — Google mesh.** Takeout staging convention + `photos-google-mesh` (report-only
   default) + review UI; the approved additive download lane last. Acceptance: a full Takeout
   meshes with per-chunk progress; conflicts flagged-but-written; google-only list reviewable.
+- **Phase 7 — The Gallery shelf.** `PhotoShelf` on assets and albums + `ArtistName`; the query
+  exclusions and the folder badge; `/photos/gallery` with its museum treatment for artist
+  collections; the member selection-bar move (group-coherent) and the album editor's shelf toggle;
+  `photos-shelf`; export/import carry both fields. Acceptance: the art piles leave the timeline
+  without leaving the folder view, every family member can browse them, and re-running the whole
+  CLI sequence changes nothing.
 
 ## §6 Standing rules this plan inherits (restated because they bind every phase)
 
@@ -801,3 +874,64 @@ lesson), and `DownloadedPath`. The decisions that needed making:
 6. **Home timezone** for §2.7's UTC→wall-clock conversion (a config value, presumably the
    household's zone) — and whether travel-heavy folders warrant GPS-based conversion from day
    one or as a later refinement.
+
+---
+
+## Phase 7 addendum — the Gallery shelf, as built
+
+Written after implementation. §2.12 above is the design; this is what actually shipped, what it cost,
+and the two decisions that were not obvious.
+
+**Nothing in this phase may deploy before `scripts/photos-phase7-migration.sql` is applied.** Every
+query it adds reads `[Shelf]`, and the code carries **no runtime fallback** for the column being
+absent — deliberately, because a fallback is a second set of query semantics that only ever runs
+during a window nobody is watching. Apply first, deploy second. The script is purely additive (three
+columns, one index; no ALTER, no DROP, no data movement) and, as always in this vertical, it has never
+been executed against any database. It was scaffolded on top of an unrelated `AddMusicArtistKind`
+migration authored in the same working tree; the two touch disjoint tables, but
+`__EFMigrationsHistory` is ordered, so that one goes first if it is still outstanding.
+
+**The index decision.** The timeline's page query gained `AND Shelf = Timeline`, and the existing
+covering index carries `Shelf` in neither its key nor its `INCLUDE` — so that predicate would have
+become a residual on the hottest query in the section. The natural repair is to extend that index's
+key, which is a `DROP` plus a `CREATE`, which is precisely what an additive-only migration may not
+contain. The additive spelling is a SECOND covering index, keyed and `INCLUDE`-ing identically,
+**filtered to `[Shelf] = 0`**: it matches the timeline/undated/person predicate exactly, it *shrinks*
+as the archive grows (the same reasoning behind the three filtered ingest-queue indexes), and the
+original stays for the surfaces that do not filter by shelf — the folder tree, and an admin browsing
+with show-hidden on. The cost is honest and was accepted: two covering indexes mean the metadata pass
+maintains both, a bounded once-per-photo write traded against an unbounded every-page read. It is a
+filtered index, so writers need `SET QUOTED_IDENTIFIER ON` — a constraint this table was already
+under, so Phase 7 adds no new operational rule. `PhotoAlbum.Shelf` deliberately gets **no** index:
+tens of rows, and an index whose only effect is to be maintained is a cost with no reader.
+
+**Group coherence was the non-obvious correctness bug.** The first instinct is to shelve exactly what
+the member selected. That is wrong in both directions, and quietly: move only a group's master and the
+copies stay on the timeline's books while collapsed behind a card that is no longer there, so the
+photograph vanishes from both sections; move only a copy — which is what the folder view hands you,
+since it shows every copy — and *nothing visible happens*, because that copy was already collapsed.
+Either way the member presses a button and is told a lie. So both the selection bar and the CLI expand
+through `PhotoDupeMasters.GroupCoherentIdsAsync`, over the same settled-group predicate `Collapsed` is
+built from, and the extras are always reported. Album ENTRIES still redirect to masters, which is the
+opposite motion and is correct for the opposite reason: a tag or a membership is a fact about the
+photograph, while a shelf is a fact about where the photograph is filed.
+
+**The dry run had a real gap, found by its own test.** `--dry-run` with a new `--album` reported zero
+album entries, because there was no album id to add them against — i.e. it advertised a no-op for a
+rule that would have created 1,609 rows. The pass now models the album as *none / pending / existing*
+and counts the would-be entries in the pending case.
+
+**Verified.** 24 new backend tests (788 total, green) and 13 new frontend tests (716 total, 55 files,
+green); `npm run build` green. The CLI was smoked end to end against a **generated** SQLite fixture
+built to the surveyed shape of the real tree — 2,312 files: 31 loose at the `Misc Pics` root, the five
+subfolders at 221/153/261/8/17, and `SAMisc` at 1,608 plus its 1-file `NWS` corner. The real
+invocation sequence reproduced every count exactly; `SA Misc` chunked into four batches with visible
+per-chunk cursor progress; and the whole sequence re-run (at a *different* batch size, so chunk
+boundaries could not be load-bearing) changed nothing — every write-counter absent, `already`
+accounting for all 2,300 rows, albums found rather than created, no second hide. The verdict the phase
+exists for, as two numbers: **the timeline went 2,312 → 12 while the folder view went 2,312 → 2,311**,
+and that one is the NWS file, hidden rather than gone — an admin still sees it. No test, build or smoke
+touched the NAS, the configured database, or a real photograph.
+
+**Still open:** the migration itself, and then the real run. The exact command lines were carried in
+the delivery report rather than committed here, since they name real folders.

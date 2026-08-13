@@ -14,7 +14,7 @@ import { formatRange } from "./PhotoAlbums";
 // everything else keeps its order behind them), so what the UI promises and what the API does are
 // the same sentence.
 
-export default function PhotoAlbumDetail({ slug, onBack, onOpen, onTitle }) {
+export default function PhotoAlbumDetail({ slug, onBack, onOpen, onTitle, onMeta }) {
   const [album, setAlbum] = useState(null);
   const [items, setItems] = useState([]);
   const [state, setState] = useState("loading");
@@ -40,6 +40,12 @@ export default function PhotoAlbumDetail({ slug, onBack, onOpen, onTitle }) {
         // The page's own <h1> carries the album's name (the section label moves up to the eyebrow),
         // so the title is published rather than printed twice.
         onTitle?.(body.album?.title ?? null);
+        // §2.12: and the shelf + artist, which decide the eyebrow, the headline and whether the page
+        // is lit as a gallery wall. Published rather than re-fetched — this component is the only one
+        // that has the album.
+        onMeta?.(
+          body.album ? { shelf: body.album.shelf, artistName: body.album.artistName || null } : null
+        );
         const cards = (body.items || []).map((entry) => entry.card);
         setItems((prev) => (append ? prev.concat(cards) : cards));
         skipRef.current = (append ? skipRef.current : 0) + cards.length;
@@ -51,7 +57,7 @@ export default function PhotoAlbumDetail({ slug, onBack, onOpen, onTitle }) {
         inFlightRef.current = false;
       }
     },
-    [slug, onTitle]
+    [slug, onTitle, onMeta]
   );
 
   useEffect(() => {
@@ -104,7 +110,7 @@ export default function PhotoAlbumDetail({ slug, onBack, onOpen, onTitle }) {
     <div className="photo-album-detail">
       <nav className="photo-crumbs">
         <button type="button" className="photo-crumb" onClick={onBack}>
-          All albums
+          {album.shelf === "Archive" ? "The gallery" : "All albums"}
         </button>
         <button type="button" className="photo-crumb">
           {album.title}
@@ -182,11 +188,16 @@ export default function PhotoAlbumDetail({ slug, onBack, onOpen, onTitle }) {
         </div>
       )}
 
+      {/* §2.12: an artist collection is hung, not stacked. The grid gets more air and each picture
+          gets a plaque — the filename-derived title and the artist — because that is how you read a
+          wall of paintings, and it is exactly wrong for a hundred snapshots of one afternoon. */}
       <PhotoGrid
         items={items}
         groupBySection={false}
         onOpen={onOpen}
         selection={selection}
+        gallery={!!album.artistName}
+        plaqueArtist={album.artistName || null}
         emptyText="This album is empty. Add photos from any view's selection mode."
       />
       <div ref={sentinelRef} className="photos-sentinel">
@@ -203,6 +214,9 @@ function AlbumEditor({ album, onSaved }) {
   const [description, setDescription] = useState(album.description || "");
   const [rangeStart, setRangeStart] = useState(album.rangeStart ? String(album.rangeStart).split("T")[0] : "");
   const [rangeEnd, setRangeEnd] = useState(album.rangeEnd ? String(album.rangeEnd).split("T")[0] : "");
+  // §2.12: which shelf the album is indexed on, and the artist that makes it an artist collection.
+  const [shelf, setShelf] = useState(album.shelf === "Archive" ? "Archive" : "Timeline");
+  const [artistName, setArtistName] = useState(album.artistName || "");
   const [busy, setBusy] = useState(false);
 
   const save = async () => {
@@ -217,6 +231,9 @@ function AlbumEditor({ album, onSaved }) {
         rangeStart: rangeStart ? `${rangeStart}T00:00:00` : null,
         rangeEndSet: true,
         rangeEnd: rangeEnd ? `${rangeEnd}T00:00:00` : null,
+        shelf,
+        artistNameSet: true,
+        artistName: artistName.trim() || null,
       });
       if (!response.ok) {
         message.error("Could not save the album.");
@@ -239,6 +256,29 @@ function AlbumEditor({ album, onSaved }) {
       />
       <Input type="date" value={rangeStart} onChange={(e) => setRangeStart(e.target.value)} disabled={busy} />
       <Input type="date" value={rangeEnd} onChange={(e) => setRangeEnd(e.target.value)} disabled={busy} />
+      {/* Moving an album between shelves moves the ALBUM, never its photographs: which index a
+          collection appears on and whether a picture is part of the family record are two different
+          questions, and the selection bar answers the second one. */}
+      <label className="photo-album-shelf">
+        <span>Shelf</span>
+        <select
+          value={shelf}
+          onChange={(e) => setShelf(e.target.value)}
+          disabled={busy}
+          aria-label="Album shelf"
+        >
+          <option value="Timeline">Family album</option>
+          <option value="Archive">Gallery</option>
+        </select>
+      </label>
+      {shelf === "Archive" && (
+        <Input
+          value={artistName}
+          onChange={(e) => setArtistName(e.target.value)}
+          placeholder="Artist (makes this an artist collection)"
+          disabled={busy}
+        />
+      )}
       <button type="button" className="photos-button" disabled={busy || !title.trim()} onClick={save}>
         Save
       </button>

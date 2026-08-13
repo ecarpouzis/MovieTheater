@@ -68,30 +68,55 @@ export default function PhotoAlbums({ onOpenAlbum }) {
         </button>
       </div>
 
-      {albums.length === 0 ? (
-        <p className="photos-note">
-          No albums yet. Make one here, from a selection in any view, or from a folder in the folder
-          browser.
-        </p>
-      ) : (
-        <ul className="photo-album-cards">
-          {albums.map((album) => (
-            <li key={album.id}>
-              <button type="button" className="photo-album-card" onClick={() => onOpenAlbum(album.slug)}>
-                <span className="photo-album-cover">
-                  {album.coverUrl ? <img src={album.coverUrl} alt="" loading="lazy" /> : <span>◇</span>}
-                </span>
-                <span className="photo-album-card-title">{album.title}</span>
-                <span className="photo-album-card-meta">
-                  {album.count.toLocaleString()} {album.count === 1 ? "item" : "items"}
-                  {formatRange(album)}
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+      <AlbumCards
+        albums={albums}
+        onOpenAlbum={onOpenAlbum}
+        emptyText="No albums yet. Make one here, from a selection in any view, or from a folder in the folder browser."
+      />
     </div>
+  );
+}
+
+/**
+ * The shelf of album cards, shared by the family album index and the Gallery (§2.12).
+ *
+ * One component for both because they are the same object seen on two shelves — and because two
+ * copies of a card would drift, which on a page whose whole subject is "these pictures belong
+ * together" is the one inconsistency the eye actually catches.
+ *
+ * An album carrying an `artistName` is drawn as an ARTIST COLLECTION: the artist's name leads in the
+ * plate under the picture and the album's own title drops to the line beneath, but only when the two
+ * differ — a collection titled with its artist's name should not print it twice.
+ */
+export function AlbumCards({ albums, onOpenAlbum, emptyText }) {
+  if (!albums.length) return <p className="photos-note">{emptyText}</p>;
+
+  return (
+    <ul className="photo-album-cards">
+      {albums.map((album) => {
+        const artist = album.artistName || null;
+        const subtitle = artist && artist !== album.title ? album.title : null;
+        return (
+          <li key={album.id}>
+            <button
+              type="button"
+              className={`photo-album-card${artist ? " is-artist" : ""}`}
+              onClick={() => onOpenAlbum(album.slug)}
+            >
+              <span className="photo-album-cover">
+                {album.coverUrl ? <img src={album.coverUrl} alt="" loading="lazy" /> : <span>◇</span>}
+              </span>
+              <span className="photo-album-card-title">{artist || album.title}</span>
+              {subtitle && <span className="photo-album-card-sub">{subtitle}</span>}
+              <span className="photo-album-card-meta">
+                {album.count.toLocaleString()} {album.count === 1 ? "item" : "items"}
+                {formatRange(album)}
+              </span>
+            </button>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 

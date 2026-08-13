@@ -1198,6 +1198,14 @@ function setPhotosHidden(ids, hidden) {
   return photosPost("/API/Photos/Hide", { ids, hidden });
 }
 
+// §2.12: which SHELF photos are filed on — the family timeline, or the Gallery of art and memes.
+// Member-permitted, exactly like hiding: deciding a picture is art is ordinary curation. The move is
+// group-coherent server-side (a settled duplicate group changes shelf as a unit), and the response
+// reports how many extra rows came along.
+function setPhotosShelf(ids, shelf) {
+  return photosPost("/API/Photos/Shelf", { ids, shelf });
+}
+
 function getPhotosHideProposals(includeDecided) {
   return fetch("/API/Photos/HideProposals?includeDecided=" + (includeDecided ? "true" : "false"), { cache: "no-store" });
 }
@@ -1224,6 +1232,13 @@ function approvePhotosIngestBatches({ groupKey, batchIds } = {}) {
 
 function getPhotoAlbums() {
   return fetch("/API/Photos/Albums", { cache: "no-store" });
+}
+
+// §2.12: the Gallery index — the SAME shape as getPhotoAlbums, over the archive shelf. Two calls
+// rather than one with a parameter because they are two sections with two URLs, and a caller that
+// forgot the parameter would silently render the wrong shelf.
+function getPhotoGallery() {
+  return fetch("/API/Photos/Gallery", { cache: "no-store" });
 }
 
 function getPhotoAlbum(slug, { skip, take } = {}) {
@@ -1700,12 +1715,14 @@ const MovieAPI = {
   getPhotoAsset,
   getPhotosIngestStatus,
   setPhotosHidden,
+  setPhotosShelf,
   getPhotosHideProposals,
   getPhotosHideProposal,
   decidePhotosHideProposal,
   getPhotosIngestBatches,
   approvePhotosIngestBatches,
   getPhotoAlbums,
+  getPhotoGallery,
   getPhotoAlbum,
   createPhotoAlbum,
   updatePhotoAlbum,

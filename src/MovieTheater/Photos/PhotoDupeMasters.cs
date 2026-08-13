@@ -89,6 +89,72 @@ namespace MovieTheater.Photos
         public static async Task<int> MasterForAsync(MovieDb db, int assetId) =>
             (await MasterMapAsync(db, new[] { assetId }))[assetId];
 
+        // ── Group-coherent moves (§2.12) ─────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// A group is SETTLED when its members have been agreed to be one photograph: any
+        /// <see cref="PhotoDupeGroupStatus.Resolved"/> group, plus an
+        /// <see cref="PhotoDupeGroupKind.Exact"/> group still awaiting confirmation (byte-identical
+        /// files have no judgement left in them).
+        ///
+        /// <para>This is the OTHER HALF of <see cref="Collapsed"/> — that predicate is exactly
+        /// "not the master AND this". The two are written out separately rather than composed because
+        /// EF cannot translate one expression called from inside another, and a predicate that only
+        /// worked in memory would turn a page query into a table scan. They must be changed
+        /// TOGETHER.</para>
+        /// </summary>
+        public static readonly Expression<Func<PhotoDupeMember, bool>> Settled =
+            m => m.PhotoDupeGroup.Status == PhotoDupeGroupStatus.Resolved
+                 || (m.PhotoDupeGroup.Status == PhotoDupeGroupStatus.Pending
+                     && m.PhotoDupeGroup.Kind == PhotoDupeGroupKind.Exact);
+
+        /// <summary>
+        /// Expands a selection so that a settled duplicate group moves as a UNIT (§2.12).
+        ///
+        /// <para><b>Why shelf moves expand where tags redirect.</b> A tag is a fact about a photograph,
+        /// so it goes on the one row that represents it — the master. A SHELF is a fact about where a
+        /// photograph is filed, and a settled group is one photograph filed in several places at once.
+        /// Move only the master and the copies stay on the timeline's books while being collapsed
+        /// behind a card that is no longer there — the picture disappears from both sections. Move only
+        /// a copy (which is what the folder view offers, since it shows every copy) and nothing visible
+        /// happens at all, because that copy was already collapsed. Either way the member pressed a
+        /// button and got a lie. Expanding is the only spelling where the answer matches the
+        /// instruction.</para>
+        ///
+        /// <para><b>Only SETTLED groups expand.</b> A <see cref="PhotoDupeGroupStatus.Rejected"/> group
+        /// is a tombstone recording "not the same photo", and a PENDING
+        /// <see cref="PhotoDupeGroupKind.Near"/> group is a hash's opinion nobody has agreed with yet —
+        /// sweeping a family's scans into the Gallery on either basis is precisely the mistake the dupe
+        /// review UI exists to prevent. Those groups do not collapse, so they have nothing to keep
+        /// coherent.</para>
+        ///
+        /// <para>Bounded by the caller's id list on both hops — never a scan. Returns the selection
+        /// itself plus whatever it dragged along; the caller reports the difference, because a member
+        /// who moved six cards and changed nine is owed the reason.</para>
+        /// </summary>
+        public static async Task<List<int>> GroupCoherentIdsAsync(MovieDb db, IReadOnlyCollection<int> assetIds)
+        {
+            var expanded = new HashSet<int>(assetIds);
+            if (assetIds.Count == 0) return expanded.ToList();
+
+            var ids = assetIds.ToList();
+            var groupIds = await db.PhotoDupeMembers
+                .Where(Settled)
+                .Where(m => ids.Contains(m.PhotoAssetId))
+                .Select(m => m.PhotoDupeGroupId)
+                .Distinct()
+                .ToListAsync();
+            if (groupIds.Count == 0) return expanded.ToList();
+
+            var siblings = await db.PhotoDupeMembers
+                .Where(m => groupIds.Contains(m.PhotoDupeGroupId))
+                .Select(m => m.PhotoAssetId)
+                .ToListAsync();
+            foreach (var id in siblings) expanded.Add(id);
+
+            return expanded.ToList();
+        }
+
         // ── Default master pick (§2.6) ───────────────────────────────────────────────────────────
 
         /// <summary>

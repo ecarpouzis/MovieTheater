@@ -130,6 +130,21 @@ namespace MovieTheater.Db
         /// Also what collapses a dupe group's non-masters out of browse.</summary>
         public bool Hidden { get; set; }
 
+        /// <summary>
+        /// Which shelf this asset lives on (§2.12, Phase 7). <see cref="PhotoShelf.Timeline"/> is the
+        /// family record; <see cref="PhotoShelf.Archive"/> is the Gallery — art and memes, off the
+        /// timeline but browsable by every family member.
+        ///
+        /// <para>Orthogonal to <see cref="Hidden"/> and composed with it: shelf decides WHICH SECTION,
+        /// hidden decides WHETHER A NON-ADMIN MAY SEE IT AT ALL. Hidden beats everything, so an
+        /// archived-and-hidden asset is admin-only wherever it appears.</para>
+        ///
+        /// <para><b>Moves are group-coherent</b> (§2.12): shelving any member of a settled duplicate
+        /// group shelves the whole group, because a collapsed group is ONE photograph on the browse
+        /// surfaces and half of it changing section would make the card vanish from both.</para>
+        /// </summary>
+        public PhotoShelf Shelf { get; set; }
+
         /// <summary>Marks the ingest run that created this row (the <see cref="Movie.ReviewBatch"/>
         /// convention): bulk inserts stay reviewable, and the timeline can quarantine a run until it
         /// is approved.</summary>
