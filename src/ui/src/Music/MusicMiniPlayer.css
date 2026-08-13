@@ -126,6 +126,14 @@
 .music-miniplayer-btn:hover { background: var(--sidebar-pill-bg); }
 .music-miniplayer-btn--active { background: var(--nav-active-bg); }
 
+/* The transport's glyphs are SVG (see IconPrev/IconPlay in the component), sized off font-size like
+   the text glyphs they replaced — so they need a box that centres them. */
+.music-miniplayer-transport .music-miniplayer-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .music-miniplayer-play { font-size: 19px; }
 
 /* The heart sits between the title and the transport, so it must not drift with the track name's
@@ -408,53 +416,116 @@
 
 .music-miniplayer-queue-remove:hover { color: #e8657f; }
 
-/* On phones the bar is THREE deliberate rows, each a full-width band, rather than one row that
-   wraps wherever it runs out of space:
+/* On phones the bar is THREE deliberate bands rather than one row that wraps wherever it runs out
+   of space:
 
-     1. artwork + title/artist + transport
+     1. artwork + title/artist + heart
      2. the scrub bar
-     3. the secondary controls (visualizer, lyrics, queue, close)
+     3. ONE control band: visualizer/lyrics · transport · queue/close
 
-   Row 3 has to be its own band. Left to wrap on its own it landed between the title and the scrub
-   bar — a ragged half-line that read as a layout accident, and it pushed the scrub bar away from
-   the times it belongs to. Giving BOTH row 2 and row 3 a 100% flex-basis (and orders that match the
-   DOM) makes the break points intentional instead of incidental.
+   Band 3 used to be two bands. The transport wrapped onto a line of its own — the info block is
+   flex:1, so it always claimed the whole first line and shoved back/play/skip down — and the
+   secondary controls then took a third. Two half-empty rows, ~90px of bar height spent on seven
+   small buttons, and the thing you actually reach for (play) marooned at the far left of a line
+   with nothing else on it.
+
+   Merging them needs the transport to sit BETWEEN the secondary controls, which the DOM order
+   can't give (transport is a sibling BEFORE .music-miniplayer-right, and the four buttons live
+   inside it). `display: contents` dissolves that wrapper for the duration of this breakpoint, so
+   its buttons become flex items of the bar itself and `order` can interleave them; the transport's
+   auto side-margins then split the leftover width evenly and it lands optically centred. The
+   wrapper's own border/padding go with it, so the divider moves onto the scrub row's bottom edge.
+
+   Everything in the band is a square target sized for a thumb, and the play button is a filled
+   accent circle: it is the one control you hit without looking, so it should be the one thing on
+   the row you can't miss.
 
    The volume slider goes: hardware volume rules a phone. */
 @media (max-width: 640px) {
-  .music-miniplayer { gap: 6px 10px; padding: 8px 10px 10px; flex-wrap: wrap; }
+  .music-miniplayer { gap: 6px 8px; padding: 8px 10px 10px; flex-wrap: wrap; }
   .music-miniplayer-volume { display: none; }
 
-  .music-miniplayer-info { min-width: 0; flex: 1 1 auto; order: 1; }
+  /* max-width goes with it: on desktop the cap stops the title crowding the transport beside it,
+     but here the title has the row to itself and the cap only strands the heart 55px short of the
+     right edge with nothing in the gap. */
+  .music-miniplayer-info { min-width: 0; max-width: none; flex: 1 1 auto; order: 1; }
   /* Same order as the info block so it stays glued to the title (equal order falls back to source
      order). Without this it defaults to 0 and jumps ahead of everything, landing the heart at the
      very start of the bar. */
   .music-miniplayer-heart { order: 1; padding: 6px 8px; font-size: 19px; }
-  .music-miniplayer-transport { order: 2; flex: none; }
 
   .music-miniplayer-seek {
-    order: 3;
+    order: 2;
     flex: 1 0 100%;
     width: 100%;
     gap: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--sidebar-border);
   }
   /* A full-width row can afford a comfortable hit target for dragging. touch-action keeps the drag
      as a drag: without it the browser can claim the gesture for a page scroll partway through, which
      both loses the scrub and fires pointercancel instead of pointerup. */
   .music-miniplayer-seek input[type="range"] { height: 22px; touch-action: none; }
 
-  .music-miniplayer-right {
-    order: 4;
-    flex: 1 0 100%;
-    width: 100%;
-    gap: 4px;
-    padding-top: 7px;
-    border-top: 1px solid var(--sidebar-border);
+  /* The wrapper stops being a box and becomes four loose flex items of the bar. */
+  .music-miniplayer-right { display: contents; }
+
+  /* Left of the transport: the two feature toggles. Both wear .music-miniplayer-viz. */
+  .music-miniplayer-viz {
+    order: 3;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    justify-content: center;
   }
-  /* Its own band means room for real tap targets. */
-  .music-miniplayer-right .music-miniplayer-btn { padding: 6px 11px; font-size: 17px; }
-  /* Dismissing the player is the one destructive control here, so it sits apart from the toggles. */
-  .music-miniplayer-close { margin-left: auto; }
+  .music-miniplayer-viz-icon { font-size: 15px; }
+
+  /* Right of it: queue and close, the only .music-miniplayer-btn descendants left in the wrapper. */
+  .music-miniplayer-right .music-miniplayer-btn {
+    order: 5;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+  }
+  /* Dismissing the player is the one destructive control here, so it keeps the far edge to itself
+     and stays quieter than the toggles it sits beside. */
+  .music-miniplayer-close { margin-left: 4px; color: var(--sidebar-text-muted); }
+
+  .music-miniplayer-transport { order: 4; gap: 6px; margin: 0 auto; }
+
+  .music-miniplayer-transport .music-miniplayer-btn {
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    font-size: 18px;
+  }
+
+  .music-miniplayer-transport .music-miniplayer-play,
+  .music-miniplayer-transport .music-miniplayer-play:hover {
+    width: 44px;
+    height: 44px;
+    font-size: 17px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #fff;
+  }
+}
+
+/* The band is 7 controls wide and a 320px phone has ~300px of content width to put them in. At the
+   sizes above that overflows by a hair and the close button wraps to a line of its own — the exact
+   ragged extra row this layout exists to kill. So the whole band steps down a size rather than
+   letting one control fall off it. */
+@media (max-width: 359px) {
+  .music-miniplayer { gap: 6px; }
+  .music-miniplayer-viz { width: 32px; height: 32px; }
+  .music-miniplayer-right .music-miniplayer-btn,
+  .music-miniplayer-transport .music-miniplayer-btn { width: 34px; height: 34px; }
+  .music-miniplayer-transport .music-miniplayer-play,
+  .music-miniplayer-transport .music-miniplayer-play:hover { width: 40px; height: 40px; }
 }
 
 /* ── On-screen lyrics (music-plan.md §2.7) ──────────────────────────────────

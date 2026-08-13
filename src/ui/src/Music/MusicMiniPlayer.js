@@ -13,6 +13,29 @@ import "./MusicMiniPlayer.css";
 // <audio> element's own events for the playhead so only this bar re-renders per tick — the context
 // (and the rest of the app) never sees position changes.
 
+// Drawn, not typed. ⏸ and ▶ carry an EMOJI presentation on Android, so the middle of the transport
+// rendered as a colour emoji (amber, rounded, a different weight) between two monochrome text
+// glyphs — three buttons that are one control reading as three unrelated ones. A variation selector
+// only asks nicely; an inline SVG is the same three shapes on every platform, and it scales off the
+// button's font-size so the sizing rules below still own the layout.
+const transportIcon = { viewBox: "0 0 24 24", width: "1em", height: "1em", fill: "currentColor", "aria-hidden": true, focusable: "false" };
+
+function IconPrev() {
+  return <svg {...transportIcon}><path d="M7 6h2.4v12H7zM19 6v12l-9-6z" /></svg>;
+}
+
+function IconNext() {
+  return <svg {...transportIcon}><path d="M14.6 6H17v12h-2.4zM5 6l9 6-9 6z" /></svg>;
+}
+
+function IconPlay() {
+  return <svg {...transportIcon}><path d="M8 5l12 7-12 7z" /></svg>;
+}
+
+function IconPause() {
+  return <svg {...transportIcon}><path d="M7 5h3.4v14H7zM13.6 5H17v14h-3.4z" /></svg>;
+}
+
 function formatTime(sec) {
   if (!Number.isFinite(sec) || sec < 0) return "0:00";
   const m = Math.floor(sec / 60);
@@ -298,12 +321,15 @@ function MusicMiniPlayer() {
         {favorited ? "♥" : "♡"}
       </button>
 
+      {/* On a phone this cluster is not where the DOM puts it: it centres itself INSIDE the secondary
+          controls' band (see the 640px block in the stylesheet), so back/play/skip and
+          visualizer/lyrics/queue/close share one row instead of taking a sparse line each. */}
       <div className="music-miniplayer-transport">
-        <button className="music-miniplayer-btn" onClick={player.prev} aria-label="Previous track">⏮</button>
+        <button className="music-miniplayer-btn" onClick={player.prev} aria-label="Previous track"><IconPrev /></button>
         <button className="music-miniplayer-btn music-miniplayer-play" onClick={player.toggle} aria-label={playing ? "Pause" : "Play"}>
-          {playing ? "⏸" : "▶"}
+          {playing ? <IconPause /> : <IconPlay />}
         </button>
-        <button className="music-miniplayer-btn" onClick={player.next} aria-label="Next track">⏭</button>
+        <button className="music-miniplayer-btn" onClick={player.next} aria-label="Next track"><IconNext /></button>
       </div>
 
       <div className={`music-miniplayer-seek${buffering ? " music-miniplayer-seek--buffering" : ""}`}>
