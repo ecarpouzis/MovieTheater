@@ -17,13 +17,11 @@ import { rememberLobbySearch } from "./arcadeLobbyState";
 import { hasSaveStates, QUICK_SLOT } from "./arcadeSystems";
 import useArcadeFilters from "./useArcadeFilters";
 import { parseSystems, toggleSystem, SYSTEM_PARAM } from "./arcadeSystemFilter";
-import useInfiniteScroll from "../../hooks/useInfiniteScroll";
 import useGridWindow from "../../hooks/useGridWindow";
 import "./ArcadePage.css";
 
 const { Text } = Typography;
 const PAGE_SIZE = 60;
-const SENTINEL_STYLE = { height: 1 };
 
 // Per-room stream quality the creator picks (arcade per-room bitrate/FEC). Persisted so a friend group
 // keeps its setting across sessions; applied to every room YOU start (one encoder per room = creator's
@@ -146,15 +144,29 @@ export default function ArcadePage({ userData }) {
   const history = useHistory();
   const location = useLocation();
 
-  const [games, setGames] = useState(null); // null = first load
+  // ── The catalog as SPARSE SLOTS (ported from The Long Box's InfiniteScroller) ──────────────────
+  // The lobby used to hold a dense array of the games it had fetched, anchored at an absolute
+  // `startIndex`. That is what made a letter jump one-directional: the array BEGAN at the letter, so
+  // there was nothing above it and scrolling up revealed nothing (reported 2026-08-13). Adding pages
+  // to the front would have meant prepending to that array, which is the classic teleport — the
+  // viewport sits still only if you can compensate for content appearing above it, and the
+  // compensation is guesswork until the new rows have been measured.
+  //
+  // The Long Box does not have that problem because it never prepends. Its whole result set is
+  // modelled as fixed slots from the first render — "The whole result set is modelled as
+  // `totalBands` fixed slots of `perBand` units … Band data is fetched on demand and cached for
+  // instant re-mount (recycling drops DOM, never data)." — so the list is `total` long immediately,
+  // the scrollbar is honest immediately, and a slot the user scrolls into is fetched whether it is
+  // above them or below them. Upward and downward are the SAME operation, and no array is ever
+  // prepended to, so there is nothing to compensate for.
+  //
+  // Ported here as a page map: `pages[n]` holds catalog indices [n*PAGE_SIZE, (n+1)*PAGE_SIZE).
+  // Anything not yet fetched renders as a skeleton tile of card size. There is no `startIndex`.
+  const [pages, setPages] = useState({});
+  const [firstLoaded, setFirstLoaded] = useState(false); // has ANY page come back for this query
   const [total, setTotal] = useState(0);
-  // The catalog is ONE list that the grid seeks into; `startIndex` is the absolute catalog index of
-  // games[0]. A pager jump re-anchors it (jump to "M" → startIndex = M's offset) and infinite scroll
-  // appends from there, so there's no page bookkeeping to keep coherent with the appended window.
-  const [startIndex, setStartIndex] = useState(0);
-  const [loading, setLoading] = useState(false); // first page / a pager jump (replaces the grid)
+  const [loading, setLoading] = useState(false); // the first page of a query (nothing to show yet)
   const [loadError, setLoadError] = useState(false); // the page request failed — not an empty catalog
-  const [loadingMore, setLoadingMore] = useState(false); // appending the next page
   const [letters, setLetters] = useState(null); // A–Z bucket offsets, for the pager (A–Z sort only)
   const [rooms, setRooms] = useState([]);
   const [renderers, setRenderers] = useState({}); // system → [{id,label,isDefault}] for the launch menu
@@ -173,12 +185,16 @@ export default function ArcadePage({ userData }) {
 
   // Read by the identity-stable loaders below, so the scroll listener never re-subscribes.
   const epochRef = useRef(0);
-  const abortRef = useRef(null);
-  const loadingMoreRef = useRef(false);
-  const gamesRef = useRef([]);
-  const startRef = useRef(0);
+  const pagesRef = useRef({});
   const totalRef = useRef(0);
   const filtersRef = useRef(null);
+  // The band-fetch scheduler's state, ported wholesale from the Long Box's pump. See fetchPages.
+  const wantRef = useRef([]);
+  const wantAgeRef = useRef(new Map());
+  const loadingPagesRef = useRef(new Set());
+  const abortersRef = useRef(new Map());
+  const inFlightRef = useRef(0);
+  const pumpTimerRef = useRef(null);
 
   const setQ = (patch) => setQuality((prev) => { const next = { ...prev, ...patch }; saveQuality(next); return next; });
 
@@ -198,8 +214,7 @@ export default function ArcadePage({ userData }) {
   }, [location.search]);
   const filterKey = JSON.stringify(filters);
   filtersRef.current = filters;
-  gamesRef.current = games || [];
-  startRef.current = startIndex;
+  pagesRef.current = pages;
   totalRef.current = total;
 
   // Stash the filtered lobby URL so the room's exit buttons can come back to it (arcadeLobbyState).
@@ -223,63 +238,125 @@ export default function ArcadePage({ userData }) {
     [setSystems, location.search],
   );
 
-  /**
-   * Load `pageSize` cards starting at absolute catalog index `skip`.
-   * `replace` = this is a new anchor (filters changed, or a pager jump): it cancels whatever is in
-   * flight, bumps the epoch so a late reply from the old query can't append its rows onto the new
-   * list, and re-seats the grid at `skip`. Otherwise it's an append.
-   */
-  const loadPage = useCallback((skip, replace) => {
-    if (replace) {
-      epochRef.current += 1;
-      abortRef.current?.abort();
-      loadingMoreRef.current = false;
-      setLoadingMore(false);
-      setLoading(true);
-    } else {
-      if (loadingMoreRef.current) return;
-      loadingMoreRef.current = true;
-      setLoadingMore(true);
-    }
-    const epoch = epochRef.current;
-    const controller = new AbortController();
-    abortRef.current = controller;
+  // ── The band-fetch scheduler (ported from The Long Box's InfiniteScroller pump) ────────────────
+  // Pages are fetched because the WINDOW wants them, never because the user pressed anything, and
+  // the want-list is REPLACED on every window move rather than appended to. That replacement is the
+  // load-bearing part on a 17k-title catalog: dragging the scrollbar sweeps the window across
+  // hundreds of pages, and firing a fetch for each one queues the page the user actually stopped at
+  // behind hundreds of stale deep-skip queries. The Long Box measured exactly that ("a halfway drag
+  // issued ~50 deep-$skip queries … no band mounted 8s after landing") and fixed it with three
+  // things, all of which are here: replace the want-list, gate a fetch on the page having stayed
+  // wanted for MIN_WANT_AGE (so a sweep fires ZERO fetches), and abort in-flight fetches for pages
+  // the window has left so their slot frees immediately.
+  const MAX_INFLIGHT = 4;
+  const MIN_WANT_AGE = 150;
 
-    MovieAPI.getArcadeGames({ ...filtersRef.current, skip, pageSize: PAGE_SIZE }, controller.signal)
-      .then((r) => {
-        if (r.status === 501) { unconfiguredRef.current = true; return null; }
-        return r.ok ? r.json() : null;
-      })
-      .then((data) => {
-        if (epochRef.current !== epoch) return; // a newer query owns the grid now
-        // A page that didn't arrive is NOT an empty catalog. Falling through to an empty list here made
-        // a failed request render as "No games match those filters" — the lobby blaming the user's
-        // filters for its own broken fetch, with no way to tell the difference or to try again.
-        if (!data) { setLoadError(true); setGames((g) => g || []); return; }
-        setLoadError(false);
-        setTotal(data.totalCount);
-        if (replace) {
-          setStartIndex(data.skip ?? skip);
-          setGames(data.games);
-        } else if (data.games.length) {
-          setGames((prev) => (prev ? prev.concat(data.games) : data.games));
-        }
-      })
-      .catch((err) => { if (err?.name !== "AbortError") { setLoadError(true); setGames((g) => g || []); } })
-      .finally(() => {
-        if (epochRef.current !== epoch) return;
-        loadingMoreRef.current = false;
-        setLoadingMore(false);
-        setLoading(false);
+  const pump = useCallback(() => {
+    let soonest = Infinity;
+    while (inFlightRef.current < MAX_INFLIGHT) {
+      const now = Date.now();
+      const page = wantRef.current.find((b) => {
+        if (loadingPagesRef.current.has(b) || pagesRef.current[b]) return false;
+        const age = now - (wantAgeRef.current.get(b) ?? now);
+        if (age >= MIN_WANT_AGE) return true;
+        soonest = Math.min(soonest, MIN_WANT_AGE - age);
+        return false;
       });
+      if (page === undefined) break;
+      wantRef.current = wantRef.current.filter((b) => b !== page);
+
+      const epoch = epochRef.current;
+      loadingPagesRef.current.add(page);
+      inFlightRef.current += 1;
+      const controller = new AbortController();
+      abortersRef.current.set(page, controller);
+      const first = Object.keys(pagesRef.current).length === 0;
+      if (first) setLoading(true);
+
+      MovieAPI.getArcadeGames(
+        { ...filtersRef.current, skip: page * PAGE_SIZE, pageSize: PAGE_SIZE },
+        controller.signal,
+      )
+        .then((r) => {
+          if (r.status === 501) { unconfiguredRef.current = true; return null; }
+          return r.ok ? r.json() : null;
+        })
+        .then((data) => {
+          if (epochRef.current !== epoch) return;  // a newer query owns the grid now
+          // A page that didn't arrive is NOT an empty catalog. Falling through to an empty list made
+          // a failed request render as "No games match those filters" — the lobby blaming the user's
+          // filters for its own broken fetch, with no way to tell the difference or to try again.
+          if (!data) { setLoadError(true); setFirstLoaded(true); return; }
+          setLoadError(false);
+          setTotal(data.totalCount);
+          setFirstLoaded(true);
+          setPages((prev) => (prev[page] ? prev : { ...prev, [page]: data.games }));
+        })
+        .catch((err) => {
+          if (controller.signal.aborted || err?.name === "AbortError") return; // deliberate — never a failure
+          if (epochRef.current !== epoch) return;
+          setLoadError(true);
+          setFirstLoaded(true);
+        })
+        .finally(() => {
+          if (abortersRef.current.get(page) === controller) abortersRef.current.delete(page);
+          loadingPagesRef.current.delete(page);
+          inFlightRef.current -= 1;
+          if (epochRef.current === epoch) setLoading(false);
+          pump();
+        });
+    }
+    // Wants exist but none are old enough yet — come back when the youngest matures.
+    if (soonest !== Infinity) {
+      if (pumpTimerRef.current) clearTimeout(pumpTimerRef.current);
+      pumpTimerRef.current = setTimeout(() => { pumpTimerRef.current = null; pump(); }, soonest + 10);
+    }
+  }, []);
+
+  /** Replace the want-list with the pages this window needs, and abort anything it has left. */
+  const wantPages = useCallback((loPage, hiPage) => {
+    const want = [];
+    const now = Date.now();
+    for (let p = loPage; p <= hiPage; p += 1) {
+      if (!pagesRef.current[p] && !loadingPagesRef.current.has(p)) want.push(p);
+    }
+    wantRef.current = want;
+    wantAgeRef.current.forEach((_, p) => {
+      if ((p < loPage || p > hiPage) && !loadingPagesRef.current.has(p)) wantAgeRef.current.delete(p);
+    });
+    for (const p of want) if (!wantAgeRef.current.has(p)) wantAgeRef.current.set(p, now);
+    abortersRef.current.forEach((a, p) => { if (p < loPage || p > hiPage) a.abort(); });
+    pump();
+  }, [pump]);
+
+  /** Drop everything and start this query again from page 0. */
+  const resetQuery = useCallback(() => {
+    epochRef.current += 1;
+    abortersRef.current.forEach((a) => a.abort());
+    abortersRef.current.clear();
+    loadingPagesRef.current.clear();
+    wantRef.current = [];
+    wantAgeRef.current.clear();
+    inFlightRef.current = 0;
+    if (pumpTimerRef.current) { clearTimeout(pumpTimerRef.current); pumpTimerRef.current = null; }
+    setPages({});
+    setFirstLoaded(false);
+    setLoadError(false);
+    pagesRef.current = {};
+    wantRef.current = [0];
+    wantAgeRef.current.set(0, 0); // page 0 is wanted NOW, not after the age gate
+    pump();
+  }, [pump]);
+
+  useEffect(() => () => {
+    abortersRef.current.forEach((a) => a.abort());
+    if (pumpTimerRef.current) clearTimeout(pumpTimerRef.current);
   }, []);
 
   // Reset + fetch from the top whenever the filters change. Keyed on the serialized filters, not on
-  // the `filters` object (fresh every render) — loadPage reads them through a ref.
+  // the `filters` object (fresh every render) — the loaders read them through a ref.
   useEffect(() => {
-    setGames(null);
-    setStartIndex(0);
-    loadPage(0, true);
+    resetQuery();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterKey]);
 
@@ -320,63 +397,54 @@ export default function ArcadePage({ userData }) {
     return () => { alive = false; };
   }, []);
 
-  // Infinite scroll. The old version listened on `window` and measured `document.body.offsetHeight`,
-  // which is wrong on desktop — the page scrolls inside .app-content, so scrollY never moved and the
-  // grid only ever grew via the Load more button. The shared hook resolves the real scroll root.
-  const hasMore = games != null && startIndex + games.length < total;
-  const loadMore = useCallback(() => {
-    const next = startRef.current + gamesRef.current.length;
-    if (loadingMoreRef.current || next >= totalRef.current) return;
-    loadPage(next, false);
-  }, [loadPage]);
-  const { sentinelRef, recheck } = useInfiniteScroll({ enabled: games != null, hasMore, onLoadMore: loadMore });
-  useEffect(() => { recheck(); }, [games, recheck]);
-
-  // Only the rows near the viewport stay mounted; the rest of the loaded list's height is held by
-  // spacers. An arcade card's height varies (box-art aspect, whether it has a version/cheats row), so
-  // the hook measures rows rather than assuming a fixed one.
-  const { hostRef, gridRef, start, end, padTop, padBottom, visibleStart, scrollToIndex } = useGridWindow(games?.length || 0, {
-    resetKey: `${filterKey}:${startIndex}`,
-  });
-  // `.filter(Boolean)` guards the render, not the data: the grid maps to `key={game.key}`, so ONE
-  // empty slot anywhere in the loaded list throws and takes the entire arcade page down with it —
-  // a blank screen instead of a missing tile. Cheap insurance on a list this page can't render without.
-  const visibleGames = useMemo(() => (games || []).slice(start, end).filter(Boolean), [games, start, end]);
-
-  // Seek the grid to an absolute catalog offset (a letter bucket or a page boundary).
-  const jumpTo = useCallback((offset) => {
-    loadPage(Math.max(0, offset), true);
-    sectionRef.current?.scrollIntoView({ block: "start" });
-  }, [loadPage]);
-
-  // ── Reading back UP past a jump ───────────────────────────────────────────────────────────────
-  // The music library fixed this by never truncating: it holds its whole catalog, so a letter jump is
-  // just a scroll and everything before the letter is still above you. 17k arcade titles cannot be
-  // held, so the grid genuinely starts at `startIndex` and there is nothing above it to scroll to —
-  // this control is what puts something there.
+  // ── The window, over ALL of it ─────────────────────────────────────────────────────────────────
+  // `total`, not "how many we have fetched". Every catalog slot exists from the first render, so the
+  // scrollbar is honest immediately and the window can move in either direction into territory that
+  // has no data yet — which is the whole of the fix. Only the rows near the viewport stay mounted;
+  // the rest of the list's height is held by two spacers. An arcade card's height varies (box art
+  // aspect, whether it has a version/cheats row), so the hook measures rows rather than assuming one.
   //
-  // ⚠ Deliberately a BUTTON, not a top sentinel that prepends automatically. An automatic prepend has
-  // to hold the viewport still while the list grows above it, and with measured-height windowing the
-  // compensation is an estimate until the new rows have mounted and been measured — the classic
-  // prepend teleport, and it would fire while a thumb was mid-flick. Re-seating one page earlier and
-  // then deliberately landing on the card that WAS at the top has no such window: the scroll is the
-  // point rather than something to be cancelled out.
-  const landOnRef = useRef(null);
-  const revealEarlier = useCallback(() => {
-    const from = Math.max(0, startRef.current - PAGE_SIZE);
-    // Where the card currently at the top of the grid ends up once the page is re-seated at `from`.
-    landOnRef.current = Math.max(0, startRef.current - 1 - from);
-    loadPage(from, true);
-  }, [loadPage]);
+  // resetKey no longer carries a start index, because there is no longer one to carry: a jump does
+  // not change the list, so it must not throw away the heights measured for it.
+  const { hostRef, gridRef, start, end, padTop, padBottom, visibleStart, scrollToIndex } = useGridWindow(total, {
+    resetKey: filterKey,
+    // ⚠ Load-bearing on a paged list. A page arriving replaces placeholders with real cards at the
+    // SAME slots, so neither the window nor the count changes — and without this the hook would never
+    // re-measure them, leaving the prefix describing skeleton heights for rows that are now cards.
+    // Every row below would then sit slightly wrong, and the further you scrolled the worse it got.
+    contentKey: Object.keys(pages).length,
+  });
 
-  // The landing, once the replaced page is actually on screen. Not inside revealEarlier: the rows to
-  // scroll to do not exist until the fetch resolves and React has committed them.
+  /** The catalog item at an absolute index, or undefined while its page is still on the wire. */
+  const gameAt = useCallback(
+    (i) => pages[Math.floor(i / PAGE_SIZE)]?.[i % PAGE_SIZE],
+    [pages],
+  );
+
+  // The mounted slice: one entry per slot, real card or placeholder. Deliberately NOT filtered — a
+  // hole is a slot whose page has not arrived, and dropping it would shorten the row and make every
+  // card below it move as the data lands.
+  const visibleSlots = useMemo(() => {
+    const out = [];
+    for (let i = start; i < Math.min(end, total); i += 1) out.push({ index: i, game: gameAt(i) });
+    return out;
+  }, [start, end, total, gameAt]);
+
+  // Fetch what the window is looking at, plus one page either side — the same "want the window's
+  // bands + one ahead" rule, made symmetric because here the user can be travelling upward.
   useEffect(() => {
-    if (landOnRef.current == null || !games || loading) return;
-    const at = landOnRef.current;
-    landOnRef.current = null;
-    scrollToIndex(Math.min(at, games.length - 1));
-  }, [games, loading, scrollToIndex]);
+    if (!total) return;
+    const lastPage = Math.max(0, Math.ceil(total / PAGE_SIZE) - 1);
+    const lo = Math.max(0, Math.floor(start / PAGE_SIZE) - 1);
+    const hi = Math.min(lastPage, Math.floor(Math.max(start, end - 1) / PAGE_SIZE) + 1);
+    wantPages(lo, hi);
+  }, [start, end, total, pages, wantPages]);
+
+  // Seek the grid to an absolute catalog offset (a letter bucket or a page boundary). No fetch, no
+  // re-seat: the slot is already there, and scrollToIndex's second phase waits for its page.
+  const jumpTo = useCallback((offset) => {
+    scrollToIndex(Math.max(0, Math.min(offset, Math.max(0, total - 1))));
+  }, [scrollToIndex, total]);
 
   // `cheats` are the ids the creator ticked on the card (arcade cheats feature). `controllerScheme`
   // is the GameCube-vs-Wiimote+Nunchuk picker (only shown for the two GC-native BrawlEx mods). Both
@@ -637,9 +705,9 @@ export default function ArcadePage({ userData }) {
             </span>
           </div>
 
-          {games === null ? (
+          {!firstLoaded ? (
             <div className="arcade-loading"><Spin size="large" /></div>
-          ) : games.length === 0 ? (
+          ) : total === 0 ? (
             /* Never claim "nothing matched" while a request is still out, or when one failed. A wide
                filter change — above all clearing the LAST console, which puts the whole catalog back in
                scope — is the slowest query the lobby can ask for, and an empty grid that explains itself
@@ -647,36 +715,40 @@ export default function ArcadePage({ userData }) {
             loading ? <div className="arcade-loading"><Spin size="large" /></div>
               : loadError ? (
                 <Empty description="Couldn't load the games list.">
-                  <Button onClick={() => loadPage(startIndex, true)}>Try again</Button>
+                  <Button onClick={resetQuery}>Try again</Button>
                 </Empty>
               ) : <Empty description={anyFilter ? "No games match those filters." : "No games here yet."} />
           ) : (
             <>
-              {/* The way back up past a letter jump. Only when there IS something above: the lobby
-                  fetches pages, so unlike the music library it cannot simply keep the whole list. */}
-              {startIndex > 0 && (
-                <div className="arcade-more arcade-more--earlier">
-                  <Button onClick={revealEarlier} disabled={loading}>
-                    ↑ Earlier titles
-                  </Button>
-                </div>
-              )}
+              {/* No "Load more", no "Earlier titles", no sentinel. Every catalog slot exists from the
+                  first render and the window fetches whichever pages it is looking at, so scrolling —
+                  in EITHER direction — is the only control there needs to be. */}
               <div ref={hostRef}>
                 {padTop > 0 && <div className="grid-spacer" style={{ height: padTop }} aria-hidden="true" />}
                 <div className="arcade-grid" ref={gridRef}>
-                  {visibleGames.map((game) => (
+                  {visibleSlots.map(({ index, game }) => (game ? (
                     <GameCard key={game.key} game={game} onOpen={openGame} />
-                  ))}
+                  ) : (
+                    /* A slot whose page is still on the wire. Same footprint as a card so the row it
+                       is in does not reflow when the real one replaces it. */
+                    <div key={`slot-${index}`} className="arcade-card arcade-card--pending" aria-hidden="true">
+                      {/* Same shape and the same 140x180 art column as a real card, so the row it is
+                          in keeps its height and nothing below it moves when the page lands. */}
+                      <div className="arcade-card__art arcade-pending__art" />
+                      <div className="arcade-card__body">
+                        <div className="arcade-pending__line arcade-pending__line--title" />
+                        <div className="arcade-pending__line arcade-pending__line--tag" />
+                        <div className="arcade-pending__line" />
+                        <div className="arcade-pending__line" />
+                        <div className="arcade-pending__line arcade-pending__line--short" />
+                      </div>
+                    </div>
+                  )))}
                 </div>
                 {padBottom > 0 && <div className="grid-spacer" style={{ height: padBottom }} aria-hidden="true" />}
               </div>
-              <div ref={sentinelRef} aria-hidden="true" style={SENTINEL_STYLE} />
               <div className="arcade-more">
-                {loadingMore ? <Spin /> : hasMore ? (
-                  <Button onClick={loadMore}>Load more</Button>
-                ) : (
-                  <Text type="secondary">— that's all {total.toLocaleString()} —</Text>
-                )}
+                <Text type="secondary">— {total.toLocaleString()} titles —</Text>
               </div>
               {/* Letters when sorted A–Z, page numbers under any other sort. Both seek into the same
                   continuous list; the active button follows the grid as you scroll. */}
@@ -685,9 +757,8 @@ export default function ArcadePage({ userData }) {
                 letters={letters}
                 total={total}
                 pageSize={PAGE_SIZE}
-                currentIndex={startIndex + visibleStart}
+                currentIndex={visibleStart}
                 onJump={jumpTo}
-                disabled={loading}
               />
             </>
           )}

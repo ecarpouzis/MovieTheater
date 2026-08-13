@@ -22,19 +22,27 @@ const TALL_H = 240;
 const COUNT = 400;
 const VIEWPORT_H = 600;
 
+/** Per-row heights, MUTABLE: a row growing after it has been measured is the whole point of the
+ *  compensation test below (a placeholder slot becoming a real card). */
+let heights;
+function resetHeights() {
+  heights = Array.from({ length: COUNT }, (_, r) => (r < SHORT_ROWS ? SHORT_H : TALL_H));
+}
+
 /** True top of a row in the virtual document — what the hook has to converge on, never told to it. */
 function trueTop(row) {
-  return row < SHORT_ROWS
-    ? row * SHORT_H
-    : SHORT_ROWS * SHORT_H + (row - SHORT_ROWS) * TALL_H;
+  let y = 0;
+  for (let r = 0; r < row; r += 1) y += heights[r] ?? TALL_H;
+  return y;
 }
+const rowH = (row) => heights[row] ?? TALL_H;
 
 let scrollY;
 let realRect;
 let realComputed;
 
-function Grid({ count, onApi }) {
-  const api = useGridWindow(count, { resetKey: "fixed" });
+function Grid({ count, onApi, contentKey = "" }) {
+  const api = useGridWindow(count, { resetKey: "fixed", contentKey });
   onApi(api);
   const { hostRef, gridRef, start, end, padTop, padBottom } = api;
   return (
@@ -54,6 +62,7 @@ function Grid({ count, onApi }) {
 
 beforeEach(() => {
   scrollY = 0;
+  resetHeights();
   realRect = Element.prototype.getBoundingClientRect;
   realComputed = window.getComputedStyle;
 
@@ -62,7 +71,7 @@ beforeEach(() => {
     const row = Number(this.dataset?.row);
     if (Number.isFinite(row)) {
       const top = trueTop(row) - scrollY;
-      const height = row < SHORT_ROWS ? SHORT_H : TALL_H;
+      const height = rowH(row);
       return { top, bottom: top + height, height, left: 0, right: 0, width: 100, x: 0, y: top };
     }
     return { top: 0, bottom: 0, height: 0, left: 0, right: 0, width: 0, x: 0, y: 0 };
@@ -79,7 +88,7 @@ beforeEach(() => {
     configurable: true,
     get() {
       const row = Number(this.dataset?.row);
-      return Number.isFinite(row) ? (row < SHORT_ROWS ? SHORT_H : TALL_H) : 0;
+      return Number.isFinite(row) ? rowH(row) : 0;
     },
   });
 
@@ -109,9 +118,16 @@ async function frames(n = 20) {
 
 async function mount(count = COUNT) {
   let api;
-  render(<Grid count={count} onApi={(a) => { api = a; }} />);
+  const view = render(<Grid count={count} onApi={(a) => { api = a; }} />);
   await frames(6);
-  return () => api;
+  const get = () => api;
+  /** Announce that the SAME slots now hold different content — what a paged list does when a page
+   *  lands and its placeholders become real cards. */
+  get.contentChanged = async (key) => {
+    await act(async () => { view.rerender(<Grid count={count} onApi={(a) => { api = a; }} contentKey={key} />); });
+    await frames(8);
+  };
+  return get;
 }
 
 describe("useGridWindow.scrollToIndex", () => {
@@ -158,5 +174,64 @@ describe("useGridWindow.scrollToIndex", () => {
     await act(async () => { api().scrollToIndex(4); });
     await frames(2);
     expect(scrollY).toBe(0);
+  });
+  // ── The prepend-without-teleport property ──────────────────────────────────────────────────────
+  // The arcade lobby now models its whole 17k-title catalog as slots that exist from the first render
+  // (The Long Box's sparse-band model), so scrolling UP into never-fetched territory is not a prepend
+  // — the slots were always there, they were just placeholders. What DOES move is their height: a
+  // placeholder becoming a real card changes what the rows above the viewport are worth, and every
+  // estimated row above the fold shifts with it. Uncompensated, that is the teleport.
+  //
+  // The assertion is therefore about the READER, not about scrollTop: whatever they were looking at
+  // must still be exactly where it was.
+  it("holds the viewport still when rows above the fold are re-measured", async () => {
+    const api = await mount();
+    await act(async () => { api().scrollToIndex(150); });
+    await frames();
+
+    // The contract, stated exactly: padTop changing while startRow does NOT is the hook correcting
+    // the estimated height of content ABOVE the fold. Everything below it just moved by that delta,
+    // so scrollTop has to move by the same amount or the reader's page jumps under them.
+    const before = { padTop: api().padTop, startRow: api().startRow, scrollY };
+
+    // Every row from here down turns out to be TALLER than the estimate that placed it — exactly what
+    // a screenful of placeholders resolving into real cards does to the running average.
+    for (let r = 150; r < COUNT; r += 1) heights[r] = 360;
+    await api.contentChanged("pages-loaded");
+
+    const after = { padTop: api().padTop, startRow: api().startRow, scrollY };
+    expect(after.padTop).not.toBe(before.padTop);      // the estimate really did move
+    expect(after.startRow).toBe(before.startRow);      // …and this is the compensated case
+    expect(after.scrollY - before.scrollY).toBe(after.padTop - before.padTop);
+  });
+
+  it("reserves the whole list up front, so there is never anything to prepend", async () => {
+    // The property the arcade port rests on: the window is over `count` — the SERVER's total — not
+    // over "how many have been fetched". Row 399 has a real position from the first render, and so
+    // does row 0 after you have travelled to the end, which is why coming back is just scrolling.
+    const api = await mount();
+    await act(async () => { api().scrollToIndex(COUNT - 1); });
+    await frames();
+    const deep = scrollY;
+    expect(deep).toBeGreaterThan(trueTop(COUNT - 2) - 5);
+
+    await act(async () => { api().scrollToIndex(0); });
+    await frames();
+    expect(scrollY).toBe(0);
+    expect(deep).toBeGreaterThan(0);
+  });
+
+  it("abandons a pending jump the moment the reader scrolls for themselves", async () => {
+    // Long Box: wheel/touchmove/keydown cancel the landing, or it snaps the viewport back out from
+    // under someone who has started reading and re-fetches everything they were looking at.
+    const api = await mount();
+    await act(async () => {
+      api().scrollToIndex(300);
+      window.dispatchEvent(new WheelEvent("wheel", { bubbles: true }));
+    });
+    await frames();
+    // The phase-1 estimate scroll still happened (it is synchronous), but the phase-2 landing was
+    // abandoned — so the position is the estimate, not the exact row-300 top.
+    expect(Math.abs(scrollY - trueTop(300))).toBeGreaterThan(2);
   });
 });

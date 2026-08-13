@@ -2,6 +2,10 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { getScrollParent, nudgeScroll, onAnyScroll, viewportBand } from "../utils/scroll";
 
 const OVERSCAN = 1200; // px of extra content kept mounted above and below the viewport
+/** Safety valve on a pending jump: if the target never mounts (a page fetch that fails, a filter
+ *  change mid-flight), stop waiting and let the ordinary compensation resume. The Long Box uses
+ *  6 s for the same reason — a deep-$skip band fetch genuinely takes seconds. */
+const JUMP_DEADLINE_MS = 6000;
 const MIN_WINDOWED = 120; // below this, mounting the whole list is cheaper than windowing it
 const INITIAL_ITEMS = 48; // mounted on the first frame, before anything has been measured
 const FALLBACK_ROW_H = 260; // only used until the first row has actually been measured
@@ -65,8 +69,15 @@ const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
  * @param count      total number of items in the list (loaded ones — not the server's total)
  * @param resetKey   changes when the list becomes a *different* list (new search / jump): drops the
  *                   measured heights and returns the window to the top
+ * @param contentKey changes when the SAME slots get different content — a paged list whose
+ *                   placeholders have just been replaced by real cards. Without it a re-measure only
+ *                   ever runs when the WINDOW moves, so data arriving in place is never measured and
+ *                   every row it silently resized stays wrong in the prefix (found by the
+ *                   compensation test, 2026-08-13). The Long Box's engine re-runs its maintain pass
+ *                   on `[extra, win.start, win.end, band0]` for exactly this reason — `extra` is its
+ *                   fetched-band map.
  */
-export default function useGridWindow(count, { resetKey = "", overscan = OVERSCAN, minItems = MIN_WINDOWED } = {}) {
+export default function useGridWindow(count, { resetKey = "", contentKey = "", overscan = OVERSCAN, minItems = MIN_WINDOWED } = {}) {
   const hostRef = useRef(null);
   const gridRef = useRef(null);
   const rootRef = useRef(null); // resolved scroll root (null = the window)
@@ -78,6 +89,9 @@ export default function useGridWindow(count, { resetKey = "", overscan = OVERSCA
   const rafRef = useRef(0);
   const anchorRef = useRef(null); // { startRow, padTop } as last committed
   const widthRef = useRef(0);
+  // { index, deadline } while a jump is waiting for its target's real DOM. Owns scrollTop for as
+  // long as it is set — see scrollToIndex.
+  const pendingJumpRef = useRef(null);
 
   const windowed = count >= minItems;
   const initial = { start: 0, end: Math.min(count, INITIAL_ITEMS), padTop: 0, padBottom: 0, visibleStart: 0, startRow: 0 };
@@ -99,6 +113,12 @@ export default function useGridWindow(count, { resetKey = "", overscan = OVERSCA
   // to the DOM — so it can't thrash layout.
   const maintain = useCallback(() => {
     rafRef.current = 0;
+    // Expire a jump whose target never mounted (a page fetch that failed, or an estimate so exact
+    // that no commit followed to run the landing effect). The Long Box expires its own deadline in
+    // the same pass and for the same reason: until it clears, the compensation below stands down.
+    if (pendingJumpRef.current && Date.now() > pendingJumpRef.current.deadline) {
+      pendingJumpRef.current = null;
+    }
     const grid = gridRef.current;
     const host = hostRef.current;
     if (!grid || !host || !count) return;
@@ -163,51 +183,60 @@ export default function useGridWindow(count, { resetKey = "", overscan = OVERSCA
    *
    * This is what an A–Z jump should always have been. The music library used to "jump" by
    * re-anchoring the rendered slice at the letter's offset, which meant everything before it stopped
-   * existing: tap J and there was no way to scroll back up into A–I (reported 2026-08-13). Since the
-   * whole catalog is already windowed, the list can simply stay whole and the jump can be a SCROLL.
+   * existing: tap J and there was no way to scroll back up into A–I (reported 2026-08-13).
    *
-   * ⚠ It has to iterate. Rows that have never been mounted have never been measured, so the prefix
-   * that produces the target is part estimate — a single scroll lands near the letter, not on it.
-   * Each pass mounts and measures the rows it just landed among, corrects the prefix, and re-derives
-   * the target from a MOUNTED card's real position (never from our own estimates, the same rule
-   * `maintain` follows). On a uniform card grid that converges in one or two passes; the pass count
-   * is capped so a list whose heights genuinely never settle cannot spin.
+   * ── TWO PHASES, not a settle loop ────────────────────────────────────────────────────────────
+   * Ported from The Long Box's `InfiniteScroller.tsx` (features/browse), which is where this whole
+   * spacer-window blueprint comes from. Rows that have never been mounted have never been measured,
+   * so the prefix that produces a target is part estimate and one scroll lands NEAR the letter, not
+   * on it. The Long Box's answer is not to iterate:
    *
-   * Native scroll anchoring would fight this exactly as it fights the re-measure compensation below
-   * — both are manual corrections — so this relies on the `overflow-anchor: none` that index.css
-   * already sets on <body> and .app-content. Do not remove it on their account.
+   *   1. scroll ONCE to the estimate, purely to pull the target into the window so it mounts (and,
+   *      where the data is paged, so it fetches);
+   *   2. the instant the target's real DOM is on screen, snap exactly to it ONCE, element-anchored,
+   *      and clear the jump.
+   *
+   * Its comment says why this is not a loop, and it is a bug report: *"A pager jump's precise landing
+   * is done ONCE … not re-pinned every frame here (a per-frame correction fed its own scroll back
+   * into the window/estimate recompute and oscillated between neighbouring letters)."* An iterating
+   * version is fine on a list whose rows are all real and uniform (music), and actively wrong on one
+   * where placeholders are becoming real cards underneath it (the arcade) — which is exactly the
+   * list this hook now has to serve.
+   *
+   * Two more things come with it, and both are load-bearing: while a jump is pending the re-measure
+   * compensation below stands down (two writers on scrollTop oscillate), and ANY hand scroll —
+   * wheel, touch, or a navigation key — abandons the jump, so it can never snap the viewport back
+   * out from under someone who has started reading.
+   *
+   * Native scroll anchoring would fight both of these, so this relies on the `overflow-anchor: none`
+   * that index.css already sets on <body> and .app-content (Long Box views-perf #6f, same lesson).
+   * Do not remove it on their account.
    */
-  const scrollToIndex = useCallback((index, { settle = 5 } = {}) => {
+  const scrollToIndex = useCallback((index) => {
     const host = hostRef.current;
-    if (!host || !count) return;
+    const grid = gridRef.current;
+    if (!host || !grid || !count) return;
     rootRef.current = getScrollParent(host);
+    const items = Array.from(grid.children);
+    if (!items.length) return;
 
-    let passes = 0;
-    const step = () => {
-      passes += 1;
-      const grid = gridRef.current;
-      if (!grid) return;
-      const items = Array.from(grid.children);
-      if (!items.length) return;
-      const cols = colsRef.current || measureCols(grid, items) || 1;
-      const totalRows = Math.max(1, Math.ceil(count / cols));
-      if (dirtyRef.current || prefixRef.current.length !== totalRows + 1) buildPrefix(totalRows);
-      const prefix = prefixRef.current;
-      const row = clamp(Math.floor(clamp(index, 0, count - 1) / cols), 0, totalRows - 1);
+    const cols = colsRef.current || measureCols(grid, items) || 1;
+    const totalRows = Math.max(1, Math.ceil(count / cols));
+    if (dirtyRef.current || prefixRef.current.length !== totalRows + 1) buildPrefix(totalRows);
+    const prefix = prefixRef.current;
+    const wanted = clamp(index, 0, count - 1);
+    const row = clamp(Math.floor(wanted / cols), 0, totalRows - 1);
 
-      const anchorTop = items[0].getBoundingClientRect().top;
-      const origin = anchorTop - prefix[clamp(winRef.current.startRow, 0, totalRows)];
-      const band = viewportBand(rootRef.current);
-      const delta = (origin + prefix[row]) - band.top;
-
-      if (Math.abs(delta) <= 2 || passes > settle) return;
-      nudgeScroll(rootRef.current, delta);
-      // Mount + measure where we just landed, then look again.
-      dirtyRef.current = true;
-      maintain();
-      if (typeof requestAnimationFrame === "function") requestAnimationFrame(step);
-    };
-    step();
+    // Phase 1: the estimate. Enough to bring the row into the window; not claimed to be exact.
+    const origin = items[0].getBoundingClientRect().top
+      - prefix[clamp(winRef.current.startRow, 0, totalRows)];
+    const delta = (origin + prefix[row]) - viewportBand(rootRef.current).top;
+    // The pending jump is armed even when the estimate needs no scroll: on a paged list the target
+    // may be a placeholder right now, and phase 2 is what waits for the real card.
+    pendingJumpRef.current = { index: wanted, deadline: Date.now() + JUMP_DEADLINE_MS };
+    if (Math.abs(delta) > 1) nudgeScroll(rootRef.current, delta);
+    dirtyRef.current = true;
+    maintain();
   }, [count, buildPrefix, maintain]);
 
   // A new list (new search, or a pager jump): forget the measured rows and go back to the top.
@@ -217,6 +246,7 @@ export default function useGridWindow(count, { resetKey = "", overscan = OVERSCA
     colsRef.current = 0;
     dirtyRef.current = true;
     anchorRef.current = null;
+    pendingJumpRef.current = null; // a jump into the OLD list means nothing in the new one
     const fresh = { start: 0, end: Math.min(count, windowed ? INITIAL_ITEMS : count), padTop: 0, padBottom: 0, visibleStart: 0, startRow: 0 };
     winRef.current = fresh;
     setWin(fresh);
@@ -241,6 +271,18 @@ export default function useGridWindow(count, { resetKey = "", overscan = OVERSCA
     if (!windowed) return undefined;
     rootRef.current = getScrollParent(hostRef.current);
     const off = onAnyScroll(schedule);
+    // ⚠ A hand scroll ABANDONS a pending jump (Long Box: the same wheel/touchmove/keydown trio).
+    // Without it the landing effect can still be armed when the reader has started scrolling for
+    // themselves, and it snaps the viewport back — remounting and re-fetching everything they were
+    // looking at. Capturing, because these fire on whichever element is actually scrolling.
+    const cancelJump = () => { pendingJumpRef.current = null; };
+    const onKey = (e) => {
+      if (e.key?.startsWith("Arrow") || e.key === "PageUp" || e.key === "PageDown"
+          || e.key === "Home" || e.key === "End" || e.key === " ") cancelJump();
+    };
+    window.addEventListener("wheel", cancelJump, { passive: true, capture: true });
+    window.addEventListener("touchmove", cancelJump, { passive: true, capture: true });
+    window.addEventListener("keydown", onKey);
     const grid = gridRef.current;
     let ro;
     if (grid && typeof ResizeObserver !== "undefined") {
@@ -259,6 +301,9 @@ export default function useGridWindow(count, { resetKey = "", overscan = OVERSCA
     }
     return () => {
       off();
+      window.removeEventListener("wheel", cancelJump, { capture: true });
+      window.removeEventListener("touchmove", cancelJump, { capture: true });
+      window.removeEventListener("keydown", onKey);
       ro?.disconnect();
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       rafRef.current = 0;
@@ -303,15 +348,46 @@ export default function useGridWindow(count, { resetKey = "", overscan = OVERSCA
       dirtyRef.current = true;
       schedule();
     }
-  }, [windowed, win.start, win.end, count, schedule]);
+  }, [windowed, win.start, win.end, count, contentKey, schedule]);
+
+  // ── Phase 2 of a jump: the one-shot, element-anchored landing ───────────────────────────────────
+  // Ported from The Long Box's InfiniteScroller: the estimate scroll only had to bring the target
+  // into the window. The moment its REAL DOM is mounted — which on a paged list means the moment its
+  // page has arrived — snap exactly to it, once, and clear the jump. Element-anchored because the
+  // row is genuinely on screen now, so its top is a fact rather than a prefix sum; single-shot
+  // because a per-frame re-pin feeds its own scroll back into the window recompute and oscillates.
+  //
+  // Runs on every commit (no dep array) rather than on [win] alone: on a paged list the commit that
+  // matters is the one where the DATA landed, which the window state does not necessarily change.
+  useLayoutEffect(() => {
+    const pj = pendingJumpRef.current;
+    if (!pj) return;
+    if (Date.now() > pj.deadline) { pendingJumpRef.current = null; return; }
+    const grid = gridRef.current;
+    if (!grid) return;
+    // Positional: children[i] IS item win.start + i. A placeholder counts as mounted DOM, so a paged
+    // consumer that renders skeletons will land on the skeleton and then, when the real card
+    // replaces it, the ordinary re-measure compensation below keeps it put.
+    const offset = pj.index - win.start;
+    if (offset < 0 || offset >= grid.children.length) return;
+    const el = grid.children[offset];
+    if (!el) return;
+    const delta = el.getBoundingClientRect().top - viewportBand(rootRef.current).top;
+    pendingJumpRef.current = null;
+    if (Math.abs(delta) > 1) nudgeScroll(rootRef.current, delta);
+    anchorRef.current = { startRow: win.startRow, padTop: win.padTop };
+  });
 
   // Hold the content still when a re-measure moves the rows above the fold. padTop changing while
   // startRow stays put means we corrected the estimated height of something above us, so everything
   // below just jumped by that delta — cancel it out. (padTop changing *because* startRow changed is
   // normal recycling: the rows we unmounted are replaced by exactly their own height.)
+  //
+  // ⚠ Stands down while a jump is pending: that jump owns scrollTop until it lands, and two writers
+  // on the same value oscillate (Long Box, same guard on its lead-spacer compensation).
   useLayoutEffect(() => {
     const prev = anchorRef.current;
-    if (prev && prev.startRow === win.startRow && prev.padTop !== win.padTop) {
+    if (!pendingJumpRef.current && prev && prev.startRow === win.startRow && prev.padTop !== win.padTop) {
       nudgeScroll(rootRef.current, win.padTop - prev.padTop);
     }
     anchorRef.current = { startRow: win.startRow, padTop: win.padTop };
@@ -327,6 +403,9 @@ export default function useGridWindow(count, { resetKey = "", overscan = OVERSCA
     padBottom: win.padBottom,
     /** Index of the first item actually on screen (not counting overscan) — drives the arcade pager. */
     visibleStart: win.visibleStart,
+    /** First MOUNTED row. Exposed for the compensation's own tests, which have to distinguish
+     *  "padTop moved because we re-estimated" from "padTop moved because we recycled". */
+    startRow: win.startRow,
     /** Seek the scrollport to an item, leaving the list whole. See above. */
     scrollToIndex,
   };
