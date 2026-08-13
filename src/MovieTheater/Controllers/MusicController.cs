@@ -405,9 +405,40 @@ namespace MovieTheater.Controllers
             return Ok(new { tracks = payloads, skipped });
         }
 
+        // ── The kind facet (MusicArtist.Kind) ────────────────────────────────────────────────────
+        // The library is ONE tree, so 22 George Carlin records and the Ender novels sat in the
+        // artist grid between Garbage and Orbital. Kind is the only thing separating them, and the
+        // DEFAULT — no ?kind= at all — is "music", i.e. the untagged rows. That direction matters:
+        // browsing must not depend on anyone having classified anything, and a shelf you have to
+        // opt out of is one nobody opts out of.
+
+        /// <summary>Escape hatch for a caller that genuinely wants the whole tree back.</summary>
+        private const string KindAll = "all";
+
+        /// <summary>
+        /// Applies the ?kind= facet: absent ⇒ music only, "all" ⇒ no filter, otherwise that kind.
+        /// </summary>
+        /// <remarks>
+        /// Null-means-music is what makes this cheap: excluding a shelf is <c>Kind IS NULL</c>, which
+        /// needs no backfill and no "music" literal written 771 times, and a kind invented tomorrow
+        /// drops out of the default browse the moment it is applied, without this method changing.
+        /// </remarks>
+        private static IQueryable<MusicArtist> WhereKind(IQueryable<MusicArtist> artists, string? kind) =>
+            kind == KindAll ? artists
+            : string.IsNullOrEmpty(kind) ? artists.Where(a => a.Kind == null)
+            : artists.Where(a => a.Kind == kind);
+
+        /// <summary>True for a facet this server understands. An unknown one is a 400 rather than an
+        /// empty shelf: a typo that silently returns nothing reads exactly like an empty library.</summary>
+        private static bool KindIsValid(string? kind) =>
+            string.IsNullOrEmpty(kind) || kind == KindAll || MusicArtistKinds.IsKnown(kind);
+
         [HttpGet("/API/Music/Artists")]
-        public async Task<IActionResult> Artists()
+        public async Task<IActionResult> Artists(string? kind = null)
         {
+            if (!KindIsValid(kind))
+                return BadRequest(new { message = $"Unknown kind '{kind}'." });
+
             // Every artist card wears a cover: its alphabetically-first album that HAS art (§2.5).
             // "First album WITH art" rather than "the art of album #1" on purpose — art coverage is
             // partial and fills in lazily, so anchoring on album #1 would leave most artists blank
@@ -422,7 +453,7 @@ namespace MovieTheater.Controllers
                 .ToDictionary(g => g.Key, g => g.First());
 
             // 333 artists — small enough to ship whole; the client groups/filters (BoardGames pattern).
-            var artists = await movieDb.MusicArtists.AsNoTracking()
+            var artists = await WhereKind(movieDb.MusicArtists.AsNoTracking(), kind)
                 .OrderBy(a => a.SortName)
                 .Select(a => new
                 {
@@ -431,6 +462,7 @@ namespace MovieTheater.Controllers
                     sortName = a.SortName,
                     folderName = a.FolderName,
                     yearRange = a.YearRange,
+                    kind = a.Kind,
                     albumCount = movieDb.MusicAlbums.Count(al => al.ArtistId == a.Id),
                     trackCount = movieDb.MusicTracks.Count(t => t.ArtistId == a.Id && t.MissingSinceUtc == null),
                 })
@@ -446,6 +478,7 @@ namespace MovieTheater.Controllers
                     a.sortName,
                     a.folderName,
                     a.yearRange,
+                    a.kind,
                     a.albumCount,
                     a.trackCount,
                     artAlbumId = face?.Id,
@@ -481,8 +514,11 @@ namespace MovieTheater.Controllers
             // Tracks sitting directly in the artist folder — real content (1,010 across the library),
             // not an error state; surfaced as their own "Loose tracks" section.
             var looseTracks = await movieDb.MusicTracks.AsNoTracking()
+                // NOT InTrackOrder: these are files that belong to no album, so a track number on one
+                // of them describes some other record's running order and would jump it ahead of 25
+                // untagged siblings. The file name is the only key they share. Id keeps it total.
                 .Where(t => t.ArtistId == id && t.AlbumId == null)
-                .OrderBy(t => t.FileName)
+                .OrderBy(t => t.FileName).ThenBy(t => t.Id)
                 .Select(t => new
                 {
                     id = t.Id,
@@ -501,21 +537,35 @@ namespace MovieTheater.Controllers
                 sortName = artist.SortName,
                 folderName = artist.FolderName,
                 yearRange = artist.YearRange,
+                // So a drilled-in page knows which shelf it belongs to and can send you back to it.
+                kind = artist.Kind,
                 albums,
                 looseTracks,
             });
         }
 
         [HttpGet("/API/Music/Search")]
-        public async Task<IActionResult> Search(string? q = null)
+        public async Task<IActionResult> Search(string? q = null, string? kind = null)
         {
+            if (!KindIsValid(kind))
+                return BadRequest(new { message = $"Unknown kind '{kind}'." });
+
             var term = (q ?? "").Trim();
             if (term.Length < 2)
                 return Ok(new { tracks = Array.Empty<object>() });
 
             // Track-title search only: the client already holds all artists/albums and matches those
             // itself; songs are the one thing it can't (20k+ rows).
-            var tracks = await movieDb.MusicTracks.AsNoTracking()
+            var scoped = movieDb.MusicTracks.AsNoTracking().AsQueryable();
+            // Search follows the shelf you are standing on. A search from the music library that
+            // returned 429 Carlin bits would be the browse-pollution problem back again, one input
+            // to the left — and a search from inside Comedy that returned nothing would be worse.
+            if (kind != KindAll)
+                scoped = string.IsNullOrEmpty(kind)
+                    ? scoped.Where(t => t.Artist.Kind == null)
+                    : scoped.Where(t => t.Artist.Kind == kind);
+
+            var tracks = await scoped
                 .Where(t => t.Title.Contains(term) && t.MissingSinceUtc == null)
                 .OrderBy(t => t.Title).ThenBy(t => t.Id)
                 .Take(100)
@@ -536,12 +586,21 @@ namespace MovieTheater.Controllers
         }
 
         [HttpGet("/API/Music/Albums")]
-        public async Task<IActionResult> Albums(string? q = null, int page = 0, int pageSize = 60)
+        public async Task<IActionResult> Albums(string? q = null, int page = 0, int pageSize = 60, string? kind = null)
         {
+            if (!KindIsValid(kind))
+                return BadRequest(new { message = $"Unknown kind '{kind}'." });
+
             // Ceiling above the whole catalog (1.3k albums): the library page loads it once and
             // filters client-side, the sanctioned pattern for a modest catalog (BoardGames).
             pageSize = Math.Clamp(pageSize, 1, 5000);
+            // The kind lives on the ARTIST, so the album grid inherits it through the navigation —
+            // a comedian's records are comedy records without anyone tagging each one.
             var query = movieDb.MusicAlbums.AsNoTracking().Include(a => a.Artist).AsQueryable();
+            if (kind != KindAll)
+                query = string.IsNullOrEmpty(kind)
+                    ? query.Where(a => a.Artist.Kind == null)
+                    : query.Where(a => a.Artist.Kind == kind);
             if (!string.IsNullOrWhiteSpace(q))
             {
                 var term = q.Trim();
@@ -583,7 +642,7 @@ namespace MovieTheater.Controllers
 
             var tracks = await movieDb.MusicTracks.AsNoTracking()
                 .Where(t => t.AlbumId == id)
-                .OrderBy(t => t.DiscNo).ThenBy(t => t.TrackNo).ThenBy(t => t.FileName)
+                .InTrackOrder()
                 .Select(t => new
                 {
                     id = t.Id,

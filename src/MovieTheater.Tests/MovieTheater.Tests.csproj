@@ -62,6 +62,10 @@
     <Compile Include="..\MovieTheater\Arcade\ArcadeQualityPresets.cs" Link="Arcade\ArcadeQualityPresets.cs" />
     <Compile Include="..\MovieTheater\Arcade\ArcadeRewindSupport.cs" Link="Arcade\ArcadeRewindSupport.cs" />
     <Compile Include="..\MovieTheater\Music\MusicNaming.cs" Link="Music\MusicNaming.cs" />
+    <!-- The tracklist order. Compiled from source because the claim is about the SHIPPED query — a
+         re-declared copy would sort a list, and the bug it fixes is a DATABASE behaviour (ORDER BY
+         puts NULLs first) that only a real query can exhibit. -->
+    <Compile Include="..\MovieTheater\Music\MusicTrackOrdering.cs" Link="Music\MusicTrackOrdering.cs" />
     <Compile Include="..\MovieTheater\Music\MusicArtStore.cs" Link="Music\MusicArtStore.cs" />
     <!-- The remote-art match gate. Pure apart from the HTTP calls the tests never reach, and worth
          testing directly: it is what stops a search result that merely shares a name from being

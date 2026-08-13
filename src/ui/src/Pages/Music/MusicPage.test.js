@@ -107,3 +107,46 @@ describe("MusicPage browse", () => {
     expect(screen.getByRole("button", { name: "Z" }).disabled).toBe(true);
   });
 });
+
+// ── The shelves (MusicArtist.Kind) ──────────────────────────────────────────
+// Comedy and audiobooks sat in the artist grid between Garbage and Orbital — 22 George Carlin
+// records and the Ender novels in the middle of browsing for music. The exclusion is the SERVER's
+// default (no ?kind= means the untagged rows), so what this page has to get right is: ask for
+// nothing by default, ask for the shelf when the URL names one, and never filter client-side —
+// holding all 813 artists in order to hide 42 of them would put the excluded material one stale
+// filter away from the grid it was excluded from.
+describe("MusicPage shelves", () => {
+  it("asks for no kind at all on the library — the default is the server's", async () => {
+    renderPage();
+    await screen.findByText("Artists");
+    expect(api.getMusicArtists).toHaveBeenCalledWith("");
+    expect(api.getMusicAlbums).toHaveBeenCalledWith("");
+  });
+
+  it("fetches the shelf rather than filtering the library down to it", async () => {
+    renderPage("?kind=comedy");
+    await screen.findByText("Comedians");
+    expect(api.getMusicArtists).toHaveBeenCalledWith("comedy");
+    expect(api.getMusicAlbums).toHaveBeenCalledWith("comedy");
+  });
+
+  it("names the shelf in the heading, both ways round", async () => {
+    renderPage("?kind=audiobook");
+    await screen.findByText("Authors");
+    cleanup();
+    renderPage("?kind=audiobook&view=albums");
+    await screen.findByText("Audiobooks");
+  });
+
+  it("scopes song search to the shelf you are standing on", async () => {
+    api.searchMusicTracks.mockImplementation(() => ok({ tracks: [] }));
+    renderPage("?kind=comedy&q=airplane");
+    await waitFor(() => expect(api.searchMusicTracks).toHaveBeenCalledWith("airplane", "comedy"));
+  });
+
+  it("treats a shelf it doesn't know as the library, not as an empty page", async () => {
+    renderPage("?kind=polka");
+    await screen.findByText("Artists");
+    expect(api.getMusicArtists).toHaveBeenCalledWith("");
+  });
+});

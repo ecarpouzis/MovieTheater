@@ -3,6 +3,12 @@ import { useHistory } from "react-router-dom";
 import { MovieAPI } from "../../MovieAPI";
 import { useMusicPlayer } from "../../Music/MusicPlayerContext";
 import MusicPlaylistManageModal from "./MusicPlaylistManageModal";
+// ⚠ BOTH sheets, and MusicPage.css is the load-bearing one. Every /music route is its own lazy
+// chunk, so a page only has the CSS it imports ITSELF — this page's shell is `.music-page`, which
+// lives in MusicPage.css and carries the site's content max-width. Without the import the shell had
+// no rules at all and the playlists ran the full width of the monitor, but only when this route was
+// the first one visited: browsing the library first pulled MusicPage.css in and hid the bug.
+import "./MusicPage.css";
 import "./MusicPlaylists.css";
 
 // ── Playlist manager (music-plan.md §2.4) ───────────────────────────────────

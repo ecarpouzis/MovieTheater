@@ -4,24 +4,30 @@ import { detectStreamCapabilities } from "./streamCapabilities";
 // The artist/album catalogs ship whole (they're small) and filter client-side;
 // only song search and per-album tracklists round-trip.
 
-function getMusicArtists() {
-  return fetch("/API/Music/Artists", { method: "get" });
+// The shelf facet (MusicArtist.Kind). Sending nothing means "music" — the server's default — so the
+// ordinary library call is unchanged and only the Comedy/Audiobooks shelves carry a parameter.
+function kindQuery(kind) {
+  return kind ? `&kind=${encodeURIComponent(kind)}` : "";
+}
+
+function getMusicArtists(kind) {
+  return fetch(`/API/Music/Artists${kind ? `?kind=${encodeURIComponent(kind)}` : ""}`, { method: "get" });
 }
 
 function getMusicArtist(id) {
   return fetch(`/API/Music/Artist/${id}`, { method: "get" });
 }
 
-function getMusicAlbums() {
-  return fetch("/API/Music/Albums?pageSize=5000", { method: "get" });
+function getMusicAlbums(kind) {
+  return fetch(`/API/Music/Albums?pageSize=5000${kindQuery(kind)}`, { method: "get" });
 }
 
 function getMusicAlbum(id) {
   return fetch(`/API/Music/Album/${id}`, { method: "get" });
 }
 
-function searchMusicTracks(q) {
-  return fetch(`/API/Music/Search?q=${encodeURIComponent(q)}`, { method: "get" });
+function searchMusicTracks(q, kind) {
+  return fetch(`/API/Music/Search?q=${encodeURIComponent(q)}${kindQuery(kind)}`, { method: "get" });
 }
 
 // What this server can play: { streamingConfigured, transcodeEnabled }. Asked once, so the UI

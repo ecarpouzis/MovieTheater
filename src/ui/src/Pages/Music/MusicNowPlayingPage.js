@@ -6,6 +6,10 @@ import MusicLyricsPane from "../../Music/MusicLyricsPane";
 import MusicVisualizer from "../../Music/MusicVisualizer";
 import MusicLyricsSettingsButton, { LYRICS_DEFAULTS } from "../../Music/MusicLyricsSettings";
 import "./MusicNowPlaying.css";
+// Same lazy-chunk rule as the playlists page: this one's transport buttons are `.music-playlist-btn`,
+// which lives in the playlists sheet, so deep-linking straight to /music/now-playing rendered them
+// as bare browser buttons until the library page had been visited.
+import "./MusicPlaylists.css";
 
 // ── Now Playing (music-plan.md §2.6/§2.7/§2.8) ──────────────────────────────
 // The full-player view: big art (or the visualizer in its place), the queue, and a lyrics pane that

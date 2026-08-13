@@ -31,6 +31,18 @@ const PAGE_STEP = 120; // cards revealed per scroll-triggered append
 const SENTINEL_STYLE = { height: 1 };
 const NO_ITEMS = [];
 
+// The shelves (MusicArtist.Kind). No ?kind= is the music library — the untagged rows, which is 771
+// of 813 artists — and the two named shelves are where the spoken-word material lives instead of in
+// the middle of it. Kept as a list rather than three branches so the rail and the headings read off
+// the same table and can't disagree about what a shelf is called.
+export const MUSIC_KINDS = [
+  { key: "", label: "Music", noun: { artists: "Artists", albums: "Albums" } },
+  { key: "comedy", label: "Comedy", noun: { artists: "Comedians", albums: "Comedy albums" } },
+  { key: "audiobook", label: "Audiobooks", noun: { artists: "Authors", albums: "Audiobooks" } },
+];
+
+const kindOf = (raw) => (MUSIC_KINDS.some((k) => k.key && k.key === raw) ? raw : "");
+
 function formatTime(sec) {
   if (!Number.isFinite(sec) || sec <= 0) return "";
   const m = Math.floor(sec / 60);
@@ -88,6 +100,8 @@ function MusicPage({ userData }) {
   const params = new URLSearchParams(location.search);
   const view = params.get("view") === "albums" ? "albums" : "artists";
   const q = (params.get("q") || "").trim();
+  const kind = kindOf(params.get("kind"));
+  const shelf = MUSIC_KINDS.find((k) => k.key === kind) || MUSIC_KINDS[0];
   const artistParam = parseInt(params.get("artist"), 10);
 
   const [albums, setAlbums] = useState(null);
@@ -144,9 +158,14 @@ function MusicPage({ userData }) {
   useEffect(() => {
     if (gated) return undefined;
     let alive = true;
+    // Re-fetched per shelf rather than filtered client-side: the whole point of a shelf is that its
+    // rows never entered the browse catalog, and holding all 813 artists in order to hide 42 of them
+    // would put the excluded material one stale filter away from the grid it was excluded from.
+    setAlbums(null);
+    setArtists(null);
     Promise.all([
-      MovieAPI.getMusicAlbums().then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
-      MovieAPI.getMusicArtists().then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
+      MovieAPI.getMusicAlbums(kind).then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
+      MovieAPI.getMusicArtists(kind).then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
     ])
       .then(([albumData, artistData]) => {
         if (!alive) return;
@@ -159,7 +178,7 @@ function MusicPage({ userData }) {
         setArtists([]);
       });
     return () => { alive = false; };
-  }, [gated]);
+  }, [gated, kind]);
 
   // Server song search rides the same q, debounced a touch.
   useEffect(() => {
@@ -168,13 +187,15 @@ function MusicPage({ userData }) {
       return undefined;
     }
     const t = setTimeout(() => {
-      MovieAPI.searchMusicTracks(q)
+      // Scoped to the shelf, like the grid: a search from the music library that surfaced 429 comedy
+      // bits would be the pollution problem back again, one input to the left.
+      MovieAPI.searchMusicTracks(q, kind)
         .then((r) => (r.ok ? r.json() : { tracks: [] }))
         .then((data) => setSongResults(data.tracks || []))
         .catch(() => setSongResults([]));
     }, 250);
     return () => clearTimeout(t);
-  }, [q]);
+  }, [q, kind]);
 
   // Artist detail (albums + loose tracks) when ?artist= is present.
   useEffect(() => {
@@ -192,7 +213,7 @@ function MusicPage({ userData }) {
   }, [artistParam]);
 
   // Reset paging whenever the visible set changes shape.
-  useEffect(() => { setStartIndex(0); setShown(PAGE_STEP); }, [view, q, artistParam]);
+  useEffect(() => { setStartIndex(0); setShown(PAGE_STEP); }, [view, q, kind, artistParam]);
 
   const lowerQ = q.toLowerCase();
   const filteredAlbums = useMemo(() => {
@@ -228,7 +249,7 @@ function MusicPage({ userData }) {
   useEffect(() => { recheck(); }, [loaded, recheck]);
 
   const { hostRef, gridRef, start, end, padTop, padBottom, visibleStart } = useGridWindow(loaded, {
-    resetKey: `${view}:${lowerQ}:${startIndex}`,
+    resetKey: `${kind}:${view}:${lowerQ}:${startIndex}`,
   });
   const visibleItems = useMemo(
     () => gridItems.slice(startIndex + start, startIndex + end),
@@ -353,7 +374,7 @@ function MusicPage({ userData }) {
       {!drilledIn && (
         <section className="music-section" ref={sectionRef}>
           <h2 className="music-section-head">
-            {view === "artists" ? "Artists" : "Albums"}
+            {shelf.noun[view]}
             <span className="music-count">{gridItems.length}</span>
           </h2>
           <div ref={hostRef}>
@@ -383,7 +404,9 @@ function MusicPage({ userData }) {
 
       {drilledIn && artistDetail && !artistDetail.missing && (
         <section className="music-section">
-          <button className="music-back" onClick={() => setParam("artist", null)}>← All artists</button>
+          <button className="music-back" onClick={() => setParam("artist", null)}>
+            ← All {shelf.noun.artists.toLowerCase()}
+          </button>
           <h2 className="music-section-head">
             {artistDetail.name}
             {artistDetail.yearRange && <span className="music-count">{artistDetail.yearRange}</span>}
