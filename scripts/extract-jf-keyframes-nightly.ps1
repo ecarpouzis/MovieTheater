@@ -41,4 +41,10 @@ for ($i = 0; $i -lt 20; $i++) {
     if ($out -match 'Nothing to extract') { break }
 }
 
+# Bank tonight's stamps (and the whole corpus) to F:\ before calling it done. KeyframeData rows
+# cascade-delete with their BaseItems, so jellyfin.db alone is one folder rename away from losing
+# hard-won extractions — the export is the durable copy (see scripts/jf-keyframes-export.py).
+$exportOut = & python "$repo\scripts\jf-keyframes-export.py" 2>&1 | Out-String -Width 500
+$exportOut.Trim() -split "\r?\n" | Add-Content $log
+
 Add-Content $log "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] nightly run done"
