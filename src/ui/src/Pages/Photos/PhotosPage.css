@@ -228,6 +228,7 @@
 
 .photos-page .photos-button,
 .photo-lightbox .photos-button,
+.photo-selection-dock .photos-button,
 .photo-album-picker .photos-button {
   background: var(--card-surface);
   border: 1px solid var(--card-border);
@@ -247,6 +248,7 @@
 
 .photos-page .photos-button:hover,
 .photo-lightbox .photos-button:hover,
+.photo-selection-dock .photos-button:hover,
 .photo-album-picker .photos-button:hover {
   border-color: var(--photos-stamp);
   color: var(--text-primary);
@@ -254,12 +256,14 @@
 
 .photos-page .photos-button:focus-visible,
 .photo-lightbox .photos-button:focus-visible,
+.photo-selection-dock .photos-button:focus-visible,
 .photo-album-picker .photos-button:focus-visible {
   outline: 2px solid var(--photos-stamp);
   outline-offset: 1px;
 }
 
-.photos-page .photos-button:disabled {
+.photos-page .photos-button:disabled,
+.photo-selection-dock .photos-button:disabled {
   cursor: not-allowed;
   opacity: 0.45;
 }
@@ -268,6 +272,14 @@
   border-color: var(--photos-stamp);
   color: var(--photos-stamp);
   margin-top: 12px;
+}
+
+/* The dock's primary action is inline in a row, not stacked under a paragraph: it wants the stamp's
+   emphasis without the plate's top margin. */
+.photo-selection-dock .photos-button--stamp {
+  border-color: var(--photos-stamp);
+  color: var(--photos-stamp);
+  margin-top: 0;
 }
 
 .photos-page .photos-button.active,
@@ -771,6 +783,37 @@
   text-transform: uppercase;
 }
 
+/* The corner target: the way to pick a photograph up WITHOUT opening it.
+   A 40px hit area holding an 18px mark — the mark is what a contact sheet's tick should look like,
+   the hit area is what a thumb needs. Drawn on hover for a mouse and permanently for a touch screen,
+   which has no hover to draw it with and is exactly where "I tapped it and it opened" was reported. */
+.photos-page .photo-tile-select {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.photos-page .photo-tile:hover .photo-tile-select,
+.photos-page .photo-tile-select:focus-visible,
+.photos-page .photo-tile-selectable .photo-tile-select,
+.photos-page .photo-tile-selected .photo-tile-select {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .photos-page .photo-tile-select {
+    opacity: 1;
+  }
+}
+
 /* Square, like everything else that holds a print. */
 .photos-page .photo-tile-check {
   position: absolute;
@@ -795,7 +838,106 @@
   border-color: var(--photos-stamp);
 }
 
-.photos-page .photo-selection-bar {
+/* Press-and-hold selects (PhotoGrid's useLongPress). Without this the hold is answered by the
+   platform's own text/image handlers first — a selection highlight on desktop, "save image" on
+   Android — and the gesture never reaches the grid. */
+.photos-page .photo-tile {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Selecting a whole month (§2.9), offered on the header only once selecting has begun. */
+.photos-page .photo-grid-header-select {
+  background: none;
+  border: 1px solid var(--photos-rule);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  margin-left: 12px;
+  padding: 3px 8px;
+  text-transform: uppercase;
+}
+
+.photos-page .photo-grid-header-select:hover {
+  border-color: var(--photos-stamp);
+  color: var(--photos-stamp);
+}
+
+/* ── The selection dock ────────────────────────────────────────────────────────────────────────
+   Portaled to <body> (see PhotoSelectionBar) and pinned to the viewport, because the batch job is
+   "pick forty of these and file them" and the picking happens wherever in the list you have scrolled
+   to. As a strip at the top of the page it made every round of that job end with a scroll back up,
+   which is what "batch work needs to be easier" was about.
+
+   It clears the music mini-player the same way every other bottom-anchored control on the site does,
+   and the safe-area inset keeps it off a phone's home indicator. */
+.photo-selection-dock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--music-miniplayer-height, 0px) + env(safe-area-inset-bottom, 0px));
+  z-index: 1030;
+  padding: 8px 10px;
+  pointer-events: none;
+}
+
+.photo-selection-dock .photo-selection-bar {
+  pointer-events: auto;
+  margin: 0 auto;
+  max-width: 1180px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+  /* One line that scrolls sideways rather than a block that grows upward and eats the grid: the row
+     of actions is long, and a wrapped four-line bar on a phone covers the photographs being picked. */
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+}
+
+.photo-selection-dock .photo-selection-bar > * {
+  flex: 0 0 auto;
+}
+
+.photo-selection-dock .photo-selection-spacer {
+  flex: 1 0 12px;
+}
+
+/* Room for the dock at the end of the list, so the last row of photographs is never the one hiding
+   under the bar you are trying to use on it. Keyed off the dock's presence rather than a class the
+   page has to remember to set — the dock is portaled out, and the page never knows it is there. */
+body:has(.photo-selection-dock) .photos-page {
+  padding-bottom: calc(96px + var(--music-miniplayer-height, 0px));
+}
+
+/* A new album can be filed straight into the gallery as it is created (§2.12). */
+.photo-album-picker .photo-album-shelf-choice {
+  align-items: flex-start;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  font-size: 12px;
+  gap: 8px;
+  line-height: 1.45;
+  margin: -8px 0 18px;
+}
+
+/* Which shelf an album on the pick-list is on, so adding to one is never a guess about where the
+   pictures are about to appear. */
+.photo-album-picker .photo-album-shelf-mark {
+  border: 1px solid var(--photos-rule);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  margin-left: 8px;
+  padding: 1px 5px;
+  text-transform: uppercase;
+}
+
+.photo-selection-bar {
   align-items: center;
   background: var(--card-surface);
   border: 1px solid var(--card-border);
@@ -807,12 +949,13 @@
   padding: 9px 13px;
 }
 
-.photos-page .photo-selection-count {
+.photo-selection-count {
   color: var(--text-primary);
   font-family: var(--font-mono);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
   margin-right: 6px;
+  white-space: nowrap;
 }
 
 /* ── Albums: the slip mount ────────────────────────────────────────────────────────────────────
@@ -1851,11 +1994,34 @@
      and the close X with it — above the viewport edge, where no thumb can reach it. Capping the
      panel at the dynamic viewport height (dvh: the URL-bar band is exactly where the X was
      being lost; vh would still include it) keeps the top edge on screen no matter how tall a
-     portrait photo runs; the content scrolls inside the panel instead. Three classes, same
-     specificity story as the container rule above. */
+     portrait photo runs. Three classes, same specificity story as the container rule above.
+
+     WHICH BOX SCROLLS is the rest of the answer, and getting it wrong is why the X went missing
+     again after that cap was added. The close button is `position: absolute` against the PANEL
+     (@rc-component/dialog's Panel puts it there, ahead of the header), so a panel that scrolls its
+     own overflow carries the X up and out of view the moment the reader scrolls down to the info or
+     the tags — a portrait photo needs only one flick to lose it. So the panel is a flex column that
+     never scrolls, and the BODY inside it is the scrollport: the header and the X stay put, and the
+     picture and its actions move under them. */
   .photos-modal.ant-modal .ant-modal-container {
+    display: flex;
+    flex-direction: column;
     max-height: calc(100dvh - 16px);
+    overflow: hidden;
+  }
+
+  .photos-modal.ant-modal .ant-modal-header {
+    flex: 0 0 auto;
+    /* Clear of the 44px X, so a long file name cannot run under it. */
+    padding-right: 46px;
+  }
+
+  .photos-modal.ant-modal .ant-modal-body {
+    flex: 1 1 auto;
+    /* Without this a flex item refuses to shrink below its content, and the panel's cap is ignored. */
+    min-height: 0;
     overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
   .photos-modal.ant-modal .ant-modal-close {
@@ -1863,6 +2029,17 @@
     /* 44px is the minimum comfortable touch target; antd's default X is smaller. */
     width: 44px;
     height: 44px;
+    /* Above the body's scrolling content, which now passes underneath it. */
+    z-index: 2;
+  }
+
+  /* The stage gets the phone's share of the screen rather than the desktop's: 72dvh of picture plus
+     a header plus a row of actions is taller than a portrait phone, which is what forced the reader
+     to scroll inside the panel in the first place. */
+  .photo-lightbox .photo-lightbox-stage,
+  .photo-lightbox .photo-lightbox-image,
+  .photo-lightbox .photo-video-element {
+    max-height: 58dvh;
   }
 
   .photos-page {

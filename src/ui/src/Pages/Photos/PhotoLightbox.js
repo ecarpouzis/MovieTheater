@@ -12,7 +12,12 @@ import PhotoVideo from "./PhotoVideo";
 // original when a browser can render it and the 3200px derivative when it cannot (§2.2's
 // OriginalRenderable rule), so the format list lives in one place instead of two.
 
-export default function PhotoLightbox({ assetId, onClose, onChanged, onOpenAsset, onUnavailable, people = [], onReloadPeople }) {
+export default function PhotoLightbox({ assetId, onClose, onCurated, onOpenAsset, onUnavailable, people = [], onReloadPeople }) {
+  // What a write here did, reported the same way the batch bar reports it: the list behind the
+  // lightbox patches the card in place instead of rebuilding itself, which on a phone used to mean
+  // closing the photo and finding yourself at the top of the timeline (see PhotosPage's `curated`).
+  const changed = (changes) => onCurated?.(assetId ? [assetId] : [], changes || {});
+
   const [detail, setDetail] = useState(null);
   const [state, setState] = useState("loading");
   const [zoomed, setZoomed] = useState(false);
@@ -98,7 +103,7 @@ export default function PhotoLightbox({ assetId, onClose, onChanged, onOpenAsset
     if (body.redirectedToMasters) message.info("Recorded against the master copy of this photo.");
     if (!pick.familyPersonId) onReloadPeople?.();
     await loadTags();
-    onChanged?.();
+    changed({});
   };
 
   const removeTag = async (tag) => {
@@ -108,7 +113,7 @@ export default function PhotoLightbox({ assetId, onClose, onChanged, onOpenAsset
       return;
     }
     await loadTags();
-    onChanged?.();
+    changed({});
   };
 
   // Curation for one photo (§2.9). A flag, and only a flag: hiding takes it out of the timeline and
@@ -121,7 +126,7 @@ export default function PhotoLightbox({ assetId, onClose, onChanged, onOpenAsset
       return;
     }
     setHidden(next);
-    onChanged?.();
+    changed({ hidden: next });
   };
 
   const card = detail?.card;
@@ -246,7 +251,11 @@ export default function PhotoLightbox({ assetId, onClose, onChanged, onOpenAsset
               onSaved={(next) => {
                 setDetail((current) => (current ? { ...current, card: { ...current.card, ...next } } : current));
                 setEditingDate(false);
-                onChanged?.();
+                // A date is what the undated shelf is FOR, so a photograph that just got one leaves
+                // it. On the dated timeline the card keeps its place until the next load rather than
+                // jumping months under the reader's thumb — the section it now belongs to is decided
+                // by the server's ordering, and this is not the moment to guess at it.
+                changed({ takenAt: next.takenAt, yearMin: next.yearMin, yearMax: next.yearMax });
               }}
               assetId={assetId}
             />

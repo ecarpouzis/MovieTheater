@@ -1195,6 +1195,20 @@ namespace MovieTheater.Controllers
             // Slugs are minted server-side and never taken from the client: they are the album's URL,
             // and a client-chosen one is a uniqueness race plus a path-injection question nobody needs.
             var existingSlugs = await movieDb.PhotoAlbums.Select(a => a.Slug).ToListAsync();
+
+            // §2.12: the shelf is answerable AT CREATION, not only through the album's Edit panel
+            // afterwards. "These forty are an artist's, not the family's" is known at the moment the
+            // selection is made, and making the member file it twice is how a two-step job became one
+            // nobody finished. Same string-not-enum parse as UpdateAlbum, so an unknown value is a 400
+            // with a message rather than a silent fall back to the family shelf.
+            var shelf = PhotoShelf.Timeline;
+            if (!string.IsNullOrWhiteSpace(request?.Shelf)
+                && !Enum.TryParse<PhotoShelf>(request!.Shelf, ignoreCase: true, out shelf))
+                return BadRequest(new { message = "Unknown shelf." });
+
+            var artist = request?.ArtistName?.Trim();
+            if (artist != null && artist.Length > 256) artist = artist.Substring(0, 256);
+
             var album = new PhotoAlbum
             {
                 Title = title,
@@ -1203,6 +1217,8 @@ namespace MovieTheater.Controllers
                 CreatedByUserId = GetCurrentUserId(),
                 CreatedUtc = DateTime.UtcNow,
                 SortOrder = 0,
+                Shelf = shelf,
+                ArtistName = string.IsNullOrWhiteSpace(artist) ? null : artist,
             };
             movieDb.PhotoAlbums.Add(album);
             await movieDb.SaveChangesAsync();
@@ -2962,6 +2978,13 @@ namespace MovieTheater.Controllers
         /// <summary>Folder-seeded album (§2.9): the folder's membership is COPIED into rows; the folder
         /// itself is never the album's identity.</summary>
         public string? FromFolder { get; set; }
+
+        /// <summary>Which shelf the new album is indexed on (§2.12) — omitted means the family album.
+        /// A string rather than the enum so an unknown value is a 400 with a message.</summary>
+        public string? Shelf { get; set; }
+
+        /// <summary>The artist, for a Gallery collection of one person's work (§2.12).</summary>
+        public string? ArtistName { get; set; }
     }
 
     public class PhotoAlbumUpdateRequest

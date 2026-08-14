@@ -263,6 +263,28 @@ approved.
 - Curation flags on `PhotoAsset`: `Hidden` (timeline/albums exclude; folder view shows all),
   auto-suggested for `Screenshots`/misc folders at ingest, human-confirmed batch-wise.
 
+**Selection mode, as revised after the first real batch session (2026-08-14).** The mode began as
+one switch at the top of the page, which made the first tap of every batch job open a photograph
+instead of picking it up, and put the actions a thousand pixels above where the picking was
+happening. Four rules now:
+
+- **Three ways to pick a photograph up**, none of which requires scrolling back to the top: the
+  switch, a **corner target** on the tile (drawn on hover, permanent on a touch screen), and
+  **press-and-hold**. The last two turn the mode on themselves. A hold that WANDERS is a scroll,
+  not a selection.
+- **Bulk gestures for bulk work**: a hold while already selecting takes everything from the last
+  tile touched **through this one**; a month header takes its whole month; the bar takes everything
+  laid out. Forty photographs in two gestures rather than forty taps.
+- **The bar is a dock** at the bottom of the screen, portaled to `<body>` (the gallery's wall is
+  painted with `clip-path`, which would capture a fixed bar's positioning), leading with **Add to
+  album** — and a new album can be filed straight onto the **gallery shelf** as it is created,
+  rather than through the album's Edit panel afterwards. An album's shelf is a one-tap action on the
+  album page for the same reason.
+- **Writes patch the list in place** (`photoPatch.js`), never rebuild it. A re-fetch after each batch
+  action returned a keyset-paged timeline to the newest photograph — measured at the time: scrolled
+  to 3,000px, back to 0 — so every round of a repetitive job began by finding your place again. What
+  a write reported is what gets applied; the header's counts still come from the server.
+
 ### §2.10 Google Photos: the API door is closed — mesh via Takeout
 
 **Fact check (2026): the Library API lost third-party read access on 2025-03-31** — the

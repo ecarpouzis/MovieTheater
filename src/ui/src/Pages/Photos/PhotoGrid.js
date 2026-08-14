@@ -1,6 +1,13 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { getScrollParent, onAnyScroll, viewportBand } from "../../utils/scroll";
-import { blockAtOffset, buildBlocks, visibleRange, DEFAULT_GAP, DEFAULT_TARGET_ROW_HEIGHT } from "./justifiedLayout";
+import {
+  blockAtOffset,
+  buildBlocks,
+  sectionKeyOf,
+  visibleRange,
+  DEFAULT_GAP,
+  DEFAULT_TARGET_ROW_HEIGHT,
+} from "./justifiedLayout";
 import { formatDuration } from "./PhotoVideo";
 
 // Virtualized justified grid (docs/photos-plan.md §4).
@@ -19,6 +26,77 @@ const OVERSCAN = 1000;
 // one afternoon and wrong for a wall.
 export const GALLERY_TARGET_ROW_HEIGHT = 300;
 export const GALLERY_GAP = 26;
+
+// A press held this long, without wandering more than a thumb's wobble, means "select" rather than
+// "open". 420ms is the platform long-press everywhere else on a phone; the slop is what separates a
+// held finger from the start of a scroll, and getting it wrong makes the grid feel like it grabs
+// photographs while you are trying to move past them.
+const LONG_PRESS_MS = 420;
+const LONG_PRESS_SLOP = 10;
+
+/**
+ * The press-and-hold gesture, as handlers to spread onto a tile.
+ *
+ * Pointer events rather than touch events, so one implementation covers a thumb and a held mouse
+ * button. Nothing is preventDefault-ed on the way down — a tile must never swallow a scroll that
+ * merely started on top of it — so the gesture is cancelled by MOVEMENT instead.
+ *
+ * `consumeClick` exists because a long press is followed by a click the browser still delivers, and
+ * that click would immediately undo the selection the hold just made.
+ */
+function useLongPress(onLongPress) {
+  const timerRef = useRef(0);
+  const originRef = useRef(null);
+  const firedRef = useRef(false);
+  const handlerRef = useRef(onLongPress);
+  handlerRef.current = onLongPress;
+
+  const clear = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = 0;
+    originRef.current = null;
+  }, []);
+
+  useEffect(() => clear, [clear]);
+
+  const handlers = {
+    onPointerDown: (event) => {
+      if (event.button != null && event.button !== 0) return;
+      firedRef.current = false;
+      originRef.current = { x: event.clientX ?? 0, y: event.clientY ?? 0 };
+      clear();
+      timerRef.current = setTimeout(() => {
+        timerRef.current = 0;
+        firedRef.current = true;
+        handlerRef.current?.();
+      }, LONG_PRESS_MS);
+    },
+    onPointerMove: (event) => {
+      const origin = originRef.current;
+      if (!origin || !timerRef.current) return;
+      const dx = Math.abs((event.clientX ?? 0) - origin.x);
+      const dy = Math.abs((event.clientY ?? 0) - origin.y);
+      if (dx > LONG_PRESS_SLOP || dy > LONG_PRESS_SLOP) clear();
+    },
+    onPointerUp: clear,
+    onPointerCancel: clear,
+    onPointerLeave: clear,
+    // Android's own long-press menu ("save image") would otherwise land on top of the selection the
+    // hold just made.
+    onContextMenu: (event) => {
+      if (firedRef.current) event.preventDefault();
+    },
+  };
+
+  return {
+    handlers,
+    consumeClick: () => {
+      const fired = firedRef.current;
+      firedRef.current = false;
+      return fired;
+    },
+  };
+}
 
 export default function PhotoGrid({
   items,
@@ -53,6 +131,68 @@ export default function PhotoGrid({
 
   const blocksRef = useRef(blocks);
   blocksRef.current = blocks;
+
+  // ── Selecting in bulk (docs/photos-plan.md §2.9) ───────────────────────────────────────────────
+  // The batch job this section exists for is "put these forty photographs in an album", and doing it
+  // forty taps at a time is the thing that made batch work not worth starting. So the grid owns three
+  // bulk gestures, all of which need the ORDER items are displayed in — which only the grid has.
+  const order = useMemo(() => {
+    const index = new Map();
+    (items || []).forEach((item, i) => index.set(item.id, i));
+    return index;
+  }, [items]);
+
+  // The last tile touched, which is what a range press measures FROM. Held as an ID and resolved to a
+  // position only when a range is actually taken: a batch write removes cards from the list under the
+  // reader (photoPatch.js), and a remembered INDEX would quietly start pointing at a different
+  // photograph the moment anything above it left.
+  const anchorRef = useRef(null);
+
+  // The bar's "All" needs to know what is on screen to select, and the grid is the only thing that
+  // knows. Published rather than duplicated: the page holding the bar does not re-derive the list.
+  const selectionRef = useRef(selection);
+  selectionRef.current = selection;
+  useEffect(() => {
+    selectionRef.current?.register?.((items || []).map((item) => item.id));
+  }, [items]);
+
+  /** A plain tap on a tile: it toggles, and it becomes the anchor a later range press measures from. */
+  const tapped = useCallback((id) => {
+    anchorRef.current = id;
+    selectionRef.current?.toggle(id);
+  }, []);
+
+  /**
+   * Press and hold. Out of selection mode it STARTS selecting — the gesture that answers "tapping a
+   * photo to put it in an album opens it instead". Already selecting, it selects everything from the
+   * last tile touched through this one, which is how forty photographs get picked in two gestures.
+   */
+  const held = useCallback((id) => {
+    const current = selectionRef.current;
+    if (!current) return;
+    const index = order.get(id);
+    // An anchor whose photograph has since left the list is no anchor at all — take this one instead
+    // of a span measured from a card that is not there.
+    const anchor = current.active ? order.get(anchorRef.current) : undefined;
+    anchorRef.current = id;
+
+    if (!current.active || anchor == null || index == null) {
+      if (!current.active) current.enable?.();
+      current.toggle(id);
+      return;
+    }
+    const [from, to] = anchor <= index ? [anchor, index] : [index, anchor];
+    current.selectMany?.((items || []).slice(from, to + 1).map((item) => item.id), true);
+  }, [items, order]);
+
+  /** A month header, in selection mode: takes the whole month, or gives it all back. */
+  const toggleSection = useCallback((key) => {
+    const current = selectionRef.current;
+    if (!current) return;
+    const ids = (items || []).filter((item) => sectionKeyOf(item) === key).map((item) => item.id);
+    if (!ids.length) return;
+    current.selectMany?.(ids, !ids.every((id) => current.has(id)));
+  }, [items]);
 
   const maintain = useCallback(() => {
     rafRef.current = 0;
@@ -132,6 +272,21 @@ export default function PhotoGrid({
             ) : (
               block.label
             )}
+            {/* Selecting a month is one tap, not sixty. Only offered once selecting has begun: on a
+                page that is being READ, a "select all" beside every month is an invitation to a
+                mis-tap that quietly picks up four hundred photographs.
+
+                Named for its SCOPE rather than "Select all", which is the dock's button and means the
+                whole list — two controls a thumb's width apart must not share a label. */}
+            {selection?.active && (
+              <button
+                type="button"
+                className="photo-grid-header-select"
+                onClick={() => toggleSection(block.key)}
+              >
+                {block.key === "undated" ? "Select these" : "Select month"}
+              </button>
+            )}
           </div>
         ) : (
           <div className="photo-grid-row" key={`r-${block.top}`} style={{ top: block.top, height: block.height }}>
@@ -141,6 +296,8 @@ export default function PhotoGrid({
                 tile={tile}
                 onOpen={onOpen}
                 selection={selection}
+                onTap={tapped}
+                onHold={held}
                 plaqueArtist={gallery ? plaqueArtist : null}
               />
             ))}
@@ -184,17 +341,32 @@ export function videoBadge(item) {
  * video (Phase 5 has the poster grabs, §2.3), and a still whose format this build has no decoder
  * for. The server sends `thumbState` precisely so the UI never has to guess which it is holding.
  *
- * In selection mode the click SELECTS instead of opening — one mode, no modifier keys to discover —
+ * In selection mode the tap SELECTS instead of opening — one mode, no modifier keys to discover —
  * and the hidden badge is a subtle corner mark rather than a dimmed tile: a hidden photo in the
  * folder view is still a photo that is still on disk (§2.9), and it must not read as broken.
+ *
+ * Out of selection mode there are still two ways to pick a photograph up without opening it: the
+ * corner target (drawn on hover, and always on a touch screen where there is no hover to draw it
+ * with) and press-and-hold. Both exist because the mode switch lives at the top of the page, and
+ * "scroll back up to the top, flip a switch, scroll back down" is not a thing anybody does twice.
+ *
+ * The root is a div-with-a-role rather than a <button> for exactly one reason: the corner target is
+ * itself a button, and a button inside a button is not a thing HTML has an answer for.
  */
-function PhotoTile({ tile, onOpen, selection, plaqueArtist = null }) {
+function PhotoTile({ tile, onOpen, selection, onTap, onHold, plaqueArtist = null }) {
   const { item, width, height } = tile;
   const style = { width, height };
   const label = item.path?.split("/").pop() ?? "";
   const selecting = !!selection?.active;
   const selected = selecting && selection.has(item.id);
-  const activate = () => (selecting ? selection.toggle(item.id) : onOpen?.(item));
+  const { handlers, consumeClick } = useLongPress(() => onHold?.(item.id));
+
+  const activate = () => {
+    // The click the browser sends after a long press would undo what the hold just selected.
+    if (consumeClick()) return;
+    if (selecting) onTap?.(item.id);
+    else onOpen?.(item);
+  };
 
   const badge = videoBadge(item);
 
@@ -233,7 +405,23 @@ function PhotoTile({ tile, onOpen, selection, plaqueArtist = null }) {
           ×{item.group.size}
         </span>
       )}
-      {selecting && <span className="photo-tile-check">{selected ? "✓" : ""}</span>}
+      {/* The corner target: tap it and the photograph is picked up, whether or not selection mode was
+          already on. It is the whole answer to "I wanted it in an album and it opened instead". */}
+      {selection && (
+        <button
+          type="button"
+          className="photo-tile-select"
+          aria-label={selected ? `Deselect ${label}` : `Select ${label}`}
+          aria-pressed={selected}
+          onClick={(event) => {
+            event.stopPropagation();
+            if (!selecting) selection.enable?.();
+            onTap?.(item.id);
+          }}
+        >
+          <span className="photo-tile-check">{selected ? "✓" : ""}</span>
+        </button>
+      )}
     </>
   );
 
@@ -241,18 +429,27 @@ function PhotoTile({ tile, onOpen, selection, plaqueArtist = null }) {
     "photo-tile",
     item.gridUrl ? "" : `photo-tile-placeholder photo-tile-${(item.thumbState || "Pending").toLowerCase()}`,
     selected ? "photo-tile-selected" : "",
+    selecting ? "photo-tile-selectable" : "",
   ]
     .filter(Boolean)
     .join(" ");
 
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       className={className}
       style={style}
       onClick={activate}
+      onKeyDown={(event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        if (selecting) onTap?.(item.id);
+        else onOpen?.(item);
+      }}
       title={label}
       aria-pressed={selecting ? selected : undefined}
+      {...handlers}
     >
       {item.gridUrl ? (
         <img src={item.gridUrl} alt="" loading="lazy" decoding="async" width={width} height={height} />
@@ -272,7 +469,7 @@ function PhotoTile({ tile, onOpen, selection, plaqueArtist = null }) {
           <span className="photo-tile-plaque-artist">{plaqueArtist}</span>
         </span>
       )}
-    </button>
+    </div>
   );
 }
 

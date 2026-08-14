@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Switch as AntSwitch } from "antd";
 import { Route, Switch, useHistory, useLocation } from "react-router-dom";
 import { MovieAPI } from "../../MovieAPI";
@@ -14,6 +14,7 @@ import PhotoPeople from "./PhotoPeople";
 import PhotoTagQueue from "./PhotoTagQueue";
 import PhotoSelectionBar from "./PhotoSelectionBar";
 import useIsMobile from "../../hooks/useIsMobile";
+import useScrollLockRestore from "../../hooks/useScrollLockRestore";
 import useShowHiddenPhotos from "../../hooks/useShowHiddenPhotos";
 import usePhotosAlbum, { photosNavViews, photosSection, photosViewLabel } from "../../hooks/usePhotosAlbum";
 import "./PhotosPage.css";
@@ -140,13 +141,26 @@ export default function PhotosPage({ userData }) {
   // Admin-only, and driven from the NAVBAR rather than from here (Phase 4 addendum). The server
   // ignores the parameter for a non-admin regardless, so this is purely what the page ASKS for.
   const [showHidden] = useShowHiddenPhotos();
-  // Bumped after any curation write so the browse lists re-fetch rather than showing a stale answer.
+  // Bumped after a STRUCTURAL change so the browse lists re-fetch rather than showing a stale answer.
+  // Deliberately not bumped by ordinary curation — see `curated` below.
   const [refreshKey, setRefreshKey] = useState(0);
+  // What the last curation write did, for the lists to apply to the cards they are already holding.
+  const [patch, setPatch] = useState(null);
+  // What the grid currently has laid out, published by PhotoGrid so "Select all" does not have to
+  // re-derive a list only the grid knows the shape of.
+  const visibleIdsRef = useRef([]);
+  const registerVisible = useCallback((ids) => {
+    visibleIdsRef.current = ids;
+  }, []);
 
   const view = photosSection(location.pathname);
   const folderPath = folderPathFromUrl(location.pathname);
   const albumSlug = albumSlugFromUrl(location.pathname);
   const openAssetId = assetIdFromUrl(location.search);
+
+  // A modal locks the window's scroll, and on a phone that costs the reader their place in the list
+  // behind it — the "closing a photo puts me back at the top" report. See the hook.
+  useScrollLockRestore(!!openAssetId);
 
   // Leaving a view drops its selection, exactly as switching tabs used to.
   useEffect(() => {
@@ -159,9 +173,30 @@ export default function PhotosPage({ userData }) {
     setAlbumMeta(null);
   }, [albumSlug]);
 
+  /** A structural change — an album created, a batch approved, a duplicate group settled. The lists
+   *  are rebuilt, and the reader is knowingly returned to the top of one. */
   const changed = () => {
     setSelected([]);
     setRefreshKey((k) => k + 1);
+    refresh();
+  };
+
+  /**
+   * An ordinary curation write, applied to the cards the list is ALREADY holding (§2.9).
+   *
+   * This used to call `changed()`, which remounts the browse list — so sending forty photographs to
+   * the gallery re-fetched the timeline from the newest photograph and dropped the reader at the top,
+   * a thousand pixels above where they were working. The batch job is inherently repetitive; making
+   * every round of it start with "scroll back to where I was" is what made it not worth doing.
+   *
+   * The counts in the header still come from the server (`refresh`), so nothing here invents a total.
+   * What is patched locally is only what the write itself already told us: these ids, this flag.
+   */
+  const curated = (ids, changes) => {
+    setSelected([]);
+    if (ids?.length && changes && Object.keys(changes).length > 0) {
+      setPatch((prev) => ({ seq: (prev?.seq ?? 0) + 1, ids, changes }));
+    }
     refresh();
   };
 
@@ -215,10 +250,29 @@ export default function PhotosPage({ userData }) {
     );
   }
 
+  // A Set rather than `selected.includes`: a full month selected is several hundred ids, checked once
+  // per tile on every render, and the linear scan turns a scroll into a stutter.
+  const selectedIds = new Set(selected);
+
   const selection = {
     active: selecting,
-    has: (id) => selected.includes(id),
+    has: (id) => selectedIds.has(id),
     toggle: (id) => setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : prev.concat(id))),
+    // Turning the mode ON from a tile, which is what the corner target and press-and-hold do. The
+    // switch at the top of the page is still there; it is simply no longer the ONLY way in, which it
+    // was — and it scrolls away, which made "put these in an album" a scroll to the top first.
+    enable: () => setSelecting(true),
+    selectMany: (ids, on) =>
+      setSelected((prev) => {
+        if (!on) {
+          const dropping = new Set(ids);
+          return prev.filter((id) => !dropping.has(id));
+        }
+        const next = new Set(prev);
+        ids.forEach((id) => next.add(id));
+        return Array.from(next);
+      }),
+    register: registerVisible,
   };
 
   const browsing = view === "timeline" || view === "undated" || view === "folders";
@@ -331,13 +385,23 @@ export default function PhotosPage({ userData }) {
         </div>
       )}
 
-      {browsing && selecting && (
+      {/* The bar docks to the bottom of the SCREEN (see PhotoSelectionBar), so it is reachable from
+          wherever in the list the picking got to. It is shown for a selection made without the mode
+          switch too — the corner target and press-and-hold both turn the mode on themselves. */}
+      {browsing && (selecting || selected.length > 0) && (
         <PhotoSelectionBar
           ids={selected}
+          active={selecting}
           people={people}
           onReloadPeople={refreshPeople}
+          onCurated={curated}
           onChanged={changed}
           onClear={() => setSelected([])}
+          onSelectAll={() => setSelected(visibleIdsRef.current.slice())}
+          onDone={() => {
+            setSelecting(false);
+            setSelected([]);
+          }}
         />
       )}
 
@@ -349,6 +413,7 @@ export default function PhotosPage({ userData }) {
             includeHidden={showHidden}
             onOpen={openAsset}
             selection={selection}
+            patch={patch}
           />
         </Route>
 
@@ -360,6 +425,7 @@ export default function PhotosPage({ userData }) {
             includeHidden={showHidden}
             onOpen={openAsset}
             selection={selection}
+            patch={patch}
             onMakeAlbum={makeAlbumFromFolder}
           />
         </Route>
@@ -450,6 +516,7 @@ export default function PhotosPage({ userData }) {
             includeHidden={showHidden}
             onOpen={openAsset}
             selection={selection}
+            patch={patch}
           />
         </Route>
       </Switch>
@@ -460,7 +527,9 @@ export default function PhotosPage({ userData }) {
         // A link to a photo that is gone — or hidden from whoever followed it — drops back to the
         // view it pointed at. Nothing is announced: a stale share is not the reader's mistake.
         onUnavailable={() => showAsset(null)}
-        onChanged={changed}
+        // Same in-place patching as the batch bar: hiding a photo from the lightbox must not rebuild
+        // the list the reader is standing in the middle of.
+        onCurated={curated}
         // The lightbox is the exception to the unwrapping above: its "other copies" strip already
         // hands back a plain id (member.card.id), so this one takes it raw.
         onOpenAsset={showAsset}

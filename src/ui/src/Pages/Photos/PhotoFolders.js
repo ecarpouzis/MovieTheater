@@ -3,6 +3,7 @@ import { Spin } from "antd";
 import { MovieAPI } from "../../MovieAPI";
 import useInfiniteScroll from "../../hooks/useInfiniteScroll";
 import PhotoGrid from "./PhotoGrid";
+import { applyPatch } from "./photoPatch";
 
 // The folder browser (docs/photos-plan.md §2.9): the Path tree, with zero extra modeling. It is a
 // browse VIEW — a folder is never an album's identity, so the disk layout stays free to be ugly.
@@ -18,7 +19,7 @@ import PhotoGrid from "./PhotoGrid";
 // a folder six levels into a device dump is exactly the kind of thing one family member sends
 // another, and it used to be unlinkable. `path` comes in, `onNavigate` goes out; nothing else about
 // how this browses changed.
-export default function PhotoFolders({ path = "", onNavigate, onOpen, selection, onMakeAlbum, includeHidden = false }) {
+export default function PhotoFolders({ path = "", onNavigate, onOpen, selection, onMakeAlbum, includeHidden = false, patch = null }) {
   const [folders, setFolders] = useState([]);
   const [items, setItems] = useState([]);
   const [state, setState] = useState("loading");
@@ -72,6 +73,15 @@ export default function PhotoFolders({ path = "", onNavigate, onOpen, selection,
   useEffect(() => {
     recheck();
   }, [items.length, recheck]);
+
+  // A curation write, applied in place (photoPatch.js). The folder view's membership rule is the
+  // WEAKEST of the surfaces on purpose: it answers "what is actually in this folder", so a photograph
+  // sent to the gallery stays right here and simply gains its badge. Only hiding removes anything,
+  // and only for the members who are not being shown hidden items.
+  useEffect(() => {
+    if (!patch) return;
+    setItems((prev) => applyPatch(prev, patch, (item) => includeHidden || !item.hidden));
+  }, [patch, includeHidden]);
 
   const segments = path ? path.split("/") : [];
   const folderName = segments.length ? segments[segments.length - 1] : "";

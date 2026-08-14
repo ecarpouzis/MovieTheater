@@ -1,4 +1,4 @@
-import { render, cleanup, screen, waitFor, fireEvent } from "@testing-library/react";
+import { act, render, cleanup, screen, waitFor, fireEvent } from "@testing-library/react";
 import { vi, describe, it, expect, afterEach, beforeEach } from "vitest";
 
 // Phase 2 curation UI (docs/photos-plan.md §2.9): selection mode, the batch actions, albums and the
@@ -30,6 +30,7 @@ vi.mock("antd", async () => {
 
 const calls = {
   hide: [],
+  shelf: [],
   reorder: [],
   createAlbum: [],
   addToAlbum: [],
@@ -55,6 +56,7 @@ const card = (id, extra = {}) => ({
 });
 
 let albumsBody;
+let galleryBody;
 let albumBody;
 let proposalsBody;
 let batchesBody;
@@ -65,7 +67,14 @@ vi.mock("../../MovieAPI", () => ({
       calls.hide.push({ ids, hidden });
       return ok({ requested: ids.length, matched: ids.length, changed: ids.length, hidden });
     },
+    setPhotosShelf: (ids, shelf) => {
+      calls.shelf.push({ ids, shelf });
+      return ok({ requested: ids.length, changed: ids.length, shelf, groupMembersIncluded: 0 });
+    },
     getPhotoAlbums: () => ok(albumsBody),
+    // The album picker offers BOTH shelves (§2.12), so a selection can be filed into a gallery
+    // collection without first going and finding it on the other index.
+    getPhotoGallery: () => ok(galleryBody),
     getPhotoAlbum: () => ok(albumBody),
     createPhotoAlbum: (body) => {
       calls.createAlbum.push(body);
@@ -99,6 +108,7 @@ vi.mock("../../MovieAPI", () => ({
 }));
 
 const PhotoGrid = (await import("./PhotoGrid")).default;
+const { applyPatch } = await import("./photoPatch");
 const PhotoSelectionBar = (await import("./PhotoSelectionBar")).default;
 const PhotoAlbums = (await import("./PhotoAlbums")).default;
 const PhotoAlbumDetail = (await import("./PhotoAlbumDetail")).default;
@@ -110,6 +120,13 @@ beforeEach(() => {
     albums: [
       { id: 1, title: "The Trip", slug: "the-trip", count: 12, coverUrl: null, rangeStart: "2015-08-01T00:00:00" },
     ],
+    dataPlane: true,
+  };
+  galleryBody = {
+    albums: [
+      { id: 5, title: "Brom", slug: "brom", count: 40, coverUrl: null, shelf: "Archive", artistName: "Brom" },
+    ],
+    shelf: "Archive",
     dataPlane: true,
   };
   albumBody = {
@@ -228,6 +245,117 @@ describe("selection mode", () => {
     await waitFor(() => expect(calls.hide[0]).toEqual({ ids: [4], hidden: false }));
   });
 
+  // ── Picking photographs up WITHOUT opening them ─────────────────────────────────────────────
+  // The reported problem, in one sentence: "clicking on photos to put them in galleries is a problem
+  // if it opens the photos". Selection mode was reachable only from a switch at the top of the page,
+  // so the first tap of every batch job — made wherever in the list the reader actually was — opened
+  // a photograph instead. These pin the two ways in that do not require scrolling back up.
+
+  /** Hold a tile past the long-press threshold, then deliver the click the browser sends afterwards. */
+  const pressAndHold = (tile) => {
+    vi.useFakeTimers();
+    try {
+      fireEvent.pointerDown(tile, { clientX: 20, clientY: 20 });
+      act(() => {
+        vi.advanceTimersByTime(600);
+      });
+      fireEvent.pointerUp(tile, { clientX: 20, clientY: 20 });
+    } finally {
+      vi.useRealTimers();
+    }
+    fireEvent.click(tile);
+  };
+
+  it("press-and-hold starts selecting instead of opening the photo", async () => {
+    const state = { ids: [] };
+    const enable = vi.fn();
+    const onOpen = vi.fn();
+    render(
+      <PhotoGrid
+        items={[card(1)]}
+        groupBySection={false}
+        onOpen={onOpen}
+        selection={{ ...selectionFor(state), active: false, enable }}
+      />
+    );
+
+    pressAndHold(await screen.findByTitle("photo1.jpg"));
+
+    expect(enable).toHaveBeenCalled();
+    expect(state.ids).toEqual([1]);
+    // The click that follows a long press must not undo what the hold just did — nor open the photo.
+    expect(onOpen).not.toHaveBeenCalled();
+  });
+
+  it("the corner target selects without opening, from a page that was not selecting", async () => {
+    const state = { ids: [] };
+    const enable = vi.fn();
+    const onOpen = vi.fn();
+    render(
+      <PhotoGrid
+        items={[card(1)]}
+        groupBySection={false}
+        onOpen={onOpen}
+        selection={{ ...selectionFor(state), active: false, enable }}
+      />
+    );
+
+    fireEvent.click(await screen.findByLabelText("Select photo1.jpg"));
+    expect(enable).toHaveBeenCalled();
+    expect(state.ids).toEqual([1]);
+    expect(onOpen).not.toHaveBeenCalled();
+  });
+
+  it("a hold while selecting takes everything from the last tile touched through this one", async () => {
+    // Forty photographs in two gestures rather than forty taps: the whole reason batch work was not
+    // worth starting.
+    const state = { ids: [] };
+    const selectMany = vi.fn();
+    render(
+      <PhotoGrid
+        items={[card(1), card(2), card(3), card(4), card(5)]}
+        groupBySection={false}
+        onOpen={vi.fn()}
+        selection={{ ...selectionFor(state), selectMany }}
+      />
+    );
+
+    // The tap that sets the anchor, then a hold four tiles along.
+    fireEvent.click(await screen.findByTitle("photo2.jpg"));
+    pressAndHold(await screen.findByTitle("photo5.jpg"));
+
+    expect(selectMany).toHaveBeenCalledWith([2, 3, 4, 5], true);
+  });
+
+  it("a month header takes its whole month, and only its month", async () => {
+    const state = { ids: [] };
+    const selectMany = vi.fn();
+    render(
+      <PhotoGrid
+        items={[
+          card(1, { takenAt: "2014-03-12T10:15:30" }),
+          card(2, { takenAt: "2014-03-20T10:15:30" }),
+          card(3, { takenAt: "2014-04-02T10:15:30" }),
+        ]}
+        onOpen={vi.fn()}
+        selection={{ ...selectionFor(state), selectMany }}
+      />
+    );
+
+    // Named for its scope: "Select all" is the dock's button and means the whole list.
+    const marches = await screen.findAllByText("Select month");
+    fireEvent.click(marches[0]);
+    expect(selectMany).toHaveBeenCalledWith([1, 2], true);
+  });
+
+  it("offers no month-select until selecting has begun", async () => {
+    // A "select all" beside every month on a page being READ is an invitation to a mis-tap that
+    // quietly picks up four hundred photographs.
+    render(<PhotoGrid items={[card(1)]} onOpen={vi.fn()} selection={{ ...selectionFor({ ids: [] }), active: false }} />);
+    await screen.findByTitle("photo1.jpg");
+    expect(screen.queryByText("Select month")).toBeNull();
+  });
+
   it("creates an album from the selection", async () => {
     render(<PhotoSelectionBar ids={[7, 8]} onChanged={() => {}} onClear={() => {}} />);
     fireEvent.click(screen.getByText("Add to album"));
@@ -247,6 +375,80 @@ describe("selection mode", () => {
     fireEvent.click(await screen.findByText("The Trip"));
     await waitFor(() => expect(calls.addToAlbum).toHaveLength(1));
     expect(calls.addToAlbum[0]).toMatchObject({ id: 1, assetIds: [7] });
+  });
+
+  it("offers the gallery's collections too, marked as such", async () => {
+    // §2.12: "add these to that album" is a question about an album, not about which index it is
+    // listed on — and which shelf it is on has to be VISIBLE, or adding is a guess about where the
+    // pictures are going to turn up.
+    render(<PhotoSelectionBar ids={[7]} onChanged={() => {}} onClear={() => {}} />);
+    fireEvent.click(screen.getByText("Add to album"));
+
+    fireEvent.click(await screen.findByText("Brom"));
+    await waitFor(() => expect(calls.addToAlbum).toHaveLength(1));
+    expect(calls.addToAlbum[0]).toMatchObject({ id: 5, assetIds: [7] });
+    expect(screen.getByText("gallery")).toBeTruthy();
+  });
+
+  it("creates a new album straight onto the gallery shelf", async () => {
+    // The other half of "put these in an album, or mark it for the gallery instead": the shelf is
+    // answered where the decision is made, not in the album's Edit panel afterwards.
+    render(<PhotoSelectionBar ids={[7, 8]} onChanged={() => {}} onClear={() => {}} />);
+    fireEvent.click(screen.getByText("Add to album"));
+
+    fireEvent.change(await screen.findByPlaceholderText("New album title"), { target: { value: "Brom" } });
+    fireEvent.click(screen.getByLabelText(/File the new album in the gallery/));
+    fireEvent.click(screen.getByText("Create"));
+
+    await waitFor(() => expect(calls.createAlbum).toHaveLength(1));
+    expect(calls.createAlbum[0]).toMatchObject({ title: "Brom", assetIds: [7, 8], shelf: "Archive" });
+  });
+
+  it("leaves the shelf alone when it was not asked for", async () => {
+    render(<PhotoSelectionBar ids={[7]} onChanged={() => {}} onClear={() => {}} />);
+    fireEvent.click(screen.getByText("Add to album"));
+    fireEvent.change(await screen.findByPlaceholderText("New album title"), { target: { value: "Beach Day" } });
+    fireEvent.click(screen.getByText("Create"));
+
+    await waitFor(() => expect(calls.createAlbum).toHaveLength(1));
+    expect(calls.createAlbum[0].shelf).toBeUndefined();
+  });
+
+  it("reports WHAT it did, so the list can patch itself instead of reloading", async () => {
+    // The difference between a batch job that keeps your place and one that throws you back to the
+    // top of the timeline after every round. See PhotosPage's `curated`.
+    const onCurated = vi.fn();
+    render(<PhotoSelectionBar ids={[4, 5]} onCurated={onCurated} onClear={() => {}} />);
+
+    fireEvent.click(screen.getByText("Send to gallery"));
+    await waitFor(() => expect(onCurated).toHaveBeenCalledWith([4, 5], { shelf: "Archive" }));
+  });
+});
+
+describe("patching a list in place (photoPatch)", () => {
+  const timeline = (item) => !item.hidden && item.shelf !== "Archive";
+
+  it("drops the photographs that no longer belong on this surface", () => {
+    const items = [card(1), card(2), card(3)];
+    const next = applyPatch(items, { seq: 1, ids: [2], changes: { shelf: "Archive" } }, timeline);
+    expect(next.map((i) => i.id)).toEqual([1, 3]);
+  });
+
+  it("keeps the ones it merely marked", () => {
+    const items = [card(1), card(2)];
+    // The folder view answers "what is actually in this folder", so a picture sent to the gallery
+    // stays put and simply gains its badge.
+    const next = applyPatch(items, { seq: 1, ids: [2], changes: { shelf: "Archive" } }, () => true);
+    expect(next.map((i) => i.id)).toEqual([1, 2]);
+    expect(next[1].shelf).toBe("Archive");
+  });
+
+  it("hands back the SAME array when the write touched nothing on screen", () => {
+    // A page of forty photographs re-rendering because somebody hid one on a different shelf is a
+    // scroll stutter for no reason.
+    const items = [card(1)];
+    expect(applyPatch(items, { seq: 1, ids: [99], changes: { hidden: true } }, timeline)).toBe(items);
+    expect(applyPatch(items, null, timeline)).toBe(items);
   });
 });
 

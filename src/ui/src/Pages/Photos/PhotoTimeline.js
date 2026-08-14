@@ -4,6 +4,7 @@ import { MovieAPI } from "../../MovieAPI";
 import useInfiniteScroll from "../../hooks/useInfiniteScroll";
 import PhotoGrid from "./PhotoGrid";
 import PhotoYearRail, { jumpCursorFor } from "./PhotoYearRail";
+import { applyPatch } from "./photoPatch";
 
 // The timeline (docs/photos-plan.md §1: the primary browse surface, §2.7: undated items get their
 // own shelf rather than being scattered at epoch 0).
@@ -17,7 +18,7 @@ import PhotoYearRail, { jumpCursorFor } from "./PhotoYearRail";
 // up from a jump hits the top of the list, where the "Back to newest" chip says where you are, which
 // beats a bidirectional prepend that has to fight the scroll anchor for every inserted row.
 
-export default function PhotoTimeline({ undated = false, includeHidden = false, onOpen, selection }) {
+export default function PhotoTimeline({ undated = false, includeHidden = false, onOpen, selection, patch = null }) {
   const [items, setItems] = useState([]);
   const [state, setState] = useState("loading");
   const cursorRef = useRef(null);
@@ -107,6 +108,21 @@ export default function PhotoTimeline({ undated = false, includeHidden = false, 
     hasMore,
     onLoadMore: load,
   });
+
+  // A curation write, applied to the cards already on screen rather than re-fetched (photoPatch.js).
+  // This shelf's membership rule, stated once: the timeline is the photographs that are dated, not
+  // hidden, and on the family shelf — so a picture that just became any of those things leaves, and
+  // the reader keeps their place in everything that did not.
+  useEffect(() => {
+    if (!patch) return;
+    setItems((prev) =>
+      applyPatch(prev, patch, (item) => {
+        if (item.hidden && !includeHidden) return false;
+        if (item.shelf === "Archive") return false;
+        return undated ? !item.takenAt : true;
+      })
+    );
+  }, [patch, includeHidden, undated]);
 
   // Nudge the position check after an append rather than letting the hook re-subscribe: it also
   // auto-fills a list too short to scroll, which is the stall the site's pattern exists to avoid.

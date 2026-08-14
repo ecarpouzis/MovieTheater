@@ -1261,8 +1261,10 @@ function getPhotoAlbum(slug, { skip, take } = {}) {
 
 // The slug is minted server-side; assetIds creates from a selection and fromFolder seeds from a
 // folder (which COPIES membership — the folder is never the album's identity).
-function createPhotoAlbum({ title, description, assetIds, fromFolder } = {}) {
-  return photosPost("/API/Photos/Albums", { title, description, assetIds, fromFolder });
+// `shelf` (§2.12) lets a selection become a GALLERY collection in one action instead of a create
+// followed by a trip through the album's Edit panel.
+function createPhotoAlbum({ title, description, assetIds, fromFolder, shelf, artistName } = {}) {
+  return photosPost("/API/Photos/Albums", { title, description, assetIds, fromFolder, shelf, artistName });
 }
 
 function updatePhotoAlbum(id, body) {

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Input, Popconfirm, Spin, message } from "antd";
 import { MovieAPI } from "../../MovieAPI";
 import useInfiniteScroll from "../../hooks/useInfiniteScroll";
@@ -24,6 +25,11 @@ export default function PhotoAlbumDetail({ slug, onBack, onOpen, onTitle, onMeta
   const [editing, setEditing] = useState(false);
   const skipRef = useRef(0);
   const inFlightRef = useRef(false);
+  // What the grid has laid out, for "Select all" — published by PhotoGrid rather than re-derived.
+  const visibleIdsRef = useRef([]);
+  const registerVisible = useCallback((ids) => {
+    visibleIdsRef.current = ids;
+  }, []);
 
   const load = useCallback(
     async (append) => {
@@ -85,12 +91,26 @@ export default function PhotoAlbumDetail({ slug, onBack, onOpen, onTitle, onMeta
   };
 
 
+  // The same selection contract as the browse surfaces (PhotosPage), so the grid's corner target,
+  // press-and-hold and range gestures work identically inside an album. They have to: an album page
+  // is where "these six go to the front" and "drop these four" actually happen.
+  const selectedIds = new Set(selected);
   const selection = {
-    // An explicit mode, like every other view: without it the first click could only ever open a
-    // photo, and there would be no way to begin selecting at all.
     active: selecting,
-    has: (id) => selected.includes(id),
+    has: (id) => selectedIds.has(id),
     toggle: (id) => setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : prev.concat(id))),
+    enable: () => setSelecting(true),
+    selectMany: (ids, on) =>
+      setSelected((prev) => {
+        if (!on) {
+          const dropping = new Set(ids);
+          return prev.filter((id) => !dropping.has(id));
+        }
+        const next = new Set(prev);
+        ids.forEach((id) => next.add(id));
+        return Array.from(next);
+      }),
+    register: registerVisible,
   };
 
   if (state === "loading") return <Spin />;
@@ -136,6 +156,30 @@ export default function PhotoAlbumDetail({ slug, onBack, onOpen, onTitle, onMeta
           >
             {selecting ? "Done selecting" : "Select"}
           </button>
+          {/* §2.12, one tap instead of six. Which shelf an album is indexed on is the commonest edit
+              an album ever gets — "these are art, not the family record" — and it was reachable only
+              by opening the Edit panel and finding a <select> among the date fields. The panel still
+              has it, because that is where the artist name and the rest of the album's identity live;
+              this is the same write, put where the decision is actually made. */}
+          <button
+            type="button"
+            className="photos-button"
+            title={
+              album.shelf === "Archive"
+                ? "List this album on the family album index instead"
+                : "List this album in the gallery — art and memes, off the family index"
+            }
+            onClick={() =>
+              act(
+                MovieAPI.updatePhotoAlbum(album.id, {
+                  shelf: album.shelf === "Archive" ? "Timeline" : "Archive",
+                }),
+                reload
+              )
+            }
+          >
+            {album.shelf === "Archive" ? "Move to family album" : "Move to gallery"}
+          </button>
           <button type="button" className="photos-button" onClick={() => setEditing((v) => !v)}>
             {editing ? "Done" : "Edit"}
           </button>
@@ -155,38 +199,74 @@ export default function PhotoAlbumDetail({ slug, onBack, onOpen, onTitle, onMeta
         </div>
       </div>
 
-      {editing && <AlbumEditor album={album} onSaved={reload} />}
-
-      {selected.length > 0 && (
-        <div className="photo-selection-bar">
-          <span className="photo-selection-count">{selected.length} selected</span>
-          <button
-            type="button"
-            className="photos-button"
-            onClick={() => act(MovieAPI.reorderPhotoAlbum(album.id, selected), reload)}
-          >
-            Move to front
-          </button>
-          <button
-            type="button"
-            className="photos-button"
-            disabled={selected.length !== 1}
-            onClick={() => act(MovieAPI.updatePhotoAlbum(album.id, { coverAssetId: selected[0] }), reload)}
-          >
-            Set as cover
-          </button>
-          <button
-            type="button"
-            className="photos-button"
-            onClick={() => act(MovieAPI.removeFromPhotoAlbum(album.id, selected), reload)}
-          >
-            Remove from album
-          </button>
-          <button type="button" className="photos-button" onClick={() => setSelected([])}>
-            Clear
-          </button>
-        </div>
+      {/* Keyed on the fields the editor copies into its own state: the shelf button beside it writes
+          the same album, and an editor still holding the pre-click value would put it back on Save. */}
+      {editing && (
+        <AlbumEditor key={`${album.id}-${album.shelf}-${album.artistName || ""}`} album={album} onSaved={reload} />
       )}
+
+      {/* Docked to the bottom of the screen and portaled out of the page, for the same two reasons as
+          the browse surfaces' bar (PhotoSelectionBar): the actions have to be reachable from wherever
+          in a long album the picking got to, and the gallery's `clip-path` wall would otherwise
+          capture a fixed bar's positioning. */}
+      {(selecting || selected.length > 0) &&
+        createPortal(
+          <div className="photo-selection-dock">
+            <div className="photo-selection-bar">
+              <span className="photo-selection-count">
+                {selected.length ? `${selected.length} selected` : "Tap photos to select"}
+              </span>
+              <button
+                type="button"
+                className="photos-button photos-button--stamp"
+                disabled={!selected.length}
+                onClick={() => act(MovieAPI.reorderPhotoAlbum(album.id, selected), reload)}
+              >
+                Move to front
+              </button>
+              <button
+                type="button"
+                className="photos-button"
+                disabled={selected.length !== 1}
+                onClick={() => act(MovieAPI.updatePhotoAlbum(album.id, { coverAssetId: selected[0] }), reload)}
+              >
+                Set as cover
+              </button>
+              <button
+                type="button"
+                className="photos-button"
+                disabled={!selected.length}
+                onClick={() => act(MovieAPI.removeFromPhotoAlbum(album.id, selected), reload)}
+              >
+                Remove from album
+              </button>
+
+              <span className="photo-selection-spacer" />
+
+              <button
+                type="button"
+                className="photos-button"
+                onClick={() => setSelected(visibleIdsRef.current.slice())}
+              >
+                Select all
+              </button>
+              <button type="button" className="photos-button" disabled={!selected.length} onClick={() => setSelected([])}>
+                Clear
+              </button>
+              <button
+                type="button"
+                className="photos-button"
+                onClick={() => {
+                  setSelecting(false);
+                  setSelected([]);
+                }}
+              >
+                Done
+              </button>
+            </div>
+          </div>,
+          document.body
+        )}
 
       {/* §2.12: an artist collection is hung, not stacked. The grid gets more air and each picture
           gets a plaque — the filename-derived title and the artist — because that is how you read a
