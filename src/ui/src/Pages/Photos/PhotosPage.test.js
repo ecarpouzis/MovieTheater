@@ -66,6 +66,14 @@ vi.mock("../../MovieAPI", () => ({
       const items = params.undated ? [card(90, null)] : [card(1, "2014-03-12T10:15:30")];
       return ok({ items, nextCursor: null, hasMore: false, undated: !!params.undated, dataPlane: true });
     },
+    getPhotosTimelineYears: () => ok({
+      years: [
+        { year: 2014, count: 320 },
+        { year: 2011, count: 900 },
+        { year: 1997, count: 7 },
+      ],
+      undated: 4782,
+    }),
     getPhotosFolder: (params) => {
       folderCalls.push(params);
       return ok({
@@ -313,6 +321,46 @@ describe("PhotosPage browse", () => {
     statusResponse = populated({ dataPlane: false });
     renderAt("/photos", { username: "member" });
     await screen.findByText(/image gateway is not configured/i);
+  });
+});
+
+describe("the year rail (deep browse)", () => {
+  it("lists the years that hold photographs, grouped by decade, with the undated shelf at the end", async () => {
+    renderAt("/photos", { username: "member" });
+    await screen.findByText("2011");
+    expect(screen.queryByText("2010s")).not.toBeNull();
+    expect(screen.queryByText("1990s")).not.toBeNull();
+    // The undated shelf is reachable from the rail — the seventy-five-year collection's biggest
+    // pile is the one with no year at all, and a year index that omitted it would hide it.
+    expect(screen.queryByText("Undated")).not.toBeNull();
+    expect(screen.queryByText("4,782")).not.toBeNull();
+  });
+
+  it("a year press seeds the keyset cursor at the following New Year with id 0", async () => {
+    renderAt("/photos", { username: "member" });
+    fireEvent.click(await screen.findByText("2011"));
+
+    // The jump is the ordinary cursor, seeded: strictly-before Jan 1 2012 — no offset, no new mode.
+    await waitFor(() =>
+      expect(
+        timelineCalls.some((c) => c.beforeTakenAt === "2012-01-01T00:00:00" && c.beforeId === 0)
+      ).toBe(true)
+    );
+    // And the chip says where you are, with the way back.
+    await screen.findByText(/Showing from/i);
+
+    timelineCalls.length = 0;
+    fireEvent.click(screen.getByText(/back to newest/i));
+    await waitFor(() => expect(timelineCalls.length).toBeGreaterThan(0));
+    // Newest-first again: no cursor at all on the fresh list's first page.
+    expect(timelineCalls[0].beforeTakenAt).toBeUndefined();
+    expect(timelineCalls[0].beforeId ?? undefined).toBeUndefined();
+  });
+
+  it("the rail's undated entry walks to the undated shelf", async () => {
+    const seen = renderAt("/photos", { username: "member" });
+    fireEvent.click(await screen.findByText("Undated"));
+    await waitFor(() => expect(seen.pathname).toBe("/photos/undated"));
   });
 });
 

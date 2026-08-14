@@ -452,6 +452,43 @@ namespace MovieTheater.Controllers
             });
         }
 
+        /// <summary>
+        /// The timeline's year index — what a scrubber needs to make 75 years navigable: which years
+        /// hold photographs, how many, and how big the date-unknown shelf is.
+        ///
+        /// <para>Counts honor the SAME four exclusions as <see cref="Timeline"/> (shelf, hidden,
+        /// quarantine, dupe collapse), because a rail that promises 300 photos in 2010 and lands on a
+        /// page showing 240 reads as data loss — the exact misreading the timeline's own filters are
+        /// documented against. The jump itself needs no endpoint at all: the browser seeds the existing
+        /// keyset cursor at Jan 1 of the following year with <c>beforeId=0</c>, which the tie-break
+        /// predicate turns into a clean strictly-before seek.</para>
+        /// </summary>
+        [HttpGet("/API/Photos/TimelineYears")]
+        public async Task<IActionResult> TimelineYears(bool includeHidden = false)
+        {
+            includeHidden = ShowHidden(includeHidden);
+            var query = TimelineShelf(movieDb.PhotoAssets).Where(a => a.MissingSinceUtc == null);
+            if (!includeHidden) query = query.Where(a => !a.Hidden);
+            var collapsed = PhotoDupeMasters.CollapsedAssetIds(movieDb);
+            query = query.Where(a => !collapsed.Contains(a.Id));
+
+            var quarantine = await QuarantineAsync(CurationStore);
+            if (quarantine.Applied.Count > 0)
+            {
+                var pending = quarantine.Applied;
+                query = query.Where(a => a.IngestBatch == null || !pending.Contains(a.IngestBatch));
+            }
+
+            var years = await query.Where(a => a.TakenAt != null)
+                .GroupBy(a => a.TakenAt!.Value.Year)
+                .Select(g => new { year = g.Key, count = g.Count() })
+                .OrderByDescending(g => g.year)
+                .ToListAsync();
+            var undated = await query.CountAsync(a => a.TakenAt == null);
+
+            return Json(new { years, undated });
+        }
+
         // ── Folder view (§2.9) ───────────────────────────────────────────────────────────────────
 
         /// <summary>

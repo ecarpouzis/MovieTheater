@@ -348,6 +348,202 @@
   padding: 12px 0;
 }
 
+/* ── The edge index: timeline shell + year rail ─────────────────────────────────────────────────
+   A thick album carries its index on the page edge — thumb-cut notches you land a finger on. The
+   rail is that edge: a slim sticky column beside the grid listing every year that actually holds
+   photographs, each with a page-edge tick whose length says how thick that year is. It shares the
+   date stamp's vernacular (mono, tracked, stamp orange for where-you-are) because it indexes the
+   same axis the stamps mark. */
+.photos-page .photos-timeline-shell {
+  align-items: flex-start;
+  display: flex;
+  gap: 22px;
+}
+
+.photos-page .photos-timeline-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.photos-page .photo-year-rail {
+  background: var(--photos-well);
+  border-left: 1px solid var(--photos-rule);
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 2px;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  padding: 10px 0 10px 12px;
+  position: sticky;
+  top: 16px;
+  width: 96px;
+}
+
+.photos-page .photo-year-rail-newest,
+.photos-page .photo-year-rail-year,
+.photos-page .photo-year-rail-undated {
+  align-items: center;
+  background: none;
+  border: 0;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  gap: 6px;
+  justify-content: flex-start;
+  padding: 3px 6px 3px 0;
+  text-align: left;
+}
+
+.photos-page .photo-year-rail-newest {
+  color: var(--photos-stamp);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  padding-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.photos-page .photo-year-rail-newest.is-active {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.photos-page .photo-year-rail-decade-label {
+  color: var(--text-muted);
+  display: block;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  margin: 8px 0 2px;
+  text-transform: uppercase;
+}
+
+.photos-page .photo-year-rail-year:hover,
+.photos-page .photo-year-rail-year:focus-visible {
+  color: var(--photos-stamp);
+  outline: none;
+}
+
+.photos-page .photo-year-rail-year.is-active {
+  color: var(--photos-stamp);
+  font-weight: 700;
+}
+
+/* The page-edge tick. Length = how thick the year is; the active year's tick inks itself. */
+.photos-page .photo-year-rail-heat {
+  background: var(--photos-rule);
+  display: block;
+  flex: 0 0 auto;
+  height: 3px;
+}
+
+.photos-page .photo-year-rail-year.is-active .photo-year-rail-heat,
+.photos-page .photo-year-rail-year:hover .photo-year-rail-heat {
+  background: var(--photos-stamp);
+}
+
+.photos-page .photo-year-rail-undated {
+  border-top: 1px solid var(--photos-rule);
+  color: var(--text-muted);
+  font-size: 10px;
+  gap: 8px;
+  letter-spacing: 0.08em;
+  margin-top: 10px;
+  padding-top: 8px;
+  text-transform: uppercase;
+}
+
+.photos-page .photo-year-rail-undated:hover,
+.photos-page .photo-year-rail-undated:focus-visible {
+  color: var(--photos-stamp);
+  outline: none;
+}
+
+.photos-page .photo-year-rail-undated-count {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Where you landed after a jump, and the way back. Set as a stamp beside the grid's first header. */
+.photos-page .photos-jump-chip {
+  align-items: baseline;
+  color: var(--text-secondary);
+  display: flex;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  gap: 14px;
+  margin: 0 0 10px;
+}
+
+.photos-page .photos-jump-chip strong {
+  color: var(--photos-stamp);
+}
+
+.photos-page .photos-jump-chip button {
+  background: none;
+  border: 0;
+  color: var(--photos-stamp);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  padding: 0;
+  text-decoration: underline;
+  text-transform: uppercase;
+  text-underline-offset: 3px;
+}
+
+/* On a phone the edge index re-flows into a strip along the top — the same buttons, laid on their
+   side, because a 96px column would cost a quarter of the screen. */
+@media (max-width: 900px) {
+  .photos-page .photos-timeline-shell {
+    flex-direction: column-reverse;
+    gap: 10px;
+  }
+
+  .photos-page .photo-year-rail {
+    border-bottom: 1px solid var(--photos-rule);
+    border-left: 0;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    max-height: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 6px 4px;
+    position: static;
+    width: 100%;
+  }
+
+  .photos-page .photo-year-rail-decade {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+  }
+
+  .photos-page .photo-year-rail-decade-label {
+    margin: 0;
+  }
+
+  .photos-page .photo-year-rail-year {
+    padding: 3px 2px;
+  }
+
+  .photos-page .photo-year-rail-heat {
+    display: none;
+  }
+
+  .photos-page .photo-year-rail-undated {
+    border-top: 0;
+    margin-top: 0;
+    padding-top: 3px;
+    white-space: nowrap;
+  }
+}
+
 /* ── Justified grid ────────────────────────────────────────────────────────────────────────────
    Absolute positioning inside a host of known height: the layout is computed in JS from stored
    (already EXIF-oriented) dimensions, so every tile's box is known before a single image loads and
@@ -397,6 +593,16 @@
   width: 9px;
 }
 
+/* The stamp's two halves: the month is the burn, the year sits a step lighter beside it. */
+.photos-page .photo-grid-header-month {
+  font-weight: 700;
+}
+
+.photos-page .photo-grid-header-year {
+  margin-left: -4px;
+  opacity: 0.62;
+}
+
 .photos-page .photo-grid-header::after {
   background: linear-gradient(90deg, var(--photos-rule), transparent 70%);
   content: "";
@@ -404,9 +610,13 @@
   height: 1px;
 }
 
-/* A print: square corners, mounted on the page by a hairline rather than cut out of it. */
+/* A print: square corners, mounted on the page by a hairline rather than cut out of it. The base
+   is photographic paper waiting for its image — a faint diagonal grain, not a flat swatch — so a
+   tile whose bytes are still travelling reads as a mount, never as a hole in the page. */
 .photos-page .photo-tile {
-  background: var(--photos-tile-base);
+  background:
+    repeating-linear-gradient(135deg, rgba(60, 45, 25, 0.028) 0 2px, transparent 2px 5px),
+    var(--photos-tile-base);
   border: 0;
   border-radius: 0;
   box-shadow: inset 0 0 0 1px var(--photos-mount);
@@ -415,13 +625,24 @@
   overflow: hidden;
   padding: 0;
   position: relative;
-  transition: box-shadow 0.15s ease;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
 }
 
+/* The lift a fingertip gives a print. transform only — the tile's BOX is layout arithmetic and
+   may not change. */
 .photos-page .photo-tile:hover,
 .photos-page .photo-tile:focus-visible {
-  box-shadow: inset 0 0 0 2px var(--photos-stamp);
+  box-shadow: inset 0 0 0 2px var(--photos-stamp), 0 6px 16px rgba(60, 45, 25, 0.22);
   outline: none;
+  transform: translateY(-2px);
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .photos-page .photo-tile:hover,
+  .photos-page .photo-tile:focus-visible {
+    transform: none;
+  }
 }
 
 .photos-page .photo-tile img {

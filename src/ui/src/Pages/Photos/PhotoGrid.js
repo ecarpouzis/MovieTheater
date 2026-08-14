@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { getScrollParent, onAnyScroll, viewportBand } from "../../utils/scroll";
-import { buildBlocks, visibleRange, DEFAULT_GAP, DEFAULT_TARGET_ROW_HEIGHT } from "./justifiedLayout";
+import { blockAtOffset, buildBlocks, visibleRange, DEFAULT_GAP, DEFAULT_TARGET_ROW_HEIGHT } from "./justifiedLayout";
 import { formatDuration } from "./PhotoVideo";
 
 // Virtualized justified grid (docs/photos-plan.md §4).
@@ -28,12 +28,18 @@ export default function PhotoGrid({
   selection,
   gallery = false,
   plaqueArtist = null,
+  onSection = null,
 }) {
   const hostRef = useRef(null);
   const rootRef = useRef(null);
   const rafRef = useRef(0);
   const [width, setWidth] = useState(0);
   const [range, setRange] = useState([0, 0]);
+  // The section under the top of the viewport, reported through a ref-read callback so the year
+  // rail can say "you are here" without this component re-rendering for it.
+  const onSectionRef = useRef(onSection);
+  onSectionRef.current = onSection;
+  const lastSectionRef = useRef(null);
 
   const gap = gallery ? GALLERY_GAP : DEFAULT_GAP;
   const { blocks, totalHeight } = width > 0
@@ -57,6 +63,19 @@ export default function PhotoGrid({
     const hostTop = host.getBoundingClientRect().top;
     const next = visibleRange(blocksRef.current, { top: band.top - hostTop, bottom: band.bottom - hostTop }, OVERSCAN);
     setRange((prev) => (prev[0] === next[0] && prev[1] === next[1] ? prev : next));
+
+    // Report which SECTION sits under the top of the viewport. Walk back from the topmost visible
+    // block to its nearest header — rows carry no key, headers do — and only speak on change.
+    if (onSectionRef.current) {
+      const blocks = blocksRef.current;
+      let i = blockAtOffset(blocks, band.top - hostTop + 1);
+      while (i > 0 && blocks[i]?.type !== "header") i -= 1;
+      const key = blocks[i]?.type === "header" ? blocks[i].key : null;
+      if (key !== lastSectionRef.current) {
+        lastSectionRef.current = key;
+        onSectionRef.current(key);
+      }
+    }
   }, []);
 
   const schedule = useCallback(() => {
@@ -102,7 +121,17 @@ export default function PhotoGrid({
       {blocks.slice(start, end).map((block) =>
         block.type === "header" ? (
           <div className="photo-grid-header" key={`h-${block.key}-${block.top}`} style={{ top: block.top }}>
-            {block.label}
+            {/* A dated section's stamp inks the month and lets the year sit lighter beside it — the
+                way the year on a lab print was the small half of the burn. The undated shelf's label
+                has no such halves and prints as it is. */}
+            {/^\d{4}-\d{2}$/.test(block.key) ? (
+              <>
+                <span className="photo-grid-header-month">{block.label.slice(0, block.label.lastIndexOf(" "))}</span>
+                <span className="photo-grid-header-year">{block.label.slice(block.label.lastIndexOf(" ") + 1)}</span>
+              </>
+            ) : (
+              block.label
+            )}
           </div>
         ) : (
           <div className="photo-grid-row" key={`r-${block.top}`} style={{ top: block.top, height: block.height }}>

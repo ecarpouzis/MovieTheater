@@ -1155,12 +1155,23 @@ function getPhotosStatus() {
 function getPhotosTimeline({ beforeTakenAt, beforeId, take, undated, includeHidden } = {}) {
   const params = new URLSearchParams();
   if (beforeTakenAt) params.set("beforeTakenAt", beforeTakenAt);
-  if (beforeId) params.set("beforeId", beforeId);
+  // beforeId 0 is a REAL cursor, not an absent one: a year jump seeds (Jan 1 of year+1, id 0) so the
+  // server's tie-break predicate degenerates to a clean strictly-before seek. A truthiness test here
+  // silently dropped that cursor and every jump landed back at the newest page.
+  if (beforeId != null) params.set("beforeId", beforeId);
   if (take) params.set("take", take);
   if (undated) params.set("undated", "true");
   // The timeline excludes hidden items by default (§2.9); a member can ask to see them.
   if (includeHidden) params.set("includeHidden", "true");
   return fetch("/API/Photos/Timeline?" + params.toString(), { cache: "no-store" });
+}
+
+// The year index behind the timeline's scrubber rail: which years hold photographs (post-exclusion
+// counts, so the rail's promises match what the page shows) and the size of the date-unknown shelf.
+function getPhotosTimelineYears({ includeHidden } = {}) {
+  const params = new URLSearchParams();
+  if (includeHidden) params.set("includeHidden", "true");
+  return fetch("/API/Photos/TimelineYears?" + params.toString(), { cache: "no-store" });
 }
 
 // includeHidden is honoured only for an admin (Phase 4 addendum); a member's request is ignored
@@ -1711,6 +1722,7 @@ const MovieAPI = {
   adminSetUserSetting,
   getPhotosStatus,
   getPhotosTimeline,
+  getPhotosTimelineYears,
   getPhotosFolder,
   getPhotoAsset,
   getPhotosIngestStatus,
