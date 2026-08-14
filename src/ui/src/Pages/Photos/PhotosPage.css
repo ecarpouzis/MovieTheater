@@ -514,6 +514,16 @@
   .photos-page .photos-timeline-shell {
     flex-direction: column-reverse;
     gap: 10px;
+    /* STRETCH, and it is load-bearing. The shell's desktop rule sets `align-items: flex-start` so a
+       short rail does not stretch down a long column of photographs — correct in a ROW. Turned on its
+       side here it stops being about height and starts being about WIDTH: flex-start shrink-wraps
+       .photos-timeline-main, whose only in-flow child is `.photo-grid { width: 100% }` — a percentage
+       that resolves to auto during intrinsic sizing, over rows that are absolutely positioned and
+       contribute no width at all. The main column therefore measured ~0, the grid laid itself out to
+       that, and the entire timeline rendered as a single file of 40px thumbnails down the left edge
+       (reported from a phone 2026-08-14; measured at 390px: grid 362px before the rail landed, 0px
+       after). Nothing about the grid's arithmetic was wrong — it was told the page was a sliver. */
+    align-items: stretch;
   }
 
   .photos-page .photo-year-rail {
