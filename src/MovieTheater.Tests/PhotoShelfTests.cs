@@ -459,6 +459,11 @@ namespace MovieTheater.Tests
             // Undated now means "undated on the FAMILY TIMELINE". Nine files in the tree carry no EXIF
             // date; the two that were filed as art stop counting, leaving seven.
             Assert.Equal(7, status.GetProperty("undated").GetInt32());
+            // The Timeline rail entry promises what the timeline page shows: the raw total minus the
+            // two filed as art (nothing here is hidden, missing or collapsed). The raw total counted
+            // the Gallery inside the family record and over-promised by exactly the archive.
+            Assert.Equal(status.GetProperty("assets").GetInt32() - 2,
+                status.GetProperty("timelineCount").GetInt32());
         }
 
         // ── The CLI ─────────────────────────────────────────────────────────────────────────────

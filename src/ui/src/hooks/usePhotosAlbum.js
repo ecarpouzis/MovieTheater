@@ -174,7 +174,10 @@ export function photosNavGroups(status, unnamedCount = 0) {
   const tagWaiting = (status.pendingTagSuggestions || 0) + unnamedCount;
 
   const browse = [
-    { ...VIEW_BY_KEY.timeline, count: status.assets ?? null },
+    // timelineCount is what the timeline PAGE shows (shelf split, hidden, missing and collapse all
+    // applied server-side); the raw asset total quietly promised ~2,900 more than the page ever
+    // rendered. The fallback keeps an older server's answer usable.
+    { ...VIEW_BY_KEY.timeline, count: status.timelineCount ?? status.assets ?? null },
     ...(status.undated > 0 ? [{ ...VIEW_BY_KEY.undated, count: status.undated }] : []),
     { ...VIEW_BY_KEY.albums, count: status.albums ?? null },
     // Offered only once there is a Gallery to open (§2.12). A rail entry that leads to an empty room

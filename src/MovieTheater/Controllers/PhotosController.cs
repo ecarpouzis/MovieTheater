@@ -193,6 +193,13 @@ namespace MovieTheater.Controllers
                 // cannot play — which is what the ⚠ on the Review tab counts against.
                 VideosSynced = g.Sum(a => a.Kind == PhotoAssetKind.Video && a.MissingSinceUtc == null
                                           && a.JellyfinItemId != null ? 1 : 0),
+                // What the timeline VIEW can actually show a member, before dupe collapse: the navbar's
+                // Timeline entry used the raw table total, which quietly included the Gallery, the
+                // hidden pile and the missing — a rail entry promising ~2,900 photographs the page then
+                // never shows reads as data loss, the exact misreading every count here is written
+                // against.
+                TimelineVisible = g.Sum(a => a.Shelf == PhotoShelf.Timeline && !a.Hidden
+                                             && a.MissingSinceUtc == null ? 1 : 0),
             });
 
             var person = await CountsAsync(movieDb.FamilyPeople, g => new PersonCounts
@@ -236,7 +243,15 @@ namespace MovieTheater.Controllers
                 Artists = g.Sum(a => a.Shelf == PhotoShelf.Archive && a.ArtistName != null ? 1 : 0),
             });
             var albums = album.Total - album.Archive;
-            var collapsed = await PhotoDupeMasters.CollapsedAssetIds(movieDb).CountAsync();
+            var collapsedIds = PhotoDupeMasters.CollapsedAssetIds(movieDb);
+            var collapsed = await collapsedIds.CountAsync();
+            // The collapse's share of the timeline shelf, subtracted so `timelineCount` is what the
+            // timeline page actually renders. Counted against the shelf rather than reusing the global
+            // figure: a collapsed copy sitting in the Gallery or the hidden pile was never going to be
+            // on the timeline, and subtracting it twice would under-promise the same way the raw total
+            // over-promised.
+            var collapsedOnTimeline = await TimelineShelf(movieDb.PhotoAssets)
+                .CountAsync(a => !a.Hidden && a.MissingSinceUtc == null && collapsedIds.Contains(a.Id));
             var pendingTagSuggestions = await movieDb.PhotoPersonTags
                 .CountAsync(t => t.Source == PhotoTagSource.Suggested);
             var untaggedPhotos = await UntaggedQueue().CountAsync();
@@ -265,6 +280,9 @@ namespace MovieTheater.Controllers
                 artistCollections = album.Artists,
                 pendingDupeGroups = dupe.Pending,
                 pendingNearGroups = dupe.PendingNear,
+                // What the Timeline rail entry promises — and therefore what the page shows (§2.12's
+                // shelf split plus every member-facing exclusion, minus the collapsed copies).
+                timelineCount = asset.TimelineVisible - collapsedOnTimeline,
                 // Non-masters a settled group keeps out of the timeline (§2.6). Not a deletion and not
                 // a hide — the folder view still shows every one of them.
                 collapsed,
@@ -318,6 +336,7 @@ namespace MovieTheater.Controllers
             public int Archived { get; set; }
             public int Undated { get; set; }
             public int VideosSynced { get; set; }
+            public int TimelineVisible { get; set; }
         }
 
         private sealed class AlbumCounts
