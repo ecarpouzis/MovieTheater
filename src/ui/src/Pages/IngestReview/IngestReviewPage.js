@@ -787,6 +787,125 @@ function ReviewCard({ row, details, onFetch, onApprove, onReject, onSave, onRecl
   );
 }
 
+// One sync-scan candidate — an untracked file the last "Sync from Jellyfin" classified. An
+// UPGRADE approves in place (the movie keeps everything, only its file re-points); NEW TITLES
+// resolve in bulk from the toolbar, each becoming an ordinary review card in the open batch;
+// anything misclassified gets corrected here first (retitle, pin a tt, flip the kind).
+function SyncCandidateCard({ row, onApplyUpgrade, onRejectOne, onUpdate }) {
+  const [working, setWorking] = useState(false);
+  const [title, setTitle] = useState(row.parsedTitle || "");
+  const [year, setYear] = useState(row.parsedYear != null ? String(row.parsedYear) : "");
+  const [imdbId, setImdbId] = useState(row.resolvedImdbId || "");
+  const gb = row.sizeBytes ? (row.sizeBytes / 1024 ** 3).toFixed(2) + " GB" : "";
+  const dirty =
+    title !== (row.parsedTitle || "") ||
+    year !== (row.parsedYear != null ? String(row.parsedYear) : "") ||
+    imdbId !== (row.resolvedImdbId || "");
+
+  async function run(fn) {
+    setWorking(true);
+    try {
+      await fn();
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  return (
+    <div className="review-card">
+      <div className="review-card-body">
+        <div className="review-card-tags">
+          {row.kind === "upgrade" ? <Tag color="orange">UPGRADE</Tag> : row.kind === "new" ? <Tag color="blue">NEW TITLE</Tag> : <Tag>UNCLASSIFIED</Tag>}
+          {row.signal ? <Tag color="purple">{row.signal}</Tag> : null}
+          {gb ? <Tag>{gb}</Tag> : null}
+          {row.kind === "upgrade" && row.oldFileMissing != null ? (
+            row.oldFileMissing ? (
+              <Tag color="green">old file dead — safe swap</Tag>
+            ) : (
+              <Tag color="gold">old file still live — will be replaced</Tag>
+            )
+          ) : null}
+        </div>
+        <Space direction="vertical" size={4} style={{ width: "100%" }}>
+          {row.kind === "upgrade" ? (
+            <>
+              <Text strong>
+                {row.targetTitle || `movie #${row.targetMovieId}`}
+                {row.targetYear ? ` (${row.targetYear})` : ""}
+              </Text>
+              {row.oldPath ? (
+                <Text type="secondary" className="rc-path" title={row.oldPath}>
+                  old: {row.oldPath}
+                </Text>
+              ) : null}
+              <Text className="rc-path" title={row.path}>
+                new: {row.path}
+              </Text>
+            </>
+          ) : (
+            <>
+              <Text className="rc-path" title={row.path}>
+                {row.path}
+              </Text>
+              <Space wrap>
+                <Input size="small" style={{ width: 220 }} placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} />
+                <Input size="small" style={{ width: 80 }} placeholder="Year" value={year} onChange={(e) => setYear(e.target.value)} />
+                <Input size="small" style={{ width: 140 }} placeholder="IMDb id (tt…)" value={imdbId} onChange={(e) => setImdbId(e.target.value)} />
+                {row.kind === "new" ? (
+                  <Button
+                    size="small"
+                    disabled={!dirty || working}
+                    onClick={() => run(() => onUpdate(row, { title, year: year ? Number(year) : null, imdbId }))}
+                  >
+                    Save
+                  </Button>
+                ) : null}
+              </Space>
+              {row.resolutionError ? <Text type="danger">{row.resolutionError}</Text> : null}
+            </>
+          )}
+          <Space wrap>
+            {row.kind === "upgrade" ? (
+              <>
+                <Popconfirm
+                  title={`Re-point "${row.targetTitle || "this movie"}" to the new file? It keeps its ratings, viewings and poster; no file is deleted.`}
+                  okText="Approve upgrade"
+                  onConfirm={() => run(() => onApplyUpgrade(row))}
+                >
+                  <Button type="primary" size="small" loading={working}>
+                    Approve upgrade
+                  </Button>
+                </Popconfirm>
+                <Button size="small" disabled={working} onClick={() => run(() => onUpdate(row, { kind: "new" }))}>
+                  Not an upgrade → new title
+                </Button>
+              </>
+            ) : row.kind === "unclassified" ? (
+              <Button
+                size="small"
+                disabled={working || (!title.trim() && !imdbId.trim())}
+                onClick={() => run(() => onUpdate(row, { kind: "new", title, year: year ? Number(year) : null, imdbId: imdbId || null }))}
+              >
+                Treat as new title
+              </Button>
+            ) : null}
+            <Popconfirm
+              title="Dismiss this candidate? The file stays on disk; it just won't be offered again."
+              okText="Dismiss"
+              okButtonProps={{ danger: true }}
+              onConfirm={() => run(() => onRejectOne(row))}
+            >
+              <Button size="small" danger disabled={working}>
+                Dismiss
+              </Button>
+            </Popconfirm>
+          </Space>
+        </Space>
+      </div>
+    </div>
+  );
+}
+
 export default function IngestReviewPage({ userData }) {
   const [loading, setLoading] = useState(true);
   const [forbidden, setForbidden] = useState(false);
@@ -805,9 +924,24 @@ export default function IngestReviewPage({ userData }) {
   const detailsRef = useRef({});
   detailsRef.current = detailsCache;
 
+  // "scan" scope: sync-candidate counts ({ upgrades, newTitles, unclassified, ingested }).
+  const [scanCounts, setScanCounts] = useState(null);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
+      if (scope === "scan") {
+        const res = await MovieAPI.syncCandidatesList();
+        if (res.status === 401 || res.status === 403) {
+          setForbidden(true);
+          return;
+        }
+        const data = await res.json();
+        setItems(data.items || []);
+        setScanCounts(data.counts || null);
+        setMeta({ byConfidence: [], byType: [], batches: [] });
+        return;
+      }
       const res = await MovieAPI.ingestReviewList(scope);
       if (res.status === 401 || res.status === 403) {
         setForbidden(true);
@@ -853,6 +987,13 @@ export default function IngestReviewPage({ userData }) {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
+    if (scope === "scan") {
+      // Candidate rows carry none of the review-row fields the other filters read — search only.
+      if (!q) return items;
+      return items.filter((it) =>
+        `${it.path || ""} ${it.parsedTitle || ""} ${it.targetTitle || ""} ${it.resolvedImdbId || ""}`.toLowerCase().includes(q)
+      );
+    }
     const concernTest = CONCERN_FILTERS[concernFilter];
     return items.filter((it) => {
       if (confFilter !== "ALL" && (it.reviewConfidence || "").toUpperCase() !== confFilter) return false;
@@ -864,11 +1005,14 @@ export default function IngestReviewPage({ userData }) {
       }
       return true;
     });
-  }, [items, search, confFilter, typeFilter, concernFilter]);
+  }, [items, search, confFilter, typeFilter, concernFilter, scope]);
 
   // How many rows have any concern at all — drives the header chip and is the count behind
-  // the "Needs attention" filter.
-  const attentionCount = useMemo(() => items.filter((it) => concernsOf(it).length > 0).length, [items]);
+  // the "Needs attention" filter. Not meaningful for sync candidates.
+  const attentionCount = useMemo(
+    () => (scope === "scan" ? 0 : items.filter((it) => concernsOf(it).length > 0).length),
+    [items, scope]
+  );
 
   useEffect(() => {
     setPage(1);
@@ -991,6 +1135,101 @@ export default function IngestReviewPage({ userData }) {
     }
   }, [fetchDetails]);
 
+  // ── Sync-candidate actions (the "scan" scope) ──
+  const applyUpgrade = useCallback(async (row) => {
+    try {
+      const res = await MovieAPI.syncCandidateApplyUpgrade(row.id);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        message.error(data.message || "Upgrade failed.");
+        return false;
+      }
+      message.success(
+        `"${data.movieTitle}" now points at the new file` +
+          (data.partsAttached?.length ? ` (+${data.partsAttached.length} disc part(s))` : "") +
+          (data.extrasAttached?.length ? ` (+${data.extrasAttached.length} extra(s))` : "") +
+          (data.nowStreamable ? "." : " — it will stream after the next sync.")
+      );
+      setItems((prev) => prev.filter((it) => it.id !== row.id));
+      return true;
+    } catch {
+      message.error("Upgrade failed.");
+      return false;
+    }
+  }, []);
+
+  const rejectCandidate = useCallback(async (row) => {
+    try {
+      const res = await MovieAPI.syncCandidatesReject([row.id]);
+      if (!res.ok) {
+        message.error("Dismiss failed.");
+        return false;
+      }
+      setItems((prev) => prev.filter((it) => it.id !== row.id));
+      return true;
+    } catch {
+      message.error("Dismiss failed.");
+      return false;
+    }
+  }, []);
+
+  const updateCandidate = useCallback(
+    async (row, fields) => {
+      try {
+        const res = await MovieAPI.syncCandidateUpdate({ id: row.id, ...fields });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.success) {
+          message.error(data.message || "Update failed.");
+          return false;
+        }
+        await load();
+        return true;
+      } catch {
+        message.error("Update failed.");
+        return false;
+      }
+    },
+    [load]
+  );
+
+  // Chunked driver for new-title resolution: a few folders per call (each costs external metadata
+  // lookups), looped to completion here — same caller-drives-it pattern as the poster/thumbnail jobs.
+  const resolveNewTitles = useCallback(async () => {
+    let hide = message.loading("Resolving new titles…", 0);
+    const totals = { created: 0, converted: 0, failed: 0 };
+    try {
+      for (let guard = 0; guard < 500; guard++) {
+        const res = await MovieAPI.syncCandidatesResolve(3);
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          hide();
+          message.error(data.message || "Resolution failed.");
+          break;
+        }
+        totals.created += data.created ?? 0;
+        totals.converted += data.converted ?? 0;
+        totals.failed += data.failed ?? 0;
+        if (data.done || data.processed === 0) {
+          hide();
+          message.success(
+            `Resolved: ${totals.created} new title(s) added to the open ingest batch` +
+              (totals.converted ? `, ${totals.converted} turned out to be upgrade(s) of owned titles` : "") +
+              (totals.failed ? `, ${totals.failed} need a hand fix (see the card)` : "") +
+              ". Switch to \"Open ingest batch\" to review the new titles.",
+            10
+          );
+          break;
+        }
+        hide();
+        hide = message.loading(`Resolving new titles… ${data.remaining ?? 0} folder(s) remaining`, 0);
+      }
+    } catch {
+      hide();
+      message.error("Resolution failed.");
+    }
+    await load();
+  }, [load]);
+
   if (forbidden) {
     return <Result status="403" title="Editors only" subTitle="The library review queue requires movie-edit permission." />;
   }
@@ -1005,9 +1244,19 @@ export default function IngestReviewPage({ userData }) {
           Library ingest review
         </Title>
         <Text type="secondary">
-          {items.length} title(s) pending — quarantined from browse until you approve them. Reject deletes the row entirely.
+          {scope === "scan"
+            ? `${items.length} untracked file(s) found by the last sync — approve upgrades in place, resolve new titles into the ingest batch.`
+            : `${items.length} title(s) pending — quarantined from browse until you approve them. Reject deletes the row entirely.`}
         </Text>
         <div className="ingest-review-chips">
+          {scope === "scan" && scanCounts && (
+            <>
+              <Tag color="orange">upgrades: {scanCounts.upgrades}</Tag>
+              <Tag color="blue">new titles: {scanCounts.newTitles}</Tag>
+              <Tag>unclassified: {scanCounts.unclassified}</Tag>
+              {scanCounts.ingested > 0 && <Tag color="green">already in batch: {scanCounts.ingested}</Tag>}
+            </>
+          )}
           {attentionCount > 0 && (
             <Tag color="warning" style={{ cursor: "pointer" }} onClick={() => setConcernFilter("ATTENTION")}>
               ⚠ {attentionCount} need attention
@@ -1036,6 +1285,7 @@ export default function IngestReviewPage({ userData }) {
             { value: "batch", label: "Open ingest batch" },
             { value: "gaps", label: "All series with gaps" },
             { value: "oddities", label: "Live titles with file oddities" },
+            { value: "scan", label: "Sync scan candidates" },
           ]}
         />
         <Select
@@ -1069,16 +1319,29 @@ export default function IngestReviewPage({ userData }) {
             { value: "LOWCONF", label: "Low confidence" },
           ]}
         />
-        <Popconfirm
-          title={`Approve all ${filtered.length} shown title(s) into the library?`}
-          okText="Approve all"
-          disabled={!filtered.length}
-          onConfirm={() => approve(filtered)}
-        >
-          <Button type="primary" disabled={!filtered.length}>
-            Approve all shown ({filtered.length})
-          </Button>
-        </Popconfirm>
+        {scope === "scan" ? (
+          <Popconfirm
+            title={`Resolve all ${scanCounts?.newTitles ?? 0} new-title candidate(s)? Each folder is looked up (OMDB → IMDb → Google) and added to the open ingest batch with its file attached — you still approve them there. Runs in chunks; keep this tab open.`}
+            okText="Resolve new titles"
+            disabled={!(scanCounts?.newTitles > 0)}
+            onConfirm={resolveNewTitles}
+          >
+            <Button type="primary" disabled={!(scanCounts?.newTitles > 0)}>
+              Resolve new titles ({scanCounts?.newTitles ?? 0})
+            </Button>
+          </Popconfirm>
+        ) : (
+          <Popconfirm
+            title={`Approve all ${filtered.length} shown title(s) into the library?`}
+            okText="Approve all"
+            disabled={!filtered.length}
+            onConfirm={() => approve(filtered)}
+          >
+            <Button type="primary" disabled={!filtered.length}>
+              Approve all shown ({filtered.length})
+            </Button>
+          </Popconfirm>
+        )}
         <Button onClick={load}>Refresh</Button>
         <Popconfirm
           title="Fetch posters (IMDb via OMDB) only for approved titles that are MISSING one. Existing posters are never re-fetched or changed."
@@ -1144,9 +1407,13 @@ export default function IngestReviewPage({ userData }) {
                 `Re-pointed ${r.repointed ?? 0} moved/renamed file(s)` +
                 ((r.supersededOrphans ?? 0) > 0 ? ` (${r.supersededOrphans} rescued from renamed-folder leftovers)` : "") +
                 ((r.possibleRenames ?? 0) > 0 ? `, ${r.possibleRenames} possible rename(s) to review` : "") +
-                `; ${r.moviesMissing ?? 0} title(s) still show missing.`,
+                `; ${r.moviesMissing ?? 0} title(s) still show missing.` +
+                ((r.candidateUpgrades ?? 0) + (r.candidateNewTitles ?? 0) + (r.candidateUnclassified ?? 0) > 0
+                  ? ` Found ${r.candidateUpgrades ?? 0} upgrade / ${r.candidateNewTitles ?? 0} new-title / ${r.candidateUnclassified ?? 0} unclassified candidate(s) — see "Sync scan candidates".`
+                  : ""),
                 10
               );
+              if (scope === "scan") load();
             } catch {
               hide();
               message.error("Sync from Jellyfin failed.");
@@ -1251,7 +1518,15 @@ export default function IngestReviewPage({ userData }) {
         <>
           <div className="ingest-review-cards">
             {pageItems.map((row) =>
-              row.kind === "misc" ? (
+              scope === "scan" ? (
+                <SyncCandidateCard
+                  key={uidOf(row)}
+                  row={row}
+                  onApplyUpgrade={applyUpgrade}
+                  onRejectOne={rejectCandidate}
+                  onUpdate={updateCandidate}
+                />
+              ) : row.kind === "misc" ? (
                 <MiscReviewCard key={uidOf(row)} row={row} onApprove={approve} onReject={reject} onReclassify={reclassify} />
               ) : (
                 <ReviewCard

@@ -95,7 +95,7 @@ namespace MovieTheater.Services.Jellyfin
             using var db = await dbFactory.CreateDbContextAsync(cancel);
             var movies = await db.Movies
                 .Where(m => m.FilePath != null && m.FilePath != "")
-                .Select(m => new { m.id, m.Title, m.FilePath, m.imdbID, m.PlayableId })
+                .Select(m => new MovieLite(m.id, m.Title, m.FilePath, m.imdbID, m.PlayableId))
                 .ToListAsync(cancel);
             // Loaded always (not just on write) because the move-detection pass fingerprints existing rows.
             var existingFiles = await db.MediaFiles.ToListAsync(cancel);
@@ -130,6 +130,9 @@ namespace MovieTheater.Services.Jellyfin
             var imdbFallbackItemIds = new HashSet<string>();
 
             var imdbFallbackCandidates = new List<(int MovieId, string Line)>();
+            // Structured twins of the report lines, kept for the candidate pass: an untracked item
+            // sharing a movie's IMDb id is the strongest upgrade signal there is.
+            var imdbFallbackPairs = new List<(int MovieId, JellyfinItem Item, string DbPath)>();
             int created = 0, updated = 0;
             var now = DateTime.UtcNow;
 
@@ -145,6 +148,7 @@ namespace MovieTheater.Services.Jellyfin
                     if (item.ImdbId != null && byImdb.TryGetValue(item.ImdbId, out var byId))
                     {
                         imdbFallbackCandidates.Add((byId.id, $"{item.Path} ↔ movie {byId.id} '{byId.Title}' (shared {item.ImdbId})"));
+                        imdbFallbackPairs.Add((byId.id, item, dbPath));
                         imdbFallbackItemIds.Add(item.Id);
                     }
                     continue;
@@ -269,9 +273,13 @@ namespace MovieTheater.Services.Jellyfin
             var stillUnmatched = existingFiles.Where(f => !matchedRows.Contains(f)).ToList();
             var fileBySize = UniqueByKey(stillUnmatched.Where(f => f.SizeBytes != null), f => f.SizeBytes);
             var itemBySize = UniqueByKey(translatedUntracked.Where(u => !repointedItemIds.Contains(u.Item.Id) && u.Size != null), u => u.Size);
+            var possibleRenamePairs = new List<(MediaFile Row, JellyfinItem Item, string DbPath)>();
             foreach (var (size, row) in fileBySize)
                 if (itemBySize.TryGetValue(size, out var u))
+                {
                     r.PossibleRenames.Add($"{row.Path}  ↔  {u.DbPath}  (same size {size} B, name changed — review)");
+                    possibleRenamePairs.Add((row, u.Item, u.DbPath));
+                }
 
             // Whatever we didn't re-point (and isn't already reported as an IMDB-id fallback) is genuinely
             // a Jellyfin item the DB doesn't track.
@@ -381,6 +389,21 @@ namespace MovieTheater.Services.Jellyfin
                 if (!dryRun) db.MediaFiles.Add(NewExtraRow(owner.Value, dp, ex, now));
                 r.ExtrasAttached++;
             }
+
+            // ── Sync candidates: persist what "untracked" actually means, so the review tool can act ──
+            // Everything the passes above left untracked is classified (upgrade of an existing movie /
+            // new title / unclassified) and upserted into SyncCandidate — the durable version of the
+            // report sections, keyed by path so re-syncs refresh rather than duplicate, and a
+            // rejection is remembered. Extras attached this run are excluded (they found their owner).
+            var candidateItems = translatedUntracked
+                .Where(u => !repointedItemIds.Contains(u.Item.Id)
+                            && !imdbFallbackItemIds.Contains(u.Item.Id)
+                            && !extraMapped.Contains(JellyfinPathMapper.NormalizeForCompare(u.DbPath)))
+                .ToList();
+            await UpsertSyncCandidatesAsync(db, r, dryRun, now, candidateItems,
+                imdbFallbackPairs.Where(p => !chosen.ContainsKey(p.MovieId)).ToList(),
+                possibleRenamePairs, matchedRows, filesByPlayable, movieById.Values.ToList(),
+                movieIdByPlayable, folderToPlayable, chosen, cancel);
 
             // Still unmatched after the move pass → stamp MissingSinceUtc (existing rows only).
             var wouldStamp = existingFiles.Where(f => !matchedRows.Contains(f) && f.MissingSinceUtc == null).ToList();
@@ -651,6 +674,343 @@ namespace MovieTheater.Services.Jellyfin
             return res;
         }
 
+        /// <summary>
+        /// Applies one approved <see cref="SyncCandidateKind.Upgrade"/>: re-points the target movie's
+        /// Primary <see cref="MediaFile"/> IN PLACE to the candidate's file — same repair the per-movie
+        /// re-link does, driven from the persisted candidate instead of a shelf probe. The item is
+        /// re-fetched and its path re-verified against the candidate first, so a file that moved after
+        /// detection refuses instead of linking blind. Keyframe custody rides along (stale re-extract /
+        /// banked restore), the movie's everything-else (ratings, viewings, posters) is untouched, and
+        /// pending sibling candidates in an extras subfolder of the new movie folder are attached as
+        /// Extras and retired. Never deletes a file or a row.
+        /// </summary>
+        public async Task<SyncUpgradeResult> ApplyUpgradeCandidateAsync(int candidateId, string? approvedBy, CancellationToken cancel = default)
+        {
+            var res = new SyncUpgradeResult();
+            using var db = await dbFactory.CreateDbContextAsync(cancel);
+            var cand = await db.SyncCandidates.FirstOrDefaultAsync(c => c.Id == candidateId, cancel);
+            if (cand == null) { res.Message = "Candidate not found."; return res; }
+            if (cand.Status != SyncCandidateStatus.Pending) { res.Message = $"Candidate is {cand.Status}, not Pending."; return res; }
+            if (cand.Kind != SyncCandidateKind.Upgrade || cand.TargetMovieId == null || string.IsNullOrEmpty(cand.JellyfinItemId))
+            { res.Message = "Not an applicable upgrade candidate."; return res; }
+
+            var movie = await db.Movies.FirstOrDefaultAsync(m => m.id == cand.TargetMovieId, cancel);
+            if (movie == null) { res.Message = "The target movie no longer exists."; return res; }
+            res.MovieTitle = movie.Title;
+
+            // Re-fetch the item and require it to still be the file the candidate described.
+            var detail = (await jellyfin.GetItemsByIdsAsync(new[] { cand.JellyfinItemId! }, cancel)).FirstOrDefault();
+            if (detail == null || string.IsNullOrEmpty(detail.Path))
+            { res.Message = "The file's Jellyfin item is gone — run Sync from Jellyfin and review again."; return res; }
+            var family = await FamilyExclusionAsync(cancel);
+            if (family.IsExcluded(detail.Path!)) { res.Message = "That file belongs to the excluded family library."; return res; }
+            if (!JellyfinPathMapper.TryTranslateToDb(detail.Path!, config.JellyfinPathMappings, out var dbPath, out _))
+            { res.Message = $"No path mapping covers '{detail.Path}'."; return res; }
+            if (JellyfinPathMapper.NormalizeForCompare(dbPath) != JellyfinPathMapper.NormalizeForCompare(cand.Path))
+            { res.Message = $"The file moved since detection (now at '{dbPath}') — run Sync from Jellyfin and review again."; return res; }
+
+            // Refuse if some OTHER title claimed the path meanwhile (an approval race, a hand map).
+            var pathNorm = JellyfinPathMapper.NormalizeForCompare(dbPath);
+            var claimed = (await db.MediaFiles.Select(f => new { f.Path, f.PlayableId }).ToListAsync(cancel))
+                .FirstOrDefault(f => JellyfinPathMapper.NormalizeForCompare(f.Path) == pathNorm && f.PlayableId != movie.PlayableId);
+            if (claimed != null) { res.Message = "Another title already owns that file — nothing changed."; return res; }
+
+            var now = DateTime.UtcNow;
+            if (movie.PlayableId == null)
+            {   // pre-cutover stragglers: give the movie its file slot rather than refusing the upgrade
+                var playable = new Playable { Kind = PlayableKind.Movie };
+                db.Playables.Add(playable);
+                await db.SaveChangesAsync(cancel);
+                movie.PlayableId = playable.Id;
+            }
+            var files = await db.MediaFiles.Where(f => f.PlayableId == movie.PlayableId!.Value).ToListAsync(cancel);
+            var primary = files.FirstOrDefault(f => f.Role == MovieFileRole.Primary) ?? files.FirstOrDefault();
+            if (primary == null)
+            {
+                primary = new MediaFile { PlayableId = movie.PlayableId!.Value, Path = dbPath, Role = MovieFileRole.Primary };
+                db.MediaFiles.Add(primary);
+            }
+            else primary.Path = dbPath;
+            var restoreRows = new List<MediaFile>();
+            if (StampFromItem(primary, detail, now, restoreRows))
+                await ReExtractStaleKeyframesAsync(new[] { primary }, now, cancel);
+            if (restoreRows.Count > 0)
+                await RestoreBankedKeyframesAsync(db, restoreRows, now, cancel);
+            movie.FilePath = dbPath;
+            res.NewPath = dbPath;
+
+            // Pending sibling candidates under the new movie folder ride along with the approval:
+            // files in an extras-type subfolder become Extras, and cdN/partN files DIRECTLY in the
+            // movie folder become Parts — a multi-disc upgrade must land whole, not as the one file
+            // this candidate happened to describe (its discs would otherwise resurface as competing
+            // upgrade candidates of the same movie). Anything else is left alone.
+            var newFolder = ParentDir(dbPath);
+            if (newFolder != null)
+            {
+                var folderNorm = JellyfinPathMapper.NormalizeForCompare(newFolder);
+                var attachedNorms = files.Select(f => JellyfinPathMapper.NormalizeForCompare(f.Path)).ToHashSet();
+                attachedNorms.Add(pathNorm);
+                var siblings = (await db.SyncCandidates.Where(c => c.Status == SyncCandidateStatus.Pending && c.Id != cand.Id).ToListAsync(cancel))
+                    .Where(c => !string.IsNullOrEmpty(c.JellyfinItemId)
+                                && JellyfinPathMapper.NormalizeForCompare(c.Path).StartsWith(folderNorm + "\\")
+                                && !attachedNorms.Contains(JellyfinPathMapper.NormalizeForCompare(c.Path)))
+                    .ToList();
+                if (siblings.Count > 0)
+                {
+                    var sibDetails = (await jellyfin.GetItemsByIdsAsync(siblings.Select(s => s.JellyfinItemId!), cancel))
+                        .ToDictionary(i => i.Id, StringComparer.OrdinalIgnoreCase);
+                    foreach (var s in siblings)
+                    {
+                        if (!sibDetails.TryGetValue(s.JellyfinItemId!, out var sd)) continue;
+                        var sNorm = JellyfinPathMapper.NormalizeForCompare(s.Path);
+                        var isExtra = ExtrasClassifier.ExtraKeyword(s.Path.Substring(newFolder.Length)) != null;
+                        var partNo = !isExtra && JellyfinPathMapper.NormalizeForCompare(ParentDir(s.Path) ?? "") == folderNorm
+                            ? PartNumberOf(LeafLabel(s.Path))
+                            : null;
+                        if (!isExtra && partNo == null) continue;   // a sample/alt-cut — never guess
+                        if (!attachedNorms.Add(sNorm)) continue;
+                        if (isExtra)
+                        {
+                            db.MediaFiles.Add(NewExtraRow(movie.PlayableId!.Value, s.Path, sd, now));
+                            res.ExtrasAttached.Add(LeafLabel(s.Path));
+                        }
+                        else
+                        {
+                            var partRow = new MediaFile
+                            {
+                                PlayableId = movie.PlayableId!.Value, Path = s.Path,
+                                Role = MovieFileRole.Part, PartNumber = partNo,
+                            };
+                            StampFromItem(partRow, sd, now);
+                            db.MediaFiles.Add(partRow);
+                            res.PartsAttached.Add(LeafLabel(s.Path));
+                        }
+                        s.Status = SyncCandidateStatus.Superseded;
+                        s.ResolvedUtc = now;
+                    }
+                }
+            }
+
+            cand.Status = SyncCandidateStatus.Approved;
+            cand.ResolvedUtc = now;
+            cand.ResolvedBy = Truncate(approvedBy, 64);
+            await db.SaveChangesAsync(cancel);
+
+            res.Ok = true;
+            res.NowStreamable = primary.JellyfinItemId != null;
+            res.Message = $"'{movie.Title}' re-pointed to the new file.";
+            logger.LogInformation("Sync-candidate upgrade applied: movie {Id} '{Title}' → {Path} (candidate {Cand}, {Signal}, by {User}, +{Extras} extras)",
+                movie.id, movie.Title, dbPath, cand.Id, cand.Signal, approvedBy, res.ExtrasAttached.Count);
+            return res;
+        }
+
+        /// <summary>Slim projection of a movie row for the sync passes; property names deliberately
+        /// mirror the entity's so call sites read identically.</summary>
+        private sealed record MovieLite(int id, string? Title, string? FilePath, string? imdbID, int? PlayableId);
+
+        /// <summary>A classified untracked file on its way into <see cref="SyncCandidate"/>.</summary>
+        private sealed class CandidateDraft
+        {
+            public SyncCandidateKind Kind;
+            public string DbPath = default!;
+            public string ItemId = default!;
+            public long? Size;
+            public int? TargetMovieId;
+            public string? Signal;
+            public string? OldPath;
+            public string? ParsedTitle;
+            public int? ParsedYear;
+        }
+
+        /// <summary>
+        /// Classifies every file the sync left untracked and upserts the result into
+        /// <see cref="SyncCandidate"/> so the review tool can approve upgrades and ingest new titles
+        /// instead of reading about them in a report. Signals, strongest first: a shared IMDb id, a
+        /// unique same-size pair (the rename the sync refuses to auto-apply), the file sitting in an
+        /// existing movie's own folder, a title-token match against a movie whose file just went
+        /// missing. What remains parses as "Title (Year)" → NewTitle, or stays Unclassified (episodic
+        /// files are always Unclassified — series belong to the mapping pipeline). Rows are keyed by
+        /// path: re-syncs refresh Pending rows, reopen Superseded ones that reappear, never touch
+        /// Rejected/Approved/Ingested (a rejection is a decision, not a cache), and Pending rows whose
+        /// file stopped being untracked are marked Superseded. Nothing here writes in dry-run; the
+        /// caller's single SaveChanges persists everything or (on an aborted run) nothing.
+        /// </summary>
+        private async Task UpsertSyncCandidatesAsync(
+            MovieDb db, JellyfinSyncReport r, bool dryRun, DateTime now,
+            List<(JellyfinItem Item, string DbPath, long? Size)> untracked,
+            List<(int MovieId, JellyfinItem Item, string DbPath)> imdbPairs,
+            List<(MediaFile Row, JellyfinItem Item, string DbPath)> renamePairs,
+            HashSet<MediaFile> matchedRows,
+            ILookup<int, MediaFile> filesByPlayable,
+            List<MovieLite> movies,
+            Dictionary<int, int> movieIdByPlayable,
+            Dictionary<string, int> folderToPlayable,
+            Dictionary<int, (JellyfinItem Item, int MappingIndex)> chosen,
+            CancellationToken cancel)
+        {
+            var movieId2Movie = movies.ToDictionary(m => m.id);
+            var drafts = new Dictionary<string, CandidateDraft>();   // norm path → first (strongest) claim
+
+            void Claim(string dbPath, JellyfinItem item, long? size, SyncCandidateKind kind,
+                int? target = null, string? signal = null, string? oldPath = null,
+                string? parsedTitle = null, int? parsedYear = null)
+            {
+                var norm = JellyfinPathMapper.NormalizeForCompare(dbPath);
+                if (drafts.ContainsKey(norm)) return;
+                // Every candidate gets a best-effort folder parse, upgrades included — it's what the
+                // reviewer's "not an upgrade → new title" flip falls back on for a title.
+                if (parsedTitle == null)
+                {
+                    var p = MovieFolderParser.Parse(LeafLabel(ParentDir(dbPath) ?? dbPath));
+                    if (p != null) { parsedTitle = p.Value.Title; parsedYear ??= p.Value.Year; }
+                }
+                drafts[norm] = new CandidateDraft
+                {
+                    Kind = kind, DbPath = dbPath, ItemId = item.Id, Size = size,
+                    TargetMovieId = target, Signal = signal, OldPath = oldPath,
+                    ParsedTitle = parsedTitle, ParsedYear = parsedYear,
+                };
+            }
+
+            // 1. Shared IMDb id — the item names the movie it replaces.
+            foreach (var p in imdbPairs)
+                if (movieId2Movie.TryGetValue(p.MovieId, out var m))
+                    Claim(p.DbPath, p.Item, p.Item.MediaSources?.FirstOrDefault()?.Size,
+                        SyncCandidateKind.Upgrade, p.MovieId, "imdb-id", m.FilePath);
+
+            // 2. Unique same-size pair whose dead row is a movie's Primary.
+            foreach (var (row, item, dbPath) in renamePairs)
+                if (row.Role == MovieFileRole.Primary && movieIdByPlayable.TryGetValue(row.PlayableId, out var mid))
+                    Claim(dbPath, item, row.SizeBytes, SyncCandidateKind.Upgrade, mid, "same-size", row.Path);
+
+            // 3. The file sits directly in a folder the DB already knows as some movie's folder.
+            foreach (var u in untracked)
+            {
+                var folder = ParentDir(u.DbPath);
+                if (folder != null
+                    && folderToPlayable.TryGetValue(JellyfinPathMapper.NormalizeForCompare(folder), out var pid)
+                    && movieIdByPlayable.TryGetValue(pid, out var mid))
+                {
+                    var primary = filesByPlayable[pid].FirstOrDefault(f => f.Role == MovieFileRole.Primary);
+                    Claim(u.DbPath, u.Item, u.Size, SyncCandidateKind.Upgrade, mid, "same-folder",
+                        primary?.Path ?? movieId2Movie[mid].FilePath);
+                }
+            }
+
+            // 4. Title tokens of the file's folder against movies whose files all went missing this
+            // run (replaced rip in a renamed folder: no path, size or id survives — only the title).
+            // ≥2 shared meaningful tokens (or total match for a 1-token title), and a UNIQUE best —
+            // "Breakin'" must never claim the "Breakin' 2" rip on a tie.
+            var missingMovies = movies
+                .Where(m => !chosen.ContainsKey(m.id)
+                            && (m.PlayableId == null || filesByPlayable[m.PlayableId.Value].All(f => !matchedRows.Contains(f))))
+                .Select(m => (Movie: m, Toks: Tokens(m.Title ?? "")))
+                .Where(t => t.Toks.Count > 0)
+                .ToList();
+            foreach (var u in untracked)
+            {
+                if (drafts.ContainsKey(JellyfinPathMapper.NormalizeForCompare(u.DbPath))) continue;
+                var folderLeaf = LeafLabel(ParentDir(u.DbPath) ?? u.DbPath);
+                var folderToks = Tokens(folderLeaf);
+                if (folderToks.Count == 0) continue;
+                var scored = missingMovies
+                    .Select(t => (t.Movie, Score: TokenOverlap(t.Toks, folderToks), Need: t.Toks.Count))
+                    .Where(t => t.Score >= 2 || (t.Score >= 1 && t.Need == 1))
+                    .OrderByDescending(t => t.Score).ToList();
+                if (scored.Count == 0 || (scored.Count > 1 && scored[1].Score == scored[0].Score)) continue;
+                Claim(u.DbPath, u.Item, u.Size, SyncCandidateKind.Upgrade,
+                    scored[0].Movie.id, "title-match", scored[0].Movie.FilePath);
+            }
+
+            // 5. What's left is either a new movie (folder parses as "Title (Year)") or unclassified.
+            foreach (var u in untracked)
+            {
+                if (drafts.ContainsKey(JellyfinPathMapper.NormalizeForCompare(u.DbPath))) continue;
+                var folderLeaf = LeafLabel(ParentDir(u.DbPath) ?? u.DbPath);
+                var parsed = MovieFolderParser.LooksEpisodic(LeafLabel(u.DbPath)) ? null : MovieFolderParser.Parse(folderLeaf);
+                if (parsed != null)
+                    Claim(u.DbPath, u.Item, u.Size, SyncCandidateKind.NewTitle,
+                        parsedTitle: parsed.Value.Title, parsedYear: parsed.Value.Year);
+                else
+                    Claim(u.DbPath, u.Item, u.Size, SyncCandidateKind.Unclassified, parsedTitle: folderLeaf);
+            }
+
+            r.CandidateUpgrades = drafts.Values.Count(d => d.Kind == SyncCandidateKind.Upgrade);
+            r.CandidateNewTitles = drafts.Values.Count(d => d.Kind == SyncCandidateKind.NewTitle);
+            r.CandidateUnclassified = drafts.Values.Count(d => d.Kind == SyncCandidateKind.Unclassified);
+            foreach (var d in drafts.Values)
+                r.CandidateLines.Add(d.Kind switch
+                {
+                    SyncCandidateKind.Upgrade =>
+                        $"upgrade: {d.DbPath} → movie {d.TargetMovieId} '{(d.TargetMovieId != null && movieId2Movie.TryGetValue(d.TargetMovieId.Value, out var m) ? m.Title : "?")}' ({d.Signal})",
+                    SyncCandidateKind.NewTitle => $"new: {d.DbPath} → '{d.ParsedTitle}' ({d.ParsedYear})",
+                    _ => $"unclassified: {d.DbPath}",
+                });
+
+            if (dryRun) return;
+
+            var existing = await db.SyncCandidates.ToListAsync(cancel);
+            var existingByNorm = new Dictionary<string, SyncCandidate>();
+            foreach (var row in existing)
+                existingByNorm.TryAdd(JellyfinPathMapper.NormalizeForCompare(row.Path), row);
+
+            foreach (var (norm, d) in drafts)
+            {
+                if (existingByNorm.TryGetValue(norm, out var row))
+                {
+                    row.LastSeenUtc = now;
+                    row.JellyfinItemId = d.ItemId;
+                    if (d.Size != null) row.SizeBytes = d.Size;
+                    if (row.Status == SyncCandidateStatus.Superseded)
+                    {   // the file is untracked again — the dismissal described a state that no longer holds
+                        row.Status = SyncCandidateStatus.Pending;
+                        row.ResolvedUtc = null;
+                        row.ResolvedBy = null;
+                    }
+                    // A reviewer's hand corrections (pin/retitle/reclassify) outrank the machine's
+                    // re-classification — re-deriving the same wrong answer must not undo the fix.
+                    if (row.Status == SyncCandidateStatus.Pending && !row.PinnedByReviewer)
+                    {
+                        row.Kind = d.Kind;
+                        row.TargetMovieId = d.TargetMovieId;
+                        row.Signal = d.Signal;
+                        row.OldPath = Truncate(d.OldPath, 1024);
+                        row.ParsedTitle = Truncate(d.ParsedTitle, 512);
+                        row.ParsedYear = d.ParsedYear;
+                    }
+                }
+                else
+                {
+                    db.SyncCandidates.Add(new SyncCandidate
+                    {
+                        Kind = d.Kind,
+                        Status = SyncCandidateStatus.Pending,
+                        Path = Truncate(d.DbPath, 1024)!,
+                        JellyfinItemId = d.ItemId,
+                        SizeBytes = d.Size,
+                        TargetMovieId = d.TargetMovieId,
+                        Signal = d.Signal,
+                        OldPath = Truncate(d.OldPath, 1024),
+                        ParsedTitle = Truncate(d.ParsedTitle, 512),
+                        ParsedYear = d.ParsedYear,
+                        FirstSeenUtc = now,
+                        LastSeenUtc = now,
+                    });
+                }
+            }
+
+            // A Pending row the sync no longer finds untracked either got mapped (this run's matching,
+            // an approval, a hand fix) or its file is gone — both mean the offer is stale.
+            foreach (var row in existing)
+                if (row.Status == SyncCandidateStatus.Pending
+                    && !drafts.ContainsKey(JellyfinPathMapper.NormalizeForCompare(row.Path)))
+                {
+                    row.Status = SyncCandidateStatus.Superseded;
+                    row.ResolvedUtc = now;
+                    r.CandidatesSuperseded++;
+                }
+        }
+
         // ── Blast-radius guards ──────────────────────────────────────────────────────────────────────
 
         /// <summary>
@@ -780,6 +1140,16 @@ namespace MovieTheater.Services.Jellyfin
                 or "web" or "hdtv" or "x264" or "x265" or "hevc" or "remux" or "dvdrip" or "proper";
 
         private static int TokenOverlap(HashSet<string> a, HashSet<string> b) => a.Count(b.Contains);
+
+        private static readonly System.Text.RegularExpressions.Regex PartRx =
+            new(@"(?i)\b(?:cd|disc|disk|part|pt)\s*0*(\d{1,2})\b", System.Text.RegularExpressions.RegexOptions.Compiled);
+
+        /// <summary>Disc/part ordinal from a filename ("Title cd2" → 2), or null when it isn't one.</summary>
+        private static int? PartNumberOf(string fileName)
+        {
+            var m = PartRx.Match(fileName);
+            return m.Success ? int.Parse(m.Groups[1].Value) : null;
+        }
 
         /// <summary>
         /// Returns true when Jellyfin's SERVER-SIDE stored keyframe list for this item just went
@@ -1010,6 +1380,32 @@ namespace MovieTheater.Services.Jellyfin
         public int ExtrasAttached { get; set; }
         /// <summary>Extras whose folder didn't map to any known movie folder — left unattached.</summary>
         public int ExtrasUnplaced { get; set; }
+
+        // ── Sync candidates (the durable, actionable form of Untracked/PossibleRenames) ──
+        /// <summary>Untracked files classified as an upgrade/replacement of an existing movie.</summary>
+        public int CandidateUpgrades { get; set; }
+        /// <summary>Untracked files whose folder parses as a movie the library doesn't have.</summary>
+        public int CandidateNewTitles { get; set; }
+        /// <summary>Untracked files the classifier couldn't place (episodic, unparseable folder).</summary>
+        public int CandidateUnclassified { get; set; }
+        /// <summary>Previously-pending candidates retired this run (file got mapped or vanished).</summary>
+        public int CandidatesSuperseded { get; set; }
+        /// <summary>One line per classified candidate, for the CLI report.</summary>
+        public List<string> CandidateLines { get; } = new();
+    }
+
+    /// <summary>Result of <see cref="JellyfinSyncService.ApplyUpgradeCandidateAsync"/> — either the movie
+    /// now points at the new file, or <see cref="Message"/> says why nothing was changed.</summary>
+    public class SyncUpgradeResult
+    {
+        public bool Ok { get; set; }
+        public bool NowStreamable { get; set; }
+        public string? MovieTitle { get; set; }
+        public string? NewPath { get; set; }
+        public string? Message { get; set; }
+        public List<string> ExtrasAttached { get; } = new();
+        /// <summary>cdN/partN sibling files attached as Parts alongside the re-pointed Primary.</summary>
+        public List<string> PartsAttached { get; } = new();
     }
 
     /// <summary>Result of <see cref="JellyfinSyncService.TriggerMovieFolderRefreshAsync"/> — did the scoped

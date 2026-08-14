@@ -4554,6 +4554,10 @@ namespace MovieTheater.Controllers
                     untracked = rep.Untracked.Count,
                     untranslatable = rep.Untranslatable.Count,
                     imdbFallbacks = rep.ImdbFallbacks.Count,
+                    candidateUpgrades = rep.CandidateUpgrades,
+                    candidateNewTitles = rep.CandidateNewTitles,
+                    candidateUnclassified = rep.CandidateUnclassified,
+                    candidatesSuperseded = rep.CandidatesSuperseded,
                     samples = new
                     {
                         repointed = Sample(rep.Repointed),
@@ -4567,6 +4571,361 @@ namespace MovieTheater.Controllers
             {
                 return StatusCode(502, new { message = "Jellyfin sync failed: " + ex.Message });
             }
+        }
+
+        // ── Sync-scan candidates (the sync's untracked findings, made actionable) ─────────────────────
+        // A sync run classifies every untracked file into SyncCandidate rows (upgrade of an existing
+        // movie / new title / unclassified). These endpoints drive the review surface: list them,
+        // apply an upgrade (re-point in place), resolve new titles into quarantined ReviewBatch rows
+        // that flow through the normal ingest review, correct a wrong classification, or reject.
+        // Resolution is CHUNKED (a few folders per call, the UI loops) — each folder costs external
+        // metadata lookups, so no single request is ever asked to survive the whole pile.
+
+        [HttpGet("/API/Admin/IngestReview/SyncCandidates")]
+        public async Task<IActionResult> SyncCandidatesList()
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+            var pending = await movieDb.SyncCandidates
+                .Where(c => c.Status == SyncCandidateStatus.Pending)
+                .OrderBy(c => c.Kind).ThenBy(c => c.Path)
+                .ToListAsync();
+            var ingestedCount = await movieDb.SyncCandidates.CountAsync(c => c.Status == SyncCandidateStatus.Ingested);
+
+            var targetIds = pending.Where(c => c.TargetMovieId != null).Select(c => c.TargetMovieId!.Value).Distinct().ToList();
+            var targets = await movieDb.Movies.Where(m => targetIds.Contains(m.id))
+                .Select(m => new
+                {
+                    m.id,
+                    m.Title,
+                    Year = m.ReleaseDate != null ? m.ReleaseDate.Value.Year : (m.ImdbReleaseDate != null ? m.ImdbReleaseDate.Value.Year : (int?)null),
+                    m.PlayableId,
+                    // Old file already dead = the safest kind of upgrade; still-live = replacing a working copy.
+                    OldFileMissing = m.PlayableId == null || !movieDb.MediaFiles.Any(f =>
+                        f.PlayableId == m.PlayableId && f.Role == MovieFileRole.Primary
+                        && f.JellyfinItemId != null && f.MissingSinceUtc == null),
+                })
+                .ToDictionaryAsync(m => m.id);
+
+            return Ok(new
+            {
+                counts = new
+                {
+                    upgrades = pending.Count(c => c.Kind == SyncCandidateKind.Upgrade),
+                    newTitles = pending.Count(c => c.Kind == SyncCandidateKind.NewTitle),
+                    unclassified = pending.Count(c => c.Kind == SyncCandidateKind.Unclassified),
+                    ingested = ingestedCount,
+                },
+                items = pending.Select(c => new
+                {
+                    id = c.Id,
+                    kind = c.Kind == SyncCandidateKind.Upgrade ? "upgrade" : c.Kind == SyncCandidateKind.NewTitle ? "new" : "unclassified",
+                    path = c.Path,
+                    sizeBytes = c.SizeBytes,
+                    signal = c.Signal,
+                    oldPath = c.OldPath,
+                    targetMovieId = c.TargetMovieId,
+                    targetTitle = c.TargetMovieId != null && targets.TryGetValue(c.TargetMovieId.Value, out var t) ? t.Title : null,
+                    targetYear = c.TargetMovieId != null && targets.TryGetValue(c.TargetMovieId.Value, out var t2) ? t2.Year : null,
+                    oldFileMissing = c.TargetMovieId != null && targets.TryGetValue(c.TargetMovieId.Value, out var t3) ? t3.OldFileMissing : (bool?)null,
+                    parsedTitle = c.ParsedTitle,
+                    parsedYear = c.ParsedYear,
+                    resolvedImdbId = c.ResolvedImdbId,
+                    resolutionError = c.ResolutionError,
+                    firstSeenUtc = c.FirstSeenUtc,
+                    lastSeenUtc = c.LastSeenUtc,
+                }),
+            });
+        }
+
+        public class SyncCandidateIdRequest { public int Id { get; set; } }
+        public class SyncCandidateIdsRequest { public List<int> Ids { get; set; } = new(); }
+
+        [HttpPost("/API/Admin/IngestReview/SyncCandidates/ApplyUpgrade")]
+        public async Task<IActionResult> SyncCandidateApplyUpgrade([FromBody] SyncCandidateIdRequest req)
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+            var res = await jellyfinSyncService.ApplyUpgradeCandidateAsync(req.Id, TruncCol(User.Identity?.Name, 64));
+            return Ok(new { success = res.Ok, message = res.Message, movieTitle = res.MovieTitle, newPath = res.NewPath, nowStreamable = res.NowStreamable, extrasAttached = res.ExtrasAttached, partsAttached = res.PartsAttached });
+        }
+
+        [HttpPost("/API/Admin/IngestReview/SyncCandidates/Reject")]
+        public async Task<IActionResult> SyncCandidatesReject([FromBody] SyncCandidateIdsRequest req)
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+            var rows = await movieDb.SyncCandidates
+                .Where(c => req.Ids.Contains(c.Id) && c.Status == SyncCandidateStatus.Pending)
+                .ToListAsync();
+            var now = DateTime.UtcNow;
+            foreach (var c in rows)
+            {
+                c.Status = SyncCandidateStatus.Rejected;
+                c.ResolvedUtc = now;
+                c.ResolvedBy = TruncCol(User.Identity?.Name, 64);
+            }
+            await movieDb.SaveChangesAsync();
+            return Ok(new { rejected = rows.Count });
+        }
+
+        public class SyncCandidateUpdateRequest
+        {
+            public int Id { get; set; }
+            /// <summary>"upgrade" | "new" | "unclassified" — omit to keep the current kind.</summary>
+            public string? Kind { get; set; }
+            public string? Title { get; set; }
+            public int? Year { get; set; }
+            /// <summary>Hand-picked IMDb id; short-circuits name resolution for this candidate.</summary>
+            public string? ImdbId { get; set; }
+            /// <summary>Upgrade target when reclassifying to "upgrade" by hand.</summary>
+            public int? TargetMovieId { get; set; }
+        }
+
+        // Correct a wrong classification or parse on a still-pending candidate: retitle a NewTitle,
+        // pin its IMDb id, or re-point an upgrade at the right movie. The row stays Pending — this
+        // only changes what Approve/Resolve will do with it.
+        [HttpPost("/API/Admin/IngestReview/SyncCandidates/Update")]
+        public async Task<IActionResult> SyncCandidateUpdate([FromBody] SyncCandidateUpdateRequest req)
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+            var c = await movieDb.SyncCandidates.FirstOrDefaultAsync(x => x.Id == req.Id);
+            if (c == null) return NotFound(new { success = false, message = "Candidate not found." });
+            if (c.Status != SyncCandidateStatus.Pending)
+                return BadRequest(new { success = false, message = $"Candidate is {c.Status}, not Pending." });
+
+            // ImdbId: null = leave alone, "" = clear a pin (a rejected resolution must be un-pinnable
+            // or re-resolving recreates the same wrong movie), non-empty = validate + pin.
+            if (req.ImdbId != null)
+            {
+                if (req.ImdbId.Length == 0) c.ResolvedImdbId = null;
+                else if (!IsValidImdbId(req.ImdbId)) return BadRequest(new { success = false, message = $"'{req.ImdbId}' is not a valid IMDb id." });
+                else c.ResolvedImdbId = req.ImdbId;
+            }
+            if (req.Title != null) c.ParsedTitle = TruncCol(req.Title.Trim(), 512);
+            if (req.Year != null) c.ParsedYear = req.Year;
+
+            if (!string.IsNullOrEmpty(req.Kind))
+            {
+                switch (req.Kind.ToLowerInvariant())
+                {
+                    case "new":
+                        if (string.IsNullOrWhiteSpace(c.ParsedTitle) && string.IsNullOrEmpty(c.ResolvedImdbId))
+                            return BadRequest(new { success = false, message = "A new-title candidate needs a title or an IMDb id." });
+                        c.Kind = SyncCandidateKind.NewTitle;
+                        c.TargetMovieId = null; c.Signal = null; c.OldPath = null;
+                        break;
+                    case "upgrade":
+                        var target = req.TargetMovieId != null
+                            ? await movieDb.Movies.FirstOrDefaultAsync(m => m.id == req.TargetMovieId)
+                            : null;
+                        if (target == null) return BadRequest(new { success = false, message = "An upgrade candidate needs a valid TargetMovieId." });
+                        c.Kind = SyncCandidateKind.Upgrade;
+                        c.TargetMovieId = target.id; c.Signal = "manual"; c.OldPath = target.FilePath;
+                        break;
+                    case "unclassified":
+                        c.Kind = SyncCandidateKind.Unclassified;
+                        c.TargetMovieId = null; c.Signal = null; c.OldPath = null;
+                        break;
+                    default:
+                        return BadRequest(new { success = false, message = $"Unknown kind '{req.Kind}'." });
+                }
+            }
+            c.ResolutionError = null;
+            // Any hand edit pins the row: the next sync's refresh must not clobber a reviewer's
+            // correction with the same machine classification that was wrong the first time.
+            c.PinnedByReviewer = true;
+            await movieDb.SaveChangesAsync();
+            return Ok(new { success = true });
+        }
+
+        // Resolve a few folders' worth of pending NewTitle candidates into quarantined ReviewBatch
+        // Movie rows (with their files attached), exactly like the old batch-insert page did for a
+        // pasted list — the caller loops until done=true. Per folder: resolve details through the
+        // OMDB → IMDb-API → Google cascade (or a pinned IMDb id), refuse duplicates by tt against
+        // Movie/Series/MiscVideo (a tt owned by a dead-file movie converts the candidate to an
+        // Upgrade instead), then create the Movie + Playable + Primary MediaFile, attach cdN/partN
+        // siblings as Parts, and leave anything ambiguous Pending with a visible reason.
+        [HttpPost("/API/Admin/IngestReview/SyncCandidates/Resolve")]
+        public async Task<IActionResult> SyncCandidatesResolve([FromQuery] int limit = 3)
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+            limit = Math.Clamp(limit, 1, 10);
+
+            static string? ParentDirOf(string? p)
+            {
+                if (string.IsNullOrEmpty(p)) return null;
+                var s = p.Replace('/', '\\').TrimEnd('\\');
+                var i = s.LastIndexOf('\\');
+                return i <= 0 ? null : s.Substring(0, i);
+            }
+
+            var pendingNew = await movieDb.SyncCandidates
+                .Where(c => c.Status == SyncCandidateStatus.Pending && c.Kind == SyncCandidateKind.NewTitle)
+                .OrderBy(c => c.Path)
+                .ToListAsync();
+            var folders = pendingNew
+                .Where(c => c.ResolutionError == null)   // errored folders wait for a hand fix (Update) before retrying
+                .GroupBy(c => (ParentDirOf(c.Path) ?? c.Path).ToLowerInvariant())
+                .ToList();
+            var work = folders.Take(limit).ToList();
+
+            int created = 0, converted = 0, failed = 0;
+            var now = DateTime.UtcNow;
+            var user = TruncCol(User.Identity?.Name, 64);
+            var partRx = new System.Text.RegularExpressions.Regex(@"(?i)\b(?:cd|disc|disk|part|pt)\s*0*(\d{1,2})\b");
+
+            foreach (var group in work)
+            {
+                var members = group.OrderByDescending(c => c.SizeBytes ?? 0).ToList();
+                var primaryCand = members[0];
+                try
+                {
+                    // 1. Resolve: pinned tt wins; otherwise the same cascade the batch-insert page used.
+                    var lookup = !string.IsNullOrEmpty(primaryCand.ResolvedImdbId)
+                        ? primaryCand.ResolvedImdbId!
+                        : $"{primaryCand.ParsedTitle} ({primaryCand.ParsedYear})";
+                    Movie? resolved = null;
+                    try { resolved = (await GetMoviesFromNames(new[] { lookup })).FirstOrDefault(); }
+                    catch { /* a fully-failed lookup can throw inside the cascade — same outcome as no match */ }
+                    if (resolved == null || string.IsNullOrEmpty(resolved.imdbID) || !IsValidImdbId(resolved.imdbID))
+                    {
+                        primaryCand.ResolutionError = "No confident metadata match — set the IMDb id or fix the title, then resolve again.";
+                        failed++;
+                        continue;
+                    }
+                    var tt = resolved.imdbID!;
+
+                    // 2. Dedup by tt across ALL THREE playable tables before creating anything.
+                    var ownerMovie = await movieDb.Movies.FirstOrDefaultAsync(m => m.imdbID == tt);
+                    if (ownerMovie != null)
+                    {
+                        var ownerAlive = ownerMovie.PlayableId != null && await movieDb.MediaFiles.AnyAsync(f =>
+                            f.PlayableId == ownerMovie.PlayableId && f.JellyfinItemId != null && f.MissingSinceUtc == null);
+                        if (!ownerAlive)
+                        {
+                            // The library already owns this title but its file is dead/absent —
+                            // this "new" file is really that movie's upgrade.
+                            primaryCand.Kind = SyncCandidateKind.Upgrade;
+                            primaryCand.TargetMovieId = ownerMovie.id;
+                            primaryCand.Signal = "tt-owned";
+                            primaryCand.OldPath = ownerMovie.FilePath;
+                            primaryCand.ResolvedImdbId = tt;
+                            // The folder's other files must not be re-grouped into a SECOND upgrade
+                            // of the same movie on the next chunk (approving both would ping-pong the
+                            // Primary and lose parts). Stamp them with the reason: part-patterned
+                            // siblings attach as Parts when the upgrade is APPROVED; the rest wait
+                            // for a hand decision. The error text also excludes them from grouping.
+                            foreach (var sibling in members.Skip(1))
+                                sibling.ResolutionError = TruncCol(
+                                    $"Sibling of the upgrade candidate for movie {ownerMovie.id} '{ownerMovie.Title}' — disc parts attach when that upgrade is approved.", 512);
+                            converted++;
+                        }
+                        else
+                        {
+                            primaryCand.ResolutionError = TruncCol($"{tt} is already movie {ownerMovie.id} '{ownerMovie.Title}' with a live file — likely a duplicate rip.", 512);
+                            failed++;
+                        }
+                        continue;
+                    }
+                    var ownerSeries = await movieDb.Series.FirstOrDefaultAsync(s => s.imdbID == tt);
+                    if (ownerSeries != null)
+                    {
+                        primaryCand.ResolutionError = TruncCol($"{tt} is series {ownerSeries.Id} '{ownerSeries.Title}' — an episode file, not a movie.", 512);
+                        failed++;
+                        continue;
+                    }
+                    // (MiscVideo rows carry no IMDb id of their own — nothing to collide with there.)
+
+                    // 3. Create the quarantined row + its file(s). Confidence: a year agreeing with the
+                    // folder is the strongest cheap signal this resolution grabbed the right film.
+                    var yearAgrees = primaryCand.ParsedYear != null && resolved.ReleaseDate != null
+                        && Math.Abs(resolved.ReleaseDate.Value.Year - primaryCand.ParsedYear.Value) <= 1;
+                    resolved.imdbID = tt;
+                    resolved.UploadedDate = DateTime.Now;
+                    resolved.ReviewBatch = "sync-scan";
+                    resolved.ReviewProvenance = string.IsNullOrEmpty(primaryCand.ResolvedImdbId) ? "sync-scan" : "manual";
+                    resolved.ReviewConfidence = yearAgrees ? "HIGH" : "MEDIUM";
+                    resolved.ReviewSourcePath = primaryCand.Path;
+                    resolved.FilePath = primaryCand.Path;
+                    resolved.Playable = new Playable { Kind = PlayableKind.Movie };
+                    movieDb.Movies.Add(resolved);
+                    await movieDb.SaveChangesAsync();
+
+                    try { await MovieNormalizer.ApplyAllAsync(movieDb, resolved); } catch { /* normalized parse is best-effort */ }
+
+                    // Stamp Jellyfin identity onto the files now so the title is streamable on approval
+                    // (codec detail arrives with the next sync).
+                    var itemIds = members.Where(m => !string.IsNullOrEmpty(m.JellyfinItemId)).Select(m => m.JellyfinItemId!).ToList();
+                    var details = itemIds.Count > 0
+                        ? (await jellyfinApi.GetItemsByIdsAsync(itemIds)).ToDictionary(i => i.Id, StringComparer.OrdinalIgnoreCase)
+                        : new Dictionary<string, MovieTheater.Services.Jellyfin.JellyfinItem>(StringComparer.OrdinalIgnoreCase);
+
+                    MediaFile NewRow(SyncCandidate cand, MovieFileRole role, int? partNo) =>
+                        new()
+                        {
+                            Playable = resolved.Playable,
+                            Path = cand.Path,
+                            Role = role,
+                            PartNumber = partNo,
+                            Label = "match:sync-scan",
+                            JellyfinItemId = cand.JellyfinItemId,
+                            SizeBytes = cand.SizeBytes,
+                            DurationTicks = cand.JellyfinItemId != null && details.TryGetValue(cand.JellyfinItemId, out var d) ? d.RunTimeTicks : null,
+                            LastSyncedUtc = now,
+                        };
+
+                    movieDb.MediaFiles.Add(NewRow(primaryCand, MovieFileRole.Primary, null));
+                    primaryCand.Status = SyncCandidateStatus.Ingested;
+                    primaryCand.CreatedMovieId = resolved.id;
+                    primaryCand.ResolvedImdbId = tt;
+                    primaryCand.ResolvedUtc = now;
+                    primaryCand.ResolvedBy = user;
+
+                    foreach (var sibling in members.Skip(1))
+                    {
+                        var fileName = sibling.Path.Replace('/', '\\');
+                        fileName = fileName.Substring(fileName.LastIndexOf('\\') + 1);
+                        var pm = partRx.Match(fileName);
+                        if (pm.Success)
+                        {
+                            movieDb.MediaFiles.Add(NewRow(sibling, MovieFileRole.Part, int.Parse(pm.Groups[1].Value)));
+                            sibling.Status = SyncCandidateStatus.Ingested;
+                            sibling.CreatedMovieId = resolved.id;
+                            sibling.ResolvedUtc = now;
+                            sibling.ResolvedBy = user;
+                        }
+                        else
+                        {
+                            // Not confidently a disc part (could be a sample, an alt cut, an extra) —
+                            // never guess on an attach; leave it visible with the reason.
+                            sibling.ResolutionError = TruncCol($"Sibling of '{resolved.Title}' (movie {resolved.id}) — attach by hand from its review card if it belongs.", 512);
+                        }
+                    }
+                    await movieDb.SaveChangesAsync();
+                    created++;
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Sync-candidate resolution failed for folder of {Path}", primaryCand.Path);
+                    // Detach whatever this folder Added (Movie/Playable/MediaFiles/normalizer graph) —
+                    // a failed entity left in the tracker would make EVERY later SaveChanges in this
+                    // request rethrow the same error and no candidate updates would persist.
+                    foreach (var entry in movieDb.ChangeTracker.Entries().Where(e => e.State == EntityState.Added).ToList())
+                        entry.State = EntityState.Detached;
+                    primaryCand.ResolutionError = TruncCol("Resolution error: " + ex.Message, 512);
+                    failed++;
+                }
+            }
+            await movieDb.SaveChangesAsync();
+
+            var remaining = folders.Count - work.Count;
+            return Ok(new
+            {
+                processed = work.Count,
+                created,
+                converted,
+                failed,
+                remaining,
+                done = remaining == 0,
+            });
         }
 
         // ── Per-movie "Re-link files from disk" (movie edit page) ─────────────────────────────────────
@@ -5304,6 +5663,7 @@ namespace MovieTheater.Controllers
                 movieDb.MovieGenres.RemoveRange(await movieDb.MovieGenres.Where(g => g.MovieID == m.id).ToListAsync());
                 movieDb.MoviePlotSummaries.RemoveRange(await movieDb.MoviePlotSummaries.Where(s => s.MovieID == m.id).ToListAsync());
                 m.PlayableId = null;
+                await ClearSyncCandidateRefsAsync(m);   // NO ACTION FKs — see the helper
                 movieDb.Movies.Remove(m);
                 await movieDb.SaveChangesAsync();
                 return Ok(new { Success = true, kind = "misc" });
@@ -5392,8 +5752,43 @@ namespace MovieTheater.Controllers
             movieDb.MoviePlotSummaries.RemoveRange(await movieDb.MoviePlotSummaries.Where(s => s.MovieID == m.id).ToListAsync());
             var pd = await movieDb.MoviePosterDetails.FirstOrDefaultAsync(x => x.MovieId == m.id);
             if (pd != null) movieDb.MoviePosterDetails.Remove(pd);
+            await ClearSyncCandidateRefsAsync(m);
             movieDb.Movies.Remove(m);
         }
+
+        /// <summary>
+        /// Clears <see cref="SyncCandidate"/> references before a Movie row is removed — the FKs are
+        /// NO ACTION in the DB (SQL Server refuses two SET NULL paths into Movie from one table), so
+        /// EVERY path that deletes a movie must call this or the delete throws. A candidate whose
+        /// CREATED movie is going away reverts to Pending with the reason visible AND its pinned tt
+        /// cleared — the pin produced a movie the reviewer just rejected, and keeping it would make a
+        /// re-resolve deterministically recreate the same wrong row. A candidate that merely TARGETED
+        /// the movie loses its pairing and drops to Unclassified.
+        /// </summary>
+        private async Task ClearSyncCandidateRefsAsync(Movie m)
+        {
+            foreach (var c in await movieDb.SyncCandidates
+                .Where(c => c.TargetMovieId == m.id || c.CreatedMovieId == m.id).ToListAsync())
+            {
+                if (c.CreatedMovieId == m.id && c.Status == SyncCandidateStatus.Ingested)
+                {
+                    c.Status = SyncCandidateStatus.Pending;
+                    c.ResolvedImdbId = null;
+                    c.ResolutionError = TruncCol($"The resolved movie '{m.Title}' was rejected/deleted — re-resolve or dismiss.", 512);
+                    c.ResolvedUtc = null;
+                }
+                if (c.TargetMovieId == m.id)
+                {
+                    c.TargetMovieId = null; c.Signal = null; c.OldPath = null;
+                    if (c.Status == SyncCandidateStatus.Pending) c.Kind = SyncCandidateKind.Unclassified;
+                }
+                if (c.CreatedMovieId == m.id) c.CreatedMovieId = null;
+            }
+        }
+
+        /// <summary>Bound a string to a column's MaxLength — the write that records a failure must
+        /// never itself fail on 'string or binary data would be truncated'.</summary>
+        private static string? TruncCol(string? s, int max) => s != null && s.Length > max ? s.Substring(0, max) : s;
 
         // Delete a series subtree: episodes + their Playables/files, then the Series row (which cascades
         // its genre/credit/plot/poster). Mirrors the Reject path. Used when the title moves to movie/misc.

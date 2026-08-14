@@ -1498,6 +1498,47 @@ function ingestReviewBackfillThumbnails(afterId = 0, limit = 200) {
   return fetch(`/API/Admin/IngestReview/BackfillThumbnails?afterId=${afterId}&limit=${limit}`, { method: "post" });
 }
 
+// ── Sync-scan candidates (untracked files a sync classified: upgrades / new titles) ──
+function syncCandidatesList() {
+  return fetch("/API/Admin/IngestReview/SyncCandidates");
+}
+// Approve one upgrade: re-points the target movie's file in place (nothing deleted).
+function syncCandidateApplyUpgrade(id) {
+  return fetch("/API/Admin/IngestReview/SyncCandidates/ApplyUpgrade", {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ Id: id }),
+  });
+}
+function syncCandidatesReject(ids) {
+  return fetch("/API/Admin/IngestReview/SyncCandidates/Reject", {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ Ids: ids || [] }),
+  });
+}
+// Correct a pending candidate: retitle, pin an IMDb id, or reclassify (kind: "new" | "upgrade" | "unclassified").
+function syncCandidateUpdate({ id, kind, title, year, imdbId, targetMovieId }) {
+  return fetch("/API/Admin/IngestReview/SyncCandidates/Update", {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      Id: id,
+      Kind: kind ?? null,
+      Title: title ?? null,
+      Year: year ?? null,
+      ImdbId: imdbId ?? null,
+      TargetMovieId: targetMovieId ?? null,
+    }),
+  });
+}
+// One chunk of new-title resolution (a few folders per call — the caller loops on { done, remaining }).
+// Each resolved folder becomes a quarantined ReviewBatch movie with its file attached, shown in the
+// normal open-batch review flow.
+function syncCandidatesResolve(limit = 3) {
+  return fetch(`/API/Admin/IngestReview/SyncCandidates/Resolve?limit=${limit}`, { method: "post" });
+}
+
 // ── "Sync from Jellyfin" (3 phases the IngestReview button chains) ──
 // 1) tell Jellyfin to scan the disk (the periodic scan is disabled for NAS health).
 function jellyfinTriggerScan() {
@@ -1774,6 +1815,11 @@ const MovieAPI = {
   ingestReviewBackfillPosters,
   ingestReviewMigrateSeriesPosters,
   ingestReviewBackfillThumbnails,
+  syncCandidatesList,
+  syncCandidateApplyUpgrade,
+  syncCandidatesReject,
+  syncCandidateUpdate,
+  syncCandidatesResolve,
   jellyfinTriggerScan,
   jellyfinScanStatus,
   jellyfinRunSync,

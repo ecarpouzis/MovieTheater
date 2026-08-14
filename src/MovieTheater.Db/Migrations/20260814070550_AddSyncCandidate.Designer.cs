@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MovieTheater.Db;
 
@@ -11,9 +12,11 @@ using MovieTheater.Db;
 namespace MovieTheater.Db.Migrations
 {
     [DbContext(typeof(MovieDb))]
-    partial class MovieDbModelSnapshot : ModelSnapshot
+    [Migration("20260814070550_AddSyncCandidate")]
+    partial class AddSyncCandidate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2985,9 +2988,6 @@ namespace MovieTheater.Db.Migrations
                         .IsRequired()
                         .HasMaxLength(1024)
                         .HasColumnType("nvarchar(1024)");
-
-                    b.Property<bool>("PinnedByReviewer")
-                        .HasColumnType("bit");
 
                     b.Property<string>("ResolutionError")
                         .HasMaxLength(512)

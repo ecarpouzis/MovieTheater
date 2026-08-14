@@ -113,6 +113,26 @@ namespace MovieTheater.Db
                 .HasForeignKey(f => f.PlayableId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // The review queue reads Pending/Ingested rows; the sync's upsert pass reads everything
+            // non-superseded. Status leads so both stay index-served as the table accretes history.
+            modelBuilder.Entity<SyncCandidate>()
+                .HasIndex(c => new { c.Status, c.Kind });
+
+            // ClientSetNull, not SetNull: SQL Server refuses two SET NULL paths into Movie from one
+            // table ("may cause cycles or multiple cascade paths"). The DB gets NO ACTION and
+            // DeleteMovieSubtreeAsync clears/redirects candidate references before removing a movie.
+            modelBuilder.Entity<SyncCandidate>()
+                .HasOne(c => c.TargetMovie)
+                .WithMany()
+                .HasForeignKey(c => c.TargetMovieId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            modelBuilder.Entity<SyncCandidate>()
+                .HasOne(c => c.CreatedMovie)
+                .WithMany()
+                .HasForeignKey(c => c.CreatedMovieId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
             modelBuilder.Entity<Episode>()
                 .HasIndex(e => new { e.SeriesId, e.SeasonNumber, e.EpisodeNumber })
                 .IsUnique();
@@ -807,6 +827,7 @@ namespace MovieTheater.Db
         public DbSet<MoviePlotSummary> MoviePlotSummaries { get; set; }
         public DbSet<MediaFile> MediaFiles { get; set; }
         public DbSet<MediaKeyframes> MediaKeyframes { get; set; }
+        public DbSet<SyncCandidate> SyncCandidates { get; set; }
         public DbSet<Playable> Playables { get; set; }
         public DbSet<Episode> Episodes { get; set; }
         public DbSet<Series> Series { get; set; }

@@ -68,6 +68,11 @@ namespace MovieTheater.Jellyfin
                         (report.SupersededOrphans > 0 ? $" ({report.SupersededOrphans} rescued from renamed-folder leftovers)" : "") +
                         (DryRun ? "   (dry-run — not written)" : ""));
 
+            o.WriteLine($"Sync candidates for review: {report.CandidateUpgrades} upgrade(s), {report.CandidateNewTitles} new title(s), " +
+                        $"{report.CandidateUnclassified} unclassified; {report.CandidatesSuperseded} retired" +
+                        (DryRun ? "   (dry-run — not persisted)" : ""));
+
+            PrintSection(o, $"Sync candidates ({report.CandidateLines.Count})", report.CandidateLines);
             PrintSection(o, $"Moved files / renamed folders re-pointed ({report.Repointed.Count})", report.Repointed);
             PrintSection(o, $"Possible file renames — same size, name changed, review not applied ({report.PossibleRenames.Count})", report.PossibleRenames);
             PrintSection(o, $"DB titles with no Jellyfin item, even after move-detection ({report.MissingMovies.Count})" +
