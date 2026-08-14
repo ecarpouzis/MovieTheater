@@ -370,9 +370,14 @@ describe("the MSE engine inside the player", () => {
       // Audio moved to the OTHER deck, which was already holding the bytes…
       expect(player.audioRef.current.dataset.deck).not.toBe("mse");
       expect(player.index).toBe(1);
-      // …with no new MediaSource and no fresh mint at the boundary itself.
+      // …with no new MediaSource, and the boundary ITSELF depended on no mint. The one call that
+      // does go out is the flip preparing the boundary AFTER this one, immediately: a hidden page
+      // cannot be trusted to deliver the timeupdate that normally drives the prefetch, and the
+      // licence to fetch is provably alive at this instant (2026-08-13 — every second-and-later
+      // hidden boundary arrived bare because nothing prefetched between flips).
       expect(sourceBuffers.length).toBe(buffersBefore);
-      expect(api.startMusicTrack.mock.calls.length).toBe(mintsBefore);
+      const mintCalls = api.startMusicTrack.mock.calls.slice(mintsBefore);
+      expect(mintCalls.map((c) => c[0])).toEqual([3]);
     } finally {
       Object.defineProperty(document, "hidden", { value: false, configurable: true });
     }
@@ -491,6 +496,16 @@ describe("the MSE engine inside the player", () => {
   it("survives two rapid picks: the superseded start neither falls back nor kills the winner", async () => {
     const { el } = await mountPlaying();
 
+    // Fresh track ids, deliberately: a restarted engine now INHERITS its predecessor's mint window
+    // (the 2026-08-13 fix), so a pick within the already-minted queue makes no mint round trip at
+    // all — there would be nothing to hold open. Tracks the window has never seen force the fetch
+    // this race is choreographed around.
+    const MORE = [
+      { id: 4, title: "Four", artist: "B", durationSec: 100 },
+      { id: 5, title: "Five", artist: "B", durationSec: 100 },
+      { id: 6, title: "Six", artist: "B", durationSec: 100 },
+    ];
+
     // Pick #1, with its mint held open so the start is parked BETWEEN sourceopen and
     // addSourceBuffer — the exact window the field race hit.
     let releaseMint;
@@ -508,7 +523,7 @@ describe("the MSE engine inside the player", () => {
     // Two acts, deliberately: the effect that starts engine #1 runs as act exits, so its sourceopen
     // timer needs a tick of its OWN before the second pick — otherwise the held mint lands on the
     // wrong engine and there is no race to survive.
-    await act(async () => { player.playAt(1); });
+    await act(async () => { player.playTracks(MORE, 0); });
     await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
     expect(typeof releaseMint).toBe("function");    // engine #1 is parked mid-start, mint in flight
 
@@ -517,7 +532,7 @@ describe("the MSE engine inside the player", () => {
     await act(async () => { player.playAt(2); });
     await flush();
     expect(player.audioRef.current).toBe(el("mse"));
-    expect(player.current.id).toBe(3);
+    expect(player.current.id).toBe(6);
 
     // The corpse's mint finally lands. Before the fix this ran addSourceBuffer on the closed
     // MediaSource, and the throw was treated as MSE failing: fallBackToDecks latched the session
@@ -526,7 +541,7 @@ describe("the MSE engine inside the player", () => {
     await flush();
 
     expect(player.audioRef.current).toBe(el("mse"));
-    expect(player.current.id).toBe(3);
+    expect(player.current.id).toBe(6);
     expect(api.startMusicTrack).not.toHaveBeenCalled();   // no deck load ever happened
   });
   // ── Wake → scrub → pause: the second live source (reported 2026-08-13) ─────────────────────────

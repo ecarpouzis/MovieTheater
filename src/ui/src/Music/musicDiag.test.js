@@ -144,6 +144,23 @@ describe("musicDiag self-reporting", () => {
     expect(sent).toHaveLength(1);
   });
 
+  it("refunds a report the browser refused to queue — a lost beacon must not silence the next one", async () => {
+    // 2026-08-13: the budget was spent and the 60 s gap armed BEFORE anyone knew whether the
+    // beacon was accepted, so on the sleeping phone the reports that failed were the ones that
+    // silenced everything after them. A refused hand-off now costs nothing.
+    let accept = false;
+    const sent = [];
+    navigator.sendBeacon = () => { if (accept) { sent.push(1); return true; } return false; };
+    const { reportIncident } = await import("./musicDiag");
+
+    expect(reportIncident("park", { force: true })).toBe(false);
+    expect(reportIncident("park", { force: true })).toBe(false);
+    accept = true;
+    // No gap was armed and no budget was spent by the refusals: this lands immediately, unforced.
+    expect(reportIncident("park", {})).toBe(true);
+    expect(sent).toHaveLength(1);
+  });
+
   it("caps the whole session, which is the limit `force: true` used to walk straight past", async () => {
     // The gap limit alone was never enough: the MSE paths passed force to jump it, so a browser
     // stuck in a fallback loop could write rows faster than one a minute — the exact flood the

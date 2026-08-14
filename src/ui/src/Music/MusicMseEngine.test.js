@@ -209,13 +209,53 @@ describe("the engine", () => {
   });
 
   // THE rule: a mint is a JS fetch, the first thing a backgrounded page stops being allowed to run.
-  // No route may NEED one while asleep, so the engine must not even try.
-  it("NEVER mints while hidden", async () => {
+  // No route may NEED one while asleep, so the pump must not even try. start() is the ONE
+  // exception (tested below): a hidden restart with no mint in hand is dead without the fetch, so
+  // a fetch that merely might fail beats the guaranteed throw that killed 2026-08-13's night.
+  it("never mints from the pump while hidden", async () => {
+    const api = makeApi({});
+    installFetch([]);
+    let hidden = false;
+    const engine = createMseEngine({
+      audio: fakeAudio(), api, mediaSourceCtor: FakeMediaSource, isTypeSupported: () => true,
+      isHidden: () => hidden,
+    });
+    await engine.start({ queue, index: 0 });
+    const mintsBefore = api.startMusicTracks.mock.calls.length;
+    hidden = true;
+    engine.setQueue([...queue, { id: 99, durationSec: 240 }]);
+    await engine.pump();
+    expect(api.startMusicTracks.mock.calls.length).toBe(mintsBefore);
+  });
+
+  it("start() DOES mint while hidden — a restart with no mint is dead without the fetch", async () => {
     const api = makeApi({});
     installFetch([]);
     const engine = engineWith({ api, hidden: true });
-    await engine.start({ queue, index: 0 }).catch(() => {});
-    expect(api.startMusicTracks).not.toHaveBeenCalled();
+    await engine.start({ queue, index: 0 });
+    expect(api.startMusicTracks).toHaveBeenCalled();
+    expect(engine.inspect().appended.length).toBeGreaterThan(0);
+  });
+
+  // The restart hand-me-down: a successor engine created at a hidden boundary inherits the mint
+  // window its predecessor was holding, so it does not even need the forced fetch above.
+  it("carries exported mints into a successor and starts hidden on them alone", async () => {
+    const api = makeApi({});
+    installFetch([]);
+    const first = engineWith({ api });
+    await first.start({ queue, index: 0 });
+    const carried = first.exportMints();
+    expect(carried.length).toBeGreaterThan(0);
+    first.destroy();
+
+    const successorApi = makeApi({});
+    successorApi.startMusicTracks = vi.fn(() => Promise.reject(new Error("network is gone")));
+    const successor = createMseEngine({
+      audio: fakeAudio(), api: successorApi, mediaSourceCtor: FakeMediaSource,
+      isTypeSupported: () => true, isHidden: () => true, initialMints: carried,
+    });
+    await successor.start({ queue, index: 1 });
+    expect(successor.inspect().appended.length).toBeGreaterThan(0);
   });
 
   it("plays on from the window while hidden, without asking for anything new", async () => {

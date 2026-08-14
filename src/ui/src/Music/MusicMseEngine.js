@@ -104,6 +104,12 @@ export function createMseEngine({
   mediaSourceCtor,
   isTypeSupported,
   quotaBytes = ASSUMED_QUOTA_BYTES,
+  // Mints inherited from a predecessor engine (see exportMints). A restart is the one moment an
+  // engine may be created on a HIDDEN page — a boundary the old engine could not carry — and a
+  // fresh engine with an empty mint map on a hidden page could not mint and therefore could not
+  // start (2026-08-13: "no treatment for the first track", and the whole night fell to the decks).
+  // The predecessor was holding hours of perfectly fresh tokens; take them.
+  initialMints = null,
   onAdvance = () => {},
   onRung = () => {},
   onDeckNeeded = () => {},
@@ -129,7 +135,7 @@ export function createMseEngine({
     // is what the buffer and the playhead say between them.
     appendCursor: 0,
     appended: [],          // [{ trackId, startSec, treatment, bytesAppended, complete }]
-    mints: new Map(),      // trackId -> { payload, mintedAt }
+    mints: new Map(initialMints || undefined),  // trackId -> { payload, mintedAt }
     minting: new Set(),
     busy: false,
     destroyed: false,
@@ -246,8 +252,12 @@ export function createMseEngine({
   // Topped up only while VISIBLE. Minting is a JS fetch, which is the first thing a backgrounded
   // page stops being allowed to run — so no route may be allowed to NEED one while asleep. Tokens
   // are stateless and free to sign, which is what makes holding two hours of them reasonable.
-  const topUpMints = async () => {
-    if (state.destroyed || isHidden()) return;
+  //
+  // `force` is start()'s exception, and only start()'s: a restart at a hidden boundary that has no
+  // usable mint is dead WITHOUT the fetch, so a fetch that merely MIGHT fail is strictly better
+  // than the guaranteed throw. The rule above still governs every pump-driven top-up.
+  const topUpMints = async (force = false) => {
+    if (state.destroyed || (isHidden() && !force)) return;
     const wanted = mintWindowIds(state.queue, state.appendCursor);
     const missing = wanted.filter((id) => !state.minting.has(id) && !mintIsFresh(state.mints.get(id), now()));
     if (missing.length === 0) return;
@@ -619,7 +629,9 @@ export function createMseEngine({
     });
     if (state.destroyed) return null;
 
-    await topUpMints();
+    // Forced: this is the one call allowed to mint while hidden (see topUpMints). Inherited mints
+    // (initialMints) usually make it a no-op — the window is already in hand.
+    await topUpMints(true);
     // Re-check after EVERY await, not just sourceopen: a newer start() destroys this engine and
     // assigns its own src, which detaches this MediaSource — addSourceBuffer on it would throw and
     // read as an engine failure when it is only supersession (incident 5, 2026-08-12).
@@ -630,8 +642,14 @@ export function createMseEngine({
       ? appendTreatmentFor({ payload, isTypeSupported: supports, hidden: isHidden(), quotaBytes })
       : { treatment: null };
     if (!decision.treatment) {
-      rung(7, { why: "no treatment for the first track" });
-      throw new Error("no treatment for the first track");
+      // Say WHICH failure. "no treatment for the first track" covered two different worlds — the
+      // format matrix rejecting the track, and the mint simply being absent — and telling them
+      // apart from the ring cost the first investigation an hour (2026-08-13).
+      const why = payload
+        ? "matrix rejected the first track"
+        : `no mint for the first track (${isHidden() ? "hidden" : "visible"}, mint fetch failed or refused)`;
+      rung(7, { why, track: first?.id ?? null });
+      throw new Error(why);
     }
     const sb = ms.addSourceBuffer(decision.treatment.mime);
     // "sequence" so appended tracks land back-to-back without computing timestamps — the mechanism
@@ -696,6 +714,10 @@ export function createMseEngine({
     evictBehind,
     timeline,
     element: audio,
+    /** The mint window, for a successor engine (initialMints). Only entries still fresh are worth
+     *  carrying; the successor re-checks freshness on use anyway (mintIsFresh), this just keeps the
+     *  hand-me-down bounded. Valid after destroy() — a restart exports from the engine it replaces. */
+    exportMints: () => Array.from(state.mints.entries()).filter(([, entry]) => mintIsFresh(entry, now())),
     /** Diagnostics + tests. Never used to drive playback — the engine reads its own refs. */
     inspect: () => ({
       appendCursor: state.appendCursor,

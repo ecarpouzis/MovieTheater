@@ -208,8 +208,6 @@ export function reportIncident(kind, { summary = "", trackId = null, force = fal
   const now = Date.now();
   if (reportsSent >= REPORT_MAX_PER_SESSION) return false;
   if (!force && now - lastReportAt < REPORT_MIN_GAP_MS) return false;
-  lastReportAt = now;
-  reportsSent += 1;
   const body = JSON.stringify({
     kind,
     summary: String(summary).slice(0, 400),
@@ -218,18 +216,31 @@ export function reportIncident(kind, { summary = "", trackId = null, force = fal
     // Only the tail matters: the run-up to the failure, not the whole listening session.
     events: entries.slice(-120),
   });
+  // The budget is spent AFTER the hand-off, not before. Spending it first meant a beacon the
+  // browser refused outright still cost one of the five reports AND armed the 60 s gap — so on
+  // the sleeping phone this table exists to observe, the reports that failed were the ones that
+  // silenced everything after them (2026-08-13: two parks in the ring, zero rows). sendBeacon
+  // returning true is only "queued", not "delivered" — a queued-then-dropped beacon is still
+  // invisible here, which is what the wake-after-park recap exists to catch.
+  let queued = false;
   try {
     if (typeof navigator !== "undefined" && navigator.sendBeacon) {
       // Type text/plain keeps it a CORS-simple request, so a freezing page never has to wait for
       // a preflight it will not survive.
-      return navigator.sendBeacon(REPORT_URL, new Blob([body], { type: "text/plain" }));
+      queued = navigator.sendBeacon(REPORT_URL, new Blob([body], { type: "text/plain" }));
+    } else {
+      fetch(REPORT_URL, { method: "POST", body, headers: { "Content-Type": "text/plain" }, keepalive: true })
+        .catch(() => { /* a failed report must never surface to the listener */ });
+      queued = true;
     }
-    fetch(REPORT_URL, { method: "POST", body, headers: { "Content-Type": "text/plain" }, keepalive: true })
-      .catch(() => { /* a failed report must never surface to the listener */ });
-    return true;
   } catch {
-    return false;
+    queued = false;
   }
+  if (queued) {
+    lastReportAt = now;
+    reportsSent += 1;
+  }
+  return queued;
 }
 
 export function subscribeDiag(fn) {

@@ -295,6 +295,11 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   // play() was refused on a hidden page during recovery. The listener is still there — retry the
   // play the moment the page is visible, instead of leaving a silently paused bar behind.
   const resumeOnWakeRef = useRef(false);
+  // Has this park episode's wake recap been filed yet? A park's own report goes out on a page
+  // whose network just demonstrably failed — a beacon into the void. The recap goes out at WAKE,
+  // when the network works by definition, so a parked night is guaranteed to leave a row. One per
+  // episode: cleared when a park episode starts, set when the recap is queued.
+  const parkRecapSentRef = useRef(true);
   // Has the stored queue been read back yet? Until it has, an empty `queue` means "not loaded",
   // not "cleared" — see the persist effect.
   const hydratedRef = useRef(false);
@@ -399,6 +404,11 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   // { trackId, url, channels } — the next track's signed URL, minted early. `url` is null while the
   // mint is in flight, which also marks the slot as claimed so the poll doesn't re-request it.
   const prefetchRef = useRef(null);
+  // Mirror for prefetchNext, so loadTrack (defined before it) can drive a prefetch on a HIDDEN
+  // load. The timeupdate driver below is the normal path, but timeupdate is exactly the event a
+  // hidden page cannot be trusted to deliver — and a deck session that begins while hidden (the
+  // engine fell back at a sleeping boundary, 2026-08-13) otherwise reaches every boundary bare.
+  const prefetchNextRef = useRef(() => {});
   // The track whose source `ended` already installed. The track-change effect consumes this and
   // skips its own load, rather than tearing a playing stream off the element to re-fetch its URL.
   const handedOffRef = useRef(null);
@@ -573,6 +583,13 @@ export function MusicPlayerProvider({ children, enabled = true }) {
         if (seq !== loadSeqRef.current) return; // superseded by a newer pick
         diagLog("load:minted", { track: track.id, url: (data.url || "").slice(-28), size: data.sizeBytes });
         setError(null);
+        // Nobody is looking: prepare the NEXT boundary now, not at a timeupdate threshold —
+        // timeupdate is exactly the event a hidden page cannot be trusted to deliver, and the
+        // network is demonstrably up at this instant (the mint that produced `data` just landed).
+        // The 2026-08-13 night: the fallback load at 22:08 succeeded, nothing prefetched, and the
+        // 22:11 boundary then needed a fetch the phone had stopped allowing. Visible pages keep
+        // the existing timeupdate-driven timing.
+        if (document.hidden) prefetchNextRef.current();
         // Too big to stream safely? Fetch the whole thing first. This costs a wait on the FIRST
         // track of a session — every later one was already downloaded during the track before it —
         // and it is the only way a file over the buffer cap survives the screen going off.
@@ -777,8 +794,13 @@ export function MusicPlayerProvider({ children, enabled = true }) {
         // there is nothing left to fetch at the moment it has the least licence to fetch anything.
         installOnIdleDeck(track, data.url, Number(data.sizeBytes) || 0);
       })
-      .catch(() => {
+      .catch((e) => {
         if (prefetchRef.current?.trackId === track.id) prefetchRef.current = null;
+        // A failed prefetch mint means the NEXT boundary arrives bare — on a hidden page that is
+        // the exact run-up to the sleep stall, and this catch used to say nothing at all. The
+        // 2026-08-13 forensics could not tell "prefetch never ran" from "prefetch ran and failed";
+        // this line is the difference. `preload:failed` so it rides the existing tripwire set.
+        diagLog("preload:failed", { track: track.id, why: `mint: ${String(e?.message ?? e).slice(0, 60)}` });
       });
   }, [installOnIdleDeck]);
 
@@ -993,10 +1015,16 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   const startEngine = useCallback((track, autoplay) => {
     const el = audioMseRef.current;
     if (!el) return false;
+    // Inherit the outgoing engine's mint window BEFORE destroying it. A restart can happen at a
+    // HIDDEN boundary (the old engine ended its stream mid-queue), and the new engine cannot
+    // reliably mint there — but the old one was holding hours of still-fresh tokens. Without this,
+    // the 2026-08-13 night died on a restart whose only real defect was an empty mint map.
+    const carriedMints = engineRef.current?.exportMints() ?? null;
     destroyEngine();
     const engine = createMseEngine({
       audio: el,
       quotaBytes: undefined,
+      initialMints: carriedMints,
       onAdvance: (trackId) => {
         // The boundary as bookkeeping: audio is already playing the new track from the same buffer,
         // and React is being told about it afterwards. handedOffRef is the existing signal that says
@@ -1115,6 +1143,12 @@ export function MusicPlayerProvider({ children, enabled = true }) {
     // back — so this effect only does the bookkeeping above and lets the audio run.
     if (handedOffRef.current === current.id) {
       handedOffRef.current = null;
+      // A hidden boundary just flipped cleanly; the NEXT one must be prepared while this instant's
+      // licence lasts (audio is playing again, the network provably worked seconds ago). Waiting
+      // for a timeupdate threshold is what left every second-and-later hidden boundary bare on
+      // 2026-08-13. Engine advances land here too — with the engine live the queue is already in
+      // its buffer, so deck preparation would only double-fetch (see the timeupdate driver).
+      if (document.hidden && !mseActive()) prefetchNext();
       return;
     }
     handedOffRef.current = null; // a pick that jumped elsewhere: the stale claim can't outlive it
@@ -1362,10 +1396,15 @@ export function MusicPlayerProvider({ children, enabled = true }) {
       // two-minute Wi-Fi doze into a hundred rows saying the same thing.
       if (state.parkBeats === 1) {
         diagLog("park", { track: track.id, sec: Math.round(progressRef.current.sec), networkLevel });
+        // force: a park IS the headline failure this table exists for, it fires once per episode
+        // (the beats guard above), and on 2026-08-13 the 60 s gap — armed by a boundary report that
+        // never landed — was one of the two reasons the night left no rows.
         reportIncident("park", {
           summary: `parked: ${message}`.slice(0, 400),
           trackId: track.id,
+          force: true,
         });
+        parkRecapSentRef.current = false; // a new episode earns a new wake recap
       }
       schedulePendingRecovery(track.id, state.parkBeats <= PARKED_MAX_BEATS ? PARKED_RETRY_MS : null);
       return;
@@ -1418,6 +1457,7 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   // Kept in a ref so loadTrack — defined earlier, and deliberately dependency-free — can reach it.
   useEffect(() => { failTrackRef.current = failTrack; }, [failTrack]);
   useEffect(() => { loadTrackRef.current = loadTrack; }, [loadTrack]);
+  useEffect(() => { prefetchNextRef.current = prefetchNext; }, [prefetchNext]);
 
   // The two moments the world changes back: the page becomes visible (the listener picked the phone
   // up) and the browser regains a network. Both fire whatever recovery was parked, so the session
@@ -1427,6 +1467,18 @@ export function MusicPlayerProvider({ children, enabled = true }) {
     const onWake = () => {
       if (document.hidden) return;
       diagLog("wake", { armed: resumeOnWakeRef.current, loaded: loadedTrackIdRef.current, current: currentRef.current?.id ?? null, finished: queueFinishedRef.current });
+      // Waking out of a park episode: file the recap NOW, while the network provably works — the
+      // park's own beacon went out on a page whose network had just failed, and on 2026-08-13
+      // both parks' reports were lost exactly that way. The ring tail rides along, so the whole
+      // night's evidence reaches the DB without anyone copying the ring off the phone.
+      if (recoveryRef.current.parkBeats > 0 && !parkRecapSentRef.current) {
+        const sent = reportIncident("park", {
+          summary: `wake after park: ${recoveryRef.current.parkBeats} beat(s) spent on track ${recoveryRef.current.trackId}`,
+          trackId: recoveryRef.current.trackId,
+          force: true,
+        });
+        if (sent) parkRecapSentRef.current = true;
+      }
       // A queue that finished stays finished. Waking is not a reason to play anything: the listener
       // left it playing, it played to the end, and picking the phone up should show that — not the
       // last track back at 0:00, which is what it did before this guard.
