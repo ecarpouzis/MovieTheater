@@ -41,10 +41,30 @@ for ($i = 0; $i -lt 20; $i++) {
     if ($out -match 'Nothing to extract') { break }
 }
 
-# Bank tonight's stamps (and the whole corpus) to F:\ before calling it done. KeyframeData rows
-# cascade-delete with their BaseItems, so jellyfin.db alone is one folder rename away from losing
-# hard-won extractions — the export is the durable copy (see scripts/jf-keyframes-export.py).
+# ── Keyframe custody (2026-08-13) ──────────────────────────────────────────────────────────────
+# KeyframeData rows cascade-delete with their BaseItems, so jellyfin.db alone is one folder rename
+# away from losing hard-won extractions. Three layers run after the night's extractions:
+#   1. fingerprint-media-files — content identity for new rows (~3.5 MB of reads each; the key the
+#      banked lists live under, and what makes them rename-proof).
+#   2. bank-jellyfin-keyframes — copies tonight's server-side lists into MediaKeyframes (the master
+#      copy sync-jellyfin restores from after a re-point; also flags any stamp whose server list the
+#      cascade already ate).
+#   3. jf-keyframes-export.py — the file-level doomsday copy on F:\, mirrored to D:\.
+$fpOut = (& dotnet run --project "$repo\src\MovieTheater\MovieTheater.csproj" -c Release -- fingerprint-media-files --limit 300 2>&1 |
+    Out-String -Width 500) -split "\r?\n" | Where-Object { $_ -match '^\s\s!|^\{ processed|Nothing to fingerprint' }
+$fpOut | Add-Content $log
+$bankOut = (& dotnet run --project "$repo\src\MovieTheater\MovieTheater.csproj" -c Release -- bank-jellyfin-keyframes 2>&1 |
+    Out-String -Width 500) -split "\r?\n" | Where-Object { $_ -match '^\s\s!|^\{ banked|^\{ wouldBank|Nothing to bank' }
+$bankOut | Add-Content $log
+
 $exportOut = & python "$repo\scripts\jf-keyframes-export.py" 2>&1 | Out-String -Width 500
 $exportOut.Trim() -split "\r?\n" | Add-Content $log
+
+# Mirror the newest export to a second disk, pruned to the same 14 the exporter keeps.
+$mirror = 'D:\JfKeyframesBackup'
+New-Item -ItemType Directory -Force $mirror | Out-Null
+$newest = Get-ChildItem "$repo\data\jf-keyframes-backup\keyframedata-*.jsonl.gz" | Sort-Object Name | Select-Object -Last 1
+if ($newest) { Copy-Item $newest.FullName $mirror -Force }
+Get-ChildItem "$mirror\keyframedata-*.jsonl.gz" | Sort-Object Name | Select-Object -SkipLast 14 | Remove-Item -Force
 
 Add-Content $log "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] nightly run done"

@@ -633,6 +633,43 @@ namespace MovieTheater.Services.Jellyfin
             }
         }
 
+        /// <summary>
+        /// Pushes a previously-captured keyframe list into Jellyfin's repository for an item — the
+        /// restore half of keyframe custody (<see cref="MovieTheater.Db.MediaKeyframes"/>). The patched
+        /// server's <c>ImportKeyframes</c> endpoint stores it exactly as an extraction would, so the
+        /// exact-segmentation path lights up for the new item with no ffprobe walk at all.
+        ///
+        /// <para><c>keyframeTicksJson</c> is the stored JSON tick array embedded VERBATIM into the
+        /// request body — a four-thousand-element list round-trips byte-faithfully instead of being
+        /// parsed and re-serialized on every hop. A 404 here means the SERVER LACKS THE ENDPOINT (a
+        /// stock Jellyfin after an upgrade wiped the patch) or the item is gone; callers treat it as
+        /// "restore unavailable" and fall back to the nightly re-extraction, never as an error worth
+        /// failing a sync over.</para>
+        /// </summary>
+        public async Task<KeyframeExtractOutcome> ImportKeyframesAsync(string itemId, long totalDurationTicks,
+            string keyframeTicksJson, CancellationToken cancel = default)
+        {
+            EnsureConfigured();
+            var client = httpClientFactory.CreateClient(LongRunningClientName);
+            try
+            {
+                using var content = new StringContent(
+                    $"{{\"totalDurationTicks\":{totalDurationTicks},\"keyframeTicks\":{keyframeTicksJson}}}",
+                    System.Text.Encoding.UTF8, "application/json");
+                using var resp = await client.PostAsync(
+                    $"/Videos/{Uri.EscapeDataString(itemId)}/ImportKeyframes", content, cancel);
+                if (resp.IsSuccessStatusCode)
+                    return new KeyframeExtractOutcome(true, (int)resp.StatusCode, null);
+                var body = await resp.Content.ReadAsStringAsync(cancel);
+                return new KeyframeExtractOutcome(false, (int)resp.StatusCode,
+                    body.Length == 0 ? resp.ReasonPhrase : body.Length <= 200 ? body : body[..200]);
+            }
+            catch (Exception e) when (e is HttpRequestException or TaskCanceledException && !cancel.IsCancellationRequested)
+            {
+                return new KeyframeExtractOutcome(false, 0, e.Message.Length <= 200 ? e.Message : e.Message[..200]);
+            }
+        }
+
         private async Task<List<JellyfinItem>> GetAllItemsAsync(string includeItemTypes, CancellationToken cancel) =>
             await GetAllItemsAsync(includeItemTypes, "Path,MediaSources,ProviderIds", cancel);
 

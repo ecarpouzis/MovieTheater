@@ -100,6 +100,13 @@ namespace MovieTheater.Db
             modelBuilder.Entity<MediaFile>()
                 .HasIndex(f => f.PlayableId);
 
+            // The restore lookup: a sync re-point asks "do we hold a banked keyframe list for these
+            // bytes" by the row's fingerprint. Filtered to stamped rows — most of the table is stamped,
+            // but a partial index keeps the null tail free.
+            modelBuilder.Entity<MediaFile>()
+                .HasIndex(f => f.ContentFingerprint)
+                .HasFilter("[ContentFingerprint] IS NOT NULL");
+
             modelBuilder.Entity<MediaFile>()
                 .HasOne(f => f.Playable)
                 .WithMany(p => p.Files)
@@ -799,6 +806,7 @@ namespace MovieTheater.Db
         public DbSet<MovieGenre> MovieGenres { get; set; }
         public DbSet<MoviePlotSummary> MoviePlotSummaries { get; set; }
         public DbSet<MediaFile> MediaFiles { get; set; }
+        public DbSet<MediaKeyframes> MediaKeyframes { get; set; }
         public DbSet<Playable> Playables { get; set; }
         public DbSet<Episode> Episodes { get; set; }
         public DbSet<Series> Series { get; set; }

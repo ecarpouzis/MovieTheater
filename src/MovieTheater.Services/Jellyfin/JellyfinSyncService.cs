@@ -105,6 +105,9 @@ namespace MovieTheater.Services.Jellyfin
             // Rows whose server-side keyframe list went stale this run (file replaced in place) —
             // re-extracted in bulk before the final save; see ReExtractStaleKeyframesAsync.
             var staleKeyframeRows = new List<MediaFile>();
+            // Rows a re-point moved to a NEW item id with the same bytes (rename/move) — their banked
+            // keyframe lists are re-imported before the final save; see RestoreBankedKeyframesAsync.
+            var restoreKeyframeRows = new List<MediaFile>();
 
             // DB path → movie. Duplicate paths are matched to the first movie and reported.
             var byPath = new Dictionary<string, (int Id, string Title, string FilePath)>();
@@ -168,7 +171,7 @@ namespace MovieTheater.Services.Jellyfin
                 {
                     if (row == null) { row = new MediaFile { PlayableId = playableId.Value, Path = moviePath }; db.MediaFiles.Add(row); created++; }
                     else updated++;
-                    if (StampFromItem(row, item, now)) staleKeyframeRows.Add(row);
+                    if (StampFromItem(row, item, now, restoreKeyframeRows)) staleKeyframeRows.Add(row);
                 }
                 if (row != null) matchedRows.Add(row);
             }
@@ -211,7 +214,7 @@ namespace MovieTheater.Services.Jellyfin
                 {
                     if (!matchedEpFileIds.Add(row.Id)) continue;   // first Jellyfin item wins per file
                     matchedRows.Add(row);
-                    if (!dryRun && StampFromItem(row, item, now)) staleKeyframeRows.Add(row);
+                    if (!dryRun && StampFromItem(row, item, now, restoreKeyframeRows)) staleKeyframeRows.Add(row);
                 }
             }
             r.EpMatched = matchedEpFileIds.Count;
@@ -251,7 +254,7 @@ namespace MovieTheater.Services.Jellyfin
                 if (JellyfinPathMapper.NormalizeForCompare(row.Path) == JellyfinPathMapper.NormalizeForCompare(u.DbPath))
                     continue;                                          // already sitting at the right path
                 if (matchedRows.Contains(row)) maskedRepoints++;       // was linked to a now-superseded (dead) item
-                if (!dryRun) { row.Path = u.DbPath; if (StampFromItem(row, u.Item, now)) staleKeyframeRows.Add(row); }
+                if (!dryRun) { row.Path = u.DbPath; if (StampFromItem(row, u.Item, now, restoreKeyframeRows)) staleKeyframeRows.Add(row); }
                 repointedRows.Add(row);
                 repointedItemIds.Add(u.Item.Id);
                 matchedRows.Add(row);
@@ -315,7 +318,7 @@ namespace MovieTheater.Services.Jellyfin
                     {
                         matchedRows.Add(f);
                         r.RescuedAlternateVersions++;
-                        if (!dryRun && StampFromItem(f, item, now)) staleKeyframeRows.Add(f);
+                        if (!dryRun && StampFromItem(f, item, now, restoreKeyframeRows)) staleKeyframeRows.Add(f);
                     }
             }
 
@@ -403,6 +406,8 @@ namespace MovieTheater.Services.Jellyfin
                 foreach (var f in wouldStamp) f.MissingSinceUtc = now;
                 if (staleKeyframeRows.Count > 0)
                     await ReExtractStaleKeyframesAsync(staleKeyframeRows, now, cancel);
+                if (restoreKeyframeRows.Count > 0)
+                    await RestoreBankedKeyframesAsync(db, restoreKeyframeRows, now, cancel);
                 await db.SaveChangesAsync(cancel);
             }
 
@@ -587,9 +592,12 @@ namespace MovieTheater.Services.Jellyfin
                 db.MediaFiles.Add(primary);
             }
             else primary.Path = newPath;
-            var staleServerKeyframes = StampFromItem(primary, detail, now);
+            var relinkRestoreRows = new List<MediaFile>();
+            var staleServerKeyframes = StampFromItem(primary, detail, now, relinkRestoreRows);
             if (staleServerKeyframes)
                 await ReExtractStaleKeyframesAsync(new[] { primary }, now, cancel);
+            if (relinkRestoreRows.Count > 0)
+                await RestoreBankedKeyframesAsync(db, relinkRestoreRows, now, cancel);
             movie.FilePath = newPath;
             res.PrimaryRepointed = true;
             res.NewPath = newPath;
@@ -782,8 +790,19 @@ namespace MovieTheater.Services.Jellyfin
         /// the whole mechanism exists to prevent. An item-id CHANGE is safe server-side (the new id
         /// has no stored list, so Jellyfin falls back to legacy segmentation) but still clears the
         /// stamp, since the stamp vouches for data the new item doesn't have.
+        ///
+        /// <para><b>Fingerprint semantics (keyframe custody, 2026-08-13).</b> A size change also nulls
+        /// <c>ContentFingerprint</c> — a re-rip is different bytes, and a stale fingerprint would let a
+        /// restore hand the new encode the OLD encode's keyframes, the silent-wrong-list case every
+        /// check in this lane exists to refuse. An id change with the SAME size is the rename/move
+        /// case: the bytes are untouched, so the row lands in <paramref name="restoreCandidates"/> and
+        /// <see cref="RestoreBankedKeyframesAsync"/> re-imports the banked list onto the new item id —
+        /// which is what makes a folder rename cost zero re-extraction and zero legacy-playback window.
+        /// The old cascade-deleted server row is irrelevant by then; the master copy lives in
+        /// <c>MediaKeyframes</c>, keyed by the bytes.</para>
         /// </summary>
-        private static bool StampFromItem(MediaFile row, JellyfinItem item, DateTime now)
+        private static bool StampFromItem(MediaFile row, JellyfinItem item, DateTime now,
+            List<MediaFile>? restoreCandidates = null)
         {
             var src = item.MediaSources?.FirstOrDefault();
             var vid = src?.MediaStreams?.FirstOrDefault(s => s.Type == "Video");
@@ -797,6 +816,10 @@ namespace MovieTheater.Services.Jellyfin
             var serverKeyframesStale = sizeChanged && !idChanged && row.JfKeyframesUtc != null;
             if (sizeChanged || idChanged)
                 row.JfKeyframesUtc = null;            // exact-copy authorization no longer holds
+            if (sizeChanged)
+                row.ContentFingerprint = null;        // different bytes; re-stamped by the next fingerprint run
+            else if (idChanged && row.ContentFingerprint != null)
+                restoreCandidates?.Add(row);
             row.JellyfinItemId = item.Id;
             row.DurationTicks = item.RunTimeTicks;
             row.Container = Truncate(src?.Container, 32);
@@ -808,6 +831,84 @@ namespace MovieTheater.Services.Jellyfin
             row.LastSyncedUtc = now;
             row.MissingSinceUtc = null;
             return serverKeyframesStale;
+        }
+
+        /// <summary>
+        /// Re-imports banked keyframe lists (<see cref="MediaKeyframes"/>) for rows a re-point just
+        /// moved to a new item id with their bytes untouched. One cheap HTTP POST per row against the
+        /// patch's <c>ImportKeyframes</c> endpoint — no ffprobe, no file reads — so even a whole-bucket
+        /// rename (hundreds of files) restores in a couple of minutes inside the sync that noticed it.
+        ///
+        /// <para>Refusals are individually silent but collectively loud: a missing banked row means the
+        /// fingerprint pass never covered the file (nightly re-extraction picks it up, exactly as
+        /// before this lane existed); a SIZE mismatch against the banked row means the fingerprint is
+        /// lying about the bytes and importing would be worse than re-measuring. Three consecutive
+        /// 404s abort the pass — that is a stock (patch-wiped) Jellyfin answering, and every further
+        /// call would 404 the same way.</para>
+        /// </summary>
+        private async Task<(int Restored, int NoBankedRow, int Skipped)> RestoreBankedKeyframesAsync(
+            MovieDb db, IReadOnlyList<MediaFile> rows, DateTime now, CancellationToken cancel)
+        {
+            const int Cap = 1000;
+            var work = rows.Take(Cap).ToList();
+            if (rows.Count > Cap)
+                logger.LogWarning(
+                    "Keyframe restore cap ({Cap}) reached; {Left} re-pointed rows fall back to nightly re-extraction",
+                    Cap, rows.Count - Cap);
+            if (work.Count == 0) return (0, 0, rows.Count > Cap ? rows.Count - Cap : 0);
+
+            var fingerprints = work.Select(r => r.ContentFingerprint!).Distinct().ToList();
+            var banked = await db.MediaKeyframes.Where(k => fingerprints.Contains(k.Fingerprint))
+                .ToDictionaryAsync(k => k.Fingerprint, cancel);
+
+            int restored = 0, noRow = 0, skipped = 0, consecutive404 = 0;
+            foreach (var row in work)
+            {
+                if (!banked.TryGetValue(row.ContentFingerprint!, out var keyframes))
+                {
+                    noRow++;
+                    continue;
+                }
+                if (row.SizeBytes == null || keyframes.SizeBytes != row.SizeBytes)
+                {
+                    skipped++;
+                    logger.LogWarning(
+                        "Banked keyframes for MediaFile {Id} refused: size {RowSize} vs banked {BankedSize} (fingerprint {Fp}) — re-extraction will re-measure",
+                        row.Id, row.SizeBytes, keyframes.SizeBytes, row.ContentFingerprint);
+                    continue;
+                }
+
+                var outcome = await jellyfin.ImportKeyframesAsync(
+                    row.JellyfinItemId!, keyframes.TotalDurationTicks, keyframes.KeyframeTicks, cancel);
+                if (outcome.Ok)
+                {
+                    row.JfKeyframesUtc = now;
+                    restored++;
+                    consecutive404 = 0;
+                }
+                else if (outcome.StatusCode == 404 && ++consecutive404 >= 3)
+                {
+                    logger.LogWarning(
+                        "Keyframe restore aborted after 3 consecutive 404s — the ImportKeyframes endpoint is absent " +
+                        "(stock Jellyfin? a stock upgrade wipes the patch — see hls-copy-freeze). " +
+                        "{Left} rows fall back to nightly re-extraction",
+                        work.Count - restored - noRow - skipped);
+                    break;
+                }
+                else
+                {
+                    skipped++;
+                    logger.LogWarning(
+                        "Keyframe import failed for MediaFile {Id} (item {ItemId}): {Status} {Error} — nightly re-extraction will cover it",
+                        row.Id, row.JellyfinItemId, outcome.StatusCode, outcome.Error);
+                }
+            }
+
+            if (restored > 0 || noRow > 0 || skipped > 0)
+                logger.LogInformation(
+                    "Keyframe restore after re-point: {Restored} restored from bank, {NoRow} unbanked (nightly re-extracts), {Skipped} refused/failed",
+                    restored, noRow, skipped);
+            return (restored, noRow, skipped);
         }
 
         /// <summary>

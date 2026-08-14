@@ -92,5 +92,17 @@ namespace MovieTheater.Db
 
         /// <summary>Set (once) when a sync can no longer find the file; cleared when it reappears.</summary>
         public DateTime? MissingSinceUtc { get; set; }
+
+        /// <summary>
+        /// Content identity: hex SHA-256 over the file's size plus sampled byte regions
+        /// (<c>MediaFingerprint</c> — head, tail and three interior blocks, ~3.5 MB read per file, never
+        /// the whole 20 GB). Computed on the NAS-attached host by <c>fingerprint-media-files</c>; the
+        /// prod pods cannot read the collection, so a sync only ever CONSUMES this value. It is what
+        /// lets a banked keyframe list (<see cref="MediaKeyframes"/>) survive any rename — file, folder
+        /// or whole-drive reorg — because the bytes, not the path, are the key. Nulled by the sync when
+        /// a file's size changes (a re-rip is different bytes), re-stamped by the next fingerprint run.
+        /// </summary>
+        [MaxLength(64)]
+        public string? ContentFingerprint { get; set; }
     }
 }
