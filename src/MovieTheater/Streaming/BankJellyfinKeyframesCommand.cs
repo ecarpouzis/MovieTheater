@@ -63,13 +63,27 @@ namespace MovieTheater.Streaming
 
             await using var db = await dbFactory.CreateDbContextAsync(cancel);
 
+            // Rows that SHARE a Jellyfin item with another row (version-collapsed alternate cuts,
+            // multi-part titles) are excluded outright: the item's one stored list describes the
+            // PRIMARY source's bytes, and banking it under the other file's fingerprint would file a
+            // wrong list under a true key — the silent-wrong-list case the size check exists to catch,
+            // except here the sizes agree because both rows were stamped from the same item. Measured
+            // 2026-08-14: exactly 100 such rows (18,888 stamps over 18,788 distinct items), zero
+            // orphans — the count difference that first LOOKED like cascade damage.
+            var sharedItems = db.MediaFiles
+                .Where(f => f.JellyfinItemId != null)
+                .GroupBy(f => f.JellyfinItemId)
+                .Where(g => g.Count() > 1)
+                .Select(g => g.Key);
+
             // The queue: stamped + fingerprinted rows whose fingerprint is not banked yet. Left-join
             // spelled as a subquery so the whole predicate runs DB-side.
             var banked = db.MediaKeyframes.Select(k => k.Fingerprint);
             var batch = await db.MediaFiles
                 .Where(f => f.MissingSinceUtc == null && f.JellyfinItemId != null
                             && f.JfKeyframesUtc != null && f.ContentFingerprint != null
-                            && !banked.Contains(f.ContentFingerprint))
+                            && !banked.Contains(f.ContentFingerprint)
+                            && !sharedItems.Contains(f.JellyfinItemId))
                 .OrderByDescending(f => f.Id)
                 .Take(Math.Max(1, Limit))
                 .ToListAsync(cancel);
@@ -136,10 +150,14 @@ namespace MovieTheater.Streaming
             var remaining = await db.MediaFiles.CountAsync(
                 f => f.MissingSinceUtc == null && f.JellyfinItemId != null
                      && f.JfKeyframesUtc != null && f.ContentFingerprint != null
-                     && !banked.Contains(f.ContentFingerprint), cancel);
+                     && !banked.Contains(f.ContentFingerprint)
+                     && !sharedItems.Contains(f.JellyfinItemId), cancel);
+            var sharedSkipped = await db.MediaFiles.CountAsync(
+                f => f.MissingSinceUtc == null && f.JfKeyframesUtc != null
+                     && f.JellyfinItemId != null && sharedItems.Contains(f.JellyfinItemId), cancel);
             w.WriteLine("");
             w.WriteLine($"{{ {(DryRun ? "wouldBank" : "banked")}: {bankedNow}, orphanStamps: {orphanStamps}, noSize: {noSize}, " +
-                        $"unfingerprinted: {unfingerprinted}, remaining: {remaining} }}");
+                        $"sharedItemRowsExcluded: {sharedSkipped}, unfingerprinted: {unfingerprinted}, remaining: {remaining} }}");
         }
 
     }
