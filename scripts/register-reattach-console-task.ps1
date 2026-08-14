@@ -66,7 +66,12 @@ $def.Settings.Hidden                      = $false
 $def.Settings.DisallowStartIfOnBatteries  = $false
 $def.Settings.StopIfGoingOnBatteries      = $false
 $def.Settings.MultipleInstances           = $TASK_INSTANCES_IGNORE
-$def.Settings.ExecutionTimeLimit          = "PT2M"
+# The script now waits the dwell out in process (~60 s) instead of stamping a file and exiting, so a run
+# is no longer instantaneous. Its OWN -MaxWaitSeconds is the real bound; this limit is only a backstop,
+# and it is deliberately far above the dwell — being killed HERE is the bad outcome, because a run cut
+# off mid-wait writes no verdict to the log and looks exactly like a run that never happened. Was PT2M,
+# sized when the script did nothing but read a file.
+$def.Settings.ExecutionTimeLimit          = "PT5M"
 $def.Principal.RunLevel  = $TASK_RUNLEVEL_HIGHEST
 $def.Principal.UserId    = "S-1-5-18"                # SYSTEM
 $def.Principal.LogonType = $TASK_LOGON_SERVICE_ACCT
