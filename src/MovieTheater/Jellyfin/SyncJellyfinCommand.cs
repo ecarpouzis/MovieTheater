@@ -71,6 +71,10 @@ namespace MovieTheater.Jellyfin
             o.WriteLine($"Sync candidates for review: {report.CandidateUpgrades} upgrade(s), {report.CandidateNewTitles} new title(s), " +
                         $"{report.CandidateUnclassified} unclassified; {report.CandidatesSuperseded} retired" +
                         (DryRun ? "   (dry-run — not persisted)" : ""));
+            if (report.CandidateError != null)
+                o.WriteLine($"⚠ Candidate classification FAILED (sync itself completed): {report.CandidateError}");
+            if (report.KeyframeError != null)
+                o.WriteLine($"⚠ Keyframe re-extract/restore FAILED after the save (nightly covers it): {report.KeyframeError}");
 
             PrintSection(o, $"Sync candidates ({report.CandidateLines.Count})", report.CandidateLines);
             PrintSection(o, $"Moved files / renamed folders re-pointed ({report.Repointed.Count})", report.Repointed);

@@ -4500,6 +4500,7 @@ namespace MovieTheater.Controllers
             }
             catch (Exception ex)
             {
+                logger.LogWarning(ex, "Jellyfin scan trigger failed");
                 return StatusCode(502, new { triggered = false, message = "Could not reach Jellyfin to start a scan: " + ex.Message });
             }
         }
@@ -4517,6 +4518,7 @@ namespace MovieTheater.Controllers
             }
             catch (Exception ex)
             {
+                logger.LogWarning(ex, "Jellyfin scan-status read failed");
                 return StatusCode(502, new { message = "Could not reach Jellyfin to read scan status: " + ex.Message });
             }
         }
@@ -4530,7 +4532,11 @@ namespace MovieTheater.Controllers
             try
             {
                 var rep = await jellyfinSyncService.RunAsync(dryRun: false);
-                if (rep.Aborted != null) return BadRequest(new { message = rep.Aborted });
+                if (rep.Aborted != null)
+                {
+                    logger.LogError("Jellyfin sync (admin button) aborted: {Reason}", rep.Aborted);
+                    return BadRequest(new { message = rep.Aborted });
+                }
 
                 static List<string> Sample(IReadOnlyList<string> xs, int n = 20) =>
                     xs.Count <= n ? new List<string>(xs) : new List<string>(xs).GetRange(0, n);
@@ -4558,6 +4564,8 @@ namespace MovieTheater.Controllers
                     candidateNewTitles = rep.CandidateNewTitles,
                     candidateUnclassified = rep.CandidateUnclassified,
                     candidatesSuperseded = rep.CandidatesSuperseded,
+                    candidateError = rep.CandidateError,
+                    keyframeError = rep.KeyframeError,
                     samples = new
                     {
                         repointed = Sample(rep.Repointed),
@@ -4569,7 +4577,10 @@ namespace MovieTheater.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(502, new { message = "Jellyfin sync failed: " + ex.Message });
+                // The message alone goes to the browser toast; the STACK must land in the pod log or a
+                // failed sync is undiagnosable after the toast is dismissed (learned 2026-08-14).
+                logger.LogError(ex, "Jellyfin sync (admin button) failed");
+                return StatusCode(502, new { message = $"Jellyfin sync failed: [{ex.GetType().Name}] {ex.Message}" });
             }
         }
 

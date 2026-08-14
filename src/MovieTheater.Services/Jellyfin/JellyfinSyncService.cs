@@ -74,6 +74,10 @@ namespace MovieTheater.Services.Jellyfin
             var items = family.Filter(reported, out var excludedItems);
             r.FamilyItemsExcluded += excludedItems;
             r.MovieItems = items.Count;
+            // Breadcrumb logs at each phase so a run that dies mid-flight shows WHERE in the pod log,
+            // instead of leaving one all-or-nothing summary line that only a finished run ever writes.
+            logger.LogInformation("Jellyfin sync ({Mode}): fetched {N} items ({Fam} family-excluded) from {Server} {Version}",
+                dryRun ? "dry-run" : "write", items.Count, excludedItems, r.ServerName, r.Version);
 
             // ── Blast-radius guard #1: the exclusion (§2.3) ──
             // The family collection is a corner of the disk, so excluding most of the library is not a
@@ -181,6 +185,7 @@ namespace MovieTheater.Services.Jellyfin
             }
             r.MoviesMatched = chosen.Count;
             r.MoviesTotal = movies.Count;
+            logger.LogInformation("Jellyfin sync: movie pass matched {M}/{T}", chosen.Count, movies.Count);
 
             // Pass 2: episode/misc files + a movie's non-Primary files + movie primaries pass 1 missed.
             // Reuses the single item list fetched above (it already holds every leaf item, regardless of
@@ -223,6 +228,7 @@ namespace MovieTheater.Services.Jellyfin
             }
             r.EpMatched = matchedEpFileIds.Count;
             r.EpTotal = nonMovieFiles.Count;
+            logger.LogInformation("Jellyfin sync: episode/part/misc pass matched {M}/{T}", r.EpMatched, r.EpTotal);
 
             // ── Move / rename detection ───────────────────────────────────────────────
             // Anything still unmatched is a DB row whose path no Jellyfin item has. Pair those against
@@ -286,6 +292,8 @@ namespace MovieTheater.Services.Jellyfin
             foreach (var u in translatedUntracked)
                 if (!repointedItemIds.Contains(u.Item.Id) && !imdbFallbackItemIds.Contains(u.Item.Id))
                     r.Untracked.Add(u.Item.Path ?? u.DbPath);
+            logger.LogInformation("Jellyfin sync: move detection re-pointed {R} ({Masked} from dead items), {PR} possible rename(s), {U} untracked",
+                r.Repointed.Count, maskedRepoints, r.PossibleRenames.Count, r.Untracked.Count);
 
             // Carry the Movie.FilePath of any re-pointed movie primary to the new location too, so the
             // movie pass matches it directly next time (not just via the episode/misc fallback).
@@ -400,10 +408,28 @@ namespace MovieTheater.Services.Jellyfin
                             && !imdbFallbackItemIds.Contains(u.Item.Id)
                             && !extraMapped.Contains(JellyfinPathMapper.NormalizeForCompare(u.DbPath)))
                 .ToList();
-            await UpsertSyncCandidatesAsync(db, r, dryRun, now, candidateItems,
-                imdbFallbackPairs.Where(p => !chosen.ContainsKey(p.MovieId)).ToList(),
-                possibleRenamePairs, matchedRows, filesByPlayable, movieById.Values.ToList(),
-                movieIdByPlayable, folderToPlayable, chosen, cancel);
+            // Non-fatal by design: candidate persistence is an AUXILIARY product of the sync. A bug
+            // here must degrade to "no candidates this run" — loudly — never to a failed sync whose
+            // matching/missing work is all thrown away.
+            try
+            {
+                await UpsertSyncCandidatesAsync(db, r, dryRun, now, candidateItems,
+                    imdbFallbackPairs.Where(p => !chosen.ContainsKey(p.MovieId)).ToList(),
+                    possibleRenamePairs, matchedRows, filesByPlayable, movieById.Values.ToList(),
+                    movieIdByPlayable, folderToPlayable, chosen, cancel);
+                logger.LogInformation("Jellyfin sync: candidates classified — {U} upgrade, {N} new-title, {X} unclassified, {S} retired",
+                    r.CandidateUpgrades, r.CandidateNewTitles, r.CandidateUnclassified, r.CandidatesSuperseded);
+            }
+            catch (Exception ex) when (!cancel.IsCancellationRequested)
+            {
+                r.CandidateError = ex.Message;
+                logger.LogError(ex, "Jellyfin sync: candidate classification failed — continuing without candidates this run");
+                // Half-built candidate rows must not ride along with the sync's own save.
+                foreach (var entry in db.ChangeTracker.Entries<SyncCandidate>().ToList())
+                    entry.State = entry.State == EntityState.Added
+                        ? EntityState.Detached
+                        : entry.State == EntityState.Modified ? EntityState.Unchanged : entry.State;
+            }
 
             // Still unmatched after the move pass → stamp MissingSinceUtc (existing rows only).
             var wouldStamp = existingFiles.Where(f => !matchedRows.Contains(f) && f.MissingSinceUtc == null).ToList();
@@ -427,11 +453,37 @@ namespace MovieTheater.Services.Jellyfin
             if (!dryRun)
             {
                 foreach (var f in wouldStamp) f.MissingSinceUtc = now;
-                if (staleKeyframeRows.Count > 0)
-                    await ReExtractStaleKeyframesAsync(staleKeyframeRows, now, cancel);
-                if (restoreKeyframeRows.Count > 0)
-                    await RestoreBankedKeyframesAsync(db, restoreKeyframeRows, now, cancel);
+                // The sync's own product (matches, re-points, stamps, extras, candidates) is saved FIRST.
+                // The keyframe lanes come after: each call there is a Jellyfin round trip that can take
+                // minutes per file, and losing the whole sync to a keyframe hiccup — the exact work this
+                // run just finished — is strictly worse than a file temporarily playing via legacy
+                // segmentation until the nightly re-extraction covers it.
+                logger.LogInformation("Jellyfin sync: saving — {Stamp} newly missing, {Cand} candidate row change(s)",
+                    wouldStamp.Count, db.ChangeTracker.Entries<SyncCandidate>().Count(e => e.State != EntityState.Unchanged));
                 await db.SaveChangesAsync(cancel);
+                logger.LogInformation("Jellyfin sync: core save complete");
+
+                try
+                {
+                    if (staleKeyframeRows.Count > 0)
+                    {
+                        logger.LogInformation("Jellyfin sync: re-extracting keyframes for {N} replaced file(s)", staleKeyframeRows.Count);
+                        await ReExtractStaleKeyframesAsync(staleKeyframeRows, now, cancel);
+                    }
+                    if (restoreKeyframeRows.Count > 0)
+                    {
+                        logger.LogInformation("Jellyfin sync: restoring banked keyframes for {N} re-pointed file(s)", restoreKeyframeRows.Count);
+                        await RestoreBankedKeyframesAsync(db, restoreKeyframeRows, now, cancel);
+                    }
+                    if (staleKeyframeRows.Count > 0 || restoreKeyframeRows.Count > 0)
+                        await db.SaveChangesAsync(cancel);   // just the JfKeyframesUtc stamps
+                }
+                catch (Exception ex) when (!cancel.IsCancellationRequested)
+                {
+                    r.KeyframeError = ex.Message;
+                    logger.LogError(ex,
+                        "Jellyfin sync: keyframe re-extract/restore failed AFTER the core save — sync results are intact; nightly re-extraction covers the affected files");
+                }
             }
 
             r.Created = created;
@@ -1380,6 +1432,11 @@ namespace MovieTheater.Services.Jellyfin
         public int ExtrasAttached { get; set; }
         /// <summary>Extras whose folder didn't map to any known movie folder — left unattached.</summary>
         public int ExtrasUnplaced { get; set; }
+
+        /// <summary>Set when candidate classification failed (non-fatally — the sync itself completed).</summary>
+        public string? CandidateError { get; set; }
+        /// <summary>Set when the post-save keyframe re-extract/restore failed (sync results intact).</summary>
+        public string? KeyframeError { get; set; }
 
         // ── Sync candidates (the durable, actionable form of Untracked/PossibleRenames) ──
         /// <summary>Untracked files classified as an upgrade/replacement of an existing movie.</summary>

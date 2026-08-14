@@ -1379,13 +1379,32 @@ export default function IngestReviewPage({ userData }) {
 
               // Phase 2 — poll until the scan finishes. Handles the brief start-up delay (don't bail
               // before it's seen running) and a fast no-op scan (proceed after ~15s if it never shows
-              // running). Bounded so a stuck scan can't loop forever.
+              // running). Bounded so a stuck scan can't loop forever. TRANSIENT-TOLERANT: a scan runs
+              // ~10 minutes and one gateway hiccup among ~200 polls must not abandon the whole flow —
+              // only give up after several CONSECUTIVE failed polls (the scan itself is unaffected by
+              // our polling either way).
               let seenRunning = false;
+              let pollFailures = 0;
               for (let guard = 0; guard < 600; guard++) {
                 await sleep(3000);
-                const st = await MovieAPI.jellyfinScanStatus();
-                const sdata = await st.json().catch(() => ({}));
-                if (!st.ok) { hide(); message.error(sdata.message || "Lost contact with Jellyfin during the scan."); return; }
+                let st, sdata;
+                try {
+                  st = await MovieAPI.jellyfinScanStatus();
+                  sdata = await st.json().catch(() => ({}));
+                } catch {
+                  st = null;
+                }
+                if (!st || !st.ok) {
+                  pollFailures++;
+                  console.warn(`Jellyfin scan-status poll failed (${pollFailures} consecutive)`, sdata?.message);
+                  if (pollFailures >= 5) {
+                    hide();
+                    message.error((sdata?.message || "Lost contact with Jellyfin during the scan.") + " The scan itself may still finish — retry the sync in a few minutes.");
+                    return;
+                  }
+                  continue;
+                }
+                pollFailures = 0;
                 if (sdata.running) {
                   seenRunning = true;
                   hide();
@@ -1398,10 +1417,19 @@ export default function IngestReviewPage({ userData }) {
               // Phase 3 — run the sync that stamps JellyfinItemId onto the site's MediaFile rows.
               hide();
               hide = message.loading("Linking files to the site…", 0);
-              const syn = await MovieAPI.jellyfinRunSync();
+              let syn;
+              try {
+                syn = await MovieAPI.jellyfinRunSync();
+              } catch {
+                // The fetch itself died (proxy timeout, network) — the SERVER-side sync keeps running
+                // to completion regardless, so don't claim the sync failed when only our view of it did.
+                hide();
+                message.warning("Lost the connection while the sync was running — it continues on the server. Refresh in a couple of minutes to see the result.", 12);
+                return;
+              }
               const r = await syn.json().catch(() => ({}));
               hide();
-              if (!syn.ok) { message.error(r.message || "Sync failed."); return; }
+              if (!syn.ok) { message.error(r.message || "Sync failed.", 12); return; }
               message.success(
                 `Synced. Movies ${r.moviesMatched}/${r.moviesTotal}, episodes/misc ${r.epMatched}/${r.epTotal}. ` +
                 `Re-pointed ${r.repointed ?? 0} moved/renamed file(s)` +
@@ -1413,6 +1441,8 @@ export default function IngestReviewPage({ userData }) {
                   : ""),
                 10
               );
+              if (r.candidateError) message.warning(`Candidate classification failed (sync itself completed): ${r.candidateError}`, 12);
+              if (r.keyframeError) message.warning(`Keyframe restore failed after the sync (nightly re-extraction covers it): ${r.keyframeError}`, 12);
               if (scope === "scan") load();
             } catch {
               hide();
