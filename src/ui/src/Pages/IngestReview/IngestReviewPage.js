@@ -787,6 +787,166 @@ function ReviewCard({ row, details, onFetch, onApprove, onReject, onSave, onRecl
   );
 }
 
+// One SHOW's worth of untracked episode files, folded into a single card — 84 loose rows for Nick
+// Arcade was a report, not a review queue. It shows what the resolver has already worked out (which
+// series, how many episodes are catalogued, which files map to which episode) and what it still
+// owes; corrections here (right series, right tt, right title) apply to the whole group, because
+// they are statements about the show rather than about one file.
+function SyncSeriesGroupCard({ group, onUpdate, onRejectGroup, onMapAbsolute }) {
+  const [working, setWorking] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [title, setTitle] = useState(group.title || "");
+  const [year, setYear] = useState(group.year != null ? String(group.year) : "");
+  const [imdbId, setImdbId] = useState(group.seriesImdbId || "");
+  const headId = group.files[0]?.id;
+  const dirty =
+    title !== (group.title || "") ||
+    year !== (group.year != null ? String(group.year) : "") ||
+    imdbId !== (group.seriesImdbId || "");
+
+  async function run(fn) {
+    setWorking(true);
+    try {
+      await fn();
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  const mapped = group.fileCount - group.unmatchedFiles;
+
+  return (
+    <div className="review-card">
+      <div className="review-card-poster">
+        {group.seriesId && group.seriesHasPoster ? (
+          <img src={`/SeriesImageThumb/${group.seriesId}`} alt="" loading="lazy" />
+        ) : (
+          <div className="review-card-noposter">no poster</div>
+        )}
+      </div>
+      <div className="review-card-body">
+        <div className="review-card-tags">
+          <Tag color="purple">SERIES</Tag>
+          <Tag>{group.fileCount} episode file(s)</Tag>
+          <Tag>{group.seasonCount} season(s) on disk</Tag>
+          {group.seriesId ? (
+            <Tag color="blue">series #{group.seriesId}</Tag>
+          ) : (
+            <Tag color="gold">not identified yet</Tag>
+          )}
+          {group.episodeRowsKnown > 0 ? (
+            <Tag color="green">{group.episodeRowsKnown} episode(s) catalogued</Tag>
+          ) : group.seriesId ? (
+            <Tag color="red">no episode list yet</Tag>
+          ) : null}
+          {group.unmatchedFiles > 0 ? <Tag color="orange">{group.unmatchedFiles} file(s) unmatched</Tag> : null}
+          {group.signal ? <Tag>{group.signal}</Tag> : null}
+          {group.seriesReviewBatch ? <Tag color="gold">awaiting approval</Tag> : null}
+        </div>
+        <Space direction="vertical" size={4} style={{ width: "100%" }}>
+          <Text strong>
+            {group.seriesTitle || group.title || group.folder}
+            {group.year ? ` (${group.year})` : ""}
+          </Text>
+          <Text type="secondary" className="rc-path" title={group.folder}>
+            {group.folder}
+          </Text>
+          <Text type="secondary">
+            {mapped}/{group.fileCount} file(s) mapped · next: {group.nextStep}
+          </Text>
+          {group.shapeMismatch ? (
+            <Text type="warning">
+              Numbering disagrees — {group.shapeMismatch}. Nothing maps by number while that is true.
+            </Text>
+          ) : null}
+          {group.error ? <Text type="danger">{group.error}</Text> : null}
+
+          <Space wrap>
+            <Input size="small" style={{ width: 240 }} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Series title" />
+            <Input size="small" style={{ width: 90 }} value={year} onChange={(e) => setYear(e.target.value)} placeholder="Year" />
+            <Input size="small" style={{ width: 130 }} value={imdbId} onChange={(e) => setImdbId(e.target.value)} placeholder="ttNNNNNNN" />
+            {dirty && headId ? (
+              <Button
+                size="small"
+                type="primary"
+                loading={working}
+                onClick={() =>
+                  run(() =>
+                    onUpdate(headId, {
+                      title: title.trim() || null,
+                      year: year ? Number(year) : null,
+                      imdbId: imdbId.trim(),
+                      applyToGroup: true,
+                    })
+                  )
+                }
+              >
+                Save for all {group.fileCount}
+              </Button>
+            ) : null}
+          </Space>
+
+          <a onClick={() => setOpen((v) => !v)}>{open ? "▾ hide" : "▸ show"} the {group.fileCount} file(s)</a>
+          {open ? (
+            <div className="rc-seasons">
+              {group.seasons.map((s) => (
+                <div key={s} className="rc-season">
+                  <div className="rc-season-head">
+                    Season {s} · {group.files.filter((f) => f.season === s && f.matched).length}/
+                    {group.files.filter((f) => f.season === s).length} matched
+                  </div>
+                  {group.files
+                    .filter((f) => f.season === s)
+                    .map((f) => (
+                      <div key={f.id} className={"rc-ep" + (f.matched ? "" : " rc-ep-missing")}>
+                        <span className="rc-epnum">E{f.episode}</span>
+                        <span className="rc-ep-title">
+                          {f.episodeTitle || (f.matched ? "(untitled episode)" : "no episode row yet")}
+                          {f.spansToEpisode ? ` — file covers E${f.episode}–E${f.spansToEpisode}` : ""}
+                        </span>
+                        <span className="rc-path" title={f.path}>
+                          {f.path.split("\\").pop()}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              ))}
+            </div>
+          ) : null}
+
+          <Space wrap>
+            {group.canMapAbsolute && headId ? (
+              <Popconfirm
+                title={
+                  `Map in absolute order? The ${group.fileCount} file(s) and the ${group.episodeRowsKnown} catalogued ` +
+                  `episode(s) agree on the total but split into seasons differently, so the nth file becomes the nth ` +
+                  `episode — this OVERRIDES the SxxExx in the file names. Only do this if the files are in broadcast order.`
+                }
+                okText="Map in absolute order"
+                onConfirm={() => run(() => onMapAbsolute(headId))}
+              >
+                <Button size="small" type="primary" loading={working}>
+                  Map in absolute order
+                </Button>
+              </Popconfirm>
+            ) : null}
+            <Popconfirm
+              title={`Dismiss all ${group.fileCount} file(s) of this show? They stay on disk; they just won't be offered again.`}
+              okText="Dismiss show"
+              okButtonProps={{ danger: true }}
+              onConfirm={() => run(() => onRejectGroup(group))}
+            >
+              <Button size="small" danger disabled={working}>
+                Dismiss show
+              </Button>
+            </Popconfirm>
+          </Space>
+        </Space>
+      </div>
+    </div>
+  );
+}
+
 // One sync-scan candidate — an untracked file the last "Sync from Jellyfin" classified. An
 // UPGRADE approves in place (the movie keeps everything, only its file re-points); NEW TITLES
 // resolve in bulk from the toolbar, each becoming an ordinary review card in the open batch;
@@ -881,13 +1041,20 @@ function SyncCandidateCard({ row, onApplyUpgrade, onRejectOne, onUpdate }) {
                 </Button>
               </>
             ) : row.kind === "unclassified" ? (
-              <Button
-                size="small"
-                disabled={working || (!title.trim() && !imdbId.trim())}
-                onClick={() => run(() => onUpdate(row, { kind: "new", title, year: year ? Number(year) : null, imdbId: imdbId || null }))}
-              >
-                Treat as new title
-              </Button>
+              <>
+                <Button
+                  size="small"
+                  disabled={working || (!title.trim() && !imdbId.trim())}
+                  onClick={() => run(() => onUpdate(row, { kind: "new", title, year: year ? Number(year) : null, imdbId: imdbId || null }))}
+                >
+                  Treat as new title
+                </Button>
+                {/* The rescue hatch for an episode whose file name the parser couldn't read: it joins
+                    its folder's series card instead of sitting here alone forever. */}
+                <Button size="small" disabled={working} onClick={() => run(() => onUpdate(row, { kind: "series" }))}>
+                  Treat as a series episode
+                </Button>
+              </>
             ) : null}
             <Popconfirm
               title="Dismiss this candidate? The file stays on disk; it just won't be offered again."
@@ -924,8 +1091,10 @@ export default function IngestReviewPage({ userData }) {
   const detailsRef = useRef({});
   detailsRef.current = detailsCache;
 
-  // "scan" scope: sync-candidate counts ({ upgrades, newTitles, unclassified, ingested }).
+  // "scan" scope: sync-candidate counts ({ upgrades, newTitles, unclassified, ingested, … }).
   const [scanCounts, setScanCounts] = useState(null);
+  // "scan" scope: one entry per SHOW whose episode files are pending — the folded series cards.
+  const [seriesGroups, setSeriesGroups] = useState([]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -939,6 +1108,7 @@ export default function IngestReviewPage({ userData }) {
         const data = await res.json();
         setItems(data.items || []);
         setScanCounts(data.counts || null);
+        setSeriesGroups(data.seriesGroups || []);
         setMeta({ byConfidence: [], byType: [], batches: [] });
         return;
       }
@@ -1006,6 +1176,20 @@ export default function IngestReviewPage({ userData }) {
       return true;
     });
   }, [items, search, confFilter, typeFilter, concernFilter, scope]);
+
+  // Series groups honour the free-text search (by show title or folder) and nothing else — the
+  // confidence/type/concern filters describe library rows, not a folder of episode files.
+  const shownSeriesGroups = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return seriesGroups;
+    return seriesGroups.filter(
+      (g) =>
+        (g.seriesTitle || "").toLowerCase().includes(q) ||
+        (g.title || "").toLowerCase().includes(q) ||
+        (g.folder || "").toLowerCase().includes(q) ||
+        String(g.seriesId ?? "") === q
+    );
+  }, [seriesGroups, search]);
 
   // How many rows have any concern at all — drives the header chip and is the count behind
   // the "Needs attention" filter. Not meaningful for sync candidates.
@@ -1173,6 +1357,66 @@ export default function IngestReviewPage({ userData }) {
     }
   }, []);
 
+  // Dismiss a whole show's files in one call — the group card's counterpart to per-row Dismiss.
+  const rejectSeriesGroup = useCallback(
+    async (group) => {
+      try {
+        const res = await MovieAPI.syncCandidatesReject(group.files.map((f) => f.id));
+        if (!res.ok) {
+          message.error("Dismiss failed.");
+          return false;
+        }
+        await load();
+        return true;
+      } catch {
+        message.error("Dismiss failed.");
+        return false;
+      }
+    },
+    [load]
+  );
+
+  const mapSeriesAbsolute = useCallback(
+    async (id) => {
+      try {
+        const res = await MovieAPI.syncCandidatesMapSeriesAbsolute(id);
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          message.error(data.message || "Absolute-order mapping failed.");
+          return false;
+        }
+        if (data.mapped > 0) message.success(`Mapped ${data.mapped}/${data.total} file(s) in absolute order.`);
+        else message.warning(data.message || "Nothing could be mapped — see the card for why.");
+        await load();
+        return true;
+      } catch {
+        message.error("Absolute-order mapping failed.");
+        return false;
+      }
+    },
+    [load]
+  );
+
+  // The group card edits by candidate id (its head row) rather than by row object.
+  const updateCandidateById = useCallback(
+    async (id, fields) => {
+      try {
+        const res = await MovieAPI.syncCandidateUpdate({ id, ...fields });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.success) {
+          message.error(data.message || "Update failed.");
+          return false;
+        }
+        await load();
+        return true;
+      } catch {
+        message.error("Update failed.");
+        return false;
+      }
+    },
+    [load]
+  );
+
   const updateCandidate = useCallback(
     async (row, fields) => {
       try {
@@ -1230,6 +1474,56 @@ export default function IngestReviewPage({ userData }) {
     await load();
   }, [load]);
 
+  // Same caller-drives-it loop for shows. A call does a bounded number of units (identify one show /
+  // enumerate one season / map one folder's files), so a 30-season series takes several calls and no
+  // single request has to survive it. The no-progress break is the safety net: a tick that neither
+  // advances nor shrinks the queue stops the loop instead of spinning on it.
+  const resolveSeries = useCallback(async () => {
+    let hide = message.loading("Resolving series…", 0);
+    const totals = { identified: 0, enriched: 0, seasons: 0, episodes: 0, files: 0, failed: 0 };
+    let lastRemaining = null;
+    let idle = 0;
+    try {
+      for (let guard = 0; guard < 500; guard++) {
+        const res = await MovieAPI.syncCandidatesResolveSeries(4);
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          hide();
+          message.error(data.message || "Series resolution failed.");
+          break;
+        }
+        totals.identified += data.identified ?? 0;
+        totals.enriched += data.enriched ?? 0;
+        totals.seasons += data.seasonsEnumerated ?? 0;
+        totals.episodes += data.episodesAdded ?? 0;
+        totals.files += data.filesMapped ?? 0;
+        totals.failed += data.failed ?? 0;
+
+        if (data.processed === 0 || data.remaining === lastRemaining) idle += 1;
+        else idle = 0;
+        lastRemaining = data.remaining;
+
+        if (data.done || data.processed === 0 || idle >= 3) {
+          hide();
+          message.success(
+            `Series resolved: ${totals.identified} show(s) identified, ${totals.enriched} enriched, ` +
+              `${totals.episodes} episode(s) catalogued across ${totals.seasons} season(s), ${totals.files} file(s) mapped` +
+              (totals.failed ? `, ${totals.failed} need a hand fix (see the card)` : "") +
+              (data.blocked ? `. ${data.blocked} show(s) blocked on a correction.` : "."),
+            10
+          );
+          break;
+        }
+        hide();
+        hide = message.loading(`Resolving series… ${data.remaining ?? 0} show(s) remaining`, 0);
+      }
+    } catch {
+      hide();
+      message.error("Series resolution failed.");
+    }
+    await load();
+  }, [load]);
+
   if (forbidden) {
     return <Result status="403" title="Editors only" subTitle="The library review queue requires movie-edit permission." />;
   }
@@ -1245,7 +1539,9 @@ export default function IngestReviewPage({ userData }) {
         </Title>
         <Text type="secondary">
           {scope === "scan"
-            ? `${items.length} untracked file(s) found by the last sync — approve upgrades in place, resolve new titles into the ingest batch.`
+            ? `${items.length} untracked file(s)${
+                seriesGroups.length ? ` plus ${scanCounts?.seriesEpisodeFiles ?? 0} episode file(s) in ${seriesGroups.length} show(s)` : ""
+              } found by the last sync — approve upgrades in place, resolve new titles and series into the ingest batch.`
             : `${items.length} title(s) pending — quarantined from browse until you approve them. Reject deletes the row entirely.`}
         </Text>
         <div className="ingest-review-chips">
@@ -1253,6 +1549,11 @@ export default function IngestReviewPage({ userData }) {
             <>
               <Tag color="orange">upgrades: {scanCounts.upgrades}</Tag>
               <Tag color="blue">new titles: {scanCounts.newTitles}</Tag>
+              {scanCounts.seriesGroups > 0 && (
+                <Tag color="purple">
+                  series: {scanCounts.seriesGroups} show(s) / {scanCounts.seriesEpisodeFiles} file(s)
+                </Tag>
+              )}
               <Tag>unclassified: {scanCounts.unclassified}</Tag>
               {scanCounts.ingested > 0 && <Tag color="green">already in batch: {scanCounts.ingested}</Tag>}
             </>
@@ -1320,16 +1621,28 @@ export default function IngestReviewPage({ userData }) {
           ]}
         />
         {scope === "scan" ? (
-          <Popconfirm
-            title={`Resolve all ${scanCounts?.newTitles ?? 0} new-title candidate(s)? Each folder is looked up (OMDB → IMDb → Google) and added to the open ingest batch with its file attached — you still approve them there. Runs in chunks; keep this tab open.`}
-            okText="Resolve new titles"
-            disabled={!(scanCounts?.newTitles > 0)}
-            onConfirm={resolveNewTitles}
-          >
-            <Button type="primary" disabled={!(scanCounts?.newTitles > 0)}>
-              Resolve new titles ({scanCounts?.newTitles ?? 0})
-            </Button>
-          </Popconfirm>
+          <>
+            <Popconfirm
+              title={`Resolve all ${scanCounts?.newTitles ?? 0} new-title candidate(s)? Each folder is looked up (OMDB → IMDb → Google) and added to the open ingest batch with its file attached — you still approve them there. Runs in chunks; keep this tab open.`}
+              okText="Resolve new titles"
+              disabled={!(scanCounts?.newTitles > 0)}
+              onConfirm={resolveNewTitles}
+            >
+              <Button type="primary" disabled={!(scanCounts?.newTitles > 0)}>
+                Resolve new titles ({scanCounts?.newTitles ?? 0})
+              </Button>
+            </Popconfirm>
+            <Popconfirm
+              title={`Resolve all ${scanCounts?.seriesUnresolved ?? 0} show(s)? Each one is identified, its full episode list is catalogued (TMDB + IMDb), and its files are attached to the episodes they name — you still approve the shows in the ingest batch. Runs in chunks; keep this tab open.`}
+              okText="Resolve series"
+              disabled={!(scanCounts?.seriesUnresolved > 0)}
+              onConfirm={resolveSeries}
+            >
+              <Button type="primary" disabled={!(scanCounts?.seriesUnresolved > 0)}>
+                Resolve series ({scanCounts?.seriesUnresolved ?? 0})
+              </Button>
+            </Popconfirm>
+          </>
         ) : (
           <Popconfirm
             title={`Approve all ${filtered.length} shown title(s) into the library?`}
@@ -1582,12 +1895,32 @@ export default function IngestReviewPage({ userData }) {
         </Popconfirm>
       </div>
 
+      {/* Series groups sit above the loose candidates and are never paginated — there are a handful
+          of shows even when there are hundreds of episode files, and they are the biggest decisions
+          on the page. They live outside the filter/pager so a filter aimed at loose rows can't hide
+          them. */}
+      {!loading && scope === "scan" && shownSeriesGroups.length > 0 && (
+        <div className="ingest-review-cards">
+          {shownSeriesGroups.map((g) => (
+            <SyncSeriesGroupCard
+              key={g.folder}
+              group={g}
+              onUpdate={updateCandidateById}
+              onRejectGroup={rejectSeriesGroup}
+              onMapAbsolute={mapSeriesAbsolute}
+            />
+          ))}
+        </div>
+      )}
+
       {loading ? (
         <div className="ingest-review-loading">
           <Spin size="large" />
         </div>
       ) : filtered.length === 0 ? (
-        <Empty description={items.length ? "Nothing matches the current filter." : "Review queue is empty."} />
+        shownSeriesGroups.length > 0 ? null : (
+          <Empty description={items.length ? "Nothing matches the current filter." : "Review queue is empty."} />
+        )
       ) : (
         <>
           <div className="ingest-review-cards">

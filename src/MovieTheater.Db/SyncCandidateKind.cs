@@ -12,5 +12,10 @@ namespace MovieTheater.Db
 
         /// <summary>A file whose folder parses as a movie the library doesn't have yet.</summary>
         NewTitle = 2,
+
+        /// <summary>An episode file (SxxExx). Never its own card: every candidate sharing a
+        /// <see cref="SyncCandidate.SeriesFolder"/> folds into ONE series card, resolved together —
+        /// identify the show, enumerate its episodes, then map each file to the episode it names.</summary>
+        SeriesEpisode = 3,
     }
 }

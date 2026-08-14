@@ -427,8 +427,10 @@ namespace MovieTheater.Services.Jellyfin
                     imdbFallbackPairs.Where(p => !chosen.ContainsKey(p.MovieId)).ToList(),
                     possibleRenamePairs, matchedRows, filesByPlayable, movieById.Values.ToList(),
                     movieIdByPlayable, folderToPlayable, chosen, cancel);
-                logger.LogInformation("Jellyfin sync: candidates classified — {U} upgrade, {N} new-title, {X} unclassified, {S} retired",
-                    r.CandidateUpgrades, r.CandidateNewTitles, r.CandidateUnclassified, r.CandidatesSuperseded);
+                logger.LogInformation(
+                    "Jellyfin sync: candidates classified — {U} upgrade, {N} new-title, {E} episode file(s) in {G} show(s), {X} unclassified, {S} retired",
+                    r.CandidateUpgrades, r.CandidateNewTitles, r.CandidateSeriesEpisodes, r.CandidateSeriesGroups,
+                    r.CandidateUnclassified, r.CandidatesSuperseded);
             }
             catch (Exception ex) when (!cancel.IsCancellationRequested)
             {
@@ -884,7 +886,18 @@ namespace MovieTheater.Services.Jellyfin
             public string? OldPath;
             public string? ParsedTitle;
             public int? ParsedYear;
+            // Episodic (SeriesEpisode) only: the folder every episode of one show shares, the series it
+            // was attributed to, and which episode the file name says it is.
+            public string? SeriesFolder;
+            public int? TargetSeriesId;
+            public int? SeasonNumber;
+            public int? EpisodeNumber;
+            public int? SpansToEpisode;
         }
+
+        /// <summary>The series folder a file belongs to — see
+        /// <see cref="MovieFolderParser.SeriesRootOf"/>, which owns the climb (and its tests).</summary>
+        private static string? SeriesRootOf(string? filePath) => MovieFolderParser.SeriesRootOf(filePath);
 
         /// <summary>
         /// Classifies every file the sync left untracked and upserts the result into
@@ -917,7 +930,9 @@ namespace MovieTheater.Services.Jellyfin
 
             void Claim(string dbPath, JellyfinItem item, long? size, SyncCandidateKind kind,
                 int? target = null, string? signal = null, string? oldPath = null,
-                string? parsedTitle = null, int? parsedYear = null)
+                string? parsedTitle = null, int? parsedYear = null,
+                string? seriesFolder = null, int? targetSeriesId = null,
+                int? season = null, int? episode = null, int? spansTo = null)
             {
                 var norm = JellyfinPathMapper.NormalizeForCompare(dbPath);
                 if (drafts.ContainsKey(norm)) return;
@@ -933,8 +948,20 @@ namespace MovieTheater.Services.Jellyfin
                     Kind = kind, DbPath = dbPath, ItemId = item.Id, Size = size,
                     TargetMovieId = target, Signal = signal, OldPath = oldPath,
                     ParsedTitle = parsedTitle, ParsedYear = parsedYear,
+                    SeriesFolder = seriesFolder, TargetSeriesId = targetSeriesId,
+                    SeasonNumber = season, EpisodeNumber = episode, SpansToEpisode = spansTo,
                 };
             }
+
+            // 0. Anything that is not a video container is claimed FIRST, as unclassified. Jellyfin
+            // enumerates a DVD rip's .ifo/.bup sidecars as items, and the "same-folder" signal below
+            // happily offered one as an upgrade of the movie whose .avi sits beside it — approving that
+            // re-points a working title at an index file. Claiming first is what makes the guard total:
+            // every later step short-circuits on an already-claimed path.
+            foreach (var u in untracked)
+                if (!MovieFolderParser.IsVideoFile(u.DbPath))
+                    Claim(u.DbPath, u.Item, u.Size, SyncCandidateKind.Unclassified, signal: "not-video",
+                        parsedTitle: LeafLabel(u.DbPath));
 
             // 1. Shared IMDb id — the item names the movie it replaces.
             foreach (var p in imdbPairs)
@@ -986,12 +1013,94 @@ namespace MovieTheater.Services.Jellyfin
                     scored[0].Movie.id, "title-match", scored[0].Movie.FilePath);
             }
 
-            // 5. What's left is either a new movie (folder parses as "Title (Year)") or unclassified.
+            // 5. Episode files. These are NOT one candidate each — 84 loose lines for one show is a
+            // report, not a review queue. Every episodic file is stamped with the folder its whole
+            // series shares (SeriesRootOf) plus its own SxxExx, so the review tool can fold them into a
+            // single card; attribution to an existing Series happens here, while the sync already holds
+            // the evidence. Strongest first: the folder ALREADY holds mapped episodes of exactly one
+            // series, the folder is a series' recorded ReviewSourcePath, then a unique title-token match.
+            var episodic = untracked
+                .Where(u => !drafts.ContainsKey(JellyfinPathMapper.NormalizeForCompare(u.DbPath)))
+                .Select(u => (u.Item, u.DbPath, u.Size, Ep: MovieFolderParser.ParseEpisode(LeafLabel(u.DbPath))))
+                .Where(u => u.Ep != null)
+                .ToList();
+            if (episodic.Count > 0)
+            {
+                // Where each series' ALREADY-mapped episode files live, keyed by the same climb the
+                // candidates use — an exact key match, never a path-prefix scan over 17k rows.
+                var mappedRoots = new Dictionary<string, HashSet<int>>(StringComparer.OrdinalIgnoreCase);
+                var mapped = await (from f in db.MediaFiles
+                                    join e in db.Episodes on f.PlayableId equals e.PlayableId
+                                    where e.SeriesId != null
+                                    select new { f.Path, SeriesId = e.SeriesId!.Value }).ToListAsync(cancel);
+                foreach (var mf in mapped)
+                {
+                    var root = SeriesRootOf(mf.Path);
+                    if (root == null) continue;
+                    var key = JellyfinPathMapper.NormalizeForCompare(root);
+                    if (!mappedRoots.TryGetValue(key, out var set)) mappedRoots[key] = set = new HashSet<int>();
+                    set.Add(mf.SeriesId);
+                }
+
+                var allSeries = await db.Series
+                    .Select(s => new { s.Id, s.Title, s.ReviewSourcePath })
+                    .ToListAsync(cancel);
+                var byReviewPath = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                foreach (var s in allSeries)
+                    if (!string.IsNullOrEmpty(s.ReviewSourcePath))
+                        byReviewPath.TryAdd(JellyfinPathMapper.NormalizeForCompare(s.ReviewSourcePath), s.Id);
+                var seriesToks = allSeries
+                    .Select(s => (s.Id, s.Title, Toks: Tokens(s.Title ?? "")))
+                    .Where(s => s.Toks.Count > 0).ToList();
+
+                // One attribution decision per FOLDER, not per file: every episode of a show must land
+                // on the same series or the card fragments.
+                var rootAttrib = new Dictionary<string, (int? SeriesId, string Signal)>(StringComparer.OrdinalIgnoreCase);
+                foreach (var group in episodic.GroupBy(u => JellyfinPathMapper.NormalizeForCompare(SeriesRootOf(u.DbPath) ?? u.DbPath)))
+                {
+                    if (rootAttrib.ContainsKey(group.Key)) continue;
+                    var rootPath = SeriesRootOf(group.First().DbPath) ?? group.First().DbPath;
+                    var leaf = MovieFolderParser.SeriesFolderLeaf(rootPath);
+
+                    if (mappedRoots.TryGetValue(group.Key, out var owners) && owners.Count == 1)
+                    { rootAttrib[group.Key] = (owners.First(), "series-folder"); continue; }
+                    if (owners != null && owners.Count > 1)
+                    { rootAttrib[group.Key] = (null, "series-ambiguous"); continue; }
+                    if (byReviewPath.TryGetValue(group.Key, out var byPath))
+                    { rootAttrib[group.Key] = (byPath, "series-source-path"); continue; }
+
+                    var folderToks = Tokens(MovieFolderParser.ParseSeriesFolder(leaf)?.Title ?? leaf);
+                    var scored = seriesToks
+                        .Select(t => (t.Id, Score: TokenOverlap(t.Toks, folderToks), Need: t.Toks.Count))
+                        .Where(t => t.Score >= 2 || (t.Score >= 1 && t.Need == 1))
+                        .OrderByDescending(t => t.Score).ToList();
+                    rootAttrib[group.Key] = (scored.Count == 1 || (scored.Count > 1 && scored[1].Score < scored[0].Score))
+                        ? (scored[0].Id, "series-title-match")
+                        : (null, "series-new");
+                }
+
+                foreach (var u in episodic)
+                {
+                    var rootPath = SeriesRootOf(u.DbPath) ?? u.DbPath;
+                    var key = JellyfinPathMapper.NormalizeForCompare(rootPath);
+                    var (sid, signal) = rootAttrib.TryGetValue(key, out var a) ? a : (null, "series-new");
+                    var parsedFolder = MovieFolderParser.ParseSeriesFolder(MovieFolderParser.SeriesFolderLeaf(rootPath));
+                    Claim(u.DbPath, u.Item, u.Size, SyncCandidateKind.SeriesEpisode,
+                        signal: signal,
+                        parsedTitle: parsedFolder?.Title ?? MovieFolderParser.SeriesFolderLeaf(rootPath),
+                        parsedYear: parsedFolder?.Year,
+                        seriesFolder: rootPath, targetSeriesId: sid,
+                        season: u.Ep!.Value.Season, episode: u.Ep.Value.Episode,
+                        spansTo: u.Ep.Value.Spans != u.Ep.Value.Episode ? u.Ep.Value.Spans : null);
+                }
+            }
+
+            // 6. What's left is either a new movie (folder parses as "Title (Year)") or unclassified.
             foreach (var u in untracked)
             {
                 if (drafts.ContainsKey(JellyfinPathMapper.NormalizeForCompare(u.DbPath))) continue;
                 var folderLeaf = LeafLabel(ParentDir(u.DbPath) ?? u.DbPath);
-                var parsed = MovieFolderParser.LooksEpisodic(LeafLabel(u.DbPath)) ? null : MovieFolderParser.Parse(folderLeaf);
+                var parsed = MovieFolderParser.Parse(folderLeaf);
                 if (parsed != null)
                     Claim(u.DbPath, u.Item, u.Size, SyncCandidateKind.NewTitle,
                         parsedTitle: parsed.Value.Title, parsedYear: parsed.Value.Year);
@@ -1002,14 +1111,23 @@ namespace MovieTheater.Services.Jellyfin
             r.CandidateUpgrades = drafts.Values.Count(d => d.Kind == SyncCandidateKind.Upgrade);
             r.CandidateNewTitles = drafts.Values.Count(d => d.Kind == SyncCandidateKind.NewTitle);
             r.CandidateUnclassified = drafts.Values.Count(d => d.Kind == SyncCandidateKind.Unclassified);
-            foreach (var d in drafts.Values)
+            r.CandidateSeriesEpisodes = drafts.Values.Count(d => d.Kind == SyncCandidateKind.SeriesEpisode);
+            r.CandidateSeriesGroups = drafts.Values.Where(d => d.Kind == SyncCandidateKind.SeriesEpisode)
+                .Select(d => d.SeriesFolder ?? "").Distinct(StringComparer.OrdinalIgnoreCase).Count();
+            foreach (var d in drafts.Values.Where(d => d.Kind != SyncCandidateKind.SeriesEpisode))
                 r.CandidateLines.Add(d.Kind switch
                 {
                     SyncCandidateKind.Upgrade =>
                         $"upgrade: {d.DbPath} → movie {d.TargetMovieId} '{(d.TargetMovieId != null && movieId2Movie.TryGetValue(d.TargetMovieId.Value, out var m) ? m.Title : "?")}' ({d.Signal})",
                     SyncCandidateKind.NewTitle => $"new: {d.DbPath} → '{d.ParsedTitle}' ({d.ParsedYear})",
-                    _ => $"unclassified: {d.DbPath}",
+                    _ => $"unclassified: {d.DbPath}" + (d.Signal != null ? $" ({d.Signal})" : ""),
                 });
+            // One line per SHOW, not per episode — the whole point of the grouping.
+            foreach (var g in drafts.Values.Where(d => d.Kind == SyncCandidateKind.SeriesEpisode)
+                         .GroupBy(d => d.SeriesFolder ?? "", StringComparer.OrdinalIgnoreCase))
+                r.CandidateLines.Add(
+                    $"series: {g.Key} → {(g.First().TargetSeriesId != null ? $"series {g.First().TargetSeriesId}" : $"NEW '{g.First().ParsedTitle}'")} " +
+                    $"({g.Count()} episode file(s), {g.Select(d => d.SeasonNumber).Distinct().Count()} season(s), {g.First().Signal})");
 
             if (dryRun) return;
 
@@ -1041,6 +1159,14 @@ namespace MovieTheater.Services.Jellyfin
                         row.OldPath = Truncate(d.OldPath, 1024);
                         row.ParsedTitle = Truncate(d.ParsedTitle, 512);
                         row.ParsedYear = d.ParsedYear;
+                        row.SeriesFolder = Truncate(d.SeriesFolder, 1024);
+                        row.SeasonNumber = d.SeasonNumber;
+                        row.EpisodeNumber = d.EpisodeNumber;
+                        row.SpansToEpisode = d.SpansToEpisode;
+                        // A series this candidate was already resolved into outranks re-attribution: the
+                        // refresh must not un-point an episode from the series a previous Resolve created
+                        // for it just because the title-token guess now reads differently.
+                        row.TargetSeriesId ??= d.TargetSeriesId;
                     }
                 }
                 else
@@ -1057,6 +1183,11 @@ namespace MovieTheater.Services.Jellyfin
                         OldPath = Truncate(d.OldPath, 1024),
                         ParsedTitle = Truncate(d.ParsedTitle, 512),
                         ParsedYear = d.ParsedYear,
+                        SeriesFolder = Truncate(d.SeriesFolder, 1024),
+                        TargetSeriesId = d.TargetSeriesId,
+                        SeasonNumber = d.SeasonNumber,
+                        EpisodeNumber = d.EpisodeNumber,
+                        SpansToEpisode = d.SpansToEpisode,
                         FirstSeenUtc = now,
                         LastSeenUtc = now,
                     });
@@ -1455,8 +1586,15 @@ namespace MovieTheater.Services.Jellyfin
         public int CandidateUpgrades { get; set; }
         /// <summary>Untracked files whose folder parses as a movie the library doesn't have.</summary>
         public int CandidateNewTitles { get; set; }
-        /// <summary>Untracked files the classifier couldn't place (episodic, unparseable folder).</summary>
+        /// <summary>Untracked files the classifier couldn't place (unparseable folder, non-video sidecar).</summary>
         public int CandidateUnclassified { get; set; }
+
+        /// <summary>Untracked EPISODE files (SxxExx), stamped with their series folder + episode number.</summary>
+        public int CandidateSeriesEpisodes { get; set; }
+
+        /// <summary>How many distinct SHOWS those episode files represent — the number of review cards
+        /// they will fold into, which is the figure worth reading (84 files, 1 card).</summary>
+        public int CandidateSeriesGroups { get; set; }
         /// <summary>Previously-pending candidates retired this run (file got mapped or vanished).</summary>
         public int CandidatesSuperseded { get; set; }
         /// <summary>One line per classified candidate, for the CLI report.</summary>

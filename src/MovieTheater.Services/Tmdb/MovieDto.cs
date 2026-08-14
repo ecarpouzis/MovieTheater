@@ -63,6 +63,30 @@ namespace MovieTheater.Services.Tmdb
 
         [JsonProperty("name")]
         public string Name { get; set; }
+
+        [JsonProperty("first_air_date")]
+        public string FirstAirDate { get; set; }
+    }
+
+    /// <summary>A <c>/3/search/tv</c> page.</summary>
+    public class TmdbTvSearchDto
+    {
+        [JsonProperty("results")]
+        public List<TmdbTvResultDto> Results { get; set; }
+    }
+
+    /// <summary>A <c>/3/search/movie</c> page.</summary>
+    public class TmdbMovieSearchDto
+    {
+        [JsonProperty("results")]
+        public List<MovieDto> Results { get; set; }
+    }
+
+    /// <summary>A show's ids in other databases — the bridge from a TMDB TV id back to an IMDb tt.</summary>
+    public class TmdbExternalIdsDto
+    {
+        [JsonProperty("imdb_id")]
+        public string ImdbId { get; set; }
     }
 
     public class Root

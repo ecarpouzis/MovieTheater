@@ -40,6 +40,7 @@ namespace MovieTheater.Services
             services.AddSingleton<Jellyfin.JellyfinSyncRunner>();
             services.AddTransient<BoardgameRulesService>();
             services.AddTransient<Poster.PosterFetchService>();
+            services.AddTransient<Series.SeriesEpisodeCatalog>();
             services.AddTransient<TitleEnrichService>();
             services.AddHttpClient<IMDBApiService>(httpClient =>
             {

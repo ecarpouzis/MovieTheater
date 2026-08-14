@@ -1519,8 +1519,10 @@ function syncCandidatesReject(ids) {
     body: JSON.stringify({ Ids: ids || [] }),
   });
 }
-// Correct a pending candidate: retitle, pin an IMDb id, or reclassify (kind: "new" | "upgrade" | "unclassified").
-function syncCandidateUpdate({ id, kind, title, year, imdbId, targetMovieId }) {
+// Correct a pending candidate: retitle, pin an IMDb id, or reclassify
+// (kind: "new" | "upgrade" | "unclassified" | "series"). applyToGroup fans the edit out over every
+// pending candidate sharing this one's series folder — a correction to a SHOW, not to one file.
+function syncCandidateUpdate({ id, kind, title, year, imdbId, targetMovieId, targetSeriesId, applyToGroup }) {
   return fetch("/API/Admin/IngestReview/SyncCandidates/Update", {
     method: "post",
     headers: { "Content-Type": "application/json" },
@@ -1531,6 +1533,8 @@ function syncCandidateUpdate({ id, kind, title, year, imdbId, targetMovieId }) {
       Year: year ?? null,
       ImdbId: imdbId ?? null,
       TargetMovieId: targetMovieId ?? null,
+      TargetSeriesId: targetSeriesId ?? null,
+      ApplyToGroup: !!applyToGroup,
     }),
   });
 }
@@ -1539,6 +1543,21 @@ function syncCandidateUpdate({ id, kind, title, year, imdbId, targetMovieId }) {
 // normal open-batch review flow.
 function syncCandidatesResolve(limit = 3) {
   return fetch(`/API/Admin/IngestReview/SyncCandidates/Resolve?limit=${limit}`, { method: "post" });
+}
+// One chunk of SERIES resolution. A "unit" is identify-the-show / enumerate-one-season /
+// map-the-files, and a call does at most `limit` of them — the caller loops on { done, remaining }.
+// Every unit's result is durable, so an interrupted loop resumes where it stopped.
+function syncCandidatesResolveSeries(limit = 4) {
+  return fetch(`/API/Admin/IngestReview/SyncCandidates/ResolveSeries?limit=${limit}`, { method: "post" });
+}
+// The reviewer's answer to a season-boundary disagreement: map nth file to nth catalogued episode.
+// Never automatic — it overrides what the file names say.
+function syncCandidatesMapSeriesAbsolute(id) {
+  return fetch("/API/Admin/IngestReview/SyncCandidates/MapSeriesAbsolute", {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ Id: id }),
+  });
 }
 
 // ── "Sync from Jellyfin" (3 phases the IngestReview button chains) ──
@@ -1827,6 +1846,8 @@ const MovieAPI = {
   syncCandidatesReject,
   syncCandidateUpdate,
   syncCandidatesResolve,
+  syncCandidatesResolveSeries,
+  syncCandidatesMapSeriesAbsolute,
   jellyfinTriggerScan,
   jellyfinScanStatus,
   jellyfinRunSync,

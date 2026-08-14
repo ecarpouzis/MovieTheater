@@ -69,5 +69,42 @@ namespace MovieTheater.Ingest
             if (head.Length == 0) return rest + ", The"; // pathological "The : foo" -> fall back
             return head + ", The" + tail;
         }
+
+        // Longest first so ", An" is never mis-read as ", A".
+        private static readonly string[] Articles = { "The", "An", "A" };
+
+        /// <summary>
+        /// The exact inverse of <see cref="InvertLeadingThe"/>: "Sheep Detectives, The" -> "The Sheep
+        /// Detectives", and "Lord of the Rings, The: Fellowship" -> "The Lord of the Rings:
+        /// Fellowship".
+        ///
+        /// <para>Needed because the convention is OURS. Folder names carry the A-Z sort form, while
+        /// every external catalogue (IMDb, OMDB, TMDB) holds the real title, so a lookup that passes
+        /// the folder's spelling straight through asks for a title that does not exist anywhere -- the
+        /// answer is a confident "not found" rather than an error, which is the worst kind of miss.
+        /// Also restores ", A" / ", An", which <see cref="InvertLeadingThe"/> never produces but hand-
+        /// filed folders do. Returns the input unchanged when there is no trailing article.</para>
+        /// </summary>
+        public static string RestoreLeadingThe(string title)
+        {
+            var t = (title ?? "").Trim();
+            if (t.Length == 0) return title;
+            foreach (var art in Articles)
+                if (t.StartsWith(art + " ", System.StringComparison.OrdinalIgnoreCase))
+                    return title;   // already in natural order
+
+            foreach (var art in Articles)
+            {
+                // Article re-attached before a subtitle: "X, The: Y" -> "The X: Y".
+                var mid = ", " + art + ":";
+                var i = t.IndexOf(mid, System.StringComparison.OrdinalIgnoreCase);
+                if (i > 0) return art + " " + t.Substring(0, i) + t.Substring(i + mid.Length - 1);
+
+                var end = ", " + art;
+                if (t.Length > end.Length && t.EndsWith(end, System.StringComparison.OrdinalIgnoreCase))
+                    return art + " " + t.Substring(0, t.Length - end.Length);
+            }
+            return title;
+        }
     }
 }

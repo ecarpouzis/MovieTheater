@@ -63,6 +63,7 @@ namespace MovieTheater.Controllers
         private readonly MovieTheater.Services.OpenSubtitles.OpenSubtitlesApi openSubtitles;
         private readonly MovieTheater.Services.Jellyfin.JellyfinSyncService jellyfinSyncService;
         private readonly MovieTheater.Services.Jellyfin.JellyfinSyncRunner jellyfinSyncRunner;
+        private readonly MovieTheater.Services.Series.SeriesEpisodeCatalog episodeCatalog;
         private readonly ILogger<APIController> logger;
 
         public APIController(MovieDb movieDb, TmdbApi tmdb, OmdbApi omdb, ImdbApiClient imdb, HttpClient httpClient, IPosterImageRepository imageRepo,
@@ -74,8 +75,10 @@ namespace MovieTheater.Controllers
             MovieTheater.Services.Jellyfin.JellyfinApi jellyfinApi, MovieTheater.Services.Jellyfin.JellyfinSyncService jellyfinSyncService,
             MovieTheater.Services.Jellyfin.JellyfinSyncRunner jellyfinSyncRunner,
             MovieTheater.Services.OpenSubtitles.OpenSubtitlesApi openSubtitles,
+            MovieTheater.Services.Series.SeriesEpisodeCatalog episodeCatalog,
             ILogger<APIController> logger)
         {
+            this.episodeCatalog = episodeCatalog;
             this.movieDb = movieDb;
             this.tmdb = tmdb;
             this.omdb = omdb;
@@ -3706,9 +3709,14 @@ namespace MovieTheater.Controllers
                     .Select(kv => kv.Key).ToHashSet()
                 : new HashSet<int>();
 
-            // Movies only — series-typed rows now live in the Series table (added below).
+            // Movies only — series-typed rows now live in the Series table (added below). A row still
+            // in a ReviewBatch is the exception: a title filed as a movie that IMDb calls a
+            // mini-series is exactly what a reviewer has to rule on, and excluding it by type would
+            // quarantine it into invisibility — present in the DB, absent from the queue, hidden from
+            // browse. The exclusion applies to LIVE rows, which is where it came from.
             var raw = await movieDb.Movies
-                .Where(m => m.TitleType != TitleType.TvSeries && m.TitleType != TitleType.TvMiniSeries
+                .Where(m => (m.ReviewBatch != null
+                        || (m.TitleType != TitleType.TvSeries && m.TitleType != TitleType.TvMiniSeries))
                     && (m.ReviewBatch != null
                         || (oddScope && m.ReviewBatch == null && m.OddityAcknowledgedUtc == null
                             && m.PlayableId != null && oddPlayableIds.Contains(m.PlayableId.Value))))
@@ -4609,11 +4617,16 @@ namespace MovieTheater.Controllers
         public async Task<IActionResult> SyncCandidatesList()
         {
             if (!await IsCurrentUserEditor()) return Forbid();
-            var pending = await movieDb.SyncCandidates
+            var all = await movieDb.SyncCandidates
                 .Where(c => c.Status == SyncCandidateStatus.Pending)
                 .OrderBy(c => c.Kind).ThenBy(c => c.Path)
                 .ToListAsync();
             var ingestedCount = await movieDb.SyncCandidates.CountAsync(c => c.Status == SyncCandidateStatus.Ingested);
+
+            // Episode candidates never appear as loose rows — they fold into one card per show below.
+            var episodeCands = all.Where(c => c.Kind == SyncCandidateKind.SeriesEpisode).ToList();
+            var pending = all.Where(c => c.Kind != SyncCandidateKind.SeriesEpisode).ToList();
+            var seriesGroups = await BuildSyncSeriesGroupsAsync(episodeCands);
 
             var targetIds = pending.Where(c => c.TargetMovieId != null).Select(c => c.TargetMovieId!.Value).Distinct().ToList();
             var targets = await movieDb.Movies.Where(m => targetIds.Contains(m.id))
@@ -4638,7 +4651,13 @@ namespace MovieTheater.Controllers
                     newTitles = pending.Count(c => c.Kind == SyncCandidateKind.NewTitle),
                     unclassified = pending.Count(c => c.Kind == SyncCandidateKind.Unclassified),
                     ingested = ingestedCount,
+                    seriesGroups = seriesGroups.Count,
+                    seriesEpisodeFiles = episodeCands.Count,
+                    // How many shows still need work before their card is complete — the number the
+                    // "Resolve series" button loops over, and the honest "how much is left".
+                    seriesUnresolved = seriesGroups.Count(g => !g.Complete),
                 },
+                seriesGroups,
                 items = pending.Select(c => new
                 {
                     id = c.Id,
@@ -4659,6 +4678,188 @@ namespace MovieTheater.Controllers
                     lastSeenUtc = c.LastSeenUtc,
                 }),
             });
+        }
+
+        // ── Series-episode candidate groups ───────────────────────────────────────────────────────────
+        // One show = one card, however many episode files it brought. The card carries the show's
+        // identity (matched series or a parse of the folder), what the resolver still owes it
+        // (identify → enumerate episodes → map files), and the per-file episode list so the reviewer
+        // sees S01E07 → "Episode 7" rather than a wall of release names.
+
+        public class SyncSeriesGroupDto
+        {
+            public string Folder { get; set; } = default!;
+            public string? Title { get; set; }
+            public int? Year { get; set; }
+            public string? Signal { get; set; }
+            public int? SeriesId { get; set; }
+            public string? SeriesTitle { get; set; }
+            public string? SeriesImdbId { get; set; }
+            /// <summary>The pending series card is still quarantined in this batch (null once approved).</summary>
+            public string? SeriesReviewBatch { get; set; }
+            public bool SeriesHasPoster { get; set; }
+            public int EpisodeRowsKnown { get; set; }
+            public int FileCount { get; set; }
+            public int SeasonCount { get; set; }
+            public List<int> Seasons { get; set; } = new();
+            /// <summary>Files whose (season, episode) has no Episode row yet — the numbering
+            /// disagreements a reviewer must see rather than have guessed at.</summary>
+            public int UnmatchedFiles { get; set; }
+            public string? Error { get; set; }
+            /// <summary>How the disk's season numbering disagrees with the catalogue's, in words;
+            /// null when they agree. While this is set, NOTHING maps by number — so the card must
+            /// report every file as unmatched rather than showing the by-number lookup's answer,
+            /// which is precisely the answer that would be wrong.</summary>
+            public string? ShapeMismatch { get; set; }
+            /// <summary>The disk and the catalogue hold the same NUMBER of episodes but split them
+            /// into seasons differently, and nothing is mapped yet — the one situation where mapping
+            /// in absolute order is meaningful, offered to the reviewer as an explicit choice.</summary>
+            public bool CanMapAbsolute { get; set; }
+            /// <summary>Nothing left for the resolver: the show is identified, its episodes are
+            /// enumerated, and every file has been mapped (so its candidates left Pending).</summary>
+            public bool Complete { get; set; }
+            /// <summary>What the resolver would do next — shown on the card so the loop is legible.</summary>
+            public string NextStep { get; set; } = default!;
+            public List<SyncSeriesFileDto> Files { get; set; } = new();
+        }
+
+        private sealed record SeriesLite(int Id, string? Title, string? ImdbId, string? ReviewBatch, bool HasPoster);
+
+        public class SyncSeriesFileDto
+        {
+            public int Id { get; set; }
+            public string Path { get; set; } = default!;
+            public long? SizeBytes { get; set; }
+            public int? Season { get; set; }
+            public int? Episode { get; set; }
+            public int? SpansToEpisode { get; set; }
+            public string? EpisodeTitle { get; set; }
+            public bool Matched { get; set; }
+        }
+
+        /// <summary>
+        /// Folds pending episode candidates into one DTO per show and works out, for each, what the
+        /// resolver still owes it. Deliberately read-only and side-effect free — the same computation
+        /// drives both the card and <see cref="SyncCandidatesResolveSeries"/>'s work queue, so the
+        /// progress the reviewer sees is the progress the loop is actually making.
+        /// </summary>
+        private async Task<List<SyncSeriesGroupDto>> BuildSyncSeriesGroupsAsync(List<SyncCandidate> episodeCands)
+        {
+            if (episodeCands.Count == 0) return new List<SyncSeriesGroupDto>();
+
+            var seriesIds = episodeCands.Where(c => c.TargetSeriesId != null)
+                .Select(c => c.TargetSeriesId!.Value).Distinct().ToList();
+            var seriesById = seriesIds.Count == 0
+                ? new Dictionary<int, SeriesLite>()
+                : (await movieDb.Series.Where(s => seriesIds.Contains(s.Id))
+                    .Select(s => new SeriesLite(s.Id, s.Title, s.imdbID, s.ReviewBatch,
+                        s.PosterDetails != null && s.PosterDetails.PosterVersion > 0))
+                    .ToListAsync()).ToDictionary(s => s.Id);
+            // (season, episode) → title, for every series any group points at.
+            var epRows = seriesIds.Count == 0
+                ? new List<(int SeriesId, int Season, int Episode, string? Title)>()
+                : (await movieDb.Episodes.Where(e => e.SeriesId != null && seriesIds.Contains(e.SeriesId!.Value))
+                    .Select(e => new { SeriesId = e.SeriesId!.Value, e.SeasonNumber, e.EpisodeNumber, e.Title })
+                    .ToListAsync())
+                    .Select(e => (SeriesId: e.SeriesId, Season: e.SeasonNumber, Episode: e.EpisodeNumber, Title: e.Title)).ToList();
+            var epLookup = epRows.ToDictionary(e => (e.SeriesId, e.Season, e.Episode), e => e.Title);
+            // The same Episode rows the mapper's shape check reads, grouped per series.
+            var epRowsBySeries = epRows
+                .GroupBy(e => e.SeriesId)
+                .ToDictionary(g => g.Key, g => (IReadOnlyCollection<Episode>)g
+                    .Select(e => new Episode { SeasonNumber = e.Season, EpisodeNumber = e.Episode, Title = e.Title })
+                    .ToList());
+            var epCountBySeries = epRows.GroupBy(e => e.SeriesId).ToDictionary(g => g.Key, g => g.Count());
+            // Episodes of those series that ALREADY hold a file — absolute-order mapping is only
+            // meaningful on a show where nothing is mapped yet.
+            var mappedEpBySeries = seriesIds.Count == 0
+                ? new Dictionary<int, int>()
+                : (await movieDb.Episodes
+                    .Where(e => e.SeriesId != null && seriesIds.Contains(e.SeriesId!.Value) && e.PlayableId != null
+                        && movieDb.MediaFiles.Any(f => f.PlayableId == e.PlayableId))
+                    .GroupBy(e => e.SeriesId!.Value).Select(g => new { g.Key, n = g.Count() })
+                    .ToListAsync()).ToDictionary(x => x.Key, x => x.n);
+
+            var groups = new List<SyncSeriesGroupDto>();
+            foreach (var g in episodeCands
+                .GroupBy(c => c.SeriesFolder ?? ParentDirOfPath(c.Path) ?? c.Path, StringComparer.OrdinalIgnoreCase)
+                .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase))
+            {
+                var members = g.OrderBy(c => c.SeasonNumber ?? 0).ThenBy(c => c.EpisodeNumber ?? 0).ThenBy(c => c.Path).ToList();
+                var head = members[0];
+                var sid = members.Select(c => c.TargetSeriesId).FirstOrDefault(x => x != null);
+                SeriesLite? s = sid != null && seriesById.TryGetValue(sid.Value, out var sv) ? sv : null;
+
+                var dto = new SyncSeriesGroupDto
+                {
+                    Folder = g.Key,
+                    Title = head.ParsedTitle,
+                    Year = head.ParsedYear,
+                    Signal = head.Signal,
+                    SeriesId = sid,
+                    SeriesTitle = s?.Title,
+                    SeriesImdbId = s?.ImdbId,
+                    SeriesReviewBatch = s?.ReviewBatch,
+                    SeriesHasPoster = s?.HasPoster == true,
+                    EpisodeRowsKnown = sid != null && epCountBySeries.TryGetValue(sid.Value, out var ec) ? ec : 0,
+                    FileCount = members.Count,
+                    Seasons = members.Where(c => c.SeasonNumber != null).Select(c => c.SeasonNumber!.Value).Distinct().OrderBy(n => n).ToList(),
+                    Error = members.Select(c => c.ResolutionError).FirstOrDefault(e => e != null),
+                };
+                dto.SeasonCount = dto.Seasons.Count;
+                dto.Files = members.Select(c => new SyncSeriesFileDto
+                {
+                    Id = c.Id,
+                    Path = c.Path,
+                    SizeBytes = c.SizeBytes,
+                    Season = c.SeasonNumber,
+                    Episode = c.EpisodeNumber,
+                    SpansToEpisode = c.SpansToEpisode,
+                    EpisodeTitle = sid != null && c.SeasonNumber != null && c.EpisodeNumber != null
+                        && epLookup.TryGetValue((sid.Value, c.SeasonNumber.Value, c.EpisodeNumber.Value), out var et) ? et : null,
+                    Matched = sid != null && c.SeasonNumber != null && c.EpisodeNumber != null
+                        && epLookup.ContainsKey((sid.Value, c.SeasonNumber.Value, c.EpisodeNumber.Value)),
+                }).ToList();
+                // The card must agree with the mapper. When the season shapes disagree, mapping by
+                // number is refused wholesale — so reporting the by-number lookup's 83-of-84 here
+                // would tell the reviewer the show is nearly done when in fact nothing will attach.
+                if (sid != null && epRowsBySeries.TryGetValue(sid.Value, out var catalogue))
+                {
+                    dto.ShapeMismatch = MovieTheater.Services.Series.SyncSeriesMatcher
+                        .SeasonShapeMismatch(members, catalogue);
+                    if (dto.ShapeMismatch != null)
+                        foreach (var f in dto.Files) f.Matched = false;
+                }
+                dto.UnmatchedFiles = dto.Files.Count(f => !f.Matched);
+                dto.CanMapAbsolute =
+                    sid != null
+                    && dto.EpisodeRowsKnown > 0
+                    && dto.UnmatchedFiles > 0
+                    && (mappedEpBySeries.TryGetValue(sid.Value, out var already) ? already : 0) == 0
+                    && dto.Files.Count(f => f.Season != null && f.Episode != null) == dto.EpisodeRowsKnown;
+
+                dto.NextStep =
+                    sid == null ? "identify the show"
+                    : !dto.SeriesHasPoster ? "enrich the show (poster, plot, rating)"
+                    : dto.EpisodeRowsKnown == 0 ? "enumerate its episodes"
+                    : dto.UnmatchedFiles == dto.FileCount ? "enumerate the missing seasons"
+                    : "map the files to episodes";
+                // These candidates are Pending by definition (the query filters on it), so a group that
+                // still exists always has files left to map — "complete" is about the SHOW being ready,
+                // which is what tells the reviewer the resolver has nothing more to do here.
+                dto.Complete = sid != null && dto.EpisodeRowsKnown > 0 && dto.UnmatchedFiles == 0;
+                if (dto.Complete) dto.NextStep = "map the files to episodes";
+                groups.Add(dto);
+            }
+            return groups;
+        }
+
+        private static string? ParentDirOfPath(string? p)
+        {
+            if (string.IsNullOrEmpty(p)) return null;
+            var s = p.Replace('/', '\\').TrimEnd('\\');
+            var i = s.LastIndexOf('\\');
+            return i <= 0 ? null : s.Substring(0, i);
         }
 
         public class SyncCandidateIdRequest { public int Id { get; set; } }
@@ -4693,7 +4894,7 @@ namespace MovieTheater.Controllers
         public class SyncCandidateUpdateRequest
         {
             public int Id { get; set; }
-            /// <summary>"upgrade" | "new" | "unclassified" — omit to keep the current kind.</summary>
+            /// <summary>"upgrade" | "new" | "unclassified" | "series" — omit to keep the current kind.</summary>
             public string? Kind { get; set; }
             public string? Title { get; set; }
             public int? Year { get; set; }
@@ -4701,6 +4902,13 @@ namespace MovieTheater.Controllers
             public string? ImdbId { get; set; }
             /// <summary>Upgrade target when reclassifying to "upgrade" by hand.</summary>
             public int? TargetMovieId { get; set; }
+            /// <summary>The show an episode candidate belongs to; also settable on a whole group.</summary>
+            public int? TargetSeriesId { get; set; }
+            /// <summary>Apply this edit to EVERY pending candidate sharing the row's SeriesFolder. A
+            /// correction to a show ("this is the wrong series", "here's the right tt") is a statement
+            /// about the show, and fixing it one file at a time across 84 rows is not review, it's
+            /// data entry.</summary>
+            public bool ApplyToGroup { get; set; }
         }
 
         // Correct a wrong classification or parse on a still-pending candidate: retitle a NewTitle,
@@ -4715,49 +4923,101 @@ namespace MovieTheater.Controllers
             if (c.Status != SyncCandidateStatus.Pending)
                 return BadRequest(new { success = false, message = $"Candidate is {c.Status}, not Pending." });
 
+            // An edit aimed at a SHOW applies to every pending file of that show — see ApplyToGroup.
+            var affected = new List<SyncCandidate> { c };
+            if (req.ApplyToGroup && !string.IsNullOrEmpty(c.SeriesFolder))
+                affected = await movieDb.SyncCandidates
+                    .Where(x => x.Status == SyncCandidateStatus.Pending && x.SeriesFolder == c.SeriesFolder)
+                    .ToListAsync();
+
+            if (req.TargetSeriesId != null)
+            {
+                var ts = await movieDb.Series.FirstOrDefaultAsync(s => s.Id == req.TargetSeriesId);
+                if (ts == null) return BadRequest(new { success = false, message = $"No series {req.TargetSeriesId}." });
+                foreach (var x in affected) x.TargetSeriesId = ts.Id;
+            }
+
             // ImdbId: null = leave alone, "" = clear a pin (a rejected resolution must be un-pinnable
             // or re-resolving recreates the same wrong movie), non-empty = validate + pin.
             if (req.ImdbId != null)
             {
-                if (req.ImdbId.Length == 0) c.ResolvedImdbId = null;
+                if (req.ImdbId.Length == 0) foreach (var x in affected) x.ResolvedImdbId = null;
                 else if (!IsValidImdbId(req.ImdbId)) return BadRequest(new { success = false, message = $"'{req.ImdbId}' is not a valid IMDb id." });
-                else c.ResolvedImdbId = req.ImdbId;
+                else foreach (var x in affected) x.ResolvedImdbId = req.ImdbId;
             }
-            if (req.Title != null) c.ParsedTitle = TruncCol(req.Title.Trim(), 512);
-            if (req.Year != null) c.ParsedYear = req.Year;
+            if (req.Title != null) foreach (var x in affected) x.ParsedTitle = TruncCol(req.Title.Trim(), 512);
+            if (req.Year != null) foreach (var x in affected) x.ParsedYear = req.Year;
 
             if (!string.IsNullOrEmpty(req.Kind))
             {
                 switch (req.Kind.ToLowerInvariant())
                 {
+                    case "series":
+                        // Rescue an episode file the classifier left unclassified (an odd file name, a
+                        // folder with no SxxExx): give it a series folder to group under so it joins the
+                        // show's card instead of sitting alone forever.
+                        foreach (var x in affected)
+                        {
+                            x.Kind = SyncCandidateKind.SeriesEpisode;
+                            x.TargetMovieId = null; x.OldPath = null;
+                            x.Signal = "manual";
+                            x.SeriesFolder ??= TruncCol(ParentDirOfPath(x.Path), 1024);
+                            if (x.SeasonNumber == null || x.EpisodeNumber == null)
+                            {
+                                var ep = MovieTheater.Services.Jellyfin.MovieFolderParser.ParseEpisode(LeafOf(x.Path));
+                                if (ep != null)
+                                {
+                                    x.SeasonNumber = ep.Value.Season;
+                                    x.EpisodeNumber = ep.Value.Episode;
+                                    x.SpansToEpisode = ep.Value.Spans != ep.Value.Episode ? ep.Value.Spans : null;
+                                }
+                            }
+                        }
+                        break;
                     case "new":
                         if (string.IsNullOrWhiteSpace(c.ParsedTitle) && string.IsNullOrEmpty(c.ResolvedImdbId))
                             return BadRequest(new { success = false, message = "A new-title candidate needs a title or an IMDb id." });
-                        c.Kind = SyncCandidateKind.NewTitle;
-                        c.TargetMovieId = null; c.Signal = null; c.OldPath = null;
+                        foreach (var x in affected)
+                        {
+                            x.Kind = SyncCandidateKind.NewTitle;
+                            x.TargetMovieId = null; x.Signal = null; x.OldPath = null;
+                            x.TargetSeriesId = null; x.SeriesFolder = null; x.SeriesListOwned = false;
+                        }
                         break;
                     case "upgrade":
                         var target = req.TargetMovieId != null
                             ? await movieDb.Movies.FirstOrDefaultAsync(m => m.id == req.TargetMovieId)
                             : null;
                         if (target == null) return BadRequest(new { success = false, message = "An upgrade candidate needs a valid TargetMovieId." });
+                        // An upgrade is a statement about ONE file replacing ONE movie — never fanned
+                        // out over a group, which would point every episode at the same movie.
                         c.Kind = SyncCandidateKind.Upgrade;
                         c.TargetMovieId = target.id; c.Signal = "manual"; c.OldPath = target.FilePath;
+                        c.TargetSeriesId = null; c.SeriesFolder = null; c.SeriesListOwned = false;
+                        affected = new List<SyncCandidate> { c };
                         break;
                     case "unclassified":
-                        c.Kind = SyncCandidateKind.Unclassified;
-                        c.TargetMovieId = null; c.Signal = null; c.OldPath = null;
+                        foreach (var x in affected)
+                        {
+                            x.Kind = SyncCandidateKind.Unclassified;
+                            x.TargetMovieId = null; x.Signal = null; x.OldPath = null;
+                            x.TargetSeriesId = null; x.SeriesFolder = null; x.SeriesListOwned = false;
+                        }
                         break;
                     default:
                         return BadRequest(new { success = false, message = $"Unknown kind '{req.Kind}'." });
                 }
             }
-            c.ResolutionError = null;
             // Any hand edit pins the row: the next sync's refresh must not clobber a reviewer's
-            // correction with the same machine classification that was wrong the first time.
-            c.PinnedByReviewer = true;
+            // correction with the same machine classification that was wrong the first time. Clearing
+            // the error is what puts a blocked group back in the resolver's queue.
+            foreach (var x in affected)
+            {
+                x.ResolutionError = null;
+                x.PinnedByReviewer = true;
+            }
             await movieDb.SaveChangesAsync();
-            return Ok(new { success = true });
+            return Ok(new { success = true, updated = affected.Count });
         }
 
         // Resolve a few folders' worth of pending NewTitle candidates into quarantined ReviewBatch
@@ -4802,20 +5062,29 @@ namespace MovieTheater.Controllers
                 var primaryCand = members[0];
                 try
                 {
-                    // 1. Resolve: pinned tt wins; otherwise the same cascade the batch-insert page used.
-                    var lookup = !string.IsNullOrEmpty(primaryCand.ResolvedImdbId)
-                        ? primaryCand.ResolvedImdbId!
-                        : $"{primaryCand.ParsedTitle} ({primaryCand.ParsedYear})";
-                    Movie? resolved = null;
-                    try { resolved = (await GetMoviesFromNames(new[] { lookup })).FirstOrDefault(); }
-                    catch { /* a fully-failed lookup can throw inside the cascade — same outcome as no match */ }
-                    if (resolved == null || string.IsNullOrEmpty(resolved.imdbID) || !IsValidImdbId(resolved.imdbID))
+                    // 1. Resolve: pinned tt wins; otherwise the same cascade the batch-insert page used,
+                    // over each spelling of the folder's title (natural order before the sort form).
+                    var resolved = await ResolveThroughCascadeAsync(
+                        primaryCand.ResolvedImdbId, primaryCand.ParsedTitle, primaryCand.ParsedYear, preferFilm: true);
+                    if (resolved == null)
                     {
                         primaryCand.ResolutionError = "No confident metadata match — set the IMDb id or fix the title, then resolve again.";
                         failed++;
                         continue;
                     }
                     var tt = resolved.imdbID!;
+
+                    // 1b. The catalogue's verdict on WHAT this id is, when it disagrees with the shelf.
+                    // FLAGGED, never refused: a title filed as a movie really can be a mini-series
+                    // (that is how they are filed), so blocking would reject correct work. But a plain
+                    // title search also answers a movie query with a same-named ongoing show
+                    // ("Obsession" 2025), which is simply the wrong title — and the dedup below only
+                    // asks whether WE already own the id, so nothing else would catch it. Writing it
+                    // with the disagreement attached puts it in front of a person at LOW trust, which
+                    // is the house rule for an IMDb mismatch; the card's "Reclassify as series" is one
+                    // click away. A pinned id is the reviewer's own decision and is left alone.
+                    var typeDisagrees = string.IsNullOrEmpty(primaryCand.ResolvedImdbId)
+                        && (resolved.TitleType == TitleType.TvSeries || resolved.TitleType == TitleType.TvMiniSeries);
 
                     // 2. Dedup by tt across ALL THREE playable tables before creating anything.
                     var ownerMovie = await movieDb.Movies.FirstOrDefaultAsync(m => m.imdbID == tt);
@@ -4866,7 +5135,15 @@ namespace MovieTheater.Controllers
                     resolved.UploadedDate = DateTime.Now;
                     resolved.ReviewBatch = "sync-scan";
                     resolved.ReviewProvenance = string.IsNullOrEmpty(primaryCand.ResolvedImdbId) ? "sync-scan" : "manual";
-                    resolved.ReviewConfidence = yearAgrees ? "HIGH" : "MEDIUM";
+                    resolved.ReviewConfidence = typeDisagrees ? "LOW" : yearAgrees ? "HIGH" : "MEDIUM";
+                    if (typeDisagrees)
+                    {
+                        resolved.ImdbNeedsReview = true;
+                        resolved.ImdbReviewReason = TruncCol(
+                            $"Filed as a movie, but IMDb lists {tt} as a {(resolved.TitleType == TitleType.TvMiniSeries ? "mini-series" : "TV series")}. " +
+                            "That is normal for a mini-series; for an ongoing show it usually means the title matched the wrong work. " +
+                            "Confirm the id, or use \"Reclassify as a TV series\".", 512);
+                    }
                     resolved.ReviewSourcePath = primaryCand.Path;
                     resolved.FilePath = primaryCand.Path;
                     resolved.Playable = new Playable { Kind = PlayableKind.Movie };
@@ -4950,6 +5227,599 @@ namespace MovieTheater.Controllers
                 remaining,
                 done = remaining == 0,
             });
+        }
+
+        // ── Series-episode resolution (the "Resolve series" loop) ─────────────────────────────────────
+        // Turns a folder of loose episode files into a finished series card, in bounded steps the UI
+        // drives to completion. A "unit" is one of three things, and a call does at most `limit` of
+        // them before returning {processed, remaining, done} — no single request has to survive a
+        // whole show, let alone a whole queue:
+        //
+        //   identify  — resolve the folder to a Series (existing one, or create a quarantined row via
+        //               the same OMDB → IMDb-API → Google cascade the batch page uses), fetch a poster
+        //   episodes  — enumerate ONE season into Episode rows (TMDB + OMDB, no browser)
+        //   map       — attach each file to the episode its NAME claims, as a Playable + MediaFile
+        //
+        // Each unit's result is durable, so an interrupted run resumes exactly where it stopped: the
+        // state is the DB (TargetSeriesId set / Episode rows present / candidate no longer Pending),
+        // never an in-memory cursor. Termination is guaranteed because every unit either advances that
+        // state or writes a ResolutionError, and errored groups are excluded from the queue until a
+        // reviewer clears them by hand.
+
+        [HttpPost("/API/Admin/IngestReview/SyncCandidates/ResolveSeries")]
+        public async Task<IActionResult> SyncCandidatesResolveSeries([FromQuery] int limit = 4)
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+            limit = Math.Clamp(limit, 1, 10);
+
+            var now = DateTime.UtcNow;
+            var user = TruncCol(User.Identity?.Name, 64);
+            int identified = 0, enriched = 0, seasonsEnumerated = 0, episodesAdded = 0, filesMapped = 0, failed = 0;
+            var log = new List<string>();
+
+            var pendingEpisodes = await movieDb.SyncCandidates
+                .Where(c => c.Status == SyncCandidateStatus.Pending && c.Kind == SyncCandidateKind.SeriesEpisode)
+                .ToListAsync();
+
+            // A group with an unresolved error waits for a hand fix (Update clears it) — retrying the
+            // same failing lookup on every tick is the infinite loop this must not become.
+            var queue = pendingEpisodes
+                .GroupBy(c => c.SeriesFolder ?? ParentDirOfPath(c.Path) ?? c.Path, StringComparer.OrdinalIgnoreCase)
+                .Where(g => g.All(c => c.ResolutionError == null))
+                .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            int units = 0;
+            foreach (var group in queue)
+            {
+                if (units >= limit) break;
+                var members = group.OrderBy(c => c.SeasonNumber ?? 0).ThenBy(c => c.EpisodeNumber ?? 0).ThenBy(c => c.Path).ToList();
+                var head = members[0];
+                try
+                {
+                    // ── unit: identify ────────────────────────────────────────────────────────────
+                    var sid = members.Select(c => c.TargetSeriesId).FirstOrDefault(x => x != null);
+                    if (sid == null)
+                    {
+                        units++;
+                        var created = await IdentifySyncSeriesGroupAsync(members, head, now);
+                        if (created == null) { failed++; log.Add($"identify failed: {group.Key}"); continue; }
+                        sid = created.Value;
+                        identified++;
+                        log.Add($"identified {group.Key} → series {sid}");
+                        await movieDb.SaveChangesAsync();
+                        if (units >= limit) continue;
+                    }
+
+                    var series = await movieDb.Series.FirstOrDefaultAsync(s => s.Id == sid.Value);
+                    if (series == null || string.IsNullOrEmpty(series.imdbID))
+                    {
+                        MarkGroupError(members, $"Series {sid} has no IMDb id — set one on its review card, then resolve again.");
+                        failed++; await movieDb.SaveChangesAsync(); continue;
+                    }
+
+                    // ── unit: enrich a bare show ──────────────────────────────────────────────────
+                    // The sync can attribute files to a series that exists but was never filled in —
+                    // Nick Arcade arrived from an archive.org ingest with an id, a title and nothing
+                    // else. Identification only enriches shows it CREATES, so without this a matched
+                    // show would reach the reviewer with no poster, plot or cast. Keyed on
+                    // ImdbVerifiedDate, which is what makes it run once rather than every tick.
+                    if (series.ImdbVerifiedDate == null)
+                    {
+                        if (units >= limit) break;
+                        units++;
+                        try
+                        {
+                            if (await titleEnrichService.EnrichAsync(series.Id, isSeries: true))
+                            {
+                                enriched++;
+                                log.Add($"series {sid} '{series.Title}': enriched (poster, plot, rating)");
+                            }
+                        }
+                        catch (Exception ex) { logger.LogWarning(ex, "Enrich failed for series {Sid}", sid); }
+                        // A failed enrich must not block the episodes — the card is poorer, not stuck.
+                        if (units >= limit) continue;
+                    }
+
+                    // ── unit(s): enumerate seasons ────────────────────────────────────────────────
+                    // ONLY for a series with no episode list at all. An existing show's episodes came
+                    // from the curated pipeline (title-authority re-maps and all), and TMDB/IMDb
+                    // disagree with it often enough that pouring catalogue rows into it would fight
+                    // that work and invent duplicates. For those, the resolver maps into the list that
+                    // is already there and reports whatever doesn't fit.
+                    var existingEpisodeCount = await movieDb.Episodes.CountAsync(e => e.SeriesId == sid.Value);
+                    if (existingEpisodeCount == 0 && !members.Any(m => m.SeriesListOwned))
+                        foreach (var m in members) m.SeriesListOwned = true;   // durable across the chunked walk
+                    if (members.Any(m => m.SeriesListOwned))
+                    {
+                        var fileSeasons = members.Where(c => c.SeasonNumber != null).Select(c => c.SeasonNumber!.Value).Distinct().ToList();
+                        var plan = await episodeCatalog.PlanAsync(series.imdbID);
+                        // The catalogue's season list, not the disk's: a card that says 43 of 84 is the
+                        // honest one, and the missing episodes are a fact worth showing.
+                        var wanted = plan.Seasons.Concat(fileSeasons).Distinct().OrderBy(n => n).ToList();
+                        if (wanted.Count == 0)
+                        {
+                            MarkGroupError(members, TruncCol($"No season list for {series.imdbID} ({plan.Note ?? "no catalogue match"}) — check the IMDb id on the series card.", 512));
+                            failed++; await movieDb.SaveChangesAsync(); continue;
+                        }
+
+                        // Seasons already written by an earlier chunk of THIS enumeration.
+                        var haveSeasons = (await movieDb.Episodes
+                            .Where(e => e.SeriesId == sid.Value)
+                            .Select(e => e.SeasonNumber).Distinct().ToListAsync()).ToHashSet();
+                        // Seasons this call actually asked about. A season the catalogue turns out to
+                        // have nothing for writes no rows, so "has rows" alone would mark it
+                        // outstanding forever and the group would never reach the mapping step.
+                        var attempted = new HashSet<int>();
+                        bool stalled = false;
+                        foreach (var season in wanted.Where(n => !haveSeasons.Contains(n)))
+                        {
+                            if (units >= limit) break;
+                            attempted.Add(season);
+                            units++; seasonsEnumerated++;
+                            var eps = await episodeCatalog.FetchSeasonAsync(series.imdbID, plan.TmdbTvId, season);
+                            if (eps.Count == 0)
+                            {
+                                // A season on disk that no catalogue knows: never invent episodes for
+                                // it, and never retry it forever. Say so and stop this group.
+                                if (fileSeasons.Contains(season))
+                                {
+                                    MarkGroupError(members, TruncCol(
+                                        $"Season {season} has files on disk but neither TMDB nor IMDb lists it for {series.imdbID}. " +
+                                        "Fix the series id or the season numbering, then resolve again.", 512));
+                                    failed++; stalled = true;
+                                }
+                                continue;
+                            }
+                            foreach (var e in eps)
+                                movieDb.Episodes.Add(new Episode
+                                {
+                                    SeriesId = sid.Value,
+                                    SeasonNumber = e.Season,
+                                    EpisodeNumber = e.Episode,
+                                    Title = e.Title,
+                                    ImdbId = e.ImdbId,
+                                    Plot = e.Plot,
+                                    AirDate = e.AirDate,
+                                    RuntimeMinutes = e.RuntimeMinutes,
+                                    ImdbRating = e.ImdbRating,
+                                    StillPath = e.StillPath,
+                                });
+                            episodesAdded += eps.Count;
+                            haveSeasons.Add(season);
+                            await movieDb.SaveChangesAsync();
+                            log.Add($"series {sid} S{season}: +{eps.Count} episodes");
+                        }
+                        if (stalled) { await movieDb.SaveChangesAsync(); continue; }
+                        // Seasons we ran out of budget for — come back for them on the next call
+                        // rather than running a 30-season show inside one request. Seasons we DID ask
+                        // about are done either way, so the walk always terminates.
+                        if (wanted.Any(n => !haveSeasons.Contains(n) && !attempted.Contains(n)))
+                        {
+                            await movieDb.SaveChangesAsync();
+                            continue;
+                        }
+                    }
+
+                    // ── unit: map files to episodes ───────────────────────────────────────────────
+                    if (units >= limit) break;
+                    units++;
+                    var mapped = await MapSyncSeriesFilesAsync(members, sid.Value, now, user);
+                    filesMapped += mapped.Mapped;
+                    log.Add($"series {sid}: mapped {mapped.Mapped}/{members.Count} file(s)" +
+                            (mapped.Unmatched > 0 ? $", {mapped.Unmatched} left for review" : ""));
+                    await movieDb.SaveChangesAsync();
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Sync series resolution failed for {Folder}", group.Key);
+                    foreach (var entry in movieDb.ChangeTracker.Entries().Where(e => e.State == EntityState.Added).ToList())
+                        entry.State = EntityState.Detached;
+                    MarkGroupError(members, TruncCol("Resolution error: " + ex.Message, 512));
+                    failed++;
+                    await movieDb.SaveChangesAsync();
+                }
+            }
+
+            // Recompute what's left from the DB, not from the loop's own bookkeeping — an independent
+            // count is the only "remaining" that can catch a unit that thought it made progress.
+            var stillPending = await movieDb.SyncCandidates
+                .Where(c => c.Status == SyncCandidateStatus.Pending && c.Kind == SyncCandidateKind.SeriesEpisode)
+                .ToListAsync();
+            var remainingGroups = stillPending
+                .GroupBy(c => c.SeriesFolder ?? ParentDirOfPath(c.Path) ?? c.Path, StringComparer.OrdinalIgnoreCase)
+                .Count(g => g.All(c => c.ResolutionError == null));
+
+            return Ok(new
+            {
+                processed = units,
+                identified,
+                enriched,
+                seasonsEnumerated,
+                episodesAdded,
+                filesMapped,
+                failed,
+                remaining = remainingGroups,
+                blocked = stillPending
+                    .GroupBy(c => c.SeriesFolder ?? ParentDirOfPath(c.Path) ?? c.Path, StringComparer.OrdinalIgnoreCase)
+                    .Count(g => g.Any(c => c.ResolutionError != null)),
+                done = remainingGroups == 0,
+                log,
+            });
+        }
+
+        /// <summary>
+        /// The reviewer's answer to a season-boundary disagreement: map this show's files to its
+        /// catalogued episodes in ABSOLUTE order — nth file to nth episode — because the disk and the
+        /// catalogue split the same episodes into seasons differently. Deliberately a separate,
+        /// explicit action rather than a mode of the bulk loop: it overrides what the file names say,
+        /// which is a judgement the tool is not entitled to make on its own.
+        /// </summary>
+        [HttpPost("/API/Admin/IngestReview/SyncCandidates/MapSeriesAbsolute")]
+        public async Task<IActionResult> SyncCandidatesMapSeriesAbsolute([FromBody] SyncCandidateIdRequest req)
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+            var head = await movieDb.SyncCandidates.FirstOrDefaultAsync(c => c.Id == req.Id);
+            if (head == null) return NotFound(new { success = false, message = "Candidate not found." });
+            if (head.TargetSeriesId == null)
+                return BadRequest(new { success = false, message = "Identify the show first." });
+
+            var folder = head.SeriesFolder;
+            var members = (folder == null
+                ? new List<SyncCandidate> { head }
+                : await movieDb.SyncCandidates
+                    .Where(c => c.Status == SyncCandidateStatus.Pending && c.SeriesFolder == folder)
+                    .ToListAsync())
+                .OrderBy(c => c.SeasonNumber ?? 0).ThenBy(c => c.EpisodeNumber ?? 0).ThenBy(c => c.Path)
+                .ToList();
+            foreach (var m in members) m.ResolutionError = null;
+
+            var res = await MapSyncSeriesFilesAsync(members, head.TargetSeriesId.Value,
+                DateTime.UtcNow, TruncCol(User.Identity?.Name, 64), absoluteOrder: true);
+            await movieDb.SaveChangesAsync();
+            logger.LogInformation("Sync series absolute-order mapping: series {Sid}, {Mapped}/{Total} file(s) (by {User})",
+                head.TargetSeriesId, res.Mapped, members.Count, User.Identity?.Name ?? "?");
+            return Ok(new { success = res.Mapped > 0, mapped = res.Mapped, unmatched = res.Unmatched, total = members.Count });
+        }
+
+        /// <summary>
+        /// The forms of a folder-derived title worth asking a catalogue about, best first. The folder
+        /// carries the library's A-Z sort convention ("Sheep Detectives, The"); IMDb, OMDB and TMDB all
+        /// carry the natural title, so the un-inverted form is tried FIRST and the folder's own
+        /// spelling is kept only as a fallback for the rare title that really does end in an article.
+        /// </summary>
+        private static List<string> TitleLookupForms(string? parsedTitle, int? parsedYear)
+        {
+            var forms = new List<string>();
+            var title = (parsedTitle ?? "").Trim();
+            if (title.Length == 0) return forms;
+            var suffix = parsedYear != null ? $" ({parsedYear})" : "";
+
+            var natural = MovieTheater.Ingest.TitleNorm.RestoreLeadingThe(title);
+            if (!string.Equals(natural, title, StringComparison.Ordinal)) forms.Add(natural + suffix);
+            forms.Add(title + suffix);
+            return forms;
+        }
+
+        /// <summary>
+        /// Runs the batch page's OMDB → IMDb-API → Google cascade over each lookup form until one
+        /// answers with a valid IMDb id. A pinned id short-circuits everything. Returns null when no
+        /// form resolved — the caller turns that into a visible "set the IMDb id" on the card.
+        ///
+        /// <para><paramref name="preferFilm"/> adds one retry for the movie lane, and only when the
+        /// cascade's answer is unusable: a general title search has no notion of what KIND of work
+        /// the shelf meant, so "Obsession" in the movies tree comes back as a same-named television
+        /// series. Asking TMDB's film index by name settles it, exactly as the series lane asks the TV
+        /// index. The retry is a fallback, not the primary — the cascade keeps answering the ordinary
+        /// cases the way it always has.</para>
+        /// </summary>
+        private async Task<Movie?> ResolveThroughCascadeAsync(
+            string? pinnedTt, string? parsedTitle, int? parsedYear, bool preferFilm = false)
+        {
+            if (!string.IsNullOrEmpty(pinnedTt))
+            {
+                try { return (await GetMoviesFromNames(new[] { pinnedTt! })).FirstOrDefault(); }
+                catch { return null; }
+            }
+
+            Movie? best = null;
+            foreach (var form in TitleLookupForms(parsedTitle, parsedYear))
+            {
+                Movie? m = null;
+                // A fully-failed lookup can throw inside the cascade — same outcome as no match, and
+                // it must not stop the remaining forms from being tried.
+                try { m = (await GetMoviesFromNames(new[] { form })).FirstOrDefault(); }
+                catch { }
+                if (m == null || string.IsNullOrEmpty(m.imdbID) || !IsValidImdbId(m.imdbID)) continue;
+                var wrongKind = preferFilm && (m.TitleType == TitleType.TvSeries || m.TitleType == TitleType.TvMiniSeries);
+                if (!wrongKind) return m;
+                best ??= m;   // remember it: if the film index also comes up empty, this is still the best we have
+            }
+
+            if (preferFilm)
+            {
+                var film = await ResolveFilmThroughTmdbAsync(parsedTitle, parsedYear);
+                if (film != null) return film;
+            }
+            return best;
+        }
+
+        /// <summary>
+        /// Asks TMDB's film index for a title and carries the hit back through the normal by-id
+        /// lookup, so the returned row is built the same way every other resolution is. Null when
+        /// TMDB has no film by that name, or holds no IMDb id for the one it found.
+        /// </summary>
+        private async Task<Movie?> ResolveFilmThroughTmdbAsync(string? parsedTitle, int? parsedYear)
+        {
+            foreach (var form in TitleLookupForms(parsedTitle, null))
+            {
+                try
+                {
+                    var hits = parsedYear != null ? await tmdb.SearchMovie(form, parsedYear) : new List<MovieDto>();
+                    if (hits.Count == 0) hits = await tmdb.SearchMovie(form);
+                    foreach (var hit in hits.Take(3))
+                    {
+                        var detail = await tmdb.GetMovieDetail(hit.Id);
+                        var tt = detail?.ImdbId;
+                        if (string.IsNullOrWhiteSpace(tt) || !IsValidImdbId(tt)) continue;
+                        var m = (await GetMoviesFromNames(new[] { tt })).FirstOrDefault();
+                        if (m != null && !string.IsNullOrEmpty(m.imdbID) && IsValidImdbId(m.imdbID))
+                        {
+                            logger.LogInformation("Film-index retry: '{Form}' → TMDB {TmdbId} → {Tt}", form, hit.Id, tt);
+                            return m;
+                        }
+                    }
+                }
+                catch (Exception ex) { logger.LogDebug(ex, "TMDB film search failed for {Title}", form); }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Records why a show could not be finished — on ONE row, not the same sentence 84 times.
+        /// It must be a row that is still Pending: after a partial map the mapped rows have left
+        /// Pending, and both the card and the resolver's queue read Pending rows only, so an error
+        /// parked on an Ingested row is invisible and the group silently re-queues.
+        /// </summary>
+        private static void MarkGroupError(List<SyncCandidate> members, string? message)
+        {
+            var target = members.FirstOrDefault(m => m.Status == SyncCandidateStatus.Pending) ?? members[0];
+            target.ResolutionError = message;
+        }
+
+        /// <summary>
+        /// Resolves an episode folder to a Series row — reusing an existing show when its IMDb id is
+        /// already ours, otherwise creating a quarantined <c>ReviewBatch</c> series from the same
+        /// cascade the batch-insert page uses, and fetching its poster so the review card is complete
+        /// BEFORE approval rather than after it. Returns the series id, or null when the lookup could
+        /// not confidently name the show (the reason is left on the group).
+        /// </summary>
+        private async Task<int?> IdentifySyncSeriesGroupAsync(List<SyncCandidate> members, SyncCandidate head, DateTime now)
+        {
+            if (string.IsNullOrEmpty(head.ResolvedImdbId) && string.IsNullOrWhiteSpace(head.ParsedTitle))
+            {
+                MarkGroupError(members, "No title could be parsed from the folder — set a title or IMDb id, then resolve again.");
+                return null;
+            }
+
+            // TV index FIRST, when we are going on a title rather than a pinned id. A show and its
+            // films share a name and a shelf — the Muppets being the standing example — and a general
+            // title search will often hand back the movie, confidently. Asking TMDB's TV index cannot
+            // make that mistake, so it settles the identity before the general cascade ever runs.
+            var pinnedTt = head.ResolvedImdbId;
+            bool tvIndexMatched = false;
+            if (string.IsNullOrEmpty(pinnedTt) && !string.IsNullOrWhiteSpace(head.ParsedTitle))
+            {
+                foreach (var form in TitleLookupForms(head.ParsedTitle, null))
+                {
+                    var tv = await episodeCatalog.FindSeriesByTitleAsync(form, head.ParsedYear);
+                    if (tv == null || !IsValidImdbId(tv.ImdbId)) continue;
+                    // Hand the cascade an id rather than a name. Kept in a LOCAL: this is the tool's
+                    // match, not the reviewer's, so it must not masquerade as a hand-pinned id in the
+                    // provenance the card shows.
+                    pinnedTt = tv.ImdbId;
+                    tvIndexMatched = true;
+                    logger.LogInformation("Sync series identify: '{Form}' matched TMDB tv {TvId} '{Name}' -> {Tt}",
+                        form, tv.TmdbTvId, tv.Name, tv.ImdbId);
+                    break;
+                }
+            }
+
+            var resolved = await ResolveThroughCascadeAsync(pinnedTt, head.ParsedTitle, head.ParsedYear);
+            if (resolved == null)
+            {
+                MarkGroupError(members, "No confident metadata match — set the IMDb id or fix the title, then resolve again.");
+                return null;
+            }
+            var tt = resolved.imdbID!;
+
+            // Already ours? Point at it — never a second row for the same show.
+            var existing = await movieDb.Series.FirstOrDefaultAsync(s => s.imdbID == tt);
+            if (existing != null)
+            {
+                foreach (var c in members) { c.TargetSeriesId = existing.Id; c.ResolvedImdbId = tt; }
+                return existing.Id;
+            }
+            // A tt the MOVIE table owns is a classification conflict, not a series to create.
+            var ownerMovie = await movieDb.Movies.FirstOrDefaultAsync(m => m.imdbID == tt);
+            if (ownerMovie != null)
+            {
+                MarkGroupError(members, TruncCol(
+                    $"{tt} is movie {ownerMovie.id} '{ownerMovie.Title}', not a series — reclassify that title or pin a different id.", 512));
+                return null;
+            }
+            // The mirror of the movie lane's type guard: a folder of episode files whose title search
+            // lands on a FILM has matched the wrong work, and creating a Series row from it would give
+            // the show a tt whose episode list can never be enumerated.
+            if (string.IsNullOrEmpty(head.ResolvedImdbId) && !tvIndexMatched && resolved.TitleType == TitleType.Movie)
+            {
+                MarkGroupError(members, TruncCol(
+                    $"'{head.ParsedTitle}' resolved to {tt} '{resolved.Title}', which IMDb lists as a FILM, and TMDB's TV " +
+                    "index has no show by that name — a show and its movies often share a shelf, so this is usually the " +
+                    "wrong work. Pin the show's IMDb id on this card, then resolve again.", 512));
+                return null;
+            }
+
+            var series = new Series();
+            CopyTitleScalars(resolved, series);
+            if (series.TitleType != TitleType.TvSeries && series.TitleType != TitleType.TvMiniSeries)
+                series.TitleType = TitleType.TvSeries;
+            series.imdbID = tt;
+            series.UploadedDate = DateTime.Now;
+            series.StartYear ??= resolved.ReleaseDate?.Year ?? head.ParsedYear;
+            series.ReviewBatch = "sync-scan";
+            series.ReviewProvenance = !string.IsNullOrEmpty(head.ResolvedImdbId) ? "manual"
+                : tvIndexMatched ? "sync-scan-tv" : "sync-scan";
+            var yearAgrees = head.ParsedYear != null && resolved.ReleaseDate != null
+                && Math.Abs(resolved.ReleaseDate.Value.Year - head.ParsedYear.Value) <= 1;
+            series.ReviewConfidence = yearAgrees ? "HIGH" : "MEDIUM";
+            series.ReviewSourcePath = TruncCol(head.SeriesFolder ?? ParentDirOfPath(head.Path), 1024);
+            movieDb.Series.Add(series);
+            await movieDb.SaveChangesAsync();   // assigns series.Id
+
+            try { await SeriesNormalizer.ApplyAllAsync(movieDb, series); } catch { /* normalized parse is best-effort */ }
+            try { await posterFetchService.EnsurePosterAsync(series.Id, tt, isSeries: true); } catch { /* a card without art is still reviewable */ }
+
+            foreach (var c in members) { c.TargetSeriesId = series.Id; c.ResolvedImdbId = tt; }
+            return series.Id;
+        }
+
+        /// <summary>
+        /// Attaches each of a group's files to the episode its FILE NAME names — (season, episode)
+        /// exact match against the Episode rows, never position in a sorted list, because a folder
+        /// with a gap or absolute numbering would otherwise off-by-one an entire season without
+        /// anything looking wrong. A file whose episode does not exist, or whose episode already has a
+        /// Primary, is left Pending with a reason so it lands in front of a person.
+        ///
+        /// <para><paramref name="absoluteOrder"/> is the reviewer's explicit override for the case the
+        /// shape guard catches: the disk and the catalogue agree on the TOTAL but split it into
+        /// seasons differently, so the nth file is the nth episode even though their season/episode
+        /// labels differ. It is never chosen automatically — the tool can see the ambiguity but not
+        /// resolve it, so a person does, and then the tool does the clerical part.</para>
+        /// </summary>
+        private async Task<(int Mapped, int Unmatched)> MapSyncSeriesFilesAsync(
+            List<SyncCandidate> members, int seriesId, DateTime now, string? user, bool absoluteOrder = false)
+        {
+            var episodes = await movieDb.Episodes.Where(e => e.SeriesId == seriesId).ToListAsync();
+            var byNumber = episodes
+                .GroupBy(e => (e.SeasonNumber, e.EpisodeNumber))
+                .ToDictionary(g => g.Key, g => g.First());
+            var epIds = episodes.Where(e => e.PlayableId != null).Select(e => e.PlayableId!.Value).ToList();
+            var filesByPlayable = (await movieDb.MediaFiles.Where(f => epIds.Contains(f.PlayableId)).ToListAsync())
+                .GroupBy(f => f.PlayableId).ToDictionary(g => g.Key, g => g.ToList());
+
+            // Absolute mode re-points each file at the nth catalogued episode instead of the one its
+            // label names. Only legal on a 1:1 count with nothing already mapped — otherwise the zip
+            // has no defined meaning and would collide with existing files.
+            Dictionary<int, Episode>? absoluteTarget = null;
+            if (absoluteOrder)
+            {
+                absoluteTarget = filesByPlayable.Count > 0
+                    ? null
+                    : MovieTheater.Services.Series.SyncSeriesMatcher.AbsolutePairing(members, episodes);
+                if (absoluteTarget == null)
+                {
+                    var n = members.Count(c => c.SeasonNumber != null && c.EpisodeNumber != null);
+                    MarkGroupError(members, TruncCol(
+                        $"Absolute-order mapping needs an exact 1:1 with nothing already mapped: {n} file(s) " +
+                        $"vs {episodes.Count} catalogued episode(s), {filesByPlayable.Count} already mapped.", 512));
+                    return (0, members.Count);
+                }
+            }
+            else
+            {
+                var mismatch = MovieTheater.Services.Series.SyncSeriesMatcher.SeasonShapeMismatch(members, episodes);
+                if (mismatch != null)
+                {
+                    var diskCount = members.Count(c => c.SeasonNumber != null && c.EpisodeNumber != null);
+                    var totalsAgree = diskCount == episodes.Count && filesByPlayable.Count == 0;
+                    MarkGroupError(members, TruncCol(
+                        $"Not mapped — {mismatch}. Mapping by number would shift every later episode. " +
+                        (totalsAgree
+                            ? $"The totals DO agree ({diskCount} files, {episodes.Count} catalogued episodes), so this looks like a season-boundary difference: use \"Map in absolute order\" if the files are in broadcast order."
+                            : "Map these by hand from the series card."), 512));
+                    return (0, members.Count);
+                }
+            }
+
+            // One Jellyfin round trip for the whole group's runtimes rather than one per file.
+            var itemIds = members.Where(m => !string.IsNullOrEmpty(m.JellyfinItemId)).Select(m => m.JellyfinItemId!).Distinct().ToList();
+            var details = new Dictionary<string, MovieTheater.Services.Jellyfin.JellyfinItem>(StringComparer.OrdinalIgnoreCase);
+            if (itemIds.Count > 0)
+            {
+                try
+                {
+                    foreach (var i in await jellyfinApi.GetItemsByIdsAsync(itemIds)) details[i.Id] = i;
+                }
+                catch { /* runtime detail is a nicety; the mapping itself does not need it */ }
+            }
+
+            int mapped = 0, unmatched = 0;
+            var reasons = new List<string>();
+            foreach (var c in members)
+            {
+                if (c.SeasonNumber == null || c.EpisodeNumber == null)
+                { unmatched++; reasons.Add($"{LeafOf(c.Path)}: no SxxExx in the file name"); continue; }
+                if (c.SpansToEpisode != null)
+                {
+                    unmatched++;
+                    reasons.Add($"{LeafOf(c.Path)}: covers E{c.EpisodeNumber}–E{c.SpansToEpisode} — attach it by hand from the series card");
+                    continue;
+                }
+                Episode? ep;
+                if (absoluteTarget != null)
+                {
+                    if (!absoluteTarget.TryGetValue(c.Id, out ep))
+                    { unmatched++; reasons.Add($"{LeafOf(c.Path)}: no position in the absolute order"); continue; }
+                }
+                else if (!byNumber.TryGetValue((c.SeasonNumber.Value, c.EpisodeNumber.Value), out ep))
+                { unmatched++; reasons.Add($"{LeafOf(c.Path)}: S{c.SeasonNumber:00}E{c.EpisodeNumber:00} is not an episode of this series"); continue; }
+
+                if (ep.PlayableId != null
+                    && filesByPlayable.TryGetValue(ep.PlayableId.Value, out var existingFiles)
+                    && existingFiles.Any(f => f.Role == MovieFileRole.Primary))
+                {
+                    unmatched++;
+                    reasons.Add($"{LeafOf(c.Path)}: S{c.SeasonNumber:00}E{c.EpisodeNumber:00} already has a primary file");
+                    continue;
+                }
+
+                if (ep.PlayableId == null)
+                {
+                    var pl = new Playable { Kind = PlayableKind.Episode };
+                    movieDb.Playables.Add(pl);
+                    await movieDb.SaveChangesAsync();
+                    ep.PlayableId = pl.Id;
+                }
+                movieDb.MediaFiles.Add(new MediaFile
+                {
+                    PlayableId = ep.PlayableId!.Value,
+                    Path = c.Path,
+                    Role = MovieFileRole.Primary,
+                    Label = "match:sync-scan-series",
+                    JellyfinItemId = c.JellyfinItemId,
+                    SizeBytes = c.SizeBytes,
+                    DurationTicks = c.JellyfinItemId != null && details.TryGetValue(c.JellyfinItemId, out var d) ? d.RunTimeTicks : null,
+                    LastSyncedUtc = now,
+                });
+                c.Status = SyncCandidateStatus.Ingested;
+                c.ResolvedUtc = now;
+                c.ResolvedBy = user;
+                mapped++;
+            }
+
+            if (unmatched > 0)
+                MarkGroupError(members, TruncCol(
+                    $"{unmatched} of {members.Count} file(s) could not be mapped: " + string.Join("; ", reasons.Take(6))
+                    + (reasons.Count > 6 ? $"; +{reasons.Count - 6} more" : ""), 512));
+            return (mapped, unmatched);
+        }
+
+        private static string LeafOf(string path)
+        {
+            var s = path.Replace('/', '\\').TrimEnd('\\');
+            var i = s.LastIndexOf('\\');
+            return i < 0 ? s : s.Substring(i + 1);
         }
 
         // ── Per-movie "Re-link files from disk" (movie edit page) ─────────────────────────────────────
@@ -5823,7 +6693,36 @@ namespace MovieTheater.Controllers
             movieDb.MediaFiles.RemoveRange(await movieDb.MediaFiles.Where(f => epPids.Contains(f.PlayableId)).ToListAsync());
             movieDb.Episodes.RemoveRange(eps);
             movieDb.Playables.RemoveRange(await movieDb.Playables.Where(p => epPids.Contains(p.Id)).ToListAsync());
+            await ClearSyncCandidateSeriesRefsAsync(s);
             movieDb.Series.Remove(s);
+        }
+
+        /// <summary>
+        /// The <see cref="ClearSyncCandidateRefsAsync"/> counterpart for series: <c>TargetSeriesId</c> is
+        /// NO ACTION in the DB, so every path that removes a Series must clear it or the delete throws.
+        /// Episode candidates that were mapped into the show being deleted come BACK as Pending — their
+        /// files exist and are untracked again the moment the episodes go away, and silently losing them
+        /// would make a rejected series erase the evidence that its files are on disk. The pinned tt is
+        /// cleared too: it produced a series the reviewer just rejected, so a re-resolve must not
+        /// deterministically recreate it.
+        /// </summary>
+        private async Task ClearSyncCandidateSeriesRefsAsync(Series s)
+        {
+            foreach (var c in await movieDb.SyncCandidates.Where(c => c.TargetSeriesId == s.Id).ToListAsync())
+            {
+                c.TargetSeriesId = null;
+                c.ResolvedImdbId = null;
+                // The episode list went with the series, so the next resolve is free to build a new
+                // one — the ownership marker must not outlive the list it described.
+                c.SeriesListOwned = false;
+                c.ResolutionError = TruncCol($"The resolved series '{s.Title}' was rejected/deleted — re-resolve or dismiss.", 512);
+                if (c.Status == SyncCandidateStatus.Ingested)
+                {
+                    c.Status = SyncCandidateStatus.Pending;
+                    c.ResolvedUtc = null;
+                    c.ResolvedBy = null;
+                }
+            }
         }
 
         // Delete a misc video + its Playable/files. Used when the title moves to series.

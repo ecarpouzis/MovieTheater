@@ -127,5 +127,97 @@ namespace MovieTheater.Services.Tmdb
             string responseContent = await response.Content.ReadAsStringAsync();
             return JsonConvert.DeserializeObject<TmdbTvDetailDto>(responseContent);
         }
+
+        /// <summary>
+        /// Searches TMDB's FILM index by name — the mirror of <see cref="SearchTv"/>, and needed for
+        /// the same reason in reverse: a general title search can answer a movie query with a
+        /// same-named television show, and asking the film index removes the ambiguity instead of
+        /// guessing which of the two the shelf meant.
+        /// </summary>
+        public async Task<List<MovieDto>> SearchMovie(string query, int? year = null)
+        {
+            var url = $"/3/search/movie?api_key={_options.ApiKey}&query={Uri.EscapeDataString(query)}"
+                      + (year != null ? $"&year={year}" : "");
+            var response = await _httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Get, new Uri(url, UriKind.Relative)));
+            if (!response.IsSuccessStatusCode) return new List<MovieDto>();
+
+            var content = await response.Content.ReadAsStringAsync();
+            try
+            {
+                return JsonConvert.DeserializeObject<TmdbMovieSearchDto>(content)?.Results ?? new List<MovieDto>();
+            }
+            catch (JsonException)
+            {
+                return new List<MovieDto>();
+            }
+        }
+
+        /// <summary>
+        /// Searches TMDB's TV index by name. The point is the index, not the ranking: a plain title
+        /// search cannot tell "The Muppet Show" from "The Muppet Movie" and will often prefer the
+        /// film, because a show and its movies share a name and a shelf. Asking the TV index instead
+        /// removes the ambiguity at the source rather than second-guessing a film match afterwards.
+        /// </summary>
+        public async Task<List<TmdbTvResultDto>> SearchTv(string query, int? firstAirYear = null)
+        {
+            var url = $"/3/search/tv?api_key={_options.ApiKey}&query={Uri.EscapeDataString(query)}"
+                      + (firstAirYear != null ? $"&first_air_date_year={firstAirYear}" : "");
+            var response = await _httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Get, new Uri(url, UriKind.Relative)));
+            if (!response.IsSuccessStatusCode) return new List<TmdbTvResultDto>();
+
+            var content = await response.Content.ReadAsStringAsync();
+            try
+            {
+                return JsonConvert.DeserializeObject<TmdbTvSearchDto>(content)?.Results ?? new List<TmdbTvResultDto>();
+            }
+            catch (JsonException)
+            {
+                return new List<TmdbTvResultDto>();
+            }
+        }
+
+        /// <summary>A TV show's IMDb id, so a TMDB-side match can be carried back into our tt-keyed
+        /// world. Null when TMDB holds no IMDb id for it.</summary>
+        public async Task<string?> GetTvImdbId(int tvId)
+        {
+            var response = await _httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Get,
+                new Uri($"/3/tv/{tvId}/external_ids?api_key={_options.ApiKey}", UriKind.Relative)));
+            if (!response.IsSuccessStatusCode) return null;
+
+            var content = await response.Content.ReadAsStringAsync();
+            try
+            {
+                var id = JsonConvert.DeserializeObject<TmdbExternalIdsDto>(content)?.ImdbId;
+                return string.IsNullOrWhiteSpace(id) ? null : id.Trim();
+            }
+            catch (JsonException)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// One season's episode list. This is the HTTP-only alternative to scraping IMDb's episode
+        /// pages with Playwright — the API pod has no browser, and the review tool's series resolution
+        /// has to run there. Returns null on a non-success status (a season TMDB doesn't have).
+        /// </summary>
+        public async Task<TmdbSeasonDetailDto?> GetTvSeason(int tvId, int seasonNumber)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get,
+                new Uri($"/3/tv/{tvId}/season/{seasonNumber}?api_key={_options.ApiKey}", UriKind.Relative));
+            var response = await _httpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+                return null;
+
+            string responseContent = await response.Content.ReadAsStringAsync();
+            try
+            {
+                return JsonConvert.DeserializeObject<TmdbSeasonDetailDto>(responseContent);
+            }
+            catch (JsonException)
+            {
+                return null;
+            }
+        }
     }
 }

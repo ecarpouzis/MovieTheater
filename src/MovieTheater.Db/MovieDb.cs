@@ -133,6 +133,19 @@ namespace MovieTheater.Db
                 .HasForeignKey(c => c.CreatedMovieId)
                 .OnDelete(DeleteBehavior.ClientSetNull);
 
+            // Same NO ACTION treatment as the Movie FKs above: DeleteSeriesSubtreeAsync clears candidate
+            // references before removing a series, so a rejected show's episode candidates come back
+            // Pending instead of the delete throwing.
+            modelBuilder.Entity<SyncCandidate>()
+                .HasOne(c => c.TargetSeries)
+                .WithMany()
+                .HasForeignKey(c => c.TargetSeriesId)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            // The review tool's series lane always reads by folder group.
+            modelBuilder.Entity<SyncCandidate>()
+                .HasIndex(c => new { c.Status, c.SeriesFolder });
+
             modelBuilder.Entity<Episode>()
                 .HasIndex(e => new { e.SeriesId, e.SeasonNumber, e.EpisodeNumber })
                 .IsUnique();

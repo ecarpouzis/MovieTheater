@@ -76,6 +76,57 @@ namespace MovieTheater.Services.Tmdb
 
         [JsonProperty("videos")]
         public TmdbVideos Videos { get; set; }
+
+        /// <summary>Season stubs (<c>season_number</c>, <c>episode_count</c>) — the authority for HOW
+        /// MANY seasons a show has, so the episode enumeration can walk them without guessing.</summary>
+        [JsonProperty("seasons")]
+        public List<TmdbSeasonStub> Seasons { get; set; }
+    }
+
+    public class TmdbSeasonStub
+    {
+        [JsonProperty("season_number")]
+        public int SeasonNumber { get; set; }
+
+        [JsonProperty("episode_count")]
+        public int EpisodeCount { get; set; }
+    }
+
+    /// <summary>One season's full episode list (<c>/3/tv/{id}/season/{n}</c>).</summary>
+    public class TmdbSeasonDetailDto
+    {
+        [JsonProperty("season_number")]
+        public int SeasonNumber { get; set; }
+
+        [JsonProperty("episodes")]
+        public List<TmdbEpisodeDto> Episodes { get; set; }
+    }
+
+    public class TmdbEpisodeDto
+    {
+        [JsonProperty("episode_number")]
+        public int EpisodeNumber { get; set; }
+
+        [JsonProperty("season_number")]
+        public int SeasonNumber { get; set; }
+
+        [JsonProperty("name")]
+        public string Name { get; set; }
+
+        [JsonProperty("overview")]
+        public string Overview { get; set; }
+
+        [JsonProperty("still_path")]
+        public string StillPath { get; set; }
+
+        [JsonProperty("air_date")]
+        public string AirDate { get; set; }
+
+        [JsonProperty("runtime")]
+        public int? Runtime { get; set; }
+
+        [JsonProperty("vote_average")]
+        public decimal? VoteAverage { get; set; }
     }
 
     public class TmdbCountry

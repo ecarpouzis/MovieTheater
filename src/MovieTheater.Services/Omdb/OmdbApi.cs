@@ -140,6 +140,36 @@ namespace MovieTheater.Services.Omdb
             return movie;
         }
 
+        /// <summary>
+        /// One season's episodes straight from OMDB (<c>&amp;Season=n</c>), which is IMDb's own data —
+        /// the source of each episode's IMDb id and IMDb rating, neither of which TMDB carries. Used
+        /// alongside the TMDB season fetch (titles/plots/stills) so an enumerated season is as complete
+        /// as the hand-run scrape produced. Returns an empty list for a season IMDb doesn't have, which
+        /// is also how the caller learns to stop walking seasons.
+        /// </summary>
+        public async Task<OmdbSeasonDto?> GetSeason(string imdbID, int season)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get,
+                new Uri($"?apikey={_options.ApiKey}&i={imdbID}&Season={season}", UriKind.Relative));
+            var response = await _httpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode) return null;
+
+            var content = await response.Content.ReadAsStringAsync();
+            try
+            {
+                var root = JsonConvert.DeserializeObject<OmdbSeasonDto>(content);
+                return root?.Response == "True" ? root : null;
+            }
+            catch (JsonException)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>Just the episode rows of <see cref="GetSeason"/>; empty for a season IMDb lacks.</summary>
+        public async Task<List<OmdbSeasonEpisode>> GetSeasonEpisodes(string imdbID, int season) =>
+            (await GetSeason(imdbID, season))?.Episodes ?? new List<OmdbSeasonEpisode>();
+
         public async Task<Movie> GetMovieByName(string name)
         {
             var request = new HttpRequestMessage(HttpMethod.Get, new Uri($"?apikey={_options.ApiKey}&t={name}", UriKind.Relative));

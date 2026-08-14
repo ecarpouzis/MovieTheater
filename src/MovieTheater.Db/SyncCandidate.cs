@@ -10,7 +10,9 @@ namespace MovieTheater.Db
     /// <see cref="SyncCandidateKind.Upgrade"/> (evidence ties it to an existing movie whose file went
     /// missing — approving re-points that movie in place) and a <see cref="SyncCandidateKind.NewTitle"/>
     /// (its folder parses as a movie the library doesn't have — resolving details creates a quarantined
-    /// <c>ReviewBatch</c> Movie row that flows through the normal review ingest). Rows are keyed by
+    /// <c>ReviewBatch</c> Movie row that flows through the normal review ingest), plus
+    /// <see cref="SyncCandidateKind.SeriesEpisode"/> (an episode file, reviewed as part of the ONE card
+    /// its <see cref="SeriesFolder"/> group forms rather than on its own). Rows are keyed by
     /// <see cref="Path"/> and upserted by each sync, so a candidate survives re-syncs without
     /// duplicating and a rejection is remembered.
     /// </summary>
@@ -72,6 +74,46 @@ namespace MovieTheater.Db
 
         [ForeignKey(nameof(CreatedMovieId))]
         public Movie? CreatedMovie { get; set; }
+
+        // ── SeriesEpisode grouping ────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// The folder every episode file of ONE show shares — the grouping key that turns 84 loose
+        /// rows into a single review card. Derived by climbing past season/release folders, so
+        /// "…\Nick Arcade (1992)\Nick.Arcade.S01…-BTN\S01E07.mkv" and its 83 siblings across both
+        /// season folders all carry "L:\2 - Video\Series\Nick Arcade (1992)".
+        /// </summary>
+        [MaxLength(1024)]
+        public string? SeriesFolder { get; set; }
+
+        /// <summary>The Series these episodes belong to — matched to an existing one by the sync, or
+        /// set when a resolve creates it. Null means the show still needs identifying.</summary>
+        public int? TargetSeriesId { get; set; }
+
+        [ForeignKey(nameof(TargetSeriesId))]
+        public Series? TargetSeries { get; set; }
+
+        /// <summary>Season/episode the FILE NAME claims. The mapping is by this pair, never by
+        /// position in a sorted list — an absolute-numbered or gap-ridden folder would silently
+        /// off-by-one a whole season.</summary>
+        public int? SeasonNumber { get; set; }
+
+        public int? EpisodeNumber { get; set; }
+
+        /// <summary>Last episode of a multi-episode file ("S01E01-E02" → 2); null for the normal
+        /// single-episode case. Set so a combined file is visibly a decision, not silently mapped to
+        /// its first episode alone.</summary>
+        public int? SpansToEpisode { get; set; }
+
+        /// <summary>
+        /// The resolver found <see cref="TargetSeriesId"/> with NO episode list and took ownership of
+        /// building one. Durable because the enumeration is chunked across calls: without it, the
+        /// second call would see the episodes the first call wrote, conclude the list is curated, and
+        /// abandon a multi-season show half-catalogued. It is equally the guard in the other
+        /// direction — a series that already had episodes never gets this flag, so the resolver can
+        /// never pour catalogue rows into a hand-reconciled list.
+        /// </summary>
+        public bool SeriesListOwned { get; set; }
 
         /// <summary>Set when a reviewer hand-edited this row (retitle, pinned tt, reclassify). A
         /// pinned Pending row keeps its classification across syncs — the refresh would otherwise
