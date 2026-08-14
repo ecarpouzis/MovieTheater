@@ -155,13 +155,32 @@
   margin-right: 6px;
 }
 
+/* A button now (it opens the tracklist), styled back down to the heading line it replaced: the
+   affordance is the hover colour and the cursor, not button chrome. display:block + width:100% so
+   the ellipsis still has a definite width to clip against, and text-align:left because a button
+   would otherwise centre it. */
 .music-playlist-card-name {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
   font-weight: 600;
   font-size: 14px;
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  transition: color 0.12s ease;
+}
+
+.music-playlist-card-name:hover { color: var(--accent); }
+
+@media (prefers-reduced-motion: reduce) {
+  .music-playlist-card-name { transition: none; }
 }
 
 .music-playlist-card-sub {
@@ -173,7 +192,19 @@
   min-height: 15px;
 }
 
-.music-playlist-card-actions { display: flex; gap: 8px; margin-top: 2px; }
+/* Wraps, and needs to: the grid's columns bottom out at 230px (≈202px of content) and four verbs
+   want ~290px, so without this they overflowed the card — which three of them already did before
+   Tracks was added. Wrapping to 2×2 in a card is fine; spilling past its border is not. */
+.music-playlist-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+/* The verbs keep their labels whatever the card does, so they must not be squeezed narrower than
+   their text — a flex item's default min-width:auto is what lets that happen. */
+.music-playlist-card-actions .music-playlist-btn { flex: none; }
 
 .music-playlist-btn {
   background: var(--sidebar-pill-bg, var(--accent-soft));
@@ -187,6 +218,36 @@
 
 .music-playlist-btn:hover:not(:disabled) { background: var(--accent-soft); color: var(--accent); }
 .music-playlist-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* ── Playlist tracklist sheet ──
+   Borrows the album sheet's container chain wholesale (.music-album-detail / -head / -tracks), so
+   the only thing here is the state an album can't be in: empty. It takes the tracklist's slot in
+   the flex column, so it needs that slot's gutter — the sheet puts its padding on the CHILDREN,
+   not on the body. */
+/* A playlist's rows carry a meta and an album's don't (one album, one artist), and in the sheet on
+   a phone the row has the least width it will ever have. Title and meta both shrink in proportion
+   to their content, so the meta — 30-odd characters of "Artist — Album" — was squeezing the title
+   down to "Track n…", i.e. eating the one part that says WHICH song this is. The meta yields first:
+   it is the disambiguator, the title is the thing being read. Same call the play bar's queue makes
+   with its artist column, and scoped to the sheet so the library's own lists are untouched. */
+@media (max-width: 640px) {
+  .music-album-modal.ant-modal-wrap .music-song-meta { max-width: 34%; }
+}
+
+/* Below this there is no split that leaves both readable — capping the meta just buys the title a
+   few characters and truncates them both. The artist goes; the title, the number and the two
+   trailing buttons are what the row is FOR, and the bar names the artist of whatever this queues. */
+@media (max-width: 420px) {
+  .music-album-modal.ant-modal-wrap .music-song-meta { display: none; }
+}
+
+.music-album-modal.ant-modal-wrap .music-playlist-tracks-empty {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 22px var(--music-sheet-pad);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
 
 /* Small "＋" button that opens the picker, used on song rows and next to album actions. */
 .music-add-btn {

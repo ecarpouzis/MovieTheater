@@ -3,6 +3,8 @@ import { useHistory } from "react-router-dom";
 import { MovieAPI } from "../../MovieAPI";
 import { useMusicPlayer } from "../../Music/MusicPlayerContext";
 import MusicPlaylistManageModal from "./MusicPlaylistManageModal";
+import MusicPlaylistTracksModal from "./MusicPlaylistTracksModal";
+import MusicPlaylistPickerModal from "./MusicPlaylistPickerModal";
 // ⚠ BOTH sheets, and MusicPage.css is the load-bearing one. Every /music route is its own lazy
 // chunk, so a page only has the CSS it imports ITSELF — this page's shell is `.music-page`, which
 // lives in MusicPage.css and carries the site's content max-width. Without the import the shell had
@@ -26,6 +28,13 @@ export default function MusicPlaylistsPage({ userData }) {
   const [playlists, setPlaylists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [manageId, setManageId] = useState(null);
+  // Looking inside a playlist is a DIFFERENT job from editing it: this one plays and queues, and
+  // never writes. Manage owns the reorder/remove/share half and its Save/Cancel contract.
+  const [tracksId, setTracksId] = useState(null);
+  // The tracklist's ＋ needs somewhere to put a track, and this route had no picker of its own —
+  // the library page carries one for exactly the same reason (music-plan.md Phase 3).
+  const [pickerTracks, setPickerTracks] = useState(null);
+  const [pickerName, setPickerName] = useState("");
 
   const gated = !userData?.hasPassword;
 
@@ -79,10 +88,17 @@ export default function MusicPlaylistsPage({ userData }) {
         key={p.id}
         data-testid="music-playlist-card"
       >
-        <div className="music-playlist-card-name" title={p.name}>
+        {/* The name is the way in, because "click the thing to see what's in it" is what an album
+            card already does and it is what anyone tries first. A real button, so it is reachable
+            by keyboard — the card itself can't be one, since it contains buttons. */}
+        <button
+          className="music-playlist-card-name"
+          title={`See the tracks in ${p.name}`}
+          onClick={() => setTracksId(p.id)}
+        >
           {p.isFavorites && <span className="music-playlist-card-heart" aria-hidden="true">♥</span>}
           {p.name}
-        </div>
+        </button>
         <div className="music-playlist-card-sub" title={(p.trackTitles || []).join(", ")}>
           {p.count} track{p.count === 1 ? "" : "s"}
           {p.isFavorites ? " · only yours" : ""}
@@ -96,6 +112,17 @@ export default function MusicPlaylistsPage({ userData }) {
           </button>
           <button className="music-playlist-btn" disabled={p.count === 0} onClick={() => play(p.id, { shuffle: true })}>
             🔀 Shuffle
+          </button>
+          {/* Spelled out next to Play and Shuffle rather than left to the name click alone: this is
+              the only control on the card that doesn't throw away what you are already listening
+              to, and nothing about a card name advertises that. */}
+          <button
+            className="music-playlist-btn"
+            disabled={p.count === 0}
+            onClick={() => setTracksId(p.id)}
+            title="Pick tracks to play or add to the queue"
+          >
+            ☰ Tracks
           </button>
           <button className="music-playlist-btn" onClick={() => setManageId(p.id)}>Manage</button>
         </div>
@@ -136,6 +163,24 @@ export default function MusicPlaylistsPage({ userData }) {
           <div className="music-playlist-grid">{shared.map(card)}</div>
         </section>
       )}
+
+      <MusicPlaylistTracksModal
+        open={tracksId != null}
+        playlistId={tracksId}
+        onClose={() => setTracksId(null)}
+        onAddToPlaylist={(tracks, suggestedName) => {
+          setPickerTracks(tracks);
+          setPickerName(suggestedName || "");
+        }}
+      />
+
+      <MusicPlaylistPickerModal
+        open={pickerTracks != null}
+        tracks={pickerTracks || []}
+        defaultName={pickerName}
+        onClose={() => setPickerTracks(null)}
+        onDone={reload}
+      />
 
       <MusicPlaylistManageModal
         open={manageId != null}
