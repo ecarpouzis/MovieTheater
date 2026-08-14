@@ -15,8 +15,15 @@ namespace MovieTheater.Imdb
     /// </summary>
     public sealed class ImdbScrapeService : IAsyncDisposable
     {
-        private const string UserAgent =
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+        // Must track the major version of Playwright's bundled Chromium. The engine advertises its
+        // real version through client hints (Sec-CH-UA), so a UA claiming an older Chrome contradicts
+        // them — a mismatch bot detection reads as automation. A stale 120 here against a Chromium 151
+        // engine got every page served IMDb's "Human Verification" interstitial instead of the doc.
+        // THE single copy: every Playwright-driven IMDb scraper (ScrapeImdbCommand,
+        // ScrapeEpisodesCommand, BootstrapSeriesEpisodesCommand) references this constant, so a
+        // Chromium bump is a one-line change — four drifting copies is how the 120-vs-151 bug happened.
+        internal const string UserAgent =
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36";
 
         private readonly ILogger<ImdbScrapeService> logger;
         private readonly ImdbTitleScraper scraper = new ImdbTitleScraper();

@@ -47,8 +47,9 @@ namespace MovieTheater.Imdb
         [CommandOption("delay-max", Description = "Max delay between season pages, ms.")]
         public int DelayMaxMs { get; set; } = 3500;
 
-        private const string UserAgent =
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+        // Shared with every Playwright IMDb scraper — the single copy lives on ImdbScrapeService so a
+        // Chromium bump can't leave one command behind the engine's Sec-CH-UA and hit "Human Verification".
+        private const string UserAgent = ImdbScrapeService.UserAgent;
 
         private readonly IDbContextFactory<MovieDb> dbFactory;
         private readonly ILogger<BootstrapSeriesEpisodesCommand> logger;

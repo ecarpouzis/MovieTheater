@@ -68,8 +68,9 @@ namespace MovieTheater.Imdb
         [CommandOption("cache-dir", Description = "Root dir for the local IMDB page cache (default: data/imdb-cache).")]
         public string CacheDir { get; set; }
 
-        private const string UserAgent =
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+        // Shared with every Playwright IMDb scraper — the single copy lives on ImdbScrapeService so a
+        // Chromium bump can't leave one command behind the engine's Sec-CH-UA and hit "Human Verification".
+        private const string UserAgent = ImdbScrapeService.UserAgent;
 
         private readonly IDbContextFactory<MovieDb> dbFactory;
         private readonly ILogger<ScrapeImdbCommand> logger;
