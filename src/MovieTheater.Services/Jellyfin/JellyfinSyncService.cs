@@ -48,9 +48,14 @@ namespace MovieTheater.Services.Jellyfin
             this.logger = logger;
         }
 
-        public async Task<JellyfinSyncReport> RunAsync(bool dryRun, CancellationToken cancel = default)
+        public async Task<JellyfinSyncReport> RunAsync(bool dryRun, CancellationToken cancel = default,
+            Action<string>? progress = null)
         {
             var r = new JellyfinSyncReport { DryRun = dryRun };
+            // Short human phase labels for whoever is watching the run (the background runner's
+            // status endpoint) — a minutes-long job must be seen advancing, not spinning.
+            void Step(string s) => progress?.Invoke(s);
+            Step("contacting Jellyfin");
 
             if (config.JellyfinPathMappings.Count == 0)
             {
@@ -70,6 +75,7 @@ namespace MovieTheater.Services.Jellyfin
 
             // One fetch of every leaf media item (Movie/Episode/Video), routed below PURELY by file path —
             // never by Jellyfin item type — so the sync is identical for typed and "homevideos" libraries.
+            Step("fetching the Jellyfin item list");
             var reported = await jellyfin.GetAllVideoItemsAsync(cancel);
             var items = family.Filter(reported, out var excludedItems);
             r.FamilyItemsExcluded += excludedItems;
@@ -140,6 +146,7 @@ namespace MovieTheater.Services.Jellyfin
             int created = 0, updated = 0;
             var now = DateTime.UtcNow;
 
+            Step($"matching {items.Count} items against {movies.Count} movies");
             // Pass 1: resolve each Jellyfin movie item to a movie, keeping one item per movie.
             var chosen = new Dictionary<int, (JellyfinItem Item, int MappingIndex)>();
             foreach (var item in items)
@@ -186,6 +193,7 @@ namespace MovieTheater.Services.Jellyfin
             r.MoviesMatched = chosen.Count;
             r.MoviesTotal = movies.Count;
             logger.LogInformation("Jellyfin sync: movie pass matched {M}/{T}", chosen.Count, movies.Count);
+            Step($"movies matched {chosen.Count}/{movies.Count}; matching episodes and misc files");
 
             // Pass 2: episode/misc files + a movie's non-Primary files + movie primaries pass 1 missed.
             // Reuses the single item list fetched above (it already holds every leaf item, regardless of
@@ -229,6 +237,7 @@ namespace MovieTheater.Services.Jellyfin
             r.EpMatched = matchedEpFileIds.Count;
             r.EpTotal = nonMovieFiles.Count;
             logger.LogInformation("Jellyfin sync: episode/part/misc pass matched {M}/{T}", r.EpMatched, r.EpTotal);
+            Step($"episodes/misc matched {r.EpMatched}/{r.EpTotal}; detecting moved and renamed files");
 
             // ── Move / rename detection ───────────────────────────────────────────────
             // Anything still unmatched is a DB row whose path no Jellyfin item has. Pair those against
@@ -294,6 +303,7 @@ namespace MovieTheater.Services.Jellyfin
                     r.Untracked.Add(u.Item.Path ?? u.DbPath);
             logger.LogInformation("Jellyfin sync: move detection re-pointed {R} ({Masked} from dead items), {PR} possible rename(s), {U} untracked",
                 r.Repointed.Count, maskedRepoints, r.PossibleRenames.Count, r.Untracked.Count);
+            Step($"re-pointed {r.Repointed.Count} moved file(s); placing extras and classifying candidates");
 
             // Carry the Movie.FilePath of any re-pointed movie primary to the new location too, so the
             // movie pass matches it directly next time (not just via the episode/misc fallback).
@@ -460,8 +470,10 @@ namespace MovieTheater.Services.Jellyfin
                 // segmentation until the nightly re-extraction covers it.
                 logger.LogInformation("Jellyfin sync: saving — {Stamp} newly missing, {Cand} candidate row change(s)",
                     wouldStamp.Count, db.ChangeTracker.Entries<SyncCandidate>().Count(e => e.State != EntityState.Unchanged));
+                Step("saving results");
                 await db.SaveChangesAsync(cancel);
                 logger.LogInformation("Jellyfin sync: core save complete");
+                Step("results saved; refreshing keyframe custody");
 
                 try
                 {

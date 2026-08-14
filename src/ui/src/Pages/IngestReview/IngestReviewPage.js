@@ -1414,22 +1414,66 @@ export default function IngestReviewPage({ userData }) {
                 }
               }
 
-              // Phase 3 — run the sync that stamps JellyfinItemId onto the site's MediaFile rows.
+              // Phase 3 — start the sync as a SERVER-SIDE background job. The old blocking call
+              // "failed" whenever the proxy gave up before the sync did (while the sync quietly
+              // finished) — now the outcome lives on the server and we just poll for it.
               hide();
               hide = message.loading("Linking files to the site…", 0);
-              let syn;
-              try {
-                syn = await MovieAPI.jellyfinRunSync();
-              } catch {
-                // The fetch itself died (proxy timeout, network) — the SERVER-side sync keeps running
-                // to completion regardless, so don't claim the sync failed when only our view of it did.
+              const syn = await MovieAPI.jellyfinRunSync();
+              const sdat = await syn.json().catch(() => ({}));
+              if (!syn.ok) { hide(); message.error(sdat.message || "Could not start the sync.", 12); return; }
+              if (sdat.alreadyRunning) {
                 hide();
-                message.warning("Lost the connection while the sync was running — it continues on the server. Refresh in a couple of minutes to see the result.", 12);
+                const since = sdat.startedUtc ? new Date(sdat.startedUtc).toLocaleTimeString() : "earlier";
+                // The in-flight run may predate the scan that just finished — its item list wouldn't
+                // include the newly scanned files. Follow it, but say so.
+                message.warning(`A sync started at ${since} is already running — following it. If it began before your scan, re-run the sync afterwards to pick up the new files.`, 10);
+                hide = message.loading("Following the running sync…", 0);
+              }
+
+              // Phase 4 — poll the background sync to its verdict, transient-tolerant like phase 2.
+              // A 200 whose body is NOT a status object (the SPA fallback answers unknown paths with
+              // index.html mid-deploy; a gateway can hiccup a 200 too) counts as a TRANSIENT failure —
+              // only a well-formed status is allowed to end the flow.
+              let r = null;
+              let syncPollFailures = 0;
+              let lastPhase = null;
+              for (let guard = 0; guard < 800; guard++) {
+                await sleep(3000);
+                let st, stData;
+                try {
+                  st = await MovieAPI.jellyfinSyncRunStatus();
+                  stData = await st.json().catch(() => ({}));
+                } catch {
+                  st = null;
+                }
+                if (!st || !st.ok || typeof stData?.running !== "boolean") {
+                  syncPollFailures++;
+                  if (syncPollFailures >= 5) {
+                    hide();
+                    message.warning("Lost contact while the sync runs — it continues on the server. Refresh in a couple of minutes to see the result.", 12);
+                    return;
+                  }
+                  continue;
+                }
+                syncPollFailures = 0;
+                if (stData.running) {
+                  if (stData.phase && stData.phase !== lastPhase) {
+                    lastPhase = stData.phase;
+                    hide();
+                    hide = message.loading(`Linking files — ${stData.phase}…`, 0);
+                  }
+                  continue;
+                }
+                if (stData.error) { hide(); message.error("Sync failed: " + stData.error, 15); return; }
+                if (stData.done && stData.summary) { r = stData.summary; break; }
+                // Well-formed status, not running, no result: the pod restarted mid-run and forgot it.
+                hide();
+                message.warning("The sync's result is unavailable (server restarted?) — Refresh and check \"Sync scan candidates\"; re-run if needed.", 12);
                 return;
               }
-              const r = await syn.json().catch(() => ({}));
               hide();
-              if (!syn.ok) { message.error(r.message || "Sync failed.", 12); return; }
+              if (r === null) { message.warning("The sync is still running after 40 minutes — check back later.", 12); return; }
               message.success(
                 `Synced. Movies ${r.moviesMatched}/${r.moviesTotal}, episodes/misc ${r.epMatched}/${r.epTotal}. ` +
                 `Re-pointed ${r.repointed ?? 0} moved/renamed file(s)` +

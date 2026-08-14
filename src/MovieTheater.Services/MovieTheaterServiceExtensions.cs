@@ -36,6 +36,8 @@ namespace MovieTheater.Services
             services.AddArcadeServices(config);
             services.AddOpenSubtitlesServices(config.OpenSubtitlesApiKey, config.OpenSubtitlesUsername, config.OpenSubtitlesPassword);
             services.AddTransient<Jellyfin.JellyfinSyncService>();
+            // Singleton on purpose: it IS the single-flight guard and the memory of the last run.
+            services.AddSingleton<Jellyfin.JellyfinSyncRunner>();
             services.AddTransient<BoardgameRulesService>();
             services.AddTransient<Poster.PosterFetchService>();
             services.AddTransient<TitleEnrichService>();

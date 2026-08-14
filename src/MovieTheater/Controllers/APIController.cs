@@ -62,6 +62,7 @@ namespace MovieTheater.Controllers
         private readonly MovieTheater.Services.Jellyfin.JellyfinApi jellyfinApi;
         private readonly MovieTheater.Services.OpenSubtitles.OpenSubtitlesApi openSubtitles;
         private readonly MovieTheater.Services.Jellyfin.JellyfinSyncService jellyfinSyncService;
+        private readonly MovieTheater.Services.Jellyfin.JellyfinSyncRunner jellyfinSyncRunner;
         private readonly ILogger<APIController> logger;
 
         public APIController(MovieDb movieDb, TmdbApi tmdb, OmdbApi omdb, ImdbApiClient imdb, HttpClient httpClient, IPosterImageRepository imageRepo,
@@ -71,6 +72,7 @@ namespace MovieTheater.Controllers
             IConfiguration configuration, YouTubeService youTubeService, IMemoryCache memoryCache,
             BoardgameSimilarityService boardgameSimilarityService, PosterFetchService posterFetchService, TitleEnrichService titleEnrichService,
             MovieTheater.Services.Jellyfin.JellyfinApi jellyfinApi, MovieTheater.Services.Jellyfin.JellyfinSyncService jellyfinSyncService,
+            MovieTheater.Services.Jellyfin.JellyfinSyncRunner jellyfinSyncRunner,
             MovieTheater.Services.OpenSubtitles.OpenSubtitlesApi openSubtitles,
             ILogger<APIController> logger)
         {
@@ -96,6 +98,7 @@ namespace MovieTheater.Controllers
             this.titleEnrichService = titleEnrichService;
             this.jellyfinApi = jellyfinApi;
             this.jellyfinSyncService = jellyfinSyncService;
+            this.jellyfinSyncRunner = jellyfinSyncRunner;
             this.openSubtitles = openSubtitles;
             this.logger = logger;
         }
@@ -4523,65 +4526,75 @@ namespace MovieTheater.Controllers
             }
         }
 
-        // Phase 3: run the sync (the same logic as the sync-jellyfin CLI) and return a counts summary
-        // plus a few samples of each diff section. Editor-gated; writes JellyfinItemId/codecs onto MediaFiles.
+        // Phase 3: START the sync as a server-side background job and return immediately — the sync
+        // legitimately runs for minutes (item enumeration + per-file keyframe round trips), longer
+        // than any proxy will hold a request open. The result must not depend on the browser's
+        // connection surviving: the run's outcome lives on the server (JellyfinSyncRunner) and the
+        // UI polls SyncStatus for it, exactly like the scan phase. Single-flight — a second click
+        // while one runs just follows the run in flight.
         [HttpPost("/API/Admin/Jellyfin/RunSync")]
         public async Task<IActionResult> JellyfinRunSync()
         {
             if (!await IsCurrentUserEditor()) return Forbid();
-            try
-            {
-                var rep = await jellyfinSyncService.RunAsync(dryRun: false);
-                if (rep.Aborted != null)
-                {
-                    logger.LogError("Jellyfin sync (admin button) aborted: {Reason}", rep.Aborted);
-                    return BadRequest(new { message = rep.Aborted });
-                }
+            var started = jellyfinSyncRunner.TryStart(User.Identity?.Name);
+            var snap = jellyfinSyncRunner.Snapshot();
+            // startedUtc lets the follower see WHICH run it's following: an in-flight run that began
+            // before this caller's scan finished won't have seen the newly scanned files.
+            return Ok(new { started, alreadyRunning = !started, startedUtc = snap.StartedUtc });
+        }
 
-                static List<string> Sample(IReadOnlyList<string> xs, int n = 20) =>
-                    xs.Count <= n ? new List<string>(xs) : new List<string>(xs).GetRange(0, n);
+        // Phase 4: the background sync's state. { running } while in flight; then { done, summary }
+        // or { done, error }. A pod restart forgets the last run — reported honestly as
+        // { done: false, running: false } rather than inventing an outcome.
+        [HttpGet("/API/Admin/Jellyfin/SyncStatus")]
+        public async Task<IActionResult> JellyfinSyncStatus()
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+            var (running, startedUtc, finishedUtc, report, error, phase) = jellyfinSyncRunner.Snapshot();
+            if (running) return Ok(new { running = true, startedUtc, phase });
+            if (error != null) return Ok(new { running = false, done = true, startedUtc, finishedUtc, error });
+            if (report != null) return Ok(new { running = false, done = true, startedUtc, finishedUtc, summary = SyncSummary(report) });
+            return Ok(new { running = false, done = false });
+        }
 
-                return Ok(new
-                {
-                    server = rep.ServerName,
-                    version = rep.Version,
-                    moviesMatched = rep.MoviesMatched,
-                    moviesTotal = rep.MoviesTotal,
-                    created = rep.Created,
-                    updated = rep.Updated,
-                    repointed = rep.Repointed.Count,
-                    extrasAttached = rep.ExtrasAttached,
-                    extrasUnplaced = rep.ExtrasUnplaced,
-                    supersededOrphans = rep.SupersededOrphans,
-                    possibleRenames = rep.PossibleRenames.Count,
-                    moviesMissing = rep.MissingMovies.Count,
-                    epMatched = rep.EpMatched,
-                    epTotal = rep.EpTotal,
-                    untracked = rep.Untracked.Count,
-                    untranslatable = rep.Untranslatable.Count,
-                    imdbFallbacks = rep.ImdbFallbacks.Count,
-                    candidateUpgrades = rep.CandidateUpgrades,
-                    candidateNewTitles = rep.CandidateNewTitles,
-                    candidateUnclassified = rep.CandidateUnclassified,
-                    candidatesSuperseded = rep.CandidatesSuperseded,
-                    candidateError = rep.CandidateError,
-                    keyframeError = rep.KeyframeError,
-                    samples = new
-                    {
-                        repointed = Sample(rep.Repointed),
-                        possibleRenames = Sample(rep.PossibleRenames),
-                        missingTitles = Sample(rep.MissingMovies),
-                        imdbFallbacks = Sample(rep.ImdbFallbacks),
-                    },
-                });
-            }
-            catch (Exception ex)
+        private static object SyncSummary(MovieTheater.Services.Jellyfin.JellyfinSyncReport rep)
+        {
+            static List<string> Sample(IReadOnlyList<string> xs, int n = 20) =>
+                xs.Count <= n ? new List<string>(xs) : new List<string>(xs).GetRange(0, n);
+
+            return new
             {
-                // The message alone goes to the browser toast; the STACK must land in the pod log or a
-                // failed sync is undiagnosable after the toast is dismissed (learned 2026-08-14).
-                logger.LogError(ex, "Jellyfin sync (admin button) failed");
-                return StatusCode(502, new { message = $"Jellyfin sync failed: [{ex.GetType().Name}] {ex.Message}" });
-            }
+                server = rep.ServerName,
+                version = rep.Version,
+                moviesMatched = rep.MoviesMatched,
+                moviesTotal = rep.MoviesTotal,
+                created = rep.Created,
+                updated = rep.Updated,
+                repointed = rep.Repointed.Count,
+                extrasAttached = rep.ExtrasAttached,
+                extrasUnplaced = rep.ExtrasUnplaced,
+                supersededOrphans = rep.SupersededOrphans,
+                possibleRenames = rep.PossibleRenames.Count,
+                moviesMissing = rep.MissingMovies.Count,
+                epMatched = rep.EpMatched,
+                epTotal = rep.EpTotal,
+                untracked = rep.Untracked.Count,
+                untranslatable = rep.Untranslatable.Count,
+                imdbFallbacks = rep.ImdbFallbacks.Count,
+                candidateUpgrades = rep.CandidateUpgrades,
+                candidateNewTitles = rep.CandidateNewTitles,
+                candidateUnclassified = rep.CandidateUnclassified,
+                candidatesSuperseded = rep.CandidatesSuperseded,
+                candidateError = rep.CandidateError,
+                keyframeError = rep.KeyframeError,
+                samples = new
+                {
+                    repointed = Sample(rep.Repointed),
+                    possibleRenames = Sample(rep.PossibleRenames),
+                    missingTitles = Sample(rep.MissingMovies),
+                    imdbFallbacks = Sample(rep.ImdbFallbacks),
+                },
+            };
         }
 
         // ── Sync-scan candidates (the sync's untracked findings, made actionable) ─────────────────────

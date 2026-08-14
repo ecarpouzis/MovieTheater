@@ -1548,9 +1548,14 @@ function jellyfinTriggerScan() {
 function jellyfinScanStatus() {
   return fetch("/API/Admin/Jellyfin/ScanStatus");
 }
-// 3) run the sync that stamps JellyfinItemId onto MediaFile rows (same logic as the sync-jellyfin CLI).
+// 3) START the sync as a server-side background job ({ started } | { alreadyRunning }) — the run's
+//    outcome lives on the server, so a dropped browser connection can't lose it.
 function jellyfinRunSync() {
   return fetch("/API/Admin/Jellyfin/RunSync", { method: "post" });
+}
+// 4) poll the background sync ({ running } → { done, summary } | { done, error }).
+function jellyfinSyncRunStatus() {
+  return fetch("/API/Admin/Jellyfin/SyncStatus");
 }
 
 // ── Per-movie "Re-link files from disk" (movie edit page) ──
@@ -1823,6 +1828,7 @@ const MovieAPI = {
   jellyfinTriggerScan,
   jellyfinScanStatus,
   jellyfinRunSync,
+  jellyfinSyncRunStatus,
   relinkRefresh,
   relinkApply,
   jellyfinSubtitlesList,
