@@ -5,6 +5,7 @@ import MusicAlbumArt from "./MusicAlbumArt";
 import MusicVisualizer from "./MusicVisualizer";
 import MusicLyricsPane from "./MusicLyricsPane";
 import MusicLyricsSettingsButton, { LYRICS_DEFAULTS } from "./MusicLyricsSettings";
+import { IconPrev, IconNext, IconPlay, IconPause } from "./MusicTransportIcons";
 import MusicPlaylistPickerModal from "../Pages/Music/MusicPlaylistPickerModal";
 import "./MusicMiniPlayer.css";
 
@@ -12,29 +13,6 @@ import "./MusicMiniPlayer.css";
 // Rendered by the provider whenever a track is loaded, on EVERY page of the site. Subscribes to the
 // <audio> element's own events for the playhead so only this bar re-renders per tick — the context
 // (and the rest of the app) never sees position changes.
-
-// Drawn, not typed. ⏸ and ▶ carry an EMOJI presentation on Android, so the middle of the transport
-// rendered as a colour emoji (amber, rounded, a different weight) between two monochrome text
-// glyphs — three buttons that are one control reading as three unrelated ones. A variation selector
-// only asks nicely; an inline SVG is the same three shapes on every platform, and it scales off the
-// button's font-size so the sizing rules below still own the layout.
-const transportIcon = { viewBox: "0 0 24 24", width: "1em", height: "1em", fill: "currentColor", "aria-hidden": true, focusable: "false" };
-
-function IconPrev() {
-  return <svg {...transportIcon}><path d="M7 6h2.4v12H7zM19 6v12l-9-6z" /></svg>;
-}
-
-function IconNext() {
-  return <svg {...transportIcon}><path d="M14.6 6H17v12h-2.4zM5 6l9 6-9 6z" /></svg>;
-}
-
-function IconPlay() {
-  return <svg {...transportIcon}><path d="M8 5l12 7-12 7z" /></svg>;
-}
-
-function IconPause() {
-  return <svg {...transportIcon}><path d="M7 5h3.4v14H7zM13.6 5H17v14h-3.4z" /></svg>;
-}
 
 function formatTime(sec) {
   if (!Number.isFinite(sec) || sec < 0) return "0:00";

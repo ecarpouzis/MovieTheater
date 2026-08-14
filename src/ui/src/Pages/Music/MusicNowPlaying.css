@@ -70,11 +70,110 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* ── The control cluster ────────────────────────────────────────────────────
+   Favourite · transport · visualizer. It used to be five buttons of the same shape and five
+   different widths, wrap-anywhere, which on a phone put four on one line and left "Show visualizer"
+   alone on a second — and gave the transport no more standing than the two switches beside it.
+
+   Now the transport is the centre (auto side-margins split whatever width is left over, so it stays
+   centred between the two switches at every size) and the only thing here that gets size. Same
+   language as the play bar's control band, because they are the same controls in two places.
+
+   Capped in width so the cluster stays a cluster: the actions row spans the whole left column, and
+   on a desktop that is ~700px of daylight to strand the two switches at opposite ends of. 460px
+   also sits it under the artwork above (max 420px) rather than out past it. */
 .music-np-actions {
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
   gap: 8px;
-  margin: 12px 0 4px;
+  margin: 14px 0 4px;
+  max-width: 460px;
+}
+
+.music-np-actions .music-playlist-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  padding: 7px 12px;
+  border-radius: 999px;
+  line-height: 1;
+}
+
+.music-np-actions-icon { font-size: 13px; line-height: 1; }
+
+.music-np-transport {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  /* Both margins auto: the leftover width is split evenly, so the transport is centred between the
+     switches instead of packed against one of them. */
+  margin: 0 auto;
+}
+
+/* Not .music-playlist-btn: these are the page's primary control and should not wear the same chrome
+   as the two switches they sit between. */
+.music-np-tbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: none;
+  color: var(--text-primary);
+  font-size: 22px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.music-np-tbtn:hover { background: var(--accent-soft); color: var(--accent); }
+
+/* The one control the page is for. Filled, bigger, and the only accent in the cluster until
+   something is favourited. */
+.music-np-tbtn--play {
+  width: 56px;
+  height: 56px;
+  font-size: 26px;
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.music-np-tbtn--play:hover {
+  background: color-mix(in srgb, var(--accent) 88%, #000);
+  color: #fff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .music-np-tbtn { transition: none; }
+}
+
+/* On a phone the cluster wants 378px of labels and transport and has ~316px, so something has to
+   give. Not the labels: unlike the play bar — which drops to icons because a 44px-tall strip has
+   nowhere to put words — this is the full player, it has the vertical room, and "Show visualizer"
+   spelled out is most of how anyone finds Butterchurn at all.
+
+   So it becomes two deliberate rows instead of one ragged one: the transport takes a line of its
+   own and centres in it, and the two switches share the line below (they need 228px together and
+   fit side by side down to 320px). The break is forced with a 100% flex-basis rather than left to
+   wrap where it lands — which is what used to drop "Show visualizer" onto a line by itself. */
+@media (max-width: 640px) {
+  .music-np-actions { justify-content: center; gap: 10px; }
+
+  .music-np-transport {
+    order: 1;
+    flex: 1 0 100%;
+    justify-content: center;
+    margin: 0;
+  }
+
+  /* Its own row means room for a proper tap target on both. */
+  .music-np-actions .music-playlist-btn { order: 2; padding: 9px 14px; font-size: 12.5px; }
 }
 
 .music-playlist-btn--on {

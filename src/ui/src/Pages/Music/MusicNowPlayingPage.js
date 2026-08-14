@@ -5,6 +5,7 @@ import MusicAlbumArt from "../../Music/MusicAlbumArt";
 import MusicLyricsPane from "../../Music/MusicLyricsPane";
 import MusicVisualizer from "../../Music/MusicVisualizer";
 import MusicLyricsSettingsButton, { LYRICS_DEFAULTS } from "../../Music/MusicLyricsSettings";
+import { IconPrev, IconNext, IconPlay, IconPause } from "../../Music/MusicTransportIcons";
 import "./MusicNowPlaying.css";
 // Same lazy-chunk rule as the playlists page: this one's transport buttons are `.music-playlist-btn`,
 // which lives in the playlists sheet, so deep-linking straight to /music/now-playing rendered them
@@ -116,6 +117,11 @@ export default function MusicNowPlayingPage({ userData }) {
           <div className="music-np-times">
             {formatTime(position)} / {formatTime(effectiveDuration)}
           </div>
+          {/* Toggle · transport · toggle, rather than five same-shaped pills in a row that wrapped
+              wherever it ran out of width — on a phone that stranded "Show visualizer" alone on a
+              second line, and made the three transport pills look like three more options instead
+              of the control this page exists for. The transport is the centre and is the only thing
+              here that gets size; the two switches flank it and keep the quiet pill chrome. */}
           <div className="music-np-actions">
             {/* The same switch the play bar's heart flips — both read player.favoriteIds, so
                 favoriting here fills the bar's heart at once and vice versa. */}
@@ -123,24 +129,36 @@ export default function MusicNowPlayingPage({ userData }) {
               className={`music-playlist-btn music-np-heart${favorited ? " music-np-heart--on" : ""}`}
               onClick={() => player.toggleFavorite(current.id)}
               aria-pressed={favorited}
+              title={favorited ? "In your Favorites" : "Add to your Favorites"}
               data-testid="music-favorite-toggle-np"
             >
-              {favorited ? "♥ Favorited" : "♡ Favorite"}
+              <span className="music-np-actions-icon" aria-hidden="true">{favorited ? "♥" : "♡"}</span>
+              <span className="music-np-actions-label">{favorited ? "Favorited" : "Favorite"}</span>
             </button>
-            <button className="music-playlist-btn" onClick={player.prev}>⏮ Prev</button>
-            <button className="music-playlist-btn" onClick={player.toggle}>
-              {player.playing ? "⏸ Pause" : "▶ Play"}
-            </button>
-            <button className="music-playlist-btn" onClick={player.next}>⏭ Next</button>
+
+            <div className="music-np-transport">
+              <button className="music-np-tbtn" onClick={player.prev} aria-label="Previous track"><IconPrev /></button>
+              <button
+                className="music-np-tbtn music-np-tbtn--play"
+                onClick={player.toggle}
+                aria-label={player.playing ? "Pause" : "Play"}
+              >
+                {player.playing ? <IconPause /> : <IconPlay />}
+              </button>
+              <button className="music-np-tbtn" onClick={player.next} aria-label="Next track"><IconNext /></button>
+            </div>
+
             {/* toggleVisualizer resumes the AudioContext inside this gesture — a browser only
                 honours that from a user gesture, never from an effect a tick later. */}
             <button
               className={`music-playlist-btn music-np-vizbtn${visualizerOn ? " music-np-vizbtn--on" : ""}`}
               onClick={player.toggleVisualizer}
               aria-pressed={visualizerOn}
+              title={visualizerOn ? "Hide visualizer" : "Show visualizer"}
               data-testid="music-visualizer-toggle"
             >
-              {visualizerOn ? "◼ Hide visualizer" : "◉ Show visualizer"}
+              <span className="music-np-actions-icon" aria-hidden="true">{visualizerOn ? "◼" : "◉"}</span>
+              <span className="music-np-actions-label">{visualizerOn ? "Hide visualizer" : "Show visualizer"}</span>
             </button>
           </div>
 
