@@ -1571,8 +1571,10 @@ function jellyfinScanStatus() {
 }
 // 3) START the sync as a server-side background job ({ started } | { alreadyRunning }) — the run's
 //    outcome lives on the server, so a dropped browser connection can't lose it.
-function jellyfinRunSync() {
-  return fetch("/API/Admin/Jellyfin/RunSync", { method: "post" });
+// Starts the WHOLE operation (scan → wait → sync) as one server-side job and returns immediately.
+// scan=false skips the library scan, for when one has just finished.
+function jellyfinRunSync(scan = true) {
+  return fetch(`/API/Admin/Jellyfin/RunSync?scan=${scan ? "true" : "false"}`, { method: "post" });
 }
 // 4) poll the background sync ({ running } → { done, summary } | { done, error }).
 function jellyfinSyncRunStatus() {

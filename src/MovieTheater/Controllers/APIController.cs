@@ -4492,14 +4492,20 @@ namespace MovieTheater.Controllers
             return Ok(new { attempted = targets.Count, got, minId });
         }
 
-        // ── "Sync from Jellyfin" admin button (3 phases, driven by the IngestReview UI) ──────────────
+        // ── "Sync from Jellyfin" admin button ────────────────────────────────────────────────────────
         // The periodic Jellyfin library scan is disabled (NAS health), so making freshly-mapped content
-        // streamable now takes two manual steps that this button chains: (1) tell Jellyfin to scan the
-        // disk, (2) wait for that scan to finish, (3) run the sync that stamps JellyfinItemId onto our
-        // MediaFile rows. Split into separate endpoints so a slow scan can't time out one request — the
-        // UI triggers, polls status to completion, then runs the sync (caller-driven, observable).
+        // streamable takes two steps: tell Jellyfin to scan the disk, then run the sync that stamps
+        // JellyfinItemId onto our MediaFile rows. BOTH, and the sequencing between them, belong to the
+        // server: RunSync starts one background job that does the whole thing and SyncStatus reports
+        // where it is. The browser is a spectator.
+        //
+        // It used to chain the phases itself, and that was the bug — a tab closed during the twelve
+        // minute scan stranded the run silently (2026-08-15: the scan completed at 23:18 and the sync
+        // was simply never asked for; nothing in the DB or the UI said so, and the operator reasonably
+        // believed they had synced). TriggerScan and ScanStatus remain for diagnosing Jellyfin itself,
+        // no longer as steps anyone has to chain.
 
-        // Phase 1: kick off Jellyfin's library scan (returns immediately; the scan runs in the background).
+        // Ask Jellyfin to scan, without running a sync. Diagnostic; the normal path is RunSync.
         [HttpPost("/API/Admin/Jellyfin/TriggerScan")]
         public async Task<IActionResult> JellyfinTriggerScan()
         {
@@ -4516,7 +4522,7 @@ namespace MovieTheater.Controllers
             }
         }
 
-        // Phase 2: report the library-scan task state so the UI can poll until it's done.
+        // The library-scan task's raw state. Diagnostic; the job watches this itself now.
         // { running, progress (0-100 or null), found, state }.
         [HttpGet("/API/Admin/Jellyfin/ScanStatus")]
         public async Task<IActionResult> JellyfinScanStatus()
@@ -4534,25 +4540,24 @@ namespace MovieTheater.Controllers
             }
         }
 
-        // Phase 3: START the sync as a server-side background job and return immediately — the sync
-        // legitimately runs for minutes (item enumeration + per-file keyframe round trips), longer
-        // than any proxy will hold a request open. The result must not depend on the browser's
-        // connection surviving: the run's outcome lives on the server (JellyfinSyncRunner) and the
-        // UI polls SyncStatus for it, exactly like the scan phase. Single-flight — a second click
-        // while one runs just follows the run in flight.
+        // START the whole operation as ONE server-side background job — scan, wait, sync — and return
+        // immediately. Nothing about the outcome depends on the caller's connection surviving: the
+        // job's state lives on the server (JellyfinSyncRunner) and SyncStatus reports it. Single-
+        // flight: a second click while one runs just follows the run in flight.
+        // scan=false syncs against the library as it stands, for when a scan has only just finished.
         [HttpPost("/API/Admin/Jellyfin/RunSync")]
-        public async Task<IActionResult> JellyfinRunSync()
+        public async Task<IActionResult> JellyfinRunSync([FromQuery] bool scan = true)
         {
             if (!await IsCurrentUserEditor()) return Forbid();
-            var started = jellyfinSyncRunner.TryStart(User.Identity?.Name);
+            var started = jellyfinSyncRunner.TryStart(User.Identity?.Name, withScan: scan);
             var snap = jellyfinSyncRunner.Snapshot();
-            // startedUtc lets the follower see WHICH run it's following: an in-flight run that began
-            // before this caller's scan finished won't have seen the newly scanned files.
-            return Ok(new { started, alreadyRunning = !started, startedUtc = snap.StartedUtc });
+            // startedUtc lets the follower see WHICH run it's following — an in-flight run that began
+            // earlier may predate whatever the caller was hoping to pick up.
+            return Ok(new { started, alreadyRunning = !started, startedUtc = snap.StartedUtc, phase = snap.Phase });
         }
 
-        // Phase 4: the background sync's state. { running } while in flight; then { done, summary }
-        // or { done, error }. A pod restart forgets the last run — reported honestly as
+        // The job's state. { running, phase } while in flight; then { done, summary } or
+        // { done, error }. A pod restart forgets the last run — reported honestly as
         // { done: false, running: false } rather than inventing an outcome.
         [HttpGet("/API/Admin/Jellyfin/SyncStatus")]
         public async Task<IActionResult> JellyfinSyncStatus()
@@ -4591,10 +4596,13 @@ namespace MovieTheater.Controllers
                 imdbFallbacks = rep.ImdbFallbacks.Count,
                 candidateUpgrades = rep.CandidateUpgrades,
                 candidateNewTitles = rep.CandidateNewTitles,
+                candidateSeriesEpisodes = rep.CandidateSeriesEpisodes,
+                candidateSeriesGroups = rep.CandidateSeriesGroups,
                 candidateUnclassified = rep.CandidateUnclassified,
                 candidatesSuperseded = rep.CandidatesSuperseded,
                 candidateError = rep.CandidateError,
                 keyframeError = rep.KeyframeError,
+                scanNote = rep.ScanNote,
                 samples = new
                 {
                     repointed = Sample(rep.Repointed),

@@ -1589,6 +1589,11 @@ namespace MovieTheater.Services.Jellyfin
         /// <summary>Untracked files the classifier couldn't place (unparseable folder, non-video sidecar).</summary>
         public int CandidateUnclassified { get; set; }
 
+        /// <summary>What went wrong in the scan phase, when the run did one and it misbehaved. Not an
+        /// abort — an unreachable or wedged scan still leaves a library worth syncing — but the
+        /// reviewer has to know the sync saw a stale index rather than assume it saw the disk.</summary>
+        public string? ScanNote { get; set; }
+
         /// <summary>Untracked EPISODE files (SxxExx), stamped with their series folder + episode number.</summary>
         public int CandidateSeriesEpisodes { get; set; }
 

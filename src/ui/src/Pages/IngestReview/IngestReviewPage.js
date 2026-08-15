@@ -1376,6 +1376,98 @@ export default function IngestReviewPage({ userData }) {
     [load]
   );
 
+  // Start the server-side sync job and WATCH it. Watching is all this does: the scan, the wait and
+  // the sync are one job on the server, so closing the tab, sleeping the laptop or losing the network
+  // cannot strand it half-way — which is exactly what used to happen when the browser owned the
+  // sequencing. Losing contact here is therefore a display problem, never a data one, and the
+  // messages say so rather than implying the run died.
+  const runJellyfinSync = useCallback(
+    async (withScan) => {
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+      let hide = message.loading("Starting the sync on the server…", 0);
+      try {
+        const res = await MovieAPI.jellyfinRunSync(withScan);
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          hide();
+          message.error(data.message || "Could not start the sync.", 12);
+          return;
+        }
+        if (data.alreadyRunning) {
+          const since = data.startedUtc ? new Date(data.startedUtc).toLocaleTimeString() : "earlier";
+          message.warning(`A sync started at ${since} is already running — following it.`, 8);
+        }
+
+        // Poll to the verdict. A 200 whose body is NOT a status object (the SPA fallback answers
+        // unknown paths with index.html mid-deploy; a gateway can hiccup a 200 too) counts as a
+        // TRANSIENT failure — only a well-formed status may end the watch.
+        let summary = null;
+        let pollFailures = 0;
+        let lastPhase = null;
+        for (let guard = 0; guard < 1200; guard++) {
+          await sleep(3000);
+          let st, stData;
+          try {
+            st = await MovieAPI.jellyfinSyncRunStatus();
+            stData = await st.json().catch(() => ({}));
+          } catch {
+            st = null;
+          }
+          if (!st || !st.ok || typeof stData?.running !== "boolean") {
+            pollFailures++;
+            if (pollFailures >= 5) {
+              hide();
+              message.warning("Lost contact while watching — the sync keeps running on the server. Come back to this page for the result.", 12);
+              return;
+            }
+            continue;
+          }
+          pollFailures = 0;
+          if (stData.running) {
+            if (stData.phase && stData.phase !== lastPhase) {
+              lastPhase = stData.phase;
+              hide();
+              hide = message.loading(`Sync running — ${stData.phase}…`, 0);
+            }
+            continue;
+          }
+          if (stData.error) { hide(); message.error("Sync failed: " + stData.error, 15); return; }
+          if (stData.done && stData.summary) { summary = stData.summary; break; }
+          hide();
+          message.warning('The sync\'s result is unavailable (server restarted?) — Refresh and check "Sync scan candidates"; re-run if needed.', 12);
+          return;
+        }
+        hide();
+        if (summary === null) { message.warning("Still running after an hour — it continues on the server; check back later.", 12); return; }
+
+        const r = summary;
+        const loose = (r.candidateUpgrades ?? 0) + (r.candidateNewTitles ?? 0) + (r.candidateUnclassified ?? 0);
+        message.success(
+          `Synced. Movies ${r.moviesMatched}/${r.moviesTotal}, episodes/misc ${r.epMatched}/${r.epTotal}. ` +
+            `Re-pointed ${r.repointed ?? 0} moved/renamed file(s)` +
+            ((r.supersededOrphans ?? 0) > 0 ? ` (${r.supersededOrphans} rescued from renamed-folder leftovers)` : "") +
+            ((r.possibleRenames ?? 0) > 0 ? `, ${r.possibleRenames} possible rename(s) to review` : "") +
+            `; ${r.moviesMissing ?? 0} title(s) still show missing.` +
+            ((r.candidateSeriesGroups ?? 0) > 0
+              ? ` ${r.candidateSeriesEpisodes} episode file(s) across ${r.candidateSeriesGroups} show(s).`
+              : "") +
+            (loose > 0
+              ? ` ${r.candidateUpgrades ?? 0} upgrade / ${r.candidateNewTitles ?? 0} new-title / ${r.candidateUnclassified ?? 0} unclassified candidate(s) — see "Sync scan candidates".`
+              : ""),
+          10
+        );
+        if (r.scanNote) message.warning(r.scanNote, 12);
+        if (r.candidateError) message.warning(`Candidate classification failed (sync itself completed): ${r.candidateError}`, 12);
+        if (r.keyframeError) message.warning(`Keyframe restore failed after the sync (nightly re-extraction covers it): ${r.keyframeError}`, 12);
+        await load();
+      } catch {
+        hide();
+        message.warning("Lost contact while watching — the sync keeps running on the server.", 12);
+      }
+    },
+    [load]
+  );
+
   const mapSeriesAbsolute = useCallback(
     async (id) => {
       try {
@@ -1679,133 +1771,9 @@ export default function IngestReviewPage({ userData }) {
           <Button>Backfill posters</Button>
         </Popconfirm>
         <Popconfirm
-          title="Sync from Jellyfin? Triggers a Jellyfin library scan, waits for it to finish, then links the new/changed files to the site so they stream. Keep this tab open — the scan can take a few minutes."
+          title="Sync from Jellyfin? Scans the disk and links new/changed files to the site so they stream. It runs ON THE SERVER — you can close this tab; it keeps going and you can check back here for the result."
           okText="Sync from Jellyfin"
-          onConfirm={async () => {
-            const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-            let hide = message.loading("Starting Jellyfin scan…", 0);
-            try {
-              // Phase 1 — trigger the Jellyfin library scan (returns immediately).
-              const trg = await MovieAPI.jellyfinTriggerScan();
-              const tdata = await trg.json().catch(() => ({}));
-              if (!trg.ok) { hide(); message.error(tdata.message || "Could not start the Jellyfin scan."); return; }
-
-              // Phase 2 — poll until the scan finishes. Handles the brief start-up delay (don't bail
-              // before it's seen running) and a fast no-op scan (proceed after ~15s if it never shows
-              // running). Bounded so a stuck scan can't loop forever. TRANSIENT-TOLERANT: a scan runs
-              // ~10 minutes and one gateway hiccup among ~200 polls must not abandon the whole flow —
-              // only give up after several CONSECUTIVE failed polls (the scan itself is unaffected by
-              // our polling either way).
-              let seenRunning = false;
-              let pollFailures = 0;
-              for (let guard = 0; guard < 600; guard++) {
-                await sleep(3000);
-                let st, sdata;
-                try {
-                  st = await MovieAPI.jellyfinScanStatus();
-                  sdata = await st.json().catch(() => ({}));
-                } catch {
-                  st = null;
-                }
-                if (!st || !st.ok) {
-                  pollFailures++;
-                  console.warn(`Jellyfin scan-status poll failed (${pollFailures} consecutive)`, sdata?.message);
-                  if (pollFailures >= 5) {
-                    hide();
-                    message.error((sdata?.message || "Lost contact with Jellyfin during the scan.") + " The scan itself may still finish — retry the sync in a few minutes.");
-                    return;
-                  }
-                  continue;
-                }
-                pollFailures = 0;
-                if (sdata.running) {
-                  seenRunning = true;
-                  hide();
-                  hide = message.loading(`Jellyfin scanning… ${sdata.progress != null ? Math.round(sdata.progress) + "%" : ""}`, 0);
-                } else if (seenRunning || guard >= 4) {
-                  break; // started-and-done, or never ran within ~15s (fast/no-op) → move on
-                }
-              }
-
-              // Phase 3 — start the sync as a SERVER-SIDE background job. The old blocking call
-              // "failed" whenever the proxy gave up before the sync did (while the sync quietly
-              // finished) — now the outcome lives on the server and we just poll for it.
-              hide();
-              hide = message.loading("Linking files to the site…", 0);
-              const syn = await MovieAPI.jellyfinRunSync();
-              const sdat = await syn.json().catch(() => ({}));
-              if (!syn.ok) { hide(); message.error(sdat.message || "Could not start the sync.", 12); return; }
-              if (sdat.alreadyRunning) {
-                hide();
-                const since = sdat.startedUtc ? new Date(sdat.startedUtc).toLocaleTimeString() : "earlier";
-                // The in-flight run may predate the scan that just finished — its item list wouldn't
-                // include the newly scanned files. Follow it, but say so.
-                message.warning(`A sync started at ${since} is already running — following it. If it began before your scan, re-run the sync afterwards to pick up the new files.`, 10);
-                hide = message.loading("Following the running sync…", 0);
-              }
-
-              // Phase 4 — poll the background sync to its verdict, transient-tolerant like phase 2.
-              // A 200 whose body is NOT a status object (the SPA fallback answers unknown paths with
-              // index.html mid-deploy; a gateway can hiccup a 200 too) counts as a TRANSIENT failure —
-              // only a well-formed status is allowed to end the flow.
-              let r = null;
-              let syncPollFailures = 0;
-              let lastPhase = null;
-              for (let guard = 0; guard < 800; guard++) {
-                await sleep(3000);
-                let st, stData;
-                try {
-                  st = await MovieAPI.jellyfinSyncRunStatus();
-                  stData = await st.json().catch(() => ({}));
-                } catch {
-                  st = null;
-                }
-                if (!st || !st.ok || typeof stData?.running !== "boolean") {
-                  syncPollFailures++;
-                  if (syncPollFailures >= 5) {
-                    hide();
-                    message.warning("Lost contact while the sync runs — it continues on the server. Refresh in a couple of minutes to see the result.", 12);
-                    return;
-                  }
-                  continue;
-                }
-                syncPollFailures = 0;
-                if (stData.running) {
-                  if (stData.phase && stData.phase !== lastPhase) {
-                    lastPhase = stData.phase;
-                    hide();
-                    hide = message.loading(`Linking files — ${stData.phase}…`, 0);
-                  }
-                  continue;
-                }
-                if (stData.error) { hide(); message.error("Sync failed: " + stData.error, 15); return; }
-                if (stData.done && stData.summary) { r = stData.summary; break; }
-                // Well-formed status, not running, no result: the pod restarted mid-run and forgot it.
-                hide();
-                message.warning("The sync's result is unavailable (server restarted?) — Refresh and check \"Sync scan candidates\"; re-run if needed.", 12);
-                return;
-              }
-              hide();
-              if (r === null) { message.warning("The sync is still running after 40 minutes — check back later.", 12); return; }
-              message.success(
-                `Synced. Movies ${r.moviesMatched}/${r.moviesTotal}, episodes/misc ${r.epMatched}/${r.epTotal}. ` +
-                `Re-pointed ${r.repointed ?? 0} moved/renamed file(s)` +
-                ((r.supersededOrphans ?? 0) > 0 ? ` (${r.supersededOrphans} rescued from renamed-folder leftovers)` : "") +
-                ((r.possibleRenames ?? 0) > 0 ? `, ${r.possibleRenames} possible rename(s) to review` : "") +
-                `; ${r.moviesMissing ?? 0} title(s) still show missing.` +
-                ((r.candidateUpgrades ?? 0) + (r.candidateNewTitles ?? 0) + (r.candidateUnclassified ?? 0) > 0
-                  ? ` Found ${r.candidateUpgrades ?? 0} upgrade / ${r.candidateNewTitles ?? 0} new-title / ${r.candidateUnclassified ?? 0} unclassified candidate(s) — see "Sync scan candidates".`
-                  : ""),
-                10
-              );
-              if (r.candidateError) message.warning(`Candidate classification failed (sync itself completed): ${r.candidateError}`, 12);
-              if (r.keyframeError) message.warning(`Keyframe restore failed after the sync (nightly re-extraction covers it): ${r.keyframeError}`, 12);
-              if (scope === "scan") load();
-            } catch {
-              hide();
-              message.error("Sync from Jellyfin failed.");
-            }
-          }}
+          onConfirm={() => runJellyfinSync(true)}
         >
           <Button>Sync from Jellyfin</Button>
         </Popconfirm>
