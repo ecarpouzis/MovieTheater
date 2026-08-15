@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="Movie Theater">
+  <title>Movie Theater</title>
+  <!--
+    Theater fixture hung top-left, throwing a beam into the bottom-right corner.
+    Tuned for favicon use, so every choice is about surviving 16x16:
+      - one silhouette, no hairlines (nothing thinner than ~0.8 user units = 0.4px at 16px)
+      - the housing is a MID-tone graphite, not near-black, so it reads on both a white
+        tab strip and a dark one; the dark-scheme block below only nudges it further
+      - the beam is atmosphere, the gold lens band is the load-bearing detail
+  -->
+  <defs>
+    <!-- Beam: warm and near-opaque at the lens, gone by the corner. userSpaceOnUse so the
+         fade tracks the actual throw axis (lens -> bottom-right) instead of the bbox. -->
+    <linearGradient id="beam" gradientUnits="userSpaceOnUse" x1="14" y1="14" x2="33" y2="33">
+      <stop offset="0"    stop-color="#FFF6D5" stop-opacity="0.95"/>
+      <stop offset="0.18" stop-color="#FFD34D" stop-opacity="0.78"/>
+      <stop offset="0.55" stop-color="#FFB627" stop-opacity="0.34"/>
+      <stop offset="1"    stop-color="#FF9F1A" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Cylindrical shading across the barrel, perpendicular to the throw axis. -->
+    <linearGradient id="barrel" gradientUnits="userSpaceOnUse" x1="18.24" y1="9.76" x2="9.76" y2="18.24">
+      <stop offset="0"    stop-color="#6E7684"/>
+      <stop offset="0.2"  stop-color="#A6AEBC"/>
+      <stop offset="0.55" stop-color="#59606F"/>
+      <stop offset="1"    stop-color="#31363F"/>
+    </linearGradient>
+
+    <radialGradient id="lens" gradientUnits="userSpaceOnUse" cx="14" cy="14" r="5">
+      <stop offset="0"    stop-color="#FFFFFF"/>
+      <stop offset="0.45" stop-color="#FFE28A"/>
+      <stop offset="0.78" stop-color="#FFC02E" stop-opacity="0.9"/>
+      <stop offset="1"    stop-color="#FFB000" stop-opacity="0"/>
+    </radialGradient>
+
+    <radialGradient id="halo" gradientUnits="userSpaceOnUse" cx="14" cy="14" r="9.5">
+      <stop offset="0"    stop-color="#FFE9A8" stop-opacity="0.5"/>
+      <stop offset="0.55" stop-color="#FFD24D" stop-opacity="0.17"/>
+      <stop offset="1"    stop-color="#FFC400" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <style>
+    /* Ignored by rasterizers and by browsers that don't do themed favicons; the base
+       palette already works on either background, so this is a nudge, not a fallback. */
+    .lift { opacity: 0 }
+    @media (prefers-color-scheme: dark) {
+      .lift { opacity: 0.2 }
+    }
+  </style>
+
+  <!-- Throw: cone from the lens face out past the bottom-right corner (clipped by the viewBox). -->
+  <polygon points="18.24,9.76 42.61,21.39 21.39,42.61 9.76,18.24" fill="url(#beam)"/>
+  <circle cx="14" cy="14" r="9.5" fill="url(#halo)"/>
+
+  <!-- Rig: yoke arm down from a mounting plate on the top edge. Drawn under the housing so
+       the barrel swallows its lower end. -->
+  <rect x="11.94" y="0" width="5.6" height="2.2" rx="0.8" fill="#2F343D"/>
+  <path d="M14.74 1 V7" stroke="#3A3F4A" stroke-width="2.8"/>
+
+  <!-- Housing: rear cooling cap, then the barrel at 45 degrees. -->
+  <polygon points="11.24,2.76 8.48,1.84 1.84,8.48 2.76,11.24" fill="#454A55"/>
+  <polygon points="18.24,9.76 11.24,2.76 2.76,11.24 9.76,18.24" fill="url(#barrel)"/>
+  <polygon points="18.24,9.76 11.24,2.76 2.76,11.24 9.76,18.24" fill="#FFFFFF" class="lift"/>
+
+  <!-- Top rim highlight: the one line that keeps the silhouette crisp on a dark tab strip. -->
+  <path d="M11.24 2.76 L18.24 9.76" stroke="#C3CAD6" stroke-width="0.9" stroke-opacity="0.8"/>
+
+  <!-- Tilt pivot where the yoke meets the barrel. -->
+  <circle cx="14.74" cy="6.26" r="1.5" fill="#2F343D"/>
+
+  <!-- Aperture: the gold band is the front face; the disc is the emitter bulging out of it. -->
+  <path d="M18.24 9.76 L9.76 18.24" stroke="#FFC93C" stroke-width="3.2"/>
+  <circle cx="14" cy="14" r="5" fill="url(#lens)"/>
+  <circle cx="13.5" cy="13.5" r="1.5" fill="#FFFFFF" fill-opacity="0.95"/>
+</svg>

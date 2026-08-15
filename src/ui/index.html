@@ -11,8 +11,15 @@
          live?" turned into grepping every served chunk for a string literal (2026-07-24). This meta
          tag is served uncached and unminified, so a single fetch answers it. Bump the date whenever
          you want an unambiguous "did the rollout actually happen" probe. -->
-    <meta name="mt-build" content="2026-08-15-sync-resolves-candidates" />
-    <link rel="apple-touch-icon" href="/logo192.png" />
+    <meta name="mt-build" content="2026-08-15-favicon-set" />
+    <!-- Favicons. The .ico (16/32/48) is the legacy + Windows path and is also what bare
+         /favicon.ico probes get; the SVG is preferred by every current browser and is the one
+         that stays sharp on hi-dpi tabs. sizes="32x32" on the .ico stops browsers assuming
+         it's 16-only and picking it over the SVG. Sources live in public/; regenerate the
+         rasters from favicon.svg if the artwork changes. -->
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.json" />
     <title>Movie Theater</title>
     <style>
