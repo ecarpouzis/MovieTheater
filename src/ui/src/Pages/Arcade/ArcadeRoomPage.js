@@ -28,6 +28,38 @@ const STATUS_TEXT = {
 // frozen first frame behind the "Tap to start" overlay.
 const LIVE_STATUS = ["playing", "spectating"];
 
+// ── Input tape (inputTape.js) ────────────────────────────────────────────────────────────────────
+// A developer affordance, off for everyone by default: record every pad frame this seat sends (plus
+// the save-state actions and a per-frame video thumbprint), download it as JSON, and later replay it
+// into a fresh room. Turned on per-browser by visiting any arcade URL with ?tape=1 (?tape=0 turns it
+// back off); the setting then sticks in localStorage. Gating it keeps a control nobody else needs out
+// of the room's button row — the recorder itself costs a non-recording room two null checks.
+const TAPE_DEV_KEY = "arcade.inputTape";
+function tapeDevEnabled(search) {
+  try {
+    const q = new URLSearchParams(search || "");
+    if (q.has("tape")) {
+      const on = q.get("tape") !== "0";
+      localStorage.setItem(TAPE_DEV_KEY, on ? "1" : "0");
+      return on;
+    }
+    return localStorage.getItem(TAPE_DEV_KEY) === "1";
+  } catch { return false; }
+}
+// Hand the tape to the player as a file. A download (rather than a POST to the site) is deliberate:
+// it needs no schema, no route, and no retention policy, and the agent that replays the tape is
+// already running on the same machine as the browser that recorded it.
+function downloadTape(json, filename) {
+  const url = URL.createObjectURL(new Blob([JSON.stringify(json)], { type: "application/json" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
 // Systems the button-mapping visualizer offers. Excludes the heavy-lane (Moonlight-streamed,
 // docs/arcade-heavy-lane-plan.md §7.1) and capture-lane entries: those pass a native controller
 // straight through rather than going through cloudRetroClient.js's RetroPad remapping, so a
@@ -116,6 +148,12 @@ export default function ArcadeRoomPage() {
   const spectator = yourSlot != null && yourSlot < 0;
   const [system, setSystem] = useState(location.state?.descriptor?.system ?? null);
   const [gameKey, setGameKey] = useState(location.state?.descriptor?.gameKey ?? null);
+  // Input tape: whether this browser has the recorder turned on at all, and whether it's rolling.
+  // The replay half lives in a ref — a running replay is machinery (a player + its control pump),
+  // not renderable data.
+  const [tapeDev] = useState(() => tapeDevEnabled(location.search));
+  const [taping, setTaping] = useState(false);
+  const tapeReplayRef = useRef(null);
   // The room's resolved Wii controller scheme ("gc"/"wiimote"/"") — rides every descriptor's wsUrl
   // (creator AND joiners, server-side), since it changes what button bits everyone's client sends.
   const [controllerScheme, setControllerScheme] = useState(controllerSchemeFromWsUrl(location.state?.descriptor?.wsUrl));
@@ -947,6 +985,164 @@ export default function ArcadeRoomPage() {
     } catch { message.error("Couldn't load your quicksave."); }
   }
 
+  // ── Input tape: record / replay ────────────────────────────────────────────────────────────────
+  // The provenance a replay has to match to mean anything. coreKey/coreOptions/cheats are in here
+  // deliberately: the same game booted on a different core, or with a different core option set (the
+  // pcsx2_softfloat kind), is a DIFFERENT run, and a tape that didn't say so would let a replay
+  // quietly compare two different machines.
+  function tapeMeta() {
+    const d = descriptorRef.current || {};
+    const v = videoRef.current;
+    return {
+      roomCode: code,
+      gameKey: d.gameKey ?? gameKey ?? null,
+      system: d.system ?? system ?? null,
+      coreKey: d.coreKey ?? null,
+      coreOptions: d.coreOptions ?? null,
+      cheats: d.cheats ?? null,
+      competitive: !!d.competitive,
+      playerSlot: d.playerSlot ?? null,
+      videoSize: v && v.videoWidth ? `${v.videoWidth}x${v.videoHeight}` : null,
+      startedAtIso: new Date().toISOString(),
+      userAgent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+    };
+  }
+
+  // `anchor` records HOW the run was set up, because a tape is only reproducible from the same
+  // starting state. "quickload" (the default, and the one that works everywhere — PS2's lobby-Resume
+  // is a silent no-op) means: the replay must press Load and let the quicksave restore before the
+  // first frame of the tape plays.
+  // `opts.trace: false` skips the per-frame video thumbprint. The thumbprint is a canvas readback per
+  // presented frame and it is not free — turn it off if it costs the very frames you're recording,
+  // accepting that a trace-less tape can still be REPLAYED but can never be DIFFED.
+  function startTape(anchor, opts) {
+    const s = sessionRef.current;
+    if (!s || !s.startTapeRecording) { message.error("This room can't record input."); return false; }
+    const ok = s.startTapeRecording({ ...tapeMeta(), anchor: anchor || "quickload" }, opts);
+    if (!ok) { message.warning("Watchers have no controls to record."); return false; }
+    setTaping(true);
+    // The DISPLAY title exists client-side only in the lobby's live-room list, and only while this
+    // room is alive. Fetch it into the header now, or a tape read back in a month knows the rom key
+    // and the system and nothing a human would recognise — and the replay script needs the title to
+    // find the game in the lobby.
+    fetch("/API/Arcade/Rooms")
+      .then((r) => r.json())
+      .then((rooms) => {
+        const mine = (rooms || []).find((r) => r.roomCode === code);
+        const title = mine && (mine.game?.title || mine.game);
+        if (title) sessionRef.current?.setTapeMeta?.({ gameTitle: String(title) });
+      })
+      .catch(() => { /* provenance is nice, not load-bearing — never fail a recording over it */ });
+    message.info("Recording input — press Stop (or F9) when the run is done.");
+    return true;
+  }
+
+  function stopTape(opts) {
+    const s = sessionRef.current;
+    if (!s || !s.stopTapeRecording) return null;
+    const json = s.stopTapeRecording({ endedAtIso: new Date().toISOString() });
+    setTaping(false);
+    if (!json) return null;
+    const c = json.inputs.length;
+    if (!(opts && opts.noDownload)) {
+      const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+      downloadTape(json, `tape-${json.meta.gameKey || json.meta.system || "arcade"}-${stamp}.json`);
+    }
+    message.success(`Tape: ${c} input frames, ${json.trace.length} video frames${json.meta.traceTruncated ? " (trace hit its cap)" : ""}`);
+    return json;
+  }
+
+  // Arm a replay and pump it. Pad frames come out of the tape inside the shim's own input poll; the
+  // save-state actions can't — quickLoad is a two-step gateway call that lives up here — so this
+  // timer drains the tape's due controls and dispatches them through the same handlers a human's
+  // button press would. onDone fires once the tape runs out (the harness waits on it).
+  function armTapeReplay(tapeJson, o) {
+    const s = sessionRef.current;
+    if (!s || !s.armTapeReplay) return null;
+    disarmTapeReplay();
+    const player = s.armTapeReplay(tapeJson, o);
+    if (!player) return null;
+    const onDone = (o && o.onDone) || null;
+    const timer = setInterval(() => {
+      const t = s.replayClockMs();
+      for (const c of player.dueControls(t)) {
+        if (c.action === "quickSave") quickSave();
+        else if (c.action === "quickLoad") quickLoad();
+        else if (c.action === "reset") s.reset?.();
+        else if (c.action === "fastForward") s.fastForward?.(!!c.arg);
+        else if (c.action === "rewind") s.rewind?.(!!c.arg);
+        else if (c.action === "swapDisc") s.swapDisc?.(c.arg | 0);
+        // "mark" is a human annotation, not an action — it only ever labels a moment.
+      }
+      if (player.finished(t)) {
+        clearInterval(timer);
+        if (tapeReplayRef.current && tapeReplayRef.current.timer === timer) tapeReplayRef.current.done = true;
+        if (onDone) onDone();
+      }
+    }, 50);
+    tapeReplayRef.current = { player, timer, done: false };
+    return player;
+  }
+
+  function disarmTapeReplay() {
+    if (tapeReplayRef.current) clearInterval(tapeReplayRef.current.timer);
+    tapeReplayRef.current = null;
+    sessionRef.current?.disarmTapeReplay?.();
+  }
+
+  // The bridge a driving script (test-roms/tape-replay.mjs) talks to. Re-published on every render so
+  // it always closes over live handlers, and only when the dev flag is on — an ordinary room exposes
+  // nothing. It intentionally returns the tape rather than downloading it when the caller is a
+  // script: Playwright wants the object, a human wants the file.
+  useEffect(() => {
+    if (!tapeDev || typeof window === "undefined") return undefined;
+    window.__arcadeTape = {
+      version: 1,
+      status: () => ({
+        roomCode: code,
+        connection: statusRef.current,
+        recording: !!sessionRef.current?.isTapeRecording?.(),
+        counts: sessionRef.current?.tapeCounts?.() || null,
+        replaying: !!sessionRef.current?.isTapeReplaying?.(),
+        replayDone: !!(tapeReplayRef.current && tapeReplayRef.current.done),
+        replayClockMs: sessionRef.current?.replayClockMs?.() ?? 0,
+        replayProgress: tapeReplayRef.current
+          ? tapeReplayRef.current.player.progress(sessionRef.current?.replayClockMs?.() ?? 0) : null,
+        meta: tapeMeta(),
+      }),
+      start: (anchor, opts) => startTape(anchor, opts),
+      stop: (o) => stopTape({ noDownload: true, ...(o || {}) }),
+      mark: (label) => sessionRef.current?.markTape?.(label),
+      // A replay usually wants its OWN trace so it can be diffed against the recording; recording
+      // while replaying is exactly how you get one.
+      armReplay: (tapeJson, o) => {
+        const p = armTapeReplay(tapeJson, o);
+        return p ? { length: p.length, durationMs: p.durationMs, mode: p.mode, droppedInputs: p.droppedInputs } : null;
+      },
+      disarmReplay: () => disarmTapeReplay(),
+      quickSave: () => quickSave(),
+      quickLoad: () => quickLoad(),
+    };
+    return () => { if (window.__arcadeTape) delete window.__arcadeTape; };
+  });
+
+  // F9 toggles recording, F10 drops a mark ("the bug happened HERE"). Keyboard rather than a pad
+  // chord on purpose: the point of a tape is to capture a run made with both hands on the controller,
+  // and a chord would have to steal pad bits from the very run being recorded. No arcade key binding
+  // uses the function row, so these can't collide with a game.
+  useEffect(() => {
+    if (!tapeDev) return undefined;
+    const onKey = (e) => {
+      if (e.key === "F9") { e.preventDefault(); if (sessionRef.current?.isTapeRecording?.()) stopTape(); else startTape(); }
+      else if (e.key === "F10") { e.preventDefault(); sessionRef.current?.markTape?.(`F10 @${new Date().toISOString().slice(11, 19)}`); message.info("Marked"); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+
+  // A room that goes away with a tape still rolling must not leave the replay pump ticking.
+  useEffect(() => () => { if (tapeReplayRef.current) clearInterval(tapeReplayRef.current.timer); }, []);
+
   // Save a NAMED snapshot (arcade-saves-plan S3): flush the live state, then ask the gateway to copy it
   // into a new numbered slot you can resume later. Saves land in the CALLER's vault (the gateway keys
   // every save/load off the token's user, not the room's owner); the buttons are UI-gated to the owner
@@ -1276,6 +1472,18 @@ export default function ArcadeRoomPage() {
           {!competitive && yourSlot === 0 && hasSaveStates(system) && (
             <Tooltip title="Load a saved snapshot without leaving the room">
               <Button onClick={loadSnapshot}>📂 Load snapshot</Button>
+            </Tooltip>
+          )}
+          {/* Input tape (?tape=1). Records every pad frame this seat sends, so a run can be handed to
+              a script and replayed into a fresh room as many times as a bug needs. Save your state
+              first: the tape replays from a quickload, not from a boot. */}
+          {tapeDev && !spectator && LIVE_STATUS.includes(status) && (
+            <Tooltip title={taping
+              ? "Stop recording and download the tape (F9). Mark a moment with F10."
+              : "Record this seat's input to a tape you can replay later (F9). Press Save first — the replay starts from your quicksave."}>
+              <Button danger={taping} onClick={() => (taping ? stopTape() : startTape())}>
+                {taping ? "⏹ Stop tape" : "⏺ Record tape"}
+              </Button>
             </Tooltip>
           )}
           <Tooltip title="Fullscreen">

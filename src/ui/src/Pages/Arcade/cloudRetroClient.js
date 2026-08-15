@@ -14,6 +14,7 @@
 
 import { effectiveFaceSwap } from "./controllerIdentity";
 import { createChordWatcher, resolveChords } from "./controllerChords";
+import { createInputTape, createTapePlayer, THUMB_W, THUMB_H } from "./inputTape";
 
 // Packet types (Appendix A2).
 const T = {
@@ -1159,11 +1160,104 @@ export function createCloudRetroSession(descriptor, opts) {
   // focus force a resync, but only if the player happens to leave the tab). Resending the current
   // state once a second bounds any such desync to ~1s at ~10 bytes/s, and is safe out of order
   // precisely because the frame is absolute state, not an edge.
+  // ── Input tape: record this seat's wire frames, or replay a recorded one ────────────────────────
+  // See inputTape.js for the format and for what a replay can and cannot promise. Everything here is
+  // inert until someone arms it: `tape` and `replaySource` are null on every ordinary session, and
+  // the only cost a non-recording room pays is the two null checks in pumpInput.
+  let tape = null; // createInputTape() while recording
+  let tapeTraceOn = false; // also capture per-frame video thumbprints
+  let replaySource = null; // (clockMs) => [mask, ax, ay, rx, ry]
+  let replayT0Media = null; // media-clock origin, latched on the first frame after arming
+  let replayT0Wall = 0;
+  let replayUsesWallClock = false;
+  let videoClockRunning = false;
+  let lastMediaTime = null; // seconds, from requestVideoFrameCallback (the STREAM's own clock)
+  let lastPresentedFrames = null;
+  let thumbCanvas = null;
+  let thumbCtx = null;
+
+  // Browsers without requestVideoFrameCallback get a coarser media clock off currentTime, sampled
+  // whenever the clock is read. Same timeline, ~1 tick of resolution instead of per-frame; a tape
+  // recorded there still replays, its trace is simply absent.
+  function sampleClockFallback() {
+    if (videoClockRunning && videoEl && !videoEl.requestVideoFrameCallback && Number.isFinite(videoEl.currentTime)) {
+      lastMediaTime = videoEl.currentTime;
+    }
+  }
+
+  // A stamp for the recorder: where we are on both clocks right now.
+  const clockStamp = () => {
+    sampleClockFallback();
+    return { mediaTime: lastMediaTime, presentedFrames: lastPresentedFrames, now: Date.now() };
+  };
+
+  // The replay clock, in ms since the replay was armed. Media-clock by default: it advances with the
+  // encoder (hence with the emulator), so a stalled tab or a network hiccup on either run shifts the
+  // replay with the game instead of desynchronising it. Falls back to wall clock when the media
+  // clock isn't moving yet (pre-attach) or when the caller explicitly asked for wall.
+  function replayClockMs() {
+    sampleClockFallback();
+    if (!replayUsesWallClock && lastMediaTime != null) {
+      if (replayT0Media == null) replayT0Media = lastMediaTime;
+      return (lastMediaTime - replayT0Media) * 1000;
+    }
+    return Date.now() - replayT0Wall;
+  }
+
+  // One rVFC loop serves both halves: it maintains the media clock (needed by record AND replay) and,
+  // when a trace is armed, writes one downscaled greyscale thumbprint per PRESENTED frame into the
+  // tape. Runs only while something needs it.
+  function videoClockStep(now, meta) {
+    if (!videoClockRunning) return;
+    lastMediaTime = meta && Number.isFinite(meta.mediaTime) ? meta.mediaTime : lastMediaTime;
+    lastPresentedFrames = meta ? meta.presentedFrames : lastPresentedFrames;
+    if (tape && tapeTraceOn && thumbCtx) {
+      try {
+        thumbCtx.drawImage(videoEl, 0, 0, THUMB_W, THUMB_H);
+        const d = thumbCtx.getImageData(0, 0, THUMB_W, THUMB_H).data;
+        const g = new Uint8Array(THUMB_W * THUMB_H);
+        for (let i = 0, p = 0; p < g.length; i += 4, p++) {
+          g[p] = (d[i] * 77 + d[i + 1] * 150 + d[i + 2] * 29) >> 8;
+        }
+        tape.frame(lastMediaTime, lastPresentedFrames, g);
+      } catch { /* a tainted or not-yet-sized frame; skip it, keep the clock */ }
+    }
+    if (videoEl && videoEl.requestVideoFrameCallback) videoEl.requestVideoFrameCallback(videoClockStep);
+  }
+
+  function startVideoClock(withTrace) {
+    tapeTraceOn = tapeTraceOn || !!withTrace;
+    if (videoClockRunning) return;
+    if (!videoEl) return;
+    videoClockRunning = true;
+    if (tapeTraceOn && !thumbCanvas && typeof document !== "undefined") {
+      thumbCanvas = document.createElement("canvas");
+      thumbCanvas.width = THUMB_W;
+      thumbCanvas.height = THUMB_H;
+      thumbCtx = thumbCanvas.getContext("2d", { willReadFrequently: true });
+    }
+    // Prime the clock from currentTime before the first rVFC callback lands. Without this the first
+    // input frame after arming is stamped with a null media time and a replay drops it — measured on
+    // the first end-to-end run, which reported "1 row had no media stamp".
+    if (Number.isFinite(videoEl.currentTime)) lastMediaTime = videoEl.currentTime;
+    if (videoEl.requestVideoFrameCallback) videoEl.requestVideoFrameCallback(videoClockStep);
+  }
+
+  function stopVideoClock() {
+    if (tape || replaySource) return; // the other half still needs it
+    videoClockRunning = false;
+    tapeTraceOn = false;
+  }
+
   const RESYNC_MS = 1000;
   let last = null;
   let lastSentAt = 0;
-  function pumpInput() {
-    if (closed || !dc || dc.readyState !== "open") return;
+  // Read the physical controls and produce the frame this seat WOULD send. Split out of pumpInput so
+  // tape replay can substitute a recorded frame at exactly this point — everything downstream (the
+  // chord strip is upstream, the dedupe, the keepalive, the echo-guard stamp, the recorder) then
+  // behaves identically for a replayed frame and a played one. A replay that re-synthesised key
+  // events instead would re-run all of this logic and could drift from what was recorded.
+  function readLiveInput() {
     const gp = readGamepad();
     let mask = keyMask.value | gp.mask;
     // Keyboard arrows fold into the d-pad only where that's correct for the system (see
@@ -1200,7 +1294,24 @@ export function createCloudRetroSession(descriptor, opts) {
     // player's "left" must mean the same thing on both inputs. Safe to negate: axisToInt16 clamps to
     // ±32767, never int16's -32768.
     if (swapRightStickX) rx = -rx;
-    const a = [ax, ay, rx, ry];
+    return { mask, a: [ax, ay, rx, ry] };
+  }
+
+  function pumpInput() {
+    if (closed || !dc || dc.readyState !== "open") return;
+    // Tape replay drives this seat instead of the hardware. The chord watcher and every keyboard/pad
+    // read are skipped entirely — a stray key or a controller left on the desk must not contaminate
+    // a run whose whole point is that it is the recorded run.
+    let mask, a;
+    if (replaySource) {
+      const f = replaySource(replayClockMs());
+      mask = f[0] | 0;
+      a = [f[1] | 0, f[2] | 0, f[3] | 0, f[4] | 0];
+    } else {
+      const live = readLiveInput();
+      mask = live.mask;
+      a = live.a;
+    }
     // Echo-guard bookkeeping (see ECHO_WINDOW_MS): stamp every tick our output is non-neutral, NOT
     // every frame we send — a HELD button stops producing sends the moment the dedupe below latches,
     // while the worker's virtual pad stays pressed the whole time. Stamping on send would let the
@@ -1212,6 +1323,12 @@ export function createCloudRetroSession(descriptor, opts) {
       return;
     last = [mask, a[0], a[1], a[2], a[3]];
     lastSentAt = now;
+    // Record the frame that is actually going on the wire, at the moment it goes. Deliberately after
+    // the dedupe: a tape of every 16 ms tick would be 60x larger and say nothing extra, because the
+    // frame is ABSOLUTE STATE — the sent frames are exactly the changes, and a replay that reasserts
+    // each one at its recorded time reproduces the whole timeline. (The 1 s keepalive resends ride
+    // along harmlessly: replaying a redundant identical frame is a no-op the dedupe eats again.)
+    if (tape) tape.input(mask, a, clockStamp());
     try { dc.send(encodeInput(mask, a)); } catch { /* channel closing */ }
   }
 
@@ -1625,6 +1742,12 @@ export function createCloudRetroSession(descriptor, opts) {
     closed = true;
     status("closed");
     stopInput();
+    // Leaving the rVFC loop alive on a dead video element keeps a canvas readback running for a room
+    // that no longer exists. A tape in progress is dropped, not saved: an unfinished tape whose room
+    // vanished mid-recording has no anchor to replay against.
+    replaySource = null;
+    tape = null;
+    stopVideoClock();
     detachPointer();
     detachMouse();
     if (pinnedPad >= 0) claimedPadIndexes.delete(pinnedPad);
@@ -1985,19 +2108,67 @@ export function createCloudRetroSession(descriptor, opts) {
     // Rebuild the chord watcher from the current custom binds (controller tool "Quick actions" rebind),
     // so a changed chord fires immediately without restarting the room. No-op for non-primary sessions.
     reloadChords: () => { if (onChordAction) chordWatcher = createChordWatcher(onChordAction, resolveChords(customChordBinds)); },
-    save: asPlayer(() => send(T.GAME_SAVE, {})),
-    load: asPlayer(() => send(T.GAME_LOAD, {})),
+    // ── Input tape (inputTape.js) ─────────────────────────────────────────────────────────────
+    // Record what this seat sends, so a run can be replayed later. `meta` is provenance written into
+    // the tape header (game/system/room/anchor). trace=false skips the per-frame video thumbprint
+    // (cheaper, but then a replay has nothing to be diffed against — keep it on unless measuring).
+    startTapeRecording: (meta, o) => {
+      if (spectator) return false; // a watcher sends nothing; a tape of it would be empty by construction
+      tape = createInputTape(meta, o);
+      startVideoClock(!o || o.trace !== false);
+      // Null the dedupe so the tape OPENS with this seat's full current state rather than inheriting
+      // an unrecorded held button — a replay must not start from a pad state it was never told about.
+      last = null;
+      return true;
+    },
+    stopTapeRecording: (extraMeta) => {
+      if (!tape) return null;
+      const json = tape.toJSON(extraMeta);
+      tape = null;
+      stopVideoClock();
+      return json;
+    },
+    /** Add to the tape header after the fact (a title that had to be fetched, an anchor decision). */
+    setTapeMeta: (patch) => { if (tape && patch) Object.assign(tape.meta, patch); },
+    isTapeRecording: () => !!tape,
+    tapeCounts: () => (tape ? tape.counts() : null),
+    /** Drop a labelled mark into the tape at the current moment ("the bug happened HERE"). */
+    markTape: (label) => { if (tape) tape.control("mark", String(label || ""), clockStamp()); },
+    /**
+     * Arm replay: from now on the pad frames come from `tapeJson`, not from the hardware. Returns the
+     * player so the caller can watch progress and pump dueControls (save-state actions are the
+     * caller's to dispatch — the client has no opinion about whether a quickLoad is allowed here).
+     * Pass null to disarm; the seat returns to the live controls with a forced resync.
+     */
+    armTapeReplay: (tapeJson, o) => {
+      if (spectator || !tapeJson) { replaySource = null; last = null; stopVideoClock(); return null; }
+      const player = createTapePlayer(tapeJson, o);
+      replayUsesWallClock = player.mode === "wall";
+      replayT0Media = null;
+      replayT0Wall = Date.now();
+      replaySource = (t) => player.frameAt(t);
+      startVideoClock(false);
+      last = null; // first pump resends true (neutral) state, clearing anything the human left held
+      return player;
+    },
+    disarmTapeReplay: () => { replaySource = null; replayT0Media = null; last = null; stopVideoClock(); },
+    isTapeReplaying: () => !!replaySource,
+    /** ms since the replay was armed, on whichever clock the replay is using. */
+    replayClockMs: () => (replaySource ? replayClockMs() : 0),
+    save: asPlayer(() => { if (tape) tape.control("quickSave", null, clockStamp()); return send(T.GAME_SAVE, {}); }),
+    load: asPlayer(() => { if (tape) tape.control("quickLoad", null, clockStamp()); return send(T.GAME_LOAD, {}); }),
     // room_id is REQUIRED on reset/fast-forward/rewind: the coordinator's user handlers guard
     // these with `rq.Rid == worker.RoomId` (unlike save/load, which ignore Rid). Reset used to
     // send {} — which that guard silently no-op'd; carrying the id is the fix.
-    reset: asPlayer(() => send(T.GAME_RESET, { room_id: roomIdFromWsUrl(descriptor.wsUrl) })),
+    reset: asPlayer(() => { if (tape) tape.control("reset", null, clockStamp()); return send(T.GAME_RESET, { room_id: roomIdFromWsUrl(descriptor.wsUrl) }); }),
     // Hold-to-engage time controls. The chord watcher calls these with true on engage and false
     // on release; the on-screen buttons use pointerdown/up the same way.
-    fastForward: asPlayer((on) => send(T.GAME_FAST_FORWARD, { active: !!on, room_id: roomIdFromWsUrl(descriptor.wsUrl) })),
-    rewind: asPlayer((on) => send(T.GAME_REWIND, { active: !!on, room_id: roomIdFromWsUrl(descriptor.wsUrl) })),
+    fastForward: asPlayer((on) => { if (tape) tape.control("fastForward", !!on, clockStamp()); return send(T.GAME_FAST_FORWARD, { active: !!on, room_id: roomIdFromWsUrl(descriptor.wsUrl) }); }),
+    rewind: asPlayer((on) => { if (tape) tape.control("rewind", !!on, clockStamp()); return send(T.GAME_REWIND, { active: !!on, room_id: roomIdFromWsUrl(descriptor.wsUrl) }); }),
     // Multi-disc: ask the emulator to swap to disc image `index` (patch 0005). No-op until the "disc"
     // channel is open / for single-disc games.
     swapDisc: asPlayer((index) => {
+      if (tape) tape.control("swapDisc", index | 0, clockStamp());
       try {
         if (discDc && discDc.readyState === "open") discDc.send(new Uint8Array([index & 0xff]));
       } catch { /* channel closing */ }
