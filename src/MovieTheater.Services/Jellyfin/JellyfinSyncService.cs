@@ -1163,6 +1163,14 @@ namespace MovieTheater.Services.Jellyfin
                         row.SeasonNumber = d.SeasonNumber;
                         row.EpisodeNumber = d.EpisodeNumber;
                         row.SpansToEpisode = d.SpansToEpisode;
+                        // A resolution failure is a verdict about ONE run, not a permanent property
+                        // of the file. The resolver skips groups carrying an error, so leaving last
+                        // run's message in place blocks the folder for good — including after a fix
+                        // that would now succeed, which is precisely when it must be retried. Each
+                        // sync therefore hands the resolver a clean slate and lets it re-decide;
+                        // within a run the error still does its job of stopping a retry loop, and a
+                        // reviewer's own correction is protected by the PinnedByReviewer branch above.
+                        row.ResolutionError = null;
                         // A series this candidate was already resolved into outranks re-attribution: the
                         // refresh must not un-point an episode from the series a previous Resolve created
                         // for it just because the title-token guess now reads differently.
