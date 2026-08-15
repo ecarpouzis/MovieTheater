@@ -1756,7 +1756,7 @@ export default function IngestReviewPage({ userData }) {
         )}
         <Button onClick={load}>Refresh</Button>
         <Popconfirm
-          title="Fetch posters (IMDb via OMDB) only for approved titles that are MISSING one. Existing posters are never re-fetched or changed."
+          title="Fetch posters (IMDb via OMDB) for any title MISSING one, pending review included. Existing posters are never re-fetched or changed."
           okText="Backfill posters"
           onConfirm={async () => {
             const hide = message.loading("Backfilling posters…", 0);

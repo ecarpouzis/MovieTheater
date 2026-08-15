@@ -87,6 +87,21 @@ namespace MovieTheater.Ingest
             }
         }
 
+        /// <summary>
+        /// Records a decision the resolver made on a show's behalf, where the reviewer will see it:
+        /// on the series' own review flags. Used when the mapping succeeded but did something worth
+        /// declaring — an override of what the file names said has to be visible and reversible, or
+        /// it is just a silent guess with extra steps.
+        /// </summary>
+        private async Task NoteOnSeriesAsync(int seriesId, string note)
+        {
+            var s = await movieDb.Series.FirstOrDefaultAsync(x => x.Id == seriesId);
+            if (s == null) return;
+            s.ImdbNeedsReview = true;
+            s.ImdbReviewReason = TruncCol(note, 512);
+            await movieDb.SaveChangesAsync();
+        }
+
         private static string? ParentDirOfPath(string? p)
         {
             if (string.IsNullOrEmpty(p)) return null;
@@ -368,6 +383,13 @@ namespace MovieTheater.Ingest
                     await movieDb.SaveChangesAsync();
 
                     try { await MovieNormalizer.ApplyAllAsync(movieDb, resolved); } catch { /* normalized parse is best-effort */ }
+
+                    // Poster NOW, not at approve time. A review card is a judgement about whether
+                    // this is the right film, and the poster is most of what makes that judgement
+                    // possible — fetching it only on approval meant reviewing a wall of text and
+                    // finding out afterwards. Best-effort: a title with no art is still reviewable.
+                    try { await posterFetchService.EnsurePosterAsync(resolved.id, tt, isSeries: false); }
+                    catch (Exception ex) { logger.LogWarning(ex, "Poster fetch failed for new movie {Id} ({Tt})", resolved.id, tt); }
 
                     // Stamp Jellyfin identity onto the files now so the title is streamable on approval
                     // (codec detail arrives with the next sync).
@@ -914,6 +936,7 @@ namespace MovieTheater.Ingest
             // label names. Only legal on a 1:1 count with nothing already mapped — otherwise the zip
             // has no defined meaning and would collide with existing files.
             Dictionary<int, Episode>? absoluteTarget = null;
+            string? autoAbsoluteNote = null;
             if (absoluteOrder)
             {
                 absoluteTarget = filesByPlayable.Count > 0
@@ -935,12 +958,35 @@ namespace MovieTheater.Ingest
                 {
                     var diskCount = members.Count(c => c.SeasonNumber != null && c.EpisodeNumber != null);
                     var totalsAgree = diskCount == episodes.Count && filesByPlayable.Count == 0;
-                    MarkGroupError(members, TruncCol(
-                        $"Not mapped — {mismatch}. Mapping by number would shift every later episode. " +
-                        (totalsAgree
-                            ? $"The totals DO agree ({diskCount} files, {episodes.Count} catalogued episodes), so this looks like a season-boundary difference: use \"Map in absolute order\" if the files are in broadcast order."
-                            : "Map these by hand from the series card."), 512));
-                    return (0, members.Count);
+
+                    // An EXACT 1:1 with nothing already mapped is not actually ambiguous: the two
+                    // sources agree on how many episodes exist and disagree only on where a season
+                    // boundary falls, so the nth file is the nth episode and there is no rival
+                    // reading to choose between. Stopping here left a fully catalogued show sitting
+                    // unmapped behind a button, which is not a finished job. Map it, and SAY the
+                    // numbering was overridden so the decision is visible and reversible.
+                    if (totalsAgree)
+                    {
+                        absoluteTarget = MovieTheater.Services.Series.SyncSeriesMatcher.AbsolutePairing(members, episodes);
+                        if (absoluteTarget != null)
+                        {
+                            autoAbsoluteNote = TruncCol(
+                                $"Mapped in absolute order: {mismatch}, but both agree on {diskCount} episodes, " +
+                                "so each file was attached to the episode at its position rather than to the one its " +
+                                "name claims. Check the first episode of season 2 if the show numbers its seasons oddly.", 512);
+                            logger.LogInformation(
+                                "Series {Sid}: season shapes disagree ({Mismatch}) but totals match at {N} — mapping in absolute order",
+                                seriesId, mismatch, diskCount);
+                        }
+                    }
+
+                    if (absoluteTarget == null)
+                    {
+                        MarkGroupError(members, TruncCol(
+                            $"Not mapped — {mismatch}. Mapping by number would shift every later episode. " +
+                            "Map these by hand from the series card.", 512));
+                        return (0, members.Count);
+                    }
                 }
             }
 
@@ -1014,6 +1060,10 @@ namespace MovieTheater.Ingest
                 MarkGroupError(members, TruncCol(
                     $"{unmatched} of {members.Count} file(s) could not be mapped: " + string.Join("; ", reasons.Take(6))
                     + (reasons.Count > 6 ? $"; +{reasons.Count - 6} more" : ""), 512));
+            else if (autoAbsoluteNote != null)
+                // Every file mapped, so no candidate stays Pending to carry a message — record the
+                // override on the SERIES, where the reviewer is looking at the result of it.
+                await NoteOnSeriesAsync(seriesId, autoAbsoluteNote);
             return (mapped, unmatched);
         }
 

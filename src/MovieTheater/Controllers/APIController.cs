@@ -4331,10 +4331,13 @@ namespace MovieTheater.Controllers
             // no-ops where an on-disk image already exists, so this stays safe for legacy rows.
             // minId scopes the pass to recent ids (the buggy ingest era) so a run need not iterate the
             // whole legacy library — pass e.g. minId=9001 to target only recently-ingested titles.
-            var series = await movieDb.Series.Where(s => s.ReviewBatch == null && s.imdbID != null && s.Id >= minId
+            // Pending-review rows are INCLUDED, deliberately. They are the ones a person is about to
+            // look at, and a review card without art is the hardest kind to judge; excluding them
+            // meant the only titles that could be given a poster were the ones already approved.
+            var series = await movieDb.Series.Where(s => s.imdbID != null && s.Id >= minId
                     && (s.PosterDetails == null || s.PosterDetails.PosterVersion == 0))
                 .Select(s => new { s.Id, s.imdbID }).ToListAsync();
-            var movies = await movieDb.Movies.Where(m => m.ReviewBatch == null && m.imdbID != null && m.id >= minId
+            var movies = await movieDb.Movies.Where(m => m.imdbID != null && m.id >= minId
                     && (m.PosterDetails == null || m.PosterDetails.PosterVersion == 0)
                     && m.TitleType != TitleType.TvSeries && m.TitleType != TitleType.TvMiniSeries)
                 .Select(m => new { m.id, m.imdbID }).ToListAsync();
