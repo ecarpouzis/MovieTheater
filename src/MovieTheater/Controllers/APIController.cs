@@ -4753,6 +4753,20 @@ namespace MovieTheater.Controllers
             return Ok(new { success = res.Ok, message = res.Message, movieTitle = res.MovieTitle, newPath = res.NewPath, nowStreamable = res.NowStreamable, extrasAttached = res.ExtrasAttached, partsAttached = res.PartsAttached });
         }
 
+        public class SyncCandidateVariantRequest { public int Id { get; set; } public string? Label { get; set; } }
+
+        // "It belongs to that movie, but it isn't an upgrade" — attach the file as an alternate version
+        // (Role=Variant) beside the existing Primary instead of replacing it. Additive and reversible:
+        // the movie's main file, FilePath and metadata are untouched, and the variant can be promoted
+        // later from the title's file list (IngestReview/MoveFile).
+        [HttpPost("/API/Admin/IngestReview/SyncCandidates/AttachVariant")]
+        public async Task<IActionResult> SyncCandidateAttachVariant([FromBody] SyncCandidateVariantRequest req)
+        {
+            if (!await IsCurrentUserEditor()) return Forbid();
+            var res = await jellyfinSyncService.AttachVariantCandidateAsync(req.Id, req.Label, TruncCol(User.Identity?.Name, 64));
+            return Ok(new { success = res.Ok, message = res.Message, movieTitle = res.MovieTitle, newPath = res.NewPath, nowStreamable = res.NowStreamable });
+        }
+
         [HttpPost("/API/Admin/IngestReview/SyncCandidates/Reject")]
         public async Task<IActionResult> SyncCandidatesReject([FromBody] SyncCandidateIdsRequest req)
         {
@@ -5795,8 +5809,18 @@ namespace MovieTheater.Controllers
                 }
                 if (c.TargetMovieId == m.id)
                 {
+                    var wasUpgrade = c.Kind == SyncCandidateKind.Upgrade;
                     c.TargetMovieId = null; c.Signal = null; c.OldPath = null;
-                    if (c.Status == SyncCandidateStatus.Pending) c.Kind = SyncCandidateKind.Unclassified;
+                    if (c.Status == SyncCandidateStatus.Pending)
+                    {
+                        // Only an UPGRADE loses its identity with its target — the pairing was the whole
+                        // row. A NewTitle merely carried the movie as an advisory ("that tt is taken, so
+                        // this isn't an upgrade — attach it as an alt version instead"); deleting the owner
+                        // makes the tt free, so the row keeps its kind and its error is cleared so the next
+                        // resolve retries what will now succeed.
+                        if (wasUpgrade) c.Kind = SyncCandidateKind.Unclassified;
+                        else c.ResolutionError = null;
+                    }
                 }
                 if (c.CreatedMovieId == m.id) c.CreatedMovieId = null;
             }

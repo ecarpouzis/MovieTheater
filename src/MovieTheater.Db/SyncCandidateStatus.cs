@@ -10,7 +10,9 @@ namespace MovieTheater.Db
         /// (see <see cref="SyncCandidate.CreatedMovieId"/>); the normal review-ingest flow owns it now.</summary>
         Ingested = 1,
 
-        /// <summary>An Upgrade the reviewer applied — the target movie was re-pointed to this file.</summary>
+        /// <summary>The reviewer acted on this file against its target movie: either the movie was
+        /// re-pointed to it (an upgrade) or it was attached beside the existing feature as an alternate
+        /// version. Both are decisions about the same pairing, so both retire the candidate the same way.</summary>
         Approved = 2,
 
         /// <summary>Dismissed by the reviewer. Kept so the next sync does not re-offer the same path.</summary>

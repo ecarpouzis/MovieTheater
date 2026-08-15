@@ -951,11 +951,24 @@ function SyncSeriesGroupCard({ group, onUpdate, onRejectGroup, onMapAbsolute }) 
 // UPGRADE approves in place (the movie keeps everything, only its file re-points); NEW TITLES
 // resolve in bulk from the toolbar, each becoming an ordinary review card in the open batch;
 // anything misclassified gets corrected here first (retitle, pin a tt, flip the kind).
-function SyncCandidateCard({ row, onApplyUpgrade, onRejectOne, onUpdate }) {
+// The label an alternate version gets if the reviewer doesn't type one: the file's own name, minus
+// its extension. It's what a person would read off the shelf, and "Director's Cut"/"Extended" is
+// usually right there in it.
+function defaultVariantLabel(path) {
+  const leaf = String(path || "").replace(/\//g, "\\").split("\\").pop() || "";
+  return leaf.replace(/\.[^.]+$/, "");
+}
+
+function SyncCandidateCard({ row, onApplyUpgrade, onAttachVariant, onRejectOne, onUpdate }) {
   const [working, setWorking] = useState(false);
   const [title, setTitle] = useState(row.parsedTitle || "");
   const [year, setYear] = useState(row.parsedYear != null ? String(row.parsedYear) : "");
   const [imdbId, setImdbId] = useState(row.resolvedImdbId || "");
+  const [variantLabel, setVariantLabel] = useState(defaultVariantLabel(row.path));
+  // Any candidate the sync could tie to an existing movie can be declared an alt version of it —
+  // upgrades (the sync guessed "replacement", the reviewer says "extra cut") and the new-title rows
+  // the resolver refused because that IMDb id is already owned by a title with a live file.
+  const canAttachVariant = row.targetMovieId != null;
   const gb = row.sizeBytes ? (row.sizeBytes / 1024 ** 3).toFixed(2) + " GB" : "";
   const dirty =
     title !== (row.parsedTitle || "") ||
@@ -1021,9 +1034,35 @@ function SyncCandidateCard({ row, onApplyUpgrade, onRejectOne, onUpdate }) {
                   </Button>
                 ) : null}
               </Space>
+              {/* The resolver couldn't make this a new title because an existing one already owns its
+                  IMDb id. Naming that title is what makes the alt-version offer below make sense. */}
+              {canAttachVariant ? (
+                <Text type="secondary">
+                  already in the library as{" "}
+                  <Text strong>
+                    {row.targetTitle || `movie #${row.targetMovieId}`}
+                    {row.targetYear ? ` (${row.targetYear})` : ""}
+                  </Text>
+                </Text>
+              ) : null}
               {row.resolutionError ? <Text type="danger">{row.resolutionError}</Text> : null}
             </>
           )}
+          {/* An alternate version is a claim about the FILE ("this is the extended cut"), so the label
+              is edited here rather than guessed at approve time — it's what the title's file list will
+              show next to the play button. */}
+          {canAttachVariant ? (
+            <Space wrap size={4}>
+              <Text type="secondary">alt version label:</Text>
+              <Input
+                size="small"
+                style={{ width: 260 }}
+                placeholder="e.g. Director's Cut"
+                value={variantLabel}
+                onChange={(e) => setVariantLabel(e.target.value)}
+              />
+            </Space>
+          ) : null}
           <Space wrap>
             {row.kind === "upgrade" ? (
               <>
@@ -1055,6 +1094,20 @@ function SyncCandidateCard({ row, onApplyUpgrade, onRejectOne, onUpdate }) {
                   Treat as a series episode
                 </Button>
               </>
+            ) : null}
+            {/* The other reading of every "this file belongs to that movie" signal. Offered wherever a
+                target is known, because the sync cannot tell a better rip from a different cut — and
+                guessing wrong on an upgrade retires the copy everyone's viewings point at. */}
+            {canAttachVariant ? (
+              <Popconfirm
+                title={`Attach this file to "${row.targetTitle || "that movie"}" as an alternate version? Its main file stays exactly as it is — nothing is replaced or deleted.`}
+                okText="Attach as alt version"
+                onConfirm={() => run(() => onAttachVariant(row, variantLabel))}
+              >
+                <Button size="small" disabled={working}>
+                  {row.kind === "upgrade" ? "Alt version, not an upgrade" : "Attach as alt version"}
+                </Button>
+              </Popconfirm>
             ) : null}
             <Popconfirm
               title="Dismiss this candidate? The file stays on disk; it just won't be offered again."
@@ -1338,6 +1391,24 @@ export default function IngestReviewPage({ userData }) {
       return true;
     } catch {
       message.error("Upgrade failed.");
+      return false;
+    }
+  }, []);
+
+  // "It's that movie, but it isn't an upgrade" — attach beside the main file as an alternate version.
+  const attachVariant = useCallback(async (row, label) => {
+    try {
+      const res = await MovieAPI.syncCandidateAttachVariant(row.id, label);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        message.error(data.message || "Attach failed.");
+        return false;
+      }
+      message.success(data.message || `Attached to "${data.movieTitle}" as an alternate version.`);
+      setItems((prev) => prev.filter((it) => it.id !== row.id));
+      return true;
+    } catch {
+      message.error("Attach failed.");
       return false;
     }
   }, []);
@@ -1905,6 +1976,7 @@ export default function IngestReviewPage({ userData }) {
                   key={uidOf(row)}
                   row={row}
                   onApplyUpgrade={applyUpgrade}
+                  onAttachVariant={attachVariant}
                   onRejectOne={rejectCandidate}
                   onUpdate={updateCandidate}
                 />

@@ -1512,6 +1512,15 @@ function syncCandidateApplyUpgrade(id) {
     body: JSON.stringify({ Id: id }),
   });
 }
+// "Belongs to that movie, but isn't an upgrade": attach the file as an alternate version beside the
+// movie's existing main file. Additive — nothing is replaced or deleted.
+function syncCandidateAttachVariant(id, label) {
+  return fetch("/API/Admin/IngestReview/SyncCandidates/AttachVariant", {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ Id: id, Label: label || null }),
+  });
+}
 function syncCandidatesReject(ids) {
   return fetch("/API/Admin/IngestReview/SyncCandidates/Reject", {
     method: "post",
@@ -1845,6 +1854,7 @@ const MovieAPI = {
   ingestReviewBackfillThumbnails,
   syncCandidatesList,
   syncCandidateApplyUpgrade,
+  syncCandidateAttachVariant,
   syncCandidatesReject,
   syncCandidateUpdate,
   syncCandidatesResolve,

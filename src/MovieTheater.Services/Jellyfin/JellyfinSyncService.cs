@@ -297,7 +297,8 @@ namespace MovieTheater.Services.Jellyfin
                 }
 
             // Whatever we didn't re-point (and isn't already reported as an IMDB-id fallback) is genuinely
-            // a Jellyfin item the DB doesn't track.
+            // a Jellyfin item the DB doesn't track. Holding the id-matched ones out of this list is only
+            // safe because EVERY one of them reaches the candidate pass below — see the note there.
             foreach (var u in translatedUntracked)
                 if (!repointedItemIds.Contains(u.Item.Id) && !imdbFallbackItemIds.Contains(u.Item.Id))
                     r.Untracked.Add(u.Item.Path ?? u.DbPath);
@@ -421,10 +422,18 @@ namespace MovieTheater.Services.Jellyfin
             // Non-fatal by design: candidate persistence is an AUXILIARY product of the sync. A bug
             // here must degrade to "no candidates this run" — loudly — never to a failed sync whose
             // matching/missing work is all thrown away.
+            // EVERY imdb-id pair goes to the candidate lane, including those whose movie DID match a
+            // file by path. `candidateItems` above drops these items unconditionally, so any pair
+            // filtered out here would appear in NO report section and NO candidate row — it would
+            // simply vanish. And the pairs this used to drop are the ones that matter most: a movie
+            // whose recorded file is still live, plus a second file carrying its IMDb id, is exactly
+            // "a better rip was added beside the old one" — an upgrade, not a non-event. (The report's
+            // own ImdbFallbacks list keeps the !chosen filter: there it means "we couldn't find this
+            // movie's file by path but found it by id", which a matched movie genuinely isn't.)
             try
             {
                 await UpsertSyncCandidatesAsync(db, r, dryRun, now, candidateItems,
-                    imdbFallbackPairs.Where(p => !chosen.ContainsKey(p.MovieId)).ToList(),
+                    imdbFallbackPairs,
                     possibleRenamePairs, matchedRows, filesByPlayable, movieById.Values.ToList(),
                     movieIdByPlayable, folderToPlayable, chosen, cancel);
                 logger.LogInformation(
@@ -760,27 +769,11 @@ namespace MovieTheater.Services.Jellyfin
             if (cand.Kind != SyncCandidateKind.Upgrade || cand.TargetMovieId == null || string.IsNullOrEmpty(cand.JellyfinItemId))
             { res.Message = "Not an applicable upgrade candidate."; return res; }
 
-            var movie = await db.Movies.FirstOrDefaultAsync(m => m.id == cand.TargetMovieId, cancel);
-            if (movie == null) { res.Message = "The target movie no longer exists."; return res; }
-            res.MovieTitle = movie.Title;
+            var verified = await VerifyCandidateFileAsync(db, cand, res, cancel);
+            if (verified == null) return res;
+            var (movie, detail, dbPath) = verified.Value;
 
-            // Re-fetch the item and require it to still be the file the candidate described.
-            var detail = (await jellyfin.GetItemsByIdsAsync(new[] { cand.JellyfinItemId! }, cancel)).FirstOrDefault();
-            if (detail == null || string.IsNullOrEmpty(detail.Path))
-            { res.Message = "The file's Jellyfin item is gone — run Sync from Jellyfin and review again."; return res; }
-            var family = await FamilyExclusionAsync(cancel);
-            if (family.IsExcluded(detail.Path!)) { res.Message = "That file belongs to the excluded family library."; return res; }
-            if (!JellyfinPathMapper.TryTranslateToDb(detail.Path!, config.JellyfinPathMappings, out var dbPath, out _))
-            { res.Message = $"No path mapping covers '{detail.Path}'."; return res; }
-            if (JellyfinPathMapper.NormalizeForCompare(dbPath) != JellyfinPathMapper.NormalizeForCompare(cand.Path))
-            { res.Message = $"The file moved since detection (now at '{dbPath}') — run Sync from Jellyfin and review again."; return res; }
-
-            // Refuse if some OTHER title claimed the path meanwhile (an approval race, a hand map).
             var pathNorm = JellyfinPathMapper.NormalizeForCompare(dbPath);
-            var claimed = (await db.MediaFiles.Select(f => new { f.Path, f.PlayableId }).ToListAsync(cancel))
-                .FirstOrDefault(f => JellyfinPathMapper.NormalizeForCompare(f.Path) == pathNorm && f.PlayableId != movie.PlayableId);
-            if (claimed != null) { res.Message = "Another title already owns that file — nothing changed."; return res; }
-
             var now = DateTime.UtcNow;
             if (movie.PlayableId == null)
             {   // pre-cutover stragglers: give the movie its file slot rather than refusing the upgrade
@@ -867,6 +860,129 @@ namespace MovieTheater.Services.Jellyfin
             res.Message = $"'{movie.Title}' re-pointed to the new file.";
             logger.LogInformation("Sync-candidate upgrade applied: movie {Id} '{Title}' → {Path} (candidate {Cand}, {Signal}, by {User}, +{Extras} extras)",
                 movie.id, movie.Title, dbPath, cand.Id, cand.Signal, approvedBy, res.ExtrasAttached.Count);
+            return res;
+        }
+
+        /// <summary>
+        /// The checks every "act on this candidate's file" path must pass before it writes anything:
+        /// the target movie still exists, Jellyfin still holds the item, the item is still the file the
+        /// candidate described (not one that moved after detection), it isn't family-library content,
+        /// and no OTHER title has claimed the path in the meantime. Shared by the upgrade and the
+        /// alt-version lanes deliberately — two callers writing to the same MediaFile table must not
+        /// drift into two different ideas of what is safe. Returns null with <paramref name="res"/>'s
+        /// message set when any check fails.
+        /// </summary>
+        private async Task<(Movie Movie, JellyfinItem Detail, string DbPath)?> VerifyCandidateFileAsync(
+            MovieDb db, SyncCandidate cand, SyncUpgradeResult res, CancellationToken cancel)
+        {
+            var movie = await db.Movies.FirstOrDefaultAsync(m => m.id == cand.TargetMovieId, cancel);
+            if (movie == null) { res.Message = "The target movie no longer exists."; return null; }
+            res.MovieTitle = movie.Title;
+
+            var detail = (await jellyfin.GetItemsByIdsAsync(new[] { cand.JellyfinItemId! }, cancel)).FirstOrDefault();
+            if (detail == null || string.IsNullOrEmpty(detail.Path))
+            { res.Message = "The file's Jellyfin item is gone — run Sync from Jellyfin and review again."; return null; }
+            var family = await FamilyExclusionAsync(cancel);
+            if (family.IsExcluded(detail.Path!)) { res.Message = "That file belongs to the excluded family library."; return null; }
+            if (!JellyfinPathMapper.TryTranslateToDb(detail.Path!, config.JellyfinPathMappings, out var dbPath, out _))
+            { res.Message = $"No path mapping covers '{detail.Path}'."; return null; }
+            if (JellyfinPathMapper.NormalizeForCompare(dbPath) != JellyfinPathMapper.NormalizeForCompare(cand.Path))
+            { res.Message = $"The file moved since detection (now at '{dbPath}') — run Sync from Jellyfin and review again."; return null; }
+
+            var pathNorm = JellyfinPathMapper.NormalizeForCompare(dbPath);
+            var claimed = (await db.MediaFiles.Select(f => new { f.Path, f.PlayableId }).ToListAsync(cancel))
+                .FirstOrDefault(f => JellyfinPathMapper.NormalizeForCompare(f.Path) == pathNorm && f.PlayableId != movie.PlayableId);
+            if (claimed != null) { res.Message = "Another title already owns that file — nothing changed."; return null; }
+
+            return (movie, detail, dbPath);
+        }
+
+        /// <summary>
+        /// The reviewer's answer to "this file belongs to that movie, but it is not an upgrade": attaches
+        /// the candidate's file to the target movie as a <see cref="MovieFileRole.Variant"/> — an alternate
+        /// cut/edition sitting BESIDE the Primary — instead of re-pointing the movie at it.
+        ///
+        /// <para>This exists because the sync can only ever guess at the difference. A second file carrying
+        /// a movie's IMDb id, or sitting in its folder, is equally consistent with "a better rip arrived"
+        /// and with "the extended cut arrived", and those want opposite outcomes: one replaces the Primary,
+        /// the other must NOT — approving an upgrade on a director's cut silently retires the theatrical
+        /// version everyone's viewings refer to. The tool can see the ambiguity but not resolve it, so a
+        /// person does, and the two answers are one click apart on the same card.</para>
+        ///
+        /// <para>Strictly additive: the Primary, the movie's FilePath and all its metadata are untouched,
+        /// nothing is deleted, and the variant can be promoted to Primary later from the movie's file list
+        /// (IngestReview/MoveFile) if the reviewer changes their mind. Idempotent by path — a file already
+        /// attached to this movie is reported, not duplicated.</para>
+        /// </summary>
+        public async Task<SyncUpgradeResult> AttachVariantCandidateAsync(
+            int candidateId, string? label, string? approvedBy, CancellationToken cancel = default)
+        {
+            var res = new SyncUpgradeResult();
+            using var db = await dbFactory.CreateDbContextAsync(cancel);
+            var cand = await db.SyncCandidates.FirstOrDefaultAsync(c => c.Id == candidateId, cancel);
+            if (cand == null) { res.Message = "Candidate not found."; return res; }
+            if (cand.Status != SyncCandidateStatus.Pending) { res.Message = $"Candidate is {cand.Status}, not Pending."; return res; }
+            if (cand.TargetMovieId == null || string.IsNullOrEmpty(cand.JellyfinItemId))
+            { res.Message = "This candidate has no target movie to attach to."; return res; }
+
+            var verified = await VerifyCandidateFileAsync(db, cand, res, cancel);
+            if (verified == null) return res;
+            var (movie, detail, dbPath) = verified.Value;
+
+            var now = DateTime.UtcNow;
+            if (movie.PlayableId == null)
+            {   // A variant is defined RELATIVE to a feature; with no file slot at all there is nothing for
+                // it to be an alternate OF, and silently promoting it to the movie's only file would be the
+                // upgrade the reviewer just declined. Say so instead.
+                res.Message = "That movie has no file yet — approve this as its upgrade, or map a primary first.";
+                return res;
+            }
+
+            var files = await db.MediaFiles.Where(f => f.PlayableId == movie.PlayableId!.Value).ToListAsync(cancel);
+            var pathNorm = JellyfinPathMapper.NormalizeForCompare(dbPath);
+            var already = files.FirstOrDefault(f => JellyfinPathMapper.NormalizeForCompare(f.Path) == pathNorm);
+            if (already != null)
+            {   // Re-running the same approval must not add a second row for one file. Retire the candidate
+                // and report the truth rather than failing at the reviewer.
+                cand.Status = SyncCandidateStatus.Approved;
+                cand.ResolvedUtc = now;
+                cand.ResolvedBy = Truncate(approvedBy, 64);
+                await db.SaveChangesAsync(cancel);
+                res.Ok = true;
+                res.NewPath = dbPath;
+                res.NowStreamable = already.JellyfinItemId != null && already.MissingSinceUtc == null;
+                res.Message = $"That file was already attached to '{movie.Title}' as a {already.Role}.";
+                return res;
+            }
+
+            // A label the reviewer typed wins; otherwise the file's own name is the only honest guess —
+            // it is what a person would read off the shelf, and an empty label makes the version picker
+            // show a nameless row.
+            var chosenLabel = Truncate(string.IsNullOrWhiteSpace(label) ? LeafLabel(dbPath) : label!.Trim(), 128);
+            var variant = new MediaFile
+            {
+                PlayableId = movie.PlayableId!.Value,
+                Path = dbPath,
+                Role = MovieFileRole.Variant,
+                Label = chosenLabel,
+            };
+            // No keyframe custody to carry here, unlike an upgrade: custody restores a BANKED list onto a
+            // row whose bytes we already fingerprinted, and this row is new — it has never been measured.
+            // The nightly fingerprint/bank pass covers it, exactly as it does any newly mapped file.
+            StampFromItem(variant, detail, now);
+            db.MediaFiles.Add(variant);
+
+            cand.Status = SyncCandidateStatus.Approved;
+            cand.ResolvedUtc = now;
+            cand.ResolvedBy = Truncate(approvedBy, 64);
+            await db.SaveChangesAsync(cancel);
+
+            res.Ok = true;
+            res.NewPath = dbPath;
+            res.NowStreamable = variant.JellyfinItemId != null;
+            res.Message = $"Attached to '{movie.Title}' as an alternate version ({chosenLabel}). Its main file is unchanged.";
+            logger.LogInformation("Sync-candidate attached as VARIANT: movie {Id} '{Title}' + {Path} (label '{Label}', candidate {Cand}, {Signal}, by {User})",
+                movie.id, movie.Title, dbPath, chosenLabel, cand.Id, cand.Signal, approvedBy);
             return res;
         }
 
@@ -958,12 +1074,19 @@ namespace MovieTheater.Services.Jellyfin
             // happily offered one as an upgrade of the movie whose .avi sits beside it — approving that
             // re-points a working title at an index file. Claiming first is what makes the guard total:
             // every later step short-circuits on an already-claimed path.
-            foreach (var u in untracked)
+            // The imdb-id pairs arrive on their OWN list (the caller excludes them from `untracked`),
+            // so they need the same first claim or the guard has a hole exactly where it hurts most:
+            // Jellyfin hands a DVD rip's .ifo the same provider ids as the .mkv beside it, and step 1
+            // would then offer a 69 KB index file as that movie's upgrade.
+            foreach (var u in untracked.Select(u => (u.DbPath, u.Item, u.Size))
+                         .Concat(imdbPairs.Select(p => (p.DbPath, p.Item, Size: p.Item.MediaSources?.FirstOrDefault()?.Size))))
                 if (!MovieFolderParser.IsVideoFile(u.DbPath))
                     Claim(u.DbPath, u.Item, u.Size, SyncCandidateKind.Unclassified, signal: "not-video",
                         parsedTitle: LeafLabel(u.DbPath));
 
-            // 1. Shared IMDb id — the item names the movie it replaces.
+            // 1. Shared IMDb id — the item names the movie it replaces. The movie's own file may well
+            // still be live (an upgrade dropped beside the old rip rather than over it); that is a
+            // reason to offer the swap, not to stay silent, and approving re-points in place.
             foreach (var p in imdbPairs)
                 if (movieId2Movie.TryGetValue(p.MovieId, out var m))
                     Claim(p.DbPath, p.Item, p.Item.MediaSources?.FirstOrDefault()?.Size,

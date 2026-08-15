@@ -345,7 +345,19 @@ namespace MovieTheater.Ingest
                         }
                         else
                         {
-                            primaryCand.ResolutionError = TruncCol($"{tt} is already movie {ownerMovie.id} '{ownerMovie.Title}' with a live file — likely a duplicate rip.", 512);
+                            // The owner's file is alive, so this is NOT an upgrade and the resolver must not
+                            // convert it into one. But "likely a duplicate rip" is only the most common
+                            // reading — an extended cut, a different dub, a restoration all land here too,
+                            // and they belong ON that movie as alternate versions. Stamping the owner makes
+                            // the card actionable ("attach as an alt version of X") instead of a dead end
+                            // whose only exits are dismiss or hand-edit the id. The Kind stays NewTitle: the
+                            // tool is naming a relationship it can see, not deciding what to do about it.
+                            primaryCand.TargetMovieId = ownerMovie.id;
+                            primaryCand.OldPath = ownerMovie.FilePath;
+                            primaryCand.ResolvedImdbId = tt;
+                            primaryCand.ResolutionError = TruncCol(
+                                $"{tt} is already movie {ownerMovie.id} '{ownerMovie.Title}', whose file is still live — so this is not an upgrade. " +
+                                "If it's a duplicate rip, dismiss it; if it's another cut or edition, attach it as an alternate version.", 512);
                             failed++;
                         }
                         continue;
