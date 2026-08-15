@@ -1589,6 +1589,14 @@ namespace MovieTheater.Services.Jellyfin
         /// <summary>Untracked files the classifier couldn't place (unparseable folder, non-video sidecar).</summary>
         public int CandidateUnclassified { get; set; }
 
+        /// <summary>What the post-sync resolution accomplished — new titles created, shows identified
+        /// and catalogued, files mapped. Null when nothing was registered to do it (a CLI sync).</summary>
+        public SyncResolveSummary? Resolution { get; set; }
+
+        /// <summary>Why the resolution pass failed, when it did. The sync itself still succeeded and
+        /// its results are saved; the candidates simply stay pending for a hand run.</summary>
+        public string? ResolveError { get; set; }
+
         /// <summary>What went wrong in the scan phase, when the run did one and it misbehaved. Not an
         /// abort — an unreachable or wedged scan still leaves a library worth syncing — but the
         /// reviewer has to know the sync saw a stale index rather than assume it saw the disk.</summary>

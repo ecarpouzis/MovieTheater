@@ -161,6 +161,31 @@ namespace MovieTheater.Services.Jellyfin
                 var sync = scope.ServiceProvider.GetRequiredService<JellyfinSyncService>();
                 var rep = await sync.RunAsync(dryRun: false, progress: SetPhase);
                 if (scanNote != null) rep.ScanNote = scanNote;
+
+                // Final phase: turn the candidates this run classified into finished review cards.
+                // A sync whose output is a pile of candidates has not finished the job — the point of
+                // the operation is a review queue with posters, episodes and titles resolved, and
+                // leaving that behind a manual button is how the work ends up never being done. A
+                // side-lane like the keyframe restore: its failure is reported, never fatal, because
+                // the sync itself already succeeded and its results are already saved.
+                if (rep.Aborted == null)
+                {
+                    var resolver = scope.ServiceProvider.GetService<ISyncCandidateResolver>();
+                    if (resolver != null)
+                    {
+                        try
+                        {
+                            SetPhase("resolving candidates into review cards");
+                            rep.Resolution = await resolver.ResolveAllAsync(
+                                p => SetPhase(p), CancellationToken.None);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.LogError(ex, "Candidate resolution failed after the sync");
+                            rep.ResolveError = ex.Message;
+                        }
+                    }
+                }
                 outcome = rep.Aborted;
                 lock (gate)
                 {

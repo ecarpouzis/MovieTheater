@@ -161,6 +161,13 @@ namespace MovieTheater
                 options.MimeTypes = new[] { "application/json" };
             });
 
+            // The sync job's last mile. Registered against the interface too, so the runner in the
+            // Services assembly can finish the whole operation without that assembly knowing about
+            // the title cascade, the normalizers or the poster store.
+            services.AddScoped<Ingest.SyncCandidateResolver>();
+            services.AddScoped<MovieTheater.Services.Jellyfin.ISyncCandidateResolver>(
+                sp => sp.GetRequiredService<Ingest.SyncCandidateResolver>());
+
             services.AddScoped<Channels.ChannelScheduleService>();
             services.AddSingleton<Channels.ChannelSkipService>();
             // Durable channel-viewing telemetry: the /Now poll records beats in memory; this service

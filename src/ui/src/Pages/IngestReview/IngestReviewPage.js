@@ -1441,22 +1441,29 @@ export default function IngestReviewPage({ userData }) {
         if (summary === null) { message.warning("Still running after an hour — it continues on the server; check back later.", 12); return; }
 
         const r = summary;
-        const loose = (r.candidateUpgrades ?? 0) + (r.candidateNewTitles ?? 0) + (r.candidateUnclassified ?? 0);
+        const resolved = r.resolution;
         message.success(
           `Synced. Movies ${r.moviesMatched}/${r.moviesTotal}, episodes/misc ${r.epMatched}/${r.epTotal}. ` +
             `Re-pointed ${r.repointed ?? 0} moved/renamed file(s)` +
             ((r.supersededOrphans ?? 0) > 0 ? ` (${r.supersededOrphans} rescued from renamed-folder leftovers)` : "") +
-            ((r.possibleRenames ?? 0) > 0 ? `, ${r.possibleRenames} possible rename(s) to review` : "") +
-            `; ${r.moviesMissing ?? 0} title(s) still show missing.` +
-            ((r.candidateSeriesGroups ?? 0) > 0
-              ? ` ${r.candidateSeriesEpisodes} episode file(s) across ${r.candidateSeriesGroups} show(s).`
-              : "") +
-            (loose > 0
-              ? ` ${r.candidateUpgrades ?? 0} upgrade / ${r.candidateNewTitles ?? 0} new-title / ${r.candidateUnclassified ?? 0} unclassified candidate(s) — see "Sync scan candidates".`
-              : ""),
+            `; ${r.moviesMissing ?? 0} title(s) still show missing.`,
           10
         );
+        // The resolution is the part the reviewer actually acts on, so it gets its own line.
+        if (resolved) {
+          message.success(
+            `Review queue ready: ${resolved.moviesCreated} new movie(s), ${resolved.seriesIdentified} show(s) identified, ` +
+              `${resolved.seriesEnriched} enriched, ${resolved.episodesCatalogued} episode(s) catalogued, ` +
+              `${resolved.episodeFilesMapped} file(s) attached` +
+              (resolved.moviesConvertedToUpgrade ? `, ${resolved.moviesConvertedToUpgrade} turned out to be upgrade(s)` : "") +
+              `. Switch to "Open ingest batch" to approve.` +
+              (resolved.needsAttention ? ` ${resolved.needsAttention} item(s) need a decision — see "Sync scan candidates".` : ""),
+            14
+          );
+          (resolved.notes || []).forEach((n) => message.warning(n, 12));
+        }
         if (r.scanNote) message.warning(r.scanNote, 12);
+        if (r.resolveError) message.warning(`Candidates were classified but not resolved: ${r.resolveError}`, 14);
         if (r.candidateError) message.warning(`Candidate classification failed (sync itself completed): ${r.candidateError}`, 12);
         if (r.keyframeError) message.warning(`Keyframe restore failed after the sync (nightly re-extraction covers it): ${r.keyframeError}`, 12);
         await load();
