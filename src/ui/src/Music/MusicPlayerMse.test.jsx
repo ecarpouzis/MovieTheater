@@ -311,6 +311,55 @@ describe("the MSE engine inside the player", () => {
     expect(sourceBuffers).toHaveLength(1);          // …with the same SourceBuffer still in place
   });
 
+  // ⏮ and "tap the playing track" are restarts, and a restart is a SEEK. Both used to write
+  // `audio.currentTime` straight, which under the engine is the queue's clock: 0 is the top of the
+  // BUFFER (tracks back, or an evicted hole), and "> 4" is 4 s into the whole session.
+  //
+  /** Playhead just inside the SECOND buffered track, with the engine's own advance run. Returns
+   *  where that track begins on the element's clock. */
+  async function intoSecondTrack(mse, offsetSec) {
+    const setT = (t) => Object.defineProperty(mse, "currentTime", { value: t, writable: true, configurable: true });
+    setT(40);
+    await act(async () => { mse.dispatchEvent(new Event("timeupdate")); });
+    await flush(4);
+    expect(player.current.id).toBe(2);
+    const startSec = 40 - player.trackTime().position;
+    setT(startSec + offsetSec);
+    return startSec;
+  }
+
+  it("⏮ steps back a track when we are barely into this one — the queue clock is not the song's", async () => {
+    const { el } = await mountPlaying();
+    const mse = el("mse");
+    await intoSecondTrack(mse, 2);          // two seconds into track two…
+    await act(async () => { player.prev(); });
+    await flush(6);
+    // …so ⏮ means "the one before". Against the element's clock the test read 34 s and restarted,
+    // which is what made ⏮ stop stepping back at all a few seconds into a session.
+    expect(player.current.id).toBe(1);
+  });
+
+  it("⏮ past the restart line goes to the top of THIS song, not the top of the buffer", async () => {
+    const { el } = await mountPlaying();
+    const mse = el("mse");
+    const startSec = await intoSecondTrack(mse, 20);
+    await act(async () => { player.prev(); });
+    await flush(6);
+    expect(mse.currentTime).toBeCloseTo(startSec, 1);
+    expect(mse.currentTime).toBeGreaterThan(1);   // 0 would be the previous track's first byte
+    expect(player.current.id).toBe(2);
+  });
+
+  it("tapping the track that is already playing restarts that song, not the queue", async () => {
+    const { el } = await mountPlaying();
+    const mse = el("mse");
+    const startSec = await intoSecondTrack(mse, 20);
+    await act(async () => { player.playAt(1); });
+    await flush(6);
+    expect(mse.currentTime).toBeCloseTo(startSec, 1);
+    expect(player.current.id).toBe(2);
+  });
+
   it("takes a seek outside the buffer to a DECK, at the position asked for", async () => {
     // This used to restart the engine at the track, which begins it again at 0:00 — the whole of
     // "seeking Winterbreak goes back to the start of the song". On a 1568 kbps FLAC the 11.5 MB

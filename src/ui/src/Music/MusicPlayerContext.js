@@ -309,6 +309,8 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   const loadedTrackIdRef = useRef(null);
   // The whole queue, readable from handlers (the engine appends ahead of the playhead).
   const queueRef = useRef([]);
+  // …and our slot in it.
+  const indexRef = useRef(-1);
   // Which track a cross-engine flip has prepared a deck for, or null.
   const mseHandoffRef = useRef(null);
 
@@ -476,6 +478,9 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   // The whole queue, for the engine: it appends ahead of the playhead and must be able to read the
   // list from a handler, not from a render.
   queueRef.current = queue;
+  // Where we are in it, for callbacks that must not decide by reading state through a stale closure
+  // — and must not decide inside a setIndex updater either, which React is free to run twice.
+  indexRef.current = index;
 
   // Size the graph's output to the track so the visualizer can't collapse surround to stereo.
   //
@@ -1614,16 +1619,6 @@ export function MusicPlayerProvider({ children, enabled = true }) {
     };
   }, [mseActive]);
 
-  const prev = useCallback(() => {
-    const audio = audioRef.current;
-    // Convention: past a few seconds in, "previous" restarts the track.
-    if (audio && audio.currentTime > 4) {
-      audio.currentTime = 0;
-      return;
-    }
-    setIndex((i) => Math.max(0, i - 1));
-  }, []);
-
   const toggle = useCallback(() => {
     queueFinishedRef.current = false;
     const audio = audioRef.current;
@@ -1692,18 +1687,37 @@ export function MusicPlayerProvider({ children, enabled = true }) {
     cancelPreroll();
   }, [cancelPreroll, mseActive, seekDetour]);
 
+  /**
+   * ⏮ — restart this song once we are a few seconds into it, otherwise step back one.
+   *
+   * BOTH halves have to come through the timeline, and neither used to (music-mse-plan.md §Phase 3
+   * names the bar, the lock screen and the lyrics; this one was missed). Under the engine the
+   * element's clock counts QUEUE-seconds:
+   *   • `audio.currentTime > 4` is then "more than 4 s into the QUEUE", which is true for the whole
+   *     session — so ⏮ could never step back a track after the first few seconds of the first one;
+   *   • `audio.currentTime = 0` is the top of the BUFFER, not the top of this song — several tracks
+   *     back, or (once eviction has taken the front) a hole with no bytes in it at all, which is a
+   *     seek into nothing and stalls the element.
+   * `seek(0)` is the one restart that means the same thing on both paths, and on the engine it takes
+   * the detour when the top of the track has already been evicted.
+   */
+  const prev = useCallback(() => {
+    if (trackTime().position > 4) {
+      seek(0);
+      return;
+    }
+    setIndex((i) => Math.max(0, i - 1));
+  }, [seek, trackTime]);
+
   const playAt = useCallback((i) => {
     queueFinishedRef.current = false;
-    setIndex((old) => {
-      if (i === old) {
-        const audio = audioRef.current;
-        if (audio) audio.currentTime = 0;
-        return old;
-      }
-      return i;
-    });
+    // Tapping the track that is already playing means "start it again" — the same restart as ⏮, and
+    // wrong in the same way if it writes the element's clock directly (see prev). Decided from the
+    // index MIRROR rather than inside a setIndex updater, which React may run more than once.
+    if (i === indexRef.current) seek(0);
+    else setIndex(i);
     setPlaying(true);
-  }, []);
+  }, [seek]);
 
   const removeAt = useCallback((i) => {
     setQueue((q) => {
