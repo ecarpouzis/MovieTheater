@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Hls from "hls.js";
-import { createHls } from "../../streamEngine";
+import { createHls, bandwidthSample } from "../../streamEngine";
 import { useWakeLock } from "../../useWakeLock";
 import { useMediaSession } from "../../useMediaSession";
 import { usePictureInPicture } from "../../usePictureInPicture";
@@ -122,6 +122,7 @@ function VideoPlayer({
   onBandwidth,
   onStall,
   onEnded,
+  bufferingLabel = null,
   combinedDuration = 0,
   partOffset = 0,
   partBoundaries = [],
@@ -225,6 +226,19 @@ function VideoPlayer({
     timelineOffsetRef.current = 0;
     setTimelineOffset(0);
     sourceReloadRef.current = { at: performance.now(), startAt }; // watchdog: note (re)loads of the source
+    // Diagnostic: every source (re)load states where it was ASKED to start vs where the element
+    // actually sits. The 2026-08-16 stall-restart requested a position 15.0s ahead of where playback
+    // settled (a backward segment walk + two ffmpeg respawns) — this line makes the next mismatch
+    // self-documenting instead of a cross-server log dig.
+    {
+      let bufEnd = NaN;
+      try { if (video.buffered.length) bufEnd = video.buffered.end(video.buffered.length - 1); } catch { /* transient */ }
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[restart] startAt=${startAt.toFixed(2)}s element=${video.currentTime.toFixed(2)}s ` +
+          `bufferedEnd=${isFinite(bufEnd) ? bufEnd.toFixed(2) : "?"}`
+      );
+    }
 
     const tryPlay = () => {
       const attempt = video.play();
@@ -247,7 +261,11 @@ function VideoPlayer({
       // Shared engine: buffer config + error recovery live in createHls (see streamEngine.js) so the
       // Watch and TV players can't drift. Watch keeps a 90s back buffer (it's freely rewindable).
       hls = createHls({
-        backBufferLength: 90,
+        // 30, not the 90 Watch used to keep: Chrome caps a video SourceBuffer at ~150 MB, and the
+        // back buffer competes with the FORWARD buffer for that quota — at a 23 Mbps remux the
+        // forward buffer measured ~30s instead of the configured 120 (2026-08-16). Rewind past 30s
+        // still works; it just re-fetches segments (they persist server-side for the session).
+        backBufferLength: 30,
         // Open AT the resume/restart offset rather than loading from 0 then seeking — load-then-seek
         // wastes a segment-0 fetch (a second cold transcode start) and is the join-time A/V-desync churn
         // our TV player already avoids this way. This effect re-runs with startAt at the live position on
@@ -391,8 +409,11 @@ function VideoPlayer({
   useEffect(() => {
     if (!playing || !onBandwidth) return undefined;
     const sample = setInterval(() => {
-      const estimate = hlsRef.current?.bandwidthEstimate;
-      if (estimate && isFinite(estimate)) onBandwidth(estimate);
+      // bandwidthSample returns null while the estimator is still serving its canned default — the
+      // `playing` gate above does NOT cover an ABR restart (the element never fires `pause`), so
+      // without this the fresh instance's 500 kbps placeholder would be recorded as a real reading.
+      const estimate = bandwidthSample(hlsRef.current);
+      if (estimate) onBandwidth(estimate);
     }, 5000);
     return () => clearInterval(sample);
   }, [playing, onBandwidth]);
@@ -705,10 +726,12 @@ function VideoPlayer({
       {/* live caption-style preview (shared component): faithful sample at the real caption height */}
       {styleOpen && <SubtitleStylePreview subStyle={subStyle} />}
 
-      {/* buffering: three marquee bulbs */}
+      {/* buffering: three marquee bulbs — labeled when the page knows WHY (an ABR quality switch),
+          so a deliberate restart doesn't read as a failure and invite a refresh (2026-08-16). */}
       {buffering && !needsTap && !fatalError && (
-        <div className="vp-bulbs" aria-label="Buffering">
-          <span /><span /><span />
+        <div className="vp-bulbs" aria-label={bufferingLabel || "Buffering"}>
+          <div className="vp-bulbs-row"><span /><span /><span /></div>
+          {bufferingLabel && <div className="vp-bulbs-label">{bufferingLabel}</div>}
         </div>
       )}
 

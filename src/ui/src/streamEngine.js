@@ -39,7 +39,10 @@ function logStall(hls) {
       }
     }
   } catch { /* buffered can throw transiently */ }
-  console.warn(`[stutter] stalled @ ${t.toFixed(2)}s · ${detail}`);
+  // maxBufferLength is live config, not the constructor value: hls.js HALVES it when the browser's
+  // SourceBuffer quota rejects an append (see the BUFFER_FULL_ERROR log below), so the value at stall
+  // time is the buffer the session was really running with.
+  console.warn(`[stutter] stalled @ ${t.toFixed(2)}s · ${detail} · maxBufferLength ${hls.config.maxBufferLength}s`);
 }
 
 /**
@@ -69,6 +72,29 @@ export function timelineOffsetFromInitPts(data) {
   if (!Number.isFinite(baseTime) || !Number.isFinite(timescale) || timescale <= 0) return null;
   const offset = -(baseTime / timescale);
   return offset === 0 ? 0 : offset; // negating an aligned start yields -0; hand back a plain 0
+}
+
+/**
+ * A TRUSTWORTHY throughput estimate from an hls.js instance, or null while it has none.
+ *
+ * hls.js's bandwidthEstimate does NOT report "unknown" before it has data — its EWMA returns the
+ * configured `abrEwmaDefaultEstimate` (500 kbps) until enough fragments have loaded to estimate
+ * (EwmaBandWidthEstimator.canEstimate). Every ABR switch destroys the instance and builds a fresh
+ * one, and the players' 5s samplers keep firing across that restart, so the canned 500 kbps lands in
+ * the ABR's estimate memory as if it were a measurement of the link. That is not a rounding error:
+ * a drop reading it would price the link at 0.5 Mbps and slam a healthy connection to the bottom
+ * rung. A cold transcode start can hold the estimator empty for ~10s (see HLS_LOAD_CONFIG), long
+ * enough for such a sample to still look fresh when the first post-restart drop is allowed to fire.
+ *
+ * Comparing against the instance's own `abrEwmaDefaultEstimate` is the exact "has real data yet"
+ * test using public API. A link genuinely measured at exactly 500,000 bps is discarded for one
+ * sample — harmless, and at that speed the bottom rung is where it belongs anyway.
+ */
+export function bandwidthSample(hls) {
+  if (!hls) return null;
+  const estimate = hls.bandwidthEstimate;
+  if (!estimate || !isFinite(estimate)) return null;
+  return estimate === hls.abrEwmaDefaultEstimate ? null : estimate;
 }
 
 /**
@@ -135,6 +161,14 @@ export function createHls({ backBufferLength = 90, startPosition, onStall, onFat
     if (data.details === Hls.ErrorDetails.BUFFER_STALLED_ERROR) {
       logStall(hls); // diagnostic: report the hole size at the stall, to confirm the cause / verify the fix
       onStall?.();
+    }
+    // The browser's SourceBuffer byte quota (~150 MB of video in Chromium) rejected an append. That
+    // quota binds BEFORE our seconds/bytes config on a high-bitrate stream — at a 23 Mbps remux it
+    // caps the forward buffer near ~50s, and hls.js reacts by halving maxBufferLength for the rest of
+    // the session (measured 2026-08-16: an Original session rode a ~30s buffer, not the configured
+    // 120). Log it so the real per-device ceiling is visible instead of inferred from drain math.
+    if (data.details === Hls.ErrorDetails.BUFFER_FULL_ERROR) {
+      console.warn(`[buffer] SourceBuffer quota hit — maxBufferLength now ${hls.config.maxBufferLength}s`);
     }
     if (!data.fatal) return;
 

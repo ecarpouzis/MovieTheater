@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { rungDown, isBottomRung, climbTarget, isAutoQuality } from "./streamAbr";
+import { rungDown, isBottomRung, climbTarget, climbHoldBar, isAutoQuality } from "./streamAbr";
 
 // Adaptive-bitrate state machine, shared by the Watch player and the TV/channel player so the two
 // can't drift (they used to carry byte-identical copies of this). Jellyfin hands out one rendition
@@ -23,6 +23,23 @@ const ABR_STALL_WINDOW_MS = 30_000;
 const ABR_STALL_EPISODE_GAP_MS = 6_000;
 const ABR_STALLS_TO_DOWNSHIFT = 2;
 
+// Post-switch grace: every switch restarts the session, and the restart's own rebuffer fires the same
+// stall event as a genuine underrun. Counting it made a downshift self-perpetuating — the restart's
+// stall became episode #1 of the NEXT drop, so one real stall after a switch completed the pair and
+// the ladder cascaded down (observed 2026-08-16: two drops 30s apart on one dip). A stall this soon
+// after a switch is the switch, not the link.
+const ABR_POST_SWITCH_GRACE_MS = 10_000;
+
+// A throughput estimate older than this says nothing about the link that is stalling RIGHT NOW —
+// fall back to the blind one-rung walk rather than trust it.
+const ABR_ESTIMATE_FRESH_MS = 15_000;
+
+// Demotion memory: each stall-driven drop doubles how long the link must stay provably clean before
+// a climb (capped), and reseed() forgives it. A link that keeps knocking the session off a rung has
+// told us its "clean streaks" don't last — re-climbing on the same evidence just schedules the next
+// stall (the climb-back is itself a visible restart, so being wrong twice costs four rebuffers).
+const ABR_DEMOTION_MULT_MAX = 8;
+
 /**
  * @param qualityKeyRef ref whose `.current` is the active quality key; adaptation only runs on "auto".
  * @param profile       device ABR profile (ABR_PROFILES.desktop / .phone): openBps, ceilingBps,
@@ -35,7 +52,9 @@ const ABR_STALLS_TO_DOWNSHIFT = 2;
  *                      back to a transcode is the whole point of "auto" ("start best, fall back"). A
  *                      viewer who never wants that picks a fixed rung. Omitted → never copied.
  * @param sourceVideoBpsRef optional ref holding the source video's own bitrate, so a drop skips the
- *                      rungs whose cap sits above it (they re-deliver the same copy — see rungDown).
+ *                      rungs whose cap sits above it (they re-deliver the same copy — see rungDown)
+ *                      and a climb into the lossless tier is gated on what that tier really costs
+ *                      (the file's bitrate, not a fixed bar — see climbTarget).
  * @returns { autoBps, autoBpsRef, handleStall, handleBandwidth, adaptTo, reseed }
  */
 export function useAdaptiveBitrate({ qualityKeyRef, profile, onAdapt, videoCopiedRef, sourceVideoBpsRef }) {
@@ -58,6 +77,8 @@ export function useAdaptiveBitrate({ qualityKeyRef, profile, onAdapt, videoCopie
   const stableSinceRef = useRef(Date.now());
   const stallEpisodesRef = useRef([]); // timestamps of recent DISTINCT stall episodes
   const lastStallSeenRef = useRef(0);  // last stall fire, to collapse a burst of fires into one episode
+  const lastEstimateRef = useRef(null); // { bps, at } — freshest throughput sample, for the informed drop
+  const demotionMultRef = useRef(1);   // stableForUpMs multiplier; doubles per stall-driven drop
 
   // Move the adaptive cap and apply it. Updates the ref first so the restart/re-tune picks up the new
   // cap synchronously, ahead of the state re-render.
@@ -73,10 +94,13 @@ export function useAdaptiveBitrate({ qualityKeyRef, profile, onAdapt, videoCopie
   // Stall (debounced): only drop a rung once a repeated pattern confirms the rung is too high. Runs
   // on a copied stream too — that is the case where the fall-back matters most, since the copy carries
   // the file's full bitrate and nothing else will ever back it off (the channel player has always
-  // dropped off copies this way).
+  // dropped off copies this way). The drop is throughput-INFORMED when a fresh estimate exists: it
+  // lands on the highest rung the measured link actually clears instead of blindly stepping onto one
+  // that may still sit above it (see rungDown).
   const handleStall = useCallback(() => {
     if (!isAutoQuality(qualityKeyRef.current) || isBottomRung(autoBpsRef.current)) return;
     const now = Date.now();
+    if (now - lastSwitchAtRef.current < ABR_POST_SWITCH_GRACE_MS) return; // the switch's own rebuffer
     if (now - lastStallSeenRef.current < ABR_STALL_EPISODE_GAP_MS) {
       lastStallSeenRef.current = now; // same ongoing stall — extend the episode, don't count it twice
       return;
@@ -88,32 +112,48 @@ export function useAdaptiveBitrate({ qualityKeyRef, profile, onAdapt, videoCopie
     if (recent.length < ABR_STALLS_TO_DOWNSHIFT) return; // a lone transient stall — let the buffer recover
     if (now - lastSwitchAtRef.current < ABR_COOLDOWN_MS) return;
     stallEpisodesRef.current = []; // consumed — start the count fresh after a downshift
-    adaptTo(rungDown(autoBpsRef.current, sourceVideoBpsRef?.current));
+    demotionMultRef.current = Math.min(demotionMultRef.current * 2, ABR_DEMOTION_MULT_MAX);
+    const est = lastEstimateRef.current;
+    const freshBps = est && now - est.at <= ABR_ESTIMATE_FRESH_MS ? est.bps : undefined;
+    adaptTo(rungDown(autoBpsRef.current, sourceVideoBpsRef?.current, freshBps));
   }, [qualityKeyRef, adaptTo, sourceVideoBpsRef]);
 
-  // Throughput telemetry: climb only after a sustained streak with clear headroom; any sample short of
-  // a climb-worthy estimate resets the streak. The target (one rung up, or a jump straight to the best
-  // supported rung) and the streak length both come from the device profile.
+  // Throughput telemetry: climb only after a sustained streak with clear headroom. The streak resets
+  // on WEAK evidence (a sample below the next rung's hold bar — see climbHoldBar), not on every sample
+  // short of the full climb bar: estimate jitter around that bar used to restart the clock endlessly
+  // and starve the climb for half an hour at a time. The target (a jump straight to the best supported
+  // rung, or one rung up) and the base streak length come from the device profile; the streak length
+  // stretches by the demotion multiplier — a link that already knocked us down must stay clean longer.
   const handleBandwidth = useCallback((estimateBps) => {
+    if (estimateBps && isFinite(estimateBps)) {
+      lastEstimateRef.current = { bps: estimateBps, at: Date.now() }; // feed the informed drop, always
+    }
     if (videoCopiedRef?.current) return; // video is being copied — already lossless, nothing to climb to
     if (!isAutoQuality(qualityKeyRef.current)) return;
-    const target = climbTarget(autoBpsRef.current, estimateBps, profileRef.current);
+    const sourceBps = sourceVideoBpsRef?.current;
+    const target = climbTarget(autoBpsRef.current, estimateBps, profileRef.current, sourceBps);
+    const now = Date.now();
     if (target === autoBpsRef.current) {
-      stableSinceRef.current = Date.now();
+      const holdBar = climbHoldBar(autoBpsRef.current, profileRef.current, sourceBps);
+      const weak = !estimateBps || !isFinite(estimateBps) || (holdBar !== null && estimateBps < holdBar);
+      if (weak) stableSinceRef.current = now;
       return;
     }
-    if (Date.now() - lastSwitchAtRef.current < ABR_COOLDOWN_MS) return;
-    if (Date.now() - stableSinceRef.current >= profileRef.current.stableForUpMs) adaptTo(target);
-  }, [qualityKeyRef, adaptTo, videoCopiedRef]);
+    if (now - lastSwitchAtRef.current < ABR_COOLDOWN_MS) return;
+    const requiredMs = profileRef.current.stableForUpMs * demotionMultRef.current;
+    if (now - stableSinceRef.current >= requiredMs) adaptTo(target);
+  }, [qualityKeyRef, adaptTo, videoCopiedRef, sourceVideoBpsRef]);
 
   // Re-seed when re-entering Auto: reset the cap and arm a fresh cooldown + streak (so a manual
-  // re-select doesn't immediately flip). The caller still triggers its own restart/re-tune afterward.
+  // re-select doesn't immediately flip). The demotion multiplier is forgiven too — a manual re-select
+  // is the viewer saying "try again from the top". The caller still triggers its own restart/re-tune.
   const reseed = useCallback((seed) => {
     autoBpsRef.current = seed;
     setAutoBps(seed);
     lastSwitchAtRef.current = Date.now();
     stableSinceRef.current = Date.now();
     stallEpisodesRef.current = [];
+    demotionMultRef.current = 1;
   }, []);
 
   return { autoBps, autoBpsRef, handleStall, handleBandwidth, adaptTo, reseed };

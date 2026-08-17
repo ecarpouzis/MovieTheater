@@ -4,7 +4,39 @@ import { describe, it, expect, vi } from "vitest";
 // has no MediaSource for the real library to probe at import.
 vi.mock("hls.js", () => ({ default: { Events: {}, ErrorDetails: {}, ErrorTypes: {} } }));
 
-import { timelineOffsetFromInitPts } from "./streamEngine";
+import { timelineOffsetFromInitPts, bandwidthSample } from "./streamEngine";
+
+// A fresh hls.js instance reports its CONFIGURED default (500 kbps) from bandwidthEstimate until the
+// EWMA has real fragment samples — it never says "I don't know". Since every ABR switch builds a new
+// instance while the 5s samplers keep running, an unguarded sampler feeds that placeholder to the ABR
+// as a measurement; the throughput-informed drop would then price a healthy link at 0.5 Mbps and slam
+// it to the bottom rung. bandwidthSample is the guard.
+describe("bandwidthSample", () => {
+  const DEFAULT_ESTIMATE = 500_000;
+
+  it("discards the placeholder a fresh instance reports before it can estimate", () => {
+    expect(
+      bandwidthSample({ bandwidthEstimate: DEFAULT_ESTIMATE, abrEwmaDefaultEstimate: DEFAULT_ESTIMATE })
+    ).toBeNull();
+  });
+
+  it("passes a real measurement through once the estimator has data", () => {
+    expect(
+      bandwidthSample({ bandwidthEstimate: 31_000_000, abrEwmaDefaultEstimate: DEFAULT_ESTIMATE })
+    ).toBe(31_000_000);
+    // A genuinely slow link still reports — it just has to differ from the canned value.
+    expect(
+      bandwidthSample({ bandwidthEstimate: 1_400_000, abrEwmaDefaultEstimate: DEFAULT_ESTIMATE })
+    ).toBe(1_400_000);
+  });
+
+  it("is null with no instance or an unusable estimate (destroyed mid-restart)", () => {
+    expect(bandwidthSample(null)).toBeNull();
+    expect(bandwidthSample(undefined)).toBeNull();
+    expect(bandwidthSample({ bandwidthEstimate: NaN, abrEwmaDefaultEstimate: DEFAULT_ESTIMATE })).toBeNull();
+    expect(bandwidthSample({ bandwidthEstimate: 0, abrEwmaDefaultEstimate: DEFAULT_ESTIMATE })).toBeNull();
+  });
+});
 
 describe("timelineOffsetFromInitPts", () => {
   // The measured 2026-07-29 join: segment slot 2711.71 s carried a first packet at true PTS

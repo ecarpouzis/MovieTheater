@@ -99,13 +99,27 @@ function WatchPage({ userData }) {
   videoCopiedRef.current = !!session?.isDirectStream;
   const sourceVideoBpsRef = useRef(null);
   sourceVideoBpsRef.current = session?.videoBitrateBps ?? null;
+  // An ABR adapt restarts the stream — a multi-second freeze that looks exactly like a failure unless
+  // it says otherwise (2026-08-16: an unlabeled climb restart got refreshed away, which was slower
+  // than waiting). While set, the buffering bulbs carry an "Adjusting quality" line; the flag expires
+  // on a timer safely past a normal restart, and the label only renders while actually buffering.
+  const [adjusting, setAdjusting] = useState(false);
+  const adjustingTimerRef = useRef(null);
+  const markAdjusting = useCallback(() => {
+    setAdjusting(true);
+    clearTimeout(adjustingTimerRef.current);
+    adjustingTimerRef.current = setTimeout(() => setAdjusting(false), 15_000);
+  }, []);
+  useEffect(() => () => clearTimeout(adjustingTimerRef.current), []);
   const { autoBps, autoBpsRef, handleStall, handleBandwidth, reseed } = useAdaptiveBitrate({
     qualityKeyRef,
     profile: abrProfile,
     videoCopiedRef,
     sourceVideoBpsRef,
-    onAdapt: (nextBps) =>
-      restartAtPositionRef.current?.({ quality: qualityKeyRef.current, bpsOverride: nextBps }),
+    onAdapt: (nextBps) => {
+      markAdjusting();
+      restartAtPositionRef.current?.({ quality: qualityKeyRef.current, bpsOverride: nextBps });
+    },
   });
 
   const goBack = useCallback(() => {
@@ -521,6 +535,7 @@ function WatchPage({ userData }) {
           onBandwidth={handleBandwidth}
           onStall={handleStall}
           onEnded={handleEnded}
+          bufferingLabel={adjusting ? "Adjusting quality" : null}
           combinedDuration={combinedDuration}
           partOffset={currentPartOffset}
           partBoundaries={partOffsets.slice(1)}

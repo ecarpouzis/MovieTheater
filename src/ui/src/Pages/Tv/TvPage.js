@@ -3,7 +3,7 @@ import { useParams, useHistory } from "react-router-dom";
 import Hls from "hls.js";
 import { MovieAPI } from "../../MovieAPI";
 import { formatTime, TICKS_PER_SECOND, QUALITY_LADDER, formatPlaying, deliveredLayout } from "../Watch/VideoPlayer";
-import { createHls } from "../../streamEngine";
+import { createHls, bandwidthSample } from "../../streamEngine";
 import { autoBpsLabel, abrProfileFor, isAutoQuality } from "../../streamAbr";
 import { useAdaptiveBitrate } from "../../useAdaptiveBitrate";
 import { useWakeLock } from "../../useWakeLock";
@@ -728,8 +728,11 @@ function TvPage({ userData }) {
   useEffect(() => {
     const sample = setInterval(() => {
       if (!isAutoQuality(qualityRef.current)) return;
-      const est = hlsRef.current?.bandwidthEstimate;
-      if (est && isFinite(est)) handleBandwidth(est);
+      // bandwidthSample discards the fresh-instance placeholder (see streamEngine): this sampler runs
+      // unconditionally, including straight through a re-tune, so it would otherwise feed the ABR a
+      // canned 500 kbps "measurement" every time the channel restarts its stream.
+      const est = bandwidthSample(hlsRef.current);
+      if (est) handleBandwidth(est);
     }, 5000);
     return () => clearInterval(sample);
   }, [handleBandwidth]);
