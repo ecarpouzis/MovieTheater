@@ -71,6 +71,10 @@
          re-declared copy would sort a list, and the bug it fixes is a DATABASE behaviour (ORDER BY
          puts NULLs first) that only a real query can exhibit. -->
     <Compile Include="..\MovieTheater\Music\MusicTrackOrdering.cs" Link="Music\MusicTrackOrdering.cs" />
+    <!-- The cue-fit test that keeps a wrong-version LRC out of the database. Compiled from source
+         so the tests judge the SHIPPED tolerance and the SHIPPED timestamp grammar — the whole bug
+         was an LRC that passed one check (LRCLIB's duration) and failed the one nobody ran. -->
+    <Compile Include="..\MovieTheater\Music\MusicLyricsFit.cs" Link="Music\MusicLyricsFit.cs" />
     <Compile Include="..\MovieTheater\Music\MusicArtStore.cs" Link="Music\MusicArtStore.cs" />
     <!-- The remote-art match gate. Pure apart from the HTTP calls the tests never reach, and worth
          testing directly: it is what stops a search result that merely shares a name from being

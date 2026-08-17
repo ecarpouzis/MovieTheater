@@ -167,6 +167,16 @@ namespace MovieTheater.Music
                 var root = doc.RootElement;
                 var plain = Text(root, "plainLyrics");
                 var syncedLrc = Text(root, "syncedLyrics");
+                // LRCLIB matched on the duration it was TOLD, which is the uploader's metadata — not a
+                // property of the cues. Both can disagree, and when they do the file is timed for a
+                // different version and every line lands late (2026-08-17: CHVRCHES' Recover, a 225.9 s
+                // track, held cues running to 4:14). Drop the timings and keep the words.
+                //
+                // The MISMATCH test, not the mere cue-fit smell: a couple of seconds of overhang is a
+                // tail written at the fade, and refusing that would import plain text for a song whose
+                // timings were fine all along.
+                if (syncedLrc != null && MusicLyricsFit.IsVersionMismatch(syncedLrc, track.DurationSec))
+                    syncedLrc = null;
                 if (plain == null && syncedLrc == null) return null;
                 return (plain, syncedLrc);
             }
