@@ -992,6 +992,60 @@ index 0000000..a890c22
 +C3 is the current best candidate for holding 59.94. The open accuracy question it answers:
 +whether Stuntman's chase determinism needs VU0 *micro* and div/sqrt bit-exactness at all, or
 +only COP2 macro add/sub/mul.
+diff --git a/bin/resources/GameIndex.yaml b/bin/resources/GameIndex.yaml
+index 2416d52..2ac8214 100644
+--- a/bin/resources/GameIndex.yaml
++++ b/bin/resources/GameIndex.yaml
+@@ -52979,10 +52979,17 @@ SLUS-20250:
+   name: "Stuntman"
+   region: "NTSC-U"
+   compat: 5
++  # clampModes REMOVED (2026-07-15 evening arm): eeClampMode:3 costs ~5-9ms/frame on the EE thread —
++  # exactly the margin between the post-priority-fix ~19ms heavy-scene ticks and the 16.6ms budget.
++  # It existed only for the level-4 AI softlock (PCSX2 #2990), which clamp may not fix anyway
++  # (untested). If level 4 softlocks at stock, that is a documented limitation, not a perf tax paid
++  # on every frame of every mission. mtvu:0 also removed (measured: no effect on the collapse —
++  # that was the Normal-priority E-core steering in the WORKER, not the emulator).
+   gameFixes:
+     - BlitInternalFPSHack # Fixes internal FPS detection.
+   gsHWFixes:
+     cpuSpriteRenderBW: 4 # Fixes textures.
++    halfPixelOffset: 4 # Fixes misaligned post-processing (upstream master's entry; matters at 2x).
+ SLUS-20251:
+   name: "Harvest Moon - Save the Homeland"
+   region: "NTSC-U"
+diff --git a/build-core.bat b/build-core.bat
+new file mode 100644
+index 0000000..2bc8adf
+--- /dev/null
++++ b/build-core.bat
+@@ -0,0 +1,26 @@
++@echo off
++rem Build pcsx2_libretro.dll (LRPS2) from source — CMake + Ninja + MSVC, mirroring
++rem docker/arcade/dolphin-build-core.bat (the proven custom-core recipe on this box).
++rem
++rem WHY CMAKE, NOT THE LIBRETRO MAKEFILE (2026-07-15): the Makefile's windows_msvc2017_* branch is
++rem vestigial — it lacks the Windows platform defines (-D__SSE4_1__, -D_WIN32_WINNT, HAVE_D3D11/12,
++rem ZIP_STATIC...) that only its MinGW branch carries, and that branch's own comment says it "targets
++rem full feature parity with the cmake LIBRETRO=ON Windows build" — i.e. CMake IS the canonical
++rem Windows build. (The Makefile route died at common/VectorIntrin.h "requires at least SSE2".)
++rem The stock nightly DLL imports no CRT DLL at all -> static /MT MSVC; match it.
++rem
++rem ⚠ Dolphin lesson (see dolphin-build-core.bat): verify /O2 + /DNDEBUG survive on every C++ TU
++rem after any CMAKE_CXX_FLAGS_RELEASE override in the tree — a plain set() clobber ships a
++rem no-optimization "Release" core that loses 50% of its speed invisibly.
++set "PATH=%PATH%;C:\Program Files (x86)\Microsoft Visual Studio\Installer"
++call "C:\Program Files\Microsoft Visual Studio\18\Community\Common7\Tools\VsDevCmd.bat" -arch=x64 -host_arch=x64 -no_logo
++if errorlevel 1 exit /b 1
++where cl || exit /b 1
++set "CMAKE=C:\Users\Atoramos\AppData\Roaming\Python\Python313\site-packages\cmake\data\bin\cmake.exe"
++set "PATH=%PATH%;C:\Users\Atoramos\AppData\Roaming\Python\Python313\Scripts"
++cd /d D:\Arcade\build\lrps2
++rem CMAKE_POLICY_VERSION_MINIMUM: the vendored 3rdparty (cpuinfo/clog) declares cmake_minimum_required
++rem below 3.5, which CMake 4.x refuses outright; this flag is the documented escape hatch.
++"%CMAKE%" -S . -B bld -G Ninja -DLIBRETRO=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -DCMAKE_POLICY_VERSION_MINIMUM=3.5
++if errorlevel 1 exit /b 1
++"%CMAKE%" --build bld --target pcsx2_libretro --parallel 14
 diff --git a/libretro/libretro_core_options.h b/libretro/libretro_core_options.h
 index 1f832e8..1ae41d6 100644
 --- a/libretro/libretro_core_options.h
@@ -1062,18 +1116,27 @@ index 1f832e8..1ae41d6 100644
        "pcsx2_enable_hw_hacks",
        "HW Hacks > Enable Manual Hardware Renderer Fixes (Not Recommended)",
 diff --git a/libretro/main.cpp b/libretro/main.cpp
-index 3671110..974d1ec 100644
+index 1a145b2..8241735 100644
 --- a/libretro/main.cpp
 +++ b/libretro/main.cpp
-@@ -112,6 +112,7 @@ static int setting_native_scaling              = 0;
+@@ -25,6 +25,7 @@
+ #include "../pcsx2/CDVD/CDVD.h"
+ #include "../pcsx2/USB/USB.h"
+ #include "../pcsx2/MTVU.h"
++#include "../pcsx2/PerfAttr.h"
+ #include "../pcsx2/Counters.h"
+ #include "../pcsx2/Host.h"
+ 
+@@ -111,6 +112,8 @@ static int setting_native_scaling              = 0;
  static u8 setting_plugin_type                  = 0;
  static u8 setting_pgs_super_sampling           = 0;
  static u8 setting_pgs_high_res_scanout         = 0;
 +static u8 setting_pgs_field_fullres            = 0;
++static u8 setting_pgs_field_antiblur           = 0;
  static u8 setting_pgs_disable_mipmaps          = 0;
  static u8 setting_pgs_ss_tex                   = 0;
  static u8 setting_pgs_deblur                   = 0;
-@@ -158,6 +159,7 @@ static bool setting_force_sprite_position      = false;
+@@ -157,6 +160,7 @@ static bool setting_force_sprite_position      = false;
  static bool setting_pcrtc_screen_offsets       = false;
  static bool setting_disable_interlace_offset   = false;
  static bool setting_shared_memory_cards        = true;
@@ -1081,7 +1144,7 @@ index 3671110..974d1ec 100644
  
  static bool setting_show_parallel_options      = true;
  static bool setting_show_gsdx_options          = true;
-@@ -421,6 +423,53 @@ static void check_variables(bool first_run)
+@@ -420,6 +424,53 @@ static void check_variables(bool first_run)
  			bool fast_cdvd = !strcmp(var.value, "enabled");
  			s_settings_interface.SetBoolValue("EmuCore/Speedhacks", "fastCDVD", fast_cdvd);
  		}
@@ -1135,7 +1198,7 @@ index 3671110..974d1ec 100644
  	}
  
  	if (setting_plugin_type == PLUGIN_PGS)
-@@ -475,6 +524,15 @@ static void check_variables(bool first_run)
+@@ -474,6 +525,25 @@ static void check_variables(bool first_run)
  			}
  		}
  
@@ -1148,9 +1211,128 @@ index 3671110..974d1ec 100644
 +			s_settings_interface.SetUIntValue("EmuCore/GS", "pgsFieldFullRes", setting_pgs_field_fullres);
 +		}
 +
++		// NOT first_run-gated, unlike field_fullres: this only changes which
++		// read circuits are composited. No geometry change, no history allocation, nothing to
++		// re-init -- so it is safe to honour a mid-session flip.
++		var.key = "pcsx2_pgs_antiblur_field";
++		if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
++		{
++			setting_pgs_field_antiblur = !strcmp(var.value, "enabled");
++			s_settings_interface.SetUIntValue("EmuCore/GS", "pgsFieldAntiBlur", setting_pgs_field_antiblur);
++		}
++
  		var.key = "pcsx2_pgs_high_res_scanout";
  		if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
  		{
+@@ -2278,8 +2348,75 @@ void retro_run(void)
+ 	if (cpu_thread_state.load(std::memory_order_acquire) == VMState::Paused)
+ 		cpu_thread_resume();
+ 
+-	MTGS::MainLoop(false);
++	{
++		// perf-attr: the whole GS drain for this tick (see PerfAttr.h round-2 note).
++		PerfAttr::Timer pt(PerfAttr::mainloop_ns);
++		MTGS::MainLoop(false);
++	}
+ 	upload_output_audio_buffer();
++
++	// perf-attr dump (Phase A instrumentation, see pcsx2/PerfAttr.h): every 300 frames (~5 s NTSC
++	// at full speed; longer wall-clock when the core is slow) log where GS-side time went, formatted
++	// to sit beside the worker's pace-diag lines. Counters reset on read.
++	//
++	// Round 3: wall + REAL CPU time of the two hot threads (GetThreadTimes) per window. This is the
++	// discriminator the wait-based channels cannot provide (mainloop includes waiting for the EE):
++	//   ee_cpu ~ wall  -> the EE thread is genuinely compute-bound
++	//   gs_cpu ~ wall  -> the GS/libretro thread is genuinely compute-bound
++	//   both  << wall while ticks sag -> neither is working: a scheduling/wait pathology
++	{
++		static unsigned s_perfattr_frames = 0;
++		if (++s_perfattr_frames >= 300)
++		{
++			s_perfattr_frames = 0;
++			constexpr double ms = 1.0 / 1000000.0;
++			double wall_ms = 0.0, ee_cpu_ms = 0.0, gs_cpu_ms = 0.0;
++			{
++				static std::chrono::steady_clock::time_point s_prev_wall = std::chrono::steady_clock::now();
++				const auto now = std::chrono::steady_clock::now();
++				wall_ms = std::chrono::duration_cast<std::chrono::microseconds>(now - s_prev_wall).count() / 1000.0;
++				s_prev_wall = now;
++#ifdef _WIN32
++				static unsigned long long s_prev_ee = 0, s_prev_gs = 0;
++				auto cpu100 = [](HANDLE h) -> unsigned long long {
++					FILETIME c, e, k, u;
++					if (!GetThreadTimes(h, &c, &e, &k, &u))
++						return 0;
++					return ((static_cast<unsigned long long>(k.dwHighDateTime) << 32) | k.dwLowDateTime) +
++					       ((static_cast<unsigned long long>(u.dwHighDateTime) << 32) | u.dwLowDateTime);
++				};
++				const unsigned long long ee = cpu_thread.joinable() ? cpu100(static_cast<HANDLE>(cpu_thread.native_handle())) : 0;
++				const unsigned long long gs = cpu100(GetCurrentThread());
++				ee_cpu_ms = (ee - s_prev_ee) / 10000.0;
++				gs_cpu_ms = (gs - s_prev_gs) / 10000.0;
++				s_prev_ee = ee;
++				s_prev_gs = gs;
++#endif
++			}
++			log_cb(RETRO_LOG_INFO,
++				"[perf-attr] wall=%.0fms ee_cpu=%.0fms gs_cpu=%.0fms gsidle=%.0fms xfer=%.1fms(n=%llu) hash=%.1fms(n=%llu) mainloop=%.1fms vidpush=%.1fms vswait=%.1fms fifo=%.1fms(n=%llu) compile=%.1fms(n=%llu) binload=%.1fms(n=%llu) texmap=%.1fms(n=%llu) texunmap=%.1fms texupd=%.1fms(n=%llu)\n",
++				wall_ms, ee_cpu_ms, gs_cpu_ms,
++				PerfAttr::gsidle_ns.exchange(0) * ms,
++				PerfAttr::xfer_ns.exchange(0) * ms,
++				static_cast<unsigned long long>(PerfAttr::xfer_n.exchange(0)),
++				PerfAttr::hash_ns.exchange(0) * ms,
++				static_cast<unsigned long long>(PerfAttr::hash_n.exchange(0)),
++				PerfAttr::mainloop_ns.exchange(0) * ms,
++				PerfAttr::vidpush_ns.exchange(0) * ms,
++				PerfAttr::vswait_ns.exchange(0) * ms,
++				PerfAttr::fifowait_ns.exchange(0) * ms,
++				static_cast<unsigned long long>(PerfAttr::fifowait_n.exchange(0)),
++				PerfAttr::compile_ns.exchange(0) * ms,
++				static_cast<unsigned long long>(PerfAttr::compile_n.exchange(0)),
++				PerfAttr::binload_ns.exchange(0) * ms,
++				static_cast<unsigned long long>(PerfAttr::binload_n.exchange(0)),
++				PerfAttr::texmap_ns.exchange(0) * ms,
++				static_cast<unsigned long long>(PerfAttr::texmap_n.exchange(0)),
++				PerfAttr::texunmap_ns.exchange(0) * ms,
++				PerfAttr::texupd_ns.exchange(0) * ms,
++				static_cast<unsigned long long>(PerfAttr::texupd_n.exchange(0)));
++		}
++	}
+ }
+ 
+ std::optional<WindowInfo> Host::AcquireRenderWindow(void)
+diff --git a/pcsx2/CDVD/InputIsoFile.cpp b/pcsx2/CDVD/InputIsoFile.cpp
+index 271acb9..ea5827e 100644
+--- a/pcsx2/CDVD/InputIsoFile.cpp
++++ b/pcsx2/CDVD/InputIsoFile.cpp
+@@ -13,6 +13,7 @@
+  *  If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
++#include "../../common/Console.h"
+ #include "../../common/Path.h"
+ #include "../../common/StringUtil.h"
+ 
+@@ -35,9 +36,17 @@ static std::unique_ptr<ThreadedFileReader> GetFileReader(const char *path)
+ 		if (Strncasecmp(extension, "chd", 3) == 0)
+ 			return std::make_unique<ChdFileReader>();
+ 
+-		if (       (Strncasecmp(extension, "cso", 3) == 0) 
++		if (       (Strncasecmp(extension, "cso", 3) == 0)
+ 			|| (Strncasecmp(extension, "zso", 3) == 0))
+-			return std::make_unique<CsoFileReader>();
++		{
++			// Trust the magic, not the extension: the arcade gateway stages CSOs as raw
++			// ISOs under the SAME .cso filename (PPSSPP/Dolphin sniff, so the name is the
++			// cache's stable key). A file without a CISO/ZISO header reads flat.
++			if (CsoFileReader::CanHandle(path, path))
++				return std::make_unique<CsoFileReader>();
++			Console.Warning("(GetFileReader) %s has no CISO header; reading as a raw image.", path);
++			return std::make_unique<FlatFileReader>();
++		}
+ 	}
+ 	else if (ext_length == 2)
+ 	{
 diff --git a/pcsx2/CMakeLists.txt b/pcsx2/CMakeLists.txt
 index b750590..7a2e63e 100644
 --- a/pcsx2/CMakeLists.txt
@@ -1172,7 +1354,7 @@ index b750590..7a2e63e 100644
  	R3000A.h
  	R5900.h
 diff --git a/pcsx2/Config.h b/pcsx2/Config.h
-index e8807ba..bb4cfe1 100644
+index e8807ba..313a76b 100644
 --- a/pcsx2/Config.h
 +++ b/pcsx2/Config.h
 @@ -382,6 +382,19 @@ struct Pcsx2Config
@@ -1207,7 +1389,7 @@ index e8807ba..bb4cfe1 100644
  		}
  
  		bool operator!=(const RecompilerOptions& right) const
-@@ -531,6 +547,10 @@ struct Pcsx2Config
+@@ -531,6 +547,14 @@ struct Pcsx2Config
  		s8 OverrideTextureBarriers = -1;
  		u8 PGSSuperSampling = 0;
  		u8 PGSHighResScanout = 0;
@@ -1215,10 +1397,14 @@ index e8807ba..bb4cfe1 100644
 +		// half-height odd geometry the field path otherwise produces. Only has any effect
 +		// where field-aware rendering is active; progressive/promoted modes are untouched.
 +		u8 PGSFieldFullRes = 0;
++		// Extend the PCRTC anti-blur circuit suppression to FIELD mode (INT && FFMD). Stock only
++		// applies it to INT && !FFMD, so a half-height-field game keeps its own flicker filter --
++		// and there one DBY step is a whole field line, i.e. two output rows of blur. Per-game.
++		u8 PGSFieldAntiBlur = 0;
  		u8 PGSDisableMipmaps = 0;
  		u8 PGSSuperSampleTextures = 0;
  		u8 PGSSharpBackbuffer = 0;
-@@ -955,6 +975,32 @@ namespace EmuFolders
+@@ -955,6 +979,32 @@ namespace EmuFolders
  #define CHECK_FPU_EXTRA_OVERFLOW (EmuConfig.Cpu.Recompiler.fpuExtraOverflow) // If enabled, Operands are checked for infinities before being used in the FPU recs
  #define CHECK_FPU_FULL (EmuConfig.Cpu.Recompiler.fpuFullMode)
  
@@ -1724,8 +1910,152 @@ index 10564d4..c8d8877 100644
  	g_pgs_renderer.reset();
  #endif
  
+diff --git a/pcsx2/GS/GSState.cpp b/pcsx2/GS/GSState.cpp
+index b20a00f..9fdd817 100644
+--- a/pcsx2/GS/GSState.cpp
++++ b/pcsx2/GS/GSState.cpp
+@@ -23,6 +23,7 @@
+ 
+ #include "GSState.h"
+ #include "GSUtil.h"
++#include "PerfAttr.h"
+ 
+ int GSState::s_n = 0;
+ int GSState::s_last_transfer_draw_n = 0;
+@@ -2200,6 +2201,8 @@ void GSState::ReadbackTextureCache()
+ 
+ void GSState::Transfer(const u8* mem, u32 size)
+ {
++	// perf-attr round 5: GIF path-3 transfers (texture/image DMA -> emulated-VRAM swizzle writes).
++	PerfAttr::Timer pt(PerfAttr::xfer_ns, &PerfAttr::xfer_n);
+ 	GIFPath& path = m_path[3];
+ 
+ 	while (size > 0)
+diff --git a/pcsx2/GS/Renderers/HW/GSTextureCache.cpp b/pcsx2/GS/Renderers/HW/GSTextureCache.cpp
+index 2c81bb2..de7cde4 100644
+--- a/pcsx2/GS/Renderers/HW/GSTextureCache.cpp
++++ b/pcsx2/GS/Renderers/HW/GSTextureCache.cpp
+@@ -13,6 +13,7 @@
+ #include "common/Align.h"
+ #include "common/Console.h"
+ #include "common/HashCombine.h"
++#include "PerfAttr.h"
+ 
+ #include "GSTextureCache.h"
+ #include "GSTextureReplacements.h"
+@@ -993,6 +994,9 @@ GSTextureCache::Source* GSTextureCache::LookupDepthSource(const bool is_depth, c
+ 
+ GSTextureCache::Source* GSTextureCache::LookupSource(const bool is_color, const GIFRegTEX0& TEX0, const GIFRegTEXA& TEXA, const GIFRegCLAMP& CLAMP, const GSVector4i& r, const GSVector2i* lod, const bool possible_shuffle, const bool linear, const u32 frame_fbp, bool req_color, bool req_alpha)
+ {
++	// perf-attr round 5: the HW renderer's per-draw source lookup - hashing, cache management, and
++	// (on miss) conversion. This whole layer does not exist on the SW renderer.
++	PerfAttr::Timer pt(PerfAttr::hash_ns, &PerfAttr::hash_n);
+ 	const GSLocalMemory::psm_t& psm_s = GSLocalMemory::m_psm[TEX0.PSM];
+ 	//const GSLocalMemory::psm_t& cpsm = psm.pal > 0 ? GSLocalMemory::m_psm[TEX0.CPSM] : psm;
+ 
+diff --git a/pcsx2/GS/Renderers/OpenGL/GLShaderCache.cpp b/pcsx2/GS/Renderers/OpenGL/GLShaderCache.cpp
+index 7d61634..1a65a61 100644
+--- a/pcsx2/GS/Renderers/OpenGL/GLShaderCache.cpp
++++ b/pcsx2/GS/Renderers/OpenGL/GLShaderCache.cpp
+@@ -19,6 +19,7 @@
+ #include "GS/GS.h"
+ 
+ #include "Config.h"
++#include "PerfAttr.h"
+ #include "ShaderCacheVersion.h"
+ 
+ #include "common/Console.h"
+@@ -273,12 +274,25 @@ std::optional<GLProgram> GLShaderCache::GetProgram(const std::string_view vertex
+ 		const std::string_view fragment_shader, const PreLinkCallback& callback)
+ {
+ 	if (!m_program_binary_supported || !m_blob_file)
++	{
++		// perf-attr: no usable disk cache -> every program is a true driver compile.
++		PerfAttr::Timer pt(PerfAttr::compile_ns, &PerfAttr::compile_n);
+ 		return CompileProgram(vertex_shader, fragment_shader, callback, false);
++	}
+ 
+ 	const auto key = GetCacheKey(vertex_shader, fragment_shader);
+ 	auto iter = m_index.find(key);
+ 	if (iter == m_index.end())
++	{
++		// perf-attr: disk-cache MISS -> true GLSL driver compile (the slow path).
++		PerfAttr::Timer pt(PerfAttr::compile_ns, &PerfAttr::compile_n);
+ 		return CompileAndAddProgram(key, vertex_shader, fragment_shader, callback);
++	}
++
++	// perf-attr: disk-cache HIT -> program-binary load. Individually fast (~ms) but BATCHED at scene
++	// transitions, and re-paid every room because the in-memory program map is per-room. (The rare
++	// failed-load fallthrough to Recreate below is counted here too - acceptable noise.)
++	PerfAttr::Timer pt(PerfAttr::binload_ns, &PerfAttr::binload_n);
+ 
+ 	std::vector<u8> data(iter->second.blob_size);
+ 	if (rfseek(m_blob_file, iter->second.file_offset, SEEK_SET) != 0 ||
+diff --git a/pcsx2/GS/Renderers/OpenGL/GSDeviceOGL.cpp b/pcsx2/GS/Renderers/OpenGL/GSDeviceOGL.cpp
+index 0d10dc2..711028b 100644
+--- a/pcsx2/GS/Renderers/OpenGL/GSDeviceOGL.cpp
++++ b/pcsx2/GS/Renderers/OpenGL/GSDeviceOGL.cpp
+@@ -26,6 +26,7 @@
+ 
+ #include "GS/GSState.h"
+ #include "GS/GSUtil.h"
++#include "PerfAttr.h"
+ #include "GSDeviceOGL.h"
+ #include "GLState.h"
+ #include "Host.h"
+@@ -688,6 +689,9 @@ GSDevice::PresentResult GSDeviceOGL::BeginPresent(bool frame_skip)
+ 
+ void GSDeviceOGL::EndPresent()
+ {
++	// perf-attr: the frontend's video callback runs synchronously here - for the arcade worker
++	// that is the GL zero-copy push (zc_push: GPU->GPU copy into the encoder's texture pool).
++	PerfAttr::Timer pt(PerfAttr::vidpush_ns);
+ 	if(m_current)
+ 		video_cb(RETRO_HW_FRAME_BUFFER_VALID, m_current->GetWidth(), m_current->GetHeight(), 0);
+ 	else
+diff --git a/pcsx2/GS/Renderers/OpenGL/GSTextureOGL.cpp b/pcsx2/GS/Renderers/OpenGL/GSTextureOGL.cpp
+index 0d4f817..9318479 100644
+--- a/pcsx2/GS/Renderers/OpenGL/GSTextureOGL.cpp
++++ b/pcsx2/GS/Renderers/OpenGL/GSTextureOGL.cpp
+@@ -18,6 +18,7 @@
+ #include "GSTextureOGL.h"
+ #include "GLState.h"
+ #include "GS/GSExtra.h"
++#include "PerfAttr.h"
+ #include "common/Align.h"
+ #include "common/AlignedMalloc.h"
+ #include "common/StringUtil.h"
+@@ -185,6 +186,9 @@ bool GSTextureOGL::Update(const GSVector4i& r, const void* data, int pitch, int
+ 	if (layer >= m_mipmap_levels)
+ 		return true;
+ 
++	// perf-attr round 4: direct-path upload cost (caller-converted pixels -> GL).
++	PerfAttr::Timer pt(PerfAttr::texupd_ns, &PerfAttr::texupd_n);
++
+ 	// Default upload path for the texture is the Map/Unmap
+ 	// This path is mostly used for palette. But also for texture that could
+ 	// overflow the pbo buffer
+@@ -240,6 +244,9 @@ bool GSTextureOGL::Map(GSMap& m, const GSVector4i* _r, int layer)
+ 	if (layer >= m_mipmap_levels || IsCompressedFormat())
+ 		return false;
+ 
++	// perf-attr round 4: stream-buffer acquisition (includes any fence wait on ring wrap).
++	PerfAttr::Timer pt(PerfAttr::texmap_ns, &PerfAttr::texmap_n);
++
+ 	GSDeviceOGL::GetInstance()->CommitClear(this, true);
+ 
+ 	GSVector4i r = _r ? *_r : GSVector4i(0, 0, m_size.x, m_size.y);
+@@ -275,6 +282,8 @@ void GSTextureOGL::Unmap()
+ {
+ 	if (m_type == Type::Texture || m_type == Type::RenderTarget)
+ 	{
++		// perf-attr round 4: glTexSubImage from the upload ring (the GL-driver share of an upload).
++		PerfAttr::Timer pt(PerfAttr::texunmap_ns);
+ 		GSDeviceOGL::GetInstance()->CommitClear(this, true);
+ 
+ 		const u32 pitch = Common::AlignUpPow2(m_r_w << m_int_shift, TEXTURE_UPLOAD_PITCH_ALIGNMENT);
 diff --git a/pcsx2/GS/Renderers/parallel-gs/GSRendererPGS.cpp b/pcsx2/GS/Renderers/parallel-gs/GSRendererPGS.cpp
-index 9d8613c..586cbfa 100644
+index 9d8613c..06b057c 100644
 --- a/pcsx2/GS/Renderers/parallel-gs/GSRendererPGS.cpp
 +++ b/pcsx2/GS/Renderers/parallel-gs/GSRendererPGS.cpp
 @@ -8,6 +8,8 @@
@@ -2172,15 +2502,16 @@ index 9d8613c..586cbfa 100644
  	auto parsed = parse_super_sampling_options(GSConfig.PGSSuperSampling);
  
  	if (parsed.super_sampling != current_super_sampling || parsed.ordered != current_ordered_super_sampling ||
-@@ -504,6 +903,7 @@ void GSRendererPGS::VSync(u32 field, bool registers_written)
+@@ -504,6 +903,8 @@ void GSRendererPGS::VSync(u32 field, bool registers_written)
  	info.adapt_to_internal_horizontal_resolution = GSConfig.PCRTCAntiBlur;
  	info.raw_circuit_scanout                     = true;
  	info.high_resolution_scanout                 = GSConfig.PGSHighResScanout != 0;
 +	info.field_full_res_scanout                  = GSConfig.PGSFieldFullRes != 0;
++	info.field_antiblur                          = GSConfig.PGSFieldAntiBlur != 0;
  	auto vsync                                   = iface.vsync(info);
  
  	auto stats = iface.consume_flush_stats();
-@@ -588,7 +988,57 @@ void GSRendererPGS::VSync(u32 field, bool registers_written)
+@@ -588,7 +989,57 @@ void GSRendererPGS::VSync(u32 field, bool registers_written)
  			if (geom_changed)
  				environ_cb(RETRO_ENVIRONMENT_SET_GEOMETRY, &geom);
  
@@ -2386,10 +2717,10 @@ index 07105c7..efc76bc 100644
  	auto ffmd = priv_registers.smode2.FFMD;
  
 diff --git a/pcsx2/GS/parallel-gs/gs/gs_interface.hpp b/pcsx2/GS/parallel-gs/gs/gs_interface.hpp
-index 9f05da8..ec6e3ba 100644
+index 9f05da8..a6247f7 100644
 --- a/pcsx2/GS/parallel-gs/gs/gs_interface.hpp
 +++ b/pcsx2/GS/parallel-gs/gs/gs_interface.hpp
-@@ -192,6 +192,16 @@ struct VSyncInfo
+@@ -192,6 +192,23 @@ struct VSyncInfo
  	// For best results, force_progressive must also be used.
  	bool high_resolution_scanout;
  
@@ -2402,6 +2733,13 @@ index 9f05da8..ec6e3ba 100644
 +	// the new geometry. Has no effect unless field-aware rendering is active, so progressive
 +	// and promoted-progressive modes (menus, FMV) are untouched.
 +	bool field_full_res_scanout;
++
++	// Extend the anti_blur circuit-merge suppression to FIELD mode (INT && FFMD).
++	// Stock gates both of its Y branches on alternative_sampling (INT && !FFMD), so a game that
++	// runs the same flicker filter while rendering half-height fields keeps its blur. There the
++	// blur is WORSE, not milder: one DBY step is a whole field line, i.e. two output rows.
++	// Per-game opt-in, because the twitter that filter was cancelling comes back with it.
++	bool field_antiblur;
 +
  	// If using interlaced, defer any attempt to deinterlace and just return the raw output as-is with phase information.
  	// User is responsible for deinterlacing in whatever way is appropriate.
@@ -2666,7 +3004,7 @@ index 0000000..db9d126
 +#define PGS_PROF_DISPATCH() (void)(::ParallelGS::prof_frame.dispatches++)
 +#define PGS_PROF_SUBMIT() (void)(::ParallelGS::prof_frame.submits++)
 diff --git a/pcsx2/GS/parallel-gs/gs/gs_renderer.cpp b/pcsx2/GS/parallel-gs/gs/gs_renderer.cpp
-index adde6bb..9c9565e 100644
+index adde6bb..13ad9ee 100644
 --- a/pcsx2/GS/parallel-gs/gs/gs_renderer.cpp
 +++ b/pcsx2/GS/parallel-gs/gs/gs_renderer.cpp
 @@ -12,6 +12,7 @@
@@ -3169,7 +3507,20 @@ index adde6bb..9c9565e 100644
  	if (!device)
  		return {};
  
-@@ -4356,6 +4449,32 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
+@@ -4219,6 +4312,12 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
+ 	// FIELD mode.
+ 	bool alternative_sampling = priv.smode2.INT && !priv.smode2.FFMD;
+ 
++	// The case alternative_sampling deliberately excludes: INT && FFMD, where the game renders
++	// half-height fields. A flicker filter there reads the SAME field buffer twice one framebuffer
++	// line apart, so the blur spans two OUTPUT rows rather than one. Opt-in per game.
++	bool field_sampling = priv.smode2.INT && priv.smode2.FFMD;
++	bool field_antiblur = field_sampling && info.field_antiblur;
++
+ 	// Signals a very rare 240p mode which almost never happens.
+ 	// For aspect ratio purposes, the height should be doubled.
+ 	bool double_strike = !priv.smode2.INT && priv.smode1.CMOD != SMODE1Bits::CMOD_PROGRESSIVE;
+@@ -4356,6 +4455,32 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
  		return {};
  	}
  
@@ -3202,7 +3553,83 @@ index adde6bb..9c9565e 100644
  	// It's possible the input had higher resolution.
  	// Make a fake mode in this case that has more lines to compensate.
  	if (promoted1)
-@@ -4537,10 +4656,10 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
+@@ -4455,6 +4580,57 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
+ 	bool skip_shift_x = false;
+ 	bool skip_shift_y = false;
+ 
++	// DIAGNOSTIC, always on, effectively free: says whether the game is running a CRTC flicker
++	// filter RIGHT NOW and whether we are suppressing it. Rate-limited to one line per change of
++	// signature, so a title that never touches PMODE prints once per room. This exists because the
++	// register state is mode-dependent -- a save-state proves the filter was on at one instant and
++	// nothing more, and "is it on during the part that matters" is otherwise a guess.
++	{
++		// The gate is a 4-entry ring, not a single last-value, because a game may CYCLE through
++		// several CRTC states -- Stuntman alternates single-circuit and blended on consecutive
++		// frames, which a one-slot comparison reports as a change EVERY frame (~120 lines/s into
++		// a shared worker log). A ring goes quiet once it has seen the whole cycle. The frame-gap
++		// floor is the backstop for a cycle longer than the ring.
++		static uint64_t seen[4] = { ~0ull, ~0ull, ~0ull, ~0ull };
++		static unsigned seen_at = 0;
++		static uint64_t frame_no = 0, last_print_frame = 0;
++		++frame_no;
++		uint64_t sig = (uint64_t(EN1) << 0) | (uint64_t(EN2) << 1) | (uint64_t(MMOD) << 2) |
++		               (uint64_t(ALP) << 8) | (uint64_t(priv.dispfb1.DBY & 0x7ff) << 16) |
++		               (uint64_t(priv.dispfb2.DBY & 0x7ff) << 27) |
++		               (uint64_t(priv.display1.DY & 0x7ff) << 38) |
++		               (uint64_t(priv.display2.DY & 0x7ff) << 49) |
++		               (uint64_t(priv.smode2.INT) << 60) | (uint64_t(priv.smode2.FFMD) << 61);
++		bool known = sig == seen[0] || sig == seen[1] || sig == seen[2] || sig == seen[3];
++		// last_print_frame == 0 means nothing has printed yet -- the gap floor must not swallow
++		// the FIRST line, or a room shorter than 300 frames reports nothing at all.
++		if (!known && (last_print_frame == 0 || frame_no - last_print_frame >= 300))
++		{
++			seen[seen_at] = sig;
++			seen_at = (seen_at + 1) & 3;
++			last_print_frame = frame_no;
++			if (EN1 && EN2)
++			{
++				LOGI("[crtc-merge] EN1=1 EN2=1 MMOD=%u ALP=%u INT=%u FFMD=%u "
++				     "DBY %u/%u DY %u/%u FBP %u/%u -> %s\n",
++				     MMOD, ALP, unsigned(priv.smode2.INT), unsigned(priv.smode2.FFMD),
++				     unsigned(priv.dispfb1.DBY), unsigned(priv.dispfb2.DBY),
++				     unsigned(priv.display1.DY), unsigned(priv.display2.DY),
++				     unsigned(priv.dispfb1.FBP), unsigned(priv.dispfb2.FBP),
++				     !anti_blur ? "anti_blur OFF, merging" :
++				     (alternative_sampling ? "stock anti-blur eligible" :
++				      (field_antiblur ? "FIELD anti-blur ARMED" :
++				       (field_sampling ? "FIELD mode, anti-blur NOT armed - the game's blur SURVIVES"
++				                       : "progressive, anti-blur n/a"))));
++			}
++			else
++			{
++				LOGI("[crtc-merge] single circuit (EN1=%u EN2=%u) INT=%u FFMD=%u - no game-side blur\n",
++				     unsigned(EN1), unsigned(EN2), unsigned(priv.smode2.INT), unsigned(priv.smode2.FFMD));
++			}
++		}
++	}
++
+ 	if (EN1 && EN2 && anti_blur)
+ 	{
+ 		if (priv.dispfb1.FBP == priv.dispfb2.FBP &&
+@@ -4478,7 +4654,7 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
+ 				MMOD = PMODEBits::MMOD_ALPHA_ALP;
+ 				insert_label(cmd, "Anti-blur, force layer 0");
+ 			}
+-			else if (alternative_sampling && priv.display1.DY == priv.display2.DY)
++			else if ((alternative_sampling || field_antiblur) && priv.display1.DY == priv.display2.DY)
+ 			{
+ 				if (priv.dispfb1.DBY + 1 == priv.dispfb2.DBY)
+ 				{
+@@ -4494,7 +4670,7 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
+ 					insert_label(cmd, "Anti-blur, force layer 1");
+ 				}
+ 			}
+-			else if (alternative_sampling && priv.dispfb1.DBY == priv.dispfb2.DBY)
++			else if ((alternative_sampling || field_antiblur) && priv.dispfb1.DBY == priv.dispfb2.DBY)
+ 			{
+ 				if (priv.display1.DY + 1 == priv.display2.DY)
+ 				{
+@@ -4537,10 +4713,10 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
  			if (high_resolution_scanout)
  			{
  				image_info.width *= 2;
@@ -3215,7 +3642,7 @@ index adde6bb..9c9565e 100644
  			device->set_name(*circuit1, "Circuit1");
  		}
  
-@@ -4595,10 +4714,10 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
+@@ -4595,10 +4771,10 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
  			if (high_resolution_scanout)
  			{
  				image_info.width *= 2;
@@ -3228,7 +3655,7 @@ index adde6bb..9c9565e 100644
  			device->set_name(*circuit2, "Circuit2");
  		}
  
-@@ -4737,14 +4856,66 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
+@@ -4737,14 +4913,73 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
  		}
  	}
  
@@ -3275,6 +3702,13 @@ index adde6bb..9c9565e 100644
 +	// mis-placed the field. That dilemma is what the 4x resolve removes.
 +	//
 +	// The legacy 2x path keeps its long-standing 1.0f untouched.
++	//
++	// MEASURED, 2026-08-09: zeroing this for Stuntman -- on the theory that the game draws both
++	// fields with the identical projection, so the offset is a pure CRTC artefact -- is WRONG.
++	// A static-scene reel with the compensation removed alternates the whole picture by
++	// +1.58/-1.66 output rows every frame (|dy|mean 1.386, ALT 0.354) against 0.099/0.008 with
++	// it. The game really does render its two fields half a scanline apart, and this 2 rows is
++	// the correct alignment. Do not zero it. Left as a constant for that reason.
 +	const float phase_comp = field_full_res ? 2.0f : 1.0f;
 +
  	result.internal_width = mode_width;
@@ -3297,7 +3731,7 @@ index adde6bb..9c9565e 100644
  		image_info.height--;
  	}
  
-@@ -4792,6 +4963,18 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
+@@ -4792,6 +5027,18 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
  		start_ts = cmd.write_timestamp(VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
  
  	cmd.begin_render_pass(rp);
@@ -3316,7 +3750,7 @@ index adde6bb..9c9565e 100644
  	cmd.set_opaque_sprite_state();
  
  	if (SLBG == PMODEBits::SLBG_ALPHA_BLEND_CIRCUIT2 && circuit2)
-@@ -4811,13 +4994,38 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
+@@ -4811,13 +5058,38 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
  
  			if (high_resolution_scanout)
  			{
@@ -3359,7 +3793,7 @@ index adde6bb..9c9565e 100644
  			}
  
  			cmd.set_viewport(vp);
-@@ -4844,13 +5052,38 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
+@@ -4844,13 +5116,38 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
  
  			if (high_resolution_scanout)
  			{
@@ -3402,7 +3836,7 @@ index adde6bb..9c9565e 100644
  			}
  
  			cmd.set_viewport(vp);
-@@ -4884,6 +5117,27 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
+@@ -4884,6 +5181,27 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
  		}
  	}
  
@@ -3430,7 +3864,7 @@ index adde6bb..9c9565e 100644
  	cmd.end_render_pass();
  
  	const bool need_intermediate_pass = priv.extwrite.WRITE || is_interlaced || force_deinterlace;
-@@ -4975,6 +5229,7 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
+@@ -4975,6 +5293,7 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
  			// Is the write-back filtered at all? Probably not, but whatever.
  			cmd.set_texture(0, 1, *view, Vulkan::StockSampler::NearestClamp);
  			cmd.checkpoint("ext-feedback");
@@ -3438,7 +3872,7 @@ index adde6bb..9c9565e 100644
  			cmd.dispatch((push.resolution.x + 7) / 8, (push.resolution.y + 7) / 8, 1);
  			cmd.barrier(VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
  			            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-@@ -5017,6 +5272,22 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
+@@ -5017,6 +5336,22 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
  			field.reset();
  	}
  
@@ -3461,7 +3895,7 @@ index adde6bb..9c9565e 100644
  	cmd.end_region();
  
  	if (enable_timestamps)
-@@ -5034,8 +5305,116 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
+@@ -5034,8 +5369,116 @@ ScanoutResult GSRenderer::vsync(const PrivRegisterState &priv, const VSyncInfo &
  	return result;
  }
  
@@ -5393,6 +5827,60 @@ index 0000000..2ba4c41
 ++
 ++    FragColor = vec4(mix(0.5 * (f0.rgb + f1), f0.rgb, motion), f0.a);
 ++}
+diff --git a/pcsx2/MTGS.cpp b/pcsx2/MTGS.cpp
+index 01e7e53..bf9cf55 100644
+--- a/pcsx2/MTGS.cpp
++++ b/pcsx2/MTGS.cpp
+@@ -14,6 +14,7 @@
+  */
+ 
+ #include "Common.h"
++#include "PerfAttr.h"
+ 
+ #include <atomic>
+ #include <cstring>
+@@ -122,7 +123,11 @@ void MTGS::PostVsyncStart()
+ 	// the libretro topology, this WaitGS IS the frame-pacing mechanism: it
+ 	// blocks cpu_thread until the libretro thread (= MTGS thread) drains
+ 	// the ring through this VSYNC packet.
+-	WaitGS(false);
++	{
++		// perf-attr: per-frame EE-blocked-on-GS time (the frame-pacing wait).
++		PerfAttr::Timer pt(PerfAttr::vswait_ns);
++		WaitGS(false);
++	}
+ 
+ 	// Vsyncs should always start the GS thread, regardless of how little has actually be queued.
+ 	s_sem_event.NotifyOfWork();
+@@ -148,7 +153,12 @@ void MTGS::InitAndReadFIFO(u8* mem, u32 qwc)
+ 	tag.pointer                 = (uptr)mem;
+ 
+ 	s_WritePos.store((writepos + 1) & RINGBUFFERMASK, std::memory_order_release);
+-	WaitGS(false);
++	{
++		// perf-attr: readback sync (Accurate hw_download / cpuSpriteRenderBW path) - the EE
++		// stalls here until the GS drains the ring and services the FIFO read.
++		PerfAttr::Timer pt(PerfAttr::fifowait_ns, &PerfAttr::fifowait_n);
++		WaitGS(false);
++	}
+ }
+ 
+ void MTGS::TryOpenGS(void)
+@@ -190,7 +200,13 @@ void MTGS::MainLoop(bool flush_all)
+ 		{
+ 			if (mtvu_mode)
+ 				mtvu_lock.unlock();
+-			s_sem_event.WaitForWork();
++			{
++				// perf-attr round 5: idle time (incl. the WorkSema busy-spin) - subtract from gs_cpu
++				// to get the GS thread's REAL work share. The spin was inflating gs_cpu by 1-3s per
++				// 5s window (a paused game measured MORE gs_cpu than active driving).
++				PerfAttr::Timer pt(PerfAttr::gsidle_ns);
++				s_sem_event.WaitForWork();
++			}
+ 			if (mtvu_mode)
+ 				mtvu_lock.lock();
+ 		}
 diff --git a/pcsx2/PS2Float.cpp b/pcsx2/PS2Float.cpp
 new file mode 100644
 index 0000000..553ea8b
@@ -6311,7 +6799,7 @@ index 0000000..5c60b47
 +    static u8 DetermineMacException(u8 mode, u32 acc, bool acc_oflw, bool moflw, s32 msign, u32& addsubres, bool& oflw, bool& uflw);
 +};
 diff --git a/pcsx2/Pcsx2Config.cpp b/pcsx2/Pcsx2Config.cpp
-index e19cab2..4fa7e74 100644
+index e19cab2..61c591d 100644
 --- a/pcsx2/Pcsx2Config.cpp
 +++ b/pcsx2/Pcsx2Config.cpp
 @@ -214,6 +214,12 @@ Pcsx2Config::RecompilerOptions::RecompilerOptions()
@@ -6341,22 +6829,103 @@ index e19cab2..4fa7e74 100644
  }
  
  bool Pcsx2Config::CpuOptions::CpusChanged(const CpuOptions& right) const
-@@ -486,6 +499,7 @@ bool Pcsx2Config::GSOptions::OptionsAreEqual(const GSOptions& right) const
+@@ -486,6 +499,8 @@ bool Pcsx2Config::GSOptions::OptionsAreEqual(const GSOptions& right) const
  		OpEqu(Adapter) &&
  		OpEqu(PGSSuperSampling) &&
  		OpEqu(PGSHighResScanout) &&
 +		OpEqu(PGSFieldFullRes) &&
++		OpEqu(PGSFieldAntiBlur) &&
  		OpEqu(PGSDisableMipmaps) &&
  		OpEqu(PGSSharpBackbuffer) &&
  		OpEqu(PGSSuperSampleTextures)
-@@ -531,6 +545,7 @@ void Pcsx2Config::GSOptions::LoadSave(SettingsWrapper& wrap)
+@@ -531,6 +546,8 @@ void Pcsx2Config::GSOptions::LoadSave(SettingsWrapper& wrap)
  	SettingsWrapBitBoolEx(AutoFlushSW, "autoflush_sw");
  	SettingsWrapIntEnumEx(PGSSuperSampling, "pgsSuperSampling");
  	SettingsWrapIntEnumEx(PGSHighResScanout, "pgsHighResScanout");
 +	SettingsWrapIntEnumEx(PGSFieldFullRes, "pgsFieldFullRes");
++	SettingsWrapIntEnumEx(PGSFieldAntiBlur, "pgsFieldAntiBlur");
  	SettingsWrapIntEnumEx(PGSDisableMipmaps, "pgsDisableMipmaps");
  	SettingsWrapIntEnumEx(PGSSuperSampleTextures, "pgsSuperSampleTextures");
  	SettingsWrapIntEnumEx(PGSSharpBackbuffer, "pgsSharpBackbuffer");
+diff --git a/pcsx2/PerfAttr.h b/pcsx2/PerfAttr.h
+new file mode 100644
+index 0000000..5c1c2b6
+--- /dev/null
++++ b/pcsx2/PerfAttr.h
+@@ -0,0 +1,73 @@
++// Phase A instrumentation (MovieTheater arcade, docs/arcade-stuntman-plan.md, 2026-07-15).
++//
++// Attributes slow retro_run ticks to their cause. In this port's topology (see MTGS.cpp
++// PostVsyncStart) retro_run IS the GS MainLoop, so GS-side work (shader compiles, program-binary
++// loads) extends the tick directly, while the EE thread's WaitGS time measures how long the
++// emulated CPU sat blocked on the GS. Four seams are sampled:
++//   compile_*  - true GLSL driver compiles (GLShaderCache miss path)      [GS thread]
++//   binload_*  - program-binary loads from gl_programs.bin (cache hits)   [GS thread]
++//   vswait_ns  - per-frame WaitGS in MTGS::PostVsyncStart (frame pacing)  [EE thread]
++//   fifowait_* - WaitGS in MTGS::InitAndReadFIFO (readback sync; the
++//                cpuSpriteRenderBW / hw_download path)                    [EE thread]
++// Dumped + reset every 300 frames (~5 s NTSC) by retro_run (libretro/main.cpp) as a
++// "[perf-attr] ..." log line, designed to sit beside the worker's pace-diag lines.
++//
++// C++17 inline atomics: header-only on purpose - no build-system changes to carry.
++#pragma once
++#include <atomic>
++#include <chrono>
++#include <cstdint>
++
++namespace PerfAttr
++{
++	inline std::atomic<std::uint64_t> compile_ns{0}, compile_n{0};
++	inline std::atomic<std::uint64_t> binload_ns{0}, binload_n{0};
++	inline std::atomic<std::uint64_t> vswait_ns{0};
++	inline std::atomic<std::uint64_t> fifowait_ns{0}, fifowait_n{0};
++	// Round 2 (post-restart collapse attribution): split the GS drain itself.
++	//   mainloop_ns - MTGS::MainLoop inside retro_run = the whole GS drain           [libretro thread]
++	//   vidpush_ns  - the video_cb call in GSDeviceOGL::EndPresent = the WORKER's
++	//                 zero-copy push (zc_push + GL copy), i.e. OUR pipeline's share  [libretro thread]
++	// mainloop - vidpush - compile - binload ~= PCSX2's raw GS render work (draws,
++	// texture uploads). Whichever side owns the post-restart 30-40ms/frame is the villain.
++	inline std::atomic<std::uint64_t> mainloop_ns{0};
++	inline std::atomic<std::uint64_t> vidpush_ns{0};
++	// Round 4 (level-start texture-burst profile, GL HW renderer): split the GS thread's texture
++	// work so the async-upload fix targets the measured hot spot, not a guess.
++	//   texmap_*    - GSTextureOGL::Map    (stream-buffer acquisition, incl. fence waits on wrap)
++	//   texunmap_ns - GSTextureOGL::Unmap  (glTexSubImage from the upload ring)
++	//   texupd_*    - GSTextureOGL::Update (direct-path upload: caller-converted pixels -> GL)
++	// gs_cpu minus these ~= draw/state/conversion work elsewhere on the GS thread.
++	inline std::atomic<std::uint64_t> texmap_ns{0}, texmap_n{0};
++	inline std::atomic<std::uint64_t> texunmap_ns{0};
++	inline std::atomic<std::uint64_t> texupd_ns{0}, texupd_n{0};
++	// Round 5: the texture-UPLOAD theory measured dead (texmap/texunmap/texupd ~0 in the burst while
++	// gs_cpu ran 80% of wall). Split what actually remains on the GS thread:
++	//   xfer_*    - GSState::Transfer (GIF texture DMA -> emulated-VRAM swizzle writes; CPU memwork
++	//               present on BOTH renderers)
++	//   hash_*    - GSTextureCache source lookup (HW-renderer-ONLY per-draw hash/cache work; absent
++	//               on SW, which is the leading explanation for why SW cured the burst)
++	//   gsidle_ns - MTGS WaitForWork (the busy-spin that contaminates gs_cpu; subtract it)
++	inline std::atomic<std::uint64_t> xfer_ns{0}, xfer_n{0};
++	inline std::atomic<std::uint64_t> hash_ns{0}, hash_n{0};
++	inline std::atomic<std::uint64_t> gsidle_ns{0};
++
++	struct Timer
++	{
++		std::atomic<std::uint64_t>& ns;
++		std::atomic<std::uint64_t>* n;
++		std::chrono::steady_clock::time_point t0;
++
++		explicit Timer(std::atomic<std::uint64_t>& ns_, std::atomic<std::uint64_t>* n_ = nullptr)
++			: ns(ns_), n(n_), t0(std::chrono::steady_clock::now()) {}
++		~Timer()
++		{
++			ns.fetch_add(static_cast<std::uint64_t>(
++				std::chrono::duration_cast<std::chrono::nanoseconds>(
++					std::chrono::steady_clock::now() - t0).count()),
++				std::memory_order_relaxed);
++			if (n)
++				n->fetch_add(1, std::memory_order_relaxed);
++		}
++	};
++} // namespace PerfAttr
 diff --git a/pcsx2/VUops.cpp b/pcsx2/VUops.cpp
 index 76d4466..144c13a 100644
 --- a/pcsx2/VUops.cpp

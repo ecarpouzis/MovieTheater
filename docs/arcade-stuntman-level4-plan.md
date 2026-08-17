@@ -1,3 +1,294 @@
+# 2026-08-16 (evening) — ✅ FIELD ANTI-BLUR: DEPLOYED, A/B'd, MEASURABLY SHARPER. Eric's eyes still owed.
+
+**The game's own flicker filter is real, it IS live in Level 4, and suppressing it measurably
+restores vertical detail.** Deployed to both GL workers with Eric's approval; profile row 7 armed
+for one room and **restored** immediately after. Nothing is left armed.
+
+## The measurement
+
+Two rooms, same `"Level 4 bench"` quickload, four snaps each at 8/14/20/26 s. The bench state
+resumes onto the **static "SCENE FAILED : TOO SLOW" overlay**, which is the ideal A/B subject — the
+picture does not move, so both arms are photographing the *same frame*.
+
+The metric is **vertical HF energy over horizontal HF energy**. Raw vertical HF is scene- and
+encoder-dependent; the ratio is not, because a vertical filter cannot touch the horizontal axis, so
+horizontal HF is a built-in control for content and encode variation.
+
+| arm | V/H (4 snaps) | matched crop (warehouse, 300×180) |
+|---|---|---|
+| **A** — disarmed (today's shipped behaviour) | 0.865 / 0.861 / 0.861 / 0.859 | vert 1.4007, horiz 1.3276, **V/H 1.0551** |
+| **B** — `pcsx2_pgs_antiblur_field: enabled` | 0.928 / 0.915 / 0.915 / 0.915 | vert 1.5278, horiz 1.3860, **V/H 1.1023** |
+
+**≈ +6.6 % vertical detail, with within-arm spread of ±0.003 and ±0.006** — the arms do not overlap
+anywhere near each other. Eyeball confirmation on `compare-warehouse.png` (3× nearest, disarmed on
+top): the roof planking and the roof/wall boundary are visibly tighter in the armed arm.
+
+⚠ These are screenshots of the **decoded stream**, so this is a proxy, not a pre-encode measurement.
+It is a believable one — a two-output-row blur is far above the quantisation floor that erases
+sub-pixel AA, the V/H normalisation controls the scene, and the within-arm variance is tiny. But the
+verdict that matters is **Eric's eyes on a driven chase**, and that is not answered here: the only
+thing measured is a STATIC frame. Whether removing the game's filter brings back 60 Hz twitter in
+motion is the open half, and it is the half the filter existed to prevent.
+
+## ‼ THE CORRECTION THAT MATTERS: the save-state under-reported the filter, and nearly buried this
+
+The desk pass below read the CRTC out of save-states and concluded the filter was "mode-dependent"
+because only ONE of six states showed it. Both halves of that were wrong:
+
+1. **The state I called "the Level-4 bench" is not.** `savestore\1\60439\slot-101.dat` is user 1's
+   **"Level 5"**. The real Level-4 bench is user **33** (ArcadePlayer2) slot 101. Slot ids are
+   per-user; two different saves share slot 101.
+2. **Five of six states read single-circuit, and the live log shows the game alternating
+   single-circuit and blended on CONSECUTIVE FRAMES** — ~120 register-state changes per second:
+
+```
+[crtc-merge] single circuit (EN1=0 EN2=1) INT=1 FFMD=1 - no game-side blur
+[crtc-merge] EN1=1 EN2=1 MMOD=1 ALP=128 INT=1 FFMD=1 DBY 0/1 DY 50/50 FBP 140/140
+             -> FIELD mode, anti-blur NOT armed - the game's blur SURVIVES
+```
+
+So the game applies the 2-tap vertical blend to **every other field** — a half-strength flicker
+filter, built by alternating two dispenv structs (the table at 0x0031ABA0 has exactly those two
+entries). Had I trusted the save-state sample, the correct conclusion — "the filter is barely used,
+drop this lead" — would have been the opposite of the truth.
+
+> **⚠ DURABLE LESSON: a save-state samples the GS registers at ONE fixed point in the frame loop.**
+> For a register the game rewrites per field, that is a *systematically phase-biased* sample, not a
+> random one — it can report a state that occurs on half of all frames as occurring almost never.
+> The offline reader is still the right tool for "what are the values"; it is the wrong tool for
+> "how often". Only a per-frame instrument answers that, which is exactly why the `[crtc-merge]`
+> line was built into the same core as the fix.
+
+## What is deployed right now
+
+- Both GL workers: `pcsx2_custom_libretro.dll` **11,644,416 B**, sha256
+  `ee34c664e68157e6901c61be99b4a4d425d3df8ec376eb80b52c9e89cbeafd03`, lrps2 **`4e67327`** (tree
+  clean at that commit, so the deployed binary and HEAD agree). Recycled via `.stop` at 23:14:18,
+  both reconnected. ⚠ **Verify this one by HASH, not size** — the log-spam fix came out at exactly
+  the same 11,644,416 B as the build before it. Rollback = `pcsx2_custom_libretro.pre-antiblur.dll`
+  (11,642,368 B, the `2fe1510` build) + recycle.
+- Artifact guard re-snapshotted (`verify-patched-artifacts.ps1 -Snapshot`, 11 artifacts, vault
+  refreshed) so nobody gets the drift popup.
+- `ArcadeGameProfile` row 7 = **the shipped value**, verified by SELECT after the restore.
+- `pcsx2_pgs_antiblur_field` defaults **disabled**, so the only behavioural delta for every other
+  PS2 title is the `[crtc-merge]` log line.
+
+## Follow-up shipped in the same session
+
+The first deployed build logged `[crtc-merge]` on every *signature change*, which for a game that
+flips PMODE per frame is **~120 lines/s into the shared worker log** (652 lines from one short
+room). Fixed: the gate is now a 4-entry ring of recently-seen signatures plus a 300-frame floor
+between prints, so an alternating cycle prints each state once and then goes quiet. Rebuilt and
+redeployed.
+
+---
+
+# 2026-08-16 (earlier) — 🔨 THE FIELD ANTI-BLUR IS BUILT AND COMMITTED
+
+**Status at the time: built, strings verified in the DLL, committed, not yet deployed.**
+
+- lrps2 `a57e1e7` — `pcsx2_pgs_antiblur_field` (default **disabled**) lets paraLLEl-GS's existing
+  anti-blur Y branches fire in field mode, plus an always-on rate-limited `[crtc-merge]` diagnostic
+  that names what the game's CRTC is doing and whether we are suppressing it.
+- lrps2 `97b2fc1` — the bob-only arm committed as a documented dead end (it was sitting dirty in the
+  tree for a week). Kept rather than deleted: the twitter it trades for is a property of the content
+  the merge is fed, and `a57e1e7` changes exactly that content.
+- Built with the canonical recipe (`docker/arcade/lrps2-build-core.bat`, CMake+Ninja+MSVC):
+  `D:\Arcade\build\lrps2\bld\libretro\pcsx2_libretro.dll`, **11,651,584 B**, 622/622, zero errors.
+  `/O2` + `/DNDEBUG` confirmed present on `gs_renderer.cpp`'s own ninja rule (the Dolphin lesson).
+  `pcsx2_pgs_antiblur_field`, `crtc-merge` and `FIELD anti-blur ARMED` all present in the binary.
+- Backups staged: `pcsx2_custom_libretro.pre-antiblur.dll` in BOTH workers' `assets\cores`.
+
+**⛔ Blocked at the deploy step, deliberately not worked around.** Overwriting the live
+`pcsx2_custom_libretro.dll` on the prod workers is refused by the permission classifier, as is any
+write under `D:\ArcadeStorage`. That is the right guard on a live prod artifact and it needs Eric's
+say-so, not a detour. Everything up to that line is done.
+
+**To finish it (three steps, ~10 min):**
+1. Copy `D:\Arcade\build\lrps2\bld\libretro\pcsx2_libretro.dll` over
+   `pcsx2_custom_libretro.dll` in **both** `D:\ArcadeStorage\worker-gl\assets\cores` and
+   `worker-gl-2\assets\cores` (backups already staged). Recycle both via the `.stop` sentinel.
+   ⚠ Miss one worker and half the rooms silently run the old core.
+2. Boot Stuntman on the **"Level 4 bench"** slot with the profile UNCHANGED and grep the worker log
+   for `[crtc-merge]`. That alone answers the open question — is the filter on during the part that
+   matters — and costs one room.
+3. Only if step 2 says the filter is live: arm with `docs/arcade/stuntman-antiblur-ab.sql`, boot the
+   SAME slot again, and compare. Restore the profile immediately after.
+
+**Why the A/B is unusually clean here:** a save-state resume restores EE memory *and* the GS
+registers wholesale, so both arms start on the **identical game frame**. The sharpness question can
+be settled on a still picture — no driving, no tape, no judgement call. Vertical high-frequency
+energy on that one frame is the whole measurement (`analyze3.py` already computes it). Motion is
+only needed for the *second* question, whether removing the filter brings the twitter back.
+
+⚠ **The one way this test can lie:** libretro silently ignores an unknown option key. Arming the
+option against the old `2fe1510` core (11,642,368 B) gives a clean run, no error, and no effect —
+indistinguishable from "the hypothesis was wrong". Verify the deployed DLL is 11,651,584 B before
+believing a null result.
+
+---
+
+# 2026-08-16 — 🔎 DESK PASS (no live testing): the runtime CRTC state, read offline
+
+> **Nothing was armed, built, deployed, or tested.** Both GL workers are still on the R3b binary
+> (`worker.exe` 38,998,375 B, 2026-08-09 03:12), the PS2 core is still
+> `pcsx2_custom_libretro.dll` 11,642,368 B (2026-08-08 21:39) on both, `/status` shows all three
+> workers free, and both `cheats` dirs are empty. This entry is analysis only, written while Eric
+> is away, so that the next session is a set of A/Bs rather than an investigation.
+
+## The method that unblocks everything below: EE + GS state, read out of a save-state
+
+The 2026-08-09 close-out ended the no-interlacing work with "the DISPLAY/DISPFB *values* cannot be
+derived statically; reading them needs a runtime memory view (desktop PCSX2 debugger)". **That is no
+longer true, and the tools to do it were already sitting in the scratch dir unused.**
+`D:\ArcadeStorage\scratch\stuntman\eemem.py` locates the ELF image inside a save-state by signature
+and gives EE virtual-address reads; the same file contains the GS **privileged register block**
+verbatim. Confirmed on all three Stuntman states (`slot-101` the Level-4 bench, `slot-100`,
+`slot-000`): the EE base is at a different file offset in each (0x1D2845 / 0x84235 / 0x4C0105) but
+the GS priv regs are at a **fixed 0x1451** in every one. New scripts, next to the old ones:
+`dispenv.py` (the game's own display-env structs) and `privregs.py` (the live CRTC registers).
+
+**So any future "what was the hardware actually doing" question about this title is a desk job.**
+No PCSX2 desktop build, no debugger, no Eric.
+
+## What the registers say — and it is not what the interlace work assumed
+
+The live CRTC at the Level-4 bench save (`slot-101`, file offset 0x1451):
+
+```
+PMODE    0000000000008067   EN1=1 EN2=1 CRTMD=1 MMOD=1 AMOD=1 SLBG=0 ALP=128
+SMODE2   0000000000000003   INT=1 FFMD=1
+DISPFB1  000000000000148C   FBP=140 FBW=10 PSM=0(PSMCT32) DBX=0 DBY=0
+DISPLAY1 001BE9FF0183227C   DX=636 DY=50 MAGH=4 MAGV=1 DW=2560 DH=447
+DISPFB2  000008000000148C   FBP=140 FBW=10 PSM=0          DBX=0 DBY=1
+DISPLAY2 001BE9FF0183227C   DX=636 DY=50 MAGH=4 MAGV=1 DW=2560 DH=447
+```
+
+Read that carefully. **Both read circuits are enabled, both point at the SAME framebuffer
+(FBP=140), with identical DISPLAY windows, and their only difference is `DBY` 0 vs 1 — blended
+50/50 (`MMOD=ALP`, `ALP=128`).** That is the classic PS2 **hardware flicker filter**: the game
+averages each field line with the one below it, in the CRTC, every frame. It is deliberate, it is
+the game's own vertical low-pass, and it is applied to a 640×224 field buffer, so one `DBY` step is
+a whole field line — **two output rows** at 448.
+
+The other two states are single-circuit (`PMODE ...0066` = EN1=0, EN2=1, DBY=0, no blend), which
+means the filter is **mode-dependent, not always on**. Confirming when it is on is a test-day item
+(§Test 0 below), not something a save-state can settle.
+
+Corroboration that the decode is right: `DH=447` and `MAGH=4 → DW=2560` are exactly the raster the
+2026-08-08 pnach work measured live from the core (`1280x447` un-patched, `448` with the interlace
+bit cleared), and `FBP=140 / FBW=10 / PSMCT32` is exactly the 640×224 double-buffered layout the
+VRAM page math inferred (buffers at pages 140 and 210, 70 pages each; the template struct at
+0x0031AF30 carries `FBP=210`, the other buffer).
+
+## 🎯 THE LEAD: paraLLEl-GS already suppresses this idiom, and the suppression is dead for this title
+
+`pcsx2/GS/parallel-gs/gs/gs_renderer.cpp` has an anti-blur pass that exists **precisely** for
+"games tend to either offset DY by 1, or DBY by one" (its own comment, line ~4590). Stuntman matches
+the first Y branch exactly — same FBP/PSM/FBW/DBX, same MAGH/MAGV, `display1.DY == display2.DY`,
+`dispfb1.DBY + 1 == dispfb2.DBY` — and the branch would force single-circuit (`EN2=false`,
+`ALP=0xff`, label `"Anti-blur, force layer 0"`), i.e. drop the blur entirely.
+
+**It never fires here.** Line 4313:
+
+```cpp
+bool alternative_sampling = priv.smode2.INT && !priv.smode2.FFMD;
+```
+
+and both Y branches are gated on `alternative_sampling`. Stuntman gameplay is `INT=1 && FFMD=1`, so
+the gate is **false** and the game's flicker filter is emulated in full. (`anti_blur` itself is on —
+`GSConfig.PCRTCAntiBlur` defaults `true` in `Pcsx2Config.cpp:416` and no libretro core option
+touches it, so the outer `if (EN1 && EN2 && anti_blur)` is entered; it falls through the gate.)
+
+The gate looks like an oversight rather than a judgement. In FFMD mode the blur is **worse**, not
+milder: `DBY+1` on a half-height field buffer spans two output rows instead of one. The X-direction
+branch immediately above is not gated at all.
+
+**Hypothesis (untested, this is the thing to try first next week):** the residual vertical softness
+in Stuntman gameplay is *authored*, not an emulation defect — and it is redundant with our own
+motion-adaptive field merge. The game's filter is a permanent spatial blur that costs detail on
+every pixel; our merge cancels twitter *without* touching static detail. Removing the game's filter
+while keeping ours should be **strictly sharper at the same stability**. If it twitters instead,
+the merge is weaker than assumed and we learn that cheaply.
+
+This is orthogonal to everything in the 2026-08-08/09 rounds: it does not touch `phase_comp`, the
+4× resolve, the merge, `field_fullres`, or the fence. It cannot regress them.
+
+## What this CLOSES: no-interlacing / progressive. Both levers are now provably dead.
+
+- **Render side** — already settled by VRAM math (640×224 fields, two colour buffers + Z = 280 of
+  512 pages; real 448-line frames need 560). Unchanged.
+- **Display side** — the last open lever ("patch the per-field DISPLAY/DISPFB flip-flop at
+  scanout"). The registers above kill it: there is no per-field flip-flop to patch. `DISPFB1` and
+  `DISPFB2` are the **same buffer**, `DISPLAY1 == DISPLAY2`, and the buffer holds a 224-line field.
+  A CRTC-side patch can only move where a 224-line image lands; it cannot conjure the 448-line frame
+  that does not exist in VRAM. Variant D's intermittent blanking was the CRTC reading a window valid
+  half the time, exactly as suspected — and there is no set of values that makes it valid, because
+  the content is not there.
+
+**Recommendation: close #7 permanently.** Delete it from the open list rather than leaving it as
+"optional". The materials stay in `pnach-not-deployed\` as history.
+
+## Ranked next steps (each with the A/B that settles it)
+
+**Test 0 — free, do it first (5 min, no build).** Confirm the flicker filter is on during the part
+of the game that matters. Boot the Level-4 bench save, run PGS with debug markers (or add one log
+line on the `EN1 && EN2 && anti_blur` path) and read `PMODE`/`DISPFB2.DBY` during the chase, not
+just at the save moment. If the chase is single-circuit, item 1 is moot — check before building.
+
+**1 — Anti-blur for field mode (the lead above). Highest value / lowest risk.**
+Change: a new core option `pcsx2_pgs_antiblur_field` (default **disabled**), which drops the
+`alternative_sampling` gate on the two Y branches only. Delivered per-title via `ArcadeGameProfile`
+Id 7 `CoreOptionsJson`, so blast radius is exactly one game and rollback is a DB edit, no redeploy.
+Instrument: `static-*` reel + `analyze3.py` (already written) — vertical sharpness should RISE with
+`meanFrameDiff` and the dy ALT term unchanged; then Eric's eyes on a driven chase. Fail condition:
+`ALT` climbs (twitter returned) — then the merge is the weak link, which is itself worth knowing.
+
+**2 — A Stuntman input tape. The enabling investment.**
+"Test-critical and Eric can't drive it" is the real constraint, and `arcade-input-tape` was built
+for exactly this — but **no tape exists yet** (`tape-record.mjs` can script one; the anchor is the
+slot-101 quickload). One tape of "quickload → the chase" turns every item on this list from "ask
+Eric to play it again" into a loop. Do this before item 1 if the picture A/B needs motion, which it
+does. NOTE: `slot-101.dat` has **no `.dat.json` sidecar** — the gateway withholds a slot without
+one, so seed it before expecting a lobby resume to reach that state.
+
+**3 — PS2 second-room `0xC0000005` (open in `arcade-worker-ops`, since 2026-08-01).**
+The only *reliability* item on the list, and the suspected repro needs no human: Vulkan room →
+close → boot Stuntman in the same worker process without a restart. Worth doing, but it deliberately
+tries to crash a worker — **schedule it for when Eric is back**, or at minimum drain and use one
+deregistered worker, per the benchmark-isolation rule.
+
+**4 — The 1–2 white-flash frames in the chase.** Needs motion; item 2 is its prerequisite. The reel
++ `reel-anomaly-scan.py` gate already exists and is bimodal, so once a tape can produce the chase on
+demand this is a mechanical hunt.
+
+**5 — PS2 lobby-Resume no-op.** ⚠ **Verify before working it — it may already be fixed.** The memory
+records it as open, but `frontend.go` now carries a two-attempt boot restore
+(`bootRestoreDelay = 5s` + `bootRestoreRetrySec`) with a "player is already playing" veto whose
+comment cites a live report from 2026-08-08 15:09. Read a fresh PS2 boot log before assuming.
+
+**Not recommended:** the level-crossing upload storm (46–93 ms warm crossings). `dup=1/1480` killed
+the redundant-upload theory and the pipeline cache took the compiles; what is left was called
+content's true price and the evidence supports that.
+
+## Housekeeping / hazards found while reading
+
+- ⚠ **`D:\Arcade\build\lrps2` is DIRTY** with the rejected experiment. `git status` shows 7 modified
+  files carrying `pcsx2_pgs_field_progressive`, evolved from the refuted "same-position" idea into a
+  **bob-only** option — which Eric rejected for 60 Hz twitter. Default is `disabled`, so a rebuild
+  would not change behaviour, but it would ship an option nobody wants and would make the next
+  `lrps2-perfattr-and-gamedb.patch` export wrong. **Decide: commit it as a documented dead end, or
+  `git checkout` it.** Its one genuinely valuable artifact is the measurement comment now sitting in
+  `gs_renderer.cpp` (zeroing `phase_comp` alternates the picture ±1.6 rows/frame, |dy| 1.386 vs
+  0.099) — that belongs in the tree whatever happens to the option.
+- The `arcade-stuntman` memory's "Live DLL 11,613,696 B" is **stale**: both workers run
+  11,642,368 B (2026-08-08 21:39), the `2fe1510` build. `lrps2` HEAD is `c1093d1`, docs-only ahead.
+- `vramdump.py`'s `len(st) - 104 - VRAM` offset is **slot-specific** and yields black for
+  `slot-101`. The GS priv regs are the reliable anchor (fixed 0x1451); VRAM is not at a fixed
+  offset. Don't trust a black framebuffer render as evidence of anything.
+
+---
+
 # 2026-08-09 (~03:15) — ✅ ROUND 3b: the fence moved to the ENCODER's thread — VERIFIED, GROUND TRUTH
 
 > **Status: PASSED. Eric, ~03:25, from his own driven room — "this is the best performance, a clean
