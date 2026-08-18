@@ -1139,13 +1139,15 @@ function TvPage({ userData }) {
     video.volume = volume;
   }, [muted, volume]);
 
-  // Sidecar text subtitles render client-side: show the chosen track, hide the rest. Re-applies
+  // Sidecar text subtitles render client-side: show the chosen track, DISABLE the rest. Re-applies
   // when the track list changes (a new film) so freshly-mounted <track>s pick up the selection.
+  // "hidden" would leave them active and the browser would fetch every cue file at once — see the
+  // same effect in VideoPlayer.js for what that costs on a title with 33 embedded subtitle tracks.
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
     for (const track of Array.from(video.textTracks)) {
-      track.mode = String(track.id) === String(subtitleIndex) ? "showing" : "hidden";
+      track.mode = String(track.id) === String(subtitleIndex) ? "showing" : "disabled";
     }
   }, [subtitleIndex, subtitleTracks]);
 

@@ -429,12 +429,19 @@ function VideoPlayer({
   }, [volume, muted]);
 
   // ── text subtitles (sidecar VTT) ────────────────────────────────────────────
+  // "disabled", NOT "hidden", for the tracks we aren't showing: a hidden track is still ACTIVE, so the
+  // browser fetches and parses its cue file. With one <track> per embedded sub that meant every track
+  // loaded at once — Don't Look Up (33 tracks) fired 33 concurrent Stream.vtt requests on open, which
+  // Jellyfin answered with a single ffmpeg demuxing all 33 out of a 12.9 GB 4K MKV: 119 s of NAS reads
+  // racing the video copy of that same file, and all 33 requests dead at the gateway's 100 s timeout
+  // (measured 2026-08-17). Nothing here reads cues off a non-showing track, so disabled costs nothing;
+  // the selected track loads on demand and useSubtitleStyle/useCueLift re-apply on its 'load'.
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
     for (const track of Array.from(video.textTracks)) {
       const matches = String(track.id) === String(selectedSubtitleIndex);
-      track.mode = matches ? "showing" : "hidden";
+      track.mode = matches ? "showing" : "disabled";
     }
   }, [selectedSubtitleIndex, src]);
 
