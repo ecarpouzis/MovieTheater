@@ -28,6 +28,9 @@ namespace MovieTheater.Controllers
         // Past this fraction, resume is "done" — next play starts from the beginning. (This is resume
         // bookkeeping only; it never marks a title Seen — that's a manual user action.)
         private const double ResumeCompleteThreshold = 0.9;
+        // Below this, a stored position isn't worth resuming to. Must match WatchPage's own threshold
+        // for offering the Resume card — the pre-positioning below is only right if the client agrees.
+        private const double ResumeMinimumSeconds = 60;
         private readonly MovieDb movieDb;
         private readonly JellyfinApi jellyfin;
         private readonly MovieTheaterConfiguration config;
@@ -207,7 +210,36 @@ namespace MovieTheater.Controllers
                 return StatusCode(503, new { message = "The theater is full — too many streams are running. Try again in a few minutes." });
             }
 
-            var startTicks = (long)((request.StartSeconds ?? 0) * TicksPerSecond);
+            // Resume position (per Playable — movie / episode / misc alike). Read BEFORE PlaybackInfo,
+            // not just for the response, because it decides where this session's ffmpeg starts.
+            var resume = await movieDb.MoviePlaybackProgresses
+                .Where(p => p.UserID == userId.Value && p.PlayableId == playableId.Value && !p.Completed)
+                .Select(p => (long?)p.PositionTicks)
+                .FirstOrDefaultAsync();
+
+            // A resume open sends no StartSeconds — the client learns the resume point FROM this
+            // response and then seeks with hls.js. Jellyfin therefore built a TranscodingUrl with no
+            // StartTimeTicks, spawned ffmpeg at segment 0, and was killed and respawned with -ss the
+            // instant hls.js asked for the resume segment. Measured 2026-08-17: every open burned a
+            // throwaway ffmpeg (121-1330 frames of wasted encode) plus 1-3 s of dead time before the
+            // real session began. Starting the FIRST spawn at the resume point removes both.
+            //
+            // Only where the client would actually resume there: the Resume card is offered on a
+            // Primary open past ResumeMinimumSeconds, and the stored position is a WHOLE-MOVIE clock,
+            // so one running past this file belongs to a later part (the client changes part rather
+            // than seeking here) and must not pre-position. "From the beginning" reuses this session
+            // without restarting it, so it now pays the one respawn that resume used to pay.
+            var resumeStartTicks = request.StartSeconds == null
+                && request.MediaFileId == null
+                && resume is long resumeTicks
+                && resumeTicks > ResumeMinimumSeconds * TicksPerSecond
+                && resumeTicks < (file.DurationTicks ?? 0)
+                    ? resumeTicks
+                    : (long?)null;
+
+            var startTicks = request.StartSeconds != null
+                ? (long)(request.StartSeconds.Value * TicksPerSecond)
+                : resumeStartTicks ?? 0;
             // Direct play serves the whole original file, so it can't honor a burned-in subtitle:
             // fall back to a transcode. ForceTranscode (the channel mid-join escalation for a title
             // whose keyframe index breaks the copy seek) also rules out direct play: only a real
@@ -355,11 +387,6 @@ namespace MovieTheater.Controllers
                     };
                 })
                 .ToList();
-
-            var resume = await movieDb.MoviePlaybackProgresses
-                .Where(p => p.UserID == userId.Value && p.PlayableId == playableId.Value && !p.Completed)
-                .Select(p => (long?)p.PositionTicks)
-                .FirstOrDefaultAsync();
 
             var sourceVideoStream = source.MediaStreams.FirstOrDefault(s => s.Type == "Video");
             var sourceVideoCodec = sourceVideoStream?.Codec;
