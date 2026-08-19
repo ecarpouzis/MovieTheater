@@ -112,6 +112,15 @@ namespace MovieTheater.Controllers
                 kind = "unparseable";
             }
 
+            // Diagnostics, not history: rows expire. The prune rides the only path that grows the
+            // table — a capped batch per report — so a quiet table costs nothing and a noisy one
+            // trims itself. (Tracked RemoveRange, not ExecuteDelete+Take: the SQLite test provider
+            // can't translate the latter.)
+            var pruneCutoff = DateTime.UtcNow - IncidentRetention;
+            var expired = await movieDb.MusicPlaybackIncidents
+                .Where(i => i.CreatedUtc < pruneCutoff).Take(50).ToListAsync();
+            if (expired.Count > 0) movieDb.MusicPlaybackIncidents.RemoveRange(expired);
+
             movieDb.MusicPlaybackIncidents.Add(new MusicPlaybackIncident
             {
                 CreatedUtc = DateTime.UtcNow,
@@ -125,6 +134,10 @@ namespace MovieTheater.Controllers
             await movieDb.SaveChangesAsync();
             return Ok(new { recorded = true });
         }
+
+        // Incident reports older than this stopped being diagnostics; the quiet post-fix table
+        // stays near-empty either way, this just makes that a bound instead of luck.
+        private static readonly TimeSpan IncidentRetention = TimeSpan.FromDays(180);
 
         private static string Truncate(string s, int max) =>
             string.IsNullOrEmpty(s) ? s : (s.Length <= max ? s : s.Substring(0, max));

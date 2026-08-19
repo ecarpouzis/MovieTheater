@@ -20,7 +20,9 @@ namespace MovieTheater.Channels
     /// </summary>
     public class WatchpartyReaperService : BackgroundService
     {
-        private static readonly TimeSpan Tick = TimeSpan.FromMinutes(5);
+        // A backstop for parties with a 6-hour finished-grace needs nothing like per-minute vigilance;
+        // half-hourly keeps the reap prompt enough while making the idle wakeups 6x rarer.
+        private static readonly TimeSpan Tick = TimeSpan.FromMinutes(30);
         // A started party whose whole lineup ended this long ago is considered over and reaped.
         private static readonly TimeSpan FinishedGrace = TimeSpan.FromHours(6);
         private const int BatchSize = 50;

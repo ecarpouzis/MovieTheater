@@ -75,7 +75,7 @@ namespace MovieTheater.Recommendations
             int processed = 0, skipped = 0, remaining = 0;
             foreach (var u in users)
             {
-                string stamp = await refresher.StampAsync(db, u.UserID, idx.MaxLibId);
+                string stamp = await refresher.Staleness.StampAsync(db, u.UserID, idx.MaxLibId);
                 bool fresh = stamps.TryGetValue(u.UserID, out var have) && have == stamp;
                 if (fresh && !Force) { skipped++; continue; }
                 if (Limit is int lim && processed >= lim) { remaining++; continue; }

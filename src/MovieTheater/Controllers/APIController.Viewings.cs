@@ -212,6 +212,7 @@ namespace MovieTheater.Controllers
                 kind == "series" ? v.SeriesId == id : kind == "misc" ? v.MiscVideoId == id : v.MovieID == id);
 
             int updated = 0, skipped = 0, deleted = 0;
+            bool rescored = false;
             foreach (var item in items)
             {
                 var kind = NormKind(item.Kind);
@@ -245,8 +246,18 @@ namespace MovieTheater.Controllers
                     existingRows.Add(row);
                     updated++;
                 }
-                else if (existing.ViewingData != data) { existing.ViewingData = data; updated++; }
+                else if (existing.ViewingData != data) { existing.ViewingData = data; rescored = true; updated++; }
                 else skipped++;
+            }
+
+            // A re-score edits the row in place: ViewingID and row count both survive, so the
+            // recommendation staleness stamp (max ViewingID : count : …) cannot see it. Blank the
+            // stored stamp — a blank never matches a computed stamp, so the maintenance loop picks
+            // this user up on its next pass. New rows and deletes move the stamp on their own.
+            if (rescored)
+            {
+                var profile = await movieDb.UserTasteProfiles.FirstOrDefaultAsync(p => p.UserId == uid);
+                if (profile != null) profile.RatingsStamp = "";
             }
 
             await movieDb.SaveChangesAsync();

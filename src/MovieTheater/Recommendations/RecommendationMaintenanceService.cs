@@ -32,6 +32,11 @@ namespace MovieTheater.Recommendations
         private readonly ILogger<RecommendationMaintenanceService> logger;
         private readonly RecommendationRefresher refresher = new();
 
+        // The world-state the last all-clear scan saw. While the sentinel still matches it, a tick is
+        // three constant-cost aggregates and no per-user scan. Null whenever stale users may remain
+        // (work was found, or a batch was capped), so the scan runs every tick until drained.
+        private string? cleanSentinel;
+
         public RecommendationMaintenanceService(IServiceScopeFactory scopeFactory, ILogger<RecommendationMaintenanceService> logger)
         {
             this.scopeFactory = scopeFactory;
@@ -68,9 +73,17 @@ namespace MovieTheater.Recommendations
             using var scope = scopeFactory.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<MovieDb>();
 
-            var stale = await refresher.StaleUsersAsync(db, cancel);
+            var sentinel = await refresher.Staleness.SentinelAsync(db, cancel);
+            if (sentinel == cleanSentinel)
+                return; // provably the same world the last all-clear scan saw — skip even the stale scan
+
+            var stale = await refresher.Staleness.StaleUsersAsync(db, cancel);
             if (stale.Count == 0)
+            {
+                cleanSentinel = sentinel;
                 return; // nothing rated/changed since last pass — skip the (heavier) index build entirely
+            }
+            cleanSentinel = null;
 
             var index = await refresher.BuildIndexAsync(db, cancel);
             int done = 0;

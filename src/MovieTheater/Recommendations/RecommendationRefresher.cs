@@ -22,9 +22,17 @@ namespace MovieTheater.Recommendations
         private const int TopActors = 6;
 
         private readonly RecommendationEngine engine;
-        public RecommendationRefresher(RecommendationEngine? engine = null) => this.engine = engine ?? new RecommendationEngine();
+        public RecommendationRefresher(RecommendationEngine? engine = null)
+        {
+            this.engine = engine ?? new RecommendationEngine();
+            Staleness = new RecommendationStaleness(this.engine.Opt.AlgoVersion);
+        }
 
         public int AlgoVersion => engine.Opt.AlgoVersion;
+
+        /// <summary>The staleness half (stamps, sentinel, stale-user scan) — extracted to Services so
+        /// the test project can reach it; see <see cref="RecommendationStaleness"/>.</summary>
+        public RecommendationStaleness Staleness { get; }
 
         public sealed record FeatureIndex(
             Dictionary<int, TitleFeatures> Movies, Dictionary<int, TitleFeatures> Series, LibraryStats Stats, int MaxLibId);
@@ -32,51 +40,6 @@ namespace MovieTheater.Recommendations
         public sealed record UserResult(
             TasteProfile Profile, int RatedUsed, int MovieCandidates, int SeriesCandidates,
             IReadOnlyList<Recommendation> MovieRecs, IReadOnlyList<Recommendation> SeriesRecs);
-
-        // ── Staleness stamp ────────────────────────────────────────────────────────────────────────
-
-        /// <summary>Fingerprint of a user's inputs: their latest rating + rating count, the library's max
-        /// title id, and the algo version. Unchanged stamp ⇒ nothing to recompute.</summary>
-        public async Task<string> StampAsync(MovieDb db, int userId, int maxLibId, CancellationToken cancel = default)
-        {
-            var agg = await db.Viewings
-                .Where(v => v.UserID == userId && v.ViewingType == "Rated")
-                .GroupBy(_ => 1)
-                .Select(g => new { Max = g.Max(v => v.ViewingID), Count = g.Count() })
-                .FirstOrDefaultAsync(cancel);
-            return $"{agg?.Max ?? 0}:{agg?.Count ?? 0}:{maxLibId}:{AlgoVersion}";
-        }
-
-        /// <summary>Cheap library-growth fingerprint: the max title id across movies + series (all rows).
-        /// Part of the staleness stamp so new library content makes every user's recs recomputable.</summary>
-        public async Task<int> MaxLibIdAsync(MovieDb db, CancellationToken cancel = default)
-        {
-            int maxMovie = await db.Movies.MaxAsync(m => (int?)m.id, cancel) ?? 0;
-            int maxSeries = await db.Series.MaxAsync(s => (int?)s.Id, cancel) ?? 0;
-            return Math.Max(maxMovie, maxSeries);
-        }
-
-        /// <summary>Users with ratings whose stored profile stamp no longer matches — i.e. they've rated
-        /// something new or the library grew. Returns each with its fresh stamp so the caller needn't
-        /// recompute it. Cheap: no feature index is built.</summary>
-        public async Task<List<(int UserId, string Stamp)>> StaleUsersAsync(MovieDb db, CancellationToken cancel = default)
-        {
-            int maxLibId = await MaxLibIdAsync(db, cancel);
-            // One grouped query for every rater's stamp inputs, instead of a per-user StampAsync round-trip.
-            var perUser = await db.Viewings.Where(v => v.ViewingType == "Rated")
-                .GroupBy(v => v.UserID)
-                .Select(g => new { UserId = g.Key, Max = g.Max(v => v.ViewingID), Count = g.Count() })
-                .ToListAsync(cancel);
-            var stamps = await db.UserTasteProfiles.ToDictionaryAsync(p => p.UserId, p => p.RatingsStamp, cancel);
-            var stale = new List<(int, string)>();
-            foreach (var u in perUser.OrderBy(x => x.UserId))
-            {
-                // Must match StampAsync's format exactly.
-                var stamp = $"{u.Max}:{u.Count}:{maxLibId}:{AlgoVersion}";
-                if (!stamps.TryGetValue(u.UserId, out var have) || have != stamp) stale.Add((u.UserId, stamp));
-            }
-            return stale;
-        }
 
         // ── Compute ────────────────────────────────────────────────────────────────────────────────
 
@@ -316,7 +279,7 @@ namespace MovieTheater.Recommendations
             var series = seriesRows.ToDictionary(r => r.Id, r => Build(r, InsightSubjectKind.Series, sGenre, sCredit, sInsight, sViewers));
 
             var stats = RecommendationEngine.BuildLibraryStats(movies.Values.Concat(series.Values).ToList());
-            int maxLibId = await MaxLibIdAsync(db, cancel); // same basis the service uses for staleness stamps
+            int maxLibId = await Staleness.MaxLibIdAsync(db, cancel); // same basis the service uses for staleness stamps
             return new FeatureIndex(movies, series, stats, maxLibId);
         }
 
