@@ -1,8 +1,9 @@
-import { useState, useEffect, useMemo } from "react";
-import { useLocation } from "react-router-dom";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { useHistory, useLocation } from "react-router-dom";
 import { Spin } from "antd";
 import BoardGameCardList from "./BoardGameCardList";
 import BoardGameModal from "./BoardGameModal";
+import { bucketsFor } from "../../Components/CatalogPager";
 
 function parseJsonArray(json) {
   if (!json) return null;
@@ -58,9 +59,19 @@ function BoardGames({ userData }) {
   const [allGames, setAllGames] = useState(cached ?? []);
   const [loading, setLoading] = useState(cached == null);
   const [error, setError] = useState(null);
-  const [selectedGameId, setSelectedGameId] = useState(null);
-  const [isModalVisible, setIsModalVisible] = useState(false);
+  const history = useHistory();
   const location = useLocation();
+
+  // The open game modal lives in the URL (?game=<internal id> — the browse ?title= pattern):
+  // a card click pushes it (Back closes the full-page modal), ✕ replaces it away, and the link
+  // is shareable/reload-safe. The catalog is client-side, so a cold load just finds the row.
+  const selectedGameId = (() => {
+    const raw = new URLSearchParams(location.search).get("game");
+    if (!raw || !/^[0-9]+$/.test(raw)) return null;
+    const n = Number(raw);
+    return Number.isSafeInteger(n) && n > 0 ? n : null;
+  })();
+  const isModalVisible = selectedGameId != null;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -108,6 +119,12 @@ function BoardGames({ userData }) {
   const sortParam = params.get("sort");
 
   const showExpansions = userData?.showBoardgameExpansions ?? false;
+  // Names what makes the grid a DIFFERENT list — the card list's window resets on it.
+  const listKey = `${mode ?? ""}:${value}:${playersParam ?? ""}:${ageParam ?? ""}:${timeParam ?? ""}:${sortParam ?? ""}:${showExpansions}`;
+
+  // Memoized: the six sort branches and four filter passes used to run in the render body on
+  // every render (each sort spreading + resorting the whole list).
+  const displayGames = useMemo(() => {
   let displayGames = showExpansions
     ? allGames
     : allGames.filter((g) => g.thingType !== "boardgameexpansion" && g.baseGameId == null);
@@ -174,15 +191,38 @@ function BoardGames({ userData }) {
     displayGames = [...displayGames].sort((a, b) => (b.averageWeight ?? 0) - (a.averageWeight ?? 0));
   }
 
-  const handleOpenGame = (gameId) => {
-    setSelectedGameId(gameId);
-    setIsModalVisible(true);
-  };
+  return displayGames;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allGames, expansionMap, showExpansions, mode, value, playersParam, ageParam, timeParam, sortParam]);
 
-  const handleCloseModal = () => {
-    setIsModalVisible(false);
-    setSelectedGameId(null);
-  };
+  // A–Z quick-scroll buckets — only under the default alphabetical order, where a letter jump
+  // means anything (the server list arrives $orderby=name).
+  const letters = useMemo(
+    () => (sortParam ? null : bucketsFor(displayGames, (g) => g.name || "")),
+    [displayGames, sortParam]
+  );
+
+  const handleOpenGame = useCallback((gameId) => {
+    const p = new URLSearchParams(history.location.search);
+    p.set("game", String(gameId));
+    history.push({ pathname: "/boardgames", search: `?${p.toString()}` });
+  }, [history]);
+
+  // Switching the modal between a base and its expansions re-points the SAME open sheet — replace,
+  // so flag-flipping doesn't grow the history.
+  const handleSwitchGame = useCallback((gameId) => {
+    const p = new URLSearchParams(history.location.search);
+    p.set("game", String(gameId));
+    history.replace({ pathname: "/boardgames", search: `?${p.toString()}` });
+  }, [history]);
+
+  const handleCloseModal = useCallback(() => {
+    const p = new URLSearchParams(history.location.search);
+    if (!p.has("game")) return;
+    p.delete("game");
+    const search = p.toString();
+    history.replace({ pathname: "/boardgames", search: search ? `?${search}` : "" });
+  }, [history]);
 
   const handleGameUpdated = (rawData) => {
     const updated = normalizeGame(rawData);
@@ -203,7 +243,13 @@ function BoardGames({ userData }) {
       {displayGames.length === 0 ? (
         <span>No boardgames found.</span>
       ) : (
-        <BoardGameCardList games={displayGames} expansionMap={expansionMap} onGameClick={handleOpenGame} />
+        <BoardGameCardList
+          games={displayGames}
+          expansionMap={expansionMap}
+          onGameClick={handleOpenGame}
+          listKey={listKey}
+          letters={letters}
+        />
       )}
       <BoardGameModal
         gameId={selectedGameId}
@@ -213,7 +259,7 @@ function BoardGames({ userData }) {
         expansionMap={expansionMap}
         userData={userData}
         onGameUpdated={handleGameUpdated}
-        onOpenGame={setSelectedGameId}
+        onOpenGame={handleSwitchGame}
       />
     </>
   );

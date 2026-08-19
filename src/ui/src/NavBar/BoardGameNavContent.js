@@ -1,6 +1,6 @@
 import { Input, Select } from "antd";
 import { useHistory, useLocation } from "react-router-dom";
-import { inputLabelStyle, getPopupContainer, NavUserBlock, useSectionParams, LetterGrid } from "./navShared";
+import { inputLabelStyle, getPopupContainer, NavUserBlock, useSectionParams } from "./navShared";
 import poweredByBggImage from "../../powered_by_BGG_SM.png";
 
 const { Search } = Input;
@@ -45,14 +45,6 @@ function BoardGameNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, s
     if (mode) { params.set("mode", mode); } else { params.delete("mode"); }
     if (value && value.trim()) { params.set("value", value.trim()); } else { params.delete("value"); }
     history.push({ pathname: "/boardgames", search: params.toString() ? `?${params.toString()}` : "" });
-  }
-
-  function toggleLetter(letter) {
-    if (search.startsWith === letter) {
-      navigate();
-    } else {
-      navigate("letter", letter);
-    }
   }
 
   const urlParams = new URLSearchParams(location.search);
@@ -120,8 +112,9 @@ function BoardGameNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, s
           getPopupContainer={getPopupContainer}
         />
 
-        <span style={inputLabelStyle}>First Letter</span>
-        <LetterGrid active={search.startsWith} onToggle={toggleLetter} />
+        {/* The A–Z rail grid is gone: quick-scroll is the on-page CatalogPager now (the Music/
+            Arcade convention) — a letter tap scrolls the list instead of re-filtering it.
+            ?mode=letter URLs keep working; there's just no rail UI writing them any more. */}
       </div>
 
       <div style={{ marginTop: "auto", padding: "12px", borderTop: "1px solid var(--sidebar-border)" }}>
