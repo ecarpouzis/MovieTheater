@@ -2100,65 +2100,6 @@ namespace MovieTheater.Controllers
             return Json(userList);
         }
 
-        public class search
-        {
-            public string Type { get; set; }
-            public int? Count { get; set; }
-            public string StartsWith { get; set; }
-            public string Text { get; set; }
-            public string Actor { get; set; }
-            public string ReleaseYear { get; set; }
-            public string UploadDate { get; set; }
-        }
-
-        [HttpPost("/API/API_Movies")]
-        public async Task<IActionResult> API_Movies([FromBody] search search = null)
-        {
-            IQueryable<Movie> movies = movieDb.Movies.AsNoTracking().Where(m => m.ReviewBatch == null);
-            if (search == null)
-                return BadRequest(new { message = "No Search Data Provided" });
-
-            if (!String.IsNullOrEmpty(search.Type))
-                switch (search.Type)
-                {
-                    case "startsWith":
-                        if (search.StartsWith == "#")
-                        {
-                            movies = movies.Where(m => char.IsDigit(m.SimpleTitle[0]));
-                        }
-                        else
-                        {
-                            movies = movies.Where(m => m.SimpleTitle.StartsWith(search.StartsWith));
-                        }
-                        break;
-
-                    case "containsText":
-                        if (!String.IsNullOrEmpty(search.Text))
-                            movies = movies.Where(m => m.SimpleTitle.Contains(search.Text) || m.Title.Contains(search.Text));
-                        break;
-
-                    case "actorSearch":
-                        if (!String.IsNullOrEmpty(search.Actor))
-                            // Prefer the normalized cast (richer: full billed cast); fall back to
-                            // the legacy Actors string for movies not yet scraped.
-                            movies = movies.Where(m =>
-                                m.Credits.Any(c => c.Role == CreditRole.Actor && c.Person.DisplayName.Contains(search.Actor))
-                                || (m.Actors != null && m.Actors.Contains(search.Actor)));
-                        break;
-
-                    default:
-                        break;
-                }
-
-            if (search.Count.HasValue)
-                movies = movies.OrderBy(elem => Guid.NewGuid()).Take(search.Count.Value);
-
-            // Hard ceiling so a broad search can't dump the whole library as one JSON body.
-            const int MaxResults = 500;
-            var movieList = await movies.OrderBy(m => m.SimpleTitle).Take(MaxResults).ToListAsync();
-            return Json(movieList);
-        }
-
         private static bool IsValidImdbId(string input)
         {
             if (string.IsNullOrWhiteSpace(input))
