@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { MovieAPI } from "../../MovieAPI";
 import { preloadImages } from "../../preloadImages";
 import "./ChannelGrid.css";
+import FallbackImage from "../../Components/FallbackImage";
 
 const MS_PER_MIN = 60_000;
 
@@ -236,13 +237,13 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose }) {
               <div key={ch.id} className={`epg-row${isCurrent ? " epg-row--current" : ""}`}>
                 <button className="epg-chan" onClick={() => onPick(ch)} title={np ? `${ch.name} — now: ${np.title}` : `Watch ${ch.name}`}>
                   {np?.posterId ? (
-                    <img
+                    <FallbackImage
                       className="epg-chan-poster"
                       src={MovieAPI.getPosterThumbnail(np.posterId, np.posterVersion, np.kind)}
                       alt=""
                       loading="lazy"
                       decoding="async"
-                      onError={(e) => { e.currentTarget.style.visibility = "hidden"; }}
+                      fallback={<span className="epg-chan-poster epg-chan-poster--blank" aria-hidden="true" />}
                     />
                   ) : (
                     <span className="epg-chan-poster epg-chan-poster--blank" aria-hidden="true" />

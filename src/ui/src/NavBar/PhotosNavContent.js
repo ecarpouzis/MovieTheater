@@ -1,6 +1,5 @@
 import { useHistory, useLocation } from "react-router-dom";
-import LoginForm from "./LoginForm";
-import UserPanelHeader from "./UserPanelHeader";
+import { NavUserBlock } from "./navShared";
 import usePhotosAlbum, { photosNavGroups, photosSection } from "../hooks/usePhotosAlbum";
 
 // The family album's rail (docs/photos-plan.md §4).
@@ -27,17 +26,8 @@ function PhotosNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setA
 
   return (
     <>
-      {userData ? (
-        <div className="user-panel">
-          <UserPanelHeader
-            userData={userData}
-            setSettingsModalOpen={setSettingsModalOpen}
-            setAdminModalOpen={setAdminModalOpen}
-          />
-        </div>
-      ) : (
-        <LoginForm onUserLoggedIn={onUserLoggedIn} />
-      )}
+      <NavUserBlock userData={userData} onUserLoggedIn={onUserLoggedIn}
+        setSettingsModalOpen={setSettingsModalOpen} setAdminModalOpen={setAdminModalOpen} />
 
       {/* Nothing is listed until the server has said the album is open. The rail is not the gate —
           it just has no index to draw for someone the gate refused. */}

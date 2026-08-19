@@ -17,6 +17,7 @@ import { SubtitleStyleControls, SubtitleStylePreview, SubtitleSyncControls } fro
 import ChannelAdminModal from "./ChannelAdminModal";
 import ChannelGrid from "./ChannelGrid";
 import "./TvPage.css";
+import FallbackImage from "../../Components/FallbackImage";
 
 /**
  * /tv/:channelId? — passive broadcast mode (streaming-plan.md §7/§8).
@@ -1484,11 +1485,10 @@ function TvPage({ userData }) {
           {now?.current && (
             <div className="tv-bar-info">
               {now.current.posterId ? (
-                <img
+                <FallbackImage
                   className="tv-bar-poster"
                   src={MovieAPI.getPosterThumbnail(now.current.posterId, now.current.posterVersion, now.current.kind)}
                   alt=""
-                  onError={(e) => { e.currentTarget.style.display = "none"; }}
                 />
               ) : null}
               <span className="tv-bar-textcol">
@@ -1510,11 +1510,10 @@ function TvPage({ userData }) {
           {now?.next?.[0] && (
             <div className="tv-bar-upnext">
               {now.next[0].posterId ? (
-                <img
+                <FallbackImage
                   className="tv-bar-poster tv-bar-poster--sm"
                   src={MovieAPI.getPosterThumbnail(now.next[0].posterId, now.next[0].posterVersion, now.next[0].kind)}
                   alt=""
-                  onError={(e) => { e.currentTarget.style.display = "none"; }}
                 />
               ) : null}
               <span className="tv-bar-textcol">

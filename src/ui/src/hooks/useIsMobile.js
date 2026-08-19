@@ -1,13 +1,10 @@
-import { useState, useEffect } from "react";
+import useMediaQuery from "./useMediaQuery";
 
+// The app-shell "is this the phone layout?" switch, aligned with index.css's 768px breakpoint.
+// Implemented on matchMedia (via useMediaQuery) rather than a resize listener: consumers re-render
+// only when the answer CHANGES, not on every resize event.
 function useIsMobile(breakpoint = 768) {
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= breakpoint);
-  useEffect(() => {
-    const handler = () => setIsMobile(window.innerWidth <= breakpoint);
-    window.addEventListener("resize", handler);
-    return () => window.removeEventListener("resize", handler);
-  }, [breakpoint]);
-  return isMobile;
+  return useMediaQuery(`(max-width: ${breakpoint}px)`);
 }
 
 export default useIsMobile;

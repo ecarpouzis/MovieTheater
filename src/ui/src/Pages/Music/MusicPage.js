@@ -12,6 +12,7 @@ import MusicPlaylistManageModal from "./MusicPlaylistManageModal";
 import MusicSongRow from "./MusicSongRow";
 import "./MusicPage.css";
 import "./MusicPlaylists.css";
+import { formatDuration } from "../../utils/format";
 
 // ── The music library (music-plan.md §2.6) ──────────────────────────────────
 // Catalog strategy: artists (333) and albums (1.3k) load whole, once, and every view/search over
@@ -46,13 +47,6 @@ export const MUSIC_KINDS = [
 ];
 
 const kindOf = (raw) => (MUSIC_KINDS.some((k) => k.key && k.key === raw) ? raw : "");
-
-function formatTime(sec) {
-  if (!Number.isFinite(sec) || sec <= 0) return "";
-  const m = Math.floor(sec / 60);
-  const s = Math.floor(sec % 60);
-  return `${m}:${s < 10 ? "0" : ""}${s}`;
-}
 
 function AlbumCard({ album, onOpen }) {
   return (
@@ -330,7 +324,7 @@ function MusicPage({ userData }) {
                 no="▶"
                 title={t.title}
                 meta={`${t.artistName}${t.albumTitle ? ` — ${t.albumTitle}` : ""}`}
-                time={formatTime(t.durationSec)}
+                time={formatDuration(t.durationSec)}
                 disabled={!player.isPlayable(t)}
                 onPlay={() => playSearchSong(i)}
                 onQueue={() => player.enqueue([searchSongEntries()[i]])}
@@ -416,7 +410,7 @@ function MusicPage({ userData }) {
                     key={t.id}
                     no="▶"
                     title={t.title}
-                    time={formatTime(t.durationSec)}
+                    time={formatDuration(t.durationSec)}
                     disabled={!player.isPlayable(t)}
                     onPlay={() => playLooseTracks(i)}
                     onQueue={() => player.enqueue([looseTrackEntries()[i]])}

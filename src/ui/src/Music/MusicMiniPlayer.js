@@ -8,18 +8,12 @@ import MusicLyricsSettingsButton, { LYRICS_DEFAULTS } from "./MusicLyricsSetting
 import { IconPrev, IconNext, IconPlay, IconPause } from "./MusicTransportIcons";
 import MusicPlaylistPickerModal from "../Pages/Music/MusicPlaylistPickerModal";
 import "./MusicMiniPlayer.css";
+import { formatClock } from "../utils/format";
 
 // ── The persistent bottom bar (music-plan.md §2.6) ──────────────────────────
 // Rendered by the provider whenever a track is loaded, on EVERY page of the site. Subscribes to the
 // <audio> element's own events for the playhead so only this bar re-renders per tick — the context
 // (and the rest of the app) never sees position changes.
-
-function formatTime(sec) {
-  if (!Number.isFinite(sec) || sec < 0) return "0:00";
-  const m = Math.floor(sec / 60);
-  const s = Math.floor(sec % 60);
-  return `${m}:${s < 10 ? "0" : ""}${s}`;
-}
 
 function MusicMiniPlayer() {
   const player = useMusicPlayer();
@@ -311,7 +305,7 @@ function MusicMiniPlayer() {
       </div>
 
       <div className={`music-miniplayer-seek${buffering ? " music-miniplayer-seek--buffering" : ""}`}>
-        <span className="music-miniplayer-time">{formatTime(position)}</span>
+        <span className="music-miniplayer-time">{formatClock(position)}</span>
         <input
           type="range"
           min={0}
@@ -327,7 +321,7 @@ function MusicMiniPlayer() {
           }}
           aria-label="Seek"
         />
-        <span className="music-miniplayer-time">{formatTime(effectiveDuration)}</span>
+        <span className="music-miniplayer-time">{formatClock(effectiveDuration)}</span>
       </div>
 
       <div className="music-miniplayer-right">

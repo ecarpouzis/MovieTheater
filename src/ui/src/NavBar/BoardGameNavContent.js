@@ -1,43 +1,9 @@
-import { Input, Button, Select } from "antd";
+import { Input, Select } from "antd";
 import { useHistory, useLocation } from "react-router-dom";
-import LoginForm from "./LoginForm";
-import UserPanelHeader from "./UserPanelHeader";
+import { inputLabelStyle, getPopupContainer, NavUserBlock, useSectionParams, LetterGrid } from "./navShared";
 import poweredByBggImage from "../../powered_by_BGG_SM.png";
 
 const { Search } = Input;
-
-const inputLabelStyle = {
-  display: "block",
-  fontSize: "10px",
-  fontWeight: "600",
-  color: "var(--sidebar-text-muted)",
-  textTransform: "uppercase",
-  letterSpacing: "0.8px",
-  marginBottom: "5px",
-  marginTop: "14px",
-};
-
-const searchLetterStyle = {
-  fontWeight: "bold",
-  position: "absolute",
-  width: "100%",
-  height: "1em",
-  lineHeight: "1em",
-  top: "50%",
-  left: "0px",
-  marginTop: "-0.5em",
-};
-
-const searchLetters = ["#","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"];
-
-// Log Out is not here — it lives in the shared navbar footer, below the theme toggle.
-function BoardGameUserPanel({ userData, setSettingsModalOpen, setAdminModalOpen }) {
-  return (
-    <div className="user-panel">
-      <UserPanelHeader userData={userData} setSettingsModalOpen={setSettingsModalOpen} setAdminModalOpen={setAdminModalOpen} />
-    </div>
-  );
-}
 
 const playerOptions = [
   { value: "", label: "Any player count" },
@@ -73,18 +39,11 @@ const sortOptions = [
 function BoardGameNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setAdminModalOpen, search }) {
   const history = useHistory();
   const location = useLocation();
-  const getSelectPopupContainer = (trigger) => trigger.parentElement;
-
+  const updateParam = useSectionParams("/boardgames");
   function navigate(mode, value = "") {
     const params = new URLSearchParams(location.search);
     if (mode) { params.set("mode", mode); } else { params.delete("mode"); }
     if (value && value.trim()) { params.set("value", value.trim()); } else { params.delete("value"); }
-    history.push({ pathname: "/boardgames", search: params.toString() ? `?${params.toString()}` : "" });
-  }
-
-  function updateParam(key, value) {
-    const params = new URLSearchParams(location.search);
-    if (value != null && value !== "") { params.set(key, value); } else { params.delete(key); }
     history.push({ pathname: "/boardgames", search: params.toString() ? `?${params.toString()}` : "" });
   }
 
@@ -104,13 +63,10 @@ function BoardGameNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, s
 
   return (
     <>
-      {userData ? (
-        <BoardGameUserPanel userData={userData} setSettingsModalOpen={setSettingsModalOpen} setAdminModalOpen={setAdminModalOpen} />
-      ) : (
-        <LoginForm onUserLoggedIn={onUserLoggedIn} popupClassName="boardgame-login-dropdown" />
-      )}
+      <NavUserBlock userData={userData} onUserLoggedIn={onUserLoggedIn}
+        setSettingsModalOpen={setSettingsModalOpen} setAdminModalOpen={setAdminModalOpen} />
 
-      <div id="SearchToolContainer" style={{ padding: "16px 16px 8px", color: "white", borderTop: "1px solid var(--sidebar-border)" }}>
+      <div className="nav-search-tools" style={{ padding: "16px 16px 8px", color: "white", borderTop: "1px solid var(--sidebar-border)" }}>
         <span style={{ ...inputLabelStyle, marginTop: 0 }}>Game Title</span>
         {/* Single-field <form> so a tablet keyboard's Enter searches instead of jumping focus to the
             Players dropdown below (see SearchTools for the full note). onSearch still navigates. */}
@@ -130,8 +86,8 @@ function BoardGameNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, s
           value={activePlayers ?? ""}
           onChange={(v) => updateParam("players", v)}
           options={playerOptions}
-          classNames={{ popup: { root: "boardgame-login-dropdown" } }}
-          getPopupContainer={getSelectPopupContainer}
+          classNames={{ popup: { root: "nav-dropdown" } }}
+          getPopupContainer={getPopupContainer}
         />
 
         <span style={inputLabelStyle}>Age</span>
@@ -140,8 +96,8 @@ function BoardGameNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, s
           value={activeAge ?? ""}
           onChange={(v) => updateParam("age", v)}
           options={ageOptions}
-          classNames={{ popup: { root: "boardgame-login-dropdown" } }}
-          getPopupContainer={getSelectPopupContainer}
+          classNames={{ popup: { root: "nav-dropdown" } }}
+          getPopupContainer={getPopupContainer}
         />
 
         <span style={inputLabelStyle}>Play Time</span>
@@ -150,8 +106,8 @@ function BoardGameNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, s
           value={activeTime ?? ""}
           onChange={(v) => updateParam("time", v)}
           options={timeOptions}
-          classNames={{ popup: { root: "boardgame-login-dropdown" } }}
-          getPopupContainer={getSelectPopupContainer}
+          classNames={{ popup: { root: "nav-dropdown" } }}
+          getPopupContainer={getPopupContainer}
         />
 
         <span style={inputLabelStyle}>Sort By</span>
@@ -160,32 +116,12 @@ function BoardGameNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, s
           value={activeSort ?? ""}
           onChange={(v) => updateParam("sort", v)}
           options={sortOptions}
-          classNames={{ popup: { root: "boardgame-login-dropdown" } }}
-          getPopupContainer={getSelectPopupContainer}
+          classNames={{ popup: { root: "nav-dropdown" } }}
+          getPopupContainer={getPopupContainer}
         />
 
         <span style={inputLabelStyle}>First Letter</span>
-        {/* Plain CSS grid (.letter-grid in index.css) — this was an antd <List grid>, which v6
-            deprecated and v7 removes. */}
-        <div className="letter-grid" style={{ paddingBottom: "20px" }}>
-          {searchLetters.map((item) => (
-            <Button
-              key={item}
-              // search-letter-btn carries the 36px square + position:relative that
-              // searchLetterStyle's absolutely-positioned span needs to center itself.
-              className="search-letter-btn"
-              onClick={() => toggleLetter(item)}
-              style={{
-                width: "36px",
-                backgroundColor: item === search.startsWith ? "var(--accent)" : "var(--sidebar-pill-bg)",
-                color: item === search.startsWith ? "#fff" : "var(--sidebar-text-muted)",
-                borderColor: item === search.startsWith ? "var(--accent)" : "var(--sidebar-input-border)",
-              }}
-            >
-              <span style={searchLetterStyle}>{item}</span>
-            </Button>
-          ))}
-        </div>
+        <LetterGrid active={search.startsWith} onToggle={toggleLetter} />
       </div>
 
       <div style={{ marginTop: "auto", padding: "12px", borderTop: "1px solid var(--sidebar-border)" }}>

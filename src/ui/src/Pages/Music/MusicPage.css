@@ -79,14 +79,18 @@
   font-size: 13px;
 }
 
-/* ── Album grid ── */
-.music-album-grid {
+/* ── Album + artist grids ──
+   One shelf, one card shape: the artist card deliberately mirrors the album card (the artist's
+   first album-with-art stands in as their portrait), so the shared shell is declared once. */
+.music-album-grid,
+.music-artist-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 14px;
 }
 
-.music-album-card {
+.music-album-card,
+.music-artist-card {
   background: var(--card-surface);
   border: 1px solid var(--card-border);
   border-radius: 10px;
@@ -100,7 +104,8 @@
   gap: 6px;
 }
 
-.music-album-card:hover {
+.music-album-card:hover,
+.music-artist-card:hover {
   box-shadow: var(--card-shadow-hover);
   transform: translateY(-2px);
 }
@@ -157,34 +162,7 @@
   color: var(--accent);
 }
 
-/* ── Artist grid ──
-   Same card shape as an album's, because it now carries the same square: the artist's first
-   album-with-art stands in as their portrait, so the two views read as one shelf. */
-.music-artist-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 14px;
-}
-
-.music-artist-card {
-  background: var(--card-surface);
-  border: 1px solid var(--card-border);
-  border-radius: 10px;
-  box-shadow: var(--card-shadow);
-  padding: 10px;
-  cursor: pointer;
-  text-align: left;
-  transition: box-shadow 0.15s ease, transform 0.15s ease;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.music-artist-card:hover {
-  box-shadow: var(--card-shadow-hover);
-  transform: translateY(-2px);
-}
-
+/* ── Artist card text (shell shared with the album card above) ── */
 .music-artist-card-name {
   font-weight: 600;
   font-size: 14px;

@@ -12,7 +12,7 @@ import { MovieAPI } from "../MovieAPI";
 // Props:
 //   onUserLoggedIn(username, password?) → Promise<{ ok, requiresPassword?, message? }> (from App.js)
 //   popupClassName — antd dropdown class (defaults to the shared token-styled login dropdown)
-function LoginForm({ onUserLoggedIn, popupClassName = "login-user-dropdown" }) {
+function LoginForm({ onUserLoggedIn, popupClassName = "nav-dropdown" }) {
   const [userlist, setUserlist] = useState([]);
   const [filteredUserlist, setFilteredUserlist] = useState([]);
   const [searchValue, setSearchValue] = useState(null);

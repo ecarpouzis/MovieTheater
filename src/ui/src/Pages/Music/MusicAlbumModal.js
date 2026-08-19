@@ -6,16 +6,10 @@ import MusicAlbumArt from "../../Music/MusicAlbumArt";
 import MusicSongRow from "./MusicSongRow";
 import "./MusicPage.css";
 import "./MusicPlaylists.css";
+import { formatDuration } from "../../utils/format";
 
 // Album detail + tracklist (music-plan.md §2.6): hero header → scrolling tracklist → play actions.
 // Follows the site's modal convention (GameModal peers) in spirit; antd Modal carries the shell.
-
-function formatTime(sec) {
-  if (!Number.isFinite(sec) || sec <= 0) return "";
-  const m = Math.floor(sec / 60);
-  const s = Math.floor(sec % 60);
-  return `${m}:${s < 10 ? "0" : ""}${s}`;
-}
 
 function MusicAlbumModal({ albumId, onClose, onAddToPlaylist }) {
   const player = useMusicPlayer();
@@ -129,7 +123,7 @@ function MusicAlbumModal({ albumId, onClose, onAddToPlaylist }) {
                 no={t.trackNo ?? "·"}
                 title={t.title}
                 disc={t.discNo != null && t.discNo > 1 ? `CD${t.discNo}` : null}
-                time={formatTime(t.durationSec)}
+                time={formatDuration(t.durationSec)}
                 disabled={!player.isPlayable(t)}
                 hint={t.missing
                   ? "File is missing"

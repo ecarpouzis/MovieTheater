@@ -6,6 +6,7 @@ import UserMovieOptions, { useViewingToggles } from "./UserMovieOptions";
 import WatchButton from "../Watch/WatchButton";
 import FileMappingEditor from "./FileMappingEditor";
 import SubtitlePicker from "./SubtitlePicker";
+import { formatRuntime } from "../../utils/format";
 import "./MovieModal.css";
 
 const { TextArea } = Input;
@@ -21,14 +22,6 @@ function EditField({ label, value, onChange, multiline = false }) {
       )}
     </div>
   );
-}
-
-// Format whole minutes as e.g. "2h 16m" / "47m", matching IMDB's normalized runtime.
-function formatRuntime(minutes) {
-  if (!minutes || minutes <= 0) return null;
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return h > 0 ? `${h}h${m ? " " + m + "m" : ""}` : `${m}m`;
 }
 
 // Parse a stored "#RRGGBB" dominant poster color into an "r, g, b" triple for use

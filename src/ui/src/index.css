@@ -9,6 +9,16 @@ body {
   /* font-family / background / color come from theme.css tokens */
 }
 
+/* Form controls inherit the page's font instead of each UA's own default. This used to be
+   re-declared per component (nine scattered `font-family: inherit` rules); antd controls are
+   unaffected — its runtime CSS sets its own family at higher specificity. */
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
 html {
   box-sizing: border-box;
   /* How much fixed chrome the WINDOW scrolls underneath. Zero on desktop: the scroller there is
@@ -63,8 +73,7 @@ html {
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
-    monospace;
+  font-family: var(--font-mono);
 }
 
 .actors-container {
@@ -251,7 +260,7 @@ img {
 }
 
 /* Search button consistency */
-#SearchToolContainer .ant-input-search-btn {
+.nav-search-tools .ant-input-search-btn {
   height: 100% !important;
   min-height: 32px !important;
   padding: 4px 16px !important;
@@ -260,22 +269,22 @@ img {
   justify-content: center !important;
 }
 
-#SearchToolContainer .ant-input-search .ant-btn {
+.nav-search-tools .ant-input-search .ant-btn {
   height: 100% !important;
   min-height: 32px !important;
 }
 
-#SearchToolContainer .ant-input-search {
+.nav-search-tools .ant-input-search {
   display: flex !important;
 }
 
 /* Alphabet list scrollable space */
-#SearchToolContainer .letter-grid {
+.nav-search-tools .letter-grid {
   padding-bottom: 30px !important;
 }
 
-#SearchToolContainer .search-letter-btn:hover,
-#SearchToolContainer .search-letter-btn:focus {
+.nav-search-tools .search-letter-btn:hover,
+.nav-search-tools .search-letter-btn:focus {
   background-color: var(--accent) !important;
   border-color: var(--accent) !important;
   color: #ffffff !important;
@@ -337,21 +346,21 @@ img {
 
 /* Desktop alphabet button styling (original).
    These MUST stay scoped to .search-letter-btn, not every .ant-btn in the container: the
-   #SearchToolContainer id is reused by three different sidebars (SearchTools, BoardGameNavContent,
+   nav-search-tools class is shared by three different sidebars (SearchTools, BoardGameNavContent,
    ArcadeNavContent). A blanket .ant-btn rule squashed Arcade's "Clear filters" into a 36px square
    with its label absolutely positioned outside the box. */
 @media (min-width: 769px) {
-  #SearchToolContainer .letter-grid {
+  .nav-search-tools .letter-grid {
     row-gap: 10px;
   }
 
-  #SearchToolContainer .search-letter-btn {
+  .nav-search-tools .search-letter-btn {
     width: 36px !important;
     height: 36px !important;
     position: relative !important;
   }
 
-  #SearchToolContainer .search-letter-btn span {
+  .nav-search-tools .search-letter-btn span {
     font-size: 11px !important;
     font-weight: bold !important;
     position: absolute;
@@ -363,17 +372,17 @@ img {
     margin-top: -0.5em;
   }
 
-  #SearchToolContainer .letter-grid {
+  .nav-search-tools .letter-grid {
     padding-right: 0 !important;
   }
 
   /* Desktop search button consistency */
-  #SearchToolContainer .ant-input-search-btn {
+  .nav-search-tools .ant-input-search-btn {
     height: 32px !important;
     min-height: 32px !important;
   }
 
-  #SearchToolContainer .ant-input-search .ant-btn {
+  .nav-search-tools .ant-input-search .ant-btn {
     height: 32px !important;
     min-height: 32px !important;
   }

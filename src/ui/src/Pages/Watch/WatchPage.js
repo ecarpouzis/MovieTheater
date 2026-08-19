@@ -4,15 +4,8 @@ import { MovieAPI } from "../../MovieAPI";
 import { autoBpsLabel, abrProfileFor, isAutoQuality } from "../../streamAbr";
 import { useAdaptiveBitrate } from "../../useAdaptiveBitrate";
 import VideoPlayer, { formatTime, TICKS_PER_SECOND, QUALITY_LADDER } from "./VideoPlayer";
+import { formatRuntime } from "../../utils/format";
 import "./WatchPage.css";
-
-// Format whole minutes as "2h 16m", matching the modal's convention.
-function formatRuntime(minutes) {
-  if (!minutes || minutes <= 0) return null;
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return h > 0 ? `${h}h${m ? " " + m + "m" : ""}` : `${m}m`;
-}
 
 /**
  * /watch/:movieId — the screening room (streaming-plan.md §7).

@@ -1,20 +1,8 @@
 import { Input } from "antd";
-import { useHistory, useLocation } from "react-router-dom";
-import LoginForm from "./LoginForm";
-import UserPanelHeader from "./UserPanelHeader";
+import { useLocation } from "react-router-dom";
+import { inputLabelStyle, NavUserBlock, useSectionParams } from "./navShared";
 
 const { Search } = Input;
-
-const inputLabelStyle = {
-  display: "block",
-  fontSize: "10px",
-  fontWeight: "600",
-  color: "var(--sidebar-text-muted)",
-  textTransform: "uppercase",
-  letterSpacing: "0.8px",
-  marginBottom: "5px",
-  marginTop: "14px",
-};
 
 // Music rail (music-plan.md §2.6): search + the shelf picker + the artists/albums view toggle.
 // Filters live in the URL (?view=, ?q=, ?kind=) — the arcade convention — so back/forward and
@@ -30,23 +18,18 @@ const SHELVES = [
 ];
 
 function MusicNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setAdminModalOpen }) {
-  const history = useHistory();
   const location = useLocation();
+  const setParam = useSectionParams("/music");
 
   const params = new URLSearchParams(location.search);
   const activeView = params.get("view") === "albums" ? "albums" : "artists";
   const activeQ = params.get("q") || "";
   const activeKind = SHELVES.some((s) => s.key && s.key === params.get("kind")) ? params.get("kind") : "";
 
-  function updateParam(key, value) {
-    const p = new URLSearchParams(location.search);
-    if (value != null && value !== "") p.set(key, value);
-    else p.delete(key);
-    // Both of these leave whatever artist was drilled into: a view switch changes what a card even
-    // is, and a shelf switch changes whether that artist is on this shelf at all.
-    if (key === "view" || key === "kind") p.delete("artist");
-    history.push({ pathname: "/music", search: p.toString() ? `?${p.toString()}` : "" });
-  }
+  // A view switch changes what a card even is, and a shelf switch changes whether the drilled-into
+  // artist is on this shelf at all — both leave the artist behind.
+  const updateParam = (key, value) =>
+    setParam(key, value, key === "view" || key === "kind" ? ["artist"] : []);
 
   // One pill, two callers: the view toggle and the shelf picker are the same control in the same
   // rail, so they share the shape and only differ in which value they compare against.
@@ -63,15 +46,10 @@ function MusicNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setAd
 
   return (
     <>
-      {userData ? (
-        <div className="user-panel">
-          <UserPanelHeader userData={userData} setSettingsModalOpen={setSettingsModalOpen} setAdminModalOpen={setAdminModalOpen} />
-        </div>
-      ) : (
-        <LoginForm onUserLoggedIn={onUserLoggedIn} />
-      )}
+      <NavUserBlock userData={userData} onUserLoggedIn={onUserLoggedIn}
+        setSettingsModalOpen={setSettingsModalOpen} setAdminModalOpen={setAdminModalOpen} />
 
-      <div style={{ padding: "16px 16px 8px", borderTop: "1px solid var(--sidebar-border)" }}>
+      <div className="nav-search-tools" style={{ padding: "16px 16px 8px", borderTop: "1px solid var(--sidebar-border)" }}>
         <span style={{ ...inputLabelStyle, marginTop: 0 }}>Search</span>
         <form onSubmit={(e) => e.preventDefault()}>
           <Search

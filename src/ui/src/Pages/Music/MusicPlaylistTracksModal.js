@@ -7,6 +7,7 @@ import { useMusicPlayer } from "../../Music/MusicPlayerContext";
 import MusicSongRow from "./MusicSongRow";
 import "./MusicPage.css";
 import "./MusicPlaylists.css";
+import { formatDuration } from "../../utils/format";
 
 // ── Playlist tracklist ──────────────────────────────────────────────────────
 // Until this existed a playlist was all-or-nothing: Play and Shuffle both REPLACED the queue with
@@ -17,13 +18,6 @@ import "./MusicPlaylists.css";
 // This is the album modal's shape applied to a playlist, deliberately: same header verbs, same
 // MusicSongRow rows, same ☰/＋ trailing buttons. A playlist and an album are both "a list of tracks
 // you want to do something with", and someone who has used one should not have to learn the other.
-
-function formatTime(sec) {
-  if (!Number.isFinite(sec) || sec <= 0) return "";
-  const m = Math.floor(sec / 60);
-  const s = Math.floor(sec % 60);
-  return `${m}:${s < 10 ? "0" : ""}${s}`;
-}
 
 export default function MusicPlaylistTracksModal({ playlistId, open, onClose, onAddToPlaylist }) {
   const player = useMusicPlayer();
@@ -137,7 +131,7 @@ export default function MusicPlaylistTracksModal({ playlistId, open, onClose, on
                   // rows apart; the album almost never is, and carrying it doubled the length of
                   // the one element competing with the title for a phone's width.
                   meta={t.artistName}
-                  time={formatTime(t.durationSec)}
+                  time={formatDuration(t.durationSec)}
                   disabled={!player.isPlayable(t)}
                   hint={t.missing
                     ? "File is missing"

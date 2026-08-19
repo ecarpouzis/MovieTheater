@@ -11,19 +11,13 @@ import "./MusicNowPlaying.css";
 // which lives in the playlists sheet, so deep-linking straight to /music/now-playing rendered them
 // as bare browser buttons until the library page had been visited.
 import "./MusicPlaylists.css";
+import { formatClock } from "../../utils/format";
 
 // ── Now Playing (music-plan.md §2.6/§2.7/§2.8) ──────────────────────────────
 // The full-player view: big art (or the visualizer in its place), the queue, and a lyrics pane that
 // follows the audio. The playhead is read off the <audio> element via player.audioRef and kept in
 // THIS component's state — deliberately not in the context, which would re-render the whole app
 // four times a second.
-
-function formatTime(sec) {
-  if (!Number.isFinite(sec) || sec < 0) return "0:00";
-  const m = Math.floor(sec / 60);
-  const s = Math.floor(sec % 60);
-  return `${m}:${s < 10 ? "0" : ""}${s}`;
-}
 
 export default function MusicNowPlayingPage({ userData }) {
   const player = useMusicPlayer();
@@ -115,7 +109,7 @@ export default function MusicNowPlayingPage({ userData }) {
             {[current.artist, current.album].filter(Boolean).join(" — ")}
           </div>
           <div className="music-np-times">
-            {formatTime(position)} / {formatTime(effectiveDuration)}
+            {formatClock(position)} / {formatClock(effectiveDuration)}
           </div>
           {/* Toggle · transport · toggle, rather than five same-shaped pills in a row that wrapped
               wherever it ran out of width — on a phone that stranded "Show visualizer" alone on a

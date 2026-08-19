@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createHls } from "../../streamEngine";
+import { formatDuration } from "../../utils/format";
 import { detectStreamCapabilities } from "../../streamCapabilities";
 import { MovieAPI } from "../../MovieAPI";
 
@@ -17,16 +18,7 @@ import { MovieAPI } from "../../MovieAPI";
 // file, so there is nothing to play and the button would be a lie), an error the server explained, or
 // the video.
 
-export function formatDuration(seconds) {
-  if (!seconds || seconds <= 0 || !Number.isFinite(seconds)) return null;
-  const whole = Math.round(seconds);
-  const h = Math.floor(whole / 3600);
-  const m = Math.floor((whole % 3600) / 60);
-  const s = whole % 60;
-  const pad = (n) => String(n).padStart(2, "0");
-  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
-}
-
+export { formatDuration } from "../../utils/format";
 /** A stable per-browser id so Jellyfin counts viewers separately (the site-wide DeviceId convention). */
 function deviceToken() {
   try {

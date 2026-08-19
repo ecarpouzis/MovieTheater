@@ -600,30 +600,20 @@
 
 /* Popups (login autocomplete + filter selects) portal to the sider parent, so
    the data-feature tokens on <html> apply. One shared, token-based skin. */
-.login-user-dropdown.ant-select-dropdown,
-.boardgame-login-dropdown.ant-select-dropdown,
-.arcade-login-dropdown.ant-select-dropdown {
+.nav-dropdown.ant-select-dropdown {
   background: var(--sidebar-bg-elev) !important;
   border: 1px solid var(--sidebar-border) !important;
 }
-.login-user-dropdown .ant-select-item-option,
-.boardgame-login-dropdown .ant-select-item-option,
-.arcade-login-dropdown .ant-select-item-option {
+.nav-dropdown .ant-select-item-option {
   color: #fff !important;
 }
-.login-user-dropdown .ant-select-item-option-active:not(.ant-select-item-option-disabled),
-.boardgame-login-dropdown .ant-select-item-option-active:not(.ant-select-item-option-disabled),
-.arcade-login-dropdown .ant-select-item-option-active:not(.ant-select-item-option-disabled) {
+.nav-dropdown .ant-select-item-option-active:not(.ant-select-item-option-disabled) {
   background: var(--accent-soft) !important;
 }
-.login-user-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled),
-.boardgame-login-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled),
-.arcade-login-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
+.nav-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
   background: var(--accent) !important;
 }
-.login-user-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled) .ant-select-item-option-content,
-.boardgame-login-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled) .ant-select-item-option-content,
-.arcade-login-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled) .ant-select-item-option-content {
+.nav-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled) .ant-select-item-option-content {
   color: #fff !important;
 }
 /* ============================================================================
@@ -701,7 +691,7 @@
   margin-top: 0;
   padding-top: 16px;
 }
-.navbar-arcade-theme #SearchToolContainer {
+.navbar-arcade-theme .nav-search-tools {
   padding: 0 18px 24px;
 }
 .navbar-arcade-theme .ant-select,
@@ -813,14 +803,12 @@
 }
 
 /* The system list scrolls; give it an always-visible thumb on the dark ground. */
-.arcade-login-dropdown .rc-virtual-list-scrollbar,
-.boardgame-login-dropdown .rc-virtual-list-scrollbar {
+.nav-dropdown .rc-virtual-list-scrollbar {
   width: 10px !important;
   background: rgba(255, 255, 255, 0.12) !important;
   border-radius: 5px !important;
 }
-.arcade-login-dropdown .rc-virtual-list-scrollbar-thumb,
-.boardgame-login-dropdown .rc-virtual-list-scrollbar-thumb {
+.nav-dropdown .rc-virtual-list-scrollbar-thumb {
   background: var(--sidebar-text-muted) !important;
   border-radius: 5px !important;
 }
@@ -914,7 +902,6 @@
   border-left: 2px solid transparent;
   color: var(--sidebar-text);
   cursor: pointer;
-  font-family: inherit;
   font-size: 13px;
   padding: 8px 10px;
   text-align: left;

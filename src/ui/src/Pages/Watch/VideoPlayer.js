@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Hls from "hls.js";
 import { createHls, bandwidthSample } from "../../streamEngine";
+import { formatClock as formatTime } from "../../utils/format";
 import { useWakeLock } from "../../useWakeLock";
 import { useMediaSession } from "../../useMediaSession";
 import { usePictureInPicture } from "../../usePictureInPicture";
@@ -80,16 +81,6 @@ export function channelLayout(channels) {
   if (channels === 2) return "2.0";
   if (channels === 1) return "Mono";
   return `${channels}ch`;
-}
-
-function formatTime(totalSeconds) {
-  if (!isFinite(totalSeconds) || totalSeconds < 0) totalSeconds = 0;
-  const s = Math.floor(totalSeconds % 60);
-  const m = Math.floor((totalSeconds / 60) % 60);
-  const h = Math.floor(totalSeconds / 3600);
-  const mm = h > 0 ? String(m).padStart(2, "0") : String(m);
-  const ss = String(s).padStart(2, "0");
-  return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
 }
 
 /**

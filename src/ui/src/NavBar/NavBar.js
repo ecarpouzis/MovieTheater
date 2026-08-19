@@ -30,6 +30,31 @@ import arcadeIcon from "../assets/icons/joystick.svg";
 import musicIcon from "../assets/icons/music.svg";
 import photosIcon from "../assets/icons/photos.svg";
 
+// Photos is the one section whose word-mark is a NODE rather than a word: "Photos" alone reads as
+// one more library next to Movie Theater, and the second line is what says whose album it is. Every
+// other section still passes a plain string, so their markup is unchanged.
+const photosWordmark = (
+  <span className="navbar-photos-wordmark">
+    Photos
+    <span className="navbar-photos-wordmark-sub">Family album</span>
+  </span>
+);
+
+// One row per section, first prefix match wins; the last row (no prefix) is Movies, the fallback.
+// This table is the single place a section declares its rail: icon (arcade's joystick glyph was
+// dropped in the browse redesign - the switcher menu still shows it), word-mark, theme class,
+// data-feature token for theme.css, sider width (arcade's rail is 248px per the design handoff;
+// antd's default is 200), and the rail body. Movies has no Content row - its rail is the inline
+// Login + SearchTools pair, the one rail that also owns the playlists modal. Adding a section =
+// adding a row here plus its tokens in theme.css.
+const SECTIONS = [
+  { key: "arcade", prefix: "/arcade", icon: null, title: "Arcade", themeClass: " navbar-arcade-theme", siderWidth: 248, Content: ArcadeNavContent },
+  { key: "boardgames", prefix: "/boardgames", icon: boardGamesIcon, title: "Board Games", themeClass: " navbar-boardgames-theme", Content: BoardGameNavContent },
+  { key: "music", prefix: "/music", icon: musicIcon, title: "Music", themeClass: " navbar-music-theme", Content: MusicNavContent },
+  { key: "photos", prefix: "/photos", icon: photosIcon, title: photosWordmark, themeClass: " navbar-photos-theme", Content: PhotosNavContent },
+  { key: "movies", icon: movieTheaterIcon, title: "Movie Theater", themeClass: "" },
+];
+
 function NavBar({
   search,
   resetSearch,
@@ -220,47 +245,19 @@ function NavBar({
     moviesWantToWatchSearch,
   ]);
 
-  const isBoardGames = location.pathname.startsWith("/boardgames");
-  const isArcade = location.pathname.startsWith("/arcade");
-  const isMusic = location.pathname.startsWith("/music");
-  const isPhotos = location.pathname.startsWith("/photos");
-  const isMovies = !isArcade && !isBoardGames && !isMusic && !isPhotos;
-  // Arcade's rail carries a bare word-mark: its joystick glyph was dropped in the browse redesign.
-  // The switcher menu still shows the icon, so the section stays recognisable there.
-  const sectionIcon = isArcade ? null : isBoardGames ? boardGamesIcon : isMusic ? musicIcon : isPhotos ? photosIcon : movieTheaterIcon;
-  // Photos is the one section whose word-mark is a NODE rather than a word: "Photos" alone reads as
-  // one more library next to Movie Theater, and the second line is what says whose album it is. Every
-  // other section still passes a plain string, so their markup is unchanged.
-  const photosWordmark = (
-    <span className="navbar-photos-wordmark">
-      Photos
-      <span className="navbar-photos-wordmark-sub">Family album</span>
-    </span>
-  );
-  const sectionTitle = isArcade ? "Arcade" : isBoardGames ? "Board Games" : isMusic ? "Music" : isPhotos ? photosWordmark : "Movie Theater";
-  const navThemeClass = isArcade
-    ? " navbar-arcade-theme"
-    : isBoardGames
-    ? " navbar-boardgames-theme"
-    : isMusic
-    ? " navbar-music-theme"
-    : isPhotos
-    ? " navbar-photos-theme"
-    : "";
+  const section = SECTIONS.find((sec) => sec.prefix && location.pathname.startsWith(sec.prefix))
+    ?? SECTIONS[SECTIONS.length - 1];
+  const isMovies = section.key === "movies";
+  const isPhotos = section.key === "photos";
+  const sectionIcon = section.icon;
+  const sectionTitle = section.title;
+  const navThemeClass = section.themeClass;
 
   // Publish the active feature to <html> so theme.css re-tints its tokens (accent, sidebar,
   // content bg) per section. Runs on every route change.
   useEffect(() => {
-    document.documentElement.dataset.feature = isArcade
-      ? "arcade"
-      : isBoardGames
-      ? "boardgames"
-      : isMusic
-      ? "music"
-      : isPhotos
-      ? "photos"
-      : "movies";
-  }, [isArcade, isBoardGames, isMusic, isPhotos]);
+    document.documentElement.dataset.feature = section.key;
+  }, [section.key]);
 
   // Sun/moon light-dark toggle — present on every feature's header/top bar.
   const themeToggleButton = (
@@ -375,31 +372,10 @@ function NavBar({
     </>
   );
 
-  // JSX can be stored in a variable just like any other value and rendered later.
-  // The empty tags <> </> are a fragment — a grouping wrapper that emits no DOM element.
-  const navContent = isArcade ? (
-    <ArcadeNavContent
-      userData={userData}
-      onUserLoggedIn={onUserLoggedIn}
-      setSettingsModalOpen={setSettingsModalOpen}
-      setAdminModalOpen={setAdminModalOpen}
-    />
-  ) : isMusic ? (
-    <MusicNavContent
-      userData={userData}
-      onUserLoggedIn={onUserLoggedIn}
-      setSettingsModalOpen={setSettingsModalOpen}
-      setAdminModalOpen={setAdminModalOpen}
-    />
-  ) : isPhotos ? (
-    <PhotosNavContent
-      userData={userData}
-      onUserLoggedIn={onUserLoggedIn}
-      setSettingsModalOpen={setSettingsModalOpen}
-      setAdminModalOpen={setAdminModalOpen}
-    />
-  ) : isBoardGames ? (
-    <BoardGameNavContent
+  // Every section rail takes the same props (boardgames also reads `search`; the rest ignore it).
+  // Movies is the fallback: the inline Login + SearchTools pair.
+  const navContent = section.Content ? (
+    <section.Content
       userData={userData}
       onUserLoggedIn={onUserLoggedIn}
       setSettingsModalOpen={setSettingsModalOpen}
@@ -466,9 +442,9 @@ function NavBar({
 
   return (
     <>
-      {/* Arcade's rail is 248px wide (design handoff); every other feature keeps antd's 200px default.
-          NavBar.css mirrors this in --sider-width so the switcher dropdown spans the right width. */}
-      <Layout.Sider className={`navbar-sider${navThemeClass}`} width={isArcade ? 248 : 200} trigger={null} collapsible collapsed={collapsed} onCollapse={onCollapse}>
+      {/* NavBar.css mirrors the per-section width in --sider-width so the switcher dropdown spans
+          the right width. */}
+      <Layout.Sider className={`navbar-sider${navThemeClass}`} width={section.siderWidth ?? 200} trigger={null} collapsible collapsed={collapsed} onCollapse={onCollapse}>
         <div className="navbar-sider-inner">
           <div className={`navbar-sider-header${navThemeClass}`}>
             <div className="navbar-dropdown-wrapper">

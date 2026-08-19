@@ -3,6 +3,7 @@ import { Card } from "antd";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import UserMovieOptions, { useViewingToggles } from "./UserMovieOptions";
 import { preloadImages } from "../../preloadImages";
+import FallbackImage from "../../Components/FallbackImage";
 
 const listStyle = {
   width: "100%",
@@ -127,14 +128,13 @@ const SimpleMovieCard = memo(function SimpleMovieCard({
         }}
       >
         <div style={posterContainer}>
-          <img
+          <FallbackImage
             style={cardPosterStyle}
             alt={item.title}
             src={thumbUrl}
             loading={isAboveFold ? "eager" : "lazy"}
             fetchpriority={isAboveFold ? "high" : "auto"}
             decoding="async"
-            onError={(e) => { e.currentTarget.style.display = "none"; }}
           />
         </div>
         <div

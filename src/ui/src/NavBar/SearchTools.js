@@ -1,8 +1,9 @@
-import { Input, Button, Select, Slider } from "antd";
+import { Input, Select, Slider } from "antd";
 import { useState, useEffect } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import { MovieAPI } from "../MovieAPI";
 import { loadSort } from "../hooks/useMovieSearch";
+import { inputLabelStyle, getPopupContainer, LetterGrid } from "./navShared";
 
 // Sort-by options for the Browse grid. Labels are user-facing; values match the API `sort` param.
 const SORT_OPTIONS = [
@@ -30,37 +31,6 @@ const RATING_STOPS = [
 const stopValue = (stop) => stop.ids.join(",");
 
 const { Search } = Input;
-
-const inputLabelStyle = {
-  display: "block",
-  fontSize: "10px",
-  fontWeight: "600",
-  color: "var(--sidebar-text-muted)",
-  textTransform: "uppercase",
-  letterSpacing: "0.8px",
-  marginBottom: "5px",
-  marginTop: "14px",
-};
-
-const searchLetterStyle = {
-  fontWeight: "bold",
-  position: "absolute",
-  width: "100%",
-  height: "1em",
-  lineHeight: "1em",
-  top: "50%",
-  left: "0px",
-  marginTop: "-0.5em",
-};
-
-const searchLetters = [
-  "#", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
-  "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
-];
-
-const listStyle = {
-  paddingBottom: "20px",
-};
 
 // Genres are a static lookup, but this component remounts whenever the mobile/desktop layout flips —
 // which re-fetched every time. Cache the in-flight/resolved promise at module scope so it's fetched
@@ -168,7 +138,7 @@ function SearchTools({ search, userData }) {
   }
 
   return (
-    <div id="SearchToolContainer" style={{ padding: "8px 16px", color: "white" }}>
+    <div className="nav-search-tools" style={{ padding: "8px 16px", color: "white" }}>
       <span style={{ ...inputLabelStyle, marginTop: 0 }}>Movie Title</span>
       {/* Each search field gets its OWN single-field <form>. A loose input with more focusable fields
           below it makes a mobile/tablet keyboard label its Enter key "Next", which moves focus to the
@@ -215,8 +185,8 @@ function SearchTools({ search, userData }) {
             allowClear
             placeholder="Genre (matches all selected)"
             style={{ width: "100%" }}
-            getPopupContainer={(trigger) => trigger.parentNode}
-            classNames={{ popup: { root: "login-user-dropdown" } }}
+            getPopupContainer={getPopupContainer}
+            classNames={{ popup: { root: "nav-dropdown" } }}
             value={Array.isArray(search.genre) ? search.genre : search.genre ? [search.genre] : []}
             onChange={(vals) => navigateToBrowseSearch(vals.length ? "genre" : undefined, vals.join(","))}
             options={genres.map((g) => ({ label: g, value: g }))}
@@ -231,8 +201,8 @@ function SearchTools({ search, userData }) {
         allowClear
         placeholder="Title type (any selected)"
         style={{ width: "100%" }}
-        getPopupContainer={(trigger) => trigger.parentNode}
-        classNames={{ popup: { root: "login-user-dropdown" } }}
+        getPopupContainer={getPopupContainer}
+        classNames={{ popup: { root: "nav-dropdown" } }}
         value={Array.isArray(search.titleTypes) ? search.titleTypes : []}
         onChange={(vals) => {
           const current = new URLSearchParams(location.search);
@@ -249,8 +219,8 @@ function SearchTools({ search, userData }) {
       <span style={inputLabelStyle}>Sort By</span>
       <Select
         style={{ width: "100%" }}
-        getPopupContainer={(trigger) => trigger.parentNode}
-        classNames={{ popup: { root: "login-user-dropdown" } }}
+        getPopupContainer={getPopupContainer}
+        classNames={{ popup: { root: "nav-dropdown" } }}
         value={new URLSearchParams(location.search).get("sort") || loadSort()}
         onChange={(val) => {
           const current = new URLSearchParams(location.search);
@@ -274,27 +244,7 @@ function SearchTools({ search, userData }) {
         />
       </div>
       <span style={inputLabelStyle}>First Letter</span>
-      {/* Plain CSS grid (.letter-grid in index.css) — this was an antd <List grid>, which v6
-          deprecated and v7 removes. */}
-      <div className="letter-grid" style={listStyle}>
-        {searchLetters.map((item) => (
-          <Button
-            key={item}
-            className={`search-letter-btn${item === search.startsWith ? " search-letter-btn--active" : ""}`}
-            onClick={() => {
-              ToggleLetterSearch(item);
-            }}
-            style={{
-              width: "36px",
-              backgroundColor: item === search.startsWith ? "var(--accent)" : "var(--sidebar-pill-bg)",
-              color: item === search.startsWith ? "#fff" : "var(--sidebar-text-muted)",
-              borderColor: item === search.startsWith ? "var(--accent)" : "var(--sidebar-input-border)",
-            }}
-          >
-            <span style={searchLetterStyle}>{item}</span>
-          </Button>
-        ))}
-      </div>
+      <LetterGrid active={search.startsWith} onToggle={ToggleLetterSearch} />
     </div>
   );
 }

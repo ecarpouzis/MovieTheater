@@ -158,7 +158,7 @@ describe("the family album rail", () => {
 
     expect(railLabels()).toEqual(["Timeline", "Albums", "Folders", "People"]);
     // The movie rail's search panel is what used to be here.
-    expect(document.querySelector("#SearchToolContainer")).toBeNull();
+    expect(document.querySelector(".nav-search-tools")).toBeNull();
   });
 
   it("carries the album's own word-mark and feature tint", async () => {
