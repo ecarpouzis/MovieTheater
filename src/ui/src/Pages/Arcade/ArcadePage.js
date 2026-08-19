@@ -18,6 +18,7 @@ import { hasSaveStates, QUICK_SLOT } from "./arcadeSystems";
 import useArcadeFilters from "./useArcadeFilters";
 import { parseSystems, toggleSystem, SYSTEM_PARAM } from "./arcadeSystemFilter";
 import useGridWindow from "../../hooks/useGridWindow";
+import usePagedCatalog from "../../hooks/usePagedCatalog";
 import "./ArcadePage.css";
 
 const { Text } = Typography;
@@ -162,11 +163,8 @@ export default function ArcadePage({ userData }) {
   //
   // Ported here as a page map: `pages[n]` holds catalog indices [n*PAGE_SIZE, (n+1)*PAGE_SIZE).
   // Anything not yet fetched renders as a skeleton tile of card size. There is no `startIndex`.
-  const [pages, setPages] = useState({});
-  const [firstLoaded, setFirstLoaded] = useState(false); // has ANY page come back for this query
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(false); // the first page of a query (nothing to show yet)
-  const [loadError, setLoadError] = useState(false); // the page request failed — not an empty catalog
+  // pages/total/loading/firstLoaded/loadError all live in usePagedCatalog now (the pump was
+  // extracted to hooks/usePagedCatalog.js once Browse needed the same machinery).
   const [letters, setLetters] = useState(null); // A–Z bucket offsets, for the pager (A–Z sort only)
   const [rooms, setRooms] = useState([]);
   const [renderers, setRenderers] = useState({}); // system → [{id,label,isDefault}] for the launch menu
@@ -189,18 +187,8 @@ export default function ArcadePage({ userData }) {
   const unconfiguredRef = useRef(false);
   const sectionRef = useRef(null);
 
-  // Read by the identity-stable loaders below, so the scroll listener never re-subscribes.
-  const epochRef = useRef(0);
-  const pagesRef = useRef({});
-  const totalRef = useRef(0);
+  // Read by the identity-stable fetchPage below, so the pump never re-subscribes.
   const filtersRef = useRef(null);
-  // The band-fetch scheduler's state, ported wholesale from the Long Box's pump. See fetchPages.
-  const wantRef = useRef([]);
-  const wantAgeRef = useRef(new Map());
-  const loadingPagesRef = useRef(new Set());
-  const abortersRef = useRef(new Map());
-  const inFlightRef = useRef(0);
-  const pumpTimerRef = useRef(null);
 
   const setQ = (patch) => setQuality((prev) => { const next = { ...prev, ...patch }; saveQuality(next); return next; });
 
@@ -220,8 +208,23 @@ export default function ArcadePage({ userData }) {
   }, [location.search]);
   const filterKey = JSON.stringify(filters);
   filtersRef.current = filters;
-  pagesRef.current = pages;
-  totalRef.current = total;
+
+  // ── The catalog pump (hooks/usePagedCatalog.js — extracted from this page) ─────────────────────
+  // fetchPage reads the filters through the ref so its identity never changes; 501 = the arcade
+  // isn't configured (a dedicated empty state, not a load error).
+  const {
+    pages, total, loading, firstLoaded, loadError, itemAt: gameAt, contentKey, notifyWindow, retry,
+  } = usePagedCatalog({
+    resetKey: filterKey,
+    pageSize: PAGE_SIZE,
+    fetchPage: (skip, pageSize, signal) =>
+      MovieAPI.getArcadeGames({ ...filtersRef.current, skip, pageSize }, signal)
+        .then((r) => {
+          if (r.status === 501) { unconfiguredRef.current = true; return null; }
+          return r.ok ? r.json() : null;
+        })
+        .then((data) => (data ? { items: data.games, totalCount: data.totalCount } : null)),
+  });
 
   // ?game=<versionId> — the open modal. Anything that doesn't parse is no game at all.
   const openGameId = (() => {
@@ -299,128 +302,6 @@ export default function ArcadePage({ userData }) {
     [setSystems, location.search],
   );
 
-  // ── The band-fetch scheduler (ported from The Long Box's InfiniteScroller pump) ────────────────
-  // Pages are fetched because the WINDOW wants them, never because the user pressed anything, and
-  // the want-list is REPLACED on every window move rather than appended to. That replacement is the
-  // load-bearing part on a 17k-title catalog: dragging the scrollbar sweeps the window across
-  // hundreds of pages, and firing a fetch for each one queues the page the user actually stopped at
-  // behind hundreds of stale deep-skip queries. The Long Box measured exactly that ("a halfway drag
-  // issued ~50 deep-$skip queries … no band mounted 8s after landing") and fixed it with three
-  // things, all of which are here: replace the want-list, gate a fetch on the page having stayed
-  // wanted for MIN_WANT_AGE (so a sweep fires ZERO fetches), and abort in-flight fetches for pages
-  // the window has left so their slot frees immediately.
-  const MAX_INFLIGHT = 4;
-  const MIN_WANT_AGE = 150;
-
-  const pump = useCallback(() => {
-    let soonest = Infinity;
-    while (inFlightRef.current < MAX_INFLIGHT) {
-      const now = Date.now();
-      const page = wantRef.current.find((b) => {
-        if (loadingPagesRef.current.has(b) || pagesRef.current[b]) return false;
-        const age = now - (wantAgeRef.current.get(b) ?? now);
-        if (age >= MIN_WANT_AGE) return true;
-        soonest = Math.min(soonest, MIN_WANT_AGE - age);
-        return false;
-      });
-      if (page === undefined) break;
-      wantRef.current = wantRef.current.filter((b) => b !== page);
-
-      const epoch = epochRef.current;
-      loadingPagesRef.current.add(page);
-      inFlightRef.current += 1;
-      const controller = new AbortController();
-      abortersRef.current.set(page, controller);
-      const first = Object.keys(pagesRef.current).length === 0;
-      if (first) setLoading(true);
-
-      MovieAPI.getArcadeGames(
-        { ...filtersRef.current, skip: page * PAGE_SIZE, pageSize: PAGE_SIZE },
-        controller.signal,
-      )
-        .then((r) => {
-          if (r.status === 501) { unconfiguredRef.current = true; return null; }
-          return r.ok ? r.json() : null;
-        })
-        .then((data) => {
-          if (epochRef.current !== epoch) return;  // a newer query owns the grid now
-          // A page that didn't arrive is NOT an empty catalog. Falling through to an empty list made
-          // a failed request render as "No games match those filters" — the lobby blaming the user's
-          // filters for its own broken fetch, with no way to tell the difference or to try again.
-          if (!data) { setLoadError(true); setFirstLoaded(true); return; }
-          setLoadError(false);
-          setTotal(data.totalCount);
-          setFirstLoaded(true);
-          setPages((prev) => (prev[page] ? prev : { ...prev, [page]: data.games }));
-        })
-        .catch((err) => {
-          if (controller.signal.aborted || err?.name === "AbortError") return; // deliberate — never a failure
-          if (epochRef.current !== epoch) return;
-          setLoadError(true);
-          setFirstLoaded(true);
-        })
-        .finally(() => {
-          if (abortersRef.current.get(page) === controller) abortersRef.current.delete(page);
-          loadingPagesRef.current.delete(page);
-          inFlightRef.current -= 1;
-          if (epochRef.current === epoch) setLoading(false);
-          pump();
-        });
-    }
-    // Wants exist but none are old enough yet — come back when the youngest matures.
-    if (soonest !== Infinity) {
-      if (pumpTimerRef.current) clearTimeout(pumpTimerRef.current);
-      pumpTimerRef.current = setTimeout(() => { pumpTimerRef.current = null; pump(); }, soonest + 10);
-    }
-  }, []);
-
-  /** Replace the want-list with the pages this window needs, and abort anything it has left. */
-  const wantPages = useCallback((loPage, hiPage) => {
-    const want = [];
-    const now = Date.now();
-    for (let p = loPage; p <= hiPage; p += 1) {
-      if (!pagesRef.current[p] && !loadingPagesRef.current.has(p)) want.push(p);
-    }
-    wantRef.current = want;
-    wantAgeRef.current.forEach((_, p) => {
-      if ((p < loPage || p > hiPage) && !loadingPagesRef.current.has(p)) wantAgeRef.current.delete(p);
-    });
-    for (const p of want) if (!wantAgeRef.current.has(p)) wantAgeRef.current.set(p, now);
-    abortersRef.current.forEach((a, p) => { if (p < loPage || p > hiPage) a.abort(); });
-    pump();
-  }, [pump]);
-
-  /** Drop everything and start this query again from page 0. */
-  const resetQuery = useCallback(() => {
-    epochRef.current += 1;
-    abortersRef.current.forEach((a) => a.abort());
-    abortersRef.current.clear();
-    loadingPagesRef.current.clear();
-    wantRef.current = [];
-    wantAgeRef.current.clear();
-    inFlightRef.current = 0;
-    if (pumpTimerRef.current) { clearTimeout(pumpTimerRef.current); pumpTimerRef.current = null; }
-    setPages({});
-    setFirstLoaded(false);
-    setLoadError(false);
-    pagesRef.current = {};
-    wantRef.current = [0];
-    wantAgeRef.current.set(0, 0); // page 0 is wanted NOW, not after the age gate
-    pump();
-  }, [pump]);
-
-  useEffect(() => () => {
-    abortersRef.current.forEach((a) => a.abort());
-    if (pumpTimerRef.current) clearTimeout(pumpTimerRef.current);
-  }, []);
-
-  // Reset + fetch from the top whenever the filters change. Keyed on the serialized filters, not on
-  // the `filters` object (fresh every render) — the loaders read them through a ref.
-  useEffect(() => {
-    resetQuery();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterKey]);
-
   // A–Z bucket offsets for the pager. Only under the alphabetical sort — under any other sort the
   // letter buckets aren't contiguous, so the strip shows page numbers and needs nothing from here.
   useEffect(() => {
@@ -473,14 +354,8 @@ export default function ArcadePage({ userData }) {
     // SAME slots, so neither the window nor the count changes — and without this the hook would never
     // re-measure them, leaving the prefix describing skeleton heights for rows that are now cards.
     // Every row below would then sit slightly wrong, and the further you scrolled the worse it got.
-    contentKey: Object.keys(pages).length,
+    contentKey,
   });
-
-  /** The catalog item at an absolute index, or undefined while its page is still on the wire. */
-  const gameAt = useCallback(
-    (i) => pages[Math.floor(i / PAGE_SIZE)]?.[i % PAGE_SIZE],
-    [pages],
-  );
 
   // The mounted slice: one entry per slot, real card or placeholder. Deliberately NOT filtered — a
   // hole is a slot whose page has not arrived, and dropping it would shorten the row and make every
@@ -494,12 +369,8 @@ export default function ArcadePage({ userData }) {
   // Fetch what the window is looking at, plus one page either side — the same "want the window's
   // bands + one ahead" rule, made symmetric because here the user can be travelling upward.
   useEffect(() => {
-    if (!total) return;
-    const lastPage = Math.max(0, Math.ceil(total / PAGE_SIZE) - 1);
-    const lo = Math.max(0, Math.floor(start / PAGE_SIZE) - 1);
-    const hi = Math.min(lastPage, Math.floor(Math.max(start, end - 1) / PAGE_SIZE) + 1);
-    wantPages(lo, hi);
-  }, [start, end, total, pages, wantPages]);
+    notifyWindow(start, end);
+  }, [start, end, total, pages, notifyWindow]);
 
   // Seek the grid to an absolute catalog offset (a letter bucket or a page boundary). No fetch, no
   // re-seat: the slot is already there, and scrollToIndex's second phase waits for its page.
@@ -778,7 +649,7 @@ export default function ArcadePage({ userData }) {
             loading ? <div className="arcade-loading"><Spin size="large" /></div>
               : loadError ? (
                 <Empty description="Couldn't load the games list.">
-                  <Button onClick={resetQuery}>Try again</Button>
+                  <Button onClick={retry}>Try again</Button>
                 </Empty>
               ) : <Empty description={anyFilter ? "No games match those filters." : "No games here yet."} />
           ) : (

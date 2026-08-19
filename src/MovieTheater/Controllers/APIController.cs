@@ -729,6 +729,65 @@ namespace MovieTheater.Controllers
             return Ok(PageCards(SortCards(cards, hasSort ? s : "alpha"), page, pageSize));
         }
 
+        // A–Z bucket sizes + offsets for the alphabetically-ordered Type-scope browse — what the Browse
+        // page's letter pager jumps with (offset → page/slot index). Mirrors GetMoviesByType's pure-DB
+        // paths; letter boundaries agree with the page ordering because both order by SimpleTitle under
+        // the same SQL collation (offsets are counted by walking the ordered key list itself, the arcade
+        // GameLetters approach). Misc-inclusive scopes get no letters (curated in-memory ordering — the
+        // pager falls back to page numbers client-side). Only meaningful for the alpha sort; the client
+        // never calls this under any other.
+        [HttpGet("/API/BrowseLetters")]
+        public async Task<IActionResult> BrowseLetters(string type)
+        {
+            var types = ParseTypeScope(type);
+            if (types.Count == 0)
+                return BadRequest(new { Message = $"Unknown title type '{type}'" });
+
+            static string LetterOf(string? key)
+            {
+                if (string.IsNullOrEmpty(key)) return "#";
+                var c = char.ToUpperInvariant(key[0]);
+                return c >= 'A' && c <= 'Z' ? c.ToString() : "#";
+            }
+
+            List<string?> keys;
+            if (types.Contains(NormalizedTitleType.Misc))
+                return Ok(new { total = 0, letters = new List<object>() });
+
+            bool wantSeries = types.Contains(NormalizedTitleType.Series);
+            var movieBuckets = types.Where(t => t == NormalizedTitleType.Movies || t == NormalizedTitleType.Short).ToList();
+            IQueryable<Movie>? mq = movieBuckets.Count > 0
+                ? (await GetBaseMovieQuery()).Where(m => movieBuckets.Contains(m.NormalizedTitleType))
+                : null;
+            IQueryable<Series>? sq = wantSeries ? await GetBaseSeriesQuery() : null;
+
+            if (mq != null && sq != null)
+                keys = await OrderCardKeys(BuildCardKeys(mq, sq, "alpha"), "alpha").Select(k => k.SimpleTitle).ToListAsync();
+            else if (mq != null)
+                keys = await mq.OrderBy(m => m.SimpleTitle).ThenBy(m => m.id).Select(m => (string?)m.SimpleTitle).ToListAsync();
+            else
+                keys = await sq!.OrderBy(s2 => s2.SimpleTitle).ThenBy(s2 => s2.Id).Select(s2 => (string?)s2.SimpleTitle).ToListAsync();
+
+            // First offset wins if a letter turns out not to be contiguous (a collation could sort some
+            // punctuation between letters): jumping to the bucket's first card is still right.
+            var order = new List<string>();
+            var counts = new Dictionary<string, int>();
+            var offsets = new Dictionary<string, int>();
+            for (int i = 0; i < keys.Count; i++)
+            {
+                var letter = LetterOf(keys[i]);
+                if (!counts.ContainsKey(letter))
+                {
+                    order.Add(letter);
+                    counts[letter] = 0;
+                    offsets[letter] = i;
+                }
+                counts[letter] += 1;
+            }
+            var letters = order.Select(l => new { letter = l, count = counts[l], offset = offsets[l] }).ToList();
+            return Ok(new { total = keys.Count, letters });
+        }
+
         // Parse the comma-separated Title-Type scope — the persistent Browse "Type" filter, applied as an
         // overarching scope across every browse mode. An empty result means no scope (all types).
         private static HashSet<NormalizedTitleType> ParseTypeScope(string? types) =>

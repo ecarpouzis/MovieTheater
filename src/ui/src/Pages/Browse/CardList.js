@@ -5,6 +5,7 @@ import "./CardList.css";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { preloadImages } from "../../preloadImages";
 import useGridWindow from "../../hooks/useGridWindow";
+import CatalogPager from "../../Components/CatalogPager";
 
 // Posters fetched ahead of the mounted window, so a card's <img> renders from cache the moment the
 // window reaches it rather than snapping in. Bounded — the old code preloaded every card the list
@@ -144,7 +145,16 @@ const MovieCard = memo(function MovieCard({
   );
 });
 
-function CardList({ movieDataArray, userData, setUserData, actorSearch, activePerson, onMovieClick, onToggleViewing, listKey }) {
+/**
+ * Props beyond the obvious:
+ * - contentKey / onWindow / pager: the sparse-catalog wiring (usePagedCatalog in Browse). A hole in
+ *   movieDataArray is a slot whose page hasn't arrived — it renders as a skeleton card of the same
+ *   footprint, so nothing below it moves when the data lands. contentKey re-measures rows as
+ *   placeholders become cards; onWindow(start, end) tells the pump what the window is looking at;
+ *   pager = { total, letters } turns on the CatalogPager quick-scroll strip (letters mode when
+ *   letters exist — the alphabetical Type-scope browse — page numbers otherwise).
+ */
+function CardList({ movieDataArray, userData, setUserData, actorSearch, activePerson, onMovieClick, onToggleViewing, listKey, contentKey, onWindow, pager }) {
   const activeName = (activePerson || "").trim().toLowerCase();
 
   // O(1) membership checks per card (replaces an O(n) `.includes()` per card) — and only rebuilt
@@ -163,14 +173,21 @@ function CardList({ movieDataArray, userData, setUserData, actorSearch, activePe
 
   // Only the rows near the viewport stay mounted (useGridWindow); the rest of the list's height is
   // held by the two spacers. Cards are a fixed height here, so the reserved height is exact.
-  const { hostRef, gridRef, start, end, padTop, padBottom } = useGridWindow(movieDataArray.length, { resetKey: listKey });
+  const { hostRef, gridRef, start, end, padTop, padBottom, visibleStart, scrollToIndex } =
+    useGridWindow(movieDataArray.length, { resetKey: listKey, contentKey });
   const visible = useMemo(() => movieDataArray.slice(start, end), [movieDataArray, start, end]);
 
+  // Tell the sparse catalog's pump what the window wants (no-op on dense lists).
+  useEffect(() => {
+    onWindow?.(start, end);
+  }, [start, end, onWindow, contentKey, movieDataArray.length]);
+
   // Warm the poster cache for the mounted window plus a little ahead of it, so a card scrolled into
-  // the window renders its <img> from cache instead of fetching it (deduped globally).
+  // the window renders its <img> from cache instead of fetching it (deduped globally). Holes
+  // (unfetched sparse slots) have nothing to preload yet.
   useEffect(() => {
     const ahead = movieDataArray.slice(start, Math.min(movieDataArray.length, end + PRELOAD_AHEAD));
-    preloadImages(ahead.map((m) => MovieAPI.getPosterThumbnail(m.id, m.posterVersion, m.kind)));
+    preloadImages(ahead.filter(Boolean).map((m) => MovieAPI.getPosterThumbnail(m.id, m.posterVersion, m.kind)));
   }, [movieDataArray, start, end]);
 
   return (
@@ -179,6 +196,15 @@ function CardList({ movieDataArray, userData, setUserData, actorSearch, activePe
       <div className="card-list" ref={gridRef}>
         {visible.map((item, i) => {
           const index = start + i;
+          // A hole is a slot whose page is still on the wire — a skeleton of card size holds its
+          // place so nothing below it moves when the data lands.
+          if (!item) {
+            return (
+              <div className="card-cell" key={`slot-${index}`} aria-hidden="true">
+                <div className="movie-card skeleton-card" />
+              </div>
+            );
+          }
           // Eagerly fetch the first couple of rows (up to a 4-wide grid) so the posters above the fold
           // paint immediately instead of waiting on lazy-load intersection; everything below stays lazy.
           return (
@@ -199,6 +225,17 @@ function CardList({ movieDataArray, userData, setUserData, actorSearch, activePe
         })}
       </div>
       {padBottom > 0 && <div className="grid-spacer" style={{ height: padBottom }} aria-hidden="true" />}
+      {pager && pager.total > 0 && (
+        <CatalogPager
+          mode={pager.letters ? "letters" : "pages"}
+          letters={pager.letters || null}
+          total={pager.total}
+          pageSize={pager.pageSize}
+          currentIndex={visibleStart}
+          onJump={(offset) => scrollToIndex(Math.max(0, Math.min(offset, pager.total - 1)))}
+          itemNoun="title"
+        />
+      )}
     </div>
   );
 }

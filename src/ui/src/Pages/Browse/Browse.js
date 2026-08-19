@@ -7,6 +7,7 @@ import NowOnTvRail from "./NowOnTvRail";
 import PlaylistPickerModal from "../Tv/PlaylistPickerModal";
 import useIsMobile from "../../hooks/useIsMobile";
 import useInfiniteScroll from "../../hooks/useInfiniteScroll";
+import usePagedCatalog from "../../hooks/usePagedCatalog";
 
 // The detail modal (917 lines + FileMappingEditor, SubtitlePicker, …) only renders after a card
 // click + network fetch, so its chunk load hides behind that — keeping it out of the entry bundle.
@@ -91,10 +92,21 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
   const isMobile = useIsMobile();
   const useSimpleStyle = simpleStyle && isMobile;
 
-  // Infinite-scroll modes (server-paginated endpoints flagged via search.infinite):
-  // fetch page 1 here, then stream further pages as a bottom sentinel nears the viewport.
-  // Covers both URL endpoints and the id-list (Seen/Want) POST endpoint.
+  // Infinite-scroll modes (server-paginated endpoints flagged via search.infinite) come in two
+  // shapes now:
+  //
+  // - URL endpoints ride the SPARSE catalog (usePagedCatalog — the arcade lobby's page-map pump):
+  //   the whole result set is `total` fixed slots from the first response, the scrollbar is honest
+  //   immediately, pages are fetched because the window wants them (in either direction), and the
+  //   CatalogPager can seek anywhere. This is what makes the quick-scroll strip possible.
+  // - Id-list (Seen/Want) searches keep the DENSE append + bottom-sentinel path: their lists are
+  //   user-sized, and Seen/Want removal (handleToggleViewing) edits a dense array in place — an
+  //   operation a sparse page map can't express without re-seating every following slot.
+  //
+  // The simple mobile card list isn't windowed, so it can't render sparse holes — it stays dense too.
   const isInfinite = !!search.infinite && (!!search.url || !!search.movieIds);
+  const sparseInfinite = isInfinite && !!search.url && !useSimpleStyle;
+  const denseInfinite = isInfinite && !sparseInfinite;
   const [loadingMore, setLoadingMore] = useState(false);
   const pageRef = useRef(1);
   const loadingMoreRef = useRef(false);
@@ -108,6 +120,58 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
   const searchRef = useRef(search);
   const hasMoreRef = useRef(false);
   searchRef.current = search;
+
+  // Identity of the CURRENT result set — resets the pump and the grid's window (measured row
+  // heights, scroll position) when the list becomes a different list rather than merely longer.
+  const listKey = useMemo(() => listKeyOf(search), [search]);
+
+  // ── Sparse-infinite path: the page-map pump (see the comment on sparseInfinite above). ──
+  const paged = usePagedCatalog({
+    resetKey: listKey,
+    pageSize: INFINITE_PAGE_SIZE,
+    enabled: sparseInfinite && !search.pending,
+    fetchPage: (skip, pageSize, signal) => {
+      const s = searchRef.current;
+      if (!s?.url) return Promise.resolve(null);
+      return fetch(withPage(s.url, Math.floor(skip / pageSize) + 1, pageSize), { signal })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => (data && Array.isArray(data.movies)
+          ? { items: data.movies, totalCount: typeof data.totalCount === "number" ? data.totalCount : -1 }
+          : null));
+    },
+  });
+
+  // A–Z buckets for the pager — only for the alphabetical Type-scope browse, the one list whose
+  // letters the server can bucket cheaply (/API/BrowseLetters mirrors GetMoviesByType's ordering).
+  // Every other sparse list shows page numbers. The landing grid (seeded random) gets neither.
+  const [letters, setLetters] = useState(null);
+  useEffect(() => {
+    setLetters(null);
+    if (!sparseInfinite || !search.url) return undefined;
+    const u = new URL(search.url, window.location.origin);
+    if (u.pathname !== "/API/GetMoviesByType") return undefined;
+    if ((u.searchParams.get("sort") || "alpha") !== "alpha" || u.searchParams.get("seed")) return undefined;
+    const type = u.searchParams.get("type") || "";
+    let alive = true;
+    fetch(`/API/BrowseLetters?type=${encodeURIComponent(type)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (alive && d?.letters?.length) setLetters(d.letters); })
+      .catch(() => {});
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sparseInfinite, listKey]);
+
+  // The slot array the grid renders in sparse mode: `total` long from the first response, holes
+  // where a page hasn't arrived. CardList renders a hole as a same-footprint skeleton card.
+  const sparseSlots = useMemo(() => {
+    if (!sparseInfinite) return null;
+    const arr = new Array(paged.total);
+    for (const [pg, items] of Object.entries(paged.pages)) {
+      const base = Number(pg) * INFINITE_PAGE_SIZE;
+      for (let i = 0; i < items.length; i += 1) arr[base + i] = items[i];
+    }
+    return arr;
+  }, [sparseInfinite, paged.pages, paged.total]);
 
   // ── Non-infinite path: one fetch returns the full result set (or the legacy envelope). ──
   useEffect(() => {
@@ -150,10 +214,10 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
     return () => controller.abort();
   }, [search.url, search.movieIds, search.pending, isInfinite]);
 
-  // ── Infinite path: load the first page, then append on scroll. ──
+  // ── Dense-infinite path (id-list searches): load the first page, then append on scroll. ──
   useEffect(() => {
     // No isAuthReady gate (see the non-infinite effect above): the first page loads in parallel with auth.
-    if (!isInfinite || search.pending) return;
+    if (!denseInfinite || search.pending) return;
     setLoading(true);
     pageRef.current = 1;
     loadingMoreRef.current = false;
@@ -178,9 +242,9 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
         if (err.name !== "AbortError") throw err;
       });
     return () => controller.abort();
-  }, [search.url, search.movieIds, search.pending, isInfinite]);
+  }, [search.url, search.movieIds, search.pending, denseInfinite]);
 
-  const hasMore = isInfinite && pagination != null && movieDataArray.length < pagination.totalCount;
+  const hasMore = denseInfinite && pagination != null && movieDataArray.length < pagination.totalCount;
   hasMoreRef.current = hasMore;
 
   // Identity-stable (reads everything through refs) so the scroll listener subscribes once instead of
@@ -213,7 +277,7 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
       });
   }, []);
 
-  const { sentinelRef, recheck } = useInfiniteScroll({ enabled: isInfinite, hasMore, onLoadMore: loadMore });
+  const { sentinelRef, recheck } = useInfiniteScroll({ enabled: denseInfinite, hasMore, onLoadMore: loadMore });
 
   // After a page lands, re-check the sentinel without re-subscribing: keeps the list filling when the
   // content is still shorter than the viewport, or when the user is parked at the bottom.
@@ -239,18 +303,16 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
 
   // Restore-order reshuffle (back-nav) — memoized so it doesn't rebuild the Map/Set/concat over the
   // full array (and hand a fresh array identity to the memoized grid) on every unrelated render
-  // (modal open/close, Seen/Want toggle, scroll append).
-  // Changes only when the grid becomes a DIFFERENT list (new search / new id set) — not when it grows
-  // by a page. The windowed grid uses it to drop its measured row heights and return to the top.
-  const listKey = useMemo(() => listKeyOf(search), [search]);
-
+  // (modal open/close, Seen/Want toggle, scroll append). Sparse lists pass straight through: the
+  // slot array IS the display order (restoreOrder only rides id-list searches, which are dense).
   const displayMovies = useMemo(() => {
+    if (sparseSlots) return sparseSlots;
     if (!Array.isArray(search.restoreOrder) || search.restoreOrder.length === 0) return movieDataArray;
     const movieById = new Map(movieDataArray.map((movie) => [movie.id, movie]));
     const orderedMovies = search.restoreOrder.map((id) => movieById.get(id)).filter(Boolean);
     const orderedIdSet = new Set(orderedMovies.map((movie) => movie.id));
     return [...orderedMovies, ...movieDataArray.filter((movie) => !orderedIdSet.has(movie.id))];
-  }, [movieDataArray, search.restoreOrder]);
+  }, [movieDataArray, search.restoreOrder, sparseSlots]);
 
   // Every handler below is passed down to the memoized cards, so all of them must be identity-stable
   // or React.memo does nothing and each card re-renders on every Browse render (append, modal
@@ -361,15 +423,23 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
     setMovieDataArray((prev) =>
       prev.map((m) => (m.id === updatedMovie.id ? updatedMovie : m))
     );
-  }, []);
+    // The sparse store too (loaded pages only; a hole has nothing to update).
+    paged.mapItems((m) => (m && m.id === updatedMovie.id ? updatedMovie : m));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paged.mapItems]);
 
   return (
     <>
       {/* Rail mounts regardless of the grid's loading state so its lineup + posters fetch in parallel
           with the movie grid (it self-gates on a streaming-enabled session), rather than only after. */}
       {!location.search && <NowOnTvRail userData={userData} setUserData={setUserData} />}
-      {loading ? (
+      {(sparseInfinite ? !paged.firstLoaded : loading) ? (
         <BrowseSkeleton count={isMobile ? 6 : 12} />
+      ) : sparseInfinite && paged.loadError && paged.total === 0 ? (
+        <div style={LOADING_MORE_STYLE}>
+          Couldn&apos;t load the library.{" "}
+          <button type="button" onClick={paged.retry}>Try again</button>
+        </div>
       ) : useSimpleStyle ? (
         <SimpleCardList
           movieDataArray={displayMovies}
@@ -389,9 +459,14 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
           onToggleViewing={handleToggleViewing}
           isMobile={isMobile}
           listKey={listKey}
+          contentKey={sparseInfinite ? paged.contentKey : 0}
+          onWindow={sparseInfinite ? paged.notifyWindow : undefined}
+          pager={sparseInfinite && paged.total > 0
+            ? { total: paged.total, letters, pageSize: INFINITE_PAGE_SIZE }
+            : null}
         />
       )}
-      {isInfinite && !loading && (
+      {denseInfinite && !loading && (
         <div ref={sentinelRef} aria-hidden="true" style={SENTINEL_STYLE} />
       )}
       {/* Only while a page is actually in flight — this used to show for as long as `hasMore` was
@@ -423,7 +498,6 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
             actorSearch={handleActorSearch}
             onBrowse={handleBrowseSearch}
             onOpenTitle={handleOpenMovie}
-            movieDataArray={displayMovies}
             userData={userData}
             setUserData={setUserData}
             onToggleViewing={handleToggleViewing}
