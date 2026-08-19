@@ -353,7 +353,9 @@ function setPassword(currentPassword, newPassword) {
 const DEVICE_TOKEN_KEY = "mt-device-token";
 const fallbackDeviceToken = `t${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
 let cachedDeviceToken = null;
-function deviceToken() {
+// Exported: every player (Watch, TV, photo videos) must present the SAME device identity, or the
+// server treats one browser as two devices (see the comment above).
+export function deviceToken() {
   if (cachedDeviceToken) return cachedDeviceToken;
   try {
     let token = window.localStorage.getItem(DEVICE_TOKEN_KEY);

@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { createHls } from "../../streamEngine";
+import { createHls, prefersNativeHls, attachDirect } from "../../streamEngine";
+import { useMediaSession } from "../../useMediaSession";
 import { formatDuration } from "../../utils/format";
 import { detectStreamCapabilities } from "../../streamCapabilities";
-import { MovieAPI } from "../../MovieAPI";
+import { MovieAPI, deviceToken } from "../../MovieAPI";
 
 // Family video playback (docs/photos-plan.md §2.3), in the lightbox, in place.
 //
@@ -19,27 +20,27 @@ import { MovieAPI } from "../../MovieAPI";
 // the video.
 
 export { formatDuration } from "../../utils/format";
-/** A stable per-browser id so Jellyfin counts viewers separately (the site-wide DeviceId convention). */
-function deviceToken() {
-  try {
-    let token = window.localStorage.getItem("streamDeviceToken");
-    if (!token) {
-      token = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
-      window.localStorage.setItem("streamDeviceToken", token);
-    }
-    return token;
-  } catch {
-    // Private mode / storage disabled: the server falls back to a per-account id.
-    return undefined;
-  }
-}
+// Device identity comes from MovieAPI's deviceToken — this file used to keep a SECOND copy of the
+// convention under its own localStorage key, so the same browser presented two device ids.
 
-export default function PhotoVideo({ assetId, poster, durationSec, synced, playbackConfigured }) {
+export default function PhotoVideo({ assetId, poster, durationSec, synced, playbackConfigured, title }) {
   const videoRef = useRef(null);
   const hlsRef = useRef(null);
   const [start, setStart] = useState(null);
   const [error, setError] = useState(null);
   const [state, setState] = useState("idle");
+
+  // Lock-screen / media-key now-playing card, like every other player on the site. No custom
+  // actions: the element uses native controls, so the browser's default transport handlers apply —
+  // the metadata and position state are the parts it can't derive on its own. (No PiP toggle
+  // either, deliberately: the native controls already offer it.)
+  useMediaSession({
+    videoRef,
+    title: title || "Family video",
+    subtitle: "Photos",
+    poster: poster || undefined,
+    actions: {},
+  });
 
   useEffect(() => {
     if (!assetId || !synced || !playbackConfigured) return undefined;
@@ -88,23 +89,14 @@ export default function PhotoVideo({ assetId, poster, durationSec, synced, playb
     const video = videoRef.current;
     if (!video || !start?.url) return undefined;
 
-    if (!start.isHls) {
-      video.src = start.url;
-      return () => {
-        video.removeAttribute("src");
-        video.load();
-      };
+    // Direct play, or native HLS on Safari: a plain src either way (streamEngine.attachDirect).
+    if (!start.isHls || prefersNativeHls(video)) {
+      return attachDirect(video, start.url);
     }
 
-    // Safari plays HLS natively and does it better than MSE does.
-    if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      video.src = start.url;
-      return () => {
-        video.removeAttribute("src");
-        video.load();
-      };
-    }
-
+    // The Watch defaults (120s/400MB forward budget, 90s back buffer) are deliberate here too: a
+    // phone clip is short enough that the budget never fills, and a long family video wants
+    // exactly the movie player's behavior.
     const hls = createHls({ onFatal: () => setError("The video stream stopped unexpectedly.") });
     if (!hls) {
       setError("This browser cannot play this video.");

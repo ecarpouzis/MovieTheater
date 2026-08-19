@@ -154,6 +154,7 @@ export default function PhotoLightbox({ assetId, onClose, onCurated, onOpenAsset
             {detail.video ? (
               <PhotoVideo
                 assetId={assetId}
+                title={detail?.fileName}
                 poster={detail.viewUrl}
                 durationSec={detail.video.durationSec ?? card?.durationSec}
                 synced={detail.video.synced}

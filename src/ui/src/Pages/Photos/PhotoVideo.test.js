@@ -13,6 +13,7 @@ const startCalls = [];
 const ok = (body) => Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(body) });
 
 vi.mock("../../MovieAPI", () => ({
+  deviceToken: () => "test-device",
   MovieAPI: {
     startPhotoVideo: (assetId, options) => {
       startCalls.push({ assetId, options });
@@ -29,7 +30,15 @@ vi.mock("../../MovieAPI", () => ({
 
 // The site's hls.js construction is never exercised here — a direct-play answer needs no engine, and
 // jsdom has no MSE to give one.
-vi.mock("../../streamEngine", () => ({ createHls: () => null }));
+vi.mock("../../streamEngine", () => ({
+  prefersNativeHls: (video) => !!video.canPlayType?.("application/vnd.apple.mpegurl"),
+  attachDirect: (video, url) => {
+    video.src = url;
+    return () => {
+      video.removeAttribute("src");
+      video.load();
+    };
+  }, createHls: () => null }));
 vi.mock("../../streamCapabilities", () => ({
   detectStreamCapabilities: () => ({ supportsFmp4: true, maxAudioChannels: 2 }),
 }));

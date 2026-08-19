@@ -211,3 +211,20 @@ export function createHls({ backBufferLength = 90, startPosition, onStall, onFat
   });
   return hls;
 }
+
+/** True when this browser should play HLS natively (Safari, incl. iPad) rather than via MSE —
+ *  native does it better there, and hls.js isn't needed at all. */
+export function prefersNativeHls(video) {
+  return !!video.canPlayType?.("application/vnd.apple.mpegurl");
+}
+
+/** Plain-src attach (direct play, or native HLS on Safari) with the matching teardown. The
+ *  removeAttribute+load pair is the part everyone kept re-writing: without it the element keeps
+ *  the network connection and the old frame alive after unmount. */
+export function attachDirect(video, url) {
+  video.src = url;
+  return () => {
+    video.removeAttribute("src");
+    video.load();
+  };
+}
