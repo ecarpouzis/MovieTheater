@@ -1,9 +1,7 @@
-/* Modal styling - dark theme */
+/* Modal styling - dark theme. The dialog rides the shared sheet shell (Components/SheetModal.css):
+   bounded to the viewport, body scrolls, full-screen on a phone, standard ✕. Only its own dark
+   surface is stated here. */
 .user-settings-modal {
-  z-index: 1400 !important;
-}
-
-.user-settings-modal .ant-modal-wrap {
   z-index: 1400 !important;
 }
 
@@ -22,12 +20,7 @@
   z-index: 1600 !important;
 }
 
-/* Custom close button styling */
-.user-settings-modal .ant-modal-close {
-  top: 16px;
-  right: 16px;
-}
-
+/* Close button: the shell places and sizes it; only the glyph's ink is this dialog's own. */
 .settings-modal-close {
   font-size: 28px;
   color: rgba(255, 255, 255, 0.65);

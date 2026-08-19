@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useHistory, useLocation } from "react-router-dom";
-import { Spin } from "antd";
 import { MovieAPI } from "../../MovieAPI";
 import { useMusicPlayer } from "../../Music/MusicPlayerContext";
 import MusicAlbumArt from "../../Music/MusicAlbumArt";
@@ -312,9 +311,21 @@ function MusicPage({ userData }) {
   }
 
   if (albums === null || artists === null) {
+    // First-paint skeleton in the real tile-grid layout — the site-wide convention (movies,
+    // boardgames, arcade), instead of a lone spinner.
     return (
-      <div className="music-page music-page--loading">
-        <Spin size="large" />
+      <div className="music-page" aria-hidden="true">
+        <section className="music-section">
+          <div className="music-album-grid">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div className="music-album-card music-album-card--skeleton" key={i}>
+                <div className="music-album-tile skeleton-block" />
+                <div className="music-skel-line music-skel-line--title skeleton-block" />
+                <div className="music-skel-line skeleton-block" />
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
     );
   }

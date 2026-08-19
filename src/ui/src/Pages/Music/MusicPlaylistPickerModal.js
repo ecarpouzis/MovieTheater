@@ -6,6 +6,7 @@ import Button from "antd/es/button";
 import message from "antd/es/message";
 import { MovieAPI } from "../../MovieAPI";
 import "./MusicPlaylists.css";
+import "../../Components/SheetModal.css";
 
 /**
  * Add tracks to a music playlist — the shared "＋ Playlist" surface (album modal, a song row, the
@@ -75,6 +76,7 @@ export default function MusicPlaylistPickerModal({ open, tracks = [], defaultNam
       zIndex={1600}
       title={count > 0 ? `Add ${count} ${count === 1 ? "track" : "tracks"} to a playlist` : "New playlist"}
       destroyOnHidden
+      wrapClassName="sheet-modal"
     >
       <div className="mplpick" data-testid="music-playlist-picker">
         <Radio.Group className="mplpick-targets" value={target} onChange={(e) => setTarget(e.target.value)}>

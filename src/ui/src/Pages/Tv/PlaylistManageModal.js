@@ -6,6 +6,7 @@ import Spin from "antd/es/spin";
 import message from "antd/es/message";
 import { MovieAPI } from "../../MovieAPI";
 import "./PlaylistManageModal.css";
+import "../../Components/SheetModal.css";
 
 /**
  * Edit a playlist: rename it, reorder its titles, and drop ones you no longer want. Saves the whole ordered
@@ -66,7 +67,7 @@ export default function PlaylistManageModal({ playlistId, open, onClose, onChang
   };
 
   return (
-    <Modal open={open} onCancel={onClose} footer={null} width={520} title="Edit playlist" destroyOnHidden>
+    <Modal open={open} onCancel={onClose} footer={null} width={520} title="Edit playlist" destroyOnHidden wrapClassName="sheet-modal">
       {loading ? (
         <div className="plman-loading"><Spin /></div>
       ) : (

@@ -26,6 +26,7 @@ import { restrictToVerticalAxis, restrictToParentElement } from "@dnd-kit/modifi
 import { CSS } from "@dnd-kit/utilities";
 import { MovieAPI } from "../../MovieAPI";
 import "./MusicPlaylists.css";
+import "../../Components/SheetModal.css";
 
 /**
  * Edit a music playlist: rename, drag-reorder, remove tracks, delete the whole thing.
@@ -184,6 +185,7 @@ export default function MusicPlaylistManageModal({ playlistId, open, onClose, on
       width={560}
       title={isFavorites ? "Favorites" : "Edit playlist"}
       destroyOnHidden
+      wrapClassName="sheet-modal"
     >
       {loading ? (
         <div className="mplman-loading"><Spin /></div>

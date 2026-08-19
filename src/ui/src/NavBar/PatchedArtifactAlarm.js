@@ -3,6 +3,7 @@ import { Modal, Typography } from "antd";
 import { WarningOutlined } from "@ant-design/icons";
 import { MovieAPI } from "../MovieAPI";
 import usePolling from "../hooks/usePolling";
+import "../Components/SheetModal.css";
 
 const { Text, Paragraph } = Typography;
 
@@ -116,6 +117,7 @@ export default function PatchedArtifactAlarm({ userData }) {
       okText="Acknowledge"
       cancelButtonProps={{ style: { display: "none" } }}
       width={760}
+      wrapClassName="sheet-modal"
     >
       <Paragraph>
         One or more binaries we patched ourselves no longer match the recorded manifest. Until this is

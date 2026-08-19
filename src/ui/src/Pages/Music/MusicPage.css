@@ -12,11 +12,15 @@
   --catalog-pager-bleed: 18px;
 }
 
-.music-page--loading {
-  display: flex;
-  justify-content: center;
-  padding-top: 90px;
+/* First-paint skeleton (shape only — the shimmer is the site-wide .skeleton-block, index.css).
+   The tile square comes from .music-album-tile; these are the two text lines under it. */
+.music-album-card--skeleton { pointer-events: none; }
+.music-skel-line {
+  height: 11px;
+  border-radius: 4px;
+  width: 50%;
 }
+.music-skel-line--title { height: 13px; width: 75%; }
 
 .music-gate-note {
   background: var(--accent-soft);
@@ -359,7 +363,17 @@
   height: auto;
 }
 
-/* Same (0,3,0) trick: antd's `.ant-modal-root .ant-modal-wrap { overflow: auto }` would otherwise
+/* ⚠ The one dialog on the site that is NOT on the shared sheet shell (Components/SheetModal.css),
+   and the two reasons are structural, not stylistic:
+     1. It must stop above the persistent play bar (--music-miniplayer-height). Every other dialog
+        may cover the whole viewport; this one would bury the transport that is still playing.
+     2. Its BODY does not scroll. The shell's headline guarantee is "the body is the scroller"; here
+        the hero stays put and the TRACKLIST inside is the scrollport, which is the opposite wiring.
+   Everything that is not those two things it does take from the shell: the close chip reads the
+   shell's --sheet-close-* tokens (MusicAlbumModal.js imports them), so the ✕ is the same object
+   here as everywhere else.
+
+   Same (0,3,0) trick: antd's `.ant-modal-root .ant-modal-wrap { overflow: auto }` would otherwise
    tie this and win on injection order, leaving a second scroller behind the sheet. */
 .music-album-modal-root.ant-modal-root .ant-modal-wrap {
   /* The readable column, and the gutter that is its floor on a narrow screen. `100%`
@@ -439,22 +453,33 @@
   padding: 10px var(--music-sheet-pad) 28px;
 }
 
-/* Floating over content rather than a header, so it takes the arcade's contrast chip
-   — a bare glyph over album art is unreadable about half the time. */
+/* Floating over content rather than a header, so it takes the shared contrast chip — a bare glyph
+   over album art is unreadable about half the time. This sheet is hand-rolled (it is not on
+   Components/SheetModal.css's shell), so it restates the chip — but off that file's tokens, so the
+   ✕ is the same size, corner and inset as every other full-page dialog's and can't drift again.
+   The button IS the chip: antd's own close button is 32px, and a bigger chip inside it hangs out of
+   its own hit area and out from under the focus ring. */
 .music-album-modal.ant-modal-wrap .ant-modal-close {
-  top: 10px;
-  inset-inline-end: 10px;
+  top: var(--sheet-close-inset);
+  inset-inline-end: var(--sheet-close-inset);
+  width: var(--sheet-close-size);
+  height: var(--sheet-close-size);
+  border-radius: var(--sheet-close-radius);
   z-index: 2;
 }
 
 .music-album-modal.ant-modal-wrap .ant-modal-close-x {
-  width: 42px;
-  height: 42px;
-  line-height: 42px;
-  font-size: 17px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  font-size: 18px;
+  line-height: 1;
+  border-radius: inherit;
   color: #fff;
   background: rgba(20, 20, 24, 0.62);
-  border-radius: 50%;
   backdrop-filter: blur(4px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }
@@ -470,6 +495,11 @@
   outline: 3px solid var(--accent);
   outline-offset: 2px;
   border-radius: 6px;
+}
+/* …except the ✕, which has a shape of its own — the blanket rule above would re-round it while
+   the ring is up. */
+.music-album-modal.ant-modal-wrap .ant-modal-close:focus-visible {
+  border-radius: var(--sheet-close-radius);
 }
 
 /* The sheet has room the old 560px card never did, so the hero stops being a
@@ -515,5 +545,4 @@
   }
   .music-album-modal.ant-modal-wrap .music-album-detail-title { font-size: 17px; }
   .music-album-modal.ant-modal-wrap .music-album-detail-head { padding-block: 16px 14px; }
-  .music-album-modal.ant-modal-wrap .ant-modal-close { top: 4px; inset-inline-end: 4px; }
 }

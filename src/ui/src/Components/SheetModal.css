@@ -50,6 +50,15 @@
   --sheet-inset: 24px;
 }
 
+/* The close ✕ — see the block near the bottom of this file. Nothing about the chip is a per-dialog
+   decision; every full-page dialog wears the same one. On :root rather than on the wrap because the
+   album sheet is hand-rolled (it isn't on this shell) and still has to read the same numbers. */
+:root {
+  --sheet-close-size: 40px;
+  --sheet-close-inset: 8px;
+  --sheet-close-radius: 12px;
+}
+
 /* ── Card mode: bounded, never taller than the viewport ────────────────────── */
 .sheet-modal.ant-modal-wrap .ant-modal {
   top: var(--sheet-inset);
@@ -149,30 +158,56 @@
     padding-bottom: 16px;
   }
 
-  /* Full-thumb close target, parked in the corner of the sheet. Absolute against
-     .ant-modal-container, which no longer scrolls, so it stays put. */
-  .sheet-modal.ant-modal-wrap .ant-modal-close {
-    top: 4px;
-    inset-inline-end: 4px;
-  }
-  .sheet-modal.ant-modal-wrap .ant-modal-close-x {
-    width: 46px;
-    height: 46px;
-    line-height: 46px;
-    font-size: 18px;
+  /* Full-thumb close target, parked in the corner of the sheet. On :root for the same reason the
+     defaults are: a phone is a phone for the hand-rolled sheets too. */
+  :root {
+    --sheet-close-size: 44px;
+    --sheet-close-inset: 6px;
   }
 }
 
+/* ── The close ✕ ───────────────────────────────────────────────────────────
+   ONE chip for every sheet dialog. The four hero dialogs (movie, game,
+   boardgame, album) each used to restate this at their own size (40 / 42 / 44),
+   their own inset (6 / 8 / 10) and — the actual defect — as a chip LARGER than
+   the button it sits in: antd sizes .ant-modal-close from controlHeight (32px),
+   so a 44px chip with `margin: 6px` hung down and to the right of its own hit
+   area, and the focus ring (drawn on the button) framed a different box than the
+   thing you can see. On a phone sheet that pushed the chip half off the screen
+   edge. The button IS the chip here: one box, sized from the tokens above.
+
+   Rounded SQUARE, not a circle, in every section: it sits in the corner of a
+   square-cornered sheet, and soft corners settle into that corner the way a
+   circle can't — a circle leaves the corner empty and reads as floating loose
+   over the content. */
+.sheet-modal.ant-modal-wrap .ant-modal-close {
+  top: var(--sheet-close-inset);
+  right: var(--sheet-close-inset);
+  inset-inline-end: var(--sheet-close-inset);
+  width: var(--sheet-close-size);
+  height: var(--sheet-close-size);
+  border-radius: var(--sheet-close-radius);
+  z-index: 2;
+}
+.sheet-modal.ant-modal-wrap .ant-modal-close-x {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  font-size: 18px;
+  line-height: 1;
+  border-radius: inherit;
+}
+
 /* A headerless dialog has the ✕ floating over content — box art or a poster,
-   usually — so it gets a contrast chip. In a titled dialog the header backs it. */
+   usually — so it gets a contrast chip. In a titled dialog the header backs it.
+   Hero dialogs restate this paint in their own stylesheet, because an older TV
+   browser without :has() throws this whole selector away. */
 .sheet-modal.ant-modal-wrap .ant-modal-container:not(:has(.ant-modal-header)) .ant-modal-close-x {
-  width: 40px;
-  height: 40px;
-  line-height: 40px;
-  margin: 6px;
   color: #fff;
   background: rgba(20, 20, 24, 0.62);
-  border-radius: 50%;
   backdrop-filter: blur(4px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }
@@ -214,4 +249,9 @@
   outline: 3px solid var(--accent, #2f6fc4);
   outline-offset: 2px;
   border-radius: 6px;
+}
+/* …except on a control that already has a shape of its own. The blanket rule above re-rounds
+   whatever it lands on, so focusing the ✕ used to change the chip's corners while the ring was up. */
+.sheet-modal.ant-modal-wrap .ant-modal-close:focus-visible {
+  border-radius: var(--sheet-close-radius);
 }

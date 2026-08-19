@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Modal, Input, Select, Checkbox, Button, InputNumber, Slider, Tag, message, Popconfirm } from "antd";
 import { MovieAPI } from "../../MovieAPI";
 import "./ChannelAdminModal.css";
+import "../../Components/SheetModal.css";
 
 const STRATEGY_OPTIONS = [
   { value: "SeededShuffle", label: "Shuffle (seeded)" },
@@ -532,7 +533,10 @@ function ChannelAdminModal({ open, onClose, onChanged }) {
       title={shelves ? "Reorder shelves" : editing ? (editing.id ? "Edit channel" : "New channel") : "TV channels"}
       width={600}
       centered
-      styles={{ body: { maxHeight: "calc(100vh - 200px)", overflowY: "auto" } }}
+      /* The shell bounds the dialog to the viewport and makes the BODY the scroller, so the
+         hand-rolled `maxHeight: calc(100vh - 200px)` body cap this used to carry is gone — and on a
+         phone it becomes a full-screen sheet like every other dialog. */
+      wrapClassName="sheet-modal"
       footer={
         shelves
           ? [

@@ -6,6 +6,7 @@ import UserMovieOptions, { useViewingToggles } from "./UserMovieOptions";
 import WatchButton from "../Watch/WatchButton";
 import FileMappingEditor from "./FileMappingEditor";
 import SubtitlePicker from "./SubtitlePicker";
+import FallbackImage from "../../Components/FallbackImage";
 import { formatRuntime } from "../../utils/format";
 import "../../Components/SheetModal.css";
 import "./MovieModal.css";
@@ -32,6 +33,35 @@ function posterRgb(hex) {
   if (!m) return "90, 95, 110";
   const int = parseInt(m[1], 16);
   return `${(int >> 16) & 255}, ${(int >> 8) & 255}, ${int & 255}`;
+}
+
+// The poster and its mat. The mat RESERVES the poster's shape (2:3) until the image settles: an
+// unreserved mat collapses to its own padding, i.e. a ~10px-tall white pill sitting above the title
+// for as long as the poster is on the wire — which on a phone is the first thing you see. The
+// reservation is released once the image lands, because posters are not all exactly 2:3 and a fixed
+// box would crop the ones that aren't. A poster that never arrives keeps the placeholder rather
+// than the browser's broken-image glyph — the FallbackImage convention the grid cards use.
+function ModalPoster({ movie, kind }) {
+  const src = MovieAPI.getMoviePoster(movie.id, movie.posterVersion, kind);
+  const [settled, setSettled] = useState(false);
+  useEffect(() => { setSettled(false); }, [src]);
+  return (
+    <div className={`modal-poster-frame${settled ? "" : " modal-poster-frame--loading"}`}>
+      <FallbackImage
+        className="modal-poster"
+        alt={`${movie.title} poster`}
+        src={src}
+        decoding="async"
+        onLoad={() => setSettled(true)}
+        onError={() => setSettled(true)}
+        fallback={
+          <div className="modal-poster-placeholder" aria-hidden="true">
+            <span className="modal-poster-placeholder-icon">🎞</span>
+          </div>
+        }
+      />
+    </div>
+  );
 }
 
 function basename(p) {
@@ -468,9 +498,7 @@ function MovieModal({ movieId, open, onClose, actorSearch, onBrowse, onOpenTitle
       ) : movie ? (
         <div className="modal-body-wrapper">
           <div className="modal-poster-column">
-            <div className="modal-poster-frame">
-              <img className="modal-poster" alt={movie.title + " poster"} src={MovieAPI.getMoviePoster(movie.id, movie.posterVersion, kind)} />
-            </div>
+            <ModalPoster movie={movie} kind={kind} />
           </div>
           <div className="modal-info-panel">
             {!editing ? (

@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useHistory, useLocation } from "react-router-dom";
-import { Spin } from "antd";
+import { Empty } from "antd";
 import BoardGameCardList from "./BoardGameCardList";
 import BoardGameModal from "./BoardGameModal";
 import { bucketsFor } from "../../Components/CatalogPager";
 import LoadFailure from "../../Components/LoadFailure";
 import useCachedResource from "../../hooks/useCachedResource";
+import CardGridSkeleton from "../../Components/CardGridSkeleton";
 
 function parseJsonArray(json) {
   if (!json) return null;
@@ -211,11 +212,9 @@ function BoardGames({ userData }) {
   };
 
   if (loading) {
-    return (
-      <div style={{ padding: "10px 10px 2px", display: "flex", justifyContent: "center" }}>
-        <Spin size="large" />
-      </div>
-    );
+    // Same first-paint convention as the movie grid: skeleton cards in the real layout, not a
+    // lone spinner.
+    return <CardGridSkeleton />;
   }
   if (catalog.error && allGames.length === 0) {
     return <LoadFailure message="Couldn't load the board games." onRetry={catalog.refresh} />;
@@ -224,7 +223,7 @@ function BoardGames({ userData }) {
   return (
     <>
       {displayGames.length === 0 ? (
-        <span>No boardgames found.</span>
+        <Empty description="No board games match." />
       ) : (
         <BoardGameCardList
           games={displayGames}

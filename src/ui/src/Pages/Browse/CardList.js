@@ -2,10 +2,11 @@ import { MovieAPI } from "../../MovieAPI";
 import { Card } from "antd";
 import UserMovieOptions, { useViewingToggles } from "./UserMovieOptions";
 import "./CardList.css";
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo } from "react";
 import { preloadImages } from "../../preloadImages";
 import useGridWindow from "../../hooks/useGridWindow";
 import CatalogPager from "../../Components/CatalogPager";
+import FallbackImage from "../../Components/FallbackImage";
 
 // Posters fetched ahead of the mounted window, so a card's <img> renders from cache the moment the
 // window reaches it rather than snapping in. Bounded — the old code preloaded every card the list
@@ -15,18 +16,11 @@ const PRELOAD_AHEAD = 24;
 
 // Poster thumbnail with a graceful fallback: when the image 404s (common for Misc videos, which
 // usually have no poster), swap in a placeholder instead of the browser's broken-image glyph.
+// FallbackImage is the site-wide convention for this — it also heals if the src later changes.
 function CardPoster({ item, isAboveFold }) {
-  const [failed, setFailed] = useState(false);
   const thumbUrl = MovieAPI.getPosterThumbnail(item.id, item.posterVersion, item.kind);
-  if (failed) {
-    return (
-      <div className="card-poster-placeholder" aria-hidden="true">
-        <span className="card-poster-placeholder-icon">🎞</span>
-      </div>
-    );
-  }
   return (
-    <img
+    <FallbackImage
       className="card-poster-image"
       alt=""
       src={thumbUrl}
@@ -35,7 +29,11 @@ function CardPoster({ item, isAboveFold }) {
       // warns + drops the camelCase prop on every card render.
       fetchpriority={isAboveFold ? "high" : "auto"}
       decoding="async"
-      onError={() => setFailed(true)}
+      fallback={
+        <div className="card-poster-placeholder" aria-hidden="true">
+          <span className="card-poster-placeholder-icon">🎞</span>
+        </div>
+      }
     />
   );
 }
@@ -201,7 +199,7 @@ function CardList({ movieDataArray, userData, setUserData, actorSearch, activePe
           if (!item) {
             return (
               <div className="card-cell" key={`slot-${index}`} aria-hidden="true">
-                <div className="movie-card skeleton-card" />
+                <div className="movie-card skeleton-card skeleton-block" />
               </div>
             );
           }

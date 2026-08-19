@@ -8,6 +8,7 @@ import Button from "antd/es/button";
 import message from "antd/es/message";
 import { MovieAPI } from "../../MovieAPI";
 import "./PlaylistPickerModal.css";
+import "../../Components/SheetModal.css";
 
 /**
  * Add one or more titles to a playlist — the shared "＋ Add to playlist" surface (movie modal, a season of
@@ -87,6 +88,7 @@ export default function PlaylistPickerModal({ open, items = [], defaultName = ""
       width={460}
       title={count > 0 ? `Add ${count} ${count === 1 ? "title" : "titles"} to a playlist` : "New playlist"}
       destroyOnHidden
+      wrapClassName="sheet-modal"
     >
       <div className="plpick">
         <Radio.Group

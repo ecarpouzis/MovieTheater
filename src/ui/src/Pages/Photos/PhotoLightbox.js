@@ -4,6 +4,7 @@ import { MovieAPI } from "../../MovieAPI";
 import PhotoPersonPicker from "./PhotoPersonPicker";
 import PhotoVideo from "./PhotoVideo";
 import LoadFailure from "../../Components/LoadFailure";
+import "../../Components/SheetModal.css";
 
 // The lightbox (docs/photos-plan.md §4). Shows the ~1600px `view` derivative by default and only
 // reaches for a full-size image when the viewer actually zooms — a timeline click must not pull tens
@@ -142,6 +143,7 @@ export default function PhotoLightbox({ assetId, onClose, onCurated, onOpenAsset
       centered
       destroyOnHidden
       className="photo-lightbox photos-modal"
+      wrapClassName="sheet-modal"
       title={detail?.fileName || " "}
     >
       {state === "loading" && <Spin />}

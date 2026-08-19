@@ -73,24 +73,12 @@
   padding-block: 40px calc(40px + env(safe-area-inset-bottom));
 }
 
-/* The container no longer scrolls (the body does), so an absolute ✕ stays put in its corner.
-   The shell's headerless-dialog chip states the look behind :not(:has(...)); stated plainly here
-   as well for older browsers without :has(), like the game modal does. */
-.movie-modal .ant-modal-close {
-  top: 8px;
-  right: 8px;
-  inset-inline-end: 8px;
-  z-index: 2;
-}
-
+/* The ✕'s size, corner and position come from the shell (Components/SheetModal.css). Only the
+   PAINT is restated here: the shell states it behind :not(:has(...)), and an older browser without
+   :has() drops that rule — leaving a grey glyph over the poster wash. */
 .movie-modal .ant-modal-close-x {
-  width: 40px;
-  height: 40px;
-  line-height: 40px;
-  font-size: 18px;
   color: #fff;
   background: rgba(20, 20, 24, 0.62);
-  border-radius: 50%;
   backdrop-filter: blur(4px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }
@@ -135,11 +123,33 @@
   outline-offset: -1px;
 }
 
+/* Until the poster settles the mat holds a poster-shaped box (see ModalPoster in MovieModal.js for
+   why the reservation is released afterwards), so the column opens at the poster's size instead of
+   as a bare white pill above the title. Shape only — no placeholder treatment, the mat is the mat. */
+.modal-poster-frame--loading {
+  aspect-ratio: 2 / 3;
+}
+
 .modal-poster {
   width: 100%;
   height: auto;
   display: block;
   border-radius: 6px;
+}
+
+/* No poster at all (common for Misc videos) — the grid card's placeholder, at modal scale. */
+.modal-poster-placeholder {
+  aspect-ratio: 2 / 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: var(--chip-neutral-bg);
+}
+
+.modal-poster-placeholder-icon {
+  font-size: 40px;
+  opacity: 0.55;
 }
 
 /* ── Info panel (right column) ────────────────────────────────────────── */

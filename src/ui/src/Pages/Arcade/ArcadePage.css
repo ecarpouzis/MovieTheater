@@ -207,12 +207,6 @@
   color: var(--text-muted);
 }
 
-.arcade-loading {
-  display: flex;
-  justify-content: center;
-  padding: 80px 0;
-}
-
 .arcade-more {
   text-align: center;
   padding: 28px 0 8px;
@@ -346,36 +340,22 @@
   pointer-events: none;
 }
 
+/* Shape only — the loading texture is the site-wide .skeleton-block shimmer (index.css). */
 .arcade-pending__art {
   flex: 0 0 140px;
   width: 140px;
   height: 180px;
   border-radius: 8px;
-  background: var(--chip-neutral-bg);
 }
 
 .arcade-pending__line {
   height: 10px;
   border-radius: 4px;
-  background: var(--chip-neutral-bg);
-  opacity: 0.72;
 }
 
-.arcade-pending__line--title { height: 15px; width: 78%; opacity: 0.9; }
+.arcade-pending__line--title { height: 15px; width: 78%; }
 .arcade-pending__line--tag { height: 11px; width: 46%; }
 .arcade-pending__line--short { width: 60%; }
-
-/* One slow pulse so a run of them reads as "loading" rather than as broken tiles. Honoured only where
-   motion is welcome. */
-@media (prefers-reduced-motion: no-preference) {
-  .arcade-pending__art,
-  .arcade-pending__line { animation: arcade-pending-pulse 1.6s ease-in-out infinite; }
-}
-
-@keyframes arcade-pending-pulse {
-  0%, 100% { opacity: 0.45; }
-  50% { opacity: 0.8; }
-}
 
 .arcade-card__rating {
   position: absolute;

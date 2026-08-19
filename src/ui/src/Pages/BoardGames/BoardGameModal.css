@@ -35,22 +35,12 @@
   padding-block: 24px calc(24px + env(safe-area-inset-bottom));
 }
 
-/* Stated plainly (not only behind the shell's :not(:has(...))) for older browsers,
-   like the game and movie modals do. */
-.boardgame-modal .ant-modal-close {
-  top: 8px;
-  right: 8px;
-  inset-inline-end: 8px;
-  z-index: 2;
-}
+/* Size, corner and position come from the shell (Components/SheetModal.css); the paint is stated
+   plainly here — not only behind the shell's :not(:has(...)) — for older browsers, like the game
+   and movie modals do. */
 .boardgame-modal .ant-modal-close-x {
-  width: 40px;
-  height: 40px;
-  line-height: 40px;
-  font-size: 18px;
   color: #fff;
   background: rgba(20, 20, 24, 0.62);
-  border-radius: 50%;
   backdrop-filter: blur(4px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }

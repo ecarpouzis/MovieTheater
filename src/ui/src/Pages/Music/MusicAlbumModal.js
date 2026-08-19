@@ -4,6 +4,9 @@ import { MovieAPI } from "../../MovieAPI";
 import { useMusicPlayer } from "../../Music/MusicPlayerContext";
 import MusicAlbumArt from "../../Music/MusicAlbumArt";
 import MusicSongRow from "./MusicSongRow";
+// For the shared close-chip tokens (--sheet-close-*); every rule in that file is scoped to
+// .sheet-modal, which this hand-rolled sheet is not, so it brings nothing else with it.
+import "../../Components/SheetModal.css";
 import "./MusicPage.css";
 import "./MusicPlaylists.css";
 import { formatDuration } from "../../utils/format";

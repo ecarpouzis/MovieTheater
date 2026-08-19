@@ -3,6 +3,7 @@ import { Modal, Input, Button, Checkbox, message } from "antd";
 import { MovieAPI } from "../MovieAPI";
 import "./UserSettingsModal.css";
 import "./AdminModal.css";
+import "../Components/SheetModal.css";
 
 // One line describing the patched-binary guard, for the footer of this modal.
 //
@@ -167,10 +168,9 @@ function AdminModal({ open, onClose }) {
       onCancel={onClose}
       footer={null}
       width={720}
-      wrapClassName="user-settings-modal"
+      wrapClassName="sheet-modal user-settings-modal"
       title={null}
       closeIcon={<span className="settings-modal-close">×</span>}
-      getContainer={false}
     >
       <div className="settings-modal-content">
         <h2 className="settings-modal-title">User Administration</h2>

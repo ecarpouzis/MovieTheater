@@ -1337,8 +1337,10 @@ body:has(.photo-selection-dock) .photos-page {
   overflow-wrap: anywhere;
 }
 
+/* Size, corner and position come from the shell (Components/SheetModal.css) — this section used to
+   square the ✕ off to match its stamp-edged panels, which is one more dialog with its own close
+   button. Only the section's ink stays. */
 .photos-modal.ant-modal .ant-modal-close {
-  border-radius: 0;
   color: var(--text-muted);
 }
 
@@ -1997,50 +1999,13 @@ body:has(.photo-selection-dock) .photos-page {
 
 /* ── Phone ───────────────────────────────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  /* A centered antd modal taller than the phone's screen keeps its center and pushes its TOP —
-     and the close X with it — above the viewport edge, where no thumb can reach it. Capping the
-     panel at the dynamic viewport height (dvh: the URL-bar band is exactly where the X was
-     being lost; vh would still include it) keeps the top edge on screen no matter how tall a
-     portrait photo runs. Three classes, same specificity story as the container rule above.
+  /* The panel cap, the never-scrolling panel with a scrolling BODY, and the full-thumb close target
+     that used to be hand-rolled here are the shared sheet shell's job now — these dialogs opt in
+     with `sheet-modal` (Components/SheetModal.css), which was written for the same failure this
+     block was: a dialog taller than the phone pushing its own ✕ off the top of the screen. Only the
+     genuinely photographic part of the answer stays.
 
-     WHICH BOX SCROLLS is the rest of the answer, and getting it wrong is why the X went missing
-     again after that cap was added. The close button is `position: absolute` against the PANEL
-     (@rc-component/dialog's Panel puts it there, ahead of the header), so a panel that scrolls its
-     own overflow carries the X up and out of view the moment the reader scrolls down to the info or
-     the tags — a portrait photo needs only one flick to lose it. So the panel is a flex column that
-     never scrolls, and the BODY inside it is the scrollport: the header and the X stay put, and the
-     picture and its actions move under them. */
-  .photos-modal.ant-modal .ant-modal-container {
-    display: flex;
-    flex-direction: column;
-    max-height: calc(100dvh - 16px);
-    overflow: hidden;
-  }
-
-  .photos-modal.ant-modal .ant-modal-header {
-    flex: 0 0 auto;
-    /* Clear of the 44px X, so a long file name cannot run under it. */
-    padding-right: 46px;
-  }
-
-  .photos-modal.ant-modal .ant-modal-body {
-    flex: 1 1 auto;
-    /* Without this a flex item refuses to shrink below its content, and the panel's cap is ignored. */
-    min-height: 0;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-  }
-
-  .photos-modal.ant-modal .ant-modal-close {
-    top: max(10px, env(safe-area-inset-top));
-    /* 44px is the minimum comfortable touch target; antd's default X is smaller. */
-    width: 44px;
-    height: 44px;
-    /* Above the body's scrolling content, which now passes underneath it. */
-    z-index: 2;
-  }
-
-  /* The stage gets the phone's share of the screen rather than the desktop's: 72dvh of picture plus
+     The stage gets the phone's share of the screen rather than the desktop's: 72dvh of picture plus
      a header plus a row of actions is taller than a portrait phone, which is what forced the reader
      to scroll inside the panel in the first place. */
   .photo-lightbox .photo-lightbox-stage,

@@ -3,6 +3,7 @@ import { Modal, Select, Checkbox, Button, Input, message } from "antd";
 import { MovieAPI } from "../MovieAPI";
 import "./UserSettingsModal.css";
 import { writeStored } from "../utils/storage";
+import "../Components/SheetModal.css";
 
 const cardStyleOptions = [
   { value: "standard", label: "Standard" },
@@ -133,10 +134,9 @@ function UserSettingsModal({ open, onClose, userData, setUserData }) {
       onCancel={onClose}
       footer={null}
       width={560}
-      wrapClassName="user-settings-modal"
+      wrapClassName="sheet-modal user-settings-modal"
       title={null}
       closeIcon={<span className="settings-modal-close">×</span>}
-      getContainer={false}
     >
       <div className="settings-modal-content">
         <h2 className="settings-modal-title">User Settings</h2>

@@ -85,4 +85,25 @@ function GameCard({ game, onOpen }) {
   );
 }
 
+/**
+ * A card-shaped placeholder: same shape and the same 140x180 art column as a real card, so a row of
+ * them holds its height and nothing moves when the real cards land. Used both for a slot whose page
+ * is still on the wire and, as a whole grid, for the lobby's first paint — the same skeleton-first
+ * convention as the movie and boardgame grids.
+ */
+export function PendingGameCard() {
+  return (
+    <div className="arcade-card arcade-card--pending" aria-hidden="true">
+      <div className="arcade-card__art arcade-pending__art skeleton-block" />
+      <div className="arcade-card__body">
+        <div className="arcade-pending__line arcade-pending__line--title skeleton-block" />
+        <div className="arcade-pending__line arcade-pending__line--tag skeleton-block" />
+        <div className="arcade-pending__line skeleton-block" />
+        <div className="arcade-pending__line skeleton-block" />
+        <div className="arcade-pending__line arcade-pending__line--short skeleton-block" />
+      </div>
+    </div>
+  );
+}
+
 export default GameCard;

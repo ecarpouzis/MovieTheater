@@ -9,6 +9,8 @@ import useIsMobile from "../../hooks/useIsMobile";
 import useInfiniteScroll from "../../hooks/useInfiniteScroll";
 import usePagedCatalog from "../../hooks/usePagedCatalog";
 import LoadFailure from "../../Components/LoadFailure";
+import CardGridSkeleton from "../../Components/CardGridSkeleton";
+import { Empty } from "antd";
 
 // The detail modal (917 lines + FileMappingEditor, SubtitlePicker, …) only renders after a card
 // click + network fetch, so its chunk load hides behind that — keeping it out of the entry bundle.
@@ -70,20 +72,6 @@ function fetchInfinitePage(search, page, signal) {
 function listKeyOf(search) {
   if (search.movieIds) return `ids:${search.movieIds.length}:${search.sort || ""}`;
   return search.url || "empty";
-}
-
-// Placeholder grid shown while the first page loads — same .card-list layout as the real cards, so the
-// page shows structure immediately (not a lone spinner) and the rail above can keep loading in parallel.
-function BrowseSkeleton({ count = 12 }) {
-  return (
-    <div className="card-list" aria-hidden="true">
-      {Array.from({ length: count }).map((_, i) => (
-        <div className="card-cell" key={i}>
-          <div className="movie-card skeleton-card" />
-        </div>
-      ))}
-    </div>
-  );
 }
 
 function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
@@ -447,11 +435,15 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
           with the movie grid (it self-gates on a streaming-enabled session), rather than only after. */}
       {!location.search && <NowOnTvRail userData={userData} setUserData={setUserData} />}
       {(sparseInfinite ? !paged.firstLoaded : loading) ? (
-        <BrowseSkeleton count={isMobile ? 6 : 12} />
+        <CardGridSkeleton />
       ) : sparseInfinite && paged.loadError && paged.total === 0 ? (
         <LoadFailure message="Couldn't load the library." onRetry={paged.retry} />
       ) : fetchError ? (
         <LoadFailure message="Couldn't load the library." onRetry={() => setRetryNonce((n) => n + 1)} />
+      ) : displayMovies.length === 0 ? (
+        /* A real zero-result answer (errors and in-flight loads are handled above) — say so, the
+           way every catalog on the site does, instead of rendering a blank grid. */
+        <Empty description="No titles match." />
       ) : useSimpleStyle ? (
         <SimpleCardList
           movieDataArray={displayMovies}

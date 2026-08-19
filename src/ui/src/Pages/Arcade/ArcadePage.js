@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useHistory, useLocation } from "react-router-dom";
-import { Button, Empty, Modal, Select, Spin, Typography, message } from "antd";
+import { Button, Empty, Modal, Select, Typography, message } from "antd";
 import { MovieAPI } from "../../MovieAPI";
 import ArcadeHostBanner from "./ArcadeHostBanner";
-import GameCard from "./GameCard";
+import GameCard, { PendingGameCard } from "./GameCard";
 import GameModal from "./GameModal";
 import HeavyGameModal from "./HeavyGameModal";
 import LiveRooms from "./LiveRooms";
@@ -12,6 +12,7 @@ import SavesManager from "./SavesManager";
 import SavesVaultManager from "./SavesVaultManager";
 import RetroAchievementsModal from "./RetroAchievementsModal";
 import CatalogPager from "../../Components/CatalogPager";
+import LoadFailure from "../../Components/LoadFailure";
 import ConsoleCarousel from "./ConsoleCarousel";
 import { rememberLobbySearch } from "./arcadeLobbyState";
 import { hasSaveStates, QUICK_SLOT } from "./arcadeSystems";
@@ -637,17 +638,23 @@ export default function ArcadePage({ userData }) {
           </div>
 
           {!firstLoaded ? (
-            <div className="arcade-loading"><Spin size="large" /></div>
+            /* Skeleton cards in the real grid layout — the site-wide first-paint convention (movies,
+               boardgames), instead of a lone spinner. */
+            <div className="arcade-grid" aria-hidden="true">
+              {Array.from({ length: 8 }).map((_, i) => <PendingGameCard key={i} />)}
+            </div>
           ) : total === 0 ? (
             /* Never claim "nothing matched" while a request is still out, or when one failed. A wide
                filter change — above all clearing the LAST console, which puts the whole catalog back in
                scope — is the slowest query the lobby can ask for, and an empty grid that explains itself
                as a filter result is indistinguishable from a real one. */
-            loading ? <div className="arcade-loading"><Spin size="large" /></div>
+            loading ? (
+              <div className="arcade-grid" aria-hidden="true">
+                {Array.from({ length: 8 }).map((_, i) => <PendingGameCard key={i} />)}
+              </div>
+            )
               : loadError ? (
-                <Empty description="Couldn't load the games list.">
-                  <Button onClick={retry}>Try again</Button>
-                </Empty>
+                <LoadFailure message="Couldn't load the games list." onRetry={retry} />
               ) : <Empty description={anyFilter ? "No games match those filters." : "No games here yet."} />
           ) : (
             <>
@@ -662,18 +669,7 @@ export default function ArcadePage({ userData }) {
                   ) : (
                     /* A slot whose page is still on the wire. Same footprint as a card so the row it
                        is in does not reflow when the real one replaces it. */
-                    <div key={`slot-${index}`} className="arcade-card arcade-card--pending" aria-hidden="true">
-                      {/* Same shape and the same 140x180 art column as a real card, so the row it is
-                          in keeps its height and nothing below it moves when the page lands. */}
-                      <div className="arcade-card__art arcade-pending__art" />
-                      <div className="arcade-card__body">
-                        <div className="arcade-pending__line arcade-pending__line--title" />
-                        <div className="arcade-pending__line arcade-pending__line--tag" />
-                        <div className="arcade-pending__line" />
-                        <div className="arcade-pending__line" />
-                        <div className="arcade-pending__line arcade-pending__line--short" />
-                      </div>
-                    </div>
+                    <PendingGameCard key={`slot-${index}`} />
                   )))}
                 </div>
                 {padBottom > 0 && <div className="grid-spacer" style={{ height: padBottom }} aria-hidden="true" />}

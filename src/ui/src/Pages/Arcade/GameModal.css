@@ -83,26 +83,13 @@
   margin-block: auto;
 }
 
-/* Headerless sheet: the ✕ floats over the hero art, so it wears a contrast chip. Park it in the
-   viewport corner — .ant-modal-container is exactly the viewport here and never scrolls, so absolute
-   is already fixed. The shell states this too, but behind `:not(:has(.ant-modal-header))`; an older
-   TV browser without :has() throws that whole selector away, and this is the one dialog where
-   losing the chip would leave a grey ✕ sitting on box art. Stated plainly here as well. */
-.arcade-game-modal .ant-modal-close {
-  top: 6px;
-  right: 6px;
-  inset-inline-end: 6px;
-  z-index: 2;
-}
+/* Headerless sheet: the ✕ floats over the hero art, so it wears a contrast chip. Its size, corner
+   and position come from the shell (Components/SheetModal.css); only the PAINT is restated here,
+   because the shell states it behind `:not(:has(.ant-modal-header))` and an older TV browser
+   without :has() throws that whole selector away — leaving a grey ✕ sitting on box art. */
 .arcade-game-modal .ant-modal-close-x {
-  width: 44px;
-  height: 44px;
-  line-height: 44px;
-  margin: 6px;
-  font-size: 18px;
   color: #fff;
   background: rgba(20, 20, 24, 0.62);
-  border-radius: 50%;
   backdrop-filter: blur(4px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }
