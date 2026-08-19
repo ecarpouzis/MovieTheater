@@ -22,6 +22,20 @@ const MODE_ACTION = {
   want: "SetWantToWatch",
 };
 
+/**
+ * The open title, read out of ?title=<kind>:<id> (the photos ?photo= pattern): a card click pushes
+ * it, ✕ replaces it away, the browser's Back closes the modal because the modal state IS the URL —
+ * and the link is shareable/reload-safe for the first time. Anything that doesn't parse is treated
+ * as no title at all.
+ */
+function titleFromUrl(search) {
+  const raw = new URLSearchParams(search).get("title");
+  const m = /^(movie|series|misc):([0-9]+)$/.exec(raw || "");
+  if (!m) return null;
+  const id = Number(m[2]);
+  return Number.isSafeInteger(id) && id > 0 ? { kind: m[1], id } : null;
+}
+
 // Hoisted: a fresh object literal in JSX is a new prop identity on every render.
 const SENTINEL_STYLE = { height: 1 };
 const LOADING_MORE_STYLE = { textAlign: "center", padding: "16px", color: "#8fa8c0", fontSize: "13px" };
@@ -209,9 +223,11 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
 
   const history = useHistory();
   const location = useLocation();
-  const [selectedMovieId, setSelectedMovieId] = useState(null);
-  const [selectedKind, setSelectedKind] = useState("movie");
-  const [isModalVisible, setIsModalVisible] = useState(false);
+  // The detail modal's state lives in the URL (?title=<kind>:<id>) — see titleFromUrl.
+  const openTitle = useMemo(() => titleFromUrl(location.search), [location.search]);
+  const selectedMovieId = openTitle?.id ?? null;
+  const selectedKind = openTitle?.kind ?? "movie";
+  const isModalVisible = openTitle != null;
 
   // "Add to playlist" surface: pickerRequest = { items:[{playableId,title}], name } (null = closed).
   // playlistsVersion bumps to nudge the My-Playlists shelf to reload after a create/change.
@@ -245,16 +261,23 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
   movieDataRef.current = movieDataArray;
   locationRef.current = location;
 
+  // Open pushes (Back = close, like any full page); ✕ replaces the param away so closing doesn't
+  // grow the history. Route state (browseMovieIds — the back-nav grid restore) rides along on both.
   const handleOpenMovie = useCallback((movieId, kind = "movie") => {
-    setSelectedMovieId(movieId);
-    setSelectedKind(kind || "movie");
-    setIsModalVisible(true);
-  }, []);
+    const loc = locationRef.current;
+    const params = new URLSearchParams(loc.search);
+    params.set("title", `${kind || "movie"}:${movieId}`);
+    history.push({ pathname: loc.pathname, search: `?${params.toString()}`, state: loc.state });
+  }, [history]);
 
   const handleCloseModal = useCallback(() => {
-    setIsModalVisible(false);
-    setSelectedMovieId(null);
-  }, []);
+    const loc = locationRef.current;
+    const params = new URLSearchParams(loc.search);
+    if (!params.has("title")) return;
+    params.delete("title");
+    const search = params.toString();
+    history.replace({ pathname: loc.pathname, search: search ? `?${search}` : "", state: loc.state });
+  }, [history]);
 
   const handleActorSearch = useCallback((actor) => {
     if (!actor || !actor.trim()) {
@@ -312,10 +335,9 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
     history.push({ pathname: "/", search: `?${params.toString()}` });
   }, [history]);
 
-  // Close modal when search changes (e.g., when actor is clicked)
-  useEffect(() => {
-    handleCloseModal();
-  }, [search, handleCloseModal]);
+  // No close-on-search-change effect any more: every search navigation (actor chip, nav rail,
+  // insight chips) pushes a fresh ?mode=&value= URL that doesn't carry ?title, so the URL
+  // transition itself closes the modal.
 
   // Called by CardList / MovieModal when a movie's viewing state is toggled.
   // Only removes a movie from the displayed list when the action that was deactivated

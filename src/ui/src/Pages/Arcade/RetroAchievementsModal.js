@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Modal, Spin, Button, Input, Tag, Empty, message } from "antd";
 import { MovieAPI } from "../../MovieAPI";
 import ArcadeAchievements from "./ArcadeAchievements";
-import "./ArcadeModal.css";
+import "../../Components/SheetModal.css";
 import "./RetroAchievements.css";
 
 // ── Account panel: link/unlink the user's real retroachievements.org account + show their pulled RA
@@ -187,11 +187,11 @@ export default function RetroAchievementsModal({ open, onClose }) {
       width={720}
       title="🏆 RetroAchievements"
       className="ra-modal"
-      // Above the nav bar (1300). `arcade-modal` = the shared shell (bounded to the viewport, body
+      // Above the nav bar (1300). `sheet-modal` = the shared shell (bounded to the viewport, body
       // scrolls, full screen on a phone); `--themed` gives it the arcade surface its trophy tiles
-      // and headings already paint themselves for. See ArcadeModal.css.
+      // and headings already paint themselves for. See Components/SheetModal.css.
       zIndex={1500}
-      wrapClassName="arcade-modal arcade-modal--themed"
+      wrapClassName="sheet-modal sheet-modal--themed"
       destroyOnHidden
     >
       <RaAccount />

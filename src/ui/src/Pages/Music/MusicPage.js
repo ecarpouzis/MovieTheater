@@ -106,7 +106,11 @@ function MusicPage({ userData }) {
   const [artists, setArtists] = useState(null);
   const [songResults, setSongResults] = useState(null);
   const [artistDetail, setArtistDetail] = useState(null);
-  const [openAlbumId, setOpenAlbumId] = useState(null);
+  // The open album modal lives in the URL (?album=<id>) — the artist drill-in (?artist=) already
+  // did, so the album sheet now closes on Back and survives a reload/share the same way.
+  const albumParam = parseInt(params.get("album"), 10);
+  const openAlbumId = Number.isInteger(albumParam) && albumParam > 0 ? albumParam : null;
+  const setOpenAlbumId = (id) => setParam("album", id, { replace: id == null });
   const sectionRef = useRef(null);
   // Playlists (music-plan.md Phase 3): the shelf, plus the two modals it and the song rows drive.
   const [playlists, setPlaylists] = useState([]);
@@ -252,11 +256,14 @@ function MusicPage({ userData }) {
     scrollToIndex(Math.max(0, offset));
   }, [scrollToIndex]);
 
-  function setParam(key, value) {
+  function setParam(key, value, { replace = false } = {}) {
     const p = new URLSearchParams(location.search);
     if (value != null && value !== "") p.set(key, value);
     else p.delete(key);
-    history.push({ pathname: "/music", search: p.toString() ? `?${p.toString()}` : "" });
+    const search = p.toString() ? `?${p.toString()}` : "";
+    // replace: closing a sheet shouldn't grow the history (Back would reopen it).
+    if (replace) history.replace({ pathname: "/music", search });
+    else history.push({ pathname: "/music", search });
   }
 
   // The queue-entry shape lives in one place per list so "play from here" and "add this one to the

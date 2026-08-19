@@ -9,7 +9,7 @@ import ArcadeLeaderboards from "./ArcadeLeaderboards";
 import ArcadeAchievements from "./ArcadeAchievements";
 import { systemLabel } from "./arcadeSystems";
 import { ratingTooltip } from "./arcadeRating";
-import "./ArcadeModal.css";
+import "../../Components/SheetModal.css";
 import "./GameModal.css";
 
 /**
@@ -131,9 +131,9 @@ export default function GameModal({ game, onClose, onStart, onManageSaves, creat
       width={720}
       // Above the nav bar (z-index 1300) so the modal and its close button render over it.
       zIndex={1500}
-      // `arcade-modal` is the shared shell (viewport-bounded, body scrolls); `arcade-game-modal`
+      // `sheet-modal` is the shared shell (viewport-bounded, body scrolls); `arcade-game-modal`
       // takes it the rest of the way to a full-screen sheet at every size. See ArcadeModal.css.
-      wrapClassName="arcade-modal arcade-game-modal"
+      wrapClassName="sheet-modal arcade-game-modal"
       // Start lives in a REAL modal footer, not at the end of the body. The shell pins the footer
       // and scrolls the body between header and footer, so the primary action is on screen no
       // matter how long the summary runs or how short the viewport is — a TV browser was pushing

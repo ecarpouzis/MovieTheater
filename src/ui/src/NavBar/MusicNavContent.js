@@ -27,9 +27,9 @@ function MusicNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setAd
   const activeKind = SHELVES.some((s) => s.key && s.key === params.get("kind")) ? params.get("kind") : "";
 
   // A view switch changes what a card even is, and a shelf switch changes whether the drilled-into
-  // artist is on this shelf at all — both leave the artist behind.
+  // artist (or its open album sheet) is on this shelf at all — both leave them behind.
   const updateParam = (key, value) =>
-    setParam(key, value, key === "view" || key === "kind" ? ["artist"] : []);
+    setParam(key, value, key === "view" || key === "kind" ? ["artist", "album"] : []);
 
   // One pill, two callers: the view toggle and the shelf picker are the same control in the same
   // rail, so they share the shape and only differ in which value they compare against.

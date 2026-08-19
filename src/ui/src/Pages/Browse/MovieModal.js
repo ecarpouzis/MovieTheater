@@ -7,6 +7,7 @@ import WatchButton from "../Watch/WatchButton";
 import FileMappingEditor from "./FileMappingEditor";
 import SubtitlePicker from "./SubtitlePicker";
 import { formatRuntime } from "../../utils/format";
+import "../../Components/SheetModal.css";
 import "./MovieModal.css";
 
 const { TextArea } = Input;
@@ -457,7 +458,7 @@ function MovieModal({ movieId, open, onClose, actorSearch, onBrowse, onOpenTitle
       // Above the nav bar (z-index 1300) so the full-screen mobile modal — and its pinned
       // close button — render over it instead of being trapped beneath it.
       zIndex={1500}
-      wrapClassName="movie-modal"
+      wrapClassName="sheet-modal movie-modal"
       style={{ "--poster-rgb": posterRgb(movie?.posterDetails?.dominantColor) }}
     >
       {loading ? (

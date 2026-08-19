@@ -221,13 +221,30 @@ namespace MovieTheater.Controllers
         public async Task<IActionResult> Games(
             string system = null, string hideRegions = null, int? maxPlayers = null,
             string variant = null, string genre = null, string sort = null, string search = null,
-            string ra = null, int page = 1, int pageSize = 60, int? skip = null)
+            string ra = null, int page = 1, int pageSize = 60, int? skip = null, int? id = null)
         {
             var userId = GetCurrentUserId();
             if (userId == null)
                 return Unauthorized();
             if (!host.IsConfigured)
                 return StatusCode(501, new { message = "The arcade is not configured on this server." });
+
+            // Deep-link fetch (?game=<versionId> in the lobby URL): resolve the one card that
+            // contains this version, ignoring the card filters — a shared link should open its game
+            // whatever filter set the recipient happens to have. Age visibility still applies via
+            // VisibleGamesAsync.
+            if (id != null)
+            {
+                var visibleQ = await VisibleGamesAsync(userId.Value);
+                var anchor = await visibleQ.FirstOrDefaultAsync(g => g.Id == id.Value);
+                if (anchor == null)
+                    return Json(new { games = new List<object>(), totalCount = 0, page = 1, pageSize, skip = 0 });
+                var card = await BuildGameCardsAsync(
+                    visibleQ,
+                    new List<(string, string, string)> { (anchor.System, anchor.CollapseKey, null) },
+                    null);
+                return Json(new { games = card, totalCount = card.Count, page = 1, pageSize, skip = 0 });
+            }
 
             var var_ = NormalizeVariant(variant);
             var hidden = ParseHideRegions(hideRegions);

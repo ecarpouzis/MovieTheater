@@ -9,7 +9,7 @@ import { lobbyPath } from "./arcadeLobbyState";
 import { useWakeLock } from "../../useWakeLock";
 import AchievementToaster from "./AchievementToast";
 import ArcadeHostBanner from "./ArcadeHostBanner";
-import "./ArcadeModal.css";
+import "../../Components/SheetModal.css";
 import "./ArcadeRoomPage.css";
 
 const { Title, Text } = Typography;
@@ -1504,10 +1504,10 @@ export default function ArcadeRoomPage() {
         open={showControllers}
         onCancel={() => setShowControllers(false)}
         footer={<Button onClick={() => setShowControllers(false)}>Done</Button>}
-        // Above the nav bar (1300); `arcade-modal` = full-screen sheet on phones (ArcadeModal.css) —
+        // Above the nav bar (1300); `sheet-modal` = full-screen sheet on phones (Components/SheetModal.css) —
         // this panel is the longest list in the room and the one most often opened mid-game on a phone.
         zIndex={1500}
-        wrapClassName="arcade-modal"
+        wrapClassName="sheet-modal"
       >
         <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 0" }}>
           <Text style={{ flex: 1 }}>⌨️ Keyboard &amp; mouse</Text>

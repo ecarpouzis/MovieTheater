@@ -8,11 +8,21 @@
   --poster-rgb: 90, 95, 110;
 }
 
-/* Full-page modal on every platform: edge-to-edge and full-height, filling the
-   viewport rather than floating as a card. The modal wrap (.movie-modal) owns the
-   scroll; the content inside is centered and width-capped so it stays readable on
-   wide desktops. */
-.movie-modal .ant-modal {
+/* Full-page modal on every platform, on the shared shell (Components/SheetModal.css,
+   wrapClassName "sheet-modal movie-modal"): the shell bounds the dialog and makes the BODY the
+   scroller; these rules repeat the shell's sheet block unconditionally — the same call the game
+   modal makes — so the modal is edge-to-edge at every size, with the content centered on the
+   readable column by the shell's --sheet-pad. */
+.movie-modal.ant-modal-wrap {
+  --sheet-measure: min(1040px, 94vw);
+  --sheet-gutter: clamp(16px, 3vw, 32px);
+  --sheet-inset: 0px;
+  padding: 0;
+  /* The body is the scroller; the wrap must not add a second one behind it. */
+  overflow: hidden;
+}
+
+.movie-modal.ant-modal-wrap .ant-modal {
   max-width: 100vw !important;
   width: 100vw !important;
   margin: 0 !important;
@@ -23,10 +33,12 @@
 
 .movie-modal .ant-modal-container {
   position: relative;
+  border: none;
   border-radius: 0;
   overflow: hidden;
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
   box-shadow: none;
 }
 
@@ -45,22 +57,20 @@
   z-index: 0;
 }
 
-.movie-modal .ant-modal-body {
+.movie-modal.ant-modal-wrap .ant-modal-body {
   position: relative;
   z-index: 1;
-  max-height: none;
-  overflow: visible;
-  padding: 40px 32px;
+  padding-block: 40px calc(40px + env(safe-area-inset-bottom));
 }
 
-/* The default close button is absolutely positioned to the modal content, so on a
-   tall full-page modal it scrolls out of reach. Pin it to the viewport corner as a
-   prominent, always-reachable target on every platform. */
+/* The container no longer scrolls (the body does), so an absolute ✕ stays put in its corner.
+   The shell's headerless-dialog chip states the look behind :not(:has(...)); stated plainly here
+   as well for older browsers without :has(), like the game modal does. */
 .movie-modal .ant-modal-close {
-  position: fixed;
-  top: 12px;
-  right: 12px;
-  z-index: 1000;
+  top: 8px;
+  right: 8px;
+  inset-inline-end: 8px;
+  z-index: 2;
 }
 
 .movie-modal .ant-modal-close-x {
@@ -73,6 +83,10 @@
   border-radius: 50%;
   backdrop-filter: blur(4px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+.movie-modal .ant-modal-close:hover .ant-modal-close-x {
+  color: #fff;
+  background: rgba(20, 20, 24, 0.85);
 }
 
 /* ── Two-column shell ─────────────────────────────────────────────────── */

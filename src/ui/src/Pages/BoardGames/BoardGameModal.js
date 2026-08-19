@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Modal, Input, Button, Collapse, Tooltip, message } from "antd";
 import { MovieAPI } from "../../MovieAPI";
+import "../../Components/SheetModal.css";
 import "./BoardGameModal.css";
 import { stripHtml } from "./boardGameUtils";
 import useTouchDevice from "../../hooks/useTouchDevice";
@@ -400,9 +401,8 @@ function BoardGameModal({ gameId, open, onClose, games, expansionMap, userData, 
   }
 
   return (
-    <Modal open={open} onCancel={onClose} footer={null} width={1000} wrapClassName="boardgame-modal">
+    <Modal open={open} onCancel={onClose} footer={null} width={1000} zIndex={1500} wrapClassName="sheet-modal boardgame-modal">
       <div className="boardgame-modal-body">
-        <button className="boardgame-modal-close-btn" onClick={onClose} aria-label="Close">✕</button>
         <div className="boardgame-modal-poster-column">
           <img
             className="boardgame-modal-poster"

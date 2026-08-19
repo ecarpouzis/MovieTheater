@@ -1,0 +1,217 @@
+/* ============================================================================
+   The site's full-page dialog shell — shared by every section.
+
+   Born as the arcade dialog shell (Pages/Arcade/ArcadeModal.css) and promoted
+   here once the movie, boardgame and music modals were found re-solving the
+   same problems three more ways. Opt in by adding `sheet-modal` to a Modal's
+   wrapClassName (it lands on .ant-modal-wrap). Every selector here is prefixed
+   `.sheet-modal.ant-modal-wrap` so it outranks the per-modal rules in
+   GameModal.css / MovieModal.css / etc. regardless of stylesheet order.
+
+   Two things this shell guarantees, in this order of importance:
+
+   1. THE DIALOG NEVER OUTGROWS THE VIEWPORT. antd's modal is an auto-height card
+      parked 100px down the page; when its content is taller than what's left, the
+      overflow spills below the fold and the wrap becomes the scroller. On a TV
+      browser (a 720-or-1080-line viewport with no wheel and no scrollbar to grab)
+      that put ▶ Start room off-screen and effectively unreachable — the report
+      this shell exists to fix. Here the CONTENT is bounded to the viewport and the
+      BODY is the scroller, so the header and the footer's actions are always on
+      screen no matter how long the content runs.
+
+   2. WHERE A CARD CAN'T FIT, IT BECOMES A FULL-SCREEN SHEET. Narrow (phone) or
+      short (phone landscape, a squat desktop window) viewports get edge-to-edge —
+      antd's own small-screen styling only trims the card to `calc(100vw - 16px)`
+      and leaves it floating, which wastes the scarcest thing those screens have.
+      A hero dialog (the game modal, the movie modal) goes further and is a sheet
+      at EVERY size by re-declaring this block's rules unconditionally from its
+      own stylesheet — CSS has no way to @extend a media query.
+
+   Confirm/info dialogs (Modal.confirm — delete confirmations and their kin)
+   deliberately opt out and keep the card treatment: a two-line question blown up
+   to the full screen reads as a page, not a prompt.
+   ============================================================================ */
+
+.sheet-modal.ant-modal-wrap {
+  /* The readable column. Content wider than this is centered in the dialog rather
+     than stretched across it — the only thing that keeps a full-screen sheet from
+     reading as a stretched card on a 1080p TV. Per-dialog override encouraged. */
+  --sheet-measure: 760px;
+  /* Deliberately modest: max() below means the gutter is the FLOOR, and in card mode (where the
+     dialog is already narrower than the measure) it's the only term that applies — a viewport-sized
+     gutter would eat an 800px card from both edges. On a sheet the measure takes over. */
+  --sheet-gutter: clamp(16px, 2.2vw, 28px);
+  /* Gutter, or the leftover half-width once the column is capped — whichever is
+     bigger. `100%` resolves against whichever element USES the token (custom
+     properties substitute at the use site), i.e. the header/body/footer, all of
+     which are exactly the dialog's width. */
+  --sheet-pad: max(var(--sheet-gutter), calc((100% - var(--sheet-measure)) / 2));
+  /* Breathing room around a card-mode dialog; 0 turns the card into a sheet. */
+  --sheet-inset: 24px;
+}
+
+/* ── Card mode: bounded, never taller than the viewport ────────────────────── */
+.sheet-modal.ant-modal-wrap .ant-modal {
+  top: var(--sheet-inset);
+  padding-bottom: var(--sheet-inset);
+  max-width: calc(100vw - 2 * var(--sheet-inset));
+}
+
+.sheet-modal.ant-modal-wrap .ant-modal-container {
+  display: flex;
+  flex-direction: column;
+  /* dvh so the bound tracks the visible viewport as mobile browser chrome
+     collapses; vh first as the fallback for browsers without dvh. */
+  max-height: calc(100vh - 2 * var(--sheet-inset));
+  max-height: calc(100dvh - 2 * var(--sheet-inset));
+}
+
+.sheet-modal.ant-modal-wrap .ant-modal-header,
+.sheet-modal.ant-modal-wrap .ant-modal-footer {
+  flex: 0 0 auto;
+}
+
+/* The body is the scroller — the whole point. `min-height: 0` is load-bearing: a
+   flex item's default `min-height: auto` refuses to shrink below its content, so
+   without it the content grows the card straight past the max-height above. */
+.sheet-modal.ant-modal-wrap .ant-modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Keep header, body and footer on the same readable column. */
+.sheet-modal.ant-modal-wrap .ant-modal-body,
+.sheet-modal.ant-modal-wrap .ant-modal-footer {
+  padding-inline: var(--sheet-pad);
+}
+.sheet-modal.ant-modal-wrap .ant-modal-header {
+  padding-inline-start: var(--sheet-pad);
+  /* …except the header's trailing edge, which always leaves room for the ✕. */
+  padding-inline-end: max(56px, var(--sheet-pad));
+}
+
+/* Inner panes that cap their own height for a floating card would now fight the
+   body for the scroll (two nested scrollers, neither obviously the one to use).
+   The body is the scroller; opt a pane out by tagging it .sheet-modal-scroll. */
+.sheet-modal.ant-modal-wrap .sheet-modal-scroll {
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+/* ── Sheet mode: edge-to-edge where a card can't fit ───────────────────────── */
+/* Narrow (phone) or short (phone landscape, a squat desktop window). A hero
+   dialog opts in at every size from its own stylesheet by repeating this block's
+   rules unconditionally. */
+@media (max-width: 700px), (max-height: 560px) {
+  /* The sheet owns its own scrolling (the body does), so the wrap must not add a
+     second scroll container behind it. */
+  .sheet-modal.ant-modal-wrap {
+    --sheet-inset: 0px;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .sheet-modal.ant-modal-wrap .ant-modal {
+    top: 0 !important;
+    max-width: 100vw !important;
+    width: 100vw !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    vertical-align: top;
+  }
+
+  .sheet-modal.ant-modal-wrap .ant-modal-container {
+    height: 100vh;
+    height: 100dvh;
+    max-height: 100dvh;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .sheet-modal.ant-modal-wrap .ant-modal-header {
+    padding-block: 14px;
+    border-radius: 0;
+  }
+
+  .sheet-modal.ant-modal-wrap .ant-modal-body {
+    padding-block: 18px calc(20px + env(safe-area-inset-bottom));
+  }
+
+  /* A footer takes the bottom edge back from the body's safe-area padding. */
+  .sheet-modal.ant-modal-wrap .ant-modal-footer {
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  }
+  .sheet-modal.ant-modal-wrap .ant-modal-container:has(.ant-modal-footer) .ant-modal-body {
+    padding-bottom: 16px;
+  }
+
+  /* Full-thumb close target, parked in the corner of the sheet. Absolute against
+     .ant-modal-container, which no longer scrolls, so it stays put. */
+  .sheet-modal.ant-modal-wrap .ant-modal-close {
+    top: 4px;
+    inset-inline-end: 4px;
+  }
+  .sheet-modal.ant-modal-wrap .ant-modal-close-x {
+    width: 46px;
+    height: 46px;
+    line-height: 46px;
+    font-size: 18px;
+  }
+}
+
+/* A headerless dialog has the ✕ floating over content — box art or a poster,
+   usually — so it gets a contrast chip. In a titled dialog the header backs it. */
+.sheet-modal.ant-modal-wrap .ant-modal-container:not(:has(.ant-modal-header)) .ant-modal-close-x {
+  width: 40px;
+  height: 40px;
+  line-height: 40px;
+  margin: 6px;
+  color: #fff;
+  background: rgba(20, 20, 24, 0.62);
+  border-radius: 50%;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+.sheet-modal.ant-modal-wrap .ant-modal-close:hover .ant-modal-close-x {
+  color: #fff;
+  background: rgba(20, 20, 24, 0.82);
+}
+
+/* ── Themed surface (opt in with `sheet-modal--themed`) ────────────────────── */
+/* Most antd dialogs on this site stay light in both themes (theme.css says so out loud). A dialog
+   that paints its own text and tiles with the section tokens — --text-primary, --card-surface —
+   can't take that deal: those flip to WHITE under data-theme="dark", which left token-painted
+   content white-on-white on antd's near-white card. A dialog that writes section tokens opts into
+   the section surface those tokens were written for. No `border`: sheet mode above removes it, and
+   this block comes later. */
+.sheet-modal--themed.ant-modal-wrap .ant-modal-container {
+  background: var(--card-surface);
+  color: var(--text-primary);
+}
+.sheet-modal--themed.ant-modal-wrap .ant-modal-header,
+.sheet-modal--themed.ant-modal-wrap .ant-modal-footer {
+  background: transparent;
+  border-color: var(--card-border);
+}
+.sheet-modal--themed.ant-modal-wrap .ant-modal-title {
+  color: var(--text-title, var(--text-primary));
+}
+.sheet-modal--themed.ant-modal-wrap .ant-modal-close-x {
+  color: var(--text-muted);
+}
+
+/* ── Reachable without a pointer ───────────────────────────────────────────── */
+/* TV browsers drive a dialog by moving FOCUS with a d-pad — there is no cursor to
+   show what's selected. antd's own focus styling is a faint shadow on some
+   controls and nothing at all on the bare <button> links, which leaves a remote
+   user with no idea where they are. One unmistakable ring on everything focusable
+   inside a sheet dialog. :focus-visible, so a mouse click never draws it. */
+.sheet-modal.ant-modal-wrap :focus-visible {
+  outline: 3px solid var(--accent, #2f6fc4);
+  outline-offset: 2px;
+  border-radius: 6px;
+}

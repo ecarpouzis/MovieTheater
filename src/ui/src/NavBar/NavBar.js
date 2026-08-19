@@ -86,6 +86,8 @@ function NavBar({
   // useRef holds a mutable value that persists across renders without triggering
   // a re-render when changed — like a private instance field on a class.
   const hasHandledInitialLoadRef = useRef(false);
+  // The signature of the last search actually dispatched — see the guard in the URL effect.
+  const lastDispatchSigRef = useRef(null);
 
   const isMobile = useIsMobile();
   // The admin show-hidden switch (photos-plan.md Phase 4 addendum). Held here rather than in the
@@ -136,6 +138,22 @@ function NavBar({
     const sortParam = params.get("sort");
     const sort = sortParam || loadSort();
     saveSort(sort);
+
+    // Re-dispatch only when something search-shaped changed. The URL also carries params that are
+    // NOT searches — ?title=<kind>:<id> is the open detail modal — and every dispatch below builds a
+    // fresh `search` object, which refetches the grid and (via Browse's search-change effect) closes
+    // the modal. Without this guard, opening the modal would push a URL, re-run this effect, and
+    // close itself. A pending browseMovieIds restore always dispatches: same signature, but the
+    // point is re-seating the previous list.
+    const dispatchSig = JSON.stringify({
+      mode, value, types, sort,
+      auth: isAuthReady, user: userData?.username ?? null,
+    });
+    const hasRestoreState = Array.isArray(location.state?.browseMovieIds) && location.state.browseMovieIds.length > 0;
+    if (!isInitialLoad && !hasRestoreState && dispatchSig === lastDispatchSigRef.current) {
+      return;
+    }
+    lastDispatchSigRef.current = dispatchSig;
 
     // With no other filter active, the default browse is the Type scope itself (random when it's empty).
     const browseDefault = () => (types.length ? titleTypeSearch(types, sort) : resetSearch());

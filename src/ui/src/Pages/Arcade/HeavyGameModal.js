@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Alert, Button, Input, Modal, Progress, Typography, message } from "antd";
 import { MovieAPI } from "../../MovieAPI";
-import "./ArcadeModal.css";
+import "../../Components/SheetModal.css";
 
 const { Text, Paragraph } = Typography;
 
@@ -110,9 +110,9 @@ export default function HeavyGameModal({ game, onClose, onPlayInBrowser }) {
       open
       onCancel={onClose}
       footer={<Button onClick={onClose}>Close</Button>}
-      // Above the nav bar (1300); `arcade-modal` = full-screen sheet on phones (ArcadeModal.css).
+      // Above the nav bar (1300); `sheet-modal` = full-screen sheet on phones (Components/SheetModal.css).
       zIndex={1500}
-      wrapClassName="arcade-modal"
+      wrapClassName="sheet-modal"
     >
       <Paragraph type="secondary" style={{ marginBottom: 12 }}>
         {game.capture

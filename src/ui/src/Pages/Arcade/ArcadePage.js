@@ -177,8 +177,14 @@ export default function ArcadePage({ userData }) {
   const [optionsOpen, setOptionsOpen] = useState(false); // mobile: reveal the room-quality pills (desktop always shows them)
   const [creating, setCreating] = useState(0);
   const [manageSaves, setManageSaves] = useState(null); // { gameId, title } for the My Saves modal
-  const [modalGame, setModalGame] = useState(null); // the game whose full-page modal is open
-  const [heavyGame, setHeavyGame] = useState(null); // heavy-lane card → the Play-via-Moonlight modal
+  // The open game modal lives in the URL (?game=<versionId> — the browse ?title= pattern): a card
+  // click pushes it (so Back closes the full-page modal), ✕ replaces it away, and a shared lobby
+  // link opens its game on load. modalCard caches the card OBJECT for that id: a click seeds it
+  // synchronously; a cold-load deep link fetches it by id. The card's lane picks the modal
+  // (standard vs the heavy Play-via-Moonlight one).
+  const [modalCard, setModalCard] = useState(null); // { key: versionId, game }
+  const modalCardRef = useRef(null);
+  modalCardRef.current = modalCard;
   const [quality, setQuality] = useState(loadQuality); // creator's per-room stream quality (persisted)
   const unconfiguredRef = useRef(false);
   const sectionRef = useRef(null);
@@ -217,8 +223,63 @@ export default function ArcadePage({ userData }) {
   pagesRef.current = pages;
   totalRef.current = total;
 
+  // ?game=<versionId> — the open modal. Anything that doesn't parse is no game at all.
+  const openGameId = (() => {
+    const raw = new URLSearchParams(location.search).get("game");
+    if (!raw || !/^[0-9]+$/.test(raw)) return null;
+    const n = Number(raw);
+    return Number.isSafeInteger(n) && n > 0 ? n : null;
+  })();
+
+  const pushGameParam = (versionId) => {
+    const params = new URLSearchParams(location.search);
+    params.set("game", String(versionId));
+    history.push({ pathname: location.pathname, search: `?${params.toString()}` });
+  };
+  // ✕ replaces the param away so closing doesn't grow the history (Back would reopen it).
+  const closeGame = useCallback(() => {
+    setModalCard(null);
+    const loc = history.location;
+    const params = new URLSearchParams(loc.search);
+    if (!params.has("game")) return;
+    params.delete("game");
+    const search = params.toString();
+    history.replace({ pathname: loc.pathname, search: search ? `?${search}` : "" });
+    // history is a stable reference in react-router v5.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Cold-load (or back/forward) with ?game= but no cached card: fetch the one card by version id.
+  // A click never takes this path — openGame seeds the cache before pushing the param.
+  useEffect(() => {
+    if (!openGameId) {
+      // key === null is the defensive versionless-card open (no URL to drive it) — leave it alone.
+      if (modalCardRef.current && modalCardRef.current.key != null) setModalCard(null);
+      return;
+    }
+    if (modalCardRef.current?.key === openGameId) return;
+    let dead = false;
+    MovieAPI.getArcadeGames({ id: openGameId })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (dead) return;
+        const g = data?.games?.[0];
+        if (g) setModalCard({ key: openGameId, game: g });
+        else closeGame(); // a stale/foreign link: drop the param rather than a broken modal
+      })
+      .catch(() => {});
+    return () => { dead = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openGameId, closeGame]);
+
   // Stash the filtered lobby URL so the room's exit buttons can come back to it (arcadeLobbyState).
-  useEffect(() => { rememberLobbySearch(location.search); }, [location.search]);
+  // Minus ?game=: exiting a room shouldn't land back under the modal of the game just played.
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    params.delete("game");
+    const rest = params.toString();
+    rememberLobbySearch(rest ? `?${rest}` : "");
+  }, [location.search]);
 
   // The console carousel writes the same ?system= param the rail's dropdown does — the URL is the one
   // source of truth, so the two surfaces can never disagree about what's picked. Facets come from the
@@ -605,9 +666,11 @@ export default function ArcadePage({ userData }) {
   // `versionId` is optional and comes from the "Recently played" strip: saves are per ROM row, so a
   // recent tile opens the modal on the version whose save it is advertising.
   const openGame = (game, versionId = null) => {
-    if (game.lane === "heavy") { setHeavyGame(game); return; }
+    const vid = game.versions?.[0]?.id;
     setModalVersionId(versionId);
-    setModalGame(game);
+    if (!vid) { setModalCard({ key: null, game } ); return; } // defensive: cardless of versions, still open
+    setModalCard({ key: vid, game });
+    pushGameParam(vid);
   };
 
   if (unconfiguredRef.current) {
@@ -765,25 +828,25 @@ export default function ArcadePage({ userData }) {
         </section>
       </div>
 
-      {modalGame && (
+      {modalCard && (openGameId != null || modalCard.key == null) && modalCard.game.lane !== "heavy" && (
         <GameModal
-          game={modalGame}
+          game={modalCard.game}
           creating={creating}
           canEditMovies={userData?.canEditMovies}
-          renderers={renderers[modalGame.system] || []}
+          renderers={renderers[modalCard.game.system] || []}
           initialVersionId={modalVersionId}
-          onClose={() => setModalGame(null)}
+          onClose={closeGame}
           // Both actions leave the browse tile: close the game modal first so the follow-on surface
           // (the Continue/New-game confirm, or the saves manager) isn't stranded behind it at a lower
           // z-index. This restores the exact pre-modal flow those surfaces were built for.
           onStart={(versionId, title, cheats, hwContext, controllerScheme, renderProfile, competitive) => {
             // Grab the system BEFORE clearing the modal — the start-choice prompt needs it to know
             // whether this core even has save-states to offer (psp/scummvm don't).
-            const sys = modalGame?.system;
-            setModalGame(null);
+            const sys = modalCard?.game?.system;
+            closeGame();
             createRoom(versionId, title, cheats, hwContext, controllerScheme, renderProfile, competitive, sys);
           }}
-          onManageSaves={(gameId, title) => { setModalGame(null); setManageSaves({ gameId, title }); }}
+          onManageSaves={(gameId, title) => { closeGame(); setManageSaves({ gameId, title }); }}
         />
       )}
       {manageSaves && (
@@ -793,11 +856,11 @@ export default function ArcadePage({ userData }) {
         <SavesVaultManager onClose={() => setSavesVaultOpen(false)} onResume={doCreateRoom} />
       )}
       <RetroAchievementsModal open={raOpen} onClose={() => setRaOpen(false)} />
-      {heavyGame && (
+      {modalCard && openGameId != null && modalCard.game.lane === "heavy" && (
         <HeavyGameModal
-          game={heavyGame}
-          onClose={() => setHeavyGame(null)}
-          onPlayInBrowser={(versionId) => { setHeavyGame(null); doCreateRoom(versionId, {}); }}
+          game={modalCard.game}
+          onClose={closeGame}
+          onPlayInBrowser={(versionId) => { closeGame(); doCreateRoom(versionId, {}); }}
         />
       )}
     </div>
