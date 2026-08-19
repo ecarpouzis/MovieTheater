@@ -171,11 +171,11 @@ function SimpleCardList({ movieDataArray, userData, setUserData, onMovieClick, o
   const seenSet = useMemo(() => new Set(userData?.moviesSeen), [userData?.moviesSeen]);
   const wantSet = useMemo(() => new Set(userData?.moviesToWatch), [userData?.moviesToWatch]);
 
-  // Preload every loaded card's poster thumbnail as soon as the page data arrives (deduped), so the
-  // below-the-fold lazy <img>s render from cache instead of snapping in when scrolled to. Bounded by
-  // what infinite-scroll has loaded; a new page adds only its new thumbs.
+  // Warm the first two pages' thumbs only (deduped): preloading EVERY loaded card fired 60 fresh
+  // image requests per appended page, competing with the posters actually on screen — the same
+  // lesson CardList's PRELOAD bound encodes. Everything further down is lazy-loaded on approach.
   useEffect(() => {
-    preloadImages((movieDataArray || []).map((m) => MovieAPI.getPosterThumbnail(m.id, m.posterVersion, m.kind)));
+    preloadImages((movieDataArray || []).slice(0, 120).map((m) => MovieAPI.getPosterThumbnail(m.id, m.posterVersion, m.kind)));
   }, [movieDataArray]);
 
   return (

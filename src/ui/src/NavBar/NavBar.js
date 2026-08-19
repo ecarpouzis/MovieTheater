@@ -141,16 +141,19 @@ function NavBar({
 
     // Re-dispatch only when something search-shaped changed. The URL also carries params that are
     // NOT searches — ?title=<kind>:<id> is the open detail modal — and every dispatch below builds a
-    // fresh `search` object, which refetches the grid and (via Browse's search-change effect) closes
-    // the modal. Without this guard, opening the modal would push a URL, re-run this effect, and
-    // close itself. A pending browseMovieIds restore always dispatches: same signature, but the
-    // point is re-seating the previous list.
+    // fresh `search` object, which refetches the grid. Without this guard, opening the modal would
+    // push a URL, re-run this effect, and refetch the grid under itself. A browseMovieIds restore is
+    // part of the signature (its arrival must dispatch; its persistence must not re-dispatch on
+    // every modal open/close riding the same route state).
+    const restoreIds = Array.isArray(location.state?.browseMovieIds) ? location.state.browseMovieIds : null;
     const dispatchSig = JSON.stringify({
       mode, value, types, sort,
       auth: isAuthReady, user: userData?.username ?? null,
+      restore: restoreIds && restoreIds.length
+        ? `${restoreIds.length}:${restoreIds[0]}:${restoreIds[restoreIds.length - 1]}`
+        : null,
     });
-    const hasRestoreState = Array.isArray(location.state?.browseMovieIds) && location.state.browseMovieIds.length > 0;
-    if (!isInitialLoad && !hasRestoreState && dispatchSig === lastDispatchSigRef.current) {
+    if (!isInitialLoad && dispatchSig === lastDispatchSigRef.current) {
       return;
     }
     lastDispatchSigRef.current = dispatchSig;
