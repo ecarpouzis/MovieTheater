@@ -1,20 +1,14 @@
 # Family Photo Album Plan
 
-**Status: BUILT — all eight phases (0–5, the Phase 6 Google mesh, and the Phase 7 Gallery shelf) are
-implemented and green in the working tree, written 2026-08-12 from a shallow survey of the collection
-root, the music/streaming verticals as precedent, and current research on Immich and the Google Photos
-API. Phases 0–6 are LIVE in production; Phase 7 is not, and must not deploy before its migration is
-applied.**
-
-**Awaiting, in this order:** the commit; a StreamGateway redeploy on its host (hand-deployed — `git
-push` does nothing to it); `scripts/photos-phase7-migration.sql` applied by the owner **before Phase 7
-deploys** (three additive columns and one filtered index — see the Phase 7 addendum), and
-`scripts/photos-phase6-migration.sql` if it is still outstanding (three additive
-nullable columns, the first schema change since Phase 3 — see the Phase 6 addendum); the first real
-ingest run against the collection, human-supervised; the Immich sidecar deployment
-(`docs/photos-immich-setup.md`); and the dedicated Jellyfin family library plus its scan-then-sync.
-Nothing in this vertical has yet been run against the NAS, the live database, or a real Takeout
-archive.
+Status: **SHIPPED — historical.** All eight phases (0–7) live in production since 2026-08-13:
+every migration applied, the collection ingested (~21,900 assets), the Gallery shelf populated,
+the family Jellyfin library created and synced, the year rail and selection dock shipped after
+this doc was written. Current truth lives in the `photos` skill (`.claude/skills/photos`) and its
+companion `photos-library-ops` (runbooks + live data state); the counts and "awaiting" items that
+appeared here are long stale. This doc remains as the design record — code comments still cite
+its §s for WHY. Still-unbuilt corners it describes honestly: the Immich sidecar deployment
+(`docs/photos-immich-setup.md`) and the first Google Takeout mesh — both awaiting the owner, not
+the code.
 
 Goal: a `/photos` section of the site — a Family Photo Album over `L:\7 - Photos & Video` —
 visible only to family-flagged users. Timeline, folder, album, and person views; people tagging

@@ -16,10 +16,10 @@ using MovieTheater.Services;
 namespace MovieTheater.Controllers
 {
     /// <summary>
-    /// Family photo album control plane (docs/photos-plan.md §4). Phase 1 added the browse surfaces —
-    /// timeline, folder tree, asset detail, capability minting and the admin ingest readout; Phase 2
-    /// adds curation (hide flags, suggested-hide review, ingest-batch quarantine) and albums; people,
-    /// dupes and video playback land in later phases behind this same class-level policy.
+    /// Family photo album control plane (docs/photos-plan.md §4): the browse surfaces (timeline,
+    /// folder tree, asset detail, capability minting, the admin ingest readout), curation (hide flags,
+    /// suggested-hide review, ingest-batch quarantine), albums, people and tagging, dupe review, and
+    /// video playback — every endpoint behind this same class-level policy.
     ///
     /// <para>The policy is declared ONCE, here, rather than per action — an endpoint added later
     /// inherits the gate instead of having to remember it, which is the failure mode that makes

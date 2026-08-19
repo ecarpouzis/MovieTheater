@@ -16,9 +16,10 @@ namespace MovieTheater.Photos
     /// the family photos are separate facts, so nothing here consults the admin list.
     ///
     /// <para>The React nav hides <c>/photos</c> for non-members, but the UI is never the gate: the
-    /// policy is applied to the whole <c>PhotosController</c> and re-checked on every request, and it
-    /// will guard token minting and stream starts as those land in later phases (§2.1). Photo bytes are
-    /// gated too, not just metadata — unlike movie posters, which are served openly from /Image.</para>
+    /// policy is applied to the whole <c>PhotosController</c> and re-checked on every request,
+    /// guarding token minting and video stream starts along with every browse surface (§2.1). Photo
+    /// bytes are gated too, not just metadata — unlike movie posters, which are served openly from
+    /// /Image.</para>
     /// </summary>
     public static class FamilyAlbumGate
     {

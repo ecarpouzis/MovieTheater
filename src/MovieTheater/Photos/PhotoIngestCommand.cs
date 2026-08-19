@@ -106,7 +106,7 @@ namespace MovieTheater.Photos
             var passes = ParsePasses(Pass);
             if (passes.Count == 0)
             {
-                w.WriteLine($"Unknown --pass '{Pass}'. Use walk, metadata, hash, thumb or all.");
+                w.WriteLine($"Unknown --pass '{Pass}'. Use walk, metadata, hash, thumb, video or all.");
                 return;
             }
 
