@@ -67,7 +67,6 @@ function NavBar({
   franchiseSearch,
   firstLetterSearch,
   titleTypeSearch,
-  landingSearch,
   ratingSearch,
   restoreMovieIdsSearch,
   moviesSeenSearch,
@@ -158,14 +157,11 @@ function NavBar({
     }
     lastDispatchSigRef.current = dispatchSig;
 
-    // With no other filter active, the default browse is the Type scope itself (random when it's empty).
+    // With no other filter active, the default browse is the Type scope itself. This is also the site's
+    // landing grid: the landing used to be a separate mode that ignored the persisted sort and always
+    // shuffled, but Random is one of the sorts now (and the default one), so "the landing" is just this
+    // browse under whichever sort the user last chose.
     const browseDefault = () => (types.length ? titleTypeSearch(types, sort) : resetSearch());
-
-    // The CLEAN landing — no explicit type/sort param in the URL — shows a RANDOM assortment of the
-    // scope. The persisted Sort (alpha/IMDb/RT) is a *browse* setting: it only applies once the user
-    // actually browses, which always puts a type or sort param in the URL. Any params → sorted browse.
-    const isCleanLanding = typesParam === null && sortParam === null;
-    const landingGrid = () => (isCleanLanding ? landingSearch(types) : browseDefault());
 
     if (!mode) {
       // No search mode in the URL. Determine whether this is a hard browser reload
@@ -189,9 +185,9 @@ function NavBar({
           });
         }
 
-        // A reload re-renders the clean landing's random grid (or the sorted browse if a filter/sort
-        // param is in the URL).
-        landingGrid();
+        // A reload re-renders the browse for the current scope + sort. Under Random that is a genuine
+        // reshuffle: the seed is minted per page load (see SHUFFLE_SEED), so F5 deals a new hand.
+        browseDefault();
         return;
       }
 
@@ -205,11 +201,10 @@ function NavBar({
         return;
       }
 
-      // A clean URL is the landing: a RANDOM assortment of the Type scope (the persisted Sort is a
-      // browse setting, applied only when a type/sort param is present). LANDING_SEED keeps it stable
-      // across re-runs of this effect — e.g. when auth resolves and userData changes — so it doesn't
-      // reshuffle out from under the user.
-      landingGrid();
+      // A clean URL is the landing: the Type scope under the persisted sort, Random by default. The
+      // seed is module-scope in useMovieSearch, so re-runs of this effect — e.g. when auth resolves and
+      // userData changes — re-deal the SAME shuffle rather than reordering out from under the user.
+      browseDefault();
       return;
     }
 
@@ -259,7 +254,6 @@ function NavBar({
     franchiseSearch,
     firstLetterSearch,
     titleTypeSearch,
-    landingSearch,
     ratingSearch,
     restoreMovieIdsSearch,
     moviesSeenSearch,

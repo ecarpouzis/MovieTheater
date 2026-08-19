@@ -1,40 +1,66 @@
 import { useState, useCallback } from "react";
 
 const RANDOM_MOVIES_URL = "/API/GetRandomMovies";
-// One random seed per page load → a STABLE random order for the landing grid across its infinite-scroll
-// pages and effect re-runs (a hard reload reshuffles). The GetMoviesByType seed path orders by a
-// deterministic permutation of (id+seed), so the same seed reproduces the same shuffle on every page.
-const LANDING_SEED = Math.floor(Math.random() * 2000000000);
+// One shuffle seed per page load → a STABLE random order across the grid's infinite-scroll pages and
+// every effect re-run, so a card can't appear twice or be skipped at a page boundary. The server's
+// random sort orders by a deterministic permutation of (id + seed), so the same seed reproduces the
+// same shuffle on every page — and a hard reload mints a new seed, which is the reshuffle.
+const SHUFFLE_SEED = Math.floor(Math.random() * 2000000000);
 const TITLE_TYPES_KEY = "BrowseTitleTypes";
 const SORT_KEY = "BrowseSort";
 
 // The Browse "Sort by" control, like the Type scope, is a persistent overarching setting applied
-// across every browse mode. Values: "alpha" (A→Z by SimpleTitle — the default), "added" (Recently
-// Added, by UploadedDate desc), "imdb", "rt" (Tomatometer), "popcorn" (Popcornmeter). Persisted so
-// it survives reloads/sessions.
-export const BROWSE_SORTS = ["alpha", "added", "imdb", "rt", "popcorn"];
+// across every browse mode. Values: "random" (the shuffled discovery grid — the DEFAULT, and what the
+// site opens on), "alpha" (A→Z by SimpleTitle), "added" (Recently Added, by UploadedDate desc),
+// "imdb", "rt" (Tomatometer), "popcorn" (Popcornmeter). Persisted so it survives reloads/sessions.
+//
+// Random being a sort rather than a special landing mode is what makes the discovery grid ordinary:
+// it pages, filters, and scopes exactly like the other five instead of being its own endpoint.
+export const BROWSE_SORTS = ["random", "alpha", "added", "imdb", "rt", "popcorn"];
+export const DEFAULT_SORT = "random";
 
 export function loadSort() {
   try {
     const raw = window.localStorage.getItem(SORT_KEY);
-    return BROWSE_SORTS.includes(raw) ? raw : "alpha";
+    return BROWSE_SORTS.includes(raw) ? raw : DEFAULT_SORT;
   } catch {
-    return "alpha";
+    return DEFAULT_SORT;
   }
 }
 
 export function saveSort(sort) {
   try {
-    window.localStorage.setItem(SORT_KEY, BROWSE_SORTS.includes(sort) ? sort : "alpha");
+    window.localStorage.setItem(SORT_KEY, BROWSE_SORTS.includes(sort) ? sort : DEFAULT_SORT);
   } catch {
     /* ignore — a stale persisted sort just means the default next time */
   }
 }
 
-// Append the active sort to a browse endpoint URL. "alpha" is the server default, but we send it
-// explicitly anyway so a type-scope browse is alphabetical (not the legacy random seed).
+// Append the active sort to a browse endpoint URL. Sent explicitly even when it matches the server's
+// own default, so a browse's order is never inferred from which params happen to be present. The
+// random sort carries the page-load seed — without it every page would reshuffle independently.
 function sortSuffix(sort) {
-  return `&sort=${encodeURIComponent(BROWSE_SORTS.includes(sort) ? sort : "alpha")}`;
+  const s = BROWSE_SORTS.includes(sort) ? sort : DEFAULT_SORT;
+  return `&sort=${encodeURIComponent(s)}${s === "random" ? `&seed=${SHUFFLE_SEED}` : ""}`;
+}
+
+// The letter-strip source for a browse, or undefined when it has none. /API/BrowseLetters buckets the
+// SAME rows the search pages (same mode/value/types — one shared filter server-side), so choosing
+// Alphabetical gets the movie grid the music library's A–Z jump strip over whatever is being browsed,
+// not just over the unfiltered library. Anything else falls back to the pager's page numbers.
+//
+// Only the alpha sort has letters worth jumping to, and only a scoped browse: BrowseLetters needs a
+// type scope, and a Misc-inclusive one is a curated in-memory merge with no DB row order to walk.
+function lettersUrlFor(types, sort, mode, value) {
+  if (sort !== "alpha") return undefined;
+  const list = (Array.isArray(types) ? types : []).filter(Boolean);
+  if (list.length === 0 || list.includes("Misc")) return undefined;
+  const p = new URLSearchParams({ type: list.join(",") });
+  if (mode) {
+    p.set("mode", mode);
+    p.set("value", value);
+  }
+  return `/API/BrowseLetters?${p.toString()}`;
 }
 
 // The Browse "Type" filter is a persistent, overarching scope applied across every browse mode (it
@@ -94,13 +120,14 @@ export function useMovieSearch() {
   }, []);
 
   // These now hit unified API endpoints that return BOTH movies and series (kind-tagged), each
-  // narrowed to the current Type scope.
+  // narrowed to the current Type scope. Every one carries its own lettersUrl so the A–Z strip follows
+  // the alphabetical sort into a filtered browse, not just the unfiltered library.
   const titleSearch = useCallback((title, types, sort) => {
-    setSearch({ url: `/API/BrowseTitle?q=${encodeURIComponent(title)}${scopeSuffix(types)}${sortSuffix(sort)}`, titleTypes: types, sort, infinite: true });
+    setSearch({ url: `/API/BrowseTitle?q=${encodeURIComponent(title)}${scopeSuffix(types)}${sortSuffix(sort)}`, lettersUrl: lettersUrlFor(types, sort, "title", title), titleTypes: types, sort, infinite: true });
   }, []);
 
   const actorSearch = useCallback((person, types, sort) => {
-    setSearch({ url: `/API/BrowsePerson?q=${encodeURIComponent(person)}${scopeSuffix(types)}${sortSuffix(sort)}`, actor: person, titleTypes: types, sort, infinite: true });
+    setSearch({ url: `/API/BrowsePerson?q=${encodeURIComponent(person)}${scopeSuffix(types)}${sortSuffix(sort)}`, lettersUrl: lettersUrlFor(types, sort, "actor", person), actor: person, titleTypes: types, sort, infinite: true });
   }, []);
 
   // Genre filter (AND across genres), within the Type scope.
@@ -112,7 +139,7 @@ export function useMovieSearch() {
       setSearch({ url: RANDOM_MOVIES_URL, titleTypes: types, sort });
       return;
     }
-    setSearch({ url: `/API/BrowseGenre?genres=${encodeURIComponent(list.join(","))}${scopeSuffix(types)}${sortSuffix(sort)}`, genre: list, titleTypes: types, sort, infinite: true });
+    setSearch({ url: `/API/BrowseGenre?genres=${encodeURIComponent(list.join(","))}${scopeSuffix(types)}${sortSuffix(sort)}`, lettersUrl: lettersUrlFor(types, sort, "genre", list.join(",")), genre: list, titleTypes: types, sort, infinite: true });
   }, []);
 
   // All titles in a model-tagged franchise / shared universe, within the Type scope.
@@ -122,15 +149,23 @@ export function useMovieSearch() {
       setSearch({ url: RANDOM_MOVIES_URL, titleTypes: types, sort });
       return;
     }
-    setSearch({ url: `/API/BrowseFranchise?franchise=${encodeURIComponent(fx)}${scopeSuffix(types)}${sortSuffix(sort)}`, franchise: fx, titleTypes: types, sort, infinite: true });
+    setSearch({ url: `/API/BrowseFranchise?franchise=${encodeURIComponent(fx)}${scopeSuffix(types)}${sortSuffix(sort)}`, lettersUrl: lettersUrlFor(types, sort, "franchise", fx), franchise: fx, titleTypes: types, sort, infinite: true });
   }, []);
 
+  // No rail control writes ?mode=letter any more — the A–Z grid in the sidebar was replaced by the
+  // on-page CatalogPager strip, which SCROLLS the alphabetical list instead of re-querying it (the
+  // music/boardgames convention). The mode is kept because existing links and bookmarks use it.
   const firstLetterSearch = useCallback((firstLetter, types, sort) => {
-    setSearch({ url: `/API/BrowseLetter?letter=${encodeURIComponent(firstLetter)}${scopeSuffix(types)}${sortSuffix(sort)}`, startsWith: firstLetter, titleTypes: types, sort, infinite: true });
+    setSearch({ url: `/API/BrowseLetter?letter=${encodeURIComponent(firstLetter)}${scopeSuffix(types)}${sortSuffix(sort)}`, lettersUrl: lettersUrlFor(types, sort, "letter", firstLetter), startsWith: firstLetter, titleTypes: types, sort, infinite: true });
   }, []);
 
-  // The Type scope on its own — the default browse when no other filter is active. `types` is the
-  // scope (multi-select, OR semantics); an empty scope falls back to the random discovery grid.
+  // The Type scope on its own — the default browse when no other filter is active, and so also the
+  // site's landing grid. `types` is the scope (multi-select, OR semantics); an empty scope falls back
+  // to the one-shot all-types random endpoint (there is no paged endpoint that spans every table).
+  //
+  // There is no separate "landing" search any more. The landing used to be its own mode that ignored
+  // the persisted sort and sent a bare seed; now that Random is one of the six sorts and the default
+  // one, the landing is simply this browse under whichever sort the user last chose.
   const titleTypeSearch = useCallback((types, sort) => {
     const list = (Array.isArray(types) ? types : String(types).split(","))
       .map((t) => t.trim())
@@ -140,28 +175,9 @@ export function useMovieSearch() {
       return;
     }
     // infinite: this endpoint is paginated server-side; Browse streams it page-by-page. The Sort-by
-    // control drives the order (Alphabetical by default), so the result is a stable, deterministic
-    // ordering across pages rather than the former random assortment.
-    setSearch({ url: `/API/GetMoviesByType?type=${encodeURIComponent(list.join(","))}${sortSuffix(sort)}`, titleTypes: list, sort, infinite: true });
-  }, []);
-
-  // The clean landing / home grid: the active Type scope in RANDOM order (the discovery grid). Unlike
-  // titleTypeSearch it sends NO sort — the persisted Alphabetical/IMDb/RT sort is a *browse* setting,
-  // not the landing. The seed gives a stable shuffle (see LANDING_SEED). An empty scope ("all types")
-  // falls back to the dedicated all-types random endpoint.
-  const landingSearch = useCallback((types) => {
-    const list = (Array.isArray(types) ? types : String(types).split(","))
-      .map((t) => t.trim())
-      .filter(Boolean);
-    if (list.length === 0) {
-      setSearch({ url: RANDOM_MOVIES_URL, titleTypes: [] });
-      return;
-    }
-    setSearch({
-      url: `/API/GetMoviesByType?type=${encodeURIComponent(list.join(","))}&seed=${LANDING_SEED}`,
-      titleTypes: list,
-      infinite: true,
-    });
+    // control drives the order, so the result is a stable, deterministic ordering across pages —
+    // including under Random, which is a seeded permutation rather than a per-page reshuffle.
+    setSearch({ url: `/API/GetMoviesByType?type=${encodeURIComponent(list.join(","))}${sortSuffix(sort)}`, lettersUrl: lettersUrlFor(list, sort), titleTypes: list, sort, infinite: true });
   }, []);
 
   // Browse ONE MPA rating (the rating itself, not a ceiling). `ratingIds` is the comma-separated set
@@ -211,7 +227,6 @@ export function useMovieSearch() {
     franchiseSearch,
     firstLetterSearch,
     titleTypeSearch,
-    landingSearch,
     ratingSearch,
     movieIDListSearch,
     restoreMovieIdsSearch,

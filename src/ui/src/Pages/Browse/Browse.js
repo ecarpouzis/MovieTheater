@@ -135,25 +135,23 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
     },
   });
 
-  // A–Z buckets for the pager — only for the alphabetical Type-scope browse, the one list whose
-  // letters the server can bucket cheaply (/API/BrowseLetters mirrors GetMoviesByType's ordering).
-  // Every other sparse list shows page numbers. The landing grid (seeded random) gets neither.
+  // A–Z buckets for the pager. The search states its own letter source (useMovieSearch's lettersUrl):
+  // /API/BrowseLetters buckets exactly the rows this search pages — same mode/value/type scope, one
+  // shared filter server-side — so picking Alphabetical gets the movie grid the same letter strip the
+  // music library has, over whatever is actually being browsed. Any other sort has no letters to jump
+  // to and the pager falls back to page numbers.
+  const lettersUrl = sparseInfinite ? search.lettersUrl : null;
   const [letters, setLetters] = useState(null);
   useEffect(() => {
     setLetters(null);
-    if (!sparseInfinite || !search.url) return undefined;
-    const u = new URL(search.url, window.location.origin);
-    if (u.pathname !== "/API/GetMoviesByType") return undefined;
-    if ((u.searchParams.get("sort") || "alpha") !== "alpha" || u.searchParams.get("seed")) return undefined;
-    const type = u.searchParams.get("type") || "";
+    if (!lettersUrl) return undefined;
     let alive = true;
-    fetch(`/API/BrowseLetters?type=${encodeURIComponent(type)}`)
+    fetch(lettersUrl)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => { if (alive && d?.letters?.length) setLetters(d.letters); })
       .catch(() => {});
     return () => { alive = false; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sparseInfinite, listKey]);
+  }, [lettersUrl]);
 
   // The slot array the grid renders in sparse mode: `total` long from the first response, holes
   // where a page hasn't arrived. CardList renders a hole as a same-footprint skeleton card.

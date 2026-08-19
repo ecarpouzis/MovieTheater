@@ -46,21 +46,9 @@ html {
   overflow-x: clip;
 }
 
-/* First-letter grids + the browse "simple" 2-up card grid — plain CSS replacements for the antd
-   <List grid> layouts (List is deprecated in antd 6, removed in v7). Breakpoints mirror the old
-   grid props: 3-up (xs–lg) → 4-up at ≥1200px (xl/xxl) for letters; fixed 2-up for the cards. */
-.letter-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  justify-items: center;
-  gap: 8px 6px;
-  width: 100%;
-}
-@media (min-width: 1200px) {
-  .letter-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
+/* The browse "simple" 2-up card grid — a plain CSS replacement for the antd <List grid> layout
+   (List is deprecated in antd 6, removed in v7). (Its sibling .letter-grid went with the rails'
+   A–Z grids; quick-scroll is the on-page CatalogPager strip now.) */
 .simple-card-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -284,18 +272,6 @@ img {
   display: flex !important;
 }
 
-/* Alphabet list scrollable space */
-.nav-search-tools .letter-grid {
-  padding-bottom: 30px !important;
-}
-
-.nav-search-tools .search-letter-btn:hover,
-.nav-search-tools .search-letter-btn:focus {
-  background-color: var(--accent) !important;
-  border-color: var(--accent) !important;
-  color: #ffffff !important;
-}
-
 /* MPA Rating Search slider (on the dark sidebar). Each stop browses THAT rating — it used to be a
    cap, where PG-13 meant "PG-13 and everything tamer". */
 .rating-search-slider .ant-slider-rail {
@@ -350,38 +326,11 @@ img {
   line-height: 1.3 !important;
 }
 
-/* Desktop alphabet button styling (original).
-   These MUST stay scoped to .search-letter-btn, not every .ant-btn in the container: the
-   nav-search-tools class is shared by three different sidebars (SearchTools, BoardGameNavContent,
-   ArcadeNavContent). A blanket .ant-btn rule squashed Arcade's "Clear filters" into a 36px square
-   with its label absolutely positioned outside the box. */
+/* Any rule added here MUST stay scoped to the specific control it targets, never to every .ant-btn
+   in the container: the nav-search-tools class is shared by three different sidebars (SearchTools,
+   BoardGameNavContent, ArcadeNavContent). A blanket .ant-btn rule once squashed Arcade's "Clear
+   filters" into a 36px square with its label absolutely positioned outside the box. */
 @media (min-width: 769px) {
-  .nav-search-tools .letter-grid {
-    row-gap: 10px;
-  }
-
-  .nav-search-tools .search-letter-btn {
-    width: 36px !important;
-    height: 36px !important;
-    position: relative !important;
-  }
-
-  .nav-search-tools .search-letter-btn span {
-    font-size: 11px !important;
-    font-weight: bold !important;
-    position: absolute;
-    width: 100%;
-    height: 1em;
-    line-height: 1em;
-    top: 50%;
-    left: 0px;
-    margin-top: -0.5em;
-  }
-
-  .nav-search-tools .letter-grid {
-    padding-right: 0 !important;
-  }
-
   /* Desktop search button consistency */
   .nav-search-tools .ant-input-search-btn {
     height: 32px !important;

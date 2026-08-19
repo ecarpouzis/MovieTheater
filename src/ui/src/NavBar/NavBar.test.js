@@ -63,7 +63,7 @@ const familyMember = { ...userData, familyAlbum: true };
 const noopSearchProps = Object.fromEntries(
   [
     "search", "resetSearch", "titleSearch", "actorSearch", "genreSearch", "franchiseSearch",
-    "firstLetterSearch", "titleTypeSearch", "landingSearch", "ratingSearch", "restoreMovieIdsSearch",
+    "firstLetterSearch", "titleTypeSearch", "ratingSearch", "restoreMovieIdsSearch",
     "moviesSeenSearch", "moviesWantToWatchSearch",
   ].map((k) => [k, vi.fn()])
 );

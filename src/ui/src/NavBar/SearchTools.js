@@ -3,10 +3,13 @@ import { useState, useEffect } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import { MovieAPI } from "../MovieAPI";
 import { loadSort } from "../hooks/useMovieSearch";
-import { inputLabelStyle, getPopupContainer, LetterGrid } from "./navShared";
+import { inputLabelStyle, getPopupContainer } from "./navShared";
 
 // Sort-by options for the Browse grid. Labels are user-facing; values match the API `sort` param.
+// Random leads because it is the default: it's the shuffled discovery grid the site opens on, and
+// making it an ordinary sort is what lets it be paged, filtered and scoped like the rest.
 const SORT_OPTIONS = [
+  { label: "Random", value: "random" },
   { label: "Alphabetical (A–Z)", value: "alpha" },
   { label: "Recently Added", value: "added" },
   { label: "IMDb rating", value: "imdb" },
@@ -67,7 +70,7 @@ function SearchTools({ search, userData }) {
 
   // Navigate the Browse grid. The Type scope (`types` param) persists across mode changes: every
   // caller leaves it untouched except the Type selector, which passes typesOverride to change it
-  // ("" = all types). So clearing a genre/letter/title search returns to browsing the current scope,
+  // ("" = all types). So clearing a genre/title search returns to browsing the current scope,
   // never a hardcoded default.
   function navigateToBrowseSearch(mode, value = "", typesOverride, sortOverride) {
     const current = new URLSearchParams(location.search);
@@ -97,15 +100,6 @@ function SearchTools({ search, userData }) {
       pathname: "/",
       search: params.toString() ? `?${params.toString()}` : "",
     });
-  }
-
-  function ToggleLetterSearch(firstLetter) {
-    const isAlreadySelected = search.startsWith === firstLetter;
-    if (isAlreadySelected) {
-      navigateToBrowseSearch();
-    } else {
-      navigateToBrowseSearch("letter", firstLetter);
-    }
   }
 
   // ── MPA Rating Search slider ───────────────────────────────────────────
@@ -243,8 +237,11 @@ function SearchTools({ search, userData }) {
           onChangeComplete={onRatingPick}
         />
       </div>
-      <span style={inputLabelStyle}>First Letter</span>
-      <LetterGrid active={search.startsWith} onToggle={ToggleLetterSearch} />
+      {/* The A–Z rail grid is gone (boardgames dropped its own first): quick-scroll is the on-page
+          CatalogPager now, the same strip the music library uses. A letter tap SCROLLS the
+          alphabetical grid instead of replacing the browse with "titles starting with X" — so the
+          genre/type/rating filters survive the jump. Pick Alphabetical in Sort By to get the strip;
+          ?mode=letter URLs still work, there's just no rail control writing them. */}
     </div>
   );
 }

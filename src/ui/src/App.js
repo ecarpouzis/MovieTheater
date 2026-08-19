@@ -54,7 +54,7 @@ function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { theme, toggleTheme } = useTheme();
 
-  const { search, resetSearch, titleSearch, actorSearch, genreSearch, franchiseSearch, firstLetterSearch, titleTypeSearch, landingSearch, ratingSearch, restoreMovieIdsSearch, moviesSeenSearch, moviesWantToWatchSearch } =
+  const { search, resetSearch, titleSearch, actorSearch, genreSearch, franchiseSearch, firstLetterSearch, titleTypeSearch, ratingSearch, restoreMovieIdsSearch, moviesSeenSearch, moviesWantToWatchSearch } =
     useMovieSearch();
 
   function applyUserData(responseData, username) {
@@ -127,7 +127,6 @@ function App() {
           franchiseSearch={franchiseSearch}
           firstLetterSearch={firstLetterSearch}
           titleTypeSearch={titleTypeSearch}
-          landingSearch={landingSearch}
           ratingSearch={ratingSearch}
           restoreMovieIdsSearch={restoreMovieIdsSearch}
           moviesSeenSearch={moviesSeenSearch}

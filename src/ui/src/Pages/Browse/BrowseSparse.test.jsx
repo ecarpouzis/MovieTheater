@@ -74,8 +74,12 @@ async function frames(n = 14) {
   }
 }
 
+// Shaped like what useMovieSearch emits: the search names its OWN letter source, so Browse doesn't
+// have to reverse-engineer one out of the browse URL (which is what kept the strip pinned to the
+// unfiltered Type-scope browse). No lettersUrl = no strip, and the pager falls back to page numbers.
 const urlSearch = {
   url: `/API/GetMoviesByType?type=Movies&sort=alpha`,
+  lettersUrl: `/API/BrowseLetters?type=Movies`,
   titleTypes: ["Movies"],
   sort: "alpha",
   infinite: true,
@@ -124,7 +128,7 @@ describe("the sparse browse catalog", () => {
   });
 
   it("asks for no letters under a non-alphabetical sort (page numbers instead)", async () => {
-    const { container } = mount({ ...urlSearch, url: `/API/GetMoviesByType?type=Movies&sort=imdb`, sort: "imdb" });
+    const { container } = mount({ ...urlSearch, url: `/API/GetMoviesByType?type=Movies&sort=imdb`, lettersUrl: undefined, sort: "imdb" });
     await frames();
     expect(requests.some((r) => r.startsWith("/API/BrowseLetters"))).toBe(false);
     // Pages-mode pager still renders (600 titles = 10 pages).

@@ -1,4 +1,3 @@
-import { Button } from "antd";
 import { useHistory, useLocation } from "react-router-dom";
 import LoginForm from "./LoginForm";
 import UserPanelHeader from "./UserPanelHeader";
@@ -53,45 +52,7 @@ export function useSectionParams(pathname) {
   };
 }
 
-export const searchLetters = [
-  "#", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
-  "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
-];
-
-// The absolutely-centered glyph inside a 36px .search-letter-btn square (the class carries the
-// square + position:relative in index.css).
-const searchLetterStyle = {
-  fontWeight: "bold",
-  position: "absolute",
-  width: "100%",
-  height: "1em",
-  lineHeight: "1em",
-  top: "50%",
-  left: "0px",
-  marginTop: "-0.5em",
-};
-
-// The first-letter grid (movies + boardgames rails). Plain CSS grid (.letter-grid in index.css) —
-// this was an antd <List grid>, which v6 deprecated and v7 removes. `active` is the currently
-// toggled letter (or falsy); onToggle receives the tapped letter and owns the toggle-off logic.
-export function LetterGrid({ active, onToggle }) {
-  return (
-    <div className="letter-grid" style={{ paddingBottom: "20px" }}>
-      {searchLetters.map((item) => (
-        <Button
-          key={item}
-          className="search-letter-btn"
-          onClick={() => onToggle(item)}
-          style={{
-            width: "36px",
-            backgroundColor: item === active ? "var(--accent)" : "var(--sidebar-pill-bg)",
-            color: item === active ? "#fff" : "var(--sidebar-text-muted)",
-            borderColor: item === active ? "var(--accent)" : "var(--sidebar-input-border)",
-          }}
-        >
-          <span style={searchLetterStyle}>{item}</span>
-        </Button>
-      ))}
-    </div>
-  );
-}
+// The A–Z LetterGrid that used to live here is gone. Both rails that had one (boardgames, then
+// movies) moved their quick-scroll to the on-page CatalogPager strip, where a letter SCROLLS the
+// alphabetical list instead of re-querying it as "titles starting with X" — the music-library
+// convention. Nothing replaced it in the rail; the strip lives with the grid it seeks into.
