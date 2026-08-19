@@ -218,6 +218,10 @@ img {
   overflow-y: auto;
   height: 100%;
   padding-right: 10px;
+  /* The music mini-player (fixed, bottom 0, every route) covers the last ~72px of any page while
+     music plays — every page's content clears it here rather than each page rediscovering it.
+     0px with nothing playing (the var is published by MusicMiniPlayer). */
+  padding-bottom: var(--music-miniplayer-height, 0px);
   -webkit-overflow-scrolling: touch;
   background: var(--content-bg);
   transition: background-color 0.2s ease;
@@ -244,7 +248,9 @@ img {
     overflow-y: visible;
     height: auto;
     padding-right: 0;
-    padding-top: 48px;
+    /* The token, not a second copy of the number — --content-top-inset is 48px here (declared on
+       html above) and useGridWindow reads the same token, so the two can't drift. */
+    padding-top: var(--content-top-inset);
   }
 
   .moviePosterImage {

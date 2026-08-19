@@ -3,7 +3,9 @@
 .watch-room {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  /* Above the mobile navbar topbar (1300): the room is the whole screen and has its own Back;
+     below the sheet modals (1500) and antd messages (1600). */
+  z-index: 1400;
   background: var(--vp-black, #000000);
   display: flex;
   align-items: center;

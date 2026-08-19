@@ -6,7 +6,9 @@
 .tv-room {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  /* Above the mobile navbar topbar (1300): the room is the whole screen and has its own exit;
+     below the sheet modals (1500) and antd messages (1600). */
+  z-index: 1400;
   background: #000000;
   overflow: hidden;
   display: flex;
