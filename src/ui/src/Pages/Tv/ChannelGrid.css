@@ -1,7 +1,12 @@
 /* Cross-channel grid guide (EPG). Sits over the whole TV room as a full overlay. The horizontal
    scale is driven by --epg-ppm (pixels per minute) and the channel column by --epg-chanw; both shrink
    at narrower breakpoints so the same grid works on desktop, tablet, and phone (phone accepts the
-   horizontal scroll). --epg-totalmin (the window width in minutes) is set inline from JS. */
+   horizontal scroll). --epg-totalmin (the window width in minutes) is set inline from JS.
+
+   THEME-INDEPENDENT ON PURPOSE — do not tokenize. The same markup is the in-room overlay (it must
+   read over video) and the whole of /channels, where .channel-guide-page below pins it fixed and
+   full-bleed at 0.97 alpha. It never renders as content-area page UI, so it supplies its own dark
+   cable-box ground in both themes rather than following --card-surface. */
 .epg {
   position: absolute;
   inset: 0;
