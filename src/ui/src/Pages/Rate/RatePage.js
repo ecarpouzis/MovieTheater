@@ -21,6 +21,7 @@ import { MovieAPI } from "../../MovieAPI";
 import RateRow from "./RateRow";
 import { computeScores } from "./computeScores";
 import { reconstructLayout, diffScores, anchorsToSave, movieKey } from "./rateLayout";
+import { useDebouncedCallback } from "../../hooks/useDebounce";
 import "./RatePage.css";
 
 const SAVE_DEBOUNCE_MS = 800;
@@ -52,7 +53,6 @@ function RatePage({ userData, setUserData }) {
   const itemsRef = useRef(items);
   itemsRef.current = items;
   const baselineRef = useRef(new Map()); // last-saved score map (movieKey → score)
-  const saveTimer = useRef(null);
   const savingRef = useRef(false);
   const anchorSeq = useRef(1);
 
@@ -147,17 +147,9 @@ function RatePage({ userData, setUserData }) {
     }
   };
 
-  const scheduleSave = () => {
-    if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(runSave, SAVE_DEBOUNCE_MS);
-  };
-
-  // Flush a pending save on unmount so a quick navigate-away doesn't drop the last edit.
-  useEffect(() => {
-    return () => {
-      if (saveTimer.current) clearTimeout(saveTimer.current);
-    };
-  }, []);
+  // Shared trailing debounce; it re-arms on every edit and cancels itself on unmount. It always runs
+  // the latest runSave, which is what lets runSave re-arm itself while a save is still in flight.
+  const scheduleSave = useDebouncedCallback(() => runSave(), SAVE_DEBOUNCE_MS);
 
   // ── Mutations ──
   const onDragEnd = ({ active, over }) => {

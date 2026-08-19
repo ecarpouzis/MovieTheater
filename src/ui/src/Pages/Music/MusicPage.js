@@ -14,6 +14,7 @@ import "./MusicPage.css";
 import "./MusicPlaylists.css";
 import { formatDuration } from "../../utils/format";
 import useCachedResource from "../../hooks/useCachedResource";
+import { useDebouncedCallback } from "../../hooks/useDebounce";
 
 // ── The music library (music-plan.md §2.6) ──────────────────────────────────
 // Catalog strategy: artists (333) and albums (1.3k) load whole, once, and every view/search over
@@ -171,21 +172,25 @@ function MusicPage({ userData }) {
   // excluded material one stale filter away from the grid it was excluded from.)
 
   // Server song search rides the same q, debounced a touch.
+  // Scoped to the shelf, like the grid: a search from the music library that surfaced 429 comedy
+  // bits would be the pollution problem back again, one input to the left.
+  const searchSongs = useDebouncedCallback((term, shelf) => {
+    MovieAPI.searchMusicTracks(term, shelf)
+      .then((r) => (r.ok ? r.json() : { tracks: [] }))
+      .then((data) => setSongResults(data.tracks || []))
+      .catch(() => setSongResults([]));
+  }, 250);
+
   useEffect(() => {
+    // A q that fell below the minimum clears NOW and cancels anything armed — a late landing would
+    // repopulate the list the user just emptied.
     if (q.length < 2) {
+      searchSongs.cancel();
       setSongResults(null);
-      return undefined;
+      return;
     }
-    const t = setTimeout(() => {
-      // Scoped to the shelf, like the grid: a search from the music library that surfaced 429 comedy
-      // bits would be the pollution problem back again, one input to the left.
-      MovieAPI.searchMusicTracks(q, kind)
-        .then((r) => (r.ok ? r.json() : { tracks: [] }))
-        .then((data) => setSongResults(data.tracks || []))
-        .catch(() => setSongResults([]));
-    }, 250);
-    return () => clearTimeout(t);
-  }, [q, kind]);
+    searchSongs(q, kind);
+  }, [q, kind, searchSongs]);
 
   // Artist detail (albums + loose tracks) when ?artist= is present.
   useEffect(() => {

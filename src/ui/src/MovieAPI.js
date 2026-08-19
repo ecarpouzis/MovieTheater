@@ -747,8 +747,10 @@ function getChannelList() {
   return fetch("/API/Channel/List");
 }
 
-function getGuideGrid(hours = 6) {
-  return fetch(`/API/Channel/GuideGrid?hours=${hours}`);
+// Cross-channel "what's on everywhere" for the EPG. Takes a signal because the grid time-bounds the
+// request — a hung fetch would otherwise leave every row on "Updating…".
+function getGuideGrid(hours = 6, signal) {
+  return fetch(`/API/Channel/GuideGrid?hours=${hours}`, { signal });
 }
 
 // Channel favorites ride on the generic per-user settings store as a JSON id array.
@@ -760,6 +762,62 @@ function setFavoriteChannels(ids) {
 // player tune a channel it reached by id (e.g. a watch-party channel, hidden from the guide list).
 function getChannelMeta(id) {
   return fetch(`/API/Channel/${id}/Meta`);
+}
+
+// ── The TV room's own calls (TvPage) ─────────────────────────────────────────
+// These follow the unwrap-or-throw contract below rather than handing back a Response: every one of
+// the room's call sites either wants the parsed body or wants the HTTP status, and nothing in
+// between. The status rides on the thrown Error because the room's error copy is written per code
+// (401 sign in / 403 no streaming / 404+501 no tower).
+
+async function channelJson(url, init) {
+  const response = await fetch(url, init);
+  if (!response.ok) throw Object.assign(new Error(`HTTP ${response.status}`), { status: response.status });
+  return response.json();
+}
+
+// What's on right now: { current, next, skip, restart, viewers, paused }. Also the presence
+// heartbeat — the server counts a caller as watching (see the tv skill), so this is never a
+// throwaway read.
+function getChannelNow(id, signal) {
+  return channelJson(`/API/Channel/${id}/Now`, { signal });
+}
+
+// This channel's own lineup for the in-room guide list (the cross-channel EPG is getGuideGrid).
+function getChannelGuide(id, hours = 12, signal) {
+  return channelJson(`/API/Channel/${id}/Guide?hours=${hours}`, { signal });
+}
+
+// Skip / restart are VOTES scoped to the current itemId; the answer says whether the vote carried
+// ({ skipped } / { restarted }) plus the running tally.
+function voteChannelSkip(id, itemId) {
+  return channelJson(`/API/Channel/${id}/Skip`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ itemId }),
+  });
+}
+
+function voteChannelRestart(id, itemId) {
+  return channelJson(`/API/Channel/${id}/Restart`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ itemId }),
+  });
+}
+
+// Not a vote — anyone watching freezes or resumes the channel for everyone. Returns { paused }.
+function toggleChannelPlayPause(id) {
+  return channelJson(`/API/Channel/${id}/PlayPause`, { method: "POST" });
+}
+
+// Offered only to a lone viewer; the server refuses ({ seeked: false }) if someone tuned in meanwhile.
+function seekChannel(id, itemId, offsetSeconds) {
+  return channelJson(`/API/Channel/${id}/Seek`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ itemId, offsetSeconds }),
+  });
 }
 
 // ── User playlists & watch parties (docs/playlists-watchparty-plan.md) ────────
@@ -1746,6 +1804,12 @@ const MovieAPI = {
   getChannelList,
   getGuideGrid,
   getChannelMeta,
+  getChannelNow,
+  getChannelGuide,
+  voteChannelSkip,
+  voteChannelRestart,
+  toggleChannelPlayPause,
+  seekChannel,
   setFavoriteChannels,
   createPlaylist,
   getMyPlaylists,

@@ -11,6 +11,10 @@ import CatalogPager from "../../Components/CatalogPager";
 // Matches Music's PAGE_STEP: only feeds CatalogPager's page-mode arithmetic (letters mode ignores it).
 const PAGE_STEP = 120;
 
+// One shared empty list for the (majority) games with no expansions. A fresh `[]` per render is a new
+// prop identity, which silently defeats BoardGameCard's memo for exactly those cards.
+const NO_EXPANSIONS = [];
+
 // One card. The DOM deliberately reuses the Browse card skeleton (CardList.css classes) with
 // boardgame-specific overrides layered in BoardGameCardList.css. Memoized so a filter/sort/modal
 // render doesn't re-render every mounted card.
@@ -122,7 +126,7 @@ function BoardGameCardList({ games, expansionMap, onGameClick, listKey, letters 
             <BoardGameCard
               key={game.id}
               game={game}
-              expansions={expansionMap?.[game.id] ?? []}
+              expansions={expansionMap?.[game.id] ?? NO_EXPANSIONS}
               tooltipTrigger={tooltipTrigger}
               onGameClick={onGameClick}
             />

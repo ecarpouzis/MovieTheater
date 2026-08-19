@@ -8,6 +8,7 @@ import { useIdleChrome } from "../../useIdleChrome";
 import { createHls, bandwidthSample } from "../../streamEngine";
 import { autoBpsLabel, abrProfileFor, isAutoQuality } from "../../streamAbr";
 import { useAdaptiveBitrate } from "../../useAdaptiveBitrate";
+import { useVideoIncidents, noteStreamSwitch } from "../../videoIncidents";
 import { useWakeLock } from "../../useWakeLock";
 import { useMediaSession } from "../../useMediaSession";
 import { usePictureInPicture } from "../../usePictureInPicture";
@@ -141,6 +142,24 @@ function TvPage({ userData }) {
       const ch = channelRef.current;
       if (ch) tuneRef.current?.(ch);
     },
+  });
+
+  // Self-reported playback failures — the same shared recorder the Watch player uses (there is no
+  // per-player detection logic; see videoIncidents for what fires and what deliberately doesn't).
+  // A TV incident is identified by its CHANNEL first: "channel 12 froze" is how it gets reported,
+  // and the schedule item riding along is what says which film it was.
+  useVideoIncidents({
+    player: "tv",
+    videoRef,
+    identity: { channelId: channel?.id ?? null, playableId: now?.current?.playableId ?? null },
+    ladder: {
+      qualityKey: quality,
+      autoBps,
+      copied: playingDirect,
+      codec: playingVideoCodec,
+      sourceVideoBps: sourceVideoBpsRef.current,
+    },
+    timelineOffsetRef,
   });
 
   // tune() (and prewarm) read the current track selection without re-binding on every change.
@@ -331,6 +350,11 @@ function TvPage({ userData }) {
       if (!chan) return;
       const seq = ++tuneSeqRef.current;
       const superseded = () => seq !== tuneSeqRef.current;
+      // A re-tune IS a session restart — a new ffmpeg and several seconds of frozen picture by
+      // design. Marked here (rather than off a changing src prop, which this player doesn't have)
+      // so the incident recorder never files the restart's own rebuffer as a stall. The Watch
+      // player's equivalent is its src change; both land on the same noteStreamSwitch.
+      noteStreamSwitch("tune");
       clearTimeout(advanceTimerRef.current);
       clearTimeout(prewarmTimerRef.current);
       stopSession();
@@ -347,10 +371,9 @@ function TvPage({ userData }) {
 
       try {
         const askedAt = performance.now();
-        const nowResponse = await fetch(`/API/Channel/${chan.id}/Now`);
-        if (superseded()) return;
-        if (!nowResponse.ok) throw Object.assign(new Error(), { status: nowResponse.status });
-        const nowData = await nowResponse.json();
+        // No signal here: the monotonic tune id IS this call's cancellation — a superseded tune drops
+        // its own answer, and aborting would also lose the presence beat the poll relies on.
+        const nowData = await MovieAPI.getChannelNow(chan.id);
         if (superseded()) return;
         setNow(nowData);
         if (!nowData.current) {
@@ -572,7 +595,10 @@ function TvPage({ userData }) {
   const loadChannels = useCallback(
     (keepSelection = false) => {
       setError(null);
-      return fetch("/API/Channel/List")
+      // getChannelList/getChannelMeta hand back the Response — they're shared with the guide page and
+      // the lineup hook, which want a failure to be tolerable. The room doesn't: the status is the
+      // error copy, so it's read here.
+      return MovieAPI.getChannelList()
         .then((r) => {
           if (!r.ok) throw Object.assign(new Error(), { status: r.status });
           return r.json();
@@ -583,7 +609,7 @@ function TvPage({ userData }) {
           // A channel reached by id but not in the guide list (e.g. a watch-party channel, which is hidden
           // from List) — fetch its metadata directly and tune it, rather than snapping to the first channel.
           if (channelId && !wanted && !keepSelection) {
-            return fetch(`/API/Channel/${channelId}/Meta`)
+            return MovieAPI.getChannelMeta(channelId)
               .then((r) => (r.ok ? r.json() : null))
               .then((meta) => setChannel((prev) => meta || prev || list[0] || null))
               .catch(() => setChannel((prev) => prev || list[0] || null));
@@ -889,12 +915,13 @@ function TvPage({ userData }) {
   // the channel has moved on — a skip the group passed, or a natural advance we missed.
   useEffect(() => {
     if (!channel) return undefined;
+    // Leaving the channel aborts the beat in flight: its answer describes the channel we just left,
+    // and the re-tune below would tune us straight back to it.
+    const ctrl = new AbortController();
     const poll = setInterval(async () => {
       try {
         const askedAt = performance.now();
-        const r = await fetch(`/API/Channel/${channel.id}/Now`);
-        if (!r.ok) return;
-        const data = await r.json();
+        const data = await MovieAPI.getChannelNow(channel.id, ctrl.signal);
         // Re-anchor the channel clock on every beat, so the drift corrector tracks the server rather
         // than compounding our own measurement error between tunes.
         if (data.current && !data.paused) anchorSync(data, performance.now() - askedAt);
@@ -927,10 +954,13 @@ function TvPage({ userData }) {
           tune(channel);
         }
       } catch {
-        /* transient — the next poll retries */
+        /* transient (or aborted) — the next poll retries */
       }
     }, 12_000);
-    return () => clearInterval(poll);
+    return () => {
+      clearInterval(poll);
+      ctrl.abort();
+    };
   }, [channel, tune, anchorSync]);
 
   // Cast a skip vote for the current item. If it carries the majority the server collapses
@@ -938,13 +968,7 @@ function TvPage({ userData }) {
   const voteSkip = useCallback(async () => {
     if (!channel) return;
     try {
-      const r = await fetch(`/API/Channel/${channel.id}/Skip`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ itemId: currentItemIdRef.current ?? 0 }),
-      });
-      if (!r.ok) return;
-      const data = await r.json();
+      const data = await MovieAPI.voteChannelSkip(channel.id, currentItemIdRef.current ?? 0);
       if (data.skipped) tune(channel);
       else setSkip(data.skip || null);
     } catch {
@@ -958,13 +982,7 @@ function TvPage({ userData }) {
   const voteRestart = useCallback(async () => {
     if (!channel) return;
     try {
-      const r = await fetch(`/API/Channel/${channel.id}/Restart`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ itemId: currentItemIdRef.current ?? 0 }),
-      });
-      if (!r.ok) return;
-      const data = await r.json();
+      const data = await MovieAPI.voteChannelRestart(channel.id, currentItemIdRef.current ?? 0);
       if (data.restarted) tune(channel);
       else setRestart(data.restart || null);
     } catch {
@@ -977,9 +995,7 @@ function TvPage({ userData }) {
   const togglePlayPause = useCallback(async () => {
     if (!channel) return;
     try {
-      const r = await fetch(`/API/Channel/${channel.id}/PlayPause`, { method: "POST" });
-      if (!r.ok) return;
-      const data = await r.json();
+      const data = await MovieAPI.toggleChannelPlayPause(channel.id);
       setPaused(data.paused);
       if (data.paused) {
         videoRef.current?.pause();
@@ -1003,13 +1019,7 @@ function TvPage({ userData }) {
     async (offsetSeconds) => {
       if (!channel) return;
       try {
-        const r = await fetch(`/API/Channel/${channel.id}/Seek`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ itemId: currentItemIdRef.current ?? 0, offsetSeconds }),
-        });
-        if (!r.ok) return;
-        const data = await r.json();
+        const data = await MovieAPI.seekChannel(channel.id, currentItemIdRef.current ?? 0, offsetSeconds);
         if (data.seeked) tune(channel);
       } catch {
         /* ignore — they can scrub again */
@@ -1176,12 +1186,15 @@ function TvPage({ userData }) {
 
   // ── guide data ──────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (guideOpen && channel) {
-      fetch(`/API/Channel/${channel.id}/Guide?hours=12`)
-        .then((r) => (r.ok ? r.json() : []))
-        .then(setGuide)
-        .catch(() => setGuide([]));
-    }
+    if (!guideOpen || !channel) return undefined;
+    // Closing the list or changing channel aborts the read — a late answer would paint the previous
+    // channel's lineup under the new channel's name.
+    const ctrl = new AbortController();
+    MovieAPI.getChannelGuide(channel.id, 12, ctrl.signal)
+      .then(setGuide)
+      // An abort is a teardown, not a failure — leave what's on screen alone; only a real error empties it.
+      .catch((err) => { if (err.name !== "AbortError") setGuide([]); });
+    return () => ctrl.abort();
   }, [guideOpen, channel]);
 
   // ── presentation ────────────────────────────────────────────────────────────

@@ -3,24 +3,13 @@ import { MovieAPI } from "../../MovieAPI";
 import { preloadImages } from "../../preloadImages";
 import "./ChannelGrid.css";
 import FallbackImage from "../../Components/FallbackImage";
+import { nowPlaying } from "./channelNow";
 
 const MS_PER_MIN = 60_000;
 
 // "9:30" in the viewer's local time.
 function clockLabel(ms) {
   return new Date(ms).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-}
-
-// What a channel is showing at `atMs`: the airing program, or the next one up if it's between
-// programs. The lineup reaches into the past now, so items[0] can be something that already
-// ended — never call that "now"; a lineup entirely behind us means the channel is off air.
-function nowPlaying(items, atMs) {
-  if (!items?.length) return null;
-  return (
-    items.find((p) => Date.parse(p.startUtc) <= atMs && atMs < Date.parse(p.endUtc)) ||
-    items.find((p) => Date.parse(p.endUtc) > atMs) ||
-    null
-  );
 }
 
 /**
@@ -51,7 +40,7 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose }) {
       const timeout = setTimeout(() => ctrl.abort(), 12_000);
       let r;
       try {
-        r = await fetch("/API/Channel/GuideGrid?hours=6", { signal: ctrl.signal });
+        r = await MovieAPI.getGuideGrid(6, ctrl.signal);
       } finally {
         clearTimeout(timeout);
       }

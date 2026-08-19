@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Modal, Input, Select, Checkbox, Button, InputNumber, Slider, Tag, message, Popconfirm } from "antd";
 import { MovieAPI } from "../../MovieAPI";
+import { useDebouncedCallback } from "../../hooks/useDebounce";
 import "./ChannelAdminModal.css";
 import "../../Components/SheetModal.css";
 
@@ -78,26 +79,28 @@ function blankChannel() {
 // previously-chosen names render before any search.
 function PersonPicker({ value, people, onChange }) {
   const [options, setOptions] = useState(() => (people || []).map((p) => ({ value: p.id, label: p.name })));
-  const timer = useRef(null);
+
+  const lookup = useDebouncedCallback(async (term) => {
+    try {
+      const r = await MovieAPI.getChannelAdminPeople(term);
+      if (!r.ok) return;
+      const found = await r.json();
+      setOptions((prev) => {
+        const seen = new Map(prev.map((o) => [o.value, o]));
+        for (const p of found) seen.set(p.id, { value: p.id, label: p.name });
+        return [...seen.values()];
+      });
+    } catch {
+      /* ignore */
+    }
+  }, 250);
 
   const search = (q) => {
-    clearTimeout(timer.current);
     const term = (q || "").trim();
-    if (term.length < 2) return;
-    timer.current = setTimeout(async () => {
-      try {
-        const r = await MovieAPI.getChannelAdminPeople(term);
-        if (!r.ok) return;
-        const found = await r.json();
-        setOptions((prev) => {
-          const seen = new Map(prev.map((o) => [o.value, o]));
-          for (const p of found) seen.set(p.id, { value: p.id, label: p.name });
-          return [...seen.values()];
-        });
-      } catch {
-        /* ignore */
-      }
-    }, 250);
+    // Below the minimum length, cancel rather than search — an armed lookup for the longer term
+    // would still land and re-populate the list.
+    if (term.length < 2) lookup.cancel();
+    else lookup(term);
   };
 
   return (

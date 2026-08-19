@@ -3,6 +3,7 @@ import { MovieAPI } from "../../MovieAPI";
 import { preloadImages } from "../../preloadImages";
 import usePolling from "../../hooks/usePolling";
 import { readStored, writeStored } from "../../utils/storage";
+import { nowPlaying } from "./channelNow";
 
 const LINEUP_CACHE_KEY = "tv.lineup.v1";
 
@@ -36,15 +37,23 @@ export default function useChannelLineup({ poll = true } = {}) {
       const byId = new Map();
       for (const c of grid.items || []) byId.set(c.id, c);
 
+      // "Now" is read off the lineup by the SERVER's clock, through the same helper the EPG uses —
+      // the grid reaches 30 minutes into the past, so the first item is routinely a programme that
+      // has already finished. Next is whatever follows the airing one, never a slice from the top.
+      const serverNow = Date.parse(grid.serverNowUtc);
+      const atMs = Number.isFinite(serverNow) ? serverNow : Date.now();
+
       const built = channelsRef.current.map((ch) => {
         const g = byId.get(ch.id);
         const items = g?.items || [];
+        const now = nowPlaying(items, atMs);
+        const after = now ? items.indexOf(now) + 1 : items.length;
         return {
           ...ch,
           viewers: g?.viewers || 0,
           paused: g?.paused || false,
-          now: items[0] || null,
-          next: items.slice(1, 4),
+          now,
+          next: items.slice(after, after + 3),
         };
       });
       setLineup(built);
