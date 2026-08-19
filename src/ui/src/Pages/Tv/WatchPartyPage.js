@@ -4,6 +4,7 @@ import Button from "antd/es/button";
 import message from "antd/es/message";
 import { MovieAPI } from "../../MovieAPI";
 import "./WatchPartyPage.css";
+import { copyLink } from "../../utils/clipboard";
 
 /**
  * The watch-party lobby (docs/playlists-watchparty-plan.md). A party is a private playlist channel reached
@@ -91,13 +92,7 @@ export default function WatchPartyPage({ userData }) {
     }
   };
 
-  const copyInvite = () => {
-    const url = `${window.location.origin}/watch-together/${token}`;
-    navigator.clipboard?.writeText(url).then(
-      () => message.success("Invite link copied"),
-      () => message.info(url)
-    );
-  };
+  const copyInvite = () => copyLink(`${window.location.origin}/watch-together/${token}`);
 
   if (!userData?.hasPassword) {
     return (

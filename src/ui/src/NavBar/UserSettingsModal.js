@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Modal, Select, Checkbox, Button, Input, message } from "antd";
 import { MovieAPI } from "../MovieAPI";
 import "./UserSettingsModal.css";
+import { writeStored } from "../utils/storage";
 
 const cardStyleOptions = [
   { value: "standard", label: "Standard" },
@@ -73,7 +74,7 @@ function UserSettingsModal({ open, onClose, userData, setUserData }) {
     ])
       .then(() => {
         setUserData((prev) => ({ ...prev, ageRestriction, cardStyle, showBoardgameExpansions }));
-        window.localStorage.setItem("CardStyle", cardStyle ?? "standard");
+        writeStored("CardStyle", cardStyle ?? "standard");
         message.success("Settings Saved!");
         setTimeout(() => {
           onClose();

@@ -185,7 +185,6 @@ export default function ArcadePage({ userData }) {
   modalCardRef.current = modalCard;
   const [quality, setQuality] = useState(loadQuality); // creator's per-room stream quality (persisted)
   const unconfiguredRef = useRef(false);
-  const sectionRef = useRef(null);
 
   // Read by the identity-stable fetchPage below, so the pump never re-subscribes.
   const filtersRef = useRef(null);
@@ -631,7 +630,7 @@ export default function ArcadePage({ userData }) {
 
         <LiveRooms rooms={rooms} onJoin={joinRoom} />
 
-        <section className="arcade-section" ref={sectionRef}>
+        <section className="arcade-section">
           <div className="arcade-section__head arcade-section__head--games">
             <h2 className="arcade-section__title">Games</h2>
             <span className="arcade-section__count">

@@ -11,6 +11,7 @@ import AchievementToaster from "./AchievementToast";
 import ArcadeHostBanner from "./ArcadeHostBanner";
 import "../../Components/SheetModal.css";
 import "./ArcadeRoomPage.css";
+import { copyLink } from "../../utils/clipboard";
 
 const { Title, Text } = Typography;
 
@@ -720,13 +721,7 @@ export default function ArcadeRoomPage() {
     exit?.call(document);
   }
 
-  function copyInvite() {
-    const url = `${window.location.origin}/arcade/room/${code}`;
-    navigator.clipboard?.writeText(url).then(
-      () => message.success("Invite link copied"),
-      () => message.info(url)
-    );
-  }
+  const copyInvite = () => copyLink(`${window.location.origin}/arcade/room/${code}`);
 
   // ── Local multiplayer ────────────────────────────────────────────────────────────────────────
   // Claim an extra seat and open an input-only CloudRetro session pinned to `padIndex`. The room's

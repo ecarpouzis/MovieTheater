@@ -20,6 +20,7 @@ import ChannelAdminModal from "./ChannelAdminModal";
 import ChannelGrid from "./ChannelGrid";
 import "./TvPage.css";
 import FallbackImage from "../../Components/FallbackImage";
+import { readStored, writeStored, STREAM_QUALITY_KEY } from "../../utils/storage";
 
 /**
  * /tv/:channelId? — passive broadcast mode (streaming-plan.md §7/§8).
@@ -48,7 +49,7 @@ function TvPage({ userData }) {
   const [now, setNow] = useState(null); // { current, next }
   const [muted, setMuted] = useState(true);
   const [volume, setVolume] = useState(() => {
-    const v = parseFloat(window.localStorage.getItem("TvVolume"));
+    const v = parseFloat(readStored("TvVolume"));
     return Number.isFinite(v) ? Math.min(Math.max(v, 0), 1) : 1;
   });
   const [gridOpen, setGridOpen] = useState(false); // cross-channel grid guide (the EPG / what's-coming-up)
@@ -61,7 +62,7 @@ function TvPage({ userData }) {
   const [error, setError] = useState(null);
   const [offAir, setOffAir] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
-  const [quality, setQuality] = useState(() => window.localStorage.getItem("StreamQuality") || "auto");
+  const [quality, setQuality] = useState(() => readStored(STREAM_QUALITY_KEY) || "auto");
   const [qualityOpen, setQualityOpen] = useState(false);
   const [audioTracks, setAudioTracks] = useState([]);
   const [subtitleTracks, setSubtitleTracks] = useState([]);
@@ -814,7 +815,7 @@ function TvPage({ userData }) {
     (key) => {
       qualityRef.current = key;
       setQuality(key);
-      window.localStorage.setItem("StreamQuality", key);
+      writeStored(STREAM_QUALITY_KEY, key);
       setQualityOpen(false);
       // Selecting an Auto mode reseeds at that mode's opener with a fresh streak.
       if (isAutoQuality(key)) reseed(abrProfileFor(key).openBps);
@@ -858,7 +859,7 @@ function TvPage({ userData }) {
   const toggleMute = useCallback(() => setMuted((m) => !m), []);
   const changeVolume = useCallback((v) => {
     setVolume(v);
-    window.localStorage.setItem("TvVolume", String(v));
+    writeStored("TvVolume", v);
     setMuted(v === 0);
   }, []);
 

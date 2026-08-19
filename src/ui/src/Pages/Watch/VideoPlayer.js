@@ -16,6 +16,7 @@ import { useAssSubtitle } from "../../useAssSubtitle";
 import { useSubtitleStyle, useCueLift, useSubtitleOffset, formatDelay, SUBTITLE_NUDGE_MS } from "../../subtitleStyle";
 import { SubtitleStyleControls, SubtitleStylePreview, SubtitleSyncControls } from "../../SubtitleStyleEditor";
 import "./VideoPlayer.css";
+import { readStored, writeStored } from "../../utils/storage";
 
 // The menu vocabulary (QUALITY_LADDER, formatPlaying, deliveredLayout, codecLabel, channelLayout)
 // moved to playerMenuModel.js — shared with the TV player — and is re-exported here so existing
@@ -73,7 +74,7 @@ function VideoPlayer({
   const [currentTime, setCurrentTime] = useState(startAt);
   const [bufferedEnd, setBufferedEnd] = useState(0);
   const [volume, setVolume] = useState(() => {
-    const stored = parseFloat(window.localStorage.getItem("PlayerVolume"));
+    const stored = parseFloat(readStored("PlayerVolume"));
     return isFinite(stored) ? Math.min(Math.max(stored, 0), 1) : 1;
   });
   const [muted, setMuted] = useState(false);
@@ -355,7 +356,7 @@ function VideoPlayer({
       video.volume = volume;
       video.muted = muted;
     }
-    window.localStorage.setItem("PlayerVolume", String(volume));
+    writeStored("PlayerVolume", volume);
   }, [volume, muted]);
 
   // ── text subtitles (sidecar VTT) ────────────────────────────────────────────

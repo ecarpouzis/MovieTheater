@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { writeStored } from "./utils/storage";
 
 // ── subtitle appearance (shared by the Watch player and the TV/channel player) ──────────────────
 // The viewer's caption look, persisted across sessions in ONE localStorage key so both players agree.
@@ -66,7 +67,7 @@ export function useSubtitleStyle() {
   const setStyle = useCallback((patch) => setSubStyle((s) => ({ ...s, ...patch })), []);
 
   useEffect(() => {
-    window.localStorage.setItem("SubtitleStyle", JSON.stringify(subStyle));
+    writeStored("SubtitleStyle", JSON.stringify(subStyle));
   }, [subStyle]);
 
   // Write the chosen look into a single injected rule appended to <head> at runtime (so it sits after

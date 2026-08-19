@@ -8,6 +8,7 @@ import { LYRICS_DEFAULTS, normalizeLyricsSettings } from "./MusicLyricsSettings"
 import { createMseEngine } from "./MusicMseEngine";
 import { buildCapabilityMatrix, chooseEngineMode } from "./musicTreatments";
 import { seekPlan, trackTimeAt } from "./musicTimeline";
+import { readStored, writeStored } from "../utils/storage";
 
 // ── The site's first persistent player (music-plan.md §2.6) ─────────────────
 // Every video player dies on route change; music must not. The provider mounts ONCE in App.js
@@ -379,7 +380,7 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   const volumeOf = useCallback(() => {
     const live = elFor(deckRef.current);
     if (live && Number.isFinite(live.volume)) return live.volume;
-    const stored = parseFloat(window.localStorage.getItem(VOLUME_KEY));
+    const stored = parseFloat(readStored(VOLUME_KEY));
     return Number.isFinite(stored) ? Math.min(Math.max(stored, 0), 1) : 1;
   }, [elFor]);
 
@@ -1290,7 +1291,7 @@ export function MusicPlayerProvider({ children, enabled = true }) {
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-    const stored = parseFloat(window.localStorage.getItem(VOLUME_KEY));
+    const stored = parseFloat(readStored(VOLUME_KEY));
     if (Number.isFinite(stored)) audio.volume = Math.min(Math.max(stored, 0), 1);
   }, []);
 
@@ -1900,7 +1901,7 @@ export function MusicPlayerProvider({ children, enabled = true }) {
     [audioARef.current, audioBRef.current, audioMseRef.current].forEach((el) => {
       if (el) el.volume = clamped;
     });
-    window.localStorage.setItem(VOLUME_KEY, String(v));
+    writeStored(VOLUME_KEY, v);
   }, []);
 
   // Keep `playing` truthful to the element (covers OS media keys, autoplay refusals, errors).

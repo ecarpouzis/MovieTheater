@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { readStored, writeStored } from "./utils/storage";
 
 export const PLAYBACK_RATES = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 const STORAGE_KEY = "PlayerPlaybackRate";
@@ -9,7 +10,7 @@ const STORAGE_KEY = "PlayerPlaybackRate";
 // rate on mount and on every (re)load of the source.
 export function usePlaybackRate(videoRef, src) {
   const [rate, setRateState] = useState(() => {
-    const stored = parseFloat(window.localStorage.getItem(STORAGE_KEY));
+    const stored = parseFloat(readStored(STORAGE_KEY));
     return PLAYBACK_RATES.includes(stored) ? stored : 1;
   });
 
@@ -27,7 +28,7 @@ export function usePlaybackRate(videoRef, src) {
   const setRate = useCallback(
     (r) => {
       setRateState(r);
-      window.localStorage.setItem(STORAGE_KEY, String(r));
+      writeStored(STORAGE_KEY, r);
       const v = videoRef.current;
       if (v) v.playbackRate = r;
     },

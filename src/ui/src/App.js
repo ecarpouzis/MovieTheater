@@ -9,6 +9,7 @@ import Browse from "./Pages/Browse/Browse";
 import { useMovieSearch } from "./hooks/useMovieSearch";
 import { useTheme } from "./hooks/useTheme";
 import { MusicPlayerProvider } from "./Music/MusicPlayerContext";
+import { readStored, writeStored } from "./utils/storage";
 
 // Route-level code-splitting. The landing (Browse) and the nav shell stay in the main bundle; every
 // other page loads on demand, keeping its heavy deps out of the initial download — most notably
@@ -41,8 +42,10 @@ const MusicMseProbe = lazy(() => import("./Music/MusicMseProbe"));
 // on /API/Photos is — the page renders "family members only" when the server says so.
 const PhotosPage = lazy(() => import("./Pages/Photos/PhotosPage"));
 
-const storedUsername = window.localStorage.getItem("Username");
-const storedCardStyle = window.localStorage.getItem("CardStyle");
+// readStored, not a bare getItem: these run at MODULE SCOPE, where a storage throw (Safari
+// private mode, storage disabled) used to be a white screen before a single component mounted.
+const storedUsername = readStored("Username");
+const storedCardStyle = readStored("CardStyle");
 
 function App() {
   const [userData, setUserData] = useState(null);
@@ -57,8 +60,8 @@ function App() {
   function applyUserData(responseData, username) {
     setUserData(responseData);
     setIsAuthReady(true);
-    window.localStorage.setItem("Username", username ?? responseData.username);
-    window.localStorage.setItem("CardStyle", responseData.cardStyle ?? "standard");
+    writeStored("Username", username ?? responseData.username);
+    writeStored("CardStyle", responseData.cardStyle ?? "standard");
   }
 
   //Attempts a login; resolves to { ok } on success, or { ok: false, requiresPassword?, message? }
@@ -90,7 +93,7 @@ function App() {
         }
         return onUserLoggedIn(storedUsername).then((result) => {
           if (!result.ok) {
-            window.localStorage.removeItem("Username");
+            writeStored("Username", null);
           }
         });
       }).catch(() => setIsAuthReady(true));

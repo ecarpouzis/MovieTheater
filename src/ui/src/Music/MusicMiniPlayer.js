@@ -9,6 +9,7 @@ import { IconPrev, IconNext, IconPlay, IconPause } from "./MusicTransportIcons";
 import MusicPlaylistPickerModal from "../Pages/Music/MusicPlaylistPickerModal";
 import "./MusicMiniPlayer.css";
 import { formatClock } from "../utils/format";
+import { readStored } from "../utils/storage";
 
 // ── The persistent bottom bar (music-plan.md §2.6) ──────────────────────────
 // Rendered by the provider whenever a track is loaded, on EVERY page of the site. Subscribes to the
@@ -28,7 +29,7 @@ function MusicMiniPlayer() {
   const [position, setPosition] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolumeState] = useState(() => {
-    const stored = parseFloat(window.localStorage.getItem("music.volume"));
+    const stored = parseFloat(readStored("music.volume"));
     return Number.isFinite(stored) ? stored : 1;
   });
   // While the user drags the seek bar, the drag position wins over timeupdate ticks.

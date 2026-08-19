@@ -114,7 +114,6 @@ function MusicPage({ userData }) {
   const albumParam = parseInt(params.get("album"), 10);
   const openAlbumId = Number.isInteger(albumParam) && albumParam > 0 ? albumParam : null;
   const setOpenAlbumId = (id) => setParam("album", id, { replace: id == null });
-  const sectionRef = useRef(null);
   // Playlists (music-plan.md Phase 3): the shelf, plus the two modals it and the song rows drive.
   const [playlists, setPlaylists] = useState([]);
   const [pickerTracks, setPickerTracks] = useState(null); // non-null ⇒ picker open, holds what to add
@@ -372,7 +371,7 @@ function MusicPage({ userData }) {
 
       {/* The browse grid — artists or albums, same engine either way. */}
       {!drilledIn && (
-        <section className="music-section" ref={sectionRef}>
+        <section className="music-section">
           <h2 className="music-section-head">
             {shelf.noun[view]}
             <span className="music-count">{gridItems.length}</span>

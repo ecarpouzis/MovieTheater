@@ -6,6 +6,7 @@ import { useAdaptiveBitrate } from "../../useAdaptiveBitrate";
 import VideoPlayer, { formatTime, TICKS_PER_SECOND, QUALITY_LADDER } from "./VideoPlayer";
 import { formatRuntime } from "../../utils/format";
 import "./WatchPage.css";
+import { readStored, writeStored, STREAM_QUALITY_KEY } from "../../utils/storage";
 
 /**
  * /watch/:movieId — the screening room (streaming-plan.md §7).
@@ -53,7 +54,7 @@ function WatchPage({ userData }) {
   const [error, setError] = useState(null);
   const [session, setSession] = useState(null); // Stream/Start response
   const [startAt, setStartAt] = useState(0);
-  const [qualityKey, setQualityKey] = useState(() => window.localStorage.getItem("StreamQuality") || "auto");
+  const [qualityKey, setQualityKey] = useState(() => readStored(STREAM_QUALITY_KEY) || "auto");
   const [audioIndex, setAudioIndex] = useState(null);
   const [subtitleIndex, setSubtitleIndex] = useState(null);
 
@@ -272,7 +273,7 @@ function WatchPage({ userData }) {
   const handleSelectQuality = useCallback(
     (rung) => {
       setQualityKey(rung.key);
-      window.localStorage.setItem("StreamQuality", rung.key);
+      writeStored(STREAM_QUALITY_KEY, rung.key);
       // Selecting an Auto mode reseeds at that mode's opener with a fresh streak, then adapts from
       // there; a fixed rung just restarts at its cap.
       if (isAutoQuality(rung.key)) {
