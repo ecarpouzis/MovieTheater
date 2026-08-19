@@ -7,6 +7,7 @@ import {
   qualityOptions, audioOptions, subtitleOptions, deliveredAudio,
 } from "../../playerMenuModel";
 import { useIdleChrome } from "../../useIdleChrome";
+import { useVideoIncidents } from "../../videoIncidents";
 import { useWakeLock } from "../../useWakeLock";
 import { useMediaSession } from "../../useMediaSession";
 import { usePictureInPicture } from "../../usePictureInPicture";
@@ -56,6 +57,7 @@ function VideoPlayer({
   onStall,
   onEnded,
   bufferingLabel = null,
+  incident = null,
   combinedDuration = 0,
   partOffset = 0,
   partBoundaries = [],
@@ -101,6 +103,26 @@ function VideoPlayer({
     (video) => Math.max(0, (video?.currentTime ?? 0) - timelineOffsetRef.current),
     []
   );
+
+  // Self-reported playback failures — the shared recorder both players use. `src` is the session
+  // key: it changes on every restart (a resume, a quality/audio/subtitle pick, an ABR adapt), and
+  // the seconds after one of those are an EXPECTED freeze, not a stall. Nothing about detection
+  // lives in this file; see videoIncidents.
+  useVideoIncidents({
+    player: "watch",
+    videoRef,
+    identity: incident?.identity,
+    ladder: {
+      qualityKey,
+      autoBps: incident?.autoBps ?? null,
+      copied: isDirectStream,
+      codec: videoCodec,
+      sourceVideoBps: incident?.sourceVideoBps ?? null,
+    },
+    sessionKey: src,
+    durationSeconds,
+    timelineOffsetRef,
+  });
 
   // Subtitle timing nudge — shift the showing soft (sidecar VTT) track's cues so the viewer can fix
   // small sync drift. Shared with the TV player; only meaningful for soft tracks (burned-in image

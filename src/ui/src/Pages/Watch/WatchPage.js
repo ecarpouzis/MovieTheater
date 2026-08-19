@@ -116,6 +116,23 @@ function WatchPage({ userData }) {
     },
   });
 
+  // Identity + ladder state for the player's self-reports (videoIncidents). The path id is the
+  // *context* title, so which id space it belongs to is decided by `kind` — the same three-id-space
+  // split the rest of the page runs on. playableId is the unambiguous one when it's known.
+  const incident = useMemo(
+    () => ({
+      identity: {
+        movieId: kind === "movie" ? Number(movieId) : null,
+        seriesId: kind === "series" ? Number(movieId) : null,
+        miscVideoId: kind === "misc" ? Number(movieId) : null,
+        playableId: streamTarget.playableId,
+      },
+      autoBps,
+      sourceVideoBps: session?.videoBitrateBps ?? null,
+    }),
+    [kind, movieId, streamTarget.playableId, autoBps, session]
+  );
+
   const goBack = useCallback(() => {
     if (history.length > 1) history.goBack();
     else history.push("/");
@@ -530,6 +547,7 @@ function WatchPage({ userData }) {
           onStall={handleStall}
           onEnded={handleEnded}
           bufferingLabel={adjusting ? "Adjusting quality" : null}
+          incident={incident}
           combinedDuration={combinedDuration}
           partOffset={currentPartOffset}
           partBoundaries={partOffsets.slice(1)}

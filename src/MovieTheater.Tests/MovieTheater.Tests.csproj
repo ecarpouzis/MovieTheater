@@ -90,6 +90,18 @@
          shipped controller sat open. Neither file needs a database at test time: the gate's
          UserSettings lookup is behind IFamilyAlbumMembership, which the tests substitute (the
          configured connection string is the live shared DB and no test may reach it). -->
+    <!-- The streaming control plane, for the video players' self-report sink
+         (POST /API/Stream/Incident). Compiled from source for the same reason PhotosController is:
+         the claims are about the SHIPPED action — that it reads a raw beacon body, keeps a report it
+         cannot parse, caps the payload, and prunes its own table on insert — and a re-declared copy
+         would pass while the shipped endpoint did something else. It drags in the two app-local
+         helpers it holds references to (the rating gate's rating resolution and the in-app session
+         ledger), both of which are BCL/EF only; everything else it needs arrives through the
+         Services ProjectReference. No test may contact Jellyfin, so the client handed to it points
+         at a socket that is never opened. -->
+    <Compile Include="..\MovieTheater\Controllers\StreamController.cs" Link="Streaming\StreamController.cs" />
+    <Compile Include="..\MovieTheater\Streaming\TranscodeSessionRegistry.cs" Link="Streaming\TranscodeSessionRegistry.cs" />
+    <Compile Include="..\MovieTheater\Web\RatingGate.cs" Link="Streaming\RatingGate.cs" />
     <Compile Include="..\MovieTheater\Photos\FamilyAlbumGate.cs" Link="Photos\FamilyAlbumGate.cs" />
     <Compile Include="..\MovieTheater\Controllers\PhotosController.cs" Link="Photos\PhotosController.cs" />
     <!-- The Phase 1 ingest pipeline, compiled from source for the same reason: the tests must drive

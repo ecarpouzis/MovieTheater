@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { rungDown, isBottomRung, climbTarget, climbHoldBar, isAutoQuality } from "./streamAbr";
+import { noteStreamSwitch, noteBandwidthEstimate, reportAbrDowngrade } from "./videoIncidents";
 
 // Adaptive-bitrate state machine, shared by the Watch player and the TV/channel player so the two
 // can't drift (they used to carry byte-identical copies of this). Jellyfin hands out one rendition
@@ -88,6 +89,11 @@ export function useAdaptiveBitrate({ qualityKeyRef, profile, onAdapt, videoCopie
     setAutoBps(nextBps);
     lastSwitchAtRef.current = Date.now();
     stableSinceRef.current = Date.now();
+    // Tell the incident recorder a session restart is beginning. This is the load-bearing half of
+    // "an ABR restart is not a stall": what follows is several seconds of frozen picture by design
+    // (a new ffmpeg, a fresh manifest), and without this mark the element's `waiting` would be
+    // filed as a playback failure every single time the ladder moved.
+    noteStreamSwitch("abr");
     onAdaptRef.current(nextBps);
   }, []);
 
@@ -115,7 +121,14 @@ export function useAdaptiveBitrate({ qualityKeyRef, profile, onAdapt, videoCopie
     demotionMultRef.current = Math.min(demotionMultRef.current * 2, ABR_DEMOTION_MULT_MAX);
     const est = lastEstimateRef.current;
     const freshBps = est && now - est.at <= ABR_ESTIMATE_FRESH_MS ? est.bps : undefined;
-    adaptTo(rungDown(autoBpsRef.current, sourceVideoBpsRef?.current, freshBps));
+    const from = autoBpsRef.current;
+    const to = rungDown(from, sourceVideoBpsRef?.current, freshBps);
+    // The emergency downgrade: the viewer's picture is being taken away because the stream kept
+    // stalling. Reported BEFORE the adapt so the incident's ring still ends with the stalls that
+    // caused it rather than with the restart that answered them. (A climb is not reported — see
+    // videoIncidents.reportAbrDowngrade.)
+    reportAbrDowngrade({ fromBps: from, toBps: to, estimateBps: freshBps });
+    adaptTo(to);
   }, [qualityKeyRef, adaptTo, sourceVideoBpsRef]);
 
   // Throughput telemetry: climb only after a sustained streak with clear headroom. The streak resets
@@ -127,6 +140,9 @@ export function useAdaptiveBitrate({ qualityKeyRef, profile, onAdapt, videoCopie
   const handleBandwidth = useCallback((estimateBps) => {
     if (estimateBps && isFinite(estimateBps)) {
       lastEstimateRef.current = { bps: estimateBps, at: Date.now() }; // feed the informed drop, always
+      // ...and the incident payload: "was the link actually gone?" is the first question anyone asks
+      // of a stall row, and this is the only place the answer is measured.
+      noteBandwidthEstimate(estimateBps);
     }
     if (videoCopiedRef?.current) return; // video is being copied — already lossless, nothing to climb to
     if (!isAutoQuality(qualityKeyRef.current)) return;

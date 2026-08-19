@@ -1,4 +1,5 @@
 import Hls from "hls.js";
+import { noteVideoEvent, notePlaylistError, reportFatal } from "./videoIncidents";
 
 // ── shared hls.js engine (used by both the Watch player and the TV/channel player) ───────────────
 // One home for the streaming engine the two players share, so a fix to buffering or error recovery
@@ -160,7 +161,14 @@ export function createHls({ backBufferLength = 90, startPosition, onStall, onFat
     // A buffer stall (non-fatal) is the adaptive-downshift signal.
     if (data.details === Hls.ErrorDetails.BUFFER_STALLED_ERROR) {
       logStall(hls); // diagnostic: report the hole size at the stall, to confirm the cause / verify the fix
+      noteVideoEvent("hls:stalled"); // ring only — the stall INCIDENT is decided at the element (videoIncidents)
       onStall?.();
+    }
+    // Playlist/segment fetch failures. Reported from here rather than either player because this is
+    // the one place both of them load bytes from — and because hls.js retries them itself, the
+    // incident rule ("fatal, or three inside 30 s") lives in videoIncidents, not in this handler.
+    if (/load(error|timeout)/i.test(String(data.details))) {
+      notePlaylistError({ details: data.details, fatal: !!data.fatal, code: data.response?.code ?? null });
     }
     // The browser's SourceBuffer byte quota (~150 MB of video in Chromium) rejected an append. That
     // quota binds BEFORE our seconds/bytes config on a high-bitrate stream — at a 23 Mbps remux it
@@ -172,6 +180,19 @@ export function createHls({ backBufferLength = 90, startPosition, onStall, onFat
     }
     if (!data.fatal) return;
 
+    // Giving up is the one player event that is unambiguously a failure, so it self-reports here —
+    // once, in the shared engine, rather than in each player's own onFatal handler (they show
+    // different copy: Watch's fatal card, TV's "no signal"). A player with no incident context
+    // (the photo-album video) files nothing; see videoIncidents.setVideoIncidentContext.
+    const giveUp = () => {
+      reportFatal(`hls fatal ${data.type}/${data.details}${data.response?.code ? ` (http ${data.response.code})` : ""}`, {
+        type: data.type,
+        details: data.details,
+        code: data.response?.code ?? null,
+      });
+      onFatal?.();
+    };
+
     if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
       // A dead session (transcode gone → 404, expired, gateway 5xx, or CORS → code 0) will never clear
       // by retrying the same URL — surface it so the page can re-establish the session / show the error.
@@ -179,7 +200,7 @@ export function createHls({ backBufferLength = 90, startPosition, onStall, onFat
       // invisible infinite reload loop.
       const code = data.response?.code;
       if (code >= 400 || code === 0 || networkRetries >= MAX_NETWORK_RETRIES) {
-        onFatal?.();
+        giveUp();
       } else {
         networkRetries += 1;
         hls.startLoad();
@@ -201,13 +222,13 @@ export function createHls({ backBufferLength = 90, startPosition, onStall, onFat
         hls.swapAudioCodec();
         hls.recoverMediaError();
       } else {
-        onFatal?.();
+        giveUp();
       }
       return;
     }
 
     // OTHER_ERROR (e.g. a mux error) — nothing to recover.
-    onFatal?.();
+    giveUp();
   });
   return hls;
 }

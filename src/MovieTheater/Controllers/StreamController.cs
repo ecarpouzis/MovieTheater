@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Security.Claims;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -629,6 +631,126 @@ namespace MovieTheater.Controllers
 
             return Ok(new { success = true });
         }
+
+        /// <summary>How long a self-report is worth keeping.</summary>
+        /// <remarks>
+        /// This table is diagnostics, not history: a report is read while chasing a live complaint,
+        /// and half a year later it says nothing anyone will act on. Six months still spans "it did
+        /// this again, like last winter", which is the longest reach anyone has actually needed.
+        /// </remarks>
+        private static readonly TimeSpan IncidentRetention = TimeSpan.FromDays(180);
+
+        /// <summary>At most this many expired rows are swept per insert.</summary>
+        /// <remarks>
+        /// The prune rides the only path that GROWS the table, so it costs nothing when nobody is
+        /// failing and there is no timer, no background service and no idle work to forget about.
+        /// The cap keeps one unlucky report from paying for a year of backlog in a single request —
+        /// the incidents arrive faster than they expire whenever it matters, so a small batch per
+        /// insert is enough to hold the bound.
+        /// </remarks>
+        private const int IncidentPruneBatch = 50;
+
+        /// <summary>
+        /// Receives a playback failure report the player sends about itself.
+        /// </summary>
+        /// <remarks>
+        /// The video failures worth chasing are the ones nobody can hold still: the picture freezes,
+        /// the viewer refreshes (or shrugs and goes to bed), and everything that knew why is gone.
+        /// Until now the only witness was on the SERVER — the gateway's access log and the names of
+        /// Jellyfin's ffmpeg logs — which reconstructs a session beautifully and only for the failures
+        /// somebody thought to ask about soon enough. The player itself, which knew at the time, said
+        /// nothing. The music player has reported its own failures for months and it is the reason
+        /// the sleeping-phone stall was root-caused at all; this is that instrument, for video.
+        ///
+        /// <para>It arrives as a <c>sendBeacon</c> with <c>text/plain</c> — deliberately a CORS-simple
+        /// request, because the page making it may be mid-freeze or unloading and will not survive a
+        /// preflight — which is why the body is read and parsed here rather than model-bound.</para>
+        ///
+        /// <para>Auth is the controller's own <c>StreamingUser</c> policy: a report is only useful if
+        /// the failing session can send it, and every video session already holds that policy (there
+        /// is no way to be playing video without it). The payload is capped and the client rate-limits
+        /// itself to one a minute with a per-session ceiling.</para>
+        /// </remarks>
+        [HttpPost("/API/Stream/Incident")]
+        public async Task<IActionResult> Incident()
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+
+            using var reader = new StreamReader(Request.Body);
+            var raw = await reader.ReadToEndAsync();
+            if (string.IsNullOrWhiteSpace(raw)) return BadRequest(new { message = "Empty report." });
+            // A runaway client must not be able to write unbounded rows.
+            if (raw.Length > 256 * 1024) raw = raw.Substring(0, 256 * 1024);
+
+            string kind = "unknown", summary = null, userAgent = null, player = null;
+            int? movieId = null, seriesId = null, miscVideoId = null, playableId = null, channelId = null;
+            double? positionSeconds = null;
+            try
+            {
+                using var doc = JsonDocument.Parse(raw);
+                var root = doc.RootElement;
+                if (root.TryGetProperty("kind", out var k)) kind = k.GetString() ?? "unknown";
+                if (root.TryGetProperty("summary", out var s)) summary = s.GetString();
+                if (root.TryGetProperty("userAgent", out var ua)) userAgent = ua.GetString();
+                if (root.TryGetProperty("player", out var p)) player = p.GetString();
+                movieId = ReadInt(root, "movieId");
+                seriesId = ReadInt(root, "seriesId");
+                miscVideoId = ReadInt(root, "miscVideoId");
+                playableId = ReadInt(root, "playableId");
+                channelId = ReadInt(root, "channelId");
+                if (root.TryGetProperty("positionSeconds", out var pos) && pos.ValueKind == JsonValueKind.Number
+                    && pos.TryGetDouble(out var posValue))
+                    positionSeconds = posValue;
+            }
+            catch (JsonException)
+            {
+                // Keep it anyway: a report we can't parse is still evidence that something fired,
+                // and the raw payload is the part worth reading.
+                kind = "unparseable";
+            }
+
+            // Retention, taken immediately before the insert so the bound rides the only path that
+            // grows the table. Loaded-then-removed rather than a set-based delete because this same
+            // action runs against SQLite under test, where ExecuteDelete cannot translate a Take —
+            // and an untaken delete is the unbounded sweep the cap exists to prevent. The removals
+            // ride the insert's SaveChanges, so it stays one round trip either way.
+            var cutoff = DateTime.UtcNow - IncidentRetention;
+            var expired = await movieDb.VideoPlaybackIncidents
+                .Where(i => i.CreatedUtc < cutoff)
+                .OrderBy(i => i.Id)
+                .Take(IncidentPruneBatch)
+                .ToListAsync();
+            if (expired.Count > 0) movieDb.VideoPlaybackIncidents.RemoveRange(expired);
+
+            movieDb.VideoPlaybackIncidents.Add(new VideoPlaybackIncident
+            {
+                CreatedUtc = DateTime.UtcNow,
+                UserId = userId,
+                Kind = Truncate(kind, 40),
+                Summary = Truncate(summary, 400),
+                Player = Truncate(player, 10),
+                MovieId = movieId,
+                SeriesId = seriesId,
+                MiscVideoId = miscVideoId,
+                PlayableId = playableId,
+                ChannelId = channelId,
+                PositionSeconds = positionSeconds,
+                UserAgent = Truncate(userAgent, 400),
+                Payload = raw,
+            });
+            await movieDb.SaveChangesAsync();
+            return Ok(new { recorded = true, pruned = expired.Count });
+        }
+
+        /// <summary>A numeric property as an int, or null — a client that sends a string, a null or
+        /// nothing at all just leaves that id unknown rather than losing the whole report.</summary>
+        private static int? ReadInt(JsonElement root, string name) =>
+            root.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number
+                && value.TryGetInt32(out var parsed) ? parsed : null;
+
+        private static string Truncate(string s, int max) =>
+            string.IsNullOrEmpty(s) ? s : (s.Length <= max ? s : s.Substring(0, max));
 
         private async Task<string> ItemIdForPlayableAsync(int playableId) =>
             await movieDb.MediaFiles

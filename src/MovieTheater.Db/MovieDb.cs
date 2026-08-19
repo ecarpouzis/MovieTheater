@@ -494,6 +494,11 @@ namespace MovieTheater.Db
             modelBuilder.Entity<MusicPlaybackIncident>()
                 .HasIndex(i => new { i.CreatedUtc, i.Kind });
 
+            // Same index for the same two questions on the video side — and it is the index the
+            // insert-time retention prune walks (everything older than the cutoff, oldest first).
+            modelBuilder.Entity<VideoPlaybackIncident>()
+                .HasIndex(i => new { i.CreatedUtc, i.Kind });
+
             modelBuilder.Entity<MusicPlaylist>()
                 .HasIndex(p => p.UserId);
             // At most ONE favorites list per user. Filtered so it constrains only the flagged rows —
@@ -850,6 +855,9 @@ namespace MovieTheater.Db
         public DbSet<SeriesPosterDetails> SeriesPosterDetails { get; set; }
         public DbSet<MiscVideo> MiscVideos { get; set; }
         public DbSet<MoviePlaybackProgress> MoviePlaybackProgresses { get; set; }
+        /// <summary>The video players' self-reports (mirrors <see cref="MusicPlaybackIncidents"/>) —
+        /// written only by /API/Stream/Incident, read by hand when chasing "it stopped".</summary>
+        public DbSet<VideoPlaybackIncident> VideoPlaybackIncidents { get; set; }
         public DbSet<Channel> Channels { get; set; }
         public DbSet<ChannelScheduleItem> ChannelScheduleItems { get; set; }
         public DbSet<ChannelShelf> ChannelShelves { get; set; }
