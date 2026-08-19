@@ -8,9 +8,21 @@ import useTouchDevice from "../../hooks/useTouchDevice";
 import useLongPress from "../../hooks/useLongPress";
 
 
+// A shared-mechanics/categories tooltip that hover reveals on a pointer. A touch user has no hover,
+// so there the SAME tooltip is driven by a press-and-hold and dismissed on a timer — the tap itself
+// still opens the game, so the hold is the only gesture left to spend on "why is this here?".
+const SIMILAR_TIP_MS = 2500;
+
 function SimilarGameItem({ game, onOpenGame }) {
   const isTouch = useTouchDevice();
-  const { open, ref, suppressClick } = useLongPress();
+  const [tipOpen, setTipOpen] = useState(false);
+  const tipTimer = useRef(null);
+  useEffect(() => () => clearTimeout(tipTimer.current), []);
+  const { handlers, consumeClick } = useLongPress(() => {
+    setTipOpen(true);
+    clearTimeout(tipTimer.current);
+    tipTimer.current = setTimeout(() => setTipOpen(false), SIMILAR_TIP_MS);
+  });
   const tooltipContent = (
     <div className="similar-tooltip">
       {game.sharedMechanics?.length > 0 && (
@@ -25,13 +37,18 @@ function SimilarGameItem({ game, onOpenGame }) {
     <Tooltip
       title={tooltipContent}
       placement="top"
-      open={isTouch ? open : undefined}
+      open={isTouch ? tipOpen : undefined}
       trigger={isTouch ? [] : ["hover"]}
     >
       <button
-        ref={ref}
         className="boardgame-similar-item"
-        onClick={suppressClick(() => onOpenGame?.(game.id))}
+        // Gesture handlers on touch only: with a pointer the tooltip is already on hover, and a
+        // held mouse button would otherwise eat the click that opens the game.
+        {...(isTouch ? handlers : null)}
+        onClick={() => {
+          if (consumeClick()) return;
+          onOpenGame?.(game.id);
+        }}
       >
         <img
           src={`/BoardgameImageThumb/${game.id}${game.imageVersion != null ? `?v=${game.imageVersion}` : ""}`}
