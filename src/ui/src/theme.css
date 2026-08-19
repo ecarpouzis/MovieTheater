@@ -307,9 +307,20 @@
   --content-bg: #141c17;
   --card-surface: #1d2b22;
 }
+/* Dark lifts the ACCENTS that were tuned for white paper: movies' #2f6fc4 and music's #c9484f sit
+   near 2.6–2.8:1 on their dark surfaces (links/toggles in the tokenized modal/pages went murky —
+   flagged 2026-08-19). Feature blocks (no data-theme) tie these on specificity, so the lifts must
+   carry BOTH attributes; a bare dark-block --accent would also stomp every feature's accent on
+   source order. Boardgames' green and the arcade/photos dark blocks already clear ~4:1. */
+:root[data-theme="dark"][data-feature="movies"] {
+  --accent: #5b96e8;
+  --accent-soft: rgba(91, 150, 232, 0.16);
+}
 :root[data-theme="dark"][data-feature="music"] {
   --content-bg: #1c1315;
   --card-surface: #2a1c1f;
+  --accent: #e0666d;
+  --accent-soft: rgba(224, 102, 109, 0.16);
 }
 /* Photos, dark: the shoebox the prints came out of. Warm near-black rather than the site's blue
    ink, because a photograph laid on a cool dark surface picks up a cast that isn't in the print. */
