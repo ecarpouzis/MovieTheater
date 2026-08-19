@@ -13,6 +13,10 @@
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.22" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.22" />
 		<PackageReference Include="Microsoft.Playwright" Version="1.49.0" />
+		<!-- Pinned ahead of what EF Core 8.0.22 asks for (2.1.6). The transitive native
+		     library bundles SQLite itself, and everything <= 2.1.11 carries CVE-2025-6965.
+		     Drop this line only once the EF Core reference pulls 2.1.12 or later on its own. -->
+		<PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.13" />
 		<PackageReference Include="System.Drawing.Common" Version="8.0.3" />
 		<PackageReference Include="Yarp.ReverseProxy" Version="2.1.0" />
 		<PackageReference Include="z440.atl.core" Version="7.15.3" />
