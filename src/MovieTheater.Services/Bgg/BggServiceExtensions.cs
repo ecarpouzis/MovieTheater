@@ -19,7 +19,9 @@ namespace MovieTheater.Services.Bgg
                 options.RateLimitDelayMs = rateLimitDelayMs;
             });
 
-            services.AddSingleton<BoardGameGeekApi>();
+            // Typed-client registration resolves transient; the rate limiter inside
+            // BoardGameGeekApi is static, so no shared lifetime is needed. (A plain
+            // AddSingleton here would be shadowed by this registration anyway.)
             services.AddHttpClient<BoardGameGeekApi>((httpClient) =>
             {
                 httpClient.Timeout = TimeSpan.FromSeconds(60);

@@ -1,9 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using MovieTheater.Core;
 using System.IO;
-using System.Net;
 using System.Net.Http;
-using System.Security.Authentication;
 
 namespace MovieTheater.Services.BoardgameImage
 {
@@ -29,24 +27,12 @@ namespace MovieTheater.Services.BoardgameImage
             }
             else
             {
-                // We don't have a valid ssl cert on the prod image host so need to allow unsigned
-                ServicePointManager.ServerCertificateValidationCallback = (sender, cert, chain, sslPolicyErrors) => true;
-
-                // DevBoardgameImageRepository gets an HttpClient
+                // DevBoardgameImageRepository reads through from prod over normally-validated HTTPS.
                 services.AddTransient<IBoardgameImageRepository, DevBoardgameImageRepository>();
                 services.AddHttpClient<IBoardgameImageRepository, DevBoardgameImageRepository>()
-                    .ConfigurePrimaryHttpMessageHandler(_ =>
+                    .ConfigurePrimaryHttpMessageHandler(_ => new HttpClientHandler
                     {
-                        var handler = new HttpClientHandler
-                        {
-                            AllowAutoRedirect = false
-                        };
-
-                        handler.ClientCertificateOptions = ClientCertificateOption.Manual;
-                        handler.ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => { return true; };
-                        handler.SslProtocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12;
-
-                        return handler;
+                        AllowAutoRedirect = false
                     });
             }
 

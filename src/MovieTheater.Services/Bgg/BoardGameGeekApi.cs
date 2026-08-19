@@ -18,8 +18,12 @@ namespace MovieTheater.Services.Bgg
 
         private readonly HttpClient httpClient;
         private readonly BggApiOptions options;
-        private readonly SemaphoreSlim rateLimitSemaphore = new(1, 1);
-        private DateTime lastRequestTime = DateTime.MinValue;
+
+        // Static on purpose: this class is registered as an AddHttpClient typed client, so DI hands
+        // out a new instance per resolution. Instance fields would rate-limit each request in
+        // isolation; BGG's delay guideline is per caller, so limiter state must be shared.
+        private static readonly SemaphoreSlim rateLimitSemaphore = new(1, 1);
+        private static DateTime lastRequestTime = DateTime.MinValue;
 
         public BoardGameGeekApi(HttpClient httpClient, IOptions<BggApiOptions> options)
         {

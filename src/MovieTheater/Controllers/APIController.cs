@@ -2633,11 +2633,12 @@ namespace MovieTheater.Controllers
                 await movieDb.SaveChangesAsync();
                 fromBggBoardgame.BaseGameId = await ResolveBaseGameId(fromBggBoardgame.ExtraDetails?.LinksJson);
                 if (fromBggBoardgame.BaseGameId.HasValue) await movieDb.SaveChangesAsync();
+                await LinkOrphanedExpansionsAsync(fromBggBoardgame.id, fromBggBoardgame.BggThingId);
                 await UpsertBoardgameImageUrls(fromBggBoardgame.id, fromBgg.ImageUrl, fromBgg.ThumbnailUrl);
-                await DownloadAndSaveBoardgameImages(fromBggBoardgame);
+                var newImageError = await TryDownloadBoardgameImages(fromBggBoardgame);
                 await movieDb.Entry(fromBggBoardgame).Reference(x => x.ImageDetails).LoadAsync();
                 await boardgameSimilarityService.RebuildAsync(movieDb);
-                return Ok(new { Success = true, Message = "Boardgame captured", data = fromBggBoardgame });
+                return Ok(new { Success = true, Message = WithImageError("Boardgame captured", newImageError), data = fromBggBoardgame });
             }
 
             var imageUrlsChanged = !string.Equals(existing.ImageDetails?.ImageUrl, fromBgg.ImageUrl, StringComparison.Ordinal)
@@ -2645,18 +2646,22 @@ namespace MovieTheater.Controllers
 
             ApplyBoardgameSnapshot(existing, fromBggBoardgame);
             await movieDb.SaveChangesAsync();
-            existing.BaseGameId = await ResolveBaseGameId(existing.ExtraDetails?.LinksJson);
+            // ?? preserves hand-set groupings (standalones parked under a base game) when BGG has no
+            // inbound expansion link for this thing - a bare re-sync must not wipe them.
+            existing.BaseGameId = await ResolveBaseGameId(existing.ExtraDetails?.LinksJson) ?? existing.BaseGameId;
             await movieDb.SaveChangesAsync();
+            await LinkOrphanedExpansionsAsync(existing.id, existing.BggThingId);
             await UpsertBoardgameImageUrls(existing.id, fromBgg.ImageUrl, fromBgg.ThumbnailUrl);
 
+            string? imageError = null;
             if (imageUrlsChanged)
-                await DownloadAndSaveBoardgameImages(existing, force: true);
+                imageError = await TryDownloadBoardgameImages(existing, force: true);
 
             if (existing.ImageDetails == null)
                 await movieDb.Entry(existing).Reference(x => x.ImageDetails).LoadAsync();
 
             await boardgameSimilarityService.RebuildAsync(movieDb);
-            return Ok(new { Success = true, Message = "Boardgame updated", data = existing });
+            return Ok(new { Success = true, Message = WithImageError("Boardgame updated", imageError), data = existing });
         }
 
         public class UpdateBoardgameRequest
@@ -2687,6 +2692,8 @@ namespace MovieTheater.Controllers
             var imageUrlChanged = !string.Equals(game.ImageDetails?.ImageUrl, req.ImageUrl?.Trim(), StringComparison.Ordinal)
                                   && !string.IsNullOrWhiteSpace(req.ImageUrl);
 
+            // Full-replace on purpose: the modal always sends the complete edit state, and blanking a
+            // field is how it gets cleared. Partial API calls will null out whatever they omit.
             game.Name = req.Name;
             game.Description = req.Description;
             game.YearPublished = req.YearPublished;
@@ -2759,15 +2766,18 @@ namespace MovieTheater.Controllers
                 game.BggThingId = req.NewBggThingId;
 
                 await movieDb.SaveChangesAsync();
+                game.BaseGameId = await ResolveBaseGameId(game.ExtraDetails?.LinksJson) ?? game.BaseGameId;
+                await movieDb.SaveChangesAsync();
+                await LinkOrphanedExpansionsAsync(game.id, game.BggThingId);
                 await UpsertBoardgameImageUrls(game.id, fromBgg.ImageUrl, fromBgg.ThumbnailUrl);
-                await DownloadAndSaveBoardgameImages(game, force: true);
+                var imageError = await TryDownloadBoardgameImages(game, force: true);
 
                 // ImageDetails is set by DownloadAndSaveBoardgameImages; load it if not already populated
                 if (game.ImageDetails == null)
                     await movieDb.Entry(game).Reference(g => g.ImageDetails).LoadAsync();
 
                 await boardgameSimilarityService.RebuildAsync(movieDb);
-                return Ok(new { Success = true, data = game });
+                return Ok(new { Success = true, Message = WithImageError("Boardgame re-matched", imageError), data = game });
             }
             catch (HttpRequestException ex)
             {
@@ -2877,12 +2887,13 @@ namespace MovieTheater.Controllers
                     {
                         movieDb.Boardgames.Add(fromBggBoardgame);
                         await movieDb.SaveChangesAsync();
+                        fromBggBoardgame.BaseGameId = await ResolveBaseGameId(fromBggBoardgame.ExtraDetails?.LinksJson);
+                        if (fromBggBoardgame.BaseGameId.HasValue) await movieDb.SaveChangesAsync();
+                        await LinkOrphanedExpansionsAsync(fromBggBoardgame.id, fromBggBoardgame.BggThingId);
                         await UpsertBoardgameImageUrls(fromBggBoardgame.id, fromBgg.ImageUrl, fromBgg.ThumbnailUrl);
 
-                        // Download images after saving to database
-                        await DownloadAndSaveBoardgameImages(fromBggBoardgame);
-
-                        results.Add(new { Index = i, Input = rawInput, BggThingId = fromBggBoardgame.BggThingId, Status = "Created", Name = fromBggBoardgame.Name });
+                        var imageError = await TryDownloadBoardgameImages(fromBggBoardgame);
+                        results.Add(new { Index = i, Input = rawInput, BggThingId = fromBggBoardgame.BggThingId, Status = "Created", Name = fromBggBoardgame.Name, ImageError = imageError });
                         successCount++;
                     }
                     else
@@ -3084,33 +3095,83 @@ namespace MovieTheater.Controllers
         }
 
 
-        private async Task<int?> ResolveBaseGameId(string? linksJson)
+        // boardgameexpansion inbound:true = this game requires the linked game to play
+        // boardgameimplementation inbound:true = design lineage only; still a standalone game, not an expansion
+        private static List<int> GetInboundExpansionBaseBggIds(string? linksJson)
         {
-            if (string.IsNullOrWhiteSpace(linksJson)) return null;
+            var result = new List<int>();
+            if (string.IsNullOrWhiteSpace(linksJson)) return result;
             try
             {
                 using var doc = JsonDocument.Parse(linksJson);
-                if (doc.RootElement.ValueKind != JsonValueKind.Array) return null;
-                // boardgameexpansion inbound:true = this game requires the linked game to play
-                // boardgameimplementation inbound:true = design lineage only; still a standalone game, not an expansion
+                if (doc.RootElement.ValueKind != JsonValueKind.Array) return result;
                 foreach (var link in doc.RootElement.EnumerateArray())
                 {
-                    if (!link.TryGetProperty("type", out var typeProp)) continue;
-                    var linkType = typeProp.GetString();
-                    if (linkType != "boardgameexpansion") continue;
+                    if (!link.TryGetProperty("type", out var typeProp) || typeProp.GetString() != "boardgameexpansion") continue;
                     if (!link.TryGetProperty("inbound", out var inboundProp) || inboundProp.ValueKind != JsonValueKind.True) continue;
                     if (!link.TryGetProperty("id", out var idProp) || !idProp.TryGetInt32(out var bggBaseId)) continue;
-                    var baseGame = await movieDb.Boardgames
-                        .AsNoTracking()
-                        .Where(b => b.BggThingId == bggBaseId)
-                        .Select(b => new { b.id })
-                        .FirstOrDefaultAsync();
-                    if (baseGame != null) return baseGame.id;
+                    result.Add(bggBaseId);
                 }
             }
             catch { /* malformed JSON */ }
+            return result;
+        }
+
+        private async Task<int?> ResolveBaseGameId(string? linksJson)
+        {
+            foreach (var bggBaseId in GetInboundExpansionBaseBggIds(linksJson))
+            {
+                var baseGame = await movieDb.Boardgames
+                    .AsNoTracking()
+                    .Where(b => b.BggThingId == bggBaseId)
+                    .Select(b => new { b.id })
+                    .FirstOrDefaultAsync();
+                if (baseGame != null) return baseGame.id;
+            }
             return null;
         }
+
+        // Inverse of ResolveBaseGameId: when a base game arrives AFTER its expansions, those
+        // expansions resolved to nothing at their own insert time and stayed unlinked forever.
+        private async Task LinkOrphanedExpansionsAsync(int baseBoardgameId, int baseBggThingId)
+        {
+            var marker = "\"id\":" + baseBggThingId;
+            var candidates = await movieDb.Boardgames
+                .Where(b => b.id != baseBoardgameId && b.BaseGameId == null
+                    && b.ExtraDetails != null && b.ExtraDetails.LinksJson != null
+                    && b.ExtraDetails.LinksJson.Contains(marker))
+                .Include(b => b.ExtraDetails)
+                .ToListAsync();
+
+            bool changed = false;
+            foreach (var candidate in candidates)
+            {
+                if (GetInboundExpansionBaseBggIds(candidate.ExtraDetails!.LinksJson).Contains(baseBggThingId))
+                {
+                    candidate.BaseGameId = baseBoardgameId;
+                    changed = true;
+                }
+            }
+            if (changed) await movieDb.SaveChangesAsync();
+        }
+
+        // Image failures must not fail the whole capture: by the time images download, the row is
+        // already saved, so throwing here would report failure for a game that now exists.
+        private async Task<string?> TryDownloadBoardgameImages(Boardgame boardgame, bool force = false)
+        {
+            try
+            {
+                await DownloadAndSaveBoardgameImages(boardgame, force);
+                return null;
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
+        }
+
+        private static string WithImageError(string message, string? imageError)
+            => imageError == null ? message : message + ", but image download failed: " + imageError;
 
         private static string GetMimeType(MosaicOutputFormat format) => format switch
         {
@@ -3392,7 +3453,19 @@ namespace MovieTheater.Controllers
             if (game == null) return NotFound(new { Success = false, Message = "Boardgame not found." });
 
             if (req.HowToPlayVideoUrls != null) game.HowToPlayVideoUrls = req.HowToPlayVideoUrls;
-            if (req.RulesPdfUrls != null) game.RulesPdfUrls = req.RulesPdfUrls;
+            if (req.RulesPdfUrls != null)
+            {
+                // The list's order IS the on-disk slot mapping ({id}_{slot}.pdf). Membership and order
+                // only change through approve/upload (append) and remove (delete + compact); this
+                // endpoint may only rename entries, or names and files silently desync.
+                var current = game.RulesPdfUrls;
+                if (req.RulesPdfUrls.Count != current.Count ||
+                    !req.RulesPdfUrls.Select(e => e.Url).SequenceEqual(current.Select(e => e.Url), StringComparer.Ordinal))
+                {
+                    return BadRequest(new { Success = false, Message = "RulesPdfUrls may only change display names here; use the approve/upload/remove endpoints to change which PDFs exist." });
+                }
+                game.RulesPdfUrls = req.RulesPdfUrls;
+            }
 
             if (req.HowToPlayVideoUrls != null)
             {
@@ -5821,20 +5894,25 @@ namespace MovieTheater.Controllers
             if (pl != null) movieDb.Playables.Remove(pl);
         }
 
-        // Scrapes YouTube video metadata for all boardgame videos that are missing or stale (>30 days,
+        // Scrapes YouTube video metadata for boardgame videos that are missing or stale (>30 days,
         // per YouTube Developer Policies §4.D). Stores results directly in HowToPlayVideoUrlsJson.
+        // Bounded per call: at most `max` games are refreshed; the caller re-runs until remaining=0.
+        // Already-fresh games are skipped for free, so repeated calls converge deterministically.
         [HttpPost("/API/ScrapeYouTubeVideoDetails")]
-        public async Task<IActionResult> ScrapeYouTubeVideoDetails()
+        public async Task<IActionResult> ScrapeYouTubeVideoDetails(int max = 25)
         {
             if (!await IsCurrentUserEditor()) return Forbid();
 
             var games = await movieDb.Boardgames
                 .Where(b => b.HowToPlayVideoUrlsJson != null)
+                .OrderBy(b => b.id)
                 .ToListAsync();
 
-            int scraped = 0, total = 0;
+            int scraped = 0, total = 0, visited = 0;
             foreach (var game in games)
             {
+                if (scraped >= max) break;
+                visited++;
                 var entries = game.HowToPlayVideoEntries;
                 if (entries.Count == 0) continue;
                 total += entries.Count;
@@ -5846,7 +5924,8 @@ namespace MovieTheater.Controllers
             }
 
             if (scraped > 0) await movieDb.SaveChangesAsync();
-            return Ok(new { message = $"Updated {scraped} boardgame(s).", scraped, total });
+            var remaining = games.Count - visited;
+            return Ok(new { message = $"Updated {scraped} boardgame(s); {remaining} not yet visited.", scraped, total, remaining });
         }
     }
 }
