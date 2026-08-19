@@ -20,6 +20,7 @@ import { parseSystems, toggleSystem, SYSTEM_PARAM } from "./arcadeSystemFilter";
 import useGridWindow from "../../hooks/useGridWindow";
 import usePagedCatalog from "../../hooks/usePagedCatalog";
 import "./ArcadePage.css";
+import usePolling from "../../hooks/usePolling";
 
 const { Text } = Typography;
 const PAGE_SIZE = 60;
@@ -314,14 +315,11 @@ export default function ArcadePage({ userData }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterKey]);
 
-  // Live-rooms strip, polled every 12 s.
-  useEffect(() => {
-    let alive = true;
-    const load = () => MovieAPI.getArcadeRooms().then((r) => (r.ok ? r.json() : [])).then((rs) => { if (alive) setRooms(rs); }).catch(() => {});
-    load();
-    const id = setInterval(load, 12000);
-    return () => { alive = false; clearInterval(id); };
-  }, []);
+  // Live-rooms strip, polled every 12 s (visibility-aware: a backgrounded lobby stops asking).
+  usePolling(
+    () => MovieAPI.getArcadeRooms().then((r) => (r.ok ? r.json() : [])).then(setRooms).catch(() => {}),
+    12000
+  );
 
   // Render-profile map (system → core-and-renderer options for the launch menu). Static data; fetch once.
   useEffect(() => {

@@ -14,6 +14,7 @@ import MusicSongRow from "./MusicSongRow";
 import "./MusicPage.css";
 import "./MusicPlaylists.css";
 import { formatDuration } from "../../utils/format";
+import useCachedResource from "../../hooks/useCachedResource";
 
 // ── The music library (music-plan.md §2.6) ──────────────────────────────────
 // Catalog strategy: artists (333) and albums (1.3k) load whole, once, and every view/search over
@@ -103,12 +104,22 @@ function MusicPage({ userData }) {
   const shelf = MUSIC_KINDS.find((k) => k.key === kind) || MUSIC_KINDS[0];
   const artistParam = parseInt(params.get("artist"), 10);
 
-  const [albums, setAlbums] = useState(null);
-  const [artists, setArtists] = useState(null);
+  // Stale-while-revalidate (the boardgames pattern): the last catalog renders instantly on a
+  // revisit while the fresh fetch replaces it in the background. Keyed per shelf. This page was
+  // the site's only remaining full-page blocking spinner.
+  const catalog = useCachedResource(`music.catalog.v1:${kind || "music"}`, () =>
+    Promise.all([
+      MovieAPI.getMusicAlbums(kind).then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
+      MovieAPI.getMusicArtists(kind).then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
+    ])
+      .then(([albumData, artistData]) => ({ albums: albumData.items || [], artists: artistData || [] }))
+      .catch(() => null)
+  , { enabled: !gated });
+  const albums = catalog.data?.albums ?? null;
+  const artists = catalog.data?.artists ?? null;
   const [songResults, setSongResults] = useState(null);
   const [artistDetail, setArtistDetail] = useState(null);
-  const [catalogError, setCatalogError] = useState(false);
-  const [retryNonce, setRetryNonce] = useState(0);
+
   // The open album modal lives in the URL (?album=<id>) — the artist drill-in (?artist=) already
   // did, so the album sheet now closes on Back and survives a reload/share the same way.
   const albumParam = parseInt(params.get("album"), 10);
@@ -155,31 +166,10 @@ function MusicPage({ userData }) {
       .catch(() => {});
   }
 
-  useEffect(() => {
-    if (gated) return undefined;
-    let alive = true;
-    // Re-fetched per shelf rather than filtered client-side: the whole point of a shelf is that its
-    // rows never entered the browse catalog, and holding all 813 artists in order to hide 42 of them
-    // would put the excluded material one stale filter away from the grid it was excluded from.
-    setAlbums(null);
-    setArtists(null);
-    setCatalogError(false);
-    Promise.all([
-      MovieAPI.getMusicAlbums(kind).then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
-      MovieAPI.getMusicArtists(kind).then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
-    ])
-      .then(([albumData, artistData]) => {
-        if (!alive) return;
-        setAlbums(albumData.items || []);
-        setArtists(artistData || []);
-      })
-      .catch(() => {
-        if (!alive) return;
-        // NOT empty arrays: a failed fetch rendered exactly like an empty library before.
-        setCatalogError(true);
-      });
-    return () => { alive = false; };
-  }, [gated, kind, retryNonce]);
+  // (The per-shelf catalog fetch lives in useCachedResource above — re-fetched per shelf rather
+  // than filtered client-side: the whole point of a shelf is that its rows never entered the
+  // browse catalog, and holding all 813 artists in order to hide 42 of them would put the
+  // excluded material one stale filter away from the grid it was excluded from.)
 
   // Server song search rides the same q, debounced a touch.
   useEffect(() => {
@@ -313,10 +303,10 @@ function MusicPage({ userData }) {
     );
   }
 
-  if (catalogError) {
+  if (catalog.error) {
     return (
       <div className="music-page">
-        <LoadFailure message="Couldn't load the music library." onRetry={() => setRetryNonce((n) => n + 1)} />
+        <LoadFailure message="Couldn't load the music library." onRetry={catalog.refresh} />
       </div>
     );
   }

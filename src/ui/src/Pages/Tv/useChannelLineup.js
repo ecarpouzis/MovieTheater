@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { MovieAPI } from "../../MovieAPI";
 import { preloadImages } from "../../preloadImages";
+import usePolling from "../../hooks/usePolling";
+import { readStored, writeStored } from "../../utils/storage";
+
+const LINEUP_CACHE_KEY = "tv.lineup.v1";
 
 /**
  * Fetches the visible channel list once and the cross-channel GuideGrid (now + upcoming per channel)
@@ -10,7 +14,14 @@ import { preloadImages } from "../../preloadImages";
  * channels in the background and they fill in on a later refresh.
  */
 export default function useChannelLineup({ poll = true } = {}) {
-  const [lineup, setLineup] = useState(null);
+  // Seeded from the last successful build (stale-while-revalidate): the homepage rail renders its
+  // last-known lineup instantly instead of a blank band, and the first live poll replaces it —
+  // a seconds-stale "Now" beats an empty rail. User-independent, so caching is safe.
+  const [lineup, setLineup] = useState(() => {
+    const raw = readStored(LINEUP_CACHE_KEY);
+    if (raw == null) return null;
+    try { return JSON.parse(raw); } catch { return null; }
+  });
   const channelsRef = useRef(null);
 
   const load = useCallback(async () => {
@@ -37,6 +48,7 @@ export default function useChannelLineup({ poll = true } = {}) {
         };
       });
       setLineup(built);
+      writeStored(LINEUP_CACHE_KEY, JSON.stringify(built));
 
       // Warm now-playing posters ahead of scroll so channel cards never snap in (covers the homepage
       // rail and the /channels browser, which both consume this lineup). Low priority so they don't
@@ -51,11 +63,11 @@ export default function useChannelLineup({ poll = true } = {}) {
     }
   }, []);
 
+  // Visibility-aware: the homepage rail used to keep polling the guide from a backgrounded tab
+  // forever. A non-polling consumer still gets its one load.
+  usePolling(load, 60_000, { enabled: poll });
   useEffect(() => {
-    load();
-    if (!poll) return undefined;
-    const t = setInterval(load, 60_000);
-    return () => clearInterval(t);
+    if (!poll) load();
   }, [load, poll]);
 
   return { lineup, refresh: load };

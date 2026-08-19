@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Alert } from "antd";
 import { MovieAPI } from "../../MovieAPI";
+import usePolling from "../../hooks/usePolling";
 
 // How often we ask. The reporter on Ziggy posts on every state CHANGE (its cycle is 30 s), so this
 // is the only other term in "how long until a player sees it" — 20 s keeps the worst case around a
@@ -32,23 +33,20 @@ export default function ArcadeHostBanner() {
   const [recoveredAt, setRecoveredAt] = useState(null);
   const wasDegraded = useRef(false);
 
-  useEffect(() => {
-    let alive = true;
-    const load = () =>
+  const aliveRef = useRef(true);
+  useEffect(() => () => { aliveRef.current = false; }, []);
+  // Visibility-aware poll (usePolling): a hidden tab stops asking, and returning fires a beat.
+  usePolling(
+    () =>
       MovieAPI.getArcadeHostStatus().then((s) => {
-        if (!alive || !s) return;
+        if (!aliveRef.current || !s) return;
         if (wasDegraded.current && !s.degraded) setRecoveredAt(Date.now());
         if (s.degraded) setRecoveredAt(null);
         wasDegraded.current = !!s.degraded;
         setStatus(s);
-      });
-    load();
-    const id = setInterval(load, POLL_MS);
-    return () => {
-      alive = false;
-      clearInterval(id);
-    };
-  }, []);
+      }),
+    POLL_MS
+  );
 
   // Nothing to say until the host has actually told us something. A silent reporter shows NO banner
   // rather than a stale one — the server already suppresses a degraded state it has stopped hearing

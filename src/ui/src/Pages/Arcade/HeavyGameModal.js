@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Alert, Button, Input, Modal, Progress, Typography, message } from "antd";
 import { MovieAPI } from "../../MovieAPI";
 import "../../Components/SheetModal.css";
+import usePolling from "../../hooks/usePolling";
 
 const { Text, Paragraph } = Typography;
 
@@ -45,11 +46,11 @@ export default function HeavyGameModal({ game, onClose, onPlayInBrowser }) {
 
   useEffect(() => {
     alive.current = true;
-    loadStatus();
-    // The lane lock can change under us (someone starts/quits a stream) — refresh while open.
-    const t = setInterval(loadStatus, 12000);
-    return () => { alive.current = false; preparingRef.current = false; clearInterval(t); };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    return () => { alive.current = false; preparingRef.current = false; };
+  }, []);
+  // The lane lock can change under us (someone starts/quits a stream) — refresh while open,
+  // visibility-aware like every informational poll (usePolling fires the first beat itself).
+  usePolling(loadStatus, 12000);
 
   // This game's descriptor entry, by its ArcadeGame row id.
   const app = status?.apps?.find?.((a) => a.arcadeGameId === versionId);

@@ -5,6 +5,7 @@ import BoardGameCardList from "./BoardGameCardList";
 import BoardGameModal from "./BoardGameModal";
 import { bucketsFor } from "../../Components/CatalogPager";
 import LoadFailure from "../../Components/LoadFailure";
+import useCachedResource from "../../hooks/useCachedResource";
 
 function parseJsonArray(json) {
   if (!json) return null;
@@ -53,14 +54,18 @@ function extractGames(payload) {
 const CACHE_KEY = "boardgames_v1";
 
 function BoardGames({ userData }) {
-  const cached = useMemo(() => {
-    try { const v = localStorage.getItem(CACHE_KEY); return v ? JSON.parse(v) : null; } catch { return null; }
-  }, []);
-
-  const [allGames, setAllGames] = useState(cached ?? []);
-  const [loading, setLoading] = useState(cached == null);
-  const [error, setError] = useState(null);
-  const [retryNonce, setRetryNonce] = useState(0);
+  // The render-from-cache-then-background-refresh this page pioneered, now the shared hook.
+  const catalog = useCachedResource(CACHE_KEY, (signal) =>
+    fetch("/odata/Boardgames?$select=id,bggThingId,name,yearPublished,minPlayers,maxPlayers,playingTime,minPlayTime,maxPlayTime,minAge,averageRating,averageWeight,description,rulesPdfUrlsJson,rulesPdfCandidateUrlsJson,howToPlayVideoUrlsJson,thingType,baseGameId&$expand=imageDetails&$orderby=name", {
+      signal,
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => (data == null ? null : extractGames(data)))
+      .catch((err) => (err?.name === "AbortError" ? null : null))
+  );
+  const allGames = catalog.data ?? [];
+  const setAllGames = catalog.setData;
+  const loading = catalog.loading;
   const history = useHistory();
   const location = useLocation();
 
@@ -74,33 +79,6 @@ function BoardGames({ userData }) {
     return Number.isSafeInteger(n) && n > 0 ? n : null;
   })();
   const isModalVisible = selectedGameId != null;
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    fetch("/odata/Boardgames?$select=id,bggThingId,name,yearPublished,minPlayers,maxPlayers,playingTime,minPlayTime,maxPlayTime,minAge,averageRating,averageWeight,description,rulesPdfUrlsJson,rulesPdfCandidateUrlsJson,howToPlayVideoUrlsJson,thingType,baseGameId&$expand=imageDetails&$orderby=name", {
-      signal: controller.signal,
-    })
-      .then((r) => {
-        if (!r.ok) throw new Error(`Failed to load boardgames (${r.status})`);
-        return r.json();
-      })
-      .then((data) => {
-        const games = extractGames(data);
-        setAllGames(games);
-        setLoading(false);
-        try { localStorage.setItem(CACHE_KEY, JSON.stringify(games)); } catch { return; }
-      })
-      .catch((err) => {
-        if (err.name === "AbortError") return;
-        if (cached == null) setAllGames([]);
-        setError(err.message || "Failed to load boardgames");
-        setLoading(false);
-      });
-
-    return () => controller.abort();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [retryNonce]);
 
   const expansionMap = useMemo(() => {
     const map = {};
@@ -239,8 +217,8 @@ function BoardGames({ userData }) {
       </div>
     );
   }
-  if (error && allGames.length === 0) {
-    return <LoadFailure message="Couldn't load the board games." onRetry={() => { setLoading(true); setError(null); setRetryNonce((n) => n + 1); }} />;
+  if (catalog.error && allGames.length === 0) {
+    return <LoadFailure message="Couldn't load the board games." onRetry={catalog.refresh} />;
   }
 
   return (

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Modal, Typography } from "antd";
 import { WarningOutlined } from "@ant-design/icons";
 import { MovieAPI } from "../MovieAPI";
+import usePolling from "../hooks/usePolling";
 
 const { Text, Paragraph } = Typography;
 
@@ -38,6 +39,8 @@ export default function PatchedArtifactAlarm({ userData }) {
   const [modalPayload, setModalPayload] = useState(null);
   // Remember what we already shouted about so a 5-minute poll doesn't stack duplicate popups.
   const shoutedRef = useRef({ signature: null });
+  // The effect below (re)builds `check` per isAdmin change; usePolling calls it through this ref.
+  const checkRef = useRef(null);
 
   const isAdmin = !!userData?.isAdmin;
 
@@ -85,13 +88,15 @@ export default function PatchedArtifactAlarm({ userData }) {
       shoutedRef.current.signature = null;
     }
 
-    check();
-    const timer = setInterval(check, POLL_MS);
+    checkRef.current = check;
     return () => {
       cancelled = true;
-      clearInterval(timer);
+      checkRef.current = null;
     };
   }, [isAdmin]);
+
+  // Visibility-aware cadence (usePolling): a hidden admin tab stops re-fetching the guard report.
+  usePolling(() => checkRef.current?.(), POLL_MS, { enabled: isAdmin });
 
   if (!modalPayload) return null;
 
