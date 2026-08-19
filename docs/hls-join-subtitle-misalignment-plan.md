@@ -1,6 +1,9 @@
 # Mid-film HLS joins shift the timeline — subtitles lead the picture (initPTS misalignment)
 
-Status: **root cause proven by measurement 2026-07-29.** Companion to
+Status: **FIXED (client-side) — historical.** The INIT_PTS_FOUND offset is threaded to the
+subtitle renderers, the /tv corrector, and progress reporting; copy-path offset ≈ 0. See the
+`movie-streaming` skill for the living description. Original status: root cause proven by
+measurement 2026-07-29. Companion to
 `transcode-restart-freeze-plan.md` — same evening, same title, different bug. That doc's fix stops
 Jellyfin's copy-mode restart storms; THIS doc fixes what its workaround exposed: pin a quality rung
 (forcing a real encode) and the subtitles stop matching the picture.

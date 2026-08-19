@@ -1,8 +1,13 @@
 # Mid-session transcode restarts freeze the picture (copied video + HLS renumbering)
 
-Status: **root cause confirmed 2026-07-28, fix not yet written.** Plan verified against the code
-2026-07-28 (`StreamController.cs`, `TvPage.js`, `MediaFile.cs`) — every referenced hook exists as
-described; the probe infrastructure in Part 1 does **not** exist yet and is part of the work.
+Status: **ROOT-FIXED 2026-08-02 — historical.** The fix went further than this plan: a patched
+Jellyfin makes copied-HLS segmentation exact per-keyframe, and the full-library keyframe backfill
+completed 2026-08-02 (18,674 files, 0 failures). The Part-1 sampled probe was built, used, and then
+RETIRED with the whole workaround layer. Current truth lives in the `hls-copy-freeze` skill
+(`.claude/skills/hls-copy-freeze`); this doc remains as the investigation record.
+
+Original status (2026-07-28): root cause confirmed, fix not yet written. Plan verified against the
+code 2026-07-28 (`StreamController.cs`, `TvPage.js`, `MediaFile.cs`).
 
 2026-07-29 update: the workaround was field-tested — pinning 1080p did stop the server-side restart
 storm (encode sessions number consistently), but it exposed a second, independent bug: mid-file HLS

@@ -1,5 +1,7 @@
 # Playlists & Watch Parties — plan
 
+**Status:** SHIPPED 2026-07-03 — historical design doc. The living map is the `tv` skill.
+
 Both features are the **same primitive**: a *user-owned channel whose lineup is an explicit,
 hand-picked ordered list of playables* (movies + episodes + misc). Everything else — the shared
 broadcast timeline, the age gate, presence, shared pause/skip, the TV player shell, the guide — is
