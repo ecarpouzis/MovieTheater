@@ -743,13 +743,6 @@ namespace MovieTheater.Controllers
             if (types.Count == 0)
                 return BadRequest(new { Message = $"Unknown title type '{type}'" });
 
-            static string LetterOf(string? key)
-            {
-                if (string.IsNullOrEmpty(key)) return "#";
-                var c = char.ToUpperInvariant(key[0]);
-                return c >= 'A' && c <= 'Z' ? c.ToString() : "#";
-            }
-
             List<string?> keys;
             if (types.Contains(NormalizedTitleType.Misc))
                 return Ok(new { total = 0, letters = new List<object>() });
@@ -768,23 +761,8 @@ namespace MovieTheater.Controllers
             else
                 keys = await sq!.OrderBy(s2 => s2.SimpleTitle).ThenBy(s2 => s2.Id).Select(s2 => (string?)s2.SimpleTitle).ToListAsync();
 
-            // First offset wins if a letter turns out not to be contiguous (a collation could sort some
-            // punctuation between letters): jumping to the bucket's first card is still right.
-            var order = new List<string>();
-            var counts = new Dictionary<string, int>();
-            var offsets = new Dictionary<string, int>();
-            for (int i = 0; i < keys.Count; i++)
-            {
-                var letter = LetterOf(keys[i]);
-                if (!counts.ContainsKey(letter))
-                {
-                    order.Add(letter);
-                    counts[letter] = 0;
-                    offsets[letter] = i;
-                }
-                counts[letter] += 1;
-            }
-            var letters = order.Select(l => new { letter = l, count = counts[l], offset = offsets[l] }).ToList();
+            var letters = Web.LetterBuckets.Walk(keys)
+                .Select(b => new { letter = b.Letter, count = b.Count, offset = b.Offset }).ToList();
             return Ok(new { total = keys.Count, letters });
         }
 
@@ -3079,37 +3057,9 @@ namespace MovieTheater.Controllers
 
         private static byte[] BuildBoardgameThumbnail(byte[] sourceImage)
         {
-            using (var image = SixLabors.ImageSharp.Image.Load(sourceImage))
-            {
-                float originalHeight = image.Height;
-                float originalWidth = image.Width;
-                float calcHeight = 200f;
-                int maxWidth = 150;
-                float changedPerc = calcHeight / originalHeight;
-                float calcWidth = changedPerc * originalWidth;
-                int finalWidth = (int)Math.Round(calcWidth);
-                int finalHeight = (int)Math.Round(calcHeight);
-                if (finalWidth > maxWidth)
-                {
-                    finalWidth = maxWidth;
-                }
-
-                image.Mutate(x => x
-                    .Resize(finalWidth, finalHeight, KnownResamplers.Lanczos2)
-                    .GaussianSharpen(.5f));
-
-                var png = new PngEncoder
-                {
-                    CompressionLevel = 0,
-                    FilterMethod = PngFilterMethod.None
-                };
-
-                using (var ms = new MemoryStream())
-                {
-                    image.Save(ms, png);
-                    return ms.ToArray();
-                }
-            }
+            // The shared recipe (ImageShrinkService) with the boardgame's single sharpen pass -
+            // this used to be a hand-kept copy of the poster geometry/encoder.
+            return MovieTheater.Services.Poster.ImageShrinkService.ShrinkToThumbnailPng(sourceImage, new[] { .5f });
         }
 
         private static void ApplyBoardgameSnapshot(Boardgame existing, Boardgame fromBgg)

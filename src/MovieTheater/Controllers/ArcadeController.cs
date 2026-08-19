@@ -458,14 +458,6 @@ namespace MovieTheater.Controllers
             }).ToList();
         }
 
-        // The A–Z bucket a card sorts into. Anything not starting A–Z (numbers, punctuation) is "#".
-        private static string LetterOf(string sortKey)
-        {
-            if (string.IsNullOrEmpty(sortKey)) return "#";
-            var c = char.ToUpperInvariant(sortKey[0]);
-            return c >= 'A' && c <= 'Z' ? c.ToString() : "#";
-        }
-
         // Bucket sizes + OFFSETS for the alphabetically-ordered card list, under the lobby's current
         // filters — what the lobby's letter pager jumps with (offset → ?skip=). Offsets are counted by
         // walking the ordered list itself rather than by ordering the buckets ourselves, so they agree
@@ -499,24 +491,9 @@ namespace MovieTheater.Controllers
                 .Select(x => x.Sort)
                 .ToListAsync();
 
-            // First offset wins if a letter turns out not to be contiguous (a collation could sort some
-            // punctuation between letters): jumping to the bucket's first card is still right.
-            var order = new List<string>();
-            var counts = new Dictionary<string, int>();
-            var offsets = new Dictionary<string, int>();
-            for (int i = 0; i < sortKeys.Count; i++)
-            {
-                var letter = LetterOf(sortKeys[i]);
-                if (!counts.ContainsKey(letter))
-                {
-                    order.Add(letter);
-                    counts[letter] = 0;
-                    offsets[letter] = i;
-                }
-                counts[letter]++;
-            }
-
-            var letters = order.Select(l => new { letter = l, count = counts[l], offset = offsets[l] }).ToList();
+            // The walk lives in Web.LetterBuckets (shared with /API/BrowseLetters).
+            var letters = Web.LetterBuckets.Walk(sortKeys)
+                .Select(b => new { letter = b.Letter, count = b.Count, offset = b.Offset }).ToList();
             return Json(new { total = sortKeys.Count, letters });
         }
 

@@ -32,11 +32,9 @@ namespace MovieTheater.Controllers
     /// </summary>
     public class MusicImageController : ControllerBase
     {
-        // Album art is small (a 300px thumb is a few KB); 64 MB holds the whole catalog's thumbs.
-        private static readonly MemoryCache ArtByteCache = new(new MemoryCacheOptions
-        {
-            SizeLimit = 64L * 1024 * 1024,
-        });
+        // The shared versioned-image convention (Web.ImageCacheResponder). Album art is small
+        // (a 300px thumb is a few KB); 64 MB holds the whole catalog's thumbs.
+        private static readonly Web.ImageCacheResponder Responder = new(64L * 1024 * 1024);
 
         private static readonly HttpClient Http = MusicRemoteArt.CreateHttp();
 
@@ -65,39 +63,23 @@ namespace MovieTheater.Controllers
             var path = MusicArtStore.PathFor(config, albumId, thumbnail);
             if (path == null) return NotFound();
 
-            bool versioned = Request.Query.TryGetValue("v", out var ver) && !string.IsNullOrEmpty(ver);
-            string cacheKey = versioned ? $"music|{(thumbnail ? "s" : "m")}|{albumId}|{ver}" : null;
-            if (cacheKey != null && ArtByteCache.TryGetValue(cacheKey, out byte[] cached) && cached != null)
-            {
-                Response.Headers["Cache-Control"] = "public, max-age=31536000, immutable";
-                return File(cached, "image/png");
-            }
-
-            // Not on the mount yet — try to put it there. Costs one remote lookup on the first view.
-            if (!System.IO.File.Exists(path))
-            {
-                if (!await TryFetchArtAsync(albumId)) return NotFound();
-                if (!System.IO.File.Exists(path)) return NotFound();
-            }
-
-            var etag = $"\"{System.IO.File.GetLastWriteTimeUtc(path).Ticks}\"";
-            Response.Headers["Cache-Control"] = versioned ? "public, max-age=31536000, immutable" : "public, max-age=3600";
-            Response.Headers["ETag"] = etag;
-            if (Request.Headers.TryGetValue("If-None-Match", out var ifNoneMatch) && ifNoneMatch == etag)
-                return StatusCode(304);
-
-            byte[] bytes;
-            try { bytes = System.IO.File.ReadAllBytes(path); }
-            catch (IOException) { return NotFound(); }
-
-            if (cacheKey != null)
-                ArtByteCache.Set(cacheKey, bytes, new MemoryCacheEntryOptions
+            // getModified null = not on the mount yet; the responder then calls getBytes, whose
+            // fetch-on-miss costs one remote lookup on the first view (music's lazy art fill).
+            return await Responder.ServeAsync(
+                this,
+                $"music|{(thumbnail ? "s" : "m")}|{albumId}",
+                () => Task.FromResult<DateTimeOffset?>(
+                    System.IO.File.Exists(path) ? System.IO.File.GetLastWriteTimeUtc(path) : null),
+                async () =>
                 {
-                    Size = bytes.Length,
-                    SlidingExpiration = TimeSpan.FromHours(12),
+                    if (!System.IO.File.Exists(path))
+                    {
+                        if (!await TryFetchArtAsync(albumId)) return null;
+                        if (!System.IO.File.Exists(path)) return null;
+                    }
+                    try { return System.IO.File.ReadAllBytes(path); }
+                    catch (IOException) { return null; }
                 });
-
-            return File(bytes, "image/png");
         }
 
         /// <summary>One lazy remote fetch for an album whose art isn't on the mount. False means "no art

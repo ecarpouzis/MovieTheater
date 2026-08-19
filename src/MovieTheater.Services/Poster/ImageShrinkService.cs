@@ -82,6 +82,21 @@ namespace MovieTheater.Services.Poster
 
         private byte[] ImageMagicResizeImage(byte[] sourceImage)
         {
+            // The poster chain runs five progressively-lighter sharpen passes.
+            return ShrinkToThumbnailPng(sourceImage, new[] { .5f, .5f, .4f, .3f, .2f });
+        }
+
+        /// <summary>
+        /// The site's ONE thumbnail recipe: scale to 200px high (capped at 150px wide, aspect
+        /// preserved), Lanczos2, the given Gaussian-sharpen chain, PNG with CompressionLevel 0 +
+        /// FilterMethod None. Shared by the poster pipeline (five-pass chain) and the boardgame
+        /// image download (single .5f pass) - the two used to carry hand-kept copies with a
+        /// "change both or neither" warning; now there is only one to change. The zero-compression
+        /// PNG is deliberate-as-found: files are bigger on disk but encode fastest, and the wire
+        /// cost is absorbed by the immutable/RAM caching on the image routes.
+        /// </summary>
+        public static byte[] ShrinkToThumbnailPng(byte[] sourceImage, float[] sharpenPasses)
+        {
             using (SixLabors.ImageSharp.Image image = SixLabors.ImageSharp.Image.Load(sourceImage))
             {
                 float originalHeight = image.Height;
@@ -102,12 +117,8 @@ namespace MovieTheater.Services.Poster
                 }
 
                 image.Mutate(x => x.Resize(finalWidth, finalHeight, KnownResamplers.Lanczos2));
-                image.Mutate(x => x.GaussianSharpen(.5f));
-                image.Mutate(x => x.GaussianSharpen(.5f));
-                image.Mutate(x => x.GaussianSharpen(.4f));
-                image.Mutate(x => x.GaussianSharpen(.3f));
-                image.Mutate(x => x.GaussianSharpen(.2f));
-
+                foreach (var pass in sharpenPasses)
+                    image.Mutate(x => x.GaussianSharpen(pass));
 
                 SixLabors.ImageSharp.Formats.Png.PngEncoder png = new SixLabors.ImageSharp.Formats.Png.PngEncoder
                 {
