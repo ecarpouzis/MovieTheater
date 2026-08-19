@@ -1,3 +1,5 @@
+/* The ingest review tool. Surfaces, borders and ink ride the section tokens so the page follows
+   light/dark; the only literals left are the status colors, where the hue IS the status. */
 .ingest-review-page {
   padding: 16px 20px 48px;
   max-width: 1100px;
@@ -38,10 +40,10 @@
 .review-card {
   display: flex;
   gap: 16px;
-  border: 1px solid #e8e8e8;
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   padding: 12px;
-  background: #fff;
+  background: var(--card-surface);
 }
 
 .review-card-poster {
@@ -51,7 +53,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fafafa;
+  background: var(--chip-neutral-bg);
   border-radius: 6px;
   overflow: hidden;
 }
@@ -64,7 +66,7 @@
 }
 
 .review-card-noposter {
-  color: #bbb;
+  color: var(--text-muted);
   font-size: 12px;
   text-align: center;
 }
@@ -81,7 +83,7 @@
 .review-card-folder {
   font-family: var(--font-mono);
   font-size: 12px;
-  color: #888;
+  color: var(--text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -96,24 +98,24 @@
 .review-card-meta {
   margin-bottom: 10px;
   padding: 8px 10px;
-  background: #fafafa;
-  border: 1px solid #f0f0f0;
+  background: var(--chip-neutral-bg);
+  border: 1px solid var(--card-border);
   border-radius: 4px;
   font-size: 12px;
 }
 .review-card-meta .rc-meta-line {
-  color: #595959;
+  color: var(--text-secondary);
   margin-bottom: 3px;
 }
 .review-card-meta .rc-meta-line span {
   margin-right: 5px;
 }
 .review-card-meta .rc-meta-line b {
-  color: #262626;
+  color: var(--text-primary);
 }
 .review-card-meta .rc-meta-plot {
   margin-top: 5px;
-  color: #262626;
+  color: var(--text-primary);
   line-height: 1.4;
   max-height: 6.4em;
   overflow-y: auto;
@@ -126,7 +128,7 @@
 
 .review-card-fields td:first-child {
   width: 70px;
-  color: #666;
+  color: var(--text-secondary);
   vertical-align: middle;
   padding: 3px 8px 3px 0;
   white-space: nowrap;
@@ -157,7 +159,7 @@
 }
 .review-card-detail {
   margin-top: 10px;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--card-border);
   padding-top: 8px;
   max-height: 360px;
   overflow-y: auto;
@@ -172,7 +174,7 @@
 }
 .rc-path {
   font-family: var(--font-mono);
-  color: #555;
+  color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -183,17 +185,17 @@
 .rc-related-misc {
   margin-top: 8px;
   padding-top: 6px;
-  border-top: 1px dashed #ddd;
+  border-top: 1px dashed var(--card-border);
 }
 .rc-season-hd {
   font-weight: 600;
   font-size: 12px;
-  color: #333;
+  color: var(--text-primary);
   margin: 6px 0 2px;
 }
 .rc-epnum {
   flex: 0 0 40px;
-  color: #888;
+  color: var(--text-muted);
   font-family: var(--font-mono);
 }
 .rc-eptitle {
@@ -212,18 +214,18 @@
 
 /* On-disk folder dump (scan-series-folders) + per-episode manual file assignment. */
 .rc-folderdump { margin: 6px 0 10px; }
-.rc-folderdump-hd { font-size: 11px; color: #666; margin-bottom: 4px; }
+.rc-folderdump-hd { font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; }
 .rc-folderdump-box {
   width: 100%; max-height: 240px; font-family: var(--font-mono); font-size: 11px; line-height: 1.5;
-  overflow: auto; border: 1px solid #ddd; border-radius: 4px; padding: 4px 6px;
-  background: #fafafa; color: #333; user-select: text; resize: vertical;
+  overflow: auto; border: 1px solid var(--card-border); border-radius: 4px; padding: 4px 6px;
+  background: var(--chip-neutral-bg); color: var(--text-primary); user-select: text; resize: vertical;
 }
 /* Each on-disk file is its own line so mapped/unmapped can be color-coded; text stays selectable to copy a path. */
 .rc-fd-line { white-space: pre; padding: 0 4px; border-radius: 2px; }
 .rc-fd-ok { color: #237804; }                                   /* [OK] captured — present, de-emphasized */
 .rc-fd-no { background: #fff1f0; color: #a8071a; font-weight: 600; } /* [??] NOT captured — the ones to act on */
 .rc-fd-tag { font-family: var(--font-mono); padding: 0 4px; border-radius: 2px; }
-.rc-ep-setlink { margin-left: auto; flex: 0 0 auto; color: #1c64b8; cursor: pointer; font-size: 11px; white-space: nowrap; }
+.rc-ep-setlink { margin-left: auto; flex: 0 0 auto; color: var(--accent); cursor: pointer; font-size: 11px; white-space: nowrap; }
 .rc-ep-setlink:hover { text-decoration: underline; }
 .rc-ep-setfile { margin-left: auto; display: inline-flex; gap: 4px; align-items: center; }
 /* Extras wrap onto their own indented line under the episode; remove links are red. */
@@ -231,3 +233,10 @@
 .rc-ep-rm { color: #c0392b; cursor: pointer; font-size: 11px; flex: 0 0 auto; }
 .rc-ep-rm:hover { text-decoration: underline; }
 .rc-extra { display: inline-flex; gap: 4px; align-items: center; width: 100%; margin-left: 22px; }
+
+/* The status hues stay literal — they mean captured / missing / remove — but the light-theme inks
+   are unreadable on the dark surface, so dark gets them lifted. .rc-fd-no is exempt: it carries its
+   own ground and reads on either. */
+:root[data-theme="dark"] .rc-fd-ok { color: #5fbf5f; }
+:root[data-theme="dark"] .rc-missing { color: #ff7875; }
+:root[data-theme="dark"] .rc-ep-rm { color: #ff7875; }
