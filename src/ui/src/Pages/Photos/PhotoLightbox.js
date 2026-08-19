@@ -3,6 +3,7 @@ import { Input, Modal, Spin, message } from "antd";
 import { MovieAPI } from "../../MovieAPI";
 import PhotoPersonPicker from "./PhotoPersonPicker";
 import PhotoVideo from "./PhotoVideo";
+import LoadFailure from "../../Components/LoadFailure";
 
 // The lightbox (docs/photos-plan.md §4). Shows the ~1600px `view` derivative by default and only
 // reaches for a full-size image when the viewer actually zooms — a timeline click must not pull tens
@@ -144,7 +145,7 @@ export default function PhotoLightbox({ assetId, onClose, onCurated, onOpenAsset
       title={detail?.fileName || " "}
     >
       {state === "loading" && <Spin />}
-      {state === "error" && <p className="photos-note">Could not load this item.</p>}
+      {state === "error" && <LoadFailure message="Could not load this item." />}
       {state === "ready" && (
         <div className="photo-lightbox-body">
           <div className="photo-lightbox-stage">

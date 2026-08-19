@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Spin, message } from "antd";
 import { MovieAPI } from "../../MovieAPI";
+import LoadFailure from "../../Components/LoadFailure";
 
 // The duplicate review surface (docs/photos-plan.md §2.6) — the one interaction this phase exists
 // for. A group is a claim that several files are one photograph; settling it means picking which copy
@@ -137,7 +138,7 @@ export default function PhotoDupes({ onChanged }) {
   }, [members, pick, step, decide, resetView]);
 
   if (state === "loading") return <Spin />;
-  if (state === "error") return <p className="photos-note">Could not load the duplicate groups.</p>;
+  if (state === "error") return <LoadFailure message="Could not load the duplicate groups." />;
 
   if (!groups.length) {
     // An empty PAGE with groups still pending server-side is the next page arriving, not an empty

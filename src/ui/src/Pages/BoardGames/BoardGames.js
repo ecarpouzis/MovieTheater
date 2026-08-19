@@ -4,6 +4,7 @@ import { Spin } from "antd";
 import BoardGameCardList from "./BoardGameCardList";
 import BoardGameModal from "./BoardGameModal";
 import { bucketsFor } from "../../Components/CatalogPager";
+import LoadFailure from "../../Components/LoadFailure";
 
 function parseJsonArray(json) {
   if (!json) return null;
@@ -59,6 +60,7 @@ function BoardGames({ userData }) {
   const [allGames, setAllGames] = useState(cached ?? []);
   const [loading, setLoading] = useState(cached == null);
   const [error, setError] = useState(null);
+  const [retryNonce, setRetryNonce] = useState(0);
   const history = useHistory();
   const location = useLocation();
 
@@ -97,7 +99,8 @@ function BoardGames({ userData }) {
       });
 
     return () => controller.abort();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [retryNonce]);
 
   const expansionMap = useMemo(() => {
     const map = {};
@@ -236,7 +239,9 @@ function BoardGames({ userData }) {
       </div>
     );
   }
-  if (error && allGames.length === 0) return <div style={{ padding: 40, color: "#f00" }}>{error}</div>;
+  if (error && allGames.length === 0) {
+    return <LoadFailure message="Couldn't load the board games." onRetry={() => { setLoading(true); setError(null); setRetryNonce((n) => n + 1); }} />;
+  }
 
   return (
     <>

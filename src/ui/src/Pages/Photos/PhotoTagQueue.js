@@ -3,6 +3,7 @@ import { Spin, message } from "antd";
 import { MovieAPI } from "../../MovieAPI";
 import PhotoPersonPicker from "./PhotoPersonPicker";
 import PhotoFace from "./PhotoFace";
+import LoadFailure from "../../Components/LoadFailure";
 
 // The tag queue (docs/photos-plan.md §2.8) — "keyboard-first review of untagged/suggested photos".
 //
@@ -166,7 +167,7 @@ export default function PhotoTagQueue({ people = [], onChanged, onReloadPeople }
   }, [suggestions, decide, advance]);
 
   if (state === "loading") return <Spin />;
-  if (state === "error") return <p className="photos-note">Could not load the tag queue.</p>;
+  if (state === "error") return <LoadFailure message="Could not load the tag queue." />;
 
   return (
     <div className="photo-tag-queue">

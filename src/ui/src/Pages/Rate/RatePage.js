@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import LoadFailure from "../../Components/LoadFailure";
 import { Spin, Button } from "antd";
 import {
   DndContext,
@@ -43,6 +44,7 @@ function RatePage({ userData, setUserData }) {
   const [tray, setTray] = useState([]); // watched-but-unranked cards
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  const [reloadNonce, setReloadNonce] = useState(0);
   const [status, setStatus] = useState("idle"); // idle | saving | saved | error
 
   const loadedRef = useRef(false);
@@ -91,7 +93,8 @@ function RatePage({ userData, setUserData }) {
     return () => {
       cancelled = true;
     };
-  }, [userData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userData, reloadNonce]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -236,7 +239,10 @@ function RatePage({ userData, setUserData }) {
           <Spin />
         </div>
       ) : loadError ? (
-        <div className="rate-page--empty">Couldn’t load your watched titles.</div>
+        <LoadFailure
+          message="Couldn’t load your watched titles."
+          onRetry={() => { loadedRef.current = false; setLoadError(false); setLoading(true); setReloadNonce((n) => n + 1); }}
+        />
       ) : (
         <>
           {items.length === 0 ? (

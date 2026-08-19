@@ -5,6 +5,7 @@ import useInfiniteScroll from "../../hooks/useInfiniteScroll";
 import PhotoGrid from "./PhotoGrid";
 import PhotoYearRail, { jumpCursorFor } from "./PhotoYearRail";
 import { applyPatch } from "./photoPatch";
+import LoadFailure from "../../Components/LoadFailure";
 
 // The timeline (docs/photos-plan.md §1: the primary browse surface, §2.7: undated items get their
 // own shelf rather than being scattered at epoch 0).
@@ -137,7 +138,7 @@ export default function PhotoTimeline({ undated = false, includeHidden = false, 
   }, []);
 
   if (state === "loading" && items.length === 0) return <Spin />;
-  if (state === "error" && items.length === 0) return <p className="photos-note">Could not load the timeline.</p>;
+  if (state === "error" && items.length === 0) return <LoadFailure message="Could not load the timeline." />;
 
   return (
     <div className={undated ? "" : "photos-timeline-shell"}>

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Spin } from "antd";
 import { MovieAPI } from "../../MovieAPI";
 import { AlbumCards } from "./PhotoAlbums";
+import LoadFailure from "../../Components/LoadFailure";
 
 // The Gallery (docs/photos-plan.md §2.12).
 //
@@ -43,7 +44,7 @@ export default function PhotoGallery({ onOpenAlbum }) {
   }, [load]);
 
   if (state === "loading") return <Spin />;
-  if (state === "error") return <p className="photos-note">Could not load the gallery.</p>;
+  if (state === "error") return <LoadFailure message="Could not load the gallery." />;
 
   const artists = albums.filter((album) => album.artistName);
   const collections = albums.filter((album) => !album.artistName);

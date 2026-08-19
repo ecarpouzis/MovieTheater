@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Input, Spin, message } from "antd";
 import { MovieAPI } from "../../MovieAPI";
+import LoadFailure from "../../Components/LoadFailure";
 
 // The album index (docs/photos-plan.md §2.9). Albums are curated DB rows, never folders: the tree
 // holds device dumps and misc piles that are not albums, so the folder view is a browse surface and
@@ -51,7 +52,7 @@ export default function PhotoAlbums({ onOpenAlbum }) {
   };
 
   if (state === "loading") return <Spin />;
-  if (state === "error") return <p className="photos-note">Could not load the albums.</p>;
+  if (state === "error") return <LoadFailure message="Could not load the albums." />;
 
   return (
     <div className="photo-albums">

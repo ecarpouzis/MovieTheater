@@ -297,7 +297,13 @@ function NavBar({
   function logoutUser() {
     fetch("/API/Logout", { method: "POST" }).finally(() => {
       setUserData();
-      window.localStorage.clear();
+      // Only the ACCOUNT keys. This used to be localStorage.clear(), which also destroyed every
+      // device preference on the box — the music queue, the arcade controller mappings, volumes,
+      // the theme — for whoever logged in next. Those describe the DEVICE, not the account.
+      try {
+        window.localStorage.removeItem("Username");
+        window.localStorage.removeItem("CardStyle");
+      } catch { /* storage blocked — nothing to clear */ }
     });
   }
 

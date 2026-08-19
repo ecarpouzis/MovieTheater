@@ -4,6 +4,7 @@ import { MovieAPI } from "../../MovieAPI";
 import useInfiniteScroll from "../../hooks/useInfiniteScroll";
 import PhotoGrid from "./PhotoGrid";
 import { applyPatch } from "./photoPatch";
+import LoadFailure from "../../Components/LoadFailure";
 
 // The folder browser (docs/photos-plan.md §2.9): the Path tree, with zero extra modeling. It is a
 // browse VIEW — a folder is never an album's identity, so the disk layout stays free to be ugly.
@@ -113,7 +114,7 @@ export default function PhotoFolders({ path = "", onNavigate, onOpen, selection,
       )}
 
       {state === "loading" && <Spin />}
-      {state === "error" && <p className="photos-note">Could not read that folder.</p>}
+      {state === "error" && <LoadFailure message="Could not read that folder." />}
 
       {state === "ready" && (
         <>

@@ -7,6 +7,7 @@ import MusicAlbumArt from "../../Music/MusicAlbumArt";
 import CatalogPager, { bucketsFor } from "../../Components/CatalogPager";
 import useGridWindow from "../../hooks/useGridWindow";
 import MusicAlbumModal from "./MusicAlbumModal";
+import LoadFailure from "../../Components/LoadFailure";
 import MusicPlaylistPickerModal from "./MusicPlaylistPickerModal";
 import MusicPlaylistManageModal from "./MusicPlaylistManageModal";
 import MusicSongRow from "./MusicSongRow";
@@ -106,6 +107,8 @@ function MusicPage({ userData }) {
   const [artists, setArtists] = useState(null);
   const [songResults, setSongResults] = useState(null);
   const [artistDetail, setArtistDetail] = useState(null);
+  const [catalogError, setCatalogError] = useState(false);
+  const [retryNonce, setRetryNonce] = useState(0);
   // The open album modal lives in the URL (?album=<id>) — the artist drill-in (?artist=) already
   // did, so the album sheet now closes on Back and survives a reload/share the same way.
   const albumParam = parseInt(params.get("album"), 10);
@@ -161,6 +164,7 @@ function MusicPage({ userData }) {
     // would put the excluded material one stale filter away from the grid it was excluded from.
     setAlbums(null);
     setArtists(null);
+    setCatalogError(false);
     Promise.all([
       MovieAPI.getMusicAlbums(kind).then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
       MovieAPI.getMusicArtists(kind).then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
@@ -172,11 +176,11 @@ function MusicPage({ userData }) {
       })
       .catch(() => {
         if (!alive) return;
-        setAlbums([]);
-        setArtists([]);
+        // NOT empty arrays: a failed fetch rendered exactly like an empty library before.
+        setCatalogError(true);
       });
     return () => { alive = false; };
-  }, [gated, kind]);
+  }, [gated, kind, retryNonce]);
 
   // Server song search rides the same q, debounced a touch.
   useEffect(() => {
@@ -306,6 +310,14 @@ function MusicPage({ userData }) {
         <div className="music-gate-note">
           Music streaming needs a password-protected account — ask the site admin.
         </div>
+      </div>
+    );
+  }
+
+  if (catalogError) {
+    return (
+      <div className="music-page">
+        <LoadFailure message="Couldn't load the music library." onRetry={() => setRetryNonce((n) => n + 1)} />
       </div>
     );
   }

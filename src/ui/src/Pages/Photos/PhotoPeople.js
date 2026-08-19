@@ -3,6 +3,7 @@ import { Input, Modal, Spin, message } from "antd";
 import { MovieAPI } from "../../MovieAPI";
 import PhotoGrid from "./PhotoGrid";
 import { formatTaken } from "./PhotoLightbox";
+import LoadFailure from "../../Components/LoadFailure";
 
 // People (docs/photos-plan.md §2.8): the family's person list, and a page per person.
 //
@@ -356,7 +357,7 @@ function PhotoPersonPage({ id, onBack, onOpen, onOpenPerson }) {
   }, [load]);
 
   if (state === "loading") return <Spin />;
-  if (state === "error") return <p className="photos-note">Could not load that person.</p>;
+  if (state === "error") return <LoadFailure message="Could not load that person." />;
 
   const person = detail?.person;
   return (

@@ -5,6 +5,7 @@ import { MovieAPI } from "../../MovieAPI";
 import useInfiniteScroll from "../../hooks/useInfiniteScroll";
 import PhotoGrid from "./PhotoGrid";
 import { formatRange } from "./PhotoAlbums";
+import LoadFailure from "../../Components/LoadFailure";
 
 // One album (docs/photos-plan.md §2.9): the same justified grid and lightbox as every other browse
 // surface, plus the edits any family member may make — retitle, describe, hand-set date range, pick
@@ -115,7 +116,7 @@ export default function PhotoAlbumDetail({ slug, onBack, onOpen, onTitle, onMeta
 
   if (state === "loading") return <Spin />;
   if (state === "missing") return <p className="photos-note">That album is gone.</p>;
-  if (state === "error") return <p className="photos-note">Could not load that album.</p>;
+  if (state === "error") return <LoadFailure message="Could not load that album." />;
 
   const act = async (promise, done) => {
     const response = await promise;

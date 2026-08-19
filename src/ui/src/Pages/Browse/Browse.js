@@ -8,6 +8,7 @@ import PlaylistPickerModal from "../Tv/PlaylistPickerModal";
 import useIsMobile from "../../hooks/useIsMobile";
 import useInfiniteScroll from "../../hooks/useInfiniteScroll";
 import usePagedCatalog from "../../hooks/usePagedCatalog";
+import LoadFailure from "../../Components/LoadFailure";
 
 // The detail modal (917 lines + FileMappingEditor, SubtitlePicker, …) only renders after a card
 // click + network fetch, so its chunk load hides behind that — keeping it out of the entry bundle.
@@ -89,6 +90,11 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
   const [movieDataArray, setMovieDataArray] = useState([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState(null);
+  // A failed one-shot/dense fetch used to RE-THROW from inside its .catch — an unhandled
+  // rejection with no UI at all, the skeleton sitting there forever. It is a real state now,
+  // and retryNonce re-arms the fetch effects.
+  const [fetchError, setFetchError] = useState(false);
+  const [retryNonce, setRetryNonce] = useState(0);
   const isMobile = useIsMobile();
   const useSimpleStyle = simpleStyle && isMobile;
 
@@ -186,6 +192,7 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
       return;
     }
     setLoading(true);
+    setFetchError(false);
     const controller = new AbortController();
     const { signal } = controller;
     const fetchPromise = search.movieIds
@@ -209,16 +216,19 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
         setLoading(false);
       })
       .catch((err) => {
-        if (err.name !== "AbortError") throw err;
+        if (err.name === "AbortError") return;
+        setFetchError(true);
+        setLoading(false);
       });
     return () => controller.abort();
-  }, [search.url, search.movieIds, search.pending, isInfinite]);
+  }, [search.url, search.movieIds, search.pending, isInfinite, retryNonce]);
 
   // ── Dense-infinite path (id-list searches): load the first page, then append on scroll. ──
   useEffect(() => {
     // No isAuthReady gate (see the non-infinite effect above): the first page loads in parallel with auth.
     if (!denseInfinite || search.pending) return;
     setLoading(true);
+    setFetchError(false);
     pageRef.current = 1;
     loadingMoreRef.current = false;
     setLoadingMore(false);
@@ -239,10 +249,12 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
         setLoading(false);
       })
       .catch((err) => {
-        if (err.name !== "AbortError") throw err;
+        if (err.name === "AbortError") return;
+        setFetchError(true);
+        setLoading(false);
       });
     return () => controller.abort();
-  }, [search.url, search.movieIds, search.pending, denseInfinite]);
+  }, [search.url, search.movieIds, search.pending, denseInfinite, retryNonce]);
 
   const hasMore = denseInfinite && pagination != null && movieDataArray.length < pagination.totalCount;
   hasMoreRef.current = hasMore;
@@ -268,7 +280,8 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
         }
       })
       .catch((err) => {
-        if (err.name !== "AbortError") throw err;
+        if (err.name === "AbortError") return;
+        // An appended page that failed is retried by the next sentinel pass; never an unhandled throw.
       })
       .finally(() => {
         if (epochRef.current !== epoch) return; // the new search owns the flags now — don't clobber them
@@ -436,10 +449,9 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
       {(sparseInfinite ? !paged.firstLoaded : loading) ? (
         <BrowseSkeleton count={isMobile ? 6 : 12} />
       ) : sparseInfinite && paged.loadError && paged.total === 0 ? (
-        <div style={LOADING_MORE_STYLE}>
-          Couldn&apos;t load the library.{" "}
-          <button type="button" onClick={paged.retry}>Try again</button>
-        </div>
+        <LoadFailure message="Couldn't load the library." onRetry={paged.retry} />
+      ) : fetchError ? (
+        <LoadFailure message="Couldn't load the library." onRetry={() => setRetryNonce((n) => n + 1)} />
       ) : useSimpleStyle ? (
         <SimpleCardList
           movieDataArray={displayMovies}
