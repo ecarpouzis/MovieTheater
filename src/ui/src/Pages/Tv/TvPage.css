@@ -12,8 +12,9 @@
   display: flex;
   flex-direction: column;
   cursor: default;
-  /* The TV uses a blue accent; the shared subtitle-style editor reads these to match this menu. */
-  --ss-accent: #40a9ff;
+  /* The TV uses the screening-room blue; the shared subtitle-style editor reads these to match
+     this menu. --vp-gold comes from VideoPlayer.css (TvPage always loads the player module). */
+  --ss-accent: var(--vp-gold, #40a9ff);
   --ss-accent-dim: rgba(64, 169, 255, 0.7);
 }
 
@@ -98,7 +99,7 @@
 }
 
 .tv-tuning-label {
-  font-family: var(--vp-display, "Marcellus", Georgia, serif);
+  font-family: var(--vp-display);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   font-size: 13px;
@@ -258,7 +259,7 @@
 }
 
 .tv-bar-channel-num {
-  font-family: var(--vp-display, "Marcellus", Georgia, serif);
+  font-family: var(--vp-display);
   font-size: 22px;
   line-height: 1;
   color: #40a9ff;
@@ -402,7 +403,7 @@
 }
 
 .tv-bar-title {
-  font-family: var(--vp-display, "Marcellus", Georgia, serif);
+  font-family: var(--vp-display);
   font-size: 15px;
   color: #e8eef6;
   overflow: hidden;
@@ -413,7 +414,7 @@
 }
 
 .tv-bar-next-title {
-  font-family: var(--vp-display, "Marcellus", Georgia, serif);
+  font-family: var(--vp-display);
   font-size: 12.5px;
   color: #e8eef6;
   overflow: hidden;
@@ -802,7 +803,7 @@
 }
 
 .tv-channel-num {
-  font-family: var(--vp-display, "Marcellus", Georgia, serif);
+  font-family: var(--vp-display);
   color: #40a9ff;
   width: 20px;
   text-align: center;
@@ -845,7 +846,7 @@
 }
 
 .tv-guide-title {
-  font-family: var(--vp-display, "Marcellus", Georgia, serif);
+  font-family: var(--vp-display);
   font-size: 14.5px;
   color: #e8eef6;
   margin-top: 4px;
@@ -876,7 +877,7 @@
 }
 
 .tv-state-head {
-  font-family: var(--vp-display, "Marcellus", Georgia, serif);
+  font-family: var(--vp-display);
   font-size: clamp(24px, 4vw, 36px);
   letter-spacing: 0.04em;
   color: #e8eef6;
@@ -890,7 +891,7 @@
 
 .tv-state-btn {
   margin-top: 16px;
-  font-family: var(--vp-display, "Marcellus", Georgia, serif);
+  font-family: var(--vp-display);
   font-size: 14px;
   letter-spacing: 0.12em;
   text-transform: uppercase;

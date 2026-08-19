@@ -10,7 +10,7 @@
   max-width: 920px;
   margin: 60px auto;
   text-align: center;
-  color: #666;
+  color: var(--text-secondary);
   font-size: 15px;
 }
 
@@ -27,7 +27,7 @@
   margin: 0;
   font-size: 24px;
   font-weight: 700;
-  color: #1f1f25;
+  color: var(--text-primary);
 }
 
 .rate-sub {
@@ -35,7 +35,7 @@
   max-width: 620px;
   font-size: 13px;
   line-height: 1.5;
-  color: #6a6a76;
+  color: var(--text-secondary);
 }
 
 .rate-actions {
@@ -50,7 +50,7 @@
   min-width: 56px;
   text-align: right;
 }
-.rate-status--saving { color: #8a8a93; }
+.rate-status--saving { color: var(--text-muted); }
 .rate-status--saved { color: #2e9b57; }
 .rate-status--error { color: #d4380d; }
 
@@ -63,9 +63,9 @@
 .rate-empty-ranked {
   padding: 28px;
   text-align: center;
-  color: #888;
-  background: #fff;
-  border: 1px dashed #d9d9de;
+  color: var(--text-muted);
+  background: var(--card-surface);
+  border: 1px dashed var(--card-border);
   border-radius: 10px;
 }
 
@@ -85,16 +85,16 @@
   gap: 10px;
   min-height: 52px;
   padding: 6px 12px 6px 6px;
-  background: #ffffff;
-  border: 1px solid #e4e4ea;
+  background: var(--card-surface);
+  border: 1px solid var(--card-border);
   border-radius: 10px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--card-shadow);
   overflow: hidden;
 }
 
 .rate-row--dragging .rate-bar {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
-  border-color: #b9c8ff;
+  box-shadow: var(--card-shadow-hover);
+  border-color: var(--accent);
 }
 
 /* Score fill behind the content */
@@ -121,7 +121,7 @@
   cursor: grab;
   font-size: 18px;
   line-height: 1;
-  color: #b6b6c0;
+  color: var(--text-muted);
   padding: 4px 6px;
   touch-action: none; /* let the touch sensor own the gesture, not the scroller */
 }
@@ -135,7 +135,7 @@
   height: 50px;
   object-fit: cover;
   border-radius: 4px;
-  background: #ececf1;
+  background: var(--chip-neutral-bg);
   margin: 0;
 }
 .rate-bar-poster--placeholder {
@@ -143,7 +143,7 @@
   align-items: center;
   justify-content: center;
   font-size: 18px;
-  color: #b9b9c2;
+  color: var(--text-muted);
 }
 
 .rate-bar-body {
@@ -156,13 +156,13 @@
 
 .rate-bar-title {
   font-weight: 600;
-  color: #26262e;
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .rate-bar-year {
-  color: #9a9aa4;
+  color: var(--text-muted);
   font-size: 12px;
   flex: 0 0 auto;
 }
@@ -171,8 +171,8 @@
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #6a86d6;
-  background: #eef2ff;
+  color: var(--accent);
+  background: var(--accent-soft);
   border-radius: 4px;
   padding: 1px 5px;
 }
@@ -183,14 +183,14 @@
   text-align: right;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  color: #2b4a9b;
+  color: var(--accent);
 }
 
 .rate-bar-remove {
   flex: 0 0 auto;
   border: none;
   background: transparent;
-  color: #c2c2cc;
+  color: var(--text-muted);
   cursor: pointer;
   font-size: 13px;
   padding: 4px 6px;
@@ -198,14 +198,14 @@
 }
 .rate-bar-remove:hover {
   color: #d4380d;
-  background: #fff1ee;
+  background: rgba(212, 56, 13, 0.12);
 }
 
 /* Anchor / score-line bar */
 .rate-bar--anchor {
   min-height: 40px;
-  background: #fffaf0;
-  border-color: #f0d9a8;
+  background: var(--rating-gold-bg);
+  border-color: var(--chip-imdb-border);
   border-style: dashed;
 }
 .rate-anchor-label {
@@ -214,12 +214,12 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #b07d27;
+  color: var(--rating-gold-text);
 }
 .rate-anchor-line {
   flex: 1 1 auto;
   height: 0;
-  border-top: 2px dashed #e3b765;
+  border-top: 2px dashed var(--chip-imdb-border);
 }
 .rate-anchor-input {
   flex: 0 0 auto;
@@ -230,7 +230,7 @@
 .rate-tray {
   margin-top: 28px;
   padding-top: 16px;
-  border-top: 1px solid #e4e4ea;
+  border-top: 1px solid var(--card-border);
 }
 .rate-tray-title {
   margin: 0 0 12px;
@@ -238,7 +238,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #8a8a93;
+  color: var(--text-muted);
 }
 .rate-tray-list {
   display: flex;
@@ -250,8 +250,8 @@
   align-items: center;
   gap: 8px;
   max-width: 260px;
-  border: 1px solid #e4e4ea;
-  background: #fff;
+  border: 1px solid var(--card-border);
+  background: var(--card-surface);
   border-radius: 8px;
   padding: 4px 10px 4px 4px;
   cursor: pointer;
@@ -259,8 +259,8 @@
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 .rate-tray-item:hover {
-  border-color: #9db4ff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-color: var(--accent);
+  box-shadow: var(--card-shadow-hover);
 }
 .rate-tray-poster {
   width: 26px;
@@ -268,18 +268,18 @@
   object-fit: cover;
   border-radius: 3px;
   margin: 0;
-  background: #ececf1;
+  background: var(--chip-neutral-bg);
 }
 .rate-tray-name {
   font-size: 13px;
-  color: #33333b;
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .rate-tray-add {
   margin-left: auto;
-  color: #4084ff;
+  color: var(--accent);
   font-weight: 700;
 }
 
