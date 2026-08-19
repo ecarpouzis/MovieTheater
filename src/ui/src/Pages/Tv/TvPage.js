@@ -2,7 +2,9 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useHistory } from "react-router-dom";
 import Hls from "hls.js";
 import { MovieAPI } from "../../MovieAPI";
-import { formatTime, TICKS_PER_SECOND, QUALITY_LADDER, formatPlaying, deliveredLayout } from "../Watch/VideoPlayer";
+import { formatTime, TICKS_PER_SECOND } from "../Watch/VideoPlayer";
+import { QUALITY_LADDER, formatPlaying, qualityOptions, audioOptions, subtitleOptions, deliveredAudio } from "../../playerMenuModel";
+import { useIdleChrome } from "../../useIdleChrome";
 import { createHls, bandwidthSample } from "../../streamEngine";
 import { autoBpsLabel, abrProfileFor, isAutoQuality } from "../../streamAbr";
 import { useAdaptiveBitrate } from "../../useAdaptiveBitrate";
@@ -36,7 +38,6 @@ function TvPage({ userData }) {
   const hlsRef = useRef(null);
   const sessionRef = useRef(null);
   const advanceTimerRef = useRef(null);
-  const idleTimerRef = useRef(null);
   const progressRef = useRef(null);
   const scrubbingRef = useRef(false);
   // Grace timer before tearing down the stream on a hidden tab (see the visibility effect).
@@ -105,7 +106,6 @@ function TvPage({ userData }) {
   const [viewers, setViewers] = useState(null); // { count, names: [{ name, you }] } — who's tuned in
   const [tuning, setTuning] = useState(false); // waiting on the (cold) transcode to produce frames
   const [paused, setPaused] = useState(false); // shared channel pause — frozen for everyone watching
-  const [chromeVisible, setChromeVisible] = useState(true); // control bar fades out while idle, like the Watch player
   const [scrubHover, setScrubHover] = useState(null); // { pct, seconds } while pointing at the progress bar (lone viewer only)
   const [fillSnap, setFillSnap] = useState(false); // suppress the fill's 1s ease for one paint after leaving/seeking, so it jumps straight back to the live position
 
@@ -242,18 +242,13 @@ function TvPage({ userData }) {
     setMenuOpen(false);
   }, []);
 
-  // Show the control bar and re-arm the idle fade. The bar drops away after a few seconds of
-  // stillness (like the Watch player's house-lights fade), but stays up while paused or while a
-  // popout is open so it can't vanish mid-interaction.
-  const wakeChrome = useCallback(() => {
-    setChromeVisible(true);
-    clearTimeout(idleTimerRef.current);
-    idleTimerRef.current = setTimeout(() => {
-      const video = videoRef.current;
-      if (popoutOpenRef.current || pausedRef.current || !video || video.paused) return;
-      setChromeVisible(false);
-    }, 3000);
-  }, []);
+  // The control bar drops away after a few seconds of stillness (useIdleChrome — the Watch
+  // player's house-lights fade, shared now), but stays up while paused or while a popout is open
+  // so it can't vanish mid-interaction.
+  const { visible: chromeVisible, wake: wakeChrome, hide: hideChromeNow } = useIdleChrome({
+    videoRef,
+    holdWhile: () => popoutOpenRef.current || pausedRef.current,
+  });
 
   // Tap/click on the picture: close an open popout if there is one, otherwise toggle the chrome —
   // showing hides it, hidden shows it (and re-arms the fade). This is the tap-to-hide affordance.
@@ -264,12 +259,11 @@ function TvPage({ userData }) {
       return;
     }
     if (chromeVisible) {
-      clearTimeout(idleTimerRef.current);
-      setChromeVisible(false);
+      hideChromeNow();
     } else {
       wakeChrome();
     }
-  }, [chromeVisible, closePopouts, wakeChrome]);
+  }, [chromeVisible, closePopouts, wakeChrome, hideChromeNow]);
 
   // The bitrate cap for the current quality. A manual rung uses its own cap (incl. the uncapped
   // "Original"); Auto uses the live adaptive cap, which climbs to the lossless/uncapped tier — so a
@@ -746,7 +740,6 @@ function TvPage({ userData }) {
       window.removeEventListener("pagehide", onPageHide);
       clearTimeout(advanceTimerRef.current);
       clearTimeout(prewarmTimerRef.current);
-      clearTimeout(idleTimerRef.current);
       stopSession(true);
       // Don't leak a prewarmed transcode that never got consumed.
       if (prewarmRef.current) {
@@ -1267,10 +1260,10 @@ function TvPage({ userData }) {
               <span className="tv-qopt-hint">{QUALITY_LADDER.find((q) => q.key === quality)?.label || "Auto"}</span>
             </button>
             {qualityOpen &&
-              QUALITY_LADDER.map((q) => (
+              qualityOptions(quality).map((q) => (
                 <button
                   key={q.key}
-                  className={`tv-channel-item tv-channel-item--qopt${quality === q.key ? " tv-channel-item--on" : ""}`}
+                  className={`tv-channel-item tv-channel-item--qopt${q.selected ? " tv-channel-item--on" : ""}`}
                   onClick={() => selectQuality(q.key)}
                 >
                   <span className="tv-channel-num">·</span>
@@ -1291,10 +1284,10 @@ function TvPage({ userData }) {
                   </span>
                 </button>
                 {audioOpen &&
-                  audioTracks.map((t) => (
+                  audioOptions(audioTracks, audioIndex ?? playingAudioIndex).map((t) => (
                     <button
                       key={t.index}
-                      className={`tv-channel-item tv-channel-item--qopt${(audioIndex ?? playingAudioIndex) === t.index ? " tv-channel-item--on" : ""}`}
+                      className={`tv-channel-item tv-channel-item--qopt${t.selected ? " tv-channel-item--on" : ""}`}
                       onClick={() => selectAudio(t.index)}
                     >
                       <span className="tv-channel-num">·</span>
@@ -1317,22 +1310,15 @@ function TvPage({ userData }) {
                 </button>
                 {subsOpen && (
                   <>
-                    <button
-                      className={`tv-channel-item tv-channel-item--qopt${subtitleIndex == null ? " tv-channel-item--on" : ""}`}
-                      onClick={() => selectSubtitle(null)}
-                    >
-                      <span className="tv-channel-num">·</span>
-                      Off
-                    </button>
-                    {subtitleTracks.map((t) => (
+                    {subtitleOptions(subtitleTracks, subtitleIndex).map((t) => (
                       <button
-                        key={t.index}
-                        className={`tv-channel-item tv-channel-item--qopt${subtitleIndex === t.index ? " tv-channel-item--on" : ""}`}
+                        key={t.index ?? "off"}
+                        className={`tv-channel-item tv-channel-item--qopt${t.selected ? " tv-channel-item--on" : ""}`}
                         onClick={() => selectSubtitle(t.index)}
                       >
                         <span className="tv-channel-num">·</span>
                         {t.label}
-                        {!t.deliveryUrl && <span className="tv-qopt-hint">burned in</span>}
+                        {t.hint && <span className="tv-qopt-hint">{t.hint}</span>}
                       </button>
                     ))}
                     {/* subtitle timing fix — soft text tracks only (client-side re-time, per-viewer) */}
@@ -1396,7 +1382,7 @@ function TvPage({ userData }) {
                     videoCodec: playingVideoCodec,
                     isHls: playingHls,
                     isDirectStream: playingDirect,
-                    audio: deliveredLayout((audioTracks.find((t) => t.index === (audioIndex ?? playingAudioIndex)) || audioTracks[0])?.channels),
+                    audio: deliveredAudio(audioTracks, audioIndex ?? playingAudioIndex),
                   })}
                 </div>
               </>

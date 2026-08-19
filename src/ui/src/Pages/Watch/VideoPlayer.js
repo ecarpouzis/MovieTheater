@@ -2,86 +2,27 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import Hls from "hls.js";
 import { createHls, bandwidthSample } from "../../streamEngine";
 import { formatClock as formatTime } from "../../utils/format";
+import {
+  QUALITY_LADDER, codecLabel, channelLayout, deliveredLayout, formatPlaying,
+  qualityOptions, audioOptions, subtitleOptions, deliveredAudio,
+} from "../../playerMenuModel";
+import { useIdleChrome } from "../../useIdleChrome";
 import { useWakeLock } from "../../useWakeLock";
 import { useMediaSession } from "../../useMediaSession";
 import { usePictureInPicture } from "../../usePictureInPicture";
 import { usePlaybackRate, PLAYBACK_RATES } from "../../usePlaybackRate";
 import { usePgsSubtitle } from "../../usePgsSubtitle";
 import { useAssSubtitle } from "../../useAssSubtitle";
-import { detectStreamCapabilities } from "../../streamCapabilities";
-import { isAutoQuality } from "../../streamAbr";
 import { useSubtitleStyle, useCueLift, useSubtitleOffset, formatDelay, SUBTITLE_NUDGE_MS } from "../../subtitleStyle";
 import { SubtitleStyleControls, SubtitleStylePreview, SubtitleSyncControls } from "../../SubtitleStyleEditor";
 import "./VideoPlayer.css";
 
-// The delivered layout is capped at what this client can actually emit, so a stereo machine reads
-// "2.0" for a 5.1 source (which it gets downmixed) instead of falsely claiming surround.
-export function deliveredLayout(channels) {
-  if (!channels) return null;
-  const max = detectStreamCapabilities().maxAudioChannels || 2;
-  return channelLayout(Math.min(channels, max));
-}
+// The menu vocabulary (QUALITY_LADDER, formatPlaying, deliveredLayout, codecLabel, channelLayout)
+// moved to playerMenuModel.js — shared with the TV player — and is re-exported here so existing
+// import paths keep working.
+export { QUALITY_LADDER, codecLabel, channelLayout, deliveredLayout, formatPlaying };
 
 const TICKS_PER_SECOND = 10_000_000;
-
-// The quality ladder from streaming-plan.md §7. "Auto" (§14.4) adapts the cap to
-// measured bandwidth; "Original" omits the cap entirely, letting compatible sources
-// direct-stream with no re-encode. The numbered rungs pin a fixed cap.
-export const QUALITY_LADDER = [
-  { key: "auto", label: "Auto", bps: null, hint: "adapts to your connection" },
-  { key: "auto-mobile", label: "Mobile Auto", bps: null, hint: "low data · caps at 1080p" },
-  { key: "original", label: "Original", bps: null, hint: "direct stream when possible" },
-  { key: "1080-12", label: "1080p", bps: 12_000_000, hint: "12 Mbps" },
-  { key: "1080-8", label: "1080p", bps: 8_000_000, hint: "8 Mbps" },
-  { key: "720-4", label: "720p", bps: 4_000_000, hint: "4 Mbps" },
-  { key: "480-15", label: "480p", bps: 1_500_000, hint: "1.5 Mbps" },
-];
-
-// Pretty-print the negotiated output codec for the player readout (§14.1).
-export function codecLabel(codec) {
-  const map = { hevc: "HEVC", h265: "HEVC", h264: "H.264", avc: "H.264", av1: "AV1", vp9: "VP9" };
-  return map[String(codec).toLowerCase()] || String(codec).toUpperCase();
-}
-
-// The "Playing" readout, shared by the Watch player and the TV/channel menu so both report delivery
-// quality identically and truthfully: the active quality, the output codec, and — the part the viewer
-// actually cares about — whether the video is the original copied bit-for-bit ("no re-encode") or a
-// transcode. `autoLabel` is the live adaptive-cap label (e.g. "Auto · Original" / "Auto · 8 Mbps").
-export function formatPlaying({ qualityKey, autoLabel, videoCodec, isHls, isDirectStream, audio }) {
-  const rung = QUALITY_LADDER.find((q) => q.key === qualityKey);
-  // Lead with the unambiguous live verdict. "Video copied" (isDirectStream) is NOT the whole story: a
-  // copied video can still ride an HLS session that re-encodes the audio/container (e.g. an E-AC-3 track
-  // the browser can't decode) — which is NOT raw direct play and can behave differently (seek/segmenting).
-  // Only a NON-HLS session is a true bit-for-bit direct play; an HLS session that merely copies the video
-  // says exactly that instead of falsely claiming "Original". The option's "…when possible" marketing hint
-  // stays in the Quality menu, not here, so this never hedges about what's actually being delivered.
-  const parts = [
-    !isDirectStream ? "Transcoded" : isHls ? "Video copied · HLS transcode" : "Original · no re-encode",
-  ];
-  if (!isDirectStream) {
-    parts.push(
-      isAutoQuality(qualityKey)
-        ? (autoLabel || "Auto").replace(/^Auto · /, "")
-        : [rung?.label, rung?.hint].filter(Boolean).join(" ")
-    );
-  }
-  if (videoCodec) parts.push(codecLabel(videoCodec));
-  if (audio) parts.push(audio);
-  return parts.join(" · ");
-}
-
-// Speaker layout from a channel count, for the "Playing" readout (so 5.1 surround is visible, not
-// just assumed). The server now preserves the source channel count up to the client's output, so
-// this reflects what's actually delivered.
-export function channelLayout(channels) {
-  if (!channels) return null;
-  if (channels >= 8) return "7.1";
-  if (channels === 7) return "6.1";
-  if (channels === 6) return "5.1";
-  if (channels === 2) return "2.0";
-  if (channels === 1) return "Mono";
-  return `${channels}ch`;
-}
 
 /**
  * The screening-room player (streaming-plan.md §7). Self-contained dark UI —
@@ -123,7 +64,6 @@ function VideoPlayer({
   const containerRef = useRef(null);
   const videoRef = useRef(null);
   const hlsRef = useRef(null);
-  const idleTimerRef = useRef(null);
   const clickTimerRef = useRef(null);
   const scrubRef = useRef(null);
 
@@ -138,7 +78,6 @@ function VideoPlayer({
   });
   const [muted, setMuted] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
-  const [controlsVisible, setControlsVisible] = useState(true);
   const [openMenu, setOpenMenu] = useState(null); // 'settings' | null
   const [scrubbing, setScrubbing] = useState(false);
   const [scrubTime, setScrubTime] = useState(null);
@@ -533,24 +472,10 @@ function VideoPlayer({
     },
   });
 
-  // ── controls visibility: fade like house lights ─────────────────────────────
-  const wakeControls = useCallback(() => {
-    setControlsVisible(true);
-    clearTimeout(idleTimerRef.current);
-    idleTimerRef.current = setTimeout(() => {
-      // Keep controls up while paused, scrubbing, or inside a menu.
-      setControlsVisible((visible) => {
-        const video = videoRef.current;
-        if (!video || video.paused) return true;
-        return false;
-      });
-    }, 3000);
-  }, []);
-
-  useEffect(() => {
-    wakeControls();
-    return () => clearTimeout(idleTimerRef.current);
-  }, [wakeControls]);
+  // ── controls visibility: fade like house lights (useIdleChrome — shared with the TV player).
+  // Menu/scrub holds stay at the render gate below, exactly as before: closing the menu drops the
+  // chrome immediately rather than restarting a countdown.
+  const { visible: controlsVisible, wake: wakeControls, hide: hideControls } = useIdleChrome({ videoRef });
 
   const hideChrome = playing && !controlsVisible && !openMenu && !scrubbing;
 
@@ -697,7 +622,7 @@ function VideoPlayer({
       role="application"
       aria-label={`Video player: ${title || ""}`}
       onMouseMove={wakeControls}
-      onMouseLeave={() => playing && setControlsVisible(false)}
+      onMouseLeave={() => playing && hideControls()}
     >
       <video ref={videoRef} className="vp-video" poster={poster} crossOrigin="anonymous" playsInline onClick={onSurfaceClick}>
         {subtitleTracks
@@ -847,15 +772,15 @@ function VideoPlayer({
             {openMenu && (
               <div className="vp-menu" role="menu">
                 <div className="vp-menu-section">Quality</div>
-                {QUALITY_LADDER.map((q) => (
+                {qualityOptions(qualityKey).map((q) => (
                   <button
                     key={q.key}
                     role="menuitemradio"
-                    aria-checked={qualityKey === q.key}
-                    className={`vp-menu-item${qualityKey === q.key ? " vp-menu-item--on" : ""}`}
+                    aria-checked={q.selected}
+                    className={`vp-menu-item${q.selected ? " vp-menu-item--on" : ""}`}
                     onClick={() => {
                       setOpenMenu(null);
-                      if (q.key !== qualityKey) onSelectQuality?.(q);
+                      if (!q.selected) onSelectQuality?.(q);
                     }}
                   >
                     <span className="vp-menu-dot" />
@@ -867,15 +792,15 @@ function VideoPlayer({
                 {audioTracks.length > 1 && (
                   <>
                     <div className="vp-menu-section">Audio</div>
-                    {audioTracks.map((t) => (
+                    {audioOptions(audioTracks, selectedAudioIndex).map((t) => (
                       <button
                         key={t.index}
                         role="menuitemradio"
-                        aria-checked={selectedAudioIndex === t.index}
-                        className={`vp-menu-item${selectedAudioIndex === t.index ? " vp-menu-item--on" : ""}`}
+                        aria-checked={t.selected}
+                        className={`vp-menu-item${t.selected ? " vp-menu-item--on" : ""}`}
                         onClick={() => {
                           setOpenMenu(null);
-                          if (t.index !== selectedAudioIndex) onSelectAudio?.(t);
+                          if (!t.selected) onSelectAudio?.(t.track);
                         }}
                       >
                         <span className="vp-menu-dot" />
@@ -888,24 +813,12 @@ function VideoPlayer({
                 {subtitleTracks.length > 0 && (
                   <>
                     <div className="vp-menu-section">Subtitles</div>
-                    <button
-                      role="menuitemradio"
-                      aria-checked={selectedSubtitleIndex == null}
-                      className={`vp-menu-item${selectedSubtitleIndex == null ? " vp-menu-item--on" : ""}`}
-                      onClick={() => {
-                        setOpenMenu(null);
-                        onSelectSubtitle?.(null);
-                      }}
-                    >
-                      <span className="vp-menu-dot" />
-                      Off
-                    </button>
-                    {subtitleTracks.map((t) => (
+                    {subtitleOptions(subtitleTracks, selectedSubtitleIndex).map((t) => (
                       <button
-                        key={t.index}
+                        key={t.index ?? "off"}
                         role="menuitemradio"
-                        aria-checked={selectedSubtitleIndex === t.index}
-                        className={`vp-menu-item${selectedSubtitleIndex === t.index ? " vp-menu-item--on" : ""}`}
+                        aria-checked={t.selected}
+                        className={`vp-menu-item${t.selected ? " vp-menu-item--on" : ""}`}
                         onClick={() => {
                           setOpenMenu(null);
                           onSelectSubtitle?.(t.index);
@@ -913,7 +826,7 @@ function VideoPlayer({
                       >
                         <span className="vp-menu-dot" />
                         {t.label}
-                        {!t.deliveryUrl && <span className="vp-menu-hint">burned in</span>}
+                        {t.hint && <span className="vp-menu-hint">{t.hint}</span>}
                       </button>
                     ))}
                     {activeTextSub && (
@@ -971,7 +884,7 @@ function VideoPlayer({
                     videoCodec,
                     isHls,
                     isDirectStream,
-                    audio: deliveredLayout((audioTracks.find((t) => t.index === selectedAudioIndex) || audioTracks[0])?.channels),
+                    audio: deliveredAudio(audioTracks, selectedAudioIndex),
                   })}
                 </div>
               </div>
