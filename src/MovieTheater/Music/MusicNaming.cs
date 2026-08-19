@@ -5,8 +5,10 @@ namespace MovieTheater.Music
 {
     /// <summary>
     /// Parses the music library's curated folder grammar (music-plan.md §1) — the source of truth
-    /// for artist/album identity (§2.3): artist folders are <c>Artist (YearRange)</c> with "The"
-    /// inverted to a <c>, The</c> suffix (movie-library convention), album folders are
+    /// for artist/album identity (§2.3): artist folders are <c>Artist (YearRange)</c> and KEEP a
+    /// leading "The" ("The Beatles (1963-1988)") — the <c>, The</c> inversion is the MOVIE
+    /// library's convention, NOT this one (applying it here was a real shipped error, since
+    /// reverted; <see cref="RestoreArticle"/> only tolerates stragglers). Album folders are
     /// <c>Artist - Album (Year)</c> with optional <c>[Tag]</c> curation brackets, track files are
     /// optionally prefixed <c>NN - Title.ext</c>.
     /// </summary>
@@ -43,7 +45,9 @@ namespace MovieTheater.Music
             return new ArtistName(RestoreArticle(baseName), baseName, years);
         }
 
-        /// <summary>"Offspring, The" ⇒ "The Offspring". Only "The" inverts in this library; "A"/"An" stay literal.</summary>
+        /// <summary>Tolerance shim, not the library grammar: the library keeps a leading "The", but a
+        /// stray inverted folder ("Wanted, The (2010-2011)" is the one on disk) still displays right.
+        /// Only "The" is restored; "A"/"An" stay literal.</summary>
         public static string RestoreArticle(string sortName)
         {
             const string suffix = ", The";

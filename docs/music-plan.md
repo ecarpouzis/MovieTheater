@@ -1,6 +1,13 @@
 # Music Vertical Plan
 
-**Status: Phases 0–7 BUILT 2026-08-04; DEPLOYED + PLAYING IN PROD 2026-08-05.**
+Status: **SHIPPED — historical.** All phases live since 2026-08-05; the vertical has since grown
+well past this doc (MSE default player, artist Kinds, playlist sharing, lyrics refit, incident
+self-reporting). Current truth lives in the `music` skill (`.claude/skills/music`) and its
+companions `music-library-ops` and `music-sleep-stall`; the counts and follow-ups below are the
+2026-08-04/05 snapshot and are long stale. This doc remains as the design record — code comments
+still cite its §s for WHY.
+
+**Original status: Phases 0–7 BUILT 2026-08-04; DEPLOYED + PLAYING IN PROD 2026-08-05.**
 Prod bring-up took three separate fixes, each of which looked like the others: (1) the site half
 went live on push but the **StreamGateway was never redeployed** — `/s/{token}/MusicFile` didn't
 exist in the running binary; (2) album art written locally can never reach prod, so

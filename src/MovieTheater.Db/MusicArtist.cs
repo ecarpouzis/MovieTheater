@@ -16,11 +16,13 @@ namespace MovieTheater.Db
         [Key]
         public int Id { get; set; }
 
-        /// <summary>Display name, article restored ("Offspring, The" folder ⇒ "The Offspring").</summary>
+        /// <summary>Display name — the folder base name, with a stray ", The" suffix restored to a
+        /// leading "The" (a tolerance; the library's grammar keeps "The" leading on disk).</summary>
         [MaxLength(300)]
         public string Name { get; set; } = default!;
 
-        /// <summary>Article-inverted sort key — the folder base name, which the library already stores inverted.</summary>
+        /// <summary>Sort key — the folder base name VERBATIM. The library keeps a leading "The"
+        /// ("The Beatles" sorts under T, by design); nothing is inverted here.</summary>
         [MaxLength(300)]
         public string SortName { get; set; } = default!;
 

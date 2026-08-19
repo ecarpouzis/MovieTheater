@@ -1,6 +1,12 @@
 # Music: one continuous stream (MSE + fMP4)
 
-Plan for taking JavaScript out of the track boundary. Status: **THE GATE RAN ON THE PHONE
+Status: **SHIPPED — historical.** All 5 phases complete 2026-08-12; the MSE engine is the DEFAULT
+player. Post-plan work (the hidden-restart mint carry, seekDetour's engine parking, `park:live`)
+lives in the `music` skill (`.claude/skills/music`) and the `music-sleep-stall` case file — those
+are the current truth. This doc remains as the spec record: the measured numbers (quota, lanes,
+sleep-viability arithmetic) and route mechanics that code comments cite by §.
+
+Plan for taking JavaScript out of the track boundary. Original status: **THE GATE RAN ON THE PHONE
 2026-08-11 (Android Chrome 150) AND THE CENTRAL BET HELD: fetches issued while hidden completed
 (2/2, 176 ms / 85 ms). All three changeType joins continuous on the phone, mp4a.6B refused, quota
 11.85 MB, worst hidden execution gap 84 s. The run also produced the missing design rule — the
