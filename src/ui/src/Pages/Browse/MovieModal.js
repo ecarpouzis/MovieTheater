@@ -458,7 +458,9 @@ function MovieModal({ movieId, open, onClose, actorSearch, onBrowse, onOpenTitle
       // Above the nav bar (z-index 1300) so the full-screen mobile modal — and its pinned
       // close button — render over it instead of being trapped beneath it.
       zIndex={1500}
-      wrapClassName="sheet-modal movie-modal"
+      // --themed: this dialog paints itself with the section tokens, so it needs the section
+      // surface underneath them (Components/SheetModal.css).
+      wrapClassName="sheet-modal sheet-modal--themed movie-modal"
       style={{ "--poster-rgb": posterRgb(movie?.posterDetails?.dominantColor) }}
     >
       {loading ? (

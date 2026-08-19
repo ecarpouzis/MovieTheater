@@ -2,6 +2,16 @@
    Movie modal — a clean "now showing" card. The poster's dominant color is
    passed in as --poster-rgb ("r, g, b") and used for a soft ambient wash and
    subtle accents so every film's modal feels a little bit themed.
+
+   Two color systems live here and must not be confused:
+     • --poster-rgb — per-title ambient tint. Always used through rgba(), so it
+       composites on whatever ground it lands on; theme-independent by design.
+     • The section tokens (--text-*, --card-*, --accent, --chip-*) — everything
+       that reads as text, surface or border. The dialog opts into the themed
+       shell (`sheet-modal--themed`, Components/SheetModal.css) so the container
+       paints --card-surface and these tokens have the ground they assume.
+   Literal colors that survived are compositional (ink over the poster tint, a
+   black scrim, a video letterbox) or semantic (RT freshness, media roles).
    ═══════════════════════════════════════════════════════════════════════ */
 
 .movie-modal {
@@ -9,10 +19,10 @@
 }
 
 /* Full-page modal on every platform, on the shared shell (Components/SheetModal.css,
-   wrapClassName "sheet-modal movie-modal"): the shell bounds the dialog and makes the BODY the
-   scroller; these rules repeat the shell's sheet block unconditionally — the same call the game
-   modal makes — so the modal is edge-to-edge at every size, with the content centered on the
-   readable column by the shell's --sheet-pad. */
+   wrapClassName "sheet-modal sheet-modal--themed movie-modal"): the shell bounds the dialog,
+   paints the container with --card-surface, and makes the BODY the scroller; these rules repeat
+   the shell's sheet block unconditionally — the same call the game modal makes — so the modal is
+   edge-to-edge at every size, with the content centered on the shell's --sheet-pad column. */
 .movie-modal.ant-modal-wrap {
   --sheet-measure: min(1040px, 94vw);
   --sheet-gutter: clamp(16px, 3vw, 32px);
@@ -110,16 +120,18 @@
   top: 0;
 }
 
+/* The 5px mat the poster is mounted on — a surface, so it takes the theme's. */
 .modal-poster-frame {
   position: relative;
   border-radius: 10px;
   overflow: hidden;
-  background: #fff;
+  background: var(--card-surface);
   padding: 5px;
+  /* Drop shadow, not a border: black at low alpha reads as depth on either ground. */
   box-shadow:
     0 1px 0 rgba(0, 0, 0, 0.04),
     0 10px 30px rgba(0, 0, 0, 0.26);
-  outline: 1px solid rgba(0, 0, 0, 0.06);
+  outline: 1px solid var(--card-border);
   outline-offset: -1px;
 }
 
@@ -147,7 +159,7 @@
   margin: 0;
   line-height: 1.2;
   letter-spacing: -0.01em;
-  color: #1a1a1f;
+  color: var(--text-primary);
   overflow-wrap: break-word;
   text-align: center;
 }
@@ -160,13 +172,13 @@
   justify-content: center;
   gap: 8px;
   font-size: 14px;
-  color: #5a5a64;
+  color: var(--text-secondary);
   font-weight: 600;
   margin-top: -6px;
 }
 
 .modal-dot {
-  color: #cfcfd6;
+  color: var(--text-muted);
   font-weight: 400;
   user-select: none;
 }
@@ -184,7 +196,7 @@
   font-size: 11.5px;
   font-weight: 600;
   letter-spacing: 0.03em;
-  color: #4a4a55;
+  color: var(--text-secondary);
   background: rgba(var(--poster-rgb), 0.1);
   border: 1px solid rgba(var(--poster-rgb), 0.18);
   border-radius: 999px;
@@ -209,7 +221,7 @@
   margin: 0;
   font-size: 13.5px;
   line-height: 1.5;
-  color: #3a3a44;
+  color: var(--text-primary);
 }
 
 /* A genre-style chip that's clickable (franchise / comp-title navigation). Resets button styling. */
@@ -305,13 +317,13 @@
 
 .modal-franchise-year {
   font-size: 11px;
-  color: #5a5a64;
+  color: var(--text-secondary);
   line-height: 1.2;
 }
 
 .modal-franchise-item.is-current .modal-franchise-year {
   font-weight: 700;
-  color: #2c2c34;
+  color: var(--text-primary);
 }
 
 .modal-franchise-browseall {
@@ -341,7 +353,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #a2a2ad;
+  color: var(--text-muted);
 }
 
 /* ── Plot ─────────────────────────────────────────────────────────────── */
@@ -361,14 +373,15 @@
   left: 0;
   right: 0;
   height: 44px;
-  background: linear-gradient(to bottom, transparent, #fff);
+  /* Fades the clipped plot into the dialog's own ground, so it must be the surface token. */
+  background: linear-gradient(to bottom, transparent, var(--card-surface));
   pointer-events: none;
 }
 
 .modal-plot {
   margin: 0;
   font-size: 14.5px;
-  color: #3c3c44;
+  color: var(--text-primary);
   line-height: 1.72;
   border-left: 3px solid rgba(var(--poster-rgb), 0.45);
   padding-left: 14px;
@@ -377,7 +390,7 @@
 .modal-desc-toggle {
   background: none;
   border: none;
-  color: #1677ff;
+  color: var(--accent);
   cursor: pointer;
   font-size: 13px;
   font-weight: 600;
@@ -385,8 +398,10 @@
   display: block;
 }
 
+/* Mixing toward --text-primary rather than #000 keeps "intensify on hover" meaning
+   DARKER in light and BRIGHTER in dark; a fixed darker blue vanishes on the dark surface. */
 .modal-desc-toggle:hover {
-  color: #0958d9;
+  color: color-mix(in srgb, var(--accent) 80%, var(--text-primary));
   text-decoration: underline;
 }
 
@@ -426,7 +441,7 @@
 }
 
 .modal-cast-character {
-  color: #9a9aa3;
+  color: var(--text-muted);
 }
 
 /* Subtle clickable person link — used for cast, director, and writer. */
@@ -437,12 +452,12 @@
   margin: 0;
   font: inherit;
   cursor: pointer;
-  color: #1677ff;
+  color: var(--accent);
 }
 
 .person-link:hover {
   text-decoration: underline;
-  color: #0958d9;
+  color: color-mix(in srgb, var(--accent) 80%, var(--text-primary));
 }
 
 /* ── Ratings row ──────────────────────────────────────────────────────── */
@@ -469,14 +484,14 @@
   text-align: right;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  color: #e6e6ea;
+  color: var(--text-primary);
 }
 
 .modal-your-rating .your-rating-clear {
   flex: 0 0 auto;
   border: none;
   background: transparent;
-  color: #9a9aa4;
+  color: var(--text-muted);
   cursor: pointer;
   font-size: 11px;
   text-transform: uppercase;
@@ -495,29 +510,29 @@
   text-decoration: none;
   color: inherit;
   padding: 9px 15px;
-  background: #fafafa;
-  border: 1px solid #ececf0;
+  background: var(--chip-neutral-bg);
+  border: 1px solid var(--chip-neutral-border);
   border-radius: 10px;
   white-space: nowrap;
   transition: background 0.15s, border-color 0.15s, transform 0.15s;
 }
 
 .modal-rating-link:hover {
-  background: #eef5ff;
-  border-color: #91caff;
+  background: var(--accent-soft);
+  border-color: var(--accent);
   transform: translateY(-1px);
 }
 
 .modal-rating-score {
   font-size: 15px;
   font-weight: 700;
-  color: #222;
+  color: var(--text-primary);
 }
 
 .modal-rating-denom {
   font-size: 13px;
   font-weight: 400;
-  color: #aaa;
+  color: var(--text-muted);
 }
 
 /* Rotten Tomatoes icon chip (🍅 / 🍿) sitting before the label. */
@@ -629,7 +644,7 @@
   gap: 14px;
   margin-top: 4px;
   padding-top: 18px;
-  border-top: 1px solid #efeff2;
+  border-top: 1px solid var(--card-border);
 }
 
 .modal-watch-row {
@@ -649,7 +664,7 @@
 
 .modal-movie-id {
   font-size: 12px;
-  color: #cfcfd6;
+  color: var(--text-muted);
   text-align: right;
   margin-top: auto;
 }
@@ -673,24 +688,28 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  color: #aaa;
+  color: var(--text-muted);
 }
 
+/* antd injects its own checkbox styling at runtime after this bundle, so these keep their
+   !important — a tie on specificity loses on source order. */
 .modal-edit-form .ant-checkbox-wrapper,
 .modal-edit-form .ant-checkbox + span {
-  color: #000 !important;
+  color: var(--text-primary) !important;
 }
 
 .modal-edit-form .ant-checkbox-wrapper:hover,
 .modal-edit-form .ant-checkbox-wrapper:hover .ant-checkbox + span,
 .modal-edit-form .ant-checkbox:hover + span {
-  color: #1890ff !important;
+  color: var(--accent) !important;
 }
 
-/* antd 6: the checkbox box IS .ant-checkbox (no inner span); the checkmark is its ::after. */
+/* antd 6: the checkbox box IS .ant-checkbox (no inner span); the checkmark is its ::after.
+   The box is filled accent in both states; only the tick's contrast tells them apart, so the
+   unchecked tick stays a fixed dim ink — it composites on the accent fill, not on the theme. */
 .modal-edit-form .ant-checkbox {
-  background-color: #1677ff !important;
-  border-color: #1677ff !important;
+  background-color: var(--accent) !important;
+  border-color: var(--accent) !important;
 }
 
 .modal-edit-form .ant-checkbox::after {
@@ -700,17 +719,17 @@
 }
 
 .modal-edit-form .ant-checkbox.ant-checkbox-checked {
-  background-color: #1677ff !important;
-  border-color: #1677ff !important;
+  background-color: var(--accent) !important;
+  border-color: var(--accent) !important;
 }
 
 .modal-edit-form .ant-checkbox.ant-checkbox-checked::after {
-  border-color: #ffffff !important;
+  border-color: var(--accent-contrast) !important;
 }
 
 .modal-edit-form .ant-checkbox-wrapper:hover .ant-checkbox,
 .modal-edit-form .ant-checkbox:hover {
-  border-color: #4096ff !important;
+  border-color: color-mix(in srgb, var(--accent) 80%, #fff) !important;
 }
 
 .modal-edit-actions {
@@ -729,7 +748,7 @@
 }
 .subtitle-note {
   font-size: 13px;
-  color: rgba(0, 0, 0, 0.45);
+  color: var(--text-secondary);
 }
 .subtitle-current,
 .subtitle-results {
@@ -741,7 +760,7 @@
   margin-top: 6px;
   max-height: 230px;
   overflow-y: auto;
-  border-top: 1px dashed rgba(0, 0, 0, 0.12);
+  border-top: 1px dashed var(--card-border);
   padding-top: 8px;
 }
 .subtitle-row {
@@ -760,7 +779,7 @@
 .subtitle-meta {
   flex: 0 0 auto;
   font-size: 12px;
-  color: rgba(0, 0, 0, 0.45);
+  color: var(--text-muted);
 }
 .subtitle-search-bar {
   display: flex;
@@ -834,15 +853,18 @@
 .modal-file-row { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 0; }
 .modal-file-role {
   flex: 0 0 auto; font-size: 11px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.4px; padding: 1px 7px; border-radius: 4px; background: rgba(0,0,0,0.06); color: #555;
+  letter-spacing: 0.4px; padding: 1px 7px; border-radius: 4px;
+  background: var(--chip-neutral-bg); color: var(--chip-neutral-text);
 }
+/* Role coding — the hue IS the meaning, and each pill carries its own ground, so it stays
+   literal and legible on either surface. */
 .modal-file-role--primary { background: #e5f5ea; color: #1a7f37; }
 .modal-file-role--part    { background: #e7f0fb; color: #1c64b8; }
 .modal-file-role--variant { background: #f3ebfb; color: #7a3fb5; }
 .modal-file-role--extra   { background: #f2f2f2; color: #777; }
-.modal-file-label { flex: 0 0 auto; font-size: 12px; color: #333; font-weight: 600; }
+.modal-file-label { flex: 0 0 auto; font-size: 12px; color: var(--text-primary); font-weight: 600; }
 .modal-file-name {
-  flex: 1 1 auto; min-width: 0; font-family: var(--font-mono); font-size: 12px; color: #888;
+  flex: 1 1 auto; min-width: 0; font-family: var(--font-mono); font-size: 12px; color: var(--text-muted);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
@@ -850,24 +872,30 @@
 .modal-season { margin-top: 2px; }
 .modal-season-hd {
   display: flex; align-items: center; gap: 8px; width: 100%; background: none; border: none;
-  cursor: pointer; padding: 5px 0; font-size: 13px; font-weight: 600; color: #2a2a2a; text-align: left;
+  cursor: pointer; padding: 5px 0; font-size: 13px; font-weight: 600; color: var(--text-primary); text-align: left;
 }
-.modal-season-caret { flex: 0 0 14px; color: #999; }
-.modal-season-count { margin-left: auto; flex: 0 0 auto; font-size: 12px; font-weight: 500; color: #999; font-family: var(--font-mono); }
+.modal-season-caret { flex: 0 0 14px; color: var(--text-muted); }
+.modal-season-count { margin-left: auto; flex: 0 0 auto; font-size: 12px; font-weight: 500; color: var(--text-muted); font-family: var(--font-mono); }
 .modal-season-eps { padding: 2px 0 6px 22px; }
+/* Three tiers of episode ink: no file (muted), has a file (secondary), hovered (primary). */
 .modal-ep {
   display: flex; align-items: center; gap: 8px; font-size: 12.5px; padding: 3px 8px 3px 6px;
-  color: #999; border-radius: 5px;
+  color: var(--text-muted); border-radius: 5px;
 }
-.modal-ep--hasfile { color: #333; }
+.modal-ep--hasfile { color: var(--text-secondary); }
 /* Whole row is the play target when the episode is streamable. */
 .modal-ep--play { cursor: pointer; }
-.modal-ep--play:hover { background: rgba(var(--poster-rgb), 0.12); color: #111; }
-.modal-ep--play:hover .modal-ep-mark { color: rgba(var(--poster-rgb), 1); }
-.modal-ep-num { flex: 0 0 38px; font-family: var(--font-mono); color: #aaa; }
+.modal-ep--play:hover { background: rgba(var(--poster-rgb), 0.12); color: var(--text-primary); }
+/* Doubled class: the dark lift on .modal-ep-mark below is (0,3,0) and later in the file, so a
+   plain .modal-ep--play:hover would tie and lose the hover tint under data-theme="dark". */
+.modal-ep.modal-ep--play:hover .modal-ep-mark { color: rgba(var(--poster-rgb), 1); }
+.modal-ep-num { flex: 0 0 38px; font-family: var(--font-mono); color: var(--text-muted); }
 .modal-ep-title { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-/* Fixed-width right indicator so ▶ (playable) and ● (file, not synced) line up cleanly. */
+/* Fixed-width right indicator so ▶ (playable) and ● (file, not synced) line up cleanly.
+   Green is semantic (a file is there), so it stays literal — but a 10px glyph in the light-theme
+   green all but disappears on the dark surface, hence the lift. */
 .modal-ep-mark { flex: 0 0 16px; text-align: center; font-size: 10px; color: #1a7f37; }
+:root[data-theme="dark"] .modal-ep-mark { color: #4cc07a; }
 .modal-ep--play .modal-ep-mark { font-size: 11px; }
 
 /* Per-episode / per-file play button (multi-file movies + series episodes). */
@@ -883,29 +911,32 @@
 /* Multi-file episode: a "N files" badge that expands to the per-file (Part/Variant/Extra) list. */
 .modal-ep-wrap { margin: 0; }
 .modal-ep-files-badge {
-  flex: 0 0 auto; background: #eef1f5; border: 1px solid #dde2e8; border-radius: 10px;
-  padding: 0 8px; height: 18px; line-height: 16px; font-size: 11px; color: #5a6573; cursor: pointer;
+  flex: 0 0 auto; background: var(--chip-neutral-bg); border: 1px solid var(--chip-neutral-border); border-radius: 10px;
+  padding: 0 8px; height: 18px; line-height: 16px; font-size: 11px; color: var(--chip-neutral-text); cursor: pointer;
   font-family: var(--font-mono); white-space: nowrap;
 }
-.modal-ep-files-badge:hover { background: #e2e7ee; color: #1c64b8; }
+.modal-ep-files-badge:hover { background: var(--accent-soft); color: var(--accent); }
 /* When the row also has a play mark, keep the badge just left of it. */
 .modal-ep .modal-ep-files-badge + .modal-ep-mark { margin-left: 6px; }
 .modal-ep-files { padding: 2px 0 6px 44px; }
 .modal-ep-file { font-size: 12px; }
-.modal-ep-file .modal-file-name { color: #777; font-family: var(--font-mono); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-.modal-ep-file .modal-file-label { font-size: 11px; color: #999; }
+.modal-ep-file .modal-file-name { color: var(--text-muted); font-family: var(--font-mono); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+/* Dimmer than the top-level file label, which is primary ink. */
+.modal-ep-file .modal-file-label { font-size: 11px; color: var(--text-muted); }
 
 /* "Extras & Specials": series/season-level extra files + related misc videos (workprints, featurettes). */
-.modal-extras { margin: 14px 0 6px; border-top: 1px solid #eee; padding-top: 10px; }
+.modal-extras { margin: 14px 0 6px; border-top: 1px solid var(--card-border); padding-top: 10px; }
 .modal-extras .modal-label { display: block; margin-bottom: 6px; }
-.modal-extras .modal-file-name { color: #555; }
+.modal-extras .modal-file-name { color: var(--text-secondary); }
 
-/* Playlist / watch-party actions (docs/playlists-watchparty-plan.md). */
+/* Playlist / watch-party actions (docs/playlists-watchparty-plan.md).
+   The steel and crimson washes are alpha over whatever the surface is, so they hold on both
+   grounds; only the ink had to learn the theme. */
 .modal-playlist-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 4px; }
 .modal-plbtn {
   border: 1px solid rgba(120, 150, 180, 0.5);
   background: rgba(120, 150, 180, 0.08);
-  color: #2b3a4a;
+  color: var(--text-primary);
   border-radius: 8px;
   padding: 6px 12px;
   font-size: 13px;
@@ -914,18 +945,21 @@
   transition: background 0.12s ease, border-color 0.12s ease;
 }
 .modal-plbtn:hover { background: rgba(120, 150, 180, 0.18); border-color: rgba(120, 150, 180, 0.8); }
+/* Watch-party red is semantic — the one action that pulls other people in. Literal, so it also
+   needs the dark lift: the light-theme ink is unreadable on the dark surface. */
 .modal-plbtn--party { border-color: rgba(209, 72, 59, 0.55); background: rgba(209, 72, 59, 0.08); color: #a5342a; }
 .modal-plbtn--party:hover { background: rgba(209, 72, 59, 0.16); border-color: rgba(209, 72, 59, 0.85); }
+:root[data-theme="dark"] .modal-plbtn--party { color: #f08b80; }
 
 /* "＋ playlist" affordance on a season header (doesn't toggle the season). */
 .modal-season-add {
   margin-left: 8px;
   font-size: 11px;
   font-weight: 600;
-  color: #6f8296;
+  color: var(--text-secondary);
   border: 1px solid rgba(120, 150, 180, 0.4);
   border-radius: 6px;
   padding: 1px 7px;
   white-space: nowrap;
 }
-.modal-season-add:hover { color: #2b3a4a; background: rgba(120, 150, 180, 0.14); }
+.modal-season-add:hover { color: var(--text-primary); background: rgba(120, 150, 180, 0.14); }
