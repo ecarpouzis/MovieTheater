@@ -62,7 +62,34 @@ namespace MovieTheater.Arcade
             // usual '_' substitution and a "(DOS_English)" style tag). Our ingest titles come from the
             // SAME database, so the title/token match lands ~95% of cards with no extra machinery.
             ["scummvm"] = "ScummVM",
+            // Added 2026-08-20. Every one of these has a real libretro repo and was simply never listed, so
+            // the cascade skipped step 3 for them entirely and they went to IGDB/SteamGridDB or straight to
+            // the placeholder. Saturn was the expensive omission: 865 cards with no cover against 2,296
+            // boxarts sitting in the repo, 263 of them an EXACT normalized-title match.
+            ["saturn"] = "Sega - Saturn",
+            ["cdi"] = "Philips - CD-i",
+            ["3do"] = "The 3DO Company - 3DO",
+            ["intv"] = "Mattel - Intellivision",
+            ["coleco"] = "Coleco - ColecoVision",
+            ["o2em"] = "Magnavox - Odyssey2",
+            ["channelf"] = "Fairchild - Channel F",
+            ["vectrex"] = "GCE - Vectrex",
+            ["pokemini"] = "Nintendo - Pokemon Mini",
+            ["supervision"] = "Watara - Supervision",
+            ["arcadia"] = "Emerson - Arcadia 2001",
         };
+
+        /// <summary>Repos whose default branch is <c>main</c>, not <c>master</c>. Everything else in
+        /// libretro-thumbnails still uses master, and both the raw URL and the tree API need the right one —
+        /// CD-i answered 404 to every request for years because we asked master of a main-only repo, which
+        /// reads exactly like "this system has no art".</summary>
+        private static readonly HashSet<string> MainBranchRepos = new(StringComparer.Ordinal)
+        {
+            "Philips - CD-i",
+        };
+
+        /// <summary>The default branch to address a thumbnail repo on.</summary>
+        public static string BranchFor(string repo) => MainBranchRepos.Contains(repo) ? "main" : "master";
 
         public static bool HasRepo(string system) => ThumbRepo.ContainsKey(system);
 
@@ -184,7 +211,7 @@ namespace MovieTheater.Arcade
             for (int hop = 0; hop <= MaxSymlinkHops; hop++)
             {
                 // Repos use underscores for spaces (Nintendo_-_Nintendo_64); the FILENAME keeps spaces (encoded).
-                var url = $"https://raw.githubusercontent.com/libretro-thumbnails/{repo}/master/Named_Boxarts/{Uri.EscapeDataString(name)}.png";
+                var url = $"https://raw.githubusercontent.com/libretro-thumbnails/{repo}/{BranchFor(repo.Replace('_', ' '))}/Named_Boxarts/{Uri.EscapeDataString(name)}.png";
                 var bytes = await TryDownloadBytes(http, url);
                 if (bytes == null) return null;
                 if (IsPng(bytes)) return bytes;

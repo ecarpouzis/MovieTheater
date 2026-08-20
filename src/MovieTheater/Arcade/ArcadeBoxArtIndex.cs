@@ -328,7 +328,8 @@ namespace MovieTheater.Arcade
         {
             if (!ArcadeBoxArt.ThumbRepo.TryGetValue(system, out var repo)) return -1;
             var repoSlug = repo.Replace(' ', '_');
-            var url = $"https://api.github.com/repos/libretro-thumbnails/{repoSlug}/git/trees/master?recursive=1";
+            var branch = ArcadeBoxArt.BranchFor(repo);
+            var url = $"https://api.github.com/repos/libretro-thumbnails/{repoSlug}/git/trees/{branch}?recursive=1";
 
             using var req = new HttpRequestMessage(HttpMethod.Get, url);
             req.Headers.UserAgent.ParseAdd("MovieTheater-arcade-boxart/1.0");
