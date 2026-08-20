@@ -102,10 +102,20 @@
 
 /* ── Poster ───────────────────────────────────────────────────────────── */
 .modal-poster-column {
+  /* --poster-w is the column's width; --poster-max-h is how tall the poster may ever be.
+     A sticky block TALLER than the scrollport pins its top and then hides its own bottom until
+     the very end of the scroll — the poster only "arrives" once you've read the whole modal.
+     Landscape phones hit that constantly (a 214px poster is 331px tall; the body scrollport can
+     be ~330px), so the poster is capped to the viewport and scaled down to fit instead.
+     The 64px is the body's 40px top padding — where the poster sits BEFORE it sticks, and the
+     tightest of the two positions — plus a little air under it. */
+  --poster-w: 214px;
+  --poster-max-h: calc(100dvh - 64px);
   flex-shrink: 0;
-  width: 214px;
+  width: var(--poster-w);
   position: sticky;
-  top: 0;
+  top: 12px;
+  max-height: var(--poster-max-h);
 }
 
 /* The 5px mat the poster is mounted on — a surface, so it takes the theme's. */
@@ -115,6 +125,14 @@
   overflow: hidden;
   background: var(--card-surface);
   padding: 5px;
+  /* Hug the poster rather than the column: when the image is height-capped it comes out
+     narrower than --poster-w, and the mat must shrink with it instead of standing as a wide
+     pill behind it. Every child therefore carries its own width (see the loading + placeholder
+     rules) — max-content has nothing to measure otherwise. */
+  width: max-content;
+  max-width: 100%;
+  margin-inline: auto;
+  box-sizing: border-box;
   /* Drop shadow, not a border: black at low alpha reads as depth on either ground. */
   box-shadow:
     0 1px 0 rgba(0, 0, 0, 0.04),
@@ -128,11 +146,18 @@
    as a bare white pill above the title. Shape only — no placeholder treatment, the mat is the mat. */
 .modal-poster-frame--loading {
   aspect-ratio: 2 / 3;
+  /* Width, not height, is what a 2:3 box is sized from — so the reservation is narrowed until
+     its implied height fits the cap, matching where the real poster will land. */
+  width: min(100%, calc(var(--poster-max-h) * 2 / 3));
 }
 
 .modal-poster {
-  width: 100%;
+  /* Bounded on BOTH axes (minus the 5px mat on each side) and sized by the intrinsic ratio, so
+     a tall poster in a short viewport shrinks proportionally instead of being clipped. */
+  width: auto;
   height: auto;
+  max-width: calc(var(--poster-w) - 10px);
+  max-height: calc(var(--poster-max-h) - 10px);
   display: block;
   border-radius: 6px;
 }
@@ -140,6 +165,7 @@
 /* No poster at all (common for Misc videos) — the grid card's placeholder, at modal scale. */
 .modal-poster-placeholder {
   aspect-ratio: 2 / 3;
+  width: min(calc(var(--poster-w) - 10px), calc(var(--poster-max-h) * 2 / 3));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -810,9 +836,13 @@
     gap: 18px;
   }
 
+  /* Stacked above the info panel and not sticky, so nothing needs capping — the poster just
+     gets smaller. --poster-max-h stays generous so it never binds on a portrait phone. */
   .modal-poster-column {
-    width: 150px;
+    --poster-w: 150px;
+    --poster-max-h: 100dvh;
     position: static;
+    max-height: none;
   }
 
   .modal-info-panel {
