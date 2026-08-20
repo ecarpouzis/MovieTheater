@@ -54,10 +54,9 @@ namespace MovieTheater.Services.Igdb
             foreach (var g in games.EnumerateArray())
             {
                 var name = g.TryGetProperty("name", out var n) ? n.GetString() ?? "" : "";
-                var got = Normalize(name);
-                bool ok = got == want ||
-                          (got.Length >= 4 && want.Length >= 4 && (got.StartsWith(want) || want.StartsWith(got)));
-                if (ok) { gameId = g.GetProperty("id").GetInt64(); break; }
+                if (!NameMatches(want, Normalize(name))) continue;
+                gameId = g.GetProperty("id").GetInt64();
+                break;
             }
             if (gameId is not long id) return null;
 
@@ -71,11 +70,37 @@ namespace MovieTheater.Services.Igdb
             return null;
         }
 
+        /// <summary>Does a SteamGridDB search result name the game we asked for? Exact on the normalized
+        /// names, or a prefix relationship where the shorter name is at least <see cref="MinPrefixRatio"/>
+        /// of the longer — which is what keeps "Sonic Adventure" ⇄ "Sonic Adventure DX" while rejecting the
+        /// short-prefix false matches the ratio-free gate let through.
+        ///
+        /// <para>Those were not hypothetical. A backfill of 20 coverless cards produced 6 covers and TWO were
+        /// wrong, both from this rule: our "Super Masters!" (Intellivision golf) matched a SteamGridDB game
+        /// literally named "Super", and "Rack + Roll" matched a visual novel named "Rack" — because a bare
+        /// <c>want.StartsWith(got)</c> accepts ANY 4-character prefix. At the scale of a full backfill that
+        /// bakes hundreds of confidently-wrong covers onto a shared mount we cannot delete from.</para></summary>
+        public static bool NameMatches(string want, string got)
+        {
+            if (want.Length == 0 || got.Length == 0) return false;
+            if (got == want) return true;
+            if (got.Length < 4 || want.Length < 4) return false;
+            if (!got.StartsWith(want, StringComparison.Ordinal) &&
+                !want.StartsWith(got, StringComparison.Ordinal)) return false;
+            var (min, max) = got.Length < want.Length ? (got.Length, want.Length) : (want.Length, got.Length);
+            return min * 100 >= max * MinPrefixRatio;
+        }
+
+        /// <summary>How much of the longer name a prefix match must cover, in percent. 70 keeps the real
+        /// edition/subtitle cases ("Sonic Adventure" vs "…DX", 14/16 = 87%) and rejects the false ones
+        /// ("Super" vs "Super Masters", 5/12 = 41%; "Rack" vs "Rack Roll", 4/8 = 50%).</summary>
+        private const int MinPrefixRatio = 70;
+
         // Diacritics are folded (FormD + drop non-spacing marks) because SteamGridDB stores the real,
         // accented name ("Pokémon Kart 64") while our catalog follows the No-Intro convention and spells it
         // "Pokemon" — without the fold the gate rejects an exact match and the card falls through to the
         // web-image last resort.
-        private static string Normalize(string sIn)
+        public static string Normalize(string sIn)
         {
             var sb = new StringBuilder(sIn.Length);
             int depth = 0;
