@@ -17,11 +17,12 @@ namespace MovieTheater.Arcade
         /// <summary>Ascending sort key — the smallest is the default-selected version. The RA-recognized
         /// dump wins first (so an untagged hack like a "GameCube Edition" can't lead a card RA supports),
         /// then official over modified, English regions, disc 1, and the highest revision.</summary>
-        public static (int, int, int, int, int, int) Rank(ArcadeGame g) =>
+        public static (int, int, int, int, int, int, int) Rank(ArcadeGame g) =>
         (
             g.RaSupported ? 0 : 1,                                     // RA-supported dump leads (per-version)
             string.Equals(g.Variant, "Release", StringComparison.OrdinalIgnoreCase) || g.Variant == null ? 0 : 1,
             RegionRank(g.Region),
+            LanguageSku(g.CloudRetroGameKey) == null ? 0 : 1,         // the base (English) dump before its localized SKUs
             DiscNumber(g.CloudRetroGameKey) is int d and > 0 ? d : 0, // Disc 1 before Disc 2; non-disc = 0
             -RevValue(g.CloudRetroGameKey),                            // higher revision first
             g.Id
@@ -41,6 +42,13 @@ namespace MovieTheater.Arcade
 
             var edition = Edition(g.CloudRetroGameKey);
             if (edition != null) parts.Add(edition);
+
+            // The localized-language SKU of a European release. Load-bearing since same-game/different-name
+            // cards merge (arcade-merge-cards): "007 - Ein Quantum Trost" is now a VERSION of Quantum of
+            // Solace, and without this its entry reads "Standard" — indistinguishable from the four other
+            // untagged dumps on that card.
+            var sku = LanguageSku(g.CloudRetroGameKey);
+            if (sku != null) parts.Add(sku);
 
             if (includeDisc)
             {
@@ -88,7 +96,8 @@ namespace MovieTheater.Arcade
 
         // Version identity EXCLUDING disc number, so all discs of one release collapse together.
         private static string VersionKey(ArcadeGame g) =>
-            $"{(g.Region ?? "").ToLowerInvariant()}|{(g.Variant ?? "").ToLowerInvariant()}|{RevValue(g.CloudRetroGameKey)}|{(Edition(g.CloudRetroGameKey) ?? "").ToLowerInvariant()}";
+            $"{(g.Region ?? "").ToLowerInvariant()}|{(g.Variant ?? "").ToLowerInvariant()}|{RevValue(g.CloudRetroGameKey)}|"
+          + $"{(Edition(g.CloudRetroGameKey) ?? "").ToLowerInvariant()}|{(LanguageSku(g.CloudRetroGameKey) ?? "").ToLowerInvariant()}";
 
         /// <summary>The CloudRetro launch key of the .m3u playlist for a multi-disc game — the ROM name with
         /// the disc tag stripped (so the core loads "&lt;name&gt;.m3u" instead of a single disc). Covers both
@@ -205,6 +214,43 @@ namespace MovieTheater.Arcade
             if (key == null) return null;
             var m = Regex.Match(key, @"\(([^()]*\bEdition)\)", RegexOptions.IgnoreCase);
             return m.Success ? m.Groups[1].Value.Trim() : null;
+        }
+
+        // Advanscene two-letter language SKUs, and the No-Intro single-country tags that mean the same
+        // thing: a European release in ONE language. ArcadeRomTags deliberately leaves the two-letter set
+        // unmapped (they are not regions), so without this they carry no distinguishing mark at all.
+        private static readonly Dictionary<string, string> LanguageSkus = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["DE"] = "German", ["Germany"] = "German",
+            ["FR"] = "French", ["France"] = "French",
+            ["ES"] = "Spanish", ["Spain"] = "Spanish",
+            ["IT"] = "Italian", ["Italy"] = "Italian",
+            ["NL"] = "Dutch", ["Netherlands"] = "Dutch",
+            ["DK"] = "Danish", ["Denmark"] = "Danish",
+            ["NO"] = "Norwegian", ["Norway"] = "Norwegian",
+            ["SE"] = "Swedish", ["Sweden"] = "Swedish",
+            ["FI"] = "Finnish", ["Finland"] = "Finnish",
+            ["PT"] = "Portuguese", ["Portugal"] = "Portuguese",
+            ["PL"] = "Polish", ["Poland"] = "Polish",
+            ["RU"] = "Russian", ["Russia"] = "Russian",
+            ["GR"] = "Greek", ["Greece"] = "Greek",
+            ["CZ"] = "Czech", ["HU"] = "Hungarian", ["TR"] = "Turkish",
+        };
+
+        /// <summary>The single language this dump is localized to, as a display word ("German"), or null for
+        /// an untagged / English / multi-language release. Reads a WHOLE parenthesised tag only, so a title
+        /// that merely contains the letters ("(v1.1)", "Es Kommt") can never match, and ignores a tag that
+        /// sits in a multi-language list ("(En,Fr,De)") — that dump is not a single-language SKU.</summary>
+        public static string? LanguageSku(string? key)
+        {
+            if (string.IsNullOrEmpty(key)) return null;
+            foreach (Match m in Regex.Matches(key, @"\(([^()]*)\)"))
+            {
+                var inner = m.Groups[1].Value.Trim();
+                if (inner.Contains(',')) continue;                       // "(En,Fr,De)" = multi-language, not a SKU
+                if (LanguageSkus.TryGetValue(inner, out var lang)) return lang;
+            }
+            return null;
         }
 
         // Translation target language from a TOSEC "[tr xx]" tag, upper-cased ("de" → "DE").

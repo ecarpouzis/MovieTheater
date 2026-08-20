@@ -63,5 +63,25 @@ namespace MovieTheater.Tests
         [InlineData("Final Fantasy IX (USA) (Disc 1)", "Final Fantasy IX (USA) (Disc 3)")]
         public void M3uKey_DiscsOfOneGameShareABase(string disc1, string discN)
             => Assert.Equal(ArcadeVersions.M3uKey(disc1), ArcadeVersions.M3uKey(discN));
+
+        [Theory]
+        // Advanscene two-letter SKUs (the L: NDS set) — ArcadeRomTags leaves these unmapped on purpose, so
+        // the version label is the ONLY thing distinguishing them once same-game cards merge.
+        [InlineData("3306 - 007 - Ein Quantum Trost (DE)", "German")]
+        [InlineData("2903 - Shrek Terzo (IT)", "Italian")]
+        [InlineData("1988 - Pokemon - Edicion Perla (ES)", "Spanish")]
+        [InlineData("4011 - Professeur Layton et l'Appel du Spectre (FR)", "French")]
+        [InlineData("2210 - Shrek de Derde (NL)", "Dutch")]
+        // No-Intro spells the same thing out.
+        [InlineData("Turrican (Germany)", "German")]
+        // Not single-language SKUs.
+        [InlineData("Some Game (En,Fr,De)", null)]          // multi-language release, not a localized SKU
+        [InlineData("2934 - 007 - Quantum of Solace (US)", null)]
+        [InlineData("Sonic Adventure (v1.1)", null)]        // a version tag must never read as a language
+        [InlineData("Es Kommt (Japan)", null)]              // free text, not a whole tag
+        [InlineData("0155 - Metroid Prime Hunters (EU)", null)]
+        [InlineData(null, null)]
+        public void LanguageSku_ReadsWholeTagsOnly(string? key, string? expected)
+            => Assert.Equal(expected, ArcadeVersions.LanguageSku(key));
     }
 }
