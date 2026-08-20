@@ -149,9 +149,15 @@ namespace MovieTheater.Db.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<bool>("BoxArtBlocked")
+                        .HasColumnType("bit");
+
                     b.Property<string>("BoxArtPath")
                         .HasMaxLength(400)
                         .HasColumnType("nvarchar(400)");
+                    b.Property<int>("BoxArtGeneration")
+                        .HasColumnType("int");
+
 
                     b.Property<string>("BoxArtSourceUrl")
                         .HasMaxLength(500)

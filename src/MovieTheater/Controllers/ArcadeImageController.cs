@@ -89,10 +89,21 @@ namespace MovieTheater.Controllers
             // (keyed by the card's lowest version id) so we don't keep a near-duplicate PNG per region/revision.
             var siblings = await movieDb.ArcadeGames
                 .Where(g => g.System == game.System && g.CollapseKey == game.CollapseKey)
-                .Select(g => new { g.Id, g.BoxArtPath, g.Region, g.CloudRetroGameKey, g.IgdbId, g.Notes, g.BoxArtSourceUrl })
+                .Select(g => new { g.Id, g.BoxArtPath, g.Region, g.CloudRetroGameKey, g.IgdbId, g.Notes,
+                                   g.BoxArtSourceUrl, g.BoxArtGeneration, g.BoxArtBlocked })
                 .ToListAsync();
             var cardId = siblings.Count > 0 ? siblings.Min(s => s.Id) : id;
             var anchor = siblings.OrderBy(s => s.Id).FirstOrDefault();  // metadata (IgdbId/Notes) lives here
+
+            // A blocked card is one somebody looked at and judged unsourceable — every cascade step was tried
+            // and the best any of them offered was the wrong game. Re-running it would just re-fetch the same
+            // wrong cover, so this is terminal: placeholder, no network, until the flag is cleared.
+            if (siblings.Any(s => s.BoxArtBlocked)) return NotFound();
+
+            // Eviction generation. The mount is shared and we cannot delete from it, so a cover is retired by
+            // RENAMING what the route looks for: g0 keeps the historic {cardId}.png, and every eviction moves
+            // the card to {cardId}-g{n}.png, orphaning the bad file where it can never be served again.
+            var generation = siblings.Count > 0 ? siblings.Max(s => s.BoxArtGeneration) : 0;
 
             // 0. An explicit BoxArtSourceUrl wins over everything below — INCLUDING already-cached art.
             //    It exists for titles no cover database can ever carry (community mods), where the cascade's
@@ -136,7 +147,9 @@ namespace MovieTheater.Controllers
                 var cached = ResolveUnderRoot(root, rel!);
                 if (cached != null && System.IO.File.Exists(cached)) return ServeFile(cached);
             }
-            var cardRel = $"arcade/{game.System}/{cardId}.png";
+            var cardRel = generation > 0
+                ? $"arcade/{game.System}/{cardId}-g{generation}.png"
+                : $"arcade/{game.System}/{cardId}.png";
             var cardPath = ResolveUnderRoot(root, cardRel);
             if (cardPath != null && System.IO.File.Exists(cardPath)) return ServeFile(cardPath);
 

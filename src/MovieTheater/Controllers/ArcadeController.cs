@@ -377,8 +377,11 @@ namespace MovieTheater.Controllers
                     // the same row /ArcadeImage resolves its bytes from, so the token moves exactly when the
                     // art does. Without it a re-pointed cover stays stale in every browser that already
                     // loaded the card, for a day, through hard reloads included.
-                    artV = ArcadeBoxArt.ArtVersion(artRow?.BoxArtSourceUrl, artRow?.BoxArtPath),
-                    hasBoxArt = vs.Any(g => g.BoxArtPath != null),
+                    artV = ArcadeBoxArt.ArtVersion(artRow?.BoxArtSourceUrl, artRow?.BoxArtPath,
+                                                   vs.Count > 0 ? vs.Max(g => g.BoxArtGeneration) : 0),
+                    // A blocked card has no cover and never will until someone unblocks it — say so, so the
+                    // UI draws the placeholder instead of requesting an image that is guaranteed to 404.
+                    hasBoxArt = vs.Any(g => g.BoxArtPath != null) && !vs.Any(g => g.BoxArtBlocked),
                     year = rep?.Year ?? meta?.Year,
                     maxPlayers = versions.Count > 0 ? versions.Max(v => v.MaxPlayers) : (byte)1,
                     versionCount = versions.Count,

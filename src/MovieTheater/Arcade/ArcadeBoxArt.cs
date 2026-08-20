@@ -264,7 +264,11 @@ namespace MovieTheater.Arcade
         /// cache, and <c>BoxArtPath</c> covers the cascade — NULL until the first fetch, then the file it
         /// wrote. Setting a source URL moves both (the fetch is cached under a URL-hashed filename).</para>
         /// </summary>
-        public static string ArtVersion(string? boxArtSourceUrl, string? boxArtPath) =>
-            ShortHash(boxArtSourceUrl ?? boxArtPath ?? "");
+        /// <param name="generation">The card's <c>BoxArtGeneration</c>. An eviction bumps it without
+        /// necessarily changing either other input (the usual eviction nulls BoxArtPath and supplies no URL,
+        /// so both would read the same as a never-fetched card), and the token has to move or every browser
+        /// that already has the bad cover keeps showing it.</param>
+        public static string ArtVersion(string? boxArtSourceUrl, string? boxArtPath, int generation = 0) =>
+            ShortHash($"{boxArtSourceUrl ?? boxArtPath ?? ""}|g{generation}");
     }
 }

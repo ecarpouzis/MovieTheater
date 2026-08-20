@@ -150,6 +150,23 @@ namespace MovieTheater.Db
         [MaxLength(500)]
         public string? BoxArtSourceUrl { get; set; }
 
+        /// <summary>How many times this card's cover has been EVICTED. The posters mount is shared and we
+        /// cannot delete from it, and the image route serves a cached <c>{cardId}.png</c> before it ever
+        /// re-searches — so a wrong cover is otherwise permanent. Bumping this changes the cache filename to
+        /// <c>{cardId}-g{n}.png</c>, which orphans the bad file (it stays on disk, unreferenced) and lets the
+        /// cascade run again into a fresh name. Same retire-by-renaming trick as
+        /// <see cref="BoxArtSourceUrl"/>'s URL hash, but it needs no replacement URL — which matters because
+        /// most evictions are "this is the wrong game", not "I have a better link".
+        /// <para>Written by <c>arcade-boxart-evict</c>; feeds <c>ArcadeBoxArt.ArtVersion</c> so the browser
+        /// stops serving the old bytes too.</para></summary>
+        public int BoxArtGeneration { get; set; }
+
+        /// <summary>True = this card gets the PLACEHOLDER and the cascade never runs for it again. Eviction
+        /// alone only retires the file; if the cascade would just re-fetch the same wrong cover (the usual
+        /// case — the sources have nothing better for an obscure demo disc), re-running it is a loop. This is
+        /// the terminal state: no art exists for this card, stop looking. Clearing it re-opens the search.</summary>
+        public bool BoxArtBlocked { get; set; }
+
         /// <summary>Confidence-adjusted score used for <c>sort=rating</c> ONLY (never displayed): the effective
         /// raw score (LaunchBox, else IGDB) shrunk toward its system's mean by vote count —
         /// <c>(v/(v+m))·raw + (m/(v+m))·mean</c>, m=20. Without this a 1-vote 100 outranks a 4,000-vote 94.
