@@ -73,6 +73,26 @@
      collapses; vh first as the fallback for browsers without dvh. */
   max-height: calc(100vh - 2 * var(--sheet-inset));
   max-height: calc(100dvh - 2 * var(--sheet-inset));
+  /* THE SHELL OWNS ITS PADDING; the panel keeps none. antd pads this panel instead of its parts
+     (contentPadding = 20px 24px, with header/body/footer all at 0), which quietly framed every
+     sheet in 24px of inline and 20px of block padding the shell never asked for — and the two
+     costs both landed on the part that matters most, the BODY, because the body is the scroller:
+
+       • its scrollbar rode 24px INSIDE the sheet's right edge — a bar floating in open margin
+         rather than hugging an edge, and 24px in is exactly where the ✕ chip sits, so the thumb
+         ran up underneath it;
+       • its top edge sat 20px BELOW the sheet's, so scrolled content was cut off along a line
+         partway down the screen with a dead strip of bare surface above it — most visible on the
+         movie sheet, where the poster is the first thing to reach that line.
+
+     Zeroing it also makes --sheet-pad's `100%` term the sheet's real width rather than 48px less,
+     and hands a phone back 48px of column. The block rhythm antd got from this padding is restored
+     on the parts below; the inline rhythm was already --sheet-pad's job. */
+  padding: 0;
+  /* A rounded panel whose child scrolls has to clip: content now reaches the corners the padding
+     used to hold it away from. Sheet mode zeroes the radius, so this only bites in card mode.
+     Safe for overlays — antd portals its dropdowns, tooltips and selects out to <body>. */
+  overflow: hidden;
 }
 
 .sheet-modal.ant-modal-wrap .ant-modal-header,
@@ -100,6 +120,23 @@
   padding-inline-start: var(--sheet-pad);
   /* …except the header's trailing edge, which always leaves room for the ✕. */
   padding-inline-end: max(56px, var(--sheet-pad));
+}
+
+/* The block rhythm antd got from the panel's padding, restored on the PARTS now that the panel has
+   none. Each gap is stated once and by one part: the header's own margin-bottom and the footer's
+   margin-top are folded away so the body's padding is the only thing between them and the content —
+   two numbers stacking is how the 8px-under-a-title / 28px-under-a-title split happens. Sheet mode
+   below re-states all three at its own scale; equal specificity, later in the file, so it wins. */
+.sheet-modal.ant-modal-wrap .ant-modal-header {
+  padding-block: 20px 0;
+  margin-bottom: 0;
+}
+.sheet-modal.ant-modal-wrap .ant-modal-body {
+  padding-block: 20px;
+}
+.sheet-modal.ant-modal-wrap .ant-modal-footer {
+  padding-block: 0 20px;
+  margin-top: 0;
 }
 
 /* Inner panes that cap their own height for a floating card would now fight the

@@ -800,11 +800,10 @@
 /* ── Mobile ───────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   /* The full-page modal shell is now shared across all platforms (see top of file);
-     phones only need the single-column stack and tighter padding/fonts. */
-  .movie-modal .ant-modal-body {
-    padding: 20px 18px;
-  }
-
+     phones only need the single-column stack and smaller fonts. Padding is NOT restated here:
+     the inline gutter is the shell's --sheet-pad and the block padding is set above, both at a
+     higher specificity than a `.movie-modal .ant-modal-body` inside a media query can reach —
+     the rule that used to sit here read as the phone's padding while doing nothing at all. */
   .modal-body-wrapper {
     flex-direction: column;
     align-items: center;
