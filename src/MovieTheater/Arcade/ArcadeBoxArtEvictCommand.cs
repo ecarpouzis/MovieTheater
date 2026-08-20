@@ -125,6 +125,9 @@ namespace MovieTheater.Arcade
 
                 w.WriteLine($"  evict [{grp.Key.System}] {cardId} \"{group[0].Title}\"  g{gen}→g{gen + 1}"
                           + $"  retires {retired}{(Block ? "  [BLOCK]" : "")}");
+                // Counted outside the Apply branch so a dry run reports what it WOULD do — a preview whose
+                // numbers only appear once you commit is not a preview.
+                cleared += group.Count(g => g.BoxArtPath != null);
                 if (Apply)
                 {
                     var note = $"boxart-evict {stamp}: retired {retired} (g{gen}→g{gen + 1})"
@@ -132,7 +135,7 @@ namespace MovieTheater.Arcade
                     foreach (var g in group)
                     {
                         g.BoxArtGeneration = gen + 1;
-                        if (g.BoxArtPath != null) { g.BoxArtPath = null; cleared++; }
+                        g.BoxArtPath = null;
                         // A source URL that produced a rejected cover must go too, or step 0 re-fetches it
                         // and the eviction achieves nothing.
                         g.BoxArtSourceUrl = null;
