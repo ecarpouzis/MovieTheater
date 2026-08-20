@@ -37,9 +37,13 @@ namespace MovieTheater.Arcade
     /// canonical name we don't carry are paired with each other instead.</item>
     /// <item><c>igdb</c> — two cards in one system carry the same <see cref="ArcadeGame.IgdbId"/>.</item>
     /// <item><c>ra</c> — two cards in one system carry the same <see cref="ArcadeGame.RaGameId"/>.</item>
+    /// <item><c>art</c> (<c>--art-discover</c>) — the two covers are near-identical. The other three all
+    /// resolve by TITLE somewhere upstream, so they are structurally blind to a pair no title index links:
+    /// a coded Saturn dump (<c>0691-atlantis-fre-cd1</c>) has no name to look up at all. This one never
+    /// reads the name.</item>
     /// </list>
-    /// All three resolve by TITLE upstream, so all three are individually fallible; the report prints which
-    /// fired, and the box-art check is the independent corroboration.</para>
+    /// The first three resolve by TITLE upstream, so all three are individually fallible; the report prints
+    /// which fired, and the box-art check is the independent corroboration.</para>
     ///
     /// <para><b>Box art is the tell.</b> Two dumps of one game usually carry the same cover artwork even when
     /// the text on it is in another language. Each candidate's two covers are compared as normalized 12x12
@@ -107,6 +111,15 @@ namespace MovieTheater.Arcade
 
         [CommandOption("art-strong", Description = "Auto tier: art similarity that qualifies on its own (default 0.90).")]
         public double ArtStrong { get; set; } = 0.90;
+
+        [CommandOption("art-discover", Description = "ALSO generate candidates by comparing every in-scope card's cover with every other's (needs --art-base-url or a posters mount). Finds twins no title index links.")]
+        public bool ArtDiscover { get; set; }
+
+        [CommandOption("art-discover-min", Description = "art-discover: minimum cover similarity for a pair to become a candidate (default 0.93).")]
+        public double ArtDiscoverMin { get; set; } = 0.93;
+
+        [CommandOption("art-hub-max", Description = "art-discover: drop a cover that matches more than this many other cards — it is stock/series art, not this game's (default 5).")]
+        public int ArtHubMax { get; set; } = 5;
 
         [CommandOption("out", Description = "Write a TSV report of every candidate edge (signals, art score, guard verdict) to this path.")]
         public string Out { get; set; } = "";
@@ -183,9 +196,11 @@ namespace MovieTheater.Arcade
                 });
             w.WriteLine($"{rows.Count:N0} enabled rows -> {cards.Count:N0} cards.");
 
+            var art = new BoxArtSimilarity(http, ArtBaseUrl, RepoDataPath.Resolve(ArtCache), cfg.MoviePostersDir);
+
             var edges = Pairs.Length > 0
                 ? LoadPairs(RepoDataPath.Resolve(Pairs), cards, w)
-                : await GenerateAsync(cards, http, w);
+                : await GenerateAsync(cards, http, art, w);
 
             foreach (var e in edges) e.Reject = Guard(e);
             var live = edges.Where(e => e.Reject.Length == 0).ToList();
@@ -198,8 +213,7 @@ namespace MovieTheater.Arcade
             var remaining = Math.Max(0, live.Count - Limit);
             var batch = live.Take(Math.Max(1, Limit)).ToList();
 
-            var art = new BoxArtSimilarity(http, ArtBaseUrl, RepoDataPath.Resolve(ArtCache), cfg.MoviePostersDir);
-            foreach (var e in batch) e.Art = await art.ScoreAsync(e.Src.Anchor.Id, e.Dst.Anchor.Id);
+            foreach (var e in batch) e.Art ??= await art.ScoreAsync(e.Src.Anchor.Id, e.Dst.Anchor.Id);
             w.WriteLine($"art: {art.Hits} cover(s) resolved, {art.Misses} unavailable "
                       + $"({batch.Count(e => e.Art.HasValue)}/{batch.Count} edges scored).");
 
@@ -276,7 +290,8 @@ namespace MovieTheater.Arcade
 
         // ── candidate generation ─────────────────────────────────────────────────────────────────────────
 
-        private async Task<List<Edge>> GenerateAsync(Dictionary<(string, string), Card> cards, HttpClient http, ConsoleWriter w)
+        private async Task<List<Edge>> GenerateAsync(Dictionary<(string, string), Card> cards, HttpClient http,
+                                                     BoxArtSimilarity art, ConsoleWriter w)
         {
             var zipPath = await LaunchBoxMetadata.EnsureDumpAsync(http, RepoDataPath.Resolve(Zip), Refresh, w.WriteLine);
             var index = LaunchBoxMetadata.BuildNameIndex(zipPath, w.WriteLine);
@@ -337,7 +352,75 @@ namespace MovieTheater.Arcade
             BySharedId(c => c.Igdb, "igdb");
             BySharedId(c => c.Ra, "ra");
 
+            // 4. Cover-first discovery. The three signals above all resolve by TITLE somewhere upstream, so
+            //    they are blind to a pair no title index links — a coded Saturn dump ("0691-atlantis-fre-cd1")
+            //    has no name to look up, and a Japanese title whose Western name shares not one token can only
+            //    be found by something that never reads the name. Two dumps of one game usually carry the same
+            //    cover art, so compare every in-scope card's cover with every other's in the same system.
+            if (ArtDiscover) await DiscoverByArtAsync(cards, art, Add, w);
+
             return edges.Values.ToList();
+        }
+
+        /// <summary>All-pairs cover comparison inside each system. Only cards whose cover is ALREADY cached
+        /// are probed — a card with no <see cref="ArcadeGame.BoxArtPath"/> would send /ArcadeImage off through
+        /// the libretro → IGDB → SteamGridDB → web-search cascade, and a sweep of tens of thousands of those
+        /// is not something a catalog-hygiene pass gets to spend.
+        ///
+        /// <para>A cover that matches MORE than <c>--art-hub-max</c> other cards is stock or series art (one
+        /// publisher template across a shovelware line, a compilation's shared sleeve), not this game's own —
+        /// every pair it forms is dropped and the hub is logged, because a hub that slips through pulls a
+        /// dozen unrelated games onto one card in a single apply.</para></summary>
+        private async Task DiscoverByArtAsync(Dictionary<(string, string), Card> cards, BoxArtSimilarity art,
+                                              Action<Card, Card, string> add, ConsoleWriter w)
+        {
+            if (ArtBaseUrl.Length == 0 && string.IsNullOrEmpty(cfg.MoviePostersDir))
+            { w.WriteLine("--art-discover needs --art-base-url or a posters mount; skipping."); return; }
+
+            var pool = cards.Values.Where(c => c.Rows.Any(r => r.BoxArtPath != null))
+                                   .GroupBy(c => c.System)
+                                   .OrderByDescending(g => g.Count()).ToList();
+            w.WriteLine($"art-discover: {pool.Sum(g => g.Count()):N0} card(s) with a cached cover across "
+                      + $"{pool.Count} system(s) — reading covers…");
+
+            int pairs = 0, hubs = 0, done = 0;
+            foreach (var grp in pool)
+            {
+                var list = new List<(Card Card, float[] F)>();
+                foreach (var c in grp)
+                {
+                    var f = await art.FeatureAsync(c.Anchor.Id);
+                    if (f != null) list.Add((c, f));
+                    if (++done % 2000 == 0) w.WriteLine($"    … {done:N0} cover(s) read");
+                }
+                if (list.Count < 2) continue;
+
+                // Collect every over-threshold pair, then drop the hubs before emitting anything.
+                var hits = new List<(int A, int B, double S)>();
+                var degree = new int[list.Count];
+                for (int i = 0; i < list.Count; i++)
+                    for (int j = i + 1; j < list.Count; j++)
+                    {
+                        var sc = BoxArtSimilarity.Score(list[i].F, list[j].F);
+                        if (sc < ArtDiscoverMin) continue;
+                        hits.Add((i, j, sc));
+                        degree[i]++; degree[j]++;
+                    }
+                foreach (var (i, j, _) in hits)
+                {
+                    if (degree[i] > ArtHubMax || degree[j] > ArtHubMax) continue;
+                    add(list[i].Card, list[j].Card, "art");
+                    pairs++;
+                }
+                int hubCount = degree.Count(d => d > ArtHubMax);
+                hubs += hubCount;
+                if (hubCount > 0)
+                    w.WriteLine($"    [{grp.Key}] {hubCount} hub cover(s) ignored (matched > {ArtHubMax} cards each) — "
+                              + string.Join(", ", Enumerable.Range(0, list.Count).Where(k => degree[k] > ArtHubMax)
+                                    .Take(5).Select(k => $"\"{list[k].Card.Title}\" x{degree[k]}")));
+            }
+            w.WriteLine($"art-discover: {pairs:N0} candidate pair(s) from cover similarity ≥ {ArtDiscoverMin:0.00} "
+                      + $"({hubs} hub cover(s) ignored).");
         }
 
         private static List<Edge> LoadPairs(string path, Dictionary<(string, string), Card> cards, ConsoleWriter w)

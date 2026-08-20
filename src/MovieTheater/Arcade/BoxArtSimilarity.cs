@@ -49,18 +49,29 @@ namespace MovieTheater.Arcade
             this.postersDir = postersDir;
         }
 
-        /// <summary>Similarity of two cards' covers in [-1, 1], or null when either cover is unavailable.</summary>
-        public async Task<double?> ScoreAsync(int anchorA, int anchorB)
+        /// <summary>Length of the descriptor <see cref="FeatureAsync"/> returns — the caller needs it to
+        /// score two descriptors itself without re-reading either image.</summary>
+        public const int FeatureLength = Grid * Grid;
+
+        /// <summary>Similarity of two already-loaded descriptors, in [-1, 1]. 1.0 = identical artwork.</summary>
+        public static double Score(float[] a, float[] b)
         {
-            var a = await FeatureAsync(anchorA);
-            var b = await FeatureAsync(anchorB);
-            if (a == null || b == null) return null;
             double sum = 0;
             for (int i = 0; i < a.Length; i++) sum += a[i] * b[i];
             return sum / a.Length;
         }
 
-        private async Task<float[]> FeatureAsync(int anchorId)
+        /// <summary>Similarity of two cards' covers in [-1, 1], or null when either cover is unavailable.</summary>
+        public async Task<double?> ScoreAsync(int anchorA, int anchorB)
+        {
+            var a = await FeatureAsync(anchorA);
+            var b = await FeatureAsync(anchorB);
+            return a == null || b == null ? null : Score(a, b);
+        }
+
+        /// <summary>This card's cover descriptor, or null when the cover is unavailable or undecodable.
+        /// Cached per anchor for the life of the instance, so an all-pairs scan reads each image once.</summary>
+        public async Task<float[]> FeatureAsync(int anchorId)
         {
             if (features.TryGetValue(anchorId, out var cached)) return cached;
             var bytes = await LoadAsync(anchorId);
