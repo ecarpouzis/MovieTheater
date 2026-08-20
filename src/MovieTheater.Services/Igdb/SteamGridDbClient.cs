@@ -85,11 +85,28 @@ namespace MovieTheater.Services.Igdb
             if (want.Length == 0 || got.Length == 0) return false;
             if (got == want) return true;
             if (got.Length < 4 || want.Length < 4) return false;
+            // A purely numeric residual is always a sequel/volume ("Ridge Racer" vs "Ridge Racer 2").
+            var (sh, lo) = got.Length < want.Length ? (got, want) : (want, got);
+            if (lo.StartsWith(sh, StringComparison.Ordinal) && lo[sh.Length..].All(char.IsDigit)) return false;
             if (!got.StartsWith(want, StringComparison.Ordinal) &&
                 !want.StartsWith(got, StringComparison.Ordinal)) return false;
-            var (min, max) = got.Length < want.Length ? (got.Length, want.Length) : (want.Length, got.Length);
-            return min * 100 >= max * MinPrefixRatio;
+            var (shorter, longer) = got.Length < want.Length ? (got, want) : (want, got);
+            // The bit the shorter name does NOT cover. If that residual is a volume or sequel marker, the two
+            // are SIBLINGS, not the same game, however high the ratio: the CD-i disc "Tell Me Why One" is
+            // 75% of the way to the 2020 adventure game "Tell Me Why", and "Icebreaker" is 83% of
+            // "Icebreaker II". An edition suffix ("dx", "hd") is the opposite case and must still pass.
+            if (SequelMarkers.Contains(longer[shorter.Length..])) return false;
+            return shorter.Length * 100 >= longer.Length * MinPrefixRatio;
         }
+
+        /// <summary>Residuals that mean "a different entry in the same series". Digits are handled
+        /// separately so any number qualifies.</summary>
+        private static readonly HashSet<string> SequelMarkers = new(StringComparer.Ordinal)
+        {
+            "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix", "x", "xi", "xii",
+            "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+            "part2", "part3", "vol2", "vol3",
+        };
 
         /// <summary>How much of the longer name a prefix match must cover, in percent. 70 keeps the real
         /// edition/subtitle cases ("Sonic Adventure" vs "…DX", 14/16 = 87%) and rejects the false ones

@@ -25,6 +25,7 @@ namespace MovieTheater.Tests
         // Real edition/subtitle prefixes: the shorter name still covers most of the longer one.
         [InlineData("Sonic Adventure", "Sonic Adventure DX")]
         [InlineData("Metal Gear Solid", "Metal Gear Solid HD")]
+        [InlineData("Sonic Adventure", "Sonic Adventure DX")]   // an EDITION suffix is not a sequel marker
         public void Accepts(string ours, string theirs) => Assert.True(Match(ours, theirs));
 
         [Theory]
@@ -35,6 +36,14 @@ namespace MovieTheater.Tests
         [InlineData("Legend", "Legend of Zelda - Ocarina of Time")]
         [InlineData("Pang", "Pang Adventures Deluxe Edition")]
         [InlineData("Solo Crisis", "Solo")]
+        // A residual that is a volume or sequel marker means SIBLINGS, however high the ratio. Both of
+        // these shipped wrong covers: the CD-i educational discs "Tell Me Why One"/"Two" were given the
+        // 2020 Dontnod adventure game's key art at 75%.
+        [InlineData("Tell Me Why One", "Tell Me Why")]
+        [InlineData("Tell Me Why Two", "Tell Me Why")]
+        [InlineData("Icebreaker II", "Icebreaker")]
+        [InlineData("Ridge Racer 2", "Ridge Racer")]
+        [InlineData("Street Fighter", "Street Fighter III")]
         // Too short to risk a prefix match at all.
         [InlineData("Ico", "Ico and Shadow of the Colossus")]
         [InlineData("", "Anything")]
