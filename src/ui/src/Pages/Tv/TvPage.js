@@ -1247,7 +1247,10 @@ function TvPage({ userData }) {
         )}
 
         {/* channel-change static burst */}
-        <div className={`tv-static${staticBurst ? " tv-static--on" : ""}`} aria-hidden="true" />
+        {/* Channel-change static burst — MOUNTED ONLY WHILE IT BURSTS. It used to sit over the
+            picture permanently at opacity 0, which is invisible but still a mix-blend-mode box
+            over the video; nothing gets to sit on top of the picture between channel changes. */}
+        {staticBurst && <div className="tv-static tv-static--on" aria-hidden="true" />}
 
         {/* cold-transcode wait — the source takes a few seconds to start; show it's working */}
         {tuning && !error && !offAir && (

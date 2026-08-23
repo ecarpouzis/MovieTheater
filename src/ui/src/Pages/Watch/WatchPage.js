@@ -474,6 +474,12 @@ function WatchPage({ userData }) {
       {phase !== "playing" && poster && (
         <div className="watch-backdrop" style={{ backgroundImage: `url(${poster})` }} aria-hidden="true" />
       )}
+      {/* Room vignette for the title-card states — a REAL element under the same phase guard as the
+          backdrop, never a .watch-room::after. A pseudo-element on the room is a positioned z-auto
+          box that comes last in tree order, so it paints over every sibling INCLUDING the player:
+          as .watch-room::after this scrim spent its life dimming the corners of every movie by up
+          to 55% (found 2026-08-22). Nothing may paint over .vp-stage — the picture is the master. */}
+      {phase !== "playing" && <div className="watch-scrim" aria-hidden="true" />}
 
       {phase === "loading" && (
         <div className="watch-card watch-card--entrance">

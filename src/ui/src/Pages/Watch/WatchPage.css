@@ -34,8 +34,10 @@
   }
 }
 
-.watch-room::after {
-  content: "";
+/* Vignette for the title-card states. Rendered by WatchPage ONLY while phase !== "playing", so it
+   cannot coexist with the player — see the comment at its JSX. It must stay a class on a real
+   element: as .watch-room::after it painted over the video for the whole film. */
+.watch-scrim {
   position: absolute;
   inset: 0;
   pointer-events: none;

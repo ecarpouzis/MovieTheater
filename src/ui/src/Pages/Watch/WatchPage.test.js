@@ -62,3 +62,24 @@ describe("WatchPage — multi-part combined timeline", () => {
     expect(container.querySelector(".vp-time-total")?.textContent).toMatch(/3:0\d:/);
   });
 });
+
+// The picture is the master: while a film is playing, the room contributes NOTHING over the video.
+// This is a regression guard, not a style check — the vignette lived as .watch-room::after and so
+// painted over .vp-stage for the whole runtime, dimming every movie's corners by up to 55% until
+// it was found on 2026-08-22. A pseudo-element can't be asserted on, which is exactly why the
+// scrim is now a real element under the same phase guard as the backdrop.
+describe("WatchPage — nothing overlays the picture", () => {
+  beforeEach(() => {
+    MovieAPI.getTitle.mockResolvedValue({ json: () => Promise.resolve(multiPart) });
+    MovieAPI.startStream.mockResolvedValue({ ok: true, json: () => Promise.resolve(session) });
+  });
+  afterEach(() => vi.clearAllMocks());
+
+  it("renders no scrim or backdrop once the player is up", async () => {
+    const { container } = renderWatch();
+    await waitFor(() => expect(container.querySelector("video")).toBeTruthy(), { timeout: 4000 });
+    expect(container.querySelector(".vp-stage")).toBeTruthy();
+    expect(container.querySelector(".watch-scrim")).toBeNull();
+    expect(container.querySelector(".watch-backdrop")).toBeNull();
+  });
+});

@@ -54,7 +54,11 @@
   font-size: clamp(18px, 3vh, 36px);
 }
 
-/* The movie is shown exactly as mastered — no grain, no vignette, no filters over the picture. */
+/* The movie is shown exactly as mastered — no grain, no vignette, no filters over the picture.
+   This holds for the ROOM too, not just this file: WatchPage's vignette (.watch-scrim) and poster
+   ember (.watch-backdrop) are both gated on phase !== "playing" so neither can share the screen
+   with .vp-stage. That guarantee was broken for as long as the vignette was a .watch-room::after —
+   a pseudo-element paints over every sibling, player included. Nothing goes over the picture. */
 
 /* ── chrome fade: the lights dim ─────────────────────────────────────────── */
 .vp-topbar,
