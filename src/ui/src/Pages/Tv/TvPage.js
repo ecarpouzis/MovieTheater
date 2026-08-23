@@ -1144,10 +1144,11 @@ function TvPage({ userData }) {
     video.volume = volume;
   }, [muted, volume]);
 
-  // Sidecar text subtitles render client-side: show the chosen track, DISABLE the rest. Re-applies
-  // when the track list changes (a new film) so freshly-mounted <track>s pick up the selection.
-  // "hidden" would leave them active and the browser would fetch every cue file at once — see the
-  // same effect in VideoPlayer.js for what that costs on a title with 33 embedded subtitle tracks.
+  // Sidecar text subtitles render client-side. Only the chosen track is MOUNTED (see the render) —
+  // a mounted track's cue file gets fetched whatever its mode, so a 40-subtitle film opened 40
+  // concurrent Stream.vtt requests against one ffmpeg; see the same effect in VideoPlayer.js.
+  // This just puts the one mounted track into "showing" (a fresh track starts "disabled"), and
+  // re-applies when the track list changes (a new film) so a freshly-mounted <track> picks it up.
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -1226,8 +1227,10 @@ function TvPage({ userData }) {
           guide pop out over it, and only while open. */}
       <div className="tv-screen" onClick={onScreenTap}>
         <video ref={videoRef} className="tv-video" autoPlay playsInline muted crossOrigin="anonymous">
+          {/* The selected sidecar-VTT track only — mounting the whole list fetches the whole list. */}
           {subtitleTracks
             .filter((t) => t.deliveryUrl && t.kind !== "image-pgs" && t.kind !== "ass")
+            .filter((t) => String(t.index) === String(subtitleIndex))
             .map((t) => (
               <track key={t.index} id={String(t.index)} kind="subtitles" label={t.label} src={t.deliveryUrl} srcLang={t.language || "en"} />
             ))}

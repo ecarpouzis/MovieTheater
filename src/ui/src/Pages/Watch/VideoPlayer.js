@@ -382,13 +382,15 @@ function VideoPlayer({
   }, [volume, muted]);
 
   // ── text subtitles (sidecar VTT) ────────────────────────────────────────────
-  // "disabled", NOT "hidden", for the tracks we aren't showing: a hidden track is still ACTIVE, so the
-  // browser fetches and parses its cue file. With one <track> per embedded sub that meant every track
-  // loaded at once — Don't Look Up (33 tracks) fired 33 concurrent Stream.vtt requests on open, which
-  // Jellyfin answered with a single ffmpeg demuxing all 33 out of a 12.9 GB 4K MKV: 119 s of NAS reads
-  // racing the video copy of that same file, and all 33 requests dead at the gateway's 100 s timeout
-  // (measured 2026-08-17). Nothing here reads cues off a non-showing track, so disabled costs nothing;
-  // the selected track loads on demand and useSubtitleStyle/useCueLift re-apply on its 'load'.
+  // Only the SELECTED sub is mounted as a <track> at all (see the render). Setting the others'
+  // mode to "disabled" was the first attempt at this and it is not enough: Firefox fetches a
+  // track element's src on insert regardless of mode, so all of them still loaded. Don't Look Up
+  // (33 tracks) fired 33 concurrent Stream.vtt requests on open, which Jellyfin answered with a
+  // single ffmpeg demuxing all 33 out of a 12.9 GB 4K MKV: 119 s of NAS reads racing the video copy
+  // of that same file, and all 33 dead at the gateway's 100 s timeout (measured 2026-08-17); the
+  // burst was still there on Matilda: The Musical's 40 tracks on 2026-08-22. One track element means
+  // one request, in every engine. This effect then only has to put that one track into "showing" —
+  // a freshly mounted track starts "disabled", which shows nothing.
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -648,8 +650,10 @@ function VideoPlayer({
       onMouseLeave={() => playing && hideControls()}
     >
       <video ref={videoRef} className="vp-video" poster={poster} crossOrigin="anonymous" playsInline onClick={onSurfaceClick}>
+        {/* The selected sidecar-VTT track only — mounting the whole list fetches the whole list. */}
         {subtitleTracks
           .filter((t) => t.deliveryUrl && t.kind !== "image-pgs" && t.kind !== "ass")
+          .filter((t) => String(t.index) === String(selectedSubtitleIndex))
           .map((t) => (
             <track key={t.index} id={String(t.index)} kind="subtitles" label={t.label} src={t.deliveryUrl} srcLang={t.language || "en"} />
           ))}
