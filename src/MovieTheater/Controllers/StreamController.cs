@@ -97,6 +97,26 @@ namespace MovieTheater.Controllers
                 || s.Codec.Equals("ssa", StringComparison.OrdinalIgnoreCase));
 
         /// <summary>
+        /// The frame width a capped rung should actually be encoded at, or null to leave Jellyfin's own
+        /// choice alone. Jellyfin infers the output resolution from the bitrate ceiling and its ladder
+        /// BOTTOMS OUT AT 720p, so the 1.5 Mbps rung — the menu's "480p", and the rung auto-mobile opens
+        /// on — came back as 1280x720 at 1,116,000 bps: well under half what 720p24 needs, and a label
+        /// that lies about what's being delivered. Measured on Matilda: The Musical (HEVC/DV, so every
+        /// open re-encodes) 2026-08-22: three separate opens at that rung died in Firefox 129/Linux with
+        /// MediaError DECODE two segments in, while the 4 Mbps rung played 105 segments straight through
+        /// on the same connection minutes either side. Whether the under-bitrated 720p encode is what
+        /// Firefox's decoder choked on is unproven — but a rung that claims 480p should encode 480p.
+        /// The upper rungs are left alone because Jellyfin already picks 1080p for them.
+        /// </summary>
+        private static int? MaxWidthForCeiling(long? maxBitrateBps) => maxBitrateBps switch
+        {
+            null => null,
+            <= 2_000_000 => 854,    // "480p" rung — Jellyfin would give 720p
+            <= 5_000_000 => 1280,   // "720p" rung — pins what Jellyfin already chose
+            _ => null,
+        };
+
+        /// <summary>
         /// This viewer's Jellyfin device identity. Jellyfin keys a session by Client+DeviceId, so while
         /// every viewer shared one id they all collapsed into a single session: <c>/Sessions</c> reported
         /// one viewer and ≤1 transcode no matter how many were really running, and the dashboard couldn't
@@ -475,6 +495,14 @@ namespace MovieTheater.Controllers
                 if (burnInImageIndex is int burnIndex
                     && !transcodingUrl.Contains("SubtitleStreamIndex=", StringComparison.OrdinalIgnoreCase))
                     transcodingUrl += $"&SubtitleStreamIndex={burnIndex}&SubtitleMethod=Encode";
+                // Pin the frame size on the low rungs (see MaxWidthForCeiling). Jellyfin carries MaxWidth
+                // from this url through master.m3u8 into main.m3u8 and the RESOLUTION attribute, so the one
+                // append covers the whole session. ONLY on a re-encode: a copied video is never scaled, and
+                // naming a width below the source's would turn a copy INTO an encode.
+                if (!videoIsCopied
+                    && MaxWidthForCeiling(request.MaxBitrateBps) is int maxWidth
+                    && !transcodingUrl.Contains("MaxWidth=", StringComparison.OrdinalIgnoreCase))
+                    transcodingUrl += $"&MaxWidth={maxWidth}";
                 playbackUrl = ToGatewayUrl(transcodingUrl);
                 isHls = true;
             }
