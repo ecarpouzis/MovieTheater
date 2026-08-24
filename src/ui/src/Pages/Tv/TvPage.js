@@ -1,11 +1,15 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams, useHistory } from "react-router-dom";
 import Hls from "hls.js";
 import { MovieAPI } from "../../MovieAPI";
 import { formatTime, TICKS_PER_SECOND } from "../Watch/VideoPlayer";
 import { QUALITY_LADDER, formatPlaying, qualityOptions, audioOptions, subtitleOptions, deliveredAudio } from "../../playerMenuModel";
 import { useIdleChrome } from "../../useIdleChrome";
-import { createHls, bandwidthSample } from "../../streamEngine";
+import { createHls, bandwidthSample, canRemotePlay } from "../../streamEngine";
+import { useCastSender } from "../../castSender";
+import { useCastProfile } from "../../useCastProfile";
+import { CAST_PROFILES, castCeilingBps, castTrackDescriptors, castSubtitleTracks } from "../../castProfiles";
+import { useAirPlay } from "../../useAirPlay";
 import { autoBpsLabel, abrProfileFor, isAutoQuality } from "../../streamAbr";
 import { useAdaptiveBitrate } from "../../useAdaptiveBitrate";
 import { useVideoIncidents, noteStreamSwitch } from "../../videoIncidents";
@@ -81,6 +85,7 @@ function TvPage({ userData }) {
   const timelineOffsetRef = useRef(0);
   const [audioOpen, setAudioOpen] = useState(false);
   const [subsOpen, setSubsOpen] = useState(false);
+  const [castOpen, setCastOpen] = useState(false); // receiver-profile accordion (only while casting)
   // Caption appearance — shared with the Watch player (same hook + persisted settings + injected ::cue).
   const { subStyle, setSubStyle, setStyle, styleOpen, setStyleOpen } = useSubtitleStyle();
   // Subtitle timing nudge — client-side re-time of the showing soft track; per-viewer, so it works
@@ -97,12 +102,7 @@ function TvPage({ userData }) {
     capturePoint: captureSubtitleSyncPoint,
     cancelSync: cancelSubtitleSync,
   } = useSubtitleOffset(videoRef, subtitleIndex, subtitleTracks, timelineOffset);
-  // The selected SOFT (sidecar VTT) subtitle — only these can be re-timed client-side, so the delay
-  // UI gates on it (burned-in image subs are baked into the transcode and can't be moved).
-  const activeTextSub =
-    subtitleTracks.find(
-      (t) => t.index === subtitleIndex && !!t.deliveryUrl && t.kind !== "image-pgs" && t.kind !== "ass"
-    ) || null;
+  // (activeTextSub moved down to the other subtitle-derived values — it now depends on `casting`.)
   const [skip, setSkip] = useState(null); // { viewers, votes, required, youVoted }
   const [restart, setRestart] = useState(null); // { viewers, votes, required, youVoted }
   const [viewers, setViewers] = useState(null); // { count, names: [{ name, you }] } — who's tuned in
@@ -235,6 +235,57 @@ function TvPage({ userData }) {
   // tune bail out instead of stomping a newer one with a stale error or stream.
   const tuneSeqRef = useRef(0);
 
+  // ── casting (Chromecast) ────────────────────────────────────────────────────
+  // Same shape as the Watch player: the cast is the SAME channel session, negotiated for the
+  // RECEIVER's decode profile instead of this browser's (castProfiles.js) and played by the
+  // receiver's own player instead of our hls.js. A channel brings two wrinkles the Watch page
+  // doesn't have, and both are handled where they arise: the drift corrector has to nudge a remote
+  // player rather than a local element, and the hidden-tab teardown — which exists to stop a
+  // channel nobody is watching — must not fire when the reason the tab is hidden is that the film
+  // is on the television.
+  const [castError, setCastError] = useState(null);
+  const [castStarting, setCastStarting] = useState(false);
+  const castingRef = useRef(false);
+  const castProfileRef = useRef(null);
+  const castCapsRef = useRef(null);
+  const leavingRef = useRef(false);
+  // Whether the current LOCAL source could go to an AirPlay receiver (see canRemotePlay).
+  const [remotePlayable, setRemotePlayable] = useState(true);
+  // The receiver's playlist-vs-content time constant, measured once per tune (see the drift
+  // corrector). Null until the first steady sample; re-nulled on every tune.
+  const castDriftBaseRef = useRef(null);
+
+  const cast = useCastSender({
+    // The cast ended somewhere other than here — stopped from the TV, device taken by the Home app,
+    // receiver rebooted. Re-tune locally so the channel comes back into this tab rather than dying.
+    onSessionEnded: () => {
+      castingRef.current = false;
+      setCastStarting(false);
+      setCastError(null);
+      if (leavingRef.current) return;
+      // Ended while this tab is hidden — someone stopped the cast from the TV with the phone asleep.
+      // Do NOT pull the channel back into a throttled background tab: that is precisely what the
+      // hidden-tab teardown exists to avoid, and its visibilitychange listener won't fire again to
+      // clean up after us. Stop cleanly; coming back to the tab re-tunes, because that path keys off
+      // a null sessionRef.
+      if (document.visibilityState === "hidden") {
+        stopSessionRef.current?.();
+        return;
+      }
+      // tune() stops the old session itself, so this is just "come back into this tab".
+      if (channelRef.current) tuneRef.current?.(channelRef.current);
+    },
+  });
+  const castPrefs = useCastProfile(cast.device);
+  const casting = cast.connected;
+  // The sender, reachable from callbacks that must not be rebuilt when the mirrored remote player
+  // ticks (tune(), the drift corrector, the progress beat — all once-registered or widely depended on).
+  const castRef = useRef(null);
+  castRef.current = cast;
+  castingRef.current = casting;
+  castProfileRef.current = castPrefs.profile;
+  castCapsRef.current = castPrefs.capabilities;
+
   // ── helpers ─────────────────────────────────────────────────────────────────
   const stopSession = useCallback((useBeacon = false) => {
     const s = sessionRef.current;
@@ -244,6 +295,10 @@ function TvPage({ userData }) {
     if (useBeacon) MovieAPI.beaconStopStream(payload);
     else MovieAPI.stopStream(payload);
   }, []);
+  // Late-bound for the cast sender's end-of-session callback, which is registered above this (the
+  // sender hook owns the listener, and the listener has to exist from mount).
+  const stopSessionRef = useRef(null);
+  stopSessionRef.current = stopSession;
 
   const destroyHls = useCallback(() => {
     if (hlsRef.current) {
@@ -293,8 +348,12 @@ function TvPage({ userData }) {
   const resolveBitrate = useCallback(() => {
     const rungKey = qualityRef.current;
     const rung = QUALITY_LADDER.find((q) => q.key === rungKey) || QUALITY_LADDER[0];
-    if (!isAutoQuality(rungKey)) return rung.bps; // manual rung (incl. uncapped "Original")
-    const cap = autoBpsRef.current;
+    const auto = isAutoQuality(rungKey);
+    const cap = auto ? autoBpsRef.current : rung.bps;
+    // Casting: the ABR ladder can't run (no hls.js in this tab to measure the receiver's own wifi
+    // link), so the profile's ceiling stands in — see castCeilingBps.
+    if (castingRef.current) return castCeilingBps(castProfileRef.current, cap, auto);
+    if (!auto) return rung.bps; // manual rung (incl. uncapped "Original")
     return isFinite(cap) ? cap : null; // lossless tier → uncapped (the server copies the source)
   }, [autoBpsRef]);
 
@@ -307,10 +366,17 @@ function TvPage({ userData }) {
       // subtitle reaches the transcode; text subs ride along as sidecars regardless.
       const audioStreamIndex = audioIndexRef.current;
       const subtitleStreamIndex = burnSubIndexRef.current;
+      // A warmed transcode is negotiated under whichever device profile was live when it started, so
+      // the reuse check downstream has to know which one that was. Without it, changing the cast
+      // profile (or connecting/disconnecting) in the ~20s before a boundary would silently reuse a
+      // session encoded for the wrong decoder — the black-picture failure, arriving at the exact
+      // moment the channel changed programme and looking like a channel bug.
+      const negotiatedFor = castingRef.current ? castPrefs.negotiationKey : "local";
       try {
         const r = await MovieAPI.startStream({
           playableId,
           maxBitrateBps: resolveBitrate(),
+          capabilities: castingRef.current ? castCapsRef.current : null,
           startSeconds: 0,
           audioStreamIndex,
           subtitleStreamIndex,
@@ -320,12 +386,12 @@ function TvPage({ userData }) {
         // For a transcode, pull the playlist to actually spawn ffmpeg; direct play has
         // nothing to warm (it's a static file).
         if (session.isHls !== false) fetch(session.hlsUrl).catch(() => {});
-        prewarmRef.current = { playableId, session, audioStreamIndex, subtitleStreamIndex };
+        prewarmRef.current = { playableId, session, audioStreamIndex, subtitleStreamIndex, negotiatedFor };
       } catch {
         /* prewarm is best-effort */
       }
     },
-    [resolveBitrate]
+    [resolveBitrate, castPrefs.negotiationKey]
   );
 
   // Re-anchor the channel clock from a Now answer. The offset the server states was true about half a
@@ -355,6 +421,9 @@ function TvPage({ userData }) {
       // so the incident recorder never files the restart's own rebuffer as a stall. The Watch
       // player's equivalent is its src change; both land on the same noteStreamSwitch.
       noteStreamSwitch("tune");
+      // A new stream re-rolls the receiver's playlist-vs-content constant, so the drift corrector
+      // must re-measure it rather than correct against the previous item's number.
+      castDriftBaseRef.current = null;
       clearTimeout(advanceTimerRef.current);
       clearTimeout(prewarmTimerRef.current);
       stopSession();
@@ -450,6 +519,10 @@ function TvPage({ userData }) {
             pw.playableId === nowData.current.playableId &&
             pw.audioStreamIndex === audioIndexRef.current &&
             pw.subtitleStreamIndex === burnSubIndexRef.current &&
+            // ...and the same DECODER. A session warmed for this browser cannot be handed to a
+            // Chromecast, or vice versa: the codec, container and segment format were all chosen for
+            // whichever one was live when the prewarm ran.
+            pw.negotiatedFor === (castingRef.current ? castPrefs.negotiationKey : "local") &&
             nowData.current.offsetSeconds < 8 &&
             // A prewarm is a copy stream; don't reuse it for an item we've escalated to re-encode.
             forceTranscodeItemRef.current !== nowData.current.itemId
@@ -467,6 +540,8 @@ function TvPage({ userData }) {
           const startResponse = await MovieAPI.startStream({
             playableId: nowData.current.playableId,
             maxBitrateBps: resolveBitrate(),
+            // The receiver's decode profile when casting; this browser's probe otherwise.
+            capabilities: castingRef.current ? castCapsRef.current : null,
             startSeconds: Math.floor(nowData.current.offsetSeconds),
             audioStreamIndex: audioIndexRef.current,
             subtitleStreamIndex: burnSubIndexRef.current,
@@ -499,10 +574,57 @@ function TvPage({ userData }) {
         videoCopiedRef.current = !!session.isDirectStream;
         sourceVideoBpsRef.current = session.videoBitrateBps ?? null;
 
+        const joinAt = nowData.current.offsetSeconds;
+
+        // ── casting: the receiver joins the channel, this element stays empty ──
+        // Nothing below this block runs while casting. It would all be about a <video> that has no
+        // source: attaching hls.js here would pull a SECOND copy of the same transcode down this
+        // tab's connection, doubling the load on one ffmpeg and one uplink for a picture nobody is
+        // looking at.
+        if (castingRef.current) {
+          const castSubs = castSubtitleTracks(session.subtitleTracks).tracks;
+          const activeTrack = castSubs.find((t) => t.index === subtitleIndexRef.current && !!t.deliveryUrl);
+          castRef.current
+            .loadMedia({
+              url: session.hlsUrl,
+              isHls: session.isHls !== false,
+              startTime: joinAt,
+              title: nowData.current.title || chan.name,
+              subtitle: chan.name,
+              poster: nowData.current.posterId
+                ? MovieAPI.getPosterThumbnail(nowData.current.posterId, nowData.current.posterVersion, nowData.current.kind)
+                : null,
+              tracks: castTrackDescriptors(session.subtitleTracks),
+              activeTrackId: activeTrack ? activeTrack.index : null,
+            })
+            .then(() => {
+              if (superseded()) return;
+              setCastStarting(false);
+              setTuning(false); // the receiver holds the picture — the "Tuning in…" card is done
+              // A frozen channel is frozen everywhere: hold the receiver on the joined frame too,
+              // or the one viewer who cast would run on while everyone else is paused.
+              if (nowData.paused) castRef.current.playPause();
+            })
+            .catch((err) => {
+              if (superseded()) return;
+              setCastStarting(false);
+              // Most likely the receiver couldn't FETCH the stream: the gateway's CORS allow-list
+              // doesn't name the cast receiver origin, or the gateway isn't reachable from where the
+              // TV sits. Say the useful thing and fall back to playing here.
+              setCastError(
+                `The TV couldn't tune this channel${err?.message ? ` (${err.message})` : ""}. Playing here instead.`
+              );
+              castRef.current.disconnect();
+            });
+          // The advance/prewarm timers below still arm — they run off the schedule clock, not the
+          // element, so auto-advance keeps working with the picture on the television.
+        }
+
         const video = videoRef.current;
         if (!video) return;
-        video.playbackRate = 1; // a fresh join starts on-tempo; the drift corrector re-nudges if it has to
-        const joinAt = nowData.current.offsetSeconds;
+        if (!castingRef.current) {
+          video.playbackRate = 1; // a fresh join starts on-tempo; the drift corrector re-nudges if it has to
+        }
         // Tuning a frozen channel loads the frame but must NOT start it: the picture holds on the
         // paused instant. (The buffered frame still renders, and 'loadeddata' clears the tuning card.)
         const frozen = !!nowData.paused;
@@ -512,10 +634,13 @@ function TvPage({ userData }) {
         const startPlayback = () => {
           if (!frozen) video.play().catch(() => {});
         };
-        if (session.isHls === false) {
+        if (castingRef.current) {
+          // Already handed to the receiver above. Skip every local attach path.
+        } else if (session.isHls === false) {
           // Direct play: the original file. Seek to the live offset via a range request —
           // no transcode, so the channel joins near-instantly.
           video.src = session.hlsUrl;
+          setRemotePlayable(true);
           video.addEventListener(
             "loadedmetadata",
             () => {
@@ -542,12 +667,14 @@ function TvPage({ userData }) {
             },
           });
           hlsRef.current = hls;
+          setRemotePlayable(canRemotePlay(hls));
           hls.on(Hls.Events.MANIFEST_PARSED, startPlayback);
           hls.loadSource(session.hlsUrl);
           hls.attachMedia(video);
         } else {
           // Safari native HLS: seek on metadata is the only join lever available.
           video.src = session.hlsUrl;
+          setRemotePlayable(true);
           video.addEventListener(
             "loadedmetadata",
             () => {
@@ -561,7 +688,7 @@ function TvPage({ userData }) {
         // While paused the timeline is frozen: don't arm the auto-advance or prewarm, and hold the
         // picture on a still frame. A resume (ours or someone else's) re-tunes us at the live offset.
         if (nowData.paused) {
-          video.pause();
+          if (!castingRef.current) video.pause(); // casting holds the receiver instead (above)
         } else {
           // Advance when the schedule says this item ends (+ a little grace).
           const msUntilEnd = new Date(nowData.current.endsAtUtc).getTime() - Date.now();
@@ -580,14 +707,41 @@ function TvPage({ userData }) {
         if (!superseded()) {
           setError(err);
           setTuning(false);
+          // Whatever failed, the cast is no longer starting — leaving this set would strand the
+          // plate on "Tuning in on…" behind the error card.
+          setCastStarting(false);
         }
       }
     },
-    [stopSession, destroyHls, resolveBitrate, prewarmNext, handleStall, anchorSync]
+    // `cast` is deliberately absent, and reached through castRef instead: its identity changes on
+    // every remote-player tick (~1/s), so naming it here would rebuild tune() — and everything that
+    // depends on tune() — once a second.
+    [stopSession, destroyHls, resolveBitrate, prewarmNext, handleStall, anchorSync, castPrefs.negotiationKey]
   );
   // tune() is invoked from the ABR adapt path (useAdaptiveBitrate onAdapt) via this ref, avoiding a
   // tune/adapt dependency cycle.
   tuneRef.current = tune;
+
+  // Entering a cast — or changing the receiver's profile while cast — re-tunes: the session has to
+  // be re-negotiated for a different decoder and re-joined at the live offset, which is a new
+  // TranscodingUrl, not a reload. LEAVING deliberately isn't handled here; it goes through the
+  // sender's onSessionEnded, the only path that also covers the endings this tab never initiates.
+  const wasCastingRef = useRef(false);
+  const castNegotiationRef = useRef(null);
+  useEffect(() => {
+    const entering = casting && !wasCastingRef.current;
+    wasCastingRef.current = casting;
+    if (!casting) {
+      castNegotiationRef.current = castPrefs.negotiationKey;
+      return;
+    }
+    const renegotiated = castNegotiationRef.current !== castPrefs.negotiationKey;
+    castNegotiationRef.current = castPrefs.negotiationKey;
+    if (!entering && !renegotiated) return;
+    setCastError(null);
+    setCastStarting(true);
+    if (channelRef.current) tune(channelRef.current);
+  }, [casting, castPrefs.negotiationKey, tune]);
 
   // ── channel list ────────────────────────────────────────────────────────────
   // keepSelection: after an admin edit, hold the current channel if it still exists
@@ -650,6 +804,21 @@ function TvPage({ userData }) {
     const beat = setInterval(() => {
       const video = videoRef.current;
       const s = sessionRef.current;
+      // Casting: report where the RECEIVER is. Without this branch the beat would read a detached
+      // element sitting at 0 — which still feeds Jellyfin's 60s ping timeout, so the channel would
+      // keep playing and nothing would look wrong, while the server believed every cast viewer was
+      // parked at the start of the programme.
+      if (castingRef.current && s) {
+        const remote = castRef.current?.remote;
+        MovieAPI.reportStreamProgress({
+          playSessionId: s.playSessionId,
+          playableId: s.playableId,
+          positionTicks: Math.max(0, Math.round((remote?.currentTime || 0) * TICKS_PER_SECOND)),
+          paused: !!remote?.paused,
+          passive: true,
+        });
+        return;
+      }
       if (video && s) {
         MovieAPI.reportStreamProgress({
           playSessionId: s.playSessionId,
@@ -678,8 +847,50 @@ function TvPage({ userData }) {
       const video = videoRef.current;
       const anchor = syncRef.current;
       if (!video || !anchor || pausedRef.current || tuningRef.current) return;
-      if (video.paused || video.seeking || !video.readyState) return;
       if (anchor.itemId !== currentItemIdRef.current) return; // channel moved on — wait for a fresh anchor
+
+      // ── casting ──
+      // The receiver reports PLAYLIST time and never tells us how far that sits ahead of content
+      // time. The local path knows: hls.js reports INIT_PTS_FOUND and timelineOffsetRef holds it. The
+      // sender API has no equivalent, and the gap is real — up to one source GOP on any mid-file
+      // encode join, which is most cast sessions. Comparing raw against the channel clock would read
+      // that constant as drift and seek every cooldown forever: the exact tune/seek storm the local
+      // path's timelineOffset exists to prevent.
+      //
+      // So CALIBRATE it. The first steady sample after the receiver starts playing becomes the zero,
+      // and correction runs against movement away from it. What that gives up is closing the
+      // join-time gap — a cast viewer can sit up to a GOP plus their join latency behind the room,
+      // and nothing here will pull them forward. What it keeps is the reason the corrector exists at
+      // all: drift that ACCUMULATES over an evening. A re-tune at each programme boundary re-zeros
+      // the whole thing anyway.
+      if (castingRef.current) {
+        const remote = castRef.current?.remote;
+        if (!remote?.mediaLoaded || remote.paused) return;
+        const expectedNow = anchor.position + (performance.now() - anchor.atMs) / 1000;
+        const raw = remote.currentTime - expectedNow;
+        if (!isFinite(raw)) return;
+        if (castDriftBaseRef.current == null) {
+          castDriftBaseRef.current = raw;
+          return;
+        }
+        const castDrift = raw - castDriftBaseRef.current;
+        if (Math.abs(castDrift) > SYNC_SEEK_AFTER_S) {
+          if (performance.now() - lastSyncSeekAtRef.current < SYNC_SEEK_COOLDOWN_MS) return;
+          lastSyncSeekAtRef.current = performance.now();
+          castRef.current.setPlaybackRate(1);
+          castRef.current.seek(expectedNow + castDriftBaseRef.current);
+          return;
+        }
+        const castRate =
+          Math.abs(castDrift) <= SYNC_TOLERANCE_S ? 1 : castDrift > 0 ? 1 - SYNC_RATE_STEP : 1 + SYNC_RATE_STEP;
+        // Only on a CHANGE: every call is a message over the cast channel, and the receiver's own
+        // reported rate is the truth we compare against — so a receiver that ignores rate changes
+        // simply never converges here and lets the seek branch above do the work instead.
+        if (Math.abs((remote.playbackRate ?? 1) - castRate) > 0.001) castRef.current.setPlaybackRate(castRate);
+        return;
+      }
+
+      if (video.paused || video.seeking || !video.readyState) return;
 
       const expected = anchor.position + (performance.now() - anchor.atMs) / 1000;
       // Both sides in CONTENT time. The channel clock states a content offset, while currentTime can
@@ -761,12 +972,25 @@ function TvPage({ userData }) {
 
   // ── teardown / wake lock / keyboard ─────────────────────────────────────────
   useEffect(() => {
-    const onPageHide = () => stopSession(true);
+    // A cast dies with the page, same as the Watch player: the stream the receiver is playing is
+    // THIS page's session, and the teardown stops it — leaving the television on a URL whose
+    // transcode has just been killed. Surviving the page would need a session controller outside it,
+    // which isn't built.
+    const endCast = () => {
+      if (!castingRef.current) return;
+      leavingRef.current = true;
+      castRef.current?.disconnect();
+    };
+    const onPageHide = () => {
+      endCast();
+      stopSession(true);
+    };
     window.addEventListener("pagehide", onPageHide);
     return () => {
       window.removeEventListener("pagehide", onPageHide);
       clearTimeout(advanceTimerRef.current);
       clearTimeout(prewarmTimerRef.current);
+      endCast();
       stopSession(true);
       // Don't leak a prewarmed transcode that never got consumed.
       if (prewarmRef.current) {
@@ -791,6 +1015,11 @@ function TvPage({ userData }) {
   // stop the stream (a clean stop, not a server kill) and re-tune at the live offset on return.
   useEffect(() => {
     const onVisibility = () => {
+      // NEVER while casting. This teardown exists because a hidden tab means nobody is watching —
+      // but when the picture is on the television, a hidden tab is the NORMAL state: the viewer cast
+      // the channel and put their phone in their pocket. Firing here would stop the stream out from
+      // under a room full of people about thirty seconds after the screen locked.
+      if (castingRef.current) return;
       if (document.visibilityState === "hidden") {
         clearTimeout(hiddenGraceRef.current);
         hiddenGraceRef.current = setTimeout(() => {
@@ -875,15 +1104,35 @@ function TvPage({ userData }) {
       burnSubIndexRef.current = nextBurn;
       setSubtitleIndex(index);
       setSubsOpen(false);
-      if (channel && nextBurn !== prevBurn) tune(channel);
+      if (channel && nextBurn !== prevBurn) {
+        tune(channel);
+        return;
+      }
+      // A sidecar VTT change costs no re-tune on either path: locally the <track> swaps mode, and on
+      // a cast the receiver already holds every castable track from the load request — this only
+      // says which one to show.
+      if (castingRef.current) castRef.current?.setActiveTextTrack(track?.deliveryUrl ? index : null);
     },
     [channel, subtitleTracks, tune]
   );
 
   // Local, per-viewer volume (the shared channel state is only play/pause). Dragging to 0
   // mutes; dragging up unmutes. Persisted so the next visit remembers it.
-  const toggleMute = useCallback(() => setMuted((m) => !m), []);
+  // While casting these drive the RECEIVER instead, and its reported level is what the control shows
+  // (see volumeIcon / the slider value) — so a change made on the TV remote is reflected here rather
+  // than fought over.
+  const toggleMute = useCallback(() => {
+    if (castingRef.current) {
+      castRef.current?.toggleMuted();
+      return;
+    }
+    setMuted((m) => !m);
+  }, []);
   const changeVolume = useCallback((v) => {
+    if (castingRef.current) {
+      castRef.current?.setVolume(v);
+      return;
+    }
     setVolume(v);
     writeStored("TvVolume", v);
     setMuted(v === 0);
@@ -1032,6 +1281,7 @@ function TvPage({ userData }) {
   // SHARED channel pause (same as the on-screen button) and prev/next to channel down/up; no seek (the
   // channel timeline is shared and forward-only). Position state still drives a read-only lock scrubber.
   const pip = usePictureInPicture(videoRef);
+  const airplay = useAirPlay(videoRef, remotePlayable);
   useMediaSession({
     videoRef,
     title: now?.current?.title,
@@ -1138,11 +1388,14 @@ function TvPage({ userData }) {
   }, [switchBy, channels, adminOpen, gridOpen, togglePlayPause, toggleFullscreen, wakeChrome]);
 
   useEffect(() => {
+    // While casting the receiver owns its volume — it's a property of the room, not of this tab, and
+    // the TV remote and the Home app move the same number. The controls below drive it directly.
+    if (casting) return;
     const video = videoRef.current;
     if (!video) return;
     video.muted = muted;
     video.volume = volume;
-  }, [muted, volume]);
+  }, [muted, volume, casting]);
 
   // Sidecar text subtitles render client-side. Only the chosen track is MOUNTED (see the render) —
   // a mounted track's cue file gets fetched whatever its mode, so a 40-subtitle film opened 40
@@ -1151,11 +1404,21 @@ function TvPage({ userData }) {
   // re-applies when the track list changes (a new film) so a freshly-mounted <track> picks it up.
   useEffect(() => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video || casting) return; // casting mounts no <track> at all — the receiver renders its own
     for (const track of Array.from(video.textTracks)) {
       track.mode = String(track.id) === String(subtitleIndex) ? "showing" : "disabled";
     }
-  }, [subtitleIndex, subtitleTracks]);
+  }, [subtitleIndex, subtitleTracks, casting]);
+
+  // The selected SOFT (sidecar VTT) subtitle — only these can be re-timed client-side, so the delay
+  // UI gates on it (burned-in image subs are baked into the transcode and can't be moved). Null while
+  // casting: the re-timing shifts cues on THIS element, and the captions are on a television.
+  const activeTextSub =
+    (!casting &&
+      subtitleTracks.find(
+        (t) => t.index === subtitleIndex && !!t.deliveryUrl && t.kind !== "image-pgs" && t.kind !== "ass"
+      )) ||
+    null;
 
   // Vertical lift for the showing track's cues (size/color/font/edge/box ride on the injected ::cue
   // rule from useSubtitleStyle). reloadKey = subtitleTracks: a new film replaces the <track> set, so
@@ -1164,11 +1427,11 @@ function TvPage({ userData }) {
 
   // Client-rendered PGS (Blu-ray bitmap) subs via libpgs — keeps the video copied instead of burned.
   const activePgsSub = subtitleTracks.find((t) => t.index === subtitleIndex && t.kind === "image-pgs");
-  usePgsSubtitle(videoRef, activePgsSub ? activePgsSub.deliveryUrl : null, timelineOffset);
+  usePgsSubtitle(videoRef, activePgsSub && !casting ? activePgsSub.deliveryUrl : null, timelineOffset);
 
   // Client-rendered ASS/SSA via libass — full typesetting, also keeps the video copied.
   const activeAssSub = subtitleTracks.find((t) => t.index === subtitleIndex && t.kind === "ass");
-  useAssSubtitle(videoRef, activeAssSub ? activeAssSub.deliveryUrl : null, timelineOffset);
+  useAssSubtitle(videoRef, activeAssSub && !casting ? activeAssSub.deliveryUrl : null, timelineOffset);
 
   // Keep the fullscreen button's icon in sync with the actual state (incl. Esc to exit).
   useEffect(() => {
@@ -1215,7 +1478,21 @@ function TvPage({ userData }) {
     return error.message || "The signal dropped.";
   })();
 
-  const volumeIcon = muted || volume === 0 ? "🔇" : volume < 0.5 ? "🔉" : "🔊";
+  // While casting, read the receiver's own level so the control tells the truth about the sound in
+  // the room rather than about a muted, detached element in this tab.
+  // While casting, offer only the subtitle kinds a Default Media Receiver can render: PGS and ASS
+  // are painted over the LOCAL element by libpgs/libass, and neither canvas exists on a television.
+  // The dropped ones become a note rather than options that quietly do nothing.
+  const castSubs = useMemo(() => castSubtitleTracks(subtitleTracks), [subtitleTracks]);
+  const castableSubtitleTracks = casting ? castSubs.tracks : subtitleTracks;
+  const castSubtitleNote =
+    casting && castSubs.dropped.length
+      ? `${castSubs.dropped.length} track${castSubs.dropped.length > 1 ? "s" : ""} can't be shown on a TV`
+      : null;
+
+  const shownMuted = casting ? !!cast.remote.muted : muted;
+  const shownVolume = casting ? cast.remote.volume ?? 1 : volume;
+  const volumeIcon = shownMuted || shownVolume === 0 ? "🔇" : shownVolume < 0.5 ? "🔉" : "🔊";
 
   // The bar fades out only once the chrome is idle and nothing is popped out over the picture.
   const chromeHidden = !chromeVisible && !gridOpen && !menuOpen && !guideOpen;
@@ -1227,14 +1504,36 @@ function TvPage({ userData }) {
           guide pop out over it, and only while open. */}
       <div className="tv-screen" onClick={onScreenTap}>
         <video ref={videoRef} className="tv-video" autoPlay playsInline muted crossOrigin="anonymous">
-          {/* The selected sidecar-VTT track only — mounting the whole list fetches the whole list. */}
-          {subtitleTracks
-            .filter((t) => t.deliveryUrl && t.kind !== "image-pgs" && t.kind !== "ass")
-            .filter((t) => String(t.index) === String(subtitleIndex))
-            .map((t) => (
-              <track key={t.index} id={String(t.index)} kind="subtitles" label={t.label} src={t.deliveryUrl} srcLang={t.language || "en"} />
-            ))}
+          {/* The selected sidecar-VTT track only — mounting the whole list fetches the whole list.
+              None while casting: the receiver was handed its own copies of these urls in the load
+              request, and a <track> on a detached element would fetch the cue file a second time
+              (through the same ffmpeg) to render it for nobody. */}
+          {!casting &&
+            subtitleTracks
+              .filter((t) => t.deliveryUrl && t.kind !== "image-pgs" && t.kind !== "ass")
+              .filter((t) => String(t.index) === String(subtitleIndex))
+              .map((t) => (
+                <track key={t.index} id={String(t.index)} kind="subtitles" label={t.label} src={t.deliveryUrl} srcLang={t.language || "en"} />
+              ))}
         </video>
+
+        {/* The picture is on the television. Without this the channel reads as a dead black screen
+            with a live control bar. */}
+        {casting && (
+          <div className="tv-castplate">
+            <div className="tv-castplate-head">{castStarting ? "Tuning in on" : "Playing on"}</div>
+            <div className="tv-castplate-device">{castPrefs.deviceName || "the TV"}</div>
+            {(castError || cast.error) && <div className="tv-castplate-error">{castError || cast.error}</div>}
+            {cast.device && !cast.device.videoCapable && (
+              <div className="tv-castplate-error">
+                This device only plays audio — pick one with a screen to see the picture.
+              </div>
+            )}
+            <button className="tv-castplate-stop" onClick={(e) => { e.stopPropagation(); cast.disconnect(); }}>
+              Stop casting
+            </button>
+          </div>
+        )}
 
         {/* live caption-style preview (shared component): faithful sample at the real caption height */}
         {styleOpen && <SubtitleStylePreview subStyle={subStyle} />}
@@ -1253,7 +1552,10 @@ function TvPage({ userData }) {
         {staticBurst && <div className="tv-static tv-static--on" aria-hidden="true" />}
 
         {/* cold-transcode wait — the source takes a few seconds to start; show it's working */}
-        {tuning && !error && !offAir && (
+        {/* Not while casting: the plate above already says "Tuning in on <device>", and this card
+            renders later in the DOM at the same z-index, so it would paint its own bulbs on top of
+            that message. */}
+        {tuning && !casting && !error && !offAir && (
           <div className="tv-tuning" aria-label="Tuning">
             <div className="tv-tuning-bulbs"><span /><span /><span /></div>
             <div className="tv-tuning-label">Tuning in…</div>
@@ -1291,6 +1593,49 @@ function TvPage({ userData }) {
                   {q.hint ? <span className="tv-qopt-hint">{q.hint}</span> : null}
                 </button>
               ))}
+            {/* Which receiver profile the session was negotiated from. A real control, not a
+                preference: it decides the DeviceProfile the server builds, so the wrong setting is
+                the difference between a picture and a black screen. Only while connected — the
+                answer is per-TV. */}
+            {casting && (
+              <>
+                <button
+                  className={`tv-channel-item${castOpen ? " tv-channel-item--on" : ""}`}
+                  onClick={() => setCastOpen((c) => !c)}
+                >
+                  <span className="tv-channel-num">TV</span>
+                  {castPrefs.deviceName || "Receiver"}
+                  <span className="tv-qopt-hint">{castPrefs.profile.label}</span>
+                </button>
+                {castOpen && (
+                  <>
+                    {[CAST_PROFILES.baseline, CAST_PROFILES.hevc4k].map((p) => (
+                      <button
+                        key={p.key}
+                        className={`tv-channel-item tv-channel-item--qopt${
+                          castPrefs.profile.key === p.key ? " tv-channel-item--on" : ""
+                        }`}
+                        onClick={() => castPrefs.selectProfile(p.key)}
+                      >
+                        <span className="tv-channel-num">·</span>
+                        {p.label}
+                        <span className="tv-qopt-hint">{p.hint}</span>
+                      </button>
+                    ))}
+                    <button
+                      className={`tv-channel-item tv-channel-item--qopt${
+                        castPrefs.dolby ? " tv-channel-item--on" : ""
+                      }`}
+                      onClick={castPrefs.toggleDolby}
+                    >
+                      <span className="tv-channel-num">·</span>
+                      Dolby pass-through
+                      <span className="tv-qopt-hint">only with a receiver</span>
+                    </button>
+                  </>
+                )}
+              </>
+            )}
             {audioTracks.length > 1 && (
               <>
                 <button
@@ -1330,7 +1675,7 @@ function TvPage({ userData }) {
                 </button>
                 {subsOpen && (
                   <>
-                    {subtitleOptions(subtitleTracks, subtitleIndex).map((t) => (
+                    {subtitleOptions(castableSubtitleTracks, subtitleIndex).map((t) => (
                       <button
                         key={t.index ?? "off"}
                         className={`tv-channel-item tv-channel-item--qopt${t.selected ? " tv-channel-item--on" : ""}`}
@@ -1341,6 +1686,7 @@ function TvPage({ userData }) {
                         {t.hint && <span className="tv-qopt-hint">{t.hint}</span>}
                       </button>
                     ))}
+                    {castSubtitleNote && <div className="tv-qopt-note">{castSubtitleNote}</div>}
                     {/* subtitle timing fix — soft text tracks only (client-side re-time, per-viewer) */}
                     {activeTextSub && (
                       <SubtitleSyncControls
@@ -1593,7 +1939,7 @@ function TvPage({ userData }) {
             <button
               className={`tv-bar-icon-btn${muted || volume === 0 ? " tv-bar-icon-btn--pulse" : ""}`}
               onClick={(e) => { e.stopPropagation(); toggleMute(); }}
-              title={muted ? "Unmute" : "Mute"}
+              title={shownMuted ? "Unmute" : "Mute"}
             >
               {volumeIcon}
             </button>
@@ -1603,14 +1949,36 @@ function TvPage({ userData }) {
               min="0"
               max="1"
               step="0.01"
-              value={muted ? 0 : volume}
+              value={shownMuted ? 0 : shownVolume}
               onChange={(e) => changeVolume(parseFloat(e.target.value))}
               onClick={(e) => e.stopPropagation()}
               aria-label="Volume"
             />
           </div>
 
-          {pip.supported && (
+          {/* Cast / AirPlay. At most one can ever be supported on a given browser — Apple doesn't
+              allow the Cast SDK on iOS, and no Chromium browser has the webkit AirPlay API. */}
+          {cast.supported && cast.state !== "no-devices" && cast.state !== "unavailable" && (
+            <button
+              className={`tv-bar-icon-btn${casting ? " tv-bar-icon-btn--on" : ""}`}
+              onClick={(e) => { e.stopPropagation(); casting ? cast.disconnect() : cast.connect(); }}
+              title={casting ? `Casting to ${castPrefs.deviceName || "the TV"}` : "Play on a TV"}
+            >
+              <span className="tv-glyph-cast" />
+            </button>
+          )}
+
+          {airplay.supported && airplay.available && !casting && (
+            <button
+              className={`tv-bar-icon-btn${airplay.active ? " tv-bar-icon-btn--on" : ""}`}
+              onClick={(e) => { e.stopPropagation(); airplay.show(); }}
+              title="Play on a TV (AirPlay)"
+            >
+              <span className="tv-glyph-airplay" />
+            </button>
+          )}
+
+          {pip.supported && !casting && (
             <button
               className={`tv-bar-icon-btn${pip.active ? " tv-bar-icon-btn--on" : ""}`}
               onClick={(e) => { e.stopPropagation(); pip.toggle(); }}

@@ -5,6 +5,9 @@ import { autoBpsLabel, abrProfileFor, isAutoQuality } from "../../streamAbr";
 import { useAdaptiveBitrate } from "../../useAdaptiveBitrate";
 import VideoPlayer, { formatTime, TICKS_PER_SECOND, QUALITY_LADDER } from "./VideoPlayer";
 import { formatRuntime } from "../../utils/format";
+import { useCastSender } from "../../castSender";
+import { useCastProfile } from "../../useCastProfile";
+import { castCeilingBps, castTrackDescriptors, castSubtitleTracks } from "../../castProfiles";
 import "./WatchPage.css";
 import { readStored, writeStored, STREAM_QUALITY_KEY } from "../../utils/storage";
 
@@ -133,6 +136,48 @@ function WatchPage({ userData }) {
     [kind, movieId, streamTarget.playableId, autoBps, session]
   );
 
+  // ── casting (Chromecast) ────────────────────────────────────────────────────
+  // A cast is the SAME streaming session as local playback, just decoded somewhere else: one
+  // /API/Stream/Start, one ffmpeg, one progress beat, one Stop. What changes is who negotiates it
+  // (the receiver's profile, not this browser's — castProfiles.js) and who plays it (the receiver's
+  // own player, not our hls.js). Everything else in this page is deliberately unchanged, which is
+  // why a quality/audio/subtitle change works while casting without a second code path: they all
+  // funnel through restartAtPosition, and the effect below pushes whatever session comes out of it
+  // to the receiver.
+  const [castError, setCastError] = useState(null);
+  const [castStarting, setCastStarting] = useState(false);
+  // Declared ahead of the hook because its callbacks close over them, and assigned below once the
+  // values they mirror exist. startSession reads these — it must not re-create on every cast tick.
+  const castingRef = useRef(false);
+  const castProfileRef = useRef(null);
+  const castCapsRef = useRef(null);
+  // Set once the page is on its way out, so the cast teardown can't be mistaken for the viewer
+  // stopping the cast from their TV.
+  const leavingRef = useRef(false);
+
+  const cast = useCastSender({
+    // Fires for every way a cast can end that ISN'T us: stopped from the TV, the Google Home app
+    // taking the device, the receiver rebooting. Pull playback back into this tab at the position it
+    // reached, so the film doesn't silently restart from the resume point.
+    onSessionEnded: (position) => {
+      castingRef.current = false;
+      // Leaving the page ends the cast on purpose (see the teardown effect). Falling through to a
+      // restart there would mint a fresh transcode for a page that is already gone — the exact leak
+      // the Stop beacon exists to prevent, arriving one line after it.
+      if (leavingRef.current) return;
+      setCastStarting(false);
+      setCastError(null);
+      if (position > 0) positionRef.current = position;
+      restartAtPositionRef.current?.({});
+    },
+  });
+
+  const castPrefs = useCastProfile(cast.device);
+  const casting = cast.connected;
+  castingRef.current = casting;
+  castProfileRef.current = castPrefs.profile;
+  castCapsRef.current = castPrefs.capabilities;
+
   const goBack = useCallback(() => {
     if (history.length > 1) history.goBack();
     else history.push("/");
@@ -159,10 +204,21 @@ function WatchPage({ userData }) {
           : (QUALITY_LADDER.find((q) => q.key === quality) || QUALITY_LADDER[0]).bps;
       // The lossless tier (Auto at the top, or manual "Original") carries no cap — a null bitrate tells
       // the server to copy the original video rather than re-encode it. Only finite caps go on the wire.
-      const maxBitrateBps = bps != null && isFinite(bps) ? bps : null;
+      let maxBitrateBps = bps != null && isFinite(bps) ? bps : null;
+      // Casting rewrites BOTH halves of the negotiation. The profile because the receiver decodes, not
+      // this browser (an HEVC copy to a 3rd-gen Chromecast is a black picture). The cap because the ABR
+      // ladder cannot run here at all — it drives off hls.js's bandwidth estimate and stall events, and
+      // while casting there is no hls.js in this tab; the receiver is pulling segments over its own
+      // wifi link, which this page has no instrument for. castCeilingBps pins a sane number instead of
+      // letting an Auto session hand a 23 Mbps remux to a dongle on 2.4 GHz.
+      const capabilities = castingRef.current ? castCapsRef.current : null;
+      if (castingRef.current) {
+        maxBitrateBps = castCeilingBps(castProfileRef.current, bps, isAutoQuality(quality));
+      }
       const response = await MovieAPI.startStream({
         ...streamTargetRef.current,
         maxBitrateBps,
+        capabilities,
         audioStreamIndex: audio,
         // The burned-in image subtitle (null = none), threaded through *every* (re)start so a quality
         // or audio change keeps it — and turning it off actually drops it from the transcode.
@@ -174,7 +230,14 @@ function WatchPage({ userData }) {
         const err = { status: response.status, message: body.message };
         throw err;
       }
-      return await response.json();
+      const data = await response.json();
+      // Stamp which decoder this session was negotiated for. The cast push effect keys off session
+      // IDENTITY, and entering a cast flips `casting` a beat before the re-negotiated session
+      // arrives — so without this the effect fires once on the session built for THIS BROWSER and
+      // hands the receiver an HEVC/fMP4 stream (black picture) or a direct-play .mkv url (outright
+      // load failure, which then disconnects the cast), a second before the right one replaces it.
+      data.negotiatedForCast = castingRef.current;
+      return data;
     },
     [qualityKey, audioIndex, autoBpsRef]
   );
@@ -222,7 +285,21 @@ function WatchPage({ userData }) {
 
   // ── teardown: leaving the page or closing the tab kills the transcode ──────
   useEffect(() => {
-    const onPageHide = () => stopCurrentSession(true);
+    // A cast dies with the page. The stream it is playing is THIS page's session, and the teardown
+    // below stops it — so without ending the cast too, the television would sit on a URL whose
+    // transcode has just been killed and stall a few seconds later with no explanation. Keeping the
+    // cast alive instead would mean owning the session outside the page's lifetime (a background
+    // controller, a re-attachable session, a "still casting" bar on every other page), which is a
+    // larger feature than this one. Ending it is the honest half.
+    const endCast = () => {
+      if (!castingRef.current) return;
+      leavingRef.current = true;
+      cast.disconnect();
+    };
+    const onPageHide = () => {
+      endCast();
+      stopCurrentSession(true);
+    };
     const onVisibility = () => {
       // A backgrounded tab reports where it is so server throttling stays honest.
       if (document.visibilityState === "hidden" && sessionRef.current) {
@@ -239,8 +316,12 @@ function WatchPage({ userData }) {
     return () => {
       window.removeEventListener("pagehide", onPageHide);
       document.removeEventListener("visibilitychange", onVisibility);
+      endCast();
       stopCurrentSession(true);
     };
+    // cast.disconnect is a stable useCallback, so naming `cast` here would re-run this teardown on
+    // every remote-player tick — stopping the session it is meant to protect, once a second.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stopCurrentSession]);
 
   // ── player callbacks ────────────────────────────────────────────────────────
@@ -273,19 +354,36 @@ function WatchPage({ userData }) {
         // minted (don't leave it for the 60s reaper) and bail without stomping the newer session.
         if (seq !== restartSeqRef.current) {
           MovieAPI.stopStream({ playSessionId: next.playSessionId, ...streamTargetRef.current });
-          return;
+          return null;
         }
         setStartAt(position);
         setSession(next);
+        return next;
       } catch (err) {
-        if (seq !== restartSeqRef.current) return;
+        if (seq !== restartSeqRef.current) return null;
         setError(err);
         setPhase("error");
+        return null;
       }
     },
     [startSession, stopCurrentSession]
   );
   restartAtPositionRef.current = restartAtPosition;
+
+  // Entering a cast re-negotiates the session for the RECEIVER at the current position — a different
+  // device profile and a different cap, which is a different TranscodingUrl. LEAVING is deliberately
+  // not handled here: it goes through the sender's onSessionEnded, which is the only path that also
+  // covers the endings this tab never initiates (stopped from the TV, device taken by the Home app,
+  // receiver rebooted).
+  const wasCastingRef = useRef(false);
+  useEffect(() => {
+    if (casting === wasCastingRef.current) return;
+    wasCastingRef.current = casting;
+    if (!casting) return;
+    setCastError(null);
+    setCastStarting(true);
+    restartAtPosition({});
+  }, [casting, restartAtPosition]);
 
   const handleSelectQuality = useCallback(
     (rung) => {
@@ -323,9 +421,14 @@ function WatchPage({ userData }) {
       if (nextBurn !== burnedSubRef.current) {
         burnedSubRef.current = nextBurn;
         restartAtPosition();
+        return;
       }
+      // A sidecar VTT change costs no restart on either path. Locally the <track> element swaps
+      // mode; on a cast the receiver was handed EVERY castable VTT track in the load request, so
+      // this only tells it which one to show.
+      if (casting) cast.setActiveTextTrack(track?.deliveryUrl ? index : null);
     },
-    [session, restartAtPosition]
+    [session, restartAtPosition, casting, cast]
   );
 
   const handleEnded = useCallback(
@@ -449,6 +552,132 @@ function WatchPage({ userData }) {
   const durationSeconds = session ? session.durationTicks / TICKS_PER_SECOND : 0;
   const resumeSeconds = session?.resumePositionTicks ? session.resumePositionTicks / TICKS_PER_SECOND : 0;
 
+  // ── what the receiver gets ─────────────────────────────────────────────────
+  // Only the tracks a Default Media Receiver can actually render survive to the cast menu; the
+  // dropped ones become a note rather than dead options (see castSubtitleTracks).
+  const castSubs = useMemo(
+    () => castSubtitleTracks(session?.subtitleTracks),
+    [session]
+  );
+  const effectiveSubtitleIndex = subtitleIndex ?? session?.selectedSubtitleIndex ?? null;
+
+  // Push every session to the receiver — the first one and every restart a quality / audio /
+  // subtitle / cast-profile change produces. Routing them all through one effect keyed on the
+  // session object's identity is what makes those controls work while casting with no parallel
+  // implementation: they already end in a new `session`, and a new session is a new load.
+  useEffect(() => {
+    // negotiatedForCast, not just `casting`: only a session actually built for the receiver may be
+    // handed to it (see the stamp in startSession).
+    if (!casting || !session?.negotiatedForCast || phase !== "playing") return undefined;
+    let cancelled = false;
+    const activeTrack = castSubs.tracks.find(
+      (t) => t.index === effectiveSubtitleIndex && !!t.deliveryUrl
+    );
+    cast
+      .loadMedia({
+        url: session.hlsUrl,
+        isHls: session.isHls !== false,
+        // positionRef, not startAt: on the very first cast this is where local playback had got to,
+        // and startAt still holds whatever the page opened at.
+        startTime: positionRef.current,
+        title,
+        subtitle: metaLine,
+        poster,
+        durationSeconds,
+        tracks: castTrackDescriptors(session.subtitleTracks),
+        activeTrackId: activeTrack ? activeTrack.index : null,
+      })
+      .then(() => {
+        if (!cancelled) setCastStarting(false);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setCastStarting(false);
+        // The overwhelmingly likely cause of a load failure is the receiver being unable to FETCH
+        // the stream — which on this stack means the gateway's CORS allow-list doesn't include the
+        // cast receiver origin, or the gateway isn't reachable from the TV's network position. The
+        // SDK's error is a bare code, so the message says the useful part instead.
+        setCastError(
+          `The TV couldn't load this stream${err?.message ? ` (${err.message})` : ""}. ` +
+            "Playing here instead."
+        );
+        cast.disconnect();
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [casting, session, phase]);
+
+  // The film running out on the receiver. There is no remote "ended" event in the mirrored player
+  // surface, so the sender reconstructs it from the receiver's own idleReason; this just routes it
+  // into the same handler local playback uses (which also handles rolling into the next part).
+  const castEndedRef = useRef(false);
+  const castHadMediaRef = useRef(false);
+  useEffect(() => {
+    if (!casting) {
+      castEndedRef.current = false;
+      castHadMediaRef.current = false;
+      return;
+    }
+    if (cast.remote.mediaLoaded) {
+      castHadMediaRef.current = true;
+      castEndedRef.current = false;
+      return;
+    }
+    // Nothing loaded. FINISHED only means OUR film ended if this cast has actually held it: a
+    // receiver can be sitting on a FINISHED idleReason from whatever the household watched before we
+    // connected, and reading that at connect time would roll the credits before the first frame.
+    // (A mid-film restart passes through un-loaded too, but with INTERRUPTED, not FINISHED.)
+    if (!castHadMediaRef.current || !cast.remote.finished || castEndedRef.current) return;
+    castEndedRef.current = true;
+    handleEnded(cast.remote.currentTime || durationSeconds);
+  }, [casting, cast.remote.mediaLoaded, cast.remote.finished, cast.remote.currentTime,
+    durationSeconds, handleEnded]);
+
+  // Changing the receiver's profile (or the Dolby switch) changes the DeviceProfile the server
+  // negotiates from, so it can only take effect on a fresh session — restart, don't reload.
+  const castNegotiationRef = useRef(null);
+  useEffect(() => {
+    if (!casting) {
+      castNegotiationRef.current = castPrefs.negotiationKey;
+      return;
+    }
+    if (castNegotiationRef.current === castPrefs.negotiationKey) return;
+    castNegotiationRef.current = castPrefs.negotiationKey;
+    restartAtPosition({});
+  }, [casting, castPrefs.negotiationKey, restartAtPosition]);
+
+  // The single prop the player takes for everything cast-related: whether the button should exist,
+  // what it's connected to, the mirrored transport, and the receiver-specific settings. The player
+  // renders and routes; every decision above stays here, with the session that owns it.
+  const castProp = useMemo(
+    () => ({
+      supported: cast.supported && cast.state !== "no-devices" && cast.state !== "unavailable",
+      connected: casting,
+      connecting: cast.state === "connecting" || castStarting,
+      deviceName: castPrefs.deviceName,
+      videoCapable: cast.device ? cast.device.videoCapable : true,
+      error: castError || cast.error,
+      profileKey: castPrefs.profile.key,
+      dolbyPassthrough: castPrefs.dolby,
+      onSelectProfile: castPrefs.selectProfile,
+      onToggleDolby: castPrefs.toggleDolby,
+      connect: cast.connect,
+      disconnect: cast.disconnect,
+      subtitleNote: castSubs.dropped.length
+        ? `${castSubs.dropped.length} subtitle track${castSubs.dropped.length > 1 ? "s" : ""} can't be shown on a TV`
+        : null,
+      remote: cast.remote,
+      playPause: cast.playPause,
+      seek: cast.seek,
+      setVolume: cast.setVolume,
+      toggleMuted: cast.toggleMuted,
+      setPlaybackRate: cast.setPlaybackRate,
+    }),
+    [cast, casting, castStarting, castError, castPrefs, castSubs.dropped.length]
+  );
+
   const errorCopy = (() => {
     if (!error) return null;
     if (error.status === 401) return { head: "Please sign in", body: "You need to be signed in to enter the screening room." };
@@ -542,9 +771,10 @@ function WatchPage({ userData }) {
           qualityKey={qualityKey}
           qualityDetail={autoBpsLabel(autoBps)}
           audioTracks={session.audioTracks || []}
-          subtitleTracks={session.subtitleTracks || []}
+          subtitleTracks={casting ? castSubs.tracks : session.subtitleTracks || []}
           selectedAudioIndex={audioIndex ?? session.selectedAudioIndex ?? null}
-          selectedSubtitleIndex={subtitleIndex ?? session.selectedSubtitleIndex ?? null}
+          selectedSubtitleIndex={effectiveSubtitleIndex}
+          cast={castProp}
           onSelectQuality={handleSelectQuality}
           onSelectAudio={handleSelectAudio}
           onSelectSubtitle={handleSelectSubtitle}

@@ -1,16 +1,18 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Hls from "hls.js";
-import { createHls, bandwidthSample } from "../../streamEngine";
+import { createHls, bandwidthSample, canRemotePlay } from "../../streamEngine";
 import { formatClock as formatTime } from "../../utils/format";
 import {
   QUALITY_LADDER, codecLabel, channelLayout, deliveredLayout, formatPlaying,
   qualityOptions, audioOptions, subtitleOptions, deliveredAudio,
 } from "../../playerMenuModel";
+import { CAST_PROFILES } from "../../castProfiles";
 import { useIdleChrome } from "../../useIdleChrome";
 import { useVideoIncidents } from "../../videoIncidents";
 import { useWakeLock } from "../../useWakeLock";
 import { useMediaSession } from "../../useMediaSession";
 import { usePictureInPicture } from "../../usePictureInPicture";
+import { useAirPlay } from "../../useAirPlay";
 import { usePlaybackRate, PLAYBACK_RATES } from "../../usePlaybackRate";
 import { usePgsSubtitle } from "../../usePgsSubtitle";
 import { useAssSubtitle } from "../../useAssSubtitle";
@@ -25,6 +27,10 @@ import { readStored, writeStored } from "../../utils/storage";
 export { QUALITY_LADDER, codecLabel, channelLayout, deliveredLayout, formatPlaying };
 
 const TICKS_PER_SECOND = 10_000_000;
+
+// The receiver profiles offered in the menu, in the order they're shown: safest first, so a viewer
+// who doesn't know what their dongle is keeps the one that works everywhere.
+const CAST_PROFILE_OPTIONS = [CAST_PROFILES.baseline, CAST_PROFILES.hevc4k];
 
 /**
  * The screening-room player (streaming-plan.md §7). Self-contained dark UI —
@@ -58,6 +64,7 @@ function VideoPlayer({
   onEnded,
   bufferingLabel = null,
   incident = null,
+  cast = null,
   combinedDuration = 0,
   partOffset = 0,
   partBoundaries = [],
@@ -88,6 +95,33 @@ function VideoPlayer({
   const [hoverX, setHoverX] = useState(0);
   const [flash, setFlash] = useState(null); // transient center icon: 'play' | 'pause'
   const [fatalError, setFatalError] = useState(null);
+  // Whether the CURRENT source could be handed to an AirPlay receiver. Set by the source effect
+  // because only it knows which of the three attach paths was taken (see canRemotePlay); state, not
+  // a ref, because the AirPlay button's existence depends on it.
+  const [remotePlayable, setRemotePlayable] = useState(true);
+
+  // ── casting ─────────────────────────────────────────────────────────────────
+  // While casting, THE RECEIVER IS THE PLAYER. It holds the clock, the buffer, the volume and the
+  // decode; this <video> holds nothing at all, because the source effect below never attaches to it.
+  // So every transport call and every readout has to come from the mirrored remote player instead.
+  //
+  // That switch is deliberately this one flag applied at each site, rather than a transport
+  // abstraction both paths implement. The two are not symmetric — the local path has a buffered
+  // range, a playback rate, PiP, client-rendered PGS/ASS overlays and a subtitle-timing nudge, and
+  // the remote path has none of those — so an abstraction would spend most of its surface
+  // documenting which half doesn't apply. Reading `casting ? … : …` at the six places it matters is
+  // shorter and truer than that.
+  const casting = !!cast?.connected;
+  const remote = cast?.remote || null;
+  const castTime = remote?.currentTime || 0;
+  // A cast is "playing" only once the receiver actually holds the media: between requestSession and
+  // the load resolving, isPaused is false but nothing is on screen, and treating that as playing
+  // fades the chrome out over a title card.
+  const castPlaying = !!(remote?.mediaLoaded && !remote.paused);
+  // The 10s progress beat and the native event handlers are not re-bound per render, so the cast
+  // position has to reach them through a ref rather than a closure.
+  const castStateRef = useRef({ casting: false, time: 0, paused: false });
+  castStateRef.current = { casting, time: castTime, paused: !!remote?.paused };
 
   // ── player time vs content time ─────────────────────────────────────────────
   // An HLS session that starts mid-file (a resume, a seek, an ABR/quality restart) lands on the
@@ -164,13 +198,28 @@ function VideoPlayer({
   // single-file titles/episodes, collapsing every expression below back to plain local time.
   const combined = combinedDuration > 0;
   const displayDuration = combined ? combinedDuration : duration;
-  const globalCurrent = (combined ? partOffset : 0) + currentTime;
+  // The clock comes from whoever is actually playing. Everything downstream (the rail, the readout,
+  // the scrub target, the keyboard percentage jumps) reads these, so this is the only place the two
+  // playback paths have to be told apart for timing.
+  const effectiveCurrentTime = casting ? castTime : currentTime;
+  const effectivePlaying = casting ? castPlaying : playing;
+  const globalCurrent = (combined ? partOffset : 0) + effectiveCurrentTime;
   const shownTime = scrubbing && scrubTime != null ? scrubTime : globalCurrent;
 
   // ── source lifecycle ────────────────────────────────────────────────────────
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !src) return undefined;
+    // Casting: attach nothing. The previous run's cleanup has already destroyed the hls.js instance
+    // (or cleared the src), so returning here leaves the element genuinely empty rather than quietly
+    // pulling a second copy of the same transcode down this tab's connection while the TV pulls the
+    // first — which would double the load on the same ffmpeg and the same uplink for a picture
+    // nobody is looking at.
+    if (casting) {
+      setBuffering(false);
+      setFatalError(null);
+      return undefined;
+    }
 
     setBuffering(true);
     setFatalError(null);
@@ -209,6 +258,7 @@ function VideoPlayer({
       // Direct play: the original file, downloaded progressively via range requests — no
       // transcode, near-instant start. Seeking/startAt are plain currentTime (range fetches).
       video.src = src;
+      setRemotePlayable(true);
       video.addEventListener("loadedmetadata", seekToStart, { once: true });
     } else if (Hls.isSupported()) {
       // Shared engine: buffer config + error recovery live in createHls (see streamEngine.js) so the
@@ -232,6 +282,7 @@ function VideoPlayer({
         },
       });
       hlsRef.current = hls;
+      setRemotePlayable(canRemotePlay(hls));
       // watchdog: remember the most recent of the hls.js events that can move/flush the playhead, so a
       // backward jump can be correlated with (e.g.) a manifest re-parse or buffer flush that just fired.
       const recordHls = (name) => () => { lastHlsEventRef.current = { name, at: performance.now() }; };
@@ -243,6 +294,7 @@ function VideoPlayer({
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
       // Safari: native HLS.
       video.src = src;
+      setRemotePlayable(true);
       video.addEventListener("loadedmetadata", seekToStart, { once: true });
     } else {
       setFatalError("This browser can't play HLS video.");
@@ -257,7 +309,7 @@ function VideoPlayer({
         video.load();
       }
     };
-  }, [src, startAt, isHls]);
+  }, [src, startAt, isHls, casting]);
 
   // ── element events ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -296,16 +348,24 @@ function VideoPlayer({
         );
       }
     };
+    // Every one of these reports a POSITION, so each has to stand down while casting: the element is
+    // detached and sitting at 0, and detaching it (removeAttribute + load) is itself capable of
+    // firing `pause`. One stray report at 0 overwrites the resume point for the whole title.
     const onPlay = () => {
+      if (castStateRef.current.casting) return;
       setPlaying(true);
       setNeedsTap(false);
       onProgress?.(contentTimeOf(video), false);
     };
     const onPause = () => {
+      if (castStateRef.current.casting) return;
       setPlaying(false);
       onProgress?.(contentTimeOf(video), true);
     };
-    const onSeeked = () => onProgress?.(contentTimeOf(video), video.paused);
+    const onSeeked = () => {
+      if (castStateRef.current.casting) return;
+      onProgress?.(contentTimeOf(video), video.paused);
+    };
     const onWaiting = () => setBuffering(true);
     const onPlaying = () => setBuffering(false);
     const onBufferProgress = () => {
@@ -315,7 +375,10 @@ function VideoPlayer({
         /* transient invalid ranges while switching sources */
       }
     };
-    const onVideoEnded = () => onEnded?.(contentTimeOf(video));
+    const onVideoEnded = () => {
+      if (castStateRef.current.casting) return; // the receiver's end-of-film is the page's to detect
+      onEnded?.(contentTimeOf(video));
+    };
 
     video.addEventListener("timeupdate", onTime);
     video.addEventListener("seeking", onSeekingWatch);
@@ -349,6 +412,16 @@ function VideoPlayer({
   // phase, so leaving/ending unmounts it and clears this interval.
   useEffect(() => {
     const beat = setInterval(() => {
+      // Casting: report where the RECEIVER is. This branch is load-bearing, and its absence would
+      // be near-invisible — the detached element sits at currentTime 0, so the beat would keep
+      // Jellyfin's ping timeout happy (nothing would stall, nothing would error) while quietly
+      // rewriting the viewer's resume point to 0:00 every ten seconds. They'd only find out when
+      // they came back to finish the film.
+      const cs = castStateRef.current;
+      if (cs.casting) {
+        onProgress?.(cs.time, cs.paused);
+        return;
+      }
       const video = videoRef.current;
       if (video) onProgress?.(contentTimeOf(video), video.paused);
     }, 10_000);
@@ -373,13 +446,17 @@ function VideoPlayer({
 
   // ── volume ──────────────────────────────────────────────────────────────────
   useEffect(() => {
+    // While casting the receiver owns its own volume (it's a property of the room, not of this tab)
+    // and the controls below drive it directly — pushing this tab's remembered level at it here
+    // would fight the viewer's TV remote and the Google Home app for control of the same number.
+    if (casting) return;
     const video = videoRef.current;
     if (video) {
       video.volume = volume;
       video.muted = muted;
     }
     writeStored("PlayerVolume", volume);
-  }, [volume, muted]);
+  }, [volume, muted, casting]);
 
   // ── text subtitles (sidecar VTT) ────────────────────────────────────────────
   // Only the SELECTED sub is mounted as a <track> at all (see the render). Setting the others'
@@ -402,10 +479,15 @@ function VideoPlayer({
 
   // The currently-selected SOFT subtitle (sidecar VTT). null when off, a burned-in image sub, or a
   // client-rendered PGS sub — only soft text cues can be re-timed client-side, so the delay UI gates here.
+  // Null while casting: all three of the client-side subtitle facilities below (the timing nudge, the
+  // libpgs canvas, the libass renderer) paint onto or re-time cues on THIS element, and the picture is
+  // on a television. The receiver renders the VTT it was handed and nothing else can reach it.
   const activeTextSub =
-    subtitleTracks.find(
-      (t) => t.index === selectedSubtitleIndex && !!t.deliveryUrl && t.kind !== "image-pgs" && t.kind !== "ass"
-    ) || null;
+    (!casting &&
+      subtitleTracks.find(
+        (t) => t.index === selectedSubtitleIndex && !!t.deliveryUrl && t.kind !== "image-pgs" && t.kind !== "ass"
+      )) ||
+    null;
 
   // Vertical lift for the showing track's cues. Size/color/font/edge/box ride on the injected
   // ::cue rule from useSubtitleStyle; position can't be set via ::cue, so it's applied per-cue here.
@@ -414,11 +496,11 @@ function VideoPlayer({
   // Client-rendered PGS (Blu-ray bitmap) subs — drawn over the video by libpgs so the server copies the
   // video instead of burning the bitmap in. Active only while the selected track is a PGS image sub.
   const activePgsSub = subtitleTracks.find((t) => t.index === selectedSubtitleIndex && t.kind === "image-pgs");
-  usePgsSubtitle(videoRef, activePgsSub ? activePgsSub.deliveryUrl : null, timelineOffset);
+  usePgsSubtitle(videoRef, activePgsSub && !casting ? activePgsSub.deliveryUrl : null, timelineOffset);
 
   // Client-rendered ASS/SSA via libass — full typesetting, also keeps the video copied (no flatten to VTT).
   const activeAssSub = subtitleTracks.find((t) => t.index === selectedSubtitleIndex && t.kind === "ass");
-  useAssSubtitle(videoRef, activeAssSub ? activeAssSub.deliveryUrl : null, timelineOffset);
+  useAssSubtitle(videoRef, activeAssSub && !casting ? activeAssSub.deliveryUrl : null, timelineOffset);
 
   // Keep the screen awake during a film — shared with the TV player.
   useWakeLock();
@@ -437,6 +519,14 @@ function VideoPlayer({
 
   // ── transport ───────────────────────────────────────────────────────────────
   const togglePlay = useCallback(() => {
+    if (casting) {
+      // The receiver's own state decides which way this goes, so the bloom follows it rather than
+      // the local element (which is paused-and-empty and would flash "play" every time).
+      setFlash(remote?.paused ? "play" : "pause");
+      setTimeout(() => setFlash(null), 500);
+      cast.playPause();
+      return;
+    }
     const video = videoRef.current;
     if (!video) return;
     if (video.paused) {
@@ -447,20 +537,29 @@ function VideoPlayer({
       setFlash("pause");
     }
     setTimeout(() => setFlash(null), 500);
-  }, []);
+  }, [casting, cast, remote]);
 
   const seekTo = useCallback(
     (seconds) => {
+      if (casting) {
+        cast.seek(Math.min(Math.max(seconds, 0), duration || seconds));
+        return;
+      }
       const video = videoRef.current;
       if (!video) return;
       const clamped = Math.min(Math.max(seconds, 0), duration || video.duration || seconds);
       video.currentTime = clamped;
       setCurrentTime(clamped);
     },
-    [duration]
+    [duration, casting, cast]
   );
 
-  const seekBy = useCallback((delta) => seekTo((videoRef.current?.currentTime ?? 0) + delta), [seekTo]);
+  // Relative seeks read the PLAYING clock, not the element's: while casting the element sits at 0,
+  // so a keyboard "+10s" would jump to 0:10 of the film rather than ten seconds further on.
+  const seekBy = useCallback(
+    (delta) => seekTo((casting ? castTime : videoRef.current?.currentTime ?? 0) + delta),
+    [seekTo, casting, castTime]
+  );
 
   // Seek to a point on the (possibly combined) timeline: inside the current part it's a plain local
   // seek (no reload); a position in another part is handed up so the page loads that part at the
@@ -481,6 +580,55 @@ function VideoPlayer({
   // ── OS media integration + extra playback controls (shared hooks) ────────────
   const { rate: playbackRate, setRate: setPlaybackRate, cycleRate } = usePlaybackRate(videoRef, src);
   const pip = usePictureInPicture(videoRef);
+  // The iOS route to a television. Cast and AirPlay never coexist on one browser — Apple doesn't
+  // allow the Cast SDK on iOS, and no Chromium browser has the webkit AirPlay API — so at most one
+  // of these two buttons can ever be `supported`, and neither needs to know about the other.
+  const airplay = useAirPlay(videoRef, remotePlayable);
+
+  // Volume, mute and speed all go to whichever device is actually making the sound. The buttons, the
+  // menu and the keyboard route through these three, so they can't end up disagreeing about which
+  // player they're controlling — the keyboard silently moving a detached element's volume while the
+  // button moved the receiver's would be a maddening bug to report.
+  //
+  // These sit BELOW usePlaybackRate on purpose: stepRate names cycleRate in its dependency array,
+  // which is evaluated during render, so declaring it any earlier is a temporal-dead-zone crash on
+  // mount rather than a lint nit.
+  const nudgeVolume = useCallback(
+    (delta) => {
+      if (casting) {
+        cast.setVolume(Math.min(Math.max((remote?.volume ?? 1) + delta, 0), 1));
+        return;
+      }
+      if (delta > 0) setMuted(false);
+      setVolume((v) => Math.min(Math.max(v + delta, 0), 1));
+    },
+    [casting, cast, remote]
+  );
+
+  const toggleMuted = useCallback(() => {
+    if (casting) {
+      cast.toggleMuted();
+      return;
+    }
+    setMuted((m) => !m);
+  }, [casting, cast]);
+
+  // While casting, step the RECEIVER's reported rate through the same ladder the menu offers —
+  // usePlaybackRate only ever touches the local element.
+  const stepRate = useCallback(
+    (direction) => {
+      if (!casting) {
+        cycleRate(direction);
+        return;
+      }
+      const current = remote?.playbackRate ?? 1;
+      const from = PLAYBACK_RATES.indexOf(current);
+      const start = from >= 0 ? from : PLAYBACK_RATES.indexOf(1);
+      const next = PLAYBACK_RATES[Math.min(Math.max(start + direction, 0), PLAYBACK_RATES.length - 1)];
+      if (next !== current) cast.setPlaybackRate(next);
+    },
+    [casting, cast, remote, cycleRate]
+  );
   // Lock-screen / media-key now-playing + an accurate position scrubber (setPositionState lives in the
   // hook). Defined here so the seek handlers it references are already in scope.
   useMediaSession({
@@ -500,9 +648,16 @@ function VideoPlayer({
   // ── controls visibility: fade like house lights (useIdleChrome — shared with the TV player).
   // Menu/scrub holds stay at the render gate below, exactly as before: closing the menu drops the
   // chrome immediately rather than restarting a countdown.
-  const { visible: controlsVisible, wake: wakeControls, hide: hideControls } = useIdleChrome({ videoRef });
+  const { visible: controlsVisible, wake: wakeControls, hide: hideControls } = useIdleChrome({
+    videoRef,
+    // Casting holds the chrome up: what's behind it is a status plate, not a picture, so fading the
+    // controls away would leave a black rectangle with nothing to reveal. This already happens by
+    // accident — the detached element reads as paused, which the hook holds for — and saying it out
+    // loud is what keeps it true if that check ever changes.
+    holdWhile: () => castStateRef.current.casting,
+  });
 
-  const hideChrome = playing && !controlsVisible && !openMenu && !scrubbing;
+  const hideChrome = effectivePlaying && !controlsVisible && !openMenu && !scrubbing;
 
   // ── keyboard ────────────────────────────────────────────────────────────────
   const onKeyDown = useCallback(
@@ -528,20 +683,19 @@ function VideoPlayer({
           seekBy(10);
           break;
         case "ArrowUp":
-          setMuted(false);
-          setVolume((v) => Math.min(1, v + 0.05));
+          nudgeVolume(0.05);
           break;
         case "ArrowDown":
-          setVolume((v) => Math.max(0, v - 0.05));
+          nudgeVolume(-0.05);
           break;
         case "m":
-          setMuted((m) => !m);
+          toggleMuted();
           break;
         case "<":
-          cycleRate(-1);
+          stepRate(-1);
           break;
         case ">":
-          cycleRate(1);
+          stepRate(1);
           break;
         case "f":
           toggleFullscreen();
@@ -571,7 +725,7 @@ function VideoPlayer({
         wakeControls();
       }
     },
-    [togglePlay, seekBy, seekDisplay, toggleFullscreen, displayDuration, subtitleTracks, selectedSubtitleIndex, onSelectSubtitle, wakeControls, activeTextSub, nudgeSubtitle, cycleRate]
+    [togglePlay, seekBy, seekDisplay, toggleFullscreen, displayDuration, subtitleTracks, selectedSubtitleIndex, onSelectSubtitle, wakeControls, activeTextSub, nudgeSubtitle, nudgeVolume, toggleMuted, stepRate]
   );
 
   // Listen on window (not just the focused stage) so the spacebar pauses the moment the player is up —
@@ -635,8 +789,12 @@ function VideoPlayer({
   };
 
   const playedPct = displayDuration > 0 ? (shownTime / displayDuration) * 100 : 0;
+  // No buffered bar while casting: the receiver's buffer is not something the sender API reports,
+  // and a bar frozen at 0% reads as "nothing has loaded". Better to show none than to show a lie.
   const bufferedPct =
-    displayDuration > 0 ? Math.min((((combined ? partOffset : 0) + bufferedEnd) / displayDuration) * 100, 100) : 0;
+    casting || displayDuration <= 0
+      ? 0
+      : Math.min((((combined ? partOffset : 0) + bufferedEnd) / displayDuration) * 100, 100);
 
   return (
     /* eslint-disable jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events, jsx-a11y/media-has-caption */
@@ -647,17 +805,43 @@ function VideoPlayer({
       role="application"
       aria-label={`Video player: ${title || ""}`}
       onMouseMove={wakeControls}
-      onMouseLeave={() => playing && hideControls()}
+      onMouseLeave={() => effectivePlaying && hideControls()}
     >
       <video ref={videoRef} className="vp-video" poster={poster} crossOrigin="anonymous" playsInline onClick={onSurfaceClick}>
-        {/* The selected sidecar-VTT track only — mounting the whole list fetches the whole list. */}
-        {subtitleTracks
-          .filter((t) => t.deliveryUrl && t.kind !== "image-pgs" && t.kind !== "ass")
-          .filter((t) => String(t.index) === String(selectedSubtitleIndex))
-          .map((t) => (
-            <track key={t.index} id={String(t.index)} kind="subtitles" label={t.label} src={t.deliveryUrl} srcLang={t.language || "en"} />
-          ))}
+        {/* The selected sidecar-VTT track only — mounting the whole list fetches the whole list.
+            None at all while casting: the receiver was handed its own copies of these urls in the
+            load request, and a <track> on a detached element would pull the cue file down a second
+            time (through the same ffmpeg) to render it for nobody. */}
+        {!casting &&
+          subtitleTracks
+            .filter((t) => t.deliveryUrl && t.kind !== "image-pgs" && t.kind !== "ass")
+            .filter((t) => String(t.index) === String(selectedSubtitleIndex))
+            .map((t) => (
+              <track key={t.index} id={String(t.index)} kind="subtitles" label={t.label} src={t.deliveryUrl} srcLang={t.language || "en"} />
+            ))}
       </video>
+
+      {/* The picture is on the television — say so, and say which one. An empty black stage with a
+          working scrub bar reads as a broken player. */}
+      {casting && (
+        <div className="vp-castplate">
+          <div className="vp-castplate-mark" aria-hidden="true">
+            <span className="vp-castplate-screen" />
+            <span className="vp-castplate-wave" />
+          </div>
+          <div className="vp-castplate-head">{cast.connecting ? "Connecting…" : "Playing on"}</div>
+          <div className="vp-castplate-device">{cast.deviceName || "the TV"}</div>
+          {cast.error && <div className="vp-castplate-error">{cast.error}</div>}
+          {!cast.videoCapable && (
+            <div className="vp-castplate-error">
+              This device only plays audio — pick one with a screen to see the picture.
+            </div>
+          )}
+          <button className="vp-castplate-stop" onClick={cast.disconnect}>
+            Stop casting
+          </button>
+        </div>
+      )}
 
       {/* transient center play/pause bloom */}
       {flash && (
@@ -678,15 +862,17 @@ function VideoPlayer({
 
       {/* buffering: three marquee bulbs — labeled when the page knows WHY (an ABR quality switch),
           so a deliberate restart doesn't read as a failure and invite a refresh (2026-08-16). */}
-      {buffering && !needsTap && !fatalError && (
+      {(casting ? !!remote?.buffering : buffering) && !needsTap && !fatalError && (
         <div className="vp-bulbs" aria-label={bufferingLabel || "Buffering"}>
           <div className="vp-bulbs-row"><span /><span /><span /></div>
           {bufferingLabel && <div className="vp-bulbs-label">{bufferingLabel}</div>}
         </div>
       )}
 
-      {/* autoplay was blocked — one gold tap target */}
-      {needsTap && (
+      {/* autoplay was blocked — one gold tap target. Never while casting: nothing is trying to
+          autoplay here, and a leftover flag from before the cast would put a play button over the
+          "playing on your TV" plate. */}
+      {needsTap && !casting && (
         <button className="vp-bigplay" onClick={togglePlay} aria-label="Play">
           <span className="vp-bigplay-tri" />
         </button>
@@ -739,17 +925,28 @@ function VideoPlayer({
         </div>
 
         <div className="vp-buttons">
-          <button className="vp-btn" onClick={togglePlay} aria-label={playing ? "Pause" : "Play"}>
-            {playing ? (
+          <button className="vp-btn" onClick={togglePlay} aria-label={effectivePlaying ? "Pause" : "Play"}>
+            {effectivePlaying ? (
               <span className="vp-glyph-pause"><i /><i /></span>
             ) : (
               <span className="vp-glyph-play" />
             )}
           </button>
 
+          {/* Volume drives whichever device is making the sound. While casting that's the receiver's
+              own level — the same number the TV remote and the Home app move — so it is read back
+              from the mirrored player rather than from this tab's remembered preference. */}
           <div className="vp-volume">
-            <button className="vp-btn" onClick={() => setMuted((m) => !m)} aria-label={muted ? "Unmute" : "Mute"}>
-              <span className={`vp-glyph-vol${muted || volume === 0 ? " vp-glyph-vol--off" : ""}`} />
+            <button
+              className="vp-btn"
+              onClick={toggleMuted}
+              aria-label={(casting ? remote?.muted : muted) ? "Unmute" : "Mute"}
+            >
+              <span
+                className={`vp-glyph-vol${
+                  (casting ? remote?.muted || remote?.volume === 0 : muted || volume === 0) ? " vp-glyph-vol--off" : ""
+                }`}
+              />
             </button>
             <input
               className="vp-volume-slider"
@@ -757,11 +954,16 @@ function VideoPlayer({
               min="0"
               max="1"
               step="0.02"
-              value={muted ? 0 : volume}
+              value={casting ? (remote?.muted ? 0 : remote?.volume ?? 1) : muted ? 0 : volume}
               aria-label="Volume"
               onChange={(e) => {
+                const next = parseFloat(e.target.value);
+                if (casting) {
+                  cast.setVolume(next);
+                  return;
+                }
                 setMuted(false);
-                setVolume(parseFloat(e.target.value));
+                setVolume(next);
               }}
             />
           </div>
@@ -774,7 +976,37 @@ function VideoPlayer({
 
           <div className="vp-spacer" />
 
-          {isDirectStream && qualityKey === "original" && <span className="vp-direct-badge">Direct</span>}
+          {isDirectStream && qualityKey === "original" && !casting && <span className="vp-direct-badge">Direct</span>}
+
+          {/* The cast button only exists once the SDK has found a receiver on the network — there is
+              no honest "cast unavailable" state to render, and a permanently dead button on every
+              iPhone (where the Cast SDK cannot exist at all) would be a standing bug report. */}
+          {cast?.supported && (
+            <button
+              className={`vp-btn vp-btn-cast${casting ? " vp-btn-cast--on" : ""}`}
+              onClick={() => (casting ? cast.disconnect() : cast.connect())}
+              aria-label={casting ? `Stop casting to ${cast.deviceName || "the TV"}` : "Play on a TV"}
+              title={casting ? `Casting to ${cast.deviceName || "the TV"}` : "Play on a TV"}
+              aria-pressed={casting}
+            >
+              <span className="vp-glyph-cast" />
+            </button>
+          )}
+
+          {/* AirPlay. Gated on a receiver having actually been SEEN, not just on the API existing:
+              Safari reports availability asynchronously, and an always-present button on a Mac with
+              no Apple TV in the house is a control that can only disappoint. */}
+          {airplay.supported && airplay.available && !casting && (
+            <button
+              className={`vp-btn vp-btn-airplay${airplay.active ? " vp-btn-airplay--on" : ""}`}
+              onClick={airplay.show}
+              aria-label="Play on a TV (AirPlay)"
+              title="Play on a TV (AirPlay)"
+              aria-pressed={airplay.active}
+            >
+              <span className="vp-glyph-airplay" />
+            </button>
+          )}
 
           {subtitleTracks.length > 0 && (
             <button
@@ -886,24 +1118,75 @@ function VideoPlayer({
                   </>
                 )}
 
+                {/* Which receiver profile the session was negotiated from. This is a real control,
+                    not a preference: it changes the DeviceProfile the server builds, so a wrong
+                    setting here is the difference between a picture and a black screen. It is only
+                    offered while connected, because the answer is per-TV. */}
+                {casting && (
+                  <>
+                    <div className="vp-menu-section">TV</div>
+                    {CAST_PROFILE_OPTIONS.map((p) => (
+                      <button
+                        key={p.key}
+                        role="menuitemradio"
+                        aria-checked={cast.profileKey === p.key}
+                        className={`vp-menu-item${cast.profileKey === p.key ? " vp-menu-item--on" : ""}`}
+                        onClick={() => {
+                          setOpenMenu(null);
+                          if (cast.profileKey !== p.key) cast.onSelectProfile?.(p.key);
+                        }}
+                      >
+                        <span className="vp-menu-dot" />
+                        {p.label}
+                        <span className="vp-menu-hint">{p.hint}</span>
+                      </button>
+                    ))}
+                    <button
+                      role="menuitemcheckbox"
+                      aria-checked={!!cast.dolbyPassthrough}
+                      className={`vp-menu-item${cast.dolbyPassthrough ? " vp-menu-item--on" : ""}`}
+                      onClick={() => {
+                        setOpenMenu(null);
+                        cast.onToggleDolby?.();
+                      }}
+                    >
+                      <span className="vp-menu-dot" />
+                      Dolby pass-through
+                      <span className="vp-menu-hint">only with a receiver</span>
+                    </button>
+                    {cast.subtitleNote && <div className="vp-menu-readout">{cast.subtitleNote}</div>}
+                  </>
+                )}
+
+                {/* Speed. While casting the tick follows the receiver's REPORTED rate, not the one
+                    we asked for — SET_PLAYBACK_RATE is a message a receiver may ignore, and a menu
+                    that ticks 1.5× over a film playing at normal speed is worse than one that
+                    visibly refuses to move. */}
                 <div className="vp-menu-section">Speed</div>
-                {PLAYBACK_RATES.map((r) => (
-                  <button
-                    key={r}
-                    role="menuitemradio"
-                    aria-checked={playbackRate === r}
-                    className={`vp-menu-item${playbackRate === r ? " vp-menu-item--on" : ""}`}
-                    onClick={() => {
-                      setOpenMenu(null);
-                      setPlaybackRate(r);
-                    }}
-                  >
-                    <span className="vp-menu-dot" />
-                    {r === 1 ? "Normal" : `${r}×`}
-                  </button>
-                ))}
+                {PLAYBACK_RATES.map((r) => {
+                  const on = (casting ? remote?.playbackRate ?? 1 : playbackRate) === r;
+                  return (
+                    <button
+                      key={r}
+                      role="menuitemradio"
+                      aria-checked={on}
+                      className={`vp-menu-item${on ? " vp-menu-item--on" : ""}`}
+                      onClick={() => {
+                        setOpenMenu(null);
+                        if (casting) cast.setPlaybackRate?.(r);
+                        else setPlaybackRate(r);
+                      }}
+                    >
+                      <span className="vp-menu-dot" />
+                      {r === 1 ? "Normal" : `${r}×`}
+                    </button>
+                  );
+                })}
 
                 <div className="vp-menu-section">Playing</div>
+                {casting && (
+                  <div className="vp-menu-readout">On {cast.deviceName || "the TV"}</div>
+                )}
                 <div className="vp-menu-readout">
                   {formatPlaying({
                     qualityKey,
@@ -918,7 +1201,7 @@ function VideoPlayer({
             )}
           </div>
 
-          {pip.supported && (
+          {pip.supported && !casting && (
             <button
               className={`vp-btn vp-btn-pip${pip.active ? " vp-btn-pip--on" : ""}`}
               onClick={pip.toggle}

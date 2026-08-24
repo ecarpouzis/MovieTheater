@@ -239,6 +239,29 @@ export function prefersNativeHls(video) {
   return !!video.canPlayType?.("application/vnd.apple.mpegurl");
 }
 
+/**
+ * Whether what this element is playing can be handed to a REMOTE target (AirPlay), given the hls.js
+ * instance driving it — or null when there isn't one.
+ *
+ * This is the honest gate behind the AirPlay button, and it is not the same question as "does this
+ * device have AirPlay receivers". Three cases:
+ *
+ *  - **No hls.js** (direct play, or Safari's native HLS): the element has a plain URL. AirPlay has
+ *    always worked here — the receiver just fetches it.
+ *  - **hls.js on ManagedMediaSource**: works. Apple built MMS specifically so MSE-based players on
+ *    iPhone keep AirPlay and PiP, and hls.js prefers it wherever it exists (its
+ *    `preferManagedMediaSource` default is true, which createHls leaves alone). This is the modern
+ *    iPhone/iPad case, i.e. most of the phones that will ever press the button.
+ *  - **hls.js on plain MediaSource** (desktop Safari, which has MSE but no MMS): does NOT work.
+ *    Safari cannot AirPlay MediaSource content. The device list would still report receivers, so
+ *    trusting availability alone puts a button there that yields a black television.
+ */
+export function canRemotePlay(hls) {
+  if (!hls) return true;
+  const managed = typeof self !== "undefined" ? self.ManagedMediaSource : undefined;
+  return !!managed && hls.config?.preferManagedMediaSource !== false;
+}
+
 /** Plain-src attach (direct play, or native HLS on Safari) with the matching teardown. The
  *  removeAttribute+load pair is the part everyone kept re-writing: without it the element keeps
  *  the network connection and the old frame alive after unmount. */

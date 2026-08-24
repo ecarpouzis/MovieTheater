@@ -371,10 +371,15 @@ export function deviceToken() {
   return cachedDeviceToken;
 }
 
-function startStream({ movieId = null, playableId = null, mediaFileId = null, maxBitrateBps = null, audioStreamIndex = null, subtitleStreamIndex = null, startSeconds = null, forceTranscode = false }) {
+function startStream({ movieId = null, playableId = null, mediaFileId = null, maxBitrateBps = null, audioStreamIndex = null, subtitleStreamIndex = null, startSeconds = null, forceTranscode = false, capabilities = null }) {
   // Negotiate the codec profile from this browser's real capabilities (§14.1) so
   // HEVC/AV1-capable clients avoid a needless H.264 re-encode.
-  const caps = detectStreamCapabilities();
+  //
+  // `capabilities` overrides that probe for a session this browser is not going to DECODE. Casting is
+  // the case that exists: the Chromecast is the decoder, so a profile probed from Chrome would let the
+  // server copy an HEVC source to a receiver that has never decoded one (see castProfiles.js). The
+  // shape is identical either way, so the server needs no idea which one it got.
+  const caps = capabilities || detectStreamCapabilities();
   return fetch("/API/Stream/Start", {
     method: "post",
     headers: { "Content-Type": "application/json" },

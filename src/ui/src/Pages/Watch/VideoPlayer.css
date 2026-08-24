@@ -743,6 +743,185 @@
   background: linear-gradient(to right, transparent, var(--vp-gold), transparent);
 }
 
+/* ── casting ─────────────────────────────────────────────────────────────── */
+/* The Cast mark, drawn rather than imported: a screen outline with three arcs radiating from its
+   lower-left corner. Two boxes and two ::before/::after rings — no icon font, matching every other
+   glyph in this player. */
+.vp-glyph-cast {
+  position: relative;
+  display: inline-block;
+  width: 17px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-radius: 2px;
+  box-sizing: border-box;
+}
+
+/* Mask out the lower-left quadrant of the screen frame so the arcs sit in a clean notch. */
+.vp-glyph-cast::before {
+  content: "";
+  position: absolute;
+  left: -2px;
+  bottom: -2px;
+  width: 9px;
+  height: 9px;
+  background: var(--vp-black);
+}
+
+/* The waves: concentric quarter-rings anchored at the corner. One element carries both by using a
+   border on a rotated square — cheaper than three nested nodes and it scales with font size. */
+.vp-glyph-cast::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 7px;
+  height: 7px;
+  border-left: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  border-radius: 0 0 0 2px;
+  box-shadow: -1px 1px 0 0 currentColor;
+}
+
+.vp-btn-cast--on {
+  color: var(--vp-gold);
+}
+
+/* AirPlay: a screen outline with a solid triangle rising into its lower edge. */
+.vp-glyph-airplay {
+  position: relative;
+  display: inline-block;
+  width: 17px;
+  height: 17px;
+}
+
+.vp-glyph-airplay::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 11px;
+  border: 2px solid currentColor;
+  border-bottom-width: 0;
+  border-radius: 2px 2px 0 0;
+  box-sizing: border-box;
+}
+
+.vp-glyph-airplay::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 7px solid currentColor;
+}
+
+.vp-btn-airplay--on {
+  color: var(--vp-gold);
+}
+
+/* The plate that replaces the picture while the television has it. Deliberately the same visual
+   language as the fatal card (centered, display face, thin rules) — it is the same kind of message:
+   "the video is not here, and here is why". */
+.vp-castplate {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  z-index: 2;
+  padding: 0 10vw;
+  text-align: center;
+  color: var(--vp-cream);
+  font-family: var(--vp-display);
+  background: radial-gradient(ellipse at center, rgba(64, 169, 255, 0.09), transparent 62%);
+}
+
+.vp-castplate-mark {
+  position: relative;
+  width: 76px;
+  height: 56px;
+  border: 2px solid var(--vp-gold-dim);
+  border-radius: 4px;
+}
+
+.vp-castplate-screen {
+  position: absolute;
+  inset: 9px;
+  border-radius: 2px;
+  background: linear-gradient(160deg, rgba(64, 169, 255, 0.32), rgba(64, 169, 255, 0.08));
+}
+
+/* A slow pulse behind the screen — the one moving thing on an otherwise still card, so a connected
+   cast never looks like a frozen page. */
+.vp-castplate-wave {
+  position: absolute;
+  inset: -10px;
+  border-radius: 8px;
+  border: 1px solid var(--vp-gold-dim);
+  opacity: 0;
+  animation: vp-cast-pulse 2.4s ease-out infinite;
+}
+
+@keyframes vp-cast-pulse {
+  0% { transform: scale(0.86); opacity: 0.55; }
+  100% { transform: scale(1.12); opacity: 0; }
+}
+
+/* Respect a reduced-motion preference: the pulse is decoration, and the plate reads fine without it. */
+@media (prefers-reduced-motion: reduce) {
+  .vp-castplate-wave {
+    animation: none;
+    opacity: 0.35;
+  }
+}
+
+.vp-castplate-head {
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--vp-cream-dim);
+}
+
+.vp-castplate-device {
+  font-size: 26px;
+  letter-spacing: 0.04em;
+}
+
+.vp-castplate-error {
+  font-family: inherit;
+  font-size: 14px;
+  max-width: 34em;
+  color: var(--vp-cream-dim);
+}
+
+.vp-castplate-stop {
+  margin-top: 4px;
+  padding: 8px 20px;
+  font: inherit;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--vp-cream);
+  background: transparent;
+  border: 1px solid var(--vp-gold-dim);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.vp-castplate-stop:hover {
+  color: var(--vp-gold-bright);
+  border-color: var(--vp-gold);
+}
+
 /* ── small screens ───────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
   .vp-topbar {

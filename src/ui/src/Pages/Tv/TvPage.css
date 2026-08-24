@@ -141,6 +141,139 @@
   color: rgba(232, 238, 246, 0.78);
 }
 
+/* ── casting ────────────────────────────────────────────────────────────────── */
+/* Same role as .tv-paused: the picture isn't here, so say where it is. Sits below the paused
+   overlay's z-index so a frozen channel still reads as frozen while cast. */
+.tv-castplate {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 0 8vw;
+  text-align: center;
+  z-index: 4;
+  background: radial-gradient(ellipse at center, rgba(64, 169, 255, 0.1), rgba(8, 7, 6, 0.86) 68%);
+}
+
+.tv-castplate-head {
+  font-size: 12px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(232, 238, 246, 0.66);
+}
+
+.tv-castplate-device {
+  font-size: 26px;
+  letter-spacing: 0.04em;
+  color: #e8eef6;
+}
+
+.tv-castplate-error {
+  font-size: 13px;
+  max-width: 34em;
+  color: rgba(232, 238, 246, 0.72);
+}
+
+.tv-castplate-stop {
+  margin-top: 4px;
+  padding: 8px 20px;
+  font: inherit;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #e8eef6;
+  background: transparent;
+  border: 1px solid rgba(64, 169, 255, 0.55);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.tv-castplate-stop:hover {
+  color: #6cc0ff;
+  border-color: #40a9ff;
+}
+
+/* Cast mark: a screen outline with radiating arcs at its lower-left corner. Mirrors the Watch
+   player's .vp-glyph-cast — same drawing, sized for this bar. */
+.tv-glyph-cast {
+  position: relative;
+  display: inline-block;
+  width: 16px;
+  height: 13px;
+  border: 2px solid currentColor;
+  border-radius: 2px;
+  box-sizing: border-box;
+}
+
+.tv-glyph-cast::before {
+  content: "";
+  position: absolute;
+  left: -2px;
+  bottom: -2px;
+  width: 8px;
+  height: 8px;
+  background: #100e0c;
+}
+
+.tv-glyph-cast::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 6px;
+  height: 6px;
+  border-left: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  border-radius: 0 0 0 2px;
+  box-shadow: -1px 1px 0 0 currentColor;
+}
+
+/* AirPlay: a screen outline with a solid triangle rising into its lower edge. */
+.tv-glyph-airplay {
+  position: relative;
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+}
+
+.tv-glyph-airplay::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 10px;
+  border: 2px solid currentColor;
+  border-bottom-width: 0;
+  border-radius: 2px 2px 0 0;
+  box-sizing: border-box;
+}
+
+.tv-glyph-airplay::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 6px solid currentColor;
+}
+
+/* An explanatory line inside a menu accordion (e.g. "2 tracks can't be shown on a TV"). */
+.tv-qopt-note {
+  padding: 6px 14px 8px 34px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: rgba(232, 238, 246, 0.55);
+}
+
 /* ── flattened control bar ──────────────────────────────────────────────────── */
 .tv-bar {
   /* Overlay the bottom of the picture rather than taking a flex slot — the slot used to stay reserved

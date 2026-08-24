@@ -28,6 +28,26 @@ string jellyfinApiKey = config["JellyfinApiKey"]
     ?? throw new InvalidOperationException("JellyfinApiKey is required.");
 string siteOrigin = config["SiteOrigin"] ?? "https://your-movie-site.example";
 
+// Every origin allowed to FETCH media here. This is a list rather than the single site origin
+// because of casting: a Chromecast does not proxy the stream through the phone that started it — the
+// receiver app fetches the playlist and every segment itself, from its own origin, and it plays HLS
+// through MSE, so those fetches are subject to CORS exactly like the browser's. Left at site-only,
+// a cast fails on the TV with an unhelpful generic load error while every server-side log looks
+// perfect: the token validates, the bytes are served, and the receiver discards them.
+//
+// The default covers the Default Media Receiver (gstatic). GatewayCorsOrigins overrides it wholesale
+// for a custom receiver app, which is served from whatever origin hosts it.
+// IsNullOrWhiteSpace, not ??: the binder answers a JSON null / absent setting with "" rather than
+// null (the same trap ConfiguredRoot documents below), and "" ?? default is "" — which would leave
+// the list at site-only and break every cast while looking configured.
+var configuredCorsOrigins = config["GatewayCorsOrigins"];
+if (string.IsNullOrWhiteSpace(configuredCorsOrigins))
+    configuredCorsOrigins = GatewayCors.DefaultCastOrigins;
+var allowedOrigins = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { siteOrigin.TrimEnd('/') };
+foreach (var extra in configuredCorsOrigins
+             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+    allowedOrigins.Add(extra.TrimEnd('/'));
+
 // One pooled client for all forwarding; no auto-decompression so byte ranges pass through.
 var httpClient = new HttpMessageInvoker(new SocketsHttpHandler
 {
@@ -39,15 +59,18 @@ var httpClient = new HttpMessageInvoker(new SocketsHttpHandler
 });
 
 var requestOptions = new ForwarderRequestConfig { ActivityTimeout = TimeSpan.FromSeconds(100) };
-var transformer = new GatewayTransformer(jellyfinApiKey, siteOrigin);
+var transformer = new GatewayTransformer(jellyfinApiKey, siteOrigin, allowedOrigins);
 var forwarder = app.Services.GetRequiredService<IHttpForwarder>();
 
-// CORS preflight + headers. Auth is in the URL, never credentials, so the
-// allow-origin can be the single site origin with no allow-credentials.
+// CORS preflight + headers. Auth is in the URL, never credentials, so the allow-origin can be echoed
+// from a fixed allow-list with no allow-credentials — still an allow-list, just one with more than
+// one member now that a cast receiver is a legitimate client. Vary: Origin was already correct and
+// becomes load-bearing here: the header genuinely differs per request, so a cache keyed without it
+// would hand the receiver the site's ACAO (or the reverse).
 app.Use(async (context, next) =>
 {
     var headers = context.Response.Headers;
-    headers["Access-Control-Allow-Origin"] = siteOrigin;
+    headers["Access-Control-Allow-Origin"] = GatewayCors.ResolveAllowOrigin(context, allowedOrigins, siteOrigin);
     headers["Vary"] = "Origin";
     headers["Access-Control-Allow-Methods"] = "GET, HEAD, OPTIONS";
     headers["Access-Control-Allow-Headers"] = "Range";
@@ -636,11 +659,13 @@ sealed class GatewayTransformer : HttpTransformer
 {
     private readonly string apiKey;
     private readonly string siteOrigin;
+    private readonly IReadOnlySet<string> allowedOrigins;
 
-    public GatewayTransformer(string apiKey, string siteOrigin)
+    public GatewayTransformer(string apiKey, string siteOrigin, IReadOnlySet<string> allowedOrigins)
     {
         this.apiKey = apiKey;
         this.siteOrigin = siteOrigin;
+        this.allowedOrigins = allowedOrigins;
     }
 
     public override async ValueTask TransformRequestAsync(
@@ -671,8 +696,42 @@ sealed class GatewayTransformer : HttpTransformer
         var headers = httpContext.Response.Headers;
         foreach (var key in headers.Keys.Where(k => k.StartsWith("Access-Control-", StringComparison.OrdinalIgnoreCase)).ToList())
             headers.Remove(key);
-        headers["Access-Control-Allow-Origin"] = siteOrigin;
+        headers["Access-Control-Allow-Origin"] = GatewayCors.ResolveAllowOrigin(httpContext, allowedOrigins, siteOrigin);
         headers["Access-Control-Expose-Headers"] = "Content-Length, Content-Range, Accept-Ranges";
+        // The strip above removes Vary along with nothing else CORS-shaped, but the header this
+        // response now carries is origin-dependent — restate it so a proxy can't cache one client's
+        // ACAO for another's.
+        headers["Vary"] = "Origin";
         return result;
+    }
+}
+
+/// <summary>
+/// The gateway's CORS allow-list, shared by the response middleware and the proxy transformer so the
+/// two can't answer the same question differently.
+/// </summary>
+internal static class GatewayCors
+{
+    /// <summary>
+    /// Google's Default Media Receiver — the free, registration-free Cast app the site's sender uses
+    /// (see castSender.js). Its player runs from this origin, so this is the Origin header that
+    /// arrives on the receiver's playlist, segment and WebVTT fetches. A CUSTOM receiver app is
+    /// served from wherever it's hosted instead; point GatewayCorsOrigins at that origin if one ever
+    /// replaces the default.
+    /// </summary>
+    public const string DefaultCastOrigins = "https://www.gstatic.com";
+
+    /// <summary>
+    /// The value for Access-Control-Allow-Origin: the caller's own origin when it's on the list, else
+    /// the site origin. Falling back (rather than omitting the header) keeps the previous behaviour
+    /// byte-for-byte for a browser and for any request that carries no Origin at all — a plain
+    /// Chromecast media fetch often doesn't, and it doesn't need one.
+    /// </summary>
+    public static string ResolveAllowOrigin(HttpContext context, IReadOnlySet<string> allowed, string fallback)
+    {
+        var origin = context.Request.Headers.Origin.ToString();
+        if (string.IsNullOrEmpty(origin)) return fallback;
+        var normalized = origin.TrimEnd('/');
+        return allowed.Contains(normalized) ? origin : fallback;
     }
 }

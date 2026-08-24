@@ -4,7 +4,7 @@ import { describe, it, expect, vi } from "vitest";
 // has no MediaSource for the real library to probe at import.
 vi.mock("hls.js", () => ({ default: { Events: {}, ErrorDetails: {}, ErrorTypes: {} } }));
 
-import { timelineOffsetFromInitPts, bandwidthSample } from "./streamEngine";
+import { timelineOffsetFromInitPts, bandwidthSample, canRemotePlay } from "./streamEngine";
 
 // A fresh hls.js instance reports its CONFIGURED default (500 kbps) from bandwidthEstimate until the
 // EWMA has real fragment samples — it never says "I don't know". Since every ABR switch builds a new
@@ -66,5 +66,53 @@ describe("timelineOffsetFromInitPts", () => {
     expect(timelineOffsetFromInitPts({ initPTS: 900, timescale: 0 })).toBeNull();
     expect(timelineOffsetFromInitPts({ initPTS: NaN, timescale: 90_000 })).toBeNull();
     expect(timelineOffsetFromInitPts({ initPTS: { baseTime: 900 } })).toBeNull();
+  });
+});
+
+// The AirPlay button's honest gate. Getting this wrong in the permissive direction puts a button on
+// desktop Safari that sends a black picture to the television; getting it wrong in the restrictive
+// direction hides AirPlay from every modern iPhone, which is most of the phones that will use it.
+describe("canRemotePlay", () => {
+  const withManagedMediaSource = (present, run) => {
+    const had = "ManagedMediaSource" in globalThis;
+    const previous = globalThis.ManagedMediaSource;
+    if (present) globalThis.ManagedMediaSource = function ManagedMediaSource() {};
+    else delete globalThis.ManagedMediaSource;
+    try {
+      run();
+    } finally {
+      if (had) globalThis.ManagedMediaSource = previous;
+      else delete globalThis.ManagedMediaSource;
+    }
+  };
+
+  it("allows a plain-src element — direct play and Safari's native HLS", () => {
+    // No hls.js instance means the element holds a URL, which AirPlay has always been able to send.
+    withManagedMediaSource(false, () => expect(canRemotePlay(null)).toBe(true));
+    withManagedMediaSource(true, () => expect(canRemotePlay(undefined)).toBe(true));
+  });
+
+  it("allows hls.js when ManagedMediaSource is available — the modern iPhone/iPad case", () => {
+    withManagedMediaSource(true, () => {
+      expect(canRemotePlay({ config: { preferManagedMediaSource: true } })).toBe(true);
+      expect(canRemotePlay({ config: {} })).toBe(true); // hls.js defaults the preference to true
+    });
+  });
+
+  it("refuses hls.js on plain MediaSource — desktop Safari cannot AirPlay MSE content", () => {
+    withManagedMediaSource(false, () => {
+      expect(canRemotePlay({ config: { preferManagedMediaSource: true } })).toBe(false);
+    });
+  });
+
+  it("refuses when the preference is explicitly off, even where MMS exists", () => {
+    // hls.js would then be on plain MediaSource despite MMS being present.
+    withManagedMediaSource(true, () => {
+      expect(canRemotePlay({ config: { preferManagedMediaSource: false } })).toBe(false);
+    });
+  });
+
+  it("refuses rather than throwing on an instance with no config", () => {
+    withManagedMediaSource(false, () => expect(canRemotePlay({})).toBe(false));
   });
 });
