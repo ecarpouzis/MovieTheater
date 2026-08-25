@@ -1,3 +1,66 @@
+# 2026-08-24 — THE BOUNCE IN MOTION: real, attributed to the merge's bob path, mitigated. Eric's eyes owed.
+
+Eric's report after the anti-blur went permanent: "sharper, but the graphics still bounce a bit —
+the UI doesn't — only in motion." All three clauses turned out to be precisely right.
+
+## What was seen (every presented frame of Eric's own drive, room ORGNEY, 7,880 frames)
+
+Kymographs (`test-roms/kymo.py`: one vertical slice per frame laid left→right, magnified) of
+`D:\ArcadeStorage\scratch\stuntman-bounce\reel-drive1`:
+
+| slice | result |
+|---|---|
+| world roofline, driving | **a comb — one tooth per frame**, ~1 row at 448 (≈2 at 896), alternating at the FIELD cadence (30 Hz in the 60 fps stream) |
+| HUD status bar, same frames | dead straight |
+| yellow car, PAUSED menu | dead straight |
+
+So: 3D scanout only, motion only. Then two native-pixel band reels from the `"Level 4 bench"`
+quickload with throttle held (`crop-reel.mjs --crop 0,120,1280,300`), one per anti-blur arm
+(profile row 7 disarmed for one room and re-armed — `[crtc-merge]` confirmed each): **the comb is in
+both arms**. The anti-blur did not cause it; it sharpened the edges it lives on.
+
+## Mechanism
+
+`field_merge.frag`: static = `0.5*(f0+f1)` weave (cancels the twitter — measured 0 shifts on
+stills), moving = **newest field only**. The two phases are genuinely different renders (the game
+jitters its projection half a scanline per field and rasterises each on its own — the "TRUE field
+content twitter" Phase 2 exposed), so one field per frame alternates. Bob re-exposes in motion exactly
+what weave cancels when still. Only a temporal blend of the two phases can cancel a period-2
+alternation; any spatial filter softens the edge and leaves it bouncing.
+
+## Change — lrps2 `c7f436a`, live on both GL workers since 20:04
+
+`MOTION_PREV_WEIGHT = 0.25`: fully-moving pixels output `0.75*f0 + 0.25*f1`. Alternation halved,
+cost = a 25 % trail one field (1/60 s) behind, a few pixels at chase speed, below what AV1 smears at
+the room's ceiling. `0.5` would cancel it entirely and IS weave — full-contrast double edges on
+everything that moves; don't. Toolchain repro gate passed byte-identical before the rebake.
+
+- DLL **11,644,416 B — same size as before, verify by hash** — sha256 `66f0b004…`. Rollback:
+  `pcsx2_custom_libretro.dll.pre-motionblend` (= `ee34c664…`, 4e67327) + `.stop` both workers.
+- `paraLLEl-GS: rejecting 228 MB pipeline cache … written by a different core build` in the first
+  room is the proof the new build loaded (the header's build id did its job).
+- Guard re-snapshotted; `docker/arcade/lrps2-perfattr-and-gamedb.patch` and `shader-patches/0002`
+  regenerated.
+
+## Measurement honesty
+
+An edge-position meter on the roofline (soft intensity-weighted position, parity keyed on
+`presentedFrames`) gives **~90 % sign flips in every arm and window** — the alternation is still there
+at the field cadence, as a 75/25 blend predicts (halved, not gone) — and **residual rms lower on the new
+core than the old armed core in all three windows** (0.28/0.26/0.48 vs 0.53/0.48/0.66). The amplitude
+estimate itself swings 4x between windows on a moving diagonal edge and is not trustworthy; the
+verdict is Eric's eyes. Two traps cost time: a mid-level-crossing detector is blind to a 75/25 blend
+(still crosses at the dominant field's edge), and file-order parity is broken by the 2-5 % of presented
+frames every reel drops.
+
+## Other facts this session bought
+
+- **A second live PS2 room runs at ~40 t/s.** All GL workers share affinity 0x5555; while Eric's room
+  held 59.9 t/s the bench room got 36-42 and captured 23 fps. Incumbent untouched, newcomer starved.
+- Full-frame native JPEG capture per rVFC frame starves the client to ~32 presented fps and aliases
+  the 30 Hz cadence — hence `crop-reel.mjs`.
+- Spectating Eric needs `ArcadeGame` 60439 MaxPlayers 1→2 (restored to 1 afterwards).
+
 # 2026-08-16 (evening) — ✅ FIELD ANTI-BLUR: DEPLOYED, A/B'd, MEASURABLY SHARPER. Eric's eyes still owed.
 
 **The game's own flicker filter is real, it IS live in Level 4, and suppressing it measurably

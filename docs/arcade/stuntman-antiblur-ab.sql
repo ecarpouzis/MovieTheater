@@ -1,5 +1,12 @@
 -- Stuntman field anti-blur A/B (2026-08-16). Two statements; run ONE at a time.
 --
+-- STATUS 2026-08-24: the ARM below is APPLIED IN PROD PERMANENTLY (row 7, guarded single-row UPDATE,
+--   verified by read-back; Notes column stamped). This file is now the ROLLBACK record, not a pending
+--   experiment. From 2026-08-16 to 2026-08-24 the row sat RESTORED, so every Stuntman room in that window
+--   ran the baseline picture -- do not read those sessions as evidence about the filter.
+--   Options ship per-room from the site, so it took effect on the next room with no worker recycle.
+--   Still open: the +6.6% was measured on a STATIC frame; the motion question needs a driven chase.
+--
 -- WHAT IS BEING TESTED
 --   The game runs its OWN CRTC flicker filter during gameplay: both read circuits point at the
 --   SAME framebuffer (FBP=140) one line apart (DBY 0 vs 1), blended 50/50 (MMOD=ALP, ALP=128),
