@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- The Books vertical's sidecar store: two SQLite files (books.db hot, books-legs.db warehouse),
+		     each its own DbContext with its own migrations. Entities and contexts are GENERATED from
+		     docs/books/v2-mapping.json by scripts/books/gen/gen_entities.py - edit the mapping, not the C#. -->
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.11">
+		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		  <PrivateAssets>all</PrivateAssets>
+		</PackageReference>
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.11" />
+	</ItemGroup>
+
+</Project>

@@ -38,15 +38,16 @@
       "purpose": "One file = one item (ids preserved = Comics.Id). File identity + the browse-hot flags + the materialized Resolved* scalars. THE browse projection joins Item + Series only.",
       "cols": "Id INTEGER, RootId INTEGER FK LibraryRoot, FolderId INTEGER FK Folder, TopFolderId INTEGER, Kind INTEGER, Path TEXT UNIQUE, FileName TEXT, Extension TEXT, ContainerFormat INTEGER, FileSize INTEGER, FileModifiedAt TEXT, IndexedAt TEXT, PageCount INTEGER, Title TEXT, NormalizedTitle TEXT, CalibreBookId INTEGER UNIQUE NULL, PublisherId INTEGER FK Publisher NULL, SeriesId INTEGER FK Series NULL, IsExcluded INTEGER, KeepInDirectory INTEGER, CoverAspect REAL, ResolvedTitle TEXT, ResolvedSeries TEXT, ResolvedPublisher TEXT, ResolvedYear INTEGER, ResolvedMonth INTEGER, ResolvedDatePrecision INTEGER, ResolvedRating INTEGER, ResolvedSynopsisSource INTEGER, ResolvedCreatorsCsv TEXT, ResolvedTagsCsv TEXT, ResolvedAt TEXT",
       "idx": [
-        "(Kind, IsExcluded, ResolvedSeries, Id)",
-        "(Kind, IsExcluded, ResolvedYear DESC, IndexedAt DESC, Id)",
-        "(Kind, IsExcluded, ResolvedRating DESC, Id)",
-        "(Kind, IsExcluded, IndexedAt DESC, Id)",
+        "(Kind, ResolvedSeries, Id)",
+        "(Kind, ResolvedYear DESC, IndexedAt DESC, Id)",
+        "(Kind, ResolvedRating DESC, Id)",
+        "(Kind, IndexedAt DESC, Id)",
         "(SeriesId, Id)",
         "(FolderId)",
         "(TopFolderId)",
         "(PublisherId)",
-        "(NormalizedTitle)"
+        "(Kind, NormalizedTitle, Id)",
+        "(Kind, ResolvedPublisher, Id)"
       ]
     },
     "ItemState": {
@@ -154,7 +155,7 @@
         "SeriesId"
       ],
       "purpose": "MangaUpdates link (matched AFTER resolution, so keyed by SeriesId; SeriesMergeService re-keys it)",
-      "cols": "SeriesId INTEGER FK Series, MuSeriesId INTEGER, Status INTEGER, Method TEXT, Confidence REAL, MatchedKey TEXT, CreatedAt TEXT"
+      "cols": "SeriesId INTEGER FK Series, MuSeriesId INTEGER NULL, Status INTEGER, Method TEXT, Confidence REAL, MatchedKey TEXT, CreatedAt TEXT"
     },
     "ItemProviderLink": {
       "file": "hot",
@@ -280,7 +281,8 @@
       "cols": "ItemId INTEGER FK Item, SeriesId INTEGER, Level INTEGER, TrackRole INTEGER, SpanStart INTEGER, SpanEnd INTEGER, ContainsCount INTEGER, ParentItemId INTEGER FK Item NULL, SpanSource INTEGER, SpanLabel TEXT",
       "idx": [
         "(SeriesId)",
-        "(ParentItemId)"
+        "(ParentItemId)",
+        "(ContainsCount DESC)"
       ]
     },
     "CollectedEditionSpan": {
@@ -309,7 +311,7 @@
         "Id"
       ],
       "purpose": "ComicVine issue (cover dates feed reading order; description is a synopsis source)",
-      "cols": "Id INTEGER, VolumeId INTEGER FK CvVolume, Name TEXT, IssueNumber TEXT, CoverDate TEXT, StoreDate TEXT, Deck TEXT, Description TEXT, ImageUrl TEXT, SiteDetailUrl TEXT, FetchedAt TEXT",
+      "cols": "Id INTEGER, VolumeId INTEGER, Name TEXT, IssueNumber TEXT, CoverDate TEXT, StoreDate TEXT, Deck TEXT, Description TEXT, ImageUrl TEXT, SiteDetailUrl TEXT, FetchedAt TEXT",
       "idx": [
         "(VolumeId)"
       ]
@@ -759,7 +761,7 @@
         "EmbeddedRating": "->ComicEmbedded.Rating",
         "UserRating": "drop:0 rows in v1; per-item user ratings arrive as Rating(Source=User) in v2",
         "MetadataVersion": "drop:scanner-private constant 1",
-        "Imprint": "drop:write-only (usage census: single reference = entity declaration)",
+        "Imprint": "->ComicEmbedded.Imprint",
         "GTIN": "drop:always NULL or constant in v1 (column census)",
         "SeriesGroup": "drop:always NULL or constant in v1 (column census)",
         "AlternateCount": "drop:always NULL or constant in v1 (column census)",
@@ -1635,7 +1637,8 @@
       "FilenameLeadingIndex",
       "Folder",
       "Volume",
-      "Default"
+      "Default",
+      "Manual"
     ],
     "ReadingOrderEntry.Source": [
       "Unordered",

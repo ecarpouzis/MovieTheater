@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Every test runs on throwaway SQLite FILES (never EF-InMemory: the migration, the FTS table and
+         "killed mid-run and resumed" are all claims about real files). Nothing reads the NAS, the live
+         standalone site's database, or the shared SQL Server. -->
+    <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MovieTheater.Books\MovieTheater.Books.csproj" />
+    <ProjectReference Include="..\MovieTheater.Books.Db\MovieTheater.Books.Db.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The v1 DDL (85 tables), tracked here so the synthetic v1 fixture is built from the REAL schema. -->
+    <EmbeddedResource Include="Fixtures\schema-v1.sql" LogicalName="MovieTheater.Books.Tests.schema-v1.sql" />
+  </ItemGroup>
+
+</Project>
