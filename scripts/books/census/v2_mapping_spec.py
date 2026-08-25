@@ -1,0 +1,278 @@
+"""R3: the Books v1 -> v2 mapping, as code.
+
+This is the single source of truth for *where every v1 table and column goes*. It emits
+docs/books/v2-mapping.json (consumed by R4's `books-migrate-v1` and by v2_mapping_check.py) and the
+generated sections of docs/books/v2-model.md (via write_v2_model.py).
+
+Vocabulary
+  file:   "hot"  -> books.db (BooksDb, the runtime's only file)
+          "legs" -> books-legs.db (BooksLegsDb, offline warehouse; no FKs across files)
+          "drop" -> not carried (reason required)
+  column rules (per v1 column): "same" | "->NewName" | "drop:reason" | "xf:name" (a named transform)
+  A v1 table may fan out to several v2 tables ("targets"); the first target owns the row identity.
+
+Read-only against the census artifacts; nothing here touches a database.
+"""
+from __future__ import annotations
+import json
+from common import DOCS, CENSUS, dump_json
+
+# ----------------------------------------------------------------------------------------------
+# v2 catalog: every table the design contains, with its file, key and one-line purpose.
+# Column lists are the *design* (what R4's EF migration creates); types are SQLite affinities.
+# ----------------------------------------------------------------------------------------------
+V2 = {
+    # ---- hot: library ----
+    "LibraryRoot": dict(file="hot", pk=["Id"], purpose="A scanned root (comics / books; Calibre-managed or not)",
+        cols="Id INTEGER, Path TEXT UNIQUE, Kind INTEGER, IsCalibre INTEGER, Enabled INTEGER"),
+    "Folder": dict(file="hot", pk=["Id"], purpose="Folder tree (ids preserved); aggregates folded in; TopFolderId = the v1 'collection'",
+        cols="Id INTEGER, RootId INTEGER FK LibraryRoot, ParentId INTEGER FK Folder NULL, Kind INTEGER, Path TEXT UNIQUE, Name TEXT, NormalizedName TEXT, Depth INTEGER, TopFolderId INTEGER, DirectChildCount INTEGER, DescendantItemCount INTEGER, FolderModifiedAt TEXT, IndexedAt TEXT, HasIcon INTEGER",
+        idx=["(ParentId)", "(TopFolderId)", "(NormalizedName)"]),
+    "Publisher": dict(file="hot", pk=["Id"], purpose="Normalized publisher (ids preserved)", cols="Id INTEGER, Name TEXT UNIQUE, FullName TEXT"),
+    "Item": dict(file="hot", pk=["Id"], purpose="One file = one item (ids preserved = Comics.Id). File identity + the browse-hot flags + the materialized Resolved* scalars. THE browse projection joins Item + Series only.",
+        cols="Id INTEGER, RootId INTEGER FK LibraryRoot, FolderId INTEGER FK Folder, TopFolderId INTEGER, Kind INTEGER, Path TEXT UNIQUE, FileName TEXT, Extension TEXT, ContainerFormat INTEGER, FileSize INTEGER, FileModifiedAt TEXT, IndexedAt TEXT, PageCount INTEGER, Title TEXT, NormalizedTitle TEXT, CalibreBookId INTEGER UNIQUE NULL, PublisherId INTEGER FK Publisher NULL, SeriesId INTEGER FK Series NULL, IsExcluded INTEGER, KeepInDirectory INTEGER, CoverAspect REAL, ResolvedTitle TEXT, ResolvedSeries TEXT, ResolvedPublisher TEXT, ResolvedYear INTEGER, ResolvedMonth INTEGER, ResolvedDatePrecision INTEGER, ResolvedRating INTEGER, ResolvedSynopsisSource INTEGER, ResolvedCreatorsCsv TEXT, ResolvedTagsCsv TEXT, ResolvedAt TEXT",
+        idx=["(Kind, IsExcluded, ResolvedSeries, Id)", "(Kind, IsExcluded, ResolvedYear DESC, IndexedAt DESC, Id)", "(Kind, IsExcluded, ResolvedRating DESC, Id)", "(Kind, IsExcluded, IndexedAt DESC, Id)", "(SeriesId, Id)", "(FolderId)", "(TopFolderId)", "(PublisherId)", "(NormalizedTitle)"]),
+    "ItemState": dict(file="hot", pk=["ItemId"], purpose="Churny per-item state rewritten by jobs (health, thumbnail, cover dims, exclusion detail) so the catalog row is not rewritten",
+        cols="ItemId INTEGER FK Item, IsBroken INTEGER, BrokenReason TEXT, BrokenCheckedAt TEXT, ThumbnailError TEXT, ThumbnailCheckedAt TEXT, CoverWidth INTEGER, CoverHeight INTEGER, CoverDimsComputedFor TEXT, ExclusionReason TEXT, ExcludedAt TEXT"),
+    "ItemSignature": dict(file="hot", pk=["ItemId"], purpose="Dedup signatures (comics only)",
+        cols="ItemId INTEGER FK Item, ContentFingerprint TEXT, CoverPHash INTEGER, PageSignature TEXT, SignaturesComputedFor TEXT", idx=["(ContentFingerprint)", "(CoverPHash)"]),
+    "ComicEmbedded": dict(file="hot", pk=["ItemId"], purpose="Raw ComicInfo.xml as read from the archive (comics with a ComicInfo; never rewritten - CVDB-resolved names go to ItemTag/ItemCredit)",
+        cols="ItemId INTEGER FK Item, Series TEXT, Number TEXT, AltSeries TEXT, AltNumber TEXT, Volume INTEGER, Title TEXT, Summary TEXT, Publisher TEXT, Imprint TEXT, Genre TEXT, Tags TEXT, Characters TEXT, Teams TEXT, Locations TEXT, StoryArc TEXT, Web TEXT, Language TEXT, Format TEXT, PublicationDate TEXT, Writers TEXT, Pencillers TEXT, Inker TEXT, Colorist TEXT, Letterer TEXT, CoverArtist TEXT, Editor TEXT, BlackAndWhite INTEGER, Manga TEXT, Rating INTEGER, Identifier TEXT, Notes TEXT, Count INTEGER, AgeRating TEXT"),
+    "BookDetail": dict(file="hot", pk=["ItemId"], purpose="Calibre-native identity of a book (authors -> ItemCredit, subject tags -> ItemTag)",
+        cols="ItemId INTEGER FK Item, Isbn TEXT, SeriesName TEXT, SeriesIndex REAL, Publisher TEXT, PublishedOn TEXT, Language TEXT, Description TEXT", idx=["(Isbn)", "(SeriesName, SeriesIndex)"]),
+    "ComicDetail": dict(file="hot", pk=["ItemId"], purpose="Parse-pipeline output (comics only). ParsedSeriesKey is the resolution INPUT; SeriesId on Item is DERIVED from it",
+        cols="ItemId INTEGER FK Item, ParsedSeriesKey TEXT, IssueNo TEXT, Year INTEGER, VolumeNo INTEGER, Publisher TEXT, Format INTEGER, FormatRaw TEXT, IsCollection INTEGER, EventName TEXT, IssueTitle TEXT, Confidence INTEGER, SeriesSource INTEGER, IssueSource INTEGER, YearSource INTEGER, PublisherSource INTEGER, FolderSeries TEXT, FolderYear INTEGER, ParseNotes TEXT, ParsedAt TEXT",
+        idx=["(ParsedSeriesKey)", "(EventName)", "(Year)"]),
+    "Series": dict(file="hot", pk=["Id"], purpose="DERIVED canonical series (ids preserved) + the series-scoped facts every issue used to carry; rebuilt by books-resolve-series from ComicDetail.ParsedSeriesKey + SeriesKeyLink",
+        cols="Id INTEGER, ParsedKey TEXT, CanonicalKey TEXT UNIQUE, Name TEXT, DisplayNameOverride TEXT, IssueCount INTEGER, YearStart INTEGER, YearEnd INTEGER, IsOngoing INTEGER, Franchise TEXT, PublisherId INTEGER NULL, CvVolumeId INTEGER NULL, ExternalWorkId INTEGER NULL, MuSeriesId INTEGER NULL, ResolvedSynopsisSource INTEGER, ResolvedRating INTEGER, ResolvedAt TEXT",
+        idx=["(Name, Id)", "(ParsedKey)", "(Franchise)", "(ResolvedRating DESC, Id)"]),
+    "SeriesAlias": dict(file="hot", pk=["ParsedKey"], purpose="Every parsed spelling -> its canonical Series (DERIVED)", cols="ParsedKey TEXT, SeriesId INTEGER FK Series", idx=["(SeriesId)"]),
+    "SeriesMerge": dict(file="hot", pk=["OldSeriesId"], purpose="Old-id redirect for merged series (all 44,261 v1 rows carried; ?series=<oldId> resolves through it)", cols="OldSeriesId INTEGER, NewSeriesId INTEGER, MergedAt TEXT"),
+    "SeriesKeyLink": dict(file="hot", pk=["ParsedKey", "Provider"], purpose="Series-level provider link keyed by the PARSED KEY (a resolution INPUT the reconciliation ops edit) - Provider in {Cv, External}",
+        cols="ParsedKey TEXT, Provider INTEGER, ProviderKey INTEGER, Status INTEGER, Score INTEGER, StoredTopScore INTEGER, AttemptCount INTEGER, AttemptedAt TEXT, Error TEXT", idx=["(Provider, ProviderKey)", "(Status)"]),
+    "MuSeriesLink": dict(file="hot", pk=["SeriesId"], purpose="MangaUpdates link (matched AFTER resolution, so keyed by SeriesId; SeriesMergeService re-keys it)",
+        cols="SeriesId INTEGER FK Series, MuSeriesId INTEGER, Status INTEGER, Method TEXT, Confidence REAL, MatchedKey TEXT, CreatedAt TEXT"),
+    "ItemProviderLink": dict(file="hot", pk=["ItemId", "Provider"], purpose="One shape for every item-level leg: Cv, Locg, Gcd, Barney, Marvel, Inducks",
+        cols="ItemId INTEGER FK Item, Provider INTEGER, ProviderKey TEXT, SecondaryKey TEXT, Status INTEGER, Method TEXT, MatchedKey TEXT, Confidence REAL, Quality INTEGER, StoredTopScore INTEGER, Applied INTEGER, AttemptCount INTEGER, AttemptedAt TEXT, Error TEXT",
+        idx=["(Provider, ProviderKey)", "(Provider, Status)"]),
+    "ItemCredit": dict(file="hot", pk=["ItemId", "Source", "Ordinal"], purpose="Who made it - one shape for ComicInfo creators, LOCG creators, Calibre authors (Source in {ComicInfo, Locg, Calibre, AI}); facets GROUP BY (Role, NormalizedName)",
+        cols="ItemId INTEGER FK Item, Source INTEGER, Ordinal INTEGER, Role TEXT, Name TEXT, NormalizedName TEXT, ProviderPersonId TEXT", idx=["(Role, NormalizedName, ItemId)"]),
+    "ItemTag": dict(file="hot", pk=["ItemId", "Category", "Value", "Source"], purpose="Item-level tags with provenance (ComicInfo genre/tags, Calibre subjects, CVDB-resolved names, GCD story genres, insight tags folded)",
+        cols="ItemId INTEGER FK Item, Category TEXT, Value TEXT, Source INTEGER", idx=["(Category, Value, ItemId)"]),
+    "SeriesTag": dict(file="hot", pk=["SeriesId", "Category", "Value", "Source"], purpose="Series-level tags (AI insight tags, External subjects, MU genres, CV concepts)",
+        cols="SeriesId INTEGER FK Series, Category TEXT, Value TEXT, Source INTEGER", idx=["(Category, Value, SeriesId)"]),
+    "TagAlias": dict(file="hot", pk=["Category", "AliasTag"], purpose="Alias -> canonical tag", cols="Category TEXT, AliasTag TEXT, CanonicalTag TEXT, Source TEXT"),
+    "KidSafeTag": dict(file="hot", pk=["Category", "Tag"], purpose="Kids allowlist (AppliesTo: comic/book/both)", cols="Category TEXT, Tag TEXT, AppliesTo TEXT, UpdatedAt TEXT"),
+    "Insight": dict(file="hot", pk=["Id"], purpose="Append-only model/provider-generated metadata for an Item or a Series (GATE-1/2): rank -> confidence -> recency SELECTS the current row (IsCurrent); nothing overwritten. Maturity lives here for books.",
+        cols="Id INTEGER, SubjectKind INTEGER, SubjectId INTEGER, ModelId TEXT, Rank INTEGER, Confidence INTEGER, Recognized INTEGER, Rating INTEGER, Synopsis TEXT, Author TEXT, Artist TEXT, YearBegin INTEGER, YearEnd INTEGER, Maturity INTEGER NULL, ReviewFlag TEXT, SourceKey TEXT, GeneratedAt TEXT, IsCurrent INTEGER",
+        idx=["(SubjectKind, SubjectId, IsCurrent)", "(SubjectKind, Maturity) WHERE IsCurrent = 1"]),
+    "InsightTag": dict(file="hot", pk=["InsightId", "Category", "Value"], purpose="Tags of one insight row (folded into ItemTag/SeriesTag with Source=AI when the row is current)",
+        cols="InsightId INTEGER FK Insight, Category TEXT, Value TEXT"),
+    "Rating": dict(file="hot", pk=["TargetKind", "TargetId", "Source"], purpose="Every rating with provenance, normalized to 0-100 at write time (RawValue/RawScale kept); Item/Series.ResolvedRating is materialized from it - browse never joins this",
+        cols="TargetKind INTEGER, TargetId INTEGER, Source INTEGER, Value INTEGER, RawValue REAL, RawScale TEXT, Count INTEGER, Note TEXT, IsOverride INTEGER, ModelId TEXT, GeneratedAt TEXT"),
+    "ReadingOrderEntry": dict(file="hot", pk=["ItemId"], purpose="DERIVED per-issue reading position (books-reading-order)",
+        cols="ItemId INTEGER FK Item, SeriesId INTEGER, ReadTier INTEGER, ReadNumber REAL, ReadNumberSuffix REAL, ReadDate TEXT, ReadDatePrecision INTEGER, ReadIndex INTEGER, ReadCount INTEGER, Source INTEGER, Confidence INTEGER, Notes TEXT, ComputedAt TEXT",
+        idx=["(SeriesId, ReadIndex)"]),
+    "CollectionNode": dict(file="hot", pk=["ItemId"], purpose="DERIVED containment (books-containment); ParentItemId -> Item",
+        cols="ItemId INTEGER FK Item, SeriesId INTEGER, Level INTEGER, TrackRole INTEGER, SpanStart INTEGER, SpanEnd INTEGER, ContainsCount INTEGER, ParentItemId INTEGER FK Item NULL, SpanSource INTEGER, SpanLabel TEXT", idx=["(SeriesId)", "(ParentItemId)"]),
+    "CollectedEditionSpan": dict(file="hot", pk=["ItemId", "Source"], purpose="Collected-edition spans from the four sources (Locg, Gcd, Cv, Curated) - containment precedence Locg > Gcd > Cv > Curated",
+        cols="ItemId INTEGER FK Item, Source INTEGER, SeriesId INTEGER, IssueStart REAL, IssueEnd REAL, EditionTitle TEXT, ProviderRef TEXT, Contiguous INTEGER, Confidence REAL, Note TEXT, CreatedAt TEXT", idx=["(SeriesId)"]),
+    "CvVolume": dict(file="hot", pk=["Id"], purpose="ComicVine volume (series-level facts the modal shows)",
+        cols="Id INTEGER, Name TEXT, StartYear INTEGER, PublisherName TEXT, CountOfIssues INTEGER, Deck TEXT, Description TEXT, ImageUrl TEXT, SiteDetailUrl TEXT, FetchedAt TEXT"),
+    "CvIssue": dict(file="hot", pk=["Id"], purpose="ComicVine issue (cover dates feed reading order; description is a synopsis source)",
+        cols="Id INTEGER, VolumeId INTEGER FK CvVolume, Name TEXT, IssueNumber TEXT, CoverDate TEXT, StoreDate TEXT, Deck TEXT, Description TEXT, ImageUrl TEXT, SiteDetailUrl TEXT, FetchedAt TEXT", idx=["(VolumeId)"]),
+    "LocgComic": dict(file="hot", pk=["LocgComicId"], purpose="LOCG record, HOT SUBSET: only rows an ItemProviderLink(Locg) references and only the columns the modal/projection read (GATE question 15)",
+        cols="LocgComicId INTEGER, LocgSeriesId INTEGER, SeriesName TEXT, Title TEXT, IssueNumber TEXT, Format TEXT, CoverDate TEXT, PageCount INTEGER, Description TEXT, CommunityRating REAL, RatingCount INTEGER, IsKey INTEGER, KeyType TEXT, Isbn TEXT, Upc TEXT, CoverPrice TEXT, CoverUrl TEXT, StoryCount INTEGER, ScrapedAt TEXT"),
+    "MuSeries": dict(file="hot", pk=["Id"], purpose="MangaUpdates series (runtime leg: description + genres)",
+        cols="Id INTEGER, Title TEXT, Year INTEGER, Type TEXT, Status TEXT, Completed INTEGER, Description TEXT, BayesianRating REAL, Url TEXT, ScrapedAt TEXT"),
+    "ExternalWork": dict(file="hot", pk=["Id"], purpose="Open Library / Google Books work (the ComicVine-miss fallback leg)",
+        cols="Id INTEGER, Provider TEXT, ProviderKey TEXT, Title TEXT, Authors TEXT, Publisher TEXT, FirstPublishYear INTEGER, Description TEXT, CoverImageUrl TEXT, Isbn TEXT, InfoUrl TEXT, FetchedAt TEXT", idx=["UNIQUE (Provider, ProviderKey)"]),
+    "BarneyProg": dict(file="hot", pk=["ProgNo"], purpose="2000AD prog dates (reading-order recompute input; 2,313 rows)", cols="ProgNo INTEGER, CoverDate TEXT, Price TEXT, StripsJson TEXT, ScrapedAt TEXT"),
+    "CvdbResolution": dict(file="hot", pk=["CvdbTag"], purpose="CVDB#### -> ComicVine entity name", cols="CvdbTag TEXT, ComicvineId INTEGER, ResolvedName TEXT, EntityType TEXT, Status TEXT, ResolvedAt TEXT"),
+    "SeriesInferenceDecision": dict(file="hot", pk=["Id"], purpose="Reconciliation audit log + review queue (reversible)", cols="Id INTEGER, SeriesKey TEXT, Class TEXT, Action TEXT, Target TEXT, Confidence TEXT, EvidenceJson TEXT, State TEXT, UndoJson TEXT, DecidedBy TEXT, DecidedAt TEXT", idx=["(State, Class)"]),
+    "SeriesMatchReview": dict(file="hot", pk=["Id"], purpose="Mismatch detection triage state", cols="Id INTEGER, Scope TEXT, Key TEXT, State TEXT, Note TEXT, DecidedBy TEXT, DecidedAt TEXT", idx=["UNIQUE (Scope, Key)"]),
+    "DuplicateGroup": dict(file="hot", pk=["Id"], purpose="Dedup groups", cols="Id INTEGER, Relationship INTEGER, Confidence TEXT, Evidence TEXT, SuggestedKeeperItemId INTEGER, ReviewState TEXT, DetectedAt TEXT"),
+    "DuplicateMember": dict(file="hot", pk=["Id"], purpose="Dedup group members", cols="Id INTEGER, DuplicateGroupId INTEGER FK DuplicateGroup, ItemId INTEGER FK Item, Role TEXT, SoleFileInFolder INTEGER", idx=["(ItemId)", "(DuplicateGroupId)"]),
+    "UserItemState": dict(file="hot", pk=["UserId", "ItemId"], purpose="One row per MT user x item: reading position + want/favorite/hidden (lastPage -1 = Finished is the ONLY finish signal; any write clears HiddenFromHistory)",
+        cols="UserId INTEGER, ItemId INTEGER FK Item, LastPage INTEGER, LastSpineItemIndex INTEGER, LastScrollPercent REAL, Status INTEGER, WantToRead INTEGER, Favorite INTEGER, HiddenFromHistory INTEGER, UpdatedAt TEXT", idx=["(UserId, UpdatedAt DESC)", "(UserId, WantToRead)", "(ItemId)"]),
+    "GroupMark": dict(file="hot", pk=["UserId", "GroupType", "GroupKey"], purpose="Per-user marks on a group (series key = SeriesId; volume/collection/publisher/decade keys as the batch endpoint addresses them)",
+        cols="UserId INTEGER, GroupType INTEGER, GroupKey TEXT, IsRead INTEGER, WantToRead INTEGER, IsFavorite INTEGER, Rating INTEGER, Notes TEXT, UpdatedAt TEXT", idx=["(UserId, GroupType, WantToRead)"]),
+    "DerivedTable": dict(file="hot", pk=["Name"], purpose="Registry of DERIVED tables/columns: the job that rebuilds each, its input fingerprint, last rebuild - replaces the SystemState fingerprint rows and enforces the edit-inputs rule structurally",
+        cols="Name TEXT, RebuildJob TEXT, InputFingerprint TEXT, LastRebuiltAt TEXT, RowCount INTEGER"),
+    "SystemState": dict(file="hot", pk=["Key"], purpose="Generic KV (scan bookkeeping only; fingerprints moved to DerivedTable)", cols="Key TEXT, Value TEXT"),
+    "ScanRun": dict(file="hot", pk=["Id"], purpose="Audit of scans/imports (replaces boot-time backfills)", cols="Id INTEGER, RootId INTEGER, Kind TEXT, StartedAt TEXT, FinishedAt TEXT, ItemsSeen INTEGER, Added INTEGER, Changed INTEGER, Removed INTEGER, Error TEXT"),
+    "MigrationProgress": dict(file="hot", pk=["Stage"], purpose="books-migrate-v1 resume state", cols="Stage TEXT, Cursor TEXT, Processed INTEGER, Total INTEGER, FinishedAt TEXT"),
+    "KnownIdentity": dict(file="hot", pk=["UserId"], purpose="Last-seen identity payload per MT user (cache warmer input)", cols="UserId INTEGER, Username TEXT, IsAdmin INTEGER, MaturityCeiling INTEGER, KidsStyle TEXT, LastSeenAt TEXT"),
+    "ItemFts": dict(file="hot", pk=["rowid"], purpose="FTS5 content-less index over ResolvedTitle, ResolvedSeries, ResolvedCreatorsCsv, ResolvedPublisher and the synopsis the pointer names; rebuilt at the end of books-resolve", cols="rowid=Item.Id, body TEXT"),
+    # ---- legs: offline warehouse ----
+    "LocgComicRaw": dict(file="legs", pk=["LocgComicId"], purpose="Every LOCG row incl. the 73k stubs and the columns nothing reads at runtime; the containment reduction reads this",
+        cols="LocgComicId INTEGER, LocgSeriesId INTEGER, SeriesName TEXT, Title TEXT, IssueNumber TEXT, Format TEXT, ReleaseDate TEXT, CoverDate TEXT, PageCount INTEGER, Description TEXT, CommunityRating REAL, RatingCount INTEGER, IsKey INTEGER, KeyType TEXT, KeyReason TEXT, Isbn TEXT, Upc TEXT, DistributorSku TEXT, CoverPrice TEXT, EstimatedValue TEXT, CoverUrl TEXT, Url TEXT, StoryCount INTEGER, StoryIdsJson TEXT, ScrapedAt TEXT"),
+    "LocgCreatorRaw": dict(file="legs", pk=["LocgComicId", "Ordinal"], purpose="CreatorsJson normalized for ALL LOCG rows (the hot ItemCredit(Source=Locg) is the matched subset)", cols="LocgComicId INTEGER, Ordinal INTEGER, Role TEXT, Name TEXT, PeopleId TEXT"),
+    "LocgContainment": dict(file="legs", pk=["Id"], purpose="391k forward/reverse containment edges - input to books-locg-containment only", cols="Id INTEGER, ContainerLocgComicId INTEGER, ContainedLocgComicId INTEGER, ChapterTitle TEXT, Ordinal INTEGER, Source TEXT, StoryId INTEGER, ScrapedAt TEXT", idx=["UNIQUE (ContainerLocgComicId, ContainedLocgComicId)", "(ContainedLocgComicId)"]),
+    "LocgSeries": dict(file="legs", pk=["LocgSeriesId"], purpose="LOCG series (python leg)", cols="LocgSeriesId INTEGER, Name TEXT, Publisher TEXT, YearBegin INTEGER, YearEnd INTEGER, YearText TEXT, IssueCount INTEGER, ImportedAt TEXT"),
+    "LocgSeriesInference": dict(file="legs", pk=["GcdSeriesId"], purpose="GCD-series -> LOCG-series inference", cols="GcdSeriesId INTEGER, LocgSeriesId TEXT, SeriesName TEXT, Support INTEGER, ImportedAt TEXT"),
+    "GcdIssue": dict(file="legs", pk=["GcdIssueId"], purpose="GCD issues (the story-genre fold reads them into ItemTag(Source=Gcd))", cols="GcdIssueId INTEGER, GcdSeriesId INTEGER, SeriesName TEXT, SeriesYearBegan INTEGER, Number TEXT, Title TEXT, KeyDate TEXT, PublicationDate TEXT, ValidIsbn TEXT, Isbn TEXT, Barcode TEXT, PageCount INTEGER, Price TEXT, Publisher TEXT, Format TEXT, VariantOfId INTEGER, VariantName TEXT, ImportedAt TEXT, StoryGenres TEXT", idx=["(GcdSeriesId)", "(ValidIsbn)", "(Barcode)"]),
+    "GcdSeries": dict(file="legs", pk=["GcdSeriesId"], purpose="GCD series", cols="GcdSeriesId INTEGER, Name TEXT, SortName TEXT, YearBegan INTEGER, YearEnded INTEGER, Publisher TEXT, Format TEXT, IssueCount INTEGER, HasIsbn INTEGER, HasBarcode INTEGER, Binding TEXT, Notes TEXT, ImportedAt TEXT"),
+    "OpenLibraryEdition": dict(file="legs", pk=["Isbn"], purpose="ISBN-keyed OL editions", cols="Isbn TEXT, Title TEXT, Subtitle TEXT, AuthorsJson TEXT, Publishers TEXT, PublishDate TEXT, Pages INTEGER, SubjectsJson TEXT, CoverUrl TEXT, OlEditionKey TEXT, OlWorkKey TEXT, SeriesString TEXT, PhysicalFormat TEXT, ImportedAt TEXT", idx=["(OlWorkKey)"]),
+    "OpenLibraryWork": dict(file="legs", pk=["WorkKey"], purpose="OL works", cols="WorkKey TEXT, Title TEXT, SubjectsJson TEXT, SeriesString TEXT, EditionCount INTEGER, ImportedAt TEXT"),
+    "OlSeriesInference": dict(file="legs", pk=["GcdSeriesId"], purpose="GCD-series -> OL-work inference", cols="GcdSeriesId INTEGER, OlWorkKey TEXT, SeriesString TEXT, SubjectsJson TEXT, IsbnSupport INTEGER, ImportedAt TEXT"),
+    "MarvelSeries": dict(file="legs", pk=["MarvelSeriesId"], purpose="Marvel identity leg", cols="MarvelSeriesId INTEGER, Slug TEXT, Name TEXT, YearStart INTEGER, YearEnd INTEGER, ScrapedAt TEXT"),
+    "MarvelIssue": dict(file="legs", pk=["MarvelIssueId"], purpose="Marvel identity leg", cols="MarvelIssueId INTEGER, MarvelSeriesId INTEGER, Number TEXT, Slug TEXT, ScrapedAt TEXT"),
+    "MarvelSeriesLink": dict(file="legs", pk=["SeriesId"], purpose="Marvel series match (128 rows)", cols="SeriesId INTEGER, MarvelSeriesId INTEGER, Status TEXT, Confidence REAL, MatchedKey TEXT, CreatedAt TEXT"),
+    "BarcodeScan": dict(file="legs", pk=["ItemId"], purpose="Barcode sweep results", cols="ItemId INTEGER, CodesJson TEXT, PagesScanned INTEGER, Error TEXT, ScannedAt TEXT"),
+    "ProviderResponseCache": dict(file="legs", pk=["Provider", "RequestKey"], purpose="Cache-first API bodies (ComicVine today)", cols="Provider INTEGER, RequestKey TEXT, ResponseJson TEXT, FetchedAt TEXT"),
+    "LinkCandidates": dict(file="legs", pk=["Scope", "Key", "Provider"], purpose="CandidatesJson for links that are NOT Pending/Multiple (audit trail; the hot links keep candidates only while a decision is open)", cols="Scope INTEGER, Key TEXT, Provider INTEGER, CandidatesJson TEXT"),
+    "MuSeriesRaw": dict(file="legs", pk=["MuSeriesId"], purpose="MangaUpdates raw payload + JSON lists", cols="MuSeriesId INTEGER, GenresJson TEXT, CategoriesJson TEXT, RawJson TEXT"),
+    "CvVolumeRaw": dict(file="legs", pk=["CvVolumeId"], purpose="ComicVine volume JSON lists (concepts/characters/locations/objects/teams) - all '[]' today", cols="CvVolumeId INTEGER, ConceptsJson TEXT, CharactersJson TEXT, LocationsJson TEXT, ObjectsJson TEXT, TeamsJson TEXT"),
+}
+
+# ----------------------------------------------------------------------------------------------
+# v1 -> v2: per v1 table, its targets and per-column rules. Any v1 column not listed maps "same"
+# into the first target; the checker fails on a v1 column that reaches no target and is not
+# dropped with a reason.
+# ----------------------------------------------------------------------------------------------
+NO_RT = "drop:no runtime reader (usage census) and no offline reader that needs it after v2"
+DEAD = "drop:always NULL or constant in v1 (column census)"
+IDENT = "drop:identity moves to the site (MT Users/UserSettings; BooksIdentity header)"
+
+V1 = {
+    "LibraryPaths": dict(targets=["LibraryRoot"], stage="roots", cols={"Category": "->Kind", "IsCalibreLibrary": "->IsCalibre", "AuthorizedUsersJson": "drop:per-folder/root ACL dropped (2 distinct lists over 54,418 folders; gate = BooksAccess + maturity)"}),
+    "Folders": dict(targets=["Folder"], stage="folders", cols={"FolderPath": "->Path", "FolderName": "->Name", "Category": "->Kind", "AuthorizedUsersJson": "drop:per-folder ACL dropped (uniform lists; LIKE scan on every list query removed)"},
+                    derived={"RootId": "xf:root_of_path", "Depth": "xf:depth_of_path", "TopFolderId": "xf:top_ancestor", "HasIcon": "xf:icon_file_exists"}),
+    "FolderAggregates": dict(targets=["Folder"], stage="folders", cols={"FolderId": "->Id", "DescendantComicCount": "->DescendantItemCount", "UpdatedAt": "drop:aggregate refresh is a ScanRun fact now"}),
+    "Publishers": dict(targets=["Publisher"], stage="publishers", cols={}),
+    "Comics": dict(targets=["Item", "ItemState", "ItemSignature", "ComicEmbedded", "BookDetail", "ItemCredit", "ItemTag", "Rating"], stage="items", cols={
+        # Item
+        "ParentFolderId": "->Item.FolderId", "Category": "->Item.Kind", "FilePath": "->Item.Path", "FileExtension": "->Item.Extension", "FolderGroupId": "->Item.TopFolderId",
+        "ExcludedFromLibrary": "->Item.IsExcluded", "KeepInDirectory": "same", "PublisherId": "same", "Title": "same", "NormalizedTitle": "same", "FileName": "same", "FileSize": "same", "FileModifiedAt": "same", "IndexedAt": "same", "PageCount": "same",
+        # ItemState
+        "IsBroken": "->ItemState.IsBroken", "BrokenReason": "->ItemState.BrokenReason", "BrokenCheckedAt": "->ItemState.BrokenCheckedAt", "ThumbnailError": "->ItemState.ThumbnailError", "ThumbnailCheckedAt": "->ItemState.ThumbnailCheckedAt",
+        "CoverWidth": "->ItemState.CoverWidth", "CoverHeight": "->ItemState.CoverHeight", "CoverDimsComputedFor": "->ItemState.CoverDimsComputedFor", "ExclusionReason": "->ItemState.ExclusionReason", "ExcludedAt": "->ItemState.ExcludedAt",
+        # ItemSignature
+        "ContentFingerprint": "->ItemSignature.ContentFingerprint", "CoverPHash": "->ItemSignature.CoverPHash", "PageSignature": "->ItemSignature.PageSignature", "SignaturesComputedFor": "->ItemSignature.SignaturesComputedFor",
+        # ComicEmbedded (comics) / BookDetail (books) - the transform routes by Category
+        "SeriesName": "xf:split_by_kind:ComicEmbedded.Series|BookDetail.SeriesName", "SeriesIndex": "xf:split_by_kind:ComicEmbedded.Number|BookDetail.SeriesIndex",
+        "AltSeriesName": "->ComicEmbedded.AltSeries", "AltSeriesIndex": "->ComicEmbedded.AltNumber", "Volume": "->ComicEmbedded.Volume", "IssueTitle": "xf:split_by_kind:ComicEmbedded.Title|drop(duplicate of Title for books)",
+        "Description": "xf:split_by_kind:ComicEmbedded.Summary|BookDetail.Description", "Publisher": "xf:split_by_kind:ComicEmbedded.Publisher|BookDetail.Publisher", "PublicationDate": "xf:split_by_kind:ComicEmbedded.PublicationDate|BookDetail.PublishedOn",
+        "Language": "xf:split_by_kind:ComicEmbedded.Language|BookDetail.Language", "Identifier": "xf:split_by_kind:ComicEmbedded.Identifier|BookDetail.Isbn",
+        "Writers": "xf:split_by_kind:ComicEmbedded.Writers+ItemCredit(Writer,ComicInfo)|ItemCredit(Author,Calibre)", "Pencillers": "->ComicEmbedded.Pencillers +ItemCredit", "Inker": "->ComicEmbedded.Inker +ItemCredit", "Colorist": "->ComicEmbedded.Colorist +ItemCredit", "Letterer": "->ComicEmbedded.Letterer +ItemCredit", "CoverArtist": "->ComicEmbedded.CoverArtist +ItemCredit", "Editor": "->ComicEmbedded.Editor +ItemCredit",
+        "Genre": "xf:comicinfo_genre:ComicEmbedded.Genre+ItemTag(genre,ComicInfo|Cv)", "Tags": "xf:split_by_kind:ComicEmbedded.Tags+ItemTag(tag,ComicInfo)|ItemTag(tag,Calibre)",
+        "Characters": "->ComicEmbedded.Characters", "Teams": "->ComicEmbedded.Teams", "Locations": "->ComicEmbedded.Locations", "StoryArc": "->ComicEmbedded.StoryArc", "Web": "->ComicEmbedded.Web", "Format": "->ComicEmbedded.Format", "BlackAndWhite": "->ComicEmbedded.BlackAndWhite", "Manga": "->ComicEmbedded.Manga", "Notes": "->ComicEmbedded.Notes", "Count": "->ComicEmbedded.Count", "AgeRating": "->ComicEmbedded.AgeRating",
+        "EmbeddedRating": "xf:rating:ComicEmbedded.Rating+Rating(Item,Embedded)", "UserRating": "xf:rating:Rating(Item,User)",
+        # dead
+        "MetadataVersion": "drop:scanner-private constant 1", "Imprint": "drop:write-only (usage census: single reference = entity declaration)", "GTIN": DEAD, "SeriesGroup": DEAD, "AlternateCount": DEAD, "Translator": DEAD, "StoryArcNumber": DEAD, "MainCharacterOrTeam": "drop:constant ('Superman') and write-only",
+    }, derived={"Item.ContainerFormat": "xf:sniff_or_extension", "Item.CalibreBookId": "xf:calibre_link_json", "Item.SeriesId": "derived:books-resolve-series", "Item.CoverAspect": "derived:books-resolve (ItemState dims, clamp 0.35-1.6, default 0.66)", "Item.Resolved*": "derived:books-resolve", "Item.RootId": "xf:root_of_path"}),
+    "ComicParsedDetails": dict(targets=["ComicDetail"], stage="comic-details", cols={"ComicId": "->ItemId", "Series": "->ParsedSeriesKey", "Format": "xf:enum:Format (33 spellings -> enum + FormatRaw)", "Confidence": "xf:enum:Confidence", "SeriesSource": "xf:enum:Source", "IssueSource": "xf:enum:Source", "YearSource": "xf:enum:Source", "PublisherSource": "xf:enum:Source",
+        "ClaudeSeriesMetadataId": "drop:series-scoped; the Insight(Series) current row is reached via Item.SeriesId", "ComicvineVolumeId": "drop:series-scoped -> Series.CvVolumeId (derived from SeriesKeyLink)", "ExternalWorkId": "drop:series-scoped -> Series.ExternalWorkId (derived)", "SeriesId": "->Item.SeriesId (materialized; still DERIVED)"}),
+    "Series": dict(targets=["Series"], stage="series", cols={"ResolvedName": "->Name", "ComicvineVolumeId": "->CvVolumeId"}),
+    "SeriesParsedKeys": dict(targets=["SeriesAlias"], stage="series-aliases", cols={}),
+    "SeriesMergeLogs": dict(targets=["SeriesMerge"], stage="series-merges", cols={"CanonicalKey": "drop:constant '' in v1"}),
+    "SeriesAliases": dict(targets=[], stage="-", cols={}, drop="19 manual rows the resolution pipeline never reads (series-reconciliation skill); exported to data/books/v1/series-aliases.json"),
+    "ComicvineSeriesLinks": dict(targets=["SeriesKeyLink", "LinkCandidates"], stage="series-links", cols={"SeriesName": "->ParsedKey", "ComicvineVolumeId": "->ProviderKey", "MatchScore": "->Score", "CandidatesJson": "xf:candidates:hot only while Status in (Pending, Multiple), else LinkCandidates; StoredTopScore extracted", "AttemptedAt": "same", "ErrorMessage": "->Error", "SearchQuery": "drop:reconstructible from ParsedKey", "Status": "xf:enum:LinkStatus"}, derived={"Provider": "const:Cv"}),
+    "ExternalSeriesLinks": dict(targets=["SeriesKeyLink", "LinkCandidates"], stage="series-links", cols={"SeriesName": "->ParsedKey", "ExternalWorkId": "->ProviderKey", "MatchScore": "->Score", "MatchedProvider": "drop:constant 'openlibrary' (column census)", "CandidatesJson": "xf:candidates", "ErrorMessage": "drop:always NULL", "SearchQuery": "drop:reconstructible", "AttemptCount": "same", "Status": "xf:enum:LinkStatus"}, derived={"Provider": "const:External"}),
+    "MangaUpdatesMatches": dict(targets=["MuSeriesLink", "LinkCandidates"], stage="series-links", cols={"MatchMethod": "->Method", "CandidatesJson": "xf:candidates"}),
+    "ComicvineMatches": dict(targets=["ItemProviderLink", "LinkCandidates"], stage="item-links", cols={"ComicId": "->ItemId", "ComicvineIssueId": "->ProviderKey", "ComicvineVolumeId": "->SecondaryKey", "Status": "xf:enum:LinkStatus", "LastAttemptedAt": "->AttemptedAt", "ErrorMessage": "->Error", "SearchQuery": "drop:reconstructible", "CandidatesJson": "xf:candidates"}, derived={"Provider": "const:Cv", "Quality": "const:Unknown"}),
+    "LocgMatches": dict(targets=["ItemProviderLink"], stage="item-links", cols={"ComicId": "->ItemId", "LocgComicId": "->ProviderKey", "LocgSeriesId": "drop:always NULL", "Slug": "drop:always NULL", "Status": "xf:enum:LinkStatus", "MatchMethod": "->Method", "MatchQuality": "xf:enum:LinkQuality ('span-corroborated' -> High + Method)", "LastScrapedAt": "->AttemptedAt", "ErrorMessage": "->Error"}, derived={"Provider": "const:Locg"}),
+    "GcdMatches": dict(targets=["ItemProviderLink"], stage="item-links", cols={"ComicId": "->ItemId", "GcdIssueId": "->ProviderKey", "GcdSeriesId": "->SecondaryKey", "Status": "xf:enum:LinkStatus", "MatchMethod": "->Method", "CandidateCount": "drop:derivable", "ErrorMessage": "->Error", "CreatedAt": "->AttemptedAt"}, derived={"Provider": "const:Gcd"}),
+    "BarneyMatches": dict(targets=["ItemProviderLink"], stage="item-links", cols={"ComicId": "->ItemId", "ProgNo": "->ProviderKey", "MatchMethod": "->Method", "CreatedAt": "->AttemptedAt"}, derived={"Provider": "const:Barney", "Status": "const:Matched"}),
+    "MarvelMatches": dict(targets=["ItemProviderLink"], stage="item-links", cols={"ComicId": "->ItemId", "MarvelIssueId": "->ProviderKey", "MatchMethod": "->Method", "CreatedAt": "->AttemptedAt"}, derived={"Provider": "const:Marvel", "Status": "const:Matched"}),
+    "InducksMatches": dict(targets=["ItemProviderLink"], stage="item-links", cols={"ComicId": "->ItemId", "IssueCode": "->ProviderKey", "PublicationCode": "->SecondaryKey", "Status": "xf:enum:LinkStatus", "MatchMethod": "->Method", "CreatedAt": "->AttemptedAt"}, derived={"Provider": "const:Inducks"}),
+    "MarvelSeriesMatches": dict(targets=["MarvelSeriesLink"], stage="legs", cols={}),
+    "ComicvineVolumes": dict(targets=["CvVolume", "CvVolumeRaw"], stage="cv", cols={"ComicvineId": "->Id", "PublisherId": "drop:CV publisher id unused (PublisherName is what the projection reads)", "ConceptsJson": "->CvVolumeRaw.ConceptsJson", "CharactersJson": "->CvVolumeRaw.CharactersJson", "LocationsJson": "->CvVolumeRaw.LocationsJson", "ObjectsJson": "->CvVolumeRaw.ObjectsJson", "TeamsJson": "->CvVolumeRaw.TeamsJson"}),
+    "ComicvineIssues": dict(targets=["CvIssue"], stage="cv", cols={"ComicvineId": "->Id"}),
+    "ComicvineApiCaches": dict(targets=["ProviderResponseCache"], stage="legs", cols={}, derived={"Provider": "const:Cv"}),
+    "ComicvineCollectedEditions": dict(targets=["CollectedEditionSpan"], stage="collected-editions", cols={"ComicId": "->ItemId", "ComicvineVolumeId": "->ProviderRef", "ScrapedAt": "->CreatedAt"}, derived={"Source": "const:Cv"}),
+    "GcdCollectedEditions": dict(targets=["CollectedEditionSpan"], stage="collected-editions", cols={"ComicId": "->ItemId", "GcdIssueId": "drop:always NULL", "SourceSeries": "->ProviderRef", "MatchBy": "->Note"}, derived={"Source": "const:Gcd"}),
+    "LocgCollectedEditions": dict(targets=["CollectedEditionSpan"], stage="collected-editions", cols={"ComicId": "->ItemId", "LocgComicId": "->ProviderRef", "ContainedCount": "->Note"}, derived={"Source": "const:Locg"}),
+    "CuratedCollectedEditions": dict(targets=["CollectedEditionSpan"], stage="collected-editions", cols={"ComicId": "->ItemId", "Source": "drop:constant 'claude' (becomes Source=Curated)"}, derived={"Source": "const:Curated"}),
+    "ComicCollectionNodes": dict(targets=["CollectionNode"], stage="collection-nodes", cols={"ComicId": "->ItemId", "CollectionLevel": "->Level", "ParentComicId": "->ParentItemId", "TrackRole": "xf:enum:TrackRole", "SpanSource": "xf:enum:SpanSource"}),
+    "ComicReadingOrder": dict(targets=["ReadingOrderEntry"], stage="reading-order", cols={"ComicId": "->ItemId", "GroupKey": "xf:groupkey_to_seriesid", "Source": "xf:enum:ReadingOrderSource", "Confidence": "xf:enum:Confidence", "ReadDatePrecision": "xf:enum:DatePrecision"}),
+    "ClaudeSeriesMetadata": dict(targets=["Insight"], stage="insights", cols={"Id": "drop:v2 Insight.Id is new; v1 id kept in SourceKey suffix", "SeriesName": "xf:insight_subject:Series via SeriesAlias(lower(SeriesName)); SourceKey=SeriesName; unresolved -> report", "KnownSeries": "->Recognized", "Confidence": "xf:enum:Confidence", "TagsCsv": "drop:rollup; rebuilt as SeriesTag(Source=AI) from InsightTag"}, derived={"SubjectKind": "const:Series", "Rank": "xf:model_rank", "IsCurrent": "derived:books-resolve-insights"}),
+    "ClaudeSeriesTags": dict(targets=["InsightTag"], stage="insights", cols={"MetadataId": "->InsightId (via the v1 id kept during migration)", "Tag": "->Value"}),
+    "ClaudeBookMetadata": dict(targets=["Insight"], stage="insights", cols={"ComicId": "->SubjectId", "KnownBook": "->Recognized", "Confidence": "xf:enum:Confidence", "YearPublished": "->YearBegin", "TagsCsv": "drop:rollup; rebuilt as ItemTag(Source=AI)"}, derived={"SubjectKind": "const:Item", "Rank": "xf:model_rank", "IsCurrent": "const:1 (one row per book in v1)"}),
+    "ClaudeBookTags": dict(targets=["InsightTag"], stage="insights", cols={"ComicId": "->InsightId (via the book's Insight row)", "Tag": "->Value"}),
+    "KidSafeTags": dict(targets=["KidSafeTag"], stage="tags", cols={}),
+    "TagAliases": dict(targets=["TagAlias"], stage="tags", cols={}),
+    "Tags": dict(targets=[], stage="-", cols={}, drop="0 rows; the dead second tag system"),
+    "ComicTagAssociation": dict(targets=[], stage="-", cols={}, drop="0 rows; the dead second tag system"),
+    "LibraryComicRatings": dict(targets=["Rating"], stage="ratings", cols={"ComicId": "->TargetId", "Rating": "->Value", "Sources": "->Note (appended)"}, derived={"TargetKind": "const:Item", "Source": "const:Library"}),
+    "LibrarySeriesRatings": dict(targets=["Rating"], stage="ratings", cols={"SeriesId": "->TargetId", "Rating": "->Value", "Sources": "->Note (appended)"}, derived={"TargetKind": "const:Series", "Source": "const:Library"}),
+    "LibraryRatingOverrides": dict(targets=["Rating"], stage="ratings", cols={"TargetType": "->TargetKind", "Rating": "->Value", "CreatedAt": "->GeneratedAt"}, derived={"Source": "const:Override", "IsOverride": "const:1"}),
+    "LocgComics": dict(targets=["LocgComic", "LocgComicRaw", "LocgCreatorRaw", "ItemCredit"], stage="locg", cols={"RawJson": "drop:always NULL (column census)", "CreatorsJson": "xf:creators_json -> LocgCreatorRaw (all rows) + ItemCredit(Source=Locg) for matched rows", "ReleaseDate": "->LocgComicRaw.ReleaseDate", "KeyReason": "->LocgComicRaw.KeyReason", "DistributorSku": "->LocgComicRaw.DistributorSku", "EstimatedValue": "->LocgComicRaw.EstimatedValue", "Url": "->LocgComicRaw.Url", "StoryIdsJson": "->LocgComicRaw.StoryIdsJson"}, note="hot LocgComic keeps only rows referenced by ItemProviderLink(Locg); LocgComicRaw keeps every row"),
+    "LocgContainments": dict(targets=["LocgContainment"], stage="legs", cols={}),
+    "LocgSeries": dict(targets=["LocgSeries"], stage="legs", cols={}),
+    "LocgSeriesInference": dict(targets=["LocgSeriesInference"], stage="legs", cols={}),
+    "LocgApiCaches": dict(targets=[], stage="-", cols={}, drop="0 rows; LOCG HTTP lives in the Node scraper, never in C#"),
+    "GcdIssues": dict(targets=["GcdIssue"], stage="legs", cols={"TagsCsv": "drop:rollup; rebuilt as ItemTag(Source=Gcd) by the fold"}),
+    "GcdSeries": dict(targets=["GcdSeries"], stage="legs", cols={}),
+    "MangaUpdatesSeries": dict(targets=["MuSeries", "MuSeriesRaw"], stage="mu", cols={"MuSeriesId": "->Id", "GenresJson": "->MuSeriesRaw.GenresJson (+SeriesTag(Source=Mu) via fold)", "CategoriesJson": "->MuSeriesRaw.CategoriesJson", "RawJson": "->MuSeriesRaw.RawJson", "TagsCsv": "drop:rollup; rebuilt as SeriesTag(Source=Mu)"}),
+    "BarneyProgs": dict(targets=["BarneyProg"], stage="barney", cols={}),
+    "MarvelSeries": dict(targets=["MarvelSeries"], stage="legs", cols={}),
+    "MarvelIssues": dict(targets=["MarvelIssue"], stage="legs", cols={}),
+    "ExternalWorks": dict(targets=["ExternalWork"], stage="external", cols={"SubjectsJson": "drop:folded into SeriesTag(Source=External) by the whitelist fold; raw subjects live in OpenLibraryWork.SubjectsJson", "TagsCsv": "drop:rollup; rebuilt as SeriesTag(Source=External)"}),
+    "OpenLibraryEditions": dict(targets=["OpenLibraryEdition"], stage="legs", cols={}),
+    "OpenLibraryWorks": dict(targets=["OpenLibraryWork"], stage="legs", cols={}),
+    "OlSeriesInference": dict(targets=["OlSeriesInference"], stage="legs", cols={}),
+    "BarcodeScans": dict(targets=["BarcodeScan"], stage="legs", cols={"ComicId": "->ItemId"}),
+    "CvdbResolutions": dict(targets=["CvdbResolution"], stage="tags", cols={}),
+    "SeriesInferenceDecisions": dict(targets=["SeriesInferenceDecision"], stage="reconciliation", cols={}),
+    "SeriesMatchReviews": dict(targets=["SeriesMatchReview"], stage="reconciliation", cols={}),
+    "DuplicateGroups": dict(targets=["DuplicateGroup"], stage="dedup-groups", cols={"SuggestedKeeperComicId": "->SuggestedKeeperItemId"}),
+    "DuplicateMembers": dict(targets=["DuplicateMember"], stage="dedup-members", cols={"ComicId": "->ItemId"}),
+    "Bookmarks": dict(targets=["UserItemState"], stage="user-activity", cols={"Id": "drop:composite key (UserId, ItemId)", "Username": "xf:username_to_userid (only user 2 -> 1)", "ComicId": "->ItemId", "Status": "xf:enum:ReadStatus"}),
+    "ComicUserLists": dict(targets=["UserItemState"], stage="user-activity", cols={"Id": "drop:composite key", "Username": "xf:username_to_userid", "ComicId": "->ItemId", "ListType": "xf:list_type -> WantToRead=1", "AddedAt": "->UpdatedAt (when no position row exists)"}),
+    "GroupUserMetadata": dict(targets=["GroupMark", "UserItemState"], stage="user-activity", cols={"Id": "drop:composite key", "Username": "xf:username_to_userid", "GroupType": "xf:group_type:'comic' rows -> UserItemState(Favorite/WantToRead/Notes); others -> GroupMark enum", "IsFavorite": "same"}),
+    "SeriesUserLists": dict(targets=[], stage="-", cols={}, drop="0 rows; superseded by GroupMark"),
+    "Users": dict(targets=[], stage="-", cols={}, drop=IDENT[5:]),
+    "Sessions": dict(targets=[], stage="-", cols={}, drop=IDENT[5:]),
+    "SiteSettings": dict(targets=["SystemState"], stage="system-state", cols={"UpdatedAt": "drop:KV has no timestamp"}),
+    "SystemState": dict(targets=["DerivedTable"], stage="system-state", cols={"Key": "xf:fingerprint_key_to_table (the 7 *_fingerprint rows become DerivedTable.InputFingerprint; other keys -> SystemState)", "Value": "->InputFingerprint"}),
+    "ComicvineCharacters": dict(targets=[], stage="-", cols={}, drop="0 rows; scraper code that wrote it is deleted in the port"),
+    "ComicvinePeople": dict(targets=[], stage="-", cols={}, drop="0 rows"), "ComicvineTeams": dict(targets=[], stage="-", cols={}, drop="0 rows"), "ComicvineStoryArcs": dict(targets=[], stage="-", cols={}, drop="0 rows"),
+    "ComicvineIssueCharacters": dict(targets=[], stage="-", cols={}, drop="0 rows"), "ComicvineIssuePeople": dict(targets=[], stage="-", cols={}, drop="0 rows"), "ComicvineIssueTeams": dict(targets=[], stage="-", cols={}, drop="0 rows"), "ComicvineIssueStoryArcs": dict(targets=[], stage="-", cols={}, drop="0 rows"),
+    "ComicvineSeries": dict(targets=[], stage="-", cols={}, drop="0 rows; 'never populated - do not use' (unified-data skill)"), "ComicvineVolumeSeries": dict(targets=[], stage="-", cols={}, drop="0 rows"),
+    "ComicFts": dict(targets=["ItemFts"], stage="fts", cols={"body": "xf:rebuild from Resolved* at the end of books-resolve"}),
+    "ComicFts_config": dict(targets=[], stage="-", cols={}, drop="FTS shadow table"), "ComicFts_data": dict(targets=[], stage="-", cols={}, drop="FTS shadow table"), "ComicFts_docsize": dict(targets=[], stage="-", cols={}, drop="FTS shadow table"), "ComicFts_idx": dict(targets=[], stage="-", cols={}, drop="FTS shadow table"),
+    "sqlite_sequence": dict(targets=[], stage="-", cols={}, drop="SQLite internal"),
+}
+
+ENUMS = {
+    "Item.Kind": ["Comic", "Book"],
+    "Item.ContainerFormat": ["Cbz", "Cbr", "Pdf", "Epub", "Mobi", "Unknown"],
+    "ComicDetail.Format": ["SingleIssue", "Tpb", "Hardcover", "Omnibus", "Annual", "Special", "OneShot", "GraphicNovel", "LimitedSeries", "Weekly", "Reprint", "Collection", "Magazine", "Unknown"],
+    "Confidence": ["Unknown", "Low", "Medium", "High"],
+    "ComicDetail.*Source": ["None", "Metadata", "MetadataAlt", "Filename", "FilenameLeadingIndex", "Folder", "Volume", "Default"],
+    "ReadingOrderEntry.Source": ["Unordered", "ComicVine", "Date", "IssueNo", "IssueNoDate", "ClaudeYear", "IssueNoClaudeYear", "Containment"],
+    "DatePrecision": ["None", "Year", "Month", "Day"],
+    "CollectionNode.Level": ["Issue", "Volume", "Book", "Omnibus"],
+    "CollectionNode.TrackRole": ["Primary", "Container", "Alternate"],
+    "CollectionNode.SpanSource": ["None", "Inferred", "ComicVine", "Gcd", "Locg", "Curated"],
+    "Provider": ["Cv", "External", "Locg", "Gcd", "Mu", "Barney", "Marvel", "Inducks"],
+    "LinkStatus": ["Pending", "Matched", "NoMatch", "Multiple", "Error", "Manual", "Cleared", "Skip"],
+    "LinkQuality": ["Unknown", "Low", "Medium", "High", "Conflict"],
+    "CollectedEditionSpan.Source": ["Locg", "Gcd", "Cv", "Curated"],
+    "Insight.SubjectKind / Rating.TargetKind": ["Item", "Series"],
+    "Rating.Source": ["Embedded", "User", "AI", "Locg", "Mu", "Library", "Override"],
+    "ItemCredit.Source / ItemTag.Source": ["ComicInfo", "Cv", "Calibre", "Locg", "Gcd", "External", "Mu", "AI"],
+    "UserItemState.Status": ["Unread", "InProgress", "Finished"],
+    "GroupMark.GroupType": ["Series", "Volume", "Collection", "Publisher", "Decade"],
+    "Item.ResolvedSynopsisSource": ["None", "Cv", "Embedded", "Locg", "External", "Mu", "CvDeck", "AI"],
+}
+
+STAGE_ORDER = ["roots", "folders", "publishers", "series", "series-aliases", "series-merges", "items", "comic-details", "reading-order", "collection-nodes", "collected-editions",
+               "cv", "locg", "mu", "barney", "external", "legs", "series-links", "item-links", "insights", "ratings", "tags", "reconciliation", "dedup-groups", "dedup-members",
+               "user-activity", "system-state", "resolve", "fts", "analyze"]
+
+
+def main():
+    out = {"version": 1, "v2": V2, "v1": V1, "enums": ENUMS, "stages": STAGE_ORDER,
+           "invariants": ["Item.Id == Comics.Id", "Series.Id == Series.Id (v1)", "Folder.Id == Folders.Id", "Publisher.Id == Publishers.Id",
+                          "browse projection joins Item + Series only", "no FK crosses the hot/legs file boundary",
+                          "derived tables are rebuilt by their registered job, never hand-edited"]}
+    dump_json(DOCS / "v2-mapping.json", out)
+    print("v2 tables:", len(V2), "hot:", sum(1 for v in V2.values() if v["file"] == "hot"), "legs:", sum(1 for v in V2.values() if v["file"] == "legs"))
+    print("v1 tables mapped:", len(V1), "dropped:", sum(1 for v in V1.values() if not v["targets"]))
+
+
+if __name__ == "__main__":
+    main()
