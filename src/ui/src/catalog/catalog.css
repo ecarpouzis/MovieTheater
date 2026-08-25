@@ -1,0 +1,45 @@
+/* Catalog package styles. Tokens come from theme.css (data-theme x data-feature on <html>), so a
+   badge is tinted by whichever section renders it. Imported by the components themselves: Vite
+   splits CSS per lazy chunk, so a component rendered on every route must own its stylesheet. */
+
+.catalog-badges {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.catalog-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font: 600 11px/16px var(--font-sans, system-ui, sans-serif);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  border: 1px solid var(--chip-neutral-border, transparent);
+  background: var(--chip-neutral-bg, rgba(127, 127, 127, 0.15));
+  color: var(--chip-neutral-text, inherit);
+}
+
+.catalog-badge--rating {
+  background: var(--rating-chip-bg, var(--chip-neutral-bg));
+  border-color: var(--rating-chip-border, var(--chip-neutral-border));
+  color: var(--rating-chip-text, var(--chip-neutral-text));
+}
+
+.catalog-badge--system {
+  background: transparent;
+  border-color: var(--chip-system-border, var(--chip-neutral-border));
+  color: var(--chip-system-text, var(--chip-neutral-text));
+}
+
+.catalog-badge--want {
+  background: var(--want-soft, var(--chip-neutral-bg));
+  border-color: transparent;
+  color: var(--want-accent, var(--chip-neutral-text));
+}
+
+.catalog-badge--live {
+  background: var(--status-live, #c9484f);
+  border-color: transparent;
+  color: #fff;
+}

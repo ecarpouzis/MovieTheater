@@ -1,5 +1,6 @@
 import { defineConfig, transformWithEsbuild } from "vite";
 import react from "@vitejs/plugin-react";
+import { fileURLToPath } from "node:url";
 
 export default defineConfig({
   plugins: [
@@ -13,6 +14,11 @@ export default defineConfig({
     },
     react(),
   ],
+
+  // `@/...` = src/... for the TypeScript code (mirrors tsconfig `paths`); existing JS keeps relative imports.
+  resolve: {
+    alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
+  },
 
   optimizeDeps: {
     esbuildOptions: {
