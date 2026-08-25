@@ -39,6 +39,14 @@ public sealed class RomCacheOptions
     /// <summary>Host path of the ROM mount root (same as compose <c>ROMS_DIR</c>, e.g. D:\Arcade\roms).</summary>
     public string? RomsDir { get; set; }
 
+    /// <summary>Every worker's emulator SAVE root — <c>&lt;ConfDir&gt;/libretro/legacy_save</c>, one entry per
+    /// GL worker (they deliberately do NOT share a ConfDir). Destination for a game whose companion carries a
+    /// <c>save:</c> <see cref="RomCache.ManifestGame.CompanionDest"/>: PSP DLC, which the game only finds on
+    /// the memory stick. Installed into ALL of them because the coordinator, not the gateway, decides which
+    /// worker takes a room — and these assets are static and user-independent, so a copy per worker is right.
+    /// Empty disables save-root companions (they are then reported as skipped, never silently dropped).</summary>
+    public string[] WorkerSaveRoots { get; set; } = Array.Empty<string>();
+
     /// <summary>Disk cap for extracted JIT ROMs. Default 30 GB.</summary>
     public long MaxBytes { get; set; } = 30L * 1024 * 1024 * 1024;
 
@@ -70,7 +78,12 @@ public sealed class RomCache
     // neogeo.zip). Without them fbneo reports "missing romset". Staged verbatim by filename, idempotently,
     // and deliberately NOT tracked for eviction: a BIOS zip is shared by hundreds of games, so it stays
     // resident once copied (the closure is small and bounded, far under the cap).
-    public sealed record ManifestGame(int GameId, string GameKey, string System, string Folder, string Archive, string[]? Exts = null, DiscRef[]? Discs = null, string[]? Deps = null, string? CompanionPath = null);
+    // CompanionDest = where CompanionPath has to LAND when the ROM mount is the wrong place for it, in the
+    // "<root>:<relpath>" grammar the worker config's cards: map uses. Null (the ordinary case) means the ROM
+    // mount, in a subfolder named after GameKey. "save:<relpath>" means the emulator SAVE root instead —
+    // <ConfDir>/libretro/legacy_save, which for PPSSPP IS ms0:, the only place a PSP game will look for its
+    // downloadable content. Nullable and last, so a manifest written before this existed still deserializes.
+    public sealed record ManifestGame(int GameId, string GameKey, string System, string Folder, string Archive, string[]? Exts = null, DiscRef[]? Discs = null, string[]? Deps = null, string? CompanionPath = null, string? CompanionDest = null);
 
     // A member disc of a multi-disc .m3u game: the source archive to extract + the .cue/.chd filename it
     // produces (which goes, in order, into the generated playlist). See docs/arcade-dedupe-multidisc-plan.md.
@@ -163,6 +176,13 @@ public sealed class RomCache
                 // Game ROM already resident, but its dependency closure may not be (e.g. it was staged
                 // before deps were added to the manifest). Ensure it — idempotent and cheap when present.
                 await StageDepsAsync(g, FolderDest(g), ct);
+                // Same reasoning, and the reason a `save:` companion exists at all: IsPresent only inspects
+                // the ROM MOUNT, so a DLC install that went missing from a worker's save root — a rebuilt
+                // ConfDir, a new worker added since the last launch, a hand-cleaned memory stick — is
+                // invisible to it, and the game would quietly boot as the version without its content
+                // (Ape Quest reverting to its prologue demo). Re-ensure on every launch: this is an
+                // existence check on a small directory, and a no-op once installed.
+                await StageCompanionAsync(g, ct);
                 Touch(gameId, g);
                 return;
             }
@@ -383,9 +403,14 @@ public sealed class RomCache
     // (a Naomi GD-ROM disc, a ScummVM data directory) — that the companion subfolder actually landed too.
     // Without the second check a room could be told "ready" right after the tiny primary file (a boot-stub
     // zip, a .scummvm hook) copies but before the real data behind it exists.
+    // ⚠ A `save:` companion (PSP DLC) is EXEMPT from that second clause: it is installed into the workers'
+    // save roots, not this mount, so the subfolder here is never created and requiring it would make the
+    // game permanently "not present" — an infinite re-stage loop on every launch.
     private bool IsPresent(ManifestGame g) =>
-        ExtsOf(g).Any(e => File.Exists(RomDest(g, e))) &&
-        (g.CompanionPath is null || Directory.Exists(CompanionDest(g)) && Directory.EnumerateFileSystemEntries(CompanionDest(g)).Any());
+        ExtsOf(g).Any(e => File.Exists(RomDest(g, e)))
+        && (g.CompanionPath is null
+            || SaveRootRelPath(g) is not null
+            || (Directory.Exists(CompanionDest(g)) && Directory.EnumerateFileSystemEntries(CompanionDest(g)).Any()));
 
     private string CompanionDest(ManifestGame g) => Path.GetFullPath(Path.Combine(FolderDest(g), g.GameKey));
 
@@ -733,6 +758,7 @@ public sealed class RomCache
     private async Task StageCompanionAsync(ManifestGame g, CancellationToken ct)
     {
         if (g.CompanionPath is null) return;
+        if (SaveRootRelPath(g) is { } saveRel) { await StageSaveRootCompanionAsync(g, saveRel, ct); return; }
         var finalDest = CompanionDest(g);
         if (Directory.Exists(finalDest) && Directory.EnumerateFileSystemEntries(finalDest).Any()) return; // already staged
 
@@ -758,6 +784,97 @@ public sealed class RomCache
         {
             throw new FileNotFoundException($"companion source missing for {g.GameKey}: {g.CompanionPath}");
         }
+    }
+
+    // "save:PSP/GAME/NPUG80061" -> "PSP/GAME/NPUG80061"; anything else (including a plain path, or a root we
+    // don't implement) -> null, meaning "ordinary ROM-mount companion". Kept deliberately strict: an
+    // unrecognized root must fall back to the old behaviour rather than guess at a filesystem location.
+    internal static string? SaveRootRelPath(ManifestGame g)
+    {
+        const string prefix = "save:";
+        var spec = g.CompanionDest;
+        if (string.IsNullOrWhiteSpace(spec) || !spec.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) return null;
+        var rel = spec[prefix.Length..].Trim().Replace('\\', '/').Trim('/');
+        return rel.Length == 0 ? null : rel;
+    }
+
+    /// <summary>
+    /// Install a <c>save:</c> companion into EVERY worker's save root — PSP DLC being the case that needs it
+    /// (a game looks for its downloadable content at <c>ms0:/PSP/GAME/&lt;TITLEID&gt;/</c> and nowhere else,
+    /// and <c>ms0:</c> is the save root, not the ROM mount).
+    ///
+    /// <para>All workers, because the COORDINATOR picks which one takes a room — the gateway cannot know in
+    /// advance, and unlike a per-user memory card this content is static and identical for everybody, so a
+    /// copy per worker is correct rather than wasteful. Idempotent: an install that is already present is
+    /// left alone, which is what makes this safe to re-run on every launch.</para>
+    ///
+    /// <para>Deliberately NOT eviction-tracked (same contract as the FBNeo BIOS/parent closure): these are a
+    /// few hundred KB of static unlock data, and evicting them would silently downgrade the game — Ape Quest
+    /// without its DLC is the three-chapter game reverting to a prologue demo, which looks like a broken card
+    /// rather than a missing file. Nothing on the library drive is touched; only the copy under a save root.</para>
+    /// </summary>
+    private async Task StageSaveRootCompanionAsync(ManifestGame g, string relPath, CancellationToken ct)
+    {
+        if (!Directory.Exists(g.CompanionPath) && !File.Exists(g.CompanionPath))
+            throw new FileNotFoundException($"companion source missing for {g.GameKey}: {g.CompanionPath}");
+
+        if (opt.WorkerSaveRoots.Length == 0)
+        {
+            // Never silent: a game whose DLC cannot be placed still boots, just without its content.
+            log.LogWarning("RomCache: {Game} wants companion at save:{Rel} but no WorkerSaveRoots are configured — skipping.",
+                g.GameKey, relPath);
+            return;
+        }
+
+        foreach (var root in opt.WorkerSaveRoots)
+        {
+            ct.ThrowIfCancellationRequested();
+            var rootFull = Path.GetFullPath(root);
+            if (!Directory.Exists(rootFull))
+            {
+                log.LogWarning("RomCache: save root {Root} does not exist — {Game} companion not installed there.", rootFull, g.GameKey);
+                continue;
+            }
+
+            var dest = Path.GetFullPath(Path.Combine(rootFull, relPath));
+            // Containment check, same invariant the ROM mount gets: a relPath that climbs out of the save
+            // root would let a manifest write anywhere on the host.
+            if (!IsUnder(dest, rootFull))
+            {
+                log.LogWarning("RomCache: refusing companion dest {Dest} for {Game} — escapes save root {Root}.", dest, g.GameKey, rootFull);
+                continue;
+            }
+
+            if (Directory.Exists(g.CompanionPath))
+            {
+                if (Directory.Exists(dest) && Directory.EnumerateFileSystemEntries(dest).Any()) continue; // already installed
+                var tmp = dest + ".tmp";
+                if (Directory.Exists(tmp)) Directory.Delete(tmp, recursive: true);
+                Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
+                await CopyDirectoryAsync(g.CompanionPath, tmp, ct);
+                if (Directory.Exists(dest)) Directory.Delete(dest, recursive: true);
+                Directory.Move(tmp, dest);                       // atomic on NTFS — never leave a half tree
+            }
+            else
+            {
+                var to = Path.Combine(dest, Path.GetFileName(g.CompanionPath));
+                if (File.Exists(to)) continue;
+                Directory.CreateDirectory(dest);
+                var part = to + ".part";
+                using (var src = new FileStream(g.CompanionPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                using (var dst = new FileStream(part, FileMode.Create, FileAccess.Write, FileShare.None))
+                    await src.CopyToAsync(dst, ct);
+                File.Move(part, to, overwrite: true);
+            }
+
+            log.LogInformation("RomCache: installed {Game} companion at {Dest}.", g.GameKey, dest);
+        }
+    }
+
+    private static bool IsUnder(string candidate, string root)
+    {
+        var r = Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        return Path.GetFullPath(candidate).StartsWith(r, StringComparison.OrdinalIgnoreCase);
     }
 
     private static async Task CopyDirectoryAsync(string sourceDir, string destDir, CancellationToken ct)

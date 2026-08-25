@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -480,7 +480,8 @@ namespace MovieTheater.Arcade
                 games.Add(new ManifestGame(
                     GameId: g.Id, GameKey: g.CloudRetroGameKey, System: g.System,
                     Folder: FolderOf(g.RomPath), Archive: g.SourceArchivePath!, Exts: ExtsFor(g.System),
-                    Deps: DepsFor(g, dat), CompanionPath: g.SourceCompanionPath));
+                    Deps: DepsFor(g, dat), CompanionPath: g.SourceCompanionPath,
+                    CompanionDest: g.SourceCompanionDest));
 
             games = games.OrderBy(g => g.GameId).ToList();
 
@@ -558,7 +559,10 @@ namespace MovieTheater.Arcade
         }
 
         private sealed record Manifest(int Version, List<ManifestGame> Games);
-        private sealed record ManifestGame(int GameId, string GameKey, string System, string Folder, string Archive, string[] Exts, DiscRef[]? Discs = null, string[]? Deps = null, string? CompanionPath = null);
+        // CompanionDest mirrors RomCache.ManifestGame: "<root>:<relpath>" naming where a companion has to
+        // LAND when the ROM mount is the wrong place ("save:PSP/GAME/NPUG80061" = the emulator save
+        // root, i.e. PPSSPP's ms0:, the only place PSP DLC is ever looked for). Null = ROM mount.
+        private sealed record ManifestGame(int GameId, string GameKey, string System, string Folder, string Archive, string[] Exts, DiscRef[]? Discs = null, string[]? Deps = null, string? CompanionPath = null, string? CompanionDest = null);
         private sealed record DiscRef(string Archive, string File);
     }
 

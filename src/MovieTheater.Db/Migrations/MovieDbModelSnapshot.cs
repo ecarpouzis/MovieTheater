@@ -286,6 +286,10 @@ namespace MovieTheater.Db.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<string>("SourceCompanionDest")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
                     b.Property<string>("SourceCompanionPath")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");

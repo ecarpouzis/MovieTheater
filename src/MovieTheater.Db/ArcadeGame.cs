@@ -81,6 +81,25 @@ namespace MovieTheater.Db
         [MaxLength(500)]
         public string? SourceCompanionPath { get; set; }
 
+        /// <summary>Where <see cref="SourceCompanionPath"/> has to LAND, when the ROM mount is the wrong
+        /// place for it. Null (the ordinary case) keeps the behaviour above: a subfolder of the ROM mount
+        /// named after <see cref="CloudRetroGameKey"/>.
+        ///
+        /// <para>Set it to <c>save:&lt;relpath&gt;</c> to install the companion into the emulator's SAVE root
+        /// instead — the same <c>&lt;root&gt;:&lt;relpath&gt;</c> grammar the worker config's <c>cards:</c> map
+        /// uses. That root is <c>&lt;ConfDir&gt;/libretro/legacy_save</c>, which for PPSSPP IS the memory
+        /// stick (<c>ms0:</c>), so PSP downloadable content — which a game only finds at
+        /// <c>ms0:/PSP/GAME/&lt;TITLEID&gt;/</c> and nowhere else — is expressed as
+        /// <c>save:PSP/GAME/NPUG80061</c>. The gateway installs it into EVERY worker's save root, because
+        /// the coordinator (not the gateway) chooses which worker takes a room.</para>
+        ///
+        /// <para>Unlike the ROM-mount companion this is NOT eviction-tracked: a DLC unlock is a few hundred
+        /// KB of static, user-independent content shared by every room of that game, so it stays resident
+        /// once installed — the same contract the FBNeo BIOS/parent closure gets. Nothing on the library
+        /// drive is ever touched; only the copy under the save root.</para></summary>
+        [MaxLength(200)]
+        public string? SourceCompanionDest { get; set; }
+
         public int? Year { get; set; }
 
         /// <summary>Normalized release region parsed from the ROM filename tags — USA/Europe/Japan/World/
