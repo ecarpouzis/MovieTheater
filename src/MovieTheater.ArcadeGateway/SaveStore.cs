@@ -564,11 +564,18 @@ public sealed class SaveStore
     private static string SlotCardName(int slot, string ext) => $"slot-{slot:D3}{ext}";
 
     /// <summary>Delete a state slot's bundled PS2 card blobs (slot-NNN.mcdN), if any — called when the
-    /// slot itself is deleted, pruned, or capped so no orphan card outlives its state.</summary>
-    private void DeleteSlotCards(int userId, int gameId, int slot)
+    /// slot itself is deleted, pruned, or capped so no orphan card outlives its state. Returns the bytes
+    /// freed, so the size-driven cap (<see cref="EnforceCap"/>) can account for them and not over-evict.</summary>
+    private long DeleteSlotCards(int userId, int gameId, int slot)
     {
+        long freed = 0;
         foreach (var ext in Ps2CardExt)
-            TryDeleteUnder(storeRoot, StoreFile(userId, gameId, SlotCardName(slot, ext)));
+        {
+            var p = StoreFile(userId, gameId, SlotCardName(slot, ext));
+            freed += FileLen(p); // 0 when absent
+            TryDeleteUnder(storeRoot, p);
+        }
+        return freed;
     }
 
     // ── Core save-directory trees (PSP memstick / DC-Naomi VMU / DOS) ─────────────────────────────────
@@ -878,7 +885,7 @@ public sealed class SaveStore
             long freed = FileLen(blob);
             TryDeleteUnder(storeRoot, blob);
             TryDeleteUnder(storeRoot, SidecarPath(blob));
-            DeleteSlotCards(m.UserId, m.GameId, m.SlotId);
+            freed += DeleteSlotCards(m.UserId, m.GameId, m.SlotId); // count the card blobs freed too
             total -= freed;
         }
         if (total > opt.MaxBytes)
