@@ -444,8 +444,12 @@ public sealed class SaveStore
     {
         var dat = MountFile(sessionId, ".dat");
         if (!await WaitForFileAsync(dat, SaveFlushWaitMs, ct)) return null;
-        return await CopyIntoStoreAsync(userId, gameId, system, KindState, slot, label,
+        var meta = await CopyIntoStoreAsync(userId, gameId, system, KindState, slot, label,
             coreName: null, coreVersion: null, src: dat, destName: SlotFile(slot), isAutosave: false, ct);
+        // Bundle the PS2 memory card the worker just exported beside the state, so resuming this slot
+        // restores the card that matches it (no "wrong memory card" eject). Only on a real snapshot.
+        if (meta != null) CaptureSlotCards(userId, gameId, system, sessionId, slot);
+        return meta;
     }
 
     /// <summary>Poll for a mount file to appear, up to <paramref name="timeoutMs"/>, returning true as soon
@@ -488,6 +492,70 @@ public sealed class SaveStore
         CopyGuarded(blob, MountFile(sessionId, ".dat"));
         return true;
     }
+
+    // ── PS2 per-slot memory-card bundling (docs/arcade-ps2-card-bundle-plan.md) ───────────────────────
+    //
+    // A PS2 save-state freezes the card's checksum and PCSX2 ejects the card on load if the mounted card
+    // has drifted ("wrong memory card"). So a snapshot must carry the card that matched it. The worker
+    // exports the live card beside the state as <id>.mcd0/.mcd1 (a Save just happened); here we vault it
+    // WITH the slot, and on load we stage it back so the worker can hand it to the core before the eject
+    // check. ps2 only — the eject is PCSX2-specific. The card DATA is what matters; the .mcd blobs sit
+    // next to the slot-NNN.dat and are pruned with it.
+    private static readonly string[] Ps2CardExt = { ".mcd0", ".mcd1" };
+
+    /// <summary>Vault this PS2 slot's memory card (exported by the worker beside the state) alongside the
+    /// slot's <c>.dat</c>. No-op for non-ps2 or when the worker exported no card.</summary>
+    public void CaptureSlotCards(int userId, int gameId, string system, string sessionId, int slot)
+    {
+        if (!string.Equals(system, "ps2", StringComparison.Ordinal)) return;
+        foreach (var ext in Ps2CardExt)
+        {
+            var src = MountFile(sessionId, ext);
+            var dst = StoreFile(userId, gameId, SlotCardName(slot, ext));
+            try
+            {
+                if (File.Exists(src))
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(dst))!);
+                    File.Copy(src, dst, overwrite: true);
+                }
+                else if (File.Exists(dst))
+                {
+                    File.Delete(dst); // no card exported ⇒ don't leave a stale bundle on the slot
+                }
+            }
+            catch (Exception ex) { log.LogWarning(ex, "card capture failed for slot {Slot}{Ext}", slot, ext); }
+        }
+    }
+
+    /// <summary>Stage this PS2 slot's bundled card into the mount as <c>&lt;id&gt;.mcdN</c> so the worker
+    /// hands it to the core on the coming LOAD (t=107). Backs up the card currently in the mount first, so
+    /// adopting the snapshot's card lineage never loses the card the player was on. No-op for non-ps2 or a
+    /// slot with no bundled card (then the load behaves exactly as before — the mount card is untouched).</summary>
+    public void StageSlotCards(int userId, int gameId, string system, string sessionId, int slot)
+    {
+        if (!string.Equals(system, "ps2", StringComparison.Ordinal)) return;
+        foreach (var ext in Ps2CardExt)
+        {
+            var blob = StoreFile(userId, gameId, SlotCardName(slot, ext));
+            if (!File.Exists(blob)) continue; // pre-bundle snapshot: leave the mount card as-is
+            // Write the LOAD-only input "<id>.mcdN.load" — distinct from the worker's ".mcdN" capture
+            // export, so only a deliberate slot LOAD hands the core a card to swap in.
+            var mount = MountFile(sessionId, ext + ".load");
+            try
+            {
+                // Preserve the card the player is currently on (the worker's last capture export) before
+                // adopting this snapshot's card lineage.
+                var current = MountFile(sessionId, ext);
+                if (File.Exists(current))
+                    File.Copy(current, StoreFile(userId, gameId, "_cardpreload" + ext), overwrite: true);
+                CopyGuarded(blob, mount);
+            }
+            catch (Exception ex) { log.LogWarning(ex, "card stage failed for slot {Slot}{Ext}", slot, ext); }
+        }
+    }
+
+    private static string SlotCardName(int slot, string ext) => $"slot-{slot:D3}{ext}";
 
     // ── Core save-directory trees (PSP memstick / DC-Naomi VMU / DOS) ─────────────────────────────────
 

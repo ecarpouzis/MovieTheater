@@ -12077,10 +12077,10 @@ index f3553b1..82912c8 100644
 +func (c *Caged) Close()                           { c.Emulator.Close() }
 +func (c *Caged) IsSupported() error               { return c.base.IsSupported() }
 diff --git a/pkg/worker/caged/libretro/frontend.go b/pkg/worker/caged/libretro/frontend.go
-index 6974d59..86ce40b 100644
+index 6974d59..4ff8fff 100644
 --- a/pkg/worker/caged/libretro/frontend.go
 +++ b/pkg/worker/caged/libretro/frontend.go
-@@ -1,578 +1,2654 @@
+@@ -1,578 +1,2736 @@
 -package libretro
 -
 -import (
@@ -15015,6 +15015,8 @@ index 6974d59..86ce40b 100644
 +		return err
 +	}
 +	ss = nil
++	// Bundle the PS2 card with this state so a snapshot taken from it carries the matching card.
++	f.exportPs2Card()
 +	return sramErr
 +}
 +
@@ -15035,6 +15037,9 @@ index 6974d59..86ce40b 100644
 +	if err != nil && !errors.Is(err, os.ErrNotExist) {
 +		return err
 +	}
++	// If the gateway staged this slot's bundled PS2 card, hand it to the core (as "<cardfile>.pending")
++	// BEFORE the restore, so the state's frozen card CRC matches the mount and PCSX2 doesn't eject.
++	f.stagePs2CardPending()
 +	stateErr := nanoarch.RestoreSaveState(ss)
 +
 +	// Restored even when the state failed: a rejected or foreign state must not also cost the player
@@ -15045,6 +15050,83 @@ index 6974d59..86ce40b 100644
 +		return stateErr
 +	}
 +	return sramErr
++}
++
++// ── PS2 per-slot memory-card bundling (docs/arcade-ps2-card-bundle-plan.md) ──────────────────────
++//
++// A PS2 save-state freezes the memory card's checksum; PCSX2 EJECTS the card on load if the mounted
++// card no longer matches ("THE MEMORY CARD INSERTED IS THE INCORRECT CARD"). The single per-user card
++// drifts (Stuntman rewrites it on boot), so an older snapshot's card stops matching. The fix bundles
++// the card WITH each state: export it beside the state on save so the gateway vaults it per slot, and
++// on resume stage it as "<cardfile>.pending" for the core to swap in before the eject check
++// (FileMcd_ApplyPendingSwaps). ps2 only — the eject is PCSX2-specific.
++
++// ps2CardFiles: mcd0 == Mcd001 (port 1), mcd1 == Mcd002 (port 2).
++var ps2CardFiles = []string{"Mcd001.ps2", "Mcd002.ps2"}
++
++// mcdMountPath is where a snapshot's ps2 card rides beside its state in the saves mount, so the
++// gateway vaults it with the slot: "<saveMount>/<id>.mcd0" / ".mcd1".
++func (f *Frontend) mcdMountPath(i int) string {
++	suffix := ".mcd0"
++	if i == 1 {
++		suffix = ".mcd1"
++	}
++	return filepath.Join(filepath.Dir(f.HashPath()), f.storage.MainPath()+suffix)
++}
++
++// exportPs2Card copies the live PS2 card into the saves mount beside the state (ps2 only). The core
++// has just flushed the card checksum to disk (retro_serialize), so the on-disk card matches the CRC
++// this state froze. A missing card clears any stale bundle rather than leaving one behind.
++func (f *Frontend) exportPs2Card() {
++	_, system, ok := cardOwner(f.storage.MainPath())
++	if !ok || system != "ps2" {
++		return
++	}
++	c := f.cardFor(system)
++	if c.empty() {
++		return
++	}
++	for i, name := range ps2CardFiles {
++		src := filepath.Join(c.dir, name)
++		dst := f.mcdMountPath(i)
++		if !os.Exists(src) {
++			_ = os.RemoveAll(dst)
++			continue
++		}
++		if err := os.CopyFile(src, dst); err != nil {
++			f.log.Error().Err(err).Msgf("cards: could not export ps2 %v to the save mount", name)
++		}
++	}
++}
++
++// stagePs2CardPending moves a per-slot card the gateway placed in the mount ("<id>.mcdN") to
++// "<cardfile>.pending" in the ps2 cards dir; the core applies it inside retro_unserialize, before the
++// frozen-CRC eject check, so no "wrong memory card" fires. Consumes the staged file so a later plain
++// load never re-applies a stale card. ps2 only.
++func (f *Frontend) stagePs2CardPending() {
++	_, system, ok := cardOwner(f.storage.MainPath())
++	if !ok || system != "ps2" {
++		return
++	}
++	c := f.cardFor(system)
++	if c.empty() {
++		return
++	}
++	for i, name := range ps2CardFiles {
++		// The STAGE input is "<id>.mcdN.load", written ONLY by the gateway on a real slot LOAD — kept
++		// distinct from the "<id>.mcdN" CAPTURE export (written on every Save) so an ordinary autosave
++		// or boot-restore never spuriously re-applies the current card.
++		staged := f.mcdMountPath(i) + ".load"
++		if !os.Exists(staged) {
++			continue
++		}
++		if err := os.CopyFile(staged, filepath.Join(c.dir, name+".pending")); err != nil {
++			f.log.Error().Err(err).Msgf("cards: could not stage pending ps2 %v", name)
++			continue
++		}
++		_ = os.RemoveAll(staged)
++		f.log.Info().Msgf("cards: staged bundled ps2 %v for the resumed state", name)
++	}
 +}
 +
 +// ── Fast-forward / rewind (t=114/115) ────────────────────────────────────────────────────────────

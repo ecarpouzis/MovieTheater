@@ -455,6 +455,10 @@ app.MapPost("/w-load/{token}", async (HttpContext ctx, string token) =>
     if (!string.IsNullOrEmpty(savedOn) && !string.Equals(savedOn, lsys, StringComparison.Ordinal))
         return Results.Json(new { ok = false, reason = "That save was made on a different core — resume it from the game's page and it'll launch the right one." });
 
+    // Stage this slot's bundled PS2 memory card into the mount BEFORE the load, so the worker hands it
+    // to the core and the resumed state's frozen card CRC matches the mount (no "wrong memory card"
+    // eject). No-op for non-ps2 or a pre-bundle snapshot. See docs/arcade-ps2-card-bundle-plan.md.
+    saveStore.StageSlotCards(p.UserId, g, lsys, id, slot);
     return Results.Json(new { ok = saveStore.LoadSlotToMount(p.UserId, g, id, slot) });
 });
 
