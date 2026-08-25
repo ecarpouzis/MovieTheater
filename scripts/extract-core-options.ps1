@@ -7,7 +7,7 @@
   Phase 1 of docs/arcade-config-module-dead-options-plan.md. The catalog's own header has always said
   "regenerate from the DLLs on Ziggy" and there has never been a generator; this is it.
 
-  Method is a RUNTIME HARNESS, not a static parse. scripts/extract-core-options (a small .NET 8 x64
+  Method is a RUNTIME HARNESS, not a static parse. scripts/extract-core-options (a small .NET 10 x64
   console tool) LoadLibrary's ONE core per invocation and hands it a retro_environment_t that answers
   RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION = 2 and captures whichever registration command the core
   uses. The core hands over the real structs, which sidesteps the linker string-pooling trap that made

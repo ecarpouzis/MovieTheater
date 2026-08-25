@@ -14,7 +14,7 @@
 .PARAMETER LogFile  Append log (real OS stream merge via cmd, same as the GL worker runner).
 #>
 param(
-    [string]$Exe     = "F:\Work\MovieTheater\src\MovieTheater.ArcadeGateway\bin\Debug\net8.0\MovieTheater.ArcadeGateway.exe",
+    [string]$Exe     = "F:\Work\MovieTheater\src\MovieTheater.ArcadeGateway\bin\Debug\net10.0\MovieTheater.ArcadeGateway.exe",
     [string]$LogFile = "D:\ArcadeStorage\logs\gateway.log"
 )
 

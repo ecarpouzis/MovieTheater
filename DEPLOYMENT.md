@@ -8,7 +8,7 @@ The MovieTheater application deploys to MicroK8s with **automated HTTPS** via Le
 
 ## 📦 What's Deployed
 
-- **Application**: .NET 8 API + Next.js UI
+- **Application**: .NET 10 API + React (Vite) UI
 - **Infrastructure**: MicroK8s on self-hosted Linux runner
 - **HTTPS**: Let's Encrypt certificates via cert-manager
 - **DNS**: theater.carpouzis.com (managed by GoDaddy)

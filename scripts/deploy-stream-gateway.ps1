@@ -89,7 +89,13 @@ if (-not $PublishDir) { $PublishDir = Join-Path $env:TEMP "streamgateway-publish
 if (-not $SkipPublish) {
   $csproj = Join-Path $repo 'src\MovieTheater.StreamGateway\MovieTheater.StreamGateway.csproj'
   Write-Host "publishing $csproj -> $PublishDir"
-  # Framework-dependent on purpose: it is what is installed, and .NET 8 is present on this host.
+  # Framework-dependent on purpose: it is what is installed, and the ASP.NET Core 10 runtime is present
+  # on this host (the solution retargeted to net10.0 in 2026-08). Refuse to publish a framework-dependent
+  # build for a runtime the host does not have - that failure shape is a dead service, not a build error.
+  $runtimes = (& dotnet --list-runtimes) -join "`n"
+  if ($runtimes -notmatch 'Microsoft\.AspNetCore\.App 10\.') {
+    throw "Microsoft.AspNetCore.App 10.x runtime is not installed on this host; install it before deploying a net10.0 framework-dependent gateway."
+  }
   # Switching back to --self-contained/-p:PublishSingleFile would change the deployment shape and
   # strand the sibling DLLs already in the app dir.
   dotnet publish $csproj -c Release -o $PublishDir --nologo | Out-Null

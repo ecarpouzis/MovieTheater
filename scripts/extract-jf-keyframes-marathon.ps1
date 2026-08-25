@@ -34,7 +34,7 @@ $ErrorActionPreference = "Stop"
 
 $repo     = Split-Path -Parent $PSScriptRoot
 $project  = Join-Path $repo "src\MovieTheater\MovieTheater.csproj"
-$appDir   = Join-Path $repo "src\MovieTheater\bin\Release\net8.0"
+$appDir   = Join-Path $repo "src\MovieTheater\bin\Release\net10.0"
 $dll      = Join-Path $appDir "MovieTheater.dll"
 $log      = Join-Path $repo "data\extract-jf-keyframes.log"
 $stopFile = Join-Path $repo "data\extract-jf-keyframes.stop"
