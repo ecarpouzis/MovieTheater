@@ -161,7 +161,13 @@ public sealed class SaveStore
         {
             var m = await CopyIntoStoreAsync(userId, gameId, system, KindState, ContinueSlot, label: null,
                 coreName: null, coreVersion: null, src: dat, destName: SlotFile(ContinueSlot), isAutosave, ct);
-            if (m != null) results.Add(m);
+            if (m != null)
+            {
+                results.Add(m);
+                // Bundle the PS2 card with the Continue slot too, so an in-room Load of Continue after the
+                // live card drifted mid-session doesn't eject (same fix as named snapshots).
+                CaptureSlotCards(userId, gameId, system, sessionId, ContinueSlot);
+            }
         }
 
         if (results.Count > 0) PruneStates(userId, gameId);
@@ -528,8 +534,8 @@ public sealed class SaveStore
         }
     }
 
-    /// <summary>Stage this PS2 slot's bundled card into the mount as <c>&lt;id&gt;.mcdN</c> so the worker
-    /// hands it to the core on the coming LOAD (t=107). Backs up the card currently in the mount first, so
+    /// <summary>Stage this PS2 slot's bundled card into the mount as <c>&lt;id&gt;.mcdN.load</c> so the
+    /// worker hands it to the core on the coming LOAD (t=107). Backs up the card currently in the mount first, so
     /// adopting the snapshot's card lineage never loses the card the player was on. No-op for non-ps2 or a
     /// slot with no bundled card (then the load behaves exactly as before — the mount card is untouched).</summary>
     public void StageSlotCards(int userId, int gameId, string system, string sessionId, int slot)
@@ -556,6 +562,14 @@ public sealed class SaveStore
     }
 
     private static string SlotCardName(int slot, string ext) => $"slot-{slot:D3}{ext}";
+
+    /// <summary>Delete a state slot's bundled PS2 card blobs (slot-NNN.mcdN), if any — called when the
+    /// slot itself is deleted, pruned, or capped so no orphan card outlives its state.</summary>
+    private void DeleteSlotCards(int userId, int gameId, int slot)
+    {
+        foreach (var ext in Ps2CardExt)
+            TryDeleteUnder(storeRoot, StoreFile(userId, gameId, SlotCardName(slot, ext)));
+    }
 
     // ── Core save-directory trees (PSP memstick / DC-Naomi VMU / DOS) ─────────────────────────────────
 
@@ -676,6 +690,7 @@ public sealed class SaveStore
         bool existed = File.Exists(blob);
         TryDeleteUnder(storeRoot, blob);
         TryDeleteUnder(storeRoot, SidecarPath(blob));
+        if (kind == KindState) DeleteSlotCards(userId, gameId, slot); // drop the bundled card too
 
         // dirzip (heavy lane) never touches the CloudRetro saves mount — its live copy is the
         // emulator's own save dir, which stays untouched on vault delete (never-clobber).
@@ -838,10 +853,11 @@ public sealed class SaveStore
                         && string.IsNullOrEmpty(x.meta.Label) && x.meta.SlotId != ContinueSlot)
             .OrderByDescending(x => x.meta!.UpdatedUtc)
             .ToList();
-        foreach (var (file, _) in autos.Skip(Math.Max(0, opt.MaxStatesPerGame)))
+        foreach (var (file, meta) in autos.Skip(Math.Max(0, opt.MaxStatesPerGame)))
         {
             TryDeleteUnder(storeRoot, file);
             TryDeleteUnder(storeRoot, SidecarPath(file));
+            DeleteSlotCards(userId, gameId, meta!.SlotId);
         }
     }
 
@@ -862,6 +878,7 @@ public sealed class SaveStore
             long freed = FileLen(blob);
             TryDeleteUnder(storeRoot, blob);
             TryDeleteUnder(storeRoot, SidecarPath(blob));
+            DeleteSlotCards(m.UserId, m.GameId, m.SlotId);
             total -= freed;
         }
         if (total > opt.MaxBytes)
