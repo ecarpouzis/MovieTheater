@@ -11,19 +11,9 @@ RUN dotnet publish src/MovieTheater/MovieTheater.csproj --no-restore -c Release 
 # Build final release image
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 as release
 
-RUN apt update
-RUN apt install -y libjpeg-dev zlib1g-dev
-
-# Install system deps and python tooling in one step, remove apt lists to reduce image size
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-      python3 python3-pip libjpeg-dev zlib1g-dev \
-      libc6-dev && \
-    rm -rf /var/lib/apt/lists/*
-
-# Use modern pip and install a Pillow wheel (avoid building from source)
-RUN python3 -m pip install --upgrade pip setuptools wheel --break-system-packages && \
-    python3 -m pip install --no-cache-dir "pillow>=9.5.0" --break-system-packages
+# Python + Pillow for PILResaveImage, from Debian's own packages. The aspnet:10.0 image is Debian 13,
+# whose distro-managed pip refuses `pip install --upgrade pip` (RECORD file not found), so no pip at all.
+RUN apt-get update &&     apt-get install -y --no-install-recommends python3 python3-pil &&     rm -rf /var/lib/apt/lists/*
 
 ENV ASPNETCORE_ENVIRONMENT=Production
 ENV ASPNETCORE_URLS="http://+:80"
