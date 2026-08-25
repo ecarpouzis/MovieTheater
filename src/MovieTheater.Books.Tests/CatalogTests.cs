@@ -423,5 +423,88 @@ namespace MovieTheater.Books.Tests
             Assert.Empty(MaturityFilter.HardBlockedAbove(2));
             Assert.Empty(MaturityFilter.AllowedAtOrBelow(3));
         }
+
+        // ── the per-user mark filters (slice 4 wired these into the browse) ───────────────────────────────────
+
+        [Fact]
+        public async Task WantToReadOnly_restricts_the_browse_to_the_callers_own_queue()
+        {
+            using var db = fixture.Db();
+            // The fixture's owner wants items 2, 4 and 5 and has finished item 1; they have marked series 1 and
+            // series 2 READ at the series level.
+            var wanted = Body<BrowseGroupsResponse>(
+                await Browse(db).GetGroups(groupBy: "series", groupsTop: 200, wantToReadOnly: true));
+            Assert.Equal(new[] { 2, 4, 5 },
+                wanted.Groups.SelectMany(g => g.Items).Select(i => i.Id).OrderBy(x => x).ToArray());
+            // The heads shrink with the items: a series with nothing wanted in it is not a group at all.
+            Assert.Equal(2, wanted.TotalGroups);
+            Assert.Equal(new[] { "1", "2" }, wanted.Groups.Select(g => g.Key).OrderBy(k => k).ToArray());
+
+            // readOnly takes the finished item AND the issues of the series marked read — the two ways v2 says
+            // the same thing.
+            var read = Body<BrowseGroupsResponse>(
+                await Browse(db).GetGroups(groupBy: "series", groupsTop: 200, readOnly: true));
+            Assert.Equal(new[] { 1, 2, 4, 5 },
+                read.Groups.SelectMany(g => g.Items).Select(i => i.Id).OrderBy(x => x).ToArray());
+
+            // Both flags AND: only what is wanted and also read.
+            var both = Body<BrowseGroupsResponse>(
+                await Browse(db).GetGroups(groupBy: "series", groupsTop: 200, wantToReadOnly: true, readOnly: true));
+            Assert.Equal(new[] { 2, 4, 5 },
+                both.Groups.SelectMany(g => g.Items).Select(i => i.Id).OrderBy(x => x).ToArray());
+
+            // The filter reaches the letter rail and the band continuation too, so no surface disagrees.
+            var letters = Assert.IsType<OkObjectResult>(
+                await Browse(db).GetGroupLetters(groupBy: "collection", wantToReadOnly: true)).Value!;
+            Assert.Equal(1, (int)letters.GetType().GetProperty("totalGroups")!.GetValue(letters)!);
+            var band = Assert.IsType<OkObjectResult>(
+                await Browse(db).GetGroupItems("series", "1", wantToReadOnly: true)).Value!;
+            Assert.Equal(1, (int)band.GetType().GetProperty("total")!.GetValue(band)!);
+        }
+
+        [Fact]
+        public async Task A_mark_filtered_signature_is_never_cached()
+        {
+            using var db = fixture.Db();
+            var cache = NewCache();
+
+            // An unfiltered browse caches its heads; a mark-filtered one must not, because the answer changes on
+            // every click and a stale shelf is worse than a recomputed one.
+            await Browse(db, cache: cache).GetGroups(groupBy: "series", groupsTop: 200);
+            var cachedEntries = ((MemoryCache)cache).Count;
+            Assert.True(cachedEntries > 0);
+
+            await Browse(db, cache: cache).GetGroups(groupBy: "series", groupsTop: 200, wantToReadOnly: true);
+            await Browse(db, cache: cache).GetGroupLetters(groupBy: "series", readOnly: true);
+            Assert.Equal(cachedEntries, ((MemoryCache)cache).Count);
+
+            // And it really is per-caller: another account's browse is not the owner's queue.
+            var stranger = Body<BrowseGroupsResponse>(await Browse(db, BooksIdentity.Principal(42, "someone", false, 3))
+                .GetGroups(groupBy: "series", groupsTop: 200, wantToReadOnly: true));
+            Assert.Empty(stranger.Groups);
+        }
+
+        [Fact]
+        public async Task Group_heads_carry_the_callers_own_marks()
+        {
+            using var db = fixture.Db();
+            var groups = Body<BrowseGroupsResponse>(await Browse(db).GetGroups(groupBy: "series", groupsTop: 200)).Groups;
+
+            // The owner marked series 1 read + favourite with a rating of 80, and series 2 read.
+            var dredd = groups.Single(g => g.Key == "1");
+            Assert.NotNull(dredd.UserMeta);
+            Assert.True(dredd.UserMeta!.IsRead);
+            Assert.True(dredd.UserMeta.IsFavorite);
+            Assert.Equal(80, dredd.UserMeta.Rating);
+
+            Assert.True(groups.Single(g => g.Key == "2").UserMeta!.IsRead);
+            // An unmarked group carries null, not a row of falses.
+            Assert.Null(groups.Single(g => g.Key == "3").UserMeta);
+
+            // Another account sees its own marks, which is none of these.
+            var stranger = Body<BrowseGroupsResponse>(
+                await Browse(db, BooksIdentity.Principal(42, "someone", false, 3)).GetGroups(groupBy: "series", groupsTop: 200));
+            Assert.All(stranger.Groups, g => Assert.Null(g.UserMeta));
+        }
     }
 }

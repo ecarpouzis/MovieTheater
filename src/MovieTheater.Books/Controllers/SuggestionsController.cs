@@ -62,7 +62,23 @@ namespace MovieTheater.Books.Controllers
             [FromQuery] int? seed = null,
             CancellationToken ct = default)
         {
-            if (BooksIdentity.UserId(User) is not int userId) return Forbid();
+            if (BooksIdentity.UserId(User) is not int) return Forbid();
+            var items = await SuggestAsync(count, seed, ct);
+            return Ok(new { count = items.Count, items });
+        }
+
+        /// <summary>
+        /// The shelf itself, without the HTTP envelope — the eight phases below, in the winners' order.
+        ///
+        /// <para>It is separate from <see cref="Get"/> because the Explore rails compose it: the "Suggested" rail
+        /// on <c>/explore</c> IS this list, and a second implementation of a weighted recommender is exactly the
+        /// kind of drift the port exists to remove. Returns an empty list — never an error — when the user has no
+        /// signals yet, no candidate scores above zero, or no principal: a rail with nothing in it is simply not
+        /// rendered.</para>
+        /// </summary>
+        internal async Task<List<ItemSummary>> SuggestAsync(int count, int? seed, CancellationToken ct)
+        {
+            if (BooksIdentity.UserId(User) is not int userId) return [];
             count = Math.Clamp(count, 1, MaxCount);
 
             // ── 1. signals ────────────────────────────────────────────────────────────────────────────────────
@@ -113,7 +129,7 @@ namespace MovieTheater.Books.Controllers
                 AddWeight(seriesId, w);
             }
 
-            if (weights.Count == 0) return Ok(new { count = 0, items = Array.Empty<ItemSummary>() });
+            if (weights.Count == 0) return [];
             var known = weights.Keys.ToHashSet();
 
             // ── 3. taste profile ──────────────────────────────────────────────────────────────────────────────
@@ -160,7 +176,7 @@ namespace MovieTheater.Books.Controllers
             var candidates = (await UserActivityQueries.AccessibleItems(db, User)
                     .Where(i => i.SeriesId != null).Select(i => i.SeriesId!.Value).Distinct().ToListAsync(ct))
                 .Where(id => !known.Contains(id)).ToList();
-            if (candidates.Count == 0) return Ok(new { count = 0, items = Array.Empty<ItemSummary>() });
+            if (candidates.Count == 0) return [];
 
             // ── 5. scoring ────────────────────────────────────────────────────────────────────────────────────
             float Score(int seriesId)
@@ -189,7 +205,7 @@ namespace MovieTheater.Books.Controllers
             }
 
             var scored = candidates.Select(id => (Series: id, Score: Score(id))).Where(x => x.Score > 0f).ToList();
-            if (scored.Count == 0) return Ok(new { count = 0, items = Array.Empty<ItemSummary>() });
+            if (scored.Count == 0) return [];
 
             // ── 6. noisy sampling ─────────────────────────────────────────────────────────────────────────────
             // Variety without randomness: the same seed replays the same shelf, and equal scores always resolve
@@ -223,8 +239,7 @@ namespace MovieTheater.Books.Controllers
 
             // ── 8. project, in the winners' order ─────────────────────────────────────────────────────────────
             var summaries = await UserActivityQueries.SummariesAsync(db, User, repIds, ct);
-            var items = repIds.Select(summaries.GetValueOrDefault).Where(s => s != null).Select(s => s!).ToList();
-            return Ok(new { count = items.Count, items });
+            return repIds.Select(summaries.GetValueOrDefault).Where(s => s != null).Select(s => s!).ToList();
         }
 
         // ── the derived corpus (identical for every caller, so it is built once) ───────────────────────────────

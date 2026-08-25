@@ -1,0 +1,290 @@
+using System.Globalization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
+using MovieTheater.Books.Access;
+using MovieTheater.Books.Db;
+using MovieTheater.Books.Identity;
+using MovieTheater.Books.Media;
+using MovieTheater.Books.Projections;
+using MovieTheater.Books.Services;
+
+namespace MovieTheater.Books.Controllers
+{
+    public record NovelFacetOption(string Value, int Count);
+
+    public sealed class NovelFacets
+    {
+        public List<NovelFacetOption> Authors { get; init; } = [];
+        public List<NovelFacetOption> Series { get; init; } = [];
+        public List<NovelFacetOption> Publishers { get; init; } = [];
+        public List<NovelFacetOption> Decades { get; init; } = [];
+        public List<NovelFacetOption> Tags { get; init; } = [];
+    }
+
+    /// <summary>
+    /// <b>Novels</b> — the prose half of the library (<c>Item.Kind == Book</c>): the Calibre-native EPUB shelf,
+    /// with its own filters and facets. The standalone site called this <c>BooksController</c>; here "book" is
+    /// already the entity kind, so the SURFACE is named for what a reader calls the thing.
+    ///
+    /// <para><b>Books have their own gate</b>, and it is the strictest one in the vertical: a book's maturity
+    /// lives on its own current <c>Insight</c> row, and a book with no rating at all is HIDDEN below ceiling 3.
+    /// That is the standalone's fail-safe, kept exactly — an unclassified book is not assumed safe. It is
+    /// enforced in <see cref="MaturityFilter"/>, so this controller does not restate it; it just starts from
+    /// <see cref="ItemAccess.VisibleItems"/> like every other list surface.</para>
+    ///
+    /// <para><b>The filters are exact-equality, multi-valued, OR within a facet and AND across</b> — the
+    /// standalone's semantics, comma-separated per parameter. In v2 they land on rows rather than on columns
+    /// scraped at request time: an author is an <c>ItemCredit(Source=Calibre, Role=Author)</c>, a series and a
+    /// publisher are <c>BookDetail</c> fields, a decade is <c>Item.ResolvedYear</c> (not a string prefix of a
+    /// publication date, which is what made the old query need <c>SUBSTR</c> and let a malformed date invent a
+    /// "0100s" facet), and a tag is an <c>ItemTag(Category, Value)</c> EXISTS.</para>
+    ///
+    /// <para><c>GET /novels/{id}</c> is the SAME payload <c>/items/{id}</c> returns — it calls the same
+    /// <see cref="ItemDetailBuilder"/>. A book detail that drifted from an item detail would be two truths about
+    /// one row.</para>
+    /// </summary>
+    [ApiController]
+    [Route("novels")]
+    public sealed class NovelsController : ControllerBase
+    {
+        public const int MaxTop = 200;
+        public const int AuthorFacetLimit = 400;
+        public const int SeriesFacetLimit = 400;
+        public const int PublisherFacetLimit = 300;
+        public const int TagFacetLimit = 200;
+
+        /// <summary>Calibre's own author role — the one credit source a book actually has.</summary>
+        public const string AuthorRole = "Author";
+
+        /// <summary>Backstop TTL; the facets only move when the library does. Same policy as the browse facets.</summary>
+        private static readonly TimeSpan FacetsTtl = TimeSpan.FromHours(48);
+
+        private readonly BooksDb db;
+        private readonly IMemoryCache cache;
+        private readonly BooksOptions options;
+        private readonly ThumbnailService thumbnails;
+
+        public NovelsController(BooksDb db, IMemoryCache cache, BooksOptions options, ThumbnailService thumbnails)
+        {
+            this.db = db;
+            this.cache = cache;
+            this.options = options;
+            this.thumbnails = thumbnails;
+        }
+
+        /// <summary>
+        /// GET /novels?author=&amp;series=&amp;publisher=&amp;decade=&amp;tag=&amp;q=&amp;skip=&amp;top=&amp;orderby=
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> List(
+            [FromQuery] string? author = null,
+            [FromQuery] string? series = null,
+            [FromQuery] string? publisher = null,
+            [FromQuery] string? decade = null,
+            [FromQuery] string? tag = null,
+            [FromQuery] string? q = null,
+            [FromQuery] int skip = 0,
+            [FromQuery] int top = 60,
+            [FromQuery] string? orderby = null,
+            CancellationToken ct = default)
+        {
+            skip = Math.Max(0, skip);
+            top = Math.Clamp(top, 1, MaxTop);
+
+            var query = Filtered(author, series, publisher, decade, tag, q);
+            var total = await query.CountAsync(ct);
+            var items = await Sorted(query.Select(ItemSummary.Project), orderby)
+                .Skip(skip).Take(top).ToListAsync(ct);
+
+            var media = MediaUrls.For(options, User);
+            return Ok(new
+            {
+                total,
+                skip,
+                top,
+                items,
+                covers = items.ToDictionary(i => i.Id.ToString(CultureInfo.InvariantCulture), i => media.Thumb(i.Id)),
+            });
+        }
+
+        /// <summary>
+        /// GET /novels/facets — the option lists with counts, computed over the books this caller may see, so a
+        /// restricted account never learns that an author or a tag it is gated out of exists.
+        ///
+        /// <para>Like the standalone's, the counts are over the GATED set and not over the currently-selected
+        /// filters: the rail is what you could choose, not what you have chosen.</para>
+        /// </summary>
+        [HttpGet("facets")]
+        public async Task<IActionResult> Facets(CancellationToken ct = default)
+        {
+            var key = $"books:novels:facets:{UserSig()}";
+            if (cache.TryGetValue(key, out NovelFacets? hit) && hit != null) return Ok(hit);
+
+            var books = Visible();
+            var ids = books.Select(i => i.Id);
+
+            var authors = await db.ItemCredits.AsNoTracking()
+                .Where(c => c.Source == TagSource.Calibre && c.Role == AuthorRole && c.Name != null && c.Name != "")
+                .Join(books, c => c.ItemId, i => i.Id, (c, i) => new { Value = c.Name!, c.ItemId })
+                .Distinct()
+                .GroupBy(x => x.Value).Select(g => new { g.Key, Count = g.Count() })
+                .OrderByDescending(x => x.Count).ThenBy(x => x.Key).Take(AuthorFacetLimit).ToListAsync(ct);
+
+            var seriesRows = await db.BookDetails.AsNoTracking()
+                .Where(b => b.SeriesName != null && b.SeriesName != "")
+                .Join(books, b => b.ItemId, i => i.Id, (b, i) => new { Value = b.SeriesName! })
+                .GroupBy(x => x.Value).Select(g => new { g.Key, Count = g.Count() })
+                .OrderByDescending(x => x.Count).ThenBy(x => x.Key).Take(SeriesFacetLimit).ToListAsync(ct);
+
+            var publisherRows = await db.BookDetails.AsNoTracking()
+                .Where(b => b.Publisher != null && b.Publisher != "")
+                .Join(books, b => b.ItemId, i => i.Id, (b, i) => new { Value = b.Publisher! })
+                .GroupBy(x => x.Value).Select(g => new { g.Key, Count = g.Count() })
+                .OrderByDescending(x => x.Count).ThenBy(x => x.Key).Take(PublisherFacetLimit).ToListAsync(ct);
+
+            var decadeRows = await books.Where(i => i.ResolvedYear != null)
+                .GroupBy(i => i.ResolvedYear!.Value / 10).Select(g => new { g.Key, Count = g.Count() })
+                .ToListAsync(ct);
+
+            var tagRows = await db.ItemTags.AsNoTracking()
+                .Where(t => t.Value != "")
+                .Join(books, t => t.ItemId, i => i.Id, (t, i) => new { t.Category, t.Value, t.ItemId })
+                .Distinct()
+                .GroupBy(x => new { x.Category, x.Value }).Select(g => new { g.Key.Category, g.Key.Value, Count = g.Count() })
+                .OrderByDescending(x => x.Count).ThenBy(x => x.Category).ThenBy(x => x.Value)
+                .Take(TagFacetLimit).ToListAsync(ct);
+
+            var facets = new NovelFacets
+            {
+                Authors = authors.Select(x => new NovelFacetOption(x.Key, x.Count)).ToList(),
+                Series = seriesRows.Select(x => new NovelFacetOption(x.Key, x.Count)).ToList(),
+                Publishers = publisherRows.Select(x => new NovelFacetOption(x.Key, x.Count)).ToList(),
+                // Decades stay CHRONOLOGICAL (newest first), never count-sorted: a decade rail that jumps around
+                // by popularity is unreadable.
+                Decades = decadeRows.OrderByDescending(d => d.Key)
+                    .Select(d => new NovelFacetOption($"{d.Key * 10}s", d.Count)).ToList(),
+                // The tag facet's value is the COMPOSITE "category:value" — the same string ?tag= takes, so a
+                // client can echo a chip straight back as a filter.
+                Tags = tagRows.Select(x => new NovelFacetOption($"{x.Category}:{x.Value}", x.Count)).ToList(),
+            };
+
+            cache.Set(key, facets, new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = FacetsTtl, Size = 1 });
+            return Ok(facets);
+        }
+
+        /// <summary>
+        /// GET /novels/{id} — the full item detail, identical to <c>/items/{id}</c>. 404 for anything that is not
+        /// a visible BOOK, including a comic at that id: absent and forbidden look the same.
+        /// </summary>
+        [HttpGet("{id:int}")]
+        public async Task<IActionResult> Get(int id, [FromQuery] string? mediaToken = null, CancellationToken ct = default)
+        {
+            var item = await ItemAccess.GetAuthorizedItemAsync(db, User, id, allowExcluded: true, ct);
+            if (item == null || item.Kind != ItemKind.Book) return NotFound();
+
+            var media = MediaUrls.For(options, User, mediaToken);
+            var detail = await ItemDetailBuilder.BuildAsync(db, item,
+                media.Configured ? media.Thumb : null,
+                media.Configured ? media.Download : null,
+                media.Configured ? media.PagesTemplate : null,
+                thumbnails.Exists(item.Id), ct);
+            return Ok(detail);
+        }
+
+        // ── filtering ────────────────────────────────────────────────────────────────────────────────────────
+
+        private IQueryable<Item> Visible() => ItemAccess.VisibleItems(db, User, ItemKind.Book);
+
+        private IQueryable<Item> Filtered(string? author, string? series, string? publisher, string? decade,
+            string? tag, string? q)
+        {
+            var query = Visible();
+
+            var authors = Csv(author);
+            if (authors.Count > 0)
+                query = query.Where(i => db.ItemCredits.Any(c => c.ItemId == i.Id && c.Source == TagSource.Calibre
+                                                                 && c.Role == AuthorRole && c.Name != null
+                                                                 && authors.Contains(c.Name)));
+
+            var seriesNames = Csv(series);
+            if (seriesNames.Count > 0)
+                query = query.Where(i => db.BookDetails.Any(b => b.ItemId == i.Id && b.SeriesName != null
+                                                                 && seriesNames.Contains(b.SeriesName)));
+
+            var publishers = Csv(publisher);
+            if (publishers.Count > 0)
+                query = query.Where(i => db.BookDetails.Any(b => b.ItemId == i.Id && b.Publisher != null
+                                                                 && publishers.Contains(b.Publisher)));
+
+            var decades = Decades(decade);
+            if (decades.Count > 0)
+                query = query.Where(i => i.ResolvedYear != null && decades.Contains(i.ResolvedYear.Value / 10 * 10));
+
+            foreach (var (category, value) in Tags(tag))
+            {
+                // Captured per iteration on purpose: each selected tag ANDs, so each becomes its own EXISTS.
+                var cat = category;
+                var val = value;
+                query = cat == null
+                    ? query.Where(i => db.ItemTags.Any(t => t.ItemId == i.Id && t.Value == val))
+                    : query.Where(i => db.ItemTags.Any(t => t.ItemId == i.Id && t.Category == cat && t.Value == val));
+            }
+
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                var match = CatalogController.BuildFtsQuery(q.Trim());
+                if (match.Length == 0) return query.Where(_ => false);
+                var ids = ItemFts.Search(db, match, CatalogController.FtsLimit);
+                query = query.Where(i => ids.Contains(i.Id));
+            }
+
+            return query;
+        }
+
+        /// <summary>
+        /// The five sorts. The default is the shelf order a reader expects from a prose library — by author,
+        /// then within an author by series and title — and every one of them ends with the item id, so a page
+        /// boundary can neither drop a book nor show it twice.
+        /// </summary>
+        private static IQueryable<ItemSummary> Sorted(IQueryable<ItemSummary> q, string? orderby) =>
+            (orderby ?? "").Trim().ToLowerInvariant() switch
+            {
+                "title" => q.OrderBy(s => s.Title).ThenBy(s => s.Id),
+                "rating" => q.OrderByDescending(s => s.Rating).ThenBy(s => s.Title).ThenBy(s => s.Id),
+                "newest" => q.OrderByDescending(s => s.Year).ThenBy(s => s.Title).ThenBy(s => s.Id),
+                "oldest" => q.OrderBy(s => s.Year).ThenBy(s => s.Title).ThenBy(s => s.Id),
+                _ => q.OrderBy(s => s.CreatorsCsv).ThenBy(s => s.Series).ThenBy(s => s.Title).ThenBy(s => s.Id),
+            };
+
+        // ── small helpers ────────────────────────────────────────────────────────────────────────────────────
+
+        private static List<string> Csv(string? s) =>
+            string.IsNullOrWhiteSpace(s)
+                ? []
+                : s.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+
+        /// <summary>"1990s" or "1990" → 1990. Anything else is dropped rather than guessed at.</summary>
+        private static List<int> Decades(string? decade) => Csv(decade)
+            .Select(d => d.TrimEnd('s', 'S'))
+            .Select(d => int.TryParse(d, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v) ? v / 10 * 10 : (int?)null)
+            .Where(v => v != null).Select(v => v!.Value).Distinct().ToList();
+
+        /// <summary>
+        /// <c>?tag=genre:dystopian</c> pins the category; a bare <c>?tag=dystopian</c> matches any category. The
+        /// composite spelling is what <c>/novels/facets</c> hands back, so a chip round-trips unchanged.
+        /// </summary>
+        private static List<(string? Category, string Value)> Tags(string? tag) => Csv(tag)
+            .Select(t =>
+            {
+                var i = t.IndexOf(':');
+                return i <= 0 || i == t.Length - 1
+                    ? ((string?)null, t)
+                    : (t[..i].Trim(), t[(i + 1)..].Trim());
+            })
+            .Where(t => t.Item2.Length > 0).ToList();
+
+        private string UserSig() =>
+            $"{BooksIdentity.UserId(User)}:{BooksIdentity.CeilingFor(User)}:{(BooksIdentity.IsAdmin(User) ? 1 : 0)}";
+    }
+}

@@ -7,6 +7,7 @@ using MovieTheater.Books.Access;
 using MovieTheater.Books.Db;
 using MovieTheater.Books.Identity;
 using MovieTheater.Books.Projections;
+using MovieTheater.Books.Services;
 
 namespace MovieTheater.Books.Controllers
 {
@@ -30,7 +31,8 @@ namespace MovieTheater.Books.Controllers
         public List<FacetOption> Decades { get; init; } = [];
     }
 
-    /// <summary>Per-user marks on a group (read / want / favourite). SLICE 3 fills it; slice 1 always sends null.</summary>
+    /// <summary>Per-user marks on a group (read / want / favourite), read from <c>GroupMark</c>. Null when the
+    /// caller has not marked that group — or when the grouping has no group type of its own (franchise).</summary>
     public record GroupUserMarkResult(bool IsRead, bool WantToRead, bool IsFavorite, int? Rating, string? Notes);
 
     /// <summary>The series group's AI card: the current insight's prose, score and tags.</summary>
@@ -240,9 +242,8 @@ namespace MovieTheater.Books.Controllers
             [FromQuery] string? subGroupBy = null,
             [FromQuery] string? singleGroupKey = null,
             [FromQuery] string? kind = null,
-            // SLICE 3 (user activity) owns the per-user mark filters. Accepted now so the client contract is
-            // stable and a caller that already sends them is not a 400; deliberately ignored until MarksController
-            // lands, at which point they restrict the eligible group keys (and make the heads sig uncacheable).
+            // The per-user mark filters (see ApplyMarkFilters): they restrict the ITEM set, so the heads, the
+            // bands and the letter rail all agree, and they make the heads signature uncacheable.
             [FromQuery] bool wantToReadOnly = false,
             [FromQuery] bool readOnly = false,
             CancellationToken ct = default)
@@ -254,8 +255,8 @@ namespace MovieTheater.Books.Controllers
             var by = NormalizeGroupBy(groupBy);
             var itemKind = CatalogController.ParseKind(kind);
 
-            var (countQuery, summaryQuery) = BuildFilteredContext(itemKind, q, filter);
-            var heads = await CachedHeadsAsync(HeadsSig(itemKind, by, q, filter), Ttl(q, filter),
+            var (countQuery, summaryQuery) = await BuildFilteredContextAsync(itemKind, q, filter, wantToReadOnly, readOnly, ct);
+            var heads = await CachedHeadsAsync(HeadsSig(itemKind, by, q, filter, wantToReadOnly, readOnly), Ttl(q, filter),
                 () => GroupHeadsAsync(countQuery, by, ct));
 
             var paged = singleGroupKey != null
@@ -267,12 +268,12 @@ namespace MovieTheater.Books.Controllers
                 BandQuery(summaryQuery, by, paged), orderby, by, seriesSubView, perGroupTop, perGroupSkip, ct);
 
             var details = by == "series" ? await SeriesDetailsAsync(paged, ct) : null;
+            var marks = await GroupMarksAsync(by, paged, ct);
 
             var groups = paged.Select(h => new BrowseGroupItem(
                 h.Key, h.Label, h.Count,
                 byKey.GetValueOrDefault(h.Key, []),
-                // TODO(slice 3): per-user marks come from GroupMark once MarksController lands.
-                UserMeta: null,
+                UserMeta: marks.GetValueOrDefault(h.Key),
                 GroupDetail: details?.GetValueOrDefault(h.Key),
                 RenderTotal: renderTotals?.GetValueOrDefault(h.Key))).ToList();
 
@@ -291,14 +292,14 @@ namespace MovieTheater.Books.Controllers
             [FromQuery] string? q = null,
             [FromQuery(Name = "$filter")] string? filter = null,
             [FromQuery] string? kind = null,
-            [FromQuery] bool wantToReadOnly = false,   // slice 3, see GetGroups
+            [FromQuery] bool wantToReadOnly = false,   // see GetGroups
             [FromQuery] bool readOnly = false,
             CancellationToken ct = default)
         {
             var by = NormalizeGroupBy(groupBy);
             var itemKind = CatalogController.ParseKind(kind);
-            var (countQuery, _) = BuildFilteredContext(itemKind, q, filter);
-            var heads = await CachedHeadsAsync(HeadsSig(itemKind, by, q, filter), Ttl(q, filter),
+            var (countQuery, _) = await BuildFilteredContextAsync(itemKind, q, filter, wantToReadOnly, readOnly, ct);
+            var heads = await CachedHeadsAsync(HeadsSig(itemKind, by, q, filter, wantToReadOnly, readOnly), Ttl(q, filter),
                 () => GroupHeadsAsync(countQuery, by, ct));
 
             var letters = new List<object>();
@@ -324,13 +325,15 @@ namespace MovieTheater.Books.Controllers
             [FromQuery] string? q = null,
             [FromQuery(Name = "$filter")] string? filter = null,
             [FromQuery] string? kind = null,
+            [FromQuery] bool wantToReadOnly = false,   // see GetGroups
+            [FromQuery] bool readOnly = false,
             CancellationToken ct = default)
         {
             skip = Math.Max(0, skip);
             top = Math.Clamp(top, 1, 500);
             var by = NormalizeGroupBy(groupBy);
             var itemKind = CatalogController.ParseKind(kind);
-            var (_, summaryQuery) = BuildFilteredContext(itemKind, q, filter);
+            var (_, summaryQuery) = await BuildFilteredContextAsync(itemKind, q, filter, wantToReadOnly, readOnly, ct);
 
             var head = new GroupHead(key, key, 0);
             var band = BandQuery(summaryQuery, by, new List<GroupHead> { head });
@@ -362,15 +365,16 @@ namespace MovieTheater.Books.Controllers
         // ── the shared request prologue ───────────────────────────────────────────────────────────────────────
 
         /// <summary>
-        /// Auth + maturity gate + FTS + the OData <c>$filter</c>, shared by every groups endpoint.
+        /// Auth + maturity gate + the per-user mark filters + FTS + the OData <c>$filter</c>, shared by every
+        /// groups endpoint.
         /// The COUNT query stays at the ENTITY level (EF cannot GROUP BY a projected type). With no <c>$filter</c>
         /// the summary set IS the entity set, so the ids subquery is skipped entirely — embedding the projection as
         /// a correlated subquery made every unfiltered GROUP BY pay the projection's join for nothing.
         /// </summary>
-        private (IQueryable<Item> CountQuery, IQueryable<ItemSummary> SummaryQuery) BuildFilteredContext(
-            ItemKind kind, string? q, string? filter)
+        private async Task<(IQueryable<Item> CountQuery, IQueryable<ItemSummary> SummaryQuery)> BuildFilteredContextAsync(
+            ItemKind kind, string? q, string? filter, bool wantToReadOnly, bool readOnly, CancellationToken ct)
         {
-            var entityQuery = ItemAccess.VisibleItems(db, User, kind);
+            var entityQuery = await ApplyMarkFiltersAsync(ItemAccess.VisibleItems(db, User, kind), wantToReadOnly, readOnly, ct);
 
             if (!string.IsNullOrWhiteSpace(q))
             {
@@ -393,6 +397,72 @@ namespace MovieTheater.Books.Controllers
                 entityQuery = entityQuery.Where(i => filteredIds.Contains(i.Id));
             }
             return (entityQuery, summaryQuery);
+        }
+
+        // ── the per-user mark filters ─────────────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Restrict the browse to what the caller has MARKED — <c>?wantToReadOnly=true</c> for their queue,
+        /// <c>?readOnly=true</c> for what they have finished. Both together AND (the standalone's semantics):
+        /// "wanted AND read" is a legitimate, if small, question.
+        ///
+        /// <para><b>It restricts ITEMS, not group keys.</b> The standalone filtered the group KEYS against the
+        /// user's <c>GroupUserMetadata</c>, which only ever worked for the series grouping — a reader marks
+        /// series, not decades, so "read only" grouped by decade returned nothing unless they had literally
+        /// marked a decade. In v2 a mark is an item mark (<c>UserItemState</c>) or a series mark
+        /// (<c>GroupMark(Series)</c>, which fans out to the issues anyway), so the honest reading is "the items
+        /// you marked, plus the items of the series you marked" — and then the heads, the bands and the letter
+        /// rail all fall out of one filtered set and cannot disagree.</para>
+        ///
+        /// <para><b>These signatures are never cached</b> (see <see cref="HeadsSig"/>): they are per-user and
+        /// change on every click, so a cached head list would be wrong the moment a reader marked something.</para>
+        /// </summary>
+        private async Task<IQueryable<Item>> ApplyMarkFiltersAsync(
+            IQueryable<Item> items, bool wantToReadOnly, bool readOnly, CancellationToken ct)
+        {
+            if (!wantToReadOnly && !readOnly) return items;
+            // No principal and a per-user filter is not "everything" — it is nothing.
+            if (BooksIdentity.UserId(User) is not int userId) return items.Where(_ => false);
+
+            if (wantToReadOnly)
+                items = Restrict(items, UserActivityQueries.MarkedItemIds(db, userId, MarkKind.WantToRead),
+                    await UserActivityQueries.WantedSeriesIds(db, userId, ct));
+            if (readOnly)
+                items = Restrict(items, UserActivityQueries.MarkedItemIds(db, userId, MarkKind.Read),
+                    await UserActivityQueries.ReadSeriesIds(db, userId, ct));
+            return items;
+        }
+
+        /// <summary>
+        /// The item ids stay an <see cref="IQueryable{T}"/> (a subquery, so a reader with thousands of marks does
+        /// not become a thousand-parameter IN list); the series ids are a short materialized list.
+        /// </summary>
+        private static IQueryable<Item> Restrict(IQueryable<Item> items, IQueryable<int> markedItemIds, List<int> markedSeriesIds) =>
+            markedSeriesIds.Count == 0
+                ? items.Where(i => markedItemIds.Contains(i.Id))
+                : items.Where(i => markedItemIds.Contains(i.Id)
+                                   || (i.SeriesId != null && markedSeriesIds.Contains(i.SeriesId.Value)));
+
+        /// <summary>
+        /// The caller's marks on the groups of THIS band, as the standalone decorated its heads: one read of the
+        /// user's own (few) rows for the grouping's type, matched in memory — the same shape
+        /// <c>POST /marks/groups/batch</c> uses, and for the same reason (a composite tuple IN does not translate).
+        /// Franchise has no group type of its own, so its heads carry no marks.
+        /// </summary>
+        private async Task<Dictionary<string, GroupUserMarkResult>> GroupMarksAsync(
+            string by, List<GroupHead> paged, CancellationToken ct)
+        {
+            var empty = new Dictionary<string, GroupUserMarkResult>(StringComparer.Ordinal);
+            if (paged.Count == 0) return empty;
+            if (BooksIdentity.UserId(User) is not int userId) return empty;
+            if (MarksController.ParseGroupType(by) is not GroupType type) return empty;
+
+            var keys = paged.Select(h => h.Key).ToHashSet(StringComparer.Ordinal);
+            var rows = await db.GroupMarks.AsNoTracking()
+                .Where(m => m.UserId == userId && m.GroupType == type).ToListAsync(ct);
+            foreach (var m in rows.Where(m => keys.Contains(m.GroupKey)))
+                empty[m.GroupKey] = new GroupUserMarkResult(m.IsRead, m.WantToRead, m.IsFavorite, m.Rating, m.Notes);
+            return empty;
         }
 
         // ── heads ─────────────────────────────────────────────────────────────────────────────────────────────
@@ -702,14 +772,20 @@ namespace MovieTheater.Books.Controllers
         private string UserSig() =>
             $"{BooksIdentity.UserId(User)}:{BooksIdentity.CeilingFor(User)}:{(BooksIdentity.IsAdmin(User) ? 1 : 0)}";
 
-        private string HeadsSig(ItemKind kind, string by, string? q, string? filter) =>
-            $"books:heads:{UserSig()}:{kind}:{by}:{q}:{filter}";
+        /// <summary>
+        /// The heads cache key — or NULL, which means "do not cache this one". A mark-filtered signature is
+        /// per-user AND changes on every click, so caching it would serve a stale shelf the moment the reader
+        /// marked something; recomputing it is the cheaper of the two mistakes.
+        /// </summary>
+        private string? HeadsSig(ItemKind kind, string by, string? q, string? filter, bool wantToReadOnly, bool readOnly) =>
+            wantToReadOnly || readOnly ? null : $"books:heads:{UserSig()}:{kind}:{by}:{q}:{filter}";
 
         private static TimeSpan Ttl(string? q, string? filter) =>
             string.IsNullOrEmpty(q) && string.IsNullOrEmpty(filter) ? HeadsTtlDefault : HeadsTtlFiltered;
 
-        private async Task<List<GroupHead>> CachedHeadsAsync(string sig, TimeSpan ttl, Func<Task<List<GroupHead>>> factory)
+        private async Task<List<GroupHead>> CachedHeadsAsync(string? sig, TimeSpan ttl, Func<Task<List<GroupHead>>> factory)
         {
+            if (sig == null) return await factory();
             if (cache.TryGetValue(sig, out List<GroupHead>? hit) && hit != null) return hit;
             var value = await factory();
             Cache(sig, value, ttl);

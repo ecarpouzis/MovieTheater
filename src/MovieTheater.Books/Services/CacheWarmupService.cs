@@ -162,7 +162,20 @@ namespace MovieTheater.Books.Services
                 // the projection's join pages hot so the real request stays at warm speed.
                 Tally(await RunAsync<BrowseController>(principal, "groups:default",
                     c => c.GetGroups("collection", null, "series", 20, 0, 48, 0, null, null, null, null, false, false, ct), ct));
+
+                // Explore. Its payload IS cached (one entry per user × ceiling × day seed), and assembling it is
+                // the most expensive read in the vertical, so warming it is the difference between "fresh
+                // arrivals appear within a poll" and "the first visitor after midnight pays for them". Only the
+                // no-seed entry is warmed; an explicit ?seed= re-roll is a one-off and simply expires.
+                Tally(await RunAsync<ExploreController>(principal, "explore:comic", c => c.Get(null, null, ct), ct));
+                Tally(await RunAsync<ExploreController>(principal, "explore:book", c => c.Get("book", null, ct), ct));
             }
+
+            // The kids landing is identical for every account (its ceiling is forced to 0 and nothing per-user is
+            // composed), so it is warmed ONCE per pass rather than per identity.
+            if (principals.Count > 0)
+                if (await RunAsync<ExploreController>(principals[0], "explore:kids", c => c.GetKids(null, ct), ct)) ok++;
+                else failed++;
 
             lastWarmUtc = DateTime.UtcNow;
             // Snapshot AFTER warming, so a write racing the pass re-triggers next poll instead of being absorbed.

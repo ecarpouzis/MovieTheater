@@ -55,7 +55,7 @@ Contract notes worth knowing before writing a client:
   same parser, so it honours `$filter`. It costs one extra COUNT — ask for it on the first page only.
 - **The projection joins `Item` + `Series` only.** Raw provider fields (ComicVine, LOCG, MangaUpdates, the embedded
   ComicInfo block, the current insight's prose) come from the item detail endpoint in slice 2.
-- **Per-user marks** (`wantToReadOnly`, `readOnly`) are accepted and ignored until slice 3.
+- **Per-user marks** (`wantToReadOnly`, `readOnly`) restrict the browse as of slice 4 — see that section.
 - Facet and group-head payloads are memory-cached per `userId:ceiling:isAdmin` — 48 h for unfiltered signatures,
   20 min for ad-hoc search/filter ones. `CacheWarmupService` keeps the unfiltered ones hot: it polls
   `PRAGMA data_version` on a dedicated read connection, re-fingerprints the catalog tables only when something
@@ -227,3 +227,200 @@ Two deliberate departures from the standalone site, stated because they change b
    brief asked for — see `ArchiveEntryOrder`. Natural sort re-orders any archive whose page numbers are not
    consistently zero-padded, which would silently move every saved reading position in those books. Changing it
    is a one-line edit there, plus a `PageCount` re-scan and a decision about existing positions.
+
+## Runtime endpoints (R6 slice 6 — OPDS)
+
+The e-reader surface. Chunky, Panels, KyBook, Moon+ Reader, Aldiko and Calibre all speak OPDS, so this one route
+set turns the library into a shelf inside every reading app — with **page streaming** (OPDS-PSE), which is the
+only way a 200 MB collected edition is readable over a phone connection.
+
+**The URL scheme, and where the password is checked.** An e-reader authenticates with HTTP **Basic**, and that is
+verified at the **site** (the pod), which then forwards `/opds/{**}` — prefix KEPT — to this host with the same
+signed identity header every other Books route already rides. So:
+
+| Where | URL | Auth |
+|---|---|---|
+| What the user types into a reader | `https://<site>/opds` | HTTP Basic, checked at the pod |
+| What this host answers | `/opds/…` | the signed identity header, under the host's fallback policy |
+
+`OpdsController` therefore parses **no credentials of its own** — it is an ordinary identity-gated controller, and
+`User` is the site's user exactly as it is in `ItemsController`. `GET /opds/ping` stays the host's own minimal-API
+seam proof (a literal route segment outranks the controller's `{category}` parameter, so the two coexist).
+
+| Route | What it is |
+|---|---|
+| `GET /opds` | The navigation feed every reader fetches first. One entry per shelf, plus the OpenSearch link |
+| `GET /opds/{category}?page=&key=` | One shelf. `page` is **1-based**; 50 entries a page. Categories: `recent`, `comics`, `books`, `series`, `publishers`, `publisher` (needs `key=`), `kids`, `want-to-read`, `in-progress` |
+| `GET /opds/series/{id}?page=` | One series' issues **in reading order** (the derived `ReadIndex`, id after that) |
+| `GET /opds/search?q=&page=` | The same FTS5 index and the same escaping the web catalog's `q=` uses |
+| `GET /opds/opensearch.xml` | The OpenSearch description — what puts a search box in the reader |
+| `GET /opds/pages/{id}/{pageNumber}` | The OPDS-PSE page target. 1-based; redirects to the media plane (see below) |
+
+**Setting up an e-reader (the one-liner):** add an OPDS/catalog source pointing at `https://<site>/opds` with the
+site username and password — every shelf, cover, download and page-by-page stream follows from that one URL.
+
+Contract notes worth knowing before pointing a reader at it:
+
+- **Two origins, deliberately.** FEED links are built from the SITE origin (`Opds:SiteBaseUrl`) because that is
+  where an e-reader's Basic credentials are verified; BYTE links (cover, download) point straight at this host's
+  media plane with a minted capability token, exactly like the SPA's. Unconfigured, the feed base falls back to
+  the forwarded origin (`X-Forwarded-Proto`/`-Host`, which the site's proxy stamps) and then to the request's own
+  origin — never to the documented `https://<site>` placeholder, which would hand every reader a dead link.
+- **The PSE page link goes through `/opds/pages/…`, not straight to the media plane**, for two reasons that are
+  each a silent failure otherwise: PSE's `{pageNumber}` is **1-based** while the media plane's page index is
+  **0-based** (every page would be off by one and the last page a 404), and a media token lives 12 hours while an
+  e-reader keeps a cached feed for months (a token baked into the feed would stream today and fail next week).
+  That route converts the index, mints a fresh token, and 302s to the media plane — the bytes never travel
+  through the catalog path.
+- **`pse:count` and `pse:lastRead`.** A stream link needs BOTH a `{pageNumber}` template AND a `pse:count` in a
+  declared namespace or every client ignores it and downloads the whole archive; a row with no indexed page count
+  gets no stream link at all. `pse:lastRead` is 1-based: a finished book reports its last page, an in-progress one
+  reports where it stopped, an untouched one reports nothing (`lastRead=1` everywhere makes every cover look
+  half-read).
+- **The gate is the same one everything else uses.** Every feed starts at `ExcludeHidden().ApplyMaturity(ceiling)`,
+  so shadow duplicates never appear and a restricted account cannot enumerate through a reader app what the web
+  catalog hides from it. That hole was real on the standalone site — it enforced folder authorisation only. The
+  Kids shelf is the ceiling-0 view for ANY caller: a shelf, not a permission.
+- **A shelf that would open empty is not advertised.** The root feed writes an entry only when it leads somewhere:
+  no books ⇒ no Books shelf, no user id ⇒ no personal shelves. Unknown category, personal shelf without an
+  identity, publisher drill without a key, and a series the caller cannot see are all **404** — absent and
+  forbidden look the same from outside.
+- **Configuration (`Opds:` section, host-only, all optional):** `SiteBaseUrl` (set this in production — the site
+  origin, e.g. `https://<site>`), `PageSize` (50), `Title` (the catalog's name in the reader's library list),
+  `Enabled` (default **on** — the site-wide policy is that a lever ships enabled and is opted out of).
+  `Books:SiteBaseUrl` / `Books:EnableOpds` are accepted as aliases. No service registration was needed: the
+  controller reads these per request from `IConfiguration` and constructs `OpdsFeedService` itself, so
+  `BooksServiceExtensions` is untouched by this slice.
+- **UTF-8, no BOM.** `Utf8StringWriter` exists because `StringWriter` hardcodes UTF-16 and `XmlWriter` takes the
+  DECLARED encoding from the writer, not from `XmlWriterSettings` — a `utf-16` prolog on UTF-8 bytes entitles a
+  conforming parser to reject the feed, and some readers do.
+
+## Runtime endpoints (R6 slice 4 — explore, kids, novels)
+
+The section's front page, the kids view, and the prose shelf. The standalone site's `ComicsController.GetHome`,
+`KidsController` and `BooksController`, ported onto v2 — with Home's payload re-shaped into the **site-wide
+Explore envelope** (below), because Explore is one contract for every MovieTheater section and Books is only the
+first section to have a server for it.
+
+| Route | What it is |
+|---|---|
+| `GET /explore?kind=comic\|book&seed=` | The section's Explore payload: `{ spotlight, rails, seed }` |
+| `GET /explore/kids?seed=` | The kids landing, same envelope, ceiling forced to 0 |
+| `GET /kids/browse?groupBy=series&groupsSkip=&groupsTop=&perGroupTop=` | Kid-safe shelves — one group per kid-clear series (`PerSeries` 40, `MaxSeries` 160), plus a trailing `books` group |
+| `GET /kids/series/{id}/items?skip=&top=` | One kid-safe shelf's issues; 404 when the series is not kid-clear |
+| `GET /novels?author=&series=&publisher=&decade=&tag=&q=&skip=&top=&orderby=` | The books list: `{ total, skip, top, items, covers }` |
+| `GET /novels/facets` | `{ authors, series, publishers, decades, tags }` with counts, over the gated set |
+| `GET /novels/{id}` | The same `ItemDetail` `/items/{id}` returns (same builder), 404 for anything that is not a visible book |
+
+### `ExploreResponse` — **this is the site-wide Explore contract**
+
+Every section's Explore endpoint returns it: Movies, Music, Arcade, Photos and Boardgames answer the same shape,
+and the SPA's Explore tab is one component for all of them. Nothing in it may grow a field only Books could fill.
+The C# side is `Projections/CardItem.cs`; its TypeScript twin is `src/ui/src/catalog/types.ts` (`CardItem`,
+`ExploreRail`, `ExploreResponse`) — the two are meant to be diffable by eye.
+
+```
+{ spotlight: CardItem[],
+  rails: [{ key, title, kind: 'strip'|'wall'|'grid', items: CardItem[], more?: { href } }],
+  seed }
+```
+
+`CardItem` = `{ kind: 'comic'|'book'|'series', id, key: "{kind}:{id}", title, subtitle?, label?, year?, aspect,
+imageUrl, imageThumbUrl, hue?, rating?, badges?, groupKey?, sortKey, raw }`.
+
+- **`key`, not `id`, is what a list keys on** — ids collide across kinds (a comic 7 and a book 7 both exist).
+- **`raw` is the section's own row, untouched** (an `ItemSummary` for an item card; the series facts plus its
+  cover item for a series card), so a section's modal needs no second fetch and the views never read it.
+- **`aspect`** is the cover's true width/height, `0.66` when unknown. **`sortKey`** is the value the rail ordered
+  by (a rating, an `IndexedAt`, a series name), so a view can show a "you are here" without knowing the query.
+- **`imageUrl` and `imageThumbUrl` are the same URL**: the generated 720×440 WebP IS the cover the site shows,
+  there is no second rendition. They are minted server-side with a media token for the CALLER's identity (same
+  ceiling, same admin flag — a token can never widen what its holder may fetch), so a card arrives ready to
+  render in one round trip. A URL is minted whether or not the file exists; a missing thumbnail answers 404 and
+  the client's fallback art covers it. `POST /thumbs/batch` remains the surface that reports existence.
+- **An empty rail is never sent.** A heading over a blank row is worse than no heading, so `top-series` and
+  `collected-editions` are simply ABSENT for `kind=book` — series identity and containment are the comics spine.
+- `more.href` is relative to the Books API root and is the browse URL that lists the rail fully. It is **omitted
+  when the rail's rule is not expressible in the browse vocabulary** — `collected-editions` has no `more`,
+  because containment is not a `$filter` and a link that quietly led somewhere else would be worse than none.
+
+### The rails, and where their numbers come from
+
+Ported from `GetHome` with the thresholds, the pools and the per-rail seed salts unchanged (`ExploreController`'s
+constants name every one of them):
+
+| Rail | Rule |
+|---|---|
+| `spotlight` | Rated >= **75** and carrying editorial prose, one per series, top **300** ranked -> **6** picked |
+| `top-series` | `Series.ResolvedRating` >= **72** and `IssueCount` >= **4**, top **140** -> **14**, each drawn with its cover issue (`kind: 'series'`) |
+| `collected-editions` | `CollectionNode.ContainsCount` >= **6**, not an alternate track, one per series, top **160** -> **12** |
+| `top-shelf-reads` | The COUNTERPART kind rated >= **60**, top **120** -> **14** (a comics page shows books; a books page shows comics — the standalone's `topBooks`, generalized) |
+| `suggested` | `SuggestionsController.SuggestAsync` — the slice-3 recommender, composed rather than re-implemented |
+| `fresh-arrivals` | Most recently indexed **28**, id as the tiebreaker. **Not** rotated: the point is that they are the newest |
+
+- "**Carries editorial prose**" is `Item.ResolvedSynopsisSource != None` — the resolver already picked the leg
+  that won the synopsis, so v2 asks one scalar where the standalone OR'd two joins.
+- Every rotated rail is a **deterministic Fisher–Yates pick from a RANKED pool, seeded by the UTC day number**.
+  That is what makes the page rotate once a day rather than per render, keeps it identical across renders and
+  replicas, and lets `?seed=` re-roll it reproducibly. The seed is echoed in the response.
+- **Caching:** the composed payload is memory-cached per `userId:ceiling:isAdmin` x kind x seed for 24 h — the
+  standalone's `library_home` key on v2 vocabulary. That TTL is a backstop only: `CacheWarmupService` re-runs the
+  real action for every `KnownIdentity` whenever the catalog fingerprint moves, so fresh arrivals show up within
+  a poll and no visitor ever pays the assembly. `?seed=` re-rolls key separately, stay unwarmed, and expire.
+  `/explore/kids` caches under a **seed-only** key: its ceiling is fixed and nothing per-user is composed, so one
+  warm serves every account.
+
+### Kids
+
+`KidsPolicy` (`Access/KidsPolicy.cs`) is the one answer to "is this kid content", shared by `/explore/kids` and
+`/kids/...` so the landing and the browse can never disagree.
+
+- **Two gates, in order.** The admin allow-list (`KidSafeTag`, scoped by `AppliesTo` — comics are cleared by
+  `audience: all-ages`, books by `audience: children`) decides INCLUSION; the blocked-audience floor then
+  overrules it. The floor is `MaturityFilter.HardBlockedAbove(0)` — read from the maturity gate rather than
+  copied, so raising it is one edit.
+- **`teen` is deliberately not blocked**, mirroring min-wins: a kid-clear series that also reads as teen (Bone,
+  Tintin, Asterix) is still kid content. Only a two-or-more-level spread (all-ages AND mature) is a contradiction.
+- **The ceiling is the VIEW's, not the caller's.** A child, an adult and an admin see the same shelves — which is
+  the only way the view can be checked before a child is handed it.
+- Shelves are `BrowseGroupItem`s, the same shape `/browse/groups` sends, so the kids shelf and the main shelf are
+  one component with a different source. Cover URLs ride in a `covers` map beside the groups: `ItemSummary` is the
+  shared flat projection and must not grow a per-surface field.
+- Kid-cleared BOOKS ride as a single trailing `books` group. A book carries its own clearance (`ItemTag`) and its
+  own maturity (its current `Insight`), and Calibre makes roughly one folder per book, so there are no book
+  shelves to build — the standalone listed them flat after the comic shelves and that order is kept.
+- One deliberate change: the standalone's kids home reshuffled on every request; `/explore/kids` is **seeded**
+  like every other rail, so the day's shelf is stable, reproducible and cacheable.
+
+### Novels
+
+- **The strictest gate in the vertical, unchanged from the standalone:** a book's maturity is on its own current
+  `Insight` row, and a book with **no** maturity is hidden below ceiling 3. An unclassified book is never assumed
+  safe. It lives in `MaturityFilter`, so this controller just starts from `ItemAccess.VisibleItems`.
+- Filters are **exact-equality, comma-separated, OR within a facet and AND across** (the standalone's semantics),
+  landing on ROWS: `author` = `ItemCredit(Source=Calibre, Role=Author)` (so Calibre's `"A & B"` is two credits and
+  either name finds the book), `series` / `publisher` = `BookDetail`, `decade` = `Item.ResolvedYear` (not a
+  `SUBSTR` of a date string — that is what let a malformed date invent a `0100s` facet), `tag` = an
+  `ItemTag(Category, Value)` EXISTS. `?tag=genre:dystopian` pins the category, a bare `?tag=dystopian` matches any
+  — and `/novels/facets` hands tags back in that composite spelling, so a chip round-trips unchanged.
+- `q=` is the same FTS5 search the catalog uses. `orderby` = `author` (default: author -> series -> title) |
+  `title` | `rating` | `newest` | `oldest`, and every one ends with the item id.
+- Facets count the **gated** set and are NOT re-filtered by the active selections — the rail is what you could
+  choose, not what you have chosen. Decades stay chronological, newest first, never count-sorted. Cached per
+  caller for 48 h, like the browse facets.
+
+### The marks filters are now wired into `/browse` (they were accepted-and-ignored in slice 1)
+
+- `?wantToReadOnly=true` / `?readOnly=true` restrict the browse to what the caller has marked; both together AND.
+- **They restrict ITEMS, not group keys.** The standalone filtered group KEYS against `GroupUserMetadata`, which
+  only ever worked for the series grouping — a reader marks series, not decades, so "read only" grouped by decade
+  returned nothing. In v2 a mark is an item mark (`UserItemState`) or a series mark (`GroupMark(Series)`, which
+  fans out to the issues anyway), so the filter is "the items you marked, plus the items of the series you
+  marked" (`UserActivityQueries.MarkedItemIds` / `ReadSeriesIds` / `WantedSeriesIds`). Heads, bands and the letter
+  rail then all fall out of one filtered set and cannot disagree.
+- **A mark-filtered signature is never cached.** It is per-user and changes on every click, so a cached head list
+  would be wrong the moment a reader marked something. `/browse/groups`, `/browse/group-letters` and
+  `/browse/groups/{groupBy}/{key}/items` all take the flags.
+- Group heads now carry `userMeta` from `GroupMark` — one read of the caller's own (few) rows for the grouping's
+  type, matched in memory, the same shape `POST /marks/groups/batch` uses and for the same reason. Franchise has
+  no group type of its own, so its heads carry no marks.
