@@ -237,7 +237,7 @@ namespace MovieTheater
                 ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto
                     | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor,
             };
-            forwardedOptions.KnownNetworks.Clear();
+            forwardedOptions.KnownIPNetworks.Clear();
             forwardedOptions.KnownProxies.Clear();
             app.UseForwardedHeaders(forwardedOptions);
 

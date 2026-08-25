@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
 namespace MovieTheater.Db
@@ -19,7 +19,7 @@ namespace MovieTheater.Db
                 ?? "Server=localhost;Database=MovieSite;Trusted_Connection=True;TrustServerCertificate=true;";
 
             var options = new DbContextOptionsBuilder<MovieDb>()
-                .UseSqlServer(connectionString)
+                .UseSqlServer(connectionString, DbServiceExtensions.SqlServerOptions)
                 .Options;
 
             return new MovieDb(options);
