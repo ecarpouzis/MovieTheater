@@ -22,7 +22,29 @@ namespace MovieTheater.BooksHost
             ReportDir = ConfiguredRoot.FullPathOrNull(b["ReportDir"]);
             V1OwnerUsername = string.IsNullOrWhiteSpace(b["V1OwnerUsername"]) ? null : b["V1OwnerUsername"]!.Trim();
             OwnerUserId = int.TryParse(b["OwnerUserId"], out var uid) ? uid : 1;
+            Urls = Text(b["Urls"]);
+            SiteOrigin = Text(b["SiteOrigin"]);
+            PublicBaseUrl = Text(b["PublicBaseUrl"]);
+            IdentityTokenSecret = Text(b["IdentityTokenSecret"]);
+            MediaTokenSecret = Text(b["MediaTokenSecret"]);
         }
+
+        private static string? Text(string? v) => string.IsNullOrWhiteSpace(v) ? null : v.Trim();
+
+        /// <summary>Kestrel listen URL(s) for the <c>web</c> verb (default http://localhost:2204; Caddy fronts it).</summary>
+        public string? Urls { get; }
+
+        /// <summary>The site origin — the only origin allowed to fetch media here (one ACAO, Vary: Origin).</summary>
+        public string? SiteOrigin { get; }
+
+        /// <summary>This host's public base (https://books-host.…), the origin of every media URL it mints.</summary>
+        public string? PublicBaseUrl { get; }
+
+        /// <summary>HMAC secret shared with the site pods; opens the X-MT-Identity header.</summary>
+        public string? IdentityTokenSecret { get; }
+
+        /// <summary>HMAC secret known to this host only; mints and validates the media-plane tokens.</summary>
+        public string? MediaTokenSecret { get; }
 
         /// <summary>The standalone site's owner account — the ONLY user whose activity migrates (decision 5).</summary>
         public string? V1OwnerUsername { get; }

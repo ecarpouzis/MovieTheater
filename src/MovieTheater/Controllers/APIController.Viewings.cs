@@ -426,6 +426,8 @@ namespace MovieTheater.Controllers
             "ShowBoardgameExpansions",
             "RatingAnchors",
             "FavoriteChannels",
+            // Books kids skin (pop | bubble) is the user's own choice; the grant and the ceiling are NOT here.
+            MovieTheater.Books.BooksAccessGate.KidsStyleKey,
         };
 
         [HttpPost("/API/SetUserSetting")]

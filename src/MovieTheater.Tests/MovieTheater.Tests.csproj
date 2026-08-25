@@ -100,6 +100,11 @@
     <Compile Include="..\MovieTheater\Streaming\TranscodeSessionRegistry.cs" Link="Streaming\TranscodeSessionRegistry.cs" />
     <Compile Include="..\MovieTheater\Web\RatingGate.cs" Link="Streaming\RatingGate.cs" />
     <Compile Include="..\MovieTheater\Photos\FamilyAlbumGate.cs" Link="Photos\FamilyAlbumGate.cs" />
+    <!-- The Books gate and the OPDS Basic scheme (merge program R5), for the same reason as the family-album
+         gate: the tests run the REAL policy declaration and the real handler; only the UserSettings read and
+         the password hash check are substituted. The Yarp transform/config stay out (they need the proxy). -->
+    <Compile Include="..\MovieTheater\Books\BooksAccessGate.cs" Link="Books\BooksAccessGate.cs" />
+    <Compile Include="..\MovieTheater\Books\OpdsBasicAuthenticationHandler.cs" Link="Books\OpdsBasicAuthenticationHandler.cs" />
     <Compile Include="..\MovieTheater\Controllers\PhotosController.cs" Link="Photos\PhotosController.cs" />
     <!-- The Phase 1 ingest pipeline, compiled from source for the same reason: the tests must drive
          the SHIPPED walk/metadata/hash/thumb code, not a description of it. Everything here depends

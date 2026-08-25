@@ -316,6 +316,15 @@ namespace MovieTheater.Controllers
             }
             catch (System.Text.Json.JsonException) { favoriteChannels = Array.Empty<int>(); }
 
+            // Books (merge program R5): the grant, the per-user ceiling and kids skin, and where the host lives —
+            // surfaced so the SPA can hide the section and build media URLs; the gate itself is the
+            // RequireBooksAccess policy on the proxied route, re-checked on every request.
+            var booksAccess = MovieTheater.Books.BooksAccessGate.IsGrant(Setting(MovieTheater.Books.BooksAccessGate.SettingKey));
+            var booksMaturityCeiling = MovieTheater.Books.BooksAccessGate.ParseCeiling(Setting(MovieTheater.Books.BooksAccessGate.CeilingKey));
+            var booksKidsStyle = Setting(MovieTheater.Books.BooksAccessGate.KidsStyleKey);
+            var booksHostBaseUrl = !string.IsNullOrWhiteSpace(configuration["BooksHostBaseUrl"]) && !string.IsNullOrWhiteSpace(configuration["BooksTokenSecret"])
+                ? configuration["BooksHostBaseUrl"]!.TrimEnd('/') : null;
+
             var hasPassword = user.PasswordHash != null;
 
             // Drives whether the SPA shows the admin tools. Mirrors the server gate: a config admin
@@ -323,7 +332,7 @@ namespace MovieTheater.Controllers
             // false here, which is correct — they must set their password before they can administer.
             var isAdmin = IsAdminUsername(user.Username) && hasPassword;
 
-            return new { user.Username, moviesSeen, moviesToWatch, miscSeen, ratings, ratingAnchors, ageRestriction, cardStyle, canEditMovies, enablePagination, showBoardgameExpansions, comicSiteAccess, favoriteChannels, hasPassword, isAdmin, familyAlbum };
+            return new { user.Username, moviesSeen, moviesToWatch, miscSeen, ratings, ratingAnchors, ageRestriction, cardStyle, canEditMovies, enablePagination, showBoardgameExpansions, comicSiteAccess, favoriteChannels, hasPassword, isAdmin, familyAlbum, booksAccess, booksMaturityCeiling, booksKidsStyle, booksHostBaseUrl };
         }
 
         [HttpPost("/API/Logout")]

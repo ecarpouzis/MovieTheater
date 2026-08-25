@@ -141,6 +141,26 @@ function AdminModal({ open, onClose }) {
       .finally(() => setBusyUserId(null));
   };
 
+  // Books access (the merge program's R5 gate). Same posture as the family album: this toggle is the only
+  // grant surface, and an administrator is not implicitly a Books member.
+  const toggleBooksAccess = (user, checked) => {
+    setBusyUserId(user.userId);
+    MovieAPI.adminSetUserSetting(user.userId, "BooksAccess", checked ? "true" : null)
+      .then((r) => r.json().then((body) => ({ ok: r.ok, body })))
+      .then(({ ok, body }) => {
+        if (!ok) {
+          message.error(body?.message ?? "Failed to update access.");
+          return;
+        }
+        patchUser(user.userId, { booksAccess: checked });
+      })
+      .catch((error) => {
+        console.error("Error updating books access:", error);
+        message.error("Failed to update access.");
+      })
+      .finally(() => setBusyUserId(null));
+  };
+
   // Family photo album membership (photos-plan.md §2.1). This is the only surface that grants it —
   // it is absent from the self-service settings allow-list — and it is deliberately separate from
   // ADMIN: an administrator is not implicitly in the family photos.
@@ -212,6 +232,14 @@ function AdminModal({ open, onClose }) {
                       onChange={(e) => toggleFamilyAlbum(user, e.target.checked)}
                     >
                       Family photos
+                    </Checkbox>
+                    <Checkbox
+                      className="admin-editor-check"
+                      checked={user.booksAccess}
+                      disabled={busy}
+                      onChange={(e) => toggleBooksAccess(user, e.target.checked)}
+                    >
+                      Books
                     </Checkbox>
                   </div>
                   <div className="admin-user-pw-row">

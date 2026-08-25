@@ -14,6 +14,13 @@ namespace MovieTheater.Books.Db
         public static DbContextOptionsBuilder<T> Configure<T>(DbContextOptionsBuilder<T> builder, string path, bool readOnly = false)
             where T : DbContext
         {
+            Configure((DbContextOptionsBuilder)builder, path, readOnly);
+            return builder;
+        }
+
+        /// <summary>The non-generic form <c>AddDbContext</c> lambdas receive.</summary>
+        public static DbContextOptionsBuilder Configure(DbContextOptionsBuilder builder, string path, bool readOnly = false)
+        {
             var cs = new SqliteConnectionStringBuilder
             {
                 DataSource = path,

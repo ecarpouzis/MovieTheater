@@ -112,6 +112,15 @@ namespace MovieTheater.Controllers
                 .ToListAsync();
             var familySet = familyIds.ToHashSet();
 
+            // Books access (merge program R5) — same posture as the family album: granted here only, and
+            // independent of isAdmin.
+            var booksIds = await movieDb.UserSettings
+                .Where(s => s.SettingKey == Books.BooksAccessGate.SettingKey
+                    && s.SettingValue == Books.BooksAccessGate.SettingValue)
+                .Select(s => s.UserID)
+                .ToListAsync();
+            var booksSet = booksIds.ToHashSet();
+
             var result = users.Select(u => new
             {
                 userId = u.UserID,
@@ -120,6 +129,7 @@ namespace MovieTheater.Controllers
                 hasPassword = u.HasPassword,
                 canEditMovies = editorSet.Contains(u.UserID),
                 familyAlbum = familySet.Contains(u.UserID),
+                booksAccess = booksSet.Contains(u.UserID),
                 // Admin status is config-bound; surfaced read-only so the UI can badge it.
                 isAdmin = IsAdminUsername(u.Username),
             });

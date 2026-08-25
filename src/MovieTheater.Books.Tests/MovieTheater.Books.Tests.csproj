@@ -31,4 +31,14 @@
     <EmbeddedResource Include="Fixtures\schema-v1.sql" LogicalName="MovieTheater.Books.Tests.schema-v1.sql" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The host's seam pieces (R5) are compiled from source, the MovieTheater.Tests stance: the identity handler,
+         the recorder and the config are claims about the SHIPPED host, and a ProjectReference to a Web-SDK exe
+         is not worth its weight. They need the framework's Authentication types. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <Compile Include="..\MovieTheater.BooksHost\BooksHostConfiguration.cs" Link="Host\BooksHostConfiguration.cs" />
+    <Compile Include="..\MovieTheater.BooksHost\Web\BooksIdentityAuthHandler.cs" Link="Host\BooksIdentityAuthHandler.cs" />
+    <Compile Include="..\MovieTheater.BooksHost\Web\KnownIdentityRecorder.cs" Link="Host\KnownIdentityRecorder.cs" />
+  </ItemGroup>
+
 </Project>

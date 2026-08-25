@@ -38,6 +38,15 @@ namespace MovieTheater.Services
         /// <summary>HMAC secret shared with the StreamGateway; signs the capability URLs (§3.3).</summary>
         public string? StreamTokenSecret { get; set; }
 
+        // ── Books (the MyBooks merge program, R5). The site proxies /API/Books and /opds to the Books host
+        // under its own origin and stamps a signed identity header; both keys unset = no Books routes. ──
+
+        /// <summary>Public base of the Books host (the Yarp destination AND the origin of its media URLs).</summary>
+        public string? BooksHostBaseUrl { get; set; }
+
+        /// <summary>HMAC secret shared with the Books host; signs the per-request X-MT-Identity header.</summary>
+        public string? BooksTokenSecret { get; set; }
+
         /// <summary>0 = unlimited; otherwise Stream/Start returns a friendly "theater full" 503 when reached.</summary>
         public int StreamingMaxConcurrentTranscodes { get; set; }
 

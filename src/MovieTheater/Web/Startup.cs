@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MovieTheater.Db;
 using MovieTheater.Photos;
+using MovieTheater.Books;
 using Microsoft.AspNetCore.OData;
 using MovieTheater.Services;
 using MovieTheater.Services.ImdbApi;
@@ -139,8 +140,18 @@ namespace MovieTheater
                 // 30-day cookie would otherwise carry a stale grant for a month. So it reads the flag
                 // per request — see FamilyAlbumGate for the memoization that keeps that to one query.
                 Photos.FamilyAlbumGate.AddPolicy(options);
+                // Books (the merge program's R5 seam): the same shape as the family album — password-verified
+                // session + a UserSettings grant — guarding the proxied /API/Books route, plus the OPDS
+                // variant whose password was verified on THIS request by the Basic scheme below.
+                Books.BooksAccessGate.AddPolicies(options);
             });
             services.AddFamilyAlbumServices();
+            services.AddBooksAccessServices();
+            services.AddScoped<Books.IPasswordVerifier, Books.IdentityPasswordVerifier>();
+            // OPDS e-readers cannot carry the cookie; they present the site username + password as HTTP Basic
+            // on /opds only. Verified here, at the pod — the Books host never sees a password.
+            services.AddAuthentication()
+                .AddScheme<AuthenticationSchemeOptions, Books.OpdsBasicAuthenticationHandler>(Books.OpdsBasicAuthenticationHandler.SchemeName, _ => { });
             // Family video playback (photos-plan.md §2.3): mints a gateway capability for ONE video
             // behind the gate above. Scoped like the controller that uses it; a host with no Jellyfin
             // still resolves it and simply reports itself unconfigured, which the UI renders as no play
@@ -149,6 +160,14 @@ namespace MovieTheater
 
             var proxyBuilder = services.AddReverseProxy();
             proxyBuilder.LoadFromConfig(config.RawConfiguration.GetSection("ReverseProxy"));
+            // The Books host routes are built in code and only when configured (BooksHostBaseUrl + BooksTokenSecret):
+            // a config-file cluster with an empty destination would fail Yarp's validation and take the API down.
+            // Two providers coexist (Yarp 2.x); the identity transform stamps X-MT-Identity on the Books routes only.
+            if (Books.BooksProxyConfig.IsConfigured(config))
+            {
+                proxyBuilder.LoadFromMemory(Books.BooksProxyConfig.Routes(), Books.BooksProxyConfig.Clusters(config));
+                proxyBuilder.AddTransforms<Books.BooksIdentityTransform>();
+            }
 
             services.AddMemoryCache(opts => opts.SizeLimit = 200 * 1024 * 1024); // 200 MB cap, evicts LRU when full
 
