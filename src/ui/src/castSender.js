@@ -25,33 +25,46 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 // GatewayCorsOrigins in MovieTheater.StreamGateway/Program.cs.
 
 const SDK_URL = "https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1";
-// How long to wait for __onGCastApiAvailable before concluding this browser has no Cast support.
-// The callback fires within a few hundred ms where the SDK exists; where it doesn't (Firefox, Safari,
-// every iOS browser) it never fires at all, and without a deadline `supported` would stay unresolved
-// forever and the button would never settle into a state.
+// How long the hook waits for the SDK before REPORTING "still loading" as the reason there is no
+// button. It is a reporting deadline, not a give-up: the loader below never times out on its own,
+// so a framework that arrives late on a slow cellular link still produces the button. (It used to
+// be a hard cut-off, which silently lost the button for any viewer whose two SDK scripts took
+// longer than this to fetch.) Where the SDK can never call back — a Chromium build without the
+// media router — the promise simply stays pending, and nothing but this hook awaits it.
 const SDK_TIMEOUT_MS = 6_000;
 
 let sdkPromise = null;
 
 /**
- * Load cast_sender.js once per page and resolve true when the framework is usable.
+ * Load cast_sender.js once per page and resolve `{ ok, reason }`.
+ *
+ * `ok` true means the framework is usable. When it isn't, `reason` says WHY, in the vocabulary the
+ * settings menu turns into a sentence (see tvStatusLine in playerMenuModel):
+ *   - "unsupported-browser" — no window.chrome: Firefox, Safari, every iOS browser
+ *   - "insecure-context"    — plain http://; the SDK refuses to initialize there
+ *   - "sdk-blocked"         — the script tag was refused (CSP) or failed to load (ad blocker,
+ *                             filtering DNS, offline)
+ *   - "sdk-unavailable"     — the script ran but said no, or left no framework behind (a Chromium
+ *                             fork with casting disabled)
  *
  * The callback name is fixed by Google and must exist BEFORE the script executes, so it is assigned
- * first. Resolving false (rather than rejecting) is deliberate: "this browser can't cast" is an
+ * first. Resolving ok:false (rather than rejecting) is deliberate: "this browser can't cast" is an
  * ordinary answer, not an error, and every caller treats it as one.
  */
 export function loadCastFramework() {
   if (sdkPromise) return sdkPromise;
   sdkPromise = new Promise((resolve) => {
-    if (typeof window === "undefined" || typeof document === "undefined") return resolve(false);
-    if (window.cast?.framework && window.chrome?.cast) return resolve(true);
+    const no = (reason) => resolve({ ok: false, reason });
+    if (typeof window === "undefined" || typeof document === "undefined") return no("unsupported-browser");
+    if (window.cast?.framework && window.chrome?.cast) return resolve({ ok: true, reason: null });
     // Preconditions the SDK itself has, checked before paying for it. The framework is a Chromium
     // feature (window.chrome is defined there and nowhere else) and it requires a secure context.
     // Skipping the fetch on Firefox, Safari and every iOS browser isn't just tidiness: without this
-    // they each load ~100 kB of script that can never work, then sit through the full SDK_TIMEOUT_MS
-    // before the button resolves to "absent". It also keeps the test DOM — which refuses script tags
+    // they each load ~100 kB of script that can never work, and the menu would blame a slow network
+    // for a browser that has no Cast at all. It also keeps the test DOM — which refuses script tags
     // outright — from logging a DOMException on every suite run.
-    if (!window.chrome || window.isSecureContext === false) return resolve(false);
+    if (!window.chrome) return no("unsupported-browser");
+    if (window.isSecureContext === false) return no("insecure-context");
 
     let settled = false;
     const finish = (value) => {
@@ -65,10 +78,9 @@ export function loadCastFramework() {
       // Chain rather than clobber: another script on the page (or a previous mount in a hot reload)
       // may own this hook too, and stealing it silently would break whoever set it first.
       try { previous?.(isAvailable, reason); } catch { /* not ours to fix */ }
-      finish(!!isAvailable && !!window.cast?.framework);
+      const usable = !!isAvailable && !!window.cast?.framework;
+      finish(usable ? { ok: true, reason: null } : { ok: false, reason: "sdk-unavailable" });
     };
-
-    setTimeout(() => finish(false), SDK_TIMEOUT_MS);
 
     // Injecting the tag can THROW rather than fire onerror — a CSP that doesn't list gstatic, and
     // the test DOM, both refuse it synchronously. Unhandled, that rejects this promise and every
@@ -78,10 +90,10 @@ export function loadCastFramework() {
       const script = document.createElement("script");
       script.src = SDK_URL;
       script.async = true;
-      script.onerror = () => finish(false); // offline, blocked by an extension, or a filtering DNS
+      script.onerror = () => finish({ ok: false, reason: "sdk-blocked" }); // offline, an extension, a filtering DNS
       document.head.appendChild(script);
     } catch {
-      finish(false);
+      finish({ ok: false, reason: "sdk-blocked" });
     }
   });
   return sdkPromise;
@@ -160,6 +172,11 @@ let mediaRequestId = 1;
  */
 export function useCastSender({ onSessionEnded } = {}) {
   const [supported, setSupported] = useState(false);
+  // Why `supported` is false, once known: a loader reason (above), or "sdk-timeout" while the SDK
+  // is still on its way. Null while probing, and null again once the framework is up. This is
+  // what lets the settings menu answer "why is there no cast button?" instead of the viewer
+  // guessing between "my browser can't" and "it didn't find my TV".
+  const [reason, setReason] = useState(null);
   const [state, setState] = useState("unavailable"); // unavailable | no-devices | idle | connecting | connected
   const [device, setDevice] = useState(null);
   const [error, setError] = useState(null);
@@ -187,8 +204,15 @@ export function useCastSender({ onSessionEnded } = {}) {
     let context = null;
     let onCastState = null;
 
-    loadCastFramework().then((ok) => {
-      if (cancelled || !ok) return;
+    const slow = setTimeout(() => { if (!cancelled) setReason("sdk-timeout"); }, SDK_TIMEOUT_MS);
+    loadCastFramework().then((result) => {
+      clearTimeout(slow);
+      if (cancelled) return;
+      if (!result.ok) {
+        setReason(result.reason);
+        return;
+      }
+      setReason(null);
       const cast = window.cast.framework;
       const chromeCast = window.chrome.cast;
       try {
@@ -274,6 +298,7 @@ export function useCastSender({ onSessionEnded } = {}) {
 
     return () => {
       cancelled = true;
+      clearTimeout(slow);
       // Detach the listeners but NEVER end the session here: this effect tears down on any unmount of
       // the page, and a re-render that killed the viewer's cast would be indefensible. Ending is an
       // explicit act (disconnect(), or the page's own teardown).
@@ -421,12 +446,12 @@ export function useCastSender({ onSessionEnded } = {}) {
 
   return useMemo(
     () => ({
-      supported, state, device, error, remote,
+      supported, reason, state, device, error, remote,
       connected: state === "connected",
       connect, disconnect, loadMedia, setActiveTextTrack,
       playPause, seek, setVolume, toggleMuted, setPlaybackRate,
     }),
-    [supported, state, device, error, remote, connect, disconnect, loadMedia, setActiveTextTrack,
+    [supported, reason, state, device, error, remote, connect, disconnect, loadMedia, setActiveTextTrack,
       playPause, seek, setVolume, toggleMuted, setPlaybackRate]
   );
 }

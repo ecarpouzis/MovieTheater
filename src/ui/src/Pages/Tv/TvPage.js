@@ -3,7 +3,7 @@ import { useParams, useHistory } from "react-router-dom";
 import Hls from "hls.js";
 import { MovieAPI } from "../../MovieAPI";
 import { formatTime, TICKS_PER_SECOND } from "../Watch/VideoPlayer";
-import { QUALITY_LADDER, formatPlaying, qualityOptions, audioOptions, subtitleOptions, deliveredAudio } from "../../playerMenuModel";
+import { QUALITY_LADDER, formatPlaying, qualityOptions, audioOptions, subtitleOptions, deliveredAudio, tvStatusLine } from "../../playerMenuModel";
 import { useIdleChrome } from "../../useIdleChrome";
 import { createHls, bandwidthSample, canRemotePlay } from "../../streamEngine";
 import { useCastSender } from "../../castSender";
@@ -1735,6 +1735,21 @@ function TvPage({ userData }) {
               <span className="tv-channel-num">⏻</span>
               Off
             </button>
+
+            {/* Why there is no cast/AirPlay button, when there isn't one — same readout as the
+                Watch player (tvStatusLine). The buttons only exist once a receiver is found. */}
+            {!casting && (
+              <>
+                <div className="tv-menu-section">TV</div>
+                <div className="tv-menu-readout">
+                  {tvStatusLine({
+                    cast: { sdkReady: cast.supported, state: cast.state, reason: cast.reason },
+                    airplay,
+                    userAgent: navigator.userAgent,
+                  })}
+                </div>
+              </>
+            )}
 
             {/* What's actually being delivered — quality, codec, and whether it's the original copied
                 bit-for-bit (no re-encode) or a transcode. */}

@@ -24,7 +24,8 @@ import { useCallback, useEffect, useState } from "react";
 /**
  * @param videoRef the media element
  * @param contentIsRemotePlayable whether the current source can go to a remote target at all
- * @returns { supported, available, active, show }
+ * @returns { hasApi, supported, available, active, show }
+ *   `hasApi`    — the browser can AirPlay at all (Safari, and WebKit-hosted browsers on iOS).
  *   `supported` — the browser has the API and this source qualifies.
  *   `available` — a receiver has actually been seen on the network (drives whether to render at all).
  *   `active`    — playback is currently going to a receiver.
@@ -74,5 +75,5 @@ export function useAirPlay(videoRef, contentIsRemotePlayable = true) {
     }
   }, [videoRef]);
 
-  return { supported: hasApi && contentIsRemotePlayable, available, active, show };
+  return { hasApi, supported: hasApi && contentIsRemotePlayable, available, active, show };
 }

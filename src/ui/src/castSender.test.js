@@ -2,6 +2,9 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 import { loadCastFramework, resetCastFrameworkForTests } from "./castSender";
 
+// The loader answers { ok, reason }: `reason` is what the settings menu turns into the sentence
+// that tells a viewer WHY there is no cast button (tvStatusLine), so its vocabulary is pinned too.
+
 // The loader is the part of the sender that runs on EVERY browser, including the ones that can never
 // cast — so what it must not do (fetch a script that can't work, hang, throw) is worth pinning.
 
@@ -24,19 +27,53 @@ describe("loadCastFramework", () => {
     else window.cast = originalCast;
   });
 
-  it("resolves false without injecting a script on a non-Chromium browser", async () => {
+  it("names an unsupported browser without injecting a script", async () => {
     // Firefox, Safari and every iOS browser land here. The point is the absent appendChild: loading
     // 100 kB of SDK that cannot initialize, then waiting out the timeout, is pure cost.
     const append = vi.spyOn(document.head, "appendChild");
-    await expect(loadCastFramework()).resolves.toBe(false);
+    await expect(loadCastFramework()).resolves.toEqual({ ok: false, reason: "unsupported-browser" });
     expect(append).not.toHaveBeenCalled();
+  });
+
+  it("names an insecure context before paying for the script", async () => {
+    // The SDK refuses to initialize on plain http://, so a LAN-IP visit would otherwise sit through
+    // the reporting deadline and get blamed on a slow network.
+    window.chrome = {};
+    const secure = Object.getOwnPropertyDescriptor(window, "isSecureContext");
+    Object.defineProperty(window, "isSecureContext", { value: false, configurable: true });
+    const append = vi.spyOn(document.head, "appendChild");
+    try {
+      await expect(loadCastFramework()).resolves.toEqual({ ok: false, reason: "insecure-context" });
+      expect(append).not.toHaveBeenCalled();
+    } finally {
+      if (secure) Object.defineProperty(window, "isSecureContext", secure);
+      else delete window.isSecureContext;
+    }
+  });
+
+  it("does not give up on its own — a slow SDK still answers", async () => {
+    // The old loader resolved false after six seconds, which silently lost the button for anyone
+    // whose two SDK scripts took longer than that to fetch. The deadline now only drives the menu's
+    // "still loading" reason; the promise waits for the SDK's actual answer.
+    vi.useFakeTimers();
+    window.chrome = {};
+    vi.spyOn(document.head, "appendChild").mockImplementation(() => undefined);
+    let settled = null;
+    loadCastFramework().then((r) => { settled = r; });
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(settled).toBeNull();
+    window.cast = { framework: {} };
+    window.__onGCastApiAvailable(true);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(settled).toEqual({ ok: true, reason: null });
+    vi.useRealTimers();
   });
 
   it("resolves true immediately when the framework is already present", async () => {
     window.cast = { framework: {} };
     window.chrome = { cast: {} };
     const append = vi.spyOn(document.head, "appendChild");
-    await expect(loadCastFramework()).resolves.toBe(true);
+    await expect(loadCastFramework()).resolves.toEqual({ ok: true, reason: null });
     expect(append).not.toHaveBeenCalled();
   });
 
@@ -55,7 +92,7 @@ describe("loadCastFramework", () => {
     vi.spyOn(document.head, "appendChild").mockImplementation(() => {
       throw new Error("Refused to load the script (CSP).");
     });
-    await expect(loadCastFramework()).resolves.toBe(false);
+    await expect(loadCastFramework()).resolves.toEqual({ ok: false, reason: "sdk-blocked" });
   });
 
   it("resolves false when the SDK reports itself unavailable", async () => {
@@ -63,7 +100,7 @@ describe("loadCastFramework", () => {
     vi.spyOn(document.head, "appendChild").mockImplementation(() => undefined);
     const pending = loadCastFramework();
     window.__onGCastApiAvailable(false, "no receivers");
-    await expect(pending).resolves.toBe(false);
+    await expect(pending).resolves.toEqual({ ok: false, reason: "sdk-unavailable" });
   });
 
   it("resolves false when the SDK claims availability but left no framework behind", async () => {
@@ -71,7 +108,7 @@ describe("loadCastFramework", () => {
     vi.spyOn(document.head, "appendChild").mockImplementation(() => undefined);
     const pending = loadCastFramework();
     window.__onGCastApiAvailable(true); // no window.cast.framework — nothing usable
-    await expect(pending).resolves.toBe(false);
+    await expect(pending).resolves.toEqual({ ok: false, reason: "sdk-unavailable" });
   });
 
   it("resolves true once the SDK announces a usable framework", async () => {
@@ -80,7 +117,7 @@ describe("loadCastFramework", () => {
     const pending = loadCastFramework();
     window.cast = { framework: {} };
     window.__onGCastApiAvailable(true);
-    await expect(pending).resolves.toBe(true);
+    await expect(pending).resolves.toMatchObject({ ok: true });
   });
 
   it("chains an existing __onGCastApiAvailable instead of stealing it", async () => {
@@ -93,7 +130,7 @@ describe("loadCastFramework", () => {
     const pending = loadCastFramework();
     window.cast = { framework: {} };
     window.__onGCastApiAvailable(true, "ok");
-    await expect(pending).resolves.toBe(true);
+    await expect(pending).resolves.toMatchObject({ ok: true });
     expect(previous).toHaveBeenCalledWith(true, "ok");
   });
 
@@ -106,7 +143,7 @@ describe("loadCastFramework", () => {
     const pending = loadCastFramework();
     window.cast = { framework: {} };
     window.__onGCastApiAvailable(true);
-    await expect(pending).resolves.toBe(true);
+    await expect(pending).resolves.toMatchObject({ ok: true });
   });
 
   it("ignores a second announcement after it has already settled", async () => {
@@ -116,6 +153,6 @@ describe("loadCastFramework", () => {
     window.cast = { framework: {} };
     window.__onGCastApiAvailable(true);
     window.__onGCastApiAvailable(false);
-    await expect(pending).resolves.toBe(true);
+    await expect(pending).resolves.toMatchObject({ ok: true });
   });
 });

@@ -654,6 +654,11 @@ function WatchPage({ userData }) {
   const castProp = useMemo(
     () => ({
       supported: cast.supported && cast.state !== "no-devices" && cast.state !== "unavailable",
+      // The raw verdict, for the menu's "TV" readout (tvStatusLine): `supported` above is the
+      // button's gate and can't say WHY it's closed.
+      sdkReady: cast.supported,
+      state: cast.state,
+      reason: cast.reason,
       connected: casting,
       connecting: cast.state === "connecting" || castStarting,
       deviceName: castPrefs.deviceName,

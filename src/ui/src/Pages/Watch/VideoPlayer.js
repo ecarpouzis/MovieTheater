@@ -4,7 +4,7 @@ import { createHls, bandwidthSample, canRemotePlay } from "../../streamEngine";
 import { formatClock as formatTime } from "../../utils/format";
 import {
   QUALITY_LADDER, codecLabel, channelLayout, deliveredLayout, formatPlaying,
-  qualityOptions, audioOptions, subtitleOptions, deliveredAudio,
+  qualityOptions, audioOptions, subtitleOptions, deliveredAudio, tvStatusLine,
 } from "../../playerMenuModel";
 import { CAST_PROFILES } from "../../castProfiles";
 import { useIdleChrome } from "../../useIdleChrome";
@@ -1182,6 +1182,18 @@ function VideoPlayer({
                     </button>
                   );
                 })}
+
+                {/* Why there is no cast/AirPlay button, when there isn't one. The buttons only
+                    exist once a receiver is found, so their absence can't say whether the browser
+                    can't, the SDK was blocked, or the TV is on the other Wi-Fi. This line can. */}
+                {cast && !casting && (
+                  <>
+                    <div className="vp-menu-section">TV</div>
+                    <div className="vp-menu-readout">
+                      {tvStatusLine({ cast, airplay, userAgent: navigator.userAgent })}
+                    </div>
+                  </>
+                )}
 
                 <div className="vp-menu-section">Playing</div>
                 {casting && (

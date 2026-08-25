@@ -119,3 +119,50 @@ export function deliveredAudio(audioTracks, selectedIndex) {
   const tracks = audioTracks || [];
   return deliveredLayout((tracks.find((t) => t.index === selectedIndex) || tracks[0])?.channels);
 }
+
+/**
+ * One sentence for the "TV" readout in both settings menus: why there is, or isn't, a way to send
+ * the picture to a television right now.
+ *
+ * The cast and AirPlay buttons only render once a receiver has actually been found — honest, but
+ * mute: a viewer whose browser has no Cast at all, one on plain http://, one whose ad blocker ate
+ * the SDK, and one whose Chromecast is on the other Wi-Fi all see the same nothing. This is the line
+ * that tells them apart, written for the viewer (what to do next), not for a log.
+ *
+ * `cast` is the sender's view: sdkReady (framework loaded), state, reason (why it isn't — see
+ * loadCastFramework), connected, deviceName. `airplay` is useAirPlay's return. `userAgent` only
+ * decides whether "can't cast" should point an iPhone at AirPlay instead of at Chrome — it never
+ * chooses a profile, which is the kind of sniffing this player deliberately does not do.
+ */
+export function tvStatusLine({ cast, airplay, userAgent = "" }) {
+  const apple = /iPhone|iPad|iPod/i.test(userAgent);
+  if (cast?.connected) return `Casting to ${cast.deviceName || "the TV"}.`;
+  if (airplay?.active) return "Playing over AirPlay.";
+  const castFound = !!cast?.sdkReady && cast.state !== "no-devices" && cast.state !== "unavailable";
+  if (castFound) return "Chromecast found — use the cast button.";
+  if (airplay?.hasApi) {
+    // Safari with MSE (desktop) can discover receivers it cannot send this stream to; that is the
+    // one AirPlay failure the viewer can act on by switching device.
+    if (!airplay.supported) return "AirPlay can't carry this stream from this browser — use Safari on an iPhone or iPad.";
+    if (airplay.available) return "AirPlay receiver found — use the AirPlay button.";
+    return cast?.sdkReady
+      ? "No Chromecast or AirPlay receiver found on this Wi-Fi."
+      : "No AirPlay receiver found on this Wi-Fi (an Apple TV or an AirPlay-capable television).";
+  }
+  if (cast?.sdkReady) return "No Chromecast found on this Wi-Fi. Roku, Fire TV and Apple TV aren't Cast devices.";
+  switch (cast?.reason) {
+    case "unsupported-browser":
+    case "sdk-unavailable":
+      return apple
+        ? "Google Cast isn't available on iPhone or iPad — open this in Safari and use AirPlay."
+        : "This browser can't Google Cast — open the site in Chrome or Edge.";
+    case "insecure-context":
+      return "Casting needs the site's https:// address.";
+    case "sdk-blocked":
+      return "Google's Cast script was blocked — an ad blocker, or a filtering DNS?";
+    case "sdk-timeout":
+      return "Google's Cast script is still loading — a slow connection, or it's blocked.";
+    default:
+      return "Looking for a way to reach a TV…";
+  }
+}

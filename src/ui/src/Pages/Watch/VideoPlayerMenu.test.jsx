@@ -78,4 +78,14 @@ describe("the Watch settings menu (shared option model)", () => {
     fireEvent.click(items2.find((el) => el.textContent.trim() === "Off"));
     expect(onSelectSubtitle).toHaveBeenCalledWith(null);
   });
+
+  it("explains a missing cast button in a TV readout", () => {
+    // No button renders for an unsupported browser (nothing to press), but the menu says why.
+    const { container } = mountWithMenu({
+      cast: { supported: false, sdkReady: false, state: "unavailable", reason: "unsupported-browser", connected: false },
+    });
+    expect(container.querySelector(".vp-btn-cast")).toBeNull();
+    const readouts = [...container.querySelectorAll(".vp-menu-readout")].map((el) => el.textContent);
+    expect(readouts.some((t) => /can't Google Cast/.test(t))).toBe(true);
+  });
 });
