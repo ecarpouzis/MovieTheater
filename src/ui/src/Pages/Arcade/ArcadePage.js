@@ -477,12 +477,6 @@ export default function ArcadePage({ userData }) {
                         }))}
                         onChange={(slotId) => pick({ seedSlot: slotId })}
                         aria-label="Load a snapshot save"
-                        // Render the dropdown INSIDE the modal, not portaled to <body>: a static
-                        // Modal.confirm lands above the antdPopupLayer's 1800 popup layer (antd 6's
-                        // auto z-index for a static-method dialog doesn't stay under it), so a
-                        // body-portaled popup renders BEHIND the dialog. Nesting it in the modal's own
-                        // stacking context makes z-index moot — same fix LoginForm/UserSettingsModal use.
-                        getPopupContainer={(trigger) => trigger.parentElement}
                       />
                     </div>
                   ) : (
