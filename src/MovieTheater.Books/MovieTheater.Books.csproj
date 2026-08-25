@@ -21,6 +21,24 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<!-- R6 slice 2: the archive readers. Same packages and the SAME VERSIONS the standalone site runs, so a
+		     ported reader behaves byte-for-byte the way it did there — page ordering, PDF rasterization, EPUB
+		     parsing and WebP encoding are all claims that only hold at a known version.
+		       SharpCompress  — RAR (and 7-Zip via ArchiveFactory) for .cbr
+		       PdfPig         — PDF page model + embedded-image extraction
+		       Docnet.Core    — pdfium rasterizer for PDF pages that carry text/vector content
+		       VersOne.Epub   — EPUB package/spine/nav/content
+		       ImageSharp     — decode, spread crop, resize, WebP/JPEG encode
+		       ImageSharp.Drawing — the generated jacket for documents with no usable cover art -->
+		<PackageReference Include="Docnet.Core" Version="2.6.0" />
+		<PackageReference Include="PdfPig" Version="0.1.14" />
+		<PackageReference Include="SharpCompress" Version="0.48.1" />
+		<PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
+		<PackageReference Include="SixLabors.ImageSharp.Drawing" Version="2.1.6" />
+		<PackageReference Include="VersOne.Epub" Version="3.3.6" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<!-- The v1->v2 migration CONTRACT, linked straight from the design doc's sidecar so the tool and the
 		     doc cannot drift: the same file the R3 gate approved is what books-migrate-v1 executes. -->
 		<EmbeddedResource Include="..\..\docs\books\v2-mapping.json" Link="Migration\v2-mapping.json" LogicalName="MovieTheater.Books.v2-mapping.json" />

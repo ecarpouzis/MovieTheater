@@ -33,7 +33,23 @@ namespace MovieTheater.BooksHost.Commands
             // R6: the catalog surface — controllers, the projection, the browse caches and the change-driven
             // warmer — all live in MovieTheater.Books. AddBooks registers the BooksDb from the same path the R5
             // wiring used, so the host has one place a file is opened.
-            builder.Services.AddBooks(new BooksOptions { DbPath = config.DbPath });
+            builder.Services.AddBooks(new BooksOptions
+            {
+                DbPath = config.DbPath,
+                // R6 slice 2: the readers, the thumbnail service and the URL builders in the item payloads all
+                // live in the library, so the host's Books: settings are handed across here rather than reached
+                // for from inside it. A null path means the feature degrades, never that startup fails.
+                PublicBaseUrl = config.PublicBaseUrl,
+                MediaTokenSecret = config.MediaTokenSecret,
+                CacheDir = config.CacheDir,
+                ArchiveCacheDir = config.ArchiveCacheDir,
+                ArchiveCacheGb = config.ArchiveCacheGb,
+                PageJpegQuality = config.PageJpegQuality,
+                PageCacheLimitMb = config.PageCacheLimitMb,
+                ThumbnailQuality = config.ThumbnailQuality,
+                SevenZipPath = config.SevenZipPath,
+                EnableTextRegions = config.EnableTextRegions,
+            });
 
             builder.Services.AddAuthentication(BooksIdentity.AuthenticationScheme)
                 .AddScheme<AuthenticationSchemeOptions, BooksIdentityAuthHandler>(BooksIdentity.AuthenticationScheme, _ => { });

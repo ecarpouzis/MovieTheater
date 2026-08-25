@@ -52,6 +52,10 @@ namespace MovieTheater.Books.Media
 
         public static string ThumbUrl(string publicBaseUrl, string token, long itemId) => $"{publicBaseUrl.TrimEnd('/')}/m/{token}/thumbs/{itemId}.webp";
         public static string PageUrl(string publicBaseUrl, string token, long itemId, int page) => $"{publicBaseUrl.TrimEnd('/')}/m/{token}/pages/{itemId}/{page}";
+
+        /// <summary>The page URL with <c>{page}</c> left for the client to substitute — one link instead of one
+        /// per page, which for an omnibus is the difference between a payload and a phone book.</summary>
+        public static string PageUrlTemplate(string publicBaseUrl, string token, long itemId) => $"{publicBaseUrl.TrimEnd('/')}/m/{token}/pages/{itemId}/{{page}}";
         public static string EpubResourceUrl(string publicBaseUrl, string token, long itemId, string path) => $"{publicBaseUrl.TrimEnd('/')}/m/{token}/epub/{itemId}/{path.TrimStart('/')}";
         public static string DownloadUrl(string publicBaseUrl, string token, long itemId) => $"{publicBaseUrl.TrimEnd('/')}/m/{token}/download/{itemId}";
         public static string FolderIconUrl(string publicBaseUrl, string token, long folderId) => $"{publicBaseUrl.TrimEnd('/')}/m/{token}/folders/{folderId}/icon";
@@ -61,11 +65,20 @@ namespace MovieTheater.Books.Media
         /// the resolved path must still sit under the cache root — defense in depth costs one string compare.
         /// Null when the id is not a positive integer or the path escapes.
         /// </summary>
-        public static string? ResolveThumb(string cacheDir, string idSegment)
+        public static string? ResolveThumb(string cacheDir, string idSegment) => ResolveCacheFile(cacheDir, idSegment, "", ".webp");
+
+        /// <summary>
+        /// The collection icon for a folder: <c>f_{id}.jpg</c> beside the thumbnails, under the same confinement.
+        /// The <c>f_</c> prefix is load-bearing — it is what the admin cache-clear's <c>^\d+$</c> name guard uses
+        /// to wipe generated thumbnails without destroying hand-uploaded folder icons.
+        /// </summary>
+        public static string? ResolveFolderIcon(string cacheDir, string idSegment) => ResolveCacheFile(cacheDir, idSegment, "f_", ".jpg");
+
+        private static string? ResolveCacheFile(string cacheDir, string idSegment, string prefix, string extension)
         {
             if (!long.TryParse(idSegment, out var id) || id <= 0) return null;
             var root = Path.GetFullPath(cacheDir);
-            var full = Path.GetFullPath(Path.Combine(root, id + ".webp"));
+            var full = Path.GetFullPath(Path.Combine(root, prefix + id + extension));
             return full.StartsWith(root.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) ? full : null;
         }
     }

@@ -46,5 +46,38 @@ namespace MovieTheater.Books.Access
         public static IQueryable<Item> DirectoryItems(BooksDb db, ClaimsPrincipal user, ItemKind kind, int folderId) =>
             db.Items.AsNoTracking().Where(i => i.Kind == kind && i.FolderId == folderId)
                 .ExcludeHiddenForDirectory().ApplyMaturity(db, BooksIdentity.CeilingFor(user));
+
+        /// <summary>
+        /// <b>The one authorization for anything addressed by id</b> — every detail endpoint, every next/prev
+        /// hop, and every byte the media plane serves goes through here. It is a single indexed read on the
+        /// primary key with the exclusion and maturity predicates folded in, so authorizing costs the same as
+        /// fetching.
+        ///
+        /// <para>Null means "not visible to this caller", and callers answer <b>404</b> — never 403. A 403 would
+        /// tell a restricted account that an item it may not see EXISTS at that id, and the ids are sequential:
+        /// a caller could enumerate the shape of the library it is gated out of. Absent and forbidden must be
+        /// indistinguishable from outside.</para>
+        ///
+        /// <para><b>An excluded item is not readable by id either.</b> A shadow duplicate stays visible in the
+        /// Directory drill (see <see cref="ExcludeHiddenForDirectory"/>) because that view mirrors the folder
+        /// tree, so a by-id read of one is allowed ONLY when <c>allowExcluded</c> says the caller came from
+        /// there — that is what makes clicking a dimmed tile work without opening a back door to every
+        /// deduplicated file.</para>
+        /// </summary>
+        public static Task<Item?> GetAuthorizedItemAsync(
+            BooksDb db, ClaimsPrincipal user, int id, bool allowExcluded = true, CancellationToken ct = default) =>
+            db.Items.AsNoTracking()
+                .Where(i => i.Id == id)
+                .ExcludeHiddenForDirectoryOrHidden(allowExcluded)
+                .ApplyMaturity(db, BooksIdentity.CeilingFor(user))
+                .FirstOrDefaultAsync(ct);
+
+        /// <summary>
+        /// The by-id exclusion rule: shadow duplicates that are kept in the Directory drill remain reachable by
+        /// id (the tile is clickable), everything else excluded is gone. With <paramref name="allowExcluded"/>
+        /// false it is the strict browse rule.
+        /// </summary>
+        private static IQueryable<Item> ExcludeHiddenForDirectoryOrHidden(this IQueryable<Item> items, bool allowExcluded) =>
+            allowExcluded ? items.ExcludeHiddenForDirectory() : items.ExcludeHidden();
     }
 }

@@ -27,9 +27,18 @@ namespace MovieTheater.BooksHost
             PublicBaseUrl = Text(b["PublicBaseUrl"]);
             IdentityTokenSecret = Text(b["IdentityTokenSecret"]);
             MediaTokenSecret = Text(b["MediaTokenSecret"]);
+            ArchiveCacheDir = ConfiguredRoot.FullPathOrNull(b["ArchiveCacheDir"]);
+            ArchiveCacheGb = Int(b["ArchiveCacheGb"], 0);
+            PageJpegQuality = Clamp(Int(b["PageJpegQuality"], 82), 40, 100);
+            PageCacheLimitMb = Clamp(Int(b["PageCacheLimitMb"], 384), 16, 8192);
+            ThumbnailQuality = Clamp(Int(b["ThumbnailQuality"], 75), 40, 100);
+            SevenZipPath = Text(b["SevenZipPath"]);
+            EnableTextRegions = !bool.TryParse(b["EnableTextRegions"], out var tr) || tr;
         }
 
         private static string? Text(string? v) => string.IsNullOrWhiteSpace(v) ? null : v.Trim();
+        private static int Int(string? v, int fallback) => int.TryParse(v, out var n) ? n : fallback;
+        private static int Clamp(int v, int lo, int hi) => Math.Clamp(v, lo, hi);
 
         /// <summary>Kestrel listen URL(s) for the <c>web</c> verb (default http://localhost:2204; Caddy fronts it).</summary>
         public string? Urls { get; }
@@ -69,5 +78,28 @@ namespace MovieTheater.BooksHost
 
         /// <summary>Where verbs write their reports (orphan insights, verify results, replay tables).</summary>
         public string? ReportDir { get; }
+
+        // ── R6 slice 2: readers, pages, thumbnails ───────────────────────────────────────────────────────
+
+        /// <summary>Where whole archives are copied off the library share. Null ⇒ <c>{CacheDir}/archives</c>.</summary>
+        public string? ArchiveCacheDir { get; }
+
+        /// <summary>Budget for that copy cache in GB. 0 (the default) disables it entirely.</summary>
+        public int ArchiveCacheGb { get; }
+
+        /// <summary>JPEG quality for a scaled page on the wire.</summary>
+        public int PageJpegQuality { get; }
+
+        /// <summary>Byte budget (MB) of the extracted-page cache — its own MemoryCache, not the shared one.</summary>
+        public int PageCacheLimitMb { get; }
+
+        /// <summary>WebP quality for a generated thumbnail.</summary>
+        public int ThumbnailQuality { get; }
+
+        /// <summary>Optional 7z.exe for the archive fallback. Null ⇒ probe the usual install paths.</summary>
+        public string? SevenZipPath { get; }
+
+        /// <summary>Run the Bubble Zoom detector (default on). Off ⇒ the text-region route answers an empty list.</summary>
+        public bool EnableTextRegions { get; }
     }
 }
