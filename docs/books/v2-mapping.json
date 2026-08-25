@@ -756,8 +756,8 @@
         "Notes": "->ComicEmbedded.Notes",
         "Count": "->ComicEmbedded.Count",
         "AgeRating": "->ComicEmbedded.AgeRating",
-        "EmbeddedRating": "xf:rating:ComicEmbedded.Rating+Rating(Item,Embedded)",
-        "UserRating": "xf:rating:Rating(Item,User)",
+        "EmbeddedRating": "->ComicEmbedded.Rating",
+        "UserRating": "drop:0 rows in v1; per-item user ratings arrive as Rating(Source=User) in v2",
         "MetadataVersion": "drop:scanner-private constant 1",
         "Imprint": "drop:write-only (usage census: single reference = entity declaration)",
         "GTIN": "drop:always NULL or constant in v1 (column census)",
@@ -1120,7 +1120,7 @@
       "stage": "insights",
       "cols": {
         "Id": "drop:v2 Insight.Id is new; v1 id kept in SourceKey suffix",
-        "SeriesName": "xf:insight_subject:Series via SeriesAlias(lower(SeriesName)); SourceKey=SeriesName; unresolved -> report",
+        "SeriesName": "xf:insight_subject:Series via SeriesAlias/Series name (lower); SourceKey=SeriesName; the ~1,000 rows that resolve to no series are NOT carried - exported to data/books/v1/orphan-insights.json",
         "KnownSeries": "->Recognized",
         "Confidence": "xf:enum:Confidence",
         "TagsCsv": "drop:rollup; rebuilt as SeriesTag(Source=AI) from InsightTag"
@@ -1710,7 +1710,6 @@
       "Series"
     ],
     "Rating.Source": [
-      "Embedded",
       "User",
       "AI",
       "Locg",
