@@ -1,5 +1,5 @@
 # Build dotnet C# project
-FROM mcr.microsoft.com/dotnet/sdk:8.0 as dotnet-build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 as dotnet-build
 WORKDIR /build
 COPY docker/projectfiles.tar .
 RUN tar -xvf projectfiles.tar
@@ -9,7 +9,7 @@ COPY src ./src
 RUN dotnet publish src/MovieTheater/MovieTheater.csproj --no-restore -c Release -o /publish
 
 # Build final release image
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 as release
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 as release
 
 RUN apt update
 RUN apt install -y libjpeg-dev zlib1g-dev
@@ -18,7 +18,7 @@ RUN apt install -y libjpeg-dev zlib1g-dev
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
       python3 python3-pip libjpeg-dev zlib1g-dev \
-      libc6-dev libgdiplus libx11-dev && \
+      libc6-dev && \
     rm -rf /var/lib/apt/lists/*
 
 # Use modern pip and install a Pillow wheel (avoid building from source)
@@ -29,7 +29,6 @@ ENV ASPNETCORE_ENVIRONMENT=Production
 ENV ASPNETCORE_URLS="http://+:80"
 EXPOSE 80
 
-ENV ASPNETCORE_ENVIRONMENT Production
 ENV PYPATH /usr/bin/python3
 ENV MOVIEPOSTERSDIR /volume/posters
 ENV BOARDGAMEIMAGESDIR /volume/boardgameimages
