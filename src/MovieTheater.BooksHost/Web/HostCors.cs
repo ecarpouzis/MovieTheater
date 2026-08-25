@@ -19,7 +19,7 @@ namespace MovieTheater.BooksHost.Web
                 headers["Vary"] = "Origin";
                 headers["Access-Control-Allow-Methods"] = "GET, HEAD, OPTIONS";
                 headers["Access-Control-Allow-Headers"] = "Range";
-                headers["Access-Control-Expose-Headers"] = "Content-Length, Content-Range, Accept-Ranges, ETag";
+                headers["Access-Control-Expose-Headers"] = "Content-Length, Content-Range, Accept-Ranges, ETag, X-Total-Count";
                 if (HttpMethods.IsOptions(context.Request.Method))
                 {
                     context.Response.StatusCode = StatusCodes.Status204NoContent;

@@ -12,6 +12,15 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<!-- R6: the controllers and the engines live HERE, not in the host (the host stays a thin CliFx shell
+		     that calls AddBooks()/MapBooks()). That needs the ASP.NET Core framework and the same OData package
+		     version the site runs, because /odata/catalog uses [EnableQuery] in query-options-only mode exactly
+		     the way src/MovieTheater does. -->
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+		<PackageReference Include="Microsoft.AspNetCore.OData" Version="9.5.0" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<!-- The v1->v2 migration CONTRACT, linked straight from the design doc's sidecar so the tool and the
 		     doc cannot drift: the same file the R3 gate approved is what books-migrate-v1 executes. -->
 		<EmbeddedResource Include="..\..\docs\books\v2-mapping.json" Link="Migration\v2-mapping.json" LogicalName="MovieTheater.Books.v2-mapping.json" />

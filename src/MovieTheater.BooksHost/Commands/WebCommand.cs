@@ -3,7 +3,7 @@ using CliFx.Attributes;
 using CliFx.Exceptions;
 using CliFx.Infrastructure;
 using Microsoft.AspNetCore.Authentication;
-using MovieTheater.Books.Db;
+using MovieTheater.Books;
 using MovieTheater.Books.Identity;
 using MovieTheater.BooksHost.Web;
 using MovieTheater.Core.Logging;
@@ -30,8 +30,10 @@ namespace MovieTheater.BooksHost.Commands
             builder.Services.AddMovieTheaterLogging();
             builder.Services.AddSingleton(config);
             builder.Services.AddSingleton<KnownIdentityRecorder>();
-            if (config.DbPath != null)
-                builder.Services.AddDbContext<BooksDb>(o => BooksDbOptions.Configure(o, config.DbPath));
+            // R6: the catalog surface — controllers, the projection, the browse caches and the change-driven
+            // warmer — all live in MovieTheater.Books. AddBooks registers the BooksDb from the same path the R5
+            // wiring used, so the host has one place a file is opened.
+            builder.Services.AddBooks(new BooksOptions { DbPath = config.DbPath });
 
             builder.Services.AddAuthentication(BooksIdentity.AuthenticationScheme)
                 .AddScheme<AuthenticationSchemeOptions, BooksIdentityAuthHandler>(BooksIdentity.AuthenticationScheme, _ => { });
@@ -48,6 +50,7 @@ namespace MovieTheater.BooksHost.Commands
             app.UseAuthentication();
             app.UseAuthorization();
             app.MapHostEndpoints(config);
+            app.MapBooks();
 
             await console.Output.WriteLineAsync($"Books host listening on {config.Urls ?? "http://localhost:2204"}; catalog {(config.DbPath ?? "(none)")}; media {(config.MediaTokenSecret == null ? "off" : "on")}");
             await app.RunAsync();
