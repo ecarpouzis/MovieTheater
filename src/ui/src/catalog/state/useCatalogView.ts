@@ -29,7 +29,8 @@ export function storageKeyFor(section: string): string {
   return `catalog.view.v1:${section}`;
 }
 
-function readStoredDefaults(section: string): Partial<CatalogViewState> {
+/** The section's remembered default (`catalog.view.v1:<section>`), or nothing. */
+export function readCatalogDefaults(section: string): Partial<CatalogViewState> {
   const raw = readStored(storageKeyFor(section), null) as string | null;
   if (!raw) return {};
   try {
@@ -68,7 +69,9 @@ export function resolveViewState(
   const sortValues = source.sorts.map((s) => s.value);
   const fallbackSort = source.defaultSort && sortValues.includes(source.defaultSort) ? source.defaultSort : (sortValues[0] ?? "");
   const pickSort = (s: string | null | undefined) => (s && sortValues.includes(s) ? s : null);
-  const sort = pickSort(params.get("sort")) ?? pickSort(stored.sort) ?? fallbackSort;
+  // A section that owns its sort (Movies' NavBar "Sort by") pins the state to what its endpoints are
+  // already returning — never a remembered value the section's own dispatcher knows nothing about.
+  const sort = source.currentSort ?? pickSort(params.get("sort")) ?? pickSort(stored.sort) ?? fallbackSort;
 
   return { view, group, items, sort };
 }
@@ -79,11 +82,11 @@ export default function useCatalogView(section: string, source: CatalogSource, a
   const search = location.search;
 
   const state = useMemo(
-    () => resolveViewState(search, readStoredDefaults(section), source, available),
+    () => resolveViewState(search, readCatalogDefaults(section), source, available),
     // The source's OFFER (supports/groups/sorts) is what matters, not its identity; its queryKey
     // changes on every filter edit and must not re-resolve the view.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [search, section, source.supports, source.groups, source.sorts, source.itemsModes, source.defaultView, source.defaultGroup, source.defaultSort, available],
+    [search, section, source.supports, source.groups, source.sorts, source.currentSort, source.itemsModes, source.defaultView, source.defaultGroup, source.defaultSort, available],
   );
 
   /** Apply a change: the URL carries it (push — Back undoes it), the section remembers it as its default. */

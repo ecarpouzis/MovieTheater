@@ -21,7 +21,7 @@ function hueOf(id: string): number {
   return h;
 }
 
-function NodeTile({ node, cellH, hoverClass, onOpen }: { node: DirectoryNode; cellH: number; hoverClass: string; onOpen: (n: DirectoryNode) => void }) {
+function NodeTile({ node, cellH, hoverClass, noun, onOpen }: { node: DirectoryNode; cellH: number; hoverClass: string; noun: string; onOpen: (n: DirectoryNode) => void }) {
   const w = Math.round(cellH * 0.66);
   const hue = node.hue ?? hueOf(node.id);
   return (
@@ -32,7 +32,7 @@ function NodeTile({ node, cellH, hoverClass, onOpen }: { node: DirectoryNode; ce
         <span className="bx-dir-badge" aria-hidden="true">▸</span>
       </div>
       <div className="bx-meta" style={{ width: w, minWidth: 100 }}>
-        <div className="bx-meta-row"><span className="bx-meta-a">{node.count != null ? `${node.count.toLocaleString()} items` : ""}</span></div>
+        <div className="bx-meta-row"><span className="bx-meta-a">{node.count != null ? `${node.count.toLocaleString()} ${node.count === 1 ? noun : `${noun}s`}` : ""}</span></div>
         <div className="bx-meta-title">{node.label}</div>
       </div>
     </div>
@@ -92,7 +92,7 @@ export default function DirectoryView({ source, state, coverScale, metadata, hov
             <section className="bx-drill-section">
               {items.length > 0 && <div className="bx-drill-label">Folders</div>}
               <div className="bx-grid" style={{ "--cell": `${cellH}px` } as CSSProperties}>
-                {visibleNodes.map((n) => <NodeTile key={n.id} node={n} cellH={cellH} hoverClass={hoverClass} onOpen={push} />)}
+                {visibleNodes.map((n) => <NodeTile key={n.id} node={n} cellH={cellH} hoverClass={hoverClass} noun={source.itemNoun ?? "item"} onOpen={push} />)}
               </div>
             </section>
           )}

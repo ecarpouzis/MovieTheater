@@ -40,7 +40,7 @@ describe("catalog/ExtendedView — strips per group over the grouped stream", ()
     await waitFor(() => expect(fetchGroupMore).toHaveBeenCalledWith("Group 0", 48, 48, "genre", "alpha"));
     await waitFor(() => expect(screen.getByLabelText("Title 90048")).toBeInTheDocument());
     fireEvent.click(screen.getByText("Group 1"));
-    expect(source.onOpenGroup).toHaveBeenCalledWith(expect.objectContaining({ key: "Group 1" }));
+    expect(source.onOpenGroup).toHaveBeenCalledWith(expect.objectContaining({ key: "Group 1" }), "genre");
   });
 });
 

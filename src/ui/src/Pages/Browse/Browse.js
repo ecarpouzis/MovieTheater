@@ -10,6 +10,9 @@ import useInfiniteScroll from "../../hooks/useInfiniteScroll";
 import usePagedCatalog from "../../hooks/usePagedCatalog";
 import LoadFailure from "../../Components/LoadFailure";
 import CardGridSkeleton from "../../Components/CardGridSkeleton";
+import CatalogHost, { AVAILABLE_VIEWS } from "../../catalog/CatalogHost";
+import { createMoviesSource } from "../../catalog/sources/moviesSource";
+import { CATALOG_PARAM_KEYS, readCatalogDefaults, resolveViewState } from "../../catalog/state/useCatalogView";
 import { Empty } from "antd";
 
 // The detail modal (917 lines + FileMappingEditor, SubtitlePicker, …) only renders after a card
@@ -38,6 +41,17 @@ function titleFromUrl(search) {
   if (!m) return null;
   const id = Number(m[2]);
   return Number.isSafeInteger(id) && id > 0 ? { kind: m[1], id } : null;
+}
+
+/**
+ * "The landing" = no SEARCH params. The catalog's own params (?view=&group=&items=&sort=) describe
+ * how the grid is shown, not what it shows — a `?view=wall` landing still gets the Now-on-TV rail
+ * and the back-nav snapshot.
+ */
+function isLandingSearch(search) {
+  const p = new URLSearchParams(search);
+  for (const k of CATALOG_PARAM_KEYS) p.delete(k);
+  return [...p.keys()].length === 0;
 }
 
 // Hoisted: a fresh object literal in JSX is a new prop identity on every render.
@@ -85,6 +99,8 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
   const [retryNonce, setRetryNonce] = useState(0);
   const isMobile = useIsMobile();
   const useSimpleStyle = simpleStyle && isMobile;
+  const history = useHistory();
+  const location = useLocation();
 
   // Infinite-scroll modes (server-paginated endpoints flagged via search.infinite) come in two
   // shapes now:
@@ -119,11 +135,36 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
   // heights, scroll position) when the list becomes a different list rather than merely longer.
   const listKey = useMemo(() => listKeyOf(search), [search]);
 
+  // ── The catalog views (Wall / List / Extended / Shelves / Newspaper / Directory) over the SAME search. ──
+  // Only a paged URL browse has a catalog scope (createMoviesSource → null for the rest), and the grid
+  // stays the existing CardList below (the host's `grid` override), so the default view is unchanged.
+  // The open/browse handlers are defined further down; the source reaches them through refs because
+  // it has to exist here, where the pump needs to know whether the grid is the view on screen.
+  const openRef = useRef(null);
+  const browseRef = useRef(null);
+  const catalogSource = useMemo(
+    () => (sparseInfinite && !search.pending
+      ? createMoviesSource({
+          search,
+          onOpen: (id, kind) => openRef.current?.(id, kind),
+          onBrowse: (mode, value) => browseRef.current?.(mode, value),
+        })
+      : null),
+    [sparseInfinite, search]
+  );
+  const catalogView = useMemo(
+    () => (catalogSource ? resolveViewState(location.search, readCatalogDefaults("movies"), catalogSource, AVAILABLE_VIEWS).view : "grid"),
+    [catalogSource, location.search]
+  );
+  // The other views page through the source themselves; the grid's pump (and its letter strip) only
+  // runs while the grid is what's on screen.
+  const gridActive = catalogView === "grid";
+
   // ── Sparse-infinite path: the page-map pump (see the comment on sparseInfinite above). ──
   const paged = usePagedCatalog({
     resetKey: listKey,
     pageSize: INFINITE_PAGE_SIZE,
-    enabled: sparseInfinite && !search.pending,
+    enabled: sparseInfinite && !search.pending && gridActive,
     fetchPage: (skip, pageSize, signal) => {
       const s = searchRef.current;
       if (!s?.url) return Promise.resolve(null);
@@ -140,7 +181,7 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
   // shared filter server-side — so picking Alphabetical gets the movie grid the same letter strip the
   // music library has, over whatever is actually being browsed. Any other sort has no letters to jump
   // to and the pager falls back to page numbers.
-  const lettersUrl = sparseInfinite ? search.lettersUrl : null;
+  const lettersUrl = sparseInfinite && gridActive ? search.lettersUrl : null;
   const [letters, setLetters] = useState(null);
   useEffect(() => {
     setLetters(null);
@@ -284,8 +325,6 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
     recheck();
   }, [movieDataArray.length, loading, recheck]);
 
-  const history = useHistory();
-  const location = useLocation();
   // The detail modal's state lives in the URL (?title=<kind>:<id>) — see titleFromUrl.
   const openTitle = useMemo(() => titleFromUrl(location.search), [location.search]);
   const selectedMovieId = openTitle?.id ?? null;
@@ -364,7 +403,7 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
     // (e.g. misc 13 → Movie 13). For any grid containing misc we skip the snapshot and let back-nav
     // re-run the scope query (a stable, materialized list) instead.
     const gridHasMisc = movieDataArray.some((m) => m.kind === "misc");
-    if (!location.search && !gridHasMisc && movieDataArray.length > 0) {
+    if (isLandingSearch(location.search) && !gridHasMisc && movieDataArray.length > 0) {
       const browseMovieIds = movieDataArray.map((movie) => movie.id).filter((id) => Number.isInteger(id) && id > 0);
       if (browseMovieIds.length > 0) {
         history.replace({
@@ -395,6 +434,8 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
     params.set("value", v);
     history.push({ pathname: "/", search: `?${params.toString()}` });
   }, [history]);
+  openRef.current = handleOpenMovie;
+  browseRef.current = handleBrowseSearch;
 
   // No close-on-search-change effect any more: every search navigation (actor chip, nav rail,
   // insight chips) pushes a fresh ?mode=&value= URL that doesn't carry ?title, so the URL
@@ -427,12 +468,9 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paged.mapItems]);
 
-  return (
-    <>
-      {/* Rail mounts regardless of the grid's loading state so its lineup + posters fetch in parallel
-          with the movie grid (it self-gates on a streaming-enabled session), rather than only after. */}
-      {!location.search && <NowOnTvRail userData={userData} setUserData={setUserData} />}
-      {(sparseInfinite ? !paged.firstLoaded : loading) ? (
+  // The grid as it has always rendered — and, when the search has a catalog scope, the `grid` view
+  // the CatalogHost shows behind its pill row; the other views render from the source instead.
+  const gridBody = (sparseInfinite ? !paged.firstLoaded : loading) ? (
         <CardGridSkeleton />
       ) : sparseInfinite && paged.loadError && paged.total === 0 ? (
         <LoadFailure message="Couldn't load the library." onRetry={paged.retry} />
@@ -467,6 +505,17 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
             ? { total: paged.total, letters, pageSize: INFINITE_PAGE_SIZE }
             : null}
         />
+      );
+
+  return (
+    <>
+      {/* Rail mounts regardless of the grid's loading state so its lineup + posters fetch in parallel
+          with the movie grid (it self-gates on a streaming-enabled session), rather than only after. */}
+      {isLandingSearch(location.search) && <NowOnTvRail userData={userData} setUserData={setUserData} />}
+      {catalogSource ? (
+        <CatalogHost section="movies" source={catalogSource} overrides={{ grid: gridBody }} />
+      ) : (
+        gridBody
       )}
       {denseInfinite && !loading && (
         <div ref={sentinelRef} aria-hidden="true" style={SENTINEL_STYLE} />

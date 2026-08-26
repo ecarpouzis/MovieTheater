@@ -96,9 +96,9 @@ export function useFlatStream(source: CatalogSource, state: CatalogViewState, pe
   const retry = useCallback(() => setNonce((n) => n + 1), []);
   const open = useCallback((item: CardItem) => {
     const s = sourceRef.current;
-    if (item.group && s.onOpenGroup) s.onOpenGroup(item.group);
+    if (item.group && s.onOpenGroup) s.onOpenGroup(item.group, groupBy);
     else s.onOpen(item);
-  }, []);
+  }, [groupBy]);
 
   return useMemo(() => ({ queryKey, band0, total, loading, error, retry, fetchBand, open }),
     [queryKey, band0, total, loading, error, retry, fetchBand, open]);

@@ -194,6 +194,13 @@ export interface CatalogSource {
   /** Group-by modes for the grouped views and the flat views' representative mode; empty = ungrouped only. */
   groups: GroupSpec[];
   sorts: SortSpec[];
+  /**
+   * Set when the SECTION owns the sort (its own persisted control and `?sort=` param — Movies' NavBar
+   * "Sort by"): the switcher shows exactly this value and never restores a remembered one, so the
+   * views always page under the order the section's endpoints are already returning. Picking a sort
+   * still writes `?sort=`; the section's own URL dispatcher reacts and hands back a new source.
+   */
+  currentSort?: string;
   /** Offer the Items pill (every item vs one card per group). Needs `fetchGroupBand`. */
   itemsModes?: ItemsMode[];
   /** Labels for the Items pill, e.g. { items: "Titles", groups: "Franchises" }. */
@@ -219,7 +226,8 @@ export interface CatalogSource {
   groupLetters?(groupBy: string, sort: string, signal?: AbortSignal): Promise<{ letter: string; firstIndex: number }[]>;
   /** Open the section's detail for a card (URL-driven modal, per the site convention). */
   onOpen(item: CardItem): void;
-  onOpenGroup?(group: CardGroup): void;
+  /** Open a group's own browse; `groupBy` says which mode the key belongs to (a genre key is not a franchise key). */
+  onOpenGroup?(group: CardGroup, groupBy: string): void;
 }
 
 /** One rail on a section's Explore tab. */

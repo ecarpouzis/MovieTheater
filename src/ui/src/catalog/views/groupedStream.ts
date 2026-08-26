@@ -91,7 +91,7 @@ export function useGroupedStream(source: CatalogSource, state: CatalogViewState,
     return (groupKey: string, skip: number) => sourceRef.current.fetchGroupMore!(groupKey, skip, perGroupTop, groupBy, sort).then((p) => p.items);
   }, [source.fetchGroupMore, perGroupTop, groupBy, sort]);
   const open = useCallback((item: CardItem) => sourceRef.current.onOpen(item), []);
-  const openGroup = useMemo(() => (source.onOpenGroup ? (g: CardGroup) => sourceRef.current.onOpenGroup!(g) : null), [source.onOpenGroup]);
+  const openGroup = useMemo(() => (source.onOpenGroup ? (g: CardGroup) => sourceRef.current.onOpenGroup!(g, groupBy) : null), [source.onOpenGroup, groupBy]);
 
   return useMemo(() => ({ queryKey, groupBy, band0, totalGroups, loading, error, retry, fetchBand, loadMore, letters, open, openGroup }),
     [queryKey, groupBy, band0, totalGroups, loading, error, retry, fetchBand, loadMore, letters, open, openGroup]);

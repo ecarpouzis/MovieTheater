@@ -34,6 +34,12 @@ describe("catalog/useCatalogView — the switcher's state lives in the URL, its 
       .toEqual({ view: "grid", group: "none", items: "items", sort: "alpha" });
   });
 
+  it("a section that owns its sort pins the state to it, whatever the URL or the device remembers", () => {
+    const owned: CatalogSource = { ...source, currentSort: "imdb" };
+    expect(resolveViewState("?sort=alpha", { sort: "alpha" }, owned, available).sort).toBe("imdb");
+    expect(resolveViewState("", {}, owned, available)).toEqual({ view: "grid", group: "none", items: "items", sort: "imdb" });
+  });
+
   it("a change pushes the URL and remembers the section's default", () => {
     const wrapper = ({ children }: { children: ReactNode }) => <MemoryRouter initialEntries={["/movies?mode=actor&value=x"]}>{children}</MemoryRouter>;
     const { result } = renderHook(() => ({ cv: useCatalogView("movies", source, available), loc: useLocation() }), { wrapper });
