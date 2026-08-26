@@ -28,8 +28,8 @@ export const NOVELS_VIEWS: ViewMode[] = ["grid", "wall", "list"];
 
 /** The host's five orders (`NovelsController.Sorted`); the default is the shelf order by author. */
 export const NOVELS_SORTS: (SortSpec & { orderby: string | null })[] = [
-  { value: "author", label: "Author", orderby: null },
-  { value: "title", label: "Title", orderby: "title" },
+  { value: "author", label: "Author", orderby: null, alpha: true },
+  { value: "title", label: "Title", orderby: "title", alpha: true },
   { value: "rating", label: "Top rated", orderby: "rating" },
   { value: "newest", label: "Newest", orderby: "newest" },
   { value: "oldest", label: "Oldest", orderby: "oldest" },
@@ -118,7 +118,13 @@ export function createNovelsSource(o: NovelsSourceOptions): CatalogSource {
     itemNoun: "book",
     supports: NOVELS_VIEWS,
     groups: [],
-    sorts: NOVELS_SORTS.map(({ value, label }) => ({ value, label })),
+    sorts: NOVELS_SORTS.map(({ value, label, alpha }) => ({ value, label, alpha })),
+    // The flat strip's buckets under the two alphabetical sorts (R9 S0) — without them the site's
+    // CatalogPager shows page numbers here.
+    letters: async (sort, signal) => {
+      const orderby = (NOVELS_SORTS.find((s) => s.value === sort) ?? NOVELS_SORTS[0]).orderby ?? undefined;
+      return (await api.fetchNovelLetters({ ...query, orderby }, signal)).letters;
+    },
     listColumns: NOVELS_LIST_COLUMNS,
     tweakExtras: o.tweakExtras,
     defaultView: "grid",

@@ -130,6 +130,44 @@ namespace MovieTheater.Books.Controllers
         }
 
         /// <summary>
+        /// GET /novels/letters — the flat A–Z buckets over the same filtered set, in the list's own order (R9 S0:
+        /// the site's strip shows page numbers unless the source can bucket the flat order). <c>orderby=title</c>
+        /// buckets on the title; anything else buckets on the author line, the default sort's key.
+        /// </summary>
+        [HttpGet("letters")]
+        public async Task<IActionResult> Letters(
+            [FromQuery] string? author = null,
+            [FromQuery] string? series = null,
+            [FromQuery] string? publisher = null,
+            [FromQuery] string? decade = null,
+            [FromQuery] string? tag = null,
+            [FromQuery] string? q = null,
+            [FromQuery] string? orderby = null,
+            [FromQuery] string? excludeTag = null,
+            [FromQuery] int? minRating = null,
+            [FromQuery] bool unknown = false,
+            CancellationToken ct = default)
+        {
+            var summary = Filtered(author, series, publisher, decade, tag, q, excludeTag, minRating, unknown).Select(ItemSummary.Project);
+            var byTitle = string.Equals((orderby ?? "").Trim(), "title", StringComparison.OrdinalIgnoreCase);
+            IQueryable<string?> keys = byTitle
+                ? summary.OrderBy(s => s.Title).ThenBy(s => s.Id).Select(s => s.Title)
+                : summary.OrderBy(s => s.CreatorsCsv).ThenBy(s => s.Series).ThenBy(s => s.Title).ThenBy(s => s.Id).Select(s => s.CreatorsCsv);
+            var buckets = new List<BrowseController.LetterBucket>();
+            var indexOf = new Dictionary<string, int>(StringComparer.Ordinal);
+            var i = 0;
+            await foreach (var k in keys.AsAsyncEnumerable().WithCancellation(ct))
+            {
+                var ch = k is { Length: > 0 } ? char.ToUpperInvariant(k[0]) : '#';
+                var letter = ch is >= 'A' and <= 'Z' ? ch.ToString() : "#";
+                if (indexOf.TryGetValue(letter, out var at)) buckets[at] = buckets[at] with { Count = buckets[at].Count + 1 };
+                else { indexOf[letter] = buckets.Count; buckets.Add(new BrowseController.LetterBucket(letter, 1, i)); }
+                i++;
+            }
+            return Ok(new { total = i, letters = buckets });
+        }
+
+        /// <summary>
         /// GET /novels/facets — the option lists with counts, computed over the books this caller may see, so a
         /// restricted account never learns that an author or a tag it is gated out of exists.
         ///

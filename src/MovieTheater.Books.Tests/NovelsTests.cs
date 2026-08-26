@@ -57,6 +57,26 @@ namespace MovieTheater.Books.Tests
             return Read<List<ItemSummary>>(body, "items").Select(i => i.Id).ToArray();
         }
 
+        // ── the flat letter strip (R9 S0) ────────────────────────────────────────────────────────────────────
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("title")]
+        public async Task Letters_bucket_the_gated_list_in_its_own_order(string? orderby)
+        {
+            using var db = fixture.Db();
+            var body = Value(await Novels(db, Owner(3)).Letters(orderby: orderby));
+            var total = Read<int>(body, "total");
+            var letters = Read<List<BrowseController.LetterBucket>>(body, "letters");
+            var ids = await ListIds(Novels(db, Owner(3)), orderby: orderby);
+            Assert.Equal(ids.Length, total);
+            Assert.Equal(total, letters.Sum(l => l.Count));
+            var running = 0;
+            foreach (var l in letters) { Assert.Equal(running, l.Offset); running += l.Count; }
+            // the gate applies to the buckets too: a lower ceiling sees fewer rows
+            Assert.True(Read<int>(Value(await Novels(db, Owner(2)).Letters(orderby: orderby)), "total") < total);
+        }
+
         // ── the gate ─────────────────────────────────────────────────────────────────────────────────────────
 
         [Fact]

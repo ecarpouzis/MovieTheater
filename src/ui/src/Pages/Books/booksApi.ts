@@ -396,6 +396,9 @@ export interface NovelsQuery {
 }
 export const fetchNovels = (p: NovelsQuery, signal?: AbortSignal) => request<NovelsPage>(`/novels${qs({ ...p })}`, undefined, signal);
 export const fetchNovelFacets = (signal?: AbortSignal) => request<NovelFacets>("/novels/facets", undefined, signal);
+/** `/novels/letters` — the flat A–Z buckets over the list's filters; `orderby=title` buckets on the title, else the author line. */
+export const fetchNovelLetters = (p: Omit<NovelsQuery, "skip" | "top">, signal?: AbortSignal) =>
+  request<{ total: number; letters: LetterBucket[] }>(`/novels/letters${qs({ ...p })}`, undefined, signal);
 export const fetchNovel = (id: number, mediaToken?: string | null) => request<ItemDetail>(`/novels/${id}${qs({ mediaToken })}`);
 
 // ── the one site-side write Books owns ──
