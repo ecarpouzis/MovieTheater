@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Net.Http.Headers;
 using MovieTheater.Books;
 using MovieTheater.Books.Archives;
@@ -27,8 +28,24 @@ namespace MovieTheater.BooksHost.Web
     {
         public static void MapHostEndpoints(this WebApplication app, BooksHostConfiguration config)
         {
-            // liveness for the reverse proxy / monitoring — reveals nothing, needs nothing
-            app.MapGet("/healthz", () => Results.Text("ok")).AllowAnonymous();
+            // Liveness for the reverse proxy, monitoring and the deploy probe. It TOUCHES THE STORE: on
+            // 2026-08-25 the host went live without its native SQLite library and every database call threw,
+            // while a store-blind healthz kept saying ok and the deploy probes passed. One SELECT 1 costs
+            // microseconds and turns that into a 503 with the reason. Reveals nothing about the catalog.
+            app.MapGet("/healthz", async (HttpContext ctx) =>
+            {
+                var db = ctx.RequestServices.GetService<BooksDb>();
+                if (db == null) return Results.Text("ok (no catalog configured)");
+                try
+                {
+                    await db.Database.ExecuteSqlRawAsync("SELECT 1", ctx.RequestAborted);
+                    return Results.Text("ok");
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    return Results.Text("db: " + ex.GetBaseException().GetType().Name, statusCode: StatusCodes.Status503ServiceUnavailable);
+                }
+            }).AllowAnonymous();
 
             // the seam proof: the identity the site stamped, echoed back
             var ping = (HttpContext ctx) => Results.Json(new

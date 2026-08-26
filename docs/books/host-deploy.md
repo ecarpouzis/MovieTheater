@@ -73,7 +73,8 @@ browser ──(media token in the path)─────────────�
 
 ## Every later deploy
 
-`.\scripts\deploy-books-host.ps1` (elevated). It publishes, snapshots `app.bak-<label>` once, swaps everything except `appsettings*.json`, restarts, and verifies by behaviour: `/healthz` 200, `GET /ping` without identity **401** (404 = old binary), `/m/bogus/thumbs/1.webp` 403, exactly one `Access-Control-Allow-Origin`. Roll back with `-Rollback <snapshot>`.
+`.\scripts\deploy-books-host.ps1` (elevated). It publishes, snapshots `app.bak-<label>` once, swaps everything except `appsettings*.json`, restarts, and verifies by behaviour: `/healthz` 200 (**it touches the store**: `SELECT 1` on `books.db`, 503 `db: <exception>` when the catalog cannot open — added after 2026-08-25, when a deploy without `runtimes\win-x64
+ative\` passed a store-blind probe), `GET /ping` without identity **401** (404 = old binary), `/m/bogus/thumbs/1.webp` 403, exactly one `Access-Control-Allow-Origin`. Roll back with `-Rollback <snapshot>`.
 
 ## First real runs on the host (after the seam is proven; each is chunked/resumable and prints `{ processed, remaining, nextCursor }` per batch)
 
