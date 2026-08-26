@@ -190,12 +190,17 @@ namespace MovieTheater.Controllers
                     return (mq, sq);
 
                 case "franchise":
+                    // The tag must sit on the title's NEWEST insight — the rule GetFranchiseRail and the grouped
+                    // browse (Web.BrowseGroups) apply. Matching a superseded generation's tag here made "more of
+                    // this franchise" disagree with the shelf it was opened from.
                     return (mq.Where(m => movieDb.TitleTags.Any(t => t.Category == TagCategory.Franchise && t.Value == v
-                                && movieDb.TitleInsights.Any(ti => ti.Id == t.TitleInsightId
-                                    && ti.SubjectKind == InsightSubjectKind.Movie && ti.SubjectId == m.id))),
+                                && t.Insight.SubjectKind == InsightSubjectKind.Movie && t.Insight.SubjectId == m.id
+                                && t.Insight.GeneratedUtc == movieDb.TitleInsights
+                                    .Where(x => x.SubjectKind == InsightSubjectKind.Movie && x.SubjectId == m.id).Max(x => x.GeneratedUtc))),
                             sq.Where(s => movieDb.TitleTags.Any(t => t.Category == TagCategory.Franchise && t.Value == v
-                                && movieDb.TitleInsights.Any(ti => ti.Id == t.TitleInsightId
-                                    && ti.SubjectKind == InsightSubjectKind.Series && ti.SubjectId == s.Id))));
+                                && t.Insight.SubjectKind == InsightSubjectKind.Series && t.Insight.SubjectId == s.Id
+                                && t.Insight.GeneratedUtc == movieDb.TitleInsights
+                                    .Where(x => x.SubjectKind == InsightSubjectKind.Series && x.SubjectId == s.Id).Max(x => x.GeneratedUtc))));
 
                 default:
                     return (mq, sq);
