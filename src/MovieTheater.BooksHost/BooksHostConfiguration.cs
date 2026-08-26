@@ -34,6 +34,9 @@ namespace MovieTheater.BooksHost
             ThumbnailQuality = Clamp(Int(b["ThumbnailQuality"], 75), 40, 100);
             SevenZipPath = Text(b["SevenZipPath"]);
             EnableTextRegions = !bool.TryParse(b["EnableTextRegions"], out var tr) || tr;
+            ComicVineApiKey = Text(b["ComicVineApiKey"]);
+            SettingsOverlayPath = ConfiguredRoot.FullPathOrNull(b["SettingsOverlayPath"])
+                ?? (DbPath == null ? null : System.IO.Path.Combine(System.IO.Path.GetDirectoryName(DbPath)!, "books.settings.json"));
         }
 
         private static string? Text(string? v) => string.IsNullOrWhiteSpace(v) ? null : v.Trim();
@@ -101,5 +104,17 @@ namespace MovieTheater.BooksHost
 
         /// <summary>Run the Bubble Zoom detector (default on). Off ⇒ the text-region route answers an empty list.</summary>
         public bool EnableTextRegions { get; }
+
+        // ── R6 slice 5: admin & providers ────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// The ComicVine API key. PLAIN configuration — the standalone's per-user DPAPI key vault is deleted;
+        /// one shared scraper key belongs to the host. The admin settings overlay can override it at runtime.
+        /// Null ⇒ the scrapers run cache-only and never open a socket.
+        /// </summary>
+        public string? ComicVineApiKey { get; }
+
+        /// <summary>The admin-writable settings overlay. Defaults to <c>books.settings.json</c> beside books.db.</summary>
+        public string? SettingsOverlayPath { get; }
     }
 }

@@ -4,9 +4,11 @@ using Microsoft.AspNetCore.OData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 using MovieTheater.Books.Archives;
 using MovieTheater.Books.Db;
 using MovieTheater.Books.Media;
+using MovieTheater.Books.Providers;
 using MovieTheater.Books.Services;
 
 namespace MovieTheater.Books
@@ -67,6 +69,25 @@ namespace MovieTheater.Books
 
         /// <summary>Run the Bubble Zoom detector. Off ⇒ the text-region endpoint answers an empty list.</summary>
         public bool EnableTextRegions { get; init; } = true;
+
+        // ── slice 5: admin & providers ───────────────────────────────────────────────────────────────────
+
+        /// <summary>books-legs.db — the offline warehouse. The tag folds, the LOCG containment reduction and the
+        /// provider response cache read it; null means those jobs are unavailable, never that startup fails.</summary>
+        public string? LegsDbPath { get; init; }
+
+        /// <summary>
+        /// The ComicVine API key — PLAIN CONFIGURATION (`Books:ComicVineApiKey`), overridable through the admin
+        /// settings overlay. The standalone's per-user DPAPI key vault is deleted: one shared scraper key
+        /// belongs to the host, not to an account. Null ⇒ the scrapers run cache-only and never open a socket.
+        /// </summary>
+        public string? ComicVineApiKey { get; init; }
+
+        /// <summary>The admin-writable settings overlay (default <c>{DataDir}/books.settings.json</c>).</summary>
+        public string? SettingsOverlayPath { get; init; }
+
+        /// <summary>The Calibre <c>calibre_link.json</c> the book importer matches by.</summary>
+        public string? CalibreLinkPath { get; init; }
     }
 
     public static class BooksServiceExtensions
@@ -118,6 +139,37 @@ namespace MovieTheater.Books
             services.AddSingleton<ThumbnailJob>();
             services.AddSingleton<MediaAccess>();
             // ── end slice 2 ──────────────────────────────────────────────────────────────────────────────
+
+            // ── slice 5 (admin & providers) ──────────────────────────────────────────────────────────────
+            // The job classes are singletons because each owns a cursor protocol, not per-request state; the
+            // JobRunner is a singleton for the same reason it exists at all (a job outlives the request that
+            // started it). The two HTTP clients are named so a test can replace their handler and prove the
+            // scrapers never open a socket.
+            services.AddSingleton<JobRunner>();
+            services.AddSingleton<InMemoryLogStore>();
+            services.AddSingleton(sp => new BooksSettingsOverlay(options.SettingsOverlayPath));
+            services.AddSingleton<LibraryScanner>();
+            services.AddSingleton<CalibreImportService>();
+            services.AddSingleton<DuplicateDetectionService>();
+            services.AddSingleton<DataNormalizationService>();
+            services.AddSingleton<SeriesMismatchService>();
+            services.AddSingleton<SeriesNamesService>();
+
+            services.AddSingleton(sp => new ProviderCacheStore(options.LegsDbPath));
+            services.AddHttpClient<ComicVineClient>();
+            services.AddHttpClient<ExternalWorkScraper>();
+            services.AddSingleton(sp => new ComicVineClient(
+                sp.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(ComicVineClient)),
+                sp.GetRequiredService<ProviderCacheStore>(),
+                sp.GetRequiredService<BooksSettingsOverlay>().Value("ComicVineApiKey") ?? options.ComicVineApiKey,
+                sp.GetRequiredService<ILogger<ComicVineClient>>()));
+            services.AddSingleton(sp => new ExternalWorkScraper(
+                sp.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(ExternalWorkScraper)),
+                sp.GetRequiredService<ProviderCacheStore>(),
+                sp.GetRequiredService<ILogger<ExternalWorkScraper>>()));
+            services.AddSingleton<ComicVineSeriesScraper>();
+            services.AddSingleton<ComicVineIssueScraper>();
+            // ── end slice 5 ──────────────────────────────────────────────────────────────────────────────
 
             return services;
         }

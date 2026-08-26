@@ -49,7 +49,20 @@ namespace MovieTheater.BooksHost.Commands
                 ThumbnailQuality = config.ThumbnailQuality,
                 SevenZipPath = config.SevenZipPath,
                 EnableTextRegions = config.EnableTextRegions,
+                // R6 slice 5: the admin surface and the provider scrapers. The legs file is what the tag folds
+                // and the provider response cache read; the ComicVine key is plain config (no key vault); the
+                // overlay is the one file an admin's config PUT may write.
+                LegsDbPath = config.LegsDbPath,
+                ComicVineApiKey = config.ComicVineApiKey,
+                SettingsOverlayPath = config.SettingsOverlayPath,
+                CalibreLinkPath = config.CalibreLinkPath,
             });
+
+            // The admin log panel is a ring buffer fed by an ILoggerProvider registered ALONGSIDE the console
+            // one — never instead of it, so the host's own log file keeps everything the tail drops.
+            var logStore = new MovieTheater.Books.Services.InMemoryLogStore();
+            builder.Services.AddSingleton(logStore);
+            builder.Logging.AddProvider(new MovieTheater.Books.Services.InMemoryLoggerProvider(logStore));
 
             builder.Services.AddAuthentication(BooksIdentity.AuthenticationScheme)
                 .AddScheme<AuthenticationSchemeOptions, BooksIdentityAuthHandler>(BooksIdentity.AuthenticationScheme, _ => { });

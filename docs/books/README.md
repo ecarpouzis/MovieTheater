@@ -424,3 +424,110 @@ constants name every one of them):
 - Group heads now carry `userMeta` from `GroupMark` — one read of the caller's own (few) rows for the grouping's
   type, matched in memory, the same shape `POST /marks/groups/batch` uses and for the same reason. Franchise has
   no group type of its own, so its heads carry no marks.
+
+## Runtime endpoints (R6 slice 5 — admin & providers)
+
+The operator's half of the vertical: the jobs that BUILD the catalog, the registry that says what is derived
+from what, and the reconciliation tools for when a series went wrong. Everything here is
+`[Authorize(Policy = "admin")]` and sits under `/admin` (through the site proxy, `/API/Books/admin/…`).
+
+| Route | What it is |
+|---|---|
+| `GET /admin/info` | The counts an operator checks first — catalog, derived tables, links, dedup — plus what this host is configured with and every job it has run |
+| `GET /admin/derived` | The **derived-table registry**: each table, the verb that rebuilds it, its stored input fingerprint, when it last ran, and whether it is now `stale` |
+| `GET /admin/jobs/status?kind=` · `POST /admin/jobs/{kind}/stop` | The job runner: one snapshot per kind, and a cooperative stop |
+| `POST /admin/scan/start?rootId=&apply=` · `GET /admin/scan/status` · `POST /admin/scan/stop` | The library scan. **Without `apply=true` this is a PREVIEW** — would-add / would-change / would-remove, nothing written |
+| `POST /admin/thumbnails/start?reset=` · `GET /admin/thumbnails/status` · `POST /admin/thumbnails/stop` | The generate-missing thumbnail pass |
+| `GET /admin/broken?skip=&top=` | The files a scan or a thumbnail pass could not read, paged |
+| `GET/POST/PUT/DELETE /admin/roots[/{id}]` | `LibraryRoot` CRUD. A delete is REFUSED while the root still holds items |
+| `POST /admin/calibre/import?metadata=&link=&apply=` | Fill the books' Calibre-native identity (see below) |
+| `POST /admin/cache/clear?apply=` | Delete GENERATED thumbnails only — the `^\d+\.webp$` guard |
+| `POST/DELETE /admin/folders/{id}/icon` | The hand-made collection icon, `f_{id}.jpg` |
+| `GET/PUT /admin/config` | The settings overlay — an allow-list, not a config editor (see below) |
+| `GET/DELETE /admin/logs?count=&level=&afterSeq=` | The host's own log tail, newest first |
+| `GET/PUT/DELETE /admin/kids-tags[/{category}/{tag}]` | The `KidSafeTag` allow-list |
+| `POST /admin/recompute/{what}` | Start the job that owns one derived table: `series`, `resolve`, `tags`, `reading-order`, `containment`, `collected-editions`, `ratings` |
+| `POST /admin/dedup/start` · `GET /admin/dedup` · `POST /admin/dedup/{id}/resolve` | Duplicate detection, review and resolution |
+| `GET/PUT/DELETE /admin/normalization/aliases` · `POST /admin/normalization/apply?apply=` | The `TagAlias` map and the four tag-hygiene passes |
+| `GET /admin/series/summary` · `/{id}/aliases` · `/link-candidates` · `/decisions` · `/namefix` · `/split-overmatch` | Series reconciliation, read side |
+| `POST /admin/series/clear-link` · `set-link` · `fold` · `unify-folder` · `review` · `decisions/{id}/revert` · `prune` · `PUT /{id}/override` | Series reconciliation, write side — every one of them edits an INPUT |
+| `POST /admin/comicvine/start?mode=series\|issues` · `GET /admin/comicvine/status` · `POST /admin/comicvine/stop` | The ComicVine scrape |
+| `POST /admin/external/start` · `GET /admin/external/status` · `POST /admin/external/stop` | The Open Library / Google Books fallback scrape |
+| `GET /admin/{kind}/events` | The live job feed as Server-Sent Events |
+
+Contract notes worth knowing before writing a client:
+
+- **No endpoint here loops to completion.** A start endpoint runs ONE batch inline — so the 202 carries real
+  numbers rather than a promise — hands the rest to `JobRunner`'s background loop, and answers with a
+  `statusUrl`. One job at a time per KIND (a second start is a **409**); a stop takes effect at the next batch
+  boundary with the cursor already committed, so nothing is lost and a restart resumes.
+- **A job that stops moving stops.** The runner breaks on a batch that processes nothing OR that reports the
+  same cursor twice — the same no-progress guard every CLI verb has.
+- **`GET /admin/{kind}/events`** sets `X-Accel-Buffering: no` (or an nginx-family proxy buffers the stream into
+  silence) and writes a `: keepalive` COMMENT every 20 s (or an idle intermediary closes a connection that is
+  merely waiting for the next batch). A comment is not an event, so no client sees it as data.
+- **The cache clear's guard is a whitelist on the NAME**, `^\d+\.webp$`. Those are the files `books-thumbs` can
+  regenerate. A collection icon is `f_{id}.jpg` and can never be regenerated, so it must survive — which is why
+  the guard is not a wildcard over the directory.
+- **The config overlay is an allow-list**, stored at `Books:SettingsOverlayPath` (default
+  `books.settings.json` beside books.db) and written atomically. Only `ComicVineApiKey`, `ThumbnailQuality`,
+  `PageJpegQuality` and `ArchiveCacheGb` are settable; an unknown key or an out-of-range number is a **400**,
+  never a silent no-op. Paths and the other secrets are deliberately NOT settable — an endpoint that could
+  re-point `DbPath` or `MediaTokenSecret` would let an admin account move the database or forge media tokens.
+  A secret reads back as `"(set)"`, never as its value.
+- **`Books:ComicVineApiKey` is plain configuration.** The standalone's per-user DPAPI key vault and its
+  controller are DELETED: one shared scraper key belongs to the host, not to an account. With no key the
+  scrapers run **cache-first only** and never open a socket — which is also how the tests drive them.
+- **User administration is gone**: the site owns users.
+
+### Jobs & verbs
+
+Every long job is chunked, resumable and observable, prints `{ processed, remaining, nextCursor, … }` per batch,
+and is driven to completion by its CALLER (the verb's own loop, or `JobRunner`). Each derived table is stamped
+in `DerivedTable` with its fingerprint, row count and rebuild time by the job that owns it.
+
+| Verb | What it derives | `DerivedTable` |
+|---|---|---|
+| `books-scan [--root] [--batch-size] [--max-batches] [--apply] [--resume] [--status]` | Walks the roots READ-ONLY and reconciles `Folder` / `Item` / `ItemState` / `ComicEmbedded` / `ComicDetail` / `BookDetail` / `ItemCredit(ComicInfo)` / `ItemTag(ComicInfo)`, then the folder aggregates and the publisher backfill | `Folder.TopFolderId/Counts` |
+| `books-resolve [--series] [--tags] [--fts] [--batch-size]` | `--series` = the identity rebuild; `--tags` = the legs-reading folds; bare = insight currency, the AI fold, `Series.Resolved*`, `Item.Resolved*`, `ItemFts` | `Series`, `SeriesAlias`, `Item.SeriesId`, `ItemTag/SeriesTag(folds)`, `Insight.IsCurrent`, `Item.Resolved*`, `Series.Resolved*`, `ItemFts` |
+| `books-thumbs [--missing] [--batch-size] [--max-batches] [--reset] [--status]` | The missing `{itemId}.webp` covers | — |
+| `books-reading-order [--series] [--batch-size]` | `ReadingOrderEntry` — tier, number, date, dense `ReadIndex` per run | `ReadingOrderEntry` |
+| `books-reading-order-audit [--out]` | A per-series CSV of coverage and which signal won | — |
+| `books-containment [--batch-size]` | `CollectionNode` — levels, spans, nesting, primary track | `CollectionNode` |
+| `books-collected-editions [--legs] [--batch-size]` (alias `books-locg-containment`) | `CollectedEditionSpan(Source=Locg)` from the warehouse's containment edges | `CollectedEditionSpan(Source=Locg)` |
+| `books-library-ratings [--batch-size] [--resolve]` | `Rating(Source=Library)` for every series and item, then re-materializes `ResolvedRating` | `Rating(Source=Library)` |
+| `books-import-calibre --metadata <metadata.db> [--link] [--apply] [--reset]` | `Item.CalibreBookId`, `BookDetail`, `ItemCredit(Calibre)`, `ItemTag(Calibre)` | — |
+| `books-locg-import --file <export.jsonl> [--legs]` | `LocgComicRaw` + `LocgCreatorRaw` (legs) and the hot `LocgComic` subset | — |
+| `books-locg-import-map --file <map.csv>` | `ItemProviderLink(Locg, Manual)` from offline-decided matches | — |
+| `books-gcd-match --gcd <gcd.db> [--legs]` | `GcdIssue` (legs) + `ItemProviderLink(Gcd)` by ISBN then barcode | — |
+| `books-mu-import --file <export.json> [--legs]` | `MuSeries` (hot) + `MuSeriesRaw` (legs) | — |
+| `books-dedup [--csv] [--apply] [--reset] [--batch-size]` | `DuplicateGroup` / `DuplicateMember` with a suggested keeper | — |
+| `books-fix-issue-numbers [--apply]` | Re-extracts `ComicDetail.IssueNo` from the filenames and reports what moved | — |
+| `books-parse-audit [--out]` | The parse-pipeline CSV, one row per comic with a source per field | — |
+| `books-series-{override,clearlink,namefix,prune,split-overmatch}` | Edits to the resolution INPUTS (and two read-only reports) | — |
+
+Contract notes worth knowing before running any of them:
+
+- **`books-scan` is dry-run by default**, and so are `books-dedup`, `books-import-calibre`,
+  `books-fix-issue-numbers`, `books-series-namefix` and `books-series-prune`. `--apply` is the house rule.
+- **A removed file is MARKED, never deleted.** `UserItemState.ItemId` is a foreign key to `Item`, so "delete
+  the item but keep the reader's rows" is not a state the schema can hold — and keeping the reader's position
+  and marks is the requirement that matters. A missing file gets `Item.IsExcluded = 1` (so it leaves every
+  browse surface through the gate that already exists) and `ItemState.IsBroken` with reason `missing` (so the
+  broken panel lists it). A later scan that finds the file clears both and the item returns whole, id and all.
+- **The scan's guard**: an unreachable root refuses the whole run, and a root that goes unreachable MID-scan
+  aborts the removal phase. A dropped share must never mark a library missing.
+- **After a scan, run `books-resolve --series` and then `books-resolve`.** The scan writes the inputs; the
+  identity and the browse scalars are derived, and the verb says so when it finishes.
+- **Reconciliation edits inputs.** `clear-link` / `set-link` write `SeriesKeyLink`; `fold` / `unify-folder`
+  write `ComicDetail.ParsedSeriesKey`; `override` writes `Series.DisplayNameOverride`. Each answers
+  `rebuildRequired: true` and each is recorded in `SeriesInferenceDecision` with an undo payload. A cleared
+  link stays as `Cleared` rather than being deleted, so the next scrape cannot re-make the same wrong match.
+- **A folded-away spelling leaves an EMPTY series, not a merged one** — its own parsed key still exists, so it
+  keeps its own canonical key. Removing an empty series is `books-series-prune`'s job, and prune never removes
+  one a reader has marked.
+- `books-import-calibre` is what finally fills **`BookDetail.SeriesName`**: it is NULL for all 22,084 migrated
+  books because v1 had no column for it, so until this verb runs the novels facets have no series rail.
+- The LOCG, GCD and MangaUpdates **scrapers are not ported and never will be** — they are offline Node and
+  Python pipelines, and that is the right shape for them. What is ported is their CONSUME side, so nothing in
+  this list opens a socket except the two provider clients.

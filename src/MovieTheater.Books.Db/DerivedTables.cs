@@ -19,17 +19,19 @@ namespace MovieTheater.Books.Db
                 ComicDetailStamp + " UNION ALL SELECT count(*) || ':' || coalesce(sum(ProviderKey),0) || ':' || coalesce(sum(Status),0) FROM SeriesKeyLink"),
             new Entry("SeriesAlias", "books-resolve --series", ComicDetailStamp),
             new Entry("Item.SeriesId", "books-resolve --series", "SELECT count(*) || ':' || coalesce(sum(SeriesId),0) FROM SeriesAlias"),
-            new Entry("Item.Resolved*", "books-resolve --items",
+            new Entry("Item.Resolved*", "books-resolve",
                 "SELECT count(*) || ':' || coalesce(max(ResolvedAt),'') FROM Series UNION ALL " + InsightStamp
                 + " UNION ALL SELECT count(*) || ':' || coalesce(max(AttemptedAt),'') FROM ItemProviderLink UNION ALL SELECT count(*) FROM Rating"),
-            new Entry("Series.Resolved*", "books-resolve --items", InsightStamp + " UNION ALL SELECT count(*) FROM Rating"),
+            new Entry("Series.Resolved*", "books-resolve", InsightStamp + " UNION ALL SELECT count(*) FROM Rating"),
             new Entry("ItemTag/SeriesTag(folds)", "books-resolve --tags",
                 InsightStamp + " UNION ALL SELECT count(*) FROM CvdbResolution UNION ALL SELECT count(*) FROM MuSeriesLink UNION ALL SELECT count(*) FROM ItemProviderLink WHERE Provider = 3"),
-            new Entry("Insight.IsCurrent", "books-resolve --insights", InsightStamp),
+            new Entry("Insight.IsCurrent", "books-resolve", InsightStamp),
             new Entry("ItemFts", "books-resolve --fts", "SELECT count(*) || ':' || coalesce(max(ResolvedAt),'') FROM Item"),
             new Entry("ReadingOrderEntry", "books-reading-order", ComicDetailStamp + " UNION ALL SELECT count(*) FROM CvIssue UNION ALL SELECT count(*) FROM CollectedEditionSpan"),
             new Entry("CollectionNode", "books-containment", ComicDetailStamp + " UNION ALL SELECT count(*) FROM CollectedEditionSpan"),
             new Entry("Folder.TopFolderId/Counts", "books-scan", "SELECT count(*) || ':' || coalesce(max(IndexedAt),'') FROM Folder"),
+            new Entry("CollectedEditionSpan(Source=Locg)", "books-collected-editions",
+                "SELECT count(*) || ':' || coalesce(sum(CASE WHEN Provider = 2 AND Status = 1 THEN 1 ELSE 0 END),0) FROM ItemProviderLink"),
             new Entry("Rating(Source=Library)", "books-library-ratings", "SELECT count(*) FROM Rating WHERE Source <> 4"),
         };
     }
