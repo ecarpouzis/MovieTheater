@@ -10,7 +10,7 @@
  * invalidation) must not yank the reader to another page mid-read.
  */
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getPosition, markFinished as apiMarkFinished, putPosition, resetPosition, type ReadingPosition } from "../booksApi";
 import { bk, invalidateAfter } from "../booksQuery";
 
@@ -145,14 +145,11 @@ export default function useReadingPosition(itemId: number, pageCount: number | n
     };
   }, [itemId, qc]);
 
-  return {
-    position: query.data ?? null,
-    loading: query.isLoading,
-    resume,
-    isFinished: savedPageRef.current === -1 || query.data?.status === "finished",
-    savePage,
-    saveEpub,
-    markFinished,
-    reset,
-  };
+  // A STABLE object: the readers keep it in effect deps (the EPUB save effect, the page-turn save), and
+  // a fresh object per render would re-arm every debounce on every render.
+  const data = query.data ?? null;
+  const loading = query.isLoading;
+  const isFinished = savedPageRef.current === -1 || data?.status === "finished";
+  return useMemo(() => ({ position: data, loading, resume, isFinished, savePage, saveEpub, markFinished, reset }),
+    [data, loading, resume, isFinished, savePage, saveEpub, markFinished, reset]);
 }
