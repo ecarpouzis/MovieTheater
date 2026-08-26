@@ -1,12 +1,12 @@
 /**
- * The catalog package's shared contracts — the seam every section's browse surface will speak
- * once the generic views (Wall / Shelves / Grid / List / Extended) land. Nothing here fetches or
- * renders; adapters (`catalog/sources/*`) map a section's API rows onto these shapes, and the
- * views consume only these shapes.
+ * The catalog package's shared contracts — the seam every section's browse surface speaks.
+ * Nothing here fetches or renders; adapters (`catalog/sources/*`) map a section's API rows onto
+ * these shapes, and the views consume only these shapes.
  *
  * Kept deliberately small: a card is "an image with an identity and a few labels", a group is
- * "a labelled run of cards", and a source is "how to page cards and groups". Section-specific
- * detail (a movie's runtime, a comic's issue number) rides in `raw` for the section's own modal.
+ * "a labelled run of cards", and a source is "how to page cards and groups, and what the
+ * switcher may offer". Section-specific detail (a movie's runtime, a comic's issue number) rides
+ * in `raw` for the section's own modal.
  */
 
 /** Which entity space an item belongs to. Ids collide across spaces (movies vs misc, comics vs books). */
@@ -54,6 +54,14 @@ export interface CardItem {
   groupKey?: string;
   /** The value the source ordered by; lets a view show a letter rail or a "you are here". */
   sortKey?: string;
+  /**
+   * When the card stands for a whole group (the "Items: groups" mode of the flat views — one
+   * representative per series/franchise/artist), how many items it stands for. Drives the
+   * corner count badge and the "N titles" run label.
+   */
+  count?: number;
+  /** Set when this card is a group's REPRESENTATIVE (the flat views' "one per group" mode); opening it opens the group. */
+  group?: CardGroup;
   /** The section's own row, untouched — for the section's modal, never for the views. */
   raw: unknown;
 }
@@ -79,6 +87,34 @@ export interface CardGroup {
 
 export type ViewMode = "grid" | "wall" | "shelf" | "list" | "extended" | "newspaper" | "directory";
 
+export const VIEW_LABELS: Record<ViewMode, string> = {
+  grid: "Grid",
+  wall: "Wall",
+  shelf: "Shelves",
+  list: "List",
+  extended: "Extended",
+  newspaper: "Newspaper",
+  directory: "Directory",
+};
+
+/** The views whose content is one continuous run of cards (no group headers). */
+export const FLAT_VIEWS: ReadonlySet<ViewMode> = new Set<ViewMode>(["grid", "wall", "list"]);
+
+/** What the flat views page: every item, or one representative card per group. */
+export type ItemsMode = "items" | "groups";
+
+export interface SortSpec {
+  value: string;
+  label: string;
+  /** An alphabetical order — the pager can offer letters (the source's `letters()`) instead of pages. */
+  alpha?: boolean;
+}
+
+export interface GroupSpec {
+  value: string;
+  label: string;
+}
+
 export interface CardPage {
   items: CardItem[];
   /**
@@ -99,19 +135,81 @@ export interface LetterBucket {
   offset: number;
 }
 
+/** One column of the List view. `value` reads the display value straight off the card. */
+export interface ListColumn {
+  key: string;
+  label: string;
+  /** CSS grid track (e.g. "1.6fr", "64px"); default "1fr". */
+  width?: string;
+  align?: "left" | "right";
+  /** Mono (numbers, dates) vs the body face. */
+  mono?: boolean;
+  value: (item: CardItem) => string | number | null | undefined;
+}
+
+/** A node of a section's own hierarchy (a folder, a franchise, an artist, a system). */
+export interface DirectoryNode {
+  id: string;
+  label: string;
+  count?: number;
+  imageUrl?: string;
+  hue?: number;
+  hasChildren?: boolean;
+}
+
+/** The Directory view's data: a tree of nodes whose leaves page cards. */
+export interface DirectorySource {
+  roots(signal?: AbortSignal): Promise<DirectoryNode[]>;
+  children(id: string, signal?: AbortSignal): Promise<DirectoryNode[]>;
+  items(id: string, skip: number, top: number, signal?: AbortSignal): Promise<CardPage>;
+}
+
+/** A section-registered tweak (a font family, a backdrop) the panel shows as a segmented row. */
+export interface TweakExtra {
+  key: string;
+  label: string;
+  options: { value: string; label: string }[];
+}
+
 /**
- * What a section hands the views. Flat paging is mandatory; grouped paging, "more of one group"
- * and letter buckets are optional capabilities a view checks before offering the control.
+ * What a section hands the views. Flat paging is mandatory; grouped paging, "more of one group",
+ * letter buckets and a directory are optional capabilities a view checks before offering the
+ * control.
  */
 export interface CatalogSource {
+  /**
+   * Identity of the section's current filter state. The engines drop every band and go back to
+   * the top when it changes; it must NOT change for a view/sort/tweak switch alone.
+   */
+  queryKey: string;
   /** Which views this section supports; the switcher shows only these. */
   supports: ViewMode[];
-  /** Group-by modes for the grouped views ("series", "genre", "decade", …); empty = ungrouped only. */
-  groupModes: string[];
-  fetchFlatBand(skip: number, top: number, signal?: AbortSignal): Promise<CardPage>;
-  fetchGroupBand?(groupsSkip: number, groupsTop: number, perGroupTop: number, groupBy: string, signal?: AbortSignal): Promise<GroupPage>;
-  fetchGroupMore?(groupKey: string, skip: number, top: number, groupBy: string, signal?: AbortSignal): Promise<CardPage>;
-  letters?(): Promise<LetterBucket[]>;
+  /** Group-by modes for the grouped views and the flat views' representative mode; empty = ungrouped only. */
+  groups: GroupSpec[];
+  sorts: SortSpec[];
+  /** Offer the Items pill (every item vs one card per group). Needs `fetchGroupBand`. */
+  itemsModes?: ItemsMode[];
+  /** Labels for the Items pill, e.g. { items: "Titles", groups: "Franchises" }. */
+  itemsLabels?: Partial<Record<ItemsMode, string>>;
+  listColumns?: ListColumn[];
+  directory?: DirectorySource;
+  tweakExtras?: TweakExtra[];
+  defaultView?: ViewMode;
+  defaultGroup?: string;
+  defaultSort?: string;
+  /** Cards per flat band (default 48). */
+  pageSize?: number;
+  /** The uniform tile aspect the Grid uses (default `DEFAULT_ASPECT`). */
+  defaultAspect?: number;
+  /** "title", "album", "game" — the pager's tooltip noun. */
+  itemNoun?: string;
+  fetchFlatBand(skip: number, top: number, sort: string, signal?: AbortSignal): Promise<CardPage>;
+  fetchGroupBand?(groupsSkip: number, groupsTop: number, perGroupTop: number, groupBy: string, sort: string, signal?: AbortSignal): Promise<GroupPage>;
+  fetchGroupMore?(groupKey: string, skip: number, top: number, groupBy: string, sort: string, signal?: AbortSignal): Promise<CardPage>;
+  /** Letter buckets over the flat order (only meaningful for an `alpha` sort). */
+  letters?(sort: string, signal?: AbortSignal): Promise<LetterBucket[]>;
+  /** Letter → first group index over the grouped order (only meaningful for an `alpha` sort). */
+  groupLetters?(groupBy: string, sort: string, signal?: AbortSignal): Promise<{ letter: string; firstIndex: number }[]>;
   /** Open the section's detail for a card (URL-driven modal, per the site convention). */
   onOpen(item: CardItem): void;
   onOpenGroup?(group: CardGroup): void;

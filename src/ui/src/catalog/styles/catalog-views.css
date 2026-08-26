@@ -1,0 +1,241 @@
+/* ── Catalog package: views, cards, switcher, tweaks ────────────────────────
+   Ported from the standalone site's browse.css and tokenised: every colour comes from theme.css
+   (data-theme × data-feature on <html>), so the same view is tinted by whichever section renders
+   it. The `--ink/--sub/--line/--bg` names the port used stay as LOCAL aliases on .bx-host so the
+   rules read like the original; nothing outside the host sees them. Imported by CatalogHost,
+   which is the component on every adopting route — so this stylesheet exists wherever the host
+   does (Vite splits CSS per lazy chunk).
+
+   Grid/Wall rules use DESCENDANT selectors on purpose: the band engine wraps each page of cards
+   in a display:contents band — the wrapper has no box but it IS the cards' DOM parent, so `>`
+   would stop matching.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.bx-host {
+  --ink: var(--text-primary);
+  --sub: var(--text-secondary);
+  --line: var(--card-border);
+  --bg: var(--card-surface);
+  --chrome: var(--card-surface);
+  --display-weight: 600;
+  --display-tracking: -0.01em;
+  --bx-radius: 6px;
+  position: relative;
+  min-width: 0;
+}
+
+/* ── Switcher row ────────────────────────────────────────────────────────── */
+.bx-toolbar {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 4px 0 10px; min-width: 0;
+}
+.bx-tool-left { display: flex; align-items: center; gap: 8px; min-width: 0; color: var(--sub); font-size: 12px; }
+.bx-tool-right { display: flex; align-items: center; gap: 8px; }
+.bx-tool-btn {
+  appearance: none; border: 1px solid var(--line); background: transparent; color: var(--ink);
+  font: inherit; font-size: 12px; cursor: pointer; height: 32px; padding: 0 12px; border-radius: 7px;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.bx-tool-btn:hover { background: var(--line); }
+.bx-tool-btn.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.bx-tool-gear { padding: 0 10px; font-size: 15px; }
+.bx-pill-wrap { position: relative; }
+.bx-pill {
+  appearance: none; border: 1px solid var(--line); background: transparent; color: var(--ink);
+  font: inherit; font-size: 12px; cursor: pointer; height: 32px; padding: 0 11px; border-radius: 7px;
+  display: inline-flex; align-items: center; gap: 7px; white-space: nowrap;
+}
+.bx-pill:hover { background: var(--line); }
+.bx-pill-k { font-family: var(--font-mono); font-size: 9px; letter-spacing: .06em; text-transform: uppercase; color: var(--sub); }
+.bx-pill-v { font-weight: 500; }
+.bx-dd-menu {
+  position: absolute; top: calc(100% + 5px); right: 0; z-index: 70;
+  min-width: 170px; background: var(--bg); border: 1px solid var(--line); border-radius: 9px; padding: 4px;
+  box-shadow: 0 14px 36px rgba(0,0,0,.16);
+}
+.bx-dd-item {
+  appearance: none; border: 0; background: transparent; width: 100%; text-align: left;
+  color: var(--ink); font: inherit; padding: 8px 10px; border-radius: 6px; cursor: pointer; white-space: nowrap;
+}
+.bx-dd-item:hover { background: var(--line); }
+.bx-dd-item.on { font-weight: 600; }
+.bx-dd-item.on::after { content: '✓'; float: right; }
+
+/* Phones: the pill rows become one horizontally-swipeable strip (menus go position:fixed — see
+   mobileMenuPos), never a second row of chrome. */
+@media (max-width: 680px) {
+  .bx-toolbar { gap: 8px; }
+  .bx-tool-right { overflow-x: auto; overflow-y: hidden; scrollbar-width: none; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
+  .bx-tool-right::-webkit-scrollbar { display: none; }
+}
+
+/* ── Results root ───────────────────────────────────────────────────────── */
+/* NOT a scroller: the page scrolls (.app-content on desktop, the window on phones — index.css
+   already sets overflow-anchor:none on both). The engine resolves the real scroll root. */
+.bx-results { position: relative; min-width: 0; }
+.bx-empty { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 80px 20px; color: var(--sub); }
+.bx-empty-mark { font-family: var(--font-display); font-size: 56px; color: var(--line); }
+.bx-spinner { width: 28px; height: 28px; border: 2px solid var(--line); border-top-color: var(--ink); border-radius: 50%; animation: bx-spin 0.7s linear infinite; }
+@keyframes bx-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .bx-spinner { animation: none; } }
+
+/* While an infinite stream is actively scrolling (class set by the engine, cleared 160 ms after the
+   last scroll event) its children are exempt from hit-testing: Chrome re-dispatches pointerover for
+   content moving under a STATIONARY cursor, and every card passing under the mouse ran its hover
+   transition — pure paint churn. Wheel events fall through to the scroller. */
+.bx-inf-scrolling { pointer-events: none; }
+.bx-band-spacer { pointer-events: none; }
+
+/* ── Card ────────────────────────────────────────────────────────────────── */
+.bx-card { position: relative; min-width: 0; cursor: pointer; transition: transform 0.25s cubic-bezier(.2,.7,.3,1); outline: none; }
+.bx-card:focus-visible .bx-cover { box-shadow: 0 0 0 2px var(--accent); }
+.bx-cover {
+  position: relative; width: 100%; overflow: hidden;
+  box-shadow: 0 0 0 1px var(--line), 0 1px 3px rgba(0,0,0,.05);
+  transition: box-shadow 0.25s, transform 0.25s, opacity 150ms ease;
+  background: var(--line);
+  content-visibility: auto;
+}
+.bx-cover > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.bx-rounded .bx-cover { border-radius: var(--bx-radius); }
+.bx-sharp .bx-cover { border-radius: 0; }
+/* The child-count badge — bottom-right of a representative's cover: how many items stand behind it. */
+.bx-count {
+  position: absolute; right: 0; bottom: 0; z-index: 3;
+  font-family: var(--font-mono); font-size: 10px; font-weight: 600; line-height: 1;
+  color: #fff; background: rgba(12, 14, 18, .74);
+  padding: 3px 7px 4px; border-top-left-radius: 7px; pointer-events: none;
+}
+.bx-hover-lift:hover .bx-cover { transform: translateY(-3px); box-shadow: 0 0 0 1px var(--line), 0 14px 28px rgba(0,0,0,.18); }
+.bx-hover-zoom:hover .bx-cover { transform: scale(1.03); z-index: 5; }
+.bx-hover-tilt:hover .bx-cover { transform: perspective(800px) rotateX(2deg) rotateY(-3deg); }
+/* dim: the OTHER covers fade while any cover is hovered — driven by the root, no per-card class. */
+.bx-results[data-hover="dim"]:has(.bx-card:hover) .bx-card:not(:hover) .bx-cover { opacity: 0.45; }
+.bx-results[data-hover="none"] .bx-cover { transition: none; }
+
+/* Meta strip */
+.bx-meta { padding: 8px 2px 0; font-size: 11.5px; line-height: 1.35; }
+.bx-meta-row { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.bx-meta-a { font-family: var(--font-mono); font-size: 10px; letter-spacing: .08em; color: var(--sub); white-space: nowrap; }
+.bx-meta-b {
+  font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .12em; color: var(--sub); text-transform: uppercase;
+  flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right;
+}
+.bx-meta-title {
+  font-family: var(--font-display); font-weight: var(--display-weight); letter-spacing: var(--display-tracking);
+  font-size: 14px; line-height: 1.15; color: var(--ink); margin-top: 3px;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.bx-meta-badges { margin-top: 4px; }
+
+/* ── Grid ───────────────────────────────────────────────────────────────── */
+.bx-grid { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 24px 12px; padding: 4px 0; }
+.bx-grid .bx-card { display: flex; flex-direction: column; flex: 0 0 auto; }
+.bx-grid .bx-card > .bx-cover { height: var(--cell, 220px); width: calc(var(--cell, 220px) * var(--aspect, .66)); }
+.bx-grid .bx-card .bx-meta { width: calc(var(--cell, 220px) * var(--aspect, .66)); min-width: 120px; }
+
+/* ── Wall ───────────────────────────────────────────────────────────────── */
+.bx-wall { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0; }
+.bx-wall .bx-card { display: flex; flex: 0 0 auto; }
+.bx-wall .bx-card > .bx-cover {
+  height: var(--cell, 140px); width: calc(var(--cell, 140px) * var(--aspect, .66));
+  box-shadow: none; border-radius: 0; outline: 0.5px solid rgba(0,0,0,.08); outline-offset: -0.5px;
+}
+.bx-hover-meta {
+  position: absolute; inset: auto 0 0 0; padding: 16px 8px 8px;
+  background: linear-gradient(to top, rgba(0,0,0,.85), rgba(0,0,0,0));
+  opacity: 0; transform: translateY(8px); transition: opacity .2s ease, transform .2s ease;
+  pointer-events: none;
+}
+.bx-wall .bx-card:hover .bx-hover-meta { opacity: 1; transform: translateY(0); }
+.bx-count { transition: opacity .2s ease; }
+.bx-wall .bx-card:hover .bx-count { opacity: 0; }
+.bx-hover-meta .bx-meta-a, .bx-hover-meta .bx-meta-b { color: rgba(255,255,255,.72); }
+.bx-hover-meta .bx-meta-title { color: #fff; font-size: 15px; margin-top: 2px; }
+
+/* ── List ───────────────────────────────────────────────────────────────── */
+.bx-list { display: flex; flex-direction: column; padding-top: 4px; overflow-x: auto; }
+.bx-list-head, .bx-list-row {
+  display: grid; grid-template-columns: var(--bx-list-cols, 44px 2fr 72px 1.2fr);
+  gap: 12px; align-items: center; min-width: 560px;
+}
+.bx-list-head {
+  font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--sub);
+  padding: 6px 10px; border-bottom: 1px solid var(--line);
+  position: sticky; top: var(--content-top-inset, 0px); background: var(--content-bg); z-index: 2;
+}
+.bx-list-sortbtn { appearance: none; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; padding: 0; cursor: pointer; letter-spacing: inherit; text-transform: inherit; }
+.bx-list-sortbtn.on { color: var(--ink); }
+.bx-caret { margin-left: 4px; font-size: 8px; }
+.bx-list-row {
+  appearance: none; border: 0; border-bottom: 1px solid var(--line); background: transparent; cursor: pointer;
+  text-align: left; font: inherit; color: var(--ink); padding: 8px 10px; width: 100%;
+}
+.bx-list-row:hover { background: var(--line); }
+.bx-list-thumb { position: relative; display: block; height: 38px; width: 26px; box-shadow: 0 0 0 1px var(--line); overflow: hidden; background: var(--line); }
+.bx-lc { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12.5px; }
+.bx-lc:first-of-type { font-weight: 600; font-size: 13.5px; }
+.bx-lc-mono { font-family: var(--font-mono); font-size: 11px; color: var(--sub); }
+.bx-lc-right { text-align: right; }
+
+/* ── Tweaks panel ───────────────────────────────────────────────────────── */
+.twk-panel {
+  position: fixed; z-index: 1200;
+  width: 280px; max-height: calc(100vh - 32px);
+  display: flex; flex-direction: column;
+  background: var(--chrome); color: var(--ink);
+  -webkit-backdrop-filter: blur(24px) saturate(160%); backdrop-filter: blur(24px) saturate(160%);
+  border: .5px solid var(--line); border-radius: 14px;
+  box-shadow: 0 1px 0 rgba(255,255,255,.25) inset, 0 12px 40px rgba(0,0,0,.18);
+  font: 11.5px/1.4 var(--font-sans); overflow: hidden;
+}
+.twk-hd {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 8px 10px 14px; cursor: move; user-select: none;
+  border-bottom: .5px solid var(--line); flex-shrink: 0;
+}
+.twk-hd b { font-size: 12px; font-weight: 600; letter-spacing: .01em; }
+/* Phones / landscape phones: pin the panel to the top so its ✕ is always reachable (!important
+   beats the inline drag anchors). */
+@media (max-width: 1024px), (max-height: 500px) {
+  .twk-panel { left: 10px; right: 10px !important; top: max(10px, env(safe-area-inset-top)); bottom: auto !important; width: auto; max-height: calc(100dvh - 20px); }
+  .twk-hd { cursor: default; }
+}
+.twk-x {
+  appearance: none; border: 0; background: transparent; color: var(--sub);
+  width: 22px; height: 22px; border-radius: 6px; cursor: pointer; font-size: 13px;
+  display: inline-flex; align-items: center; justify-content: center; line-height: 1;
+}
+.twk-x:hover { background: color-mix(in oklab, var(--ink) 8%, transparent); color: var(--ink); }
+.twk-body { padding: 4px 14px 14px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; overflow-x: hidden; min-height: 0; scrollbar-width: thin; }
+.twk-sect { font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--sub); padding-top: 10px; }
+.twk-sect:first-child { padding-top: 4px; }
+.twk-row { display: flex; flex-direction: column; gap: 5px; }
+.twk-row-h { flex-direction: row !important; align-items: center; justify-content: space-between; gap: 10px; }
+.twk-lbl { display: flex; justify-content: space-between; align-items: baseline; }
+.twk-lbl > span:first-child { font-weight: 500; color: var(--ink); }
+.twk-val { color: var(--sub); font-variant-numeric: tabular-nums; }
+.twk-foot { font-size: 10px; color: var(--sub); padding-top: 6px; }
+.twk-seg { position: relative; display: flex; padding: 2px; border-radius: 8px; background: color-mix(in oklab, var(--ink) 8%, transparent); user-select: none; }
+.twk-seg-thumb {
+  position: absolute; top: 2px; bottom: 2px; border-radius: 6px; background: var(--chrome);
+  box-shadow: 0 1px 3px rgba(0,0,0,.12); border: .5px solid color-mix(in oklab, var(--ink) 12%, transparent);
+  transition: left .15s cubic-bezier(.3,.7,.4,1), width .15s; pointer-events: none;
+}
+.twk-seg button {
+  appearance: none; position: relative; z-index: 1; flex: 1; border: 0; background: transparent; color: var(--ink);
+  font: inherit; font-size: 11px; font-weight: 500; min-height: 22px; border-radius: 6px; cursor: pointer; padding: 4px; line-height: 1.2;
+}
+.twk-slider {
+  -webkit-appearance: none; appearance: none; display: block; width: 100%; height: 4px; margin: 6px 0; border-radius: 999px;
+  background: color-mix(in oklab, var(--ink) 14%, transparent); outline: none; cursor: pointer;
+}
+.twk-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--chrome);
+  border: .5px solid color-mix(in oklab, var(--ink) 20%, transparent); box-shadow: 0 1px 3px rgba(0,0,0,.2);
+}
+.twk-slider::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; border: none; background: var(--chrome); box-shadow: 0 0 0 .5px color-mix(in oklab, var(--ink) 20%, transparent), 0 1px 3px rgba(0,0,0,.2); }
+.twk-toggle { flex-shrink: 0; position: relative; width: 32px; height: 18px; border: 0; border-radius: 999px; padding: 0; cursor: pointer; background: color-mix(in oklab, var(--ink) 20%, transparent); transition: background .15s; }
+.twk-toggle[data-on="1"] { background: #34c759; }
+.twk-toggle i { position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; pointer-events: none; font-style: normal; box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: transform .15s; }
+.twk-toggle[data-on="1"] i { transform: translateX(14px); }
