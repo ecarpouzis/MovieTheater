@@ -20,6 +20,9 @@ import useArcadeFilters from "./useArcadeFilters";
 import { parseSystems, toggleSystem, SYSTEM_PARAM } from "./arcadeSystemFilter";
 import useGridWindow from "../../hooks/useGridWindow";
 import usePagedCatalog from "../../hooks/usePagedCatalog";
+import CatalogHost, { AVAILABLE_VIEWS } from "../../catalog/CatalogHost";
+import { createArcadeSource, serverSort } from "../../catalog/sources/arcadeSource";
+import { readCatalogDefaults, resolveViewState } from "../../catalog/state/useCatalogView";
 import "./ArcadePage.css";
 import usePolling from "../../hooks/usePolling";
 
@@ -202,13 +205,41 @@ export default function ArcadePage({ userData }) {
       maxPlayers: p.get("players") || "",
       variant: p.get("variant") || "",
       genre: p.get("genre") || "",
-      sort: p.get("sort") || "",
+      // The catalog switcher names the default order "alpha"; the server knows it as "".
+      sort: serverSort(p.get("sort")),
       search: p.get("q") || "",
       ra: p.get("ra") || "",
     };
   }, [location.search]);
   const filterKey = JSON.stringify(filters);
   filtersRef.current = filters;
+
+  // ── The catalog views (Wall / List / Extended / Shelves / Newspaper / Directory) over the SAME filters. ──
+  // The lobby grid below stays exactly as it is (the host's `grid` override); the other views page the
+  // source themselves, so the lobby's pump and letter strip only run while the grid is on screen. The
+  // modal opener is defined further down — the source reaches it through a ref.
+  const openGameRef = useRef(null);
+  const catalogSource = useMemo(
+    () => createArcadeSource({
+      filters,
+      filterKey,
+      onOpen: (card) => openGameRef.current?.(card),
+      onFilter: (param, value) => {
+        const params = new URLSearchParams(location.search);
+        params.set(param, value);
+        params.delete("game");
+        history.push({ pathname: "/arcade", search: `?${params.toString()}` });
+      },
+    }),
+    // history is a stable reference in react-router v5; location.search is what the filters came from.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filters, filterKey]
+  );
+  const catalogView = useMemo(
+    () => resolveViewState(location.search, readCatalogDefaults("arcade"), catalogSource, AVAILABLE_VIEWS).view,
+    [location.search, catalogSource]
+  );
+  const gridActive = catalogView === "grid";
 
   // ── The catalog pump (hooks/usePagedCatalog.js — extracted from this page) ─────────────────────
   // fetchPage reads the filters through the ref so its identity never changes; 501 = the arcade
@@ -218,6 +249,7 @@ export default function ArcadePage({ userData }) {
   } = usePagedCatalog({
     resetKey: filterKey,
     pageSize: PAGE_SIZE,
+    enabled: gridActive,
     fetchPage: (skip, pageSize, signal) =>
       MovieAPI.getArcadeGames({ ...filtersRef.current, skip, pageSize }, signal)
         .then((r) => {
@@ -306,7 +338,7 @@ export default function ArcadePage({ userData }) {
   // A–Z bucket offsets for the pager. Only under the alphabetical sort — under any other sort the
   // letter buckets aren't contiguous, so the strip shows page numbers and needs nothing from here.
   useEffect(() => {
-    if (filters.sort) { setLetters(null); return undefined; }
+    if (filters.sort || !gridActive) { setLetters(null); return undefined; }
     let alive = true;
     MovieAPI.getArcadeGameLetters(filters)
       .then((r) => (r.ok ? r.json() : null))
@@ -541,6 +573,7 @@ export default function ArcadePage({ userData }) {
     setModalCard({ key: vid, game });
     pushGameParam(vid);
   };
+  openGameRef.current = openGame;
 
   if (unconfiguredRef.current) {
     return <div style={{ padding: 48 }}><Empty description="The arcade isn't set up on this server yet." /></div>;
@@ -637,7 +670,7 @@ export default function ArcadePage({ userData }) {
             </span>
           </div>
 
-          {!firstLoaded ? (
+          <CatalogHost section="arcade" source={catalogSource} overrides={{ grid: !firstLoaded ? (
             /* Skeleton cards in the real grid layout — the site-wide first-paint convention (movies,
                boardgames), instead of a lone spinner. */
             <div className="arcade-grid" aria-hidden="true">
@@ -688,7 +721,7 @@ export default function ArcadePage({ userData }) {
                 onJump={jumpTo}
               />
             </>
-          )}
+          ) }} />
         </section>
       </div>
 
