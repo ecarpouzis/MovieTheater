@@ -9,10 +9,13 @@
  */
 import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import { Redirect, Route, Switch, useLocation } from "react-router-dom";
+import { SectionIndexTabs } from "../../catalog/rail/SectionIndexRail";
 import { readTweaks, subscribeTweaks } from "../../catalog/tweaks/useTweaks";
 import CardGridSkeleton from "../../Components/CardGridSkeleton";
+import useBooksIndex from "../../hooks/useBooksIndex";
+import useIsMobile from "../../hooks/useIsMobile";
 import { setMediaUser, useMediaToken } from "./booksMedia";
-import { booksSection, booksViewLabel, isKidAccount, kidAllowedPath, type BooksMe } from "./booksNav";
+import { booksNavViews, booksSection, isKidAccount, kidAllowedPath, type BooksMe } from "./booksNav";
 import { applyBooksTheme, siteTheme } from "./booksTheme";
 import BrowsePage from "./BrowsePage";
 import { readEntityParams } from "./openEntity";
@@ -22,6 +25,10 @@ import "./css/books-backdrops.css";
 
 const ItemModal = lazy(() => import("./ItemModal"));
 const SeriesModal = lazy(() => import("./SeriesModal"));
+const ExplorePage = lazy(() => import("./ExplorePage"));
+const ShelfPage = lazy(() => import("./ShelfPage"));
+const NovelsPage = lazy(() => import("./NovelsPage"));
+const KidsPage = lazy(() => import("./KidsPage"));
 
 export interface BooksPageProps {
   userData: (BooksMe & { username?: string | null }) | null | undefined;
@@ -42,10 +49,11 @@ function Coming({ what }: { what: string }) {
   return <Plate title={what}>This part of the Books section is on its way — the browse, the modals and the readers land first.</Plate>;
 }
 
-export default function BooksPage({ userData }: BooksPageProps) {
+export default function BooksPage({ userData, setUserData }: BooksPageProps) {
   const location = useLocation();
   const rootRef = useRef<HTMLDivElement>(null);
   const username = userData?.username ?? "";
+  const isMobile = useIsMobile();
 
   // The media plane wants to know who is signed in (a different user re-mints); kick the mint early.
   useEffect(() => { setMediaUser(username || null); }, [username]);
@@ -66,6 +74,8 @@ export default function BooksPage({ userData }: BooksPageProps) {
   const entity = useMemo(() => readEntityParams(location.search), [location.search]);
   const section = booksSection(location.pathname);
   const kid = isKidAccount(userData);
+  // The phone's section tabs (the rail is behind the hamburger there); the counts are asked for on phones only.
+  const counts = useBooksIndex(userData, isMobile);
 
   if (userData === undefined) return <div className="books-section"><CardGridSkeleton count={12} /></div>;
 
@@ -87,18 +97,24 @@ export default function BooksPage({ userData }: BooksPageProps) {
 
   return (
     <div className="books-section" ref={rootRef} data-books-section={section} data-kids-style={userData.booksKidsStyle ?? undefined}>
-      <Switch>
-        <Route path="/books/read/:itemId"><Coming what="Reader" /></Route>
-        <Route path="/books/explore"><Coming what={booksViewLabel("explore")} /></Route>
-        <Route path="/books/shelf"><Coming what={booksViewLabel("shelf")} /></Route>
-        <Route path="/books/novels"><Coming what={booksViewLabel("novels")} /></Route>
-        <Route path="/books/kids"><Coming what={booksViewLabel("kids")} /></Route>
-        <Route path="/books/admin">{userData.isAdmin ? <Coming what="Admin" /> : <Redirect to="/books" />}</Route>
-        <Route path="/books"><BrowsePage username={username} isKid={kid} /></Route>
-      </Switch>
+      {isMobile && section !== "read" && (
+        <SectionIndexTabs views={booksNavViews(userData, counts)} activeKey={section} ariaLabel="Books sections" className="books-tabs" />
+      )}
+      <Suspense fallback={<CardGridSkeleton count={12} />}>
+        <Switch>
+          <Route path="/books/read/:itemId"><Coming what="Reader" /></Route>
+          <Route path="/books/explore">{kid ? <Redirect to="/books/kids" /> : <ExplorePage />}</Route>
+          <Route path="/books/shelf"><ShelfPage /></Route>
+          <Route path="/books/novels">{kid ? <Redirect to="/books/kids" /> : <NovelsPage username={username} />}</Route>
+          <Route path="/books/kids"><KidsPage userData={userData} setUserData={setUserData} /></Route>
+          <Route path="/books/admin">{userData.isAdmin ? <Coming what="Admin" /> : <Redirect to="/books" />}</Route>
+          <Route path="/books"><BrowsePage username={username} isKid={kid} /></Route>
+        </Switch>
+      </Suspense>
       <Suspense fallback={null}>
         {entity.item != null && <ItemModal itemId={entity.item} isKid={kid} />}
-        {entity.series != null && <SeriesModal seriesId={entity.series} isKid={kid} />}
+        {/* On the kids page `?series=` is a SHELF (the kids' single-series view), never the series modal. */}
+        {entity.series != null && section !== "kids" && <SeriesModal seriesId={entity.series} isKid={kid} />}
       </Suspense>
     </div>
   );

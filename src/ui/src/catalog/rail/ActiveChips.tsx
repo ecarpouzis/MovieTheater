@@ -17,11 +17,11 @@ export interface ActiveChipsProps {
 }
 
 export function chipLabel(def: FacetDef, value: FacetValue, facets?: Record<string, FacetOptionRow[]>): string {
-  if (def.valueType === "number") {
+  if (def.valueType === "number" || def.labelOf) {
     const row = (facets?.[def.key] ?? []).find((o) => facetEquals(o.value, value));
     if (row) return row.label;
   }
-  return String(value);
+  return def.labelOf ? def.labelOf(value) : String(value);
 }
 
 export default function ActiveChips({ spec, state, actions, facets, onSave }: ActiveChipsProps) {

@@ -33,6 +33,10 @@ export interface FacetDef {
   appliesTo?: "all" | "groups";
   /** false → counts are shown but the facet cannot filter (no include/exclude controls). */
   filterable?: boolean;
+  /** false → include only; the rail offers no "−" (the section's API cannot exclude on this facet). */
+  excludable?: boolean;
+  /** How a raw value reads on a chip when the loaded option list does not carry it (a composite "category:value"). */
+  labelOf?: (value: FacetValue) => string;
 }
 
 export interface FacetFlagDef {

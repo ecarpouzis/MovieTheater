@@ -30,6 +30,7 @@ export const bk = {
   novels: (params: unknown) => ["books", "novels", params] as const,
   novelFacets: () => ["books", "novel-facets"] as const,
   kidsBrowse: () => ["books", "kids-browse"] as const,
+  kidsSeries: (id: number) => ["books", "kids-series", id] as const,
   epubSpine: (id: number) => ["books", "epub-spine", id] as const,
   epubToc: (id: number) => ["books", "epub-toc", id] as const,
   admin: (...parts: (string | number)[]) => ["books", "admin", ...parts] as const,
@@ -86,6 +87,11 @@ export async function invalidateAfter(qc: QueryClient, event: BooksEvent): Promi
         bump(qc, ["books", "explore"]),
         bump(qc, ["books", "explore-kids"]),
         bump(qc, bk.novelFacets()),
+        bump(qc, ["books", "novels"]),
+        bump(qc, ["books", "novels-count"]),
+        bump(qc, ["books", "kids-browse"]),
+        bump(qc, ["books", "kids-series"]),
+        bump(qc, ["books", "count"]),
         bump(qc, bk.index()),
       ]);
       return;

@@ -1,0 +1,116 @@
+/* ── The Shelf (/books/shelf) ───────────────────────────────────────────────
+   The standalone's bookshelf, on the section tokens (--books-* through .books-surface's aliases). */
+.bookshelf { display: flex; flex-direction: column; gap: 20px; max-width: 1500px; margin: 0 auto; padding: 18px var(--catalog-pager-bleed, 18px) 0; }
+.bs-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.bs-eyebrow { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--sub); }
+.bs-title { font-family: var(--font-display); font-weight: var(--display-weight); letter-spacing: var(--display-tracking); font-size: 46px; line-height: 1; margin: 6px 0 0; color: var(--ink); }
+.bs-head-right { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; justify-content: flex-end; }
+.bs-headcount { font-family: var(--font-mono); font-size: 12px; color: var(--ink); }
+.bs-headcount b { font-size: 16px; }
+.bs-headcount-sub { color: var(--sub); }
+.bs-scale { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--sub); }
+.bs-scale input { width: 110px; accent-color: var(--ink); }
+.bs-note { padding: 40px 0; text-align: center; color: var(--sub); font-size: 14px; }
+
+.bs-segbar {
+  display: flex; align-items: center; gap: 2px; flex-wrap: nowrap; padding: 5px; border-radius: 999px; background: var(--bg);
+  box-shadow: inset 0 0 0 1px var(--line); align-self: flex-start; max-width: 100%;
+  overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+}
+.bs-segbar::-webkit-scrollbar { display: none; }
+.bs-seg {
+  display: inline-flex; align-items: center; gap: 8px; appearance: none; border: 0; background: transparent; color: var(--sub);
+  font: inherit; font-size: 13.5px; font-weight: 500; padding: 9px 16px; border-radius: 999px; cursor: pointer;
+  transition: background 0.15s, color 0.15s; flex: 0 0 auto; white-space: nowrap;
+}
+.bs-seg:hover { color: var(--ink); }
+.bs-seg.on { background: var(--ink); color: var(--bg); }
+.bs-seg-num { font-family: var(--font-mono); font-size: 10.5px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: var(--line); color: var(--sub); }
+.bs-seg.on .bs-seg-num { background: rgba(255, 255, 255, 0.22); color: var(--bg); }
+
+.bs-grid { display: flex; flex-direction: column; gap: 12px; padding: 8px; margin: -8px; }
+.bs-grid-note { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--sub); }
+
+/* Section headers (Series vs single issues) */
+.bs-section { display: flex; flex-direction: column; gap: 13px; }
+.bs-sec-head { display: flex; align-items: center; gap: 10px; }
+.bs-sec-label { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--sub); }
+.bs-sec-count { font-family: var(--font-mono); font-size: 10px; color: var(--sub); background: var(--line); border-radius: 999px; padding: 1px 8px; }
+.bs-sec-rule { flex: 1 1 auto; height: 1px; background: var(--line); }
+
+/* Item cards */
+.bs-cards { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 24px 12px; padding: 4px 0; }
+.bs-card { display: flex; flex-direction: column; flex: 0 0 auto; cursor: pointer; }
+.bs-card-cover { position: relative; border-radius: 6px; overflow: hidden; background: var(--line); box-shadow: 0 0 0 1px var(--line), 0 1px 3px rgba(0, 0, 0, 0.05); transition: box-shadow 0.25s, transform 0.25s; }
+.bs-card:hover .bs-card-cover { transform: translateY(-3px); box-shadow: 0 0 0 1px var(--line), 0 14px 28px rgba(0, 0, 0, 0.18); }
+.bs-card-meta { padding: 8px 2px 0; font-size: 11.5px; line-height: 1.35; }
+.bs-card-title { font-family: var(--font-display); font-weight: var(--display-weight); letter-spacing: var(--display-tracking); font-size: 14px; line-height: 1.15; color: var(--ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.bs-card-author { font-family: var(--font-mono); font-size: 10px; color: var(--sub); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 1px; }
+.bs-card-date { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; color: var(--sub); margin-top: 2px; }
+.bs-card-remove {
+  position: absolute; top: 6px; right: 6px; z-index: 3; padding: 0; width: 24px; height: 24px; border-radius: 50%; border: 0; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; background: rgba(34, 37, 43, 0.6); color: #fff; backdrop-filter: blur(2px);
+  opacity: 0; transition: opacity 0.12s, background 0.12s, transform 0.12s;
+}
+.bs-card:hover .bs-card-remove, .bs-card:focus-within .bs-card-remove { opacity: 1; }
+.bs-card-remove:hover { background: rgba(18, 20, 24, 0.88); transform: scale(1.08); }
+@media (pointer: coarse) { .bs-card-remove { opacity: 1; } }
+
+/* The compact 10-star control */
+.bs-stars { display: inline-flex; align-items: center; gap: 1px; }
+.bs-star { appearance: none; border: 0; background: transparent; padding: 0 0.5px; cursor: pointer; font-size: 13px; line-height: 1; color: color-mix(in oklab, var(--ink) 20%, transparent); transition: color 0.1s, transform 0.1s; }
+.bs-star:hover { transform: scale(1.2); }
+.bs-star.on { color: #f5c542; }
+.bs-card-rate { margin-top: 5px; }
+.bs-card-rate .bs-star, .bs-tile-rate .bs-star { font-size: 12px; }
+
+/* Series tiles */
+.bs-series-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--bs-tile-min, 168px), 1fr)); gap: 18px 14px; align-items: start; }
+.bs-tile { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.bs-tile-cover { position: relative; width: 100%; aspect-ratio: 2 / 3; padding: 0; border: 0; border-radius: 8px; overflow: hidden; cursor: pointer; background: var(--line); box-shadow: 0 1px 5px rgba(0, 0, 0, 0.18); transition: box-shadow 0.14s, transform 0.14s; }
+.bs-tile-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.bs-tile-cover:hover { box-shadow: 0 4px 14px rgba(0, 0, 0, 0.26); transform: translateY(-2px); }
+.bs-tile.on .bs-tile-cover { box-shadow: 0 0 0 2px var(--ink), 0 4px 14px rgba(0, 0, 0, 0.22); }
+.bs-tile-prog { position: absolute; left: 6px; bottom: 6px; font-family: var(--font-mono); font-size: 10px; font-weight: 600; color: #fff; background: rgba(0, 0, 0, 0.66); border-radius: 999px; padding: 2px 7px; }
+.bs-tile-prog.done { background: rgba(46, 158, 91, 0.95); }
+.bs-tile-count { position: absolute; right: 0; bottom: 0; font-family: var(--font-mono); font-size: 10px; font-weight: 600; line-height: 1; color: #fff; background: rgba(12, 14, 18, 0.74); padding: 3px 7px 4px; border-top-left-radius: 7px; pointer-events: none; }
+.bs-tile-name { appearance: none; border: 0; background: transparent; padding: 0; cursor: pointer; text-align: left; font-family: var(--font-display); font-weight: var(--display-weight); letter-spacing: var(--display-tracking); font-size: 14px; line-height: 1.2; color: var(--ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.bs-tile-name:hover { text-decoration: underline; }
+.bs-tile-sub { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 7px; font-family: var(--font-mono); font-size: 10px; color: var(--sub); }
+.bs-tile-manage { margin-top: 2px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; appearance: none; border: 1px solid var(--line); background: transparent; color: var(--sub); font: inherit; font-size: 11px; font-weight: 500; padding: 5px 9px; border-radius: 999px; cursor: pointer; transition: background 0.12s, color 0.12s, border-color 0.12s; }
+.bs-tile-manage:hover { color: var(--ink); border-color: var(--ink); }
+.bs-tile-manage.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.bs-tile-chev { display: inline-flex; transition: transform 0.15s; }
+
+/* The inline drawer */
+.bs-drawer { grid-column: 1 / -1; border: 1px solid var(--ink); border-radius: 14px; background: var(--bg); overflow: hidden; box-shadow: 0 8px 26px rgba(0, 0, 0, 0.12); }
+.bs-drawer-head { display: flex; align-items: center; gap: 12px; padding: 11px 15px; border-bottom: 1px solid var(--line); }
+.bs-drawer-title { appearance: none; border: 0; background: transparent; padding: 0; cursor: pointer; text-align: left; font-family: var(--font-display); font-weight: var(--display-weight); letter-spacing: var(--display-tracking); font-size: 17px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bs-drawer-title:hover { text-decoration: underline; }
+.bs-drawer-sub { flex: 0 0 auto; font-family: var(--font-mono); font-size: 11px; color: var(--sub); }
+.bs-drawer-close { margin-left: auto; flex: 0 0 auto; appearance: none; border: 1px solid var(--line); background: transparent; color: var(--sub); width: 27px; height: 27px; border-radius: 7px; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; justify-content: center; transition: color 0.12s, border-color 0.12s; }
+.bs-drawer-close:hover { color: var(--ink); border-color: var(--ink); }
+.bs-drawer-issues { display: flex; flex-direction: column; max-height: 440px; overflow-y: auto; scrollbar-width: thin; }
+.bs-issues-note { padding: 14px; font-size: 13px; color: var(--sub); }
+.bs-issue { display: flex; align-items: center; gap: 12px; padding: 8px 15px; }
+.bs-issue + .bs-issue { border-top: 1px solid color-mix(in oklab, var(--line) 60%, transparent); }
+.bs-issue-check { flex: 0 0 auto; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; padding: 0; border-radius: 6px; cursor: pointer; border: 1px solid var(--line); background: transparent; color: transparent; transition: background 0.12s, color 0.12s, border-color 0.12s; }
+.bs-issue-check.on { background: #2e9e5b; border-color: #2e9e5b; color: #fff; }
+.bs-issue-cover { position: relative; flex: 0 0 auto; width: 34px; height: 51px; padding: 0; border: 0; border-radius: 4px; overflow: hidden; cursor: pointer; background: var(--line); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18); }
+.bs-issue-title { flex: 1 1 auto; min-width: 0; display: flex; align-items: baseline; gap: 8px; appearance: none; border: 0; background: transparent; padding: 0; cursor: pointer; text-align: left; color: var(--ink); font: inherit; font-size: 13.5px; }
+.bs-issue-title:hover .bs-issue-name { text-decoration: underline; }
+.bs-issue-num { flex: 0 0 auto; font-family: var(--font-mono); font-size: 11.5px; color: var(--sub); }
+.bs-issue-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bs-issue-rate { flex: 0 0 auto; }
+.bs-issue-date { flex: 0 0 auto; width: 58px; text-align: right; font-family: var(--font-mono); font-size: 11px; color: var(--sub); }
+
+/* Empty */
+.bs-empty { display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; padding: 70px 24px; border: 1px dashed var(--line); border-radius: 16px; color: var(--sub); }
+.bs-empty-mark { font-size: 40px; opacity: 0.6; }
+.bs-empty-text { display: flex; flex-direction: column; gap: 6px; max-width: 440px; font-size: 13.5px; line-height: 1.5; }
+.bs-empty-title { font-family: var(--font-display); font-weight: var(--display-weight); letter-spacing: var(--display-tracking); font-size: 20px; color: var(--ink); }
+
+@media (max-width: 640px) {
+  .bs-title { font-size: 34px; }
+  .bs-issue-date { display: none; }
+}

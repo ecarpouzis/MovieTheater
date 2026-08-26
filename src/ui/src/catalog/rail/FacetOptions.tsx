@@ -34,6 +34,7 @@ function TileImage({ src, hue, alt }: { src?: string | null; hue: number; alt: s
 export default function FacetOptions({ def, options, selected, excluded, onToggle, loadOptions, max = 9 }: FacetOptionsProps) {
   const dynamic = !!def.dynamic && !!loadOptions;
   const filterable = def.filterable !== false;
+  const excludable = def.excludable !== false;
   const [q, setQ] = useState("");
   const [moreItems, setMoreItems] = useState<FacetOptionRow[]>([]);
   const [hasMore, setHasMore] = useState(dynamic);
@@ -95,7 +96,7 @@ export default function FacetOptions({ def, options, selected, excluded, onToggl
 
   const extras: FacetOptionRow[] = [...selected, ...excluded]
     .filter((v) => !base.some((o) => hasFacetValue([o.value], v)))
-    .map((v) => ({ value: v, label: String(v), count: 0 }));
+    .map((v) => ({ value: v, label: def.labelOf ? def.labelOf(v) : String(v), count: 0 }));
 
   const shown = [...extras, ...base].sort((a, b) => (isActive(a.value) ? 0 : 1) - (isActive(b.value) ? 0 : 1));
   const showSearch = dynamic || options.length > max;
@@ -128,7 +129,7 @@ export default function FacetOptions({ def, options, selected, excluded, onToggl
               {filterable && (
                 <span className="bx-opt-acts">
                   <button type="button" className="bx-opt-inc" aria-label={`Include ${o.label}`} aria-pressed={on} onClick={() => onToggle(def.key, o.value, "inc")}>+</button>
-                  <button type="button" className="bx-opt-exc" aria-label={`Exclude ${o.label}`} aria-pressed={ex} onClick={() => onToggle(def.key, o.value, "exc")}>−</button>
+                  {excludable && <button type="button" className="bx-opt-exc" aria-label={`Exclude ${o.label}`} aria-pressed={ex} onClick={() => onToggle(def.key, o.value, "exc")}>−</button>}
                 </span>
               )}
             </div>

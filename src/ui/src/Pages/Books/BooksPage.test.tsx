@@ -87,11 +87,12 @@ describe("Books/BooksPage — the gate, the pinning, the modals", () => {
 
   it("pins a kid account to Kids and lets it read its shelf", async () => {
     renderAt("/books?view=wall", { ...member, booksMaturityCeiling: 0 });
-    expect(await screen.findByText("Kids")).toBeInTheDocument();
+    // The Kids page is a lazy chunk: its first import under vitest can take more than the 1 s default wait.
+    await waitFor(() => expect(document.querySelector(".kids-shell")).toBeInTheDocument(), { timeout: 15000 });
     cleanup();
     renderAt("/books/shelf", { ...member, booksMaturityCeiling: 0 });
-    expect(await screen.findByText("Shelf")).toBeInTheDocument();
-  });
+    expect(await screen.findByRole("heading", { level: 1, name: "Shelf" }, { timeout: 15000 })).toBeInTheDocument();
+  }, 40000);
 
   it("a member gets the browse with the catalog's pill row", async () => {
     const { container } = renderAt("/books", member);
@@ -122,7 +123,7 @@ describe("Books/BooksPage — the gate, the pinning, the modals", () => {
     expect(await screen.findByText("On your list")).toBeInTheDocument();
     expect(screen.getByText("7/10")).toBeInTheDocument();
     expect(screen.getAllByText("Single Issue").length).toBeGreaterThanOrEqual(1); // the kind row and the stats line both carry the format
-  });
+  }, 20000);
 
   it("?series= cold-loads the series modal: head, run, rating, progress ticks, the caller's notes", async () => {
     renderAt("/books?series=9", member);
@@ -133,5 +134,5 @@ describe("Books/BooksPage — the gate, the pinning, the modals", () => {
     expect(screen.getByDisplayValue("keep")).toBeInTheDocument();
     expect(screen.getByText("Hellboy #8")).toBeInTheDocument();
     expect(screen.getByText("On your list")).toBeInTheDocument();
-  });
+  }, 20000);
 });

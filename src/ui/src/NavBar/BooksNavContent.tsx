@@ -10,6 +10,7 @@ import useBooksIndex from "../hooks/useBooksIndex";
 import useIsMobile from "../hooks/useIsMobile";
 import { booksNavGroups, booksSection, isKidAccount, type BooksMe } from "../Pages/Books/booksNav";
 import BooksSiderRail from "../Pages/Books/BooksSiderRail";
+import NovelsSiderRail from "../Pages/Books/NovelsSiderRail";
 import { NavUserBlock } from "./navShared";
 
 interface BooksNavContentProps {
@@ -26,12 +27,14 @@ export default function BooksNavContent({ userData, onUserLoggedIn, setSettingsM
   const groups = booksNavGroups(userData, counts);
   const section = booksSection(location.pathname);
   const member = !!userData?.booksAccess && !!userData?.hasPassword;
-  const showRail = member && !isMobile && section === "browse" && !isKidAccount(userData);
+  const railable = member && !isMobile && !isKidAccount(userData);
+  const username = String(userData?.username ?? "");
   return (
     <>
       <NavUserBlock userData={userData} onUserLoggedIn={onUserLoggedIn} setSettingsModalOpen={setSettingsModalOpen} setAdminModalOpen={setAdminModalOpen} />
       <SectionIndexRail groups={groups} activeKey={section} ariaLabel="Books sections" />
-      {showRail && <BooksSiderRail username={String(userData?.username ?? "")} />}
+      {railable && section === "browse" && <BooksSiderRail username={username} />}
+      {railable && section === "novels" && <NovelsSiderRail username={username} />}
     </>
   );
 }
