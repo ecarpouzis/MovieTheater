@@ -7,6 +7,8 @@ import { bucketsFor } from "../../Components/CatalogPager";
 import LoadFailure from "../../Components/LoadFailure";
 import useCachedResource from "../../hooks/useCachedResource";
 import CardGridSkeleton from "../../Components/CardGridSkeleton";
+import CatalogHost from "../../catalog/CatalogHost";
+import { createBoardgamesSource, facetsMap } from "../../catalog/sources/boardgamesSource";
 
 function parseJsonArray(json) {
   if (!json) return null;
@@ -67,6 +69,15 @@ function BoardGames({ userData }) {
   const allGames = catalog.data ?? [];
   const setAllGames = catalog.setData;
   const loading = catalog.loading;
+  // Publisher / family / designer / category / mechanic per game (parsed server-side out of the BGG
+  // links) — the catalog views' group modes. Cached like the catalog; the grid never needs it.
+  const facets = useCachedResource("boardgames_facets_v1", (signal) =>
+    fetch("/API/Boardgames/Facets", { signal })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => (Array.isArray(d?.items) ? d.items : null))
+      .catch(() => null)
+  );
+  const facetsById = useMemo(() => facetsMap(facets.data), [facets.data]);
   const history = useHistory();
   const location = useLocation();
 
@@ -98,7 +109,10 @@ function BoardGames({ userData }) {
   const playersParam = params.get("players");
   const ageParam = params.get("age");
   const timeParam = params.get("time");
-  const sortParam = params.get("sort");
+  // `name` is the catalog switcher's name for the default order (the server's $orderby=name) — the
+  // same list as no sort at all, letters included.
+  const rawSort = params.get("sort");
+  const sortParam = rawSort && rawSort !== "name" ? rawSort : null;
 
   const showExpansions = userData?.showBoardgameExpansions ?? false;
   // Names what makes the grid a DIFFERENT list — the card list's window resets on it.
@@ -206,6 +220,13 @@ function BoardGames({ userData }) {
     history.replace({ pathname: "/boardgames", search: search ? `?${search}` : "" });
   }, [history]);
 
+  // The catalog views (Wall / List / Extended / Shelves / Newspaper / Directory) over the SAME list
+  // the grid shows; the grid itself stays BoardGameCardList (the host's `grid` override).
+  const source = useMemo(
+    () => createBoardgamesSource({ games: displayGames, expansionMap, facetsById, listKey, currentSort: sortParam ?? "name", onOpen: handleOpenGame }),
+    [displayGames, expansionMap, facetsById, listKey, sortParam, handleOpenGame]
+  );
+
   const handleGameUpdated = (rawData) => {
     const updated = normalizeGame(rawData);
     setAllGames((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
@@ -220,19 +241,21 @@ function BoardGames({ userData }) {
     return <LoadFailure message="Couldn't load the board games." onRetry={catalog.refresh} />;
   }
 
+  const grid = displayGames.length === 0 ? (
+    <Empty description="No board games match." />
+  ) : (
+    <BoardGameCardList
+      games={displayGames}
+      expansionMap={expansionMap}
+      onGameClick={handleOpenGame}
+      listKey={listKey}
+      letters={letters}
+    />
+  );
+
   return (
     <>
-      {displayGames.length === 0 ? (
-        <Empty description="No board games match." />
-      ) : (
-        <BoardGameCardList
-          games={displayGames}
-          expansionMap={expansionMap}
-          onGameClick={handleOpenGame}
-          listKey={listKey}
-          letters={letters}
-        />
-      )}
+      <CatalogHost section="boardgames" source={source} overrides={{ grid }} />
       <BoardGameModal
         gameId={selectedGameId}
         open={isModalVisible}

@@ -16,6 +16,9 @@
 import { MovieAPI } from "../../MovieAPI";
 import type { CardGroup, CardItem, CardKind, CardPage, CatalogSource, DirectoryNode, GroupPage, GroupSpec, LetterBucket, ListColumn, SortSpec, ViewMode } from "../types";
 import { cardKey } from "../types";
+import { hueOf } from "./hue";
+
+export { hueOf };
 
 /** The slice of `useMovieSearch`'s search object the adapter reads. */
 export interface MovieSearch {
@@ -128,13 +131,6 @@ function yearOf(iso: string | null | undefined): number | undefined {
   if (!iso) return undefined;
   const y = Number(String(iso).slice(0, 4));
   return Number.isFinite(y) && y > 0 ? y : undefined;
-}
-
-/** A stable 0–359 hue from the title — shelf spines and placeholder tints before the art lands. */
-export function hueOf(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i += 1) h = (h * 31 + s.charCodeAt(i)) >>> 0;
-  return h % 360;
 }
 
 function kindOf(row: MovieCardRow): CardKind {
