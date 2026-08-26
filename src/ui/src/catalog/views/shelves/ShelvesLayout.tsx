@@ -284,10 +284,13 @@ export default function ShelvesLayout({ slots, extras, scale, noun, onOpen, onOp
     };
     const unloadBand = (band: HTMLElement) => { band.querySelectorAll<HTMLImageElement>("img[src]").forEach((img) => { if (img.dataset.src) img.removeAttribute("src"); }); };
 
+    let loadRetryTimer: ReturnType<typeof setTimeout> | undefined;
+    let disposed = false;
     const scheduleLoad = () => {
-      if (loadRaf) return;
+      if (loadRaf || disposed) return;
       loadRaf = requestAnimationFrame(() => {
         loadRaf = 0;
+        if (disposed) return;
         const scRect = vpRect();
         const vm = vScrolling ? V_ACTIVE : V_MARGIN;
         const hm = vScrolling ? H_ACTIVE : H_MARGIN;
@@ -302,7 +305,14 @@ export default function ShelvesLayout({ slots, extras, scale, noun, onOpen, onOp
             loadShelfVisible(sb, hm);
           });
         });
-        if (!allRendered && loadRetries < 40) { loadRetries += 1; setTimeout(scheduleLoad, 64); } else loadRetries = 0;
+        // a17: a band whose data has not mounted yet (clientWidth 0) re-runs the load pass shortly.
+        // The timer is TRACKED so an unmount (a query change swapping the layout) cannot leave a
+        // trailing pass touching disconnected nodes — the cover stall came from exactly that.
+        if (!allRendered && loadRetries < 40) {
+          loadRetries += 1;
+          if (loadRetryTimer) clearTimeout(loadRetryTimer);
+          loadRetryTimer = setTimeout(() => { loadRetryTimer = undefined; if (!disposed) scheduleLoad(); }, 64);
+        } else loadRetries = 0;
       });
     };
 
@@ -460,6 +470,8 @@ export default function ShelvesLayout({ slots, extras, scale, noun, onOpen, onOp
       scrollTimers.forEach((t) => clearTimeout(t)); retryTimers.forEach((t) => clearTimeout(t));
       if (vSettleTimer) clearTimeout(vSettleTimer);
       rafIds.forEach((id) => cancelAnimationFrame(id));
+      disposed = true;
+      if (loadRetryTimer) clearTimeout(loadRetryTimer);
       if (loadRaf) cancelAnimationFrame(loadRaf);
       verticalIO?.disconnect(); spyIO?.disconnect(); bandRO?.disconnect();
       autoExposed.forEach((bk) => hideBook(bk));

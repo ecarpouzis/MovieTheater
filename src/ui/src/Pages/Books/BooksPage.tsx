@@ -29,6 +29,7 @@ const ExplorePage = lazy(() => import("./ExplorePage"));
 const ShelfPage = lazy(() => import("./ShelfPage"));
 const NovelsPage = lazy(() => import("./NovelsPage"));
 const KidsPage = lazy(() => import("./KidsPage"));
+const ReadPage = lazy(() => import("./read/ReadPage"));
 
 export interface BooksPageProps {
   userData: (BooksMe & { username?: string | null }) | null | undefined;
@@ -71,9 +72,13 @@ export default function BooksPage({ userData, setUserData }: BooksPageProps) {
     return () => mo.disconnect();
   }, [themeTick]);
 
-  const entity = useMemo(() => readEntityParams(location.search), [location.search]);
   const section = booksSection(location.pathname);
   const kid = isKidAccount(userData);
+  // The reader is pushed OVER the page it came from (`state.from`): that page stays mounted
+  // underneath (its scroll, its bands, its modal) with visibility hidden, and Close is one Back.
+  const reading = section === "read";
+  const under = (reading && (location.state as { from?: typeof location } | undefined)?.from) || location;
+  const entity = useMemo(() => readEntityParams(reading ? "" : location.search), [reading, location.search]);
   // The phone's section tabs (the rail is behind the hamburger there); the counts are asked for on phones only.
   const counts = useBooksIndex(userData, isMobile);
 
@@ -100,17 +105,24 @@ export default function BooksPage({ userData, setUserData }: BooksPageProps) {
       {isMobile && section !== "read" && (
         <SectionIndexTabs views={booksNavViews(userData, counts)} activeKey={section} ariaLabel="Books sections" className="books-tabs" />
       )}
-      <Suspense fallback={<CardGridSkeleton count={12} />}>
-        <Switch>
-          <Route path="/books/read/:itemId"><Coming what="Reader" /></Route>
-          <Route path="/books/explore">{kid ? <Redirect to="/books/kids" /> : <ExplorePage />}</Route>
-          <Route path="/books/shelf"><ShelfPage /></Route>
-          <Route path="/books/novels">{kid ? <Redirect to="/books/kids" /> : <NovelsPage username={username} />}</Route>
-          <Route path="/books/kids"><KidsPage userData={userData} setUserData={setUserData} /></Route>
-          <Route path="/books/admin">{userData.isAdmin ? <Coming what="Admin" /> : <Redirect to="/books" />}</Route>
-          <Route path="/books"><BrowsePage username={username} isKid={kid} /></Route>
-        </Switch>
-      </Suspense>
+      <div className="books-under" style={reading ? { visibility: "hidden" } : undefined} aria-hidden={reading || undefined}>
+        <Suspense fallback={<CardGridSkeleton count={12} />}>
+          <Switch location={under}>
+            <Route path="/books/read/:itemId"><div /></Route>
+            <Route path="/books/explore">{kid ? <Redirect to="/books/kids" /> : <ExplorePage />}</Route>
+            <Route path="/books/shelf"><ShelfPage /></Route>
+            <Route path="/books/novels">{kid ? <Redirect to="/books/kids" /> : <NovelsPage username={username} />}</Route>
+            <Route path="/books/kids"><KidsPage userData={userData} setUserData={setUserData} /></Route>
+            <Route path="/books/admin">{userData.isAdmin ? <Coming what="Admin" /> : <Redirect to="/books" />}</Route>
+            <Route path="/books"><BrowsePage username={username} isKid={kid} /></Route>
+          </Switch>
+        </Suspense>
+      </div>
+      {reading && (
+        <Suspense fallback={<div className="books-reader" />}>
+          <Route path="/books/read/:itemId"><ReadPage userData={userData} /></Route>
+        </Suspense>
+      )}
       <Suspense fallback={null}>
         {entity.item != null && <ItemModal itemId={entity.item} isKid={kid} />}
         {/* On the kids page `?series=` is a SHELF (the kids' single-series view), never the series modal. */}

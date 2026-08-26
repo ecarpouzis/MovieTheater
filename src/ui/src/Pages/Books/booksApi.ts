@@ -185,6 +185,17 @@ export interface NovelsPage { total: number; skip: number; top: number; items: I
 export interface NovelFacetOption { value: string; count: number }
 export interface NovelFacets { authors: NovelFacetOption[]; series: NovelFacetOption[]; publishers: NovelFacetOption[]; decades: NovelFacetOption[]; tags: NovelFacetOption[] }
 
+/** Bubble Zoom: a text block on a page, every number normalized 0–1 to the page's size. */
+export interface TextRegion {
+  x: number; y: number; width: number; height: number;
+  hitX: number; hitY: number; hitWidth: number; hitHeight: number;
+  pol: number; glyphs: number;
+}
+export interface EpubSpineItem { index: number; href: string; title?: string | null }
+export interface EpubSpine { id: number; count: number; fixedLayout: boolean; direction: string | null; items: EpubSpineItem[] }
+/** `spineIndex` -1 = a heading whose target is not in the reading order. */
+export interface EpubTocEntry { label: string; spineIndex: number; anchor?: string | null; depth: number }
+
 export interface KidsBrowseResponse { totalGroups: number; groups: BrowseGroupItem[]; covers: Record<string, string | null> }
 export interface KidsSeriesItems { series: { id: number; name: string; rating: number | null }; total: number; skip: number; top: number; items: ItemSummary[]; covers: Record<string, string | null> }
 
@@ -293,7 +304,7 @@ export const fetchPrev = (id: number, mediaToken?: string | null) =>
   request<{ via: string; item: ItemDetail } | null>(`/items/${id}/prev${qs({ mediaToken })}`);
 
 export const fetchTextRegions = (id: number, page: number, signal?: AbortSignal) =>
-  request<{ regions: unknown[] }>(`/items/${id}/pages/${page}/text-regions`, undefined, signal);
+  request<{ regions: TextRegion[] }>(`/items/${id}/pages/${page}/text-regions`, undefined, signal);
 
 export const thumbsBatch = (ids: number[], mediaToken?: string | null) =>
   request<Record<string, { url: string; etag: string | null } | null>>("/thumbs/batch", { ...json({ ids, mediaToken }), method: "POST" });
@@ -310,8 +321,8 @@ export const fetchFolder = (id: number, p: { kind?: ItemKind; skip?: number; top
 
 export const fetchFolderParent = (id: number) => request<{ parentId: number | null; parent: FolderNode | null }>(`/folders/${id}/parent`);
 
-export const fetchEpubSpine = (id: number) => request<{ id: number; count: number; fixedLayout: boolean; direction: string | null; items: unknown[] }>(`/epub/${id}/spine`);
-export const fetchEpubToc = (id: number) => request<{ id: number; count: number; entries: unknown[] }>(`/epub/${id}/toc`);
+export const fetchEpubSpine = (id: number, signal?: AbortSignal) => request<EpubSpine>(`/epub/${id}/spine`, undefined, signal);
+export const fetchEpubToc = (id: number, signal?: AbortSignal) => request<{ id: number; count: number; entries: EpubTocEntry[] }>(`/epub/${id}/toc`, undefined, signal);
 export async function fetchEpubChapterHtml(id: number, spineIndex: number, signal?: AbortSignal): Promise<string> {
   const url = `${BOOKS_API}/epub/${id}/chapters/${spineIndex}`;
   const r = await fetch(url, { credentials: "same-origin", signal });
@@ -324,8 +335,9 @@ export const fetchMediaToken = () => request<MediaTokenResponse>("/media-token")
 // ── positions (the ONE progress API) ──
 
 export const getPosition = (id: number, signal?: AbortSignal) => request<ReadingPosition>(`/positions/${id}`, undefined, signal);
-export const putPosition = (id: number, body: { lastPage?: number; lastSpineItemIndex?: number; lastScrollPercent?: number }) =>
-  request<ReadingPosition>(`/positions/${id}`, json(body));
+/** `keepalive` lets a page-unload flush outlive the document (the readers' last position). */
+export const putPosition = (id: number, body: { lastPage?: number; lastSpineItemIndex?: number; lastScrollPercent?: number }, opts?: { keepalive?: boolean }) =>
+  request<ReadingPosition>(`/positions/${id}`, { ...json(body), keepalive: opts?.keepalive });
 /** An empty body: "I opened it" — surfaces the item on Last opened without moving the page. */
 export const touchPosition = (id: number) => request<ReadingPosition>(`/positions/${id}`, json({}));
 /** `lastPage: -1` is the ONLY Finished signal. */

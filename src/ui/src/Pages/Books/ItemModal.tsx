@@ -91,6 +91,8 @@ export default function ItemModal({ itemId, isKid = false }: ItemModalProps) {
 
   const close = () => closeEntity(history, location);
   const go = (href: string) => history.push(href);
+  // The reader opens OVER this page (background location): Close inside it comes back here.
+  const read = () => history.push(readHref(itemId), { from: location });
   const openItem = (item: ItemSummary) => openEntity(history, location, { kind: "item", id: item.id });
   const facet = (token: string, value: string | number) => (isKid ? undefined : () => go(facetHref(token, value)));
 
@@ -115,7 +117,7 @@ export default function ItemModal({ itemId, isKid = false }: ItemModalProps) {
               <ModalCover detail={detail} hue={hue} />
             </div>
             <div className="cm-actions">
-              <button type="button" className="cm-btn cm-btn-primary" onClick={() => go(readHref(itemId))}>
+              <button type="button" className="cm-btn cm-btn-primary" onClick={read}>
                 <Icon d={ICON.book} /><span>Read now</span>
               </button>
               <button type="button" className={`cm-btn${state.wantToRead ? " on" : ""}`} onClick={state.toggleWant} data-testid="item-want">
