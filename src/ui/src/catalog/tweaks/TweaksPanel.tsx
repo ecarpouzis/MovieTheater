@@ -125,11 +125,15 @@ export default function TweaksPanel({ view, tweaks, coverScale, onCoverScale, on
         {extras && extras.length > 0 && (
           <>
             <div className="twk-sect">This section</div>
-            {extras.map((x) => (
-              <TweakRow key={x.key} label={x.label}>
-                <Seg options={x.options} value={tweaks.extras[x.key] ?? x.options[0]?.value ?? ""} onChange={(v) => onExtra(x.key, v)} />
-              </TweakRow>
-            ))}
+            {extras.map((x) => {
+              const storeKey = x.perView ? `${x.key}:${view}` : x.key;
+              const current = (x.perView ? tweaks.extras[storeKey] : undefined) ?? tweaks.extras[x.key] ?? x.options[0]?.value ?? "";
+              return (
+                <TweakRow key={x.key} label={x.perView ? `${x.label} (this view)` : x.label}>
+                  <Seg options={x.options} value={current} onChange={(v) => onExtra(storeKey, v)} />
+                </TweakRow>
+              );
+            })}
           </>
         )}
         <div className="twk-foot">Remembered on this device for the {view === "shelf" ? "Shelves" : view.charAt(0).toUpperCase() + view.slice(1)} view.</div>

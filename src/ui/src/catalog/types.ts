@@ -175,6 +175,11 @@ export interface TweakExtra {
   key: string;
   label: string;
   options: { value: string; label: string }[];
+  /**
+   * Remembered PER VIEW (stored under `${key}:${view}`, falling back to `key`): a backdrop chosen on
+   * the Shelves need not follow you to the Grid — the standalone's per-layout background memory.
+   */
+  perView?: boolean;
 }
 
 /**

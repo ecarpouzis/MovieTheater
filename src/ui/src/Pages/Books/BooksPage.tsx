@@ -16,7 +16,7 @@ import useBooksIndex from "../../hooks/useBooksIndex";
 import useIsMobile from "../../hooks/useIsMobile";
 import { setMediaUser, useMediaToken } from "./booksMedia";
 import { booksNavViews, booksSection, isKidAccount, kidAllowedPath, type BooksMe } from "./booksNav";
-import { applyBooksTheme, siteTheme } from "./booksTheme";
+import { applyBooksTheme, booksSkinContext, siteTheme } from "./booksTheme";
 import BrowsePage from "./BrowsePage";
 import { readEntityParams } from "./openEntity";
 import "./css/books.css";
@@ -63,15 +63,21 @@ export default function BooksPage({ userData, setUserData }: BooksPageProps) {
 
   // The section skin, from the tweaks store the catalog host writes: applied here to the section
   // root, re-applied on every write and on a light/dark switch (the backdrop family follows it).
+  // The store and view the skin resolves from follow the URL (the browse, Novels and Kids each have
+  // their own store; the backdrop is remembered per view).
   const [themeTick, setThemeTick] = useState(0);
-  useEffect(() => subscribeTweaks("books", () => setThemeTick((t) => t + 1)), []);
   useEffect(() => {
-    const apply = () => applyBooksTheme(rootRef.current, readTweaks("books").extras, siteTheme());
+    const unsubs = ["books", "books-novels", "books-kids"].map((s) => subscribeTweaks(s, () => setThemeTick((t) => t + 1)));
+    return () => { for (const u of unsubs) u(); };
+  }, []);
+  const skinCtx = booksSkinContext(location.pathname, location.search);
+  useEffect(() => {
+    const apply = () => applyBooksTheme(rootRef.current, readTweaks(skinCtx.store).extras, siteTheme(), skinCtx.view);
     apply();
     const mo = new MutationObserver(apply);
     mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
     return () => mo.disconnect();
-  }, [themeTick]);
+  }, [themeTick, skinCtx.store, skinCtx.view]);
 
   const section = booksSection(location.pathname);
   const kid = isKidAccount(userData);

@@ -6,8 +6,9 @@
  */
 import { Modal } from "antd";
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { useLocation } from "react-router-dom";
 import { readTweaks, subscribeTweaks } from "../../catalog/tweaks/useTweaks";
-import { booksThemeStyle, siteTheme } from "./booksTheme";
+import { booksSkinContext, booksThemeStyle, siteTheme } from "./booksTheme";
 
 export interface BooksModalShellProps {
   open: boolean;
@@ -19,10 +20,14 @@ export interface BooksModalShellProps {
 }
 
 function useBooksSkinStyle(): CSSProperties {
-  const [tick, setTick] = useState(0);
-  useEffect(() => subscribeTweaks("books", () => setTick((t) => t + 1)), []);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  return booksThemeStyle(readTweaks("books").extras, siteTheme()) as CSSProperties;
+  const location = useLocation();
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const unsubs = ["books", "books-novels", "books-kids"].map((s) => subscribeTweaks(s, () => setTick((t) => t + 1)));
+    return () => { for (const u of unsubs) u(); };
+  }, []);
+  const ctx = booksSkinContext(location.pathname, location.search);
+  return booksThemeStyle(readTweaks(ctx.store).extras, siteTheme(), ctx.view) as CSSProperties;
 }
 
 export default function BooksModalShell({ open, onClose, ariaLabel, variant = "book", kidsStyle, children }: BooksModalShellProps) {
