@@ -109,7 +109,7 @@ function Thumb({ item, height, onOpen, cap }: { item: CardItem; height: number; 
 }
 
 function Feature({ run, flip, h, noun, onOpen, onOpenGroup }: { run: Run; flip: boolean; h: (n: number) => number; noun: string; onOpen: (i: CardItem) => void; onOpenGroup: ((r: Run) => void) | null }) {
-  const span = run.minY > 0 ? `${run.minY}–${run.maxY}` : "";
+  const span = run.minY > 0 ? (run.minY === run.maxY ? `${run.minY}` : `${run.minY}–${run.maxY}`) : "";
   return (
     <article className={`np-lead${flip ? " np-lead-flip" : ""}`}>
       <div className="np-lead-text">
@@ -153,7 +153,7 @@ function Columns({ runs, h, noun, onOpen, onOpenGroup }: { runs: Run[]; h: (n: n
             <h3 className={`np-col-hl${onOpenGroup ? " bx-clickable" : ""}`} onClick={onOpenGroup ? () => onOpenGroup(run) : undefined}>{run.name}</h3>
             {run.byline && <div className="np-col-by">{run.byline}</div>}
             <div className="np-col-stat">
-              {run.minY > 0 ? `${run.minY}–${run.maxY} · ` : ""}{run.count.toLocaleString()} {run.count === 1 ? noun : `${noun}s`}{run.rating > 0 ? ` · ★${(run.rating / 10).toFixed(1)}` : ""}
+              {run.minY > 0 ? `${run.minY === run.maxY ? run.minY : `${run.minY}–${run.maxY}`} · ` : ""}{run.count.toLocaleString()} {run.count === 1 ? noun : `${noun}s`}{run.rating > 0 ? ` · ★${(run.rating / 10).toFixed(1)}` : ""}
             </div>
             <div className="np-col-covers">{run.items.slice(0, 6).map((b) => <Thumb key={b.key} item={b} height={h(74)} onOpen={onOpen} />)}</div>
             {lede && <p className="np-col-lede">{lede}</p>}

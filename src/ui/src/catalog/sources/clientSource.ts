@@ -63,6 +63,7 @@ interface Grouped {
 }
 
 const collator = new Intl.Collator(undefined, { sensitivity: "base", numeric: true });
+const bracketed = (label: string) => (/^[(\[{]/.test(label) ? 1 : 0);
 
 function withGroupKey(items: CardItem[], key: string): CardItem[] {
   return items.map((i) => (i.groupKey === key ? i : { ...i, groupKey: key }));
@@ -112,7 +113,8 @@ export function createClientSource(o: ClientSourceOptions): CatalogSource {
     const order = grouper?.order ?? "label";
     if (order === "keyDesc") heads.sort((a, b) => collator.compare(b.key, a.key));
     else if (order === "count") heads.sort((a, b) => b.totalItems - a.totalItems || collator.compare(a.label, b.label));
-    else heads.sort((a, b) => collator.compare(a.label, b.label));
+    // Bracketed pseudo-names ("(Unknown)", "[touch]") sort AFTER the real ones, not before them.
+    else heads.sort((a, b) => bracketed(a.label) - bracketed(b.label) || collator.compare(a.label, b.label));
     const result = { heads, byKey };
     groupCache.set(cacheKey, result);
     return result;
