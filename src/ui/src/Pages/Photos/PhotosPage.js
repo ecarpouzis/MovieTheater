@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Switch as AntSwitch } from "antd";
 import { Route, Switch, useHistory, useLocation } from "react-router-dom";
 import { MovieAPI } from "../../MovieAPI";
@@ -17,6 +17,8 @@ import useIsMobile from "../../hooks/useIsMobile";
 import useScrollLockRestore from "../../hooks/useScrollLockRestore";
 import useShowHiddenPhotos from "../../hooks/useShowHiddenPhotos";
 import usePhotosAlbum, { photosNavViews, photosSection, photosViewLabel } from "../../hooks/usePhotosAlbum";
+import CatalogHost from "../../catalog/CatalogHost";
+import { createPhotosSource } from "../../catalog/sources/photosSource";
 import "./PhotosPage.css";
 
 // ── Family photo album (docs/photos-plan.md §4) ─────────────────────────────
@@ -144,6 +146,19 @@ export default function PhotosPage({ userData }) {
   // Bumped after a STRUCTURAL change so the browse lists re-fetch rather than showing a stale answer.
   // Deliberately not bumped by ordinary curation — see `curated` below.
   const [refreshKey, setRefreshKey] = useState(0);
+  // The catalog views' source (the /photos/browse route). Re-made on the hidden toggle and the same
+  // structural refreshes the lists re-fetch on; its open handlers come through a ref set below.
+  const photosOpenRef = useRef(null);
+  const photosSource = useMemo(
+    () => createPhotosSource({
+      includeHidden: showHidden,
+      listKey: `${refreshKey}:${showHidden}`,
+      onOpen: (id) => photosOpenRef.current?.photo(id),
+      onOpenAlbum: (slug) => photosOpenRef.current?.album(slug),
+      onOpenFolder: (path) => photosOpenRef.current?.folder(path),
+    }),
+    [showHidden, refreshKey]
+  );
   // What the last curation write did, for the lists to apply to the cards they are already holding.
   const [patch, setPatch] = useState(null);
   // What the grid currently has laid out, published by PhotoGrid so "Select all" does not have to
@@ -289,6 +304,14 @@ export default function PhotosPage({ userData }) {
     history.replace({ pathname: location.pathname, search: search ? `?${search}` : "" });
   };
   const openAsset = (item) => showAsset(item.id);
+  // The catalog views' way in (the /photos/browse route): the lightbox, an album page, a folder view.
+  // Read through a ref so the source (memoised on the hidden toggle + refresh) never rebuilds for a
+  // fresh handler identity.
+  photosOpenRef.current = {
+    photo: showAsset,
+    album: (slug) => history.push(`/photos/albums/${encodeURIComponent(slug)}`),
+    folder: (path) => history.push(folderUrl(path)),
+  };
 
   const makeAlbumFromFolder = async (path, name) => {
     const response = await MovieAPI.createPhotoAlbum({ title: name || path, fromFolder: path });
@@ -406,6 +429,12 @@ export default function PhotosPage({ userData }) {
       )}
 
       <Switch>
+        <Route path="/photos/browse">
+          {/* Wall / List / Extended / Shelves / Newspaper / Directory over the timeline's own rows
+              (/API/Photos/Browse + BrowseGroups). The timeline route keeps its justified grid. */}
+          <CatalogHost section="photos" source={photosSource} />
+        </Route>
+
         <Route path="/photos/undated">
           <PhotoTimeline
             key={`undated-${refreshKey}-${showHidden}`}

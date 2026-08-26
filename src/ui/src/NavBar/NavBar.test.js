@@ -156,7 +156,7 @@ describe("the family album rail", () => {
     renderNav("/photos", familyMember);
     await waitFor(() => expect(photosNav()).toBeTruthy());
 
-    expect(railLabels()).toEqual(["Timeline", "Albums", "Folders", "People"]);
+    expect(railLabels()).toEqual(["Timeline", "Browse", "Albums", "Folders", "People"]);
     // The movie rail's search panel is what used to be here.
     expect(document.querySelector(".nav-search-tools")).toBeNull();
   });

@@ -129,6 +129,9 @@ export default function usePhotosAlbum({ enabled = true, username } = {}) {
 
 export const PHOTO_VIEWS = [
   { key: "timeline", label: "Timeline", path: "/photos" },
+  // The catalog package's views (Wall / List / Shelves / Newspaper / Directory…) over the same timeline
+  // — the section's second surface; the timeline keeps its justified grid.
+  { key: "browse", label: "Browse", path: "/photos/browse" },
   { key: "undated", label: "Undated", path: "/photos/undated" },
   { key: "albums", label: "Albums", path: "/photos/albums" },
   // §2.12. "Gallery", not "Archive": the shelf's storage meaning is that it is off the timeline, but
@@ -178,6 +181,7 @@ export function photosNavGroups(status, unnamedCount = 0) {
     // applied server-side); the raw asset total quietly promised ~2,900 more than the page ever
     // rendered. The fallback keeps an older server's answer usable.
     { ...VIEW_BY_KEY.timeline, count: status.timelineCount ?? status.assets ?? null },
+    { ...VIEW_BY_KEY.browse, count: null },
     ...(status.undated > 0 ? [{ ...VIEW_BY_KEY.undated, count: status.undated }] : []),
     { ...VIEW_BY_KEY.albums, count: status.albums ?? null },
     // Offered only once there is a Gallery to open (§2.12). A rail entry that leads to an empty room

@@ -463,8 +463,8 @@ describe("the album's index", () => {
     people: 0, albums: 0, pendingDupeGroups: 0, empty: false, dataPlane: true,
   };
 
-  it("always offers the four ways into the album", () => {
-    expect(keys(base)).toEqual(["timeline", "albums", "folders", "people"]);
+  it("always offers the five ways into the album", () => {
+    expect(keys(base)).toEqual(["timeline", "browse", "albums", "folders", "people"]);
   });
 
   it("offers the undated shelf only when something is waiting for a date", () => {
