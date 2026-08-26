@@ -17,6 +17,7 @@ export type CardKind =
   | "comic"
   | "book"
   | "album"
+  | "artist"
   | "game"
   | "boardgame"
   | "photo";

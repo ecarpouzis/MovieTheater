@@ -26,6 +26,8 @@ export interface ClientGrouper extends GroupSpec {
 export interface ClientSort extends SortSpec {
   /** Comparator over cards; omitted = the incoming order (the section sorted already). */
   compare?: (a: CardItem, b: CardItem) => number;
+  /** What the letter strip buckets on under this sort (default: the card's `sortKey`, else its title). */
+  letterKey?: (item: CardItem) => string;
 }
 
 export interface ClientSourceOptions {
@@ -165,7 +167,11 @@ export function createClientSource(o: ClientSourceOptions): CatalogSource {
         }
       : undefined,
     fetchGroupMore: groupable ? fetchGroupMore : undefined,
-    letters: async (sort): Promise<LetterBucket[]> => bucketsFor(sorted(sort), (i: CardItem) => i.sortKey ?? i.title) as LetterBucket[],
+    letters: async (sort): Promise<LetterBucket[]> => {
+      const spec = sorts.find((s) => s.value === sort) ?? sorts[0];
+      const keyOf = spec.letterKey ?? ((i: CardItem) => i.sortKey ?? i.title);
+      return bucketsFor(sorted(spec.value), keyOf) as LetterBucket[];
+    },
     groupLetters: groupable
       ? async (groupBy, sort) => (bucketsFor(grouped(groupBy, sort).heads, (g: CardGroup) => g.label) as LetterBucket[]).map((b) => ({ letter: b.letter, firstIndex: b.offset }))
       : undefined,

@@ -15,13 +15,18 @@ import "./MusicPlaylists.css";
 import { formatDuration } from "../../utils/format";
 import useCachedResource from "../../hooks/useCachedResource";
 import { useDebouncedCallback } from "../../hooks/useDebounce";
+import CatalogHost, { AVAILABLE_VIEWS } from "../../catalog/CatalogHost";
+import { createMusicSource, letterKeyFor, sortRows } from "../../catalog/sources/musicSource";
+import { readCatalogDefaults, resolveViewState } from "../../catalog/state/useCatalogView";
 
 // ── The music library (music-plan.md §2.6) ──────────────────────────────────
 // Catalog strategy: artists (333) and albums (1.3k) load whole, once, and every view/search over
 // them is client-side — the BoardGames pattern for a modest catalog. Songs are the one thing the
 // client can't hold (20k+), so a live q of 2+ chars also asks the server for matching tracks.
-// URL is the state store (arcade convention): ?view=artists|albums, ?q=, ?artist=<id>.
-// Artists is the DEFAULT view — the shelf people browse by is the performer, not the album.
+// URL is the state store (arcade convention): ?tab=artists|albums, ?q=, ?artist=<id>. (`?view=` is the
+// catalog switcher's — Grid/Wall/Shelves… — site-wide; the tab owned that name until 2026-08-26 and a
+// legacy ?view=albums link is rewritten to ?tab= on arrival.)
+// Artists is the DEFAULT tab — the shelf people browse by is the performer, not the album.
 //
 // ── The grid: the WHOLE list, always ────────────────────────────────────────
 // The catalog is already in the browser, so the rendered list is simply all of it and useGridWindow
@@ -98,7 +103,8 @@ function MusicPage({ userData }) {
   const gated = !userData?.hasPassword;
 
   const params = new URLSearchParams(location.search);
-  const view = params.get("view") === "albums" ? "albums" : "artists";
+  const legacyTab = ["artists", "albums"].includes(params.get("view")) && !params.has("tab") ? params.get("view") : null;
+  const view = (params.get("tab") ?? legacyTab) === "albums" ? "albums" : "artists";
   const q = (params.get("q") || "").trim();
   const kind = kindOf(params.get("kind"));
   const shelf = MUSIC_KINDS.find((k) => k.key === kind) || MUSIC_KINDS[0];
@@ -119,6 +125,17 @@ function MusicPage({ userData }) {
   const artists = catalog.data?.artists ?? null;
   const [songResults, setSongResults] = useState(null);
   const [artistDetail, setArtistDetail] = useState(null);
+
+  // A legacy ?view=artists|albums link becomes ?tab= once, in place, so the catalog switcher's own
+  // ?view= (Grid / Wall / Shelves…) can never be read as a tab.
+  useEffect(() => {
+    if (!legacyTab) return;
+    const p = new URLSearchParams(location.search);
+    p.delete("view");
+    if (legacyTab === "albums") p.set("tab", "albums");
+    const search = p.toString() ? `?${p.toString()}` : "";
+    history.replace({ pathname: "/music", search });
+  }, [legacyTab, location.search, history]);
 
   // The open album modal lives in the URL (?album=<id>) — the artist drill-in (?artist=) already
   // did, so the album sheet now closes on Back and survives a reload/share the same way.
@@ -226,24 +243,51 @@ function MusicPage({ userData }) {
   // grid (that view renders the artist's own, short album list), so it idles on an empty list rather
   // than windowing something nobody is looking at.
   const drilledIn = Number.isInteger(artistParam);
-  const gridItems = drilledIn ? NO_ITEMS : view === "artists" ? filteredArtists : filteredAlbums;
+  const listKey = `${kind}:${view}:${lowerQ}`;
 
-  // The whole list, every time. `resetKey` names what makes it a DIFFERENT list — a shelf, a view or
-  // a search — and pointedly not a jump, because a jump does not change the list at all any more.
+  // The catalog views (Wall / List / Extended / Shelves / Newspaper / Directory) over the SAME list
+  // the grid shows, one source per tab; the grid itself stays this page's (the host's `grid`
+  // override). The open handlers are read through a ref so a fresh setParam never rebuilds the source.
+  const openRef = useRef(null);
+  openRef.current = { album: setOpenAlbumId, artist: (id) => setParam("artist", id) };
+  const source = useMemo(
+    () => createMusicSource({
+      tab: view,
+      albums: filteredAlbums,
+      artists: filteredArtists,
+      listKey,
+      onOpenAlbum: (id) => openRef.current?.album(id),
+      onOpenArtist: (id) => openRef.current?.artist(id),
+    }),
+    [view, filteredAlbums, filteredArtists, listKey]
+  );
+  // The catalog owns the sort here (this page never had a sort control): resolve it exactly as the
+  // host will — URL, then the section's remembered default — so the grid and the views agree.
+  const catalogSort = useMemo(
+    () => resolveViewState(location.search, readCatalogDefaults("music"), source, AVAILABLE_VIEWS).sort,
+    [location.search, source]
+  );
+  const gridItems = useMemo(
+    () => (drilledIn ? NO_ITEMS : sortRows(view === "artists" ? filteredArtists : filteredAlbums, view, catalogSort)),
+    [drilledIn, view, filteredArtists, filteredAlbums, catalogSort]
+  );
+
+  // The whole list, every time. `resetKey` names what makes it a DIFFERENT list — a shelf, a tab, a
+  // search or a sort — and pointedly not a jump, because a jump does not change the list at all any more.
   const { hostRef, gridRef, start, end, padTop, padBottom, visibleStart, scrollToIndex } =
-    useGridWindow(gridItems.length, { resetKey: `${kind}:${view}:${lowerQ}` });
+    useGridWindow(gridItems.length, { resetKey: `${listKey}:${catalogSort}` });
   const visibleItems = useMemo(
     () => gridItems.slice(start, end),
     [gridItems, start, end]
   );
 
-  // A–Z buckets over the list as ordered by the server: artists by their sort name, albums by their
-  // ARTIST's (that's what /API/Music/Albums orders on).
+  // A–Z buckets over the list in ITS order: by the artist's sort name under the default album order
+  // (that's what /API/Music/Albums orders on — "Beatles, The" under B), by title under the title
+  // sort, by the artist's sort name on the artists tab; none under a non-alphabetical sort.
+  const letterKey = letterKeyFor(view, catalogSort);
   const letters = useMemo(
-    () => bucketsFor(gridItems, view === "artists"
-      ? (a) => a.sortName || a.name
-      : (a) => a.artistSortName || a.artistName),
-    [gridItems, view]
+    () => (letterKey ? bucketsFor(gridItems, letterKey) : null),
+    [gridItems, letterKey]
   );
 
   // A jump is a SCROLL, not a re-slice. The list is untouched, so the letters before the one tapped
@@ -382,27 +426,38 @@ function MusicPage({ userData }) {
             {shelf.noun[view]}
             <span className="music-count">{gridItems.length}</span>
           </h2>
-          <div ref={hostRef}>
-            {padTop > 0 && <div className="grid-spacer" style={{ height: padTop }} aria-hidden="true" />}
-            <div className={view === "artists" ? "music-artist-grid" : "music-album-grid"} ref={gridRef}>
-              {visibleItems.map((item) => (view === "artists" ? (
-                <ArtistCard key={item.id} artist={item} onOpen={(id) => setParam("artist", id)} />
-              ) : (
-                <AlbumCard key={item.id} album={item} onOpen={setOpenAlbumId} />
-              )))}
-            </div>
-            {padBottom > 0 && <div className="grid-spacer" style={{ height: padBottom }} aria-hidden="true" />}
-          </div>
-          {/* Scrolls the same whole list; the active letter follows the grid as you scroll, and
-              everything before the letter you tapped is still up there. */}
-          <CatalogPager
-            mode="letters"
-            letters={letters}
-            total={gridItems.length}
-            pageSize={PAGE_STEP}
-            currentIndex={visibleStart}
-            onJump={jumpTo}
-            itemNoun={view === "artists" ? "artist" : "album"}
+          <CatalogHost
+            section="music"
+            source={source}
+            overrides={{
+              grid: (
+                <>
+                  <div ref={hostRef}>
+                    {padTop > 0 && <div className="grid-spacer" style={{ height: padTop }} aria-hidden="true" />}
+                    <div className={view === "artists" ? "music-artist-grid" : "music-album-grid"} ref={gridRef}>
+                      {visibleItems.map((item) => (view === "artists" ? (
+                        <ArtistCard key={item.id} artist={item} onOpen={(id) => setParam("artist", id)} />
+                      ) : (
+                        <AlbumCard key={item.id} album={item} onOpen={setOpenAlbumId} />
+                      )))}
+                    </div>
+                    {padBottom > 0 && <div className="grid-spacer" style={{ height: padBottom }} aria-hidden="true" />}
+                  </div>
+                  {/* Scrolls the same whole list; the active letter follows the grid as you scroll, and
+                      everything before the letter you tapped is still up there. Page numbers under a
+                      sort that has no letters. */}
+                  <CatalogPager
+                    mode={letters ? "letters" : "pages"}
+                    letters={letters}
+                    total={gridItems.length}
+                    pageSize={PAGE_STEP}
+                    currentIndex={visibleStart}
+                    onJump={jumpTo}
+                    itemNoun={view === "artists" ? "artist" : "album"}
+                  />
+                </>
+              ),
+            }}
           />
         </section>
       )}

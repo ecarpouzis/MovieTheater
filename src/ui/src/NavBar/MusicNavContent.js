@@ -5,8 +5,9 @@ import { inputLabelStyle, NavUserBlock, useSectionParams } from "./navShared";
 const { Search } = Input;
 
 // Music rail (music-plan.md §2.6): search + the shelf picker + the artists/albums view toggle.
-// Filters live in the URL (?view=, ?q=, ?kind=) — the arcade convention — so back/forward and
-// reloads restore the same view.
+// Filters live in the URL (?tab=, ?q=, ?kind=) — the arcade convention — so back/forward and
+// reloads restore the same list. (`?view=` is the catalog switcher's — Grid/Wall/Shelves… — site-wide;
+// the artists/albums toggle used to own that name and MusicPage still honours a legacy link.)
 
 // The shelves, mirroring MUSIC_KINDS in MusicPage. Music is the empty key because it is the SERVER's
 // default: browsing must work without anything having been classified, so "no ?kind=" is the
@@ -22,14 +23,14 @@ function MusicNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setAd
   const setParam = useSectionParams("/music");
 
   const params = new URLSearchParams(location.search);
-  const activeView = params.get("view") === "albums" ? "albums" : "artists";
+  const activeView = (params.get("tab") ?? params.get("view")) === "albums" ? "albums" : "artists";
   const activeQ = params.get("q") || "";
   const activeKind = SHELVES.some((s) => s.key && s.key === params.get("kind")) ? params.get("kind") : "";
 
-  // A view switch changes what a card even is, and a shelf switch changes whether the drilled-into
+  // A tab switch changes what a card even is, and a shelf switch changes whether the drilled-into
   // artist (or its open album sheet) is on this shelf at all — both leave them behind.
   const updateParam = (key, value) =>
-    setParam(key, value, key === "view" || key === "kind" ? ["artist", "album"] : []);
+    setParam(key, value, key === "tab" || key === "kind" ? ["artist", "album"] : []);
 
   // One pill, two callers: the view toggle and the shelf picker are the same control in the same
   // rail, so they share the shape and only differ in which value they compare against.
@@ -83,10 +84,10 @@ function MusicNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setAd
         <span style={inputLabelStyle}>Browse</span>
         {/* Artists on top — it's the default view, and the rail should read in the same order. */}
         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <button style={pillStyle(activeView === "artists")} onClick={() => updateParam("view", null)}>
+          <button style={pillStyle(activeView === "artists")} onClick={() => updateParam("tab", null)}>
             Artists
           </button>
-          <button style={pillStyle(activeView === "albums")} onClick={() => updateParam("view", "albums")}>
+          <button style={pillStyle(activeView === "albums")} onClick={() => updateParam("tab", "albums")}>
             Albums
           </button>
         </div>
