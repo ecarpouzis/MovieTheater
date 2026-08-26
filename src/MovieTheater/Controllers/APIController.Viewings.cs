@@ -415,7 +415,7 @@ namespace MovieTheater.Controllers
 
         // Keys a user is allowed to set on their own account through the self-service endpoint.
         // Default-deny: anything not listed here (notably the privileged access grants
-        // "CanEditMovies" and "ComicSiteAccess") can only be set via /API/Admin/SetUserSetting,
+        // "CanEditMovies" and "BooksAccess") can only be set via /API/Admin/SetUserSetting,
         // which requires a password-verified config admin. Without this allow-list any logged-in
         // user could grant themselves editor rights by POSTing CanEditMovies=true.
         private static readonly HashSet<string> SelfServiceSettingKeys = new(StringComparer.OrdinalIgnoreCase)

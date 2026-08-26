@@ -1,7 +1,8 @@
 # The catalog package — every view, for every section
 
 `src/ui/src/catalog/` is the one browse surface the site's sections share: seven views (Grid, Wall,
-List, Extended, Shelves, Newspaper, Directory), one band engine, one tweaks panel, one URL contract.
+List, Extended, Shelves, Newspaper, Directory), one band engine, one tweaks panel, one URL contract,
+plus the rail family (facet rail, smart search, chips, saved searches) and the Explore page kit.
 A section adopts it by writing a **source adapter** (how to page its rows and groups, and what to
 offer) and mounting **`CatalogHost`** where its grid lives. Nothing in the package knows what a movie
 or an album is; nothing in a section knows how a shelf is laid out.
@@ -44,6 +45,16 @@ two-phase — heads (`totalGroups` + a page of groups with their first cards) th
   per view per pointer class, hover (lift / zoom / tilt / dim / none), corners, metadata mode, the
   Directory's show-empty, section-registered extras. Applied ONCE by the host (`data-hover` on the
   results root + the shared hover class on every card) so no view can drift from the setting.
+  An extra with `perView: true` (`TweakExtra`) is stored as `<key>:<view>` and read view-first
+  (`extras["backdrop:shelf"] ?? extras["backdrop"]`) — the Books backdrop is remembered per view this
+  way. The panel closes on the X, on Escape, and on a tap outside (a scrim on phones); on phones it
+  sits below the site's fixed top bar (`--content-top-inset`).
+- **Rail state** — the section's filters (`rail/useFacetState.ts`): the URL IS the state — `q`
+  (text), `f=token:value` (include), `x=token:value` (exclude), `y=min-max` (years), `r=0–100`
+  (rating floor), `my=read,want` (personal flags). A `FacetSpec` (`rail/facetSpec.ts`) declares the
+  facets (`token`, `valueType`, `dynamic` long tails, `render` check|swatch|tile, `excludable`,
+  `labelOf`, `appliesTo: "groups"`), the text/years/rating/flags, and two loaders. Saved searches
+  keep the whole query string per section (`catalog.saved.v1:<section>`).
 
 ## The engine (`engine/InfiniteBands.tsx`)
 
@@ -56,6 +67,30 @@ bands, a **resolved scroll root** (`engine/scroller.ts` — `.app-content` on de
 phones). Letter and page jumps go through `jumpToUnit`. The flat views ride the same engine (the
 Wall's true-aspect rows defeat a constant-columns window).
 
+## The rail family (`catalog/rail/`)
+
+- **`FacetRail`** — one body, two skins: `rail` (a desktop sider column: the section mounts it in
+  the site sider, e.g. `BooksSiderRail` through `BooksNavContent`) and `sheet` (a full-page phone
+  sheet the section raises behind a Filters pill; z-index 1350, above the top bar). Sections:
+  facets in spec order (`RailSection` collapsibles, `FacetOptions` with include/exclude controls and
+  the searched, paged long tails via `useFacetOptions`), then Date range, Rating, My lists
+  (`RangeFacets`), then the saved searches. A count badge on the head shows the active filters.
+- **`SmartSearch`** — the rail's input: a text "Search" row first, then facet suggestions with type
+  labels and counts; `token:` prefixes scope the suggestions; arrows/Enter/Escape.
+- **`ActiveChips`** — `search` / `<One>` / `not <one>` / `years` / `rating` / flag chips over the
+  results (`CatalogHost.beforeResults`), Clear all, and Save (a saved search).
+- **`SectionIndexRail`/`SectionIndexTabs`** — the section's own index (Explore / Browse / …) in
+  the sider on desktop and as tabs on phones.
+- Never host the filters inside NavBar's phone drawer: it closes on every `location.search` change.
+
+## The Explore kit (`catalog/explore/`)
+
+`ExploreTab` renders a section's landing from data the SECTION fetches (`data / loading / error` —
+the section owns the query and its keys): a `HeroSpotlight` (a `detail()` hook lets a section
+headline a group instead of an item), `CardRow`s, a `CoverWall`, `CardGrid`s, `RowHead`s with a
+"More" link, `ScoreBadge`s. `mapExplore.ts` maps a section's rows onto `CardItem`s;
+`cards/placeholder.ts` paints hue placeholders for cards without art.
+
 ## Sources (`catalog/sources/`)
 
 | Section | Adapter | Scope | Flat | Groups | Directory |
@@ -65,6 +100,9 @@ Wall's true-aspect rows defeat a constant-columns window).
 | Music | `musicSource.ts` over `clientSource.ts` | the shelf's cached artists/albums, per tab | slices (the catalog sorts) | artist/decade/kind/letter; artists by decade/letter | artists → albums |
 | Arcade | `arcadeSource.ts` | the lobby's filters | `/API/Arcade/Games` (absolute skip) | `/API/Arcade/GameGroups` system/genre/decade | systems |
 | Photos | `photosSource.ts` | the timeline (+ hidden toggle) | `/API/Photos/Browse` | `/API/Photos/BrowseGroups` year/month/album/folder | top-level folders |
+| Books | `booksSource.ts` over `booksOData.ts` | the rail URL (`q/f/x/y/r/my`) | `/API/Books/odata/catalog` | `/API/Books/browse/groups` collection/series/publisher/decade/franchise (+ Items one-per-series) | collection folders (`dir=`) |
+| Novels | `novelsSource.ts` | the Novels rail (include-only facets; adult-romance excluded by default) | `/API/Books/novels` | — | — |
+| Kids | `kidsSource.ts` | one bounded `/API/Books/kids/browse` load | client slices, best/alpha | series (client) | — |
 
 `clientSource.ts` is the in-memory source: bands are slices, heads are walks, letters are buckets,
 all instant and abort-free — for sections that already ship their whole catalog to the browser.
@@ -79,11 +117,19 @@ all instant and abort-free — for sections that already ship their whole catalo
    pump/letters on "the grid is the view on screen" (`resolveViewState(...).view === "grid"`).
 3. If the section has a landing that keys on "no params", exclude the catalog's (`CATALOG_PARAM_KEYS`).
 4. Tests: an envelope test per adapter on recorded fixtures (`*.test.ts` beside it).
-5. Smoke: every view on desktop + phone, a card open keeps `?view=`, Back closes.
+5. Filters (optional): write a `FacetSpec`, mount `FacetRail` in the sider (desktop) and behind a
+   Filters pill as a sheet (phone), pass `useFacetState`'s query into the source's scope key, put
+   `ActiveChips` in `beforeResults`.
+6. Explore (optional): a section query + `ExploreTab` with a `mapExplore` for its rows.
+7. Skin (optional): section-wide tokens written on the section root from the tweaks store; a
+   per-view extra (`perView`) when a look should follow the view.
+8. Smoke: every view on desktop + phone, a card open keeps `?view=`, Back closes; the modal and the
+   tweaks panel must not slide under the fixed top bar on phones (site modals use `zIndex={1500}`).
 
 ## Verification
 
 - `npm run typecheck`, `npm test`, `npm run build` (the same gate the Docker UI image runs).
 - Headless smoke (Playwright from the test-roms skill folder): each section's seven views on the
   desktop and phone profiles, zero page/console errors, a card open from the Wall keeps the view.
-  Password-gated sections (Arcade, Photos) need a password session and are checked by hand.
+  Password-gated sections (Arcade, Photos, Books) need a password session and are checked by hand —
+  Books has a full Playwright suite on a hand-captured session (`.claude/skills/books/e2e/`).
