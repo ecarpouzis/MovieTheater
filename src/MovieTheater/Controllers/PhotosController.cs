@@ -32,7 +32,7 @@ namespace MovieTheater.Controllers
     /// the browser ask for a token per card.</para>
     /// </summary>
     [Authorize(Policy = FamilyAlbumGate.PolicyName)]
-    public class PhotosController : Controller
+    public partial class PhotosController : Controller
     {
         private readonly MovieDb movieDb;
         private readonly MovieTheaterConfiguration config;

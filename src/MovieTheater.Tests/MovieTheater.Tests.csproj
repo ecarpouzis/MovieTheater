@@ -102,6 +102,8 @@
     <!-- The grouped browse core + the A–Z walk it derives letter rails from (BrowseGroupsTests). -->
     <Compile Include="..\MovieTheater\Web\BrowseGroups.cs" Link="Browse\BrowseGroups.cs" />
     <Compile Include="..\MovieTheater\Web\LetterBuckets.cs" Link="Browse\LetterBuckets.cs" />
+    <Compile Include="..\MovieTheater\Web\BoardgameLinkFacets.cs" Link="Browse\BoardgameLinkFacets.cs" />
+    <Compile Include="..\MovieTheater\Arcade\ArcadeGameGroups.cs" Link="Arcade\ArcadeGameGroups.cs" />
     <Compile Include="..\MovieTheater\Photos\FamilyAlbumGate.cs" Link="Photos\FamilyAlbumGate.cs" />
     <!-- The Books gate and the OPDS Basic scheme (merge program R5), for the same reason as the family-album
          gate: the tests run the REAL policy declaration and the real handler; only the UserSettings read and
@@ -109,6 +111,7 @@
     <Compile Include="..\MovieTheater\Books\BooksAccessGate.cs" Link="Books\BooksAccessGate.cs" />
     <Compile Include="..\MovieTheater\Books\OpdsBasicAuthenticationHandler.cs" Link="Books\OpdsBasicAuthenticationHandler.cs" />
     <Compile Include="..\MovieTheater\Controllers\PhotosController.cs" Link="Photos\PhotosController.cs" />
+    <Compile Include="..\MovieTheater\Controllers\PhotosController.Browse.cs" Link="Photos\PhotosController.Browse.cs" />
     <!-- The Phase 1 ingest pipeline, compiled from source for the same reason: the tests must drive
          the SHIPPED walk/metadata/hash/thumb code, not a description of it. Everything here depends
          only on BCL + EF + ImageSharp + MetadataExtractor — the CliFx command that wraps it is

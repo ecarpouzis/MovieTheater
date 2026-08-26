@@ -636,6 +636,9 @@ namespace MovieTheater.Controllers
                     // client's A–Z jump strip has to bucket on the same string the sort used —
                     // "Beatles, The" belongs under B, not T.
                     artistSortName = a.Artist.SortName,
+                    // The artist's kind (null = music; comedy, audiobook, …) so the catalog package can
+                    // group the client-side album list by kind without a second fetch.
+                    artistKind = a.Artist.Kind,
                     hasArt = a.HasArt,
                     dominantColor = a.DominantColor,
                 })

@@ -32,7 +32,7 @@ namespace MovieTheater.Controllers
     /// the creator's browser makes the room and reports its id back via Bind.
     /// </summary>
     [Authorize(Policy = "StreamingUser")]
-    public class ArcadeController : Controller
+    public partial class ArcadeController : Controller
     {
         // URL-safe, unambiguous room codes (RFC 4648 base32 alphabet).
         private const string CodeAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";

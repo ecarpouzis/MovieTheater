@@ -273,6 +273,30 @@ namespace MovieTheater.Controllers
             return movieDb.Boardgames.Include(b => b.ImageDetails);
         }
 
+        /// <summary>
+        /// Publisher / family / designer / category / mechanic per game, read out of the stored BGG links
+        /// (Web.BoardgameLinkFacets) — the group axes the catalog package's grouped views need and that
+        /// are not columns. One slim payload for the whole catalog, cached, so the client-side grouping
+        /// never has to $expand every game's links array.
+        /// </summary>
+        [HttpGet("/API/Boardgames/Facets")]
+        public async Task<IActionResult> BoardgameFacets()
+        {
+            var items = await memoryCache.GetOrCreateAsync("boardgames:facets", async entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(6);
+                var rows = await movieDb.BoardgameExtraDetails.AsNoTracking().Select(d => new { d.BoardgameId, d.LinksJson }).ToListAsync();
+                var list = rows.Select(r =>
+                {
+                    var f = Web.BoardgameLinkFacets.Parse(r.LinksJson);
+                    return new { id = r.BoardgameId, publishers = f.Publishers, families = f.Families, designers = f.Designers, categories = f.Categories, mechanics = f.Mechanics };
+                }).ToList();
+                entry.Size = 256 + list.Count * 400L; // the site's cache is byte-budgeted
+                return list;
+            });
+            return Ok(new { items });
+        }
+
         [HttpGet("/API/SimilarBoardgames")]
         public IActionResult SimilarBoardgames(int id)
         {
