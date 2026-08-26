@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { MemoryRouter, Route } from "react-router-dom";
 import { __resetMediaForTests } from "./booksMedia";
@@ -51,6 +51,7 @@ function mockFetch() {
     if (url.includes("/browse/groups/series/9/items")) return ok({ items: [summary(8)], total: 1 });
     if (url.includes("/odata/catalog")) return ok([summary(7), summary(8)], { "X-Total-Count": "2" });
     if (url.includes("/library/comic/folders")) return ok([]);
+    if (url.includes("/browse/facets")) return ok({ collections: [{ id: 2, name: "Comics", count: 2 }], series: [{ id: 9, value: "Hellboy", count: 2 }], tags: [{ value: "Horror", count: 2 }], authors: [], artists: [], events: [], franchises: [], publishers: [{ id: 1, name: "Dark Horse", full: "Dark Horse Comics", count: 2 }], decades: [{ value: "1990", count: 2 }] });
     const miss: MockResponse = { ok: false, status: 404, headers: { get: () => null }, json: async () => null, text: async () => "" };
     return miss;
   }));
@@ -96,6 +97,18 @@ describe("Books/BooksPage — the gate, the pinning, the modals", () => {
     const { container } = renderAt("/books", member);
     await waitFor(() => expect(container.querySelector(".bx-host")).toBeInTheDocument());
     expect(container.querySelector(".bx-host")?.getAttribute("data-section")).toBe("books");
+  });
+
+  it("a filtered browse shows the count and one chip per filter — a number facet by its label — and Clear all keeps the catalog params", async () => {
+    renderAt("/books?view=wall&f=tag:Horror&f=series:9&x=tag:Manga", member);
+    await waitFor(() => expect(document.querySelector(".bx-count")?.textContent).toBe("2 comics"));
+    expect(await screen.findByText("Hellboy", { selector: ".bx-chip" })).toBeInTheDocument();
+    expect(screen.getByText("Horror", { selector: ".bx-chip" })).toBeInTheDocument();
+    expect(screen.getByText("Manga", { selector: ".bx-chip-ex" })).toBeInTheDocument();
+    expect(screen.getByText("＋ Save search")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Clear all"));
+    await waitFor(() => expect(document.querySelector(".bx-chiprow")).toBeNull());
+    expect(document.querySelector(".bx-host")?.getAttribute("data-view")).toBe("wall");
   });
 
   it("?item= cold-loads the item modal from the host: title, credits by role, the event, the synopsis leg, the marks", async () => {

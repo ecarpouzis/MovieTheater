@@ -1,0 +1,211 @@
+/* ── The rail family ────────────────────────────────────────────────────────────────────────────
+   Ported from the standalone's browse.css, on the package's four tokens (--ink / --sub / --line /
+   --bg) + --font-mono. Two surfaces bind them:
+     .bx-rail-on-sider  the section sider (dark, feature-tinted): ink = the sider's strong text
+     .bx-rail-surface   a page surface (the phone sheet, the chip row): ink = the page's text
+   A section may rebind either (Books binds --books-* under .books-section). */
+
+.bx-rail-on-sider {
+  --ink: var(--sidebar-text-strong, #fff);
+  --sub: var(--sidebar-text-muted, rgba(255, 255, 255, 0.6));
+  --line: var(--sidebar-border, rgba(255, 255, 255, 0.12));
+  --bg: var(--sidebar-bg, #1c1c1c);
+  --bx-danger: #e57373;
+  color: var(--ink);
+}
+.bx-rail-surface {
+  --ink: var(--text-primary);
+  --sub: var(--text-secondary);
+  --line: var(--card-border);
+  --bg: var(--card-surface);
+  --bx-danger: #b71c1c;
+  color: var(--ink);
+}
+
+/* ── Smart search ── */
+.bx-search { position: relative; display: flex; align-items: center; }
+.bx-search-icon { position: absolute; left: 11px; color: var(--sub); display: flex; pointer-events: none; }
+.bx-search-input {
+  appearance: none; width: 100%; border: 1px solid var(--line); background: var(--bg);
+  color: var(--ink); font: inherit; font-size: 13px; padding: 8px 12px 8px 32px; border-radius: 8px;
+  transition: border-color .15s;
+}
+.bx-search-input::placeholder { color: var(--sub); }
+.bx-search-input:focus { outline: none; border-color: var(--ink); }
+.bx-search-input::-webkit-search-cancel-button { appearance: none; }
+.bx-search-big .bx-search-input { font-size: 15px; padding: 13px 16px 13px 42px; border-radius: 10px; }
+.bx-search-big .bx-search-icon { left: 15px; }
+.bx-suggest {
+  position: absolute; top: calc(100% + 5px); left: 0; right: 0; z-index: 80;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 5px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, .18); max-height: 320px; overflow-y: auto;
+}
+.bx-sugg {
+  appearance: none; border: 0; background: transparent; width: 100%;
+  display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 7px;
+  cursor: pointer; font: inherit; color: var(--ink); text-align: left;
+}
+.bx-sugg.on, .bx-sugg:hover { background: var(--line); }
+.bx-sugg-type {
+  flex: 0 0 auto; font-family: var(--font-mono); font-size: 9px; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--bg); background: var(--ink);
+  padding: 3px 7px; border-radius: 5px; min-width: 64px; text-align: center;
+}
+.bx-sugg-val { flex: 1; font-size: 13.5px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bx-sugg-count { flex: 0 0 auto; font-family: var(--font-mono); font-size: 10px; color: var(--sub); }
+
+/* ── Active chips ── */
+.bx-chiprow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px 0 4px; }
+.bx-chip {
+  appearance: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+  border: 1px solid var(--ink); background: var(--ink); color: var(--bg);
+  font: inherit; font-size: 11.5px; font-weight: 500; padding: 4px 9px; border-radius: 999px;
+  max-width: 100%;
+}
+.bx-chip-k { font-family: var(--font-mono); font-size: 8.5px; letter-spacing: .08em; text-transform: uppercase; opacity: .6; }
+.bx-chip-x { font-size: 13px; opacity: .7; margin-left: 1px; }
+.bx-chip:hover .bx-chip-x { opacity: 1; }
+.bx-chip-actions { display: flex; gap: 4px; margin-left: 4px; }
+.bx-chip-clear, .bx-chip-save {
+  appearance: none; border: 1px dashed var(--line); background: transparent; color: var(--sub);
+  font: inherit; font-size: 11px; cursor: pointer; padding: 4px 10px; border-radius: 999px;
+}
+.bx-chip-clear:hover, .bx-chip-save:hover { color: var(--ink); border-color: var(--ink); }
+.bx-chip-ex { border-color: var(--bx-danger); background: var(--bx-danger); color: #fff; }
+.bx-save-prompt { display: flex; gap: 8px; align-items: center; padding: 6px 0; }
+.bx-save-input {
+  flex: 1; min-width: 0; border: 1px solid var(--ink); background: var(--bg); color: var(--ink);
+  font: inherit; font-size: 12px; padding: 4px 8px; border-radius: 6px;
+}
+
+/* ── Facet options ── */
+.bx-facet { display: flex; flex-direction: column; gap: 6px; }
+.bx-facet-search {
+  appearance: none; border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+  font: inherit; font-size: 12px; padding: 6px 9px; border-radius: 6px;
+}
+.bx-facet-search:focus { outline: none; border-color: var(--ink); }
+.bx-facet-opts { display: flex; flex-direction: column; gap: 1px; max-height: 220px; overflow-y: auto; scrollbar-width: thin; }
+.bx-opt {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 7px; border-radius: 6px; font: inherit; color: var(--ink);
+  text-align: left; width: 100%;
+}
+.bx-opt:hover, .bx-opt.on { background: var(--line); }
+.bx-opt-box {
+  flex: 0 0 auto; width: 16px; height: 16px; border-radius: 4px;
+  border: 1px solid var(--sub); display: flex; align-items: center; justify-content: center;
+  font-size: 11px; color: var(--bg);
+}
+.bx-opt.on .bx-opt-box { background: var(--ink); border-color: var(--ink); }
+.bx-opt-swatch { flex: 0 0 auto; width: 12px; height: 12px; border-radius: 3px; }
+.bx-opt-label { flex: 1; font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.bx-opt-count { flex: 0 0 auto; font-family: var(--font-mono); font-size: 10px; color: var(--sub); }
+.bx-opt-acts { flex: 0 0 auto; display: flex; gap: 3px; margin-left: 2px; }
+.bx-opt-inc, .bx-opt-exc {
+  appearance: none; cursor: pointer; flex: 0 0 auto;
+  width: 20px; height: 20px; padding: 0; border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--line); background: var(--bg); color: var(--sub);
+  font: inherit; font-size: 14px; font-weight: 700; line-height: 1;
+}
+.bx-opt-inc:hover { border-color: var(--ink); color: var(--ink); }
+.bx-opt-exc:hover { border-color: var(--bx-danger); color: var(--bx-danger); }
+.bx-opt-inc[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.bx-opt-exc[aria-pressed="true"] { background: var(--bx-danger); border-color: var(--bx-danger); color: #fff; }
+.bx-opt.ex .bx-opt-label { text-decoration: line-through; color: var(--sub); }
+.bx-opt.ex .bx-opt-box { background: var(--bx-danger); border-color: var(--bx-danger); }
+.bx-opt-collection { gap: 10px; padding: 5px 7px; }
+.bx-opt-cover { flex: 0 0 auto; width: 28px; height: 28px; border-radius: 6px; object-fit: cover; background: var(--line); }
+.bx-opt-collection.on { box-shadow: inset 0 0 0 1.5px var(--ink); }
+.bx-opt-collection.on .bx-opt-label { font-weight: 600; }
+.bx-opt-collection.ex { box-shadow: inset 0 0 0 1.5px var(--bx-danger); }
+.bx-opt-collection.ex .bx-opt-label { font-weight: 600; }
+.bx-facet-empty, .bx-facet-loading { font-size: 12px; color: var(--sub); padding: 8px 7px; }
+
+/* Date / rating / flags */
+.bx-date { display: flex; flex-direction: column; gap: 8px; }
+.bx-date-vals { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 12px; }
+.bx-date-sliders { display: flex; flex-direction: column; gap: 2px; }
+.bx-date-sliders input { width: 100%; accent-color: var(--ink); cursor: pointer; }
+.bx-date-decades, .bx-rating { display: flex; flex-wrap: wrap; gap: 4px; }
+.bx-mini {
+  appearance: none; border: 1px solid var(--line); background: transparent; color: var(--sub);
+  font: inherit; font-size: 11px; cursor: pointer; padding: 4px 9px; border-radius: 999px;
+}
+.bx-mini:hover { color: var(--ink); border-color: var(--ink); }
+.bx-mini.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+/* ── Saved searches ── */
+.bx-rail-saved { display: flex; flex-direction: column; gap: 4px; }
+.bx-rail-saved-empty { font-size: 11.5px; color: var(--sub); line-height: 1.4; }
+.bx-saved-pill { display: flex; align-items: center; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+.bx-saved-apply {
+  flex: 1; min-width: 0; appearance: none; border: 0; background: transparent; cursor: pointer;
+  color: var(--ink); font: inherit; font-size: 12px; font-weight: 500; text-align: left; padding: 7px 9px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.bx-saved-apply:hover { background: var(--line); }
+.bx-saved-del { appearance: none; border: 0; background: transparent; cursor: pointer; color: var(--sub); font-size: 15px; padding: 0 10px; align-self: stretch; }
+.bx-saved-del:hover { color: var(--ink); }
+.bx-rail-savebtn { align-self: flex-start; margin-top: 2px; }
+
+/* ── The rail column ── */
+.bx-railbar {
+  display: flex; flex-direction: column; gap: 14px;
+  padding: 12px 12px 18px; color: var(--ink);
+}
+.bx-rail-on-sider .bx-railbar { border-top: 1px solid var(--line); margin-top: 4px; }
+.bx-rail-top { display: flex; align-items: center; justify-content: space-between; margin: -2px 0 0; }
+.bx-rail-toptitle {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--sub);
+}
+.bx-rail-topbadge, .bx-rsec-badge {
+  font-family: var(--font-mono); font-size: 9.5px; background: var(--ink); color: var(--bg);
+  border-radius: 999px; min-width: 16px; height: 16px; padding: 0 4px;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.bx-rail-collapse {
+  appearance: none; border: 1px solid var(--line); background: transparent; color: var(--sub);
+  cursor: pointer; width: 26px; height: 26px; border-radius: 6px;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.bx-rail-collapse:hover { color: var(--ink); border-color: var(--ink); }
+.bx-rail-savedwrap { display: flex; flex-direction: column; gap: 7px; }
+.bx-rail-savedhead { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.bx-rail-count { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .04em; color: var(--ink); white-space: nowrap; }
+.bx-rail-label { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--sub); }
+.bx-rail-facets { display: flex; flex-direction: column; }
+.bx-rsec { border-top: 1px solid var(--line); }
+.bx-rsec:last-child { border-bottom: 1px solid var(--line); }
+.bx-rsec-head {
+  appearance: none; border: 0; background: transparent; width: 100%; cursor: pointer;
+  display: flex; align-items: center; gap: 8px; padding: 11px 2px; color: var(--ink); font: inherit;
+}
+.bx-rsec-title { flex: 1; text-align: left; font-size: 13px; font-weight: 600; }
+.bx-rsec-carat { color: var(--sub); transition: transform .15s; }
+.bx-rsec.open .bx-rsec-carat { transform: rotate(180deg); }
+.bx-rsec-body { padding: 0 2px 12px; }
+.bx-rail-note { font-size: 12px; line-height: 1.45; color: var(--sub); padding: 12px 14px 18px; border-top: 1px solid var(--line); margin-top: 4px; }
+
+/* ── The phone sheet: filters own the whole screen, scroll internally, slide down ── */
+.bx-filter-pill {
+  appearance: none; border: 1px solid var(--line); background: transparent; color: var(--ink);
+  cursor: pointer; height: 32px; padding: 0 11px; border-radius: 7px; flex: 0 0 auto;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.bx-filter-pill:hover { background: var(--line); }
+.bx-railbar-sheet {
+  position: fixed; inset: 0; z-index: 1300;
+  overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+  background: var(--bg);
+  padding: max(16px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom));
+  animation: bx-sheet-down .22s ease;
+}
+.bx-rail-backdrop { position: fixed; inset: 0; z-index: 1290; background: rgba(0, 0, 0, .34); animation: bx-fade-in .2s ease; }
+@keyframes bx-sheet-down { from { transform: translateY(-12px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes bx-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .bx-railbar-sheet, .bx-rail-backdrop { animation: none; }
+}

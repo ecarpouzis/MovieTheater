@@ -53,7 +53,7 @@ const SECTIONS = [
   { key: "boardgames", prefix: "/boardgames", icon: boardGamesIcon, title: "Board Games", themeClass: " navbar-boardgames-theme", Content: BoardGameNavContent },
   { key: "music", prefix: "/music", icon: musicIcon, title: "Music", themeClass: " navbar-music-theme", Content: MusicNavContent },
   { key: "photos", prefix: "/photos", icon: photosIcon, title: photosWordmark, themeClass: " navbar-photos-theme", Content: PhotosNavContent },
-  { key: "books", prefix: "/books", icon: comicsIcon, title: "Books", themeClass: " navbar-books-theme", siderWidth: 232, Content: BooksNavContent },
+  { key: "books", prefix: "/books", icon: comicsIcon, title: "Books", themeClass: " navbar-books-theme", siderWidth: 280, Content: BooksNavContent },
   { key: "movies", icon: movieTheaterIcon, title: "Movie Theater", themeClass: "" },
 ];
 

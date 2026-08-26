@@ -19,6 +19,7 @@ export const RATING_PRESETS = [
 export function booksFacetSpec(identity: string): FacetSpec {
   return {
     identity: `books:comic:${identity}`,
+    noun: "comics",
     text: true,
     years: { decadesKey: "decades" },
     rating: { presets: RATING_PRESETS },

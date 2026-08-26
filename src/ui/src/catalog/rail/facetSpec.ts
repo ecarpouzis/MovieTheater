@@ -46,6 +46,8 @@ export interface FacetFlagDef {
 export interface FacetSpec {
   /** Memo key for the loaded options (per section + user facts). */
   identity: string;
+  /** What a result is called in the count ("comics", "titles"); defaults to "results". */
+  noun?: string;
   facets: FacetDef[];
   /** Offer free-text search (`q`). */
   text?: boolean;

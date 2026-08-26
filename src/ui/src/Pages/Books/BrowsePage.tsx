@@ -1,23 +1,31 @@
 /**
  * `/books` — the section root: the seven catalog views over the Books source, scoped by the facet
- * state in the URL. The rail's facets, search, chips and saved searches arrive in S2; the URL codec is
- * already the one they will write, so a filtered link works today.
+ * state in the URL. The page owns what sits over the results — the count, the active-filter chips
+ * with Clear all / Save search — and, on phones, the Filters pill that raises the full-page sheet
+ * (the desktop rail lives in the section's sider: `BooksSiderRail`). A kid account browses without
+ * filters; the Directory is a folder navigator and ignores them.
  */
 import { useQuery } from "@tanstack/react-query";
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import CatalogHost from "../../catalog/CatalogHost";
-import type { FacetState } from "../../catalog/rail/facetSpec";
+import ActiveChips from "../../catalog/rail/ActiveChips";
+import FacetRail from "../../catalog/rail/FacetRail";
 import { hasFacetValue } from "../../catalog/rail/facetSpec";
-import { parseFacetState, writeFacetState } from "../../catalog/rail/facetUrl";
+import { savableSearch, useSavedSearches } from "../../catalog/rail/savedSearches";
+import { SaveSearchPrompt } from "../../catalog/rail/SavedSearchesRail";
+import useFacetOptions from "../../catalog/rail/useFacetOptions";
+import useFacetState from "../../catalog/rail/useFacetState";
 import { createBooksSource } from "../../catalog/sources/booksSource";
 import type { CardItem, DirectoryNode } from "../../catalog/types";
+import useIsMobile from "../../hooks/useIsMobile";
 import { fetchFolder } from "./booksApi";
 import { booksFacetSpec } from "./booksFacetSpec";
 import { useMediaToken } from "./booksMedia";
 import { bk } from "./booksQuery";
 import { booksTweakExtras, siteTheme } from "./booksTheme";
 import { openEntity } from "./openEntity";
+import { isDirectoryBrowse, isGroupedBrowse, useBooksResultTotal } from "./useBooksBrowse";
 
 export interface BrowsePageProps {
   username: string;
@@ -32,14 +40,35 @@ function positiveInt(raw: string | null): number | null {
   return Number.isSafeInteger(n) && n > 0 ? n : null;
 }
 
+function FilterGlyph() {
+  return (
+    <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+      <line x1="2" y1="4" x2="14" y2="4" /><line x1="2" y1="8" x2="14" y2="8" /><line x1="2" y1="12" x2="14" y2="12" />
+      <circle cx="6" cy="4" r="1.7" fill="currentColor" stroke="none" /><circle cx="10" cy="8" r="1.7" fill="currentColor" stroke="none" /><circle cx="5" cy="12" r="1.7" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 export default function BrowsePage({ username, epoch = 0, isKid = false }: BrowsePageProps) {
   const history = useHistory();
   const location = useLocation();
+  const isMobile = useIsMobile();
   const spec = useMemo(() => booksFacetSpec(username), [username]);
-  const state = useMemo(() => parseFacetState(location.search, spec), [location.search, spec]);
+  const { state, actions, activeCount } = useFacetState(spec);
   const { epoch: mediaEpoch } = useMediaToken();
   const theme = siteTheme();
   const tweakExtras = useMemo(() => booksTweakExtras(theme), [theme]);
+
+  const directory = isDirectoryBrowse(location.search);
+  const grouped = isGroupedBrowse(location.search);
+  const filtersApply = !isKid && !directory;
+  const facets = useFacetOptions(spec, filtersApply);
+  const total = useBooksResultTotal(state, spec, !directory);
+  const saved = useSavedSearches("books");
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [savePrompt, setSavePrompt] = useState(false);
+  useEffect(() => { if (!isMobile) setSheetOpen(false); }, [isMobile]);
+  useEffect(() => { setSheetOpen(false); }, [location.search]);
 
   // The Directory's "start here" — a "Browse this folder" link carries ?dir=<folderId>.
   const dir = positiveInt(new URLSearchParams(location.search).get("dir"));
@@ -50,21 +79,16 @@ export default function BrowsePage({ username, epoch = 0, isKid = false }: Brows
     return [{ id: String(dir), label: f?.name ?? f?.path ?? `Folder ${dir}`, count: f?.descendantItemCount, hasChildren: (f?.directChildCount ?? 0) > 0 }];
   }, [dir, folder.data]);
 
-  /** Scope in place (a group header): apply a facet or a year range, drop the grouping a level, push. */
+  /** Scope in place (a group header): apply a facet or a year range, drop the grouping a level — one push. */
   const scope = useCallback((patch: { facet?: { key: string; value: string | number }; years?: [number, number]; group?: string }) => {
     if (isKid) return;
-    const next: FacetState = { ...state, include: { ...state.include }, exclude: { ...state.exclude }, flags: { ...state.flags } };
-    if (patch.facet && !hasFacetValue(next.include[patch.facet.key], patch.facet.value)) {
-      next.include[patch.facet.key] = [...(next.include[patch.facet.key] ?? []), patch.facet.value];
-    }
-    if (patch.years) { next.yearMin = patch.years[0]; next.yearMax = patch.years[1]; }
-    const params = new URLSearchParams(location.search);
-    writeFacetState(params, next, spec);
-    if (patch.group) params.set("group", patch.group);
-    params.delete("item");
-    params.delete("series");
-    history.push({ pathname: location.pathname, search: `?${params.toString()}`, state: location.state });
-  }, [state, spec, history, location.pathname, location.search, location.state, isKid]);
+    actions.apply((d) => {
+      if (patch.facet && !hasFacetValue(d.include[patch.facet.key], patch.facet.value)) {
+        d.include[patch.facet.key] = [...(d.include[patch.facet.key] ?? []), patch.facet.value];
+      }
+      if (patch.years) { d.yearMin = patch.years[0]; d.yearMax = patch.years[1]; }
+    }, patch.group ? { group: patch.group } : undefined);
+  }, [actions, isKid]);
 
   const onOpen = useCallback((item: CardItem) => openEntity(history, location, { kind: "item", id: item.id }), [history, location]);
   const onOpenSeries = useCallback((seriesId: number, _label: string, single?: { isSingleIssueSeries: boolean; itemId: number } | null) =>
@@ -75,5 +99,49 @@ export default function BrowsePage({ username, epoch = 0, isKid = false }: Brows
     [state, spec, epoch, mediaEpoch, tweakExtras, onOpen, onOpenSeries, scope],
   );
 
-  return <CatalogHost section="books" source={source} directoryStart={directoryStart} />;
+  const saveCurrent = (name: string) => { saved.save(name, savableSearch(location.search)); setSavePrompt(false); };
+
+  const lead = (
+    <div className="books-browse-lead">
+      {filtersApply && isMobile && (
+        <button type="button" className="bx-filter-pill" onClick={() => setSheetOpen(true)} aria-label="Filters" title="Filters">
+          <FilterGlyph />
+          {activeCount > 0 && <span className="bx-tool-num">{activeCount}</span>}
+        </button>
+      )}
+      {!directory && total.data != null && total.data >= 0 && (
+        <span className="bx-count" aria-live="polite">{total.data.toLocaleString()}<span className="bx-count-of"> {spec.noun ?? "results"}</span></span>
+      )}
+    </div>
+  );
+
+  const chips = filtersApply ? (
+    <div className="bx-rail-surface books-browse-chips">
+      {savePrompt
+        ? <SaveSearchPrompt onSave={saveCurrent} onCancel={() => setSavePrompt(false)} />
+        : <ActiveChips spec={spec} state={state} actions={actions} facets={facets.data} onSave={activeCount > 0 ? () => setSavePrompt(true) : undefined} />}
+    </div>
+  ) : null;
+
+  return (
+    <>
+      {filtersApply && isMobile && (
+        <FacetRail
+          variant="sheet"
+          open={sheetOpen}
+          onClose={() => setSheetOpen(false)}
+          spec={spec}
+          state={state}
+          actions={actions}
+          activeCount={activeCount}
+          facets={facets.data}
+          facetsLoading={facets.isLoading}
+          total={total.data}
+          grouped={grouped}
+          saved={{ list: saved.list, onApply: actions.replaceSearch, onRemove: saved.remove, onSave: (name) => saved.save(name, savableSearch(location.search)) }}
+        />
+      )}
+      <CatalogHost section="books" source={source} directoryStart={directoryStart} leading={lead} beforeResults={chips} />
+    </>
+  );
 }

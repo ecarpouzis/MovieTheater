@@ -253,6 +253,30 @@ describe("the books rail", () => {
     expect(railLabels()).toEqual(["Kids", "Shelf"]);
   });
 
+  it("hangs the filter rail beneath the index on the browse (desktop), not on the shelf", async () => {
+    const origFetch = global.fetch;
+    global.fetch = vi.fn(async (url) => {
+      const body = String(url).includes("/browse/facets")
+        ? { collections: [], series: [], tags: [{ value: "Noir", count: 3 }], authors: [], artists: [], events: [], franchises: [], publishers: [], decades: [] }
+        : [];
+      return { ok: true, status: 200, headers: { get: (k) => (k === "X-Total-Count" ? "42" : null) }, json: async () => body, text: async () => "" };
+    });
+    try {
+      renderNav("/books?f=tag:Noir", booksMember);
+      await waitFor(() => expect(document.querySelector(".bx-rail-on-sider .bx-railbar")).toBeTruthy());
+      expect(screen.getByRole("combobox", { name: "Search" })).toBeInTheDocument();
+      expect(await screen.findByText("42 comics")).toBeInTheDocument();
+      expect(screen.getByText("Tags")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Include Noir" })).toHaveAttribute("aria-pressed", "true");
+      cleanup();
+      renderNav("/books/shelf", booksMember);
+      await waitFor(() => expect(indexNav()).toBeTruthy());
+      expect(document.querySelector(".bx-railbar")).toBeNull();
+    } finally {
+      global.fetch = origFetch;
+    }
+  });
+
   it("draws no index for someone without the grant, and never dispatches the movie search off the movies section", async () => {
     renderNav("/books", userData);
     await waitFor(() => expect(logoutBtn()).toBeTruthy());

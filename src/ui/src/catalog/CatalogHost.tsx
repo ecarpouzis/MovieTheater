@@ -47,9 +47,11 @@ export interface CatalogHostProps {
   className?: string;
   /** Directory view: start drilled into these nodes (a section's "Browse this folder"). */
   directoryStart?: DirectoryNode[];
+  /** Between the switcher row and the results (a section's active-filter chips). */
+  beforeResults?: ReactNode;
 }
 
-export default function CatalogHost({ section, source, overrides, leading, className, directoryStart }: CatalogHostProps) {
+export default function CatalogHost({ section, source, overrides, leading, className, directoryStart, beforeResults }: CatalogHostProps) {
   const { state, setView, setGroup, setItems, setSort } = useCatalogView(section, source, AVAILABLE_VIEWS);
   const { tweaks, update, setCoverScale, setExtra, coverScale } = useTweaks(section);
   const [tweaksOpen, setTweaksOpen] = useState(false);
@@ -78,6 +80,7 @@ export default function CatalogHost({ section, source, overrides, leading, class
         onTweaks={() => setTweaksOpen((o) => !o)}
         leading={leading}
       />
+      {beforeResults}
       <div className={`bx-results ${tweaks.rounded ? "bx-rounded" : "bx-sharp"}`} data-hover={tweaks.hover} data-view={state.view}>
         {content}
       </div>
