@@ -319,6 +319,57 @@ namespace MovieTheater.Books.Tests
             return System.Text.Json.JsonSerializer.Serialize(value);
         }
 
+        /// <summary>The wire shape: the host's JSON is camelCase (web defaults), the bare serializer's is not.</summary>
+        private static string WebJson(object value) =>
+            System.Text.Json.JsonSerializer.Serialize(value, new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+
+        /// <summary>
+        /// R9 S0: the flat strip. Buckets are contiguous runs in the flat catalog's own order (offsets are the
+        /// cumulative counts), the row AT each offset really starts with that letter under the same LINQ ordering the
+        /// OData pages use, the total is the filtered set, and a filter narrows the buckets with it.
+        /// </summary>
+        [Theory]
+        [InlineData("series")]
+        [InlineData("title")]
+        [InlineData("publisher")]
+        public async Task Flat_letters_bucket_the_ordered_catalog(string sort)
+        {
+            using var db = fixture.Db();
+            var cache = NewCache();
+            var doc = System.Text.Json.JsonDocument.Parse(WebJson(
+                Assert.IsType<OkObjectResult>(await Browse(db, cache: cache).GetLetters(sort: sort)).Value!));
+            var total = doc.RootElement.GetProperty("total").GetInt32();
+            var letters = doc.RootElement.GetProperty("letters").EnumerateArray()
+                .Select(l => (Letter: l.GetProperty("letter").GetString()!, Count: l.GetProperty("count").GetInt32(), Offset: l.GetProperty("offset").GetInt32()))
+                .ToList();
+            Assert.NotEmpty(letters);
+            Assert.Equal(letters.Sum(l => l.Count), total);
+            var running = 0;
+            foreach (var l in letters) { Assert.Equal(running, l.Offset); running += l.Count; }
+
+            var all = Catalog(db).Get();
+            var keys = (sort switch
+            {
+                "title" => all.OrderBy(s => s.Title).ThenBy(s => s.Id).Select(s => s.Title),
+                "publisher" => all.OrderBy(s => s.Publisher).ThenBy(s => s.Year).ThenBy(s => s.Id).Select(s => s.Publisher),
+                _ => all.OrderBy(s => s.Series).ThenBy(s => s.Year).ThenBy(s => s.Id).Select(s => s.Series),
+            }).ToList();
+            Assert.Equal(keys.Count, total);
+            foreach (var l in letters)
+            {
+                var k = keys[l.Offset] ?? "";
+                var ch = k.Length > 0 ? char.ToUpperInvariant(k[0]) : '#';
+                Assert.Equal(l.Letter, ch is >= 'A' and <= 'Z' ? ch.ToString() : "#");
+            }
+
+            // a second call is a cache hit that agrees; a filter narrows the set and the buckets with it
+            var again = WebJson(Assert.IsType<OkObjectResult>(await Browse(db, cache: cache).GetLetters(sort: sort)).Value!);
+            Assert.Equal(doc.RootElement.GetRawText(), System.Text.Json.JsonDocument.Parse(again).RootElement.GetRawText());
+            var filtered = System.Text.Json.JsonDocument.Parse(WebJson(
+                Assert.IsType<OkObjectResult>(await Browse(db).GetLetters(sort: sort, filter: "year eq 1987")).Value!));
+            Assert.True(filtered.RootElement.GetProperty("total").GetInt32() < total);
+        }
+
         [Fact]
         public async Task Every_grouping_pages_by_group_and_bands_its_items()
         {

@@ -281,6 +281,15 @@ export const fetchGroups = (g: GroupsQuery, signal?: AbortSignal) =>
 export const fetchGroupLetters = (g: Pick<GroupsQuery, "groupBy" | "q" | "filter" | "kind" | "wantToReadOnly" | "readOnly" | "exact">, signal?: AbortSignal) =>
   request<{ totalGroups: number; letters: GroupLetter[] }>(`/browse/group-letters${groupsQs({ ...g })}`, undefined, signal);
 
+/** One bucket of the flat A–Z strip (the catalog package's `LetterBucket` shape). */
+export interface LetterBucket { letter: string; count: number; offset: number }
+
+/** `/browse/letters` — the flat sibling of group-letters, over the same filters; `sort` = series | title | publisher. */
+export const fetchLetters = (g: { sort?: string } & Pick<GroupsQuery, "q" | "filter" | "kind" | "wantToReadOnly" | "readOnly" | "exact">, signal?: AbortSignal) =>
+  request<{ total: number; letters: LetterBucket[] }>(
+    `/browse/letters${qs({ sort: g.sort, q: g.q, $filter: g.filter, kind: g.kind, wantToReadOnly: g.wantToReadOnly, readOnly: g.readOnly, ...(g.exact ?? {}) })}`,
+    undefined, signal);
+
 export const fetchGroupItems = (groupBy: string, key: string, g: { skip?: number; top?: number } & Pick<GroupsQuery, "orderby" | "q" | "filter" | "kind" | "wantToReadOnly" | "readOnly" | "exact">, signal?: AbortSignal) =>
   request<{ items: ItemSummary[]; total: number }>(
     `/browse/groups/${encodeURIComponent(groupBy)}/${encodeURIComponent(key)}/items${qs({ skip: g.skip, top: g.top, orderby: g.orderby, q: g.q, $filter: g.filter, kind: g.kind, wantToReadOnly: g.wantToReadOnly, readOnly: g.readOnly, ...(g.exact ?? {}) })}`,

@@ -71,6 +71,35 @@ The Shelves view is the standalone's bookcase in full — planks, spines, reveal
 (crown, stiles, the dark walnut recess, cream labels, ghost planks while bands load) — on for every
 section under every backdrop; a source sets `shelvesSkin: "plain"` for bare planks on its own surface.
 
+## Laws (R9 S0 — the Long Box `views-perf` catalog is binding)
+
+- **One engine, one strip.** Every view rides `InfiniteBands`; every view's seek control is
+  `Components/CatalogPager` (letters under an alphabetical sort, page numbers otherwise). A section
+  whose Grid still runs its own windowing (`useGridWindow`/`usePagedCatalog`) is a migration debt,
+  not a second engine — R9 S3 retires it. A source that wants LETTERS on its flat views must offer
+  `letters(sort)` (Books: `/browse/letters`, the flat sibling of `group-letters`; Movies:
+  `/API/BrowseLetters`); with only `groupLetters` the strip falls back to page numbers on Grid/Wall/List.
+- **The want-list pump + abort + `MIN_WANT_AGE` are a set.** Aborts alone cascade (a freed slot
+  fetches the next doomed band; the server runs every query to completion); the age gate is what
+  makes a scrollbar drag fire ~zero mid-flight fetches.
+- **Band mounts and window shifts are `startTransition`s; spy state stays synchronous; band
+  renderers are module-level components** (a renderer defined inside a view is a new type every
+  render and remounts the stream).
+- **`.bx-inf-scrolling { pointer-events: none }` during a scroll burst** — Chrome re-dispatches
+  `pointerover` for content moving under a stationary cursor.
+- **`overflow-anchor: none` on every scroller hosting a spacer stream** (it does not inherit); the
+  scroll root is RESOLVED (`engine/scroller.ts`), never assumed.
+- **Image failure = hue placeholder + retry with backoff, then DORMANT with a cooldown
+  (`CardImage`: 3 × 1.5 s, then one fresh round every 15 s) — never a fallback `src` swap**, which a
+  windowing scheme reads as "loaded" and makes one transient failure permanent.
+- **Paint tiers are feature-detected, never UA-sniffed.** `index.js` sets `html.eng-gecko` on
+  Firefox (software WebRender is a deployment target); `catalog-shelves.css`/`catalog-views.css`
+  scope the diet (zero-blur book shadow, no static overlays over the scrolled opening, cheap hover
+  lift, no cover opacity transition). Chrome keeps the rich look — do not fold the diet into the base
+  rules. `(pointer: coarse)` is the touch tier.
+- **Rejected designs stay rejected:** settle-deferred band mounts (bare planks while scrolling),
+  velocity-gated deferral, an always-on wheel→strip hijack, `content-visibility` on a JS-windowed band.
+
 ## The rail family (`catalog/rail/`)
 
 - **`FacetRail`** — one body, two skins: `rail` (a desktop sider column: the section mounts it in

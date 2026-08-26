@@ -334,6 +334,78 @@ namespace MovieTheater.Books.Controllers
         }
 
         /// <summary>
+        /// GET /browse/letters — the FLAT sibling of <c>/group-letters</c>: the first item index (and the count) per
+        /// leading letter of the sort key across the whole filtered flat set, so a Grid / Wall / List under an
+        /// alphabetical sort can draw the site's A–Z strip and seek by letter (the strip fell back to page numbers on
+        /// Books, R9 S0). The ordering restates the flat catalog's own <c>$orderby</c> (<c>series asc,year asc</c> /
+        /// <c>title asc</c> / <c>publisher asc,year asc</c>, id tiebreaker) in LINQ, so an offset lands exactly where
+        /// <c>/odata/catalog</c> pages the same row. Cached under the heads' signature plus the sort; mark-filtered
+        /// signatures recompute (see <see cref="HeadsSig"/>). Non-alphabetic leading chars ⇒ "#".
+        /// </summary>
+        [HttpGet("letters")]
+        public async Task<IActionResult> GetLetters(
+            [FromQuery] string sort = "series",
+            [FromQuery] string? q = null,
+            [FromQuery(Name = "$filter")] string? filter = null,
+            [FromQuery] string? kind = null,
+            [FromQuery] bool wantToReadOnly = false,
+            [FromQuery] bool readOnly = false,
+            [FromQuery] string[]? author = null,
+            [FromQuery] string[]? artist = null,
+            [FromQuery] string[]? tag = null,
+            [FromQuery(Name = "event")] string[]? eventName = null,
+            [FromQuery] string[]? exAuthor = null,
+            [FromQuery] string[]? exArtist = null,
+            [FromQuery] string[]? exTag = null,
+            [FromQuery] string[]? exEvent = null,
+            CancellationToken ct = default)
+        {
+            var exact = ExactFilters.From(author, artist, tag, eventName, exAuthor, exArtist, exTag, exEvent);
+            var key = NormalizeLetterSort(sort);
+            var itemKind = CatalogController.ParseKind(kind);
+            var (_, summaryQuery) = await BuildFilteredContextAsync(itemKind, q, filter, exact, wantToReadOnly, readOnly, ct);
+            var letters = await CachedAsync(HeadsSig(itemKind, "letters:" + key, q, filter, exact, wantToReadOnly, readOnly), Ttl(q, filter, exact),
+                () => LetterBucketsAsync(summaryQuery, key, ct));
+            return Ok(new { total = letters.Sum(l => l.Count), letters });
+        }
+
+        /// <summary>One bucket of the flat A–Z strip: the letter, how many rows it holds, and the index of its first row.</summary>
+        public sealed record LetterBucket(string Letter, int Count, int Offset);
+
+        internal static string NormalizeLetterSort(string? sort) => (sort ?? "").Trim().ToLowerInvariant() switch
+        {
+            "title" => "title",
+            "publisher" => "publisher",
+            _ => "series",
+        };
+
+        /// <summary>
+        /// One streamed pass over the sort key in the flat catalog's order. A projection of one short string per row
+        /// (the whole library is ~140k rows) costs milliseconds in SQLite and is exact where a GROUP BY would have to
+        /// trust the collation twice.
+        /// </summary>
+        private static async Task<List<LetterBucket>> LetterBucketsAsync(IQueryable<ItemSummary> summary, string key, CancellationToken ct)
+        {
+            IQueryable<string?> keys = key switch
+            {
+                "title" => summary.OrderBy(s => s.Title).ThenBy(s => s.Id).Select(s => s.Title),
+                "publisher" => summary.OrderBy(s => s.Publisher).ThenBy(s => s.Year).ThenBy(s => s.Id).Select(s => s.Publisher),
+                _ => summary.OrderBy(s => s.Series).ThenBy(s => s.Year).ThenBy(s => s.Id).Select(s => s.Series),
+            };
+            var buckets = new List<LetterBucket>();
+            var indexOf = new Dictionary<string, int>(StringComparer.Ordinal);
+            var i = 0;
+            await foreach (var k in keys.AsAsyncEnumerable().WithCancellation(ct))
+            {
+                var letter = LeadingLetter(k ?? "");
+                if (indexOf.TryGetValue(letter, out var at)) buckets[at] = buckets[at] with { Count = buckets[at].Count + 1 };
+                else { indexOf[letter] = buckets.Count; buckets.Add(new LetterBucket(letter, 1, i)); }
+                i++;
+            }
+            return buckets;
+        }
+
+        /// <summary>
         /// GET /browse/groups/{groupBy}/{key}/items — the band continuation: more items inside ONE group, in the
         /// same sort order the band used. This is what a shelf's horizontal load-more calls.
         /// </summary>
@@ -857,10 +929,14 @@ namespace MovieTheater.Books.Controllers
         private static TimeSpan Ttl(string? q, string? filter, ExactFilters exact) =>
             string.IsNullOrEmpty(q) && string.IsNullOrEmpty(filter) && exact.IsEmpty ? HeadsTtlDefault : HeadsTtlFiltered;
 
-        private async Task<List<GroupHead>> CachedHeadsAsync(string? sig, TimeSpan ttl, Func<Task<List<GroupHead>>> factory)
+        private Task<List<GroupHead>> CachedHeadsAsync(string? sig, TimeSpan ttl, Func<Task<List<GroupHead>>> factory) =>
+            CachedAsync(sig, ttl, factory);
+
+        /// <summary>The heads cache's contract for any payload: a null signature means "do not cache this one".</summary>
+        private async Task<T> CachedAsync<T>(string? sig, TimeSpan ttl, Func<Task<T>> factory) where T : class
         {
             if (sig == null) return await factory();
-            if (cache.TryGetValue(sig, out List<GroupHead>? hit) && hit != null) return hit;
+            if (cache.TryGetValue(sig, out T? hit) && hit != null) return hit;
             var value = await factory();
             Cache(sig, value, ttl);
             return value;

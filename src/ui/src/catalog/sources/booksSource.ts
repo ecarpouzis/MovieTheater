@@ -166,6 +166,9 @@ export function createBooksSource(o: BooksSourceOptions): CatalogSource {
       return { groups: r.groups.map((g) => toBookGroup(g, groupBy)), totalGroups: r.totalGroups };
     },
     fetchGroupMore,
+    // The flat strip: without this the site's CatalogPager fell back to page numbers on Books' Grid / Wall / List
+    // (R9 S0) — the package only draws letters when the source can bucket the FLAT order, not just the groups.
+    letters: async (sort, signal) => (await api.fetchLetters({ ...common, sort }, signal)).letters,
     groupLetters: async (groupBy, _sort, signal) => (await api.fetchGroupLetters({ ...common, groupBy }, signal)).letters,
     onOpen: (item) => o.onOpen(item),
     onOpenGroup: (group, groupBy) => {

@@ -77,6 +77,26 @@
   .bk-3d { box-shadow: 1px 3px 4px rgba(0,0,0,.55), inset -1px 0 0 rgba(0,0,0,.4); }
 }
 
+/* ── Gecko paint tier (html.eng-gecko, set by index.js via a MozAppearance feature check) ──
+   Software WebRender rasterises on the CPU at full window resolution, and STATIC overlays that
+   intersect scrolling content (the opening's inset depth shadows, the crown rail's cast shadow, the
+   label text-shadow) re-blend every scrolled frame even when only bare wood moves beneath them; a
+   blurred per-book shadow × hundreds of books was the blend storm behind a 7 fps slow scroll on the
+   family's Firefox. Chrome keeps the rich look — do NOT fold these into the base rules (an
+   all-engines shadow diet was shipped and reverted on the standalone the same day). */
+.eng-gecko .bk-3d { box-shadow: 2px 3px 0 rgba(0,0,0,.4), inset -1px 0 0 rgba(0,0,0,.4); }
+.eng-gecko .bx-results[data-view="shelf"]:not([data-skin="plain"]) .bx-shelved {
+  box-shadow: none;
+  background-image: url("/catalog/backing.png");
+  background-repeat: repeat;
+  background-position: top left;
+}
+.eng-gecko .bx-results[data-view="shelf"]:not([data-skin="plain"]) .bx-bookcase::before { box-shadow: none; }
+.eng-gecko .bx-results[data-view="shelf"]:not([data-skin="plain"]) .shelf-name { text-shadow: none; }
+/* Placeholder bands ARE the scrolling content during a fast flick — keep the ghost plank (one
+   gradient layer) but drop the masked spine layer (a mask is an extra per-tile blend). */
+.eng-gecko .bx-results[data-view="shelf"]:not([data-skin="plain"]) .bx-band-placeholder::before { content: none; }
+
 /* ── The bookcase carcass — the Shelves view's look (opt out with data-skin="plain") ── */
 .bx-results[data-view="shelf"]:not([data-skin="plain"]) .bx-bookcase {
   padding: 20px 20px 0;

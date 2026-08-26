@@ -112,6 +112,11 @@
 /* dim: the OTHER covers fade while any cover is hovered — driven by the root, no per-card class. */
 .bx-results[data-hover="dim"]:has(.bx-card:hover) .bx-card:not(:hover) .bx-cover { opacity: 0.45; }
 .bx-results[data-hover="none"] .bx-cover { transition: none; }
+/* Gecko paint tier (see catalog-shelves.css): a cheap hover-lift blur, and no opacity transition on
+   covers — dim-siblings re-styles EVERY visible card on hover in/out, and software WebRender pays
+   that as a full re-blend per frame of the transition. */
+.eng-gecko .bx-hover-lift:hover .bx-cover { box-shadow: 0 0 0 1px var(--line), 0 4px 8px rgba(0,0,0,.28); }
+.eng-gecko .bx-cover { transition: box-shadow 0.25s, transform 0.25s; }
 
 /* Meta strip */
 .bx-meta { padding: 8px 2px 0; font-size: 11.5px; line-height: 1.35; }

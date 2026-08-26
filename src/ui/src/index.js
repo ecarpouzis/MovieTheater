@@ -20,6 +20,16 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 5 * 60 * 1000, retry: 1, refetchOnWindowFocus: false } },
 });
 
+// Engine tier for CSS (the Long Box's views-perf law #6e): the family's Firefox runs on SOFTWARE
+// WebRender (about:support → Compositing), where every overlapping shadow/texture over scrolling
+// content is CPU raster per frame at full resolution. `html.eng-gecko` scopes a paint diet in the
+// catalog stylesheets (cheap book shadow, no static overlays over the scrolled opening, cheap hover
+// lift) to Firefox only — Chrome keeps the rich look. Feature-detected (MozAppearance), never
+// UA-sniffed. The durable cure on those machines is HW WebRender, not CSS.
+if ("MozAppearance" in document.documentElement.style) {
+  document.documentElement.classList.add("eng-gecko");
+}
+
 const container = document.getElementById("root");
 const root = createRoot(container);
 root.render(

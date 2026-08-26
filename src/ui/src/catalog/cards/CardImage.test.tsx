@@ -1,5 +1,5 @@
 import { act, fireEvent, render } from "@testing-library/react";
-import CardImage, { RETRY_LIMIT, RETRY_STEP_MS } from "./CardImage";
+import CardImage, { DEAD_COOLDOWN_MS, RETRY_LIMIT, RETRY_STEP_MS } from "./CardImage";
 
 describe("catalog/CardImage — a failed cover retries with backoff, then becomes the hue placeholder", () => {
   beforeEach(() => { vi.useFakeTimers(); });
@@ -20,6 +20,25 @@ describe("catalog/CardImage — a failed cover retries with backoff, then become
     expect(img().getAttribute("src")?.startsWith("data:image/svg+xml")).toBe(true);
     expect(img().getAttribute("data-fallback")).toBe("1");
     expect(decodeURIComponent(img().getAttribute("src") ?? "")).toContain("0.18 120");
+  });
+
+  it("is dormant, not dead: after the cooldown the placeholder gives way to one fresh round (R9 S0, views-perf #3)", () => {
+    const { container } = render(<CardImage src="/thumb/2.webp" hue={30} />);
+    const img = () => container.querySelector("img")!;
+    for (let attempt = 1; attempt <= RETRY_LIMIT; attempt += 1) {
+      fireEvent.error(img());
+      act(() => { vi.advanceTimersByTime(attempt * RETRY_STEP_MS + 5); });
+    }
+    fireEvent.error(img());
+    expect(img().getAttribute("data-fallback")).toBe("1");
+    // the placeholder is inert — nothing retries inside the cooldown
+    act(() => { vi.advanceTimersByTime(DEAD_COOLDOWN_MS - 50); });
+    expect(img().getAttribute("data-fallback")).toBe("1");
+    // …then the real src is asked for again, with the backoff count reset
+    act(() => { vi.advanceTimersByTime(100); });
+    expect(img().getAttribute("src")).toBe("/thumb/2.webp");
+    expect(img().getAttribute("data-fallback")).toBeNull();
+    expect(img().getAttribute("data-attempt")).toBeNull();
   });
 
   it("a new src starts the count over", () => {

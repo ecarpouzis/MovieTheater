@@ -10,6 +10,12 @@ import { useEffect, useRef, useState } from "react";
  */
 export const RETRY_LIMIT = 3;
 export const RETRY_STEP_MS = 1500;
+/**
+ * After the retries a cover goes DORMANT, not dead: the placeholder shows, and one fresh attempt is
+ * made after this cooldown (the standalone's `data-dead` + 15 s rule). A transient outage — a host
+ * restart, a Wi-Fi blip under a fling's burst — used to blank whole bands for the session.
+ */
+export const DEAD_COOLDOWN_MS = 15_000;
 
 export function hueSvg(hue: number | undefined, w = 100, h = 150): string {
   const fill = hue == null ? "oklch(0.35 0.02 260)" : `oklch(0.52 0.18 ${Math.round(hue)})`;
@@ -37,8 +43,14 @@ export default function CardImage({ src, alt = "", hue, eager, className }: Card
   }, [src]);
 
   const onError = () => {
-    if (attempt >= RETRY_LIMIT) { setFailed(true); return; }
     if (timerRef.current) clearTimeout(timerRef.current);
+    if (attempt >= RETRY_LIMIT) {
+      // Dormant: placeholder now, one fresh round after the cooldown (attempt resets so the backoff
+      // starts over); unmounting clears the timer through the effect above.
+      setFailed(true);
+      timerRef.current = setTimeout(() => { setAttempt(0); setFailed(false); }, DEAD_COOLDOWN_MS);
+      return;
+    }
     timerRef.current = setTimeout(() => setAttempt((a) => a + 1), (attempt + 1) * RETRY_STEP_MS);
   };
 
