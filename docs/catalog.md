@@ -67,6 +67,10 @@ bands, a **resolved scroll root** (`engine/scroller.ts` — `.app-content` on de
 phones). Letter and page jumps go through `jumpToUnit`. The flat views ride the same engine (the
 Wall's true-aspect rows defeat a constant-columns window).
 
+The Shelves view is the standalone's bookcase in full — planks, spines, reveal AND the wooden carcass
+(crown, stiles, the dark walnut recess, cream labels, ghost planks while bands load) — on for every
+section under every backdrop; a source sets `shelvesSkin: "plain"` for bare planks on its own surface.
+
 ## The rail family (`catalog/rail/`)
 
 - **`FacetRail`** — one body, two skins: `rail` (a desktop sider column: the section mounts it in

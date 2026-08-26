@@ -1,17 +1,8 @@
 /* ── Backdrops ──────────────────────────────────────────────────────────────────────────────────
    The token SETS live in booksTheme.ts (applied inline on the section root); this file holds what a
-   backdrop needs beyond tokens: the archive's scene image, and the bookcase's timber — the catalog's
-   Shelves already carry a bookcase skin under [data-skin="bookcase"], which the bookcase backdrop
-   lights up for every shelf view inside the section. */
-
-.books-section[data-books-backdrop="bookcase"] .bx-results[data-view="shelf"] {
-  background:
-    linear-gradient(180deg, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.32)),
-    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.08) 0 2px, transparent 2px 9px),
-    var(--books-bg);
-  border-radius: 10px;
-  padding: 10px;
-}
+   backdrop needs beyond tokens (the archive's scene attachment, the card meta surface). The wooden
+   bookcase carcass is the Shelves VIEW itself (catalog-shelves.css), on under every backdrop — the
+   `bookcase` backdrop only colours the surround in the same timber, as the standalone did. */
 
 .books-section[data-books-backdrop="archive"] { background-attachment: fixed; }
 

@@ -81,7 +81,7 @@ export default function CatalogHost({ section, source, overrides, leading, class
         leading={leading}
       />
       {beforeResults}
-      <div className={`bx-results ${tweaks.rounded ? "bx-rounded" : "bx-sharp"}`} data-hover={tweaks.hover} data-view={state.view}>
+      <div className={`bx-results ${tweaks.rounded ? "bx-rounded" : "bx-sharp"}`} data-hover={tweaks.hover} data-view={state.view} data-skin={source.shelvesSkin ?? "bookcase"}>
         {content}
       </div>
       {tweaksOpen && (

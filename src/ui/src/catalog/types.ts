@@ -199,6 +199,12 @@ export interface CatalogSource {
   groupNoun?: string;
   /** Which views this section supports; the switcher shows only these. */
   supports: ViewMode[];
+  /**
+   * The Shelves view's look. "bookcase" (default): the standalone's wooden carcass — crown, stiles, the dark
+   * walnut recess, cream labels — is part of the view, whatever the backdrop. "plain": bare planks on the
+   * section's own surface.
+   */
+  shelvesSkin?: "bookcase" | "plain";
   /** Group-by modes for the grouped views and the flat views' representative mode; empty = ungrouped only. */
   groups: GroupSpec[];
   sorts: SortSpec[];
