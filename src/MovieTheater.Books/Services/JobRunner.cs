@@ -73,7 +73,8 @@ namespace MovieTheater.Books.Services
             var entry = jobs.GetOrAdd(kind, k => new Entry { Kind = k });
             lock (entry)
             {
-                if (entry.State == "running") throw new InvalidOperationException($"Job '{kind}' is already running.");
+                // "stopping" counts as running: the old loop still owns this entry until it finishes.
+                if (entry.State is "running" or "stopping") throw new InvalidOperationException($"Job '{kind}' is already running.");
                 entry.State = "running";
                 entry.Processed = entry.Remaining = entry.Failed = 0;
                 entry.NextCursor = entry.Error = entry.LastLine = null;
@@ -109,7 +110,9 @@ namespace MovieTheater.Books.Services
                         Apply(entry, progress);
                         if (stalled) break;
                     }
-                    Finish(entry, null);
+                    // A stop that lands before the loop's next iteration (or during a batch that returned
+                    // normally) exits through the while guard, not the catch — it is still a stop.
+                    Finish(entry, null, token.IsCancellationRequested ? "stopped" : "done");
                 }
                 catch (OperationCanceledException) { Finish(entry, null, "stopped"); }
                 catch (Exception ex)
