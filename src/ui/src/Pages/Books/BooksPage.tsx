@@ -30,6 +30,7 @@ const ShelfPage = lazy(() => import("./ShelfPage"));
 const NovelsPage = lazy(() => import("./NovelsPage"));
 const KidsPage = lazy(() => import("./KidsPage"));
 const ReadPage = lazy(() => import("./read/ReadPage"));
+const AdminPage = lazy(() => import("./admin/AdminPage"));
 
 export interface BooksPageProps {
   userData: (BooksMe & { username?: string | null }) | null | undefined;
@@ -113,7 +114,7 @@ export default function BooksPage({ userData, setUserData }: BooksPageProps) {
             <Route path="/books/shelf"><ShelfPage /></Route>
             <Route path="/books/novels">{kid ? <Redirect to="/books/kids" /> : <NovelsPage username={username} />}</Route>
             <Route path="/books/kids"><KidsPage userData={userData} setUserData={setUserData} /></Route>
-            <Route path="/books/admin">{userData.isAdmin ? <Coming what="Admin" /> : <Redirect to="/books" />}</Route>
+            <Route path="/books/admin">{userData.isAdmin ? <AdminPage /> : <Redirect to="/books" />}</Route>
             <Route path="/books"><BrowsePage username={username} isKid={kid} /></Route>
           </Switch>
         </Suspense>
