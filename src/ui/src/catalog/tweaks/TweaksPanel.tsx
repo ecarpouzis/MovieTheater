@@ -1,4 +1,4 @@
-import { useCallback, useRef, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, type ReactNode } from "react";
 import type { TweakExtra, ViewMode } from "../types";
 import {
   HOVER_EFFECTS, SCALE_MAX, SCALE_MIN, SCALE_STEP,
@@ -97,7 +97,16 @@ export default function TweaksPanel({ view, tweaks, coverScale, onCoverScale, on
     window.addEventListener("mouseup", up);
   }, []);
 
+  // Escape closes (every floating tool on the site does); the scrim is the phone's tap-away.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { e.stopPropagation(); onClose(); } };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   return (
+    <>
+    <div className="twk-scrim" onClick={onClose} aria-hidden="true" />
     <div ref={dragRef} className="twk-panel" role="dialog" aria-label="Browse tweaks" style={{ right: posRef.current.x, bottom: posRef.current.y }}>
       <div className="twk-hd" onMouseDown={onDragStart}>
         <b>Browse Tweaks</b>
@@ -139,5 +148,6 @@ export default function TweaksPanel({ view, tweaks, coverScale, onCoverScale, on
         <div className="twk-foot">Remembered on this device for the {view === "shelf" ? "Shelves" : view.charAt(0).toUpperCase() + view.slice(1)} view.</div>
       </div>
     </div>
+    </>
   );
 }

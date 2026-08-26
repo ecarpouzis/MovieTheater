@@ -41,6 +41,9 @@ export default function BooksModalShell({ open, onClose, ariaLabel, variant = "b
       destroyOnHidden
       width={1240}
       centered={false}
+      // Above the site's fixed top bar (1300) — the number the movie and album modals use; antd's
+      // default 1000 slid the sheet under the bar on phones.
+      zIndex={1500}
       wrapClassName="books-modal"
       rootClassName="books-modal-root"
       wrapProps={{ style: skin, "data-kids-style": kidsStyle ?? undefined }}
