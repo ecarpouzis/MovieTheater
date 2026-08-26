@@ -1,6 +1,6 @@
 import { arcadeQuery, coverUrl, createArcadeSource, serverSort, toArcadeCard } from "./arcadeSource";
 
-const row = (n: number, extra: Record<string, unknown> = {}) => ({ key: `snes|game-${n}`, title: `Game ${n}`, system: "snes", artId: 100 + n, artV: "7", hasBoxArt: true, year: 1990 + n, maxPlayers: 2, versionCount: 1, rating: 82, ratingSource: "LaunchBox", genres: "Platform", raAchievements: true, versions: [{ id: 5000 + n }], ...extra });
+const row = (n: number, extra: Record<string, unknown> = {}) => ({ key: `snes|game-${n}`, title: `Game ${n}`, system: "snes", artId: 100 + n, artV: "7", hasBoxArt: true, year: 1990 + n, maxPlayers: 2, versionCount: 1, rating: 82, ratingSource: "LaunchBox", genres: "Platform", raAchievements: true, summary: "Run and jump.", developer: "Studio", publisher: "Studio", versions: [{ id: 5000 + n }], ...extra });
 
 function mockFetch(handler: (url: string) => unknown) {
   const calls: string[] = [];
@@ -57,6 +57,7 @@ describe("catalog/arcadeSource — the lobby's filters are the scope", () => {
     expect(calls[0]).toBe("/API/Arcade/GameGroups?genre=Platform&sort=rating&groupBy=system&groupsSkip=0&groupsTop=20&perGroupTop=24");
     expect(band.totalGroups).toBe(2);
     expect(band.groups[1].items[0].groupKey).toBe("snes");
+    expect(band.groups[0].detail).toEqual({ synopsis: "Run and jump.", byline: "Game 1 — Studio", kicker: "snes", tags: ["Platform"] });
     const more = await s.fetchGroupMore!("snes", 24, 24, "system", "rating");
     expect(calls[1]).toContain("singleGroupKey=snes&perGroupSkip=24&perGroupTop=24");
     expect(more.total).toBe(9);

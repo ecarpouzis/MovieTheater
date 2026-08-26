@@ -1,6 +1,6 @@
 import { createBoardgamesSource, facetsMap, playersBucket, playersLabel, playTimeLabel, toBoardgameCard } from "./boardgamesSource";
 
-const game = (id: number, extra: Record<string, unknown> = {}) => ({ id, name: `Game ${id}`, yearPublished: 2000 + id, minPlayers: 2, maxPlayers: 4, minPlayTime: 30, maxPlayTime: 60, minAge: 10, averageRating: 7.84, averageWeight: 2.5, imageVersion: 2, ...extra });
+const game = (id: number, extra: Record<string, unknown> = {}) => ({ id, name: `Game ${id}`, yearPublished: 2000 + id, minPlayers: 2, maxPlayers: 4, minPlayTime: 30, maxPlayTime: 60, minAge: 10, averageRating: 7.84, averageWeight: 2.5, imageVersion: 2, description: "<p>A fine&nbsp;game of <b>cubes</b>.</p>", ...extra });
 
 describe("catalog/boardgamesSource — cards and groupers over the page's list", () => {
   it("maps a game onto a card with the box art URLs, the players/time labels and badges", () => {
@@ -31,6 +31,7 @@ describe("catalog/boardgamesSource — cards and groupers over the page's list",
     expect(source.groups.map((g) => g.value)).toEqual(["publisher", "family", "decade", "players", "designer", "category", "mechanic"]);
     const pubs = await source.fetchGroupBand!(0, 10, 10, "publisher", "rating_desc");
     expect(pubs.groups.map((g) => [g.label, g.totalItems])).toEqual([["Alpha Games", 1], ["Beta Press", 2]]);
+    expect(pubs.groups[0].detail).toEqual({ kicker: "Publisher", synopsis: "A fine game of cubes.", byline: "From Game 1" });
     const decades = await source.fetchGroupBand!(0, 10, 10, "decade", "rating_desc");
     expect(decades.groups.map((g) => g.label)).toEqual(["2000s", "1990s"]);
     const players = await source.fetchGroupBand!(0, 10, 10, "players", "rating_desc");

@@ -151,9 +151,19 @@ async function getJson<T>(url: string, signal?: AbortSignal): Promise<T> {
   return (await r.json()) as T;
 }
 
+/** The Newspaper's per-group detail: the group's best-rated game tells the story. */
+export function groupDetail(rows: ArcadeGameRow[]): CardGroup["detail"] {
+  const lead = [...rows].sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1)).find((r) => r.summary);
+  if (!lead) return undefined;
+  const byline = [lead.developer, lead.publisher].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).join(" · ");
+  const tags = (lead.genres ?? "").split(/[,;/]/).map((t) => t.trim()).filter(Boolean).slice(0, 4);
+  return { synopsis: lead.summary, byline: byline ? `${lead.title} — ${byline}` : lead.title, kicker: lead.system, tags };
+}
+
 function toGroup(g: GroupRow): CardGroup {
-  const items = (g.items ?? []).map((row) => ({ ...toArcadeCard(row), groupKey: g.key }));
-  return { key: g.key, label: g.label, totalItems: g.totalItems, renderTotal: g.renderTotal ?? g.totalItems, items };
+  const rows = g.items ?? [];
+  const items = rows.map((row) => ({ ...toArcadeCard(row), groupKey: g.key }));
+  return { key: g.key, label: g.label, totalItems: g.totalItems, renderTotal: g.renderTotal ?? g.totalItems, items, detail: groupDetail(rows) };
 }
 
 export interface ArcadeSourceOptions {

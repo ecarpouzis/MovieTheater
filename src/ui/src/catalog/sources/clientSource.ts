@@ -21,6 +21,8 @@ export interface ClientGrouper extends GroupSpec {
   keysOf(item: CardItem): GroupKey[] | GroupKey | null | undefined;
   /** Head order: by label (default), by key descending (decades, newest first), or by size. */
   order?: "label" | "keyDesc" | "count";
+  /** Per-group detail for the Newspaper (synopsis / byline / kicker / tags), computed once from the group's cards. */
+  detail?(key: GroupKey, items: CardItem[]): CardGroup["detail"];
 }
 
 export interface ClientSort extends SortSpec {
@@ -105,6 +107,7 @@ export function createClientSource(o: ClientSourceOptions): CatalogSource {
     for (const g of heads) {
       g.totalItems = g.items.length;
       g.renderTotal = g.items.length;
+      if (grouper?.detail) g.detail = grouper.detail({ key: g.key, label: g.label }, g.items);
     }
     const order = grouper?.order ?? "label";
     if (order === "keyDesc") heads.sort((a, b) => collator.compare(b.key, a.key));

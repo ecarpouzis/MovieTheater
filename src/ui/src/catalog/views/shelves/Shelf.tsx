@@ -1,5 +1,6 @@
 import { memo, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { CardGroup, CardItem } from "../../types";
+import { coverSrc } from "../../cards/Card";
 import {
   PLANK, SHELF_PAD_LEFT, VIRT_THRESHOLD, relaxedGap, shelfBasis, shelfBookDims, shelfGrowWeight, spineFor, spinePrefix, virtualWindow,
 } from "./geometry";
@@ -24,7 +25,7 @@ export function ShelfBook({ item, shelfH, onOpen }: { item: CardItem; shelfH: nu
     <div className="bk" data-cw={cw} onClick={() => onOpen(item)} title={item.title}
       style={{ "--cw": `${cw}px`, "--spine": `${spine}px`, "--sh": `${ch}px` } as CSSProperties}>
       <div className="bk-3d" style={{ background: `oklch(0.52 0.18 ${hue})` }}>
-        <img data-src={item.imageThumbUrl ?? item.imageUrl} alt={item.title} decoding="async"
+        <img data-src={coverSrc(item, cw)} alt={item.title} decoding="async"
           style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
       </div>
     </div>

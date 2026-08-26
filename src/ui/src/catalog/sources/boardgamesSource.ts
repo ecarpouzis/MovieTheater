@@ -23,6 +23,7 @@ export interface BoardgameRow {
   minAge?: number | null;
   averageRating?: number | null;
   averageWeight?: number | null;
+  description?: string | null;
   imageVersion?: number | string | null;
   thingType?: string | null;
   baseGameId?: number | null;
@@ -124,11 +125,30 @@ export function playersBucket(g: BoardgameRow): GroupKey | null {
   return { key: "7", label: "7+ players" };
 }
 
+/** BGG descriptions arrive as HTML; the Newspaper wants a paragraph of prose. */
+export function plainText(html: string | null | undefined, max = 600): string | null {
+  if (!html) return null;
+  // Block tags become a space (paragraphs must not fuse); inline tags vanish (a bold word keeps its stop).
+  const text = html.replace(/<\/?(p|br|div|li|h\d|ul|ol|blockquote)\b[^>]*>/gi, " ").replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#10;|&#13;/g, " ").replace(/\s+/g, " ").trim();
+  if (!text) return null;
+  return text.length > max ? `${text.slice(0, max).replace(/\s+\S*$/, "")}…` : text;
+}
+
+/** The Newspaper's per-group detail: the group's best-rated game tells the story, under the grouping's name. */
+function groupDetail(kicker: string) {
+  return (_key: GroupKey, items: CardItem[]): CardGroup["detail"] => {
+    const lead = [...items].sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1))[0];
+    const synopsis = lead ? plainText(rawOf(lead).description) : null;
+    return { kicker, ...(synopsis ? { synopsis, byline: `From ${lead.title}` } : {}) };
+  };
+}
+
 function facetGrouper(value: string, label: string, pick: (f: BoardgameFacets) => string[] | undefined, facetsById: Map<number, BoardgameFacets>): ClientGrouper {
   return {
     value,
     label,
     keysOf: (i) => (pick(facetsById.get(i.id) ?? { id: i.id }) ?? []).filter(Boolean).map((k) => ({ key: k, label: k })),
+    detail: groupDetail(label),
   };
 }
 
@@ -136,8 +156,8 @@ export function boardgameGroupers(facetsById: Map<number, BoardgameFacets>): Cli
   return [
     facetGrouper("publisher", "Publisher", (f) => f.publishers, facetsById),
     facetGrouper("family", "Family", (f) => f.families, facetsById),
-    { value: "decade", label: "Decade", order: "keyDesc", keysOf: (i) => (i.year ? { key: String(Math.floor(i.year / 10) * 10), label: `${Math.floor(i.year / 10) * 10}s` } : null) },
-    { value: "players", label: "Players", keysOf: (i) => playersBucket(rawOf(i)) },
+    { value: "decade", label: "Decade", order: "keyDesc", keysOf: (i) => (i.year ? { key: String(Math.floor(i.year / 10) * 10), label: `${Math.floor(i.year / 10) * 10}s` } : null), detail: groupDetail("Decade") },
+    { value: "players", label: "Players", keysOf: (i) => playersBucket(rawOf(i)), detail: groupDetail("Players") },
     facetGrouper("designer", "Designer", (f) => f.designers, facetsById),
     facetGrouper("category", "Category", (f) => f.categories, facetsById),
     facetGrouper("mechanic", "Mechanic", (f) => f.mechanics, facetsById),

@@ -26,6 +26,17 @@ export interface CardProps {
   onOpen: (item: CardItem) => void;
 }
 
+/**
+ * The widest cover a section's THUMB rendition still looks sharp at. Past it (a Wall scaled up, a big
+ * Grid tile) the full image is asked for instead — a poster thumbnail stretched to 300px is the one
+ * thing a cover wall must never show.
+ */
+export const THUMB_MAX_PX = 220;
+
+export function coverSrc(item: CardItem, widthPx: number): string {
+  return item.imageThumbUrl && widthPx <= THUMB_MAX_PX ? item.imageThumbUrl : item.imageUrl;
+}
+
 function CardInner({ item, cellH, uniformAspect, metadata, hoverMeta, hoverClass, eager, onOpen }: CardProps) {
   const aspect = uniformAspect ?? (item.aspect || 0.66);
   const w = Math.round(cellH * aspect);
@@ -52,7 +63,7 @@ function CardInner({ item, cellH, uniformAspect, metadata, hoverMeta, hoverClass
       aria-label={item.title}
     >
       <div className="bx-cover" style={{ height: cellH, width: w }}>
-        <CardImage src={item.imageThumbUrl ?? item.imageUrl} alt="" hue={item.hue} eager={eager} />
+        <CardImage src={coverSrc(item, w)} alt="" hue={item.hue} eager={eager} />
         {item.count != null && item.count > 1 && <span className="bx-count">{item.count}</span>}
         {hoverMeta && <div className="bx-hover-meta">{caption}</div>}
       </div>
