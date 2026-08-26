@@ -29,12 +29,24 @@ browser ──(media token in the path)─────────────�
     "MediaTokenSecret": "<host-only random secret>",
     "DbPath": "F:\\Work\\MovieTheater\\data\\books\\v2\\books.db",
     "LegsDbPath": "F:\\Work\\MovieTheater\\data\\books\\v2\\books-legs.db",
-    "CacheDir": "<thumbnail cache root: {id}.webp files>",
+    "CacheDir": "F:\Work\MovieTheater\data\books-cache\thumbs",
     "ReportDir": "F:\\Work\\MovieTheater\\data\\books\\v2",
-    "V1SourcePath": null, "CalibreLinkPath": null, "V1OwnerUsername": null, "OwnerUserId": 1
+    "ArchiveCacheDir": "F:\Work\MovieTheater\data\books-cache\archives",
+    "ArchiveCacheGb": 50,
+    "PageJpegQuality": 82, "PageCacheLimitMb": 384, "ThumbnailQuality": 75,
+    "SevenZipPath": "<7z.exe, for the RAR fallback; null = CBR via SharpCompress only>",
+    "EnableTextRegions": true,
+    "ComicVineApiKey": null,
+    "SiteBaseUrl": "https://<site host>",
+    "V1SourcePath": null, "CalibreLinkPath": "<calibre_link.json, for books-import-calibre>", "V1OwnerUsername": null, "OwnerUserId": 1
   }
 }
 ```
+
+- **`CacheDir` must be an MT-owned directory, never the standalone site's live cache.** `books-thumbs` and the admin thumbnail job WRITE `{id}.webp` files into it, and the parallel run (R10) keeps the two services' caches separate. Until R10's robocopy fills it, the host answers 404 for thumbnails it has not generated — expected, not a fault.
+- `ArchiveCacheDir` (whole-archive copies pulled off the share while someone reads) is optional; `ArchiveCacheGb: 0` turns it off.
+- `SiteBaseUrl` is what OPDS feeds print as their absolute base (`Opds:SiteBaseUrl` overrides it); missing → the forwarded origin.
+- `ComicVineApiKey`, `ThumbnailQuality`, `PageJpegQuality`, `ArchiveCacheGb` are also settable from the admin panel; those writes go to `books.settings.json` beside `books.db` (`SettingsOverlayPath`), never to this file.
 
 ## First install (elevated pwsh, on the media host)
 
@@ -50,11 +62,18 @@ browser ──(media token in the path)─────────────�
    ```
 5. DNS: `books-host.<domain>` CNAME → the existing anchor record (the same way `arcade.` is a CNAME).
 6. Site pod secret (`MOVIETHEATER_APPSETTINGS_JSON`, per the movietheater-secret recipe): add `"BooksHostBaseUrl": "https://books-host.<domain>"` and `"BooksTokenSecret": "<shared>"`; restart the pods.
-7. Grant: run `scripts/books/migrate-books-access.sql` end-to-end (count → insert → recount): every user with the legacy `ComicSiteAccess` row gets `BooksAccess = true`; the legacy row stays until R8.
+7. Grant: `scripts/books/migrate-books-access.sql` — **already applied 2026-08-25** (3 `ComicSiteAccess` holders → 3 `BooksAccess` rows); re-running is safe (it inserts only missing rows). The legacy row stays until R8.
 
 ## Every later deploy
 
 `.\scripts\deploy-books-host.ps1` (elevated). It publishes, snapshots `app.bak-<label>` once, swaps everything except `appsettings*.json`, restarts, and verifies by behaviour: `/healthz` 200, `GET /ping` without identity **401** (404 = old binary), `/m/bogus/thumbs/1.webp` 403, exactly one `Access-Control-Allow-Origin`. Roll back with `-Rollback <snapshot>`.
+
+## First real runs on the host (after the seam is proven; each is chunked/resumable and prints `{ processed, remaining, nextCursor }` per batch)
+
+1. `MovieTheater.BooksHost.exe books-scan` — dry run first (the default): counts the adds/changes/removals it would make against the `LibraryRoot` rows (UNC paths, read-only). Then `--apply`. A file that is gone is MARKED (`Item.IsExcluded` + `ItemState.IsBroken`), never deleted.
+2. `books-import-calibre --link <calibre_link.json>` — fills `BookDetail.SeriesName/SeriesIndex/Isbn` (NULL for all 22,084 books after the v1 migration).
+3. `books-thumbs` — generates the missing `{id}.webp` files into `CacheDir` (or robocopy the standalone cache in first — R10 — and let this fill the gaps).
+4. `books-resolve` (after 1–2) — rebuilds `Resolved*` + FTS from the new inputs.
 
 ## Proving the seam
 
