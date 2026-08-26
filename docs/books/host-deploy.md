@@ -76,12 +76,14 @@ browser ──(media token in the path)─────────────�
 `.\scripts\deploy-books-host.ps1` (elevated). It publishes, snapshots `app.bak-<label>` once, swaps everything except `appsettings*.json`, restarts, and verifies by behaviour: `/healthz` 200 (**it touches the store**: `SELECT 1` on `books.db`, 503 `db: <exception>` when the catalog cannot open — added after 2026-08-25, when a deploy without `runtimes\win-x64
 ative\` passed a store-blind probe), `GET /ping` without identity **401** (404 = old binary), `/m/bogus/thumbs/1.webp` 403, exactly one `Access-Control-Allow-Origin`. Roll back with `-Rollback <snapshot>`.
 
-## First real runs on the host (after the seam is proven; each is chunked/resumable and prints `{ processed, remaining, nextCursor }` per batch)
+## First real runs on the host (done 2026-08-26 — copies only, no share walk)
 
-1. `MovieTheater.BooksHost.exe books-scan` — dry run first (the default): counts the adds/changes/removals it would make against the `LibraryRoot` rows (UNC paths, read-only). Then `--apply`. A file that is gone is MARKED (`Item.IsExcluded` + `ItemState.IsBroken`), never deleted.
-2. `books-import-calibre --link <calibre_link.json>` — fills `BookDetail.SeriesName/SeriesIndex/Isbn` (NULL for all 22,084 books after the v1 migration).
-3. `books-thumbs` — generates the missing `{id}.webp` files into `CacheDir` (or robocopy the standalone cache in first — R10 — and let this fill the gaps).
-4. `books-resolve` (after 1–2) — rebuilds `Resolved*` + FTS from the new inputs.
+The house rule for this step: **leverage copies of what the standalone already knows; do not walk the share** — the catalog was migrated whole from the frozen v1 file, so a scan would only re-stat 141k files to learn nothing.
+
+1. **Thumbnail cache**: robocopy the standalone's cache (top-level `*.webp` + `f_*.jpg` only; the regenerable `archives\` subtree is not copied) into `CacheDir`, `/XO` so re-runs continue. Same drive, no share access. Result: 141,092 files (140,983 + 109), 3.78 GB, 0 failed. Run robocopy from PowerShell (git-bash rewrites its `/switches` into paths).
+2. **Calibre**: one 64 MB copy of the library's `metadata.db` into `dataooks\calibre\`, then `books-import-calibre --metadata <copy> --link <calibre_link.json> --library-root "<the Calibre root as the catalog knows it>"` — dry run first (persists nothing), then `--apply`. **Run it from PowerShell**: git-bash rewrites a leading `\` in the UNC root even with `MSYS2_ARG_CONV_EXCL` set, and the root silently becomes a path that matches nothing. Result: 21,980 / 21,989 matched (7,109 via the link file, the rest by path across every format), 9 unmatched.
+3. `books-resolve` — rebuilds `Resolved*` + FTS from the new inputs (local file only; one write transaction of a few minutes — run it when nobody is reading).
+4. **Not run, by design**: `books-thumbs` (would open the ~27 files without a thumbnail) and `books-scan` (54k listings + 141k stats over SMB to confirm what the copy already says). The scan's moment is the cut-over delta (R12), or R10 once the standalone stops scanning. When it does run: dry run first; a removed file is MARKED (`Item.IsExcluded` + `ItemState.IsBroken`/"missing"), never deleted.
 
 ## Proving the seam
 

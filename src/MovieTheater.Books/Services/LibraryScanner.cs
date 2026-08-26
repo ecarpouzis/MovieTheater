@@ -46,11 +46,11 @@ namespace MovieTheater.Books.Services
     /// <para><b>It never writes to the library.</b> The share is opened for reading only — no rename, no delete,
     /// no thumbnail written beside a file. Everything the scan produces lands in the catalog.</para>
     ///
-    /// <para><b>A removed file deletes its ITEM subtree, not its series</b> — state, signature, embedded block,
-    /// details, credits, tags and provider links go; `Series` never does (it is derived and shared), and
-    /// `UserItemState` is DELIBERATELY KEPT and reported, because a file that comes back must not have lost the
-    /// reader's position and marks. The post-scan re-resolve (`books-resolve --series` then `books-resolve`) is a
-    /// separate, registered job that the caller runs afterwards.</para>
+    /// <para><b>A removed file is MARKED, never deleted</b> — <c>Item.IsExcluded</c> takes it out of every browse and
+    /// <c>ItemState.IsBroken</c> carries the reason "missing"; its details, credits, tags, links and the reader's
+    /// <c>UserItemState</c> all stay, so a file that comes back is whole again with the next scan. <c>Series</c> is
+    /// derived and shared and is never touched here. The post-scan re-resolve (`books-resolve --series` then
+    /// `books-resolve`) is a separate, registered job that the caller runs afterwards.</para>
     /// </summary>
     public sealed class LibraryScanner
     {
