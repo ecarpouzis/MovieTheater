@@ -189,6 +189,14 @@ export function useMediaToken(): { token: MediaToken | null; epoch: number } {
 
 export const subscribeMedia = subscribe;
 
+/** Test seam: a minted token, as if `/media-token` had answered. */
+export function __setMediaForTests(t: MediaToken | null): void {
+  current = t;
+  unavailableUntil = 0;
+  writeSession(t);
+  notify();
+}
+
 /** Test seam. */
 export function __resetMediaForTests(): void {
   current = null;

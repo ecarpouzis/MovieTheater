@@ -10,6 +10,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import { mapExplore } from "../../catalog/explore/mapExplore";
+import { exploreWithLiveArt } from "./booksExploreArt";
+import { useMediaToken } from "./booksMedia";
 import type { CardItem } from "../../catalog/types";
 import { fetchExploreKids, fetchItemMarks, fetchKidsSeriesItems, putItemMark, setKidsStyle } from "./booksApi";
 import { readHref } from "./booksLinks";
@@ -89,7 +91,8 @@ export default function KidsPage({ userData, setUserData, epoch = 0 }: KidsPageP
   }, [style]);
 
   const home = useQuery({ queryKey: bk.exploreKids(seed), queryFn: ({ signal }) => fetchExploreKids(seed, signal), staleTime: 30 * 60 * 1000, enabled: mode === "home" });
-  const homeData = useMemo(() => (home.data ? mapExplore(home.data) : null), [home.data]);
+  const media = useMediaToken();
+  const homeData = useMemo(() => (home.data ? exploreWithLiveArt(mapExplore(home.data)) : null), [home.data, media.epoch]);
 
   const want = useQuery({ queryKey: bk.itemMarks("want"), queryFn: ({ signal }) => fetchItemMarks("want", 0, 500, signal) });
   const [pending, setPending] = useState<Map<number, boolean>>(new Map());

@@ -101,11 +101,11 @@ namespace MovieTheater.Books.Controllers
             var itemKind = CatalogController.ParseKind(kind);
             var daySeed = seed ?? DaySeed();
             var key = $"books:explore:{UserSig()}:{itemKind}:{daySeed}";
-            if (cache.TryGetValue(key, out ExploreResponse? hit) && hit != null) return Ok(hit);
+            if (cache.TryGetValue(key, out ExploreResponse? hit) && hit != null) return Ok(Stamped(hit));
 
             var response = await ComposeAsync(itemKind, daySeed, ct);
             Cache(key, response);
-            return Ok(response);
+            return Ok(Stamped(response));
         }
 
         /// <summary>
@@ -128,18 +128,18 @@ namespace MovieTheater.Books.Controllers
         {
             var daySeed = seed ?? DaySeed();
             var key = $"books:explore:kids:{daySeed}";
-            if (cache.TryGetValue(key, out ExploreResponse? hit) && hit != null) return Ok(hit);
+            if (cache.TryGetValue(key, out ExploreResponse? hit) && hit != null) return Ok(Stamped(hit));
 
             var response = await ComposeKidsAsync(daySeed, ct);
             Cache(key, response);
-            return Ok(response);
+            return Ok(Stamped(response));
         }
 
         // ── composition ──────────────────────────────────────────────────────────────────────────────────────
 
         private async Task<ExploreResponse> ComposeAsync(ItemKind kind, int daySeed, CancellationToken ct)
         {
-            var media = MediaUrls.For(options, User);
+            var media = MediaUrls.Sentinel(options);   // cached payload: no clock inside (see MediaUrls.TokenSentinel)
             var counterpart = kind == ItemKind.Book ? ItemKind.Comic : ItemKind.Book;
 
             // ── spotlight: top-rated titles that carry editorial prose, one per series, rotated daily ────────
@@ -261,7 +261,7 @@ namespace MovieTheater.Books.Controllers
 
         private async Task<ExploreResponse> ComposeKidsAsync(int daySeed, CancellationToken ct)
         {
-            var media = MediaUrls.For(options, User);
+            var media = MediaUrls.Sentinel(options);   // cached payload: no clock inside (see MediaUrls.TokenSentinel)
             var kidSeries = await KidsPolicy.KidSeriesAsync(db, ItemKind.Comic, ct);
             if (kidSeries.Count == 0) return new ExploreResponse([], [], daySeed);
 
@@ -370,6 +370,21 @@ namespace MovieTheater.Books.Controllers
             return rows.GroupBy(x => x.SeriesId).ToDictionary(
                 g => g.Key,
                 g => g.OrderByDescending(x => x.HasCover).ThenBy(x => x.ReadIndex ?? int.MaxValue).ThenBy(x => x.Id).First().Id);
+        }
+
+        /// <summary>
+        /// The cached payload with THIS caller's media token in every image URL. The cache holds the sentinel
+        /// form (a token is a 12 h ticket; the entry lives a day), so each response is stamped fresh.
+        /// </summary>
+        private ExploreResponse Stamped(ExploreResponse cached)
+        {
+            var media = MediaUrls.For(options, User);
+            CardItem Card(CardItem c) => c with { ImageUrl = media.Stamp(c.ImageUrl), ImageThumbUrl = media.Stamp(c.ImageThumbUrl) };
+            return cached with
+            {
+                Spotlight = cached.Spotlight.Select(Card).ToList(),
+                Rails = cached.Rails.Select(r => r with { Items = r.Items.Select(Card).ToList() }).ToList(),
+            };
         }
 
         /// <summary>Every cache key carries the caller's facts: the gate changes what the rails contain.</summary>

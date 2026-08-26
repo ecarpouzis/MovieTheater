@@ -13,8 +13,10 @@ import type { HeroDetail } from "../../catalog/explore/HeroSpotlight";
 import { mapExplore } from "../../catalog/explore/mapExplore";
 import type { CardGroup, CardItem } from "../../catalog/types";
 import { fetchExplore, type ItemSummary } from "./booksApi";
+import { exploreWithLiveArt } from "./booksExploreArt";
 import { exploreMoreHref } from "./booksExploreLinks";
 import { runLabel } from "./booksFormat";
+import { useMediaToken } from "./booksMedia";
 import { bk } from "./booksQuery";
 import { openEntity } from "./openEntity";
 
@@ -59,7 +61,10 @@ export default function ExplorePage({ kind = "comic" as const }: { kind?: "comic
     // A re-roll keeps the page up until the new roll lands — no flash to the skeleton.
     placeholderData: keepPreviousData,
   });
-  const data = useMemo(() => (query.data ? mapExplore(query.data) : null), [query.data]);
+  // Covers come from the browser's live media token (the host's cached URLs can carry a dead one); the
+  // token's epoch re-derives the page when it is minted or refreshed.
+  const media = useMediaToken();
+  const data = useMemo(() => (query.data ? exploreWithLiveArt(mapExplore(query.data)) : null), [query.data, media.epoch]);
 
   const onSeed = useCallback((next: number) => {
     const p = new URLSearchParams(location.search);

@@ -7,6 +7,7 @@ using MovieTheater.Books;
 using MovieTheater.Books.Controllers;
 using MovieTheater.Books.Db;
 using MovieTheater.Books.Identity;
+using MovieTheater.Books.Media;
 using MovieTheater.Books.Projections;
 
 namespace MovieTheater.Books.Tests
@@ -157,14 +158,47 @@ namespace MovieTheater.Books.Tests
                 first.Rails.SelectMany(r => r.Items.Select(i => i.Key)),
                 second.Rails.SelectMany(r => r.Items.Select(i => i.Key)));
 
-            // A shared cache answers the second call with the very object it composed for the first.
+            // A shared cache answers the second call with the page it composed for the first (stamped per call —
+            // see The_cached_page_carries_no_media_token_clock — so equal by content, not by reference).
             var cache = NewCache();
             var a = Body(await Explore(db, cache: cache).Get(seed: 99));
             var b = Body(await Explore(db, cache: cache).Get(seed: 99));
-            Assert.Same(a, b);
+            Assert.Equal(a.Spotlight.Select(c => c.Key), b.Spotlight.Select(c => c.Key));
+            Assert.Equal(a.Rails.SelectMany(r => r.Items.Select(i => i.Key)), b.Rails.SelectMany(r => r.Items.Select(i => i.Key)));
 
             // The default seed is the UTC day number, so the page rotates once a day rather than per render.
             Assert.Equal(ExploreController.DaySeed(), Body(await Explore(db).Get()).Seed);
+        }
+
+        /// <summary>
+        /// The regression that darkened the live Explore: the warm at boot composed the page with a real 12 h
+        /// media token baked into every image URL and cached it for a day; twelve hours later every cover was a
+        /// 403. The cache must hold the sentinel form, and each response must carry a token minted for THIS call.
+        /// </summary>
+        [Fact]
+        public async Task The_cached_page_carries_no_media_token_clock()
+        {
+            using var db = fixture.Db();
+            var options = new BooksOptions { PublicBaseUrl = "https://books.example", MediaTokenSecret = "media-secret-for-the-test" };
+            var cache = NewCache();
+
+            var served = Body(await Explore(db, cache: cache, options: options).Get(seed: 5));
+            var url = served.Spotlight.Concat(served.Rails.SelectMany(r => r.Items)).Select(c => c.ImageUrl).First(u => u != null)!;
+            Assert.DoesNotContain(MediaUrls.TokenSentinel, url);
+            var token = url.Split("/m/")[1].Split('/')[0];
+            Assert.True(BooksMediaToken.TryValidate("media-secret-for-the-test", token, out var payload));
+            Assert.Equal(1, payload!.UserId);
+
+            // What the cache holds is the sentinel form — nothing in it can expire.
+            Assert.True(cache.TryGetValue($"books:explore:1:3:0:{ItemKind.Comic}:5", out ExploreResponse? cached));
+            var cachedUrl = cached!.Spotlight.Concat(cached.Rails.SelectMany(r => r.Items)).Select(c => c.ImageUrl).First(u => u != null)!;
+            Assert.Contains(MediaUrls.TokenSentinel, cachedUrl);
+
+            // A second call on the warm cache is stamped again, for its caller, and still validates.
+            var again = Body(await Explore(db, cache: cache, options: options).Get(seed: 5));
+            var url2 = again.Spotlight.Concat(again.Rails.SelectMany(r => r.Items)).Select(c => c.ImageUrl).First(u => u != null)!;
+            Assert.DoesNotContain(MediaUrls.TokenSentinel, url2);
+            Assert.True(BooksMediaToken.TryValidate("media-secret-for-the-test", url2.Split("/m/")[1].Split('/')[0], out _));
         }
 
         [Fact]

@@ -25,6 +25,24 @@ namespace MovieTheater.Books.Media
     {
         public bool Configured => Token != null && BaseUrl != null;
 
+        /// <summary>
+        /// The token slot in a URL built for a CACHED payload. A media token carries a clock (12 h) and a cached
+        /// Explore page lives for a day, so a payload composed with a real token served every image as 403 once
+        /// the token died (the warm at boot minted it; twelve hours later the whole Explore went dark). A cached
+        /// payload is built with this sentinel and <see cref="Stamp"/>ed with the caller's own token on the way out.
+        /// </summary>
+        public const string TokenSentinel = "__MT_MEDIA_TOKEN__";
+
+        /// <summary>The set to compose a CACHEABLE payload with: the sentinel where the token goes.</summary>
+        public static MediaUrls Sentinel(BooksOptions options) =>
+            string.IsNullOrEmpty(options.PublicBaseUrl) || string.IsNullOrEmpty(options.MediaTokenSecret)
+                ? new MediaUrls(null, null)
+                : new MediaUrls(TokenSentinel, options.PublicBaseUrl);
+
+        /// <summary>A sentinel URL with THIS caller's token in the slot; null when the caller has no token.</summary>
+        public string? Stamp(string? url) =>
+            url == null ? null : Token == null ? null : url.Replace(TokenSentinel, Token);
+
         public string? Thumb(long itemId) => Configured ? BooksMediaRoutes.ThumbUrl(BaseUrl!, Token!, itemId) : null;
         public string? Download(long itemId) => Configured ? BooksMediaRoutes.DownloadUrl(BaseUrl!, Token!, itemId) : null;
         public string? PagesTemplate(long itemId) => Configured ? BooksMediaRoutes.PageUrlTemplate(BaseUrl!, Token!, itemId) : null;
