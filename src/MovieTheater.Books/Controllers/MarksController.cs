@@ -128,6 +128,23 @@ namespace MovieTheater.Books.Controllers
         /// PUT /marks/items/{itemId} — set any of want-to-read, favourite and the personal rating. Omitted fields
         /// keep their value; a <c>null</c> rating REMOVES the <c>Rating(Source=User)</c> row.
         /// </summary>
+        /// <summary>
+        /// GET /marks/items/{itemId} — one item's marks for the caller (want / favourite / status / rating). The
+        /// modal reads this instead of paging the lists; absent rows read as the defaults, never as 404 — only an
+        /// item the caller may not see is 404.
+        /// </summary>
+        [HttpGet("items/{itemId:int}")]
+        public async Task<IActionResult> GetItem(int itemId, CancellationToken ct = default)
+        {
+            if (BooksIdentity.UserId(User) is not int userId) return Forbid();
+            if (await UserActivityQueries.AccessibleItemAsync(db, User, itemId, ct) == null) return NotFound();
+
+            var row = await db.UserItemStates.AsNoTracking().FirstOrDefaultAsync(s => s.UserId == userId && s.ItemId == itemId, ct);
+            var rating = await UserRatingAsync(userId, itemId, ct);
+            return Ok(new ItemMarkResult(itemId, row?.WantToRead ?? false, row?.Favorite ?? false,
+                UserActivityQueries.StatusName(row?.Status ?? ReadStatus.Unread), rating, row?.UpdatedAt, null));
+        }
+
         [HttpPut("items/{itemId:int}")]
         public async Task<IActionResult> UpsertItem(int itemId, [FromBody] UpsertItemMarkRequest req, CancellationToken ct = default)
         {

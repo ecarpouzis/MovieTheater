@@ -52,6 +52,9 @@ namespace MovieTheater.Books.Controllers
     /// <summary>One ordered entry of a grouping's full group list — the band-invariant "heads" phase.</summary>
     public sealed record GroupHead(string Key, string Label, int Count);
 
+    /// <summary>One issue of a series run: the flat row plus the reading-order and containment rows the flat projection omits.</summary>
+    public sealed record SeriesRunRow(ItemSummary Item, ReadingOrderBlock? ReadingOrder, CollectionBlock? Collection);
+
     /// <summary>
     /// The grouped/faceted browse surface: what the facet rail, the letter rail and every banded layout read.
     ///
@@ -246,8 +249,17 @@ namespace MovieTheater.Books.Controllers
             // bands and the letter rail all agree, and they make the heads signature uncacheable.
             [FromQuery] bool wantToReadOnly = false,
             [FromQuery] bool readOnly = false,
+            [FromQuery] string[]? author = null,
+            [FromQuery] string[]? artist = null,
+            [FromQuery] string[]? tag = null,
+            [FromQuery(Name = "event")] string[]? eventName = null,
+            [FromQuery] string[]? exAuthor = null,
+            [FromQuery] string[]? exArtist = null,
+            [FromQuery] string[]? exTag = null,
+            [FromQuery] string[]? exEvent = null,
             CancellationToken ct = default)
         {
+            var exact = ExactFilters.From(author, artist, tag, eventName, exAuthor, exArtist, exTag, exEvent);
             groupsTop = Math.Clamp(groupsTop, 1, MaxGroupsTop);
             perGroupTop = Math.Clamp(perGroupTop, 1, 5000);
             perGroupSkip = Math.Max(0, perGroupSkip);
@@ -255,8 +267,8 @@ namespace MovieTheater.Books.Controllers
             var by = NormalizeGroupBy(groupBy);
             var itemKind = CatalogController.ParseKind(kind);
 
-            var (countQuery, summaryQuery) = await BuildFilteredContextAsync(itemKind, q, filter, wantToReadOnly, readOnly, ct);
-            var heads = await CachedHeadsAsync(HeadsSig(itemKind, by, q, filter, wantToReadOnly, readOnly), Ttl(q, filter),
+            var (countQuery, summaryQuery) = await BuildFilteredContextAsync(itemKind, q, filter, exact, wantToReadOnly, readOnly, ct);
+            var heads = await CachedHeadsAsync(HeadsSig(itemKind, by, q, filter, exact, wantToReadOnly, readOnly), Ttl(q, filter, exact),
                 () => GroupHeadsAsync(countQuery, by, ct));
 
             var paged = singleGroupKey != null
@@ -294,12 +306,21 @@ namespace MovieTheater.Books.Controllers
             [FromQuery] string? kind = null,
             [FromQuery] bool wantToReadOnly = false,   // see GetGroups
             [FromQuery] bool readOnly = false,
+            [FromQuery] string[]? author = null,
+            [FromQuery] string[]? artist = null,
+            [FromQuery] string[]? tag = null,
+            [FromQuery(Name = "event")] string[]? eventName = null,
+            [FromQuery] string[]? exAuthor = null,
+            [FromQuery] string[]? exArtist = null,
+            [FromQuery] string[]? exTag = null,
+            [FromQuery] string[]? exEvent = null,
             CancellationToken ct = default)
         {
+            var exact = ExactFilters.From(author, artist, tag, eventName, exAuthor, exArtist, exTag, exEvent);
             var by = NormalizeGroupBy(groupBy);
             var itemKind = CatalogController.ParseKind(kind);
-            var (countQuery, _) = await BuildFilteredContextAsync(itemKind, q, filter, wantToReadOnly, readOnly, ct);
-            var heads = await CachedHeadsAsync(HeadsSig(itemKind, by, q, filter, wantToReadOnly, readOnly), Ttl(q, filter),
+            var (countQuery, _) = await BuildFilteredContextAsync(itemKind, q, filter, exact, wantToReadOnly, readOnly, ct);
+            var heads = await CachedHeadsAsync(HeadsSig(itemKind, by, q, filter, exact, wantToReadOnly, readOnly), Ttl(q, filter, exact),
                 () => GroupHeadsAsync(countQuery, by, ct));
 
             var letters = new List<object>();
@@ -327,13 +348,22 @@ namespace MovieTheater.Books.Controllers
             [FromQuery] string? kind = null,
             [FromQuery] bool wantToReadOnly = false,   // see GetGroups
             [FromQuery] bool readOnly = false,
+            [FromQuery] string[]? author = null,
+            [FromQuery] string[]? artist = null,
+            [FromQuery] string[]? tag = null,
+            [FromQuery(Name = "event")] string[]? eventName = null,
+            [FromQuery] string[]? exAuthor = null,
+            [FromQuery] string[]? exArtist = null,
+            [FromQuery] string[]? exTag = null,
+            [FromQuery] string[]? exEvent = null,
             CancellationToken ct = default)
         {
+            var exact = ExactFilters.From(author, artist, tag, eventName, exAuthor, exArtist, exTag, exEvent);
             skip = Math.Max(0, skip);
             top = Math.Clamp(top, 1, 500);
             var by = NormalizeGroupBy(groupBy);
             var itemKind = CatalogController.ParseKind(kind);
-            var (_, summaryQuery) = await BuildFilteredContextAsync(itemKind, q, filter, wantToReadOnly, readOnly, ct);
+            var (_, summaryQuery) = await BuildFilteredContextAsync(itemKind, q, filter, exact, wantToReadOnly, readOnly, ct);
 
             var head = new GroupHead(key, key, 0);
             var band = BandQuery(summaryQuery, by, new List<GroupHead> { head });
@@ -362,6 +392,47 @@ namespace MovieTheater.Books.Controllers
             return Ok(new { rating, note });
         }
 
+        /// <summary>
+        /// GET /browse/series/{seriesId}/run — every visible issue of one series with its reading-order and
+        /// containment rows, in reading order. This is what the series modal's smart reading list and the shelf
+        /// drawer need and the flat projection deliberately does not carry: the containment tree
+        /// (<c>trackRole</c> / <c>level</c> / <c>spanStart..spanEnd</c> / <c>parentItemId</c>) and the
+        /// <c>readIndex</c>. Joined, never id-listed, so a 2,000-issue weekly stays one query per table.
+        /// </summary>
+        [HttpGet("series/{seriesId:int}/run")]
+        public async Task<IActionResult> GetSeriesRun(int seriesId, [FromQuery] string? kind = null, CancellationToken ct = default)
+        {
+            var itemKind = CatalogController.ParseKind(kind);
+            var visible = ItemAccess.VisibleItems(db, User, itemKind).Where(i => i.SeriesId == seriesId);
+            var summaries = await visible.Select(ItemSummary.Project).ToListAsync(ct);
+
+            var orders = await (from r in db.ReadingOrderEntries.AsNoTracking()
+                                join i in visible on r.ItemId equals i.Id
+                                select new { r.ItemId, Block = new ReadingOrderBlock(r.SeriesId, r.ReadTier, r.ReadNumber, r.ReadDate,
+                                    r.ReadDatePrecision, r.ReadIndex, r.ReadCount, r.Source, r.Confidence) })
+                .ToListAsync(ct);
+            var orderById = orders.GroupBy(o => o.ItemId).ToDictionary(g => g.Key, g => g.First().Block);
+
+            var nodes = await (from n in db.CollectionNodes.AsNoTracking()
+                               join i in visible on n.ItemId equals i.Id
+                               select new { n.ItemId, Block = new CollectionBlock(n.Level, n.TrackRole, n.SpanStart, n.SpanEnd,
+                                   n.ContainsCount, n.ParentItemId, n.SpanSource, n.SpanLabel) })
+                .ToListAsync(ct);
+            var nodeById = nodes.GroupBy(n => n.ItemId).ToDictionary(g => g.Key, g => g.First().Block);
+
+            // Reading order: the standalone's readDate, readTier, readIndex ascending, then the issue's own year
+            // and id so an issue the order job never reached still lands somewhere deterministic.
+            var rows = summaries
+                .Select(s => new SeriesRunRow(s, orderById.GetValueOrDefault(s.Id), nodeById.GetValueOrDefault(s.Id)))
+                .OrderBy(r => r.ReadingOrder?.ReadDate ?? "9999")
+                .ThenBy(r => r.ReadingOrder?.ReadTier ?? int.MaxValue)
+                .ThenBy(r => r.ReadingOrder?.ReadIndex ?? int.MaxValue)
+                .ThenBy(r => r.Item.Year ?? int.MaxValue)
+                .ThenBy(r => r.Item.Id)
+                .ToList();
+            return Ok(new { seriesId, total = rows.Count, items = rows });
+        }
+
         // ── the shared request prologue ───────────────────────────────────────────────────────────────────────
 
         /// <summary>
@@ -372,9 +443,12 @@ namespace MovieTheater.Books.Controllers
         /// a correlated subquery made every unfiltered GROUP BY pay the projection's join for nothing.
         /// </summary>
         private async Task<(IQueryable<Item> CountQuery, IQueryable<ItemSummary> SummaryQuery)> BuildFilteredContextAsync(
-            ItemKind kind, string? q, string? filter, bool wantToReadOnly, bool readOnly, CancellationToken ct)
+            ItemKind kind, string? q, string? filter, ExactFilters exact, bool wantToReadOnly, bool readOnly, CancellationToken ct)
         {
             var entityQuery = await ApplyMarkFiltersAsync(ItemAccess.VisibleItems(db, User, kind), wantToReadOnly, readOnly, ct);
+            // The exact facet filters (credits / tags / events) narrow the ENTITY set, before the projection and the
+            // OData filter, so heads, bands, letters and counts all agree — see ExactFilters.
+            entityQuery = exact.Apply(db, entityQuery);
 
             if (!string.IsNullOrWhiteSpace(q))
             {
@@ -638,9 +712,15 @@ namespace MovieTheater.Books.Controllers
             return (byKey, renderTotals);
         }
 
-        /// <summary>The seven item sorts. Every one ends with the item id, so a page boundary never duplicates or drops a row.</summary>
-        private static IQueryable<ItemSummary> ApplySort(IQueryable<ItemSummary> q, string? orderby) => orderby switch
+        /// <summary>
+        /// The item sorts. Every one ends with the item id, so a page boundary never duplicates or drops a row.
+        /// <c>reading</c> orders by the reading-order job's <c>readIndex</c> (unordered issues last) — it only means
+        /// something inside a series group, which is the only place the client offers it.
+        /// </summary>
+        private IQueryable<ItemSummary> ApplySort(IQueryable<ItemSummary> q, string? orderby) => orderby switch
         {
+            "reading" => q.OrderBy(s => db.ReadingOrderEntries.Where(r => r.ItemId == s.Id).Select(r => r.ReadIndex).FirstOrDefault() ?? int.MaxValue)
+                .ThenBy(s => s.Year).ThenBy(s => s.Id),
             "newest" => q.OrderByDescending(s => s.Year).ThenByDescending(s => s.IndexedAt).ThenBy(s => s.Id),
             "oldest" => q.OrderBy(s => s.Year).ThenBy(s => s.IndexedAt).ThenBy(s => s.Id),
             "rating" => q.OrderByDescending(s => s.Rating).ThenBy(s => s.Id),
@@ -670,12 +750,6 @@ namespace MovieTheater.Books.Controllers
         }
 
         // ── facet helpers ─────────────────────────────────────────────────────────────────────────────────────
-
-        private static class CreditRoles
-        {
-            public static readonly string[] Authors = { "Writer", "Author" };
-            public static readonly string[] Artists = { "Penciller", "Artist", "Cover Artist" };
-        }
 
         /// <summary>
         /// Credit counts grouped by the NORMALIZED name — the (Role, NormalizedName, ItemId) index covers both the
@@ -777,11 +851,11 @@ namespace MovieTheater.Books.Controllers
         /// per-user AND changes on every click, so caching it would serve a stale shelf the moment the reader
         /// marked something; recomputing it is the cheaper of the two mistakes.
         /// </summary>
-        private string? HeadsSig(ItemKind kind, string by, string? q, string? filter, bool wantToReadOnly, bool readOnly) =>
-            wantToReadOnly || readOnly ? null : $"books:heads:{UserSig()}:{kind}:{by}:{q}:{filter}";
+        private string? HeadsSig(ItemKind kind, string by, string? q, string? filter, ExactFilters exact, bool wantToReadOnly, bool readOnly) =>
+            wantToReadOnly || readOnly ? null : $"books:heads:{UserSig()}:{kind}:{by}:{q}:{filter}:{exact.Sig}";
 
-        private static TimeSpan Ttl(string? q, string? filter) =>
-            string.IsNullOrEmpty(q) && string.IsNullOrEmpty(filter) ? HeadsTtlDefault : HeadsTtlFiltered;
+        private static TimeSpan Ttl(string? q, string? filter, ExactFilters exact) =>
+            string.IsNullOrEmpty(q) && string.IsNullOrEmpty(filter) && exact.IsEmpty ? HeadsTtlDefault : HeadsTtlFiltered;
 
         private async Task<List<GroupHead>> CachedHeadsAsync(string? sig, TimeSpan ttl, Func<Task<List<GroupHead>>> factory)
         {

@@ -44,6 +44,8 @@ site proxy they appear under `/API/Books/…`.
 | `GET /browse/group-letters?groupBy=` | `{ totalGroups, letters: [{letter, firstIndex}] }` for the A–Z rail. Shares the heads cache with `/browse/groups` |
 | `GET /browse/groups/{groupBy}/{key}/items?skip=&top=` | Band continuation: more items inside one group, same sort |
 | `GET /browse/series/{id}/library-rating` | `{ rating, note }` for the series modal's chip; 200 with nulls when unrated |
+| `GET /browse/series/{id}/run` | (R8) Every visible issue of one series in reading order, each row `{ item, readingOrder?, collection? }` — the reading-order and containment blocks the flat projection omits (the series modal's smart reading list, the shelf drawer) |
+| exact facet params (R8) | `author=`, `artist=`, `tag=`, `event=` and their excludes `exAuthor= exArtist= exTag= exEvent=` — REPEATABLE query params accepted by `/odata/catalog` and the three `/browse/*` group endpoints. They filter on the ROWS the facets count (`ItemCredit` by role, `ItemTag` + `SeriesTag`, `ComicDetail.EventName`): OR within a param, AND across, exact never substring; tags take the facets' `category:value` spelling. See `Access/ExactFilters.cs`. `orderby=reading` sorts a series band by `readIndex` |
 
 Contract notes worth knowing before writing a client:
 
@@ -96,6 +98,8 @@ want/read stores are gone; so is its per-folder ACL.
 | `GET /shelf/series?kind=read\|want&skip=&top=` | The shelved series as cards: name, issues held, issues finished, cover item, run years, publisher, the mark's own flags |
 | `GET /shelf/continue?skip=&top=` | In-progress items, most recent first |
 | `GET /shelf/last-opened?skip=&top=` | Opened items (in progress or finished), most recent first, minus the dismissed |
+| `GET /shelf/series/{id}/progress` | (R8) `{ seriesId, total, finishedCount, finishedIds, inProgressIds }` — the user's state inside one series, for the drawer's done-ticks |
+| `GET /marks/items/{itemId}` | (R8) One item's marks for the caller (defaults when unmarked; 404 only when the item is not visible) |
 | `GET /suggestions?count=&seed=` | The recommender. `seed` makes a run reproducible |
 
 Contract notes worth knowing before writing a client:
@@ -308,7 +312,7 @@ first section to have a server for it.
 | `GET /explore/kids?seed=` | The kids landing, same envelope, ceiling forced to 0 |
 | `GET /kids/browse?groupBy=series&groupsSkip=&groupsTop=&perGroupTop=` | Kid-safe shelves — one group per kid-clear series (`PerSeries` 40, `MaxSeries` 160), plus a trailing `books` group |
 | `GET /kids/series/{id}/items?skip=&top=` | One kid-safe shelf's issues; 404 when the series is not kid-clear |
-| `GET /novels?author=&series=&publisher=&decade=&tag=&q=&skip=&top=&orderby=` | The books list: `{ total, skip, top, items, covers }` |
+| `GET /novels?author=&series=&publisher=&decade=&tag=&q=&skip=&top=&orderby=&excludeTag=&minRating=&unknown=` | The books list: `{ total, skip, top, items, covers, maturity }` — (R8) `excludeTag` NOT EXISTS in the `tag` spelling, `minRating` floors the 0–100 rating, `unknown=true` = only books with no current insight; `maturity` = the current insight's 0–3 per row (null when unrated) |
 | `GET /novels/facets` | `{ authors, series, publishers, decades, tags }` with counts, over the gated set |
 | `GET /novels/{id}` | The same `ItemDetail` `/items/{id}` returns (same builder), 404 for anything that is not a visible book |
 

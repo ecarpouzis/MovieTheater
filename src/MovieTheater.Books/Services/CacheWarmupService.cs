@@ -156,12 +156,12 @@ namespace MovieTheater.Books.Services
                 // four groupings warm cheaply and the band fetches then hit that same cache.
                 foreach (var groupBy in WarmedGroupings)
                     Tally(await RunAsync<BrowseController>(principal, "heads:" + groupBy,
-                        c => c.GetGroupLetters(groupBy, null, null, null, false, false, ct), ct));
+                        c => c.GetGroupLetters(groupBy, null, null, null, false, false, ct: ct), ct));
 
                 // The default first band. Its response is not cached (megabytes per variant), but running it keeps
                 // the projection's join pages hot so the real request stays at warm speed.
                 Tally(await RunAsync<BrowseController>(principal, "groups:default",
-                    c => c.GetGroups("collection", null, "series", 20, 0, 48, 0, null, null, null, null, false, false, ct), ct));
+                    c => c.GetGroups("collection", null, "series", 20, 0, 48, 0, null, null, null, null, false, false, ct: ct), ct));
 
                 // Explore. Its payload IS cached (one entry per user × ceiling × day seed), and assembling it is
                 // the most expensive read in the vertical, so warming it is the difference between "fresh

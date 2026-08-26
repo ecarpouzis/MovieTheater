@@ -75,6 +75,14 @@ namespace MovieTheater.Books.Controllers
 
         /// <summary>
         /// GET /novels?author=&amp;series=&amp;publisher=&amp;decade=&amp;tag=&amp;q=&amp;skip=&amp;top=&amp;orderby=
+        /// &amp;excludeTag=&amp;minRating=&amp;unknown=
+        ///
+        /// <para>The three the standalone's Books view had beyond the facets: <c>excludeTag</c> (the same
+        /// composite spelling as <c>tag</c>, NOT EXISTS — its default chip was "not adult-romance"),
+        /// <c>minRating</c> (a floor on the resolved 0–100 rating) and <c>unknown=true</c> (ONLY the books with no
+        /// current insight row — the "no metadata yet" pile, the inverse of what the rest of the rail can reach).
+        /// The response also carries <c>maturity</c> per row (the current insight's 0–3, null when unrated) beside
+        /// <c>covers</c>, because the row projection is the shared one and may not grow a book-only column.</para>
         /// </summary>
         [HttpGet]
         public async Task<IActionResult> List(
@@ -87,15 +95,27 @@ namespace MovieTheater.Books.Controllers
             [FromQuery] int skip = 0,
             [FromQuery] int top = 60,
             [FromQuery] string? orderby = null,
+            [FromQuery] string? excludeTag = null,
+            [FromQuery] int? minRating = null,
+            [FromQuery] bool unknown = false,
             CancellationToken ct = default)
         {
             skip = Math.Max(0, skip);
             top = Math.Clamp(top, 1, MaxTop);
 
-            var query = Filtered(author, series, publisher, decade, tag, q);
+            var query = Filtered(author, series, publisher, decade, tag, q, excludeTag, minRating, unknown);
             var total = await query.CountAsync(ct);
             var items = await Sorted(query.Select(ItemSummary.Project), orderby)
                 .Skip(skip).Take(top).ToListAsync(ct);
+
+            var ids = items.Select(i => i.Id).ToList();
+            var maturity = ids.Count == 0
+                ? new Dictionary<int, int?>()
+                : await db.Insights.AsNoTracking()
+                    .Where(n => n.SubjectKind == SubjectKind.Item && n.IsCurrent && n.SubjectId != null && ids.Contains(n.SubjectId.Value))
+                    .GroupBy(n => n.SubjectId!.Value)
+                    .Select(g => new { Id = g.Key, Maturity = g.Max(n => n.Maturity) })
+                    .ToDictionaryAsync(x => x.Id, x => x.Maturity, ct);
 
             var media = MediaUrls.For(options, User);
             return Ok(new
@@ -105,6 +125,7 @@ namespace MovieTheater.Books.Controllers
                 top,
                 items,
                 covers = items.ToDictionary(i => i.Id.ToString(CultureInfo.InvariantCulture), i => media.Thumb(i.Id)),
+                maturity = items.ToDictionary(i => i.Id.ToString(CultureInfo.InvariantCulture), i => maturity.GetValueOrDefault(i.Id)),
             });
         }
 
@@ -197,9 +218,24 @@ namespace MovieTheater.Books.Controllers
         private IQueryable<Item> Visible() => ItemAccess.VisibleItems(db, User, ItemKind.Book);
 
         private IQueryable<Item> Filtered(string? author, string? series, string? publisher, string? decade,
-            string? tag, string? q)
+            string? tag, string? q, string? excludeTag = null, int? minRating = null, bool unknown = false)
         {
             var query = Visible();
+
+            foreach (var (category, value) in Tags(excludeTag))
+            {
+                var cat = category;
+                var val = value;
+                query = cat == null
+                    ? query.Where(i => !db.ItemTags.Any(t => t.ItemId == i.Id && t.Value == val))
+                    : query.Where(i => !db.ItemTags.Any(t => t.ItemId == i.Id && t.Category == cat && t.Value == val));
+            }
+
+            if (minRating is int floor && floor > 0)
+                query = query.Where(i => i.ResolvedRating != null && i.ResolvedRating >= floor);
+
+            if (unknown)
+                query = query.Where(i => !db.Insights.Any(n => n.SubjectKind == SubjectKind.Item && n.SubjectId == i.Id && n.IsCurrent));
 
             var authors = Csv(author);
             if (authors.Count > 0)

@@ -38,12 +38,25 @@ namespace MovieTheater.Books.Controllers
         private readonly BooksDb db;
         public CatalogController(BooksDb db) => this.db = db;
 
+        /// <summary>
+        /// The exact facet filters ride beside the OData options (see <see cref="ExactFilters"/>): repeatable
+        /// <c>author= artist= tag= event=</c> and their <c>ex*</c> excludes. They narrow the ITEM set before the
+        /// projection, so <c>$filter</c>, <c>$count</c> and paging all see the same rows.
+        /// </summary>
         [HttpGet]
         [EnableQuery(PageSize = 120, MaxTop = 500)]
         public IQueryable<ItemSummary> Get(
             [FromQuery] string? q = null,
             [FromQuery] int? directory = null,
-            [FromQuery] string? kind = null)
+            [FromQuery] string? kind = null,
+            [FromQuery] string[]? author = null,
+            [FromQuery] string[]? artist = null,
+            [FromQuery] string[]? tag = null,
+            [FromQuery(Name = "event")] string[]? eventName = null,
+            [FromQuery] string[]? exAuthor = null,
+            [FromQuery] string[]? exArtist = null,
+            [FromQuery] string[]? exTag = null,
+            [FromQuery] string[]? exEvent = null)
         {
             // [EnableQuery] runs AFTER the action and builds its own EDM from the CLR type unless the request
             // already carries one — and the one it builds is PascalCase, so a client filtering on the camelCase
@@ -68,6 +81,8 @@ namespace MovieTheater.Books.Controllers
                 var ids = ItemFts.Search(db, match, FtsLimit);
                 query = query.Where(i => ids.Contains(i.Id));
             }
+
+            query = ExactFilters.From(author, artist, tag, eventName, exAuthor, exArtist, exTag, exEvent).Apply(db, query);
 
             var summary = query.Select(ItemSummary.Project);
             EmitTotalCount(summary);

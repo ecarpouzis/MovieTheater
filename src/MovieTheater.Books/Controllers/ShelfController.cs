@@ -100,6 +100,27 @@ namespace MovieTheater.Books.Controllers
             return Ok(Page(total, skip, top, cards));
         }
 
+        /// <summary>
+        /// GET /shelf/series/{seriesId}/progress — the user's per-issue state inside ONE series: which visible
+        /// issues are finished and which are under way. The shelf drawer's done-ticks read this instead of paging
+        /// the whole read list; the counts are the same arithmetic <see cref="GetSeries"/> uses for its cards.
+        /// </summary>
+        [HttpGet("series/{seriesId:int}/progress")]
+        public async Task<IActionResult> SeriesProgress(int seriesId, CancellationToken ct = default)
+        {
+            if (BooksIdentity.UserId(User) is not int userId) return Forbid();
+
+            var items = UserActivityQueries.AccessibleItems(db, User).Where(i => i.SeriesId == seriesId);
+            var total = await items.CountAsync(ct);
+            var states = await (from s in db.UserItemStates.AsNoTracking().Where(s => s.UserId == userId)
+                                join i in items on s.ItemId equals i.Id
+                                select new { s.ItemId, s.Status }).ToListAsync(ct);
+
+            var finishedIds = states.Where(s => s.Status == ReadStatus.Finished).Select(s => s.ItemId).OrderBy(id => id).ToList();
+            var inProgressIds = states.Where(s => s.Status == ReadStatus.InProgress).Select(s => s.ItemId).OrderBy(id => id).ToList();
+            return Ok(new { seriesId, total, finishedCount = finishedIds.Count, finishedIds, inProgressIds });
+        }
+
         /// <summary>GET /shelf/continue — what the user is part-way through, most recent first.</summary>
         [HttpGet("continue")]
         public async Task<IActionResult> Continue([FromQuery] int skip = 0, [FromQuery] int top = 24, CancellationToken ct = default)
