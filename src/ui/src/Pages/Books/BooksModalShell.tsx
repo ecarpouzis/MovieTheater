@@ -46,8 +46,12 @@ export default function BooksModalShell({ open, onClose, ariaLabel, variant = "b
       zIndex={1500}
       wrapClassName="books-modal"
       rootClassName="books-modal-root"
-      wrapProps={{ style: skin, "data-kids-style": kidsStyle ?? undefined }}
-      styles={{ body: { padding: 0 } }}
+      // The skin tokens ride `styles.wrapper`, which the dialog MERGES into the wrap's own inline style.
+      // They used to ride `wrapProps.style`, which the dialog spreads AFTER its own props — so the wrap
+      // lost its inline `zIndex` (and its display toggle) and the mask, still at 1500, painted OVER the
+      // modal: "click a book and the whole screen blurs with the modal behind it" (Eric, 2026-08-26).
+      wrapProps={{ "data-kids-style": kidsStyle ?? undefined }}
+      styles={{ wrapper: skin, body: { padding: 0 } }}
     >
       <div className={`cm cm--${variant}`} role="dialog" aria-label={ariaLabel}>
         <button type="button" className="cm-close" onClick={onClose} aria-label="Close">
