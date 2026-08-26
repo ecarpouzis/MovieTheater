@@ -18,6 +18,8 @@ export interface CatalogTweaks {
   hover: HoverEffect;
   rounded: boolean;
   metadata: MetadataMode;
+  /** Directory: keep nodes with nothing under them (they render as a blank hue tile). */
+  showEmptyFolders: boolean;
   /** Section-registered extras (a font theme, a backdrop), by key. */
   extras: Record<string, string>;
 }
@@ -36,7 +38,7 @@ export const HOVER_EFFECTS: { value: HoverEffect; label: string }[] = [
   { value: "none", label: "None" },
 ];
 
-export const DEFAULT_TWEAKS: CatalogTweaks = { scale: {}, hover: "lift", rounded: true, metadata: "label", extras: {} };
+export const DEFAULT_TWEAKS: CatalogTweaks = { scale: {}, hover: "lift", rounded: true, metadata: "label", showEmptyFolders: false, extras: {} };
 
 export function storageKeyFor(section: string): string {
   return `catalog.tweaks.v1:${section}`;
@@ -71,6 +73,7 @@ export function loadTweaks(section: string): CatalogTweaks {
     if (HOVER_EFFECTS.some((h) => h.value === p.hover)) out.hover = p.hover as HoverEffect;
     if (typeof p.rounded === "boolean") out.rounded = p.rounded;
     if (p.metadata === "label" || p.metadata === "minimal") out.metadata = p.metadata;
+    if (typeof p.showEmptyFolders === "boolean") out.showEmptyFolders = p.showEmptyFolders;
     if (p.extras && typeof p.extras === "object") {
       for (const [k, v] of Object.entries(p.extras)) if (typeof v === "string") out.extras[k] = v;
     }

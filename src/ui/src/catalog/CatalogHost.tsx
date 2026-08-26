@@ -1,12 +1,19 @@
 import { useState, type ReactNode } from "react";
 import "./styles/catalog-views.css";
+import "./styles/catalog-grouped.css";
+import "./styles/catalog-shelves.css";
 import ViewSwitcher from "./ViewSwitcher";
+import useMiddleDragScroll from "./engine/useMiddleDragScroll";
 import useCatalogView from "./state/useCatalogView";
-import TweaksPanel from "./tweaks/TweaksPanel";
+import TweaksPanel, { TweakRow, TweakToggle } from "./tweaks/TweaksPanel";
 import useTweaks, { hoverClass } from "./tweaks/useTweaks";
 import type { CatalogSource, ViewMode } from "./types";
+import DirectoryView from "./views/DirectoryView";
+import ExtendedView from "./views/ExtendedView";
 import GridView from "./views/GridView";
 import ListView from "./views/ListView";
+import NewspaperView from "./views/NewspaperView";
+import ShelvesView from "./views/ShelvesView";
 import type { ViewProps } from "./views/ViewProps";
 import WallView from "./views/WallView";
 
@@ -19,12 +26,15 @@ import WallView from "./views/WallView";
  * `overrides` lets a section keep an existing renderer for a view (Movies keeps its CardList as
  * the Grid, untouched); the switcher still lists the view, the host just renders the override.
  */
-export const AVAILABLE_VIEWS: readonly ViewMode[] = ["grid", "wall", "list"];
+export const AVAILABLE_VIEWS: readonly ViewMode[] = ["grid", "wall", "list", "extended", "shelf", "newspaper", "directory"];
 
 const VIEWS: Partial<Record<ViewMode, (p: ViewProps) => JSX.Element>> = {
   grid: GridView,
   wall: WallView,
   list: ListView,
+  extended: ExtendedView,
+  shelf: ShelvesView,
+  newspaper: NewspaperView,
 };
 
 export interface CatalogHostProps {
@@ -41,10 +51,16 @@ export default function CatalogHost({ section, source, overrides, leading, class
   const { state, setView, setGroup, setItems, setSort } = useCatalogView(section, source, AVAILABLE_VIEWS);
   const { tweaks, update, setCoverScale, setExtra, coverScale } = useTweaks(section);
   const [tweaksOpen, setTweaksOpen] = useState(false);
+  useMiddleDragScroll();
   const scale = coverScale(state.view);
   const hc = hoverClass(tweaks.hover);
-  const View = VIEWS[state.view];
   const override = overrides?.[state.view];
+  const viewProps: ViewProps = { source, state, coverScale: scale, metadata: tweaks.metadata, hover: tweaks.hover, hoverClass: hc };
+  const View = VIEWS[state.view];
+  let content: ReactNode = null;
+  if (override != null) content = override;
+  else if (state.view === "directory") content = <DirectoryView {...viewProps} showEmpty={tweaks.showEmptyFolders} />;
+  else if (View) content = <View {...viewProps} />;
 
   return (
     <div className={`bx-host${className ? ` ${className}` : ""}`} data-view={state.view} data-section={section}>
@@ -61,9 +77,7 @@ export default function CatalogHost({ section, source, overrides, leading, class
         leading={leading}
       />
       <div className={`bx-results ${tweaks.rounded ? "bx-rounded" : "bx-sharp"}`} data-hover={tweaks.hover} data-view={state.view}>
-        {override ?? (View
-          ? <View source={source} state={state} coverScale={scale} metadata={tweaks.metadata} hover={tweaks.hover} hoverClass={hc} />
-          : null)}
+        {content}
       </div>
       {tweaksOpen && (
         <TweaksPanel
@@ -75,7 +89,16 @@ export default function CatalogHost({ section, source, overrides, leading, class
           onExtra={setExtra}
           extras={source.tweakExtras}
           onClose={() => setTweaksOpen(false)}
-        />
+        >
+          {state.view === "directory" && (
+            <>
+              <div className="twk-sect">Directory</div>
+              <TweakRow label="Show empty folders" inline>
+                <TweakToggle on={tweaks.showEmptyFolders} onChange={(showEmptyFolders) => update({ showEmptyFolders })} label="Show empty folders" />
+              </TweakRow>
+            </>
+          )}
+        </TweaksPanel>
       )}
     </div>
   );

@@ -1,0 +1,254 @@
+import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import CatalogPager from "../../Components/CatalogPager";
+import Card from "../cards/Card";
+import InfiniteBands, { type InfiniteBandsHandle } from "../engine/InfiniteBands";
+import { NO_GROUP } from "../state/useCatalogView";
+import type { CardGroup, CardItem } from "../types";
+import FlatCardStream from "./FlatCardStream";
+import { GRID_BASE_CELL } from "./GridView";
+import { StreamEmpty, StreamFailed, StreamLoading } from "./StreamStates";
+import type { ViewProps } from "./ViewProps";
+import { GROUPS_PAGE_SIZE, groupLetterBuckets, groupRunLabel, useGroupedStream } from "./groupedStream";
+
+/**
+ * Extended — every group as a horizontally-scrolling strip of cards under its header, the strips
+ * streamed by the band engine. Each strip remembers its scroll position across band recycling,
+ * shows edge chevrons only where it can scroll, and pulls the group's next page when the reader
+ * nears its right edge. Ungrouped, it is simply the Grid.
+ */
+export const EXTENDED_PER_GROUP = 48;
+const STRIP_RATIO = 184 / 220;
+
+function ChevronIcon({ dir }: { dir: "l" | "r" }) {
+  return (
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {dir === "l" ? <polyline points="10,3 5,8 10,13" /> : <polyline points="6,3 11,8 6,13" />}
+    </svg>
+  );
+}
+
+function GroupIcon() {
+  return (
+    <svg className="bx-group-icon" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true">
+      <circle cx="7" cy="7" r="4.5" /><line x1="10.5" y1="10.5" x2="14" y2="14" />
+    </svg>
+  );
+}
+
+/**
+ * A horizontally-scrolling strip with edge chevrons (mounted only where it can scroll that way),
+ * remembered scroll position (the store outlives band recycling), and a near-end trigger.
+ */
+export function Strip({ coverH, itemCount, groupKey, scrollStore, onNearEnd, children }: {
+  coverH: number; itemCount: number; groupKey: string; scrollStore: Map<string, number>; onNearEnd?: () => void; children: ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [edges, setEdges] = useState({ left: false, right: false });
+  const update = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+    const left = el.scrollLeft > 1;
+    const right = el.scrollLeft + el.clientWidth < el.scrollWidth - 1;
+    setEdges((prev) => (prev.left === left && prev.right === right ? prev : { left, right }));
+  }, []);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const saved = scrollStore.get(groupKey);
+    if (saved) el.scrollLeft = saved;
+    update();
+  }, [groupKey, scrollStore, update]);
+  const onScroll = () => {
+    const el = ref.current;
+    if (!el) return;
+    scrollStore.set(groupKey, el.scrollLeft);
+    if (onNearEnd && el.scrollLeft + el.clientWidth > el.scrollWidth - 600) onNearEnd();
+    update();
+  };
+  useEffect(() => {
+    update();
+    const el = ref.current;
+    if (!el || typeof ResizeObserver === "undefined") return undefined;
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [update, itemCount, coverH]);
+  const scroll = (dir: -1 | 1) => { const el = ref.current; if (el) el.scrollBy({ left: dir * el.clientWidth * 0.8, behavior: "smooth" }); };
+  return (
+    <div className="bx-strip-wrap" style={{ "--cover-h": `${coverH}px` } as CSSProperties}>
+      {edges.left && <button type="button" className="bx-strip-nav bx-strip-nav-l" aria-label="Scroll left" onClick={() => scroll(-1)}><ChevronIcon dir="l" /></button>}
+      <div className="bx-strip" ref={ref} onScroll={onScroll}>{children}</div>
+      {edges.right && <button type="button" className="bx-strip-nav bx-strip-nav-r" aria-label="Scroll right" onClick={() => scroll(1)}><ChevronIcon dir="r" /></button>}
+    </div>
+  );
+}
+
+type Extra = { items: CardItem[]; loading: boolean; hasMore: boolean };
+
+/** One band of groups: header + strip per group, with per-group "more" that survives band recycling. */
+function GroupBand({ groups, cellH, metadata, hoverClass, noun, groupNoun, onOpen, onOpenGroup, loadMore, perGroupCap, extras, onLoadMore, scrollStore }: {
+  groups: CardGroup[]; cellH: number; metadata: ViewProps["metadata"]; hoverClass: string; noun: string; groupNoun: string;
+  onOpen: (i: CardItem) => void; onOpenGroup: ((g: CardGroup) => void) | null;
+  loadMore: ((groupKey: string, skip: number) => Promise<CardItem[]>) | null; perGroupCap: number;
+  extras: Record<string, Extra>; onLoadMore: (groupKey: string, count: number) => void; scrollStore: Map<string, number>;
+}) {
+  const stripH = Math.round(cellH * STRIP_RATIO);
+  return (
+    <div className="bx-groups">
+      {groups.map((g) => {
+        const extra = extras[g.key];
+        const all = extra ? [...g.items, ...extra.items] : g.items;
+        const showMore = !!loadMore && (extra ? extra.hasMore : g.items.length >= perGroupCap) && all.length < g.totalItems;
+        const loadingMore = extra?.loading ?? false;
+        return (
+          <section key={g.key} className="bx-group" data-group-key={g.key}>
+            <header className="bx-group-head">
+              <h3 className={`bx-group-name${onOpenGroup ? " bx-clickable" : ""}`} onClick={onOpenGroup ? () => onOpenGroup(g) : undefined}>{g.label}</h3>
+              {onOpenGroup && (
+                <button type="button" className="bx-group-browse" title={`Open ${groupNoun.replace(/s$/, "")}`} onClick={() => onOpenGroup(g)}><GroupIcon /></button>
+              )}
+              <span className="bx-group-meta">{groupRunLabel(g, noun)}</span>
+              <span className="bx-group-rule" />
+            </header>
+            <Strip coverH={stripH} itemCount={all.length} groupKey={g.key} scrollStore={scrollStore}
+              onNearEnd={showMore && !loadingMore ? () => onLoadMore(g.key, all.length) : undefined}>
+              {all.map((item) => (
+                <Card key={item.key} item={item} cellH={stripH} metadata={metadata} hoverClass={hoverClass} onOpen={onOpen} />
+              ))}
+              {showMore && (
+                <button type="button" className="bx-strip-more" disabled={loadingMore} onClick={() => onLoadMore(g.key, all.length)}>
+                  {loadingMore ? "…" : "more →"}
+                </button>
+              )}
+            </Strip>
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+const GroupBandMemo = memo(GroupBand);
+
+export default function ExtendedView(props: ViewProps) {
+  const { source, state, coverScale } = props;
+  if (state.group === NO_GROUP || !source.fetchGroupBand) {
+    return <FlatCardStream {...props} variant="grid" cellH={Math.round(GRID_BASE_CELL * coverScale)} perBand={source.pageSize ?? 48} />;
+  }
+  return <ExtendedGrouped {...props} />;
+}
+
+function ExtendedGrouped({ source, state, coverScale, metadata, hoverClass }: ViewProps) {
+  const cellH = Math.round(GRID_BASE_CELL * coverScale);
+  const stream = useGroupedStream(source, state, EXTENDED_PER_GROUP);
+  const engineRef = useRef<InfiniteBandsHandle>(null);
+  const [spyUnit, setSpyUnit] = useState(0);
+  const onSpy = useCallback((unit: number) => setSpyUnit(unit), []);
+  const scrollStoreRef = useRef(new Map<string, number>());
+  const [extras, setExtras] = useState<Record<string, Extra>>({});
+  const inFlightRef = useRef(new Set<string>());
+  useEffect(() => { setExtras({}); inFlightRef.current.clear(); scrollStoreRef.current.clear(); }, [stream.queryKey]);
+
+  const onLoadMore = useCallback(async (groupKey: string, count: number) => {
+    const lm = stream.loadMore;
+    if (!lm || inFlightRef.current.has(groupKey)) return;
+    inFlightRef.current.add(groupKey);
+    setExtras((prev) => ({ ...prev, [groupKey]: { items: prev[groupKey]?.items ?? [], loading: true, hasMore: true } }));
+    try {
+      const more = await lm(groupKey, count);
+      setExtras((prev) => ({ ...prev, [groupKey]: { items: [...(prev[groupKey]?.items ?? []), ...more], loading: false, hasMore: more.length >= EXTENDED_PER_GROUP } }));
+    } catch {
+      setExtras((prev) => ({ ...prev, [groupKey]: { items: prev[groupKey]?.items ?? [], loading: false, hasMore: true } }));
+    } finally {
+      inFlightRef.current.delete(groupKey);
+    }
+  }, [stream.loadMore]);
+
+  // Wheel over a strip = horizontal browse, but only while a card in that strip is hovered (the
+  // visible "engaged" state) or a browse is already running; a vertical page scroll always falls
+  // through and clears engagement, so the page can never be trapped. Non-passive capture is what
+  // preventDefault needs; the handler is O(1).
+  const rootRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return undefined;
+    let hoverCard: HTMLElement | null = null;
+    const engaged = new Set<Element>();
+    const timers = new Map<Element, ReturnType<typeof setTimeout>>();
+    const onOver = (e: Event) => { hoverCard = (e.target as HTMLElement)?.closest?.(".bx-strip .bx-card") as HTMLElement | null; };
+    const onOut = (e: Event) => { const c = (e.target as HTMLElement)?.closest?.(".bx-strip .bx-card"); if (c && c === hoverCard) hoverCard = null; };
+    const onWheel = (e: WheelEvent) => {
+      const strip = (e.target as HTMLElement)?.closest?.(".bx-strip") as HTMLElement | null;
+      if (!strip) return;
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+      const on = engaged.has(strip) || (hoverCard != null && hoverCard.closest(".bx-strip") === strip);
+      if (!on || strip.scrollWidth <= strip.clientWidth + 1) return;
+      const step = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+      const atStart = strip.scrollLeft <= 0;
+      const atEnd = strip.scrollLeft >= strip.scrollWidth - strip.clientWidth - 1;
+      if ((step < 0 && atStart) || (step > 0 && atEnd)) { engaged.delete(strip); return; }
+      e.preventDefault();
+      engaged.add(strip);
+      strip.scrollLeft += step;
+      const t = timers.get(strip);
+      if (t) clearTimeout(t);
+      timers.set(strip, setTimeout(() => { if (!hoverCard || hoverCard.closest(".bx-strip") !== strip) engaged.delete(strip); }, 150));
+    };
+    const onPageScroll = () => { engaged.clear(); };
+    root.addEventListener("pointerover", onOver);
+    root.addEventListener("pointerout", onOut);
+    root.addEventListener("wheel", onWheel, { capture: true, passive: false });
+    window.addEventListener("scroll", onPageScroll, { passive: true, capture: true });
+    return () => {
+      root.removeEventListener("pointerover", onOver);
+      root.removeEventListener("pointerout", onOut);
+      root.removeEventListener("wheel", onWheel, { capture: true });
+      window.removeEventListener("scroll", onPageScroll, { capture: true });
+      timers.forEach((t) => clearTimeout(t));
+    };
+  }, []);
+
+  const noun = source.itemNoun ?? "item";
+  const groupNoun = source.groupNoun ?? "groups";
+  const renderBand = useCallback((groups: CardGroup[]) => (
+    <GroupBandMemo
+      groups={groups} cellH={cellH} metadata={metadata} hoverClass={hoverClass} noun={noun} groupNoun={groupNoun}
+      onOpen={stream.open} onOpenGroup={stream.openGroup} loadMore={stream.loadMore} perGroupCap={EXTENDED_PER_GROUP}
+      extras={extras} onLoadMore={onLoadMore} scrollStore={scrollStoreRef.current}
+    />
+  ), [cellH, metadata, hoverClass, noun, groupNoun, stream.open, stream.openGroup, stream.loadMore, extras, onLoadMore]);
+
+  if (stream.loading && !stream.band0) return <StreamLoading />;
+  if (stream.error && !stream.band0) return <StreamFailed onRetry={stream.retry} />;
+  if (!stream.band0 || stream.band0.length === 0) return <StreamEmpty noun={noun} />;
+
+  const letters = stream.letters ? groupLetterBuckets(stream.letters, stream.totalGroups) : null;
+  return (
+    <div ref={rootRef} className="bx-extended">
+      <InfiniteBands<CardGroup>
+        ref={engineRef}
+        key="extended-groups"
+        total={stream.totalGroups}
+        perBand={GROUPS_PAGE_SIZE}
+        band0={stream.band0}
+        queryKey={stream.queryKey}
+        fetchBand={stream.fetchBand}
+        estBandHeight={GROUPS_PAGE_SIZE * (Math.round(cellH * STRIP_RATIO) + 110)}
+        spy={letters ? "unit" : "band"}
+        onSpy={onSpy}
+        renderBand={renderBand}
+      />
+      {stream.totalGroups > GROUPS_PAGE_SIZE && (
+        <CatalogPager
+          mode={letters ? "letters" : "pages"}
+          letters={letters}
+          total={stream.totalGroups}
+          pageSize={GROUPS_PAGE_SIZE}
+          currentIndex={spyUnit}
+          disabled={false}
+          onJump={(offset: number) => engineRef.current?.jumpToUnit(offset)}
+          itemNoun={groupNoun.replace(/s$/, "")}
+        />
+      )}
+    </div>
+  );
+}

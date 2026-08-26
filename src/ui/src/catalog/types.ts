@@ -81,7 +81,10 @@ export interface CardGroup {
    */
   renderTotal: number;
   items: CardItem[];
-  /** Optional per-group detail a view may surface (synopsis, span label, …). */
+  /**
+   * Optional per-group detail a view may surface. Known keys: `runLabel` (a span like "1987 – Present"),
+   * `synopsis`, `byline`, `kicker` (the Newspaper's category line), `tags` (string[]).
+   */
   detail?: Record<string, unknown>;
 }
 
@@ -182,6 +185,10 @@ export interface CatalogSource {
    * the top when it changes; it must NOT change for a view/sort/tweak switch alone.
    */
   queryKey: string;
+  /** The section's display name ("Movies", "Music") — the Newspaper's masthead and the empty states. */
+  title?: string;
+  /** Plural noun for groups ("franchises", "artists") — headers and the Items pill. */
+  groupNoun?: string;
   /** Which views this section supports; the switcher shows only these. */
   supports: ViewMode[];
   /** Group-by modes for the grouped views and the flat views' representative mode; empty = ungrouped only. */
