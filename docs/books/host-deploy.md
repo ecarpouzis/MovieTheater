@@ -7,9 +7,9 @@ R5 section and `v2-model.md`.
 ## Topology
 
 ```
-browser ──(cookie)──► site pod ──/API/Books/* ──► Yarp ──X-MT-Identity──► https://books-host.<domain> ──► Caddy ──► localhost:2204
+browser ──(cookie)──► site pod ──/API/Books/* ──► Yarp ──X-MT-Identity──► https://books.<domain> ──► Caddy ──► localhost:2204
 browser ──(Basic)───► site pod ──/opds/*     ──► Yarp ──X-MT-Identity──► (same)
-browser ──(media token in the path)──────────────────────────────────────► https://books-host.<domain>/m/{token}/…
+browser ──(media token in the path)──────────────────────────────────────► https://books.<domain>/m/{token}/…
 ```
 
 - `/API/Books/{**}` — policy `RequireBooksAccess` (password-verified session + `UserSettings.BooksAccess = true`), prefix stripped, `Cookie` removed, identity header stamped (`userId|username|isAdmin|ceiling|exp`, 60 s + 30 s grace).
@@ -24,7 +24,7 @@ browser ──(media token in the path)─────────────�
   "Books": {
     "Urls": "http://localhost:2204",
     "SiteOrigin": "https://<site host>",
-    "PublicBaseUrl": "https://books-host.<domain>",
+    "PublicBaseUrl": "https://books.<domain>",
     "IdentityTokenSecret": "<same value as the pod's BooksTokenSecret>",
     "MediaTokenSecret": "<host-only random secret>",
     "DbPath": "F:\\Work\\MovieTheater\\data\\books\\v2\\books.db",
@@ -53,15 +53,21 @@ browser ──(media token in the path)─────────────�
 1. `.\scripts\deploy-books-host.ps1 -SkipRestart` — publishes and copies the binaries to `C:\BooksHost\app`.
 2. Write `appsettings.Production.json` as above.
 3. `.\scripts\install-books-host-service.ps1` — nssm service `BooksHost`, runs `MovieTheater.BooksHost.exe web` as the installing user (NAS access), `ASPNETCORE_ENVIRONMENT=Production` is its only environment variable; logs rotate under `C:\BooksHost\logs`.
-4. Caddy: add the site block and the host to the explicit `http://` redirect list, then `caddy validate --config C:\caddy\Caddyfile` and reload:
+4. **Hostname ruling (2026-08-25): the host takes `books.<domain>`; the standalone site moves to `longbox.<domain>`.** `books.` is the anchor A record (the other gateways CNAME onto it) and already has a certificate, so the host inherits both. In `C:\caddy\Caddyfile`: rename the existing standalone block to `longbox.<domain>` (still `reverse_proxy localhost:21938`), add `http://longbox.<domain>` to the explicit `http://` redirect list, and turn the `books.<domain>` block into the host:
    ```
-   books-host.<domain> {
+   books.<domain> {
        import altsvc_clear
        reverse_proxy localhost:2204
    }
+   longbox.<domain> {
+       import altsvc_clear
+       reverse_proxy localhost:21938
+   }
    ```
-5. DNS: `books-host.<domain>` CNAME → the existing anchor record (the same way `arcade.` is a CNAME).
-6. Site pod secret (`MOVIETHEATER_APPSETTINGS_JSON`, per the movietheater-secret recipe): add `"BooksHostBaseUrl": "https://books-host.<domain>"` and `"BooksTokenSecret": "<shared>"`; restart the pods.
+   `caddy validate --config C:\caddy\Caddyfile`, reload; Caddy issues the `longbox.` certificate on first request (`caddy.log`).
+5. DNS: nothing for `books.` (the anchor stays). Add `longbox` CNAME → `books.<domain>` (the same way `arcade.` is a CNAME) **before** the Caddy reload, or the standalone is unreachable until the record propagates.
+5b. The site's `UserSettings.ComicSiteAccess` rows hold the standalone's URL (the NavBar's external "Comics" link): update them to `https://longbox.<domain>` at the same time (end-to-end via `SqlConnection`, count → update → recount). Any OPDS reader app pointed at the standalone's `/opds` must be re-pointed by hand.
+6. Site pod secret (`MOVIETHEATER_APPSETTINGS_JSON`, per the movietheater-secret recipe): add `"BooksHostBaseUrl": "https://books.<domain>"` and `"BooksTokenSecret": "<shared>"`; restart the pods.
 7. Grant: `scripts/books/migrate-books-access.sql` — **already applied 2026-08-25** (3 `ComicSiteAccess` holders → 3 `BooksAccess` rows); re-running is safe (it inserts only missing rows). The legacy row stays until R8.
 
 ## Every later deploy
@@ -77,7 +83,7 @@ browser ──(media token in the path)─────────────�
 
 ## Proving the seam
 
-- Host, direct: `GET https://books-host.<domain>/ping` → 401 (no identity header can be forged from outside).
+- Host, direct: `GET https://books.<domain>/ping` → 401 (no identity header can be forged from outside).
 - Through the site with a password-verified session: `GET https://<site>/API/Books/ping` → `{ userId, username, isAdmin, maturity, host: "books-host", utc }`.
 - OPDS: `curl -u <user>:<site password> https://<site>/opds/ping` → the same echo; a wrong password → 401 with `WWW-Authenticate: Basic realm="Books"`.
 - Media: `GET /API/Books/media-token` → `{ token, baseUrl }`; `GET {baseUrl}/m/{token}/thumbs/{id}.webp` → the cover (`Cache-Control: private`, ETag, 304 on re-request).
