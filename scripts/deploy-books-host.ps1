@@ -43,6 +43,19 @@ if (-not $isAdmin -and -not $SkipRestart) {
   throw "Not elevated. Stopping an NSSM service needs admin — relaunch: Start-Process pwsh -Verb RunAs -ArgumentList '-NoExit','-File','$PSCommandPath'"
 }
 
+# Copy a publish tree INCLUDING subfolders. runtimes\win-x64\native\ carries e_sqlite3.dll and pdfium.dll;
+# a flat file copy (the StreamGateway script this was cloned from has no native dependencies) left the host
+# without SQLite at all on 2026-08-25 - every database touch threw DllNotFoundException while /ping still 200ed.
+function Copy-Tree {
+  param([string]$From, [string]$To, [switch]$SkipAppSettings)
+  Get-ChildItem $From -Recurse -File | Where-Object { -not ($SkipAppSettings -and $_.Name -like 'appsettings*.json') } | ForEach-Object {
+    $rel = $_.FullName.Substring($From.TrimEnd('\').Length + 1)
+    $dest = Join-Path $To $rel
+    New-Item -ItemType Directory -Force (Split-Path $dest -Parent) | Out-Null
+    Copy-Item $_.FullName -Destination $dest -Force
+    $_.FullName
+  }
+}
 function Restart-Host {
   param([scriptblock]$Swap)
   if ($SkipRestart) { & $Swap; return }
@@ -57,7 +70,7 @@ function Restart-Host {
 
 if ($Rollback) {
   if (-not (Test-Path (Join-Path $Rollback 'MovieTheater.BooksHost.dll'))) { throw "Not a usable snapshot (no host dll): $Rollback" }
-  Restart-Host { Get-ChildItem $Rollback -File | ForEach-Object { Copy-Item $_.FullName -Destination $AppDir -Force } }
+  Restart-Host { Copy-Tree $Rollback $AppDir }
   Write-Host "rolled back from $Rollback"
   return
 }
@@ -78,21 +91,17 @@ if (-not (Test-Path (Join-Path $PublishDir 'MovieTheater.BooksHost.dll'))) { thr
 # ── write-once rollback point ──
 New-Item -ItemType Directory -Force $AppDir | Out-Null
 $backup = Join-Path (Split-Path $AppDir -Parent) "app.bak-$Label"
-if ((Test-Path $backup) -and @(Get-ChildItem $backup -File -ErrorAction SilentlyContinue).Count -gt 0) {
+if ((Test-Path $backup) -and @(Get-ChildItem $backup -Recurse -File -ErrorAction SilentlyContinue).Count -gt 0) {
   Write-Host "backup already exists, keeping it untouched -> $backup"
-} elseif (@(Get-ChildItem $AppDir -File -ErrorAction SilentlyContinue).Count -gt 0) {
+} elseif (@(Get-ChildItem $AppDir -Recurse -File -ErrorAction SilentlyContinue).Count -gt 0) {
   New-Item -ItemType Directory -Path $backup -Force | Out-Null
-  Get-ChildItem $AppDir -File | ForEach-Object { Copy-Item $_.FullName -Destination $backup -Force }
-  Write-Host "backed up $(@(Get-ChildItem $backup -File).Count) files -> $backup"
+  Copy-Tree $AppDir $backup
+  Write-Host "backed up $(@(Get-ChildItem $backup -Recurse -File).Count) files -> $backup"
 }
 
 # ── swap (never config) ──
 Restart-Host {
-  $copied = @()
-  Get-ChildItem $PublishDir -File | Where-Object { $_.Name -notlike 'appsettings*.json' } | ForEach-Object {
-    Copy-Item $_.FullName -Destination $AppDir -Force
-    $copied += $_.Name
-  }
+  $copied = @(Copy-Tree $PublishDir $AppDir -SkipAppSettings)
   Write-Host "copied $($copied.Count) files"
 }
 if ($SkipRestart) { Write-Host 'binaries in place; install the service next (install-books-host-service.ps1)'; return }

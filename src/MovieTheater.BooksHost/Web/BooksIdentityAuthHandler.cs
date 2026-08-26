@@ -1,3 +1,4 @@
+using System;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
@@ -36,7 +37,10 @@ namespace MovieTheater.BooksHost.Web
             if (!BooksIdentityToken.TryValidate(secret, header, out var payload) || payload == null)
                 return AuthenticateResult.Fail("invalid identity header");
 
-            await recorder.RecordAsync(Context.RequestServices, payload);
+            // Recording who we saw is a side effect for the cache warmer; it must never turn a valid identity
+            // into a 500 (the request's own database work surfaces a broken store loudly enough).
+            try { await recorder.RecordAsync(Context.RequestServices, payload); }
+            catch (Exception ex) { Logger.LogWarning(ex, "KnownIdentity record failed for user {UserId}", payload.UserId); }
             var principal = BooksIdentity.Principal(payload.UserId, payload.Username, payload.IsAdmin, payload.MaturityCeiling);
             return AuthenticateResult.Success(new AuthenticationTicket(principal, Scheme.Name));
         }

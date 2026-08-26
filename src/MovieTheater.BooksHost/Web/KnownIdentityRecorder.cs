@@ -28,8 +28,6 @@ namespace MovieTheater.BooksHost.Web
             var changed = !lastSeen.TryGetValue(payload.UserId, out var seen) || seen != facts;
             var stale = !lastStamped.TryGetValue(payload.UserId, out var at) || now - at > RestampEvery;
             if (!changed && !stale) return;
-            lastSeen[payload.UserId] = facts;
-            lastStamped[payload.UserId] = now;
 
             var db = services.GetService<BooksDb>();
             if (db == null) return; // a host with no catalog configured still answers ping
@@ -37,6 +35,11 @@ namespace MovieTheater.BooksHost.Web
             if (row == null) db.KnownIdentities.Add(new KnownIdentity { UserId = payload.UserId, Username = payload.Username, IsAdmin = payload.IsAdmin, MaturityCeiling = payload.MaturityCeiling, LastSeenAt = now });
             else { row.Username = payload.Username; row.IsAdmin = payload.IsAdmin; row.MaturityCeiling = payload.MaturityCeiling; row.LastSeenAt = now; }
             await db.SaveChangesAsync();
+            // Memoize only AFTER the row is written: a failed write must be retried by the next request, not
+            // remembered as done (the first production ping hit a missing native SQLite library and the memo
+            // then hid it behind a 200 for every request after).
+            lastSeen[payload.UserId] = facts;
+            lastStamped[payload.UserId] = now;
         }
 
         /// <summary>For tests and the warmer: what has been seen since start.</summary>

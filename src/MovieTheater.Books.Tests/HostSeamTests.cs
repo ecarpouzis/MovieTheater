@@ -33,9 +33,11 @@ namespace MovieTheater.Books.Tests
             Assert.Equal(3, BooksIdentity.CeilingFor(BooksIdentity.Principal(1, "x", false, 9)));
         }
 
-        private static async Task<AuthenticateResult> Authenticate(BooksHostConfiguration config, string? header, KnownIdentityRecorder? recorder = null)
+        private static async Task<AuthenticateResult> Authenticate(BooksHostConfiguration config, string? header, KnownIdentityRecorder? recorder = null, Action<IServiceCollection>? configure = null)
         {
-            var services = new ServiceCollection().AddLogging().BuildServiceProvider();
+            var collection = new ServiceCollection().AddLogging();
+            configure?.Invoke(collection);
+            var services = collection.BuildServiceProvider();
             var ctx = new DefaultHttpContext { RequestServices = services };
             if (header != null) ctx.Request.Headers[BooksIdentityToken.HeaderName] = header;
             var handler = new BooksIdentityAuthHandler(
@@ -78,6 +80,50 @@ namespace MovieTheater.Books.Tests
         }
 
         // ── recorder ──
+
+        [Fact]
+        public async Task A_failed_record_is_retried_and_never_fails_authentication()
+        {
+            // 2026-08-25, production: the first request hit a store that could not open (missing native SQLite),
+            // the recorder had memoized BEFORE writing, and every later request skipped the write behind a 200.
+            var dir = Path.Combine(Path.GetTempPath(), "books-recorder-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(dir);
+            try
+            {
+                var good = Path.Combine(dir, "books.db");
+                using (var db = new BooksDb(BooksDbOptions.Hot(good))) db.Database.Migrate();
+                var broken = Path.Combine(dir, "missing", "nope", "books.db"); // parent folder absent: cannot open
+                var recorder = new KnownIdentityRecorder();
+                var payload = new BooksIdentityToken.Payload(7, "u", true, 3, 0);
+
+                var brokenServices = new ServiceCollection();
+                brokenServices.AddDbContext<BooksDb>(o => BooksDbOptions.Configure(o, broken));
+                await using (var bp = brokenServices.BuildServiceProvider())
+                using (var scope = bp.CreateScope())
+                    await Assert.ThrowsAnyAsync<Exception>(() => recorder.RecordAsync(scope.ServiceProvider, payload));
+                Assert.False(recorder.LastSeen.ContainsKey(7)); // not memoized as done
+
+                var config = Config(("IdentityTokenSecret", "s3cret"));
+                var token = BooksIdentityToken.MintNow("s3cret", 7, "u", isAdmin: true, maturityCeiling: 3);
+                var result = await Authenticate(config, token, recorder, sc => sc.AddDbContext<BooksDb>(o => BooksDbOptions.Configure(o, broken)));
+                Assert.True(result.Succeeded); // a broken side effect is a warning, never a 500
+
+                var goodServices = new ServiceCollection();
+                goodServices.AddDbContext<BooksDb>(o => BooksDbOptions.Configure(o, good));
+                await using (var gp = goodServices.BuildServiceProvider())
+                {
+                    using (var scope = gp.CreateScope()) await recorder.RecordAsync(scope.ServiceProvider, payload);
+                    using (var scope = gp.CreateScope())
+                        Assert.Equal("u", scope.ServiceProvider.GetRequiredService<BooksDb>().KnownIdentities.Single(k => k.UserId == 7).Username);
+                }
+                Assert.True(recorder.LastSeen.ContainsKey(7));
+            }
+            finally
+            {
+                Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+                try { Directory.Delete(dir, true); } catch (IOException) { }
+            }
+        }
 
         [Fact]
         public async Task The_recorder_writes_once_per_change()
