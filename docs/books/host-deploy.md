@@ -66,7 +66,8 @@ browser ──(media token in the path)─────────────�
    ```
    `caddy validate --config C:\caddy\Caddyfile`, reload; Caddy issues the `longbox.` certificate on first request (`caddy.log`).
 5. DNS: nothing for `books.` (the anchor stays). Add `longbox` CNAME → `books.<domain>` (the same way `arcade.` is a CNAME) **before** the Caddy reload, or the standalone is unreachable until the record propagates.
-5b. The site's `UserSettings.ComicSiteAccess` rows hold the standalone's URL (the NavBar's external "Comics" link): update them to `https://longbox.<domain>` at the same time (end-to-end via `SqlConnection`, count → update → recount). Any OPDS reader app pointed at the standalone's `/opds` must be re-pointed by hand.
+5b. The site's `UserSettings.ComicSiteAccess` rows hold the standalone's URL (the NavBar's external "Comics" link): update them to `https://longbox.<domain>` at the same time (end-to-end via `SqlConnection`, count → update → recount). Any OPDS reader app pointed at the standalone's `/opds` must be re-pointed by hand. **Steps 4–5b were carried out 2026-08-25**; the Caddyfile backup from before the switch is `Caddyfile.bak-20260825-prebooks`.
+6a. The pod secret change does not deploy itself (movietheater-secret skill): push a commit so CI rebuilds; the route appears when the new API pod is healthy — anonymous `GET /API/Books/ping` through the site flips from the SPA fallback to **401**.
 6. Site pod secret (`MOVIETHEATER_APPSETTINGS_JSON`, per the movietheater-secret recipe): add `"BooksHostBaseUrl": "https://books.<domain>"` and `"BooksTokenSecret": "<shared>"`; restart the pods.
 7. Grant: `scripts/books/migrate-books-access.sql` — **already applied 2026-08-25** (3 `ComicSiteAccess` holders → 3 `BooksAccess` rows); re-running is safe (it inserts only missing rows). The legacy row stays until R8.
 
