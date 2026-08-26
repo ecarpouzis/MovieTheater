@@ -26,6 +26,7 @@ import movieTheaterIcon from "../assets/icons/movie-theater.svg";
 import tvIcon from "../assets/icons/tv.svg";
 import boardGamesIcon from "../assets/icons/board-games.svg";
 import comicsIcon from "../assets/icons/comics.svg";
+import BooksNavContent from "./BooksNavContent";
 import arcadeIcon from "../assets/icons/joystick.svg";
 import musicIcon from "../assets/icons/music.svg";
 import photosIcon from "../assets/icons/photos.svg";
@@ -52,6 +53,7 @@ const SECTIONS = [
   { key: "boardgames", prefix: "/boardgames", icon: boardGamesIcon, title: "Board Games", themeClass: " navbar-boardgames-theme", Content: BoardGameNavContent },
   { key: "music", prefix: "/music", icon: musicIcon, title: "Music", themeClass: " navbar-music-theme", Content: MusicNavContent },
   { key: "photos", prefix: "/photos", icon: photosIcon, title: photosWordmark, themeClass: " navbar-photos-theme", Content: PhotosNavContent },
+  { key: "books", prefix: "/books", icon: comicsIcon, title: "Books", themeClass: " navbar-books-theme", siderWidth: 232, Content: BooksNavContent },
   { key: "movies", icon: movieTheaterIcon, title: "Movie Theater", themeClass: "" },
 ];
 
@@ -108,6 +110,11 @@ function NavBar({
   }, [location.pathname, location.search]);
 
   useEffect(() => {
+    // The movies dispatcher belongs to the movies section only. Every other section owns its own
+    // URL params and none of them is a movie search; until R8 this effect re-ran the movies
+    // browseDefault() under /photos, /music, /books on every param change, a fetch nobody looked at.
+    if (SECTIONS.some((sec) => sec.prefix && location.pathname.startsWith(sec.prefix))) return;
+
     // The ref lets us detect the very first execution of this effect.
     // Unlike a local variable, it survives re-renders without resetting.
     const isInitialLoad = !hasHandledInitialLoadRef.current;
@@ -384,9 +391,11 @@ function NavBar({
         <img className="navbar-section-icon" src={boardGamesIcon} alt="" /> Board Games
         <span className="navbar-hue-dot" style={{ background: "#2E9E63" }} />
       </button>
-      {userData?.comicSiteAccess && (
-        <button className="navbar-section-item" onClick={() => window.open(userData.comicSiteAccess, "_blank", "noopener,noreferrer")}>
-          <img className="navbar-section-icon" src={comicsIcon} alt="" /> Comics
+      {/* Books (R8): the former external "Comics" link, now a section. Same gating shape as Photos:
+          the entry is a courtesy, the /API/Books/* route re-checks the grant and the password session. */}
+      {userData?.booksAccess && userData?.hasPassword && (
+        <button className="navbar-section-item" onClick={() => history.push("/books")}>
+          <img className="navbar-section-icon" src={comicsIcon} alt="" /> Books
           <span className="navbar-hue-dot" style={{ background: "#D98936" }} />
         </button>
       )}

@@ -41,6 +41,7 @@ const MusicMseProbe = lazy(() => import("./Music/MusicMseProbe"));
 // deliberately routed for everyone: the route existing is not access, the RequireFamilyAlbum policy
 // on /API/Photos is — the page renders "family members only" when the server says so.
 const PhotosPage = lazy(() => import("./Pages/Photos/PhotosPage"));
+const BooksPage = lazy(() => import("./Pages/Books/BooksPage"));
 
 // readStored, not a bare getItem: these run at MODULE SCOPE, where a storage throw (Safari
 // private mode, storage disabled) used to be a white screen before a single component mounted.
@@ -182,6 +183,11 @@ function App() {
                 lazy chunk instead of one per view. */}
             <Route path="/photos">
               <PhotosPage userData={userData} />
+            </Route>
+            {/* Books (R8): non-exact like /photos. BooksPage owns the inner Switch (/books, /books/explore,
+                /books/shelf, /books/novels, /books/kids, /books/admin, /books/read/:itemId). */}
+            <Route path="/books">
+              <BooksPage userData={userData} setUserData={setUserData} />
             </Route>
             <Route path="/arcade/room/:code" exact>
               <ArcadeRoomPage />

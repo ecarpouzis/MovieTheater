@@ -101,6 +101,27 @@ export function hoverClass(effect: HoverEffect): string {
   return `bx-hover-${effect}`;
 }
 
+/**
+ * A section can read its tweaks OUTSIDE the host (Books applies its backdrop + type theme to the
+ * section root) — `readTweaks` for the value, `subscribeTweaks` to hear every write the host makes.
+ */
+const listeners = new Map<string, Set<() => void>>();
+
+export const readTweaks = loadTweaks;
+
+export function subscribeTweaks(section: string, listener: () => void): () => void {
+  let set = listeners.get(section);
+  if (!set) listeners.set(section, (set = new Set()));
+  set.add(listener);
+  return () => { set!.delete(listener); };
+}
+
+function persist(section: string, next: CatalogTweaks) {
+  writeStored(storageKeyFor(section), JSON.stringify(next));
+  // After the write, never inside the setState updater: React may call an updater twice.
+  queueMicrotask(() => { for (const l of listeners.get(section) ?? []) l(); });
+}
+
 export default function useTweaks(section: string) {
   const [tweaks, setTweaks] = useState<CatalogTweaks>(() => loadTweaks(section));
   useEffect(() => { setTweaks(loadTweaks(section)); }, [section]);
@@ -108,7 +129,7 @@ export default function useTweaks(section: string) {
   const update = useCallback((patch: Partial<CatalogTweaks>) => {
     setTweaks((prev) => {
       const next = { ...prev, ...patch };
-      writeStored(storageKeyFor(section), JSON.stringify(next));
+      persist(section, next);
       return next;
     });
   }, [section]);
@@ -119,7 +140,7 @@ export default function useTweaks(section: string) {
       const entry = { ...(prev.scale[view] ?? {}) };
       if (coarse) entry.coarse = clampScale(value); else entry.fine = clampScale(value);
       const next = { ...prev, scale: { ...prev.scale, [view]: entry } };
-      writeStored(storageKeyFor(section), JSON.stringify(next));
+      persist(section, next);
       return next;
     });
   }, [section]);
@@ -127,7 +148,7 @@ export default function useTweaks(section: string) {
   const setExtra = useCallback((key: string, value: string) => {
     setTweaks((prev) => {
       const next = { ...prev, extras: { ...prev.extras, [key]: value } };
-      writeStored(storageKeyFor(section), JSON.stringify(next));
+      persist(section, next);
       return next;
     });
   }, [section]);

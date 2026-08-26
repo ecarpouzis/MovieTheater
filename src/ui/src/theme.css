@@ -281,6 +281,47 @@
   --photos-tile-base: #d3cabb;
 }
 
+/* Books (R8): the comics hue the section menu has always shown (#D98936), on paper. The
+   --books-* role tokens are the section skin's defaults; BooksPage overrides them per backdrop
+   and type theme on the section root (and on its modals' wrap), see Pages/Books/booksTheme.ts. */
+:root[data-feature="books"] {
+  --accent: #b8621f;
+  --accent-soft: rgba(184, 98, 31, 0.14);
+  --content-bg: #f1ede6;
+  --card-surface: #fbf9f5;
+  --card-border: #dcd3c4;
+  --card-shadow: 0 1px 2px rgba(50, 35, 15, 0.1);
+  --card-shadow-hover: 0 6px 18px rgba(50, 35, 15, 0.16);
+
+  --text-primary: #1f1a14;
+  --text-secondary: #5a4f42;
+  --text-muted: #8c8073;
+
+  --sidebar-bg: linear-gradient(180deg, #2a1f14 0%, #17110c 100%);
+  --sidebar-bg-elev: #34281b;
+  --sidebar-heading: #a8916f;
+  --sidebar-text-muted: #b5a48c;
+  --sidebar-text-strong: #f6efe3;
+  --sidebar-link: #e8a35a;
+  --sidebar-border: rgba(255, 240, 220, 0.1);
+  --sidebar-input-bg: #120d08;
+  --sidebar-input-border: rgba(255, 240, 220, 0.14);
+  --sidebar-pill-bg: rgba(255, 240, 220, 0.06);
+  --nav-active-bg: rgba(184, 98, 31, 0.2);
+
+  --books-bg: #f6f5f1;
+  --books-ink: #1a1714;
+  --books-sub: #6c6258;
+  --books-line: #1a17141a;
+  --books-chrome: rgba(246, 245, 241, 0.85);
+  --books-scene: #f6f5f1;
+  --books-display: "Alfa Slab One", "Rockwell", "Times New Roman", serif;
+  --books-header: "Alfa Slab One", "Rockwell", "Times New Roman", serif;
+  --books-mono: "JetBrains Mono", ui-monospace, monospace;
+  --books-tracking: 0em;
+  --books-weight: 400;
+}
+
 /* ── DARK theme: swap content-area surfaces only (§3b) ──────────────────── */
 :root[data-theme="dark"] {
   --card-surface: #1e2739;
@@ -346,6 +387,31 @@
   --photos-mount: rgba(255, 236, 210, 0.1);
   --photos-well: #1b1611;
   --photos-tile-base: #2a231b;
+}
+
+:root[data-theme="dark"][data-feature="books"] {
+  --content-bg: #14100c;
+  --card-surface: #211a13;
+  --card-border: rgba(255, 236, 210, 0.1);
+  --card-shadow: none;
+  --card-shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.55);
+
+  --accent: #e08a3c;
+  --accent-soft: rgba(224, 138, 60, 0.18);
+
+  --text-primary: #f4efe6;
+  --text-secondary: #c3b8a8;
+  --text-muted: #8d8172;
+
+  --sidebar-bg: linear-gradient(180deg, #1f1810 0%, #120d08 100%);
+  --sidebar-bg-elev: #2a2117;
+
+  --books-bg: #1c1f24;
+  --books-ink: #f0ece4;
+  --books-sub: #9a958a;
+  --books-line: #f0ece422;
+  --books-chrome: rgba(28, 31, 36, 0.85);
+  --books-scene: #1c1f24;
 }
 
 :root[data-theme="dark"][data-feature="arcade"] {

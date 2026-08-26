@@ -39,17 +39,21 @@ function NodeTile({ node, cellH, hoverClass, noun, onOpen }: { node: DirectoryNo
   );
 }
 
-export interface DirectoryViewProps extends ViewProps { showEmpty: boolean }
+export interface DirectoryViewProps extends ViewProps {
+  showEmpty: boolean;
+  /** Start drilled into these nodes (a "Browse this folder" link); a new identity re-seeds the stack. */
+  initialStack?: DirectoryNode[];
+}
 
-export default function DirectoryView({ source, state, coverScale, metadata, hoverClass, showEmpty }: DirectoryViewProps) {
+export default function DirectoryView({ source, state, coverScale, metadata, hoverClass, showEmpty, initialStack }: DirectoryViewProps) {
   const dir = source.directory as DirectorySource | undefined;
   const cellH = Math.round(DIR_BASE_CELL * coverScale);
-  const [stack, setStack] = useState<DirectoryNode[]>([]);
+  const [stack, setStack] = useState<DirectoryNode[]>(() => initialStack ?? []);
   const [nodes, setNodes] = useState<DirectoryNode[] | null>(null);
   const [items, setItems] = useState<CardItem[] | null>(null);
   const [error, setError] = useState(false);
   const [nonce, setNonce] = useState(0);
-  useEffect(() => { setStack([]); }, [source.queryKey]);
+  useEffect(() => { setStack(initialStack ?? []); }, [source.queryKey, initialStack]);
   const current = stack[stack.length - 1] ?? null;
 
   useEffect(() => {

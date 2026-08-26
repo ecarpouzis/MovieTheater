@@ -7,7 +7,7 @@ import useMiddleDragScroll from "./engine/useMiddleDragScroll";
 import useCatalogView from "./state/useCatalogView";
 import TweaksPanel, { TweakRow, TweakToggle } from "./tweaks/TweaksPanel";
 import useTweaks, { hoverClass } from "./tweaks/useTweaks";
-import type { CatalogSource, ViewMode } from "./types";
+import type { CatalogSource, DirectoryNode, ViewMode } from "./types";
 import DirectoryView from "./views/DirectoryView";
 import ExtendedView from "./views/ExtendedView";
 import GridView from "./views/GridView";
@@ -45,9 +45,11 @@ export interface CatalogHostProps {
   /** Anything to show at the left of the switcher row (a count, a scope title). */
   leading?: ReactNode;
   className?: string;
+  /** Directory view: start drilled into these nodes (a section's "Browse this folder"). */
+  directoryStart?: DirectoryNode[];
 }
 
-export default function CatalogHost({ section, source, overrides, leading, className }: CatalogHostProps) {
+export default function CatalogHost({ section, source, overrides, leading, className, directoryStart }: CatalogHostProps) {
   const { state, setView, setGroup, setItems, setSort } = useCatalogView(section, source, AVAILABLE_VIEWS);
   const { tweaks, update, setCoverScale, setExtra, coverScale } = useTweaks(section);
   const [tweaksOpen, setTweaksOpen] = useState(false);
@@ -59,7 +61,7 @@ export default function CatalogHost({ section, source, overrides, leading, class
   const View = VIEWS[state.view];
   let content: ReactNode = null;
   if (override != null) content = override;
-  else if (state.view === "directory") content = <DirectoryView {...viewProps} showEmpty={tweaks.showEmptyFolders} />;
+  else if (state.view === "directory") content = <DirectoryView {...viewProps} showEmpty={tweaks.showEmptyFolders} initialStack={directoryStart} />;
   else if (View) content = <View {...viewProps} />;
 
   return (

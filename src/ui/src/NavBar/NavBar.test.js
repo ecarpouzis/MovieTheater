@@ -1,6 +1,7 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 
 // React 18 only enables act() support when this flag is set (vitest doesn't set it for us).
@@ -69,7 +70,9 @@ const noopSearchProps = Object.fromEntries(
 );
 
 function renderNav(route, ud = userData, setUserData = vi.fn()) {
+  // The Books rail reads its counts through React Query; index.js provides the client for the app.
   render(
+    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
     <MemoryRouter initialEntries={[route]}>
       <NavBar
         {...noopSearchProps}
@@ -83,6 +86,7 @@ function renderNav(route, ud = userData, setUserData = vi.fn()) {
         toggleTheme={vi.fn()}
       />
     </MemoryRouter>
+    </QueryClientProvider>
   );
 }
 
@@ -221,5 +225,39 @@ describe("the family album rail", () => {
     expect(document.documentElement.dataset.feature).toBe(feature);
     // And no other section pays for the album: its status query is only ever made on /photos.
     expect(document.querySelector(".navbar-photos-count")).toBeNull();
+  });
+});
+
+// The Books section (R8): the former external "Comics" link is a section with its own counted index.
+describe("the books rail", () => {
+  const booksMember = { ...userData, booksAccess: true, booksMaturityCeiling: 3 };
+  const indexNav = () => document.querySelector(".navbar-index-nav");
+  const railLabels = () => Array.from(document.querySelectorAll(".navbar-index-link-label")).map((node) => node.textContent);
+
+  it("lists the library's views for a member, with the section's own tint", async () => {
+    renderNav("/books", booksMember);
+    await waitFor(() => expect(indexNav()).toBeTruthy());
+    expect(railLabels()).toEqual(["Explore", "Browse", "Novels", "Kids", "Shelf"]);
+    expect(document.querySelector(".nav-search-tools")).toBeNull();
+    expect(document.querySelector(".navbar-sider.navbar-books-theme")).toBeTruthy();
+    expect(document.documentElement.dataset.feature).toBe("books");
+  });
+
+  it("marks the view you are on, and a kid account sees Kids and the shelf only", async () => {
+    renderNav("/books/shelf", booksMember);
+    await waitFor(() => expect(indexNav()).toBeTruthy());
+    expect(document.querySelector(".navbar-index-link.is-active").textContent).toContain("Shelf");
+    cleanup();
+    renderNav("/books/kids", { ...booksMember, booksMaturityCeiling: 0 });
+    await waitFor(() => expect(indexNav()).toBeTruthy());
+    expect(railLabels()).toEqual(["Kids", "Shelf"]);
+  });
+
+  it("draws no index for someone without the grant, and never dispatches the movie search off the movies section", async () => {
+    renderNav("/books", userData);
+    await waitFor(() => expect(logoutBtn()).toBeTruthy());
+    expect(indexNav()).toBeNull();
+    expect(noopSearchProps.titleTypeSearch).not.toHaveBeenCalled();
+    expect(noopSearchProps.resetSearch).not.toHaveBeenCalled();
   });
 });

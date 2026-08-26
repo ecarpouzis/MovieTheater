@@ -87,6 +87,8 @@ export interface CardGroup {
    * `synopsis`, `byline`, `kicker` (the Newspaper's category line), `tags` (string[]).
    */
   detail?: Record<string, unknown>;
+  /** The caller's own marks on this group, when the section tracks them (Books' series/collection marks). */
+  userMark?: { isRead: boolean; wantToRead: boolean; isFavorite: boolean; rating: number | null; notes: string | null };
 }
 
 export type ViewMode = "grid" | "wall" | "shelf" | "list" | "extended" | "newspaper" | "directory";
