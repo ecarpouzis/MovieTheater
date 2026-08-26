@@ -41,7 +41,8 @@ namespace MovieTheater.Books.Tests
                 cmd.ExecuteNonQuery();
             }
             Exec(@"
-CREATE TABLE books (id INTEGER PRIMARY KEY, title TEXT, path TEXT, pubdate TEXT, isbn TEXT, series_index REAL);
+CREATE TABLE books (id INTEGER PRIMARY KEY, title TEXT, path TEXT, pubdate TEXT, series_index REAL);
+CREATE TABLE identifiers (id INTEGER PRIMARY KEY, book INTEGER, type TEXT, val TEXT);
 CREATE TABLE authors (id INTEGER PRIMARY KEY, name TEXT);
 CREATE TABLE books_authors_link (book INTEGER, author INTEGER);
 CREATE TABLE series (id INTEGER PRIMARY KEY, name TEXT);
@@ -56,7 +57,8 @@ CREATE TABLE comments (id INTEGER PRIMARY KEY, book INTEGER, text TEXT);
 CREATE TABLE data (id INTEGER PRIMARY KEY, book INTEGER, format TEXT, name TEXT);");
             // Book 844 is the one calibre_link.json pairs with item 101 in the fixture.
             Exec(@"
-INSERT INTO books (id, title, path, pubdate, isbn, series_index) VALUES (844, 'Brave New World', 'Aldous Huxley/Brave New World (844)', '2006-10-17', '9780060850524', 3.0);
+INSERT INTO books (id, title, path, pubdate, series_index) VALUES (844, 'Brave New World', 'Aldous Huxley/Brave New World (844)', '2006-10-17', 3.0);
+INSERT INTO identifiers (book, type, val) VALUES (844, 'isbn', '9780060850524'), (844, 'google', 'abc');
 INSERT INTO authors (id, name) VALUES (1, 'Aldous Huxley'), (2, 'A Collaborator');
 INSERT INTO books_authors_link (book, author) VALUES (844, 1), (844, 2);
 INSERT INTO series (id, name) VALUES (1, 'Dystopias');

@@ -328,7 +328,7 @@ namespace MovieTheater.Books.Controllers
             {
                 var scoped = services.GetRequiredService<BooksDb>();
                 var job = services.GetRequiredService<CalibreImportService>();
-                var r = await job.RunBatchAsync(scoped, metadataPath, link, batchSize, apply, token);
+                var r = await job.RunBatchAsync(scoped, metadataPath, link, batchSize, apply, ct: token);
                 return new JobProgress(r.Processed, r.Remaining, r.NextCursor?.ToString(), r.Unmatched, r.ToString());
             });
         }

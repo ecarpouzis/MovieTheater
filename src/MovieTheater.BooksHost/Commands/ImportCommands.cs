@@ -24,6 +24,7 @@ namespace MovieTheater.BooksHost.Commands
         [CommandOption("db", Description = "books.db (default Books:DbPath).")] public string? DbPath { get; set; }
         [CommandOption("metadata", Description = "The Calibre metadata.db (read-only).")] public string? MetadataPath { get; set; }
         [CommandOption("link", Description = "calibre_link.json (default Books:CalibreLinkPath).")] public string? LinkPath { get; set; }
+        [CommandOption("library-root", Description = "The Calibre library's root as the catalog knows it (default: the metadata.db's folder). Pass it when --metadata is a copy.")] public string? LibraryRoot { get; set; }
         [CommandOption("batch-size", Description = "Calibre books per batch (default 500).")] public int BatchSize { get; set; } = CalibreImportService.DefaultBatchSize;
         [CommandOption("max-batches", Description = "Stop after this many batches (0 = until done).")] public int MaxBatches { get; set; }
         [CommandOption("apply", Description = "Actually write. Without it the verb only reports what would match.")] public bool Apply { get; set; }
@@ -45,11 +46,15 @@ namespace MovieTheater.BooksHost.Commands
 
             long matched = 0, unmatched = 0, filled = 0;
             var batches = 0;
+            long? after = null; // dry run: the cursor lives here, not in the store
+            await console.Output.WriteLineAsync($"metadata: {metadata}" + Environment.NewLine + $"library root: {LibraryRoot ?? Path.GetDirectoryName(Path.GetFullPath(metadata))}  (paths are composed under this and compared with Item.Path)");
             while (MaxBatches <= 0 || batches < MaxBatches)
             {
-                var r = await service.RunBatchAsync(db, metadata, link, BatchSize, Apply);
+                var r = await service.RunBatchAsync(db, metadata, link, BatchSize, Apply, LibraryRoot, Apply ? null : after);
+                if (!Apply) after = r.NextCursor ?? after;
                 batches++;
-                matched += r.Matched; unmatched += r.Unmatched; filled += r.Filled;
+                // the terminal batch (nothing left to read) re-reports the persisted totals, not new work
+                if (!(r.Done && r.Processed == 0)) { matched += r.Matched; unmatched += r.Unmatched; filled += r.Filled; }
                 await console.Output.WriteLineAsync(r.ToString() + $"  [batches: {batches}]");
                 if (r.Done) break;
             }

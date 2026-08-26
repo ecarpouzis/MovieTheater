@@ -72,14 +72,15 @@ namespace MovieTheater.Books.Services
         public sealed record CalibreBook(
             int Id, string? Title, string? RelPath, string? FileName, string? PubDate, string? Isbn,
             string? Authors, string? Series, double? SeriesIndex, string? Description, string? Publisher,
-            string? Tags, string? Language);
+            string? Tags, string? Language, string? Formats = null);
 
         /// <summary>
         /// Calibre's own schema, read-only. The scalar sub-selects mirror the standalone's query exactly, so a
         /// book with two authors or no series behaves the way it always did.
         /// </summary>
         private const string BookSql = @"
-SELECT b.id, b.title, b.path, b.pubdate, b.isbn,
+SELECT b.id, b.title, b.path, b.pubdate,
+       (SELECT i.val FROM identifiers i WHERE i.book = b.id AND i.type = 'isbn' LIMIT 1) AS isbn, -- Calibre keeps ISBNs in identifiers, never on books
        (SELECT group_concat(a.name, ' & ') FROM books_authors_link bal JOIN authors a ON a.id = bal.author WHERE bal.book = b.id) AS authors,
        (SELECT d.name FROM data d WHERE d.book = b.id ORDER BY d.id LIMIT 1) AS file_name,
        (SELECT s.name FROM books_series_link bsl JOIN series s ON s.id = bsl.series WHERE bsl.book = b.id LIMIT 1) AS series,
@@ -87,7 +88,8 @@ SELECT b.id, b.title, b.path, b.pubdate, b.isbn,
        (SELECT c.text FROM comments c WHERE c.book = b.id LIMIT 1) AS comment,
        (SELECT p.name FROM books_publishers_link bpl JOIN publishers p ON p.id = bpl.publisher WHERE bpl.book = b.id LIMIT 1) AS publisher,
        (SELECT group_concat(t.name, ', ') FROM books_tags_link btl JOIN tags t ON t.id = btl.tag WHERE btl.book = b.id) AS tags,
-       (SELECT l.lang_code FROM books_languages_link bll JOIN languages l ON l.id = bll.lang_code WHERE bll.book = b.id LIMIT 1) AS lang
+       (SELECT l.lang_code FROM books_languages_link bll JOIN languages l ON l.id = bll.lang_code WHERE bll.book = b.id LIMIT 1) AS lang,
+       (SELECT group_concat(lower(d.format), ',') FROM data d WHERE d.book = b.id) AS formats
 FROM books b WHERE b.id > $after ORDER BY b.id LIMIT $n";
 
         public static SqliteConnection OpenCalibre(string metadataDbPath)
@@ -116,7 +118,7 @@ FROM books b WHERE b.id > $after ORDER BY b.id LIMIT $n";
                     rd.GetInt32(0),
                     Str(rd, 1), Str(rd, 2), Str(rd, 6), Str(rd, 3), Str(rd, 4), Str(rd, 5),
                     Str(rd, 7), rd.IsDBNull(8) ? null : rd.GetDouble(8),
-                    Str(rd, 9), Str(rd, 10), Str(rd, 11), Str(rd, 12)));
+                    Str(rd, 9), Str(rd, 10), Str(rd, 11), Str(rd, 12), Str(rd, 13)));
             return list;
         }
 
@@ -137,13 +139,17 @@ FROM books b WHERE b.id > $after ORDER BY b.id LIMIT $n";
         /// writes nothing — the dry run a destructive-looking job owes its caller.
         /// </summary>
         public async Task<CalibreBatchResult> RunBatchAsync(
-            BooksDb db, string metadataDbPath, string? linkPath, int batchSize, bool apply = true, CancellationToken ct = default)
+            BooksDb db, string metadataDbPath, string? linkPath, int batchSize, bool apply = true, string? libraryRoot = null, long? after = null, CancellationToken ct = default)
         {
             batchSize = Math.Clamp(batchSize, 1, 5_000);
             using var calibre = OpenCalibre(metadataDbPath);
-            var libraryRoot = Path.GetDirectoryName(Path.GetFullPath(metadataDbPath))!;
+            // The path match composes <library root>\<calibre path>\<file> and compares it with Item.Path. When the
+            // metadata.db in hand is a COPY (the house rule: never scan the share for what a copy already knows),
+            // the caller passes the library's real root; the metadata's own folder is only the default.
+            libraryRoot ??= Path.GetDirectoryName(Path.GetFullPath(metadataDbPath))!;
 
-            var cursor = await ReadLongAsync(db, CursorKey, ct);
+            // A dry run persists nothing, so its caller hands back the previous batch's cursor (`after`).
+            var cursor = after ?? await ReadLongAsync(db, CursorKey, ct);
             var books = ReadBooks(calibre, cursor, batchSize);
             if (books.Count == 0)
             {
@@ -159,7 +165,7 @@ FROM books b WHERE b.id > $after ORDER BY b.id LIMIT $n";
             var linkedItemIds = books.Select(b => itemByCalibreId.GetValueOrDefault(b.Id, 0)).Where(id => id > 0).ToList();
             var byItemId = await db.Items.Where(i => linkedItemIds.Contains(i.Id)).ToDictionaryAsync(i => i.Id, ct);
 
-            var paths = books.Select(b => ResolvePath(libraryRoot, b)).Where(p => p != null).Select(p => p!).ToList();
+            var paths = books.SelectMany(b => ResolvePaths(libraryRoot, b)).ToList();
             var byPath = await db.Items.Where(i => paths.Contains(i.Path))
                 .ToDictionaryAsync(i => i.Path, StringComparer.OrdinalIgnoreCase, ct);
 
@@ -190,10 +196,13 @@ FROM books b WHERE b.id > $after ORDER BY b.id LIMIT $n";
             }
 
             var nextCursor = books[^1].Id;
-            await WriteLongAsync(db, CursorKey, nextCursor, ct);
-            await AddLongAsync(db, MatchedKey, matched, ct);
-            await AddLongAsync(db, UnmatchedKey, unmatched, ct);
-            await db.SaveChangesAsync(ct);
+            if (apply)
+            {
+                await WriteLongAsync(db, CursorKey, nextCursor, ct);
+                await AddLongAsync(db, MatchedKey, matched, ct);
+                await AddLongAsync(db, UnmatchedKey, unmatched, ct);
+                await db.SaveChangesAsync(ct);
+            }
 
             var remaining = Scalar(calibre, "SELECT count(*) FROM books WHERE id > " + nextCursor);
             logger.LogInformation("calibre batch: processed {N}, matched {Matched}, unmatched {Unmatched}, remaining {Remaining}",
@@ -232,15 +241,26 @@ FROM books b WHERE b.id > $after ORDER BY b.id LIMIT $n";
         {
             if (linkByCalibreId.TryGetValue(book.Id, out var itemId) && byItemId.TryGetValue(itemId, out var linked)) return linked;
             if (byStoredId.TryGetValue(book.Id, out var stored)) return stored;
-            var path = ResolvePath(libraryRoot, book);
-            return path != null && byPath.TryGetValue(path, out var byFile) ? byFile : null;
+            foreach (var path in ResolvePaths(libraryRoot, book))
+                if (byPath.TryGetValue(path, out var byFile)) return byFile;
+            return null;
         }
 
         /// <summary>Calibre stores <c>&lt;library&gt;/&lt;book.path&gt;/&lt;data.name&gt;.epub</c> with forward slashes.</summary>
-        public static string? ResolvePath(string libraryRoot, CalibreBook book)
+        /// <summary>The first candidate path (the book's first format); tests and the folder match use it.</summary>
+        public static string? ResolvePath(string libraryRoot, CalibreBook book) => ResolvePaths(libraryRoot, book).FirstOrDefault();
+
+        /// <summary>
+        /// One candidate path per format Calibre holds for the book. A book with a PDF and an EPUB is two files on
+        /// the share, and the catalog may hold either (or both, as separate items) - the first data row is not
+        /// enough (that is how the 2026-08-26 import matched 0 books by path).
+        /// </summary>
+        public static IReadOnlyList<string> ResolvePaths(string libraryRoot, CalibreBook book)
         {
-            if (string.IsNullOrWhiteSpace(book.RelPath) || string.IsNullOrWhiteSpace(book.FileName)) return null;
-            return Path.Combine(libraryRoot, book.RelPath.Replace('/', Path.DirectorySeparatorChar), book.FileName + ".epub");
+            if (string.IsNullOrWhiteSpace(book.RelPath) || string.IsNullOrWhiteSpace(book.FileName)) return Array.Empty<string>();
+            var dir = Path.Combine(libraryRoot, book.RelPath.Replace('/', Path.DirectorySeparatorChar));
+            var formats = (book.Formats ?? "epub").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            return formats.Select(f => Path.Combine(dir, book.FileName + "." + f)).ToList();
         }
 
         private static string? Blank(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
