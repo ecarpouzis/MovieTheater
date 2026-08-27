@@ -30,52 +30,37 @@ export default function useSlot(id: string | null): HTMLElement | null {
 }
 
 /**
- * The phone top bar's search button asks the page first: a section whose search lives in its facet
- * sheet (`useRailSheet`) handles this event (preventDefault) and raises the sheet; otherwise the
- * bar falls back to opening the rail drawer, where the older sections keep their search fields.
- */
-export const SEARCH_EVENT = "section-bar:search";
-
-/** True when a page took the search request. */
-export function requestSectionSearch(): boolean {
-  if (typeof window === "undefined") return false;
-  return !window.dispatchEvent(new CustomEvent(SEARCH_EVENT, { cancelable: true }));
-}
-
-/**
- * ONE filter surface open at a time on a phone.
+ * The phone top bar's magnifier.
  *
- * The nav DRAWER is the sider (2026-08-27), so it carries the section's own `FacetRail` in its
- * `rail` variant — not a door to a second copy of it. The bar's Filters pill still raises the page's
- * full-page SHEET as the quick path. Both read the same URL, so they can never DISAGREE; what they
- * must not do is be open at the same time, which would be two rails stacked on one 390 px screen.
- * So each closes the other: the drawer publishes its state here and `useRailSheet` listens, and the
- * sheet publishes its state here and NavBar listens.
+ * ONE filter surface on a phone (2026-08-28, Eric: "this filter button seems to present the same
+ * options opening the drawer does — why do these buttons still exist?"). The drawer IS the sider and
+ * carries the section's own `FacetRail`, so the bar's Filters pill and the page's full-page rail
+ * SHEET are gone: the magnifier opens the DRAWER, and the rail's SmartSearch — the first thing under
+ * the rail's head line on a phone — takes the caret.
  *
- * A module-level value plus an event, not context: the drawer lives above the router and is not
- * inside any page's providers — and these are two booleans.
+ * A module flag PLUS an event, not a prop, because of the mount order: the rail mounts WITH the
+ * drawer (NavBar's `railVisible`), so at the instant the button is pressed there is no input to
+ * focus. The flag survives that mount and the SmartSearch claims it; the event covers the other
+ * case, a magnifier tap while the drawer is already open. A section with no facet spec (the TV
+ * guide) never claims it, so the drawer closing drops it — an unclaimed request must not steal the
+ * caret on the next section the reader opens.
  */
-export const DRAWER_EVENT = "section-bar:drawer";
-export const SHEET_EVENT = "section-bar:sheet";
-let navDrawerOpen = false;
-let railSheetOpen = false;
+export const SEARCH_FOCUS_EVENT = "section-bar:search-focus";
+let searchFocusPending = false;
 
-export function publishNavDrawer(open: boolean): void {
-  if (navDrawerOpen === open) return;
-  navDrawerOpen = open;
-  if (typeof window !== "undefined") window.dispatchEvent(new Event(DRAWER_EVENT));
+export function requestRailSearchFocus(): void {
+  searchFocusPending = true;
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(SEARCH_FOCUS_EVENT));
 }
 
-export function isNavDrawerOpen(): boolean {
-  return navDrawerOpen;
+/** A rail SmartSearch claims the request ONCE — on mount, or on the event when it is already up. */
+export function claimRailSearchFocus(): boolean {
+  if (!searchFocusPending) return false;
+  searchFocusPending = false;
+  return true;
 }
 
-export function publishRailSheet(open: boolean): void {
-  if (railSheetOpen === open) return;
-  railSheetOpen = open;
-  if (typeof window !== "undefined") window.dispatchEvent(new Event(SHEET_EVENT));
-}
-
-export function isRailSheetOpen(): boolean {
-  return railSheetOpen;
+/** The drawer closing drops an unclaimed request. */
+export function clearRailSearchFocus(): void {
+  searchFocusPending = false;
 }

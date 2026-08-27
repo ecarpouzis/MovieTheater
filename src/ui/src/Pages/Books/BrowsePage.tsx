@@ -1,9 +1,9 @@
 /**
  * `/books` — the section root: the seven catalog views over the Books source, scoped by the facet
  * state in the URL. The page owns what sits over the results — the count, the active-filter chips
- * with Clear all / Save search — and, on phones, the Filters pill that raises the full-page sheet
- * (the desktop rail lives in the section's sider: `BooksSiderRail`). A kid account browses without
- * filters; the Directory is a folder navigator and ignores them.
+ * with Clear all / Save search. The rail itself lives in the section's sider (`BooksSiderRail`) —
+ * and on a phone that sider IS the nav drawer, which is the one place the filters live. A kid account
+ * browses without filters; the Directory is a folder navigator and ignores them.
  */
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useMemo } from "react";
@@ -11,8 +11,8 @@ import { useHistory, useLocation } from "react-router-dom";
 import CatalogHost from "../../catalog/CatalogHost";
 import { hasFacetValue } from "../../catalog/rail/facetSpec";
 import sectionRailSurfaces from "../../catalog/rail/sectionRailSurfaces";
-import useRailSheet from "../../catalog/rail/useRailSheet";
 import useSectionRail from "../../catalog/rail/useSectionRail";
+import useIsMobile from "../../hooks/useIsMobile";
 import { createBooksSource } from "../../catalog/sources/booksSource";
 import type { CardItem, DirectoryNode } from "../../catalog/types";
 import { fetchFacets, fetchFolder } from "./booksApi";
@@ -20,7 +20,7 @@ import { booksFacetSpec } from "./booksFacetSpec";
 import { useMediaToken } from "./booksMedia";
 import { bk } from "./booksQuery";
 import { openEntity } from "./openEntity";
-import { isDirectoryBrowse, useBooksResultTotal } from "./useBooksBrowse";
+import { isDirectoryBrowse } from "./useBooksBrowse";
 
 export interface BrowsePageProps {
   username: string;
@@ -39,15 +39,13 @@ function positiveInt(raw: string | null): number | null {
 export default function BrowsePage({ username, epoch = 0, isKid = false }: BrowsePageProps) {
   const history = useHistory();
   const location = useLocation();
-  const sheet = useRailSheet();
+  const isMobile = useIsMobile();
   const spec = useMemo(() => booksFacetSpec(username), [username]);
   const directory = isDirectoryBrowse(location.search);
   const filtersApply = !isKid && !directory;
   const rail = useSectionRail("books", spec, { facetsEnabled: filtersApply });
   const { state, actions } = rail;
   const { epoch: mediaEpoch } = useMediaToken();
-
-  const total = useBooksResultTotal(state, spec, !directory);
 
   // The Group pill's axes come from the HOST (`/browse/facets` → `groupAxes`), never from a constant
   // here: a stale host does not 400 on `groupBy=author`, it silently answers with COLLECTIONS, so the
@@ -86,20 +84,18 @@ export default function BrowsePage({ username, epoch = 0, isKid = false }: Brows
     [state, spec, epoch, mediaEpoch, groupAxes, onOpen, onOpenSeries, scope],
   );
 
-  // The bar's tools: the phone's Filters pill (the desktop rail shows the count on its own head line;
-  // the toolbar no longer carries a count — Long Box: counts live where the thing they count lives).
-  const railSurfaces = sectionRailSurfaces(rail, sheet, {
-    total: total.data,
+  // The page's share of the rail: the chips over the results and, on desktop, the bar's SmartSearch.
+  // The count lives on the rail's own head line (Long Box: counts live where the thing they count
+  // lives), and the rail is the sider's — the drawer's, on a phone.
+  const railSurfaces = sectionRailSurfaces(rail, isMobile, {
     placeholder: "author:Miller, tag:Noir, series:Batman…",
     chipsClassName: "books-browse-chips",
   });
-  // A kid account browses without filters, and the Directory ignores them.
-  const barTools = filtersApply ? railSurfaces.pill : null;
 
   return (
     <>
       {filtersApply && railSurfaces.surfaces}
-      <CatalogHost section="books" source={source} directoryStart={directoryStart} tools={barTools} beforeResults={filtersApply ? railSurfaces.chips : null} />
+      <CatalogHost section="books" source={source} directoryStart={directoryStart} beforeResults={filtersApply ? railSurfaces.chips : null} />
     </>
   );
 }

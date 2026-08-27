@@ -12,13 +12,12 @@ import "./MusicPage.css";
 import "./MusicPlaylists.css";
 import { formatDuration } from "../../utils/format";
 import { useDebouncedCallback } from "../../hooks/useDebounce";
+import useIsMobile from "../../hooks/useIsMobile";
 import CatalogHost, { AVAILABLE_VIEWS } from "../../catalog/CatalogHost";
-import { BarToolsSlot } from "../../catalog/bar/BarSearch";
 import { hasFacetValue } from "../../catalog/rail/facetSpec";
 import { facetStateKey } from "../../catalog/rail/facetUrl";
 import useSectionRail from "../../catalog/rail/useSectionRail";
 import sectionRailSurfaces from "../../catalog/rail/sectionRailSurfaces";
-import useRailSheet from "../../catalog/rail/useRailSheet";
 import { createMusicSource } from "../../catalog/sources/musicSource";
 import { readCatalogDefaults, resolveViewState } from "../../catalog/state/useCatalogView";
 import { FLAT_VIEWS } from "../../catalog/types";
@@ -56,6 +55,7 @@ export { MUSIC_KINDS };
 function MusicPage({ userData }) {
   const history = useHistory();
   const location = useLocation();
+  const isMobile = useIsMobile();
   const player = useMusicPlayer();
   // Streaming is password-only (§3.1): every /API/Music/* route sits behind the StreamingUser
   // policy. Without one, the fetches below would all 401 into an empty library, so don't make them.
@@ -74,7 +74,6 @@ function MusicPage({ userData }) {
   const rail = useSectionRail("music", spec, { entityParams: MUSIC_ENTITY_PARAMS, facetsEnabled: !gated });
   const facetState = rail.state;
   const facetActions = rail.actions;
-  const sheet = useRailSheet();
   const q = facetState.q;
   const albums = browse.loading ? null : browse.albums;
   const artists = browse.loading ? null : browse.artists;
@@ -312,18 +311,16 @@ function MusicPage({ userData }) {
     );
   }
 
-  // The bar's tools: the phone's Filters pill raising the full-page sheet (the desktop rail is the
-  // sider's MusicSiderRail, which carries the count on its head line). Drilled into an artist there
-  // is no CatalogHost to carry the pill, so it rides the bar's tools slot directly.
-  const { pill: filtersPill, chips, surfaces } = sectionRailSurfaces(rail, sheet, {
-    total: artistItems ? filteredArtists.length : filteredAlbums.length,
+  // The rail itself is the sider's MusicSiderRail, which carries the count on its head line — and on
+  // a phone that sider IS the drawer, so nothing phone-shaped is left for the page. Its share: the
+  // chips over the results and, on desktop, the bar's SmartSearch.
+  const { chips, surfaces } = sectionRailSurfaces(rail, isMobile, {
     placeholder: "A song, artist:Bush, tag:Live…",
   });
 
   return (
     <div className="music-page">
       {surfaces}
-      {drilledIn && filtersPill && <BarToolsSlot>{filtersPill}</BarToolsSlot>}
       {/* Song results (server search) come first: they're the most specific match for a query. */}
       {songResults && songResults.length > 0 && (
         <section className="music-section">
@@ -357,7 +354,7 @@ function MusicPage({ userData }) {
               to the rail. The Songs head above is a content section and stays. */}
           {/* The letter strip is the package's now, over the same whole list: a jump is a scroll,
               so everything before the letter you tapped is still up there. */}
-          <CatalogHost section="music" source={source} tools={filtersPill} beforeResults={chips} />
+          <CatalogHost section="music" source={source} beforeResults={chips} />
         </section>
       )}
 

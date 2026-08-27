@@ -9,8 +9,10 @@ import sectionRailSurfaces from "./sectionRailSurfaces";
 import useSectionRail from "./useSectionRail";
 
 // The pieces every section's rail is now made of: `useSectionRail` (the URL state + the option
-// lists + the saved searches + "is the view grouped"), `SectionSiderRail` (the sider column) and
-// `sectionRailSurfaces` (the page's pill / chips / bar search / phone sheet).
+// lists + the saved searches + "is the view grouped"), `SectionSiderRail` (the sider column — which
+// on a phone is what the nav drawer draws) and `sectionRailSurfaces` (the page's chips + the bar's
+// search). The phone Filters pill and the full-page sheet were deleted on 2026-08-28: the drawer
+// holds the rail, so the pill offered the same options a second time.
 
 const spec: FacetSpec = {
   identity: "test:1",
@@ -72,8 +74,27 @@ describe("SectionSiderRail", () => {
     render(<Wrapper><Harness /></Wrapper>);
     await waitFor(() => expect(screen.getByText("1,234 things")).toBeInTheDocument());
     expect(document.querySelector(".bx-rail-on-sider .bx-railbar")).not.toBeNull();
-    // The sider never draws the search — the page portals it into the bar's centre slot.
+    // On DESKTOP the sider draws no search — the page portals it into the bar's centre slot.
     expect(screen.queryByRole("combobox")).toBeNull();
+  });
+
+  it("on a phone it DOES draw the search — the drawer is the sider and the phone bar has no search box", async () => {
+    isMobile = true;
+    const Harness = () => {
+      const rail = useSectionRail("test", spec);
+      return <SectionSiderRail rail={rail} total={7} />;
+    };
+    const Wrapper = wrapperFor("/x");
+    render(<Wrapper><Harness /></Wrapper>);
+    const box = screen.getByRole("combobox");
+    expect(box).toBeInTheDocument();
+    // At the TOP of the rail: under the head line, above the saved views and the facets.
+    const rail = document.querySelector(".bx-railbar")!;
+    const head = rail.querySelector(".bx-rail-top")!;
+    const savedViews = rail.querySelector(".bx-rail-savedwrap")!;
+    expect(head.compareDocumentPosition(box) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(savedViews.compareDocumentPosition(box) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
+    await waitFor(() => expect(screen.getByText("7 things")).toBeInTheDocument());
   });
 
   it("draws a note instead of the controls when the section hands one in", () => {
@@ -89,31 +110,29 @@ describe("SectionSiderRail", () => {
 });
 
 describe("sectionRailSurfaces", () => {
-  const Harness = ({ total }: { total?: number }) => {
+  const Harness = () => {
     const rail = useSectionRail("test", spec);
-    const sheet = { open: true, show: () => {}, hide: () => {}, isMobile };
-    const { pill, chips, surfaces } = sectionRailSurfaces(rail, sheet, { total, placeholder: "A thing…" });
-    return <div>{pill}{chips}{surfaces}</div>;
+    const { chips, surfaces } = sectionRailSurfaces(rail, isMobile, { placeholder: "A thing…" });
+    return <div>{chips}{surfaces}</div>;
   };
 
-  it("on desktop: no pill, no sheet — the chips only (the bar's search portals into a slot that is absent here)", () => {
+  it("on desktop: the chips (the bar's search portals into a slot that is absent here)", () => {
     const Wrapper = wrapperFor("/x?f=genre:Crime");
     render(<Wrapper><Harness /></Wrapper>);
-    expect(screen.queryByRole("button", { name: "Filters" })).toBeNull();
-    expect(document.querySelector(".bx-railbar-sheet")).toBeNull();
     expect(screen.getByText("Crime")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Clear all/ })).toBeInTheDocument();
   });
 
-  it("on a phone: the Filters pill with the active count, and the full-page sheet", async () => {
+  it("on a phone: NO Filters pill and NO sheet — the drawer's rail is the section's one filter surface", () => {
     isMobile = true;
     const Wrapper = wrapperFor("/x?f=genre:Crime&q=heat");
-    render(<Wrapper><Harness total={42} /></Wrapper>);
-    expect(screen.getByRole("button", { name: "Filters" }).textContent).toContain("2");
-    const sheet = document.querySelector(".bx-railbar-sheet");
-    expect(sheet).not.toBeNull();
-    expect(sheet!.getAttribute("aria-modal")).toBe("true");
-    await waitFor(() => expect(screen.getByText("42 things")).toBeInTheDocument());
+    render(<Wrapper><Harness /></Wrapper>);
+    expect(screen.queryByRole("button", { name: "Filters" })).toBeNull();
+    expect(document.querySelector(".bx-filter-pill")).toBeNull();
+    expect(document.querySelector(".bx-railbar-sheet")).toBeNull();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    // The page still owns the chips over the results.
+    expect(screen.getByText("Crime")).toBeInTheDocument();
   });
 
   it("draws no chips row content when nothing is active", () => {

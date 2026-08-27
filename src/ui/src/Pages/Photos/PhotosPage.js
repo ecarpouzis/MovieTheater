@@ -25,9 +25,8 @@ import { hasFacetValue } from "../../catalog/rail/facetSpec";
 import { facetStateKey } from "../../catalog/rail/facetUrl";
 import useSectionRail from "../../catalog/rail/useSectionRail";
 import sectionRailSurfaces from "../../catalog/rail/sectionRailSurfaces";
-import useRailSheet from "../../catalog/rail/useRailSheet";
 import { PHOTOS_ENTITY_PARAMS, photosFacetSpec, photosFilterParams } from "./photosFacetSpec";
-import { usePhotosResultTotal } from "./PhotosSiderRail";
+
 import "./PhotosPage.css";
 
 // ── Family photo album (docs/photos-plan.md §4) ─────────────────────────────
@@ -164,8 +163,6 @@ export default function PhotosPage({ userData }) {
   const rail = useSectionRail("photos", facetSpec, { entityParams: PHOTOS_ENTITY_PARAMS, facetsEnabled: onBrowse });
   const facetState = rail.state;
   const facetActions = rail.actions;
-  const sheet = useRailSheet();
-  const facetTotal = usePhotosResultTotal(facetState, !!showHidden, onBrowse && sheet.isMobile);
   const browseFilter = useMemo(() => photosFilterParams(facetState), [facetState]);
   const browseFilterKey = facetStateKey(facetState);
   // The catalog views' source (the /photos/browse route). Re-made on the hidden toggle, the rail's
@@ -380,9 +377,9 @@ export default function PhotosPage({ userData }) {
   const inGallery = view === "gallery" || albumMeta?.shelf === "Archive";
 
   // The rail's page-side surfaces (the /photos/browse route mounts them): the bar's SmartSearch on
-  // desktop, the Filters pill + full-page sheet on phones, the active chips over the results.
-  const railSurfaces = sectionRailSurfaces(rail, sheet, {
-    total: facetTotal.data,
+  // desktop and the active chips over the results. The RAIL is the sider's PhotosSiderRail — which
+  // on a phone is what the drawer holds, count and search and all.
+  const railSurfaces = sectionRailSurfaces(rail, isMobile, {
     placeholder: "A place, person:Grandma, album:Summer…",
   });
 
@@ -458,13 +455,12 @@ export default function PhotosPage({ userData }) {
         <Route path="/photos/browse">
           {/* Wall / List / Extended / Shelves / Newspaper / Directory over the timeline's own rows
               (/API/Photos/Browse + BrowseGroups), narrowed by the rail (R9 S2c): the SmartSearch in the
-              bar on desktop (`person:Grandma`, `album:Summer`), the Filters pill + full-page sheet on
-              phones, the active chips over the results. The timeline route keeps its justified grid. */}
+              bar on desktop (`person:Grandma`, `album:Summer`), the drawer's rail on phones, the
+              active chips over the results. The timeline route keeps its justified grid. */}
           {railSurfaces.surfaces}
           <CatalogHost
             section="photos"
             source={photosSource}
-            tools={railSurfaces.pill}
             beforeResults={railSurfaces.chips}
           />
         </Route>

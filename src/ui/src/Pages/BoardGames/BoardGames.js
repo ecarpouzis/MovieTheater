@@ -2,6 +2,7 @@ import { useEffect, useMemo, useCallback } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import BoardGameCard, { NO_EXPANSIONS } from "./BoardGameCard";
 import BoardGameModal from "./BoardGameModal";
+import useIsMobile from "../../hooks/useIsMobile";
 import useTouchDevice from "../../hooks/useTouchDevice";
 import LoadFailure from "../../Components/LoadFailure";
 import CardGridSkeleton from "../../Components/CardGridSkeleton";
@@ -10,7 +11,6 @@ import { hasFacetValue } from "../../catalog/rail/facetSpec";
 import { facetStateKey } from "../../catalog/rail/facetUrl";
 import useSectionRail from "../../catalog/rail/useSectionRail";
 import sectionRailSurfaces from "../../catalog/rail/sectionRailSurfaces";
-import useRailSheet from "../../catalog/rail/useRailSheet";
 import { createBoardgamesSource } from "../../catalog/sources/boardgamesSource";
 import { DRILL_NEXT_GROUP, LINK_FACETS, RANGE_GROUP_KEYS, legacyToBoardgamesSearch, rangeForGroup, sortBoardgames } from "./boardgamesFacetSpec";
 import useBoardgamesBrowse, { BOARDGAMES_ENTITY_PARAMS, useBoardgamesResults } from "./useBoardgamesBrowse";
@@ -26,12 +26,12 @@ function BoardGames({ userData }) {
   const { games: allGames, expansionMap, facetsById, loading, setGames } = browse;
   const history = useHistory();
   const location = useLocation();
+  const isMobile = useIsMobile();
 
   // ── The facet rail's state (R9 S2c): the URL is the filter (`q/f/x/y` + the `a/t/w` ranges). ──
   const rail = useSectionRail("boardgames", browse.spec, { entityParams: BOARDGAMES_ENTITY_PARAMS });
   const facetState = rail.state;
   const facetActions = rail.actions;
-  const sheet = useRailSheet();
 
   // A pre-S2c link (?players=&age=&time=&mode=title&value= — the old rail's Selects, old bookmarks)
   // is rewritten ONCE into the facet form it means; the page re-renders on the new URL.
@@ -142,18 +142,17 @@ function BoardGames({ userData }) {
     return <LoadFailure message="Couldn't load the board games." onRetry={browse.refresh} />;
   }
 
-  // The bar's tools: the phone's Filters pill raising the full-page sheet (the desktop rail is the
-  // sider's BoardgamesSiderRail, which carries the count on its head line), the chips over the
-  // results, and the bar's SmartSearch — all from the shared rail surfaces.
-  const { pill: filtersPill, chips, surfaces } = sectionRailSurfaces(rail, sheet, {
-    total: displayGames.length,
+  // The rail itself is the sider's BoardgamesSiderRail, which carries the count on its head line —
+  // and on a phone that sider IS the drawer. The page's share: the chips over the results and, on
+  // desktop, the bar's SmartSearch.
+  const { chips, surfaces } = sectionRailSurfaces(rail, isMobile, {
     placeholder: "A game, mechanic:Deck, designer:Knizia…",
   });
 
   return (
     <>
       {surfaces}
-      <CatalogHost section="boardgames" source={source} tools={filtersPill} beforeResults={chips} />
+      <CatalogHost section="boardgames" source={source} beforeResults={chips} />
       <BoardGameModal
         gameId={selectedGameId}
         open={isModalVisible}

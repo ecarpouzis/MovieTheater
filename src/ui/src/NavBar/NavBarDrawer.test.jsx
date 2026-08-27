@@ -4,14 +4,20 @@
  * Eric's report, with a photograph: the Arcade hamburger opened on a name, a cog, one "Filters"
  * button and 1,200 px of nothing. The drawer now renders the SAME components the desktop sider
  * renders for the section — the user block, the index rows where the section has them, and its
- * `FacetRail` in the `rail` variant — so the tests below read the rail's own section titles
- * (`.bx-rsec-title`) out of the open drawer.
+ * `FacetRail` — so the tests below read the rail's own section titles (`.bx-rsec-title`) out of the
+ * open drawer.
+ *
+ * 2026-08-28: the drawer is also the section's ONE filter surface. The bar's phone Filters pill and
+ * the full-page rail sheet it raised are gone (Eric: "this filter button seems to present the same
+ * options opening the drawer does"), and the top bar's magnifier — which used to raise that sheet —
+ * opens THIS drawer and drops the caret in the rail's SmartSearch. The last describe below is what
+ * used to be the sheet's test.
  *
  * Playwright covers Movies / Board games / Arcade / Channels against the live prod-proxied site.
  * Music, Photos and Books are gated (a password session, a family-album grant, BooksAccess), so
  * they are pinned HERE — this file is their half of the verification, not a duplicate of the smoke.
  */
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -212,6 +218,40 @@ describe("the drawer survives a facet click", () => {
     await userEvent.click(document.querySelector(".navbar-home-btn"));
     await userEvent.click(await screen.findByRole("button", { name: /Board Games/i }));
     await waitFor(() => expect(document.querySelector(".navbar-dropdown--open")).toBeNull());
+  });
+
+  afterEach(cleanup);
+});
+
+describe("the phone top bar's magnifier", () => {
+  it("opens the drawer and puts the caret in the section's search", async () => {
+    renderNav("/");
+    expect(document.querySelector(".navbar-dropdown--open")).toBeNull();
+
+    await userEvent.click(screen.getByRole("button", { name: "Search" }));
+    await waitFor(() => expect(document.querySelector(".navbar-dropdown--open")).toBeTruthy());
+    const drawer = document.querySelector(".navbar-dropdown--open");
+
+    // The section's search is the rail's SmartSearch, at the top of the rail — the phone bar has no
+    // centre search box for it to portal into, so the drawer carries it.
+    const box = await within(drawer).findByRole("combobox");
+    await waitFor(() => expect(document.activeElement).toBe(box));
+
+    // …and there is nowhere else to reach the filters from: no Filters pill, no full-page sheet.
+    expect(document.querySelector(".bx-filter-pill")).toBeNull();
+    expect(document.querySelector(".bx-railbar-sheet")).toBeNull();
+  });
+
+  it("focuses the search on a tap while the drawer is already open", async () => {
+    renderNav("/");
+    await openDrawer();
+    const drawer = document.querySelector(".navbar-dropdown--open");
+    const box = await within(drawer).findByRole("combobox");
+    box.blur();
+    expect(document.activeElement).not.toBe(box);
+
+    await userEvent.click(screen.getByRole("button", { name: "Search" }));
+    await waitFor(() => expect(document.activeElement).toBe(box));
   });
 
   afterEach(cleanup);

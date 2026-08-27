@@ -103,9 +103,10 @@ it without the bar ever importing a catalog.
 - **The phone DRAWER is the sider — the WHOLE sider.** The hamburger renders the same components the
   desktop sider renders for that section, in the same order: the user block with its cog, the
   section's index rows where it has them (`SectionIndexRail` — Movies' Seen · Want · Rate ·
-  Playlists, Photos' album index, TV's Guide, Books' counted index), the section's **`FacetRail` in
-  its `rail` variant** with the result count on its head line, whatever the sider puts under it (the
-  BGG badge), then Log Out. Not copies — the SAME `Pages/*/…SiderRail.tsx` the desktop mounts, gated
+  Playlists, Photos' album index, TV's Guide, Books' counted index), the section's **`FacetRail`**
+  with the result count on its head line — **and, on a phone only, its SmartSearch at the top of that
+  rail**, since the phone bar has no centre search box — whatever the sider puts under it (the BGG
+  badge), then Log Out. Not copies — the SAME `Pages/*/…SiderRail.tsx` the desktop mounts, gated
   by NavBar's `railVisible` prop (`!isMobile || drawerOpen`) instead of a `!isMobile` guard.
   It briefly (2026-08-27) held a lone **Filters** row that shut the drawer and raised the page's
   sheet instead; one button and 1,200 px of nothing is the failure Eric photographed, and the row,
@@ -113,22 +114,30 @@ it without the bar ever importing a catalog.
   The rail MOUNTS with the drawer rather than living behind it: the drawer's markup is in the DOM on
   every route, and a permanently mounted rail would run its option queries on every page of the site.
   The page has usually already warmed those React Query keys, so opening is a cache hit.
-- **The bar's Filters pill and the page's full-page SHEET stay** as the quick path — the same rail,
-  read off the same URL, so the two can never disagree. What they must not do is be open at once:
-  `bar/useSlot.ts` carries `publishNavDrawer`/`publishRailSheet` and each surface stands down when
-  the other goes up.
+- **On a phone the drawer is the ONLY filter surface (2026-08-28).** The bar's Filters pill and the
+  full-page rail SHEET it raised are DELETED — Eric, on his phone: *"this filter button seems to
+  present the same options opening the drawer does. Why do these buttons still exist?"* Once the
+  drawer became the sider, the pill was a second door onto one room, which is the duplicate-options
+  bug in its purest form. Gone with them: `FilterPill.tsx`, `useRailSheet.ts`, `FacetRail`'s `sheet`
+  variant (`.bx-railbar-sheet` / `.bx-rail-backdrop`, z-index 1350) and the
+  `publishRailSheet`/`SEARCH_EVENT` channel in `bar/useSlot.ts`. **The phone top bar's magnifier now
+  opens the DRAWER** and asks the rail's SmartSearch for the caret (`requestRailSearchFocus` /
+  `claimRailSearchFocus` — a module flag plus an event, because the rail mounts WITH the drawer and
+  there is no input to focus at the moment the button is pressed). Pinned by `chromeChecks.mjs`'
+  `readFilterPill` + `searchOpensDrawer`, both probed by `probe-chrome-checks.mjs`.
 - **One bar, one sort control, one ⚙, and the count is NOT here.** The result total lives on the
   rail's head line (`.bx-rail-count`) — counts live where the thing they count lives. Every legacy
   sort Select the sections carried (`SearchTools`, `ArcadeNavContent`, `BoardGameNavContent`) was
   retired in S1; the Sort pill is the one control, and a section that persists its own order says so
   through `CatalogSource.currentSort`.
 
-### The bar, the strip and the drawer, per section (as built, 2026-08-27)
+### The bar, the strip and the drawer, per section (as built, 2026-08-27; phone filters 2026-08-28)
 
 Read off the approved canvas (`gen.mjs`'s fifteen `.dc.html` artboards) and verified against the
 live sections at 1440x900 and 390x844, light and dark. DESKTOP = the bar's tabs, then its tools;
-PHONE = the fixed top bar is always `search + gear + theme`, the ONE strip is the bar's tabs plus the
-section's pills, and the drawer is the sider.
+PHONE = the fixed top bar is always `search + gear + theme` (the search opens the drawer), the ONE
+strip is the bar's tabs plus the section's pills, and the drawer is the sider — and the section's one
+filter surface, so no bar tool below is a Filters pill.
 
 | Section | Bar tabs | Bar tools (after the search) | Phone drawer = the sider |
 |---|---|---|---|
@@ -318,8 +327,9 @@ it is what a card OPENS, so the contract belongs here.
   variable, so zeroing it turns those rules into the sheet's numbers with no specificity fight.
 - **One layer, one place**: `SHEET_Z` = 1500 for every section's detail modal, `SHEET_STACK_Z` =
   1600 for a dialog a sheet raises WITHOUT closing itself. The stack it clears: tweaks 1200 · phone
-  top bar 1300 · rail sheet 1350 · immersive routes 1400. Nine dialogs sat at antd's default 1000 —
-  under the bar and under the rail sheet — until that constant existed.
+  top bar 1300 · immersive routes 1400 (the facet rail's phone sheet held 1350 until 2026-08-28; the
+  rail lives in the nav drawer now and there is no sheet). Nine dialogs sat at antd's default 1000 —
+  under the bar — until that constant existed.
 - **It lives in the URL** (`?title=` / `?game=` / `?album=` / `?item=` / `?series=` / `?photo=`):
   open PUSHES so Back closes it, ✕ REPLACES. The smoke asserts both, plus that `?view=` survives.
 - **Skin tokens ride `styles={{ wrapper }}`, never `wrapProps.style`** — `@rc-component/dialog`
@@ -378,16 +388,19 @@ the only copy.
 
 ## The rail family (`catalog/rail/`)
 
-- **`FacetRail`** — one body, two skins: `rail` (a desktop sider column: the section mounts it in
-  the site sider, e.g. `BooksSiderRail` through `BooksNavContent`) and `sheet` (a full-page phone
-  sheet the section raises behind a Filters pill; z-index 1350, above the top bar). Sections:
+- **`FacetRail`** — ONE shape, one place: the sider column the section mounts through its NavContent
+  (e.g. `BooksSiderRail` through `BooksNavContent`) — which on a phone is what the nav DRAWER draws.
+  The second skin, a full-page `sheet` raised behind a Filters pill (z-index 1350), was deleted on
+  2026-08-28: it offered the options the drawer already held. `search` is the one viewport-aware prop
+  (`SectionSiderRail` passes `isMobile`): false on desktop, where the page portals the same
+  `SmartSearch` into the bar's centre slot, true on a phone, where the bar has no centre slot.
+  Sections:
   facets in spec order (`RailSection` collapsibles, `FacetOptions` with include/exclude controls and
   the searched, paged long tails via `useFacetOptions`), the **fixed-scale ranges** (`spec.ranges`,
   `RangeFacetDef`: two thumbs over declared stops — the Boardgames Age 3…18+ / Play time / Weight —
   URL `<token>=min-max`, a thumb at either end = an open side, BOTH thumbs filter; drawn right under
   the facet named by `after`, `StopsRangeFacet`), then Date range, Rating, My lists (`RangeFacets`),
-  then the saved searches. A count badge on the head shows the active filters. The phone sheet
-  binds the page tokens through `bx-rail-surface` (without it the sheet is transparent).
+  then the saved searches. A count badge on the head shows the active filters.
 - **`SmartSearch`** — the rail's input: a text "Search" row first, then facet suggestions with type
   labels and counts; `token:` prefixes scope the suggestions; arrows/Enter/Escape.
 - **`ActiveChips`** — `search` / `<One>` / `not <one>` / `years` / `rating` / flag chips over the
@@ -396,11 +409,10 @@ the only copy.
   DRAWER (which is the sider). `SectionIndexTabs`, its phone-strip twin, was deleted on 2026-08-27:
   a second strip of the bar's own destinations is the duplicate-options bug. An index row must say
   something the bar's tabs do not — a count, a group the bar has no room for, the viewer's own list.
-- **Per-section pieces** (R9 S2): `FilterPill` (the phone's bar tool), `useRailSheet` (the sheet's
-  open state — closes on URL change / desktop, and answers the phone top bar's search button through
-  `requestSectionSearch`), `RailChips` (the chips row + save prompt over the results). A section
-  mounts its rail in the sider through its NavContent (`BooksSiderRail`, `MoviesSiderRail`) and the
-  sheet + SmartSearch-in-the-bar from its page — both read the same URL, nothing crosses through props.
+- **Per-section pieces** (R9 S2): `RailChips` (the chips row + save prompt over the results). A
+  section mounts its rail in the sider through its NavContent (`BooksSiderRail`, `MoviesSiderRail`)
+  and the SmartSearch-in-the-bar from its page — both read the same URL, nothing crosses through
+  props. (`FilterPill` and `useRailSheet` were the phone's second surface and are deleted.)
 - **How a section wires all that up is itself shared** (the S2 review pass) — a section writes its
   spec and its count, nothing else:
   - `useSectionRail(section, spec, { entityParams, facetsEnabled, grouped })` → `SectionRailState`
@@ -409,13 +421,15 @@ the only copy.
     ONE call. Both trees call it — they still agree through the URL, never through props.
   - `<SectionSiderRail rail={…} total={…} loading={…} note={…} />` is the sider column (`note`
     replaces the controls where a view has no filters — the Books Directory).
-  - `sectionRailSurfaces(rail, sheet, { total, placeholder, chipsClassName })` → `{ pill, chips,
-    surfaces }` for the page. NOT a hook (it calls none) — pages return early above it; and the
-    sheet's `useRailSheet` stays the PAGE's, because only the tree that renders the sheet may answer
-    `requestSectionSearch`.
+  - `sectionRailSurfaces(rail, isMobile, { placeholder, chipsClassName })` → `{ chips, surfaces }`
+    for the page: the chips over the results, and the bar's SmartSearch on desktop. NOT a hook (it
+    calls none) — pages return early above it, and `isMobile` is passed in for the same reason. It
+    returned a third thing, the phone's `pill` + sheet, until 2026-08-28; with those gone the pages
+    also stopped asking for a `total` — the only reader of that number was the sheet's head line, and
+    the RAIL asks for its own.
   - `useResultCount(key, request, enabled)` / `useCountQuery` (`rail/useResultCount.ts`) is the head
     line's count: one 1-row page per state, five minutes, `totalCount` or `total` off the envelope
-    (-1 = the endpoint does not count). One query key means the sider and the sheet ask once.
+    (-1 = the endpoint does not count).
   - A section whose rail and page read the same CACHED list uses `hooks/useSharedCachedResource`
     (Boardgames, Music) — see the site-frontend skill for when that beats `useCachedResource`.
 ### The rail, per section
@@ -457,13 +471,14 @@ itself uses.
   1,200 px of nothing, which is what Eric photographed.) `NavBar.js` now closes the drawer on a
   pathname change — a destination was chosen — on the hamburger, on the backdrop, and on the section
   switcher (which pushes a pathname). A facet click only rewrites `search`, so the drawer stays open:
-  the option ticks, the head count moves, the chip appears under the bar behind it. The bar's Filters
-  pill and the page's `useRailSheet` sheet remain the quick path over the SAME URL state, and
-  `bar/useSlot.ts`'s `publishNavDrawer` / `publishRailSheet` keep the two from being open together.
-  Verified in a real browser at 390×844 in both themes for Movies, Board games, Channels and Arcade
-  (`.claude/skills/test-roms/drawer-verify.mjs`), pinned headlessly by `chromeChecks.mjs`'
-  `DRAWER_RAIL` + `clickDrawerFacet`, and — for the gated sections — by
-  `src/ui/src/NavBar/NavBarDrawer.test.jsx`.
+  the option ticks, the head count moves, the chip appears under the bar behind it. **And it is the
+  ONLY filter surface on a phone (2026-08-28)**: the bar's Filters pill and the page's `useRailSheet`
+  sheet are deleted rather than kept as a "quick path", because a second door onto the same room is
+  the duplicate-options bug Eric named twice. The top bar's magnifier opens this drawer and the
+  rail's SmartSearch takes the caret. Verified in a real browser at 390×844 in both themes for
+  Movies, Board games, Channels and Arcade (`.claude/skills/test-roms/drawer-verify.mjs`), pinned
+  headlessly by `chromeChecks.mjs`' `DRAWER_RAIL` + `clickDrawerFacet` + `readFilterPill` +
+  `searchOpensDrawer`, and — for the gated sections — by `src/ui/src/NavBar/NavBarDrawer.test.jsx`.
 
 ## The Explore kit (`catalog/explore/`) — R9 S7: every section has one
 
@@ -637,9 +652,10 @@ below. **Four rules the whole table obeys:**
    while a dense list loads).
 3. If the section has a landing that keys on "no params", exclude the catalog's (`CATALOG_PARAM_KEYS`).
 4. Tests: an envelope test per adapter on recorded fixtures (`*.test.ts` beside it).
-5. Filters (optional): write a `FacetSpec`, mount `FacetRail` in the sider (desktop) and behind a
-   Filters pill as a sheet (phone), pass `useFacetState`'s query into the source's scope key, put
-   `ActiveChips` in `beforeResults`.
+5. Filters (optional): write a `FacetSpec` and mount `SectionSiderRail` in the section's NavContent
+   — that IS the phone surface too, since the drawer is the sider. Pass `useFacetState`'s query into
+   the source's scope key and put `ActiveChips` in `beforeResults` (`sectionRailSurfaces`). There is
+   no phone Filters pill and no sheet to build: one way in, and it already exists.
 6. Explore: a tab row in `catalog/bar/sections.ts`, a route, and a PURE `compose<Section>Explore`
    over `composeExplore.ts` — named queries the section already serves, `groupCard` for a facet,
    `facetHref` for where it leads, `useExploreDepth` on the expensive ones. See "The Explore kit".
@@ -820,15 +836,20 @@ controller.
   appears for an admin · **on a phone, exactly ONE content strip (nothing outside the bar repeats
   a bar tab's destination above the results); a drawer that carries the section's OWN nav, not just
   the user block and Log Out; where the section has a facet spec, that drawer holding the RAIL
-  (`.bx-rsec-title` matched against `chromeChecks.mjs`' `DRAWER_RAIL`); and the drawer SURVIVING a
-  facet clicked inside it, with the head count moving.** GET-only: every other method is fulfilled
-  locally with 204, the one exception being the harness account's login.
+  (`.bx-rsec-title` matched against `chromeChecks.mjs`' `DRAWER_RAIL`); the drawer SURVIVING a
+  facet clicked inside it, with the head count moving; NO Filters pill and no rail-sheet node
+  anywhere in the chrome (`readFilterPill`); and the top bar's magnifier OPENING THE DRAWER with the
+  section's SmartSearch focused at the top of its rail (`searchOpensDrawer`).** GET-only: every other
+  method is fulfilled locally with 204, the one exception being the harness account's login.
 - Those phone checks live in `chromeChecks.mjs`, imported by the smoke, so
   `probe-chrome-checks.mjs` can run the SAME functions against a page with the defect injected — a
   check verified by a re-typed copy of itself is not verified, and the strip check WAS blind at first
   (its label normaliser left `browse118` where `browse` was wanted, so a counted tab never matched).
   The drawer check was blind the same way: "does the drawer hold any of the section's own controls"
-  PASSES on a drawer holding one Filters button, which is the defect Eric photographed. The probe
+  PASSES on a drawer holding one Filters button, which is the defect Eric photographed. The
+  Filters-pill check has its own trap, also probed: the rail's `<aside>` carries `aria-label="Filters"`
+  too, so a loose `[aria-label="Filters"]` matches the RAIL and can never fail — it is
+  `button[aria-label="Filters"]`. The probe
   injects that exact shape and shows `ownControls: 1` passing while the rail check fires — which is
   why the rail check exists as a separate assertion rather than a bigger number.
 - `drawer-verify.mjs` is the browser-eye half: one section × one theme at 390×844, drawer open →

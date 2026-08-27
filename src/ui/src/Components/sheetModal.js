@@ -2,14 +2,15 @@
  * The site's dialog layer, as ONE number instead of a literal repeated in a dozen files.
  *
  * The stack it has to clear, bottom up: the tweaks panel (1200, catalog-views.css), the fixed phone
- * top bar (1300, NavBar.css), the facet rail's phone sheet (1350, catalog/rail/rail.css). Above it:
+ * top bar (1300, NavBar.css). (The facet rail's phone sheet held 1350 until 2026-08-28; the rail
+ * lives in the nav drawer now and there is no sheet.) Above it:
  * the immersive routes that own the whole screen and carry their own Back (the watch room and the TV
  * room at 1400, the Books reader at 1400) — those are ROUTES, not dialogs, and a dialog opened from
  * one still has to sit over it, which is why the band starts at 1500 rather than 1350.
  *
  * `SHEET_Z` is every section's detail modal: the movie sheet, the game sheet, the boardgame sheet,
  * the album sheet, the photo lightbox, the Books item/series sheets, the TV admin and playlist
- * surfaces. One value means a modal can never open under the bar or under the rail sheet, which is
+ * surfaces. One value means a modal can never open under the bar or under the drawer, which is
  * exactly the bug each of those files fixed separately (and the ones still at antd's default 1000
  * had not).
  *

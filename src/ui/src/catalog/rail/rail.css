@@ -2,7 +2,7 @@
    Ported from the standalone's browse.css, on the package's four tokens (--ink / --sub / --line /
    --bg) + --font-mono. Two surfaces bind them:
      .bx-rail-on-sider  the section sider (dark, feature-tinted): ink = the sider's strong text
-     .bx-rail-surface   a page surface (the phone sheet, the chip row): ink = the page's text
+     .bx-rail-surface   a page surface (the chip row): ink = the page's text
    A section may rebind either (Books binds --books-* under .books-section). */
 
 .bx-rail-on-sider {
@@ -195,12 +195,6 @@
   border-radius: 999px; min-width: 16px; height: 16px; padding: 0 4px;
   display: inline-flex; align-items: center; justify-content: center;
 }
-.bx-rail-collapse {
-  appearance: none; border: 1px solid var(--line); background: transparent; color: var(--sub);
-  cursor: pointer; width: 26px; height: 26px; border-radius: 6px;
-  display: inline-flex; align-items: center; justify-content: center;
-}
-.bx-rail-collapse:hover { color: var(--ink); border-color: var(--ink); }
 .bx-rail-savedwrap { display: flex; flex-direction: column; gap: 7px; }
 .bx-rail-savedhead { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .bx-rail-count { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .04em; color: var(--ink); white-space: nowrap; }
@@ -218,26 +212,10 @@
 .bx-rsec-body { padding: 0 2px 12px; }
 .bx-rail-note { font-size: 12px; line-height: 1.45; color: var(--sub); padding: 12px 14px 18px; border-top: 1px solid var(--line); margin-top: 4px; }
 
-/* ── The phone sheet: filters own the whole screen, scroll internally, slide down ── */
-.bx-filter-pill {
-  appearance: none; border: 1px solid var(--line); background: transparent; color: var(--ink);
-  cursor: pointer; height: 32px; padding: 0 11px; border-radius: 7px; flex: 0 0 auto;
-  display: inline-flex; align-items: center; gap: 6px;
-}
-.bx-filter-pill:hover { background: var(--line); }
-.bx-railbar-sheet {
-  position: fixed; inset: 0; z-index: 1350; /* above the site's fixed top bar (1300) */
-  overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
-  background: var(--bg);
-  padding: max(16px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom));
-  animation: bx-sheet-down .22s ease;
-}
-.bx-rail-backdrop { position: fixed; inset: 0; z-index: 1290; background: rgba(0, 0, 0, .34); animation: bx-fade-in .2s ease; }
-@keyframes bx-sheet-down { from { transform: translateY(-12px); opacity: 0; } to { transform: none; opacity: 1; } }
-@keyframes bx-fade-in { from { opacity: 0; } to { opacity: 1; } }
-@media (prefers-reduced-motion: reduce) {
-  .bx-railbar-sheet, .bx-rail-backdrop { animation: none; }
-}
+/* The phone's full-page filter SHEET (`.bx-railbar-sheet`), its backdrop and the bar's Filters pill
+   that raised it lived here until 2026-08-28. They were deleted, not restyled: the drawer became the
+   sider and already holds this rail, so the sheet was a second door onto the same room. On a phone
+   the rail is drawn by `.bx-rail-on-sider` inside `.navbar-dropdown`, like every other sider row. */
 
 /* The chips row over a section's results: nothing active → nothing drawn (RailChips). */
 .bx-chips-row:empty { display: none; }

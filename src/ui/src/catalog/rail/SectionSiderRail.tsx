@@ -1,12 +1,18 @@
 /**
- * A section's filter rail in the sider (desktop): the generic `FacetRail` over the section's spec,
- * reading the same URL the page reads and pushing the same URLs — nothing crosses the sider/page
- * boundary through props. The SmartSearch lives in the SectionBar's centre slot (the page mounts it
- * there), so the rail draws none; the head line carries the section's own result count.
+ * A section's filter rail in the sider: the generic `FacetRail` over the section's spec, reading the
+ * same URL the page reads and pushing the same URLs — nothing crosses the sider/page boundary
+ * through props. The head line carries the section's own result count.
+ *
+ * On a PHONE the nav drawer is this sider (2026-08-27) and it is the section's ONE filter surface
+ * (2026-08-28) — so the search moves with it. On desktop the SmartSearch lives in the SectionBar's
+ * centre slot (the page mounts it there) and the rail draws none; on a phone the bar has no search
+ * box at all, only the top bar's magnifier, which opens THIS drawer — so the rail carries the
+ * SmartSearch, at the top, where the magnifier's caret lands.
  *
  * A section's own rail file is now just its spec, its count and this (`…SiderRail.tsx`).
  */
 import type { ReactNode } from "react";
+import useIsMobile from "../../hooks/useIsMobile";
 import FacetRail from "./FacetRail";
 import type { SectionRailState } from "./useSectionRail";
 
@@ -22,12 +28,12 @@ export interface SectionSiderRailProps {
 }
 
 export default function SectionSiderRail({ rail, total, loading, title, note }: SectionSiderRailProps) {
+  const isMobile = useIsMobile();
   if (note != null) return <div className="bx-rail-on-sider bx-rail-note">{note}</div>;
   return (
     <div className="bx-rail-on-sider">
       <FacetRail
-        variant="rail"
-        search={false}
+        search={isMobile}
         title={title}
         spec={rail.spec}
         state={rail.state}

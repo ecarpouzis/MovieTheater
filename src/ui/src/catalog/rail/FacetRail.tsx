@@ -1,13 +1,14 @@
 /**
  * The filter rail: a title with the active count, the smart search, the saved searches with the
  * result count, then one collapsible section per facet, the year range, the rating floor and — on
- * grouped views — the personal flags. Two skins over one body:
+ * grouped views — the personal flags.
  *
- *   rail   the persistent column (the section's sider on desktop)
- *   sheet  the phone's full-page sheet (a partial sheet wastes the rest of the screen on a dimmed
- *          page): fixed, scrolls internally, locks the page behind it, Escape / backdrop / × close
+ * ONE shape, one place. It is the persistent column of the section's sider — and on a phone the nav
+ * DRAWER is that sider (2026-08-27), so this is what the hamburger opens. The second skin, a
+ * full-page `sheet` raised behind the bar's Filters pill, was deleted on 2026-08-28: it offered the
+ * same options the drawer already held, which is the duplicate-options bug in its purest form.
  */
-import { Fragment, useEffect, useState, type ReactNode } from "react";
+import { Fragment, useState } from "react";
 import type { FacetOptionRow, FacetSpec, FacetState, FacetValue, RangeFacetDef } from "./facetSpec";
 import { isRangeSet } from "./facetSpec";
 import FacetOptions from "./FacetOptions";
@@ -35,14 +36,12 @@ export interface FacetRailProps {
   facetsLoading?: boolean;
   /** The result count for the current state, when known. */
   total?: number | null;
-  /** Render the SmartSearch in the rail (default). The desktop sider passes false since R9 S1d: the
-   *  page portals the same SmartSearch into the SectionBar's centre slot instead. */
+  /** Render the SmartSearch in the rail (default). The DESKTOP sider passes false since R9 S1d: the
+   *  page portals the same SmartSearch into the SectionBar's centre slot instead. A phone has no bar
+   *  search box, so there it stays true and the rail carries it (see `SectionSiderRail`). */
   search?: boolean;
   /** Whether the current view groups (the groups-only facets and flags show only then). */
   grouped: boolean;
-  variant: "rail" | "sheet";
-  open?: boolean;
-  onClose?: () => void;
   saved?: FacetRailSaved;
   activeCount: number;
   title?: string;
@@ -54,13 +53,7 @@ export interface FacetRailProps {
 const NO_OPTIONS: FacetOptionRow[] = [];
 const NO_VALUES: FacetValue[] = [];
 
-function CloseGlyph({ sheet }: { sheet: boolean }) {
-  return sheet
-    ? <svg viewBox="0 0 12 12" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M2 2l8 8M10 2l-8 8" /></svg>
-    : <svg viewBox="0 0 10 6" width="12" height="8" fill="currentColor" style={{ transform: "rotate(90deg)" }} aria-hidden="true"><path d="M0 0h10L5 6z" /></svg>;
-}
-
-function RailBody({ spec, state, actions, facets, facetsLoading, total, grouped, saved, activeCount, title, sheet, onClose, search = true }: FacetRailProps & { sheet: boolean }) {
+function RailBody({ spec, state, actions, facets, facetsLoading, total, grouped, saved, activeCount, title, search = true }: FacetRailProps) {
   const [saving, setSaving] = useState(false);
   const canSave = !!saved?.onSave && activeCount > 0;
   const noun = spec.noun ?? "results";
@@ -89,11 +82,6 @@ function RailBody({ spec, state, actions, facets, facetsLoading, total, grouped,
         <span className="bx-rail-toptitle">
           {title ?? "Filters"}{activeCount > 0 && <span className="bx-rail-topbadge">{activeCount}</span>}
         </span>
-        {onClose && (
-          <button type="button" className="bx-rail-collapse" onClick={onClose} title={sheet ? "Close filters" : "Collapse filters"} aria-label={sheet ? "Close filters" : "Collapse filters"}>
-            <CloseGlyph sheet={sheet} />
-          </button>
-        )}
       </div>
 
       {spec.text !== false && search && <SmartSearch spec={spec} facets={facets} onAdd={actions.add} onText={actions.setText} />}
@@ -148,27 +136,10 @@ function RailBody({ spec, state, actions, facets, facetsLoading, total, grouped,
 }
 
 export default function FacetRail(props: FacetRailProps) {
-  const { variant, open = true, onClose, className } = props;
-  const sheet = variant === "sheet";
-
-  // The sheet locks the page behind it and closes on Escape.
-  useEffect(() => {
-    if (!sheet || !open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose?.(); };
-    document.addEventListener("keydown", onKey);
-    return () => { document.body.style.overflow = prev; document.removeEventListener("keydown", onKey); };
-  }, [sheet, open, onClose]);
-
-  if (sheet && !open) return null;
-
-  const body: ReactNode = <RailBody {...props} sheet={sheet} />;
-  if (!sheet) return <aside className={`bx-railbar${className ? ` ${className}` : ""}`} aria-label={props.title ?? "Filters"}>{body}</aside>;
+  const { className } = props;
   return (
-    <>
-      <div className="bx-rail-backdrop" onClick={onClose} aria-hidden="true" />
-      <aside className={`bx-railbar bx-railbar-sheet bx-rail-surface${className ? ` ${className}` : ""}`} role="dialog" aria-modal="true" aria-label={props.title ?? "Filters"}>{body}</aside>
-    </>
+    <aside className={`bx-railbar${className ? ` ${className}` : ""}`} aria-label={props.title ?? "Filters"}>
+      <RailBody {...props} />
+    </aside>
   );
 }

@@ -5,6 +5,7 @@
  * facet row adds a filter, committing the text row sets `q`. Tokens come from the spec.
  */
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { SEARCH_FOCUS_EVENT, claimRailSearchFocus } from "../bar/useSlot";
 import { hueOf } from "../sources/hue";
 import type { FacetOptionRow, FacetSpec, FacetValue } from "./facetSpec";
 
@@ -64,6 +65,27 @@ export default function SmartSearch({ spec, facets, onAdd, onText, big = false, 
   const [open, setOpen] = useState(false);
   const [sel, setSel] = useState(0);
   const wrap = useRef<HTMLDivElement>(null);
+  const input = useRef<HTMLInputElement>(null);
+
+  // The phone top bar's magnifier opens the drawer and asks for the caret (`useSlot.ts`). Claimed
+  // on MOUNT because the rail mounts with the drawer — the input does not exist when the button is
+  // pressed — and on the event for a tap while the drawer is already open. Unconditional: on a phone
+  // this is the section's ONE search box, and on a desktop nothing ever sets the flag.
+  useEffect(() => {
+    const take = () => {
+      if (!claimRailSearchFocus()) return;
+      const el = input.current;
+      if (!el) return;
+      // `preventScroll` then scroll the RAIL, not the input: focus()'s own scroll parks the input
+      // flush against the phone top bar and pushes the rail's head line — the section's result count
+      // — off the top of the drawer. Scrolling to the rail shows both.
+      el.focus({ preventScroll: true });
+      (el.closest(".bx-railbar") ?? el).scrollIntoView?.({ block: "start" });
+    };
+    take();
+    window.addEventListener(SEARCH_FOCUS_EVENT, take);
+    return () => window.removeEventListener(SEARCH_FOCUS_EVENT, take);
+  }, []);
 
   useEffect(() => {
     const h = (e: MouseEvent) => { if (wrap.current && !wrap.current.contains(e.target as Node)) setOpen(false); };
@@ -97,6 +119,7 @@ export default function SmartSearch({ spec, facets, onAdd, onText, big = false, 
         <svg viewBox="0 0 24 24" width={big ? 18 : 15} height={big ? 18 : 15} fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><circle cx="11" cy="11" r="6.5" /><path d="M16.5 16.5L21 21" /></svg>
       </span>
       <input
+        ref={input}
         className="bx-search-input"
         type="search"
         value={q}

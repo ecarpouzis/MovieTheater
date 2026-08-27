@@ -13,11 +13,10 @@ import { hasFacetValue } from "../../catalog/rail/facetSpec";
 import { parseFacetState } from "../../catalog/rail/facetUrl";
 import useSectionRail from "../../catalog/rail/useSectionRail";
 import sectionRailSurfaces from "../../catalog/rail/sectionRailSurfaces";
-import useRailSheet from "../../catalog/rail/useRailSheet";
 import { createMoviesListSource, createMoviesSource } from "../../catalog/sources/moviesSource";
 import { CATALOG_PARAM_KEYS } from "../../catalog/state/useCatalogView";
 import { MOVIES_PARSE_SPEC, browseSearchFor, isPlainMoviesSearch } from "./moviesFacetSpec";
-import { MOVIES_ENTITY_PARAMS, moviesViewerIdentity, useMoviesFacetSpec, useMoviesResultTotal } from "./useMoviesBrowse";
+import { MOVIES_ENTITY_PARAMS, moviesViewerIdentity, useMoviesFacetSpec } from "./useMoviesBrowse";
 
 // The detail modal (917 lines + FileMappingEditor, SubtitlePicker, …) only renders after a card
 // click + network fetch, so its chunk load hides behind that — keeping it out of the entry bundle.
@@ -94,8 +93,6 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
   const rail = useSectionRail("movies", spec, { entityParams: MOVIES_ENTITY_PARAMS });
   const facetState = rail.state;
   const facetActions = rail.actions;
-  const sheet = useRailSheet();
-  const facetTotal = useMoviesResultTotal(facetState, sheet.isMobile);
   // A group header scopes in place (adds its facet / year range, regroups a level — one push). The
   // source reaches it through a ref so its identity stays keyed on the search alone.
   const scopeRef = useRef(null);
@@ -417,11 +414,10 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
         ? <LoadFailure message="Couldn't load the library." onRetry={() => setRetryNonce((n) => n + 1)} />
         : null;
 
-  // The bar's tools: the phone's Filters pill raising the full-page sheet (the desktop rail is the
-  // sider's MoviesSiderRail, which carries the count on its head line), the chips over the results,
-  // and the bar's SmartSearch — all from the shared rail surfaces.
-  const { pill: filtersPill, chips, surfaces } = sectionRailSurfaces(rail, sheet, {
-    total: facetTotal.data,
+  // The rail's page-side surfaces: the chips over the results and, on desktop, the bar's SmartSearch.
+  // The RAIL itself is the sider's MoviesSiderRail — which on a phone is what the drawer holds, count
+  // and search and all, so the page has nothing phone-shaped left to draw.
+  const { chips, surfaces } = sectionRailSurfaces(rail, isMobile, {
     placeholder: "Title, person:Pacino, genre:Crime…",
   });
 
@@ -435,7 +431,6 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
         section="movies"
         source={source}
         overrides={gridOverride ? { grid: gridOverride } : undefined}
-        tools={filtersPill}
         beforeResults={chips}
       />
       <Suspense fallback={null}>

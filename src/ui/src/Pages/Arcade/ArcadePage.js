@@ -20,10 +20,9 @@ import CatalogHost from "../../catalog/CatalogHost";
 import { hasFacetValue } from "../../catalog/rail/facetSpec";
 import useSectionRail from "../../catalog/rail/useSectionRail";
 import sectionRailSurfaces from "../../catalog/rail/sectionRailSurfaces";
-import useRailSheet from "../../catalog/rail/useRailSheet";
 import { ARCADE_GRID_CELL, createArcadeSource } from "../../catalog/sources/arcadeSource";
-import useResultCount from "../../catalog/rail/useResultCount";
 import "./ArcadePage.css";
+import useIsMobile from "../../hooks/useIsMobile";
 import usePolling from "../../hooks/usePolling";
 
 const { Text } = Typography;
@@ -147,13 +146,14 @@ function saveQuality(q) { try { localStorage.setItem(QUALITY_KEY, JSON.stringify
  *
  * Over ~13k cards this is SERVER-SIDE filtered + paged: the filters live in the URL as the rail's
  * `q/f/x` (R9 S2c — `arcadeFacetSpec.ts` maps them onto `/API/Arcade/Games`' own params; the sider's
- * ArcadeSiderRail, the phone's sheet, the bar's SmartSearch and the console carousel all write the
+ * ArcadeSiderRail (the phone drawer's rail too), the bar's SmartSearch and the console carousel all write the
  * same URL), and this page fetches the matching page and appends more on demand. A "Live rooms"
  * strip shows what friends are playing right now.
  */
 export default function ArcadePage({ userData }) {
   const history = useHistory();
   const location = useLocation();
+  const isMobile = useIsMobile();
 
   // ── The catalog as SPARSE BANDS (R9 S3: the package's InfiniteBands, shared with every section) ─
   // The lobby used to hold a dense array of the games it had fetched, anchored at an absolute
@@ -212,7 +212,6 @@ export default function ArcadePage({ userData }) {
   const rail = useSectionRail("arcade", spec, { entityParams: ARCADE_ENTITY_PARAMS });
   const facetState = rail.state;
   const facetActions = rail.actions;
-  const sheet = useRailSheet();
 
   // A pre-S2c lobby link (?system=&hideRegions=&players=&variant=&genre=&ra= — the old rail's Selects,
   // old bookmarks, a room's exit button from before the deploy) is rewritten ONCE into the facet form
@@ -271,11 +270,6 @@ export default function ArcadePage({ userData }) {
   );
   const facetActionsRef = useRef(null);
   facetActionsRef.current = facetActions;
-
-  // The rail head's count: one 1-row page per filter state, five minutes, shared by the sider and
-  // the phone sheet (the grid's own total lives in the stream now).
-  const totalQuery = useResultCount(["arcade", "count", filterKey], ({ signal }) =>
-    MovieAPI.getArcadeGames({ ...filtersRef.current, skip: 0, pageSize: 1 }, signal));
 
   // ?game=<versionId> — the open modal. Anything that doesn't parse is no game at all.
   const openGameId = (() => {
@@ -537,18 +531,15 @@ export default function ArcadePage({ userData }) {
     return <div style={{ padding: 48 }}><Empty description="The arcade isn't set up on this server yet." /></div>;
   }
 
-  // The phone's Filters pill raising the full-page sheet (the desktop rail is the sider's
-  // ArcadeSiderRail); the active-filter chips sit over the results.
-  const { pill: filtersPill, chips, surfaces } = sectionRailSurfaces(rail, sheet, {
-    total: totalQuery.data ?? null,
-    loading: !facets || totalQuery.isPending,
+  // The rail itself is the sider's ArcadeSiderRail — the phone drawer's, too, count and search and
+  // all. What is left for the page: the bar's SmartSearch on desktop and the chips over the results.
+  const { chips, surfaces } = sectionRailSurfaces(rail, isMobile, {
     placeholder: "A game, system:PS2, genre:RPG…",
   });
 
   // The section's bar tools (R9 S1): the two things you open + the Quality toggle, before the pills.
   const arcadeTools = (
     <>
-      {filtersPill}
       <button type="button" className="bx-tool-btn" onClick={() => setSavesVaultOpen(true)}>💾 Saves</button>
       <button
         type="button"

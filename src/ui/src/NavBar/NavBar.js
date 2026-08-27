@@ -20,7 +20,7 @@ const UserSettingsModal = lazy(() => import("./UserSettingsModal"));
 const MyPlaylistsModal = lazy(() => import("../Pages/Tv/MyPlaylistsModal"));
 import useIsMobile from "../hooks/useIsMobile";
 import { loadTitleTypes, saveTitleTypes, loadSort, saveSort } from "../hooks/useMovieSearch";
-import { SHEET_EVENT, isRailSheetOpen, publishNavDrawer, requestSectionSearch } from "../catalog/bar/useSlot";
+import { clearRailSearchFocus, requestRailSearchFocus } from "../catalog/bar/useSlot";
 import { parseFacetState, facetStateKey } from "../catalog/rail/facetUrl";
 import {
   MOVIES_PARSE_SPEC, isPlainMoviesSearch, legacyToFacetSearch, markMoviesSeeded, moviesFilterParams, myListsOf,
@@ -117,15 +117,11 @@ function NavBar({
     setDropdownOpen(false);
   }, [location.pathname]);
 
-  // One filter surface at a time on a phone: the drawer publishes itself so the page's rail SHEET
-  // can stand down, and stands down itself when the sheet goes up (the bar's Filters pill, the top
-  // bar's search button). See catalog/bar/useSlot.ts.
-  useEffect(() => { publishNavDrawer(drawerOpen); }, [drawerOpen]);
-  useEffect(() => {
-    const onSheet = () => { if (isRailSheetOpen()) setDrawerOpen(false); };
-    window.addEventListener(SHEET_EVENT, onSheet);
-    return () => window.removeEventListener(SHEET_EVENT, onSheet);
-  }, []);
+  // The drawer is the section's ONE filter surface on a phone (2026-08-28) — there is no second
+  // surface left to coordinate with. What survives of that plumbing is the caret: the top bar's
+  // magnifier opens this drawer and asks the rail's SmartSearch to focus, and a drawer that closes
+  // before any rail claimed the request drops it. See catalog/bar/useSlot.ts.
+  useEffect(() => { if (!drawerOpen) clearRailSearchFocus(); }, [drawerOpen]);
 
   useEffect(() => {
     // The movies dispatcher belongs to the movies section only. Every other section owns its own
@@ -443,11 +439,15 @@ function NavBar({
               <div className="navbar-section-dropdown">{sectionMenuItems}</div>
             )}
           </div>
-          {/* The GENERIC controls live up here on phones (R9 S1): search (opens the rail drawer, where
-              the section's search lives), the catalog's ⚙ (portaled into #topbar-tools by CatalogHost)
-              and the theme toggle. The section strip under this bar is content navigation only. */}
+          {/* The GENERIC controls live up here on phones (R9 S1): search, the catalog's ⚙ (portaled
+              into #topbar-tools by CatalogHost) and the theme toggle. The section strip under this
+              bar is content navigation only.
+              The magnifier opens the DRAWER — the drawer is the sider, the sider holds the section's
+              facet rail, and that rail's SmartSearch is the section's search. It used to ask the page
+              first, and a page whose rail sheet answered raised that sheet instead; the sheet is gone
+              (2026-08-28), so there is one destination and it is this one. */}
           <div className="navbar-topbar-tools">
-            <button type="button" className="navbar-tb-btn" onClick={() => { if (!requestSectionSearch()) setDrawerOpen(true); }} title="Search" aria-label="Search">
+            <button type="button" className="navbar-tb-btn" onClick={() => { requestRailSearchFocus(); setDrawerOpen(true); }} title="Search" aria-label="Search">
               <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><circle cx="7" cy="7" r="4.5" /><line x1="10.5" y1="10.5" x2="14" y2="14" /></svg>
             </button>
             <span id="topbar-tools" className="navbar-topbar-slot" />
@@ -460,11 +460,12 @@ function NavBar({
 
         <div className={`navbar-dropdown${drawerOpen ? " navbar-dropdown--open" : ""}${navThemeClass}`}>
           {/* The drawer IS the sider: the same user block, the same index rows, the same FacetRail
-              in its `rail` variant with the result count on its head line, the same footer. It used
-              to hold a lone "Filters" row that shut the drawer and raised the page's sheet — one
-              button and 1,200 px of nothing, which is the failure Eric photographed on 2026-08-27.
-              The bar's Filters pill still raises that sheet as the QUICK path; both read the same
-              URL, and useSlot.ts keeps them from being open at the same time. */}
+              with the result count on its head line, the same footer — plus the SmartSearch the
+              desktop bar carries in its centre box, since the phone bar has none. It used to hold a
+              lone "Filters" row that shut the drawer and raised the page's sheet — one button and
+              1,200 px of nothing, which is the failure Eric photographed on 2026-08-27. The sheet
+              and its Filters pill are gone too (2026-08-28): they offered the same options this
+              drawer holds, and the drawer is the one place the filters live now. */}
           {navContent}
           {navFooter}
         </div>

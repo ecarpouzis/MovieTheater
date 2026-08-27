@@ -26,7 +26,7 @@ const actions = (): FacetActions => ({
 
 describe("FacetRail", () => {
   it("the rail lists every facet section, the count, and hides the groups-only parts on a flat view", () => {
-    render(<FacetRail variant="rail" spec={spec} state={EMPTY_FACET_STATE} actions={actions()} facets={facets} total={1234} grouped={false} activeCount={0} />);
+    render(<FacetRail spec={spec} state={EMPTY_FACET_STATE} actions={actions()} facets={facets} total={1234} grouped={false} activeCount={0} />);
     expect(screen.getByText("1,234 comics")).toBeInTheDocument();
     expect(screen.getByText("Collections")).toBeInTheDocument();
     expect(screen.getByText("Tags")).toBeInTheDocument();
@@ -41,7 +41,7 @@ describe("FacetRail", () => {
   it("a grouped view shows the groups-only facet and the flags; a saved search applies and can be saved when filters are active", () => {
     const a = actions();
     const saved = { list: [{ id: "1", name: "Noir", search: "?f=tag:Noir" }], onApply: vi.fn(), onRemove: vi.fn(), onSave: vi.fn() };
-    render(<FacetRail variant="rail" spec={spec} state={{ ...EMPTY_FACET_STATE, include: { tags: ["Noir"] } }} actions={a} facets={facets} grouped activeCount={1} saved={saved} />);
+    render(<FacetRail spec={spec} state={{ ...EMPTY_FACET_STATE, include: { tags: ["Noir"] } }} actions={a} facets={facets} grouped activeCount={1} saved={saved} />);
     expect(screen.getByText("Shelves")).toBeInTheDocument();
     expect(screen.getByText("My lists")).toBeInTheDocument();
     fireEvent.click(screen.getByText("★ Noir"));
@@ -52,26 +52,31 @@ describe("FacetRail", () => {
     expect(saved.onSave).toHaveBeenCalledWith("Mine");
   });
 
-  it("the sheet renders nothing while closed, is a dialog when open, locks the page and closes on Escape / backdrop", () => {
-    const onClose = vi.fn();
-    const { rerender } = render(<FacetRail variant="sheet" open={false} onClose={onClose} spec={spec} state={EMPTY_FACET_STATE} actions={actions()} grouped={false} activeCount={0} />);
+  // The rail has ONE shape now. The full-page `sheet` variant (a dialog with a backdrop, raised by
+  // the bar's phone Filters pill) was deleted on 2026-08-28: it drew the same options the nav drawer
+  // already holds. This is the test that it cannot come back by accident.
+  it("is a plain column — never a dialog, never a backdrop, and it never locks the page", () => {
+    render(<FacetRail spec={spec} state={EMPTY_FACET_STATE} actions={actions()} facets={facets} grouped={false} activeCount={0} />);
     expect(screen.queryByRole("dialog")).toBeNull();
-    rerender(<FacetRail variant="sheet" open onClose={onClose} spec={spec} state={EMPTY_FACET_STATE} actions={actions()} grouped={false} activeCount={0} />);
-    expect(screen.getByRole("dialog", { name: "Filters" })).toBeInTheDocument();
-    expect(document.body.style.overflow).toBe("hidden");
-    fireEvent.keyDown(document, { key: "Escape" });
-    expect(onClose).toHaveBeenCalledTimes(1);
-    fireEvent.click(document.querySelector(".bx-rail-backdrop")!);
-    expect(onClose).toHaveBeenCalledTimes(2);
-    rerender(<FacetRail variant="sheet" open={false} onClose={onClose} spec={spec} state={EMPTY_FACET_STATE} actions={actions()} grouped={false} activeCount={0} />);
+    expect(document.querySelector(".bx-rail-backdrop")).toBeNull();
+    expect(document.querySelector(".bx-railbar-sheet")).toBeNull();
     expect(document.body.style.overflow).toBe("");
+    // …and no close/collapse control: the drawer's own hamburger closes it.
+    expect(screen.queryByRole("button", { name: /close filters|collapse filters/i })).toBeNull();
+  });
+
+  it("draws the SmartSearch by default and drops it when the caller says the bar has one", () => {
+    const { rerender } = render(<FacetRail spec={spec} state={EMPTY_FACET_STATE} actions={actions()} facets={facets} grouped={false} activeCount={0} />);
+    expect(screen.getByRole("combobox")).toBeInTheDocument();
+    rerender(<FacetRail search={false} spec={spec} state={EMPTY_FACET_STATE} actions={actions()} facets={facets} grouped={false} activeCount={0} />);
+    expect(screen.queryByRole("combobox")).toBeNull();
   });
 });
 
 describe("FacetRail — fixed-scale ranges", () => {
   it("draws the range under the facet it follows, reads the state's thumbs, and a thumb move commits stop values (ends open)", () => {
     const a = actions();
-    render(<FacetRail variant="rail" spec={spec} state={{ ...EMPTY_FACET_STATE, ranges: { age: { min: 12, max: null } } }} actions={a} facets={facets} grouped={false} activeCount={1} />);
+    render(<FacetRail spec={spec} state={{ ...EMPTY_FACET_STATE, ranges: { age: { min: 12, max: null } } }} actions={a} facets={facets} grouped={false} activeCount={1} />);
     const titles = Array.from(document.querySelectorAll(".bx-rail-facets .bx-rsec-title")).map((el) => el.textContent?.trim() ?? "");
     expect(titles.findIndex((t) => t.startsWith("Age"))).toBeGreaterThan(titles.findIndex((t) => t.startsWith("Collections")));
     expect(titles.findIndex((t) => t.startsWith("Age"))).toBeLessThan(titles.findIndex((t) => t.startsWith("Tags")));
