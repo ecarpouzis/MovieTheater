@@ -53,13 +53,24 @@
 .bx-pill:hover { background: var(--line); }
 .bx-pill-k { font-family: var(--font-mono); font-size: 9px; letter-spacing: .06em; text-transform: uppercase; color: var(--sub); }
 .bx-pill-v { font-weight: 500; }
+/* A COLUMN, explicitly. The items are <button>s (inline-block by default) with `width: 100%`, and a
+   percentage width resolves to auto during intrinsic sizing — so in a plain block box they lay out
+   INLINE and the menu comes out as one long row. On desktop the absolutely-positioned box is narrow
+   enough that each item wraps to its own line and it looks right by accident; on phones the menu is
+   `position: fixed` (mobileMenuPos) and shrink-to-fit against a far wider containing block, so the row
+   stayed a row: measured 455 px wide for the 7-item View menu on a 390 px phone, and 1,258 px for the
+   12-item Boardgames Group menu — off-screen with no way to reach the tail. A flex column blockifies
+   the items, and the cap + scroll keeps even the longest axis list reachable. */
 .bx-dd-menu {
   position: absolute; top: calc(100% + 5px); right: 0; z-index: 70;
-  min-width: 170px; background: var(--bg); border: 1px solid var(--line); border-radius: 9px; padding: 4px;
+  display: flex; flex-direction: column;
+  min-width: 170px; max-width: min(280px, calc(100vw - 16px));
+  max-height: min(60vh, 420px); overflow-y: auto; overscroll-behavior: contain;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 9px; padding: 4px;
   box-shadow: 0 14px 36px rgba(0,0,0,.16);
 }
 .bx-dd-item {
-  appearance: none; border: 0; background: transparent; width: 100%; text-align: left;
+  appearance: none; border: 0; background: transparent; flex: 0 0 auto; width: 100%; text-align: left;
   color: var(--ink); font: inherit; padding: 8px 10px; border-radius: 6px; cursor: pointer; white-space: nowrap;
 }
 .bx-dd-item:hover { background: var(--line); }
