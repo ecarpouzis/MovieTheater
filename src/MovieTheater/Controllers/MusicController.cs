@@ -446,6 +446,85 @@ namespace MovieTheater.Controllers
         private static bool KindIsValid(string? kind) =>
             string.IsNullOrEmpty(kind) || kind == KindAll || MusicArtistKinds.IsKnown(kind);
 
+        // ── Genre + rating on the shelf rows (R9 S10) ────────────────────────────────────────────
+        // The Music browse holds its whole shelf client-side and filters it there, so the rail's
+        // Genre facet, the "By genre" group and the "Top rated" sort can only exist if the genre and
+        // the score arrive ON the shelf rows. That is the section's per-shelf fetch rule working as
+        // designed — one fetch, everything the browse can ask about — not a widened payload for its
+        // own sake. Both additions are small: a genre list is at most four short strings and the
+        // scores are three numbers.
+
+        /// <summary>Genres per album id, strongest first, MERGED across sources.</summary>
+        /// <remarks>
+        /// The tag pass and the external passes disagree about a record on purpose, and both are
+        /// right about something — the files say what this rip was labelled, MusicBrainz says what
+        /// the world calls it. The rail lists the UNION so a search for either finds the album, with
+        /// the file's own answer first (it is the one about THIS copy) and everything de-duplicated
+        /// case-insensitively so "indie rock" and "Indie Rock" are one pill.
+        /// </remarks>
+        private async Task<Dictionary<int, List<string>>> GenresByAlbumAsync(List<int> albumIds)
+        {
+            if (albumIds.Count == 0) return new Dictionary<int, List<string>>();
+            var rows = await movieDb.MusicAlbumGenres.AsNoTracking()
+                .Where(g => albumIds.Contains(g.AlbumId))
+                .Select(g => new { g.AlbumId, g.Genre, g.Source, g.Weight })
+                .ToListAsync();
+            return rows
+                .GroupBy(r => r.AlbumId)
+                .ToDictionary(g => g.Key, g => g
+                    // Tags first (they describe this copy), then by how strongly the source asserts it.
+                    .OrderBy(r => r.Source == MusicGenreSources.Tags ? 0 : 1)
+                    .ThenByDescending(r => r.Weight)
+                    .Select(r => r.Genre)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .Take(6)
+                    .ToList());
+        }
+
+        /// <summary>Every album's genres, for a whole-shelf fetch — one scan instead of a 2,900-id IN list.</summary>
+        private async Task<Dictionary<int, List<string>>> AllGenresByAlbumAsync()
+        {
+            var rows = await movieDb.MusicAlbumGenres.AsNoTracking()
+                .Select(g => new { g.AlbumId, g.Genre, g.Source, g.Weight })
+                .ToListAsync();
+            return rows
+                .GroupBy(r => r.AlbumId)
+                .ToDictionary(g => g.Key, g => g
+                    .OrderBy(r => r.Source == MusicGenreSources.Tags ? 0 : 1)
+                    .ThenByDescending(r => r.Weight)
+                    .Select(r => r.Genre)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .Take(6)
+                    .ToList());
+        }
+
+        private sealed record AlbumScores(double? Average, int Count, int? Mine);
+
+        /// <summary>The house's average + the caller's own score, per album id. Two small grouped
+        /// reads; the blend itself is <see cref="MusicPopularity.Blend"/> and happens per row.</summary>
+        private async Task<Dictionary<int, AlbumScores>> ScoresByAlbumAsync(int? userId)
+        {
+            var aggregates = await movieDb.MusicAlbumRatings.AsNoTracking()
+                .GroupBy(r => r.AlbumId)
+                .Select(g => new { AlbumId = g.Key, Average = (double?)g.Average(r => (double)r.Score), Count = g.Count() })
+                .ToListAsync();
+            var mine = userId == null
+                ? new List<(int AlbumId, int Score)>()
+                : (await movieDb.MusicAlbumRatings.AsNoTracking()
+                    .Where(r => r.UserId == userId.Value)
+                    .Select(r => new { r.AlbumId, r.Score })
+                    .ToListAsync()).Select(r => (r.AlbumId, r.Score)).ToList();
+
+            var map = aggregates.ToDictionary(a => a.AlbumId, a => new AlbumScores(a.Average, a.Count, null));
+            foreach (var (albumId, score) in mine)
+                map[albumId] = map.TryGetValue(albumId, out var row)
+                    ? row with { Mine = score }
+                    : new AlbumScores(null, 0, score);
+            return map;
+        }
+
+        private static readonly AlbumScores NoScores = new(null, 0, null);
+
         [HttpGet("/API/Music/Artists")]
         public async Task<IActionResult> Artists(string? kind = null)
         {
@@ -481,6 +560,40 @@ namespace MovieTheater.Controllers
                 })
                 .ToListAsync();
 
+            // The artist's headline genres (R9 S10) — the roll-up MusicArtistGenre exists to make
+            // cheap, so the "one per artist" grid can say what a shelf-mate sounds like without the
+            // client summing 2,900 albums on every render.
+            var artistGenres = (await movieDb.MusicArtistGenres.AsNoTracking()
+                    .Select(g => new { g.ArtistId, g.Genre, g.Source, g.Weight })
+                    .ToListAsync())
+                .GroupBy(g => g.ArtistId)
+                .ToDictionary(g => g.Key, g => g
+                    .OrderBy(r => r.Source == MusicGenreSources.Tags ? 0 : 1)
+                    .ThenByDescending(r => r.Weight)
+                    .Select(r => r.Genre)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .Take(3)
+                    .ToList());
+
+            // "Who has the best-regarded record on this shelf" — an artist has no score of their own,
+            // so the Top-rated order over the one-per-artist grid reads the best of their albums.
+            // Computed here rather than in the browser because the artist grid must be able to sort
+            // even when the albums behind it are filtered out of the current view.
+            var albumScores = await ScoresByAlbumAsync(null);
+            var artistTop = (await movieDb.MusicAlbums.AsNoTracking()
+                    .Select(al => new { al.Id, al.ArtistId, al.Popularity })
+                    .ToListAsync())
+                .GroupBy(al => al.ArtistId)
+                .ToDictionary(g => g.Key, g => g
+                    .Select(al =>
+                    {
+                        var s = albumScores.GetValueOrDefault(al.Id, NoScores);
+                        return MusicPopularity.Blend(s.Average, s.Count, al.Popularity);
+                    })
+                    .Where(v => v != null)
+                    .DefaultIfEmpty(null)
+                    .Max());
+
             return Ok(artists.Select(a =>
             {
                 faces.TryGetValue(a.id, out var face);
@@ -497,6 +610,8 @@ namespace MovieTheater.Controllers
                     artAlbumId = face?.Id,
                     hasArt = face != null,
                     dominantColor = face?.DominantColor,
+                    genres = artistGenres.GetValueOrDefault(a.id) ?? EmptyGenres,
+                    topRating = artistTop.GetValueOrDefault(a.id),
                 };
             }));
         }
@@ -621,7 +736,7 @@ namespace MovieTheater.Controllers
             }
 
             var total = await query.CountAsync();
-            var items = await query
+            var rows = await query
                 .OrderBy(a => a.Artist.SortName).ThenBy(a => a.Year).ThenBy(a => a.Title)
                 .Skip(page * pageSize).Take(pageSize)
                 .Select(a => new
@@ -641,11 +756,50 @@ namespace MovieTheater.Controllers
                     artistKind = a.Artist.Kind,
                     hasArt = a.HasArt,
                     dominantColor = a.DominantColor,
+                    popularity = a.Popularity,
                 })
                 .ToListAsync();
 
+            // Genre + score, added to the rows the browse already fetches (R9 S10) — see the note by
+            // GenresByAlbumAsync. A whole-shelf fetch reads every genre row in one scan; a real page
+            // (the endpoint still supports one) asks only for the ids on it.
+            var genres = rows.Count > 1000
+                ? await AllGenresByAlbumAsync()
+                : await GenresByAlbumAsync(rows.Select(r => r.id).ToList());
+            var scores = await ScoresByAlbumAsync(GetCurrentUserId());
+
+            var items = rows.Select(a =>
+            {
+                var s = scores.GetValueOrDefault(a.id, NoScores);
+                return new
+                {
+                    a.id,
+                    a.title,
+                    a.year,
+                    a.tag,
+                    a.artistId,
+                    a.artistName,
+                    a.artistSortName,
+                    a.artistKind,
+                    a.hasArt,
+                    a.dominantColor,
+                    a.popularity,
+                    genres = genres.GetValueOrDefault(a.id) ?? EmptyGenres,
+                    myRating = s.Mine,
+                    ratingAvg = s.Average,
+                    ratingCount = s.Count,
+                    // The ONE number the "Top rated" order and the rail's rating floor read, computed
+                    // server-side so the sort, the floor and the album sheet cannot disagree about
+                    // what an album is worth. Null = nothing is known about it, and the sort files
+                    // those last rather than inventing a middle.
+                    rating = MusicPopularity.Blend(s.Average, s.Count, a.popularity),
+                };
+            }).ToList();
+
             return Ok(new { total, page, pageSize, items });
         }
+
+        private static readonly List<string> EmptyGenres = new();
 
         [HttpGet("/API/Music/Album/{id}")]
         public async Task<IActionResult> Album(int id)
@@ -673,6 +827,9 @@ namespace MovieTheater.Controllers
                 })
                 .ToListAsync();
 
+            var genres = (await GenresByAlbumAsync(new List<int> { id })).GetValueOrDefault(id) ?? EmptyGenres;
+            var scores = (await ScoresByAlbumAsync(GetCurrentUserId())).GetValueOrDefault(id, NoScores);
+
             return Ok(new
             {
                 id = album.Id,
@@ -683,8 +840,130 @@ namespace MovieTheater.Controllers
                 artistName = album.Artist.Name,
                 hasArt = album.HasArt,
                 dominantColor = album.DominantColor,
+                genres,
+                popularity = album.Popularity,
+                myRating = scores.Mine,
+                ratingAvg = scores.Average,
+                ratingCount = scores.Count,
+                rating = MusicPopularity.Blend(scores.Average, scores.Count, album.Popularity),
                 tracks,
             });
+        }
+
+        // ── Site ratings (R9 S10) ────────────────────────────────────────────────────────────────
+        // The music side of the movies' 0-100 rating feature, in its own table for the reason the
+        // whole vertical has its own tables: Viewing's identity is a title in one of the three video
+        // id spaces and its verbs (Seen, WantToWatch) mean nothing for a record you can put on again
+        // tomorrow. The SHAPE is copied verbatim, including the rule that cost the movie side a bug:
+        // 0 is a real score and unrated is NO ROW, so clearing a rating DELETES.
+
+        public class RatingItem
+        {
+            public int AlbumId { get; set; }
+            /// <summary>0–100, or null to CLEAR the rating (delete the row).</summary>
+            public int? Value { get; set; }
+        }
+
+        public class SetMusicRatingsRequest
+        {
+            public List<RatingItem> Items { get; set; } = new();
+        }
+
+        /// <summary>
+        /// The caller's own ratings. With <c>albumId</c>: that album's numbers (mine, the house
+        /// average, the vote count, the blend). Without: every rating this user has, which is the
+        /// list a "rate the shelf" surface starts from.
+        /// </summary>
+        [HttpGet("/API/Music/Rating")]
+        public async Task<IActionResult> GetRating([FromQuery] int? albumId = null)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+
+            if (albumId != null)
+            {
+                var album = await movieDb.MusicAlbums.AsNoTracking()
+                    .Where(a => a.Id == albumId.Value)
+                    .Select(a => new { a.Id, a.Popularity })
+                    .FirstOrDefaultAsync();
+                if (album == null) return NotFound();
+                var s = (await ScoresByAlbumAsync(userId)).GetValueOrDefault(album.Id, NoScores);
+                return Ok(new
+                {
+                    albumId = album.Id,
+                    myRating = s.Mine,
+                    ratingAvg = s.Average,
+                    ratingCount = s.Count,
+                    popularity = album.Popularity,
+                    rating = MusicPopularity.Blend(s.Average, s.Count, album.Popularity),
+                });
+            }
+
+            // Every rating one listener has is a few hundred rows at most (2,921 albums is the
+            // ceiling), so this is the whole list and not a page — the same judgement the shelf
+            // itself is fetched on.
+            var mine = await movieDb.MusicAlbumRatings.AsNoTracking()
+                .Where(r => r.UserId == userId.Value)
+                .OrderByDescending(r => r.UpdatedUtc).ThenBy(r => r.AlbumId)
+                .Select(r => new { albumId = r.AlbumId, score = r.Score, updatedUtc = r.UpdatedUtc })
+                .ToListAsync();
+            return Ok(new { ratings = mine });
+        }
+
+        /// <summary>
+        /// Upserts the caller's own 0–100 ratings. Bounded + idempotent: one capped chunk per call,
+        /// writes only CHANGED rows, and re-sending the same value is a no-op — a caller with a long
+        /// list drives the chunk loop to completion (the movies' <c>SetRatings</c> contract).
+        /// </summary>
+        [HttpPost("/API/Music/Rating")]
+        public async Task<IActionResult> SetRating([FromBody] SetMusicRatingsRequest request)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+
+            var items = request?.Items;
+            if (items == null || items.Count == 0) return Ok(new { updated = 0, skipped = 0, deleted = 0 });
+            // Bounded write (project rule): the caller sends capped chunks and drives the loop.
+            if (items.Count > 200)
+                return BadRequest(new { message = "Too many items; send at most 200 per call." });
+
+            var albumIds = items.Select(i => i.AlbumId).Distinct().ToList();
+            var valid = (await movieDb.MusicAlbums.Where(a => albumIds.Contains(a.Id)).Select(a => a.Id).ToListAsync()).ToHashSet();
+            var existing = await movieDb.MusicAlbumRatings
+                .Where(r => r.UserId == userId.Value && albumIds.Contains(r.AlbumId))
+                .ToListAsync();
+
+            int updated = 0, skipped = 0, deleted = 0;
+            var now = DateTime.UtcNow;
+            foreach (var item in items)
+            {
+                if (!valid.Contains(item.AlbumId)) { skipped++; continue; }
+                var row = existing.FirstOrDefault(r => r.AlbumId == item.AlbumId);
+
+                if (item.Value == null)
+                {
+                    // Unrated is the ABSENCE of a row, never a sentinel — clearing deletes.
+                    if (row != null) { movieDb.MusicAlbumRatings.Remove(row); existing.Remove(row); deleted++; }
+                    else skipped++;
+                    continue;
+                }
+
+                var score = Math.Clamp(item.Value.Value, 0, 100);
+                if (row == null)
+                {
+                    movieDb.MusicAlbumRatings.Add(new MusicAlbumRating
+                    {
+                        UserId = userId.Value, AlbumId = item.AlbumId, Score = score,
+                        CreatedUtc = now, UpdatedUtc = now,
+                    });
+                    updated++;
+                }
+                else if (row.Score != score) { row.Score = score; row.UpdatedUtc = now; updated++; }
+                else skipped++;
+            }
+
+            await movieDb.SaveChangesAsync();
+            return Ok(new { updated, skipped, deleted });
         }
 
         /// <summary>Lyrics for one track (music-plan.md §2.7). 404 when we have none — the pane's

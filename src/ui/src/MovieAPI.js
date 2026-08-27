@@ -68,6 +68,23 @@ function getMusicProbeCandidates() {
   return fetch("/API/Music/Probe/Candidates", { method: "get" });
 }
 
+// ── Music ratings (R9 S10) ──────────────────────────────────────────────────
+// The music side of the movies' 0-100 rating feature. 0 is a real score and unrated is NO ROW, so
+// sending `value: null` CLEARS a rating rather than writing a zero. The POST is a capped upsert
+// (200 per call) the caller drives in chunks, the same contract /API/SetRatings has.
+
+function getMusicRating(albumId) {
+  return fetch(albumId == null ? "/API/Music/Rating" : `/API/Music/Rating?albumId=${albumId}`);
+}
+
+function setMusicRatings(items) {
+  return fetch("/API/Music/Rating", {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ items }),
+  });
+}
+
 // Lyrics for one track: { plainText, syncedLrc, source } or 404 when we have none (§2.7).
 function getMusicTrackLyrics(trackId) {
   return fetch(`/API/Music/Track/${trackId}/Lyrics`);
@@ -1952,6 +1969,8 @@ const MovieAPI = {
   getMusicArtist,
   getMusicAlbums,
   getMusicAlbum,
+  getMusicRating,
+  setMusicRatings,
   searchMusicTracks,
   startMusicTrack,
   startMusicTracks,
