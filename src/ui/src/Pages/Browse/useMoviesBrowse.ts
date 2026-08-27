@@ -10,6 +10,9 @@ import { facetStateKey } from "../../catalog/rail/facetUrl";
 import useResultCount from "../../catalog/rail/useResultCount";
 import { moviesFacetSpec, moviesFilterParams, typesFromSearch, typesOf } from "./moviesFacetSpec";
 
+/** The open detail modal (`?title=<kind>:<id>`) — dropped by a filter push and by a saved search. */
+export const MOVIES_ENTITY_PARAMS = ["title"] as const;
+
 /** The viewer facts the server keys its facet counts on. */
 export function moviesViewerIdentity(userData: { username?: string | null; ageRestriction?: number | null } | null | undefined): string {
   return `${userData?.username ?? "anon"}:${userData?.ageRestriction ?? ""}`;

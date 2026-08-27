@@ -20,8 +20,7 @@ import useRailSheet from "../../catalog/rail/useRailSheet";
 import { createMoviesSource } from "../../catalog/sources/moviesSource";
 import { CATALOG_PARAM_KEYS, readCatalogDefaults, resolveViewState } from "../../catalog/state/useCatalogView";
 import { MOVIES_PARSE_SPEC, browseSearchFor, isPlainMoviesSearch } from "./moviesFacetSpec";
-import { MOVIES_ENTITY_PARAMS } from "./MoviesSiderRail";
-import { moviesViewerIdentity, useMoviesFacetSpec, useMoviesResultTotal } from "./useMoviesBrowse";
+import { MOVIES_ENTITY_PARAMS, moviesViewerIdentity, useMoviesFacetSpec, useMoviesResultTotal } from "./useMoviesBrowse";
 import { Empty } from "antd";
 
 // The detail modal (917 lines + FileMappingEditor, SubtitlePicker, …) only renders after a card

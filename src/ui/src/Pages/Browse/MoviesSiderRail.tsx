@@ -6,9 +6,7 @@
  */
 import SectionSiderRail from "../../catalog/rail/SectionSiderRail";
 import useSectionRail from "../../catalog/rail/useSectionRail";
-import { moviesViewerIdentity, useMoviesFacetSpec, useMoviesResultTotal } from "./useMoviesBrowse";
-
-export const MOVIES_ENTITY_PARAMS = ["title"] as const;
+import { MOVIES_ENTITY_PARAMS, moviesViewerIdentity, useMoviesFacetSpec, useMoviesResultTotal } from "./useMoviesBrowse";
 
 export default function MoviesSiderRail({ userData }: { userData: { username?: string | null; ageRestriction?: number | null } | null | undefined }) {
   const spec = useMoviesFacetSpec(moviesViewerIdentity(userData));
