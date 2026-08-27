@@ -86,6 +86,11 @@
 /* ── Album + artist grids ──
    One shelf, one card shape: the artist card deliberately mirrors the album card (the artist's
    first album-with-art stands in as their portrait), so the shared shell is declared once. */
+/* `.bx-grid.*`, not a bare class: the package's own wrap rule (`.bx-grid` — a wrapping FLEX row) is
+   the same specificity, so a bare class would win or lose on file order. The bare pair stays for the
+   `?artist=` drill page, which lists an artist's albums outside any catalog host. */
+.bx-grid.music-album-grid,
+.bx-grid.music-artist-grid,
 .music-album-grid,
 .music-artist-grid {
   display: grid;
@@ -96,6 +101,7 @@
   grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--cell, 150px)), 1fr));
   align-items: start;
   gap: 14px;
+  padding: 0;
 }
 
 /* The engine's lead/tail spacers and its band skeletons are row-breaking blocks: in a column grid

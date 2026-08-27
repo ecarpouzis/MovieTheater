@@ -95,23 +95,26 @@ describe("the lobby's system filter, end to end", () => {
     gamesResponder = () => Promise.resolve({ ok: false, status: 504, json: () => Promise.resolve(null) });
     const { container } = renderLobby("?system=nes");
 
-    await waitFor(() => expect(screen.getByText(/Couldn't load the games list/)).toBeTruthy());
-    expect(screen.queryByText(/No games match those filters/)).toBeNull();
+    // (R9 S3: the failure surface is the package's now — one LoadFailure for every section's stream.)
+    await waitFor(() => expect(screen.getByText(/Couldn't load this list/)).toBeTruthy());
+    expect(screen.queryByText(/No games match/)).toBeNull();
     expect(cards(container)).toBe(0);
 
     // Retry re-asks for the same page, and a good answer clears the error.
     gamesResponder = null;
     await act(async () => { fireEvent.click(screen.getByText("Try again")); });
     await waitFor(() => expect(cards(container)).toBe(1));
-    expect(screen.queryByText(/Couldn't load the games list/)).toBeNull();
+    expect(screen.queryByText(/Couldn't load this list/)).toBeNull();
   });
 
   // "all" is the Mods & Hacks DEFAULT and the rail used to write it into the URL, so an untouched
-  // lobby could describe itself as filtered. The empty state has to read as an empty CATALOG.
+  // lobby could describe itself as filtered. What matters is that it reaches the EMPTY state at all
+  // rather than the failure one, and that the request it made carried no variant.
   it("treats ?variant=all as no filter at all", async () => {
     gamesResponder = () => ok({ games: [], totalCount: 0, skip: 0 });
     renderLobby("?variant=all");
-    await waitFor(() => expect(screen.getByText(/No games here yet/)).toBeTruthy());
-    expect(screen.queryByText(/No games match those filters/)).toBeNull();
+    await waitFor(() => expect(screen.getByText(/No games match/)).toBeTruthy());
+    expect(screen.queryByText(/Couldn't load this list/)).toBeNull();
+    expect(gamesCalls.at(-1).variant).toBeFalsy();
   });
 });

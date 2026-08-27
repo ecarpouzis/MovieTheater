@@ -10,8 +10,10 @@ import { ratingTooltip } from "./arcadeRating";
 // 2. THE ART IS NEVER CLIPPED. The cover renders at its true aspect, at whatever size fits inside the
 //    box (coverBox), and CENTERS in it — never cropped, never letterboxed.
 // 3. THE DETAILS COLUMN ALWAYS HAS THE SAME ROOM, because ART_W is fixed regardless of cover shape.
-const COVER_H = 180;
+export const COVER_H = 180;
 const ART_W = 140;
+/** ART_W as a share of COVER_H — the cover-size tweak scales BOTH so the box keeps its shape. */
+const ART_RATIO = ART_W / COVER_H;
 const ART_STYLE = { flex: `0 0 ${ART_W}px`, width: ART_W, height: COVER_H };
 
 /**
@@ -26,7 +28,14 @@ const ART_STYLE = { flex: `0 0 ${ART_W}px`, width: ART_W, height: COVER_H };
  * A game's several ROMs (region / revision / edition / disc / hack) collapse into one card; which one
  * launches (and which cheats are on offer) is decided in the modal.
  */
-function GameCard({ game, onOpen }) {
+function GameCard({ game, onOpen, cellH, metadata, hoverClass, eager }) {
+  // The tweak contract (R9 S3): the card's height IS the art box, so the cover-size tweak scales the
+  // whole card. The art column stays a FIXED box at any scale — that is what keeps every card in a
+  // grid row the same height and the details column the same width (see the three laws above).
+  const coverH = cellH || COVER_H;
+  const artW = Math.round(coverH * ART_RATIO);
+  const artStyle = coverH === COVER_H ? ART_STYLE : { flex: `0 0 ${artW}px`, width: artW, height: coverH };
+  const rich = metadata !== "minimal";
   // Heavy-lane titles (docs/arcade-heavy-lane-plan.md §7.1) stream via Moonlight; the lobby routes
   // their card click to HeavyGameModal instead of the standard game modal (onOpen decides).
   const heavy = game.lane === "heavy";
@@ -40,7 +49,7 @@ function GameCard({ game, onOpen }) {
   const credit = [game.year, game.developer || game.publisher].filter(Boolean).join(" · ");
 
   return (
-    <div className="arcade-card" onClick={() => onOpen?.(game)} role="button" tabIndex={0}
+    <div className={`arcade-card bx-card${hoverClass ? ` ${hoverClass}` : ""}`} onClick={() => onOpen?.(game)} role="button" tabIndex={0}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen?.(game); } }}>
       {/* The score pins to the CARD's top-right corner, clear of the art. */}
       {game.rating != null && (
@@ -49,14 +58,18 @@ function GameCard({ game, onOpen }) {
         </span>
       )}
 
-      <div className="arcade-card__art" style={ART_STYLE}>
-        <GameCover game={game} height={COVER_H} maxWidth={ART_W} />
+      <div className="arcade-card__art" style={artStyle}>
+        {/* `bx-cover` goes on the COVER itself, not on this fixed box: the cover is drawn at its true
+            aspect in exact pixels (never cropped, never letterboxed — see coverBox), and the package's
+            Rounded / Hover / Dim rules all select `.bx-cover`. */}
+        <GameCover game={game} height={coverH} maxWidth={artW} className="bx-cover" eager={eager} />
       </div>
 
       <div className="arcade-card__body">
         {/* Two lines, reserved whether or not the title needs them, so every card in a grid row lines up. */}
         <div className="arcade-card__title" title={game.title}>{game.title}</div>
 
+        {rich && (
         <div className="arcade-tags">
           <span className="arcade-chip arcade-chip--system">{systemLabel(game.system)}</span>
           <span className="arcade-chip">{game.maxPlayers}P</span>
@@ -67,11 +80,13 @@ function GameCard({ game, onOpen }) {
           {game.raHighScores && <span className="arcade-chip arcade-chip--ra" title="Has a high-score leaderboard">🥇</span>}
           {game.raSpeedruns && <span className="arcade-chip arcade-chip--ra" title="Has a speedrun (time) leaderboard">⏱️</span>}
         </div>
+        )}
 
-        <div className="arcade-card__summary">{game.summary}</div>
+        {rich && <div className="arcade-card__summary">{game.summary}</div>}
 
         {/* Pinned to the bottom of the details column so it lines up across a grid row. Both halves are
             optional; the row itself always renders so the columns stay flat. */}
+        {rich && (
         <div className="arcade-card__foot">
           <span className="arcade-card__credit" title={credit || undefined}>{credit}</span>
           {game.versionCount > 1 && (
@@ -80,6 +95,7 @@ function GameCard({ game, onOpen }) {
             </span>
           )}
         </div>
+        )}
       </div>
     </div>
   );

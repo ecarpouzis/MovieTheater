@@ -51,7 +51,7 @@ export function coverBox(aspect, height, maxWidth) {
  * `maxWidth` caps how far a landscape cover may grow across — see coverBox above for why both are
  * needed, and why neither may be expressed relative to the card.
  */
-function GameCover({ game, artId, height, maxWidth, className = "" }) {
+function GameCover({ game, artId, height, maxWidth, className = "", eager = false }) {
   const id = artId ?? game?.artId;
   // Cache-bust the cover URL with the card's art token (API: artV, from ArcadeBoxArt.ArtVersion). The
   // covers are lazy, and a lazily-fetched image takes the ordinary cache path even on a hard reload — so
@@ -83,7 +83,7 @@ function GameCover({ game, artId, height, maxWidth, className = "" }) {
         className="arcade-cover__img"
         src={src}
         alt=""
-        loading="lazy"
+        loading={eager ? "eager" : "lazy"}
         decoding="async"
         onLoad={onLoad}
         onError={() => setBroken(true)}

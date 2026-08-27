@@ -3,7 +3,7 @@ import { useHistory, useLocation } from "react-router-dom";
 import { Button, Empty, Modal, Select, Typography, message } from "antd";
 import { MovieAPI } from "../../MovieAPI";
 import ArcadeHostBanner from "./ArcadeHostBanner";
-import GameCard, { PendingGameCard } from "./GameCard";
+import GameCard from "./GameCard";
 import GameModal from "./GameModal";
 import HeavyGameModal from "./HeavyGameModal";
 import LiveRooms from "./LiveRooms";
@@ -11,28 +11,24 @@ import RecentlyPlayed from "./RecentlyPlayed";
 import SavesManager from "./SavesManager";
 import SavesVaultManager from "./SavesVaultManager";
 import RetroAchievementsModal from "./RetroAchievementsModal";
-import CatalogPager from "../../Components/CatalogPager";
-import LoadFailure from "../../Components/LoadFailure";
 import ConsoleCarousel from "./ConsoleCarousel";
 import { rememberLobbySearch } from "./arcadeLobbyState";
 import { hasSaveStates, QUICK_SLOT } from "./arcadeSystems";
 import { parseSystems, toggleSystem } from "./arcadeSystemFilter";
-import { ARCADE_ENTITY_PARAMS, arcadeNarrows, legacyToArcadeSearch } from "./arcadeFacetSpec";
+import { ARCADE_ENTITY_PARAMS, legacyToArcadeSearch } from "./arcadeFacetSpec";
 import useArcadeBrowse from "./useArcadeBrowse";
-import useGridWindow from "../../hooks/useGridWindow";
-import usePagedCatalog from "../../hooks/usePagedCatalog";
-import CatalogHost, { AVAILABLE_VIEWS } from "../../catalog/CatalogHost";
+import CatalogHost from "../../catalog/CatalogHost";
 import { hasFacetValue } from "../../catalog/rail/facetSpec";
 import useSectionRail from "../../catalog/rail/useSectionRail";
 import sectionRailSurfaces from "../../catalog/rail/sectionRailSurfaces";
 import useRailSheet from "../../catalog/rail/useRailSheet";
-import { createArcadeSource } from "../../catalog/sources/arcadeSource";
-import { readCatalogDefaults, resolveViewState } from "../../catalog/state/useCatalogView";
+import { ARCADE_GRID_CELL, createArcadeSource } from "../../catalog/sources/arcadeSource";
+import useResultCount from "../../catalog/rail/useResultCount";
 import "./ArcadePage.css";
 import usePolling from "../../hooks/usePolling";
 
 const { Text } = Typography;
-const PAGE_SIZE = 60;
+
 
 // Per-room stream quality the creator picks (arcade per-room bitrate/FEC). Persisted so a friend group
 // keeps its setting across sessions; applied to every room YOU start (one encoder per room = creator's
@@ -157,7 +153,7 @@ export default function ArcadePage({ userData }) {
   const history = useHistory();
   const location = useLocation();
 
-  // ── The catalog as SPARSE SLOTS (ported from The Long Box's InfiniteScroller) ──────────────────
+  // ── The catalog as SPARSE BANDS (R9 S3: the package's InfiniteBands, shared with every section) ─
   // The lobby used to hold a dense array of the games it had fetched, anchored at an absolute
   // `startIndex`. That is what made a letter jump one-directional: the array BEGAN at the letter, so
   // there was nothing above it and scrolling up revealed nothing (reported 2026-08-13). Adding pages
@@ -173,11 +169,9 @@ export default function ArcadePage({ userData }) {
   // above them or below them. Upward and downward are the SAME operation, and no array is ever
   // prepended to, so there is nothing to compensate for.
   //
-  // Ported here as a page map: `pages[n]` holds catalog indices [n*PAGE_SIZE, (n+1)*PAGE_SIZE).
+  // The lobby proved that model here first (as a page map + useGridWindow); R9 S3 retired that copy
+  // for the package's own `catalog/engine/InfiniteBands`, which every section's Grid now rides.
   // Anything not yet fetched renders as a skeleton tile of card size. There is no `startIndex`.
-  // pages/total/loading/firstLoaded/loadError all live in usePagedCatalog now (the pump was
-  // extracted to hooks/usePagedCatalog.js once Browse needed the same machinery).
-  const [letters, setLetters] = useState(null); // A–Z bucket offsets, for the pager (A–Z sort only)
   const [rooms, setRooms] = useState([]);
   const [renderers, setRenderers] = useState({}); // system → [{id,label,isDefault}] for the launch menu
   const [recentGames, setRecentGames] = useState([]); // "Recently played" strip (save-derived history)
@@ -196,7 +190,9 @@ export default function ArcadePage({ userData }) {
   const modalCardRef = useRef(null);
   modalCardRef.current = modalCard;
   const [quality, setQuality] = useState(loadQuality); // creator's per-room stream quality (persisted)
-  const unconfiguredRef = useRef(false);
+  // 501 from /API/Arcade/Games = this server has no arcade configured (a dedicated empty state,
+  // not a load error). The source reports the status; the page decides what it means.
+  const [unconfigured, setUnconfigured] = useState(false);
 
   // Read by the identity-stable fetchPage below, so the pump never re-subscribes.
   const filtersRef = useRef(null);
@@ -222,15 +218,30 @@ export default function ArcadePage({ userData }) {
     if (legacy != null) history.replace({ pathname: location.pathname, search: legacy, state: location.state });
   }, [history, location.pathname, location.search, location.state]);
 
-  // ── The catalog views (Wall / List / Extended / Shelves / Newspaper / Directory) over the SAME filters. ──
-  // The lobby grid below stays exactly as it is (the host's `grid` override); the other views page the
-  // source themselves, so the lobby's pump and letter strip only run while the grid is on screen. The
-  // modal opener is defined further down — the source reaches it through a ref.
+  // ── The catalog (R9 S3: ONE engine under every view) ──────────────────────────────────────────
+  // The lobby grid IS the package's GridView now, laying THIS page's GameCard into the shared bands;
+  // Wall / List / Extended / Shelves / Newspaper / Directory read the same source. The modal opener
+  // is defined further down — the source reaches it through a ref.
   const openGameRef = useRef(null);
+  // GameCard is a MODULE-LEVEL component (the BandSlot memo law); this renderer's identity never
+  // changes, because everything a card varies on rides in the card item and the tweak values.
+  const renderCard = useCallback((item, view) => (
+    <GameCard
+      game={item.raw}
+      cellH={view.cellH}
+      metadata={view.metadata}
+      hoverClass={view.hoverClass}
+      eager={view.eager}
+      onOpen={(card) => openGameRef.current?.(card)}
+    />
+  ), []);
   const catalogSource = useMemo(
     () => createArcadeSource({
       filters,
       filterKey,
+      renderCard,
+      // 501 = no arcade on this server. The source reports the status; the page renders the note.
+      onStatus: (status) => { if (status === 501) setUnconfigured(true); },
       onOpen: (card) => openGameRef.current?.(card),
       // A group header (System / Genre) scopes in place: the facet include, one push, the modal closed.
       onFilter: (param, value) => {
@@ -245,33 +256,15 @@ export default function ArcadePage({ userData }) {
     }),
     // The facet actions are read through a ref so the source's identity stays keyed on the filters.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [filters, filterKey]
+    [filters, filterKey, renderCard]
   );
   const facetActionsRef = useRef(null);
   facetActionsRef.current = facetActions;
-  const catalogView = useMemo(
-    () => resolveViewState(location.search, readCatalogDefaults("arcade"), catalogSource, AVAILABLE_VIEWS).view,
-    [location.search, catalogSource]
-  );
-  const gridActive = catalogView === "grid";
 
-  // ── The catalog pump (hooks/usePagedCatalog.js — extracted from this page) ─────────────────────
-  // fetchPage reads the filters through the ref so its identity never changes; 501 = the arcade
-  // isn't configured (a dedicated empty state, not a load error).
-  const {
-    pages, total, loading, firstLoaded, loadError, itemAt: gameAt, contentKey, notifyWindow, retry,
-  } = usePagedCatalog({
-    resetKey: filterKey,
-    pageSize: PAGE_SIZE,
-    enabled: gridActive,
-    fetchPage: (skip, pageSize, signal) =>
-      MovieAPI.getArcadeGames({ ...filtersRef.current, skip, pageSize }, signal)
-        .then((r) => {
-          if (r.status === 501) { unconfiguredRef.current = true; return null; }
-          return r.ok ? r.json() : null;
-        })
-        .then((data) => (data ? { items: data.games, totalCount: data.totalCount } : null)),
-  });
+  // The rail head's count: one 1-row page per filter state, five minutes, shared by the sider and
+  // the phone sheet (the grid's own total lives in the stream now).
+  const totalQuery = useResultCount(["arcade", "count", filterKey], ({ signal }) =>
+    MovieAPI.getArcadeGames({ ...filtersRef.current, skip: 0, pageSize: 1 }, signal));
 
   // ?game=<versionId> — the open modal. Anything that doesn't parse is no game at all.
   const openGameId = (() => {
@@ -349,19 +342,6 @@ export default function ArcadePage({ userData }) {
     [setSystems, location.search],
   );
 
-  // A–Z bucket offsets for the pager. Only under the alphabetical sort — under any other sort the
-  // letter buckets aren't contiguous, so the strip shows page numbers and needs nothing from here.
-  useEffect(() => {
-    if (filters.sort || !gridActive) { setLetters(null); return undefined; }
-    let alive = true;
-    MovieAPI.getArcadeGameLetters(filters)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (alive) setLetters(d?.letters || []); })
-      .catch(() => {});
-    return () => { alive = false; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterKey]);
-
   // Live-rooms strip, polled every 12 s (visibility-aware: a backgrounded lobby stops asking).
   usePolling(
     () => MovieAPI.getArcadeRooms().then((r) => (r.ok ? r.json() : [])).then(setRooms).catch(() => {}),
@@ -382,45 +362,6 @@ export default function ArcadePage({ userData }) {
     MovieAPI.getArcadeRecentlyPlayed(12).then((rows) => { if (alive) setRecentGames(Array.isArray(rows) ? rows : []); });
     return () => { alive = false; };
   }, []);
-
-  // ── The window, over ALL of it ─────────────────────────────────────────────────────────────────
-  // `total`, not "how many we have fetched". Every catalog slot exists from the first render, so the
-  // scrollbar is honest immediately and the window can move in either direction into territory that
-  // has no data yet — which is the whole of the fix. Only the rows near the viewport stay mounted;
-  // the rest of the list's height is held by two spacers. An arcade card's height varies (box art
-  // aspect, whether it has a version/cheats row), so the hook measures rows rather than assuming one.
-  //
-  // resetKey no longer carries a start index, because there is no longer one to carry: a jump does
-  // not change the list, so it must not throw away the heights measured for it.
-  const { hostRef, gridRef, start, end, padTop, padBottom, visibleStart, scrollToIndex } = useGridWindow(total, {
-    resetKey: filterKey,
-    // ⚠ Load-bearing on a paged list. A page arriving replaces placeholders with real cards at the
-    // SAME slots, so neither the window nor the count changes — and without this the hook would never
-    // re-measure them, leaving the prefix describing skeleton heights for rows that are now cards.
-    // Every row below would then sit slightly wrong, and the further you scrolled the worse it got.
-    contentKey,
-  });
-
-  // The mounted slice: one entry per slot, real card or placeholder. Deliberately NOT filtered — a
-  // hole is a slot whose page has not arrived, and dropping it would shorten the row and make every
-  // card below it move as the data lands.
-  const visibleSlots = useMemo(() => {
-    const out = [];
-    for (let i = start; i < Math.min(end, total); i += 1) out.push({ index: i, game: gameAt(i) });
-    return out;
-  }, [start, end, total, gameAt]);
-
-  // Fetch what the window is looking at, plus one page either side — the same "want the window's
-  // bands + one ahead" rule, made symmetric because here the user can be travelling upward.
-  useEffect(() => {
-    notifyWindow(start, end);
-  }, [start, end, total, pages, notifyWindow]);
-
-  // Seek the grid to an absolute catalog offset (a letter bucket or a page boundary). No fetch, no
-  // re-seat: the slot is already there, and scrollToIndex's second phase waits for its page.
-  const jumpTo = useCallback((offset) => {
-    scrollToIndex(Math.max(0, Math.min(offset, Math.max(0, total - 1))));
-  }, [scrollToIndex, total]);
 
   // `cheats` are the ids the creator ticked on the card (arcade cheats feature). `controllerScheme`
   // is the GameCube-vs-Wiimote+Nunchuk picker (only shown for the two GC-native BrawlEx mods). Both
@@ -589,18 +530,15 @@ export default function ArcadePage({ userData }) {
   };
   openGameRef.current = openGame;
 
-  if (unconfiguredRef.current) {
+  if (unconfigured) {
     return <div style={{ padding: 48 }}><Empty description="The arcade isn't set up on this server yet." /></div>;
   }
 
-  // Anything narrowing the lobby (the rail's state in the API's words) — the empty state reads as a
-  // filter result only then; "all" was the old variant default written out loud and never counts.
-  const anyFilter = arcadeNarrows(filters);
   // The phone's Filters pill raising the full-page sheet (the desktop rail is the sider's
   // ArcadeSiderRail); the active-filter chips sit over the results.
   const { pill: filtersPill, chips, surfaces } = sectionRailSurfaces(rail, sheet, {
-    total: firstLoaded ? total : null,
-    loading: !facets,
+    total: totalQuery.data ?? null,
+    loading: !facets || totalQuery.isPending,
     placeholder: "A game, system:PS2, genre:RPG…",
   });
 
@@ -686,66 +624,11 @@ export default function ArcadePage({ userData }) {
 
         <LiveRooms rooms={rooms} onJoin={joinRoom} />
 
+        {/* No bespoke head: the SectionBar names the section and the rail's head line carries the
+            count (R9 S1). The grid is the package's GridView over InfiniteBands, drawing THIS page's
+            GameCard; its skeletons, its A-Z strip and its empty/failed states are the package's too. */}
         <section className="arcade-section">
-          <div className="arcade-section__head arcade-section__head--games">
-            <h2 className="arcade-section__title">Games</h2>
-            <span className="arcade-section__count">
-              {total.toLocaleString()} {anyFilter ? (total === 1 ? "match" : "matches") : (total === 1 ? "title" : "titles")}
-            </span>
-          </div>
-
-          <CatalogHost section="arcade" source={catalogSource} tools={arcadeTools} beforeResults={chips} overrides={{ grid: !firstLoaded ? (
-            /* Skeleton cards in the real grid layout — the site-wide first-paint convention (movies,
-               boardgames), instead of a lone spinner. */
-            <div className="arcade-grid" aria-hidden="true">
-              {Array.from({ length: 8 }).map((_, i) => <PendingGameCard key={i} />)}
-            </div>
-          ) : total === 0 ? (
-            /* Never claim "nothing matched" while a request is still out, or when one failed. A wide
-               filter change — above all clearing the LAST console, which puts the whole catalog back in
-               scope — is the slowest query the lobby can ask for, and an empty grid that explains itself
-               as a filter result is indistinguishable from a real one. */
-            loading ? (
-              <div className="arcade-grid" aria-hidden="true">
-                {Array.from({ length: 8 }).map((_, i) => <PendingGameCard key={i} />)}
-              </div>
-            )
-              : loadError ? (
-                <LoadFailure message="Couldn't load the games list." onRetry={retry} />
-              ) : <Empty description={anyFilter ? "No games match those filters." : "No games here yet."} />
-          ) : (
-            <>
-              {/* No "Load more", no "Earlier titles", no sentinel. Every catalog slot exists from the
-                  first render and the window fetches whichever pages it is looking at, so scrolling —
-                  in EITHER direction — is the only control there needs to be. */}
-              <div ref={hostRef}>
-                {padTop > 0 && <div className="grid-spacer" style={{ height: padTop }} aria-hidden="true" />}
-                <div className="arcade-grid" ref={gridRef}>
-                  {visibleSlots.map(({ index, game }) => (game ? (
-                    <GameCard key={game.key} game={game} onOpen={openGame} />
-                  ) : (
-                    /* A slot whose page is still on the wire. Same footprint as a card so the row it
-                       is in does not reflow when the real one replaces it. */
-                    <PendingGameCard key={`slot-${index}`} />
-                  )))}
-                </div>
-                {padBottom > 0 && <div className="grid-spacer" style={{ height: padBottom }} aria-hidden="true" />}
-              </div>
-              <div className="arcade-more">
-                <Text type="secondary">— {total.toLocaleString()} titles —</Text>
-              </div>
-              {/* Letters when sorted A–Z, page numbers under any other sort. Both seek into the same
-                  continuous list; the active button follows the grid as you scroll. */}
-              <CatalogPager
-                mode={filters.sort ? "pages" : "letters"}
-                letters={letters}
-                total={total}
-                pageSize={PAGE_SIZE}
-                currentIndex={visibleStart}
-                onJump={jumpTo}
-              />
-            </>
-          ) }} />
+          <CatalogHost section="arcade" source={catalogSource} tools={arcadeTools} beforeResults={chips} />
         </section>
       </div>
 

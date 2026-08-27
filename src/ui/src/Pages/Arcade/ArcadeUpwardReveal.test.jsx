@@ -13,7 +13,13 @@ import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 // because it never prepends: the whole result set is modelled as fixed slots from the first render
 // and band data is fetched on demand into them. Ported here as a page map. What this file pins is
 // the consequence — the arcade asks the server for pages the WINDOW wants, above it as readily as
-// below it, and never re-seats the list to do so.
+// below it, and never re-seats the list to do so. (R9 S3: the page map retired for the package's
+// own `catalog/engine/InfiniteBands`, which every section's Grid rides. Same laws, one copy.)
+//
+// The engine derives its window from real geometry, and happy-dom has none: every rect is at 0
+// whatever the scroll, and window.scrollTo does not move scrollY. `giveTheDomAScroll` below gives
+// it the browser's answers — an element at document y=0 reports top = -scrollY once you scroll —
+// which is the same shim `catalog/engine/InfiniteBands.test.tsx` uses.
 
 global.IS_REACT_ACT_ENVIRONMENT = true;
 global.ResizeObserver = global.ResizeObserver || class { observe() {} unobserve() {} disconnect() {} };
@@ -71,7 +77,20 @@ beforeEach(() => {
   window.localStorage.clear();
 });
 
-afterEach(() => { cleanup(); vi.clearAllMocks(); });
+afterEach(() => { cleanup(); vi.clearAllMocks(); vi.restoreAllMocks(); });
+
+function giveTheDomAScroll() {
+  let y = 0;
+  Object.defineProperty(window, "scrollY", { configurable: true, get: () => y });
+  window.scrollTo = (_x, to) => {
+    y = Math.max(0, Number(to) || 0);
+    window.dispatchEvent(new Event("scroll"));
+  };
+  vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function rect() {
+    const top = -window.scrollY;
+    return { top, bottom: top, left: 0, right: 0, width: 0, height: 0, x: 0, y: top, toJSON: () => ({}) };
+  });
+}
 
 async function frames(n = 14) {
   for (let i = 0; i < n; i++) {
@@ -97,14 +116,20 @@ const titles = (container) =>
   [...container.querySelectorAll(".arcade-card__title")].map((n) => n.textContent);
 
 describe("the arcade lobby's sparse catalog", () => {
-  it("asks for page 0 and reports the SERVER's total, not what it holds", async () => {
+  it("asks for page 0 and models the SERVER's total, not what it holds", async () => {
     const { container } = await mountLobby();
     expect(skips).toContain(0);
-    expect(container.querySelector(".arcade-section__count").textContent).toMatch(/1,200/);
     expect(titles(container)[0]).toBe("Game 0");
+    // The witness that the whole 1,200 exists from the first render: only the first bands are
+    // mounted, and a TAIL SPACER holds the height of everything after them. (R9 S3 moved the count
+    // itself onto the rail's head line; the grid's own head is gone.)
+    const tail = container.querySelector(".bx-band-spacer");
+    expect(tail).toBeTruthy();
+    expect(parseInt(tail.style.height, 10)).toBeGreaterThan(0);
   });
 
   it("never re-seats the list to reach a letter — the slots were always there", async () => {
+    giveTheDomAScroll();
     const { container, getByRole } = await mountLobby();
     const asked = skips.length;
 
@@ -124,10 +149,13 @@ describe("the arcade lobby's sparse catalog", () => {
   it("fetches pages ABOVE the window as readily as below it", async () => {
     // The whole complaint in one assertion. Land deep, then let the window move UP — the lobby must
     // ask for the earlier pages, with no button and no re-anchor.
+    giveTheDomAScroll();
     const { getByRole } = await mountLobby();
     await act(async () => { getByRole("button", { name: "M" }).click(); });
     await frames();
     const deepAsked = new Set(skips);
+    // The jump really did land deep: pages around offset 600 were asked for.
+    expect(skips.some((s) => s >= 480)).toBe(true);
 
     // The window walks back toward the top. (In the browser this is the user scrolling; here it is
     // the same state change, driven through the component's own effects.)
@@ -145,17 +173,17 @@ describe("the arcade lobby's sparse catalog", () => {
     const text = container.textContent;
     expect(text).not.toMatch(/Load more/i);
     expect(text).not.toMatch(/Earlier titles/i);
-    expect(text).toMatch(/1,200 titles/);
+    // …and the list still knows how long it is: the unmounted remainder is a spacer, not an end.
+    expect(container.querySelector(".bx-band-spacer")).toBeTruthy();
   });
 
   it("renders a placeholder for a slot whose page has not landed, never a hole", async () => {
     // A page that never resolves: the slots it covers must still occupy a card's footprint, or every
     // row below them moves when it finally arrives.
     //
-    // A SMALL catalog on purpose — 100 slots is under useGridWindow's windowing threshold, so every
-    // slot mounts. The DOM shim has no layout, so a windowed list can never be driven past its first
-    // screenful here; this is the one shape in which the placeholder path is reachable from a real
-    // render of the page.
+    // A SMALL catalog on purpose — 100 slots is two bands, so band 1 is inside the engine's mount
+    // window from the first render and its placeholder is reachable without any scrolling (the DOM
+    // shim has no layout, so a stream can never be driven past its first screenful here).
     const SMALL = 100;
     api.getArcadeGames = vi.fn(({ skip = 0, pageSize = PAGE_SIZE }) => {
       skips.push(skip);
@@ -171,11 +199,14 @@ describe("the arcade lobby's sparse catalog", () => {
 
     // Page 0's 60 cards are real…
     expect(within(grid).queryAllByText("Game 0").length).toBe(1);
-    expect(grid.querySelectorAll(".arcade-card:not(.arcade-card--pending)").length).toBe(PAGE_SIZE);
-    // …and the 40 slots page 1 would have filled are placeholders, not missing.
-    expect(grid.querySelectorAll(".arcade-card--pending").length).toBe(SMALL - PAGE_SIZE);
-    // The catalog still reports its true size while a page is outstanding.
-    expect(container.querySelector(".arcade-section__count").textContent).toMatch(/100/);
+    expect(grid.querySelectorAll(".arcade-card").length).toBe(PAGE_SIZE);
+    // …and the band page 1 would have filled is a SKELETON BLOCK of its reserved height (R9 S3: the
+    // package's shared band placeholder replaced the lobby's per-slot PendingGameCard), so nothing
+    // below it moves when the page lands.
+    const skel = grid.querySelector(".bx-skel-band");
+    expect(skel).toBeTruthy();
+    expect(parseInt(skel.style.height, 10)).toBeGreaterThan(0);
+    expect(skel.querySelectorAll(".bx-skel-card").length).toBeGreaterThan(0);
   });
 
 });

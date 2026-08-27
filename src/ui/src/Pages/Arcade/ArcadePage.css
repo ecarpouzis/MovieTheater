@@ -262,11 +262,38 @@
 }
 
 /* ── Game grid + card ────────────────────────────────────────────────────── */
+/* R9 S3: this IS the catalog Grid's wrap (`CatalogSource.gridClass`) — the lobby's own windowing +
+   pager shell retired in favour of the package's InfiniteBands, which every section's Grid rides.
+   The track width follows the cover-size tweak (`--cell`, set on the wrap by FlatCardStream), so a
+   bigger cover gets a wider card instead of squeezing the details column. */
+/* `.bx-grid.arcade-grid`, not a bare `.arcade-grid`: the package's own wrap rule (`.bx-grid` — a
+   wrapping FLEX row) is the same specificity, so a bare class would win or lose on file order. */
+.bx-grid.arcade-grid,
 .arcade-grid {
   display: grid;
-  /* min() keeps a single column from overflowing viewports narrower than 355px. */
-  grid-template-columns: repeat(auto-fill, minmax(min(355px, 100%), 1fr));
+  /* min() keeps a single column from overflowing viewports narrower than the track. */
+  grid-template-columns: repeat(auto-fill, minmax(min(calc(var(--cell, 180px) + 175px), 100%), 1fr));
+  align-items: start;
   gap: 16px;
+  padding: 0;
+}
+
+/* The package makes every `.bx-card` in a Grid a COLUMN (its own card stacks cover over caption);
+   the arcade card IS the row — art left, details right — so it takes itself back. */
+.bx-grid .arcade-card.bx-card { flex-direction: row; }
+
+/* The engine's lead/tail spacers and its band skeletons are row-breaking blocks: in a column grid
+   they have to span every track. */
+.arcade-grid > .bx-band-spacer,
+.arcade-grid > .bx-skel-band { grid-column: 1 / -1; }
+.arcade-grid > .bx-skel-band { gap: 16px; }
+.arcade-grid .bx-skel-card .bx-cover { width: 100% !important; }
+
+/* The cover wears `bx-cover` so Rounded / Hover / Dim reach it — but its box is EXACT pixels at the
+   art's true aspect (GameCover.coverBox), so the package's fill-and-crop defaults must not apply. */
+.arcade-cover.bx-cover {
+  box-shadow: none;
+  background: transparent;
 }
 
 .arcade-card {
@@ -289,8 +316,9 @@
   transition: transform 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease;
 }
 @media (hover: hover) {
+  /* The LIFT is the hover tweak's job now (`.bx-hover-*` on the cover, set once by the host), so
+     "Hover: None" really means none. The card keeps its own shadow + accent border response. */
   .arcade-card:hover {
-    transform: translateY(-2px);
     box-shadow: var(--card-shadow-hover);
     border-color: var(--accent);
   }

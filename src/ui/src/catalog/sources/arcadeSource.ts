@@ -76,6 +76,8 @@ const GROUP_FILTER_PARAM: Record<string, string> = { system: "system", genre: "g
 
 /** Box art runs from tall NES boxes to wide Genesis ones; the Grid's uniform tile splits the difference. */
 export const ARCADE_ASPECT = 0.75;
+/** The Grid's base box-art height before the cover-size tweak (GameCard's old COVER_H). */
+export const ARCADE_GRID_CELL = 180;
 export const ARCADE_PAGE_SIZE = 60;
 const ALL_VIEWS: ViewMode[] = ["grid", "wall", "list", "extended", "shelf", "newspaper", "directory"];
 const DIRECTORY_HEADS_PAGE = 50;
@@ -174,6 +176,10 @@ export interface ArcadeSourceOptions {
   onOpen: (row: ArcadeGameRow) => void;
   /** Apply a lobby filter (`?system=`, `?genre=`) — a group header's click. */
   onFilter?: (param: string, value: string) => void;
+  /** The section's own Grid card (R9 S3) — module-level, supplied by the page. */
+  renderCard?: CatalogSource["renderCard"];
+  /** A non-OK status off `/API/Arcade/Games` (501 = this server has no arcade), for the page's own empty state. */
+  onStatus?: (status: number) => void;
 }
 
 export function createArcadeSource(o: ArcadeSourceOptions): CatalogSource {
@@ -204,6 +210,9 @@ export function createArcadeSource(o: ArcadeSourceOptions): CatalogSource {
     defaultGroup: "system",
     pageSize: ARCADE_PAGE_SIZE,
     defaultAspect: ARCADE_ASPECT,
+    renderCard: o.renderCard,
+    gridClass: "arcade-grid",
+    gridCell: ARCADE_GRID_CELL,
     directory: {
       roots: async (signal?: AbortSignal): Promise<DirectoryNode[]> => {
         const nodes: DirectoryNode[] = [];
@@ -227,7 +236,7 @@ export function createArcadeSource(o: ArcadeSourceOptions): CatalogSource {
     },
     fetchFlatBand: async (skip, top, _sort, signal) => {
       const r = await MovieAPI.getArcadeGames({ ...scope, sort, skip, pageSize: top }, signal);
-      if (!r.ok) throw new Error(`/API/Arcade/Games → ${r.status}`);
+      if (!r.ok) { o.onStatus?.(r.status); throw new Error(`/API/Arcade/Games → ${r.status}`); }
       const data = (await r.json()) as { games?: ArcadeGameRow[]; totalCount?: number };
       if (typeof data.totalCount === "number" && data.totalCount >= 0) knownTotal = data.totalCount;
       return { items: (data.games ?? []).map(toArcadeCard), total: knownTotal };
