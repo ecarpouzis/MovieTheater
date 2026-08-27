@@ -1,5 +1,6 @@
 import { render, act, cleanup, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 
 // ── The lobby reads in BOTH directions ──────────────────────────────────────────────────────────
@@ -38,7 +39,7 @@ vi.mock("./SavesManager", () => ({ default: () => null }));
 vi.mock("./SavesVaultManager", () => ({ default: () => null }));
 vi.mock("./RetroAchievementsModal", () => ({ default: () => null }));
 vi.mock("./ConsoleCarousel", () => ({ default: () => null }));
-vi.mock("./useArcadeFilters", () => ({ default: () => ({ systems: [], genres: [], loading: false }) }));
+vi.mock("./useArcadeFilters", () => ({ default: () => ({ systems: [], genres: [], loading: false }), arcadeFilterKey: () => "scope" }));
 
 import ArcadePage from "./ArcadePage";
 
@@ -80,10 +81,13 @@ async function frames(n = 14) {
 }
 
 async function mountLobby() {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const view = render(
-    <MemoryRouter initialEntries={["/arcade"]}>
-      <ArcadePage userData={{ username: "eric" }} />
-    </MemoryRouter>
+    <QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={["/arcade"]}>
+        <ArcadePage userData={{ username: "eric" }} />
+      </MemoryRouter>
+    </QueryClientProvider>
   );
   await frames();
   return view;

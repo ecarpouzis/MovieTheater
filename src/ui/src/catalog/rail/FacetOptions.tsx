@@ -35,6 +35,7 @@ export default function FacetOptions({ def, options, selected, excluded, onToggl
   const dynamic = !!def.dynamic && !!loadOptions;
   const filterable = def.filterable !== false;
   const excludable = def.excludable !== false;
+  const includable = def.includable !== false;
   const [q, setQ] = useState("");
   const [moreItems, setMoreItems] = useState<FacetOptionRow[]>([]);
   const [hasMore, setHasMore] = useState(dynamic);
@@ -136,7 +137,7 @@ export default function FacetOptions({ def, options, selected, excluded, onToggl
               {def.showCounts !== false && <span className="bx-opt-count">{o.count.toLocaleString()}</span>}
               {filterable && def.render !== "pill" && (
                 <span className="bx-opt-acts">
-                  <button type="button" className="bx-opt-inc" aria-label={`Include ${o.label}`} aria-pressed={on} onClick={() => onToggle(def.key, o.value, "inc")}>+</button>
+                  {includable && <button type="button" className="bx-opt-inc" aria-label={`Include ${o.label}`} aria-pressed={on} onClick={() => onToggle(def.key, o.value, "inc")}>+</button>}
                   {excludable && <button type="button" className="bx-opt-exc" aria-label={`Exclude ${o.label}`} aria-pressed={ex} onClick={() => onToggle(def.key, o.value, "exc")}>−</button>}
                 </span>
               )}

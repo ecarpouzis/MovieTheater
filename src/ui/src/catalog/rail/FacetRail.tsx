@@ -97,7 +97,7 @@ function RailBody({ spec, state, actions, facets, facetsLoading, total, grouped,
       </div>
 
       <div className="bx-rail-facets" aria-busy={facetsLoading || undefined}>
-        {spec.facets.filter((def) => def.appliesTo !== "groups" || grouped).map((def) => (
+        {spec.facets.filter((def) => !def.hidden && (def.appliesTo !== "groups" || grouped)).map((def) => (
           <Fragment key={def.key}>
             <RailSection title={def.label} count={(state.include[def.key]?.length ?? 0) + (state.exclude[def.key]?.length ?? 0)} defaultOpen={def.defaultOpen}>
               <FacetOptions

@@ -701,8 +701,9 @@
 
 /* ── Live rooms ──────────────────────────────────────────────────────────── */
 .arcade-rooms {
-  display: flex;
-  flex-direction: column;
+  /* Compact two-up (R9 S2c, Eric's canvas): what is open and the free seats, at a glance. */
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
   gap: 12px;
 }
 

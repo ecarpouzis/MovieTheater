@@ -2,6 +2,7 @@ import { render, cleanup, waitFor, fireEvent, act, screen } from "@testing-libra
 import { vi, describe, it, expect, afterEach, beforeEach } from "vitest";
 import { Router } from "react-router-dom";
 import { createMemoryHistory } from "history";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // Page-level tests for the lobby's filter round trip. The unit tests beside these cover the pieces
 // (ConsoleCarousel, arcadeSystemFilter, useArcadeFilters); what these pin down is the whole loop —
@@ -53,7 +54,8 @@ const ArcadePage = (await import("./ArcadePage")).default;
 
 const renderLobby = (search = "") => {
   const history = createMemoryHistory({ initialEntries: [`/arcade${search}`] });
-  const view = render(<Router history={history}><ArcadePage userData={{ username: "Eric" }} /></Router>);
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const view = render(<QueryClientProvider client={client}><Router history={history}><ArcadePage userData={{ username: "Eric" }} /></Router></QueryClientProvider>);
   return { history, ...view };
 };
 
@@ -64,7 +66,8 @@ afterEach(cleanup);
 
 describe("the lobby's system filter, end to end", () => {
   // The reported bug: lighting a console up and switching it off again left an empty grid. Switching
-  // the LAST console off has to drop ?system= entirely and ask for the whole catalog again.
+  // the LAST console off has to drop the system facet entirely and ask for the whole catalog again.
+  // (R9 S2c: the carousel writes the rail's `f=system:` form; the old `?system=` still reads.)
   it("puts the whole catalog back when the last console is switched off", async () => {
     const { container, history } = renderLobby();
     await waitFor(() => expect(cards(container)).toBe(40));
@@ -74,7 +77,7 @@ describe("the lobby's system filter, end to end", () => {
     const nesTile = () => screen.getByRole("button", { name: /^NES/ });
     await waitFor(() => expect(container.querySelectorAll(".arcade-console").length).toBe(2));
     await act(async () => { fireEvent.click(nesTile()); });
-    await waitFor(() => expect(history.location.search).toBe("?system=nes"));
+    await waitFor(() => expect(history.location.search).toBe("?f=system%3Anes"));
     await waitFor(() => expect(cards(container)).toBe(1));
 
     await act(async () => { fireEvent.click(nesTile()); });

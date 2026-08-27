@@ -1,23 +1,29 @@
-// How the lobby's system filter is encoded in the URL. Two surfaces now write it — the navbar rail's
-// System dropdown and the console carousel above the grid — and they MUST agree byte for byte, or
-// picking a console in one would read back as a different selection in the other.
+// How the lobby's system filter is encoded in the URL. Two surfaces write it — the console carousel
+// above the grid and the rail's chips / the bar's SmartSearch (`system:snes`) — and they MUST agree
+// byte for byte, or picking a console in one would read back as a different selection in the other.
 //
-// Encoding: a comma-joined list of system codes, `?system=snes,genesis`. Empty/absent means "all
-// systems", which is the untouched lobby. A single value is just a one-element list, so every link
-// minted before the filter went multi-select (`?system=nes`) still resolves to exactly what it meant.
+// Encoding (R9 S2c): the rail's repeatable include, `?f=system:snes&f=system:genesis` — the same
+// `f=` the other facets ride (catalog/rail/facetUrl.ts). Absent means "all systems", the untouched
+// lobby. The pre-S2c form, a comma-joined `?system=snes,genesis`, is still READ here (a bookmark's
+// first render, before `legacyToArcadeSearch` rewrites it) but never written.
 
 export const SYSTEM_PARAM = "system";
+const SYSTEM_TOKEN = "system:";
 
-/** The selected system codes, from a URLSearchParams or a raw `?…` string. Always an array. */
+/** The selected system codes, from a URLSearchParams or a raw `?…` string. Always an array, lowercase, deduped. */
 export function parseSystems(search) {
   const params = typeof search === "string" ? new URLSearchParams(search) : search;
-  return (params.get(SYSTEM_PARAM) || "")
-    .split(",")
-    .map((s) => s.trim().toLowerCase())
-    .filter(Boolean);
+  const out = [];
+  const add = (raw) => {
+    const code = String(raw || "").trim().toLowerCase();
+    if (code && !out.includes(code)) out.push(code);
+  };
+  for (const entry of params.getAll("f")) if (entry.startsWith(SYSTEM_TOKEN)) add(entry.slice(SYSTEM_TOKEN.length));
+  for (const code of (params.get(SYSTEM_PARAM) || "").split(",")) add(code);
+  return out;
 }
 
-/** The param value for a set of codes — "" when empty, which callers drop from the URL entirely. */
+/** The API's csv for a set of codes — "" when empty (the lobby's filter object; the URL is the `f=` form). */
 export function serializeSystems(systems) {
   return (systems || []).filter(Boolean).join(",");
 }

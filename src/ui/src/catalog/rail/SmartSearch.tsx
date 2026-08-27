@@ -25,7 +25,7 @@ export function buildSuggestionIndex(spec: FacetSpec, facets?: Record<string, Fa
   if (!facets) return [];
   const idx: FilterSuggestion[] = [];
   for (const def of spec.facets) {
-    if (def.filterable === false) continue;
+    if (def.filterable === false || def.includable === false) continue;
     for (const row of facets[def.key] ?? []) {
       idx.push({ kind: "filter", key: def.key, value: row.value, display: row.label, typeLabel: def.one, count: row.count, hue: def.render === "swatch" ? row.hue ?? hueOf(row.label) : undefined });
     }

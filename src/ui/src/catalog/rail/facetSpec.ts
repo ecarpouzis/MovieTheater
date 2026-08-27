@@ -38,6 +38,11 @@ export interface FacetDef {
   excludable?: boolean;
   /** false → the rows show no count (a facet whose values are SCOPES the counts cannot describe — the Music shelves). */
   showCounts?: boolean;
+  /** false → exclude only; the rail offers no "+" (the Arcade's deselect-a-region model: the API can only HIDE regions). */
+  includable?: boolean;
+  /** true → in the spec for the URL codec, the search and the chips, but NOT drawn as a rail section — another
+   *  surface owns it (the Arcade's console carousel IS the System facet). */
+  hidden?: boolean;
   /** How a raw value reads on a chip when the loaded option list does not carry it (a composite "category:value"). */
   labelOf?: (value: FacetValue) => string;
 }

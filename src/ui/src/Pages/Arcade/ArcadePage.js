@@ -16,15 +16,24 @@ import LoadFailure from "../../Components/LoadFailure";
 import ConsoleCarousel from "./ConsoleCarousel";
 import { rememberLobbySearch } from "./arcadeLobbyState";
 import { hasSaveStates, QUICK_SLOT } from "./arcadeSystems";
-import useArcadeFilters from "./useArcadeFilters";
-import { parseSystems, toggleSystem, SYSTEM_PARAM } from "./arcadeSystemFilter";
+import { parseSystems, toggleSystem } from "./arcadeSystemFilter";
+import { ARCADE_ENTITY_PARAMS, arcadeNarrows, legacyToArcadeSearch } from "./arcadeFacetSpec";
+import useArcadeBrowse from "./useArcadeBrowse";
 import useGridWindow from "../../hooks/useGridWindow";
 import usePagedCatalog from "../../hooks/usePagedCatalog";
 import CatalogHost, { AVAILABLE_VIEWS } from "../../catalog/CatalogHost";
-import BarSearchPortal from "../../catalog/bar/BarSearch";
-import { useSectionParams } from "../../NavBar/navShared";
-import { createArcadeSource, serverSort } from "../../catalog/sources/arcadeSource";
-import { readCatalogDefaults, resolveViewState } from "../../catalog/state/useCatalogView";
+import { BarSearchSlot } from "../../catalog/bar/BarSearch";
+import FacetRail from "../../catalog/rail/FacetRail";
+import FilterPill from "../../catalog/rail/FilterPill";
+import RailChips from "../../catalog/rail/RailChips";
+import SmartSearch from "../../catalog/rail/SmartSearch";
+import { hasFacetValue } from "../../catalog/rail/facetSpec";
+import { savableSearch, useSavedSearches } from "../../catalog/rail/savedSearches";
+import useFacetOptions from "../../catalog/rail/useFacetOptions";
+import useFacetState from "../../catalog/rail/useFacetState";
+import useRailSheet from "../../catalog/rail/useRailSheet";
+import { createArcadeSource } from "../../catalog/sources/arcadeSource";
+import { isGroupedBrowse, readCatalogDefaults, resolveViewState } from "../../catalog/state/useCatalogView";
 import "./ArcadePage.css";
 import usePolling from "../../hooks/usePolling";
 
@@ -144,9 +153,11 @@ function saveQuality(q) { try { localStorage.setItem(QUALITY_KEY, JSON.stringify
 /**
  * The /arcade lobby (docs/arcade-plan.md §7, redesigned per design_handoff_arcade_browse/README.md).
  *
- * Over ~13k cards this is SERVER-SIDE filtered + paged: the filter controls live in the navbar rail
- * (ArcadeNavContent) as URL params, and this page fetches the matching page and appends more on
- * demand. A "Live rooms" strip shows what friends are playing right now.
+ * Over ~13k cards this is SERVER-SIDE filtered + paged: the filters live in the URL as the rail's
+ * `q/f/x` (R9 S2c — `arcadeFacetSpec.ts` maps them onto `/API/Arcade/Games`' own params; the sider's
+ * ArcadeSiderRail, the phone's sheet, the bar's SmartSearch and the console carousel all write the
+ * same URL), and this page fetches the matching page and appends more on demand. A "Live rooms"
+ * strip shows what friends are playing right now.
  */
 export default function ArcadePage({ userData }) {
   const history = useHistory();
@@ -197,25 +208,27 @@ export default function ArcadePage({ userData }) {
   const filtersRef = useRef(null);
 
   const setQ = (patch) => setQuality((prev) => { const next = { ...prev, ...patch }; saveQuality(next); return next; });
-  const updateArcadeParam = useSectionParams("/arcade");
 
-  // The active filters, from the URL (set by the navbar panel).
-  const filters = useMemo(() => {
-    const p = new URLSearchParams(location.search);
-    return {
-      system: p.get("system") || "",
-      hideRegions: p.get("hideRegions") || "",
-      maxPlayers: p.get("players") || "",
-      variant: p.get("variant") || "",
-      genre: p.get("genre") || "",
-      // The catalog switcher names the default order "alpha"; the server knows it as "".
-      sort: serverSort(p.get("sort")),
-      search: p.get("q") || "",
-      ra: p.get("ra") || "",
-    };
-  }, [location.search]);
-  const filterKey = JSON.stringify(filters);
+  // ── The facet rail's state (R9 S2c): the URL is the filter; the sider rail reads the same URL. ──
+  // `filters` is that state in the API's vocabulary (system csv, hideRegions, maxPlayers, …) — the
+  // pump, the letters strip, the facets request and the catalog source all read it.
+  const browse = useArcadeBrowse();
+  const { filters, filterKey, facets, spec } = browse;
   filtersRef.current = filters;
+  const { state: facetState, actions: facetActions, activeCount } = useFacetState(spec, { entityParams: ARCADE_ENTITY_PARAMS });
+  const facetLists = useFacetOptions(spec);
+  const sheet = useRailSheet();
+  const grouped = isGroupedBrowse(location.search, "arcade");
+  const saved = useSavedSearches("arcade");
+  const saveCurrent = useCallback((name) => saved.save(name, savableSearch(location.search, ARCADE_ENTITY_PARAMS)), [saved, location.search]);
+
+  // A pre-S2c lobby link (?system=&hideRegions=&players=&variant=&genre=&ra= — the old rail's Selects,
+  // old bookmarks, a room's exit button from before the deploy) is rewritten ONCE into the facet form
+  // it means; the page re-renders on the new URL.
+  useEffect(() => {
+    const legacy = legacyToArcadeSearch(location.search);
+    if (legacy != null) history.replace({ pathname: location.pathname, search: legacy, state: location.state });
+  }, [history, location.pathname, location.search, location.state]);
 
   // ── The catalog views (Wall / List / Extended / Shelves / Newspaper / Directory) over the SAME filters. ──
   // The lobby grid below stays exactly as it is (the host's `grid` override); the other views page the
@@ -227,17 +240,23 @@ export default function ArcadePage({ userData }) {
       filters,
       filterKey,
       onOpen: (card) => openGameRef.current?.(card),
+      // A group header (System / Genre) scopes in place: the facet include, one push, the modal closed.
       onFilter: (param, value) => {
-        const params = new URLSearchParams(location.search);
-        params.set(param, value);
-        params.delete("game");
-        history.push({ pathname: "/arcade", search: `?${params.toString()}` });
+        const key = param === "system" ? "system" : param === "genre" ? "genre" : null;
+        if (!key) return;
+        const v = key === "system" ? String(value).toLowerCase() : String(value);
+        facetActionsRef.current?.apply((d) => {
+          if (key === "genre") d.include.genre = [v];
+          else if (!hasFacetValue(d.include.system, v)) d.include.system = [...(d.include.system ?? []), v];
+        });
       },
     }),
-    // history is a stable reference in react-router v5; location.search is what the filters came from.
+    // The facet actions are read through a ref so the source's identity stays keyed on the filters.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [filters, filterKey]
   );
+  const facetActionsRef = useRef(null);
+  facetActionsRef.current = facetActions;
   const catalogView = useMemo(
     () => resolveViewState(location.search, readCatalogDefaults("arcade"), catalogSource, AVAILABLE_VIEWS).view,
     [location.search, catalogSource]
@@ -320,18 +339,18 @@ export default function ArcadePage({ userData }) {
     rememberLobbySearch(rest ? `?${rest}` : "");
   }, [location.search]);
 
-  // The console carousel writes the same ?system= param the rail's dropdown does — the URL is the one
-  // source of truth, so the two surfaces can never disagree about what's picked. Facets come from the
-  // shared hook, so the rail and the shelf make ONE request between them rather than one each.
-  const facets = useArcadeFilters(filters);
+  // The console carousel IS the System facet (Eric, canvas 2026-08-27): it writes the same `f=system:`
+  // the rail's chips remove and the bar's SmartSearch adds — the URL is the one source of truth, so no
+  // two surfaces can disagree about what's picked. Facets come from the shared hook, so the rail and
+  // the shelf make ONE request between them rather than one each.
   const selectedSystems = parseSystems(location.search);
 
   const setSystems = useCallback((next) => {
-    const params = new URLSearchParams(location.search);
-    const value = next.join(",");
-    if (value) params.set(SYSTEM_PARAM, value); else params.delete(SYSTEM_PARAM);
-    history.push({ pathname: "/arcade", search: params.toString() ? `?${params.toString()}` : "" });
-  }, [history, location.search]);
+    facetActions.apply((d) => {
+      if (next.length) d.include.system = [...next];
+      else delete d.include.system;
+    });
+  }, [facetActions]);
 
   const onToggleSystem = useCallback(
     (system) => setSystems(toggleSystem(parseSystems(location.search), system)),
@@ -582,15 +601,20 @@ export default function ArcadePage({ userData }) {
     return <div style={{ padding: 48 }}><Empty description="The arcade isn't set up on this server yet." /></div>;
   }
 
-  // "all" is the Mods & Hacks DEFAULT, and picking it explicitly leaves ?variant=all in the URL — so
-  // treating any variant value as a filter made an unfiltered lobby report "No games match those
-  // filters", which reads as though something had been filtered away when nothing had.
-  const anyFilter = filters.system || filters.hideRegions || filters.maxPlayers
-    || (filters.variant && filters.variant !== "all") || filters.genre || filters.search || filters.ra;
+  // Anything narrowing the lobby (the rail's state in the API's words) — the empty state reads as a
+  // filter result only then; "all" was the old variant default written out loud and never counts.
+  const anyFilter = arcadeNarrows(filters);
+  // The phone's Filters pill raising the full-page sheet (the desktop rail is the sider's
+  // ArcadeSiderRail); the active-filter chips sit over the results.
+  const filtersPill = sheet.isMobile ? <FilterPill count={activeCount} onClick={sheet.show} /> : null;
+  const chips = (
+    <RailChips spec={spec} state={facetState} actions={facetActions} facets={facetLists.data} activeCount={activeCount} onSave={saveCurrent} />
+  );
 
   // The section's bar tools (R9 S1): the two things you open + the Quality toggle, before the pills.
   const arcadeTools = (
     <>
+      {filtersPill}
       <button type="button" className="bx-tool-btn" onClick={() => setSavesVaultOpen(true)}>💾 Saves</button>
       <button type="button" className="bx-tool-btn" onClick={() => setRaOpen(true)}>🏆 Trophies</button>
       <button
@@ -607,8 +631,28 @@ export default function ArcadePage({ userData }) {
   return (
     <div className="arcade-page">
       <div className="arcade-page__inner">
-        {/* The search in the SectionBar's centre box (R9 S1d): the same ?q= the rail's field writes on phones. */}
-        <BarSearchPortal placeholder="Search games…" value={filters.search} onSubmit={(text) => updateArcadeParam("q", text)} />
+        {/* The SmartSearch in the SectionBar's centre box (R9 S1d/S2c): text = `q`, a token (`system:PS2`, `genre:RPG`) = a facet. */}
+        {!sheet.isMobile && (
+          <BarSearchSlot>
+            <SmartSearch spec={spec} facets={facetLists.data} onAdd={facetActions.add} onText={facetActions.setText} placeholder="A game, system:PS2, genre:RPG…" />
+          </BarSearchSlot>
+        )}
+        {sheet.isMobile && (
+          <FacetRail
+            variant="sheet"
+            open={sheet.open}
+            onClose={sheet.hide}
+            spec={spec}
+            state={facetState}
+            actions={facetActions}
+            activeCount={activeCount}
+            facets={facetLists.data}
+            facetsLoading={facetLists.isLoading || !facets}
+            total={firstLoaded ? total : null}
+            grouped={grouped}
+            saved={{ list: saved.list, onApply: facetActions.replaceSearch, onRemove: saved.remove, onSave: saveCurrent }}
+          />
+        )}
         {/* The header and its toolbar left the page in R9 S1: the SectionBar names the section, and
             Saves · Trophies · Quality ride the bar's tools slot (see `arcadeTools` on the CatalogHost
             below). The Quality controls open here, under the bar, only while the toggle is on.
@@ -678,7 +722,7 @@ export default function ArcadePage({ userData }) {
             </span>
           </div>
 
-          <CatalogHost section="arcade" source={catalogSource} tools={arcadeTools} overrides={{ grid: !firstLoaded ? (
+          <CatalogHost section="arcade" source={catalogSource} tools={arcadeTools} beforeResults={chips} overrides={{ grid: !firstLoaded ? (
             /* Skeleton cards in the real grid layout — the site-wide first-paint convention (movies,
                boardgames), instead of a lone spinner. */
             <div className="arcade-grid" aria-hidden="true">
