@@ -34,6 +34,9 @@ export interface FacetRailProps {
   facetsLoading?: boolean;
   /** The result count for the current state, when known. */
   total?: number | null;
+  /** Render the SmartSearch in the rail (default). The desktop sider passes false since R9 S1d: the
+   *  page portals the same SmartSearch into the SectionBar's centre slot instead. */
+  search?: boolean;
   /** Whether the current view groups (the groups-only facets and flags show only then). */
   grouped: boolean;
   variant: "rail" | "sheet";
@@ -51,7 +54,7 @@ function CloseGlyph({ sheet }: { sheet: boolean }) {
     : <svg viewBox="0 0 10 6" width="12" height="8" fill="currentColor" style={{ transform: "rotate(90deg)" }} aria-hidden="true"><path d="M0 0h10L5 6z" /></svg>;
 }
 
-function RailBody({ spec, state, actions, facets, facetsLoading, total, grouped, saved, activeCount, title, sheet, onClose }: FacetRailProps & { sheet: boolean }) {
+function RailBody({ spec, state, actions, facets, facetsLoading, total, grouped, saved, activeCount, title, sheet, onClose, search = true }: FacetRailProps & { sheet: boolean }) {
   const [saving, setSaving] = useState(false);
   const canSave = !!saved?.onSave && activeCount > 0;
   const noun = spec.noun ?? "results";
@@ -68,7 +71,7 @@ function RailBody({ spec, state, actions, facets, facetsLoading, total, grouped,
         )}
       </div>
 
-      {spec.text !== false && <SmartSearch spec={spec} facets={facets} onAdd={actions.add} onText={actions.setText} />}
+      {spec.text !== false && search && <SmartSearch spec={spec} facets={facets} onAdd={actions.add} onText={actions.setText} />}
 
       <div className="bx-rail-savedwrap">
         <div className="bx-rail-savedhead">

@@ -11,6 +11,8 @@ import { useHistory, useLocation } from "react-router-dom";
 import CatalogHost from "../../catalog/CatalogHost";
 import ActiveChips from "../../catalog/rail/ActiveChips";
 import FacetRail from "../../catalog/rail/FacetRail";
+import SmartSearch from "../../catalog/rail/SmartSearch";
+import { BarSearchSlot } from "../../catalog/bar/BarSearch";
 import { hasFacetValue } from "../../catalog/rail/facetSpec";
 import { savableSearch, useSavedSearches } from "../../catalog/rail/savedSearches";
 import { SaveSearchPrompt } from "../../catalog/rail/SavedSearchesRail";
@@ -120,6 +122,13 @@ export default function BrowsePage({ username, epoch = 0, isKid = false }: Brows
 
   return (
     <>
+      {/* The SmartSearch lives in the SectionBar's centre slot on desktop (R9 S1d); the phone's
+          sheet keeps its own. */}
+      {filtersApply && !isMobile && (
+        <BarSearchSlot>
+          <SmartSearch spec={spec} facets={facets.data} onAdd={actions.add} onText={actions.setText} placeholder="author:Miller, tag:Noir, series:Batman…" />
+        </BarSearchSlot>
+      )}
       {filtersApply && isMobile && (
         <FacetRail
           variant="sheet"

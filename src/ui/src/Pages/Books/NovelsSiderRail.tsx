@@ -19,6 +19,7 @@ export default function NovelsSiderRail({ username }: { username: string }) {
     <div className="bx-rail-on-sider">
       <FacetRail
         variant="rail"
+        search={false}
         title="Novels"
         spec={spec}
         state={state}

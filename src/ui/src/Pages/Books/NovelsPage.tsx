@@ -10,6 +10,8 @@ import { useHistory, useLocation } from "react-router-dom";
 import CatalogHost from "../../catalog/CatalogHost";
 import ActiveChips from "../../catalog/rail/ActiveChips";
 import FacetRail from "../../catalog/rail/FacetRail";
+import SmartSearch from "../../catalog/rail/SmartSearch";
+import { BarSearchSlot } from "../../catalog/bar/BarSearch";
 import { savableSearch, useSavedSearches } from "../../catalog/rail/savedSearches";
 import { SaveSearchPrompt } from "../../catalog/rail/SavedSearchesRail";
 import useFacetOptions from "../../catalog/rail/useFacetOptions";
@@ -92,6 +94,13 @@ export default function NovelsPage({ username, epoch = 0 }: NovelsPageProps) {
 
   return (
     <div className="books-novels">
+      {/* The SmartSearch lives in the SectionBar's centre slot on desktop (R9 S1d); the phone's
+          sheet keeps its own. */}
+      {!isMobile && (
+        <BarSearchSlot>
+          <SmartSearch spec={spec} facets={facets.data} onAdd={actions.add} onText={actions.setText} placeholder="author:Le Guin, tag:space-opera…" />
+        </BarSearchSlot>
+      )}
       {isMobile && (
         <FacetRail
           variant="sheet"

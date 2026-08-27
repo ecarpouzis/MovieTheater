@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import { MovieAPI } from "../MovieAPI";
 import { inputLabelStyle, getPopupContainer } from "./navShared";
+import useIsMobile from "../hooks/useIsMobile";
 
 // Sort-by options for the Browse grid. Labels are user-facing; values match the API `sort` param.
 // Random leads because it is the default: it's the shuffled discovery grid the site opens on, and
@@ -46,6 +47,7 @@ function loadGenres() {
 function SearchTools({ search, userData }) {
   const history = useHistory();
   const location = useLocation();
+  const isMobile = useIsMobile();
   const [genres, setGenres] = useState([]);
 
   useEffect(() => {
@@ -123,28 +125,34 @@ function SearchTools({ search, userData }) {
 
   return (
     <div className="nav-search-tools" style={{ padding: "8px 16px", color: "white" }}>
-      <span style={{ ...inputLabelStyle, marginTop: 0 }}>Movie Title</span>
-      {/* Each search field gets its OWN single-field <form>. A loose input with more focusable fields
+      {/* On desktop the title search is the SectionBar's centre box (R9 S1d); the rail keeps it for
+          the phone drawer, where the bar has no search slot.
+          Each search field gets its OWN single-field <form>. A loose input with more focusable fields
           below it makes a mobile/tablet keyboard label its Enter key "Next", which moves focus to the
           next filter instead of searching; a single-field form implicitly submits, so the key becomes
           "Go"/"Search" (enterKeyHint names it) and antd's onSearch fires as it does on desktop. The
           submit handler only stops the default page reload — onSearch still does the navigating. */}
-      <form onSubmit={(e) => e.preventDefault()}>
-        <Search
-          placeholder="Title"
-          style={{ width: "100%" }}
-          enterKeyHint="search"
-          onSearch={(value) => {
-            if (value && value.trim()) {
-              navigateToBrowseSearch("title", value);
-            } else {
-              navigateToBrowseSearch();
-            }
-          }}
-          enterButton
-        />
-      </form>
-      <span style={inputLabelStyle}>People</span>
+      {isMobile && (
+        <>
+          <span style={{ ...inputLabelStyle, marginTop: 0 }}>Movie Title</span>
+          <form onSubmit={(e) => e.preventDefault()}>
+            <Search
+              placeholder="Title"
+              style={{ width: "100%" }}
+              enterKeyHint="search"
+              onSearch={(value) => {
+                if (value && value.trim()) {
+                  navigateToBrowseSearch("title", value);
+                } else {
+                  navigateToBrowseSearch();
+                }
+              }}
+              enterButton
+            />
+          </form>
+        </>
+      )}
+      <span style={{ ...inputLabelStyle, marginTop: isMobile ? undefined : 0 }}>People</span>
       <form onSubmit={(e) => e.preventDefault()}>
         <Search
           placeholder="Actor, director, or writer"

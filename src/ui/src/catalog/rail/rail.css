@@ -33,6 +33,15 @@
 .bx-search-input::placeholder { color: var(--sub); }
 .bx-search-input:focus { outline: none; border-color: var(--ink); }
 .bx-search-input::-webkit-search-cancel-button { appearance: none; }
+/* The bar's compact variant (BarSearch): one row high, a ✕ that clears. */
+.bx-search-bar { width: 100%; }
+.bx-search-bar .bx-search-input { font-size: 12.5px; padding: 6px 30px 6px 30px; border-radius: 7px; height: 32px; }
+.bx-search-bar .bx-search-icon { left: 10px; }
+.bx-search-clear {
+  position: absolute; right: 6px; appearance: none; border: 0; background: transparent; color: var(--sub);
+  width: 22px; height: 22px; border-radius: 6px; cursor: pointer; font-size: 12px; display: inline-flex; align-items: center; justify-content: center;
+}
+.bx-search-clear:hover { color: var(--ink); background: var(--line); }
 .bx-search-big .bx-search-input { font-size: 15px; padding: 13px 16px 13px 42px; border-radius: 10px; }
 .bx-search-big .bx-search-icon { left: 15px; }
 .bx-suggest {

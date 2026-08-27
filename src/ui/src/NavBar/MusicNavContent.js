@@ -1,6 +1,7 @@
 import { Input } from "antd";
 import { useLocation } from "react-router-dom";
 import { inputLabelStyle, NavUserBlock, useSectionParams } from "./navShared";
+import useIsMobile from "../hooks/useIsMobile";
 
 const { Search } = Input;
 
@@ -23,6 +24,7 @@ function MusicNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setAd
   const setParam = useSectionParams("/music");
 
   const params = new URLSearchParams(location.search);
+  const isMobile = useIsMobile();
   const activeView = (params.get("tab") ?? params.get("view")) === "albums" ? "albums" : "artists";
   const activeQ = params.get("q") || "";
   const activeKind = SHELVES.some((s) => s.key && s.key === params.get("kind")) ? params.get("kind") : "";
@@ -51,18 +53,24 @@ function MusicNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setAd
         setSettingsModalOpen={setSettingsModalOpen} setAdminModalOpen={setAdminModalOpen} />
 
       <div className="nav-search-tools" style={{ padding: "16px 16px 8px", borderTop: "1px solid var(--sidebar-border)" }}>
-        <span style={{ ...inputLabelStyle, marginTop: 0 }}>Search</span>
-        <form onSubmit={(e) => e.preventDefault()}>
-          <Search
-            placeholder="Artist, album, song"
-            style={{ width: "100%" }}
-            enterKeyHint="search"
-            defaultValue={activeQ}
-            allowClear
-            onSearch={(v) => updateParam("q", v && v.trim())}
-            enterButton
-          />
-        </form>
+        {/* On desktop the search is the SectionBar's centre box (R9 S1d); the rail keeps it for the
+            phone drawer, where the bar has no search slot. */}
+        {isMobile && (
+          <>
+            <span style={{ ...inputLabelStyle, marginTop: 0 }}>Search</span>
+            <form onSubmit={(e) => e.preventDefault()}>
+              <Search
+                placeholder="Artist, album, song"
+                style={{ width: "100%" }}
+                enterKeyHint="search"
+                defaultValue={activeQ}
+                allowClear
+                onSearch={(v) => updateParam("q", v && v.trim())}
+                enterButton
+              />
+            </form>
+          </>
+        )}
 
         {/* The shelf comes FIRST because it decides what "Artists" even lists. Comedy and audiobooks
             are hidden from the music library by default (MusicArtist.Kind) — this is where they are,

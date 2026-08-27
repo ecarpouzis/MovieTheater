@@ -2,6 +2,7 @@ import { Input, Select } from "antd";
 import { useHistory, useLocation } from "react-router-dom";
 import { inputLabelStyle, getPopupContainer, NavUserBlock, useSectionParams } from "./navShared";
 import poweredByBggImage from "../../powered_by_BGG_SM.png";
+import useIsMobile from "../hooks/useIsMobile";
 
 const { Search } = Input;
 
@@ -29,6 +30,7 @@ const timeOptions = [
 function BoardGameNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setAdminModalOpen, search }) {
   const history = useHistory();
   const location = useLocation();
+  const isMobile = useIsMobile();
   const updateParam = useSectionParams("/boardgames");
   function navigate(mode, value = "") {
     const params = new URLSearchParams(location.search);
@@ -48,20 +50,25 @@ function BoardGameNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, s
         setSettingsModalOpen={setSettingsModalOpen} setAdminModalOpen={setAdminModalOpen} />
 
       <div className="nav-search-tools" style={{ padding: "16px 16px 8px", color: "white", borderTop: "1px solid var(--sidebar-border)" }}>
-        <span style={{ ...inputLabelStyle, marginTop: 0 }}>Game Title</span>
-        {/* Single-field <form> so a tablet keyboard's Enter searches instead of jumping focus to the
-            Players dropdown below (see SearchTools for the full note). onSearch still navigates. */}
-        <form onSubmit={(e) => e.preventDefault()}>
-          <Search
-            placeholder="Title"
-            style={{ width: "100%" }}
-            enterKeyHint="search"
-            onSearch={(v) => (v && v.trim() ? navigate("title", v) : navigate())}
-            enterButton
-          />
-        </form>
+        {/* On desktop the title search is the SectionBar's centre box (R9 S1d); the rail keeps it
+            for the phone drawer. Single-field <form> so a tablet keyboard's Enter searches instead of
+            jumping focus to the Players dropdown below (see SearchTools for the full note). */}
+        {isMobile && (
+          <>
+            <span style={{ ...inputLabelStyle, marginTop: 0 }}>Game Title</span>
+            <form onSubmit={(e) => e.preventDefault()}>
+              <Search
+                placeholder="Title"
+                style={{ width: "100%" }}
+                enterKeyHint="search"
+                onSearch={(v) => (v && v.trim() ? navigate("title", v) : navigate())}
+                enterButton
+              />
+            </form>
+          </>
+        )}
 
-        <span style={{ ...inputLabelStyle, marginTop: "18px" }}>Players</span>
+        <span style={{ ...inputLabelStyle, marginTop: isMobile ? "18px" : 0 }}>Players</span>
         <Select
           style={{ width: "100%" }}
           value={activePlayers ?? ""}

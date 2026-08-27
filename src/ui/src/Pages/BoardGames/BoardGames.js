@@ -8,6 +8,7 @@ import LoadFailure from "../../Components/LoadFailure";
 import useCachedResource from "../../hooks/useCachedResource";
 import CardGridSkeleton from "../../Components/CardGridSkeleton";
 import CatalogHost from "../../catalog/CatalogHost";
+import BarSearchPortal from "../../catalog/bar/BarSearch";
 import { createBoardgamesSource, facetsMap } from "../../catalog/sources/boardgamesSource";
 
 function parseJsonArray(json) {
@@ -255,6 +256,18 @@ function BoardGames({ userData }) {
 
   return (
     <>
+      {/* The title search in the SectionBar's centre box (R9 S1d): the same ?mode=title&value= the
+          rail's field writes on phones. */}
+      <BarSearchPortal
+        placeholder="Search games…"
+        value={mode === "title" ? value : ""}
+        onSubmit={(text) => {
+          const p = new URLSearchParams(history.location.search);
+          if (text) { p.set("mode", "title"); p.set("value", text); }
+          else if (p.get("mode") === "title") { p.delete("mode"); p.delete("value"); }
+          history.push({ pathname: "/boardgames", search: p.toString() ? `?${p.toString()}` : "" });
+        }}
+      />
       <CatalogHost section="boardgames" source={source} overrides={{ grid }} />
       <BoardGameModal
         gameId={selectedGameId}

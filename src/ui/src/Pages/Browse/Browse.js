@@ -11,6 +11,7 @@ import usePagedCatalog from "../../hooks/usePagedCatalog";
 import LoadFailure from "../../Components/LoadFailure";
 import CardGridSkeleton from "../../Components/CardGridSkeleton";
 import CatalogHost, { AVAILABLE_VIEWS } from "../../catalog/CatalogHost";
+import BarSearchPortal from "../../catalog/bar/BarSearch";
 import { createMoviesSource } from "../../catalog/sources/moviesSource";
 import { CATALOG_PARAM_KEYS, readCatalogDefaults, resolveViewState } from "../../catalog/state/useCatalogView";
 import { Empty } from "antd";
@@ -509,6 +510,13 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
 
   return (
     <>
+      {/* The title search in the SectionBar's centre box (R9 S1d): the same ?mode=title&value= the
+          rail's field writes on phones. */}
+      <BarSearchPortal
+        placeholder="Search titles…"
+        value={new URLSearchParams(location.search).get("mode") === "title" ? (new URLSearchParams(location.search).get("value") || "") : ""}
+        onSubmit={(text) => handleBrowseSearch("title", text)}
+      />
       {/* Rail mounts regardless of the grid's loading state so its lineup + posters fetch in parallel
           with the movie grid (it self-gates on a streaming-enabled session), rather than only after. */}
       {isLandingSearch(location.search) && <NowOnTvRail userData={userData} setUserData={setUserData} />}

@@ -6,6 +6,7 @@ import { systemLabel } from "../Pages/Arcade/arcadeSystems";
 import { parseSystems, serializeSystems } from "../Pages/Arcade/arcadeSystemFilter";
 import useArcadeFilters from "../Pages/Arcade/useArcadeFilters";
 import { inputLabelStyle, getPopupContainer, NavUserBlock, useSectionParams } from "./navShared";
+import useIsMobile from "../hooks/useIsMobile";
 
 const playerOptions = [
   { value: "", label: "Any player count" },
@@ -67,6 +68,7 @@ function ArcadeNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setA
   const activeGenre = p.get("genre") || "";
   const activeRa = p.get("ra") || "";
   const activeSort = p.get("sort") || "";
+  const isMobile = useIsMobile();
 
   // RetroAchievements filter: find games that track achievements / have high-score or speedrun boards.
   // Counts are faceted (they exclude the RA filter itself), so each label shows how many games qualify.
@@ -122,21 +124,25 @@ function ArcadeNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setA
             makes a tablet keyboard render its Enter key as "Next" — it moves focus to the Sort/System
             dropdown instead of searching. A single-field form gets implicit submission, so the key
             becomes "Go"/"Search" (enterKeyHint names it) and Enter runs the search. */}
-        <form onSubmit={submitSearch}>
-          <Input
-            ref={searchRef}
-            placeholder="Search title…"
-            prefix={<SearchOutlined />}
-            allowClear
-            enterKeyHint="search"
-            value={query}
-            style={{ width: "100%" }}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              if (!e.target.value && activeQuery) updateParam("q", "");
-            }}
-          />
-        </form>
+        {/* On desktop the search is the SectionBar's centre box (R9 S1d); the rail keeps it for the
+            phone drawer, where the bar has no search slot. */}
+        {isMobile && (
+          <form onSubmit={submitSearch}>
+            <Input
+              ref={searchRef}
+              placeholder="Search title…"
+              prefix={<SearchOutlined />}
+              allowClear
+              enterKeyHint="search"
+              value={query}
+              style={{ width: "100%" }}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                if (!e.target.value && activeQuery) updateParam("q", "");
+              }}
+            />
+          </form>
+        )}
 
         {/* Sort left the rail in R9 S1: the SectionBar's Sort pill is the one sort control. */}
         <span style={inputLabelStyle}>

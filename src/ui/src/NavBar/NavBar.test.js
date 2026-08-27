@@ -263,7 +263,9 @@ describe("the books rail", () => {
     try {
       renderNav("/books?f=tag:Noir", booksMember);
       await waitFor(() => expect(document.querySelector(".bx-rail-on-sider .bx-railbar")).toBeTruthy());
-      expect(screen.getByRole("combobox", { name: "Search" })).toBeInTheDocument();
+      // R9 S1d: the SmartSearch left the desktop rail for the SectionBar's centre slot (the page
+      // portals it there); the rail holds the facets, the count and the saved searches.
+      expect(screen.queryByRole("combobox", { name: "Search" })).toBeNull();
       expect(await screen.findByText("42 comics")).toBeInTheDocument();
       expect(screen.getByText("Tags")).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Include Noir" })).toHaveAttribute("aria-pressed", "true");

@@ -21,6 +21,8 @@ import { parseSystems, toggleSystem, SYSTEM_PARAM } from "./arcadeSystemFilter";
 import useGridWindow from "../../hooks/useGridWindow";
 import usePagedCatalog from "../../hooks/usePagedCatalog";
 import CatalogHost, { AVAILABLE_VIEWS } from "../../catalog/CatalogHost";
+import BarSearchPortal from "../../catalog/bar/BarSearch";
+import { useSectionParams } from "../../NavBar/navShared";
 import { createArcadeSource, serverSort } from "../../catalog/sources/arcadeSource";
 import { readCatalogDefaults, resolveViewState } from "../../catalog/state/useCatalogView";
 import "./ArcadePage.css";
@@ -195,6 +197,7 @@ export default function ArcadePage({ userData }) {
   const filtersRef = useRef(null);
 
   const setQ = (patch) => setQuality((prev) => { const next = { ...prev, ...patch }; saveQuality(next); return next; });
+  const updateArcadeParam = useSectionParams("/arcade");
 
   // The active filters, from the URL (set by the navbar panel).
   const filters = useMemo(() => {
@@ -604,6 +607,8 @@ export default function ArcadePage({ userData }) {
   return (
     <div className="arcade-page">
       <div className="arcade-page__inner">
+        {/* The search in the SectionBar's centre box (R9 S1d): the same ?q= the rail's field writes on phones. */}
+        <BarSearchPortal placeholder="Search games…" value={filters.search} onSubmit={(text) => updateArcadeParam("q", text)} />
         {/* The header and its toolbar left the page in R9 S1: the SectionBar names the section, and
             Saves · Trophies · Quality ride the bar's tools slot (see `arcadeTools` on the CatalogHost
             below). The Quality controls open here, under the bar, only while the toggle is on.

@@ -16,6 +16,8 @@ import { formatDuration } from "../../utils/format";
 import useCachedResource from "../../hooks/useCachedResource";
 import { useDebouncedCallback } from "../../hooks/useDebounce";
 import CatalogHost, { AVAILABLE_VIEWS } from "../../catalog/CatalogHost";
+import BarSearchPortal from "../../catalog/bar/BarSearch";
+import { useSectionParams } from "../../NavBar/navShared";
 import { createMusicSource, letterKeyFor, sortRows } from "../../catalog/sources/musicSource";
 import { readCatalogDefaults, resolveViewState } from "../../catalog/state/useCatalogView";
 
@@ -106,6 +108,7 @@ function MusicPage({ userData }) {
   const legacyTab = ["artists", "albums"].includes(params.get("view")) && !params.has("tab") ? params.get("view") : null;
   const view = (params.get("tab") ?? legacyTab) === "albums" ? "albums" : "artists";
   const q = (params.get("q") || "").trim();
+  const updateMusicParam = useSectionParams("/music");
   const kind = kindOf(params.get("kind"));
   const shelf = MUSIC_KINDS.find((k) => k.key === kind) || MUSIC_KINDS[0];
   const artistParam = parseInt(params.get("artist"), 10);
@@ -381,6 +384,8 @@ function MusicPage({ userData }) {
 
   return (
     <div className="music-page">
+      {/* The search in the SectionBar's centre box (R9 S1d): the same ?q= the rail's field writes on phones. */}
+      <BarSearchPortal placeholder="Artist, album, song" value={q} onSubmit={(text) => updateMusicParam("q", text)} />
       {/* Song results (server search) come first: they're the most specific match for a query. */}
       {songResults && songResults.length > 0 && (
         <section className="music-section">
