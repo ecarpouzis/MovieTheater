@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -243,6 +243,11 @@ namespace MovieTheater.Music
                         existing.SampleRateHz = tags2.SampleRateHz;
                         existing.Channels = tags2.Channels;
                         existing.HasEmbeddedArt = tags2.HasEmbeddedArt;
+                        // A machine field like the rest of this block: a retagged file's genre is the
+                        // new file's genre. Stamping the check date alongside keeps the row out of the
+                        // music-genres queue whichever pass got here first.
+                        existing.Genre = tags2.Genre;
+                        existing.GenreCheckedUtc = DateTime.UtcNow;
                         existing.MissingSinceUtc = null;
                     }
                     updated++;
@@ -277,6 +282,11 @@ namespace MovieTheater.Music
                     TagAlbum = Truncate(tags.Album, 400),
                     HasEmbeddedArt = tags.HasEmbeddedArt,
                     RequiresTranscode = !native,
+                    Genre = tags.Genre,
+                    // Stamped on the INSERT — the file was open and its genre frame was read, which is
+                    // exactly what the negative cache records. A new track therefore never enters the
+                    // music-genres backlog, hit or miss.
+                    GenreCheckedUtc = DateTime.UtcNow,
                 };
                 if (Apply)
                 {
@@ -385,7 +395,22 @@ namespace MovieTheater.Music
         private sealed record TagData(
             string? Title, string? Artist, string? Album, int? TrackNo, int? DiscNo,
             double? DurationSec, int? BitrateKbps, int? SampleRateHz, int? Channels, bool HasEmbeddedArt,
-            string? UnsyncedLyrics, string? SyncedLrc);
+            string? UnsyncedLyrics, string? SyncedLrc, string? Genre);
+
+        /// <summary>
+        /// A file's genre tag as the column stores it: every genre the tag names, normalised, comma
+        /// joined, truncated to the column. Null when the tag says nothing usable.
+        /// </summary>
+        /// <remarks>Shared with <c>music-genres</c> (which reads the same tag off the same reader) so
+        /// the two spellings of "what genre is this file" cannot drift — the same reason
+        /// <see cref="ReadChannels"/> is shared with the channels backfill.</remarks>
+        internal static string? JoinGenres(string? rawTag)
+        {
+            var list = MusicGenres.Split(rawTag);
+            if (list.Count == 0) return null;
+            var joined = string.Join(", ", list);
+            return joined.Length <= 200 ? joined : joined.Substring(0, 200).TrimEnd(',', ' ');
+        }
 
         /// <summary>Channel count from the decoded stream properties, 0 when the format wouldn't say.
         /// Shared with the backfill so both spellings of "how many channels" can't drift.</summary>
@@ -423,14 +448,19 @@ namespace MovieTheater.Music
                     Channels: ReadChannels(t),
                     HasEmbeddedArt: t.EmbeddedPictures != null && t.EmbeddedPictures.Count > 0,
                     UnsyncedLyrics: unsynced,
-                    SyncedLrc: lrc);
+                    SyncedLrc: lrc,
+                    // The file's own genre frame (ID3 TCON / Vorbis GENRE / MP4 ©gen), normalised and
+                    // comma-joined — ATL exposes all three spellings as one string. Read here so a
+                    // freshly ingested track arrives WITH a genre and never joins the music-genres
+                    // backlog; the backfill exists only for the 42k tracks that predate the column.
+                    Genre: JoinGenres(t.Genre));
             }
             catch
             {
                 tagErrors++;
                 // Channels 0, not null: the file was unreadable, so the backfill would fail on it too —
                 // record the sentinel now rather than leaving it to be retried on every future pass.
-                return new TagData(null, null, null, null, null, null, null, null, 0, false, null, null);
+                return new TagData(null, null, null, null, null, null, null, null, 0, false, null, null, null);
             }
         }
 

@@ -46,5 +46,29 @@ namespace MovieTheater.Db
         /// this album — the negative cache (§2.5). Set even on a miss so a re-run skips albums the
         /// internet has already told us it doesn't have; null means "never asked".</summary>
         public DateTime? ArtCheckedUtc { get; set; }
+
+        /// <summary>
+        /// How well known the record is, 0–100 (R9 S10) — NOT how good it is. Derived from an external
+        /// audience signal (Last.fm listeners today) by <c>music-enrich</c>; null until that pass has
+        /// looked, and null forever for a record the world has never heard of.
+        /// </summary>
+        /// <remarks>
+        /// Separate from the site's own <see cref="MusicAlbumRating"/> on purpose, and the "Top rated"
+        /// order BLENDS them rather than picking one: a shelf ordered purely by popularity is a chart
+        /// nobody here wrote, and a shelf ordered purely by our own ratings is empty until somebody
+        /// rates something.
+        /// </remarks>
+        public int? Popularity { get; set; }
+
+        /// <summary>Which external source produced <see cref="Popularity"/> — see
+        /// <see cref="MusicGenreSources"/>. Bulk-written values are stamped so one source can be
+        /// re-run or retired without guessing which rows came from it.</summary>
+        [MaxLength(32)]
+        public string? PopularitySource { get; set; }
+
+        /// <summary>When <c>music-enrich</c> last asked about this album — the negative cache, stamped
+        /// on a miss as well as a hit (the <see cref="ArtCheckedUtc"/> convention), so the external
+        /// queue shrinks monotonically and terminates.</summary>
+        public DateTime? PopularityCheckedUtc { get; set; }
     }
 }

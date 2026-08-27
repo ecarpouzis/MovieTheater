@@ -1709,6 +1709,16 @@ namespace MovieTheater.Db.Migrations
                     b.Property<bool>("HasArt")
                         .HasColumnType("bit");
 
+                    b.Property<int?>("Popularity")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("PopularityCheckedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PopularitySource")
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
                     b.Property<string>("Tag")
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
@@ -1729,6 +1739,113 @@ namespace MovieTheater.Db.Migrations
                     b.HasIndex("ArtistId", "Year");
 
                     b.ToTable("MusicAlbum");
+                });
+
+            modelBuilder.Entity("MovieTheater.Db.MusicAlbumGenre", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AlbumId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Genre")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<int>("Weight")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Genre");
+
+                    b.HasIndex("AlbumId", "Source", "Genre")
+                        .IsUnique();
+
+                    b.ToTable("MusicAlbumGenre");
+                });
+
+            modelBuilder.Entity("MovieTheater.Db.MusicAlbumRating", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AlbumId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Score")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AlbumId");
+
+                    b.HasIndex("UserId", "AlbumId")
+                        .IsUnique();
+
+                    b.ToTable("MusicAlbumRating");
+                });
+
+            modelBuilder.Entity("MovieTheater.Db.MusicArtistGenre", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ArtistId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Genre")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<int>("Weight")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Genre");
+
+                    b.HasIndex("ArtistId", "Source", "Genre")
+                        .IsUnique();
+
+                    b.ToTable("MusicArtistGenre");
                 });
 
             modelBuilder.Entity("MovieTheater.Db.MusicArtist", b =>
@@ -1938,6 +2055,13 @@ namespace MovieTheater.Db.Migrations
                         .IsRequired()
                         .HasMaxLength(260)
                         .HasColumnType("nvarchar(260)");
+
+                    b.Property<string>("Genre")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("GenreCheckedUtc")
+                        .HasColumnType("datetime2");
 
                     b.Property<bool>("HasEmbeddedArt")
                         .HasColumnType("bit");
@@ -3585,6 +3709,47 @@ namespace MovieTheater.Db.Migrations
                         .WithMany()
                         .HasForeignKey("ArtistId")
                         .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Artist");
+                });
+
+            modelBuilder.Entity("MovieTheater.Db.MusicAlbumGenre", b =>
+                {
+                    b.HasOne("MovieTheater.Db.MusicAlbum", "Album")
+                        .WithMany()
+                        .HasForeignKey("AlbumId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Album");
+                });
+
+            modelBuilder.Entity("MovieTheater.Db.MusicAlbumRating", b =>
+                {
+                    b.HasOne("MovieTheater.Db.MusicAlbum", "Album")
+                        .WithMany()
+                        .HasForeignKey("AlbumId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MovieTheater.Db.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Album");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("MovieTheater.Db.MusicArtistGenre", b =>
+                {
+                    b.HasOne("MovieTheater.Db.MusicArtist", "Artist")
+                        .WithMany()
+                        .HasForeignKey("ArtistId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Artist");

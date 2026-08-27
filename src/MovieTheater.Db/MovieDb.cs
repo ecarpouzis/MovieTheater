@@ -490,6 +490,57 @@ namespace MovieTheater.Db
                 .HasForeignKey<MusicTrackLyrics>(l => l.TrackId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // ── Music metadata (R9 S10): genre, popularity, site ratings ──
+            // The SOURCE is part of a genre row's identity: the tag pass and the external passes each
+            // own their own rows for an album, so a re-run replaces one pass's output and leaves the
+            // other's alone. That unique index is what makes both passes idempotent.
+            modelBuilder.Entity<MusicAlbumGenre>()
+                .HasIndex(g => new { g.AlbumId, g.Source, g.Genre })
+                .IsUnique();
+            // The rail's Genre facet asks the other question — "which albums are Jazz?" — so the join
+            // is indexed from both ends.
+            modelBuilder.Entity<MusicAlbumGenre>()
+                .HasIndex(g => g.Genre);
+            // Cascade from the album: a genre row is a statement ABOUT the album and means nothing
+            // without it. (MusicTrack stays Restrict — a track is content, this is a label.)
+            modelBuilder.Entity<MusicAlbumGenre>()
+                .HasOne(g => g.Album)
+                .WithMany()
+                .HasForeignKey(g => g.AlbumId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<MusicArtistGenre>()
+                .HasIndex(g => new { g.ArtistId, g.Source, g.Genre })
+                .IsUnique();
+            modelBuilder.Entity<MusicArtistGenre>()
+                .HasIndex(g => g.Genre);
+            modelBuilder.Entity<MusicArtistGenre>()
+                .HasOne(g => g.Artist)
+                .WithMany()
+                .HasForeignKey(g => g.ArtistId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // One opinion per listener per album — the double-tap guard, and what makes the POST an
+            // upsert rather than an append.
+            modelBuilder.Entity<MusicAlbumRating>()
+                .HasIndex(r => new { r.UserId, r.AlbumId })
+                .IsUnique();
+            // "What does the house think of this album?" — the library blend's read.
+            modelBuilder.Entity<MusicAlbumRating>()
+                .HasIndex(r => r.AlbumId);
+            // Restrict on User for the multiple-cascade-path reason MusicPlaylist documents above;
+            // cascade from the album, which is the row the rating is about.
+            modelBuilder.Entity<MusicAlbumRating>()
+                .HasOne(r => r.User)
+                .WithMany()
+                .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<MusicAlbumRating>()
+                .HasOne(r => r.Album)
+                .WithMany()
+                .HasForeignKey(r => r.AlbumId)
+                .OnDelete(DeleteBehavior.Cascade);
+
             // Read newest-first, and "is this still happening?" is a count by kind over a date range.
             modelBuilder.Entity<MusicPlaybackIncident>()
                 .HasIndex(i => new { i.CreatedUtc, i.Kind });
@@ -885,6 +936,9 @@ namespace MovieTheater.Db
         public DbSet<MusicPlaylistItem> MusicPlaylistItems { get; set; }
         public DbSet<MusicPlaylistShare> MusicPlaylistShares { get; set; }
         public DbSet<MusicPlaybackIncident> MusicPlaybackIncidents { get; set; }
+        public DbSet<MusicAlbumGenre> MusicAlbumGenres { get; set; }
+        public DbSet<MusicArtistGenre> MusicArtistGenres { get; set; }
+        public DbSet<MusicAlbumRating> MusicAlbumRatings { get; set; }
 
         // ── Family photo album (docs/photos-plan.md §3) ──────────────────────────────────────────
         // §6 privacy invariant: these sets exist for the family-gated /API/Photos routes ONLY. They are

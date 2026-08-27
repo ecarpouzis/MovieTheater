@@ -90,5 +90,25 @@ namespace MovieTheater.Db
         /// <summary>When the LRCLIB lookup last ran for this track — the lyrics negative cache (§2.7).
         /// Stamped even on a miss so a re-run skips tracks LRCLIB has no lyrics for; null = never asked.</summary>
         public DateTime? LyricsCheckedUtc { get; set; }
+
+        /// <summary>
+        /// The file's own genre frame (ID3 <c>TCON</c> / Vorbis <c>GENRE</c> / MP4 <c>©gen</c>),
+        /// normalised and comma-joined when the tag names several ("Rock, Alternative"). Null when the
+        /// file carries none — which is a great many of them, and not an error.
+        /// </summary>
+        /// <remarks>
+        /// Kept per TRACK even though nothing browses by it, because the album roll-up is a MAJORITY
+        /// over the tracks and a majority needs the votes. A compilation whose twelve tracks say
+        /// twelve different things is a real record, and collapsing it at read time would lose the
+        /// evidence that says so.
+        /// </remarks>
+        [MaxLength(200)]
+        public string? Genre { get; set; }
+
+        /// <summary>When the genre pass last opened this file — the negative cache, stamped on a MISS
+        /// as well as a hit (the <see cref="LyricsCheckedUtc"/> convention). It is the
+        /// <c>music-genres</c> queue's only stop condition: without it a library where most files
+        /// carry no genre would be re-read in full by every run, forever.</summary>
+        public DateTime? GenreCheckedUtc { get; set; }
     }
 }
