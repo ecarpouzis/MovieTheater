@@ -3,13 +3,9 @@
  * one badge with the active count; every section with a FacetSpec mounts this same pill through the
  * host's `tools` (or `BarToolsSlot` when there is no host).
  *
- * It is also the site's ANSWER to "does this page have a rail on a phone": the pill is mounted
- * exactly when one exists, so it publishes itself (`publishSectionRail`) for the nav drawer, which
- * lives above the router and cannot see the page's rail state. See `useSlot.ts`.
+ * It is the QUICK path, not the only one: the nav drawer is the sider and carries the same rail in
+ * its `rail` variant. Both read the URL, and `useSlot.ts` keeps them from being open at once.
  */
-import { useEffect } from "react";
-import { publishSectionRail } from "../bar/useSlot";
-
 export function FilterGlyph() {
   return (
     <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
@@ -20,10 +16,6 @@ export function FilterGlyph() {
 }
 
 export default function FilterPill({ count, onClick }: { count: number; onClick: () => void }) {
-  useEffect(() => {
-    publishSectionRail(count);
-    return () => publishSectionRail(null);
-  }, [count]);
   return (
     <button type="button" className="bx-filter-pill" onClick={onClick} aria-label="Filters" title="Filters">
       <FilterGlyph />

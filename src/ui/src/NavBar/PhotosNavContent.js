@@ -1,7 +1,6 @@
 import { useLocation } from "react-router-dom";
 import { NavUserBlock } from "./navShared";
 import SectionIndexRail from "../catalog/rail/SectionIndexRail";
-import useIsMobile from "../hooks/useIsMobile";
 import usePhotosAlbum, { photosNavGroups, photosSection } from "../hooks/usePhotosAlbum";
 import PhotosSiderRail from "../Pages/Photos/PhotosSiderRail";
 
@@ -14,14 +13,14 @@ import PhotosSiderRail from "../Pages/Photos/PhotosSiderRail";
 // Every row is a real URL (§ the route map), so a view can be bookmarked, shared and refreshed. The
 // counts come from the shared album store, which the page is reading at the same moment — one status
 // request feeds both. Since R9 S2c the index is the site's generic `SectionIndexRail` (the photos
-// rail's own classes were the prototype it generalized), and on `/photos/browse` the desktop sider
-// carries the reel's facet rail under it (Album · People · Kind · Camera · Date range).
+// rail's own classes were the prototype it generalized), and on `/photos/browse` the sider carries
+// the reel's facet rail under it (Album · People · Kind · Camera · Date range) — in the phone
+// drawer too, since the drawer IS the sider (2026-08-27).
 //
 // Log Out, the theme switch and the admin show-hidden checkbox are NOT here: they live in the
 // navbar's shared footer, the same as on every other section.
-function PhotosNavContent({ userData, onUserLoggedIn, setSettingsModalOpen }) {
+function PhotosNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, railVisible = true }) {
   const location = useLocation();
-  const isMobile = useIsMobile();
   // Enabled unconditionally because this component only renders on /photos — no other section ever
   // issues a photos request.
   const { state, status, unnamed } = usePhotosAlbum({ username: userData?.username });
@@ -38,7 +37,7 @@ function PhotosNavContent({ userData, onUserLoggedIn, setSettingsModalOpen }) {
           it just has no index to draw for someone the gate refused. */}
       <SectionIndexRail groups={groups} activeKey={active} ariaLabel="Album sections" />
 
-      {!isMobile && state === "ready" && active === "browse" && <PhotosSiderRail />}
+      {railVisible && state === "ready" && active === "browse" && <PhotosSiderRail />}
     </>
   );
 }

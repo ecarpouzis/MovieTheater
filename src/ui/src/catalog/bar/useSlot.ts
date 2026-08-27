@@ -43,35 +43,39 @@ export function requestSectionSearch(): boolean {
 }
 
 /**
- * Does the routed page have a facet rail on this phone, and how much of it is active?
+ * ONE filter surface open at a time on a phone.
  *
- * The phone's rail lives in a full-page SHEET the page owns (`useRailSheet`), reached from the
- * strip's Filters pill. The NAV DRAWER — a different tree, mounted above the router — needs to offer
- * the same door: without it a section whose sider is nothing but the rail (Arcade, Board games)
- * opens a drawer with a user block and a Log Out button in it and nothing else, which is what Eric
- * caught on 2026-08-27. So the pill PUBLISHES itself: it is mounted exactly when a rail exists on a
- * phone, and it already holds the count.
+ * The nav DRAWER is the sider (2026-08-27), so it carries the section's own `FacetRail` in its
+ * `rail` variant — not a door to a second copy of it. The bar's Filters pill still raises the page's
+ * full-page SHEET as the quick path. Both read the same URL, so they can never DISAGREE; what they
+ * must not do is be open at the same time, which would be two rails stacked on one 390 px screen.
+ * So each closes the other: the drawer publishes its state here and `useRailSheet` listens, and the
+ * sheet publishes its state here and NavBar listens.
  *
- * A module-level value plus an event, not context: the drawer is not inside the page's provider and
- * never will be, and this is one number.
+ * A module-level value plus an event, not context: the drawer lives above the router and is not
+ * inside any page's providers — and these are two booleans.
  */
-export const RAIL_EVENT = "section-bar:rail";
-let railCount: number | null = null;
+export const DRAWER_EVENT = "section-bar:drawer";
+export const SHEET_EVENT = "section-bar:sheet";
+let navDrawerOpen = false;
+let railSheetOpen = false;
 
-export function publishSectionRail(count: number | null): void {
-  if (railCount === count) return;
-  railCount = count;
-  if (typeof window !== "undefined") window.dispatchEvent(new Event(RAIL_EVENT));
+export function publishNavDrawer(open: boolean): void {
+  if (navDrawerOpen === open) return;
+  navDrawerOpen = open;
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(DRAWER_EVENT));
 }
 
-/** The active filter count, or null when this page has no rail (so the drawer draws no dead row). */
-export function useSectionRailCount(): number | null {
-  const [n, setN] = useState<number | null>(railCount);
-  useEffect(() => {
-    const read = () => setN(railCount);
-    read();
-    window.addEventListener(RAIL_EVENT, read);
-    return () => window.removeEventListener(RAIL_EVENT, read);
-  }, []);
-  return n;
+export function isNavDrawerOpen(): boolean {
+  return navDrawerOpen;
+}
+
+export function publishRailSheet(open: boolean): void {
+  if (railSheetOpen === open) return;
+  railSheetOpen = open;
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(SHEET_EVENT));
+}
+
+export function isRailSheetOpen(): boolean {
+  return railSheetOpen;
 }

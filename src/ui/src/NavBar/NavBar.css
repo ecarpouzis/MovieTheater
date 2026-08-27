@@ -266,39 +266,11 @@
   min-height: 100%;
 }
 
-/* The phone drawer's FILTERS row (R9, 2026-08-27): the door to the section's facet sheet, in the
-   place the desktop sider puts its FILTERS head. Sections whose whole sider IS the rail (Arcade,
-   Board games) otherwise opened a drawer with nothing in it. `margin-top: auto` on the FOOTER still
-   pins Log Out to the bottom, so this sits directly under whatever index rows the section has. */
-.navbar-drawer-filters {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: calc(100% - 32px);
-  margin: 14px 16px 0;
-  padding: 11px 12px;
-  border: 1px solid var(--sidebar-border);
-  border-radius: 8px;
-  background: var(--sidebar-bg-elev);
-  color: var(--sidebar-text-strong);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.navbar-drawer-filters-label { flex: 1; text-align: left; }
-
-.navbar-drawer-filters-count {
-  flex: none;
-  min-width: 20px;
-  padding: 1px 6px;
-  border-radius: 10px;
-  background: var(--accent);
-  color: #fff;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  text-align: center;
-}
+/* The phone drawer briefly (2026-08-27) held a lone FILTERS row that shut the drawer and raised the
+   page's facet sheet. That was the empty shell Eric photographed: one button and 1,200px of nothing.
+   The drawer carries the section's `FacetRail` itself now, so the row and its classes are gone —
+   `.bx-rail-on-sider` in catalog/rail/rail.css binds the rail to the sider's dark tokens in the
+   drawer exactly as it does in the desktop sider. */
 
 /* Rail footer — theme row, then Log Out. margin-top:auto pins it to the bottom of the flex sider
    and, since the mobile drawer is a full-height flex column too, to the bottom of that as well. */

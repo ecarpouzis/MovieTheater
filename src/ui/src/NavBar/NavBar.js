@@ -20,8 +20,7 @@ const UserSettingsModal = lazy(() => import("./UserSettingsModal"));
 const MyPlaylistsModal = lazy(() => import("../Pages/Tv/MyPlaylistsModal"));
 import useIsMobile from "../hooks/useIsMobile";
 import { loadTitleTypes, saveTitleTypes, loadSort, saveSort } from "../hooks/useMovieSearch";
-import { requestSectionSearch, useSectionRailCount } from "../catalog/bar/useSlot";
-import { FilterGlyph } from "../catalog/rail/FilterPill";
+import { SHEET_EVENT, isRailSheetOpen, publishNavDrawer, requestSectionSearch } from "../catalog/bar/useSlot";
 import { parseFacetState, facetStateKey } from "../catalog/rail/facetUrl";
 import {
   MOVIES_PARSE_SPEC, isPlainMoviesSearch, legacyToFacetSearch, markMoviesSeeded, moviesFilterParams, myListsOf,
@@ -102,17 +101,31 @@ function NavBar({
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [playlistsModalOpen, setPlaylistsModalOpen] = useState(false);
-  // Null when the routed page has no facet rail on this phone (an Explore landing, the TV guide);
-  // otherwise the active filter count. The drawer offers the rail's door with it — see below.
-  const railCount = useSectionRailCount();
 
   // useEffect with a dependency array runs the callback whenever any listed value changes
   // — similar to subscribing to a PropertyChanged event for those specific properties.
-  // Close the dropdown whenever the URL path or query string changes.
+  //
+  // The drawer closes on a PATHNAME change — a destination was chosen — and never on a `search`
+  // change. That distinction is the whole reason the drawer can BE the sider (2026-08-27): it now
+  // carries the section's facet rail, and every facet click rewrites `location.search`, so closing
+  // on `search` would slam the drawer shut on the first tap of every filter. A facet click leaves
+  // the drawer open: the chip appears under the bar behind it and the rail head's count moves.
+  // Explicit closes (the ✕ / the backdrop / the hamburger) and the section switcher (which pushes a
+  // new pathname) are the ways out.
   useEffect(() => {
     setDrawerOpen(false);
     setDropdownOpen(false);
-  }, [location.pathname, location.search]);
+  }, [location.pathname]);
+
+  // One filter surface at a time on a phone: the drawer publishes itself so the page's rail SHEET
+  // can stand down, and stands down itself when the sheet goes up (the bar's Filters pill, the top
+  // bar's search button). See catalog/bar/useSlot.ts.
+  useEffect(() => { publishNavDrawer(drawerOpen); }, [drawerOpen]);
+  useEffect(() => {
+    const onSheet = () => { if (isRailSheetOpen()) setDrawerOpen(false); };
+    window.addEventListener(SHEET_EVENT, onSheet);
+    return () => window.removeEventListener(SHEET_EVENT, onSheet);
+  }, []);
 
   useEffect(() => {
     // The movies dispatcher belongs to the movies section only. Every other section owns its own
@@ -381,10 +394,16 @@ function NavBar({
     </>
   );
 
+  // On a phone the drawer IS the sider, so it draws exactly what the desktop sider draws — including
+  // the section's facet rail. The rail is MOUNTED with the drawer rather than kept alive behind it:
+  // the drawer's markup is in the DOM on every route whether it is open or not, and a FacetRail
+  // mounted there permanently would run its option queries on every page of the site. Its data is
+  // React Query's and the page has usually already warmed it, so opening is a cache hit.
+  const railVisible = !isMobile || drawerOpen;
+
   // Every section rail takes the same props (boardgames also reads `search`; the rest ignore it).
-  // Movies is the fallback: Login (the user block + the Seen · Want · Rate index rows) and, on
-  // desktop, the generic facet rail over the movies spec (R9 S2) — the phone's browse raises its own
-  // full-page sheet from the bar's Filters pill.
+  // Movies is the fallback: Login (the user block + the Seen · Want · Rate index rows) and the
+  // generic facet rail over the movies spec (R9 S2).
   const navContent = section.Content ? (
     <section.Content
       userData={userData}
@@ -392,6 +411,7 @@ function NavBar({
       setSettingsModalOpen={setSettingsModalOpen}
       search={search}
       onOpenPlaylists={() => setPlaylistsModalOpen(true)}
+      railVisible={railVisible}
     />
   ) : (
     <>
@@ -401,7 +421,7 @@ function NavBar({
         setSettingsModalOpen={setSettingsModalOpen}
         onOpenPlaylists={() => setPlaylistsModalOpen(true)}
       />
-      {!isMobile && !isExploreRoute(location.pathname) && <MoviesSiderRail userData={userData} />}
+      {railVisible && !isExploreRoute(location.pathname) && <MoviesSiderRail userData={userData} />}
     </>
   );
 
@@ -439,23 +459,13 @@ function NavBar({
         {dropdownOpen && <div className="navbar-overlay" onClick={() => setDropdownOpen(false)} style={{ zIndex: 1150 }} />}
 
         <div className={`navbar-dropdown${drawerOpen ? " navbar-dropdown--open" : ""}${navThemeClass}`}>
+          {/* The drawer IS the sider: the same user block, the same index rows, the same FacetRail
+              in its `rail` variant with the result count on its head line, the same footer. It used
+              to hold a lone "Filters" row that shut the drawer and raised the page's sheet — one
+              button and 1,200 px of nothing, which is the failure Eric photographed on 2026-08-27.
+              The bar's Filters pill still raises that sheet as the QUICK path; both read the same
+              URL, and useSlot.ts keeps them from being open at the same time. */}
           {navContent}
-          {/* On a phone the drawer IS the sider, and the sider's last block is FILTERS. The rail
-              itself lives in the page's full-page sheet (the canvas's RailSheetPhone board), so the
-              drawer offers its DOOR rather than a second copy of the rail — one rail per phone, and
-              no section opens a drawer that holds nothing but a name and a Log Out button. The row
-              is drawn only when a rail exists here (the pill publishes it), never inert. */}
-          {railCount != null && (
-            <button
-              type="button"
-              className="navbar-drawer-filters"
-              onClick={() => { setDrawerOpen(false); requestSectionSearch(); }}
-            >
-              <FilterGlyph />
-              <span className="navbar-drawer-filters-label">Filters</span>
-              {railCount > 0 && <span className="navbar-drawer-filters-count">{railCount}</span>}
-            </button>
-          )}
           {navFooter}
         </div>
 

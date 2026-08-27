@@ -100,16 +100,23 @@ it without the bar ever importing a catalog.
   counts on them; that is the "two bars of chrome, with duplicate options" Eric caught on
   2026-08-27, and the strip is deleted (`SectionIndexTabs` itself has no callers left). The COUNT
   belongs to the rail head, not to a tab.
-- **The phone DRAWER is the sider.** The hamburger holds, in the sider's order: the user block with
-  its cog, the section's index rows where it has them (`SectionIndexRail` — Movies' Seen · Want ·
-  Rate · Playlists, Photos' album index, TV's Guide, Music's views), then a **Filters (n)** row, then
-  Log Out. The rail itself stays in the page's full-page SHEET (the canvas's RailSheetPhone) — one
-  rail per phone — and the drawer offers its door. Without it a section whose sider IS nothing but
-  the rail (Arcade, Board games) opened a drawer holding a name and a Log Out button. The pill
-  publishes whether a rail exists here and how much of it is active (`publishSectionRail` /
-  `useSectionRailCount` in `bar/useSlot.ts`): the pill is mounted exactly when there is one, and the
-  drawer lives above the router where no provider reaches it. `null` = no rail, and the row is not
-  drawn — never inert.
+- **The phone DRAWER is the sider — the WHOLE sider.** The hamburger renders the same components the
+  desktop sider renders for that section, in the same order: the user block with its cog, the
+  section's index rows where it has them (`SectionIndexRail` — Movies' Seen · Want · Rate ·
+  Playlists, Photos' album index, TV's Guide, Books' counted index), the section's **`FacetRail` in
+  its `rail` variant** with the result count on its head line, whatever the sider puts under it (the
+  BGG badge), then Log Out. Not copies — the SAME `Pages/*/…SiderRail.tsx` the desktop mounts, gated
+  by NavBar's `railVisible` prop (`!isMobile || drawerOpen`) instead of a `!isMobile` guard.
+  It briefly (2026-08-27) held a lone **Filters** row that shut the drawer and raised the page's
+  sheet instead; one button and 1,200 px of nothing is the failure Eric photographed, and the row,
+  its CSS and the `publishSectionRail`/`useSectionRailCount` channel that fed it are gone.
+  The rail MOUNTS with the drawer rather than living behind it: the drawer's markup is in the DOM on
+  every route, and a permanently mounted rail would run its option queries on every page of the site.
+  The page has usually already warmed those React Query keys, so opening is a cache hit.
+- **The bar's Filters pill and the page's full-page SHEET stay** as the quick path — the same rail,
+  read off the same URL, so the two can never disagree. What they must not do is be open at once:
+  `bar/useSlot.ts` carries `publishNavDrawer`/`publishRailSheet` and each surface stands down when
+  the other goes up.
 - **One bar, one sort control, one ⚙, and the count is NOT here.** The result total lives on the
   rail's head line (`.bx-rail-count`) — counts live where the thing they count lives. Every legacy
   sort Select the sections carried (`SearchTools`, `ArcadeNavContent`, `BoardGameNavContent`) was
@@ -123,19 +130,25 @@ live sections at 1440x900 and 390x844, light and dark. DESKTOP = the bar's tabs,
 PHONE = the fixed top bar is always `search + gear + theme`, the ONE strip is the bar's tabs plus the
 section's pills, and the drawer is the sider.
 
-| Section | Bar tabs | Bar tools (after the search) | Phone drawer |
+| Section | Bar tabs | Bar tools (after the search) | Phone drawer = the sider |
 |---|---|---|---|
-| Movies/TV | Explore - Browse - Channels* - Admin* | View - Items - Sort - gear - theme | Seen - Want to watch - Rate movies - Playlists - Filters |
-| TV (`/channels`) | Guide - Admin* | theme only (no CatalogHost) | Guide - My playlists* |
-| Arcade | Explore - Browse - **Trophies** - Admin* | Saves - Quality - View - Items - Sort - gear - theme | Filters |
-| Board games | Explore - Browse - Admin* | View - Items - Sort - gear - theme | Filters |
-| Music | Explore - Browse - Playlists - Now playing - Rate - Admin* | View - Items - Sort - gear - theme | Browse - Playlists - Now playing - Filters |
-| Photos | Explore - Timeline - Browse - Albums - Gallery - People - Admin* | Select - View - Sort - gear - theme | the album index (Timeline - Undated - Albums - Folders - People + the Gallery group) - Filters |
-| Books | Explore - Browse - Shelf - Novels - Kids - Admin* | View - Items - Sort - gear - theme | the Books index (BooksNavContent) - Filters |
+| Movies/TV | Explore - Browse - Channels* - Admin* | View - Items - Sort - gear - theme | user block - Seen - Want to Watch - Rate Movies (+ the Playlists pill) - the rail (Type - Genre - MPA rating - Years - Franchise - People - Mood - Subgenre - Era - Theme - Setting - My lists) - Log Out |
+| TV (`/channels`) | Guide - Admin* | theme only (no CatalogHost) | user block - Guide - My playlists* - Log Out (no facet rail: the EPG has no catalog) |
+| Arcade | Explore - Browse - **Trophies** - Admin* | Saves - Quality - View - Items - Sort - gear - theme | user block - the rail (Genre - Players - Region - Mods & hacks - RetroAchievements) - Log Out |
+| Board games | Explore - Browse - Admin* | View - Items - Sort - gear - theme | user block - the rail (Players - Age - Play time - Weight - Publisher - Family - Designer - Category - Mechanic - Years) - the BGG badge - Log Out |
+| Music | Explore - Browse - Playlists - Now playing - Rate - Admin* | View - Items - Sort - gear - theme | user block - the rail (Shelf - Artist - Genre - Tag - Years - Rating) - Log Out. **No index rows**: Browse - Playlists - Now playing were the bar's own tabs, deleted 2026-08-27 |
+| Photos | Explore - Timeline - Browse - Albums - Gallery - People - Admin* | Select - View - Sort - gear - theme | user block - the album index (Timeline - Undated - Albums - Folders - People + the Gallery group) - the rail on `/photos/browse` (Album - People - Kind - Camera - Years) - Log Out |
+| Books | Explore - Browse - Shelf - Novels - Kids - Admin* | View - Items - Sort - gear - theme | user block - the Books counted index (BooksNavContent) - the rail on the browse/novels (Collections - Series - Tags - Writers - Artists - Events - Franchises - Publishers - Years - Rating - Read/Want) - Log Out |
 
-`*` = `when(user)`, so the tab is REMOVED for anyone it does not apply to, never disabled. The
-Filters row appears only where a rail exists on that route (`useSectionRailCount()` is `null`
-otherwise) - an Explore landing and the TV guide draw none.
+`*` = `when(user)`, so the tab is REMOVED for anyone it does not apply to, never disabled. The rail
+appears only where the section HAS one on that route - an Explore landing, the TV guide and Books'
+Directory draw none, exactly as the desktop sider does not.
+
+**Index rows earn their place by saying something the tabs do not.** Books' carry counts and an
+Operate group the bar has no room for; Movies' Seen - Want to Watch - Rate Movies carry the viewer's
+own totals (Eric named them); Photos' index is the album's ways in, not a copy of its tabs. Music's
+were Browse - Playlists - Now playing, which is the Music bar's tab list verbatim - the same
+duplicate-options bug that deleted Books' `SectionIndexTabs`, and they are gone (`MusicNavContent`).
 
 Arcade's **Trophies** is a tab whose route (`/arcade/trophies`) renders the same lobby with the
 RetroAchievements hub open: a modal on this site lives in the URL, so the canvas's tab cost nothing
@@ -379,8 +392,10 @@ the only copy.
   labels and counts; `token:` prefixes scope the suggestions; arrows/Enter/Escape.
 - **`ActiveChips`** — `search` / `<One>` / `not <one>` / `years` / `rating` / flag chips over the
   results (`CatalogHost.beforeResults`), Clear all, and Save (a saved search).
-- **`SectionIndexRail`/`SectionIndexTabs`** — the section's own index (Explore / Browse / …) in
-  the sider on desktop and as tabs on phones.
+- **`SectionIndexRail`** — the section's own index rows, in the sider on desktop and in the phone
+  DRAWER (which is the sider). `SectionIndexTabs`, its phone-strip twin, was deleted on 2026-08-27:
+  a second strip of the bar's own destinations is the duplicate-options bug. An index row must say
+  something the bar's tabs do not — a count, a group the bar has no room for, the viewer's own list.
 - **Per-section pieces** (R9 S2): `FilterPill` (the phone's bar tool), `useRailSheet` (the sheet's
   open state — closes on URL change / desktop, and answers the phone top bar's search button through
   `requestSectionSearch`), `RailChips` (the chips row + save prompt over the results). A section
@@ -415,7 +430,7 @@ itself uses.
 | Movies/TV | Type · Genre · MPA (one pill row, five stops, `stops: true`) · **Years** · Franchise · People (typeahead) · Mood · Subgenre · Era · Theme · Setting | Years (two-thumb, `after: "mpa"`) · Seen/Want/Rated (`my=`) | `/API/BrowseFacets` (keyed on the Type scope) + `/API/BrowsePeople` for the person tail | Seen · Want to watch · Rate movies · Playlists |
 | TV | — (no catalog) | — | — | Guide · Favourites · Playlists |
 | Boardgames | Publisher · Family · Designer · Category · Mechanic · Players | Min age · Play time · Weight (`a`/`t`/`w`, fixed stops) · Years | `/API/Boardgames/Facets` for the five link facets; the ladders are computed over the cached OData catalog | — |
-| Music | Kind (a SCOPE — the shelf is fetched, not filtered) · Artist · **Genre** (dynamic long tail) · Tag · Year | Years · **Rating floor (`r=`)** | client, over the cached shelf (`useMusicShelf`) — including the Genre tail, which is a slice of an array rather than a request | Rate the shelf (`/music/rate`) · Playlists |
+| Music | Kind (a SCOPE — the shelf is fetched, not filtered) · Artist · **Genre** (dynamic long tail) · Tag · Year | Years · **Rating floor (`r=`)** | client, over the cached shelf (`useMusicShelf`) — including the Genre tail, which is a slice of an array rather than a request | — (its rows were the bar's own tabs; deleted 2026-08-27) |
 | Arcade | System (**drawn as the console carousel**, `hidden` in the rail) · Genre · Players · Region (exclude-only) · Mods & hacks · RetroAchievements | — | `/API/Arcade/Filters` | — |
 | Photos | Album · People · Kind · Camera | Years · hidden (admin) | `/API/Photos/Facets`, per hidden toggle | Undated · Folders |
 | Books | Collection · Series · Publisher · Franchise · Author · Artist · Tag · Event | Years · Rating floor (`r=`) · Read/Want (`my=`) | `/API/Books/browse/facets` + `/facet-options` for the paged long tails | — |
@@ -435,9 +450,20 @@ itself uses.
   same rule the year range follows and for the same reason — a filter that silently keeps the
   unknowns is not a filter; a section that supplies no `rating` extractor never reaches the test, so
   `r=` is simply inert for it.
-- **Never host the filters inside NavBar's phone drawer: it closes on every `location.search`
-  change.** This is why the drawer offers a **Filters (n)** row that raises the page's SHEET rather
-  than carrying the rail itself — one rail per phone, and the one that survives a facet click.
+- **The phone drawer HOSTS the rail, and closes on `location.pathname` — never on
+  `location.search`.** (Rewritten 2026-08-27. The old law said the opposite — "never host the filters
+  inside NavBar's phone drawer, it closes on every `location.search` change" — and it was a NavBar
+  BEHAVIOUR dressed as a design ruling. Obeying it produced a drawer holding one Filters button and
+  1,200 px of nothing, which is what Eric photographed.) `NavBar.js` now closes the drawer on a
+  pathname change — a destination was chosen — on the hamburger, on the backdrop, and on the section
+  switcher (which pushes a pathname). A facet click only rewrites `search`, so the drawer stays open:
+  the option ticks, the head count moves, the chip appears under the bar behind it. The bar's Filters
+  pill and the page's `useRailSheet` sheet remain the quick path over the SAME URL state, and
+  `bar/useSlot.ts`'s `publishNavDrawer` / `publishRailSheet` keep the two from being open together.
+  Verified in a real browser at 390×844 in both themes for Movies, Board games, Channels and Arcade
+  (`.claude/skills/test-roms/drawer-verify.mjs`), pinned headlessly by `chromeChecks.mjs`'
+  `DRAWER_RAIL` + `clickDrawerFacet`, and — for the gated sections — by
+  `src/ui/src/NavBar/NavBarDrawer.test.jsx`.
 
 ## The Explore kit (`catalog/explore/`) — R9 S7: every section has one
 
@@ -792,15 +818,26 @@ controller.
   no control rendered inert · every ⚙ lever VISIBLY changes the Grid · a card open keeps `?view=`
   and Back closes it · a letter jump lands and PINS · the Explore tab draws rails · the Admin tab
   appears for an admin · **on a phone, exactly ONE content strip (nothing outside the bar repeats
-  a bar tab's destination above the results) and a drawer that carries the section's OWN nav, not
-  just the user block and Log Out.** GET-only: every other method is fulfilled locally with 204, the one
-  exception being the harness account's login.
-- Those last two live in `chromeChecks.mjs`, imported by the smoke, so `probe-chrome-checks.mjs`
-  can run the SAME functions against a page with the defect injected — a check verified by a
-  re-typed copy of itself is not verified, and the strip check WAS blind at first (its label
-  normaliser left `browse118` where `browse` was wanted, so a counted tab never matched).
+  a bar tab's destination above the results); a drawer that carries the section's OWN nav, not just
+  the user block and Log Out; where the section has a facet spec, that drawer holding the RAIL
+  (`.bx-rsec-title` matched against `chromeChecks.mjs`' `DRAWER_RAIL`); and the drawer SURVIVING a
+  facet clicked inside it, with the head count moving.** GET-only: every other method is fulfilled
+  locally with 204, the one exception being the harness account's login.
+- Those phone checks live in `chromeChecks.mjs`, imported by the smoke, so
+  `probe-chrome-checks.mjs` can run the SAME functions against a page with the defect injected — a
+  check verified by a re-typed copy of itself is not verified, and the strip check WAS blind at first
+  (its label normaliser left `browse118` where `browse` was wanted, so a counted tab never matched).
+  The drawer check was blind the same way: "does the drawer hold any of the section's own controls"
+  PASSES on a drawer holding one Filters button, which is the defect Eric photographed. The probe
+  injects that exact shape and shows `ownControls: 1` passing while the rail check fires — which is
+  why the rail check exists as a separate assertion rather than a bigger number.
+- `drawer-verify.mjs` is the browser-eye half: one section × one theme at 390×844, drawer open →
+  shot, a facet clicked INSIDE it → shot, plus the page behind it with the chip on it. Movies runs
+  twice (signed out and in) because the index rows only exist for a session.
 - Last full run (2026-08-27, prod bundle at `:3101`): **Movies · Boardgames · Channels · Music ·
   Arcade all pass**, desktop and phone, light and dark. Photos and Books skipped as `manual`.
+  The drawer rewrite was re-run the same day against the prod-proxied dev server at `:3100`
+  (`--checks=chrome --gated`): all five pass, drawer rail and facet-click included.
 - **Photos and Books are `manual`** — no harness account can reach them (a family-album grant, and
   BooksAccess + a password session). Books has its own Playwright suite on a hand-captured session:
   `.claude/skills/books/e2e/`.
