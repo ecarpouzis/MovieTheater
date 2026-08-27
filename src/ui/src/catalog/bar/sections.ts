@@ -65,6 +65,7 @@ export const SECTIONS: SectionDef[] = [
   {
     key: "boardgames", prefixes: ["/boardgames"], title: "Board Games", searchPlaceholder: "mechanic:Deck, designer:Knizia, or a game…",
     tabs: [
+      { key: "explore", label: "Explore", path: "/boardgames/explore" },
       { key: "browse", label: "Browse", path: "/boardgames", exact: true },
       { key: "admin", label: "Admin", path: "/boardgames/admin", admin: true, when: editor },
     ],

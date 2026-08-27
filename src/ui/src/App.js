@@ -48,6 +48,7 @@ const MoviesAdminPage = lazy(() => import("./Pages/Admin/MoviesAdminPage"));
 const MoviesExplorePage = lazy(() => import("./Pages/Browse/MoviesExplorePage"));
 const MusicExplorePage = lazy(() => import("./Pages/Music/MusicExplorePage"));
 const ArcadeExplorePage = lazy(() => import("./Pages/Arcade/ArcadeExplorePage"));
+const BoardgamesExplorePage = lazy(() => import("./Pages/BoardGames/BoardgamesExplorePage"));
 const TvAdminPage = lazy(() => import("./Pages/Tv/TvAdminPage"));
 const ArcadeAdminPage = lazy(() => import("./Pages/Arcade/ArcadeAdminPage"));
 const MusicAdminPage = lazy(() => import("./Pages/Music/MusicAdminPage"));
@@ -233,6 +234,9 @@ function App() {
             {/* The routes those tools used to own (admin/aliases.js) — one Redirect each, so every
                 link anyone kept still lands in the tab that now holds it. */}
             {SITE_ADMIN_ALIASES.map((a) => <Redirect key={a.from} exact from={a.from} to={a.to} />)}
+            <Route path="/boardgames/explore" exact>
+              <BoardgamesExplorePage />
+            </Route>
             <Route path="/boardgames" exact>
               <BoardGames userData={userData} setUserData={setUserData} />
             </Route>
