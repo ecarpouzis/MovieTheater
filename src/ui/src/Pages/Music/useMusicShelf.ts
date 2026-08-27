@@ -7,13 +7,12 @@
  * and a failed refresh over a warm cache keeps the stale copy. Fetched PER SHELF on purpose
  * (music-plan.md §2.6): the excluded material never enters the browse catalog.
  */
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useMemo } from "react";
+import { useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import type { FacetState } from "../../catalog/rail/facetSpec";
 import type { MusicAlbumRow, MusicArtistRow } from "../../catalog/sources/musicSource";
+import useSharedCachedResource from "../../hooks/useSharedCachedResource";
 import { MovieAPI } from "../../MovieAPI";
-import { readStored, writeStored } from "../../utils/storage";
 import { applyMusicFacets, kindFromSearch, musicFacetSpec, musicItemsMode, shelfOf, type MusicKind, type MusicResults } from "./musicFacetSpec";
 
 export const MUSIC_ENTITY_PARAMS = ["album"] as const;
@@ -26,22 +25,17 @@ export interface MusicShelfData {
 export const musicShelfKey = (kind: MusicKind) => ["music", "shelf", kind || "music"] as const;
 const cacheKeyFor = (kind: MusicKind) => `music.catalog.v1:${kind || "music"}`;
 
-function readCached(kind: MusicKind): MusicShelfData | undefined {
-  const raw = readStored(cacheKeyFor(kind));
-  if (raw == null) return undefined;
-  try {
-    const v = JSON.parse(raw) as Partial<MusicShelfData> | null;
-    return v && Array.isArray(v.albums) && Array.isArray(v.artists) ? { albums: v.albums, artists: v.artists } : undefined;
-  } catch { return undefined; }
+/** A cached seed is only usable when both lists are still there (an older shape reads as a cold cache). */
+function parseShelf(raw: unknown): MusicShelfData | undefined {
+  const v = raw as Partial<MusicShelfData> | null;
+  return v && Array.isArray(v.albums) && Array.isArray(v.artists) ? { albums: v.albums, artists: v.artists } : undefined;
 }
 
 async function fetchShelf(kind: MusicKind): Promise<MusicShelfData> {
   const [albumsRes, artistsRes] = await Promise.all([MovieAPI.getMusicAlbums(kind), MovieAPI.getMusicArtists(kind)]);
   if (!albumsRes.ok || !artistsRes.ok) throw new Error(`music shelf → ${albumsRes.status}/${artistsRes.status}`);
   const [albumData, artistData] = await Promise.all([albumsRes.json(), artistsRes.json()]);
-  const data: MusicShelfData = { albums: albumData?.items ?? [], artists: artistData ?? [] };
-  try { writeStored(cacheKeyFor(kind), JSON.stringify(data)); } catch { /* payload too big — render-only */ }
-  return data;
+  return { albums: albumData?.items ?? [], artists: artistData ?? [] };
 }
 
 export interface MusicShelf extends MusicShelfData {
@@ -59,24 +53,21 @@ const EMPTY_ALBUMS: MusicAlbumRow[] = [];
 const EMPTY_ARTISTS: MusicArtistRow[] = [];
 
 export function useMusicShelf(kind: MusicKind, enabled = true): MusicShelf {
-  const client = useQueryClient();
-  const shelf = useQuery<MusicShelfData>({
+  const shelf = useSharedCachedResource<MusicShelfData>({
     queryKey: musicShelfKey(kind),
-    queryFn: () => fetchShelf(kind),
-    initialData: () => readCached(kind),
-    initialDataUpdatedAt: 0,
-    staleTime: 5 * 60 * 1000,
+    storageKey: cacheKeyFor(kind),
+    fetcher: () => fetchShelf(kind),
+    parse: parseShelf,
     enabled,
   });
-  const refresh = useCallback(() => { void client.refetchQueries({ queryKey: musicShelfKey(kind) }); }, [client, kind]);
   return {
     kind,
     albums: shelf.data?.albums ?? EMPTY_ALBUMS,
     artists: shelf.data?.artists ?? EMPTY_ARTISTS,
-    loading: enabled && shelf.data == null && shelf.isPending,
-    error: shelf.data == null && shelf.isError,
-    refresh,
-    version: `${shelf.dataUpdatedAt}:${shelf.data?.albums.length ?? 0}:${shelf.data?.artists.length ?? 0}`,
+    loading: shelf.loading,
+    error: shelf.error,
+    refresh: shelf.refresh,
+    version: `${shelf.version}:${shelf.data?.albums.length ?? 0}:${shelf.data?.artists.length ?? 0}`,
   };
 }
 

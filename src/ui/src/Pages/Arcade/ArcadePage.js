@@ -22,18 +22,12 @@ import useArcadeBrowse from "./useArcadeBrowse";
 import useGridWindow from "../../hooks/useGridWindow";
 import usePagedCatalog from "../../hooks/usePagedCatalog";
 import CatalogHost, { AVAILABLE_VIEWS } from "../../catalog/CatalogHost";
-import { BarSearchSlot } from "../../catalog/bar/BarSearch";
-import FacetRail from "../../catalog/rail/FacetRail";
-import FilterPill from "../../catalog/rail/FilterPill";
-import RailChips from "../../catalog/rail/RailChips";
-import SmartSearch from "../../catalog/rail/SmartSearch";
 import { hasFacetValue } from "../../catalog/rail/facetSpec";
-import { savableSearch, useSavedSearches } from "../../catalog/rail/savedSearches";
-import useFacetOptions from "../../catalog/rail/useFacetOptions";
-import useFacetState from "../../catalog/rail/useFacetState";
+import useSectionRail from "../../catalog/rail/useSectionRail";
+import sectionRailSurfaces from "../../catalog/rail/sectionRailSurfaces";
 import useRailSheet from "../../catalog/rail/useRailSheet";
 import { createArcadeSource } from "../../catalog/sources/arcadeSource";
-import { isGroupedBrowse, readCatalogDefaults, resolveViewState } from "../../catalog/state/useCatalogView";
+import { readCatalogDefaults, resolveViewState } from "../../catalog/state/useCatalogView";
 import "./ArcadePage.css";
 import usePolling from "../../hooks/usePolling";
 
@@ -215,12 +209,10 @@ export default function ArcadePage({ userData }) {
   const browse = useArcadeBrowse();
   const { filters, filterKey, facets, spec } = browse;
   filtersRef.current = filters;
-  const { state: facetState, actions: facetActions, activeCount } = useFacetState(spec, { entityParams: ARCADE_ENTITY_PARAMS });
-  const facetLists = useFacetOptions(spec);
+  const rail = useSectionRail("arcade", spec, { entityParams: ARCADE_ENTITY_PARAMS });
+  const facetState = rail.state;
+  const facetActions = rail.actions;
   const sheet = useRailSheet();
-  const grouped = isGroupedBrowse(location.search, "arcade");
-  const saved = useSavedSearches("arcade");
-  const saveCurrent = useCallback((name) => saved.save(name, savableSearch(location.search, ARCADE_ENTITY_PARAMS)), [saved, location.search]);
 
   // A pre-S2c lobby link (?system=&hideRegions=&players=&variant=&genre=&ra= — the old rail's Selects,
   // old bookmarks, a room's exit button from before the deploy) is rewritten ONCE into the facet form
@@ -606,10 +598,11 @@ export default function ArcadePage({ userData }) {
   const anyFilter = arcadeNarrows(filters);
   // The phone's Filters pill raising the full-page sheet (the desktop rail is the sider's
   // ArcadeSiderRail); the active-filter chips sit over the results.
-  const filtersPill = sheet.isMobile ? <FilterPill count={activeCount} onClick={sheet.show} /> : null;
-  const chips = (
-    <RailChips spec={spec} state={facetState} actions={facetActions} facets={facetLists.data} activeCount={activeCount} onSave={saveCurrent} />
-  );
+  const { pill: filtersPill, chips, surfaces } = sectionRailSurfaces(rail, sheet, {
+    total: firstLoaded ? total : null,
+    loading: !facets,
+    placeholder: "A game, system:PS2, genre:RPG…",
+  });
 
   // The section's bar tools (R9 S1): the two things you open + the Quality toggle, before the pills.
   const arcadeTools = (
@@ -631,28 +624,7 @@ export default function ArcadePage({ userData }) {
   return (
     <div className="arcade-page">
       <div className="arcade-page__inner">
-        {/* The SmartSearch in the SectionBar's centre box (R9 S1d/S2c): text = `q`, a token (`system:PS2`, `genre:RPG`) = a facet. */}
-        {!sheet.isMobile && (
-          <BarSearchSlot>
-            <SmartSearch spec={spec} facets={facetLists.data} onAdd={facetActions.add} onText={facetActions.setText} placeholder="A game, system:PS2, genre:RPG…" />
-          </BarSearchSlot>
-        )}
-        {sheet.isMobile && (
-          <FacetRail
-            variant="sheet"
-            open={sheet.open}
-            onClose={sheet.hide}
-            spec={spec}
-            state={facetState}
-            actions={facetActions}
-            activeCount={activeCount}
-            facets={facetLists.data}
-            facetsLoading={facetLists.isLoading || !facets}
-            total={firstLoaded ? total : null}
-            grouped={grouped}
-            saved={{ list: saved.list, onApply: facetActions.replaceSearch, onRemove: saved.remove, onSave: saveCurrent }}
-          />
-        )}
+        {surfaces}
         {/* The header and its toolbar left the page in R9 S1: the SectionBar names the section, and
             Saves · Trophies · Quality ride the bar's tools slot (see `arcadeTools` on the CatalogHost
             below). The Quality controls open here, under the bar, only while the toggle is on.

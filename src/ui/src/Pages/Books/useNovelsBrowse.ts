@@ -3,9 +3,9 @@
  * state, held five minutes — the sider rail and the page read the same query) and the URL facts the
  * page needs. The default content exclusion is applied here as a one-time landing rewrite.
  */
-import { useQuery } from "@tanstack/react-query";
 import type { FacetSpec, FacetState } from "../../catalog/rail/facetSpec";
 import { facetStateKey, writeFacetState } from "../../catalog/rail/facetUrl";
+import { useCountQuery } from "../../catalog/rail/useResultCount";
 import { buildNovelsQuery } from "../../catalog/sources/novelsSource";
 import { fetchNovels } from "./booksApi";
 import { NOVELS_DEFAULT_EXCLUDE_TAG } from "./novelsFacetSpec";
@@ -13,12 +13,7 @@ import { NOVELS_DEFAULT_EXCLUDE_TAG } from "./novelsFacetSpec";
 export const novelsCountKey = (state: FacetState) => ["books", "novels-count", facetStateKey(state)] as const;
 
 export function useNovelsTotal(state: FacetState, enabled = true) {
-  return useQuery({
-    queryKey: novelsCountKey(state),
-    queryFn: async ({ signal }) => (await fetchNovels({ ...buildNovelsQuery(state), top: 1 }, signal)).total,
-    enabled,
-    staleTime: 5 * 60 * 1000,
-  });
+  return useCountQuery(novelsCountKey(state), async ({ signal }) => (await fetchNovels({ ...buildNovelsQuery(state), top: 1 }, signal)).total, enabled);
 }
 
 const SEEDED_KEY = "books.novels.seeded.v1";

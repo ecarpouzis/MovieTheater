@@ -11,20 +11,15 @@ import usePagedCatalog from "../../hooks/usePagedCatalog";
 import LoadFailure from "../../Components/LoadFailure";
 import CardGridSkeleton from "../../Components/CardGridSkeleton";
 import CatalogHost, { AVAILABLE_VIEWS } from "../../catalog/CatalogHost";
-import { BarSearchSlot, BarToolsSlot } from "../../catalog/bar/BarSearch";
-import FacetRail from "../../catalog/rail/FacetRail";
-import FilterPill from "../../catalog/rail/FilterPill";
-import RailChips from "../../catalog/rail/RailChips";
-import SmartSearch from "../../catalog/rail/SmartSearch";
+import { BarToolsSlot } from "../../catalog/bar/BarSearch";
 import { hasFacetValue } from "../../catalog/rail/facetSpec";
 import { parseFacetState } from "../../catalog/rail/facetUrl";
-import { savableSearch, useSavedSearches } from "../../catalog/rail/savedSearches";
-import useFacetOptions from "../../catalog/rail/useFacetOptions";
-import useFacetState from "../../catalog/rail/useFacetState";
+import useSectionRail from "../../catalog/rail/useSectionRail";
+import sectionRailSurfaces from "../../catalog/rail/sectionRailSurfaces";
 import useRailSheet from "../../catalog/rail/useRailSheet";
 import { createMoviesSource } from "../../catalog/sources/moviesSource";
-import { CATALOG_PARAM_KEYS, isGroupedBrowse, readCatalogDefaults, resolveViewState } from "../../catalog/state/useCatalogView";
-import { MOVIES_PARSE_SPEC, isPlainMoviesSearch } from "./moviesFacetSpec";
+import { CATALOG_PARAM_KEYS, readCatalogDefaults, resolveViewState } from "../../catalog/state/useCatalogView";
+import { MOVIES_PARSE_SPEC, browseSearchFor, isPlainMoviesSearch } from "./moviesFacetSpec";
 import { MOVIES_ENTITY_PARAMS } from "./MoviesSiderRail";
 import { moviesViewerIdentity, useMoviesFacetSpec, useMoviesResultTotal } from "./useMoviesBrowse";
 import { Empty } from "antd";
@@ -119,13 +114,11 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
 
   // ── The facet rail's state (R9 S2): the URL is the filter; the sider rail reads the same URL. ──
   const spec = useMoviesFacetSpec(moviesViewerIdentity(userData));
-  const { state: facetState, actions: facetActions, activeCount } = useFacetState(spec, { entityParams: MOVIES_ENTITY_PARAMS });
-  const facets = useFacetOptions(spec);
+  const rail = useSectionRail("movies", spec, { entityParams: MOVIES_ENTITY_PARAMS });
+  const facetState = rail.state;
+  const facetActions = rail.actions;
   const sheet = useRailSheet();
   const facetTotal = useMoviesResultTotal(facetState, sheet.isMobile);
-  const grouped = isGroupedBrowse(location.search, "movies");
-  const saved = useSavedSearches("movies");
-  const saveCurrent = useCallback((name) => saved.save(name, savableSearch(location.search, MOVIES_ENTITY_PARAMS)), [saved, location.search]);
   // A group header scopes in place (adds its facet / year range, regroups a level — one push). The
   // source reaches it through a ref so its identity stays keyed on the search alone.
   const scopeRef = useRef(null);
@@ -417,18 +410,14 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
   }, [history]);
 
   const handleActorSearch = useCallback((actor) => {
-    if (!actor || !actor.trim()) {
-      return;
-    }
+    // The facet URL is pushed DIRECTLY (R9 S2 normalization): this used to push the legacy
+    // `?mode=actor&value=` and let NavBar's entry dispatcher rewrite it a render later — an extra
+    // history.replace and an extra dispatch per chip click.
+    const targetSearch = browseSearchFor("actor", actor);
+    if (targetSearch == null) return;
     const location = locationRef.current;
     const movieDataArray = movieDataRef.current;
 
-    const trimmedActor = actor.trim();
-    const params = new URLSearchParams();
-    params.set("mode", "actor");
-    params.set("value", trimmedActor);
-
-    const targetSearch = `?${params.toString()}`;
     if (location.pathname === "/" && location.search === targetSearch) {
       return;
     }
@@ -461,22 +450,19 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
   }, [history]);
 
   // Generic "jump to a browse search" used by the detail modal's insight chips (franchise, comp
-  // title). Pushes ?mode=&value= so NavBar's dispatch picks it up; the modal closes via the
-  // search-change effect below.
+  // title). Pushes the facet URL the mode MEANS (`?f=franchise:…`, `?q=…`); the modal closes because
+  // the new URL carries no ?title=.
   const handleBrowseSearch = useCallback((mode, value) => {
-    const v = (value ?? "").trim();
-    if (!mode || !v) return;
-    const params = new URLSearchParams();
-    params.set("mode", mode);
-    params.set("value", v);
-    history.push({ pathname: "/", search: `?${params.toString()}` });
+    const search = browseSearchFor(mode, value);
+    if (search == null) return;
+    history.push({ pathname: "/", search });
   }, [history]);
   openRef.current = handleOpenMovie;
   browseRef.current = handleBrowseSearch;
 
-  // No close-on-search-change effect any more: every search navigation (actor chip, nav rail,
-  // insight chips) pushes a fresh ?mode=&value= URL that doesn't carry ?title, so the URL
-  // transition itself closes the modal.
+  // No close-on-search-change effect any more: every search navigation (actor chip, the rail,
+  // insight chips) pushes a fresh facet URL that doesn't carry ?title, so the URL transition itself
+  // closes the modal.
 
   // Called by CardList / MovieModal when a movie's viewing state is toggled.
   // Only removes a movie from the displayed list when the action that was deactivated
@@ -544,36 +530,16 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
       );
 
   // The bar's tools: the phone's Filters pill raising the full-page sheet (the desktop rail is the
-  // sider's MoviesSiderRail, which carries the count on its head line).
-  const filtersPill = sheet.isMobile ? <FilterPill count={activeCount} onClick={sheet.show} /> : null;
-  const chips = (
-    <RailChips spec={spec} state={facetState} actions={facetActions} facets={facets.data} activeCount={activeCount} onSave={saveCurrent} />
-  );
+  // sider's MoviesSiderRail, which carries the count on its head line), the chips over the results,
+  // and the bar's SmartSearch — all from the shared rail surfaces.
+  const { pill: filtersPill, chips, surfaces } = sectionRailSurfaces(rail, sheet, {
+    total: facetTotal.data,
+    placeholder: "Title, person:Pacino, genre:Crime…",
+  });
 
   return (
     <>
-      {/* The SmartSearch in the SectionBar's centre box (R9 S1d/S2): text = `q`, a token = a facet. */}
-      {!sheet.isMobile && (
-        <BarSearchSlot>
-          <SmartSearch spec={spec} facets={facets.data} onAdd={facetActions.add} onText={facetActions.setText} placeholder="Title, person:Pacino, genre:Crime…" />
-        </BarSearchSlot>
-      )}
-      {sheet.isMobile && (
-        <FacetRail
-          variant="sheet"
-          open={sheet.open}
-          onClose={sheet.hide}
-          spec={spec}
-          state={facetState}
-          actions={facetActions}
-          activeCount={activeCount}
-          facets={facets.data}
-          facetsLoading={facets.isLoading}
-          total={facetTotal.data}
-          grouped={grouped}
-          saved={{ list: saved.list, onApply: facetActions.replaceSearch, onRemove: saved.remove, onSave: saveCurrent }}
-        />
-      )}
+      {surfaces}
       {/* Rail mounts regardless of the grid's loading state so its lineup + posters fetch in parallel
           with the movie grid (it self-gates on a streaming-enabled session), rather than only after. */}
       {isLandingSearch(location.search) && <NowOnTvRail userData={userData} setUserData={setUserData} />}

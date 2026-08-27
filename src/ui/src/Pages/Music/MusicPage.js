@@ -15,18 +15,13 @@ import "./MusicPlaylists.css";
 import { formatDuration } from "../../utils/format";
 import { useDebouncedCallback } from "../../hooks/useDebounce";
 import CatalogHost, { AVAILABLE_VIEWS } from "../../catalog/CatalogHost";
-import { BarSearchSlot, BarToolsSlot } from "../../catalog/bar/BarSearch";
-import FacetRail from "../../catalog/rail/FacetRail";
-import FilterPill from "../../catalog/rail/FilterPill";
-import RailChips from "../../catalog/rail/RailChips";
-import SmartSearch from "../../catalog/rail/SmartSearch";
+import { BarToolsSlot } from "../../catalog/bar/BarSearch";
 import { facetStateKey } from "../../catalog/rail/facetUrl";
-import { savableSearch, useSavedSearches } from "../../catalog/rail/savedSearches";
-import useFacetOptions from "../../catalog/rail/useFacetOptions";
-import useFacetState from "../../catalog/rail/useFacetState";
+import useSectionRail from "../../catalog/rail/useSectionRail";
+import sectionRailSurfaces from "../../catalog/rail/sectionRailSurfaces";
 import useRailSheet from "../../catalog/rail/useRailSheet";
 import { createMusicSource, letterKeyFor, sortRows } from "../../catalog/sources/musicSource";
-import { isGroupedBrowse, readCatalogDefaults, resolveViewState } from "../../catalog/state/useCatalogView";
+import { readCatalogDefaults, resolveViewState } from "../../catalog/state/useCatalogView";
 import { MUSIC_KINDS, legacyToMusicSearch, shelfOf } from "./musicFacetSpec";
 import useMusicBrowse, { MUSIC_ENTITY_PARAMS, useMusicResults } from "./useMusicShelf";
 
@@ -118,12 +113,10 @@ function MusicPage({ userData }) {
   const browse = useMusicBrowse(userData);
   const { kind, spec } = browse;
   const shelf = shelfOf(kind);
-  const { state: facetState, actions: facetActions, activeCount } = useFacetState(spec, { entityParams: MUSIC_ENTITY_PARAMS });
-  const facets = useFacetOptions(spec, !gated);
+  const rail = useSectionRail("music", spec, { entityParams: MUSIC_ENTITY_PARAMS, facetsEnabled: !gated });
+  const facetState = rail.state;
+  const facetActions = rail.actions;
   const sheet = useRailSheet();
-  const grouped = isGroupedBrowse(location.search, "music");
-  const saved = useSavedSearches("music");
-  const saveCurrent = useCallback((name) => saved.save(name, savableSearch(location.search, MUSIC_ENTITY_PARAMS)), [saved, location.search]);
   const q = facetState.q;
   const albums = browse.loading ? null : browse.albums;
   const artists = browse.loading ? null : browse.artists;
@@ -375,35 +368,14 @@ function MusicPage({ userData }) {
   // The bar's tools: the phone's Filters pill raising the full-page sheet (the desktop rail is the
   // sider's MusicSiderRail, which carries the count on its head line). Drilled into an artist there
   // is no CatalogHost to carry the pill, so it rides the bar's tools slot directly.
-  const filtersPill = sheet.isMobile ? <FilterPill count={activeCount} onClick={sheet.show} /> : null;
-  const chips = (
-    <RailChips spec={spec} state={facetState} actions={facetActions} facets={facets.data} activeCount={activeCount} onSave={saveCurrent} />
-  );
+  const { pill: filtersPill, chips, surfaces } = sectionRailSurfaces(rail, sheet, {
+    total: view === "artists" ? filteredArtists.length : filteredAlbums.length,
+    placeholder: "A song, artist:Bush, tag:Live…",
+  });
 
   return (
     <div className="music-page">
-      {/* The SmartSearch in the SectionBar's centre box (R9 S1d/S2c): text = `q` (the song search rides it), a token = a facet. */}
-      {!sheet.isMobile && (
-        <BarSearchSlot>
-          <SmartSearch spec={spec} facets={facets.data} onAdd={facetActions.add} onText={facetActions.setText} placeholder="A song, artist:Bush, tag:Live…" />
-        </BarSearchSlot>
-      )}
-      {sheet.isMobile && (
-        <FacetRail
-          variant="sheet"
-          open={sheet.open}
-          onClose={sheet.hide}
-          spec={spec}
-          state={facetState}
-          actions={facetActions}
-          activeCount={activeCount}
-          facets={facets.data}
-          facetsLoading={facets.isLoading}
-          total={view === "artists" ? filteredArtists.length : filteredAlbums.length}
-          grouped={grouped}
-          saved={{ list: saved.list, onApply: facetActions.replaceSearch, onRemove: saved.remove, onSave: saveCurrent }}
-        />
-      )}
+      {surfaces}
       {drilledIn && filtersPill && <BarToolsSlot>{filtersPill}</BarToolsSlot>}
       {/* Song results (server search) come first: they're the most specific match for a query. */}
       {songResults && songResults.length > 0 && (

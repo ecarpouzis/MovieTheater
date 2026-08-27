@@ -9,16 +9,10 @@ import { useQuery } from "@tanstack/react-query";
 import { useCallback, useMemo } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import CatalogHost from "../../catalog/CatalogHost";
-import FacetRail from "../../catalog/rail/FacetRail";
-import FilterPill from "../../catalog/rail/FilterPill";
-import RailChips from "../../catalog/rail/RailChips";
-import SmartSearch from "../../catalog/rail/SmartSearch";
-import { BarSearchSlot } from "../../catalog/bar/BarSearch";
 import { hasFacetValue } from "../../catalog/rail/facetSpec";
-import { savableSearch, useSavedSearches } from "../../catalog/rail/savedSearches";
-import useFacetOptions from "../../catalog/rail/useFacetOptions";
-import useFacetState from "../../catalog/rail/useFacetState";
+import sectionRailSurfaces from "../../catalog/rail/sectionRailSurfaces";
 import useRailSheet from "../../catalog/rail/useRailSheet";
+import useSectionRail from "../../catalog/rail/useSectionRail";
 import { createBooksSource } from "../../catalog/sources/booksSource";
 import type { CardItem, DirectoryNode } from "../../catalog/types";
 import { fetchFolder } from "./booksApi";
@@ -27,7 +21,7 @@ import { useMediaToken } from "./booksMedia";
 import { bk } from "./booksQuery";
 import { booksTweakExtras, siteTheme } from "./booksTheme";
 import { openEntity } from "./openEntity";
-import { isDirectoryBrowse, isGroupedBrowse, useBooksResultTotal } from "./useBooksBrowse";
+import { isDirectoryBrowse, useBooksResultTotal } from "./useBooksBrowse";
 
 export interface BrowsePageProps {
   username: string;
@@ -47,19 +41,16 @@ export default function BrowsePage({ username, epoch = 0, isKid = false }: Brows
   const history = useHistory();
   const location = useLocation();
   const sheet = useRailSheet();
-  const isMobile = sheet.isMobile;
   const spec = useMemo(() => booksFacetSpec(username), [username]);
-  const { state, actions, activeCount } = useFacetState(spec);
+  const directory = isDirectoryBrowse(location.search);
+  const filtersApply = !isKid && !directory;
+  const rail = useSectionRail("books", spec, { facetsEnabled: filtersApply });
+  const { state, actions } = rail;
   const { epoch: mediaEpoch } = useMediaToken();
   const theme = siteTheme();
   const tweakExtras = useMemo(() => booksTweakExtras(theme), [theme]);
 
-  const directory = isDirectoryBrowse(location.search);
-  const grouped = isGroupedBrowse(location.search);
-  const filtersApply = !isKid && !directory;
-  const facets = useFacetOptions(spec, filtersApply);
   const total = useBooksResultTotal(state, spec, !directory);
-  const saved = useSavedSearches("books");
 
   // The Directory's "start here" — a "Browse this folder" link carries ?dir=<folderId>.
   const dir = positiveInt(new URLSearchParams(location.search).get("dir"));
@@ -90,42 +81,20 @@ export default function BrowsePage({ username, epoch = 0, isKid = false }: Brows
     [state, spec, epoch, mediaEpoch, tweakExtras, onOpen, onOpenSeries, scope],
   );
 
-  const saveCurrent = (name: string) => saved.save(name, savableSearch(location.search));
-
   // The bar's tools: the phone's Filters pill (the desktop rail shows the count on its own head line;
   // the toolbar no longer carries a count — Long Box: counts live where the thing they count lives).
-  const barTools = filtersApply && isMobile ? <FilterPill count={activeCount} onClick={sheet.show} /> : null;
-
-  const chips = filtersApply ? (
-    <RailChips spec={spec} state={state} actions={actions} facets={facets.data} activeCount={activeCount} onSave={saveCurrent} className="books-browse-chips" />
-  ) : null;
+  const railSurfaces = sectionRailSurfaces(rail, sheet, {
+    total: total.data,
+    placeholder: "author:Miller, tag:Noir, series:Batman…",
+    chipsClassName: "books-browse-chips",
+  });
+  // A kid account browses without filters, and the Directory ignores them.
+  const barTools = filtersApply ? railSurfaces.pill : null;
 
   return (
     <>
-      {/* The SmartSearch lives in the SectionBar's centre slot on desktop (R9 S1d); the phone's
-          sheet keeps its own. */}
-      {filtersApply && !isMobile && (
-        <BarSearchSlot>
-          <SmartSearch spec={spec} facets={facets.data} onAdd={actions.add} onText={actions.setText} placeholder="author:Miller, tag:Noir, series:Batman…" />
-        </BarSearchSlot>
-      )}
-      {filtersApply && isMobile && (
-        <FacetRail
-          variant="sheet"
-          open={sheet.open}
-          onClose={sheet.hide}
-          spec={spec}
-          state={state}
-          actions={actions}
-          activeCount={activeCount}
-          facets={facets.data}
-          facetsLoading={facets.isLoading}
-          total={total.data}
-          grouped={grouped}
-          saved={{ list: saved.list, onApply: actions.replaceSearch, onRemove: saved.remove, onSave: saveCurrent }}
-        />
-      )}
-      <CatalogHost section="books" source={source} directoryStart={directoryStart} tools={barTools} beforeResults={chips} />
+      {filtersApply && railSurfaces.surfaces}
+      <CatalogHost section="books" source={source} directoryStart={directoryStart} tools={barTools} beforeResults={filtersApply ? railSurfaces.chips : null} />
     </>
   );
 }

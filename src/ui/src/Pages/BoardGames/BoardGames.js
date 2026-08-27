@@ -7,18 +7,11 @@ import { bucketsFor } from "../../Components/CatalogPager";
 import LoadFailure from "../../Components/LoadFailure";
 import CardGridSkeleton from "../../Components/CardGridSkeleton";
 import CatalogHost from "../../catalog/CatalogHost";
-import { BarSearchSlot } from "../../catalog/bar/BarSearch";
-import FacetRail from "../../catalog/rail/FacetRail";
-import FilterPill from "../../catalog/rail/FilterPill";
-import RailChips from "../../catalog/rail/RailChips";
-import SmartSearch from "../../catalog/rail/SmartSearch";
 import { hasFacetValue } from "../../catalog/rail/facetSpec";
 import { facetStateKey } from "../../catalog/rail/facetUrl";
-import { savableSearch, useSavedSearches } from "../../catalog/rail/savedSearches";
-import useFacetOptions from "../../catalog/rail/useFacetOptions";
-import useFacetState from "../../catalog/rail/useFacetState";
+import useSectionRail from "../../catalog/rail/useSectionRail";
+import sectionRailSurfaces from "../../catalog/rail/sectionRailSurfaces";
 import useRailSheet from "../../catalog/rail/useRailSheet";
-import { isGroupedBrowse } from "../../catalog/state/useCatalogView";
 import { createBoardgamesSource } from "../../catalog/sources/boardgamesSource";
 import { DRILL_NEXT_GROUP, LINK_FACETS, legacyToBoardgamesSearch, sortBoardgames } from "./boardgamesFacetSpec";
 import useBoardgamesBrowse, { BOARDGAMES_ENTITY_PARAMS, useBoardgamesResults } from "./useBoardgamesBrowse";
@@ -35,13 +28,10 @@ function BoardGames({ userData }) {
   const location = useLocation();
 
   // ── The facet rail's state (R9 S2c): the URL is the filter (`q/f/x/y` + the `a/t/w` ranges). ──
-  const spec = browse.spec;
-  const { state: facetState, actions: facetActions, activeCount } = useFacetState(spec, { entityParams: BOARDGAMES_ENTITY_PARAMS });
-  const facets = useFacetOptions(spec);
+  const rail = useSectionRail("boardgames", browse.spec, { entityParams: BOARDGAMES_ENTITY_PARAMS });
+  const facetState = rail.state;
+  const facetActions = rail.actions;
   const sheet = useRailSheet();
-  const grouped = isGroupedBrowse(location.search, "boardgames");
-  const saved = useSavedSearches("boardgames");
-  const saveCurrent = useCallback((name) => saved.save(name, savableSearch(location.search, BOARDGAMES_ENTITY_PARAMS)), [saved, location.search]);
 
   // A pre-S2c link (?players=&age=&time=&mode=title&value= — the old rail's Selects, old bookmarks)
   // is rewritten ONCE into the facet form it means; the page re-renders on the new URL.
@@ -150,36 +140,16 @@ function BoardGames({ userData }) {
   );
 
   // The bar's tools: the phone's Filters pill raising the full-page sheet (the desktop rail is the
-  // sider's BoardgamesSiderRail, which carries the count on its head line).
-  const filtersPill = sheet.isMobile ? <FilterPill count={activeCount} onClick={sheet.show} /> : null;
-  const chips = (
-    <RailChips spec={spec} state={facetState} actions={facetActions} facets={facets.data} activeCount={activeCount} onSave={saveCurrent} />
-  );
+  // sider's BoardgamesSiderRail, which carries the count on its head line), the chips over the
+  // results, and the bar's SmartSearch — all from the shared rail surfaces.
+  const { pill: filtersPill, chips, surfaces } = sectionRailSurfaces(rail, sheet, {
+    total: displayGames.length,
+    placeholder: "A game, mechanic:Deck, designer:Knizia…",
+  });
 
   return (
     <>
-      {/* The SmartSearch in the SectionBar's centre box (R9 S1d/S2c): text = `q`, a token = a facet. */}
-      {!sheet.isMobile && (
-        <BarSearchSlot>
-          <SmartSearch spec={spec} facets={facets.data} onAdd={facetActions.add} onText={facetActions.setText} placeholder="A game, mechanic:Deck, designer:Knizia…" />
-        </BarSearchSlot>
-      )}
-      {sheet.isMobile && (
-        <FacetRail
-          variant="sheet"
-          open={sheet.open}
-          onClose={sheet.hide}
-          spec={spec}
-          state={facetState}
-          actions={facetActions}
-          activeCount={activeCount}
-          facets={facets.data}
-          facetsLoading={facets.isLoading}
-          total={displayGames.length}
-          grouped={grouped}
-          saved={{ list: saved.list, onApply: facetActions.replaceSearch, onRemove: saved.remove, onSave: saveCurrent }}
-        />
-      )}
+      {surfaces}
       <CatalogHost section="boardgames" source={source} overrides={{ grid }} tools={filtersPill} beforeResults={chips} />
       <BoardGameModal
         gameId={selectedGameId}

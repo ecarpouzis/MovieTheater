@@ -21,17 +21,10 @@ import useShowHiddenPhotos from "../../hooks/useShowHiddenPhotos";
 import usePhotosAlbum, { photosSection } from "../../hooks/usePhotosAlbum";
 import CatalogHost from "../../catalog/CatalogHost";
 import { createPhotosSource } from "../../catalog/sources/photosSource";
-import { BarSearchSlot } from "../../catalog/bar/BarSearch";
-import FacetRail from "../../catalog/rail/FacetRail";
-import FilterPill from "../../catalog/rail/FilterPill";
-import RailChips from "../../catalog/rail/RailChips";
-import SmartSearch from "../../catalog/rail/SmartSearch";
 import { facetStateKey } from "../../catalog/rail/facetUrl";
-import { savableSearch, useSavedSearches } from "../../catalog/rail/savedSearches";
-import useFacetOptions from "../../catalog/rail/useFacetOptions";
-import useFacetState from "../../catalog/rail/useFacetState";
+import useSectionRail from "../../catalog/rail/useSectionRail";
+import sectionRailSurfaces from "../../catalog/rail/sectionRailSurfaces";
 import useRailSheet from "../../catalog/rail/useRailSheet";
-import { isGroupedBrowse } from "../../catalog/state/useCatalogView";
 import { PHOTOS_ENTITY_PARAMS, photosFacetSpec, photosFilterParams } from "./photosFacetSpec";
 import { usePhotosResultTotal } from "./PhotosSiderRail";
 import "./PhotosPage.css";
@@ -167,13 +160,11 @@ export default function PhotosPage({ userData }) {
   // sider's PhotosSiderRail reads the same URL. The Timeline root is untouched by it. ──
   const onBrowse = location.pathname.startsWith("/photos/browse");
   const facetSpec = useMemo(() => photosFacetSpec(String(refreshKey), !!showHidden), [refreshKey, showHidden]);
-  const { state: facetState, actions: facetActions, activeCount } = useFacetState(facetSpec, { entityParams: PHOTOS_ENTITY_PARAMS });
-  const facetLists = useFacetOptions(facetSpec, onBrowse);
+  const rail = useSectionRail("photos", facetSpec, { entityParams: PHOTOS_ENTITY_PARAMS, facetsEnabled: onBrowse });
+  const facetState = rail.state;
+  const facetActions = rail.actions;
   const sheet = useRailSheet();
   const facetTotal = usePhotosResultTotal(facetState, !!showHidden, onBrowse && sheet.isMobile);
-  const grouped = isGroupedBrowse(location.search, "photos");
-  const savedSearches = useSavedSearches("photos");
-  const saveCurrent = useCallback((name) => savedSearches.save(name, savableSearch(location.search, PHOTOS_ENTITY_PARAMS)), [savedSearches, location.search]);
   const browseFilter = useMemo(() => photosFilterParams(facetState), [facetState]);
   const browseFilterKey = facetStateKey(facetState);
   // The catalog views' source (the /photos/browse route). Re-made on the hidden toggle, the rail's
@@ -376,6 +367,13 @@ export default function PhotosPage({ userData }) {
   // modifier on the page root rather than a second stylesheet: it is the same room, lit differently.
   const inGallery = view === "gallery" || albumMeta?.shelf === "Archive";
 
+  // The rail's page-side surfaces (the /photos/browse route mounts them): the bar's SmartSearch on
+  // desktop, the Filters pill + full-page sheet on phones, the active chips over the results.
+  const railSurfaces = sectionRailSurfaces(rail, sheet, {
+    total: facetTotal.data,
+    placeholder: "A place, person:Grandma, album:Summer…",
+  });
+
   return (
     <div className={`photos-page${inGallery ? " photos-page--gallery" : ""}`}>
       {/* R9 S1: the page head and the phone tab strip are gone — the SectionBar names the view and
@@ -438,32 +436,12 @@ export default function PhotosPage({ userData }) {
               (/API/Photos/Browse + BrowseGroups), narrowed by the rail (R9 S2c): the SmartSearch in the
               bar on desktop (`person:Grandma`, `album:Summer`), the Filters pill + full-page sheet on
               phones, the active chips over the results. The timeline route keeps its justified grid. */}
-          {!sheet.isMobile && (
-            <BarSearchSlot>
-              <SmartSearch spec={facetSpec} facets={facetLists.data} onAdd={facetActions.add} onText={facetActions.setText} placeholder="A place, person:Grandma, album:Summer…" />
-            </BarSearchSlot>
-          )}
-          {sheet.isMobile && (
-            <FacetRail
-              variant="sheet"
-              open={sheet.open}
-              onClose={sheet.hide}
-              spec={facetSpec}
-              state={facetState}
-              actions={facetActions}
-              activeCount={activeCount}
-              facets={facetLists.data}
-              facetsLoading={facetLists.isLoading}
-              total={facetTotal.data}
-              grouped={grouped}
-              saved={{ list: savedSearches.list, onApply: facetActions.replaceSearch, onRemove: savedSearches.remove, onSave: saveCurrent }}
-            />
-          )}
+          {railSurfaces.surfaces}
           <CatalogHost
             section="photos"
             source={photosSource}
-            tools={sheet.isMobile ? <FilterPill count={activeCount} onClick={sheet.show} /> : null}
-            beforeResults={<RailChips spec={facetSpec} state={facetState} actions={facetActions} facets={facetLists.data} activeCount={activeCount} onSave={saveCurrent} />}
+            tools={railSurfaces.pill}
+            beforeResults={railSurfaces.chips}
           />
         </Route>
 

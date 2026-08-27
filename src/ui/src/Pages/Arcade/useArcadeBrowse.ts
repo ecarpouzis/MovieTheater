@@ -4,10 +4,10 @@
  * scope (`useArcadeFilters` — one request shared with the console carousel), the spec over them, and
  * the result count for the scope (one `pageSize=1` page, held five minutes).
  */
-import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import { parseFacetState } from "../../catalog/rail/facetUrl";
+import useResultCount from "../../catalog/rail/useResultCount";
 import { serverSort, type ArcadeFilters } from "../../catalog/sources/arcadeSource";
 import { MovieAPI } from "../../MovieAPI";
 import { ARCADE_PARSE_SPEC, arcadeFacetSpec, arcadeFilterParams, type ArcadeFacetsDto } from "./arcadeFacetSpec";
@@ -39,15 +39,5 @@ export const arcadeCountKey = (filterKey: string) => ["arcade", "count", filterK
 
 /** `/API/Arcade/Games` page 1 carries the count; one row is enough to read it (the sider rail's head line). */
 export function useArcadeResultTotal(filters: ArcadeFilters, filterKey: string, enabled = true) {
-  return useQuery({
-    queryKey: arcadeCountKey(filterKey),
-    queryFn: async ({ signal }) => {
-      const r = await MovieAPI.getArcadeGames({ ...filters, skip: 0, pageSize: 1 }, signal);
-      if (!r.ok) throw new Error(`count → ${r.status}`);
-      const data = (await r.json()) as { totalCount?: number };
-      return typeof data.totalCount === "number" ? data.totalCount : -1;
-    },
-    enabled,
-    staleTime: 5 * 60 * 1000,
-  });
+  return useResultCount(arcadeCountKey(filterKey), ({ signal }) => MovieAPI.getArcadeGames({ ...filters, skip: 0, pageSize: 1 }, signal), enabled);
 }

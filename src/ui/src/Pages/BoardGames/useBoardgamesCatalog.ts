@@ -1,17 +1,15 @@
 /**
  * The Boardgames catalog as ONE shared resource (R9 S2c): the whole `/odata/Boardgames` list and
- * the `/API/Boardgames/Facets` rows, read by the page AND the sider rail (two trees) through React
- * Query — one fetch, one in-memory copy, `setQueryData` for the modal's edits. Keeps the section's
- * render-from-cache-then-refresh contract: the last payload seeds the query from localStorage (the
- * same `boardgames_v1` / `boardgames_facets_v1` keys `useCachedResource` wrote), a fresh fetch
- * replaces it in the background and rewrites the cache, and a failed refresh over a warm cache keeps
- * the stale copy. `useCachedResource` itself is per-mount, which is why this exists.
+ * the `/API/Boardgames/Facets` rows, read by the page AND the sider rail (two trees) through
+ * `useSharedCachedResource` — one fetch, one in-memory copy, one `setData` for the modal's edits.
+ * That hook is `useCachedResource`'s contract for two trees, so the section keeps its
+ * render-from-cache-then-refresh behaviour on the same `boardgames_v1` / `boardgames_facets_v1`
+ * localStorage keys it always used.
  */
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo } from "react";
 import type { BoardgameFacets, BoardgameRow } from "../../catalog/sources/boardgamesSource";
 import { facetsMap } from "../../catalog/sources/boardgamesSource";
-import { readStored, writeStored } from "../../utils/storage";
+import useSharedCachedResource from "../../hooks/useSharedCachedResource";
 
 export const BOARDGAMES_CACHE_KEY = "boardgames_v1";
 export const BOARDGAMES_FACETS_CACHE_KEY = "boardgames_facets_v1";
@@ -78,31 +76,20 @@ export function extractGames(payload: unknown): BoardgameGame[] {
   return rawGames.map(normalizeGame).filter((g) => Number.isInteger(g.id) && g.id > 0);
 }
 
-function readCached<T>(key: string): T | undefined {
-  const raw = readStored(key);
-  if (raw == null) return undefined;
-  try { return JSON.parse(raw) as T; } catch { return undefined; }
-}
-
-function writeCached(key: string, value: unknown): void {
-  try { writeStored(key, JSON.stringify(value)); } catch { /* payload too big — render-only */ }
-}
+/** A cached seed is only usable when it is still a list (an older shape reads as a cold cache). */
+const asArray = <T,>(raw: unknown): T[] | undefined => (Array.isArray(raw) ? (raw as T[]) : undefined);
 
 async function fetchCatalog(signal?: AbortSignal): Promise<BoardgameGame[]> {
   const r = await fetch(CATALOG_URL, { signal });
   if (!r.ok) throw new Error(`boardgames → ${r.status}`);
-  const games = extractGames(await r.json());
-  writeCached(BOARDGAMES_CACHE_KEY, games);
-  return games;
+  return extractGames(await r.json());
 }
 
 async function fetchFacets(signal?: AbortSignal): Promise<BoardgameFacets[]> {
   const r = await fetch("/API/Boardgames/Facets", { signal });
   if (!r.ok) throw new Error(`boardgame facets → ${r.status}`);
   const d = (await r.json()) as { items?: BoardgameFacets[] };
-  const items = Array.isArray(d?.items) ? d.items : [];
-  writeCached(BOARDGAMES_FACETS_CACHE_KEY, items);
-  return items;
+  return Array.isArray(d?.items) ? d.items : [];
 }
 
 export interface BoardgamesCatalog {
@@ -125,22 +112,17 @@ const EMPTY_GAMES: BoardgameGame[] = [];
 const EMPTY_FACETS: BoardgameFacets[] = [];
 
 export default function useBoardgamesCatalog(): BoardgamesCatalog {
-  const client = useQueryClient();
-  // `initialDataUpdatedAt: 0` makes the cached seed stale at once, so the mount refetches in the
-  // background while the seed renders — the stale-while-revalidate the section always had.
-  const catalog = useQuery<BoardgameGame[]>({
+  const catalog = useSharedCachedResource<BoardgameGame[]>({
     queryKey: boardgamesCatalogKey,
-    queryFn: ({ signal }) => fetchCatalog(signal),
-    initialData: () => readCached<BoardgameGame[]>(BOARDGAMES_CACHE_KEY),
-    initialDataUpdatedAt: 0,
-    staleTime: 5 * 60 * 1000,
+    storageKey: BOARDGAMES_CACHE_KEY,
+    fetcher: fetchCatalog,
+    parse: asArray,
   });
-  const facets = useQuery<BoardgameFacets[]>({
+  const facets = useSharedCachedResource<BoardgameFacets[]>({
     queryKey: boardgamesFacetsKey,
-    queryFn: ({ signal }) => fetchFacets(signal),
-    initialData: () => readCached<BoardgameFacets[]>(BOARDGAMES_FACETS_CACHE_KEY),
-    initialDataUpdatedAt: 0,
-    staleTime: 5 * 60 * 1000,
+    storageKey: BOARDGAMES_FACETS_CACHE_KEY,
+    fetcher: fetchFacets,
+    parse: asArray,
   });
 
   const games = catalog.data ?? EMPTY_GAMES;
@@ -154,22 +136,22 @@ export default function useBoardgamesCatalog(): BoardgamesCatalog {
   }, [games]);
   const facetsById = useMemo(() => facetsMap(facetRows), [facetRows]);
 
+  const catalogSetData = catalog.setData;
   const setGames = useCallback((update: (prev: BoardgameGame[]) => BoardgameGame[]) => {
-    client.setQueryData<BoardgameGame[]>(boardgamesCatalogKey, (prev) => update(prev ?? []));
-  }, [client]);
-  const refresh = useCallback(() => {
-    void client.refetchQueries({ queryKey: boardgamesCatalogKey });
-    void client.refetchQueries({ queryKey: boardgamesFacetsKey });
-  }, [client]);
+    catalogSetData((prev) => update(prev ?? []));
+  }, [catalogSetData]);
+  const catalogRefresh = catalog.refresh;
+  const facetsRefresh = facets.refresh;
+  const refresh = useCallback(() => { catalogRefresh(); facetsRefresh(); }, [catalogRefresh, facetsRefresh]);
 
   return {
     games,
     expansionMap,
     facetsById,
-    loading: catalog.data == null && catalog.isPending,
-    error: catalog.data == null && catalog.isError,
+    loading: catalog.loading,
+    error: catalog.error,
     refresh,
     setGames,
-    version: `${catalog.dataUpdatedAt}:${games.length}:${facets.dataUpdatedAt}:${facetRows.length}`,
+    version: `${catalog.version}:${games.length}:${facets.version}:${facetRows.length}`,
   };
 }

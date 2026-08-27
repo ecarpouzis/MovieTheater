@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { parseFacetState } from "../../catalog/rail/facetUrl";
 import {
-  MOVIES_PARSE_SPEC, isPlainMoviesSearch, legacyToFacetSearch, moviesFacetSpec, moviesFilterParams, myListsOf,
+  MOVIES_PARSE_SPEC, browseSearchFor, isPlainMoviesSearch, legacyToFacetSearch, moviesFacetSpec, moviesFilterParams, myListsOf,
   seededMoviesSearch, typesFromSearch, typesOf,
 } from "./moviesFacetSpec";
 
@@ -96,6 +96,26 @@ describe("legacyToFacetSearch — pre-S2 links keep working", () => {
 
   it("an explicit empty types (the old 'all types') yields no type chip", () => {
     expect(legacyToFacetSearch("?types=")).toBe("");
+  });
+});
+
+describe("browseSearchFor — a jump pushes the facet URL, not the legacy one", () => {
+  it("writes the same search the entry rewrite would have produced", () => {
+    // The page pushes these directly now; the pair must not drift, so check them against each other.
+    for (const [mode, value] of [["actor", "Al Pacino"], ["franchise", "mann-verse"], ["genre", "Crime"], ["title", "Heat"], ["rating", "6"], ["seen", "x"]] as const) {
+      expect(browseSearchFor(mode, value)).toBe(legacyToFacetSearch(`?mode=${mode}&value=${encodeURIComponent(value)}`));
+    }
+    expect(browseSearchFor("actor", "Al Pacino")).toBe("?f=person%3AAl+Pacino");
+    expect(browseSearchFor("title", "Heat")).toBe("?q=Heat");
+  });
+
+  it("is null when there is nothing to browse", () => {
+    expect(browseSearchFor("actor", "   ")).toBeNull();
+    expect(browseSearchFor("", "Heat")).toBeNull();
+  });
+
+  it("carries nothing over from the current URL — a jump is a fresh browse", () => {
+    expect(browseSearchFor("franchise", "bond")).toBe("?f=franchise%3Abond");
   });
 });
 

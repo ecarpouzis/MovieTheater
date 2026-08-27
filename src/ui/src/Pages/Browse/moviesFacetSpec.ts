@@ -185,6 +185,38 @@ const LEGACY_KEYS = ["mode", "value", "types"] as const;
 const LEGACY_MODE_FACET: Record<string, string> = { actor: "person", genre: "genre", franchise: "franchise" };
 
 /**
+ * One browse mode + value written into a facet state — the single reading of the old `?mode=&value=`
+ * vocabulary, shared by the entry rewrite (`legacyToFacetSearch`) and by the section's own jumps
+ * (`browseSearchFor`, the actor chip and the modal's insight chips), so a link and a click can never
+ * drift apart. `params` is the query the state will be written into (a letter mode is a sort, not a
+ * facet).
+ */
+function applyBrowseMode(next: FacetState, params: URLSearchParams, mode: string, value: string): void {
+  if (mode === "title" && value) next.q = value;
+  else if (LEGACY_MODE_FACET[mode] && value) next.include[LEGACY_MODE_FACET[mode]] = value.split(",").map((s) => s.trim()).filter(Boolean);
+  else if (mode === "rating" && value) next.include.mpa = [value.split(",")[0].trim()].filter((v) => /^[1-6]$/.test(v)).map((v) => (v === "6" ? "5" : v));
+  else if (mode === "letter") params.set("sort", "alpha");
+  else if (mode === "seen" || mode === "want") next.flags[mode] = true;
+}
+
+/**
+ * A fresh browse in facet form: the search string a "jump to this browse" click should push
+ * (`browseSearchFor("actor", "Al Pacino")` → `?f=person:Al+Pacino`). The old code pushed the legacy
+ * `?mode=&value=` and let the entry dispatcher rewrite it a render later — one extra history replace
+ * and one extra dispatch per click. Null when there is nothing to browse.
+ */
+export function browseSearchFor(mode: string, value: string): string | null {
+  const v = (value ?? "").trim();
+  if (!mode || !v) return null;
+  const p = new URLSearchParams();
+  const next = parseFacetState("", MOVIES_PARSE_SPEC);
+  applyBrowseMode(next, p, mode, v);
+  writeFacetState(p, next, MOVIES_PARSE_SPEC);
+  const s = p.toString();
+  return s ? `?${s}` : "";
+}
+
+/**
  * A pre-S2 browse link (`?mode=genre&value=Crime&types=Movies,Series`, the rail's old vocabulary)
  * as the facet search it means; null when the URL carries none of the legacy params. Every other
  * param (sort, the catalog's view params, an open `?title=`) rides through untouched. A letter mode
@@ -204,11 +236,7 @@ export function legacyToFacetSearch(search: string): string | null {
     if (list.length) next.include.type = list;
     else delete next.include.type;
   }
-  if (mode === "title" && value) next.q = value;
-  else if (LEGACY_MODE_FACET[mode] && value) next.include[LEGACY_MODE_FACET[mode]] = value.split(",").map((s) => s.trim()).filter(Boolean);
-  else if (mode === "rating" && value) next.include.mpa = [value.split(",")[0].trim()].filter((v) => /^[1-6]$/.test(v)).map((v) => (v === "6" ? "5" : v));
-  else if (mode === "letter") p.set("sort", "alpha");
-  else if (mode === "seen" || mode === "want") next.flags[mode] = true;
+  applyBrowseMode(next, p, mode, value);
   writeFacetState(p, next, MOVIES_PARSE_SPEC);
   const s = p.toString();
   return s ? `?${s}` : "";

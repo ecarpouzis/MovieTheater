@@ -3,11 +3,11 @@
  * per state, held five minutes — the sider rail and the page read the same query) and the spec for
  * the viewer, built from the URL's Type scope (the counts describe the scope).
  */
-import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import type { FacetState } from "../../catalog/rail/facetSpec";
 import { facetStateKey } from "../../catalog/rail/facetUrl";
+import useResultCount from "../../catalog/rail/useResultCount";
 import { moviesFacetSpec, moviesFilterParams, typesFromSearch, typesOf } from "./moviesFacetSpec";
 
 /** The viewer facts the server keys its facet counts on. */
@@ -34,15 +34,5 @@ export function browseTotalUrl(state: FacetState): string {
 }
 
 export function useMoviesResultTotal(state: FacetState, enabled = true) {
-  return useQuery({
-    queryKey: moviesCountKey(state),
-    queryFn: async ({ signal }) => {
-      const r = await fetch(browseTotalUrl(state), { signal });
-      if (!r.ok) throw new Error(`count → ${r.status}`);
-      const data = (await r.json()) as { totalCount?: number };
-      return typeof data.totalCount === "number" ? data.totalCount : -1;
-    },
-    enabled,
-    staleTime: 5 * 60 * 1000,
-  });
+  return useResultCount(moviesCountKey(state), ({ signal }) => fetch(browseTotalUrl(state), { signal }), enabled);
 }
