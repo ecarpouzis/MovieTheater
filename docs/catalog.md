@@ -94,11 +94,52 @@ it without the bar ever importing a catalog.
   slot present the host falls back to an in-flow `ViewSwitcher` row — that fallback is for a host
   rendered outside the app shell, and a section rendering one on a normal page is a bug the smoke
   catches ("no in-flow toolbar").
+- **ONE content strip on a phone, and it is the bar's.** A section may put anything it likes above
+  its results — the console carousel, the chips row — but never a second strip of the same
+  destinations. Books drew its own `SectionIndexTabs` under the bar carrying the same tabs with
+  counts on them; that is the "two bars of chrome, with duplicate options" Eric caught on
+  2026-08-27, and the strip is deleted (`SectionIndexTabs` itself has no callers left). The COUNT
+  belongs to the rail head, not to a tab.
+- **The phone DRAWER is the sider.** The hamburger holds, in the sider's order: the user block with
+  its cog, the section's index rows where it has them (`SectionIndexRail` — Movies' Seen · Want ·
+  Rate · Playlists, Photos' album index, TV's Guide, Music's views), then a **Filters (n)** row, then
+  Log Out. The rail itself stays in the page's full-page SHEET (the canvas's RailSheetPhone) — one
+  rail per phone — and the drawer offers its door. Without it a section whose sider IS nothing but
+  the rail (Arcade, Board games) opened a drawer holding a name and a Log Out button. The pill
+  publishes whether a rail exists here and how much of it is active (`publishSectionRail` /
+  `useSectionRailCount` in `bar/useSlot.ts`): the pill is mounted exactly when there is one, and the
+  drawer lives above the router where no provider reaches it. `null` = no rail, and the row is not
+  drawn — never inert.
 - **One bar, one sort control, one ⚙, and the count is NOT here.** The result total lives on the
   rail's head line (`.bx-rail-count`) — counts live where the thing they count lives. Every legacy
   sort Select the sections carried (`SearchTools`, `ArcadeNavContent`, `BoardGameNavContent`) was
   retired in S1; the Sort pill is the one control, and a section that persists its own order says so
   through `CatalogSource.currentSort`.
+
+### The bar, the strip and the drawer, per section (as built, 2026-08-27)
+
+Read off the approved canvas (`gen.mjs`'s fifteen `.dc.html` artboards) and verified against the
+live sections at 1440x900 and 390x844, light and dark. DESKTOP = the bar's tabs, then its tools;
+PHONE = the fixed top bar is always `search + gear + theme`, the ONE strip is the bar's tabs plus the
+section's pills, and the drawer is the sider.
+
+| Section | Bar tabs | Bar tools (after the search) | Phone drawer |
+|---|---|---|---|
+| Movies/TV | Explore - Browse - Channels* - Admin* | View - Items - Sort - gear - theme | Seen - Want to watch - Rate movies - Playlists - Filters |
+| TV (`/channels`) | Guide - Admin* | theme only (no CatalogHost) | Guide - My playlists* |
+| Arcade | Explore - Browse - **Trophies** - Admin* | Saves - Quality - View - Items - Sort - gear - theme | Filters |
+| Board games | Explore - Browse - Admin* | View - Items - Sort - gear - theme | Filters |
+| Music | Explore - Browse - Playlists - Now playing - Rate - Admin* | View - Items - Sort - gear - theme | Browse - Playlists - Now playing - Filters |
+| Photos | Explore - Timeline - Browse - Albums - Gallery - People - Admin* | Select - View - Sort - gear - theme | the album index (Timeline - Undated - Albums - Folders - People + the Gallery group) - Filters |
+| Books | Explore - Browse - Shelf - Novels - Kids - Admin* | View - Items - Sort - gear - theme | the Books index (BooksNavContent) - Filters |
+
+`*` = `when(user)`, so the tab is REMOVED for anyone it does not apply to, never disabled. The
+Filters row appears only where a rail exists on that route (`useSectionRailCount()` is `null`
+otherwise) - an Explore landing and the TV guide draw none.
+
+Arcade's **Trophies** is a tab whose route (`/arcade/trophies`) renders the same lobby with the
+RetroAchievements hub open: a modal on this site lives in the URL, so the canvas's tab cost nothing
+but a route.
 
 ## The engine (`engine/InfiniteBands.tsx`)
 
@@ -220,6 +261,26 @@ Rules that bite:
 - **`.bx-cover > img` fills and CROPS.** A card whose art is letterboxed on purpose (a movie poster,
   BGG box art, arcade box art) overrides it one class deeper, or puts `bx-cover` on the exact-sized
   cover element instead of the box around it (Arcade).
+  Letterboxing CENTRES by default — the boardgame card wants `object-position: center top`, which
+  is what its container's old `align-items: flex-start` said.
+- **The Grid sizes the PACKAGE card only.** `.bx-grid .bx-card--pkg > .bx-cover` / `… .bx-meta` set
+  the box from `--cell × --aspect`; `bx-card--pkg` is written by `cards/Card.tsx` and by nothing
+  else. Unscoped (as it shipped) that rule is three classes against `.music-cover`'s one, so the
+  package quietly re-cropped Music's SQUARE album art into a 0.66 portrait tile. A section card
+  brings its own geometry — and the package's own Card states its box INLINE, so it never needed
+  the rule at all.
+
+**Parity is the law, and it is tested.** Eric's S3 ruling was engine-level migration ONLY: "the
+section cards keep their EXACT presentation." Three had drifted by 2026-08-27 — Music's square art
+cropped to a portrait tile, Arcade's `.arcade-card__rating` / `.arcade-card__body` rules DELETED
+along with the retired RecentlyPlayed strip (the score chip fell into the flex flow as a third
+column; the details column, with no `min-width: 0`, overflowed its track), and the boardgame box art
+floated to the middle of its box. `catalog/views/sectionCardParity.test.jsx` pins every card's class
+names and field order, `metadata: "minimal"` included, plus a SOURCE check that the four geometry
+rules still exist and stay scoped — a deleted rule is the failure mode, and happy-dom computes no
+stylesheet, so nothing rendered can catch it. The method that found them: a pre-S3 worktree served
+from a SECOND prod-proxied dev server, the same URL side by side at 390×844 and 1440×900. Use it
+again before claiming a card is unchanged.
 
 Per section: Movies `MovieCard` / `SimpleMovieCard` (`Pages/Browse/MovieCard.js`; `.bx-grid--movies`
 / `.bx-grid--simple`), Boardgames `BoardGameCard` (`.bx-grid--boardgames`), Music `AlbumCard` /
@@ -351,17 +412,18 @@ itself uses.
 
 | Section | Facets, in spec order | Ranges / flags | Option counts | Index rows |
 |---|---|---|---|---|
-| Movies/TV | Type · Genre · MPA (one pill row, five stops) · Franchise · People (typeahead) · Mood · Subgenre · Era · Theme · Setting | Years (two-thumb) · Seen/Want/Rated (`my=`) | `/API/BrowseFacets` (keyed on the Type scope) + `/API/BrowsePeople` for the person tail | Seen · Want to watch · Rate movies · Playlists |
+| Movies/TV | Type · Genre · MPA (one pill row, five stops, `stops: true`) · **Years** · Franchise · People (typeahead) · Mood · Subgenre · Era · Theme · Setting | Years (two-thumb, `after: "mpa"`) · Seen/Want/Rated (`my=`) | `/API/BrowseFacets` (keyed on the Type scope) + `/API/BrowsePeople` for the person tail | Seen · Want to watch · Rate movies · Playlists |
 | TV | — (no catalog) | — | — | Guide · Favourites · Playlists |
 | Boardgames | Publisher · Family · Designer · Category · Mechanic · Players | Min age · Play time · Weight (`a`/`t`/`w`, fixed stops) · Years | `/API/Boardgames/Facets` for the five link facets; the ladders are computed over the cached OData catalog | — |
 | Music | Kind (a SCOPE — the shelf is fetched, not filtered) · Artist · **Genre** (dynamic long tail) · Tag · Year | Years · **Rating floor (`r=`)** | client, over the cached shelf (`useMusicShelf`) — including the Genre tail, which is a slice of an array rather than a request | Rate the shelf (`/music/rate`) · Playlists |
-| Arcade | System (**drawn as the console carousel**, `hidden` in the rail) · Players · Genre · Variant · RA · Region (exclude-only) | — | `/API/Arcade/Filters` | — |
+| Arcade | System (**drawn as the console carousel**, `hidden` in the rail) · Genre · Players · Region (exclude-only) · Mods & hacks · RetroAchievements | — | `/API/Arcade/Filters` | — |
 | Photos | Album · People · Kind · Camera | Years · hidden (admin) | `/API/Photos/Facets`, per hidden toggle | Undated · Folders |
 | Books | Collection · Series · Publisher · Franchise · Author · Artist · Tag · Event | Years · Rating floor (`r=`) · Read/Want (`my=`) | `/API/Books/browse/facets` + `/facet-options` for the paged long tails | — |
 | Novels | include-only (author/series/publisher/decade — the host cannot exclude on these) | — | `/API/Books/novels/facets` | — |
 
 - **Specs**: `Pages/Books/booksFacetSpec.ts`, `novelsFacetSpec.ts`, `Pages/Browse/moviesFacetSpec.ts`
-  (Type · Genre · MPA as one pill row · Years as the bare two-thumb range · Franchise · People
+  (Type · Genre · MPA as one pill row of five stops · Years as the bare two-thumb range, placed under
+  MPA by `years.after` · Franchise · People
   (typeahead via `/API/BrowsePeople`) · mood/subgenre/era/theme/setting · Seen/Want/Rated flags;
   counts from `/API/BrowseFacets`, keyed on the Type scope).
 - **`clientFacets.ts`** — the client twin of the server's `BrowseFilter` for sections whose list is
@@ -373,7 +435,9 @@ itself uses.
   same rule the year range follows and for the same reason — a filter that silently keeps the
   unknowns is not a filter; a section that supplies no `rating` extractor never reaches the test, so
   `r=` is simply inert for it.
-- Never host the filters inside NavBar's phone drawer: it closes on every `location.search` change.
+- **Never host the filters inside NavBar's phone drawer: it closes on every `location.search`
+  change.** This is why the drawer offers a **Filters (n)** row that raises the page's SHEET rather
+  than carrying the rail itself — one rail per phone, and the one that survives a facet click.
 
 ## The Explore kit (`catalog/explore/`) — R9 S7: every section has one
 
@@ -727,8 +791,14 @@ controller.
   SLOT (bar on desktop, top bar on phones) · the count on the rail head and no in-flow toolbar ·
   no control rendered inert · every ⚙ lever VISIBLY changes the Grid · a card open keeps `?view=`
   and Back closes it · a letter jump lands and PINS · the Explore tab draws rails · the Admin tab
-  appears for an admin. GET-only: every other method is fulfilled locally with 204, the one
+  appears for an admin · **on a phone, exactly ONE content strip (nothing outside the bar repeats
+  a bar tab's destination above the results) and a drawer that carries the section's OWN nav, not
+  just the user block and Log Out.** GET-only: every other method is fulfilled locally with 204, the one
   exception being the harness account's login.
+- Those last two live in `chromeChecks.mjs`, imported by the smoke, so `probe-chrome-checks.mjs`
+  can run the SAME functions against a page with the defect injected — a check verified by a
+  re-typed copy of itself is not verified, and the strip check WAS blind at first (its label
+  normaliser left `browse118` where `browse` was wanted, so a counted tab never matched).
 - Last full run (2026-08-27, prod bundle at `:3101`): **Movies · Boardgames · Channels · Music ·
   Arcade all pass**, desktop and phone, light and dark. Photos and Books skipped as `manual`.
 - **Photos and Books are `manual`** — no harness account can reach them (a family-album grant, and

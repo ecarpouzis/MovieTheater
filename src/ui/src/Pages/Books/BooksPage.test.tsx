@@ -100,6 +100,30 @@ describe("Books/BooksPage — the gate, the pinning, the modals", () => {
     expect(container.querySelector(".bx-host")?.getAttribute("data-section")).toBe("books");
   });
 
+  // ONE STRIP (Eric, 2026-08-27, on a phone: "two bars… duplicate options"). Books drew its own
+  // `SectionIndexTabs` — Explore · Browse 118,322 · Novels 22,084 · Kids — directly under the
+  // SectionBar's tab strip, which carries the same destinations. The page must contribute NO
+  // content-navigation strip of its own at any width; the bar's is the one, and the counted index
+  // lives in the SIDER (BooksNavContent), where the canvas puts it.
+  it("draws no second navigation strip of its own — the bar's tabs are the only one", async () => {
+    // Restore it: a leaked `matches: true` makes every LATER test in the file think it is a phone.
+    const realMatchMedia = (global as unknown as { matchMedia: unknown }).matchMedia;
+    (global as unknown as { matchMedia: unknown }).matchMedia = (q: string) => ({
+      matches: true, media: q, onchange: null, addListener: vi.fn(), removeListener: vi.fn(),
+      addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn(),
+    });
+    try {
+      const { container } = renderAt("/books", member);
+      await waitFor(() => expect(container.querySelector(".bx-host")).toBeInTheDocument());
+      expect(container.querySelector(".books-tabs")).toBeNull();
+      const strips = [...container.querySelectorAll("nav")]
+        .filter((n) => [...n.querySelectorAll("a, button")].some((b) => /^(Explore|Browse|Shelf|Novels|Kids)/.test((b.textContent ?? "").trim())));
+      expect(strips).toEqual([]);
+    } finally {
+      (global as unknown as { matchMedia: unknown }).matchMedia = realMatchMedia;
+    }
+  });
+
   it("a filtered browse shows the count and one chip per filter — a number facet by its label — and Clear all keeps the catalog params", async () => {
     renderAt("/books?view=wall&f=tag:Horror&f=series:9&x=tag:Manga", member);
     // R9 S1: the count left the toolbar for the rail's head line (BooksSiderRail, in the sider); the
@@ -117,7 +141,7 @@ describe("Books/BooksPage — the gate, the pinning, the modals", () => {
   it("?item= cold-loads the item modal from the host: title, credits by role, the event, the synopsis leg, the marks", async () => {
     renderAt("/books?item=7", member);
     // The modal is a lazy chunk: its first import under vitest can take more than the 1 s default wait.
-    expect(await screen.findByRole("dialog", { name: "Hellboy #7" }, { timeout: 5000 })).toBeInTheDocument();
+    expect(await screen.findByRole("dialog", { name: "Hellboy #7" }, { timeout: 20000 })).toBeInTheDocument();
     expect(await screen.findByText("Hellboy meets the frog men.")).toBeInTheDocument();
     expect(screen.getByText("ComicVine")).toBeInTheDocument();
     expect(screen.getByText("Seed of Destruction")).toBeInTheDocument();
@@ -129,7 +153,7 @@ describe("Books/BooksPage — the gate, the pinning, the modals", () => {
 
   it("?series= cold-loads the series modal: head, run, rating, progress ticks, the caller's notes", async () => {
     renderAt("/books?series=9", member);
-    expect(await screen.findByRole("dialog", { name: "Hellboy" }, { timeout: 5000 })).toBeInTheDocument();
+    expect(await screen.findByRole("dialog", { name: "Hellboy" }, { timeout: 20000 })).toBeInTheDocument();
     expect(await screen.findByText("Big red.")).toBeInTheDocument();
     expect(screen.getByText("88")).toBeInTheDocument();
     expect(screen.getByText("1 / 2 read")).toBeInTheDocument();
