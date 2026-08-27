@@ -82,6 +82,7 @@ export const SECTIONS: SectionDef[] = [
   {
     key: "photos", prefixes: ["/photos"], title: "Photos", searchPlaceholder: "person:Grandma, album:Summer…",
     tabs: [
+      { key: "explore", label: "Explore", path: "/photos/explore" },
       { key: "timeline", label: "Timeline", path: "/photos", exact: true },
       { key: "browse", label: "Browse", path: "/photos/browse" },
       { key: "albums", label: "Albums", path: "/photos/albums" },

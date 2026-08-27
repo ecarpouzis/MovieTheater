@@ -171,5 +171,45 @@ namespace MovieTheater.Tests
             Assert.Equal(2, fg[1].GetProperty("totalItems").GetInt32());
             Assert.Equal(new[] { ids["B/3.jpg"], ids["B/sub/4.jpg"] }, Ids(fg[1].GetProperty("items")));
         }
+
+        /// <summary>
+        /// R9 S7: `/API/Photos/OnThisDay` is the one query the Explore tab could not compose out of what
+        /// existed — the browse narrows by year, and by month WITHIN a year, never by a day across years.
+        /// It must reach every year, ignore the same photographs the rest of the section ignores, and cap
+        /// what it returns.
+        /// </summary>
+        [Fact]
+        public async Task On_this_day_reaches_every_year_honours_the_timeline_exclusions_and_caps_its_take()
+        {
+            using var db = fixture.NewDb();
+            Seed(db, "A/2011.jpg", new DateTime(2011, 8, 27, 10, 0, 0));
+            Seed(db, "A/2019.jpg", new DateTime(2019, 8, 27, 18, 0, 0));
+            Seed(db, "A/other-day.jpg", new DateTime(2016, 8, 26, 10, 0, 0));
+            Seed(db, "A/other-month.jpg", new DateTime(2016, 7, 27, 10, 0, 0));
+            Seed(db, "A/hidden.jpg", new DateTime(2013, 8, 27, 10, 0, 0), hidden: true);
+            Seed(db, "Art/gallery.jpg", new DateTime(2012, 8, 27, 10, 0, 0), shelf: PhotoShelf.Archive);
+            var ids = db.PhotoAssets.ToDictionary(a => a.Path, a => a.Id);
+
+            var c = PhotosControllerHarness.Build(fixture, db);
+            var body = PhotosControllerHarness.Body(await c.OnThisDay(month: 8, day: 27));
+            // Newest first, across the years; the other day, the other month, the hidden photograph and
+            // the gallery shelf are all out.
+            Assert.Equal(new[] { ids["A/2019.jpg"], ids["A/2011.jpg"] }, Ids(body.GetProperty("items")));
+            Assert.Equal(8, body.GetProperty("month").GetInt32());
+            Assert.Equal(27, body.GetProperty("day").GetInt32());
+            Assert.Equal(new[] { 2019, 2011 }, body.GetProperty("years").EnumerateArray().Select(y => y.GetInt32()).ToArray());
+
+            // The take is clamped: a caller cannot ask for the whole album through this route.
+            var capped = PhotosControllerHarness.Body(await c.OnThisDay(month: 8, day: 27, take: 1));
+            Assert.Equal(1, capped.GetProperty("items").GetArrayLength());
+            var overAsked = PhotosControllerHarness.Body(await c.OnThisDay(month: 8, day: 27, take: 100000));
+            Assert.Equal(2, overAsked.GetProperty("items").GetArrayLength());
+
+            // A nonsense date falls back to today rather than answering for month 0.
+            var today = DateTime.Now;
+            var fallback = PhotosControllerHarness.Body(await c.OnThisDay(month: 99, day: 0));
+            Assert.Equal(today.Month, fallback.GetProperty("month").GetInt32());
+            Assert.Equal(today.Day, fallback.GetProperty("day").GetInt32());
+        }
     }
 }

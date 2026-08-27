@@ -75,6 +75,40 @@ namespace MovieTheater.Controllers
         }
 
         /// <summary>
+        /// GET /API/Photos/OnThisDay — the album's oldest habit, as a query: every dated photograph
+        /// taken on this month-and-day in ANY year, newest first. The Explore tab (R9 S7) is the only
+        /// caller, and it is the one composition the section could NOT assemble from what existed:
+        /// `/API/Photos/Browse` narrows by year and by month-WITHIN-a-year, never by day across years.
+        ///
+        /// Read-only, capped, and it rides the SAME gated timeline predicate every photo surface
+        /// shares, so it can never surface a photograph the browse would hide. `years` is what the
+        /// rail's subtitle says ("across 9 years").
+        /// </summary>
+        [HttpGet("/API/Photos/OnThisDay")]
+        public async Task<IActionResult> OnThisDay(int? month = null, int? day = null, int take = 24, bool includeHidden = false)
+        {
+            take = Math.Clamp(take, 1, 60);
+            var today = DateTime.Now;
+            var m = month is >= 1 and <= 12 ? month.Value : today.Month;
+            var d = day is >= 1 and <= 31 ? day.Value : today.Day;
+            includeHidden = ShowHidden(includeHidden);
+            var query = (await TimelineQueryAsync(includeHidden))
+                .Where(a => a.TakenAt != null && a.TakenAt!.Value.Month == m && a.TakenAt!.Value.Day == d);
+            var rows = await query.OrderByDescending(a => a.TakenAt).ThenByDescending(a => a.Id).Take(take).ToListAsync();
+            var userId = GetCurrentUserId() ?? 0;
+            var badges = await BadgesAsync(rows);
+            var years = rows.Select(a => a.TakenAt!.Value.Year).Distinct().OrderByDescending(y => y).ToList();
+            return Json(new
+            {
+                items = rows.Select(a => Card(a, userId, badges)).ToList(),
+                month = m,
+                day = d,
+                years,
+                dataPlane = DataPlaneConfigured,
+            });
+        }
+
+        /// <summary>
         /// The grouped photo browse for the catalog package's Extended / Shelves / Newspaper views:
         /// <c>groupBy</c> = year | month | album | folder. Two-phase like the other sections —
         /// <c>groupsSkip/groupsTop</c> over the heads, <c>perGroupSkip/perGroupTop</c> within each,

@@ -11,6 +11,7 @@ import PhotoAlbums from "./PhotoAlbums";
 import PhotoAlbumDetail from "./PhotoAlbumDetail";
 import PhotoGallery from "./PhotoGallery";
 import PhotoPeople from "./PhotoPeople";
+import PhotoExplore from "./PhotoExplore";
 import PhotosAdminPage from "./PhotosAdminPage";
 import { PHOTOS_ADMIN_ALIASES } from "../../admin/aliases";
 import PhotoSelectionBar from "./PhotoSelectionBar";
@@ -430,6 +431,18 @@ export default function PhotosPage({ userData }) {
       )}
 
       <Switch>
+        {/* R9 S7 — the section's Explore landing. Inside THIS Switch on purpose: it inherits the
+            gate plates above and the ?photo= lightbox below, so a card here opens exactly the
+            lightbox a timeline card opens. The people list is handed down, not re-fetched. */}
+        <Route path="/photos/explore">
+          <PhotoExplore
+            people={people}
+            includeHidden={showHidden}
+            onOpen={showAsset}
+            onNavigate={(href) => history.push(href)}
+          />
+        </Route>
+
         <Route path="/photos/browse">
           {/* Wall / List / Extended / Shelves / Newspaper / Directory over the timeline's own rows
               (/API/Photos/Browse + BrowseGroups), narrowed by the rail (R9 S2c): the SmartSearch in the
