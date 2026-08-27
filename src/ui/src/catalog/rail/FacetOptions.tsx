@@ -133,7 +133,7 @@ export default function FacetOptions({ def, options, selected, excluded, onToggl
                 </>
               )}
               <span className="bx-opt-label" title={o.label}>{o.label}</span>
-              <span className="bx-opt-count">{o.count.toLocaleString()}</span>
+              {def.showCounts !== false && <span className="bx-opt-count">{o.count.toLocaleString()}</span>}
               {filterable && def.render !== "pill" && (
                 <span className="bx-opt-acts">
                   <button type="button" className="bx-opt-inc" aria-label={`Include ${o.label}`} aria-pressed={on} onClick={() => onToggle(def.key, o.value, "inc")}>+</button>

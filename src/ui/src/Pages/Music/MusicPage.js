@@ -13,22 +13,32 @@ import MusicSongRow from "./MusicSongRow";
 import "./MusicPage.css";
 import "./MusicPlaylists.css";
 import { formatDuration } from "../../utils/format";
-import useCachedResource from "../../hooks/useCachedResource";
 import { useDebouncedCallback } from "../../hooks/useDebounce";
 import CatalogHost, { AVAILABLE_VIEWS } from "../../catalog/CatalogHost";
-import BarSearchPortal from "../../catalog/bar/BarSearch";
-import { useSectionParams } from "../../NavBar/navShared";
+import { BarSearchSlot, BarToolsSlot } from "../../catalog/bar/BarSearch";
+import FacetRail from "../../catalog/rail/FacetRail";
+import FilterPill from "../../catalog/rail/FilterPill";
+import RailChips from "../../catalog/rail/RailChips";
+import SmartSearch from "../../catalog/rail/SmartSearch";
+import { facetStateKey } from "../../catalog/rail/facetUrl";
+import { savableSearch, useSavedSearches } from "../../catalog/rail/savedSearches";
+import useFacetOptions from "../../catalog/rail/useFacetOptions";
+import useFacetState from "../../catalog/rail/useFacetState";
+import useRailSheet from "../../catalog/rail/useRailSheet";
 import { createMusicSource, letterKeyFor, sortRows } from "../../catalog/sources/musicSource";
-import { readCatalogDefaults, resolveViewState } from "../../catalog/state/useCatalogView";
+import { isGroupedBrowse, readCatalogDefaults, resolveViewState } from "../../catalog/state/useCatalogView";
+import { MUSIC_KINDS, legacyToMusicSearch, shelfOf } from "./musicFacetSpec";
+import useMusicBrowse, { MUSIC_ENTITY_PARAMS, useMusicResults } from "./useMusicShelf";
 
 // ── The music library (music-plan.md §2.6) ──────────────────────────────────
 // Catalog strategy: artists (333) and albums (1.3k) load whole, once, and every view/search over
 // them is client-side — the BoardGames pattern for a modest catalog. Songs are the one thing the
 // client can't hold (20k+), so a live q of 2+ chars also asks the server for matching tracks.
-// URL is the state store (arcade convention): ?tab=artists|albums, ?q=, ?artist=<id>. (`?view=` is the
-// catalog switcher's — Grid/Wall/Shelves… — site-wide; the tab owned that name until 2026-08-26 and a
-// legacy ?view=albums link is rewritten to ?tab= on arrival.)
-// Artists is the DEFAULT tab — the shelf people browse by is the performer, not the album.
+// URL is the state store (arcade convention): the rail's `q/f/x/y` (R9 S2c — `f=kind:` names the shelf,
+// `f=artist:` / `f=tag:` / `y=` filter it), ?artist=<id> the drill, ?album=<id> the open sheet. (`?view=` is
+// the catalog switcher's — Grid/Wall/Shelves… — site-wide; the old ?tab= / ?view=artists|albums and ?kind=
+// links are rewritten once on arrival by `legacyToMusicSearch`.)
+// "One per artist" is the DEFAULT Items mode — the shelf people browse by is the performer, not the album.
 //
 // ── The grid: the WHOLE list, always ────────────────────────────────────────
 // The catalog is already in the browser, so the rendered list is simply all of it and useGridWindow
@@ -49,13 +59,7 @@ const NO_ITEMS = [];
 // of 813 artists — and the two named shelves are where the spoken-word material lives instead of in
 // the middle of it. Kept as a list rather than three branches so the rail and the headings read off
 // the same table and can't disagree about what a shelf is called.
-export const MUSIC_KINDS = [
-  { key: "", label: "Music", noun: { artists: "Artists", albums: "Albums" } },
-  { key: "comedy", label: "Comedy", noun: { artists: "Comedians", albums: "Comedy albums" } },
-  { key: "audiobook", label: "Audiobooks", noun: { artists: "Authors", albums: "Audiobooks" } },
-];
-
-const kindOf = (raw) => (MUSIC_KINDS.some((k) => k.key && k.key === raw) ? raw : "");
+export { MUSIC_KINDS };
 
 function AlbumCard({ album, onOpen }) {
   return (
@@ -105,42 +109,34 @@ function MusicPage({ userData }) {
   const gated = !userData?.hasPassword;
 
   const params = new URLSearchParams(location.search);
-  // R9 S1b — one section. The old ?tab=artists|albums (and the older ?view=artists|albums) map onto
-  // the catalog's Items mode: "one per artist" IS the artist grid, "every album" the album grid.
-  const legacyTab = params.get("tab") ?? (["artists", "albums"].includes(params.get("view")) ? params.get("view") : null);
-  const q = (params.get("q") || "").trim();
-  const updateMusicParam = useSectionParams("/music");
-  const kind = kindOf(params.get("kind"));
-  const shelf = MUSIC_KINDS.find((k) => k.key === kind) || MUSIC_KINDS[0];
   const artistParam = parseInt(params.get("artist"), 10);
 
-  // Stale-while-revalidate (the boardgames pattern): the last catalog renders instantly on a
-  // revisit while the fresh fetch replaces it in the background. Keyed per shelf. This page was
-  // the site's only remaining full-page blocking spinner.
-  const catalog = useCachedResource(`music.catalog.v1:${kind || "music"}`, () =>
-    Promise.all([
-      MovieAPI.getMusicAlbums(kind).then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
-      MovieAPI.getMusicArtists(kind).then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
-    ])
-      .then(([albumData, artistData]) => ({ albums: albumData.items || [], artists: artistData || [] }))
-      .catch(() => null)
-  , { enabled: !gated });
-  const albums = catalog.data?.albums ?? null;
-  const artists = catalog.data?.artists ?? null;
+  // ── The facet rail's state (R9 S2c): the URL is the filter; the sider rail reads the same URL. ──
+  // The shelf (`f=kind:`) decides what is FETCHED — stale-while-revalidate per shelf through one
+  // shared React-Query resource (the sider rail reads the same rows); the last catalog renders
+  // instantly on a revisit while the fresh fetch replaces it in the background.
+  const browse = useMusicBrowse(userData);
+  const { kind, spec } = browse;
+  const shelf = shelfOf(kind);
+  const { state: facetState, actions: facetActions, activeCount } = useFacetState(spec, { entityParams: MUSIC_ENTITY_PARAMS });
+  const facets = useFacetOptions(spec, !gated);
+  const sheet = useRailSheet();
+  const grouped = isGroupedBrowse(location.search, "music");
+  const saved = useSavedSearches("music");
+  const saveCurrent = useCallback((name) => saved.save(name, savableSearch(location.search, MUSIC_ENTITY_PARAMS)), [saved, location.search]);
+  const q = facetState.q;
+  const albums = browse.loading ? null : browse.albums;
+  const artists = browse.loading ? null : browse.artists;
   const [songResults, setSongResults] = useState(null);
   const [artistDetail, setArtistDetail] = useState(null);
 
-  // A legacy ?tab= / ?view=artists|albums link becomes the catalog's ?items= once, in place — so the
-  // catalog switcher's own ?view= (Grid / Wall / Shelves…) can never be read as a tab.
+  // A legacy ?kind= / ?tab= / ?view=artists|albums link becomes the rail's `f=kind:` and the
+  // catalog's ?items= once, in place — so the catalog switcher's own ?view= (Grid / Wall / Shelves…)
+  // can never be read as a tab and the shelf picker's old param keeps working from bookmarks.
   useEffect(() => {
-    if (!legacyTab) return;
-    const p = new URLSearchParams(location.search);
-    p.delete("tab");
-    if (["artists", "albums"].includes(p.get("view"))) p.delete("view");
-    p.set("items", legacyTab === "albums" ? "items" : "groups");
-    const search = p.toString() ? `?${p.toString()}` : "";
-    history.replace({ pathname: "/music", search });
-  }, [legacyTab, location.search, history]);
+    const legacy = legacyToMusicSearch(location.search);
+    if (legacy != null) history.replace({ pathname: "/music", search: legacy, state: location.state });
+  }, [location.search, location.state, history]);
 
   // The open album modal lives in the URL (?album=<id>) — the artist drill-in (?artist=) already
   // did, so the album sheet now closes on Back and survives a reload/share the same way.
@@ -229,26 +225,17 @@ function MusicPage({ userData }) {
     return () => { alive = false; };
   }, [artistParam]);
 
-  const lowerQ = q.toLowerCase();
-  const filteredAlbums = useMemo(() => {
-    if (!albums) return [];
-    if (!lowerQ) return albums;
-    return albums.filter(
-      (a) => a.title.toLowerCase().includes(lowerQ) || a.artistName.toLowerCase().includes(lowerQ)
-    );
-  }, [albums, lowerQ]);
-
-  const filteredArtists = useMemo(() => {
-    if (!artists) return [];
-    if (!lowerQ) return artists;
-    return artists.filter((a) => a.name.toLowerCase().includes(lowerQ));
-  }, [artists, lowerQ]);
+  // The facet state over the shelf's rows: the albums it keeps, and the artists the "one per artist"
+  // grid shows (every artist of the shelf until something narrows the albums).
+  const results = useMusicResults(browse, facetState);
+  const filteredAlbums = results.albums;
+  const filteredArtists = results.artists;
 
   // The one browse list this page's scroll engine drives. Drilled into an artist there is no browse
   // grid (that view renders the artist's own, short album list), so it idles on an empty list rather
   // than windowing something nobody is looking at.
   const drilledIn = Number.isInteger(artistParam);
-  const listKey = `${kind}:${lowerQ}`;
+  const listKey = `${kind}:${facetStateKey(facetState)}`;
 
   // The catalog views (Wall / List / Extended / Shelves / Newspaper / Directory) over the SAME list
   // the grid shows, one source per tab; the grid itself stays this page's (the host's `grid`
@@ -357,10 +344,10 @@ function MusicPage({ userData }) {
     );
   }
 
-  if (catalog.error) {
+  if (browse.error) {
     return (
       <div className="music-page">
-        <LoadFailure message="Couldn't load the music library." onRetry={catalog.refresh} />
+        <LoadFailure message="Couldn't load the music library." onRetry={browse.refresh} />
       </div>
     );
   }
@@ -385,10 +372,39 @@ function MusicPage({ userData }) {
     );
   }
 
+  // The bar's tools: the phone's Filters pill raising the full-page sheet (the desktop rail is the
+  // sider's MusicSiderRail, which carries the count on its head line). Drilled into an artist there
+  // is no CatalogHost to carry the pill, so it rides the bar's tools slot directly.
+  const filtersPill = sheet.isMobile ? <FilterPill count={activeCount} onClick={sheet.show} /> : null;
+  const chips = (
+    <RailChips spec={spec} state={facetState} actions={facetActions} facets={facets.data} activeCount={activeCount} onSave={saveCurrent} />
+  );
+
   return (
     <div className="music-page">
-      {/* The search in the SectionBar's centre box (R9 S1d): the same ?q= the rail's field writes on phones. */}
-      <BarSearchPortal placeholder="Artist, album, song" value={q} onSubmit={(text) => updateMusicParam("q", text)} />
+      {/* The SmartSearch in the SectionBar's centre box (R9 S1d/S2c): text = `q` (the song search rides it), a token = a facet. */}
+      {!sheet.isMobile && (
+        <BarSearchSlot>
+          <SmartSearch spec={spec} facets={facets.data} onAdd={facetActions.add} onText={facetActions.setText} placeholder="A song, artist:Bush, tag:Live…" />
+        </BarSearchSlot>
+      )}
+      {sheet.isMobile && (
+        <FacetRail
+          variant="sheet"
+          open={sheet.open}
+          onClose={sheet.hide}
+          spec={spec}
+          state={facetState}
+          actions={facetActions}
+          activeCount={activeCount}
+          facets={facets.data}
+          facetsLoading={facets.isLoading}
+          total={view === "artists" ? filteredArtists.length : filteredAlbums.length}
+          grouped={grouped}
+          saved={{ list: saved.list, onApply: facetActions.replaceSearch, onRemove: saved.remove, onSave: saveCurrent }}
+        />
+      )}
+      {drilledIn && filtersPill && <BarToolsSlot>{filtersPill}</BarToolsSlot>}
       {/* Song results (server search) come first: they're the most specific match for a query. */}
       {songResults && songResults.length > 0 && (
         <section className="music-section">
@@ -435,6 +451,8 @@ function MusicPage({ userData }) {
           <CatalogHost
             section="music"
             source={source}
+            tools={filtersPill}
+            beforeResults={chips}
             overrides={{
               grid: (
                 <>

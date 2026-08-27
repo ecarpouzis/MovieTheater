@@ -36,6 +36,8 @@ export interface FacetDef {
   filterable?: boolean;
   /** false → include only; the rail offers no "−" (the section's API cannot exclude on this facet). */
   excludable?: boolean;
+  /** false → the rows show no count (a facet whose values are SCOPES the counts cannot describe — the Music shelves). */
+  showCounts?: boolean;
   /** How a raw value reads on a chip when the loaded option list does not carry it (a composite "category:value"). */
   labelOf?: (value: FacetValue) => string;
 }

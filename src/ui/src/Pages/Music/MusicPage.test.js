@@ -1,5 +1,6 @@
 import { render, screen, cleanup, fireEvent, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import MusicPage from "./MusicPage";
@@ -39,10 +40,13 @@ const ALBUMS = [
 ];
 
 function renderPage(search = "") {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <MemoryRouter initialEntries={[`/music${search}`]}>
-      <MusicPage userData={{ hasPassword: true }} />
-    </MemoryRouter>
+    <QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={[`/music${search}`]}>
+        <MusicPage userData={{ hasPassword: true }} />
+      </MemoryRouter>
+    </QueryClientProvider>
   );
 }
 
