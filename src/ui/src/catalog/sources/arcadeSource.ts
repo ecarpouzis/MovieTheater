@@ -65,14 +65,32 @@ export const ARCADE_SORTS: SortSpec[] = [
   { value: "players", label: "Most players" },
 ];
 
+/**
+ * `/API/Arcade/GameGroups?groupBy=` values — the audited axis set (R9 S8). Region and variant are per
+ * VERSION (a card stands under every region and variant it has a dump for); the rest are card facts.
+ */
 export const ARCADE_GROUPS: GroupSpec[] = [
   { value: "system", label: "System" },
   { value: "genre", label: "Genre" },
   { value: "decade", label: "Decade" },
+  { value: "players", label: "Players" },
+  { value: "region", label: "Region" },
+  { value: "variant", label: "Variant" },
+  { value: "developer", label: "Developer" },
+  { value: "publisher", label: "Publisher" },
+  { value: "ra", label: "RetroAchievements" },
 ];
 
-/** Which lobby filter a group header applies (`?system=`, `?genre=`); decades have none. */
-const GROUP_FILTER_PARAM: Record<string, string> = { system: "system", genre: "genre" };
+/**
+ * Which lobby filter a group header applies. Decades have none; REGION deliberately has none — the
+ * rail's Region facet is deselect-only (`x=region:` → `hideRegions`), so "show me only Japan" is not
+ * a state it can express, and a header that cannot scope only regroups. Developer and Publisher have
+ * no filter param at all (the lobby's `search` matches the TITLE), and the RA shelf for cards with
+ * none is the absence of the filter rather than a value of it.
+ */
+const GROUP_FILTER_PARAM: Record<string, string> = { system: "system", genre: "genre", variant: "variant", players: "maxPlayers", ra: "ra" };
+/** The RA shelf that means "no RetroAchievements" — the one `ra=` cannot ask for. */
+const RA_NONE = "none";
 
 /** Box art runs from tall NES boxes to wide Genesis ones; the Grid's uniform tile splits the difference. */
 export const ARCADE_ASPECT = 0.75;
@@ -266,6 +284,7 @@ export function createArcadeSource(o: ArcadeSourceOptions): CatalogSource {
     onOpen: (item) => o.onOpen(rawOf(item)),
     onOpenGroup: o.onFilter
       ? (group, groupBy) => {
+          if (groupBy === "ra" && group.key === RA_NONE) return;
           const param = GROUP_FILTER_PARAM[groupBy];
           if (param) o.onFilter!(param, group.key);
         }

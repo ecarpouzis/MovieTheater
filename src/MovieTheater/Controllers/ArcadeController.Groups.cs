@@ -98,14 +98,26 @@ namespace MovieTheater.Controllers
             {
                 entry.AbsoluteExpirationRelativeToNow = filtered ? GameGroupsTtlFiltered : GameGroupsTtlUnfiltered;
                 var matchQ = ApplyCardFilters(baseQ, systems, maxPlayers, genre, search, hideRegions, var_, ra);
+                // The card aggregates the lobby's own grid sorts on, plus the four single-valued facts the
+                // R9 S8 axes read: the anchor's developer/publisher (comma-joined on the anchor exactly as
+                // Genres is) and the RA flags, which arcade-ra-enrich keeps uniform across a card's versions.
                 var rows = await matchQ.GroupBy(g => new { g.System, g.CollapseKey })
                     .Select(grp => new ArcadeGameGroups.CardLight(
                         grp.Key.System, grp.Key.CollapseKey,
                         grp.Min(x => x.Title), grp.Min(x => x.SortTitle),
                         grp.Max(x => x.RatingWeighted), grp.Max(x => x.Year), grp.Max(x => (int)x.MaxPlayers),
-                        grp.Min(x => x.Genres)))
+                        grp.Min(x => x.Genres),
+                        grp.Min(x => x.Developer), grp.Min(x => x.Publisher),
+                        grp.Max(x => x.RaAchievementCount ?? 0),
+                        grp.Max(x => x.RaHasScoreLeaderboard ? 1 : 0) == 1,
+                        grp.Max(x => x.RaHasTimeLeaderboard ? 1 : 0) == 1))
                     .ToListAsync();
-                var index = ArcadeGameGroups.BuildIndex(rows, by);
+                // Region and variant are per VERSION, so they need the distinct tuples — a couple of rows
+                // per card, not every ROM row. Only fetched for the two axes that read them.
+                List<ArcadeGameGroups.CardTag> tags = null;
+                if (ArcadeGameGroups.NeedsTags(by))
+                    tags = await matchQ.Select(g => new ArcadeGameGroups.CardTag(g.System, g.CollapseKey, g.Region, g.Variant)).Distinct().ToListAsync();
+                var index = ArcadeGameGroups.BuildIndex(rows, by, null, tags);
                 entry.Size = index.ApproxBytes;
                 return index;
             });

@@ -72,4 +72,25 @@ describe("catalog/arcadeSource — the lobby's filters are the scope", () => {
     s.onOpenGroup!({ key: "1990", label: "1990s", totalItems: 1, renderTotal: 1, items: [] }, "decade");
     expect(onFilter).toHaveBeenCalledTimes(1);
   });
+
+  it("offers the audited axis set, and only the headers with a lobby filter behind them scope (R9 S8)", () => {
+    const onFilter = vi.fn();
+    const s = createArcadeSource({ filters: {}, filterKey: "k", onOpen: vi.fn(), onFilter });
+    expect(s.groups.map((g) => g.value)).toEqual(["system", "genre", "decade", "players", "region", "variant", "developer", "publisher", "ra"]);
+
+    const g = (key: string) => ({ key, label: key, totalItems: 1, renderTotal: 1, items: [] });
+    s.onOpenGroup!(g("4"), "players");
+    expect(onFilter).toHaveBeenLastCalledWith("maxPlayers", "4");
+    s.onOpenGroup!(g("Hack"), "variant");
+    expect(onFilter).toHaveBeenLastCalledWith("variant", "Hack");
+    s.onOpenGroup!(g("achievements"), "ra");
+    expect(onFilter).toHaveBeenLastCalledWith("ra", "achievements");
+    expect(onFilter).toHaveBeenCalledTimes(3);
+
+    // Region is DESELECT-only in the rail (`x=region:` → hideRegions), so "only Japan" is not a state
+    // it can express; Developer and Publisher have no lobby param at all (search matches the TITLE);
+    // and "no RetroAchievements" is the absence of `ra=`, not a value of it. All four only regroup.
+    for (const [key, by] of [["Japan", "region"], ["Sega", "developer"], ["Sony", "publisher"], ["none", "ra"]] as const) s.onOpenGroup!(g(key), by);
+    expect(onFilter).toHaveBeenCalledTimes(3);
+  });
 });

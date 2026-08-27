@@ -28,6 +28,9 @@ import usePolling from "../../hooks/usePolling";
 
 const { Text } = Typography;
 
+/** A group header's lobby param → the rail facet it writes (`arcadeSource.GROUP_FILTER_PARAM` names the params). */
+const GROUP_FACET_KEY = { system: "system", genre: "genre", maxPlayers: "players", variant: "variant", ra: "ra" };
+
 
 // Per-room stream quality the creator picks (arcade per-room bitrate/FEC). Persisted so a friend group
 // keeps its setting across sessions; applied to every room YOU start (one encoder per room = creator's
@@ -244,14 +247,18 @@ export default function ArcadePage({ userData }) {
       // 501 = no arcade on this server. The source reports the status; the page renders the note.
       onStatus: (status) => { if (status === 501) setUnconfigured(true); },
       onOpen: (card) => openGameRef.current?.(card),
-      // A group header (System / Genre) scopes in place: the facet include, one push, the modal closed.
+      // A group header scopes in place: the facet include, one push, the modal closed. System is the
+      // one repeatable facet (the carousel adds consoles); Genre / Players / Variant / RA are
+      // single-valued on the API side, so their header REPLACES rather than appends.
+      // Region, Developer and Publisher headers reach here at all — the source drops them, because
+      // the rail has no include-side state for any of the three (`arcadeSource.GROUP_FILTER_PARAM`).
       onFilter: (param, value) => {
-        const key = param === "system" ? "system" : param === "genre" ? "genre" : null;
+        const key = GROUP_FACET_KEY[param];
         if (!key) return;
         const v = key === "system" ? String(value).toLowerCase() : String(value);
         facetActionsRef.current?.apply((d) => {
-          if (key === "genre") d.include.genre = [v];
-          else if (!hasFacetValue(d.include.system, v)) d.include.system = [...(d.include.system ?? []), v];
+          if (key === "system") { if (!hasFacetValue(d.include.system, v)) d.include.system = [...(d.include.system ?? []), v]; }
+          else d.include[key] = [v];
         });
       },
     }),
