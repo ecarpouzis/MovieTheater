@@ -50,6 +50,12 @@ export interface InfiniteBandsProps<T> {
   band0?: T[];
   /** Query identity — caches/window/scroll reset when it changes. */
   queryKey: string;
+  /**
+   * Data identity UNDER a stable query (see `CatalogSource.dataVersion`). A change drops the cached
+   * bands so they re-read, and KEEPS the window, the measured heights and the scroll position — the
+   * in-place edit of a dense client list, which must not throw the reader back to the top.
+   */
+  dataVersion?: number;
   /** Fetch one band. HONOUR the signal: the pump aborts fetches for bands the window swept past. */
   fetchBand: (band: number, signal: AbortSignal) => Promise<T[]>;
   renderBand: (units: T[], band: number) => ReactNode;
@@ -91,7 +97,7 @@ const BandSlot = memo(BandSlotInner) as typeof BandSlotInner;
 
 function InfiniteBandsInner<T>(
   {
-    total, perBand, band0, queryKey, fetchBand, renderBand,
+    total, perBand, band0, queryKey, dataVersion, fetchBand, renderBand,
     flow, wrapClass, wrapStyle, estBandHeight = DEFAULT_EST, onWrapEl,
     spy = "band", onSpy, renderPlaceholder,
   }: InfiniteBandsProps<T>,
@@ -156,6 +162,23 @@ function InfiniteBandsInner<T>(
       if (getScrollTop(scrollRootRef.current) > top) setScrollTop(scrollRootRef.current, Math.max(0, top));
     }
   }, [queryKey]);
+
+  // Data changed under a STABLE query (a dense list edited in place, a background chunk landing).
+  // Drop the band cache and the pump's accounting so every mounted band re-reads — but leave the
+  // window, the measured heights and the scroll position exactly where the reader left them. The
+  // queryKey reset above is the other case: a different list, and it owns all three.
+  const dvRef = useRef(dataVersion);
+  useEffect(() => {
+    if (dvRef.current === dataVersion) return;
+    dvRef.current = dataVersion;
+    loadingRef.current.clear();
+    wantRef.current = [];
+    wantAgeRef.current.clear();
+    abortersRef.current.forEach((a) => a.abort());
+    abortersRef.current.clear();
+    inFlightRef.current = 0;
+    setExtra({});
+  }, [dataVersion]);
 
   const bandData = useCallback(
     (i: number): T[] | undefined => (i === 0 && band0 ? band0 : (staleRef.current ? undefined : extra[i])),

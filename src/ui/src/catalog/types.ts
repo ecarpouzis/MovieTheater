@@ -9,6 +9,9 @@
  * in `raw` for the section's own modal.
  */
 
+import type { ReactNode } from "react";
+import type { HoverEffect, MetadataMode } from "./tweaks/useTweaks";
+
 /** Which entity space an item belongs to. Ids collide across spaces (movies vs misc, comics vs books). */
 export type CardKind =
   | "movie"
@@ -183,6 +186,30 @@ export interface TweakExtra {
 }
 
 /**
+ * What the Grid hands a section's own card renderer (`CatalogSource.renderCard`). It is the tweak
+ * contract in prop form: the card sizes its cover from `cellH` (the Grid's `--cell`), wears
+ * `hoverClass` beside `bx-card` and puts `bx-cover` on its cover box so hover / rounded / dim apply
+ * through the package's CSS, and hides its metadata block when `metadata` is "minimal".
+ *
+ * Deliberately flat primitives (no nested objects): a section card is memoized, and one fresh object
+ * per render would defeat that memo for every card in the band.
+ */
+export interface CardRenderProps {
+  /** Cover box height in px — `GRID_BASE_CELL` (or the source's `gridCell`) × the cover-size tweak. */
+  cellH: number;
+  /** The raw cover-size multiplier, for a card that scales more than its cover. */
+  coverScale: number;
+  metadata: MetadataMode;
+  hover: HoverEffect;
+  /** The per-card class for the current hover effect ("" for dim/none) — ONE source of truth. */
+  hoverClass: string;
+  /** Above-the-fold cards load their art eagerly; everything else is lazy. */
+  eager: boolean;
+  /** The stream's open action (a representative card opens its group, anything else opens itself). */
+  onOpen: (item: CardItem) => void;
+}
+
+/**
  * What a section hands the views. Flat paging is mandatory; grouped paging, "more of one group",
  * letter buckets and a directory are optional capabilities a view checks before offering the
  * control.
@@ -233,6 +260,28 @@ export interface CatalogSource {
   defaultAspect?: number;
   /** "title", "album", "game" — the pager's tooltip noun. */
   itemNoun?: string;
+  /**
+   * The GRID's own card (R9 S3). When a section supplies one, the Grid — and only the Grid — lays
+   * the section's existing card into the shared bands instead of the package `Card`; every other
+   * view keeps the package card. The engine, the letter strip, the skeletons and the tweaks
+   * plumbing are shared either way.
+   *
+   * MUST return a module-level component (`<MovieGridCard …/>`), never an inline closure component:
+   * a component type created per render is a new type every render and React remounts the whole
+   * band (the BandSlot memo law).
+   */
+  renderCard?(item: CardItem, view: CardRenderProps): ReactNode;
+  /** Extra class on the Grid's wrap, so a section's own card layout (a column grid) can replace the package's wrap flow. */
+  gridClass?: string;
+  /** The Grid's base cover height in px before the cover-size tweak (default `GRID_BASE_CELL`). */
+  gridCell?: number;
+  /**
+   * Bumped when the source's DATA changed under an UNCHANGED `queryKey` — a dense in-memory list
+   * edited in place (Movies' Seen/Want removal-on-untoggle) or extended by a background chunk. The
+   * stream re-reads its bands; the window, the measured heights and the scroll position stay put
+   * (a `queryKey` change is the other thing, and it resets all three).
+   */
+  dataVersion?: number;
   fetchFlatBand(skip: number, top: number, sort: string, signal?: AbortSignal): Promise<CardPage>;
   fetchGroupBand?(groupsSkip: number, groupsTop: number, perGroupTop: number, groupBy: string, sort: string, signal?: AbortSignal): Promise<GroupPage>;
   fetchGroupMore?(groupKey: string, skip: number, top: number, groupBy: string, sort: string, signal?: AbortSignal): Promise<CardPage>;

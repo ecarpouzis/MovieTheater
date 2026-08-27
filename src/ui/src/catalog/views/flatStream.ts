@@ -19,6 +19,8 @@ export interface FlatStream {
   fetchBand: (band: number, signal: AbortSignal) => Promise<CardItem[]>;
   /** The card's open action: a representative opens its group, anything else opens itself. */
   open: (item: CardItem) => void;
+  /** The source's `dataVersion` at the time band 0 was read — handed to the engine so it re-reads its cache in step. */
+  dataVersion: number;
 }
 
 /** One card standing for a whole group: the group's first item, re-labelled. */
@@ -46,10 +48,14 @@ export function useFlatStream(source: CatalogSource, state: CatalogViewState, pe
   const groupBy = groupByFor(source, state);
   const sort = state.sort;
   const queryKey = `${source.queryKey}|${sort}|${repsMode ? `reps:${groupBy}` : "items"}|${perBand}`;
+  // Data edited in place under the SAME query (a dense client list): band 0 and the total are re-read
+  // and the engine drops its band cache, but nothing resets the window or the scroll position.
+  const dataVersion = source.dataVersion ?? 0;
 
   const sourceRef = useRef(source);
   sourceRef.current = source;
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const fetchBand = useCallback((band: number, signal: AbortSignal): Promise<CardItem[]> => {
     const s = sourceRef.current;
     if (repsMode && s.fetchGroupBand) {
@@ -57,8 +63,7 @@ export function useFlatStream(source: CatalogSource, state: CatalogViewState, pe
         .then((gp) => gp.groups.map(representative).filter((c): c is CardItem => c != null));
     }
     return s.fetchFlatBand(band * perBand, perBand, sort, signal).then((p) => p.items);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queryKey]);
+  }, [queryKey, dataVersion]);
 
   const [band0, setBand0] = useState<CardItem[] | null>(null);
   const [total, setTotal] = useState(0);
@@ -66,11 +71,19 @@ export function useFlatStream(source: CatalogSource, state: CatalogViewState, pe
   const [error, setError] = useState(false);
   const [nonce, setNonce] = useState(0);
 
+  // A re-read driven by `dataVersion` alone must not blank the stream: the list is the same list,
+  // one row shorter (or one chunk longer). Only a genuinely different query goes back to the
+  // loading state — otherwise every Seen/Want untoggle flashed the spinner over the whole grid.
+  const readKeyRef = useRef(queryKey);
   useEffect(() => {
     const controller = new AbortController();
-    setLoading(true);
+    const sameList = readKeyRef.current === queryKey;
+    readKeyRef.current = queryKey;
+    if (!sameList) {
+      setLoading(true);
+      setBand0(null);
+    }
     setError(false);
-    setBand0(null);
     const s = sourceRef.current;
     const first = repsMode && s.fetchGroupBand
       ? s.fetchGroupBand(0, perBand, 1, groupBy, sort, controller.signal)
@@ -91,7 +104,7 @@ export function useFlatStream(source: CatalogSource, state: CatalogViewState, pe
       });
     return () => controller.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queryKey, nonce]);
+  }, [queryKey, nonce, dataVersion]);
 
   const retry = useCallback(() => setNonce((n) => n + 1), []);
   const open = useCallback((item: CardItem) => {
@@ -100,8 +113,8 @@ export function useFlatStream(source: CatalogSource, state: CatalogViewState, pe
     else s.onOpen(item);
   }, [groupBy]);
 
-  return useMemo(() => ({ queryKey, band0, total, loading, error, retry, fetchBand, open }),
-    [queryKey, band0, total, loading, error, retry, fetchBand, open]);
+  return useMemo(() => ({ queryKey, band0, total, loading, error, retry, fetchBand, open, dataVersion }),
+    [queryKey, band0, total, loading, error, retry, fetchBand, open, dataVersion]);
 }
 
 /**

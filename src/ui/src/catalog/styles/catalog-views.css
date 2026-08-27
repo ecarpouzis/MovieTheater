@@ -253,3 +253,19 @@
 .twk-toggle[data-on="1"] { background: #34c759; }
 .twk-toggle i { position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; pointer-events: none; font-style: normal; box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: transform .15s; }
 .twk-toggle[data-on="1"] i { transform: translateX(14px); }
+
+/* ── Band skeletons (R9 S3) ─────────────────────────────────────────────── */
+/* A band whose page is still on the wire. The block reserves EXACTLY the height the engine's spacer
+   would have had (so nothing below it moves when the data lands) and paints the shape of what is
+   coming inside it — the per-slot skeleton cards each section's own grid used to draw. It is a
+   row-breaking full-width block in both wrap flavours: the package's flex `.bx-grid` and a
+   section's own column grid (`gridClass`). */
+.bx-skel-band {
+  flex-basis: 100%;
+  width: 100%;
+  grid-column: 1 / -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.bx-skel-card { pointer-events: none; }
+.bx-skel-band .bx-cover { box-shadow: none; }
