@@ -11,11 +11,16 @@ import "./MusicPage.css";
 import "./MusicPlaylists.css";
 import { formatDuration } from "../../utils/format";
 import { SHEET_Z } from "../../Components/sheetModal";
+import { useRouteSkinStyle } from "../../catalog/skin/skin";
 
 // Album detail + tracklist (music-plan.md §2.6): hero header → scrolling tracklist → play actions.
 // Follows the site's modal convention (GameModal peers) in spirit; antd Modal carries the shell.
 
 function MusicAlbumModal({ albumId, onClose, onAddToPlaylist }) {
+  // The section skin (catalog/skin): a modal is a PORTAL, outside the section root, so the
+  // backdrop + type tokens ride the wrap (`styles.wrapper`, which the dialog MERGES). `{}` while
+  // the section is on its own surface.
+  const skinStyle = useRouteSkinStyle("music");
   const player = useMusicPlayer();
   const [album, setAlbum] = useState(null);
 
@@ -61,6 +66,7 @@ function MusicAlbumModal({ albumId, onClose, onAddToPlaylist }) {
       destroyOnHidden
       /* Both classes are needed: the wrap carries the dialog, the root carries the mask, and BOTH
          have to stop above the play bar or the bar is either covered or dimmed-and-dead. */
+      styles={{ wrapper: skinStyle }}
       wrapClassName="music-album-modal"
       rootClassName="music-album-modal-root"
     >

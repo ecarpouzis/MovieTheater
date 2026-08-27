@@ -21,8 +21,26 @@ if (typeof document !== "undefined") {
   document.documentElement.dataset.theme = initialTheme;
 }
 
+// Somewhere OTHER than the toggle can need the site in a particular theme — the catalog's backdrop
+// swatch grid shows all nine of a section's backdrops, and picking one from the other light/dark
+// family asks for that family here rather than painting a dark page inside a light site (a swatch
+// that did nothing would be an inert control). It is a REQUEST, not a write: this hook stays the
+// single writer of `data-theme` and of the stored value.
+export const THEME_REQUEST_EVENT = "site:theme";
+
+export function requestSiteTheme(theme) {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(THEME_REQUEST_EVENT, { detail: theme === "dark" ? "dark" : "light" }));
+}
+
 export function useTheme() {
   const [theme, setTheme] = useState(initialTheme);
+
+  useEffect(() => {
+    const onRequest = (e) => setTheme(e.detail === "dark" ? "dark" : "light");
+    window.addEventListener(THEME_REQUEST_EVENT, onRequest);
+    return () => window.removeEventListener(THEME_REQUEST_EVENT, onRequest);
+  }, []);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;

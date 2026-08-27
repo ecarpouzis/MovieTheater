@@ -19,7 +19,6 @@ import { fetchFolder } from "./booksApi";
 import { booksFacetSpec } from "./booksFacetSpec";
 import { useMediaToken } from "./booksMedia";
 import { bk } from "./booksQuery";
-import { booksTweakExtras, siteTheme } from "./booksTheme";
 import { openEntity } from "./openEntity";
 import { isDirectoryBrowse, useBooksResultTotal } from "./useBooksBrowse";
 
@@ -47,8 +46,6 @@ export default function BrowsePage({ username, epoch = 0, isKid = false }: Brows
   const rail = useSectionRail("books", spec, { facetsEnabled: filtersApply });
   const { state, actions } = rail;
   const { epoch: mediaEpoch } = useMediaToken();
-  const theme = siteTheme();
-  const tweakExtras = useMemo(() => booksTweakExtras(theme), [theme]);
 
   const total = useBooksResultTotal(state, spec, !directory);
 
@@ -77,8 +74,8 @@ export default function BrowsePage({ username, epoch = 0, isKid = false }: Brows
     openEntity(history, location, { kind: "series", id: seriesId, single }), [history, location]);
 
   const source = useMemo(
-    () => createBooksSource({ facetState: state, spec, epoch, mediaEpoch, tweakExtras, onOpen, onOpenSeries, onScope: scope }),
-    [state, spec, epoch, mediaEpoch, tweakExtras, onOpen, onOpenSeries, scope],
+    () => createBooksSource({ facetState: state, spec, epoch, mediaEpoch, onOpen, onOpenSeries, onScope: scope }),
+    [state, spec, epoch, mediaEpoch, onOpen, onOpenSeries, scope],
   );
 
   // The bar's tools: the phone's Filters pill (the desktop rail shows the count on its own head line;

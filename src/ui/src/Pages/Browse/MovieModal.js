@@ -11,6 +11,7 @@ import { formatRuntime } from "../../utils/format";
 import "../../Components/SheetModal.css";
 import "./MovieModal.css";
 import { SHEET_Z } from "../../Components/sheetModal";
+import { useRouteSkinStyle } from "../../catalog/skin/skin";
 
 const { TextArea } = Input;
 
@@ -130,6 +131,9 @@ function YourRating({ id, kind, userData, setUserData }) {
 
 function MovieModal({ movieId, open, onClose, actorSearch, onBrowse, onOpenTitle, userData, setUserData, onToggleViewing, onMovieUpdated, onAddToPlaylist, kind = "movie" }) {
   const history = useHistory();
+  // The section skin (catalog/skin): the sheet is a PORTAL, outside the section root, so the
+  // backdrop + type tokens ride the wrap. `{}` while the section is on its own surface.
+  const skinStyle = useRouteSkinStyle("movies");
   const { toggleSeen, toggleWant } = useViewingToggles(userData, setUserData, onToggleViewing);
   const [openSeasons, setOpenSeasons] = useState({});
   const [openEps, setOpenEps] = useState({});
@@ -492,6 +496,7 @@ function MovieModal({ movieId, open, onClose, actorSearch, onBrowse, onOpenTitle
       // --themed: this dialog paints itself with the section tokens, so it needs the section
       // surface underneath them (Components/SheetModal.css).
       wrapClassName="sheet-modal sheet-modal--themed movie-modal"
+      styles={{ wrapper: skinStyle }}
       style={{ "--poster-rgb": posterRgb(movie?.posterDetails?.dominantColor) }}
     >
       {loading ? (

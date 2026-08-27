@@ -174,15 +174,31 @@ export interface DirectorySource {
 }
 
 /** A section-registered tweak (a font family, a backdrop) the panel shows as a segmented row. */
+export interface TweakExtraOption {
+  value: string;
+  label: string;
+  /** A swatch row's paint (a colour or a `var(--…)` reference). */
+  color?: string;
+  /** Which light/dark family the option belongs to ("any" = both). */
+  family?: "light" | "dark" | "any";
+  /** True when the option does not apply under the current theme — the panel says so on the chip. */
+  inactive?: boolean;
+}
+
 export interface TweakExtra {
   key: string;
   label: string;
-  options: { value: string; label: string }[];
+  options: TweakExtraOption[];
   /**
    * Remembered PER VIEW (stored under `${key}:${view}`, falling back to `key`): a backdrop chosen on
    * the Shelves need not follow you to the Grid — the standalone's per-layout background memory.
    */
   perView?: boolean;
+  /**
+   * How the row draws: a segmented control (default) or the Long Box's 4-column swatch grid — the
+   * only sane shape for nine colours, which no Seg can hold (`catalog/skin/`).
+   */
+  render?: "seg" | "swatch";
 }
 
 /**

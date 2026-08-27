@@ -1,0 +1,49 @@
+/* ── The catalog skin (R9 S5) ───────────────────────────────────────────────────────────────────
+   The token SETS live in `catalog/skin/sectionSkins.ts` and are written inline on the section root
+   by `applySectionSkin`; this file is what a backdrop needs BEYOND tokens.
+
+   Two facts decide every selector here:
+
+   * `.bx-host` declares the package's local aliases (`--ink/--sub/--line/--bg/--chrome`) from the
+     site tokens, so a skin has to re-declare them ON THE SAME ELEMENT or deeper. `.bx-host` is
+     (0,1,0); `.bx-host[data-catalog-skin]` is (0,2,0) and wins outright rather than on file order.
+   * Every token here carries the site value as its FALLBACK, so the `site` swatch — which writes
+     no tokens at all — leaves the page exactly as theme.css painted it.
+
+   Imported by CatalogHost AFTER catalog-views.css. */
+
+.bx-host[data-catalog-skin] {
+  --ink: var(--skin-ink, var(--text-primary));
+  --sub: var(--skin-sub, var(--text-secondary));
+  --line: var(--skin-line, var(--card-border));
+  --bg: var(--skin-card, var(--card-surface));
+  --chrome: var(--skin-chrome, var(--card-surface));
+  --font-display: var(--skin-display, "Space Grotesk", var(--font-sans));
+  --font-header: var(--skin-header, var(--skin-display, "Space Grotesk", var(--font-sans)));
+  --font-mono: var(--skin-mono, ui-monospace, Menlo, monospace);
+  --display-tracking: var(--skin-tracking, -0.01em);
+  --display-weight: var(--skin-weight, 600);
+  color: var(--skin-ink, inherit);
+}
+
+/* The painted surface. Only a section that asked the host to paint (`paintHost`, i.e. every
+   generic section — Books paints `.books-section` itself) AND a backdrop that is not the section's
+   own surface gets a box: `data-skin-paint` is set only when both are true, so the default state
+   has no extra padding, no extra background and no second paint. */
+.bx-host[data-skin-paint] {
+  background: var(--skin-scene);
+  background-size: cover;
+  border-radius: 12px;
+  padding: 14px 14px 36px;
+  min-height: 62vh;
+}
+/* A scene (an image layer) stays put while the page scrolls, as the standalone's did. */
+.bx-host[data-skin-paint][data-catalog-skin="archive"],
+.bx-host[data-skin-paint][data-catalog-skin="room"] { background-attachment: fixed; }
+
+/* On a skin, a card's meta strip fades to the backdrop, never to the site's white. */
+.bx-host[data-skin-paint] .bx-card .bx-meta { background: transparent; }
+
+@media (max-width: 640px) {
+  .bx-host[data-skin-paint] { padding: 10px 10px 28px; border-radius: 10px; }
+}

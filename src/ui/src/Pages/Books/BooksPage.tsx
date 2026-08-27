@@ -16,7 +16,8 @@ import useBooksIndex from "../../hooks/useBooksIndex";
 import useIsMobile from "../../hooks/useIsMobile";
 import { setMediaUser, useMediaToken } from "./booksMedia";
 import { booksNavViews, booksSection, isKidAccount, kidAllowedPath, type BooksMe } from "./booksNav";
-import { applyBooksTheme, booksSkinContext, siteTheme } from "./booksTheme";
+import { applySectionSkin, siteTheme } from "../../catalog/skin/skin";
+import { booksSkinContext } from "./booksTheme";
 import BrowsePage from "./BrowsePage";
 import { readEntityParams } from "./openEntity";
 import "./css/books.css";
@@ -72,7 +73,7 @@ export default function BooksPage({ userData, setUserData }: BooksPageProps) {
   }, []);
   const skinCtx = booksSkinContext(location.pathname, location.search);
   useEffect(() => {
-    const apply = () => applyBooksTheme(rootRef.current, readTweaks(skinCtx.store).extras, siteTheme(), skinCtx.view);
+    const apply = () => applySectionSkin(rootRef.current, skinCtx.store, readTweaks(skinCtx.store).extras, siteTheme(), skinCtx.view);
     apply();
     const mo = new MutationObserver(apply);
     mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });

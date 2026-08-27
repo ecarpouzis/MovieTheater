@@ -6,6 +6,7 @@ import PhotoVideo from "./PhotoVideo";
 import LoadFailure from "../../Components/LoadFailure";
 import "../../Components/SheetModal.css";
 import { SHEET_Z } from "../../Components/sheetModal";
+import { useRouteSkinStyle } from "../../catalog/skin/skin";
 
 // The lightbox (docs/photos-plan.md §4). Shows the ~1600px `view` derivative by default and only
 // reaches for a full-size image when the viewer actually zooms — a timeline click must not pull tens
@@ -16,6 +17,9 @@ import { SHEET_Z } from "../../Components/sheetModal";
 // OriginalRenderable rule), so the format list lives in one place instead of two.
 
 export default function PhotoLightbox({ assetId, onClose, onCurated, onOpenAsset, onUnavailable, people = [], onReloadPeople }) {
+  // The section skin (catalog/skin): the lightbox is a PORTAL, outside the section root, so the
+  // backdrop tokens ride the wrap. `{}` while the section is on its own surface.
+  const skinStyle = useRouteSkinStyle("photos");
   // What a write here did, reported the same way the batch bar reports it: the list behind the
   // lightbox patches the card in place instead of rebuilding itself, which on a phone used to mean
   // closing the photo and finding yourself at the top of the timeline (see PhotosPage's `curated`).
@@ -145,6 +149,7 @@ export default function PhotoLightbox({ assetId, onClose, onCurated, onOpenAsset
       destroyOnHidden
       className="photo-lightbox photos-modal"
       wrapClassName="sheet-modal"
+      styles={{ wrapper: skinStyle }}
       // The site's dialog layer (Components/sheetModal.js). At antd's default 1000 the lightbox
       // opened UNDER the fixed phone top bar (1300) and under the photos rail's phone sheet (1350).
       zIndex={SHEET_Z}

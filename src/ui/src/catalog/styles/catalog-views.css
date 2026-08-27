@@ -194,6 +194,17 @@
   box-shadow: 0 1px 0 rgba(255,255,255,.25) inset, 0 12px 40px rgba(0,0,0,.18);
   font: 11.5px/1.4 var(--font-sans); overflow: hidden;
 }
+/* The glass, and the law. A backdrop-filter over SCROLLING content re-composites every frame — the
+   catalog's standing perf law. The panel is a transient drag-open card, so it keeps its glass while
+   the page is still and drops to an opaque chrome for the 160 ms around a scroll burst
+   (`data-scrolling`, set by TweaksPanel off the RESOLVED scroll root). Firefox's software
+   WebRender pays a blur as a full re-blend, so the gecko tier never gets one at all — the same
+   zero-blur diet catalog-shelves.css applies to the book shadows. */
+.twk-panel[data-scrolling], .eng-gecko .twk-panel {
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+  background: var(--bg);
+}
+.eng-gecko .twk-panel { box-shadow: 0 1px 0 rgba(255,255,255,.25) inset, 0 6px 18px rgba(0,0,0,.28); }
 .twk-hd {
   display: flex; align-items: center; justify-content: space-between;
   padding: 10px 8px 10px 14px; cursor: move; user-select: none;
@@ -249,6 +260,24 @@
   border: .5px solid color-mix(in oklab, var(--ink) 20%, transparent); box-shadow: 0 1px 3px rgba(0,0,0,.2);
 }
 .twk-slider::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; border: none; background: var(--chrome); box-shadow: 0 0 0 .5px color-mix(in oklab, var(--ink) 20%, transparent), 0 1px 3px rgba(0,0,0,.2); }
+/* The backdrop grid — the Long Box's shape: nine colours, FOUR to a row, a tick on the chosen one.
+   An out-of-family swatch (a dark backdrop while the site is light) is dimmed but live: picking it
+   asks the site to switch theme, so nothing here is an inert control. */
+.twk-swatches { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.twk-swatch {
+  appearance: none; border: none; border-radius: 7px; height: 34px; padding: 0;
+  cursor: pointer; position: relative;
+  box-shadow: 0 0 0 .5px color-mix(in oklab, var(--ink) 16%, transparent), 0 1px 2px rgba(0,0,0,.06);
+  transition: transform .12s cubic-bezier(.3,.7,.4,1), box-shadow .12s, opacity .12s;
+  display: flex; align-items: center; justify-content: center;
+}
+.twk-swatch:hover { transform: translateY(-1px); box-shadow: 0 0 0 .5px color-mix(in oklab, var(--ink) 28%, transparent), 0 4px 10px rgba(0,0,0,.12); }
+.twk-swatch[data-on="1"] { box-shadow: 0 0 0 2px var(--ink), 0 2px 6px rgba(0,0,0,.15); }
+.twk-swatch[data-inactive="1"] { opacity: .45; }
+.twk-swatch[data-inactive="1"]:hover { opacity: .8; }
+.eng-gecko .twk-swatch, .eng-gecko .twk-swatch:hover { box-shadow: 0 0 0 .5px color-mix(in oklab, var(--ink) 20%, transparent); }
+.eng-gecko .twk-swatch[data-on="1"] { box-shadow: 0 0 0 2px var(--ink); }
+
 .twk-toggle { flex-shrink: 0; position: relative; width: 32px; height: 18px; border: 0; border-radius: 999px; padding: 0; cursor: pointer; background: color-mix(in oklab, var(--ink) 20%, transparent); transition: background .15s; }
 .twk-toggle[data-on="1"] { background: #34c759; }
 .twk-toggle i { position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; pointer-events: none; font-style: normal; box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: transform .15s; }

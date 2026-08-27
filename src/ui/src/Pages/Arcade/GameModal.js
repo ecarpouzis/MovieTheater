@@ -12,6 +12,7 @@ import { ratingTooltip } from "./arcadeRating";
 import "../../Components/SheetModal.css";
 import "./GameModal.css";
 import { SHEET_Z } from "../../Components/sheetModal";
+import { useRouteSkinStyle } from "../../catalog/skin/skin";
 
 /**
  * The full-page game modal (mirrors the movie modal): a card opens this instead of launching inline.
@@ -33,6 +34,10 @@ import { SHEET_Z } from "../../Components/sheetModal";
  * launch is a Moonlight/capture flow, not a room with cheats/versions/schemes).
  */
 export default function GameModal({ game, onClose, onStart, onManageSaves, creating, canEditMovies, renderers = [], initialVersionId = null }) {
+  // The section skin (catalog/skin): a modal is a PORTAL, outside the section root, so the
+  // backdrop + type tokens ride the wrap (`styles.wrapper`, which the dialog MERGES). `{}` while
+  // the section is on its own surface.
+  const skinStyle = useRouteSkinStyle("arcade");
   const genre = game.genres ? game.genres.split(/[;,]/)[0].trim() : null;
   // `initialVersionId` is the "Recently played" strip's hand-off: saves live on the ROM row, so a tile
   // opened from there must land on the version whose save it advertised, not on the card's default.
@@ -135,6 +140,7 @@ export default function GameModal({ game, onClose, onStart, onManageSaves, creat
       // `sheet-modal` is the shared shell (viewport-bounded, body scrolls); `arcade-game-modal`
       // takes it the rest of the way to a full-screen sheet at every size. See ArcadeModal.css.
       wrapClassName="sheet-modal arcade-game-modal"
+      styles={{ wrapper: skinStyle }}
       // Start lives in a REAL modal footer, not at the end of the body. The shell pins the footer
       // and scrolls the body between header and footer, so the primary action is on screen no
       // matter how long the summary runs or how short the viewport is — a TV browser was pushing

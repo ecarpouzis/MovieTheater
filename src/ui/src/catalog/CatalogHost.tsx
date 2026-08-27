@@ -1,12 +1,16 @@
-import { useState, type ReactNode } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import "./styles/catalog-views.css";
 import "./styles/catalog-grouped.css";
 import "./styles/catalog-shelves.css";
+import "./skin/skin.css";
 import ViewSwitcher, { TweaksButton, ViewPills } from "./ViewSwitcher";
 import useSlot, { BAR_TOOLS_SLOT, TOPBAR_TOOLS_SLOT } from "./bar/useSlot";
 import useMiddleDragScroll from "./engine/useMiddleDragScroll";
 import useIsMobile from "../hooks/useIsMobile";
+import { requestSiteTheme } from "../hooks/useTheme";
+import { applySectionSkin, crossFamilyPick, skinTweakExtras, useSiteTheme } from "./skin/skin";
+import "./skin/sectionSkins";
 import useCatalogView from "./state/useCatalogView";
 import TweaksPanel, { TweakRow, TweakToggle } from "./tweaks/TweaksPanel";
 import useTweaks, { hoverClass } from "./tweaks/useTweaks";
@@ -63,6 +67,24 @@ export default function CatalogHost({ section, source, overrides, tools, classNa
   const { tweaks, update, setCoverScale, setExtra, coverScale } = useTweaks(section);
   const [tweaksOpen, setTweaksOpen] = useState(false);
   const isMobile = useIsMobile();
+  const hostRef = useRef<HTMLDivElement>(null);
+  // The section SKIN (catalog/skin): the registered backdrop + type rows go into the ⚙ panel, and
+  // the chosen token set is written ONCE on this root — never per card. A cross-family pick (a
+  // dark backdrop while the site is light) asks the site to switch theme, so no swatch is inert.
+  const theme = useSiteTheme();
+  const skinExtras = useMemo(() => skinTweakExtras(section, theme), [section, theme]);
+  const extras = useMemo(
+    () => (source.tweakExtras?.length ? [...skinExtras, ...source.tweakExtras] : skinExtras),
+    [skinExtras, source.tweakExtras],
+  );
+  useLayoutEffect(() => {
+    applySectionSkin(hostRef.current, section, tweaks.extras, theme, state.view);
+  }, [section, tweaks.extras, theme, state.view]);
+  const chooseExtra = useCallback((key: string, value: string) => {
+    setExtra(key, value);
+    const family = crossFamilyPick(section, key, value, theme);
+    if (family) requestSiteTheme(family);
+  }, [section, setExtra, theme]);
   const pillsSlot = useSlot(BAR_TOOLS_SLOT);
   const gearSlot = useSlot(isMobile ? TOPBAR_TOOLS_SLOT : BAR_TOOLS_SLOT);
   useMiddleDragScroll();
@@ -94,7 +116,7 @@ export default function CatalogHost({ section, source, overrides, tools, classNa
   }
 
   return (
-    <div className={`bx-host${className ? ` ${className}` : ""}`} data-view={state.view} data-section={section}>
+    <div ref={hostRef} className={`bx-host${className ? ` ${className}` : ""}`} data-view={state.view} data-section={section}>
       {chrome}
       {beforeResults}
       <div className={`bx-results ${tweaks.rounded ? "bx-rounded" : "bx-sharp"}`} data-hover={tweaks.hover} data-view={state.view} data-skin={source.shelvesSkin ?? "bookcase"}>
@@ -107,8 +129,8 @@ export default function CatalogHost({ section, source, overrides, tools, classNa
           coverScale={scale}
           onCoverScale={(v) => setCoverScale(state.view, v)}
           onChange={update}
-          onExtra={setExtra}
-          extras={source.tweakExtras}
+          onExtra={chooseExtra}
+          extras={extras}
           onClose={() => setTweaksOpen(false)}
         >
           {state.view === "directory" && (

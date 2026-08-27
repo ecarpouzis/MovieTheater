@@ -1,13 +1,18 @@
 /**
- * The Books section's own skin, layered under the site's theme: the standalone's nine backdrops and
- * four display-type themes, both offered as tweak rows and applied to the section root as
- * `data-books-backdrop` + inline `--books-*` custom properties. MT's `data-theme` remains the
- * light/dark authority: a backdrop belongs to one family, and a remembered value from the other
- * family falls back to that family's default. The backdrop is remembered PER VIEW (the standalone's
- * per-layout background memory: Bookcase on the Shelves, Paper on the Grid); the type theme is per
- * section store.
+ * The Books section's skin REGISTRATION. Since R9 S5 the machinery — resolve, apply, the tweak
+ * rows, the modal style object — is the catalog's (`catalog/skin/skin.ts`); what stays here is the
+ * DATA that is Books' own: the standalone's nine backdrops (five paper, four timber/night) and its
+ * four display-type themes, plus the `@fontsource` imports those faces need, which must stay in
+ * the Books chunk rather than shipping to every section.
  *
- * Fonts are bundled (`@fontsource`), imported here so they ship in the Books chunk only.
+ * MT's `data-theme` remains the light/dark authority: a backdrop belongs to a family, and a
+ * remembered value from the other family falls back to that family's default. The backdrop is
+ * remembered PER VIEW (the standalone's per-layout background memory: Bookcase on the Shelves,
+ * Paper on the Grid); the type theme is per store.
+ *
+ * `tokenPrefix: "books"` keeps the `--books-*` names five stylesheets and the reader are written
+ * against; `paintHost: false` because Books paints its OWN root (`.books-section` — the tabs and
+ * the plates take the backdrop too), not the catalog host's box.
  */
 import "@fontsource/alfa-slab-one";
 import "@fontsource/anton";
@@ -21,21 +26,15 @@ import "@fontsource/jetbrains-mono/600.css";
 import "@fontsource-variable/baloo-2";
 import "@fontsource-variable/fredoka";
 import { readCatalogDefaults } from "../../catalog/state/useCatalogView";
-import type { TweakExtra } from "../../catalog/types";
+import {
+  BACKDROP_EXTRA, TYPE_EXTRA, registerSectionSkin, siteTheme,
+  type BackdropDef, type SectionSkin, type SkinFamily, type TypeDef,
+} from "../../catalog/skin/skin";
 
-export type SiteTheme = "light" | "dark";
+export type SiteTheme = SkinFamily;
+export { BACKDROP_EXTRA, TYPE_EXTRA as DISPLAY_EXTRA, siteTheme };
 
-export interface BackdropTokens {
-  bg: string;
-  ink: string;
-  sub: string;
-  line: string;
-  chrome: string;
-  /** A scene (image) painted behind the content; `bg` when absent. */
-  scene?: string;
-}
-
-export const BOOKS_BACKDROPS: Record<string, BackdropTokens & { family: SiteTheme; label: string }> = {
+export const BOOKS_BACKDROPS: Record<string, BackdropDef> = {
   paper: { family: "light", label: "Paper", bg: "#f6f5f1", ink: "#1a1714", sub: "#6c6258", line: "#1a17141a", chrome: "rgba(246,245,241,0.85)" },
   snow: { family: "light", label: "Snow", bg: "#fafaf7", ink: "#19171a", sub: "#6a6766", line: "#19171a19", chrome: "rgba(250,250,247,0.85)" },
   bone: { family: "light", label: "Bone", bg: "#ebe6dc", ink: "#191613", sub: "#65594c", line: "#1916131f", chrome: "rgba(235,230,220,0.85)" },
@@ -49,16 +48,7 @@ export const BOOKS_BACKDROPS: Record<string, BackdropTokens & { family: SiteThem
 
 export const DEFAULT_BACKDROP: Record<SiteTheme, string> = { light: "paper", dark: "slate" };
 
-export interface DisplayFontTokens {
-  display: string;
-  header: string;
-  mono: string;
-  tracking: string;
-  weight: string;
-  label: string;
-}
-
-export const BOOKS_DISPLAY_FONTS: Record<string, DisplayFontTokens> = {
+export const BOOKS_DISPLAY_FONTS: Record<string, TypeDef> = {
   pulp: { label: "Pulp", display: '"Alfa Slab One", "Rockwell", "Times New Roman", serif', header: '"Alfa Slab One", "Rockwell", "Times New Roman", serif', mono: '"JetBrains Mono", ui-monospace, monospace', tracking: "0em", weight: "400" },
   newsprint: { label: "News", display: '"Anton", "Impact", "Arial Black", sans-serif', header: '"Anton", "Impact", "Arial Black", sans-serif', mono: '"JetBrains Mono", ui-monospace, monospace', tracking: "0.005em", weight: "400" },
   stencil: { label: "Stencil", display: '"Bungee", "Bowlby One", sans-serif', header: '"Bungee", "Bowlby One", sans-serif', mono: '"Space Mono", "JetBrains Mono", monospace', tracking: "0em", weight: "400" },
@@ -67,29 +57,20 @@ export const BOOKS_DISPLAY_FONTS: Record<string, DisplayFontTokens> = {
 
 export const DEFAULT_DISPLAY_FONT = "pulp";
 
-export const BACKDROP_EXTRA = "backdrop";
-export const DISPLAY_EXTRA = "display";
+export const BOOKS_SKIN: SectionSkin = {
+  backdrops: BOOKS_BACKDROPS,
+  defaults: DEFAULT_BACKDROP,
+  types: BOOKS_DISPLAY_FONTS,
+  defaultType: DEFAULT_DISPLAY_FONT,
+  perView: true,
+  tokenPrefix: "books",
+  // Books paints `.books-section` itself (books.css) — the whole section, not the results box.
+  paintHost: false,
+};
 
-export function siteTheme(): SiteTheme {
-  if (typeof document === "undefined") return "light";
-  return document.documentElement.dataset.theme === "dark" ? "dark" : "light";
-}
-
-/** The backdrop to use: the remembered one when it belongs to the current family, else the family default. */
-export function resolveBackdrop(value: string | null | undefined, theme: SiteTheme): string {
-  const b = value ? BOOKS_BACKDROPS[value] : undefined;
-  return b && b.family === theme ? value! : DEFAULT_BACKDROP[theme];
-}
-
-export function resolveDisplayFont(value: string | null | undefined): string {
-  return value && BOOKS_DISPLAY_FONTS[value] ? value : DEFAULT_DISPLAY_FONT;
-}
-
-/** The backdrop remembered for a view: `backdrop:<view>` first, the section-wide choice second. */
-export function backdropExtraFor(extras: Record<string, string> | undefined, view: string | null | undefined): string | undefined {
-  if (!extras) return undefined;
-  return (view ? extras[`${BACKDROP_EXTRA}:${view}`] : undefined) ?? extras[BACKDROP_EXTRA];
-}
+/** The browse, Novels and Kids each have their own catalog host, so each has its own store. */
+export const BOOKS_SKIN_STORES = ["books", "books-novels", "books-kids"] as const;
+for (const store of BOOKS_SKIN_STORES) registerSectionSkin(store, BOOKS_SKIN);
 
 /**
  * Which tweaks store and which view a Books URL is on — the two facts the skin resolves from. The
@@ -102,53 +83,4 @@ export function booksSkinContext(pathname: string, search: string): { store: str
   const fallback = store === "books-novels" ? "grid" : store === "books-kids" ? "shelf" : "extended";
   const view = new URLSearchParams(search).get("view") ?? readCatalogDefaults(store).view ?? fallback;
   return { store, view };
-}
-
-/** The tweak rows a Books source registers. Backdrop options follow the site's light/dark family. */
-export function booksTweakExtras(theme: SiteTheme): TweakExtra[] {
-  return [
-    {
-      key: BACKDROP_EXTRA,
-      label: "Backdrop",
-      perView: true,
-      options: Object.entries(BOOKS_BACKDROPS).filter(([, b]) => b.family === theme).map(([value, b]) => ({ value, label: b.label })),
-    },
-    {
-      key: DISPLAY_EXTRA,
-      label: "Type",
-      options: Object.entries(BOOKS_DISPLAY_FONTS).map(([value, f]) => ({ value, label: f.label })),
-    },
-  ];
-}
-
-/** Apply the skin to the section root. Idempotent; the tokens are read by `books.css` and the modals. */
-export function applyBooksTheme(root: HTMLElement | null, extras: Record<string, string> | undefined, theme: SiteTheme, view?: string | null): void {
-  if (!root) return;
-  const backdrop = resolveBackdrop(backdropExtraFor(extras, view), theme);
-  const font = BOOKS_DISPLAY_FONTS[resolveDisplayFont(extras?.[DISPLAY_EXTRA])];
-  const t = BOOKS_BACKDROPS[backdrop];
-  root.dataset.booksBackdrop = backdrop;
-  root.style.setProperty("--books-bg", t.bg);
-  root.style.setProperty("--books-ink", t.ink);
-  root.style.setProperty("--books-sub", t.sub);
-  root.style.setProperty("--books-line", t.line);
-  root.style.setProperty("--books-chrome", t.chrome);
-  root.style.setProperty("--books-scene", t.scene ?? t.bg);
-  root.style.setProperty("--books-display", font.display);
-  root.style.setProperty("--books-header", font.header);
-  root.style.setProperty("--books-mono", font.mono);
-  root.style.setProperty("--books-tracking", font.tracking);
-  root.style.setProperty("--books-weight", font.weight);
-}
-
-/** The same tokens, as a style object, for a portal (an antd modal wrap) that is not inside the section root. */
-export function booksThemeStyle(extras: Record<string, string> | undefined, theme: SiteTheme, view?: string | null): Record<string, string> {
-  const backdrop = resolveBackdrop(backdropExtraFor(extras, view), theme);
-  const font = BOOKS_DISPLAY_FONTS[resolveDisplayFont(extras?.[DISPLAY_EXTRA])];
-  const t = BOOKS_BACKDROPS[backdrop];
-  return {
-    "--books-bg": t.bg, "--books-ink": t.ink, "--books-sub": t.sub, "--books-line": t.line, "--books-chrome": t.chrome,
-    "--books-scene": t.scene ?? t.bg, "--books-display": font.display, "--books-header": font.header, "--books-mono": font.mono,
-    "--books-tracking": font.tracking, "--books-weight": font.weight,
-  };
 }

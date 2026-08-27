@@ -14,12 +14,12 @@
  * section root, wears the same backdrop and type.
  */
 import { Modal } from "antd";
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { type CSSProperties, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
-import { readTweaks, subscribeTweaks } from "../../catalog/tweaks/useTweaks";
+import { useSectionSkinStyle } from "../../catalog/skin/skin";
 import { SHEET_Z } from "../../Components/sheetModal";
 import "../../Components/SheetModal.css";
-import { booksSkinContext, booksThemeStyle, siteTheme } from "./booksTheme";
+import { booksSkinContext } from "./booksTheme";
 
 export interface BooksModalShellProps {
   open: boolean;
@@ -32,13 +32,8 @@ export interface BooksModalShellProps {
 
 function useBooksSkinStyle(): CSSProperties {
   const location = useLocation();
-  const [, setTick] = useState(0);
-  useEffect(() => {
-    const unsubs = ["books", "books-novels", "books-kids"].map((s) => subscribeTweaks(s, () => setTick((t) => t + 1)));
-    return () => { for (const u of unsubs) u(); };
-  }, []);
   const ctx = booksSkinContext(location.pathname, location.search);
-  return booksThemeStyle(readTweaks(ctx.store).extras, siteTheme(), ctx.view) as CSSProperties;
+  return useSectionSkinStyle(ctx.store, ctx.view) as CSSProperties;
 }
 
 export default function BooksModalShell({ open, onClose, ariaLabel, variant = "book", kidsStyle, children }: BooksModalShellProps) {

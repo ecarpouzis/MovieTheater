@@ -20,7 +20,6 @@ import { createNovelsSource } from "../../catalog/sources/novelsSource";
 import type { CardItem } from "../../catalog/types";
 import useIsMobile from "../../hooks/useIsMobile";
 import { useMediaToken } from "./booksMedia";
-import { booksTweakExtras, siteTheme } from "./booksTheme";
 import { novelsFacetSpec } from "./novelsFacetSpec";
 import { openEntity } from "./openEntity";
 import { seededNovelsSearch, sessionStorageOrNull, useNovelsTotal } from "./useNovelsBrowse";
@@ -46,8 +45,6 @@ export default function NovelsPage({ username, epoch = 0 }: NovelsPageProps) {
   const spec = useMemo(() => novelsFacetSpec(username), [username]);
   const { state, actions, activeCount } = useFacetState(spec);
   const { epoch: mediaEpoch } = useMediaToken();
-  const theme = siteTheme();
-  const tweakExtras = useMemo(() => booksTweakExtras(theme), [theme]);
   const facets = useFacetOptions(spec);
   const total = useNovelsTotal(state);
   const saved = useSavedSearches("books-novels");
@@ -71,8 +68,8 @@ export default function NovelsPage({ username, epoch = 0 }: NovelsPageProps) {
 
   const onOpen = useCallback((item: CardItem) => openEntity(history, location, { kind: "item", id: item.id }), [history, location]);
   const source = useMemo(
-    () => createNovelsSource({ facetState: state, spec, epoch, mediaEpoch, tweakExtras, onOpen }),
-    [state, spec, epoch, mediaEpoch, tweakExtras, onOpen],
+    () => createNovelsSource({ facetState: state, spec, epoch, mediaEpoch, onOpen }),
+    [state, spec, epoch, mediaEpoch, onOpen],
   );
   const saveCurrent = (name: string) => { saved.save(name, savableSearch(location.search)); setSavePrompt(false); };
 

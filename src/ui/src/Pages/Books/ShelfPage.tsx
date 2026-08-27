@@ -4,12 +4,16 @@
  * series tiles (`/shelf/series?kind=`) over the standalone items (`/marks/items?kind=`, an item being
  * standalone when it has no series or is a single-issue series — any issue of a real series is its
  * series tile, never a loose card too); Suggested is `/suggestions?count=48`, asked for only on its
- * tab. Ratings show on Read only. The cover size is a device tweak (`books-shelf`).
+ * tab. Ratings show on Read only.
+ *
+ * The cover size is a device tweak (`books-shelf`) reached the way every other view reaches one:
+ * the ⚙ in the section bar's tools slot (R9 S5). The page's own "Size" slider in the header — the
+ * last bespoke tweak control on the site — is gone.
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo, type CSSProperties } from "react";
 import { useHistory, useLocation } from "react-router-dom";
-import { SCALE_MAX, SCALE_MIN, SCALE_STEP } from "../../catalog/tweaks/useTweaks";
+import PageTweaksTool from "../../catalog/tweaks/PageTweaksTool";
 import useTweaks from "../../catalog/tweaks/useTweaks";
 import type { ItemMark, ItemSummary } from "./booksApi";
 import { fetchItemMarks, fetchLastOpened, fetchShelfSeries, fetchSuggestions, hideFromHistory, putGroupMark, putItemMark } from "./booksApi";
@@ -80,7 +84,7 @@ export default function ShelfPage() {
   const location = useLocation();
   const qc = useQueryClient();
   const tab = readShelfTab(location.search);
-  const { coverScale, setCoverScale } = useTweaks("books-shelf");
+  const { coverScale } = useTweaks("books-shelf");
   const scale = coverScale("grid");
 
   const lastOpened = useQuery({ queryKey: bk.shelf("last-opened"), queryFn: ({ signal }) => fetchLastOpened(0, LIST_TOP, signal) });
@@ -143,6 +147,9 @@ export default function ShelfPage() {
 
   return (
     <div className="bookshelf books-surface">
+      {/* The page's ⚙, in the ONE tools slot — the shelf draws its own cards, so cover size is the
+          only standard row that reaches them (a control that does not apply is removed, not shown). */}
+      <PageTweaksTool section="books-shelf" view="grid" rows={{ hover: false, rounded: false, metadata: false }} footNote="Remembered on this device for your shelf." />
       <header className="bs-head">
         <div>
           <div className="bs-eyebrow">Your library</div>
@@ -152,10 +159,6 @@ export default function ShelfPage() {
           {counts[tab] > 0 && (
             <div className="bs-headcount"><b>{counts[tab]}</b> {counts[tab] === 1 ? "item" : "items"}<span className="bs-headcount-sub"> · {meta.label.toLowerCase()}</span></div>
           )}
-          <label className="bs-scale" title="Cover size">
-            <span className="bs-scale-label">Size</span>
-            <input type="range" min={SCALE_MIN} max={SCALE_MAX} step={SCALE_STEP} value={scale} onChange={(e) => setCoverScale("grid", Number(e.target.value))} aria-label="Cover size" />
-          </label>
         </div>
       </header>
 

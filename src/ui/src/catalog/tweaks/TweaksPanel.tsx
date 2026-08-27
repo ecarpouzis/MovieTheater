@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, type ReactNode } from "react";
-import type { TweakExtra, ViewMode } from "../types";
+import { onRootScroll, resolveScrollRoot } from "../engine/scroller";
+import type { TweakExtra, TweakExtraOption, ViewMode } from "../types";
 import {
   HOVER_EFFECTS, SCALE_MAX, SCALE_MIN, SCALE_STEP,
   type CatalogTweaks, type HoverEffect, type MetadataMode,
@@ -9,8 +10,16 @@ import {
  * The floating "Browse Tweaks" panel, ported from the standalone site: a draggable card of the
  * device-scoped controls — cover size (per view, per pointer class), hover effect, rounded corners,
  * the metadata strip, and whatever extras the section registered. It renders nothing section-
- * specific itself; the section's extras arrive as `TweakExtra` rows.
+ * specific itself; the section's extras arrive as `TweakExtra` rows — a Seg, or (nine backdrops)
+ * the Long Box's 4-column swatch grid.
  */
+export interface TweaksPanelRows {
+  cover?: boolean;
+  hover?: boolean;
+  rounded?: boolean;
+  metadata?: boolean;
+}
+
 export interface TweaksPanelProps {
   view: ViewMode;
   tweaks: CatalogTweaks;
@@ -20,6 +29,14 @@ export interface TweaksPanelProps {
   onExtra: (key: string, value: string) => void;
   extras?: TweakExtra[];
   onClose: () => void;
+  /**
+   * Which of the standard card rows apply here. A control that does NOT apply is REMOVED, not
+   * disabled (the Long Box rule): a page without the results root — the Books Shelf, which draws
+   * its own cards — has a cover size and nothing else.
+   */
+  rows?: TweaksPanelRows;
+  /** The label under the panel; the catalog says which VIEW the settings belong to. */
+  footNote?: string;
   /** Extra rows a section wants above the standard ones (e.g. a Directory-only toggle). */
   children?: ReactNode;
 }
@@ -37,6 +54,41 @@ function Seg({ options, value, onChange }: {
           {o.label}
         </button>
       ))}
+    </div>
+  );
+}
+
+/**
+ * The Long Box's background grid: nine colours, four to a row, a tick on the chosen one. A swatch
+ * from the OTHER light/dark family is dimmed and says so — clicking it still works, because the
+ * host answers a cross-family pick by asking the site to switch theme, so no swatch is inert.
+ */
+export function SwatchGrid({ options, value, onChange }: {
+  options: TweakExtraOption[]; value: string; onChange: (v: string) => void;
+}) {
+  return (
+    <div className="twk-swatches" role="radiogroup">
+      {options.map((o) => {
+        const on = o.value === value;
+        return (
+          <button
+            key={o.value} type="button" role="radio" aria-checked={on}
+            className="twk-swatch" data-on={on ? "1" : "0"} data-inactive={o.inactive ? "1" : undefined}
+            data-family={o.family ?? "any"}
+            style={{ background: o.color ?? "var(--content-bg)" }}
+            onClick={() => onChange(o.value)}
+            aria-label={o.inactive ? `${o.label} (${o.family} theme)` : o.label}
+            title={o.inactive ? `${o.label} — switches to the ${o.family} theme` : o.label}
+          >
+            {on && (
+              <svg viewBox="0 0 14 14" width="11" height="11" aria-hidden="true">
+                <path d="M3 7.2 5.8 10 11 4.2" fill="none" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
+                  stroke={o.family === "dark" ? "rgba(255,255,255,.92)" : o.family === "light" ? "rgba(0,0,0,.78)" : "var(--text-primary)"} />
+              </svg>
+            )}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -66,9 +118,15 @@ const METADATA_MODES: { value: MetadataMode; label: string }[] = [
   { value: "minimal", label: "Covers only" },
 ];
 
-export default function TweaksPanel({ view, tweaks, coverScale, onCoverScale, onChange, onExtra, extras, onClose, children }: TweaksPanelProps) {
+const ALL_ROWS: Required<TweaksPanelRows> = { cover: true, hover: true, rounded: true, metadata: true };
+
+/** How long after the last scroll event the glass comes back (the engine's own settle window). */
+const GLASS_SETTLE_MS = 160;
+
+export default function TweaksPanel({ view, tweaks, coverScale, onCoverScale, onChange, onExtra, extras, onClose, rows, footNote, children }: TweaksPanelProps) {
   const dragRef = useRef<HTMLDivElement>(null);
   const posRef = useRef({ x: 16, y: 64 });
+  const show = rows ? { ...ALL_ROWS, ...rows } : ALL_ROWS;
 
   // Drag by the header; the panel is anchored bottom/right so it never leaves the viewport.
   const onDragStart = useCallback((e: React.MouseEvent) => {
@@ -104,6 +162,29 @@ export default function TweaksPanel({ view, tweaks, coverScale, onCoverScale, on
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  /**
+   * The glass, and the law it would otherwise break. `.twk-panel` is a `backdrop-filter: blur(24px)
+   * saturate(160%)` card that sits OVER the results scroller — and a backdrop-filter over scrolling
+   * content is re-composited every frame, which is exactly the "no backdrop-filter over a scroller"
+   * law the catalog holds elsewhere. The panel is transient (drag-open, Escape-close), so it keeps
+   * its glass while the page is still: `data-scrolling` is set on the first scroll event of the
+   * RESOLVED scroll root and cleared 160 ms after the last one (the engine's own settle window),
+   * and the CSS swaps the blur for an opaque chrome for exactly that long. The reader never sees
+   * the swap — the panel is over moving content while it happens.
+   */
+  useEffect(() => {
+    const panel = dragRef.current;
+    if (!panel) return undefined;
+    const root = resolveScrollRoot(panel);
+    let t: ReturnType<typeof setTimeout> | undefined;
+    const off = onRootScroll(root, () => {
+      panel.dataset.scrolling = "1";
+      if (t) clearTimeout(t);
+      t = setTimeout(() => { delete panel.dataset.scrolling; }, GLASS_SETTLE_MS);
+    });
+    return () => { off(); if (t) clearTimeout(t); };
+  }, []);
+
   return (
     <>
     <div className="twk-scrim" onClick={onClose} aria-hidden="true" />
@@ -114,22 +195,30 @@ export default function TweaksPanel({ view, tweaks, coverScale, onCoverScale, on
       </div>
       <div className="twk-body">
         <div className="twk-sect">Cards</div>
-        <TweakRow label="Cover size" value={`${coverScale.toFixed(2)}×`}>
-          <input
-            type="range" className="twk-slider" aria-label="Cover size"
-            min={SCALE_MIN} max={SCALE_MAX} step={SCALE_STEP} value={coverScale}
-            onChange={(e) => onCoverScale(Number(e.target.value))}
-          />
-        </TweakRow>
-        <TweakRow label="Hover">
-          <Seg options={HOVER_EFFECTS} value={tweaks.hover} onChange={(v) => onChange({ hover: v as HoverEffect })} />
-        </TweakRow>
-        <TweakRow label="Rounded corners" inline>
-          <TweakToggle on={tweaks.rounded} onChange={(rounded) => onChange({ rounded })} label="Rounded corners" />
-        </TweakRow>
-        <TweakRow label="Under the cover">
-          <Seg options={METADATA_MODES} value={tweaks.metadata} onChange={(v) => onChange({ metadata: v as MetadataMode })} />
-        </TweakRow>
+        {show.cover && (
+          <TweakRow label="Cover size" value={`${coverScale.toFixed(2)}×`}>
+            <input
+              type="range" className="twk-slider" aria-label="Cover size"
+              min={SCALE_MIN} max={SCALE_MAX} step={SCALE_STEP} value={coverScale}
+              onChange={(e) => onCoverScale(Number(e.target.value))}
+            />
+          </TweakRow>
+        )}
+        {show.hover && (
+          <TweakRow label="Hover">
+            <Seg options={HOVER_EFFECTS} value={tweaks.hover} onChange={(v) => onChange({ hover: v as HoverEffect })} />
+          </TweakRow>
+        )}
+        {show.rounded && (
+          <TweakRow label="Rounded corners" inline>
+            <TweakToggle on={tweaks.rounded} onChange={(rounded) => onChange({ rounded })} label="Rounded corners" />
+          </TweakRow>
+        )}
+        {show.metadata && (
+          <TweakRow label="Under the cover">
+            <Seg options={METADATA_MODES} value={tweaks.metadata} onChange={(v) => onChange({ metadata: v as MetadataMode })} />
+          </TweakRow>
+        )}
         {children}
         {extras && extras.length > 0 && (
           <>
@@ -139,13 +228,15 @@ export default function TweaksPanel({ view, tweaks, coverScale, onCoverScale, on
               const current = (x.perView ? tweaks.extras[storeKey] : undefined) ?? tweaks.extras[x.key] ?? x.options[0]?.value ?? "";
               return (
                 <TweakRow key={x.key} label={x.perView ? `${x.label} (this view)` : x.label}>
-                  <Seg options={x.options} value={current} onChange={(v) => onExtra(storeKey, v)} />
+                  {x.render === "swatch"
+                    ? <SwatchGrid options={x.options} value={current} onChange={(v) => onExtra(storeKey, v)} />
+                    : <Seg options={x.options} value={current} onChange={(v) => onExtra(storeKey, v)} />}
                 </TweakRow>
               );
             })}
           </>
         )}
-        <div className="twk-foot">Remembered on this device for the {view === "shelf" ? "Shelves" : view.charAt(0).toUpperCase() + view.slice(1)} view.</div>
+        <div className="twk-foot">{footNote ?? `Remembered on this device for the ${view === "shelf" ? "Shelves" : view.charAt(0).toUpperCase() + view.slice(1)} view.`}</div>
       </div>
     </div>
     </>
