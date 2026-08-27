@@ -207,17 +207,6 @@
   color: var(--text-muted);
 }
 
-.arcade-more {
-  text-align: center;
-  padding: 28px 0 8px;
-}
-
-/* Same control, above the grid instead of below it — tighter, because it sits between the section
-   head and the first row rather than closing the list off. */
-.arcade-more--earlier {
-  padding: 0 0 4px;
-}
-
 /* ── Box art: natural aspect, one shared height, never cropped ───────────── */
 .arcade-cover {
   flex: none;
@@ -333,7 +322,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .arcade-card { transition: none; }
-  .arcade-card:hover { transform: none; }
 }
 
 /* The art column: the SAME fixed box on every card (GameCard's ART_W × COVER_H — see the reasoning
@@ -354,63 +342,6 @@
   align-items: center;
   justify-content: center;
   max-width: 100%;
-}
-
-/* ── A slot whose page is still on the wire ──────────────────────────────────
-   The catalog is modelled as `total` slots from the first render (the Long Box's sparse-band model),
-   so scrolling into never-fetched territory — upward as readily as downward — lands on one of these
-   until its page arrives. It must occupy EXACTLY a card's footprint: the art column is the thing that
-   sets a uniform row height (140x180, GameCard's ART_W/COVER_H), so a placeholder that measured
-   differently would move every row below it the moment real data replaced it, which is the reflow the
-   whole windowing engine exists to avoid. Not interactive and aria-hidden — it is furniture. */
-.arcade-card--pending {
-  cursor: default;
-  pointer-events: none;
-}
-
-/* Shape only — the loading texture is the site-wide .skeleton-block shimmer (index.css). */
-.arcade-pending__art {
-  flex: 0 0 140px;
-  width: 140px;
-  height: 180px;
-  border-radius: 8px;
-}
-
-.arcade-pending__line {
-  height: 10px;
-  border-radius: 4px;
-}
-
-.arcade-pending__line--title { height: 15px; width: 78%; }
-.arcade-pending__line--tag { height: 11px; width: 46%; }
-.arcade-pending__line--short { width: 60%; }
-
-.arcade-card__rating {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 1;
-  background: var(--rating-chip-bg);
-  border: 1px solid var(--rating-chip-border);
-  color: var(--rating-chip-text);
-  border-radius: 6px;
-  padding: 2px 7px;
-  font-size: 10.5px;
-  font-weight: 700;
-  line-height: 1.3;
-  white-space: nowrap;
-}
-
-/* The details column. Everything in it is clamped or fixed-height (2-line title, one tag line, 4-line
-   summary, a one-line foot), so it tops out around 155px — under the art's 180px, and that is what lets
-   the art set a uniform card height for the whole grid. Add an unclamped row here and cards start
-   varying in height again, so anything new needs a bound. */
-.arcade-card__body {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
 }
 
 /* Up to TWO lines, with the second reserved. A single nowrap line clipped most real titles ("007 - The

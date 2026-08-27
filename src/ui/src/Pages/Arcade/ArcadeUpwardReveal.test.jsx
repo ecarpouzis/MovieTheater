@@ -92,10 +92,13 @@ function giveTheDomAScroll() {
   });
 }
 
-async function frames(n = 14) {
+// Real time, not just macrotasks: the band pump only fires for a band that has stayed WANTED for
+// MIN_WANT_AGE (150 ms) — the age gate that makes a scrollbar drag fire ~zero mid-flight fetches.
+// Zero-delay frames outran it under load and made this file flaky.
+async function frames(n = 14, ms = 25) {
   for (let i = 0; i < n; i++) {
     // eslint-disable-next-line no-await-in-loop
-    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    await act(async () => { await new Promise((r) => setTimeout(r, ms)); });
   }
 }
 

@@ -1,4 +1,4 @@
-import { createMusicSource, hexToHue, letterKeyFor, sortRows, toAlbumCard, toArtistCard } from "./musicSource";
+import { createMusicSource, hexToHue, toAlbumCard, toArtistCard } from "./musicSource";
 
 const albums = [
   { id: 1, title: "Zebra", year: 1999, artistId: 10, artistName: "The Beatles", artistSortName: "Beatles, The", artistKind: null, hasArt: true, dominantColor: "#ff0000", tag: "Live" },
@@ -29,16 +29,19 @@ describe("catalog/musicSource — albums and artists as cards, the catalog ownin
     expect(hexToHue("nope")).toBeNull();
   });
 
-  it("sorts rows the way the views sort cards, and buckets letters on the sort's own key", () => {
-    expect(sortRows(albums, "albums", "artist").map((a) => a.id)).toEqual([1, 2, 3]); // the server's order stands
-    expect(sortRows(albums, "albums", "title").map((a) => a.title)).toEqual(["Apple", "Mango", "Zebra"]);
-    expect(sortRows(albums, "albums", "newest").map((a) => a.year)).toEqual([2011, 2005, 1999]);
+  // R9 S3: the page's own grid retired, so `sortRows`/`letterKeyFor` — the helpers that kept it in
+  // step with the views' order — went with it. The SOURCE does both now, so that is what is pinned.
+  it("sorts and buckets letters on each sort's own key", async () => {
+    const s = createMusicSource({ albums, listKey: "k", onOpenAlbum: vi.fn(), onOpenArtist: vi.fn() });
+    expect((await s.fetchFlatBand(0, 10, "artist")).items.map((c) => c.id)).toEqual([1, 2, 3]); // the server's order stands
+    expect((await s.fetchFlatBand(0, 10, "title")).items.map((c) => c.title)).toEqual(["Apple", "Mango", "Zebra"]);
+    expect((await s.fetchFlatBand(0, 10, "newest")).items.map((c) => c.year)).toEqual([2011, 2005, 1999]);
+    expect((await s.letters!("artist")).map((b) => b.letter)).toContain("B");
+    expect((await s.letters!("title")).map((b) => b.letter)).toEqual(["A", "M", "Z"]);
     // The artist rows sort by the SAME keys as the albums (one section, one Sort pill — R9 S1b).
-    expect(sortRows(artists, "artists", "artist").map((a) => a.id)).toEqual([10, 20]);
-    expect(letterKeyFor("albums", "artist")!(albums[0])).toBe("Beatles, The");
-    expect(letterKeyFor("albums", "title")!(albums[0])).toBe("Zebra");
-    expect(letterKeyFor("albums", "newest")).toBeNull();
-    expect(letterKeyFor("artists", null)!(artists[0])).toBe("Beatles, The");
+    const a = createMusicSource({ albums, artists, artistItems: true, listKey: "k", onOpenAlbum: vi.fn(), onOpenArtist: vi.fn() });
+    expect((await a.fetchFlatBand(0, 10, "artist")).items.map((c) => c.id)).toEqual([10, 20]);
+    expect((await a.letters!("artist")).map((b) => b.letter)).toContain("B");
   });
 
   it("the one catalog (albums) groups by artist / decade / kind / letter, lands on one-per-artist, walks artists in the directory and opens an artist from a group", async () => {

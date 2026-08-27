@@ -53,13 +53,6 @@ html {
 /* The browse "simple" 2-up card grid — a plain CSS replacement for the antd <List grid> layout
    (List is deprecated in antd 6, removed in v7). (Its sibling .letter-grid went with the rails'
    A–Z grids; quick-scroll is the on-page CatalogPager strip now.) */
-.simple-card-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 4px;
-  width: 100%;
-}
-
 .RightCol {
   text-align: left;
 }
@@ -189,7 +182,7 @@ img {
   background: #dc3545 !important;
 }
 
-/* Reserves the height of the rows a windowed grid has recycled away (useGridWindow), above and below
+/* Reserves the height of the rows a windowed grid has recycled away, above and below
    the mounted window, so the scrollbar reflects the whole loaded list. It sits OUTSIDE the grid
    element — a full-width child inside a grid would take a track and fight the layout. Shared by
    Browse's card grid and the arcade lobby. */

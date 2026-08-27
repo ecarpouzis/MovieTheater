@@ -22,7 +22,9 @@ or an album is; nothing in a section knows how a shelf is laid out.
   `sorts` (+ `currentSort` when the SECTION owns the sort), `itemsModes`/`itemsLabels`,
   `listColumns`, `directory`, `fetchFlatBand(skip, top, sort)`, `fetchGroupBand(groupsSkip,
   groupsTop, perGroupTop, groupBy, sort)`, `fetchGroupMore(groupKey, skip, top, groupBy, sort)`,
-  `letters(sort)`, `groupLetters(groupBy, sort)`, `onOpen(item)`, `onOpenGroup(group, groupBy)`.
+  `letters(sort)`, `groupLetters(groupBy, sort)`, `onOpen(item)`, `onOpenGroup(group, groupBy)`,
+  the GRID's card seam (`renderCard(item, view)` + `gridClass` + `gridCell` — see below), and
+  `dataVersion` (the SAME list edited in place: bands re-read, window/heights/scroll stay put).
 
 Two envelope laws the adapters encode: a flat page reports `total: -1` when the endpoint only
 counts on its first page (the adapter carries the first value forward); grouped browsing is
@@ -73,12 +75,14 @@ section under every backdrop; a source sets `shelvesSkin: "plain"` for bare plan
 
 ## Laws (R9 S0 — the Long Box `views-perf` catalog is binding)
 
-- **One engine, one strip.** Every view rides `InfiniteBands`; every view's seek control is
-  `Components/CatalogPager` (letters under an alphabetical sort, page numbers otherwise). A section
-  whose Grid still runs its own windowing (`useGridWindow`/`usePagedCatalog`) is a migration debt,
-  not a second engine — R9 S3 retires it. A source that wants LETTERS on its flat views must offer
-  `letters(sort)` (Books: `/browse/letters`, the flat sibling of `group-letters`; Movies:
-  `/API/BrowseLetters`); with only `groupLetters` the strip falls back to page numbers on Grid/Wall/List.
+- **One engine, one strip — TRUE since R9 S3.** Every view of every section rides `InfiniteBands`,
+  and every view's seek control is `Components/CatalogPager` (letters under an alphabetical sort,
+  page numbers otherwise). `hooks/useGridWindow` and `hooks/usePagedCatalog` — the second engine the
+  four Grid overrides ran on — are DELETED; there is nowhere left to re-roll one. A source that wants
+  LETTERS on its flat views must offer `letters(sort)` (Books: `/browse/letters`, the flat sibling of
+  `group-letters`; Movies: `/API/BrowseLetters`); with only `groupLetters` the strip falls back to
+  page numbers on Grid/Wall/List. The strip is an INDEX, so it shows at any list length; page numbers
+  only appear once there is more than one page.
 - **The want-list pump + abort + `MIN_WANT_AGE` are a set.** Aborts alone cascade (a freed slot
   fetches the next doomed band; the server runs every query to completion); the age gate is what
   makes a scrollbar drag fire ~zero mid-flight fetches.
@@ -109,8 +113,58 @@ section under every backdrop; a source sets `shelvesSkin: "plain"` for bare plan
   scope the diet (zero-blur book shadow, no static overlays over the scrolled opening, cheap hover
   lift, no cover opacity transition). Chrome keeps the rich look — do not fold the diet into the base
   rules. `(pointer: coarse)` is the touch tier.
+- **A section's own card may ride the Grid; nothing else may.** `renderCard(item, view)` is honoured
+  by `GridView` alone — the Grid is the critical default detail view, and Movies' MovieCard, the
+  Boardgame card, Arcade's GameCard and Music's album/artist tiles keep their exact presentation.
+  Every other view keeps the package `Card`, so Wall/List/Extended/Shelves/Newspaper read as one
+  site. The card renderer MUST be a module-level component; the full contract is below.
 - **Rejected designs stay rejected:** settle-deferred band mounts (bare planks while scrolling),
-  velocity-gated deferral, an always-on wheel→strip hijack, `content-visibility` on a JS-windowed band.
+  velocity-gated deferral, an always-on wheel→strip hijack, `content-visibility` on a JS-windowed
+  band, making a section's Grid consume `ViewProps` instead of moving onto the engine (that keeps two
+  engines alive forever), and replacing a section's card with the package card (it loses the detail
+  the Grid is FOR).
+
+## The Grid's card seam (R9 S3) — `renderCard`
+
+A section keeps its card and gives up its engine. `CatalogSource.renderCard?(item, view)` returns the
+section's own card; `gridClass` names the wrap it is laid out in; `gridCell` is the base cover height
+in px before the cover-size tweak. What unifies is UNDER the card: `InfiniteBands`, the letter strip,
+the band skeletons and the tweaks plumbing.
+
+The contract a section's card signs:
+
+| Tweak | How it reaches the card |
+|---|---|
+| Cover size | `--cell` on the wrap (`GridView`: `gridCell` × `coverScale`) — the section's CSS sizes its cover box off it; `view.cellH` is the same number as a prop, for a card that measures in JS (Arcade's cover box) |
+| Hover (lift / zoom / tilt) | `view.hoverClass` beside `bx-card` on the card root; the effect lands on whatever wears `bx-cover` |
+| Hover: dim | the results root's `data-hover` + `bx-cover` on the cover — nothing per-card |
+| Rounded corners | `.bx-rounded .bx-cover` — `bx-cover` on the cover is the whole requirement |
+| Metadata: minimal | `view.metadata === "minimal"` → the card drops its meta block (Movies: badges + cast + plot; Boardgames: chips + description; Arcade: chips + summary + foot; Music: the sub-line) |
+
+Rules that bite:
+
+- **`renderCard` must return a MODULE-LEVEL component.** A component type created inside the renderer
+  is a new type every render and React remounts the whole band (the `BandSlot` memo law). Live
+  per-render state (a Seen/Want set, an expansion map) reaches it as flat props through a renderer
+  whose identity changes only when one of them changes.
+- **`gridClass` must be written `.bx-grid.<class>` in CSS.** The package's own wrap rule (`.bx-grid`,
+  a wrapping flex row) has the same specificity, so a bare class wins or loses on file order.
+- **The engine's spacers and band skeletons need `grid-column: 1 / -1`** in a section's column grid:
+  they are row-breaking blocks, and left in column 1 they shred the layout.
+- **`.bx-grid .bx-card { flex-direction: column }` reaches a section card too.** A card that IS the
+  row (Arcade's) takes itself back with `.bx-grid .<card>.bx-card { flex-direction: row }`.
+- **`.bx-cover > img` fills and CROPS.** A card whose art is letterboxed on purpose (a movie poster,
+  BGG box art, arcade box art) overrides it one class deeper, or puts `bx-cover` on the exact-sized
+  cover element instead of the box around it (Arcade).
+
+Per section: Movies `MovieCard` / `SimpleMovieCard` (`Pages/Browse/MovieCard.js`; `.bx-grid--movies`
+/ `.bx-grid--simple`), Boardgames `BoardGameCard` (`.bx-grid--boardgames`), Music `AlbumCard` /
+`ArtistCard` (`Pages/Music/MusicCards.js`; `.music-album-grid` / `.music-artist-grid`), Arcade
+`GameCard` (`.arcade-grid`). Each has a `*Tweaks.test.jsx` beside it proving all four levers move it.
+
+`dataVersion` is the seam's companion: a DENSE client list edited in place — Movies' Seen/Want
+removal-on-untoggle, a background chunk landing — bumps it, and the stream re-reads its bands while
+the window, the measured heights and the scroll position stay exactly where the reader left them.
 
 ## The rail family (`catalog/rail/`)
 
@@ -175,6 +229,7 @@ headline a group instead of an item), `CardRow`s, a `CoverWall`, `CardGrid`s, `R
 
 | Section | Adapter | Scope | Flat | Groups | Directory |
 |---|---|---|---|---|---|
+| Movies (dense) | `createMoviesListSource` over `clientSource.ts` | Seen · Want to watch · the back-nav restore · a one-shot browse — the rows the page already holds. Flat views only (an id list has no server grouping); the list is filled in bounded chunks and a Seen/Want untoggle edits the array + bumps `dataVersion` | slices | — | — |
 | Movies/TV | `moviesSource.ts` | the rail URL (`q/f/x/y/my`) → `/API/Browse` via `useMovieSearch.facetSearch` (`moviesFacetSpec.ts` maps the state to `BrowseFilterQuery`; pre-S2 `?mode=&value=` links are rewritten once on entry) | the `/API/Browse` envelope | `/API/BrowseGroups` genre/decade/franchise under the same filter | franchises |
 | Boardgames | `boardgamesSource.ts` over `clientSource.ts` | the rail URL (`q/f/x/y` + `a/t/w` ranges) applied IN MEMORY (`clientFacets` via `boardgamesFacetSpec.ts`) over the shared React-Query catalog (`useBoardgamesCatalog`); pre-S2c `?players=&age=&time=&mode=title` links are rewritten once on entry | slices | publisher/family/designer/category/mechanic (`/API/Boardgames/Facets`), decade, players — a header click scopes + drills (`DRILL_NEXT_GROUP`) | publishers |
 | Music | `musicSource.ts` over `clientSource.ts` | the rail URL (`q/f/x/y`) applied IN MEMORY over the shelf the URL names (`f=kind:` is a SCOPE — the shelf is fetched, never filtered down; `musicFacetSpec.ts` over the shared `useMusicShelf` React-Query resource; `f=artist:`/`f=tag:`/`y=` filter it, `q` also drives the server song search); pre-S2c `?kind=`/`?tab=` links rewritten once | slices (the catalog sorts) | artist/decade/kind/letter; artists by decade/letter | artists → albums |
@@ -192,9 +247,11 @@ all instant and abort-free — for sections that already ship their whole catalo
 1. Write `sources/<section>Source.ts`: map rows → `CardItem` (kind-scoped key, poster/thumb URLs by
    the section's own rule, a real aspect, badges), decide the scope key, offer only what the data
    supports (`supports`, `groups`, `sorts`, `directory`), open through the section's URL-driven modal.
-2. Mount `<CatalogHost section="<name>" source={source} overrides={{ grid: <the existing grid/> }} />`
-   where the grid lives; the existing renderer stays the `grid` view untouched. Gate the section's own
-   pump/letters on "the grid is the view on screen" (`resolveViewState(...).view === "grid"`).
+2. Mount `<CatalogHost section="<name>" source={source} />` where the grid lives. Keep the section's
+   OWN card by giving the source `renderCard` + `gridClass` + `gridCell` (the seam above) — never a
+   `grid` override running its own windowing, which is the second engine R9 S3 deleted. `overrides`
+   survives only for a transient non-stream surface (Movies parks its first-paint skeleton there
+   while a dense list loads).
 3. If the section has a landing that keys on "no params", exclude the catalog's (`CATALOG_PARAM_KEYS`).
 4. Tests: an envelope test per adapter on recorded fixtures (`*.test.ts` beside it).
 5. Filters (optional): write a `FacetSpec`, mount `FacetRail` in the sider (desktop) and behind a

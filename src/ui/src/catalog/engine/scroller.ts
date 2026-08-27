@@ -33,7 +33,7 @@ export function setScrollTop(root: ScrollRoot, y: number): void {
 
 /**
  * Fixed chrome the window slides underneath (the 48 px mobile top bar). An inner scroller already
- * starts below everything, so it is 0 there. Same token useGridWindow reads — one reading line.
+ * starts below everything, so it is 0 there. One reading line for every windowed surface on the site.
  */
 export function topInset(root: ScrollRoot): number {
   if (root) return 0;
