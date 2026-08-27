@@ -375,8 +375,18 @@ TTL elapses) it rebuilds the movie browse's light group indexes and its facet co
   itself, so a pass killed halfway leaves what it finished warm and the next pass redoes the rest.
   A failure is logged and dropped — a cold cache is slow, not broken. READ-ONLY throughout; **off
   in Development**, because the dev connection IS the live shared database.
-- **What it warms**: `BrowseFilter.CountAsync` for the `Movies` and `Series` type scopes, and
-  `BrowseGroups.BuildIndexAsync` for genre / decade / franchise over `Movies`, `Series` and both.
+- **What it warms** (`CatalogWarmupTargets.Default`): `BrowseFilter.CountAsync` for the `Movies` and
+  `Series` type scopes, then `BrowseGroups.BuildIndexAsync` for
+  - the **core axes** (`CoreAxes` — genre / decade / franchise) over `Movies`, `Series` **and** both, and
+  - the **rest of the user-independent axes** (`WideAxes` — type / mpa / director / subgenre / mood /
+    era / setting) over `Movies` and the combined scope ONLY.
+
+  The asymmetry is the byte budget, not an oversight: the cache is size-limited (200 MB, `Startup`)
+  and an index costs roughly one row per (title, group), so a per-scope copy of ten axes would spend a
+  third of it on shelves nobody opened. The Series-only copies of the wide axes build on first ask.
+  **`my` is absent by construction** — it reads the caller's own lists, so there is no shared entry to
+  warm and a warm that wrote one would hand a viewer someone else's Seen shelf
+  (`BrowseGroups.IsUserDependent`; `CatalogWarmupTests` asserts both halves).
   Misc-inclusive scopes are deliberately absent (their index needs the misc CARD projection, which
   lives on the controller, and misc is a small in-memory list that costs nothing cold).
 - **`Web/BrowseCacheKeys.cs` is what makes a warm reachable.** `Web/CatalogQueries`' base queries
@@ -391,17 +401,46 @@ TTL elapses) it rebuilds the movie browse's light group indexes and its facet co
 | Section | Adapter | Scope | Flat | Groups | Directory |
 |---|---|---|---|---|---|
 | Movies (dense) | `createMoviesListSource` over `clientSource.ts` | Seen · Want to watch · the back-nav restore · a one-shot browse — the rows the page already holds. Flat views only (an id list has no server grouping); the list is filled in bounded chunks and a Seen/Want untoggle edits the array + bumps `dataVersion` | slices | — | — |
-| Movies/TV | `moviesSource.ts` | the rail URL (`q/f/x/y/my`) → `/API/Browse` via `useMovieSearch.facetSearch` (`moviesFacetSpec.ts` maps the state to `BrowseFilterQuery`; pre-S2 `?mode=&value=` links are rewritten once on entry) | the `/API/Browse` envelope | `/API/BrowseGroups` genre/decade/franchise under the same filter | franchises |
-| Boardgames | `boardgamesSource.ts` over `clientSource.ts` | the rail URL (`q/f/x/y` + `a/t/w` ranges) applied IN MEMORY (`clientFacets` via `boardgamesFacetSpec.ts`) over the shared React-Query catalog (`useBoardgamesCatalog`); pre-S2c `?players=&age=&time=&mode=title` links are rewritten once on entry | slices | publisher/family/designer/category/mechanic (`/API/Boardgames/Facets`), decade, players — a header click scopes + drills (`DRILL_NEXT_GROUP`) | publishers |
-| Music | `musicSource.ts` over `clientSource.ts` | the rail URL (`q/f/x/y`) applied IN MEMORY over the shelf the URL names (`f=kind:` is a SCOPE — the shelf is fetched, never filtered down; `musicFacetSpec.ts` over the shared `useMusicShelf` React-Query resource; `f=artist:`/`f=tag:`/`y=` filter it, `q` also drives the server song search); pre-S2c `?kind=`/`?tab=` links rewritten once | slices (the catalog sorts) | artist/decade/kind/letter; artists by decade/letter | artists → albums |
-| Arcade | `arcadeSource.ts` | the rail URL (`q/f/x`) mapped onto `/API/Arcade/Games`' own params by `arcadeFacetSpec.ts` (`f=system:` repeatable → csv — the console carousel IS that facet and the rail draws no System section (`hidden`); `x=region:` → `hideRegions` (exclude-only, `includable:false`); `players/genre/variant/ra` single-valued); pre-S2c `?system=&players=…` links rewritten once | `/API/Arcade/Games` (absolute skip) | `/API/Arcade/GameGroups` system/genre/decade — a header click adds the facet | systems |
-| Photos | `photosSource.ts` | the reel (the Timeline shelf + hidden toggle) narrowed by the rail URL (`q/f/x/y`) on `/photos/browse` — `photosFacetSpec.ts` maps it onto `PhotoBrowseFilterQuery` (album/person/kind/camera/years/q, `ex*` twins) which rides Browse, BrowseGroups and the Directory; option lists from `/API/Photos/Facets` (per hidden toggle). The Timeline root and the Gallery subsection stay outside it | `/API/Photos/Browse` | `/API/Photos/BrowseGroups` year/month/album/folder | top-level folders |
-| Books | `booksSource.ts` over `booksOData.ts` | the rail URL (`q/f/x/y/r/my`) | `/API/Books/odata/catalog` | `/API/Books/browse/groups` collection/series/publisher/decade/franchise (+ Items one-per-series) | collection folders (`dir=`) |
+| Movies/TV | `moviesSource.ts` | the rail URL (`q/f/x/y/my`) → `/API/Browse` via `useMovieSearch.facetSearch` (`moviesFacetSpec.ts` maps the state to `BrowseFilterQuery`; pre-S2 `?mode=&value=` links are rewritten once on entry) | the `/API/Browse` envelope | `/API/BrowseGroups` genre · decade · franchise · type · director · mpa · subgenre/mood/era/setting · my lists, under the same filter | franchises |
+| Boardgames | `boardgamesSource.ts` over `clientSource.ts` | the rail URL (`q/f/x/y` + `a/t/w` ranges) applied IN MEMORY (`clientFacets` via `boardgamesFacetSpec.ts`) over the shared React-Query catalog (`useBoardgamesCatalog`); pre-S2c `?players=&age=&time=&mode=title` links are rewritten once on entry | slices | publisher/family/decade/players/time/age/weight/rating tier/base-or-expansion/designer/category/mechanic (the five link facets from `/API/Boardgames/Facets`, the rest computed on the rail's own ladders) — a header click scopes + drills (`DRILL_NEXT_GROUP`) | publishers |
+| Music | `musicSource.ts` over `clientSource.ts` | the rail URL (`q/f/x/y`) applied IN MEMORY over the shelf the URL names (`f=kind:` is a SCOPE — the shelf is fetched, never filtered down; `musicFacetSpec.ts` over the shared `useMusicShelf` React-Query resource; `f=artist:`/`f=tag:`/`y=` filter it, `q` also drives the server song search); pre-S2c `?kind=`/`?tab=` links rewritten once | slices (the catalog sorts) | artist/decade/year/kind/quality tag; artists by the decade they became active | artists → albums |
+| Arcade | `arcadeSource.ts` | the rail URL (`q/f/x`) mapped onto `/API/Arcade/Games`' own params by `arcadeFacetSpec.ts` (`f=system:` repeatable → csv — the console carousel IS that facet and the rail draws no System section (`hidden`); `x=region:` → `hideRegions` (exclude-only, `includable:false`); `players/genre/variant/ra` single-valued); pre-S2c `?system=&players=…` links rewritten once | `/API/Arcade/Games` (absolute skip) | `/API/Arcade/GameGroups` system/genre/decade/players/region/variant/developer/publisher/ra — a header click adds the facet where one exists | systems |
+| Photos | `photosSource.ts` | the reel (the Timeline shelf + hidden toggle) narrowed by the rail URL (`q/f/x/y`) on `/photos/browse` — `photosFacetSpec.ts` maps it onto `PhotoBrowseFilterQuery` (album/person/kind/camera/years/q, `ex*` twins) which rides Browse, BrowseGroups and the Directory; option lists from `/API/Photos/Facets` (per hidden toggle). The Timeline root and the Gallery subsection stay outside it | `/API/Photos/Browse` | `/API/Photos/BrowseGroups` year/month(-of-a-year)/album/folder/people/kind/camera | top-level folders |
+| Books | `booksSource.ts` over `booksOData.ts` | the rail URL (`q/f/x/y/r/my`) | `/API/Books/odata/catalog` | `/API/Books/browse/groups` collection/series/publisher/decade/franchise (+ Items one-per-series); writer/artist declared but OFF until the host can group by a credit | collection folders (`dir=`) |
 | Novels | `novelsSource.ts` | the Novels rail (include-only facets; adult-romance excluded by default) | `/API/Books/novels` | — | — |
 | Kids | `kidsSource.ts` | one bounded `/API/Books/kids/browse` load | client slices, best/alpha | series (client) | — |
 
 `clientSource.ts` is the in-memory source: bands are slices, heads are walks, letters are buckets,
 all instant and abort-free — for sections that already ship their whole catalog to the browser.
+
+## The group axes, per section (R9 S8)
+
+Every section's Group pill was audited on the canvas; the verdicts and what each axis carries are
+below. **Four rules the whole table obeys:**
+
+1. **`letter` is not an axis.** The A–Z strip IS the letter axis; a shelf per letter drew the same
+   index twice. Dropped from Movies (`BrowseGroups.NormalizeGroupBy` falls back to genre) and from
+   Music (album AND artist grouper sets).
+2. **A shelf and its facet describe the same set.** Every computed axis reuses the ladder or the
+   predicate the rail already filters with — `playerCounts`, `TIME_STOPS`/`AGE_STOPS`/`WEIGHT_STOPS`,
+   the affirmed-tag rule, the effective MPA bucket, the newest-insight tag rule — so a header's count
+   and its drill can never disagree.
+3. **A header that cannot scope only regroups.** It never pretends: Boardgames' rating tier and
+   base-or-expansion, Arcade's region (the facet is deselect-only) / developer / publisher / "no RA",
+   Photos' year and month (the rail's date control is a RANGE), Music's artist (it opens `?artist=`,
+   the Directory's second level, which predates the rail).
+4. **A fixed-order or numeric axis gets NO grouped letter rail** — the strip falls back to page
+   numbers rather than pointing at letters that are not in that order (`BrowseGroups.IsAlphabetical`,
+   `ArcadeGameGroups.IsAlphabetical`, `ClientGrouper.alpha`).
+
+| Section | Dropped | Added | Notes worth keeping |
+|---|---|---|---|
+| Movies/TV | `letter` | type · director (`CreditRole.Director`) · mpa · subgenre/mood/era/setting (`TagCategory`) · my lists | MPA is the EFFECTIVE bucket (real → legacy → inferred) folded onto the rail's five stops, X reading as NC-17; a title whose rating does not resolve gets NO shelf, because the rail has no NR stop. Tag axes KEEP their singletons (one film really is that mood) where a franchise of one is still dropped. `my` is the only user-dependent axis anywhere — `BrowseCacheKeys` carries the user id for it, the warmer never touches it, and the pill hides it for a signed-out reader. |
+| Boardgames | — (`players` FIXED) | play time · min age · weight · rating tier · base or expansion | `players` was bucketed on the MAXIMUM alone, so a 2–4 game sat in "3–4" and was invisible to someone with two players; it is range-aware now (`playersBuckets` = `playerCounts`, expansions extending it, 8 = 8+) and its counts equal the rail's. Time files by the MIDPOINT of the sane span; weight in 0.5 steps to a 4.5–5.0 cap; tiers are 8.0+ / 7.5–8.0 / 7.0–7.5 / 6.5–7.0 / 6.0–6.5 / Under 6.0; "base or expansion" reads `ThingType` AND the site's own `baseGameId`, so the 24 hand-grouped standalones get their own shelf. |
+| Music | `letter` (albums AND artists) | year · quality tag | `kind` stays — three values, and the one axis naming which SHELF a row came off. The tag VALUE has no brackets: `MusicNaming.ParseAlbumFolder` strips them at ingest, so `… [FLAC]` on disk is `FLAC` here (two brackets become the one comma-joined `"FLAC, EP"`, which is what the rail's Tag facet matches). Brackets are wildcards only in a T-SQL `LIKE` or a PowerShell path. |
+| Arcade | — | players (`MaxPlayers`) · region · variant · developer · publisher · RetroAchievements | Region and variant are per VERSION: a card stands under every region and every variant it has a surviving dump for, the same reading the lobby's region deselect uses. They are the only multi-valued axes and pay for ONE extra light query, the distinct `(System, CollapseKey, Region, Variant)` tuples, and only when asked (`NeedsTags`). An untagged dump is a real shelf (`Unknown` region, `Release` variant), never a silent drop. The RA axis' first three keys ARE the `ra=` facet's values. |
+| Photos | — | people · kind · camera | **The `month` verdict: KEPT.** It was never a calendar month across years — the key is `YYYY-MM` and the label "December 2011", so it is the timeline at a finer grain, which is what a family album wants (a month here is an occasion). The across-years reading has its own endpoint, `/API/Photos/OnThisDay`, which exists precisely because the browse narrows by month only WITHIN a year. The pill now says "Month of a year". People counts AFFIRMED tags only (Manual / Confirmed) — a suggestion is a question. |
+| Books | — | writer · artist — **declared, wired, and OFF** | The FACETS exist; the HOST's grouping does not (`BrowseController.NormalizeGroupBy` matches `^(series\|publisher\|decade\|collection\|franchise)$`, and its band bucketing is single-key per item while a credit is many-per-item). A stale host does not 400 on `groupBy=author`, it silently returns COLLECTIONS, so `booksGroupsFor` keeps them off the pill behind `BooksSourceOptions.creditAxes` until the host that understands them is deployed. |
 
 ## Adopting the package (a section's checklist)
 
