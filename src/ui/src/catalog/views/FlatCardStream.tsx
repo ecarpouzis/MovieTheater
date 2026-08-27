@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useMemo, useRef, useState, type CSSProperties } from "react";
-import CatalogPager from "../../Components/CatalogPager";
+import CatalogPager from "../pager/CatalogPager";
 import Card from "../cards/Card";
 import InfiniteBands, { type InfiniteBandsHandle } from "../engine/InfiniteBands";
 import type { CardItem, CardRenderProps } from "../types";

@@ -8,7 +8,7 @@
  * plus a `currentSort` naming the order that list is in. A sort with a `compare` is applied here
  * instead (a section whose grid has no sort control of its own).
  */
-import { bucketsFor } from "../../Components/CatalogPager";
+import { bucketsFor } from "../pager/CatalogPager";
 import type { CardGroup, CardItem, CardPage, CatalogSource, DirectoryNode, GroupPage, GroupSpec, LetterBucket, ListColumn, SortSpec, TweakExtra, ViewMode } from "../types";
 
 export interface GroupKey {

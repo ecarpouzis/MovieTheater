@@ -1,5 +1,5 @@
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import CatalogPager from "../../Components/CatalogPager";
+import CatalogPager from "../pager/CatalogPager";
 import type { CardGroup, CardItem } from "../types";
 import { StreamEmpty, StreamFailed, StreamLoading } from "./StreamStates";
 import type { ViewProps } from "./ViewProps";

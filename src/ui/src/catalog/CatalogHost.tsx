@@ -6,6 +6,7 @@ import "./styles/catalog-shelves.css";
 import "./skin/skin.css";
 import ViewSwitcher, { TweaksButton, ViewPills } from "./ViewSwitcher";
 import useSlot, { BAR_TOOLS_SLOT, TOPBAR_TOOLS_SLOT } from "./bar/useSlot";
+import PerfHud from "./PerfHud";
 import useMiddleDragScroll from "./engine/useMiddleDragScroll";
 import useIsMobile from "../hooks/useIsMobile";
 import { requestSiteTheme } from "../hooks/useTheme";
@@ -143,6 +144,9 @@ export default function CatalogHost({ section, source, overrides, tools, classNa
           )}
         </TweaksPanel>
       )}
+      {/* The perf HUD, mounted once wherever a catalog is. Renders nothing and installs nothing
+          unless localStorage["catalog.perfhud.v1"] is set — see PerfHud.tsx. */}
+      <PerfHud />
     </div>
   );
 }

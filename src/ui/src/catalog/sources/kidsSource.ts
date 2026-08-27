@@ -8,7 +8,7 @@
  *
  * No user marks, no ratings badges, no excludes: a child's shelf is covers and names.
  */
-import { bucketsFor } from "../../Components/CatalogPager";
+import { bucketsFor } from "../pager/CatalogPager";
 import * as api from "../../Pages/Books/booksApi";
 import type { BrowseGroupItem, ItemSummary } from "../../Pages/Books/booksApi";
 import { clampAspect } from "../../Pages/Books/booksFormat";

@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import CatalogPager from "../../Components/CatalogPager";
+import CatalogPager from "../pager/CatalogPager";
 import Card from "../cards/Card";
 import InfiniteBands, { type InfiniteBandsHandle } from "../engine/InfiniteBands";
 import { NO_GROUP } from "../state/useCatalogView";

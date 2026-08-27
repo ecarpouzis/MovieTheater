@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState, type CSSProperties } from "react";
-import CatalogPager from "../../Components/CatalogPager";
+import CatalogPager from "../pager/CatalogPager";
 import CardImage from "../cards/CardImage";
 import InfiniteBands, { type InfiniteBandsHandle } from "../engine/InfiniteBands";
 import type { CardItem, ListColumn } from "../types";
