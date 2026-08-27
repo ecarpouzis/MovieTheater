@@ -127,7 +127,7 @@ namespace MovieTheater.Controllers
         // no DB row order to walk) and the pager falls back to page numbers client-side. Only meaningful
         // for the alpha sort; the client never calls this under any other.
         [HttpGet("/API/BrowseLetters")]
-        public async Task<IActionResult> BrowseLetters(string type, string? mode = null, string? value = null)
+        public async Task<IActionResult> BrowseLetters(string type, string? mode = null, string? value = null, [FromQuery] Web.BrowseFilterQuery? fq = null)
         {
             var types = ParseTypeScope(type);
             if (types.Count == 0)
@@ -137,6 +137,8 @@ namespace MovieTheater.Controllers
 
             var (mq, sq) = ApplyBrowseFilter(await GetBaseMovieQuery(), await GetBaseSeriesQuery(), mode, value);
             (mq, sq) = ApplyTypeScope(types, mq, sq);
+            // The facet rail's filter composes with the legacy one (R9 S2), so the strip matches the grid.
+            (mq, sq) = Web.BrowseFilter.Apply(movieDb, mq, sq, Web.BrowseFilter.From(fq), GetCurrentUserId());
 
             var keys = await OrderCardKeys(BuildCardKeys(mq, sq, "alpha"), "alpha").Select(k => k.SimpleTitle).ToListAsync();
             var letters = Web.LetterBuckets.Walk(keys)

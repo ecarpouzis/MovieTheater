@@ -26,7 +26,7 @@ namespace MovieTheater.Web
         public const int UnknownRatingId = 7;
 
         /// <summary>Highest real bucket id (X). Buckets 1..6 are real certificates; 7 is Unknown.</summary>
-        private const int MaxRealBucket = 6;
+        public const int MaxRealBucket = 6;
 
         /// <summary>
         /// Resolves a single free-text rating to its MPA bucket id (1..6), or null if it doesn't
@@ -109,6 +109,14 @@ namespace MovieTheater.Web
         /// are one certificate as far as anyone browsing is concerned — so the browse-by-rating grid
         /// takes a SET, not a single id.
         /// </summary>
+        public static Expression<Func<Series, bool>> SeriesEffectiveBucketIn(MovieDb db, ICollection<int> buckets) =>
+            s => buckets.Contains(
+                db.RatingMaps.Where(rm => rm.MovieRating == s.MpaaRating && rm.MPARatingID >= 1 && rm.MPARatingID <= MaxRealBucket).Select(rm => (int?)rm.MPARatingID).FirstOrDefault()
+                ?? db.RatingMaps.Where(rm => rm.MovieRating == s.Rating && rm.MPARatingID >= 1 && rm.MPARatingID <= MaxRealBucket).Select(rm => (int?)rm.MPARatingID).FirstOrDefault()
+                ?? db.RatingMaps.Where(rm => rm.MovieRating == s.MpaaRatingInferred && rm.MPARatingID >= 1 && rm.MPARatingID <= MaxRealBucket).Select(rm => (int?)rm.MPARatingID).FirstOrDefault()
+                ?? UnknownRatingId
+            );
+
         public static Expression<Func<Movie, bool>> MovieEffectiveBucketIn(MovieDb db, ICollection<int> buckets) =>
             m => buckets.Contains(
                 db.RatingMaps.Where(rm => rm.MovieRating == m.MpaaRating && rm.MPARatingID >= 1 && rm.MPARatingID <= MaxRealBucket).Select(rm => (int?)rm.MPARatingID).FirstOrDefault()
