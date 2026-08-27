@@ -28,6 +28,8 @@ export interface MovieSearch {
   infinite?: boolean;
   pending?: boolean;
   movieIds?: number[];
+  /** The parsed facet state behind a `/API/Browse` search (R9 S2) — the grid reads the active person from it. */
+  facet?: { include: Record<string, (string | number)[]> } | null;
 }
 
 /** `MovieCardDto` as the JSON serializer emits it (camelCase; `id` is already lower-case server-side). */
@@ -70,7 +72,6 @@ export const MOVIE_GROUPS: GroupSpec[] = [
   { value: "genre", label: "Genre" },
   { value: "decade", label: "Decade" },
   { value: "franchise", label: "Franchise" },
-  { value: "letter", label: "Letter" },
 ];
 
 /** Which browse mode a group header opens (`?mode=&value=`); decades have no browse of their own. */
@@ -95,9 +96,13 @@ export interface BrowseScope {
   seed: string | null;
   /** False for scopes `/API/BrowseGroups` cannot express (the MPA-rating browse): flat views only. */
   groupable: boolean;
+  /** The combinable filter's own params (`/API/Browse`'s BrowseFilterQuery), carried onto every scoped call. */
+  fq: [string, string][];
 }
 
-const SCOPE_BY_ENDPOINT: Record<string, { mode: string | null; valueParam: string | null; typesParam: string }> = {
+const SCOPE_BY_ENDPOINT: Record<string, { mode: string | null; valueParam: string | null; typesParam: string; passthrough?: boolean }> = {
+  // The facet rail's scope (R9 S2): every param but the paging/sort is the filter itself.
+  "/API/Browse": { mode: null, valueParam: null, typesParam: "types", passthrough: true },
   "/API/GetMoviesByType": { mode: null, valueParam: null, typesParam: "type" },
   "/API/BrowseTitle": { mode: "title", valueParam: "q", typesParam: "types" },
   "/API/BrowsePerson": { mode: "actor", valueParam: "q", typesParam: "types" },
@@ -106,6 +111,7 @@ const SCOPE_BY_ENDPOINT: Record<string, { mode: string | null; valueParam: strin
   "/API/BrowseLetter": { mode: "letter", valueParam: "letter", typesParam: "types" },
 };
 const FLAT_ONLY_ENDPOINTS = new Set(["/API/GetMoviesByRating"]);
+const NOT_FILTER_PARAMS = new Set(["types", "type", "sort", "seed", "page", "pageSize"]);
 
 /** Null when the search is not a paged URL browse (pending, id-list, the one-shot random landing). */
 export function scopeOf(search: MovieSearch | null | undefined): BrowseScope | null {
@@ -121,9 +127,10 @@ export function scopeOf(search: MovieSearch | null | undefined): BrowseScope | n
   const seed = p.get("seed");
   const spec = SCOPE_BY_ENDPOINT[u.pathname];
   if (spec) {
-    return { types: p.get(spec.typesParam) ?? "", mode: spec.mode, value: spec.valueParam ? p.get(spec.valueParam) : null, sort, seed, groupable: true };
+    const fq: [string, string][] = spec.passthrough ? [...p.entries()].filter(([k]) => !NOT_FILTER_PARAMS.has(k)) : [];
+    return { types: p.get(spec.typesParam) ?? "", mode: spec.mode, value: spec.valueParam ? p.get(spec.valueParam) : null, sort, seed, groupable: true, fq };
   }
-  if (FLAT_ONLY_ENDPOINTS.has(u.pathname)) return { types: p.get("types") ?? "", mode: null, value: null, sort, seed, groupable: false };
+  if (FLAT_ONLY_ENDPOINTS.has(u.pathname)) return { types: p.get("types") ?? "", mode: null, value: null, sort, seed, groupable: false, fq: [] };
   return null;
 }
 
@@ -204,12 +211,14 @@ export interface MoviesSourceOptions {
   search: MovieSearch;
   /** Open the detail modal (`?title=<kind>:<id>`). */
   onOpen: (id: number, kind: CardKind) => void;
-  /** Jump to a browse (`?mode=&value=`) — a group header's click. */
+  /** Jump to a browse (`?mode=&value=`) — a group header's click when the page has no facet rail. */
   onBrowse: (mode: string, value: string) => void;
+  /** Scope in place (R9 S2): a group header adds its facet (or year range) and regroups a level — one push. */
+  onScope?: (patch: { facet?: { key: string; value: string }; years?: [number, number]; group?: string }) => void;
 }
 
 /** Null when the search has no catalog scope (see `scopeOf`); the page then keeps its existing renderer. */
-export function createMoviesSource({ search, onOpen, onBrowse }: MoviesSourceOptions): CatalogSource | null {
+export function createMoviesSource({ search, onOpen, onBrowse, onScope }: MoviesSourceOptions): CatalogSource | null {
   const scope = scopeOf(search);
   if (!scope || !search.url) return null;
   const base = search.url;
@@ -222,6 +231,7 @@ export function createMoviesSource({ search, onOpen, onBrowse }: MoviesSourceOpt
       p.set("mode", scope.mode);
       p.set("value", scope.value ?? "");
     }
+    for (const [k, v] of scope.fq) p.append(k, v);
     if (withSort) {
       p.set("sort", scope.sort);
       if (scope.seed) p.set("seed", scope.seed);
@@ -302,6 +312,14 @@ export function createMoviesSource({ search, onOpen, onBrowse }: MoviesSourceOpt
     onOpen: (item) => onOpen(item.id, item.kind),
     onOpenGroup: groupable
       ? (group, groupBy) => {
+          if (onScope) {
+            if (groupBy === "genre") return onScope({ facet: { key: "genre", value: group.key }, group: "decade" });
+            if (groupBy === "franchise") return onScope({ facet: { key: "franchise", value: group.key }, group: "genre" });
+            if (groupBy === "decade") {
+              const d = parseInt(group.key, 10);
+              if (Number.isFinite(d)) return onScope({ years: [d, d + 9], group: "genre" });
+            }
+          }
           const mode = GROUP_BROWSE_MODE[groupBy];
           if (mode) onBrowse(mode, group.key);
         }

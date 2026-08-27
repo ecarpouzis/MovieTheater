@@ -27,8 +27,9 @@ export interface FacetDef {
   /** Long tail served by `loadOptions` (searched, paged) instead of the up-front facet list. */
   dynamic?: boolean;
   defaultOpen?: boolean;
-  /** How the rail draws the options: checks, publisher swatches, collection tiles. */
-  render?: "check" | "swatch" | "tile";
+  /** How the rail draws the options: checks, publisher swatches, collection tiles, or one row of
+   *  toggle pills for a short fixed scale (the five MPA stops — a click includes, a second click clears). */
+  render?: "check" | "swatch" | "tile" | "pill";
   /** "groups": only meaningful on grouped views (hidden when the view is flat + items). */
   appliesTo?: "all" | "groups";
   /** false → counts are shown but the facet cannot filter (no include/exclude controls). */
@@ -55,8 +56,9 @@ export interface FacetSpec {
   facets: FacetDef[];
   /** Offer free-text search (`q`). */
   text?: boolean;
-  /** Offer the year range; the decades list comes from `loadFacets()[decadesKey]`. */
-  years?: { decadesKey: string };
+  /** Offer the year range; the decades list comes from `loadFacets()[decadesKey]` (it sizes the
+   *  sliders). `decadePills: false` draws the two-thumb range with read-outs only — no decade row. */
+  years?: { decadesKey: string; decadePills?: boolean };
   rating?: { presets: { value: number; label: string }[] };
   flags?: FacetFlagDef[];
   loadFacets(signal?: AbortSignal): Promise<Record<string, FacetOptionRow[]>>;

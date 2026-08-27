@@ -108,6 +108,14 @@
 }
 .bx-opt.on .bx-opt-box { background: var(--ink); border-color: var(--ink); }
 .bx-opt-swatch { flex: 0 0 auto; width: 12px; height: 12px; border-radius: 3px; }
+/* A short fixed scale as one row of toggle pills (the MPA stops): the pill IS the control. */
+.bx-facet-opts--pills { flex-direction: row; flex-wrap: wrap; gap: 4px; max-height: none; overflow: visible; }
+.bx-opt-pill { width: auto; gap: 5px; padding: 3px 9px; border: 1px solid var(--line); border-radius: 999px; cursor: pointer; user-select: none; }
+.bx-opt-pill .bx-opt-box { display: none; }
+.bx-opt-pill .bx-opt-label { flex: 0 0 auto; font-size: 12px; }
+.bx-opt-pill.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.bx-opt-pill.on .bx-opt-count { color: var(--bg); opacity: 0.8; }
+.bx-opt-pill:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
 .bx-opt-label { flex: 1; font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .bx-opt-count { flex: 0 0 auto; font-family: var(--font-mono); font-size: 10px; color: var(--sub); }
 .bx-opt-acts { flex: 0 0 auto; display: flex; gap: 3px; margin-left: 2px; }
@@ -218,3 +226,6 @@
 @media (prefers-reduced-motion: reduce) {
   .bx-railbar-sheet, .bx-rail-backdrop { animation: none; }
 }
+
+/* The chips row over a section's results: nothing active → nothing drawn (RailChips). */
+.bx-chips-row:empty { display: none; }

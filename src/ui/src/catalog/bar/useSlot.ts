@@ -28,3 +28,16 @@ export default function useSlot(id: string | null): HTMLElement | null {
   }, [id]);
   return el;
 }
+
+/**
+ * The phone top bar's search button asks the page first: a section whose search lives in its facet
+ * sheet (`useRailSheet`) handles this event (preventDefault) and raises the sheet; otherwise the
+ * bar falls back to opening the rail drawer, where the older sections keep their search fields.
+ */
+export const SEARCH_EVENT = "section-bar:search";
+
+/** True when a page took the search request. */
+export function requestSectionSearch(): boolean {
+  if (typeof window === "undefined") return false;
+  return !window.dispatchEvent(new CustomEvent(SEARCH_EVENT, { cancelable: true }));
+}

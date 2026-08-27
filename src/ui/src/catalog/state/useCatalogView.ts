@@ -106,3 +106,22 @@ export default function useCatalogView(section: string, source: CatalogSource, a
 
   return { state, set, setView, setGroup, setItems, setSort };
 }
+
+// ── URL facts a section's rail needs, read the way the catalog resolves them (stored default included). ──
+
+const GROUPED_VIEWS: ReadonlySet<string> = new Set(["extended", "shelf", "newspaper"]);
+
+/** Whether the view groups (the groups-only facets and flags show only then). */
+export function isGroupedBrowse(search: string, section: string): boolean {
+  const p = new URLSearchParams(search);
+  const stored = readCatalogDefaults(section);
+  const view = p.get("view") ?? stored.view ?? "grid";
+  const items = p.get("items") ?? stored.items ?? "items";
+  return GROUPED_VIEWS.has(view) || items === "groups";
+}
+
+/** Whether the Directory (a folder navigator, which ignores the catalog filters) is the view. */
+export function isDirectoryBrowse(search: string, section: string): boolean {
+  const p = new URLSearchParams(search);
+  return (p.get("view") ?? readCatalogDefaults(section).view ?? "grid") === "directory";
+}

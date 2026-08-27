@@ -107,7 +107,7 @@ export default function FacetOptions({ def, options, selected, excluded, onToggl
         <input className="bx-facet-search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={`Filter ${def.label.toLowerCase()}…`} aria-label={`Filter ${def.label.toLowerCase()}`} />
       )}
       <div
-        className="bx-facet-opts"
+        className={`bx-facet-opts${def.render === "pill" ? " bx-facet-opts--pills" : ""}`}
         onScroll={dynamic ? (e) => { const el = e.currentTarget; if (el.scrollHeight - el.scrollTop - el.clientHeight < 40) void loadMore(); } : undefined}
       >
         {shown.map((o) => {
@@ -115,7 +115,15 @@ export default function FacetOptions({ def, options, selected, excluded, onToggl
           const ex = isEx(o.value);
           const hue = o.hue ?? hueOf(o.label);
           return (
-            <div key={String(o.value)} className={`bx-opt${on ? " on" : ""}${ex ? " ex" : ""}${def.render === "tile" ? " bx-opt-collection" : ""}`}>
+            <div
+              key={String(o.value)}
+              className={`bx-opt${on ? " on" : ""}${ex ? " ex" : ""}${def.render === "tile" ? " bx-opt-collection" : ""}${def.render === "pill" ? " bx-opt-pill" : ""}`}
+              role={def.render === "pill" && filterable ? "button" : undefined}
+              aria-pressed={def.render === "pill" && filterable ? on : undefined}
+              tabIndex={def.render === "pill" && filterable ? 0 : undefined}
+              onClick={def.render === "pill" && filterable ? () => onToggle(def.key, o.value, "inc") : undefined}
+              onKeyDown={def.render === "pill" && filterable ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggle(def.key, o.value, "inc"); } } : undefined}
+            >
               {def.render === "tile" ? (
                 <TileImage src={o.imageUrl} hue={hue} alt="" />
               ) : (
@@ -126,7 +134,7 @@ export default function FacetOptions({ def, options, selected, excluded, onToggl
               )}
               <span className="bx-opt-label" title={o.label}>{o.label}</span>
               <span className="bx-opt-count">{o.count.toLocaleString()}</span>
-              {filterable && (
+              {filterable && def.render !== "pill" && (
                 <span className="bx-opt-acts">
                   <button type="button" className="bx-opt-inc" aria-label={`Include ${o.label}`} aria-pressed={on} onClick={() => onToggle(def.key, o.value, "inc")}>+</button>
                   {excludable && <button type="button" className="bx-opt-exc" aria-label={`Exclude ${o.label}`} aria-pressed={ex} onClick={() => onToggle(def.key, o.value, "exc")}>−</button>}

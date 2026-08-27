@@ -63,9 +63,7 @@ const familyMember = { ...userData, familyAlbum: true };
 // The big route-dispatch effect calls these; they're irrelevant to the footer.
 const noopSearchProps = Object.fromEntries(
   [
-    "search", "resetSearch", "titleSearch", "actorSearch", "genreSearch", "franchiseSearch",
-    "firstLetterSearch", "titleTypeSearch", "ratingSearch", "restoreMovieIdsSearch",
-    "moviesSeenSearch", "moviesWantToWatchSearch",
+    "search", "facetSearch", "restoreMovieIdsSearch", "moviesSeenSearch", "moviesWantToWatchSearch",
   ].map((k) => [k, vi.fn()])
 );
 
@@ -282,7 +280,7 @@ describe("the books rail", () => {
     renderNav("/books", userData);
     await waitFor(() => expect(logoutBtn()).toBeTruthy());
     expect(indexNav()).toBeNull();
-    expect(noopSearchProps.titleTypeSearch).not.toHaveBeenCalled();
-    expect(noopSearchProps.resetSearch).not.toHaveBeenCalled();
+    expect(noopSearchProps.facetSearch).not.toHaveBeenCalled();
+    expect(noopSearchProps.restoreMovieIdsSearch).not.toHaveBeenCalled();
   });
 });

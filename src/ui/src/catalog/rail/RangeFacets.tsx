@@ -1,8 +1,10 @@
 /** The small facets: the year range (two sliders + decade pills), the rating floor (presets), the personal flags. */
 import type { FacetFlagDef, FacetOptionRow } from "./facetSpec";
 
-export function DateFacet({ yearMin, yearMax, decades, onChange }: {
+export function DateFacet({ yearMin, yearMax, decades, onChange, showDecades = true }: {
   yearMin: number | null; yearMax: number | null; decades: FacetOptionRow[]; onChange: (min: number | null, max: number | null) => void;
+  /** The decade shortcut row under the sliders (Books); Movies runs the range alone (Eric, canvas). */
+  showDecades?: boolean;
 }) {
   const years = decades.flatMap((d) => { const y = parseInt(String(d.value), 10); return Number.isNaN(y) ? [] : [y, y + 9]; });
   const lo = years.length ? Math.min(...years) : 1940;
@@ -16,7 +18,7 @@ export function DateFacet({ yearMin, yearMax, decades, onChange }: {
         <input type="range" min={lo} max={hi} value={mn} aria-label="From year" onChange={(e) => onChange(Math.min(+e.target.value, mx), mx)} />
         <input type="range" min={lo} max={hi} value={mx} aria-label="To year" onChange={(e) => onChange(mn, Math.max(+e.target.value, mn))} />
       </div>
-      <div className="bx-date-decades">
+      {showDecades && <div className="bx-date-decades">
         {decades.map((d) => {
           const dy = parseInt(String(d.value), 10);
           if (Number.isNaN(dy)) return null;
@@ -27,7 +29,7 @@ export function DateFacet({ yearMin, yearMax, decades, onChange }: {
             </button>
           );
         })}
-      </div>
+      </div>}
     </div>
   );
 }

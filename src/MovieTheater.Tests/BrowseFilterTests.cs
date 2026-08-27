@@ -120,7 +120,7 @@ namespace MovieTheater.Tests
             Assert.Single(f.Tags);
             Assert.Equal((TagCategory.Mood, "tense"), f.Tags[0]);
             Assert.Equal(new[] { 5, 3, 6 }.OrderBy(x => x), f.Mpa.OrderBy(x => x)); // NC-17 pulls X along
-            Assert.Equal("seen", f.My);
+            Assert.Equal(new[] { "seen" }, f.My);
             Assert.Null(f.YearMin);
             Assert.Equal(1999, f.YearMax);
             Assert.False(f.IsEmpty);

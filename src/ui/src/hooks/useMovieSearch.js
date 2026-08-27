@@ -180,6 +180,22 @@ export function useMovieSearch() {
     setSearch({ url: `/API/GetMoviesByType?type=${encodeURIComponent(list.join(","))}${sortSuffix(sort)}`, lettersUrl: lettersUrlFor(list, sort), titleTypes: list, sort, infinite: true });
   }, []);
 
+  // The combinable browse (R9 S2): the facet rail's whole state as `/API/Browse`'s query — the Type
+  // scope, the BrowseFilterQuery params (`fqParams`, already serialized by moviesFilterParams) and
+  // the sort. Every facet URL is a paged scope, so the catalog views and the letter strip ride it
+  // like any other; `facet` keeps the parsed state on the search for the grid (the active person).
+  const facetSearch = useCallback((fqParams, types, sort, facet = null) => {
+    const list = (Array.isArray(types) ? types : String(types ?? "").split(","))
+      .map((t) => t.trim())
+      .filter(Boolean);
+    const fq = fqParams ? `&${fqParams}` : "";
+    const typesQs = `types=${encodeURIComponent(list.join(","))}`;
+    const lettersUrl = list.length && sort === "alpha" && !list.includes("Misc")
+      ? `/API/BrowseLetters?type=${encodeURIComponent(list.join(","))}${fq}`
+      : undefined;
+    setSearch({ url: `/API/Browse?${typesQs}${fq}${sortSuffix(sort)}`, lettersUrl, titleTypes: list, sort, infinite: true, facet });
+  }, []);
+
   // Browse ONE MPA rating (the rating itself, not a ceiling). `ratingIds` is the comma-separated set
   // of MPA lookup ids the picked stop stands for — usually one, but NC-17 covers NC-17(5) and X(6).
   // A title is filed under the rating that actually gates it (cert → legacy → inferred).
@@ -228,6 +244,7 @@ export function useMovieSearch() {
     firstLetterSearch,
     titleTypeSearch,
     ratingSearch,
+    facetSearch,
     movieIDListSearch,
     restoreMovieIdsSearch,
     moviesSeenSearch,

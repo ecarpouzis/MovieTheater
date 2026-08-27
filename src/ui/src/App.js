@@ -56,8 +56,7 @@ function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { theme, toggleTheme } = useTheme();
 
-  const { search, resetSearch, titleSearch, actorSearch, genreSearch, franchiseSearch, firstLetterSearch, titleTypeSearch, ratingSearch, restoreMovieIdsSearch, moviesSeenSearch, moviesWantToWatchSearch } =
-    useMovieSearch();
+  const { search, facetSearch, restoreMovieIdsSearch, moviesSeenSearch, moviesWantToWatchSearch } = useMovieSearch();
 
   function applyUserData(responseData, username) {
     setUserData(responseData);
@@ -119,17 +118,10 @@ function App() {
       <Layout className="app-layout" hasSider>
         <NavBar
           search={search}
-          resetSearch={resetSearch}
           userData={userData}
           setUserData={setUserData}
           onUserLoggedIn={onUserLoggedIn}
-          titleSearch={titleSearch}
-          actorSearch={actorSearch}
-          genreSearch={genreSearch}
-          franchiseSearch={franchiseSearch}
-          firstLetterSearch={firstLetterSearch}
-          titleTypeSearch={titleTypeSearch}
-          ratingSearch={ratingSearch}
+          facetSearch={facetSearch}
           restoreMovieIdsSearch={restoreMovieIdsSearch}
           moviesSeenSearch={moviesSeenSearch}
           moviesWantToWatchSearch={moviesWantToWatchSearch}

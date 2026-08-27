@@ -103,7 +103,7 @@ function RailBody({ spec, state, actions, facets, facetsLoading, total, grouped,
         ))}
         {spec.years && (
           <RailSection title="Date range" count={state.yearMin != null || state.yearMax != null ? 1 : 0}>
-            <DateFacet yearMin={state.yearMin} yearMax={state.yearMax} decades={facets?.[spec.years.decadesKey] ?? []} onChange={actions.setYears} />
+            <DateFacet showDecades={spec.years?.decadePills !== false} yearMin={state.yearMin} yearMax={state.yearMax} decades={facets?.[spec.years.decadesKey] ?? []} onChange={actions.setYears} />
           </RailSection>
         )}
         {spec.rating && (

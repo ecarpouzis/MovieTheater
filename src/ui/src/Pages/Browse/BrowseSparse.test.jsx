@@ -1,5 +1,6 @@
 import { render, act, cleanup } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 
 // ── Browse rides the sparse catalog now ─────────────────────────────────────────────────────────
@@ -39,6 +40,9 @@ beforeEach(() => {
   global.fetch = vi.fn((url) => {
     const u = new URL(String(url), "http://localhost");
     requests.push(u.pathname + u.search);
+    if (u.pathname === "/API/BrowseFacets") {
+      return ok({ types: [], genres: [], franchises: [], mpa: [], decades: [], tags: {}, total: TOTAL });
+    }
     if (u.pathname === "/API/BrowseLetters") {
       return ok({
         total: TOTAL,
@@ -86,10 +90,13 @@ const urlSearch = {
 };
 
 function mount(search) {
+  // The facet rail's hooks (options, count) ride React Query; index.js provides the client for the app.
   return render(
-    <MemoryRouter initialEntries={["/"]}>
-      <Browse search={search} userData={null} setUserData={() => {}} isAuthReady simpleStyle={false} />
-    </MemoryRouter>
+    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <MemoryRouter initialEntries={["/"]}>
+        <Browse search={search} userData={null} setUserData={() => {}} isAuthReady simpleStyle={false} />
+      </MemoryRouter>
+    </QueryClientProvider>
   );
 }
 

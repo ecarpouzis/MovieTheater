@@ -46,9 +46,4 @@ export default function BarSearchPortal(props: BarSearchProps) {
   return createPortal(<BarSearch {...props} />, slot);
 }
 
-/** Mounts any search control (a section's SmartSearch) in the bar's search slot. */
-export function BarSearchSlot({ children }: { children: React.ReactNode }) {
-  const slot = useSlot(BAR_SEARCH_SLOT);
-  if (!slot) return null;
-  return createPortal(children, slot);
-}
+export { BarSearchSlot, BarToolsSlot } from "./SlotPortal";

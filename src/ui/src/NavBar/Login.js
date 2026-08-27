@@ -21,16 +21,16 @@ function Login({ userData, onUserLoggedIn, setSettingsModalOpen, setAdminModalOp
   const history = useHistory();
   const location = useLocation();
 
-  function navigateToBrowseSearch(mode) {
-    const params = new URLSearchParams();
-    params.set("mode", mode);
-    history.push({ pathname: "/", search: `?${params.toString()}` });
+  // The index rows seed the browse with the viewer's list (`my=` — the facet rail's own flag, so the
+  // rail shows it checked and it combines with any facet picked afterwards).
+  function navigateToBrowseSearch(list) {
+    history.push({ pathname: "/", search: `?my=${list}` });
   }
 
   // Which stat row (if any) reflects the current view — drives filled vs. outline icon.
-  const activeMode = location.pathname === "/" ? new URLSearchParams(location.search).get("mode") : null;
-  const seenActive = activeMode === "seen";
-  const wantActive = activeMode === "want";
+  const myLists = location.pathname === "/" ? (new URLSearchParams(location.search).get("my") || "").split(",") : [];
+  const seenActive = myLists.includes("seen");
+  const wantActive = myLists.includes("want");
   const rateActive = location.pathname === "/rate";
 
   function getLoggedInDisplay(userData) {

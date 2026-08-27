@@ -5,7 +5,7 @@ import { useHistory, useLocation } from "react-router-dom";
 import { lazyWithReload as lazy } from "../lazyWithReload";
 import "./NavBar.css";
 
-import SearchTools from "./SearchTools";
+import MoviesSiderRail from "../Pages/Browse/MoviesSiderRail";
 import Login from "./Login";
 import BoardGameNavContent from "./BoardGameNavContent";
 import ArcadeNavContent from "./ArcadeNavContent";
@@ -20,6 +20,12 @@ const AdminModal = lazy(() => import("./AdminModal"));
 const MyPlaylistsModal = lazy(() => import("../Pages/Tv/MyPlaylistsModal"));
 import useIsMobile from "../hooks/useIsMobile";
 import { loadTitleTypes, saveTitleTypes, loadSort, saveSort } from "../hooks/useMovieSearch";
+import { requestSectionSearch } from "../catalog/bar/useSlot";
+import { parseFacetState, facetStateKey } from "../catalog/rail/facetUrl";
+import {
+  MOVIES_PARSE_SPEC, isPlainMoviesSearch, legacyToFacetSearch, markMoviesSeeded, moviesFilterParams, myListsOf,
+  seededMoviesSearch, sessionStorageOrNull, typesOf,
+} from "../Pages/Browse/moviesFacetSpec";
 import useShowHiddenPhotos from "../hooks/useShowHiddenPhotos";
 // Section nav icons (light variants — the navbar sits on a dark ground). Dark variants for
 // light-background contexts live alongside in ../assets/icons/dark/.
@@ -62,17 +68,10 @@ const SECTIONS = [
 
 function NavBar({
   search,
-  resetSearch,
   userData,
   setUserData,
   onUserLoggedIn,
-  titleSearch,
-  actorSearch,
-  genreSearch,
-  franchiseSearch,
-  firstLetterSearch,
-  titleTypeSearch,
-  ratingSearch,
+  facetSearch,
   restoreMovieIdsSearch,
   moviesSeenSearch,
   moviesWantToWatchSearch,
@@ -125,28 +124,33 @@ function NavBar({
       hasHandledInitialLoadRef.current = true;
     }
 
-    // Parse the query string — equivalent to HttpUtility.ParseQueryString() in ASP.NET.
-    // e.g. "?mode=title&value=Alien" → mode="title", value="Alien"
+    // 1. A pre-S2 link (?mode=&value=&types= — the old rail's vocabulary, the modal's chips, old
+    //    bookmarks) is rewritten ONCE into the facet form it means; the effect re-runs on the new URL.
+    const legacy = legacyToFacetSearch(location.search);
+    if (legacy != null) {
+      markMoviesSeeded(sessionStorageOrNull());
+      history.replace({ pathname: location.pathname, search: legacy, state: location.state });
+      return;
+    }
+    // 2. A clean landing gets the persisted Type scope as chips (Movies by default), once per tab
+    //    session — so a cleared chip later in the session means "all types" and stays cleared.
+    const seeded = seededMoviesSearch(location.search, loadTitleTypes(), sessionStorageOrNull());
+    if (seeded != null) {
+      history.replace({ pathname: location.pathname, search: seeded, state: location.state });
+      return;
+    }
+
+    // The URL IS the filter (R9 S2): `q/f/x/y/my` parsed by the movies spec. The Type scope persists
+    // as the next landing's seed; the sort persists like before (absent → the stored one).
     const params = new URLSearchParams(location.search);
-    const mode = params.get("mode");
-    const value = params.get("value") || "";
-
-    // The Type scope persists across modes via the `types` param. Distinguish: absent (→ the persisted
-    // default, Movies unless the user changed it) vs. empty string (→ explicitly all types) vs. a list.
-    const typesParam = params.get("types");
-    const types =
-      typesParam === null
-        ? loadTitleTypes()
-        : typesParam === ""
-        ? []
-        : typesParam.split(",").map((t) => t.trim()).filter(Boolean);
+    const facetState = parseFacetState(location.search, MOVIES_PARSE_SPEC);
+    const types = typesOf(facetState);
     saveTitleTypes(types);
-
-    // Sort-by is a persistent overarching setting like the Type scope: absent in the URL → the persisted
-    // value (default "alpha"); present → use and persist it. Threaded into every browse mode below.
     const sortParam = params.get("sort");
     const sort = sortParam || loadSort();
     saveSort(sort);
+    const plain = isPlainMoviesSearch(facetState);
+    const lists = myListsOf(facetState);
 
     // Re-dispatch only when something search-shaped changed. The URL also carries params that are
     // NOT searches — ?title=<kind>:<id> is the open detail modal — and every dispatch below builds a
@@ -156,7 +160,7 @@ function NavBar({
     // every modal open/close riding the same route state).
     const restoreIds = Array.isArray(location.state?.browseMovieIds) ? location.state.browseMovieIds : null;
     const dispatchSig = JSON.stringify({
-      mode, value, types, sort,
+      facet: facetStateKey(facetState), types, sort,
       auth: isAuthReady, user: userData?.username ?? null,
       restore: restoreIds && restoreIds.length
         ? `${restoreIds.length}:${restoreIds[0]}:${restoreIds[restoreIds.length - 1]}`
@@ -167,14 +171,13 @@ function NavBar({
     }
     lastDispatchSigRef.current = dispatchSig;
 
-    // With no other filter active, the default browse is the Type scope itself. This is also the site's
-    // landing grid: the landing used to be a separate mode that ignored the persisted sort and always
-    // shuffled, but Random is one of the sorts now (and the default one), so "the landing" is just this
-    // browse under whichever sort the user last chose.
-    const browseDefault = () => (types.length ? titleTypeSearch(types, sort) : resetSearch());
+    // The one browse: the facet state over the Type scope under the sort. With nothing else active
+    // this is also the site's landing grid — Random is one of the sorts (and the default), so "the
+    // landing" is just this browse under whichever sort the user last chose.
+    const browse = () => facetSearch(moviesFilterParams(facetState).toString(), types, sort, facetState);
 
-    if (!mode) {
-      // No search mode in the URL. Determine whether this is a hard browser reload
+    if (plain) {
+      // Nothing narrows the browse. Determine whether this is a hard browser reload
       // (F5 / Ctrl+R) vs. normal in-app navigation, using the browser Navigation API.
       const navigationEntry = window.performance?.getEntriesByType?.("navigation")?.[0];
       const isHardReload = isInitialLoad && navigationEntry?.type === "reload";
@@ -183,8 +186,6 @@ function NavBar({
         // On a hard reload, browseMovieIds in route state (the previous scroll position
         // context) is stale and should be cleared. Route state is like TempData in
         // ASP.NET MVC — it travels with the URL but isn't visible in the address bar.
-        // { ...location.state } is a shallow copy (like new Dictionary(existing)),
-        // so we can safely delete the key without mutating the original.
         if (location.state?.browseMovieIds) {
           const restState = { ...location.state };
           delete restState.browseMovieIds;
@@ -194,61 +195,42 @@ function NavBar({
             state: Object.keys(restState).length > 0 ? restState : undefined,
           });
         }
-
         // A reload re-renders the browse for the current scope + sort. Under Random that is a genuine
         // reshuffle: the seed is minted per page load (see SHUFFLE_SEED), so F5 deals a new hand.
-        browseDefault();
+        browse();
         return;
       }
 
-      // On normal back/forward navigation, browseMovieIds in route state carries the
-      // list of movie IDs that was on screen before — restore it so the user lands
-      // back on the same results.
-      const restoreIds = Array.isArray(location.state?.browseMovieIds) ? location.state.browseMovieIds : [];
-      const movieIds = restoreIds.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0);
+      // On normal back/forward navigation, browseMovieIds in route state carries the list of movie
+      // IDs that was on screen before — restore it so the user lands back on the same results.
+      const movieIds = (restoreIds ?? []).map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0);
       if (movieIds.length > 0) {
         restoreMovieIdsSearch(movieIds, types);
         return;
       }
-
-      // A clean URL is the landing: the Type scope under the persisted sort, Random by default. The
-      // seed is module-scope in useMovieSearch, so re-runs of this effect — e.g. when auth resolves and
-      // userData changes — re-deal the SAME shuffle rather than reordering out from under the user.
-      browseDefault();
+      browse();
       return;
     }
 
-    // Dispatch table — equivalent to a switch statement or Dictionary<string, Action<string>>.
-    // Keyed on the URL "mode" param; each entry is a lambda that runs the appropriate search.
-    // Every search mode runs within the current Type scope; an empty value falls back to browsing the
-    // scope itself. (Type is no longer its own mode — it's the orthogonal `types` param above.)
-    const modeHandlers = {
-      title: (v) => (v.trim() ? titleSearch(v, types, sort) : browseDefault()),
-      actor: (v) => (v.trim() ? actorSearch(v, types, sort) : browseDefault()),
-      genre: (v) => (v.trim() ? genreSearch(v, types, sort) : browseDefault()),
-      franchise: (v) => (v.trim() ? franchiseSearch(v, types, sort) : browseDefault()),
-      letter: (v) => (v.trim() ? firstLetterSearch(v, types, sort) : browseDefault()),
-      rating: (v) => (v.trim() ? ratingSearch(v, types, sort) : browseDefault()),
-      seen: () => {
-        if (!isAuthReady) return;
-        userData ? moviesSeenSearch(userData, types, sort) : browseDefault();
-      },
-      want: () => {
-        if (!isAuthReady) return;
-        userData ? moviesWantToWatchSearch(userData, types, sort) : browseDefault();
-      },
-    };
-
-    const handler = modeHandlers[mode];
-    if (handler) {
-      handler(value);
-    } else {
-      resetSearch();
+    // The viewer's own list on its own (only the Type scope beside it) keeps the dense id-list path:
+    // untoggling Seen/Want removes the card in place, which a paged scope cannot express until S3
+    // seats these lists on the engine. Combined with any facet, the server filters the list.
+    const onlyList = lists.length === 1 && (lists[0] === "seen" || lists[0] === "want") && isPlainMoviesSearch({ ...facetState, flags: {} });
+    if (onlyList) {
+      if (!isAuthReady) return;
+      if (!userData) {
+        browse();
+        return;
+      }
+      if (lists[0] === "seen") moviesSeenSearch(userData, types, sort);
+      else moviesWantToWatchSearch(userData, types, sort);
+      return;
     }
-    // These callbacks are all stable (useCallback in App.js), and history is a stable
+    browse();
+    // These callbacks are all stable (useCallback in useMovieSearch), and history is a stable
     // reference from useHistory(). userData?.username is used intentionally instead of
     // userData to avoid re-running when moviesSeen/moviesToWatch mutate — only a user
-    // identity change should re-trigger mode dispatch.
+    // identity change should re-trigger the dispatch.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     location.search,
@@ -257,14 +239,7 @@ function NavBar({
     userData?.username,
     isAuthReady,
     history,
-    resetSearch,
-    titleSearch,
-    actorSearch,
-    genreSearch,
-    franchiseSearch,
-    firstLetterSearch,
-    titleTypeSearch,
-    ratingSearch,
+    facetSearch,
     restoreMovieIdsSearch,
     moviesSeenSearch,
     moviesWantToWatchSearch,
@@ -404,7 +379,9 @@ function NavBar({
   );
 
   // Every section rail takes the same props (boardgames also reads `search`; the rest ignore it).
-  // Movies is the fallback: the inline Login + SearchTools pair.
+  // Movies is the fallback: Login (the user block + the Seen · Want · Rate index rows) and, on
+  // desktop, the generic facet rail over the movies spec (R9 S2) — the phone's browse raises its own
+  // full-page sheet from the bar's Filters pill.
   const navContent = section.Content ? (
     <section.Content
       userData={userData}
@@ -423,7 +400,7 @@ function NavBar({
         setAdminModalOpen={setAdminModalOpen}
         onOpenPlaylists={() => setPlaylistsModalOpen(true)}
       />
-      <SearchTools search={search} userData={userData} />
+      {!isMobile && <MoviesSiderRail userData={userData} />}
     </>
   );
 
@@ -449,7 +426,7 @@ function NavBar({
               the section's search lives), the catalog's ⚙ (portaled into #topbar-tools by CatalogHost)
               and the theme toggle. The section strip under this bar is content navigation only. */}
           <div className="navbar-topbar-tools">
-            <button type="button" className="navbar-tb-btn" onClick={() => setDrawerOpen(true)} title="Search" aria-label="Search">
+            <button type="button" className="navbar-tb-btn" onClick={() => { if (!requestSectionSearch()) setDrawerOpen(true); }} title="Search" aria-label="Search">
               <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><circle cx="7" cy="7" r="4.5" /><line x1="10.5" y1="10.5" x2="14" y2="14" /></svg>
             </button>
             <span id="topbar-tools" className="navbar-topbar-slot" />

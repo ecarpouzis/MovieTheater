@@ -55,7 +55,8 @@ namespace MovieTheater.Web
         public IReadOnlyList<int> Mpa { get; init; } = Array.Empty<int>();
         public int? YearMin { get; init; }
         public int? YearMax { get; init; }
-        public string? My { get; init; }
+        /// <summary>The viewer's own lists (seen / want / rated), ANDed — every named list must hold the title.</summary>
+        public IReadOnlyList<string> My { get; init; } = Array.Empty<string>();
 
         public static readonly BrowseFilter Empty = new();
 
@@ -96,7 +97,6 @@ namespace MovieTheater.Web
                 .Select(s => int.TryParse(s, out var id) ? id : 0).Where(id => id > 0).Distinct().ToList();
             // NC-17 (5) stands for X (6) too — one certificate as far as anyone browsing is concerned.
             if (mpa.Contains(5) && !mpa.Contains(6)) mpa.Add(6);
-            var my = (fq.my ?? "").Trim().ToLowerInvariant();
             return new BrowseFilter
             {
                 Q = (fq.q ?? "").Trim(),
@@ -107,18 +107,22 @@ namespace MovieTheater.Web
                 Mpa = mpa,
                 YearMin = fq.yearMin is > 0 ? fq.yearMin : null,
                 YearMax = fq.yearMax is > 0 ? fq.yearMax : null,
-                My = my is "seen" or "want" or "rated" ? my : null,
+                My = MyLists(fq.my),
             };
         }
+
+        private static IReadOnlyList<string> MyLists(string? my) =>
+            (my ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(x => x.ToLowerInvariant()).Where(x => x is "seen" or "want" or "rated").Distinct().ToList();
 
         public bool IsEmpty =>
             Q.Length == 0 && Genres.Count == 0 && ExGenres.Count == 0 && Franchises.Count == 0 && ExFranchises.Count == 0
             && Persons.Count == 0 && ExPersons.Count == 0 && Tags.Count == 0 && ExTags.Count == 0 && Mpa.Count == 0
-            && YearMin == null && YearMax == null && My == null;
+            && YearMin == null && YearMax == null && My.Count == 0;
 
         /// <summary>Everything but the text: the facet-count cache keys on the scope, not the search box.</summary>
         public bool HasFacets => !IsEmpty && !(Genres.Count == 0 && ExGenres.Count == 0 && Franchises.Count == 0 && ExFranchises.Count == 0
-            && Persons.Count == 0 && ExPersons.Count == 0 && Tags.Count == 0 && ExTags.Count == 0 && Mpa.Count == 0 && YearMin == null && YearMax == null && My == null);
+            && Persons.Count == 0 && ExPersons.Count == 0 && Tags.Count == 0 && ExTags.Count == 0 && Mpa.Count == 0 && YearMin == null && YearMax == null && My.Count == 0);
 
         /// <summary>A canonical signature for cache keys (order-independent within a dimension).</summary>
         public string Sig
@@ -128,7 +132,7 @@ namespace MovieTheater.Web
                 if (IsEmpty) return "";
                 static string J(IEnumerable<string> xs) => string.Join("|", xs.Select(x => x.ToLowerInvariant()).OrderBy(x => x, StringComparer.Ordinal));
                 static string T(IEnumerable<(TagCategory C, string V)> xs) => string.Join("|", xs.Select(x => $"{(int)x.C}:{x.V.ToLowerInvariant()}").OrderBy(x => x, StringComparer.Ordinal));
-                return $"q={Q.ToLowerInvariant()};g={J(Genres)};xg={J(ExGenres)};f={J(Franchises)};xf={J(ExFranchises)};p={J(Persons)};xp={J(ExPersons)};t={T(Tags)};xt={T(ExTags)};m={string.Join(",", Mpa.OrderBy(x => x))};y={YearMin}-{YearMax};my={My}";
+                return $"q={Q.ToLowerInvariant()};g={J(Genres)};xg={J(ExGenres)};f={J(Franchises)};xf={J(ExFranchises)};p={J(Persons)};xp={J(ExPersons)};t={T(Tags)};xt={T(ExTags)};m={string.Join(",", Mpa.OrderBy(x => x))};y={YearMin}-{YearMax};my={string.Join(",", My)}";
             }
         }
 
@@ -193,12 +197,15 @@ namespace MovieTheater.Web
                 mq = mq.Where(m => (m.ReleaseDate != null ? m.ReleaseDate.Value.Year : m.ImdbReleaseDate != null ? m.ImdbReleaseDate.Value.Year : 9999) <= hi);
                 sq = sq.Where(s => (s.StartYear ?? (s.ReleaseDate != null ? s.ReleaseDate.Value.Year : s.ImdbReleaseDate != null ? s.ImdbReleaseDate.Value.Year : 9999)) <= hi);
             }
-            if (f.My != null)
+            if (f.My.Count > 0)
             {
                 if (userId is not int uid) return (mq.Where(m => false), sq.Where(s => false));
-                var type = f.My switch { "seen" => "Seen", "want" => "WantToWatch", _ => "Rated" };
-                mq = mq.Where(m => db.Viewings.Any(v => v.UserID == uid && v.ViewingType == type && v.MovieID == m.id));
-                sq = sq.Where(s => db.Viewings.Any(v => v.UserID == uid && v.ViewingType == type && v.SeriesId == s.Id));
+                foreach (var list in f.My)
+                {
+                    var type = list switch { "seen" => "Seen", "want" => "WantToWatch", _ => "Rated" };
+                    mq = mq.Where(m => db.Viewings.Any(v => v.UserID == uid && v.ViewingType == type && v.MovieID == m.id));
+                    sq = sq.Where(s => db.Viewings.Any(v => v.UserID == uid && v.ViewingType == type && v.SeriesId == s.Id));
+                }
             }
             return (mq, sq);
         }

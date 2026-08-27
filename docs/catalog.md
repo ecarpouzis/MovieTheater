@@ -114,6 +114,15 @@ section under every backdrop; a source sets `shelvesSkin: "plain"` for bare plan
   results (`CatalogHost.beforeResults`), Clear all, and Save (a saved search).
 - **`SectionIndexRail`/`SectionIndexTabs`** — the section's own index (Explore / Browse / …) in
   the sider on desktop and as tabs on phones.
+- **Per-section pieces** (R9 S2): `FilterPill` (the phone's bar tool), `useRailSheet` (the sheet's
+  open state — closes on URL change / desktop, and answers the phone top bar's search button through
+  `requestSectionSearch`), `RailChips` (the chips row + save prompt over the results). A section
+  mounts its rail in the sider through its NavContent (`BooksSiderRail`, `MoviesSiderRail`) and the
+  sheet + SmartSearch-in-the-bar from its page — both read the same URL, nothing crosses through props.
+- **Specs**: `Pages/Books/booksFacetSpec.ts`, `novelsFacetSpec.ts`, `Pages/Browse/moviesFacetSpec.ts`
+  (Type · Genre · MPA as one pill row · Years as the bare two-thumb range · Franchise · People
+  (typeahead via `/API/BrowsePeople`) · mood/subgenre/era/theme/setting · Seen/Want/Rated flags;
+  counts from `/API/BrowseFacets`, keyed on the Type scope).
 - Never host the filters inside NavBar's phone drawer: it closes on every `location.search` change.
 
 ## The Explore kit (`catalog/explore/`)
@@ -128,7 +137,7 @@ headline a group instead of an item), `CardRow`s, a `CoverWall`, `CardGrid`s, `R
 
 | Section | Adapter | Scope | Flat | Groups | Directory |
 |---|---|---|---|---|---|
-| Movies/TV | `moviesSource.ts` | the `useMovieSearch` URL (endpoint = mode) | the `Browse*` envelopes | `/API/BrowseGroups` genre/decade/franchise/letter | franchises |
+| Movies/TV | `moviesSource.ts` | the rail URL (`q/f/x/y/my`) → `/API/Browse` via `useMovieSearch.facetSearch` (`moviesFacetSpec.ts` maps the state to `BrowseFilterQuery`; pre-S2 `?mode=&value=` links are rewritten once on entry) | the `/API/Browse` envelope | `/API/BrowseGroups` genre/decade/franchise under the same filter | franchises |
 | Boardgames | `boardgamesSource.ts` over `clientSource.ts` | the page's filtered+sorted list | slices | publisher/family/designer/category/mechanic (`/API/Boardgames/Facets`), decade, players | publishers |
 | Music | `musicSource.ts` over `clientSource.ts` | the shelf's cached artists/albums, per tab | slices (the catalog sorts) | artist/decade/kind/letter; artists by decade/letter | artists → albums |
 | Arcade | `arcadeSource.ts` | the lobby's filters | `/API/Arcade/Games` (absolute skip) | `/API/Arcade/GameGroups` system/genre/decade | systems |

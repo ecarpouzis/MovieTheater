@@ -18,8 +18,11 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe("catalog/moviesSource — the search URL is the scope", () => {
   it("reads the type browse, a filtered browse, the rating browse (flat only) and rejects non-catalog searches", () => {
-    expect(scopeOf({ url: "/API/GetMoviesByType?type=Movies%2CSeries&sort=alpha", infinite: true })).toEqual({ types: "Movies,Series", mode: null, value: null, sort: "alpha", seed: null, groupable: true });
-    expect(scopeOf({ url: "/API/BrowseGenre?genres=Horror&types=Movies&sort=random&seed=5", infinite: true })).toEqual({ types: "Movies", mode: "genre", value: "Horror", sort: "random", seed: "5", groupable: true });
+    expect(scopeOf({ url: "/API/GetMoviesByType?type=Movies%2CSeries&sort=alpha", infinite: true })).toEqual({ types: "Movies,Series", mode: null, value: null, sort: "alpha", seed: null, groupable: true, fq: [] });
+    expect(scopeOf({ url: "/API/BrowseGenre?genres=Horror&types=Movies&sort=random&seed=5", infinite: true })).toEqual({ types: "Movies", mode: "genre", value: "Horror", sort: "random", seed: "5", groupable: true, fq: [] });
+    // The facet rail's scope (R9 S2): every non-paging param IS the filter and rides onto the grouped calls.
+    expect(scopeOf({ url: "/API/Browse?types=Movies&genre=Crime&exGenre=Horror&tag=mood%3Atense&my=seen&sort=alpha&seed=9", infinite: true }))
+      .toEqual({ types: "Movies", mode: null, value: null, sort: "alpha", seed: "9", groupable: true, fq: [["genre", "Crime"], ["exGenre", "Horror"], ["tag", "mood:tense"], ["my", "seen"]] });
     expect(scopeOf({ url: "/API/BrowsePerson?q=Someone&sort=imdb", infinite: true })?.mode).toBe("actor");
     expect(scopeOf({ url: "/API/GetMoviesByRating?ratingIds=3&types=Movies&sort=alpha", infinite: true })).toMatchObject({ groupable: false, sort: "alpha" });
     expect(scopeOf({ url: "/API/GetRandomMovies" })).toBeNull();
