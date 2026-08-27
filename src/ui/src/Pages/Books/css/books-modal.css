@@ -1,17 +1,78 @@
 /* ── The Books modals (item + series) ───────────────────────────────────────────────────────────
-   The standalone's ComicModal / GroupDetailModal chrome (.cm-*), on an antd Modal shell: the wrap
-   carries the section's --books-* tokens inline (so a portal outside the section root still wears
-   the skin) and this sheet rebinds the legacy aliases the rules were written against. antd's own
-   container is made transparent — beaten by ONE class ((0,3,0) over antd's (0,2,0)) — and .cm is
-   the visible box, with its two independently scrolling panes. */
+   The standalone's ComicModal / GroupDetailModal CONTENT (.cm-*), on the SITE's full-page sheet
+   (Components/SheetModal.css) — a sheet at EVERY size, never a card. This is the hero-dialog rule
+   MovieModal.css and GameModal.css follow: repeat the shell's sheet-mode block unconditionally
+   (CSS has no way to @extend a media query), because a detail page is not a prompt.
 
-.books-modal.ant-modal-wrap .ant-modal { max-width: 100vw; padding: 0; top: 0; }
-.books-modal.ant-modal-wrap .ant-modal-container,
-.books-modal.ant-modal-wrap .ant-modal-content { background: transparent; box-shadow: none; padding: 0; border-radius: 0; }
-.books-modal.ant-modal-wrap .ant-modal-body { padding: 0; }
+   Until R9 S4 the visible box here was `.cm` — a `min(1240px, 94vw)` card with a 16px radius, a
+   drop shadow, a pop animation and TWO independently scrolling panes inside it, floating over a
+   transparent antd container. That was the standalone's smaller modal imported wholesale, and
+   Eric's verdict on it (canvas 2026-08-27) was "a critical failure … adapting the smaller modals
+   Longbox had". `.cm` is now nothing but the bridge that rebinds the legacy `--bg/--ink/--sub/
+   --line/--font-*` aliases the `.cm-*` rules are written against; the sheet is the box, its BODY
+   is the one scroller, and the content re-flows onto the shell's readable column.
+
+   The tokens: the wrap carries the section's --books-* values inline (a portal renders outside the
+   section root, so it cannot inherit them) and re-points the SITE surface tokens that
+   `sheet-modal--themed` paints from — so the shell's own rules dress the sheet in the Books skin
+   and this file states no container background of its own. */
+
+.books-modal.ant-modal-wrap {
+  /* Wider than the shell default: this dialog is two columns (cover + actions / details). */
+  --sheet-measure: min(1120px, 94vw);
+  --sheet-gutter: clamp(16px, 3vw, 34px);
+  /* Sheet at EVERY size, so the shell's card inset never applies — this one variable is what turns
+     the shell's card-mode rules (top/max-width/max-height, all stated in terms of it) into the
+     sheet's numbers without a specificity fight. */
+  --sheet-inset: 0px;
+  /* What `sheet-modal--themed` paints the container, header and ✕ from. */
+  --card-surface: var(--books-bg);
+  --card-border: var(--books-line);
+  --text-primary: var(--books-ink);
+  --text-title: var(--books-ink);
+  --text-muted: var(--books-sub);
+  /* The body is the scroller; the wrap must not add a second one behind it. */
+  padding: 0;
+  overflow: hidden;
+}
+
+/* `!important` only where antd writes the value INLINE (the width prop) or the shell's card rule
+   would otherwise leave a gutter. */
+.books-modal.ant-modal-wrap .ant-modal {
+  top: 0 !important;
+  width: 100vw !important;
+  max-width: 100vw !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  vertical-align: top;
+}
+
+/* The shell's card-mode rule already gives this flex column, zero padding, `overflow: hidden` and a
+   max-height of 100dvh (--sheet-inset is 0). What only its media query states — the full height and
+   the edge-to-edge trim — is repeated here, one class deeper than antd's own container rules. */
+.books-modal.ant-modal-wrap .ant-modal-container {
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
 .books-modal.ant-modal-wrap .ant-modal-mask,
 .books-modal-root.ant-modal-root .ant-modal-mask { background: rgba(15, 12, 8, 0.55); backdrop-filter: blur(5px); }
 
+/* The ✕'s size, corner and position come from the shell. Only the PAINT is restated: the shell
+   states it behind :not(:has(…)), which an older browser without :has() throws away entirely —
+   leaving a bare glyph over the cover. Same call MovieModal.css makes. */
+.books-modal .ant-modal-close-x {
+  color: #fff;
+  background: rgba(20, 20, 24, 0.62);
+  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+/* No box of its own any more — the alias bridge, and the type the .cm-* rules assume. */
 .books-modal .cm {
   --bg: var(--books-bg);
   --ink: var(--books-ink);
@@ -22,26 +83,17 @@
   --display-weight: var(--books-weight);
   --display-tracking: var(--books-tracking);
   --accent: var(--accent, #b8621f);
-  position: relative; width: min(1240px, 94vw); max-height: 92vh; margin: 4vh auto;
-  background: var(--bg); color: var(--ink);
-  border-radius: 16px; box-shadow: 0 30px 90px rgba(0,0,0,.45);
-  overflow: hidden; animation: cm-pop .22s cubic-bezier(.2,.8,.3,1);
-  display: flex; flex-direction: column;
+  color: var(--ink);
   font-family: var(--font-sans);
 }
-@keyframes cm-pop { from { transform: translateY(14px) scale(.98); opacity: 0; } }
-.cm-close {
-  position: absolute; top: 14px; right: 14px; z-index: 3;
-  width: 34px; height: 34px; border-radius: 9px; border: 0;
-  background: var(--bg); color: var(--ink); box-shadow: 0 0 0 1px var(--line);
-  cursor: pointer; display: flex; align-items: center; justify-content: center;
-}
-.cm-close:hover { background: var(--line); }
-.cm-grid { display: grid; grid-template-columns: 380px minmax(0, 1fr); flex: 1; min-height: 0; }
+
+/* Two panes on the shell's readable column. Neither scrolls: the sheet's body is the scroller, and
+   a pane that caps its own height would fight it for the wheel (the shell says so out loud). */
+.cm-grid { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: clamp(24px, 3.2vw, 44px); align-items: start; }
 .cm-grid > * { min-width: 0; }
 .cm-left {
-  padding: 26px; border-right: 1px solid var(--line);
-  display: flex; flex-direction: column; min-height: 0; overflow-y: auto;
+  display: flex; flex-direction: column;
+  padding: 0; border-right: 0; overflow: visible;
 }
 .cm-cover { width: 100%; aspect-ratio: var(--aspect,.66) / 1; position: relative; box-shadow: 0 16px 40px rgba(0,0,0,.3); }
 .cm-cover > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
@@ -58,7 +110,7 @@
 .cm-btn-primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 .cm-btn-primary:hover { background: var(--ink); filter: brightness(1.12); }
 .cm-btn svg { width: 16px; height: 16px; flex: 0 0 auto; }
-.cm-right { padding: 30px 32px 34px; overflow-y: auto; min-height: 0; -webkit-overflow-scrolling: touch; }
+.cm-right { padding: 0; overflow: visible; min-width: 0; }
 .cm-pub {
   appearance: none; border: 0; background: transparent; cursor: pointer; padding: 0;
   display: inline-flex; align-items: center; gap: 8px;
@@ -96,8 +148,13 @@
 .cm-mag:hover { color: var(--ink); filter: brightness(.94); }
 .cm-provenance { font-family: var(--font-mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--sub); margin: 6px 0 0; }
 
-/* Series: the fanned cover stack */
-.cm--series .cm-left { background: color-mix(in oklab, var(--ink) 4%, var(--bg)); }
+/* Series: the fanned cover stack. The tint used to be the left PANE's wall, edge to edge against a
+   divider rule; with no pane to fill it becomes a tile the stack sits in, so the fan still has
+   something behind it to lean on. */
+.cm--series .cm-left {
+  background: color-mix(in oklab, var(--ink) 4%, var(--bg));
+  border: 1px solid var(--line); border-radius: 14px; padding: 22px 26px 24px;
+}
 .cm-stack { position: relative; width: 100%; aspect-ratio: var(--aspect,.66) / 1; margin: 6px 12px 12px 0; }
 .cm-stack-card { position: absolute; inset: 0; box-shadow: 0 16px 40px rgba(0,0,0,.32); transition: transform .2s ease; }
 .cm-stack-card > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
@@ -165,7 +222,9 @@
 }
 .cm-folder span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cm-folder:hover { color: var(--ink); }
-.cm-synopsis { font-size: 14.5px; line-height: 1.6; margin: 18px 0 0; text-wrap: pretty; }
+/* The measure is set for two columns and a reading-order table; prose gets its own, narrower one —
+   ~100 characters a line was what the full right column produced on a 1440px screen. */
+.cm-synopsis { font-size: 14.5px; line-height: 1.6; margin: 18px 0 0; text-wrap: pretty; max-width: 72ch; }
 .cm-relsec { margin-top: 26px; }
 .cm-h3 { font-family: var(--font-display); font-weight: var(--display-weight); letter-spacing: var(--display-tracking); font-size: 18px; margin: 0 0 12px; }
 .cm-rel { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; }
@@ -264,24 +323,26 @@
 .stars-num { font-family: var(--font-mono); font-size: 11px; margin-left: 6px; color: inherit; opacity: .85; }
 .cm-loading { padding: 60px; text-align: center; color: var(--sub); font-family: var(--font-mono); font-size: 12px; }
 
+/* Narrow: the two panes stack, and the cover lies down beside its actions so the title is still
+   above the fold. The sheet itself needs nothing here — it was already edge-to-edge. */
 @media (max-width: 880px) {
-  .books-modal .cm { width: 100%; max-height: 94vh; margin: 3vh auto; }
-  .cm-grid { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr; min-height: 0; }
-  .cm-left { flex-direction: row; gap: 18px; padding: 20px; border-right: 0; border-bottom: 1px solid var(--line); overflow: visible; align-items: flex-start; }
+  /* Stacked, the cover row IS the top of the sheet — and the ✕ chip lives in that corner
+     (--sheet-close-size + inset = 48px, 50px on a phone). Clear it, or the first action button
+     opens under the close target. */
+  .cm-grid { grid-template-columns: minmax(0, 1fr); gap: 22px; padding-top: 34px; }
+  .cm-left { flex-direction: row; gap: 18px; align-items: flex-start; }
   .cm-cover { width: 132px; flex: 0 0 132px; }
   .cm-actions { margin-top: 0; flex: 1; min-width: 0; align-self: stretch; }
-  .cm-right { padding: 22px 22px 28px; }
   .cm-title { font-size: 30px; }
+  .cm--series .cm-left { padding: 18px; border-radius: 12px; }
   .cm--series .cm-stack { width: 132px; flex: 0 0 132px; margin: 4px 14px 4px 0; }
   .cm-stack-card[data-d="2"] { transform: translate(11px,11px) rotate(3.5deg); }
   .cm-stack-card[data-d="1"] { transform: translate(6px,6px) rotate(1.75deg); }
   .cm-stack-count { top: -7px; right: -7px; min-width: 26px; height: 26px; font-size: 11px; }
 }
 @media (max-width: 560px) {
-  .books-modal .cm { width: 100%; max-height: 100vh; max-height: 100dvh; margin: 0; border-radius: 0; }
-  .cm-left { flex-direction: row; padding: 18px; }
+  .cm-grid { gap: 18px; }
   .cm-cover, .cm--series .cm-stack { width: 108px; flex: 0 0 108px; }
-  .cm-right { padding: 18px 18px 26px; }
   .cm-title { font-size: 26px; }
   .cm-actions { gap: 7px; }
   .cm-btn { padding: 9px 11px; font-size: 12.5px; }

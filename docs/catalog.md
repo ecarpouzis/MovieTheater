@@ -268,7 +268,12 @@ all instant and abort-free — for sections that already ship their whole catalo
 7. Skin (optional): section-wide tokens written on the section root from the tweaks store; a
    per-view extra (`perView`) when a look should follow the view.
 8. Smoke: every view on desktop + phone, a card open keeps `?view=`, Back closes; the modal and the
-   tweaks panel must not slide under the fixed top bar on phones (site modals use `zIndex={1500}`).
+   tweaks panel must not slide under the fixed top bar on phones. A section's detail modal is the
+   site's full-page sheet at EVERY size (`Components/SheetModal.css` + the section's own stylesheet
+   repeating its sheet block unconditionally — `MovieModal.css`, `GameModal.css`,
+   `BoardGameModal.css`, `books-modal.css`), and it opens at `SHEET_Z` (1500,
+   `Components/sheetModal.js` — the one place the number lives; `SHEET_STACK_Z` = 1600 for a dialog
+   a sheet raises without closing itself). Card mode is for confirm/info prompts only.
 
 ## Verification
 

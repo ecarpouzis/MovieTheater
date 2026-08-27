@@ -1,13 +1,24 @@
 /**
- * The shared modal chrome for the item and series modals: an antd Modal (the site's modal shell —
- * mask, focus trap, Escape, the popup layer) whose container is made transparent by `books-modal.css`,
- * with the standalone's `.cm` box inside. The wrap carries the section skin as inline tokens so the
- * portal, which renders outside the section root, wears the same backdrop and type.
+ * The shared modal chrome for the item and series modals: the SITE's full-page sheet
+ * (`Components/SheetModal.css`) at EVERY size — the hero-dialog rule the movie and game modals
+ * follow, edge-to-edge, 100dvh, one ✕ chip, the body is the scroller, content on the readable
+ * column. `books-modal.css` repeats the shell's sheet block unconditionally and re-points the site
+ * surface tokens `sheet-modal--themed` paints from at the Books skin.
+ *
+ * It was the standalone's `.cm` box — a `min(1240px, 94vw)` card with its own radius, shadow and
+ * pop animation — until R9 S4: "a critical failure … adapting the smaller modals Longbox had"
+ * (Eric, canvas 2026-08-27). The `.cm` element survives ONLY as the token bridge the `.cm-*` rules
+ * are written against; it is no longer a box, and there is no card mode to fall back into.
+ *
+ * The wrap carries the section skin as inline tokens so the portal, which renders outside the
+ * section root, wears the same backdrop and type.
  */
 import { Modal } from "antd";
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 import { readTweaks, subscribeTweaks } from "../../catalog/tweaks/useTweaks";
+import { SHEET_Z } from "../../Components/sheetModal";
+import "../../Components/SheetModal.css";
 import { booksSkinContext, booksThemeStyle, siteTheme } from "./booksTheme";
 
 export interface BooksModalShellProps {
@@ -37,26 +48,25 @@ export default function BooksModalShell({ open, onClose, ariaLabel, variant = "b
       open={open}
       onCancel={onClose}
       footer={null}
-      closable={false}
       destroyOnHidden
-      width={1240}
       centered={false}
-      // Above the site's fixed top bar (1300) — the number the movie and album modals use; antd's
-      // default 1000 slid the sheet under the bar on phones.
-      zIndex={1500}
-      wrapClassName="books-modal"
+      // Above the site's fixed top bar (1300) and the facet rail's phone sheet (1350) — the one
+      // number every site modal uses; antd's default 1000 slid the sheet under both.
+      zIndex={SHEET_Z}
+      // `sheet-modal` is the site's shell, `--themed` makes it paint from the section tokens
+      // (which `books-modal.css` re-points at the Books skin), `books-modal` takes it the rest of
+      // the way to a sheet at every size. No `closable={false}` and no hand-rolled `.cm-close`:
+      // the shell's ✕ chip is the one every full-page dialog on this site wears.
+      wrapClassName="sheet-modal sheet-modal--themed books-modal"
       rootClassName="books-modal-root"
       // The skin tokens ride `styles.wrapper`, which the dialog MERGES into the wrap's own inline style.
       // They used to ride `wrapProps.style`, which the dialog spreads AFTER its own props — so the wrap
       // lost its inline `zIndex` (and its display toggle) and the mask, still at 1500, painted OVER the
       // modal: "click a book and the whole screen blurs with the modal behind it" (Eric, 2026-08-26).
       wrapProps={{ "data-kids-style": kidsStyle ?? undefined }}
-      styles={{ wrapper: skin, body: { padding: 0 } }}
+      styles={{ wrapper: skin }}
     >
       <div className={`cm cm--${variant}`} role="dialog" aria-label={ariaLabel}>
-        <button type="button" className="cm-close" onClick={onClose} aria-label="Close">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M6 6l12 12M6 18L18 6" /></svg>
-        </button>
         {children}
       </div>
     </Modal>
