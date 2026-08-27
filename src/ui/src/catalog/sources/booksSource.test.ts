@@ -3,7 +3,7 @@ import { __resetMediaForTests } from "../../Pages/Books/booksMedia";
 import { setGroupMarkOverride } from "../../Pages/Books/booksQuery";
 import type { FacetSpec } from "../rail/facetSpec";
 import { parseFacetState } from "../rail/facetUrl";
-import { createBooksSource, toBookCard, toBookGroup } from "./booksSource";
+import { booksGroupsFor, createBooksSource, toBookCard, toBookGroup } from "./booksSource";
 
 const spec: FacetSpec = {
   identity: "books",
@@ -83,17 +83,44 @@ describe("catalog/booksSource — the facet state is the scope", () => {
     s.onOpenGroup!({ key: "1990", label: "1990s", totalItems: 9, renderTotal: 9, items: [] }, "decade");
     expect(onScope).toHaveBeenCalledWith({ years: [1990, 1999], group: "series" });
 
-    // R9 S8: the Writer / Artist axes are declared and wired, but OFF until the HOST can group by a
-    // credit — a stale host answers `groupBy=author` with COLLECTIONS instead of an error, and a pill
-    // that draws the wrong axis is worse than one that is absent.
+    // The pill's axes are the HOST's answer (`/browse/facets` → `groupAxes`), never a guess: a stale
+    // host does not 400 on `groupBy=author`, it silently answers with COLLECTIONS. No advertisement =
+    // an older host = the five axes every host has always had.
     expect(s.groups.map((g) => g.value)).toEqual(["collection", "series", "publisher", "decade", "franchise"]);
-    const withCredits = createBooksSource({ facetState: state, spec, creditAxes: true, onOpen, onOpenSeries, onScope });
+    const withCredits = createBooksSource({ facetState: state, spec, groupAxes: ["collection", "series", "publisher", "decade", "franchise", "author", "artist"], onOpen, onOpenSeries, onScope });
     expect(withCredits.groups.map((g) => g.value)).toEqual(["collection", "series", "publisher", "decade", "franchise", "author", "artist"]);
     const head = (key: string) => ({ key, label: key, totalItems: 1, renderTotal: 1, items: [] });
     withCredits.onOpenGroup!(head("alan moore"), "author");
     expect(onScope).toHaveBeenLastCalledWith({ facet: { key: "authors", value: "alan moore" }, group: "series" });
     withCredits.onOpenGroup!(head("dave gibbons"), "artist");
     expect(onScope).toHaveBeenLastCalledWith({ facet: { key: "artists", value: "dave gibbons" }, group: "series" });
+  });
+
+  it("the Group pill can never outrun the host that has to serve it", () => {
+    const values = (axes?: string[] | null) => booksGroupsFor(axes).map((g) => g.value);
+    const FIVE = ["collection", "series", "publisher", "decade", "franchise"];
+
+    // An old host sends nothing. That is "it tells me nothing", not "it has no axes" — so the five
+    // every host has always answered, never an empty pill.
+    expect(values(undefined)).toEqual(FIVE);
+    expect(values(null)).toEqual(FIVE);
+    expect(values([])).toEqual(FIVE);
+
+    // A host that advertises the credit axes gets them, in the SPA's pill order rather than the
+    // order the wire happened to use.
+    expect(values(["artist", "author", "series", "collection", "publisher", "decade", "franchise"]))
+      .toEqual([...FIVE, "author", "artist"]);
+
+    // A host that drops an axis loses its pill entry — the whole point of reading the binary.
+    expect(values(["collection", "series", "author"])).toEqual(["collection", "series", "author"]);
+
+    // An axis this SPA has no label for is ignored, never drawn as a raw token; and a list of
+    // nothing-but-unknowns falls back rather than emptying the pill.
+    expect(values(["collection", "colour"])).toEqual(["collection"]);
+    expect(values(["colour", "letterer"])).toEqual(FIVE);
+
+    // Case and whitespace come from a wire format, not from us.
+    expect(values([" Author ", "COLLECTION"])).toEqual(["collection", "author"]);
   });
 
   it("a one-issue series header collapses to its issue", () => {

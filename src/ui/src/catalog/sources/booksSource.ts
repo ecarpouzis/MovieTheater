@@ -34,25 +34,38 @@ export const BOOKS_GROUPS: GroupSpec[] = [
 ];
 
 /**
- * The two axes R9 S8 asked for — and the one place in the audit where the SPA is not the whole
- * answer. The Writer/Artist FACETS exist (`booksFacetSpec.ts`, `/browse/facet-options?field=authors`),
- * but the HOST's grouping does not: `BrowseController.NormalizeGroupBy` matches
- * `^(series|publisher|decade|collection|franchise)$` and falls back to `collection`, and its band
- * bucketing is single-key per item (`KeyOf`) while a credit is many-per-item.
- *
- * So they are declared here, wired here, and OFF until the host can answer — because a stale host
- * does not 400 on `groupBy=author`, it silently returns COLLECTIONS, and a pill that draws the wrong
- * axis is worse than a pill that is absent. `BrowsePage` passes `creditAxes` once the host carrying
- * the change is deployed; nothing else has to move.
+ * The two axes R9 S8 asked for: the Writer/Artist FACETS already existed (`booksFacetSpec.ts`,
+ * `/browse/facet-options?field=authors`), and R9 S9 built the host's grouping for them
+ * (`BrowseController.GroupByPattern` / `CreditHeadsAsync` / `KeysOf` — a credit is many-per-item, so
+ * one issue stands under every person it credits).
  */
 export const BOOKS_CREDIT_GROUPS: GroupSpec[] = [
   { value: "author", label: "Writer" },
   { value: "artist", label: "Artist" },
 ];
 
-/** The axis set for a host that can (or cannot) group by a credit. */
-export function booksGroupsFor(creditAxes: boolean): GroupSpec[] {
-  return creditAxes ? [...BOOKS_GROUPS, ...BOOKS_CREDIT_GROUPS] : BOOKS_GROUPS;
+/** Every axis this SPA knows how to label, in pill order. Advertised axes are filtered through it. */
+const KNOWN_GROUPS: GroupSpec[] = [...BOOKS_GROUPS, ...BOOKS_CREDIT_GROUPS];
+
+/**
+ * The Group pill's axes, as a reading of the DEPLOYED host rather than a guess about it.
+ *
+ * `groupAxes` is what `/browse/facets` advertises (`BrowseController.GroupAxes`). This exists because
+ * **a stale host does not 400 on `groupBy=author` — it silently answers with COLLECTIONS**, so the
+ * pill could otherwise draw an axis the binary cannot serve, which is worse than an absent pill. The
+ * two credit axes used to ride a hand-flipped `CREDIT_AXES` constant in `BrowsePage` waiting on a
+ * deploy; the advertisement replaced it, so the pill can never outrun the host and a NEW axis needs
+ * nothing here but a label.
+ *
+ * An old host sends no list at all, and that is "this host tells me nothing", not "this host has no
+ * axes": the fallback is `BOOKS_GROUPS`, the five every host has always answered. An advertised axis
+ * this SPA has no label for is ignored rather than drawn as a raw token.
+ */
+export function booksGroupsFor(groupAxes?: string[] | null): GroupSpec[] {
+  if (!groupAxes?.length) return BOOKS_GROUPS;
+  const advertised = new Set(groupAxes.map((a) => a.trim().toLowerCase()));
+  const offered = KNOWN_GROUPS.filter((g) => advertised.has(g.value));
+  return offered.length ? offered : BOOKS_GROUPS;
 }
 
 /** A credit axis' group key IS the facet value the rail writes (the normalized credit name). */
@@ -134,11 +147,11 @@ export interface BooksSourceOptions {
   /** Bumped when an admin job changes the catalog — drops every band. */
   epoch?: number;
   /**
-   * True once the deployed BooksHost can group by a credit (R9 S8 — see `BOOKS_CREDIT_GROUPS`).
-   * Default false: a stale host answers `groupBy=author` with COLLECTIONS rather than an error, so
-   * the two axes stay off the pill until the host that understands them is live.
+   * The group axes the deployed host advertised on `/browse/facets` (`groupAxes`). Undefined — an
+   * older host, or the facets fetch still in flight — falls back to the five axes every host has
+   * always answered. See `booksGroupsFor`.
    */
-  creditAxes?: boolean;
+  groupAxes?: string[];
   /** Re-mint epoch of the media token: URLs are rebuilt when it changes. */
   mediaEpoch?: number;
   tweakExtras?: TweakExtra[];
@@ -175,7 +188,7 @@ export function createBooksSource(o: BooksSourceOptions): CatalogSource {
     itemNoun: "book",
     groupNoun: "series",
     supports: ALL_VIEWS,
-    groups: booksGroupsFor(!!o.creditAxes),
+    groups: booksGroupsFor(o.groupAxes),
     sorts: BOOKS_SORTS.map(({ value, label, alpha }) => ({ value, label, alpha })),
     itemsModes: ["items", "groups"],
     itemsLabels: { items: "Comics", groups: "Series" },

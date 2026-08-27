@@ -73,6 +73,14 @@ export interface BrowseFacetsResult {
   publishers: PublisherFacetOption[];
   collections: CollectionFacetOption[];
   decades: FacetOption[];
+  /**
+   * The group axes the DEPLOYED host can answer (`BrowseController.GroupAxes`). Optional because an
+   * older host does not send it — and an absent list means "this host tells me nothing", not "this
+   * host has no axes": `booksGroupsFor` then falls back to the five every host has always had.
+   * This is what stops the Group pill outrunning the binary that has to serve it (a stale host does
+   * not 400 on `groupBy=author` — it silently answers with COLLECTIONS).
+   */
+  groupAxes?: string[];
 }
 
 export interface GroupUserMark { isRead: boolean; wantToRead: boolean; isFavorite: boolean; rating: number | null; notes: string | null }

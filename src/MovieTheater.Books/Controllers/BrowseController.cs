@@ -29,6 +29,23 @@ namespace MovieTheater.Books.Controllers
         public List<PublisherFacetOption> Publishers { get; init; } = [];
         public List<CollectionFacetOption> Collections { get; init; } = [];
         public List<FacetOption> Decades { get; init; } = [];
+
+        /// <summary>
+        /// The group axes THIS BINARY can answer (<see cref="BrowseController.GroupAxes"/>) — the pill's
+        /// vocabulary, advertised rather than assumed (R9 closing pass).
+        ///
+        /// <para>It exists because of a real failure shape: a stale host does NOT 400 on
+        /// <c>groupBy=author</c>, it silently answers with COLLECTIONS, so the SPA could not tell a host
+        /// that understands an axis from one that ignores it. Writer/Artist therefore shipped behind a
+        /// hand-flipped <c>CREDIT_AXES</c> constant waiting on a deploy. Reading the axis set off the
+        /// answer is the durable fix: the pill can never outrun the binary that has to serve it, and the
+        /// next axis needs no constant at all.</para>
+        ///
+        /// <para>An OLD host omits the field entirely, which deserializes to an empty list — and the SPA
+        /// reads that as "this host tells me nothing" and falls back to the five axes every host has
+        /// always had, never as "this host has no axes".</para>
+        /// </summary>
+        public List<string> GroupAxes { get; init; } = [];
     }
 
     /// <summary>Per-user marks on a group (read / want / favourite), read from <c>GroupMark</c>. Null when the
@@ -171,6 +188,8 @@ namespace MovieTheater.Books.Controllers
                 Authors = authors,
                 Artists = artists,
                 Tags = tags,
+                // Compile-time, so a cached payload always agrees with the binary that cached it.
+                GroupAxes = [.. BrowseController.GroupAxes],
             };
 
             // The multi-day TTL is a backstop only: CacheWarmupService re-warms this entry whenever the catalog
@@ -1009,9 +1028,20 @@ namespace MovieTheater.Books.Controllers
 
         // ── small helpers ─────────────────────────────────────────────────────────────────────────────────────
 
-        // `author` / `artist` (R9 S8) are the two MANY-PER-ITEM axes: one issue stands under every writer AND every
-        // artist it credits, which is why the band bucketing had to grow from KeyOf to KeysOf.
-        private static readonly Regex GroupByPattern = new("^(series|publisher|decade|collection|franchise|author|artist)$", RegexOptions.Compiled);
+        /// <summary>
+        /// Every group axis this host can answer, in the order the pill offers them. It is the ONE list:
+        /// <see cref="GroupByPattern"/> is built from it, and <c>/browse/facets</c> advertises it as
+        /// <c>groupAxes</c> so the SPA's pill is a reading of the deployed binary rather than a guess
+        /// about it (see <see cref="BrowseFacetsResult.GroupAxes"/> for why that matters).
+        ///
+        /// <para>`author` / `artist` (R9 S8) are the two MANY-PER-ITEM axes: one issue stands under every
+        /// writer AND every artist it credits, which is why the band bucketing had to grow from KeyOf to
+        /// KeysOf. Adding an axis means adding it here and teaching the heads/band code — nothing on the
+        /// SPA side, and no constant to remember to flip after a deploy.</para>
+        /// </summary>
+        public static readonly string[] GroupAxes = ["collection", "series", "publisher", "decade", "franchise", "author", "artist"];
+
+        private static readonly Regex GroupByPattern = new("^(" + string.Join("|", GroupAxes) + ")$", RegexOptions.Compiled);
 
         internal static string NormalizeGroupBy(string? groupBy)
         {

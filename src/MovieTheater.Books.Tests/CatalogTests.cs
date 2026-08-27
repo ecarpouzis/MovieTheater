@@ -461,6 +461,38 @@ namespace MovieTheater.Books.Tests
             Assert.Equal(2, (int)more.GetType().GetProperty("total")!.GetValue(more)!);
         }
 
+        /// <summary>
+        /// The host ADVERTISES its group axes (R9 closing pass). It has to: a host that does not know an axis does
+        /// not 400 on it, it silently answers with COLLECTIONS, so the site could never tell "understood" from
+        /// "ignored" — and Writer/Artist shipped behind a hand-flipped SPA constant waiting on a deploy because of
+        /// exactly that. The advertisement is the durable fix, so what is pinned here is that it cannot LIE: every
+        /// axis on the list is one <c>NormalizeGroupBy</c> keeps, and every axis it keeps is on the list.
+        /// </summary>
+        [Fact]
+        public async Task The_facets_advertise_exactly_the_group_axes_this_host_can_answer()
+        {
+            using var db = fixture.Db();
+            var facets = Body<BrowseFacetsResult>(await Browse(db).GetFacets());
+
+            Assert.Equal(
+                new[] { "collection", "series", "publisher", "decade", "franchise", "author", "artist" },
+                facets.GroupAxes.ToArray());
+
+            // Advertised ⇒ ANSWERED, asserted through the wire because that is the failure mode: an axis this host
+            // does not know comes back as the COLLECTION shelves, silently. So every advertised axis but that one
+            // must produce a different set of labels, and an axis nobody advertises ("penciller") must produce the
+            // same one. The regex is BUILT from the list, so this is the guard against the two drifting apart.
+            var collections = Body<BrowseGroupsResponse>(await Browse(db).GetGroups(groupBy: "collection", groupsTop: 200));
+            var collectionLabels = collections.Groups.Select(g => g.Label).ToArray();
+            foreach (var axis in facets.GroupAxes.Where(a => a != "collection"))
+            {
+                var answered = Body<BrowseGroupsResponse>(await Browse(db).GetGroups(groupBy: axis, groupsTop: 200));
+                Assert.NotEqual(collectionLabels, answered.Groups.Select(g => g.Label).ToArray());
+            }
+            var unknown = Body<BrowseGroupsResponse>(await Browse(db).GetGroups(groupBy: "penciller", groupsTop: 200));
+            Assert.Equal(collectionLabels, unknown.Groups.Select(g => g.Label).ToArray());
+        }
+
         [Fact]
         public async Task A_band_can_be_paged_and_continued_within_one_group()
         {
