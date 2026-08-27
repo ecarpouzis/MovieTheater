@@ -216,6 +216,15 @@ namespace MovieTheater
 
             services.AddHostedService<BoardgameSimilarityStartupService>();
 
+            // The change-driven catalog warmer (R9 S7): rebuilds the movie browse's light group
+            // indexes and its facet counts into the shared memory cache whenever the catalog's
+            // fingerprint moves, so the first reader after an ingest does not pay for the pass. Gated
+            // on the fingerprint, never on a clock and never on a request; read-only; one bounded
+            // target per step. Off in Development — the dev connection IS the live shared database
+            // and a developer's process has no business warming it.
+            services.AddSingleton(new Web.CatalogWarmupOptions { Enabled = !IsDevelopment });
+            services.AddHostedService<Web.CatalogWarmupService>();
+
             services.AddMvc()
                 .AddJsonOptions(opts =>
                 {

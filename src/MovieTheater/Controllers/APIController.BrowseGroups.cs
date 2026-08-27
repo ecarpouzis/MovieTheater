@@ -140,8 +140,18 @@ namespace MovieTheater.Controllers
             public IQueryable<Series> Series { get; init; } = default!;
             public IReadOnlyList<MovieCardDto> MiscCards { get; init; } = Array.Empty<MovieCardDto>();
             public IReadOnlyList<BrowseGroups.MiscLight> Misc { get; init; } = Array.Empty<BrowseGroups.MiscLight>();
-            public string CacheKey { get; init; } = "";
+            public int? UserId { get; init; }
+            public int Age { get; init; }
+            public IReadOnlyCollection<NormalizedTitleType> TypeScope { get; init; } = Array.Empty<NormalizedTitleType>();
+            public string? Mode { get; init; }
+            public string Value { get; init; } = "";
+            public string FilterSig { get; init; } = "";
+            /// <summary>True only when the filter reads the caller's own lists — the one user-dependent case.</summary>
+            public bool UserDependent { get; init; }
             public bool Filtered { get; init; }
+
+            public string CacheKey(string groupBy) =>
+                BrowseCacheKeys.Groups(UserId, Age, TypeScope, Mode, Value, FilterSig, UserDependent, groupBy);
         }
 
         /// <summary>The same scope the flat endpoints page: quarantine + series exclusion + age gate (the base queries), the filter mode, the Type scope; misc joins when the scope includes it.</summary>
@@ -164,13 +174,15 @@ namespace MovieTheater.Controllers
             var wantMisc = typeScope.Contains(NormalizedTitleType.Misc) && !filtered;
             var miscCards = wantMisc ? await GetMiscCards() : new List<MovieCardDto>();
             var age = await GetAgeRestrictionAsync();
-            var user = GetCurrentUserId()?.ToString() ?? "anon";
-            var cacheKey = $"browse:groups:{user}:{age}:{string.Join(",", typeScope.OrderBy(t => t))}:{(mode ?? "").Trim().ToLowerInvariant()}:{v.ToLowerInvariant()}:{filter.Sig}";
+            // The scope's identity carries the USER only when the filter reads the caller's own lists
+            // (`my=`); everything else depends on the age gate alone, so one warmed index serves every
+            // viewer at that age (BrowseCacheKeys). The group axis is appended by the caller.
             return new GroupScope
             {
                 Movies = mq, Series = sq, MiscCards = miscCards,
                 Misc = miscCards.Select(c => new BrowseGroups.MiscLight(c.id, c.SimpleTitle, c.Title, c.ReleaseDate?.Year)).ToList(),
-                CacheKey = cacheKey, Filtered = filtered,
+                UserId = GetCurrentUserId(), Age = age, TypeScope = typeScope, Mode = mode, Value = v,
+                FilterSig = filter.Sig, UserDependent = filter.My.Count > 0, Filtered = filtered,
             };
         }
 
@@ -181,7 +193,7 @@ namespace MovieTheater.Controllers
         /// </summary>
         private async Task<BrowseGroups.GroupIndex> CachedGroupIndexAsync(GroupScope scope, string by, CancellationToken ct)
         {
-            var key = $"{scope.CacheKey}:{by}";
+            var key = scope.CacheKey(by);
             var cached = await memoryCache.GetOrCreateAsync(key, async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = scope.Filtered ? GroupIndexTtlFiltered : GroupIndexTtlUnfiltered;

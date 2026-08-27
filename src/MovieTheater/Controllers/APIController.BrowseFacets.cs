@@ -64,8 +64,9 @@ namespace MovieTheater.Controllers
             if (!string.IsNullOrWhiteSpace(types) && typeScope.Count == 0) return BadRequest(new { Message = $"Unknown title type '{types}'" });
             var text = (q ?? "").Trim();
             var age = await GetAgeRestrictionAsync();
-            var user = GetCurrentUserId()?.ToString() ?? "anon";
-            var key = $"browse:facets:{user}:{age}:{string.Join(",", typeScope.OrderBy(t => t))}:{text.ToLowerInvariant()}";
+            // Not user-keyed: the counts pass a null user id to BrowseFilter.Apply, so nothing personal
+            // can reach them and one pass per (age, scope, text) serves everyone — and can be warmed.
+            var key = BrowseCacheKeys.Facets(age, typeScope, text);
             var counts = await memoryCache.GetOrCreateAsync(key, async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = text.Length > 0 ? FacetsTtlFiltered : FacetsTtlUnfiltered;

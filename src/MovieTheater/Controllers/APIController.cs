@@ -567,29 +567,16 @@ namespace MovieTheater.Controllers
         private async Task<IQueryable<Movie>> GetBaseMovieQuery()
         {
             int ageRestriction = await GetAgeRestrictionAsync();
-            return movieDb.Movies
-                .Include(m => m.PosterDetails)
-                // Quarantine: hide rows still pending library-ingest review (ReviewBatch != null)
-                // from every browse/odata path until they're approved.
-                .Where(m => m.ReviewBatch == null)
-                // Series live in their own table now; exclude series-typed Movie rows so a series
-                // shows once (from Series), never doubled during the dual-existence window.
-                .Where(m => m.TitleType != TitleType.TvSeries && m.TitleType != TitleType.TvMiniSeries)
-                // Age gate on the EFFECTIVE rating (real cert → legacy → inferred), so freshly
-                // scraped rows (MpaaRating only) and inferred rows gate correctly, not just legacy.
-                .Where(Web.RatingGate.MovieVisibleAtAge(movieDb, ageRestriction));
+            // The predicate itself lives in Web/CatalogQueries so the out-of-request catalog warmer
+            // builds the SAME set (quarantine + the series de-duplication + the effective-rating gate).
+            return Web.CatalogQueries.BaseMovies(movieDb, ageRestriction);
         }
 
         // Series peer of GetBaseMovieQuery (same quarantine + age gate). Browse/search union the two.
         private async Task<IQueryable<Series>> GetBaseSeriesQuery()
         {
             int ageRestriction = await GetAgeRestrictionAsync();
-            return movieDb.Series
-                .Include(s => s.PosterDetails)
-                .Where(s => s.ReviewBatch == null)
-                // Effective-rating gate (see GetBaseMovieQuery). Critical for series: most carry only
-                // a scraped MpaaRating, so gating on the legacy Rating alone leaked adult series.
-                .Where(Web.RatingGate.SeriesVisibleAtAge(movieDb, ageRestriction));
+            return Web.CatalogQueries.BaseSeries(movieDb, ageRestriction);
         }
 
         // Merge movie + series cards into one SimpleTitle-ordered list (browse stays unified).

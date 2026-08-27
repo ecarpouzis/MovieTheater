@@ -105,6 +105,13 @@
          the newest-insight tag rule and the counts are claims about the SHIPPED query builder. -->
     <Compile Include="..\MovieTheater\Web\BrowseFilter.cs" Link="Browse\BrowseFilter.cs" />
     <Compile Include="..\MovieTheater\Web\PhotoBrowseFilter.cs" Link="Browse\PhotoBrowseFilter.cs" />
+    <!-- R9 S7: the change-driven catalog warmer's judgeable halves — the catalog FINGERPRINT it gates
+         on and the pure gating decision — plus the two cache keys a warm has to agree with a request
+         about, and the base queries both of them build over. The hosted service itself is deliberately
+         NOT compiled in: a real warm reads the whole library, and no test may do that. -->
+    <Compile Include="..\MovieTheater\Web\CatalogQueries.cs" Link="Browse\CatalogQueries.cs" />
+    <Compile Include="..\MovieTheater\Web\BrowseCacheKeys.cs" Link="Browse\BrowseCacheKeys.cs" />
+    <Compile Include="..\MovieTheater\Web\CatalogWarmup.cs" Link="Browse\CatalogWarmup.cs" />
     <Compile Include="..\MovieTheater\Web\LetterBuckets.cs" Link="Browse\LetterBuckets.cs" />
     <Compile Include="..\MovieTheater\Web\BoardgameLinkFacets.cs" Link="Browse\BoardgameLinkFacets.cs" />
     <Compile Include="..\MovieTheater\Arcade\ArcadeGameGroups.cs" Link="Arcade\ArcadeGameGroups.cs" />
