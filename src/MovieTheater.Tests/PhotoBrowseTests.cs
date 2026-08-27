@@ -96,6 +96,64 @@ namespace MovieTheater.Tests
             Assert.Equal("Grandma", facets.GetProperty("people")[0].GetProperty("label").GetString());
             Assert.Equal(new[] { 3, 1 }, facets.GetProperty("kinds").EnumerateArray().Select(k => k.GetProperty("count").GetInt32()).ToArray());
             Assert.Equal(2, facets.GetProperty("cameras").GetArrayLength());
+
+            // ── R9 S8: the three axes the rail already filtered on are shelves too ──
+            static (string Key, string Label, int Count)[] Heads(JsonElement body) =>
+                body.GetProperty("groups").EnumerateArray()
+                    .Select(g => (g.GetProperty("key").GetString()!, g.GetProperty("label").GetString()!, g.GetProperty("totalItems").GetInt32())).ToArray();
+
+            // People: AFFIRMED tags only, so Grandma's shelf holds the manual tag and not the suggestion.
+            var people = PhotosControllerHarness.Body(await PhotosControllerHarness.Build(fixture, db).BrowseGroups(groupBy: "people"));
+            Assert.Equal(new[] { (grandma.Id.ToString(), "Grandma", 1) }, Heads(people));
+            Assert.Equal(new[] { ids["Beach/2.jpg"] }, Ids(people.GetProperty("groups")[0].GetProperty("items")));
+
+            // Kind: two shelves, photos first, and the ARCHIVE shelf's row never counts.
+            var kinds = PhotosControllerHarness.Body(await PhotosControllerHarness.Build(fixture, db).BrowseGroups(groupBy: "kind"));
+            Assert.Equal(new[] { ("photo", "Photos", 3), ("video", "Videos", 1) }, Heads(kinds));
+            Assert.Equal(new[] { ids["Home/3.mp4"] }, Ids(kinds.GetProperty("groups")[1].GetProperty("items")));
+
+            // Camera: one shelf per model, biggest first; a photograph with no camera gets no shelf.
+            var cameras = PhotosControllerHarness.Body(await PhotosControllerHarness.Build(fixture, db).BrowseGroups(groupBy: "camera"));
+            Assert.Equal(new[] { ("Canon EOS", "Canon EOS", 1), ("iPhone 6", "iPhone 6", 1) }, Heads(cameras));
+            Assert.Equal(new[] { ids["Beach/1.jpg"] }, Ids(cameras.GetProperty("groups")[0].GetProperty("items")));
+
+            // …and the rail's filter rides all three, exactly as it rides year/month/album/folder.
+            var filteredPeople = PhotosControllerHarness.Body(await PhotosControllerHarness.Build(fixture, db)
+                .BrowseGroups(groupBy: "people", filter: new MovieTheater.Web.PhotoBrowseFilterQuery { camera = new[] { "Canon EOS" } }));
+            Assert.Empty(Heads(filteredPeople));
+            var filteredCameras = PhotosControllerHarness.Body(await PhotosControllerHarness.Build(fixture, db)
+                .BrowseGroups(groupBy: "camera", filter: new MovieTheater.Web.PhotoBrowseFilterQuery { person = new[] { grandma.Id } }));
+            Assert.Equal(new[] { ("iPhone 6", "iPhone 6", 1) }, Heads(filteredCameras));
+            var filteredKinds = PhotosControllerHarness.Body(await PhotosControllerHarness.Build(fixture, db)
+                .BrowseGroups(groupBy: "kind", filter: new MovieTheater.Web.PhotoBrowseFilterQuery { q = "Home" }));
+            Assert.Equal(new[] { ("photo", "Photos", 1), ("video", "Videos", 1) }, Heads(filteredKinds));
+        }
+
+        /// <summary>
+        /// R9 S8's one "clarify": `month` is YEAR-AND-MONTH ("December 2011", key `2011-12`), NOT a
+        /// calendar month gathered across years — so it is KEPT. The across-years reading has its own
+        /// endpoint (`/API/Photos/OnThisDay`), which exists precisely because the browse narrows by
+        /// month only within a year.
+        /// </summary>
+        [Fact]
+        public async Task Month_groups_are_a_month_OF_A_YEAR_never_a_calendar_month_across_years()
+        {
+            using var db = fixture.NewDb();
+            Seed(db, "A/1.jpg", new DateTime(2011, 12, 25, 9, 0, 0));
+            Seed(db, "A/2.jpg", new DateTime(2011, 12, 26, 9, 0, 0));
+            Seed(db, "B/3.jpg", new DateTime(2014, 12, 25, 9, 0, 0));
+            Seed(db, "B/4.jpg", new DateTime(2014, 3, 12, 10, 0, 0));
+
+            var body = PhotosControllerHarness.Body(await PhotosControllerHarness.Build(fixture, db).BrowseGroups(groupBy: "month"));
+            var heads = body.GetProperty("groups").EnumerateArray()
+                .Select(g => (g.GetProperty("key").GetString(), g.GetProperty("label").GetString(), g.GetProperty("totalItems").GetInt32())).ToArray();
+            // Two Decembers, in two different years — never one "December" of three.
+            Assert.Equal(new[]
+            {
+                ("2014-12", "December 2014", 1),
+                ("2014-03", "March 2014", 1),
+                ("2011-12", "December 2011", 2),
+            }, heads);
         }
 
         [Fact]

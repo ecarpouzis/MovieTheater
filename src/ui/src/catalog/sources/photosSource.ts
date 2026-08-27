@@ -39,12 +39,28 @@ interface GroupRow {
 }
 
 export const PHOTO_SORTS: SortSpec[] = [{ value: "newest", label: "Newest first" }];
+
+/**
+ * `/API/Photos/BrowseGroups?groupBy=` values — the audited axis set (R9 S8).
+ *
+ * **`month` is year-AND-month and stays** (the audit's one "clarify"): the key is `YYYY-MM` and the
+ * label "December 2011", so it is the timeline at a finer grain, not a calendar month gathered
+ * across years. Here a month IS an occasion — a holiday, a trip — and the across-years question has
+ * its own answer already, `/API/Photos/OnThisDay`, which exists precisely because the browse narrows
+ * by month only WITHIN a year. Hence "Month" is labelled for what it is.
+ */
 export const PHOTO_GROUPS: GroupSpec[] = [
   { value: "year", label: "Year" },
-  { value: "month", label: "Month" },
+  { value: "month", label: "Month of a year" },
   { value: "album", label: "Album" },
   { value: "folder", label: "Folder" },
+  { value: "people", label: "People" },
+  { value: "kind", label: "Photo or video" },
+  { value: "camera", label: "Camera" },
 ];
+
+/** Which facet a group header adds when it scopes in place; the rest open their own page. */
+const GROUP_FACET: Record<string, string> = { people: "person", kind: "kind", camera: "camera" };
 export const PHOTOS_PAGE_SIZE = 60;
 const ALL_VIEWS: ViewMode[] = ["grid", "wall", "list", "extended", "shelf", "newspaper", "directory"];
 const DIRECTORY_HEADS_PAGE = 50;
@@ -145,6 +161,8 @@ export interface PhotosSourceOptions {
   onOpenAlbum?: (slug: string) => void;
   /** A folder header → the folder view (by root-relative path). */
   onOpenFolder?: (path: string) => void;
+  /** Scope in place: a People / Kind / Camera header adds its facet and regroups a level — one push. */
+  onScope?: (patch: { facet?: { key: string; value: string }; group?: string }) => void;
 }
 
 export function createPhotosSource(o: PhotosSourceOptions): CatalogSource {
@@ -205,8 +223,12 @@ export function createPhotosSource(o: PhotosSourceOptions): CatalogSource {
     fetchGroupMore,
     onOpen: (item) => o.onOpen(item.id),
     onOpenGroup: (group, groupBy) => {
-      if (groupBy === "album") o.onOpenAlbum?.(group.key);
-      else if (groupBy === "folder") o.onOpenFolder?.(group.key);
+      // Album and folder headers open the section's OWN pages — those existed before the rail and are
+      // richer than a filtered reel. The three new axes are facets, so they scope in place.
+      if (groupBy === "album") return o.onOpenAlbum?.(group.key);
+      if (groupBy === "folder") return o.onOpenFolder?.(group.key);
+      const facet = GROUP_FACET[groupBy];
+      if (facet) o.onScope?.({ facet: { key: facet, value: group.key }, group: "month" });
     },
   };
 }

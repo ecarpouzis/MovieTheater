@@ -64,4 +64,36 @@ describe("catalog/photosSource — the timeline under an offset, groups by date/
     expect(s.letters).toBeUndefined();
     expect(createPhotosSource({ includeHidden: false, listKey: "k", onOpen }).queryKey).toBe("photos:k");
   });
+
+  it("offers the audited axis set and keeps Month as a month OF A YEAR (R9 S8)", () => {
+    const s = createPhotosSource({ includeHidden: false, listKey: "k", onOpen: vi.fn() });
+    expect(s.groups.map((g) => g.value)).toEqual(["year", "month", "album", "folder", "people", "kind", "camera"]);
+    // The audit asked whether `month` was a calendar month across years. It never was: the key is
+    // `YYYY-MM` and the label "December 2011", so the axis KEEPS its place — and says what it is.
+    expect(s.groups.find((g) => g.value === "month")!.label).toBe("Month of a year");
+  });
+
+  it("a People / Kind / Camera header scopes in place; Album and Folder keep opening their own pages", () => {
+    const onScope = vi.fn();
+    const onOpenAlbum = vi.fn();
+    const onOpenFolder = vi.fn();
+    const s = createPhotosSource({ includeHidden: false, listKey: "k", onOpen: vi.fn(), onOpenAlbum, onOpenFolder, onScope });
+    const g = (key: string, label = key) => ({ key, label, totalItems: 1, renderTotal: 1, items: [] });
+
+    s.onOpenGroup!(g("4", "Grandma"), "people");
+    expect(onScope).toHaveBeenLastCalledWith({ facet: { key: "person", value: "4" }, group: "month" });
+    s.onOpenGroup!(g("video", "Videos"), "kind");
+    expect(onScope).toHaveBeenLastCalledWith({ facet: { key: "kind", value: "video" }, group: "month" });
+    s.onOpenGroup!(g("iPhone 12"), "camera");
+    expect(onScope).toHaveBeenLastCalledWith({ facet: { key: "camera", value: "iPhone 12" }, group: "month" });
+
+    // The album and folder PAGES are richer than a filtered reel, and they predate the rail.
+    s.onOpenGroup!(g("summer-2019", "Summer"), "album");
+    expect(onOpenAlbum).toHaveBeenCalledWith("summer-2019");
+    s.onOpenGroup!(g("2019"), "folder");
+    expect(onOpenFolder).toHaveBeenCalledWith("2019");
+    // Year and month headers have no facet of their own (the rail's date control is a RANGE).
+    s.onOpenGroup!(g("2019-07", "July 2019"), "month");
+    expect(onScope).toHaveBeenCalledTimes(3);
+  });
 });

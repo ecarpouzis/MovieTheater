@@ -21,6 +21,7 @@ import useShowHiddenPhotos from "../../hooks/useShowHiddenPhotos";
 import usePhotosAlbum, { photosSection } from "../../hooks/usePhotosAlbum";
 import CatalogHost from "../../catalog/CatalogHost";
 import { createPhotosSource } from "../../catalog/sources/photosSource";
+import { hasFacetValue } from "../../catalog/rail/facetSpec";
 import { facetStateKey } from "../../catalog/rail/facetUrl";
 import useSectionRail from "../../catalog/rail/useSectionRail";
 import sectionRailSurfaces from "../../catalog/rail/sectionRailSurfaces";
@@ -171,6 +172,16 @@ export default function PhotosPage({ userData }) {
   // filter and the same structural refreshes the lists re-fetch on; its open handlers come through a
   // ref set below.
   const photosOpenRef = useRef(null);
+  // A People / Kind / Camera header scopes in place (adds its facet, regroups by month) — one push.
+  // Read through a ref so the source's identity stays keyed on the filter alone.
+  const photosScopeRef = useRef(null);
+  photosScopeRef.current = (patch) => {
+    facetActions.apply((d) => {
+      if (patch.facet && !hasFacetValue(d.include[patch.facet.key], patch.facet.value)) {
+        d.include[patch.facet.key] = [...(d.include[patch.facet.key] ?? []), patch.facet.value];
+      }
+    }, patch.group ? { group: patch.group } : undefined);
+  };
   const photosSource = useMemo(
     () => createPhotosSource({
       includeHidden: showHidden,
@@ -179,6 +190,7 @@ export default function PhotosPage({ userData }) {
       onOpen: (id) => photosOpenRef.current?.photo(id),
       onOpenAlbum: (slug) => photosOpenRef.current?.album(slug),
       onOpenFolder: (path) => photosOpenRef.current?.folder(path),
+      onScope: (patch) => photosScopeRef.current?.(patch),
     }),
     // browseFilterKey names the filter; browseFilter is its serialization.
     // eslint-disable-next-line react-hooks/exhaustive-deps

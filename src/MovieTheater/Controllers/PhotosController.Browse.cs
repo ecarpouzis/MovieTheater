@@ -110,18 +110,39 @@ namespace MovieTheater.Controllers
 
         /// <summary>
         /// The grouped photo browse for the catalog package's Extended / Shelves / Newspaper views:
-        /// <c>groupBy</c> = year | month | album | folder. Two-phase like the other sections —
-        /// <c>groupsSkip/groupsTop</c> over the heads, <c>perGroupSkip/perGroupTop</c> within each,
-        /// <c>singleGroupKey</c> for "more of this group". Year and month groups honour the timeline's
-        /// exclusions; album groups are the family albums' curated entries (hidden/missing assets
-        /// dropped); folder groups are the top-level folders of the tree the folder view shows.
+        /// <c>groupBy</c> = year | month | album | folder | people | kind | camera. Two-phase like the
+        /// other sections — <c>groupsSkip/groupsTop</c> over the heads, <c>perGroupSkip/perGroupTop</c>
+        /// within each, <c>singleGroupKey</c> for "more of this group". Year and month groups honour the
+        /// timeline's exclusions; album groups are the family albums' curated entries (hidden/missing
+        /// assets dropped); folder groups are the top-level folders of the tree the folder view shows.
+        ///
+        /// <para><b>`month` is YEAR-AND-MONTH, and stays (R9 S8's one "clarify").</b> The key is
+        /// <c>YYYY-MM</c> and the label "December 2011": it is the finer grain of the timeline, not a
+        /// calendar month gathered across years. That reading is the one the family album wants — a
+        /// month IS an occasion here (a holiday, a trip) — and the across-years question already has
+        /// its own answer in <c>/API/Photos/OnThisDay</c>, which exists precisely because the browse
+        /// narrows by month only WITHIN a year. So it is kept, not dropped.</para>
+        ///
+        /// <para>R9 S8 adds the three axes the rail already filters on: <c>people</c> (AFFIRMED tags
+        /// only — a suggestion is a question, the same rule <see cref="PhotoBrowseFilter"/> applies),
+        /// <c>kind</c> (photo/video) and <c>camera</c> (<see cref="PhotoAsset.CameraModel"/>). The
+        /// rail's filter rides all three, exactly as it rides year/month/album/folder.</para>
         /// </summary>
         [HttpGet("/API/Photos/BrowseGroups")]
         public async Task<IActionResult> BrowseGroups(string? groupBy = null, int groupsSkip = 0, int groupsTop = 0, int perGroupTop = 0, int perGroupSkip = 0,
             string? singleGroupKey = null, bool includeHidden = false, [FromQuery] PhotoBrowseFilterQuery? filter = null)
         {
             includeHidden = ShowHidden(includeHidden);
-            var by = (groupBy ?? "").Trim().ToLowerInvariant() switch { "month" => "month", "album" => "album", "folder" => "folder", _ => "year" };
+            var by = (groupBy ?? "").Trim().ToLowerInvariant() switch
+            {
+                "month" => "month",
+                "album" => "album",
+                "folder" => "folder",
+                "people" or "person" => "people",
+                "kind" => "kind",
+                "camera" => "camera",
+                _ => "year",
+            };
             groupsTop = groupsTop <= 0 ? GroupsDefaultTop : Math.Min(groupsTop, GroupsMaxTop);
             perGroupTop = perGroupTop <= 0 ? PerGroupDefaultTop : Math.Min(perGroupTop, PerGroupMaxTop);
             perGroupSkip = Math.Max(0, perGroupSkip);
@@ -136,7 +157,9 @@ namespace MovieTheater.Controllers
             tree = browseFilter.Apply(tree, movieDb);
 
             // ── Heads ──
-            var heads = new List<(string Key, string Label, int Count, int AlbumId)>();
+            // The 4th slot is the head's own entity id where the axis has one: the album for `album`,
+            // the FamilyPerson for `people`, 0 elsewhere.
+            var heads = new List<(string Key, string Label, int Count, int EntityId)>();
             switch (by)
             {
                 case "month":
@@ -167,6 +190,35 @@ namespace MovieTheater.Controllers
                         .GroupBy(name => name).Select(g => new { Name = g.Key, Count = g.Count() })
                         .OrderBy(f => f.Name).ToListAsync();
                     heads.AddRange(folders.Select(f => (f.Name, f.Name, f.Count, 0)));
+                    break;
+                }
+                case "people":
+                {
+                    // AFFIRMED tags only — the same predicate PhotoBrowseFilter uses, so the shelf and
+                    // the People facet describe the same photographs. A person with none is no shelf.
+                    var people = await movieDb.FamilyPeople
+                        .Select(p => new { p.Id, p.Name, Count = movieDb.PhotoPersonTags.Count(t => t.FamilyPersonId == p.Id && (t.Source == PhotoTagSource.Manual || t.Source == PhotoTagSource.Confirmed) && timeline.Any(s => s.Id == t.PhotoAssetId)) })
+                        .Where(p => p.Count > 0)
+                        .OrderByDescending(p => p.Count).ThenBy(p => p.Name).ToListAsync();
+                    heads.AddRange(people.Select(p => (p.Id.ToString(), string.IsNullOrWhiteSpace(p.Name) ? $"Person #{p.Id}" : p.Name, p.Count, p.Id)));
+                    break;
+                }
+                case "kind":
+                {
+                    var kinds = await timeline.GroupBy(a => a.Kind).Select(g => new { Kind = g.Key, Count = g.Count() }).ToListAsync();
+                    foreach (var k in new[] { PhotoAssetKind.Photo, PhotoAssetKind.Video })
+                    {
+                        var count = kinds.FirstOrDefault(r => r.Kind == k)?.Count ?? 0;
+                        if (count > 0) heads.Add((k == PhotoAssetKind.Video ? "video" : "photo", k == PhotoAssetKind.Video ? "Videos" : "Photos", count, 0));
+                    }
+                    break;
+                }
+                case "camera":
+                {
+                    var cameras = await timeline.Where(a => a.CameraModel != null && a.CameraModel != "")
+                        .GroupBy(a => a.CameraModel!).Select(g => new { Model = g.Key, Count = g.Count() })
+                        .OrderByDescending(c => c.Count).ThenBy(c => c.Model).ToListAsync();
+                    heads.AddRange(cameras.Select(c => (c.Model, c.Model, c.Count, 0)));
                     break;
                 }
                 default:
@@ -201,7 +253,7 @@ namespace MovieTheater.Controllers
                     }
                     case "album":
                     {
-                        var albumId = h.AlbumId;
+                        var albumId = h.EntityId;
                         var albumRows = movieDb.PhotoAlbumEntries.Where(e => e.PhotoAlbumId == albumId)
                             .OrderBy(e => e.SortOrder).ThenBy(e => e.Id)
                             .Select(e => e.PhotoAsset)
@@ -214,6 +266,28 @@ namespace MovieTheater.Controllers
                         var prefix = h.Key + "/";
                         rows = await tree.Where(a => a.Path.StartsWith(prefix))
                             .OrderBy(a => a.Path).ThenBy(a => a.Id).Skip(perGroupSkip).Take(perGroupTop).ToListAsync();
+                        break;
+                    }
+                    case "people":
+                    {
+                        var personId = h.EntityId;
+                        rows = await timeline.Where(a => movieDb.PhotoPersonTags.Any(t => t.PhotoAssetId == a.Id && t.FamilyPersonId == personId
+                                && (t.Source == PhotoTagSource.Manual || t.Source == PhotoTagSource.Confirmed)))
+                            .OrderByDescending(a => a.TakenAt).ThenByDescending(a => a.Id).Skip(perGroupSkip).Take(perGroupTop).ToListAsync();
+                        break;
+                    }
+                    case "kind":
+                    {
+                        var kind = h.Key == "video" ? PhotoAssetKind.Video : PhotoAssetKind.Photo;
+                        rows = await timeline.Where(a => a.Kind == kind)
+                            .OrderByDescending(a => a.TakenAt).ThenByDescending(a => a.Id).Skip(perGroupSkip).Take(perGroupTop).ToListAsync();
+                        break;
+                    }
+                    case "camera":
+                    {
+                        var model = h.Key;
+                        rows = await timeline.Where(a => a.CameraModel == model)
+                            .OrderByDescending(a => a.TakenAt).ThenByDescending(a => a.Id).Skip(perGroupSkip).Take(perGroupTop).ToListAsync();
                         break;
                     }
                     default:
