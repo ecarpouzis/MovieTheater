@@ -82,6 +82,18 @@ describe("catalog/booksSource — the facet state is the scope", () => {
     expect(onScope).toHaveBeenCalledWith({ facet: { key: "collections", value: 44 }, group: "series" });
     s.onOpenGroup!({ key: "1990", label: "1990s", totalItems: 9, renderTotal: 9, items: [] }, "decade");
     expect(onScope).toHaveBeenCalledWith({ years: [1990, 1999], group: "series" });
+
+    // R9 S8: the Writer / Artist axes are declared and wired, but OFF until the HOST can group by a
+    // credit — a stale host answers `groupBy=author` with COLLECTIONS instead of an error, and a pill
+    // that draws the wrong axis is worse than one that is absent.
+    expect(s.groups.map((g) => g.value)).toEqual(["collection", "series", "publisher", "decade", "franchise"]);
+    const withCredits = createBooksSource({ facetState: state, spec, creditAxes: true, onOpen, onOpenSeries, onScope });
+    expect(withCredits.groups.map((g) => g.value)).toEqual(["collection", "series", "publisher", "decade", "franchise", "author", "artist"]);
+    const head = (key: string) => ({ key, label: key, totalItems: 1, renderTotal: 1, items: [] });
+    withCredits.onOpenGroup!(head("alan moore"), "author");
+    expect(onScope).toHaveBeenLastCalledWith({ facet: { key: "authors", value: "alan moore" }, group: "series" });
+    withCredits.onOpenGroup!(head("dave gibbons"), "artist");
+    expect(onScope).toHaveBeenLastCalledWith({ facet: { key: "artists", value: "dave gibbons" }, group: "series" });
   });
 
   it("a one-issue series header collapses to its issue", () => {

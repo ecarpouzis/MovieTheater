@@ -33,6 +33,31 @@ export const BOOKS_GROUPS: GroupSpec[] = [
   { value: "franchise", label: "Franchise" },
 ];
 
+/**
+ * The two axes R9 S8 asked for — and the one place in the audit where the SPA is not the whole
+ * answer. The Writer/Artist FACETS exist (`booksFacetSpec.ts`, `/browse/facet-options?field=authors`),
+ * but the HOST's grouping does not: `BrowseController.NormalizeGroupBy` matches
+ * `^(series|publisher|decade|collection|franchise)$` and falls back to `collection`, and its band
+ * bucketing is single-key per item (`KeyOf`) while a credit is many-per-item.
+ *
+ * So they are declared here, wired here, and OFF until the host can answer — because a stale host
+ * does not 400 on `groupBy=author`, it silently returns COLLECTIONS, and a pill that draws the wrong
+ * axis is worse than a pill that is absent. `BrowsePage` passes `creditAxes` once the host carrying
+ * the change is deployed; nothing else has to move.
+ */
+export const BOOKS_CREDIT_GROUPS: GroupSpec[] = [
+  { value: "author", label: "Writer" },
+  { value: "artist", label: "Artist" },
+];
+
+/** The axis set for a host that can (or cannot) group by a credit. */
+export function booksGroupsFor(creditAxes: boolean): GroupSpec[] {
+  return creditAxes ? [...BOOKS_GROUPS, ...BOOKS_CREDIT_GROUPS] : BOOKS_GROUPS;
+}
+
+/** A credit axis' group key IS the facet value the rail writes (the normalized credit name). */
+const CREDIT_GROUP_FACET: Record<string, string> = { author: "authors", artist: "artists" };
+
 export const BOOKS_PAGE_SIZE = 48;
 const ALL_VIEWS: ViewMode[] = ["grid", "wall", "list", "extended", "shelf", "newspaper", "directory"];
 const DIRECTORY_PAGE = 200;
@@ -108,6 +133,12 @@ export interface BooksSourceOptions {
   spec: FacetSpec;
   /** Bumped when an admin job changes the catalog — drops every band. */
   epoch?: number;
+  /**
+   * True once the deployed BooksHost can group by a credit (R9 S8 — see `BOOKS_CREDIT_GROUPS`).
+   * Default false: a stale host answers `groupBy=author` with COLLECTIONS rather than an error, so
+   * the two axes stay off the pill until the host that understands them is live.
+   */
+  creditAxes?: boolean;
   /** Re-mint epoch of the media token: URLs are rebuilt when it changes. */
   mediaEpoch?: number;
   tweakExtras?: TweakExtra[];
@@ -144,7 +175,7 @@ export function createBooksSource(o: BooksSourceOptions): CatalogSource {
     itemNoun: "book",
     groupNoun: "series",
     supports: ALL_VIEWS,
-    groups: BOOKS_GROUPS,
+    groups: booksGroupsFor(!!o.creditAxes),
     sorts: BOOKS_SORTS.map(({ value, label, alpha }) => ({ value, label, alpha })),
     itemsModes: ["items", "groups"],
     itemsLabels: { items: "Comics", groups: "Series" },
@@ -182,6 +213,8 @@ export function createBooksSource(o: BooksSourceOptions): CatalogSource {
         case "collection": o.onScope({ facet: { key: "collections", value: Number(group.key) }, group: "series" }); return;
         case "publisher": o.onScope({ facet: { key: "publishers", value: group.key }, group: "series" }); return;
         case "franchise": o.onScope({ facet: { key: "franchises", value: group.key }, group: "series" }); return;
+        case "author":
+        case "artist": o.onScope({ facet: { key: CREDIT_GROUP_FACET[groupBy], value: group.key }, group: "series" }); return;
         case "decade": {
           const y = Number(group.key);
           if (Number.isFinite(y)) o.onScope({ years: [y, y + 9], group: "series" });
