@@ -77,7 +77,7 @@ export default function DirectoryView({ source, state, coverScale, metadata, hov
     return sort && !sort.alpha ? [...list].sort((a, b) => (b.count ?? 0) - (a.count ?? 0)) : [...list].sort((a, b) => a.label.localeCompare(b.label));
   }, [nodes, showEmpty, source.sorts, state.sort]);
 
-  if (!dir) return <StreamEmpty noun={source.itemNoun ?? "item"} />;
+  if (!dir) return <StreamEmpty source={source} />;
   const loading = nodes == null || items == null;
   return (
     <div className="bx-drill">
@@ -108,7 +108,7 @@ export default function DirectoryView({ source, state, coverScale, metadata, hov
               </div>
             </section>
           )}
-          {visibleNodes.length === 0 && items.length === 0 && <StreamEmpty noun={source.itemNoun ?? "item"} />}
+          {visibleNodes.length === 0 && items.length === 0 && <StreamEmpty source={source} />}
         </div>
       )}
     </div>

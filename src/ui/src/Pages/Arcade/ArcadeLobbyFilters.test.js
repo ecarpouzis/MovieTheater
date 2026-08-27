@@ -109,12 +109,21 @@ describe("the lobby's system filter, end to end", () => {
 
   // "all" is the Mods & Hacks DEFAULT and the rail used to write it into the URL, so an untouched
   // lobby could describe itself as filtered. What matters is that it reaches the EMPTY state at all
-  // rather than the failure one, and that the request it made carried no variant.
+  // rather than the failure one, and that the request it made carried no variant. Since S4 the empty
+  // state SAYS which of the two it is (CatalogSource.emptyLabel + filtered), so this pins the
+  // unfiltered wording — "no games match" was a lie when nothing was matching against anything.
   it("treats ?variant=all as no filter at all", async () => {
     gamesResponder = () => ok({ games: [], totalCount: 0, skip: 0 });
     renderLobby("?variant=all");
-    await waitFor(() => expect(screen.getByText(/No games match/)).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(/No games here yet/)).toBeTruthy());
+    expect(screen.queryByText(/No games match/)).toBeNull();
     expect(screen.queryByText(/Couldn't load this list/)).toBeNull();
     expect(gamesCalls.at(-1).variant).toBeFalsy();
+  });
+
+  it("says the filters are what emptied the lobby when something narrows it", async () => {
+    gamesResponder = () => ok({ games: [], totalCount: 0, skip: 0 });
+    renderLobby("?f=system:nes");
+    await waitFor(() => expect(screen.getByText(/No games match those filters/)).toBeTruthy());
   });
 });

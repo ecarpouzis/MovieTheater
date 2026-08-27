@@ -172,6 +172,11 @@ export interface ArcadeSourceOptions {
   filters: ArcadeFilters;
   /** Names what makes the list a DIFFERENT list (the lobby's filterKey). */
   filterKey: string;
+  /**
+   * True when something narrows the lobby (`arcadeNarrows(filters)` — the page owns the predicate,
+   * since the facet spec lives in the section, not the package). Only picks the empty line.
+   */
+  narrowed?: boolean;
   /** Open the lobby's modal for a card (the lobby's `openGame(card)`). */
   onOpen: (row: ArcadeGameRow) => void;
   /** Apply a lobby filter (`?system=`, `?genre=`) — a group header's click. */
@@ -199,6 +204,9 @@ export function createArcadeSource(o: ArcadeSourceOptions): CatalogSource {
     queryKey: `arcade:${o.filterKey}`,
     title: "Arcade",
     itemNoun: "game",
+    // "No games match." is wrong when nothing is filtering — that lobby is empty, not narrowed.
+    emptyLabel: { empty: "No games here yet.", filtered: "No games match those filters." },
+    filtered: o.narrowed ?? false,
     groupNoun: "groups",
     supports: ALL_VIEWS,
     groups: ARCADE_GROUPS,

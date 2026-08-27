@@ -15,7 +15,7 @@ import ConsoleCarousel from "./ConsoleCarousel";
 import { rememberLobbySearch } from "./arcadeLobbyState";
 import { hasSaveStates, QUICK_SLOT } from "./arcadeSystems";
 import { parseSystems, toggleSystem } from "./arcadeSystemFilter";
-import { ARCADE_ENTITY_PARAMS, legacyToArcadeSearch } from "./arcadeFacetSpec";
+import { ARCADE_ENTITY_PARAMS, arcadeNarrows, legacyToArcadeSearch } from "./arcadeFacetSpec";
 import useArcadeBrowse from "./useArcadeBrowse";
 import CatalogHost from "../../catalog/CatalogHost";
 import { hasFacetValue } from "../../catalog/rail/facetSpec";
@@ -240,6 +240,9 @@ export default function ArcadePage({ userData }) {
       filters,
       filterKey,
       renderCard,
+      // Picks the empty line: "No games here yet." when nothing narrows, "…match those filters." when
+      // something does — the two are different reports and the second one used to be told either way.
+      narrowed: arcadeNarrows(filters),
       // 501 = no arcade on this server. The source reports the status; the page renders the note.
       onStatus: (status) => { if (status === 501) setUnconfigured(true); },
       onOpen: (card) => openGameRef.current?.(card),

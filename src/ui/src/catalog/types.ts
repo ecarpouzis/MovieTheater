@@ -261,6 +261,19 @@ export interface CatalogSource {
   /** "title", "album", "game" — the pager's tooltip noun. */
   itemNoun?: string;
   /**
+   * What an empty result says, in the section's own words. Without it every view says
+   * "No <itemNoun>s match." — which is a lie when nothing is filtering: an arcade with no games
+   * ingested yet, a shelf nobody has added to. `filtered` below picks the line.
+   */
+  emptyLabel?: { empty: string; filtered: string };
+  /**
+   * True when SOMETHING narrows this source — a facet, a search box, a scope the user chose. It
+   * picks `emptyLabel.filtered` over `emptyLabel.empty`, and only that. The source computes it (it
+   * is the only party that knows what its scope was built from); the views cannot, since the
+   * catalog's own state carries the view/group/sort and never the section's filters.
+   */
+  filtered?: boolean;
+  /**
    * The GRID's own card (R9 S3). When a section supplies one, the Grid — and only the Grid — lays
    * the section's existing card into the shared bands instead of the package `Card`; every other
    * view keeps the package card. The engine, the letter strip, the skeletons and the tweaks

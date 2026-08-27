@@ -96,7 +96,7 @@ export default function ShelvesView({ source, state, coverScale }: ViewProps) {
   const noun = source.itemNoun ?? "item";
   if (stream.loading && !stream.band0) return <StreamLoading />;
   if (stream.error && !stream.band0) return <StreamFailed onRetry={stream.retry} />;
-  if (!stream.band0 || stream.band0.length === 0) return <StreamEmpty noun={noun} />;
+  if (!stream.band0 || stream.band0.length === 0) return <StreamEmpty source={source} />;
 
   const letters = stream.letters ? groupLetterBuckets(stream.letters, stream.totalGroups) : null;
   const currentIndex = active.band * GROUPS_PAGE_SIZE + active.within;

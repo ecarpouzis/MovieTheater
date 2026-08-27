@@ -219,7 +219,7 @@ function ExtendedGrouped({ source, state, coverScale, metadata, hoverClass }: Vi
 
   if (stream.loading && !stream.band0) return <StreamLoading />;
   if (stream.error && !stream.band0) return <StreamFailed onRetry={stream.retry} />;
-  if (!stream.band0 || stream.band0.length === 0) return <StreamEmpty noun={noun} />;
+  if (!stream.band0 || stream.band0.length === 0) return <StreamEmpty source={source} />;
 
   const letters = stream.letters ? groupLetterBuckets(stream.letters, stream.totalGroups) : null;
   return (

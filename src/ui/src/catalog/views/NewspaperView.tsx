@@ -223,10 +223,10 @@ export default function NewspaperView({ source, state, coverScale }: ViewProps) 
   const noun = source.itemNoun ?? "item";
   const onOpenGroup = stream.openGroup ? (r: Run) => stream.openGroup!({ key: r.key, label: r.name, totalItems: r.count, renderTotal: r.items.length, items: r.items }) : null;
 
-  if (state.group === NO_GROUP && source.groups.length === 0) return <StreamEmpty noun={noun} />;
+  if (state.group === NO_GROUP && source.groups.length === 0) return <StreamEmpty source={source} />;
   if (stream.loading && !stream.band0) return <StreamLoading />;
   if (stream.error && !stream.band0) return <StreamFailed onRetry={stream.retry} />;
-  if (!runs.length) return <StreamEmpty noun={noun} />;
+  if (!runs.length) return <StreamEmpty source={source} />;
 
   const years = runs.flatMap((r) => (r.minY > 0 ? [r.minY, r.maxY] : []));
   const yLo = years.length ? Math.min(...years) : 0;

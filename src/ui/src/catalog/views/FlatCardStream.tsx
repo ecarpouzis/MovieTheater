@@ -86,7 +86,7 @@ export default function FlatCardStream({ source, state, variant, cellH, perBand,
 
   if (stream.loading && !stream.band0) return <StreamLoading />;
   if (stream.error && !stream.band0) return <StreamFailed onRetry={stream.retry} />;
-  if (!stream.band0 || stream.band0.length === 0) return <StreamEmpty noun={source.itemNoun ?? "item"} />;
+  if (!stream.band0 || stream.band0.length === 0) return <StreamEmpty source={source} />;
 
   const pagerMode = letters ? "letters" : "pages";
   return (

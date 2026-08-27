@@ -23,8 +23,15 @@ or an album is; nothing in a section knows how a shelf is laid out.
   `listColumns`, `directory`, `fetchFlatBand(skip, top, sort)`, `fetchGroupBand(groupsSkip,
   groupsTop, perGroupTop, groupBy, sort)`, `fetchGroupMore(groupKey, skip, top, groupBy, sort)`,
   `letters(sort)`, `groupLetters(groupBy, sort)`, `onOpen(item)`, `onOpenGroup(group, groupBy)`,
-  the GRID's card seam (`renderCard(item, view)` + `gridClass` + `gridCell` — see below), and
-  `dataVersion` (the SAME list edited in place: bands re-read, window/heights/scroll stay put).
+  the GRID's card seam (`renderCard(item, view)` + `gridClass` + `gridCell` — see below),
+  `emptyLabel`/`filtered` (below), and `dataVersion` (the SAME list edited in place: bands re-read,
+  window/heights/scroll stay put).
+- **`emptyLabel` + `filtered`** — an empty result is two different reports and every view used to
+  file only one of them ("No games match." on a lobby with nothing ingested). A source supplies
+  `emptyLabel: { empty, filtered }` and the boolean `filtered`; `StreamEmpty` picks the line
+  (`views/StreamStates.tsx` → `emptyLine`). The SOURCE owns `filtered` because it is the only party
+  that knows what its scope was built from — the catalog's own state carries view/group/items/sort
+  and never the section's facets (Arcade: `arcadeNarrows(filters)` off `arcadeFacetSpec.ts`).
 
 Two envelope laws the adapters encode: a flat page reports `total: -1` when the endpoint only
 counts on its first page (the adapter carries the first value forward); grouped browsing is
