@@ -81,11 +81,20 @@ describe("MusicPage browse", () => {
     expect(within(cards[2]).getByText("N")).toBeTruthy();
   });
 
-  it("still renders the album grid at ?view=albums", async () => {
-    const { container } = renderPage("?view=albums");
+  it("renders the album grid at ?items=items (every album) — the artist grid is 'one per artist'", async () => {
+    const { container } = renderPage("?items=items");
     await waitFor(() => expect(document.querySelector(".music-album-grid")).toBeTruthy());
     expect(container.querySelector(".music-album-grid")).toBeTruthy();
     expect(container.querySelector(".music-artist-grid")).toBeNull();
+  });
+
+  it("still renders the album grid at the legacy ?view=albums / ?tab=albums (rewritten to ?items=items)", async () => {
+    const { container } = renderPage("?view=albums");
+    await waitFor(() => expect(document.querySelector(".music-album-grid")).toBeTruthy());
+    expect(container.querySelector(".music-artist-grid")).toBeNull();
+    cleanup();
+    renderPage("?tab=albums");
+    await waitFor(() => expect(document.querySelector(".music-album-grid")).toBeTruthy());
   });
 
   it("seeks the grid with the A–Z strip instead of paging it", async () => {

@@ -64,7 +64,8 @@ export function resolveViewState(
   const itemsModes = source.itemsModes ?? ["items"];
   const pickItems = (i: string | null | undefined): ItemsMode | null =>
     i === "items" || i === "groups" ? (itemsModes.includes(i) ? i : null) : null;
-  const items = pickItems(params.get("items")) ?? pickItems(stored.items) ?? "items";
+  const fallbackItems: ItemsMode = source.defaultItems && itemsModes.includes(source.defaultItems) ? source.defaultItems : "items";
+  const items = pickItems(params.get("items")) ?? pickItems(stored.items) ?? fallbackItems;
 
   const sortValues = source.sorts.map((s) => s.value);
   const fallbackSort = source.defaultSort && sortValues.includes(source.defaultSort) ? source.defaultSort : (sortValues[0] ?? "");
@@ -86,7 +87,7 @@ export default function useCatalogView(section: string, source: CatalogSource, a
     // The source's OFFER (supports/groups/sorts) is what matters, not its identity; its queryKey
     // changes on every filter edit and must not re-resolve the view.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [search, section, source.supports, source.groups, source.sorts, source.currentSort, source.itemsModes, source.defaultView, source.defaultGroup, source.defaultSort, available],
+    [search, section, source.supports, source.groups, source.sorts, source.currentSort, source.itemsModes, source.defaultView, source.defaultGroup, source.defaultItems, source.defaultSort, available],
   );
 
   /** Apply a change: the URL carries it (push — Back undoes it), the section remembers it as its default. */

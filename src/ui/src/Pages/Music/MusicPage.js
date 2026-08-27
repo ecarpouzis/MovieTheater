@@ -105,8 +105,9 @@ function MusicPage({ userData }) {
   const gated = !userData?.hasPassword;
 
   const params = new URLSearchParams(location.search);
-  const legacyTab = ["artists", "albums"].includes(params.get("view")) && !params.has("tab") ? params.get("view") : null;
-  const view = (params.get("tab") ?? legacyTab) === "albums" ? "albums" : "artists";
+  // R9 S1b — one section. The old ?tab=artists|albums (and the older ?view=artists|albums) map onto
+  // the catalog's Items mode: "one per artist" IS the artist grid, "every album" the album grid.
+  const legacyTab = params.get("tab") ?? (["artists", "albums"].includes(params.get("view")) ? params.get("view") : null);
   const q = (params.get("q") || "").trim();
   const updateMusicParam = useSectionParams("/music");
   const kind = kindOf(params.get("kind"));
@@ -129,13 +130,14 @@ function MusicPage({ userData }) {
   const [songResults, setSongResults] = useState(null);
   const [artistDetail, setArtistDetail] = useState(null);
 
-  // A legacy ?view=artists|albums link becomes ?tab= once, in place, so the catalog switcher's own
-  // ?view= (Grid / Wall / Shelves…) can never be read as a tab.
+  // A legacy ?tab= / ?view=artists|albums link becomes the catalog's ?items= once, in place — so the
+  // catalog switcher's own ?view= (Grid / Wall / Shelves…) can never be read as a tab.
   useEffect(() => {
     if (!legacyTab) return;
     const p = new URLSearchParams(location.search);
-    p.delete("view");
-    if (legacyTab === "albums") p.set("tab", "albums");
+    p.delete("tab");
+    if (["artists", "albums"].includes(p.get("view"))) p.delete("view");
+    p.set("items", legacyTab === "albums" ? "items" : "groups");
     const search = p.toString() ? `?${p.toString()}` : "";
     history.replace({ pathname: "/music", search });
   }, [legacyTab, location.search, history]);
@@ -246,7 +248,7 @@ function MusicPage({ userData }) {
   // grid (that view renders the artist's own, short album list), so it idles on an empty list rather
   // than windowing something nobody is looking at.
   const drilledIn = Number.isInteger(artistParam);
-  const listKey = `${kind}:${view}:${lowerQ}`;
+  const listKey = `${kind}:${lowerQ}`;
 
   // The catalog views (Wall / List / Extended / Shelves / Newspaper / Directory) over the SAME list
   // the grid shows, one source per tab; the grid itself stays this page's (the host's `grid`
@@ -255,30 +257,31 @@ function MusicPage({ userData }) {
   openRef.current = { album: setOpenAlbumId, artist: (id) => setParam("artist", id) };
   const source = useMemo(
     () => createMusicSource({
-      tab: view,
       albums: filteredAlbums,
-      artists: filteredArtists,
       listKey,
       onOpenAlbum: (id) => openRef.current?.album(id),
       onOpenArtist: (id) => openRef.current?.artist(id),
     }),
-    [view, filteredAlbums, filteredArtists, listKey]
+    [filteredAlbums, listKey]
   );
-  // The catalog owns the sort here (this page never had a sort control): resolve it exactly as the
-  // host will — URL, then the section's remembered default — so the grid and the views agree.
-  const catalogSort = useMemo(
-    () => resolveViewState(location.search, readCatalogDefaults("music"), source, AVAILABLE_VIEWS).sort,
+  // The catalog owns the sort AND the Items mode here: resolve them exactly as the host will — URL,
+  // then the section's remembered default — so the grid and the views agree. "One per artist" is
+  // this page's artist grid; "every album" its album grid.
+  const catalogState = useMemo(
+    () => resolveViewState(location.search, readCatalogDefaults("music"), source, AVAILABLE_VIEWS),
     [location.search, source]
   );
+  const catalogSort = catalogState.sort;
+  const view = catalogState.items === "groups" ? "artists" : "albums";
   const gridItems = useMemo(
     () => (drilledIn ? NO_ITEMS : sortRows(view === "artists" ? filteredArtists : filteredAlbums, view, catalogSort)),
     [drilledIn, view, filteredArtists, filteredAlbums, catalogSort]
   );
 
-  // The whole list, every time. `resetKey` names what makes it a DIFFERENT list — a shelf, a tab, a
-  // search or a sort — and pointedly not a jump, because a jump does not change the list at all any more.
+  // The whole list, every time. `resetKey` names what makes it a DIFFERENT list — a shelf, the items
+  // mode, a search or a sort — and pointedly not a jump, because a jump does not change the list at all any more.
   const { hostRef, gridRef, start, end, padTop, padBottom, visibleStart, scrollToIndex } =
-    useGridWindow(gridItems.length, { resetKey: `${listKey}:${catalogSort}` });
+    useGridWindow(gridItems.length, { resetKey: `${listKey}:${view}:${catalogSort}` });
   const visibleItems = useMemo(
     () => gridItems.slice(start, end),
     [gridItems, start, end]

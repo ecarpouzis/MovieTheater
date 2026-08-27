@@ -224,6 +224,8 @@ export interface CatalogSource {
   tweakExtras?: TweakExtra[];
   defaultView?: ViewMode;
   defaultGroup?: string;
+  /** The Items mode a fresh visitor lands on (Music lands on "one per artist"); default "items". */
+  defaultItems?: ItemsMode;
   defaultSort?: string;
   /** Cards per flat band (default 48). */
   pageSize?: number;

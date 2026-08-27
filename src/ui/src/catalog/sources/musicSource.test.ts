@@ -33,19 +33,24 @@ describe("catalog/musicSource — albums and artists as cards, the catalog ownin
     expect(sortRows(albums, "albums", "artist").map((a) => a.id)).toEqual([1, 2, 3]); // the server's order stands
     expect(sortRows(albums, "albums", "title").map((a) => a.title)).toEqual(["Apple", "Mango", "Zebra"]);
     expect(sortRows(albums, "albums", "newest").map((a) => a.year)).toEqual([2011, 2005, 1999]);
-    expect(sortRows(artists, "artists", "tracks").map((a) => a.id)).toEqual([10, 20]);
+    // The artist rows sort by the SAME keys as the albums (one section, one Sort pill — R9 S1b).
+    expect(sortRows(artists, "artists", "artist").map((a) => a.id)).toEqual([10, 20]);
     expect(letterKeyFor("albums", "artist")!(albums[0])).toBe("Beatles, The");
     expect(letterKeyFor("albums", "title")!(albums[0])).toBe("Zebra");
     expect(letterKeyFor("albums", "newest")).toBeNull();
     expect(letterKeyFor("artists", null)!(artists[0])).toBe("Beatles, The");
   });
 
-  it("the albums tab groups by artist / decade / kind / letter, walks artists in the directory and opens an artist from a group", async () => {
+  it("the one catalog (albums) groups by artist / decade / kind / letter, lands on one-per-artist, walks artists in the directory and opens an artist from a group", async () => {
     const onOpenAlbum = vi.fn();
     const onOpenArtist = vi.fn();
-    const s = createMusicSource({ tab: "albums", albums, artists, listKey: "k", onOpenAlbum, onOpenArtist });
+    const s = createMusicSource({ albums, listKey: "k", onOpenAlbum, onOpenArtist });
     expect(s.groups.map((g) => g.value)).toEqual(["artist", "decade", "kind", "letter"]);
     expect(s.currentSort).toBeUndefined();
+    // R9 S1b: no artists tab — "one per artist" is the Items mode a fresh visitor lands on
+    expect(s.itemsModes).toEqual(["items", "groups"]);
+    expect(s.defaultItems).toBe("groups");
+    expect(s.itemsLabels).toEqual({ items: "Every album", groups: "One per artist" });
     const byArtist = await s.fetchGroupBand!(0, 10, 10, "artist", "artist");
     expect(byArtist.groups.map((g) => [g.key, g.label, g.totalItems])).toEqual([["10", "The Beatles", 2], ["20", "Zed", 1]]);
     const byKind = await s.fetchGroupBand!(0, 10, 10, "kind", "artist");
@@ -63,16 +68,12 @@ describe("catalog/musicSource — albums and artists as cards, the catalog ownin
     expect(onOpenArtist).toHaveBeenCalledTimes(1);
   });
 
-  it("the artists tab is cards of artists that open the artist drill", async () => {
+  it("one per artist is the package's representative mode over the same albums — a group head per artist", async () => {
     const onOpenArtist = vi.fn();
-    const s = createMusicSource({ tab: "artists", albums, artists, listKey: "k", onOpenAlbum: vi.fn(), onOpenArtist });
-    expect(s.groups.map((g) => g.value)).toEqual(["decade", "letter"]);
-    expect(s.directory).toBeUndefined();
-    const band = await s.fetchFlatBand(0, 10, "albums");
-    expect(band.items.map((i) => i.title)).toEqual(["The Beatles", "Zed"]);
-    const decades = await s.fetchGroupBand!(0, 10, 10, "decade", "name");
-    expect(decades.groups.map((g) => g.label)).toEqual(["1960s"]);
-    s.onOpen(band.items[1]);
-    expect(onOpenArtist).toHaveBeenCalledWith(20);
+    const s = createMusicSource({ albums, listKey: "k", onOpenAlbum: vi.fn(), onOpenArtist });
+    const heads = await s.fetchGroupBand!(0, 10, 1, "artist", "artist");
+    expect(heads.groups.map((g) => [g.label, g.totalItems, g.items.length])).toEqual([["The Beatles", 2, 1], ["Zed", 1, 1]]);
+    s.onOpenGroup!(heads.groups[0], "artist");
+    expect(onOpenArtist).toHaveBeenCalledWith(10);
   });
 });

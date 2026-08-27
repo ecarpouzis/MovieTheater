@@ -44,6 +44,7 @@ export interface ClientSourceOptions {
   sorts: ClientSort[];
   currentSort?: string;
   defaultGroup?: string;
+  defaultItems?: CatalogSource["defaultItems"];
   /** Which grouping the Directory view walks (its roots); none = no directory. */
   directoryGroup?: string;
   listColumns?: ListColumn[];
@@ -155,6 +156,7 @@ export function createClientSource(o: ClientSourceOptions): CatalogSource {
     listColumns: o.listColumns,
     directory,
     defaultGroup: o.defaultGroup,
+    defaultItems: groupable ? o.defaultItems : undefined,
     defaultAspect: o.defaultAspect,
     pageSize: o.pageSize,
     tweakExtras: o.tweakExtras,

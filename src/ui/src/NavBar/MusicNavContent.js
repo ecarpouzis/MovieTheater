@@ -25,7 +25,6 @@ function MusicNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setAd
 
   const params = new URLSearchParams(location.search);
   const isMobile = useIsMobile();
-  const activeView = (params.get("tab") ?? params.get("view")) === "albums" ? "albums" : "artists";
   const activeQ = params.get("q") || "";
   const activeKind = SHELVES.some((s) => s.key && s.key === params.get("kind")) ? params.get("kind") : "";
 
@@ -89,16 +88,8 @@ function MusicNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setAd
           ))}
         </div>
 
-        <span style={inputLabelStyle}>Browse</span>
-        {/* Artists on top — it's the default view, and the rail should read in the same order. */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <button style={pillStyle(activeView === "artists")} onClick={() => updateParam("tab", null)}>
-            Artists
-          </button>
-          <button style={pillStyle(activeView === "albums")} onClick={() => updateParam("tab", "albums")}>
-            Albums
-          </button>
-        </div>
+        {/* The Artists / Albums pair is gone (R9 S1b): Music is ONE section — "one per artist" is the
+            catalog's Items pill in the SectionBar, "by artist" its Group pill. */}
       </div>
     </>
   );
