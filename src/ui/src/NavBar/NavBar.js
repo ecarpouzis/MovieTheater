@@ -20,7 +20,8 @@ const UserSettingsModal = lazy(() => import("./UserSettingsModal"));
 const MyPlaylistsModal = lazy(() => import("../Pages/Tv/MyPlaylistsModal"));
 import useIsMobile from "../hooks/useIsMobile";
 import { loadTitleTypes, saveTitleTypes, loadSort, saveSort } from "../hooks/useMovieSearch";
-import { requestSectionSearch } from "../catalog/bar/useSlot";
+import { requestSectionSearch, useSectionRailCount } from "../catalog/bar/useSlot";
+import { FilterGlyph } from "../catalog/rail/FilterPill";
 import { parseFacetState, facetStateKey } from "../catalog/rail/facetUrl";
 import {
   MOVIES_PARSE_SPEC, isPlainMoviesSearch, legacyToFacetSearch, markMoviesSeeded, moviesFilterParams, myListsOf,
@@ -101,6 +102,9 @@ function NavBar({
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [playlistsModalOpen, setPlaylistsModalOpen] = useState(false);
+  // Null when the routed page has no facet rail on this phone (an Explore landing, the TV guide);
+  // otherwise the active filter count. The drawer offers the rail's door with it — see below.
+  const railCount = useSectionRailCount();
 
   // useEffect with a dependency array runs the callback whenever any listed value changes
   // — similar to subscribing to a PropertyChanged event for those specific properties.
@@ -436,6 +440,22 @@ function NavBar({
 
         <div className={`navbar-dropdown${drawerOpen ? " navbar-dropdown--open" : ""}${navThemeClass}`}>
           {navContent}
+          {/* On a phone the drawer IS the sider, and the sider's last block is FILTERS. The rail
+              itself lives in the page's full-page sheet (the canvas's RailSheetPhone board), so the
+              drawer offers its DOOR rather than a second copy of the rail — one rail per phone, and
+              no section opens a drawer that holds nothing but a name and a Log Out button. The row
+              is drawn only when a rail exists here (the pill publishes it), never inert. */}
+          {railCount != null && (
+            <button
+              type="button"
+              className="navbar-drawer-filters"
+              onClick={() => { setDrawerOpen(false); requestSectionSearch(); }}
+            >
+              <FilterGlyph />
+              <span className="navbar-drawer-filters-label">Filters</span>
+              {railCount > 0 && <span className="navbar-drawer-filters-count">{railCount}</span>}
+            </button>
+          )}
           {navFooter}
         </div>
 

@@ -45,28 +45,3 @@ export default function SectionIndexRail({ groups, activeKey, ariaLabel, classPr
     </nav>
   );
 }
-
-/** The phone form: one flat strip, no headings (a section's top tab row). */
-export function SectionIndexTabs({ views, activeKey, ariaLabel, className = "photos-tabs", onNavigate }: {
-  views: IndexView[]; activeKey: string; ariaLabel: string; className?: string; onNavigate?: (path: string) => void;
-}) {
-  const history = useHistory();
-  const go = onNavigate ?? ((path: string) => history.push(path));
-  if (views.length === 0) return null;
-  return (
-    <nav className={className} aria-label={ariaLabel}>
-      {views.map((view) => (
-        <button
-          key={view.key}
-          type="button"
-          className={`${className.replace(/s$/, "")}${activeKey === view.key ? " is-active" : ""}`}
-          aria-current={activeKey === view.key ? "page" : undefined}
-          onClick={() => go(view.path)}
-        >
-          {view.label}
-          {view.count != null && <span className={`${className.replace(/s$/, "")}-count`}>{view.count.toLocaleString()}</span>}
-        </button>
-      ))}
-    </nav>
-  );
-}

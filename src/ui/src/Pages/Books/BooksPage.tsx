@@ -9,13 +9,10 @@
  */
 import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import { Redirect, Route, Switch, useLocation } from "react-router-dom";
-import { SectionIndexTabs } from "../../catalog/rail/SectionIndexRail";
 import { readTweaks, subscribeTweaks } from "../../catalog/tweaks/useTweaks";
 import CardGridSkeleton from "../../Components/CardGridSkeleton";
-import useBooksIndex from "../../hooks/useBooksIndex";
-import useIsMobile from "../../hooks/useIsMobile";
 import { setMediaUser, useMediaToken } from "./booksMedia";
-import { booksNavViews, booksSection, isKidAccount, kidAllowedPath, type BooksMe } from "./booksNav";
+import { booksSection, isKidAccount, kidAllowedPath, type BooksMe } from "./booksNav";
 import { applySectionSkin, siteTheme } from "../../catalog/skin/skin";
 import { booksSkinContext } from "./booksTheme";
 import BrowsePage from "./BrowsePage";
@@ -56,7 +53,6 @@ export default function BooksPage({ userData, setUserData }: BooksPageProps) {
   const location = useLocation();
   const rootRef = useRef<HTMLDivElement>(null);
   const username = userData?.username ?? "";
-  const isMobile = useIsMobile();
 
   // The media plane wants to know who is signed in (a different user re-mints); kick the mint early.
   useEffect(() => { setMediaUser(username || null); }, [username]);
@@ -87,9 +83,6 @@ export default function BooksPage({ userData, setUserData }: BooksPageProps) {
   const reading = section === "read";
   const under = (reading && (location.state as { from?: typeof location } | undefined)?.from) || location;
   const entity = useMemo(() => readEntityParams(reading ? "" : location.search), [reading, location.search]);
-  // The phone's section tabs (the rail is behind the hamburger there); the counts are asked for on phones only.
-  const counts = useBooksIndex(userData, isMobile);
-
   if (userData === undefined) return <div className="books-section"><CardGridSkeleton count={12} /></div>;
 
   if (!userData || !userData.booksAccess) {
@@ -110,9 +103,6 @@ export default function BooksPage({ userData, setUserData }: BooksPageProps) {
 
   return (
     <div className="books-section" ref={rootRef} data-books-section={section} data-kids-style={userData.booksKidsStyle ?? undefined}>
-      {isMobile && section !== "read" && (
-        <SectionIndexTabs views={booksNavViews(userData, counts)} activeKey={section} ariaLabel="Books sections" className="books-tabs" />
-      )}
       <div className="books-under" style={reading ? { visibility: "hidden" } : undefined} aria-hidden={reading || undefined}>
         <Suspense fallback={<CardGridSkeleton count={12} />}>
           <Switch location={under}>

@@ -83,7 +83,3 @@ export function booksNavGroups(me: BooksMe | null | undefined, counts: BooksInde
   if (me.isAdmin) groups.push({ key: "operate", label: "Operate", views: [{ ...VIEW_BY_KEY.admin }] });
   return groups;
 }
-
-export function booksNavViews(me: BooksMe | null | undefined, counts: BooksIndexCounts = {}): IndexView[] {
-  return booksNavGroups(me, counts).flatMap((g) => g.views);
-}
