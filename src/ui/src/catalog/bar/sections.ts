@@ -130,6 +130,16 @@ export function tabsFor(section: SectionDef, user: SectionUser | null | undefine
   return section.tabs.filter((t) => !t.when || t.when(user));
 }
 
+/**
+ * Is this one of the section LANDINGS (R9 S7)? A facet rail has nothing to filter on an Explore tab
+ * — every option row would read "No matches" — and the site's law is that a control which does not
+ * apply is REMOVED, not drawn inert. The sider rails ask this. Table-driven off the tabs themselves,
+ * so a new Explore route is covered the moment its row exists.
+ */
+export function isExploreRoute(pathname: string): boolean {
+  return SECTIONS.some((s) => s.tabs.some((t) => t.key === "explore" && tabIsActive(t, pathname)));
+}
+
 export function tabIsActive(tab: SectionTab, pathname: string): boolean {
   if (tab.exact) return pathname === tab.path || pathname === tab.path + "/";
   return pathname === tab.path || pathname.startsWith(tab.path + "/");

@@ -1,7 +1,9 @@
 import { NavUserBlock } from "./navShared";
 import poweredByBggImage from "../../powered_by_BGG_SM.png";
 import useIsMobile from "../hooks/useIsMobile";
+import { useLocation } from "react-router-dom";
 import BoardgamesSiderRail from "../Pages/BoardGames/BoardgamesSiderRail";
+import { isExploreRoute } from "../catalog/bar/sections";
 
 /**
  * The Boardgames sider (R9 S2c): the user block, then — on desktop — the generic facet rail over the
@@ -12,12 +14,13 @@ import BoardgamesSiderRail from "../Pages/BoardGames/BoardgamesSiderRail";
  */
 function BoardGameNavContent({ userData, onUserLoggedIn, setSettingsModalOpen }) {
   const isMobile = useIsMobile();
+  const location = useLocation();
   return (
     <>
       <NavUserBlock userData={userData} onUserLoggedIn={onUserLoggedIn}
         setSettingsModalOpen={setSettingsModalOpen} />
 
-      {!isMobile && <BoardgamesSiderRail userData={userData} />}
+      {!isMobile && !isExploreRoute(location.pathname) && <BoardgamesSiderRail userData={userData} />}
 
       <div style={{ marginTop: "auto", padding: "12px", borderTop: "1px solid var(--sidebar-border)" }}>
         <img

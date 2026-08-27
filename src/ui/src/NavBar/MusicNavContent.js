@@ -24,6 +24,9 @@ const INDEX_GROUPS = [
 export function musicIndexKey(pathname) {
   if (pathname.startsWith("/music/playlists")) return "playlists";
   if (pathname.startsWith("/music/now-playing")) return "now";
+  // The Explore landing is a BAR tab, not an index row: nothing here is highlighted, and the facet
+  // rail below hides — there is no list on that page for it to narrow (R9 S7).
+  if (pathname.startsWith("/music/explore")) return "explore";
   return "browse";
 }
 

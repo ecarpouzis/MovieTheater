@@ -6,6 +6,7 @@ import { lazyWithReload as lazy } from "../lazyWithReload";
 import "./NavBar.css";
 
 import MoviesSiderRail from "../Pages/Browse/MoviesSiderRail";
+import { isExploreRoute } from "../catalog/bar/sections";
 import Login from "./Login";
 import BoardGameNavContent from "./BoardGameNavContent";
 import ArcadeNavContent from "./ArcadeNavContent";
@@ -396,7 +397,7 @@ function NavBar({
         setSettingsModalOpen={setSettingsModalOpen}
         onOpenPlaylists={() => setPlaylistsModalOpen(true)}
       />
-      {!isMobile && <MoviesSiderRail userData={userData} />}
+      {!isMobile && !isExploreRoute(location.pathname) && <MoviesSiderRail userData={userData} />}
     </>
   );
 

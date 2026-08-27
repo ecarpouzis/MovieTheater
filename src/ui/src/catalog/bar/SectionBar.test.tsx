@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route } from "react-router-dom";
 import SectionBar from "./SectionBar";
-import { barHidden, sectionFor, tabIsActive, tabsFor } from "./sections";
+import { barHidden, isExploreRoute, sectionFor, tabIsActive, tabsFor } from "./sections";
 
 /**
  * R9 S1: the one content-top bar. Tabs come from the table and are REMOVED (never disabled) when
@@ -47,6 +47,35 @@ describe("catalog/bar — sections table", () => {
     expect(tabIsActive(browse, "/books/explore")).toBe(false);
     const shelf = books.tabs.find((t) => t.key === "shelf")!;
     expect(tabIsActive(shelf, "/books/shelf")).toBe(true);
+  });
+});
+
+describe("catalog/bar — the Explore landings (R9 S7)", () => {
+  it("every browsable section offers an Explore tab", () => {
+    for (const [path, expected] of [
+      ["/", "/movies/explore"],
+      ["/music", "/music/explore"],
+      ["/arcade", "/arcade/explore"],
+      ["/boardgames", "/boardgames/explore"],
+      ["/photos", "/photos/explore"],
+    ] as const) {
+      const tab = sectionFor(path).tabs.find((t) => t.key === "explore");
+      expect(tab?.path).toBe(expected);
+    }
+    // TV deliberately has none: /channels IS the EPG, so an Explore of "now + favourites" would be
+    // a second copy of that page. See docs/catalog.md → "The Explore kit".
+    expect(sectionFor("/channels").tabs.find((t) => t.key === "explore")).toBeUndefined();
+  });
+
+  it("knows an Explore route, so the facet rails can hide where they have nothing to filter", () => {
+    expect(isExploreRoute("/movies/explore")).toBe(true);
+    expect(isExploreRoute("/music/explore")).toBe(true);
+    expect(isExploreRoute("/boardgames/explore")).toBe(true);
+    expect(isExploreRoute("/photos/explore")).toBe(true);
+    expect(isExploreRoute("/books/explore")).toBe(true);
+    expect(isExploreRoute("/")).toBe(false);
+    expect(isExploreRoute("/music")).toBe(false);
+    expect(isExploreRoute("/boardgames")).toBe(false);
   });
 });
 

@@ -127,7 +127,7 @@ export default function MoviesExplorePage({ userData, setUserData }: MoviesExplo
   });
   // The homepage rail's lineup, reused verbatim (localStorage-seeded, user-independent). No poll:
   // Explore is a landing, not the guide.
-  const { lineup } = useChannelLineup({ poll: false }) as { lineup: LineupChannel[] | null };
+  const { lineup } = useChannelLineup({ poll: false, enabled: streaming }) as { lineup: LineupChannel[] | null };
 
   const data = useMemo(() => composeMoviesExplore({
     random: random.data?.movies,

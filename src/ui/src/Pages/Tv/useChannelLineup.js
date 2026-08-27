@@ -14,7 +14,7 @@ const LINEUP_CACHE_KEY = "tv.lineup.v1";
  * the right poster route. Schedules are stable, so a 60s poll is plenty — the maintainer warms cold
  * channels in the background and they fill in on a later refresh.
  */
-export default function useChannelLineup({ poll = true } = {}) {
+export default function useChannelLineup({ poll = true, enabled = true } = {}) {
   // Seeded from the last successful build (stale-while-revalidate): the homepage rail renders its
   // last-known lineup instantly instead of a blank band, and the first live poll replaces it —
   // a seconds-stale "Now" beats an empty rail. User-independent, so caching is safe.
@@ -74,10 +74,13 @@ export default function useChannelLineup({ poll = true } = {}) {
 
   // Visibility-aware: the homepage rail used to keep polling the guide from a backgrounded tab
   // forever. A non-polling consumer still gets its one load.
-  usePolling(load, 60_000, { enabled: poll });
+  // `enabled: false` is for a consumer that already knows the viewer cannot have a lineup (the
+  // Movies Explore's On-TV rail, which is streaming-only): /API/Channel/List 401s for anyone without
+  // a password session, and asking anyway is two guaranteed failures per mount.
+  usePolling(load, 60_000, { enabled: poll && enabled });
   useEffect(() => {
-    if (!poll) load();
-  }, [load, poll]);
+    if (!poll && enabled) load();
+  }, [load, poll, enabled]);
 
   return { lineup, refresh: load };
 }

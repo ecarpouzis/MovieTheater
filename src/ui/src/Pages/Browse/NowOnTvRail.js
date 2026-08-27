@@ -11,7 +11,9 @@ import "./NowOnTvRail.css";
  * streaming-enabled users; a card tunes straight to the channel.
  */
 export default function NowOnTvRail({ userData, setUserData }) {
-  const { lineup } = useChannelLineup();
+  // Streaming-only, and the hook has to be called unconditionally — so tell it not to ask. Without
+  // this an anonymous landing fires /API/Channel/List and takes a guaranteed 401 (R9 S7).
+  const { lineup } = useChannelLineup({ enabled: !!userData?.hasPassword });
   const { isFavorite, toggle } = useFavoriteChannels(userData, setUserData);
   const history = useHistory();
   const railRef = useRef(null);
