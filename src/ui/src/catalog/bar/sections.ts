@@ -59,6 +59,9 @@ export const SECTIONS: SectionDef[] = [
     tabs: [
       { key: "explore", label: "Explore", path: "/arcade/explore" },
       { key: "browse", label: "Browse", path: "/arcade", exact: true },
+      // The RetroAchievements hub, as the canvas draws it: a tab, not a bar button. The route renders
+      // the lobby with the hub open (App.js) — a modal on this site lives in the URL.
+      { key: "trophies", label: "Trophies", path: "/arcade/trophies", exact: true },
       { key: "admin", label: "Admin", path: "/arcade/admin", admin: true, when: admin },
     ],
   },

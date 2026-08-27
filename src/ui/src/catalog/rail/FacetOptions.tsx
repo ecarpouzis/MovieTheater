@@ -126,7 +126,7 @@ export default function FacetOptions({ def, options, selected, excluded, onToggl
         <input className="bx-facet-search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={`Filter ${def.label.toLowerCase()}…`} aria-label={`Filter ${def.label.toLowerCase()}`} />
       )}
       <div
-        className={`bx-facet-opts${def.render === "pill" ? " bx-facet-opts--pills" : ""}`}
+        className={`bx-facet-opts${def.render === "pill" ? " bx-facet-opts--pills" : ""}${def.stops ? " bx-facet-opts--stops" : ""}`}
         onScroll={dynamic ? (e) => { const el = e.currentTarget; if (el.scrollHeight - el.scrollTop - el.clientHeight < 40) void loadMore(); } : undefined}
       >
         {shown.map((o) => {

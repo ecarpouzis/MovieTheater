@@ -50,6 +50,6 @@ describe("ActiveChips", () => {
     expect(a.setFlag).toHaveBeenCalledWith("want", false);
     fireEvent.click(screen.getByText("Clear all"));
     expect(a.clearAll).toHaveBeenCalled();
-    expect(screen.getByText("＋ Save search")).toBeInTheDocument();
+    expect(screen.getByText("＋ Save view")).toBeInTheDocument();
   });
 });

@@ -89,7 +89,7 @@ export default function ActiveChips({ spec, state, actions, facets, onSave }: Ac
       {chips}
       <div className="bx-chip-actions">
         <button type="button" className="bx-chip-clear" onClick={actions.clearAll}>Clear all</button>
-        {onSave && <button type="button" className="bx-chip-save" onClick={onSave}>＋ Save search</button>}
+        {onSave && <button type="button" className="bx-chip-save" onClick={onSave}>＋ Save view</button>}
       </div>
     </div>
   );

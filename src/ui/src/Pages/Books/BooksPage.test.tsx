@@ -108,7 +108,7 @@ describe("Books/BooksPage — the gate, the pinning, the modals", () => {
     expect(await screen.findByText("Hellboy", { selector: ".bx-chip" })).toBeInTheDocument();
     expect(screen.getByText("Horror", { selector: ".bx-chip" })).toBeInTheDocument();
     expect(screen.getByText("Manga", { selector: ".bx-chip-ex" })).toBeInTheDocument();
-    expect(screen.getByText("＋ Save search")).toBeInTheDocument();
+    expect(screen.getByText("＋ Save view")).toBeInTheDocument();
     fireEvent.click(screen.getByText("Clear all"));
     await waitFor(() => expect(document.querySelector(".bx-chiprow")).toBeNull());
     expect(document.querySelector(".bx-host")?.getAttribute("data-view")).toBe("wall");

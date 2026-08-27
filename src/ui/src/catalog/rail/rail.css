@@ -119,6 +119,12 @@
 .bx-opt-pill.on { background: var(--ink); color: var(--bx-on-ink, var(--bg)); border-color: var(--ink); }
 .bx-opt-pill.on .bx-opt-count { color: var(--bx-on-ink, var(--bg)); opacity: 0.8; }
 .bx-opt-pill:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+/* A fixed SCALE, not a list: the five MPA stops read as one line (Eric, canvas 2026-08-27) — five
+   pills at rail padding are ~220px against a 176px column, so they wrapped. Tighter, no wrap, the
+   row shared evenly between them, exactly the canvas's `.mini-row.tight`. */
+.bx-facet-opts--stops { flex-wrap: nowrap; gap: 3px; }
+.bx-facet-opts--stops .bx-opt-pill { flex: 1 0 auto; justify-content: center; padding: 3px 5px; }
+.bx-facet-opts--stops .bx-opt-label { font-size: 10px; letter-spacing: 0; }
 .bx-opt-label { flex: 1; font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .bx-opt-count { flex: 0 0 auto; font-family: var(--font-mono); font-size: 10px; color: var(--sub); }
 .bx-opt-acts { flex: 0 0 auto; display: flex; gap: 3px; margin-left: 2px; }

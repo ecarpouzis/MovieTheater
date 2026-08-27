@@ -32,7 +32,7 @@ describe("FacetRail", () => {
     expect(screen.getByText("Tags")).toBeInTheDocument();
     expect(screen.queryByText("Shelves")).toBeNull();
     expect(screen.queryByText("My lists")).toBeNull();
-    expect(screen.getByText("Date range")).toBeInTheDocument();
+    expect(screen.getByText("Years")).toBeInTheDocument();
     expect(screen.getByText("Rating")).toBeInTheDocument();
     // Collections is open by default: its tile is drawn.
     expect(screen.getByText("Marvel")).toBeInTheDocument();
@@ -46,7 +46,7 @@ describe("FacetRail", () => {
     expect(screen.getByText("My lists")).toBeInTheDocument();
     fireEvent.click(screen.getByText("★ Noir"));
     expect(saved.onApply).toHaveBeenCalledWith("?f=tag:Noir");
-    fireEvent.click(screen.getByText("＋ Save this search"));
+    fireEvent.click(screen.getByText("＋ Save view"));
     fireEvent.change(screen.getByRole("textbox", { name: "Search name" }), { target: { value: "Mine" } });
     fireEvent.keyDown(screen.getByRole("textbox", { name: "Search name" }), { key: "Enter" });
     expect(saved.onSave).toHaveBeenCalledWith("Mine");

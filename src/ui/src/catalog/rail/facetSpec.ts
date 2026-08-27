@@ -30,6 +30,9 @@ export interface FacetDef {
   /** How the rail draws the options: checks, publisher swatches, collection tiles, or one row of
    *  toggle pills for a short fixed scale (the five MPA stops — a click includes, a second click clears). */
   render?: "check" | "swatch" | "tile" | "pill";
+  /** With `render: "pill"`: a fixed SCALE that must read as one line — the five MPA stops (Eric,
+   *  canvas 2026-08-27: "MPA = five stops on one line"). Tighter, no wrap, the row shared evenly. */
+  stops?: boolean;
   /** "groups": only meaningful on grouped views (hidden when the view is flat + items). */
   appliesTo?: "all" | "groups";
   /** false → counts are shown but the facet cannot filter (no include/exclude controls). */
@@ -95,8 +98,11 @@ export interface FacetSpec {
   /** Offer free-text search (`q`). */
   text?: boolean;
   /** Offer the year range; the decades list comes from `loadFacets()[decadesKey]` (it sizes the
-   *  sliders). `decadePills: false` draws the two-thumb range with read-outs only — no decade row. */
-  years?: { decadesKey: string; decadePills?: boolean };
+   *  sliders). `decadePills: false` draws the two-thumb range with read-outs only — no decade row.
+   *  `label` names the section (the canvas calls it "Years"), and `after` places it under a named
+   *  facet the way `RangeFacetDef.after` does — the approved order is Type · Genre · MPA · YEARS ·
+   *  Franchise · People · Mood, and a year range pinned to the bottom of the rail is not that. */
+  years?: { decadesKey: string; decadePills?: boolean; label?: string; after?: string };
   rating?: { presets: { value: number; label: string }[] };
   /** The fixed-scale ranges (age, minutes, weight) — see `RangeFacetDef`. */
   ranges?: RangeFacetDef[];

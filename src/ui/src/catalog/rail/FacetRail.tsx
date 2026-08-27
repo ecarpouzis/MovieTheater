@@ -71,6 +71,18 @@ function RailBody({ spec, state, actions, facets, facetsLoading, total, grouped,
       <StopsRangeFacet def={def} range={state.ranges?.[def.key]} onChange={(min, max) => actions.setRange(def.key, min, max)} />
     </RailSection>
   );
+  // The year range sits where the section PUTS it (`years.after`), not always at the foot of the
+  // rail: the approved order runs Type · Genre · MPA · Years · Franchise · People · Mood.
+  const yearSection = !spec.years ? null : (
+    <RailSection key="years" title={spec.years.label ?? "Years"} count={state.yearMin != null || state.yearMax != null ? 1 : 0}>
+      <DateFacet showDecades={spec.years?.decadePills !== false} yearMin={state.yearMin} yearMax={state.yearMax} decades={facets?.[spec.years.decadesKey] ?? NO_OPTIONS} onChange={actions.setYears} />
+    </RailSection>
+  );
+  const yearsAfter = (key: string | null) => {
+    if (!yearSection) return null;
+    const anchor = spec.years?.after && spec.facets.some((f) => f.key === spec.years!.after) ? spec.years.after : null;
+    return anchor === key ? yearSection : null;
+  };
   return (
     <>
       <div className="bx-rail-top">
@@ -88,7 +100,7 @@ function RailBody({ spec, state, actions, facets, facetsLoading, total, grouped,
 
       <div className="bx-rail-savedwrap">
         <div className="bx-rail-savedhead">
-          <span className="bx-rail-label">Saved searches</span>
+          <span className="bx-rail-label">Saved views</span>
           {total != null && total >= 0 && <span className="bx-rail-count">{total.toLocaleString()} {noun}</span>}
         </div>
         {saved && (saving
@@ -96,7 +108,7 @@ function RailBody({ spec, state, actions, facets, facetsLoading, total, grouped,
           : (
             <>
               <SavedSearchesRail list={saved.list} onApply={saved.onApply} onRemove={saved.onRemove} />
-              {canSave && <button type="button" className="bx-chip-save bx-rail-savebtn" onClick={() => setSaving(true)}>＋ Save this search</button>}
+              {canSave && <button type="button" className="bx-chip-save bx-rail-savebtn" onClick={() => setSaving(true)}>＋ Save view</button>}
             </>
           ))}
       </div>
@@ -115,14 +127,11 @@ function RailBody({ spec, state, actions, facets, facetsLoading, total, grouped,
               />
             </RailSection>
             {rangesAfter(def.key).map(rangeSection)}
+            {yearsAfter(def.key)}
           </Fragment>
         ))}
         {rangesAfter(null).map(rangeSection)}
-        {spec.years && (
-          <RailSection title="Date range" count={state.yearMin != null || state.yearMax != null ? 1 : 0}>
-            <DateFacet showDecades={spec.years?.decadePills !== false} yearMin={state.yearMin} yearMax={state.yearMax} decades={facets?.[spec.years.decadesKey] ?? NO_OPTIONS} onChange={actions.setYears} />
-          </RailSection>
-        )}
+        {yearsAfter(null)}
         {spec.rating && (
           <RailSection title="Rating" count={state.ratingMin > 0 ? 1 : 0}>
             <RatingFacet value={state.ratingMin} presets={spec.rating.presets} onChange={actions.setRating} />

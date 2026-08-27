@@ -62,11 +62,13 @@ const playersLabel = labelOfTable(PLAYER_OPTIONS);
 const variantLabel = labelOfTable(VARIANT_OPTIONS);
 const raLabel = (v: FacetValue) => RA_VALUES.find((r) => r.value === String(v))?.label ?? String(v);
 
+// The canvas order (2026-08-27): Genre · Players · Region · Mods & hacks · RetroAchievements. The
+// System facet stays hidden — the console carousel above the grid IS it.
 export const ARCADE_FACET_DEFS: FacetSpec["facets"] = [
   { key: "system", token: "system", label: "System", one: "System", valueType: "string", hidden: true, excludable: false, labelOf: (v) => systemLabel(String(v)) },
-  { key: "region", token: "region", label: "Region", one: "Region", valueType: "string", includable: false, defaultOpen: true },
-  { key: "players", token: "players", label: "Players", one: "Players", valueType: "number", render: "pill", defaultOpen: true, excludable: false, showCounts: false, labelOf: playersLabel },
   { key: "genre", token: "genre", label: "Genre", one: "Genre", valueType: "string", defaultOpen: true, excludable: false },
+  { key: "players", token: "players", label: "Players", one: "Players", valueType: "number", render: "pill", defaultOpen: true, excludable: false, showCounts: false, labelOf: playersLabel },
+  { key: "region", token: "region", label: "Region", one: "Region", valueType: "string", includable: false, defaultOpen: true },
   { key: "variant", token: "variant", label: "Mods & hacks", one: "Variant", valueType: "string", render: "pill", excludable: false, showCounts: false, labelOf: variantLabel },
   { key: "ra", token: "ra", label: "RetroAchievements", one: "RA", valueType: "string", render: "pill", excludable: false, labelOf: raLabel },
 ];

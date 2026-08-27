@@ -178,7 +178,10 @@ export default function ArcadePage({ userData }) {
   const [renderers, setRenderers] = useState({}); // system → [{id,label,isDefault}] for the launch menu
   const [modalVersionId, setModalVersionId] = useState(null); // pre-selected version (a recent tile's save)
   const [savesVaultOpen, setSavesVaultOpen] = useState(false); // the cross-game "My saves" drawer
-  const [raOpen, setRaOpen] = useState(false); // the RetroAchievements hub (account + trophy room)
+  // The RetroAchievements hub is a TAB on the canvas (Explore · Browse · Trophies · Admin), and
+  // the site's rule is that a modal lives in the URL — so the tab IS the modal: /arcade/trophies
+  // renders this same lobby with the hub open, and closing it goes back to /arcade.
+  const raOpen = location.pathname === "/arcade/trophies";
   const [optionsOpen, setOptionsOpen] = useState(false); // mobile: reveal the room-quality pills (desktop always shows them)
   const [creating, setCreating] = useState(0);
   const [manageSaves, setManageSaves] = useState(null); // { gameId, title } for the My Saves modal
@@ -547,7 +550,6 @@ export default function ArcadePage({ userData }) {
     <>
       {filtersPill}
       <button type="button" className="bx-tool-btn" onClick={() => setSavesVaultOpen(true)}>💾 Saves</button>
-      <button type="button" className="bx-tool-btn" onClick={() => setRaOpen(true)}>🏆 Trophies</button>
       <button
         type="button"
         className={"bx-tool-btn" + (optionsOpen ? " on" : "")}
@@ -657,7 +659,7 @@ export default function ArcadePage({ userData }) {
       {savesVaultOpen && (
         <SavesVaultManager onClose={() => setSavesVaultOpen(false)} onResume={doCreateRoom} />
       )}
-      <RetroAchievementsModal open={raOpen} onClose={() => setRaOpen(false)} />
+      <RetroAchievementsModal open={raOpen} onClose={() => history.push({ pathname: "/arcade", search: location.search })} />
       {modalCard && openGameId != null && modalCard.game.lane === "heavy" && (
         <HeavyGameModal
           game={modalCard.game}

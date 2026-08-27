@@ -12,7 +12,8 @@ import ArcadeSiderRail from "../Pages/Arcade/ArcadeSiderRail";
 function ArcadeNavContent({ userData, onUserLoggedIn, setSettingsModalOpen }) {
   const location = useLocation();
   const isMobile = useIsMobile();
-  const onLobby = location.pathname === "/arcade" || location.pathname === "/arcade/";
+  // /arcade/trophies is the same lobby with the RA hub open, so the rail belongs there too.
+  const onLobby = /^\/arcade\/?(trophies\/?)?$/.test(location.pathname);
   return (
     <>
       <NavUserBlock userData={userData} onUserLoggedIn={onUserLoggedIn}

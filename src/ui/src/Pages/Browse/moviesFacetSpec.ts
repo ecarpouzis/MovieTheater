@@ -83,12 +83,16 @@ export function moviesFacetSpec(identity: string, types: readonly string[] = [])
     identity: `movies:${identity}:${scope.join(",")}`,
     noun: "titles",
     text: true,
-    years: { decadesKey: "decades", decadePills: false },
+    // The canvas order is Type · Genre · MPA · YEARS · Franchise · People · Mood… — `after` puts the
+    // two-thumb range under the MPA stops instead of at the foot of the rail.
+    years: { decadesKey: "decades", decadePills: false, label: "Years", after: "mpa" },
     flags: MY_FLAGS.map((f) => ({ ...f })),
     facets: [
       { key: "type", token: "type", label: "Type", one: "Type", valueType: "string", defaultOpen: true, excludable: false },
       { key: "genre", token: "genre", label: "Genre", one: "Genre", valueType: "string", defaultOpen: true },
-      { key: "mpa", token: "mpa", label: "MPA rating", one: "Rated", valueType: "string", render: "pill", defaultOpen: true, excludable: false, labelOf: mpaLabel },
+      // `showCounts: false` is what puts the five stops on ONE line (Eric, canvas 2026-08-27):
+      // "G 1,056" is twice the width of "G", and five of those wrap the rail into two rows.
+      { key: "mpa", token: "mpa", label: "MPA rating", one: "Rated", valueType: "string", render: "pill", stops: true, defaultOpen: true, excludable: false, showCounts: false, labelOf: mpaLabel },
       { key: "franchise", token: "franchise", label: "Franchise", one: "Franchise", valueType: "string", labelOf: humanizeTag },
       { key: "person", token: "person", label: "People", one: "Person", valueType: "string", dynamic: true },
       ...TAG_FACETS.map((t) => ({ key: t.key, token: t.key, label: t.label, one: t.one, valueType: "string" as const, labelOf: humanizeTag })),

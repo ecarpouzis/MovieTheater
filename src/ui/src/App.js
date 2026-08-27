@@ -164,7 +164,9 @@ function App() {
             <Route path="/channels" exact>
               <ChannelGuidePage userData={userData} setUserData={setUserData} />
             </Route>
-            <Route path="/arcade" exact>
+            {/* /arcade/trophies is the SAME lobby with the RetroAchievements hub open — the canvas
+                draws Trophies as a bar tab, and a modal on this site lives in the URL. */}
+            <Route path={["/arcade", "/arcade/trophies"]} exact>
               <ArcadePage userData={userData} />
             </Route>
             <Route path="/music" exact>

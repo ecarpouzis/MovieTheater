@@ -29,7 +29,8 @@ describe("legacyToArcadeSearch", () => {
   it("rewrites the old lobby params once, drops variant=all, keeps sort/view/q, and is null for a final URL", () => {
     expect(legacyToArcadeSearch("?f=system%3Anes&q=x&view=wall")).toBeNull();
     expect(legacyToArcadeSearch("?system=snes,Genesis&hideRegions=Japan&players=2&variant=modded&genre=RPG&ra=achievements&q=mario&sort=rating"))
-      .toBe("?sort=rating&q=mario&f=system%3Asnes&f=system%3Agenesis&f=players%3A2&f=genre%3ARPG&f=variant%3Amodded&f=ra%3Aachievements&x=region%3AJapan");
+      // The `f=` order follows ARCADE_FACET_DEFS, which the canvas re-ordered to Genre · Players · Region.
+      .toBe("?sort=rating&q=mario&f=system%3Asnes&f=system%3Agenesis&f=genre%3ARPG&f=players%3A2&f=variant%3Amodded&f=ra%3Aachievements&x=region%3AJapan");
     expect(legacyToArcadeSearch("?variant=all")).toBe("");
     expect(legacyToArcadeSearch("?system=")).toBe("");
   });
