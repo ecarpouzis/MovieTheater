@@ -82,6 +82,11 @@
          re-declared copy would pass while the shipped facet shattered into near-duplicates. Pure
          (no I/O, no database) — the file reading lives in the CLI, which is excluded as always. -->
     <Compile Include="..\MovieTheater\Music\MusicGenres.cs" Link="Music\MusicGenres.cs" />
+    <!-- The popularity scale and the library BLEND behind the "Top rated" order (R9 S10). Pure
+         arithmetic, and the arithmetic is the claim: a linear popularity map would collapse the
+         whole library into two points of the scale, and a plain average would let one enthusiastic
+         100 outrank a record five people agreed was excellent. -->
+    <Compile Include="..\MovieTheater\Music\MusicPopularity.cs" Link="Music\MusicPopularity.cs" />
     <!-- The remote-art match gate. Pure apart from the HTTP calls the tests never reach, and worth
          testing directly: it is what stops a search result that merely shares a name from being
          accepted as the album's cover. -->

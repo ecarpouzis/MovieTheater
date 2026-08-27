@@ -130,6 +130,20 @@ namespace MovieTheater.Services
         /// separate hosts — turning this on without that yields a 404 from the gateway.</summary>
         public bool MusicTranscodeEnabled { get; set; }
 
+        /// <summary>
+        /// Last.fm Web API key (https://www.last.fm/api/account/create) for the <c>music-enrich</c>
+        /// CLI's popularity leg — album <c>listeners</c>/<c>playcount</c> → <c>MusicAlbum.Popularity</c>
+        /// (R9 S10). READ-ONLY, and only ever used by the CLI: no site request touches Last.fm.
+        /// </summary>
+        /// <remarks>
+        /// Unset is a supported state and the ONLY consequence is that the popularity half of
+        /// <c>music-enrich</c> reports "not configured" and skips itself — the MusicBrainz genre half
+        /// needs no key and runs regardless. Nothing on the site degrades: albums simply have a null
+        /// Popularity, which the blend already handles (an album with no rating and no popularity has
+        /// no opinion attached and sorts last).
+        /// </remarks>
+        public string? LastFmApiKey { get; set; }
+
         // ── Family photo album (docs/photos-plan.md §2.2/§2.5). Every surface degrades when these are
         // unset — the CLI refuses to run and the token minter answers "not configured" — so a host that
         // is not photo-adjacent simply does not offer the vertical. NO path here is ever hardcoded:
