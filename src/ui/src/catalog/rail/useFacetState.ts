@@ -27,6 +27,8 @@ export interface FacetActions {
   setMode(key: string, value: FacetValue, mode: FacetMode): void;
   setYears(min: number | null, max: number | null): void;
   setRating(min: number): void;
+  /** A fixed-scale range (`spec.ranges`); both null clears it. */
+  setRange(key: string, min: number | null, max: number | null): void;
   setFlag(key: string, on: boolean): void;
   clearAll(): void;
   /** Several changes in ONE push (a group header scopes AND regroups); `params` sets other query params (`null` deletes). */
@@ -38,7 +40,7 @@ export interface FacetActions {
 export const DEFAULT_ENTITY_PARAMS: readonly string[] = ["item", "series"];
 
 export function cloneFacetState(state: FacetState): FacetState {
-  return { ...state, include: { ...state.include }, exclude: { ...state.exclude }, flags: { ...state.flags } };
+  return { ...state, include: { ...state.include }, exclude: { ...state.exclude }, ranges: { ...(state.ranges ?? {}) }, flags: { ...state.flags } };
 }
 
 const without = (list: FacetValue[] | undefined, value: FacetValue) => (list ?? []).filter((v) => !facetEquals(v, value));
@@ -68,7 +70,7 @@ export const facetTransitions = {
     return d;
   },
   clearAll(state: FacetState): FacetState {
-    return { ...state, q: "", include: {}, exclude: {}, yearMin: null, yearMax: null, ratingMin: 0, flags: {} };
+    return { ...state, q: "", include: {}, exclude: {}, yearMin: null, yearMax: null, ratingMin: 0, ranges: {}, flags: {} };
   },
 };
 
@@ -106,6 +108,12 @@ export default function useFacetState(spec: FacetSpec, opts: { entityParams?: re
     setMode: (key, value, mode) => commit(facetTransitions.setMode(state, key, value, mode)),
     setYears: (min, max) => commit({ ...cloneFacetState(state), yearMin: min, yearMax: max }),
     setRating: (min) => commit({ ...cloneFacetState(state), ratingMin: Math.max(0, Math.min(100, Math.floor(min))) }),
+    setRange: (key, min, max) => {
+      const d = cloneFacetState(state);
+      if (min == null && max == null) delete d.ranges[key];
+      else d.ranges[key] = { min, max };
+      commit(d);
+    },
     setFlag: (key, on) => {
       const d = cloneFacetState(state);
       if (on) d.flags[key] = true;

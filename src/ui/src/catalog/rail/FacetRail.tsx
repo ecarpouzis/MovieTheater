@@ -7,11 +7,12 @@
  *   sheet  the phone's full-page sheet (a partial sheet wastes the rest of the screen on a dimmed
  *          page): fixed, scrolls internally, locks the page behind it, Escape / backdrop / × close
  */
-import { useEffect, useState, type ReactNode } from "react";
-import type { FacetOptionRow, FacetSpec, FacetState } from "./facetSpec";
+import { Fragment, useEffect, useState, type ReactNode } from "react";
+import type { FacetOptionRow, FacetSpec, FacetState, RangeFacetDef } from "./facetSpec";
+import { isRangeSet } from "./facetSpec";
 import FacetOptions from "./FacetOptions";
 import RailSection from "./RailSection";
-import { DateFacet, FlagFacet, RatingFacet } from "./RangeFacets";
+import { DateFacet, FlagFacet, RatingFacet, StopsRangeFacet } from "./RangeFacets";
 import { SaveSearchPrompt, SavedSearchesRail } from "./SavedSearchesRail";
 import type { SavedSearch } from "./savedSearches";
 import SmartSearch from "./SmartSearch";
@@ -58,6 +59,13 @@ function RailBody({ spec, state, actions, facets, facetsLoading, total, grouped,
   const [saving, setSaving] = useState(false);
   const canSave = !!saved?.onSave && activeCount > 0;
   const noun = spec.noun ?? "results";
+  // A fixed-scale range sits under the facet it names (`after`); the rest follow every facet.
+  const rangesAfter = (key: string | null) => (spec.ranges ?? []).filter((r) => (key == null ? !r.after || !spec.facets.some((f) => f.key === r.after) : r.after === key));
+  const rangeSection = (def: RangeFacetDef) => (
+    <RailSection key={`range:${def.key}`} title={def.label} count={isRangeSet(state.ranges?.[def.key]) ? 1 : 0} defaultOpen={def.defaultOpen}>
+      <StopsRangeFacet def={def} range={state.ranges?.[def.key]} onChange={(min, max) => actions.setRange(def.key, min, max)} />
+    </RailSection>
+  );
   return (
     <>
       <div className="bx-rail-top">
@@ -90,17 +98,21 @@ function RailBody({ spec, state, actions, facets, facetsLoading, total, grouped,
 
       <div className="bx-rail-facets" aria-busy={facetsLoading || undefined}>
         {spec.facets.filter((def) => def.appliesTo !== "groups" || grouped).map((def) => (
-          <RailSection key={def.key} title={def.label} count={(state.include[def.key]?.length ?? 0) + (state.exclude[def.key]?.length ?? 0)} defaultOpen={def.defaultOpen}>
-            <FacetOptions
-              def={def}
-              options={facets?.[def.key] ?? []}
-              selected={state.include[def.key] ?? []}
-              excluded={state.exclude[def.key] ?? []}
-              onToggle={actions.setMode}
-              loadOptions={spec.loadOptions}
-            />
-          </RailSection>
+          <Fragment key={def.key}>
+            <RailSection title={def.label} count={(state.include[def.key]?.length ?? 0) + (state.exclude[def.key]?.length ?? 0)} defaultOpen={def.defaultOpen}>
+              <FacetOptions
+                def={def}
+                options={facets?.[def.key] ?? []}
+                selected={state.include[def.key] ?? []}
+                excluded={state.exclude[def.key] ?? []}
+                onToggle={actions.setMode}
+                loadOptions={spec.loadOptions}
+              />
+            </RailSection>
+            {rangesAfter(def.key).map(rangeSection)}
+          </Fragment>
         ))}
+        {rangesAfter(null).map(rangeSection)}
         {spec.years && (
           <RailSection title="Date range" count={state.yearMin != null || state.yearMax != null ? 1 : 0}>
             <DateFacet showDecades={spec.years?.decadePills !== false} yearMin={state.yearMin} yearMax={state.yearMax} decades={facets?.[spec.years.decadesKey] ?? []} onChange={actions.setYears} />
@@ -142,7 +154,7 @@ export default function FacetRail(props: FacetRailProps) {
   return (
     <>
       <div className="bx-rail-backdrop" onClick={onClose} aria-hidden="true" />
-      <aside className={`bx-railbar bx-railbar-sheet${className ? ` ${className}` : ""}`} role="dialog" aria-modal="true" aria-label={props.title ?? "Filters"}>{body}</aside>
+      <aside className={`bx-railbar bx-railbar-sheet bx-rail-surface${className ? ` ${className}` : ""}`} role="dialog" aria-modal="true" aria-label={props.title ?? "Filters"}>{body}</aside>
     </>
   );
 }

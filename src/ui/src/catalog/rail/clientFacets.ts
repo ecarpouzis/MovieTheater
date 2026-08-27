@@ -6,12 +6,16 @@
  * Semantics match the Movies server: within one facet the included values are ALL required by
  * default (Crime AND Drama; a game that plays 2 AND 4) — a facet may opt into ANY (`anyOf`) —
  * excluded values are NOT-ed, facets AND together; `q` is a case-insensitive substring over the
- * section's text; the year range brackets the section's year; flags are the section's own tests.
+ * section's text; the year range brackets the section's year; a fixed-scale range brackets the
+ * item's number (or overlaps its span — a 30–60 min game meets a 45–90 range); an item WITHOUT the
+ * value is out once its range is set (the year rule); flags are the section's own tests.
  */
 import type { FacetOptionRow, FacetState, FacetValue } from "./facetSpec";
 import { facetEquals } from "./facetSpec";
 
 export type FacetExtractor<T> = (item: T) => FacetValue | FacetValue[] | null | undefined;
+/** A range's value: one number, or a [lo, hi] span the range must overlap. */
+export type RangeExtractor<T> = (item: T) => number | [number, number] | null | undefined;
 
 export interface ClientFacetOptions<T> {
   /** The text `q` searches. */
@@ -20,6 +24,8 @@ export interface ClientFacetOptions<T> {
   year?: (item: T) => number | null | undefined;
   /** A personal flag's test (`my=`), by flag key. */
   flags?: Record<string, (item: T) => boolean>;
+  /** The number (or span) each `spec.ranges` entry brackets, by range key. */
+  ranges?: Record<string, RangeExtractor<T>>;
   /** Facet keys where ANY included value matches (default: ALL must). */
   anyOf?: readonly string[];
   /** A label for a value the rail lists (default: the value itself). */
@@ -45,6 +51,14 @@ export function matchesFacetState<T>(item: T, state: FacetState, extractors: Rec
     if (y == null) return false;
     if (state.yearMin != null && y < state.yearMin) return false;
     if (state.yearMax != null && y > state.yearMax) return false;
+  }
+  for (const [key, range] of Object.entries(state.ranges ?? {})) {
+    if (!range || (range.min == null && range.max == null)) continue;
+    const v = opts.ranges?.[key]?.(item) ?? null;
+    if (v == null) return false;
+    const [lo, hi] = Array.isArray(v) ? v : [v, v];
+    if (range.min != null && hi < range.min) return false;
+    if (range.max != null && lo > range.max) return false;
   }
   for (const [key, wanted] of Object.entries(state.include)) {
     if (!wanted?.length) continue;

@@ -106,8 +106,12 @@ section under every backdrop; a source sets `shelvesSkin: "plain"` for bare plan
   the site sider, e.g. `BooksSiderRail` through `BooksNavContent`) and `sheet` (a full-page phone
   sheet the section raises behind a Filters pill; z-index 1350, above the top bar). Sections:
   facets in spec order (`RailSection` collapsibles, `FacetOptions` with include/exclude controls and
-  the searched, paged long tails via `useFacetOptions`), then Date range, Rating, My lists
-  (`RangeFacets`), then the saved searches. A count badge on the head shows the active filters.
+  the searched, paged long tails via `useFacetOptions`), the **fixed-scale ranges** (`spec.ranges`,
+  `RangeFacetDef`: two thumbs over declared stops — the Boardgames Age 3…18+ / Play time / Weight —
+  URL `<token>=min-max`, a thumb at either end = an open side, BOTH thumbs filter; drawn right under
+  the facet named by `after`, `StopsRangeFacet`), then Date range, Rating, My lists (`RangeFacets`),
+  then the saved searches. A count badge on the head shows the active filters. The phone sheet
+  binds the page tokens through `bx-rail-surface` (without it the sheet is transparent).
 - **`SmartSearch`** — the rail's input: a text "Search" row first, then facet suggestions with type
   labels and counts; `token:` prefixes scope the suggestions; arrows/Enter/Escape.
 - **`ActiveChips`** — `search` / `<One>` / `not <one>` / `years` / `rating` / flag chips over the
@@ -143,7 +147,7 @@ headline a group instead of an item), `CardRow`s, a `CoverWall`, `CardGrid`s, `R
 | Section | Adapter | Scope | Flat | Groups | Directory |
 |---|---|---|---|---|---|
 | Movies/TV | `moviesSource.ts` | the rail URL (`q/f/x/y/my`) → `/API/Browse` via `useMovieSearch.facetSearch` (`moviesFacetSpec.ts` maps the state to `BrowseFilterQuery`; pre-S2 `?mode=&value=` links are rewritten once on entry) | the `/API/Browse` envelope | `/API/BrowseGroups` genre/decade/franchise under the same filter | franchises |
-| Boardgames | `boardgamesSource.ts` over `clientSource.ts` | the page's filtered+sorted list | slices | publisher/family/designer/category/mechanic (`/API/Boardgames/Facets`), decade, players | publishers |
+| Boardgames | `boardgamesSource.ts` over `clientSource.ts` | the rail URL (`q/f/x/y` + `a/t/w` ranges) applied IN MEMORY (`clientFacets` via `boardgamesFacetSpec.ts`) over the shared React-Query catalog (`useBoardgamesCatalog`); pre-S2c `?players=&age=&time=&mode=title` links are rewritten once on entry | slices | publisher/family/designer/category/mechanic (`/API/Boardgames/Facets`), decade, players — a header click scopes + drills (`DRILL_NEXT_GROUP`) | publishers |
 | Music | `musicSource.ts` over `clientSource.ts` | the shelf's cached artists/albums, per tab | slices (the catalog sorts) | artist/decade/kind/letter; artists by decade/letter | artists → albums |
 | Arcade | `arcadeSource.ts` | the lobby's filters | `/API/Arcade/Games` (absolute skip) | `/API/Arcade/GameGroups` system/genre/decade | systems |
 | Photos | `photosSource.ts` | the timeline (+ hidden toggle) | `/API/Photos/Browse` | `/API/Photos/BrowseGroups` year/month/album/folder | top-level folders |

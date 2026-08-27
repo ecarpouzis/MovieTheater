@@ -11,12 +11,13 @@ const spec: FacetSpec = {
   ],
   flags: [{ key: "want", token: "want", label: "Want to read" }],
   rating: { presets: [{ value: 80, label: "4★+" }] },
+  ranges: [{ key: "age", token: "a", label: "Age", one: "Age", stops: [3, 8, 12, 18], openTop: true }],
   loadFacets: async () => ({}),
 };
 const facets = { series: [{ value: 9, label: "Hellboy", count: 5 }] };
 
 function actions() {
-  return { remove: vi.fn(), setText: vi.fn(), setYears: vi.fn(), setRating: vi.fn(), setFlag: vi.fn(), clearAll: vi.fn() };
+  return { remove: vi.fn(), setText: vi.fn(), setYears: vi.fn(), setRating: vi.fn(), setRange: vi.fn(), setFlag: vi.fn(), clearAll: vi.fn() };
 }
 
 describe("ActiveChips", () => {
@@ -26,11 +27,11 @@ describe("ActiveChips", () => {
   });
 
   it("one chip per value — includes, a red 'not' for excludes, number facets by their label — plus text, years, rating, flags", () => {
-    const state: FacetState = { q: "hell", include: { tags: ["Noir"], series: [9] }, exclude: { tags: ["Manga"] }, yearMin: 1990, yearMax: null, ratingMin: 80, flags: { want: true } };
+    const state: FacetState = { q: "hell", include: { tags: ["Noir"], series: [9] }, exclude: { tags: ["Manga"] }, yearMin: 1990, yearMax: null, ratingMin: 80, ranges: { age: { min: 12, max: null } }, flags: { want: true } };
     const a = actions();
     render(<ActiveChips spec={spec} state={state} actions={a} facets={facets} onSave={vi.fn()} />);
     const chips = screen.getAllByRole("button").filter((b) => b.className.startsWith("bx-chip") && !b.className.includes("clear") && !b.className.includes("save"));
-    expect(chips.map((c) => c.textContent)).toEqual(["searchhell×", "TagNoir×", "not tagManga×", "SeriesHellboy×", "years1990–…×", "rating4★+×", "myWant to read×"]);
+    expect(chips.map((c) => c.textContent)).toEqual(["searchhell×", "TagNoir×", "not tagManga×", "SeriesHellboy×", "years1990–…×", "rating4★+×", "age12+×", "myWant to read×"]);
     expect(chips[2].className).toContain("bx-chip-ex");
 
     fireEvent.click(chips[1]);
@@ -44,6 +45,8 @@ describe("ActiveChips", () => {
     fireEvent.click(chips[5]);
     expect(a.setRating).toHaveBeenCalledWith(0);
     fireEvent.click(chips[6]);
+    expect(a.setRange).toHaveBeenCalledWith("age", null, null);
+    fireEvent.click(chips[7]);
     expect(a.setFlag).toHaveBeenCalledWith("want", false);
     fireEvent.click(screen.getByText("Clear all"));
     expect(a.clearAll).toHaveBeenCalled();

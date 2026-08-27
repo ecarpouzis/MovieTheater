@@ -16,6 +16,7 @@ const spec: FacetSpec = {
   flags: [{ key: "read", token: "read", label: "Read" }],
   years: { decadesKey: "decades" },
   rating: { presets: [{ value: 80, label: "4★+" }] },
+  ranges: [{ key: "age", token: "a", label: "Age", one: "Age", stops: [3, 8, 12, 18], openTop: true }],
   loadFacets: async () => ({}),
 };
 
@@ -72,6 +73,22 @@ describe("useFacetState", () => {
     act(() => latest!.actions.setFlag("read", true));
     expect(new URLSearchParams(search).get("my")).toBe("read");
     expect(latest!.activeCount).toBe(4);
+  });
+
+  it("setRange writes the range under its own token, clears it on both-null, and clearAll drops it", () => {
+    mount("/boardgames?view=wall");
+    act(() => latest!.actions.setRange("age", 12, null));
+    expect(new URLSearchParams(search).get("a")).toBe("12-");
+    expect(latest!.state.ranges).toEqual({ age: { min: 12, max: null } });
+    expect(latest!.activeCount).toBe(1);
+    act(() => latest!.actions.setRange("age", 8, 12));
+    expect(new URLSearchParams(search).get("a")).toBe("8-12");
+    act(() => latest!.actions.setRange("age", null, null));
+    expect(new URLSearchParams(search).has("a")).toBe(false);
+    act(() => latest!.actions.setRange("age", null, 8));
+    act(() => latest!.actions.clearAll());
+    expect(new URLSearchParams(search).has("a")).toBe(false);
+    expect(new URLSearchParams(search).get("view")).toBe("wall");
   });
 
   it("apply makes one push for several changes and can set other params", () => {

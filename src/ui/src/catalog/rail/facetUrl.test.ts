@@ -13,6 +13,10 @@ const spec: FacetSpec = {
     { key: "tags", token: "tag", label: "Tags", one: "Tag", valueType: "string" },
     { key: "publishers", token: "publisher", label: "Publishers", one: "Publisher", valueType: "string" },
   ],
+  ranges: [
+    { key: "age", token: "a", label: "Age", one: "Age", stops: [3, 5, 8, 12, 18], openTop: true },
+    { key: "weight", token: "w", label: "Weight", one: "Weight", stops: [1, 2, 3, 4, 5] },
+  ],
   loadFacets: async () => ({}),
 };
 
@@ -25,6 +29,7 @@ describe("catalog/rail — the facet state's URL form", () => {
       include: { series: [12], tags: ["Noir", "Crime"] },
       exclude: { publishers: ["Dark Horse"] },
       yearMin: 1980, yearMax: 1989, ratingMin: 80,
+      ranges: {},
       flags: { read: true, want: true },
     });
     const params = new URLSearchParams(search);
@@ -57,5 +62,33 @@ describe("catalog/rail — the facet state's URL form", () => {
     expect(activeFacetCount(a, spec)).toBe(4);
     expect(facetEquals("Dark Horse", "dark horse")).toBe(true);
     expect(hasFacetValue([12, 13], "12")).toBe(true);
+  });
+});
+
+describe("catalog/rail — fixed-scale ranges in the URL", () => {
+  it("reads `token=min-max` with open sides, writes it back, and ignores malformed or fully open values", () => {
+    const state = parseFacetState("?a=12-&w=1.5-3&view=wall", spec);
+    expect(state.ranges).toEqual({ age: { min: 12, max: null }, weight: { min: 1.5, max: 3 } });
+    expect(parseFacetState("?a=-8", spec).ranges).toEqual({ age: { min: null, max: 8 } });
+    expect(parseFacetState("?a=-&w=abc&a=", spec).ranges).toEqual({});
+    const params = new URLSearchParams("?a=3-5&view=wall&stale=1");
+    writeFacetState(params, state, spec);
+    expect(params.get("a")).toBe("12-");
+    expect(params.get("w")).toBe("1.5-3");
+    expect(params.get("view")).toBe("wall");
+    expect(parseFacetState(`?${params.toString()}`, spec)).toEqual(state);
+    // Clearing a range drops its param.
+    writeFacetState(params, { ...state, ranges: {} }, spec);
+    expect(params.has("a")).toBe(false);
+    expect(params.has("w")).toBe(false);
+  });
+
+  it("counts a set range as one active filter, keys it, and sees it as a facet param", () => {
+    const state = parseFacetState("?a=12-", spec);
+    expect(activeFacetCount(state, spec)).toBe(1);
+    expect(facetStateKey(state)).not.toBe(facetStateKey(parseFacetState("?a=-12", spec)));
+    expect(hasNoFacetParams("?a=12-", spec)).toBe(false);
+    expect(hasNoFacetParams("?a=12-")).toBe(true);
+    expect(hasNoFacetParams("?view=wall", spec)).toBe(true);
   });
 });

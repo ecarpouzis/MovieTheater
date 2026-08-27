@@ -14,13 +14,14 @@ const spec: FacetSpec = {
   ],
   years: { decadesKey: "decades" },
   rating: { presets: [{ value: 80, label: "4★+" }] },
+  ranges: [{ key: "age", token: "a", label: "Age", one: "Age", stops: [3, 8, 12, 18], openTop: true, after: "collections", defaultOpen: true }],
   flags: [{ key: "read", token: "read", label: "Read", appliesTo: "groups" }],
   loadFacets: async () => ({}),
 };
 const facets = { collections: [{ value: 2, label: "Marvel", count: 10 }], tags: [{ value: "Noir", label: "Noir", count: 3 }], decades: [{ value: "1990", label: "1990", count: 4 }] };
 
 const actions = (): FacetActions => ({
-  setText: vi.fn(), add: vi.fn(), remove: vi.fn(), setMode: vi.fn(), setYears: vi.fn(), setRating: vi.fn(), setFlag: vi.fn(), clearAll: vi.fn(), apply: vi.fn(), replaceSearch: vi.fn(),
+  setText: vi.fn(), add: vi.fn(), remove: vi.fn(), setMode: vi.fn(), setYears: vi.fn(), setRating: vi.fn(), setRange: vi.fn(), setFlag: vi.fn(), clearAll: vi.fn(), apply: vi.fn(), replaceSearch: vi.fn(),
 });
 
 describe("FacetRail", () => {
@@ -64,5 +65,24 @@ describe("FacetRail", () => {
     expect(onClose).toHaveBeenCalledTimes(2);
     rerender(<FacetRail variant="sheet" open={false} onClose={onClose} spec={spec} state={EMPTY_FACET_STATE} actions={actions()} grouped={false} activeCount={0} />);
     expect(document.body.style.overflow).toBe("");
+  });
+});
+
+describe("FacetRail — fixed-scale ranges", () => {
+  it("draws the range under the facet it follows, reads the state's thumbs, and a thumb move commits stop values (ends open)", () => {
+    const a = actions();
+    render(<FacetRail variant="rail" spec={spec} state={{ ...EMPTY_FACET_STATE, ranges: { age: { min: 12, max: null } } }} actions={a} facets={facets} grouped={false} activeCount={1} />);
+    const titles = Array.from(document.querySelectorAll(".bx-rail-facets .bx-rsec-title")).map((el) => el.textContent?.trim() ?? "");
+    expect(titles.findIndex((t) => t.startsWith("Age"))).toBeGreaterThan(titles.findIndex((t) => t.startsWith("Collections")));
+    expect(titles.findIndex((t) => t.startsWith("Age"))).toBeLessThan(titles.findIndex((t) => t.startsWith("Tags")));
+    const from = screen.getByRole("slider", { name: "From age" }) as HTMLInputElement;
+    const to = screen.getByRole("slider", { name: "To age" }) as HTMLInputElement;
+    expect(from.value).toBe("2");
+    expect(to.value).toBe("3");
+    expect(screen.getAllByText("18+").length).toBeGreaterThan(0);
+    fireEvent.change(to, { target: { value: "2" } });
+    expect(a.setRange).toHaveBeenLastCalledWith("age", 12, 12);
+    fireEvent.change(from, { target: { value: "0" } });
+    expect(a.setRange).toHaveBeenLastCalledWith("age", null, null);
   });
 });

@@ -48,6 +48,37 @@ export interface FacetFlagDef {
   appliesTo?: "all" | "groups";
 }
 
+/**
+ * A range over a numeric attribute with a FIXED scale (the Boardgames age slider: 3 · 4 · 5 · 6 · 7 ·
+ * 8 · 10 · 12 · 14 · 16 · 18+): two thumbs walk the stops, a thumb parked at either end is an open
+ * side, and BOTH thumbs filter (the lower one hides what sits below it — 12+ hides the kid games).
+ * URL form: `<token>=min-max` (`a=12-`, `a=-8`, `t=30-60`). The rail draws it under the facet named
+ * by `after` (or after every facet when unset); the stops are the whole option list, so no counts
+ * are loaded for it.
+ */
+export interface RangeFacetDef {
+  key: string;
+  /** URL param (`a` in `a=12-18`) — must not collide with the codec's own or the catalog's params. */
+  token: string;
+  label: string;
+  /** For the chip ("age 12+"). */
+  one: string;
+  /** Ascending. */
+  stops: number[];
+  /** The top stop reads as "and up" ("18+"): a max AT the top stop is an open top. */
+  openTop?: boolean;
+  /** How one value reads ("2.5", "60 min"); default `String(v)`. */
+  format?: (v: number) => string;
+  /** The facet key this section follows in the rail; unset = after every facet. */
+  after?: string;
+  defaultOpen?: boolean;
+}
+
+export interface FacetRange {
+  min: number | null;
+  max: number | null;
+}
+
 export interface FacetSpec {
   /** Memo key for the loaded options (per section + user facts). */
   identity: string;
@@ -60,6 +91,8 @@ export interface FacetSpec {
    *  sliders). `decadePills: false` draws the two-thumb range with read-outs only — no decade row. */
   years?: { decadesKey: string; decadePills?: boolean };
   rating?: { presets: { value: number; label: string }[] };
+  /** The fixed-scale ranges (age, minutes, weight) — see `RangeFacetDef`. */
+  ranges?: RangeFacetDef[];
   flags?: FacetFlagDef[];
   loadFacets(signal?: AbortSignal): Promise<Record<string, FacetOptionRow[]>>;
   loadOptions?(key: string, q: string, skip: number, top: number, signal?: AbortSignal): Promise<{ items: FacetOptionRow[]; total: number }>;
@@ -73,6 +106,8 @@ export interface FacetState {
   yearMax: number | null;
   /** 0 = no floor. */
   ratingMin: number;
+  /** By `RangeFacetDef.key`; absent = unset. A side that is null is open. */
+  ranges: Record<string, FacetRange>;
   flags: Record<string, boolean>;
 }
 
@@ -83,6 +118,7 @@ export const EMPTY_FACET_STATE: FacetState = Object.freeze({
   yearMin: null,
   yearMax: null,
   ratingMin: 0,
+  ranges: {},
   flags: {},
 }) as FacetState;
 
@@ -103,8 +139,24 @@ export function activeFacetCount(state: FacetState, spec: FacetSpec): number {
   if (state.q.trim()) n += 1;
   if (state.yearMin != null || state.yearMax != null) n += 1;
   if (state.ratingMin > 0) n += 1;
+  for (const r of spec.ranges ?? []) if (isRangeSet(state.ranges?.[r.key])) n += 1;
   for (const flag of spec.flags ?? []) if (state.flags[flag.key]) n += 1;
   return n;
+}
+
+export function isRangeSet(range: FacetRange | undefined): boolean {
+  return !!range && (range.min != null || range.max != null);
+}
+
+/** "12+", "≤8", "8–12" — how a set range reads on a chip and in the rail's read-out. */
+export function rangeLabel(def: RangeFacetDef, range: FacetRange | undefined): string {
+  const f = def.format ?? ((v: number) => String(v));
+  const min = range?.min ?? null;
+  const max = range?.max ?? null;
+  if (min != null && max != null) return min === max ? f(min) : `${f(min)}–${f(max)}`;
+  if (min != null) return `${f(min)}+`;
+  if (max != null) return `≤${f(max)}`;
+  return "any";
 }
 
 export function isEmptyFacetState(state: FacetState, spec: FacetSpec): boolean {

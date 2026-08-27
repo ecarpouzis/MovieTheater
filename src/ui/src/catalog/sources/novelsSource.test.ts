@@ -32,6 +32,7 @@ describe("catalog/novelsSource", () => {
       include: { authors: ["Le Guin", "Herbert"], series: ["Earthsea"], publishers: [], decades: ["1960s"], tags: ["genre:sci-fi"] },
       exclude: { tags: ["adult-romance"], authors: ["Nobody"] },
       ratingMin: 80,
+      ranges: {},
       flags: { unknown: true },
     };
     expect(buildNovelsQuery(state)).toEqual({

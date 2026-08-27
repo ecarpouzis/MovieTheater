@@ -1,17 +1,17 @@
 /**
  * The active filters as removable chips: the text, one chip per included value, a red "not" chip per
- * excluded value, the year range, the rating floor, each flag — then Clear all and (optionally) Save.
+ * excluded value, the year range, the rating floor, each fixed-scale range, each flag — then Clear all and (optionally) Save.
  * Number-valued facets (series, collections) show their label from the loaded facet lists.
  */
 import type { ReactNode } from "react";
 import type { FacetDef, FacetOptionRow, FacetSpec, FacetState, FacetValue } from "./facetSpec";
-import { activeFacetCount, facetEquals } from "./facetSpec";
+import { activeFacetCount, facetEquals, isRangeSet, rangeLabel } from "./facetSpec";
 import type { FacetActions } from "./useFacetState";
 
 export interface ActiveChipsProps {
   spec: FacetSpec;
   state: FacetState;
-  actions: Pick<FacetActions, "remove" | "setText" | "setYears" | "setRating" | "setFlag" | "clearAll">;
+  actions: Pick<FacetActions, "remove" | "setText" | "setYears" | "setRating" | "setRange" | "setFlag" | "clearAll">;
   facets?: Record<string, FacetOptionRow[]>;
   onSave?: () => void;
 }
@@ -63,6 +63,15 @@ export default function ActiveChips({ spec, state, actions, facets, onSave }: Ac
     chips.push(
       <button key="r" type="button" className="bx-chip" onClick={() => actions.setRating(0)} title="Remove">
         <span className="bx-chip-k">rating</span>{preset?.label ?? `${state.ratingMin}+`}<span className="bx-chip-x" aria-hidden="true">×</span>
+      </button>,
+    );
+  }
+  for (const def of spec.ranges ?? []) {
+    const range = state.ranges?.[def.key];
+    if (!isRangeSet(range)) continue;
+    chips.push(
+      <button key={`rg:${def.key}`} type="button" className="bx-chip" onClick={() => actions.setRange(def.key, null, null)} title="Remove">
+        <span className="bx-chip-k">{def.one.toLowerCase()}</span>{rangeLabel(def, range)}<span className="bx-chip-x" aria-hidden="true">×</span>
       </button>,
     );
   }

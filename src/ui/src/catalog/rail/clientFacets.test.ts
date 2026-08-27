@@ -83,3 +83,28 @@ describe("decadeOf", () => {
     expect(decadeOf(0)).toBeNull();
   });
 });
+
+describe("applyFacetState — fixed-scale ranges", () => {
+  interface Row { id: number; age: number | null; time: [number, number] | null }
+  const rows: Row[] = [
+    { id: 1, age: 8, time: [30, 60] },
+    { id: 2, age: 12, time: [90, 120] },
+    { id: 3, age: 14, time: [15, 20] },
+    { id: 4, age: null, time: null },
+  ];
+  const ropts = { ranges: { age: (r: Row) => r.age, time: (r: Row) => r.time } };
+  const rid = (list: Row[]) => list.map((r) => r.id);
+
+  it("brackets a number on both sides; a thumb at an open side is no bound", () => {
+    expect(rid(applyFacetState(rows, state({ ranges: { age: { min: 12, max: null } } }), {}, ropts))).toEqual([2, 3]);
+    expect(rid(applyFacetState(rows, state({ ranges: { age: { min: null, max: 8 } } }), {}, ropts))).toEqual([1]);
+    expect(rid(applyFacetState(rows, state({ ranges: { age: { min: 10, max: 12 } } }), {}, ropts))).toEqual([2]);
+  });
+
+  it("a span passes when it overlaps the range; an item without the value is out once a range is set; an unset range is ignored", () => {
+    expect(rid(applyFacetState(rows, state({ ranges: { time: { min: 45, max: 100 } } }), {}, ropts))).toEqual([1, 2]);
+    expect(rid(applyFacetState(rows, state({ ranges: { time: { min: null, max: 20 } } }), {}, ropts))).toEqual([3]);
+    expect(rid(applyFacetState(rows, state({ ranges: { age: { min: null, max: null } } }), {}, ropts))).toEqual([1, 2, 3, 4]);
+    expect(rid(applyFacetState(rows, state({ ranges: { other: { min: 1, max: 2 } } }), {}, ropts))).toEqual([]);
+  });
+});
