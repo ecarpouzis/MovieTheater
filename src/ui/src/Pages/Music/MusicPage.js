@@ -94,21 +94,12 @@ function MusicPage({ userData }) {
   const albumParam = parseInt(params.get("album"), 10);
   const openAlbumId = Number.isInteger(albumParam) && albumParam > 0 ? albumParam : null;
   const setOpenAlbumId = (id) => setParam("album", id, { replace: id == null });
-  // Playlists (music-plan.md Phase 3): the shelf, plus the two modals it and the song rows drive.
-  const [playlists, setPlaylists] = useState([]);
+  // Playlists (music-plan.md Phase 3): the two modals the song rows drive. The page itself no longer
+  // HOLDS the list — its "Playlists n · Manage playlists →" head is gone (Playlists is a bar tab), so
+  // fetching it here on every mount was a request nothing read. The /music/playlists route owns it.
   const [pickerTracks, setPickerTracks] = useState(null); // non-null ⇒ picker open, holds what to add
   const [pickerName, setPickerName] = useState("");
   const [managePlaylistId, setManagePlaylistId] = useState(null);
-
-  const reloadPlaylists = useCallback(() => {
-    if (gated) return;
-    MovieAPI.getMyMusicPlaylists()
-      .then((r) => (r.ok ? r.json() : []))
-      .then((list) => setPlaylists(list || []))
-      .catch(() => setPlaylists([]));
-  }, [gated]);
-
-  useEffect(() => { reloadPlaylists(); }, [reloadPlaylists]);
 
   function openPicker(tracks, suggestedName = "") {
     setPickerTracks(tracks);
@@ -354,28 +345,16 @@ function MusicPage({ userData }) {
           </div>
         </section>
       )}
-
-      {/* Playlists live on their own route now (music-plan.md §2.4) — the strip that used to sit
-          here grew with every playlist and pushed the library down the page. This is just the way in. */}
-      {playlists.length > 0 && !drilledIn && (
-        <section className="music-section">
-          <h2 className="music-section-head">
-            Playlists <span className="music-count">{playlists.length}</span>
-            <button
-              className="music-playlist-btn music-playlists-link"
-              onClick={() => history.push("/music/playlists")}
-            >
-              Manage playlists →
-            </button>
-          </h2>
-        </section>
-      )}
+      {/* Playlists are a BAR TAB (the canvas: Explore · Browse · Playlists · Now playing · Admin),
+          and the canvas's Browse goes chips → grid with nothing between. The "Playlists n · Manage
+          playlists →" head that used to sit here was a third door to the same route, and on a phone
+          it pushed the library a screen down. The route and its modals stay; the door is gone. */}
 
       {/* The browse grid — artists or albums, same engine either way. */}
       {!drilledIn && (
         <section className="music-section">
           {/* No section head here since R9 S1: the SectionBar names the page, and the count belongs
-              to the rail. The Songs / Playlists heads above are content sections and stay. */}
+              to the rail. The Songs head above is a content section and stays. */}
           {/* The letter strip is the package's now, over the same whole list: a jump is a scroll,
               so everything before the letter you tapped is still up there. */}
           <CatalogHost section="music" source={source} tools={filtersPill} beforeResults={chips} />
@@ -429,14 +408,12 @@ function MusicPage({ userData }) {
         tracks={pickerTracks || []}
         defaultName={pickerName}
         onClose={() => setPickerTracks(null)}
-        onDone={reloadPlaylists}
       />
 
       <MusicPlaylistManageModal
         open={managePlaylistId != null}
         playlistId={managePlaylistId}
         onClose={() => setManagePlaylistId(null)}
-        onChanged={reloadPlaylists}
       />
     </div>
   );
