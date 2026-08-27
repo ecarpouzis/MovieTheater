@@ -1,3 +1,31 @@
+/* ── The sheet's palette (R9 S5 carry-forward) ───────────────────────────────────────
+   This file used to hard-code a light surface and light-surface ink (#fafafa tiles, #222 values,
+   #1677ff links, a white plot fade), which is why the boardgame sheet was the one detail modal left
+   OFF the section skin: handing it a dark backdrop's `--text-primary` painted light text on a white
+   card — the bug `sheet-modal--themed` exists to warn about. Every colour below now names a token,
+   so the sheet takes `sheet-modal--themed` + the skin's `--skin-*` (delivered on the wrap through
+   `styles.wrapper`) and reads correctly in both themes and under all nine backdrops.
+
+   The category hues (expansion purple, base blue, standalone teal, accessory amber, rules amber)
+   are MEANING, not decoration — they stay, mixed into the current surface instead of over white. */
+.boardgame-modal {
+  --bgm-ink: var(--text-primary);
+  --bgm-sub: var(--text-secondary);
+  --bgm-faint: var(--text-muted);
+  --bgm-line: var(--card-border);
+  --bgm-surface: var(--card-surface);
+  /* A tile sitting ON the sheet: a hair of ink mixed into the surface, so it separates in both themes. */
+  --bgm-tile: color-mix(in oklab, var(--card-surface) 94%, var(--text-primary));
+  --bgm-link: var(--accent-link, #1677ff);
+  --bgm-link-strong: var(--accent-solid, #0958d9);
+  --bgm-expansion: #7c3aed;
+  --bgm-base: #1677ff;
+  --bgm-standalone: #0d9488;
+  --bgm-accessory: #d97706;
+  --bgm-rules: #d46b08;
+  --bgm-good: #52c41a;
+}
+
 /* Full-page modal on every platform, on the shared shell (Components/SheetModal.css,
    wrapClassName "sheet-modal boardgame-modal"): the shell bounds the dialog and makes the BODY
    the scroller; these rules repeat the shell's sheet block unconditionally — the same call the
@@ -101,7 +129,7 @@
   justify-content: center;
   gap: 6px;
   font-size: 14px;
-  color: #555;
+  color: var(--bgm-sub);
   font-weight: 500;
 }
 
@@ -117,8 +145,8 @@
   flex-direction: column;
   gap: 2px;
   padding: 8px 14px;
-  background: #fafafa;
-  border: 1px solid #ebebeb;
+  background: var(--bgm-tile);
+  border: 1px solid var(--bgm-line);
   border-radius: 8px;
   align-items: center;
   text-align: center;
@@ -131,7 +159,7 @@
 .boardgame-modal-stat-value {
   font-size: 15px;
   font-weight: 700;
-  color: #222;
+  color: var(--bgm-ink);
 }
 
 .boardgame-modal-plot-wrap {
@@ -150,14 +178,14 @@
   left: 0;
   right: 0;
   height: 44px;
-  background: linear-gradient(to bottom, transparent, #fff);
+  background: linear-gradient(to bottom, transparent, var(--bgm-surface));
   pointer-events: none;
 }
 
 .boardgame-desc-toggle {
   background: none;
   border: none;
-  color: #1677ff;
+  color: var(--bgm-link);
   cursor: pointer;
   font-size: 13px;
   padding: 2px 0;
@@ -165,26 +193,26 @@
 }
 
 .boardgame-desc-toggle:hover {
-  color: #0958d9;
+  color: var(--bgm-link-strong);
   text-decoration: underline;
 }
 
 .boardgame-modal-plot {
   margin: 0;
   font-size: 14px;
-  color: #444;
+  color: var(--bgm-sub);
   line-height: 1.7;
-  border-left: 3px solid #e8e8e8;
+  border-left: 3px solid var(--bgm-line);
   padding-left: 12px;
 }
 
 .boardgame-bgg-link {
   display: inline-block;
   padding: 6px 16px;
-  background: #e8f3ff;
-  border: 1px solid #91caff;
+  background: color-mix(in oklab, var(--bgm-link) 12%, var(--bgm-surface));
+  border: 1px solid color-mix(in oklab, var(--bgm-link) 40%, var(--bgm-surface));
   border-radius: 6px;
-  color: #1677ff;
+  color: var(--bgm-link);
   font-size: 13px;
   text-decoration: none;
   align-self: flex-start;
@@ -192,13 +220,13 @@
 }
 
 .boardgame-bgg-link:hover {
-  background: #d0e8ff;
-  border-color: #4096ff;
+  background: color-mix(in oklab, var(--bgm-link) 22%, var(--bgm-surface));
+  border-color: var(--bgm-link);
 }
 
 .boardgame-modal-id {
   font-size: 12px;
-  color: #ccc;
+  color: var(--bgm-faint);
   text-align: right;
   margin-top: auto;
 }
@@ -215,9 +243,9 @@
   display: block;
   width: 100%;
   padding: 5px 10px 5px 8px;
-  background: #f5f0ff;
+  background: color-mix(in oklab, var(--bgm-expansion) 12%, var(--bgm-surface));
   border: none;
-  border-left: 4px solid #7c3aed;
+  border-left: 4px solid var(--bgm-expansion);
   border-radius: 0 6px 6px 0;
   cursor: pointer;
   text-align: left;
@@ -225,12 +253,12 @@
 }
 
 .expansion-flag:hover {
-  background: #ede9fe;
+  background: color-mix(in oklab, var(--bgm-expansion) 22%, var(--bgm-surface));
 }
 
 .expansion-flag--active {
-  background: #7c3aed;
-  border-left-color: #5b21b6;
+  background: var(--bgm-expansion);
+  border-left-color: color-mix(in oklab, var(--bgm-expansion) 70%, #000);
 }
 
 .expansion-flag--active .expansion-flag-label {
@@ -238,21 +266,21 @@
 }
 
 .expansion-flag--base {
-  background: #e8f3ff;
-  border-left-color: #1677ff;
+  background: color-mix(in oklab, var(--bgm-base) 12%, var(--bgm-surface));
+  border-left-color: var(--bgm-base);
 }
 
 .expansion-flag--base:hover {
-  background: #d0e8ff;
+  background: color-mix(in oklab, var(--bgm-base) 22%, var(--bgm-surface));
 }
 
 .expansion-flag--base.expansion-flag--active {
-  background: #1677ff;
-  border-left-color: #0958d9;
+  background: var(--bgm-base);
+  border-left-color: var(--bgm-link-strong);
 }
 
 .expansion-flag--base .expansion-flag-label {
-  color: #1677ff;
+  color: color-mix(in oklab, var(--bgm-base) 55%, var(--bgm-ink));
 }
 
 .expansion-flag--base.expansion-flag--active .expansion-flag-label {
@@ -260,21 +288,21 @@
 }
 
 .expansion-flag--standalone {
-  background: #f0fdfa;
-  border-left-color: #0d9488;
+  background: color-mix(in oklab, var(--bgm-standalone) 12%, var(--bgm-surface));
+  border-left-color: var(--bgm-standalone);
 }
 
 .expansion-flag--standalone:hover {
-  background: #ccfbf1;
+  background: color-mix(in oklab, var(--bgm-standalone) 22%, var(--bgm-surface));
 }
 
 .expansion-flag--standalone.expansion-flag--active {
-  background: #0d9488;
-  border-left-color: #0f766e;
+  background: var(--bgm-standalone);
+  border-left-color: color-mix(in oklab, var(--bgm-standalone) 75%, #000);
 }
 
 .expansion-flag--standalone .expansion-flag-label {
-  color: #0d9488;
+  color: color-mix(in oklab, var(--bgm-standalone) 55%, var(--bgm-ink));
 }
 
 .expansion-flag--standalone.expansion-flag--active .expansion-flag-label {
@@ -282,21 +310,21 @@
 }
 
 .expansion-flag--accessory {
-  background: #fef3c7;
-  border-left-color: #d97706;
+  background: color-mix(in oklab, var(--bgm-accessory) 14%, var(--bgm-surface));
+  border-left-color: var(--bgm-accessory);
 }
 
 .expansion-flag--accessory:hover {
-  background: #fde68a;
+  background: color-mix(in oklab, var(--bgm-accessory) 24%, var(--bgm-surface));
 }
 
 .expansion-flag--accessory.expansion-flag--active {
-  background: #d97706;
-  border-left-color: #b45309;
+  background: var(--bgm-accessory);
+  border-left-color: color-mix(in oklab, var(--bgm-accessory) 75%, #000);
 }
 
 .expansion-flag--accessory .expansion-flag-label {
-  color: #d97706;
+  color: color-mix(in oklab, var(--bgm-accessory) 55%, var(--bgm-ink));
 }
 
 .expansion-flag--accessory.expansion-flag--active .expansion-flag-label {
@@ -306,15 +334,15 @@
 .expansion-flag-label {
   font-size: 11px;
   font-weight: 600;
-  color: #5b21b6;
+  color: color-mix(in oklab, var(--bgm-expansion) 55%, var(--bgm-ink));
   display: block;
   word-break: break-word;
 }
 
 /* ── Expansion detail panel (info panel) ── */
 .expansion-detail-panel {
-  background: #faf5ff;
-  border: 1px solid #c4b5fd;
+  background: color-mix(in oklab, var(--bgm-expansion) 9%, var(--bgm-surface));
+  border: 1px solid color-mix(in oklab, var(--bgm-expansion) 34%, var(--bgm-surface));
   border-radius: 8px;
   padding: 12px 14px;
   display: flex;
@@ -331,12 +359,12 @@
 .expansion-detail-name {
   font-weight: 700;
   font-size: 15px;
-  color: #3b0764;
+  color: color-mix(in oklab, var(--bgm-expansion) 45%, var(--bgm-ink));
 }
 
 .expansion-detail-year {
   font-size: 13px;
-  color: #888;
+  color: var(--bgm-sub);
 }
 
 .expansion-detail-stats {
@@ -347,20 +375,20 @@
 
 .expansion-detail-stat {
   font-size: 13px;
-  color: #555;
+  color: var(--bgm-sub);
   font-weight: 500;
 }
 
 .expansion-detail-desc {
   font-size: 13px;
-  color: #555;
+  color: var(--bgm-sub);
   line-height: 1.6;
   margin: 0;
 }
 
 .expansion-detail-bgg {
   font-size: 12px;
-  color: #7c3aed;
+  color: color-mix(in oklab, var(--bgm-expansion) 55%, var(--bgm-ink));
   text-decoration: none;
   align-self: flex-start;
 }
@@ -393,18 +421,18 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  color: #aaa;
+  color: var(--bgm-faint);
 }
 
 .edit-field-hint {
   font-size: 12px;
-  color: #888;
+  color: var(--bgm-sub);
   margin-top: 2px;
 }
 
 .boardgame-modal-base-game {
   font-size: 13px;
-  color: #666;
+  color: var(--bgm-sub);
 }
 
 .modal-edit-actions {
@@ -418,7 +446,7 @@
 .boardgame-rematch-section {
   margin-top: 16px;
   padding-top: 16px;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--bgm-line);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -426,7 +454,7 @@
 
 .boardgame-rematch-label {
   font-size: 12px;
-  color: #888;
+  color: var(--bgm-sub);
   font-weight: 500;
 }
 
@@ -456,7 +484,7 @@
 .rules-video-title {
   font-size: 15px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--bgm-ink);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -467,8 +495,8 @@
 .rules-video-duration {
   font-size: 11px;
   font-weight: 600;
-  color: #555;
-  background: #f0f0f0;
+  color: var(--bgm-sub);
+  background: var(--bgm-tile);
   border-radius: 4px;
   padding: 2px 7px;
   white-space: nowrap;
@@ -504,10 +532,10 @@
   align-items: center;
   gap: 6px;
   padding: 6px 16px;
-  background: #fff7e6;
-  border: 1px solid #ffd591;
+  background: color-mix(in oklab, var(--bgm-rules) 12%, var(--bgm-surface));
+  border: 1px solid color-mix(in oklab, var(--bgm-rules) 38%, var(--bgm-surface));
   border-radius: 6px;
-  color: #d46b08;
+  color: color-mix(in oklab, var(--bgm-rules) 62%, var(--bgm-ink));
   font-size: 13px;
   font-weight: 500;
   text-decoration: none;
@@ -515,16 +543,16 @@
 }
 
 .rules-pdf-link:hover {
-  background: #ffe7ba;
-  border-color: #fa8c16;
+  background: color-mix(in oklab, var(--bgm-rules) 22%, var(--bgm-surface));
+  border-color: var(--bgm-rules);
 }
 
 /* ── Rules admin panel (edit mode) ── */
 .rules-admin-panel {
   margin-top: 8px;
   padding: 14px 16px;
-  background: #fafafa;
-  border: 1px solid #e8e8e8;
+  background: var(--bgm-tile);
+  border: 1px solid var(--bgm-line);
   border-radius: 8px;
   display: flex;
   flex-direction: column;
@@ -536,7 +564,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  color: #888;
+  color: var(--bgm-sub);
   margin-bottom: 2px;
 }
 
@@ -549,7 +577,7 @@
 
 .rules-candidate-link {
   font-size: 13px;
-  color: #1677ff;
+  color: var(--bgm-link);
   text-decoration: none;
 }
 
@@ -559,12 +587,12 @@
 
 .rules-confirmed-url {
   font-size: 12px;
-  color: #52c41a;
+  color: color-mix(in oklab, var(--bgm-good) 66%, var(--bgm-ink));
   font-weight: 500;
 }
 
 .rules-confirmed-url a {
-  color: #52c41a;
+  color: color-mix(in oklab, var(--bgm-good) 66%, var(--bgm-ink));
   text-decoration: underline;
 }
 
@@ -573,13 +601,13 @@
   align-items: center;
   gap: 8px;
   padding: 4px 0;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--bgm-line);
 }
 
 .rules-url-text {
   flex: 1;
   font-size: 12px;
-  color: #1677ff;
+  color: var(--bgm-link);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -599,7 +627,7 @@
 
 .rules-empty-hint {
   font-size: 12px;
-  color: #bbb;
+  color: var(--bgm-faint);
   font-style: italic;
 }
 
@@ -608,12 +636,12 @@
   align-items: center;
   gap: 8px;
   padding: 4px 0;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--bgm-line);
 }
 
 .rules-approved-pdf-slot {
   font-size: 13px;
-  color: #d46b08;
+  color: color-mix(in oklab, var(--bgm-rules) 62%, var(--bgm-ink));
   text-decoration: none;
   white-space: nowrap;
 }
@@ -644,8 +672,8 @@
   flex-direction: column;
   align-items: center;
   gap: 5px;
-  background: #fafafa;
-  border: 1px solid #ebebeb;
+  background: var(--bgm-tile);
+  border: 1px solid var(--bgm-line);
   border-radius: 8px;
   padding: 8px;
   cursor: pointer;
@@ -657,8 +685,8 @@
 }
 
 .boardgame-similar-item:hover {
-  background: #f0f7ff;
-  border-color: #91caff;
+  background: color-mix(in oklab, var(--bgm-link) 12%, var(--bgm-surface));
+  border-color: color-mix(in oklab, var(--bgm-link) 40%, var(--bgm-surface));
 }
 
 .boardgame-similar-thumb {
@@ -687,7 +715,7 @@
 
 .boardgame-similar-name {
   font-size: 11px;
-  color: #333;
+  color: var(--bgm-ink);
   font-weight: 500;
   line-height: 1.3;
   display: -webkit-box;

@@ -268,12 +268,13 @@ export function applySectionSkin(root: HTMLElement | null, section: string, extr
  * Which sheets wear it, and why not all of them: a dialog that paints itself FROM the tokens takes
  * the skin as a whole — the movie sheet and the Books sheets (`sheet-modal--themed`), the arcade
  * game sheet (`background: var(--content-bg); color: var(--text-primary)`) and the photo lightbox
- * (`background: var(--card-surface)`). The BOARDGAME sheet and the MUSIC album sheet do not: the
- * first hard-codes a light surface and light-surface ink (#fafafa / #222 / #1677ff throughout
- * `BoardGameModal.css`), the second leaves antd's own near-white container in place. Handing those
- * two a dark backdrop's `--text-primary` would paint light text on a white card — the exact bug the
- * `sheet-modal--themed` block in `Components/SheetModal.css` exists to warn about — so they are
- * left alone until someone tokenises them.
+ * (`background: var(--card-surface)`) — and, since R9 S6, the BOARDGAME sheet, whose hard-coded
+ * light surface and light-surface ink (#fafafa / #222 / #1677ff) were tokenised so it could join
+ * them (`--bgm-*` at the top of `BoardGameModal.css`; the category hues survive as mixes into the
+ * live surface). The MUSIC album sheet still does NOT: it leaves antd's own near-white container in
+ * place, so handing it a dark backdrop's `--text-primary` would paint light text on a white card —
+ * the exact bug the `sheet-modal--themed` block in `Components/SheetModal.css` exists to warn
+ * about. Tokenise first, wire after.
  */
 export function sectionSkinStyle(section: string, extras: Record<string, string> | undefined, theme: SkinFamily, view?: string | null): Record<string, string> {
   const t = skinTokens(section, extras, theme, view);

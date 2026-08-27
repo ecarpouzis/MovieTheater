@@ -16,6 +16,11 @@
   --sub: var(--text-secondary);
   --line: var(--card-border);
   --bg: var(--card-surface);
+  /* Text on an "on" surface (a lit ⚙, a hovered strip arrow): the pair is ink-on-ink, so the text
+     needs the PAGE colour, not the CARD one — `--card-surface` is a GRADIENT under the arcade's
+     dark theme, and `color: <gradient>` is invalid at computed-value time, which left the lit ⚙
+     inheriting the ink it sits on (invisible). Same fix the rail already carries. */
+  --bx-on-ink: var(--content-bg);
   --chrome: var(--card-surface);
   --display-weight: 600;
   --display-tracking: -0.01em;
@@ -37,7 +42,7 @@
   display: inline-flex; align-items: center; gap: 6px;
 }
 .bx-tool-btn:hover { background: var(--line); }
-.bx-tool-btn.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.bx-tool-btn.on { background: var(--ink); color: var(--bx-on-ink, var(--bg)); border-color: var(--ink); }
 .bx-tool-gear { padding: 0 10px; font-size: 15px; }
 .bx-pill-wrap { position: relative; }
 .bx-pill {
