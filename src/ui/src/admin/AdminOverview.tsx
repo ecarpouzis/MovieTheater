@@ -29,7 +29,8 @@ export function AdminStats({ stats }: { stats: StatDef[] }) {
           key={s.label}
           title={s.label}
           value={s.value ?? "—"}
-          valueStyle={s.bad ? { color: "var(--rating-bad, #c0392b)" } : undefined}
+          // `styles.content`, not the deprecated `valueStyle` (antd 6).
+          styles={s.bad ? { content: { color: "var(--rating-bad, #c0392b)" } } : undefined}
         />
       ))}
     </div>

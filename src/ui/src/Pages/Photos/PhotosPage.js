@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import useSlot, { BAR_TOOLS_SLOT } from "../../catalog/bar/useSlot";
 import { Switch as AntSwitch } from "antd";
-import { Route, Switch, useHistory, useLocation } from "react-router-dom";
+import { Redirect, Route, Switch, useHistory, useLocation } from "react-router-dom";
 import { MovieAPI } from "../../MovieAPI";
 import PhotoTimeline from "./PhotoTimeline";
 import PhotoFolders from "./PhotoFolders";
@@ -10,10 +10,9 @@ import PhotoLightbox from "./PhotoLightbox";
 import PhotoAlbums from "./PhotoAlbums";
 import PhotoAlbumDetail from "./PhotoAlbumDetail";
 import PhotoGallery from "./PhotoGallery";
-import PhotoReview from "./PhotoReview";
-import PhotoDupes from "./PhotoDupes";
 import PhotoPeople from "./PhotoPeople";
-import PhotoTagQueue from "./PhotoTagQueue";
+import PhotosAdminPage from "./PhotosAdminPage";
+import { PHOTOS_ADMIN_ALIASES } from "../../admin/aliases";
 import PhotoSelectionBar from "./PhotoSelectionBar";
 import useIsMobile from "../../hooks/useIsMobile";
 import useScrollLockRestore from "../../hooks/useScrollLockRestore";
@@ -537,17 +536,19 @@ export default function PhotosPage({ userData }) {
           />
         </Route>
 
-        <Route path="/photos/tag">
-          <PhotoTagQueue key={`tag-${refreshKey}`} people={people} onReloadPeople={refreshPeople} onChanged={changed} />
+        {/* R9 S6 — the curation tools are tabs of the one admin shell. The three routes they used
+            to own (and `/photos/google`, which never had one) redirect into their tab, so every
+            link anyone kept still lands. */}
+        <Route path="/photos/admin">
+          <PhotosAdminPage
+            status={status}
+            people={people}
+            refreshPeople={refreshPeople}
+            changed={changed}
+            refreshKey={refreshKey}
+          />
         </Route>
-
-        <Route path="/photos/dupes">
-          <PhotoDupes key={`dupes-${refreshKey}`} onChanged={changed} />
-        </Route>
-
-        <Route path="/photos/review">
-          <PhotoReview key={`review-${refreshKey}`} admin={!!status.admin} onChanged={changed} />
-        </Route>
+        {PHOTOS_ADMIN_ALIASES.map((a) => <Redirect key={a.from} exact from={a.from} to={a.to} />)}
 
         <Route path="/photos">
           <PhotoTimeline

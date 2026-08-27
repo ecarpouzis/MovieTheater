@@ -19,7 +19,7 @@ import PhotosSiderRail from "../Pages/Photos/PhotosSiderRail";
 //
 // Log Out, the theme switch and the admin show-hidden checkbox are NOT here: they live in the
 // navbar's shared footer, the same as on every other section.
-function PhotosNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setAdminModalOpen }) {
+function PhotosNavContent({ userData, onUserLoggedIn, setSettingsModalOpen }) {
   const location = useLocation();
   const isMobile = useIsMobile();
   // Enabled unconditionally because this component only renders on /photos — no other section ever
@@ -32,7 +32,7 @@ function PhotosNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setA
   return (
     <>
       <NavUserBlock userData={userData} onUserLoggedIn={onUserLoggedIn}
-        setSettingsModalOpen={setSettingsModalOpen} setAdminModalOpen={setAdminModalOpen} />
+        setSettingsModalOpen={setSettingsModalOpen} />
 
       {/* Nothing is listed until the server has said the album is open. The rail is not the gate —
           it just has no index to draw for someone the gate refused. */}

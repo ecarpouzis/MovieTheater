@@ -17,10 +17,9 @@ interface BooksNavContentProps {
   userData: (BooksMe & Record<string, unknown>) | null | undefined;
   onUserLoggedIn: (...args: unknown[]) => void;
   setSettingsModalOpen: (open: boolean) => void;
-  setAdminModalOpen: (open: boolean) => void;
 }
 
-export default function BooksNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setAdminModalOpen }: BooksNavContentProps) {
+export default function BooksNavContent({ userData, onUserLoggedIn, setSettingsModalOpen }: BooksNavContentProps) {
   const location = useLocation();
   const isMobile = useIsMobile();
   const counts = useBooksIndex(userData);
@@ -31,7 +30,7 @@ export default function BooksNavContent({ userData, onUserLoggedIn, setSettingsM
   const username = String(userData?.username ?? "");
   return (
     <>
-      <NavUserBlock userData={userData} onUserLoggedIn={onUserLoggedIn} setSettingsModalOpen={setSettingsModalOpen} setAdminModalOpen={setAdminModalOpen} />
+      <NavUserBlock userData={userData} onUserLoggedIn={onUserLoggedIn} setSettingsModalOpen={setSettingsModalOpen} />
       <SectionIndexRail groups={groups} activeKey={section} ariaLabel="Books sections" />
       {railable && section === "browse" && <BooksSiderRail username={username} />}
       {railable && section === "novels" && <NovelsSiderRail username={username} />}

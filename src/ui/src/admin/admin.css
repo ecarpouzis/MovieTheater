@@ -76,7 +76,9 @@
 .adm-att-row:first-child { border-top: 0; }
 button.adm-att-row { cursor: pointer; }
 button.adm-att-row:hover { background: color-mix(in oklab, var(--bg) 92%, var(--ink)); }
-.adm-att-count { font-family: var(--font-mono); font-size: 15px; font-weight: 700; min-width: 4ch; }
+/* The count column is fixed-width and right-aligned so every row's label starts on the same line —
+   a five-figure queue must not shove its own label out of the column. */
+.adm-att-count { font-family: var(--font-mono); font-size: 15px; font-weight: 700; flex: 0 0 auto; min-width: 5.5ch; text-align: right; }
 .adm-att-count[data-tone="bad"] { color: #c0392b; }
 .adm-att-count[data-tone="warn"] { color: #b26a00; }
 .adm-att-count[data-tone="ok"] { color: var(--sub); }

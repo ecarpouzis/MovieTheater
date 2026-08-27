@@ -15,7 +15,6 @@ import TvNavContent from "./TvNavContent";
 // Settings/admin modals only open on demand (and admin only for privileged users), so keep them out
 // of the entry bundle and load their chunks when first rendered.
 const UserSettingsModal = lazy(() => import("./UserSettingsModal"));
-const AdminModal = lazy(() => import("./AdminModal"));
 // The playlists modal (Movies only) loads on demand when first opened from the sidebar pill.
 const MyPlaylistsModal = lazy(() => import("../Pages/Tv/MyPlaylistsModal"));
 import useIsMobile from "../hooks/useIsMobile";
@@ -100,7 +99,6 @@ function NavBar({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
-  const [adminModalOpen, setAdminModalOpen] = useState(false);
   const [playlistsModalOpen, setPlaylistsModalOpen] = useState(false);
 
   // useEffect with a dependency array runs the callback whenever any listed value changes
@@ -387,7 +385,6 @@ function NavBar({
       userData={userData}
       onUserLoggedIn={onUserLoggedIn}
       setSettingsModalOpen={setSettingsModalOpen}
-      setAdminModalOpen={setAdminModalOpen}
       search={search}
       onOpenPlaylists={() => setPlaylistsModalOpen(true)}
     />
@@ -397,7 +394,6 @@ function NavBar({
         userData={userData}
         onUserLoggedIn={onUserLoggedIn}
         setSettingsModalOpen={setSettingsModalOpen}
-        setAdminModalOpen={setAdminModalOpen}
         onOpenPlaylists={() => setPlaylistsModalOpen(true)}
       />
       {!isMobile && <MoviesSiderRail userData={userData} />}
@@ -449,7 +445,6 @@ function NavBar({
             userData={userData}
             setUserData={setUserData}
           />
-          <AdminModal open={adminModalOpen} onClose={() => setAdminModalOpen(false)} />
           {(isMovies || section.key === "tv") && (
             <MyPlaylistsModal open={playlistsModalOpen} onClose={() => setPlaylistsModalOpen(false)} userData={userData} />
           )}
@@ -486,7 +481,6 @@ function NavBar({
           userData={userData}
           setUserData={setUserData}
         />
-        <AdminModal open={adminModalOpen} onClose={() => setAdminModalOpen(false)} />
         {(isMovies || section.key === "tv") && (
           <MyPlaylistsModal open={playlistsModalOpen} onClose={() => setPlaylistsModalOpen(false)} userData={userData} />
         )}

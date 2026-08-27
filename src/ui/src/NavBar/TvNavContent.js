@@ -8,7 +8,7 @@ import { NavUserBlock } from "./navShared";
  * channels pages fell through to that rail). Favourites are a toggle inside the guide; the
  * facet rail proper arrives with S2.
  */
-export default function TvNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setAdminModalOpen, onOpenPlaylists }) {
+export default function TvNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, onOpenPlaylists }) {
   const location = useLocation();
   const history = useHistory();
   const views = [{ key: "guide", label: "Guide", path: "/channels" }];
@@ -17,7 +17,7 @@ export default function TvNavContent({ userData, onUserLoggedIn, setSettingsModa
   const activeKey = location.pathname.startsWith("/channels") ? "guide" : "";
   return (
     <>
-      <NavUserBlock userData={userData} onUserLoggedIn={onUserLoggedIn} setSettingsModalOpen={setSettingsModalOpen} setAdminModalOpen={setAdminModalOpen} />
+      <NavUserBlock userData={userData} onUserLoggedIn={onUserLoggedIn} setSettingsModalOpen={setSettingsModalOpen} />
       <SectionIndexRail
         groups={groups}
         activeKey={activeKey}

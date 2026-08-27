@@ -15,9 +15,9 @@ import "./Login.css";
 // Log Out is NOT here: it lives in the shared navbar footer, below the theme toggle, on every page.
 // Props:
 //   userData / onUserLoggedIn — session plumbing
-//   setSettingsModalOpen / setAdminModalOpen — modal openers
+//   setSettingsModalOpen — opens the user-settings modal
 //   onOpenPlaylists — opens the "My Playlists" modal (streaming accounts only)
-function Login({ userData, onUserLoggedIn, setSettingsModalOpen, setAdminModalOpen, onOpenPlaylists }) {
+function Login({ userData, onUserLoggedIn, setSettingsModalOpen, onOpenPlaylists }) {
   const history = useHistory();
   const location = useLocation();
 
@@ -39,7 +39,6 @@ function Login({ userData, onUserLoggedIn, setSettingsModalOpen, setAdminModalOp
         <UserPanelHeader
           userData={userData}
           setSettingsModalOpen={setSettingsModalOpen}
-          setAdminModalOpen={setAdminModalOpen}
           onOpenPlaylists={onOpenPlaylists}
         />
         <div className={`stat-row${seenActive ? " stat-row--active" : ""}`} onClick={() => navigateToBrowseSearch("seen")}>

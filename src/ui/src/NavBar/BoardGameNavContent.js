@@ -10,12 +10,12 @@ import BoardgamesSiderRail from "../Pages/BoardGames/BoardgamesSiderRail";
  * and the phone's title search are gone: the phone's browse raises its own full-page sheet from the
  * bar's Filters pill (and the top bar's search button), the desktop's SmartSearch sits in the bar.
  */
-function BoardGameNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setAdminModalOpen }) {
+function BoardGameNavContent({ userData, onUserLoggedIn, setSettingsModalOpen }) {
   const isMobile = useIsMobile();
   return (
     <>
       <NavUserBlock userData={userData} onUserLoggedIn={onUserLoggedIn}
-        setSettingsModalOpen={setSettingsModalOpen} setAdminModalOpen={setAdminModalOpen} />
+        setSettingsModalOpen={setSettingsModalOpen} />
 
       {!isMobile && <BoardgamesSiderRail userData={userData} />}
 

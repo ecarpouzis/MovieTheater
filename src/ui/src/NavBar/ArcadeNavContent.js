@@ -9,14 +9,14 @@ import ArcadeSiderRail from "../Pages/Arcade/ArcadeSiderRail";
 // 2026-08-27) and writes the same `f=system:` the rail's chips remove. The antd Selects and the
 // phone's search field retired with S2c: the phone's lobby raises its own full-page sheet from the
 // bar's Filters pill (and the top bar's search button), the desktop's SmartSearch sits in the bar.
-function ArcadeNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setAdminModalOpen }) {
+function ArcadeNavContent({ userData, onUserLoggedIn, setSettingsModalOpen }) {
   const location = useLocation();
   const isMobile = useIsMobile();
   const onLobby = location.pathname === "/arcade" || location.pathname === "/arcade/";
   return (
     <>
       <NavUserBlock userData={userData} onUserLoggedIn={onUserLoggedIn}
-        setSettingsModalOpen={setSettingsModalOpen} setAdminModalOpen={setAdminModalOpen} />
+        setSettingsModalOpen={setSettingsModalOpen} />
 
       {!isMobile && onLobby && <ArcadeSiderRail />}
     </>

@@ -49,17 +49,23 @@ const booksGrownUp = (u: SectionUser | null | undefined) => booksMember(u) && !i
 export const SECTIONS: SectionDef[] = [
   {
     key: "tv", prefixes: ["/channels", "/tv", "/watch-together"], title: "TV", searchPlaceholder: "Search the guide — a show, a channel…",
-    tabs: [{ key: "guide", label: "Guide", path: "/channels" }],
+    tabs: [
+      { key: "guide", label: "Guide", path: "/channels", exact: true },
+      { key: "admin", label: "Admin", path: "/channels/admin", admin: true, when: editor },
+    ],
   },
   {
     key: "arcade", prefixes: ["/arcade"], title: "Arcade", searchPlaceholder: "system:PS2, genre:RPG, or a game…",
-    tabs: [{ key: "browse", label: "Browse", path: "/arcade", exact: true }],
+    tabs: [
+      { key: "browse", label: "Browse", path: "/arcade", exact: true },
+      { key: "admin", label: "Admin", path: "/arcade/admin", admin: true, when: admin },
+    ],
   },
   {
     key: "boardgames", prefixes: ["/boardgames"], title: "Board Games", searchPlaceholder: "mechanic:Deck, designer:Knizia, or a game…",
     tabs: [
       { key: "browse", label: "Browse", path: "/boardgames", exact: true },
-      { key: "admin", label: "Admin", path: "/boardgames/batchinsert", admin: true, when: admin },
+      { key: "admin", label: "Admin", path: "/boardgames/admin", admin: true, when: editor },
     ],
   },
   {
@@ -68,6 +74,7 @@ export const SECTIONS: SectionDef[] = [
       { key: "browse", label: "Browse", path: "/music", exact: true },
       { key: "playlists", label: "Playlists", path: "/music/playlists" },
       { key: "now", label: "Now playing", path: "/music/now-playing" },
+      { key: "admin", label: "Admin", path: "/music/admin", admin: true, when: admin },
     ],
   },
   {
@@ -78,7 +85,7 @@ export const SECTIONS: SectionDef[] = [
       { key: "albums", label: "Albums", path: "/photos/albums" },
       { key: "gallery", label: "Gallery", path: "/photos/gallery" },
       { key: "people", label: "People", path: "/photos/people" },
-      { key: "admin", label: "Admin", path: "/photos/review", admin: true, when: admin },
+      { key: "admin", label: "Admin", path: "/photos/admin", admin: true, when: admin },
     ],
   },
   {
@@ -97,7 +104,7 @@ export const SECTIONS: SectionDef[] = [
     tabs: [
       { key: "browse", label: "Browse", path: "/", exact: true },
       { key: "channels", label: "Channels", path: "/channels", when: (u) => !!u?.hasPassword },
-      { key: "admin", label: "Admin", path: "/review-ingest", admin: true, when: editor },
+      { key: "admin", label: "Admin", path: "/movies/admin", admin: true, when: editor },
     ],
   },
 ];

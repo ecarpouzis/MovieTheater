@@ -24,7 +24,12 @@ describe("catalog/bar — sections table", () => {
     expect(sectionFor("/books/shelf").key).toBe("books");
     expect(sectionFor("/channels").key).toBe("tv");
     expect(sectionFor("/").key).toBe("movies");
+    // R9 S6 moved the movie tools under one shell; `/review-ingest` still resolves (App redirects
+    // it into the tab), and the shell's own path resolves to the same section.
     expect(sectionFor("/review-ingest").key).toBe("movies");
+    expect(sectionFor("/movies/admin").key).toBe("movies");
+    expect(sectionFor("/channels/admin").key).toBe("tv");
+    expect(sectionFor("/photos/admin").key).toBe("photos");
     expect(barHidden("/watch/12")).toBe(true);
     expect(barHidden("/tv/3")).toBe(true);
     expect(barHidden("/arcade/room/ABCD")).toBe(true);

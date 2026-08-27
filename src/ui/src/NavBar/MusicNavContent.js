@@ -27,13 +27,13 @@ export function musicIndexKey(pathname) {
   return "browse";
 }
 
-function MusicNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setAdminModalOpen }) {
+function MusicNavContent({ userData, onUserLoggedIn, setSettingsModalOpen }) {
   const location = useLocation();
   const isMobile = useIsMobile();
   return (
     <>
       <NavUserBlock userData={userData} onUserLoggedIn={onUserLoggedIn}
-        setSettingsModalOpen={setSettingsModalOpen} setAdminModalOpen={setAdminModalOpen} />
+        setSettingsModalOpen={setSettingsModalOpen} />
 
       {userData?.hasPassword && (
         <SectionIndexRail groups={INDEX_GROUPS} activeKey={musicIndexKey(location.pathname)} ariaLabel="Music sections" />

@@ -1,19 +1,20 @@
 import { useState, useEffect, useMemo } from "react";
-import { Modal, Input, Button, Checkbox, message } from "antd";
-import { MovieAPI } from "../MovieAPI";
-import "./UserSettingsModal.css";
-import "./AdminModal.css";
-import "../Components/SheetModal.css";
-import { SHEET_Z } from "../Components/sheetModal";
+import { Input, Button, Checkbox, message } from "antd";
+import { MovieAPI } from "../../MovieAPI";
+import "../../NavBar/UserSettingsModal.css";
+import "../../NavBar/AdminModal.css";
 
-// One line describing the patched-binary guard, for the footer of this modal.
+// The Users tab of /movies/admin (R9 S6). This WAS `NavBar/AdminModal` — a dialog behind the
+// sider's gear — and is now a tab like every other operator tool; the modal shell was the only
+// thing removed. Admin-only for real on the server: every endpoint below is independently gated.
 //
-// WHY IT LIVES HERE AND NOT IN A POPUP: the guard's *findings* interrupt (PatchedArtifactAlarm.js
-// still throws a modal when a core actually shifted), but its LIVENESS must not. The report is held
-// in memory per pod, so every deploy resets it and a "guard is not reporting" toast fired at the
-// next admin page load even though nothing was wrong. Pull-when-you-look beats push-after-every-deploy
-// for a fact that is only ever acted on deliberately.
-function guardStatus(guard) {
+// WHY THE GUARD LINE LIVES HERE AND NOT IN A POPUP: the patched-binary guard's *findings* interrupt
+// (PatchedArtifactAlarm.js still throws a modal when a core actually shifted), but its LIVENESS must
+// not. The report is held in memory per pod, so every deploy resets it and a "guard is not
+// reporting" toast fired at the next admin page load even though nothing was wrong.
+// Pull-when-you-look beats push-after-every-deploy for a fact that is only ever acted on
+// deliberately.
+export function guardStatus(guard) {
   if (!guard) return { tone: "nopw", text: "Patched-binary guard: status unavailable." };
   if (guard.warming) {
     return {
@@ -45,10 +46,7 @@ function guardStatus(guard) {
   };
 }
 
-// Admin-only tool for managing users: creating an initial streaming password (users can't
-// create their own first password) and granting the editor permission. Visibility is driven
-// by userData.isAdmin, and every endpoint it calls is independently admin-gated on the server.
-function AdminModal({ open, onClose }) {
+function MoviesUsersTab() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState("");
@@ -59,12 +57,7 @@ function AdminModal({ open, onClose }) {
   const [busyUserId, setBusyUserId] = useState(null);
 
   useEffect(() => {
-    if (!open) return;
-    setFilter("");
-    setPasswordDrafts({});
-
     // Best-effort: the guard line is a footnote, so a failure here must never block the user list.
-    setGuard(null);
     MovieAPI.adminGetPatchedArtifacts()
       .then((r) => (r.ok ? r.json() : null))
       .then(setGuard)
@@ -82,7 +75,7 @@ function AdminModal({ open, onClose }) {
         message.error("Failed to load users.");
       })
       .finally(() => setLoading(false));
-  }, [open]);
+  }, []);
 
   const filteredUsers = useMemo(() => {
     const needle = filter.trim().toLowerCase();
@@ -123,80 +116,28 @@ function AdminModal({ open, onClose }) {
       .finally(() => setBusyUserId(null));
   };
 
-  const toggleEditor = (user, checked) => {
+  const toggleSetting = (user, key, patchKey, checked, label) => {
     setBusyUserId(user.userId);
     // A null value deletes the setting; "true" enables it.
-    MovieAPI.adminSetUserSetting(user.userId, "CanEditMovies", checked ? "true" : null)
+    MovieAPI.adminSetUserSetting(user.userId, key, checked ? "true" : null)
       .then((r) => r.json().then((body) => ({ ok: r.ok, body })))
       .then(({ ok, body }) => {
         if (!ok) {
-          message.error(body?.message ?? "Failed to update permission.");
+          message.error(body?.message ?? `Failed to update ${label}.`);
           return;
         }
-        patchUser(user.userId, { canEditMovies: checked });
+        patchUser(user.userId, { [patchKey]: checked });
       })
       .catch((error) => {
-        console.error("Error updating permission:", error);
-        message.error("Failed to update permission.");
-      })
-      .finally(() => setBusyUserId(null));
-  };
-
-  // Books access (the merge program's R5 gate). Same posture as the family album: this toggle is the only
-  // grant surface, and an administrator is not implicitly a Books member.
-  const toggleBooksAccess = (user, checked) => {
-    setBusyUserId(user.userId);
-    MovieAPI.adminSetUserSetting(user.userId, "BooksAccess", checked ? "true" : null)
-      .then((r) => r.json().then((body) => ({ ok: r.ok, body })))
-      .then(({ ok, body }) => {
-        if (!ok) {
-          message.error(body?.message ?? "Failed to update access.");
-          return;
-        }
-        patchUser(user.userId, { booksAccess: checked });
-      })
-      .catch((error) => {
-        console.error("Error updating books access:", error);
-        message.error("Failed to update access.");
-      })
-      .finally(() => setBusyUserId(null));
-  };
-
-  // Family photo album membership (photos-plan.md §2.1). This is the only surface that grants it —
-  // it is absent from the self-service settings allow-list — and it is deliberately separate from
-  // ADMIN: an administrator is not implicitly in the family photos.
-  const toggleFamilyAlbum = (user, checked) => {
-    setBusyUserId(user.userId);
-    MovieAPI.adminSetUserSetting(user.userId, "FamilyAlbum", checked ? "true" : null)
-      .then((r) => r.json().then((body) => ({ ok: r.ok, body })))
-      .then(({ ok, body }) => {
-        if (!ok) {
-          message.error(body?.message ?? "Failed to update access.");
-          return;
-        }
-        patchUser(user.userId, { familyAlbum: checked });
-      })
-      .catch((error) => {
-        console.error("Error updating family album access:", error);
-        message.error("Failed to update access.");
+        console.error(`Error updating ${label}:`, error);
+        message.error(`Failed to update ${label}.`);
       })
       .finally(() => setBusyUserId(null));
   };
 
   return (
-    <Modal
-      open={open}
-      onCancel={onClose}
-      footer={null}
-      width={720}
-      zIndex={SHEET_Z}
-      wrapClassName="sheet-modal user-settings-modal"
-      title={null}
-      closeIcon={<span className="settings-modal-close">×</span>}
-    >
+    <div className="adm-tab">
       <div className="settings-modal-content">
-        <h2 className="settings-modal-title">User Administration</h2>
-
         <Input
           className="admin-filter-input"
           placeholder="Filter users…"
@@ -223,15 +164,19 @@ function AdminModal({ open, onClose }) {
                       className="admin-editor-check"
                       checked={user.canEditMovies}
                       disabled={busy}
-                      onChange={(e) => toggleEditor(user, e.target.checked)}
+                      onChange={(e) => toggleSetting(user, "CanEditMovies", "canEditMovies", e.target.checked, "permission")}
                     >
                       Can edit
                     </Checkbox>
+                    {/* Family photo album membership (photos-plan.md §2.1). This is the only surface
+                        that grants it — it is absent from the self-service settings allow-list — and
+                        it is deliberately separate from ADMIN: an administrator is not implicitly in
+                        the family photos. Books access (R5) has the same posture. */}
                     <Checkbox
                       className="admin-editor-check"
                       checked={user.familyAlbum}
                       disabled={busy}
-                      onChange={(e) => toggleFamilyAlbum(user, e.target.checked)}
+                      onChange={(e) => toggleSetting(user, "FamilyAlbum", "familyAlbum", e.target.checked, "access")}
                     >
                       Family photos
                     </Checkbox>
@@ -239,7 +184,7 @@ function AdminModal({ open, onClose }) {
                       className="admin-editor-check"
                       checked={user.booksAccess}
                       disabled={busy}
-                      onChange={(e) => toggleBooksAccess(user, e.target.checked)}
+                      onChange={(e) => toggleSetting(user, "BooksAccess", "booksAccess", e.target.checked, "access")}
                     >
                       Books
                     </Checkbox>
@@ -278,8 +223,8 @@ function AdminModal({ open, onClose }) {
           <span className={`admin-badge admin-badge--${guardLine.tone}`}>GUARD</span> {guardLine.text}
         </p>
       </div>
-    </Modal>
+    </div>
   );
 }
 
-export default AdminModal;
+export default MoviesUsersTab;

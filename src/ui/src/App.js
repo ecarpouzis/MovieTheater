@@ -2,7 +2,7 @@ import { Layout, Spin } from "antd";
 import { MovieAPI } from "./MovieAPI";
 import { useState, useRef, Suspense } from "react";
 import { lazyWithReload as lazy } from "./lazyWithReload";
-import { BrowserRouter, Switch, Route } from "react-router-dom";
+import { BrowserRouter, Switch, Route, Redirect } from "react-router-dom";
 import NavBar from "./NavBar/NavBar";
 import SectionBar from "./catalog/bar/SectionBar";
 import PatchedArtifactAlarm from "./NavBar/PatchedArtifactAlarm";
@@ -11,6 +11,7 @@ import { useMovieSearch } from "./hooks/useMovieSearch";
 import { useTheme } from "./hooks/useTheme";
 import { MusicPlayerProvider } from "./Music/MusicPlayerContext";
 import { readStored, writeStored } from "./utils/storage";
+import { SITE_ADMIN_ALIASES } from "./admin/aliases";
 
 // Route-level code-splitting. The landing (Browse) and the nav shell stay in the main bundle; every
 // other page loads on demand, keeping its heavy deps out of the initial download — most notably
@@ -20,16 +21,12 @@ import { readStored, writeStored } from "./utils/storage";
 // blanking (see lazyWithReload.js).
 const BoardGames = lazy(() => import("./Pages/BoardGames/BoardGames"));
 const MoviePage = lazy(() => import("./Pages/MoviePage"));
-const InsertPage = lazy(() => import("./Pages/InsertPage"));
-const BatchInsertPage = lazy(() => import("./Pages/BatchInsertPage"));
-const BoardgameBatchInsertPage = lazy(() => import("./Pages/BoardGames/BoardgameBatchInsertPage"));
 const WatchPage = lazy(() => import("./Pages/Watch/WatchPage"));
 const TvPage = lazy(() => import("./Pages/Tv/TvPage"));
 const ChannelGuidePage = lazy(() => import("./Pages/Tv/ChannelGuidePage"));
 const ArcadePage = lazy(() => import("./Pages/Arcade/ArcadePage"));
 const ArcadeRoomPage = lazy(() => import("./Pages/Arcade/ArcadeRoomPage"));
 const WatchPartyPage = lazy(() => import("./Pages/Tv/WatchPartyPage"));
-const IngestReviewPage = lazy(() => import("./Pages/IngestReview/IngestReviewPage"));
 const RatePage = lazy(() => import("./Pages/Rate/RatePage"));
 const MusicPage = lazy(() => import("./Pages/Music/MusicPage"));
 const MusicNowPlayingPage = lazy(() => import("./Pages/Music/MusicNowPlayingPage"));
@@ -43,6 +40,14 @@ const MusicMseProbe = lazy(() => import("./Music/MusicMseProbe"));
 // on /API/Photos is — the page renders "family members only" when the server says so.
 const PhotosPage = lazy(() => import("./Pages/Photos/PhotosPage"));
 const BooksPage = lazy(() => import("./Pages/Books/BooksPage"));
+// One admin shell per section (R9 S6): `/<section>/admin?tab=`. The pages these wrap did not change
+// — they are tabs now instead of one-off routes and modals — and the old routes below redirect into
+// the tab that holds them, so every link anyone has kept still lands.
+const MoviesAdminPage = lazy(() => import("./Pages/Admin/MoviesAdminPage"));
+const TvAdminPage = lazy(() => import("./Pages/Tv/TvAdminPage"));
+const ArcadeAdminPage = lazy(() => import("./Pages/Arcade/ArcadeAdminPage"));
+const MusicAdminPage = lazy(() => import("./Pages/Music/MusicAdminPage"));
+const BoardgamesAdminPage = lazy(() => import("./Pages/BoardGames/BoardgamesAdminPage"));
 
 // readStored, not a bare getItem: these run at MODULE SCOPE, where a storage throw (Safari
 // private mode, storage disabled) used to be a white screen before a single component mounted.
@@ -189,21 +194,30 @@ function App() {
             <Route path="/arcade/room/:code" exact>
               <ArcadeRoomPage />
             </Route>
-            <Route path="/insert" exact>
-              <InsertPage />
-            </Route>
-            <Route path="/batchinsert" exact>
-              <BatchInsertPage />
-            </Route>
-            <Route path="/review-ingest" exact>
-              <IngestReviewPage userData={userData} />
+            {/* R9 S6 — the movie section's operator tools are tabs of one shell; the routes they
+                used to own redirect into their tab so old links, bookmarks and the sider's menu
+                keep landing. `/rate` is NOT one of them: it is a member surface. */}
+            <Route path="/movies/admin" exact>
+              <MoviesAdminPage userData={userData} setUserData={setUserData} />
             </Route>
             <Route path="/rate" exact>
               <RatePage userData={userData} setUserData={setUserData} />
             </Route>
-            <Route path="/boardgames/batchinsert" exact>
-              <BoardgameBatchInsertPage />
+            <Route path="/channels/admin" exact>
+              <TvAdminPage userData={userData} setUserData={setUserData} />
             </Route>
+            <Route path="/arcade/admin" exact>
+              <ArcadeAdminPage userData={userData} />
+            </Route>
+            <Route path="/music/admin" exact>
+              <MusicAdminPage userData={userData} />
+            </Route>
+            <Route path="/boardgames/admin" exact>
+              <BoardgamesAdminPage userData={userData} setUserData={setUserData} />
+            </Route>
+            {/* The routes those tools used to own (admin/aliases.js) — one Redirect each, so every
+                link anyone kept still lands in the tab that now holds it. */}
+            {SITE_ADMIN_ALIASES.map((a) => <Redirect key={a.from} exact from={a.from} to={a.to} />)}
             <Route path="/boardgames" exact>
               <BoardGames userData={userData} setUserData={setUserData} />
             </Route>

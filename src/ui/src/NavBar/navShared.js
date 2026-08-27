@@ -23,14 +23,10 @@ export const getPopupContainer = (trigger) => trigger.parentElement;
 
 // The user-panel-or-login block every rail opens with. Log Out is not here — it lives in the
 // shared navbar footer, below the theme toggle.
-export function NavUserBlock({ userData, onUserLoggedIn, setSettingsModalOpen, setAdminModalOpen }) {
+export function NavUserBlock({ userData, onUserLoggedIn, setSettingsModalOpen }) {
   return userData ? (
     <div className="user-panel">
-      <UserPanelHeader
-        userData={userData}
-        setSettingsModalOpen={setSettingsModalOpen}
-        setAdminModalOpen={setAdminModalOpen}
-      />
+      <UserPanelHeader userData={userData} setSettingsModalOpen={setSettingsModalOpen} />
     </div>
   ) : (
     <LoginForm onUserLoggedIn={onUserLoggedIn} />
