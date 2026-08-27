@@ -319,6 +319,42 @@
   .arcade-card { transition: none; }
 }
 
+/* The score chip pins to the CARD's own top-right corner, clear of the art. Without `position:
+   absolute` it becomes an ordinary flex item and opens a third column to the LEFT of the box art —
+   which is exactly how the lobby's card came out of R9 S3 (the rule was deleted with the retired
+   RecentlyPlayed strip). Restored verbatim. */
+.arcade-card__rating {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+  background: var(--rating-chip-bg);
+  border: 1px solid var(--rating-chip-border);
+  color: var(--rating-chip-text);
+  border-radius: 6px;
+  padding: 2px 7px;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+/* The details column. Everything in it is clamped or fixed-height (2-line title, one tag line, 4-line
+   summary, a one-line foot), so it tops out around 155px — under the art's 180px, and that is what lets
+   the art set a uniform card height for the whole grid. Add an unclamped row here and cards start
+   varying in height again, so anything new needs a bound.
+
+   `min-width: 0` is the load-bearing half: a flex item's default minimum is its CONTENT's, so without
+   it the chip row and the summary push the column past the card and spill over the neighbouring
+   track — the overflowing lobby card R9 S3 shipped. Restored verbatim. */
+.arcade-card__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
 /* The art column: the SAME fixed box on every card (GameCard's ART_W × COVER_H — see the reasoning
    there). Fixed width, so the details column beside it is the same width on every card whatever shape
    the box art turned out to be. Fixed height, taller than the details column can ever be, so the art

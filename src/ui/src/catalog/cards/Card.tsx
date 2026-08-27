@@ -12,6 +12,11 @@ import CardImage from "./CardImage";
  *
  * Hover effects are NOT applied here — the results root's `data-hover` and the shared hoverClass
  * decide them in one place (the view-drift rule).
+ *
+ * The root wears `bx-card--pkg` as well as `bx-card`: it is what tells the Grid's stylesheet that
+ * THIS is the package's own tile and its cover/meta may be sized off `--cell × --aspect`. A SECTION
+ * card (`CatalogSource.renderCard`) wears only `bx-card` — it brings its own geometry, and the
+ * package must never impose a 0.66 poster box on a square album cover (R9 S3 parity fix).
  */
 export interface CardProps {
   item: CardItem;
@@ -53,7 +58,7 @@ function CardInner({ item, cellH, uniformAspect, metadata, hoverMeta, hoverClass
   );
   return (
     <div
-      className={`bx-card${hoverClass ? ` ${hoverClass}` : ""}`}
+      className={`bx-card bx-card--pkg${hoverClass ? ` ${hoverClass}` : ""}`}
       style={{ "--aspect": aspect } as CSSProperties}
       data-kind={item.kind}
       onClick={() => onOpen(item)}

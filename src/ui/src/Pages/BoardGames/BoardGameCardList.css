@@ -38,7 +38,10 @@
   flex: 0 0 auto;
   box-shadow: none;
 }
-/* Box art is letterboxed, not cropped — one class more specific than `.bx-cover > img`. */
+/* Box art is letterboxed, not cropped — one class more specific than `.bx-cover > img`.
+   `object-position: center top` is the container's old `align-items: flex-start`: box art is wider
+   than it is tall, so `contain` leaves slack at the BOTTOM of the 0.7 box and centring it floated
+   every cover down the card. Top, as it always sat. */
 .boardgame-card-poster-container.bx-cover > .boardgame-card-poster-image,
 .boardgame-card-poster-container.bx-cover > .card-poster-placeholder {
   position: absolute;
@@ -47,6 +50,7 @@
   height: 100%;
   max-height: none;
   object-fit: contain;
+  object-position: center top;
 }
 
 /* BGG time + rating chips read as gold; players/complexity use the neutral outlined chip. */

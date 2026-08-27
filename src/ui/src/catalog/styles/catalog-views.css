@@ -152,8 +152,13 @@
 /* ── Grid ───────────────────────────────────────────────────────────────── */
 .bx-grid { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 24px 12px; padding: 4px 0; }
 .bx-grid .bx-card { display: flex; flex-direction: column; flex: 0 0 auto; }
-.bx-grid .bx-card > .bx-cover { height: var(--cell, 220px); width: calc(var(--cell, 220px) * var(--aspect, .66)); }
-.bx-grid .bx-card .bx-meta { width: calc(var(--cell, 220px) * var(--aspect, .66)); min-width: 120px; }
+/* `--pkg`, not a bare `.bx-card`: a SECTION card (renderCard) brings its OWN cover geometry — Music's
+   square album art, Arcade's fixed 140x180 art column, the movie/boardgame letterboxed poster box —
+   and this rule beat every one of them on specificity (`.music-cover` is one class, this is three).
+   That is how the album grid ended up cropping square covers into 0.66 portrait tiles. The package's
+   own Card sets these two boxes INLINE anyway, so scoping loses nothing and closes the hole. */
+.bx-grid .bx-card--pkg > .bx-cover { height: var(--cell, 220px); width: calc(var(--cell, 220px) * var(--aspect, .66)); }
+.bx-grid .bx-card--pkg .bx-meta { width: calc(var(--cell, 220px) * var(--aspect, .66)); min-width: 120px; }
 
 /* ── Wall ───────────────────────────────────────────────────────────────── */
 .bx-wall { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0; }
