@@ -123,6 +123,11 @@ section under every backdrop; a source sets `shelvesSkin: "plain"` for bare plan
   (Type · Genre · MPA as one pill row · Years as the bare two-thumb range · Franchise · People
   (typeahead via `/API/BrowsePeople`) · mood/subgenre/era/theme/setting · Seen/Want/Rated flags;
   counts from `/API/BrowseFacets`, keyed on the Type scope).
+- **`clientFacets.ts`** — the client twin of the server's `BrowseFilter` for sections whose list is
+  already in the browser (Boardgames, Music, Arcade): `applyFacetState(items, state, extractors)`
+  (ALL included values per facet by default, `anyOf` opts a facet into ANY; excludes NOT; facets AND;
+  `q` substring; year range; the section's flag tests) and `countClientFacets(items, extractors)`
+  (the rail's option rows, most-common first). The S2c sections mount their specs over it.
 - Never host the filters inside NavBar's phone drawer: it closes on every `location.search` change.
 
 ## The Explore kit (`catalog/explore/`)
