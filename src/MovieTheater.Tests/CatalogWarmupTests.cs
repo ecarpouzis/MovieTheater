@@ -190,10 +190,34 @@ namespace MovieTheater.Tests
         public void The_default_warm_plan_is_bounded_and_never_includes_misc()
         {
             var targets = CatalogWarmupTargets.Default();
-            Assert.InRange(targets.Count, 1, 24);
+            Assert.InRange(targets.Count, 1, 32);
             Assert.All(targets, t => Assert.DoesNotContain(NormalizedTitleType.Misc, t.TypeScope));
             Assert.Equal(2, targets.Count(t => t.IsFacets));
             Assert.Contains(targets, t => t.GroupBy == "franchise");
+        }
+
+        [Fact]
+        public void The_warm_plan_covers_the_new_cheap_axes_and_never_the_users_own_lists()
+        {
+            var targets = CatalogWarmupTargets.Default();
+            var axes = targets.Where(t => !t.IsFacets).Select(t => t.GroupBy).Distinct().ToList();
+
+            // R9 S8: the axes the Group pill offers that depend on nothing but the age gate.
+            foreach (var by in new[] { "genre", "decade", "franchise", "type", "mpa", "director", "subgenre", "mood", "era", "setting" })
+                Assert.Contains(by, axes);
+
+            // `my` reads the CALLER's own lists — there is no shared entry to warm, and a warm that
+            // wrote one would hand one viewer another viewer's Seen shelf.
+            Assert.DoesNotContain("my", axes);
+            Assert.All(targets.Where(t => !t.IsFacets), t => Assert.False(BrowseGroups.IsUserDependent(t.GroupBy!)));
+
+            // The core three warm every scope; the rest skip the Series-only copy to keep the byte
+            // budget honest (they build on first ask instead).
+            var series = new[] { NormalizedTitleType.Series };
+            foreach (var by in CatalogWarmupTargets.CoreAxes)
+                Assert.Contains(targets, t => t.GroupBy == by && t.TypeScope.SequenceEqual(series));
+            foreach (var by in CatalogWarmupTargets.WideAxes)
+                Assert.DoesNotContain(targets, t => t.GroupBy == by && t.TypeScope.SequenceEqual(series));
         }
     }
 }

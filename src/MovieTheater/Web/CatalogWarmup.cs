@@ -103,6 +103,20 @@ namespace MovieTheater.Web
 
     public static class CatalogWarmupTargets
     {
+        /// <summary>The three axes worth a warm in EVERY Type scope — the ones the pill opens on.</summary>
+        public static readonly IReadOnlyList<string> CoreAxes = new[] { "genre", "decade", "franchise" };
+
+        /// <summary>
+        /// The rest of the user-independent axes the Group pill offers (R9 S8). They warm over the two
+        /// scopes that carry the traffic — the landing (`f=type:Movies`) and the combined one — rather
+        /// than all three, because the cache is byte-BUDGETED (200 MB, `Startup`) and an index costs
+        /// roughly one row per (title, group): a per-scope copy of ten axes would spend a third of the
+        /// budget on shelves nobody opened. The Series-only copies of these axes are built on first ask.
+        /// `my` is absent by construction: it reads the caller's own lists, so there is no shared entry
+        /// to warm (`BrowseGroups.IsUserDependent`).
+        /// </summary>
+        public static readonly IReadOnlyList<string> WideAxes = new[] { "type", "mpa", "director", "subgenre", "mood", "era", "setting" };
+
         /// <summary>
         /// What the pods warm, in the order the SPA asks for it: the landing's Type scope first
         /// (`f=type:Movies` is the seeded default), then Series, then the combined scope.
@@ -120,10 +134,15 @@ namespace MovieTheater.Web
                 new("facets:Movies", movies, null),
                 new("facets:Series", series, null),
             };
-            foreach (var by in new[] { "genre", "decade", "franchise" })
+            foreach (var by in CoreAxes)
             {
                 list.Add(new WarmTarget($"groups:Movies:{by}", movies, by));
                 list.Add(new WarmTarget($"groups:Series:{by}", series, by));
+                list.Add(new WarmTarget($"groups:Movies,Series:{by}", both, by));
+            }
+            foreach (var by in WideAxes)
+            {
+                list.Add(new WarmTarget($"groups:Movies:{by}", movies, by));
                 list.Add(new WarmTarget($"groups:Movies,Series:{by}", both, by));
             }
             return list;

@@ -68,6 +68,10 @@ namespace MovieTheater.Controllers
         /// <c>sort</c>/<c>seed</c> (the order INSIDE each group) — plus the two-phase paging:
         /// <c>groupsSkip/groupsTop</c> over the heads, <c>perGroupSkip/perGroupTop</c> within each.
         /// <c>singleGroupKey</c> serves "more of this group" (a band of exactly that group).
+        ///
+        /// <c>groupBy</c> takes the axis set <see cref="BrowseGroups.NormalizeGroupBy"/> defines (R9 S8):
+        /// genre · decade · franchise · type · director · mpa · the AI tag categories · my. An unknown
+        /// value — including the retired <c>letter</c> — falls back to genre.
         /// </summary>
         [HttpGet("/API/BrowseGroups")]
         public async Task<IActionResult> BrowseGroupsAsync(
@@ -150,8 +154,12 @@ namespace MovieTheater.Controllers
             public bool UserDependent { get; init; }
             public bool Filtered { get; init; }
 
+            /// <summary>
+            /// The axis is part of the identity, and it can also MAKE the scope user-dependent: the `my`
+            /// axis reads the caller's own lists even when the filter does not (`BrowseGroups.IsUserDependent`).
+            /// </summary>
             public string CacheKey(string groupBy) =>
-                BrowseCacheKeys.Groups(UserId, Age, TypeScope, Mode, Value, FilterSig, UserDependent, groupBy);
+                BrowseCacheKeys.Groups(UserId, Age, TypeScope, Mode, Value, FilterSig, UserDependent || BrowseGroups.IsUserDependent(groupBy), groupBy);
         }
 
         /// <summary>The same scope the flat endpoints page: quarantine + series exclusion + age gate (the base queries), the filter mode, the Type scope; misc joins when the scope includes it.</summary>
@@ -197,7 +205,7 @@ namespace MovieTheater.Controllers
             var cached = await memoryCache.GetOrCreateAsync(key, async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = scope.Filtered ? GroupIndexTtlFiltered : GroupIndexTtlUnfiltered;
-                var index = await BrowseGroups.BuildIndexAsync(movieDb, scope.Movies, scope.Series, scope.Misc, by, ct);
+                var index = await BrowseGroups.BuildIndexAsync(movieDb, scope.Movies, scope.Series, scope.Misc, by, scope.UserId, ct);
                 // The site's cache is byte-budgeted (Startup: 200 MB SizeLimit) — every entry must state a size.
                 entry.Size = index.ApproxBytes;
                 return index;

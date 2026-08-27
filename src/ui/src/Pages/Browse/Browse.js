@@ -105,6 +105,8 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
         d.include[patch.facet.key] = [...(d.include[patch.facet.key] ?? []), patch.facet.value];
       }
       if (patch.years) { d.yearMin = patch.years[0]; d.yearMax = patch.years[1]; }
+      // "My lists" is a FLAG, not a facet value — the same `my=` the sider's index rows write.
+      if (patch.flag) d.flags[patch.flag] = true;
     }, patch.group ? { group: patch.group } : undefined);
   };
 
@@ -369,18 +371,23 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
   // the search alone.
   const openRef = useRef(null);
   const browseRef = useRef(null);
+  const signedIn = !!userData;
   openRef.current = handleOpenMovie;
   browseRef.current = handleBrowseSearch;
   const serverSource = useMemo(
     () => (sparseInfinite
       ? createMoviesSource({
           search,
+          // "By my lists" is only a shelf for a reader who HAS lists.
+          signedIn,
           onOpen: (id, kind) => openRef.current?.(id, kind),
           onBrowse: (mode, value) => browseRef.current?.(mode, value),
           onScope: (patch) => scopeRef.current?.(patch),
         })
       : null),
-    [sparseInfinite, search]
+    // `signedIn` is a BOOLEAN on purpose: depending on `userData` itself would rebuild the source on
+    // every Seen/Want toggle (that object is replaced each time) and drop the reader's bands.
+    [sparseInfinite, search, signedIn]
   );
   const listSource = useMemo(
     () => (serverSource

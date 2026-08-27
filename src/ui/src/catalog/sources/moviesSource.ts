@@ -68,15 +68,50 @@ export const MOVIE_SORTS: SortSpec[] = [
   { value: "popcorn", label: "Popcornmeter" },
 ];
 
-/** `/API/BrowseGroups?groupBy=` values. */
+/**
+ * `/API/BrowseGroups?groupBy=` values — the audited axis set (R9 S8). `letter` is GONE: the A–Z strip
+ * is the letter axis, and a shelf per letter was the same index drawn twice.
+ *
+ * Every axis here has a matching facet, so a group header can scope in place (`onOpenGroup` below):
+ * type/genre/franchise/mpa are their own facets, director drills into `person`, the four AI tag axes
+ * into their own tokens, decade into the year range, and "my lists" into the rail's flags.
+ */
 export const MOVIE_GROUPS: GroupSpec[] = [
   { value: "genre", label: "Genre" },
   { value: "decade", label: "Decade" },
   { value: "franchise", label: "Franchise" },
+  { value: "type", label: "Type" },
+  { value: "director", label: "Director" },
+  { value: "mpa", label: "MPA rating" },
+  { value: "subgenre", label: "Subgenre" },
+  { value: "mood", label: "Mood" },
+  { value: "era", label: "Era" },
+  { value: "setting", label: "Setting" },
+  { value: "my", label: "My lists" },
 ];
 
-/** Which browse mode a group header opens (`?mode=&value=`); decades have no browse of their own. */
-const GROUP_BROWSE_MODE: Record<string, string> = { genre: "genre", franchise: "franchise", letter: "letter" };
+const GROUP_LABELS: Record<string, string> = Object.fromEntries(MOVIE_GROUPS.map((g) => [g.value, g.label]));
+
+/**
+ * Which FACET a group header adds when it scopes in place. `decade` is a year range and `my` is a
+ * rail flag, so both are handled on their own below; `director` narrows the People facet, which is
+ * the one the rail actually offers (there is no director-only facet — `BrowseFilter` matches a person
+ * across every credit role).
+ */
+const GROUP_FACET: Record<string, string> = {
+  genre: "genre",
+  franchise: "franchise",
+  type: "type",
+  mpa: "mpa",
+  director: "person",
+  subgenre: "subgenre",
+  mood: "mood",
+  era: "era",
+  setting: "setting",
+};
+
+/** Which browse mode a group header opens on a page with no rail (`?mode=&value=`). */
+const GROUP_BROWSE_MODE: Record<string, string> = { genre: "genre", franchise: "franchise", director: "actor", mpa: "rating" };
 
 export const POSTER_ASPECT = 0.667;
 /** Matches the server default in `GetMoviesByType` and the grid's own page size. */
@@ -203,23 +238,40 @@ async function getJson<T>(url: string, signal?: AbortSignal): Promise<T> {
   return (await r.json()) as T;
 }
 
-function toGroup(g: GroupRow): CardGroup {
+function toGroup(g: GroupRow, groupBy: string): CardGroup {
   const items = (g.items ?? []).map((row) => ({ ...toCard(row), groupKey: g.key }));
-  return { key: g.key, label: g.label, totalItems: g.totalItems, renderTotal: g.renderTotal ?? g.totalItems, items };
+  // The Newspaper's eyebrow. The movie endpoints carry no per-group prose (no synopsis, no byline),
+  // so the honest detail is what KIND of shelf this is — never an invented sentence.
+  const kicker = GROUP_LABELS[groupBy];
+  return {
+    key: g.key,
+    label: g.label,
+    totalItems: g.totalItems,
+    renderTotal: g.renderTotal ?? g.totalItems,
+    items,
+    detail: kicker ? { kicker } : undefined,
+  };
+}
+
+/** The axes on offer for this reader: "my lists" needs a reader with lists (a control that does not apply is REMOVED). */
+export function movieGroupsFor(signedIn: boolean): GroupSpec[] {
+  return signedIn ? MOVIE_GROUPS : MOVIE_GROUPS.filter((g) => g.value !== "my");
 }
 
 export interface MoviesSourceOptions {
   search: MovieSearch;
+  /** A signed-in reader — the only one whose Seen / Want / Rated shelves exist. */
+  signedIn?: boolean;
   /** Open the detail modal (`?title=<kind>:<id>`). */
   onOpen: (id: number, kind: CardKind) => void;
   /** Jump to a browse (`?mode=&value=`) — a group header's click when the page has no facet rail. */
   onBrowse: (mode: string, value: string) => void;
-  /** Scope in place (R9 S2): a group header adds its facet (or year range) and regroups a level — one push. */
-  onScope?: (patch: { facet?: { key: string; value: string }; years?: [number, number]; group?: string }) => void;
+  /** Scope in place (R9 S2): a group header adds its facet (or year range, or `my` flag) and regroups a level — one push. */
+  onScope?: (patch: { facet?: { key: string; value: string }; years?: [number, number]; flag?: string; group?: string }) => void;
 }
 
 /** Null when the search has no catalog scope (see `scopeOf`); the page then keeps its existing renderer. */
-export function createMoviesSource({ search, onOpen, onBrowse, onScope }: MoviesSourceOptions): CatalogSource | null {
+export function createMoviesSource({ search, signedIn, onOpen, onBrowse, onScope }: MoviesSourceOptions): CatalogSource | null {
   const scope = scopeOf(search);
   if (!scope || !search.url) return null;
   const base = search.url;
@@ -244,7 +296,7 @@ export function createMoviesSource({ search, onOpen, onBrowse, onScope }: Movies
   const fetchGroupMore = async (groupKey: string, skip: number, top: number, groupBy: string, _sort: string, signal?: AbortSignal): Promise<CardPage> => {
     const data = await getJson<{ groups?: GroupRow[] }>(`/API/BrowseGroups?${scoped({ groupBy, singleGroupKey: groupKey, perGroupSkip: skip, perGroupTop: top }, true)}`, signal);
     const g = data.groups?.[0];
-    return g ? { items: toGroup(g).items, total: g.totalItems } : { items: [], total: 0 };
+    return g ? { items: toGroup(g, groupBy).items, total: g.totalItems } : { items: [], total: 0 };
   };
 
   const groupable = scope.groupable;
@@ -280,7 +332,7 @@ export function createMoviesSource({ search, onOpen, onBrowse, onScope }: Movies
     groupNoun: "groups",
     itemNoun: "title",
     supports: groupable ? ALL_VIEWS : FLAT_ONLY_VIEWS,
-    groups: groupable ? MOVIE_GROUPS : [],
+    groups: groupable ? movieGroupsFor(!!signedIn) : [],
     sorts: MOVIE_SORTS,
     currentSort: scope.sort,
     itemsModes: groupable ? ["items", "groups"] : undefined,
@@ -300,7 +352,7 @@ export function createMoviesSource({ search, onOpen, onBrowse, onScope }: Movies
     fetchGroupBand: groupable
       ? async (groupsSkip, groupsTop, perGroupTop, groupBy, _sort, signal): Promise<GroupPage> => {
           const data = await getJson<{ totalGroups: number; groups: GroupRow[] }>(`/API/BrowseGroups?${scoped({ groupBy, groupsSkip, groupsTop, perGroupTop }, true)}`, signal);
-          return { groups: (data.groups ?? []).map(toGroup), totalGroups: data.totalGroups ?? 0 };
+          return { groups: (data.groups ?? []).map((g) => toGroup(g, groupBy)), totalGroups: data.totalGroups ?? 0 };
         }
       : undefined,
     fetchGroupMore: groupable ? fetchGroupMore : undefined,
@@ -314,12 +366,17 @@ export function createMoviesSource({ search, onOpen, onBrowse, onScope }: Movies
     onOpenGroup: groupable
       ? (group, groupBy) => {
           if (onScope) {
-            if (groupBy === "genre") return onScope({ facet: { key: "genre", value: group.key }, group: "decade" });
-            if (groupBy === "franchise") return onScope({ facet: { key: "franchise", value: group.key }, group: "genre" });
+            // Every axis drills: it adds its own facet and drops the grouping a level, one push.
+            // Genre regroups by decade (the only pair where "the same axis again" would be useless);
+            // everything else lands on the section's default axis.
             if (groupBy === "decade") {
               const d = parseInt(group.key, 10);
               if (Number.isFinite(d)) return onScope({ years: [d, d + 9], group: "genre" });
             }
+            // "My lists" is a rail FLAG (`my=seen`), not a facet value.
+            if (groupBy === "my") return onScope({ flag: group.key, group: "genre" });
+            const facet = GROUP_FACET[groupBy];
+            if (facet) return onScope({ facet: { key: facet, value: group.key }, group: groupBy === "genre" ? "decade" : "genre" });
           }
           const mode = GROUP_BROWSE_MODE[groupBy];
           if (mode) onBrowse(mode, group.key);

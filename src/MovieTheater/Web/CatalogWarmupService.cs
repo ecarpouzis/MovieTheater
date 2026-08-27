@@ -145,8 +145,10 @@ namespace MovieTheater.Web
             var groupKey = BrowseCacheKeys.Groups(null, UnrestrictedAge, target.TypeScope, null, null,
                 BrowseFilter.Empty.Sig, userDependent: false, groupBy: target.GroupBy!);
             if (cache.TryGetValue(groupKey, out _)) return "already warm";
+            // No user id: the warmer only ever builds the SHARED axes (`BrowseGroups.IsUserDependent`
+            // is false for every one of them), so no viewer's own lists can leak into a shared entry.
             var index = await BrowseGroups.BuildIndexAsync(db, scoped.Movies, scoped.Series,
-                Array.Empty<BrowseGroups.MiscLight>(), target.GroupBy!, ct);
+                Array.Empty<BrowseGroups.MiscLight>(), target.GroupBy!, userId: null, ct);
             cache.Set(groupKey, index, new MemoryCacheEntryOptions
             {
                 AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(6),

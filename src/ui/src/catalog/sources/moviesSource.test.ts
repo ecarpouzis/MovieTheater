@@ -1,4 +1,4 @@
-import { createMoviesSource, hueOf, scopeOf, toCard, withPage } from "./moviesSource";
+import { MOVIE_GROUPS, createMoviesSource, hueOf, movieGroupsFor, scopeOf, toCard, withPage } from "./moviesSource";
 
 const row = (id: number, extra: Record<string, unknown> = {}) => ({ id, kind: "movie", title: `Title ${id}`, simpleTitle: `title ${id}`, releaseDate: "1994-10-14T00:00:00", imdbRating: 8.7, rtTomatometer: 92, rating: "R", posterVersion: 3, ...extra });
 
@@ -110,6 +110,50 @@ describe("catalog/moviesSource — paging", () => {
     const page = await source.directory!.items("alien", 0, 500);
     expect(page).toMatchObject({ total: 6 });
     expect(page.items[0].key).toBe("movie:5");
+  });
+
+  it("offers the audited axis set — no letter, and my-lists only for a signed-in reader (R9 S8)", () => {
+    const values = MOVIE_GROUPS.map((g) => g.value);
+    expect(values).toEqual(["genre", "decade", "franchise", "type", "director", "mpa", "subgenre", "mood", "era", "setting", "my"]);
+    // The letter axis was retired: the A–Z strip is the letter axis.
+    expect(values).not.toContain("letter");
+    expect(movieGroupsFor(false).map((g) => g.value)).not.toContain("my");
+    expect(movieGroupsFor(true).map((g) => g.value)).toContain("my");
+
+    const source = createMoviesSource({ search, signedIn: true, onOpen: vi.fn(), onBrowse: vi.fn() })!;
+    expect(source.groups.map((g) => g.value)).toEqual(values);
+    expect(createMoviesSource({ search, onOpen: vi.fn(), onBrowse: vi.fn() })!.groups.map((g) => g.value)).not.toContain("my");
+  });
+
+  it("every axis header scopes in place: its own facet, the year range, or the `my` flag", () => {
+    const onScope = vi.fn();
+    const source = createMoviesSource({ search, signedIn: true, onOpen: vi.fn(), onBrowse: vi.fn(), onScope })!;
+    const g = (key: string) => ({ key, label: key, totalItems: 1, renderTotal: 1, items: [] });
+
+    source.onOpenGroup!(g("Action"), "genre");
+    expect(onScope).toHaveBeenLastCalledWith({ facet: { key: "genre", value: "Action" }, group: "decade" });
+    source.onOpenGroup!(g("Series"), "type");
+    expect(onScope).toHaveBeenLastCalledWith({ facet: { key: "type", value: "Series" }, group: "genre" });
+    // A director shelf drills into the PEOPLE facet — the rail has no director-only facet.
+    source.onOpenGroup!(g("Stanley Kubrick"), "director");
+    expect(onScope).toHaveBeenLastCalledWith({ facet: { key: "person", value: "Stanley Kubrick" }, group: "genre" });
+    source.onOpenGroup!(g("4"), "mpa");
+    expect(onScope).toHaveBeenLastCalledWith({ facet: { key: "mpa", value: "4" }, group: "genre" });
+    source.onOpenGroup!(g("cozy"), "mood");
+    expect(onScope).toHaveBeenLastCalledWith({ facet: { key: "mood", value: "cozy" }, group: "genre" });
+    source.onOpenGroup!(g("neo-noir"), "subgenre");
+    expect(onScope).toHaveBeenLastCalledWith({ facet: { key: "subgenre", value: "neo-noir" }, group: "genre" });
+    source.onOpenGroup!(g("1990"), "decade");
+    expect(onScope).toHaveBeenLastCalledWith({ years: [1990, 1999], group: "genre" });
+    source.onOpenGroup!(g("seen"), "my");
+    expect(onScope).toHaveBeenLastCalledWith({ flag: "seen", group: "genre" });
+  });
+
+  it("tags a group with the axis it came from, so the Newspaper's eyebrow is never invented", async () => {
+    mockFetch(() => ({ totalGroups: 1, groups: [{ key: "cozy", label: "Cozy", totalItems: 2, items: [row(1)] }] }));
+    const source = createMoviesSource({ search, onOpen: vi.fn(), onBrowse: vi.fn() })!;
+    const band = await source.fetchGroupBand!(0, 20, 48, "mood", "alpha");
+    expect(band.groups[0].detail).toEqual({ kicker: "Mood" });
   });
 
   it("a flat-only scope offers no grouped views, groups or directory", () => {
