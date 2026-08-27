@@ -89,9 +89,36 @@
 .music-album-grid,
 .music-artist-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  /* R9 S3: these two ARE the catalog Grid's wrap now (`CatalogSource.gridClass`). The track width
+     is the cover-size tweak — `--cell` is set on the wrap by FlatCardStream — so the size slider
+     moves a music tile like any other card. `min(100%, …)` keeps a huge cell from overflowing a
+     phone. */
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--cell, 150px)), 1fr));
+  align-items: start;
   gap: 14px;
 }
+
+/* The engine's lead/tail spacers and its band skeletons are row-breaking blocks: in a column grid
+   they have to span every track. */
+.music-album-grid > .bx-band-spacer,
+.music-artist-grid > .bx-band-spacer,
+.music-album-grid > .bx-skel-band,
+.music-artist-grid > .bx-skel-band { grid-column: 1 / -1; }
+.music-album-grid > .bx-skel-band,
+.music-artist-grid > .bx-skel-band { gap: 14px; }
+.music-album-grid .bx-skel-card .bx-cover,
+.music-artist-grid .bx-skel-card .bx-cover { width: 100% !important; aspect-ratio: 1; height: auto !important; }
+
+/* The square art box: `bx-cover` is what the Hover / Rounded tweaks select, and the tile inside
+   fills it. */
+.music-cover {
+  display: block;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+}
+.music-cover > .music-album-tile { width: 100%; height: 100%; }
 
 .music-album-card,
 .music-artist-card {
@@ -108,10 +135,11 @@
   gap: 6px;
 }
 
+/* The lift is the HOVER TWEAK's job now (`.bx-hover-*` on the cover, set once by the host), so
+   "Hover: None" really means none. The card keeps its own shadow response. */
 .music-album-card:hover,
 .music-artist-card:hover {
   box-shadow: var(--card-shadow-hover);
-  transform: translateY(-2px);
 }
 
 .music-album-tile {

@@ -2,9 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import { MovieAPI } from "../../MovieAPI";
 import { useMusicPlayer } from "../../Music/MusicPlayerContext";
-import MusicAlbumArt from "../../Music/MusicAlbumArt";
-import CatalogPager, { bucketsFor } from "../../Components/CatalogPager";
-import useGridWindow from "../../hooks/useGridWindow";
+import { AlbumCard, ArtistCard } from "./MusicCards";
 import MusicAlbumModal from "./MusicAlbumModal";
 import LoadFailure from "../../Components/LoadFailure";
 import MusicPlaylistPickerModal from "./MusicPlaylistPickerModal";
@@ -20,8 +18,9 @@ import { facetStateKey } from "../../catalog/rail/facetUrl";
 import useSectionRail from "../../catalog/rail/useSectionRail";
 import sectionRailSurfaces from "../../catalog/rail/sectionRailSurfaces";
 import useRailSheet from "../../catalog/rail/useRailSheet";
-import { createMusicSource, letterKeyFor, sortRows } from "../../catalog/sources/musicSource";
+import { createMusicSource } from "../../catalog/sources/musicSource";
 import { readCatalogDefaults, resolveViewState } from "../../catalog/state/useCatalogView";
+import { FLAT_VIEWS } from "../../catalog/types";
 import { MUSIC_KINDS, legacyToMusicSearch, shelfOf } from "./musicFacetSpec";
 import useMusicBrowse, { MUSIC_ENTITY_PARAMS, useMusicResults } from "./useMusicShelf";
 
@@ -36,64 +35,22 @@ import useMusicBrowse, { MUSIC_ENTITY_PARAMS, useMusicResults } from "./useMusic
 // "One per artist" is the DEFAULT Items mode — the shelf people browse by is the performer, not the album.
 //
 // ── The grid: the WHOLE list, always ────────────────────────────────────────
-// The catalog is already in the browser, so the rendered list is simply all of it and useGridWindow
-// mounts only the rows near the viewport (the rest is reserved by two spacers). There is no paging
-// here, and deliberately no `startIndex`.
+// The catalog is already in the browser, so the rendered list is simply all of it, paged into the
+// site's ONE band engine (R9 S3) — which mounts only the rows near the viewport and holds the rest
+// of the height in two spacers. There is no paging here, and deliberately no `startIndex`.
 //
 // There used to be. A letter jump re-anchored the rendered slice at that letter's offset, which is
 // what made "tap J and you cannot scroll up into A–I" (reported 2026-08-13): the earlier artists had
 // stopped existing, so there was nothing above to scroll to. Re-anchoring bought nothing the
 // windowing wasn't already giving — the only reason it existed is that the arcade, which shares this
 // pager, genuinely cannot render pages it has not fetched. Music can, so a jump is now what it
-// always looked like: a SCROLL into a list that stays whole (useGridWindow's scrollToIndex).
-
-const PAGE_STEP = 120; // only the pager's page-mode arithmetic; the letters mode ignores it
-const NO_ITEMS = [];
+// always looked like: a SCROLL into a list that stays whole (the engine's `jumpToUnit`).
 
 // The shelves (MusicArtist.Kind). No ?kind= is the music library — the untagged rows, which is 771
 // of 813 artists — and the two named shelves are where the spoken-word material lives instead of in
 // the middle of it. Kept as a list rather than three branches so the rail and the headings read off
 // the same table and can't disagree about what a shelf is called.
 export { MUSIC_KINDS };
-
-function AlbumCard({ album, onOpen }) {
-  return (
-    <button className="music-album-card" onClick={() => onOpen(album.id)}>
-      <MusicAlbumArt
-        albumId={album.id}
-        hasArt={album.hasArt}
-        title={album.title}
-        dominantColor={album.dominantColor}
-      />
-      <div className="music-album-card-title" title={album.title}>{album.title}</div>
-      <div className="music-album-card-sub">
-        <span className="music-album-card-artist" title={album.artistName}>{album.artistName}</span>
-        {album.year != null && <span className="music-album-card-year">{album.year}</span>}
-      </div>
-      {album.tag && <div className="music-album-card-tag">{album.tag}</div>}
-    </button>
-  );
-}
-
-/** An artist wears their first album's cover (see /API/Music/Artists) — initials tile when none has art. */
-function ArtistCard({ artist, onOpen }) {
-  return (
-    <button className="music-artist-card" onClick={() => onOpen(artist.id)}>
-      <MusicAlbumArt
-        albumId={artist.artAlbumId}
-        hasArt={artist.hasArt}
-        title={artist.name}
-        dominantColor={artist.dominantColor}
-      />
-      <div className="music-artist-card-name" title={artist.name}>{artist.name}</div>
-      <div className="music-artist-card-sub">
-        {artist.yearRange && <span>{artist.yearRange}</span>}
-        <span>{artist.albumCount} album{artist.albumCount === 1 ? "" : "s"}</span>
-        <span>{artist.trackCount} track{artist.trackCount === 1 ? "" : "s"}</span>
-      </div>
-    </button>
-  );
-}
 
 function MusicPage({ userData }) {
   const history = useHistory();
@@ -230,58 +187,43 @@ function MusicPage({ userData }) {
   const drilledIn = Number.isInteger(artistParam);
   const listKey = `${kind}:${facetStateKey(facetState)}`;
 
-  // The catalog views (Wall / List / Extended / Shelves / Newspaper / Directory) over the SAME list
-  // the grid shows, one source per tab; the grid itself stays this page's (the host's `grid`
-  // override). The open handlers are read through a ref so a fresh setParam never rebuilds the source.
+  // ── The catalog (R9 S3: ONE engine under every view) ──────────────────────────────────────────
+  // The open handlers are read through a ref so a fresh setParam never rebuilds the source.
   const openRef = useRef(null);
   openRef.current = { album: setOpenAlbumId, artist: (id) => setParam("artist", id) };
-  const source = useMemo(
-    () => createMusicSource({
-      albums: filteredAlbums,
-      listKey,
-      onOpenAlbum: (id) => openRef.current?.album(id),
-      onOpenArtist: (id) => openRef.current?.artist(id),
-    }),
-    [filteredAlbums, listKey]
-  );
-  // The catalog owns the sort AND the Items mode here: resolve them exactly as the host will — URL,
-  // then the section's remembered default — so the grid and the views agree. "One per artist" is
-  // this page's artist grid; "every album" its album grid.
+  const openAlbum = useCallback((id) => openRef.current?.album(id), []);
+  const openArtist = useCallback((id) => openRef.current?.artist(id), []);
+  // The Grid lays THIS section's tiles into the shared bands. AlbumCard / ArtistCard are
+  // MODULE-LEVEL components (the BandSlot memo law); this renderer's identity never changes, because
+  // everything it varies on rides in the card item and the tweak values.
+  const renderCard = useCallback((item, view) => (item.kind === "artist" ? (
+    <ArtistCard artist={item.raw} onOpen={openArtist} metadata={view.metadata} hoverClass={view.hoverClass} eager={view.eager} />
+  ) : (
+    <AlbumCard album={item.raw} onOpen={openAlbum} metadata={view.metadata} hoverClass={view.hoverClass} eager={view.eager} />
+  )), [openAlbum, openArtist]);
+
+  const makeSource = useCallback((artistItems) => createMusicSource({
+    albums: filteredAlbums,
+    artists: filteredArtists,
+    artistItems,
+    listKey,
+    renderCard,
+    onOpenAlbum: openAlbum,
+    onOpenArtist: openArtist,
+  }), [filteredAlbums, filteredArtists, listKey, renderCard, openAlbum, openArtist]);
+
+  // The catalog owns the sort AND the Items mode here, so the page resolves them exactly as the host
+  // will — URL, then the section's remembered default. "One per artist" over a FLAT view pages the
+  // ARTIST rows themselves rather than collapsing album groups to representatives: an artist with
+  // only loose tracks, or one the Artist facet keeps while their albums are filtered out, has no
+  // album to be represented by. The grouped views always band the albums.
+  const albumSource = useMemo(() => makeSource(false), [makeSource]);
   const catalogState = useMemo(
-    () => resolveViewState(location.search, readCatalogDefaults("music"), source, AVAILABLE_VIEWS),
-    [location.search, source]
+    () => resolveViewState(location.search, readCatalogDefaults("music"), albumSource, AVAILABLE_VIEWS),
+    [location.search, albumSource]
   );
-  const catalogSort = catalogState.sort;
-  const view = catalogState.items === "groups" ? "artists" : "albums";
-  const gridItems = useMemo(
-    () => (drilledIn ? NO_ITEMS : sortRows(view === "artists" ? filteredArtists : filteredAlbums, view, catalogSort)),
-    [drilledIn, view, filteredArtists, filteredAlbums, catalogSort]
-  );
-
-  // The whole list, every time. `resetKey` names what makes it a DIFFERENT list — a shelf, the items
-  // mode, a search or a sort — and pointedly not a jump, because a jump does not change the list at all any more.
-  const { hostRef, gridRef, start, end, padTop, padBottom, visibleStart, scrollToIndex } =
-    useGridWindow(gridItems.length, { resetKey: `${listKey}:${view}:${catalogSort}` });
-  const visibleItems = useMemo(
-    () => gridItems.slice(start, end),
-    [gridItems, start, end]
-  );
-
-  // A–Z buckets over the list in ITS order: by the artist's sort name under the default album order
-  // (that's what /API/Music/Albums orders on — "Beatles, The" under B), by title under the title
-  // sort, by the artist's sort name on the artists tab; none under a non-alphabetical sort.
-  const letterKey = letterKeyFor(view, catalogSort);
-  const letters = useMemo(
-    () => (letterKey ? bucketsFor(gridItems, letterKey) : null),
-    [gridItems, letterKey]
-  );
-
-  // A jump is a SCROLL, not a re-slice. The list is untouched, so the letters before the one tapped
-  // are still above you — which is the whole point (2026-08-13: "I tapped J and couldn't get back to
-  // the artists before J").
-  const jumpTo = useCallback((offset) => {
-    scrollToIndex(Math.max(0, offset));
-  }, [scrollToIndex]);
+  const artistItems = catalogState.items === "groups" && FLAT_VIEWS.has(catalogState.view);
+  const source = useMemo(() => (artistItems ? makeSource(true) : albumSource), [artistItems, makeSource, albumSource]);
 
   function setParam(key, value, { replace = false } = {}) {
     const p = new URLSearchParams(location.search);
@@ -369,7 +311,7 @@ function MusicPage({ userData }) {
   // sider's MusicSiderRail, which carries the count on its head line). Drilled into an artist there
   // is no CatalogHost to carry the pill, so it rides the bar's tools slot directly.
   const { pill: filtersPill, chips, surfaces } = sectionRailSurfaces(rail, sheet, {
-    total: view === "artists" ? filteredArtists.length : filteredAlbums.length,
+    total: artistItems ? filteredArtists.length : filteredAlbums.length,
     placeholder: "A song, artist:Bush, tag:Live…",
   });
 
@@ -420,41 +362,9 @@ function MusicPage({ userData }) {
         <section className="music-section">
           {/* No section head here since R9 S1: the SectionBar names the page, and the count belongs
               to the rail. The Songs / Playlists heads above are content sections and stay. */}
-          <CatalogHost
-            section="music"
-            source={source}
-            tools={filtersPill}
-            beforeResults={chips}
-            overrides={{
-              grid: (
-                <>
-                  <div ref={hostRef}>
-                    {padTop > 0 && <div className="grid-spacer" style={{ height: padTop }} aria-hidden="true" />}
-                    <div className={view === "artists" ? "music-artist-grid" : "music-album-grid"} ref={gridRef}>
-                      {visibleItems.map((item) => (view === "artists" ? (
-                        <ArtistCard key={item.id} artist={item} onOpen={(id) => setParam("artist", id)} />
-                      ) : (
-                        <AlbumCard key={item.id} album={item} onOpen={setOpenAlbumId} />
-                      )))}
-                    </div>
-                    {padBottom > 0 && <div className="grid-spacer" style={{ height: padBottom }} aria-hidden="true" />}
-                  </div>
-                  {/* Scrolls the same whole list; the active letter follows the grid as you scroll, and
-                      everything before the letter you tapped is still up there. Page numbers under a
-                      sort that has no letters. */}
-                  <CatalogPager
-                    mode={letters ? "letters" : "pages"}
-                    letters={letters}
-                    total={gridItems.length}
-                    pageSize={PAGE_STEP}
-                    currentIndex={visibleStart}
-                    onJump={jumpTo}
-                    itemNoun={view === "artists" ? "artist" : "album"}
-                  />
-                </>
-              ),
-            }}
-          />
+          {/* The letter strip is the package's now, over the same whole list: a jump is a scroll,
+              so everything before the letter you tapped is still up there. */}
+          <CatalogHost section="music" source={source} tools={filtersPill} beforeResults={chips} />
         </section>
       )}
 

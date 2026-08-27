@@ -30,6 +30,7 @@ export default function MusicAlbumArt({
   dominantColor,
   thumb = true,
   className = "music-album-tile",
+  eager = false,
 }) {
   const [failed, setFailed] = useState(false);
   useEffect(() => { setFailed(false); }, [albumId, hasArt]);
@@ -61,7 +62,8 @@ export default function MusicAlbumArt({
         style={style}
         src={src}
         alt=""
-        loading="lazy"
+        loading={eager ? "eager" : "lazy"}
+        decoding="async"
         onError={() => setFailed(true)}
       />
     );

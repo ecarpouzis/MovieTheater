@@ -110,7 +110,10 @@ export default function FlatCardStream({ source, state, variant, cellH, perBand,
         renderBand={renderBand}
         renderPlaceholder={renderPlaceholder}
       />
-      {stream.total > perBand && (
+      {/* Pages are only worth offering once there is more than one; a LETTER strip is an index, not
+          a pager — it shows which letters the list has, so it earns its place at any length (and
+          Music, Boardgames and Movies all showed it that way before they moved onto this engine). */}
+      {(stream.total > perBand || pagerMode === "letters") && (
         <CatalogPager
           mode={pagerMode}
           letters={letters}
