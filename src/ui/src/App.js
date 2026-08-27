@@ -46,6 +46,7 @@ const BooksPage = lazy(() => import("./Pages/Books/BooksPage"));
 const MoviesAdminPage = lazy(() => import("./Pages/Admin/MoviesAdminPage"));
 // R9 S7 — every section's Explore tab. Its own chunk: a landing nobody opens costs nothing.
 const MoviesExplorePage = lazy(() => import("./Pages/Browse/MoviesExplorePage"));
+const MusicExplorePage = lazy(() => import("./Pages/Music/MusicExplorePage"));
 const TvAdminPage = lazy(() => import("./Pages/Tv/TvAdminPage"));
 const ArcadeAdminPage = lazy(() => import("./Pages/Arcade/ArcadeAdminPage"));
 const MusicAdminPage = lazy(() => import("./Pages/Music/MusicAdminPage"));
@@ -168,6 +169,9 @@ function App() {
             </Route>
             {/* Full player: lyrics + queue + visualizer (music-plan.md §2.6). Declared before no
                 other /music route needs it, but kept exact so /music itself still matches above. */}
+            <Route path="/music/explore" exact>
+              <MusicExplorePage userData={userData} />
+            </Route>
             <Route path="/music/now-playing" exact>
               <MusicNowPlayingPage userData={userData} />
             </Route>

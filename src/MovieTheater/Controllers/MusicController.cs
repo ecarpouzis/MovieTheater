@@ -844,7 +844,9 @@ namespace MovieTheater.Controllers
                     p.ownerName,
                     p.sharedWith,
                     trackTitles = items.Take(3).Select(i => i.title).ToList(),
-                    albumIds = items.Where(i => i.albumId != null).Select(i => i.albumId!.Value).Distinct().Take(4).ToList(),
+                    // Four is what the tile's art collage needs; twelve is what the Music Explore tab's
+                    // "Your favourites" rail draws from (R9 S7) — the same ids, a longer prefix.
+                    albumIds = items.Where(i => i.albumId != null).Select(i => i.albumId!.Value).Distinct().Take(12).ToList(),
                 };
             });
             return Ok(result);

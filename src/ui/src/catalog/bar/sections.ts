@@ -71,6 +71,7 @@ export const SECTIONS: SectionDef[] = [
   {
     key: "music", prefixes: ["/music"], title: "Music", searchPlaceholder: "artist:Bush, or an album…",
     tabs: [
+      { key: "explore", label: "Explore", path: "/music/explore" },
       { key: "browse", label: "Browse", path: "/music", exact: true },
       { key: "playlists", label: "Playlists", path: "/music/playlists" },
       { key: "now", label: "Now playing", path: "/music/now-playing" },
