@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useCallback } from "react";
 import { useHistory, useLocation } from "react-router-dom";
-import { Empty } from "antd";
-import BoardGameCardList from "./BoardGameCardList";
+import BoardGameCard, { NO_EXPANSIONS } from "./BoardGameCard";
 import BoardGameModal from "./BoardGameModal";
-import { bucketsFor } from "../../Components/CatalogPager";
+import useTouchDevice from "../../hooks/useTouchDevice";
 import LoadFailure from "../../Components/LoadFailure";
 import CardGridSkeleton from "../../Components/CardGridSkeleton";
 import CatalogHost from "../../catalog/CatalogHost";
@@ -20,6 +19,7 @@ import { normalizeGame } from "./useBoardgamesCatalog";
 const LINK_FACET_KEYS = new Set(LINK_FACETS.map((f) => f.key));
 
 function BoardGames({ userData }) {
+  const tooltipTrigger = useTouchDevice() ? "click" : "hover";
   // The catalog is ONE shared resource (React Query, seeded from the localStorage cache): the sider
   // rail reads the same rows, so its counts and this list always agree.
   const browse = useBoardgamesBrowse(userData);
@@ -64,13 +64,6 @@ function BoardGames({ userData }) {
   const results = useBoardgamesResults(browse, facetState);
   const displayGames = useMemo(() => sortBoardgames(results, sortParam), [results, sortParam]);
 
-  // A–Z quick-scroll buckets — only under the default alphabetical order, where a letter jump
-  // means anything (the server list arrives $orderby=name).
-  const letters = useMemo(
-    () => (sortParam ? null : bucketsFor(displayGames, (g) => g.name || "")),
-    [displayGames, sortParam]
-  );
-
   const handleOpenGame = useCallback((gameId) => {
     const p = new URLSearchParams(history.location.search);
     p.set("game", String(gameId));
@@ -106,11 +99,26 @@ function BoardGames({ userData }) {
     }
   }, [facetActions]);
 
-  // The catalog views (Wall / List / Extended / Shelves / Newspaper / Directory) over the SAME list
-  // the grid shows; the grid itself stays BoardGameCardList (the host's `grid` override).
+  // The Grid lays THIS section's card into the shared bands (R9 S3): BoardGameCard is a
+  // MODULE-LEVEL component (the BandSlot memo law), reached through a renderer whose identity
+  // changes only when something a card draws changes — the expansion map, the tooltip trigger.
+  const renderCard = useCallback((item, view) => (
+    <BoardGameCard
+      game={item.raw}
+      expansions={expansionMap?.[item.id] ?? NO_EXPANSIONS}
+      tooltipTrigger={tooltipTrigger}
+      metadata={view.metadata}
+      hoverClass={view.hoverClass}
+      eager={view.eager}
+      onGameClick={handleOpenGame}
+    />
+  ), [expansionMap, tooltipTrigger, handleOpenGame]);
+
+  // ONE engine under every view: the grid is the package's GridView over InfiniteBands, drawing the
+  // card above; Wall / List / Extended / Shelves / Newspaper / Directory read the same source.
   const source = useMemo(
-    () => createBoardgamesSource({ games: displayGames, expansionMap, facetsById, listKey, currentSort: sortParam ?? "name", onOpen: handleOpenGame, onOpenGroup: handleOpenGroup }),
-    [displayGames, expansionMap, facetsById, listKey, sortParam, handleOpenGame, handleOpenGroup]
+    () => createBoardgamesSource({ games: displayGames, expansionMap, facetsById, listKey, currentSort: sortParam ?? "name", onOpen: handleOpenGame, onOpenGroup: handleOpenGroup, renderCard }),
+    [displayGames, expansionMap, facetsById, listKey, sortParam, handleOpenGame, handleOpenGroup, renderCard]
   );
 
   const handleGameUpdated = (rawData) => {
@@ -127,18 +135,6 @@ function BoardGames({ userData }) {
     return <LoadFailure message="Couldn't load the board games." onRetry={browse.refresh} />;
   }
 
-  const grid = displayGames.length === 0 ? (
-    <Empty description="No board games match." />
-  ) : (
-    <BoardGameCardList
-      games={displayGames}
-      expansionMap={expansionMap}
-      onGameClick={handleOpenGame}
-      listKey={listKey}
-      letters={letters}
-    />
-  );
-
   // The bar's tools: the phone's Filters pill raising the full-page sheet (the desktop rail is the
   // sider's BoardgamesSiderRail, which carries the count on its head line), the chips over the
   // results, and the bar's SmartSearch — all from the shared rail surfaces.
@@ -150,7 +146,7 @@ function BoardGames({ userData }) {
   return (
     <>
       {surfaces}
-      <CatalogHost section="boardgames" source={source} overrides={{ grid }} tools={filtersPill} beforeResults={chips} />
+      <CatalogHost section="boardgames" source={source} tools={filtersPill} beforeResults={chips} />
       <BoardGameModal
         gameId={selectedGameId}
         open={isModalVisible}

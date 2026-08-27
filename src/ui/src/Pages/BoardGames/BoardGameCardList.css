@@ -7,6 +7,48 @@
   background: var(--card-surface);
 }
 
+/* ── The boardgame Grid, on the catalog engine (R9 S3) ────────────────────── */
+/* `BoardGameCardList`'s windowing + pager shell retired: the cards are laid out by the package's
+   GridView over InfiniteBands. This is the column grid `.card-list` gave them, as the Grid's own
+   wrap class, so the engine's row-spanning spacers and band skeletons can live in it. */
+.bx-grid.bx-grid--boardgames {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+  padding: 10px 10px 2px;
+}
+
+@media (min-width: 769px) { .bx-grid.bx-grid--boardgames { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1200px) { .bx-grid.bx-grid--boardgames { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 1600px) { .bx-grid.bx-grid--boardgames { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+.bx-grid--boardgames > .bx-band-spacer,
+.bx-grid--boardgames > .bx-skel-band { grid-column: 1 / -1; }
+.bx-grid--boardgames > .bx-skel-band { padding: 0; gap: 8px; }
+.bx-grid--boardgames .bx-skel-card .bx-cover { width: 100% !important; }
+.bx-grid--boardgames .bx-card { min-width: 0; }
+
+/* The tweak contract: the card's height IS the box-art box, so the cover-size tweak (`--cell`, set
+   on the wrap by FlatCardStream) drives the whole card. Box art is roughly square. */
+.bx-grid--boardgames .card-content-wrapper { height: var(--cell, 200px); }
+.bx-grid--boardgames .boardgame-card-poster-container.bx-cover {
+  width: calc(var(--cell, 200px) * 0.7);
+  height: var(--cell, 200px);
+  flex: 0 0 auto;
+  box-shadow: none;
+}
+/* Box art is letterboxed, not cropped — one class more specific than `.bx-cover > img`. */
+.boardgame-card-poster-container.bx-cover > .boardgame-card-poster-image,
+.boardgame-card-poster-container.bx-cover > .card-poster-placeholder {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  object-fit: contain;
+}
+
 /* BGG time + rating chips read as gold; players/complexity use the neutral outlined chip. */
 .boardgame-card .card-meta-row .badge-runtime {
   background-color: var(--rating-gold-bg);
@@ -75,17 +117,8 @@
 }
 
 @media (max-width: 640px) {
-  .boardgame-card-poster-container {
-    width: 112px;
-    height: 160px;
-  }
-
-  .boardgame-card-poster-image {
-    width: 112px;
-    height: auto;
-    max-height: 160px;
-  }
-
+  /* The card's height is the cover-size tweak's job now — the tweaks store keeps a separate scale
+     per pointer class, so a phone lands on a smaller default cell than a desktop. */
   .boardgame-card .card-meta-row {
     gap: 2px;
   }

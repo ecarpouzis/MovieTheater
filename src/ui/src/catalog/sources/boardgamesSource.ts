@@ -52,6 +52,8 @@ export const BOARDGAME_SORTS: ClientSort[] = [
 
 /** Box art is close to square far more often than not. */
 export const BOARDGAME_ASPECT = 1;
+/** The Grid's base box-art height before the cover-size tweak (the card's old 200 px). */
+export const BOARDGAME_GRID_CELL = 200;
 
 const fmtTime = (t: number | null | undefined) => (t == null ? null : t > 999 ? "∞" : String(t));
 
@@ -181,6 +183,8 @@ export interface BoardgamesSourceOptions {
   currentSort: string | null | undefined;
   onOpen: (id: number) => void;
   onOpenGroup?: (group: CardGroup, groupBy: string) => void;
+  /** The section's own Grid card (R9 S3) — the page supplies it, module-level, with the live expansion map. */
+  renderCard?: CatalogSource["renderCard"];
 }
 
 export function createBoardgamesSource(o: BoardgamesSourceOptions): CatalogSource {
@@ -201,5 +205,8 @@ export function createBoardgamesSource(o: BoardgamesSourceOptions): CatalogSourc
     defaultAspect: BOARDGAME_ASPECT,
     onOpen: (item) => o.onOpen(item.id),
     onOpenGroup: o.onOpenGroup,
+    renderCard: o.renderCard,
+    gridClass: "bx-grid--boardgames",
+    gridCell: BOARDGAME_GRID_CELL,
   });
 }

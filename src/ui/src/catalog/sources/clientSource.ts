@@ -51,6 +51,10 @@ export interface ClientSourceOptions {
   defaultAspect?: number;
   pageSize?: number;
   tweakExtras?: TweakExtra[];
+  /** The section's own Grid card + wrap (R9 S3) — passed straight through to the source. */
+  renderCard?: CatalogSource["renderCard"];
+  gridClass?: string;
+  gridCell?: number;
   onOpen(item: CardItem): void;
   onOpenGroup?(group: CardGroup, groupBy: string): void;
 }
@@ -182,6 +186,9 @@ export function createClientSource(o: ClientSourceOptions): CatalogSource {
     groupLetters: groupable
       ? async (groupBy, sort) => (bucketsFor(grouped(groupBy, sort).heads, (g: CardGroup) => g.label) as LetterBucket[]).map((b) => ({ letter: b.letter, firstIndex: b.offset }))
       : undefined,
+    renderCard: o.renderCard,
+    gridClass: o.gridClass,
+    gridCell: o.gridCell,
     onOpen: o.onOpen,
     onOpenGroup: o.onOpenGroup,
   };
