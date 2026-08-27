@@ -226,6 +226,32 @@ Per section: Movies `MovieCard` / `SimpleMovieCard` (`Pages/Browse/MovieCard.js`
 removal-on-untoggle, a background chunk landing — bumps it, and the stream re-reads its bands while
 the window, the measured heights and the scroll position stay exactly where the reader left them.
 
+## The detail sheet — R9 S4
+
+Not part of the package (the shell is `Components/SheetModal.css` + `Components/sheetModal.js`), but
+it is what a card OPENS, so the contract belongs here.
+
+- **A section's detail modal is the site's full-page SHEET at EVERY size — never card mode.** Eric's
+  ruling; card mode is for confirm/info prompts only. Each section's stylesheet repeats the shell's
+  sheet block UNCONDITIONALLY — `MovieModal.css`, `GameModal.css`, `BoardGameModal.css`,
+  `Pages/Books/css/books-modal.css`: edge to edge, 100 dvh, the shell's one ✕ chip, and the BODY is
+  the scroller with the content on a readable column.
+- **`--sheet-inset: 0` is the whole trick.** The shell states its card geometry in terms of that
+  variable, so zeroing it turns those rules into the sheet's numbers with no specificity fight.
+- **One layer, one place**: `SHEET_Z` = 1500 for every section's detail modal, `SHEET_STACK_Z` =
+  1600 for a dialog a sheet raises WITHOUT closing itself. The stack it clears: tweaks 1200 · phone
+  top bar 1300 · rail sheet 1350 · immersive routes 1400. Nine dialogs sat at antd's default 1000 —
+  under the bar and under the rail sheet — until that constant existed.
+- **It lives in the URL** (`?title=` / `?game=` / `?album=` / `?item=` / `?series=` / `?photo=`):
+  open PUSHES so Back closes it, ✕ REPLACES. The smoke asserts both, plus that `?view=` survives.
+- **Skin tokens ride `styles={{ wrapper }}`, never `wrapProps.style`** — `@rc-component/dialog`
+  spreads `wrapProps` AFTER its own, so a `style` there REPLACES the wrap's inline style and takes
+  its `zIndex` with it (the mask then paints over the modal: "click a book, the screen blurs, the
+  modal is behind it").
+- **The MUSIC album sheet is deliberately off the shell** and stays that way: it must stop above the
+  persistent play bar, and its body does NOT scroll (the hero stays, the TRACKLIST is the
+  scrollport) — the exact opposite of the shell's headline guarantee.
+
 ## The skin (`catalog/skin/`) — R9 S5
 
 Nine backdrops and a type theme, per section, from the one ⚙ panel. Lifted out of Books, which had
@@ -678,6 +704,8 @@ recorded here rather than guessed at.
   and Back closes it · a letter jump lands and PINS · the Explore tab draws rails · the Admin tab
   appears for an admin. GET-only: every other method is fulfilled locally with 204, the one
   exception being the harness account's login.
+- Last full run (2026-08-27, prod bundle at `:3101`): **Movies · Boardgames · Channels · Music ·
+  Arcade all pass**, desktop and phone, light and dark. Photos and Books skipped as `manual`.
 - **Photos and Books are `manual`** — no harness account can reach them (a family-album grant, and
   BooksAccess + a password session). Books has its own Playwright suite on a hand-captured session:
   `.claude/skills/books/e2e/`.
