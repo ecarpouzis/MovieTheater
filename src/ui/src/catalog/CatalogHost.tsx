@@ -1,9 +1,12 @@
 import { useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import "./styles/catalog-views.css";
 import "./styles/catalog-grouped.css";
 import "./styles/catalog-shelves.css";
-import ViewSwitcher from "./ViewSwitcher";
+import ViewSwitcher, { TweaksButton, ViewPills } from "./ViewSwitcher";
+import useSlot, { BAR_TOOLS_SLOT, TOPBAR_TOOLS_SLOT } from "./bar/useSlot";
 import useMiddleDragScroll from "./engine/useMiddleDragScroll";
+import useIsMobile from "../hooks/useIsMobile";
 import useCatalogView from "./state/useCatalogView";
 import TweaksPanel, { TweakRow, TweakToggle } from "./tweaks/TweaksPanel";
 import useTweaks, { hoverClass } from "./tweaks/useTweaks";
@@ -18,13 +21,17 @@ import type { ViewProps } from "./views/ViewProps";
 import WallView from "./views/WallView";
 
 /**
- * The one mount point a section uses: the switcher row, the tweaks panel, and the current view over
- * the section's CatalogSource. Tweaks are applied HERE, once — `data-hover` on the results root and
- * the shared hoverClass on every card — so no view can drift from the setting (the standalone's
- * drill view once did, and Zoom/Tilt/Dim silently stopped working there).
+ * The one mount point a section uses: the command pills + ⚙ (portaled into the SectionBar's tools
+ * slot — on phones the ⚙ goes to the top bar's generic slot), the tweaks panel, and the current
+ * view over the section's CatalogSource. Tweaks are applied HERE, once — `data-hover` on the
+ * results root and the shared hoverClass on every card — so no view can drift from the setting
+ * (the standalone's drill view once did, and Zoom/Tilt/Dim silently stopped working there).
  *
  * `overrides` lets a section keep an existing renderer for a view (Movies keeps its CardList as
  * the Grid, untouched); the switcher still lists the view, the host just renders the override.
+ * `tools` are the section's own bar controls (a phone Filters pill, Arcade's Saves/Quality); they
+ * sit before the pills in the slot. Where no bar exists (a host rendered outside the app shell),
+ * the pills fall back to an in-flow row above the results.
  */
 export const AVAILABLE_VIEWS: readonly ViewMode[] = ["grid", "wall", "list", "extended", "shelf", "newspaper", "directory"];
 
@@ -42,19 +49,22 @@ export interface CatalogHostProps {
   section: string;
   source: CatalogSource;
   overrides?: Partial<Record<ViewMode, ReactNode>>;
-  /** Anything to show at the left of the switcher row (a count, a scope title). */
-  leading?: ReactNode;
+  /** The section's own bar tools, placed before the pills in the bar's tools slot. */
+  tools?: ReactNode;
   className?: string;
   /** Directory view: start drilled into these nodes (a section's "Browse this folder"). */
   directoryStart?: DirectoryNode[];
-  /** Between the switcher row and the results (a section's active-filter chips). */
+  /** Between the bar and the results (a section's active-filter chips). */
   beforeResults?: ReactNode;
 }
 
-export default function CatalogHost({ section, source, overrides, leading, className, directoryStart, beforeResults }: CatalogHostProps) {
+export default function CatalogHost({ section, source, overrides, tools, className, directoryStart, beforeResults }: CatalogHostProps) {
   const { state, setView, setGroup, setItems, setSort } = useCatalogView(section, source, AVAILABLE_VIEWS);
   const { tweaks, update, setCoverScale, setExtra, coverScale } = useTweaks(section);
   const [tweaksOpen, setTweaksOpen] = useState(false);
+  const isMobile = useIsMobile();
+  const pillsSlot = useSlot(BAR_TOOLS_SLOT);
+  const gearSlot = useSlot(isMobile ? TOPBAR_TOOLS_SLOT : BAR_TOOLS_SLOT);
   useMiddleDragScroll();
   const scale = coverScale(state.view);
   const hc = hoverClass(tweaks.hover);
@@ -66,20 +76,26 @@ export default function CatalogHost({ section, source, overrides, leading, class
   else if (state.view === "directory") content = <DirectoryView {...viewProps} showEmpty={tweaks.showEmptyFolders} initialStack={directoryStart} />;
   else if (View) content = <View {...viewProps} />;
 
+  const pillProps = { state, source, available: AVAILABLE_VIEWS, onView: setView, onGroup: setGroup, onItems: setItems, onSort: setSort };
+  const toggleTweaks = () => setTweaksOpen((o) => !o);
+
+  let chrome: ReactNode;
+  if (pillsSlot) {
+    chrome = (
+      <>
+        {createPortal(<>{tools}<ViewPills {...pillProps} /></>, pillsSlot)}
+        {gearSlot && gearSlot !== pillsSlot
+          ? createPortal(<TweaksButton open={tweaksOpen} onToggle={toggleTweaks} />, gearSlot)
+          : createPortal(<TweaksButton open={tweaksOpen} onToggle={toggleTweaks} />, pillsSlot)}
+      </>
+    );
+  } else {
+    chrome = <ViewSwitcher {...pillProps} tweaksOpen={tweaksOpen} onTweaks={toggleTweaks} leading={tools} />;
+  }
+
   return (
     <div className={`bx-host${className ? ` ${className}` : ""}`} data-view={state.view} data-section={section}>
-      <ViewSwitcher
-        state={state}
-        source={source}
-        available={AVAILABLE_VIEWS}
-        onView={setView}
-        onGroup={setGroup}
-        onItems={setItems}
-        onSort={setSort}
-        tweaksOpen={tweaksOpen}
-        onTweaks={() => setTweaksOpen((o) => !o)}
-        leading={leading}
-      />
+      {chrome}
       {beforeResults}
       <div className={`bx-results ${tweaks.rounded ? "bx-rounded" : "bx-sharp"}`} data-hover={tweaks.hover} data-view={state.view} data-skin={source.shelvesSkin ?? "bookcase"}>
         {content}

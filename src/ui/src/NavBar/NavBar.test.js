@@ -120,21 +120,20 @@ describe("navbar footer Log Out", () => {
     expect(footer).toBeTruthy();
     expect(footer.contains(logoutBtn())).toBe(true);
 
-    // It must sit BELOW the theme row, not above it.
-    const themeRow = footer.querySelector(".navbar-theme-row");
-    expect(themeRow).toBeTruthy();
-    expect(themeRow.compareDocumentPosition(logoutBtn()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // The theme toggle left the footer in R9 S1 (it lives in the SectionBar / the phone top bar),
+    // so the footer holds no theme row any more.
+    expect(footer.querySelector(".navbar-theme-row")).toBeNull();
 
     // And it must no longer live in the user panel next to the username/gear.
     const userPanel = document.querySelector(".user-panel");
     if (userPanel) expect(userPanel.querySelector(".logout-button")).toBeNull();
   });
 
-  it("hides Log Out when signed out but keeps the theme row", () => {
+  it("hides Log Out when signed out but keeps the footer", () => {
     renderNav("/", null); // NOT undefined — that would re-trigger the default param and log us in
 
     expect(logoutBtn()).toBeNull();
-    expect(document.querySelector(".navbar-footer .navbar-theme-row")).toBeTruthy();
+    expect(document.querySelector(".navbar-footer")).toBeTruthy();
   });
 
   it("logs the session out when clicked", async () => {

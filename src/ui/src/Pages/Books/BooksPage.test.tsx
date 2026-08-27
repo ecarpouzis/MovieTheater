@@ -102,7 +102,9 @@ describe("Books/BooksPage — the gate, the pinning, the modals", () => {
 
   it("a filtered browse shows the count and one chip per filter — a number facet by its label — and Clear all keeps the catalog params", async () => {
     renderAt("/books?view=wall&f=tag:Horror&f=series:9&x=tag:Manga", member);
-    await waitFor(() => expect(document.querySelector(".bx-count")?.textContent).toBe("2 comics"));
+    // R9 S1: the count left the toolbar for the rail's head line (BooksSiderRail, in the sider); the
+    // page itself shows the chips.
+    await waitFor(() => expect(document.querySelectorAll(".bx-chip").length).toBeGreaterThan(0));
     expect(await screen.findByText("Hellboy", { selector: ".bx-chip" })).toBeInTheDocument();
     expect(screen.getByText("Horror", { selector: ".bx-chip" })).toBeInTheDocument();
     expect(screen.getByText("Manga", { selector: ".bx-chip-ex" })).toBeInTheDocument();

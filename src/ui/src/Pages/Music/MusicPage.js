@@ -422,10 +422,8 @@ function MusicPage({ userData }) {
       {/* The browse grid — artists or albums, same engine either way. */}
       {!drilledIn && (
         <section className="music-section">
-          <h2 className="music-section-head">
-            {shelf.noun[view]}
-            <span className="music-count">{gridItems.length}</span>
-          </h2>
+          {/* No section head here since R9 S1: the SectionBar names the page, and the count belongs
+              to the rail. The Songs / Playlists heads above are content sections and stay. */}
           <CatalogHost
             section="music"
             source={source}

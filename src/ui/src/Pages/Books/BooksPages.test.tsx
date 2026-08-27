@@ -169,7 +169,8 @@ describe("Books — Explore, Shelf, Novels, Kids", () => {
     const lists = calls.filter((c) => c.url.includes("/novels?") && !c.url.includes("top=1"));
     expect(lists.length).toBeGreaterThanOrEqual(1);
     for (const l of lists) expect(l.url).toContain("excludeTag=adult-romance");
-    await waitFor(() => expect(document.querySelector(".bx-count")?.textContent).toBe("2 books"));
+    // R9 S1: the count left the toolbar for the rail's head line; the page shows the chips.
+    await waitFor(() => expect(document.querySelectorAll(".bx-chip").length).toBeGreaterThan(0));
     expect(document.querySelector(".bx-host")?.getAttribute("data-section")).toBe("books-novels");
     // Clearing the chip is a real filter change: the next landing this session is not re-seeded.
     fireEvent.click(screen.getByText("Adult romance", { selector: ".bx-chip-ex" }));

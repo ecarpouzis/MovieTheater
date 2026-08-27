@@ -138,10 +138,7 @@ function ArcadeNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setA
           />
         </form>
 
-        <span style={inputLabelStyle}>Sort by</span>
-        <Select style={{ width: "100%" }} value={activeSort} onChange={(v) => updateParam("sort", v)}
-          options={sortOptions} classNames={{ popup: { root: "nav-dropdown" } }} getPopupContainer={getPopupContainer} />
-
+        {/* Sort left the rail in R9 S1: the SectionBar's Sort pill is the one sort control. */}
         <span style={inputLabelStyle}>
           System{facets ? <span style={{ opacity: 0.6, fontWeight: 400 }}> — all {facets.total} by default</span> : null}
         </span>

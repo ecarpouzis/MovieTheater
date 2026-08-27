@@ -331,13 +331,11 @@ function NavBar({
 
   // Rail footer — theme row, then Log Out beneath it. Shared by the mobile drawer and the desktop
   // sider so the two can't drift.
+  // The theme toggle left this foot in R9 S1: it lives in the SectionBar (desktop) and the top bar
+  // (phones) — the strip that is always on screen.
   const navFooter = (
     <div className="navbar-footer">
       {photosNavControls}
-      <div className="navbar-theme-row">
-        <span className="navbar-theme-label">{theme === "dark" ? "Dark" : "Light"} mode</span>
-        {themeToggleButton}
-      </div>
       {userData && (
         <button className="logout-button" onClick={logoutUser}>
           Log Out
@@ -443,7 +441,16 @@ function NavBar({
               <div className="navbar-section-dropdown">{sectionMenuItems}</div>
             )}
           </div>
-          {userData && <span className="navbar-username-badge">{userData.username}</span>}
+          {/* The GENERIC controls live up here on phones (R9 S1): search (opens the rail drawer, where
+              the section's search lives), the catalog's ⚙ (portaled into #topbar-tools by CatalogHost)
+              and the theme toggle. The section strip under this bar is content navigation only. */}
+          <div className="navbar-topbar-tools">
+            <button type="button" className="navbar-tb-btn" onClick={() => setDrawerOpen(true)} title="Search" aria-label="Search">
+              <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><circle cx="7" cy="7" r="4.5" /><line x1="10.5" y1="10.5" x2="14" y2="14" /></svg>
+            </button>
+            <span id="topbar-tools" className="navbar-topbar-slot" />
+            {themeToggleButton}
+          </div>
         </div>
 
         {drawerOpen && <div className="navbar-overlay" onClick={() => setDrawerOpen(false)} />}

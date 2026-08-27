@@ -2,21 +2,11 @@ import { Input, Select, Slider } from "antd";
 import { useState, useEffect } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import { MovieAPI } from "../MovieAPI";
-import { loadSort } from "../hooks/useMovieSearch";
 import { inputLabelStyle, getPopupContainer } from "./navShared";
 
 // Sort-by options for the Browse grid. Labels are user-facing; values match the API `sort` param.
 // Random leads because it is the default: it's the shuffled discovery grid the site opens on, and
 // making it an ordinary sort is what lets it be paged, filtered and scoped like the rest.
-const SORT_OPTIONS = [
-  { label: "Random", value: "random" },
-  { label: "Alphabetical (A–Z)", value: "alpha" },
-  { label: "Recently Added", value: "added" },
-  { label: "IMDb rating", value: "imdb" },
-  { label: "Rotten Tomatoes", value: "rt" },
-  { label: "Popcornmeter", value: "popcorn" },
-];
-
 // MPA Rating Search stops. Each stop browses THAT rating — "PG-13" shows the PG-13 movies, not
 // "PG-13 and everything tamer" (which is what this used to be: a cap/ceiling). `ids` are the MPA
 // lookup ids the stop stands for: NC-17 covers both NC-17(5) and X(6), one certificate as far as
@@ -210,18 +200,8 @@ function SearchTools({ search, userData }) {
         ]}
         filterOption={(input, option) => option.label.toLowerCase().includes(input.toLowerCase())}
       />
-      <span style={inputLabelStyle}>Sort By</span>
-      <Select
-        style={{ width: "100%" }}
-        getPopupContainer={getPopupContainer}
-        classNames={{ popup: { root: "nav-dropdown" } }}
-        value={new URLSearchParams(location.search).get("sort") || loadSort()}
-        onChange={(val) => {
-          const current = new URLSearchParams(location.search);
-          navigateToBrowseSearch(current.get("mode"), current.get("value") || "", undefined, val);
-        }}
-        options={SORT_OPTIONS}
-      />
+      {/* Sort left the rail in R9 S1: the SectionBar's Sort pill is the one sort control (it writes
+          the same ?sort= this Select wrote, with the catalog's labels). */}
       <span style={inputLabelStyle}>MPA Rating Search</span>
       <div
         className={`rating-search-slider${activeRatingIndex < 0 ? " rating-search-slider--empty" : ""}`}

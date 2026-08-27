@@ -59,7 +59,7 @@ afterEach(() => { cleanup(); vi.clearAllMocks(); });
 describe("MusicPage browse", () => {
   it("lands on Artists, not Albums — no ?view needed", async () => {
     const { container } = renderPage();
-    await screen.findByText("Artists");
+    await waitFor(() => expect(document.querySelector(".music-artist-grid")).toBeTruthy());
     expect(container.querySelector(".music-artist-grid")).toBeTruthy();
     expect(container.querySelector(".music-album-grid")).toBeNull();
   });
@@ -83,7 +83,7 @@ describe("MusicPage browse", () => {
 
   it("still renders the album grid at ?view=albums", async () => {
     const { container } = renderPage("?view=albums");
-    await screen.findByText("Albums");
+    await waitFor(() => expect(document.querySelector(".music-album-grid")).toBeTruthy());
     expect(container.querySelector(".music-album-grid")).toBeTruthy();
     expect(container.querySelector(".music-artist-grid")).toBeNull();
   });
@@ -128,13 +128,13 @@ describe("MusicPage browse", () => {
     });
   });
 
-  it("still counts the whole catalog after a jump, not the tail of it", async () => {
-    // The heading's count came off the same slice the grid rendered, so a jump used to shrink it —
-    // "Artists 2" after tapping B, with no way to tell that from a filter having been applied.
+  it("still holds the whole catalog after a jump, not the tail of it", async () => {
+    // The grid used to be re-sliced by a jump — three artists became two after tapping B. (The
+    // heading's count moved to the rail in R9 S1; the grid itself is the witness now.)
     const { container } = renderPage();
-    await screen.findByText("Artists");
+    await waitFor(() => expect(document.querySelector(".music-artist-grid")).toBeTruthy());
     fireEvent.click(screen.getByRole("button", { name: "B" }));
-    await waitFor(() => expect(container.querySelector(".music-count").textContent).toBe("3"));
+    await waitFor(() => expect(container.querySelectorAll(".music-artist-card")).toHaveLength(3));
   });
 });
 
@@ -148,24 +148,24 @@ describe("MusicPage browse", () => {
 describe("MusicPage shelves", () => {
   it("asks for no kind at all on the library — the default is the server's", async () => {
     renderPage();
-    await screen.findByText("Artists");
+    await waitFor(() => expect(document.querySelector(".music-artist-grid")).toBeTruthy());
     expect(api.getMusicArtists).toHaveBeenCalledWith("");
     expect(api.getMusicAlbums).toHaveBeenCalledWith("");
   });
 
   it("fetches the shelf rather than filtering the library down to it", async () => {
     renderPage("?kind=comedy");
-    await screen.findByText("Comedians");
+    await waitFor(() => expect(document.querySelector(".music-artist-grid")).toBeTruthy());
     expect(api.getMusicArtists).toHaveBeenCalledWith("comedy");
     expect(api.getMusicAlbums).toHaveBeenCalledWith("comedy");
   });
 
-  it("names the shelf in the heading, both ways round", async () => {
+  it("asks for the shelf both ways round (the heading moved to the bar in R9 S1)", async () => {
     renderPage("?kind=audiobook");
-    await screen.findByText("Authors");
+    await waitFor(() => expect(document.querySelector(".music-artist-grid")).toBeTruthy());
     cleanup();
     renderPage("?kind=audiobook&view=albums");
-    await screen.findByText("Audiobooks");
+    await waitFor(() => expect(document.querySelector(".music-album-grid")).toBeTruthy());
   });
 
   it("scopes song search to the shelf you are standing on", async () => {
@@ -176,7 +176,7 @@ describe("MusicPage shelves", () => {
 
   it("treats a shelf it doesn't know as the library, not as an empty page", async () => {
     renderPage("?kind=polka");
-    await screen.findByText("Artists");
+    await waitFor(() => expect(document.querySelector(".music-artist-grid")).toBeTruthy());
     expect(api.getMusicArtists).toHaveBeenCalledWith("");
   });
 });

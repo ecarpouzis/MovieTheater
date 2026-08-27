@@ -26,16 +26,6 @@ const timeOptions = [
   })),
 ];
 
-const sortOptions = [
-  { value: "", label: "Alphabetical A → Z" },
-  { value: "play_time_asc", label: "Play Time: Short → Long" },
-  { value: "play_time_desc", label: "Play Time: Long → Short" },
-  { value: "rating_asc", label: "Rating: Low → High" },
-  { value: "rating_desc", label: "Rating: High → Low" },
-  { value: "complexity_asc", label: "Complexity: Low → High" },
-  { value: "complexity_desc", label: "Complexity: High → Low" },
-];
-
 function BoardGameNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, setAdminModalOpen, search }) {
   const history = useHistory();
   const location = useLocation();
@@ -51,7 +41,6 @@ function BoardGameNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, s
   const activePlayers = urlParams.get("players") || undefined;
   const activeAge = urlParams.get("age") || undefined;
   const activeTime = urlParams.get("time") || undefined;
-  const activeSort = urlParams.get("sort") || undefined;
 
   return (
     <>
@@ -102,15 +91,7 @@ function BoardGameNavContent({ userData, onUserLoggedIn, setSettingsModalOpen, s
           getPopupContainer={getPopupContainer}
         />
 
-        <span style={inputLabelStyle}>Sort By</span>
-        <Select
-          style={{ width: "100%" }}
-          value={activeSort ?? ""}
-          onChange={(v) => updateParam("sort", v)}
-          options={sortOptions}
-          classNames={{ popup: { root: "nav-dropdown" } }}
-          getPopupContainer={getPopupContainer}
-        />
+        {/* Sort left the rail in R9 S1: the SectionBar's Sort pill is the one sort control. */}
 
         {/* The A–Z rail grid is gone: quick-scroll is the on-page CatalogPager now (the Music/
             Arcade convention) — a letter tap scrolls the list instead of re-filtering it.

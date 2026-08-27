@@ -74,20 +74,14 @@ export default function NovelsPage({ username, epoch = 0 }: NovelsPageProps) {
   );
   const saveCurrent = (name: string) => { saved.save(name, savableSearch(location.search)); setSavePrompt(false); };
 
-  const lead = (
-    <div className="books-browse-lead">
-      {isMobile && (
-        <button type="button" className="bx-filter-pill" onClick={() => setSheetOpen(true)} aria-label="Filters" title="Filters">
-          <FilterGlyph />
-          {activeCount > 0 && <span className="bx-tool-num">{activeCount}</span>}
-        </button>
-      )}
-      <span className="books-page-title">Novels</span>
-      {total.data != null && total.data >= 0 && (
-        <span className="bx-count" aria-live="polite">{total.data.toLocaleString()}<span className="bx-count-of"> {spec.noun ?? "results"}</span></span>
-      )}
-    </div>
-  );
+  // The bar's tools: the phone's Filters pill. The page title is the bar's active tab and the count
+  // is on the rail's head line (R9 S1) — the toolbar carries neither any more.
+  const barTools = isMobile ? (
+    <button type="button" className="bx-filter-pill" onClick={() => setSheetOpen(true)} aria-label="Filters" title="Filters">
+      <FilterGlyph />
+      {activeCount > 0 && <span className="bx-tool-num">{activeCount}</span>}
+    </button>
+  ) : null;
   const chips = (
     <div className="bx-rail-surface books-browse-chips">
       {savePrompt
@@ -115,7 +109,7 @@ export default function NovelsPage({ username, epoch = 0 }: NovelsPageProps) {
           saved={{ list: saved.list, onApply: actions.replaceSearch, onRemove: saved.remove, onSave: (name) => saved.save(name, savableSearch(location.search)) }}
         />
       )}
-      {!seeding && <CatalogHost section="books-novels" source={source} leading={lead} beforeResults={chips} />}
+      {!seeding && <CatalogHost section="books-novels" source={source} tools={barTools} beforeResults={chips} />}
     </div>
   );
 }

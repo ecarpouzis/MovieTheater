@@ -1,0 +1,63 @@
+/* ── The SectionBar (R9 S1) ─────────────────────────────────────────────────────────────────────
+   One bar per section, sticky at the top of the content scroller. Tokens from theme.css; the pills
+   that land in its tools slot keep their own styles (catalog-views.css .bx-pill / .bx-tool-*).
+   NO backdrop-filter: a blurred layer over continuously scrolling content is the cheapest way to
+   lose frames on a tablet (the CatalogPager learned that) — the bar is an opaque surface. */
+
+:root { --section-bar-h: 46px; }
+
+.sbar {
+  position: sticky; top: 0; z-index: 5;
+  display: flex; align-items: center; gap: 12px;
+  height: var(--section-bar-h); padding: 0 18px;
+  background: var(--content-bg);
+  border-bottom: 1px solid var(--card-border);
+  color: var(--text-primary);
+}
+.sbar-tabs { display: flex; align-items: center; gap: 4px; min-width: 0; flex: 0 0 auto; }
+.sbar-tab {
+  appearance: none; border: 0; background: transparent; cursor: pointer;
+  font: inherit; font-size: 12.5px; font-weight: 500; color: var(--text-secondary);
+  padding: 6px 11px; border-radius: 999px; white-space: nowrap; line-height: 1.2;
+}
+.sbar-tab:hover { color: var(--text-primary); background: var(--chip-neutral-bg); }
+.sbar-tab.on { background: var(--text-primary); color: var(--content-bg); font-weight: 600; }
+.sbar-tab--admin { color: var(--accent); border: 1px dashed color-mix(in oklab, var(--accent) 45%, transparent); }
+.sbar-tab--admin.on { background: var(--accent); color: var(--accent-contrast, #fff); border-color: var(--accent); }
+
+/* the section's search, centred; empty (zero width) until a page fills it */
+.sbar-search { flex: 1 1 auto; min-width: 0; max-width: 520px; margin: 0 auto; display: flex; align-items: center; }
+.sbar-search:empty { flex: 1 1 auto; }
+.sbar-search > * { width: 100%; }
+
+.sbar-tools { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; margin-left: auto; }
+.sbar-slot { display: contents; }
+.sbar-slot:empty { display: none; }
+.sbar-theme {
+  appearance: none; cursor: pointer; width: 34px; height: 32px; border: 1px solid var(--card-border); border-radius: 7px;
+  background: transparent; color: var(--text-secondary); display: inline-flex; align-items: center; justify-content: center;
+}
+.sbar-theme:hover { color: var(--text-primary); border-color: var(--text-primary); }
+
+/* The pills the host portals in wear the catalog's own pill styles; they need the package aliases. */
+.sbar { --ink: var(--text-primary); --sub: var(--text-secondary); --line: var(--card-border); --bg: var(--card-surface); --font-mono: ui-monospace, Menlo, monospace; }
+
+/* ── Phone: one swipeable strip under the fixed top bar; content navigation only ── */
+@media (max-width: 768px) {
+  :root { --section-bar-h: 44px; }
+  .sbar--phone {
+    top: var(--topbar-h, 48px); padding: 0; height: var(--section-bar-h);
+  }
+  .sbar-strip {
+    display: flex; align-items: center; gap: 8px; height: 100%; padding: 0 12px;
+    overflow-x: auto; overflow-y: hidden; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain; white-space: nowrap;
+  }
+  .sbar-strip::-webkit-scrollbar { display: none; }
+  .sbar-strip .sbar-tabs { flex: 0 0 auto; }
+  .sbar-tab { padding: 5px 9px; font-size: 12px; }
+  .sbar-divider { flex: 0 0 auto; width: 1px; height: 22px; background: var(--card-border); }
+  .sbar-slot { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+  .sbar-slot .bx-pill { height: 28px; font-size: 11.5px; padding: 0 9px; }
+  .sbar-slot .bx-filter-pill { height: 28px; }
+}

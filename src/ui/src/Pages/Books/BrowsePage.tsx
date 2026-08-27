@@ -101,19 +101,14 @@ export default function BrowsePage({ username, epoch = 0, isKid = false }: Brows
 
   const saveCurrent = (name: string) => { saved.save(name, savableSearch(location.search)); setSavePrompt(false); };
 
-  const lead = (
-    <div className="books-browse-lead">
-      {filtersApply && isMobile && (
-        <button type="button" className="bx-filter-pill" onClick={() => setSheetOpen(true)} aria-label="Filters" title="Filters">
-          <FilterGlyph />
-          {activeCount > 0 && <span className="bx-tool-num">{activeCount}</span>}
-        </button>
-      )}
-      {!directory && total.data != null && total.data >= 0 && (
-        <span className="bx-count" aria-live="polite">{total.data.toLocaleString()}<span className="bx-count-of"> {spec.noun ?? "results"}</span></span>
-      )}
-    </div>
-  );
+  // The bar's tools: the phone's Filters pill (the desktop rail shows the count on its own head line;
+  // the toolbar no longer carries a count — Long Box: counts live where the thing they count lives).
+  const barTools = filtersApply && isMobile ? (
+    <button type="button" className="bx-filter-pill" onClick={() => setSheetOpen(true)} aria-label="Filters" title="Filters">
+      <FilterGlyph />
+      {activeCount > 0 && <span className="bx-tool-num">{activeCount}</span>}
+    </button>
+  ) : null;
 
   const chips = filtersApply ? (
     <div className="bx-rail-surface books-browse-chips">
@@ -141,7 +136,7 @@ export default function BrowsePage({ username, epoch = 0, isKid = false }: Brows
           saved={{ list: saved.list, onApply: actions.replaceSearch, onRemove: saved.remove, onSave: (name) => saved.save(name, savableSearch(location.search)) }}
         />
       )}
-      <CatalogHost section="books" source={source} directoryStart={directoryStart} leading={lead} beforeResults={chips} />
+      <CatalogHost section="books" source={source} directoryStart={directoryStart} tools={barTools} beforeResults={chips} />
     </>
   );
 }

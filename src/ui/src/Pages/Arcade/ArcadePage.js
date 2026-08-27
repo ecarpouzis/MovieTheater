@@ -585,30 +585,33 @@ export default function ArcadePage({ userData }) {
   const anyFilter = filters.system || filters.hideRegions || filters.maxPlayers
     || (filters.variant && filters.variant !== "all") || filters.genre || filters.search || filters.ra;
 
+  // The section's bar tools (R9 S1): the two things you open + the Quality toggle, before the pills.
+  const arcadeTools = (
+    <>
+      <button type="button" className="bx-tool-btn" onClick={() => setSavesVaultOpen(true)}>💾 Saves</button>
+      <button type="button" className="bx-tool-btn" onClick={() => setRaOpen(true)}>🏆 Trophies</button>
+      <button
+        type="button"
+        className={"bx-tool-btn" + (optionsOpen ? " on" : "")}
+        aria-expanded={optionsOpen}
+        onClick={() => setOptionsOpen((o) => !o)}
+      >
+        ⚡ Quality
+      </button>
+    </>
+  );
+
   return (
     <div className="arcade-page">
       <div className="arcade-page__inner">
-        <header className="arcade-header">
-          <div className="arcade-header__lede">
-            <h1 className="arcade-title">Arcade</h1>
-            <p className="arcade-subtitle">Pick a game to open a room, then send friends the link to play together.</p>
-          </div>
-
-          {/* Compact toolbar: the two things you open (saves, trophies) + a ⚙ that reveals the room-quality
-              controls. On mobile the pills collapse behind ⚙ so the games sit near the top; on desktop
-              they're always shown and ⚙ is hidden. Quality applies only to rooms YOU start (one encoder
-              per room = the creator's pick is what everyone gets). */}
-          <div className="arcade-toolbar">
-            <Button className="arcade-tool-btn" onClick={() => setSavesVaultOpen(true)}>💾 Saves</Button>
-            <Button className="arcade-tool-btn" onClick={() => setRaOpen(true)}>🏆 Trophies</Button>
-            <Button
-              className={"arcade-tool-btn arcade-options-toggle" + (optionsOpen ? " is-open" : "")}
-              aria-expanded={optionsOpen}
-              onClick={() => setOptionsOpen((o) => !o)}
-            >
-              ⚙ Quality
-            </Button>
-            <div className={"arcade-conn" + (optionsOpen ? " arcade-conn--open" : "")}>
+        {/* The header and its toolbar left the page in R9 S1: the SectionBar names the section, and
+            Saves · Trophies · Quality ride the bar's tools slot (see `arcadeTools` on the CatalogHost
+            below). The Quality controls open here, under the bar, only while the toggle is on.
+            Quality applies only to rooms YOU start (one encoder per room = the creator's pick is what
+            everyone gets). */}
+        {optionsOpen && (
+          <div className="arcade-toolbar arcade-toolbar--quality">
+            <div className={"arcade-conn arcade-conn--open"}>
               <div className="arcade-pill">
                 <span className="arcade-dot-ok" />
                 <Select
@@ -644,7 +647,7 @@ export default function ArcadePage({ userData }) {
               </div>
             </div>
           </div>
-        </header>
+        )}
 
         {/* Host health, above everything you can click: if a remote desktop is holding the arcade PC
             off its own screen, every room you start from here will be choppy, and that is worth
@@ -670,7 +673,7 @@ export default function ArcadePage({ userData }) {
             </span>
           </div>
 
-          <CatalogHost section="arcade" source={catalogSource} overrides={{ grid: !firstLoaded ? (
+          <CatalogHost section="arcade" source={catalogSource} tools={arcadeTools} overrides={{ grid: !firstLoaded ? (
             /* Skeleton cards in the real grid layout — the site-wide first-paint convention (movies,
                boardgames), instead of a lone spinner. */
             <div className="arcade-grid" aria-hidden="true">

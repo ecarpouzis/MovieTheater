@@ -4,6 +4,7 @@ import { useState, useRef, Suspense } from "react";
 import { lazyWithReload as lazy } from "./lazyWithReload";
 import { BrowserRouter, Switch, Route } from "react-router-dom";
 import NavBar from "./NavBar/NavBar";
+import SectionBar from "./catalog/bar/SectionBar";
 import PatchedArtifactAlarm from "./NavBar/PatchedArtifactAlarm";
 import Browse from "./Pages/Browse/Browse";
 import { useMovieSearch } from "./hooks/useMovieSearch";
@@ -139,6 +140,10 @@ function App() {
           toggleTheme={toggleTheme}
         />
         <Layout.Content className="app-content">
+          {/* The ONE content-top bar every section shares (R9 S1): tabs · search slot · the
+              catalog's pills + ⚙ (portaled in by CatalogHost) · light/dark. Mounted once, above the
+              routes, so it is the same element on every page. */}
+          <SectionBar userData={userData} theme={theme} toggleTheme={toggleTheme} />
           <Suspense fallback={<div style={{ display: "flex", justifyContent: "center", padding: "80px 0" }}><Spin size="large" /></div>}>
           <Switch>
             <Route path="/movie/:id" exact>

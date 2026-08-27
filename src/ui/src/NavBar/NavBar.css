@@ -6,6 +6,18 @@
    remain on the DOM (set by NavBar.js) but surface colors now come from tokens.
    ============================================================================ */
 
+/* The phone top bar's generic tools (R9 S1): search · the catalog's ⚙ (portaled) · theme. */
+.navbar-topbar-tools { display: flex; align-items: center; gap: 6px; margin-left: auto; flex: 0 0 auto; }
+.navbar-topbar-slot { display: contents; }
+.navbar-topbar-tools .navbar-tb-btn,
+.navbar-topbar-tools .bx-tool-btn,
+.navbar-topbar-tools .navbar-theme-toggle {
+  appearance: none; cursor: pointer; width: 32px; height: 32px; padding: 0; border-radius: 7px;
+  border: 1px solid var(--sidebar-border); background: transparent; color: rgba(255, 255, 255, 0.85);
+  display: inline-flex; align-items: center; justify-content: center; font-size: 15px; line-height: 1;
+}
+.navbar-topbar-tools .bx-tool-btn.on { background: rgba(255, 255, 255, 0.14); color: #fff; }
+
 /* Fixed top bar (mobile) */
 .navbar-topbar {
   position: fixed;

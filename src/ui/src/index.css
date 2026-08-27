@@ -26,7 +26,11 @@ html {
      scroller and .navbar-topbar is `position: fixed; top: 0; height: 48px` over the top of it — so
      anything that scrolls a target "to the top" has to mean 48px down, or it parks it behind an
      opaque bar. Declared here, next to the bar that owns the number, and read by useGridWindow. */
-  --content-top-inset: 0px;
+  --content-top-inset: var(--section-bar-h, 46px);
+  /* R9 S1: the SectionBar is sticky at the top of the content scroller on every route, so the
+     reading line sits under it on desktop too (--section-bar-h is declared in catalog/bar/bar.css;
+     the bar is hidden on the screening rooms, which are full-screen surfaces of their own). */
+  --topbar-h: 48px;
 }
 
 #root {
@@ -223,8 +227,9 @@ img {
 
 @media (max-width: 768px) {
   html {
-    /* The fixed top bar's height — see the token's declaration. */
-    --content-top-inset: 48px;
+    /* The fixed top bar's height plus the sticky section strip under it (R9 S1) — see the token's
+       declaration. The strip is in flow, so the content's padding clears only the fixed bar. */
+    --content-top-inset: calc(var(--topbar-h) + var(--section-bar-h, 44px));
   }
 
   .app-layout {
@@ -236,9 +241,9 @@ img {
     overflow-y: visible;
     height: auto;
     padding-right: 0;
-    /* The token, not a second copy of the number — --content-top-inset is 48px here (declared on
-       html above) and useGridWindow reads the same token, so the two can't drift. */
-    padding-top: var(--content-top-inset);
+    /* Only the FIXED bar's height: the sticky section strip is in flow and takes its own room.
+       useGridWindow's reading line is --content-top-inset (fixed bar + strip), declared above. */
+    padding-top: var(--topbar-h);
   }
 
   .moviePosterImage {

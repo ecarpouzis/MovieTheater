@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import useSlot, { BAR_TOOLS_SLOT } from "../../catalog/bar/useSlot";
 import { Switch as AntSwitch } from "antd";
 import { Route, Switch, useHistory, useLocation } from "react-router-dom";
 import { MovieAPI } from "../../MovieAPI";
@@ -16,7 +18,7 @@ import PhotoSelectionBar from "./PhotoSelectionBar";
 import useIsMobile from "../../hooks/useIsMobile";
 import useScrollLockRestore from "../../hooks/useScrollLockRestore";
 import useShowHiddenPhotos from "../../hooks/useShowHiddenPhotos";
-import usePhotosAlbum, { photosNavViews, photosSection, photosViewLabel } from "../../hooks/usePhotosAlbum";
+import usePhotosAlbum, { photosSection } from "../../hooks/usePhotosAlbum";
 import CatalogHost from "../../catalog/CatalogHost";
 import { createPhotosSource } from "../../catalog/sources/photosSource";
 import "./PhotosPage.css";
@@ -139,6 +141,8 @@ export default function PhotosPage({ userData }) {
   // Curation state (§2.9). Selection mode is explicit: a click either opens a photo or selects it,
   // and which of those it does is never a guess about modifier keys.
   const [selecting, setSelecting] = useState(false);
+  // The SectionBar's tools slot (R9 S1): the Select toggle is portaled there.
+  const barToolsSlot = useSlot(BAR_TOOLS_SLOT);
   const [selected, setSelected] = useState([]);
   // Admin-only, and driven from the NAVBAR rather than from here (Phase 4 addendum). The server
   // ignores the parameter for a non-admin regardless, so this is purely what the page ASKS for.
@@ -323,14 +327,20 @@ export default function PhotosPage({ userData }) {
 
   // The album's counts, set as the annotation on a contact sheet: the figure in tabular mono, the
   // thing it counts in small tracked capitals underneath.
-  const facts = [
-    ["photos", status.photos],
-    ["videos", status.videos],
-    ["undated", status.undated],
-    ["hidden", status.hidden],
-    ["in the gallery", status.archived],
-    ["copies collapsed", status.collapsed],
-  ].filter(([, value]) => value > 0);
+  // The curation toggle: a bar tool when the SectionBar is mounted, an in-flow toolbar otherwise.
+  const selectToggle = (
+    <label className="photos-toggle">
+      <AntSwitch
+        size="small"
+        checked={selecting}
+        onChange={(on) => {
+          setSelecting(on);
+          if (!on) setSelected([]);
+        }}
+      />
+      Select
+    </label>
+  );
 
   // The gallery — and any album that lives on its shelf — is drawn on the deeper mount tone. One
   // modifier on the page root rather than a second stylesheet: it is the same room, lit differently.
@@ -338,45 +348,19 @@ export default function PhotosPage({ userData }) {
 
   return (
     <div className={`photos-page${inGallery ? " photos-page--gallery" : ""}`}>
-      <header className="photos-head">
-        <div className="photos-head-titles">
-          {/* Inside an album the eyebrow becomes the shelf and the heading becomes the album — the
-              name a family gave it is the more useful of the two things to put in 21px capitals. */}
-          <p className="photos-eyebrow">{albumEyebrow(albumSlug, albumMeta)}</p>
-          <h1 className="photos-title">{albumSlug ? albumHeadline(albumTitle, albumMeta) : photosViewLabel(view)}</h1>
-          {/* An artist collection prints the ARTIST above and the collection's own name here — but
-              only when they differ, so "Brom" titled "Brom" is not announced twice. */}
-          {albumSlug && albumSubtitle(albumTitle, albumMeta) && (
-            <p className="photos-subtitle">{albumSubtitle(albumTitle, albumMeta)}</p>
-          )}
-        </div>
-        <ul className="photos-facts">
-          {facts.map(([label, value]) => (
-            <li className="photos-fact" key={label}>
-              <span className="photos-fact-value">{value.toLocaleString()}</span>
-              <span className="photos-fact-label">{label}</span>
-            </li>
-          ))}
-        </ul>
-      </header>
-
-      {/* The rail carries the album's index. On a phone the rail is behind a hamburger, so the same
-          list rides along the top of the page instead — one navigation, two shapes. */}
-      {isMobile && (
-        <nav className="photos-tabs" aria-label="Album sections">
-          {photosNavViews(status, unnamed.length).map((item) => (
-            <button
-              key={item.key}
-              type="button"
-              className={`photos-tab${view === item.key ? " is-active" : ""}`}
-              aria-current={view === item.key ? "page" : undefined}
-              onClick={() => history.push(item.path)}
-            >
-              {item.label}
-              {item.count != null && <span className="photos-tab-count">{item.count.toLocaleString()}</span>}
-            </button>
-          ))}
-        </nav>
+      {/* R9 S1: the page head and the phone tab strip are gone — the SectionBar names the view and
+          carries the tabs, the counts live in the sider index. Inside an ALBUM the head stays: the
+          album's name (and an artist collection's artist) is content, not chrome. */}
+      {albumSlug && (
+        <header className="photos-head">
+          <div className="photos-head-titles">
+            <p className="photos-eyebrow">{albumEyebrow(albumSlug, albumMeta)}</p>
+            <h1 className="photos-title">{albumHeadline(albumTitle, albumMeta)}</h1>
+            {albumSubtitle(albumTitle, albumMeta) && (
+              <p className="photos-subtitle">{albumSubtitle(albumTitle, albumMeta)}</p>
+            )}
+          </div>
+        </header>
       )}
 
       {!status.dataPlane && (
@@ -385,27 +369,17 @@ export default function PhotosPage({ userData }) {
         </p>
       )}
 
-      {browsing && (
-        <div className="photos-toolbar">
-          <label className="photos-toggle">
-            <AntSwitch
-              size="small"
-              checked={selecting}
-              onChange={(on) => {
-                setSelecting(on);
-                if (!on) setSelected([]);
-              }}
-            />
-            Select
-          </label>
-          {/* Show-hidden used to live here as a member-visible switch. Phase 4 moved it to the navbar
-              and made it admin-only: hiding is ordinary member curation, but the hidden pile is
-              revealed to an operator, and the server ignores the request from anyone else. What is
-              left here is the state, reported, so nobody wonders why the album looks longer. */}
-          {showHidden && status.canShowHidden && (
-            <span className="photos-note">Showing hidden photos (from the navbar switch).</span>
-          )}
-        </div>
+      {/* The Select toggle is a BAR tool since R9 S1 (portaled into the SectionBar's tools slot, before
+          any catalog pills); the page keeps only the state note. */}
+      {browsing && (barToolsSlot
+        ? createPortal(selectToggle, barToolsSlot)
+        : <div className="photos-toolbar">{selectToggle}</div>)}
+      {/* Show-hidden used to live here as a member-visible switch. Phase 4 moved it to the navbar
+          and made it admin-only: hiding is ordinary member curation, but the hidden pile is
+          revealed to an operator, and the server ignores the request from anyone else. What is
+          left here is the state, reported, so nobody wonders why the album looks longer. */}
+      {browsing && showHidden && status.canShowHidden && (
+        <p className="photos-note">Showing hidden photos (from the navbar switch).</p>
       )}
 
       {/* The bar docks to the bottom of the SCREEN (see PhotoSelectionBar), so it is reachable from
