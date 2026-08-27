@@ -57,6 +57,7 @@ export const SECTIONS: SectionDef[] = [
   {
     key: "arcade", prefixes: ["/arcade"], title: "Arcade", searchPlaceholder: "system:PS2, genre:RPG, or a game…",
     tabs: [
+      { key: "explore", label: "Explore", path: "/arcade/explore" },
       { key: "browse", label: "Browse", path: "/arcade", exact: true },
       { key: "admin", label: "Admin", path: "/arcade/admin", admin: true, when: admin },
     ],

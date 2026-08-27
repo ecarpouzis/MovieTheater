@@ -46,7 +46,6 @@ vi.mock("../../MovieAPI", () => ({
     // "the host has told us nothing", which renders nothing. That is the state a lobby test wants.
     getArcadeHostStatus: () => Promise.resolve(null),
     getArcadeRenderers: () => Promise.resolve({}),
-    getArcadeRecentlyPlayed: () => Promise.resolve([]),
   },
 }));
 

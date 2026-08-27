@@ -40,7 +40,6 @@ vi.mock("./ArcadeHostBanner", () => ({ default: () => null }));
 vi.mock("./GameModal", () => ({ default: () => null }));
 vi.mock("./HeavyGameModal", () => ({ default: () => null }));
 vi.mock("./LiveRooms", () => ({ default: () => null }));
-vi.mock("./RecentlyPlayed", () => ({ default: () => null }));
 vi.mock("./SavesManager", () => ({ default: () => null }));
 vi.mock("./SavesVaultManager", () => ({ default: () => null }));
 vi.mock("./RetroAchievementsModal", () => ({ default: () => null }));
@@ -73,7 +72,6 @@ beforeEach(() => {
   }));
   api.getArcadeRooms = vi.fn(() => ok([]));
   api.getArcadeRenderers = vi.fn(() => ok({}));
-  api.getArcadeRecentlyPlayed = vi.fn(() => Promise.resolve([]));
   window.localStorage.clear();
 });
 

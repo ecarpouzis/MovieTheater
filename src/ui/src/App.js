@@ -47,6 +47,7 @@ const MoviesAdminPage = lazy(() => import("./Pages/Admin/MoviesAdminPage"));
 // R9 S7 — every section's Explore tab. Its own chunk: a landing nobody opens costs nothing.
 const MoviesExplorePage = lazy(() => import("./Pages/Browse/MoviesExplorePage"));
 const MusicExplorePage = lazy(() => import("./Pages/Music/MusicExplorePage"));
+const ArcadeExplorePage = lazy(() => import("./Pages/Arcade/ArcadeExplorePage"));
 const TvAdminPage = lazy(() => import("./Pages/Tv/TvAdminPage"));
 const ArcadeAdminPage = lazy(() => import("./Pages/Arcade/ArcadeAdminPage"));
 const MusicAdminPage = lazy(() => import("./Pages/Music/MusicAdminPage"));
@@ -196,6 +197,9 @@ function App() {
                 /books/shelf, /books/novels, /books/kids, /books/admin, /books/read/:itemId). */}
             <Route path="/books">
               <BooksPage userData={userData} setUserData={setUserData} />
+            </Route>
+            <Route path="/arcade/explore" exact>
+              <ArcadeExplorePage userData={userData} />
             </Route>
             <Route path="/arcade/room/:code" exact>
               <ArcadeRoomPage />

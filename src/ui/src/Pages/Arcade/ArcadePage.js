@@ -7,7 +7,6 @@ import GameCard from "./GameCard";
 import GameModal from "./GameModal";
 import HeavyGameModal from "./HeavyGameModal";
 import LiveRooms from "./LiveRooms";
-import RecentlyPlayed from "./RecentlyPlayed";
 import SavesManager from "./SavesManager";
 import SavesVaultManager from "./SavesVaultManager";
 import RetroAchievementsModal from "./RetroAchievementsModal";
@@ -174,7 +173,6 @@ export default function ArcadePage({ userData }) {
   // Anything not yet fetched renders as a skeleton tile of card size. There is no `startIndex`.
   const [rooms, setRooms] = useState([]);
   const [renderers, setRenderers] = useState({}); // system → [{id,label,isDefault}] for the launch menu
-  const [recentGames, setRecentGames] = useState([]); // "Recently played" strip (save-derived history)
   const [modalVersionId, setModalVersionId] = useState(null); // pre-selected version (a recent tile's save)
   const [savesVaultOpen, setSavesVaultOpen] = useState(false); // the cross-game "My saves" drawer
   const [raOpen, setRaOpen] = useState(false); // the RetroAchievements hub (account + trophy room)
@@ -355,14 +353,6 @@ export default function ArcadePage({ userData }) {
   useEffect(() => {
     let alive = true;
     MovieAPI.getArcadeRenderers().then((m) => { if (alive) setRenderers(m || {}); });
-    return () => { alive = false; };
-  }, []);
-
-  // "Recently played" strip — a fresh fetch on mount is enough: it only changes once a session ends
-  // and harvests a save, and returning here from a room is a route change that remounts this page.
-  useEffect(() => {
-    let alive = true;
-    MovieAPI.getArcadeRecentlyPlayed(12).then((rows) => { if (alive) setRecentGames(Array.isArray(rows) ? rows : []); });
     return () => { alive = false; };
   }, []);
 
@@ -622,8 +612,6 @@ export default function ArcadePage({ userData }) {
           onToggle={onToggleSystem}
           onClear={() => setSystems([])}
         />
-
-        <RecentlyPlayed rows={recentGames} onOpen={openGame} />
 
         <LiveRooms rooms={rooms} onJoin={joinRoom} />
 

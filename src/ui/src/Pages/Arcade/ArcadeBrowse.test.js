@@ -5,7 +5,6 @@ import GameCard from "./GameCard";
 import GameModal from "./GameModal";
 import GameCover, { coverBox } from "./GameCover";
 import LiveRooms from "./LiveRooms";
-import RecentlyPlayed from "./RecentlyPlayed";
 import { getCoverAspect, rememberCoverAspect } from "./coverAspect";
 
 global.IS_REACT_ACT_ENVIRONMENT = true;
@@ -232,47 +231,14 @@ describe("GameModal", () => {
   });
 });
 
-describe("RecentlyPlayed", () => {
-  const row = (over = {}) => ({
-    game: game({ key: "n64|GoldenEye", versions: [{ id: 7, label: "USA" }, { id: 8, label: "Japan" }] }),
-    lastPlayedUtc: new Date(Date.now() - 3 * 3600 * 1000).toISOString(),
-    saveCount: 2,
-    playedVersionId: 8,
-    ...over,
-  });
-
-  it("renders nothing when the player has no history", () => {
-    const { container } = render(<RecentlyPlayed rows={[]} onOpen={vi.fn()} />);
-    expect(container.firstChild).toBeNull();
-  });
-
-  // The tile is a pure display tile now, exactly like a grid card: Continue and My saves duplicated the
-  // modal (and skipped its version/cheat/renderer choices), so they're gone.
-  it("carries no Continue or My saves button", () => {
-    const { container } = render(<RecentlyPlayed rows={[row()]} onOpen={vi.fn()} />);
-    expect(container.querySelector("button")).toBeNull();
-    expect(screen.queryByText(/Continue/)).toBeNull();
-    expect(screen.queryByText(/My saves/)).toBeNull();
-    expect(screen.getByText("3h ago")).toBeTruthy();
-  });
-
-  // Saves are keyed on the ROM row, so the tile hands the modal the version whose save it advertised —
-  // otherwise Start would look for a save on the card's default version and find none.
-  it("opens the game modal on the version the save belongs to", () => {
-    const onOpen = vi.fn();
-    const r = row();
-    const { container } = render(<RecentlyPlayed rows={[r]} onOpen={onOpen} />);
-    fireEvent.click(container.querySelector(".arcade-recent__card"));
-    expect(onOpen).toHaveBeenCalledWith(r.game, 8);
-  });
-
-  it("opens on keyboard activation, since the tile is a button", () => {
-    const onOpen = vi.fn();
-    const { container } = render(<RecentlyPlayed rows={[row()]} onOpen={onOpen} />);
-    fireEvent.keyDown(container.querySelector(".arcade-recent__card"), { key: "Enter" });
-    expect(onOpen).toHaveBeenCalledTimes(1);
-  });
-});
+// "Recently played" is no longer a lobby strip: R9 S7 MOVED it to /arcade/explore, where it is a
+// rail of the section's Explore tab (the lobby keeps the console carousel, the live rooms and the
+// grid). Its assertions moved with it — see `arcadeExplore.test.ts`:
+//   · no history → no rail at all (was: the strip renders nothing)
+//   · the tile opens on the version the save belongs to (was: onOpen(game, playedVersionId))
+//   · the relative "3h ago" line
+// The tile's own "no Continue / no My saves button" claim retired with the component: an Explore
+// card has exactly one target by construction.
 
 describe("coverBox — the art's exact, bounded box", () => {
   it("gives a portrait cover the full height; the width follows its shape", () => {
