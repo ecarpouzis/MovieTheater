@@ -1,34 +1,33 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import { lazyWithReload as lazy } from "../../lazyWithReload";
-import CardList from "./CardList";
-import SimpleCardList from "./SimpleCardList";
+import { MovieCard, SimpleMovieCard, MOVIE_GRID_CELL } from "./MovieCard";
+import { useViewingToggles } from "./UserMovieOptions";
 import NowOnTvRail from "./NowOnTvRail";
 import PlaylistPickerModal from "../Tv/PlaylistPickerModal";
 import useIsMobile from "../../hooks/useIsMobile";
-import useInfiniteScroll from "../../hooks/useInfiniteScroll";
-import usePagedCatalog from "../../hooks/usePagedCatalog";
 import LoadFailure from "../../Components/LoadFailure";
 import CardGridSkeleton from "../../Components/CardGridSkeleton";
-import CatalogHost, { AVAILABLE_VIEWS } from "../../catalog/CatalogHost";
-import { BarToolsSlot } from "../../catalog/bar/BarSearch";
+import CatalogHost from "../../catalog/CatalogHost";
 import { hasFacetValue } from "../../catalog/rail/facetSpec";
 import { parseFacetState } from "../../catalog/rail/facetUrl";
 import useSectionRail from "../../catalog/rail/useSectionRail";
 import sectionRailSurfaces from "../../catalog/rail/sectionRailSurfaces";
 import useRailSheet from "../../catalog/rail/useRailSheet";
-import { createMoviesSource } from "../../catalog/sources/moviesSource";
-import { CATALOG_PARAM_KEYS, readCatalogDefaults, resolveViewState } from "../../catalog/state/useCatalogView";
+import { createMoviesListSource, createMoviesSource } from "../../catalog/sources/moviesSource";
+import { CATALOG_PARAM_KEYS } from "../../catalog/state/useCatalogView";
 import { MOVIES_PARSE_SPEC, browseSearchFor, isPlainMoviesSearch } from "./moviesFacetSpec";
 import { MOVIES_ENTITY_PARAMS, moviesViewerIdentity, useMoviesFacetSpec, useMoviesResultTotal } from "./useMoviesBrowse";
-import { Empty } from "antd";
 
 // The detail modal (917 lines + FileMappingEditor, SubtitlePicker, …) only renders after a card
 // click + network fetch, so its chunk load hides behind that — keeping it out of the entry bundle.
 const MovieModal = lazy(() => import("./MovieModal"));
 
-// Page size for infinite-scroll modes. Matches the server default in GetMoviesByType.
-const INFINITE_PAGE_SIZE = 60;
+// Page size for the dense id-list fill below. Matches the server default in GetMoviesByType.
+const DENSE_PAGE_SIZE = 120;
+// A bounded fill: no request loop may be unbounded (the house rule for anything iterating a big
+// set). Past this the list simply stops growing — 10k tracked titles is far beyond any real list.
+const DENSE_MAX_ROWS = 12_000;
 
 // The viewer's list (`?my=`) whose membership each Viewing action defines — turning that action OFF
 // is what removes a card from the grid (see handleToggleViewing).
@@ -63,44 +62,23 @@ function isLandingSearch(search) {
   return isPlainMoviesSearch(parseFacetState(search, MOVIES_PARSE_SPEC));
 }
 
-// Hoisted: a fresh object literal in JSX is a new prop identity on every render.
-const SENTINEL_STYLE = { height: 1 };
-const LOADING_MORE_STYLE = { textAlign: "center", padding: "16px", color: "#8fa8c0", fontSize: "13px" };
-
-// Append page/pageSize to a browse URL (preserving its existing query string).
-function withPage(url, page, pageSize) {
-  const u = new URL(url, window.location.origin);
-  u.searchParams.set("page", String(page));
-  u.searchParams.set("pageSize", String(pageSize));
-  return u.pathname + u.search;
-}
-
-// Fetch one page of an infinite-scroll search. Id-list searches (Seen/Want) POST the id
-// set to GetMoviesByIds with paging params; the rest are GET endpoints that take page/pageSize.
-function fetchInfinitePage(search, page, signal) {
-  if (search.movieIds) {
-    const sortQs = search.sort ? `&sort=${encodeURIComponent(search.sort)}` : "";
-    return fetch(`/API/GetMoviesByIds?page=${page}&pageSize=${INFINITE_PAGE_SIZE}${sortQs}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(search.movieIds),
-      signal,
-    });
-  }
-  return fetch(withPage(search.url, page, INFINITE_PAGE_SIZE), { signal });
-}
-
-// Identity of the CURRENT result set. Used to reset the grid's window (measured row heights, scroll
-// position) when the list becomes a different list rather than merely a longer one.
+// Identity of the CURRENT result set. Used to reset the catalog stream (band cache, measured
+// heights, scroll position) when the list becomes a different list rather than merely a longer one.
 function listKeyOf(search) {
-  if (search.movieIds) return `ids:${search.movieIds.length}:${search.sort || ""}`;
+  if (search.pending) return "pending";
+  if (search.movieIds) return `ids:${search.movieIds.length}:${search.sort || ""}:${search.restoreOrder ? "restore" : ""}`;
   return search.url || "empty";
 }
 
 function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
   const [movieDataArray, setMovieDataArray] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [pagination, setPagination] = useState(null);
+  // Bumped whenever the DENSE rows change under an unchanged list identity — a Seen/Want removal,
+  // a background chunk landing, a modal save. The catalog stream re-reads its bands and keeps the
+  // reader where they were (`CatalogSource.dataVersion`); a listKey change is the other thing, and
+  // it deliberately resets the window and the scroll.
+  const [dataVersion, setDataVersion] = useState(0);
+  const bumpData = useCallback(() => setDataVersion((v) => v + 1), []);
   // A failed one-shot/dense fetch used to RE-THROW from inside its .catch — an unhandled
   // rejection with no UI at all, the skeleton sitting there forever. It is a real state now,
   // and retryNonce re-arms the fetch effects.
@@ -130,229 +108,97 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
     }, patch.group ? { group: patch.group } : undefined);
   };
 
-  // Infinite-scroll modes (server-paginated endpoints flagged via search.infinite) come in two
-  // shapes now:
+  // ── The two shapes of a movie browse (R9 S3 — ONE engine under both) ──────────────────────────
   //
-  // - URL endpoints ride the SPARSE catalog (usePagedCatalog — the arcade lobby's page-map pump):
-  //   the whole result set is `total` fixed slots from the first response, the scrollbar is honest
-  //   immediately, pages are fetched because the window wants them (in either direction), and the
-  //   CatalogPager can seek anywhere. This is what makes the quick-scroll strip possible.
-  // - Id-list (Seen/Want) searches keep the DENSE append + bottom-sentinel path: their lists are
-  //   user-sized, and Seen/Want removal (handleToggleViewing) edits a dense array in place — an
-  //   operation a sparse page map can't express without re-seating every following slot.
+  // - A paged URL browse is a SERVER source: `createMoviesSource` pages `/API/Browse*` straight into
+  //   the catalog's bands, and the grouped views ride `/API/BrowseGroups` under the same scope.
+  // - Everything else — the Seen / Want to watch id lists, the back-nav restore, a one-shot browse —
+  //   is a DENSE list this page holds in memory and hands over as a client source. That is what keeps
+  //   removal-on-untoggle honest: un-ticking Seen while browsing Seen edits the array in place (a
+  //   sparse page map cannot express that without re-seating every following slot), and `dataVersion`
+  //   tells the engine to re-read without throwing the reader back to the top.
   //
-  // The simple mobile card list isn't windowed, so it can't render sparse holes — it stays dense too.
-  const isInfinite = !!search.infinite && (!!search.url || !!search.movieIds);
-  const sparseInfinite = isInfinite && !!search.url && !useSimpleStyle;
-  const denseInfinite = isInfinite && !sparseInfinite;
-  const [loadingMore, setLoadingMore] = useState(false);
-  const pageRef = useRef(1);
-  const loadingMoreRef = useRef(false);
-  // Bumped every time a new result set starts loading. A page-N fetch that was already in flight
-  // checks it on arrival and drops its rows — otherwise switching filter mid-flight appended the old
-  // search's page 2 onto the new search's page 1 (the append is blind: `prev.concat(more)`).
-  const epochRef = useRef(0);
-  const moreAbortRef = useRef(null);
-  // Read by loadMore, which is deliberately identity-stable (no deps) so the scroll listener never
-  // has to re-subscribe.
-  const searchRef = useRef(search);
-  const hasMoreRef = useRef(false);
-  searchRef.current = search;
-
-  // Identity of the CURRENT result set — resets the pump and the grid's window (measured row
-  // heights, scroll position) when the list becomes a different list rather than merely longer.
+  // Either way the Grid is the package's GridView laying THIS page's MovieCard into the shared
+  // bands (`renderCard`), so every tweak, the letter strip and the pills work on every path.
+  const sparseInfinite = !!search.infinite && !!search.url && !search.movieIds && !search.pending;
+  const denseIdList = !!search.movieIds && !!search.infinite;
   const listKey = useMemo(() => listKeyOf(search), [search]);
 
-  // ── The catalog views (Wall / List / Extended / Shelves / Newspaper / Directory) over the SAME search. ──
-  // Only a paged URL browse has a catalog scope (createMoviesSource → null for the rest), and the grid
-  // stays the existing CardList below (the host's `grid` override), so the default view is unchanged.
-  // The open/browse handlers are defined further down; the source reaches them through refs because
-  // it has to exist here, where the pump needs to know whether the grid is the view on screen.
-  const openRef = useRef(null);
-  const browseRef = useRef(null);
-  const catalogSource = useMemo(
-    () => (sparseInfinite && !search.pending
-      ? createMoviesSource({
-          search,
-          onOpen: (id, kind) => openRef.current?.(id, kind),
-          onBrowse: (mode, value) => browseRef.current?.(mode, value),
-          onScope: (patch) => scopeRef.current?.(patch),
-        })
-      : null),
-    [sparseInfinite, search]
-  );
-  const catalogView = useMemo(
-    () => (catalogSource ? resolveViewState(location.search, readCatalogDefaults("movies"), catalogSource, AVAILABLE_VIEWS).view : "grid"),
-    [catalogSource, location.search]
-  );
-  // The other views page through the source themselves; the grid's pump (and its letter strip) only
-  // runs while the grid is what's on screen.
-  const gridActive = catalogView === "grid";
-
-  // ── Sparse-infinite path: the page-map pump (see the comment on sparseInfinite above). ──
-  const paged = usePagedCatalog({
-    resetKey: listKey,
-    pageSize: INFINITE_PAGE_SIZE,
-    enabled: sparseInfinite && !search.pending && gridActive,
-    fetchPage: (skip, pageSize, signal) => {
-      const s = searchRef.current;
-      if (!s?.url) return Promise.resolve(null);
-      return fetch(withPage(s.url, Math.floor(skip / pageSize) + 1, pageSize), { signal })
-        .then((r) => (r.ok ? r.json() : null))
-        .then((data) => (data && Array.isArray(data.movies)
-          ? { items: data.movies, totalCount: typeof data.totalCount === "number" ? data.totalCount : -1 }
-          : null));
-    },
-  });
-
-  // A–Z buckets for the pager. The search states its own letter source (useMovieSearch's lettersUrl):
-  // /API/BrowseLetters buckets exactly the rows this search pages — same mode/value/type scope, one
-  // shared filter server-side — so picking Alphabetical gets the movie grid the same letter strip the
-  // music library has, over whatever is actually being browsed. Any other sort has no letters to jump
-  // to and the pager falls back to page numbers.
-  const lettersUrl = sparseInfinite && gridActive ? search.lettersUrl : null;
-  const [letters, setLetters] = useState(null);
+  // ── The dense fill ────────────────────────────────────────────────────────────────────────────
+  // An id list is paged in bounded chunks (never "fetch everything in one request"): the first chunk
+  // paints, each following one extends the array and bumps dataVersion. A one-shot URL/restore
+  // search is a single fetch — the restore path needs the whole list before it can re-apply the
+  // remembered on-screen order, so it must not paint a half-ordered grid.
   useEffect(() => {
-    setLetters(null);
-    if (!lettersUrl) return undefined;
-    let alive = true;
-    fetch(lettersUrl)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (alive && d?.letters?.length) setLetters(d.letters); })
-      .catch(() => {});
-    return () => { alive = false; };
-  }, [lettersUrl]);
-
-  // The slot array the grid renders in sparse mode: `total` long from the first response, holes
-  // where a page hasn't arrived. CardList renders a hole as a same-footprint skeleton card.
-  const sparseSlots = useMemo(() => {
-    if (!sparseInfinite) return null;
-    const arr = new Array(paged.total);
-    for (const [pg, items] of Object.entries(paged.pages)) {
-      const base = Number(pg) * INFINITE_PAGE_SIZE;
-      for (let i = 0; i < items.length; i += 1) arr[base + i] = items[i];
-    }
-    return arr;
-  }, [sparseInfinite, paged.pages, paged.total]);
-
-  // ── Non-infinite path: one fetch returns the full result set (or the legacy envelope). ──
-  useEffect(() => {
-    // No isAuthReady gate: URL searches are age-gated server-side via the auth cookie, and id-based
-    // (Seen/Want) searches are only dispatched post-auth upstream — so the grid fetches in parallel
-    // with /API/Me. `search.pending` is the initial sentinel (skeleton stays until NavBar dispatches).
-    if (isInfinite || search.pending) return;
+    if (sparseInfinite || search.pending) return undefined;
     if (!search.url && !search.movieIds) {
       setMovieDataArray([]);
-      setPagination(null);
       setLoading(false);
-      return;
+      bumpData();
+      return undefined;
     }
     setLoading(true);
     setFetchError(false);
+    setMovieDataArray([]);
+    bumpData();
     const controller = new AbortController();
     const { signal } = controller;
-    const fetchPromise = search.movieIds
+    let cancelled = false;
+
+    const oneShot = () => (search.movieIds
       ? fetch("/API/GetMoviesByIds", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(search.movieIds),
           signal,
         })
-      : fetch(search.url, { signal });
-    fetchPromise
+      : fetch(search.url, { signal }))
       .then((r) => r.json())
       .then((data) => {
-        if (data != null && Array.isArray(data.movies) && typeof data.totalCount === "number") {
-          setMovieDataArray(data.movies);
-          setPagination({ totalCount: data.totalCount, page: data.page, pageSize: data.pageSize });
-        } else {
-          setMovieDataArray(Array.isArray(data) ? data : (data?.value ?? []));
-          setPagination(null);
-        }
+        if (cancelled) return;
+        if (data != null && Array.isArray(data.movies)) setMovieDataArray(data.movies);
+        else setMovieDataArray(Array.isArray(data) ? data : (data?.value ?? []));
         setLoading(false);
-      })
-      .catch((err) => {
-        if (err.name === "AbortError") return;
-        setFetchError(true);
-        setLoading(false);
+        bumpData();
       });
-    return () => controller.abort();
-  }, [search.url, search.movieIds, search.pending, isInfinite, retryNonce]);
 
-  // ── Dense-infinite path (id-list searches): load the first page, then append on scroll. ──
-  useEffect(() => {
-    // No isAuthReady gate (see the non-infinite effect above): the first page loads in parallel with auth.
-    if (!denseInfinite || search.pending) return;
-    setLoading(true);
-    setFetchError(false);
-    pageRef.current = 1;
-    loadingMoreRef.current = false;
-    setLoadingMore(false);
-    // Invalidate (and cancel) any page-N fetch still in flight for the PREVIOUS result set.
-    epochRef.current += 1;
-    moreAbortRef.current?.abort();
-    moreAbortRef.current = null;
-    const controller = new AbortController();
-    fetchInfinitePage(search, 1, controller.signal)
-      .then((r) => r.json())
-      .then((data) => {
-        setMovieDataArray(Array.isArray(data?.movies) ? data.movies : []);
-        setPagination(
-          typeof data?.totalCount === "number"
-            ? { totalCount: data.totalCount, page: 1, pageSize: INFINITE_PAGE_SIZE }
-            : null
-        );
-        setLoading(false);
-      })
-      .catch((err) => {
-        if (err.name === "AbortError") return;
-        setFetchError(true);
-        setLoading(false);
-      });
-    return () => controller.abort();
-  }, [search.url, search.movieIds, search.pending, denseInfinite, retryNonce]);
-
-  const hasMore = denseInfinite && pagination != null && movieDataArray.length < pagination.totalCount;
-  hasMoreRef.current = hasMore;
-
-  // Identity-stable (reads everything through refs) so the scroll listener subscribes once instead of
-  // being torn down and re-added on every appended page.
-  const loadMore = useCallback(() => {
-    if (loadingMoreRef.current || !hasMoreRef.current) return;
-    loadingMoreRef.current = true;
-    setLoadingMore(true);
-    const epoch = epochRef.current;
-    const next = pageRef.current + 1;
-    const controller = new AbortController();
-    moreAbortRef.current = controller;
-    fetchInfinitePage(searchRef.current, next, controller.signal)
-      .then((r) => r.json())
-      .then((data) => {
-        if (epochRef.current !== epoch) return; // a different search landed while this was in flight
+    // Chunked + resumable-by-construction: each pass reports its own progress into the grid, and a
+    // pass that returns nothing (or hits the row cap) is the deterministic stop.
+    const fill = async () => {
+      const rows = [];
+      const sortQs = search.sort ? `&sort=${encodeURIComponent(search.sort)}` : "";
+      let total = Infinity;
+      for (let page = 1; !cancelled && rows.length < Math.min(total, DENSE_MAX_ROWS); page += 1) {
+        // eslint-disable-next-line no-await-in-loop
+        const r = await fetch(`/API/GetMoviesByIds?page=${page}&pageSize=${DENSE_PAGE_SIZE}${sortQs}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(search.movieIds),
+          signal,
+        });
+        // eslint-disable-next-line no-await-in-loop
+        const data = await r.json();
+        if (cancelled) return;
         const more = Array.isArray(data?.movies) ? data.movies : [];
-        if (more.length) {
-          pageRef.current = next;
-          setMovieDataArray((prev) => prev.concat(more));
-        }
-      })
-      .catch((err) => {
-        if (err.name === "AbortError") return;
-        // An appended page that failed is retried by the next sentinel pass; never an unhandled throw.
-      })
-      .finally(() => {
-        if (epochRef.current !== epoch) return; // the new search owns the flags now — don't clobber them
-        loadingMoreRef.current = false;
-        setLoadingMore(false);
-      });
-  }, []);
+        if (typeof data?.totalCount === "number" && data.totalCount >= 0) total = data.totalCount;
+        if (more.length === 0) break;
+        rows.push(...more);
+        setMovieDataArray(rows.slice());
+        setLoading(false);
+        bumpData();
+        if (more.length < DENSE_PAGE_SIZE) break;
+      }
+      setLoading(false);
+    };
 
-  const { sentinelRef, recheck } = useInfiniteScroll({ enabled: denseInfinite, hasMore, onLoadMore: loadMore });
-
-  // After a page lands, re-check the sentinel without re-subscribing: keeps the list filling when the
-  // content is still shorter than the viewport, or when the user is parked at the bottom.
-  useEffect(() => {
-    recheck();
-  }, [movieDataArray.length, loading, recheck]);
+    (denseIdList ? fill() : oneShot()).catch((err) => {
+      if (cancelled || err?.name === "AbortError") return;
+      setFetchError(true);
+      setLoading(false);
+    });
+    return () => { cancelled = true; controller.abort(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.url, search.movieIds, search.pending, search.sort, sparseInfinite, denseIdList, retryNonce, bumpData]);
 
   // The detail modal's state lives in the URL (?title=<kind>:<id>) — see titleFromUrl.
   const openTitle = useMemo(() => titleFromUrl(location.search), [location.search]);
@@ -363,23 +209,20 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
   // "Add to playlist" surface: pickerRequest = { items:[{playableId,title}], name } (null = closed).
   // playlistsVersion bumps to nudge the My-Playlists shelf to reload after a create/change.
   const [pickerRequest, setPickerRequest] = useState(null);
-  const [playlistsVersion, setPlaylistsVersion] = useState(0);
+  const [, setPlaylistsVersion] = useState(0);
   const openPlaylistPicker = useCallback((items, name = "") => {
     setPickerRequest({ items: items || [], name });
   }, []);
 
   // Restore-order reshuffle (back-nav) — memoized so it doesn't rebuild the Map/Set/concat over the
-  // full array (and hand a fresh array identity to the memoized grid) on every unrelated render
-  // (modal open/close, Seen/Want toggle, scroll append). Sparse lists pass straight through: the
-  // slot array IS the display order (restoreOrder only rides id-list searches, which are dense).
+  // full array (and hand a fresh array identity to the source) on every unrelated render.
   const displayMovies = useMemo(() => {
-    if (sparseSlots) return sparseSlots;
     if (!Array.isArray(search.restoreOrder) || search.restoreOrder.length === 0) return movieDataArray;
     const movieById = new Map(movieDataArray.map((movie) => [movie.id, movie]));
     const orderedMovies = search.restoreOrder.map((id) => movieById.get(id)).filter(Boolean);
     const orderedIdSet = new Set(orderedMovies.map((movie) => movie.id));
     return [...orderedMovies, ...movieDataArray.filter((movie) => !orderedIdSet.has(movie.id))];
-  }, [movieDataArray, search.restoreOrder, sparseSlots]);
+  }, [movieDataArray, search.restoreOrder]);
 
   // Every handler below is passed down to the memoized cards, so all of them must be identity-stable
   // or React.memo does nothing and each card re-renders on every Browse render (append, modal
@@ -456,14 +299,8 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
     if (search == null) return;
     history.push({ pathname: "/", search });
   }, [history]);
-  openRef.current = handleOpenMovie;
-  browseRef.current = handleBrowseSearch;
 
-  // No close-on-search-change effect any more: every search navigation (actor chip, the rail,
-  // insight chips) pushes a fresh facet URL that doesn't carry ?title, so the URL transition itself
-  // closes the modal.
-
-  // Called by CardList / MovieModal when a movie's viewing state is toggled.
+  // Called by the cards / MovieModal when a movie's viewing state is toggled.
   // Only removes a movie from the displayed list when the action that was deactivated
   // is the exact criterion that defines membership in the current browse mode.
   // e.g. removing from Seen while on the Want list leaves the card visible,
@@ -473,60 +310,105 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
       const lists = (new URLSearchParams(locationRef.current.search).get("my") || "").split(",");
       if (lists.some((l) => LIST_ACTION[l] === action) && movieDataRef.current.some((m) => m.id === movieId)) {
         setMovieDataArray((prev) => prev.filter((m) => m.id !== movieId));
-        // Keep the infinite-scroll total in sync with the removal so hasMore stays correct
-        // (no-op when not infinite, where pagination is null).
-        setPagination((prev) => (prev ? { ...prev, totalCount: Math.max(0, prev.totalCount - 1) } : prev));
+        bumpData();
       }
     }
-  }, []);
+  }, [bumpData]);
 
   const handleMovieUpdated = useCallback((updatedMovie) => {
-    setMovieDataArray((prev) =>
-      prev.map((m) => (m.id === updatedMovie.id ? updatedMovie : m))
-    );
-    // The sparse store too (loaded pages only; a hole has nothing to update).
-    paged.mapItems((m) => (m && m.id === updatedMovie.id ? updatedMovie : m));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paged.mapItems]);
+    setMovieDataArray((prev) => prev.map((m) => (m.id === updatedMovie.id ? updatedMovie : m)));
+    // The server source has the new row too — a re-read is how it picks it up.
+    bumpData();
+  }, [bumpData]);
 
-  // The grid as it has always rendered — and, when the search has a catalog scope, the `grid` view
-  // the CatalogHost shows behind its pill row; the other views render from the source instead.
-  const gridBody = (sparseInfinite ? !paged.firstLoaded : loading) ? (
-        <CardGridSkeleton />
-      ) : sparseInfinite && paged.loadError && paged.total === 0 ? (
-        <LoadFailure message="Couldn't load the library." onRetry={paged.retry} />
-      ) : fetchError ? (
-        <LoadFailure message="Couldn't load the library." onRetry={() => setRetryNonce((n) => n + 1)} />
-      ) : displayMovies.length === 0 ? (
-        /* A real zero-result answer (errors and in-flight loads are handled above) — say so, the
-           way every catalog on the site does, instead of rendering a blank grid. */
-        <Empty description="No titles match." />
-      ) : useSimpleStyle ? (
-        <SimpleCardList
-          movieDataArray={displayMovies}
-          userData={userData}
-          setUserData={setUserData}
-          onMovieClick={handleOpenMovie}
-          onToggleViewing={handleToggleViewing}
-        />
-      ) : (
-        <CardList
-          movieDataArray={displayMovies}
-          userData={userData}
-          setUserData={setUserData}
-          actorSearch={handleActorSearch}
-          activePerson={search.facet?.include?.person?.[0]}
-          onMovieClick={handleOpenMovie}
-          onToggleViewing={handleToggleViewing}
-          isMobile={isMobile}
-          listKey={listKey}
-          contentKey={sparseInfinite ? paged.contentKey : 0}
-          onWindow={sparseInfinite ? paged.notifyWindow : undefined}
-          pager={sparseInfinite && paged.total > 0
-            ? { total: paged.total, letters, pageSize: INFINITE_PAGE_SIZE }
-            : null}
-        />
-      );
+  // ── The card the Grid lays into the bands ─────────────────────────────────────────────────────
+  // MovieCard / SimpleMovieCard are MODULE-LEVEL components (the BandSlot memo law): a renderer
+  // created per render would be a new component type every render and remount the whole band. The
+  // live context reaches them through one memoized bundle, so the renderer's identity changes
+  // exactly when a card's appearance depends on something that changed — a Seen/Want set, the
+  // searched person, the sign-in state — and not on every unrelated Browse render.
+  const seenSet = useMemo(() => new Set(userData?.moviesSeen), [userData?.moviesSeen]);
+  const wantSet = useMemo(() => new Set(userData?.moviesToWatch), [userData?.moviesToWatch]);
+  const { toggleSeen, toggleWant } = useViewingToggles(userData, setUserData, handleToggleViewing);
+  const activeName = (search.facet?.include?.person?.[0] ?? "").toString().trim().toLowerCase();
+  const cardCtx = useMemo(() => ({
+    simple: useSimpleStyle,
+    activeName,
+    showOptions: !!userData,
+    seenSet,
+    wantSet,
+    onMovieClick: handleOpenMovie,
+    onActorSearch: handleActorSearch,
+    onToggleSeen: toggleSeen,
+    onToggleWant: toggleWant,
+  }), [useSimpleStyle, activeName, userData, seenSet, wantSet, handleOpenMovie, handleActorSearch, toggleSeen, toggleWant]);
+
+  const renderCard = useCallback((item, view) => {
+    const row = item.raw;
+    const Comp = cardCtx.simple ? SimpleMovieCard : MovieCard;
+    return (
+      <Comp
+        item={row}
+        eager={view.eager}
+        metadata={view.metadata}
+        hoverClass={view.hoverClass}
+        activeName={cardCtx.activeName}
+        showOptions={cardCtx.showOptions}
+        isWatched={cardCtx.showOptions ? cardCtx.seenSet.has(row.id) : false}
+        isWanted={cardCtx.showOptions ? cardCtx.wantSet.has(row.id) : false}
+        onMovieClick={cardCtx.onMovieClick}
+        onActorSearch={cardCtx.onActorSearch}
+        onToggleSeen={cardCtx.onToggleSeen}
+        onToggleWant={cardCtx.onToggleWant}
+      />
+    );
+  }, [cardCtx]);
+
+  // ── The source ────────────────────────────────────────────────────────────────────────────────
+  // The open/browse handlers reach the server source through refs so its identity stays keyed on
+  // the search alone.
+  const openRef = useRef(null);
+  const browseRef = useRef(null);
+  openRef.current = handleOpenMovie;
+  browseRef.current = handleBrowseSearch;
+  const serverSource = useMemo(
+    () => (sparseInfinite
+      ? createMoviesSource({
+          search,
+          onOpen: (id, kind) => openRef.current?.(id, kind),
+          onBrowse: (mode, value) => browseRef.current?.(mode, value),
+          onScope: (patch) => scopeRef.current?.(patch),
+        })
+      : null),
+    [sparseInfinite, search]
+  );
+  const listSource = useMemo(
+    () => (serverSource
+      ? null
+      : createMoviesListSource({
+          rows: displayMovies,
+          listKey,
+          sort: search.sort,
+          alphabetical: search.sort === "alpha" && !search.restoreOrder,
+          onOpen: (id, kind) => openRef.current?.(id, kind),
+        })),
+    [serverSource, displayMovies, listKey, search.sort, search.restoreOrder]
+  );
+  const gridClass = useSimpleStyle ? "bx-grid--simple" : "bx-grid--movies";
+  const source = useMemo(() => {
+    const base = serverSource ?? listSource;
+    return base && { ...base, renderCard, gridClass, gridCell: MOVIE_GRID_CELL, dataVersion };
+  }, [serverSource, listSource, renderCard, gridClass, dataVersion]);
+
+  // While the dense list is still on the wire (or failed) the Grid shows the site-wide skeleton /
+  // failure surface instead of the stream — the pills, the rail and the chips stay up throughout.
+  const gridOverride = serverSource
+    ? null
+    : search.pending || (loading && displayMovies.length === 0)
+      ? <CardGridSkeleton />
+      : fetchError
+        ? <LoadFailure message="Couldn't load the library." onRetry={() => setRetryNonce((n) => n + 1)} />
+        : null;
 
   // The bar's tools: the phone's Filters pill raising the full-page sheet (the desktop rail is the
   // sider's MoviesSiderRail, which carries the count on its head line), the chips over the results,
@@ -542,54 +424,28 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
       {/* Rail mounts regardless of the grid's loading state so its lineup + posters fetch in parallel
           with the movie grid (it self-gates on a streaming-enabled session), rather than only after. */}
       {isLandingSearch(location.search) && <NowOnTvRail userData={userData} setUserData={setUserData} />}
-      {catalogSource ? (
-        <CatalogHost section="movies" source={catalogSource} overrides={{ grid: gridBody }} tools={filtersPill} beforeResults={chips} />
-      ) : (
-        <>
-          {filtersPill && <BarToolsSlot>{filtersPill}</BarToolsSlot>}
-          {chips}
-          {gridBody}
-        </>
-      )}
-      {denseInfinite && !loading && (
-        <div ref={sentinelRef} aria-hidden="true" style={SENTINEL_STYLE} />
-      )}
-      {/* Only while a page is actually in flight — this used to show for as long as `hasMore` was
-          true, i.e. a permanent footer under a list that was sitting perfectly still. */}
-      {loadingMore && (
-        <div style={LOADING_MORE_STYLE}>Loading more…</div>
-      )}
+      <CatalogHost
+        section="movies"
+        source={source}
+        overrides={gridOverride ? { grid: gridOverride } : undefined}
+        tools={filtersPill}
+        beforeResults={chips}
+      />
       <Suspense fallback={null}>
-        {useSimpleStyle ? (
-          <MovieModal
-            movieId={selectedMovieId}
-            kind={selectedKind}
-            open={isModalVisible}
-            onClose={handleCloseModal}
-            actorSearch={handleActorSearch}
-            onBrowse={handleBrowseSearch}
-            onOpenTitle={handleOpenMovie}
-            userData={userData}
-            setUserData={setUserData}
-            onToggleViewing={handleToggleViewing}
-            onAddToPlaylist={openPlaylistPicker}
-          />
-        ) : (
-          <MovieModal
-            movieId={selectedMovieId}
-            kind={selectedKind}
-            open={isModalVisible}
-            onClose={handleCloseModal}
-            actorSearch={handleActorSearch}
-            onBrowse={handleBrowseSearch}
-            onOpenTitle={handleOpenMovie}
-            userData={userData}
-            setUserData={setUserData}
-            onToggleViewing={handleToggleViewing}
-            onMovieUpdated={handleMovieUpdated}
-            onAddToPlaylist={openPlaylistPicker}
-          />
-        )}
+        <MovieModal
+          movieId={selectedMovieId}
+          kind={selectedKind}
+          open={isModalVisible}
+          onClose={handleCloseModal}
+          actorSearch={handleActorSearch}
+          onBrowse={handleBrowseSearch}
+          onOpenTitle={handleOpenMovie}
+          userData={userData}
+          setUserData={setUserData}
+          onToggleViewing={handleToggleViewing}
+          onMovieUpdated={useSimpleStyle ? undefined : handleMovieUpdated}
+          onAddToPlaylist={openPlaylistPicker}
+        />
       </Suspense>
       <PlaylistPickerModal
         open={!!pickerRequest}

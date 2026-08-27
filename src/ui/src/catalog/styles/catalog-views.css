@@ -266,6 +266,10 @@
   grid-column: 1 / -1;
   overflow: hidden;
   pointer-events: none;
+  /* The band is a fixed-height box: a CSS grid would otherwise STRETCH its auto rows to fill it
+     (align-content defaults to stretch) and paint a handful of tiles floating in white space. */
+  align-content: start;
+  align-items: start;
 }
 .bx-skel-card { pointer-events: none; }
 .bx-skel-band .bx-cover { box-shadow: none; }

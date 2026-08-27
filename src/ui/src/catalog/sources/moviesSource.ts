@@ -16,6 +16,7 @@
 import { MovieAPI } from "../../MovieAPI";
 import type { CardGroup, CardItem, CardKind, CardPage, CatalogSource, DirectoryNode, GroupPage, GroupSpec, LetterBucket, ListColumn, SortSpec, ViewMode } from "../types";
 import { cardKey } from "../types";
+import { createClientSource, type ClientSort } from "./clientSource";
 import { hueOf } from "./hue";
 
 export { hueOf };
@@ -325,4 +326,47 @@ export function createMoviesSource({ search, onOpen, onBrowse, onScope }: Movies
         }
       : undefined,
   };
+}
+
+export interface MoviesListSourceOptions {
+  /** The rows the page already holds, in the order it shows them. */
+  rows: MovieCardRow[];
+  /** Identity of the LIST (which search it is) — NOT its contents; `dataVersion` covers edits in place. */
+  listKey: string;
+  /** The order the server returned (`NormalizeSort`'s vocabulary); the section owns it, so nothing re-sorts here. */
+  sort?: string | null;
+  /** False when the array order is NOT the alphabetical one (the back-nav restore reorders it) — no letter strip. */
+  alphabetical?: boolean;
+  onOpen: (id: number, kind: CardKind) => void;
+}
+
+/**
+ * The DENSE movie lists — Seen, Want to watch, the back-nav restore, and any one-shot browse — as a
+ * `CatalogSource` over the rows the page is already holding (R9 S3). They kept their own renderer
+ * for one reason: removal-on-untoggle edits a dense array in place, which a sparse page map cannot
+ * express without re-seating every following slot. It still does; the array is the source's `items`
+ * and the page bumps `dataVersion` when it edits one out, so the engine re-reads the bands and
+ * leaves the scroll position alone.
+ *
+ * Flat views only: an id list has no server grouping behind it, and the site's rule is that a
+ * control which does not apply is REMOVED, not disabled.
+ */
+export function createMoviesListSource(o: MoviesListSourceOptions): CatalogSource {
+  const alpha = o.alphabetical !== false;
+  const sorts: ClientSort[] = MOVIE_SORTS.map((s) => ({ ...s, alpha: !!s.alpha && alpha }));
+  const sort = o.sort && MOVIE_SORTS.some((s) => s.value === o.sort) ? o.sort : "alpha";
+  return createClientSource({
+    queryKey: `movies:list:${o.listKey}`,
+    title: "Movies",
+    itemNoun: "title",
+    items: o.rows.map(toCard),
+    sorts,
+    // The rows arrive in the server's order and the NavBar owns the Sort control, so the pill pins
+    // to what is on screen instead of re-ordering a page the server already ordered.
+    currentSort: sort,
+    listColumns: MOVIE_LIST_COLUMNS,
+    defaultAspect: POSTER_ASPECT,
+    pageSize: MOVIES_PAGE_SIZE,
+    onOpen: (item) => o.onOpen(item.id, item.kind),
+  });
 }

@@ -3,12 +3,14 @@ import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 
-// ── Browse rides the sparse catalog now ─────────────────────────────────────────────────────────
+// ── Browse rides the ONE catalog engine (R9 S3) ─────────────────────────────────────────────────
 // URL-based infinite searches (the Type-scope browse, title/person/genre/franchise) are modelled as
-// fixed slots from the first response — the arcade lobby's page-map pump, extracted to
-// usePagedCatalog — so the CatalogPager quick-scroll strip can seek anywhere and scrolling works in
-// both directions. Id-list (Seen/Want) searches deliberately keep the dense append + sentinel path.
-// This file pins the seams of that split.
+// fixed slots from the first response — InfiniteBands' sparse bands — so the CatalogPager
+// quick-scroll strip can seek anywhere and scrolling works in both directions. Id-list (Seen/Want)
+// searches ride the SAME engine over a dense client source: their list is user-sized and a
+// Seen/Want removal edits the array in place, which a sparse page map cannot express. This file
+// pins the seams of that split. (The assertions moved from `.card-list` — the retired CardList
+// shell — to `.bx-grid--movies`, the Grid's own wrap; the behaviour they pin is unchanged.)
 
 global.IS_REACT_ACT_ENVIRONMENT = true;
 global.ResizeObserver = global.ResizeObserver || class { observe() {} unobserve() {} disconnect() {} };
@@ -105,7 +107,7 @@ describe("the sparse browse catalog", () => {
     const { container } = mount(urlSearch);
     await frames();
     expect(requests.some((r) => r.startsWith("/API/GetMoviesByType") && r.includes("page=1"))).toBe(true);
-    expect(container.querySelector(".card-list")).toBeTruthy();
+    expect(container.querySelector(".bx-grid--movies")).toBeTruthy();
     expect(container.textContent).toContain("Movie 0");
   });
 
@@ -122,16 +124,20 @@ describe("the sparse browse catalog", () => {
   it("mounts no bottom sentinel — the window pump owns fetching, not a scroll sentinel", async () => {
     const { container } = mount(urlSearch);
     await frames();
-    // The dense path's sentinel is a 1px div; the sparse path must not render one.
+    // Nothing in the catalog stream is driven by a 1px bottom sentinel any more, on either path.
     expect(container.querySelector('div[aria-hidden="true"][style*="height: 1px"]')).toBeNull();
   });
 
-  it("keeps id-list (Seen/Want) searches on the dense sentinel path with no pager", async () => {
+  it("pages id-list (Seen/Want) searches into the SAME grid — dense, chunked, no sentinel", async () => {
     const { container } = mount({ movieIds: [1, 2, 3], infinite: true });
     await frames();
-    expect(requests.some((r) => r.startsWith("/API/GetMoviesByIds"))).toBe(true);
-    expect(container.querySelector(".catalog-pager")).toBeNull();
+    // Chunked, never "fetch everything in one request": a paged POST, bounded by the row cap.
+    expect(requests.some((r) => r.startsWith("/API/GetMoviesByIds") && r.includes("page=1"))).toBe(true);
+    // It is the catalog Grid now — so Seen/Want finally has the pills, the tweaks and the strip.
+    expect(container.querySelector(".bx-grid--movies")).toBeTruthy();
     expect(container.textContent).toContain("Movie 0");
+    // Three titles is under one band: no pager to seek with.
+    expect(container.querySelector(".catalog-pager")).toBeNull();
   });
 
   it("asks for no letters under a non-alphabetical sort (page numbers instead)", async () => {

@@ -79,8 +79,8 @@
    (133px, matching the failure placeholder below) so the card's text column doesn't shift as posters
    decode/arrive (CLS). object-fit keeps odd aspect ratios letterboxed instead of stretched. */
 .card-poster-image {
-  height: 200px;
-  width: 133px;
+  height: 100%;
+  width: 100%;
   object-fit: contain;
   display: block;
   margin: 0;
@@ -89,8 +89,8 @@
 /* Shown when a poster is missing / fails to load (most Misc videos have no poster). Keeps the
    2:3 poster footprint so the card layout doesn't collapse. */
 .card-poster-placeholder {
-  height: 200px;
-  width: 133px;
+  height: 100%;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -125,15 +125,10 @@
 
 /* Narrow screens: smaller poster (card height follows it) + tighter right-column padding.
    Everything stays in the horizontal layout — no stacking, no overflow. */
+/* Narrow screens: tighter right-column padding. The card's HEIGHT is the cover-size tweak's job
+   now — the tweaks store keeps a separate scale per pointer class, so a phone already lands on a
+   smaller default cell (0.8x) than a desktop and the reader can move it. */
 @media (max-width: 640px) {
-  .card-content-wrapper {
-    height: 172px;
-  }
-  .card-poster-image,
-  .card-poster-placeholder {
-    height: 172px;
-    width: 115px;
-  }
   .card-right-col {
     padding: 8px 10px;
     gap: 4px;
@@ -310,4 +305,125 @@
   background-color: var(--accent-soft);
   color: var(--accent);
   border: 1px solid var(--accent-soft);
+}
+
+/* ── The movie Grid, on the catalog engine (R9 S3) ────────────────────────── */
+/* `CardList`'s windowing + pager shell retired: the cards below are laid out by the package's
+   GridView over InfiniteBands (`CatalogSource.renderCard`). This is what `.card-list` used to be —
+   the same responsive column count — as the Grid's own wrap class, so the engine's row-spanning
+   spacers and band skeletons can live in it. */
+.bx-grid.bx-grid--movies {
+  display: grid;
+  /* minmax(0, 1fr), not 1fr: a bare 1fr track has an implicit min-content minimum, so a card
+     whose content is wider than the viewport (e.g. a long cast line) stretches the track past
+     the screen. The 0 minimum lets each column shrink to the container and clip instead. */
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+  padding: 10px 10px 2px;
+}
+
+@media (min-width: 769px) {
+  .bx-grid.bx-grid--movies { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1200px) {
+  .bx-grid.bx-grid--movies { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1600px) {
+  .bx-grid.bx-grid--movies { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+/* The engine's lead/tail spacers and its band skeletons are row-breaking blocks: in a column grid
+   they have to span every track or they would sit in column 1 and shred the layout. */
+.bx-grid--movies > .bx-band-spacer,
+.bx-grid--movies > .bx-skel-band { grid-column: 1 / -1; }
+.bx-grid--movies > .bx-skel-band { padding: 0; gap: 8px; }
+.bx-grid--movies .bx-skel-card .bx-cover { width: 100% !important; }
+
+/* The tweak contract. The card's height IS the cover box, so `--cell` (the cover-size tweak, set
+   on the wrap by FlatCardStream) drives the whole card. */
+.bx-grid--movies .card-content-wrapper { height: var(--cell, 200px); }
+.bx-grid--movies .card-poster-container.bx-cover {
+  width: calc(var(--cell, 200px) * 0.667);
+  height: var(--cell, 200px);
+  flex: 0 0 auto;
+}
+/* Posters are letterboxed, not cropped — the package default (`object-fit: cover`) would trim
+   non-2:3 art the movie card has always shown whole. One class more specific than `.bx-cover > img`. */
+.card-poster-container.bx-cover > .card-poster-image,
+.card-poster-container.bx-cover > .card-poster-placeholder {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.card-poster-container.bx-cover > .card-poster-image { object-fit: contain; }
+/* The card's own antd shadow is the frame; the package's cover ring would double it. */
+.bx-grid--movies .card-poster-container.bx-cover { box-shadow: none; background: transparent; }
+.bx-grid--movies .bx-card { min-width: 0; }
+
+/* ── The phone "simple" style — the same Grid, a poster tile instead of a row ── */
+.bx-grid.bx-grid--simple {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 4px;
+  padding: 5px;
+}
+.bx-grid--simple > .bx-band-spacer,
+.bx-grid--simple > .bx-skel-band { grid-column: 1 / -1; }
+.bx-grid--simple > .bx-skel-band { padding: 0; gap: 4px; }
+.bx-grid--simple .bx-skel-card .bx-cover { width: 100% !important; }
+.simple-card-cell { min-width: 0; }
+.mobile-movie-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  background: var(--card-surface);
+  user-select: none;
+}
+.simple-card-poster {
+  width: 100%;
+  height: var(--cell, 200px);
+  flex: 0 0 auto;
+  background: var(--line);
+}
+.simple-card-poster > .simple-card-poster-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.simple-card-text { padding: 4px 8px; cursor: pointer; }
+.simple-card-title {
+  font-weight: 700;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.3;
+  color: var(--text-primary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-align: center;
+}
+.simple-card-text:hover .simple-card-title { color: var(--accent); }
+.simple-card-meta {
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.simple-card-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: auto;
+  padding: 4px 8px;
 }
