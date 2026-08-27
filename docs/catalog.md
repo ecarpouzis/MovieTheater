@@ -70,6 +70,36 @@ two-phase — heads (`totalGroups` + a page of groups with their first cards) th
   `labelOf`, `appliesTo: "groups"`), the text/years/rating/flags, and two loaders. Saved searches
   keep the whole query string per section (`catalog.saved.v1:<section>`).
 
+## The bar and the tools slot (`catalog/bar/`) — R9 S1
+
+The ONE content-top bar every section wears, and the seam that lets a page put its own controls on
+it without the bar ever importing a catalog.
+
+- **`bar/sections.ts` is the table.** One row per section: `key`, `prefixes`, `title`,
+  `searchPlaceholder`, and its `tabs` (`label`, `path`, `exact?`, `admin?`, `when(user)`). `NavBar`
+  reads the same table and stays the single writer of `data-feature`. `barHidden(pathname)` is the
+  short list of immersive routes that get NO bar at all (`/watch/`, `/tv/`, `/arcade/room/`,
+  `/watch-together/`). **`when: false` REMOVES a tab** — the Long Box rule the whole chrome follows:
+  a control that does not apply is removed, never disabled.
+- **`SectionBar.tsx` is mounted ONCE**, in `App.js` above the route switch. Desktop: tabs · the
+  section's SmartSearch (`#section-bar-search`) · the tools slot (`#section-bar-tools`) · the
+  light/dark toggle. Phones: the fixed 48 px top bar carries the GENERIC controls (search, ⚙,
+  theme) in `#topbar-tools`, and this bar becomes one swipeable strip of content navigation only —
+  tabs, then the section's pills. Nothing generic rides in the scroller.
+- **The tools slot is a PORTAL, and the page fills it.** `CatalogHost` `createPortal`s
+  `Filters(phone) · View · Group · Items · Sort · ⚙` into `#section-bar-tools` (the ⚙ into
+  `#topbar-tools` on phones), through `bar/useSlot.ts`; a page with no host at all uses
+  `tweaks/PageTweaksTool` or `bar/SlotPortal` the same way (the Books Shelf's ⚙, Arcade's Saves and
+  Quality). `announceSlots()` tells mounted consumers to re-target when the layout flips. With no
+  slot present the host falls back to an in-flow `ViewSwitcher` row — that fallback is for a host
+  rendered outside the app shell, and a section rendering one on a normal page is a bug the smoke
+  catches ("no in-flow toolbar").
+- **One bar, one sort control, one ⚙, and the count is NOT here.** The result total lives on the
+  rail's head line (`.bx-rail-count`) — counts live where the thing they count lives. Every legacy
+  sort Select the sections carried (`SearchTools`, `ArcadeNavContent`, `BoardGameNavContent`) was
+  retired in S1; the Sort pill is the one control, and a section that persists its own order says so
+  through `CatalogSource.currentSort`.
+
 ## The engine (`engine/InfiniteBands.tsx`)
 
 The standalone site's InfiniteScroller, ported: sparse band slots with prefix-summed heights, a
@@ -88,8 +118,9 @@ section under every backdrop; a source sets `shelvesSkin: "plain"` for bare plan
 ## Laws (R9 S0 — the Long Box `views-perf` catalog is binding)
 
 - **One engine, one strip — TRUE since R9 S3.** Every view of every section rides `InfiniteBands`,
-  and every view's seek control is `Components/CatalogPager` (letters under an alphabetical sort,
-  page numbers otherwise). `hooks/useGridWindow` and `hooks/usePagedCatalog` — the second engine the
+  and every view's seek control is `catalog/pager/CatalogPager` — letters under an alphabetical sort,
+  page numbers otherwise. (It moved out of `Components/` in R9 S9, a pure file move: it is the
+  package's ONE strip, not a leftover of the Grid overrides S3 deleted.) `hooks/useGridWindow` and `hooks/usePagedCatalog` — the second engine the
   four Grid overrides ran on — are DELETED; there is nowhere left to re-roll one. A source that wants
   LETTERS on its flat views must offer `letters(sort)` (Books: `/browse/letters`, the flat sibling of
   `group-letters`; Movies: `/API/BrowseLetters`); with only `groupLetters` the strip falls back to
@@ -137,11 +168,21 @@ section under every backdrop; a source sets `shelvesSkin: "plain"` for bare plan
   Boardgame card, Arcade's GameCard and Music's album/artist tiles keep their exact presentation.
   Every other view keeps the package `Card`, so Wall/List/Extended/Shelves/Newspaper read as one
   site. The card renderer MUST be a module-level component; the full contract is below.
+- **A perf claim needs an instrument, and the instrument names its own blind spot.** Headless
+  measures script / layout / recalc / nodes / listeners / heap / long tasks / the pacing of a
+  SCRIPTED scroll faithfully; it CANNOT reproduce GPU raster, real scrollbar layout or perceived
+  smoothness, because it renders in software. So "60 fps and zero jank in the profiler" is never a
+  smoothness verdict — the HUD on real hardware and the headed feel probe are, and the three tiers
+  are listed under "The instruments" below. Profile the PRODUCTION bundle; a dev-server number is
+  not a number.
 - **Rejected designs stay rejected:** settle-deferred band mounts (bare planks while scrolling),
   velocity-gated deferral, an always-on wheel→strip hijack, `content-visibility` on a JS-windowed
   band, making a section's Grid consume `ViewProps` instead of moving onto the engine (that keeps two
   engines alive forever), and replacing a section's card with the package card (it loses the detail
-  the Grid is FOR).
+  the Grid is FOR). Two more the instruments could tempt you into: a statistics scanner where one
+  picture answers the question, and tuning `MIN_WANT_AGE` against a WAN-proxied measurement — the
+  gate is a function of drag SPEED against band HEIGHT, and a slower drag legitimately prefetching
+  is the design working.
 
 ## The Grid's card seam (R9 S3) — `renderCard`
 
@@ -271,6 +312,24 @@ the only copy.
     (-1 = the endpoint does not count). One query key means the sider and the sheet ask once.
   - A section whose rail and page read the same CACHED list uses `hooks/useSharedCachedResource`
     (Boardgames, Music) — see the site-frontend skill for when that beats `useCachedResource`.
+### The rail, per section
+
+Every row is `Pages/<Section>/<section>FacetSpec.ts` plus the sider mount its NavContent renders.
+"Option counts" is where the numbers on the chips come from; a CLIENT source counts them in the
+browser with `clientFacets.ts`, a SERVER one asks an endpoint built from the same pass the browse
+itself uses.
+
+| Section | Facets, in spec order | Ranges / flags | Option counts | Index rows |
+|---|---|---|---|---|
+| Movies/TV | Type · Genre · MPA (one pill row, five stops) · Franchise · People (typeahead) · Mood · Subgenre · Era · Theme · Setting | Years (two-thumb) · Seen/Want/Rated (`my=`) | `/API/BrowseFacets` (keyed on the Type scope) + `/API/BrowsePeople` for the person tail | Seen · Want to watch · Rate movies · Playlists |
+| TV | — (no catalog) | — | — | Guide · Favourites · Playlists |
+| Boardgames | Publisher · Family · Designer · Category · Mechanic · Players | Min age · Play time · Weight (`a`/`t`/`w`, fixed stops) · Years | `/API/Boardgames/Facets` for the five link facets; the ladders are computed over the cached OData catalog | — |
+| Music | Kind (a SCOPE — the shelf is fetched, not filtered) · Artist · Tag · Year | Years | client, over the cached shelf (`useMusicShelf`) | — |
+| Arcade | System (**drawn as the console carousel**, `hidden` in the rail) · Players · Genre · Variant · RA · Region (exclude-only) | — | `/API/Arcade/Filters` | — |
+| Photos | Album · People · Kind · Camera | Years · hidden (admin) | `/API/Photos/Facets`, per hidden toggle | Undated · Folders |
+| Books | Collection · Series · Publisher · Franchise · Author · Artist · Tag · Event | Years · Rating floor (`r=`) · Read/Want (`my=`) | `/API/Books/browse/facets` + `/facet-options` for the paged long tails | — |
+| Novels | include-only (author/series/publisher/decade — the host cannot exclude on these) | — | `/API/Books/novels/facets` | — |
+
 - **Specs**: `Pages/Books/booksFacetSpec.ts`, `novelsFacetSpec.ts`, `Pages/Browse/moviesFacetSpec.ts`
   (Type · Genre · MPA as one pill row · Years as the bare two-thumb range · Franchise · People
   (typeahead via `/API/BrowsePeople`) · mood/subgenre/era/theme/setting · Seen/Want/Rated flags;
@@ -440,7 +499,7 @@ below. **Four rules the whole table obeys:**
 | Music | `letter` (albums AND artists) | year · quality tag | `kind` stays — three values, and the one axis naming which SHELF a row came off. The tag VALUE has no brackets: `MusicNaming.ParseAlbumFolder` strips them at ingest, so `… [FLAC]` on disk is `FLAC` here (two brackets become the one comma-joined `"FLAC, EP"`, which is what the rail's Tag facet matches). Brackets are wildcards only in a T-SQL `LIKE` or a PowerShell path. |
 | Arcade | — | players (`MaxPlayers`) · region · variant · developer · publisher · RetroAchievements | Region and variant are per VERSION: a card stands under every region and every variant it has a surviving dump for, the same reading the lobby's region deselect uses. They are the only multi-valued axes and pay for ONE extra light query, the distinct `(System, CollapseKey, Region, Variant)` tuples, and only when asked (`NeedsTags`). An untagged dump is a real shelf (`Unknown` region, `Release` variant), never a silent drop. The RA axis' first three keys ARE the `ra=` facet's values. |
 | Photos | — | people · kind · camera | **The `month` verdict: KEPT.** It was never a calendar month across years — the key is `YYYY-MM` and the label "December 2011", so it is the timeline at a finer grain, which is what a family album wants (a month here is an occasion). The across-years reading has its own endpoint, `/API/Photos/OnThisDay`, which exists precisely because the browse narrows by month only WITHIN a year. The pill now says "Month of a year". People counts AFFIRMED tags only (Manual / Confirmed) — a suggestion is a question. |
-| Books | — | writer · artist — **declared, wired, and OFF** | The FACETS exist; the HOST's grouping does not (`BrowseController.NormalizeGroupBy` matches `^(series\|publisher\|decade\|collection\|franchise)$`, and its band bucketing is single-key per item while a credit is many-per-item). A stale host does not 400 on `groupBy=author`, it silently returns COLLECTIONS, so `booksGroupsFor` keeps them off the pill behind `BooksSourceOptions.creditAxes` until the host that understands them is deployed. |
+| Books | — | writer · artist — **built on both sides, OFF until the host ships** | R9 S9 finished the host half: `GroupByPattern` knows `author\|artist`; `CreditHeadsAsync` builds the heads from the SAME `CreditKeyCountsAsync` → `WithDisplayNamesAsync` → `Ordered` the FACETS use, so a shelf's count and its chip's count cannot disagree (rule 2), with the normalized name as the KEY and the readable name as the LABEL, and no `take` (a truncated head list would make the letter rail lie); `BandQuery` narrows by EXISTENCE of a matching `ItemCredit` (a join would return the item once per credit row and inflate the band); and `KeyOf` became **`KeysOf`** — the first many-per-item axis the host has, so one issue stands under every writer AND every artist it credits, fed by a per-band `itemId → names` lookup joined against the band query rather than an id IN-list. `/browse/group-letters` rides the heads unchanged. The pill stays OFF (`CREDIT_AXES` in `Pages/Books/BrowsePage.tsx`) until `scripts/deploy-books-host.ps1` has run, because **a stale host does not 400 on `groupBy=author` — it silently answers with COLLECTIONS**, and a pill that draws the wrong axis is worse than one that is absent. The durable fix if this bites again: have the host ADVERTISE its axes on `/browse/facets` and let `booksGroupsFor` read that, so the pill can never outrun the binary. |
 
 ## Adopting the package (a section's checklist)
 
@@ -530,10 +589,103 @@ it: where the tool is a modal or a drawer today (the channel editor, the playlis
 per-game arcade config, the saves vault, the trophy hub), its tab is a card that opens it. The tab
 adds a URL and a place; it does not change what the tool does.
 
+## The instruments (R9 S9)
+
+One engine means one place to measure, so the Long Box's `views-perf` toolkit was ported whole
+rather than per section. Three tiers, and each answers a question the tier below it cannot.
+
+| Instrument | Where | What only IT can see |
+|---|---|---|
+| **Perf HUD** — `catalog/PerfHud.tsx` | in the app, mounted once by `CatalogHost` | the GPU slice, on REAL hardware. Enable with `localStorage["catalog.perfhud.v1"] = "1"` and reload; it shows fps, the worst frame of the CURRENT scroll burst, mounted bands + placeholders, cards, in-flight fetches, long tasks, the JS heap where a browser offers one ("heap n/a" is how you know you are in Firefox), and covers loading vs dormant. **Zero cost when off** is tested, not hoped for: with the flag unset it installs no listener, starts no rAF, patches no fetch and renders nothing. The flag is read ONCE per page load through `utils/storage`, so toggling needs a reload — a HUD that could appear mid-session would be measuring a page it changed. |
+| **`catalog-profile.mjs`** (CDP) | `.claude/skills/test-roms/` | the main-thread cost, exactly: nodes and heap AFTER a forced GC, listeners, long tasks, frame pacing over a scripted halfway drag, per section × view × profile. Reads pacing BEFORE the GC — a forced collection is a pause the sampler would file as jank. |
+| **`views-deep-probe.mjs` · `wall-probe.mjs`** | `.claude/skills/test-roms/` | the PUMP. Their headline is not a duration, it is **how many band requests a halfway drag issues** — a healthy sweep fires a couple of dozen, a broken one fires one per band swept, and that is the failure the want-list + abort + `MIN_WANT_AGE` triple exists to prevent. |
+| **`feel-probe.mjs`** | `.claude/skills/test-roms/`, HEADED, one at a time | the INPUT pipeline. The profiler drives `scrollTop` and can never see a wheel hijack, an autoscroll latch, a non-passive listener or a hover storm; this drives real `page.mouse.wheel` ticks with the cursor over content and reports per-tick dispatch time as well as frame pacing. A hung `mouse.wheel` IS the finding. |
+
+`probeLib.mjs` holds what they share: the prod-bundle base, the GET-only route guard, the injected
+longtask + rAF sampler, the RESOLVED scroll root, the halfway drag, and a covers-in-viewport reading
+that checks BOTH axes (checking only the vertical one counts a Shelves plank's whole horizontal run
+and reports a starvation that is not there).
+
+**Measure the production bundle.** `vite preview` over `src/ui/build` with the API routes proxied to
+prod (`:3101`), never the dev server — dev-mode React inflates every number and hides
+minifier-only breakage. Everything below was read that way.
+
+### Measured (2026-08-27, prod bundle at `:3101`, prod API over the WAN through one dev proxy)
+
+Halfway drag, 40 steps. `nodes` and `heap` are post-GC; `covers` is the fraction of viewport covers
+decoded 5 s after the landing.
+
+| Section · view | desktop — nodes / heap / long tasks / covers@5 s | phone — nodes / heap / long tasks / covers@5 s |
+|---|---|---|
+| Movies Grid | 4,326 / 8 MB / 0 / 18-18 | 3,925 / 8 MB / 0 / 6-6 |
+| Movies Wall | 8,820 / 9 MB / 0 / **0-104** (all by 9.6 s) | 3,660 / 7 MB / 0 / 29-40 (all by 5.6 s) |
+| Movies List | 3,263 / 7 MB / 0 / 17-17 | 2,790 / 7 MB / 0 / 16-16 |
+| Movies Extended | 23,634 / 13 MB / 0 / 19-25 (all by 6.0 s) | 23,204 / 13 MB / 0 / 8-8 |
+| Movies Shelves | 6,854 / 8 MB / 0 / 45-74 (all by 8.0 s) | 6,833 / 8 MB / 0 / 43-43 |
+| Boardgames Grid | 3,619 / 15 MB / 0 / 18-18 | 3,445 / 15 MB / 0 / 6-6 |
+| Boardgames Wall | 5,605 / 9 MB / 0 / 56-56 | 3,008 / 8 MB / 0 / 24-24 |
+| Boardgames List | 2,584 / 8 MB / 0 / 17-17 | 2,410 / 8 MB / 0 / 16-16 |
+| Boardgames Extended | 3,030 / 12 MB / 0 / 13-13 | 2,868 / 12 MB / 0 / 3-3 |
+| Boardgames Shelves | 2,439 / 12 MB / 0 / 33-33 | 1,488 / 11 MB / 0 / 9-9 |
+| Arcade Grid | 4,713 / 8 MB / 0 / 13-13 | 4,218 / 8 MB / 0 / 5-5 |
+| Arcade Wall | 8,296 / 8 MB / 0 / 19-19 | 3,462 / 7 MB / 0 / 32-32 |
+| Arcade List | 3,820 / 8 MB / 0 / 17-17 | 3,325 / 7 MB / 0 / 16-16 |
+| Arcade Extended | 15,651 / 13 MB / **2 (max 63 ms)** / 1-24 (all by 6.9 s) | 15,129 / 13 MB / **2 (max 57 ms)** / 12-12 |
+| Arcade Shelves | 6,860 / 9 MB / 0 / 54-54 | 6,224 / 9 MB / 0 / 37-37 |
+
+Regression probes:
+
+| Probe | Reading |
+|---|---|
+| `views-deep-probe` (40-step drag, Grid/Extended/List × 3 sections × 2 profiles) | **sweep fetches 0** in 16 of 18 cells; Arcade Extended fires 1–2. Frame max ≤ 25 ms everywhere except the Extended band mount (83–92 ms). |
+| `wall-probe` (60-step drag, Movies) | desktop 41 sweep fetches / 46 total, covers 0-91 at 5 s and complete at 12.0 s; phone **0** sweep fetches / 6 total, complete at 7.8 s. The asymmetry is arithmetic, not a defect: a 60-step drag over the desktop Wall's tall bands leaves a band wanted for ~210 ms, which clears `MIN_WANT_AGE`, while the phone's 1,120 px steps sweep past in ~40 ms. The 40-step drag fires zero on both. |
+| `feel-probe` (headed Chromium) | Movies Grid tick p50/p95/max 4/10/21 ms, frame max 28 ms, **0 stalls > 100 ms**; Movies Shelves 8/26/38 ms, frame max 56 ms, 0 stalls; Boardgames Extended 4/5/9 ms, frame max 24 ms, 0 stalls. |
+
+**Against the exit criterion** — bounded nodes/heap over a halfway drag: **met everywhere** (nodes
+and heap are flat in scroll depth; the window holds 1–6 bands and recycles the rest). 0 long tasks
+on the scripted scroll: **met in 28 of 30 cells**; Arcade Extended pays 2 tasks of ≤ 63 ms on its
+band mount, which is one commit of 779 cards and is interruptible (`startTransition` — frame p95
+stays 19 ms), not a stall. All viewport covers within 5 s of landing: **met for Grid, List and every
+Boardgames view; missed on the Movies Wall (9.6 s), Movies Shelves (8.0 s), Movies/Arcade Extended
+(~6.4 s)**. Two causes, and they are separable: (a) every cover here is a real WAN round trip
+funnelled through one Node dev proxy — Boardgames, whose art is already cached in the browser,
+completes at 0–2 ms in the same rig; (b) the residual server cost of a deep OFFSET query. 0 stalls
+> 100 ms at steady wheel speed: **met on Chromium; Firefox is owed** (Playwright wants a
+`firefox-1532` build this box does not have — `npx playwright install firefox`).
+
+**The one open lever, and it is the server's.** `/API/Browse`'s paging (`PageCardsAsync`,
+`PageMergedAsync`, `OrderCardKeys`) takes **no `CancellationToken`**, so a band fetch the engine
+aborts still runs to completion in the pod. The client half of the law is honoured exactly — the
+probes show the aborts happening — but the Long Box's own catalog names `RequestAborted`-aware
+queries as the unclaimed SERVER-side lever, and this is the same gap. It shows as the Wall's
+desktop landing: 41 swept-past queries the pod is still executing when the landing band's query
+arrives. Fixing it is an API change that cannot be verified before it is deployed, so it is
+recorded here rather than guessed at.
+
 ## Verification
 
-- `npm run typecheck`, `npm test`, `npm run build` (the same gate the Docker UI image runs).
-- Headless smoke (Playwright from the test-roms skill folder): each section's seven views on the
-  desktop and phone profiles, zero page/console errors, a card open from the Wall keeps the view.
-  Password-gated sections (Arcade, Photos, Books) need a password session and are checked by hand —
-  Books has a full Playwright suite on a hand-captured session (`.claude/skills/books/e2e/`).
+- `npm run typecheck`, `npm test`, `npm run build` (the same gate the Docker UI image runs);
+  `dotnet test src/MovieTheater.Tests` and — for the Books host — `src/MovieTheater.Books.Tests`.
+- **The headless smoke has ONE entry point**: `node stitch-smoke.mjs <outDir>` in
+  `.claude/skills/test-roms/`. It drives `catalog-smoke-section.mjs` over every section on the
+  desktop AND phone profiles in light AND dark, and its exit code is the number of failing sections.
+  `--gated` adds the sections the harness account can reach (Music, Arcade); `--sections=`,
+  `--checks=`, `--profiles=`, `--themes=` narrow it; `--slices` also runs the per-slice scripts
+  (`s3-grid`, `s4-modal`, `s5-skin`, `s6-admin`, `s7-explore`, `s8-pill`) unchanged. What it
+  asserts, per section: every view renders · ONE bar · ONE sort control · ONE ⚙ and it is IN THE
+  SLOT (bar on desktop, top bar on phones) · the count on the rail head and no in-flow toolbar ·
+  no control rendered inert · every ⚙ lever VISIBLY changes the Grid · a card open keeps `?view=`
+  and Back closes it · a letter jump lands and PINS · the Explore tab draws rails · the Admin tab
+  appears for an admin. GET-only: every other method is fulfilled locally with 204, the one
+  exception being the harness account's login.
+- **Photos and Books are `manual`** — no harness account can reach them (a family-album grant, and
+  BooksAccess + a password session). Books has its own Playwright suite on a hand-captured session:
+  `.claude/skills/books/e2e/`.
+- Three readings the smoke reports but never FAILS on, because failing them would punish the engine
+  for obeying its own rules: a superseded fetch's abort (`TypeError: Failed to fetch` /
+  `ERR_ABORTED` is what the "abort is not just for bands" law looks like from the console), a
+  missing poster (404 — data, not code), and the A–Z strip's greyed letters (an index shows every
+  letter; a letter with nothing behind it is a landmark, not an inert control).
+- **Known load-flakes** — these pass alone and fail only under a full parallel run; a red one is
+  not a signal until it is reproduced in isolation: `MusicPlayerHandoff`, `PhotoTagQueue`,
+  `PhotoPeopleTests.Rejecting_a_suggestion…`.
