@@ -219,12 +219,13 @@ the only copy.
   return the same set plus the site surface repoints (`--card-surface`, `--text-primary`, …) for an
   antd modal's wrap, which renders OUTSIDE the section root. It rides `styles={{ wrapper }}`, never
   `wrapProps.style` (that one REPLACES the wrap's inline style and takes its `zIndex` with it).
-  Worn by the movie sheet, the Books item/series sheets, the arcade game sheet and the photo
-  lightbox — the dialogs that already paint FROM the tokens. The boardgame sheet and the music album
-  sheet are NOT wired: the first hard-codes a light surface and light-surface ink, the second leaves
-  antd's own near-white container in place, and handing either a dark backdrop's `--text-primary`
-  paints light text on a white card (the bug `sheet-modal--themed` warns about in
-  `Components/SheetModal.css`). Tokenise them and they can opt in.
+  Worn by the movie sheet, the Books item/series sheets, the arcade game sheet, the photo lightbox
+  and — since R9 S6 — the boardgame sheet, whose hard-coded light surface and light-surface ink were
+  tokenised for it (`--bgm-*` at the top of `BoardGameModal.css`; the category hues survive as
+  color-mixes into the LIVE surface). The MUSIC album sheet is still NOT wired: it leaves antd's own
+  near-white container in place, so handing it a dark backdrop's `--text-primary` paints light text
+  on a white card (the bug `sheet-modal--themed` warns about in `Components/SheetModal.css`).
+  Tokenise first, wire after.
 - **Perf.** `.twk-panel` keeps its glass but never blurs over MOVING content: `data-scrolling` is set
   from one capturing `onAnyScroll` listener and cleared 160 ms after the last scroll, and the CSS
   swaps `backdrop-filter` for an opaque `--bg` for exactly that window. `eng-gecko` (software
@@ -331,6 +332,66 @@ all instant and abort-free — for sections that already ship their whole catalo
    `BoardGameModal.css`, `books-modal.css`), and it opens at `SHEET_Z` (1500,
    `Components/sheetModal.js` — the one place the number lives; `SHEET_STACK_Z` = 1600 for a dialog
    a sheet raises without closing itself). Card mode is for confirm/info prompts only.
+
+## The admin shell (`src/ui/src/admin/`) — R9 S6
+
+Not part of the catalog package, but the same idea one floor down: every section's operator tools
+wear ONE shell, at `/<section>/admin?tab=`, reached from the bar's Admin tab
+(`catalog/bar/sections.ts`). It was lifted out of the Books admin, which is now just its biggest
+adopter.
+
+| Piece | What it is |
+|---|---|
+| `AdminShell.tsx` | The head + the tab row. The tab is in the URL (`?tab=`), so "the Users tab" is a real link and an Overview row can point at it. Only the ACTIVE tab's body mounts — ten operator tabs mounted at once is ten queries nobody asked for — inside a `Suspense` so a tab can be a lazy chunk. `when: false` REMOVES a tab (the Long Box rule the bar follows); `allowed={false}` draws the refusal plate. `readAdminTab` / `visibleTabs` / `adminTabHref` are the pure helpers. |
+| `AdminOverview.tsx` | The report primitives: `AdminStats` (tiles), `NeedsAttention` (the rows), `AdminCard` (a plain block). |
+| `jobs.ts` | The job vocabulary — `JobStatus`/`JobStart`, `isRunning`, `jobPercent`, `AdminApiError`, and the `JobApi` adapter a section supplies. |
+| `useJobStatus.ts` | One job kind observed: the SSE feed while it runs, a 2 s poll behind it, `apply()` for the status a start/stop call already answered with. |
+| `JobCard.tsx` | One job as a card: state, progress, last line, error, Start / Stop. A 409 is a warning, not a failure. |
+| `driveBatches.ts` | The caller-driven chunk loop for a whole paged list: bounded per call, progress reported, **resumable** (`from`), a no-progress break, a step ceiling. The house rule for bulk work, on the client side. |
+| `aliases.js` | Where the old operator routes went — one table, rendered as `<Redirect>`s by App and by PhotosPage, asserted by a test. |
+| `admin.css` | The shell's surfaces (`.admin-page`, `.adm-*`). Books' four port names come from `.books-section`, so the shell states the site tokens only under `:not(.books-admin)`; `--bg` is `--content-bg`, never `--card-surface`, because the arcade's dark card surface is a GRADIENT and `color-mix()` over a gradient is invalid. |
+
+### The Overview contract
+
+**An Overview is a REPORT, not a dashboard.** Three rules, and they are the whole of it:
+
+1. **Existing endpoints only.** No section grew an API for its Overview. Movies reads
+   `/API/GetTotalMovieCount`, `/API/Admin/IngestReview/List?scope=batch|gaps`,
+   `/API/Admin/IngestReview/SyncCandidates`, `/API/Admin/Users`, `/API/Admin/PatchedArtifacts`; TV
+   reads `/API/Channel/Admin/List` + `/API/Channel/Playlist/Mine`; Arcade `/API/Arcade/Filters`,
+   `/Rooms`, `/HostStatus`; Photos the single `/API/Photos/Status`; Boardgames the same
+   `/odata/Boardgames` its browse reads; Music the shelf + `/API/Music/Capabilities`.
+2. **A count with no source says so.** `count: null` renders as `—` and does not link. Each page
+   also carries a "what this page cannot report" card naming the numbers that genuinely have no
+   endpoint (a channel's pool size, arcade box-art coverage, photo scanning/dating, every CLI job) —
+   a report with a stated gap beats a report that guesses.
+3. **A needs-attention row names the tab that fixes it and links to it.** Zero rows are not drawn;
+   a `null` row IS drawn (an unknown is worth saying); `always` pins a standing fact (the arcade
+   host is degraded, the curation store is unconfigured). Nothing is rendered inert.
+
+### The sections
+
+| Route | Tabs | Aliased from |
+|---|---|---|
+| `/movies/admin` | Overview · Review ingest · Insert · Batch insert · Users (admins only) · Rate | `/review-ingest`, `/insert`, `/batchinsert` (and `NavBar/AdminModal`, deleted — its body is the Users tab) |
+| `/channels/admin` | Overview · Channels · Playlists | — (`/tv/admin` is impossible: `/tv/:channelId?` is the screening room) |
+| `/arcade/admin` | Overview · Game config · Saves vault · RetroAchievements | — |
+| `/photos/admin` | Overview · Review · Dupes · Tag queue · Google | `/photos/review`, `/photos/dupes`, `/photos/tag`, `/photos/google` |
+| `/boardgames/admin` | Overview · Batch insert | `/boardgames/batchinsert` |
+| `/music/admin` | Overview | — |
+| `/books/admin` | Overview · Library · ComicVine · Series · Collections · Normalization · Kids · Duplicates · Config · System | — |
+
+`/rate` is deliberately NOT aliased: it is a member surface (the sider's "Rate Movies" row) that the
+movie admin also offers as a tab.
+
+**Gating is a courtesy.** The route re-checks the same flag the bar uses (`isAdmin`, or
+`isAdmin || canEditMovies` where an editor is enough) and draws a plate for anyone else — but every
+endpoint behind every tab is independently gated on the server, and that is the gate.
+
+**A dialog-backed tool stays a dialog.** The first pass WRAPPED what existed rather than rewriting
+it: where the tool is a modal or a drawer today (the channel editor, the playlist manager, the
+per-game arcade config, the saves vault, the trophy hub), its tab is a card that opens it. The tab
+adds a URL and a place; it does not change what the tool does.
 
 ## Verification
 
