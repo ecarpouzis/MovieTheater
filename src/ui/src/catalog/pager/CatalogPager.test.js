@@ -1,5 +1,7 @@
-import { describe, expect, it } from "vitest";
-import { activeLetter, bucketsFor, letterStrip, pageOf, pageStrip } from "./CatalogPager";
+import { readFileSync } from "node:fs";
+import { cleanup, render } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
+import CatalogPager, { activeLetter, bucketsFor, letterStrip, pageOf, pageStrip } from "./CatalogPager";
 
 describe("letterStrip", () => {
   it("renders the full #, A–Z strip, filling in the buckets the catalog has no games for", () => {
@@ -114,5 +116,55 @@ describe("bucketsFor", () => {
   it("survives an empty list and a missing key", () => {
     expect(bucketsFor([], key)).toEqual([]);
     expect(bucketsFor([{}], key)).toEqual([{ letter: "#", count: 1, offset: 0 }]);
+  });
+});
+
+// ── One strip, one layout (2026-08-28) ──────────────────────────────────────────────────────────
+// Eric, on his phone: "why do the numeric buttons on the movie page all scrunch up, and not take up
+// the space they can like the letters do?" They did, because the growth rule was scoped to a
+// `catalog-pager--letters` modifier on the nav. The modifier is gone and the rule moved onto the
+// button, so the two modes cannot drift apart again — which is what these pin.
+describe("the pager's layout does not depend on its mode", () => {
+  const LETTERS = [
+    { letter: "A", count: 100, offset: 0 },
+    { letter: "B", count: 100, offset: 100 },
+  ];
+  const pager = (mode) => render(
+    <CatalogPager mode={mode} letters={mode === "letters" ? LETTERS : null} total={200} pageSize={60} currentIndex={0} onJump={() => {}} />
+  );
+  /** The class list minus the active/current modifier — that one is a READOUT, not a layout. */
+  const layout = (el) => el.className.split(" ").filter((c) => !c.endsWith("--active")).sort().join(" ");
+
+  afterEach(cleanup);
+
+  it("draws the same nav class and the same button class under letters and under pages", () => {
+    const a = pager("letters");
+    const lettersNav = layout(a.container.querySelector("nav"));
+    const letterBtns = [...a.container.querySelectorAll(".catalog-pager__btn")].map(layout);
+    a.unmount();
+
+    const b = pager("pages");
+    const pagesNav = layout(b.container.querySelector("nav"));
+    const pageBtns = [...b.container.querySelectorAll(".catalog-pager__btn")].map(layout);
+
+    expect(pagesNav).toBe(lettersNav);
+    expect(new Set(pageBtns)).toEqual(new Set(letterBtns));
+    // Both modes actually drew buttons — an empty strip would pass every equality above.
+    expect(letterBtns.length).toBeGreaterThan(1);
+    expect(pageBtns.length).toBeGreaterThan(1);
+  });
+
+  // happy-dom's getComputedStyle is stubbed to inline styles only (setupTests.js), so the rule that
+  // makes them share the row is checked where it lives.
+  it("the growth rule sits on the button, unscoped by mode", () => {
+    // The path is a VARIABLE on purpose: Vite statically rewrites a literal
+    // `new URL("./x", import.meta.url)` into an asset URL (http://localhost:3000/…), and readFileSync
+    // then refuses it. Same trick as `sectionCardParity.test.jsx`.
+    const rel = "./CatalogPager.css";
+    const css = readFileSync(new URL(rel, import.meta.url), "utf8");
+    expect(css).toMatch(/\.catalog-pager__btn\s*\{[^}]*flex:\s*1 0 auto/);
+    // …and no mode-scoped layout RULE survives (the words still appear, in the comment that records
+    // why the modifier went away — so this must match a rule, not a mention).
+    expect(css).not.toMatch(/\.catalog-pager--letters[^{\n]*\{/);
   });
 });

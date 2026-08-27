@@ -169,10 +169,13 @@ function CatalogPager({ mode, letters, total, pageSize, currentIndex, onJump, di
   return (
     <nav
       ref={railRef}
-      /* The letters modifier is what lets the buttons share the full width of the strip. Page
-         numbers must NOT stretch: there are five of them and two ellipses, and spreading those
-         across a 1500px page reads as a broken layout rather than as an alphabet. */
-      className={`catalog-pager${mode === "letters" ? " catalog-pager--letters" : ""}`}
+      /* ONE layout for both modes. It used to carry a `--letters` modifier that let ONLY the letters
+         share the strip's full width, on the theory that five page numbers and two ellipses spread
+         across 1500px would read as a broken layout. Eric, on his phone (2026-08-28): "why do the
+         numeric buttons on the movie page all scrunch up, and not take up the space they can like
+         the letters do?" — the huddle at the left edge is what actually read as broken, so the
+         growth rule moved onto `.catalog-pager__btn` itself and the modifier is gone. */
+      className="catalog-pager"
       aria-label={mode === "letters" ? "Jump to letter" : "Jump to page"}
     >
       {mode === "letters"

@@ -188,7 +188,14 @@ section under every backdrop; a source sets `shelvesSkin: "plain"` for bare plan
   LETTERS on its flat views must offer `letters(sort)` (Books: `/browse/letters`, the flat sibling of
   `group-letters`; Movies: `/API/BrowseLetters`); with only `groupLetters` the strip falls back to
   page numbers on Grid/Wall/List. The strip is an INDEX, so it shows at any list length; page numbers
-  only appear once there is more than one page.
+  only appear once there is more than one page. **The two modes differ in their CONTENT, never in
+  their layout** (2026-08-28): every button carries `flex: 1 0 auto` and shares the row, and the strip
+  scrolls sideways on a phone once they no longer fit. The growth rule used to be scoped to a
+  `catalog-pager--letters` modifier on the nav, on the theory that page numbers spread across 1500 px
+  would read as broken — Eric, on his phone: *"why do the numeric buttons on the movie page all
+  scrunch up, and not take up the space they can like the letters do?"* The huddle in the left corner
+  was the broken-looking thing. The modifier is gone; `CatalogPager.test.js` pins that both modes draw
+  the same nav class and the same button class, and that the rule still sits on the button.
 - **The want-list pump + abort + `MIN_WANT_AGE` are a set.** Aborts alone cascade (a freed slot
   fetches the next doomed band; the server runs every query to completion); the age gate is what
   makes a scrollbar drag fire ~zero mid-flight fetches.
