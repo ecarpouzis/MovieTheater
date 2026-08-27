@@ -4,7 +4,7 @@
  * and — for a `dynamic` facet — a debounced server search plus scroll-to-load paging through the
  * spec's `loadOptions`. Publishers draw a swatch, collections a square cover tile with a hue fallback.
  */
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { hueOf } from "../sources/hue";
 import type { FacetDef, FacetOptionRow, FacetSpec, FacetValue } from "./facetSpec";
 import { hasFacetValue } from "./facetSpec";
@@ -28,7 +28,8 @@ function TileImage({ src, hue, alt }: { src?: string | null; hue: number; alt: s
   const [failed, setFailed] = useState(false);
   useEffect(() => { setFailed(false); }, [src]);
   if (!src || failed) return <span className="bx-opt-cover" style={{ background: `oklch(0.78 0.14 ${hue})` }} aria-hidden="true" />;
-  return <img className="bx-opt-cover" src={src} alt={alt} loading="lazy" onError={() => setFailed(true)} />;
+  // decoding="async" keeps a long tile list off the main thread's decode path (the catalog's image law).
+  return <img className="bx-opt-cover" src={src} alt={alt} loading="lazy" decoding="async" onError={() => setFailed(true)} />;
 }
 
 export default function FacetOptions({ def, options, selected, excluded, onToggle, loadOptions, max = 9 }: FacetOptionsProps) {
@@ -49,57 +50,74 @@ export default function FacetOptions({ def, options, selected, excluded, onToggl
     setSearchResults(null);
   }, [options, dynamic]);
 
+  // The typeahead ABORTS the answer it no longer wants (the catalog's fetch law: a sequence guard
+  // alone leaves the server running every superseded query to completion) — the debounce keeps the
+  // keystrokes off the wire, the controller takes back the one that did go out.
   useEffect(() => {
     if (!dynamic || !loadOptions) return;
     if (!q.trim()) { setSearchResults(null); return; }
     const id = ++searchId.current;
+    const controller = new AbortController();
     const timer = setTimeout(async () => {
       setLoading(true);
       try {
-        const r = await loadOptions(def.key, q.trim(), 0, PAGE);
+        const r = await loadOptions(def.key, q.trim(), 0, PAGE, controller.signal);
         if (id !== searchId.current) return;
         setSearchResults(r.items);
       } catch {
-        if (id === searchId.current) setSearchResults([]);
+        if (id === searchId.current && !controller.signal.aborted) setSearchResults([]);
       } finally {
         if (id === searchId.current) setLoading(false);
       }
     }, SEARCH_DEBOUNCE_MS);
-    return () => clearTimeout(timer);
+    return () => { clearTimeout(timer); controller.abort(); };
   }, [q, dynamic, loadOptions, def.key]);
+
+  // The scroll-to-load page is aborted on unmount for the same reason (a closed rail section, a
+  // sheet dismissed mid-page).
+  const moreAbort = useRef<AbortController | null>(null);
+  useEffect(() => () => moreAbort.current?.abort(), []);
 
   const loadMore = useCallback(async () => {
     if (!dynamic || !loadOptions || loading || !hasMore || q.trim()) return;
     setLoading(true);
+    const controller = new AbortController();
+    moreAbort.current?.abort();
+    moreAbort.current = controller;
     try {
       const skip = options.length + moreItems.length;
-      const r = await loadOptions(def.key, "", skip, PAGE);
+      const r = await loadOptions(def.key, "", skip, PAGE, controller.signal);
+      if (controller.signal.aborted) return;
       setMoreItems((prev) => [...prev, ...r.items]);
       if (r.items.length < PAGE) setHasMore(false);
     } catch {
-      setHasMore(false);
+      if (!controller.signal.aborted) setHasMore(false);
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted) setLoading(false);
     }
   }, [dynamic, loadOptions, loading, hasMore, q, def.key, options.length, moreItems.length]);
 
   const isOn = (v: FacetValue) => hasFacetValue(selected, v);
   const isEx = (v: FacetValue) => hasFacetValue(excluded, v);
-  const isActive = (v: FacetValue) => isOn(v) || isEx(v);
 
-  const base: FacetOptionRow[] = dynamic && q.trim() && searchResults != null
-    ? searchResults
-    : dynamic
-      ? [...options, ...moreItems]
-      : q.trim()
-        ? options.filter((o) => o.label.toLowerCase().includes(q.toLowerCase()))
-        : options;
-
-  const extras: FacetOptionRow[] = [...selected, ...excluded]
-    .filter((v) => !base.some((o) => hasFacetValue([o.value], v)))
-    .map((v) => ({ value: v, label: def.labelOf ? def.labelOf(v) : String(v), count: 0 }));
-
-  const shown = [...extras, ...base].sort((a, b) => (isActive(a.value) ? 0 : 1) - (isActive(b.value) ? 0 : 1));
+  // The rows to draw, memoized: a long tail (Movies' genres, Boardgames' designers, the paged
+  // People typeahead) is filtered, deduped against the active values and sorted here, and the rail
+  // re-renders on every URL change — doing that work per render is a scroll-jank source.
+  const shown = useMemo(() => {
+    const term = q.trim().toLowerCase();
+    const base: FacetOptionRow[] = dynamic && term && searchResults != null
+      ? searchResults
+      : dynamic
+        ? [...options, ...moreItems]
+        : term
+          ? options.filter((o) => o.label.toLowerCase().includes(term))
+          : options;
+    const extras: FacetOptionRow[] = [...selected, ...excluded]
+      .filter((v) => !base.some((o) => hasFacetValue([o.value], v)))
+      .map((v) => ({ value: v, label: def.labelOf ? def.labelOf(v) : String(v), count: 0 }));
+    const active = (v: FacetValue) => (hasFacetValue(selected, v) || hasFacetValue(excluded, v) ? 0 : 1);
+    return [...extras, ...base].sort((a, b) => active(a.value) - active(b.value));
+  }, [q, dynamic, searchResults, options, moreItems, selected, excluded, def]);
   const showSearch = dynamic || options.length > max;
 
   return (

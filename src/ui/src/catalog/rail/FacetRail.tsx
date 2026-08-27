@@ -8,7 +8,7 @@
  *          page): fixed, scrolls internally, locks the page behind it, Escape / backdrop / × close
  */
 import { Fragment, useEffect, useState, type ReactNode } from "react";
-import type { FacetOptionRow, FacetSpec, FacetState, RangeFacetDef } from "./facetSpec";
+import type { FacetOptionRow, FacetSpec, FacetState, FacetValue, RangeFacetDef } from "./facetSpec";
 import { isRangeSet } from "./facetSpec";
 import FacetOptions from "./FacetOptions";
 import RailSection from "./RailSection";
@@ -48,6 +48,11 @@ export interface FacetRailProps {
   title?: string;
   className?: string;
 }
+
+// Hoisted empties: `?? []` in the JSX is a NEW array identity every render, which resets
+// `FacetOptions`' paged long tail (its reset effect keys on `options`) and defeats its memo.
+const NO_OPTIONS: FacetOptionRow[] = [];
+const NO_VALUES: FacetValue[] = [];
 
 function CloseGlyph({ sheet }: { sheet: boolean }) {
   return sheet
@@ -102,9 +107,9 @@ function RailBody({ spec, state, actions, facets, facetsLoading, total, grouped,
             <RailSection title={def.label} count={(state.include[def.key]?.length ?? 0) + (state.exclude[def.key]?.length ?? 0)} defaultOpen={def.defaultOpen}>
               <FacetOptions
                 def={def}
-                options={facets?.[def.key] ?? []}
-                selected={state.include[def.key] ?? []}
-                excluded={state.exclude[def.key] ?? []}
+                options={facets?.[def.key] ?? NO_OPTIONS}
+                selected={state.include[def.key] ?? NO_VALUES}
+                excluded={state.exclude[def.key] ?? NO_VALUES}
                 onToggle={actions.setMode}
                 loadOptions={spec.loadOptions}
               />
@@ -115,7 +120,7 @@ function RailBody({ spec, state, actions, facets, facetsLoading, total, grouped,
         {rangesAfter(null).map(rangeSection)}
         {spec.years && (
           <RailSection title="Date range" count={state.yearMin != null || state.yearMax != null ? 1 : 0}>
-            <DateFacet showDecades={spec.years?.decadePills !== false} yearMin={state.yearMin} yearMax={state.yearMax} decades={facets?.[spec.years.decadesKey] ?? []} onChange={actions.setYears} />
+            <DateFacet showDecades={spec.years?.decadePills !== false} yearMin={state.yearMin} yearMax={state.yearMax} decades={facets?.[spec.years.decadesKey] ?? NO_OPTIONS} onChange={actions.setYears} />
           </RailSection>
         )}
         {spec.rating && (

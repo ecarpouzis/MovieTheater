@@ -37,7 +37,8 @@ describe("FacetOptions", () => {
     expect(loadOptions).not.toHaveBeenCalled();
     await act(async () => { vi.advanceTimersByTime(2); });
     expect(loadOptions).toHaveBeenCalledTimes(1);
-    expect(loadOptions).toHaveBeenCalledWith("tags", "noir", 0, 50);
+    // …carrying an abort signal: a superseded typeahead is taken back off the wire, not just ignored.
+    expect(loadOptions).toHaveBeenCalledWith("tags", "noir", 0, 50, expect.any(AbortSignal));
     await act(async () => { await Promise.resolve(); });
     expect(screen.getByText("noir!")).toBeInTheDocument();
     vi.useRealTimers();

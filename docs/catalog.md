@@ -92,6 +92,18 @@ section under every backdrop; a source sets `shelvesSkin: "plain"` for bare plan
 - **Image failure = hue placeholder + retry with backoff, then DORMANT with a cooldown
   (`CardImage`: 3 × 1.5 s, then one fresh round every 15 s) — never a fallback `src` swap**, which a
   windowing scheme reads as "loaded" and makes one transient failure permanent.
+- **Every `<img>` in a list carries `decoding="async"`** (plus `loading="lazy"` where it is off
+  screen) — a card grid, a Shelves plank, the rail's collection tiles. A synchronous decode of a
+  long list runs on the main thread between frames.
+- **A collection prop is a hoisted constant, never `x ?? []` in the JSX.** `?? []`/`?? {}` inside a
+  render is a NEW identity every render: a child effect keyed on it re-runs (`FacetOptions` dropped
+  its paged long tail on every parent render this way — `FacetRail`'s `NO_OPTIONS`/`NO_VALUES` are
+  the fix) and any `useMemo` under it is dead. This is the render-side twin of the "no fresh object
+  literal in JSX" rule the pages already follow for style objects.
+- **Abort is not just for bands.** Any fetch a UI can supersede — the rail's typeahead
+  (`FacetOptions` + `FacetSpec.loadOptions(…, signal)`), a scroll-to-load page, a count query —
+  carries an `AbortSignal`. A sequence guard alone drops the ANSWER while the server still runs
+  every superseded query to completion.
 - **Paint tiers are feature-detected, never UA-sniffed.** `index.js` sets `html.eng-gecko` on
   Firefox (software WebRender is a deployment target); `catalog-shelves.css`/`catalog-views.css`
   scope the diet (zero-blur book shadow, no static overlays over the scrolled opening, cheap hover
@@ -123,6 +135,23 @@ section under every backdrop; a source sets `shelvesSkin: "plain"` for bare plan
   `requestSectionSearch`), `RailChips` (the chips row + save prompt over the results). A section
   mounts its rail in the sider through its NavContent (`BooksSiderRail`, `MoviesSiderRail`) and the
   sheet + SmartSearch-in-the-bar from its page — both read the same URL, nothing crosses through props.
+- **How a section wires all that up is itself shared** (the S2 review pass) — a section writes its
+  spec and its count, nothing else:
+  - `useSectionRail(section, spec, { entityParams, facetsEnabled, grouped })` → `SectionRailState`
+    (`state` / `actions` / `activeCount` / `grouped` / `facets` / `saved` / `saveCurrent`): the URL
+    state, the spec's option lists, the grouped reading and the section's saved-search store, in
+    ONE call. Both trees call it — they still agree through the URL, never through props.
+  - `<SectionSiderRail rail={…} total={…} loading={…} note={…} />` is the sider column (`note`
+    replaces the controls where a view has no filters — the Books Directory).
+  - `sectionRailSurfaces(rail, sheet, { total, placeholder, chipsClassName })` → `{ pill, chips,
+    surfaces }` for the page. NOT a hook (it calls none) — pages return early above it; and the
+    sheet's `useRailSheet` stays the PAGE's, because only the tree that renders the sheet may answer
+    `requestSectionSearch`.
+  - `useResultCount(key, request, enabled)` / `useCountQuery` (`rail/useResultCount.ts`) is the head
+    line's count: one 1-row page per state, five minutes, `totalCount` or `total` off the envelope
+    (-1 = the endpoint does not count). One query key means the sider and the sheet ask once.
+  - A section whose rail and page read the same CACHED list uses `hooks/useSharedCachedResource`
+    (Boardgames, Music) — see the site-frontend skill for when that beats `useCachedResource`.
 - **Specs**: `Pages/Books/booksFacetSpec.ts`, `novelsFacetSpec.ts`, `Pages/Browse/moviesFacetSpec.ts`
   (Type · Genre · MPA as one pill row · Years as the bare two-thumb range · Franchise · People
   (typeahead via `/API/BrowsePeople`) · mood/subgenre/era/theme/setting · Seen/Want/Rated flags;
