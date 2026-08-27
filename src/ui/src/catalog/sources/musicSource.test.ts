@@ -44,11 +44,13 @@ describe("catalog/musicSource — albums and artists as cards, the catalog ownin
     expect((await a.letters!("artist")).map((b) => b.letter)).toContain("B");
   });
 
-  it("the one catalog (albums) groups by artist / decade / kind / letter, lands on one-per-artist, walks artists in the directory and opens an artist from a group", async () => {
+  it("the one catalog (albums) groups by artist / decade / year / kind / tag, lands on one-per-artist, walks artists in the directory and opens an artist from a group", async () => {
     const onOpenAlbum = vi.fn();
     const onOpenArtist = vi.fn();
     const s = createMusicSource({ albums, listKey: "k", onOpenAlbum, onOpenArtist });
-    expect(s.groups.map((g) => g.value)).toEqual(["artist", "decade", "kind", "letter"]);
+    // R9 S8: `letter` retired (the A–Z strip is the letter axis); year and the quality tag added.
+    expect(s.groups.map((g) => g.value)).toEqual(["artist", "decade", "year", "kind", "tag"]);
+    expect(s.groups.map((g) => g.value)).not.toContain("letter");
     expect(s.currentSort).toBeUndefined();
     // R9 S1b: no artists tab — "one per artist" is the Items mode a fresh visitor lands on
     expect(s.itemsModes).toEqual(["items", "groups"]);
@@ -58,17 +60,46 @@ describe("catalog/musicSource — albums and artists as cards, the catalog ownin
     expect(byArtist.groups.map((g) => [g.key, g.label, g.totalItems])).toEqual([["10", "The Beatles", 2], ["20", "Zed", 1]]);
     const byKind = await s.fetchGroupBand!(0, 10, 10, "kind", "artist");
     expect(byKind.groups.map((g) => g.label)).toEqual(["Comedy", "Music"]);
-    const byLetter = await s.fetchGroupBand!(0, 10, 10, "letter", "artist");
-    expect(byLetter.groups.map((g) => g.key)).toEqual(["B", "Z"]);
+    const byYear = await s.fetchGroupBand!(0, 10, 10, "year", "artist");
+    expect(byYear.groups.map((g) => [g.label, g.totalItems])).toEqual([["2011", 1], ["2005", 1], ["1999", 1]]);
+    // The quality/curation tag: the value is the album's `tag` VERBATIM — `MusicNaming` already
+    // stripped the folder's brackets, so it is "FLAC" / "V0" / "Live", not "[FLAC]".
+    const byTag = await s.fetchGroupBand!(0, 10, 10, "tag", "artist");
+    expect(byTag.groups.map((g) => [g.key, g.totalItems])).toEqual([["Live", 1]]);
     expect(await s.letters!("title")).toEqual([{ letter: "A", count: 1, offset: 0 }, { letter: "M", count: 1, offset: 1 }, { letter: "Z", count: 1, offset: 2 }]);
+    // A numeric / count-ordered axis has no A–Z rail; the alphabetical ones keep theirs.
+    expect(await s.groupLetters!("year", "artist")).toEqual([]);
+    expect(await s.groupLetters!("tag", "artist")).toEqual([]);
+    expect((await s.groupLetters!("artist", "artist")).map((b) => b.letter)).toEqual(["T", "Z"]);
     const roots = await s.directory!.roots();
     expect(roots.map((r) => [r.id, r.label, r.count])).toEqual([["10", "The Beatles", 2], ["20", "Zed", 1]]);
     s.onOpen(byArtist.groups[0].items[0]);
     expect(onOpenAlbum).toHaveBeenCalledWith(1);
     s.onOpenGroup!(byArtist.groups[1], "artist");
     expect(onOpenArtist).toHaveBeenCalledWith(20);
-    s.onOpenGroup!(byLetter.groups[0], "letter");
-    expect(onOpenArtist).toHaveBeenCalledTimes(1);
+  });
+
+  it("a group header that HAS a facet scopes in place; an artist header still opens the artist drill", async () => {
+    const onScope = vi.fn();
+    const onOpenArtist = vi.fn();
+    const s = createMusicSource({ albums, listKey: "k", onOpenAlbum: vi.fn(), onOpenArtist, onScope });
+    const g = (key: string, label = key) => ({ key, label, totalItems: 1, renderTotal: 1, items: [] });
+
+    s.onOpenGroup!(g("Live"), "tag");
+    expect(onScope).toHaveBeenLastCalledWith({ facet: { key: "tag", value: "Live" }, group: "artist" });
+    s.onOpenGroup!(g("comedy", "Comedy"), "kind");
+    expect(onScope).toHaveBeenLastCalledWith({ facet: { key: "kind", value: "comedy" }, group: "artist" });
+    // The library's own rows are the shelf-LESS scope — "no kind pill", not `kind:music`.
+    s.onOpenGroup!(g("music", "Music"), "kind");
+    expect(onScope).toHaveBeenLastCalledWith({ group: "artist" });
+    s.onOpenGroup!(g("1990", "1990s"), "decade");
+    expect(onScope).toHaveBeenLastCalledWith({ years: [1990, 1999], group: "artist" });
+    s.onOpenGroup!(g("2011"), "year");
+    expect(onScope).toHaveBeenLastCalledWith({ years: [2011, 2011], group: "artist" });
+
+    s.onOpenGroup!(g("20", "Zed"), "artist");
+    expect(onOpenArtist).toHaveBeenCalledWith(20);
+    expect(onScope).toHaveBeenCalledTimes(5);
   });
 
   it("one per artist is the package's representative mode over the same albums — a group head per artist", async () => {

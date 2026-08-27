@@ -14,6 +14,7 @@ import { formatDuration } from "../../utils/format";
 import { useDebouncedCallback } from "../../hooks/useDebounce";
 import CatalogHost, { AVAILABLE_VIEWS } from "../../catalog/CatalogHost";
 import { BarToolsSlot } from "../../catalog/bar/BarSearch";
+import { hasFacetValue } from "../../catalog/rail/facetSpec";
 import { facetStateKey } from "../../catalog/rail/facetUrl";
 import useSectionRail from "../../catalog/rail/useSectionRail";
 import sectionRailSurfaces from "../../catalog/rail/sectionRailSurfaces";
@@ -193,6 +194,18 @@ function MusicPage({ userData }) {
   openRef.current = { album: setOpenAlbumId, artist: (id) => setParam("artist", id) };
   const openAlbum = useCallback((id) => openRef.current?.album(id), []);
   const openArtist = useCallback((id) => openRef.current?.artist(id), []);
+  // A group header that HAS a matching facet scopes in place and regroups by artist — one push.
+  // Reached through a ref so the source's identity stays keyed on the list alone.
+  const scopeRef = useRef(null);
+  scopeRef.current = (patch) => {
+    facetActions.apply((d) => {
+      if (patch.facet && !hasFacetValue(d.include[patch.facet.key], patch.facet.value)) {
+        d.include[patch.facet.key] = [...(d.include[patch.facet.key] ?? []), patch.facet.value];
+      }
+      if (patch.years) { d.yearMin = patch.years[0]; d.yearMax = patch.years[1]; }
+    }, patch.group ? { group: patch.group } : undefined);
+  };
+  const scope = useCallback((patch) => scopeRef.current?.(patch), []);
   // The Grid lays THIS section's tiles into the shared bands. AlbumCard / ArtistCard are
   // MODULE-LEVEL components (the BandSlot memo law); this renderer's identity never changes, because
   // everything it varies on rides in the card item and the tweak values.
@@ -210,7 +223,8 @@ function MusicPage({ userData }) {
     renderCard,
     onOpenAlbum: openAlbum,
     onOpenArtist: openArtist,
-  }), [filteredAlbums, filteredArtists, listKey, renderCard, openAlbum, openArtist]);
+    onScope: scope,
+  }), [filteredAlbums, filteredArtists, listKey, renderCard, openAlbum, openArtist, scope]);
 
   // The catalog owns the sort AND the Items mode here, so the page resolves them exactly as the host
   // will — URL, then the section's remembered default. "One per artist" over a FLAT view pages the
