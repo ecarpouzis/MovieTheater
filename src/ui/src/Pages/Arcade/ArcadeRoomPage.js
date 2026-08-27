@@ -12,6 +12,7 @@ import ArcadeHostBanner from "./ArcadeHostBanner";
 import "../../Components/SheetModal.css";
 import "./ArcadeRoomPage.css";
 import { copyLink } from "../../utils/clipboard";
+import { SHEET_Z } from "../../Components/sheetModal";
 
 const { Title, Text } = Typography;
 
@@ -1501,7 +1502,7 @@ export default function ArcadeRoomPage() {
         footer={<Button onClick={() => setShowControllers(false)}>Done</Button>}
         // Above the nav bar (1300); `sheet-modal` = full-screen sheet on phones (Components/SheetModal.css) —
         // this panel is the longest list in the room and the one most often opened mid-game on a phone.
-        zIndex={1500}
+        zIndex={SHEET_Z}
         wrapClassName="sheet-modal"
       >
         <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 0" }}>

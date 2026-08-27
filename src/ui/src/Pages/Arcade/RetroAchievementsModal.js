@@ -4,6 +4,7 @@ import { MovieAPI } from "../../MovieAPI";
 import ArcadeAchievements from "./ArcadeAchievements";
 import "../../Components/SheetModal.css";
 import "./RetroAchievements.css";
+import { SHEET_Z } from "../../Components/sheetModal";
 
 // ── Account panel: link/unlink the user's real retroachievements.org account + show their pulled RA
 // profile (points, rank, recent). The link is optional — the friends boards work without it; linking just
@@ -190,7 +191,7 @@ export default function RetroAchievementsModal({ open, onClose }) {
       // Above the nav bar (1300). `sheet-modal` = the shared shell (bounded to the viewport, body
       // scrolls, full screen on a phone); `--themed` gives it the arcade surface its trophy tiles
       // and headings already paint themselves for. See Components/SheetModal.css.
-      zIndex={1500}
+      zIndex={SHEET_Z}
       wrapClassName="sheet-modal sheet-modal--themed"
       destroyOnHidden
     >

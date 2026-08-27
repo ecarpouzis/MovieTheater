@@ -8,6 +8,7 @@ import PlaylistManageModal from "./PlaylistManageModal";
 import PlaylistPickerModal from "./PlaylistPickerModal";
 import "./MyPlaylistsModal.css";
 import "../../Components/SheetModal.css";
+import { SHEET_Z } from "../../Components/sheetModal";
 
 // A 2×2 poster collage tile for a playlist (falls back to a tinted initial when empty).
 function Collage({ posters, name }) {
@@ -69,7 +70,7 @@ export default function MyPlaylistsModal({ open, onClose, userData }) {
 
   return (
     <>
-      <Modal open={open} onCancel={onClose} footer={null} width={640} title="My Playlists" destroyOnHidden wrapClassName="sheet-modal">
+      <Modal open={open} onCancel={onClose} footer={null} width={640} title="My Playlists" destroyOnHidden wrapClassName="sheet-modal" zIndex={SHEET_Z}>
         <div className="mypl-grid">
           {list.map((p) => (
             <div className="mypl-card" key={p.id}>

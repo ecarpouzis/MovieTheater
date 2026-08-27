@@ -8,6 +8,7 @@ import MusicSongRow from "./MusicSongRow";
 import "./MusicPage.css";
 import "./MusicPlaylists.css";
 import { formatDuration } from "../../utils/format";
+import { SHEET_Z } from "../../Components/sheetModal";
 
 // ── Playlist tracklist ──────────────────────────────────────────────────────
 // Until this existed a playlist was all-or-nothing: Play and Shuffle both REPLACED the queue with
@@ -69,7 +70,7 @@ export default function MusicPlaylistTracksModal({ playlistId, open, onClose, on
       // gutters. The name goes in .music-album-detail-head instead, where the album's does.
       // Same band as the album modal: above the nav bar, below nothing that matters, and stopping
       // short of the play bar so the bar stays live behind it (see antdPopupLayer.css).
-      zIndex={1500}
+      zIndex={SHEET_Z}
       destroyOnHidden
       wrapClassName="music-album-modal"
       rootClassName="music-album-modal-root"

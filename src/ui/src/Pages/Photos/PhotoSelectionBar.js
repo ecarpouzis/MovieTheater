@@ -4,6 +4,7 @@ import { Input, Modal, message } from "antd";
 import { MovieAPI } from "../../MovieAPI";
 import PhotoPersonPicker from "./PhotoPersonPicker";
 import "../../Components/SheetModal.css";
+import { SHEET_Z } from "../../Components/sheetModal";
 
 // Batch actions for selection mode (docs/photos-plan.md §2.9: albums are "created/edited by any
 // family member from selection mode in any view", and curation flags are confirmed batch-wise).
@@ -231,7 +232,7 @@ export function BatchTagModal({ open, ids, people, onReloadPeople, onClose, onDo
   };
 
   return (
-    <Modal className="photos-modal" wrapClassName="sheet-modal" open={open} onCancel={onClose} footer={null} title={`Tag ${ids.length} photo(s)`} destroyOnHidden>
+    <Modal className="photos-modal" wrapClassName="sheet-modal" zIndex={SHEET_Z} open={open} onCancel={onClose} footer={null} title={`Tag ${ids.length} photo(s)`} destroyOnHidden>
       <div className="photo-album-picker">
         <p className="photos-note">
           Type a name. Anyone new is created for you, and the tag lands on every duplicate copy of each
@@ -322,7 +323,7 @@ export function AddToAlbumModal({ open, ids, onClose, onDone }) {
   };
 
   return (
-    <Modal className="photos-modal" wrapClassName="sheet-modal" open={open} onCancel={onClose} footer={null} title="Add to an album" destroyOnHidden>
+    <Modal className="photos-modal" wrapClassName="sheet-modal" zIndex={SHEET_Z} open={open} onCancel={onClose} footer={null} title="Add to an album" destroyOnHidden>
       <div className="photo-album-picker">
         <div className="photo-album-new">
           <Input

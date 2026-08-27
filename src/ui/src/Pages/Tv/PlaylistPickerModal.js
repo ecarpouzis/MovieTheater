@@ -9,6 +9,7 @@ import message from "antd/es/message";
 import { MovieAPI } from "../../MovieAPI";
 import "./PlaylistPickerModal.css";
 import "../../Components/SheetModal.css";
+import { SHEET_STACK_Z } from "../../Components/sheetModal";
 
 /**
  * Add one or more titles to a playlist — the shared "＋ Add to playlist" surface (movie modal, a season of
@@ -86,6 +87,9 @@ export default function PlaylistPickerModal({ open, items = [], defaultName = ""
       onCancel={onClose}
       footer={null}
       width={460}
+      // Over the movie sheet that raised it and did not close (Components/sheetModal.js) — the same
+      // call MusicPlaylistPickerModal makes over the album sheet.
+      zIndex={SHEET_STACK_Z}
       title={count > 0 ? `Add ${count} ${count === 1 ? "title" : "titles"} to a playlist` : "New playlist"}
       destroyOnHidden
       wrapClassName="sheet-modal"

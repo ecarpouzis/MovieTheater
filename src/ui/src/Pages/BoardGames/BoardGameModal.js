@@ -6,6 +6,7 @@ import "./BoardGameModal.css";
 import { stripHtml } from "./boardGameUtils";
 import useTouchDevice from "../../hooks/useTouchDevice";
 import useLongPress from "../../hooks/useLongPress";
+import { SHEET_Z } from "../../Components/sheetModal";
 
 
 // A shared-mechanics/categories tooltip that hover reveals on a pointer. A touch user has no hover,
@@ -418,7 +419,7 @@ function BoardGameModal({ gameId, open, onClose, games, expansionMap, userData, 
   }
 
   return (
-    <Modal open={open} onCancel={onClose} footer={null} width={1000} zIndex={1500} wrapClassName="sheet-modal boardgame-modal">
+    <Modal open={open} onCancel={onClose} footer={null} width={1000} zIndex={SHEET_Z} wrapClassName="sheet-modal boardgame-modal">
       <div className="boardgame-modal-body">
         <div className="boardgame-modal-poster-column">
           <img

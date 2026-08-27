@@ -10,6 +10,7 @@ import FallbackImage from "../../Components/FallbackImage";
 import { formatRuntime } from "../../utils/format";
 import "../../Components/SheetModal.css";
 import "./MovieModal.css";
+import { SHEET_Z } from "../../Components/sheetModal";
 
 const { TextArea } = Input;
 
@@ -485,9 +486,9 @@ function MovieModal({ movieId, open, onClose, actorSearch, onBrowse, onOpenTitle
       onCancel={onClose}
       footer={null}
       width={960}
-      // Above the nav bar (z-index 1300) so the full-screen mobile modal — and its pinned
-      // close button — render over it instead of being trapped beneath it.
-      zIndex={1500}
+      // The site's dialog layer (Components/sheetModal.js): above the fixed top bar and the
+      // rail's phone sheet, so the full-screen modal — and its pinned ✕ — render over both.
+      zIndex={SHEET_Z}
       // --themed: this dialog paints itself with the section tokens, so it needs the section
       // surface underneath them (Components/SheetModal.css).
       wrapClassName="sheet-modal sheet-modal--themed movie-modal"

@@ -5,6 +5,7 @@ import PhotoPersonPicker from "./PhotoPersonPicker";
 import PhotoVideo from "./PhotoVideo";
 import LoadFailure from "../../Components/LoadFailure";
 import "../../Components/SheetModal.css";
+import { SHEET_Z } from "../../Components/sheetModal";
 
 // The lightbox (docs/photos-plan.md §4). Shows the ~1600px `view` derivative by default and only
 // reaches for a full-size image when the viewer actually zooms — a timeline click must not pull tens
@@ -144,6 +145,9 @@ export default function PhotoLightbox({ assetId, onClose, onCurated, onOpenAsset
       destroyOnHidden
       className="photo-lightbox photos-modal"
       wrapClassName="sheet-modal"
+      // The site's dialog layer (Components/sheetModal.js). At antd's default 1000 the lightbox
+      // opened UNDER the fixed phone top bar (1300) and under the photos rail's phone sheet (1350).
+      zIndex={SHEET_Z}
       title={detail?.fileName || " "}
     >
       {state === "loading" && <Spin />}

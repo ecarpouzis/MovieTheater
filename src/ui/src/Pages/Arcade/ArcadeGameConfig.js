@@ -4,6 +4,7 @@ import { MovieAPI } from "../../MovieAPI";
 import { systemLabel } from "./arcadeSystems";
 import "../../Components/SheetModal.css";
 import "./ArcadeGameConfig.css";
+import { SHEET_STACK_Z } from "../../Components/sheetModal";
 
 /**
  * The per-game emulator config tool (docs/arcade-per-game-config.md), reached from the game modal's ⚙
@@ -211,7 +212,7 @@ export default function ArcadeGameConfig({ game, onClose }) {
       open
       onCancel={onClose}
       width={800}
-      zIndex={1600}
+      zIndex={SHEET_STACK_Z}
       // `sheet-modal` = the shared shell (bounded, pinned header/footer); `--themed` gives it the
       // arcade surface its own CSS already writes text for — without it the category rail is
       // white-on-white in dark theme. See Components/SheetModal.css.

@@ -4,6 +4,7 @@ import { MovieAPI } from "../../MovieAPI";
 import { useDebouncedCallback } from "../../hooks/useDebounce";
 import "./ChannelAdminModal.css";
 import "../../Components/SheetModal.css";
+import { SHEET_Z } from "../../Components/sheetModal";
 
 const STRATEGY_OPTIONS = [
   { value: "SeededShuffle", label: "Shuffle (seeded)" },
@@ -533,6 +534,9 @@ function ChannelAdminModal({ open, onClose, onChanged }) {
     <Modal
       open={open}
       onCancel={handleClose}
+      // The site's dialog layer (Components/sheetModal.js): the TV room is a route at 1400 and the
+      // phone top bar is 1300 — at antd's default 1000 this opened under both.
+      zIndex={SHEET_Z}
       title={shelves ? "Reorder shelves" : editing ? (editing.id ? "Edit channel" : "New channel") : "TV channels"}
       width={600}
       centered

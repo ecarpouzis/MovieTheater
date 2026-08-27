@@ -4,6 +4,7 @@ import { MovieAPI } from "../MovieAPI";
 import "./UserSettingsModal.css";
 import "./AdminModal.css";
 import "../Components/SheetModal.css";
+import { SHEET_Z } from "../Components/sheetModal";
 
 // One line describing the patched-binary guard, for the footer of this modal.
 //
@@ -188,6 +189,7 @@ function AdminModal({ open, onClose }) {
       onCancel={onClose}
       footer={null}
       width={720}
+      zIndex={SHEET_Z}
       wrapClassName="sheet-modal user-settings-modal"
       title={null}
       closeIcon={<span className="settings-modal-close">×</span>}

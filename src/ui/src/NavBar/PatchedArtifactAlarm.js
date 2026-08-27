@@ -4,6 +4,7 @@ import { WarningOutlined } from "@ant-design/icons";
 import { MovieAPI } from "../MovieAPI";
 import usePolling from "../hooks/usePolling";
 import "../Components/SheetModal.css";
+import { SHEET_Z } from "../Components/sheetModal";
 
 const { Text, Paragraph } = Typography;
 
@@ -117,6 +118,7 @@ export default function PatchedArtifactAlarm({ userData }) {
       okText="Acknowledge"
       cancelButtonProps={{ style: { display: "none" } }}
       width={760}
+      zIndex={SHEET_Z}
       wrapClassName="sheet-modal"
     >
       <Paragraph>

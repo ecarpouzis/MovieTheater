@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Button, Empty, Modal, Space, Spin, Typography, message } from "antd";
 import { MovieAPI } from "../../MovieAPI";
 import "../../Components/SheetModal.css";
+import { SHEET_Z } from "../../Components/sheetModal";
 
 const { Text } = Typography;
 
@@ -70,7 +71,7 @@ function SavesManager({ game, onClose, onResume }) {
       // Above the nav bar (1300) so the sheet covers it rather than sliding under it;
       // `sheet-modal` is the shared shell — bounded to the viewport, body scrolls, full
       // screen on a phone or a short window (Components/SheetModal.css).
-      zIndex={1500}
+      zIndex={SHEET_Z}
       wrapClassName="sheet-modal"
     >
       {rows === null ? (

@@ -5,6 +5,7 @@ import PhotoGrid from "./PhotoGrid";
 import { formatTaken } from "./PhotoLightbox";
 import LoadFailure from "../../Components/LoadFailure";
 import "../../Components/SheetModal.css";
+import { SHEET_Z } from "../../Components/sheetModal";
 
 // People (docs/photos-plan.md §2.8): the family's person list, and a page per person.
 //
@@ -199,7 +200,7 @@ function PersonEditor({ value, onClose, onSaved }) {
   };
 
   return (
-    <Modal className="photos-modal" wrapClassName="sheet-modal" open onCancel={onClose} footer={null} title={creating ? "Add a person" : "Edit person"} destroyOnHidden>
+    <Modal className="photos-modal" wrapClassName="sheet-modal" zIndex={SHEET_Z} open onCancel={onClose} footer={null} title={creating ? "Add a person" : "Edit person"} destroyOnHidden>
       <div className="photo-person-editor">
         <label className="photo-field">
           <span>Name</span>
@@ -279,7 +280,7 @@ function NameClusterModal({ group, people, onClose, onDone }) {
   };
 
   return (
-    <Modal className="photos-modal" wrapClassName="sheet-modal" open onCancel={onClose} footer={null} title="Who is this?" destroyOnHidden>
+    <Modal className="photos-modal" wrapClassName="sheet-modal" zIndex={SHEET_Z} open onCancel={onClose} footer={null} title="Who is this?" destroyOnHidden>
       <div className="photo-album-picker">
         <p className="photos-note">
           {group.suggestionCount.toLocaleString()} face

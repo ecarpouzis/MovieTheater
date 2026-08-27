@@ -4,6 +4,7 @@ import { MovieAPI } from "../../MovieAPI";
 import GameCover from "./GameCover";
 import { SYSTEM_LABEL, systemLabel } from "./arcadeSystems";
 import "./ArcadeModal.css";
+import { SHEET_Z } from "../../Components/sheetModal";
 
 const { Text } = Typography;
 const PAGE_SIZE = 20;
@@ -127,7 +128,7 @@ function SavesVaultManager({ onClose, onResume }) {
   // `arcade-drawer`: on a phone the 680px panel would hang off a ~390px screen, so
   // ArcadeModal.css widens it to the full screen there.
   return (
-    <Drawer open title="My saves — all games" onClose={onClose} width={680} placement="right" className="arcade-drawer" zIndex={1500}>
+    <Drawer open title="My saves — all games" onClose={onClose} width={680} placement="right" className="arcade-drawer" zIndex={SHEET_Z}>
       <Space style={{ marginBottom: 12, width: "100%", justifyContent: "space-between" }} wrap>
         <Space wrap>
           <Input.Search

@@ -7,6 +7,7 @@ import message from "antd/es/message";
 import { MovieAPI } from "../../MovieAPI";
 import "./MusicPlaylists.css";
 import "../../Components/SheetModal.css";
+import { SHEET_STACK_Z } from "../../Components/sheetModal";
 
 /**
  * Add tracks to a music playlist — the shared "＋ Playlist" surface (album modal, a song row, the
@@ -70,10 +71,10 @@ export default function MusicPlaylistPickerModal({ open, tracks = [], defaultNam
       onCancel={onClose}
       footer={null}
       width={440}
-      // Above the album sheet (1500), because "＋ Playlist" opens this WITHOUT closing that — both
-      // are on screen at once, and at antd's default 1000 this would have opened behind it and read
-      // as a dead button. Still under the 1800 popup layer (antdPopupLayer.css).
-      zIndex={1600}
+      // Above the album sheet, because "＋ Playlist" opens this WITHOUT closing that — both are on
+      // screen at once, and at antd's default 1000 this would have opened behind it and read as a
+      // dead button. That is exactly what SHEET_STACK_Z is (Components/sheetModal.js).
+      zIndex={SHEET_STACK_Z}
       title={count > 0 ? `Add ${count} ${count === 1 ? "track" : "tracks"} to a playlist` : "New playlist"}
       destroyOnHidden
       wrapClassName="sheet-modal"

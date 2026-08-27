@@ -1,9 +1,10 @@
 /* Modal styling - dark theme. The dialog rides the shared sheet shell (Components/SheetModal.css):
    bounded to the viewport, body scrolls, full-screen on a phone, standard ✕. Only its own dark
    surface is stated here. */
-.user-settings-modal {
-  z-index: 1400 !important;
-}
+/* No z-index here any more. It used to force the WRAP to 1400 with `!important` while antd left the
+   MASK at its default 1000 — so on a phone the fixed top bar (1300) sat between them, undimmed and
+   still clickable over an open dialog. Both now come from the `zIndex` prop (SHEET_Z,
+   Components/sheetModal.js), which antd writes onto the wrap AND the mask together. */
 
 .user-settings-modal .ant-modal-container {
   background: var(--sidebar-bg);

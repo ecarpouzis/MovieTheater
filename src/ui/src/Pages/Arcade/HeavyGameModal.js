@@ -3,6 +3,7 @@ import { Alert, Button, Input, Modal, Progress, Typography, message } from "antd
 import { MovieAPI } from "../../MovieAPI";
 import "../../Components/SheetModal.css";
 import usePolling from "../../hooks/usePolling";
+import { SHEET_Z } from "../../Components/sheetModal";
 
 const { Text, Paragraph } = Typography;
 
@@ -111,8 +112,8 @@ export default function HeavyGameModal({ game, onClose, onPlayInBrowser }) {
       open
       onCancel={onClose}
       footer={<Button onClick={onClose}>Close</Button>}
-      // Above the nav bar (1300); `sheet-modal` = full-screen sheet on phones (Components/SheetModal.css).
-      zIndex={1500}
+      // The site's dialog layer (Components/sheetModal.js); `sheet-modal` = the shared shell.
+      zIndex={SHEET_Z}
       wrapClassName="sheet-modal"
     >
       <Paragraph type="secondary" style={{ marginBottom: 12 }}>

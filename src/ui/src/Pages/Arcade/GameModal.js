@@ -11,6 +11,7 @@ import { systemLabel } from "./arcadeSystems";
 import { ratingTooltip } from "./arcadeRating";
 import "../../Components/SheetModal.css";
 import "./GameModal.css";
+import { SHEET_Z } from "../../Components/sheetModal";
 
 /**
  * The full-page game modal (mirrors the movie modal): a card opens this instead of launching inline.
@@ -129,8 +130,8 @@ export default function GameModal({ game, onClose, onStart, onManageSaves, creat
       open
       onCancel={onClose}
       width={720}
-      // Above the nav bar (z-index 1300) so the modal and its close button render over it.
-      zIndex={1500}
+      // The site's dialog layer (Components/sheetModal.js) — over the top bar and the rail sheet.
+      zIndex={SHEET_Z}
       // `sheet-modal` is the shared shell (viewport-bounded, body scrolls); `arcade-game-modal`
       // takes it the rest of the way to a full-screen sheet at every size. See ArcadeModal.css.
       wrapClassName="sheet-modal arcade-game-modal"

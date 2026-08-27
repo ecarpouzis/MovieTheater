@@ -4,6 +4,7 @@ import { MovieAPI } from "../MovieAPI";
 import "./UserSettingsModal.css";
 import { writeStored } from "../utils/storage";
 import "../Components/SheetModal.css";
+import { SHEET_Z } from "../Components/sheetModal";
 
 const cardStyleOptions = [
   { value: "standard", label: "Standard" },
@@ -134,6 +135,10 @@ function UserSettingsModal({ open, onClose, userData, setUserData }) {
       onCancel={onClose}
       footer={null}
       width={560}
+      // The site's dialog layer (Components/sheetModal.js). The dialog used to reach 1400 through a
+      // `z-index: … !important` on its wrap class, which left the MASK at antd's default 1000 —
+      // under the fixed phone top bar, so the bar stayed lit and clickable over an open dialog.
+      zIndex={SHEET_Z}
       wrapClassName="sheet-modal user-settings-modal"
       title={null}
       closeIcon={<span className="settings-modal-close">×</span>}
