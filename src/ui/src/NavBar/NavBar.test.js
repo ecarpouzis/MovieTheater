@@ -149,9 +149,9 @@ describe("navbar footer Log Out", () => {
 // genre search over a film library. These pin the replacement down — and pin down that nothing else
 // moved, because a section rail is the one component every page on the site renders.
 describe("the family album rail", () => {
-  const photosNav = () => document.querySelector(".navbar-photos-nav");
+  const photosNav = () => document.querySelector('.navbar-index-nav[aria-label="Album sections"]');
   const railLabels = () =>
-    Array.from(document.querySelectorAll(".navbar-photos-link-label")).map((node) => node.textContent);
+    Array.from(document.querySelectorAll(".navbar-index-link-label")).map((node) => node.textContent);
 
   it("lists the album's views instead of the movie search tools", async () => {
     renderNav("/photos", familyMember);
@@ -175,7 +175,7 @@ describe("the family album rail", () => {
     renderNav("/photos/albums/summer-1994", familyMember);
     await waitFor(() => expect(photosNav()).toBeTruthy());
 
-    const active = document.querySelector(".navbar-photos-link.is-active");
+    const active = document.querySelector(".navbar-index-link.is-active");
     expect(active.textContent).toContain("Albums");
     expect(active.getAttribute("aria-current")).toBe("page");
   });
@@ -186,7 +186,7 @@ describe("the family album rail", () => {
     await waitFor(() => expect(photosNav()).toBeTruthy());
 
     await waitFor(() => expect(railLabels()).toContain("Dupes"));
-    expect(document.querySelector(".navbar-photos-count.is-waiting").textContent).toBe("3");
+    expect(document.querySelector(".navbar-index-count.is-waiting").textContent).toBe("3");
   });
 
   it("draws no index for someone the gate refused", async () => {
@@ -221,7 +221,7 @@ describe("the family album rail", () => {
     expect(document.querySelector(".navbar-photos-theme")).toBeNull();
     expect(document.documentElement.dataset.feature).toBe(feature);
     // And no other section pays for the album: its status query is only ever made on /photos.
-    expect(document.querySelector(".navbar-photos-count")).toBeNull();
+    expect(document.querySelector(".navbar-index-count")).toBeNull();
   });
 });
 

@@ -1,5 +1,6 @@
 import { render, cleanup, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { vi, describe, it, expect, afterEach, beforeEach } from "vitest";
 
 // The Gallery (docs/photos-plan.md §2.12) — the section the owner asked for when they said the art
@@ -96,11 +97,14 @@ const album = (slug, title, shelf, artistName, items = []) => ({
 
 function renderAt(route) {
   const seen = { pathname: route };
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
+    <QueryClientProvider client={client}>
     <MemoryRouter initialEntries={[route]}>
       <PhotosPage userData={{ username: "member" }} />
       <Route path="*" render={({ location }) => { seen.pathname = location.pathname; return null; }} />
     </MemoryRouter>
+    </QueryClientProvider>
   );
   return seen;
 }

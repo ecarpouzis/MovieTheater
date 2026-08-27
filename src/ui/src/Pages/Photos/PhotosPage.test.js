@@ -1,4 +1,5 @@
 import { render, cleanup, screen, waitFor, fireEvent } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route } from "react-router-dom";
 import { vi, describe, it, expect, afterEach, beforeEach } from "vitest";
 
@@ -150,7 +151,9 @@ const populated = (extra = {}) => ok({
 // assert on navigation as well as on what rendered.
 function renderAt(route, userData) {
   const seen = { pathname: route, search: "", action: null, entries: 0 };
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
+    <QueryClientProvider client={client}>
     <MemoryRouter initialEntries={[route]}>
       <PhotosPage userData={userData} />
       <Route
@@ -164,6 +167,7 @@ function renderAt(route, userData) {
         }}
       />
     </MemoryRouter>
+    </QueryClientProvider>
   );
   return seen;
 }

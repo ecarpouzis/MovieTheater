@@ -21,6 +21,19 @@ import useShowHiddenPhotos from "../../hooks/useShowHiddenPhotos";
 import usePhotosAlbum, { photosSection } from "../../hooks/usePhotosAlbum";
 import CatalogHost from "../../catalog/CatalogHost";
 import { createPhotosSource } from "../../catalog/sources/photosSource";
+import { BarSearchSlot } from "../../catalog/bar/BarSearch";
+import FacetRail from "../../catalog/rail/FacetRail";
+import FilterPill from "../../catalog/rail/FilterPill";
+import RailChips from "../../catalog/rail/RailChips";
+import SmartSearch from "../../catalog/rail/SmartSearch";
+import { facetStateKey } from "../../catalog/rail/facetUrl";
+import { savableSearch, useSavedSearches } from "../../catalog/rail/savedSearches";
+import useFacetOptions from "../../catalog/rail/useFacetOptions";
+import useFacetState from "../../catalog/rail/useFacetState";
+import useRailSheet from "../../catalog/rail/useRailSheet";
+import { isGroupedBrowse } from "../../catalog/state/useCatalogView";
+import { PHOTOS_ENTITY_PARAMS, photosFacetSpec, photosFilterParams } from "./photosFacetSpec";
+import { usePhotosResultTotal } from "./PhotosSiderRail";
 import "./PhotosPage.css";
 
 // ── Family photo album (docs/photos-plan.md §4) ─────────────────────────────
@@ -150,18 +163,35 @@ export default function PhotosPage({ userData }) {
   // Bumped after a STRUCTURAL change so the browse lists re-fetch rather than showing a stale answer.
   // Deliberately not bumped by ordinary curation — see `curated` below.
   const [refreshKey, setRefreshKey] = useState(0);
-  // The catalog views' source (the /photos/browse route). Re-made on the hidden toggle and the same
-  // structural refreshes the lists re-fetch on; its open handlers come through a ref set below.
+  // ── The facet rail's state (R9 S2c) on the /photos/browse route: the URL is the filter; the
+  // sider's PhotosSiderRail reads the same URL. The Timeline root is untouched by it. ──
+  const onBrowse = location.pathname.startsWith("/photos/browse");
+  const facetSpec = useMemo(() => photosFacetSpec(String(refreshKey), !!showHidden), [refreshKey, showHidden]);
+  const { state: facetState, actions: facetActions, activeCount } = useFacetState(facetSpec, { entityParams: PHOTOS_ENTITY_PARAMS });
+  const facetLists = useFacetOptions(facetSpec, onBrowse);
+  const sheet = useRailSheet();
+  const facetTotal = usePhotosResultTotal(facetState, !!showHidden, onBrowse && sheet.isMobile);
+  const grouped = isGroupedBrowse(location.search, "photos");
+  const savedSearches = useSavedSearches("photos");
+  const saveCurrent = useCallback((name) => savedSearches.save(name, savableSearch(location.search, PHOTOS_ENTITY_PARAMS)), [savedSearches, location.search]);
+  const browseFilter = useMemo(() => photosFilterParams(facetState), [facetState]);
+  const browseFilterKey = facetStateKey(facetState);
+  // The catalog views' source (the /photos/browse route). Re-made on the hidden toggle, the rail's
+  // filter and the same structural refreshes the lists re-fetch on; its open handlers come through a
+  // ref set below.
   const photosOpenRef = useRef(null);
   const photosSource = useMemo(
     () => createPhotosSource({
       includeHidden: showHidden,
-      listKey: `${refreshKey}:${showHidden}`,
+      filter: browseFilter,
+      listKey: `${refreshKey}:${showHidden}:${browseFilterKey}`,
       onOpen: (id) => photosOpenRef.current?.photo(id),
       onOpenAlbum: (slug) => photosOpenRef.current?.album(slug),
       onOpenFolder: (path) => photosOpenRef.current?.folder(path),
     }),
-    [showHidden, refreshKey]
+    // browseFilterKey names the filter; browseFilter is its serialization.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [showHidden, refreshKey, browseFilterKey]
   );
   // What the last curation write did, for the lists to apply to the cards they are already holding.
   const [patch, setPatch] = useState(null);
@@ -405,8 +435,36 @@ export default function PhotosPage({ userData }) {
       <Switch>
         <Route path="/photos/browse">
           {/* Wall / List / Extended / Shelves / Newspaper / Directory over the timeline's own rows
-              (/API/Photos/Browse + BrowseGroups). The timeline route keeps its justified grid. */}
-          <CatalogHost section="photos" source={photosSource} />
+              (/API/Photos/Browse + BrowseGroups), narrowed by the rail (R9 S2c): the SmartSearch in the
+              bar on desktop (`person:Grandma`, `album:Summer`), the Filters pill + full-page sheet on
+              phones, the active chips over the results. The timeline route keeps its justified grid. */}
+          {!sheet.isMobile && (
+            <BarSearchSlot>
+              <SmartSearch spec={facetSpec} facets={facetLists.data} onAdd={facetActions.add} onText={facetActions.setText} placeholder="A place, person:Grandma, album:Summer…" />
+            </BarSearchSlot>
+          )}
+          {sheet.isMobile && (
+            <FacetRail
+              variant="sheet"
+              open={sheet.open}
+              onClose={sheet.hide}
+              spec={facetSpec}
+              state={facetState}
+              actions={facetActions}
+              activeCount={activeCount}
+              facets={facetLists.data}
+              facetsLoading={facetLists.isLoading}
+              total={facetTotal.data}
+              grouped={grouped}
+              saved={{ list: savedSearches.list, onApply: facetActions.replaceSearch, onRemove: savedSearches.remove, onSave: saveCurrent }}
+            />
+          )}
+          <CatalogHost
+            section="photos"
+            source={photosSource}
+            tools={sheet.isMobile ? <FilterPill count={activeCount} onClick={sheet.show} /> : null}
+            beforeResults={<RailChips spec={facetSpec} state={facetState} actions={facetActions} facets={facetLists.data} activeCount={activeCount} onSave={saveCurrent} />}
+          />
         </Route>
 
         <Route path="/photos/undated">

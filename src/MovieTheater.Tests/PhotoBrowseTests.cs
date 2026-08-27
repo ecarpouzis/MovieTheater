@@ -38,6 +38,67 @@ namespace MovieTheater.Tests
         private static int[] Ids(JsonElement items) => items.EnumerateArray().Select(i => i.GetProperty("id").GetInt32()).ToArray();
 
         [Fact]
+        public async Task The_rail_filter_narrows_the_browse_and_the_groups_and_the_facets_count_the_reachable_scope()
+        {
+            using var db = fixture.NewDb();
+            Seed(db, "Beach/1.jpg", new DateTime(2011, 7, 4, 10, 0, 0));
+            Seed(db, "Beach/2.jpg", new DateTime(2014, 3, 12, 10, 0, 0));
+            Seed(db, "Home/3.mp4", new DateTime(2014, 5, 1, 10, 0, 0));
+            Seed(db, "Home/4.jpg", new DateTime(2019, 8, 1, 10, 0, 0));
+            Seed(db, "Art/brom.jpg", new DateTime(2016, 9, 1, 10, 0, 0), shelf: PhotoShelf.Archive);
+            var ids = db.PhotoAssets.OrderBy(a => a.Path).ToDictionary(a => a.Path, a => a.Id);
+            var video = db.PhotoAssets.Single(a => a.Path == "Home/3.mp4");
+            video.Kind = PhotoAssetKind.Video;
+            db.PhotoAssets.Single(a => a.Path == "Beach/1.jpg").CameraModel = "Canon EOS";
+            db.PhotoAssets.Single(a => a.Path == "Beach/2.jpg").CameraModel = "iPhone 6";
+            var album = new PhotoAlbum { Title = "Summer", Slug = "summer", Shelf = PhotoShelf.Timeline, CreatedUtc = DateTime.UtcNow };
+            db.PhotoAlbums.Add(album);
+            db.SaveChanges();
+            db.PhotoAlbumEntries.Add(new PhotoAlbumEntry { PhotoAlbumId = album.Id, PhotoAssetId = ids["Beach/1.jpg"], SortOrder = 0 });
+            db.PhotoAlbumEntries.Add(new PhotoAlbumEntry { PhotoAlbumId = album.Id, PhotoAssetId = ids["Beach/2.jpg"], SortOrder = 1 });
+            var grandma = new FamilyPerson { Name = "Grandma", CreatedUtc = DateTime.UtcNow };
+            db.FamilyPeople.Add(grandma);
+            db.SaveChanges();
+            db.PhotoPersonTags.Add(new PhotoPersonTag { PhotoAssetId = ids["Beach/2.jpg"], FamilyPersonId = grandma.Id, Source = PhotoTagSource.Manual, CreatedUtc = DateTime.UtcNow });
+            db.PhotoPersonTags.Add(new PhotoPersonTag { PhotoAssetId = ids["Home/4.jpg"], FamilyPersonId = grandma.Id, Source = PhotoTagSource.Suggested, CreatedUtc = DateTime.UtcNow });
+            db.SaveChanges();
+
+            var c = PhotosControllerHarness.Build(fixture, db);
+            var byAlbum = PhotosControllerHarness.Body(await c.Browse(filter: new MovieTheater.Web.PhotoBrowseFilterQuery { album = new[] { "summer" } }));
+            Assert.Equal(new[] { ids["Beach/2.jpg"], ids["Beach/1.jpg"] }, Ids(byAlbum.GetProperty("items")));
+            // A suggestion is a question: only the affirmed tag counts as "a photo of Grandma".
+            var byPerson = PhotosControllerHarness.Body(await c.Browse(filter: new MovieTheater.Web.PhotoBrowseFilterQuery { person = new[] { grandma.Id } }));
+            Assert.Equal(new[] { ids["Beach/2.jpg"] }, Ids(byPerson.GetProperty("items")));
+            var notPerson = PhotosControllerHarness.Body(await c.Browse(filter: new MovieTheater.Web.PhotoBrowseFilterQuery { exPerson = new[] { grandma.Id } }));
+            Assert.Equal(3, notPerson.GetProperty("total").GetInt32());
+            var videos = PhotosControllerHarness.Body(await c.Browse(filter: new MovieTheater.Web.PhotoBrowseFilterQuery { kind = "video" }));
+            Assert.Equal(new[] { ids["Home/3.mp4"] }, Ids(videos.GetProperty("items")));
+            var years = PhotosControllerHarness.Body(await c.Browse(filter: new MovieTheater.Web.PhotoBrowseFilterQuery { yearMin = 2014, yearMax = 2014, kind = "photo" }));
+            Assert.Equal(new[] { ids["Beach/2.jpg"] }, Ids(years.GetProperty("items")));
+            var camera = PhotosControllerHarness.Body(await c.Browse(filter: new MovieTheater.Web.PhotoBrowseFilterQuery { camera = new[] { "Canon EOS" } }));
+            Assert.Equal(new[] { ids["Beach/1.jpg"] }, Ids(camera.GetProperty("items")));
+            var text = PhotosControllerHarness.Body(await c.Browse(filter: new MovieTheater.Web.PhotoBrowseFilterQuery { q = "Home" }));
+            Assert.Equal(2, text.GetProperty("total").GetInt32());
+
+            // The groups ride the same filter: only 2014 remains, with the one album photograph of it.
+            var groups = PhotosControllerHarness.Body(await PhotosControllerHarness.Build(fixture, db).BrowseGroups(groupBy: "year", filter: new MovieTheater.Web.PhotoBrowseFilterQuery { album = new[] { "summer" }, yearMin = 2012 }));
+            var heads = groups.GetProperty("groups").EnumerateArray().Select(g => (g.GetProperty("key").GetString(), g.GetProperty("totalItems").GetInt32())).ToArray();
+            Assert.Equal(new[] { ("2014", 1) }, heads);
+            var albumGroups = PhotosControllerHarness.Body(await PhotosControllerHarness.Build(fixture, db).BrowseGroups(groupBy: "album", filter: new MovieTheater.Web.PhotoBrowseFilterQuery { camera = new[] { "iPhone 6" } }));
+            Assert.Equal(1, albumGroups.GetProperty("groups")[0].GetProperty("totalItems").GetInt32());
+
+            // The facets describe the reachable scope (the archive shelf never counts; the suggestion does not).
+            var facets = PhotosControllerHarness.Body(await PhotosControllerHarness.Build(fixture, db).Facets());
+            Assert.Equal(4, facets.GetProperty("total").GetInt32());
+            Assert.Equal(new[] { "2010" }, facets.GetProperty("decades").EnumerateArray().Select(d => d.GetProperty("value").GetString()).ToArray());
+            Assert.Equal(2, facets.GetProperty("albums")[0].GetProperty("count").GetInt32());
+            Assert.Equal(1, facets.GetProperty("people")[0].GetProperty("count").GetInt32());
+            Assert.Equal("Grandma", facets.GetProperty("people")[0].GetProperty("label").GetString());
+            Assert.Equal(new[] { 3, 1 }, facets.GetProperty("kinds").EnumerateArray().Select(k => k.GetProperty("count").GetInt32()).ToArray());
+            Assert.Equal(2, facets.GetProperty("cameras").GetArrayLength());
+        }
+
+        [Fact]
         public async Task Browse_pages_the_dated_timeline_newest_first_with_the_same_exclusions()
         {
             using var db = fixture.NewDb();

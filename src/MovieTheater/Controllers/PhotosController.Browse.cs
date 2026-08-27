@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MovieTheater.Db;
 using MovieTheater.Photos;
+using MovieTheater.Web;
 
 namespace MovieTheater.Controllers
 {
@@ -48,12 +49,14 @@ namespace MovieTheater.Controllers
         /// predicate under a different pager. <c>total</c> is counted only on the first page.
         /// </summary>
         [HttpGet("/API/Photos/Browse")]
-        public async Task<IActionResult> Browse(int skip = 0, int top = BrowseDefaultTop, int? year = null, int? month = null, bool includeHidden = false)
+        public async Task<IActionResult> Browse(int skip = 0, int top = BrowseDefaultTop, int? year = null, int? month = null, bool includeHidden = false,
+            [FromQuery] PhotoBrowseFilterQuery? filter = null)
         {
             top = Math.Clamp(top, 1, BrowseMaxTop);
             skip = Math.Max(0, skip);
             includeHidden = ShowHidden(includeHidden);
-            var query = (await TimelineQueryAsync(includeHidden)).Where(a => a.TakenAt != null);
+            // The rail's filter (R9 S2c) narrows the SAME gated predicate every photo surface shares.
+            var query = PhotoBrowseFilter.Parse(filter).Apply(await TimelineQueryAsync(includeHidden), movieDb).Where(a => a.TakenAt != null);
             if (year is int y) query = query.Where(a => a.TakenAt!.Value.Year == y);
             if (month is int m && year != null) query = query.Where(a => a.TakenAt!.Value.Month == m);
             var total = skip == 0 ? await query.CountAsync() : -1;
@@ -81,7 +84,7 @@ namespace MovieTheater.Controllers
         /// </summary>
         [HttpGet("/API/Photos/BrowseGroups")]
         public async Task<IActionResult> BrowseGroups(string? groupBy = null, int groupsSkip = 0, int groupsTop = 0, int perGroupTop = 0, int perGroupSkip = 0,
-            string? singleGroupKey = null, bool includeHidden = false)
+            string? singleGroupKey = null, bool includeHidden = false, [FromQuery] PhotoBrowseFilterQuery? filter = null)
         {
             includeHidden = ShowHidden(includeHidden);
             var by = (groupBy ?? "").Trim().ToLowerInvariant() switch { "month" => "month", "album" => "album", "folder" => "folder", _ => "year" };
@@ -90,9 +93,13 @@ namespace MovieTheater.Controllers
             perGroupSkip = Math.Max(0, perGroupSkip);
             groupsSkip = Math.Max(0, groupsSkip);
 
-            var timeline = await TimelineQueryAsync(includeHidden);
+            // The rail's filter (R9 S2c) rides every axis: the timeline's year/month groups, the album
+            // entries and the folder tree all count and list the SAME narrowed photographs.
+            var browseFilter = PhotoBrowseFilter.Parse(filter);
+            var timeline = browseFilter.Apply(await TimelineQueryAsync(includeHidden), movieDb);
             IQueryable<PhotoAsset> tree = movieDb.PhotoAssets.Where(a => a.MissingSinceUtc == null);
             if (!includeHidden) tree = tree.Where(a => !a.Hidden);
+            tree = browseFilter.Apply(tree, movieDb);
 
             // ── Heads ──
             var heads = new List<(string Key, string Label, int Count, int AlbumId)>();
@@ -109,9 +116,12 @@ namespace MovieTheater.Controllers
                 }
                 case "album":
                 {
+                    var albumScope = browseFilter.IsEmpty
+                        ? movieDb.PhotoAssets.Where(a => a.MissingSinceUtc == null && (includeHidden || !a.Hidden))
+                        : browseFilter.Apply(movieDb.PhotoAssets.Where(a => a.MissingSinceUtc == null && (includeHidden || !a.Hidden)), movieDb);
                     var albums = await movieDb.PhotoAlbums.Where(a => a.Shelf == PhotoShelf.Timeline)
                         .OrderByDescending(a => a.ArtistName != null ? 1 : 0).ThenBy(a => a.SortOrder).ThenByDescending(a => a.CreatedUtc)
-                        .Select(a => new { a.Id, a.Slug, a.Title, Count = a.Entries.Count(e => e.PhotoAsset.MissingSinceUtc == null && (includeHidden || !e.PhotoAsset.Hidden)) })
+                        .Select(a => new { a.Id, a.Slug, a.Title, Count = a.Entries.Count(e => albumScope.Any(s => s.Id == e.PhotoAssetId)) })
                         .ToListAsync();
                     heads.AddRange(albums.Select(a => (a.Slug, a.Title, a.Count, a.Id)));
                     break;
@@ -158,11 +168,11 @@ namespace MovieTheater.Controllers
                     case "album":
                     {
                         var albumId = h.AlbumId;
-                        rows = await movieDb.PhotoAlbumEntries.Where(e => e.PhotoAlbumId == albumId)
+                        var albumRows = movieDb.PhotoAlbumEntries.Where(e => e.PhotoAlbumId == albumId)
                             .OrderBy(e => e.SortOrder).ThenBy(e => e.Id)
                             .Select(e => e.PhotoAsset)
-                            .Where(a => a.MissingSinceUtc == null && (includeHidden || !a.Hidden))
-                            .Skip(perGroupSkip).Take(perGroupTop).ToListAsync();
+                            .Where(a => a.MissingSinceUtc == null && (includeHidden || !a.Hidden));
+                        rows = await browseFilter.Apply(albumRows, movieDb).Skip(perGroupSkip).Take(perGroupTop).ToListAsync();
                         break;
                     }
                     case "folder":
@@ -193,6 +203,55 @@ namespace MovieTheater.Controllers
                 items = members.First(m => m.Key == h.Key).Rows.Select(a => Card(a, userId, badges)).ToList(),
             }).ToList();
             return Json(new { totalGroups = heads.Count, groups, includeHidden, dataPlane = DataPlaneConfigured });
+        }
+
+        /// <summary>
+        /// The Photos rail's option lists (R9 S2c), counted over the rows the rail can reach — the gated
+        /// timeline (the Long Box rule: the scope, not the current selection): the albums of the family
+        /// shelf, the people with affirmed tags, photo/video, the cameras, and the decades that size
+        /// the year range. Never filtered by the rail's own state; the SPA memoizes it per hidden toggle.
+        /// </summary>
+        [HttpGet("/API/Photos/Facets")]
+        public async Task<IActionResult> Facets(bool includeHidden = false)
+        {
+            includeHidden = ShowHidden(includeHidden);
+            var timeline = await TimelineQueryAsync(includeHidden);
+            var total = await timeline.CountAsync();
+
+            var years = await timeline.Where(a => a.TakenAt != null)
+                .GroupBy(a => a.TakenAt!.Value.Year).Select(g => new { Year = g.Key, Count = g.Count() })
+                .OrderBy(g => g.Year).ToListAsync();
+            var decades = years.GroupBy(y => y.Year / 10 * 10)
+                .Select(g => new { value = g.Key.ToString(), label = $"{g.Key}s", count = g.Sum(y => y.Count) })
+                .OrderBy(d => d.value).ToList();
+
+            var albums = await movieDb.PhotoAlbums.Where(a => a.Shelf == PhotoShelf.Timeline)
+                .Select(a => new { value = a.Slug, label = a.Title, count = a.Entries.Count(e => timeline.Any(s => s.Id == e.PhotoAssetId)) })
+                .Where(a => a.count > 0)
+                .OrderByDescending(a => a.count).ThenBy(a => a.label).ToListAsync();
+
+            var people = await movieDb.FamilyPeople
+                .Select(p => new
+                {
+                    value = p.Id,
+                    label = p.Name,
+                    count = movieDb.PhotoPersonTags.Count(t => t.FamilyPersonId == p.Id
+                        && (t.Source == PhotoTagSource.Manual || t.Source == PhotoTagSource.Confirmed)
+                        && timeline.Any(s => s.Id == t.PhotoAssetId)),
+                })
+                .Where(p => p.count > 0)
+                .OrderByDescending(p => p.count).ThenBy(p => p.label).ToListAsync();
+
+            var kindRows = await timeline.GroupBy(a => a.Kind).Select(g => new { Kind = g.Key, Count = g.Count() }).ToListAsync();
+            var kinds = new[] { PhotoAssetKind.Photo, PhotoAssetKind.Video }
+                .Select(k => new { value = k == PhotoAssetKind.Video ? "video" : "photo", label = k == PhotoAssetKind.Video ? "Videos" : "Photos", count = kindRows.FirstOrDefault(r => r.Kind == k)?.Count ?? 0 })
+                .ToList();
+
+            var cameras = await timeline.Where(a => a.CameraModel != null && a.CameraModel != "")
+                .GroupBy(a => a.CameraModel!).Select(g => new { value = g.Key, label = g.Key, count = g.Count() })
+                .OrderByDescending(c => c.count).ThenBy(c => c.label).ToListAsync();
+
+            return Json(new { total, decades, years = years.Select(y => new { value = y.Year.ToString(), label = y.Year.ToString(), count = y.Count }).ToList(), albums, people, kinds, cameras, includeHidden });
         }
     }
 }

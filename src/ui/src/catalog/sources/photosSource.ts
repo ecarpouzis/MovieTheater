@@ -4,6 +4,8 @@
  * `/API/Photos/BrowseGroups` (year / month / album / folder); the Directory walks the top-level
  * folders. Cards carry the photograph's TRUE aspect, which is what makes the Wall a contact sheet.
  * The timeline route keeps its justified grid — these views are the section's second surface.
+ * The rail's filter (R9 S2c — `photosFilterParams`, the `PhotoBrowseFilterQuery` params) rides every
+ * call, so the flat pages, the groups and the directory all describe the same narrowed reel.
  */
 import { hueSvg } from "../cards/CardImage";
 import type { CardGroup, CardItem, CardPage, CatalogSource, DirectoryNode, GroupPage, GroupSpec, ListColumn, SortSpec, ViewMode } from "../types";
@@ -133,6 +135,8 @@ function toGroup(g: GroupRow): CardGroup {
 
 export interface PhotosSourceOptions {
   includeHidden: boolean;
+  /** The rail's state in the API's vocabulary — a query-string fragment ("" = no filter). */
+  filter?: string;
   /** Names what makes the list a DIFFERENT list (a curation refresh, the hidden toggle). */
   listKey: string;
   /** Open the lightbox (`?photo=<id>`). */
@@ -145,10 +149,11 @@ export interface PhotosSourceOptions {
 
 export function createPhotosSource(o: PhotosSourceOptions): CatalogSource {
   const hidden = o.includeHidden ? { includeHidden: true } : {};
+  const filter = o.filter ? `&${o.filter}` : "";
   let knownTotal = -1;
 
   const fetchGroupMore = async (groupKey: string, skip: number, top: number, groupBy: string, _sort: string, signal?: AbortSignal): Promise<CardPage> => {
-    const data = await getJson<{ groups?: GroupRow[] }>(`/API/Photos/BrowseGroups?${qs({ groupBy, singleGroupKey: groupKey, perGroupSkip: skip, perGroupTop: top, ...hidden })}`, signal);
+    const data = await getJson<{ groups?: GroupRow[] }>(`/API/Photos/BrowseGroups?${qs({ groupBy, singleGroupKey: groupKey, perGroupSkip: skip, perGroupTop: top, ...hidden })}${filter}`, signal);
     const g = data.groups?.[0];
     return g ? { items: toGroup(g).items, total: g.totalItems } : { items: [], total: 0 };
   };
@@ -173,7 +178,7 @@ export function createPhotosSource(o: PhotosSourceOptions): CatalogSource {
         let total = Infinity;
         for (let page = 0; page < DIRECTORY_MAX_PAGES && nodes.length < total; page += 1) {
           const data = await getJson<{ totalGroups: number; groups: GroupRow[] }>(
-            `/API/Photos/BrowseGroups?${qs({ groupBy: "folder", groupsSkip: page * DIRECTORY_HEADS_PAGE, groupsTop: DIRECTORY_HEADS_PAGE, perGroupTop: 1, ...hidden })}`,
+            `/API/Photos/BrowseGroups?${qs({ groupBy: "folder", groupsSkip: page * DIRECTORY_HEADS_PAGE, groupsTop: DIRECTORY_HEADS_PAGE, perGroupTop: 1, ...hidden })}${filter}`,
             signal,
           );
           total = data.totalGroups;
@@ -189,12 +194,12 @@ export function createPhotosSource(o: PhotosSourceOptions): CatalogSource {
       items: (id, skip, top, signal) => fetchGroupMore(id, skip, top, "folder", "newest", signal),
     },
     fetchFlatBand: async (skip, top, _sort, signal) => {
-      const data = await getJson<{ items?: PhotoCardRow[]; total?: number }>(`/API/Photos/Browse?${qs({ skip, top, ...hidden })}`, signal);
+      const data = await getJson<{ items?: PhotoCardRow[]; total?: number }>(`/API/Photos/Browse?${qs({ skip, top, ...hidden })}${filter}`, signal);
       if (typeof data.total === "number" && data.total >= 0) knownTotal = data.total;
       return { items: (data.items ?? []).map(toPhotoCard), total: knownTotal };
     },
     fetchGroupBand: async (groupsSkip, groupsTop, perGroupTop, groupBy, _sort, signal): Promise<GroupPage> => {
-      const data = await getJson<{ totalGroups: number; groups: GroupRow[] }>(`/API/Photos/BrowseGroups?${qs({ groupBy, groupsSkip, groupsTop, perGroupTop, ...hidden })}`, signal);
+      const data = await getJson<{ totalGroups: number; groups: GroupRow[] }>(`/API/Photos/BrowseGroups?${qs({ groupBy, groupsSkip, groupsTop, perGroupTop, ...hidden })}${filter}`, signal);
       return { groups: (data.groups ?? []).map(toGroup), totalGroups: data.totalGroups ?? 0 };
     },
     fetchGroupMore,
