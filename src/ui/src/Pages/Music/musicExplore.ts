@@ -9,6 +9,7 @@
  * | `just-added` | the cached shelf, by descending id |
  * | `favourites` | `/API/Music/Playlist/Mine` — the Favorites list's album ids, resolved in the shelf |
  * | `artists` | the cached shelf's artists — GROUP cards, routed by `f=artist:<id>` |
+ * | `best` | the cached shelf, by the blended 0–100 the browse's Top-rated order uses (R9 S10) |
  *
  * One honesty note, stated because it is a judgement call: **Music has no "added" stamp.**
  * `MusicAlbum` carries `Year` and nothing else about when it landed, so "Just added" orders by
@@ -38,6 +39,7 @@ export interface MusicExploreInput {
 export const MUSIC_SPOTLIGHT_SIZE = 5;
 const RANDOM_TAKE = 30;
 const ADDED_TAKE = 24;
+const BEST_TAKE = 18;
 const ARTISTS_TAKE = 18;
 const FAVOURITES_TAKE = 12;
 
@@ -45,6 +47,9 @@ export const MUSIC_MORE = {
   artists: "/music?items=groups",
   favourites: "/music/playlists",
   random: "/music",
+  // The rail's "more" IS the browse under the same order, so the rail is a window onto a real view
+  // rather than a hand-picked list that ends where it ends.
+  best: "/music?items=items&sort=rated",
 };
 
 /** `/music?f=artist:412` — the Music rail's artist facet is numeric, so the id rides straight in. */
@@ -84,6 +89,23 @@ export function favouriteAlbums(albums: readonly MusicAlbumRow[], playlists: rea
   return out;
 }
 
+/**
+ * The best-regarded records on the shelf (R9 S10): the SAME blended 0–100 the browse's "Top rated"
+ * order uses, computed once on the server so this rail and that view cannot disagree.
+ *
+ * Albums with no score at all are DROPPED rather than sorted last — a rail titled "Best on the
+ * shelf" whose tail is a run of records nobody has an opinion about is a lie about its own contents,
+ * and an empty rail is dropped by `exploreRail` anyway, which is the honest empty state before the
+ * enrich pass has run.
+ */
+export function bestAlbums(albums: readonly MusicAlbumRow[], take = BEST_TAKE): MusicAlbumRow[] {
+  return albums
+    .filter((a) => typeof a.rating === "number")
+    .slice()
+    .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0) || (b.ratingCount ?? 0) - (a.ratingCount ?? 0))
+    .slice(0, take);
+}
+
 /** Artists with the most on the shelf first — the ones a rail of eighteen should actually contain. */
 export function topArtists(artists: readonly MusicArtistRow[], take = ARTISTS_TAKE): MusicArtistRow[] {
   return artists.slice()
@@ -107,10 +129,11 @@ export function composeMusicExplore(input: MusicExploreInput): ExploreResponse {
   return exploreResponse(spotlight, [
     exploreRail("favourites", "Your favourites", "strip", favouriteAlbums(albums, input.playlists).map(toAlbumCard), MUSIC_MORE.favourites),
     exploreRail("just-added", "Latest on the shelf", "wall", added.map(toAlbumCard)),
+    exploreRail("best", "Best on the shelf", "strip", bestAlbums(albums).map(toAlbumCard), MUSIC_MORE.best),
     exploreRail("artists", "Artists to sit with", "strip", topArtists(input.artists ?? []).map(toArtistGroupCard), MUSIC_MORE.artists),
     exploreRail("random", "Reach for something", "grid", shuffled.slice(MUSIC_SPOTLIGHT_SIZE).map(toAlbumCard), MUSIC_MORE.random),
   ], input.seed);
 }
 
 /** Rails whose point is that they are CURRENT — shuffling them would be a lie. */
-export const MUSIC_UNSEEDED_RAILS: ReadonlySet<string> = new Set(["favourites", "just-added", "artists"]);
+export const MUSIC_UNSEEDED_RAILS: ReadonlySet<string> = new Set(["favourites", "just-added", "artists", "best"]);

@@ -53,10 +53,11 @@ describe("MusicSiderRail", () => {
     expect(api.getMusicArtists).not.toHaveBeenCalled();
   });
 
-  it("lists Shelf · Artist · Tag · Date range over the shelf's rows and counts artists on the landing", async () => {
+  it("lists Shelf · Artist · Genre · Tag · Date range · Rating over the shelf's rows and counts artists on the landing", async () => {
     mount("", { hasPassword: true });
     await waitFor(() => expect(screen.getByText("2 artists")).toBeInTheDocument());
-    expect(Array.from(document.querySelectorAll(".bx-rsec-title")).map((e) => e.textContent)).toEqual(["Shelf", "Artist", "Tag", "Date range"]);
+    // R9 S10 added Genre (a dynamic long tail over the shelf rows) and the Rating floor.
+    expect(Array.from(document.querySelectorAll(".bx-rsec-title")).map((e) => e.textContent)).toEqual(["Shelf", "Artist", "Genre", "Tag", "Date range", "Rating"]);
     expect(api.getMusicArtists).toHaveBeenCalledWith("");
     // The shelf pills carry no counts; the artist rows do. (The option lists load a tick after the rows.)
     await waitFor(() => expect(screen.getByText("Comedy")).toBeInTheDocument());

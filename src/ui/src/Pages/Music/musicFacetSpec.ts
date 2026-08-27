@@ -1,6 +1,6 @@
 /**
  * The Music browse's facets (R9 S2c) — the same `q/f/x/y` URL contract as Movies and Boardgames,
- * applied in memory over the SHELF the browser holds. Rail order: Shelf · Artist · Tag · Year.
+ * applied in memory over the SHELF the browser holds. Rail order: Shelf · Artist · Genre · Tag · Year · Rating.
  *
  * The Shelf facet (`f=kind:comedy` / `f=kind:audiobook`; nothing = the music library) is a SCOPE,
  * not a filter: the page fetches the named shelf (music-plan.md §2.6 — the whole point of a shelf is
@@ -55,13 +55,21 @@ export function musicItemsMode(search: string): "groups" | "items" {
 const ALBUM_EXTRACTORS: Record<string, FacetExtractor<MusicAlbumRow>> = {
   artist: (a) => a.artistId ?? null,
   tag: (a) => a.tag ?? null,
+  // R9 S10. An album is legitimately several genres at once, so this returns the whole list and the
+  // matcher's default (ALL included values must be present) reads as an AND — picking Jazz and Funk
+  // narrows to the records that are both, which is what a two-pill selection should mean.
+  genre: (a) => a.genres ?? null,
   decades: (a) => decadeOf(a.year),
 };
 
 function albumOptions(kind: MusicKind): ClientFacetOptions<MusicAlbumRow> {
   return {
-    text: (a) => `${a.title ?? ""} ${a.artistName ?? ""}`,
+    text: (a) => `${a.title ?? ""} ${a.artistName ?? ""} ${(a.genres ?? []).join(" ")}`,
     year: (a) => a.year ?? null,
+    // The rating FLOOR reads the same blended number the Top-rated order does (the server computes
+    // it once, so the sort and the floor cannot disagree). An album with no score is below every
+    // floor — the year range's rule.
+    rating: (a) => (typeof a.rating === "number" ? a.rating : null),
     labelOf: { decades: (v) => `${v}s` },
   };
 }
@@ -71,7 +79,7 @@ const withKind = (kind: MusicKind): Record<string, FacetExtractor<MusicAlbumRow>
 
 /** True when something beyond the shelf narrows the albums (the artist grid folds to matching artists then). */
 export function narrowsAlbums(state: FacetState): boolean {
-  if (state.q.trim() || state.yearMin != null || state.yearMax != null) return true;
+  if (state.q.trim() || state.yearMin != null || state.yearMax != null || state.ratingMin > 0) return true;
   for (const [key, list] of Object.entries(state.include)) if (key !== "kind" && list.length) return true;
   for (const list of Object.values(state.exclude)) if (list.length) return true;
   return false;
@@ -95,7 +103,7 @@ export function applyMusicFacets(albums: readonly MusicAlbumRow[], artists: read
   const q = state.q.trim().toLowerCase();
   const wantedArtists = new Set((state.include.artist ?? []).map(Number));
   const withAlbum = new Set(kept.map((a) => a.artistId).filter((id): id is number => id != null));
-  const onlyQ = !!q && !Object.entries(state.include).some(([k, l]) => k !== "kind" && l.length) && !Object.values(state.exclude).some((l) => l.length) && state.yearMin == null && state.yearMax == null;
+  const onlyQ = !!q && !Object.entries(state.include).some(([k, l]) => k !== "kind" && l.length) && !Object.values(state.exclude).some((l) => l.length) && state.yearMin == null && state.yearMax == null && state.ratingMin === 0;
   return {
     albums: kept,
     artists: artists.filter((ar) => withAlbum.has(ar.id) || wantedArtists.has(ar.id) || (onlyQ && (ar.name ?? "").toLowerCase().includes(q))),
@@ -129,10 +137,28 @@ export function musicFacetSpec(identity: string, albums: readonly MusicAlbumRow[
     facets: [
       { key: "kind", token: "kind", label: "Shelf", one: "Shelf", valueType: "string", render: "pill", defaultOpen: true, excludable: false, showCounts: false, labelOf: (v) => shelfOf(normalizeKind(String(v))).label },
       { key: "artist", token: "artist", label: "Artist", one: "Artist", valueType: "number", defaultOpen: true },
+      // R9 S10. `dynamic` because music genre tags are an open set of thousands with no authority
+      // behind them — the rail searches and pages the long tail instead of drawing it all. Counts
+      // come from the shelf the browser already holds, so the option list costs no request.
+      { key: "genre", token: "genre", label: "Genre", one: "Genre", valueType: "string", dynamic: true, defaultOpen: true },
       { key: "tag", token: "tag", label: "Tag", one: "Tag", valueType: "string" },
     ],
+    // The floor the URL already carried (`r=`, the codec's own param) — now that there is a score
+    // for it to read. The stops are the movie section's, so one habit works everywhere.
+    rating: { presets: [{ value: 60, label: "60+" }, { value: 70, label: "70+" }, { value: 80, label: "80+" }, { value: 90, label: "90+" }] },
     async loadFacets() {
       return countMusicFacets(albums, artists);
+    },
+    /**
+     * The dynamic facets' long tail, searched and paged — over the SHELF the browser already holds,
+     * so it is a slice of an array rather than a request. (The contract is async because a
+     * server-backed section's is; answering from memory is the cheap case, not a different shape.)
+     */
+    async loadOptions(key: string, q: string, skip: number, top: number) {
+      const all = countMusicFacets(albums, artists)[key] ?? [];
+      const term = q.trim().toLowerCase();
+      const hits = term ? all.filter((r) => r.label.toLowerCase().includes(term)) : all;
+      return { items: hits.slice(skip, skip + top), total: hits.length };
     },
   };
 }

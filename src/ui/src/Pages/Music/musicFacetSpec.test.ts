@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { emptyFacetState, parseFacetState } from "../../catalog/rail/facetUrl";
 import type { MusicAlbumRow, MusicArtistRow } from "../../catalog/sources/musicSource";
-import { MUSIC_PARSE_SPEC, applyMusicFacets, countMusicFacets, kindFromSearch, kindOf, legacyToMusicSearch, musicItemsMode } from "./musicFacetSpec";
+import { MUSIC_PARSE_SPEC, applyMusicFacets, countMusicFacets, kindFromSearch, kindOf, legacyToMusicSearch, musicFacetSpec, musicItemsMode, narrowsAlbums } from "./musicFacetSpec";
 
 const artists: MusicArtistRow[] = [
   { id: 1, name: "Air", sortName: "Air", albumCount: 2 },
@@ -9,9 +9,9 @@ const artists: MusicArtistRow[] = [
   { id: 3, name: "Nobody", sortName: "Nobody", albumCount: 0 },
 ];
 const albums: MusicAlbumRow[] = [
-  { id: 11, title: "Moon Safari", year: 1998, artistId: 1, artistName: "Air", tag: "Live" },
-  { id: 12, title: "Talkie Walkie", year: 2004, artistId: 1, artistName: "Air" },
-  { id: 22, title: "Abbey Road", year: 1969, artistId: 2, artistName: "The Beatles", tag: "Remaster" },
+  { id: 11, title: "Moon Safari", year: 1998, artistId: 1, artistName: "Air", tag: "Live", genres: ["Electronic", "Downtempo"], rating: 82 },
+  { id: 12, title: "Talkie Walkie", year: 2004, artistId: 1, artistName: "Air", genres: ["Electronic"], rating: 64 },
+  { id: 22, title: "Abbey Road", year: 1969, artistId: 2, artistName: "The Beatles", tag: "Remaster", genres: ["Rock"] },
 ];
 const state = (search: string) => parseFacetState(search, MUSIC_PARSE_SPEC);
 const ids = (rows: { id: number }[]) => rows.map((r) => r.id);
@@ -81,5 +81,34 @@ describe("kind + legacy links", () => {
   it("the Items mode reads the URL first", () => {
     expect(musicItemsMode("?items=items")).toBe("items");
     expect(musicItemsMode("?items=groups")).toBe("groups");
+  });
+});
+
+describe("the genre facet and the rating floor (R9 S10)", () => {
+  it("a genre include keeps the albums filed under it; two includes read as AND", () => {
+    expect(ids(applyMusicFacets(albums, artists, state("?f=genre:Electronic")).albums)).toEqual([11, 12]);
+    expect(ids(applyMusicFacets(albums, artists, state("?f=genre:Electronic&f=genre:Downtempo")).albums)).toEqual([11]);
+    expect(ids(applyMusicFacets(albums, artists, state("?x=genre:Electronic")).albums)).toEqual([22]);
+    // The artist grid folds to the artists with a kept album, as it does for every other facet.
+    expect(ids(applyMusicFacets(albums, artists, state("?f=genre:Rock")).artists)).toEqual([2]);
+  });
+
+  it("the rating floor keeps what reaches it and DROPS the unscored — an unrated record is below every floor", () => {
+    expect(ids(applyMusicFacets(albums, artists, state("?r=70")).albums)).toEqual([11]);
+    expect(ids(applyMusicFacets(albums, artists, state("?r=60")).albums)).toEqual([11, 12]);
+    // Abbey Road has no score at all and never survives a floor, however low.
+    expect(ids(applyMusicFacets(albums, artists, state("?r=1")).albums)).toEqual([11, 12]);
+    // A floor IS a narrowing, so the artist grid must fold rather than showing everybody.
+    expect(narrowsAlbums(state("?r=70"))).toBe(true);
+    expect(ids(applyMusicFacets(albums, artists, state("?r=70")).artists)).toEqual([1]);
+  });
+
+  it("the rail lists genres by size, and the long tail is searched and paged out of the shelf itself", async () => {
+    expect(countMusicFacets(albums, artists).genre.map((r) => [r.value, r.count])).toEqual([["Electronic", 2], ["Downtempo", 1], ["Rock", 1]]);
+    const spec = musicFacetSpec("t", albums, artists, "albums");
+    expect(spec.facets.find((f) => f.key === "genre")?.dynamic).toBe(true);
+    expect(spec.rating?.presets.map((p) => p.value)).toEqual([60, 70, 80, 90]);
+    const page = await spec.loadOptions!("genre", "elec", 0, 10);
+    expect(page).toEqual({ items: [{ value: "Electronic", label: "Electronic", count: 2 }], total: 1 });
   });
 });

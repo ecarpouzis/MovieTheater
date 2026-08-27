@@ -6,7 +6,8 @@
  * Semantics match the Movies server: within one facet the included values are ALL required by
  * default (Crime AND Drama; a game that plays 2 AND 4) — a facet may opt into ANY (`anyOf`) —
  * excluded values are NOT-ed, facets AND together; `q` is a case-insensitive substring over the
- * section's text; the year range brackets the section's year; a fixed-scale range brackets the
+ * section's text; the year range brackets the section's year; the rating floor (`r=`) keeps items
+ * whose score reaches it and drops the unscored; a fixed-scale range brackets the
  * item's number (or overlaps its span — a 30–60 min game meets a 45–90 range); an item WITHOUT the
  * value is out once its range is set (the year rule); flags are the section's own tests.
  */
@@ -22,6 +23,9 @@ export interface ClientFacetOptions<T> {
   text?: (item: T) => string | null | undefined;
   /** The year the range brackets (null = no year → excluded once a range is set). */
   year?: (item: T) => number | null | undefined;
+  /** The 0–100 score the rating FLOOR (`r=`) brackets. Without it a section's `r=` is ignored, which
+   *  is what keeps every existing client-faceted section (whose spec declares no rating) unchanged. */
+  rating?: (item: T) => number | null | undefined;
   /** A personal flag's test (`my=`), by flag key. */
   flags?: Record<string, (item: T) => boolean>;
   /** The number (or span) each `spec.ranges` entry brackets, by range key. */
@@ -51,6 +55,13 @@ export function matchesFacetState<T>(item: T, state: FacetState, extractors: Rec
     if (y == null) return false;
     if (state.yearMin != null && y < state.yearMin) return false;
     if (state.yearMax != null && y > state.yearMax) return false;
+  }
+  // The rating floor is a FLOOR, and an item with no score is below every floor — the same rule the
+  // year range follows, and the same reason: a filter that silently keeps the unknowns is not a
+  // filter. A section that supplies no `rating` extractor never reaches this test at all.
+  if (state.ratingMin > 0 && opts.rating) {
+    const r = opts.rating(item) ?? null;
+    if (r == null || r < state.ratingMin) return false;
   }
   for (const [key, range] of Object.entries(state.ranges ?? {})) {
     if (!range || (range.min == null && range.max == null)) continue;

@@ -12,7 +12,8 @@ import { useMusicShelf } from "./useMusicShelf";
 // Everything below comes from endpoints the section already serves:
 //   /API/Music/Albums, /API/Music/Artists  — the shelf the browse itself reads (shared cache)
 //   /API/Music/Capabilities                — whether streaming and the transcode/MSE lanes are configured
-// Art coverage is computed from the shelf rows' own `hasArt` flag; nothing new is fetched for it.
+// Art coverage is computed from the shelf rows' own `hasArt` flag; genre, popularity and rating
+// coverage from the fields R9 S10 added to those same rows. Nothing new is fetched for any of it.
 
 function MusicOverviewTab() {
   const shelf = useMusicShelf("music");
@@ -73,7 +74,7 @@ function MusicOverviewTab() {
 
       <AdminCard
         title="Where the music tooling lives"
-        description="Ingest, album art, lyrics and library moves are CLI jobs against the NAS (music-ingest, music-art, music-lyrics) — there is no site button for any of them, and this page deliberately does not pretend otherwise. Playback failures self-report: the player posts incidents rather than waiting to be caught live."
+        description="Ingest, album art, lyrics, genre and external metadata are CLI jobs against the NAS and the open web (music-ingest, music-art, music-lyrics, music-genres, music-enrich) — there is no site button for any of them, and this page deliberately does not pretend otherwise. Playback failures self-report: the player posts incidents rather than waiting to be caught live."
       />
     </div>
   );

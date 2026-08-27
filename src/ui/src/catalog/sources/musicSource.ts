@@ -27,6 +27,18 @@ export interface MusicAlbumRow {
   artistKind?: string | null;
   hasArt?: boolean;
   dominantColor?: string | null;
+  /** Genres, strongest first, MERGED across sources by the server (R9 S10) — the file's own tags
+   *  first, then MusicBrainz/Last.fm. Absent on a shelf fetched before that leg ran. */
+  genres?: string[];
+  /** 0–100 external audience signal (Last.fm listeners) — how KNOWN the record is, not how good. */
+  popularity?: number | null;
+  /** The one blended 0–100 the "Top rated" order and the rail's rating floor read. Null = nothing
+   *  known about this record, and the sort files those last rather than inventing a middle. */
+  rating?: number | null;
+  /** The viewer's own score, or null when they have not rated it (0 is a real score). */
+  myRating?: number | null;
+  ratingAvg?: number | null;
+  ratingCount?: number;
 }
 
 /** One row of `/API/Music/Artists`. */
@@ -40,6 +52,11 @@ export interface MusicArtistRow {
   artAlbumId?: number | null;
   hasArt?: boolean;
   dominantColor?: string | null;
+  /** The artist's top three, rolled up from their albums (R9 S10). */
+  genres?: string[];
+  /** The best blended score among the artist's albums — an artist has no score of their own, so the
+   *  Top-rated order over the "one per artist" grid means "who has the best-regarded record here". */
+  topRating?: number | null;
 }
 
 export const MUSIC_KIND_LABELS: Record<string, string> = { "": "Music", comedy: "Comedy", audiobook: "Audiobooks" };
@@ -90,6 +107,10 @@ export function toAlbumCard(a: MusicAlbumRow): CardItem {
     hue,
     sortKey: `${a.artistSortName ?? a.artistName ?? ""} ${title}`,
     badges: a.tag ? [{ label: a.tag, tone: "system" as const }] : undefined,
+    // The package's own 0–100 slot (the Newspaper picks its lead on it) — the SAME blended number
+    // the Top-rated order and the rail's floor use, so nothing on the page can disagree about what
+    // an album is worth.
+    rating: a.rating ?? undefined,
     raw: a,
   };
 }
@@ -124,7 +145,18 @@ export const ALBUM_SORTS: ClientSort[] = [
   { value: "title", label: "A–Z title", alpha: true, compare: (a, b) => collator.compare(a.title, b.title), letterKey: (i) => i.title },
   { value: "newest", label: "Newest", compare: (a, b) => (b.year ?? 0) - (a.year ?? 0) || collator.compare(a.title, b.title) },
   { value: "oldest", label: "Oldest", compare: (a, b) => (a.year ?? 9999) - (b.year ?? 9999) || collator.compare(a.title, b.title) },
+  // R9 S10. The blend (site ratings shrunk toward the popularity signal, computed server-side) —
+  // NOT the raw average, or one enthusiastic 100 would top the shelf over a record five people
+  // agreed was excellent. An album nothing is known about has no opinion attached and files LAST,
+  // which is why the fallback is -1 rather than 0: a genuine 0 is a real score and outranks silence.
+  { value: "rated", label: "Top rated", compare: (a, b) => (ratingOf(b) ?? -1) - (ratingOf(a) ?? -1) || collator.compare(a.title, b.title) },
 ];
+
+/** The blended 0–100 an album card carries, or null when nothing is known about the record. */
+const ratingOf = (i: CardItem): number | null => {
+  const r = albumOf(i).rating;
+  return typeof r === "number" ? r : null;
+};
 
 /** The first year of an artist's "1971 – 1985" range, for the newest/oldest orders. */
 const artistYear = (i: CardItem): number | null => {
@@ -142,6 +174,10 @@ export const ARTIST_SORTS: ClientSort[] = [
   { value: "title", label: "A–Z title", alpha: true },
   { value: "newest", label: "Newest", compare: (a, b) => (artistYear(b) ?? 0) - (artistYear(a) ?? 0) || collator.compare(a.title, b.title) },
   { value: "oldest", label: "Oldest", compare: (a, b) => (artistYear(a) ?? 9999) - (artistYear(b) ?? 9999) || collator.compare(a.title, b.title) },
+  // The Sort pill is ONE control for the section (R9 S1b), so every album order has an artist
+  // reading. An artist has no blended score of their own — the honest reading is "who has the
+  // best-regarded record on the shelf", which is what an artist grid ordered by rating means.
+  { value: "rated", label: "Top rated", compare: (a, b) => (artistOf(b).topRating ?? -1) - (artistOf(a).topRating ?? -1) || collator.compare(a.title, b.title) },
 ];
 
 function decadeOf(year: number | null | undefined): GroupKey | null {
@@ -168,6 +204,12 @@ export const ALBUM_GROUPERS: ClientGrouper[] = [
   // The library's own rows carry no kind (null = music) — they still need a key, or the grouping drops them.
   { value: "kind", label: "Kind", keysOf: (i) => { const k = albumOf(i).artistKind ?? ""; return { key: k || "music", label: MUSIC_KIND_LABELS[k] ?? k }; } },
   { value: "tag", label: "Quality tag", order: "count", alpha: false, keysOf: (i) => { const t = (albumOf(i).tag ?? "").trim(); return t ? { key: t, label: t } : null; } },
+  // R9 S10. An album is legitimately several genres at once, so this axis puts a record on EVERY
+  // shelf its genres name — the one axis here where the shelves overlap on purpose, which is why it
+  // returns an array. Ordered by size (`count`): the long tail of one-album genres belongs at the
+  // bottom, not spread alphabetically through the middle. An album with no genre is dropped rather
+  // than pooled under "Unknown" — a shelf of things we know nothing about is not a shelf.
+  { value: "genre", label: "Genre", order: "count", alpha: false, keysOf: (i) => (albumOf(i).genres ?? []).map((g) => ({ key: g, label: g })) },
 ];
 
 const firstYearOf = (range: string | null | undefined) => {
@@ -177,17 +219,21 @@ const firstYearOf = (range: string | null | undefined) => {
 
 export const ARTIST_GROUPERS: ClientGrouper[] = [
   { value: "decade", label: "Active since", order: "keyDesc", alpha: false, keysOf: (i) => decadeOf(firstYearOf(artistOf(i).yearRange)) },
+  { value: "genre", label: "Genre", order: "count", alpha: false, keysOf: (i) => (artistOf(i).genres ?? []).map((g) => ({ key: g, label: g })) },
 ];
 
 export const ALBUM_LIST_COLUMNS: ListColumn[] = [
   { key: "title", label: "Album", width: "2fr", value: (i) => i.title },
   { key: "artist", label: "Artist", width: "1.4fr", value: (i) => albumOf(i).artistName },
+  { key: "genre", label: "Genre", width: "1fr", value: (i) => (albumOf(i).genres ?? []).slice(0, 2).join(", ") },
   { key: "year", label: "Year", width: "64px", mono: true, value: (i) => i.year },
+  { key: "rating", label: "Rated", width: "64px", mono: true, align: "right", value: (i) => (ratingOf(i) == null ? null : Math.round(ratingOf(i)!)) },
   { key: "tag", label: "Tag", width: "90px", value: (i) => albumOf(i).tag },
 ];
 
 export const ARTIST_LIST_COLUMNS: ListColumn[] = [
   { key: "name", label: "Artist", width: "2fr", value: (i) => i.title },
+  { key: "genre", label: "Genre", width: "1.2fr", value: (i) => (artistOf(i).genres ?? []).slice(0, 2).join(", ") },
   { key: "years", label: "Active", width: "110px", mono: true, value: (i) => artistOf(i).yearRange },
   { key: "albums", label: "Albums", width: "70px", mono: true, align: "right", value: (i) => artistOf(i).albumCount },
   { key: "tracks", label: "Tracks", width: "70px", mono: true, align: "right", value: (i) => artistOf(i).trackCount },
@@ -224,7 +270,7 @@ export interface MusicSourceOptions {
 }
 
 /** Which facet a group header becomes; `decade`/`year` are the year range and are handled on their own. */
-const GROUP_FACET: Record<string, string> = { kind: "kind", tag: "tag" };
+const GROUP_FACET: Record<string, string> = { kind: "kind", tag: "tag", genre: "genre" };
 
 /**
  * ONE Music catalog — the albums (R9 S1b; Eric: artists and albums are not two sections). "By
