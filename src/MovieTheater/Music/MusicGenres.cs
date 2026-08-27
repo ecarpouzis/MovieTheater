@@ -91,10 +91,14 @@ namespace MovieTheater.Music
                         continue;
                     }
                 }
-                // The four separators actually seen in the wild. A slash is included because
-                // "Rock/Pop" is overwhelmingly two genres — the handful of real names that contain
-                // one ("Jazz+Funk" uses a plus, "R&B" an ampersand) do not.
-                if (c == ';' || c == '/' || c == ',' || c == '|' || c == '\0' || c == '\n' || c == '\r')
+                // The separators actually seen in the wild. A slash is included because "Rock/Pop"
+                // is overwhelmingly two genres — the handful of real names that contain one
+                // ("Jazz+Funk" uses a plus, "R&B" an ampersand) do not. The UNDERSCORE is here on
+                // measured evidence rather than principle: MusicBrainz's crowd tags for one album
+                // included "progressive rock_alternative rock" and
+                // "progressive rock_alternative rock_alternative rock", which are two people's
+                // concatenations, not genres. No genre name in either vocabulary uses one.
+                if (c == ';' || c == '/' || c == ',' || c == '|' || c == '_' || c == '\0' || c == '\n' || c == '\r')
                 {
                     Flush(pieces, buffer);
                     continue;

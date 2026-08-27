@@ -32,9 +32,17 @@ namespace MovieTheater.Music
         private readonly string root;
 
         /// <param name="root">Cache root; defaults to <c>data/music-cache</c> (data/ is gitignored).</param>
+        /// <remarks>
+        /// The default is resolved by walking UP for the repo's <c>data/</c> directory rather than
+        /// taken relative to the working directory. `dotnet MovieTheater.dll` is run from wherever
+        /// the CLI happens to be staged, and a cache that lands beside the binary is a cache that
+        /// silently re-fetches everything the next time it is staged somewhere else — the arcade
+        /// CLIs' <see cref="MovieTheater.Arcade.RepoDataPath"/> lesson, which cost three separate
+        /// silent failures before it was written down.
+        /// </remarks>
         public MusicResponseCache(string? root = null)
         {
-            this.root = root ?? Path.Combine("data", "music-cache");
+            this.root = root ?? Path.Combine(Arcade.RepoDataPath.Resolve("data"), "music-cache");
         }
 
         public string Root => root;

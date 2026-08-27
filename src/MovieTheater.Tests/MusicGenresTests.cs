@@ -52,7 +52,7 @@ public class MusicGenresTests
     }
 
     [Fact]
-    public void Split_separates_on_the_four_real_separators_and_dedupes()
+    public void Split_separates_on_the_real_separators_and_dedupes()
     {
         Assert.Equal(new[] { "Rock", "Alternative" }, MusicGenres.Split("Rock;Alternative"));
         Assert.Equal(new[] { "Rock", "Pop" }, MusicGenres.Split("Rock/Pop"));
@@ -60,6 +60,18 @@ public class MusicGenresTests
         Assert.Equal(new[] { "Rock" }, MusicGenres.Split("Rock; rock; ROCK"));
         // A real name containing an ampersand or a plus is ONE genre, not two.
         Assert.Equal(new[] { "R&B" }, MusicGenres.Split("R&B"));
+    }
+
+    [Fact]
+    public void One_external_tag_naming_two_genres_becomes_two_genres()
+    {
+        // Measured against MusicBrainz's crowd tags for A Perfect Circle's Mer de Noms: people
+        // concatenate. Stored whole these are unusable singletons in the rail's long tail; split
+        // they are votes on the pills that are already there.
+        Assert.Equal(new[] { "Pop", "Rock" }, MusicGenres.Split("pop/rock"));
+        Assert.Equal(new[] { "Alternative", "Indie Rock" }, MusicGenres.Split("alternative/indie rock"));
+        Assert.Equal(new[] { "Progressive Rock", "Alternative Rock" }, MusicGenres.Split("progressive rock_alternative rock"));
+        Assert.Equal(new[] { "Progressive Rock", "Alternative Rock" }, MusicGenres.Split("progressive rock_alternative rock_alternative rock"));
     }
 
     [Fact]

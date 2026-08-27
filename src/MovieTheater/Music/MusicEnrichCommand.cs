@@ -144,8 +144,10 @@ namespace MovieTheater.Music
                         if (popularity != null) { popHits++; popularitySource = MusicGenreSources.LastFm; }
                         else popMisses++;
                         // Last.fm's own top tags are genres too, kept under their own Source so the two
-                        // externals never overwrite each other.
-                        if (lfmTags.Count > 0 && Apply)
+                        // externals never overwrite each other. The replace runs even on an EMPTY
+                        // answer: a re-run that now gets nothing must clear what it wrote last time,
+                        // or a retired tag lives on in the facet forever.
+                        if (Apply)
                             genreRows += await ReplaceGenresAsync(db, album.Id, MusicGenreSources.LastFm,
                                 lfmTags.Select(t => (t.Genre, t.Votes)).ToList());
                         else genreRows += lfmTags.Count;
@@ -163,8 +165,11 @@ namespace MovieTheater.Music
                 else genreRows += found.Count;
 
                 if (Verbose)
+                    // The genres as they would be WRITTEN, not the raw tags: a dry run's job is to
+                    // show the shape, and the fold (splitting "pop/rock", dropping the values that
+                    // mean nothing) is most of what there is to see.
                     w.WriteLine($"  {(found.Count > 0 || popularity != null ? "+" : "·")} {album.Id} {artist} — {title}: " +
-                                $"genres [{string.Join(", ", found.Select(f => f.Genre))}]" +
+                                $"genres [{string.Join(", ", found.SelectMany(f => MusicGenres.Split(f.Genre)).Distinct(StringComparer.OrdinalIgnoreCase).Take(MaxGenresPerAlbum))}]" +
                                 $" popularity {(popularity?.ToString() ?? "—")}");
             }
 
@@ -181,7 +186,11 @@ namespace MovieTheater.Music
             w.WriteLine($"{{ processed: {batch.Count}, remaining: {remaining}, nextCursor: {nextCursor}, " +
                         $"counts: {{ mbHits: {mbHits}, mbMisses: {mbMisses}, popHits: {popHits}, popMisses: {popMisses}, " +
                         $"genreRows: {genreRows}, cacheHits: {cacheHits}, errors: {errors} }} }}");
-            if (!Apply) w.WriteLine("DRY RUN — nothing written. Re-run with --apply.");
+            // A dry run still FILLS THE CACHE, and that is deliberate: the point of the cache is that
+            // a request is made once ever, so the answers a dry run collected are the answers the
+            // --apply run parses, with no second trip to anyone's server. Nothing reaches the
+            // database, and nothing is ever written under the music root.
+            if (!Apply) w.WriteLine("DRY RUN — nothing written to the database (raw responses ARE cached above). Re-run with --apply.");
             else if (remaining > 0) w.WriteLine($"More to do: re-run with --after {nextCursor}.");
             if (Apply) w.WriteLine("Then run `music-genres --rollup-only --apply` to fold the new genres into the artist roll-ups.");
         }
@@ -198,14 +207,21 @@ namespace MovieTheater.Music
             int added = 0;
             foreach (var (genre, weight) in genres)
             {
-                var norm = MusicGenres.Normalize(genre);
-                if (norm == null || !seen.Add(norm)) continue;
-                db.MusicAlbumGenres.Add(new MusicAlbumGenre
+                // SPLIT, not just Normalize: an external tag is as unruly as a file's own frame and
+                // needs the same fold. Measured against MusicBrainz's crowd tags for one album:
+                // "pop/rock", "alternative/indie rock" and "progressive rock_alternative rock" are
+                // all one tag naming two genres, and storing them whole would put three unusable
+                // singletons in the rail's long tail instead of votes on the pills already there.
+                foreach (var norm in MusicGenres.Split(genre))
                 {
-                    AlbumId = albumId, Genre = norm, Source = source, Weight = weight, CreatedUtc = DateTime.UtcNow,
-                });
-                added++;
-                if (added >= MaxGenresPerAlbum) break;
+                    if (!seen.Add(norm)) continue;
+                    db.MusicAlbumGenres.Add(new MusicAlbumGenre
+                    {
+                        AlbumId = albumId, Genre = norm, Source = source, Weight = weight, CreatedUtc = DateTime.UtcNow,
+                    });
+                    added++;
+                    if (added >= MaxGenresPerAlbum) return added;
+                }
             }
             return added;
         }
