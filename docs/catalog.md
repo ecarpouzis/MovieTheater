@@ -282,13 +282,109 @@ the only copy.
   (the rail's option rows, most-common first). The S2c sections mount their specs over it.
 - Never host the filters inside NavBar's phone drawer: it closes on every `location.search` change.
 
-## The Explore kit (`catalog/explore/`)
+## The Explore kit (`catalog/explore/`) — R9 S7: every section has one
 
 `ExploreTab` renders a section's landing from data the SECTION fetches (`data / loading / error` —
 the section owns the query and its keys): a `HeroSpotlight` (a `detail()` hook lets a section
 headline a group instead of an item), `CardRow`s, a `CoverWall`, `CardGrid`s, `RowHead`s with a
 "More" link, `ScoreBadge`s. `mapExplore.ts` maps a section's rows onto `CardItem`s;
 `cards/placeholder.ts` paints hue placeholders for cards without art.
+
+### The composition contract
+
+Books' Explore comes down the wire already composed (the host answers one `/explore` payload,
+`mapExplore` maps it). **Every other section composes its landing IN THE BROWSER** out of endpoints
+it already served — a rail is a named query plus a mapper, and the composer is a PURE function so
+the rails and their links can be asserted without a network. Three pieces make that a pattern
+rather than five copies:
+
+- **`composeExplore.ts`** — `exploreRail(key, title, kind, items, more?)` (an empty rail is
+  DROPPED, never drawn as an empty shelf), `exploreResponse(spotlight, rails, seed?)`, and
+  `groupCard({ kind, key, title, count, … })` for a card that stands for a FACET rather than a row.
+  A group card carries `groupKey` + `count`, which is what `groupOf` reads when the tab hands it to
+  `onOpenGroup`.
+- **`ExploreTab`'s `groupKinds`** — which card kinds are GROUPS in this section's vocabulary.
+  The default is the host's (`series` + `artist`); the SPA-composed sections pass
+  `FACET_GROUP_KINDS` (`franchise` `system` `person` `artist` `channel`). Movies MUST: its `series`
+  cards are TV shows — titles — and the host default would open one as a browse. It has to be a
+  stable identity (a fresh `new Set()` in the JSX is a new prop every render).
+- **`rail/facetUrl.ts` → `facetHref(pathname, facets, extra?)`** — a browse URL that is nothing but
+  facets, which is exactly the state the section's rail would have produced by hand, so the chip is
+  present the moment the page opens. **Every group card routes through `onOpenGroup` to
+  `<section>?f=token:value`** — the rail URL contract from S2.
+
+### Cheapness is the design
+
+- Every rail fetch is its own React Query with a real `staleTime`; the page never refetches because
+  a param moved, and returning to the tab redraws from cache.
+- **The expensive queries wait.** `useNearViewport.ts` → `useExploreDepth()` is false until the
+  reader actually moves (an idle fallback flips it after 2.5 s so a very tall window still fills
+  in), and a section hangs its TAIL rails' `enabled` on it. What waits, per section, is named below.
+- **Rails below the fold do not mount.** `LazyRail` reserves the rail's height and mounts nothing
+  until it is approached — one `IntersectionObserver`, disconnected on the first hit. `ExploreTab`
+  renders the first `eagerRails` (2) directly; the reserve is the same box the mounted rail fills,
+  so revealing one never moves the page under the reader.
+- The engine's laws still apply one floor up: `CardImage` for every cover (`decoding="async"`, hue
+  placeholder + backoff + dormant cooldown, never a fallback `src` swap), module-level renderers,
+  no per-item listeners.
+
+### The rails, per section
+
+| Section | Route | Rails (name → source) | Group cards | Waits for depth |
+|---|---|---|---|---|
+| Movies/TV | `/movies/explore` | spotlight + **Something else entirely** → `/API/Browse?sort=random&seed=` (one seeded page feeds both) · **Keep watching** → `/API/ContinueWatching` · **On TV right now** → the `useChannelLineup` the homepage rail builds · **Picked for you** → `/API/Recommendations` · **Just added to the library** → `/API/Browse?sort=added` · **Whole runs to binge** → `/API/BrowseGroups?groupBy=franchise` · **The ‹X› run, in order** → `/API/GetFranchiseRail` anchored on the spotlight | franchise → `/?f=franchise:‹v›`; a person chip → `/?f=person:‹name›` | the franchise group index + the franchise run |
+| Music | `/music/explore` | spotlight + **Reach for something** → the cached shelf, seeded shuffle · **Your favourites** → `/API/Music/Playlist/Mine` (the Favorites list's album ids, resolved in the shelf) · **Latest on the shelf** → the cached shelf, descending id · **Artists to sit with** → the cached shelf's artists | artist → `/music?f=artist:‹id›` | the playlists read |
+| Arcade | `/arcade/explore` | **Recently played** → `/API/Arcade/RecentlyPlayed` (**moved from the lobby**) · **Live rooms** → `/API/Arcade/Rooms` · **Where you last earned something** → `/API/Arcade/Trophies/Mine` · **Pick a console** → `/API/Arcade/Filters` · spotlight + **Best on the shelf** → `/API/Arcade/Games?sort=rating` · **Spin the shelf: ‹System›** → one console picked by the seed | system → `/arcade?f=system:‹v›` | the trophy room + the spin |
+| Photos | `/photos/explore` | spotlight (the anniversary, else the newest) · **On this day — ‹date›** → `/API/Photos/OnThisDay` · **Latest in the album** → `/API/Photos/Browse` · **The people in the album** → the people list `PhotosPage` already holds | person → `/photos/browse?f=person:‹id›` | the recent reel |
+| Boardgames | `/boardgames/explore` | spotlight + **Best on the shelf** · **Newest on the shelf** · **Designers on the shelf** · **Pull one off the shelf** — ALL four off `useBoardgamesCatalog`, the copy the browse already holds | designer → `/boardgames?f=designer:‹name›` | nothing — the tab makes no request at all |
+| Books | `/books/explore` | the host's composed payload (`/API/Books/explore`) | series → the series modal | — |
+| TV | — | **deliberately none.** `/channels` IS the EPG: the grid guide already draws every channel, grouped by category, with what is on NOW, and its detail panel carries the ♥. An Explore of "now + favourites" would be a second, worse copy of that one page. The lineup instead surfaces where it is NOT already visible — the **On TV right now** rail on the Movies Explore. Revisit if TV grows a second axis (per-channel "up next" shelves, playlists as cards). | — | — |
+
+Two rails carry a stated honesty note rather than a claim the data cannot support: **Music and
+Boardgames have no "added" stamp** (`MusicAlbum` has `Year`, a boardgame row has `yearPublished`,
+and neither records when it landed), so "Latest / Newest on the shelf" orders by descending id —
+the identity column IS the ingest order — and the rail is labelled for what that actually means.
+
+**New endpoints are the exception, and there are three.** Every other rail rides something that
+already existed. Each is read-only, capped, and gated exactly as its section's browse is:
+`/API/ContinueWatching` (a resume position had no read route at all; `MoviePlaybackProgress` hangs
+off a `Playable`, so an episode resolves to its SERIES card), `/API/Recommendations` (the
+`TitleRecommendation` rows `RecommendationMaintenanceService` keeps fresh), and
+`/API/Photos/OnThisDay` (the browse narrows by year, and by month WITHIN a year, never by a day
+across years). The first two are per-viewer, so they are never cached and never warmed.
+`/API/Music/Playlist/Mine` widened its per-playlist `albumIds` prefix from 4 to 12 — the same ids,
+a longer prefix.
+
+## The change-driven cache warmer (`Web/CatalogWarmupService`) — R9 S7
+
+The Long Box `views-perf` law the pods were missing. Every `CheckInterval` (5 min) the hosted
+service reads a cheap **`CatalogFingerprint`** — the counts of visible movies / series / misc /
+insights / viewings plus the max `UploadedDate` and `GeneratedUtc` stamps, all indexed COUNTs and
+MAXes, quarantined rows excluded so it sees what the browse sees. When it MOVES (or the backstop
+TTL elapses) it rebuilds the movie browse's light group indexes and its facet counts into the same
+`IMemoryCache` a request would fill.
+
+- **Gating is pure and tested** (`CatalogWarmupPlan.Decide`): first pass · changed · backstop TTL
+  (4 h) · and never inside `MinInterval` (2 min). That floor matters because viewing counts are
+  part of the fingerprint — without it, ticking through the Rate page would re-warm the whole index
+  once per row. A change inside the floor is not lost; it warms at the next check. **Never a timer
+  as the trigger, and never a request.**
+- **Bounded, observable, resumable**: one target per step with a pause between, its own scope and
+  `DbContext`, every pass logging its REASON and every target logging what it built and how long it
+  took (`catalog-warmup: groups:Movies:genre → 412 groups in 830 ms (4/8)`). State is the cache
+  itself, so a pass killed halfway leaves what it finished warm and the next pass redoes the rest.
+  A failure is logged and dropped — a cold cache is slow, not broken. READ-ONLY throughout; **off
+  in Development**, because the dev connection IS the live shared database.
+- **What it warms**: `BrowseFilter.CountAsync` for the `Movies` and `Series` type scopes, and
+  `BrowseGroups.BuildIndexAsync` for genre / decade / franchise over `Movies`, `Series` and both.
+  Misc-inclusive scopes are deliberately absent (their index needs the misc CARD projection, which
+  lives on the controller, and misc is a small in-memory list that costs nothing cold).
+- **`Web/BrowseCacheKeys.cs` is what makes a warm reachable.** `Web/CatalogQueries`' base queries
+  depend on exactly ONE viewer fact, the age restriction, so the group index and the facet counts
+  are identical for every viewer at that age — EXCEPT when the filter reads the caller's own lists
+  (`my=`), the only user-dependent part of `BrowseFilter`. The key now carries the user id only in
+  that case. Before this, every signed-in viewer built their own private copy of an identical index
+  and no warm could ever have been hit.
 
 ## Sources (`catalog/sources/`)
 
@@ -322,7 +418,9 @@ all instant and abort-free — for sections that already ship their whole catalo
 5. Filters (optional): write a `FacetSpec`, mount `FacetRail` in the sider (desktop) and behind a
    Filters pill as a sheet (phone), pass `useFacetState`'s query into the source's scope key, put
    `ActiveChips` in `beforeResults`.
-6. Explore (optional): a section query + `ExploreTab` with a `mapExplore` for its rows.
+6. Explore: a tab row in `catalog/bar/sections.ts`, a route, and a PURE `compose<Section>Explore`
+   over `composeExplore.ts` — named queries the section already serves, `groupCard` for a facet,
+   `facetHref` for where it leads, `useExploreDepth` on the expensive ones. See "The Explore kit".
 7. Skin: `registerSectionSkin("<section>", …)` with nine backdrops (a `siteDefault` first, then four
    light + four dark) — the host does the rest. See "The skin" above.
 8. Smoke: every view on desktop + phone, a card open keeps `?view=`, Back closes; the modal and the
