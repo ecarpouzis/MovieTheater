@@ -102,6 +102,7 @@ export const SECTIONS: SectionDef[] = [
   {
     key: "movies", prefixes: [], title: "Movie Theater", searchPlaceholder: "genre:Noir, person:Pacino, or a title…",
     tabs: [
+      { key: "explore", label: "Explore", path: "/movies/explore" },
       { key: "browse", label: "Browse", path: "/", exact: true },
       { key: "channels", label: "Channels", path: "/channels", when: (u) => !!u?.hasPassword },
       { key: "admin", label: "Admin", path: "/movies/admin", admin: true, when: editor },

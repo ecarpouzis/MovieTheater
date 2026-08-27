@@ -143,3 +143,24 @@ export function hasNoFacetParams(search: string, spec?: Pick<FacetSpec, "ranges"
 export function emptyFacetState(): FacetState {
   return { ...EMPTY_FACET_STATE, include: {}, exclude: {}, ranges: {}, flags: {} };
 }
+
+/**
+ * A browse URL carrying nothing but facets — the rail URL contract written from scratch (R9 S7).
+ * Explore's group cards and "More →" links land on `<pathname>?f=token:value…`, which is exactly the
+ * state the section's rail would have produced by hand, so the chip is present the moment the page
+ * opens. `extra` carries the non-facet params a link may also want (`view`, `group`, `sort`).
+ */
+export function facetHref(
+  pathname: string,
+  facets: readonly (readonly [string, string | number])[],
+  extra: Readonly<Record<string, string | number | undefined>> = {},
+): string {
+  const params = new URLSearchParams();
+  for (const [token, value] of facets) {
+    const v = String(value ?? "").trim();
+    if (token && v) params.append("f", `${token}:${v}`);
+  }
+  for (const [k, v] of Object.entries(extra)) if (v != null && String(v).length > 0) params.set(k, String(v));
+  const q = params.toString();
+  return q ? `${pathname}?${q}` : pathname;
+}

@@ -75,11 +75,19 @@ export function mapExplore(dto: ExploreWireResponse): ExploreResponse {
   };
 }
 
-/** The card kinds that stand for a group rather than one item; the tab opens them through `onOpenGroup`. */
+/**
+ * The card kinds that stand for a group rather than one item; the tab opens them through
+ * `onOpenGroup`. This is the BOOKS/host default — a section whose vocabulary disagrees passes its
+ * own set (`ExploreTab`'s `groupKinds`). Movies must: a `series` card there is a TV show, an ITEM,
+ * and opening it as a group would land on a browse instead of the title's sheet.
+ */
 export const GROUP_CARD_KINDS: ReadonlySet<string> = new Set(["series", "artist"]);
 
-export function isGroupCard(card: CardItem): boolean {
-  return GROUP_CARD_KINDS.has(card.kind);
+/** The group kinds the SPA-composed sections use (R9 S7) — all of them stand for a facet value. */
+export const FACET_GROUP_KINDS: ReadonlySet<string> = new Set(["franchise", "system", "person", "artist", "channel"]);
+
+export function isGroupCard(card: CardItem, kinds: ReadonlySet<string> = GROUP_CARD_KINDS): boolean {
+  return kinds.has(card.kind);
 }
 
 /** A group card as the `CardGroup` a section's `onOpenGroup` expects: the card is its own one-card run. */

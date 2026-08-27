@@ -23,7 +23,14 @@ export type CardKind =
   | "artist"
   | "game"
   | "boardgame"
-  | "photo";
+  | "photo"
+  // Group spaces (R9 S7): a card that stands for a whole FACET rather than one row — a franchise,
+  // an arcade system, a credited person, a TV channel. Explore routes these through `onOpenGroup`,
+  // which lands on the section's browse with the matching `f=token:value`.
+  | "franchise"
+  | "system"
+  | "person"
+  | "channel";
 
 export interface CardBadgeSpec {
   /** Short text, e.g. "IMDb 7.8", "#12", "4K". */

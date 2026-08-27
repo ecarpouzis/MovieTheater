@@ -44,6 +44,8 @@ const BooksPage = lazy(() => import("./Pages/Books/BooksPage"));
 // — they are tabs now instead of one-off routes and modals — and the old routes below redirect into
 // the tab that holds them, so every link anyone has kept still lands.
 const MoviesAdminPage = lazy(() => import("./Pages/Admin/MoviesAdminPage"));
+// R9 S7 — every section's Explore tab. Its own chunk: a landing nobody opens costs nothing.
+const MoviesExplorePage = lazy(() => import("./Pages/Browse/MoviesExplorePage"));
 const TvAdminPage = lazy(() => import("./Pages/Tv/TvAdminPage"));
 const ArcadeAdminPage = lazy(() => import("./Pages/Arcade/ArcadeAdminPage"));
 const MusicAdminPage = lazy(() => import("./Pages/Music/MusicAdminPage"));
@@ -199,6 +201,11 @@ function App() {
                 keep landing. `/rate` is NOT one of them: it is a member surface. */}
             <Route path="/movies/admin" exact>
               <MoviesAdminPage userData={userData} setUserData={setUserData} />
+            </Route>
+            {/* R9 S7 — the section's Explore landing. Declared above the "/" catch-all, which is the
+                Movies section's Browse. */}
+            <Route path="/movies/explore" exact>
+              <MoviesExplorePage userData={userData} setUserData={setUserData} />
             </Route>
             <Route path="/rate" exact>
               <RatePage userData={userData} setUserData={setUserData} />

@@ -12,7 +12,8 @@ import CardRow from "./CardRow";
 import CoverWall from "./CoverWall";
 import type { HeroDetail } from "./HeroSpotlight";
 import HeroSpotlight from "./HeroSpotlight";
-import { groupOf, isGroupCard } from "./mapExplore";
+import LazyRail from "./LazyRail";
+import { GROUP_CARD_KINDS, groupOf, isGroupCard } from "./mapExplore";
 import RowHead from "./RowHead";
 import "./explore.css";
 
@@ -25,6 +26,12 @@ export interface ExploreTabProps {
   onOpen: (item: CardItem) => void;
   /** A group card (a series, an artist); when absent the card opens like an item. */
   onOpenGroup?: (group: CardGroup, groupBy: string) => void;
+  /**
+   * Which card kinds stand for a GROUP in this section's vocabulary. Defaults to the host's
+   * (`series` + `artist`); Movies passes `FACET_GROUP_KINDS` because its `series` cards are titles.
+   * Must be a stable identity — a fresh `new Set()` in the JSX is a new prop every render.
+   */
+  groupKinds?: ReadonlySet<string>;
   /** The rail's browse href → the section's own URL; null/undefined hides the More link. */
   moreHref?: (href: string, rail: ExploreResponse["rails"][number]) => string | null | undefined;
   /** Rails that should not offer Shuffle (the genuinely-newest arrivals). */
@@ -36,16 +43,23 @@ export interface ExploreTabProps {
   railSubtitle?: (rail: ExploreResponse["rails"][number]) => string | undefined;
   emptyMessage?: ReactNode;
   className?: string;
+  /** How many rails mount eagerly before the rest wait for the viewport (default 2). */
+  eagerRails?: number;
 }
 
 export function randomSeed(): number {
   return Math.floor(Math.random() * 1_000_000) + 1;
 }
 
+/** Reserved height per rail kind while it is still below the fold — head + one row of covers. */
+const RAIL_RESERVE: Record<ExploreRailKind, number> = { strip: 320, grid: 420, wall: 300 };
+type ExploreRailKind = ExploreResponse["rails"][number]["kind"];
+
 export default function ExploreTab(p: ExploreTabProps) {
   const history = useHistory();
+  const kinds = p.groupKinds ?? GROUP_CARD_KINDS;
   const open = (item: CardItem) => {
-    if (p.onOpenGroup && isGroupCard(item)) p.onOpenGroup(groupOf(item), item.kind);
+    if (p.onOpenGroup && isGroupCard(item, kinds)) p.onOpenGroup(groupOf(item), item.kind);
     else p.onOpen(item);
   };
   const shuffle = p.onSeed ? () => p.onSeed!(randomSeed()) : undefined;
@@ -65,7 +79,7 @@ export default function ExploreTab(p: ExploreTabProps) {
       {p.data.spotlight.length > 0 && (
         <HeroSpotlight items={p.data.spotlight} onOpen={open} intervalMs={p.heroIntervalMs} detail={p.heroDetail} eyebrow={p.heroEyebrow} />
       )}
-      {rails.map((rail) => {
+      {rails.map((rail, i) => {
         const href = rail.more && p.moreHref ? p.moreHref(rail.more.href, rail) : null;
         const seeded = shuffle && !(p.unseededRails?.has(rail.key));
         const action = (seeded || href) ? (
@@ -74,14 +88,20 @@ export default function ExploreTab(p: ExploreTabProps) {
             {href && <button type="button" className="xp-row-action" onClick={() => history.push(href)}>More →</button>}
           </>
         ) : undefined;
-        return (
-          <section key={rail.key} className={`xp-row xp-row-${rail.kind}`} data-rail={rail.key}>
+        const body = (
+          <section className={`xp-row xp-row-${rail.kind}`} data-rail={rail.key}>
             <RowHead title={rail.title} subtitle={p.railSubtitle?.(rail)} action={action} />
             {rail.kind === "wall" && <CoverWall items={rail.items} onOpen={open} />}
             {rail.kind === "grid" && <CardGrid items={rail.items} onOpen={open} />}
             {rail.kind === "strip" && <CardRow items={rail.items} onOpen={open} />}
           </section>
         );
+        // The first rails are the first screen; the rest wait until they are approached, so an
+        // Explore with eight rails paints two rails' worth of covers on landing, not eight.
+        const eager = p.eagerRails ?? 2;
+        return i < eager
+          ? <div key={rail.key}>{body}</div>
+          : <LazyRail key={rail.key} minHeight={RAIL_RESERVE[rail.kind]}>{body}</LazyRail>;
       })}
     </div>
   );
