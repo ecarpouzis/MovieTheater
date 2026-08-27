@@ -8,6 +8,7 @@ import { LYRICS_DEFAULTS, normalizeLyricsSettings } from "./MusicLyricsSettings"
 import { createMseEngine } from "./MusicMseEngine";
 import { buildCapabilityMatrix, chooseEngineMode } from "./musicTreatments";
 import { seekPlan, trackTimeAt } from "./musicTimeline";
+import { createPlayReporter } from "./musicPlays";
 import { readStored, writeStored } from "../utils/storage";
 
 // ── The site's first persistent player (music-plan.md §2.6) ─────────────────
@@ -1597,6 +1598,20 @@ export function MusicPlayerProvider({ children, enabled = true }) {
    *
    * On the deck path it is exactly what it always was: one element, one track, one clock.
    */
+  // ── Play telemetry (R9 closing pass) ───────────────────────────────────────────────────────────
+  // The vertical recorded no plays at all until this, so "Most played" had nothing to sort on. The
+  // rules live in musicPlays.js (pure, tested); what belongs HERE is only where the session opens
+  // and where the playhead is read.
+  const playReporterRef = useRef(null);
+  if (playReporterRef.current === null) playReporterRef.current = createPlayReporter();
+
+  // A session opens when the player moves to a track — the QUEUE POSITION, not the load. A wake
+  // retry or a recovery re-loads the same track without moving, so it must not open a second
+  // session; putting the record on again later does move, and correctly counts again.
+  useEffect(() => {
+    playReporterRef.current.begin(current?.id ?? null);
+  }, [current?.id, index]);
+
   const trackTime = useCallback(() => {
     const audio = audioRef.current;
     if (!audio) return { position: 0, duration: 0 };
@@ -1619,6 +1634,30 @@ export function MusicPlayerProvider({ children, enabled = true }) {
       duration: Number.isFinite(audio.duration) ? audio.duration : (Number(currentRef.current?.durationSec) || 0),
     };
   }, [mseActive]);
+
+  // The play beacon's tick. `timeupdate` on the LIVE element — which `audioRef` always points at,
+  // MSE deck included — read through `trackTime` so the position is track-relative on both engines
+  // (the element's own clock is the QUEUE's clock under MSE, and a 43-minute reading would report
+  // a play the moment a side started). Re-binds on a deck flip, like every other listener here.
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return undefined;
+    const onTime = () => {
+      const { position, duration } = trackTime();
+      playReporterRef.current.note(position, duration);
+    };
+    audio.addEventListener("timeupdate", onTime);
+    return () => audio.removeEventListener("timeupdate", onTime);
+  }, [activeDeck, trackTime]);
+
+  // The page is going away: hand over anything a refused beacon is still holding. `pagehide` (not
+  // `unload`) is the event a frozen/bfcached page actually gets, and it is where sendBeacon exists
+  // to be used.
+  useEffect(() => {
+    const flush = () => playReporterRef.current.flush();
+    window.addEventListener("pagehide", flush);
+    return () => window.removeEventListener("pagehide", flush);
+  }, []);
 
   const toggle = useCallback(() => {
     queueFinishedRef.current = false;

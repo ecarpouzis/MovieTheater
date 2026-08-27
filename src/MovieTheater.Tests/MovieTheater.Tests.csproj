@@ -107,6 +107,17 @@
          Services ProjectReference. No test may contact Jellyfin, so the client handed to it points
          at a socket that is never opened. -->
     <Compile Include="..\MovieTheater\Controllers\StreamController.cs" Link="Streaming\StreamController.cs" />
+    <!-- The music control plane, for the play beacon's sink (POST /API/Music/Play) and its gate.
+         Compiled from source for the same reason StreamController and PhotosController are: the
+         claims are about the SHIPPED action — that it reads a raw text/plain beacon, floors the
+         start stamp to the minute, and treats a report carrying a minute it already counted as a
+         no-op — and about the REAL [Authorize] attribute on the class, which is the only thing
+         standing between play telemetry and an anonymous writer. A re-declared copy would pass
+         while the shipped endpoint double-counted or sat open. No test may reach the configured
+         connection string (it IS the live shared database), so every test here runs against a
+         throwaway SQLite MovieDb. MusicArtFill comes along because the controller references it. -->
+    <Compile Include="..\MovieTheater\Music\MusicArtFill.cs" Link="Music\MusicArtFill.cs" />
+    <Compile Include="..\MovieTheater\Controllers\MusicController.cs" Link="Music\MusicController.cs" />
     <Compile Include="..\MovieTheater\Streaming\TranscodeSessionRegistry.cs" Link="Streaming\TranscodeSessionRegistry.cs" />
     <Compile Include="..\MovieTheater\Web\RatingGate.cs" Link="Streaming\RatingGate.cs" />
     <!-- The grouped browse core + the A–Z walk it derives letter rails from (BrowseGroupsTests). -->

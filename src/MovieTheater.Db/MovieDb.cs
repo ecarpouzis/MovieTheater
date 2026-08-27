@@ -541,6 +541,31 @@ namespace MovieTheater.Db
                 .HasForeignKey(r => r.AlbumId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // ── Play telemetry (R9 closing pass): one row per listener per track ──
+            // The unique index is the whole design: the beacon's write is an UPSERT on it, so a
+            // repeated report cannot mint a second row, and "most played" is a SUM over a table
+            // bounded by listeners x tracks-ever-played rather than by listening time.
+            modelBuilder.Entity<MusicPlayStat>()
+                .HasIndex(p => new { p.UserId, p.MusicTrackId })
+                .IsUnique();
+            // The library-wide roll-ups ("most played album/artist", "recently played") read from the
+            // TRACK end and carry both numbers, so the join never touches the table itself.
+            modelBuilder.Entity<MusicPlayStat>()
+                .HasIndex(p => p.MusicTrackId);
+            // Restrict on User (the multiple-cascade-path reason MusicPlaylist documents); Restrict on
+            // the track too, for the reason MusicTrack's own parents are restricted — a play is a fact
+            // about listening, and it must not vanish because a reconcile touched a content row.
+            modelBuilder.Entity<MusicPlayStat>()
+                .HasOne(p => p.User)
+                .WithMany()
+                .HasForeignKey(p => p.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<MusicPlayStat>()
+                .HasOne(p => p.Track)
+                .WithMany()
+                .HasForeignKey(p => p.MusicTrackId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             // Read newest-first, and "is this still happening?" is a count by kind over a date range.
             modelBuilder.Entity<MusicPlaybackIncident>()
                 .HasIndex(i => new { i.CreatedUtc, i.Kind });
@@ -939,6 +964,7 @@ namespace MovieTheater.Db
         public DbSet<MusicAlbumGenre> MusicAlbumGenres { get; set; }
         public DbSet<MusicArtistGenre> MusicArtistGenres { get; set; }
         public DbSet<MusicAlbumRating> MusicAlbumRatings { get; set; }
+        public DbSet<MusicPlayStat> MusicPlayStats { get; set; }
 
         // ── Family photo album (docs/photos-plan.md §3) ──────────────────────────────────────────
         // §6 privacy invariant: these sets exist for the family-gated /API/Photos routes ONLY. They are

@@ -525,6 +525,185 @@ namespace MovieTheater.Controllers
 
         private static readonly AlbumScores NoScores = new(null, 0, null);
 
+        // ── Play telemetry (R9 closing pass) ─────────────────────────────────────────────────────
+
+        /// <summary>Library-wide plays for one album or artist: how many, and when last.</summary>
+        private sealed record PlayRollup(int Plays, DateTime? LastPlayedUtc);
+
+        private static readonly PlayRollup NoPlays = new(0, null);
+
+        /// <summary>
+        /// The library-wide play roll-ups, by album and by artist — two small grouped reads over
+        /// <see cref="MusicPlayStat"/> joined to the tracks.
+        /// </summary>
+        /// <remarks>
+        /// <para>The numbers ride the SHELF ROWS for the reason genre and rating do: the Music browse
+        /// holds its whole shelf client-side, so a "Most played" order (and the Explore rail behind
+        /// it) can only exist if the count is ON the row. Summing an aggregate table is what makes
+        /// that affordable — an event log would make this a COUNT over every play ever.</para>
+        /// <para><b>Library-wide, never per listener.</b> The rows are per user; what a card SHOWS is
+        /// the sum across everyone, so it says how often a record gets played in this house and never
+        /// by whom. An artist's plays include their loose tracks, which belong to no album.</para>
+        /// </remarks>
+        private async Task<(Dictionary<int, PlayRollup> ByAlbum, Dictionary<int, PlayRollup> ByArtist)> PlayRollupsAsync()
+        {
+            var byAlbum = (await (from s in movieDb.MusicPlayStats.AsNoTracking()
+                                  join t in movieDb.MusicTracks.AsNoTracking() on s.MusicTrackId equals t.Id
+                                  where t.AlbumId != null
+                                  group s by t.AlbumId!.Value into g
+                                  select new { AlbumId = g.Key, Plays = g.Sum(x => x.PlayCount), Last = (DateTime?)g.Max(x => x.LastPlayedUtc) })
+                             .ToListAsync())
+                .ToDictionary(r => r.AlbumId, r => new PlayRollup(r.Plays, r.Last));
+
+            var byArtist = (await (from s in movieDb.MusicPlayStats.AsNoTracking()
+                                   join t in movieDb.MusicTracks.AsNoTracking() on s.MusicTrackId equals t.Id
+                                   group s by t.ArtistId into g
+                                   select new { ArtistId = g.Key, Plays = g.Sum(x => x.PlayCount), Last = (DateTime?)g.Max(x => x.LastPlayedUtc) })
+                              .ToListAsync())
+                .ToDictionary(r => r.ArtistId, r => new PlayRollup(r.Plays, r.Last));
+
+            return (byAlbum, byArtist);
+        }
+
+        /// <summary>One reported play: the track, and when it STARTED (the idempotency key).</summary>
+        public sealed record PlayReport(int TrackId, DateTime StartedUtc);
+
+        /// <summary>Bounds one report. The player sends one play at a time; the cap is for the
+        /// <c>pagehide</c> flush, which can carry a small backlog, and for a runaway client.</summary>
+        private const int MaxPlayReports = 50;
+
+        /// <summary>
+        /// Parses the beacon's body into reports. Pure so the parsing rules — which are the whole
+        /// contract with a fire-and-forget sender — can be tested without a request.
+        /// </summary>
+        /// <remarks>
+        /// A missing or unusable <c>startedAt</c> falls back to <paramref name="now"/>, so a report is
+        /// never DROPPED for a clock problem, and a stamp outside a sane window is clamped rather
+        /// than trusted: it only ever keys idempotency, and a wild value would make the next genuine
+        /// play look like a duplicate. Every stamp is floored to the minute — that IS the key.
+        /// </remarks>
+        internal static List<PlayReport> ParsePlayReports(string? raw, DateTime now)
+        {
+            var reports = new List<PlayReport>();
+            if (string.IsNullOrWhiteSpace(raw)) return reports;
+            JsonDocument doc;
+            try { doc = JsonDocument.Parse(raw); }
+            catch (JsonException) { return reports; }
+            using (doc)
+            {
+                var root = doc.RootElement;
+                // A bare object is one play; `plays` is the batch the pagehide flush sends.
+                var items = root.ValueKind == JsonValueKind.Array ? root
+                    : root.TryGetProperty("plays", out var p) && p.ValueKind == JsonValueKind.Array ? p
+                    : default;
+                var elements = items.ValueKind == JsonValueKind.Array
+                    ? items.EnumerateArray().ToList()
+                    : new List<JsonElement> { root };
+
+                foreach (var e in elements)
+                {
+                    if (e.ValueKind != JsonValueKind.Object) continue;
+                    if (!e.TryGetProperty("trackId", out var t) || t.ValueKind != JsonValueKind.Number) continue;
+                    if (!t.TryGetInt32(out var trackId) || trackId <= 0) continue;
+
+                    var started = now;
+                    if (e.TryGetProperty("startedAt", out var sa))
+                    {
+                        if (sa.ValueKind == JsonValueKind.String && DateTime.TryParse(sa.GetString(),
+                                System.Globalization.CultureInfo.InvariantCulture,
+                                System.Globalization.DateTimeStyles.AdjustToUniversal | System.Globalization.DateTimeStyles.AssumeUniversal,
+                                out var parsed))
+                            started = parsed;
+                        else if (sa.ValueKind == JsonValueKind.Number && sa.TryGetInt64(out var ms))
+                            started = DateTimeOffset.FromUnixTimeMilliseconds(ms).UtcDateTime;
+                    }
+                    // A stamp only keys idempotency, so a wild one is clamped, never trusted.
+                    if (started > now.AddMinutes(5) || started < now.AddDays(-1)) started = now;
+                    reports.Add(new PlayReport(trackId, FloorToMinute(started)));
+                    if (reports.Count >= MaxPlayReports) break;
+                }
+            }
+            return reports;
+        }
+
+        private static DateTime FloorToMinute(DateTime t) =>
+            new(t.Year, t.Month, t.Day, t.Hour, t.Minute, 0, DateTimeKind.Utc);
+
+        /// <summary>
+        /// Records that the caller played a track. The music vertical's first play telemetry.
+        /// </summary>
+        /// <remarks>
+        /// <para>The player fires this ONCE per track, when playback passes 30 s or 50 % of the
+        /// track (whichever comes first) — a threshold, not a start, so skipping through a queue
+        /// records nothing and a seek inside a track it already reported cannot fire it again.</para>
+        ///
+        /// <para>It arrives as a <c>sendBeacon</c> with <c>text/plain</c>, exactly like
+        /// <c>/API/Music/Incident</c> and for the same reason: the last one is sent from
+        /// <c>pagehide</c>, when the page is being frozen and will not survive a CORS preflight. So
+        /// the body is read and parsed here rather than model-bound.</para>
+        ///
+        /// <para><b>Idempotent per user × track × started-at MINUTE.</b> The row remembers the
+        /// minute of the play it last counted, and a report carrying that same minute is a no-op.
+        /// That is what makes a fire-and-forget beacon safe: a retry, a <c>pagehide</c> flush racing
+        /// the in-flight send, or two tabs cannot inflate a count. Bounded, like every write here —
+        /// at most <see cref="MaxPlayReports"/> per call.</para>
+        ///
+        /// <para>Gated like every <c>/API/Music/*</c> route (the controller's StreamingUser policy).
+        /// Rows are per user; only the library-wide sum is ever shown.</para>
+        /// </remarks>
+        [HttpPost("/API/Music/Play")]
+        public async Task<IActionResult> Play()
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+
+            using var reader = new StreamReader(Request.Body);
+            var raw = await reader.ReadToEndAsync();
+            if (raw.Length > 64 * 1024) raw = raw.Substring(0, 64 * 1024);
+
+            var now = DateTime.UtcNow;
+            var reports = ParsePlayReports(raw, now);
+            if (reports.Count == 0) return Ok(new { counted = 0, skipped = 0 });
+
+            var trackIds = reports.Select(r => r.TrackId).Distinct().ToList();
+            var valid = (await movieDb.MusicTracks.AsNoTracking()
+                .Where(t => trackIds.Contains(t.Id)).Select(t => t.Id).ToListAsync()).ToHashSet();
+            var existing = await movieDb.MusicPlayStats
+                .Where(p => p.UserId == userId.Value && trackIds.Contains(p.MusicTrackId))
+                .ToListAsync();
+
+            int counted = 0, skipped = 0;
+            foreach (var report in reports)
+            {
+                if (!valid.Contains(report.TrackId)) { skipped++; continue; }
+                var row = existing.FirstOrDefault(p => p.MusicTrackId == report.TrackId);
+                if (row == null)
+                {
+                    row = new MusicPlayStat
+                    {
+                        UserId = userId.Value,
+                        MusicTrackId = report.TrackId,
+                        PlayCount = 1,
+                        LastPlayedUtc = now,
+                        LastStartedUtc = report.StartedUtc,
+                    };
+                    movieDb.MusicPlayStats.Add(row);
+                    existing.Add(row);
+                    counted++;
+                    continue;
+                }
+                // The same minute is the same play, however many times it is reported.
+                if (row.LastStartedUtc == report.StartedUtc) { skipped++; continue; }
+                row.PlayCount++;
+                row.LastPlayedUtc = now;
+                row.LastStartedUtc = report.StartedUtc;
+                counted++;
+            }
+
+            await movieDb.SaveChangesAsync();
+            return Ok(new { counted, skipped });
+        }
+
         [HttpGet("/API/Music/Artists")]
         public async Task<IActionResult> Artists(string? kind = null)
         {
@@ -594,9 +773,12 @@ namespace MovieTheater.Controllers
                     .DefaultIfEmpty(null)
                     .Max());
 
+            var (_, playsByArtist) = await PlayRollupsAsync();
+
             return Ok(artists.Select(a =>
             {
                 faces.TryGetValue(a.id, out var face);
+                var plays = playsByArtist.GetValueOrDefault(a.id, NoPlays);
                 return new
                 {
                     a.id,
@@ -612,6 +794,10 @@ namespace MovieTheater.Controllers
                     dominantColor = face?.DominantColor,
                     genres = artistGenres.GetValueOrDefault(a.id) ?? EmptyGenres,
                     topRating = artistTop.GetValueOrDefault(a.id),
+                    // Every play of every track filed under this artist — their loose tracks
+                    // included, which belong to no album and would otherwise be invisible here.
+                    playCount = plays.Plays,
+                    lastPlayedUtc = plays.LastPlayedUtc,
                 };
             }));
         }
@@ -767,10 +953,12 @@ namespace MovieTheater.Controllers
                 ? await AllGenresByAlbumAsync()
                 : await GenresByAlbumAsync(rows.Select(r => r.id).ToList());
             var scores = await ScoresByAlbumAsync(GetCurrentUserId());
+            var (playsByAlbum, _) = await PlayRollupsAsync();
 
             var items = rows.Select(a =>
             {
                 var s = scores.GetValueOrDefault(a.id, NoScores);
+                var plays = playsByAlbum.GetValueOrDefault(a.id, NoPlays);
                 return new
                 {
                     a.id,
@@ -793,6 +981,11 @@ namespace MovieTheater.Controllers
                     // what an album is worth. Null = nothing is known about it, and the sort files
                     // those last rather than inventing a middle.
                     rating = MusicPopularity.Blend(s.Average, s.Count, a.popularity),
+                    // Library-wide plays (R9 closing pass) — what "Most played" sorts on and what
+                    // "Recently played" orders by. Zero and null are the honest answers for a record
+                    // nobody has put on yet; the sort files those last rather than inventing a middle.
+                    playCount = plays.Plays,
+                    lastPlayedUtc = plays.LastPlayedUtc,
                 };
             }).ToList();
 
@@ -829,6 +1022,7 @@ namespace MovieTheater.Controllers
 
             var genres = (await GenresByAlbumAsync(new List<int> { id })).GetValueOrDefault(id) ?? EmptyGenres;
             var scores = (await ScoresByAlbumAsync(GetCurrentUserId())).GetValueOrDefault(id, NoScores);
+            var plays = (await PlayRollupsAsync()).ByAlbum.GetValueOrDefault(id, NoPlays);
 
             return Ok(new
             {
@@ -846,6 +1040,8 @@ namespace MovieTheater.Controllers
                 ratingAvg = scores.Average,
                 ratingCount = scores.Count,
                 rating = MusicPopularity.Blend(scores.Average, scores.Count, album.Popularity),
+                playCount = plays.Plays,
+                lastPlayedUtc = plays.LastPlayedUtc,
                 tracks,
             });
         }

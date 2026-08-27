@@ -39,6 +39,10 @@ export interface MusicAlbumRow {
   myRating?: number | null;
   ratingAvg?: number | null;
   ratingCount?: number;
+  /** Library-wide plays — every listener's, summed (R9 closing pass). 0 = nobody has put it on yet. */
+  playCount?: number;
+  /** When this record was last played by anyone here; null when it never has been. */
+  lastPlayedUtc?: string | null;
 }
 
 /** One row of `/API/Music/Artists`. */
@@ -57,6 +61,10 @@ export interface MusicArtistRow {
   /** The best blended score among the artist's albums — an artist has no score of their own, so the
    *  Top-rated order over the "one per artist" grid means "who has the best-regarded record here". */
   topRating?: number | null;
+  /** Library-wide plays of every track filed under this artist, loose tracks included. */
+  playCount?: number;
+  /** When anything of theirs was last played here; null when nothing has been. */
+  lastPlayedUtc?: string | null;
 }
 
 export const MUSIC_KIND_LABELS: Record<string, string> = { "": "Music", comedy: "Comedy", audiobook: "Audiobooks" };
@@ -150,7 +158,25 @@ export const ALBUM_SORTS: ClientSort[] = [
   // agreed was excellent. An album nothing is known about has no opinion attached and files LAST,
   // which is why the fallback is -1 rather than 0: a genuine 0 is a real score and outranks silence.
   { value: "rated", label: "Top rated", compare: (a, b) => (ratingOf(b) ?? -1) - (ratingOf(a) ?? -1) || collator.compare(a.title, b.title) },
+  // R9 closing pass. The library's own listening, summed across everyone — what gets PLAYED here,
+  // which is a different question from what is rated or what is famous. A record nobody has put on
+  // is a real 0 and files last; the tiebreak is the title, so the long tail of untouched albums
+  // stays alphabetical instead of shuffling on every fetch.
+  { value: "played", label: "Most played", compare: (a, b) => playsOf(b) - playsOf(a) || collator.compare(a.title, b.title) },
 ];
+
+/** Library-wide plays on a card, treating an old shelf (no field) as none. */
+export const playsOf = (i: CardItem): number => {
+  const raw = (i.raw ?? {}) as { playCount?: number };
+  return typeof raw.playCount === "number" ? raw.playCount : 0;
+};
+
+/** When a card was last played here, as ms since epoch; 0 when never (so it files last). */
+export const lastPlayedOf = (i: CardItem): number => {
+  const raw = (i.raw ?? {}) as { lastPlayedUtc?: string | null };
+  const t = raw.lastPlayedUtc ? Date.parse(raw.lastPlayedUtc) : NaN;
+  return Number.isFinite(t) ? t : 0;
+};
 
 /** The blended 0–100 an album card carries, or null when nothing is known about the record. */
 const ratingOf = (i: CardItem): number | null => {
@@ -178,6 +204,9 @@ export const ARTIST_SORTS: ClientSort[] = [
   // reading. An artist has no blended score of their own — the honest reading is "who has the
   // best-regarded record on the shelf", which is what an artist grid ordered by rating means.
   { value: "rated", label: "Top rated", compare: (a, b) => (artistOf(b).topRating ?? -1) - (artistOf(a).topRating ?? -1) || collator.compare(a.title, b.title) },
+  // The artist reading of the same order (one Sort pill for the section): every play of everything
+  // filed under them, their loose tracks included.
+  { value: "played", label: "Most played", compare: (a, b) => playsOf(b) - playsOf(a) || collator.compare(a.title, b.title) },
 ];
 
 function decadeOf(year: number | null | undefined): GroupKey | null {

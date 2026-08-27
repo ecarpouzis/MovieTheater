@@ -1,8 +1,8 @@
 import { createMusicSource, hexToHue, toAlbumCard, toArtistCard } from "./musicSource";
 
 const albums = [
-  { id: 1, title: "Zebra", year: 1999, artistId: 10, artistName: "The Beatles", artistSortName: "Beatles, The", artistKind: null, hasArt: true, dominantColor: "#ff0000", tag: "Live", genres: ["Rock", "Pop"], rating: 71, ratingCount: 2 },
-  { id: 2, title: "Apple", year: 2011, artistId: 20, artistName: "Zed", artistSortName: "Zed", artistKind: "comedy", hasArt: false, dominantColor: null, genres: ["Comedy"], rating: 88, ratingCount: 1 },
+  { id: 1, title: "Zebra", year: 1999, artistId: 10, artistName: "The Beatles", artistSortName: "Beatles, The", artistKind: null, hasArt: true, dominantColor: "#ff0000", tag: "Live", genres: ["Rock", "Pop"], rating: 71, ratingCount: 2, playCount: 12, lastPlayedUtc: "2026-08-20T10:00:00Z" },
+  { id: 2, title: "Apple", year: 2011, artistId: 20, artistName: "Zed", artistSortName: "Zed", artistKind: "comedy", hasArt: false, dominantColor: null, genres: ["Comedy"], rating: 88, ratingCount: 1, playCount: 3, lastPlayedUtc: "2026-08-26T10:00:00Z" },
   { id: 3, title: "Mango", year: 2005, artistId: 10, artistName: "The Beatles", artistSortName: "Beatles, The", artistKind: null, hasArt: true },
 ];
 const artists = [
@@ -39,6 +39,11 @@ describe("catalog/musicSource — albums and artists as cards, the catalog ownin
     // R9 S10 "Top rated": the server's blend, best first — and an album nothing is known about files
     // LAST rather than in the middle (the fallback is -1, so a genuine 0 would still outrank it).
     expect((await s.fetchFlatBand(0, 10, "rated")).items.map((c) => c.id)).toEqual([2, 1, 3]);
+    // R9 closing pass "Most played": library-wide plays, most first. A record nobody has put on is a
+    // real 0 and files last, and the tie among those is the TITLE — so the untouched tail stays
+    // alphabetical instead of reshuffling between fetches. (Album 3 carries no field at all, which
+    // is what a shelf fetched from a pod without the roll-up looks like: read as none, never as NaN.)
+    expect((await s.fetchFlatBand(0, 10, "played")).items.map((c) => c.id)).toEqual([1, 2, 3]);
     expect((await s.letters!("artist")).map((b) => b.letter)).toContain("B");
     expect((await s.letters!("title")).map((b) => b.letter)).toEqual(["A", "M", "Z"]);
     // The artist rows sort by the SAME keys as the albums (one section, one Sort pill — R9 S1b).

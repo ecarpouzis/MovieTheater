@@ -4,7 +4,9 @@ import {
   bestAlbums,
   composeMusicExplore,
   favouriteAlbums,
+  mostPlayedAlbums,
   musicArtistHref,
+  recentlyPlayedAlbums,
   seededPick,
   topArtists,
 } from "./musicExplore";
@@ -27,6 +29,9 @@ describe("Pages/Music/musicExplore — the Music Explore composition (R9 S7)", (
     });
     // No album carries a score in this fixture, so "Best on the shelf" is DROPPED rather than
     // padded with records nobody has an opinion about (R9 S10).
+    // Nor has anything been PLAYED, so both play rails are dropped too — before the beacon has ever
+    // fired every album is a real zero, and a "Most played" rail full of records nobody has put on
+    // would be a lie about its own contents (R9 closing pass).
     expect(out.rails.map((r) => r.key)).toEqual(["favourites", "just-added", "artists", "random"]);
     expect(out.spotlight).toHaveLength(5);
 
@@ -86,5 +91,31 @@ describe("Pages/Music/musicExplore — the Music Explore composition (R9 S7)", (
     // The rail's "more" IS the browse under the same order, so it is a window onto a real view.
     expect(rail.more).toEqual({ href: "/music?items=items&sort=rated" });
     expect(MUSIC_UNSEEDED_RAILS.has("best")).toBe(true);
+  });
+
+  it("'Most played' and 'Recently played' read the library-wide numbers, and drop what was never played", () => {
+    const played = [
+      album(1, { playCount: 4, lastPlayedUtc: "2026-08-20T09:00:00Z" }),
+      album(2, { playCount: 31, lastPlayedUtc: "2026-08-01T09:00:00Z" }),
+      album(3),
+      album(4, { playCount: 0, lastPlayedUtc: null }),
+      album(5, { playCount: 4, lastPlayedUtc: "2026-08-26T09:00:00Z" }),
+    ];
+    // Most played: count first, then id — so the order is total and does not wobble between fetches.
+    expect(mostPlayedAlbums(played).map((a) => a.id)).toEqual([2, 1, 5]);
+    // Recently played: the same rows read by their stamp, newest first.
+    expect(recentlyPlayedAlbums(played).map((a) => a.id)).toEqual([5, 1, 2]);
+    // Never played is not "played least" — it is absent from both.
+    expect(mostPlayedAlbums(played).map((a) => a.id)).not.toContain(3);
+    expect(recentlyPlayedAlbums(played).map((a) => a.id)).not.toContain(4);
+
+    const out = composeMusicExplore({ albums: played, artists: [], seed: 1 });
+    const most = out.rails.find((r) => r.key === "most-played")!;
+    expect(most.title).toBe("Most played");
+    // The rail's "more" IS the browse under the same order — a window onto a real view.
+    expect(most.more).toEqual({ href: "/music?items=items&sort=played" });
+    expect(out.rails.find((r) => r.key === "recently-played")!.title).toBe("Recently played");
+    expect(MUSIC_UNSEEDED_RAILS.has("most-played")).toBe(true);
+    expect(MUSIC_UNSEEDED_RAILS.has("recently-played")).toBe(true);
   });
 });

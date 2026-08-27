@@ -1848,6 +1848,39 @@ namespace MovieTheater.Db.Migrations
                     b.ToTable("MusicArtistGenre");
                 });
 
+            modelBuilder.Entity("MovieTheater.Db.MusicPlayStat", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("LastPlayedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("LastStartedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("MusicTrackId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PlayCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MusicTrackId");
+
+                    b.HasIndex("UserId", "MusicTrackId")
+                        .IsUnique();
+
+                    b.ToTable("MusicPlayStat");
+                });
+
             modelBuilder.Entity("MovieTheater.Db.MusicArtist", b =>
                 {
                     b.Property<int>("Id")
@@ -3753,6 +3786,25 @@ namespace MovieTheater.Db.Migrations
                         .IsRequired();
 
                     b.Navigation("Artist");
+                });
+
+            modelBuilder.Entity("MovieTheater.Db.MusicPlayStat", b =>
+                {
+                    b.HasOne("MovieTheater.Db.MusicTrack", "Track")
+                        .WithMany()
+                        .HasForeignKey("MusicTrackId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MovieTheater.Db.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Track");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("MovieTheater.Db.MusicPlaylist", b =>

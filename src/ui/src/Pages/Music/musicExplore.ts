@@ -10,6 +10,8 @@
  * | `favourites` | `/API/Music/Playlist/Mine` — the Favorites list's album ids, resolved in the shelf |
  * | `artists` | the cached shelf's artists — GROUP cards, routed by `f=artist:<id>` |
  * | `best` | the cached shelf, by the blended 0–100 the browse's Top-rated order uses (R9 S10) |
+ * | `most-played` | the cached shelf, by library-wide play count (R9 closing pass) |
+ * | `recently-played` | the cached shelf, by when anyone here last put the record on |
  *
  * One honesty note, stated because it is a judgement call: **Music has no "added" stamp.**
  * `MusicAlbum` carries `Year` and nothing else about when it landed, so "Just added" orders by
@@ -42,6 +44,8 @@ const ADDED_TAKE = 24;
 const BEST_TAKE = 18;
 const ARTISTS_TAKE = 18;
 const FAVOURITES_TAKE = 12;
+const PLAYED_TAKE = 18;
+const RECENT_TAKE = 12;
 
 export const MUSIC_MORE = {
   artists: "/music?items=groups",
@@ -50,6 +54,7 @@ export const MUSIC_MORE = {
   // The rail's "more" IS the browse under the same order, so the rail is a window onto a real view
   // rather than a hand-picked list that ends where it ends.
   best: "/music?items=items&sort=rated",
+  played: "/music?items=items&sort=played",
 };
 
 /** `/music?f=artist:412` — the Music rail's artist facet is numeric, so the id rides straight in. */
@@ -106,6 +111,37 @@ export function bestAlbums(albums: readonly MusicAlbumRow[], take = BEST_TAKE): 
     .slice(0, take);
 }
 
+/**
+ * The records this house actually plays (R9 closing pass) — library-wide counts, summed across every
+ * listener, the same number the browse's "Most played" order reads.
+ *
+ * Albums nobody has played are DROPPED, not sorted last: before anyone has listened with the beacon
+ * live, EVERY album has zero plays, and a rail titled "Most played" full of records nobody has ever
+ * put on would be a lie about its own contents. Dropping them makes the rail empty instead, and
+ * `exploreRail` drops an empty rail — so this rail simply does not appear until there is something
+ * true to say. That is the honest empty state, and it fills in on its own.
+ */
+export function mostPlayedAlbums(albums: readonly MusicAlbumRow[], take = PLAYED_TAKE): MusicAlbumRow[] {
+  return albums
+    .filter((a) => (a.playCount ?? 0) > 0)
+    .slice()
+    .sort((a, b) => (b.playCount ?? 0) - (a.playCount ?? 0) || Number(a.id) - Number(b.id))
+    .slice(0, take);
+}
+
+/**
+ * What went on most recently — free from the same rows, because the play table keeps a last-played
+ * stamp beside the count. Same empty-state rule: never played = not in the rail.
+ */
+export function recentlyPlayedAlbums(albums: readonly MusicAlbumRow[], take = RECENT_TAKE): MusicAlbumRow[] {
+  const at = (a: MusicAlbumRow) => (a.lastPlayedUtc ? Date.parse(a.lastPlayedUtc) : NaN);
+  return albums
+    .filter((a) => Number.isFinite(at(a)))
+    .slice()
+    .sort((a, b) => at(b) - at(a) || Number(b.id) - Number(a.id))
+    .slice(0, take);
+}
+
 /** Artists with the most on the shelf first — the ones a rail of eighteen should actually contain. */
 export function topArtists(artists: readonly MusicArtistRow[], take = ARTISTS_TAKE): MusicArtistRow[] {
   return artists.slice()
@@ -130,10 +166,12 @@ export function composeMusicExplore(input: MusicExploreInput): ExploreResponse {
     exploreRail("favourites", "Your favourites", "strip", favouriteAlbums(albums, input.playlists).map(toAlbumCard), MUSIC_MORE.favourites),
     exploreRail("just-added", "Latest on the shelf", "wall", added.map(toAlbumCard)),
     exploreRail("best", "Best on the shelf", "strip", bestAlbums(albums).map(toAlbumCard), MUSIC_MORE.best),
+    exploreRail("recently-played", "Recently played", "strip", recentlyPlayedAlbums(albums).map(toAlbumCard)),
+    exploreRail("most-played", "Most played", "strip", mostPlayedAlbums(albums).map(toAlbumCard), MUSIC_MORE.played),
     exploreRail("artists", "Artists to sit with", "strip", topArtists(input.artists ?? []).map(toArtistGroupCard), MUSIC_MORE.artists),
     exploreRail("random", "Reach for something", "grid", shuffled.slice(MUSIC_SPOTLIGHT_SIZE).map(toAlbumCard), MUSIC_MORE.random),
   ], input.seed);
 }
 
 /** Rails whose point is that they are CURRENT — shuffling them would be a lie. */
-export const MUSIC_UNSEEDED_RAILS: ReadonlySet<string> = new Set(["favourites", "just-added", "artists", "best"]);
+export const MUSIC_UNSEEDED_RAILS: ReadonlySet<string> = new Set(["favourites", "just-added", "artists", "best", "most-played", "recently-played"]);
