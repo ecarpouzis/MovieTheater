@@ -189,13 +189,29 @@ section under every backdrop; a source sets `shelvesSkin: "plain"` for bare plan
   `group-letters`; Movies: `/API/BrowseLetters`); with only `groupLetters` the strip falls back to
   page numbers on Grid/Wall/List. The strip is an INDEX, so it shows at any list length; page numbers
   only appear once there is more than one page. **The two modes differ in their CONTENT, never in
-  their layout** (2026-08-28): every button carries `flex: 1 0 auto` and shares the row, and the strip
-  scrolls sideways on a phone once they no longer fit. The growth rule used to be scoped to a
-  `catalog-pager--letters` modifier on the nav, on the theory that page numbers spread across 1500 px
-  would read as broken — Eric, on his phone: *"why do the numeric buttons on the movie page all
-  scrunch up, and not take up the space they can like the letters do?"* The huddle in the left corner
-  was the broken-looking thing. The modifier is gone; `CatalogPager.test.js` pins that both modes draw
-  the same nav class and the same button class, and that the rule still sits on the button.
+  their layout** (2026-08-28) — and "content" means the run, not the shape of a button:
+  - **A page-number button IS a letter button.** Same `min-width`, same padding, same `flex: 1 0 auto`,
+    same `max-width` cap — one unscoped rule on `.catalog-pager__btn`, no mode modifier. The cap is
+    the load-bearing half: growth alone let a run of seven split a 1228 px row into ~290 px slabs.
+    A run that does not fill the row therefore leaves room and CENTRES (`justify-content: safe center`),
+    exactly as the alphabet does when few letters fit.
+  - **Pages render the FULL run, 1…N, no ellipses** — the way letters render every letter — in the
+    same `overflow-x` strip, which is what gives the numbers somewhere to scroll. The active page
+    follows the grid as the active letter does and is nudged back into view inside the STRIP's own
+    scroller (never `scrollIntoView` on the page: the strip is sticky and would drag the document).
+    A tap still seeks the grid to that page's offset; `aria-label` + one `aria-current` are the
+    letters' semantics unchanged.
+
+  Both halves are Eric's ruling of 2026-08-28, and each replaced a wrong reading of the one before.
+  First: *"why do the numeric buttons on the movie page all scrunch up, and not take up the space they
+  can like the letters do?"* — answered by putting `flex: 1 0 auto` on every button, which produced
+  `1 · 2 · 3 · … · 101` at ~290 px a pill. Then: *"What I had meant about numbers not stretching is
+  that the buttons themselves become too wide, and can't be scrolled like the letters can be. Both are
+  defects."* Measured on the prod-proxied bundle after the fix: at 1440 a letter is 37–45 px and a page
+  28–33 px (101 of them overflow the row, so growth is inert — the same thing the 27 letters do at
+  390); at 390 both are 22 px. A four-page run sits at the 46 px cap, centred, where it used to be
+  ~290 px. `CatalogPager.test.js` pins the full run, the single active mark, the seek offset, and both
+  ends of the width rule (a `min-width` without its `max-width` is exactly how this broke).
 - **The want-list pump + abort + `MIN_WANT_AGE` are a set.** Aborts alone cascade (a freed slot
   fetches the next doomed band; the server runs every query to completion); the age gate is what
   makes a scrollbar drag fire ~zero mid-flight fetches.

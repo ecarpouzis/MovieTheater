@@ -7,9 +7,12 @@ import "./CatalogPager.css";
 // from there.
 //
 // Sorted A–Z (the default in both catalogs) the strip shows letters, because that's the landmark the
-// list actually has: ~17k arcade cards is 289 pages, and "page 147" means nothing to anyone. Under any
+// list actually has: ~17k arcade cards is 440 pages, and "page 147" means nothing to anyone. Under any
 // other sort (rating, year, system, players) alphabet buckets are meaningless, so it falls back to
 // numbers.
+//
+// The two modes differ in their CONTENT and in nothing else: one nav class, one button class, one
+// growth rule, one overflow-x strip, and BOTH render their run in full — every letter, every page.
 //
 // The pure helpers are exported for tests — and they live in THIS file rather than a `catalogPager.js`
 // beside it because Windows' filesystem is case-insensitive, so the two names are one file.
@@ -40,25 +43,19 @@ export function activeLetter(letters, index) {
 }
 
 /**
- * Condensed numeric strip: 1 … 6 7 [8] 9 10 … 289. A gap is only inserted where it actually saves
- * buttons — eliding a single page ("1 … 3 4") is sillier than just showing page 2.
+ * The FULL run of pages, 1…N — the way the letters mode renders every letter, and for the same
+ * reason: the strip is an INDEX of the list, and an index you have to walk a page at a time to reach
+ * the middle of is not one. It used to be condensed (1 … 6 7 [8] 9 10 … 289), which was the wrong
+ * half of a pair of defects Eric named on 2026-08-28: seven buttons cannot overflow a desktop row, so
+ * flex growth blew each of them out to ~290 px AND there was nothing left to scroll. *"What I had
+ * meant about numbers not stretching is that the buttons themselves become too wide, and can't be
+ * scrolled like the letters can be. Both are defects."* The full run is what makes the strip
+ * scrollable, exactly like the alphabet on a phone; the `max-width` in the CSS is what keeps a SHORT
+ * run's buttons from stretching.
  */
-export function pageStrip(current, totalPages, span = 2) {
-  if (totalPages <= 1) return [{ type: "page", page: 1 }];
-  const pages = new Set([1, totalPages]);
-  for (let p = current - span; p <= current + span; p += 1) {
-    if (p >= 1 && p <= totalPages) pages.add(p);
-  }
-  const strip = [];
-  let prev = 0;
-  for (const page of [...pages].sort((a, b) => a - b)) {
-    const skipped = page - prev - 1;
-    if (skipped === 1) strip.push({ type: "page", page: page - 1 });
-    else if (skipped > 1) strip.push({ type: "gap", key: `gap-${prev}` });
-    strip.push({ type: "page", page });
-    prev = page;
-  }
-  return strip;
+export function pageStrip(totalPages) {
+  const n = Math.max(1, Math.floor(totalPages) || 1);
+  return Array.from({ length: n }, (_, i) => i + 1);
 }
 
 /** The 1-based page an absolute card index lives on. */
@@ -92,10 +89,9 @@ function CatalogPager({ mode, letters, total, pageSize, currentIndex, onJump, di
   const strip = useMemo(() => letterStrip(letters), [letters]);
   const currentPage = pageOf(currentIndex, pageSize);
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const pages = useMemo(
-    () => (mode === "letters" ? [] : pageStrip(currentPage, totalPages)),
-    [mode, currentPage, totalPages]
-  );
+  // The run depends on the LIST, not on where the reader is in it — so scrolling the grid re-marks a
+  // button, it never rebuilds the strip.
+  const pages = useMemo(() => (mode === "letters" ? [] : pageStrip(totalPages)), [mode, totalPages]);
   // ── The tapped letter wins, until the reader takes over ────────────────────────────────────────
   // The readout otherwise names whatever the grid's scroll-spy reports at the top of the list, and a
   // GRID ROW holds `cols` cards — so a letter whose first card is not in column 0 shares its top row
@@ -137,8 +133,11 @@ function CatalogPager({ mode, letters, total, pageSize, currentIndex, onJump, di
   const spyLetter = mode === "letters" ? activeLetter(strip, currentIndex) : null;
   const currentLetter = mode === "letters" ? (pinned ?? spyLetter) : null;
 
-  // The strip is one swipeable row (see the CSS), so on a narrow screen part of the alphabet is
-  // off-screen and the active button has to be brought back to where it can be read.
+  // The strip is one swipeable row (see the CSS), so part of the run is off-screen — the whole
+  // alphabet on a phone, and the whole page run at any size once a catalog is more than a screen's
+  // worth of pages long — and the active button has to be brought back to where it can be read. It
+  // is the STRIP that scrolls, never the page: `scrollIntoView` on a button inside a sticky bar
+  // would drag the document with it.
   //
   // ⚠ MINIMALLY, not centred. Centring was the original rule and it is what made "jump to M, then
   // A–L are gone" a real complaint: the scrollbar is hidden on both engines, so on a desktop with a
@@ -169,12 +168,8 @@ function CatalogPager({ mode, letters, total, pageSize, currentIndex, onJump, di
   return (
     <nav
       ref={railRef}
-      /* ONE layout for both modes. It used to carry a `--letters` modifier that let ONLY the letters
-         share the strip's full width, on the theory that five page numbers and two ellipses spread
-         across 1500px would read as a broken layout. Eric, on his phone (2026-08-28): "why do the
-         numeric buttons on the movie page all scrunch up, and not take up the space they can like
-         the letters do?" — the huddle at the left edge is what actually read as broken, so the
-         growth rule moved onto `.catalog-pager__btn` itself and the modifier is gone. */
+      /* ONE layout for both modes — same nav class, same button class, same growth rule, same
+         overflow-x strip. What differs is only what is IN it: 27 letters or N pages. */
       className="catalog-pager"
       aria-label={mode === "letters" ? "Jump to letter" : "Jump to page"}
     >
@@ -193,23 +188,20 @@ function CatalogPager({ mode, letters, total, pageSize, currentIndex, onJump, di
               {letter}
             </button>
           ))
-        : pages.map((item) =>
-            item.type === "gap" ? (
-              <span key={item.key} className="catalog-pager__gap" aria-hidden="true">…</span>
-            ) : (
-              <button
-                key={item.page}
-                type="button"
-                ref={item.page === currentPage ? activeRef : undefined}
-                className={`catalog-pager__btn${item.page === currentPage ? " catalog-pager__btn--active" : ""}`}
-                disabled={disabled}
-                aria-current={item.page === currentPage ? "true" : undefined}
-                onClick={() => onJump((item.page - 1) * pageSize)}
-              >
-                {item.page}
-              </button>
-            )
-          )}
+        : pages.map((page) => (
+            <button
+              key={page}
+              type="button"
+              ref={page === currentPage ? activeRef : undefined}
+              className={`catalog-pager__btn${page === currentPage ? " catalog-pager__btn--active" : ""}`}
+              disabled={disabled}
+              title={`Page ${page} of ${totalPages}`}
+              aria-current={page === currentPage ? "true" : undefined}
+              onClick={() => onJump((page - 1) * pageSize)}
+            >
+              {page}
+            </button>
+          ))}
     </nav>
   );
 }

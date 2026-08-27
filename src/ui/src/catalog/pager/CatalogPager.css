@@ -80,21 +80,24 @@
   }
 }
 
-/* The strip EARNS the full width of the page — in BOTH modes. Left at their content size the 27
-   letters sat in a ~800px huddle in the middle of a 1500px catalog and, more than cosmetically, a
-   strip that packs itself tight is a strip that starts overflowing (and hiding its own start) at
-   widths where the letters would comfortably have fitted.
-   This was `.catalog-pager--letters .catalog-pager__btn` until 2026-08-28: page numbers were held at
-   their content size on the theory that seven of them spread across 1500px would read as a broken
-   layout. Eric, on his phone: "why do the numeric buttons on the movie page all scrunch up, and not
-   take up the space they can like the letters do?" — a seek control huddled in the left corner of an
-   otherwise empty bar is what read as broken. One mode, one rule; the `…` gaps keep their content
-   size, so the numbers space themselves evenly around them.
+/* ── One width rule, both modes ───────────────────────────────────────────────
+   A page-number button is a LETTER button: same min-width, same padding, same growth, same cap. The
+   strip still earns the row's width — left at their content size the 27 letters sat in a ~800px
+   huddle in the middle of a 1500px catalog — but the growth is BOUNDED, and the bound is what makes
+   the rule safe to share.
+   `1 0 auto` alone was not: it shipped on 2026-08-28 to stop the numbers scrunching into the left
+   corner, and with a CONDENSED run (1 … 40 41 42 … 101) seven buttons split a 1228px row into ~290px
+   slabs. Eric: "What I had meant about numbers not stretching is that the buttons themselves become
+   too wide, and can't be scrolled like the letters can be. Both are defects." `max-width` is the
+   answer to the first (a button never grows past a letter's comfortable pill, so a SHORT run leaves
+   room in the row and `justify-content: safe center` centres it, exactly as the letters do when few
+   of them fit); rendering the FULL 1…N run — see `pageStrip` — is the answer to the second.
    `1 0 auto` — grow, NEVER shrink: below the width where the buttons fit at their minimum this is
-   inert and the row goes back to scrolling, which is the phone behaviour both modes already share. */
+   inert and the row scrolls, which is what the alphabet already does on a phone. */
 .catalog-pager__btn {
   flex: 1 0 auto;
   min-width: 28px;
+  max-width: 46px;
   height: 28px;
   padding: 0 6px;
   border: 1px solid transparent;
@@ -127,11 +130,6 @@
   color: var(--accent);
 }
 
-.catalog-pager__gap {
-  padding: 0 2px;
-  color: var(--text-muted);
-}
-
 /* Deliberately narrower than The Long Box's 30px pills: the strip scrolls now, so the only thing
    button size buys is how much of the alphabet you can see at once, and half of it beats a third.
    ~22px + 2px gap fits about 14 letters across a 390px phone. Height stays taller than width — the
@@ -143,6 +141,7 @@
   }
   .catalog-pager__btn {
     min-width: 22px;
+    max-width: 34px;
     height: 26px;
     padding: 0 3px;
     font-size: 11.5px;
