@@ -21,12 +21,12 @@ export default function ConfigTab() {
   const c = config.data;
   const dirty = Object.keys(draft).length > 0;
   return (
-    <div className="bka-tab">
-      <section className="bka-card">
-        <header className="bka-card-head">
-          <div className="bka-card-text">
-            <h3 className="bka-card-title">Settings overlay</h3>
-            <p className="bka-card-desc">Written atomically to <code>{c?.path ?? "…"}</code>. Paths and the other secrets are deliberately not settable here. {c && !c.writable && <Tag color="red">not writable on this host</Tag>}</p>
+    <div className="adm-tab">
+      <section className="adm-card">
+        <header className="adm-card-head">
+          <div className="adm-card-text">
+            <h3 className="adm-card-title">Settings overlay</h3>
+            <p className="adm-card-desc">Written atomically to <code>{c?.path ?? "…"}</code>. Paths and the other secrets are deliberately not settable here. {c && !c.writable && <Tag color="red">not writable on this host</Tag>}</p>
           </div>
           <Space>
             <Button onClick={() => setDraft({})} disabled={!dirty}>Discard</Button>
@@ -34,14 +34,14 @@ export default function ConfigTab() {
           </Space>
         </header>
         {config.isError && <Alert type="error" showIcon title="The settings could not be read." />}
-        <div className="bka-config">
+        <div className="adm-config">
           {(c?.keys ?? []).map((k) => {
             const current = c?.values[k.name];
             const value = k.name in draft ? draft[k.name] : current;
             return (
-              <div key={k.name} className="bka-config-row">
-                <div className="bka-config-key"><code>{k.name}</code><div className="bka-muted">{k.description}</div></div>
-                <div className="bka-config-val">
+              <div key={k.name} className="adm-config-row">
+                <div className="adm-config-key"><code>{k.name}</code><div className="adm-muted">{k.description}</div></div>
+                <div className="adm-config-val">
                   {k.kind === "Secret" ? (
                     <Space>
                       <Input.Password placeholder={current === "(set)" ? "(set) — type to replace" : "not set"} value={typeof value === "string" && value !== "(set)" ? value : ""} onChange={(e) => setDraft({ ...draft, [k.name]: e.target.value })} style={{ width: 300 }} />
@@ -51,7 +51,7 @@ export default function ConfigTab() {
                   ) : (
                     <Space>
                       <InputNumber min={k.min ?? undefined} max={k.max ?? undefined} value={typeof value === "number" ? value : value == null ? null : Number(value)} onChange={(v) => setDraft({ ...draft, [k.name]: v })} style={{ width: 160 }} />
-                      <span className="bka-muted">{k.min != null && k.max != null ? `${k.min}–${k.max}` : ""}{current == null ? " · host default" : ""}</span>
+                      <span className="adm-muted">{k.min != null && k.max != null ? `${k.min}–${k.max}` : ""}{current == null ? " · host default" : ""}</span>
                     </Space>
                   )}
                 </div>

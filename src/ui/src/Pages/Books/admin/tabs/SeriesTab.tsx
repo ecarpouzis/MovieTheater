@@ -46,8 +46,8 @@ function Mismatches() {
   const s = summary.data;
 
   return (
-    <div className="bka-tab">
-      <div className="bka-stats">
+    <div className="adm-tab">
+      <div className="adm-stats">
         <Statistic title="Series" value={s?.series ?? 0} />
         <Statistic title="Linked" value={s?.linkedSeries ?? 0} />
         <Statistic title="Unlinked" value={s?.unlinkedSeries ?? 0} />
@@ -57,20 +57,20 @@ function Mismatches() {
         <Statistic title="Single-issue" value={s?.singleIssueSeries ?? 0} />
       </div>
 
-      <section className="bka-card">
-        <header className="bka-card-head"><div className="bka-card-text"><h3 className="bka-card-title">A parsed key's provider link</h3><p className="bka-card-desc">What the scraper decided for one spelling. A cleared link stays <i>Cleared</i> so the next scrape cannot re-make the same wrong match.</p></div></header>
-        <div className="bka-form-row">
+      <section className="adm-card">
+        <header className="adm-card-head"><div className="adm-card-text"><h3 className="adm-card-title">A parsed key's provider link</h3><p className="adm-card-desc">What the scraper decided for one spelling. A cleared link stays <i>Cleared</i> so the next scrape cannot re-make the same wrong match.</p></div></header>
+        <div className="adm-form-row">
           <Input placeholder="parsed series key" value={key} onChange={(e) => setKey(e.target.value)} onPressEnter={() => setAsked(key.trim())} style={{ maxWidth: 360 }} />
           <Button onClick={() => setAsked(key.trim())} disabled={!key.trim()}>Look up</Button>
         </div>
         {link.isError && asked && <Alert type="info" showIcon title={`No stored link for "${asked}".`} />}
         {link.data && (
-          <div className="bka-facts">
+          <div className="adm-facts">
             <span>status <Tag>{link.data.status}</Tag></span>
             <span>provider key <code>{link.data.providerKey ?? "—"}</code></span>
             <span>score {link.data.score ?? "—"} (stored top {link.data.storedTopScore ?? "—"})</span>
             <span>attempts {link.data.attemptCount}</span>
-            {link.data.error && <span className="bka-warn">{link.data.error}</span>}
+            {link.data.error && <span className="adm-warn">{link.data.error}</span>}
             {link.data.candidatesInLegs && <span>candidates are in the legs file (settled link)</span>}
             <Space wrap>
               <Popconfirm title="Clear this link?" onConfirm={() => doClear.mutate()}><Button danger size="small">Clear link</Button></Popconfirm>
@@ -81,9 +81,9 @@ function Mismatches() {
         )}
       </section>
 
-      <section className="bka-card">
-        <header className="bka-card-head"><div className="bka-card-text"><h3 className="bka-card-title">Fold a spelling</h3><p className="bka-card-desc">Re-points every comic parsed as <i>from</i> onto <i>to</i>. The emptied spelling keeps its own series row until pruned (Names).</p></div></header>
-        <div className="bka-form-row">
+      <section className="adm-card">
+        <header className="adm-card-head"><div className="adm-card-text"><h3 className="adm-card-title">Fold a spelling</h3><p className="adm-card-desc">Re-points every comic parsed as <i>from</i> onto <i>to</i>. The emptied spelling keeps its own series row until pruned (Names).</p></div></header>
+        <div className="adm-form-row">
           <Input placeholder="from key" value={fold.from} onChange={(e) => setFold({ ...fold, from: e.target.value })} style={{ maxWidth: 280 }} />
           <span>→</span>
           <Input placeholder="to key" value={fold.to} onChange={(e) => setFold({ ...fold, to: e.target.value })} style={{ maxWidth: 280 }} />
@@ -91,25 +91,25 @@ function Mismatches() {
         </div>
       </section>
 
-      <section className="bka-card">
-        <header className="bka-card-head"><div className="bka-card-text"><h3 className="bka-card-title">Unify a folder</h3><p className="bka-card-desc">Gives every comic in one folder the same parsed key — the fix for a shattered folder.</p></div></header>
-        <div className="bka-form-row">
+      <section className="adm-card">
+        <header className="adm-card-head"><div className="adm-card-text"><h3 className="adm-card-title">Unify a folder</h3><p className="adm-card-desc">Gives every comic in one folder the same parsed key — the fix for a shattered folder.</p></div></header>
+        <div className="adm-form-row">
           <InputNumber placeholder="folder id" value={unify.folderId} onChange={(v) => setUnify({ ...unify, folderId: v == null ? null : Number(v) })} style={{ width: 140 }} />
           <Input placeholder="parsed key" value={unify.key} onChange={(e) => setUnify({ ...unify, key: e.target.value })} style={{ maxWidth: 280 }} />
           <Popconfirm title="Unify this folder?" onConfirm={() => doUnify.mutate()} disabled={unify.folderId == null || !unify.key.trim()}><Button type="primary" disabled={unify.folderId == null || !unify.key.trim()}>Unify</Button></Popconfirm>
         </div>
       </section>
 
-      <section className="bka-card">
-        <header className="bka-card-head"><div className="bka-card-text"><h3 className="bka-card-title">A series' spellings</h3><p className="bka-card-desc">The parsed keys that resolve into one series, with how many items each carries.</p></div></header>
-        <div className="bka-form-row">
+      <section className="adm-card">
+        <header className="adm-card-head"><div className="adm-card-text"><h3 className="adm-card-title">A series' spellings</h3><p className="adm-card-desc">The parsed keys that resolve into one series, with how many items each carries.</p></div></header>
+        <div className="adm-form-row">
           <InputNumber placeholder="series id" value={seriesId} onChange={(v) => setSeriesId(v == null ? null : Number(v))} style={{ width: 140 }} />
         </div>
         {aliases.data && <Table<SeriesAliasRow> size="small" rowKey="parsedKey" pagination={false} dataSource={aliases.data} columns={[{ title: "Parsed key", dataIndex: "parsedKey", render: (v: string) => <code>{v}</code> }, { title: "Items", dataIndex: "items", align: "right" }]} />}
       </section>
 
-      <section className="bka-card">
-        <header className="bka-card-head"><div className="bka-card-text"><h3 className="bka-card-title">Over-matched volumes</h3><p className="bka-card-desc">Series holding more than twice the issues their ComicVine volume claims — a volume that swallowed a sibling series. Clearing the link lets the next scrape pick again.</p></div></header>
+      <section className="adm-card">
+        <header className="adm-card-head"><div className="adm-card-text"><h3 className="adm-card-title">Over-matched volumes</h3><p className="adm-card-desc">Series holding more than twice the issues their ComicVine volume claims — a volume that swallowed a sibling series. Clearing the link lets the next scrape pick again.</p></div></header>
         <Table<Overmatch>
           size="small" rowKey="seriesId" loading={over.isLoading} dataSource={over.data ?? []} pagination={{ pageSize: 25, showSizeChanger: false }}
           columns={[
@@ -147,10 +147,10 @@ function Review() {
   };
   const revert = useMutation({ mutationFn: (id: number) => revertDecision(id), onSuccess: (r) => { toast.ok(r); void load(state); }, onError: toast.err });
   return (
-    <div className="bka-tab">
-      <section className="bka-card">
-        <header className="bka-card-head">
-          <div className="bka-card-text"><h3 className="bka-card-title">Decision log</h3><p className="bka-card-desc">Every reconciliation edit, with its undo payload. Fold and unify revert from here; a cleared link is reversed by setting it again.</p></div>
+    <div className="adm-tab">
+      <section className="adm-card">
+        <header className="adm-card-head">
+          <div className="adm-card-text"><h3 className="adm-card-title">Decision log</h3><p className="adm-card-desc">Every reconciliation edit, with its undo payload. Fold and unify revert from here; a cleared link is reversed by setting it again.</p></div>
           <Space wrap>
             <Segmented options={DECISION_STATES} value={state} onChange={(v) => { setState(String(v)); void load(String(v)); }} />
             <Button onClick={() => load(state)} loading={loading}>Load</Button>
@@ -187,29 +187,29 @@ function Names() {
   const pruneDry = useQuery({ queryKey: bk.admin("series", "prune"), queryFn: () => prune(false) });
   const applyPrune = useMutation({ mutationFn: () => prune(true), onSuccess: (r) => { message.success(`Pruned ${r.deleted} empty series.`); void pruneDry.refetch(); }, onError: toast.err });
   return (
-    <div className="bka-tab">
-      <section className="bka-card">
-        <header className="bka-card-head"><div className="bka-card-text"><h3 className="bka-card-title">Display name override</h3><p className="bka-card-desc">Pins the name a series shows. An override always wins over the resolved name; clearing it restores the pipeline's pick.</p></div></header>
-        <div className="bka-form-row">
+    <div className="adm-tab">
+      <section className="adm-card">
+        <header className="adm-card-head"><div className="adm-card-text"><h3 className="adm-card-title">Display name override</h3><p className="adm-card-desc">Pins the name a series shows. An override always wins over the resolved name; clearing it restores the pipeline's pick.</p></div></header>
+        <div className="adm-form-row">
           <InputNumber placeholder="series id" value={seriesId} onChange={(v) => setSeriesId(v == null ? null : Number(v))} style={{ width: 140 }} />
           <Input placeholder="display name" value={name} onChange={(e) => setName(e.target.value)} style={{ maxWidth: 360 }} />
           <Button type="primary" disabled={seriesId == null || !name.trim()} onClick={() => doOverride.mutate(false)}>Set</Button>
           <Button disabled={seriesId == null} onClick={() => doOverride.mutate(true)}>Clear</Button>
         </div>
       </section>
-      <section className="bka-card">
-        <header className="bka-card-head">
-          <div className="bka-card-text"><h3 className="bka-card-title">Name fix</h3><p className="bka-card-desc">Series whose resolved name still carries a scene-release artifact; the proposal is the cleaned title. Dry run below — Apply pins every proposal as an override.</p></div>
+      <section className="adm-card">
+        <header className="adm-card-head">
+          <div className="adm-card-text"><h3 className="adm-card-title">Name fix</h3><p className="adm-card-desc">Series whose resolved name still carries a scene-release artifact; the proposal is the cleaned title. Dry run below — Apply pins every proposal as an override.</p></div>
           <Popconfirm title={`Apply ${fixes.data?.fixes.length ?? 0} name fixes?`} onConfirm={() => applyFixes.mutate()} disabled={!fixes.data?.fixes.length}><Button type="primary" disabled={!fixes.data?.fixes.length} loading={applyFixes.isPending}>Apply all</Button></Popconfirm>
         </header>
         <Table<NameFix> size="small" rowKey="seriesId" loading={fixes.isLoading} dataSource={fixes.data?.fixes ?? []} pagination={{ pageSize: 25, showSizeChanger: false }}
           columns={[{ title: "Series", dataIndex: "seriesId", width: 90, render: (v: number) => <code>#{v}</code> }, { title: "Current", dataIndex: "current" }, { title: "Proposed", dataIndex: "proposed" }, { title: "Issues", dataIndex: "issueCount", align: "right" }]} />
       </section>
-      <section className="bka-card">
-        <header className="bka-card-head">
-          <div className="bka-card-text"><h3 className="bka-card-title">Prune empty series</h3><p className="bka-card-desc">Series with no items and no marks — the residue of past re-points. A series a reader has marked is never pruned.</p></div>
+      <section className="adm-card">
+        <header className="adm-card-head">
+          <div className="adm-card-text"><h3 className="adm-card-title">Prune empty series</h3><p className="adm-card-desc">Series with no items and no marks — the residue of past re-points. A series a reader has marked is never pruned.</p></div>
           <Space>
-            <span className="bka-muted">{pruneDry.data ? `${pruneDry.data.candidates.toLocaleString()} candidates` : "…"}</span>
+            <span className="adm-muted">{pruneDry.data ? `${pruneDry.data.candidates.toLocaleString()} candidates` : "…"}</span>
             <Popconfirm title={`Delete ${pruneDry.data?.candidates ?? 0} empty series?`} onConfirm={() => applyPrune.mutate()} disabled={!pruneDry.data?.candidates}><Button danger disabled={!pruneDry.data?.candidates} loading={applyPrune.isPending}>Prune</Button></Popconfirm>
           </Space>
         </header>
@@ -223,8 +223,8 @@ const VIEWS = [{ value: "mismatches", label: "Mismatches" }, { value: "review", 
 export default function SeriesTab() {
   const [view, setView] = useState("mismatches");
   return (
-    <div className="bka-tab">
-      <Select value={view} onChange={setView} options={VIEWS} style={{ width: 200 }} className="bka-subtabs" />
+    <div className="adm-tab">
+      <Select value={view} onChange={setView} options={VIEWS} style={{ width: 200 }} className="adm-subtabs" />
       {view === "mismatches" && <Mismatches />}
       {view === "review" && <Review />}
       {view === "names" && <Names />}

@@ -9,16 +9,15 @@
  * Errors: the host answers `{ error }` bodies on 400/404/409; those become `AdminApiError.message`
  * so a tab can show the host's own sentence ("Root 3 still holds 412 items; scan it empty first.").
  */
+import { AdminApiError, isRunning, jobPercent, type JobApi, type JobStart, type JobState, type JobStatus } from "../../../admin/jobs";
 import { BOOKS_API, qs } from "../booksApi";
 
 export const ADMIN_API = `${BOOKS_API}/admin`;
 
-export class AdminApiError extends Error {
-  constructor(public readonly status: number, public readonly url: string, message: string) {
-    super(message);
-    this.name = "AdminApiError";
-  }
-}
+// The job vocabulary is the SITE's (R9 S6, `src/ui/src/admin/jobs`); re-exported here so the tabs'
+// imports stay local and there is one definition of a job status on the site.
+export { AdminApiError, isRunning, jobPercent };
+export type { JobApi, JobStart, JobState, JobStatus };
 
 async function request<T>(path: string, init?: RequestInit, signal?: AbortSignal): Promise<T> {
   const url = `${ADMIN_API}${path}`;
@@ -42,13 +41,6 @@ const json = (method: string, body?: unknown): RequestInit => ({
 });
 
 // ── shapes ──
-
-export type JobState = "idle" | "running" | "stopping" | "done" | "failed" | "stopped";
-export interface JobStatus {
-  kind: string; state: JobState; processed: number; remaining: number; nextCursor: string | null; failed: number;
-  startedAt: string | null; finishedAt: string | null; error: string | null; lastLine: string | null; batches: number;
-}
-export interface JobStart { job: JobStatus; statusUrl: string }
 
 export interface AdminInfo {
   catalog: { roots: number; folders: number; items: number; comics: number; books: number; excluded: number; broken: number; series: number; publishers: number };
@@ -175,12 +167,9 @@ export const comicVineStatus = (signal?: AbortSignal) => request<ComicVineStatus
 export const externalStart = () => request<JobStart>("/external/start", json("POST"));
 export const externalStatus = (signal?: AbortSignal) => request<JobStatus | null>("/external/status", undefined, signal);
 
-/** A job's progress as 0–100 when it knows its remaining count; null while it cannot say. */
-export function jobPercent(j: JobStatus | null | undefined): number | null {
-  if (!j) return null;
-  const total = j.processed + j.remaining;
-  if (total <= 0) return j.state === "done" ? 100 : null;
-  return Math.max(0, Math.min(100, Math.round((j.processed / total) * 100)));
-}
-
-export const isRunning = (j: JobStatus | null | undefined) => !!j && (j.state === "running" || j.state === "stopping");
+/** What the shared shell's cards call to observe and stop a Books job. */
+export const booksJobApi: JobApi = {
+  fetchJob: (kind, signal) => fetchJob(kind, signal),
+  stopJob: (kind) => stopJob(kind),
+  eventsUrl: (kind) => jobEventsUrl(kind),
+};

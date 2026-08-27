@@ -1,52 +1,6 @@
 /* ── Books admin (/books/admin) ───────────────────────────────────────────────────────────────────
-   antd does the controls; these are the page's own surfaces on the section tokens. */
-.books-admin { max-width: 1320px; margin: 0 auto; padding: 18px var(--catalog-pager-bleed, 18px) 40px; color: var(--ink); }
-.bka-head { margin-bottom: 14px; }
-.bka-eyebrow { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--sub); }
-.bka-title { font-family: var(--font-display); font-weight: var(--display-weight); letter-spacing: var(--display-tracking); font-size: 40px; line-height: 1; margin: 6px 0 0; color: var(--ink); }
-.bka-tab { display: flex; flex-direction: column; gap: 16px; }
-.bka-subtabs { align-self: flex-start; }
-.bka-card { border: 1px solid var(--line); border-radius: 12px; background: color-mix(in oklab, var(--bg) 96%, var(--ink)); padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
-.bka-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-.bka-card-text { min-width: 0; flex: 1 1 320px; }
-.bka-card-title { font-family: var(--font-display); font-weight: var(--display-weight); letter-spacing: var(--display-tracking); font-size: 20px; line-height: 1.1; margin: 0; color: var(--ink); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.bka-card-desc { margin: 6px 0 0; font-size: 13px; line-height: 1.5; color: var(--sub); }
-.bka-state { text-transform: uppercase; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; }
-.bka-live { font-family: var(--font-mono); font-size: 10px; }
-.bka-job-progress { display: flex; flex-direction: column; gap: 4px; }
-.bka-job-nums { font-family: var(--font-mono); font-size: 11px; color: var(--sub); display: flex; gap: 6px; flex-wrap: wrap; }
-.bka-job-line { font-family: var(--font-mono); font-size: 11px; color: var(--ink); white-space: pre-wrap; word-break: break-word; }
-.bka-job-error { margin-top: 6px; }
-.bka-warn { color: #c0392b; }
-.bka-muted { color: var(--sub); font-size: 12px; }
-.bka-facts { display: flex; flex-wrap: wrap; gap: 10px 18px; font-size: 13px; align-items: center; }
-.bka-form-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.bka-inline { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
-.bka-preview { margin: 0; }
-.bka-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
-.bka-stats .ant-statistic { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: color-mix(in oklab, var(--bg) 96%, var(--ink)); }
-.bka-stats .ant-statistic-title { color: var(--sub); font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; }
-.bka-stats .ant-statistic-content { color: var(--ink); font-family: var(--font-display); font-weight: var(--display-weight); font-size: 26px; }
-.bka-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 16px; }
-.bka-tile { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.bka-tile-art { position: relative; aspect-ratio: 2 / 3; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--line); padding: 0; cursor: pointer; }
-.bka-tile-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.bka-tile-empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--sub); font-size: 12px; }
-.bka-tile-hover { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.45); color: #fff; font-size: 12px; font-weight: 600; opacity: 0; transition: opacity 0.15s; }
-.bka-tile-art:hover .bka-tile-hover { opacity: 1; }
-.bka-tile-name { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink); }
-.bka-tile-sub { font-family: var(--font-mono); font-size: 10px; color: var(--sub); }
-.bka-group { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 10px; }
-.bka-group-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; }
-.bka-members { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 10px; }
-.bka-member { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--line); border-radius: 8px; padding: 8px; cursor: pointer; font-size: 12px; }
-.bka-member img { width: 56px; height: 84px; object-fit: cover; border-radius: 4px; background: var(--line); flex: 0 0 auto; }
-.bka-member-text { min-width: 0; display: flex; flex-direction: column; gap: 3px; word-break: break-all; }
-.bka-config { display: flex; flex-direction: column; gap: 12px; }
-.bka-config-row { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 10px; }
-.bka-config-key { flex: 1 1 280px; min-width: 0; font-size: 13px; }
-.bka-config-val { flex: 0 0 auto; }
-.bka-exc { margin: 4px 0 0; font-size: 10px; white-space: pre-wrap; color: var(--sub); max-height: 200px; overflow: auto; }
-.books-admin .ant-tabs-tab { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
-.books-admin .ant-table { background: transparent; }
-@media (max-width: 640px) { .bka-title { font-size: 30px; } .books-admin { padding-left: 10px; padding-right: 10px; } }
+   The surfaces moved to the site's shell in R9 S6 (`src/ui/src/admin/admin.css`, the `bka-*` names
+   became `adm-*`); what stays here is only what is BOOKS about this page. The four port names
+   (--ink/--sub/--line/--bg) are bound by `.books-section` from the skin, which is why the shell
+   deliberately does not state them under `.books-admin`. */
+.books-admin { color: var(--ink); }

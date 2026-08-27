@@ -40,9 +40,9 @@ export default function OverviewTab() {
   const running = new Set((i?.jobs ?? []).filter((j) => j.state === "running" || j.state === "stopping").map((j) => j.kind));
 
   return (
-    <div className="bka-tab">
+    <div className="adm-tab">
       {info.isError && <Alert type="error" showIcon title="The host's admin surface did not answer — is the Books host up, and is this account an admin there?" />}
-      <div className="bka-stats">
+      <div className="adm-stats">
         <Statistic title="Items" value={i?.catalog.items ?? 0} />
         <Statistic title="Comics" value={i?.catalog.comics ?? 0} />
         <Statistic title="Books" value={i?.catalog.books ?? 0} />
@@ -56,10 +56,10 @@ export default function OverviewTab() {
         <Statistic title="Multiple links" value={i?.links.multiple ?? 0} />
       </div>
 
-      <section className="bka-card">
-        <header className="bka-card-head"><div className="bka-card-text"><h3 className="bka-card-title">This host</h3></div></header>
+      <section className="adm-card">
+        <header className="adm-card-head"><div className="adm-card-text"><h3 className="adm-card-title">This host</h3></div></header>
         {i && (
-          <div className="bka-facts">
+          <div className="adm-facts">
             <span>Cache dir <Tag color={i.host.cacheDir ? "green" : "red"}>{i.host.cacheDir ? "configured" : "missing"}</Tag></span>
             <span>Media plane <Tag color={i.host.mediaPlane ? "green" : "red"}>{i.host.mediaPlane ? "configured" : "missing"}</Tag></span>
             <span>ComicVine key <Tag color={i.host.comicVineConfigured ? "green" : "default"}>{i.host.comicVineConfigured ? "set" : "not set"}</Tag></span>
@@ -69,11 +69,11 @@ export default function OverviewTab() {
         )}
       </section>
 
-      <section className="bka-card">
-        <header className="bka-card-head">
-          <div className="bka-card-text">
-            <h3 className="bka-card-title">Derived tables</h3>
-            <p className="bka-card-desc">What is computed from what. <b>Stale</b> means the inputs changed since the table was last rebuilt — a scan landed but the resolver has not run.</p>
+      <section className="adm-card">
+        <header className="adm-card-head">
+          <div className="adm-card-text">
+            <h3 className="adm-card-title">Derived tables</h3>
+            <p className="adm-card-desc">What is computed from what. <b>Stale</b> means the inputs changed since the table was last rebuilt — a scan landed but the resolver has not run.</p>
           </div>
           <Space wrap>
             {RECOMPUTE_KINDS.map((k) => (
@@ -102,8 +102,8 @@ export default function OverviewTab() {
         />
       </section>
 
-      <section className="bka-card">
-        <header className="bka-card-head"><div className="bka-card-text"><h3 className="bka-card-title">Jobs this host has run</h3></div></header>
+      <section className="adm-card">
+        <header className="adm-card-head"><div className="adm-card-text"><h3 className="adm-card-title">Jobs this host has run</h3></div></header>
         <Table<JobStatus>
           size="small"
           rowKey="kind"
@@ -118,7 +118,7 @@ export default function OverviewTab() {
             { title: "Failed", dataIndex: "failed", align: "right" },
             { title: "Started", dataIndex: "startedAt", render: (v: string | null) => fmtDate(v) },
             { title: "Finished", dataIndex: "finishedAt", render: (v: string | null) => fmtDate(v) },
-            { title: "Last line", dataIndex: "lastLine", ellipsis: true, render: (v: string | null, r) => r.error ? <span className="bka-warn">{r.error}</span> : v },
+            { title: "Last line", dataIndex: "lastLine", ellipsis: true, render: (v: string | null, r) => r.error ? <span className="adm-warn">{r.error}</span> : v },
           ]}
         />
       </section>

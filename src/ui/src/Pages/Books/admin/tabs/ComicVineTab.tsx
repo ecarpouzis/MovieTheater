@@ -12,7 +12,7 @@ import JobCard from "../JobCard";
 export default function ComicVineTab() {
   const status = useQuery({ queryKey: bk.admin("comicvine-status"), queryFn: ({ signal }) => comicVineStatus(signal), refetchInterval: 10000 });
   return (
-    <div className="bka-tab">
+    <div className="adm-tab">
       {status.data && !status.data.configured && (
         <Alert type="warning" showIcon title="No ComicVine API key is set." description="Set ComicVineApiKey on the Config tab (or Books:ComicVineApiKey in the host's configuration). Until then both scrapes are cache-first and make no network calls." />
       )}

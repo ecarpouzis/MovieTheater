@@ -1,0 +1,92 @@
+/* ── The admin shell (R9 S6) ──────────────────────────────────────────────────────────────────────
+   One surface for every section's operator tools: the head, the tab row, the job/report cards.
+   Lifted verbatim out of `Pages/Books/css/books-admin.css` (the `bka-*` names became `adm-*`) so
+   the Books admin is byte-for-byte what it was and every other section gets the same register.
+   antd does the controls; these are the page's own surfaces, on the section tokens — so an admin
+   page under any `data-feature` (and under any catalog skin) paints itself correctly. */
+.admin-page { max-width: 1320px; margin: 0 auto; padding: 18px var(--catalog-pager-bleed, 18px) 40px; color: var(--ink, var(--text-primary)); }
+/* The port's four names come from an ancestor inside Books (`.books-section` binds --ink/--sub/
+   --line/--bg from the skin); every other section has no such binding, so the shell states them
+   from the site tokens — on ITSELF, which is why Books must be excluded: a custom property set on
+   the element beats one inherited from an ancestor no matter what the specificity says. */
+/* --bg is the PAGE, not the card: `--card-surface` is a GRADIENT under the arcade's dark theme, and
+   `color-mix()` over a gradient is invalid at computed-value time — every card below would lose its
+   background. Same trap as `--bx-on-ink` in the rail. */
+.admin-page:not(.books-admin) { --ink: var(--text-primary); --sub: var(--text-secondary); --line: var(--card-border); --bg: var(--content-bg); }
+.adm-head { margin-bottom: 14px; }
+.adm-eyebrow { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--sub); }
+.adm-title { font-family: var(--font-display); font-weight: var(--display-weight); letter-spacing: var(--display-tracking); font-size: 40px; line-height: 1; margin: 6px 0 0; color: var(--ink); }
+.adm-tab { display: flex; flex-direction: column; gap: 16px; }
+.adm-subtabs { align-self: flex-start; }
+.adm-card { border: 1px solid var(--line); border-radius: 12px; background: color-mix(in oklab, var(--bg) 96%, var(--ink)); padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+.adm-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.adm-card-text { min-width: 0; flex: 1 1 320px; }
+.adm-card-title { font-family: var(--font-display); font-weight: var(--display-weight); letter-spacing: var(--display-tracking); font-size: 20px; line-height: 1.1; margin: 0; color: var(--ink); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.adm-card-desc { margin: 6px 0 0; font-size: 13px; line-height: 1.5; color: var(--sub); }
+.adm-state { text-transform: uppercase; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; }
+.adm-live { font-family: var(--font-mono); font-size: 10px; }
+.adm-job-progress { display: flex; flex-direction: column; gap: 4px; }
+.adm-job-nums { font-family: var(--font-mono); font-size: 11px; color: var(--sub); display: flex; gap: 6px; flex-wrap: wrap; }
+.adm-job-line { font-family: var(--font-mono); font-size: 11px; color: var(--ink); white-space: pre-wrap; word-break: break-word; }
+.adm-job-error { margin-top: 6px; }
+.adm-warn { color: #c0392b; }
+.adm-muted { color: var(--sub); font-size: 12px; }
+.adm-facts { display: flex; flex-wrap: wrap; gap: 10px 18px; font-size: 13px; align-items: center; }
+.adm-form-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.adm-inline { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
+.adm-preview { margin: 0; }
+.adm-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.adm-stats .ant-statistic { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: color-mix(in oklab, var(--bg) 96%, var(--ink)); }
+.adm-stats .ant-statistic-title { color: var(--sub); font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; }
+.adm-stats .ant-statistic-content { color: var(--ink); font-family: var(--font-display); font-weight: var(--display-weight); font-size: 26px; }
+.adm-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 16px; }
+.adm-tile { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.adm-tile-art { position: relative; aspect-ratio: 2 / 3; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--line); padding: 0; cursor: pointer; }
+.adm-tile-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.adm-tile-empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--sub); font-size: 12px; }
+.adm-tile-hover { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.45); color: #fff; font-size: 12px; font-weight: 600; opacity: 0; transition: opacity 0.15s; }
+.adm-tile-art:hover .adm-tile-hover { opacity: 1; }
+.adm-tile-name { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink); }
+.adm-tile-sub { font-family: var(--font-mono); font-size: 10px; color: var(--sub); }
+.adm-group { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 10px; }
+.adm-group-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; }
+.adm-members { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 10px; }
+.adm-member { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--line); border-radius: 8px; padding: 8px; cursor: pointer; font-size: 12px; }
+.adm-member img { width: 56px; height: 84px; object-fit: cover; border-radius: 4px; background: var(--line); flex: 0 0 auto; }
+.adm-member-text { min-width: 0; display: flex; flex-direction: column; gap: 3px; word-break: break-all; }
+.adm-config { display: flex; flex-direction: column; gap: 12px; }
+.adm-config-row { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 10px; }
+.adm-config-key { flex: 1 1 280px; min-width: 0; font-size: 13px; }
+.adm-config-val { flex: 0 0 auto; }
+.adm-exc { margin: 4px 0 0; font-size: 10px; white-space: pre-wrap; color: var(--sub); max-height: 200px; overflow: auto; }
+.admin-page .ant-tabs-tab { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
+.admin-page .ant-table { background: transparent; }
+
+/* ── The Overview REPORT (the Long Box's "admin overview is a report", copied per section) ──
+   Stat tiles say what the section holds; the needs-attention rows say what is WRONG and name the
+   tab that fixes it — a row is a link, never a dead number. A section with nothing to report says
+   so rather than showing an empty box. */
+.adm-attention { display: flex; flex-direction: column; gap: 0; }
+.adm-att-row {
+  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+  padding: 9px 2px; border-top: 1px solid var(--line); text-align: left;
+  appearance: none; background: none; border-left: 0; border-right: 0; border-bottom: 0;
+  color: var(--ink); font: inherit; width: 100%;
+}
+.adm-att-row:first-child { border-top: 0; }
+button.adm-att-row { cursor: pointer; }
+button.adm-att-row:hover { background: color-mix(in oklab, var(--bg) 92%, var(--ink)); }
+.adm-att-count { font-family: var(--font-mono); font-size: 15px; font-weight: 700; min-width: 4ch; }
+.adm-att-count[data-tone="bad"] { color: #c0392b; }
+.adm-att-count[data-tone="warn"] { color: #b26a00; }
+.adm-att-count[data-tone="ok"] { color: var(--sub); }
+.adm-att-label { font-size: 13px; font-weight: 600; }
+.adm-att-detail { font-size: 12px; color: var(--sub); flex: 1 1 220px; min-width: 0; }
+.adm-att-goto { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--sub); white-space: nowrap; }
+.adm-clear { font-size: 13px; color: var(--sub); }
+
+/* The refusal plate: the route re-checks the admin flag as a courtesy — the API is the gate. */
+.adm-plate { padding: 60px 16px; text-align: center; color: var(--sub); }
+.adm-plate h2 { font-family: var(--font-display); font-size: 24px; color: var(--ink); margin: 0 0 6px; }
+
+@media (max-width: 640px) { .adm-title { font-size: 30px; } .admin-page { padding-left: 10px; padding-right: 10px; } }

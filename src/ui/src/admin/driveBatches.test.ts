@@ -1,7 +1,7 @@
 import { driveBatches, NoProgressError, pagedStep } from "./driveBatches";
 
-describe("Books/admin/driveBatches — the client-driven loop", () => {
-  it("walks pages until the host says there is no next cursor, reporting progress", async () => {
+describe("admin/driveBatches — the client-driven loop", () => {
+  it("walks pages until the server says there is no next cursor, reporting progress", async () => {
     const pages: Record<number, number[]> = { 0: [1, 2, 3], 3: [4, 5, 6], 6: [7] };
     const seen: number[] = [];
     const out = await driveBatches<number>(async (cursor) => {
@@ -24,6 +24,27 @@ describe("Books/admin/driveBatches — the client-driven loop", () => {
     expect(out).toEqual([0, 1]);
     const capped = await driveBatches<number>(async (cursor) => ({ items: [cursor], nextCursor: cursor + 1 }), { maxSteps: 3 });
     expect(capped).toEqual([0, 1, 2]);
+  });
+
+  it("resumes from the cursor an interrupted drive stopped at, instead of restarting", async () => {
+    const pages: Record<number, number[]> = { 0: [1, 2], 2: [3, 4], 4: [5] };
+    const ac = new AbortController();
+    let stoppedAt = 0;
+    const first = await driveBatches<number>(async (cursor) => {
+      const items = pages[cursor] ?? [];
+      return { items, nextCursor: items.length === 2 ? cursor + 2 : null };
+    }, {
+      signal: ac.signal,
+      onProgress: (p) => { stoppedAt = p.cursor + p.batch.length; if (p.loaded >= 2) ac.abort(); },
+    });
+    expect(first).toEqual([1, 2]);
+    expect(stoppedAt).toBe(2);
+
+    const rest = await driveBatches<number>(async (cursor) => {
+      const items = pages[cursor] ?? [];
+      return { items, nextCursor: items.length === 2 ? cursor + 2 : null };
+    }, { from: stoppedAt });
+    expect(rest).toEqual([3, 4, 5]);
   });
 
   it("pagedStep reads a {totalCount, items} envelope", async () => {

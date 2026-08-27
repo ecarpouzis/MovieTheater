@@ -19,10 +19,10 @@ export default function SystemTab() {
   const cacheM = useMutation({ mutationFn: (apply: boolean) => cacheClear(apply), onSuccess: (r) => { setCache(r); if (!r.dryRun) message.success(`Deleted ${r.deleted} thumbnails.`); }, onError: (e) => message.error(e instanceof Error ? e.message : "Cache clear failed.") });
   const entries = (logs.data?.entries ?? []).filter((e) => !q || e.message.toLowerCase().includes(q.toLowerCase()) || e.category.toLowerCase().includes(q.toLowerCase()));
   return (
-    <div className="bka-tab">
-      <section className="bka-card">
-        <header className="bka-card-head">
-          <div className="bka-card-text"><h3 className="bka-card-title">Thumbnail cache</h3><p className="bka-card-desc">Deletes generated covers only (<code>{"^\\d+\\.webp$"}</code>); the thumbnail pass regenerates them. Hand-made collection icons are never touched.</p></div>
+    <div className="adm-tab">
+      <section className="adm-card">
+        <header className="adm-card-head">
+          <div className="adm-card-text"><h3 className="adm-card-title">Thumbnail cache</h3><p className="adm-card-desc">Deletes generated covers only (<code>{"^\\d+\\.webp$"}</code>); the thumbnail pass regenerates them. Hand-made collection icons are never touched.</p></div>
           <Space>
             <Button onClick={() => cacheM.mutate(false)} loading={cacheM.isPending}>Count</Button>
             <Popconfirm title={`Delete ${cache?.wouldDelete ?? "the generated"} thumbnails?`} onConfirm={() => cacheM.mutate(true)}><Button danger>Clear cache</Button></Popconfirm>
@@ -30,9 +30,9 @@ export default function SystemTab() {
         </header>
         {cache && <Alert type={cache.dryRun ? "info" : "success"} showIcon title={cache.dryRun ? `Would delete ${cache.wouldDelete?.toLocaleString()} generated thumbnails; ${cache.kept.toLocaleString()} other files kept.` : `Deleted ${cache.deleted?.toLocaleString()}; ${cache.kept.toLocaleString()} kept.`} />}
       </section>
-      <section className="bka-card">
-        <header className="bka-card-head">
-          <div className="bka-card-text"><h3 className="bka-card-title">Host log</h3><p className="bka-card-desc">The last {logs.data?.capacity?.toLocaleString() ?? "…"} lines the host wrote, newest first.</p></div>
+      <section className="adm-card">
+        <header className="adm-card-head">
+          <div className="adm-card-text"><h3 className="adm-card-title">Host log</h3><p className="adm-card-desc">The last {logs.data?.capacity?.toLocaleString() ?? "…"} lines the host wrote, newest first.</p></div>
           <Space wrap>
             <Input.Search placeholder="filter" value={q} onChange={(e) => setQ(e.target.value)} allowClear style={{ width: 220 }} />
             <Select allowClear placeholder="Level" value={level} onChange={setLevel} options={["Information", "Warning", "Error", "Critical", "Debug"].map((l) => ({ value: l, label: l }))} style={{ width: 140 }} />
@@ -46,7 +46,7 @@ export default function SystemTab() {
             { title: "At", dataIndex: "at", width: 170, render: (v: string) => new Date(v).toLocaleTimeString() },
             { title: "Level", dataIndex: "level", width: 110, render: (v: string) => <Tag color={LEVEL_COLOR[v?.toLowerCase()] ?? "default"}>{v}</Tag> },
             { title: "Category", dataIndex: "category", width: 220, ellipsis: true },
-            { title: "Message", dataIndex: "message", render: (v: string, r) => <span>{v}{r.exception && <pre className="bka-exc">{r.exception}</pre>}</span> },
+            { title: "Message", dataIndex: "message", render: (v: string, r) => <span>{v}{r.exception && <pre className="adm-exc">{r.exception}</pre>}</span> },
           ]}
         />
       </section>

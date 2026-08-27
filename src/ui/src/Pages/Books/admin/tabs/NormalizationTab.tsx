@@ -21,10 +21,10 @@ export default function NormalizationTab() {
   const run = useMutation({ mutationFn: (apply: boolean) => normalizeTags(apply), onSuccess: (r) => { setResult(r); if (!r.dryRun) message.success("Tags normalized — rebuild resolve on Overview."); }, onError: (e) => message.error(e instanceof Error ? e.message : "Normalization failed.") });
 
   return (
-    <div className="bka-tab">
-      <section className="bka-card">
-        <header className="bka-card-head"><div className="bka-card-text"><h3 className="bka-card-title">Tag aliases</h3><p className="bka-card-desc">Variant → canonical mappings the tag folds consume. Adding or removing one changes the folds' input fingerprint; the Tags table then shows stale on Overview.</p></div></header>
-        <div className="bka-form-row">
+    <div className="adm-tab">
+      <section className="adm-card">
+        <header className="adm-card-head"><div className="adm-card-text"><h3 className="adm-card-title">Tag aliases</h3><p className="adm-card-desc">Variant → canonical mappings the tag folds consume. Adding or removing one changes the folds' input fingerprint; the Tags table then shows stale on Overview.</p></div></header>
+        <div className="adm-form-row">
           <Select value={draft.category} onChange={(category) => setDraft({ ...draft, category })} options={CATEGORIES.map((c) => ({ value: c, label: c }))} style={{ width: 170 }} />
           <Input placeholder="alias (variant)" value={draft.aliasTag} onChange={(e) => setDraft({ ...draft, aliasTag: e.target.value })} style={{ maxWidth: 220 }} />
           <span>→</span>
@@ -42,9 +42,9 @@ export default function NormalizationTab() {
           ]}
         />
       </section>
-      <section className="bka-card">
-        <header className="bka-card-head">
-          <div className="bka-card-text"><h3 className="bka-card-title">Tag hygiene</h3><p className="bka-card-desc">Applies the aliases, drops era ranges and cross-category strays, migrates the old tone:mature. Dry run first.</p></div>
+      <section className="adm-card">
+        <header className="adm-card-head">
+          <div className="adm-card-text"><h3 className="adm-card-title">Tag hygiene</h3><p className="adm-card-desc">Applies the aliases, drops era ranges and cross-category strays, migrates the old tone:mature. Dry run first.</p></div>
           <Space>
             <Button onClick={() => run.mutate(false)} loading={run.isPending}>Dry run</Button>
             <Popconfirm title="Rewrite the input tags?" onConfirm={() => run.mutate(true)}><Button type="primary" danger>Apply</Button></Popconfirm>

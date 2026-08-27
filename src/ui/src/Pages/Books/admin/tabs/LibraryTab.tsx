@@ -21,11 +21,11 @@ function RootsCard() {
   const update = useMutation({ mutationFn: (r: LibraryRoot) => updateRoot(r.id, { path: r.path, kind: r.kind, isCalibre: r.isCalibre, enabled: r.enabled }), onSuccess: () => void invalidate(), onError: (e) => message.error(e instanceof Error ? e.message : "Update failed.") });
   const remove = useMutation({ mutationFn: (id: number) => deleteRoot(id), onSuccess: () => { void invalidate(); message.success("Root removed."); }, onError: (e) => message.error(e instanceof Error ? e.message : "Delete refused.") });
   return (
-    <section className="bka-card">
-      <header className="bka-card-head">
-        <div className="bka-card-text">
-          <h3 className="bka-card-title">Library roots</h3>
-          <p className="bka-card-desc">The folders the scan walks. A root that still holds items cannot be removed — scan it empty first.</p>
+    <section className="adm-card">
+      <header className="adm-card-head">
+        <div className="adm-card-text">
+          <h3 className="adm-card-title">Library roots</h3>
+          <p className="adm-card-desc">The folders the scan walks. A root that still holds items cannot be removed — scan it empty first.</p>
         </div>
       </header>
       <Table<LibraryRoot>
@@ -38,10 +38,10 @@ function RootsCard() {
           { title: "", key: "act", align: "right", render: (_v, r) => <Popconfirm title="Remove this root?" description="Refused while it holds items." onConfirm={() => remove.mutate(r.id)}><Button size="small" danger>Remove</Button></Popconfirm> },
         ]}
       />
-      <div className="bka-form-row">
+      <div className="adm-form-row">
         <Input placeholder="New root path" value={draft.path} onChange={(e) => setDraft({ ...draft, path: e.target.value })} style={{ maxWidth: 420 }} />
         <Select<RootKind> value={draft.kind} onChange={(kind) => setDraft({ ...draft, kind })} options={[{ value: "Comic", label: "Comics" }, { value: "Book", label: "Books" }]} style={{ width: 120 }} />
-        <label className="bka-inline"><Switch size="small" checked={draft.isCalibre} onChange={(on) => setDraft({ ...draft, isCalibre: on })} /> Calibre library</label>
+        <label className="adm-inline"><Switch size="small" checked={draft.isCalibre} onChange={(on) => setDraft({ ...draft, isCalibre: on })} /> Calibre library</label>
         <Button type="primary" onClick={() => add.mutate()} disabled={!draft.path.trim() || add.isPending}>Add root</Button>
       </div>
     </section>
@@ -70,10 +70,10 @@ function ScanCard() {
       )}
     >
       {preview && (
-        <Alert type="info" showIcon className="bka-preview" title={`Preview: would add ${preview.wouldAdd.toLocaleString()}, change ${preview.wouldChange.toLocaleString()}, remove ${preview.wouldRemove.toLocaleString()} — over ${preview.folders.toLocaleString()} folders / ${preview.files.toLocaleString()} files.`} />
+        <Alert type="info" showIcon className="adm-preview" title={`Preview: would add ${preview.wouldAdd.toLocaleString()}, change ${preview.wouldChange.toLocaleString()}, remove ${preview.wouldRemove.toLocaleString()} — over ${preview.folders.toLocaleString()} folders / ${preview.files.toLocaleString()} files.`} />
       )}
       {p && p.phase !== "done" && (
-        <div className="bka-job-nums">phase <b>{p.phase}</b> · +{p.added} / ~{p.changed} / −{p.removed}{p.failed > 0 && <span className="bka-warn"> · {p.failed} failed</span>}</div>
+        <div className="adm-job-nums">phase <b>{p.phase}</b> · +{p.added} / ~{p.changed} / −{p.removed}{p.failed > 0 && <span className="adm-warn"> · {p.failed} failed</span>}</div>
       )}
     </JobCard>
   );
@@ -89,9 +89,9 @@ function ThumbsCard() {
       title="Thumbnails"
       description="Generates the missing cover thumbnails. Reset starts the walk from the top (already-generated covers are skipped, not redrawn)."
       start={() => thumbsStart(reset)}
-      controls={<label className="bka-inline"><Switch size="small" checked={reset} onChange={setReset} /> Reset cursor</label>}
+      controls={<label className="adm-inline"><Switch size="small" checked={reset} onChange={setReset} /> Reset cursor</label>}
     >
-      {s && <div className="bka-job-nums">generated {s.generated.toLocaleString()} · skipped {s.skipped.toLocaleString()} · failed {s.failed.toLocaleString()} · remaining {s.remaining.toLocaleString()}</div>}
+      {s && <div className="adm-job-nums">generated {s.generated.toLocaleString()} · skipped {s.skipped.toLocaleString()} · failed {s.failed.toLocaleString()} · remaining {s.remaining.toLocaleString()}</div>}
     </JobCard>
   );
 }
@@ -111,7 +111,7 @@ function CalibreCard() {
         <>
           <Input placeholder="metadata.db path (optional)" value={metadata} onChange={(e) => setMetadata(e.target.value)} style={{ width: 260 }} />
           <Input placeholder="link file (optional)" value={link} onChange={(e) => setLink(e.target.value)} style={{ width: 200 }} />
-          <label className="bka-inline"><Switch size="small" checked={apply} onChange={setApply} /> Apply</label>
+          <label className="adm-inline"><Switch size="small" checked={apply} onChange={setApply} /> Apply</label>
         </>
       )}
     />
@@ -123,8 +123,8 @@ function BrokenCard() {
   const top = 50;
   const broken = useQuery({ queryKey: bk.admin("broken", page), queryFn: ({ signal }) => fetchBroken((page - 1) * top, top, signal) });
   return (
-    <section className="bka-card">
-      <header className="bka-card-head"><div className="bka-card-text"><h3 className="bka-card-title">Broken files</h3><p className="bka-card-desc">What a scan or the thumbnail pass could not read. A file marked missing returns whole when a later scan finds it.</p></div></header>
+    <section className="adm-card">
+      <header className="adm-card-head"><div className="adm-card-text"><h3 className="adm-card-title">Broken files</h3><p className="adm-card-desc">What a scan or the thumbnail pass could not read. A file marked missing returns whole when a later scan finds it.</p></div></header>
       <Table<BrokenRow>
         size="small" rowKey="id" loading={broken.isLoading} dataSource={broken.data?.items ?? []}
         pagination={{ current: page, pageSize: top, total: broken.data?.totalCount ?? 0, onChange: setPage, showSizeChanger: false }}
@@ -141,7 +141,7 @@ function BrokenCard() {
 
 export default function LibraryTab() {
   return (
-    <div className="bka-tab">
+    <div className="adm-tab">
       <RootsCard />
       <ScanCard />
       <ThumbsCard />
