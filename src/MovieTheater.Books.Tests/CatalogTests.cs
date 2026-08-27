@@ -392,6 +392,75 @@ namespace MovieTheater.Books.Tests
             Assert.Equal(new[] { "1970s", "1980s", "2020s" }, decades.Groups.Select(g => g.Label).ToArray());
         }
 
+        /// <summary>
+        /// R9 S8 — the writer / artist shelves. They are the FIRST many-per-item axes the host has: one issue stands
+        /// under every writer AND every artist it credits, so the band bucketing had to grow from one key per row to
+        /// a list. What is asserted is the contract the site's Group pill depends on: the axis survives normalization,
+        /// a shelf's count IS its facet chip's count (rule 2 of the group-axes table), the band really contains that
+        /// many items, one item can appear under two people, and the A–Z rail can index them.
+        /// </summary>
+        [Fact]
+        public async Task Writer_and_artist_are_group_axes_and_one_item_can_stand_under_several()
+        {
+            using var db = fixture.Db();
+
+            // The axis survives normalization — asserted through the wire, because that is the failure mode the
+            // site guards against: a host that does NOT know an axis does not 400, it silently answers with
+            // COLLECTIONS ("a stale host fails silently"). So "penciller" must look like the collection shelf and
+            // "author" must NOT.
+            var collections = Body<BrowseGroupsResponse>(await Browse(db).GetGroups(groupBy: "collection", groupsTop: 200));
+            var nonsense = Body<BrowseGroupsResponse>(await Browse(db).GetGroups(groupBy: "penciller", groupsTop: 200));
+            Assert.Equal(collections.Groups.Select(g => g.Label), nonsense.Groups.Select(g => g.Label));
+            var asAuthor = Body<BrowseGroupsResponse>(await Browse(db).GetGroups(groupBy: "author", groupsTop: 200));
+            Assert.NotEqual(collections.Groups.Select(g => g.Label), asAuthor.Groups.Select(g => g.Label));
+
+            var facets = Body<BrowseFacetsResult>(await Browse(db).GetFacets());
+            foreach (var (by, chips) in new[] { ("author", facets.Authors), ("artist", facets.Artists) })
+            {
+                var response = Body<BrowseGroupsResponse>(
+                    await Browse(db).GetGroups(groupBy: by, groupsTop: 200, perGroupTop: 48));
+                Assert.True(response.TotalGroups > 0, by);
+                Assert.Equal(response.TotalGroups, response.Groups.Count);
+
+                // label-ordered, and the label is the name a person reads (the KEY is the normalized one)
+                Assert.Equal(response.Groups.Select(g => g.Label).OrderBy(x => x, StringComparer.OrdinalIgnoreCase),
+                    response.Groups.Select(g => g.Label));
+
+                foreach (var group in response.Groups)
+                {
+                    Assert.Equal(group.TotalItems, group.Items.Count);        // the fixture fits inside one page
+                    Assert.All(group.Items, i => Assert.False(i.IsExcluded)); // shadows never enter a band
+                    // …and the shelf agrees with the facet chip of the same name, exactly
+                    var chip = chips.SingleOrDefault(c => c.Value == group.Label);
+                    if (chip != null) Assert.Equal(chip.Count, group.TotalItems);
+                }
+            }
+
+            var authors = Body<BrowseGroupsResponse>(await Browse(db).GetGroups(groupBy: "author", groupsTop: 200));
+            var miller = authors.Groups.Single(g => g.Label == "Frank Miller");
+            Assert.Equal(2, miller.TotalItems);
+
+            // MANY-PER-ITEM: an item credited to two writers is in BOTH bands, which is the whole reason KeyOf
+            // became KeysOf — the single-key bucketing would have filed it under one of them and lost the other.
+            var shared = authors.Groups.SelectMany(g => g.Items.Select(i => i.Id))
+                .GroupBy(id => id).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
+            var creditsPerItem = await db.ItemCredits.AsNoTracking()
+                .Where(c => c.Role != null && CreditRoles.Authors.Contains(c.Role) && c.NormalizedName != null)
+                .Select(c => new { c.ItemId, c.NormalizedName }).Distinct().ToListAsync();
+            var expectedShared = creditsPerItem.GroupBy(c => c.ItemId).Where(g => g.Count() > 1).Select(g => g.Key)
+                .Where(id => authors.Groups.Any(g => g.Items.Any(i => i.Id == id))).ToList();
+            Assert.Equal(expectedShared.OrderBy(x => x), shared.OrderBy(x => x));
+
+            // the A–Z rail indexes them like every other label-ordered axis
+            var letters = Assert.IsType<OkObjectResult>(await Browse(db).GetGroupLetters(groupBy: "artist")).Value!;
+            Assert.Contains("\"letter\"", WebJson(letters));
+
+            // and one shelf can be continued on its own (the "more of this group" call)
+            var more = Assert.IsType<OkObjectResult>(
+                await Browse(db).GetGroupItems("author", miller.Key, skip: 0, top: 1)).Value!;
+            Assert.Equal(2, (int)more.GetType().GetProperty("total")!.GetValue(more)!);
+        }
+
         [Fact]
         public async Task A_band_can_be_paged_and_continued_within_one_group()
         {

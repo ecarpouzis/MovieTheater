@@ -29,6 +29,23 @@ export interface BrowsePageProps {
   isKid?: boolean;
 }
 
+/**
+ * The Writer / Artist group axes (R9 S8/S9). The HOST side is BUILT — `BrowseController` knows
+ * `author|artist`, heads come off the same `CreditKeyCountsAsync` the facets use, `BandQuery`
+ * narrows by `ItemCredit` role + normalized name, and `KeysOf` files one issue under every person
+ * it credits (`MovieTheater.Books.Tests` covers it). It is OFF here for exactly one reason: the
+ * deployed host is still the old one, and **a stale host does not 400 on `groupBy=author` — it
+ * silently answers with COLLECTIONS**. A pill that draws the wrong axis is worse than one that is
+ * absent, so this stays `false` until `scripts/deploy-books-host.ps1` (elevated) has run.
+ *
+ * AFTER THAT DEPLOY: change this to `true`. That is the whole change.
+ *
+ * The durable fix, if this ever bites again: have the host ADVERTISE its group axes (a `groupAxes`
+ * array on `/browse/facets`) and let `booksGroupsFor` read it, so the pill can never outrun the
+ * binary that has to answer it.
+ */
+const CREDIT_AXES = false;
+
 function positiveInt(raw: string | null): number | null {
   if (!raw || !/^[0-9]+$/.test(raw)) return null;
   const n = Number(raw);
@@ -74,7 +91,7 @@ export default function BrowsePage({ username, epoch = 0, isKid = false }: Brows
     openEntity(history, location, { kind: "series", id: seriesId, single }), [history, location]);
 
   const source = useMemo(
-    () => createBooksSource({ facetState: state, spec, epoch, mediaEpoch, onOpen, onOpenSeries, onScope: scope }),
+    () => createBooksSource({ facetState: state, spec, epoch, mediaEpoch, creditAxes: CREDIT_AXES, onOpen, onOpenSeries, onScope: scope }),
     [state, spec, epoch, mediaEpoch, onOpen, onOpenSeries, scope],
   );
 

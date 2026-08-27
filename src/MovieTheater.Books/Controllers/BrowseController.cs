@@ -277,7 +277,7 @@ namespace MovieTheater.Books.Controllers
 
             var seriesSubView = subGroupBy == "series";
             var (byKey, renderTotals) = await BandItemsAsync(
-                BandQuery(summaryQuery, by, paged), orderby, by, seriesSubView, perGroupTop, perGroupSkip, ct);
+                BandQuery(summaryQuery, by, paged), orderby, by, paged, seriesSubView, perGroupTop, perGroupSkip, ct);
 
             var details = by == "series" ? await SeriesDetailsAsync(paged, ct) : null;
             var marks = await GroupMarksAsync(by, paged, ct);
@@ -619,8 +619,27 @@ namespace MovieTheater.Books.Controllers
             "publisher" => PublisherHeadsAsync(live, ct),
             "decade" => DecadeHeadsAsync(live, ct),
             "franchise" => FranchiseHeadsAsync(live, ct),
+            "author" => CreditHeadsAsync(live, CreditRoles.Authors, ct),
+            "artist" => CreditHeadsAsync(live, CreditRoles.Artists, ct),
             _ => CollectionHeadsAsync(live, ct),
         };
+
+        /// <summary>
+        /// The writer / artist shelves (R9 S8). Deliberately the SAME three steps the Author and Artist FACETS are
+        /// built from — <see cref="CreditKeyCountsAsync"/> (distinct ITEMS per normalized name, so a person credited
+        /// twice on one book is one book) then <see cref="WithDisplayNamesAsync"/> then <see cref="Ordered"/> — so a
+        /// shelf's count and its facet chip's count can never disagree, which is rule 2 of the group-axes table.
+        /// The KEY stays the normalized name (what <c>f=author:</c> filters on); the LABEL is the name a person reads.
+        /// No <c>take</c>: a head list that stopped at the top N would make the letter rail lie.
+        /// </summary>
+        private async Task<List<GroupHead>> CreditHeadsAsync(IQueryable<Item> live, string[] roles, CancellationToken ct)
+        {
+            var counts = await CreditKeyCountsAsync(live, roles, null, ct);
+            // A stable input order, so the zip below is deterministic and the display lookup is one query.
+            var ordered = counts.OrderByDescending(kv => kv.Value).ThenBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase).ToList();
+            var display = await WithDisplayNamesAsync(ordered, ct);
+            return Ordered(ordered.Select((kv, i) => new GroupHead(kv.Key, display[i].Value, kv.Value)));
+        }
 
         private async Task<List<GroupHead>> CollectionHeadsAsync(IQueryable<Item> live, CancellationToken ct)
         {
@@ -679,10 +698,22 @@ namespace MovieTheater.Books.Controllers
         // ── bands ─────────────────────────────────────────────────────────────────────────────────────────────
 
         /// <summary>The band's slice of the filtered set: only the items belonging to the paged groups.</summary>
-        private static IQueryable<ItemSummary> BandQuery(IQueryable<ItemSummary> summaryQuery, string by, List<GroupHead> paged)
+        private IQueryable<ItemSummary> BandQuery(IQueryable<ItemSummary> summaryQuery, string by, List<GroupHead> paged)
         {
             switch (by)
             {
+                case "author":
+                case "artist":
+                    {
+                        // Many-per-item: an item enters the band if ANY of its credits in these roles carries one of
+                        // the paged normalized names. Existence, not a join — a join would return the item once per
+                        // matching credit row and inflate every band.
+                        var roles = by == "author" ? CreditRoles.Authors : CreditRoles.Artists;
+                        var names = paged.Select(h => h.Key).ToList();
+                        return summaryQuery.Where(s => db.ItemCredits.Any(c =>
+                            c.ItemId == s.Id && c.Role != null && roles.Contains(c.Role)
+                            && c.NormalizedName != null && names.Contains(c.NormalizedName)));
+                    }
                 case "series":
                     {
                         var ids = paged.Select(h => ParseInt(h.Key)).Where(v => v != null).Select(v => v!.Value).ToList();
@@ -724,18 +755,46 @@ namespace MovieTheater.Books.Controllers
             public string? Series { get; init; }
         }
 
-        private static string? KeyOf(LightRow r, string by) => by switch
+        /// <summary>
+        /// Every group key a row belongs to. One key for the single-valued axes; for a CREDIT axis (R9 S8) a row
+        /// stands under EVERY writer or artist it credits, so this returns a list and `credits` is the per-band
+        /// itemId → normalized-name lookup that supplies it. An item whose credits are all outside the paged heads
+        /// contributes nothing, which is why the lookup is filtered to the band's keys before it gets here.
+        /// </summary>
+        private static IEnumerable<string> KeysOf(LightRow r, string by, IReadOnlyDictionary<int, List<string>>? credits)
         {
-            "series" => r.SeriesId?.ToString(CultureInfo.InvariantCulture),
-            "publisher" => r.Publisher,
-            "decade" => r.Year == null ? null : (r.Year.Value / 10 * 10).ToString(CultureInfo.InvariantCulture),
-            "franchise" => r.Franchise,
-            _ => r.TopFolderId?.ToString(CultureInfo.InvariantCulture),
-        };
+            if (by is "author" or "artist")
+                return credits != null && credits.TryGetValue(r.Id, out var names) ? names : [];
+            var single = by switch
+            {
+                "series" => r.SeriesId?.ToString(CultureInfo.InvariantCulture),
+                "publisher" => r.Publisher,
+                "decade" => r.Year == null ? null : (r.Year.Value / 10 * 10).ToString(CultureInfo.InvariantCulture),
+                "franchise" => r.Franchise,
+                _ => r.TopFolderId?.ToString(CultureInfo.InvariantCulture),
+            };
+            return single == null ? [] : [single];
+        }
+
+        /// <summary>The band's itemId → normalized-name lookup for a credit axis, narrowed to the PAGED heads (an
+        /// item's other writers belong to other bands). Joined against the band query, never an id IN-list — a band
+        /// can hold thousands of rows and SQLite's variable cap is not something to gamble on.</summary>
+        private async Task<Dictionary<int, List<string>>> BandCreditsAsync(
+            IQueryable<ItemSummary> bandQuery, string by, List<GroupHead> paged, CancellationToken ct)
+        {
+            var roles = by == "author" ? CreditRoles.Authors : CreditRoles.Artists;
+            var names = paged.Select(h => h.Key).ToList();
+            var rows = await db.ItemCredits.AsNoTracking()
+                .Where(c => c.Role != null && roles.Contains(c.Role)
+                            && c.NormalizedName != null && names.Contains(c.NormalizedName))
+                .Join(bandQuery, c => c.ItemId, s => s.Id, (c, s) => new { c.ItemId, Name = c.NormalizedName! })
+                .Distinct().ToListAsync(ct);
+            return rows.GroupBy(x => x.ItemId).ToDictionary(g => g.Key, g => g.Select(x => x.Name).ToList());
+        }
 
         private async Task<(Dictionary<string, List<ItemSummary>> ByKey, Dictionary<string, int>? RenderTotals)>
-            BandItemsAsync(IQueryable<ItemSummary> bandQuery, string? orderby, string by, bool seriesSubView,
-                int perGroupTop, int perGroupSkip, CancellationToken ct)
+            BandItemsAsync(IQueryable<ItemSummary> bandQuery, string? orderby, string by, List<GroupHead> paged,
+                bool seriesSubView, int perGroupTop, int perGroupSkip, CancellationToken ct)
         {
             var light = await ApplySort(bandQuery, orderby)
                 .Select(s => new LightRow
@@ -744,14 +803,15 @@ namespace MovieTheater.Books.Controllers
                     Year = s.Year, SeriesId = s.SeriesId, Franchise = s.Franchise, Series = s.Series,
                 }).ToListAsync(ct);
 
+            var credits = by is "author" or "artist" ? await BandCreditsAsync(bandQuery, by, paged, ct) : null;
+
             var buckets = new Dictionary<string, List<LightRow>>(StringComparer.Ordinal);
             foreach (var row in light)
-            {
-                var k = KeyOf(row, by);
-                if (k == null) continue;
-                if (!buckets.TryGetValue(k, out var list)) buckets[k] = list = [];
-                list.Add(row);
-            }
+                foreach (var k in KeysOf(row, by, credits))
+                {
+                    if (!buckets.TryGetValue(k, out var list)) buckets[k] = list = [];
+                    list.Add(row);
+                }
 
             Dictionary<string, int>? renderTotals = null;
             var chosen = new Dictionary<string, List<int>>(StringComparer.Ordinal);
@@ -949,7 +1009,9 @@ namespace MovieTheater.Books.Controllers
 
         // ── small helpers ─────────────────────────────────────────────────────────────────────────────────────
 
-        private static readonly Regex GroupByPattern = new("^(series|publisher|decade|collection|franchise)$", RegexOptions.Compiled);
+        // `author` / `artist` (R9 S8) are the two MANY-PER-ITEM axes: one issue stands under every writer AND every
+        // artist it credits, which is why the band bucketing had to grow from KeyOf to KeysOf.
+        private static readonly Regex GroupByPattern = new("^(series|publisher|decade|collection|franchise|author|artist)$", RegexOptions.Compiled);
 
         internal static string NormalizeGroupBy(string? groupBy)
         {
