@@ -7,7 +7,6 @@ import { stripHtml } from "./boardGameUtils";
 import useTouchDevice from "../../hooks/useTouchDevice";
 import useLongPress from "../../hooks/useLongPress";
 import { SHEET_Z } from "../../Components/sheetModal";
-import { useRouteSkinStyle } from "../../catalog/skin/skin";
 
 
 // A shared-mechanics/categories tooltip that hover reveals on a pointer. A touch user has no hover,
@@ -122,10 +121,6 @@ function UrlRow({ url, actionLabel, actionDanger, onAction, loading }) {
 }
 
 function BoardGameModal({ gameId, open, onClose, games, expansionMap, userData, onGameUpdated, onOpenGame }) {
-  // The section skin (catalog/skin): a modal is a PORTAL, outside the section root, so the
-  // backdrop + type tokens ride the wrap (`styles.wrapper`, which the dialog MERGES). `{}` while
-  // the section is on its own surface.
-  const skinStyle = useRouteSkinStyle("boardgames");
   const [game, setGame] = useState(null);
   const [editing, setEditing] = useState(false);
   const [similarGames, setSimilarGames] = useState([]);
@@ -424,7 +419,7 @@ function BoardGameModal({ gameId, open, onClose, games, expansionMap, userData, 
   }
 
   return (
-    <Modal open={open} onCancel={onClose} footer={null} width={1000} zIndex={SHEET_Z} wrapClassName="sheet-modal boardgame-modal" styles={{ wrapper: skinStyle }}>
+    <Modal open={open} onCancel={onClose} footer={null} width={1000} zIndex={SHEET_Z} wrapClassName="sheet-modal boardgame-modal">
       <div className="boardgame-modal-body">
         <div className="boardgame-modal-poster-column">
           <img

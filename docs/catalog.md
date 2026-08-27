@@ -55,9 +55,14 @@ two-phase — heads (`totalGroups` + a page of groups with their first cards) th
   Directory's show-empty, section-registered extras. Applied ONCE by the host (`data-hover` on the
   results root + the shared hover class on every card) so no view can drift from the setting.
   An extra with `perView: true` (`TweakExtra`) is stored as `<key>:<view>` and read view-first
-  (`extras["backdrop:shelf"] ?? extras["backdrop"]`) — the Books backdrop is remembered per view this
-  way. The panel closes on the X, on Escape, and on a tap outside (a scrim on phones); on phones it
-  sits below the site's fixed top bar (`--content-top-inset`).
+  (`extras["backdrop:shelf"] ?? extras["backdrop"]`) — every section's backdrop is remembered per
+  view this way. An extra with `render: "swatch"` draws as the 4-column swatch grid instead of a Seg.
+  The panel closes on the X, on Escape, and on a tap outside (a scrim on phones); on phones it
+  sits below the site's fixed top bar (`--content-top-inset`). `rows` removes the standard card rows
+  that do not apply where the panel is mounted (a control that doesn't apply is REMOVED, not
+  disabled), and `tweaks/PageTweaksTool.tsx` is the ⚙ for a page with no host at all (the Books
+  Shelf: cover size, nothing else).
+- **Skin** — the section's backdrop + type, `catalog/skin/` (below).
 - **Rail state** — the section's filters (`rail/useFacetState.ts`): the URL IS the state — `q`
   (text), `f=token:value` (include), `x=token:value` (exclude), `y=min-max` (years), `r=0–100`
   (rating floor), `my=read,want` (personal flags). A `FacetSpec` (`rail/facetSpec.ts`) declares the
@@ -120,6 +125,13 @@ section under every backdrop; a source sets `shelvesSkin: "plain"` for bare plan
   scope the diet (zero-blur book shadow, no static overlays over the scrolled opening, cheap hover
   lift, no cover opacity transition). Chrome keeps the rich look — do not fold the diet into the base
   rules. `(pointer: coarse)` is the touch tier.
+- **No `backdrop-filter` over content that is MOVING.** The tweaks card keeps its glass because it
+  drops the filter for the 160 ms around a scroll burst (`.twk-panel[data-scrolling]`) — a blur that
+  stays on while the page scrolls re-composites the scrolled region every frame. The `eng-gecko`
+  tier has no blur at any time.
+- **A skin writes tokens on the section ROOT, once — never on a card.** `applySectionSkin` is the
+  only writer, it removes what it stops setting, and every rule that reads a `--skin-*` token states
+  the site token as its fallback so the unskinned state is theme.css untouched.
 - **A section's own card may ride the Grid; nothing else may.** `renderCard(item, view)` is honoured
   by `GridView` alone — the Grid is the critical default detail view, and Movies' MovieCard, the
   Boardgame card, Arcade's GameCard and Music's album/artist tiles keep their exact presentation.
@@ -172,6 +184,51 @@ Per section: Movies `MovieCard` / `SimpleMovieCard` (`Pages/Browse/MovieCard.js`
 `dataVersion` is the seam's companion: a DENSE client list edited in place — Movies' Seen/Want
 removal-on-untoggle, a background chunk landing — bumps it, and the stream re-reads its bands while
 the window, the measured heights and the scroll position stay exactly where the reader left them.
+
+## The skin (`catalog/skin/`) — R9 S5
+
+Nine backdrops and a type theme, per section, from the one ⚙ panel. Lifted out of Books, which had
+the only copy.
+
+- **A section registers a `SectionSkin`** (`skin.ts` → `registerSectionSkin(section, skin)`):
+  `backdrops` (nine), `defaults` per family, `types`, `perView`, and two escape hatches —
+  `tokenPrefix` (Books also gets `--books-*`, the names five of its stylesheets read) and
+  `paintHost: false` (Books paints `.books-section` itself, a wider root than the results box).
+  `sectionSkins.ts` registers Movies, TV, Boardgames, Music, Arcade and Photos; `Pages/Books/
+  booksTheme.ts` registers `books` / `books-novels` / `books-kids` and keeps its `@fontsource`
+  imports in the Books chunk.
+- **The first swatch of every set is the section's own surface** (`siteDefault`) and writes NO
+  tokens: theme.css keeps the floor, so a device that has never opened the panel renders exactly
+  what it rendered before the skin existed, and "no backdrop" is a real, selectable choice. The
+  other eight are four light and four dark, drawn from the section's `data-feature` hue.
+- **`data-theme` is the authority.** A backdrop belongs to a family; a remembered one from the other
+  family falls back to that family's default (`resolveBackdrop`), so a dark page never opens inside
+  a light site. The panel still shows all nine — an out-of-family swatch is dimmed but LIVE:
+  `crossFamilyPick` reports it and `CatalogHost` answers with `requestSiteTheme(family)`
+  (`hooks/useTheme.js` — a REQUEST; that hook stays the one writer of `data-theme` and of the
+  stored value). No swatch is an inert control.
+- **Where the tokens land.** `applySectionSkin(root, …)` writes `--skin-bg/card/ink/sub/line/chrome/
+  scene/display/header/mono/tracking/weight` ONCE on the section root — `CatalogHost` on `.bx-host`,
+  `BooksPage` on `.books-section` — and REMOVES what it stops setting. `skin.css` binds them to the
+  package's local aliases at `.bx-host[data-catalog-skin]` (one class deeper than `.bx-host`'s own
+  declarations, so it wins outright rather than on file order), each with the site token as its
+  fallback. `data-skin-paint` — set only when the section asked the host to paint AND the backdrop
+  is not the site's own — is what turns the results box into a painted surface; nothing is written
+  per card.
+- **The sheet takes the skin too.** `sectionSkinStyle` / `useSectionSkinStyle` / `useRouteSkinStyle`
+  return the same set plus the site surface repoints (`--card-surface`, `--text-primary`, …) for an
+  antd modal's wrap, which renders OUTSIDE the section root. It rides `styles={{ wrapper }}`, never
+  `wrapProps.style` (that one REPLACES the wrap's inline style and takes its `zIndex` with it).
+  Worn by the movie sheet, the Books item/series sheets, the arcade game sheet and the photo
+  lightbox — the dialogs that already paint FROM the tokens. The boardgame sheet and the music album
+  sheet are NOT wired: the first hard-codes a light surface and light-surface ink, the second leaves
+  antd's own near-white container in place, and handing either a dark backdrop's `--text-primary`
+  paints light text on a white card (the bug `sheet-modal--themed` warns about in
+  `Components/SheetModal.css`). Tokenise them and they can opt in.
+- **Perf.** `.twk-panel` keeps its glass but never blurs over MOVING content: `data-scrolling` is set
+  from one capturing `onAnyScroll` listener and cleared 160 ms after the last scroll, and the CSS
+  swaps `backdrop-filter` for an opaque `--bg` for exactly that window. `eng-gecko` (software
+  WebRender) gets no blur and a zero-spread shadow at all times.
 
 ## The rail family (`catalog/rail/`)
 
@@ -265,8 +322,8 @@ all instant and abort-free — for sections that already ship their whole catalo
    Filters pill as a sheet (phone), pass `useFacetState`'s query into the source's scope key, put
    `ActiveChips` in `beforeResults`.
 6. Explore (optional): a section query + `ExploreTab` with a `mapExplore` for its rows.
-7. Skin (optional): section-wide tokens written on the section root from the tweaks store; a
-   per-view extra (`perView`) when a look should follow the view.
+7. Skin: `registerSectionSkin("<section>", …)` with nine backdrops (a `siteDefault` first, then four
+   light + four dark) — the host does the rest. See "The skin" above.
 8. Smoke: every view on desktop + phone, a card open keeps `?view=`, Back closes; the modal and the
    tweaks panel must not slide under the fixed top bar on phones. A section's detail modal is the
    site's full-page sheet at EVERY size (`Components/SheetModal.css` + the section's own stylesheet

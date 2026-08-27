@@ -264,6 +264,16 @@ export function applySectionSkin(root: HTMLElement | null, section: string, extr
  * modal's wrap (`styles={{ wrapper }}`; never `wrapProps.style`, which REPLACES the wrap's own
  * inline style and takes its z-index with it). It repoints the SITE surface tokens too, so a sheet
  * dressed in `--card-surface` / `--text-primary` takes the skin with no stylesheet of its own.
+ *
+ * Which sheets wear it, and why not all of them: a dialog that paints itself FROM the tokens takes
+ * the skin as a whole — the movie sheet and the Books sheets (`sheet-modal--themed`), the arcade
+ * game sheet (`background: var(--content-bg); color: var(--text-primary)`) and the photo lightbox
+ * (`background: var(--card-surface)`). The BOARDGAME sheet and the MUSIC album sheet do not: the
+ * first hard-codes a light surface and light-surface ink (#fafafa / #222 / #1677ff throughout
+ * `BoardGameModal.css`), the second leaves antd's own near-white container in place. Handing those
+ * two a dark backdrop's `--text-primary` would paint light text on a white card — the exact bug the
+ * `sheet-modal--themed` block in `Components/SheetModal.css` exists to warn about — so they are
+ * left alone until someone tokenises them.
  */
 export function sectionSkinStyle(section: string, extras: Record<string, string> | undefined, theme: SkinFamily, view?: string | null): Record<string, string> {
   const t = skinTokens(section, extras, theme, view);

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, type ReactNode } from "react";
-import { onRootScroll, resolveScrollRoot } from "../engine/scroller";
+import { onAnyScroll } from "../../utils/scroll";
 import type { TweakExtra, TweakExtraOption, ViewMode } from "../types";
 import {
   HOVER_EFFECTS, SCALE_MAX, SCALE_MIN, SCALE_STEP,
@@ -167,17 +167,18 @@ export default function TweaksPanel({ view, tweaks, coverScale, onCoverScale, on
    * saturate(160%)` card that sits OVER the results scroller — and a backdrop-filter over scrolling
    * content is re-composited every frame, which is exactly the "no backdrop-filter over a scroller"
    * law the catalog holds elsewhere. The panel is transient (drag-open, Escape-close), so it keeps
-   * its glass while the page is still: `data-scrolling` is set on the first scroll event of the
-   * RESOLVED scroll root and cleared 160 ms after the last one (the engine's own settle window),
-   * and the CSS swaps the blur for an opaque chrome for exactly that long. The reader never sees
-   * the swap — the panel is over moving content while it happens.
+   * its glass while the page is still: `data-scrolling` is set on the first scroll event and
+   * cleared 160 ms after the last one (the engine's own settle window), and the CSS swaps the blur
+   * for an opaque chrome for exactly that long. The reader never sees the swap — the panel is over
+   * moving content while it happens. The listener is `onAnyScroll` (one CAPTURING window listener),
+   * not a resolved root: the panel is `position: fixed` over whichever element is scrolling, and
+   * resolving a root at mount can miss a scroller that is not yet taller than its box.
    */
   useEffect(() => {
     const panel = dragRef.current;
     if (!panel) return undefined;
-    const root = resolveScrollRoot(panel);
     let t: ReturnType<typeof setTimeout> | undefined;
-    const off = onRootScroll(root, () => {
+    const off = onAnyScroll(() => {
       panel.dataset.scrolling = "1";
       if (t) clearTimeout(t);
       t = setTimeout(() => { delete panel.dataset.scrolling; }, GLASS_SETTLE_MS);
