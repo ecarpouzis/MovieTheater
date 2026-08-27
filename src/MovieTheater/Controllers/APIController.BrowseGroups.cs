@@ -81,7 +81,7 @@ namespace MovieTheater.Controllers
             string? singleGroupKey = null, [FromQuery] BrowseFilterQuery? fq = null, CancellationToken ct = default)
         {
             var by = BrowseGroups.NormalizeGroupBy(groupBy);
-            var scope = await ResolveGroupScopeAsync(types, mode, value, BrowseFilter.From(fq));
+            var scope = await ResolveGroupScopeAsync(types, mode, value, BrowseFilter.From(fq), ct);
             if (scope == null) return BadRequest(new { Message = $"Unknown title type '{types}'" });
             var index = await CachedGroupIndexAsync(scope, by, ct);
             var heads = index.Heads;
@@ -131,7 +131,7 @@ namespace MovieTheater.Controllers
         public async Task<IActionResult> BrowseGroupLettersAsync(string? groupBy = null, string? types = null, string? mode = null, string? value = null, [FromQuery] BrowseFilterQuery? fq = null, CancellationToken ct = default)
         {
             var by = BrowseGroups.NormalizeGroupBy(groupBy);
-            var scope = await ResolveGroupScopeAsync(types, mode, value, BrowseFilter.From(fq));
+            var scope = await ResolveGroupScopeAsync(types, mode, value, BrowseFilter.From(fq), ct);
             if (scope == null) return BadRequest(new { Message = $"Unknown title type '{types}'" });
             var index = await CachedGroupIndexAsync(scope, by, ct);
             var letters = BrowseGroups.GroupLetters(index.Heads, by).Select(l => new { letter = l.Letter, firstIndex = l.FirstIndex }).ToList();
@@ -168,20 +168,20 @@ namespace MovieTheater.Controllers
         /// facet rail's combinable filter (R9 S2) compose — a link from the old world still works, a rail
         /// selection narrows it further. Misc rides along only when nothing narrows the set.
         /// </summary>
-        private async Task<GroupScope?> ResolveGroupScopeAsync(string? types, string? mode, string? value, BrowseFilter? filter = null)
+        private async Task<GroupScope?> ResolveGroupScopeAsync(string? types, string? mode, string? value, BrowseFilter? filter = null, CancellationToken ct = default)
         {
             filter ??= BrowseFilter.Empty;
             var typeScope = ParseTypeScope(types);
             if (!string.IsNullOrWhiteSpace(types) && typeScope.Count == 0) return null;
-            var (mq, sq) = ApplyBrowseFilter(await GetBaseMovieQuery(), await GetBaseSeriesQuery(), mode, value);
+            var (mq, sq) = ApplyBrowseFilter(await GetBaseMovieQuery(ct), await GetBaseSeriesQuery(ct), mode, value);
             (mq, sq) = ApplyTypeScope(typeScope, mq, sq);
             (mq, sq) = BrowseFilter.Apply(movieDb, mq, sq, filter, GetCurrentUserId());
             var v = (value ?? "").Trim();
             var filtered = v.Length > 0 || !filter.IsEmpty;
             // Misc has no genre/cast/title-search presence (see ApplyTypeScope) — it joins only the plain Type-scope browse.
             var wantMisc = typeScope.Contains(NormalizedTitleType.Misc) && !filtered;
-            var miscCards = wantMisc ? await GetMiscCards() : new List<MovieCardDto>();
-            var age = await GetAgeRestrictionAsync();
+            var miscCards = wantMisc ? await GetMiscCards(ct) : new List<MovieCardDto>();
+            var age = await GetAgeRestrictionAsync(ct);
             // The scope's identity carries the USER only when the filter reads the caller's own lists
             // (`my=`); everything else depends on the age gate alone, so one warmed index serves every
             // viewer at that age (BrowseCacheKeys). The group axis is appended by the caller.

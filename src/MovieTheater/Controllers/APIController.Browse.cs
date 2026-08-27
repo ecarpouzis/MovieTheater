@@ -40,13 +40,13 @@ namespace MovieTheater.Controllers
     public partial class APIController
     {
         [HttpGet("/API/GetRandomMovies")]
-        public async Task<IActionResult> GetRandomMovies(int take = 50)
+        public async Task<IActionResult> GetRandomMovies(int take = 50, CancellationToken ct = default)
         {
-            var mq = await GetBaseMovieQuery();
-            var sq = await GetBaseSeriesQuery();
-            var movies = await mq.Where(m => !m.RemoveFromRandom).OrderBy(m => Guid.NewGuid()).Take(take).Select(ToCardDto).ToListAsync();
+            var mq = await GetBaseMovieQuery(ct);
+            var sq = await GetBaseSeriesQuery(ct);
+            var movies = await mq.Where(m => !m.RemoveFromRandom).OrderBy(m => Guid.NewGuid()).Take(take).Select(ToCardDto).ToListAsync(ct);
             // Sprinkle a proportional number of series into the random landing grid.
-            var series = await sq.Where(s => !s.RemoveFromRandom).OrderBy(s => Guid.NewGuid()).Take(Math.Max(1, take / 10)).Select(ToSeriesCardDto).ToListAsync();
+            var series = await sq.Where(s => !s.RemoveFromRandom).OrderBy(s => Guid.NewGuid()).Take(Math.Max(1, take / 10)).Select(ToSeriesCardDto).ToListAsync(ct);
             var all = movies.Concat(series).ToList();
             var rng = new Random();
             for (int i = all.Count - 1; i > 0; i--) { int j = rng.Next(i + 1); (all[i], all[j]) = (all[j], all[i]); }
@@ -63,7 +63,7 @@ namespace MovieTheater.Controllers
         // behavior) for any caller that still wants the full list. Combos without Misc stay fully
         // DB-paged; only Misc-inclusive combos pay an in-memory merge (Misc is a materialized list).
         [HttpGet("/API/GetMoviesByType")]
-        public async Task<IActionResult> GetMoviesByType(string type, int page = 1, int pageSize = 60, int? seed = null, string? sort = null)
+        public async Task<IActionResult> GetMoviesByType(string type, int page = 1, int pageSize = 60, int? seed = null, string? sort = null, CancellationToken ct = default)
         {
             var types = ParseTypeScope(type);
             if (types.Count == 0)
@@ -83,14 +83,14 @@ namespace MovieTheater.Controllers
             var movieBuckets = types.Where(t => t == NormalizedTitleType.Movies || t == NormalizedTitleType.Short).ToList();
 
             IQueryable<Movie>? mq = movieBuckets.Count > 0
-                ? (await GetBaseMovieQuery()).Where(m => movieBuckets.Contains(m.NormalizedTitleType))
+                ? (await GetBaseMovieQuery(ct)).Where(m => movieBuckets.Contains(m.NormalizedTitleType))
                 : null;
-            IQueryable<Series>? sq = wantSeries ? await GetBaseSeriesQuery() : null;
+            IQueryable<Series>? sq = wantSeries ? await GetBaseSeriesQuery(ct) : null;
 
             // Misc alone: an explicit sort orders it; otherwise it keeps its curated collection ordering.
             if (wantMisc && mq == null && sq == null)
             {
-                var misc = await GetMiscCards();
+                var misc = await GetMiscCards(ct);
                 return Ok(PageCards(hasSort ? SortCards(misc, s, sd) : misc, page, pageSize));
             }
 
@@ -98,18 +98,18 @@ namespace MovieTheater.Controllers
             {
                 // Pure-DB paths — no Misc, so everything pages at the database.
                 if (mq != null && sq != null)
-                    return Ok(await PageMergedAsync(mq, sq, page, pageSize, s, sd));
+                    return Ok(await PageMergedAsync(mq, sq, page, pageSize, s, sd, ct));
                 if (mq != null)
-                    return Ok(await PageCardsAsync(SortMovies(mq, s, sd).Select(ToCardDto), page, pageSize));
-                return Ok(await PageCardsAsync(SortSeries(sq!, s, sd).Select(ToSeriesCardDto), page, pageSize));
+                    return Ok(await PageCardsAsync(SortMovies(mq, s, sd).Select(ToCardDto), page, pageSize, ct));
+                return Ok(await PageCardsAsync(SortSeries(sq!, s, sd).Select(ToSeriesCardDto), page, pageSize, ct));
             }
 
             // Misc mixed with movies/series → merge all selected sources in memory, ordered uniformly by
             // the chosen sort (Misc's own table can't UNION with the Movie/Series queries).
             var cards = new List<MovieCardDto>();
-            if (mq != null) cards.AddRange(await mq.Select(ToCardDto).ToListAsync());
-            if (sq != null) cards.AddRange(await sq.Select(ToSeriesCardDto).ToListAsync());
-            cards.AddRange(await GetMiscCards());
+            if (mq != null) cards.AddRange(await mq.Select(ToCardDto).ToListAsync(ct));
+            if (sq != null) cards.AddRange(await sq.Select(ToSeriesCardDto).ToListAsync(ct));
+            cards.AddRange(await GetMiscCards(ct));
             return Ok(PageCards(SortCards(cards, s, sd), page, pageSize));
         }
 
@@ -127,7 +127,7 @@ namespace MovieTheater.Controllers
         // no DB row order to walk) and the pager falls back to page numbers client-side. Only meaningful
         // for the alpha sort; the client never calls this under any other.
         [HttpGet("/API/BrowseLetters")]
-        public async Task<IActionResult> BrowseLetters(string type, string? mode = null, string? value = null, [FromQuery] Web.BrowseFilterQuery? fq = null)
+        public async Task<IActionResult> BrowseLetters(string type, string? mode = null, string? value = null, [FromQuery] Web.BrowseFilterQuery? fq = null, CancellationToken ct = default)
         {
             var types = ParseTypeScope(type);
             if (types.Count == 0)
@@ -135,12 +135,12 @@ namespace MovieTheater.Controllers
             if (types.Contains(NormalizedTitleType.Misc))
                 return Ok(new { total = 0, letters = new List<object>() });
 
-            var (mq, sq) = ApplyBrowseFilter(await GetBaseMovieQuery(), await GetBaseSeriesQuery(), mode, value);
+            var (mq, sq) = ApplyBrowseFilter(await GetBaseMovieQuery(ct), await GetBaseSeriesQuery(ct), mode, value);
             (mq, sq) = ApplyTypeScope(types, mq, sq);
             // The facet rail's filter composes with the legacy one (R9 S2), so the strip matches the grid.
             (mq, sq) = Web.BrowseFilter.Apply(movieDb, mq, sq, Web.BrowseFilter.From(fq), GetCurrentUserId());
 
-            var keys = await OrderCardKeys(BuildCardKeys(mq, sq, "alpha"), "alpha").Select(k => k.SimpleTitle).ToListAsync();
+            var keys = await OrderCardKeys(BuildCardKeys(mq, sq, "alpha"), "alpha").Select(k => k.SimpleTitle).ToListAsync(ct);
             var letters = Web.LetterBuckets.Walk(keys)
                 .Select(b => new { letter = b.Letter, count = b.Count, offset = b.Offset }).ToList();
             return Ok(new { total = keys.Count, letters });
@@ -236,19 +236,23 @@ namespace MovieTheater.Controllers
 
         // Page a card query at the DB (SELECT just one page + a COUNT). The query MUST already
         // be ordered so Skip/Take is stable. pageSize <= 0 → return the whole set.
-        private static async Task<object> PageCardsAsync(IQueryable<MovieCardDto> ordered, int page, int pageSize)
+        //
+        // `ct` is the request's own RequestAborted: the catalog engine aborts a band fetch it has
+        // scrolled past, and without the token here the pod finished the query anyway (docs/catalog.md →
+        // "The instruments"). An aborted request closes as 499 at Web/ClientAbortedFilter.
+        private static async Task<object> PageCardsAsync(IQueryable<MovieCardDto> ordered, int page, int pageSize, CancellationToken ct = default)
         {
             if (pageSize <= 0)
             {
-                var all = await ordered.ToListAsync();
+                var all = await ordered.ToListAsync(ct);
                 return new { movies = all, totalCount = all.Count, page = 1, pageSize = all.Count };
             }
             if (page < 1) page = 1;
             // Only the first page's totalCount is consumed by the client — it sets the "Showing X of Y"
             // header and the infinite-scroll hasMore bound once, then ignores it on every subsequent
             // page fetch. So skip the COUNT round-trip on page > 1 (-1 = "not computed").
-            var totalCount = page == 1 ? await ordered.CountAsync() : -1;
-            var paged = await ordered.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+            var totalCount = page == 1 ? await ordered.CountAsync(ct) : -1;
+            var paged = await ordered.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(ct);
             return new { movies = paged, totalCount, page, pageSize };
         }
 
@@ -319,14 +323,14 @@ namespace MovieTheater.Controllers
         //      page boundaries don't drift between fetches, so infinite scroll never dupes/skips.
         //   2. Materialize the full card DTOs for just the page's ids and restore the merged order.
         // pageSize <= 0 returns the whole merged set (back-compat).
-        private static async Task<object> PageMergedAsync(IQueryable<Movie> mq, IQueryable<Series> sq, int page, int pageSize, string sort = "alpha", int seed = 0)
+        private static async Task<object> PageMergedAsync(IQueryable<Movie> mq, IQueryable<Series> sq, int page, int pageSize, string sort = "alpha", int seed = 0, CancellationToken ct = default)
         {
             var keys = BuildCardKeys(mq, sq, sort, seed);
 
             if (pageSize <= 0)
             {
-                var allMovies = await mq.Select(ToCardDto).ToListAsync();
-                var allSeries = await sq.Select(ToSeriesCardDto).ToListAsync();
+                var allMovies = await mq.Select(ToCardDto).ToListAsync(ct);
+                var allSeries = await sq.Select(ToSeriesCardDto).ToListAsync(ct);
                 var allMerged = SortCards(allMovies.Concat(allSeries), sort, seed);
                 return new { movies = allMerged, totalCount = allMerged.Count, page = 1, pageSize = allMerged.Count };
             }
@@ -334,19 +338,19 @@ namespace MovieTheater.Controllers
             // Count only on the first page — the client reads totalCount once and discards it on every
             // later page fetch. Here that COUNT is a full UNION of both table scans, so skipping it on
             // page > 1 saves the most expensive query of the request (-1 = "not computed").
-            var totalCount = page == 1 ? await keys.CountAsync() : -1;
+            var totalCount = page == 1 ? await keys.CountAsync(ct) : -1;
 
             var pageKeys = await OrderCardKeys(keys, sort)
                 .Skip((page - 1) * pageSize).Take(pageSize)
-                .ToListAsync();
+                .ToListAsync(ct);
 
             var movieIds = pageKeys.Where(k => k.Kind == "movie").Select(k => k.Id).ToList();
             var seriesIds = pageKeys.Where(k => k.Kind == "series").Select(k => k.Id).ToList();
             var movieCards = movieIds.Count > 0
-                ? await mq.Where(m => movieIds.Contains(m.id)).Select(ToCardDto).ToListAsync()
+                ? await mq.Where(m => movieIds.Contains(m.id)).Select(ToCardDto).ToListAsync(ct)
                 : new List<MovieCardDto>();
             var seriesCards = seriesIds.Count > 0
-                ? await sq.Where(s => seriesIds.Contains(s.Id)).Select(ToSeriesCardDto).ToListAsync()
+                ? await sq.Where(s => seriesIds.Contains(s.Id)).Select(ToSeriesCardDto).ToListAsync(ct)
                 : new List<MovieCardDto>();
 
             var movieById = movieCards.ToDictionary(c => c.id);
@@ -369,9 +373,9 @@ namespace MovieTheater.Controllers
         // (a related misc inherits its parent's; a standalone one is judged on its own), gated the
         // same way every other title is. Poster (if any) is served from the separate /MiscImage
         // namespace; the card builds the poster URL off Kind="misc", not the shared id space.
-        private async Task<List<MovieCardDto>> GetMiscCards()
+        private async Task<List<MovieCardDto>> GetMiscCards(CancellationToken ct = default)
         {
-            int ageRestriction = await GetAgeRestrictionAsync();
+            int ageRestriction = await GetAgeRestrictionAsync(ct);
             var raw = await movieDb.MiscVideos
                 .Where(v => v.ReviewBatch == null)
                 .Where(Web.RatingGate.MiscVisibleAtAge(movieDb, ageRestriction))
@@ -379,7 +383,7 @@ namespace MovieTheater.Controllers
                 .ThenBy(v => v.SortOrder ?? int.MaxValue)
                 .ThenBy(v => v.SimpleTitle ?? v.Title)
                 .Select(v => new { v.Id, v.Title, v.SimpleTitle, v.Year, v.Description, v.Category, v.PlayableId, v.MpaaRatingInferred })
-                .ToListAsync();
+                .ToListAsync(ct);
             return raw.Select(v => new MovieCardDto
             {
                 id = v.Id,
@@ -398,17 +402,17 @@ namespace MovieTheater.Controllers
         // Misc-video cards for an explicit id set (the Rate page's misc bars). MiscVideo has its own id
         // space, so this is separate from GetMoviesByIds; same projection + age gate as GetMiscCards.
         [HttpPost("/API/GetMiscByIds")]
-        public async Task<IActionResult> GetMiscByIds([FromBody] List<int> ids)
+        public async Task<IActionResult> GetMiscByIds([FromBody] List<int> ids, CancellationToken ct = default)
         {
             if (ids == null || ids.Count == 0)
                 return Ok(new List<MovieCardDto>());
 
-            int ageRestriction = await GetAgeRestrictionAsync();
+            int ageRestriction = await GetAgeRestrictionAsync(ct);
             var raw = await movieDb.MiscVideos
                 .Where(v => ids.Contains(v.Id) && v.ReviewBatch == null)
                 .Where(Web.RatingGate.MiscVisibleAtAge(movieDb, ageRestriction))
                 .Select(v => new { v.Id, v.Title, v.SimpleTitle, v.Year, v.Description, v.Category, v.PlayableId, v.MpaaRatingInferred })
-                .ToListAsync();
+                .ToListAsync(ct);
             var cards = raw.Select(v => new MovieCardDto
             {
                 id = v.Id,
@@ -431,36 +435,36 @@ namespace MovieTheater.Controllers
         // the same call /API/BrowseLetters makes), apply the Type scope, page the merged result under
         // the chosen sort. `seed` is only read by the random sort.
         [HttpGet("/API/BrowseTitle")]
-        public async Task<IActionResult> BrowseTitle(string q, int page = 1, int pageSize = 60, string? types = null, string? sort = null, int seed = 0)
-            => await BrowseFilteredAsync("title", q, page, pageSize, types, sort, seed);
+        public async Task<IActionResult> BrowseTitle(string q, int page = 1, int pageSize = 60, string? types = null, string? sort = null, int seed = 0, CancellationToken ct = default)
+            => await BrowseFilteredAsync("title", q, page, pageSize, types, sort, seed, ct);
 
         [HttpGet("/API/BrowseLetter")]
-        public async Task<IActionResult> BrowseLetter(string letter, int page = 1, int pageSize = 60, string? types = null, string? sort = null, int seed = 0)
-            => await BrowseFilteredAsync("letter", letter, page, pageSize, types, sort, seed);
+        public async Task<IActionResult> BrowseLetter(string letter, int page = 1, int pageSize = 60, string? types = null, string? sort = null, int seed = 0, CancellationToken ct = default)
+            => await BrowseFilteredAsync("letter", letter, page, pageSize, types, sort, seed, ct);
 
         [HttpGet("/API/BrowseGenre")]
-        public async Task<IActionResult> BrowseGenre(string genres, int page = 1, int pageSize = 60, string? types = null, string? sort = null, int seed = 0)
-            => await BrowseFilteredAsync("genre", genres, page, pageSize, types, sort, seed);
+        public async Task<IActionResult> BrowseGenre(string genres, int page = 1, int pageSize = 60, string? types = null, string? sort = null, int seed = 0, CancellationToken ct = default)
+            => await BrowseFilteredAsync("genre", genres, page, pageSize, types, sort, seed, ct);
 
         // All titles the model tagged as part of a franchise / shared universe (TagCategory.Franchise),
         // e.g. "mcu", "studio-ghibli". The franchise value is the model's normalized tag (lowercase);
         // the detail modal's franchise chips pass it through verbatim.
         [HttpGet("/API/BrowseFranchise")]
-        public async Task<IActionResult> BrowseFranchise(string franchise, int page = 1, int pageSize = 60, string? types = null, string? sort = null, int seed = 0)
-            => await BrowseFilteredAsync("franchise", franchise, page, pageSize, types, sort, seed);
+        public async Task<IActionResult> BrowseFranchise(string franchise, int page = 1, int pageSize = 60, string? types = null, string? sort = null, int seed = 0, CancellationToken ct = default)
+            => await BrowseFilteredAsync("franchise", franchise, page, pageSize, types, sort, seed, ct);
 
         [HttpGet("/API/BrowsePerson")]
-        public async Task<IActionResult> BrowsePerson(string q, int page = 1, int pageSize = 60, string? types = null, string? sort = null, int seed = 0)
-            => await BrowseFilteredAsync("actor", q, page, pageSize, types, sort, seed);
+        public async Task<IActionResult> BrowsePerson(string q, int page = 1, int pageSize = 60, string? types = null, string? sort = null, int seed = 0, CancellationToken ct = default)
+            => await BrowseFilteredAsync("actor", q, page, pageSize, types, sort, seed, ct);
 
-        private async Task<IActionResult> BrowseFilteredAsync(string mode, string? value, int page, int pageSize, string? types, string? sort, int seed)
+        private async Task<IActionResult> BrowseFilteredAsync(string mode, string? value, int page, int pageSize, string? types, string? sort, int seed, CancellationToken ct = default)
         {
             // An empty value is not "match everything" — the caller cleared the field, and the client
             // navigates back to the unfiltered browse rather than reading an unbounded page from here.
             if ((value ?? "").Trim().Length == 0) return Ok(EmptyPage(pageSize));
-            var (mq, sq) = ApplyBrowseFilter(await GetBaseMovieQuery(), await GetBaseSeriesQuery(), mode, value);
+            var (mq, sq) = ApplyBrowseFilter(await GetBaseMovieQuery(ct), await GetBaseSeriesQuery(ct), mode, value);
             (mq, sq) = ApplyTypeScope(ParseTypeScope(types), mq, sq);
-            return Ok(await PageMergedAsync(mq, sq, page, pageSize, NormalizeSort(sort), seed));
+            return Ok(await PageMergedAsync(mq, sq, page, pageSize, NormalizeSort(sort), seed, ct));
         }
     }
 }

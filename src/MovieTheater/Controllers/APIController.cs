@@ -435,22 +435,22 @@ namespace MovieTheater.Controllers
         // pageSize <= 0 (default) returns the full merged list as a bare array, which the restore
         // path needs so it can reorder client-side by its remembered on-screen order.
         [HttpPost("/API/GetMoviesByIds")]
-        public async Task<IActionResult> GetMoviesByIds([FromBody] List<int> ids, int page = 1, int pageSize = 0, string? sort = null, int seed = 0)
+        public async Task<IActionResult> GetMoviesByIds([FromBody] List<int> ids, int page = 1, int pageSize = 0, string? sort = null, int seed = 0, CancellationToken ct = default)
         {
             if (ids == null || ids.Count == 0)
                 return Ok(pageSize > 0 ? (object)EmptyPage(pageSize) : new List<MovieCardDto>());
 
             // ids share a space across the two tables — match both Movies and Series.
-            var mq = (await GetBaseMovieQuery()).Where(m => ids.Contains(m.id));
-            var sq = (await GetBaseSeriesQuery()).Where(s => ids.Contains(s.Id));
+            var mq = (await GetBaseMovieQuery(ct)).Where(m => ids.Contains(m.id));
+            var sq = (await GetBaseSeriesQuery(ct)).Where(s => ids.Contains(s.Id));
 
             // The infinite (Seen/Want) path honors the browse sort; the bare-array restore path keeps its
             // SimpleTitle order (the client reorders it by the remembered on-screen sequence anyway).
             if (pageSize > 0)
-                return Ok(await PageMergedAsync(mq, sq, page, pageSize, NormalizeSort(sort), seed));
+                return Ok(await PageMergedAsync(mq, sq, page, pageSize, NormalizeSort(sort), seed, ct));
 
-            var movies = await mq.Select(ToCardDto).ToListAsync();
-            var series = await sq.Select(ToSeriesCardDto).ToListAsync();
+            var movies = await mq.Select(ToCardDto).ToListAsync(ct);
+            var series = await sq.Select(ToSeriesCardDto).ToListAsync(ct);
             return Ok(movies.Concat(series).OrderBy(c => c.SimpleTitle, StringComparer.OrdinalIgnoreCase).ToList());
         }
 
@@ -540,7 +540,7 @@ namespace MovieTheater.Controllers
             UploadedDate = s.UploadedDate,
         };
 
-        private async Task<int> GetAgeRestrictionAsync()
+        private async Task<int> GetAgeRestrictionAsync(CancellationToken ct = default)
         {
             // Memoize per request: a single browse request builds the movie, series and misc queries,
             // each of which needs the age restriction — without this that's the same UserSettings
@@ -554,7 +554,7 @@ namespace MovieTheater.Controllers
             if (currentUserId.HasValue)
             {
                 var setRestriction = await movieDb.UserSettings
-                    .FirstOrDefaultAsync(u => u.SettingKey == "AgeRestriction" && u.UserID == currentUserId.Value);
+                    .FirstOrDefaultAsync(u => u.SettingKey == "AgeRestriction" && u.UserID == currentUserId.Value, ct);
                 if (setRestriction != null && int.TryParse(setRestriction.SettingValue, out int parsedRestriction))
                     result = parsedRestriction;
             }
@@ -564,18 +564,18 @@ namespace MovieTheater.Controllers
             return result;
         }
 
-        private async Task<IQueryable<Movie>> GetBaseMovieQuery()
+        private async Task<IQueryable<Movie>> GetBaseMovieQuery(CancellationToken ct = default)
         {
-            int ageRestriction = await GetAgeRestrictionAsync();
+            int ageRestriction = await GetAgeRestrictionAsync(ct);
             // The predicate itself lives in Web/CatalogQueries so the out-of-request catalog warmer
             // builds the SAME set (quarantine + the series de-duplication + the effective-rating gate).
             return Web.CatalogQueries.BaseMovies(movieDb, ageRestriction);
         }
 
         // Series peer of GetBaseMovieQuery (same quarantine + age gate). Browse/search union the two.
-        private async Task<IQueryable<Series>> GetBaseSeriesQuery()
+        private async Task<IQueryable<Series>> GetBaseSeriesQuery(CancellationToken ct = default)
         {
-            int ageRestriction = await GetAgeRestrictionAsync();
+            int ageRestriction = await GetAgeRestrictionAsync(ct);
             return Web.CatalogQueries.BaseSeries(movieDb, ageRestriction);
         }
 

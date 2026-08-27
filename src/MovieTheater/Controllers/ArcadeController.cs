@@ -221,7 +221,8 @@ namespace MovieTheater.Controllers
         public async Task<IActionResult> Games(
             string system = null, string hideRegions = null, int? maxPlayers = null,
             string variant = null, string genre = null, string sort = null, string search = null,
-            string ra = null, int page = 1, int pageSize = 60, int? skip = null, int? id = null)
+            string ra = null, int page = 1, int pageSize = 60, int? skip = null, int? id = null,
+            System.Threading.CancellationToken ct = default)
         {
             var userId = GetCurrentUserId();
             if (userId == null)
@@ -236,13 +237,13 @@ namespace MovieTheater.Controllers
             if (id != null)
             {
                 var visibleQ = await VisibleGamesAsync(userId.Value);
-                var anchor = await visibleQ.FirstOrDefaultAsync(g => g.Id == id.Value);
+                var anchor = await visibleQ.FirstOrDefaultAsync(g => g.Id == id.Value, ct);
                 if (anchor == null)
                     return Json(new { games = new List<object>(), totalCount = 0, page = 1, pageSize, skip = 0 });
                 var card = await BuildGameCardsAsync(
                     visibleQ,
                     new List<(string, string, string)> { (anchor.System, anchor.CollapseKey, null) },
-                    null);
+                    null, ct);
                 return Json(new { games = card, totalCount = card.Count, page = 1, pageSize, skip = 0 });
             }
 
@@ -271,7 +272,7 @@ namespace MovieTheater.Controllers
                     Year = grp.Max(x => x.Year),
                     Players = grp.Max(x => (int)x.MaxPlayers),
                 });
-            var totalCount = await groupedQ.CountAsync();
+            var totalCount = await groupedQ.CountAsync(ct);
             // Sort (all fall back to alphabetical within ties; unrated/undated float to the end).
             groupedQ = (sort ?? "").Trim().ToLowerInvariant() switch
             {
@@ -282,14 +283,14 @@ namespace MovieTheater.Controllers
                 _ => groupedQ.OrderBy(x => x.Sort).ThenBy(x => x.Title),
             };
             var pageKeys = await groupedQ
-                .Skip(skipRows).Take(pageSize).ToListAsync();
+                .Skip(skipRows).Take(pageSize).ToListAsync(ct);
 
             // Deselect region model: cards are hidden wholesale, not narrowed to one region, so there is no
             // single "specific region" to pin the displayed version/art to — pass null (card's own default).
             var games = await BuildGameCardsAsync(
                 baseQ,
                 pageKeys.Select(k => (k.System, k.CollapseKey, k.Title)).ToList(),
-                null);
+                null, ct);
 
             return Json(new { games, totalCount, page, pageSize, skip = skipRows });
         }
@@ -309,13 +310,14 @@ namespace MovieTheater.Controllers
         private async Task<List<object>> BuildGameCardsAsync(
             IQueryable<ArcadeGame> baseQ,
             IReadOnlyList<(string System, string CollapseKey, string Title)> keys,
-            string specificRegion)
+            string specificRegion,
+            System.Threading.CancellationToken ct = default)
         {
             // All age-visible versions of the requested games (superset by System/CollapseKey IN, trimmed to exact
             // page keys in memory) — the dropdown lists every version, not just the ones that matched.
             var pageSystems = keys.Select(k => k.System).Distinct().ToList();
             var pageCollapse = keys.Select(k => k.CollapseKey).Distinct().ToList();
-            var versionRows = await baseQ.Where(g => pageSystems.Contains(g.System) && pageCollapse.Contains(g.CollapseKey)).ToListAsync();
+            var versionRows = await baseQ.Where(g => pageSystems.Contains(g.System) && pageCollapse.Contains(g.CollapseKey)).ToListAsync(ct);
             var keySet = keys.Select(k => (k.System, k.CollapseKey)).ToHashSet();
             var byGame = versionRows.Where(g => keySet.Contains((g.System, g.CollapseKey)))
                 .GroupBy(g => (g.System, g.CollapseKey))
@@ -329,7 +331,7 @@ namespace MovieTheater.Controllers
                 .Where(c => pageVersionIds.Contains(c.ArcadeGameId) && c.Kind == "code")
                 .GroupBy(c => c.ArcadeGameId)
                 .Select(g => new { GameId = g.Key, Count = g.Count() })
-                .ToDictionaryAsync(x => x.GameId, x => x.Count);
+                .ToDictionaryAsync(x => x.GameId, x => x.Count, ct);
 
             // The renderer/core each version ACTUALLY launches on (⚙ Configure → ArcadeGameProfile, else the
             // system default). Without it the Start-room menu could only mark the SYSTEM's default, which for
@@ -340,7 +342,7 @@ namespace MovieTheater.Controllers
             var savedProfiles = await movieDb.ArcadeGameProfiles.AsNoTracking()
                 .Where(p => pageSystems.Contains(p.System) && pageTitleKeys.Contains(p.TitleKey))
                 .Select(p => new { p.System, p.TitleKey, p.RenderProfile, p.HwContext })
-                .ToListAsync();
+                .ToListAsync(ct);
             var savedByKey = savedProfiles
                 .GroupBy(p => (p.System, p.TitleKey))
                 .ToDictionary(g => g.Key, g => g.First());

@@ -225,7 +225,13 @@ namespace MovieTheater
             services.AddSingleton(new Web.CatalogWarmupOptions { Enabled = !IsDevelopment });
             services.AddHostedService<Web.CatalogWarmupService>();
 
-            services.AddMvc()
+            services.AddMvc(opts =>
+                {
+                    // A request the caller abandoned closes quietly (499) instead of logging a fault:
+                    // the browse endpoints honour RequestAborted now, so an aborted band fetch throws
+                    // by design. See Web/ClientAbortedFilter.
+                    opts.Filters.Add<Web.ClientAbortedFilter>();
+                })
                 .AddJsonOptions(opts =>
                 {
                     var enumConverter = new JsonStringEnumConverter();

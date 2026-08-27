@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -26,8 +27,9 @@ namespace MovieTheater.Controllers
         /// offset browse and the grouped browse share, so none of them can promise a photo another
         /// refuses to show. <paramref name="includeHidden"/> is the already-resolved admin opt-in.
         /// </summary>
-        private async Task<IQueryable<PhotoAsset>> TimelineQueryAsync(bool includeHidden)
+        private async Task<IQueryable<PhotoAsset>> TimelineQueryAsync(bool includeHidden, CancellationToken ct = default)
         {
+            ct.ThrowIfCancellationRequested();
             var query = TimelineShelf(movieDb.PhotoAssets).Where(a => a.MissingSinceUtc == null);
             if (!includeHidden) query = query.Where(a => !a.Hidden);
             var collapsed = PhotoDupeMasters.CollapsedAssetIds(movieDb);
@@ -50,19 +52,19 @@ namespace MovieTheater.Controllers
         /// </summary>
         [HttpGet("/API/Photos/Browse")]
         public async Task<IActionResult> Browse(int skip = 0, int top = BrowseDefaultTop, int? year = null, int? month = null, bool includeHidden = false,
-            [FromQuery] PhotoBrowseFilterQuery? filter = null)
+            [FromQuery] PhotoBrowseFilterQuery? filter = null, CancellationToken ct = default)
         {
             top = Math.Clamp(top, 1, BrowseMaxTop);
             skip = Math.Max(0, skip);
             includeHidden = ShowHidden(includeHidden);
             // The rail's filter (R9 S2c) narrows the SAME gated predicate every photo surface shares.
-            var query = PhotoBrowseFilter.Parse(filter).Apply(await TimelineQueryAsync(includeHidden), movieDb).Where(a => a.TakenAt != null);
+            var query = PhotoBrowseFilter.Parse(filter).Apply(await TimelineQueryAsync(includeHidden, ct), movieDb).Where(a => a.TakenAt != null);
             if (year is int y) query = query.Where(a => a.TakenAt!.Value.Year == y);
             if (month is int m && year != null) query = query.Where(a => a.TakenAt!.Value.Month == m);
-            var total = skip == 0 ? await query.CountAsync() : -1;
-            var rows = await query.OrderByDescending(a => a.TakenAt).ThenByDescending(a => a.Id).Skip(skip).Take(top).ToListAsync();
+            var total = skip == 0 ? await query.CountAsync(ct) : -1;
+            var rows = await query.OrderByDescending(a => a.TakenAt).ThenByDescending(a => a.Id).Skip(skip).Take(top).ToListAsync(ct);
             var userId = GetCurrentUserId() ?? 0;
-            var badges = await BadgesAsync(rows);
+            var badges = await BadgesAsync(rows, ct);
             return Json(new
             {
                 items = rows.Select(a => Card(a, userId, badges)).ToList(),
@@ -130,7 +132,8 @@ namespace MovieTheater.Controllers
         /// </summary>
         [HttpGet("/API/Photos/BrowseGroups")]
         public async Task<IActionResult> BrowseGroups(string? groupBy = null, int groupsSkip = 0, int groupsTop = 0, int perGroupTop = 0, int perGroupSkip = 0,
-            string? singleGroupKey = null, bool includeHidden = false, [FromQuery] PhotoBrowseFilterQuery? filter = null)
+            string? singleGroupKey = null, bool includeHidden = false, [FromQuery] PhotoBrowseFilterQuery? filter = null,
+            CancellationToken ct = default)
         {
             includeHidden = ShowHidden(includeHidden);
             var by = (groupBy ?? "").Trim().ToLowerInvariant() switch
@@ -151,7 +154,7 @@ namespace MovieTheater.Controllers
             // The rail's filter (R9 S2c) rides every axis: the timeline's year/month groups, the album
             // entries and the folder tree all count and list the SAME narrowed photographs.
             var browseFilter = PhotoBrowseFilter.Parse(filter);
-            var timeline = browseFilter.Apply(await TimelineQueryAsync(includeHidden), movieDb);
+            var timeline = browseFilter.Apply(await TimelineQueryAsync(includeHidden, ct), movieDb);
             IQueryable<PhotoAsset> tree = movieDb.PhotoAssets.Where(a => a.MissingSinceUtc == null);
             if (!includeHidden) tree = tree.Where(a => !a.Hidden);
             tree = browseFilter.Apply(tree, movieDb);
@@ -167,7 +170,7 @@ namespace MovieTheater.Controllers
                     var months = await timeline.Where(a => a.TakenAt != null)
                         .GroupBy(a => new { a.TakenAt!.Value.Year, a.TakenAt!.Value.Month })
                         .Select(g => new { g.Key.Year, g.Key.Month, Count = g.Count() })
-                        .OrderByDescending(g => g.Year).ThenByDescending(g => g.Month).ToListAsync();
+                        .OrderByDescending(g => g.Year).ThenByDescending(g => g.Month).ToListAsync(ct);
                     heads.AddRange(months.Select(m => ($"{m.Year:D4}-{m.Month:D2}", $"{CultureInfo.InvariantCulture.DateTimeFormat.GetMonthName(m.Month)} {m.Year}", m.Count, 0)));
                     break;
                 }
@@ -179,7 +182,7 @@ namespace MovieTheater.Controllers
                     var albums = await movieDb.PhotoAlbums.Where(a => a.Shelf == PhotoShelf.Timeline)
                         .OrderByDescending(a => a.ArtistName != null ? 1 : 0).ThenBy(a => a.SortOrder).ThenByDescending(a => a.CreatedUtc)
                         .Select(a => new { a.Id, a.Slug, a.Title, Count = a.Entries.Count(e => albumScope.Any(s => s.Id == e.PhotoAssetId)) })
-                        .ToListAsync();
+                        .ToListAsync(ct);
                     heads.AddRange(albums.Select(a => (a.Slug, a.Title, a.Count, a.Id)));
                     break;
                 }
@@ -188,7 +191,7 @@ namespace MovieTheater.Controllers
                     var folders = await tree.Where(a => a.Path.Contains("/"))
                         .Select(a => a.Path.Substring(0, a.Path.IndexOf("/")))
                         .GroupBy(name => name).Select(g => new { Name = g.Key, Count = g.Count() })
-                        .OrderBy(f => f.Name).ToListAsync();
+                        .OrderBy(f => f.Name).ToListAsync(ct);
                     heads.AddRange(folders.Select(f => (f.Name, f.Name, f.Count, 0)));
                     break;
                 }
@@ -199,13 +202,13 @@ namespace MovieTheater.Controllers
                     var people = await movieDb.FamilyPeople
                         .Select(p => new { p.Id, p.Name, Count = movieDb.PhotoPersonTags.Count(t => t.FamilyPersonId == p.Id && (t.Source == PhotoTagSource.Manual || t.Source == PhotoTagSource.Confirmed) && timeline.Any(s => s.Id == t.PhotoAssetId)) })
                         .Where(p => p.Count > 0)
-                        .OrderByDescending(p => p.Count).ThenBy(p => p.Name).ToListAsync();
+                        .OrderByDescending(p => p.Count).ThenBy(p => p.Name).ToListAsync(ct);
                     heads.AddRange(people.Select(p => (p.Id.ToString(), string.IsNullOrWhiteSpace(p.Name) ? $"Person #{p.Id}" : p.Name, p.Count, p.Id)));
                     break;
                 }
                 case "kind":
                 {
-                    var kinds = await timeline.GroupBy(a => a.Kind).Select(g => new { Kind = g.Key, Count = g.Count() }).ToListAsync();
+                    var kinds = await timeline.GroupBy(a => a.Kind).Select(g => new { Kind = g.Key, Count = g.Count() }).ToListAsync(ct);
                     foreach (var k in new[] { PhotoAssetKind.Photo, PhotoAssetKind.Video })
                     {
                         var count = kinds.FirstOrDefault(r => r.Kind == k)?.Count ?? 0;
@@ -217,7 +220,7 @@ namespace MovieTheater.Controllers
                 {
                     var cameras = await timeline.Where(a => a.CameraModel != null && a.CameraModel != "")
                         .GroupBy(a => a.CameraModel!).Select(g => new { Model = g.Key, Count = g.Count() })
-                        .OrderByDescending(c => c.Count).ThenBy(c => c.Model).ToListAsync();
+                        .OrderByDescending(c => c.Count).ThenBy(c => c.Model).ToListAsync(ct);
                     heads.AddRange(cameras.Select(c => (c.Model, c.Model, c.Count, 0)));
                     break;
                 }
@@ -226,7 +229,7 @@ namespace MovieTheater.Controllers
                     var years = await timeline.Where(a => a.TakenAt != null)
                         .GroupBy(a => a.TakenAt!.Value.Year)
                         .Select(g => new { Year = g.Key, Count = g.Count() })
-                        .OrderByDescending(g => g.Year).ToListAsync();
+                        .OrderByDescending(g => g.Year).ToListAsync(ct);
                     heads.AddRange(years.Select(y => (y.Year.ToString(), y.Year.ToString(), y.Count, 0)));
                     break;
                 }
@@ -248,7 +251,7 @@ namespace MovieTheater.Controllers
                         var parts = h.Key.Split('-');
                         var y = int.Parse(parts[0]); var m = int.Parse(parts[1]);
                         rows = await timeline.Where(a => a.TakenAt != null && a.TakenAt.Value.Year == y && a.TakenAt.Value.Month == m)
-                            .OrderByDescending(a => a.TakenAt).ThenByDescending(a => a.Id).Skip(perGroupSkip).Take(perGroupTop).ToListAsync();
+                            .OrderByDescending(a => a.TakenAt).ThenByDescending(a => a.Id).Skip(perGroupSkip).Take(perGroupTop).ToListAsync(ct);
                         break;
                     }
                     case "album":
@@ -258,14 +261,14 @@ namespace MovieTheater.Controllers
                             .OrderBy(e => e.SortOrder).ThenBy(e => e.Id)
                             .Select(e => e.PhotoAsset)
                             .Where(a => a.MissingSinceUtc == null && (includeHidden || !a.Hidden));
-                        rows = await browseFilter.Apply(albumRows, movieDb).Skip(perGroupSkip).Take(perGroupTop).ToListAsync();
+                        rows = await browseFilter.Apply(albumRows, movieDb).Skip(perGroupSkip).Take(perGroupTop).ToListAsync(ct);
                         break;
                     }
                     case "folder":
                     {
                         var prefix = h.Key + "/";
                         rows = await tree.Where(a => a.Path.StartsWith(prefix))
-                            .OrderBy(a => a.Path).ThenBy(a => a.Id).Skip(perGroupSkip).Take(perGroupTop).ToListAsync();
+                            .OrderBy(a => a.Path).ThenBy(a => a.Id).Skip(perGroupSkip).Take(perGroupTop).ToListAsync(ct);
                         break;
                     }
                     case "people":
@@ -273,35 +276,35 @@ namespace MovieTheater.Controllers
                         var personId = h.EntityId;
                         rows = await timeline.Where(a => movieDb.PhotoPersonTags.Any(t => t.PhotoAssetId == a.Id && t.FamilyPersonId == personId
                                 && (t.Source == PhotoTagSource.Manual || t.Source == PhotoTagSource.Confirmed)))
-                            .OrderByDescending(a => a.TakenAt).ThenByDescending(a => a.Id).Skip(perGroupSkip).Take(perGroupTop).ToListAsync();
+                            .OrderByDescending(a => a.TakenAt).ThenByDescending(a => a.Id).Skip(perGroupSkip).Take(perGroupTop).ToListAsync(ct);
                         break;
                     }
                     case "kind":
                     {
                         var kind = h.Key == "video" ? PhotoAssetKind.Video : PhotoAssetKind.Photo;
                         rows = await timeline.Where(a => a.Kind == kind)
-                            .OrderByDescending(a => a.TakenAt).ThenByDescending(a => a.Id).Skip(perGroupSkip).Take(perGroupTop).ToListAsync();
+                            .OrderByDescending(a => a.TakenAt).ThenByDescending(a => a.Id).Skip(perGroupSkip).Take(perGroupTop).ToListAsync(ct);
                         break;
                     }
                     case "camera":
                     {
                         var model = h.Key;
                         rows = await timeline.Where(a => a.CameraModel == model)
-                            .OrderByDescending(a => a.TakenAt).ThenByDescending(a => a.Id).Skip(perGroupSkip).Take(perGroupTop).ToListAsync();
+                            .OrderByDescending(a => a.TakenAt).ThenByDescending(a => a.Id).Skip(perGroupSkip).Take(perGroupTop).ToListAsync(ct);
                         break;
                     }
                     default:
                     {
                         var y = int.Parse(h.Key);
                         rows = await timeline.Where(a => a.TakenAt != null && a.TakenAt.Value.Year == y)
-                            .OrderByDescending(a => a.TakenAt).ThenByDescending(a => a.Id).Skip(perGroupSkip).Take(perGroupTop).ToListAsync();
+                            .OrderByDescending(a => a.TakenAt).ThenByDescending(a => a.Id).Skip(perGroupSkip).Take(perGroupTop).ToListAsync(ct);
                         break;
                     }
                 }
                 members.Add((h.Key, rows));
             }
             var userId = GetCurrentUserId() ?? 0;
-            var badges = await BadgesAsync(members.SelectMany(m => m.Rows).ToList());
+            var badges = await BadgesAsync(members.SelectMany(m => m.Rows).ToList(), ct);
             var groups = page.Select(h => new
             {
                 key = h.Key,

@@ -2389,7 +2389,7 @@ namespace MovieTheater.Controllers
         /// is the one that EXPLAINS the card — the group collapsing it, if any — with the lowest group id
         /// breaking ties so two loads of the same page agree.</para>
         /// </summary>
-        private async Task<Dictionary<int, DupeBadge>> BadgesAsync(List<PhotoAsset> rows)
+        private async Task<Dictionary<int, DupeBadge>> BadgesAsync(List<PhotoAsset> rows, System.Threading.CancellationToken ct = default)
         {
             var badges = new Dictionary<int, DupeBadge>();
             if (rows.Count == 0) return badges;
@@ -2398,7 +2398,7 @@ namespace MovieTheater.Controllers
             var memberships = await movieDb.PhotoDupeMembers
                 .Where(m => ids.Contains(m.PhotoAssetId))
                 .Select(m => new { m.PhotoAssetId, m.PhotoDupeGroupId, m.IsMaster, m.PhotoDupeGroup.Kind, m.PhotoDupeGroup.Status })
-                .ToListAsync();
+                .ToListAsync(ct);
             if (memberships.Count == 0) return badges;
 
             var groupIds = memberships.Select(m => m.PhotoDupeGroupId).Distinct().ToList();
@@ -2406,7 +2406,7 @@ namespace MovieTheater.Controllers
                 .Where(m => groupIds.Contains(m.PhotoDupeGroupId))
                 .GroupBy(m => m.PhotoDupeGroupId)
                 .Select(g => new { id = g.Key, count = g.Count() })
-                .ToListAsync();
+                .ToListAsync(ct);
             var sizeById = sizes.ToDictionary(x => x.id, x => x.count);
 
             foreach (var byAsset in memberships.GroupBy(m => m.PhotoAssetId))

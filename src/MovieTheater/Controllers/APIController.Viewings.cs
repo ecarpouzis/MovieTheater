@@ -303,14 +303,14 @@ namespace MovieTheater.Controllers
         }
 
         [HttpGet("/API/GetMoviesByRating")]
-        public async Task<IActionResult> GetMoviesByRating(string ratingIds, int page = 1, int pageSize = 60, string? types = null, string? sort = null, int seed = 0)
+        public async Task<IActionResult> GetMoviesByRating(string ratingIds, int page = 1, int pageSize = 60, string? types = null, string? sort = null, int seed = 0, CancellationToken ct = default)
         {
             int ageRestriction = 100;
             var currentUserId = GetCurrentUserId();
             if (currentUserId.HasValue)
             {
                 var setRestriction = await movieDb.UserSettings
-                    .FirstOrDefaultAsync(u => u.SettingKey == "AgeRestriction" && u.UserID == currentUserId.Value);
+                    .FirstOrDefaultAsync(u => u.SettingKey == "AgeRestriction" && u.UserID == currentUserId.Value, ct);
                 if (setRestriction != null && int.TryParse(setRestriction.SettingValue, out int parsedRestriction))
                     ageRestriction = parsedRestriction;
             }
@@ -335,7 +335,7 @@ namespace MovieTheater.Controllers
                 .Distinct()
                 .ToList();
             if (buckets.Count == 0)
-                return Ok(await PageCardsAsync(movieDb.Movies.Where(m => false).Select(ToCardDto), page, pageSize));
+                return Ok(await PageCardsAsync(movieDb.Movies.Where(m => false).Select(ToCardDto), page, pageSize, ct));
 
             var baseQuery = movieDb.Movies
                 .Where(m => m.ReviewBatch == null)
@@ -356,7 +356,7 @@ namespace MovieTheater.Controllers
             // Order at the DB by the chosen sort, then page there.
             var query = SortMovies(baseQuery, NormalizeSort(sort), seed).Select(ToCardDto);
 
-            return Ok(await PageCardsAsync(query, page, pageSize));
+            return Ok(await PageCardsAsync(query, page, pageSize, ct));
         }
 
         // Small, rarely-changing lookup tables (genres, MPA ratings, total count) fetched by every client

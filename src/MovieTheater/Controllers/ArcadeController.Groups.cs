@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -26,7 +27,8 @@ namespace MovieTheater.Controllers
         public async Task<IActionResult> GameGroups(
             string groupBy = null, string system = null, string hideRegions = null, int? maxPlayers = null,
             string variant = null, string genre = null, string search = null, string ra = null, string sort = null,
-            int groupsSkip = 0, int groupsTop = 0, int perGroupTop = 0, int perGroupSkip = 0, string singleGroupKey = null)
+            int groupsSkip = 0, int groupsTop = 0, int perGroupTop = 0, int perGroupSkip = 0, string singleGroupKey = null,
+            CancellationToken ct = default)
         {
             var userId = GetCurrentUserId();
             if (userId == null) return Unauthorized();
@@ -37,7 +39,7 @@ namespace MovieTheater.Controllers
             var hidden = ParseHideRegions(hideRegions);
             var selectedSystems = ParseSystems(system);
             var baseQ = await VisibleGamesAsync(userId.Value);
-            var index = await CachedGameGroupIndexAsync(userId.Value, baseQ, selectedSystems, maxPlayers, genre, search, hidden, var_, ra, by);
+            var index = await CachedGameGroupIndexAsync(userId.Value, baseQ, selectedSystems, maxPlayers, genre, search, hidden, var_, ra, by, ct);
 
             IReadOnlyList<ArcadeGameGroups.Head> page;
             if (!string.IsNullOrWhiteSpace(singleGroupKey))
@@ -52,7 +54,7 @@ namespace MovieTheater.Controllers
             // One card build for the whole band: BuildGameCardsAsync returns cards in key order, so the
             // concatenated member list slices back into groups by count.
             var keys = bands.SelectMany(b => b.members).Select(m => (m.System, m.CollapseKey, m.Title)).ToList();
-            var cards = keys.Count > 0 ? await BuildGameCardsAsync(baseQ, keys, null) : new List<object>();
+            var cards = keys.Count > 0 ? await BuildGameCardsAsync(baseQ, keys, null, ct) : new List<object>();
             var offset = 0;
             var groups = bands.Select(b =>
             {
@@ -68,14 +70,15 @@ namespace MovieTheater.Controllers
         [HttpGet("/API/Arcade/GameGroupLetters")]
         public async Task<IActionResult> GameGroupLetters(
             string groupBy = null, string system = null, string hideRegions = null, int? maxPlayers = null,
-            string variant = null, string genre = null, string search = null, string ra = null)
+            string variant = null, string genre = null, string search = null, string ra = null,
+            CancellationToken ct = default)
         {
             var userId = GetCurrentUserId();
             if (userId == null) return Unauthorized();
             if (!host.IsConfigured) return StatusCode(501, new { message = "The arcade is not configured on this server." });
             var by = ArcadeGameGroups.NormalizeGroupBy(groupBy);
             var baseQ = await VisibleGamesAsync(userId.Value);
-            var index = await CachedGameGroupIndexAsync(userId.Value, baseQ, ParseSystems(system), maxPlayers, genre, search, ParseHideRegions(hideRegions), NormalizeVariant(variant), ra, by);
+            var index = await CachedGameGroupIndexAsync(userId.Value, baseQ, ParseSystems(system), maxPlayers, genre, search, ParseHideRegions(hideRegions), NormalizeVariant(variant), ra, by, ct);
             var letters = ArcadeGameGroups.GroupLetters(index.Heads, by).Select(l => new { letter = l.Letter, firstIndex = l.FirstIndex }).ToList();
             return Json(new { totalGroups = index.Heads.Count, letters });
         }
@@ -87,7 +90,7 @@ namespace MovieTheater.Controllers
         /// </summary>
         private async Task<ArcadeGameGroups.GroupIndex> CachedGameGroupIndexAsync(
             int userId, IQueryable<Db.ArcadeGame> baseQ, List<string> systems, int? maxPlayers, string genre, string search,
-            List<string> hideRegions, string var_, string ra, string by)
+            List<string> hideRegions, string var_, string ra, string by, CancellationToken ct = default)
         {
             var filtered = (systems != null && systems.Count > 0) || maxPlayers is > 1 || !string.IsNullOrWhiteSpace(genre)
                 || !string.IsNullOrWhiteSpace(search) || (hideRegions != null && hideRegions.Count > 0) || (var_ != "all" && var_ != "release") || !string.IsNullOrWhiteSpace(ra);
@@ -111,12 +114,12 @@ namespace MovieTheater.Controllers
                         grp.Max(x => x.RaAchievementCount ?? 0),
                         grp.Max(x => x.RaHasScoreLeaderboard ? 1 : 0) == 1,
                         grp.Max(x => x.RaHasTimeLeaderboard ? 1 : 0) == 1))
-                    .ToListAsync();
+                    .ToListAsync(ct);
                 // Region and variant are per VERSION, so they need the distinct tuples — a couple of rows
                 // per card, not every ROM row. Only fetched for the two axes that read them.
                 List<ArcadeGameGroups.CardTag> tags = null;
                 if (ArcadeGameGroups.NeedsTags(by))
-                    tags = await matchQ.Select(g => new ArcadeGameGroups.CardTag(g.System, g.CollapseKey, g.Region, g.Variant)).Distinct().ToListAsync();
+                    tags = await matchQ.Select(g => new ArcadeGameGroups.CardTag(g.System, g.CollapseKey, g.Region, g.Variant)).Distinct().ToListAsync(ct);
                 var index = ArcadeGameGroups.BuildIndex(rows, by, null, tags);
                 entry.Size = index.ApproxBytes;
                 return index;

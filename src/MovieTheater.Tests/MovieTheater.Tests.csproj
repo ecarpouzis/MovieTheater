@@ -123,6 +123,11 @@
     <Compile Include="..\MovieTheater\Web\BrowseCacheKeys.cs" Link="Browse\BrowseCacheKeys.cs" />
     <Compile Include="..\MovieTheater\Web\CatalogWarmup.cs" Link="Browse\CatalogWarmup.cs" />
     <Compile Include="..\MovieTheater\Web\LetterBuckets.cs" Link="Browse\LetterBuckets.cs" />
+    <!-- The endpoint boundary for a request the caller abandoned. Compiled from source because the
+         claim is about the SHIPPED filter Startup registers globally: a cancellation raised by THIS
+         request's RequestAborted closes quietly as 499, and a cancellation from any other token is
+         still a failure. A re-declared copy would pass while the shipped filter swallowed real faults. -->
+    <Compile Include="..\MovieTheater\Web\ClientAbortedFilter.cs" Link="Browse\ClientAbortedFilter.cs" />
     <Compile Include="..\MovieTheater\Web\BoardgameLinkFacets.cs" Link="Browse\BoardgameLinkFacets.cs" />
     <Compile Include="..\MovieTheater\Arcade\ArcadeGameGroups.cs" Link="Arcade\ArcadeGameGroups.cs" />
     <Compile Include="..\MovieTheater\Photos\FamilyAlbumGate.cs" Link="Photos\FamilyAlbumGate.cs" />

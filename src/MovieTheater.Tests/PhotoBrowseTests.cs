@@ -37,6 +37,33 @@ namespace MovieTheater.Tests
 
         private static int[] Ids(JsonElement items) => items.EnumerateArray().Select(i => i.GetProperty("id").GetInt32()).ToArray();
 
+        /// <summary>
+        /// The photo browse honours the caller going away (the R9 closing pass): both paged endpoints
+        /// take the request's own token, so a band fetch the catalog engine aborted stops at the pod
+        /// instead of running to completion. The claim is that the token reaches the QUERY — an endpoint
+        /// that ignored it would return a page here rather than throwing.
+        /// </summary>
+        [Fact]
+        public async Task An_aborted_request_stops_the_browse_and_the_groups()
+        {
+            using var db = fixture.NewDb();
+            Seed(db, "Beach/1.jpg", new DateTime(2011, 7, 4, 10, 0, 0));
+            Seed(db, "Beach/2.jpg", new DateTime(2014, 3, 12, 10, 0, 0));
+
+            // Live token: both answer, so the assertions below are not vacuous.
+            Assert.Equal(2, PhotosControllerHarness.Body(await PhotosControllerHarness.Build(fixture, db).Browse())
+                .GetProperty("items").GetArrayLength());
+            Assert.True(PhotosControllerHarness.Body(await PhotosControllerHarness.Build(fixture, db).BrowseGroups(groupBy: "year"))
+                .GetProperty("groups").GetArrayLength() > 0);
+
+            using var aborted = new System.Threading.CancellationTokenSource();
+            aborted.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(
+                () => PhotosControllerHarness.Build(fixture, db).Browse(ct: aborted.Token));
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(
+                () => PhotosControllerHarness.Build(fixture, db).BrowseGroups(groupBy: "year", ct: aborted.Token));
+        }
+
         [Fact]
         public async Task The_rail_filter_narrows_the_browse_and_the_groups_and_the_facets_count_the_reachable_scope()
         {

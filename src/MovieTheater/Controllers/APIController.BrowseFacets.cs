@@ -28,26 +28,26 @@ namespace MovieTheater.Controllers
         /// tags or certificates to filter on) — the same rule the type browse applies.
         /// </summary>
         [HttpGet("/API/Browse")]
-        public async Task<IActionResult> BrowseAsync([FromQuery] BrowseFilterQuery? fq = null, string? types = null, string? sort = null, int seed = 0, int page = 1, int pageSize = 60)
+        public async Task<IActionResult> BrowseAsync([FromQuery] BrowseFilterQuery? fq = null, string? types = null, string? sort = null, int seed = 0, int page = 1, int pageSize = 60, CancellationToken ct = default)
         {
             var typeScope = ParseTypeScope(types);
             if (!string.IsNullOrWhiteSpace(types) && typeScope.Count == 0) return BadRequest(new { Message = $"Unknown title type '{types}'" });
             var filter = BrowseFilter.From(fq);
-            var (mq, sq) = ApplyTypeScope(typeScope, await GetBaseMovieQuery(), await GetBaseSeriesQuery());
+            var (mq, sq) = ApplyTypeScope(typeScope, await GetBaseMovieQuery(ct), await GetBaseSeriesQuery(ct));
             (mq, sq) = BrowseFilter.Apply(movieDb, mq, sq, filter, GetCurrentUserId());
             var s = NormalizeSort(sort);
             var wantMisc = typeScope.Contains(NormalizedTitleType.Misc) && !filter.HasFacets;
-            if (!wantMisc) return Ok(await PageMergedAsync(mq, sq, page, pageSize, s, seed));
+            if (!wantMisc) return Ok(await PageMergedAsync(mq, sq, page, pageSize, s, seed, ct));
 
             // Misc is a small, in-memory list; a text search still applies to it.
-            var misc = await GetMiscCards();
+            var misc = await GetMiscCards(ct);
             if (filter.Q.Length > 0)
                 misc = misc.Where(c => (c.SimpleTitle ?? "").Contains(filter.Q, StringComparison.OrdinalIgnoreCase) || (c.Title ?? "").Contains(filter.Q, StringComparison.OrdinalIgnoreCase)).ToList();
             var onlyMisc = typeScope.All(t => t == NormalizedTitleType.Misc);
             if (onlyMisc) return Ok(PageCards(SortCards(misc, s, seed), page, pageSize));
             var cards = new List<MovieCardDto>();
-            cards.AddRange(await mq.Select(ToCardDto).ToListAsync());
-            cards.AddRange(await sq.Select(ToSeriesCardDto).ToListAsync());
+            cards.AddRange(await mq.Select(ToCardDto).ToListAsync(ct));
+            cards.AddRange(await sq.Select(ToSeriesCardDto).ToListAsync(ct));
             cards.AddRange(misc);
             return Ok(PageCards(SortCards(cards, s, seed), page, pageSize));
         }
@@ -63,16 +63,16 @@ namespace MovieTheater.Controllers
             var typeScope = ParseTypeScope(types);
             if (!string.IsNullOrWhiteSpace(types) && typeScope.Count == 0) return BadRequest(new { Message = $"Unknown title type '{types}'" });
             var text = (q ?? "").Trim();
-            var age = await GetAgeRestrictionAsync();
+            var age = await GetAgeRestrictionAsync(ct);
             // Not user-keyed: the counts pass a null user id to BrowseFilter.Apply, so nothing personal
             // can reach them and one pass per (age, scope, text) serves everyone — and can be warmed.
             var key = BrowseCacheKeys.Facets(age, typeScope, text);
             var counts = await memoryCache.GetOrCreateAsync(key, async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = text.Length > 0 ? FacetsTtlFiltered : FacetsTtlUnfiltered;
-                var (mq, sq) = ApplyTypeScope(typeScope, await GetBaseMovieQuery(), await GetBaseSeriesQuery());
+                var (mq, sq) = ApplyTypeScope(typeScope, await GetBaseMovieQuery(ct), await GetBaseSeriesQuery(ct));
                 (mq, sq) = BrowseFilter.Apply(movieDb, mq, sq, new BrowseFilter { Q = text }, null);
-                var miscCount = typeScope.Contains(NormalizedTitleType.Misc) ? (await GetMiscCards()).Count : 0;
+                var miscCount = typeScope.Contains(NormalizedTitleType.Misc) ? (await GetMiscCards(ct)).Count : 0;
                 var c = await BrowseFilter.CountAsync(movieDb, mq, sq, miscCount, ct);
                 entry.Size = c.ApproxBytes;
                 return c;
@@ -90,8 +90,8 @@ namespace MovieTheater.Controllers
             var text = (q ?? "").Trim();
             top = Math.Clamp(top, 1, 50);
             if (text.Length < 2) return Ok(new { items = Array.Empty<object>(), total = 0 });
-            var mq = await GetBaseMovieQuery();
-            var sq = await GetBaseSeriesQuery();
+            var mq = await GetBaseMovieQuery(ct);
+            var sq = await GetBaseSeriesQuery(ct);
             var movieIds = mq.Select(m => m.id);
             var seriesIds = sq.Select(s => s.Id);
             var movieHits = await movieDb.MovieCredits.Where(c => c.Person.DisplayName.Contains(text) && movieIds.Contains(c.MovieID))

@@ -147,10 +147,14 @@ section under every backdrop; a source sets `shelvesSkin: "plain"` for bare plan
   its paged long tail on every parent render this way — `FacetRail`'s `NO_OPTIONS`/`NO_VALUES` are
   the fix) and any `useMemo` under it is dead. This is the render-side twin of the "no fresh object
   literal in JSX" rule the pages already follow for style objects.
-- **Abort is not just for bands.** Any fetch a UI can supersede — the rail's typeahead
-  (`FacetOptions` + `FacetSpec.loadOptions(…, signal)`), a scroll-to-load page, a count query —
-  carries an `AbortSignal`. A sequence guard alone drops the ANSWER while the server still runs
-  every superseded query to completion.
+- **Abort is not just for bands — and it has a SERVER half.** Any fetch a UI can supersede — the
+  rail's typeahead (`FacetOptions` + `FacetSpec.loadOptions(…, signal)`), a scroll-to-load page, a
+  count query — carries an `AbortSignal`. A sequence guard alone drops the ANSWER while the server
+  still runs every superseded query to completion. And the abort must REACH the query: every browse
+  endpoint threads `HttpContext.RequestAborted` into its EF calls, and an abandoned request closes as
+  499 through `Web/ClientAbortedFilter` rather than as a logged fault. The out-of-request warmer keeps
+  its own token — nothing a reader does may cancel a warm. See "The instruments" for the per-endpoint
+  table.
 - **Paint tiers are feature-detected, never UA-sniffed.** `index.js` sets `html.eng-gecko` on
   Firefox (software WebRender is a deployment target); `catalog-shelves.css`/`catalog-views.css`
   scope the diet (zero-blur book shadow, no static overlays over the scrolled opening, cheap hover
@@ -683,14 +687,31 @@ completes at 0–2 ms in the same rig; (b) the residual server cost of a deep OF
 > 100 ms at steady wheel speed: **met on Chromium; Firefox is owed** (Playwright wants a
 `firefox-1532` build this box does not have — `npx playwright install firefox`).
 
-**The one open lever, and it is the server's.** `/API/Browse`'s paging (`PageCardsAsync`,
-`PageMergedAsync`, `OrderCardKeys`) takes **no `CancellationToken`**, so a band fetch the engine
-aborts still runs to completion in the pod. The client half of the law is honoured exactly — the
-probes show the aborts happening — but the Long Box's own catalog names `RequestAborted`-aware
-queries as the unclaimed SERVER-side lever, and this is the same gap. It shows as the Wall's
-desktop landing: 41 swept-past queries the pod is still executing when the landing band's query
-arrives. Fixing it is an API change that cannot be verified before it is deployed, so it is
-recorded here rather than guessed at.
+**The server lever is CLAIMED (R9 closing pass).** It used to read: `/API/Browse`'s paging takes no
+`CancellationToken`, so a band fetch the engine aborts still runs to completion in the pod — visible
+as the Wall's desktop landing, 41 swept-past queries the pod was still executing when the landing
+band's query arrived. The request's own `HttpContext.RequestAborted` now rides every browse read:
+
+| Endpoint | Before | Now |
+|---|---|---|
+| `/API/Browse`, `/API/BrowseTitle\|Letter\|Genre\|Franchise\|Person`, `/API/GetMoviesByType`, `/API/GetMoviesByIds`, `/API/GetMoviesByRating`, `/API/GetRandomMovies`, `/API/GetMiscByIds`, `/API/BrowseLetters`, `/API/BrowseFacets`, `/API/BrowsePeople` | no token | `ct` through `PageCardsAsync` / `PageMergedAsync` / `GetMiscCards` / `GetBaseMovieQuery` / `GetBaseSeriesQuery` / `GetAgeRestrictionAsync` to every `ToListAsync` / `CountAsync` |
+| `/API/BrowseGroups`, `/API/BrowseGroupLetters` | token reached `BuildIndexAsync` + the hydrate only | also `ResolveGroupScopeAsync` (base queries, misc cards, age) |
+| `/API/Arcade/Games`, `/GameGroups`, `/GameGroupLetters` | no token | `ct` through `BuildGameCardsAsync` + `CachedGameGroupIndexAsync` to the card aggregates, the tag tuples, the version rows, the cheat counts and the saved profiles |
+| `/API/Photos/Browse`, `/BrowseGroups` | no token | `ct` through `TimelineQueryAsync` + `BadgesAsync` to every head and band query |
+
+Two rules came with it. **`CatalogWarmupService` keeps its OWN token** — it is not a request, nothing
+can abort it, and a warm cancelled by a reader walking away would be the opposite of the point. And
+**an honoured token means the action THROWS**, so the trade would have been a wasted query for a
+logged fault: `Web/ClientAbortedFilter` (a global MVC exception filter, registered in `Startup`)
+closes the request as **499** — nginx's "client closed request" — when the exception is a
+cancellation AND this request's own `RequestAborted` is what signalled it. Chosen over letting it
+escape (the log stays clean) and over a 200 empty envelope (an empty page is a lie about the
+catalog; nothing reads either, the socket is gone). A cancellation from any OTHER token — a
+server-side timeout, a bug — still propagates as the failure it is.
+`BrowseCancellationTests` pins both halves: a pre-cancelled token issues **zero** DB commands
+(counted at a `DbCommandInterceptor`, because "it threw" would also be true of a query that ran and
+then noticed), and the filter's truth table. `PhotoBrowseTests` pins the photo pair through the real
+controller.
 
 ## Verification
 
