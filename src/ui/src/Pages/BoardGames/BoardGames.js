@@ -12,7 +12,7 @@ import useSectionRail from "../../catalog/rail/useSectionRail";
 import sectionRailSurfaces from "../../catalog/rail/sectionRailSurfaces";
 import useRailSheet from "../../catalog/rail/useRailSheet";
 import { createBoardgamesSource } from "../../catalog/sources/boardgamesSource";
-import { DRILL_NEXT_GROUP, LINK_FACETS, legacyToBoardgamesSearch, sortBoardgames } from "./boardgamesFacetSpec";
+import { DRILL_NEXT_GROUP, LINK_FACETS, RANGE_GROUP_KEYS, legacyToBoardgamesSearch, rangeForGroup, sortBoardgames } from "./boardgamesFacetSpec";
 import useBoardgamesBrowse, { BOARDGAMES_ENTITY_PARAMS, useBoardgamesResults } from "./useBoardgamesBrowse";
 import { normalizeGame } from "./useBoardgamesCatalog";
 
@@ -86,16 +86,23 @@ function BoardGames({ userData }) {
     history.replace({ pathname: "/boardgames", search: search ? `?${search}` : "" });
   }, [history]);
 
-  // A group header in the package views scopes in place (adds its facet or decade) and drills to
-  // the next axis — one push. Player buckets are ranges of counts, not one count: they only regroup.
+  // A group header in the package views scopes in place (adds its facet, decade or range) and drills
+  // to the next axis — one push. Since R9 S8 a Players shelf is ONE exact count (the axis is
+  // range-aware), so it drills into the Players facet like any other; the three ladder axes drill
+  // into their own two-thumb range (`a=`/`t=`/`w=`). Rating tier and Base-or-expansion have no facet
+  // to become, so their headers only regroup — a header that cannot scope does not pretend to.
   const handleOpenGroup = useCallback((group, groupBy) => {
-    if (LINK_FACET_KEYS.has(groupBy)) {
+    const next = { group: DRILL_NEXT_GROUP[groupBy] ?? null };
+    if (LINK_FACET_KEYS.has(groupBy) || groupBy === "players") {
       facetActions.apply((d) => {
         if (!hasFacetValue(d.include[groupBy], group.key)) d.include[groupBy] = [...(d.include[groupBy] ?? []), group.key];
-      }, { group: DRILL_NEXT_GROUP[groupBy] ?? null });
+      }, next);
     } else if (groupBy === "decade") {
       const d = Number(group.key);
-      if (Number.isFinite(d)) facetActions.apply((s) => { s.yearMin = d; s.yearMax = d + 9; }, { group: DRILL_NEXT_GROUP.decade });
+      if (Number.isFinite(d)) facetActions.apply((s) => { s.yearMin = d; s.yearMax = d + 9; }, next);
+    } else if (RANGE_GROUP_KEYS.has(groupBy)) {
+      const span = rangeForGroup(groupBy, group.key);
+      if (span) facetActions.apply((s) => { s.ranges = { ...s.ranges, [groupBy]: span }; }, next);
     }
   }, [facetActions]);
 

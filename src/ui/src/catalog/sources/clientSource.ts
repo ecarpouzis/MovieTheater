@@ -19,8 +19,18 @@ export interface GroupKey {
 export interface ClientGrouper extends GroupSpec {
   /** Every group an item belongs to (an album has one artist; a boardgame several publishers). Nothing = the item is left out of this grouping. */
   keysOf(item: CardItem): GroupKey[] | GroupKey | null | undefined;
-  /** Head order: by label (default), by key descending (decades, newest first), or by size. */
-  order?: "label" | "keyDesc" | "count";
+  /**
+   * Head order: by label (default), by key ascending (a numeric ladder — player counts, play-time
+   * stops, an age ladder), by key descending (decades and rating tiers, best/newest first), or by size.
+   */
+  order?: "label" | "keyAsc" | "keyDesc" | "count";
+  /**
+   * False for an axis whose heads are NOT in label order — a numeric ladder (players, weight, a
+   * rating tier) or a fixed order. The grouped letter rail is then absent rather than pointing at
+   * letters that are not in that order; the strip falls back to page numbers, exactly as it does for
+   * the server sources' wide axes. Default true.
+   */
+  alpha?: boolean;
   /** Per-group detail for the Newspaper (synopsis / byline / kicker / tags), computed once from the group's cards. */
   detail?(key: GroupKey, items: CardItem[]): CardGroup["detail"];
 }
@@ -116,7 +126,8 @@ export function createClientSource(o: ClientSourceOptions): CatalogSource {
       if (grouper?.detail) g.detail = grouper.detail({ key: g.key, label: g.label }, g.items);
     }
     const order = grouper?.order ?? "label";
-    if (order === "keyDesc") heads.sort((a, b) => collator.compare(b.key, a.key));
+    if (order === "keyAsc") heads.sort((a, b) => collator.compare(a.key, b.key));
+    else if (order === "keyDesc") heads.sort((a, b) => collator.compare(b.key, a.key));
     else if (order === "count") heads.sort((a, b) => b.totalItems - a.totalItems || collator.compare(a.label, b.label));
     // Bracketed pseudo-names ("(Unknown)", "[touch]") sort AFTER the real ones, not before them.
     else heads.sort((a, b) => bracketed(a.label) - bracketed(b.label) || collator.compare(a.label, b.label));
@@ -184,7 +195,10 @@ export function createClientSource(o: ClientSourceOptions): CatalogSource {
       return bucketsFor(sorted(spec.value), keyOf) as LetterBucket[];
     },
     groupLetters: groupable
-      ? async (groupBy, sort) => (bucketsFor(grouped(groupBy, sort).heads, (g: CardGroup) => g.label) as LetterBucket[]).map((b) => ({ letter: b.letter, firstIndex: b.offset }))
+      ? async (groupBy, sort) => {
+          if (groupers.find((g) => g.value === groupBy)?.alpha === false) return [];
+          return (bucketsFor(grouped(groupBy, sort).heads, (g: CardGroup) => g.label) as LetterBucket[]).map((b) => ({ letter: b.letter, firstIndex: b.offset }));
+        }
       : undefined,
     renderCard: o.renderCard,
     gridClass: o.gridClass,

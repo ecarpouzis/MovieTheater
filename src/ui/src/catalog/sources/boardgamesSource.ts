@@ -5,6 +5,7 @@
  * directory. Publisher / family / designer / category / mechanic come from `/API/Boardgames/Facets`
  * (parsed server-side out of `LinksJson`); decade and player count come from the rows themselves.
  */
+import { AGE_STOPS, PLAYERS_CAP, TIME_STOPS, ageOf, formatMinutes, playerCounts, timeSpan, weightOf } from "../../Pages/BoardGames/boardgamesFacetSpec";
 import type { CardGroup, CardItem, CatalogSource, ListColumn } from "../types";
 import { cardKey } from "../types";
 import { createClientSource, type ClientGrouper, type ClientSort, type GroupKey } from "./clientSource";
@@ -116,15 +117,85 @@ export const BOARDGAME_LIST_COLUMNS: ListColumn[] = [
   { key: "weight", label: "Weight", width: "64px", mono: true, align: "right", value: (i) => (rawOf(i).averageWeight != null ? Number(rawOf(i).averageWeight).toFixed(2) : null) },
 ];
 
-/** Max-players buckets; the labels sort themselves. */
-export function playersBucket(g: BoardgameRow): GroupKey | null {
-  const max = g.maxPlayers ?? g.minPlayers ?? null;
-  if (max == null) return null;
-  if (max <= 1) return { key: "1", label: "1 player" };
-  if (max === 2) return { key: "2", label: "2 players" };
-  if (max <= 4) return { key: "3", label: "3–4 players" };
-  if (max <= 6) return { key: "5", label: "5–6 players" };
-  return { key: "7", label: "7+ players" };
+/**
+ * Player-count shelves, RANGE-AWARE (R9 S8 — the audit's one FIX here). The old axis bucketed a game
+ * by its MAXIMUM alone, so a 2–4 player game landed in "3–4 players" and was missing from the shelf
+ * of someone looking for a two-player evening. A game now appears on EVERY count it plays at, its
+ * expansions extending it — the exact rule `playerCounts` in `boardgamesFacetSpec.ts` already applied
+ * to the rail's Players facet, so a shelf and its facet finally describe the same set. 8 means 8+.
+ */
+export function playersBuckets(g: BoardgameRow, expansions: readonly BoardgameRow[] = []): GroupKey[] {
+  return playerCounts(g, expansions).map((n) => ({ key: String(n), label: n >= PLAYERS_CAP ? `Plays ${PLAYERS_CAP}+` : `Plays ${n}` }));
+}
+
+/** The typical length of a play: the midpoint of the sane [shortest, longest] span BGG gives. */
+export function typicalMinutes(g: BoardgameRow): number | null {
+  const span = timeSpan(g);
+  return span ? Math.round((span[0] + span[1]) / 2) : null;
+}
+
+/**
+ * Play-time shelves over the rail's own `TIME_STOPS` — a game files under the interval its typical
+ * length falls in, so the shelves read as a ladder ("Under 15m", "15m–20m", … "4h+") and the axis
+ * uses the same scale as the Play time range facet.
+ */
+export function timeBucket(g: BoardgameRow): GroupKey | null {
+  const t = typicalMinutes(g);
+  if (t == null) return null;
+  if (t < TIME_STOPS[0]) return { key: "0", label: `Under ${formatMinutes(TIME_STOPS[0])}` };
+  for (let i = TIME_STOPS.length - 1; i >= 0; i -= 1) {
+    if (t < TIME_STOPS[i]) continue;
+    const hi = TIME_STOPS[i + 1];
+    return { key: String(TIME_STOPS[i]), label: hi == null ? `${formatMinutes(TIME_STOPS[i])}+` : `${formatMinutes(TIME_STOPS[i])}–${formatMinutes(hi)}` };
+  }
+  return null;
+}
+
+/** Minimum-age shelves on the rail's `AGE_STOPS` ladder: the highest stop the game's `MinAge` clears. */
+export function ageBucket(g: BoardgameRow): GroupKey | null {
+  const age = ageOf(g);
+  if (age == null) return null;
+  for (let i = AGE_STOPS.length - 1; i >= 0; i -= 1) if (age >= AGE_STOPS[i]) return { key: String(AGE_STOPS[i]), label: `${AGE_STOPS[i]}+` };
+  return { key: String(AGE_STOPS[0]), label: `${AGE_STOPS[0]}+` };
+}
+
+/** Complexity shelves in 0.5 steps of BGG's `AverageWeight` (1–5); the top step is 4.5–5.0. */
+export function weightBucket(g: BoardgameRow): GroupKey | null {
+  const w = weightOf(g);
+  if (w == null) return null;
+  const lo = Math.min(Math.max(Math.floor(w * 2) / 2, 1), 4.5);
+  return { key: lo.toFixed(1), label: `${lo.toFixed(1)}–${(lo + 0.5).toFixed(1)}` };
+}
+
+/**
+ * BGG rating tiers. BGG's average is 0–10 and the interesting range is 5.5–8.5, so the tiers are
+ * half a point wide from 6.0 up and one floor below: 8.0+ · 7.5–8.0 · 7.0–7.5 · 6.5–7.0 · 6.0–6.5 ·
+ * Under 6.0. An unrated game (no `averageRating`) has no tier.
+ */
+export const RATING_TIERS: readonly number[] = [8, 7.5, 7, 6.5, 6];
+
+export function ratingTier(g: BoardgameRow): GroupKey | null {
+  const r = g.averageRating == null ? null : Number(g.averageRating);
+  if (r == null || !Number.isFinite(r) || r <= 0) return null;
+  for (let i = 0; i < RATING_TIERS.length; i += 1) {
+    if (r < RATING_TIERS[i]) continue;
+    const hi = RATING_TIERS[i - 1];
+    return { key: RATING_TIERS[i].toFixed(1), label: hi == null ? `${RATING_TIERS[i].toFixed(1)}+` : `${RATING_TIERS[i].toFixed(1)}–${hi.toFixed(1)}` };
+  }
+  return { key: "0.0", label: `Under ${RATING_TIERS[RATING_TIERS.length - 1].toFixed(1)}` };
+}
+
+/**
+ * What KIND of row this is. `ThingType` names the BGG thing; `baseGameId` is the site's own
+ * grouping, and 24 standalone rows are deliberately parked under a base game — those are neither a
+ * plain base game nor an expansion, so they get their own shelf rather than being miscounted.
+ */
+export function kindBucket(g: BoardgameRow): GroupKey | null {
+  const t = (g.thingType ?? "").toLowerCase();
+  if (t === "boardgameexpansion") return { key: "expansion", label: "Expansions" };
+  if (t === "boardgameaccessory") return { key: "accessory", label: "Accessories" };
+  if (g.baseGameId != null) return { key: "grouped", label: "Grouped under a base game" };
+  return { key: "base", label: "Base games" };
 }
 
 /** BGG descriptions arrive as HTML; the Newspaper wants a paragraph of prose. */
@@ -154,17 +225,30 @@ function facetGrouper(value: string, label: string, pick: (f: BoardgameFacets) =
   };
 }
 
-export function boardgameGroupers(facetsById: Map<number, BoardgameFacets>): ClientGrouper[] {
+/**
+ * The Boardgames axis set (R9 S8). The BGG link facets come off `/API/Boardgames/Facets`; everything
+ * else is computed from the row itself on the ladders the rail already uses, so a shelf and its
+ * facet always describe the same set. The numeric ladders (`players`, `time`, `age`, `weight`,
+ * `rating`) declare `alpha: false` — their heads are in numeric order, so there is no letter rail.
+ */
+export function boardgameGroupers(facetsById: Map<number, BoardgameFacets>, expansionMap: Record<number, BoardgameRow[]> = {}): ClientGrouper[] {
   return [
     facetGrouper("publisher", "Publisher", (f) => f.publishers, facetsById),
     facetGrouper("family", "Family", (f) => f.families, facetsById),
-    { value: "decade", label: "Decade", order: "keyDesc", keysOf: (i) => (i.year ? { key: String(Math.floor(i.year / 10) * 10), label: `${Math.floor(i.year / 10) * 10}s` } : null), detail: groupDetail("Decade") },
-    { value: "players", label: "Players", keysOf: (i) => playersBucket(rawOf(i)), detail: groupDetail("Players") },
+    { value: "decade", label: "Decade", order: "keyDesc", alpha: false, keysOf: (i) => (i.year ? { key: String(Math.floor(i.year / 10) * 10), label: `${Math.floor(i.year / 10) * 10}s` } : null), detail: groupDetail("Decade") },
+    { value: "players", label: "Players", order: "keyAsc", alpha: false, keysOf: (i) => playersBuckets(rawOf(i), expansionMap[i.id] ?? NO_EXPANSIONS), detail: groupDetail("Players") },
+    { value: "time", label: "Play time", order: "keyAsc", alpha: false, keysOf: (i) => timeBucket(rawOf(i)), detail: groupDetail("Play time") },
+    { value: "age", label: "Min age", order: "keyAsc", alpha: false, keysOf: (i) => ageBucket(rawOf(i)), detail: groupDetail("Min age") },
+    { value: "weight", label: "Weight", order: "keyAsc", alpha: false, keysOf: (i) => weightBucket(rawOf(i)), detail: groupDetail("Weight") },
+    { value: "rating", label: "Rating tier", order: "keyDesc", alpha: false, keysOf: (i) => ratingTier(rawOf(i)), detail: groupDetail("Rating tier") },
+    { value: "kind", label: "Base or expansion", keysOf: (i) => kindBucket(rawOf(i)), detail: groupDetail("Base or expansion") },
     facetGrouper("designer", "Designer", (f) => f.designers, facetsById),
     facetGrouper("category", "Category", (f) => f.categories, facetsById),
     facetGrouper("mechanic", "Mechanic", (f) => f.mechanics, facetsById),
   ];
 }
+
+const NO_EXPANSIONS: BoardgameRow[] = [];
 
 export function facetsMap(items: BoardgameFacets[] | null | undefined): Map<number, BoardgameFacets> {
   const m = new Map<number, BoardgameFacets>();
@@ -196,7 +280,7 @@ export function createBoardgamesSource(o: BoardgamesSourceOptions): CatalogSourc
     groupNoun: "groups",
     itemsLabels: { items: "Games", groups: "One per group" },
     items,
-    groups: boardgameGroupers(o.facetsById),
+    groups: boardgameGroupers(o.facetsById, o.expansionMap),
     sorts: BOARDGAME_SORTS,
     currentSort: o.currentSort && BOARDGAME_SORTS.some((s) => s.value === o.currentSort) ? o.currentSort : "name",
     defaultGroup: "publisher",

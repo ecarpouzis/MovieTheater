@@ -200,4 +200,29 @@ export const DRILL_NEXT_GROUP: Record<string, string> = {
   category: "mechanic",
   mechanic: "category",
   decade: "category",
+  players: "category",
+  time: "category",
+  age: "category",
+  weight: "category",
 };
+
+/** The three group axes that are the two-thumb RANGES of the rail (`a=`/`t=`/`w=`), not facet values. */
+export const RANGE_GROUP_KEYS = new Set(BOARDGAME_RANGES.map((r) => r.key));
+
+/**
+ * The [min, max] a ladder shelf stands for, so its header can become the rail's own range: an age
+ * shelf is open at the top (`10+` = 10 and up), a play-time or weight shelf is the interval between
+ * its stop and the next one. `time`'s "0" key is everything below the first stop.
+ */
+export function rangeForGroup(groupBy: string, key: string): { min: number | null; max: number | null } | null {
+  const n = Number(key);
+  if (!Number.isFinite(n)) return null;
+  if (groupBy === "age") return { min: n, max: null };
+  if (groupBy === "time") {
+    if (n <= 0) return { min: null, max: TIME_STOPS[0] };
+    const next = TIME_STOPS[TIME_STOPS.indexOf(n) + 1];
+    return { min: n, max: next ?? null };
+  }
+  if (groupBy === "weight") return { min: n, max: Math.min(n + 0.5, WEIGHT_STOPS[WEIGHT_STOPS.length - 1]) };
+  return null;
+}
