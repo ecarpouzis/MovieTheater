@@ -11,6 +11,7 @@ import BoardGameNavContent from "./BoardGameNavContent";
 import ArcadeNavContent from "./ArcadeNavContent";
 import MusicNavContent from "./MusicNavContent";
 import PhotosNavContent from "./PhotosNavContent";
+import TvNavContent from "./TvNavContent";
 // Settings/admin modals only open on demand (and admin only for privileged users), so keep them out
 // of the entry bundle and load their chunks when first rendered.
 const UserSettingsModal = lazy(() => import("./UserSettingsModal"));
@@ -49,6 +50,8 @@ const photosWordmark = (
 // Login + SearchTools pair, the one rail that also owns the playlists modal. Adding a section =
 // adding a row here plus its tokens in theme.css.
 const SECTIONS = [
+  // TV (R9 S1c): its own section — the channels pages used to fall through to the movies rail.
+  { key: "tv", prefix: "/channels", icon: tvIcon, title: "TV", themeClass: " navbar-tv-theme", Content: TvNavContent },
   { key: "arcade", prefix: "/arcade", icon: null, title: "Arcade", themeClass: " navbar-arcade-theme", siderWidth: 248, Content: ArcadeNavContent },
   { key: "boardgames", prefix: "/boardgames", icon: boardGamesIcon, title: "Board Games", themeClass: " navbar-boardgames-theme", Content: BoardGameNavContent },
   { key: "music", prefix: "/music", icon: musicIcon, title: "Music", themeClass: " navbar-music-theme", Content: MusicNavContent },
@@ -409,6 +412,7 @@ function NavBar({
       setSettingsModalOpen={setSettingsModalOpen}
       setAdminModalOpen={setAdminModalOpen}
       search={search}
+      onOpenPlaylists={() => setPlaylistsModalOpen(true)}
     />
   ) : (
     <>
@@ -469,7 +473,7 @@ function NavBar({
             setUserData={setUserData}
           />
           <AdminModal open={adminModalOpen} onClose={() => setAdminModalOpen(false)} />
-          {isMovies && (
+          {(isMovies || section.key === "tv") && (
             <MyPlaylistsModal open={playlistsModalOpen} onClose={() => setPlaylistsModalOpen(false)} userData={userData} />
           )}
         </Suspense>
@@ -506,7 +510,7 @@ function NavBar({
           setUserData={setUserData}
         />
         <AdminModal open={adminModalOpen} onClose={() => setAdminModalOpen(false)} />
-        {isMovies && (
+        {(isMovies || section.key === "tv") && (
           <MyPlaylistsModal open={playlistsModalOpen} onClose={() => setPlaylistsModalOpen(false)} userData={userData} />
         )}
       </Suspense>

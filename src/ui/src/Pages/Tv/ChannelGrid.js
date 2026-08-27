@@ -8,7 +8,7 @@ import { nowPlaying } from "./channelNow";
 const MS_PER_MIN = 60_000;
 
 // "9:30" in the viewer's local time.
-function clockLabel(ms) {
+export function clockLabel(ms) {
   return new Date(ms).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
@@ -22,7 +22,12 @@ function clockLabel(ms) {
  * the endpoint is a bounded read, rows use CSS `content-visibility` so off-screen rows skip layout,
  * and the "now" line advances from a local clock tick rather than re-fetching.
  */
-function ChannelGrid({ open, channels, currentChannelId, onPick, onClose }) {
+/**
+ * `onPickProgram(channel, program, rowItems)` — when given, a program cell SELECTS the show (the
+ * guide page opens its detail panel) instead of tuning the channel; the channel button still
+ * tunes. `selectedKey` (`${channelId}:${startUtc}`) marks the selected cell.
+ */
+function ChannelGrid({ open, channels, currentChannelId, onPick, onClose, onPickProgram, selectedKey }) {
   const [lineup, setLineup] = useState(null); // { serverNowUtc, hours, byId } or null while loading
   const [nowMs, setNowMs] = useState(() => Date.now());
   const scrollRef = useRef(null);
@@ -279,7 +284,8 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose }) {
                         key={i}
                         className={`epg-prog${live ? " epg-prog--live" : ""}${endMs <= nowMs ? " epg-prog--past" : ""}`}
                         style={{ left: `${left}%`, width: `${width}%` }}
-                        onClick={() => onPick(ch)}
+                        aria-pressed={selectedKey != null && selectedKey === `${ch.id}:${prog.startUtc}` ? true : undefined}
+                        onClick={() => (onPickProgram ? onPickProgram(ch, prog, row.items) : onPick(ch))}
                         title={`${prog.title} · ${clockLabel(startMs)}–${clockLabel(endMs)}`}
                       >
                         {live && <span className="epg-prog-elapsed" style={{ width: `${elapsedPct}%` }} aria-hidden="true" />}

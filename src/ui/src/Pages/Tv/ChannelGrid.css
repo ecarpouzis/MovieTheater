@@ -21,11 +21,69 @@
   --epg-rowh: 96px;
 }
 
-/* /channels page: render the guide full-screen (the .epg overlay fills this fixed wrapper). */
+/* /channels page (R9 S1c): the guide is a PAGE under the SectionBar, not a fixed overlay — a column
+   that fills the content area: the detail panel (when a show is selected) above, the guide filling
+   the rest. --content-top-inset is the bar (desktop) / top bar + strip (phones). */
 .channel-guide-page {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: calc(100dvh - var(--content-top-inset, 0px));
+  min-height: 420px;
+}
+.channel-guide-page .epg {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* ── The detail panel (GuideDetail): poster · title · slot · plot · actions · up next ─────────────
+   Themed like content (it is content), on the section's tokens; the guide beneath keeps its cable-box
+   ground. */
+.guide-detail {
+  position: relative;
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr) auto;
+  gap: 18px;
+  padding: 14px 18px;
+  background: var(--card-surface);
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--card-border);
+}
+.guide-detail__poster { width: 112px; }
+.guide-detail__img { display: block; width: 112px; height: 168px; object-fit: cover; border-radius: 6px; background: #1a2230; }
+.guide-detail__img--empty { background: linear-gradient(135deg, #2b3a4a, #1a2530); }
+.guide-detail__body { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.guide-detail__eyebrow { margin: 0; font-family: var(--font-mono, ui-monospace, monospace); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-secondary); }
+.guide-detail__title { margin: 0; font-family: var(--font-display); font-size: 22px; font-weight: 700; line-height: 1.15; letter-spacing: -0.01em; }
+.guide-detail__plot { margin: 2px 0 0; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); max-width: 70ch; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.guide-detail__actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.guide-detail__btn {
+  appearance: none; cursor: pointer; font: inherit; font-size: 12.5px; font-weight: 600;
+  height: 32px; padding: 0 12px; border-radius: 7px; border: 1px solid var(--card-border);
+  background: transparent; color: var(--text-primary);
+}
+.guide-detail__btn:hover { border-color: var(--accent); color: var(--accent); }
+.guide-detail__btn--primary, .guide-detail__btn--primary:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+.guide-detail__btn.is-on { border-color: var(--accent); color: var(--accent); }
+.guide-detail__next { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
+.guide-detail__next-list { list-style: none; margin: 0; padding: 0; display: flex; gap: 8px; }
+.guide-detail__next-item { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.guide-detail__next-img { display: block; width: 44px; height: 66px; object-fit: cover; border-radius: 4px; background: #1a2230; }
+.guide-detail__next-time { font-family: var(--font-mono, ui-monospace, monospace); font-size: 10px; color: var(--text-secondary); }
+.guide-detail__close {
+  position: absolute; top: 8px; right: 8px; width: 30px; height: 30px; border: 0; border-radius: 7px;
+  background: transparent; color: var(--text-secondary); font-size: 18px; cursor: pointer;
+}
+.guide-detail__close:hover { background: var(--chip-neutral-bg); color: var(--text-primary); }
+/* The selected cell is outlined in the guide. */
+.epg-prog[aria-pressed="true"] { box-shadow: inset 0 0 0 2px #40a9ff; }
+@media (max-width: 768px) {
+  .guide-detail { grid-template-columns: 76px minmax(0, 1fr); gap: 12px; padding: 12px 12px 12px; }
+  .guide-detail__img { width: 76px; height: 114px; }
+  .guide-detail__next { display: none; }
+  .guide-detail__title { font-size: 18px; }
 }
 
 /* Category band between channel groups (Channels 2.0). Sticky-left so the label stays visible while

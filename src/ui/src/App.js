@@ -159,7 +159,7 @@ function App() {
               <WatchPartyPage userData={userData} />
             </Route>
             <Route path="/channels" exact>
-              <ChannelGuidePage />
+              <ChannelGuidePage userData={userData} setUserData={setUserData} />
             </Route>
             <Route path="/arcade" exact>
               <ArcadePage userData={userData} />
