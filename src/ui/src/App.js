@@ -52,6 +52,7 @@ const BoardgamesExplorePage = lazy(() => import("./Pages/BoardGames/BoardgamesEx
 const TvAdminPage = lazy(() => import("./Pages/Tv/TvAdminPage"));
 const ArcadeAdminPage = lazy(() => import("./Pages/Arcade/ArcadeAdminPage"));
 const MusicAdminPage = lazy(() => import("./Pages/Music/MusicAdminPage"));
+const MusicRatePage = lazy(() => import("./Pages/Music/MusicRatePage"));
 const BoardgamesAdminPage = lazy(() => import("./Pages/BoardGames/BoardgamesAdminPage"));
 
 // readStored, not a bare getItem: these run at MODULE SCOPE, where a storage throw (Safari
@@ -181,6 +182,12 @@ function App() {
                 unboundedly and pushed the library down the page. */}
             <Route path="/music/playlists" exact>
               <MusicPlaylistsPage userData={userData} />
+            </Route>
+            {/* R9 S10 — the MEMBER surface for scoring records, where the movies have /rate. Not an
+                admin tab: /music/admin is a report because every music job is a CLI, and a rating is
+                somebody's opinion with no operator-shaped job hiding in it. */}
+            <Route path="/music/rate" exact>
+              <MusicRatePage userData={userData} />
             </Route>
             {/* Visit-a-URL-on-the-phone diagnostics, not a listening surface: it renders nothing but
                 an "on" button unless ?diag=1 has been used (the musicDiag convention). */}

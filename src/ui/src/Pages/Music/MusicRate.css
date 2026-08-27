@@ -1,0 +1,146 @@
+/* `/music/rate` — the member surface for scoring records (R9 S10). A list, not a grid: the row is
+   a name and a slider, and the art is a thumbnail that says "yes, that record" rather than a cover
+   to browse by. */
+
+.music-rate {
+  max-width: 940px;
+  margin: 0 auto;
+  padding: 16px 16px 48px;
+}
+
+.music-rate--loading {
+  display: flex;
+  justify-content: center;
+  padding: 64px 0;
+}
+
+.music-rate-head-line {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.music-rate-title {
+  font-family: var(--vp-display, inherit);
+  font-size: var(--text-display-md);
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.music-rate-count {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.music-rate-blurb {
+  margin: 6px 0 12px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  max-width: 60ch;
+}
+
+.music-rate-controls {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.music-rate-search { max-width: 320px; }
+
+.music-rate-empty {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.music-rate-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.music-rate-row {
+  display: grid;
+  /* art · names · slider · score · clear. The slider takes what the names do not. */
+  grid-template-columns: 44px minmax(0, 1fr) minmax(120px, 240px) 3em auto;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--border-subtle, rgba(127, 127, 127, 0.18));
+}
+
+.music-rate-row--rated { background: var(--chip-neutral-bg, rgba(127, 127, 127, 0.07)); }
+
+.music-rate-art {
+  width: 44px;
+  height: 44px;
+  border-radius: 4px;
+  overflow: hidden;
+  display: block;
+}
+.music-rate-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.music-rate-names {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.music-rate-album {
+  font-size: 13.5px;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.music-rate-artist {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.music-rate-slider { margin: 0; }
+
+.music-rate-score {
+  text-align: right;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.music-rate-clear {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 4px;
+}
+.music-rate-clear:hover:not(:disabled) { color: #ff6b6b; }
+.music-rate-clear:disabled { opacity: 0.3; cursor: default; }
+
+.music-rate-more {
+  display: flex;
+  justify-content: center;
+  padding-top: 16px;
+}
+
+/* Phones: the slider gets its own line under the name rather than fighting it for width. */
+@media (max-width: 640px) {
+  .music-rate-row {
+    grid-template-columns: 40px minmax(0, 1fr) 3em auto;
+    row-gap: 6px;
+  }
+  .music-rate-slider {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}

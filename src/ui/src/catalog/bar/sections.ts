@@ -77,6 +77,8 @@ export const SECTIONS: SectionDef[] = [
       { key: "browse", label: "Browse", path: "/music", exact: true },
       { key: "playlists", label: "Playlists", path: "/music/playlists" },
       { key: "now", label: "Now playing", path: "/music/now-playing" },
+      // R9 S10 — the member Rate surface, where the movies have /rate.
+      { key: "rate", label: "Rate", path: "/music/rate" },
       { key: "admin", label: "Admin", path: "/music/admin", admin: true, when: admin },
     ],
   },
