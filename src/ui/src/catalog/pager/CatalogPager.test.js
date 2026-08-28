@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { cleanup, render } from "@testing-library/react";
+import { cleanup, fireEvent, render } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import CatalogPager, { activeLetter, bucketsFor, letterStrip, pageOf, pageStrip } from "./CatalogPager";
 
@@ -213,5 +213,110 @@ describe("a page button is a letter button", () => {
     // …and no mode-scoped layout RULE survives (the words still appear, in the comments that record
     // why the modifier went away — so this must match a rule, not a mention).
     expect(css).not.toMatch(/\.catalog-pager--letters[^{\n]*\{/);
+  });
+});
+
+// ── Travelling a run that is rendered in full (2026-08-28) ──────────────────────────────────────
+// Eric: "There doesn't appear to be a way to scroll the number paging buttons on a desktop. There
+// also needs to be a way to fast-scroll to the end of the line, since there's potentially thousands
+// of pages." Rendering every page (above) is what gives the strip somewhere to go; these are the two
+// ways to actually go there with a mouse — the wheel, and the sticky end caps.
+describe("moving along the strip", () => {
+  const elProto = Object.getPrototypeOf(document.createElement("nav"));
+  const saved = [];
+
+  /** happy-dom lays nothing out, so overflow has to be asserted rather than measured. */
+  function stubWidths(scrollWidth, clientWidth) {
+    for (const [prop, value] of [["scrollWidth", scrollWidth], ["clientWidth", clientWidth]]) {
+      saved.push([prop, Object.getOwnPropertyDescriptor(elProto, prop)]);
+      Object.defineProperty(elProto, prop, { configurable: true, get: () => value });
+    }
+  }
+
+  afterEach(() => {
+    while (saved.length) {
+      const [prop, desc] = saved.pop();
+      if (desc) Object.defineProperty(elProto, prop, desc);
+      else delete elProto[prop];
+    }
+    cleanup();
+  });
+
+  const pager = (props = {}) => render(
+    <CatalogPager mode="pages" letters={null} total={60000} pageSize={60} currentIndex={0}
+      onJump={() => {}} {...props} />
+  );
+  const caps = (c) => [...c.querySelectorAll(".catalog-pager__end")];
+
+  it("keeps the end caps out of the row while the whole run fits it", () => {
+    stubWidths(400, 400);
+    const { container } = pager({ total: 120 });          // two pages: nothing to travel
+    expect(caps(container)).toHaveLength(2);
+    expect(caps(container).every((b) => b.hidden)).toBe(true);
+  });
+
+  it("seeks the LAST page — a thousand-page run's far end is one click away", () => {
+    stubWidths(20000, 600);
+    const jumps = [];
+    const { container } = pager({ onJump: (o) => jumps.push(o) });
+    const [start, end] = caps(container);
+    expect(start.hidden).toBe(false);
+    expect(end.title).toBe("Last page (1000)");           // 60,000 titles / 60 = 1,000 pages
+    fireEvent.click(end);
+    expect(jumps).toEqual([999 * 60]);
+    fireEvent.click(start);
+    expect(jumps).toEqual([999 * 60, 0]);
+  });
+
+  it("aims the caps at the first and last letters the catalog actually HAS", () => {
+    stubWidths(2000, 300);
+    const jumps = [];
+    // A #-less, Z-less catalog: the caps must land on B and on Y, not on the empty ends of the run.
+    const { container } = pager({
+      mode: "letters",
+      letters: [{ letter: "B", count: 5, offset: 0 }, { letter: "Y", count: 5, offset: 5 }],
+      total: 10,
+      onJump: (o) => jumps.push(o),
+    });
+    const [start, end] = caps(container);
+    expect(start.title).toBe("First letter (B)");
+    expect(end.title).toBe("Last letter (Y)");
+    fireEvent.click(end);
+    expect(jumps).toEqual([5]);
+    // …and a cap is a letter tap, so the readout follows it (the pin) rather than the scroll-spy.
+    expect(container.querySelector(".catalog-pager__btn--active").textContent).toBe("Y");
+  });
+
+  it("does not count the caps as part of the run", () => {
+    stubWidths(20000, 600);
+    const { container } = pager({ total: 600 });
+    expect(container.querySelectorAll(".catalog-pager__btn")).toHaveLength(10);
+  });
+
+  it("turns a vertical wheel over the strip into a horizontal scroll", () => {
+    stubWidths(20000, 600);
+    const { container } = pager();
+    const rail = container.querySelector(".catalog-pager");
+    rail.scrollLeft = 0;
+
+    // happy-dom's WheelEvent drops the MouseEvent modifier fields, so ctrlKey goes on by hand.
+    const wheel = (deltaY, { ctrlKey = false } = {}) => {
+      const e = new WheelEvent("wheel", { deltaY, bubbles: true, cancelable: true });
+      Object.defineProperty(e, "ctrlKey", { value: ctrlKey });
+      rail.dispatchEvent(e);
+      return e;
+    };
+
+    expect(wheel(300).defaultPrevented).toBe(true);
+    expect(rail.scrollLeft).toBe(300);
+
+    // Ctrl+wheel is the browser's zoom — never ours.
+    expect(wheel(300, { ctrlKey: true }).defaultPrevented).toBe(false);
+    expect(rail.scrollLeft).toBe(300);
+
+    // At the far end the gesture goes back to the page: the strip lies across the bottom of the
+    // scrollport, so swallowing every tick that crossed it would stop the page scrolling at all.
+    rail.scrollLeft = 20000 - 600;
+    expect(wheel(300).defaultPrevented).toBe(false);
   });
 });

@@ -111,7 +111,55 @@
   transition: background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease;
 }
 
+/* ── The two ends ─────────────────────────────────────────────────────────────
+   « and » — Home and End for a control with no keyboard, and the answer to "there also needs to be a
+   way to fast-scroll to the end of the line, since there's potentially thousands of pages"
+   (2026-08-28). Sticky to the strip's own edges so they are reachable from anywhere in the run, and
+   OPAQUE (plus a solid 4px shadow bridging the gap) so the buttons slide underneath them rather than
+   peeking out between. `flex: 0 0 auto` keeps them out of the growth rule the run shares — they are
+   chrome, not part of the index. The component hides them outright while the run fits the row: with
+   nothing to scroll there is nothing to fast-scroll to. */
+.catalog-pager__end {
+  position: sticky;
+  z-index: 1;
+  flex: 0 0 auto;
+  min-width: 26px;
+  height: 28px;
+  padding: 0 6px;
+  border: 1px solid var(--card-border);
+  border-radius: 7px;
+  background: var(--card-surface);
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+
+.catalog-pager__end[hidden] { display: none; }
+
+.catalog-pager__end--start {
+  left: 0;
+  margin-right: 4px;
+  box-shadow: 4px 0 0 0 var(--card-surface), 8px 0 8px -6px rgba(0, 0, 0, 0.35);
+}
+
+.catalog-pager__end--far {
+  right: 0;
+  margin-left: 4px;
+  box-shadow: -4px 0 0 0 var(--card-surface), -8px 0 8px -6px rgba(0, 0, 0, 0.35);
+}
+
+.catalog-pager__end:disabled { opacity: 0.32; cursor: default; }
+
 @media (hover: hover) {
+  .catalog-pager__end:hover:not(:disabled) {
+    background: var(--chip-neutral-bg);
+    border-color: var(--accent);
+    color: var(--text-primary);
+  }
+
   .catalog-pager__btn:hover:not(:disabled) {
     background: var(--chip-neutral-bg);
     color: var(--text-primary);
@@ -146,4 +194,15 @@
     padding: 0 3px;
     font-size: 11.5px;
   }
+  /* The caps cost the row two letters' worth of width, so they shrink with everything else — but
+     they do NOT go away: the phone is where the strip overflows most and where a fling across a
+     thousand pages is worst. */
+  .catalog-pager__end {
+    min-width: 22px;
+    height: 26px;
+    padding: 0 3px;
+    font-size: 12.5px;
+  }
+  .catalog-pager__end--start { margin-right: 2px; box-shadow: 2px 0 0 0 var(--card-surface), 6px 0 6px -4px rgba(0, 0, 0, 0.35); }
+  .catalog-pager__end--far { margin-left: 2px; box-shadow: -2px 0 0 0 var(--card-surface), -6px 0 6px -4px rgba(0, 0, 0, 0.35); }
 }
