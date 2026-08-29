@@ -1,3 +1,6 @@
+using System.IO.Compression;
+using SharpCompress.Archives;
+
 namespace MovieTheater.Books.Archives
 {
     /// <summary>
@@ -67,6 +70,46 @@ namespace MovieTheater.Books.Archives
                 && head[2] == 0xBC && head[3] == 0xAF && head[4] == 0x27 && head[5] == 0x1C) return Container.SevenZip;
 
             return Container.Unknown;
+        }
+
+        /// <summary>
+        /// Whether the CONTAINER opens and enumerates — the byte-level question, asked WITHOUT the format's own
+        /// parser. <c>true</c> it opens, <c>false</c> it does not, and <c>null</c> for bytes this cannot sniff
+        /// (a PDF, a MOBI, an unrecognized head), which means "no opinion — the reader's verdict stands".
+        ///
+        /// <para><b>A parser's complaint is not a corrupt file.</b> VersOne throws on an EPUB whose spine declares
+        /// no TOC or whose manifest names a cover it does not ship, in a book that opens and reads perfectly —
+        /// 1,136 of the 1,163 rows the broken flag carried into v2 were exactly that, every one of them with a
+        /// cover thumbnail already on disk. <see cref="Services.ThumbnailService"/> draws this line with
+        /// <c>ThumbnailResult.ArchiveUnreadable</c>; this is the same line, for the scan path.</para>
+        /// </summary>
+        public static bool? CanOpenContainer(string filePath)
+        {
+            switch (Detect(filePath))
+            {
+                case Container.Zip:
+                    try
+                    {
+                        using var zip = ZipFile.OpenRead(filePath);
+                        _ = zip.Entries.Count;   // the central directory, actually read
+                        return true;
+                    }
+                    catch { return false; }
+
+                case Container.Rar:
+                case Container.SevenZip:
+                    try
+                    {
+                        using var stream = File.OpenRead(filePath);
+                        using var archive = ArchiveFactory.OpenArchive(stream);
+                        _ = archive.Entries.Any();
+                        return true;
+                    }
+                    catch { return false; }
+
+                default:
+                    return null;
+            }
         }
     }
 

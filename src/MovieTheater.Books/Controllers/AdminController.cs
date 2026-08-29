@@ -88,7 +88,10 @@ namespace MovieTheater.Books.Controllers
                     comics = await db.Items.CountAsync(i => i.Kind == ItemKind.Comic, ct),
                     books = await db.Items.CountAsync(i => i.Kind == ItemKind.Book, ct),
                     excluded = await db.Items.CountAsync(i => i.IsExcluded, ct),
-                    broken = await db.ItemStates.CountAsync(s => s.IsBroken, ct),
+                    // Shadowed items sit out of this count the way they sit out of every browse surface —
+                    // and the way the standalone's own census computed it. A file nobody can reach is not
+                    // an operator's problem; `excluded` above is where it is already reported.
+                    broken = await db.Items.CountAsync(i => !i.IsExcluded && i.State != null && i.State.IsBroken, ct),
                     series = await db.Series.CountAsync(ct),
                     publishers = await db.Publishers.CountAsync(ct),
                 },

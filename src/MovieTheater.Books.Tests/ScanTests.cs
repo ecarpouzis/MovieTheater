@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;
 using MovieTheater.Books.Archives;
 using MovieTheater.Books.Db;
@@ -56,14 +57,15 @@ namespace MovieTheater.Books.Tests
 
         public BooksDb Db() => new(BooksDbOptions.Hot(HotPath));
 
-        public LibraryScanner Scanner() => new(
-            new IArchiveReader[] { new CbzArchiveReader(new SevenZipCliExtractor(new BooksOptions(), NullLogger<SevenZipCliExtractor>.Instance)) },
+        public LibraryScanner Scanner(IArchiveReader[]? readers = null) => new(
+            readers ?? [new CbzArchiveReader(new SevenZipCliExtractor(new BooksOptions(), NullLogger<SevenZipCliExtractor>.Instance))],
             NullLogger<LibraryScanner>.Instance);
 
         /// <summary>Drive the scanner to completion the way the CLI verb does, and report what it did.</summary>
-        public async Task<(int Added, int Changed, int Removed, int Batches)> ScanAsync(int batchSize = 2, int? rootId = null)
+        public async Task<(int Added, int Changed, int Removed, int Batches)> ScanAsync(
+            int batchSize = 2, int? rootId = null, IArchiveReader[]? readers = null)
         {
-            var scanner = Scanner();
+            var scanner = Scanner(readers);
             await using var db = Db();
             await scanner.StartAsync(db, rootId);
             int added = 0, changed = 0, removed = 0, batches = 0;
@@ -109,6 +111,36 @@ namespace MovieTheater.Books.Tests
                     "<dc:title>A Novel</dc:title><dc:language>en</dc:language></metadata>" +
                     "<manifest><item id=\"c1\" href=\"c1.xhtml\" media-type=\"application/xhtml+xml\"/></manifest>" +
                     "<spine><itemref idref=\"c1\"/></spine></package>");
+                Text("OEBPS/c1.xhtml", "<html><body><p>Chapter one.</p></body></html>");
+            }
+            return ms.ToArray();
+        }
+
+        /// <summary>
+        /// An EPUB whose ZIP is perfect and whose spine names a TOC the manifest does not carry — VersOne
+        /// REJECTS it ("Incorrect EPUB spine: TOC is missing."), which is the single commonest reason in the
+        /// 1,163 rows the broken flag arrived in v2 with. The book itself is fine.
+        /// </summary>
+        public static byte[] SpecInvalidEpub()
+        {
+            using var ms = new MemoryStream();
+            using (var zip = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))
+            {
+                void Text(string name, string content)
+                {
+                    using var s = zip.CreateEntry(name).Open();
+                    s.Write(Encoding.UTF8.GetBytes(content));
+                }
+                Text("mimetype", "application/epub+zip");
+                Text("META-INF/container.xml",
+                    "<container xmlns=\"urn:oasis:names:tc:opendocument:xmlns:container\"><rootfiles>" +
+                    "<rootfile full-path=\"OEBPS/book.opf\" media-type=\"application/oebps-package+xml\"/></rootfiles></container>");
+                Text("OEBPS/book.opf",
+                    "<package xmlns=\"http://www.idpf.org/2007/opf\" version=\"2.0\"><metadata xmlns:dc=\"http://purl.org/dc/elements/1.1/\">" +
+                    "<dc:title>A Sloppy Novel</dc:title><dc:language>en</dc:language></metadata>" +
+                    "<manifest><item id=\"c1\" href=\"c1.xhtml\" media-type=\"application/xhtml+xml\"/></manifest>" +
+                    // toc="ncx" with no such manifest item — the whole point of the fixture.
+                    "<spine toc=\"ncx\"><itemref idref=\"c1\"/></spine></package>");
                 Text("OEBPS/c1.xhtml", "<html><body><p>Chapter one.</p></body></html>");
             }
             return ms.ToArray();
@@ -225,6 +257,49 @@ namespace MovieTheater.Books.Tests
             var reread = await after.Items.FirstAsync(i => i.Id == id);
             Assert.NotEqual(sizeBefore, reread.FileSize);
             Assert.Equal("Rewritten", (await after.ComicDetails.FirstAsync(d => d.ItemId == id)).ParsedSeriesKey);
+        }
+
+        /// <summary>
+        /// The broken flag means THE CONTAINER WILL NOT OPEN — not "the parser complained".
+        ///
+        /// <para>This is the defect the v2 census exposed: 1,136 of the 1,163 flagged rows were EPUB novels that
+        /// VersOne's validator rejected over a missing TOC or a manifest naming a cover the file does not ship,
+        /// every one of them with a cover thumbnail already on disk, against 21 genuinely broken comics. A file
+        /// whose bytes open is recorded and left alone; a truncated one is still flagged.</para>
+        /// </summary>
+        [Fact]
+        public async Task AParserComplaintIsNotBrokenButATruncatedContainerIs()
+        {
+            using var f = new ScanFixture();
+            IArchiveReader[] readers =
+            [
+                new CbzArchiveReader(new SevenZipCliExtractor(new BooksOptions(), NullLogger<SevenZipCliExtractor>.Instance)),
+                new EpubArchiveReader(new MemoryCache(new MemoryCacheOptions { SizeLimit = 64 })),
+            ];
+
+            // Intact ZIP, spec-invalid package: readable, so not broken.
+            var sloppy = Path.Combine(f.BooksRoot, "Fiction", "A Sloppy Novel.epub");
+            await File.WriteAllBytesAsync(sloppy, ScanFixture.SpecInvalidEpub());
+
+            // The SAME format cut in half: the central directory is gone, so the container will not open and it
+            // IS broken. Both halves are EPUBs on purpose — one reader, one format, and the only difference is
+            // whether the bytes open. (A truncated CBZ would prove less: CbzArchiveReader falls through to the
+            // 7-Zip CLI when one is installed, so its verdict depends on the machine.)
+            var truncated = Path.Combine(f.BooksRoot, "Fiction", "A Truncated Novel.epub");
+            var bytes = ScanFixture.SpecInvalidEpub();
+            await File.WriteAllBytesAsync(truncated, bytes[..(bytes.Length / 2)]);
+
+            await f.ScanAsync(readers: readers);
+
+            await using var db = f.Db();
+            var novel = await db.ItemStates.FirstAsync(st => st.ItemId == db.Items.First(i => i.Path == sloppy).Id);
+            Assert.False(novel.IsBroken);
+            Assert.Null(novel.BrokenReason);
+            Assert.NotNull(novel.BrokenCheckedAt);   // it WAS checked — that is not the same as being fine by default
+
+            var cut = await db.ItemStates.FirstAsync(st => st.ItemId == db.Items.First(i => i.Path == truncated).Id);
+            Assert.True(cut.IsBroken);
+            Assert.NotNull(cut.BrokenReason);
         }
 
         /// <summary>

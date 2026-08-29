@@ -373,7 +373,19 @@ namespace MovieTheater.Books.Services
             string? brokenReason = null;
             var pageCount = 0;
 
-            if (reader != null)
+            // THE READER IS FOR COMICS. Reading an EPUB's metadata costs a full eager VersOne
+            // ReadBook — every HTML file and every image decompressed into memory — because
+            // ReadMetadataAsync counts spine images to produce a page count. For a comic that
+            // count IS the page count and the reader is page-based, so it earns its cost.
+            //
+            // For a text book it does not. The count is the number of embedded images (~1 for a
+            // novel), the EPUB reader is spine-based and never asks for it, and every other field
+            // the read yields — Language, Description, Isbn — is overwritten by
+            // books-import-calibre, which reads Calibre's metadata.db directly. Measured over a
+            // 104k-book import this ran ~1.4s per file: ~56 hours to compute a number nothing
+            // reads. IsBroken is skipped with it deliberately — VersOne's validator false-flagged
+            // 1,136 readable novels (see the note below), so its verdict on a novel is noise.
+            if (reader != null && item.Kind == ItemKind.Comic)
             {
                 try { meta = await reader.ReadMetadataAsync(filePath); }
                 catch (Exception ex) { brokenReason = ex.Message; }
@@ -393,8 +405,28 @@ namespace MovieTheater.Books.Services
             var state = await LoadAsync(db.ItemStates, s => s.ItemId == item.Id, () => new ItemState { ItemId = item.Id }, db, ct);
             if (reader != null)
             {
-                state.IsBroken = brokenReason != null;
-                state.BrokenReason = brokenReason == null ? null : Truncate(brokenReason, 500);
+                // A PARSER'S COMPLAINT IS NOT A BROKEN FILE. This flag once meant "whatever the metadata read
+                // threw", so VersOne's EPUB validator — which rejects a missing TOC or a manifest naming a cover
+                // the file does not ship — flagged 1,136 perfectly readable novels, every one of them with a
+                // cover thumbnail already on disk, against 21 genuinely broken comics. The flag means "the
+                // CONTAINER will not open", so ask the BYTES, not the parser; a container that cannot be sniffed
+                // (PDF, MOBI) offers no opinion and the reader's verdict stands.
+                //
+                // A BOOK never ran the parser above, so there is no complaint to corroborate — the sniff IS the
+                // whole verdict. It stays for books because it is the cheap half: the central directory, not the
+                // eager whole-book read the metadata parse costs. Skipping it would let a truncated novel index
+                // as healthy.
+                var opens = ArchiveFormatSniffer.CanOpenContainer(filePath);
+                var unreadable = item.Kind == ItemKind.Comic
+                    ? brokenReason != null && opens != true
+                    : opens == false;
+                if (brokenReason != null && !unreadable)
+                    logger.LogDebug("scan: {Path} opens; metadata parse said \"{Reason}\" — not flagged broken.", filePath, brokenReason);
+
+                state.IsBroken = unreadable;
+                state.BrokenReason = unreadable
+                    ? Truncate(brokenReason ?? "container does not open", 500)
+                    : null;
                 state.BrokenCheckedAt = DateTime.UtcNow;
             }
 
@@ -413,7 +445,8 @@ namespace MovieTheater.Books.Services
             }
 
             _ = root;
-            return brokenReason == null;
+            // "failed" counts files the scan could not READ — a recorded metadata complaint is not one.
+            return !state.IsBroken;
         }
 
         private async Task WriteComicRowsAsync(BooksDb db, Item item, string filePath, ArchiveMetadata? meta, IReadOnlyList<string> rootPaths, CancellationToken ct)

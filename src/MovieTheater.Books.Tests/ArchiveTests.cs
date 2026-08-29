@@ -255,6 +255,30 @@ namespace MovieTheater.Books.Tests
             Assert.Equal(ArchiveFormatSniffer.Container.Unknown, ArchiveFormatSniffer.Detect(fixture.MissingPath));
         }
 
+        /// <summary>
+        /// The container probe answers about the BYTES, not the parser — the distinction that decides whether an
+        /// item gets the broken flag. Intact ⇒ true, truncated ⇒ false, not-a-sniffable-container ⇒ no opinion.
+        /// </summary>
+        [Fact]
+        public void Container_openability_is_the_bytes_question_not_the_parsers()
+        {
+            Assert.True(ArchiveFormatSniffer.CanOpenContainer(fixture.CbzPath));
+            // An EPUB is a ZIP; the probe reads it as one without asking VersOne whether it likes the package.
+            Assert.True(ArchiveFormatSniffer.CanOpenContainer(fixture.EpubPath));
+
+            // Truncated: the local header still says PK, but the central directory is gone.
+            var truncated = Path.Combine(fixture.WorkDir, "truncated.cbz");
+            var bytes = File.ReadAllBytes(fixture.CbzPath);
+            File.WriteAllBytes(truncated, bytes[..(bytes.Length / 2)]);
+            Assert.False(ArchiveFormatSniffer.CanOpenContainer(truncated));
+
+            // Not a container we can sniff, and a file that is not there at all: no opinion either way.
+            var text = Path.Combine(fixture.WorkDir, "notes.txt");
+            File.WriteAllText(text, "not an archive");
+            Assert.Null(ArchiveFormatSniffer.CanOpenContainer(text));
+            Assert.Null(ArchiveFormatSniffer.CanOpenContainer(fixture.MissingPath));
+        }
+
         [Fact]
         public void Reader_selection_follows_the_sniffed_container()
         {
