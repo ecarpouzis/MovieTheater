@@ -720,7 +720,16 @@ namespace MovieTheater.Books.Services
         public static async Task BackfillPublishersAsync(BooksDb db, CancellationToken ct = default)
         {
             var publishers = await db.Publishers.ToListAsync(ct);
-            var byName = publishers.ToDictionary(p => p.Name, StringComparer.OrdinalIgnoreCase);
+            // The lookup is case-insensitive but the TABLE is not, so 'VIZ Media' and 'Viz Media'
+            // are two rows that collapse to one key — ToDictionary threw on the first such pair
+            // ("AfterShock Comics") and took the whole aggregate phase down with it. Group first
+            // and keep the lowest id: every item then points at ONE row per name, and the
+            // stragglers are left for a dedup pass rather than crashing a scan that has already
+            // done all its work.
+            var byName = publishers
+                .GroupBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.OrderBy(p => p.Id).First(),
+                              StringComparer.OrdinalIgnoreCase);
             var nextId = publishers.Count == 0 ? 1 : publishers.Max(p => p.Id) + 1;
 
             var rows = await (from i in db.Items
@@ -747,9 +756,16 @@ namespace MovieTheater.Books.Services
             }
             await db.SaveChangesAsync(ct);
 
-            foreach (var item in await db.Items.Where(i => updates.Keys.Contains(i.Id)).ToListAsync(ct))
-                item.PublisherId = updates[item.Id];
-            await db.SaveChangesAsync(ct);
+            // CHUNKED, because `Contains` over the key set becomes one SQL parameter per id and
+            // SQLite caps them: a 104k-book import made this throw "too many SQL variables" and
+            // took down the aggregate phase after the scan had already done all of its work.
+            // Same bounded-batch rule the rest of the scanner follows.
+            foreach (var chunk in updates.Keys.Chunk(500))
+            {
+                foreach (var item in await db.Items.Where(i => chunk.Contains(i.Id)).ToListAsync(ct))
+                    item.PublisherId = updates[item.Id];
+                await db.SaveChangesAsync(ct);
+            }
         }
 
         private static async Task StampFolderRegistryAsync(BooksDb db, CancellationToken ct)
