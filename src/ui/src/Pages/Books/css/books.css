@@ -16,17 +16,14 @@
   min-height: 100%;
   color: var(--books-ink);
   background: var(--books-scene);
-  /* The side gutter. It used to be 0 here, and the only horizontal padding in the
-     section lived in skin.css behind @media (max-width: 640px) — so a PHONE had a
-     margin and a desktop did not, and every grid, header and pager sat flush against
-     both window edges. Below 640px the host still supplies its own, so this one
-     stands down rather than doubling up. */
-  padding: 0 clamp(14px, 2.4vw, 34px) 40px;
+  /* The side gutter. It used to be 0, and the only horizontal padding anywhere in
+     the section was skin.css's `.bx-host[data-skin-paint]` rule — which is behind
+     @media (max-width: 640px) AND only applies when a skin sets a scene. So a
+     desktop had no gutter at all, and a phone only had one on a skinned view:
+     every grid, header and pager ran to both window edges.
+     The gutter therefore lives here unconditionally and just narrows on a phone. */
+  padding: 0 clamp(12px, 2.4vw, 34px) 40px;
   --catalog-pager-bleed: 18px;
-}
-
-@media (max-width: 640px) {
-  .books-section { padding-left: 0; padding-right: 0; }
 }
 
 .books-section .bx-host {
