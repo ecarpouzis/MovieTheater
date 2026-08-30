@@ -164,7 +164,6 @@ WHERE i.Id > $after ORDER BY i.Id LIMIT $n";
                 var publisher = FirstText(r.T("CvPublisher"), isBook ? r.T("BookPublisher") : r.T("EmbPublisher"), r.T("ParsedPublisher"), r.T("PublisherName"));
                 var isSingle = r.I("IssueCount") == 1;
                 var isCollection = (r.I("CollectionLevel") ?? 0) > 0 || r.B("IsCollection");
-                var title = isBook ? r.T("Title") : ResolveTitle(r.T("Title"), series, isSingle, isCollection, r.D("ReadNumber"), r.T("IssueNo"), r.I("VolumeNo"));
                 var (year, month, precision) = ResolveDate(r.T("ReadDate"), (DatePrecision)r.Int("ReadDatePrecision"), isBook ? r.T("PublishedOn") : r.T("PublicationDate"), r.I("ParsedYear"), r.I("ExtYear"));
                 var aiSynopsis = isBook ? r.S("BookAiSynopsis") : r.S("SeriesAiSynopsis");
                 var synopsis = SynopsisRules.ResolveItem(r.S("CvDescription"), isBook ? r.S("BookDescription") : r.S("Summary"), r.S("LocgDescription"), r.S("ExtDescription"), r.S("MuDescription"), r.S("CvDeck"), aiSynopsis);
@@ -173,6 +172,20 @@ WHERE i.Id > $after ORDER BY i.Id LIMIT $n";
                 var authors = isBook
                     ? FirstNonEmpty(r.S("CreditAuthors"), r.S("Writers"), r.S("ExtAuthors"), r.S("BookAiAuthor"))
                     : FirstNonEmpty(r.S("Writers"), r.S("ExtAuthors"), r.S("AiAuthor"));
+                string? title;
+                if (isBook)
+                {
+                    // Calibre took every one of these titles from a file name, so they still carry
+                    // its artefacts. Cleaned HERE, against the book's own authors, because the two
+                    // places that hold the raw string cannot keep a fix: editing Calibre renames the
+                    // folder Item.Path is matched on, and CalibreImportService rewrites Item.Title
+                    // on every import.
+                    var (clean, lifted) = BookTitleRules.Clean(r.T("Title"), authors);
+                    title = clean;
+                    // The trailing clause was the only author an unmatched item had.
+                    if (lifted != null && authors.Count == 0) authors = new List<string> { lifted };
+                }
+                else title = ResolveTitle(r.T("Title"), series, isSingle, isCollection, r.D("ReadNumber"), r.T("IssueNo"), r.I("VolumeNo"));
                 var artists = FirstNonEmpty(string.IsNullOrWhiteSpace(r.S("Pencillers")) ? r.S("CoverArtist") : r.S("Pencillers"), r.S("AiArtist"));
                 var creators = authors.Concat(artists).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
                 var tags = new List<string>();
