@@ -44,7 +44,7 @@ namespace MovieTheater.BooksHost.Commands
 
             if (Reset) await service.ResetAsync(db);
 
-            long matched = 0, unmatched = 0, filled = 0, repathed = 0, foldersFixed = 0;
+            long matched = 0, unmatched = 0, filled = 0, repathed = 0, foldersFixed = 0, dupesMerged = 0, collisions = 0, unbroken = 0;
             var batches = 0;
             long? after = null; // dry run: the cursor lives here, not in the store
             await console.Output.WriteLineAsync($"metadata: {metadata}" + Environment.NewLine + $"library root: {LibraryRoot ?? Path.GetDirectoryName(Path.GetFullPath(metadata))}  (paths are composed under this and compared with Item.Path)");
@@ -58,14 +58,19 @@ namespace MovieTheater.BooksHost.Commands
                 {
                     matched += r.Matched; unmatched += r.Unmatched; filled += r.Filled;
                     repathed += r.Repathed; foldersFixed += r.FoldersFixed;
+                    dupesMerged += r.DuplicatesMerged; collisions += r.Collisions; unbroken += r.Unbroken;
                 }
                 await console.Output.WriteLineAsync(r.ToString() + $"  [batches: {batches}]");
                 if (r.Done) break;
             }
 
             await console.Output.WriteLineAsync(
-                $"done: matched {matched}, unmatched {unmatched}, filled {filled}, repathed {repathed}, folders-fixed {foldersFixed} over {batches} batch(es)"
+                $"done: matched {matched}, unmatched {unmatched}, filled {filled}, repathed {repathed}, folders-fixed {foldersFixed},"
+                + $" duplicates-merged {dupesMerged}, collisions {collisions}, unbroken {unbroken} over {batches} batch(es)"
                 + (Apply ? "" : " (dry run — nothing written)"));
+            if (collisions > 0)
+                await console.Output.WriteLineAsync(
+                    $"WARNING: {collisions} target path(s) are held by ANOTHER Calibre-linked item — those books were left where they are; the pairs are in the log.");
         }
     }
 

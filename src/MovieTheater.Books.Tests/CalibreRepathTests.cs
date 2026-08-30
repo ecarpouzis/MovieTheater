@@ -310,6 +310,219 @@ CREATE TABLE data (id INTEGER PRIMARY KEY, book INTEGER, format TEXT, name TEXT)
             Assert.Equal(before, await SnapshotAsync(f));
         }
 
+        // ── the occupied target ──────────────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// The live shape: a scan that ran while the catalog still held the OLD path created a SECOND Item row
+        /// for the same file at the NEW one. Item 101 is the linked, missing-flagged row; 300 is the healthy,
+        /// unlinked copy sitting exactly where Calibre now says the book lives.
+        /// </summary>
+        private static async Task<int> AddScanBornDuplicateAsync(V1Fixture f, string relDir, string fileName, int? calibreBookId = null)
+        {
+            await using var db = f.HotDb();
+            var folder = await db.Folders.FirstAsync(x => x.Id == TitleFolderId);
+            const int id = 300;
+            db.Items.Add(new Item
+            {
+                Id = id, RootId = folder.RootId, FolderId = TitleFolderId, TopFolderId = AuthorFolderId,
+                Kind = ItemKind.Book, Path = $@"{LibraryRoot}\{relDir}\{fileName}", FileName = fileName,
+                Extension = Path.GetExtension(fileName), Title = "Brave New World", NormalizedTitle = "brave new world",
+                CalibreBookId = calibreBookId,
+            });
+            db.ItemStates.Add(new ItemState { ItemId = id, CoverWidth = 600, CoverHeight = 900 });
+            db.BookDetails.Add(new BookDetail { ItemId = id, SeriesName = "Whatever" });
+            db.ItemTags.Add(new ItemTag { ItemId = id, Category = "tag", Value = "scan-born", Source = TagSource.ComicInfo });
+            // no FK holds these to the item, but a recycled id would inherit them
+            db.Insights.Add(new Insight
+            {
+                Id = 9001, SubjectKind = SubjectKind.Item, SubjectId = id, ModelId = "test", Rank = 1,
+                Confidence = Confidence.High, Recognized = true, Rating = 70, Synopsis = "scan-born", IsCurrent = true,
+            });
+            db.InsightTags.Add(new InsightTag { InsightId = 9001, Category = "genre", Value = "test" });
+            db.Ratings.Add(new Rating { TargetKind = SubjectKind.Item, TargetId = id, Source = RatingSource.AI, Value = 70, ModelId = "test" });
+            // the reader got further in the duplicate than in the linked row, and favourited it there
+            db.UserItemStates.Add(new UserItemState
+            {
+                UserId = 1, ItemId = id, LastPage = 44, Status = ReadStatus.InProgress,
+                Favorite = true, UpdatedAt = new DateTime(2026, 8, 28, 0, 0, 0, DateTimeKind.Utc),
+            });
+            // a second reader who has no row on the survivor at all
+            db.UserItemStates.Add(new UserItemState
+            {
+                UserId = 2, ItemId = id, LastPage = 7, Status = ReadStatus.InProgress,
+                WantToRead = true, UpdatedAt = new DateTime(2026, 8, 27, 0, 0, 0, DateTimeKind.Utc),
+            });
+            await db.SaveChangesAsync();
+            return id;
+        }
+
+        /// <summary>Set one reader's state, whether or not the migration already left a row there (it does for item 101).</summary>
+        private static async Task SetReaderStateAsync(V1Fixture f, int userId, int itemId, int lastPage, ReadStatus status,
+            bool wantToRead, bool favorite, DateTime updatedAt)
+        {
+            await using var db = f.HotDb();
+            var row = await db.UserItemStates.FirstOrDefaultAsync(s => s.UserId == userId && s.ItemId == itemId);
+            if (row == null) { row = new UserItemState { UserId = userId, ItemId = itemId }; db.UserItemStates.Add(row); }
+            row.LastPage = lastPage;
+            row.LastSpineItemIndex = null;
+            row.LastScrollPercent = null;
+            row.Status = status;
+            row.WantToRead = wantToRead;
+            row.Favorite = favorite;
+            row.UpdatedAt = updatedAt;
+            await db.SaveChangesAsync();
+        }
+
+        /// <summary>The linked row's OLD file name — where a re-path has to move it FROM.</summary>
+        private static string StalePath => $@"{LibraryRoot}\Aldous Huxley\Brave New World (844)\Brave New World.epub";
+
+        private static async Task MakeLinkedRowStaleAsync(V1Fixture f)
+        {
+            await using var db = f.HotDb();
+            var linked = await db.Items.FirstAsync(i => i.Id == 101);
+            linked.Path = StalePath;
+            linked.FileName = "Brave New World.epub";
+            await db.SaveChangesAsync();
+        }
+
+        /// <summary>Flag the linked row the way the 08-29 scan did: missing at its old path, and excluded with it.</summary>
+        private static async Task MarkLinkedRowMissingAsync(V1Fixture f)
+        {
+            await using var db = f.HotDb();
+            await LibraryScanner.MarkMissingAsync(db, new[] { 101 });
+        }
+
+        [Fact]
+        public async Task AScanBornDuplicateAtTheTargetIsMergedIntoTheLinkedRow()
+        {
+            using var f = Migrated();
+            await ShapeLikeCalibreAsync(f);
+            await MarkLinkedRowMissingAsync(f);
+
+            // The reader's own row on the LINKED item — older, and not favourited.
+            await SetReaderStateAsync(f, 1, 101, 12, ReadStatus.InProgress, wantToRead: true, favorite: false,
+                new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc));
+
+            const string newDir = "Aldous Huxley/Brave New World (844)";
+            const string newFile = "Brave New World - Aldous Huxley.epub";
+            // The linked row is still on the OLD file name; the scan row holds the one Calibre now names.
+            await MakeLinkedRowStaleAsync(f);
+            var dupeId = await AddScanBornDuplicateAsync(f, newDir.Replace('/', '\\'), newFile);
+            var metadata = BuildCalibre(f, newDir, "Brave New World - Aldous Huxley");
+
+            var r = await ImportAsync(f, metadata);
+            Assert.Equal(1, r.Repathed);
+            Assert.Equal(1, r.DuplicatesMerged);
+            Assert.Equal(0, r.Collisions);
+            Assert.Equal(1, r.Unbroken);
+
+            await using (var db = f.HotDb())
+            {
+                // the LINKED row survived and took the path
+                var survivor = await db.Items.AsNoTracking().FirstAsync(i => i.Id == 101);
+                Assert.Equal($@"{LibraryRoot}\{newDir.Replace('/', '\\')}\{newFile}", survivor.Path);
+                Assert.Equal(844, survivor.CalibreBookId);
+
+                // the duplicate is gone, dependents and all
+                Assert.Equal(0, await db.Items.CountAsync(i => i.Id == dupeId));
+                Assert.Equal(0, await db.ItemStates.CountAsync(s => s.ItemId == dupeId));
+                Assert.Equal(0, await db.BookDetails.CountAsync(b => b.ItemId == dupeId));
+                Assert.Equal(0, await db.ItemTags.CountAsync(t => t.ItemId == dupeId));
+                Assert.Equal(0, await db.UserItemStates.CountAsync(s => s.ItemId == dupeId));
+                // the FK-less rows go too, so a recycled id cannot inherit them
+                Assert.Equal(0, await db.Insights.CountAsync(x => x.SubjectKind == SubjectKind.Item && x.SubjectId == dupeId));
+                Assert.Equal(0, await db.InsightTags.CountAsync(t => t.InsightId == 9001));
+                Assert.Equal(0, await db.Ratings.CountAsync(r => r.TargetKind == SubjectKind.Item && r.TargetId == dupeId));
+
+                // the reader's state came with it: flags OR'd, the NEWER position won
+                var reader = await db.UserItemStates.AsNoTracking().FirstAsync(s => s.UserId == 1 && s.ItemId == 101);
+                Assert.Equal(44, reader.LastPage);
+                Assert.True(reader.Favorite);       // only the duplicate had it
+                Assert.True(reader.WantToRead);     // only the survivor had it
+                // and the reader who had NO row on the survivor now has one
+                var second = await db.UserItemStates.AsNoTracking().FirstAsync(s => s.UserId == 2 && s.ItemId == 101);
+                Assert.Equal(7, second.LastPage);
+                Assert.True(second.WantToRead);
+            }
+        }
+
+        [Fact]
+        public async Task AFinishedPositionSurvivesANewerHalfReadOne()
+        {
+            using var f = Migrated();
+            await ShapeLikeCalibreAsync(f);
+            // -1 is the ONLY Finished signal the reader has; a newer in-progress page must not erase it.
+            await SetReaderStateAsync(f, 1, 101, -1, ReadStatus.Finished, wantToRead: false, favorite: false,
+                new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc));
+            const string newDir = "Aldous Huxley/Brave New World (844)";
+            await MakeLinkedRowStaleAsync(f);
+            await AddScanBornDuplicateAsync(f, newDir.Replace('/', '\\'), "Brave New World - Aldous Huxley.epub");
+
+            await ImportAsync(f, BuildCalibre(f, newDir, "Brave New World - Aldous Huxley"));
+
+            await using (var db = f.HotDb())
+            {
+                var reader = await db.UserItemStates.AsNoTracking().FirstAsync(s => s.UserId == 1 && s.ItemId == 101);
+                Assert.Equal(-1, reader.LastPage);
+                Assert.Equal(ReadStatus.Finished, reader.Status);
+            }
+        }
+
+        [Fact]
+        public async Task ATargetHeldByAnotherCalibreBookIsSkippedAndCountedNeverThrown()
+        {
+            using var f = Migrated();
+            await ShapeLikeCalibreAsync(f);
+            const string newDir = "Aldous Huxley/Brave New World (844)";
+            await MakeLinkedRowStaleAsync(f);
+            // The occupant carries a Calibre identity of its OWN — two books claiming one file.
+            var dupeId = await AddScanBornDuplicateAsync(f, newDir.Replace('/', '\\'), "Brave New World - Aldous Huxley.epub", calibreBookId: 777);
+
+            var r = await ImportAsync(f, BuildCalibre(f, newDir, "Brave New World - Aldous Huxley"));
+            Assert.Equal(0, r.Repathed);
+            Assert.Equal(1, r.Collisions);
+            Assert.Equal(0, r.DuplicatesMerged);
+            Assert.Equal(1, r.Matched);          // it still filled the metadata; only the MOVE was refused
+
+            await using (var db = f.HotDb())
+            {
+                // nothing moved, and neither row was destroyed
+                Assert.Equal(StalePath, (await db.Items.AsNoTracking().FirstAsync(i => i.Id == 101)).Path);
+                Assert.Equal(1, await db.Items.CountAsync(i => i.Id == dupeId));
+            }
+        }
+
+        [Fact]
+        public async Task ARepathClearsAStaleMissingFlagAndUnhidesTheItem()
+        {
+            using var f = Migrated();
+            await ShapeLikeCalibreAsync(f);
+            await MarkLinkedRowMissingAsync(f);
+
+            await using (var db = f.HotDb())
+            {
+                Assert.True((await db.Items.AsNoTracking().FirstAsync(i => i.Id == 101)).IsExcluded);
+                Assert.Equal("missing", (await db.ItemStates.AsNoTracking().FirstAsync(s => s.ItemId == 101)).BrokenReason);
+            }
+
+            var r = await ImportAsync(f, BuildCalibre(f, "Huxley, Aldous/Brave New World (844)", "Brave New World - Aldous Huxley"));
+            Assert.Equal(1, r.Repathed);
+            Assert.Equal(1, r.Unbroken);
+
+            await using (var db = f.HotDb())
+            {
+                var item = await db.Items.AsNoTracking().FirstAsync(i => i.Id == 101);
+                Assert.False(item.IsExcluded);
+                var state = await db.ItemStates.AsNoTracking().FirstAsync(s => s.ItemId == 101);
+                Assert.False(state.IsBroken);
+                Assert.Null(state.BrokenReason);
+                Assert.Null(state.ExclusionReason);
+            }
+
+            // a second run has nothing left to unbreak
+            Assert.Equal(0, (await ImportAsync(f, BuildCalibre(f, "Huxley, Aldous/Brave New World (844)", "Brave New World - Aldous Huxley"))).Unbroken);
+        }
+
         private static async Task<Item> DuneAsync(V1Fixture f)
         {
             await using var db = f.HotDb();

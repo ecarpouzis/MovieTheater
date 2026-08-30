@@ -9,12 +9,13 @@ namespace MovieTheater.Books.Services
     /// <summary>What one Calibre-import batch did.</summary>
     public sealed record CalibreBatchResult(
         int Processed, long Remaining, long? NextCursor, int Matched, int Unmatched, int Filled,
-        int Repathed = 0, int FoldersFixed = 0)
+        int Repathed = 0, int FoldersFixed = 0, int DuplicatesMerged = 0, int Collisions = 0, int Unbroken = 0)
     {
         public bool Done => Processed == 0 || NextCursor == null;
         public override string ToString() =>
             $"{{ processed: {Processed}, remaining: {Remaining}, nextCursor: \"{NextCursor}\", unmatched: {Unmatched} }}"
-            + $"  [matched: {Matched}, filled: {Filled}, repathed: {Repathed}, folders-fixed: {FoldersFixed}]";
+            + $"  [matched: {Matched}, filled: {Filled}, repathed: {Repathed}, folders-fixed: {FoldersFixed}, "
+            + $"duplicates-merged: {DuplicatesMerged}, collisions: {Collisions}, unbroken: {Unbroken}]";
     }
 
     /// <summary>
@@ -180,7 +181,7 @@ FROM books b WHERE b.id > $after ORDER BY b.id LIMIT $n";
             var byPath = await db.Items.Where(i => paths.Contains(i.Path))
                 .ToDictionaryAsync(i => i.Path, StringComparer.OrdinalIgnoreCase, ct);
 
-            int matched = 0, unmatched = 0, filled = 0, repathed = 0, foldersFixed = 0;
+            int matched = 0, unmatched = 0, filled = 0, repathed = 0, foldersFixed = 0, dupesMerged = 0, collisions = 0, unbroken = 0;
             // Folders emptied by a re-path are only PROVABLY empty once the batch's moves are saved, so the
             // candidates are collected here and swept after SaveChanges — never deleted on a guess.
             var huskCandidates = new HashSet<int>();
@@ -201,8 +202,12 @@ FROM books b WHERE b.id > $after ORDER BY b.id LIMIT $n";
 
                 if (needsRepath)
                 {
-                    repathed++;
-                    foldersFixed += await RepathAsync(db, item, candidates, huskCandidates, ct);
+                    var outcome = await RepathAsync(db, item, candidates, huskCandidates, ct);
+                    if (outcome.Repathed) repathed++;
+                    foldersFixed += outcome.FoldersFixed;
+                    dupesMerged += outcome.DuplicatesMerged;
+                    collisions += outcome.Collisions;
+                    unbroken += outcome.Unbroken;
                 }
 
                 item.CalibreBookId = book.Id;
@@ -248,9 +253,10 @@ FROM books b WHERE b.id > $after ORDER BY b.id LIMIT $n";
             }
 
             var remaining = Scalar(calibre, "SELECT count(*) FROM books WHERE id > " + nextCursor);
-            logger.LogInformation("calibre batch: processed {N}, matched {Matched}, unmatched {Unmatched}, repathed {Repathed}, remaining {Remaining}",
-                books.Count, matched, unmatched, repathed, remaining);
-            return new CalibreBatchResult(books.Count, remaining, nextCursor, matched, unmatched, filled, repathed, foldersFixed);
+            logger.LogInformation(
+                "calibre batch: processed {N}, matched {Matched}, unmatched {Unmatched}, repathed {Repathed}, merged {Merged}, collisions {Collisions}, remaining {Remaining}",
+                books.Count, matched, unmatched, repathed, dupesMerged, collisions, remaining);
+            return new CalibreBatchResult(books.Count, remaining, nextCursor, matched, unmatched, filled, repathed, foldersFixed, dupesMerged, collisions, unbroken);
         }
 
         /// <summary>
@@ -308,15 +314,43 @@ FROM books b WHERE b.id > $after ORDER BY b.id LIMIT $n";
         /// both an EPUB and a PDF re-paths each item onto its OWN file instead of collapsing the two. The first
         /// candidate is the fallback (a format Calibre has since dropped).</para>
         ///
-        /// <para>Returns how many FOLDER rows it touched. Idempotent: the second pass finds the item's path
-        /// already among the candidates and never gets here.</para>
+        /// <para><b>The target can already be occupied.</b> A scan that ran while the catalog still held the OLD
+        /// path created a SECOND Item row for the same file at the new one — 119428 (linked, CalibreBookId 584,
+        /// flagged missing) and 162298 (unlinked, healthy, thumbnailed) are the same
+        /// <c>Let me in - John Ajvide Lindqvist.epub</c>. <c>IX_Item_Path</c> is UNIQUE, so moving the linked row
+        /// onto that path throws. See <see cref="MergeDuplicateAsync"/> for what happens instead.</para>
+        ///
+        /// <para>Returns what it did. Idempotent: the second pass finds the item's path already among the
+        /// candidates and never gets here.</para>
         /// </summary>
-        private static async Task<int> RepathAsync(
+        private async Task<RepathOutcome> RepathAsync(
             BooksDb db, Item item, IReadOnlyList<string> candidates, HashSet<int> huskCandidates, CancellationToken ct)
         {
             var chosen = candidates.FirstOrDefault(p =>
                              string.Equals(Path.GetExtension(p), item.Extension, StringComparison.OrdinalIgnoreCase))
                          ?? candidates[0];
+
+            // Clear the target BEFORE anything else moves, so this item's own pending Path write is never the
+            // thing that has to be un-done. `IX_Item_Path` is a BINARY unique index (the column carries no
+            // COLLATE), so an EXACT match is precisely the set of rows that can throw — and an ordinal equality
+            // is an index seek, where a case-folded one would scan 245k rows for every one of ~22,000 re-paths.
+            var occupant = await db.Items.FirstOrDefaultAsync(x => x.Path == chosen && x.Id != item.Id, ct);
+            var merged = 0;
+            if (occupant != null)
+            {
+                if (occupant.CalibreBookId != null)
+                {
+                    // Two Calibre books claiming one file. This should not exist, and guessing which one owns
+                    // the path could orphan a reader's history — so nothing moves and the pair is REPORTED.
+                    logger.LogWarning(
+                        "calibre re-path collision: item {Item} (book {Book}) wants {Path}, held by item {Other} (book {OtherBook}) — skipped",
+                        item.Id, item.CalibreBookId, chosen, occupant.Id, occupant.CalibreBookId);
+                    return new RepathOutcome(false, 0, 0, 1, 0);
+                }
+                await MergeDuplicateAsync(db, item, occupant, ct);
+                merged = 1;
+            }
+
             var newFolderPath = Path.GetDirectoryName(chosen);
             var fixes = 0;
 
@@ -383,7 +417,127 @@ FROM books b WHERE b.id > $after ORDER BY b.id LIMIT $n";
             item.Path = chosen;
             item.FileName = Path.GetFileName(chosen);
             item.Extension = Path.GetExtension(chosen).ToLowerInvariant();
-            return fixes;
+
+            // The file demonstrably EXISTS — Calibre just named it — so a "missing" flag left by a scan that
+            // looked at the old path is stale, and the item is not excluded any more.
+            var state = await db.ItemStates.FirstOrDefaultAsync(s => s.ItemId == item.Id, ct);
+            var wasMissing = state?.BrokenReason == LibraryScanner.MissingReason;
+            if (wasMissing) await LibraryScanner.ClearMissingAsync(db, item, state, ct);
+
+            return new RepathOutcome(true, fixes, merged, 0, wasMissing ? 1 : 0);
+        }
+
+        /// <summary>What one item's re-path did.</summary>
+        private readonly record struct RepathOutcome(bool Repathed, int FoldersFixed, int DuplicatesMerged, int Collisions, int Unbroken);
+
+        /// <summary>
+        /// Fold a scan-born duplicate row into the row Calibre knows.
+        ///
+        /// <para><b>The linked row is the survivor</b>, always: it carries the Calibre identity, the v1 history
+        /// and the id every bookmark, mark and share link already names. The duplicate is a row a later scan
+        /// created because the catalog still had the old path — same bytes, same file, no identity of its own.</para>
+        ///
+        /// <para><b>Only the READER's state moves.</b> `BookDetail`, `ItemCredit` and `ItemTag` are rewritten
+        /// from Calibre a few lines after this returns, and the duplicate's `ItemState` / `ItemSignature` /
+        /// `ComicEmbedded` describe the same file the survivor's rows describe — carrying them over would only
+        /// overwrite good data with a copy of itself. `UserItemState` is the one thing that CANNOT be
+        /// regenerated, so it is merged per user with the same rules the series merge uses: OR the flags, keep
+        /// the further-along status, take the newer position — except that <c>LastPage = -1</c> is the only
+        /// "Finished" signal the reader has, so it always wins over a newer half-read position.</para>
+        ///
+        /// <para><b>The delete is flushed on its own.</b> EF does not order an unrelated DELETE ahead of an
+        /// UPDATE, so leaving both pending would present SQLite with two rows at one path inside the same
+        /// statement batch — which is exactly what <c>IX_Item_Path</c> refuses. Every FK into `Item` is
+        /// <c>ON DELETE RESTRICT</c>, so the dependent rows go by hand first.</para>
+        /// </summary>
+        private static async Task MergeDuplicateAsync(BooksDb db, Item survivor, Item duplicate, CancellationToken ct)
+        {
+            var mine = await db.UserItemStates.Where(s => s.ItemId == survivor.Id).ToListAsync(ct);
+            var byUser = mine.ToDictionary(s => s.UserId);
+            foreach (var theirs in await db.UserItemStates.Where(s => s.ItemId == duplicate.Id).ToListAsync(ct))
+            {
+                if (byUser.TryGetValue(theirs.UserId, out var ours)) MergeReaderState(ours, theirs);
+                else
+                    // ItemId is half the primary key, so a move is an add plus a remove — never an update.
+                    db.UserItemStates.Add(new UserItemState
+                    {
+                        UserId = theirs.UserId, ItemId = survivor.Id,
+                        LastPage = theirs.LastPage, LastSpineItemIndex = theirs.LastSpineItemIndex,
+                        LastScrollPercent = theirs.LastScrollPercent, Status = theirs.Status,
+                        WantToRead = theirs.WantToRead, Favorite = theirs.Favorite,
+                        HiddenFromHistory = theirs.HiddenFromHistory, UpdatedAt = theirs.UpdatedAt,
+                    });
+                db.UserItemStates.Remove(theirs);
+            }
+
+            // A containment row that named the duplicate as its container names the survivor now: same file.
+            foreach (var child in await db.CollectionNodes.Where(n => n.ParentItemId == duplicate.Id).ToListAsync(ct))
+                child.ParentItemId = survivor.Id;
+
+            var id = duplicate.Id;
+            db.ItemStates.RemoveRange(await db.ItemStates.Where(x => x.ItemId == id).ToListAsync(ct));
+            db.ItemSignatures.RemoveRange(await db.ItemSignatures.Where(x => x.ItemId == id).ToListAsync(ct));
+            db.ComicEmbeddeds.RemoveRange(await db.ComicEmbeddeds.Where(x => x.ItemId == id).ToListAsync(ct));
+            db.BookDetails.RemoveRange(await db.BookDetails.Where(x => x.ItemId == id).ToListAsync(ct));
+            db.ComicDetails.RemoveRange(await db.ComicDetails.Where(x => x.ItemId == id).ToListAsync(ct));
+            db.ItemCredits.RemoveRange(await db.ItemCredits.Where(x => x.ItemId == id).ToListAsync(ct));
+            db.ItemTags.RemoveRange(await db.ItemTags.Where(x => x.ItemId == id).ToListAsync(ct));
+            db.ItemProviderLinks.RemoveRange(await db.ItemProviderLinks.Where(x => x.ItemId == id).ToListAsync(ct));
+            db.ReadingOrderEntries.RemoveRange(await db.ReadingOrderEntries.Where(x => x.ItemId == id).ToListAsync(ct));
+            db.CollectionNodes.RemoveRange(await db.CollectionNodes.Where(x => x.ItemId == id).ToListAsync(ct));
+            db.CollectedEditionSpans.RemoveRange(await db.CollectedEditionSpans.Where(x => x.ItemId == id).ToListAsync(ct));
+            db.DuplicateMembers.RemoveRange(await db.DuplicateMembers.Where(x => x.ItemId == id).ToListAsync(ct));
+
+            // Insight and Rating carry no foreign key — they address a subject by (kind, id) — so nothing forces
+            // these rows out. They still have to go: the scanner allocates the next item id as max(Id) + 1, so
+            // deleting the highest-numbered row frees an id a later scan WILL hand to a different book, and it
+            // would inherit this one's AI synopsis and score. (This is not an edit to the append-only insight
+            // log; it is the removal of rows whose subject no longer exists.)
+            var insightIds = await db.Insights.Where(x => x.SubjectKind == SubjectKind.Item && x.SubjectId == id)
+                .Select(x => x.Id).ToListAsync(ct);
+            if (insightIds.Count > 0)
+            {
+                db.InsightTags.RemoveRange(await db.InsightTags.Where(t => insightIds.Contains(t.InsightId)).ToListAsync(ct));
+                db.Insights.RemoveRange(await db.Insights.Where(x => insightIds.Contains(x.Id)).ToListAsync(ct));
+            }
+            db.Ratings.RemoveRange(await db.Ratings.Where(r => r.TargetKind == SubjectKind.Item && r.TargetId == id).ToListAsync(ct));
+
+            // The folder loses a file. (The scan's aggregate pass recomputes these from scratch; this keeps the
+            // Directory view honest until it next runs.)
+            var folder = await db.Folders.FirstOrDefaultAsync(f => f.Id == duplicate.FolderId, ct);
+            if (folder != null && !duplicate.IsExcluded)
+                folder.DescendantItemCount = Math.Max(0, folder.DescendantItemCount - 1);
+
+            db.Items.Remove(duplicate);
+            await db.SaveChangesAsync(ct);
+        }
+
+        /// <summary>
+        /// Merge one reader's state from the duplicate into the survivor's row. OR the flags, keep the
+        /// further-along status, take the newer position — with Finished (<c>LastPage == -1</c>) as the one
+        /// value a newer position may not overwrite.
+        /// </summary>
+        private static void MergeReaderState(UserItemState ours, UserItemState theirs)
+        {
+            ours.WantToRead |= theirs.WantToRead;
+            ours.Favorite |= theirs.Favorite;
+            ours.HiddenFromHistory |= theirs.HiddenFromHistory;
+            if (theirs.Status > ours.Status) ours.Status = theirs.Status;
+
+            const int finished = -1;
+            if (ours.LastPage == finished) { /* already finished — nothing newer can un-finish it */ }
+            else if (theirs.LastPage == finished)
+            {
+                ours.LastPage = finished;
+                ours.Status = ReadStatus.Finished;
+            }
+            else if (theirs.UpdatedAt > ours.UpdatedAt)
+            {
+                ours.LastPage = theirs.LastPage;
+                ours.LastSpineItemIndex = theirs.LastSpineItemIndex;
+                ours.LastScrollPercent = theirs.LastScrollPercent;
+            }
+            if (theirs.UpdatedAt > ours.UpdatedAt) ours.UpdatedAt = theirs.UpdatedAt;
         }
 
         /// <summary>The "collection" a folder belongs to — a top folder is its own (see the scanner's aggregate pass).</summary>
