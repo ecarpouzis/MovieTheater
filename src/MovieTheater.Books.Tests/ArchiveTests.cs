@@ -30,6 +30,10 @@ namespace MovieTheater.Books.Tests
         /// <summary>A CBZ whose page 0 is a 2:1 landscape wraparound — the spread-crop case.</summary>
         public readonly string SpreadCbzPath;
         public readonly string EpubPath;
+        /// <summary>An EPUB named .zip — 87% of the library's 3,936 .zip "books" are exactly this.</summary>
+        public readonly string EpubAsZipPath;
+        /// <summary>A comic named .zip — same extension, and it must NOT reach the EPUB reader.</summary>
+        public readonly string ComicAsZipPath;
         /// <summary>A row in the catalog whose file is NOT on disk — the recorded-error case.</summary>
         public readonly string MissingPath;
 
@@ -51,6 +55,12 @@ namespace MovieTheater.Books.Tests
 
             EpubPath = Path.Combine(WorkDir, "novel.epub");
             WriteEpub(EpubPath);
+
+            EpubAsZipPath = Path.Combine(WorkDir, "novel.zip");
+            File.Copy(EpubPath, EpubAsZipPath);
+
+            ComicAsZipPath = Path.Combine(WorkDir, "comic.zip");
+            File.Copy(CbzPath, ComicAsZipPath);
 
             MissingPath = Path.Combine(WorkDir, "not-on-disk.cbz");
 
@@ -253,6 +263,36 @@ namespace MovieTheater.Books.Tests
             // A file that cannot be opened means "trust the extension", not an exception.
             Assert.Equal(".cbz", ArchiveFormatSniffer.ResolveReaderExtension(fixture.MissingPath, ".cbz"));
             Assert.Equal(ArchiveFormatSniffer.Container.Unknown, ArchiveFormatSniffer.Detect(fixture.MissingPath));
+        }
+
+        /// <summary>
+        /// A bare <c>.zip</c> says nothing about what is inside, and the library holds 3,936 of them with no
+        /// cover because no reader claimed the extension. Routing them by container alone is not enough either:
+        /// 87% are EPUBs, and the comic reader would hand back whichever image sorted first instead of the
+        /// book's cover. So the ZIP is split by its OCF signature — and the comic case must survive it.
+        /// </summary>
+        [Fact]
+        public void A_zip_is_routed_by_what_is_inside_it()
+        {
+            Assert.Equal(".epub", ArchiveFormatSniffer.ResolveReaderExtension(fixture.EpubAsZipPath, ".zip"));
+            Assert.Equal(".cbz", ArchiveFormatSniffer.ResolveReaderExtension(fixture.ComicAsZipPath, ".zip"));
+
+            Assert.True(ArchiveFormatSniffer.IsEpubZip(fixture.EpubAsZipPath));
+            Assert.False(ArchiveFormatSniffer.IsEpubZip(fixture.ComicAsZipPath));
+            // Not a zip at all: no opinion rather than an exception.
+            Assert.False(ArchiveFormatSniffer.IsEpubZip(fixture.MissingPath));
+
+            // The .epub extension still short-circuits — an EPUB correctly named is never re-sniffed.
+            Assert.Equal(".epub", ArchiveFormatSniffer.ResolveReaderExtension(fixture.EpubPath, ".epub"));
+        }
+
+        /// <summary>A <c>.rar</c> reaches the reader that can open RAR, instead of no reader at all.</summary>
+        [Fact]
+        public void A_rar_reaches_a_reader()
+        {
+            // The fixture's "rar" is a ZIP by content; the point is that .rar is now SNIFFED rather than
+            // dropped, so the container decides and the file is no longer unreadable by default.
+            Assert.Equal(".cbz", ArchiveFormatSniffer.ResolveReaderExtension(fixture.MisnamedCbrPath, ".rar"));
         }
 
         /// <summary>
