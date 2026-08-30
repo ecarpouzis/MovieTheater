@@ -16,8 +16,17 @@
   min-height: 100%;
   color: var(--books-ink);
   background: var(--books-scene);
-  padding: 0 0 40px;
+  /* The side gutter. It used to be 0 here, and the only horizontal padding in the
+     section lived in skin.css behind @media (max-width: 640px) — so a PHONE had a
+     margin and a desktop did not, and every grid, header and pager sat flush against
+     both window edges. Below 640px the host still supplies its own, so this one
+     stands down rather than doubling up. */
+  padding: 0 clamp(14px, 2.4vw, 34px) 40px;
   --catalog-pager-bleed: 18px;
+}
+
+@media (max-width: 640px) {
+  .books-section { padding-left: 0; padding-right: 0; }
 }
 
 .books-section .bx-host {

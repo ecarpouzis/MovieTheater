@@ -107,6 +107,14 @@ SELECT i.Id, i.Kind, i.Title, i.SeriesId, i.PublisherId,
        (SELECT r.Value FROM Rating r WHERE r.TargetKind = 0 AND r.TargetId = i.Id AND r.Source = 0) AS UserRating,
        (SELECT r.Value FROM Rating r WHERE r.TargetKind = 1 AND r.TargetId = i.SeriesId AND r.Source = 5) AS SeriesOverrideRating,
        (SELECT r.Value FROM Rating r WHERE r.TargetKind = 1 AND r.TargetId = i.SeriesId AND r.Source = 4) AS SeriesLibraryRating,
+       -- A BOOK'S AUTHOR LIVES IN ItemCredit. books-import-calibre writes one row per author
+       -- there (Source=Calibre, Role=Author) and nothing else in this query can see it: the
+       -- other creator columns are ComicEmbedded.Writers, ExternalWork.Authors and the AI
+       -- insight, none of which a Calibre book ever fills. Those credits were powering the
+       -- Authors facet while ResolvedCreatorsCsv stayed empty for 125,531 books.
+       (SELECT group_concat(c.Name, ', ')
+          FROM (SELECT Name FROM ItemCredit
+                 WHERE ItemId = i.Id AND Role = 'Author' ORDER BY Ordinal) c) AS CreditAuthors,
        (SELECT group_concat(t.Value, char(31)) FROM ItemTag t WHERE t.ItemId = i.Id AND t.Category IN ('genre','tag')) AS ItemTags,
        (SELECT group_concat(t.Value, char(31)) FROM SeriesTag t WHERE t.SeriesId = i.SeriesId AND t.Category = 'tag') AS SeriesTags
 FROM Item i
@@ -160,7 +168,11 @@ WHERE i.Id > $after ORDER BY i.Id LIMIT $n";
                 var (year, month, precision) = ResolveDate(r.T("ReadDate"), (DatePrecision)r.Int("ReadDatePrecision"), isBook ? r.T("PublishedOn") : r.T("PublicationDate"), r.I("ParsedYear"), r.I("ExtYear"));
                 var aiSynopsis = isBook ? r.S("BookAiSynopsis") : r.S("SeriesAiSynopsis");
                 var synopsis = SynopsisRules.ResolveItem(r.S("CvDescription"), isBook ? r.S("BookDescription") : r.S("Summary"), r.S("LocgDescription"), r.S("ExtDescription"), r.S("MuDescription"), r.S("CvDeck"), aiSynopsis);
-                var authors = FirstNonEmpty(r.S("Writers"), r.S("ExtAuthors"), isBook ? r.S("BookAiAuthor") : r.S("AiAuthor"));
+                // For a BOOK the Calibre credit is the best source there is — it came from the
+                // library's own metadata — so it leads. A comic keeps its existing order.
+                var authors = isBook
+                    ? FirstNonEmpty(r.S("CreditAuthors"), r.S("Writers"), r.S("ExtAuthors"), r.S("BookAiAuthor"))
+                    : FirstNonEmpty(r.S("Writers"), r.S("ExtAuthors"), r.S("AiAuthor"));
                 var artists = FirstNonEmpty(string.IsNullOrWhiteSpace(r.S("Pencillers")) ? r.S("CoverArtist") : r.S("Pencillers"), r.S("AiArtist"));
                 var creators = authors.Concat(artists).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
                 var tags = new List<string>();

@@ -969,11 +969,24 @@ namespace MovieTheater.Books.Controllers
             return counts;
         }
 
+        /// <summary>
+        /// Folder display names for a set of ids — with the same threshold <see cref="SeriesNamesAsync"/> uses,
+        /// and for the same reason.
+        ///
+        /// <para>A COMICS root has ~109 top folders (Marvel, DC, Manga…), so an IN list was always fine. A
+        /// CALIBRE root is not shaped that way: its layout is
+        /// <c>&lt;library&gt;/&lt;author&gt;/&lt;title (id)&gt;/</c>, so every author folder is a top folder —
+        /// 39,922 of them once the library passed 126k books. That IN list exceeds SQLite's variable cap, the
+        /// Directory view's group names come back empty, and the page renders a single stray tile. Past the
+        /// threshold, stream the (still small, two-column) table instead.</para>
+        /// </summary>
         private async Task<Dictionary<int, string>> FolderNamesAsync(List<int> ids, CancellationToken ct)
         {
             if (ids.Count == 0) return new Dictionary<int, string>();
-            var rows = await db.Folders.AsNoTracking().Where(f => ids.Contains(f.Id))
-                .Select(f => new { f.Id, f.Name }).ToListAsync(ct);
+            var query = db.Folders.AsNoTracking().Select(f => new { f.Id, f.Name });
+            var rows = ids.Count > 2000
+                ? await query.ToListAsync(ct)
+                : await query.Where(f => ids.Contains(f.Id)).ToListAsync(ct);
             return rows.ToDictionary(f => f.Id, f => f.Name ?? "Unknown");
         }
 

@@ -181,6 +181,21 @@ FROM books b WHERE b.id > $after ORDER BY b.id LIMIT $n";
                 item.CalibreBookId = book.Id;
                 if (item.Kind != ItemKind.Book) item.Kind = ItemKind.Book;
 
+                // THE TITLE IS PART OF THE CALIBRE IDENTITY. Without this the scan's fallback
+                // stands, and that fallback is the FILE NAME — the site then shows
+                // "Planeswalker - Lynn Abbey.epub" and "[Survivalist 05] - Resurrecting Ho".
+                // ItemResolver passes a book's Item.Title straight through to ResolvedTitle, so
+                // nothing downstream repairs it either. Calibre already holds the real title and
+                // reading it here is free, which beats the alternative the scanner used to rely
+                // on: opening every EPUB to ask its embedded metadata for a title that Calibre
+                // itself had written there.
+                var calibreTitle = Blank(book.Title);
+                if (calibreTitle != null && !string.Equals(item.Title, calibreTitle, StringComparison.Ordinal))
+                {
+                    item.Title = calibreTitle;
+                    item.NormalizedTitle = LibraryScanner.Normalize(calibreTitle);
+                }
+
                 var detail = await db.BookDetails.FirstOrDefaultAsync(b => b.ItemId == item.Id, ct);
                 if (detail == null) { detail = new BookDetail { ItemId = item.Id }; db.BookDetails.Add(detail); }
                 detail.Isbn = Blank(book.Isbn) ?? detail.Isbn;
