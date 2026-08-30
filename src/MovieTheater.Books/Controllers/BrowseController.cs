@@ -284,7 +284,12 @@ namespace MovieTheater.Books.Controllers
             perGroupSkip = Math.Max(0, perGroupSkip);
             groupsSkip = Math.Max(0, groupsSkip);
             var by = NormalizeGroupBy(groupBy);
-            var itemKind = CatalogController.ParseKind(kind);
+            // The series modal asks for ONE series head and does not know the kind. When the key names a book
+            // series the answer is in the key itself — without this the head comes back empty and the modal has
+            // no label, no count and no mark for a series that exists. An explicit ?kind= still wins.
+            var itemKind = by == "series" && kind == null && int.TryParse(singleGroupKey, out var onlySeriesId)
+                ? await KindForSeriesAsync(onlySeriesId, null, ct)
+                : CatalogController.ParseKind(kind);
 
             var (countQuery, summaryQuery) = await BuildFilteredContextAsync(itemKind, q, filter, exact, wantToReadOnly, readOnly, ct);
             var heads = await CachedHeadsAsync(HeadsSig(itemKind, by, q, filter, exact, wantToReadOnly, readOnly), Ttl(q, filter, exact),
@@ -493,7 +498,7 @@ namespace MovieTheater.Books.Controllers
         [HttpGet("series/{seriesId:int}/run")]
         public async Task<IActionResult> GetSeriesRun(int seriesId, [FromQuery] string? kind = null, CancellationToken ct = default)
         {
-            var itemKind = CatalogController.ParseKind(kind);
+            var itemKind = await KindForSeriesAsync(seriesId, kind, ct);
             var visible = ItemAccess.VisibleItems(db, User, itemKind).Where(i => i.SeriesId == seriesId);
             var summaries = await visible.Select(ItemSummary.Project).ToListAsync(ct);
 
@@ -511,17 +516,63 @@ namespace MovieTheater.Books.Controllers
                 .ToListAsync(ct);
             var nodeById = nodes.GroupBy(n => n.ItemId).ToDictionary(g => g.Key, g => g.First().Block);
 
-            // Reading order: the standalone's readDate, readTier, readIndex ascending, then the issue's own year
-            // and id so an issue the order job never reached still lands somewhere deterministic.
-            var rows = summaries
-                .Select(s => new SeriesRunRow(s, orderById.GetValueOrDefault(s.Id), nodeById.GetValueOrDefault(s.Id)))
-                .OrderBy(r => r.ReadingOrder?.ReadDate ?? "9999")
-                .ThenBy(r => r.ReadingOrder?.ReadTier ?? int.MaxValue)
-                .ThenBy(r => r.ReadingOrder?.ReadIndex ?? int.MaxValue)
-                .ThenBy(r => r.Item.Year ?? int.MaxValue)
+            var unordered = summaries.Select(s => new SeriesRunRow(s, orderById.GetValueOrDefault(s.Id), nodeById.GetValueOrDefault(s.Id)));
+
+            // A BOOK series has no reading order at all — ReadingOrderEntry is built from ComicDetail, and a
+            // novel has none — so ordering it by ReadDate/ReadTier would leave a trilogy in id order. Calibre's
+            // own series index IS the reading order for a book, so that leads, with the title behind it for the
+            // volumes an editor never numbered.
+            var rows = itemKind == ItemKind.Book
+                ? await OrderBooksAsync(seriesId, unordered, ct)
+                : unordered
+                    // Reading order: the standalone's readDate, readTier, readIndex ascending, then the issue's own
+                    // year and id so an issue the order job never reached still lands somewhere deterministic.
+                    .OrderBy(r => r.ReadingOrder?.ReadDate ?? "9999")
+                    .ThenBy(r => r.ReadingOrder?.ReadTier ?? int.MaxValue)
+                    .ThenBy(r => r.ReadingOrder?.ReadIndex ?? int.MaxValue)
+                    .ThenBy(r => r.Item.Year ?? int.MaxValue)
+                    .ThenBy(r => r.Item.Id)
+                    .ToList();
+            return Ok(new { seriesId, kind = itemKind == ItemKind.Book ? "book" : "comic", total = rows.Count, items = rows });
+        }
+
+        /// <summary>
+        /// Which kind a series-addressed endpoint should read when the caller did not say.
+        ///
+        /// <para>The series id itself carries the answer: a book series' <c>CanonicalKey</c> starts with
+        /// <c>book:</c> (<see cref="MovieTheater.Books.Resolve.SeriesResolver.BookKeyPrefix"/>). Without this the
+        /// default kind is <c>comic</c> and a book series' run comes back EMPTY — the modal the novels page opens
+        /// would show "this series is not available" for a series that is right there. An EXPLICIT
+        /// <c>?kind=</c> always wins; this only fills the blank.</para>
+        /// </summary>
+        private async Task<ItemKind> KindForSeriesAsync(int seriesId, string? kind, CancellationToken ct)
+        {
+            if (!string.IsNullOrWhiteSpace(kind)) return CatalogController.ParseKind(kind);
+            var canonical = await db.Series.AsNoTracking().Where(s => s.Id == seriesId)
+                .Select(s => s.CanonicalKey).FirstOrDefaultAsync(ct);
+            return canonical != null && canonical.StartsWith(MovieTheater.Books.Resolve.SeriesResolver.BookKeyPrefix, StringComparison.Ordinal)
+                ? ItemKind.Book
+                : ItemKind.Comic;
+        }
+
+        /// <summary>
+        /// Series index first (Calibre's own numbering), then title, then id — always deterministic. The index is
+        /// fetched by a JOIN on the series id, never an id IN-list: a long-running series can hold far more books
+        /// than SQLite's variable cap.
+        /// </summary>
+        private async Task<List<SeriesRunRow>> OrderBooksAsync(int seriesId, IEnumerable<SeriesRunRow> rows, CancellationToken ct)
+        {
+            var list = rows.ToList();
+            if (list.Count == 0) return list;
+            var index = await db.Items.AsNoTracking().Where(i => i.SeriesId == seriesId && i.Kind == ItemKind.Book)
+                .Join(db.BookDetails.AsNoTracking(), i => i.Id, b => b.ItemId, (i, b) => new { i.Id, b.SeriesIndex })
+                .Where(x => x.SeriesIndex != null)
+                .ToDictionaryAsync(x => x.Id, x => x.SeriesIndex!.Value, ct);
+            return list
+                .OrderBy(r => index.TryGetValue(r.Item.Id, out var n) ? n : double.MaxValue)
+                .ThenBy(r => r.Item.Title, StringComparer.OrdinalIgnoreCase)
                 .ThenBy(r => r.Item.Id)
                 .ToList();
-            return Ok(new { seriesId, total = rows.Count, items = rows });
         }
 
         // ── the shared request prologue ───────────────────────────────────────────────────────────────────────

@@ -10,6 +10,16 @@ export function facetHref(token: string, value: string | number, extra: Record<s
   return `/books?${p.toString()}`;
 }
 
+/**
+ * "Browse this series" for a BOOK. The comics browse filters series by ID; the Novels page's series
+ * facet is by NAME (the host reads `BookDetail.SeriesName`), and a novel's home is /books/novels — so
+ * a book series' browse link is not the same URL as a comic's, and sending it to `/books?f=series:<id>`
+ * lands on the comics browse with nothing in it.
+ */
+export function novelsSeriesHref(name: string): string {
+  return `/books/novels?${new URLSearchParams({ f: `series:${name}` }).toString()}`;
+}
+
 export function searchHref(q: string): string {
   return `/books?${new URLSearchParams({ q }).toString()}`;
 }

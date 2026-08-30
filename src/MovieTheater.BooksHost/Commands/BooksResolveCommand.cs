@@ -23,7 +23,8 @@ namespace MovieTheater.BooksHost.Commands
         [CommandOption("legs", Description = "books-legs.db (default Books:LegsDbPath) — only --tags reads it.")] public string? LegsDbPath { get; set; }
         [CommandOption("batch-size", Description = "Items per chunk (default 5000).")] public int BatchSize { get; set; } = 5000;
         [CommandOption("fts", Description = "Also rebuild ItemFts (default true).")] public bool Fts { get; set; } = true;
-        [CommandOption("series", Description = "Rebuild the SERIES IDENTITY first (aliases, survivors, Item.SeriesId, merges, counts, spans).")] public bool SeriesIdentity { get; set; }
+        [CommandOption("series", Description = "Rebuild the SERIES IDENTITY first (aliases, survivors, Item.SeriesId, merges, counts, spans) — comics THEN books.")] public bool SeriesIdentity { get; set; }
+        [CommandOption("book-series", Description = "Rebuild the BOOK series links only (book: rows, Item.SeriesId for books, counts, spans) — no comic identity pass. No comic row is read or written.")] public bool BookSeries { get; set; }
         [CommandOption("tags", Description = "Also rewrite the External/MU/GCD tag folds from the legs file.")] public bool Tags { get; set; }
 
         public async ValueTask ExecuteAsync(IConsole console)
@@ -40,6 +41,14 @@ namespace MovieTheater.BooksHost.Commands
                 await console.Output.WriteLineAsync($"series identity: {counts}");
                 var diff = SeriesResolver.Diff(hot);
                 await console.Output.WriteLineAsync($"series identity: recompute diff = {diff.Total} (0 = stable)");
+            }
+
+            // Books go AFTER the comic identity: that job's finish pass deletes rows and re-points items, and the
+            // book counts have to be computed over the settled ids.
+            if (SeriesIdentity || BookSeries)
+            {
+                var bookCounts = BookSeriesLinkJob.RunAll(hot, Math.Max(100, BatchSize), l => console.Output.WriteLine(l));
+                await console.Output.WriteLineAsync($"book series: {bookCounts}");
             }
 
             if (Tags)

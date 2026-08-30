@@ -550,7 +550,10 @@ namespace MovieTheater.Books.Controllers
             using var hot = new TargetWriter(dbPath, MappingContract.Load(), dryRun: false);
             var counts = SeriesRebuildJob.RunAll(hot, batchSize, _ => { });
             var diff = SeriesResolver.Diff(hot);
-            return new JobProgress(counts.Detail.GetValueOrDefault("items-repointed"), 0, null, 0, $"{counts}; diff {diff.Total}");
+            // Books after comics: the comic finish pass deletes rows and re-points items, and the book counts
+            // have to be computed over the settled ids. Same order as `books-resolve --series`.
+            var books = BookSeriesLinkJob.RunAll(hot, batchSize, _ => { });
+            return new JobProgress(counts.Detail.GetValueOrDefault("items-repointed"), 0, null, 0, $"{counts}; books {books}; diff {diff.Total}");
         }
 
         private static JobProgress DrainResolve(string dbPath, int batchSize)

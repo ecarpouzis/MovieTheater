@@ -13,6 +13,18 @@ namespace MovieTheater.Books.Resolve
     public static class SeriesResolver
     {
         public sealed record SeriesRow(int Id, string ParsedKey, string CanonicalKey, string? Name, string? DisplayNameOverride);
+
+        /// <summary>
+        /// The canonical-key prefix of a BOOK series (<see cref="BookSeriesLinkJob"/>). Comic identity is derived
+        /// from `ComicDetail.ParsedSeriesKey`, which a book does not have — a book series row carries a NULL
+        /// ParsedKey and would therefore fall into the empty-key bucket of every grouping here, be merged with
+        /// every other keyless row, be renamed, and finally be deleted for having no alias. So EVERY statement in
+        /// the comic identity rebuild excludes these rows, and this is the one place the rule is written.
+        /// </summary>
+        public const string BookKeyPrefix = "book:";
+
+        /// <summary>The SQL predicate that keeps a comic-identity statement off the book series rows.</summary>
+        public const string NotBookSql = "CanonicalKey NOT LIKE 'book:%'";
         public sealed record Result(Dictionary<string, int> AliasMap, Dictionary<int, int> MergeMap, Dictionary<int, (string CanonicalKey, string Name, long? CvVolumeId, int? ExternalWorkId)> Survivors);
 
         /// <summary>Conservative normalization for the no-external-match bucket: lower, strip leading "the ", non-alphanumerics → spaces, collapse. No accent folding.</summary>
@@ -54,8 +66,9 @@ namespace MovieTheater.Books.Resolve
             var volNames = hot.Pairs("SELECT Id, Name FROM CvVolume WHERE Name IS NOT NULL AND Name <> ''").ToDictionary(p => p.Item1, p => p.Item2!);
             var workTitles = hot.Pairs("SELECT Id, Title FROM ExternalWork WHERE Title IS NOT NULL AND Title <> ''").ToDictionary(p => (int)p.Item1, p => p.Item2!);
 
-            // 3. series rows
-            var series = hot.Pairs("SELECT Id, coalesce(ParsedKey,'') || char(31) || coalesce(CanonicalKey,'') || char(31) || coalesce(Name,'') || char(31) || coalesce(DisplayNameOverride,'') FROM Series")
+            // 3. series rows — COMIC rows only (see BookKeyPrefix: a book series has no parsed key and must never
+            //    be pulled into a comic canonical group)
+            var series = hot.Pairs("SELECT Id, coalesce(ParsedKey,'') || char(31) || coalesce(CanonicalKey,'') || char(31) || coalesce(Name,'') || char(31) || coalesce(DisplayNameOverride,'') FROM Series WHERE " + NotBookSql)
                 .Select(p => { var s = p.Item2!.Split(TargetWriter.Sep); return new SeriesRow((int)p.Item1, s[0], s[1], s[2].Length == 0 ? null : s[2], s[3].Length == 0 ? null : s[3]); }).ToList();
 
             string CanonicalKeyFor(string parsedKey) =>

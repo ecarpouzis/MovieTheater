@@ -121,7 +121,7 @@ namespace MovieTheater.Books.Resolve
             // Park every canonical key first. CanonicalKey is UNIQUE, and a survivor routinely takes the key
             // another row currently holds, so writing them in place would trip the index on an ordering we do not
             // control. Merged-away rows keep their parked key until the finish phase deletes them.
-            hot.Exec($"UPDATE Series SET CanonicalKey = '{TempKeyPrefix}' || Id");
+            hot.Exec($"UPDATE Series SET CanonicalKey = '{TempKeyPrefix}' || Id WHERE {SeriesResolver.NotBookSql}");
 
             foreach (var (id, (key, name, cvVolumeId, externalWorkId)) in r.Survivors)
                 hot.Update("Series", "Id", id, new
@@ -173,8 +173,9 @@ WHERE Id > $after AND Id <= $upto
             var merged = MergeMinorities(hot, log);
             counts.Bump("series-merged", merged);
 
-            // Everything that could still name a merged-away id has been re-keyed, so the rows go.
-            var deleted = hot.Exec("DELETE FROM Series WHERE Id NOT IN (SELECT DISTINCT SeriesId FROM SeriesAlias)");
+            // Everything that could still name a merged-away id has been re-keyed, so the rows go. Book series
+            // are exempt: they have no alias row by construction and this delete would take every one of them.
+            var deleted = hot.Exec($"DELETE FROM Series WHERE Id NOT IN (SELECT DISTINCT SeriesId FROM SeriesAlias) AND {SeriesResolver.NotBookSql}");
             counts.Bump("series-deleted", deleted);
 
             RecomputeIssueCounts(hot);
@@ -195,10 +196,10 @@ WHERE Id > $after AND Id <= $upto
         public static Dictionary<int, int> MergeMap(TargetWriter hot)
         {
             var map = new Dictionary<int, int>();
-            foreach (var (oldId, newId) in hot.Pairs(@"
+            foreach (var (oldId, newId) in hot.Pairs($@"
 SELECT s.Id, CAST(a.SeriesId AS TEXT) FROM Series s
 JOIN SeriesAlias a ON a.ParsedKey = s.ParsedKey
-WHERE s.Id NOT IN (SELECT DISTINCT SeriesId FROM SeriesAlias) AND a.SeriesId <> s.Id"))
+WHERE s.Id NOT IN (SELECT DISTINCT SeriesId FROM SeriesAlias) AND a.SeriesId <> s.Id AND s.{SeriesResolver.NotBookSql}"))
                 map[(int)oldId] = int.Parse(newId!);
             return map;
         }
@@ -286,10 +287,14 @@ WHERE GroupType = 0 AND GroupKey = $new
             hot.Exec("DELETE FROM GroupMark WHERE GroupType = 0 AND GroupKey = $old", ("$old", oldKey));
         }
 
-        /// <summary>One grouped UPDATE..FROM pass — never a per-row correlated subquery (O(series x items)).</summary>
+        /// <summary>
+        /// One grouped UPDATE..FROM pass — never a per-row correlated subquery (O(series x items)).
+        /// The zeroing is comic-only: it would otherwise blank every book series' count, which
+        /// <see cref="BookSeriesLinkJob"/> owns and computes over Kind = 1.
+        /// </summary>
         private static void RecomputeIssueCounts(TargetWriter hot)
         {
-            hot.Exec("UPDATE Series SET IssueCount = 0");
+            hot.Exec($"UPDATE Series SET IssueCount = 0 WHERE {SeriesResolver.NotBookSql}");
             hot.Exec(@"
 UPDATE Series SET IssueCount = t.cnt
 FROM (SELECT i.SeriesId AS sid, count(*) AS cnt FROM Item i
@@ -329,9 +334,12 @@ WHERE v.Id = Series.CvVolumeId
   AND v.StartYear BETWEEN 1900 AND 2100
   AND (Series.YearStart IS NULL OR v.StartYear < Series.YearStart)");
 
-            hot.Exec(@"
+            // Comic rows only — the two UPDATEs above are already narrowed by their Kind = 0 subquery, but this
+            // one is unconditional and would flip a recent book series to ongoing, which books do not have.
+            hot.Exec($@"
 UPDATE Series SET IsOngoing = CASE
-    WHEN YearEnd IS NOT NULL AND YearEnd >= CAST(strftime('%Y','now') AS INTEGER) - 1 THEN 1 ELSE 0 END");
+    WHEN YearEnd IS NOT NULL AND YearEnd >= CAST(strftime('%Y','now') AS INTEGER) - 1 THEN 1 ELSE 0 END
+WHERE {SeriesResolver.NotBookSql}");
         }
 
         /// <summary>
@@ -356,14 +364,15 @@ UPDATE Series SET IsOngoing = CASE
         /// </summary>
         private static int RehomeStrandedMarks(TargetWriter hot)
         {
-            var huskIds = hot.Pairs(@"
+            // Comic rows on both sides: a mark must never be re-homed from a comic onto a book series or back.
+            var huskIds = hot.Pairs($@"
 SELECT DISTINCT CAST(g.GroupKey AS INTEGER), s.Name FROM GroupMark g
 JOIN Series s ON s.Id = CAST(g.GroupKey AS INTEGER)
-WHERE g.GroupType = 0 AND s.IssueCount = 0");
+WHERE g.GroupType = 0 AND s.IssueCount = 0 AND s.{SeriesResolver.NotBookSql}");
             if (huskIds.Count == 0) return 0;
 
             var populatedByNorm = new Dictionary<string, List<int>>(StringComparer.Ordinal);
-            foreach (var (id, name) in hot.Pairs("SELECT Id, coalesce(DisplayNameOverride, Name, '') FROM Series WHERE IssueCount > 0"))
+            foreach (var (id, name) in hot.Pairs($"SELECT Id, coalesce(DisplayNameOverride, Name, '') FROM Series WHERE IssueCount > 0 AND {SeriesResolver.NotBookSql}"))
             {
                 var key = NormName(name);
                 if (!populatedByNorm.TryGetValue(key, out var list)) populatedByNorm[key] = list = new List<int>();

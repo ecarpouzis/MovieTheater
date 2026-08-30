@@ -16,7 +16,7 @@ import { hueSvg } from "../../catalog/cards/CardImage";
 import { hueOf } from "../../catalog/sources/hue";
 import { fetchCatalog, fetchGroupItems, fetchItem, type ItemDetail, type ItemSummary } from "./booksApi";
 import { clampAspect, dateLabel, fileLabel, starsFromRating, synopsisFor } from "./booksFormat";
-import { directoryHref, facetHref, readHref } from "./booksLinks";
+import { directoryHref, facetHref, novelsSeriesHref, readHref } from "./booksLinks";
 import { fillPagesTemplate, thumbUrl, useMediaToken } from "./booksMedia";
 import BooksModalShell, { ICON, Icon, MagnifierIcon } from "./BooksModalShell";
 import { bk } from "./booksQuery";
@@ -145,7 +145,12 @@ export default function ItemModal({ itemId, isKid = false }: ItemModalProps) {
                 <span className="cm-k">Series</span>
                 <button type="button" className="cm-link" onClick={() => openEntity(history, location, { kind: "series", id: summary.seriesId! })}>{summary.series}</button>
                 {!isKid && (
-                  <button type="button" className="cm-mag" title="Browse this series" onClick={() => go(facetHref("series", summary.seriesId!))}><MagnifierIcon /></button>
+                  <button
+                    type="button"
+                    className="cm-mag"
+                    title="Browse this series"
+                    onClick={() => go(summary.kind === "book" ? novelsSeriesHref(summary.series!) : facetHref("series", summary.seriesId!))}
+                  ><MagnifierIcon /></button>
                 )}
               </div>
             )}

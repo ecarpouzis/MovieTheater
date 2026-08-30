@@ -14,7 +14,7 @@ import { useHistory, useLocation } from "react-router-dom";
 import { hueOf } from "../../catalog/sources/hue";
 import { fetchGroups, fetchItem, fetchSeriesLibraryRating, fetchSeriesProgress, fetchSeriesRun, putGroupMark, type GroupUserMark, type SeriesRunRow } from "./booksApi";
 import { clampAspect, plural, runLabel, seriesSynopsisFor, stripHtml } from "./booksFormat";
-import { directoryHref, facetHref } from "./booksLinks";
+import { directoryHref, facetHref, novelsSeriesHref } from "./booksLinks";
 import BooksModalShell, { ICON, Icon } from "./BooksModalShell";
 import { bk, invalidateAfter, setGroupMarkOverride } from "./booksQuery";
 import CoverStack from "./CoverStack";
@@ -73,6 +73,8 @@ export default function SeriesModal({ seriesId, isKid = false }: SeriesModalProp
   });
 
   const label = group?.label ?? rows[0]?.item.series ?? "Series";
+  // A book series browses on the Novels page, by NAME — the comics browse's series facet is by id.
+  const isBookSeries = rows[0]?.item.kind === "book";
   const total = group?.totalItems || run.data?.total || rows.length;
   const agg = useMemo(() => aggregate(rows), [rows]);
   const detail = group?.groupDetail ?? null;
@@ -106,7 +108,7 @@ export default function SeriesModal({ seriesId, isKid = false }: SeriesModalProp
             {rows.length > 0 && <CoverStack items={rows.map((r) => r.item)} count={total} aspect={clampAspect(rows[0].item.coverAspect)} />}
             <div className="cm-actions">
               {!isKid && (
-                <button type="button" className="cm-btn cm-btn-primary" onClick={() => go(facetHref("series", seriesId))}>
+                <button type="button" className="cm-btn cm-btn-primary" onClick={() => go(isBookSeries ? novelsSeriesHref(label) : facetHref("series", seriesId))}>
                   <Icon d={ICON.grid} /><span>Browse this series</span>
                 </button>
               )}
