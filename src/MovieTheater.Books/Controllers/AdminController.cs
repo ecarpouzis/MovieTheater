@@ -229,7 +229,7 @@ namespace MovieTheater.Books.Controllers
                 var job = services.GetRequiredService<ThumbnailJob>();
                 var r = await job.RunBatchAsync(scoped, batchSize, token);
                 return new JobProgress(r.Processed, r.Remaining, r.NextCursor?.ToString(), r.Failed,
-                    $"generated {r.Generated}, skipped {r.Skipped}, failed {r.Failed}");
+                    $"generated {r.Generated}, skipped {r.Skipped}, failed {r.Failed}, errors-cleared {r.ErrorsCleared}");
             });
         }
 
@@ -237,7 +237,7 @@ namespace MovieTheater.Books.Controllers
         public async Task<IActionResult> ThumbnailsStatus(CancellationToken ct)
         {
             var s = await thumbnails.StatusAsync(db, ct);
-            return Ok(new { job = jobs.Status("thumbnails"), cursor = s.Cursor, processed = s.Processed, generated = s.Generated, skipped = s.Skipped, failed = s.Failed, remaining = s.Remaining });
+            return Ok(new { job = jobs.Status("thumbnails"), cursor = s.Cursor, processed = s.Processed, generated = s.Generated, skipped = s.Skipped, failed = s.Failed, errorsCleared = s.Cleared, remaining = s.Remaining });
         }
 
         [HttpPost("thumbnails/stop")]

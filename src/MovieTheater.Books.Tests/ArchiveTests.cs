@@ -590,6 +590,73 @@ namespace MovieTheater.Books.Tests
             }
         }
 
+        /// <summary>
+        /// The live shape on 2026-08-30: 22,419 book rows carried a `ThumbnailError` while the cache held thumbs
+        /// for 243,197 of 245,434 items. The messages were leftovers — a double run whose two passes fought over
+        /// the same output file, and the pre-1871a5ed "No archive reader" era — and the later pass, which found
+        /// the thumb and reported `skipped`, never retracted them. `/admin/broken` lists every row with a
+        /// ThumbnailError, so the admin Library tab showed ~20k false "thumb:" tags.
+        /// </summary>
+        [Fact]
+        public async Task A_skip_retracts_a_stale_error_and_a_real_failure_keeps_its_own()
+        {
+            using var scratch = new ArchiveFixture();
+            var job = new ThumbnailJob(scratch.Thumbnails(), NullLogger<ThumbnailJob>.Instance);
+
+            using (var db = scratch.NewDb())
+            {
+                var first = await job.RunBatchAsync(db, 10);
+                Assert.Equal(3, first.Generated);
+                Assert.Equal(1, first.Failed);
+                Assert.Equal(0, first.ErrorsCleared);   // nothing stale yet
+            }
+
+            // Plant the leftover: a row whose thumbnail EXISTS but which still carries a message from a pass
+            // that later succeeded.
+            var plantedAt = new DateTime(2026, 8, 30, 3, 23, 0, DateTimeKind.Utc);
+            using (var db = scratch.NewDb())
+            {
+                var state = await db.ItemStates.FirstAsync(s => s.ItemId == ArchiveFixture.CbzItemId);
+                state.ThumbnailError = "Could not decode cover image: The process cannot access the file '…\\thumbs\\1.webp' because it is being used by another process.";
+                state.ThumbnailCheckedAt = plantedAt;
+                await db.SaveChangesAsync();
+            }
+
+            var before = DateTime.UtcNow;
+            using (var db = scratch.NewDb())
+            {
+                await job.ResetAsync(db);
+                var replay = await job.RunBatchAsync(db, 10);
+                Assert.Equal(0, replay.Generated);
+                Assert.Equal(3, replay.Skipped);
+                Assert.Equal(1, replay.Failed);
+                Assert.Equal(1, replay.ErrorsCleared);   // exactly the one row that was lying
+            }
+
+            using (var db = scratch.NewDb())
+            {
+                var cleared = await db.ItemStates.AsNoTracking().FirstAsync(s => s.ItemId == ArchiveFixture.CbzItemId);
+                Assert.Null(cleared.ThumbnailError);
+                // Stamped, not preserved: the job did check this item, and the stamp dates the standing verdict.
+                Assert.True(cleared.ThumbnailCheckedAt >= before, "the checked-at stamp was not refreshed");
+
+                // The file that REALLY cannot be read keeps its error and its broken flag — a skip never
+                // invents success for something it did not skip.
+                var missing = await db.ItemStates.AsNoTracking().FirstAsync(s => s.ItemId == ArchiveFixture.MissingItemId);
+                Assert.NotNull(missing.ThumbnailError);
+                Assert.True(missing.IsBroken);
+
+                Assert.Equal(1, (await job.StatusAsync(db)).Cleared);
+            }
+
+            // Idempotent: a second sweep has nothing left to retract.
+            using (var db = scratch.NewDb())
+            {
+                await job.ResetAsync(db);
+                Assert.Equal(0, (await job.RunBatchAsync(db, 10)).ErrorsCleared);
+            }
+        }
+
         [Fact]
         public async Task A_killed_batch_repeats_at_most_that_batch()
         {

@@ -7,7 +7,7 @@ namespace MovieTheater.Books.Services
     /// <summary>What one batch did. This is the whole observability contract: a caller prints it, accumulates it,
     /// and stops when <see cref="Remaining"/> hits zero or <see cref="Processed"/> stops moving.</summary>
     public sealed record ThumbnailBatchResult(
-        int Processed, long Remaining, long? NextCursor, int Generated, int Skipped, int Failed)
+        int Processed, long Remaining, long? NextCursor, int Generated, int Skipped, int Failed, int ErrorsCleared = 0)
     {
         /// <summary>A batch that moved no cursor is the end of the run (or a defect) — either way, stop.</summary>
         public bool Done => Processed == 0 || NextCursor == null;
@@ -30,6 +30,11 @@ namespace MovieTheater.Books.Services
     /// the checked-at stamp) plus its own <c>SystemState</c> progress rows. It never touches the catalog row, and
     /// it never touches the library file — the source is opened read-only.</para>
     ///
+    /// <para><b>A skip RETRACTS a stale error.</b> A thumbnail that exists is proof that the stored
+    /// <c>ThumbnailError</c> no longer describes this item, so the skip path clears it and counts it as
+    /// <c>errors-cleared</c>. Without that, a message from a run that later succeeded stands forever — the
+    /// generate path clears the error, but the generate path is exactly the one a settled library never takes.</para>
+    ///
     /// <para>The loop that repeats batches lives in the CALLER (the CLI verb, slice 5's admin endpoint), not
     /// here: a job that must survive to the end inside one call is the thing this design exists to prevent.</para>
     /// </summary>
@@ -40,6 +45,7 @@ namespace MovieTheater.Books.Services
         public const string GeneratedKey = "books:thumbs:generated";
         public const string SkippedKey = "books:thumbs:skipped";
         public const string FailedKey = "books:thumbs:failed";
+        public const string ClearedKey = "books:thumbs:cleared";
         public const string StartedAtKey = "books:thumbs:startedAt";
 
         public const int DefaultBatchSize = 200;
@@ -56,7 +62,7 @@ namespace MovieTheater.Books.Services
         /// <summary>Drop the persisted cursor and counters so the next batch starts from the beginning.</summary>
         public async Task ResetAsync(BooksDb db, CancellationToken ct = default)
         {
-            foreach (var key in new[] { CursorKey, ProcessedKey, GeneratedKey, SkippedKey, FailedKey, StartedAtKey })
+            foreach (var key in new[] { CursorKey, ProcessedKey, GeneratedKey, SkippedKey, FailedKey, ClearedKey, StartedAtKey })
             {
                 var row = await db.SystemStates.FirstOrDefaultAsync(s => s.Key == key, ct);
                 if (row != null) db.SystemStates.Remove(row);
@@ -65,7 +71,7 @@ namespace MovieTheater.Books.Services
         }
 
         /// <summary>The run's persisted totals so far — what a status endpoint reads without doing any work.</summary>
-        public async Task<(long Cursor, long Processed, long Generated, long Skipped, long Failed, long Remaining)>
+        public async Task<(long Cursor, long Processed, long Generated, long Skipped, long Failed, long Cleared, long Remaining)>
             StatusAsync(BooksDb db, CancellationToken ct = default)
         {
             var cursor = await ReadLongAsync(db, CursorKey, ct);
@@ -75,6 +81,7 @@ namespace MovieTheater.Books.Services
                 await ReadLongAsync(db, GeneratedKey, ct),
                 await ReadLongAsync(db, SkippedKey, ct),
                 await ReadLongAsync(db, FailedKey, ct),
+                await ReadLongAsync(db, ClearedKey, ct),
                 remaining);
         }
 
@@ -104,14 +111,52 @@ namespace MovieTheater.Books.Services
                 return new ThumbnailBatchResult(0, 0, null, 0, 0, 0);
             }
 
-            int generated = 0, skipped = 0, failed = 0;
+            int generated = 0, skipped = 0, failed = 0, cleared = 0;
             var states = new Dictionary<int, ItemState>();
+
+            // The STALE errors in this batch, pre-loaded in ONE indexed range read.
+            //
+            // A skip is the hot path — over a settled library the run is 245k skips and nothing else — so it
+            // must not cost a query per item. The batch is a contiguous id range by construction (ORDER BY Id,
+            // TAKE n), so every row that could need clearing is `cursor < ItemId <= last` with an error stored,
+            // which is a scan of ItemState's primary key and never an id IN-list (that would blow SQLite's
+            // variable cap at any batch size over ~999). The range can also cover EXCLUDED items the batch
+            // itself skipped, so membership is confirmed against the batch before anything is touched.
+            var inBatch = batch.Select(b => b.Id).ToHashSet();
+            var lastId = batch[^1].Id;
+            foreach (var stale in await db.ItemStates
+                         .Where(st => st.ItemId > cursor && st.ItemId <= lastId && st.ThumbnailError != null)
+                         .ToListAsync(ct))
+                if (inBatch.Contains(stale.ItemId)) states[stale.ItemId] = stale;
 
             foreach (var item in batch)
             {
                 ct.ThrowIfCancellationRequested();
 
-                if (thumbnails.Exists(item.Id)) { skipped++; continue; }
+                if (thumbnails.Exists(item.Id))
+                {
+                    skipped++;
+                    // THE THUMBNAIL EXISTS, SO A STORED ERROR IS A LIE. 22,419 book rows carried one while the
+                    // cache held thumbs for 243,197 of 245,434 items — leftovers from a double run whose two
+                    // passes fought over the same file ("used by another process") and from the pre-1871a5ed
+                    // "No archive reader" era. The later pass generated or found the thumb and reported
+                    // `skipped`, but nothing ever retracted the old message, and /admin/broken lists every row
+                    // with a ThumbnailError — so the admin Library tab showed ~20k false "thumb:" tags.
+                    //
+                    // ONLY ThumbnailError is retracted. `IsBroken` is left exactly as it stands: it is set only
+                    // when the ARCHIVE could not be opened, and a thumbnail cached before a file went bad is no
+                    // evidence that the file opens today. Re-verifying those means deleting the thumb so the
+                    // generate path runs again.
+                    if (states.TryGetValue(item.Id, out var stale) && stale.ThumbnailError != null)
+                    {
+                        stale.ThumbnailError = null;
+                        // Stamped, not preserved: the job DID check this item, and the stamp is what tells an
+                        // operator when the standing verdict was established.
+                        stale.ThumbnailCheckedAt = DateTime.UtcNow;
+                        cleared++;
+                    }
+                    continue;
+                }
 
                 var result = await thumbnails.TryGetOrGenerateAsync(item.Id, item.Path, item.Extension);
                 var state = await LoadOrCreateStateAsync(db, states, item.Id, ct);
@@ -152,6 +197,7 @@ namespace MovieTheater.Books.Services
             await AddLongAsync(db, GeneratedKey, generated, ct);
             await AddLongAsync(db, SkippedKey, skipped, ct);
             await AddLongAsync(db, FailedKey, failed, ct);
+            await AddLongAsync(db, ClearedKey, cleared, ct);
             if (await ReadRowAsync(db, StartedAtKey, ct) == null)
                 await WriteAsync(db, StartedAtKey, DateTime.UtcNow.ToString("O"), ct);
 
@@ -161,10 +207,10 @@ namespace MovieTheater.Books.Services
 
             var remaining = await db.Items.AsNoTracking().CountAsync(i => !i.IsExcluded && i.Id > nextCursor, ct);
             logger.LogInformation(
-                "thumbs batch: processed {Processed}, generated {Generated}, skipped {Skipped}, failed {Failed}, remaining {Remaining}, nextCursor {Cursor}",
-                batch.Count, generated, skipped, failed, remaining, nextCursor);
+                "thumbs batch: processed {Processed}, generated {Generated}, skipped {Skipped}, failed {Failed}, errors-cleared {Cleared}, remaining {Remaining}, nextCursor {Cursor}",
+                batch.Count, generated, skipped, failed, cleared, remaining, nextCursor);
 
-            return new ThumbnailBatchResult(batch.Count, remaining, nextCursor, generated, skipped, failed);
+            return new ThumbnailBatchResult(batch.Count, remaining, nextCursor, generated, skipped, failed, cleared);
         }
 
         public static string FileSignature(long fileSize, DateTime? modifiedAt) =>

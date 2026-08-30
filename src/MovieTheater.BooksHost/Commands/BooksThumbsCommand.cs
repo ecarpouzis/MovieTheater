@@ -59,11 +59,11 @@ namespace MovieTheater.BooksHost.Commands
             {
                 var s = await job.StatusAsync(db);
                 await console.Output.WriteLineAsync(
-                    $"{{ cursor: {s.Cursor}, processed: {s.Processed}, generated: {s.Generated}, skipped: {s.Skipped}, failed: {s.Failed}, remaining: {s.Remaining} }}");
+                    $"{{ cursor: {s.Cursor}, processed: {s.Processed}, generated: {s.Generated}, skipped: {s.Skipped}, failed: {s.Failed}, errorsCleared: {s.Cleared}, remaining: {s.Remaining} }}");
                 return;
             }
 
-            long totalProcessed = 0, totalGenerated = 0, totalSkipped = 0, totalFailed = 0;
+            long totalProcessed = 0, totalGenerated = 0, totalSkipped = 0, totalFailed = 0, totalCleared = 0;
             var batches = 0;
             while (MaxBatches <= 0 || batches < MaxBatches)
             {
@@ -73,10 +73,11 @@ namespace MovieTheater.BooksHost.Commands
                 totalGenerated += result.Generated;
                 totalSkipped += result.Skipped;
                 totalFailed += result.Failed;
+                totalCleared += result.ErrorsCleared;
 
                 await console.Output.WriteLineAsync(
                     $"{{ processed: {result.Processed}, remaining: {result.Remaining}, nextCursor: \"{result.NextCursor}\", failed: {result.Failed} }}" +
-                    $"  [generated: {totalGenerated}, skipped: {totalSkipped}, batches: {batches}]");
+                    $"  [generated: {totalGenerated}, skipped: {totalSkipped}, errors-cleared: {totalCleared}, batches: {batches}]");
 
                 // The no-progress safety break: a batch that moved nothing is the end of the run, or a defect —
                 // either way, looping again would spin.
@@ -84,7 +85,7 @@ namespace MovieTheater.BooksHost.Commands
             }
 
             await console.Output.WriteLineAsync(
-                $"done: processed {totalProcessed}, generated {totalGenerated}, skipped {totalSkipped}, failed {totalFailed} over {batches} batch(es)");
+                $"done: processed {totalProcessed}, generated {totalGenerated}, skipped {totalSkipped}, failed {totalFailed}, errors-cleared {totalCleared} over {batches} batch(es)");
         }
 
         /// <summary>
