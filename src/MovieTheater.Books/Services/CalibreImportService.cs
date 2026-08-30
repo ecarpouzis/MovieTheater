@@ -9,13 +9,15 @@ namespace MovieTheater.Books.Services
     /// <summary>What one Calibre-import batch did.</summary>
     public sealed record CalibreBatchResult(
         int Processed, long Remaining, long? NextCursor, int Matched, int Unmatched, int Filled,
-        int Repathed = 0, int FoldersFixed = 0, int DuplicatesMerged = 0, int Collisions = 0, int Unbroken = 0)
+        int Repathed = 0, int FoldersFixed = 0, int DuplicatesMerged = 0, int Collisions = 0, int Unbroken = 0,
+        int Retired = 0, string? RetireRefused = null)
     {
         public bool Done => Processed == 0 || NextCursor == null;
         public override string ToString() =>
             $"{{ processed: {Processed}, remaining: {Remaining}, nextCursor: \"{NextCursor}\", unmatched: {Unmatched} }}"
             + $"  [matched: {Matched}, filled: {Filled}, repathed: {Repathed}, folders-fixed: {FoldersFixed}, "
-            + $"duplicates-merged: {DuplicatesMerged}, collisions: {Collisions}, unbroken: {Unbroken}]";
+            + $"duplicates-merged: {DuplicatesMerged}, collisions: {Collisions}, unbroken: {Unbroken}, retired: {Retired}]"
+            + (RetireRefused == null ? "" : $"  [retire REFUSED: {RetireRefused}]");
     }
 
     /// <summary>
@@ -44,8 +46,13 @@ namespace MovieTheater.Books.Services
     /// not one of the paths Calibre's own row composes, this job re-points the item and fixes the folder
     /// bookkeeping DB-only — see <see cref="RepathAsync"/>. Items with no Calibre identity are never touched.</para>
     ///
+    /// <para><b>And it RETIRES what Calibre no longer has.</b> The walk is over CALIBRE's books, so an item whose
+    /// Calibre row was deleted is never visited and would stay in browse forever pointing at a folder that is
+    /// gone. When — and only when — the walk reaches the end of the library, one bounded sweep marks those items
+    /// missing the way the scanner does. See <see cref="RetireDeletedAsync"/>.</para>
+    ///
     /// <para><b>Chunked and idempotent</b> like every bulk job: the cursor is the Calibre book id, which is the
-    /// batch query's own ordering, and re-running writes the same values (a second pass re-paths 0).</para>
+    /// batch query's own ordering, and re-running writes the same values (a second pass re-paths 0 and retires 0).</para>
     /// </summary>
     public sealed class CalibreImportService
     {
@@ -138,7 +145,7 @@ FROM books b WHERE b.id > $after ORDER BY b.id LIMIT $n";
 
         public async Task ResetAsync(BooksDb db, CancellationToken ct = default)
         {
-            foreach (var key in new[] { CursorKey, MatchedKey, UnmatchedKey })
+            foreach (var key in new[] { CursorKey, MatchedKey, UnmatchedKey, RetireCursorKey })
             {
                 var row = await db.SystemStates.FirstOrDefaultAsync(s => s.Key == key, ct);
                 if (row != null) db.SystemStates.Remove(row);
@@ -165,8 +172,14 @@ FROM books b WHERE b.id > $after ORDER BY b.id LIMIT $n";
             var books = ReadBooks(calibre, cursor, batchSize);
             if (books.Count == 0)
             {
-                var total = Scalar(calibre, "SELECT count(*) FROM books");
-                return new CalibreBatchResult(0, 0, null, (int)await ReadLongAsync(db, MatchedKey, ct), (int)await ReadLongAsync(db, UnmatchedKey, ct), 0);
+                // THE END OF CALIBRE — and the only place the retirement sweep can honestly run, because it is
+                // the only point at which "this book id is not in Calibre" is a statement about the whole
+                // library rather than about the page we happened to stop on. A run cut short by --max-batches
+                // never reaches here, and retires nothing.
+                var (retired, refused) = await RetireDeletedAsync(db, calibre, apply, ct);
+                return new CalibreBatchResult(
+                    0, 0, null, (int)await ReadLongAsync(db, MatchedKey, ct), (int)await ReadLongAsync(db, UnmatchedKey, ct), 0,
+                    Retired: retired, RetireRefused: refused);
             }
 
             var itemByCalibreId = ReadLinks(linkPath).ToDictionary(l => l.CalibreId, l => l.ComicId);
@@ -610,6 +623,140 @@ FROM books b WHERE b.id > $after ORDER BY b.id LIMIT $n";
         }
 
         private static bool PathEq(string? a, string? b) => string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
+
+        // ── retire: the books Calibre no longer has ──────────────────────────────────────────────────────
+
+        /// <summary>
+        /// The share of LINKED items this sweep may retire before it refuses to run at all. A wrong
+        /// <c>--metadata</c> path — an empty library, a different library, a half-copied file — makes every one
+        /// of our books look deleted, and the sweep would then exclude the entire catalog in one pass. 1,228 of
+        /// ~125,500 linked rows is 1 %; anything past a fifth is not a merge, it is the wrong file.
+        /// </summary>
+        public const double RetireGuardFraction = 0.20;
+
+        /// <summary>Items examined per page of the sweep.</summary>
+        public const int RetirePageSize = 5_000;
+
+        /// <summary>Where the sweep stopped, so a killed run resumes instead of restarting.</summary>
+        public const string RetireCursorKey = "books:calibre:retire:cursor";
+
+        /// <summary>
+        /// Retire the items whose Calibre entry is GONE.
+        ///
+        /// <para><b>Why nothing else catches these.</b> This job iterates CALIBRE's books, so an item whose
+        /// <c>CalibreBookId</c> was deleted is never visited: it keeps a `Path` pointing at a folder that no
+        /// longer exists and stays in every browse surface. 1,228 duplicate Calibre entries were merged away on
+        /// 2026-08-30 (rows deleted through Calibre's API, every file quarantined first, the loser → survivor
+        /// mapping journalled in <c>calibre_dupe_merge</c>), and those are exactly the rows nothing would
+        /// revisit. `books-scan` would find them eventually, but its moment is R10 and it may not run
+        /// unsupervised.</para>
+        ///
+        /// <para><b>What "retire" means: the scanner's own missing treatment</b>, through
+        /// <see cref="LibraryScanner.MarkMissingAsync"/> — <c>Item.IsExcluded</c>, <c>ItemState.IsBroken</c> with
+        /// the reason "missing", and the exclusion stamps. Nothing is deleted, the reader's position and marks
+        /// stay on the row, and <see cref="LibraryScanner.ClearMissingAsync"/> reverses all of it the moment the
+        /// file turns up again. <c>Item.CalibreBookId</c> is deliberately LEFT AS IS: the id is the forensic link
+        /// back to the merge journal, and clearing it would throw away the only thing that says which survivor
+        /// this row's file went into.</para>
+        ///
+        /// <para><b>Idempotent</b>: an item already excluded AND already flagged "missing" is not touched, so a
+        /// second run retires 0. <b>Bounded</b>: one indexed read of Calibre's id column, one of ours, then pages
+        /// of <see cref="RetirePageSize"/> items with a cursor persisted between pages and a no-progress break.
+        /// <b>Dry run</b>: counts what it WOULD retire and writes nothing.</para>
+        /// </summary>
+        private async Task<(int Retired, string? Refused)> RetireDeletedAsync(
+            BooksDb db, SqliteConnection calibre, bool apply, CancellationToken ct)
+        {
+            // One indexed read of Calibre's primary key.
+            var calibreIds = new HashSet<int>();
+            using (var cmd = calibre.CreateCommand())
+            {
+                cmd.CommandText = "SELECT id FROM books";
+                using var rd = cmd.ExecuteReader();
+                while (rd.Read()) calibreIds.Add(rd.GetInt32(0));
+            }
+
+            // …and one of ours. A single int column over ~126k rows, which is what makes the guard a fact rather
+            // than an estimate: it is measured over the WHOLE linked set before a single row is written.
+            var linked = await db.Items.AsNoTracking()
+                .Where(i => i.CalibreBookId != null)
+                .Select(i => i.CalibreBookId!.Value)
+                .ToListAsync(ct);
+            if (linked.Count == 0) return (0, null);
+
+            var absent = linked.Count(id => !calibreIds.Contains(id));
+            if (absent == 0)
+            {
+                await ClearRetireCursorAsync(db, ct);
+                return (0, null);
+            }
+
+            if (calibreIds.Count == 0 || absent > linked.Count * RetireGuardFraction)
+            {
+                var reason = $"{absent} of {linked.Count} linked items ({absent * 100.0 / linked.Count:F1} %) are absent from this "
+                           + $"metadata.db ({calibreIds.Count} books) — over the {RetireGuardFraction:P0} guard, so nothing was retired. "
+                           + "Check --metadata points at the real library.";
+                logger.LogWarning("calibre retire refused: {Reason}", reason);
+                return (0, reason);
+            }
+
+            if (!apply) return (absent, null);
+
+            var retired = 0;
+            var cursor = await ReadLongAsync(db, RetireCursorKey, ct);
+            var guard = 0;
+            while (true)
+            {
+                ct.ThrowIfCancellationRequested();
+                var page = await db.Items.AsNoTracking()
+                    .Where(i => i.CalibreBookId != null && i.Id > cursor)
+                    .OrderBy(i => i.Id).Take(RetirePageSize)
+                    .Select(i => new
+                    {
+                        i.Id,
+                        CalibreId = i.CalibreBookId!.Value,
+                        i.IsExcluded,
+                        // Already-retired rows are the reason a second run reports 0.
+                        Reason = db.ItemStates.Where(s => s.ItemId == i.Id).Select(s => s.BrokenReason).FirstOrDefault(),
+                    })
+                    .ToListAsync(ct);
+                if (page.Count == 0) break;
+
+                var ids = page
+                    .Where(p => !calibreIds.Contains(p.CalibreId)
+                                && !(p.IsExcluded && p.Reason == LibraryScanner.MissingReason))
+                    .Select(p => p.Id).ToList();
+                // Marked in slices: the scanner's helper filters by an id list, and a page's worth of ids in one
+                // predicate is a bet on how the provider renders `Contains` that this job does not need to take.
+                for (var i = 0; i < ids.Count; i += 500)
+                {
+                    var slice = ids.GetRange(i, Math.Min(500, ids.Count - i));
+                    await LibraryScanner.MarkMissingAsync(db, slice, ct);
+                    retired += slice.Count;
+                }
+
+                var next = page[^1].Id;
+                if (next == cursor && ++guard > 2) break;   // the no-progress safety break
+                cursor = next;
+                await WriteLongAsync(db, RetireCursorKey, cursor, ct);
+                await db.SaveChangesAsync(ct);
+                logger.LogInformation("calibre retire: examined {N} up to id {Cursor}, retired {Retired} so far", page.Count, cursor, retired);
+            }
+
+            // The sweep is finished, so the next run starts it from the beginning again (where it will find
+            // everything already marked and retire nothing).
+            await ClearRetireCursorAsync(db, ct);
+            logger.LogInformation("calibre retire: {Retired} item(s) whose Calibre entry is gone were marked missing", retired);
+            return (retired, null);
+        }
+
+        private static async Task ClearRetireCursorAsync(BooksDb db, CancellationToken ct)
+        {
+            var row = await db.SystemStates.FirstOrDefaultAsync(s => s.Key == RetireCursorKey, ct);
+            if (row == null) return;
+            db.SystemStates.Remove(row);
+            await db.SaveChangesAsync(ct);
+        }
 
         /// <summary>Calibre stores <c>&lt;library&gt;/&lt;book.path&gt;/&lt;data.name&gt;.epub</c> with forward slashes.</summary>
         /// <summary>The first candidate path (the book's first format); tests and the folder match use it.</summary>

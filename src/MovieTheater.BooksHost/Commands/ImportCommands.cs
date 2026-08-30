@@ -44,7 +44,9 @@ namespace MovieTheater.BooksHost.Commands
 
             if (Reset) await service.ResetAsync(db);
 
-            long matched = 0, unmatched = 0, filled = 0, repathed = 0, foldersFixed = 0, dupesMerged = 0, collisions = 0, unbroken = 0;
+            long matched = 0, unmatched = 0, filled = 0, repathed = 0, foldersFixed = 0, dupesMerged = 0, collisions = 0, unbroken = 0, retired = 0;
+            string? retireRefused = null;
+            var reachedEndOfCalibre = false;
             var batches = 0;
             long? after = null; // dry run: the cursor lives here, not in the store
             await console.Output.WriteLineAsync($"metadata: {metadata}" + Environment.NewLine + $"library root: {LibraryRoot ?? Path.GetDirectoryName(Path.GetFullPath(metadata))}  (paths are composed under this and compared with Item.Path)");
@@ -60,14 +62,24 @@ namespace MovieTheater.BooksHost.Commands
                     repathed += r.Repathed; foldersFixed += r.FoldersFixed;
                     dupesMerged += r.DuplicatesMerged; collisions += r.Collisions; unbroken += r.Unbroken;
                 }
+                // The retirement sweep runs ON the terminal batch — the one the accumulator above skips — so its
+                // counts are taken here, outside that guard, or they would be thrown away.
+                retired += r.Retired;
+                retireRefused ??= r.RetireRefused;
+                if (r.Done) reachedEndOfCalibre = true;
                 await console.Output.WriteLineAsync(r.ToString() + $"  [batches: {batches}]");
                 if (r.Done) break;
             }
 
             await console.Output.WriteLineAsync(
                 $"done: matched {matched}, unmatched {unmatched}, filled {filled}, repathed {repathed}, folders-fixed {foldersFixed},"
-                + $" duplicates-merged {dupesMerged}, collisions {collisions}, unbroken {unbroken} over {batches} batch(es)"
+                + $" duplicates-merged {dupesMerged}, collisions {collisions}, unbroken {unbroken}, retired {retired} over {batches} batch(es)"
                 + (Apply ? "" : " (dry run — nothing written)"));
+            if (retireRefused != null)
+                await console.Output.WriteLineAsync($"WARNING: the retirement sweep REFUSED to run — {retireRefused}");
+            if (!reachedEndOfCalibre)
+                await console.Output.WriteLineAsync(
+                    "NOTE: the walk stopped before the end of Calibre (--max-batches), so nothing was retired — only a run that reaches the end may retire.");
             if (collisions > 0)
                 await console.Output.WriteLineAsync(
                     $"WARNING: {collisions} target path(s) are held by ANOTHER Calibre-linked item — those books were left where they are; the pairs are in the log.");

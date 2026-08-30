@@ -523,6 +523,151 @@ CREATE TABLE data (id INTEGER PRIMARY KEY, book INTEGER, format TEXT, name TEXT)
             Assert.Equal(0, (await ImportAsync(f, BuildCalibre(f, "Huxley, Aldous/Brave New World (844)", "Brave New World - Aldous Huxley"))).Unbroken);
         }
 
+        // ── retiring the books Calibre no longer has ─────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Drain the whole walk, the way the CLI's loop does — the retirement sweep runs on the TERMINAL batch,
+        /// which is the one a single RunBatchAsync call never reaches.
+        /// </summary>
+        private static async Task<CalibreBatchResult> DrainAsync(V1Fixture f, string metadata, bool apply = true, bool reset = true)
+        {
+            await using var db = f.HotDb();
+            if (reset) await Importer().ResetAsync(db);
+            CalibreBatchResult r;
+            long? after = null;
+            var guard = 0;
+            do
+            {
+                r = await Importer().RunBatchAsync(db, metadata, f.CalibreLinkPath, 100, apply, LibraryRoot, apply ? null : after);
+                if (!apply) after = r.NextCursor ?? after;
+            } while (!r.Done && guard++ < 50);
+            return r;   // the TERMINAL result — the one carrying Retired / RetireRefused
+        }
+
+        /// <summary>Give an item a Calibre id that the metadata.db does not have — a row merged away tonight.</summary>
+        private static async Task LinkToDeletedBookAsync(V1Fixture f, int itemId, int calibreBookId)
+        {
+            await using var db = f.HotDb();
+            var item = await db.Items.FirstAsync(i => i.Id == itemId);
+            item.CalibreBookId = calibreBookId;
+            await db.SaveChangesAsync();
+        }
+
+        [Fact]
+        public async Task AnItemWhoseCalibreEntryIsGoneIsRetiredOnceAndOnlyOnce()
+        {
+            using var f = Migrated();
+            await ShapeLikeCalibreAsync(f);
+            // Item 102 (Dune) was linked to Calibre book 9001, which the dedup merge deleted tonight.
+            await LinkToDeletedBookAsync(f, 102, 9001);
+
+            // Book 844 IS still there, so 101 is only 1 of 2 linked rows — 50 % absent would trip the guard.
+            // Three more surviving rows put the absent share at 1 in 5, which is inside it.
+            await using (var db = f.HotDb())
+            {
+                var folder = await db.Folders.FirstAsync(x => x.Id == TitleFolderId);
+                for (var n = 0; n < 3; n++)
+                    db.Items.Add(new Item
+                    {
+                        Id = 400 + n, RootId = folder.RootId, FolderId = TitleFolderId, TopFolderId = AuthorFolderId,
+                        Kind = ItemKind.Book, Path = $@"{LibraryRoot}\filler-{n}.epub", FileName = $"filler-{n}.epub",
+                        Extension = ".epub", CalibreBookId = 5000 + n,   // CalibreBookId is UNIQUE
+                    });
+                await db.SaveChangesAsync();
+            }
+            // …and those three ids must EXIST in Calibre, or they count as absent too.
+            var metadata = BuildCalibreWithExtras(f, "Aldous Huxley/Brave New World (844)", "Brave New World - Aldous Huxley", 5000, 5001, 5002);
+
+            var r = await DrainAsync(f, metadata);
+            Assert.Null(r.RetireRefused);
+            Assert.Equal(1, r.Retired);
+
+            await using (var db = f.HotDb())
+            {
+                var dune = await db.Items.AsNoTracking().FirstAsync(i => i.Id == 102);
+                Assert.True(dune.IsExcluded);
+                // The id is the forensic link back to the merge journal — it is NOT cleared.
+                Assert.Equal(9001, dune.CalibreBookId);
+                var state = await db.ItemStates.AsNoTracking().FirstAsync(s => s.ItemId == 102);
+                Assert.True(state.IsBroken);
+                Assert.Equal(LibraryScanner.MissingReason, state.BrokenReason);
+                Assert.Equal(LibraryScanner.MissingReason, state.ExclusionReason);
+
+                // the item whose Calibre row EXISTS was not touched
+                var linked = await db.Items.AsNoTracking().FirstAsync(i => i.Id == 101);
+                Assert.False(linked.IsExcluded);
+            }
+
+            // Idempotent: the second full walk finds it already marked.
+            Assert.Equal(0, (await DrainAsync(f, metadata)).Retired);
+
+            // …and nothing is deleted, ever.
+            await using (var db = f.HotDb()) Assert.Equal(1, await db.Items.CountAsync(i => i.Id == 102));
+        }
+
+        [Fact]
+        public async Task AMetadataDbMissingMostOfTheLibraryIsRefusedNotObeyed()
+        {
+            using var f = Migrated();
+            await ShapeLikeCalibreAsync(f);
+            // Both linked books point at ids this metadata.db has never heard of — the wrong --metadata path.
+            await LinkToDeletedBookAsync(f, 101, 9001);
+            await LinkToDeletedBookAsync(f, 102, 9002);
+
+            var metadata = BuildCalibre(f, 844, "Aldous Huxley/Brave New World (844)", "Brave New World - Aldous Huxley");
+            var r = await DrainAsync(f, metadata);
+
+            Assert.Equal(0, r.Retired);
+            Assert.NotNull(r.RetireRefused);
+            Assert.Contains("guard", r.RetireRefused!, StringComparison.OrdinalIgnoreCase);
+
+            await using var db = f.HotDb();
+            Assert.False((await db.Items.AsNoTracking().FirstAsync(i => i.Id == 101)).IsExcluded);
+            Assert.False((await db.Items.AsNoTracking().FirstAsync(i => i.Id == 102)).IsExcluded);
+        }
+
+        [Fact]
+        public async Task TheDryRunCountsWhatItWouldRetireAndWritesNothing()
+        {
+            using var f = Migrated();
+            await ShapeLikeCalibreAsync(f);
+            await LinkToDeletedBookAsync(f, 102, 9001);
+            await using (var db = f.HotDb())
+            {
+                var folder = await db.Folders.FirstAsync(x => x.Id == TitleFolderId);
+                for (var n = 0; n < 3; n++)
+                    db.Items.Add(new Item
+                    {
+                        Id = 400 + n, RootId = folder.RootId, FolderId = TitleFolderId, TopFolderId = AuthorFolderId,
+                        Kind = ItemKind.Book, Path = $@"{LibraryRoot}\filler-{n}.epub", FileName = $"filler-{n}.epub",
+                        Extension = ".epub", CalibreBookId = 5000 + n,
+                    });
+                await db.SaveChangesAsync();
+            }
+            var metadata = BuildCalibreWithExtras(f, "Aldous Huxley/Brave New World (844)", "Brave New World - Aldous Huxley", 5000, 5001, 5002);
+
+            var r = await DrainAsync(f, metadata, apply: false);
+            Assert.Equal(1, r.Retired);
+
+            await using (var db = f.HotDb())
+                Assert.False((await db.Items.AsNoTracking().FirstAsync(i => i.Id == 102)).IsExcluded);
+        }
+
+        /// <summary>Book 844 plus a handful of bare rows, so the guard's denominator is realistic.</summary>
+        private static string BuildCalibreWithExtras(V1Fixture f, string relPath, string fileName, params int[] extraIds)
+        {
+            var path = BuildCalibre(f, 844, relPath, fileName);
+            using var conn = new SqliteConnection(new SqliteConnectionStringBuilder { DataSource = path, Pooling = false }.ToString());
+            conn.Open();
+            foreach (var id in extraIds)
+            {
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = $"INSERT INTO books (id, title, path, series_index) VALUES ({id}, 'Filler {id}', 'Filler/Filler ({id})', 1.0)";
+                cmd.ExecuteNonQuery();
+            }
+            return path;
+        }
+
         private static async Task<Item> DuneAsync(V1Fixture f)
         {
             await using var db = f.HotDb();
