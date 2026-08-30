@@ -44,7 +44,7 @@ namespace MovieTheater.BooksHost.Commands
 
             if (Reset) await service.ResetAsync(db);
 
-            long matched = 0, unmatched = 0, filled = 0;
+            long matched = 0, unmatched = 0, filled = 0, repathed = 0, foldersFixed = 0;
             var batches = 0;
             long? after = null; // dry run: the cursor lives here, not in the store
             await console.Output.WriteLineAsync($"metadata: {metadata}" + Environment.NewLine + $"library root: {LibraryRoot ?? Path.GetDirectoryName(Path.GetFullPath(metadata))}  (paths are composed under this and compared with Item.Path)");
@@ -54,13 +54,18 @@ namespace MovieTheater.BooksHost.Commands
                 if (!Apply) after = r.NextCursor ?? after;
                 batches++;
                 // the terminal batch (nothing left to read) re-reports the persisted totals, not new work
-                if (!(r.Done && r.Processed == 0)) { matched += r.Matched; unmatched += r.Unmatched; filled += r.Filled; }
+                if (!(r.Done && r.Processed == 0))
+                {
+                    matched += r.Matched; unmatched += r.Unmatched; filled += r.Filled;
+                    repathed += r.Repathed; foldersFixed += r.FoldersFixed;
+                }
                 await console.Output.WriteLineAsync(r.ToString() + $"  [batches: {batches}]");
                 if (r.Done) break;
             }
 
             await console.Output.WriteLineAsync(
-                $"done: matched {matched}, unmatched {unmatched}, filled {filled} over {batches} batch(es)" + (Apply ? "" : " (dry run — nothing written)"));
+                $"done: matched {matched}, unmatched {unmatched}, filled {filled}, repathed {repathed}, folders-fixed {foldersFixed} over {batches} batch(es)"
+                + (Apply ? "" : " (dry run — nothing written)"));
         }
     }
 

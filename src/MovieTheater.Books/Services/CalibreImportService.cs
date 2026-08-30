@@ -7,11 +7,14 @@ using MovieTheater.Books.Db;
 namespace MovieTheater.Books.Services
 {
     /// <summary>What one Calibre-import batch did.</summary>
-    public sealed record CalibreBatchResult(int Processed, long Remaining, long? NextCursor, int Matched, int Unmatched, int Filled)
+    public sealed record CalibreBatchResult(
+        int Processed, long Remaining, long? NextCursor, int Matched, int Unmatched, int Filled,
+        int Repathed = 0, int FoldersFixed = 0)
     {
         public bool Done => Processed == 0 || NextCursor == null;
         public override string ToString() =>
-            $"{{ processed: {Processed}, remaining: {Remaining}, nextCursor: \"{NextCursor}\", unmatched: {Unmatched} }}  [matched: {Matched}, filled: {Filled}]";
+            $"{{ processed: {Processed}, remaining: {Remaining}, nextCursor: \"{NextCursor}\", unmatched: {Unmatched} }}"
+            + $"  [matched: {Matched}, filled: {Filled}, repathed: {Repathed}, folders-fixed: {FoldersFixed}]";
     }
 
     /// <summary>
@@ -32,8 +35,16 @@ namespace MovieTheater.Books.Services
     /// `Item.CalibreBookId` already stored; then the resolved file path. A book that matches nothing is COUNTED
     /// and reported, never guessed at.</para>
     ///
+    /// <para><b>It also RE-PATHS what Calibre renamed.</b> Calibre is the source of truth for a book's folder
+    /// and file name as well as its title, and it renames both whenever the title or the author changes. The id
+    /// match still succeeds after such a rename (that is the point of storing `CalibreBookId`), but `Item.Path`,
+    /// `Item.FileName` and the `Folder` rows the Directory view renders are then STALE, and nothing else repairs
+    /// them short of a full `books-scan` over 54k listings on the share. So when a matched book's stored path is
+    /// not one of the paths Calibre's own row composes, this job re-points the item and fixes the folder
+    /// bookkeeping DB-only — see <see cref="RepathAsync"/>. Items with no Calibre identity are never touched.</para>
+    ///
     /// <para><b>Chunked and idempotent</b> like every bulk job: the cursor is the Calibre book id, which is the
-    /// batch query's own ordering, and re-running writes the same values.</para>
+    /// batch query's own ordering, and re-running writes the same values (a second pass re-paths 0).</para>
     /// </summary>
     public sealed class CalibreImportService
     {
@@ -169,14 +180,30 @@ FROM books b WHERE b.id > $after ORDER BY b.id LIMIT $n";
             var byPath = await db.Items.Where(i => paths.Contains(i.Path))
                 .ToDictionaryAsync(i => i.Path, StringComparer.OrdinalIgnoreCase, ct);
 
-            int matched = 0, unmatched = 0, filled = 0;
+            int matched = 0, unmatched = 0, filled = 0, repathed = 0, foldersFixed = 0;
+            // Folders emptied by a re-path are only PROVABLY empty once the batch's moves are saved, so the
+            // candidates are collected here and swept after SaveChanges — never deleted on a guess.
+            var huskCandidates = new HashSet<int>();
             foreach (var book in books)
             {
                 ct.ThrowIfCancellationRequested();
-                var item = Resolve(book, itemByCalibreId, byStoredId, byItemId, byPath, libraryRoot);
+                var (item, matchedBy) = Resolve(book, itemByCalibreId, byStoredId, byItemId, byPath, libraryRoot);
                 if (item == null) { unmatched++; continue; }
                 matched++;
-                if (!apply) { filled++; continue; }
+
+                // A book matched BY PATH is by definition already at one of these paths; only the id-based
+                // matches (link file / stored CalibreBookId) can be pointing at a folder Calibre has renamed.
+                var candidates = ResolvePaths(libraryRoot, book);
+                var needsRepath = matchedBy != MatchedBy.Path && candidates.Count > 0
+                    && !candidates.Any(p => string.Equals(p, item.Path, StringComparison.OrdinalIgnoreCase));
+
+                if (!apply) { filled++; if (needsRepath) repathed++; continue; }
+
+                if (needsRepath)
+                {
+                    repathed++;
+                    foldersFixed += await RepathAsync(db, item, candidates, huskCandidates, ct);
+                }
 
                 item.CalibreBookId = book.Id;
                 if (item.Kind != ItemKind.Book) item.Kind = ItemKind.Book;
@@ -217,12 +244,13 @@ FROM books b WHERE b.id > $after ORDER BY b.id LIMIT $n";
                 await AddLongAsync(db, MatchedKey, matched, ct);
                 await AddLongAsync(db, UnmatchedKey, unmatched, ct);
                 await db.SaveChangesAsync(ct);
+                foldersFixed += await SweepHusksAsync(db, huskCandidates, ct);
             }
 
             var remaining = Scalar(calibre, "SELECT count(*) FROM books WHERE id > " + nextCursor);
-            logger.LogInformation("calibre batch: processed {N}, matched {Matched}, unmatched {Unmatched}, remaining {Remaining}",
-                books.Count, matched, unmatched, remaining);
-            return new CalibreBatchResult(books.Count, remaining, nextCursor, matched, unmatched, filled);
+            logger.LogInformation("calibre batch: processed {N}, matched {Matched}, unmatched {Unmatched}, repathed {Repathed}, remaining {Remaining}",
+                books.Count, matched, unmatched, repathed, remaining);
+            return new CalibreBatchResult(books.Count, remaining, nextCursor, matched, unmatched, filled, repathed, foldersFixed);
         }
 
         /// <summary>
@@ -249,17 +277,185 @@ FROM books b WHERE b.id > $after ORDER BY b.id LIMIT $n";
                     db.ItemTags.Add(new ItemTag { ItemId = itemId, Category = "tag", Value = tag, Source = TagSource.Calibre });
         }
 
-        private static Item? Resolve(
+        /// <summary>How a book reached its item — the id-based matches are the ones whose PATH may be stale.</summary>
+        public enum MatchedBy { None, Link, StoredId, Path }
+
+        private static (Item? Item, MatchedBy By) Resolve(
             CalibreBook book, IReadOnlyDictionary<int, int> linkByCalibreId,
             IReadOnlyDictionary<int, Item> byStoredId, IReadOnlyDictionary<int, Item> byItemId,
             IReadOnlyDictionary<string, Item> byPath, string libraryRoot)
         {
-            if (linkByCalibreId.TryGetValue(book.Id, out var itemId) && byItemId.TryGetValue(itemId, out var linked)) return linked;
-            if (byStoredId.TryGetValue(book.Id, out var stored)) return stored;
+            if (linkByCalibreId.TryGetValue(book.Id, out var itemId) && byItemId.TryGetValue(itemId, out var linked)) return (linked, MatchedBy.Link);
+            if (byStoredId.TryGetValue(book.Id, out var stored)) return (stored, MatchedBy.StoredId);
             foreach (var path in ResolvePaths(libraryRoot, book))
-                if (byPath.TryGetValue(path, out var byFile)) return byFile;
-            return null;
+                if (byPath.TryGetValue(path, out var byFile)) return (byFile, MatchedBy.Path);
+            return (null, MatchedBy.None);
         }
+
+        // ── re-path: what Calibre renamed, without a rescan ──────────────────────────────────────────────
+
+        /// <summary>
+        /// Move one item onto the path Calibre's own row composes, and repair the `Folder` rows the Directory
+        /// view renders — DB-only, nothing on the share is touched or even read.
+        ///
+        /// <para>Three renames are possible and all three happen in one Calibre pass: the TITLE folder
+        /// (<c>101 Places Not to See Before You D (1234)</c> → the untruncated name), the AUTHOR folder above it,
+        /// and the file itself (<c>&lt;title&gt; - &lt;author&gt;.&lt;ext&gt;</c>). An author rename can also MERGE —
+        /// <c>Adaptation (epub)</c> → <c>Unknown</c> when an <c>Unknown</c> folder already exists — so the leaf is
+        /// re-parented into the survivor rather than a second row being created at the same path.</para>
+        ///
+        /// <para>Which candidate is chosen: the one whose extension is the item's own, so a book Calibre holds as
+        /// both an EPUB and a PDF re-paths each item onto its OWN file instead of collapsing the two. The first
+        /// candidate is the fallback (a format Calibre has since dropped).</para>
+        ///
+        /// <para>Returns how many FOLDER rows it touched. Idempotent: the second pass finds the item's path
+        /// already among the candidates and never gets here.</para>
+        /// </summary>
+        private static async Task<int> RepathAsync(
+            BooksDb db, Item item, IReadOnlyList<string> candidates, HashSet<int> huskCandidates, CancellationToken ct)
+        {
+            var chosen = candidates.FirstOrDefault(p =>
+                             string.Equals(Path.GetExtension(p), item.Extension, StringComparison.OrdinalIgnoreCase))
+                         ?? candidates[0];
+            var newFolderPath = Path.GetDirectoryName(chosen);
+            var fixes = 0;
+
+            var folder = await db.Folders.FirstOrDefaultAsync(f => f.Id == item.FolderId, ct);
+            if (folder != null && newFolderPath != null && !PathEq(folder.Path, newFolderPath))
+            {
+                var newParentPath = Path.GetDirectoryName(newFolderPath);
+                var parent = folder.ParentId is int pid ? await db.Folders.FirstOrDefaultAsync(f => f.Id == pid, ct) : null;
+                // Where the leaf ACTUALLY sits after step 1 — a re-parent moves the row without touching its
+                // Path string, so this, not the stale string, is what step 2's guard has to read.
+                var parentPath = parent?.Path ?? Path.GetDirectoryName(folder.Path);
+
+                // 1. the AUTHOR folder. Renamed in place when nothing else holds the new name; when something
+                //    does, this leaf moves under it and the emptied row becomes a husk candidate.
+                //
+                // The two guards are what keep this from touching rows it has no business touching. A library
+                // ROOT is never renamed (ParentId == null), and the author folder must stay under the SAME
+                // grandparent — a "rename" that moved it somewhere else entirely would mean the row is not
+                // shaped the way this library is, and dragging its whole subtree along would take unrelated
+                // items with it. When either guard fails the ITEM is still re-pointed (that is the path the
+                // reader and the media plane use) and the Folder rows are left to books-scan, which owns them.
+                if (parent != null && newParentPath != null && !PathEq(parent.Path, newParentPath)
+                    && parent.ParentId != null
+                    && PathEq(Path.GetDirectoryName(parent.Path), Path.GetDirectoryName(newParentPath)))
+                {
+                    var survivor = await db.Folders.FirstOrDefaultAsync(f => f.Path == newParentPath, ct);
+                    if (survivor == null)
+                    {
+                        fixes += RenameFolder(db, parent, newParentPath);
+                        parentPath = parent.Path;
+                    }
+                    else if (survivor.Id != parent.Id)
+                    {
+                        Reparent(folder, parent, survivor);
+                        huskCandidates.Add(parent.Id);
+                        parentPath = survivor.Path;
+                        fixes++;
+                    }
+                }
+
+                // 2. the TITLE folder. Same two shapes — the rename is the common one; the merge happens when a
+                //    truncated name expands onto a folder that already exists. (Renaming the author folder above
+                //    already carried this row's path with it, so this is a no-op unless the title changed too.)
+                if (!PathEq(folder.Path, newFolderPath) && PathEq(parentPath, newParentPath))
+                {
+                    var survivor = await db.Folders.FirstOrDefaultAsync(f => f.Path == newFolderPath, ct);
+                    if (survivor == null) fixes += RenameFolder(db, folder, newFolderPath);
+                    else if (survivor.Id != folder.Id)
+                    {
+                        item.FolderId = survivor.Id;
+                        folder.DescendantItemCount = Math.Max(0, folder.DescendantItemCount - 1);
+                        survivor.DescendantItemCount += 1;
+                        huskCandidates.Add(folder.Id);
+                        folder = survivor;
+                        fixes++;
+                    }
+                }
+
+                item.TopFolderId = TopOf(folder);
+            }
+
+            // The prefix sweep above already carried the item's directory; this states the whole answer, which
+            // also covers the case where ONLY the file name changed.
+            item.Path = chosen;
+            item.FileName = Path.GetFileName(chosen);
+            item.Extension = Path.GetExtension(chosen).ToLowerInvariant();
+            return fixes;
+        }
+
+        /// <summary>The "collection" a folder belongs to — a top folder is its own (see the scanner's aggregate pass).</summary>
+        private static int TopOf(Folder f) => f.TopFolderId ?? f.Id;
+
+        /// <summary>Move a folder under a new parent, carrying the counts both parents keep.</summary>
+        private static void Reparent(Folder folder, Folder oldParent, Folder newParent)
+        {
+            folder.ParentId = newParent.Id;
+            folder.TopFolderId = TopOf(newParent);
+            oldParent.DirectChildCount = Math.Max(0, oldParent.DirectChildCount - 1);
+            newParent.DirectChildCount += 1;
+            oldParent.DescendantItemCount = Math.Max(0, oldParent.DescendantItemCount - folder.DescendantItemCount);
+            newParent.DescendantItemCount += folder.DescendantItemCount;
+        }
+
+        /// <summary>
+        /// Rename one folder row and re-prefix every descendant folder and item path under it. Returns the number
+        /// of folder rows touched.
+        ///
+        /// <para>The descendant queries hit the DB, so EF hands back the TRACKED instances of rows this batch has
+        /// already re-pathed — which no longer carry the old prefix. Every rewrite therefore re-checks the prefix
+        /// first: without that, a row fixed a moment ago would have the old path's LENGTH sliced off its new
+        /// path.</para>
+        /// </summary>
+        private static int RenameFolder(BooksDb db, Folder folder, string newPath)
+        {
+            var oldPath = folder.Path;
+            var prefix = oldPath + Path.DirectorySeparatorChar;
+            folder.Path = newPath;
+            folder.Name = Path.GetFileName(newPath.TrimEnd('\\', '/'));
+            folder.NormalizedName = LibraryScanner.Normalize(folder.Name);
+            var touched = 1;
+
+            foreach (var d in db.Folders.Where(f => f.Path.StartsWith(prefix)).ToList())
+                if (d.Path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    d.Path = newPath + d.Path[oldPath.Length..];
+                    touched++;
+                }
+
+            foreach (var i in db.Items.Where(x => x.Path.StartsWith(prefix)).ToList())
+                if (i.Path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                    i.Path = newPath + i.Path[oldPath.Length..];
+
+            return touched;
+        }
+
+        /// <summary>
+        /// Delete the folder rows a re-path emptied — and ONLY those: a row that still holds an item or a child
+        /// folder stays. Run after the batch is saved, so the emptiness is a fact about the file and not about a
+        /// change tracker that has not been flushed.
+        /// </summary>
+        private static async Task<int> SweepHusksAsync(BooksDb db, HashSet<int> candidates, CancellationToken ct)
+        {
+            if (candidates.Count == 0) return 0;
+            var deleted = 0;
+            foreach (var id in candidates)
+            {
+                var folder = await db.Folders.FirstOrDefaultAsync(f => f.Id == id, ct);
+                if (folder == null) continue;
+                if (await db.Items.AnyAsync(i => i.FolderId == id, ct)) continue;
+                if (await db.Folders.AnyAsync(f => f.ParentId == id, ct)) continue;
+                db.Folders.Remove(folder);
+                deleted++;
+            }
+            if (deleted > 0) await db.SaveChangesAsync(ct);
+            candidates.Clear();
+            return deleted;
+        }
+
+        private static bool PathEq(string? a, string? b) => string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
 
         /// <summary>Calibre stores <c>&lt;library&gt;/&lt;book.path&gt;/&lt;data.name&gt;.epub</c> with forward slashes.</summary>
         /// <summary>The first candidate path (the book's first format); tests and the folder match use it.</summary>
