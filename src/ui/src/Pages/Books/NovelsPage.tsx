@@ -1,15 +1,21 @@
 /**
- * `/books/novels` — the prose books: the three flat catalog views over the Novels source, scoped by
- * the Novels facet state in the URL. The rail lives in the section's sider (`NovelsSiderRail`) — and
+ * `/books/novels` — the prose books: the catalog views over the Novels source, scoped by
+ * the Novels facet state in the URL. The grouped views (series / author / publisher / decade) appear
+ * only when the deployed host says it applies the novels filter on the grouped endpoints — see
+ * `novelsGroupsFor`; an older host would page the whole library under an active rail instead.
+ *
+ * The rail lives in the section's sider (`NovelsSiderRail`) — and
  * on a phone that sider IS the nav drawer, the one place the filters live (2026-08-28: the page's
  * own Filters pill and full-page sheet offered the drawer's options a second time, and are gone).
  * The active chips sit over the results. A first landing with no filters of its own gets the
  * standalone's default chip — "not adult-romance" — which the reader can clear like any other.
  */
+import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import CatalogHost from "../../catalog/CatalogHost";
 import ActiveChips from "../../catalog/rail/ActiveChips";
+import { hasFacetValue } from "../../catalog/rail/facetSpec";
 import SmartSearch from "../../catalog/rail/SmartSearch";
 import { BarSearchSlot } from "../../catalog/bar/BarSearch";
 import { savableSearch, useSavedSearches } from "../../catalog/rail/savedSearches";
@@ -19,7 +25,9 @@ import useFacetState from "../../catalog/rail/useFacetState";
 import { createNovelsSource } from "../../catalog/sources/novelsSource";
 import type { CardItem } from "../../catalog/types";
 import useIsMobile from "../../hooks/useIsMobile";
+import { fetchNovelFacets } from "./booksApi";
 import { useMediaToken } from "./booksMedia";
+import { bk } from "./booksQuery";
 import { novelsFacetSpec } from "./novelsFacetSpec";
 import { openEntity } from "./openEntity";
 import { seededNovelsSearch, sessionStorageOrNull } from "./useNovelsBrowse";
@@ -53,10 +61,31 @@ export default function NovelsPage({ username, epoch = 0 }: NovelsPageProps) {
     if (seeding && location.search === seeded) setSeeding(false);
   }, [seeding, seeded, location.search]);
 
+  // What this host can group a BOOK shelf by, and whether it applies the novels filter while doing it —
+  // the binary's own answer rather than a constant here (`groupAxes` / `bookFilters`). It rides
+  // `/novels/facets`, the section's own payload: `/browse/facets` is warmed for COMICS only and costs
+  // 13 s cold, so asking IT would have put that on the first Novels visit. Half-hour stale here, 48 h
+  // in the host's memory cache.
+  const grouping = useQuery({ queryKey: bk.facets("novels"), queryFn: ({ signal }) => fetchNovelFacets(signal), staleTime: 30 * 60 * 1000 });
+
   const onOpen = useCallback((item: CardItem) => openEntity(history, location, { kind: "item", id: item.id }), [history, location]);
+  const onOpenSeries = useCallback((seriesId: number) => openEntity(history, location, { kind: "series", id: seriesId }), [history, location]);
+  /** Scope in place (a group header): apply the facet it names and drop the grouping to series — one push. */
+  const scope = useCallback((patch: { facet?: { key: string; value: string }; group?: string }) => {
+    actions.apply((d) => {
+      if (patch.facet && !hasFacetValue(d.include[patch.facet.key], patch.facet.value)) {
+        d.include[patch.facet.key] = [...(d.include[patch.facet.key] ?? []), patch.facet.value];
+      }
+    }, patch.group ? { group: patch.group } : undefined);
+  }, [actions]);
+
   const source = useMemo(
-    () => createNovelsSource({ facetState: state, spec, epoch, mediaEpoch, onOpen }),
-    [state, spec, epoch, mediaEpoch, onOpen],
+    () => createNovelsSource({
+      facetState: state, spec, epoch, mediaEpoch,
+      groupAxes: grouping.data?.groupAxes, bookFilters: grouping.data?.bookFilters,
+      onOpen, onOpenSeries, onScope: scope,
+    }),
+    [state, spec, epoch, mediaEpoch, grouping.data, onOpen, onOpenSeries, scope],
   );
   const saveCurrent = (name: string) => { saved.save(name, savableSearch(location.search)); setSavePrompt(false); };
 

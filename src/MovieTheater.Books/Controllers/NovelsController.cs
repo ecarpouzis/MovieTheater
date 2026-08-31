@@ -20,6 +20,21 @@ namespace MovieTheater.Books.Controllers
         public List<NovelFacetOption> Publishers { get; init; } = [];
         public List<NovelFacetOption> Decades { get; init; } = [];
         public List<NovelFacetOption> Tags { get; init; } = [];
+
+        /// <summary>
+        /// The group axes a BOOK shelf can be banded by (<see cref="BrowseController.BookGroupAxes"/>) — the
+        /// Group pill's vocabulary, advertised rather than assumed.
+        /// </summary>
+        public List<string> GroupAxes { get; init; } = [];
+
+        /// <summary>
+        /// True when this binary applies the novels filter (<c>?book.author=</c> &amp;c.) on the GROUPED
+        /// endpoints. It rides here because the Novels section already fetches this payload, and it exists
+        /// because of a silent failure: an older host does not reject <c>book.author=</c>, it IGNORES it, so
+        /// a grouped Novels view would show the whole library under a rail full of active chips. An old host
+        /// omits the field, it deserializes to false, and the section stays flat — which is what it is now.
+        /// </summary>
+        public bool BookFilters { get; init; }
     }
 
     /// <summary>
@@ -55,7 +70,7 @@ namespace MovieTheater.Books.Controllers
         public const int TagFacetLimit = 200;
 
         /// <summary>Calibre's own author role — the one credit source a book actually has.</summary>
-        public const string AuthorRole = "Author";
+        public const string AuthorRole = NovelFilters.AuthorRole;
 
         /// <summary>Backstop TTL; the facets only move when the library does. Same policy as the browse facets.</summary>
         private static readonly TimeSpan FacetsTtl = TimeSpan.FromHours(48);
@@ -226,6 +241,9 @@ namespace MovieTheater.Books.Controllers
                 // The tag facet's value is the COMPOSITE "category:value" — the same string ?tag= takes, so a
                 // client can echo a chip straight back as a filter.
                 Tags = tagRows.Select(x => new NovelFacetOption($"{x.Category}:{x.Value}", x.Count)).ToList(),
+                // Compile-time, so a cached payload always agrees with the binary that cached it.
+                GroupAxes = [.. BrowseController.BookGroupAxes],
+                BookFilters = true,
             };
 
             cache.Set(key, facets, new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = FacetsTtl, Size = 1 });
@@ -255,55 +273,17 @@ namespace MovieTheater.Books.Controllers
 
         private IQueryable<Item> Visible() => ItemAccess.VisibleItems(db, User, ItemKind.Book);
 
+        /// <summary>
+        /// The rail's eight facets live in <see cref="NovelFilters"/>, which the GROUPED browse
+        /// (<c>/browse/groups?kind=book&amp;book.*</c>) applies too — one definition, so a reader switching
+        /// the View pill cannot find a book present in Grid and absent in Shelves. Only the FTS text stays
+        /// here, because the browse prologue already does the identical thing with it.
+        /// </summary>
         private IQueryable<Item> Filtered(string? author, string? series, string? publisher, string? decade,
             string? tag, string? q, string? excludeTag = null, int? minRating = null, bool unknown = false)
         {
-            var query = Visible();
-
-            foreach (var (category, value) in Tags(excludeTag))
-            {
-                var cat = category;
-                var val = value;
-                query = cat == null
-                    ? query.Where(i => !db.ItemTags.Any(t => t.ItemId == i.Id && t.Value == val))
-                    : query.Where(i => !db.ItemTags.Any(t => t.ItemId == i.Id && t.Category == cat && t.Value == val));
-            }
-
-            if (minRating is int floor && floor > 0)
-                query = query.Where(i => i.ResolvedRating != null && i.ResolvedRating >= floor);
-
-            if (unknown)
-                query = query.Where(i => !db.Insights.Any(n => n.SubjectKind == SubjectKind.Item && n.SubjectId == i.Id && n.IsCurrent));
-
-            var authors = Csv(author);
-            if (authors.Count > 0)
-                query = query.Where(i => db.ItemCredits.Any(c => c.ItemId == i.Id && c.Source == TagSource.Calibre
-                                                                 && c.Role == AuthorRole && c.Name != null
-                                                                 && authors.Contains(c.Name)));
-
-            var seriesNames = Csv(series);
-            if (seriesNames.Count > 0)
-                query = query.Where(i => db.BookDetails.Any(b => b.ItemId == i.Id && b.SeriesName != null
-                                                                 && seriesNames.Contains(b.SeriesName)));
-
-            var publishers = Csv(publisher);
-            if (publishers.Count > 0)
-                query = query.Where(i => db.BookDetails.Any(b => b.ItemId == i.Id && b.Publisher != null
-                                                                 && publishers.Contains(b.Publisher)));
-
-            var decades = Decades(decade);
-            if (decades.Count > 0)
-                query = query.Where(i => i.ResolvedYear != null && decades.Contains(i.ResolvedYear.Value / 10 * 10));
-
-            foreach (var (category, value) in Tags(tag))
-            {
-                // Captured per iteration on purpose: each selected tag ANDs, so each becomes its own EXISTS.
-                var cat = category;
-                var val = value;
-                query = cat == null
-                    ? query.Where(i => db.ItemTags.Any(t => t.ItemId == i.Id && t.Value == val))
-                    : query.Where(i => db.ItemTags.Any(t => t.ItemId == i.Id && t.Category == cat && t.Value == val));
-            }
+            var query = NovelFilters.From(author, series, publisher, decade, tag, excludeTag, minRating, unknown)
+                .Apply(db, Visible());
 
             if (!string.IsNullOrWhiteSpace(q))
             {
@@ -332,31 +312,6 @@ namespace MovieTheater.Books.Controllers
             };
 
         // ── small helpers ────────────────────────────────────────────────────────────────────────────────────
-
-        private static List<string> Csv(string? s) =>
-            string.IsNullOrWhiteSpace(s)
-                ? []
-                : s.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
-
-        /// <summary>"1990s" or "1990" → 1990. Anything else is dropped rather than guessed at.</summary>
-        private static List<int> Decades(string? decade) => Csv(decade)
-            .Select(d => d.TrimEnd('s', 'S'))
-            .Select(d => int.TryParse(d, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v) ? v / 10 * 10 : (int?)null)
-            .Where(v => v != null).Select(v => v!.Value).Distinct().ToList();
-
-        /// <summary>
-        /// <c>?tag=genre:dystopian</c> pins the category; a bare <c>?tag=dystopian</c> matches any category. The
-        /// composite spelling is what <c>/novels/facets</c> hands back, so a chip round-trips unchanged.
-        /// </summary>
-        private static List<(string? Category, string Value)> Tags(string? tag) => Csv(tag)
-            .Select(t =>
-            {
-                var i = t.IndexOf(':');
-                return i <= 0 || i == t.Length - 1
-                    ? ((string?)null, t)
-                    : (t[..i].Trim(), t[(i + 1)..].Trim());
-            })
-            .Where(t => t.Item2.Length > 0).ToList();
 
         private string UserSig() =>
             $"{BooksIdentity.UserId(User)}:{BooksIdentity.CeilingFor(User)}:{(BooksIdentity.IsAdmin(User) ? 1 : 0)}";

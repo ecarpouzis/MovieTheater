@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using MovieTheater.Books.Access;
+using MovieTheater.Books.Archives;
 using MovieTheater.Books.Controllers;
 using MovieTheater.Books.Db;
 using MovieTheater.Books.Identity;
@@ -312,6 +314,65 @@ namespace MovieTheater.Books.Tests
             var comicRun = Value(await browse.GetSeriesRun(1));
             Assert.Equal("comic", Read<string>(comicRun, "kind"));
             Assert.Equal(new[] { 1, 2 }, Read<List<SeriesRunRow>>(comicRun, "items").Select(r => r.Item.Id).ToArray());
+        }
+
+        /// <summary>
+        /// The grouped browse over a BOOK shelf (R9 S11): the shelves the Novels section grows, and the
+        /// promise that comes with them — the grouped surface filters through the SAME
+        /// <see cref="NovelFilters"/> the flat <c>/novels</c> list does, so a reader switching the View pill
+        /// cannot find a book present in Grid and absent in Shelves.
+        /// </summary>
+        [Fact]
+        public async Task TheGroupedBrowseFiltersABookShelfExactlyAsTheFlatNovelsListDoes()
+        {
+            using var f = Migrated();
+            await SeedAsync(f);
+            RebuildComics(f);
+            LinkBooks(f);
+            using (var hot = new TargetWriter(f.HotPath, MappingContract.Load(), dryRun: false))
+            {
+                hot.Begin();
+                ResolvePipeline.RunAll(hot, 500, _ => { });
+                hot.Commit();
+            }
+
+            await using var db = f.HotDb();
+            var browse = Bind(new BrowseController(db, new MemoryCache(new MemoryCacheOptions { SizeLimit = 200 })));
+            var novels = Bind(new NovelsController(db, new MemoryCache(new MemoryCacheOptions { SizeLimit = 200 }), new BooksOptions(),
+                new ThumbnailService(Array.Empty<IArchiveReader>(), new BooksOptions(),
+                    Microsoft.Extensions.Logging.Abstractions.NullLogger<ThumbnailService>.Instance)));
+
+            // The four axes a prose shelf has, and the flag that says this binary applies `book.*` at all —
+            // on the section's OWN facets payload (asking /browse/facets would cost the first visitor a 13 s
+            // comic-shaped build it never reads). Without the flag the SPA keeps Novels flat.
+            var facets = Body<NovelFacets>(await novels.Facets());
+            Assert.Equal(new[] { "series", "author", "publisher", "decade" }, facets.GroupAxes.ToArray());
+            Assert.True(facets.BookFilters);
+
+            // ?book.series= is EXACT on the string Calibre wrote, so "star wars" is not "Star Wars" — the
+            // shelf folds the two spellings (one normalized key), the chip does not. That is the flat list's
+            // semantics, and the grouped surface has to inherit it rather than invent a looser one.
+            var exact = new NovelFilterQuery { Series = "Star Wars" };
+            var head = Assert.Single(Body<BrowseGroupsResponse>(
+                await browse.GetGroups(groupBy: "series", kind: "book", perGroupTop: 10, book: exact)).Groups);
+            Assert.Equal("Star Wars", head.Label);
+            Assert.Equal(new[] { BookOne, BookTwo }, head.Items.Select(i => i.Id).OrderBy(i => i).ToArray());
+
+            // The same filter through the FLAT list: the same books, or the two surfaces disagree.
+            var flat = Read<List<ItemSummary>>(Value(await novels.List(series: "Star Wars", top: 60)), "items");
+            Assert.Equal(new[] { BookOne, BookTwo }, flat.Select(i => i.Id).OrderBy(i => i).ToArray());
+
+            // The decade is the rail's own spelling ("1990s"), and it keeps all three of the series' books.
+            var byDecade = Assert.Single(Body<BrowseGroupsResponse>(
+                await browse.GetGroups(groupBy: "series", kind: "book", perGroupTop: 10, book: new NovelFilterQuery { Decade = "1990s" })).Groups);
+            Assert.Equal(3, byDecade.TotalItems);
+
+            // And a COMIC browse never picks one up: the filter is applied for ItemKind.Book only, so the
+            // 1977/78 issues survive a filter that would have excluded every one of them.
+            var comics = Body<BrowseGroupsResponse>(
+                await browse.GetGroups(groupBy: "series", kind: "comic", perGroupTop: 10, book: new NovelFilterQuery { Decade = "1990s" })).Groups;
+            Assert.Equal(new[] { ComicItemA, ComicItemB },
+                comics.Single(g => g.Label == "Star Wars").Items.Select(i => i.Id).OrderBy(i => i).ToArray());
         }
 
         private static T Bind<T>(T controller) where T : ControllerBase

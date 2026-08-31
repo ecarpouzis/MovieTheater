@@ -46,6 +46,13 @@ namespace MovieTheater.Books.Services
         private static readonly string[] WarmedGroupings = { "collection", "series", "publisher", "decade" };
 
         /// <summary>
+        /// The prose half's shelves (R9 S11). Warmed for the same reason the comic ones are: these heads run
+        /// over 100k+ books, and `author` is a credit aggregation — the first visitor must not be the one who
+        /// computes them. <see cref="BrowseController.BookGroupAxes"/> is the one list; this follows it.
+        /// </summary>
+        private static string[] WarmedBookGroupings => BrowseController.BookGroupAxes;
+
+        /// <summary>
         /// Catalog-only change fingerprint. Counts catch inserts and deletes; the SUM terms catch the realistic
         /// in-place edits (re-links, rating reloads, dedup exclusions, name re-resolves, a resolve pass). It runs
         /// only when data_version says something committed, so its cost is paid around real write activity only.
@@ -157,6 +164,12 @@ namespace MovieTheater.Books.Services
                 foreach (var groupBy in WarmedGroupings)
                     Tally(await RunAsync<BrowseController>(principal, "heads:" + groupBy,
                         c => c.GetGroupLetters(groupBy, null, null, null, false, false, ct: ct), ct));
+
+                // The same phase over the BOOK half. Unfiltered only: a rail with chips on it is a different
+                // signature and computes on demand, exactly as the comic side does.
+                foreach (var groupBy in WarmedBookGroupings)
+                    Tally(await RunAsync<BrowseController>(principal, "heads:book:" + groupBy,
+                        c => c.GetGroupLetters(groupBy, null, null, "book", false, false, ct: ct), ct));
 
                 // The default first band. Its response is not cached (megabytes per variant), but running it keeps
                 // the projection's join pages hot so the real request stays at warm speed.

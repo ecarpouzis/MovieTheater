@@ -191,7 +191,18 @@ export interface ExploreResponseDto { spotlight: ExploreCard[]; rails: ExploreRa
 
 export interface NovelsPage { total: number; skip: number; top: number; items: ItemSummary[]; covers: Record<string, string | null>; maturity: Record<string, number | null> }
 export interface NovelFacetOption { value: string; count: number }
-export interface NovelFacets { authors: NovelFacetOption[]; series: NovelFacetOption[]; publishers: NovelFacetOption[]; decades: NovelFacetOption[]; tags: NovelFacetOption[] }
+export interface NovelFacets {
+  authors: NovelFacetOption[]; series: NovelFacetOption[]; publishers: NovelFacetOption[]; decades: NovelFacetOption[]; tags: NovelFacetOption[];
+  /** The axes a BOOK shelf can be banded by, from the deployed host (`BrowseController.BookGroupAxes`). */
+  groupAxes?: string[];
+  /**
+   * True when the deployed host applies the novels filter (`?book.*`) on the grouped endpoints. Absent ⇒
+   * false ⇒ Novels stays flat: an older host IGNORES `book.author=` rather than rejecting it, so the
+   * shelves would page the whole library under a rail full of active chips. It rides THIS payload (not
+   * `/browse/facets`) because the section already fetches it, and that one costs 13 s cold for books.
+   */
+  bookFilters?: boolean;
+}
 
 /** Bubble Zoom: a text block on a page, every number normalized 0–1 to the page's size. */
 export interface TextRegion {
@@ -276,17 +287,33 @@ export const fetchFacetOptions = (field: "authors" | "artists" | "tags", q: stri
 export interface GroupsQuery {
   groupBy: string; q?: string; orderby?: string | null; groupsTop?: number; groupsSkip?: number; perGroupTop?: number; perGroupSkip?: number;
   filter?: string | null; subGroupBy?: string; singleGroupKey?: string; kind?: ItemKind; wantToReadOnly?: boolean; readOnly?: boolean; exact?: ExactParams;
+  /** The novels rail's filter (`kind: "book"` only) — see `NovelBrowseFilter`. */
+  book?: NovelBrowseFilter;
 }
+
+/**
+ * The novels rail's own eight facets as the BROWSE endpoints take them. Prefixed `book.` because
+ * `/browse/*` already binds `author` / `tag` / `exTag` for the COMIC language, whose credit matching
+ * is deliberately looser (normalized names, any author-ish role, any source). A novel's author is the
+ * string Calibre wrote and `/novels/facets` counted, so the two must not share a spelling.
+ */
+export type NovelBrowseFilter = Pick<NovelsQuery, "author" | "series" | "publisher" | "decade" | "tag" | "excludeTag" | "minRating" | "unknown">;
+
+const bookParams = (b: NovelBrowseFilter | undefined): Record<string, Param> => b == null ? {} : {
+  "book.author": b.author, "book.series": b.series, "book.publisher": b.publisher, "book.decade": b.decade,
+  "book.tag": b.tag, "book.excludeTag": b.excludeTag, "book.minRating": b.minRating, "book.unknown": b.unknown,
+};
 
 const groupsQs = (g: GroupsQuery) => qs({
   groupBy: g.groupBy, q: g.q, orderby: g.orderby, groupsTop: g.groupsTop, groupsSkip: g.groupsSkip, perGroupTop: g.perGroupTop, perGroupSkip: g.perGroupSkip,
-  $filter: g.filter, subGroupBy: g.subGroupBy, singleGroupKey: g.singleGroupKey, kind: g.kind, wantToReadOnly: g.wantToReadOnly, readOnly: g.readOnly, ...(g.exact ?? {}),
+  $filter: g.filter, subGroupBy: g.subGroupBy, singleGroupKey: g.singleGroupKey, kind: g.kind, wantToReadOnly: g.wantToReadOnly, readOnly: g.readOnly,
+  ...(g.exact ?? {}), ...bookParams(g.book),
 });
 
 export const fetchGroups = (g: GroupsQuery, signal?: AbortSignal) =>
   request<BrowseGroupsResponse>(`/browse/groups${groupsQs(g)}`, undefined, signal);
 
-export const fetchGroupLetters = (g: Pick<GroupsQuery, "groupBy" | "q" | "filter" | "kind" | "wantToReadOnly" | "readOnly" | "exact">, signal?: AbortSignal) =>
+export const fetchGroupLetters = (g: Pick<GroupsQuery, "groupBy" | "q" | "filter" | "kind" | "wantToReadOnly" | "readOnly" | "exact" | "book">, signal?: AbortSignal) =>
   request<{ totalGroups: number; letters: GroupLetter[] }>(`/browse/group-letters${groupsQs({ ...g })}`, undefined, signal);
 
 /** One bucket of the flat A–Z strip (the catalog package's `LetterBucket` shape). */
@@ -298,9 +325,9 @@ export const fetchLetters = (g: { sort?: string } & Pick<GroupsQuery, "q" | "fil
     `/browse/letters${qs({ sort: g.sort, q: g.q, $filter: g.filter, kind: g.kind, wantToReadOnly: g.wantToReadOnly, readOnly: g.readOnly, ...(g.exact ?? {}) })}`,
     undefined, signal);
 
-export const fetchGroupItems = (groupBy: string, key: string, g: { skip?: number; top?: number } & Pick<GroupsQuery, "orderby" | "q" | "filter" | "kind" | "wantToReadOnly" | "readOnly" | "exact">, signal?: AbortSignal) =>
+export const fetchGroupItems = (groupBy: string, key: string, g: { skip?: number; top?: number } & Pick<GroupsQuery, "orderby" | "q" | "filter" | "kind" | "wantToReadOnly" | "readOnly" | "exact" | "book">, signal?: AbortSignal) =>
   request<{ items: ItemSummary[]; total: number }>(
-    `/browse/groups/${encodeURIComponent(groupBy)}/${encodeURIComponent(key)}/items${qs({ skip: g.skip, top: g.top, orderby: g.orderby, q: g.q, $filter: g.filter, kind: g.kind, wantToReadOnly: g.wantToReadOnly, readOnly: g.readOnly, ...(g.exact ?? {}) })}`,
+    `/browse/groups/${encodeURIComponent(groupBy)}/${encodeURIComponent(key)}/items${qs({ skip: g.skip, top: g.top, orderby: g.orderby, q: g.q, $filter: g.filter, kind: g.kind, wantToReadOnly: g.wantToReadOnly, readOnly: g.readOnly, ...(g.exact ?? {}), ...bookParams(g.book) })}`,
     undefined, signal);
 
 export const fetchSeriesLibraryRating = (seriesId: number, signal?: AbortSignal) =>

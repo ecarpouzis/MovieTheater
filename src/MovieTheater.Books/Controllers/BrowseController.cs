@@ -276,6 +276,10 @@ namespace MovieTheater.Books.Controllers
             [FromQuery] string[]? exArtist = null,
             [FromQuery] string[]? exTag = null,
             [FromQuery] string[]? exEvent = null,
+            // The novels rail's own filter, under a `book.` prefix (see NovelFilterQuery): /browse/* already
+            // binds author / tag / exTag for the COMIC language, and two filters that mean nearly the same
+            // thing must not share a spelling.
+            [FromQuery(Name = "book")] NovelFilterQuery? book = null,
             CancellationToken ct = default)
         {
             var exact = ExactFilters.From(author, artist, tag, eventName, exAuthor, exArtist, exTag, exEvent);
@@ -291,8 +295,11 @@ namespace MovieTheater.Books.Controllers
                 ? await KindForSeriesAsync(onlySeriesId, null, ct)
                 : CatalogController.ParseKind(kind);
 
-            var (countQuery, summaryQuery) = await BuildFilteredContextAsync(itemKind, q, filter, exact, wantToReadOnly, readOnly, ct);
-            var heads = await CachedHeadsAsync(HeadsSig(itemKind, by, q, filter, exact, wantToReadOnly, readOnly), Ttl(q, filter, exact),
+            // Book-only by construction: the novels rail is the only caller that sends `book.*`, and a comic
+            // browse must never inherit one from the un-prefixed fallback the model binder would otherwise try.
+            var novels = itemKind == ItemKind.Book ? book?.ToFilters() ?? NovelFilters.None : NovelFilters.None;
+            var (countQuery, summaryQuery) = await BuildFilteredContextAsync(itemKind, q, filter, exact, novels, wantToReadOnly, readOnly, ct);
+            var heads = await CachedHeadsAsync(HeadsSig(itemKind, by, q, filter, exact, novels, wantToReadOnly, readOnly), Ttl(q, filter, exact, novels),
                 () => GroupHeadsAsync(countQuery, by, ct));
 
             var paged = singleGroupKey != null
@@ -338,13 +345,20 @@ namespace MovieTheater.Books.Controllers
             [FromQuery] string[]? exArtist = null,
             [FromQuery] string[]? exTag = null,
             [FromQuery] string[]? exEvent = null,
+            // The novels rail's own filter, under a `book.` prefix (see NovelFilterQuery): /browse/* already
+            // binds author / tag / exTag for the COMIC language, and two filters that mean nearly the same
+            // thing must not share a spelling.
+            [FromQuery(Name = "book")] NovelFilterQuery? book = null,
             CancellationToken ct = default)
         {
             var exact = ExactFilters.From(author, artist, tag, eventName, exAuthor, exArtist, exTag, exEvent);
             var by = NormalizeGroupBy(groupBy);
             var itemKind = CatalogController.ParseKind(kind);
-            var (countQuery, _) = await BuildFilteredContextAsync(itemKind, q, filter, exact, wantToReadOnly, readOnly, ct);
-            var heads = await CachedHeadsAsync(HeadsSig(itemKind, by, q, filter, exact, wantToReadOnly, readOnly), Ttl(q, filter, exact),
+            // Book-only by construction: the novels rail is the only caller that sends `book.*`, and a comic
+            // browse must never inherit one from the un-prefixed fallback the model binder would otherwise try.
+            var novels = itemKind == ItemKind.Book ? book?.ToFilters() ?? NovelFilters.None : NovelFilters.None;
+            var (countQuery, _) = await BuildFilteredContextAsync(itemKind, q, filter, exact, novels, wantToReadOnly, readOnly, ct);
+            var heads = await CachedHeadsAsync(HeadsSig(itemKind, by, q, filter, exact, novels, wantToReadOnly, readOnly), Ttl(q, filter, exact, novels),
                 () => GroupHeadsAsync(countQuery, by, ct));
 
             var letters = new List<object>();
@@ -387,8 +401,10 @@ namespace MovieTheater.Books.Controllers
             var exact = ExactFilters.From(author, artist, tag, eventName, exAuthor, exArtist, exTag, exEvent);
             var key = NormalizeLetterSort(sort);
             var itemKind = CatalogController.ParseKind(kind);
-            var (_, summaryQuery) = await BuildFilteredContextAsync(itemKind, q, filter, exact, wantToReadOnly, readOnly, ct);
-            var letters = await CachedAsync(HeadsSig(itemKind, "letters:" + key, q, filter, exact, wantToReadOnly, readOnly), Ttl(q, filter, exact),
+            // The FLAT strip has no `book.*`: a prose shelf buckets its own list through /novels/letters,
+            // which applies the same NovelFilters itself.
+            var (_, summaryQuery) = await BuildFilteredContextAsync(itemKind, q, filter, exact, NovelFilters.None, wantToReadOnly, readOnly, ct);
+            var letters = await CachedAsync(HeadsSig(itemKind, "letters:" + key, q, filter, exact, NovelFilters.None, wantToReadOnly, readOnly), Ttl(q, filter, exact, NovelFilters.None),
                 () => LetterBucketsAsync(summaryQuery, key, ct));
             return Ok(new { total = letters.Sum(l => l.Count), letters });
         }
@@ -452,6 +468,10 @@ namespace MovieTheater.Books.Controllers
             [FromQuery] string[]? exArtist = null,
             [FromQuery] string[]? exTag = null,
             [FromQuery] string[]? exEvent = null,
+            // The novels rail's own filter, under a `book.` prefix (see NovelFilterQuery): /browse/* already
+            // binds author / tag / exTag for the COMIC language, and two filters that mean nearly the same
+            // thing must not share a spelling.
+            [FromQuery(Name = "book")] NovelFilterQuery? book = null,
             CancellationToken ct = default)
         {
             var exact = ExactFilters.From(author, artist, tag, eventName, exAuthor, exArtist, exTag, exEvent);
@@ -459,7 +479,10 @@ namespace MovieTheater.Books.Controllers
             top = Math.Clamp(top, 1, 500);
             var by = NormalizeGroupBy(groupBy);
             var itemKind = CatalogController.ParseKind(kind);
-            var (_, summaryQuery) = await BuildFilteredContextAsync(itemKind, q, filter, exact, wantToReadOnly, readOnly, ct);
+            // Book-only by construction: the novels rail is the only caller that sends `book.*`, and a comic
+            // browse must never inherit one from the un-prefixed fallback the model binder would otherwise try.
+            var novels = itemKind == ItemKind.Book ? book?.ToFilters() ?? NovelFilters.None : NovelFilters.None;
+            var (_, summaryQuery) = await BuildFilteredContextAsync(itemKind, q, filter, exact, novels, wantToReadOnly, readOnly, ct);
 
             var head = new GroupHead(key, key, 0);
             var band = BandQuery(summaryQuery, by, new List<GroupHead> { head });
@@ -585,12 +608,16 @@ namespace MovieTheater.Books.Controllers
         /// a correlated subquery made every unfiltered GROUP BY pay the projection's join for nothing.
         /// </summary>
         private async Task<(IQueryable<Item> CountQuery, IQueryable<ItemSummary> SummaryQuery)> BuildFilteredContextAsync(
-            ItemKind kind, string? q, string? filter, ExactFilters exact, bool wantToReadOnly, bool readOnly, CancellationToken ct)
+            ItemKind kind, string? q, string? filter, ExactFilters exact, NovelFilters novels,
+            bool wantToReadOnly, bool readOnly, CancellationToken ct)
         {
             var entityQuery = await ApplyMarkFiltersAsync(ItemAccess.VisibleItems(db, User, kind), wantToReadOnly, readOnly, ct);
             // The exact facet filters (credits / tags / events) narrow the ENTITY set, before the projection and the
             // OData filter, so heads, bands, letters and counts all agree — see ExactFilters.
             entityQuery = exact.Apply(db, entityQuery);
+            // The novels rail's own eight, in the same place and for the same reason — the SAME code the flat
+            // /novels list runs, so the two surfaces over one shelf cannot disagree (see NovelFilters).
+            entityQuery = novels.Apply(db, entityQuery);
 
             if (!string.IsNullOrWhiteSpace(q))
             {
@@ -1066,11 +1093,11 @@ namespace MovieTheater.Books.Controllers
         /// per-user AND changes on every click, so caching it would serve a stale shelf the moment the reader
         /// marked something; recomputing it is the cheaper of the two mistakes.
         /// </summary>
-        private string? HeadsSig(ItemKind kind, string by, string? q, string? filter, ExactFilters exact, bool wantToReadOnly, bool readOnly) =>
-            wantToReadOnly || readOnly ? null : $"books:heads:{UserSig()}:{kind}:{by}:{q}:{filter}:{exact.Sig}";
+        private string? HeadsSig(ItemKind kind, string by, string? q, string? filter, ExactFilters exact, NovelFilters novels, bool wantToReadOnly, bool readOnly) =>
+            wantToReadOnly || readOnly ? null : $"books:heads:{UserSig()}:{kind}:{by}:{q}:{filter}:{exact.Sig}:{novels.Sig}";
 
-        private static TimeSpan Ttl(string? q, string? filter, ExactFilters exact) =>
-            string.IsNullOrEmpty(q) && string.IsNullOrEmpty(filter) && exact.IsEmpty ? HeadsTtlDefault : HeadsTtlFiltered;
+        private static TimeSpan Ttl(string? q, string? filter, ExactFilters exact, NovelFilters novels) =>
+            string.IsNullOrEmpty(q) && string.IsNullOrEmpty(filter) && exact.IsEmpty && novels.IsEmpty ? HeadsTtlDefault : HeadsTtlFiltered;
 
         private Task<List<GroupHead>> CachedHeadsAsync(string? sig, TimeSpan ttl, Func<Task<List<GroupHead>>> factory) =>
             CachedAsync(sig, ttl, factory);
@@ -1104,6 +1131,17 @@ namespace MovieTheater.Books.Controllers
         /// SPA side, and no constant to remember to flip after a deploy.</para>
         /// </summary>
         public static readonly string[] GroupAxes = ["collection", "series", "publisher", "decade", "franchise", "author", "artist"];
+
+        /// <summary>
+        /// The subset a BOOK shelf can answer, in pill order — and it is exactly the four facets
+        /// <c>/novels/facets</c> offers, so a shelf and its chip always describe the same set. Collection and
+        /// franchise are comic structures a novel has no row in, and `artist` is the comic art credit.
+        ///
+        /// <para>Advertised on <c>/novels/facets</c>, NOT here: this payload costs 13 s cold (see
+        /// <c>CacheWarmupService</c>) and is warmed for comics only, so asking it the capability question
+        /// would have made the first Novels visit pay for a comic-shaped facet build it never reads.</para>
+        /// </summary>
+        public static readonly string[] BookGroupAxes = ["series", "author", "publisher", "decade"];
 
         private static readonly Regex GroupByPattern = new("^(" + string.Join("|", GroupAxes) + ")$", RegexOptions.Compiled);
 
