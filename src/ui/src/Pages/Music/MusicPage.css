@@ -333,9 +333,18 @@
    Fixed width so the meters line up into a comparable column down the tracklist — a bar you have to
    compare against a neighbour of a different width is not a chart. `flex: none` keeps the title the
    only thing that gives way when the row is narrow. */
+/* Bar + number as one unit. Fixed width so the meters line up into a comparable column down the
+   tracklist - a bar you have to compare against a neighbour of a different width is not a chart. */
 .music-song-pop {
   flex: none;
-  width: 34px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.music-song-pop-bar {
+  display: block;
+  width: 44px;
   height: 4px;
   border-radius: 2px;
   background: var(--card-border);
@@ -352,10 +361,23 @@
   opacity: 0.75;
 }
 
+/* The absolute 0-100 score. Tabular figures and a fixed width so the column reads as a column -
+   scanning it top to bottom IS the "how much of a drop" answer, and digits that shift left and
+   right defeat that. Muted, because it is context and the title is the content. */
+.music-song-pop-score {
+  min-width: 20px;
+  text-align: right;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
 /* On a phone the row has to give something up, and the meter is the least of what it carries: the
    title, the time and the two buttons are all doing work a finger needs. */
 @media (max-width: 560px) {
-  .music-song-pop { display: none; }
+  /* The bar goes, the NUMBER stays: it is the half that survives being small, and losing the
+     comparison entirely on a phone would be losing the feature. */
+  .music-song-pop-bar { display: none; }
 }
 
 /* The album sheet's tracklist order switch (2026-08-31). Two plain buttons rather than an antd

@@ -135,7 +135,7 @@ namespace MovieTheater.Music
             // The disk cache would make the repeat cheap; this makes it free, and keeps the run's
             // request count legible in the summary.
             var rankings = new Dictionary<string, ArtistAnswer>(StringComparer.OrdinalIgnoreCase);
-            var updates = new Dictionary<int, int?>();
+            var updates = new Dictionary<int, (int? Score, long? Listeners)>();
             using var http = MusicRemoteArt.CreateHttp();
 
             foreach (var track in batch)
@@ -192,7 +192,7 @@ namespace MovieTheater.Music
                 // "We asked and something answered" — not "we intended to ask". A track whose every
                 // candidate threw has learned nothing and must stay in the queue for a later pass,
                 // exactly as a key-less run would leave the whole library.
-                if (asked) updates[track.Id] = popularity;
+                if (asked) updates[track.Id] = (popularity, listeners);
 
                 if (Verbose)
                     w.WriteLine($"  {(popularity != null ? "+" : "·")} {track.Id} {tagArtist ?? folderArtist} — {track.Title}: " +
@@ -208,12 +208,15 @@ namespace MovieTheater.Music
                 var now = DateTime.UtcNow;
                 foreach (var row in rows)
                 {
-                    var popularity = updates[row.Id];
+                    var (score, listeners) = updates[row.Id];
                     // A miss never erases a score an earlier run established (the album leg's rule):
                     // "we don't know this time" is not "nobody has heard of it".
-                    if (popularity != null)
+                    if (score != null)
                     {
-                        row.Popularity = popularity;
+                        row.Popularity = score;
+                        // Banked alongside the score so a re-tune of the scale is an UPDATE rather
+                        // than a re-parse, and so the UI can show a DROP the log scale flattens.
+                        row.PopularityListeners = listeners;
                         row.PopularitySource = MusicGenreSources.LastFm;
                     }
                     row.PopularityCheckedUtc = now;

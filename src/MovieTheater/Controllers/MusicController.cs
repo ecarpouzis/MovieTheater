@@ -860,6 +860,7 @@ namespace MovieTheater.Controllers
                     requiresTranscode = t.RequiresTranscode,
                     missing = t.MissingSinceUtc != null,
                     popularity = t.Popularity,
+                    listeners = t.PopularityListeners,
                 })
                 .ToListAsync();
 
@@ -890,6 +891,7 @@ namespace MovieTheater.Controllers
                     requiresTranscode = t.RequiresTranscode,
                     missing = t.MissingSinceUtc != null,
                     popularity = t.Popularity,
+                    listeners = t.PopularityListeners,
                     // Where it came from, so a row can say "— Hunky Dory" and open it. An artist's
                     // loose tracks belong to no album and carry nulls here by design.
                     albumId = t.AlbumId,
@@ -968,6 +970,7 @@ namespace MovieTheater.Controllers
                     // the world means. The ORDER stays alphabetical — a search result is a lookup,
                     // and re-ranking it by fame would bury the obscure track somebody typed in full.
                     popularity = t.Popularity,
+                    listeners = t.PopularityListeners,
                 })
                 .ToListAsync();
 
@@ -1113,6 +1116,10 @@ namespace MovieTheater.Controllers
                     // a tracklist say which of these twelve are the famous ones. Null is "we don't
                     // know", never zero, and the row still renders: an album can be half-covered.
                     popularity = t.Popularity,
+                    // The raw audience behind that score. The score is LOGARITHMIC, so it cannot
+                    // express a drop — 73 and 50 on one album are 112,303 listeners and 2,905 — and
+                    // the tracklist draws its comparison bar from this instead.
+                    listeners = t.PopularityListeners,
                 })
                 .ToListAsync();
 

@@ -130,6 +130,23 @@ namespace MovieTheater.Db
         /// </remarks>
         public int? Popularity { get; set; }
 
+        /// <summary>
+        /// The RAW audience count <see cref="Popularity"/> was derived from (Last.fm listeners), or
+        /// null when unknown. Null and 0 are different answers: 0 would say nobody has heard it.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>Kept because the 0-100 scale cannot express a DROP.</b> That scale is
+        /// logarithmic by necessity - listener counts across this library span three orders of
+        /// magnitude - and the cost is that neighbouring numbers hide enormous gaps: on one album 73
+        /// and 50 are 112,303 listeners and 2,905, a 39x difference that reads as "23 points". A
+        /// tracklist asked "how much of a drop is there between these songs" can only answer honestly
+        /// from the raw count.</para>
+        /// <para>It is also what makes the scale re-tunable without asking anyone's API again: the
+        /// ceiling in <c>MusicPopularity</c> has already been raised once, and with the counts banked
+        /// a re-score is an UPDATE rather than a re-parse of the response cache.</para>
+        /// </remarks>
+        public long? PopularityListeners { get; set; }
+
         /// <summary>Which external source produced <see cref="Popularity"/> - see
         /// <see cref="MovieTheater.Music.MusicGenreSources"/>. Stamped so one source can be re-run or
         /// retired without guessing which rows came from it.</summary>

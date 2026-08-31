@@ -11,6 +11,7 @@ import "./MusicPage.css";
 import "./MusicPlaylists.css";
 import { formatDuration } from "../../utils/format";
 import { SHEET_Z } from "../../Components/sheetModal";
+import { peakOf } from "./musicPopularity";
 
 // Album detail + tracklist (music-plan.md §2.6): hero header → scrolling tracklist → play actions.
 // Follows the site's modal convention (GameModal peers) in spirit; antd Modal carries the shell.
@@ -148,6 +149,9 @@ function MusicAlbumModal({ albumId, onClose, onAddToPlaylist }) {
   // different song than the row the finger landed on.
   const tracks = album?.tracks ? orderTracks(album.tracks, trackOrder) : [];
   const anyPopularity = tracks.some((t) => typeof t.popularity === "number");
+  // The bar on each row is a share of THIS record's biggest song, so "how much of a drop is there
+  // after the hit" is answered within the album rather than against the whole world.
+  const popularityPeak = peakOf(tracks);
 
   function toQueueEntries() {
     return tracks.map((t) => ({
@@ -276,7 +280,8 @@ function MusicAlbumModal({ albumId, onClose, onAddToPlaylist }) {
                 title={t.title}
                 disc={t.discNo != null && t.discNo > 1 ? `CD${t.discNo}` : null}
                 time={formatDuration(t.durationSec)}
-                popularity={t.popularity}
+                popularity={t}
+                popularityPeak={popularityPeak}
                 disabled={!player.isPlayable(t)}
                 hint={t.missing
                   ? "File is missing"

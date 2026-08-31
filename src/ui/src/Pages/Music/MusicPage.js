@@ -4,6 +4,7 @@ import { MovieAPI } from "../../MovieAPI";
 import { useMusicPlayer } from "../../Music/MusicPlayerContext";
 import { AlbumCard, ArtistCard } from "./MusicCards";
 import MusicAlbumModal from "./MusicAlbumModal";
+import { peakOf } from "./musicPopularity";
 import LoadFailure from "../../Components/LoadFailure";
 import MusicPlaylistPickerModal from "./MusicPlaylistPickerModal";
 import MusicPlaylistManageModal from "./MusicPlaylistManageModal";
@@ -239,6 +240,12 @@ function MusicPage({ userData }) {
     else history.push({ pathname: "/music", search });
   }
 
+  // Each song list compares against ITSELF: a row's bar is its share of the loudest song in the
+  // same list, so the drop it shows is the one you are actually looking at.
+  const songResultPeak = useMemo(() => peakOf(songResults ?? []), [songResults]);
+  const topTrackPeak = useMemo(() => peakOf(artistDetail?.topTracks ?? []), [artistDetail]);
+  const loosePeak = useMemo(() => peakOf(artistDetail?.looseTracks ?? []), [artistDetail]);
+
   // The queue-entry shape lives in one place per list so "play from here" and "add this one to the
   // queue" can never drift into building different entries for the same track.
   function searchSongEntries() {
@@ -353,7 +360,8 @@ function MusicPage({ userData }) {
                 title={t.title}
                 meta={`${t.artistName}${t.albumTitle ? ` — ${t.albumTitle}` : ""}`}
                 time={formatDuration(t.durationSec)}
-                popularity={t.popularity}
+                popularity={t}
+                popularityPeak={songResultPeak}
                 disabled={!player.isPlayable(t)}
                 onPlay={() => playSearchSong(i)}
                 onQueue={() => player.enqueue([searchSongEntries()[i]])}
@@ -404,7 +412,8 @@ function MusicPage({ userData }) {
                     title={t.title}
                     meta={t.albumTitle || undefined}
                     time={formatDuration(t.durationSec)}
-                    popularity={t.popularity}
+                    popularity={t}
+                    popularityPeak={topTrackPeak}
                     disabled={!player.isPlayable(t)}
                     onPlay={() => playTopTracks(i)}
                     onQueue={() => player.enqueue([topTrackEntries()[i]])}
@@ -434,7 +443,8 @@ function MusicPage({ userData }) {
                     no="▶"
                     title={t.title}
                     time={formatDuration(t.durationSec)}
-                    popularity={t.popularity}
+                    popularity={t}
+                    popularityPeak={loosePeak}
                     disabled={!player.isPlayable(t)}
                     onPlay={() => playLooseTracks(i)}
                     onQueue={() => player.enqueue([looseTrackEntries()[i]])}

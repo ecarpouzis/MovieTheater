@@ -2136,6 +2136,9 @@ namespace MovieTheater.Db.Migrations
                     b.Property<DateTime?>("PopularityCheckedUtc")
                         .HasColumnType("datetime2");
 
+                    b.Property<long?>("PopularityListeners")
+                        .HasColumnType("bigint");
+
                     b.Property<string>("PopularitySource")
                         .HasMaxLength(32)
                         .HasColumnType("nvarchar(32)");

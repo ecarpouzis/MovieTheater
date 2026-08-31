@@ -1,28 +1,31 @@
+import { shareOf, popularityTitle } from "./musicPopularity";
+
 /**
- * How widely heard a song is, 0–100, drawn as a meter rather than printed as a number.
+ * How widely heard a song is: the score as a NUMBER, and the drop from the loudest song beside it as
+ * a BAR.
  *
- * A NUMBER in a tracklist reads as a score — the thing a listener has decided — and this is the
- * opposite of that: it is an audience count (Last.fm listeners, log-scaled server-side), and the
- * album sheet already carries a real 0–100 RATING a few centimetres above it. Two numerals side by
- * side would be compared, so only one of them is a numeral. The meter answers the question the
- * tracklist is actually asked — which of these are the famous ones — at a glance, by height.
+ * Both channels are needed and they carry different things (the reasoning lives in
+ * musicPopularity.js). The number is the absolute 0–100 score, so two songs can be compared exactly
+ * and against every other popularity on the site. The bar is this song's share of the biggest
+ * audience in the SAME list, drawn from raw listener counts — because the score is logarithmic and
+ * a bar drawn from it would show a 39× collapse as a couple of pixels.
  *
- * Renders NOTHING when the value is missing, which is the common state on a shelf the enrich pass
- * has not reached: an empty column is honest, and a zero-length bar would claim nobody has heard it.
+ * Renders NOTHING when the score is missing, which is the honest state on a shelf the enrich pass
+ * has not reached: an empty column says nothing, a zero-length bar would claim nobody has heard it.
  */
-function MusicPopularityMeter({ value }) {
-  if (typeof value !== "number") return null;
-  const pct = Math.max(0, Math.min(100, value));
+function MusicPopularityMeter({ track, peak }) {
+  if (typeof track?.popularity !== "number") return null;
+  const score = Math.max(0, Math.min(100, track.popularity));
+  const share = shareOf(track, peak);
   return (
-    <span
-      className="music-song-pop"
-      title={`Popularity ${pct} — how widely heard this song is, not how good it is`}
-      aria-label={`Popularity ${pct} of 100`}
-      role="img"
-    >
-      {/* Inline width is the DATUM (it is per-row and continuous); everything else is in the
-          stylesheet, so themes and the phone breakpoint keep control of the look. */}
-      <span className="music-song-pop-fill" style={{ width: `${pct}%` }} />
+    <span className="music-song-pop" title={popularityTitle(track, peak)}>
+      {/* Inline width is the DATUM (per-row and continuous); everything else is in the stylesheet,
+          so themes and the phone breakpoint keep control of the look. A floor of 2% keeps a song
+          that really is 1/1000th of the hit beside it from vanishing into the trough. */}
+      <span className="music-song-pop-bar" role="img" aria-label={`${Math.round(share * 100)}% of the most-heard song here`}>
+        <span className="music-song-pop-fill" style={{ width: `${Math.max(2, share * 100)}%` }} />
+      </span>
+      <span className="music-song-pop-score">{score}</span>
     </span>
   );
 }
@@ -41,7 +44,8 @@ export default function MusicSongRow({
   meta,        // secondary line-end text (artist — album), optional
   disc,        // CD marker for multi-disc albums, optional
   time,        // formatted duration, optional
-  popularity,  // 0–100 "how widely heard", or null/undefined when unknown → no meter
+  popularity,      // { popularity, listeners } for this row, or null/undefined → no meter
+  popularityPeak,  // the loudest row in THIS list (peakOf), so the bar shows a real drop
   disabled,
   hint,        // title= tooltip for the row
   onPlay,
@@ -55,7 +59,7 @@ export default function MusicSongRow({
         <span className="music-song-title">{title}</span>
         {disc && <span className="music-song-disc">{disc}</span>}
         {meta && <span className="music-song-meta">{meta}</span>}
-        <MusicPopularityMeter value={popularity} />
+        <MusicPopularityMeter track={popularity} peak={popularityPeak} />
         {time && <span className="music-song-time">{time}</span>}
       </button>
       {onQueue && (
