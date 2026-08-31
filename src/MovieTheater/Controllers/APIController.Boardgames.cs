@@ -508,7 +508,7 @@ namespace MovieTheater.Controllers
         {
             // The shared recipe (ImageShrinkService) with the boardgame's single sharpen pass -
             // this used to be a hand-kept copy of the poster geometry/encoder.
-            return MovieTheater.Services.Poster.ImageShrinkService.ShrinkToThumbnailPng(sourceImage, new[] { .5f });
+            return MovieTheater.Services.Poster.ImageShrinkService.ShrinkToThumbnail(sourceImage, new[] { .5f });
         }
 
         private static void ApplyBoardgameSnapshot(Boardgame existing, Boardgame fromBgg)

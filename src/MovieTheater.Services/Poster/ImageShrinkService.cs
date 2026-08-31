@@ -83,19 +83,33 @@ namespace MovieTheater.Services.Poster
         private byte[] ImageMagicResizeImage(byte[] sourceImage)
         {
             // The poster chain runs five progressively-lighter sharpen passes.
-            return ShrinkToThumbnailPng(sourceImage, new[] { .5f, .5f, .4f, .3f, .2f });
+            return ShrinkToThumbnail(sourceImage, new[] { .5f, .5f, .4f, .3f, .2f });
         }
 
         /// <summary>
-        /// The site's ONE thumbnail recipe: scale to 200px high (capped at 150px wide, aspect
-        /// preserved), Lanczos2, the given Gaussian-sharpen chain, PNG with CompressionLevel 0 +
-        /// FilterMethod None. Shared by the poster pipeline (five-pass chain) and the boardgame
-        /// image download (single .5f pass) - the two used to carry hand-kept copies with a
-        /// "change both or neither" warning; now there is only one to change. The zero-compression
-        /// PNG is deliberate-as-found: files are bigger on disk but encode fastest, and the wire
-        /// cost is absorbed by the immutable/RAM caching on the image routes.
+        /// The thumbnail encode quality. 82 is the knee: at 150x200 and 300 px it is visually
+        /// indistinguishable from the lossless original on cover art, and dropping further starts to show
+        /// on flat title lettering. Measured at this setting: 125 KB PNG -> 12.9 KB.
         /// </summary>
-        public static byte[] ShrinkToThumbnailPng(byte[] sourceImage, float[] sharpenPasses)
+        public const int ThumbnailQuality = 82;
+
+        /// <summary>
+        /// The site's ONE thumbnail recipe: scale to 200px high (capped at 150px wide, aspect
+        /// preserved), Lanczos2, the given Gaussian-sharpen chain, then <b>WebP q82</b>. Shared by the
+        /// poster pipeline (five-pass chain) and the boardgame image download (single .5f pass) - the two
+        /// used to carry hand-kept copies with a "change both or neither" warning; now there is only one
+        /// to change.
+        ///
+        /// <para>It wrote PNG at CompressionLevel 0 + FilterMethod None until 2026-08-31 — essentially raw
+        /// RGB — on the reasoning that files are bigger on disk but encode fastest and "the wire cost is
+        /// absorbed by the immutable/RAM caching on the image routes". Caching does nothing for the FIRST
+        /// paint of a grid, which is the thing that reads as slow, and the measurement was stark: a cover
+        /// served at 125 KB as PNG is 12.9 KB as WebP q82. Raising PNG's compression was NOT the fix
+        /// (125 KB at level 6, 122 KB at level 9) — cover art is a photograph and PNG is the wrong
+        /// container for one. Old PNGs on the mount keep working: the serve path reads the magic number
+        /// (<see cref="MovieTheater.Web.ImageBytes"/>) instead of trusting a name or a default.</para>
+        /// </summary>
+        public static byte[] ShrinkToThumbnail(byte[] sourceImage, float[] sharpenPasses)
         {
             using (SixLabors.ImageSharp.Image image = SixLabors.ImageSharp.Image.Load(sourceImage))
             {
@@ -120,15 +134,15 @@ namespace MovieTheater.Services.Poster
                 foreach (var pass in sharpenPasses)
                     image.Mutate(x => x.GaussianSharpen(pass));
 
-                SixLabors.ImageSharp.Formats.Png.PngEncoder png = new SixLabors.ImageSharp.Formats.Png.PngEncoder
+                var webp = new SixLabors.ImageSharp.Formats.Webp.WebpEncoder
                 {
-                    CompressionLevel = 0,
-                    FilterMethod = SixLabors.ImageSharp.Formats.Png.PngFilterMethod.None
+                    Quality = ThumbnailQuality,
+                    FileFormat = SixLabors.ImageSharp.Formats.Webp.WebpFileFormatType.Lossy,
                 };
 
                 using (var ms = new MemoryStream())
                 {
-                    image.Save(ms, png);//Replace Png encoder with the file format of choice
+                    image.Save(ms, webp);
                     return ms.ToArray();
                 }
             }

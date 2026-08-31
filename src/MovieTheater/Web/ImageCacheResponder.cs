@@ -39,8 +39,12 @@ namespace MovieTheater.Web
             string cacheKeyBase,
             Func<Task<DateTimeOffset?>> getModified,
             Func<Task<byte[]?>> getBytes,
-            string contentType = "image/png")
+            string? contentType = null)
         {
+            // null = read it off the bytes (ImageBytes). The thumbnails on the mount are a MIX of the old
+            // PNGs and the WebP everything writes now, under the same names, so a fixed type would mislabel
+            // one generation or the other.
+            string TypeOf(byte[] b) => contentType ?? ImageBytes.ContentTypeOf(b);
             var request = controller.Request;
             var response = controller.Response;
 
@@ -49,7 +53,7 @@ namespace MovieTheater.Web
             if (cacheKey != null && byteCache.TryGetValue(cacheKey, out byte[]? cachedBytes) && cachedBytes != null)
             {
                 response.Headers["Cache-Control"] = "public, max-age=31536000, immutable";
-                return controller.File(cachedBytes, contentType);
+                return controller.File(cachedBytes, TypeOf(cachedBytes));
             }
 
             var modifiedDate = await getModified();
@@ -84,7 +88,7 @@ namespace MovieTheater.Web
                     SlidingExpiration = TimeSpan.FromHours(12),
                 });
 
-            return controller.File(bytes, contentType);
+            return controller.File(bytes, TypeOf(bytes));
         }
     }
 }

@@ -116,7 +116,7 @@ namespace MovieTheater.Controllers
             {
                 var srcRel = $"arcade/{game.System}/{cardId}-{ShortHash(srcUrl)}.png";
                 var srcPath = ResolveUnderRoot(root, srcRel);
-                if (srcPath != null && System.IO.File.Exists(srcPath)) return ServeFile(srcPath);
+                if (srcPath != null && System.IO.File.Exists(srcPath)) return await ServeFileAsync(srcPath);
                 try
                 {
                     var bytes = ArcadeBoxArt.Thumbnail(await Http.GetByteArrayAsync(srcUrl), ThumbPx);
@@ -134,7 +134,7 @@ namespace MovieTheater.Controllers
                             catch { /* couldn't cache (mount read-only?) — still serve what we fetched */ }
                         }
                         Response.Headers["Cache-Control"] = CachePolicy();
-                        return File(bytes, "image/png");
+                        return File(bytes, MovieTheater.Web.ImageBytes.ContentTypeOf(bytes));
                     }
                 }
                 catch { /* unreachable or undecodable — fall through to the normal cascade */ }
@@ -145,13 +145,13 @@ namespace MovieTheater.Controllers
             foreach (var rel in siblings.Where(s => !string.IsNullOrWhiteSpace(s.BoxArtPath)).Select(s => s.BoxArtPath))
             {
                 var cached = ResolveUnderRoot(root, rel!);
-                if (cached != null && System.IO.File.Exists(cached)) return ServeFile(cached);
+                if (cached != null && System.IO.File.Exists(cached)) return await ServeFileAsync(cached);
             }
             var cardRel = generation > 0
                 ? $"arcade/{game.System}/{cardId}-g{generation}.png"
                 : $"arcade/{game.System}/{cardId}.png";
             var cardPath = ResolveUnderRoot(root, cardRel);
-            if (cardPath != null && System.IO.File.Exists(cardPath)) return ServeFile(cardPath);
+            if (cardPath != null && System.IO.File.Exists(cardPath)) return await ServeFileAsync(cardPath);
 
             // 2. Already tried everything for this card → placeholder (fast 404).
             if (NoArt.ContainsKey(cardId)) return NotFound();
@@ -219,7 +219,7 @@ namespace MovieTheater.Controllers
                 catch { /* couldn't cache (mount read-only?) — still serve the bytes we fetched */ }
             }
             Response.Headers["Cache-Control"] = CachePolicy();
-            return File(thumb, "image/png");
+            return File(thumb, MovieTheater.Web.ImageBytes.ContentTypeOf(thumb));
         }
 
         // 8 hex chars of SHA-1 over the source URL — enough to make the cache filename change whenever the
@@ -250,21 +250,27 @@ namespace MovieTheater.Controllers
             return full;
         }
 
-        private IActionResult ServeFile(string full)
+        private async Task<IActionResult> ServeFileAsync(string full)
         {
             var etag = $"\"{System.IO.File.GetLastWriteTimeUtc(full).Ticks}\"";
             if (Request.Headers.TryGetValue("If-None-Match", out var inm) && inm == etag) return StatusCode(304);
             Response.Headers["Cache-Control"] = CachePolicy();
             Response.Headers["ETag"] = etag;
-            return PhysicalFile(full, ContentTypeFor(full));
+            return PhysicalFile(full, await ContentTypeForAsync(full));
         }
 
-        private static string ContentTypeFor(string path) =>
+        /// <summary>
+        /// The cached covers are a MIX since 2026-08-31: the files already on the mount are PNG and every
+        /// new one is WebP, both under a <c>{cardId}.png</c> name (renaming them would mean rewriting every
+        /// <c>BoxArtPath</c> for nothing). So the extension is only a hint — the first twelve bytes decide,
+        /// and only a file that names a type we did not write falls back to it.
+        /// </summary>
+        private static async Task<string> ContentTypeForAsync(string path) =>
             Path.GetExtension(path).ToLowerInvariant() switch
             {
                 ".jpg" or ".jpeg" => "image/jpeg",
                 ".webp" => "image/webp",
-                _ => "image/png",
+                _ => await MovieTheater.Web.ImageBytes.ContentTypeOfFileAsync(path),
             };
     }
 }

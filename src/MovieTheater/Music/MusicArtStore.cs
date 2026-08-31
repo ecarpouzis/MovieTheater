@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using MovieTheater.Services;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Png;
+using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 
@@ -30,6 +30,9 @@ namespace MovieTheater.Music
 
         /// <summary>Longest edge of the thumbnail — fills the ~150px grid tile crisply on 2× screens.</summary>
         public const int ThumbMaxPx = 300;
+
+        /// <summary>WebP quality for the cached thumb — the site-wide thumbnail knee (see ImageShrinkService).</summary>
+        public const int ThumbQuality = 82;
 
         /// <summary>Image extensions the folder-art scan will consider.</summary>
         public static readonly string[] ImageExtensions = { ".jpg", ".jpeg", ".png", ".webp", ".bmp", ".gif" };
@@ -121,7 +124,11 @@ namespace MovieTheater.Music
                         Math.Max(1, (int)Math.Round(img.Height * s))));
                 }
                 using var ms = new MemoryStream();
-                img.Save(ms, new PngEncoder { CompressionLevel = PngCompressionLevel.BestCompression });
+                // WebP, not PNG: album art is a photograph, and BestCompression PNG still measured 125 KB
+                // against 12.9 KB for the same image as WebP q82 (2026-08-31). The music grid asks for ~22
+                // of these at once. Old PNGs on the mount still serve — ImageCacheResponder reads the
+                // magic number rather than assuming a type.
+                img.Save(ms, new WebpEncoder { Quality = ThumbQuality, FileFormat = WebpFileFormatType.Lossy });
                 return ms.ToArray();
             }
             catch

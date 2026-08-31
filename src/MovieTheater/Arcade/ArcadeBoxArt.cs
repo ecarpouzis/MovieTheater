@@ -6,7 +6,7 @@ using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Png;
+using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.Processing;
 
 namespace MovieTheater.Arcade
@@ -258,6 +258,9 @@ namespace MovieTheater.Arcade
         }
 
         // Downscale so ~49k games stay small: full art (~300-500 KB) → a ~220px thumbnail (~12-20 KB).
+        /// <summary>WebP quality for a cached cover — the site-wide thumbnail knee (see ImageShrinkService).</summary>
+        public const int ThumbQuality = 82;
+
         public static byte[] Thumbnail(byte[] source, int maxDim)
         {
             using var img = Image.Load(source);
@@ -268,7 +271,11 @@ namespace MovieTheater.Arcade
                 img.Mutate(x => x.Resize(Math.Max(1, (int)Math.Round(img.Width * s)), Math.Max(1, (int)Math.Round(img.Height * s))));
             }
             using var ms = new MemoryStream();
-            img.Save(ms, new PngEncoder { CompressionLevel = PngCompressionLevel.BestCompression });
+            // WebP for the same reason as every other thumbnail on the site (2026-08-31): box art is a
+            // photograph and PNG was costing ~5x the bytes. The cached files keep their {cardId}.png
+            // names — ArcadeImageController types them from their CONTENT, so the two generations coexist
+            // and no BoxArtPath has to be rewritten.
+            img.Save(ms, new WebpEncoder { Quality = ThumbQuality, FileFormat = WebpFileFormatType.Lossy });
             return ms.ToArray();
         }
 
