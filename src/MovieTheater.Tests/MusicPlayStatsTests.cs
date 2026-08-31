@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Security.Claims;
@@ -93,6 +94,33 @@ namespace MovieTheater.Tests
         private static string Beacon(params (int TrackId, string StartedAt)[] plays) =>
             JsonSerializer.Serialize(new { plays = plays.Select(p => new { trackId = p.TrackId, startedAt = p.StartedAt }) });
 
+        /// <summary>
+        /// The minute every stamp below is measured from — two hours ago, not a date in a literal.
+        /// </summary>
+        /// <remarks>
+        /// The endpoint TRUSTS a stamp only inside <c>now-1d … now+5min</c> and clamps anything else
+        /// to <c>now</c> (the stamp keys idempotency and nothing else, so a wild one must not be able
+        /// to make the next genuine play look like a duplicate). A hard-coded calendar date therefore
+        /// has a shelf life: once it ages past that window every stamp in the file collapses onto the
+        /// same "now" minute, and tests whose whole subject is "these are DIFFERENT minutes" quietly
+        /// stop testing it — the twice-arriving beacon starts failing, and its siblings keep passing
+        /// for the wrong reason. Anchoring to UtcNow keeps the window satisfied forever; flooring to
+        /// the minute keeps the arithmetic exact, and computing it ONCE keeps a minute that rolls over
+        /// mid-test from moving the stamps underneath the assertions.
+        /// </remarks>
+        private static readonly DateTime Anchor = FloorToMinute(DateTime.UtcNow.AddHours(-2));
+
+        private static DateTime FloorToMinute(DateTime t) =>
+            new(t.Year, t.Month, t.Day, t.Hour, t.Minute, 0, DateTimeKind.Utc);
+
+        /// <summary>The wire form of "<paramref name="minute"/> minutes past the anchor".</summary>
+        private static string Stamp(int minute, int second = 0) =>
+            Anchor.AddMinutes(minute).AddSeconds(second)
+                .ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture);
+
+        /// <summary>What the endpoint should store for <see cref="Stamp"/> — floored to the minute.</summary>
+        private static DateTime Minute(int minute) => Anchor.AddMinutes(minute);
+
         [Fact]
         public void The_endpoint_is_behind_the_same_password_gate_as_every_other_music_route()
         {
@@ -107,7 +135,7 @@ namespace MovieTheater.Tests
         [Fact]
         public async Task A_beacon_that_arrives_twice_counts_once()
         {
-            var body = Beacon((101, "2026-08-27T12:00:07Z"));
+            var body = Beacon((101, Stamp(0, second: 7)));
 
             using (var db = new MovieDb(options))
                 Assert.Equal((1, 0), Result(await Build(db, 1, body).Play()));
@@ -120,18 +148,18 @@ namespace MovieTheater.Tests
 
             // …and a stamp inside the same minute is the same play, even at a different second.
             using (var db = new MovieDb(options))
-                Assert.Equal((0, 1), Result(await Build(db, 1, Beacon((101, "2026-08-27T12:00:59Z"))).Play()));
+                Assert.Equal((0, 1), Result(await Build(db, 1, Beacon((101, Stamp(0, second: 59)))).Play()));
 
             using (var db = new MovieDb(options))
             {
                 var row = Assert.Single(db.MusicPlayStats.Where(p => p.UserId == 1 && p.MusicTrackId == 101));
                 Assert.Equal(1, row.PlayCount);
-                Assert.Equal(new DateTime(2026, 8, 27, 12, 0, 0, DateTimeKind.Utc), row.LastStartedUtc);
+                Assert.Equal(Minute(0), row.LastStartedUtc);
             }
 
             // Putting the record on again later IS a second play: a different minute.
             using (var db = new MovieDb(options))
-                Assert.Equal((1, 0), Result(await Build(db, 1, Beacon((101, "2026-08-27T12:04:00Z"))).Play()));
+                Assert.Equal((1, 0), Result(await Build(db, 1, Beacon((101, Stamp(4)))).Play()));
             using (var db = new MovieDb(options))
                 Assert.Equal(2, db.MusicPlayStats.Single(p => p.UserId == 1 && p.MusicTrackId == 101).PlayCount);
         }
@@ -140,10 +168,10 @@ namespace MovieTheater.Tests
         public async Task One_row_per_listener_per_track_and_a_junk_report_is_skipped_not_fatal()
         {
             using (var db = new MovieDb(options))
-                Assert.Equal((2, 0), Result(await Build(db, 1, Beacon((101, "2026-08-27T12:00:00Z"), (102, "2026-08-27T12:04:00Z"))).Play()));
+                Assert.Equal((2, 0), Result(await Build(db, 1, Beacon((101, Stamp(0)), (102, Stamp(4)))).Play()));
             // Another listener's play of the same track is their OWN row, not an increment of mine.
             using (var db = new MovieDb(options))
-                Assert.Equal((1, 0), Result(await Build(db, 2, Beacon((101, "2026-08-27T12:00:00Z"))).Play()));
+                Assert.Equal((1, 0), Result(await Build(db, 2, Beacon((101, Stamp(0)))).Play()));
             using (var db = new MovieDb(options))
             {
                 Assert.Equal(2, db.MusicPlayStats.Count(p => p.MusicTrackId == 101));
@@ -153,7 +181,7 @@ namespace MovieTheater.Tests
             // A track id that is not in the library, and a body that is not JSON at all: a
             // fire-and-forget sender gets an answer, never a 500 it cannot see anyway.
             using (var db = new MovieDb(options))
-                Assert.Equal((0, 1), Result(await Build(db, 1, Beacon((999, "2026-08-27T13:00:00Z"))).Play()));
+                Assert.Equal((0, 1), Result(await Build(db, 1, Beacon((999, Stamp(60)))).Play()));
             using (var db = new MovieDb(options))
                 Assert.Equal((0, 0), Result(await Build(db, 1, "not json").Play()));
             using (var db = new MovieDb(options))
@@ -198,9 +226,9 @@ namespace MovieTheater.Tests
             // Two listeners, three tracks — one of them the artist's LOOSE track, which belongs to no
             // album and would be invisible if the artist roll-up went through albums.
             using (var db = new MovieDb(options))
-                await Build(db, 1, Beacon((101, "2026-08-27T12:00:00Z"), (102, "2026-08-27T12:04:00Z"), (103, "2026-08-27T12:08:00Z"))).Play();
+                await Build(db, 1, Beacon((101, Stamp(0)), (102, Stamp(4)), (103, Stamp(8)))).Play();
             using (var db = new MovieDb(options))
-                await Build(db, 2, Beacon((101, "2026-08-27T12:20:00Z"))).Play();
+                await Build(db, 2, Beacon((101, Stamp(20)))).Play();
 
             using (var db = new MovieDb(options))
             {
