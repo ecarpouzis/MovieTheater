@@ -225,6 +225,14 @@ namespace MovieTheater
             services.AddSingleton(new Web.CatalogWarmupOptions { Enabled = !IsDevelopment });
             services.AddHostedService<Web.CatalogWarmupService>();
 
+            // The one-time PNG→WebP pass over the thumbnails already on the images mount. It has to run
+            // HERE because the mount is the pod's — nothing outside the cluster can write it. Bounded per
+            // tick, resumable from a cursor beside the images, and it stamps itself done and never runs
+            // again. Off in Development: a developer's Posters folder is not the mount, and converting it
+            // would look like it worked while changing nothing. See Web/ThumbsRecodeService.
+            services.AddSingleton(new Web.ThumbsRecodeOptions { Enabled = !IsDevelopment });
+            services.AddHostedService<Web.ThumbsRecodeService>();
+
             services.AddMvc(opts =>
                 {
                     // A request the caller abandoned closes quietly (499) instead of logging a fault:

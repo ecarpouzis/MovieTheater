@@ -80,16 +80,9 @@ namespace MovieTheater.Web
                 return;
             }
 
-            // Both populations as paths RELATIVE to the root, ordered ordinally — that ordering is what
-            // makes --after a valid cursor across the two of them.
-            var arcadeDir = Path.Combine(dir, "arcade");
-            var all = Directory.EnumerateFiles(dir, "*_s.png", SearchOption.TopDirectoryOnly)
-                .Concat(Directory.Exists(arcadeDir)
-                    ? Directory.EnumerateFiles(arcadeDir, "*.*", SearchOption.AllDirectories)
-                    : Enumerable.Empty<string>())
-                .Select(f => Path.GetRelativePath(dir, f).Replace('\\', '/'))
-                .OrderBy(r => r, StringComparer.Ordinal)
-                .ToList();
+            // Both populations, ordered — the same walk the service uses (ThumbRecoder), so a hand run
+            // and the overnight pass can never disagree about what a cursor means.
+            var all = ThumbRecoder.Candidates(dir);
             var pending = string.IsNullOrEmpty(After)
                 ? all
                 : all.Where(r => string.CompareOrdinal(r, After) > 0).ToList();
@@ -102,74 +95,24 @@ namespace MovieTheater.Web
             foreach (var rel in batch)
             {
                 cursor = rel;
-                var file = Path.Combine(dir, rel);
-                byte[] bytes;
-                try { bytes = await File.ReadAllBytesAsync(file); }
-                catch (Exception ex) { failed++; w.WriteLine($"  ! {cursor}: unreadable — {ex.Message}"); continue; }
-
-                if (ImageBytes.ContentTypeOf(bytes) != ImageBytes.Png)
+                var outcome = await ThumbRecoder.RecodeAsync(
+                    dir, rel, MovieTheater.Services.Poster.ImageShrinkService.ThumbnailQuality, Apply);
+                if (outcome.Rewritten)
+                {
+                    rewritten++; before += outcome.Before; after += outcome.After;
+                    if (Verbose || !Apply)
+                        w.WriteLine($"  {(Apply ? "→" : "would")} {cursor}: {outcome.Before:N0} → {outcome.After:N0} B");
+                }
+                else if (outcome.Reason.StartsWith("already", StringComparison.Ordinal)
+                         || outcome.Reason.StartsWith("webp not smaller", StringComparison.Ordinal))
                 {
                     skipped++;
-                    if (Verbose) w.WriteLine($"  = {cursor}: already {ImageBytes.ContentTypeOf(bytes)}");
-                    continue;
+                    if (Verbose) w.WriteLine($"  = {cursor}: {outcome.Reason}");
                 }
-
-                byte[] encoded;
-                int srcW, srcH;
-                try
+                else
                 {
-                    using var img = Image.Load(bytes);
-                    srcW = img.Width; srcH = img.Height;
-                    using var ms = new MemoryStream();
-                    img.Save(ms, new WebpEncoder
-                    {
-                        Quality = MovieTheater.Services.Poster.ImageShrinkService.ThumbnailQuality,
-                        FileFormat = WebpFileFormatType.Lossy,
-                    });
-                    encoded = ms.ToArray();
-                }
-                catch (Exception ex) { failed++; w.WriteLine($"  ! {cursor}: will not decode/encode — {ex.Message}"); continue; }
-
-                if (encoded.Length >= bytes.Length)
-                {
-                    skipped++;
-                    if (Verbose) w.WriteLine($"  = {cursor}: webp is not smaller ({encoded.Length} ≥ {bytes.Length}) — kept");
-                    continue;
-                }
-
-                // Read it back before trusting it: a thumbnail that does not survive the round trip keeps
-                // the bytes it has.
-                try
-                {
-                    using var check = Image.Load(encoded);
-                    if (check.Width != srcW || check.Height != srcH)
-                    {
-                        failed++;
-                        w.WriteLine($"  ! {cursor}: re-decode is {check.Width}x{check.Height}, source was {srcW}x{srcH} — kept");
-                        continue;
-                    }
-                }
-                catch (Exception ex) { failed++; w.WriteLine($"  ! {cursor}: re-decode failed — {ex.Message}"); continue; }
-
-                before += bytes.Length;
-                after += encoded.Length;
-                rewritten++;
-                if (Verbose || !Apply)
-                    w.WriteLine($"  {(Apply ? "→" : "would")} {cursor}: {bytes.Length:N0} → {encoded.Length:N0} B");
-
-                if (!Apply) continue;
-                try
-                {
-                    // Same directory, so the move is a rename on one volume rather than a copy.
-                    var tmp = file + ".webp.tmp";
-                    await File.WriteAllBytesAsync(tmp, encoded);
-                    File.Move(tmp, file, overwrite: true);
-                }
-                catch (Exception ex)
-                {
-                    rewritten--; failed++;
-                    before -= bytes.Length; after -= encoded.Length;
-                    w.WriteLine($"  ! {cursor}: write failed — {ex.Message}");
+                    failed++;
+                    w.WriteLine($"  ! {cursor}: {outcome.Reason}");
                 }
             }
 
