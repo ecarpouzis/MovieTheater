@@ -216,10 +216,11 @@ function groupDetail(kicker: string) {
   };
 }
 
-function facetGrouper(value: string, label: string, pick: (f: BoardgameFacets) => string[] | undefined, facetsById: Map<number, BoardgameFacets>): ClientGrouper {
+function facetGrouper(value: string, label: string, one: string, pick: (f: BoardgameFacets) => string[] | undefined, facetsById: Map<number, BoardgameFacets>): ClientGrouper {
   return {
     value,
     label,
+    one,
     keysOf: (i) => (pick(facetsById.get(i.id) ?? { id: i.id }) ?? []).filter(Boolean).map((k) => ({ key: k, label: k })),
     detail: groupDetail(label),
   };
@@ -233,18 +234,21 @@ function facetGrouper(value: string, label: string, pick: (f: BoardgameFacets) =
  */
 export function boardgameGroupers(facetsById: Map<number, BoardgameFacets>, expansionMap: Record<number, BoardgameRow[]> = {}): ClientGrouper[] {
   return [
-    facetGrouper("publisher", "Publisher", (f) => f.publishers, facetsById),
-    facetGrouper("family", "Family", (f) => f.families, facetsById),
-    { value: "decade", label: "Decade", order: "keyDesc", alpha: false, keysOf: (i) => (i.year ? { key: String(Math.floor(i.year / 10) * 10), label: `${Math.floor(i.year / 10) * 10}s` } : null), detail: groupDetail("Decade") },
-    { value: "players", label: "Players", order: "keyAsc", alpha: false, keysOf: (i) => playersBuckets(rawOf(i), expansionMap[i.id] ?? NO_EXPANSIONS), detail: groupDetail("Players") },
+    facetGrouper("publisher", "Publisher", "publisher", (f) => f.publishers, facetsById),
+    facetGrouper("family", "Family", "family", (f) => f.families, facetsById),
+    { value: "decade", label: "Decade", one: "decade", order: "keyDesc", alpha: false, keysOf: (i) => (i.year ? { key: String(Math.floor(i.year / 10) * 10), label: `${Math.floor(i.year / 10) * 10}s` } : null), detail: groupDetail("Decade") },
+    // The three remaining ladders (time / age / weight) name a BAND, not a thing - "one per play
+    // time" is not a sentence - so they carry no `one` and keep the generic "One per group". Same
+    // for base-or-expansion, which is a pair.
+    { value: "players", label: "Players", one: "player count", order: "keyAsc", alpha: false, keysOf: (i) => playersBuckets(rawOf(i), expansionMap[i.id] ?? NO_EXPANSIONS), detail: groupDetail("Players") },
     { value: "time", label: "Play time", order: "keyAsc", alpha: false, keysOf: (i) => timeBucket(rawOf(i)), detail: groupDetail("Play time") },
     { value: "age", label: "Min age", order: "keyAsc", alpha: false, keysOf: (i) => ageBucket(rawOf(i)), detail: groupDetail("Min age") },
     { value: "weight", label: "Weight", order: "keyAsc", alpha: false, keysOf: (i) => weightBucket(rawOf(i)), detail: groupDetail("Weight") },
-    { value: "rating", label: "Rating tier", order: "keyDesc", alpha: false, keysOf: (i) => ratingTier(rawOf(i)), detail: groupDetail("Rating tier") },
+    { value: "rating", label: "Rating tier", one: "rating tier", order: "keyDesc", alpha: false, keysOf: (i) => ratingTier(rawOf(i)), detail: groupDetail("Rating tier") },
     { value: "kind", label: "Base or expansion", keysOf: (i) => kindBucket(rawOf(i)), detail: groupDetail("Base or expansion") },
-    facetGrouper("designer", "Designer", (f) => f.designers, facetsById),
-    facetGrouper("category", "Category", (f) => f.categories, facetsById),
-    facetGrouper("mechanic", "Mechanic", (f) => f.mechanics, facetsById),
+    facetGrouper("designer", "Designer", "designer", (f) => f.designers, facetsById),
+    facetGrouper("category", "Category", "category", (f) => f.categories, facetsById),
+    facetGrouper("mechanic", "Mechanic", "mechanic", (f) => f.mechanics, facetsById),
   ];
 }
 
@@ -278,7 +282,7 @@ export function createBoardgamesSource(o: BoardgamesSourceOptions): CatalogSourc
     title: "Board Games",
     itemNoun: "game",
     groupNoun: "groups",
-    itemsLabels: { items: "Games", groups: "One per group" },
+    itemsLabels: { items: "Games" },
     items,
     groups: boardgameGroupers(o.facetsById, o.expansionMap),
     sorts: BOARDGAME_SORTS,

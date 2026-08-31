@@ -163,7 +163,7 @@ export function createClientSource(o: ClientSourceOptions): CatalogSource {
     itemNoun: o.itemNoun,
     groupNoun: o.groupNoun,
     supports: groupable ? ALL_VIEWS : FLAT_ONLY_VIEWS,
-    groups: groupers.map(({ value, label }) => ({ value, label })),
+    groups: groupers.map(({ value, label, one }) => ({ value, label, one })),
     sorts: sorts.map(({ value, label, alpha }) => ({ value, label, alpha })),
     currentSort: o.currentSort,
     itemsModes: groupable ? ["items", "groups"] : undefined,

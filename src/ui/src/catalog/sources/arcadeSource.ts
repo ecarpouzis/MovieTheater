@@ -70,14 +70,16 @@ export const ARCADE_SORTS: SortSpec[] = [
  * VERSION (a card stands under every region and variant it has a dump for); the rest are card facts.
  */
 export const ARCADE_GROUPS: GroupSpec[] = [
-  { value: "system", label: "System" },
-  { value: "genre", label: "Genre" },
-  { value: "decade", label: "Decade" },
-  { value: "players", label: "Players" },
-  { value: "region", label: "Region" },
-  { value: "variant", label: "Variant" },
-  { value: "developer", label: "Developer" },
-  { value: "publisher", label: "Publisher" },
+  { value: "system", label: "System", one: "system" },
+  { value: "genre", label: "Genre", one: "genre" },
+  { value: "decade", label: "Decade", one: "decade" },
+  { value: "players", label: "Players", one: "player count" },
+  { value: "region", label: "Region", one: "region" },
+  { value: "variant", label: "Variant", one: "variant" },
+  { value: "developer", label: "Developer", one: "developer" },
+  { value: "publisher", label: "Publisher", one: "publisher" },
+  // Two heads - "has achievements" and the RA_NONE pile whose header deliberately does not open.
+  // A pair, not a noun, so it keeps the generic "One per group".
   { value: "ra", label: "RetroAchievements" },
 ];
 
@@ -231,7 +233,7 @@ export function createArcadeSource(o: ArcadeSourceOptions): CatalogSource {
     sorts: ARCADE_SORTS,
     currentSort: alpha ? ARCADE_DEFAULT_SORT : sort,
     itemsModes: ["items", "groups"],
-    itemsLabels: { items: "Games", groups: "One per group" },
+    itemsLabels: { items: "Games" },
     listColumns: ARCADE_LIST_COLUMNS,
     defaultGroup: "system",
     pageSize: ARCADE_PAGE_SIZE,

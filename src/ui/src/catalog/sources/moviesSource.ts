@@ -77,17 +77,19 @@ export const MOVIE_SORTS: SortSpec[] = [
  * into their own tokens, decade into the year range, and "my lists" into the rail's flags.
  */
 export const MOVIE_GROUPS: GroupSpec[] = [
-  { value: "genre", label: "Genre" },
-  { value: "decade", label: "Decade" },
-  { value: "franchise", label: "Franchise" },
-  { value: "type", label: "Type" },
-  { value: "director", label: "Director" },
-  { value: "mpa", label: "MPA rating" },
-  { value: "subgenre", label: "Subgenre" },
-  { value: "mood", label: "Mood" },
-  { value: "era", label: "Era" },
-  { value: "setting", label: "Setting" },
-  { value: "my", label: "My lists" },
+  { value: "genre", label: "Genre", one: "genre" },
+  { value: "decade", label: "Decade", one: "decade" },
+  { value: "franchise", label: "Franchise", one: "franchise" },
+  { value: "type", label: "Type", one: "type" },
+  { value: "director", label: "Director", one: "director" },
+  { value: "mpa", label: "MPA rating", one: "MPA rating" },
+  { value: "subgenre", label: "Subgenre", one: "subgenre" },
+  { value: "mood", label: "Mood", one: "mood" },
+  { value: "era", label: "Era", one: "era" },
+  { value: "setting", label: "Setting", one: "setting" },
+  // "One per my lists" is not English: the axis is named for the rail FLAG it applies, and the
+  // shelves it makes are lists (Seen / Want / Rated).
+  { value: "my", label: "My lists", one: "list" },
 ];
 
 const GROUP_LABELS: Record<string, string> = Object.fromEntries(MOVIE_GROUPS.map((g) => [g.value, g.label]));
@@ -336,7 +338,7 @@ export function createMoviesSource({ search, signedIn, onOpen, onBrowse, onScope
     sorts: MOVIE_SORTS,
     currentSort: scope.sort,
     itemsModes: groupable ? ["items", "groups"] : undefined,
-    itemsLabels: { items: "Titles", groups: "One per group" },
+    itemsLabels: { items: "Titles" },
     listColumns: MOVIE_LIST_COLUMNS,
     directory,
     defaultGroup: "genre",

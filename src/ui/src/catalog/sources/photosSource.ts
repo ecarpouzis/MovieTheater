@@ -50,13 +50,16 @@ export const PHOTO_SORTS: SortSpec[] = [{ value: "newest", label: "Newest first"
  * by month only WITHIN a year. Hence "Month" is labelled for what it is.
  */
 export const PHOTO_GROUPS: GroupSpec[] = [
-  { value: "year", label: "Year" },
-  { value: "month", label: "Month of a year" },
-  { value: "album", label: "Album" },
-  { value: "folder", label: "Folder" },
-  { value: "people", label: "People" },
+  { value: "year", label: "Year", one: "year" },
+  // The pill says "One per month": "one per month of a year" is unreadable, and the cards carry
+  // the year themselves ("December 2011"), so the short noun loses nothing the reader cannot see.
+  { value: "month", label: "Month of a year", one: "month" },
+  { value: "album", label: "Album", one: "album" },
+  { value: "folder", label: "Folder", one: "folder" },
+  { value: "people", label: "People", one: "person" },
+  // A photo-or-video pair, not a noun - the generic "One per group" is the honest label.
   { value: "kind", label: "Photo or video" },
-  { value: "camera", label: "Camera" },
+  { value: "camera", label: "Camera", one: "camera" },
 ];
 
 /** Which facet a group header adds when it scopes in place; the rest open their own page. */
@@ -185,7 +188,7 @@ export function createPhotosSource(o: PhotosSourceOptions): CatalogSource {
     groups: PHOTO_GROUPS,
     sorts: PHOTO_SORTS,
     itemsModes: ["items", "groups"],
-    itemsLabels: { items: "Every photo", groups: "One per group" },
+    itemsLabels: { items: "Every photo" },
     listColumns: PHOTO_LIST_COLUMNS,
     defaultGroup: "month",
     pageSize: PHOTOS_PAGE_SIZE,

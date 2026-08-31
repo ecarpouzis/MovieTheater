@@ -26,11 +26,11 @@ import { BOOKS_SORTS, buildBooksQuery, flatOrderby, groupedOrderby } from "./boo
 import { hueOf } from "./hue";
 
 export const BOOKS_GROUPS: GroupSpec[] = [
-  { value: "collection", label: "Collection" },
-  { value: "series", label: "Series" },
-  { value: "publisher", label: "Publisher" },
-  { value: "decade", label: "Decade" },
-  { value: "franchise", label: "Franchise" },
+  { value: "collection", label: "Collection", one: "collection" },
+  { value: "series", label: "Series", one: "series" },
+  { value: "publisher", label: "Publisher", one: "publisher" },
+  { value: "decade", label: "Decade", one: "decade" },
+  { value: "franchise", label: "Franchise", one: "franchise" },
 ];
 
 /**
@@ -40,8 +40,8 @@ export const BOOKS_GROUPS: GroupSpec[] = [
  * one issue stands under every person it credits).
  */
 export const BOOKS_CREDIT_GROUPS: GroupSpec[] = [
-  { value: "author", label: "Writer" },
-  { value: "artist", label: "Artist" },
+  { value: "author", label: "Writer", one: "writer" },
+  { value: "artist", label: "Artist", one: "artist" },
 ];
 
 /** Every axis this SPA knows how to label, in pill order. Advertised axes are filtered through it. */
@@ -191,7 +191,9 @@ export function createBooksSource(o: BooksSourceOptions): CatalogSource {
     groups: booksGroupsFor(o.groupAxes),
     sorts: BOOKS_SORTS.map(({ value, label, alpha }) => ({ value, label, alpha })),
     itemsModes: ["items", "groups"],
-    itemsLabels: { items: "Comics", groups: "Series" },
+    // NOT a constant "Series": this section's default axis is COLLECTION, and the axis survives a
+    // view change, so the label follows `groupBy` (`GroupSpec.one`) or it lies on six axes of seven.
+    itemsLabels: { items: "Comics" },
     listColumns: BOOKS_LIST_COLUMNS,
     directory,
     tweakExtras: o.tweakExtras,

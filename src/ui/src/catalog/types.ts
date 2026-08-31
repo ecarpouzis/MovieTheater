@@ -129,6 +129,13 @@ export interface SortSpec {
 export interface GroupSpec {
   value: string;
   label: string;
+  /**
+   * The SINGULAR noun one representative card stands for — the Items pill reads "One per {one}".
+   * Deliberately unset for an axis whose heads are a numeric band or a yes/no pair (a play-time
+   * stop, "has RetroAchievements"): the honest label there is the generic "One per group", not a
+   * noun forced into a frame that does not fit it.
+   */
+  one?: string;
 }
 
 export interface CardPage {

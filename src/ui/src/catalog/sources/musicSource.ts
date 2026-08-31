@@ -319,7 +319,9 @@ export function createMusicSource(o: MusicSourceOptions): CatalogSource {
       title: "Music",
       itemNoun: "artist",
       groupNoun: "artists",
-      itemsLabels: { items: "Every album", groups: "One per artist" },
+      // Static, and it OUTRANKS the axis-derived label on purpose: this source exists only in the
+      // flat views, where the collapsed mode is the artist ROWS whatever `?group=` happens to say.
+      itemsLabels: { items: "Albums", groups: "Artists" },
       items: (o.artists ?? []).map(toArtistCard),
       sorts: ARTIST_SORTS,
       listColumns: ARTIST_LIST_COLUMNS,
@@ -336,7 +338,9 @@ export function createMusicSource(o: MusicSourceOptions): CatalogSource {
     title: "Music",
     itemNoun: "album",
     groupNoun: "artists",
-    itemsLabels: { items: "Every album", groups: "One per artist" },
+    // The same pair as the artist source's: in a flat view the un-chosen "Artists" option swaps to
+    // that source, so both must promise the same thing. (The grouped views draw no Items pill.)
+    itemsLabels: { items: "Albums", groups: "Artists" },
     items: o.albums.map(toAlbumCard),
     groups: ALBUM_GROUPERS,
     sorts: ALBUM_SORTS,

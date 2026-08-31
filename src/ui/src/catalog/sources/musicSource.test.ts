@@ -63,7 +63,9 @@ describe("catalog/musicSource — albums and artists as cards, the catalog ownin
     // R9 S1b: no artists tab — "one per artist" is the Items mode a fresh visitor lands on
     expect(s.itemsModes).toEqual(["items", "groups"]);
     expect(s.defaultItems).toBe("groups");
-    expect(s.itemsLabels).toEqual({ items: "Every album", groups: "One per artist" });
+    // Static on BOTH music sources: the collapsed mode here is the artist ROWS, not one album per
+    // whatever the group axis says, so it does not take the axis-derived label.
+    expect(s.itemsLabels).toEqual({ items: "Albums", groups: "Artists" });
     const byArtist = await s.fetchGroupBand!(0, 10, 10, "artist", "artist");
     expect(byArtist.groups.map((g) => [g.key, g.label, g.totalItems])).toEqual([["10", "The Beatles", 2], ["20", "Zed", 1]]);
     const byKind = await s.fetchGroupBand!(0, 10, 10, "kind", "artist");

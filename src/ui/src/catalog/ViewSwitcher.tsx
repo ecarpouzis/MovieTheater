@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 
 import type { CatalogViewState } from "./state/useCatalogView";
 import { NO_GROUP } from "./state/useCatalogView";
 import { FLAT_VIEWS, VIEW_LABELS, type CatalogSource, type ItemsMode, type ViewMode } from "./types";
+import { groupByFor } from "./views/flatStream";
 
 /**
  * The command pills — View · Group · Items · Sort — and the ⚙ Tweaks button. Since R9 S1 they live
@@ -85,8 +86,21 @@ export function ViewPills({ state, source, available, onView, onGroup, onItems, 
   const groupable = !FLAT_VIEWS.has(state.view) && state.view !== "directory" && source.groups.length > 0;
   const groupOptions: PillOption<string>[] = [{ value: NO_GROUP, label: "No grouping" }, ...source.groups.map((g) => ({ value: g.value, label: `By ${g.label}` }))];
   const itemsModes = source.itemsModes ?? [];
-  const showItems = itemsModes.includes("groups") && (FLAT_VIEWS.has(state.view) || (groupable && state.group !== NO_GROUP));
-  const itemsOptions: PillOption<ItemsMode>[] = itemsModes.map((m) => ({ value: m, label: source.itemsLabels?.[m] ?? (m === "items" ? "Every item" : "One per group") }));
+  // FLAT views only. The grouped views (Extended / Shelves / Newspaper) never read `state.items` —
+  // they always band — so the pill there was a control that changed nothing on screen, silently
+  // storing a preference for the next flat view. Books shipped that state by default (`defaultView:
+  // "extended"`), and every other section reached it the moment someone picked a grouped view.
+  const showItems = itemsModes.includes("groups") && FLAT_VIEWS.has(state.view);
+  // Name the axis the flat stream will ACTUALLY collapse on (`groupByFor` — the section's default
+  // when the URL carries no group), so the pill describes the cards it is about to draw rather than
+  // a constant. `state.group` survives a view change, so "By Publisher" in Extended then Grid used
+  // to offer "Series" for a mode that collapses publishers. A source whose collapse has ONE fixed
+  // meaning (Music's flat mode is always artists, whatever the axis says) overrides with its own.
+  const collapseNoun = source.groups.find((g) => g.value === groupByFor(source, state))?.one;
+  const itemsOptions: PillOption<ItemsMode>[] = itemsModes.map((m) => ({
+    value: m,
+    label: source.itemsLabels?.[m] ?? (m === "items" ? "Every item" : `One per ${collapseNoun ?? "group"}`),
+  }));
   const sortOptions: PillOption<string>[] = source.sorts.map((s) => ({ value: s.value, label: s.label }));
   return (
     <>
