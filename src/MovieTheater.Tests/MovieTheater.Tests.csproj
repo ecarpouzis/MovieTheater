@@ -87,6 +87,15 @@
          whole library into two points of the scale, and a plain average would let one enthusiastic
          100 outrank a record five people agreed was excellent. -->
     <Compile Include="..\MovieTheater\Music\MusicPopularity.cs" Link="Music\MusicPopularity.cs" />
+    <!-- Reading a Last.fm album.getinfo body. Compiled from source because the claim is about the
+         SHIPPED parse: Last.fm serves `tags` as an array, as a bare object, or as the empty STRING,
+         and the third shape threw InvalidOperationException past a catch(JsonException) and cost
+         ~12% of the library the popularity score it had already been given. -->
+    <Compile Include="..\MovieTheater\Music\MusicLastFm.cs" Link="Music\MusicLastFm.cs" />
+    <!-- Where the raw-response cache lands. Compiled from source because the claim is about the
+         SHIPPED default: anchored on the repo marker, so a stray data/ beside a binary can no longer
+         shadow the real cache and send an offline re-parse back to the network. -->
+    <Compile Include="..\MovieTheater\Music\MusicResponseCache.cs" Link="Music\MusicResponseCache.cs" />
     <!-- The remote-art match gate. Pure apart from the HTTP calls the tests never reach, and worth
          testing directly: it is what stops a search result that merely shares a name from being
          accepted as the album's cover. -->

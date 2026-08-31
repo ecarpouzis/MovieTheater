@@ -134,11 +134,17 @@ namespace MovieTheater.Music
                     catch (Exception ex) { errors++; if (Verbose) w.WriteLine($"  ! {album.Id} musicbrainz: {ex.Message}"); }
                 }
 
+                // "We asked and it answered" — NOT "we intended to ask". A lookup that threw has
+                // learned nothing, so it must leave the album in the queue for a later pass rather
+                // than retire it scoreless, exactly as a key-less run does.
+                var lastFmAnswered = false;
+
                 if (wantLastFm)
                 {
                     try
                     {
                         var (listeners, lfmTags, fromCache) = await LastFmAsync(http, cache, lastFmKey!, artist, title);
+                        lastFmAnswered = true;
                         if (fromCache) cacheHits++;
                         popularity = MusicPopularity.FromAudience(listeners);
                         if (popularity != null) { popHits++; popularitySource = MusicGenreSources.LastFm; }
@@ -159,7 +165,7 @@ namespace MovieTheater.Music
                 {
                     if (wantMb) genreRows += await ReplaceGenresAsync(db, album.Id, MusicGenreSources.MusicBrainz, found);
                     MusicPopularity.ApplyToAlbum(album, popularity, popularitySource,
-                        consultedLastFm: wantLastFm, now: DateTime.UtcNow);
+                        consultedLastFm: lastFmAnswered, now: DateTime.UtcNow);
                 }
                 else genreRows += found.Count;
 
@@ -290,32 +296,11 @@ namespace MovieTheater.Music
                 // request with the secret blanked — the answer is the artefact worth keeping, and a
                 // key in a sidecar is a key that leaks the first time somebody zips data/.
                 urlForMeta: url.Replace(Uri.EscapeDataString(apiKey), "«key»"));
-            var tags = new List<(string, int)>();
-            if (json == null) return (null, tags, fromCache);
-
-            try
-            {
-                using var doc = JsonDocument.Parse(json);
-                if (!doc.RootElement.TryGetProperty("album", out var a)) return (null, tags, fromCache);
-                long? listeners = null;
-                if (a.TryGetProperty("listeners", out var l) && long.TryParse(l.GetString(), out var parsed)) listeners = parsed;
-                if (a.TryGetProperty("tags", out var tagRoot) && tagRoot.TryGetProperty("tag", out var tagArr)
-                    && tagArr.ValueKind == JsonValueKind.Array)
-                {
-                    // Last.fm's top tags come ranked but unweighted; rank IS the weight, descending, so
-                    // the strongest tag keeps the biggest number the way the other sources' do.
-                    int rank = tagArr.GetArrayLength();
-                    foreach (var tag in tagArr.EnumerateArray())
-                    {
-                        var name = tag.TryGetProperty("name", out var n) ? n.GetString() : null;
-                        if (name != null) tags.Add((name, rank));
-                        rank--;
-                    }
-                }
-                return (listeners, tags.Take(MaxGenresPerAlbum).ToList(), fromCache);
-            }
-            catch (JsonException) { return (null, tags, fromCache); }
+            if (json == null) return (null, new List<(string, int)>(), fromCache);
+            var (listeners, tags) = MusicLastFm.ParseAlbum(json);
+            return (listeners, tags.Take(MaxGenresPerAlbum).ToList(), fromCache);
         }
+
 
         // ── the wire ────────────────────────────────────────────────────────────────────────────────
 

@@ -42,7 +42,45 @@ namespace MovieTheater.Music
         /// </remarks>
         public MusicResponseCache(string? root = null)
         {
-            this.root = root ?? Path.Combine(Arcade.RepoDataPath.Resolve("data"), "music-cache");
+            this.root = root ?? ResolveDefaultRoot(Directory.GetCurrentDirectory(), AppContext.BaseDirectory);
+        }
+
+        /// <summary>
+        /// Where the cache lives when the caller does not name a root: <c>&lt;repo&gt;/data/music-cache</c>,
+        /// anchored on the directory holding <c>.git</c>.
+        /// </summary>
+        /// <remarks>
+        /// <para>"The first <c>data/</c> directory at or above me" is self-defeating for a cache that
+        /// CREATES its own directory. When no <c>data/</c> is found the relative path falls through to
+        /// <see cref="Directory.CreateDirectory(string)"/>, which mints one next to whatever binary is
+        /// running — and because the search probes its start directory before any ancestor, that new
+        /// directory then shadows the real cache for every later run from the same place.</para>
+        /// <para>It happened on 2026-08-30: three roots (repo, project, <c>bin/</c>) held 5 / 1,567 / 75
+        /// bodies between them, and an enrich pass that should have re-parsed 995 banked Last.fm answers
+        /// offline went back to the network for every one of them — the precise failure this class's own
+        /// remarks warn about. A repo marker cannot be conjured by a stray write, so it cannot drift.</para>
+        /// <para>A published deployment has no <c>.git</c>; there the historical probe still applies, and
+        /// prod never runs these CLIs anyway.</para>
+        /// </remarks>
+        internal static string ResolveDefaultRoot(params string[] searchRoots)
+        {
+            foreach (var start in searchRoots)
+            {
+                for (var dir = SafeDirectory(start); dir != null; dir = dir.Parent)
+                {
+                    var git = Path.Combine(dir.FullName, ".git");
+                    // A worktree's .git is a FILE pointing at the real one — both mark the repo.
+                    if (Directory.Exists(git) || File.Exists(git))
+                        return Path.Combine(dir.FullName, "data", "music-cache");
+                }
+            }
+            return Path.Combine(Arcade.RepoDataPath.Resolve("data"), "music-cache");
+        }
+
+        private static DirectoryInfo? SafeDirectory(string path)
+        {
+            try { return string.IsNullOrWhiteSpace(path) ? null : new DirectoryInfo(path); }
+            catch { return null; }
         }
 
         public string Root => root;
