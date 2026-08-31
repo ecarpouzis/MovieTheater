@@ -99,9 +99,33 @@ function AlbumScoreLine({ album }) {
   return <span className="music-album-rating-house">{parts.join(" · ")}</span>;
 }
 
+/**
+ * The two orders an album's tracklist can be read in.
+ *
+ * "Album order" is the record as it was sequenced and stays the default — a running order is
+ * authored, and reshuffling it by default would be the site overriding the artist. "Most popular"
+ * is the question this sheet gets asked that the running order cannot answer: which of these twelve
+ * are the ones people know.
+ *
+ * Pure, and it never mutates the array it is given: the caller builds queue entries from the SAME
+ * list it renders, so a sort that worked in place would leave "play from here" pointing at whatever
+ * used to be at that index.
+ */
+export function orderTracks(tracks, order) {
+  if (order !== "popular") return tracks;
+  return [...tracks].sort((a, b) => {
+    // A track nobody has told us about files LAST rather than counting as a zero — "unknown" is not
+    // "unheard of". Ties fall back to the running order, so the album still reads as itself.
+    const av = typeof a.popularity === "number" ? a.popularity : -1;
+    const bv = typeof b.popularity === "number" ? b.popularity : -1;
+    return bv - av || (a.discNo ?? 0) - (b.discNo ?? 0) || (a.trackNo ?? 0) - (b.trackNo ?? 0);
+  });
+}
+
 function MusicAlbumModal({ albumId, onClose, onAddToPlaylist }) {
   const player = useMusicPlayer();
   const [album, setAlbum] = useState(null);
+  const [trackOrder, setTrackOrder] = useState("album");
 
   useEffect(() => {
     if (albumId == null) {
@@ -110,6 +134,9 @@ function MusicAlbumModal({ albumId, onClose, onAddToPlaylist }) {
     }
     let alive = true;
     setAlbum(null);
+    // A new record opens in ITS OWN running order. Carrying the previous sheet's choice over would
+    // silently re-sequence an album the listener never asked to re-sequence.
+    setTrackOrder("album");
     MovieAPI.getMusicAlbum(albumId)
       .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
       .then((data) => alive && setAlbum(data))
@@ -117,8 +144,13 @@ function MusicAlbumModal({ albumId, onClose, onAddToPlaylist }) {
     return () => { alive = false; };
   }, [albumId]);
 
+  // The list that is both RENDERED and queued. One array for both, or "play from here" plays a
+  // different song than the row the finger landed on.
+  const tracks = album?.tracks ? orderTracks(album.tracks, trackOrder) : [];
+  const anyPopularity = tracks.some((t) => typeof t.popularity === "number");
+
   function toQueueEntries() {
-    return album.tracks.map((t) => ({
+    return tracks.map((t) => ({
       id: t.id,
       title: t.title,
       artist: album.artistName,
@@ -203,7 +235,7 @@ function MusicAlbumModal({ albumId, onClose, onAddToPlaylist }) {
                   <Button
                     disabled={!playable}
                     onClick={() => onAddToPlaylist(
-                      album.tracks.map((t) => ({ id: t.id, title: t.title })),
+                      tracks.map((t) => ({ id: t.id, title: t.title })),
                       album.title
                     )}
                   >
@@ -214,14 +246,37 @@ function MusicAlbumModal({ albumId, onClose, onAddToPlaylist }) {
             </div>
           </div>
 
+          {/* The order switch only exists when there is something to order BY. On a shelf the
+              enrich pass has not reached, a "Most popular" button that produced the same list back
+              would be a control that does nothing. */}
+          {anyPopularity && (
+            <div className="music-track-order">
+              <button
+                type="button"
+                className={trackOrder === "album" ? "music-track-order-btn is-on" : "music-track-order-btn"}
+                onClick={() => setTrackOrder("album")}
+              >
+                Album order
+              </button>
+              <button
+                type="button"
+                className={trackOrder === "popular" ? "music-track-order-btn is-on" : "music-track-order-btn"}
+                onClick={() => setTrackOrder("popular")}
+              >
+                Most popular
+              </button>
+            </div>
+          )}
+
           <div className="music-song-list music-album-detail-tracks">
-            {album.tracks.map((t, i) => (
+            {tracks.map((t, i) => (
               <MusicSongRow
                 key={t.id}
                 no={t.trackNo ?? "·"}
                 title={t.title}
                 disc={t.discNo != null && t.discNo > 1 ? `CD${t.discNo}` : null}
                 time={formatDuration(t.durationSec)}
+                popularity={t.popularity}
                 disabled={!player.isPlayable(t)}
                 hint={t.missing
                   ? "File is missing"

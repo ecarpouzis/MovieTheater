@@ -90,6 +90,76 @@ namespace MovieTheater.Music
         }
 
         /// <summary>
+        /// Every track in one <c>artist.gettoptracks</c> body, with the listener count Last.fm
+        /// ranked it by (2026-08-31) — the source of <see cref="MovieTheater.Db.MusicTrack.Popularity"/>.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>Why this method and not <c>track.getinfo</c>.</b> Per-track lookups would be
+        /// exact and need no name matching at all, but the library holds 60,797 music tracks and that
+        /// is 60,797 requests. This asks ONCE PER ARTIST and gets their whole ranked catalogue back:
+        /// 7,921 requests for the same library, an eighth of the traffic. The cost is that the answer
+        /// has to be joined to our rows by NAME (<see cref="MusicTrackTitles"/>), and that the join
+        /// is imperfect — measured against four real artists before the pass was written, it matched
+        /// 209/213 Beatles tracks, 366/378 Nine Inch Nails, 143/146 Radiohead and 97/97 Boards of
+        /// Canada: <b>97–100%</b>. Nearly every miss was OUR tag being wrong ("Threre's A Place") or
+        /// carrying a performance credit Last.fm files elsewhere, which no lookup method would have
+        /// fixed.</para>
+        /// <para><b>The shapes.</b> <c>toptracks.track</c> is an array; an artist with exactly one
+        /// known track collapses it to a bare object, the same trap <see cref="ParseAlbum"/> hit with
+        /// tags — and an unknown artist answers <c>{"error":6}</c> with no <c>toptracks</c> at all,
+        /// which is a clean MISS. <c>listeners</c> is a string here as it is there.</para>
+        /// <para>Returned in the order Last.fm gave them, which is already descending by listeners:
+        /// this reports what was SAID, and the caller decides what to keep.</para>
+        /// </remarks>
+        public static List<(string Name, long Listeners)> ParseTopTracks(string? json)
+        {
+            var tracks = new List<(string, long)>();
+            if (string.IsNullOrWhiteSpace(json)) return tracks;
+            try
+            {
+                using var doc = JsonDocument.Parse(json);
+                var root = doc.RootElement;
+                if (root.ValueKind != JsonValueKind.Object
+                    || !root.TryGetProperty("toptracks", out var top)
+                    || top.ValueKind != JsonValueKind.Object
+                    || !top.TryGetProperty("track", out var node))
+                    return tracks;
+
+                var items = node.ValueKind switch
+                {
+                    JsonValueKind.Array => node.EnumerateArray().ToList(),
+                    // One known track arrives bare rather than in a list of one.
+                    JsonValueKind.Object => new List<JsonElement> { node },
+                    _ => new List<JsonElement>(),
+                };
+
+                foreach (var track in items)
+                {
+                    if (track.ValueKind != JsonValueKind.Object) continue;
+                    var name = track.TryGetProperty("name", out var n) ? n.GetString() : null;
+                    if (string.IsNullOrWhiteSpace(name)) continue;
+
+                    long? listeners = null;
+                    if (track.TryGetProperty("listeners", out var l))
+                    {
+                        if (l.ValueKind == JsonValueKind.String && long.TryParse(l.GetString(), out var parsed))
+                            listeners = parsed;
+                        else if (l.ValueKind == JsonValueKind.Number && l.TryGetInt64(out var direct))
+                            listeners = direct;
+                    }
+                    // A track with no usable count carries no popularity, and a 0 would claim nobody
+                    // has heard it. Dropping it leaves the row unmatched, which is the honest state.
+                    if (listeners == null) continue;
+                    tracks.Add((name!.Trim(), listeners.Value));
+                }
+                return tracks;
+            }
+            // A malformed body is a MISS, never a throw — one odd answer costs one artist, not the run.
+            catch (JsonException) { return tracks; }
+            catch (InvalidOperationException) { return tracks; }
+        }
+
+        /// <summary>
         /// Last.fm's stand-in for "this record has no picture" — a grey star, served with a 200 and a
         /// perfectly valid JPEG body at every size.
         /// </summary>

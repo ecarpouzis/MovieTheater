@@ -110,5 +110,36 @@ namespace MovieTheater.Db
         /// <c>music-genres</c> queue's only stop condition: without it a library where most files
         /// carry no genre would be re-read in full by every run, forever.</summary>
         public DateTime? GenreCheckedUtc { get; set; }
+
+        /// <summary>
+        /// How widely heard this SONG is, 0-100 (2026-08-31) - the track-level twin of
+        /// <see cref="MusicAlbum.Popularity"/>, and NOT a verdict on it. Derived from Last.fm's
+        /// listener count for the track by <c>music-track-popularity</c>; null until that pass has
+        /// looked, and null for a song the world has never heard of.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>Same scale as the album's, deliberately.</b> Both go through
+        /// <c>MusicPopularity.FromAudience</c> against the same ceiling, so a track's 62 and an
+        /// album's 62 mean the same sentence - "about this many people have heard it". They appear
+        /// side by side in one sheet, and two numbers that look alike but count differently would be
+        /// read as a comparison the data cannot support.</para>
+        /// <para><b>Why per track and not just per album.</b> "Which songs on this record are the
+        /// famous ones" cannot be answered by an album number, and it is the question the tracklist
+        /// is actually asked. It also answers it for a COMPILATION, where the album's own popularity
+        /// says nothing about the twelve unrelated songs on it.</para>
+        /// </remarks>
+        public int? Popularity { get; set; }
+
+        /// <summary>Which external source produced <see cref="Popularity"/> - see
+        /// <see cref="MovieTheater.Music.MusicGenreSources"/>. Stamped so one source can be re-run or
+        /// retired without guessing which rows came from it.</summary>
+        [MaxLength(32)]
+        public string? PopularitySource { get; set; }
+
+        /// <summary>When <c>music-track-popularity</c> last asked about this track - the negative
+        /// cache, stamped on a MISS as well as a hit (the <see cref="LyricsCheckedUtc"/> convention).
+        /// It is that queue's only stop condition, and a miss is common by design: the lookup asks
+        /// per ARTIST and a song outside their top 1,000 comes back unmentioned.</summary>
+        public DateTime? PopularityCheckedUtc { get; set; }
     }
 }

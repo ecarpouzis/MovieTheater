@@ -471,6 +471,16 @@ namespace MovieTheater.Db
                 .HasIndex(t => t.ArtistId);
             modelBuilder.Entity<MusicTrack>()
                 .HasIndex(t => t.Title);
+            // The music-track-popularity queue ("never asked", by Id) and the read it feeds: an
+            // artist's own songs, most-heard first. The queue index leads on the stamp because the
+            // work set is the rows where it is NULL and that set shrinks to nothing - the shape a
+            // seek wants; Id follows because it is the cursor, so the batch is a range scan rather
+            // than a sort. (Not a FILTERED index: those need QUOTED_IDENTIFIER ON at every writer,
+            // and sqlcmd defaults it OFF - a trap this DB has already been bitten by.)
+            modelBuilder.Entity<MusicTrack>()
+                .HasIndex(t => new { t.PopularityCheckedUtc, t.Id });
+            modelBuilder.Entity<MusicTrack>()
+                .HasIndex(t => new { t.ArtistId, t.Popularity });
             // Restrict both parents: a track row must never vanish because its artist/album row was
             // touched — reconcile flags MissingSinceUtc instead (same stance as MediaFile).
             modelBuilder.Entity<MusicTrack>()

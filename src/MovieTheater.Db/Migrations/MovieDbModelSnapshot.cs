@@ -2130,6 +2130,16 @@ namespace MovieTheater.Db.Migrations
                         .HasMaxLength(400)
                         .HasColumnType("nvarchar(400)");
 
+                    b.Property<int?>("Popularity")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("PopularityCheckedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PopularitySource")
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(400)
@@ -2148,6 +2158,10 @@ namespace MovieTheater.Db.Migrations
                     b.HasIndex("Title");
 
                     b.HasIndex("AlbumId", "DiscNo", "TrackNo");
+
+                    b.HasIndex("ArtistId", "Popularity");
+
+                    b.HasIndex("PopularityCheckedUtc", "Id");
 
                     b.ToTable("MusicTrack");
                 });

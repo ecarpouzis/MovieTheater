@@ -832,6 +832,14 @@ namespace MovieTheater.Controllers
                     hasArt = a.HasArt,
                     dominantColor = a.DominantColor,
                     trackCount = movieDb.MusicTracks.Count(t => t.AlbumId == a.Id),
+                    // The drilled-in album grid gets the same number the browse tiles carry, so a
+                    // card does not lose its popularity the moment you open the artist it belongs to.
+                    popularity = a.Popularity,
+                    // The vote count travels WITH the rating: the card's badge tooltip says "rated by
+                    // N people outside this house", and MusicBrainz ratings run thin enough that the
+                    // number is the point. Sending the score alone would silently degrade the tooltip.
+                    externalRating = a.ExternalRating,
+                    externalRatingVotes = a.ExternalRatingVotes,
                 })
                 .ToListAsync();
 
@@ -851,8 +859,60 @@ namespace MovieTheater.Controllers
                     codec = t.Codec,
                     requiresTranscode = t.RequiresTranscode,
                     missing = t.MissingSinceUtc != null,
+                    popularity = t.Popularity,
                 })
                 .ToListAsync();
+
+            // ── The artist's best-known songs (2026-08-31) ───────────────────────────────────────
+            // "Which tracks of this artist are the most popular" — a question the album grid could
+            // never answer, because the answer cuts ACROSS the records: a greatest-hits shelf the
+            // library never had.
+            //
+            // Ordered on the server, not the client, for the reason the artist grid's orders are:
+            // the page holds only what it was handed, and this list is deliberately a HANDFUL rather
+            // than the artist's whole catalogue. Popularity descending, then the title, so an artist
+            // whose songs tie does not reshuffle between fetches.
+            //
+            // Tracks with NO popularity are excluded outright rather than filed last: this is a
+            // "best known" list, and a row that means "we have never been told" is not a low score.
+            // The section disappears when the enrich pass has not reached this artist yet, which is
+            // the honest empty state.
+            var topTrackCandidates = await movieDb.MusicTracks.AsNoTracking()
+                .Where(t => t.ArtistId == id && t.MissingSinceUtc == null && t.Popularity != null)
+                .OrderByDescending(t => t.Popularity).ThenBy(t => t.Title).ThenBy(t => t.Id)
+                .Take(TopTrackCandidates)
+                .Select(t => new
+                {
+                    id = t.Id,
+                    title = t.Title,
+                    durationSec = t.DurationSec,
+                    codec = t.Codec,
+                    requiresTranscode = t.RequiresTranscode,
+                    missing = t.MissingSinceUtc != null,
+                    popularity = t.Popularity,
+                    // Where it came from, so a row can say "— Hunky Dory" and open it. An artist's
+                    // loose tracks belong to no album and carry nulls here by design.
+                    albumId = t.AlbumId,
+                    albumTitle = t.Album != null ? t.Album.Title : null,
+                })
+                .ToListAsync();
+
+            // ONE ROW PER SONG. Without this the list is unreadable for exactly the artists it
+            // matters most for: the Rolling Stones' first ten came back as Sympathy for the Devil
+            // five times, Paint It Black three times and Gimme Shelter twice, because the library
+            // holds the same recording on the studio album AND on four singles compilations, and
+            // every copy carries the same popularity. The dedupe is on the SAME normalised title the
+            // popularity was matched by (MusicTrackTitles), so the remix and the live take fold in
+            // with the original — they are one song, and the question is which songs are well known.
+            //
+            // The survivor is the first in the order already applied (popularity, then title, then
+            // id), which is deterministic and tends to pick the studio spelling — "Paint It Black"
+            // sorts before "Paint It, Black".
+            var seenSongs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var topTracks = topTrackCandidates
+                .Where(t => seenSongs.Add(MusicTrackTitles.Normalize(t.title)))
+                .Take(TopTracksPerArtist)
+                .ToList();
 
             return Ok(new
             {
@@ -865,6 +925,7 @@ namespace MovieTheater.Controllers
                 kind = artist.Kind,
                 albums,
                 looseTracks,
+                topTracks,
             });
         }
 
@@ -903,6 +964,10 @@ namespace MovieTheater.Controllers
                     artistName = t.Artist.Name,
                     albumId = t.AlbumId,
                     albumTitle = t.Album != null ? t.Album.Title : null,
+                    // Search for "Crazy" and four artists answer; the meter is what says which one
+                    // the world means. The ORDER stays alphabetical — a search result is a lookup,
+                    // and re-ranking it by fame would bury the obscure track somebody typed in full.
+                    popularity = t.Popularity,
                 })
                 .ToListAsync();
 
@@ -1010,6 +1075,17 @@ namespace MovieTheater.Controllers
 
         private static readonly List<string> EmptyGenres = new();
 
+        /// <summary>How many songs the artist page's "Most popular" section shows. A handful: it is a
+        /// pointer at the well-known ones, not a second catalogue beside the album grid.</summary>
+        private const int TopTracksPerArtist = 10;
+
+        /// <summary>How many rows to read before folding duplicates down to
+        /// <see cref="TopTracksPerArtist"/> songs. Twelve times the answer because the worst real
+        /// case is a heavily-compiled artist whose top songs each appear on five or six releases —
+        /// the Rolling Stones filled all ten slots with three songs. Still one indexed range read
+        /// over one artist.</summary>
+        private const int TopTrackCandidates = TopTracksPerArtist * 12;
+
         [HttpGet("/API/Music/Album/{id}")]
         public async Task<IActionResult> Album(int id)
         {
@@ -1033,6 +1109,10 @@ namespace MovieTheater.Controllers
                     bitrateKbps = t.BitrateKbps,
                     requiresTranscode = t.RequiresTranscode,
                     missing = t.MissingSinceUtc != null,
+                    // How widely heard the SONG is (2026-08-31), on the album's own scale — what lets
+                    // a tracklist say which of these twelve are the famous ones. Null is "we don't
+                    // know", never zero, and the row still renders: an album can be half-covered.
+                    popularity = t.Popularity,
                 })
                 .ToListAsync();
 

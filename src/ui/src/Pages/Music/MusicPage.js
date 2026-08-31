@@ -273,6 +273,26 @@ function MusicPage({ userData }) {
     player.playTracks(looseTrackEntries(), i);
   }
 
+  // The artist's best-known songs, as a playable queue. Separate from looseTrackEntries because
+  // these come off REAL albums and carry that context — the row says "— Hunky Dory" and the play
+  // bar has to agree with it.
+  function topTrackEntries() {
+    return (artistDetail.topTracks ?? []).map((t) => ({
+      id: t.id,
+      title: t.title,
+      artist: artistDetail.name,
+      album: t.albumTitle,
+      albumId: t.albumId,
+      durationSec: t.durationSec,
+      requiresTranscode: t.requiresTranscode,
+      missing: t.missing,
+    }));
+  }
+
+  function playTopTracks(i) {
+    player.playTracks(topTrackEntries(), i);
+  }
+
   if (gated) {
     return (
       <div className="music-page">
@@ -333,6 +353,7 @@ function MusicPage({ userData }) {
                 title={t.title}
                 meta={`${t.artistName}${t.albumTitle ? ` — ${t.albumTitle}` : ""}`}
                 time={formatDuration(t.durationSec)}
+                popularity={t.popularity}
                 disabled={!player.isPlayable(t)}
                 onPlay={() => playSearchSong(i)}
                 onQueue={() => player.enqueue([searchSongEntries()[i]])}
@@ -367,6 +388,33 @@ function MusicPage({ userData }) {
             {artistDetail.name}
             {artistDetail.yearRange && <span className="music-count">{artistDetail.yearRange}</span>}
           </h2>
+          {/* "Which songs of theirs are the well-known ones" — an answer that cuts ACROSS the
+              records below, so it cannot live in the album grid. Above the grid for the reason the
+              Songs results sit above the browse grid: it is the more specific answer, and on an
+              artist with forty albums it would otherwise be a scroll away. Absent entirely until the
+              enrich pass has reached this artist, which is the honest empty state. */}
+          {artistDetail.topTracks?.length > 0 && (
+            <>
+              <h3 className="music-subhead">Most popular</h3>
+              <div className="music-song-list">
+                {artistDetail.topTracks.map((t, i) => (
+                  <MusicSongRow
+                    key={t.id}
+                    no="▶"
+                    title={t.title}
+                    meta={t.albumTitle || undefined}
+                    time={formatDuration(t.durationSec)}
+                    popularity={t.popularity}
+                    disabled={!player.isPlayable(t)}
+                    onPlay={() => playTopTracks(i)}
+                    onQueue={() => player.enqueue([topTrackEntries()[i]])}
+                    onAdd={() => openPicker([{ id: t.id, title: t.title }], t.title)}
+                  />
+                ))}
+              </div>
+              <h3 className="music-subhead">Albums</h3>
+            </>
+          )}
           <div className="music-album-grid">
             {artistDetail.albums.map((a) => (
               <AlbumCard
@@ -386,6 +434,7 @@ function MusicPage({ userData }) {
                     no="▶"
                     title={t.title}
                     time={formatDuration(t.durationSec)}
+                    popularity={t.popularity}
                     disabled={!player.isPlayable(t)}
                     onPlay={() => playLooseTracks(i)}
                     onQueue={() => player.enqueue([looseTrackEntries()[i]])}

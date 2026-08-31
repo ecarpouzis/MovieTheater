@@ -329,6 +329,62 @@
 
 .music-song-disc { flex: none; font-size: 10.5px; color: var(--text-muted); }
 
+/* The popularity meter (2026-08-31): how widely heard a song is, as height rather than a numeral.
+   Fixed width so the meters line up into a comparable column down the tracklist — a bar you have to
+   compare against a neighbour of a different width is not a chart. `flex: none` keeps the title the
+   only thing that gives way when the row is narrow. */
+.music-song-pop {
+  flex: none;
+  width: 34px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--card-border);
+  overflow: hidden;
+}
+
+.music-song-pop-fill {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--accent);
+  /* Never fully opaque: the fill sits in the same row as the play affordance and the accent at full
+     strength reads as an interactive element rather than a measurement. */
+  opacity: 0.75;
+}
+
+/* On a phone the row has to give something up, and the meter is the least of what it carries: the
+   title, the time and the two buttons are all doing work a finger needs. */
+@media (max-width: 560px) {
+  .music-song-pop { display: none; }
+}
+
+/* The album sheet's tracklist order switch (2026-08-31). Two plain buttons rather than an antd
+   Segmented: this sheet is deliberately hand-rolled (see the file header), and antd injects its CSS
+   at runtime, so a component here would need a specificity fight to wear the section's tokens. */
+.music-track-order {
+  display: flex;
+  gap: 6px;
+  margin: 14px 0 6px;
+}
+
+.music-track-order-btn {
+  background: none;
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  padding: 3px 11px;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.music-track-order-btn:hover { color: var(--text-primary); }
+
+.music-track-order-btn.is-on {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
 .music-song-time {
   flex: none;
   font-size: 11.5px;

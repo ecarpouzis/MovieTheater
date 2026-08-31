@@ -96,6 +96,18 @@
          and the third shape threw InvalidOperationException past a catch(JsonException) and cost
          ~12% of the library the popularity score it had already been given. -->
     <Compile Include="..\MovieTheater\Music\MusicLastFm.cs" Link="Music\MusicLastFm.cs" />
+    <!-- The title fold that joins our catalogue to Last.fm's (2026-08-31). Compiled from source
+         because this is the one rule in the popularity pass that can be WRONG rather than merely
+         absent: strip too little and a track goes unmatched, strip too much and a real listener
+         count lands on the wrong song with nothing downstream able to tell. "(Don't Fear) The
+         Reaper" keeping its brackets is as load-bearing as "(Remastered 2009)" losing them. -->
+    <Compile Include="..\MovieTheater\Music\MusicTrackTitles.cs" Link="Music\MusicTrackTitles.cs" />
+    <!-- The truncated-title repair's detector (2026-08-31). Compiled from source because it is the
+         half that PROPOSES a rewrite of library metadata: it must recover "What's The Matter Here"
+         from a frame cut to "What's The Matte", and must refuse a title that appears twice in the
+         name, one too short to mean anything, and a filename that merely carries an edition suffix
+         the tag correctly omits. The command's own I/O is not exercised - it opens no files. -->
+    <Compile Include="..\MovieTheater\Music\MusicTitleRepair.cs" Link="Music\MusicTitleRepair.cs" />
     <!-- Where the raw-response cache lands. Compiled from source because the claim is about the
          SHIPPED default: anchored on the repo marker, so a stray data/ beside a binary can no longer
          shadow the real cache and send an offline re-parse back to the network. -->
