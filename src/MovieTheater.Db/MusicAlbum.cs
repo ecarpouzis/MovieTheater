@@ -70,5 +70,30 @@ namespace MovieTheater.Db
         /// on a miss as well as a hit (the <see cref="ArtCheckedUtc"/> convention), so the external
         /// queue shrinks monotonically and terminates.</summary>
         public DateTime? PopularityCheckedUtc { get; set; }
+
+        /// <summary>
+        /// 0–100 RATING from an outside community (<see cref="MovieTheater.Music.MusicRating"/>), or
+        /// null when nobody has rated the record.
+        /// </summary>
+        /// <remarks>
+        /// A separate column from <see cref="Popularity"/> because they are separate facts: this is
+        /// how good the people who heard it say it is, that is how many people heard it. The house's
+        /// own <c>MusicAlbumRating</c> table stays the more authoritative source when it has votes —
+        /// it just never will at this scale, which is why the rating had to come from outside.
+        /// </remarks>
+        public int? ExternalRating { get; set; }
+
+        /// <summary>How many people that rating represents. Carried so the UI can say "from N" and so
+        /// the shrink can be re-tuned offline without re-asking anyone's API.</summary>
+        public int? ExternalRatingVotes { get; set; }
+
+        /// <summary>Which community produced <see cref="ExternalRating"/> — see
+        /// <see cref="MusicGenreSources"/>.</summary>
+        [MaxLength(32)]
+        public string? ExternalRatingSource { get; set; }
+
+        /// <summary>When the rating leg last asked about this album — its own negative cache, kept
+        /// apart from <see cref="PopularityCheckedUtc"/> so either leg can be re-run alone.</summary>
+        public DateTime? ExternalRatingCheckedUtc { get; set; }
     }
 }

@@ -103,15 +103,22 @@ namespace MovieTheater.Music
             await using var db = await dbFactory.CreateDbContextAsync();
             var cache = new MusicResponseCache(CacheDir);
 
-            var pendingTotal = await db.MusicAlbums.CountAsync(a => a.PopularityCheckedUtc == null && a.Id > After);
+            // The work set is "either leg still has something to learn about this album". Popularity
+            // and the rating are fetched together but stamped SEPARATELY (they are different facts
+            // from different services), so a queue keyed on one of them alone would go quiet while
+            // the other had a whole library left to ask about — which is exactly what happened when
+            // the rating leg was added after popularity had already finished a full pass.
+            var pendingTotal = await db.MusicAlbums.CountAsync(a =>
+                (a.PopularityCheckedUtc == null || a.ExternalRatingCheckedUtc == null) && a.Id > After);
             var batch = await db.MusicAlbums
-                .Where(a => a.PopularityCheckedUtc == null && a.Id > After)
+                .Where(a => (a.PopularityCheckedUtc == null || a.ExternalRatingCheckedUtc == null) && a.Id > After)
                 .OrderBy(a => a.Id)
                 .Include(a => a.Artist)
                 .Take(Math.Max(1, Take))
                 .ToListAsync();
 
             int mbHits = 0, mbMisses = 0, popHits = 0, popMisses = 0, cacheHits = 0, genreRows = 0, errors = 0;
+            int ratingHits = 0, ratingMisses = 0;
             using var http = MusicRemoteArt.CreateHttp();
 
             foreach (var album in batch)
@@ -122,14 +129,36 @@ namespace MovieTheater.Music
                 int? popularity = null;
                 string? popularitySource = null;
 
+                int? externalRating = null;
+                int externalVotes = 0;
+                var ratingAnswered = false;
+
                 if (wantMb)
                 {
                     try
                     {
-                        var (tags, fromCache) = await MusicBrainzTagsAsync(http, cache, artist, title);
+                        var (tags, groupId, fromCache) = await MusicBrainzTagsAsync(http, cache, artist, title);
                         if (fromCache) cacheHits++;
                         if (tags.Count > 0) { mbHits++; found.AddRange(tags.Select(t => (t.Genre, t.Votes))); }
                         else mbMisses++;
+
+                        // The RATING leg. Same source, separate fact, separate column — see MusicRating.
+                        //
+                        // The search having COMPLETED is what closes this album's rating queue, not
+                        // the lookup having found something. "MusicBrainz has no release group that
+                        // matches this record" is knowledge, and an album it can never identify has
+                        // to leave the work set or the queue never terminates — the queue is now
+                        // "either leg unasked", so an album that could not be stamped here would be
+                        // re-fetched on every run forever.
+                        ratingAnswered = true;
+                        if (groupId != null)
+                        {
+                            var (stars, votes, ratedFromCache) = await MusicBrainzRatingAsync(http, cache, groupId);
+                            if (ratedFromCache) cacheHits++;
+                            externalRating = MusicRating.FromStars(stars, votes);
+                            externalVotes = votes;
+                        }
+                        if (externalRating != null) ratingHits++; else ratingMisses++;
                     }
                     catch (Exception ex) { errors++; if (Verbose) w.WriteLine($"  ! {album.Id} musicbrainz: {ex.Message}"); }
                 }
@@ -166,6 +195,20 @@ namespace MovieTheater.Music
                     if (wantMb) genreRows += await ReplaceGenresAsync(db, album.Id, MusicGenreSources.MusicBrainz, found);
                     MusicPopularity.ApplyToAlbum(album, popularity, popularitySource,
                         consultedLastFm: lastFmAnswered, now: DateTime.UtcNow);
+
+                    // Same rule as popularity's, for the same reason: only a run that ASKED may close
+                    // the rating queue, and a miss stamps (the negative cache) without erasing a score
+                    // an earlier run established.
+                    if (ratingAnswered)
+                    {
+                        if (externalRating != null)
+                        {
+                            album.ExternalRating = externalRating;
+                            album.ExternalRatingVotes = externalVotes;
+                            album.ExternalRatingSource = MusicGenreSources.MusicBrainz;
+                        }
+                        album.ExternalRatingCheckedUtc = DateTime.UtcNow;
+                    }
                 }
                 else genreRows += found.Count;
 
@@ -185,11 +228,11 @@ namespace MovieTheater.Music
 
             w.WriteLine();
             w.WriteLine($"looked up {batch.Count} album(s): musicbrainz {mbHits} hit / {mbMisses} miss, " +
-                        $"popularity {popHits} hit / {popMisses} miss, {cacheHits} served from the disk cache, {errors} error(s)" +
+                        $"popularity {popHits} hit / {popMisses} miss, rating {ratingHits} hit / {ratingMisses} miss, {cacheHits} served from the disk cache, {errors} error(s)" +
                         (Apply ? "." : " — DRY RUN, nothing written."));
             w.WriteLine($"cache: {cache.Root}");
             w.WriteLine($"{{ processed: {batch.Count}, remaining: {remaining}, nextCursor: {nextCursor}, " +
-                        $"counts: {{ mbHits: {mbHits}, mbMisses: {mbMisses}, popHits: {popHits}, popMisses: {popMisses}, " +
+                        $"counts: {{ mbHits: {mbHits}, mbMisses: {mbMisses}, popHits: {popHits}, popMisses: {popMisses}, ratingHits: {ratingHits}, ratingMisses: {ratingMisses}, " +
                         $"genreRows: {genreRows}, cacheHits: {cacheHits}, errors: {errors} }} }}");
             // A dry run still FILLS THE CACHE, and that is deliberate: the point of the cache is that
             // a request is made once ever, so the answers a dry run collected are the answers the
@@ -238,19 +281,20 @@ namespace MovieTheater.Music
         /// release for the same reason the art lookup prefers it: tags are filed against the record,
         /// not against the particular pressing a search happened to rank first.
         /// </summary>
-        private async Task<(List<(string Genre, int Votes)> Tags, bool FromCache)> MusicBrainzTagsAsync(
+        private async Task<(List<(string Genre, int Votes)> Tags, string? GroupId, bool FromCache)> MusicBrainzTagsAsync(
             HttpClient http, MusicResponseCache cache, string artist, string album)
         {
             var query = $"artist:\"{MusicRemoteArt.Sanitize(artist)}\" AND releasegroup:\"{MusicRemoteArt.Sanitize(album)}\"";
             var url = $"https://musicbrainz.org/ws/2/release-group/?query={Uri.EscapeDataString(query)}&fmt=json&limit=5";
             var (json, fromCache) = await GetCachedAsync(http, cache, "musicbrainz", query, url, maxAge: null);
             var outList = new List<(string, int)>();
-            if (json == null) return (outList, fromCache);
+            string? groupId = null;
+            if (json == null) return (outList, null, fromCache);
 
             try
             {
                 using var doc = JsonDocument.Parse(json);
-                if (!doc.RootElement.TryGetProperty("release-groups", out var groups)) return (outList, fromCache);
+                if (!doc.RootElement.TryGetProperty("release-groups", out var groups)) return (outList, null, fromCache);
                 foreach (var rg in groups.EnumerateArray())
                 {
                     var title = rg.TryGetProperty("title", out var t) ? t.GetString() ?? "" : "";
@@ -258,6 +302,13 @@ namespace MovieTheater.Music
                     // The SAME acceptance gate the art lookup uses (MusicRemoteArtMatchTests pins it).
                     // A confidently wrong genre is the same failure as a confidently wrong cover.
                     if (!MusicRemoteArt.Accepts(title, credit, album, artist, titleOnly: false)) continue;
+
+                    // The first ACCEPTED group is this album's identity, and it is worth more than the
+                    // tags: the rating lookup needs an id, and search answers carry no rating field.
+                    // Taken from the accepted group rather than the top hit so a rating can never be
+                    // attached to a record the match gate would have rejected.
+                    groupId ??= rg.TryGetProperty("id", out var gid) ? gid.GetString() : null;
+
                     if (!rg.TryGetProperty("tags", out var tags) || tags.ValueKind != JsonValueKind.Array) continue;
                     foreach (var tag in tags.EnumerateArray())
                     {
@@ -271,7 +322,37 @@ namespace MovieTheater.Music
             }
             catch (JsonException) { /* malformed answer = miss, same posture as the art lookup */ }
 
-            return (outList.OrderByDescending(x => x.Item2).Take(MaxGenresPerAlbum).ToList(), fromCache);
+            return (outList.OrderByDescending(x => x.Item2).Take(MaxGenresPerAlbum).ToList(), groupId, fromCache);
+        }
+
+        /// <summary>
+        /// One release group's community rating: the average, and how many people it represents.
+        /// </summary>
+        /// <remarks>
+        /// A second request, because MusicBrainz SEARCH answers carry no rating field — verified
+        /// against the 2,355 group answers already in the cache, none of which has one. It is a
+        /// lookup rather than a search, so it costs no matching risk: the id came from a group the
+        /// accept gate already passed.
+        /// </remarks>
+        private async Task<(double? Stars, int Votes, bool FromCache)> MusicBrainzRatingAsync(
+            HttpClient http, MusicResponseCache cache, string groupId)
+        {
+            var url = $"https://musicbrainz.org/ws/2/release-group/{Uri.EscapeDataString(groupId)}?inc=ratings&fmt=json";
+            var (json, fromCache) = await GetCachedAsync(http, cache, "musicbrainz", $"rating|{groupId}", url, maxAge: null);
+            if (json == null) return (null, 0, fromCache);
+            try
+            {
+                using var doc = JsonDocument.Parse(json);
+                if (!doc.RootElement.TryGetProperty("rating", out var rating) || rating.ValueKind != JsonValueKind.Object)
+                    return (null, 0, fromCache);
+                double? stars = rating.TryGetProperty("value", out var v) && v.ValueKind == JsonValueKind.Number
+                    ? v.GetDouble() : null;
+                var votes = rating.TryGetProperty("votes-count", out var c) && c.ValueKind == JsonValueKind.Number
+                    ? c.GetInt32() : 0;
+                return (stars, votes, fromCache);
+            }
+            catch (JsonException) { return (null, 0, fromCache); }
+            catch (InvalidOperationException) { return (null, 0, fromCache); }
         }
 
         private static string CreditOf(JsonElement element)

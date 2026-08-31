@@ -205,13 +205,18 @@ namespace MovieTheater.Music
         }
 
         /// <summary>
-        /// Recomputes the <c>Source='tags'</c> genre rows for the given albums and artists.
+        /// Recomputes the <c>Source='tags'</c> ALBUM genre rows, and the ARTIST roll-ups for every
+        /// source, for the given albums and artists.
         /// </summary>
         /// <remarks>
-        /// REPLACE, not merge: the album's genres are a function of its tracks, so the only way a
-        /// re-run can be idempotent is to derive the whole set and swap it. The delete is fenced to
-        /// this pass's own <c>Source</c> and to the ids being recomputed — the external legs' rows for
-        /// the same album are never in scope, which is the whole reason Source is part of the key.
+        /// <para>REPLACE, not merge: a roll-up is a function of its inputs, so the only way a re-run
+        /// can be idempotent is to derive the whole set and swap it.</para>
+        /// <para>The two halves are scoped differently, on purpose. The ALBUM half is
+        /// <c>tags</c>-only, because it is derived from <c>MusicTrack.Genre</c> — the files' own
+        /// frames — and the external legs write their album rows themselves; fencing the delete to
+        /// this pass's own Source is what stops it eating theirs, and is the whole reason Source is
+        /// part of the key. The ARTIST half rolls up EVERY source, because nothing else does: an
+        /// artist's genres are a function of its albums' genres whatever wrote them.</para>
         /// </remarks>
         private async Task<(int albumRows, int artistRows)> RollUpAsync(MovieDb db, List<int> albumIds, List<int> artistIds, ConsoleWriter w)
         {
@@ -247,26 +252,48 @@ namespace MovieTheater.Music
             // The album roll-up IS the artist roll-up's input, and it is read back from the database
             // rather than reused from `wantedAlbum`: an artist's other albums (untouched by this
             // chunk) count too, and a dry run must reason over what is actually there.
+            //
+            // EVERY source, not just this pass's own. `music-enrich` writes album genres for
+            // musicbrainz and lastfm and documents that it does not touch roll-ups, pointing the
+            // operator here — so if this is not the thing that folds them, nothing is, and the artist
+            // facet silently shows file tags alone while thousands of external rows sit one level
+            // down. (Measured 2026-08-31 before this fix: MusicArtistGenre held 1,992 rows, all
+            // 'tags', while MusicAlbumGenre held 11,338 lastfm and 3,456 musicbrainz.)
             var albumOwner = await db.MusicAlbums
                 .Where(a => artistIds.Contains(a.ArtistId))
                 .Select(a => new { a.Id, a.ArtistId })
                 .ToListAsync();
             var ownerOf = albumOwner.ToDictionary(a => a.Id, a => a.ArtistId);
             var ownedAlbumIds = albumOwner.Select(a => a.Id).ToList();
-            var albumGenreRows = await db.MusicAlbumGenres
-                .Where(g => g.Source == source && ownedAlbumIds.Contains(g.AlbumId))
-                .Select(g => new { g.AlbumId, g.Genre })
+
+            var allAlbumGenreRows = await db.MusicAlbumGenres
+                .Where(g => ownedAlbumIds.Contains(g.AlbumId))
+                .Select(g => new { g.AlbumId, g.Genre, g.Source })
                 .ToListAsync();
 
+            // The pipeline's own sources are always recomputed even when they currently have no album
+            // rows, so a source that has just been emptied has its stale artist rows cleared rather
+            // than left standing. A source we do not own (a hand-pinned one) is only touched when it
+            // actually has album rows to roll up.
+            var sources = allAlbumGenreRows.Select(g => g.Source)
+                .Concat(new[] { MusicGenreSources.Tags, MusicGenreSources.MusicBrainz, MusicGenreSources.LastFm })
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
             var existingArtistRows = await db.MusicArtistGenres
-                .Where(g => g.Source == source && artistIds.Contains(g.ArtistId))
+                .Where(g => artistIds.Contains(g.ArtistId) && sources.Contains(g.Source))
                 .ToListAsync();
+
             var wantedArtist = new List<MusicArtistGenre>();
-            foreach (var group in albumGenreRows.GroupBy(r => ownerOf[r.AlbumId]))
+            foreach (var src in sources)
             {
-                var perAlbum = group.GroupBy(r => r.AlbumId).Select(g => g.Select(x => x.Genre));
-                foreach (var (genre, count) in MusicGenres.RollUpArtist(perAlbum))
-                    wantedArtist.Add(new MusicArtistGenre { ArtistId = group.Key, Genre = genre, Source = source, Weight = count, CreatedUtc = DateTime.UtcNow });
+                var rowsForSource = allAlbumGenreRows.Where(g => string.Equals(g.Source, src, StringComparison.OrdinalIgnoreCase));
+                foreach (var group in rowsForSource.GroupBy(r => ownerOf[r.AlbumId]))
+                {
+                    var perAlbum = group.GroupBy(r => r.AlbumId).Select(g => g.Select(x => x.Genre));
+                    foreach (var (genre, count) in MusicGenres.RollUpArtist(perAlbum))
+                        wantedArtist.Add(new MusicArtistGenre { ArtistId = group.Key, Genre = genre, Source = src, Weight = count, CreatedUtc = DateTime.UtcNow });
+                }
             }
 
             if (Apply)

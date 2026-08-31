@@ -22,7 +22,23 @@ namespace MovieTheater.Music
         /// <summary>The listener count that scores 100. Chosen above the biggest number the library
         /// actually produces so the top of the scale is a ceiling nothing sits on rather than a
         /// plateau several records share.</summary>
-        private const double Ceiling = 4_000_000;
+        /// <remarks>
+        /// <para>Re-measured 2026-08-31, after the library grew from 2,921 albums to 4,166. Across the
+        /// 3,829 albums Last.fm gave a listener count for: median 64,407, p99 3,088,055, <b>max
+        /// 5,225,674</b> — the top of the range had climbed straight through the old 4,000,000 and 16
+        /// albums were pinned at exactly 100, which is the plateau this constant exists to prevent.
+        /// Coldplay, Daft Punk, Gorillaz, Kanye, Lady Gaga, MGMT and Muse were indistinguishable at
+        /// the top of "Top rated".</para>
+        /// <para>8,000,000 is ~1.5× the observed maximum: the biggest record in the library now scores
+        /// 97, nothing reaches 100, and there is headroom for both the collection and Last.fm's own
+        /// counts to keep growing before this needs looking at again. The cost is a ~3-point downward
+        /// shift in the middle of the scale (a 64k-listener record moves 73 → 70), which changes no
+        /// ORDERING — the map is monotonic, so only the labels move.</para>
+        /// <para>Re-tuning is cheap and offline: <c>Popularity</c> is a pure function of listener
+        /// counts that are already banked in <c>data/music-cache</c>, so a re-score is a re-parse, not
+        /// another pass over anyone's API.</para>
+        /// </remarks>
+        private const double Ceiling = 8_000_000;
 
         /// <summary>
         /// 0–100 from an audience count, or null when the source gave no usable number (which is a
@@ -51,11 +67,11 @@ namespace MovieTheater.Music
         /// <para>An album with NO rating and NO popularity has no opinion attached to it and returns
         /// null — the sort files those last rather than inventing a 50 for them.</para>
         /// </remarks>
-        public static double? Blend(double? averageScore, int voteCount, int? popularity, double priorWeight = 3.0)
+        public static double? Blend(double? averageScore, int voteCount, int? prior, double priorWeight = 3.0)
         {
-            var prior = popularity.HasValue ? (double)popularity.Value : (double?)null;
-            if (voteCount <= 0 || averageScore == null) return prior;
-            var p = prior ?? 50.0;
+            var p0 = prior.HasValue ? (double)prior.Value : (double?)null;
+            if (voteCount <= 0 || averageScore == null) return p0;
+            var p = p0 ?? 50.0;
             return (averageScore.Value * voteCount + p * priorWeight) / (voteCount + priorWeight);
         }
 

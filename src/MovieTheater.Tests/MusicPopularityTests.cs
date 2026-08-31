@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using MovieTheater.Db;
 using MovieTheater.Music;
 
@@ -44,35 +45,62 @@ public class MusicPopularityTests
     }
 
     [Fact]
+    public void The_top_of_the_scale_is_a_ceiling_nothing_in_the_library_sits_on()
+    {
+        // The constant's whole job. Measured 2026-08-31 over the 3,829 albums Last.fm gave a count
+        // for: the biggest is 5,225,674 listeners. It had climbed through the previous 4,000,000
+        // ceiling, pinning 16 albums at exactly 100 — Coldplay, Daft Punk, Gorillaz, Kanye, Lady Gaga,
+        // MGMT and Muse were indistinguishable at the top of "Top rated".
+        var biggestInLibrary = MusicPopularity.FromAudience(5_225_674)!.Value;
+
+        Assert.True(biggestInLibrary < 100,
+            $"the loudest record in the library scores {biggestInLibrary}; the ceiling is meant to sit above it");
+        // …and still near the top: a ceiling so high the library bunches in the middle is no better
+        // than one it saturates.
+        Assert.InRange(biggestInLibrary, 90, 99);
+    }
+
+    [Fact]
+    public void Re_tuning_the_ceiling_cannot_reorder_the_library()
+    {
+        // The map is monotonic in listeners, so moving the ceiling shifts labels and never ranking.
+        // That is what makes a re-tune safe to apply to a scored library without re-deciding anything.
+        long[] audiences = { 0, 200, 1_000, 64_407, 500_000, 3_088_055, 5_225_674 };
+        var scores = audiences.Select(a => MusicPopularity.FromAudience(a)!.Value).ToArray();
+
+        Assert.Equal(scores.OrderBy(s => s).ToArray(), scores);
+    }
+
+    [Fact]
     public void One_enthusiastic_vote_does_not_outrank_five_agreeing_ones()
     {
         // The whole reason the blend is a Bayesian shrink rather than an average: the classic
         // small-sample problem, and the reason a naive "sort by rating" list is always topped by
         // whatever exactly one person scored.
-        var oneRave = MusicPopularity.Blend(100, 1, popularity: 50)!.Value;
-        var fiveGood = MusicPopularity.Blend(88, 5, popularity: 50)!.Value;
+        var oneRave = MusicPopularity.Blend(100, 1, prior: 50)!.Value;
+        var fiveGood = MusicPopularity.Blend(88, 5, prior: 50)!.Value;
         Assert.True(fiveGood > oneRave);
     }
 
     [Fact]
     public void An_unrated_album_falls_back_to_the_popularity_signal_and_a_blank_one_has_no_opinion()
     {
-        Assert.Equal(63, MusicPopularity.Blend(null, 0, popularity: 63));
+        Assert.Equal(63, MusicPopularity.Blend(null, 0, prior: 63));
         // Nothing known at all: null, so the sort files it LAST instead of inventing a middle.
-        Assert.Null(MusicPopularity.Blend(null, 0, popularity: null));
+        Assert.Null(MusicPopularity.Blend(null, 0, prior: null));
     }
 
     [Fact]
     public void With_enough_votes_the_house_wins_over_the_prior()
     {
-        var many = MusicPopularity.Blend(90, 50, popularity: 10)!.Value;
+        var many = MusicPopularity.Blend(90, 50, prior: 10)!.Value;
         Assert.InRange(many, 85, 90);
     }
 
     [Fact]
     public void A_rated_album_with_no_popularity_is_pulled_toward_a_neutral_fifty_not_toward_zero()
     {
-        var blended = MusicPopularity.Blend(100, 1, popularity: null)!.Value;
+        var blended = MusicPopularity.Blend(100, 1, prior: null)!.Value;
         Assert.InRange(blended, 60, 90);
         Assert.True(blended < 100);
     }

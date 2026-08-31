@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -759,16 +759,25 @@ namespace MovieTheater.Controllers
             // Computed here rather than in the browser because the artist grid must be able to sort
             // even when the albums behind it are filtered out of the current view.
             var albumScores = await ScoresByAlbumAsync(null);
-            var artistTop = (await movieDb.MusicAlbums.AsNoTracking()
-                    .Select(al => new { al.Id, al.ArtistId, al.Popularity })
-                    .ToListAsync())
+            var artistAlbums = await movieDb.MusicAlbums.AsNoTracking()
+                .Select(al => new { al.Id, al.ArtistId, al.Popularity, al.ExternalRating })
+                .ToListAsync();
+            var artistTop = artistAlbums
                 .GroupBy(al => al.ArtistId)
                 .ToDictionary(g => g.Key, g => g
                     .Select(al =>
                     {
                         var s = albumScores.GetValueOrDefault(al.Id, NoScores);
-                        return MusicPopularity.Blend(s.Average, s.Count, al.Popularity);
+                        return MusicPopularity.Blend(s.Average, s.Count, al.ExternalRating);
                     })
+                    .Where(v => v != null)
+                    .DefaultIfEmpty(null)
+                    .Max());
+            // "Who has the most widely heard record here" — the other half of the same question, kept
+            // apart for the same reason the album orders are: fame is not a verdict.
+            var artistTopPopularity = artistAlbums
+                .GroupBy(al => al.ArtistId)
+                .ToDictionary(g => g.Key, g => g.Select(al => al.Popularity)
                     .Where(v => v != null)
                     .DefaultIfEmpty(null)
                     .Max());
@@ -794,6 +803,7 @@ namespace MovieTheater.Controllers
                     dominantColor = face?.DominantColor,
                     genres = artistGenres.GetValueOrDefault(a.id) ?? EmptyGenres,
                     topRating = artistTop.GetValueOrDefault(a.id),
+                    topPopularity = artistTopPopularity.GetValueOrDefault(a.id),
                     // Every play of every track filed under this artist — their loose tracks
                     // included, which belong to no album and would otherwise be invisible here.
                     playCount = plays.Plays,
@@ -943,6 +953,8 @@ namespace MovieTheater.Controllers
                     hasArt = a.HasArt,
                     dominantColor = a.DominantColor,
                     popularity = a.Popularity,
+                    externalRating = a.ExternalRating,
+                    externalRatingVotes = a.ExternalRatingVotes,
                 })
                 .ToListAsync();
 
@@ -976,11 +988,15 @@ namespace MovieTheater.Controllers
                     myRating = s.Mine,
                     ratingAvg = s.Average,
                     ratingCount = s.Count,
-                    // The ONE number the "Top rated" order and the rail's rating floor read, computed
-                    // server-side so the sort, the floor and the album sheet cannot disagree about
-                    // what an album is worth. Null = nothing is known about it, and the sort files
-                    // those last rather than inventing a middle.
-                    rating = MusicPopularity.Blend(s.Average, s.Count, a.popularity),
+                    // The album's RATING — a verdict — 0-100. The house's own votes when it has any,
+                    // shrunk toward the outside community's rating rather than toward popularity.
+                    // That prior USED to be `a.popularity`, which with an empty ratings table made
+                    // "Top rated" an order over fame (2026-08-31); popularity is served beside this
+                    // as its own number and the site names the two separately everywhere.
+                    // Null = nobody has reached a verdict, and the sort files those last.
+                    rating = MusicPopularity.Blend(s.Average, s.Count, a.externalRating),
+                    externalRating = a.externalRating,
+                    externalRatingVotes = a.externalRatingVotes,
                     // Library-wide plays (R9 closing pass) — what "Most played" sorts on and what
                     // "Recently played" orders by. Zero and null are the honest answers for a record
                     // nobody has put on yet; the sort files those last rather than inventing a middle.
@@ -1036,10 +1052,13 @@ namespace MovieTheater.Controllers
                 dominantColor = album.DominantColor,
                 genres,
                 popularity = album.Popularity,
+                externalRating = album.ExternalRating,
+                externalRatingVotes = album.ExternalRatingVotes,
+                externalRatingSource = album.ExternalRatingSource,
                 myRating = scores.Mine,
                 ratingAvg = scores.Average,
                 ratingCount = scores.Count,
-                rating = MusicPopularity.Blend(scores.Average, scores.Count, album.Popularity),
+                rating = MusicPopularity.Blend(scores.Average, scores.Count, album.ExternalRating),
                 playCount = plays.Plays,
                 lastPlayedUtc = plays.LastPlayedUtc,
                 tracks,
@@ -1080,7 +1099,7 @@ namespace MovieTheater.Controllers
             {
                 var album = await movieDb.MusicAlbums.AsNoTracking()
                     .Where(a => a.Id == albumId.Value)
-                    .Select(a => new { a.Id, a.Popularity })
+                    .Select(a => new { a.Id, a.Popularity, a.ExternalRating, a.ExternalRatingVotes })
                     .FirstOrDefaultAsync();
                 if (album == null) return NotFound();
                 var s = (await ScoresByAlbumAsync(userId)).GetValueOrDefault(album.Id, NoScores);
@@ -1091,7 +1110,9 @@ namespace MovieTheater.Controllers
                     ratingAvg = s.Average,
                     ratingCount = s.Count,
                     popularity = album.Popularity,
-                    rating = MusicPopularity.Blend(s.Average, s.Count, album.Popularity),
+                    externalRating = album.ExternalRating,
+                    externalRatingVotes = album.ExternalRatingVotes,
+                    rating = MusicPopularity.Blend(s.Average, s.Count, album.ExternalRating),
                 });
             }
 
