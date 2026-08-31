@@ -100,6 +100,28 @@ namespace MovieTheater.Tests
             Assert.True(s.BytesAfter < s.BytesBefore);
         }
 
+        /// <summary>
+        /// A build whose scope covers MORE than the one that finished must re-open the walk. The first
+        /// version stamped itself complete having never looked at BoardgameImagesDir — a different
+        /// directory entirely — so without this a root added later would be silently ignored forever.
+        /// </summary>
+        [Fact]
+        public async Task A_wider_scope_reopens_a_finished_walk()
+        {
+            Write("a_s.png", Png());
+            File.WriteAllText(Path.Combine(dir, ThumbRecoder.StateFileName),
+                JsonSerializer.Serialize(new ThumbsRecodeState
+                {
+                    Cursor = "zzz", DoneUtc = DateTime.UtcNow, Scope = "an-older-narrower-scope",
+                }));
+
+            await RunToCompletionAsync(Service(chunk: 10));
+
+            Assert.Equal(ImageBytes.Webp, ImageBytes.ContentTypeOf(File.ReadAllBytes(Path.Combine(dir, "a_s.png"))));
+            Assert.Equal(ThumbRecoder.Scope, State().Scope);
+            Assert.NotNull(State().DoneUtc);
+        }
+
         [Fact]
         public async Task It_resumes_from_the_cursor_instead_of_starting_over()
         {
@@ -109,7 +131,7 @@ namespace MovieTheater.Tests
 
             // A run that was killed after one file: the state file is all that survives.
             File.WriteAllText(Path.Combine(dir, ThumbRecoder.StateFileName),
-                JsonSerializer.Serialize(new ThumbsRecodeState { Cursor = "a_s.png", Processed = 1, Rewritten = 1 }));
+                JsonSerializer.Serialize(new ThumbsRecodeState { Cursor = "posters|a_s.png", Processed = 1, Rewritten = 1, Scope = ThumbRecoder.Scope }));
             var untouched = File.ReadAllBytes(Path.Combine(dir, "a_s.png"));
 
             await RunToCompletionAsync(Service(chunk: 10));

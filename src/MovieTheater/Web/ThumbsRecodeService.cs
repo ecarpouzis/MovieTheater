@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.IO;
 using System.Text.Json;
 using System.Threading;
@@ -24,6 +25,9 @@ namespace MovieTheater.Web
         public long BytesAfter { get; set; }
         /// <summary>Set once the walk has run out of candidates. Present = the job never runs again.</summary>
         public DateTime? DoneUtc { get; set; }
+        /// <summary>Which walk produced this state (<see cref="ThumbRecoder.Scope"/>). A different scope
+        /// re-opens the job — that is how a root added later is picked up despite a DoneUtc.</summary>
+        public string? Scope { get; set; }
         public DateTime? StartedUtc { get; set; }
     }
 
@@ -89,8 +93,27 @@ namespace MovieTheater.Web
 
             try { await Task.Delay(options.StartDelay, stoppingToken); } catch (OperationCanceledException) { return; }
 
+            var roots = new List<ThumbRecoder.Root> { new("posters", dir) };
+            var boardgames = config.BoardgameImagesDir;
+            if (!string.IsNullOrWhiteSpace(boardgames) && Directory.Exists(boardgames))
+                roots.Add(new ThumbRecoder.Root("boardgames", boardgames));
+            else
+                log.LogInformation("thumbs-recode: no boardgame images directory ({Dir}) — skipping that root", boardgames ?? "(unset)");
+
             var statePath = Path.Combine(dir, ThumbRecoder.StateFileName);
             var state = Read(statePath);
+            if (state.DoneUtc != null && state.Scope != ThumbRecoder.Scope)
+            {
+                // A build that covers MORE than the one that finished: re-open and re-walk. Everything
+                // already converted is a read and a sniff, so this costs minutes, not another pass.
+                log.LogInformation("thumbs-recode: scope changed ({Old} → {New}) — re-walking from the start",
+                    state.Scope ?? "(unrecorded)", ThumbRecoder.Scope);
+                state = new ThumbsRecodeState();
+            }
+            state.Scope = ThumbRecoder.Scope;
+            // Persist the re-opened state at once: until it lands, the file on disk still carries the old
+            // walk's cursor, and the per-tick merge below would read it back.
+            if (state.Cursor == null) Write(statePath, state);
             if (state.DoneUtc != null)
             {
                 log.LogInformation("thumbs-recode: already complete at {When} ({Rewritten} rewritten, {Saved} bytes saved)",
@@ -113,13 +136,17 @@ namespace MovieTheater.Web
                     // of the two each tick makes them converge instead of re-treading each other's ground —
                     // a cursor means "everything at or before this is done", so the maximum is always true.
                     var persisted = Read(statePath);
-                    if (!string.IsNullOrEmpty(persisted.Cursor)
+                    // Only merge a cursor written by the SAME scope. A stale file from a narrower walk
+                    // holds a cursor in a different coordinate system (and, after a scope reset, one this
+                    // pass has deliberately abandoned) — merging it silently undid the reset.
+                    if (persisted.Scope == ThumbRecoder.Scope
+                        && !string.IsNullOrEmpty(persisted.Cursor)
                         && string.CompareOrdinal(persisted.Cursor, state.Cursor ?? "") > 0)
                         state.Cursor = persisted.Cursor;
 
                     // Re-read the listing each tick rather than holding one: the set is small to enumerate
                     // and this way a thumbnail written WHILE the job runs is picked up if it sorts later.
-                    var all = ThumbRecoder.Candidates(dir);
+                    var all = ThumbRecoder.Candidates(roots);
                     var pending = string.IsNullOrEmpty(state.Cursor)
                         ? all
                         : all.FindAll(r => string.CompareOrdinal(r, state.Cursor) > 0);
@@ -152,9 +179,11 @@ namespace MovieTheater.Web
                 {
                     if (stoppingToken.IsCancellationRequested) break;
                     ThumbRecoder.Outcome outcome;
+                    var (rootKey, relPath) = ThumbRecoder.Split(rel);
+                    var rootDir = roots.FirstOrDefault(r => r.Key == rootKey)?.Dir ?? dir;
                     // A shutdown mid-file leaves the cursor where it was, so that file is picked up again
                     // on the next boot instead of being silently skipped forever.
-                    try { outcome = await ThumbRecoder.RecodeAsync(dir, rel, ImageShrinkQuality, apply: true, stoppingToken); }
+                    try { outcome = await ThumbRecoder.RecodeAsync(rootDir, relPath, ImageShrinkQuality, apply: true, stoppingToken); }
                     catch (OperationCanceledException) { break; }
                     state.Processed++;
                     state.Cursor = rel;   // advanced per FILE, so a kill mid-chunk loses at most one

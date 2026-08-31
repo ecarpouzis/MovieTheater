@@ -32,12 +32,44 @@ namespace MovieTheater.Web
         /// <summary>The state file the SERVICE keeps beside the images it is converting.</summary>
         public const string StateFileName = "thumbs-recode.state.json";
 
+        /// <summary>
+        /// What this build's walk COVERS. It is written into the state file, and a state whose scope
+        /// differs re-opens the walk from the beginning.
+        ///
+        /// <para>That exists because of a real miss: the first version walked only the posters root and
+        /// stamped itself complete, while the 315 BOARDGAME thumbnails live in a different directory
+        /// entirely (<c>BoardgameImagesDir</c>) and were never candidates. Without a scope marker, adding
+        /// them later would have changed nothing — the service reads <c>DoneUtc</c> and returns. Re-walking
+        /// is cheap: an already-WebP file is a read and a sniff, no encode.</para>
+        /// </summary>
+        public const string Scope = "posters+arcade+boardgames/v2";
+
+        /// <summary>One image root: a stable key (which orders the walk) and the directory it resolves to.</summary>
+        public sealed record Root(string Key, string Dir);
+
         public sealed record Outcome(bool Rewritten, string Reason, int Before, int After);
 
         /// <summary>
         /// Every candidate, as a path RELATIVE to the root, ordered ordinally. The ordering is the
         /// contract: a cursor only means "everything after this" if the walk is deterministic.
         /// </summary>
+        /// <summary>
+        /// Every candidate across every root, as <c>"{rootKey}|{relative/path}"</c>, ordered ordinally.
+        /// One flat ordered list over both roots is what lets a single cursor mean "everything before
+        /// this is done" no matter which directory a file lives in.
+        /// </summary>
+        public static List<string> Candidates(IReadOnlyList<Root> roots) =>
+            roots.SelectMany(r => Candidates(r.Dir).Select(rel => r.Key + "|" + rel))
+                 .OrderBy(x => x, StringComparer.Ordinal)
+                 .ToList();
+
+        /// <summary>Split a cursor entry back into its root key and relative path.</summary>
+        public static (string Key, string Rel) Split(string entry)
+        {
+            var i = entry.IndexOf('|');
+            return i < 0 ? ("", entry) : (entry[..i], entry[(i + 1)..]);
+        }
+
         public static List<string> Candidates(string dir)
         {
             var arcadeDir = Path.Combine(dir, "arcade");
