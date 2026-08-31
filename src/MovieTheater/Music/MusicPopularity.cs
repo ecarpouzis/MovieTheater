@@ -1,4 +1,5 @@
 using System;
+using MovieTheater.Db;
 
 namespace MovieTheater.Music
 {
@@ -56,6 +57,34 @@ namespace MovieTheater.Music
             if (voteCount <= 0 || averageScore == null) return prior;
             var p = prior ?? 50.0;
             return (averageScore.Value * voteCount + p * priorWeight) / (voteCount + priorWeight);
+        }
+
+        /// <summary>
+        /// Writes one album's popularity result, and decides whether the run that produced it has
+        /// earned the right to close that album's popularity queue (<c>music-enrich</c>).
+        /// </summary>
+        /// <remarks>
+        /// <para>The stamp goes on a MISS as well as a hit — that is the negative cache, and it is the
+        /// queue's ONLY stop condition (the queue is <c>PopularityCheckedUtc IS NULL</c>), so an album
+        /// the internet declined leaves the work set instead of being retried forever.</para>
+        /// <para><b>But only a run that actually ASKED may stamp.</b> A <c>--source musicbrainz</c>
+        /// run, or any run started with no <c>LastFmApiKey</c> configured, never consults Last.fm and
+        /// has therefore learned nothing about popularity. Stamping there would retire the whole
+        /// library unasked and hand the later run that finally has a key an empty queue — a state
+        /// indistinguishable from a finished job, recoverable only by clearing every row. The genre
+        /// half must stay runnable without a key, so the two halves get separate stop conditions.</para>
+        /// <para>A miss never erases a score an earlier run established: "we don't know this time" is
+        /// not "nobody has heard of it".</para>
+        /// </remarks>
+        public static void ApplyToAlbum(MusicAlbum album, int? popularity, string? popularitySource,
+            bool consultedLastFm, DateTime now)
+        {
+            if (popularity != null)
+            {
+                album.Popularity = popularity;
+                album.PopularitySource = popularitySource;
+            }
+            if (consultedLastFm) album.PopularityCheckedUtc = now;
         }
     }
 }

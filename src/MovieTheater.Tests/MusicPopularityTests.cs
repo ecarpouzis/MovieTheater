@@ -1,3 +1,5 @@
+using System;
+using MovieTheater.Db;
 using MovieTheater.Music;
 
 namespace MovieTheater.Tests;
@@ -73,5 +75,71 @@ public class MusicPopularityTests
         var blended = MusicPopularity.Blend(100, 1, popularity: null)!.Value;
         Assert.InRange(blended, 60, 90);
         Assert.True(blended < 100);
+    }
+
+    // --- who may close the popularity queue (music-enrich) --------------------------------------
+    // The queue is "PopularityCheckedUtc IS NULL". The stamp is the ONLY stop condition, so which
+    // runs are allowed to set it decides whether the ratings job can ever be finished.
+
+    [Fact]
+    public void A_run_that_asked_LastFm_stamps_even_on_a_miss_so_the_queue_terminates()
+    {
+        var album = new MusicAlbum { Title = "x", FolderPath = "x" };
+        var now = new DateTime(2026, 8, 30, 12, 0, 0, DateTimeKind.Utc);
+
+        // A miss is knowledge: the negative cache is what lets an album leave the work set once.
+        MusicPopularity.ApplyToAlbum(album, popularity: null, popularitySource: null,
+            consultedLastFm: true, now: now);
+
+        Assert.Equal(now, album.PopularityCheckedUtc);
+        Assert.Null(album.Popularity);
+    }
+
+    [Fact]
+    public void A_run_that_never_asked_LastFm_leaves_the_queue_open()
+    {
+        var album = new MusicAlbum { Title = "x", FolderPath = "x" };
+
+        // --source musicbrainz, or no LastFmApiKey configured. This run learned nothing about
+        // popularity; stamping here would retire the whole library unasked and hand the later run
+        // that finally has a key an empty queue.
+        MusicPopularity.ApplyToAlbum(album, popularity: null, popularitySource: null,
+            consultedLastFm: false, now: DateTime.UtcNow);
+
+        Assert.Null(album.PopularityCheckedUtc);
+    }
+
+    [Fact]
+    public void A_hit_writes_the_score_and_its_source()
+    {
+        var album = new MusicAlbum { Title = "x", FolderPath = "x" };
+        var now = new DateTime(2026, 8, 30, 12, 0, 0, DateTimeKind.Utc);
+
+        MusicPopularity.ApplyToAlbum(album, popularity: 78, popularitySource: MusicGenreSources.LastFm,
+            consultedLastFm: true, now: now);
+
+        Assert.Equal(78, album.Popularity);
+        Assert.Equal(MusicGenreSources.LastFm, album.PopularitySource);
+        Assert.Equal(now, album.PopularityCheckedUtc);
+    }
+
+    [Fact]
+    public void A_later_miss_never_erases_a_score_an_earlier_run_established()
+    {
+        var album = new MusicAlbum
+        {
+            Title = "x",
+            FolderPath = "x",
+            Popularity = 78,
+            PopularitySource = MusicGenreSources.LastFm,
+        };
+
+        // Last.fm going quiet about a record we already scored must not blank it: "we don't know
+        // this time" is not "nobody has heard of it".
+        MusicPopularity.ApplyToAlbum(album, popularity: null, popularitySource: null,
+            consultedLastFm: true, now: DateTime.UtcNow);
+
+        Assert.Equal(78, album.Popularity);
+        Assert.Equal(MusicGenreSources.LastFm, album.PopularitySource);
     }
 }

@@ -158,9 +158,8 @@ namespace MovieTheater.Music
                 if (Apply)
                 {
                     if (wantMb) genreRows += await ReplaceGenresAsync(db, album.Id, MusicGenreSources.MusicBrainz, found);
-                    if (popularity != null) { album.Popularity = popularity; album.PopularitySource = popularitySource; }
-                    // Stamped on a miss as well — the negative cache, and the queue's stop condition.
-                    album.PopularityCheckedUtc = DateTime.UtcNow;
+                    MusicPopularity.ApplyToAlbum(album, popularity, popularitySource,
+                        consultedLastFm: wantLastFm, now: DateTime.UtcNow);
                 }
                 else genreRows += found.Count;
 
