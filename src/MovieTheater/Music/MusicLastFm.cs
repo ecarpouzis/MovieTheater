@@ -88,5 +88,99 @@ namespace MovieTheater.Music
             catch (JsonException) { return (null, tags); }
             catch (InvalidOperationException) { return (null, tags); }
         }
+
+        /// <summary>
+        /// Last.fm's stand-in for "this record has no picture" — a grey star, served with a 200 and a
+        /// perfectly valid JPEG body at every size.
+        /// </summary>
+        /// <remarks>
+        /// It passes every pixel test there is, which makes it the same class of trap as the
+        /// <c>proof.jpg</c> a scene release ships: cover-SHAPED, and not a cover. It has to be refused
+        /// by identity, because nothing about the image itself will give it away — and shipping it
+        /// would be worse than leaving the album blank, since a blank album stays in the work queue
+        /// while a starred one looks finished.
+        /// </remarks>
+        public const string PlaceholderImageId = "2a96cbd8b46e442fc41c2b86b821562f";
+
+        private static readonly string[] SizeOrder = { "mega", "extralarge", "large", "medium", "small" };
+
+        /// <summary>
+        /// The best cover URL and the release MBID out of one <c>album.getinfo</c> body — the two
+        /// things in that answer that can become album art.
+        /// </summary>
+        /// <remarks>
+        /// <para>The MBID matters more than the URL: it is an EXACT release identity, so it turns a
+        /// fuzzy "search MusicBrainz for this artist and title" into a direct Cover Art Archive
+        /// lookup, and CAA holds full-resolution scans where Last.fm serves a 300px thumbnail.</para>
+        /// <para>Sizes are ranked rather than trusted in document order, and the placeholder is
+        /// refused at every size — see <see cref="PlaceholderImageId"/>.</para>
+        /// </remarks>
+        public static (string? ImageUrl, string? Mbid) ParseArt(string? json)
+        {
+            if (string.IsNullOrWhiteSpace(json)) return (null, null);
+            try
+            {
+                using var doc = JsonDocument.Parse(json);
+                var root = doc.RootElement;
+                if (root.ValueKind != JsonValueKind.Object
+                    || !root.TryGetProperty("album", out var album)
+                    || album.ValueKind != JsonValueKind.Object)
+                    return (null, null);
+
+                string? mbid = null;
+                if (album.TryGetProperty("mbid", out var m) && m.ValueKind == JsonValueKind.String)
+                {
+                    var raw = m.GetString();
+                    if (!string.IsNullOrWhiteSpace(raw)) mbid = raw!.Trim();
+                }
+
+                string? best = null;
+                var bestRank = int.MaxValue;
+                if (album.TryGetProperty("image", out var images) && images.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var image in images.EnumerateArray())
+                    {
+                        if (image.ValueKind != JsonValueKind.Object) continue;
+                        var url = image.TryGetProperty("#text", out var u) ? u.GetString() : null;
+                        if (string.IsNullOrWhiteSpace(url)) continue;
+                        if (url!.Contains(PlaceholderImageId, StringComparison.OrdinalIgnoreCase)) continue;
+
+                        var size = image.TryGetProperty("size", out var s) ? s.GetString() ?? "" : "";
+                        var rank = Array.IndexOf(SizeOrder, size);
+                        if (rank < 0) rank = SizeOrder.Length;
+                        if (rank < bestRank) { best = url.Trim(); bestRank = rank; }
+                    }
+                }
+                return (best, mbid);
+            }
+            catch (JsonException) { return (null, null); }
+            catch (InvalidOperationException) { return (null, null); }
+        }
+
+        /// <summary>
+        /// The full-resolution form of a Last.fm image URL, or null when it is not one we can reshape.
+        /// </summary>
+        /// <remarks>
+        /// Last.fm serves <c>/i/u/&lt;size&gt;/&lt;hash&gt;.jpg</c>, where the size segment is a resize
+        /// directive rather than part of the identity; dropping it returns the image as uploaded. Worth
+        /// asking for, because the largest size Last.fm advertises in <c>album.getinfo</c> is 300×300 —
+        /// below the 600px the mount stores — so taking the advertised URL would bank a cover softer
+        /// than the one available. The caller must treat a failure here as "use the sized URL", never as
+        /// a miss.
+        /// </remarks>
+        public static string? OriginalSizeUrl(string? url)
+        {
+            if (string.IsNullOrWhiteSpace(url)) return null;
+            var marker = "/i/u/";
+            var at = url!.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+            if (at < 0) return null;
+            var tail = url.Substring(at + marker.Length);
+            var slash = tail.IndexOf('/');
+            if (slash < 0) return null;                       // already unsized
+            var size = tail.Substring(0, slash);
+            // Only strip a genuine resize directive ("300x300", "770x0", "avatar170s"), never a path.
+            if (!size.Contains('x') && !size.EndsWith("s", StringComparison.OrdinalIgnoreCase)) return null;
+            return url.Substring(0, at + marker.Length) + tail.Substring(slash + 1);
+        }
     }
 }

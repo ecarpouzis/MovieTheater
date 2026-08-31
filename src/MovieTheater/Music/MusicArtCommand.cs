@@ -164,7 +164,8 @@ namespace MovieTheater.Music
                     }
                     await SpaceAsync();
 
-                    source = await MusicRemoteArt.FetchAsync(http!, album.Artist.Name, album.Title, SpaceAsync);
+                    source = await MusicRemoteArt.FetchAsync(http!, album.Artist.Name, album.Title, SpaceAsync,
+                        config.LastFmApiKey);
                     if (source != null) origin = "remote";
                     if (Apply) album.ArtCheckedUtc = DateTime.UtcNow;
                 }

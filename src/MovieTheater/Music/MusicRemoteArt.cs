@@ -62,7 +62,8 @@ namespace MovieTheater.Music
         /// first — the caller already spaced that one. Omitting it means this method will only ever
         /// make the one search, which keeps a caller that throttles externally correct by default.</para>
         /// </summary>
-        public static async Task<byte[]?> FetchAsync(HttpClient http, string artist, string album, Func<Task>? spaceCall = null)
+        public static async Task<byte[]?> FetchAsync(HttpClient http, string artist, string album,
+            Func<Task>? spaceCall = null, string? lastFmApiKey = null)
         {
             // "Title-only" means the artist column holds a WORK or a studio rather than a performer —
             // a root-level soundtrack folder, or a bucket like "Disney". The credit then proves
@@ -91,11 +92,64 @@ namespace MovieTheater.Music
                 if (bytes != null) return bytes;
             }
 
-            // iTunes is asked LAST and only for real artists. It has no artist field in the query, so
-            // it answers any term with its best guess; for a work-title album that guess is unverifiable
-            // and was a reliable source of confident nonsense.
+            // Both remaining sources match on a term rather than on a verified credit, so neither is
+            // asked for a work-title album, where that guess is unverifiable and was a reliable source
+            // of confident nonsense.
             if (titleOnly) return null;
+
+            // Last.fm before iTunes: it is asked for an ARTIST and an ALBUM as separate fields, so a
+            // hit is a claim about both, where the iTunes search has no artist field at all and answers
+            // any term with its best guess. It also reaches records the first two legs structurally
+            // cannot — a release MusicBrainz never catalogued has no CAA entry to find, however good
+            // the query, and those are most of what is still blank after a full pass.
+            if (!string.IsNullOrWhiteSpace(lastFmApiKey))
+            {
+                bytes = await LastFmCoverAsync(http, lastFmApiKey!, artist, album);
+                if (bytes != null) return bytes;
+            }
+
             return await ItunesArtworkAsync(http, $"{artist} {album}", album, artist);
+        }
+
+        /// <summary>
+        /// Cover for one album via Last.fm's <c>album.getinfo</c>: its release MBID first, its own
+        /// image second.
+        /// </summary>
+        /// <remarks>
+        /// <para>The MBID is tried first because it is worth more than the picture. Last.fm advertises
+        /// nothing larger than 300×300 in this answer — below the 600px the mount keeps — whereas the
+        /// MBID names an EXACT release, turning the fuzzy MusicBrainz search the earlier legs run into
+        /// a direct Cover Art Archive fetch of a full-resolution scan. When that release has no art
+        /// filed, its own thumbnail is still better than a blank tile, and the unsized form is asked for
+        /// before the advertised one.</para>
+        /// <para>Every result still goes through <see cref="MusicArtStore.LooksLikeCover"/>, and the
+        /// grey-star placeholder is refused by identity in
+        /// <see cref="MusicLastFm.ParseArt"/> — it passes every pixel test, so nothing downstream
+        /// would ever catch it.</para>
+        /// </remarks>
+        private static async Task<byte[]?> LastFmCoverAsync(HttpClient http, string apiKey, string artist, string album)
+        {
+            var url = "https://ws.audioscrobbler.com/2.0/?method=album.getinfo"
+                      + $"&artist={Uri.EscapeDataString(artist)}&album={Uri.EscapeDataString(album)}"
+                      + $"&api_key={Uri.EscapeDataString(apiKey)}&format=json&autocorrect=1";
+            var json = await TryGetStringAsync(http, url);
+            if (json == null) return null;
+
+            var (imageUrl, mbid) = MusicLastFm.ParseArt(json);
+
+            if (!string.IsNullOrWhiteSpace(mbid))
+            {
+                var bytes = await TryGetAsync(http, $"https://coverartarchive.org/release/{mbid}/front-500");
+                if (MusicArtStore.LooksLikeCover(bytes)) return bytes;
+            }
+
+            foreach (var candidate in new[] { MusicLastFm.OriginalSizeUrl(imageUrl), imageUrl })
+            {
+                if (string.IsNullOrWhiteSpace(candidate)) continue;
+                var bytes = await TryGetAsync(http, candidate!);
+                if (MusicArtStore.LooksLikeCover(bytes)) return bytes;
+            }
+            return null;
         }
 
         /// <summary>True when the artist name is the album's own name dressed up — a self-titled flat

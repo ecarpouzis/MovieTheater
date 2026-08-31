@@ -92,6 +92,81 @@ public class MusicLastFmTests
         Assert.Empty(tags);
     }
 
+    // --- art out of the same answer ------------------------------------------------------------
+
+    private const string WithArt = """
+        {"album":{"name":"Peace Sells","artist":"Megadeth","mbid":"11e4b0f9-0000-4000-8000-000000000001",
+          "listeners":"900000",
+          "image":[{"#text":"https://lastfm.freetls.fastly.net/i/u/34s/abc123.png","size":"small"},
+                   {"#text":"https://lastfm.freetls.fastly.net/i/u/300x300/abc123.png","size":"extralarge"},
+                   {"#text":"https://lastfm.freetls.fastly.net/i/u/174s/abc123.png","size":"large"}],
+          "tags":""}}
+        """;
+
+    // Last.fm answers "no picture" with a grey star, at every size, with a 200 and a valid JPEG.
+    private const string StarOnly = """
+        {"album":{"name":"Obscure","artist":"Nobody","mbid":"",
+          "image":[{"#text":"https://lastfm.freetls.fastly.net/i/u/34s/2a96cbd8b46e442fc41c2b86b821562f.png","size":"small"},
+                   {"#text":"https://lastfm.freetls.fastly.net/i/u/300x300/2a96cbd8b46e442fc41c2b86b821562f.png","size":"extralarge"}],
+          "tags":""}}
+        """;
+
+    [Fact]
+    public void Art_takes_the_biggest_size_and_the_release_mbid()
+    {
+        var (url, mbid) = MusicLastFm.ParseArt(WithArt);
+
+        // Ranked by size, not taken in document order -- "large" is listed last here.
+        Assert.Equal("https://lastfm.freetls.fastly.net/i/u/300x300/abc123.png", url);
+        Assert.Equal("11e4b0f9-0000-4000-8000-000000000001", mbid);
+    }
+
+    [Fact]
+    public void The_grey_star_placeholder_is_never_offered_as_a_cover()
+    {
+        // It passes every pixel test there is, so it has to be refused by identity. Shipping it would
+        // be worse than leaving the album blank: a blank album stays in the work queue, a starred one
+        // looks finished.
+        var (url, mbid) = MusicLastFm.ParseArt(StarOnly);
+
+        Assert.Null(url);
+        Assert.Null(mbid);   // empty mbid is absent, not ""
+    }
+
+    [Theory]
+    [InlineData("https://lastfm.freetls.fastly.net/i/u/300x300/abc.png",
+                "https://lastfm.freetls.fastly.net/i/u/abc.png")]
+    [InlineData("https://lastfm.freetls.fastly.net/i/u/174s/abc.png",
+                "https://lastfm.freetls.fastly.net/i/u/abc.png")]
+    public void The_size_segment_can_be_dropped_for_the_image_as_uploaded(string sized, string original)
+    {
+        // The largest size advertised is 300x300, below the 600px the mount keeps, so the sized URL
+        // would bank a softer cover than the one actually available.
+        Assert.Equal(original, MusicLastFm.OriginalSizeUrl(sized));
+    }
+
+    [Theory]
+    [InlineData("https://lastfm.freetls.fastly.net/i/u/abc.png")]  // already unsized
+    [InlineData("https://example.com/cover.jpg")]                  // not a Last.fm URL at all
+    [InlineData("")]
+    [InlineData(null)]
+    public void A_url_with_no_resize_directive_is_left_alone(string? url)
+    {
+        // Null means "nothing to try differently", and the caller falls back to the advertised URL --
+        // it must never be read as "no art".
+        Assert.Null(MusicLastFm.OriginalSizeUrl(url));
+    }
+
+    [Fact]
+    public void An_album_with_art_but_no_mbid_still_offers_its_picture()
+    {
+        var (url, mbid) = MusicLastFm.ParseArt("""
+            {"album":{"image":[{"#text":"https://lastfm.freetls.fastly.net/i/u/300x300/z.png","size":"extralarge"}]}}
+            """);
+        Assert.EndsWith("z.png", url);
+        Assert.Null(mbid);
+    }
+
     [Fact]
     public void A_numeric_listener_count_is_accepted_too()
     {
