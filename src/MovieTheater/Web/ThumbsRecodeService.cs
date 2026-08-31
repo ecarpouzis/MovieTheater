@@ -107,6 +107,16 @@ namespace MovieTheater.Web
                 int remaining;
                 try
                 {
+                    // If the deployment ever runs MORE THAN ONE replica, both share this mount and this
+                    // state file. That is safe but wasteful: each converts forward from its own cursor and
+                    // the other simply finds the file already WebP and skips it. Taking the furthest cursor
+                    // of the two each tick makes them converge instead of re-treading each other's ground —
+                    // a cursor means "everything at or before this is done", so the maximum is always true.
+                    var persisted = Read(statePath);
+                    if (!string.IsNullOrEmpty(persisted.Cursor)
+                        && string.CompareOrdinal(persisted.Cursor, state.Cursor ?? "") > 0)
+                        state.Cursor = persisted.Cursor;
+
                     // Re-read the listing each tick rather than holding one: the set is small to enumerate
                     // and this way a thumbnail written WHILE the job runs is picked up if it sorts later.
                     var all = ThumbRecoder.Candidates(dir);
@@ -141,7 +151,11 @@ namespace MovieTheater.Web
                 foreach (var rel in batch)
                 {
                     if (stoppingToken.IsCancellationRequested) break;
-                    var outcome = await ThumbRecoder.RecodeAsync(dir, rel, ImageShrinkQuality, apply: true, stoppingToken);
+                    ThumbRecoder.Outcome outcome;
+                    // A shutdown mid-file leaves the cursor where it was, so that file is picked up again
+                    // on the next boot instead of being silently skipped forever.
+                    try { outcome = await ThumbRecoder.RecodeAsync(dir, rel, ImageShrinkQuality, apply: true, stoppingToken); }
+                    catch (OperationCanceledException) { break; }
                     state.Processed++;
                     state.Cursor = rel;   // advanced per FILE, so a kill mid-chunk loses at most one
                     if (outcome.Rewritten)
@@ -182,10 +196,10 @@ namespace MovieTheater.Web
             }
             catch (Exception ex)
             {
-                // An unreadable state file must not mean "start over and redo 30k files": stop instead and
-                // let a human look. Re-running from the beginning would be harmless (already-WebP files
-                // skip) but slow, and silently losing the cursor is the kind of thing nobody notices.
-                log.LogWarning(ex, "thumbs-recode: state file {Path} unreadable — treating as a fresh start", path);
+                // Starting over is SAFE — every already-WebP file is skipped, so a re-walk costs a listing
+                // and a few thousand cheap reads, not another conversion. It is only slow, and losing the
+                // cursor silently is worse than saying so loudly, which is what this warning is for.
+                log.LogWarning(ex, "thumbs-recode: state file {Path} unreadable — re-walking from the start (already-converted files will skip)", path);
                 return new ThumbsRecodeState();
             }
         }

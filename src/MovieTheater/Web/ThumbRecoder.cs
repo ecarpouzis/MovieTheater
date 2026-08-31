@@ -43,12 +43,21 @@ namespace MovieTheater.Web
             var arcadeDir = Path.Combine(dir, "arcade");
             return Directory.EnumerateFiles(dir, "*_s.png", SearchOption.TopDirectoryOnly)
                 .Concat(Directory.Exists(arcadeDir)
+                    // The arcade tree is walked whole, so it must be filtered by EXTENSION: `*.*` also
+                    // matched a crashed run's `.webp.tmp` leftovers and anything else that ever lands
+                    // there. A `.version` sidecar at the root is already safe — `*_s.png` does not match
+                    // `1_s.png.version` on .NET 10 (verified; the legacy 8.3 pattern quirk is gone).
                     ? Directory.EnumerateFiles(arcadeDir, "*.*", SearchOption.AllDirectories)
+                        .Where(f => ImageExtensions.Contains(Path.GetExtension(f)))
                     : Enumerable.Empty<string>())
                 .Select(f => Path.GetRelativePath(dir, f).Replace('\\', '/'))
                 .OrderBy(r => r, StringComparer.Ordinal)
                 .ToList();
         }
+
+        /// <summary>What may be a cached cover. Anything else in the tree is left alone.</summary>
+        private static readonly HashSet<string> ImageExtensions =
+            new(new[] { ".png", ".jpg", ".jpeg", ".webp", ".gif" }, StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
         /// Convert one file. <paramref name="apply"/> false does everything except the write, so a dry run
@@ -59,6 +68,9 @@ namespace MovieTheater.Web
             var file = Path.Combine(dir, rel);
             byte[] bytes;
             try { bytes = await File.ReadAllBytesAsync(file, ct); }
+            // Cancellation propagates for the same reason it does on the write below: a shutdown is not a
+            // failed file, and the caller must not step its cursor past one it never looked at.
+            catch (OperationCanceledException) { throw; }
             catch (Exception ex) { return new Outcome(false, "unreadable: " + ex.Message, 0, 0); }
 
             if (ImageBytes.ContentTypeOf(bytes) != ImageBytes.Png)
@@ -89,14 +101,31 @@ namespace MovieTheater.Web
 
             if (!apply) return new Outcome(true, "would rewrite", bytes.Length, encoded.Length);
 
+            var tmp = file + ".webp.tmp";
             try
             {
-                var tmp = file + ".webp.tmp";
                 await File.WriteAllBytesAsync(tmp, encoded, ct);
                 File.Move(tmp, file, overwrite: true);
                 return new Outcome(true, "rewritten", bytes.Length, encoded.Length);
             }
-            catch (Exception ex) { return new Outcome(false, "write failed: " + ex.Message, bytes.Length, bytes.Length); }
+            // A shutdown is not a failure and must not be counted as one — nor may the caller advance its
+            // cursor past a file that is still PNG, or that file would never be converted again.
+            catch (OperationCanceledException)
+            {
+                TryDelete(tmp);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                TryDelete(tmp);
+                return new Outcome(false, "write failed: " + ex.Message, bytes.Length, bytes.Length);
+            }
+        }
+
+        /// <summary>A half-written temp file is litter on a shared mount; drop it rather than leave it.</summary>
+        private static void TryDelete(string path)
+        {
+            try { if (File.Exists(path)) File.Delete(path); } catch { /* best effort */ }
         }
     }
 }
