@@ -53,7 +53,7 @@ namespace MovieTheater.Tests
             Directory.CreateDirectory(Root);
 
             dbOptions = new DbContextOptionsBuilder<MovieDb>()
-                .UseSqlite("Data Source=" + Path.Combine(workDir, "photos.db"))
+                .UseSqlite("Data Source=" + Path.Combine(workDir, "photos.db") + ";Pooling=False")
                 .Options;
             using var db = new MovieDb(dbOptions);
             db.Database.EnsureCreated();
@@ -69,7 +69,7 @@ namespace MovieTheater.Tests
         public Func<MovieDb> SecondaryDbFactory(string name = "rebuilt")
         {
             var options = new DbContextOptionsBuilder<MovieDb>()
-                .UseSqlite("Data Source=" + Path.Combine(workDir, name + ".db"))
+                .UseSqlite("Data Source=" + Path.Combine(workDir, name + ".db") + ";Pooling=False")
                 .Options;
             using (var db = new MovieDb(options)) db.Database.EnsureCreated();
             return () => new MovieDb(options);
@@ -353,7 +353,8 @@ namespace MovieTheater.Tests
         public void Dispose()
         {
             // SQLite keeps the file handle in a connection pool; release it so the directory can go.
-            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            // Pooling=False so the temp file unlocks when the context closes. The fixtures used to call the PROCESS-GLOBAL SqliteConnection.ClearAllPools() here, which reached into every OTHER test class running in parallel and closed its pooled connections mid-test
+            // an occasional, unreproducible failure somewhere else in the suite.
             try { Directory.Delete(workDir, recursive: true); }
             catch (IOException) { /* a temp directory that outlives the run is not a test failure */ }
             catch (UnauthorizedAccessException) { }

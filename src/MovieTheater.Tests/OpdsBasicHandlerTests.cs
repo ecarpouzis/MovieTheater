@@ -38,7 +38,7 @@ namespace MovieTheater.Tests
             var services = new ServiceCollection();
             services.AddLogging();
             services.AddMemoryCache(o => o.SizeLimit = 1024);
-            services.AddDbContext<MovieDb>(o => o.UseSqlite("Data Source=" + dbPath));
+            services.AddDbContext<MovieDb>(o => o.UseSqlite("Data Source=" + dbPath + ";Pooling=False"));
             services.AddSingleton<IPasswordVerifier>(verifier);
             services.AddAuthentication().AddScheme<AuthenticationSchemeOptions, OpdsBasicAuthenticationHandler>(OpdsBasicAuthenticationHandler.SchemeName, _ => { });
             provider = services.BuildServiceProvider();
@@ -120,7 +120,8 @@ namespace MovieTheater.Tests
         public void Dispose()
         {
             provider.Dispose();
-            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            // Pooling=False so the temp file unlocks when the context closes. The fixtures used to call the PROCESS-GLOBAL SqliteConnection.ClearAllPools() here, which reached into every OTHER test class running in parallel and closed its pooled connections mid-test
+            // an occasional, unreproducible failure somewhere else in the suite.
             try { System.IO.File.Delete(dbPath); } catch (System.IO.IOException) { }
         }
     }

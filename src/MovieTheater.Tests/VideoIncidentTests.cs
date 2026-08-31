@@ -44,7 +44,7 @@ namespace MovieTheater.Tests
             workDir = Path.Combine(Path.GetTempPath(), "video-incident-tests", Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(workDir);
             options = new DbContextOptionsBuilder<MovieDb>()
-                .UseSqlite("Data Source=" + Path.Combine(workDir, "incidents.db"))
+                .UseSqlite("Data Source=" + Path.Combine(workDir, "incidents.db") + ";Pooling=False")
                 .Options;
             using var db = new MovieDb(options);
             db.Database.EnsureCreated();
@@ -52,7 +52,8 @@ namespace MovieTheater.Tests
 
         public void Dispose()
         {
-            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            // Pooling=False so the temp file unlocks when the context closes. The fixtures used to call the PROCESS-GLOBAL SqliteConnection.ClearAllPools() here, which reached into every OTHER test class running in parallel and closed its pooled connections mid-test
+            // an occasional, unreproducible failure somewhere else in the suite.
             try { Directory.Delete(workDir, recursive: true); } catch (IOException) { /* the OS still has it */ }
             GC.SuppressFinalize(this);
         }
