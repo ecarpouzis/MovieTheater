@@ -2,7 +2,7 @@ import { render, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import GridView from "../../catalog/views/GridView";
 import { MUSIC_GRID_CELL, createMusicSource } from "../../catalog/sources/musicSource";
-import { AlbumCard, ArtistCard } from "./MusicCards";
+import { AlbumCard, ArtistCard, artistRepeatsTitle } from "./MusicCards";
 
 vi.mock("../../MovieAPI", () => ({
   MovieAPI: {
@@ -88,5 +88,88 @@ describe("the music tiles, on the catalog Grid", () => {
     expect(container.querySelectorAll(".music-album-card")).toHaveLength(2);
     expect(container.textContent).toContain("Moon Safari");
     expect(container.querySelector(".music-album-card-sub")).toBeNull();
+  });
+
+  describe("the tiles keep one baseline", () => {
+    const open = () => {};
+
+    it("reserves the quality-tag line even when the record has no tag", () => {
+      // The variance Eric caught on 2026-08-31: the tag line was rendered only when there WAS a tag,
+      // so a [320] record stood taller than the untagged one beside it and the grid's bottom edge
+      // came out ragged. Every tile is now title + sub + tag, tag sometimes empty.
+      const tagged = render(<AlbumCard album={{ ...ALBUMS[0], tag: "FLAC" }} onOpen={open} />);
+      const bare = render(<AlbumCard album={{ ...ALBUMS[1] }} onOpen={open} />);
+
+      expect(tagged.container.querySelector(".music-album-card-quality").textContent).toBe("FLAC");
+      // Present and empty — the reserved line, not a missing element.
+      expect(bare.container.querySelector(".music-album-card-tag")).not.toBeNull();
+      expect(bare.container.querySelector(".music-album-card-quality").textContent).toBe("");
+    });
+
+    it("shows a rating as a rating and popularity as popularity — never one as the other", () => {
+      // The house rule the album sheet already states: they are two different facts. With no house
+      // ratings in the library yet, the blended "Top rated" number IS the popularity number, so
+      // printing that under a star would claim a verdict nobody reached.
+      const rated = render(<AlbumCard album={{ ...ALBUMS[0], ratingAvg: 83.4, ratingCount: 4, popularity: 61 }} onOpen={open} />);
+      expect(rated.container.querySelector(".music-album-card-score").textContent).toBe("★83");
+      expect(rated.container.querySelector(".music-album-card-score").title).toContain("4 listeners");
+      // Popularity is not also printed — one number in the corner, and it is the verdict.
+      expect(rated.container.querySelector(".music-album-card-pop")).toBeNull();
+
+      const known = render(<AlbumCard album={{ ...ALBUMS[1], popularity: 61 }} onOpen={open} />);
+      const pop = known.container.querySelector(".music-album-card-pop");
+      expect(pop.textContent).toBe("♪61");
+      expect(pop.title).toContain("not how good it is");
+      expect(known.container.querySelector(".music-album-card-score")).toBeNull();
+    });
+
+    it("puts your own score ahead of the house's", () => {
+      const { container } = render(
+        <AlbumCard album={{ ...ALBUMS[0], myRating: 92, ratingAvg: 40, ratingCount: 9, popularity: 61 }} onOpen={open} />,
+      );
+      const score = container.querySelector(".music-album-card-score--mine");
+      expect(score.textContent).toBe("★92");
+      expect(score.title).toBe("Your rating: 92");
+    });
+
+    it("says nothing when nothing is known — 0 is a real score, absent is not", () => {
+      const { container } = render(<AlbumCard album={{ ...ALBUMS[0] }} onOpen={open} />);
+      expect(container.querySelector(".music-album-card-score")).toBeNull();
+      expect(container.querySelector(".music-album-card-pop")).toBeNull();
+
+      const zero = render(<AlbumCard album={{ ...ALBUMS[0], myRating: 0 }} onOpen={open} />);
+      expect(zero.container.querySelector(".music-album-card-score--mine").textContent).toBe("★0");
+    });
+
+    it("does not print the artist when it is the title again", () => {
+      // A root-level compilation is its own artist, so the card was saying the same string twice.
+      const comp = { id: 7, title: "1970s Algerian Proto-Rai Underground", year: 2008,
+        artistName: "1970s Algerian Proto-Rai Underground", hasArt: true };
+      const { container } = render(<AlbumCard album={comp} onOpen={open} />);
+
+      expect(container.querySelector(".music-album-card-title").textContent)
+        .toBe("1970s Algerian Proto-Rai Underground");
+      expect(container.querySelector(".music-album-card-artist")).toBeNull();
+      // The year still earns its place on that line.
+      expect(container.querySelector(".music-album-card-year").textContent).toBe("2008");
+    });
+
+    it("still prints the artist for a normal record", () => {
+      const { container } = render(<AlbumCard album={ALBUMS[0]} onOpen={open} />);
+      expect(container.querySelector(".music-album-card-artist").textContent).toBe("Air");
+    });
+  });
+
+  describe("artistRepeatsTitle", () => {
+    it("folds case and punctuation, because the two strings arrive by different paths", () => {
+      expect(artistRepeatsTitle({ artistName: "80's Symphonic", title: "80s Symphonic" })).toBe(true);
+      expect(artistRepeatsTitle({ artistName: "Air", title: "Moon Safari" })).toBe(false);
+    });
+
+    it("an absent artist is not a repeat", () => {
+      // Otherwise a card with no artist at all would silently lose its line for the wrong reason.
+      expect(artistRepeatsTitle({ artistName: "", title: "" })).toBe(false);
+      expect(artistRepeatsTitle({ title: "Whatever" })).toBe(false);
+    });
   });
 });

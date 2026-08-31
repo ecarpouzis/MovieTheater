@@ -32,9 +32,14 @@ export interface MusicAlbumRow {
   genres?: string[];
   /** 0–100 external audience signal (Last.fm listeners) — how KNOWN the record is, not how good. */
   popularity?: number | null;
-  /** The one blended 0–100 the "Top rated" order and the rail's rating floor read. Null = nothing
-   *  known about this record, and the sort files those last rather than inventing a middle. */
+  /** The one 0–100 RATING the "Top rated" order and the rail's rating floor read — a verdict. The
+   *  house's own votes shrunk toward `externalRating`; with no house votes it IS that number. Null =
+   *  nobody has reached a verdict, and the sort files those last rather than inventing a middle. */
   rating?: number | null;
+  /** The outside community's 0–100 rating (MusicBrainz), and how many people it represents. Kept
+   *  distinct from `popularity`: this is how good they say it is, that is how many heard it. */
+  externalRating?: number | null;
+  externalRatingVotes?: number | null;
   /** The viewer's own score, or null when they have not rated it (0 is a real score). */
   myRating?: number | null;
   ratingAvg?: number | null;
@@ -58,9 +63,12 @@ export interface MusicArtistRow {
   dominantColor?: string | null;
   /** The artist's top three, rolled up from their albums (R9 S10). */
   genres?: string[];
-  /** The best blended score among the artist's albums — an artist has no score of their own, so the
+  /** The best RATING among the artist's albums — an artist has no score of their own, so the
    *  Top-rated order over the "one per artist" grid means "who has the best-regarded record here". */
   topRating?: number | null;
+  /** The best POPULARITY among the artist's albums — "who has the most widely heard record here".
+   *  Kept apart from topRating for the same reason the two album orders are (2026-08-31). */
+  topPopularity?: number | null;
   /** Library-wide plays of every track filed under this artist, loose tracks included. */
   playCount?: number;
   /** When anything of theirs was last played here; null when nothing has been. */
@@ -153,10 +161,20 @@ export const ALBUM_SORTS: ClientSort[] = [
   { value: "title", label: "A–Z title", alpha: true, compare: (a, b) => collator.compare(a.title, b.title), letterKey: (i) => i.title },
   { value: "newest", label: "Newest", compare: (a, b) => (b.year ?? 0) - (a.year ?? 0) || collator.compare(a.title, b.title) },
   { value: "oldest", label: "Oldest", compare: (a, b) => (a.year ?? 9999) - (b.year ?? 9999) || collator.compare(a.title, b.title) },
-  // R9 S10. The blend (site ratings shrunk toward the popularity signal, computed server-side) —
-  // NOT the raw average, or one enthusiastic 100 would top the shelf over a record five people
-  // agreed was excellent. An album nothing is known about has no opinion attached and files LAST,
-  // which is why the fallback is -1 rather than 0: a genuine 0 is a real score and outranks silence.
+  // POPULARITY and RATING are two different questions and get two different orders (2026-08-31).
+  //
+  // There used to be one order here, labelled "Top rated", reading the server's blend of the house's
+  // own scores with the popularity signal. That label was a lie in practice: this house has zero
+  // album ratings and — Eric's call — never will have enough listeners with overlapping taste to
+  // populate them, so the blend WAS the popularity number and "Top rated" was silently sorting by
+  // how famous a record is. A rating has to come from outside, and until it does the honest thing is
+  // to name each order after the number it actually reads.
+  //
+  // "how widely heard" — Last.fm listeners, log-scaled server-side.
+  { value: "popular", label: "Most popular", compare: (a, b) => (popularityOf(b) ?? -1) - (popularityOf(a) ?? -1) || collator.compare(a.title, b.title) },
+  // "how good people say it is" — a verdict somebody reached, never the audience count wearing a
+  // star. An album nothing is known about files LAST, which is why the fallback is -1 rather than 0:
+  // a genuine 0 is a real score and outranks silence.
   { value: "rated", label: "Top rated", compare: (a, b) => (ratingOf(b) ?? -1) - (ratingOf(a) ?? -1) || collator.compare(a.title, b.title) },
   // R9 closing pass. The library's own listening, summed across everyone — what gets PLAYED here,
   // which is a different question from what is rated or what is famous. A record nobody has put on
@@ -178,10 +196,16 @@ export const lastPlayedOf = (i: CardItem): number => {
   return Number.isFinite(t) ? t : 0;
 };
 
-/** The blended 0–100 an album card carries, or null when nothing is known about the record. */
+/** The 0–100 RATING an album card carries — a verdict — or null when nobody has reached one. */
 const ratingOf = (i: CardItem): number | null => {
   const r = albumOf(i).rating;
   return typeof r === "number" ? r : null;
+};
+
+/** The 0–100 POPULARITY an album card carries — how widely heard — or null when unknown. */
+const popularityOf = (i: CardItem): number | null => {
+  const p = albumOf(i).popularity;
+  return typeof p === "number" ? p : null;
 };
 
 /** The first year of an artist's "1971 – 1985" range, for the newest/oldest orders. */
@@ -201,8 +225,10 @@ export const ARTIST_SORTS: ClientSort[] = [
   { value: "newest", label: "Newest", compare: (a, b) => (artistYear(b) ?? 0) - (artistYear(a) ?? 0) || collator.compare(a.title, b.title) },
   { value: "oldest", label: "Oldest", compare: (a, b) => (artistYear(a) ?? 9999) - (artistYear(b) ?? 9999) || collator.compare(a.title, b.title) },
   // The Sort pill is ONE control for the section (R9 S1b), so every album order has an artist
-  // reading. An artist has no blended score of their own — the honest reading is "who has the
-  // best-regarded record on the shelf", which is what an artist grid ordered by rating means.
+  // reading. An artist has no score of their own, so both of these read the BEST of their records —
+  // "who has the most popular record here" and "who has the best-regarded record here", which are
+  // genuinely different questions and stay separate for the same reason the album orders do.
+  { value: "popular", label: "Most popular", compare: (a, b) => (artistOf(b).topPopularity ?? -1) - (artistOf(a).topPopularity ?? -1) || collator.compare(a.title, b.title) },
   { value: "rated", label: "Top rated", compare: (a, b) => (artistOf(b).topRating ?? -1) - (artistOf(a).topRating ?? -1) || collator.compare(a.title, b.title) },
   // The artist reading of the same order (one Sort pill for the section): every play of everything
   // filed under them, their loose tracks included.

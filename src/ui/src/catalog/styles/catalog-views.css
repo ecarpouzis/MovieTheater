@@ -149,6 +149,26 @@
 }
 .bx-meta-badges { margin-top: 4px; }
 
+/* One baseline across a run of tiles.
+   Both halves of the caption are variable — a title clamps to one line or two, and badges are only
+   rendered when the section supplies them — so a grid of cards came out with a ragged bottom edge,
+   which reads as breakage rather than as variety. Reserve the space instead of cropping the content:
+   the title keeps its two-line clamp and simply always occupies two lines, and a card in a run where
+   SOMETHING carries a badge reserves that line even when it has none.
+   `:has()` is what keeps this from costing anything elsewhere: a section whose cards never set a
+   badge never matches, so nothing gains an empty strip. (Scoped to the grid and the strip — the Wall
+   shows its caption as a hover overlay, where nothing is aligned to anything.) */
+.bx-grid .bx-meta-title,
+.bx-strip .bx-meta-title { min-height: 2.3em; }
+
+.bx-grid:has(.bx-meta-badges) .bx-meta:not(:has(.bx-meta-badges))::after,
+.bx-strip:has(.bx-meta-badges) .bx-meta:not(:has(.bx-meta-badges))::after {
+  content: "";
+  display: block;
+  margin-top: 4px;
+  height: 20px; /* .catalog-badge: 16px line + 2px padding + 2px border */
+}
+
 /* ── Grid ───────────────────────────────────────────────────────────────── */
 .bx-grid { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 24px 12px; padding: 4px 0; }
 .bx-grid .bx-card { display: flex; flex-direction: column; flex: 0 0 auto; }

@@ -195,9 +195,47 @@
 
 .music-album-card-year { flex: none; color: var(--text-muted); }
 
+/* Always present, often empty — see AlbumCard. The reserved line is what keeps a run of tiles on one
+   baseline: a card is title + sub + tag, and letting the last of those disappear made every untagged
+   record shorter than its neighbours. It carries the quality tag on the left and the score on the
+   right, which is why the line is worth reserving even when one side is blank. */
 .music-album-card-tag {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
   font-size: 10.5px;
+  line-height: 14px;
+  min-height: 14px;
+}
+
+.music-album-card-quality {
   color: var(--accent);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A rating is a verdict — it gets the ink. */
+.music-album-card-score {
+  flex: none;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.music-album-card-score--mine { color: var(--accent); }
+
+/* Still a verdict, so still a star — just somebody else's house, so it carries less ink than ours. */
+.music-album-card-score--outside {
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+/* Popularity is not a verdict, so it never looks like one: muted, lighter, and a different glyph. */
+.music-album-card-pop {
+  flex: none;
+  color: var(--text-muted);
 }
 
 /* ── Artist card text (shell shared with the album card above) ── */

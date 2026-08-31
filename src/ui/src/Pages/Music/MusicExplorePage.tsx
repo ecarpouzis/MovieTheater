@@ -9,7 +9,8 @@
  * An album card opens the section's album sheet at `/music?album=<id>`: that sheet is bound to the
  * persistent play bar and to MusicPage's queue (the one modal on the site deliberately off the shared
  * shell — see `MusicPage.css`), so Explore links to it rather than mounting a second copy.
- * An ARTIST card is a group card and lands on `/music?f=artist:<id>`.
+ * An ARTIST card is a group card and lands on `/music?f=artist:<id>`; a GENRE card is one too and
+ * lands on `/music?f=genre:<name>`.
  */
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useMemo } from "react";
@@ -19,7 +20,7 @@ import { FACET_GROUP_KINDS } from "../../catalog/explore/mapExplore";
 import { useExploreDepth } from "../../catalog/explore/useNearViewport";
 import type { CardGroup, CardItem } from "../../catalog/types";
 import { MovieAPI } from "../../MovieAPI";
-import { MUSIC_UNSEEDED_RAILS, composeMusicExplore, musicArtistHref, type MusicPlaylistRow } from "./musicExplore";
+import { MUSIC_UNSEEDED_RAILS, composeMusicExplore, musicArtistHref, musicGenreHref, type MusicPlaylistRow } from "./musicExplore";
 import { useMusicShelf } from "./useMusicShelf";
 import "./MusicPage.css";
 
@@ -27,8 +28,21 @@ const RAIL_SUBTITLES: Record<string, string> = {
   favourites: "Everything you have hearted, newest first",
   "just-added": "The most recent arrivals in the library",
   artists: "The names with the most on the shelf",
+  genres: "What the collection is made of",
+  // Named for what each number IS. Popularity is an audience count, not a verdict, and the two
+  // rails sat under one "Best on the shelf" heading until 2026-08-31.
+  popular: "Most widely heard, well beyond this house",
+  best: "Best regarded, where anyone has said so",
   random: "A shuffled handful — roll again for another",
 };
+
+/**
+ * The shared set plus `genre`: this section's genres are a facet value, so a genre card stands for a
+ * whole browse the way an artist card does. It is passed here rather than added to the shared set
+ * because "genre" is not a group everywhere — Movies has genres too, and a genre card on THAT
+ * landing would need to open a different view.
+ */
+const MUSIC_GROUP_KINDS: ReadonlySet<string> = new Set([...FACET_GROUP_KINDS, "genre"]);
 
 export function readSeed(search: string): number {
   const raw = new URLSearchParams(search).get("seed");
@@ -77,8 +91,8 @@ export default function MusicExplorePage({ userData }: { userData?: { hasPasswor
   }, [history]);
 
   const onOpenGroup = useCallback((group: CardGroup, groupBy: string) => {
-    if (groupBy !== "artist") return;
-    history.push(musicArtistHref(group.key));
+    if (groupBy === "artist") history.push(musicArtistHref(group.key));
+    else if (groupBy === "genre") history.push(musicGenreHref(group.key));
   }, [history]);
 
   if (gated) {
@@ -100,7 +114,7 @@ export default function MusicExplorePage({ userData }: { userData?: { hasPasswor
         onSeed={onSeed}
         onOpen={onOpen}
         onOpenGroup={onOpenGroup}
-        groupKinds={FACET_GROUP_KINDS}
+        groupKinds={MUSIC_GROUP_KINDS}
         moreHref={(href) => href || null}
         unseededRails={MUSIC_UNSEEDED_RAILS}
         railSubtitle={(rail) => RAIL_SUBTITLES[rail.key]}

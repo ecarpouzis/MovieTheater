@@ -75,16 +75,25 @@ function AlbumRating({ album, onRated }) {
 }
 
 /**
- * What everyone else thinks. Two DIFFERENT facts, never merged into one number here: the house's own
- * average (with its vote count, because an average of one is not an average) and the external
- * popularity signal, which says how KNOWN the record is and not how good it is. The blend behind the
- * Top-rated order lives on the server; showing it here as a single score would invite reading it as
- * a verdict the house has not reached.
+ * What everyone else thinks. THREE different facts, never merged into one number here: the house's
+ * own average (with its vote count, because an average of one is not an average), the outside
+ * community's rating (likewise), and the popularity signal — which says how KNOWN the record is and
+ * not how good it is. The blend behind the Top-rated order lives on the server; showing it here as a
+ * single score would invite reading it as a verdict the house has not reached.
+ *
+ * Each part names its own source, because the whole point is that they are answers to different
+ * questions and the site says so consistently — on the tile, in the Sort pill, and here.
  */
 function AlbumScoreLine({ album }) {
   const count = album.ratingCount ?? 0;
+  const votes = album.externalRatingVotes ?? 0;
   const parts = [];
-  if (count > 0) parts.push(`${Math.round(album.ratingAvg)} from ${count} listener${count === 1 ? "" : "s"}`);
+  if (count > 0) parts.push(`${Math.round(album.ratingAvg)} from ${count} here`);
+  if (typeof album.externalRating === "number") {
+    parts.push(votes > 0
+      ? `${album.externalRating} rated by ${votes} elsewhere`
+      : `${album.externalRating} rated elsewhere`);
+  }
   if (typeof album.popularity === "number") parts.push(`${album.popularity} popularity`);
   if (!parts.length) return null;
   return <span className="music-album-rating-house">{parts.join(" · ")}</span>;
