@@ -182,6 +182,14 @@ namespace MovieTheater.Books.Services
                 // no-seed entry is warmed; an explicit ?seed= re-roll is a one-off and simply expires.
                 Tally(await RunAsync<ExploreController>(principal, "explore:comic", c => c.Get(null, null, ct), ct));
                 Tally(await RunAsync<ExploreController>(principal, "explore:book", c => c.Get("book", null, ct), ct));
+
+                // The NOVELS landing. Unlike everything above it caches NOTHING — `/novels` is a plain
+                // filtered page — so this warms the only thing there is to warm: SQLite's pages for the
+                // credit/detail joins the list projects through. Measured on prod 2026-08-31 at 8.9 s cold
+                // against 0.30 s once those pages were hot, which is the whole difference. Same reasoning
+                // as the movie side's "groups:default" step, whose response is not cached either.
+                Tally(await RunAsync<NovelsController>(principal, "novels:landing",
+                    c => c.List(null, null, null, null, null, null, 0, 60, null, null, null, false, ct), ct));
             }
 
             // The kids landing is identical for every account (its ceiling is forced to 0 and nothing per-user is

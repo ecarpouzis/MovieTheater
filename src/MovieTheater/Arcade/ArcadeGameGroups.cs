@@ -1,6 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using MovieTheater.Db;
 using MovieTheater.Web;
 
 namespace MovieTheater.Arcade
@@ -27,6 +31,86 @@ namespace MovieTheater.Arcade
     /// </summary>
     public static class ArcadeGameGroups
     {
+        /// <summary>
+        /// The cache key for one filter set + axis. It carries NO VIEWER, deliberately.
+        ///
+        /// <para><c>ArcadeController.VisibleGamesAsync</c> ignores its <c>userId</c> and returns
+        /// <c>ArcadeGames.Where(IsEnabled)</c> for everyone — the arcade has no age gate by policy — and
+        /// the index holds only card aggregates (system, collapse key, title, ratings, genres, developer,
+        /// publisher, RA flags). Nothing in it belongs to a viewer, so one build serves the house, exactly
+        /// as the movie index does (<see cref="BrowseCacheKeys.SharedViewer"/>).</para>
+        ///
+        /// <para>It was keyed per user until 2026-08-31, which made EVERY account pay the same build
+        /// separately, per axis, and again after each 6 h TTL — measured on prod at <b>25.0 s</b> for
+        /// <c>system</c> and <b>22.3 s</b> cold against 1.4 s / 0.2 s warm — while the byte-budgeted cache
+        /// held one ~2 MB copy per user × axis and evicted everything else to do it.</para>
+        ///
+        /// <para><b>If the visible set ever becomes viewer-dependent</b> (an age ceiling, a per-user
+        /// hide), this key must carry the viewer again or one account will read another's shelf.</para>
+        /// </summary>
+        public static string CacheKey(string filterSig, string groupBy) =>
+            $"arcade:groups:{BrowseCacheKeys.SharedViewer}:{filterSig}:{groupBy}";
+
+        /// <summary>
+        /// The lobby filter set as one signature. It lives here rather than in the controller because the
+        /// WARMER has to produce byte-identical signatures for the entries a request will look up — a warm
+        /// under a sig the request never builds is pure waste that looks like it is working.
+        /// </summary>
+        public static string FilterSig(IReadOnlyList<string> systems, int? maxPlayers, string genre, string search,
+            IReadOnlyList<string> hideRegions, string variant, string ra) =>
+            string.Join("|",
+                string.Join(",", (systems ?? Array.Empty<string>()).OrderBy(s => s)), maxPlayers,
+                (genre ?? "").Trim().ToLowerInvariant(), (search ?? "").Trim().ToLowerInvariant(),
+                string.Join(",", (hideRegions ?? Array.Empty<string>()).OrderBy(r => r)), variant,
+                (ra ?? "").Trim().ToLowerInvariant());
+
+        /// <summary>
+        /// The signature of the UNFILTERED lobby — the whole enabled catalog, the state a reader lands on
+        /// and the only one worth warming ahead of time. `variant` is "all" because that is what
+        /// <c>NormalizeVariant(null)</c> yields, and at "all" <c>ApplyCardFilters</c> adds no predicate at
+        /// all: the warm query and the landing request are then the SAME query.
+        /// </summary>
+        public static readonly string UnfilteredSig = FilterSig(null, null, null, null, null, "all", null);
+
+        /// <summary>
+        /// Read the card aggregates for a filter set and build one axis' index. Shared by the request path
+        /// and the warmer so a warmed entry is byte-for-byte the entry a request would have built —
+        /// a warm that builds something subtly different is worse than no warm, because it looks warm.
+        /// </summary>
+        public static async Task<GroupIndex> LoadIndexAsync(IQueryable<ArcadeGame> matchQ, string by, CancellationToken ct = default)
+        {
+            // The card aggregates the lobby's own grid sorts on, plus the four single-valued facts the
+            // R9 S8 axes read: the anchor's developer/publisher (comma-joined on the anchor exactly as
+            // Genres is) and the RA flags, which arcade-ra-enrich keeps uniform across a card's versions.
+            var rows = await matchQ.GroupBy(g => new { g.System, g.CollapseKey })
+                .Select(grp => new CardLight(
+                    grp.Key.System, grp.Key.CollapseKey,
+                    grp.Min(x => x.Title), grp.Min(x => x.SortTitle),
+                    grp.Max(x => x.RatingWeighted), grp.Max(x => x.Year), grp.Max(x => (int)x.MaxPlayers),
+                    grp.Min(x => x.Genres),
+                    grp.Min(x => x.Developer), grp.Min(x => x.Publisher),
+                    grp.Max(x => x.RaAchievementCount ?? 0),
+                    grp.Max(x => x.RaHasScoreLeaderboard ? 1 : 0) == 1,
+                    grp.Max(x => x.RaHasTimeLeaderboard ? 1 : 0) == 1))
+                .ToListAsync(ct);
+            // Region and variant are per VERSION, so they need the distinct tuples — a couple of rows
+            // per card, not every ROM row. Only fetched for the two axes that read them.
+            List<CardTag> tags = null;
+            if (NeedsTags(by))
+                tags = await matchQ.Select(g => new CardTag(g.System, g.CollapseKey, g.Region, g.Variant)).Distinct().ToListAsync(ct);
+            return BuildIndex(rows, by, null, tags);
+        }
+
+        /// <summary>The axes worth warming: the one the pill opens on, plus the two next to it.</summary>
+        public static readonly string[] WarmedAxes = { "system", "genre", "decade" };
+
+        /// <summary>True when the set is narrowed at all — the filtered entries take the short TTL.</summary>
+        public static bool IsFiltered(IReadOnlyList<string> systems, int? maxPlayers, string genre, string search,
+            IReadOnlyList<string> hideRegions, string variant, string ra) =>
+            (systems != null && systems.Count > 0) || maxPlayers is > 1 || !string.IsNullOrWhiteSpace(genre)
+            || !string.IsNullOrWhiteSpace(search) || (hideRegions != null && hideRegions.Count > 0)
+            || (variant != "all" && variant != "release") || !string.IsNullOrWhiteSpace(ra);
+
         public const int DefaultGroupsTop = 20;
         public const int MaxGroupsTop = 50;
         public const int DefaultPerGroupTop = 24;

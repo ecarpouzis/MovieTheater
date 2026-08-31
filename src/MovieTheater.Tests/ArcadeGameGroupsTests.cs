@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using MovieTheater.Arcade;
 using Xunit;
@@ -7,6 +8,40 @@ namespace MovieTheater.Tests
     /// <summary>The arcade grouped browse core: an index over the lobby's card aggregates, banded in memory.</summary>
     public class ArcadeGameGroupsTests
     {
+        /// <summary>
+        /// The group index is cached ONCE for the house, not once per account. `VisibleGamesAsync` ignores
+        /// its user id (the arcade has no age gate by policy) and the index holds only card aggregates, so
+        /// a per-user key bought nothing and cost everything: measured on prod at 25.0 s cold per axis, PER
+        /// ACCOUNT, with a ~2 MB copy each in a byte-budgeted cache.
+        /// </summary>
+        [Fact]
+        public void The_group_index_key_carries_no_viewer_and_separates_axes_and_filters()
+        {
+            var a = ArcadeGameGroups.CacheKey(ArcadeGameGroups.UnfilteredSig, "system");
+            Assert.Equal(a, ArcadeGameGroups.CacheKey(ArcadeGameGroups.UnfilteredSig, "system"));
+            Assert.Contains(":any:", a);
+            // A different axis and a different filter set are different entries.
+            Assert.NotEqual(a, ArcadeGameGroups.CacheKey(ArcadeGameGroups.UnfilteredSig, "genre"));
+            Assert.NotEqual(a, ArcadeGameGroups.CacheKey(
+                ArcadeGameGroups.FilterSig(new[] { "snes" }, null, null, null, null, "all", null), "system"));
+        }
+
+        /// <summary>
+        /// What the WARMER builds has to be what a landing request looks up. The lobby's defaults normalize
+        /// to no systems, no players cap, no genre/search/region/ra and variant "all" — and at "all"
+        /// `ApplyCardFilters` adds no predicate, so the warm query is the landing query.
+        /// </summary>
+        [Fact]
+        public void The_unfiltered_signature_is_what_a_default_lobby_request_produces()
+        {
+            Assert.Equal(ArcadeGameGroups.UnfilteredSig,
+                ArcadeGameGroups.FilterSig(new List<string>(), null, "", "", new List<string>(), "all", ""));
+            Assert.False(ArcadeGameGroups.IsFiltered(new List<string>(), null, "", "", new List<string>(), "all", ""));
+            // Every warmed axis is one the endpoint will actually answer.
+            foreach (var by in ArcadeGameGroups.WarmedAxes)
+                Assert.Equal(by, ArcadeGameGroups.NormalizeGroupBy(by));
+        }
+
         private static ArcadeGameGroups.CardLight Card(string system, string key, string title, double? rating = null, int? year = null, int players = 1, string? genres = null,
             string? developer = null, string? publisher = null, int raAchievements = 0, bool raScore = false, bool raTime = false)
             => new(system, key, title, title.ToLowerInvariant(), rating, year, players, genres, developer, publisher, raAchievements, raScore, raTime);

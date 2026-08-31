@@ -211,6 +211,10 @@ namespace MovieTheater.Controllers
 
         // Parse the comma-separated Title-Type scope — the persistent Browse "Type" filter, applied as an
         // overarching scope across every browse mode. An empty result means no scope (all types).
+        /// <summary>One title-type bucket as an equality — see the note in <see cref="ApplyTypeScope"/>.</summary>
+        private static IQueryable<Movie> Only(IQueryable<Movie> mq, NormalizedTitleType bucket) =>
+            mq.Where(m => m.NormalizedTitleType == bucket);
+
         private static HashSet<NormalizedTitleType> ParseTypeScope(string? types) =>
             (types ?? string.Empty)
                 .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
@@ -229,7 +233,18 @@ namespace MovieTheater.Controllers
             if (scope.Count == 0)
                 return (mq, sq);
             var movieBuckets = scope.Where(t => t == NormalizedTitleType.Movies || t == NormalizedTitleType.Short).ToList();
-            mq = movieBuckets.Count > 0 ? mq.Where(m => movieBuckets.Contains(m.NormalizedTitleType)) : mq.Where(m => false);
+        // ONE bucket is spelled as an EQUALITY, not a one-element Contains. EF Core 8+ translates a
+        // Contains over a PARAMETERIZED collection to OPENJSON, whose cardinality estimate is a guess and
+        // which cannot drive a seek on the (NormalizedTitleType, …) indexes — so the "narrowed" landing
+        // query was measurably SLOWER than the unnarrowed one: /API/Browse?types=Movies ran 1.10 s against
+        // 0.52 s for no types at all (prod, warm, 2026-08-31), which is backwards for a filter that removes
+        // rows. `types=Movies` is the seeded landing scope, so this is the shape nearly every visit uses.
+        mq = movieBuckets.Count switch
+            {
+                0 => mq.Where(m => false),
+                1 => Only(mq, movieBuckets[0]),
+                _ => mq.Where(m => movieBuckets.Contains(m.NormalizedTitleType)),
+            };
             sq = scope.Contains(NormalizedTitleType.Series) ? sq : sq.Where(s => false);
             return (mq, sq);
         }

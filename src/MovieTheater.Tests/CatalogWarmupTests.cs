@@ -192,7 +192,7 @@ namespace MovieTheater.Tests
             var targets = CatalogWarmupTargets.Default();
             Assert.InRange(targets.Count, 1, 32);
             Assert.All(targets, t => Assert.DoesNotContain(NormalizedTitleType.Misc, t.TypeScope));
-            Assert.Equal(2, targets.Count(t => t.IsFacets));
+            Assert.Equal(4, targets.Count(t => t.IsFacets));
             Assert.Contains(targets, t => t.GroupBy == "franchise");
         }
 
@@ -218,6 +218,26 @@ namespace MovieTheater.Tests
                 Assert.Contains(targets, t => t.GroupBy == by && t.TypeScope.SequenceEqual(series));
             foreach (var by in CatalogWarmupTargets.WideAxes)
                 Assert.DoesNotContain(targets, t => t.GroupBy == by && t.TypeScope.SequenceEqual(series));
+        }
+
+        /// <summary>
+        /// Every facet scope the SPA can land on is warmed, keyed exactly as the request builds it.
+        /// Measured on prod 2026-08-30 before this: Movies 0.12 s (warmed) against 4.75 s for the
+        /// combined scope, 4.28 s for a one-off scope and 10.7 s for "all types" — the last of which a
+        /// reader reaches simply by clearing the Type chip.
+        /// </summary>
+        [Fact]
+        public void Every_facet_scope_the_rail_can_land_on_is_warmed_under_the_request_key()
+        {
+            var facets = CatalogWarmupTargets.Default().Where(t => t.IsFacets).ToList();
+            var keys = facets.Select(t => BrowseCacheKeys.Facets(100, t.TypeScope, null)).ToList();
+
+            // The landing seed, the two single scopes, the combined one, and "all types" (the empty scope).
+            Assert.Contains(BrowseCacheKeys.Facets(100, new[] { NormalizedTitleType.Movies }, null), keys);
+            Assert.Contains(BrowseCacheKeys.Facets(100, new[] { NormalizedTitleType.Series }, null), keys);
+            Assert.Contains(BrowseCacheKeys.Facets(100, new[] { NormalizedTitleType.Movies, NormalizedTitleType.Series }, null), keys);
+            Assert.Contains(BrowseCacheKeys.Facets(100, Array.Empty<NormalizedTitleType>(), null), keys);
+            Assert.Equal(keys.Count, keys.Distinct().Count());
         }
     }
 }

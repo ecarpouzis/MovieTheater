@@ -3,10 +3,12 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using MovieTheater.Arcade;
 using MovieTheater.Db;
 
 namespace MovieTheater.Web
@@ -15,8 +17,10 @@ namespace MovieTheater.Web
     /// The change-driven catalog warmer (R9 S7) — the Long Box's `views-perf` law the pods were
     /// missing. Every few minutes it reads a cheap <see cref="CatalogFingerprint"/>; when the catalog
     /// has actually CHANGED (or the backstop TTL has elapsed) it rebuilds the movie browse's light
-    /// indexes and its facet counts into the same <see cref="IMemoryCache"/> a request would fill, so
-    /// the first reader after an ingest does not pay for the pass.
+    /// indexes and its facet counts — and the ARCADE lobby's group index — into the same
+    /// <see cref="IMemoryCache"/> a request would fill, so the first reader after an ingest does not pay
+    /// for the pass. (The fingerprint is the MOVIE catalog's; the arcade rides the same cadence rather
+    /// than growing a second loop, and the 4 h backstop is what keeps its 6 h entries alive.)
     ///
     /// The house rules for a long job, all of them:
     ///  - <b>bounded per step</b>: one target per iteration, with a pause between, never "warm
@@ -117,6 +121,55 @@ namespace MovieTheater.Web
                 }
                 try { await Task.Delay(options.StepPause, ct); } catch (OperationCanceledException) { throw; }
             }
+
+            await WarmArcadeAsync(ct);
+        }
+
+        /// <summary>
+        /// The ARCADE group index, for the axes the lobby's pill opens on — the same bounded-step shape as
+        /// the movie targets above, one axis per iteration with a pause between.
+        ///
+        /// <para>It is warmable AT ALL only since the index stopped being keyed per user (2026-08-31, see
+        /// <see cref="ArcadeGameGroups.CacheKey"/>): while every account needed its own ~2 MB copy there was
+        /// nothing a background pass could usefully build. Measured cold on prod at <b>25.0 s</b> for
+        /// `system` and <b>22.3 s</b> for a wide axis, against 0.2–1.4 s warm.</para>
+        /// </summary>
+        private async Task WarmArcadeAsync(CancellationToken ct)
+        {
+            foreach (var by in ArcadeGameGroups.WarmedAxes)
+            {
+                ct.ThrowIfCancellationRequested();
+                var key = ArcadeGameGroups.CacheKey(ArcadeGameGroups.UnfilteredSig, by);
+                if (cache.TryGetValue(key, out _))
+                {
+                    log.LogDebug("catalog-warmup: arcade:{By} already warm", by);
+                }
+                else
+                {
+                    var sw = Stopwatch.StartNew();
+                    try
+                    {
+                        using var scope = scopes.CreateScope();
+                        var db = scope.ServiceProvider.GetRequiredService<MovieDb>();
+                        // The lobby's own visible set (ArcadeController.VisibleGamesAsync) with no filters:
+                        // at variant "all" ApplyCardFilters adds no predicate, so this IS the landing query.
+                        var index = await ArcadeGameGroups.LoadIndexAsync(db.ArcadeGames.Where(g => g.IsEnabled), by, ct);
+                        cache.Set(key, index, new MemoryCacheEntryOptions
+                        {
+                            AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(6),
+                            Size = index.ApproxBytes,
+                        });
+                        log.LogInformation("catalog-warmup: arcade:{By} → {Groups} groups in {Ms} ms",
+                            by, index.Heads.Count, sw.ElapsedMilliseconds);
+                    }
+                    catch (OperationCanceledException) { throw; }
+                    catch (Exception ex)
+                    {
+                        log.LogWarning(ex, "catalog-warmup: arcade:{By} failed after {Ms} ms — skipping", by, sw.ElapsedMilliseconds);
+                    }
+                }
+                try { await Task.Delay(options.StepPause, ct); } catch (OperationCanceledException) { throw; }
+            }
         }
 
         /// <summary>Builds one target INTO the cache under the same key a request computes. Idempotent:
@@ -157,12 +210,31 @@ namespace MovieTheater.Web
             return $"{index.Heads.Count} groups";
         }
 
-        /// <summary>The Type scope, without the controller: Misc never reaches a warm target.</summary>
+        /// <summary>
+        /// The Type scope, without the controller: Misc never reaches a warm target.
+        ///
+        /// <para>An EMPTY scope is "every type", not "nothing" — the controller's own
+        /// <c>ApplyTypeScope</c> returns the queries untouched for it, and that is the scope a reader
+        /// reaches by CLEARING the Type chip (`moviesFacetSpec`: the landing seeds `f=type:Movies` once
+        /// per tab, so clearing it later means all types). Without this branch a warm of that scope would
+        /// cache an EMPTY count under the key the controller reads for "all", and the rail would show
+        /// zeroes — a warm that is wrong is worse than a warm that is missing.</para>
+        /// </summary>
         private static (IQueryable<Movie> Movies, IQueryable<Series> Series) ApplyTypeScope(
             System.Collections.Generic.IReadOnlyList<NormalizedTitleType> scope, IQueryable<Movie> mq, IQueryable<Series> sq)
         {
+            if (scope.Count == 0) return (mq, sq);
             var movieBuckets = scope.Where(t => t is NormalizedTitleType.Movies or NormalizedTitleType.Short).ToList();
-            var movies = movieBuckets.Count > 0 ? mq.Where(m => movieBuckets.Contains(m.NormalizedTitleType)) : mq.Where(m => false);
+            // Same equality-not-Contains shape as the controller's ApplyTypeScope, and for the same reason
+            // (EF's OPENJSON translation of a parameterized Contains) — a warm must run the query the
+            // request runs, or it warms the wrong plan.
+            var only = movieBuckets.Count == 1 ? movieBuckets[0] : default;
+            var movies = movieBuckets.Count switch
+            {
+                0 => mq.Where(m => false),
+                1 => mq.Where(m => m.NormalizedTitleType == only),
+                _ => mq.Where(m => movieBuckets.Contains(m.NormalizedTitleType)),
+            };
             var series = scope.Contains(NormalizedTitleType.Series) ? sq : sq.Where(s => false);
             return (movies, series);
         }

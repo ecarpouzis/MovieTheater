@@ -133,6 +133,15 @@ namespace MovieTheater.Web
             {
                 new("facets:Movies", movies, null),
                 new("facets:Series", series, null),
+                // The combined scope carries traffic — this file already warms ten GROUP axes for it —
+                // and its facet counts were the one thing left cold: 4.75 s on prod, 0.14 s once warm.
+                new("facets:Movies,Series", both, null),
+                // The empty scope is "all types", which is what CLEARING the Type chip leaves behind
+                // (`moviesFacetSpec`: the landing seeds `f=type:Movies` once per tab session, so clearing
+                // it later means all types). It is the widest count pass there is and it was never warmed:
+                // 10.7 s on prod, and the 6 h TTL means the first reader after every expiry — and after
+                // every deploy, which is every push — paid it again.
+                new("facets:all", Array.Empty<NormalizedTitleType>(), null),
             };
             foreach (var by in CoreAxes)
             {

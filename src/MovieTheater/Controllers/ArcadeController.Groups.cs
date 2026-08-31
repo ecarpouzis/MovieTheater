@@ -39,7 +39,7 @@ namespace MovieTheater.Controllers
             var hidden = ParseHideRegions(hideRegions);
             var selectedSystems = ParseSystems(system);
             var baseQ = await VisibleGamesAsync(userId.Value);
-            var index = await CachedGameGroupIndexAsync(userId.Value, baseQ, selectedSystems, maxPlayers, genre, search, hidden, var_, ra, by, ct);
+            var index = await CachedGameGroupIndexAsync(baseQ, selectedSystems, maxPlayers, genre, search, hidden, var_, ra, by, ct);
 
             IReadOnlyList<ArcadeGameGroups.Head> page;
             if (!string.IsNullOrWhiteSpace(singleGroupKey))
@@ -78,7 +78,7 @@ namespace MovieTheater.Controllers
             if (!host.IsConfigured) return StatusCode(501, new { message = "The arcade is not configured on this server." });
             var by = ArcadeGameGroups.NormalizeGroupBy(groupBy);
             var baseQ = await VisibleGamesAsync(userId.Value);
-            var index = await CachedGameGroupIndexAsync(userId.Value, baseQ, ParseSystems(system), maxPlayers, genre, search, ParseHideRegions(hideRegions), NormalizeVariant(variant), ra, by, ct);
+            var index = await CachedGameGroupIndexAsync(baseQ, ParseSystems(system), maxPlayers, genre, search, ParseHideRegions(hideRegions), NormalizeVariant(variant), ra, by, ct);
             var letters = ArcadeGameGroups.GroupLetters(index.Heads, by).Select(l => new { letter = l.Letter, firstIndex = l.FirstIndex }).ToList();
             return Json(new { totalGroups = index.Heads.Count, letters });
         }
@@ -87,40 +87,21 @@ namespace MovieTheater.Controllers
         /// The lobby's card aggregates (its <c>groupedQ</c>: one row per (System, CollapseKey) with the
         /// sort columns and the anchor's genre CSV) for a filter set, grouped once and cached per user +
         /// filters + mode. ~17k cards ≈ 2 MB; the site's cache is byte-budgeted so the entry states its size.
+        ///
+        /// <para>The entry is SHARED across viewers — see <see cref="ArcadeGameGroups.CacheKey"/> for why
+        /// that is safe here and what would make it unsafe. It takes no user id for that reason.</para>
         /// </summary>
         private async Task<ArcadeGameGroups.GroupIndex> CachedGameGroupIndexAsync(
-            int userId, IQueryable<Db.ArcadeGame> baseQ, List<string> systems, int? maxPlayers, string genre, string search,
+            IQueryable<Db.ArcadeGame> baseQ, List<string> systems, int? maxPlayers, string genre, string search,
             List<string> hideRegions, string var_, string ra, string by, CancellationToken ct = default)
         {
-            var filtered = (systems != null && systems.Count > 0) || maxPlayers is > 1 || !string.IsNullOrWhiteSpace(genre)
-                || !string.IsNullOrWhiteSpace(search) || (hideRegions != null && hideRegions.Count > 0) || (var_ != "all" && var_ != "release") || !string.IsNullOrWhiteSpace(ra);
-            var sig = string.Join("|", string.Join(",", (systems ?? new List<string>()).OrderBy(s => s)), maxPlayers, (genre ?? "").Trim().ToLowerInvariant(),
-                (search ?? "").Trim().ToLowerInvariant(), string.Join(",", (hideRegions ?? new List<string>()).OrderBy(r => r)), var_, (ra ?? "").Trim().ToLowerInvariant());
-            var key = $"arcade:groups:{userId}:{sig}:{by}";
+            var filtered = ArcadeGameGroups.IsFiltered(systems, maxPlayers, genre, search, hideRegions, var_, ra);
+            var key = ArcadeGameGroups.CacheKey(ArcadeGameGroups.FilterSig(systems, maxPlayers, genre, search, hideRegions, var_, ra), by);
             var cached = await cache.GetOrCreateAsync(key, async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = filtered ? GameGroupsTtlFiltered : GameGroupsTtlUnfiltered;
                 var matchQ = ApplyCardFilters(baseQ, systems, maxPlayers, genre, search, hideRegions, var_, ra);
-                // The card aggregates the lobby's own grid sorts on, plus the four single-valued facts the
-                // R9 S8 axes read: the anchor's developer/publisher (comma-joined on the anchor exactly as
-                // Genres is) and the RA flags, which arcade-ra-enrich keeps uniform across a card's versions.
-                var rows = await matchQ.GroupBy(g => new { g.System, g.CollapseKey })
-                    .Select(grp => new ArcadeGameGroups.CardLight(
-                        grp.Key.System, grp.Key.CollapseKey,
-                        grp.Min(x => x.Title), grp.Min(x => x.SortTitle),
-                        grp.Max(x => x.RatingWeighted), grp.Max(x => x.Year), grp.Max(x => (int)x.MaxPlayers),
-                        grp.Min(x => x.Genres),
-                        grp.Min(x => x.Developer), grp.Min(x => x.Publisher),
-                        grp.Max(x => x.RaAchievementCount ?? 0),
-                        grp.Max(x => x.RaHasScoreLeaderboard ? 1 : 0) == 1,
-                        grp.Max(x => x.RaHasTimeLeaderboard ? 1 : 0) == 1))
-                    .ToListAsync(ct);
-                // Region and variant are per VERSION, so they need the distinct tuples — a couple of rows
-                // per card, not every ROM row. Only fetched for the two axes that read them.
-                List<ArcadeGameGroups.CardTag> tags = null;
-                if (ArcadeGameGroups.NeedsTags(by))
-                    tags = await matchQ.Select(g => new ArcadeGameGroups.CardTag(g.System, g.CollapseKey, g.Region, g.Variant)).Distinct().ToListAsync(ct);
-                var index = ArcadeGameGroups.BuildIndex(rows, by, null, tags);
+                var index = await ArcadeGameGroups.LoadIndexAsync(matchQ, by, ct);
                 entry.Size = index.ApproxBytes;
                 return index;
             });
