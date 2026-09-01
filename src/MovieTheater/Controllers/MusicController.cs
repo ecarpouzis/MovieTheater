@@ -861,6 +861,10 @@ namespace MovieTheater.Controllers
                     missing = t.MissingSinceUtc != null,
                     popularity = t.Popularity,
                     listeners = t.PopularityListeners,
+                    // Where the song sits in THIS LIBRARY (percentile), agreed across every source
+                    // that knows it — a different question from `popularity`, which is absolute.
+                    rank = t.PopularityRank,
+                    rankSources = t.PopularityRankSources,
                 })
                 .ToListAsync();
 
@@ -878,9 +882,13 @@ namespace MovieTheater.Controllers
             // "best known" list, and a row that means "we have never been told" is not a low score.
             // The section disappears when the enrich pass has not reached this artist yet, which is
             // the honest empty state.
+            // Ordered by the CONSENSUS rank where there is one, because a blend of the services that
+            // know a song is better evidence than any single service's number, and only falling back
+            // to the absolute score for tracks one source alone has ever mentioned.
             var topTrackCandidates = await movieDb.MusicTracks.AsNoTracking()
                 .Where(t => t.ArtistId == id && t.MissingSinceUtc == null && t.Popularity != null)
-                .OrderByDescending(t => t.Popularity).ThenBy(t => t.Title).ThenBy(t => t.Id)
+                .OrderByDescending(t => t.PopularityRank ?? t.Popularity)
+                .ThenByDescending(t => t.Popularity).ThenBy(t => t.Title).ThenBy(t => t.Id)
                 .Take(TopTrackCandidates)
                 .Select(t => new
                 {
@@ -892,6 +900,10 @@ namespace MovieTheater.Controllers
                     missing = t.MissingSinceUtc != null,
                     popularity = t.Popularity,
                     listeners = t.PopularityListeners,
+                    // Where the song sits in THIS LIBRARY (percentile), agreed across every source
+                    // that knows it — a different question from `popularity`, which is absolute.
+                    rank = t.PopularityRank,
+                    rankSources = t.PopularityRankSources,
                     // Where it came from, so a row can say "— Hunky Dory" and open it. An artist's
                     // loose tracks belong to no album and carry nulls here by design.
                     albumId = t.AlbumId,
@@ -971,6 +983,10 @@ namespace MovieTheater.Controllers
                     // and re-ranking it by fame would bury the obscure track somebody typed in full.
                     popularity = t.Popularity,
                     listeners = t.PopularityListeners,
+                    // Where the song sits in THIS LIBRARY (percentile), agreed across every source
+                    // that knows it — a different question from `popularity`, which is absolute.
+                    rank = t.PopularityRank,
+                    rankSources = t.PopularityRankSources,
                 })
                 .ToListAsync();
 
@@ -1120,6 +1136,10 @@ namespace MovieTheater.Controllers
                     // express a drop — 73 and 50 on one album are 112,303 listeners and 2,905 — and
                     // the tracklist draws its comparison bar from this instead.
                     listeners = t.PopularityListeners,
+                    // Where the song sits in THIS LIBRARY (percentile), agreed across every source
+                    // that knows it — a different question from `popularity`, which is absolute.
+                    rank = t.PopularityRank,
+                    rankSources = t.PopularityRankSources,
                 })
                 .ToListAsync();
 

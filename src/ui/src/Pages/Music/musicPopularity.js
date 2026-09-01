@@ -87,5 +87,16 @@ export function popularityTitle(track, peak) {
     const pct = Math.round((track.listeners / peak.listeners) * 100);
     parts.push(`${pct}% of the most-heard song here`);
   }
+  // Where it sits in OUR library rather than in the world, and how many services agreed on that.
+  // The source count is not decoration: a consensus of one is a single service's opinion wearing a
+  // ranking's clothes, and the tooltip is the only place that can say so.
+  const rank = typeof track?.rank === "number" ? track.rank : null;
+  if (rank != null) {
+    const top = Math.max(1, 100 - rank);
+    const sources = typeof track?.rankSources === "number" ? track.rankSources : 0;
+    parts.push(sources > 1
+      ? `top ${top}% of the library (${sources} sources agree)`
+      : `top ${top}% of the library (1 source)`);
+  }
   return parts.join(" · ");
 }

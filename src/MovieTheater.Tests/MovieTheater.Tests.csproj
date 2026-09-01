@@ -108,6 +108,15 @@
          name, one too short to mean anything, and a filename that merely carries an edition suffix
          the tag correctly omits. The command's own I/O is not exercised - it opens no files. -->
     <Compile Include="..\MovieTheater\Music\MusicTitleRepair.cs" Link="Music\MusicTitleRepair.cs" />
+    <!-- The multi-source ranking (2026-08-31). Both are pure and both are places this can be
+         silently WRONG rather than absent. MusicScoreRanking turns three services' incompatible
+         numbers into one order, and anything that averaged raw values or normalised each to its own
+         maximum would produce a plausible-looking order nobody measured. MusicDeezer's AcceptsAlbum
+         is the gate that kept 21 wrong scores out when a search for Johnny Cash's "America" returned
+         a different record entirely - the failure mode is a confident wrong answer, not a missing
+         one. The CliFx command that drives them stays out, as every other music CLI's does. -->
+    <Compile Include="..\MovieTheater\Music\MusicScoreRanking.cs" Link="Music\MusicScoreRanking.cs" />
+    <Compile Include="..\MovieTheater\Music\MusicDeezer.cs" Link="Music\MusicDeezer.cs" />
     <!-- Where the raw-response cache lands. Compiled from source because the claim is about the
          SHIPPED default: anchored on the repo marker, so a stray data/ beside a binary can no longer
          shadow the real cache and send an offline re-parse back to the network. -->

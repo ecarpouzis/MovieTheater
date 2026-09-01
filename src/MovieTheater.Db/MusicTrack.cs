@@ -147,6 +147,28 @@ namespace MovieTheater.Db
         /// </remarks>
         public long? PopularityListeners { get; set; }
 
+        /// <summary>
+        /// Where this track sits in the LIBRARY, 0-100, agreed across every source that knows it
+        /// (2026-08-31). Null until at least one source has scored it.
+        /// </summary>
+        /// <remarks>
+        /// <para>A different question from <see cref="Popularity"/>, and both are worth having.
+        /// Popularity is ABSOLUTE - "roughly this many people in the world have heard it" - and it is
+        /// what the album badge and the song-row number show. This is RELATIVE: "of everything on
+        /// these shelves, this song is in the Nth percentile", which is what "rank our music"
+        /// actually asks and what a shelf-wide ordering wants.</para>
+        /// <para>It is the mean of the per-source percentiles in <see cref="MusicTrackScore"/>, so a
+        /// source that has never heard of a track does not drag it down - only the sources that
+        /// answered get a vote. <see cref="PopularityRankSources"/> says how many that was, because a
+        /// consensus of one is not a consensus.</para>
+        /// </remarks>
+        public int? PopularityRank { get; set; }
+
+        /// <summary>How many sources <see cref="PopularityRank"/> averages. 1 means a single opinion;
+        /// the UI is entitled to trust a 3 more than a 1, and a re-run that loses a source must lower
+        /// this rather than silently keep the old blend.</summary>
+        public int PopularityRankSources { get; set; }
+
         /// <summary>Which external source produced <see cref="Popularity"/> - see
         /// <see cref="MovieTheater.Music.MusicGenreSources"/>. Stamped so one source can be re-run or
         /// retired without guessing which rows came from it.</summary>

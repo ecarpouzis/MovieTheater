@@ -481,6 +481,25 @@ namespace MovieTheater.Db
                 .HasIndex(t => new { t.PopularityCheckedUtc, t.Id });
             modelBuilder.Entity<MusicTrack>()
                 .HasIndex(t => new { t.ArtistId, t.Popularity });
+            // The shelf-wide "rank our music" ordering.
+            modelBuilder.Entity<MusicTrack>()
+                .HasIndex(t => t.PopularityRank);
+
+            // One row per (track, source) - the Source column is part of the key, which is what lets
+            // each pass replace only its own rows (the MusicAlbumGenre pattern).
+            modelBuilder.Entity<MusicTrackScore>()
+                .HasIndex(s => new { s.MusicTrackId, s.Source })
+                .IsUnique();
+            // The percentile recompute reads one source at a time, whole.
+            modelBuilder.Entity<MusicTrackScore>()
+                .HasIndex(s => s.Source);
+            // CASCADE here, unlike MusicTrack's own parents: a score is a LABEL on a track, not
+            // content, so it should not outlive the row it describes (the MusicAlbumGenre stance).
+            modelBuilder.Entity<MusicTrackScore>()
+                .HasOne(s => s.Track)
+                .WithMany()
+                .HasForeignKey(s => s.MusicTrackId)
+                .OnDelete(DeleteBehavior.Cascade);
             // Restrict both parents: a track row must never vanish because its artist/album row was
             // touched — reconcile flags MissingSinceUtc instead (same stance as MediaFile).
             modelBuilder.Entity<MusicTrack>()
@@ -975,6 +994,7 @@ namespace MovieTheater.Db
         public DbSet<MusicArtistGenre> MusicArtistGenres { get; set; }
         public DbSet<MusicAlbumRating> MusicAlbumRatings { get; set; }
         public DbSet<MusicPlayStat> MusicPlayStats { get; set; }
+        public DbSet<MusicTrackScore> MusicTrackScores { get; set; }
 
         // ── Family photo album (docs/photos-plan.md §3) ──────────────────────────────────────────
         // §6 privacy invariant: these sets exist for the family-gated /API/Photos routes ONLY. They are

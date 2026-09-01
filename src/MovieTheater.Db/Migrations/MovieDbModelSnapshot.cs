@@ -2139,6 +2139,12 @@ namespace MovieTheater.Db.Migrations
                     b.Property<long?>("PopularityListeners")
                         .HasColumnType("bigint");
 
+                    b.Property<int?>("PopularityRank")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PopularityRankSources")
+                        .HasColumnType("int");
+
                     b.Property<string>("PopularitySource")
                         .HasMaxLength(32)
                         .HasColumnType("nvarchar(32)");
@@ -2166,8 +2172,46 @@ namespace MovieTheater.Db.Migrations
 
                     b.HasIndex("PopularityCheckedUtc", "Id");
 
+                    b.HasIndex("PopularityRank");
+
                     b.ToTable("MusicTrack");
                 });
+
+            modelBuilder.Entity("MovieTheater.Db.MusicTrackScore", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CheckedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("MusicTrackId")
+                        .HasColumnType("int");
+
+                    b.Property<long?>("RawValue")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("Score")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Source");
+
+                    b.HasIndex("MusicTrackId", "Source")
+                        .IsUnique();
+
+                    b.ToTable("MusicTrackScore");
+                });
+
 
             modelBuilder.Entity("MovieTheater.Db.MusicTrackLyrics", b =>
                 {
@@ -3890,6 +3934,18 @@ namespace MovieTheater.Db.Migrations
 
                     b.Navigation("Artist");
                 });
+
+            modelBuilder.Entity("MovieTheater.Db.MusicTrackScore", b =>
+                {
+                    b.HasOne("MovieTheater.Db.MusicTrack", "Track")
+                        .WithMany()
+                        .HasForeignKey("MusicTrackId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Track");
+                });
+
 
             modelBuilder.Entity("MovieTheater.Db.MusicTrackLyrics", b =>
                 {

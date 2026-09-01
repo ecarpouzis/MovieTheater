@@ -87,6 +87,16 @@ describe("the comparison arithmetic", () => {
     expect(formatListeners(null)).toBeNull();
   });
 
+  it("names the library ranking and how many services agreed on it", () => {
+    // A consensus of one is a single service's opinion wearing a ranking's clothes, and the tooltip
+    // is the only place that can say so.
+    const peak = peakOf([{ popularity: 73, listeners: 112303 }]);
+    const many = popularityTitle({ popularity: 70, listeners: 90000, rank: 97, rankSources: 2 }, peak);
+    expect(many).toContain("top 3% of the library (2 sources agree)");
+    const one = popularityTitle({ popularity: 70, listeners: 90000, rank: 40, rankSources: 1 }, peak);
+    expect(one).toContain("top 60% of the library (1 source)");
+  });
+
   it("says what the number means AND what the bar is a share of", () => {
     const peak = peakOf([{ popularity: 73, listeners: 112303 }]);
     const title = popularityTitle({ popularity: 50, listeners: 2905 }, peak);
