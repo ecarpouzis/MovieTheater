@@ -12,6 +12,7 @@ import { useTheme } from "./hooks/useTheme";
 import { MusicPlayerProvider } from "./Music/MusicPlayerContext";
 import { readStored, writeStored } from "./utils/storage";
 import { SITE_ADMIN_ALIASES } from "./admin/aliases";
+import MediaReachBanner from "./Components/MediaReachBanner";
 
 // Route-level code-splitting. The landing (Browse) and the nav shell stay in the main bundle; every
 // other page loads on demand, keeping its heavy deps out of the initial download — most notably
@@ -147,6 +148,11 @@ function App() {
               catalog's pills + ⚙ (portaled in by CatalogHost) · light/dark. Mounted once, above the
               routes, so it is the same element on every page. */}
           <SectionBar userData={userData} theme={theme} toggleTheme={toggleTheme} />
+          {/* Mounted above the routes, and on every one of them, because the failure it reports is
+              not a page's failure: a visitor whose network cannot reach the media plane can browse
+              anything and play nothing, in every section. It renders null unless that is actually
+              true (one probe per tab), so it costs an idle mount everywhere else. */}
+          <MediaReachBanner />
           <Suspense fallback={<div style={{ display: "flex", justifyContent: "center", padding: "80px 0" }}><Spin size="large" /></div>}>
           <Switch>
             <Route path="/movie/:id" exact>

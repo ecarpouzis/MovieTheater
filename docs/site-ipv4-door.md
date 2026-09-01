@@ -208,6 +208,22 @@ scripts\register-godaddy-ddns-task.ps1     # 15-minute task, logs to D:\ArcadeSt
 It publishes **only** the SLAAC `Public` address (never `Temporary`/`Dhcp`), touches **only** the
 AAAA on `books` and `turn`, and writes **only** on difference.
 
+## 6½. The v6-path probe + the IPv6 tip banner
+
+`mediav6.carpouzis.com` carries an **AAAA and deliberately no A** — reaching it IS the answer. The
+SPA (`useMediaReachable`) probes it after the ordinary reachability probe succeeds: reachable means
+the visitor has working IPv6 and Happy Eyeballs is already taking them direct; unreachable while
+media works means they are riding the relay, and `MediaReachBanner` shows a closable tip that
+turning on IPv6 gets them a direct (slightly faster) connection and keeps the relay's bandwidth
+free for watch parties. Owner's requirement, 2026-09-01.
+
+- Served by Ziggy's Caddy as an empty `204` (its own site block; cert auto-issued like the rest).
+- The hook DERIVES the name — `mediav6.` + the media base's apex — so no hostname lives in the SPA.
+- The DDNS task keeps its AAAA current (`mediav6` is in the updater's default `-Names`).
+- **Never add an A record to this name** — an A would make it reachable from v4-only networks and
+  silence the tip exactly where it applies.
+- Verified end-to-end by `.claude/skills/test-roms/media-reach-verify.mjs` (four states).
+
 ## 7. Final verification
 
 1. `scripts\check-site-reachability.ps1` — REACH: **IPv4-only visitor: app yes, media YES**; the

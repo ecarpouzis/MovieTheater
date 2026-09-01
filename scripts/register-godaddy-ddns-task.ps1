@@ -26,10 +26,11 @@ $action = New-ScheduledTaskAction -Execute "$env:SystemRoot\System32\conhost.exe
     -Argument ("--headless powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden " +
                "-File `"$RunScript`" -LogFile `"$LogFile`"")
 
-# Every 15 minutes, forever. A prefix re-delegation therefore costs dual-stack visitors their
-# direct path for at most 15 minutes + the record TTL.
+# Every 15 minutes, forever (no RepetitionDuration = indefinite on Win10+; [TimeSpan]::MaxValue
+# serializes to a Duration the task XML REJECTS). A prefix re-delegation therefore costs
+# dual-stack visitors their direct path for at most 15 minutes + the record TTL.
 $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
-    -RepetitionInterval (New-TimeSpan -Minutes 15) -RepetitionDuration ([TimeSpan]::MaxValue)
+    -RepetitionInterval (New-TimeSpan -Minutes 15)
 
 $settings = New-ScheduledTaskSettingsSet `
     -ExecutionTimeLimit  (New-TimeSpan -Minutes 5) `

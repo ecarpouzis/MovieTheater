@@ -30,7 +30,7 @@
 [CmdletBinding(SupportsShouldProcess)]
 param(
     [string]$Domain     = 'carpouzis.com',
-    [string[]]$Names    = @('books', 'turn'),   # the ONLY names that carry an AAAA; the rest are CNAMEs
+    [string[]]$Names    = @('books', 'turn', 'mediav6'),   # the ONLY names that carry an AAAA; the rest are CNAMEs. mediav6 is the browser's v6-path probe (AAAA and NEVER an A - see docs/site-ipv4-door.md)
     [string]$Nic        = 'Ethernet 2',
     [string]$SecretFile = 'D:\ArcadeStorage\ddns\godaddy.json',
     [string]$LogFile    = 'D:\ArcadeStorage\logs\ddns.log'
