@@ -67,20 +67,26 @@ namespace MovieTheater.Tests
             Assert.Empty(MusicScoreRanking.Percentiles(new List<(int, long)>()));
         }
 
+        // ── the consensus: how much each opinion is allowed to count ────────────────────────
+
+        /// <summary>A source big enough that everything it says is taken at face value.</summary>
+        private static MusicScoreRanking.Opinion Big(int percentile, long raw = 500_000)
+            => new(percentile, raw, 1_000_000, 16_000_000);
+
         [Fact]
-        public void AveragesOnlyTheSourcesThatACTUALLY_ANSWERED()
+        public void AveragesTheSourcesThatACTUALLY_ANSWERED()
         {
             // A service that has never heard of a track knows nothing about it. Counting that silence
             // as a zero would push every obscure record to the bottom for being obscure on Deezer.
-            var (rank, sources) = MusicScoreRanking.Consensus(new[] { 90, 80 });
+            var (rank, sources) = MusicScoreRanking.Consensus(new[] { Big(90), Big(80) });
             Assert.Equal(85, rank);
             Assert.Equal(2, sources);
         }
 
         [Fact]
-        public void SaysHowMANY_agreed_becauseAConsensusOfOneIsNot()
+        public void SaysHowMANY_answered_becauseAConsensusOfOneIsNot()
         {
-            var (rank, sources) = MusicScoreRanking.Consensus(new[] { 64 });
+            var (rank, sources) = MusicScoreRanking.Consensus(new[] { Big(64) });
             Assert.Equal(64, rank);
             Assert.Equal(1, sources);
         }
@@ -88,9 +94,90 @@ namespace MovieTheater.Tests
         [Fact]
         public void ATrackNoSourceKnowsHasNoRankAtAll()
         {
-            var (rank, sources) = MusicScoreRanking.Consensus(new int[0]);
+            var (rank, sources) = MusicScoreRanking.Consensus(new MusicScoreRanking.Opinion[0]);
             Assert.Null(rank);
             Assert.Equal(0, sources);
+        }
+
+        [Fact]
+        public void A_THIN_observationIsPulledTowardTheMiddleRatherThanBelieved()
+        {
+            // THE POINT. Three listens can put a track at the very bottom of a source's ordering, but
+            // whether it belongs below its neighbours at 2 and 4 is noise. Ignorance belongs in the
+            // middle, not at the bottom where it would masquerade as "measured to be unpopular".
+            var thin = MusicScoreRanking.Consensus(new[] { new MusicScoreRanking.Opinion(2, 3, 1_000_000, 16_000_000) });
+            var solid = MusicScoreRanking.Consensus(new[] { Big(2) });
+            Assert.True(thin.Rank > solid.Rank, $"thin {thin.Rank} should sit nearer the middle than solid {solid.Rank}");
+            Assert.True(thin.Rank < 50, "it is still evidence, just weaker - it must not be erased entirely");
+        }
+
+        [Fact]
+        public void A_THIN_highPlacementIsPulledDownTheSameWay()
+        {
+            // Symmetry matters: the shrink is toward the middle, not downward. A track sitting at 98
+            // on the strength of four listens is no more trustworthy than one sitting at 2.
+            var thin = MusicScoreRanking.Consensus(new[] { new MusicScoreRanking.Opinion(98, 4, 1_000_000, 16_000_000) });
+            Assert.True(thin.Rank < 98);
+            Assert.True(thin.Rank > 50);
+        }
+
+        [Fact]
+        public void ABIG_audienceOutvotesASMALL_oneWhenTheyDisagree()
+        {
+            // A service with a few thousand listeners and one with tens of millions should not have
+            // equal say, even when both answer confidently.
+            var big = new MusicScoreRanking.Opinion(90, 500_000, 1_000_000, 16_000_000);
+            var small = new MusicScoreRanking.Opinion(10, 400, 800, 25_000);
+            var (rank, _) = MusicScoreRanking.Consensus(new[] { big, small });
+            Assert.True(rank > 50, $"the larger audience should carry the result, got {rank}");
+        }
+
+        [Fact]
+        public void ButASMALL_audienceIsNeverSILENCED()
+        {
+            // It must be able to move a ranking it disagrees with - a quieter vote, not no vote.
+            var alone = MusicScoreRanking.Consensus(new[] { Big(90) }).Rank;
+            var withDissent = MusicScoreRanking.Consensus(new[]
+            {
+                Big(90),
+                new MusicScoreRanking.Opinion(10, 400, 800, 25_000),
+            }).Rank;
+            Assert.True(withDissent < alone, "a dissenting small source must pull the result down");
+        }
+
+        [Fact]
+        public void ConfidenceRisesWithTheCountAndThenSTOPS()
+        {
+            // Past the point where the ordering is settled, more listens make a song more popular -
+            // not the reading more certain. Otherwise megahits would compound their own weight.
+            Assert.Equal(0, MusicScoreRanking.ConfidenceOf(0, 1_000_000));
+            var few = MusicScoreRanking.ConfidenceOf(5, 1_000_000);
+            var many = MusicScoreRanking.ConfidenceOf(5_000, 1_000_000);
+            Assert.True(few < many);
+            Assert.Equal(1.0, MusicScoreRanking.ConfidenceOf(50_000, 1_000_000), 3);
+            Assert.Equal(1.0, MusicScoreRanking.ConfidenceOf(5_000_000, 1_000_000), 3);
+        }
+
+        [Fact]
+        public void TheSourceScaleIgnoresOneFreakMegahit()
+        {
+            // The maximum would be hostage to a single outlier, so the scale is a robust upper
+            // quantile: one enormous value must not make every ordinary track look thin.
+            var ordinary = Enumerable.Range(1, 100).Select(i => (long)(i * 10)).ToList();
+            var withOutlier = ordinary.Concat(new[] { 500_000_000L }).ToList();
+            var a = MusicScoreRanking.ScaleOf(ordinary);
+            var b = MusicScoreRanking.ScaleOf(withOutlier);
+            Assert.True(b < a * 3, $"one outlier moved the scale from {a} to {b}");
+        }
+
+        [Fact]
+        public void AZeroCountCarriesNoConfidenceButStillLeavesARank()
+        {
+            // Zero is a real reading ("this source has no listens for it"), so the track keeps a rank;
+            // it is simply the neutral one, because a count of zero orders nothing.
+            var (rank, sources) = MusicScoreRanking.Consensus(new[] { new MusicScoreRanking.Opinion(0, 0, 1_000_000, 16_000_000) });
+            Assert.Equal(50, rank);
+            Assert.Equal(1, sources);
         }
     }
 

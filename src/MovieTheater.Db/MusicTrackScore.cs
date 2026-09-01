@@ -81,5 +81,44 @@ namespace MovieTheater.Db
 
         /// <summary>Spotify's own 0–100 track popularity. Needs a client id + secret.</summary>
         public const string Spotify = "spotify";
+
+        /// <summary>ListenBrainz total listen counts, keyed by MusicBrainz recording MBID. Open data
+        /// (CC0) and needs no credentials, but its audience is orders of magnitude smaller than
+        /// Last.fm's - which is exactly why the ranking weighs a source by the audience behind it.</summary>
+        public const string ListenBrainz = "listenbrainz";
+
+        /// <summary>
+        /// Roughly how many people are behind each source, as an ORDER OF MAGNITUDE.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>This is the one hand-set judgement in the ranking, and it is hand-set because the
+        /// data cannot supply it.</b> The obvious move — infer a source's size from how big its
+        /// numbers are — was tried and measured against the live table: Last.fm's 95th-percentile
+        /// listener count is 733,295, Deezer's rank index 525,785, ListenBrainz's listens 618,632.
+        /// All the same order of magnitude, while the audiences differ by three, because the units
+        /// are not comparable: Deezer's "rank" counts nothing, and ListenBrainz's figure is LISTENS
+        /// accumulated over years by a small membership, not listeners.</para>
+        /// <para>So the sizes are declared from what the services publish about themselves, to the
+        /// nearest order of magnitude, which is all the weighting needs — it is logarithmic, so
+        /// getting one of these wrong by a factor of two moves a weight by about 0.03. What it must
+        /// get right is the SHAPE: that ListenBrainz is a niche audience and the other two are mass
+        /// ones. Precision here would be false precision.</para>
+        /// <para>Spotify's figure is carried for completeness; it has never returned data (the
+        /// popularity field is withdrawn from new apps).</para>
+        /// </remarks>
+        public static long AudienceOf(string? source) => source?.ToLowerInvariant() switch
+        {
+            // Hundreds of millions of monthly users. Present so the table is complete.
+            Spotify => 500_000_000,
+            // A mass-market streaming service, tens of millions of subscribers.
+            Deezer => 16_000_000,
+            // Millions of scrobbling accounts - smaller than a streaming service, still a mass audience.
+            LastFm => 5_000_000,
+            // Tens of thousands of users, and self-selected: people who run their own music tooling.
+            ListenBrainz => 25_000,
+            // An unknown source is treated as the smallest thing we know of rather than the largest,
+            // so a new leg cannot silently outvote the established ones before anyone has judged it.
+            _ => 10_000,
+        };
     }
 }

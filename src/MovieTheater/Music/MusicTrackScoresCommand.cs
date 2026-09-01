@@ -45,7 +45,7 @@ namespace MovieTheater.Music
         [CommandOption("dry-run", Description = "Force a dry run. Redundant (dry is the default) but accepted, so the safe spelling is never a typo.")]
         public bool DryRun { get; set; }
 
-        [CommandOption("source", Description = "Which source to fill: lastfm (offline seed) | deezer. Omit to only recompute the ranking.")]
+        [CommandOption("source", Description = "Which source to fill: lastfm (offline seed) | deezer | listenbrainz | spotify. Omit to only recompute the ranking.")]
         public string? Source { get; set; }
 
         [CommandOption("rank-only", Description = "Skip fetching; just recompute percentiles and the consensus from the rows already stored.")]
@@ -99,9 +99,10 @@ namespace MovieTheater.Music
                 {
                     case MusicScoreSources.LastFm: await SeedLastFmAsync(db, w); break;
                     case MusicScoreSources.Deezer: await FetchDeezerAsync(db, w); break;
+                    case MusicScoreSources.ListenBrainz: await FetchListenBrainzAsync(db, w); break;
                     case MusicScoreSources.Spotify: await FetchSpotifyAsync(db, w); break;
                     default:
-                        w.WriteLine($"Unknown --source '{Source}': use lastfm, deezer, or omit it to rank.");
+                        w.WriteLine($"Unknown --source '{Source}': use lastfm, deezer, listenbrainz, spotify, or omit it to rank.");
                         return;
                 }
             }
@@ -257,6 +258,196 @@ namespace MovieTheater.Music
                         $"counts: {{ accepted: {found}, rejected: {rejected}, missing: {missing}, rows: {rows}, requests: {requests}, cacheHits: {cacheHits}, errors: {errors} }} }}");
             if (!Apply) w.WriteLine("DRY RUN — nothing written to the database (raw responses ARE cached).");
         }
+
+        // ── listenbrainz: MBID-keyed, and the only source published as open data ────────────────
+
+        /// <summary>
+        /// Fills the ListenBrainz source: MusicBrainz resolves the album to a release and its
+        /// recordings' MBIDs, then one batched call gets listen counts for all of them.
+        /// </summary>
+        /// <remarks>
+        /// <para>Three requests per album, two of them to MusicBrainz at their documented one per
+        /// second — which is the pass's real cost, not ListenBrainz's. Measured before building:
+        /// 53% of our tracks come back with a count, agreeing with Last.fm at ρ = 0.720, which is
+        /// LOWER than Deezer's 0.788 and therefore worth more.</para>
+        /// <para>The join to our rows happens ONCE, against the release's tracklist; after that the
+        /// identity is an MBID and the popularity lookup is exact.</para>
+        /// </remarks>
+        private async Task FetchListenBrainzAsync(MovieDb db, ConsoleWriter w)
+        {
+            var take = Take ?? 200;
+            var cache = new MusicResponseCache(CacheDir);
+            using var http = MusicRemoteArt.CreateHttp();
+
+            var scored = db.MusicTrackScores.Where(s => s.Source == MusicScoreSources.ListenBrainz)
+                .Select(s => s.Track.AlbumId);
+            var query = db.MusicAlbums.AsNoTracking()
+                .Where(a => a.Id > After && !scored.Contains(a.Id));
+            var pending = await query.CountAsync();
+            var albums = await query.OrderBy(a => a.Id)
+                .Select(a => new { a.Id, a.Title, Artist = a.Artist.Name })
+                .Take(Math.Max(1, take))
+                .ToListAsync();
+
+            int found = 0, rejected = 0, missing = 0, rows = 0, requests = 0, cacheHits = 0, errors = 0, unknown = 0;
+
+            foreach (var album in albums)
+            {
+                var ours = await db.MusicTracks.AsNoTracking()
+                    .Where(t => t.AlbumId == album.Id && t.MissingSinceUtc == null)
+                    .Select(t => new { t.Id, t.Title })
+                    .ToListAsync();
+                if (ours.Count == 0) continue;
+
+                try
+                {
+                    var q = $"artist:\"{MusicRemoteArt.Sanitize(album.Artist)}\" AND release:\"{MusicRemoteArt.Sanitize(album.Title)}\"";
+                    var searchUrl = $"https://musicbrainz.org/ws/2/release/?query={Uri.EscapeDataString(q)}&fmt=json&limit=1";
+                    var (searchBody, searchCached) = await GetMusicBrainzAsync(http, cache, $"release.search|{album.Artist}|{album.Title}", searchUrl);
+                    if (searchCached) cacheHits++; else requests++;
+
+                    var hit = MusicListenBrainz.ParseReleaseSearch(searchBody);
+                    if (hit == null) { missing++; if (Verbose) w.WriteLine($"  - {album.Id} no release: {album.Artist} — {album.Title}"); continue; }
+                    if (!MusicDeezer.AcceptsAlbum(hit.Value.Title, hit.Value.Artist, album.Title, album.Artist))
+                    {
+                        rejected++;
+                        if (Verbose) w.WriteLine($"  ! {album.Id} REJECTED '{hit.Value.Artist} — {hit.Value.Title}' for '{album.Artist} — {album.Title}'");
+                        continue;
+                    }
+                    found++;
+
+                    var recUrl = $"https://musicbrainz.org/ws/2/release/{hit.Value.Id}?inc=recordings&fmt=json";
+                    var (recBody, recCached) = await GetMusicBrainzAsync(http, cache, $"release.recordings|{hit.Value.Id}", recUrl);
+                    if (recCached) cacheHits++; else requests++;
+
+                    // Title → MBID for this release, folded the way every other source is joined.
+                    var byTitle = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    foreach (var (title, mbid) in MusicListenBrainz.ParseReleaseRecordings(recBody))
+                    {
+                        var key = MusicTrackTitles.Normalize(title);
+                        if (key.Length == 0 || byTitle.ContainsKey(key)) continue;
+                        byTitle[key] = mbid;
+                    }
+                    if (byTitle.Count == 0) continue;
+
+                    var mapped = new List<(int TrackId, string Mbid)>();
+                    foreach (var track in ours)
+                    {
+                        var key = MusicTrackTitles.Normalize(track.Title);
+                        if (key.Length > 0 && byTitle.TryGetValue(key, out var mbid)) mapped.Add((track.Id, mbid));
+                    }
+                    if (mapped.Count == 0) continue;
+
+                    var counts = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
+                    foreach (var batch in Batches(mapped.Select(m => m.Mbid).Distinct().ToList(), MusicListenBrainz.MaxRecordingsPerRequest))
+                    {
+                        var (popBody, popCached) = await PostListenBrainzAsync(http, cache, batch);
+                        if (popCached) cacheHits++; else requests++;
+                        foreach (var (mbid, listens) in MusicListenBrainz.ParsePopularity(popBody)) counts[mbid] = listens;
+                    }
+
+                    var matched = 0;
+                    var now = DateTime.UtcNow;
+                    foreach (var (trackId, mbid) in mapped)
+                    {
+                        // An MBID it has never seen comes back with a null count and is simply not
+                        // here. That is knowledge about ListenBrainz's coverage, not about the song.
+                        if (!counts.TryGetValue(mbid, out var listens)) { unknown++; continue; }
+                        matched++;
+                        if (!Apply) continue;
+                        var row = await db.MusicTrackScores
+                            .FirstOrDefaultAsync(s => s.MusicTrackId == trackId && s.Source == MusicScoreSources.ListenBrainz);
+                        if (row == null)
+                            db.MusicTrackScores.Add(new MusicTrackScore
+                            {
+                                MusicTrackId = trackId, Source = MusicScoreSources.ListenBrainz,
+                                Score = 0, RawValue = listens, CheckedUtc = now,
+                            });
+                        else { row.RawValue = listens; row.CheckedUtc = now; }
+                    }
+                    rows += matched;
+                    if (Apply) await db.SaveChangesAsync();
+                    if (Verbose) w.WriteLine($"  + {album.Id} {album.Artist} — {album.Title}: {matched}/{ours.Count}");
+                }
+                catch (Exception ex) { errors++; if (Verbose) w.WriteLine($"  ! {album.Id} {ex.Message}"); }
+            }
+
+            var next = albums.Count > 0 ? albums[^1].Id : After;
+            w.WriteLine($"listenbrainz: {albums.Count} album(s) — {found} accepted, {rejected} rejected by the match gate, " +
+                        $"{missing} not in MusicBrainz; {rows} track score(s) {(Apply ? "written" : "matched")}, " +
+                        $"{unknown} mapped but unheard, {requests} request(s), {cacheHits} from cache, {errors} error(s).");
+            w.WriteLine($"{{ processed: {albums.Count}, remaining: {Math.Max(0, pending - albums.Count)}, nextCursor: {next}, " +
+                        $"counts: {{ accepted: {found}, rejected: {rejected}, missing: {missing}, rows: {rows}, unknown: {unknown}, requests: {requests}, cacheHits: {cacheHits}, errors: {errors} }} }}");
+            if (!Apply) w.WriteLine("DRY RUN — nothing written to the database (raw responses ARE cached).");
+        }
+
+        /// <summary>
+        /// A cached MusicBrainz GET, through the process-wide gate and their one-per-second spacing.
+        /// </summary>
+        /// <remarks>
+        /// Uses <c>MusicRemoteArt.SpaceCallAsync</c> rather than a private spacer, because that IS
+        /// the MusicBrainz throttle the rest of the codebase holds to and a second one would silently
+        /// double the rate they ask us to respect. They answer 503 under load; that is a MISS here and
+        /// the album stays in the work set for a later chunk.
+        /// </remarks>
+        private async Task<(string? Body, bool FromCache)> GetMusicBrainzAsync(
+            HttpClient http, MusicResponseCache cache, string key, string url)
+        {
+            var cached = await cache.TryReadAsync("musicbrainz", key, ScoreTtl);
+            if (cached != null) return (cached, true);
+
+            await MusicRemoteArt.Gate.WaitAsync();
+            try
+            {
+                await MusicRemoteArt.SpaceCallAsync();
+                using var response = await http.GetAsync(url);
+                var body = await response.Content.ReadAsStringAsync();
+                if (!response.IsSuccessStatusCode) return (null, false);
+                await cache.SaveAsync("musicbrainz", key, body, url, (int)response.StatusCode);
+                return (body, false);
+            }
+            catch (HttpRequestException) { return (null, false); }
+            catch (TaskCanceledException) { return (null, false); }
+            finally { MusicRemoteArt.Gate.Release(); }
+        }
+
+        /// <summary>
+        /// The batched listen-count POST. Cached under a key built from the mbids asked for, so a
+        /// re-run of the same album is free.
+        /// </summary>
+        private async Task<(string? Body, bool FromCache)> PostListenBrainzAsync(
+            HttpClient http, MusicResponseCache cache, List<string> mbids)
+        {
+            var ordered = mbids.OrderBy(m => m, StringComparer.Ordinal).ToList();
+            var key = "popularity|" + string.Join(",", ordered);
+            var cached = await cache.TryReadAsync("listenbrainz", key, ScoreTtl);
+            if (cached != null) return (cached, true);
+
+            await MusicRemoteArt.Gate.WaitAsync();
+            try
+            {
+                var wait = ListenBrainzThrottleMs - (int)(DateTime.UtcNow - lastListenBrainzCallUtc).TotalMilliseconds;
+                if (wait > 0) await Task.Delay(wait);
+                lastListenBrainzCallUtc = DateTime.UtcNow;
+
+                var payload = System.Text.Json.JsonSerializer.Serialize(new { recording_mbids = ordered });
+                using var content = new StringContent(payload, System.Text.Encoding.UTF8, "application/json");
+                using var response = await http.PostAsync("https://api.listenbrainz.org/1/popularity/recording", content);
+                var body = await response.Content.ReadAsStringAsync();
+                if (!response.IsSuccessStatusCode) return (null, false);
+                await cache.SaveAsync("listenbrainz", key, body, "POST popularity/recording", (int)response.StatusCode);
+                return (body, false);
+            }
+            catch (HttpRequestException) { return (null, false); }
+            catch (TaskCanceledException) { return (null, false); }
+            finally { MusicRemoteArt.Gate.Release(); }
+        }
+
+        /// <summary>ListenBrainz asks for restraint rather than publishing a number; four a second is
+        /// far below what their own clients do, and the pass is bounded by MusicBrainz anyway.</summary>
+        private const int ListenBrainzThrottleMs = 250;
+
+        private static DateTime lastListenBrainzCallUtc = DateTime.MinValue;
 
         // ── spotify: the purpose-built source, three requests per album ─────────────────────────
 
@@ -545,18 +736,36 @@ namespace MovieTheater.Music
             if (all.Count == 0) { w.WriteLine("ranking: no scores stored yet — nothing to rank."); return; }
 
             var percentileByRow = new Dictionary<int, int>();
+            var scaleBySource = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
             foreach (var group in all.Where(s => s.RawValue != null).GroupBy(s => s.Source))
             {
                 var values = group.Select(g => (g.Id, g.RawValue!.Value)).ToList();
                 var ranked = MusicScoreRanking.Percentiles(values);
                 foreach (var (rowId, percentile) in ranked) percentileByRow[rowId] = percentile;
-                w.WriteLine($"  {group.Key}: {values.Count} scored track(s)");
+
+                // The source's own scale: what a big number looks like HERE. It is what makes a
+                // count of three from a small service read as thin rather than as a low placement.
+                var scale = MusicScoreRanking.ScaleOf(values.Select(v => v.Item2).ToList());
+                scaleBySource[group.Key] = scale;
+                w.WriteLine($"  {group.Key}: {values.Count} scored track(s), scale {scale:N0}");
             }
 
+            // The audience behind each source is DECLARED, not inferred from its numbers - the units
+            // are not comparable, and inferring it produced weights of 1.00 across the board.
+            var largestAudience = scaleBySource.Keys.Select(MusicScoreSources.AudienceOf).DefaultIfEmpty(1).Max();
+            foreach (var source in scaleBySource.Keys.OrderByDescending(MusicScoreSources.AudienceOf))
+                w.WriteLine($"    weight {MusicScoreRanking.SourceWeight(MusicScoreSources.AudienceOf(source), largestAudience):0.00}  " +
+                            $"{source} (audience ~{MusicScoreSources.AudienceOf(source):N0}, value scale {scaleBySource[source]:N0})");
+
             var consensus = all
-                .Where(s => percentileByRow.ContainsKey(s.Id))
+                .Where(s => percentileByRow.ContainsKey(s.Id) && s.RawValue != null)
                 .GroupBy(s => s.MusicTrackId)
-                .ToDictionary(g => g.Key, g => MusicScoreRanking.Consensus(g.Select(x => percentileByRow[x.Id])));
+                .ToDictionary(g => g.Key, g => MusicScoreRanking.Consensus(g.Select(x =>
+                    new MusicScoreRanking.Opinion(
+                        percentileByRow[x.Id],
+                        x.RawValue!.Value,
+                        scaleBySource.GetValueOrDefault(x.Source, 1),
+                        MusicScoreSources.AudienceOf(x.Source)))));
 
             var multi = consensus.Count(c => c.Value.Sources > 1);
             w.WriteLine($"ranking: {consensus.Count} track(s) ranked, {multi} with more than one source agreeing.");
