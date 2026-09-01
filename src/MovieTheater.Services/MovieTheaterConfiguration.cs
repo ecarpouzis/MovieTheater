@@ -144,26 +144,6 @@ namespace MovieTheater.Services
         /// </remarks>
         public string? LastFmApiKey { get; set; }
 
-        /// <summary>
-        /// Spotify Web API app credentials, for the per-track popularity source in
-        /// <c>music-track-scores --source spotify</c>.
-        /// </summary>
-        /// <remarks>
-        /// <para><b>These are an APP registration, not an account login.</b> The Web API
-        /// authenticates with the client-credentials flow — a Client ID and Client Secret created at
-        /// the Spotify developer dashboard — and there is no API surface that accepts an account
-        /// email and password. A user password would be both unusable here and the wrong secret to
-        /// hold.</para>
-        /// <para>Unset is a supported state: the Spotify source reports "not configured" and skips,
-        /// exactly as the Last.fm half of <c>music-enrich</c> does. Deezer needs no credentials at
-        /// all, so the multi-source ranking still has a second opinion without these.</para>
-        /// </remarks>
-        public string? SpotifyClientId { get; set; }
-
-        /// <summary>See <see cref="SpotifyClientId"/>. A SECRET — it belongs in the prod secret, never
-        /// in a committed file.</summary>
-        public string? SpotifyClientSecret { get; set; }
-
         // ── Family photo album (docs/photos-plan.md §2.2/§2.5). Every surface degrades when these are
         // unset — the CLI refuses to run and the token minter answers "not configured" — so a host that
         // is not photo-adjacent simply does not offer the vertical. NO path here is ever hardcoded:

@@ -14,9 +14,10 @@ namespace MovieTheater.Db.Migrations
     /// the same reason.</para>
     ///
     /// <para><b>Score is a PERCENTILE within its own source</b>, not the service's raw number:
-    /// Last.fm counts listeners (1 … 4.2M), Deezer publishes an internal rank (~0 … 1M) and Spotify
-    /// a 0–100 index, so averaging the raw values would be meaningless. RawValue keeps each
-    /// service's own figure so a re-scale never costs another request.</para>
+    /// Last.fm counts listeners (1 … 4.2M), Deezer publishes an internal rank (~0 … 1M) and
+    /// ListenBrainz counts listens from a far smaller crowd, so averaging the raw values would be
+    /// meaningless. RawValue keeps each service's own figure so a re-scale never costs another
+    /// request.</para>
     ///
     /// <para>Purely additive: a new table and two nullable/defaulted columns; existing rows keep
     /// NULL, which reads as "no source has scored this yet". Applied to the live DB by hand

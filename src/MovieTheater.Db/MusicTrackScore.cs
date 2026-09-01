@@ -13,8 +13,9 @@ namespace MovieTheater.Db
     /// The <c>Source</c> column is the load-bearing idea across this vertical: it is part of the
     /// unique key, so each pass owns and REPLACES only its own rows and any number of sources
     /// coexist without a "who wrote this last" column. Adding <c>PopularityDeezer</c>,
-    /// <c>PopularitySpotify</c> … would have meant a migration per source and a widening branch in
-    /// every read.</para>
+    /// <c>PopularityListenBrainz</c> … would have meant a migration per source and a widening branch
+    /// in every read — and a column per service is also the shape that makes RETIRING one expensive,
+    /// which has already happened once.</para>
     ///
     /// <para><b>Why more than one source at all.</b> Measured before this was built: Deezer's own
     /// ranking agrees with Last.fm's at Spearman ρ = 0.788 over a stratified sample of the library.
@@ -24,7 +25,7 @@ namespace MovieTheater.Db
     ///
     /// <para><b><see cref="Score"/> is a PERCENTILE, not the source's own number.</b> Sources are on
     /// wildly different scales — Last.fm counts listeners (1 … 4.2 million), Deezer publishes an
-    /// internal rank (roughly 0 … 1,000,000), Spotify a 0–100 index of its own — and averaging those
+    /// internal rank (roughly 0 … 1,000,000), ListenBrainz listens from a far smaller crowd — and averaging those
     /// raw values would be meaningless. Converting each to "where this sits among everything else
     /// this source told us about" makes them commensurable, and is also exactly the question asked of
     /// the library: rank our music. <see cref="RawValue"/> keeps the source's own number so a
@@ -54,8 +55,8 @@ namespace MovieTheater.Db
         public int Score { get; set; }
 
         /// <summary>
-        /// The source's own number, unnormalised — Last.fm listeners, a Deezer rank, a Spotify
-        /// popularity. Kept so the percentile can be recomputed offline, and because the raw count is
+        /// The source's own number, unnormalised — Last.fm listeners, a Deezer rank, ListenBrainz
+        /// listens. Kept so the percentile can be recomputed offline, and because the raw count is
         /// the only thing that can express a DROP (the reason
         /// <see cref="MusicTrack.PopularityListeners"/> exists).
         /// </summary>
@@ -79,9 +80,6 @@ namespace MovieTheater.Db
         /// <summary>Deezer's published per-track <c>rank</c>. Needs no credentials at all.</summary>
         public const string Deezer = "deezer";
 
-        /// <summary>Spotify's own 0–100 track popularity. Needs a client id + secret.</summary>
-        public const string Spotify = "spotify";
-
         /// <summary>ListenBrainz total listen counts, keyed by MusicBrainz recording MBID. Open data
         /// (CC0) and needs no credentials, but its audience is orders of magnitude smaller than
         /// Last.fm's - which is exactly why the ranking weighs a source by the audience behind it.</summary>
@@ -103,13 +101,9 @@ namespace MovieTheater.Db
         /// getting one of these wrong by a factor of two moves a weight by about 0.03. What it must
         /// get right is the SHAPE: that ListenBrainz is a niche audience and the other two are mass
         /// ones. Precision here would be false precision.</para>
-        /// <para>Spotify's figure is carried for completeness; it has never returned data (the
-        /// popularity field is withdrawn from new apps).</para>
         /// </remarks>
         public static long AudienceOf(string? source) => source?.ToLowerInvariant() switch
         {
-            // Hundreds of millions of monthly users. Present so the table is complete.
-            Spotify => 500_000_000,
             // A mass-market streaming service, tens of millions of subscribers.
             Deezer => 16_000_000,
             // Millions of scrobbling accounts - smaller than a streaming service, still a mass audience.
