@@ -49,7 +49,7 @@ func main() {
 		relayIP   = flag.String("relay-ip", env("TURN_RELAY_IP", "192.168.68.69"), "address the relay uses to reach the worker (the LAN IP the worker can answer on)")
 		certFile  = flag.String("cert", env("TURN_CERT", ""), "TLS certificate PEM (for turn hostname)")
 		keyFile   = flag.String("key", env("TURN_KEY", ""), "TLS private key PEM")
-		allowed   = flag.String("allowed-peers", env("TURN_ALLOWED_PEERS", "192.168.68.69,98.15.249.217"), "comma-separated peer IPs the relay may reach")
+		allowed   = flag.String("allowed-peers", env("TURN_ALLOWED_PEERS", "192.168.68.69"), "comma-separated peer IPs the relay may reach")  // the WORKER's address; the old WAN entry died with the 2026-09-01 CGNAT cutover
 	)
 	flag.Parse()
 

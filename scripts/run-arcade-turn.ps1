@@ -23,7 +23,7 @@ param(
     [string]$Listen     = ":5349",
     [string]$Realm      = "arcade.carpouzis.com",
     [string]$RelayIp    = "192.168.68.69",
-    [string]$AllowedPeers = "192.168.68.69,98.15.249.217"
+    [string]$AllowedPeers = "192.168.68.69"   # the worker's LAN address; the WAN entry died with the CGNAT cutover (2026-09-01)
 )
 
 $exe = Join-Path $ConfDir "arcade-turn.exe"

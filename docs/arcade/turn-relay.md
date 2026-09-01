@@ -143,7 +143,14 @@ Set-Content -NoNewline D:\ArcadeStorage\turn\secret.txt $secret
 The **same** value goes in the site's `ArcadeTurnSecret` (step 5).
 
 ### 3. DNS + TLS cert for the turn hostname
-- **Public A record** `turn.carpouzis.com → 98.15.249.217` (GoDaddy). turns needs a publicly-trusted
+- **Public AAAA record** `turn.carpouzis.com → 2607:2040:110:19ff:1ec2:1284:b022:1876` (GoDaddy),
+  **plus an A record → the VPS** (docs/site-ipv4-door.md) since the house went behind CGNAT on
+  2026-09-01. The AAAA is the direct door; the A is the VPS's blind TCP forward (443 **and** 5349
+  both ride it), which is what restored the relay for IPv4-only public wifi — exactly the
+  networks a relay exists for. The AAAA is kept current by the DDNS task
+  (`scripts/update-godaddy-aaaa.ps1`).
+  The Deco needs an IPv6 firewall rule for **TCP 5349** to that address, and the address is the
+  SLAAC *Public* one — never the rotating Temporary address the router's device picker offers. turns needs a publicly-trusted
   cert, and the browser validates the hostname.
 - **Do NOT add an AdGuard split-horizon rewrite for `turn.carpouzis.com`.** Guest/remote clients must
   resolve it to the *public* IP; the whole point is to reach Ziggy the WAN way.
