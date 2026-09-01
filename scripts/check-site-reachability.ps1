@@ -107,14 +107,20 @@ foreach ($addr in $v6) {
 # box passes every local test. AdGuard hit this 2026-08-07; Caddy hit it 2026-09-01.
 Head "HOST FIREWALL  (rule profile MUST cover the NIC's profile - see 2026-08-07 and 2026-09-01)"
 $nicProfile = (Get-NetConnectionProfile -InterfaceAlias $Nic -ErrorAction SilentlyContinue).NetworkCategory
-Row $true "NIC '$Nic' profile = $nicProfile"
+# ⚠ A null profile must FAIL, not false-PASS: `-match $null` matches every rule, which would
+# green-light the exact trap this section exists for right after a NIC/alias change — the one
+# moment the script is guaranteed to be running. And the rule flag is named 'Domain' while the
+# NIC category is 'DomainAuthenticated', so the category is mapped before matching.
+$profileFlag = switch ("$nicProfile") { 'DomainAuthenticated' { 'Domain' } default { "$nicProfile" } }
+Row ([bool]$nicProfile) ("NIC '{0}' profile = {1}" -f $Nic, $(if ($nicProfile) { $nicProfile } else { "NOT FOUND - wrong -Nic after a hardware change? rules below NOT evaluated" }))
 foreach ($proc in $ServerProcesses) {
     $rules = @(Get-NetFirewallApplicationFilter -ErrorAction SilentlyContinue |
                Where-Object { $_.Program -like "*$proc*" } | Get-NetFirewallRule -ErrorAction SilentlyContinue |
                Where-Object { $_.Direction -eq 'Inbound' -and $_.Enabled -eq 'True' -and $_.Action -eq 'Allow' })
     if (-not $rules) { Row $null "$proc : no inbound allow rule found"; continue }
     $profiles = ($rules | ForEach-Object { $_.Profile.ToString() }) -join '/'
-    $covered = $rules | Where-Object { $_.Profile -eq 'Any' -or $_.Profile.ToString() -match $nicProfile }
+    if (-not $nicProfile) { Row $null ("{0,-28} rule profiles: {1}  (NIC profile unknown - cannot judge coverage)" -f $proc, $profiles); continue }
+    $covered = $rules | Where-Object { $_.Profile -eq 'Any' -or $_.Profile.ToString() -match $profileFlag }
     Row ([bool]$covered) ("{0,-28} rule profiles: {1}" -f $proc, $profiles)
 }
 

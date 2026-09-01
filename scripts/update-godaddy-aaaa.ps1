@@ -45,8 +45,9 @@ function Log($msg) {
     try { Add-Content -Path $LogFile -Value $line -WhatIf:$false -Confirm:$false } catch {}
 }
 
-# -- 1. Which address is safe to publish? Only the SLAAC 'Public' one (see the reachability
-#       script's THIS HOST'S IPv6 section, whose parse this reuses). --------------------------
+# -- 1. Which address is safe to publish? Only the SLAAC 'Public' one. The netsh 'Address Type'
+#       parse below is a COPY of the one in check-site-reachability.ps1's THIS HOST'S IPv6
+#       section (not shared code) - a change to either regex must be made in both. ------------
 $v6 = @(Get-NetIPAddress -AddressFamily IPv6 -InterfaceAlias $Nic -ErrorAction SilentlyContinue |
         Where-Object { $_.IPAddress -match '^[23]' })   # global unicast only - no fe80/fd/lease junk
 $netsh = (netsh interface ipv6 show addresses $Nic) -join "`n"
@@ -79,13 +80,17 @@ foreach ($name in $Names) {
         Log "FAIL: GET $name AAAA: $($_.Exception.Message)"; $fail = $true; continue
     }
 
-    if ($current.Count -gt 0 -and $current[0].data -eq $target) {
+    # Desired state is EXACTLY ONE record equal to the target. Comparing only the first record
+    # made the guard order-dependent and let a stale second AAAA (hand-added, or a prefix-
+    # transition leftover) stay published forever (review finding, 2026-09-01) — the PUT below
+    # replaces the whole record set, so a multi-record state always collapses to the one truth.
+    if ($current.Count -eq 1 -and $current[0].data -eq $target) {
         Log "$name.$Domain AAAA already $target - no-op"
         continue
     }
 
     $ttl = if ($current.Count -gt 0 -and $current[0].ttl) { $current[0].ttl } else { 3600 }
-    $was = if ($current.Count -gt 0) { $current[0].data } else { '(none)' }
+    $was = if ($current.Count -gt 0) { ($current | ForEach-Object { $_.data }) -join '+' } else { '(none)' }
     if ($PSCmdlet.ShouldProcess("$name.$Domain", "AAAA $was -> $target (ttl $ttl)")) {
         try {
             $body = ConvertTo-Json @(@{ data = $target; ttl = $ttl })

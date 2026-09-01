@@ -206,7 +206,8 @@ scripts\register-godaddy-ddns-task.ps1     # 15-minute task, logs to D:\ArcadeSt
 ```
 
 It publishes **only** the SLAAC `Public` address (never `Temporary`/`Dhcp`), touches **only** the
-AAAA on `books` and `turn`, and writes **only** on difference.
+AAAA on `books`, `turn` and `mediav6` (see §6½), and writes **only** on difference — where
+"difference" means anything but exactly one record holding the target (stale extras collapse).
 
 ## 6½. The v6-path probe + the IPv6 tip banner
 

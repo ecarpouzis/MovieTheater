@@ -110,7 +110,8 @@ the relay, that 5349 still answers, and that arcade `/healthz` is 200. Any failu
    recomputes the same HMAC from the shared secret and rejects once the expiry passes. Nothing
    per-credential is stored. Only password-verified `StreamingUser` sessions ever receive one.
 2. **Peer allowlist.** TURN permissions are IP-scoped, so the relay permits relaying **only** to the
-   worker/Ziggy addresses (`-allowed-peers`, default `192.168.68.69,98.15.249.217`) and denies
+   worker/Ziggy addresses (`-allowed-peers`, default `192.168.68.69` — the old WAN entry died with
+   the 2026-09-01 CGNAT cutover) and denies
    everything else — otherwise a credential holder could relay into the LAN.
    - **Residual risk (accepted):** TURN permissions can't be scoped to a *port*, so allowing
      `192.168.68.69` technically lets a credentialed user relay UDP to any UDP port on Ziggy. Blast
