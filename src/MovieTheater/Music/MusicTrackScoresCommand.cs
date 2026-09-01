@@ -67,14 +67,21 @@ namespace MovieTheater.Music
         /// well inside what their own clients do and finishes the library in about half an hour.</summary>
         private const int DeezerThrottleMs = 250;
 
+        /// <summary>Spotify publishes no number for its rolling window; five a second is what their
+        /// own guidance calls reasonable, and a 429 is honoured with the Retry-After they send rather
+        /// than guessed at.</summary>
+        private const int SpotifyThrottleMs = 200;
+
         /// <summary>A ranking drifts as slowly as popularity does — the same window the album and
         /// track popularity passes hold their answers for.</summary>
         private static readonly TimeSpan ScoreTtl = TimeSpan.FromDays(120);
 
         private readonly IDbContextFactory<MovieDb> dbFactory;
+        private readonly MovieTheaterConfiguration config;
 
         public MusicTrackScoresCommand(MovieTheaterConfiguration config) : base(config)
         {
+            this.config = config;
             dbFactory = GetRequiredService<IDbContextFactory<MovieDb>>();
         }
 
@@ -92,12 +99,7 @@ namespace MovieTheater.Music
                 {
                     case MusicScoreSources.LastFm: await SeedLastFmAsync(db, w); break;
                     case MusicScoreSources.Deezer: await FetchDeezerAsync(db, w); break;
-                    case MusicScoreSources.Spotify:
-                        // Named explicitly rather than "unknown source": Spotify is the best available
-                        // track-popularity signal and the ONLY thing missing is a free app
-                        // registration, so the message has to say that and not look like a typo.
-                        w.WriteLine("Spotify needs SpotifyClientId + SpotifyClientSecret in config (a free app registration) — not configured, nothing done.");
-                        return;
+                    case MusicScoreSources.Spotify: await FetchSpotifyAsync(db, w); break;
                     default:
                         w.WriteLine($"Unknown --source '{Source}': use lastfm, deezer, or omit it to rank.");
                         return;
@@ -254,6 +256,277 @@ namespace MovieTheater.Music
             w.WriteLine($"{{ processed: {albums.Count}, remaining: {Math.Max(0, pending - albums.Count)}, nextCursor: {next}, " +
                         $"counts: {{ accepted: {found}, rejected: {rejected}, missing: {missing}, rows: {rows}, requests: {requests}, cacheHits: {cacheHits}, errors: {errors} }} }}");
             if (!Apply) w.WriteLine("DRY RUN — nothing written to the database (raw responses ARE cached).");
+        }
+
+        // ── spotify: the purpose-built source, three requests per album ─────────────────────────
+
+        /// <summary>
+        /// Fills the Spotify source. Same album-first shape and the same match gate as Deezer; the
+        /// extra step is that popularity does not travel on an album's tracklist, so the ids gathered
+        /// there are exchanged for full track objects in one batched call.
+        /// </summary>
+        private async Task FetchSpotifyAsync(MovieDb db, ConsoleWriter w)
+        {
+            if (string.IsNullOrWhiteSpace(config.SpotifyClientId) || string.IsNullOrWhiteSpace(config.SpotifyClientSecret))
+            {
+                // Named precisely rather than "unknown source": what is missing is an APP
+                // registration, and a reader who assumes an account login would do needs telling.
+                w.WriteLine("Spotify: not configured — set SpotifyClientId + SpotifyClientSecret (an app registration, not an account login). Nothing done.");
+                return;
+            }
+
+            var take = Take ?? 300;
+            var cache = new MusicResponseCache(CacheDir);
+            using var http = MusicRemoteArt.CreateHttp();
+
+            var token = await GetTokenAsync(http, w);
+            if (token == null) return;
+            if (!await PopularityIsAvailableAsync(http, token, w)) return;
+
+            var scored = db.MusicTrackScores.Where(s => s.Source == MusicScoreSources.Spotify)
+                .Select(s => s.Track.AlbumId);
+            var query = db.MusicAlbums.AsNoTracking()
+                .Where(a => a.Id > After && !scored.Contains(a.Id));
+            var pending = await query.CountAsync();
+            var albums = await query.OrderBy(a => a.Id)
+                .Select(a => new { a.Id, a.Title, Artist = a.Artist.Name })
+                .Take(Math.Max(1, take))
+                .ToListAsync();
+
+            int found = 0, rejected = 0, missing = 0, rows = 0, requests = 0, cacheHits = 0, errors = 0;
+
+            foreach (var album in albums)
+            {
+                var ours = await db.MusicTracks.AsNoTracking()
+                    .Where(t => t.AlbumId == album.Id && t.MissingSinceUtc == null)
+                    .Select(t => new { t.Id, t.Title })
+                    .ToListAsync();
+                if (ours.Count == 0) continue;
+
+                try
+                {
+                    var searchUrl = "https://api.spotify.com/v1/search?type=album&limit=1&q=" +
+                                    Uri.EscapeDataString($"{album.Artist} {album.Title}");
+                    var (searchBody, searchCached) = await GetSpotifyAsync(http, cache, token, $"album.search|{album.Artist}|{album.Title}", searchUrl, w);
+                    if (searchCached) cacheHits++; else requests++;
+
+                    var hit = MusicSpotify.ParseAlbumSearch(searchBody);
+                    if (hit == null) { missing++; if (Verbose) w.WriteLine($"  - {album.Id} no album: {album.Artist} — {album.Title}"); continue; }
+
+                    // The same gate Deezer uses, for the same measured reason: the failure mode is a
+                    // confident answer about the WRONG record, not a missing one.
+                    if (!MusicDeezer.AcceptsAlbum(hit.Value.Title, hit.Value.Artist, album.Title, album.Artist))
+                    {
+                        rejected++;
+                        if (Verbose) w.WriteLine($"  ! {album.Id} REJECTED '{hit.Value.Artist} — {hit.Value.Title}' for '{album.Artist} — {album.Title}'");
+                        continue;
+                    }
+                    found++;
+
+                    var tracksUrl = $"https://api.spotify.com/v1/albums/{hit.Value.Id}/tracks?limit=50";
+                    var (listBody, listCached) = await GetSpotifyAsync(http, cache, token, $"album.tracks|{hit.Value.Id}", tracksUrl, w);
+                    if (listCached) cacheHits++; else requests++;
+
+                    var ids = MusicSpotify.ParseAlbumTrackIds(listBody);
+                    if (ids.Count == 0) continue;
+
+                    // Popularity lives ONLY on the full track object, so the ids are exchanged for
+                    // them in batches — one request per 50 rather than one per track.
+                    var theirs = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
+                    foreach (var batch in Batches(ids, MusicSpotify.MaxTrackIdsPerRequest))
+                    {
+                        var joined = string.Join(",", batch);
+                        var fullUrl = "https://api.spotify.com/v1/tracks?ids=" + Uri.EscapeDataString(joined);
+                        var (fullBody, fullCached) = await GetSpotifyAsync(http, cache, token, $"tracks|{joined}", fullUrl, w);
+                        if (fullCached) cacheHits++; else requests++;
+                        foreach (var (name, popularity) in MusicSpotify.ParseTracks(fullBody))
+                        {
+                            var key = MusicTrackTitles.Normalize(name);
+                            if (key.Length == 0) continue;
+                            if (!theirs.TryGetValue(key, out var existing) || popularity > existing) theirs[key] = popularity;
+                        }
+                    }
+
+                    var matched = 0;
+                    var now = DateTime.UtcNow;
+                    foreach (var track in ours)
+                    {
+                        if (!MusicTrackTitles.TryMatch(theirs, MusicTrackTitles.Normalize(track.Title), out var popularity)) continue;
+                        matched++;
+                        if (!Apply) continue;
+                        var row = await db.MusicTrackScores
+                            .FirstOrDefaultAsync(s => s.MusicTrackId == track.Id && s.Source == MusicScoreSources.Spotify);
+                        if (row == null)
+                            db.MusicTrackScores.Add(new MusicTrackScore
+                            {
+                                MusicTrackId = track.Id, Source = MusicScoreSources.Spotify,
+                                Score = 0, RawValue = popularity, CheckedUtc = now,
+                            });
+                        else { row.RawValue = popularity; row.CheckedUtc = now; }
+                    }
+                    rows += matched;
+                    if (Apply) await db.SaveChangesAsync();
+                    if (Verbose) w.WriteLine($"  + {album.Id} {album.Artist} — {album.Title}: {matched}/{ours.Count}");
+                }
+                catch (Exception ex) { errors++; if (Verbose) w.WriteLine($"  ! {album.Id} {ex.Message}"); }
+            }
+
+            var next = albums.Count > 0 ? albums[^1].Id : After;
+            w.WriteLine($"spotify: {albums.Count} album(s) — {found} accepted, {rejected} rejected by the match gate, " +
+                        $"{missing} not on Spotify; {rows} track score(s) {(Apply ? "written" : "matched")}, " +
+                        $"{requests} request(s), {cacheHits} from cache, {errors} error(s).");
+            w.WriteLine($"{{ processed: {albums.Count}, remaining: {Math.Max(0, pending - albums.Count)}, nextCursor: {next}, " +
+                        $"counts: {{ accepted: {found}, rejected: {rejected}, missing: {missing}, rows: {rows}, requests: {requests}, cacheHits: {cacheHits}, errors: {errors} }} }}");
+            if (!Apply) w.WriteLine("DRY RUN — nothing written to the database (raw responses ARE cached).");
+        }
+
+        /// <summary>
+        /// One known track, asked for before anything else, purely to see whether this app is allowed
+        /// the <c>popularity</c> field at all.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>Measured 2026-08-31 and the reason this check exists.</b> With valid credentials
+        /// on a PREMIUM account, <c>/v1/search</c> and <c>/v1/albums/{id}/tracks</c> both answer 200 —
+        /// but <c>/v1/tracks?ids=</c> and <c>/v1/artists/{id}/top-tracks</c> answer 403, and the
+        /// single-track endpoint answers 200 with <b>no <c>popularity</c> key in the body at all</b>.
+        /// Spotify withdrew the field from newly-registered apps; it is not a credential problem, not
+        /// a Premium problem, and no amount of retrying changes it.</para>
+        /// <para>Without this preflight the pass would spend ~12,500 requests to write nothing and
+        /// report every album as "not on Spotify", which is the most expensive possible way to be
+        /// told a field is missing. One request answers it instead.</para>
+        /// </remarks>
+        private async Task<bool> PopularityIsAvailableAsync(HttpClient http, string token, ConsoleWriter w)
+        {
+            try
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Get, $"https://api.spotify.com/v1/tracks/{PopularityProbeTrackId}");
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                using var response = await http.SendAsync(request);
+                var body = await response.Content.ReadAsStringAsync();
+                if (!response.IsSuccessStatusCode)
+                {
+                    w.WriteLine($"Spotify: the API refused a single-track read (HTTP {(int)response.StatusCode}) — nothing to fetch.");
+                    return false;
+                }
+                using var doc = System.Text.Json.JsonDocument.Parse(body);
+                if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object
+                    && doc.RootElement.TryGetProperty("popularity", out _))
+                    return true;
+
+                w.WriteLine("Spotify: this app is not served the `popularity` field — the track endpoint answers 200 without it.");
+                w.WriteLine("Spotify: withdrawn from newly-registered apps; a Premium account does not restore it. Skipping.");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                w.WriteLine($"Spotify: could not check field availability — {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>A track that has existed for decades and will not be delisted, used only to ask
+        /// whether the <c>popularity</c> field comes back. Its identity is irrelevant; its permanence
+        /// is the point.</summary>
+        private const string PopularityProbeTrackId = "4XDBEoD6QFnzDY5oMmNVXN";
+
+        private static IEnumerable<List<string>> Batches(List<string> items, int size)
+        {
+            for (var i = 0; i < items.Count; i += size)
+                yield return items.GetRange(i, Math.Min(size, items.Count - i));
+        }
+
+        /// <summary>
+        /// A bearer token from the client-credentials flow, or null when the credentials are refused.
+        /// </summary>
+        /// <remarks>
+        /// Held for the life of the process. Tokens last an hour and a chunk takes minutes, so a
+        /// refresh path would be code that never runs — the driver starts a new process per chunk,
+        /// which re-asks. The token is NEVER written to the response cache: that cache lives in a
+        /// repo working tree, and a bearer token there is a credential waiting for somebody to zip
+        /// data/.
+        /// </remarks>
+        private async Task<string?> GetTokenAsync(HttpClient http, ConsoleWriter w)
+        {
+            try
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Post, "https://accounts.spotify.com/api/token");
+                var basic = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(
+                    $"{config.SpotifyClientId}:{config.SpotifyClientSecret}"));
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", basic);
+                request.Content = new FormUrlEncodedContent(new Dictionary<string, string> { ["grant_type"] = "client_credentials" });
+                using var response = await http.SendAsync(request);
+                var body = await response.Content.ReadAsStringAsync();
+                var token = MusicSpotify.ParseToken(body);
+                if (token == null)
+                {
+                    // The status is worth printing — the credentials that produced it never are.
+                    w.WriteLine($"Spotify: could not get a token (HTTP {(int)response.StatusCode}). Check the client id and secret.");
+                    return null;
+                }
+                return token.Value.AccessToken;
+            }
+            catch (HttpRequestException ex) { w.WriteLine($"Spotify: token request failed — {ex.Message}"); return null; }
+            catch (TaskCanceledException) { w.WriteLine("Spotify: token request timed out."); return null; }
+        }
+
+        private static DateTime lastSpotifyCallUtc = DateTime.MinValue;
+
+        /// <summary>One HTTP failure is worth printing in full; four thousand identical ones are
+        /// noise that buries the summary.</summary>
+        private bool spotifyFailureReported;
+
+        /// <summary>
+        /// A cached Spotify GET. The bearer token rides the request header and is never stored beside
+        /// the body.
+        /// </summary>
+        private async Task<(string? Body, bool FromCache)> GetSpotifyAsync(
+            HttpClient http, MusicResponseCache cache, string token, string key, string url, ConsoleWriter w)
+        {
+            var cached = await cache.TryReadAsync("spotify", key, ScoreTtl);
+            if (cached != null) return (cached, true);
+
+            await MusicRemoteArt.Gate.WaitAsync();
+            try
+            {
+                var wait = SpotifyThrottleMs - (int)(DateTime.UtcNow - lastSpotifyCallUtc).TotalMilliseconds;
+                if (wait > 0) await Task.Delay(wait);
+                lastSpotifyCallUtc = DateTime.UtcNow;
+
+                using var request = new HttpRequestMessage(HttpMethod.Get, url);
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                using var response = await http.SendAsync(request);
+                var body = await response.Content.ReadAsStringAsync();
+                if ((int)response.StatusCode == 429)
+                {
+                    // Spotify answers a rate limit with Retry-After, and honouring it is the whole
+                    // difference between being throttled and being blocked.
+                    var retry = response.Headers.RetryAfter?.Delta?.TotalSeconds ?? 5;
+                    w.WriteLine($"  … rate limited, waiting {retry:N0}s");
+                    await Task.Delay(TimeSpan.FromSeconds(Math.Min(60, retry + 1)));
+                    return (null, false);
+                }
+                if (!response.IsSuccessStatusCode)
+                {
+                    // SAY SO, once. A silent null here is indistinguishable from "the album is not on
+                    // Spotify", and that is exactly how it first presented: twelve albums reported
+                    // missing when every request had actually been refused 403 "Active premium
+                    // subscription required for the owner of the app". A whole run can be a lie if
+                    // this branch stays quiet.
+                    if (!spotifyFailureReported)
+                    {
+                        spotifyFailureReported = true;
+                        var detail = body.Length > 200 ? body[..200] : body;
+                        w.WriteLine($"Spotify: HTTP {(int)response.StatusCode} — {detail}");
+                        w.WriteLine("Spotify: further failures this run are counted, not repeated.");
+                    }
+                    return (null, false);
+                }
+                await cache.SaveAsync("spotify", key, body, url, (int)response.StatusCode);
+                return (body, false);
+            }
+            catch (HttpRequestException) { return (null, false); }
+            catch (TaskCanceledException) { return (null, false); }
+            finally { MusicRemoteArt.Gate.Release(); }
         }
 
         // ── the ranking ─────────────────────────────────────────────────────────────────────────
