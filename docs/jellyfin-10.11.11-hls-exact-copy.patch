@@ -1,6 +1,6 @@
 diff -ruN -x bin -x obj a/Jellyfin.Api/Controllers/DynamicHlsController.cs b/Jellyfin.Api/Controllers/DynamicHlsController.cs
 --- a/Jellyfin.Api/Controllers/DynamicHlsController.cs	2026-06-06 11:37:28.000000000 -0400
-+++ b/Jellyfin.Api/Controllers/DynamicHlsController.cs	2026-08-13 23:18:02.000000000 -0400
++++ b/Jellyfin.Api/Controllers/DynamicHlsController.cs	2026-09-01 20:19:56.141736400 -0400
 @@ -1606,8 +1606,6 @@
              state.BaseRequest.BreakOnNonKeyFrames = false;
          }
@@ -65,7 +65,7 @@ diff -ruN -x bin -x obj a/Jellyfin.Api/Controllers/DynamicHlsController.cs b/Jel
              baseUrlParam,
 diff -ruN -x bin -x obj a/Jellyfin.Api/Controllers/KeyframeExtractionController.cs b/Jellyfin.Api/Controllers/KeyframeExtractionController.cs
 --- a/Jellyfin.Api/Controllers/KeyframeExtractionController.cs	1969-12-31 19:00:00.000000000 -0500
-+++ b/Jellyfin.Api/Controllers/KeyframeExtractionController.cs	2026-08-13 23:19:08.000000000 -0400
++++ b/Jellyfin.Api/Controllers/KeyframeExtractionController.cs	2026-09-01 20:19:56.167906400 -0400
 @@ -0,0 +1,151 @@
 +using System;
 +using System.Collections.Generic;
@@ -220,7 +220,7 @@ diff -ruN -x bin -x obj a/Jellyfin.Api/Controllers/KeyframeExtractionController.
 +}
 diff -ruN -x bin -x obj a/Jellyfin.Api/Jellyfin.Api.csproj b/Jellyfin.Api/Jellyfin.Api.csproj
 --- a/Jellyfin.Api/Jellyfin.Api.csproj	2026-06-06 11:37:28.000000000 -0400
-+++ b/Jellyfin.Api/Jellyfin.Api.csproj	2026-08-13 23:18:02.000000000 -0400
++++ b/Jellyfin.Api/Jellyfin.Api.csproj	2026-09-01 20:19:56.171412800 -0400
 @@ -8,6 +8,10 @@
    <PropertyGroup>
      <TargetFramework>net9.0</TargetFramework>
@@ -234,8 +234,25 @@ diff -ruN -x bin -x obj a/Jellyfin.Api/Jellyfin.Api.csproj b/Jellyfin.Api/Jellyf
    <ItemGroup>
 diff -ruN -x bin -x obj a/MediaBrowser.Controller/MediaEncoding/EncodingHelper.cs b/MediaBrowser.Controller/MediaEncoding/EncodingHelper.cs
 --- a/MediaBrowser.Controller/MediaEncoding/EncodingHelper.cs	2026-06-06 11:37:28.000000000 -0400
-+++ b/MediaBrowser.Controller/MediaEncoding/EncodingHelper.cs	2026-08-13 23:18:02.000000000 -0400
-@@ -2960,10 +2960,19 @@
++++ b/MediaBrowser.Controller/MediaEncoding/EncodingHelper.cs	2026-09-01 20:20:53.706538900 -0400
+@@ -1960,7 +1960,15 @@
+                 " -force_key_frames:0 \"expr:gte(t,n_forced*{0})\"",
+                 segmentLength);
+ 
+-            var framerate = state.VideoStream?.RealFrameRate;
++            // MT patch: the GOP is a count of OUTPUT frames, so it must be derived from the rate
++            // this session will actually ENCODE at — the forced -r when there is one, else the
++            // stream's reference rate. Upstream read RealFrameRate (the container's r_frame_rate),
++            // which is DOUBLE the true rate on interlace-flagged MPEG-1/2 sources (avg 29.97 /
++            // real 59.94 — every old .mpg and DVD .VOB rip). That made the keyframe interval
++            // segmentLength*2 seconds long, so ffmpeg's HLS segments came out at twice the
++            // duration the playlist promises, the numbering diverged, and later segment requests
++            // hung forever. Every other framerate decision here already uses ReferenceFrameRate.
++            double? framerate = GetFramerateParam(state) ?? state.VideoStream?.ReferenceFrameRate;
+             if (framerate.HasValue)
+             {
+                 // This is to make sure keyframe interval is limited to our segment,
+@@ -2960,10 +2968,19 @@
              {
                  // For direct streaming/remuxing, we seek at the exact position of the keyframe
                  // However, ffmpeg will seek to previous keyframe when the exact time is the input
@@ -257,7 +274,7 @@ diff -ruN -x bin -x obj a/MediaBrowser.Controller/MediaEncoding/EncodingHelper.c
  
                  // Seeking beyond EOF makes no sense in transcoding. Clamp the seekTick value to
                  // [0, RuntimeTicks - 5.0s], so that the muxer gets packets and avoid error codes.
-@@ -2982,11 +2991,17 @@
+@@ -2982,11 +2999,17 @@
                      // Important: If this is ever re-enabled, make sure not to use it with wtv because it breaks seeking
                      // Disable -noaccurate_seek on mpegts container due to the timestamps issue on some clients,
                      // but it's still required for fMP4 container otherwise the audio can't be synced to the video.
@@ -278,7 +295,7 @@ diff -ruN -x bin -x obj a/MediaBrowser.Controller/MediaEncoding/EncodingHelper.c
                      }
 diff -ruN -x bin -x obj a/MediaBrowser.Controller/MediaEncoding/EncodingJobInfo.cs b/MediaBrowser.Controller/MediaEncoding/EncodingJobInfo.cs
 --- a/MediaBrowser.Controller/MediaEncoding/EncodingJobInfo.cs	2026-06-06 11:37:28.000000000 -0400
-+++ b/MediaBrowser.Controller/MediaEncoding/EncodingJobInfo.cs	2026-08-13 23:18:02.000000000 -0400
++++ b/MediaBrowser.Controller/MediaEncoding/EncodingJobInfo.cs	2026-09-01 20:19:56.189177100 -0400
 @@ -74,6 +74,16 @@
  
          public bool IsInputVideo { get; set; }
@@ -298,7 +315,7 @@ diff -ruN -x bin -x obj a/MediaBrowser.Controller/MediaEncoding/EncodingJobInfo.
          public int? OutputVideoBitrate { get; set; }
 diff -ruN -x bin -x obj a/src/Jellyfin.MediaEncoding.Hls/Cache/CacheDecorator.cs b/src/Jellyfin.MediaEncoding.Hls/Cache/CacheDecorator.cs
 --- a/src/Jellyfin.MediaEncoding.Hls/Cache/CacheDecorator.cs	2026-06-06 11:37:28.000000000 -0400
-+++ b/src/Jellyfin.MediaEncoding.Hls/Cache/CacheDecorator.cs	2026-08-13 23:18:02.000000000 -0400
++++ b/src/Jellyfin.MediaEncoding.Hls/Cache/CacheDecorator.cs	2026-09-01 20:19:56.201751300 -0400
 @@ -53,7 +53,15 @@
  
              _logger.LogDebug("Successfully extracted keyframes using {ExtractorName}", _keyframeExtractorName);
@@ -318,7 +335,7 @@ diff -ruN -x bin -x obj a/src/Jellyfin.MediaEncoding.Hls/Cache/CacheDecorator.cs
          return true;
 diff -ruN -x bin -x obj a/src/Jellyfin.MediaEncoding.Hls/Jellyfin.MediaEncoding.Hls.csproj b/src/Jellyfin.MediaEncoding.Hls/Jellyfin.MediaEncoding.Hls.csproj
 --- a/src/Jellyfin.MediaEncoding.Hls/Jellyfin.MediaEncoding.Hls.csproj	2026-06-06 11:37:28.000000000 -0400
-+++ b/src/Jellyfin.MediaEncoding.Hls/Jellyfin.MediaEncoding.Hls.csproj	2026-08-13 23:18:02.000000000 -0400
++++ b/src/Jellyfin.MediaEncoding.Hls/Jellyfin.MediaEncoding.Hls.csproj	2026-09-01 20:19:56.204273600 -0400
 @@ -3,6 +3,10 @@
    <PropertyGroup>
      <TargetFramework>net9.0</TargetFramework>
@@ -332,7 +349,7 @@ diff -ruN -x bin -x obj a/src/Jellyfin.MediaEncoding.Hls/Jellyfin.MediaEncoding.
    <ItemGroup>
 diff -ruN -x bin -x obj a/src/Jellyfin.MediaEncoding.Hls/Playlist/DynamicHlsPlaylistGenerator.cs b/src/Jellyfin.MediaEncoding.Hls/Playlist/DynamicHlsPlaylistGenerator.cs
 --- a/src/Jellyfin.MediaEncoding.Hls/Playlist/DynamicHlsPlaylistGenerator.cs	2026-06-06 11:37:28.000000000 -0400
-+++ b/src/Jellyfin.MediaEncoding.Hls/Playlist/DynamicHlsPlaylistGenerator.cs	2026-08-13 23:18:02.000000000 -0400
++++ b/src/Jellyfin.MediaEncoding.Hls/Playlist/DynamicHlsPlaylistGenerator.cs	2026-09-01 20:19:56.206296000 -0400
 @@ -9,6 +9,7 @@
  using Jellyfin.MediaEncoding.Keyframes;
  using MediaBrowser.Common.Configuration;
@@ -451,7 +468,7 @@ diff -ruN -x bin -x obj a/src/Jellyfin.MediaEncoding.Hls/Playlist/DynamicHlsPlay
          if (keyframeData.KeyframeTicks.Count > 0 && keyframeData.TotalDuration < keyframeData.KeyframeTicks[^1])
 diff -ruN -x bin -x obj a/src/Jellyfin.MediaEncoding.Hls/Playlist/IDynamicHlsPlaylistGenerator.cs b/src/Jellyfin.MediaEncoding.Hls/Playlist/IDynamicHlsPlaylistGenerator.cs
 --- a/src/Jellyfin.MediaEncoding.Hls/Playlist/IDynamicHlsPlaylistGenerator.cs	2026-06-06 11:37:28.000000000 -0400
-+++ b/src/Jellyfin.MediaEncoding.Hls/Playlist/IDynamicHlsPlaylistGenerator.cs	2026-08-13 23:18:02.000000000 -0400
++++ b/src/Jellyfin.MediaEncoding.Hls/Playlist/IDynamicHlsPlaylistGenerator.cs	2026-09-01 20:19:56.226065000 -0400
 @@ -1,3 +1,5 @@
 +using System;
 +
@@ -478,7 +495,7 @@ diff -ruN -x bin -x obj a/src/Jellyfin.MediaEncoding.Hls/Playlist/IDynamicHlsPla
  }
 diff -ruN -x bin -x obj a/tests/Jellyfin.MediaEncoding.Hls.Tests/Playlist/DynamicHlsPlaylistGeneratorTests.cs b/tests/Jellyfin.MediaEncoding.Hls.Tests/Playlist/DynamicHlsPlaylistGeneratorTests.cs
 --- a/tests/Jellyfin.MediaEncoding.Hls.Tests/Playlist/DynamicHlsPlaylistGeneratorTests.cs	2026-06-06 11:37:28.000000000 -0400
-+++ b/tests/Jellyfin.MediaEncoding.Hls.Tests/Playlist/DynamicHlsPlaylistGeneratorTests.cs	2026-08-13 23:18:02.000000000 -0400
++++ b/tests/Jellyfin.MediaEncoding.Hls.Tests/Playlist/DynamicHlsPlaylistGeneratorTests.cs	2026-09-01 20:19:56.228573000 -0400
 @@ -22,6 +22,61 @@
          }
  
