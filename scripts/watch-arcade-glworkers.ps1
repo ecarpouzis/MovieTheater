@@ -892,7 +892,13 @@ while ($true) {
             if (-not $livePids[$wpid]) { continue }
             if ($age[$wpid] -lt $GraceSec) { continue }                           # still starting up
 
-            $self = $workers | Where-Object { [int]$_.ProcessId -eq $wpid } | Select-Object -First 1
+            # The $workers snapshot is a THREE-field projection (ProcessId/CreationDate/SessionId
+            # -- no ParentProcessId), so the walk MUST start from the live CIM row; walking the
+            # projection reads a null parent and silently declares EVERY worker orphaned (first
+            # live cycle 2026-09-01: K kill-looped all three healthy, supervised workers). A null
+            # row means we cannot judge: skip and clear -- under-act, never strike on missing data.
+            $self = Get-CimInstance Win32_Process -Filter ("ProcessId={0}" -f $wpid) -ErrorAction SilentlyContinue
+            if (-not $self) { $orphanStrikes.Remove($p) | Out-Null; continue }
             $supervised = $false
             $walker = $self
             for ($hop = 0; $hop -lt 3 -and $walker; $hop++) {
