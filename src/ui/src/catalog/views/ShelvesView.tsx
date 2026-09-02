@@ -27,20 +27,35 @@ export default function ShelvesView({ source, state, coverScale }: ViewProps) {
   const exhaustedRef = useRef(new Set<string>());
   const moreLoadingRef = useRef(new Set<string>());
 
+  // One AbortController per band fetch in flight, so a superseded fetch (a new query, a band released
+  // as far, an unmount) is cancelled on the wire instead of running to completion server-side.
+  const abortersRef = useRef(new Map<number, AbortController>());
+  const abortAll = () => { abortersRef.current.forEach((a) => a.abort()); abortersRef.current.clear(); };
+
   useEffect(() => {
+    abortAll();
     setExtraBands({}); setRenderBands(new Set([0])); loadingRef.current.clear();
     heightsRef.current.clear(); setAvgBandHeight(700); setExtras({}); exhaustedRef.current.clear(); moreLoadingRef.current.clear();
     setPendingJump(null); setActive({ band: 0, within: 0 });
   }, [stream.queryKey]);
+  // Data changed under the SAME query (a Seen/Want untoggle, a background chunk): the cached bands and
+  // the "more" pages re-read; the window, the measured heights and the scroll position stay put.
+  useEffect(() => {
+    abortAll();
+    setExtraBands({}); loadingRef.current.clear(); setExtras({}); exhaustedRef.current.clear(); moreLoadingRef.current.clear();
+  }, [stream.dataVersion]);
+  useEffect(() => abortAll, []);
 
   const ensureBand = useCallback((i: number) => {
     if (i <= 0 || i >= totalBands || loadingRef.current.has(i) || extraBands[i]) return;
     loadingRef.current.add(i);
     const key = stream.queryKey;
-    stream.fetchBand(i, new AbortController().signal)
-      .then((groups) => { if (key !== stream.queryKey) return; startTransition(() => setExtraBands((prev) => ({ ...prev, [i]: groups }))); })
+    const controller = new AbortController();
+    abortersRef.current.set(i, controller);
+    stream.fetchBand(i, controller.signal)
+      .then((groups) => { if (controller.signal.aborted || key !== stream.queryKey) return; startTransition(() => setExtraBands((prev) => ({ ...prev, [i]: groups }))); })
       .catch(() => {})
-      .finally(() => loadingRef.current.delete(i));
+      .finally(() => { loadingRef.current.delete(i); if (abortersRef.current.get(i) === controller) abortersRef.current.delete(i); });
   }, [stream, totalBands, extraBands]);
   // A band mount is ~720 books: a transition, so a scroll in flight keeps its frames.
   const requestBand = useCallback((i: number) => {
@@ -49,6 +64,9 @@ export default function ShelvesView({ source, state, coverScale }: ViewProps) {
     startTransition(() => setRenderBands((prev) => (prev.has(i) ? prev : new Set(prev).add(i))));
   }, [ensureBand, totalBands]);
   const releaseBand = useCallback((i: number) => {
+    // A band the reader scrolled far from is not worth finishing: cancel its fetch if one is still out.
+    const inFlight = abortersRef.current.get(i);
+    if (inFlight) { inFlight.abort(); abortersRef.current.delete(i); loadingRef.current.delete(i); }
     setRenderBands((prev) => { if (!prev.has(i)) return prev; const next = new Set(prev); next.delete(i); return next; });
   }, []);
   const onBandHeight = useCallback((band: number, h: number) => {

@@ -60,10 +60,12 @@ const SCROLL_WINDOW_MS = 200;
 /** The DOM half of the reading — the engine's own markers, counted where they stand. */
 export function readDomFacts(root: ParentNode = document): Pick<PerfFacts, "bands" | "placeholders" | "cards" | "imgsPending" | "imgsDead"> {
   const imgs = Array.from(root.querySelectorAll<HTMLImageElement>(".bx-results img"));
+  // Two engines write the DOM: InfiniteBands (`[data-iband]` bands, `.bx-card` cards) and ShelvesLayout
+  // (`.bx-band` bands, `.bk` books). Both are counted, or the HUD reads 0+0ph / 0 cards on the Shelves.
   return {
-    bands: root.querySelectorAll("[data-iband]").length,
+    bands: root.querySelectorAll("[data-iband], .bx-band:not(.bx-band-placeholder)").length,
     placeholders: root.querySelectorAll(".bx-band-placeholder").length,
-    cards: root.querySelectorAll(".bx-results .bx-card").length,
+    cards: root.querySelectorAll(".bx-results .bx-card, .bx-results .bk").length,
     imgsPending: imgs.filter((i) => !i.dataset.fallback && !i.complete).length,
     imgsDead: imgs.filter((i) => i.dataset.fallback === "1").length,
   };

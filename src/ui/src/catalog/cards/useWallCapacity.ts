@@ -14,17 +14,17 @@ export function wallCapacity(width: number, availableHeight: number, cellH: numb
   return Math.max(cols * rows, cols * 2);
 }
 
-export default function useWallCapacity(cellH: number, onCapacity?: (n: number) => void) {
+export default function useWallCapacity(cellH: number, onCapacity?: (n: number) => void, aspect = 0.66) {
   const reportedRef = useRef(0);
   return useCallback((el: HTMLDivElement | null) => {
     if (!el || !onCapacity) return;
     const width = el.clientWidth;
     const top = el.getBoundingClientRect().top;
     const avail = window.innerHeight - top - WALL_RESERVE_PX;
-    const capacity = wallCapacity(width, avail, cellH);
+    const capacity = wallCapacity(width, avail, cellH, aspect);
     if (capacity !== reportedRef.current) {
       reportedRef.current = capacity;
       onCapacity(capacity);
     }
-  }, [cellH, onCapacity]);
+  }, [cellH, onCapacity, aspect]);
 }

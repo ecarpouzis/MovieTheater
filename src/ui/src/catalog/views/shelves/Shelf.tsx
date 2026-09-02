@@ -23,6 +23,8 @@ export function ShelfBook({ item, shelfH, onOpen }: { item: CardItem; shelfH: nu
   const hue = item.hue ?? 220;
   return (
     <div className="bk" data-cw={cw} onClick={() => onOpen(item)} title={item.title}
+      role="button" tabIndex={0} aria-label={item.title}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(item); } }}
       style={{ "--cw": `${cw}px`, "--spine": `${spine}px`, "--sh": `${ch}px` } as CSSProperties}>
       <div className="bk-3d" style={{ background: `oklch(0.52 0.18 ${hue})` }}>
         <img data-src={coverSrc(item, cw)} alt={item.title} decoding="async"

@@ -71,6 +71,17 @@ describe("catalog/PerfHud", () => {
     expect(facts).toMatchObject({ bands: 1, placeholders: 1, cards: 2, imgsDead: 1 });
   });
 
+  it("reads the Shelves engine's DOM too — .bx-band bands and .bk books", () => {
+    const root = document.createElement("div");
+    root.innerHTML = `
+      <div class="bx-results">
+        <div class="bx-band" data-band="0"><div class="bk"><img src="/a.webp"></div><div class="bk"><img src="/b.webp"></div><div class="bk"></div></div>
+        <div class="bx-band bx-band-placeholder" data-band="1"></div>
+      </div>`;
+    const facts = readDomFacts(root);
+    expect(facts).toMatchObject({ bands: 1, placeholders: 1, cards: 3 });
+  });
+
   it("says heap n/a where the engine offers no reading (every browser but Chromium)", () => {
     const line = formatFacts({
       fps: 60, scrollFrameMs: 12, bands: 3, placeholders: 1, cards: 48, fetches: 2,

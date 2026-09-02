@@ -15,6 +15,8 @@ export const GROUPS_PAGE_SIZE = 20;
 export interface GroupedStream {
   queryKey: string;
   groupBy: string;
+  /** The source's `dataVersion` at the time band 0 was read (see `CatalogSource.dataVersion`); a change re-reads the bands in place. */
+  dataVersion: number;
   band0: CardGroup[] | null;
   totalGroups: number;
   loading: boolean;
@@ -33,6 +35,9 @@ export function useGroupedStream(source: CatalogSource, state: CatalogViewState,
   const groupBy = groupByFor(source, state);
   const sort = state.sort;
   const queryKey = `${source.queryKey}|groups:${groupBy}|${sort}|${perGroupTop}`;
+  // Data edited in place under the SAME query: band 0 and the total are re-read, the views drop their
+  // cached bands, and nothing resets the window or the scroll position (the flat stream's rule).
+  const dataVersion = source.dataVersion ?? 0;
   const sourceRef = useRef(source);
   sourceRef.current = source;
 
@@ -41,7 +46,7 @@ export function useGroupedStream(source: CatalogSource, state: CatalogViewState,
     if (!s.fetchGroupBand) return Promise.resolve([]);
     return s.fetchGroupBand(band * GROUPS_PAGE_SIZE, GROUPS_PAGE_SIZE, perGroupTop, groupBy, sort, signal).then((gp) => gp.groups);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queryKey]);
+  }, [queryKey, dataVersion]);
 
   const [band0, setBand0] = useState<CardGroup[] | null>(null);
   const [totalGroups, setTotalGroups] = useState(0);
@@ -49,11 +54,18 @@ export function useGroupedStream(source: CatalogSource, state: CatalogViewState,
   const [error, setError] = useState(false);
   const [nonce, setNonce] = useState(0);
 
+  // A dataVersion-only re-read must not blank the view: same list, edited in place. Only a genuinely
+  // different query goes back to the loading state.
+  const readKeyRef = useRef(queryKey);
   useEffect(() => {
     const controller = new AbortController();
-    setLoading(true);
+    const sameList = readKeyRef.current === queryKey;
+    readKeyRef.current = queryKey;
+    if (!sameList) {
+      setLoading(true);
+      setBand0(null);
+    }
     setError(false);
-    setBand0(null);
     const s = sourceRef.current;
     if (!s.fetchGroupBand) { setBand0([]); setTotalGroups(0); setLoading(false); return undefined; }
     s.fetchGroupBand(0, GROUPS_PAGE_SIZE, perGroupTop, groupBy, sort, controller.signal)
@@ -70,7 +82,7 @@ export function useGroupedStream(source: CatalogSource, state: CatalogViewState,
       });
     return () => controller.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queryKey, nonce]);
+  }, [queryKey, nonce, dataVersion]);
 
   const alpha = !!source.sorts.find((x) => x.value === sort)?.alpha;
   const [letters, setLetters] = useState<{ letter: string; firstIndex: number }[] | null>(null);
@@ -93,8 +105,8 @@ export function useGroupedStream(source: CatalogSource, state: CatalogViewState,
   const open = useCallback((item: CardItem) => sourceRef.current.onOpen(item), []);
   const openGroup = useMemo(() => (source.onOpenGroup ? (g: CardGroup) => sourceRef.current.onOpenGroup!(g, groupBy) : null), [source.onOpenGroup, groupBy]);
 
-  return useMemo(() => ({ queryKey, groupBy, band0, totalGroups, loading, error, retry, fetchBand, loadMore, letters, open, openGroup }),
-    [queryKey, groupBy, band0, totalGroups, loading, error, retry, fetchBand, loadMore, letters, open, openGroup]);
+  return useMemo(() => ({ queryKey, groupBy, dataVersion, band0, totalGroups, loading, error, retry, fetchBand, loadMore, letters, open, openGroup }),
+    [queryKey, groupBy, dataVersion, band0, totalGroups, loading, error, retry, fetchBand, loadMore, letters, open, openGroup]);
 }
 
 /** Letter buckets for the site's CatalogPager from the grouped letters (offset = group index, count = to the next letter). */

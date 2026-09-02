@@ -13,7 +13,7 @@ import { requestSiteTheme } from "../hooks/useTheme";
 import { applySectionSkin, crossFamilyPick, skinTweakExtras, useSiteTheme } from "./skin/skin";
 import "./skin/sectionSkins";
 import useCatalogView from "./state/useCatalogView";
-import TweaksPanel, { TweakRow, TweakToggle } from "./tweaks/TweaksPanel";
+import TweaksPanel, { TweakRow, TweakToggle, type TweaksPanelRows } from "./tweaks/TweaksPanel";
 import useTweaks, { hoverClass } from "./tweaks/useTweaks";
 import type { CatalogSource, DirectoryNode, ViewMode } from "./types";
 import DirectoryView from "./views/DirectoryView";
@@ -39,6 +39,22 @@ import WallView from "./views/WallView";
  * the pills fall back to an in-flow row above the results.
  */
 export const AVAILABLE_VIEWS: readonly ViewMode[] = ["grid", "wall", "list", "extended", "shelf", "newspaper", "directory"];
+
+/**
+ * Which of the standard card tweaks REACH each view's cards. The law (catalog-views skill, "Tweaks reach
+ * every view they name") is that a control that does nothing is removed, not disabled — a lever that
+ * visibly changes nothing is a bug the smoke fails on. Grid/Extended honour all four; the Wall drops
+ * Rounded (out-specified by the zero-gap mosaic) and Under-the-cover (no meta strip at rest); the List,
+ * Shelves and Newspaper draw no `.bx-card` at all, so only Cover size (their own scale) applies; the
+ * Directory's tiles wear `bx-card`/`bx-cover`, so Hover and Rounded reach them and Under-the-cover reaches
+ * its loose items. Omitted keys mean "shown".
+ */
+export const VIEW_TWEAK_ROWS: Partial<Record<ViewMode, TweaksPanelRows>> = {
+  wall: { rounded: false, metadata: false },
+  list: { hover: false, rounded: false, metadata: false },
+  shelf: { hover: false, rounded: false, metadata: false },
+  newspaper: { hover: false, rounded: false, metadata: false },
+};
 
 const VIEWS: Partial<Record<ViewMode, (p: ViewProps) => JSX.Element>> = {
   grid: GridView,
@@ -132,6 +148,7 @@ export default function CatalogHost({ section, source, overrides, tools, classNa
           onChange={update}
           onExtra={chooseExtra}
           extras={extras}
+          rows={VIEW_TWEAK_ROWS[state.view]}
           onClose={() => setTweaksOpen(false)}
         >
           {state.view === "directory" && (

@@ -170,7 +170,12 @@ export default function NewspaperView({ source, state, coverScale }: ViewProps) 
   const [extraBands, setExtraBands] = useState<CardGroup[][]>([]);
   const nextRef = useRef(1);
   const busyRef = useRef(false);
-  useEffect(() => { setExtraBands([]); nextRef.current = 1; busyRef.current = false; }, [stream.queryKey]);
+  const aborterRef = useRef<AbortController | null>(null);
+  const abortPending = () => { aborterRef.current?.abort(); aborterRef.current = null; busyRef.current = false; };
+  useEffect(() => { abortPending(); setExtraBands([]); nextRef.current = 1; }, [stream.queryKey]);
+  // Data changed under the same query: the pool re-reads from band 1; the day's seed and the shown count stay.
+  useEffect(() => { abortPending(); setExtraBands([]); nextRef.current = 1; }, [stream.dataVersion]);
+  useEffect(() => abortPending, []);
   const totalBands = Math.max(1, Math.ceil(stream.totalGroups / GROUPS_PAGE_SIZE));
   const hasMore = nextRef.current < totalBands;
   const needMore = useCallback(() => {
@@ -179,10 +184,12 @@ export default function NewspaperView({ source, state, coverScale }: ViewProps) 
     if (i >= totalBands) return;
     busyRef.current = true;
     const key = stream.queryKey;
-    stream.fetchBand(i, new AbortController().signal)
-      .then((groups) => { if (key !== stream.queryKey) return; nextRef.current = i + 1; setExtraBands((p) => [...p, groups]); })
+    const controller = new AbortController();
+    aborterRef.current = controller;
+    stream.fetchBand(i, controller.signal)
+      .then((groups) => { if (controller.signal.aborted || key !== stream.queryKey) return; nextRef.current = i + 1; setExtraBands((p) => [...p, groups]); })
       .catch(() => {})
-      .finally(() => { busyRef.current = false; });
+      .finally(() => { if (aborterRef.current === controller) { aborterRef.current = null; busyRef.current = false; } });
   }, [stream, totalBands]);
 
   const runs = useMemo(() => {

@@ -147,6 +147,8 @@ function ExtendedGrouped({ source, state, coverScale, metadata, hoverClass }: Vi
   const [extras, setExtras] = useState<Record<string, Extra>>({});
   const inFlightRef = useRef(new Set<string>());
   useEffect(() => { setExtras({}); inFlightRef.current.clear(); scrollStoreRef.current.clear(); }, [stream.queryKey]);
+  // Data changed under the same query: the "more" pages re-read (the engine re-reads its bands via dataVersion).
+  useEffect(() => { setExtras({}); inFlightRef.current.clear(); }, [stream.dataVersion]);
 
   const onLoadMore = useCallback(async (groupKey: string, count: number) => {
     const lm = stream.loadMore;
@@ -231,6 +233,7 @@ function ExtendedGrouped({ source, state, coverScale, metadata, hoverClass }: Vi
         perBand={GROUPS_PAGE_SIZE}
         band0={stream.band0}
         queryKey={stream.queryKey}
+        dataVersion={stream.dataVersion}
         fetchBand={stream.fetchBand}
         estBandHeight={GROUPS_PAGE_SIZE * (Math.round(cellH * STRIP_RATIO) + 110)}
         spy={letters ? "unit" : "band"}

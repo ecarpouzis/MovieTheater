@@ -96,6 +96,7 @@ export default function ListView({ source, state }: ViewProps) {
         perBand={perBand}
         band0={stream.band0}
         queryKey={`${stream.queryKey}|list`}
+        dataVersion={stream.dataVersion}
         fetchBand={stream.fetchBand}
         estBandHeight={perBand * LIST_ROW_PX}
         spy={pagerMode === "letters" ? "unit" : "band"}
