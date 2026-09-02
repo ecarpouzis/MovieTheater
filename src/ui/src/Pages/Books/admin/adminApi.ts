@@ -79,7 +79,8 @@ export interface DedupPage { totalCount: number; skip: number; top: number; grou
 export interface MismatchSummary { series: number; linkedSeries: number; unlinkedSeries: number; pendingLinks: number; multipleLinks: number; openReviews: number; singleIssueSeries: number }
 export interface EditResult { action: string; target: string; rowsChanged: number; rebuildRequired: boolean }
 export interface SeriesAliasRow { parsedKey: string; items: number }
-export interface LinkCandidates { parsedKey: string; provider: string; status: string; providerKey: number | null; score: number | null; storedTopScore: number | null; candidatesInLegs: boolean; attemptCount: number; attemptedAt: string | null; error: string | null }
+export interface LinkCandidate { id: number; name: string | null; publisher?: string | null; startYear?: number | null; issues?: number | null; score?: number | null }
+export interface LinkCandidates { parsedKey: string; provider: string; status: string; providerKey: number | null; score: number | null; storedTopScore: number | null; candidatesInLegs: boolean; candidates?: LinkCandidate[] | null; attemptCount: number; attemptedAt: string | null; error: string | null }
 export interface Decision { id: number; seriesKey: string | null; class: string | null; action: string | null; target: string | null; confidence: string | null; evidenceJson: string | null; state: string | null; undoJson: string | null; decidedBy: string | null; decidedAt: string | null }
 export interface NameFix { seriesId: number; current: string; proposed: string; issueCount: number }
 export interface Overmatch { seriesId: number; name: string | null; held: number; claimed: number; cvVolumeId: number }
@@ -111,7 +112,7 @@ export const fetchRoots = (signal?: AbortSignal) => request<LibraryRoot[]>("/roo
 export const addRoot = (body: RootBody) => request<LibraryRoot>("/roots", json("POST", body));
 export const updateRoot = (id: number, body: RootBody) => request<LibraryRoot>(`/roots/${id}`, json("PUT", body));
 export const deleteRoot = (id: number) => request<null>(`/roots/${id}`, json("DELETE"));
-export const calibreImport = (p: { metadata?: string; link?: string; apply: boolean }) => request<JobStart>(`/calibre/import${qs(p)}`, json("POST"));
+export const calibreImport = (p: { metadata?: string; link?: string; libraryRoot?: string; apply: boolean }) => request<JobStart>(`/calibre/import${qs(p)}`, json("POST"));
 
 // ── cache, icons, config, logs ──
 
@@ -156,6 +157,7 @@ export const markReviewed = (body: { scope: string; key: string; state: string; 
 export const fetchDecisions = (state: string | undefined, skip: number, top: number, signal?: AbortSignal) => request<Decision[]>(`/series/decisions${qs({ state, skip, top })}`, undefined, signal);
 export const revertDecision = (id: number) => request<EditResult>(`/series/decisions/${id}/revert`, json("POST"));
 export const setOverride = (seriesId: number, displayName: string | null) => request<EditResult>(`/series/${seriesId}/override`, json("PUT", { displayName }));
+export const setFranchise = (seriesId: number, franchise: string | null) => request<EditResult>(`/series/${seriesId}/franchise`, json("PUT", { franchise }));
 export const nameFix = (apply: boolean, signal?: AbortSignal) => request<{ dryRun: boolean; fixes: NameFix[] }>(`/series/namefix${qs({ apply })}`, undefined, signal);
 export const prune = (apply: boolean) => request<{ dryRun: boolean; candidates: number; deleted: number }>(`/series/prune${qs({ apply })}`, json("POST"));
 export const fetchOvermatch = (ratio = 2, minIssues = 20, signal?: AbortSignal) => request<Overmatch[]>(`/series/split-overmatch${qs({ ratio, minIssues })}`, undefined, signal);

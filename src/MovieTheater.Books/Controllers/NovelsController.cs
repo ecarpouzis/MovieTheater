@@ -79,13 +79,15 @@ namespace MovieTheater.Books.Controllers
         private readonly IMemoryCache cache;
         private readonly BooksOptions options;
         private readonly ThumbnailService thumbnails;
+        private readonly CatalogCacheVersion? version;
 
-        public NovelsController(BooksDb db, IMemoryCache cache, BooksOptions options, ThumbnailService thumbnails)
+        public NovelsController(BooksDb db, IMemoryCache cache, BooksOptions options, ThumbnailService thumbnails, CatalogCacheVersion? version = null)
         {
             this.db = db;
             this.cache = cache;
             this.options = options;
             this.thumbnails = thumbnails;
+            this.version = version;
         }
 
         /// <summary>
@@ -246,7 +248,9 @@ namespace MovieTheater.Books.Controllers
                 BookFilters = true,
             };
 
-            cache.Set(key, facets, new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = FacetsTtl, Size = 1 });
+            var entry = new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = FacetsTtl, Size = 1 };
+            if (version != null) entry.AddExpirationToken(version.Token);   // expires with the catalog, not the clock
+            cache.Set(key, facets, entry);
             return Ok(facets);
         }
 

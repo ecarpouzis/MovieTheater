@@ -444,7 +444,9 @@ from what, and the reconciliation tools for when a series went wrong. Everything
 | `POST /admin/thumbnails/start?reset=` · `GET /admin/thumbnails/status` · `POST /admin/thumbnails/stop` | The generate-missing thumbnail pass |
 | `GET /admin/broken?skip=&top=` | The files a scan or a thumbnail pass could not read, paged |
 | `GET/POST/PUT/DELETE /admin/roots[/{id}]` | `LibraryRoot` CRUD. A delete is REFUSED while the root still holds items |
-| `POST /admin/calibre/import?metadata=&link=&apply=` | Fill the books' Calibre-native identity (see below) |
+| `POST /admin/calibre/import?metadata=&link=&libraryRoot=&apply=` | Fill the books' Calibre-native identity (see below); `libraryRoot` defaults to the `IsCalibre` root's path |
+| `POST /admin/cache/expire` | Expire every cached catalog payload now (Explore, facets, heads, suggestions) — the warmer does this itself when the fingerprint moves |
+| `PUT /admin/series/{id}/franchise` | Set or clear the curated Franchise facet value |
 | `POST /admin/cache/clear?apply=` | Delete GENERATED thumbnails only — the `^\d+\.webp$` guard |
 | `POST/DELETE /admin/folders/{id}/icon` | The hand-made collection icon, `f_{id}.jpg` |
 | `GET/PUT /admin/config` | The settings overlay — an allow-list, not a config editor (see below) |
@@ -495,17 +497,20 @@ in `DerivedTable` with its fingerprint, row count and rebuild time by the job th
 | `books-scan [--root] [--batch-size] [--max-batches] [--apply] [--resume] [--status]` | Walks the roots READ-ONLY and reconciles `Folder` / `Item` / `ItemState` / `ComicEmbedded` / `ComicDetail` / `BookDetail` / `ItemCredit(ComicInfo)` / `ItemTag(ComicInfo)`, then the folder aggregates and the publisher backfill | `Folder.TopFolderId/Counts` |
 | `books-resolve [--series] [--tags] [--fts] [--batch-size]` | `--series` = the identity rebuild; `--tags` = the legs-reading folds; bare = insight currency, the AI fold, `Series.Resolved*`, `Item.Resolved*`, `ItemFts` | `Series`, `SeriesAlias`, `Item.SeriesId`, `ItemTag/SeriesTag(folds)`, `Insight.IsCurrent`, `Item.Resolved*`, `Series.Resolved*`, `ItemFts` |
 | `books-thumbs [--missing] [--batch-size] [--max-batches] [--reset] [--status]` | The missing `{itemId}.webp` covers | — |
-| `books-reading-order [--series] [--batch-size]` | `ReadingOrderEntry` — tier, number, date, dense `ReadIndex` per run | `ReadingOrderEntry` |
+| `books-reading-order [--series] [--batch-size] [--dry-run] [--resume]` | `ReadingOrderEntry` — tier, number, date, dense `ReadIndex` per run | `ReadingOrderEntry` |
 | `books-reading-order-audit [--out]` | A per-series CSV of coverage and which signal won | — |
-| `books-containment [--batch-size]` | `CollectionNode` — levels, spans, nesting, primary track | `CollectionNode` |
-| `books-collected-editions [--legs] [--batch-size]` (alias `books-locg-containment`) | `CollectedEditionSpan(Source=Locg)` from the warehouse's containment edges | `CollectedEditionSpan(Source=Locg)` |
+| `books-containment [--batch-size] [--dry-run] [--resume]` | `CollectionNode` — levels, spans, nesting, primary track | `CollectionNode` |
+| `books-collected-editions [--legs] [--batch-size] [--dry-run] [--resume]` (alias `books-locg-containment`) | `CollectedEditionSpan(Source=Locg)` from the warehouse's containment edges | `CollectedEditionSpan(Source=Locg)` |
 | `books-library-ratings [--batch-size] [--resolve]` | `Rating(Source=Library)` for every series and item, then re-materializes `ResolvedRating` | `Rating(Source=Library)` |
-| `books-import-calibre --metadata <metadata.db> [--link] [--apply] [--reset]` | `Item.CalibreBookId`, `BookDetail`, `ItemCredit(Calibre)`, `ItemTag(Calibre)` | — |
+| `books-import-calibre --metadata <metadata.db> [--link] [--library-root] [--apply] [--reset]` | `Item.CalibreBookId`, `BookDetail`, `ItemCredit(Calibre)`, `ItemTag(Calibre)` | — |
+| `books-insight-import --file <insights.jsonl> [--apply] [--after] [--batch-size] [--report]` | `Insight` + `InsightTag` appended in-band with `IsCurrent = 0` (then `books-resolve` → `books-library-ratings`); idempotent by `sourceKey` | — |
+| `books-curation-import --file <curation.csv> [--apply] [--after] [--batch-size] [--report]` | `ComicDetail.EventName` / `IssueTitle`, `Series.Franchise` / `DisplayNameOverride` from `kind,id,field,value` rows | — |
 | `books-locg-import --file <export.jsonl> [--legs]` | `LocgComicRaw` + `LocgCreatorRaw` (legs) and the hot `LocgComic` subset | — |
 | `books-locg-import-map --file <map.csv>` | `ItemProviderLink(Locg, Manual)` from offline-decided matches | — |
 | `books-gcd-match --gcd <gcd.db> [--legs]` | `GcdIssue` (legs) + `ItemProviderLink(Gcd)` by ISBN then barcode | — |
 | `books-mu-import --file <export.json> [--legs]` | `MuSeries` (hot) + `MuSeriesRaw` (legs) | — |
-| `books-dedup [--csv] [--apply] [--reset] [--batch-size]` | `DuplicateGroup` / `DuplicateMember` with a suggested keeper | — |
+| `books-signatures [--cache-dir] [--batch-size] [--max-batches] [--hash-bytes] [--reset] [--status]` | `ItemSignature` — archive fingerprint + page signature (ZIP central directory), cover dHash (local thumb); `--hash-bytes` adds whole-file SHA-256 for cbr/pdf/mobi | — |
+| `books-dedup [--csv] [--apply] [--reset] [--batch-size]` | `DuplicateGroup` / `DuplicateMember` with a suggested keeper — grouped across the whole table, idempotent; needs `books-signatures` first | — |
 | `books-fix-issue-numbers [--apply]` | Re-extracts `ComicDetail.IssueNo` from the filenames and reports what moved | — |
 | `books-parse-audit [--out]` | The parse-pipeline CSV, one row per comic with a source per field | — |
 | `books-series-{override,clearlink,namefix,prune,split-overmatch}` | Edits to the resolution INPUTS (and two read-only reports) | — |
@@ -513,7 +518,12 @@ in `DerivedTable` with its fingerprint, row count and rebuild time by the job th
 Contract notes worth knowing before running any of them:
 
 - **`books-scan` is dry-run by default**, and so are `books-dedup`, `books-import-calibre`,
-  `books-fix-issue-numbers`, `books-series-namefix` and `books-series-prune`. `--apply` is the house rule.
+  `books-insight-import`, `books-curation-import`, `books-fix-issue-numbers`, `books-series-namefix` and
+  `books-series-prune`. `--apply` is the house rule. The derived rebuilds (`books-reading-order`,
+  `books-containment`, `books-collected-editions`) write by default but take `--dry-run` and `--resume`.
+- **The host's catalog cache expires itself.** Every Explore / facets / heads payload is bound to
+  `CatalogCacheVersion`; the warmer trips it when the catalog fingerprint moves, and
+  `POST /admin/cache/expire` does it on demand — no restart after a resolve or an import.
 - **A removed file is MARKED, never deleted.** `UserItemState.ItemId` is a foreign key to `Item`, so "delete
   the item but keep the reader's rows" is not a state the schema can hold — and keeping the reader's position
   and marks is the requirement that matters. A missing file gets `Item.IsExcluded = 1` (so it leaves every

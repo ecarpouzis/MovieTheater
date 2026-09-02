@@ -320,29 +320,45 @@ namespace MovieTheater.Books.Controllers
         /// </summary>
         [HttpPost("calibre/import")]
         public async Task<IActionResult> CalibreImport(
-            [FromQuery] string? metadata, [FromQuery] string? link, [FromQuery] bool apply = false,
+            [FromQuery] string? metadata, [FromQuery] string? link, [FromQuery] string? libraryRoot = null, [FromQuery] bool apply = false,
             [FromQuery] int batchSize = CalibreImportService.DefaultBatchSize, CancellationToken ct = default)
         {
-            var metadataPath = metadata ?? DefaultCalibreMetadata();
+            var calibreRoot = DefaultCalibreRoot();
+            var metadataPath = metadata ?? (calibreRoot == null ? null : System.IO.Path.Combine(calibreRoot, "metadata.db"));
             if (metadataPath == null || !System.IO.File.Exists(metadataPath))
                 return BadRequest(new { error = "No Calibre metadata.db found. Pass ?metadata= or mark a library root IsCalibre." });
+            // The root the catalog's Item.Path rows are composed under. It is the IsCalibre root — NOT the folder
+            // of an arbitrary metadata.db copy the operator pointed at — unless the operator says otherwise;
+            // without it the importer defaulted to the metadata file's own folder and matched nothing from a copy.
+            var root = string.IsNullOrWhiteSpace(libraryRoot) ? calibreRoot : libraryRoot.Trim();
 
             return await StartAsync("calibre-import", async (services, token) =>
             {
                 var scoped = services.GetRequiredService<BooksDb>();
                 var job = services.GetRequiredService<CalibreImportService>();
-                var r = await job.RunBatchAsync(scoped, metadataPath, link, batchSize, apply, ct: token);
+                var r = await job.RunBatchAsync(scoped, metadataPath, link, batchSize, apply, root, ct: token);
                 return new JobProgress(r.Processed, r.Remaining, r.NextCursor?.ToString(), r.Unmatched, r.ToString());
             });
         }
 
-        private string? DefaultCalibreMetadata()
-        {
-            var root = db.LibraryRoots.AsNoTracking().FirstOrDefault(r => r.IsCalibre);
-            return root == null ? null : System.IO.Path.Combine(root.Path, "metadata.db");
-        }
+        private string? DefaultCalibreRoot() =>
+            db.LibraryRoots.AsNoTracking().FirstOrDefault(r => r.IsCalibre)?.Path;
 
-        // ── cache clear & the folder icon ────────────────────────────────────────────────────────────────
+        // ── cache expire / clear & the folder icon ──────────────────────────────────────────────────────
+
+        /// <summary>
+        /// POST /admin/cache/expire — expire every cached catalog payload (Explore, facets, heads, the
+        /// suggestions corpus) right now. The warmer does this itself when the catalog fingerprint moves; this
+        /// is the operator's lever for the edit the fingerprint cannot see, and it replaces "restart the host"
+        /// in the runbooks. Nothing on disk is touched.
+        /// </summary>
+        [HttpPost("cache/expire")]
+        public IActionResult ExpireCatalogCache()
+        {
+            var version = HttpContext.RequestServices.GetService<CatalogCacheVersion>();
+            if (version == null) return BadRequest(new { error = "No catalog cache version is registered on this host." });
+            return Ok(new { generation = version.Invalidate() });
+        }
 
         /// <summary>
         /// POST /admin/cache/clear — delete GENERATED cover thumbnails only.
@@ -698,7 +714,7 @@ namespace MovieTheater.Books.Controllers
 
         [HttpGet("series/link-candidates")]
         public async Task<IActionResult> LinkCandidates([FromQuery] string parsedKey, [FromQuery] Provider provider = Provider.Cv, CancellationToken ct = default) =>
-            await mismatch.LinkCandidatesAsync(db, parsedKey, provider, ct) is object o ? Ok(o) : NotFound();
+            await mismatch.LinkCandidatesAsync(db, parsedKey, provider, ct, HttpContext.RequestServices.GetService<ProviderCacheStore>()) is object o ? Ok(o) : NotFound();
 
         [HttpPost("series/clear-link")]
         public async Task<IActionResult> ClearLink([FromBody] LinkBody body, CancellationToken ct) =>
@@ -743,6 +759,16 @@ namespace MovieTheater.Books.Controllers
         public async Task<IActionResult> SetOverride(int id, [FromBody] OverrideBody body, CancellationToken ct)
         {
             try { return Ok(await seriesNames.SetOverrideAsync(db, id, body.DisplayName, ct)); }
+            catch (InvalidOperationException) { return NotFound(); }
+        }
+
+        public sealed record FranchiseBody(string? Franchise);
+
+        /// <summary>PUT /admin/series/{id}/franchise — the curated Franchise facet value (null clears).</summary>
+        [HttpPut("series/{id:int}/franchise")]
+        public async Task<IActionResult> SetFranchise(int id, [FromBody] FranchiseBody body, CancellationToken ct)
+        {
+            try { return Ok(await seriesNames.SetFranchiseAsync(db, id, body.Franchise, ct)); }
             catch (InvalidOperationException) { return NotFound(); }
         }
 

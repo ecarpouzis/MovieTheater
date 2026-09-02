@@ -26,6 +26,8 @@ namespace MovieTheater.Books.Resolve
     public static class ReadingOrderJob
     {
         public const string DerivedName = "ReadingOrderEntry";
+        /// <summary>The persisted cursor — the SAME key the admin recompute route pages with (see <see cref="JobCursor"/>).</summary>
+        public const string CursorKey = "books:recompute:reading-order";
 
         private sealed class Row
         {
@@ -99,15 +101,21 @@ namespace MovieTheater.Books.Resolve
             return new BatchResult(seriesIds.Count, remaining, next, written);
         }
 
-        /// <summary>Drain every series (the CLI verb's default and the admin's recompute trigger).</summary>
-        public static int RunAll(TargetWriter hot, int batchSize, Action<string> log, int? onlySeriesId = null)
+        /// <summary>
+        /// Drain every series (the CLI verb's default and the admin's recompute trigger). The cursor is persisted
+        /// with each batch under <see cref="CursorKey"/> and cleared on completion; <paramref name="resume"/>
+        /// starts from it instead of series 0, so a killed run continues rather than re-walking 19k series.
+        /// </summary>
+        public static int RunAll(TargetWriter hot, int batchSize, Action<string> log, int? onlySeriesId = null, bool resume = false)
         {
-            long cursor = 0;
+            var whole = onlySeriesId == null;
+            long cursor = whole && resume ? JobCursor.Read(hot, CursorKey) : 0;
             var total = 0;
             while (true)
             {
                 hot.Begin();
                 var r = RunBatch(hot, cursor, batchSize, onlySeriesId);
+                if (whole && r.NextCursor is long next) JobCursor.Write(hot, CursorKey, next);
                 hot.Commit();
                 total += r.Rows;
                 if (r.Done) break;
@@ -116,6 +124,7 @@ namespace MovieTheater.Books.Resolve
                 if (onlySeriesId != null) break;
             }
             hot.Begin();
+            if (whole) JobCursor.Clear(hot, CursorKey);
             Stamp(hot);
             hot.Commit();
             return total;
@@ -139,7 +148,7 @@ LEFT JOIN ComicDetail cd ON cd.ItemId = i.Id
 LEFT JOIN ComicEmbedded ce ON ce.ItemId = i.Id
 LEFT JOIN ItemProviderLink cvl ON cvl.ItemId = i.Id AND cvl.Provider = {(int)Provider.Cv} AND cvl.Status = {(int)LinkStatus.Matched}
 LEFT JOIN CvIssue cvi ON cvi.Id = CAST(cvl.ProviderKey AS INTEGER)
-LEFT JOIN ItemProviderLink bl ON bl.ItemId = i.Id AND bl.Provider = {(int)Provider.Barney}
+LEFT JOIN ItemProviderLink bl ON bl.ItemId = i.Id AND bl.Provider = {(int)Provider.Barney} AND bl.Status = {(int)LinkStatus.Matched}
 LEFT JOIN BarneyProg bp ON bp.ProgNo = CAST(bl.ProviderKey AS INTEGER)
 WHERE i.SeriesId = {seriesId} AND i.Kind = 0 AND coalesce(i.IsExcluded, 0) = 0
 ORDER BY i.Id"))

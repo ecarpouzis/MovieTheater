@@ -44,11 +44,13 @@ namespace MovieTheater.Books.Providers
         public const int WinMargin = 10;
 
         private readonly ComicVineClient client;
+        private readonly ProviderCacheStore store;
         private readonly ILogger<ComicVineSeriesScraper> logger;
 
-        public ComicVineSeriesScraper(ComicVineClient client, ILogger<ComicVineSeriesScraper> logger)
+        public ComicVineSeriesScraper(ComicVineClient client, ProviderCacheStore store, ILogger<ComicVineSeriesScraper> logger)
         {
             this.client = client;
+            this.store = store;
             this.logger = logger;
         }
 
@@ -104,7 +106,7 @@ namespace MovieTheater.Books.Providers
                 {
                     multiple++;
                     if (link != null) { link.Status = LinkStatus.Multiple; link.Score = top.Score; }
-                    if (apply) await SaveCandidatesAsync(db, k.Key, scored.Take(5).Select(s => (s.Candidate, s.Score)).ToList(), ct);
+                    if (apply) SaveCandidates(k.Key, scored.Take(5).Select(s => (s.Candidate, s.Score)).ToList());
                     continue;
                 }
 
@@ -125,14 +127,24 @@ namespace MovieTheater.Books.Providers
             return new ScrapeBatchResult(keys.Count, -1, next, matched, noMatch, multiple, failed);
         }
 
-        /// <summary>The candidate blob stays on the HOT row only while the decision is open — that is what
-        /// `Status ∈ {Pending, Multiple}` means, and it is why the settled rows' blobs live in the legs file.</summary>
-        private static Task SaveCandidatesAsync(BooksDb db, string parsedKey, List<(CvVolumeDto Candidate, int Score)> scored, CancellationToken ct)
+        /// <summary>
+        /// An OPEN decision's top candidates go to the legs file's <c>LinkCandidates</c> (the hot row has no
+        /// column for them by contract), so the admin's link view can show what was seen and scored. Until
+        /// 2026-09-01 this was a no-op and a "Multiple" verdict left nothing to choose from.
+        /// </summary>
+        private void SaveCandidates(string parsedKey, List<(CvVolumeDto Candidate, int Score)> scored)
         {
-            _ = db; _ = parsedKey; _ = scored; _ = ct;
-            // SeriesKeyLink carries no CandidatesJson column in v2 (the contract moved it to LinkCandidates in
-            // the legs file); the scraper records the top score, which is the number the heuristic reads.
-            return Task.CompletedTask;
+            var json = System.Text.Json.JsonSerializer.Serialize(scored.Select(s => new
+            {
+                id = s.Candidate.Id,
+                name = s.Candidate.Name,
+                publisher = s.Candidate.PublisherName,
+                startYear = s.Candidate.StartYear,
+                issues = s.Candidate.CountOfIssues,
+                score = s.Score,
+            }));
+            try { store.PutLinkCandidates(SubjectKind.Series, parsedKey, Provider.Cv, json); }
+            catch (Exception ex) { logger.LogWarning("cv series scrape: could not store candidates for '{Key}': {Message}", parsedKey, ex.Message); }
         }
 
         private static async Task UpsertVolumeAsync(BooksDb db, CvVolumeDto v, CancellationToken ct)
@@ -315,7 +327,17 @@ namespace MovieTheater.Books.Providers
         }
 
         public sealed record ExternalHit(string Provider, string ProviderKey, string? Title, string? Authors,
-            string? Publisher, int? FirstPublishYear, string? Description, string? CoverImageUrl, string? Isbn, string? InfoUrl);
+            string? Publisher, int? FirstPublishYear, string? Description, string? CoverImageUrl, string? Isbn, string? InfoUrl,
+            string? SubjectsJson = null);
+
+        /// <summary>
+        /// The pause between LIVE requests, shared across instances: Open Library asks for about one request a
+        /// second and Google Books meters by key, and a 500-key batch with no gate is exactly the burst that
+        /// gets a client blocked. Cache hits never wait. A test may lower it.
+        /// </summary>
+        public TimeSpan MinRequestInterval { get; set; } = TimeSpan.FromMilliseconds(1000);
+        private static readonly SemaphoreSlim Gate = new(1, 1);
+        private static DateTime lastRequestUtc = DateTime.MinValue;
 
         public async Task<ScrapeBatchResult> RunBatchAsync(BooksDb db, int batchSize, bool apply = true, CancellationToken ct = default)
         {
@@ -373,6 +395,11 @@ namespace MovieTheater.Books.Providers
                 link!.Status = LinkStatus.Matched;
                 link.ProviderKey = work.Id;
                 link.Score = 80;
+
+                // The subjects go to the legs side under the provider key — the row books-resolve --tags folds
+                // from. Without it a live match folded no External tags at all.
+                try { cache.PutOpenLibraryWork(hit.ProviderKey, hit.Title, hit.SubjectsJson); }
+                catch (Exception ex) { logger.LogWarning("external: could not store subjects for '{Key}': {Message}", key, ex.Message); }
             }
 
             var next = keys[^1];
@@ -411,7 +438,8 @@ namespace MovieTheater.Books.Providers
                     Int(d, "first_publish_year"), null, null,
                     d.TryGetProperty("isbn", out var isbn) && isbn.ValueKind == JsonValueKind.Array
                         ? isbn.EnumerateArray().Select(i => i.GetString()).FirstOrDefault(i => i != null) : null,
-                    OpenLibraryBase + key);
+                    OpenLibraryBase + key,
+                    StringArrayJson(d, "subject"));
             }
             return null;
         }
@@ -438,7 +466,8 @@ namespace MovieTheater.Books.Providers
                     published != null && int.TryParse(published.AsSpan(0, Math.Min(4, published.Length)), out var y) ? y : null,
                     Str(info, "description"),
                     info.TryGetProperty("imageLinks", out var img) ? Str(img, "thumbnail") : null,
-                    null, Str(info, "infoLink"));
+                    null, Str(info, "infoLink"),
+                    StringArrayJson(info, "categories"));
             }
             return null;
         }
@@ -447,13 +476,33 @@ namespace MovieTheater.Books.Providers
         {
             var cached = cache.Get(Provider.External, cacheKey);
             if (cached != null) return cached;
-            using var request = new HttpRequestMessage(HttpMethod.Get, url);
-            request.Headers.TryAddWithoutValidation("User-Agent", "MovieTheater-Books/1.0");
-            using var response = await http.SendAsync(request, ct);
-            if (!response.IsSuccessStatusCode) return null;
-            var body = await response.Content.ReadAsStringAsync(ct);
-            cache.Put(Provider.External, cacheKey, body);
-            return body;
+            await Gate.WaitAsync(ct);
+            try
+            {
+                var wait = lastRequestUtc + MinRequestInterval - DateTime.UtcNow;
+                if (wait > TimeSpan.Zero) await Task.Delay(wait, ct);
+                using var request = new HttpRequestMessage(HttpMethod.Get, url);
+                request.Headers.TryAddWithoutValidation("User-Agent", "MovieTheater-Books/1.0");
+                using var response = await http.SendAsync(request, ct);
+                if (!response.IsSuccessStatusCode) return null;
+                var body = await response.Content.ReadAsStringAsync(ct);
+                cache.Put(Provider.External, cacheKey, body);
+                return body;
+            }
+            finally
+            {
+                lastRequestUtc = DateTime.UtcNow;
+                Gate.Release();
+            }
+        }
+
+        /// <summary>A JSON array of the string members of <paramref name="name"/> (capped), or null when absent/empty.</summary>
+        private static string? StringArrayJson(JsonElement e, string name)
+        {
+            if (!e.TryGetProperty(name, out var arr) || arr.ValueKind != JsonValueKind.Array) return null;
+            var values = arr.EnumerateArray().Where(x => x.ValueKind == JsonValueKind.String).Select(x => x.GetString()!)
+                .Where(s => s.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase).Take(80).ToList();
+            return values.Count == 0 ? null : JsonSerializer.Serialize(values);
         }
 
         private static async Task<SeriesKeyLink> ExternalLinkAsync(BooksDb db, string parsedKey, CancellationToken ct)

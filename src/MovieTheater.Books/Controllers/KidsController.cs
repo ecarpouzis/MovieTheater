@@ -107,6 +107,7 @@ namespace MovieTheater.Books.Controllers
         {
             skip = Math.Max(0, skip);
             top = Math.Clamp(top, 1, PerSeries);
+            seriesId = await SeriesRedirect.FollowAsync(db, seriesId, ct);
 
             var kidSeries = await KidsPolicy.KidSeriesAsync(db, ItemKind.Comic, ct);
             if (!kidSeries.TryGetValue(seriesId, out var series)) return NotFound();

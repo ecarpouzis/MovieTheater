@@ -29,8 +29,13 @@ namespace MovieTheater.Books.Services
     /// smaller scan. After that: a canonical series folder beats an event/chronology re-gathering tree, which
     /// beats an unsorted holding folder; then depth, cover area, a ComicVine match, and file size.</para>
     ///
-    /// <para>Chunked by `Item.Id`: each batch reads a page of signatures and groups WITHIN what it has seen so
-    /// far, so a killed run leaves the groups it already wrote intact.</para>
+    /// <para><b>Chunked by `Item.Id`, grouped across the whole table.</b> A page is the WALK, not the group
+    /// boundary: for every signature the page carries, the matching items are pulled from the entire
+    /// `ItemSignature` table, so two copies 100k ids apart still meet (until 2026-09-01 a group could only form
+    /// inside one page). An item that already sits in a group — from an earlier page, an earlier run or a
+    /// resolved decision — is skipped, which is what makes a re-run idempotent, and an in-run `claimed` set does
+    /// the same for a dry run, which persists nothing. The dry run's cursor lives in the VERB (`after`), exactly
+    /// like `books-import-calibre`; only `--apply` persists it.</para>
     /// </summary>
     public sealed class DuplicateDetectionService
     {
@@ -71,32 +76,77 @@ namespace MovieTheater.Books.Services
 
         /// <summary>
         /// One bounded batch. <paramref name="csv"/>, when given, receives one line per member — the sheet an
-        /// operator reviews outside the app.
+        /// operator reviews outside the app. <paramref name="after"/> overrides the persisted cursor (the dry
+        /// run's cursor, kept by the caller); <paramref name="claimed"/> is the caller's in-run set of item ids
+        /// already grouped, so a dry run — which writes no membership rows — does not report a copy twice.
         /// </summary>
         public async Task<DedupBatchResult> RunBatchAsync(
-            BooksDb db, int batchSize, bool apply = true, TextWriter? csv = null, CancellationToken ct = default)
+            BooksDb db, int batchSize, bool apply = true, TextWriter? csv = null, CancellationToken ct = default,
+            long? after = null, ISet<int>? claimed = null)
         {
             batchSize = Math.Clamp(batchSize, 1, 50_000);
-            var cursor = await ReadCursorAsync(db, ct);
+            var cursor = after ?? await ReadCursorAsync(db, ct);
+            claimed ??= new HashSet<int>();
 
             var page = await db.Items.AsNoTracking()
-                .Where(i => i.Id > cursor)
+                .Where(i => i.Id > cursor && !i.IsExcluded)
                 .OrderBy(i => i.Id).Take(batchSize)
                 .Select(i => new { i.Id, i.Path, i.FileName, i.FileSize, i.PageCount, i.FolderId })
                 .ToListAsync(ct);
             if (page.Count == 0) return new DedupBatchResult(0, 0, null, 0, 0);
 
-            var ids = page.Select(p => p.Id).ToList();
-            var signatures = await db.ItemSignatures.AsNoTracking().Where(s => ids.Contains(s.ItemId)).ToDictionaryAsync(s => s.ItemId, ct);
-            var states = await db.ItemStates.AsNoTracking().Where(s => ids.Contains(s.ItemId)).ToDictionaryAsync(s => s.ItemId, ct);
-            var cvLinked = (await db.ItemProviderLinks.AsNoTracking()
-                .Where(l => ids.Contains(l.ItemId) && l.Provider == Provider.Cv && l.Status == LinkStatus.Matched)
-                .Select(l => l.ItemId).ToListAsync(ct)).ToHashSet();
-            var userState = (await db.UserItemStates.AsNoTracking()
-                .Where(s => ids.Contains(s.ItemId))
-                .Select(s => s.ItemId).ToListAsync(ct)).ToHashSet();
+            var pageLast = page[^1].Id;
+            // Already grouped (any run, any state) → not a candidate again. One indexed range read over the
+            // page's contiguous id span, never an id IN-list.
+            var grouped = (await db.DuplicateMembers.AsNoTracking()
+                .Where(m => m.ItemId > cursor && m.ItemId <= pageLast)
+                .Select(m => m.ItemId).ToListAsync(ct)).ToHashSet();
+            var seeds = page.Where(p => !grouped.Contains(p.Id) && !claimed.Contains(p.Id)).ToList();
+            if (seeds.Count == 0)
+            {
+                if (apply) { await WriteCursorAsync(db, pageLast, ct); await db.SaveChangesAsync(ct); }
+                var left = await db.Items.AsNoTracking().CountAsync(i => i.Id > pageLast && !i.IsExcluded, ct);
+                return new DedupBatchResult(page.Count, left, pageLast, 0, 0);
+            }
 
-            var candidates = page.Select(p =>
+            var seedIds = seeds.Select(p => p.Id).ToList();
+            var signatures = await ReadSignaturesAsync(db, seedIds, ct);
+
+            // The other half of every match may live ANYWHERE in the table: pull every item sharing one of the
+            // page's signature values, then load those items too. Chunked IN-lists keep SQLite under its cap.
+            var partnerIds = await PartnerIdsAsync(db, signatures.Values, ct);
+            partnerIds.ExceptWith(seedIds);
+            if (partnerIds.Count > 0)
+            {
+                var memberElsewhere = new HashSet<int>();
+                foreach (var chunk in Chunk(partnerIds.ToList(), 400))
+                    memberElsewhere.UnionWith(await db.DuplicateMembers.AsNoTracking().Where(m => chunk.Contains(m.ItemId)).Select(m => m.ItemId).ToListAsync(ct));
+                partnerIds.ExceptWith(memberElsewhere);
+                partnerIds.ExceptWith(claimed);
+            }
+            var partners = new List<(int Id, string Path, string FileName, long FileSize, int? PageCount, int FolderId)>();
+            foreach (var chunk in Chunk(partnerIds.ToList(), 400))
+                partners.AddRange(await db.Items.AsNoTracking()
+                    .Where(i => chunk.Contains(i.Id) && !i.IsExcluded)
+                    .Select(i => new ValueTuple<int, string, string, long, int?, int>(i.Id, i.Path, i.FileName, i.FileSize, i.PageCount, i.FolderId))
+                    .ToListAsync(ct));
+            foreach (var kv in await ReadSignaturesAsync(db, partners.Select(p => p.Id).ToList(), ct)) signatures[kv.Key] = kv.Value;
+
+            var all = seeds.Select(p => (p.Id, p.Path, p.FileName, p.FileSize, p.PageCount, p.FolderId)).Concat(partners).ToList();
+            var ids = all.Select(p => p.Id).ToList();
+            var states = new Dictionary<int, ItemState>();
+            var cvLinked = new HashSet<int>();
+            var userState = new HashSet<int>();
+            foreach (var chunk in Chunk(ids, 400))
+            {
+                foreach (var st in await db.ItemStates.AsNoTracking().Where(s => chunk.Contains(s.ItemId)).ToListAsync(ct)) states[st.ItemId] = st;
+                cvLinked.UnionWith(await db.ItemProviderLinks.AsNoTracking()
+                    .Where(l => chunk.Contains(l.ItemId) && l.Provider == Provider.Cv && l.Status == LinkStatus.Matched)
+                    .Select(l => l.ItemId).ToListAsync(ct));
+                userState.UnionWith(await db.UserItemStates.AsNoTracking().Where(s => chunk.Contains(s.ItemId)).Select(s => s.ItemId).ToListAsync(ct));
+            }
+
+            var candidates = all.Select(p =>
             {
                 signatures.TryGetValue(p.Id, out var sig);
                 states.TryGetValue(p.Id, out var st);
@@ -108,6 +158,7 @@ namespace MovieTheater.Books.Services
             }).ToList();
 
             var clusters = BuildClusters(candidates);
+            foreach (var c in clusters) foreach (var m in c.Members) claimed.Add(m.Id);
 
             var folderCounts = await db.Items.AsNoTracking()
                 .Where(i => candidates.Select(c => c.FolderId).Contains(i.FolderId))
@@ -167,14 +218,46 @@ namespace MovieTheater.Books.Services
                 groups++;
             }
 
-            var nextCursor = page[^1].Id;
-            await WriteCursorAsync(db, nextCursor, ct);
-            if (apply) await db.SaveChangesAsync(ct);
+            var nextCursor = pageLast;
+            // The cursor is persisted only under --apply (with the groups, in one commit); a dry run hands it
+            // back and the verb carries it — a dry run that advanced the store would make the next real run skip.
+            if (apply) { await WriteCursorAsync(db, nextCursor, ct); await db.SaveChangesAsync(ct); }
 
-            var remaining = await db.Items.AsNoTracking().CountAsync(i => i.Id > nextCursor, ct);
+            var remaining = await db.Items.AsNoTracking().CountAsync(i => i.Id > nextCursor && !i.IsExcluded, ct);
             logger.LogInformation("dedup batch: processed {N}, groups {Groups}, duplicates {Dupes}, remaining {Remaining}",
                 page.Count, groups, duplicates, remaining);
             return new DedupBatchResult(page.Count, remaining, nextCursor, groups, duplicates);
+        }
+
+        private static async Task<Dictionary<int, ItemSignature>> ReadSignaturesAsync(BooksDb db, List<int> ids, CancellationToken ct)
+        {
+            var result = new Dictionary<int, ItemSignature>();
+            foreach (var chunk in Chunk(ids, 400))
+                foreach (var s in await db.ItemSignatures.AsNoTracking().Where(s => chunk.Contains(s.ItemId)).ToListAsync(ct))
+                    result[s.ItemId] = s;
+            return result;
+        }
+
+        /// <summary>Every item id in the table sharing one of these rows' present signature values.</summary>
+        private static async Task<HashSet<int>> PartnerIdsAsync(BooksDb db, IEnumerable<ItemSignature> rows, CancellationToken ct)
+        {
+            var list = rows.ToList();
+            var partners = new HashSet<int>();
+            var contents = list.Select(s => s.ContentFingerprint).Where(v => !string.IsNullOrEmpty(v)).Distinct().ToList();
+            var pages = list.Select(s => s.PageSignature).Where(v => !string.IsNullOrEmpty(v)).Distinct().ToList();
+            var covers = list.Where(s => s.CoverPHash != null).Select(s => s.CoverPHash!.Value).Distinct().ToList();
+            foreach (var chunk in Chunk(contents, 400))
+                partners.UnionWith(await db.ItemSignatures.AsNoTracking().Where(s => s.ContentFingerprint != null && chunk.Contains(s.ContentFingerprint)).Select(s => s.ItemId).ToListAsync(ct));
+            foreach (var chunk in Chunk(pages, 400))
+                partners.UnionWith(await db.ItemSignatures.AsNoTracking().Where(s => s.PageSignature != null && chunk.Contains(s.PageSignature)).Select(s => s.ItemId).ToListAsync(ct));
+            foreach (var chunk in Chunk(covers, 400))
+                partners.UnionWith(await db.ItemSignatures.AsNoTracking().Where(s => s.CoverPHash != null && chunk.Contains(s.CoverPHash.Value)).Select(s => s.ItemId).ToListAsync(ct));
+            return partners;
+        }
+
+        private static IEnumerable<List<T>> Chunk<T>(List<T> items, int size)
+        {
+            for (var i = 0; i < items.Count; i += size) yield return items.GetRange(i, Math.Min(size, items.Count - i));
         }
 
         public const string CsvHeader =

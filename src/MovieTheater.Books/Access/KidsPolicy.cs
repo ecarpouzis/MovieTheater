@@ -114,8 +114,10 @@ namespace MovieTheater.Books.Access
 
             var categories = allowed.Select(a => a.Category).Distinct().ToList();
             var values = allowed.Select(a => a.Tag).Distinct().ToList();
+            // Source = AI, exactly like the series path: the allow-list is a vocabulary of INSIGHT tags, and a
+            // Calibre subject or an External fold that happens to spell "children" must not clear a book.
             var tagged = (await db.ItemTags.AsNoTracking()
-                    .Where(t => categories.Contains(t.Category) && values.Contains(t.Value))
+                    .Where(t => t.Source == TagSource.AI && categories.Contains(t.Category) && values.Contains(t.Value))
                     .Select(t => new { t.ItemId, t.Category, t.Value })
                     .ToListAsync(ct))
                 .Where(t => allowed.Contains((t.Category, t.Value)))
@@ -124,7 +126,7 @@ namespace MovieTheater.Books.Access
 
             var blockedValues = MaturityFilter.HardBlockedAbove(Ceiling);
             var blocked = (await db.ItemTags.AsNoTracking()
-                    .Where(t => t.Category == AudienceCategory && blockedValues.Contains(t.Value))
+                    .Where(t => t.Source == TagSource.AI && t.Category == AudienceCategory && blockedValues.Contains(t.Value))
                     .Select(t => t.ItemId).ToListAsync(ct))
                 .ToHashSet();
 

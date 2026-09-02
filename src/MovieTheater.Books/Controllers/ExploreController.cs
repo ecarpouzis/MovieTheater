@@ -34,8 +34,10 @@ namespace MovieTheater.Books.Controllers
     /// else — no user ACTION state — and it is expensive to assemble, so it is memory-cached under the same
     /// house key shape the browse heads use, for 24 h. That TTL is a backstop: <see cref="CacheWarmupService"/>
     /// re-runs this action for every known identity whenever the catalog fingerprint moves, so fresh arrivals
-    /// appear within a poll and no visitor ever pays the assembly. An explicit <c>?seed=</c> re-roll keys
-    /// separately, stays unwarmed, and simply expires.</para>
+    /// appear within a poll and no visitor ever pays the assembly. The warmer trips
+    /// <see cref="CatalogCacheVersion"/> FIRST — every entry here is bound to its token — so its re-run really
+    /// recomposes instead of answering itself from the entry it is meant to replace. An explicit <c>?seed=</c>
+    /// re-roll keys separately, stays unwarmed, and simply expires.</para>
     /// </summary>
     [ApiController]
     [Route("explore")]
@@ -83,12 +85,14 @@ namespace MovieTheater.Books.Controllers
         private readonly BooksDb db;
         private readonly IMemoryCache cache;
         private readonly BooksOptions options;
+        private readonly CatalogCacheVersion? version;
 
-        public ExploreController(BooksDb db, IMemoryCache cache, BooksOptions options)
+        public ExploreController(BooksDb db, IMemoryCache cache, BooksOptions options, CatalogCacheVersion? version = null)
         {
             this.db = db;
             this.cache = cache;
             this.options = options;
+            this.version = version;
         }
 
         /// <summary>
@@ -391,8 +395,14 @@ namespace MovieTheater.Books.Controllers
         private string UserSig() =>
             $"{BooksIdentity.UserId(User)}:{BooksIdentity.CeilingFor(User)}:{(BooksIdentity.IsAdmin(User) ? 1 : 0)}";
 
-        // Size = 1: the shared cache counts payloads, not bytes (see BrowseController).
-        private void Cache(string key, ExploreResponse value) =>
-            cache.Set(key, value, new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = CacheTtl, Size = 1 });
+        // Size = 1: the shared cache counts payloads, not bytes (see BrowseController). The entry is also bound
+        // to the catalog's cache generation: a resolve, a scan or an import trips CatalogCacheVersion and the
+        // page is composed fresh — the TTL alone used to let /explore serve a pre-resolve page all day.
+        private void Cache(string key, ExploreResponse value)
+        {
+            var entry = new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = CacheTtl, Size = 1 };
+            if (version != null) entry.AddExpirationToken(version.Token);
+            cache.Set(key, value, entry);
+        }
     }
 }

@@ -197,7 +197,7 @@ namespace MovieTheater.Books.Tests
 
         private static ComicVineSeriesScraper Scraper(V1Fixture f, FakeHandler handler, string? key = "a-key") =>
             new(new ComicVineClient(new HttpClient(handler), new ProviderCacheStore(f.LegsPath), key, NullLogger<ComicVineClient>.Instance, TimeSpan.Zero),
-                NullLogger<ComicVineSeriesScraper>.Instance);
+                new ProviderCacheStore(f.LegsPath), NullLogger<ComicVineSeriesScraper>.Instance);
 
         [Fact]
         public async Task AClearWinnerIsMatchedAndItsVolumeIsStored()

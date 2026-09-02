@@ -2,6 +2,7 @@ using CliFx;
 using CliFx.Attributes;
 using CliFx.Exceptions;
 using CliFx.Infrastructure;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using MovieTheater.Books.Db;
 using MovieTheater.Books.Migration;
@@ -13,8 +14,10 @@ namespace MovieTheater.BooksHost.Commands
     /// <summary>Shared plumbing for the verbs that drive a <see cref="TargetWriter"/>-based derived job.</summary>
     internal static class HotFile
     {
-        public static TargetWriter Open(BooksHostConfiguration config, string? dbPath) =>
-            new(dbPath ?? config.DbPath ?? throw new CommandException("--db or Books:DbPath is required."), MappingContract.Load(), dryRun: false);
+        /// <summary>A dry-run writer opens the file READ-ONLY and turns every Exec/Upsert into a no-op, so a
+        /// derived job walks, computes and counts exactly what it would write and writes nothing.</summary>
+        public static TargetWriter Open(BooksHostConfiguration config, string? dbPath, bool dryRun = false) =>
+            new(dbPath ?? config.DbPath ?? throw new CommandException("--db or Books:DbPath is required."), MappingContract.Load(), dryRun);
 
         public static string Legs(BooksHostConfiguration config, string? legsPath) =>
             legsPath ?? config.LegsDbPath ?? throw new CommandException("--legs or Books:LegsDbPath is required.");
@@ -30,12 +33,14 @@ namespace MovieTheater.BooksHost.Commands
         [CommandOption("db", Description = "books.db (default Books:DbPath).")] public string? DbPath { get; set; }
         [CommandOption("series", Description = "Rebuild only this series id.")] public int? SeriesId { get; set; }
         [CommandOption("batch-size", Description = "Series per batch (default 200).")] public int BatchSize { get; set; } = 200;
+        [CommandOption("dry-run", Description = "Walk and count the rows the rebuild would write; write nothing.")] public bool DryRun { get; set; }
+        [CommandOption("resume", Description = "Continue from the persisted cursor (books:recompute:reading-order) instead of series 0.")] public bool Resume { get; set; }
 
         public async ValueTask ExecuteAsync(IConsole console)
         {
-            using var hot = HotFile.Open(config, DbPath);
-            var rows = ReadingOrderJob.RunAll(hot, BatchSize, l => console.Output.WriteLine(l), SeriesId);
-            await console.Output.WriteLineAsync($"reading order: {rows} rows written");
+            using var hot = HotFile.Open(config, DbPath, DryRun);
+            var rows = ReadingOrderJob.RunAll(hot, BatchSize, l => console.Output.WriteLine(l), SeriesId, Resume);
+            await console.Output.WriteLineAsync($"reading order: {rows} rows {(DryRun ? "would be written (dry run — nothing written)" : "written")}");
         }
     }
 
@@ -68,12 +73,14 @@ namespace MovieTheater.BooksHost.Commands
 
         [CommandOption("db", Description = "books.db (default Books:DbPath).")] public string? DbPath { get; set; }
         [CommandOption("batch-size", Description = "Series per batch (default 200).")] public int BatchSize { get; set; } = 200;
+        [CommandOption("dry-run", Description = "Walk and count the nodes the rebuild would write; write nothing.")] public bool DryRun { get; set; }
+        [CommandOption("resume", Description = "Continue from the persisted cursor (books:recompute:containment) instead of series 0.")] public bool Resume { get; set; }
 
         public async ValueTask ExecuteAsync(IConsole console)
         {
-            using var hot = HotFile.Open(config, DbPath);
-            var rows = ContainmentJob.RunAll(hot, BatchSize, l => console.Output.WriteLine(l));
-            await console.Output.WriteLineAsync($"containment: {rows} nodes written");
+            using var hot = HotFile.Open(config, DbPath, DryRun);
+            var rows = ContainmentJob.RunAll(hot, BatchSize, l => console.Output.WriteLine(l), Resume);
+            await console.Output.WriteLineAsync($"containment: {rows} nodes {(DryRun ? "would be written (dry run — nothing written)" : "written")}");
         }
     }
 
@@ -87,12 +94,14 @@ namespace MovieTheater.BooksHost.Commands
         [CommandOption("db", Description = "books.db (default Books:DbPath).")] public string? DbPath { get; set; }
         [CommandOption("legs", Description = "books-legs.db (default Books:LegsDbPath).")] public string? LegsDbPath { get; set; }
         [CommandOption("batch-size", Description = "Items per batch (default 2000).")] public int BatchSize { get; set; } = 2000;
+        [CommandOption("dry-run", Description = "Walk and count the spans the rebuild would write; write nothing.")] public bool DryRun { get; set; }
+        [CommandOption("resume", Description = "Continue from the persisted cursor (books:recompute:collected-editions) instead of item 0.")] public bool Resume { get; set; }
 
         public async ValueTask ExecuteAsync(IConsole console)
         {
-            using var hot = HotFile.Open(config, DbPath);
-            var (spans, skipped) = CollectedEditionJob.RunAll(hot, HotFile.Legs(config, LegsDbPath), BatchSize, l => console.Output.WriteLine(l));
-            await console.Output.WriteLineAsync($"collected editions: {spans} spans, {skipped} skipped");
+            using var hot = HotFile.Open(config, DbPath, DryRun);
+            var (spans, skipped) = CollectedEditionJob.RunAll(hot, HotFile.Legs(config, LegsDbPath), BatchSize, l => console.Output.WriteLine(l), Resume);
+            await console.Output.WriteLineAsync($"collected editions: {spans} spans{(DryRun ? " would be written (dry run — nothing written)" : "")}, {skipped} skipped");
         }
     }
 
@@ -161,13 +170,20 @@ namespace MovieTheater.BooksHost.Commands
                 await csv.WriteLineAsync(DuplicateDetectionService.CsvHeader);
             }
 
+            var signed = await db.ItemSignatures.AsNoTracking().CountAsync(s => s.ContentFingerprint != null || s.PageSignature != null || s.CoverPHash != null);
+            if (signed == 0)
+                await console.Output.WriteLineAsync("NOTE: no item carries a signature yet — nothing can group. Run books-signatures first (after books-thumbs).");
+
             long groups = 0, duplicates = 0;
             var batches = 0;
+            long? after = null;                      // dry run: the cursor lives here, not in the store
+            var claimed = new HashSet<int>();        // dry run: what earlier batches already reported
             try
             {
                 while (MaxBatches <= 0 || batches < MaxBatches)
                 {
-                    var r = await service.RunBatchAsync(db, BatchSize, Apply, csv);
+                    var r = await service.RunBatchAsync(db, BatchSize, Apply, csv, after: Apply ? null : after, claimed: claimed);
+                    if (!Apply) after = r.NextCursor ?? after;
                     batches++;
                     groups += r.Groups;
                     duplicates += r.Duplicates;
@@ -179,6 +195,51 @@ namespace MovieTheater.BooksHost.Commands
 
             await console.Output.WriteLineAsync(
                 $"done: {groups} group(s), {duplicates} duplicate member(s) over {batches} batch(es)" + (Apply ? "" : " (dry run — nothing written)"));
+        }
+    }
+
+    /// <summary><c>books-signatures</c> — fill ItemSignature for v2-scanned items (the dedup's inputs).</summary>
+    [Command("books-signatures", Description = "Compute ItemSignature (archive fingerprint, page signature, cover dHash) for every item — the inputs books-dedup groups on (chunked, resumable).")]
+    public class BooksSignaturesCommand : ICommand
+    {
+        private readonly BooksHostConfiguration config;
+        public BooksSignaturesCommand(BooksHostConfiguration config) => this.config = config;
+
+        [CommandOption("db", Description = "books.db (default Books:DbPath).")] public string? DbPath { get; set; }
+        [CommandOption("cache-dir", Description = "The thumbnail cache the cover hash reads (default Books:CacheDir).")] public string? CacheDir { get; set; }
+        [CommandOption("batch-size", Description = "Items per batch (default 500).")] public int BatchSize { get; set; } = SignatureJob.DefaultBatchSize;
+        [CommandOption("max-batches", Description = "Stop after this many batches (0 = until done).")] public int MaxBatches { get; set; }
+        [CommandOption("hash-bytes", Description = "Also SHA-256 the WHOLE FILE for non-ZIP formats (cbr/pdf/mobi) — reads every byte over the share; off by default.")] public bool HashBytes { get; set; }
+        [CommandOption("reset", Description = "Forget the saved cursor and start from the first item.")] public bool Reset { get; set; }
+        [CommandOption("status", Description = "Print the cursor and counts, do no work.")] public bool Status { get; set; }
+
+        public async ValueTask ExecuteAsync(IConsole console)
+        {
+            var dbPath = DbPath ?? config.DbPath ?? throw new CommandException("--db or Books:DbPath is required.");
+            await using var provider = CommandServices.Build(config, dbPath, CacheDir);
+            var job = provider.GetRequiredService<SignatureJob>();
+            await using var scope = provider.CreateAsyncScope();
+            var db = scope.ServiceProvider.GetRequiredService<BooksDb>();
+
+            if (Status)
+            {
+                var (cursor, remaining, signed) = await job.StatusAsync(db);
+                await console.Output.WriteLineAsync($"{{ cursor: {cursor}, remaining: {remaining}, signed: {signed} }}");
+                return;
+            }
+            if (Reset) await job.ResetAsync(db);
+
+            long computed = 0, skipped = 0, failed = 0;
+            var batches = 0;
+            while (MaxBatches <= 0 || batches < MaxBatches)
+            {
+                var r = await job.RunBatchAsync(db, BatchSize, HashBytes);
+                batches++;
+                computed += r.Computed; skipped += r.Skipped; failed += r.Failed;
+                await console.Output.WriteLineAsync(r.ToString() + $"  [batches: {batches}]");
+                if (r.Done) break;
+            }
+            await console.Output.WriteLineAsync($"done: computed {computed}, skipped {skipped}, failed {failed} over {batches} batch(es); next: books-dedup");
         }
     }
 

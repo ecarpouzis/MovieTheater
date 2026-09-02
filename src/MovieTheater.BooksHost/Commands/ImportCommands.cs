@@ -86,6 +86,122 @@ namespace MovieTheater.BooksHost.Commands
         }
     }
 
+    /// <summary><c>books-insight-import</c> — the lane that writes Insight + InsightTag rows (see <see cref="InsightImportService"/>).</summary>
+    [Command("books-insight-import", Description = "Append Insight/InsightTag rows from a JSON Lines file (dry run by default; ids allocated in-band; idempotent by sourceKey). Then run books-resolve and books-library-ratings.")]
+    public class BooksInsightImportCommand : ICommand
+    {
+        private readonly BooksHostConfiguration config;
+        public BooksInsightImportCommand(BooksHostConfiguration config) => this.config = config;
+
+        [CommandOption("db", Description = "books.db (default Books:DbPath).")] public string? DbPath { get; set; }
+        [CommandOption("file", Description = "The .jsonl file: one insight per line — { subject: series|book, id, model, confidence, recognized, rating, synopsis, author, artist, yearBegin, yearEnd, maturity (books), tags, sourceKey }.")] public string? FilePath { get; set; }
+        [CommandOption("batch-size", Description = "Lines per committed batch (default 30).")] public int BatchSize { get; set; } = InsightImportService.DefaultBatchSize;
+        [CommandOption("max-batches", Description = "Stop after this many batches (0 = until done).")] public int MaxBatches { get; set; }
+        [CommandOption("after", Description = "Resume after this line number.")] public long After { get; set; }
+        [CommandOption("apply", Description = "Actually write. Without it the verb validates and counts.")] public bool Apply { get; set; }
+        [CommandOption("report", Description = "Write a per-line report CSV here (line,outcome,detail).")] public string? ReportPath { get; set; }
+
+        public async ValueTask ExecuteAsync(IConsole console)
+        {
+            var dbPath = DbPath ?? config.DbPath ?? throw new CommandException("--db or Books:DbPath is required.");
+            var file = FilePath ?? throw new CommandException("--file <insights.jsonl> is required.");
+            if (!File.Exists(file)) throw new CommandException($"Not found: {file}", 2);
+
+            await using var provider = CommandServices.Build(config, dbPath);
+            var service = provider.GetRequiredService<InsightImportService>();
+            await using var scope = provider.CreateAsyncScope();
+            var db = scope.ServiceProvider.GetRequiredService<BooksDb>();
+
+            StreamWriter? report = null;
+            if (ReportPath != null)
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(ReportPath))!);
+                report = new StreamWriter(ReportPath, false, new System.Text.UTF8Encoding(true));
+                await report.WriteLineAsync("line,outcome,detail");
+            }
+
+            long inserted = 0, skipped = 0, invalid = 0;
+            var after = After;
+            var batches = 0;
+            try
+            {
+                while (MaxBatches <= 0 || batches < MaxBatches)
+                {
+                    var r = await service.RunBatchAsync(db, file, BatchSize, Apply, after, report);
+                    if (r.Done) break;
+                    batches++;
+                    inserted += r.Inserted; skipped += r.Skipped; invalid += r.Invalid;
+                    after = r.NextCursor ?? after;
+                    await console.Output.WriteLineAsync(r.ToString() + $"  [batches: {batches}]");
+                }
+            }
+            finally { if (report != null) { await report.FlushAsync(); report.Dispose(); } }
+
+            await console.Output.WriteLineAsync(
+                $"done: inserted {inserted}, skipped {skipped}, invalid {invalid} over {batches} batch(es)" + (Apply ? "" : " (dry run — nothing written)"));
+            if (Apply && inserted > 0)
+                await console.Output.WriteLineAsync("next: books-resolve (currency + folds + scalars + FTS), then books-library-ratings; the host's catalog cache expires on its own within a poll (or POST /admin/cache/expire).");
+        }
+    }
+
+    /// <summary><c>books-curation-import</c> — the lane for the hand-curated columns (see <see cref="CurationImportService"/>).</summary>
+    [Command("books-curation-import", Description = "Set ComicDetail.EventName / IssueTitle and Series.Franchise / DisplayNameOverride from a CSV (kind,id,field,value); dry run by default, chunked, idempotent.")]
+    public class BooksCurationImportCommand : ICommand
+    {
+        private readonly BooksHostConfiguration config;
+        public BooksCurationImportCommand(BooksHostConfiguration config) => this.config = config;
+
+        [CommandOption("db", Description = "books.db (default Books:DbPath).")] public string? DbPath { get; set; }
+        [CommandOption("file", Description = "The CSV: header kind,id,field,value — kind item|series; item fields eventName|issueTitle; series fields franchise|displayName; an empty value clears.")] public string? FilePath { get; set; }
+        [CommandOption("batch-size", Description = "Lines per committed batch (default 500).")] public int BatchSize { get; set; } = CurationImportService.DefaultBatchSize;
+        [CommandOption("max-batches", Description = "Stop after this many batches (0 = until done).")] public int MaxBatches { get; set; }
+        [CommandOption("after", Description = "Resume after this line number.")] public long After { get; set; }
+        [CommandOption("apply", Description = "Actually write. Without it the verb validates and counts.")] public bool Apply { get; set; }
+        [CommandOption("report", Description = "Write a per-line report CSV here (line,outcome,detail).")] public string? ReportPath { get; set; }
+
+        public async ValueTask ExecuteAsync(IConsole console)
+        {
+            var dbPath = DbPath ?? config.DbPath ?? throw new CommandException("--db or Books:DbPath is required.");
+            var file = FilePath ?? throw new CommandException("--file <curation.csv> is required.");
+            if (!File.Exists(file)) throw new CommandException($"Not found: {file}", 2);
+
+            await using var provider = CommandServices.Build(config, dbPath);
+            var service = provider.GetRequiredService<CurationImportService>();
+            await using var scope = provider.CreateAsyncScope();
+            var db = scope.ServiceProvider.GetRequiredService<BooksDb>();
+
+            StreamWriter? report = null;
+            if (ReportPath != null)
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(ReportPath))!);
+                report = new StreamWriter(ReportPath, false, new System.Text.UTF8Encoding(true));
+                await report.WriteLineAsync("line,outcome,detail");
+            }
+
+            long applied = 0, unchanged = 0, invalid = 0;
+            var after = After;
+            var batches = 0;
+            try
+            {
+                while (MaxBatches <= 0 || batches < MaxBatches)
+                {
+                    var r = await service.RunBatchAsync(db, file, BatchSize, Apply, after, report);
+                    if (r.Done) break;
+                    batches++;
+                    applied += r.Applied; unchanged += r.Unchanged; invalid += r.Invalid;
+                    after = r.NextCursor ?? after;
+                    await console.Output.WriteLineAsync(r.ToString() + $"  [batches: {batches}]");
+                }
+            }
+            finally { if (report != null) { await report.FlushAsync(); report.Dispose(); } }
+
+            await console.Output.WriteLineAsync(
+                $"done: applied {applied}, unchanged {unchanged}, invalid {invalid} over {batches} batch(es)" + (Apply ? "" : " (dry run — nothing written)"));
+            if (Apply && applied > 0)
+                await console.Output.WriteLineAsync("next: nothing to resolve — the Events/Franchise facets read these columns; the host's catalog cache expires within a poll (or POST /admin/cache/expire).");
+        }
+    }
+
     /// <summary>
     /// <c>books-locg-import</c> — take a League of Comic Geeks JSONL export into the warehouse (and the hot
     /// subset the modal reads). The scraper that PRODUCES the export is an offline Node pipeline and is not

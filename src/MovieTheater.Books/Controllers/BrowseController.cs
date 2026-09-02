@@ -113,7 +113,13 @@ namespace MovieTheater.Books.Controllers
 
         private readonly BooksDb db;
         private readonly IMemoryCache cache;
-        public BrowseController(BooksDb db, IMemoryCache cache) { this.db = db; this.cache = cache; }
+        private readonly CatalogCacheVersion? version;
+        public BrowseController(BooksDb db, IMemoryCache cache, CatalogCacheVersion? version = null)
+        {
+            this.db = db;
+            this.cache = cache;
+            this.version = version;
+        }
 
         // ── facets ───────────────────────────────────────────────────────────────────────────────────────────
 
@@ -291,6 +297,10 @@ namespace MovieTheater.Books.Controllers
             // The series modal asks for ONE series head and does not know the kind. When the key names a book
             // series the answer is in the key itself — without this the head comes back empty and the modal has
             // no label, no count and no mark for a series that exists. An explicit ?kind= still wins.
+            // A single-series head asked for by a MERGED-AWAY id follows the SeriesMerge redirect to the survivor,
+            // so a stale modal URL still finds its series (SeriesRedirect).
+            if (by == "series" && int.TryParse(singleGroupKey, out var askedSeriesId))
+                singleGroupKey = (await SeriesRedirect.FollowAsync(db, askedSeriesId, ct)).ToString(CultureInfo.InvariantCulture);
             var itemKind = by == "series" && kind == null && int.TryParse(singleGroupKey, out var onlySeriesId)
                 ? await KindForSeriesAsync(onlySeriesId, null, ct)
                 : CatalogController.ParseKind(kind);
@@ -499,6 +509,7 @@ namespace MovieTheater.Books.Controllers
         [HttpGet("series/{seriesId:int}/library-rating")]
         public async Task<IActionResult> GetSeriesLibraryRating(int seriesId, CancellationToken ct = default)
         {
+            seriesId = await SeriesRedirect.FollowAsync(db, seriesId, ct);
             var rating = await db.Series.AsNoTracking().Where(s => s.Id == seriesId)
                 .Select(s => s.ResolvedRating).FirstOrDefaultAsync(ct);
             // Series.ResolvedRating is the materialized truth; the note lives on the row that produced it —
@@ -521,6 +532,9 @@ namespace MovieTheater.Books.Controllers
         [HttpGet("series/{seriesId:int}/run")]
         public async Task<IActionResult> GetSeriesRun(int seriesId, [FromQuery] string? kind = null, CancellationToken ct = default)
         {
+            // A merged-away id answers as its survivor; `redirectedFrom` tells the client to repair its URL.
+            var askedSeriesId = seriesId;
+            seriesId = await SeriesRedirect.FollowAsync(db, seriesId, ct);
             var itemKind = await KindForSeriesAsync(seriesId, kind, ct);
             var visible = ItemAccess.VisibleItems(db, User, itemKind).Where(i => i.SeriesId == seriesId);
             var summaries = await visible.Select(ItemSummary.Project).ToListAsync(ct);
@@ -556,7 +570,14 @@ namespace MovieTheater.Books.Controllers
                     .ThenBy(r => r.Item.Year ?? int.MaxValue)
                     .ThenBy(r => r.Item.Id)
                     .ToList();
-            return Ok(new { seriesId, kind = itemKind == ItemKind.Book ? "book" : "comic", total = rows.Count, items = rows });
+            return Ok(new
+            {
+                seriesId,
+                redirectedFrom = askedSeriesId == seriesId ? (int?)null : askedSeriesId,
+                kind = itemKind == ItemKind.Book ? "book" : "comic",
+                total = rows.Count,
+                items = rows,
+            });
         }
 
         /// <summary>
@@ -1114,8 +1135,14 @@ namespace MovieTheater.Books.Controllers
 
         // The cache runs with a size limit, so every entry declares a size. One entry = one unit: the limit is a
         // count of payloads, not bytes — enough to bound the working set without pretending to measure heap.
-        private void Cache<T>(string key, T value, TimeSpan ttl) =>
-            cache.Set(key, value, new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = ttl, Size = 1 });
+        // Every entry is also bound to the catalog's cache generation (CatalogCacheVersion): a data change
+        // expires facets and heads together, and the warmer's re-run then recomputes rather than re-reads.
+        private void Cache<T>(string key, T value, TimeSpan ttl)
+        {
+            var entry = new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = ttl, Size = 1 };
+            if (version != null) entry.AddExpirationToken(version.Token);
+            cache.Set(key, value, entry);
+        }
 
         // ── small helpers ─────────────────────────────────────────────────────────────────────────────────────
 

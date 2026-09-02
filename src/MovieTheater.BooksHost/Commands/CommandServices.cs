@@ -40,6 +40,9 @@ namespace MovieTheater.BooksHost.Commands
             services.AddSingleton<LibraryScanner>();
             services.AddSingleton<CalibreImportService>();
             services.AddSingleton<DuplicateDetectionService>();
+            services.AddSingleton<SignatureJob>();
+            services.AddSingleton<InsightImportService>();
+            services.AddSingleton<CurationImportService>();
             return services.BuildServiceProvider();
         }
     }

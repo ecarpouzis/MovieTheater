@@ -106,6 +106,9 @@ namespace MovieTheater.Books
                 services.AddDbContext<BooksDb>(o => BooksDbOptions.Configure(o, options.DbPath));
 
             services.AddMemoryCache(o => o.SizeLimit = options.CacheEntryLimit);
+            // The catalog cache generation: every catalog entry binds to it; the warmer (and POST
+            // /admin/cache/expire) trip it so a data change expires the payloads instead of the clock.
+            services.AddSingleton<CatalogCacheVersion>();
 
             services.AddControllers()
                 .AddApplicationPart(typeof(BooksServiceExtensions).Assembly)
@@ -151,6 +154,9 @@ namespace MovieTheater.Books
             services.AddSingleton<LibraryScanner>();
             services.AddSingleton<CalibreImportService>();
             services.AddSingleton<DuplicateDetectionService>();
+            services.AddSingleton<SignatureJob>();
+            services.AddSingleton<InsightImportService>();
+            services.AddSingleton<CurationImportService>();
             services.AddSingleton<DataNormalizationService>();
             services.AddSingleton<SeriesMismatchService>();
             services.AddSingleton<SeriesNamesService>();

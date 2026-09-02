@@ -61,11 +61,21 @@ namespace MovieTheater.Books.Services
         /// The stored candidates for one parsed key's provider link — what the scraper saw and scored — plus the
         /// stored top score the stale-match heuristic compares against.
         /// </summary>
-        public async Task<object?> LinkCandidatesAsync(BooksDb db, string parsedKey, Provider provider, CancellationToken ct = default)
+        public async Task<object?> LinkCandidatesAsync(BooksDb db, string parsedKey, Provider provider, CancellationToken ct = default,
+            Providers.ProviderCacheStore? store = null)
         {
             var link = await db.SeriesKeyLinks.AsNoTracking()
                 .FirstOrDefaultAsync(l => l.ParsedKey == parsedKey && l.Provider == provider, ct);
             if (link == null) return null;
+            // The candidates live in the legs file's LinkCandidates — the migration put the settled ones there
+            // and a live scrape puts an open decision's there too — so they are read back when the store is at hand.
+            System.Text.Json.JsonElement? candidates = null;
+            var json = store?.GetLinkCandidates(SubjectKind.Series, parsedKey, provider);
+            if (json != null)
+            {
+                try { candidates = System.Text.Json.JsonDocument.Parse(json).RootElement.Clone(); }
+                catch (System.Text.Json.JsonException) { }
+            }
             return new
             {
                 parsedKey,
@@ -74,9 +84,8 @@ namespace MovieTheater.Books.Services
                 providerKey = link.ProviderKey,
                 score = link.Score,
                 storedTopScore = link.StoredTopScore,
-                // A settled link's candidates were moved to the legs file at migration time; a link with an OPEN
-                // decision keeps them on the hot row, which is exactly when this view is asked for.
-                candidatesInLegs = link.Status is not (LinkStatus.Pending or LinkStatus.Multiple),
+                candidatesInLegs = json != null,
+                candidates,
                 attemptCount = link.AttemptCount,
                 attemptedAt = link.AttemptedAt,
                 error = link.Error,
@@ -260,6 +269,19 @@ namespace MovieTheater.Books.Services
             series.DisplayNameOverride = string.IsNullOrWhiteSpace(displayName) ? null : displayName.Trim();
             await db.SaveChangesAsync(ct);
             return new SeriesMismatchService.EditResult("set-override", seriesId.ToString(), 1);
+        }
+
+        /// <summary>
+        /// Set (or clear, with a null) the hand-curated franchise — the Franchise facet's only producer besides
+        /// <c>books-curation-import</c>. A curated dimension, never derived: no job rewrites it.
+        /// </summary>
+        public async Task<SeriesMismatchService.EditResult> SetFranchiseAsync(BooksDb db, int seriesId, string? franchise, CancellationToken ct = default)
+        {
+            var series = await db.Series.FirstOrDefaultAsync(s => s.Id == seriesId, ct)
+                ?? throw new InvalidOperationException($"Series {seriesId} not found.");
+            series.Franchise = string.IsNullOrWhiteSpace(franchise) ? null : franchise.Trim();
+            await db.SaveChangesAsync(ct);
+            return new SeriesMismatchService.EditResult("set-franchise", seriesId.ToString(), 1);
         }
 
         /// <summary>

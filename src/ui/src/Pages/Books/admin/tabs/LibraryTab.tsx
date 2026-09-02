@@ -99,18 +99,20 @@ function ThumbsCard() {
 function CalibreCard() {
   const [metadata, setMetadata] = useState("");
   const [link, setLink] = useState("");
+  const [libraryRoot, setLibraryRoot] = useState("");
   const [apply, setApply] = useState(false);
   return (
     <JobCard
       kind="calibre-import"
       title="Calibre import"
-      description={<>Fills the books' Calibre-native identity (series, ISBN, tags) from a <code>metadata.db</code>. Without Apply it is a dry run. Leave the path empty to use the root marked Calibre.</>}
-      start={() => calibreImport({ metadata: metadata.trim() || undefined, link: link.trim() || undefined, apply })}
+      description={<>Fills the books' Calibre-native identity (series, ISBN, tags) from a <code>metadata.db</code>. Without Apply it is a dry run. Leave the path empty to use the root marked Calibre. Paths are matched under the library root — the Calibre root by default; set it when the metadata.db is a copy kept elsewhere.</>}
+      start={() => calibreImport({ metadata: metadata.trim() || undefined, link: link.trim() || undefined, libraryRoot: libraryRoot.trim() || undefined, apply })}
       startLabel={apply ? "Import" : "Dry run"}
       controls={(
         <>
           <Input placeholder="metadata.db path (optional)" value={metadata} onChange={(e) => setMetadata(e.target.value)} style={{ width: 260 }} />
           <Input placeholder="link file (optional)" value={link} onChange={(e) => setLink(e.target.value)} style={{ width: 200 }} />
+          <Input placeholder="library root (optional)" value={libraryRoot} onChange={(e) => setLibraryRoot(e.target.value)} style={{ width: 220 }} />
           <label className="adm-inline"><Switch size="small" checked={apply} onChange={setApply} /> Apply</label>
         </>
       )}

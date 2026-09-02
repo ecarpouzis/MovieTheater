@@ -11,7 +11,7 @@ import { Alert, Button, Input, InputNumber, Popconfirm, Segmented, Select, Space
 import { useState } from "react";
 import { bk } from "../../booksQuery";
 import {
-  clearLink, fetchDecisions, fetchLinkCandidates, fetchMismatchSummary, fetchOvermatch, fetchSeriesAliases, foldKey, nameFix, prune, revertDecision, setLink, setOverride, unifyFolder,
+  clearLink, fetchDecisions, fetchLinkCandidates, fetchMismatchSummary, fetchOvermatch, fetchSeriesAliases, foldKey, nameFix, prune, revertDecision, setFranchise, setLink, setOverride, unifyFolder,
   type Decision, type EditResult, type NameFix, type Overmatch, type SeriesAliasRow,
 } from "../adminApi";
 import { driveBatches } from "../driveBatches";
@@ -71,7 +71,17 @@ function Mismatches() {
             <span>score {link.data.score ?? "—"} (stored top {link.data.storedTopScore ?? "—"})</span>
             <span>attempts {link.data.attemptCount}</span>
             {link.data.error && <span className="adm-warn">{link.data.error}</span>}
-            {link.data.candidatesInLegs && <span>candidates are in the legs file (settled link)</span>}
+            {link.data.candidates?.length ? (
+              <ul className="adm-candidates">
+                {link.data.candidates.map((c) => (
+                  <li key={c.id}>
+                    <Button size="small" type="link" onClick={() => setProviderKey(c.id)}>#{c.id}</Button>
+                    {c.name ?? "—"}{c.publisher ? ` · ${c.publisher}` : ""}{c.startYear ? ` · ${c.startYear}` : ""}{c.issues != null ? ` · ${c.issues} issues` : ""}
+                    {c.score != null && <Tag>{c.score}</Tag>}
+                  </li>
+                ))}
+              </ul>
+            ) : link.data.candidatesInLegs ? <span>candidates are in the legs file</span> : null}
             <Space wrap>
               <Popconfirm title="Clear this link?" onConfirm={() => doClear.mutate()}><Button danger size="small">Clear link</Button></Popconfirm>
               <InputNumber placeholder="CV volume id" value={providerKey} onChange={(v) => setProviderKey(v == null ? null : Number(v))} style={{ width: 150 }} />
@@ -182,6 +192,9 @@ function Names() {
   const [seriesId, setSeriesId] = useState<number | null>(null);
   const [name, setName] = useState("");
   const doOverride = useMutation({ mutationFn: (clear: boolean) => setOverride(seriesId!, clear ? null : name.trim()), onSuccess: toast.ok, onError: toast.err });
+  const [franchiseId, setFranchiseId] = useState<number | null>(null);
+  const [franchise, setFranchiseName] = useState("");
+  const doFranchise = useMutation({ mutationFn: (clear: boolean) => setFranchise(franchiseId!, clear ? null : franchise.trim()), onSuccess: toast.ok, onError: toast.err });
   const fixes = useQuery({ queryKey: bk.admin("series", "namefix"), queryFn: ({ signal }) => nameFix(false, signal) });
   const applyFixes = useMutation({ mutationFn: () => nameFix(true), onSuccess: (r) => { message.success(`Applied ${r.fixes.length} name fixes.`); void fixes.refetch(); }, onError: toast.err });
   const pruneDry = useQuery({ queryKey: bk.admin("series", "prune"), queryFn: () => prune(false) });
@@ -195,6 +208,15 @@ function Names() {
           <Input placeholder="display name" value={name} onChange={(e) => setName(e.target.value)} style={{ maxWidth: 360 }} />
           <Button type="primary" disabled={seriesId == null || !name.trim()} onClick={() => doOverride.mutate(false)}>Set</Button>
           <Button disabled={seriesId == null} onClick={() => doOverride.mutate(true)}>Clear</Button>
+        </div>
+      </section>
+      <section className="adm-card">
+        <header className="adm-card-head"><div className="adm-card-text"><h3 className="adm-card-title">Franchise</h3><p className="adm-card-desc">The curated Franchise facet value for a series (Batman, X-Men, Star Wars…). Nothing derives it: this and <code>books-curation-import</code> are its only producers.</p></div></header>
+        <div className="adm-form-row">
+          <InputNumber placeholder="series id" value={franchiseId} onChange={(v) => setFranchiseId(v == null ? null : Number(v))} style={{ width: 140 }} />
+          <Input placeholder="franchise" value={franchise} onChange={(e) => setFranchiseName(e.target.value)} style={{ maxWidth: 360 }} />
+          <Button type="primary" disabled={franchiseId == null || !franchise.trim()} onClick={() => doFranchise.mutate(false)}>Set</Button>
+          <Button disabled={franchiseId == null} onClick={() => doFranchise.mutate(true)}>Clear</Button>
         </div>
       </section>
       <section className="adm-card">

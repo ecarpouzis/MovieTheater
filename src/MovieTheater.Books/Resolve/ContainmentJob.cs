@@ -99,14 +99,19 @@ namespace MovieTheater.Books.Resolve
             return new BatchResult(seriesIds.Count, hot.Scalar<long>($"SELECT count(*) FROM Series WHERE Id > {next}"), next, written);
         }
 
-        public static int RunAll(TargetWriter hot, int batchSize, Action<string> log)
+        /// <summary>The persisted cursor — the SAME key the admin recompute route pages with (see <see cref="JobCursor"/>).</summary>
+        public const string CursorKey = "books:recompute:containment";
+
+        /// <summary>Drain every series; the cursor persists per batch and <paramref name="resume"/> continues from it.</summary>
+        public static int RunAll(TargetWriter hot, int batchSize, Action<string> log, bool resume = false)
         {
-            long cursor = 0;
+            long cursor = resume ? JobCursor.Read(hot, CursorKey) : 0;
             var total = 0;
             while (true)
             {
                 hot.Begin();
                 var r = RunBatch(hot, cursor, batchSize);
+                if (r.NextCursor is long next) JobCursor.Write(hot, CursorKey, next);
                 hot.Commit();
                 total += r.Rows;
                 if (r.Done) break;
@@ -114,6 +119,7 @@ namespace MovieTheater.Books.Resolve
                 cursor = r.NextCursor!.Value;
             }
             hot.Begin();
+            JobCursor.Clear(hot, CursorKey);
             Stamp(hot);
             hot.Commit();
             return total;
@@ -353,16 +359,20 @@ ORDER BY i.Id LIMIT {batchSize}"))
         }
 
         public const string DerivedName = "CollectedEditionSpan(Source=Locg)";
+        /// <summary>The persisted cursor (an <c>Item.Id</c>); see <see cref="JobCursor"/>.</summary>
+        public const string CursorKey = "books:recompute:collected-editions";
 
-        public static (int Spans, int Skipped) RunAll(TargetWriter hot, string legsPath, int batchSize, Action<string> log)
+        /// <summary>Drain every LOCG-linked container; the cursor persists per batch and <paramref name="resume"/> continues from it.</summary>
+        public static (int Spans, int Skipped) RunAll(TargetWriter hot, string legsPath, int batchSize, Action<string> log, bool resume = false)
         {
             using var legs = LegsTagFoldJob.OpenLegs(legsPath);
-            long cursor = 0;
+            long cursor = resume ? JobCursor.Read(hot, CursorKey) : 0;
             int spans = 0, skipped = 0;
             while (true)
             {
                 hot.Begin();
                 var r = RunBatch(hot, legs, cursor, batchSize);
+                if (r.NextCursor is long next) JobCursor.Write(hot, CursorKey, next);
                 hot.Commit();
                 spans += r.Spans;
                 skipped += r.Skipped;
@@ -371,6 +381,7 @@ ORDER BY i.Id LIMIT {batchSize}"))
                 cursor = r.NextCursor!.Value;
             }
             hot.Begin();
+            JobCursor.Clear(hot, CursorKey);
             Stamp(hot);
             hot.Commit();
             return (spans, skipped);

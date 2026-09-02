@@ -54,7 +54,13 @@ namespace MovieTheater.Books.Controllers
 
         private readonly BooksDb db;
         private readonly IMemoryCache cache;
-        public SuggestionsController(BooksDb db, IMemoryCache cache) { this.db = db; this.cache = cache; }
+        private readonly CatalogCacheVersion? version;
+        public SuggestionsController(BooksDb db, IMemoryCache cache, CatalogCacheVersion? version = null)
+        {
+            this.db = db;
+            this.cache = cache;
+            this.version = version;
+        }
 
         [HttpGet]
         public async Task<IActionResult> Get(
@@ -291,11 +297,13 @@ namespace MovieTheater.Books.Controllers
                     g => g.Key, g => g.OrderByDescending(p => p.Count).ThenBy(p => p.Publisher, StringComparer.Ordinal).First().Publisher),
             };
 
-            cache.Set(CorpusCacheKey, corpus, new MemoryCacheEntryOptions
+            var entry = new MemoryCacheEntryOptions
             {
                 AbsoluteExpirationRelativeToNow = CorpusTtl,
                 Size = 1,
-            });
+            };
+            if (version != null) entry.AddExpirationToken(version.Token);   // the corpus expires with the catalog
+            cache.Set(CorpusCacheKey, corpus, entry);
             return corpus;
         }
 

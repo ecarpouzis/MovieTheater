@@ -56,6 +56,60 @@ ON CONFLICT(Provider, RequestKey) DO UPDATE SET ResponseJson = excluded.Response
             cmd.ExecuteNonQuery();
         }
 
+        /// <summary>
+        /// The scored candidates of an OPEN link decision (<c>Status ∈ {Pending, Multiple}</c>), so the admin's
+        /// link view can show what the scraper saw instead of "candidates are in the legs file". The hot
+        /// <c>SeriesKeyLink</c> has no candidates column by contract; <c>LinkCandidates</c> in the legs file is
+        /// where the migration put the settled ones, and where a live scrape now puts the open ones.
+        /// </summary>
+        public void PutLinkCandidates(SubjectKind scope, string key, Provider provider, string candidatesJson)
+        {
+            if (!Enabled) return;
+            using var conn = Open(readOnly: false);
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"
+INSERT INTO LinkCandidates (Scope, Key, Provider, CandidatesJson) VALUES ($s, $k, $p, $j)
+ON CONFLICT(Scope, Key, Provider) DO UPDATE SET CandidatesJson = excluded.CandidatesJson";
+            cmd.Parameters.AddWithValue("$s", (int)scope);
+            cmd.Parameters.AddWithValue("$k", key);
+            cmd.Parameters.AddWithValue("$p", (int)provider);
+            cmd.Parameters.AddWithValue("$j", candidatesJson);
+            cmd.ExecuteNonQuery();
+        }
+
+        public string? GetLinkCandidates(SubjectKind scope, string key, Provider provider)
+        {
+            if (!Enabled) return null;
+            using var conn = Open(readOnly: true);
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT CandidatesJson FROM LinkCandidates WHERE Scope = $s AND Key = $k AND Provider = $p";
+            cmd.Parameters.AddWithValue("$s", (int)scope);
+            cmd.Parameters.AddWithValue("$k", key);
+            cmd.Parameters.AddWithValue("$p", (int)provider);
+            return cmd.ExecuteScalar() is string s ? s : null;
+        }
+
+        /// <summary>
+        /// A work the External leg matched, with its subjects — the input <c>books-resolve --tags</c> folds
+        /// into <c>SeriesTag(Source=External)</c>. Without this row a newly scraped work folded zero tags: the
+        /// hot <c>ExternalWork</c> carries no subjects by design, and only the migration had ever filled the
+        /// legs side. Keyed by the provider key, which is what the fold joins on.
+        /// </summary>
+        public void PutOpenLibraryWork(string workKey, string? title, string? subjectsJson)
+        {
+            if (!Enabled) return;
+            using var conn = Open(readOnly: false);
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"
+INSERT INTO OpenLibraryWork (WorkKey, Title, SubjectsJson, EditionCount, ImportedAt) VALUES ($k, $t, $j, 0, $at)
+ON CONFLICT(WorkKey) DO UPDATE SET Title = excluded.Title, SubjectsJson = excluded.SubjectsJson, ImportedAt = excluded.ImportedAt";
+            cmd.Parameters.AddWithValue("$k", workKey);
+            cmd.Parameters.AddWithValue("$t", (object?)title ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("$j", (object?)subjectsJson ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("$at", DateTime.UtcNow.ToString("O"));
+            cmd.ExecuteNonQuery();
+        }
+
         private SqliteConnection Open(bool readOnly)
         {
             var conn = new SqliteConnection(new SqliteConnectionStringBuilder

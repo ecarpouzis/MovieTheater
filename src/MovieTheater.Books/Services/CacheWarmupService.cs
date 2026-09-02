@@ -31,7 +31,9 @@ namespace MovieTheater.Books.Services
     /// handler records per user — it fabricates the exact principal the header would have produced and invokes the
     /// REAL controller actions. They cache under their normal keys, so a live request is a pure cache hit on an
     /// identical code path: zero drift between what is warmed and what is served. A user is cold until their first
-    /// request after a fresh install (no KnownIdentity row yet) — stated, and accepted.</para>
+    /// request after a fresh install (no KnownIdentity row yet) — stated, and accepted. Before a change-driven
+    /// or heartbeat pass the warmer trips <see cref="CatalogCacheVersion"/>, which every catalog entry is bound
+    /// to — that is what makes the re-run compute rather than answer itself from the stale entry.</para>
     ///
     /// <para>Each target runs in its own DI scope (fresh DbContext), sequentially, so a pass never floods SQLite.
     /// Nothing throws out of the loop: one bad target is logged and skipped, one bad pass retries next poll.</para>
@@ -85,6 +87,7 @@ namespace MovieTheater.Books.Services
 
         private readonly IServiceScopeFactory scopeFactory;
         private readonly BooksOptions options;
+        private readonly CatalogCacheVersion version;
         private readonly ILogger<CacheWarmupService> logger;
 
         private SqliteConnection? probe;
@@ -92,10 +95,11 @@ namespace MovieTheater.Books.Services
         private string? lastFingerprint;
         private DateTime lastWarmUtc = DateTime.MinValue;
 
-        public CacheWarmupService(IServiceScopeFactory scopeFactory, BooksOptions options, ILogger<CacheWarmupService> logger)
+        public CacheWarmupService(IServiceScopeFactory scopeFactory, BooksOptions options, CatalogCacheVersion version, ILogger<CacheWarmupService> logger)
         {
             this.scopeFactory = scopeFactory;
             this.options = options;
+            this.version = version;
             this.logger = logger;
         }
 
@@ -139,6 +143,13 @@ namespace MovieTheater.Books.Services
 
         private async Task WarmAsync(WarmReason reason, CancellationToken ct)
         {
+            // Expire FIRST, then warm. The actions below answer from their own cache when the entry is still
+            // there, so without this a "re-warm" after a resolve simply re-read the pre-resolve payloads (the
+            // 2026-09-01 finding: /explore served the old page until the day seed rolled). The startup pass has
+            // nothing to expire; the heartbeat expires too — it exists for edits the fingerprint cannot see.
+            if (reason != WarmReason.Startup)
+                logger.LogInformation("Books catalog cache expired (generation {Generation}, {Reason}).", version.Invalidate(), reason.ToString().ToLowerInvariant());
+
             List<ClaimsPrincipal> principals;
             using (var scope = scopeFactory.CreateScope())
             {

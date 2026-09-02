@@ -145,6 +145,36 @@ namespace MovieTheater.Books.Tests
             finally { tx.Rollback(); }
         }
 
+        [Fact]
+        public async Task A_book_is_cleared_only_by_an_AI_tag_never_by_a_provider_tag_that_spells_the_same_word()
+        {
+            using var db = fixture.Db();
+            using var tx = db.Database.BeginTransaction();
+            try
+            {
+                GrantKidTags(db);
+                db.Database.ExecuteSqlRaw("UPDATE Insight SET Maturity = 0 WHERE SubjectKind = 0 AND SubjectId = 102 AND IsCurrent = 1");
+                // A Calibre subject reading "children" is a shelving word, not a safety verdict — the series
+                // path has always filtered Source = AI and the book path now does too.
+                db.ItemTags.Add(new ItemTag { ItemId = 102, Category = "audience", Value = "children", Source = TagSource.Calibre });
+                db.SaveChanges();
+                Assert.DoesNotContain(102, await KidsPolicy.KidBookIdsAsync(db));
+
+                db.ItemTags.Add(new ItemTag { ItemId = 102, Category = "audience", Value = "children", Source = TagSource.AI });
+                db.SaveChanges();
+                Assert.Contains(102, await KidsPolicy.KidBookIdsAsync(db));
+
+                // And the blocked floor is read from AI tags only as well: an External "mature" does not block.
+                db.ItemTags.Add(new ItemTag { ItemId = 102, Category = "audience", Value = "mature", Source = TagSource.External });
+                db.SaveChanges();
+                Assert.Contains(102, await KidsPolicy.KidBookIdsAsync(db));
+                db.ItemTags.Add(new ItemTag { ItemId = 102, Category = "audience", Value = "mature", Source = TagSource.AI });
+                db.SaveChanges();
+                Assert.DoesNotContain(102, await KidsPolicy.KidBookIdsAsync(db));
+            }
+            finally { tx.Rollback(); }
+        }
+
         // ── paging + the drill ───────────────────────────────────────────────────────────────────────────────
 
         [Fact]

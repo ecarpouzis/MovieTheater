@@ -271,14 +271,16 @@ INSERT INTO data (id, book, format, name) VALUES (2, 999, 'EPUB', 'Nothing');");
             using var f = Migrated();
             await using (var db = f.HotDb())
             {
-                // Items 2 and 3 are the same file twice; item 4 has no signature at all.
-                foreach (var id in new[] { 2, 3 })
+                // Items 2 and 5 are the same file twice; items 3 and 4 have no signature at all. (Item 3 is
+                // the fixture's already-HIDDEN copy: an excluded item is never a dedup candidate — its
+                // hiding is the decision this job exists to propose, and it has already been made.)
+                foreach (var id in new[] { 2, 5 })
                 {
                     var sig = await db.ItemSignatures.FirstAsync(s => s.ItemId == id);
                     sig.ContentFingerprint = "same-bytes";
                 }
+                (await db.ItemSignatures.FirstAsync(s => s.ItemId == 3)).ContentFingerprint = null;
                 (await db.ItemSignatures.FirstAsync(s => s.ItemId == 4)).ContentFingerprint = null;
-                (await db.ItemSignatures.FirstAsync(s => s.ItemId == 5)).ContentFingerprint = null;
                 await db.SaveChangesAsync();
                 await db.DuplicateMembers.ExecuteDeleteAsync();
                 await db.DuplicateGroups.ExecuteDeleteAsync();
