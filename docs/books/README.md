@@ -115,7 +115,7 @@ Contract notes worth knowing before writing a client:
   it alone", **`null`** (or `""` for notes) means "remove it", a value means "set it". Without that distinction
   there is no way to delete a rating.
 - **Series group keys are `SeriesId` strings and are validated** (404 for an unknown series, 400 for a name). A
-  name-keyed mark detaches the next time `books-resolve-series` runs. Other group types take free-form keys.
+  name-keyed mark detaches the next time `books-resolve --series` runs. Other group types take free-form keys.
 - **Marking a series read fans out to its issues** — that is what makes the shelf's "3 / 12 read" mean anything.
   The fan-out is bounded and resumable like every bulk job here: at most 500 issues per call, already-finished
   issues skipped, and the response carries `issuesMarked` / `issuesRemaining` so the caller re-PUTs until

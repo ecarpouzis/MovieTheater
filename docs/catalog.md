@@ -44,7 +44,8 @@ two-phase — heads (`totalGroups` + a page of groups with their first cards) th
   `history.push` (Back undoes it) and is remembered as the section's default in
   `catalog.view.v1:<section>`; a stale value the source no longer offers falls back. `?view=` is the
   catalog's site-wide — a section must not use it for anything else (Music's artists/albums toggle
-  moved to `?tab=`).
+  became the catalog's own `?items=` mode; its old `?tab=`/`?view=artists|albums` links are
+  rewritten once by `legacyToMusicSearch`).
 - **Section-owned sort** — when the section persists its own sort (Movies' NavBar "Sort by",
   Boardgames' rail, the arcade's filter panel), the adapter sets `currentSort` and the state pins to
   it; picking a sort still writes `?sort=`, and the section's own dispatcher answers with a new
@@ -180,7 +181,7 @@ section under every backdrop; a source sets `shelvesSkin: "plain"` for bare plan
 
 ## Laws (R9 S0 — the Long Box `views-perf` catalog is binding)
 
-- **One engine, one strip — TRUE since R9 S3.** Every view of every section rides `InfiniteBands`,
+- **One package, one strip — TRUE since R9 S3.** Every view of every section mounts through `CatalogHost` + a `CatalogSource`; Grid/Wall/List/Extended ride `InfiniteBands`, while Shelves/Newspaper keep their own band slots, observers and jump and Directory is a plain per-level drill with no bands (only `engine/scroller.ts` is shared — the `catalog-views` skill has each view's file),
   and every view's seek control is `catalog/pager/CatalogPager` — letters under an alphabetical sort,
   page numbers otherwise. (It moved out of `Components/` in R9 S9, a pure file move: it is the
   package's ONE strip, not a leftover of the Grid overrides S3 deleted.) `hooks/useGridWindow` and `hooks/usePagedCatalog` — the second engine the
