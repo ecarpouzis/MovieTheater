@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Watchdog for the Windows-native CloudRetro GL workers: recycles a worker that is
     disconnected, port-drifted, or wedged holding a dead room, so its restart loop can
@@ -72,6 +72,25 @@
        whose scheduled task is in state Ready (Running = the loop is alive and respawns in ~4 s;
        Disabled = deliberate, never overridden), two consecutive cycles so a normal recycle isn't
        mistaken for it. Response: Start-ScheduledTask. See [[arcade-runner-death-orphans-worker]].
+
+    K) ORPHANED-BUT-STILL-SERVING (first seen 2026-09-01, and it had been true for SIX DAYS): the
+       other half of F. F waits for the orphan to STOP -- it triggers on a port with no listener --
+       so the phase where the runner is dead but its worker.exe is still happily serving rooms is
+       invisible to it by construction ("looks perfectly healthy", as F's own note says). That phase
+       is not harmless: a worker whose supervisor is gone can never pick up a config change, and
+       every attempt to restart it silently does nothing. The task engine counts the orphaned
+       cmd.exe/worker.exe descendants as the task's own, so `Get-ScheduledTask` reports Running and
+       Stop/Start-ScheduledTask both report success while changing nothing at all -- which is exactly
+       how three GL workers ran on 08-24's ICE configuration until 09-01, through a CGNAT cutover
+       that made that configuration wrong. Detection: a live UDP listener whose worker.exe has no
+       surviving `run-arcade-glworker.ps1` PowerShell ancestor (parent cmd.exe, grandparent runner),
+       two consecutive cycles. Response: report EVERY cycle (nothing else will ever say it), and
+       recover at most ONE per cycle, only when the worker is FREE (which needs the coordinator:
+       when it is down, K keeps REPORTING every cycle but defers the kill) and only when its task
+       is startable -- Disabled = deliberate, F's rule, never overridden: the orphan is left
+       serving rather than turned into a permanent outage. Recovery kills the orphan and cycles
+       its task -- Stop then Start, because the engine will not restart a task it believes is
+       already running.
 
     G) CRASHED-BUT-NOT-EXITED (first seen 2026-07-24, ScummVM/Myst): a core access-violates inside
        cgo, the Go runtime prints its fault + goroutine dump to the log -- and then the process does
@@ -602,6 +621,7 @@ Log "watchdog v2 started (coordinator port: $CoordinatorPort, interval: ${Interv
 $strikes = @{}       # PID -> consecutive no-coordinator-connection strikes (check A)
 $wedgeStrikes = @{}  # PID -> consecutive busy-but-silent strikes (check C)
 $absentStrikes = @{} # port -> consecutive "no listener AND no runner" strikes (check F)
+$orphanStrikes = @{} # port -> consecutive "listener alive but its RUNNER is gone" strikes (check K)
 $lastActedTimeout = [datetime]::MinValue  # newest coordinator work-timeout already acted on (check D)
 $script:lastArtifactCheck = $null         # last patched-artifact drift scan (check H, every 30 min)
 $script:lastSessionKind = $null           # last host-session reading posted to the site (check I)
@@ -811,8 +831,11 @@ while ($true) {
         # and not already being recycled by C/D. At most ONE per cycle so the pool is never drained
         # (a busy worker is recycled once it goes free on a later cycle). Graceful path flushes the
         # shader cache like any recycle. See the .DESCRIPTION E) note (the 2026-07-23 stale-core trap).
+        # Busy map (coordinator-known room -> port), shared by checks E and K. When the
+        # coordinator is DOWN it stays EMPTY, which means UNKNOWN -- not "all free": K keeps
+        # reporting orphans without it but defers any kill until $status is back.
+        $busyPorts = @{}
         if ($status) {
-            $busyPorts = @{}
             foreach ($entry in @($status | Where-Object { $_.room })) {
                 foreach ($p in $WorkerPorts) {
                     $last = LastRoomInLog (WorkerLogPath $p)
@@ -844,6 +867,70 @@ while ($true) {
                     break   # one per cycle: never drain the pool
                 }
             }
+        }
+
+        # -- K) ORPHANED-BUT-STILL-SERVING check ------------------------------------------
+        # Check F asks "is the port empty?" and so it can only see an orphan AFTER the worker
+        # finally stops. This asks the question that is true the whole time: does this live
+        # worker still have a runner? The runner spawns `cmd /c worker.exe`, so a supervised
+        # worker's grandparent is a powershell.exe running run-arcade-glworker.ps1. When that
+        # PowerShell is gone the worker keeps serving perfectly -- and is frozen on the config it
+        # started with, unrestartable, while the task engine reports Running because it counts
+        # the orphaned descendants. Six days of that (2026-08-26 -> 09-01) is what this exists
+        # to end. Detection and its log line run even when the coordinator is DOWN; only the
+        # kill needs $status (busy state) and a startable task -- Disabled = deliberate (F's
+        # rule), so a disabled task's orphan is reported but left serving.
+        #
+        # ⚠ PID REUSE is why the ancestor's CreationDate is checked: Windows recycles PIDs, so a
+        # ParentProcessId can point at some unrelated process started later. An ancestor younger
+        # than its child is not an ancestor.
+        $orphanFound = $false
+        foreach ($p in $WorkerPorts) {
+            $owner = UdpOwner $p
+            if (-not $owner) { $orphanStrikes.Remove($p) | Out-Null; continue }   # F's territory
+            $wpid = [int]$owner
+            if (-not $livePids[$wpid]) { continue }
+            if ($age[$wpid] -lt $GraceSec) { continue }                           # still starting up
+
+            $self = $workers | Where-Object { [int]$_.ProcessId -eq $wpid } | Select-Object -First 1
+            $supervised = $false
+            $walker = $self
+            for ($hop = 0; $hop -lt 3 -and $walker; $hop++) {
+                $parent = Get-CimInstance Win32_Process -Filter ("ProcessId={0}" -f $walker.ParentProcessId) -ErrorAction SilentlyContinue
+                if (-not $parent) { break }
+                if ($parent.CreationDate -and $walker.CreationDate -and $parent.CreationDate -gt $walker.CreationDate) { break }  # PID reuse
+                if ($parent.Name -match 'powershell|pwsh' -and $parent.CommandLine -match 'run-arcade-glworker\.ps1') { $supervised = $true; break }
+                $walker = $parent
+            }
+            if ($supervised) { $orphanStrikes.Remove($p) | Out-Null; continue }
+
+            $orphanStrikes[$p] = [int]$orphanStrikes[$p] + 1
+            Log ("worker PID {0} (port {1}) ORPHANED: serving normally but its runner PowerShell is GONE -- it cannot pick up a config change and Start-ScheduledTask will silently do nothing (strike {2})" -f `
+                $wpid, $p, $orphanStrikes[$p])
+            if ($orphanStrikes[$p] -lt 2) { continue }
+            if (-not $status) { continue }                                        # coordinator down: busy state UNKNOWN -- keep reporting, defer the kill
+            if ($busyPorts[$p]) { continue }                                      # hosting a live room: catch it when it goes free
+            if ($wedgedPids[$wpid]) { continue }                                  # C is handling it
+            if ($orphanFound) { continue }                                        # one per cycle: never drain the pool
+
+            $taskName = WorkerTaskName $p
+            $task = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+            if (-not $task -or $task.State -eq 'Disabled') { continue }           # F's rule: Disabled = deliberate, never overridden -- and a kill with nothing startable behind it is an outage, not a recycle
+
+            $orphanFound = $true
+            Log ("  re-parenting port {0}: killing the orphan and cycling '{1}'" -f $p, $taskName)
+            KillWorker $wpid "orphaned (runner PowerShell gone; worker frozen on its start-time config)" $true
+            try {
+                # Stop FIRST and always: the engine believes this task is running (it counted the
+                # orphan), and it will refuse to start a task it thinks is already up.
+                Stop-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+                Start-Sleep -Seconds 2
+                Start-ScheduledTask -TaskName $taskName -ErrorAction Stop
+                Log ("  started '{0}' -- worker port {1} is supervised again" -f $taskName, $p)
+            } catch {
+                Log ("  cycling '{0}' FAILED: {1}" -f $taskName, $_.Exception.Message)
+            }
+            $orphanStrikes.Remove($p) | Out-Null
         }
 
         # -- G) crashed-but-not-exited check -------------------------------------------------
