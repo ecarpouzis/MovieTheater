@@ -489,7 +489,7 @@ function NavBar({
     <>
       {/* NavBar.css mirrors the per-section width in --sider-width so the switcher dropdown spans
           the right width. */}
-      <Layout.Sider className={`navbar-sider${navThemeClass}`} width={section.siderWidth ?? 200} trigger={null} collapsible collapsed={collapsed} onCollapse={onCollapse}>
+      <Layout.Sider className={`navbar-sider${navThemeClass}`} width={section.siderWidth ?? 236} trigger={null} collapsible collapsed={collapsed} onCollapse={onCollapse}>
         <div className="navbar-sider-inner">
           <div className={`navbar-sider-header${navThemeClass}`}>
             <div className="navbar-dropdown-wrapper">

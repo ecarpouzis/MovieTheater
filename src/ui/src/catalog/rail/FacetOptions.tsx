@@ -1,8 +1,21 @@
 /**
- * One facet's option list: a filter box once the list is long, a "+" (include) and "−" (exclude) per
- * row, active rows sorted to the top and always shown (even when they fell below the server's cut),
- * and — for a `dynamic` facet — a debounced server search plus scroll-to-load paging through the
- * spec's `loadOptions`. Publishers draw a swatch, collections a square cover tile with a hue fallback.
+ * One facet's option list: a filter box once the list is long, THE ROW ITSELF as the include
+ * control, a "−" for exclude that comes forward when you reach for it, active rows sorted to the top
+ * and always shown (even when they fell below the server's cut), and — for a `dynamic` facet — a
+ * debounced server search plus scroll-to-load paging through the spec's `loadOptions`. Publishers
+ * draw a swatch, collections a square cover tile with a hue fallback.
+ *
+ * THE LABEL IS THE HERO, and it used to be the loser. The row carried a decorative 16px square that
+ * looked like a checkbox but had no handler, plus a "+" and a "−" — five things in a 158px row, and
+ * the only one that says WHAT the option is came last. Measured across every section on 2026-09-02
+ * (`shot-rail`): the label box bottomed out at 46px, so Movies' "Comedy" drew as "Come…" and
+ * "Adventure" as "Adve…"; 65% of Boardgames' publishers and 44% of Music's artists were clipped.
+ *
+ * So: the square is gone (it did nothing), the "+" is gone (the ROW is the +, the way every facet
+ * list on the web works), and the "−" shares the count's cell instead of taking a column of its own.
+ * Coarse pointers get the count and the "−" side by side, always visible, because the phone rail is
+ * 390px wide and has the room the 236px desktop sider does not — the squeeze is desktop-only, so
+ * only desktop pays for it.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { hueOf } from "../sources/hue";
@@ -120,44 +133,61 @@ export default function FacetOptions({ def, options, selected, excluded, onToggl
   }, [q, dynamic, searchResults, options, moreItems, selected, excluded, def]);
   const showSearch = dynamic || options.length > max;
 
+  // What one click on the ROW does. Normally it includes; a facet the API can only subtract from
+  // (the Arcade's regions — `includable: false`) makes the row the exclude control instead, so its
+  // one obvious gesture is still its one available gesture.
+  const rowMode: FacetMode = includable ? "inc" : "exc";
+  const rowVerb = rowMode === "inc" ? "Include" : "Exclude";
+  const pill = def.render === "pill";
+  // The separate "−" exists only where the row's own click cannot reach exclude.
+  const hasExcludeButton = filterable && excludable && includable && !pill;
+
   return (
     <div className="bx-facet">
       {showSearch && (
         <input className="bx-facet-search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={`Filter ${def.label.toLowerCase()}…`} aria-label={`Filter ${def.label.toLowerCase()}`} />
       )}
       <div
-        className={`bx-facet-opts${def.render === "pill" ? " bx-facet-opts--pills" : ""}${def.stops ? " bx-facet-opts--stops" : ""}`}
+        className={`bx-facet-opts${pill ? " bx-facet-opts--pills" : ""}${def.stops ? " bx-facet-opts--stops" : ""}`}
         onScroll={dynamic ? (e) => { const el = e.currentTarget; if (el.scrollHeight - el.scrollTop - el.clientHeight < 40) void loadMore(); } : undefined}
       >
         {shown.map((o) => {
           const on = isOn(o.value);
           const ex = isEx(o.value);
           const hue = o.hue ?? hueOf(o.label);
-          return (
-            <div
-              key={String(o.value)}
-              className={`bx-opt${on ? " on" : ""}${ex ? " ex" : ""}${def.render === "tile" ? " bx-opt-collection" : ""}${def.render === "pill" ? " bx-opt-pill" : ""}`}
-              role={def.render === "pill" && filterable ? "button" : undefined}
-              aria-pressed={def.render === "pill" && filterable ? on : undefined}
-              tabIndex={def.render === "pill" && filterable ? 0 : undefined}
-              onClick={def.render === "pill" && filterable ? () => onToggle(def.key, o.value, "inc") : undefined}
-              onKeyDown={def.render === "pill" && filterable ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggle(def.key, o.value, "inc"); } } : undefined}
-            >
-              {def.render === "tile" ? (
-                <TileImage src={o.imageUrl} hue={hue} alt="" />
-              ) : (
-                <>
-                  <span className="bx-opt-box" aria-hidden="true">{on ? "✓" : ex ? "✕" : ""}</span>
-                  {def.render === "swatch" && <span className="bx-opt-swatch" style={{ background: `oklch(0.78 0.14 ${hue})` }} aria-hidden="true" />}
-                </>
-              )}
+          const rowClass = `bx-opt${on ? " on" : ""}${ex ? " ex" : ""}${def.render === "tile" ? " bx-opt-collection" : ""}${pill ? " bx-opt-pill" : ""}`;
+          // Everything the row SAYS. Identical in both shapes below; only the element differs.
+          const body = (
+            <>
+              {def.render === "tile" && <TileImage src={o.imageUrl} hue={hue} alt="" />}
+              {def.render === "swatch" && <span className="bx-opt-swatch" style={{ background: `oklch(0.78 0.14 ${hue})` }} aria-hidden="true" />}
               <span className="bx-opt-label" title={o.label}>{o.label}</span>
               {def.showCounts !== false && <span className="bx-opt-count">{o.count.toLocaleString()}</span>}
-              {filterable && def.render !== "pill" && (
-                <span className="bx-opt-acts">
-                  {includable && <button type="button" className="bx-opt-inc" aria-label={`Include ${o.label}`} aria-pressed={on} onClick={() => onToggle(def.key, o.value, "inc")}>+</button>}
-                  {excludable && <button type="button" className="bx-opt-exc" aria-label={`Exclude ${o.label}`} aria-pressed={ex} onClick={() => onToggle(def.key, o.value, "exc")}>−</button>}
-                </span>
+            </>
+          );
+          // A pill IS the control — one element, a real button, no tail. Everything else is a row
+          // whose body is the button and whose "−" is a SIBLING: a button inside a button is not
+          // something browsers or screen readers honour.
+          if (pill) {
+            return filterable
+              ? (
+                <button type="button" key={String(o.value)} className={rowClass} aria-label={`${rowVerb} ${o.label}`} aria-pressed={rowMode === "inc" ? on : ex} onClick={() => onToggle(def.key, o.value, rowMode)}>
+                  {body}
+                </button>
+              )
+              : <div key={String(o.value)} className={rowClass}>{body}</div>;
+          }
+          return (
+            <div key={String(o.value)} className={rowClass}>
+              {filterable
+                ? (
+                  <button type="button" className="bx-opt-main" aria-label={`${rowVerb} ${o.label}`} aria-pressed={rowMode === "inc" ? on : ex} onClick={() => onToggle(def.key, o.value, rowMode)}>
+                    {body}
+                  </button>
+                )
+                : <div className="bx-opt-main">{body}</div>}
+              {hasExcludeButton && (
+                <button type="button" className="bx-opt-exc" title={`Exclude ${o.label}`} aria-label={`Exclude ${o.label}`} aria-pressed={ex} onClick={() => onToggle(def.key, o.value, "exc")}>−</button>
               )}
             </div>
           );

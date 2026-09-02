@@ -101,8 +101,12 @@
   --text-display-lg: 26px;
   --text-display-md: 20px;
 
-  /* Sider width — antd's Layout.Sider default. Arcade widens it (see below). */
-  --sider-width: 200px;
+  /* Sider width. MIRRORS `NavBar.js`'s `section.siderWidth ?? 236` — the Sider takes its width
+     from that prop, this token is what the section-switcher dropdown spans. Change both or the
+     dropdown stops lining up with the column. 200px until 2026-09-02: it was the real reason the
+     facet labels truncated ("Come…" for Comedy), because the rail's option row has to fit a label,
+     a count and an exclude control inside it. Arcade widens further (248), Books further still (280). */
+  --sider-width: 236px;
 
   /* Content-area surfaces (feature-independent in light) */
   --card-surface: #ffffff;

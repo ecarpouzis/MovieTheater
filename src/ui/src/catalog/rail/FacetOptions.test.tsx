@@ -44,6 +44,42 @@ describe("FacetOptions", () => {
     vi.useRealTimers();
   });
 
+  // The row IS the include control (2026-09-02). It used to carry a checkbox-shaped square with no
+  // handler plus a "+" and a "-", which left the label 46px on the 200px sider - "Comedy" drew as
+  // "Come...". The square and the "+" are gone; what stays is one click on the row.
+  it("the row itself includes, and it draws no dead checkbox square", () => {
+    const onToggle = vi.fn();
+    render(<FacetOptions def={def} options={rows(3)} selected={[]} excluded={[]} onToggle={onToggle} />);
+    expect(document.querySelector(".bx-opt-box")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Include Tag 2" }));
+    expect(onToggle).toHaveBeenCalledWith("tags", "Tag 2", "inc");
+    // The label lives inside that button, so clicking the text filters.
+    expect(screen.getByText("Tag 2").closest("button")).toHaveAttribute("aria-label", "Include Tag 2");
+  });
+
+  it("a facet the API can only subtract from makes the ROW the exclude control", () => {
+    const onToggle = vi.fn();
+    render(<FacetOptions def={{ ...def, includable: false }} options={rows(2)} selected={[]} excluded={[]} onToggle={onToggle} />);
+    expect(screen.queryByRole("button", { name: "Include Tag 1" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Exclude Tag 1" }));
+    expect(onToggle).toHaveBeenCalledWith("tags", "Tag 1", "exc");
+  });
+
+  it("a non-excludable facet offers no second control at all", () => {
+    render(<FacetOptions def={{ ...def, excludable: false }} options={rows(2)} selected={[]} excluded={[]} onToggle={vi.fn()} />);
+    expect(screen.getByRole("button", { name: "Include Tag 1" })).toBeInTheDocument();
+    expect(document.querySelectorAll(".bx-opt-exc")).toHaveLength(0);
+  });
+
+  it("a pill is a real button, not a div wearing a role", () => {
+    const onToggle = vi.fn();
+    render(<FacetOptions def={{ ...def, render: "pill" }} options={rows(2)} selected={["Tag 1"]} excluded={[]} onToggle={onToggle} />);
+    const pill = screen.getByRole("button", { name: "Include Tag 1" });
+    expect(pill.tagName).toBe("BUTTON");
+    expect(pill).toHaveAttribute("aria-pressed", "true");
+    expect(pill).toHaveClass("bx-opt-pill");
+  });
+
   it("a tile facet draws covers, a non-filterable facet has no +/-", () => {
     render(<FacetOptions def={{ ...def, render: "tile", filterable: false }} options={[{ value: 1, label: "Marvel", count: 3, imageUrl: "x.jpg" }]} selected={[]} excluded={[]} onToggle={vi.fn()} />);
     expect(document.querySelector("img.bx-opt-cover")).toHaveAttribute("src", "x.jpg");

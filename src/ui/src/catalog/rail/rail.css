@@ -90,32 +90,102 @@
   font: inherit; font-size: 12px; padding: 4px 8px; border-radius: 6px;
 }
 
-/* ── Facet options ── */
+/* ── Facet options ─────────────────────────────────────────────────────────────────
+   THE ROW IS THE CONTROL. It used to carry a decorative 16px square (checkbox-shaped, no handler,
+   no role) plus a "+" and a "−" — and on the 200px sider that left the label 46px, so Movies' genres
+   drew as "Come…" and "Adve…". The square and the "+" are gone, the row itself includes, and the
+   "−" borrows the count's cell rather than taking a column. Measurements: FacetOptions.tsx's header.
+
+   Three things the label needed and did not have:
+     · the width the square and the "+" were spending (47px of 158);
+     · a count column that is the SAME width on every row (it was intrinsic, so each row truncated at
+       a different place and the list read as a ragged edge);
+     · a selected state that does not look like hover — `on` and `:hover` painted the same background,
+       so "this is filtering" and "my mouse is here" were one picture. State is now a lit left edge,
+       a deeper wash and a heavier label. */
 .bx-facet { display: flex; flex-direction: column; gap: 6px; }
 .bx-facet-search {
   appearance: none; border: 1px solid var(--line); background: var(--bg); color: var(--ink);
   font: inherit; font-size: 12px; padding: 6px 9px; border-radius: 6px;
 }
 .bx-facet-search:focus { outline: none; border-color: var(--ink); }
-.bx-facet-opts { display: flex; flex-direction: column; gap: 1px; max-height: 220px; overflow-y: auto; scrollbar-width: thin; }
+.bx-facet-opts { display: flex; flex-direction: column; gap: 1px; max-height: 264px; overflow-y: auto; scrollbar-width: thin; }
 .bx-opt {
-  display: flex; align-items: center; gap: 8px;
-  padding: 6px 7px; border-radius: 6px; font: inherit; color: var(--ink);
-  text-align: left; width: 100%;
+  position: relative; display: flex; align-items: center; width: 100%;
+  border-radius: 6px; font: inherit; color: var(--ink); text-align: left;
 }
-.bx-opt:hover, .bx-opt.on { background: var(--line); }
-.bx-opt-box {
-  flex: 0 0 auto; width: 16px; height: 16px; border-radius: 4px;
-  border: 1px solid var(--sub); display: flex; align-items: center; justify-content: center;
-  font-size: 11px; color: var(--bx-on-ink, var(--bg));
+/* The lit edge, drawn transparent at rest so no state change moves the row's box. */
+.bx-opt::before {
+  content: ""; position: absolute; left: 0; top: 5px; bottom: 5px; width: 3px;
+  border-radius: 0 3px 3px 0; background: transparent; pointer-events: none;
 }
-.bx-opt.on .bx-opt-box { background: var(--ink); border-color: var(--ink); }
+.bx-opt:hover { background: color-mix(in srgb, var(--ink) 9%, transparent); }
+.bx-opt.on { background: color-mix(in srgb, var(--ink) 17%, transparent); }
+.bx-opt.on::before { background: var(--ink); }
+.bx-opt.ex { background: color-mix(in srgb, var(--bx-danger) 15%, transparent); }
+.bx-opt.ex::before { background: var(--bx-danger); }
+
+/* The row's body IS the include button — a plain div only when the facet reports counts it cannot
+   filter on (`filterable: false`). */
+.bx-opt-main {
+  appearance: none; border: 0; background: transparent; cursor: pointer;
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px;
+  padding: 6px 7px 6px 10px; border-radius: 6px;
+  font: inherit; color: inherit; text-align: left;
+}
+div.bx-opt-main { cursor: default; }
+.bx-opt-main:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+/* Up to TWO lines, then clip. Widening the rail fixed every ordinary facet, but some vocabularies
+   are essay-length whatever the column is — Boardgames' BGG families ("Versions & Editions: Board
+   Game Versions of Role-Playing Games", 358px), Music's compilation artists, Books' events — and a
+   one-line rule turned 36% of the Family list into stubs. A second line rescues those and costs the
+   short labels nothing: a row that fits stays exactly one line high. */
+.bx-opt-label {
+  flex: 1; min-width: 0; font-size: 12.5px; line-height: 1.35;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+  overflow: hidden; overflow-wrap: break-word;
+}
+/* A pill is a fixed-width control on one line — it never wraps. */
+.bx-opt-pill .bx-opt-label { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bx-opt.on .bx-opt-label { font-weight: 600; }
+.bx-opt.ex .bx-opt-label { text-decoration: line-through; color: var(--sub); }
+/* Tabular figures over a floor: one straight column of counts, and a cell of known size for the
+   "−" to sit in. */
+.bx-opt-count {
+  flex: 0 0 auto; min-width: 30px; text-align: right;
+  font-family: var(--font-mono); font-size: 10px; font-variant-numeric: tabular-nums; color: var(--sub);
+}
 .bx-opt-swatch { flex: 0 0 auto; width: 12px; height: 12px; border-radius: 3px; }
+
+/* Exclude is the second thought, so on a pointer device it costs no width until you reach for it:
+   it takes over the count's cell on hover, on focus, and whenever it is already on. (Coarse
+   pointers draw both, always — see the block at the foot of this section.) */
+.bx-opt-exc {
+  appearance: none; cursor: pointer;
+  position: absolute; right: 5px; top: 50%; transform: translateY(-50%);
+  width: 22px; height: 22px; padding: 0; border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--line); background: var(--bg); color: var(--sub);
+  font: inherit; font-size: 14px; font-weight: 700; line-height: 1;
+  opacity: 0; pointer-events: none; transition: opacity .12s ease;
+}
+.bx-opt:hover .bx-opt-exc, .bx-opt:focus-within .bx-opt-exc, .bx-opt.ex .bx-opt-exc { opacity: 1; pointer-events: auto; }
+.bx-opt:hover .bx-opt-count, .bx-opt:focus-within .bx-opt-count, .bx-opt.ex .bx-opt-count { visibility: hidden; }
+.bx-opt-exc:hover { border-color: var(--bx-danger); color: var(--bx-danger); }
+.bx-opt-exc:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+.bx-opt-exc[aria-pressed="true"] { background: var(--bx-danger); border-color: var(--bx-danger); color: #fff; }
+
 /* A short fixed scale as one row of toggle pills (the MPA stops): the pill IS the control. */
 .bx-facet-opts--pills { flex-direction: row; flex-wrap: wrap; gap: 4px; max-height: none; overflow: visible; }
-.bx-opt-pill { width: auto; gap: 5px; padding: 3px 9px; border: 1px solid var(--line); border-radius: 999px; cursor: pointer; user-select: none; }
-.bx-opt-pill .bx-opt-box { display: none; }
+.bx-opt-pill {
+  appearance: none; width: auto; display: flex; align-items: center; gap: 5px;
+  padding: 3px 9px; border: 1px solid var(--line); border-radius: 999px;
+  background: transparent; color: var(--ink); font: inherit; cursor: pointer; user-select: none;
+}
+.bx-opt-pill::before { content: none; }
+.bx-opt-pill:hover { background: color-mix(in srgb, var(--ink) 9%, transparent); }
 .bx-opt-pill .bx-opt-label { flex: 0 0 auto; font-size: 12px; }
+.bx-opt-pill .bx-opt-count { min-width: 0; }
 .bx-opt-pill.on { background: var(--ink); color: var(--bx-on-ink, var(--bg)); border-color: var(--ink); }
 .bx-opt-pill.on .bx-opt-count { color: var(--bx-on-ink, var(--bg)); opacity: 0.8; }
 .bx-opt-pill:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
@@ -125,35 +195,44 @@
 .bx-facet-opts--stops { flex-wrap: nowrap; gap: 3px; }
 .bx-facet-opts--stops .bx-opt-pill { flex: 1 0 auto; justify-content: center; padding: 3px 5px; }
 .bx-facet-opts--stops .bx-opt-label { font-size: 10px; letter-spacing: 0; }
-.bx-opt-label { flex: 1; font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-.bx-opt-count { flex: 0 0 auto; font-family: var(--font-mono); font-size: 10px; color: var(--sub); }
-.bx-opt-acts { flex: 0 0 auto; display: flex; gap: 3px; margin-left: 2px; }
-.bx-opt-inc, .bx-opt-exc {
-  appearance: none; cursor: pointer; flex: 0 0 auto;
-  width: 20px; height: 20px; padding: 0; border-radius: 5px;
-  display: flex; align-items: center; justify-content: center;
-  border: 1px solid var(--line); background: var(--bg); color: var(--sub);
-  font: inherit; font-size: 14px; font-weight: 700; line-height: 1;
-}
-.bx-opt-inc:hover { border-color: var(--ink); color: var(--ink); }
-.bx-opt-exc:hover { border-color: var(--bx-danger); color: var(--bx-danger); }
-.bx-opt-inc[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--bx-on-ink, var(--bg)); }
-.bx-opt-exc[aria-pressed="true"] { background: var(--bx-danger); border-color: var(--bx-danger); color: #fff; }
-.bx-opt.ex .bx-opt-label { text-decoration: line-through; color: var(--sub); }
-.bx-opt.ex .bx-opt-box { background: var(--bx-danger); border-color: var(--bx-danger); }
-.bx-opt-collection { gap: 10px; padding: 5px 7px; }
+
+/* Collection tiles (Books) — the cover replaces the swatch, everything else is the same row. */
+.bx-opt-collection .bx-opt-main { gap: 10px; padding: 5px 7px 5px 10px; }
 .bx-opt-cover { flex: 0 0 auto; width: 28px; height: 28px; border-radius: 6px; object-fit: cover; background: var(--line); }
 .bx-opt-collection.on { box-shadow: inset 0 0 0 1.5px var(--ink); }
-.bx-opt-collection.on .bx-opt-label { font-weight: 600; }
 .bx-opt-collection.ex { box-shadow: inset 0 0 0 1.5px var(--bx-danger); }
-.bx-opt-collection.ex .bx-opt-label { font-weight: 600; }
+.bx-opt-collection.on .bx-opt-label, .bx-opt-collection.ex .bx-opt-label { font-weight: 600; }
+
 .bx-facet-empty, .bx-facet-loading { font-size: 12px; color: var(--sub); padding: 8px 7px; }
+
+/* A finger cannot hover, so anywhere a finger might be, the "−" is DRAWN rather than revealed and
+   it takes its own column beside the count. `any-pointer: coarse` is in the query and not just
+   `hover: none`, because a touchscreen laptop reports a MOUSE as its primary pointer: on `hover:
+   none` alone it takes the desktop branch above, and its touch users can never reach exclude. It can afford the column: the "−" costs
+   ~26px and the desktop label still measures ~127px, which is every genre, mood and subgenre we
+   have. */
+@media (hover: none), (any-pointer: coarse) {
+  .bx-opt { padding-right: 4px; }
+  .bx-opt .bx-opt-exc { position: static; transform: none; opacity: 1; pointer-events: auto; margin-left: 2px; }
+  .bx-opt:hover .bx-opt-count, .bx-opt:focus-within .bx-opt-count, .bx-opt.ex .bx-opt-count { visibility: visible; }
+  .bx-opt.ex .bx-opt-count { opacity: .45; }
+}
+
+/* And where there is NO mouse at all, the rail is the phone DRAWER at 390px, not a 236px sider — no
+   squeeze, so every row grows to a 44px target and the controls grow with it. */
+@media (hover: none) {
+  .bx-opt .bx-opt-main { padding-top: 10px; padding-bottom: 10px; min-height: 44px; }
+  .bx-opt .bx-opt-exc { width: 32px; height: 32px; font-size: 16px; }
+  .bx-opt-pill { padding: 7px 12px; }
+  .bx-facet-opts { max-height: 44vh; }
+}
 
 /* Date / rating / flags */
 .bx-date { display: flex; flex-direction: column; gap: 8px; }
 .bx-date-vals { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 12px; }
 .bx-date-sliders { display: flex; flex-direction: column; gap: 2px; }
 .bx-date-sliders input { width: 100%; accent-color: var(--ink); cursor: pointer; }
+.bx-date-sliders input:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
 .bx-date-decades, .bx-rating { display: flex; flex-wrap: wrap; gap: 4px; }
 .bx-stops-ticks { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 9.5px; color: var(--sub); padding: 0 5px; user-select: none; }
 .bx-stops-ticks span { flex: 0 0 auto; }
@@ -163,6 +242,9 @@
   font: inherit; font-size: 11px; cursor: pointer; padding: 4px 9px; border-radius: 999px;
 }
 .bx-mini:hover { color: var(--ink); border-color: var(--ink); }
+/* Same ring the option rows and the pills carry — every control in the rail is keyboard-reachable
+   and says so. */
+.bx-mini:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
 .bx-mini.on { background: var(--ink); color: var(--bx-on-ink, var(--bg)); border-color: var(--ink); }
 
 /* ── Saved searches ── */

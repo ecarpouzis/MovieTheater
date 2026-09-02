@@ -449,12 +449,43 @@ the only copy.
   (`SectionSiderRail` passes `isMobile`): false on desktop, where the page portals the same
   `SmartSearch` into the bar's centre slot, true on a phone, where the bar has no centre slot.
   Sections:
-  facets in spec order (`RailSection` collapsibles, `FacetOptions` with include/exclude controls and
+  facets in spec order (`RailSection` collapsibles, `FacetOptions` — see the option row below — and
   the searched, paged long tails via `useFacetOptions`), the **fixed-scale ranges** (`spec.ranges`,
   `RangeFacetDef`: two thumbs over declared stops — the Boardgames Age 3…18+ / Play time / Weight —
   URL `<token>=min-max`, a thumb at either end = an open side, BOTH thumbs filter; drawn right under
   the facet named by `after`, `StopsRangeFacet`), then Date range, Rating, My lists (`RangeFacets`),
   then the saved searches. A count badge on the head shows the active filters.
+- **The option row (`FacetOptions`) — the row IS the control.** One click on the row includes; the
+  "−" beside it excludes; there is no "+" and no checkbox. This is a 2026-09-02 rewrite of a row that
+  drew a 16px checkbox-shaped square with **no handler, no role and no tabindex** in front of a
+  "+" and a "−" — five things competing inside a 158px row, with the label last. Measured across
+  every section (`shot-rail`): the label box bottomed out at **46px**, so Movies' "Comedy" rendered
+  as "Come…" and "Adventure" as "Adve…", and **534 option labels were clipped** (65% of Boardgames'
+  publishers, 44% of Music's artists). Afterwards: **44**. The four rules that hold it:
+  - **One primary gesture per row.** `includable: false` (the Arcade's regions — the API can only
+    subtract) makes the ROW the exclude control rather than growing a second one; `excludable: false`
+    (Movies' Type) draws no "−" at all; `filterable: false` renders a plain `div`, not a button.
+    `setMode` toggles off when re-clicked in the same mode, so every row round-trips.
+  - **The "−" is a sibling, never a child.** The row's body is the button; a button inside a button
+    is not something browsers or screen readers honour. Accessible names stay `Include <label>` /
+    `Exclude <label>` with `aria-pressed` — that is what the tests and the smoke query on.
+  - **Counts are a column, not content.** `tabular-nums` over a `min-width` floor, so every row
+    truncates at the same place instead of leaving a ragged edge — and the "−" has a cell of known
+    size to take over on hover.
+  - **State is not hover.** `on` and `:hover` used to paint the identical background. Selected is now
+    a lit left edge + a deeper wash + a heavier label; excluded is the danger edge + a struck label.
+  - **A label gets two lines before it gets clipped.** Width fixes the ordinary facets; some
+    vocabularies are essay-length whatever the column is (Boardgames' BGG families — 36% of that list
+    was stubs at one line — Music's compilation artists, Books' events). A `-webkit-line-clamp: 2`
+    rescues those and costs a short label nothing: a row that fits stays exactly one line high. Pills
+    never wrap — they are fixed-width controls.
+  Widths: the sider is **236px** (`NavBar.js`'s `siderWidth ?? 236`, mirrored by `--sider-width` —
+  change both), Arcade 248, Books 280. Where a finger might be (`hover: none`, **or**
+  `any-pointer: coarse`, which is what catches a touchscreen laptop whose primary pointer is a
+  mouse) the "−" is drawn in its own column instead of revealed, and with no mouse at all rows grow
+  to a 44px target. The squeeze is the desktop sider's alone, so only it pays for the reveal.
+  Measured, both directions, by `.claude/skills/test-roms/rail-legibility.mjs` — run it before and
+  after any change to the row anatomy or a sider width.
 - **`SmartSearch`** — the rail's input: a text "Search" row first, then facet suggestions with type
   labels and counts; `token:` prefixes scope the suggestions; arrows/Enter/Escape.
 - **`ActiveChips`** — `search` / `<One>` / `not <one>` / `years` / `rating` / flag chips over the
