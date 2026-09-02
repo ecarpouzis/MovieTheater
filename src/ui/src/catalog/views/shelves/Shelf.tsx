@@ -1,8 +1,9 @@
-import { memo, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { memo, useCallback, useLayoutEffect, useMemo, useRef, type CSSProperties } from "react";
 import type { CardGroup, CardItem } from "../../types";
 import { coverSrc } from "../../cards/Card";
+import { useHorizontalWindow } from "../../engine/horizontalWindow";
 import {
-  PLANK, SHELF_PAD_LEFT, VIRT_THRESHOLD, relaxedGap, shelfBasis, shelfBookDims, shelfGrowWeight, spineFor, spinePrefix, virtualWindow,
+  PLANK, SHELF_PAD_LEFT, VIRT_KEEP, VIRT_SLACK, VIRT_THRESHOLD, relaxedGap, shelfBasis, shelfBookDims, shelfGrowWeight, spineFor, spinePrefix,
 } from "./geometry";
 
 /**
@@ -81,26 +82,10 @@ function ShelfInner({ group, items, shelfH, noun, onOpen, onOpenGroup }: ShelfPr
     return () => ro.disconnect();
   }, [n, shelfH, spineSum, items, unloaded]);
 
-  // In-shelf DOM virtualization past VIRT_THRESHOLD books.
-  const [win, setWin] = useState<{ start: number; end: number } | null>(null);
-  useLayoutEffect(() => {
-    const sb = booksRef.current;
-    if (!sb) return undefined;
-    if (n <= VIRT_THRESHOLD) { setWin((p) => (p === null ? p : null)); return undefined; }
-    let raf = 0;
-    const compute = () => {
-      raf = 0;
-      const gap = gapRef.current ?? Math.max(1, Math.round(shelfH * 0.11));
-      const next = virtualWindow(prefix, n, gap, sb.scrollLeft, sb.clientWidth);
-      setWin((prev) => (prev && Math.abs(prev.start - next.start) <= 12 && Math.abs(prev.end - next.end) <= 12 ? prev : next));
-    };
-    const onScroll = () => { if (!raf) raf = requestAnimationFrame(compute); };
-    compute();
-    sb.addEventListener("scroll", onScroll, { passive: true });
-    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(onScroll) : null;
-    ro?.observe(sb);
-    return () => { sb.removeEventListener("scroll", onScroll); ro?.disconnect(); if (raf) cancelAnimationFrame(raf); };
-  }, [n, prefix, shelfH]);
+  // In-shelf DOM virtualization past VIRT_THRESHOLD books — the engine's horizontal window over the
+  // spine prefix, with the adaptive gap read at compute time (the gap effect above runs first).
+  const gapOf = useCallback(() => gapRef.current ?? Math.max(1, Math.round(shelfH * 0.11)), [shelfH]);
+  const win = useHorizontalWindow(booksRef, { prefix, n, gap: gapOf, padLeft: SHELF_PAD_LEFT, keepPx: VIRT_KEEP, slack: VIRT_SLACK, threshold: VIRT_THRESHOLD });
 
   const start = win && n > VIRT_THRESHOLD ? Math.min(win.start, n) : 0;
   const end = win && n > VIRT_THRESHOLD ? Math.max(start, Math.min(win.end, n)) : n;

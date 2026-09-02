@@ -30,8 +30,11 @@ function compare(a: CardItem, b: CardItem, col: ListColumn, dir: number): number
   return cmp * dir;
 }
 
-function ListRows({ items, columns, sortKey, dir, onOpen }: {
-  items: CardItem[]; columns: ListColumn[]; sortKey: string | null; dir: number; onOpen: (i: CardItem) => void;
+/** Band 0's first rows are above the fold: their thumbs load eagerly (the same dozen the Grid marks). */
+const LIST_EAGER_ROWS = 12;
+
+function ListRows({ items, columns, sortKey, dir, eagerRows, onOpen }: {
+  items: CardItem[]; columns: ListColumn[]; sortKey: string | null; dir: number; eagerRows: number; onOpen: (i: CardItem) => void;
 }) {
   const sorted = useMemo(() => {
     const col = columns.find((c) => c.key === sortKey);
@@ -39,9 +42,9 @@ function ListRows({ items, columns, sortKey, dir, onOpen }: {
   }, [items, columns, sortKey, dir]);
   return (
     <>
-      {sorted.map((item) => (
+      {sorted.map((item, i) => (
         <button key={item.key} type="button" className="bx-list-row" onClick={() => onOpen(item)}>
-          <div className="bx-list-thumb"><CardImage src={item.imageThumbUrl ?? item.imageUrl} hue={item.hue} /></div>
+          <div className="bx-list-thumb"><CardImage src={item.imageThumbUrl ?? item.imageUrl} hue={item.hue} eager={i < eagerRows} /></div>
           {columns.map((c) => {
             const v = c.value(item);
             return (
@@ -70,8 +73,8 @@ export default function ListView({ source, state }: ViewProps) {
     if (k === sortKey) setDir((d) => -d); else { setSortKey(k); setDir(1); }
   };
   const gridTemplate = `44px ${columns.map((c) => c.width ?? "1fr").join(" ")}`;
-  const renderBand = useCallback((items: CardItem[]) => (
-    <ListRows items={items} columns={columns} sortKey={sortKey} dir={dir} onOpen={stream.open} />
+  const renderBand = useCallback((items: CardItem[], band: number) => (
+    <ListRows items={items} columns={columns} sortKey={sortKey} dir={dir} eagerRows={band === 0 ? LIST_EAGER_ROWS : 0} onOpen={stream.open} />
   ), [columns, sortKey, dir, stream.open]);
 
   if (stream.loading && !stream.band0) return <StreamLoading />;

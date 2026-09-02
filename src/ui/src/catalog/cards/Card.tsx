@@ -42,6 +42,22 @@ export function coverSrc(item: CardItem, widthPx: number): string {
   return item.imageThumbUrl && widthPx <= THUMB_MAX_PX ? item.imageThumbUrl : item.imageUrl;
 }
 
+/** The meta strip's floor: a caption narrower than this is unreadable, so a narrow cover's card is this wide. */
+export const CARD_META_MIN_W = 100;
+
+/**
+ * The card's laid-out width for a cell height — the cover's width, or the meta strip's floor when
+ * the cover is narrower and the strip is shown. ONE geometry: the card sets these boxes inline from
+ * the same numbers, and a strip's spacers reserve them before the card mounts
+ * (`engine/horizontalWindow.ts`), so a windowed run never changes width.
+ */
+export function cardWidth(item: CardItem, cellH: number, opts: { uniformAspect?: number; metadata: MetadataMode; hoverMeta?: boolean }): number {
+  const aspect = opts.uniformAspect ?? (item.aspect || 0.66);
+  const w = Math.round(cellH * aspect);
+  const showStrip = !opts.hoverMeta && opts.metadata !== "minimal";
+  return showStrip ? Math.max(w, CARD_META_MIN_W) : w;
+}
+
 function CardInner({ item, cellH, uniformAspect, metadata, hoverMeta, hoverClass, eager, onOpen }: CardProps) {
   const aspect = uniformAspect ?? (item.aspect || 0.66);
   const w = Math.round(cellH * aspect);
@@ -72,7 +88,7 @@ function CardInner({ item, cellH, uniformAspect, metadata, hoverMeta, hoverClass
         {item.count != null && item.count > 1 && <span className="bx-count">{item.count}</span>}
         {hoverMeta && <div className="bx-hover-meta">{caption}</div>}
       </div>
-      {showStrip && <div className="bx-meta" style={{ width: w, minWidth: 100 }}>{caption}</div>}
+      {showStrip && <div className="bx-meta" style={{ width: w, minWidth: CARD_META_MIN_W }}>{caption}</div>}
     </div>
   );
 }

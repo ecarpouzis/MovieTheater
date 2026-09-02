@@ -16,8 +16,12 @@
 .bx-group-browse { flex-shrink: 0; display: flex; align-items: center; background: transparent; border: none; cursor: pointer; color: var(--sub); padding: 0 4px; opacity: .3; transition: opacity .15s; line-height: 1; }
 .bx-group-head:hover .bx-group-browse { opacity: .9; }
 .bx-group-icon { display: block; }
+/* The gap and the left padding are read by the strip's horizontal window (ExtendedView.tsx STRIP_GAP /
+   STRIP_PAD_LEFT) to place its spacers — change them together. */
 .bx-strip { display: flex; gap: 14px; overflow-x: auto; padding: 2px 2px 10px; scrollbar-width: thin; }
 .bx-strip > .bx-card { flex: 0 0 auto; display: flex; flex-direction: column; }
+/* The exact-width stand-ins for the cards the window has not mounted (engine/horizontalWindow.ts). */
+.bx-strip-spacer { flex: 0 0 auto; height: 1px; pointer-events: none; }
 .bx-strip > .bx-card > .bx-cover { height: var(--cover-h, 184px); width: calc(var(--cover-h, 184px) * var(--aspect, .66)); }
 .bx-strip > .bx-card .bx-meta { width: calc(var(--cover-h, 184px) * var(--aspect, .66)); min-width: 110px; }
 .bx-strip-more {
@@ -79,6 +83,12 @@
 .np-lead-flip .np-lead-text { order: 2; }
 .np-lead-flip .np-lead-fig { order: 1; }
 .np-band-rule { height: 4px; border-top: 2px solid var(--ink); border-bottom: 1px solid var(--ink); margin: 34px 0 26px; }
+/* One band (feature + columns). The page is an append-only stack that never recycles (frozen bands
+   must stay put), so the browser windows it: a band off screen skips layout and paint and its lazy
+   covers stay unrequested. `auto` keeps the last rendered size once measured, so scrolling back up is
+   stable; the 1200 px guess only sizes bands never yet shown. This is NOT the rejected design — that
+   was content-visibility on a JS-windowed band whose measured height feeds a spacer estimate. */
+.np-band { content-visibility: auto; contain-intrinsic-size: auto 1200px; }
 .np-sentinel { text-align: center; padding: 28px 0 8px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--sub); }
 .np-cols { columns: 250px 4; column-gap: 32px; column-rule: 1px solid var(--line); }
 .np-col { break-inside: avoid; margin-bottom: 26px; }

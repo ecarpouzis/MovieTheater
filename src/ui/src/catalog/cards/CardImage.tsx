@@ -26,10 +26,15 @@ export interface CardImageProps {
   src: string;
   alt?: string;
   hue?: number;
-  /** Above-the-fold art loads eagerly; everything else is lazy. */
+  /** Above-the-fold art loads eagerly (and at high fetch priority); everything else is lazy. */
   eager?: boolean;
   className?: string;
 }
+
+// React 18 only knows the DOM attribute spelling (`fetchPriority` lands in v19 — the camelCase prop is
+// warned about and dropped), and @types/react 18 has no lowercase entry, so it rides in as a spread.
+const FETCH_HIGH = { fetchpriority: "high" } as Record<string, string>;
+const FETCH_AUTO = {} as Record<string, string>;
 
 export default function CardImage({ src, alt = "", hue, eager, className }: CardImageProps) {
   const [attempt, setAttempt] = useState(0);
@@ -63,6 +68,7 @@ export default function CardImage({ src, alt = "", hue, eager, className }: Card
       src={src}
       alt={alt}
       loading={eager ? "eager" : "lazy"}
+      {...(eager ? FETCH_HIGH : FETCH_AUTO)}
       decoding="async"
       style={style}
       data-attempt={attempt || undefined}

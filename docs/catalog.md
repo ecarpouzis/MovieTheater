@@ -220,15 +220,42 @@ section under every backdrop; a source sets `shelvesSkin: "plain"` for bare plan
   renderers are module-level components** (a renderer defined inside a view is a new type every
   render and remounts the stream).
 - **`.bx-inf-scrolling { pointer-events: none }` during a scroll burst** — Chrome re-dispatches
-  `pointerover` for content moving under a stationary cursor.
+  `pointerover` for content moving under a stationary cursor. The gate is ONE function,
+  `engine/scroller.ts` → `scrollBurstGate`: `InfiniteBands` runs it inside its scroll pass, and a
+  surface that does not ride the engine (the Newspaper) wears it through `engine/useScrollBurst`
+  (a callback ref — keyed on the element, so it arms the moment the surface mounts after its
+  loading state). The Shelves guard the same storm in their own delegated handlers (`vScrolling`).
+- **A horizontal run is windowed by ONE virtualiser** — `engine/horizontalWindow.ts`
+  (`prefixSums` · `horizontalWindow` · `spacerWidths` · `useHorizontalWindow`), the Shelves'
+  in-plank virtualisation lifted out of `views/shelves/geometry.ts` (which now only parameterises
+  it). A run reserves its full width up front from per-unit widths, mounts the slice within
+  `keepPx` of the scrollport (± `slack` units), and stands exact-width spacers in for the rest, so
+  the scroll width never changes and a remembered `scrollLeft` still means the same place. The
+  Shelves ride it past `VIRT_THRESHOLD` = 150 books (`VIRT_KEEP` 1600 px, slack 12); the
+  Extended strips past `STRIP_VIRT_THRESHOLD` = 16 cards (half a scrollport each side, slack 4),
+  with `cards/Card.tsx` → `cardWidth` as the one geometry the card and the spacers share. Measured
+  2026-09-02 (below): the Extended band mount went from 960 cards to a screenful per strip, and
+  the two long tasks on Arcade's band mount went to zero. A strip grown by "more" pages stays
+  bounded. `horizontalWindow.test.ts` pins the arithmetic (spacers preserve the run's width under
+  a flex gap); `GroupedViews.test.tsx` pins the windowed strip.
 - **`overflow-anchor: none` on every scroller hosting a spacer stream** (it does not inherit); the
   scroll root is RESOLVED (`engine/scroller.ts`), never assumed.
 - **Image failure = hue placeholder + retry with backoff, then DORMANT with a cooldown
   (`CardImage`: 3 × 1.5 s, then one fresh round every 15 s) — never a fallback `src` swap**, which a
-  windowing scheme reads as "loaded" and makes one transient failure permanent.
+  windowing scheme reads as "loaded" and makes one transient failure permanent. The numbers live
+  ONCE (`RETRY_LIMIT` / `RETRY_STEP_MS` / `DEAD_COOLDOWN_MS` in `cards/CardImage.tsx`): the
+  Shelves' delegated `error` handler imports them, and `Components/FallbackImage` applies them
+  under its opt-in `retry` prop — which the two section cards that live in streamed bands
+  (`MovieCard` / `SimpleMovieCard`, `BoardGameCard`) set, so the Grid's default detail view obeys
+  the law its five siblings already did. A lone image (a modal's poster) leaves `retry` off: no
+  burst to survive, and a known-missing file should not be re-asked for every 15 s.
 - **Every `<img>` in a list carries `decoding="async"`** (plus `loading="lazy"` where it is off
   screen) — a card grid, a Shelves plank, the rail's collection tiles. A synchronous decode of a
-  long list runs on the main thread between frames.
+  long list runs on the main thread between frames. Above-the-fold art is `eager` AND
+  `fetchpriority="high"` (`CardImage`, `MovieCard`, `BoardGameCard`; lowercase — React 18 drops the
+  camelCase prop): the Grid/Wall mark band 0's first 12, the Extended band 0's first strip's first
+  8, the List band 0's first 12 rows, the Directory a level's first 12 tiles. The Shelves set the
+  property directly (`auto` on screen, `low` for the prefetch margin).
 - **A collection prop is a hoisted constant, never `x ?? []` in the JSX.** `?? []`/`?? {}` inside a
   render is a NEW identity every render: a child effect keyed on it re-runs (`FacetOptions` dropped
   its paged long tail on every parent render this way — `FacetRail`'s `NO_OPTIONS`/`NO_VALUES` are
@@ -270,7 +297,10 @@ section under every backdrop; a source sets `shelvesSkin: "plain"` for bare plan
   velocity-gated deferral, an always-on wheel→strip hijack, `content-visibility` on a JS-windowed
   band, making a section's Grid consume `ViewProps` instead of moving onto the engine (that keeps two
   engines alive forever), and replacing a section's card with the package card (it loses the detail
-  the Grid is FOR). Two more the instruments could tempt you into: a statistics scanner where one
+  the Grid is FOR). The `content-visibility` rejection is about a band whose MEASURED height feeds a
+  spacer estimate (Firefox reports `contain-intrinsic-size` from `offsetHeight`); the Newspaper's
+  `.np-band` (2026-09-02) is the other case — an append-only stack nothing measures — where
+  `content-visibility: auto` is the browser's own windowing and the trap does not apply. Two more the instruments could tempt you into: a statistics scanner where one
   picture answers the question, and tuning `MIN_WANT_AGE` against a WAN-proxied measurement — the
   gate is a function of drag SPEED against band HEIGHT, and a slower drag legitimately prefetching
   is the design working.
@@ -804,6 +834,28 @@ Regression probes:
 | `views-deep-probe` (40-step drag, Grid/Extended/List × 3 sections × 2 profiles) | **sweep fetches 0** in 16 of 18 cells; Arcade Extended fires 1–2. Frame max ≤ 25 ms everywhere except the Extended band mount (83–92 ms). |
 | `wall-probe` (60-step drag, Movies) | desktop 41 sweep fetches / 46 total, covers 0-91 at 5 s and complete at 12.0 s; phone **0** sweep fetches / 6 total, complete at 7.8 s. The asymmetry is arithmetic, not a defect: a 60-step drag over the desktop Wall's tall bands leaves a band wanted for ~210 ms, which clears `MIN_WANT_AGE`, while the phone's 1,120 px steps sweep past in ~40 ms. The 40-step drag fires zero on both. |
 | `feel-probe` (headed Chromium) | Movies Grid tick p50/p95/max 4/10/21 ms, frame max 28 ms, **0 stalls > 100 ms**; Movies Shelves 8/26/38 ms, frame max 56 ms, 0 stalls; Boardgames Extended 4/5/9 ms, frame max 24 ms, 0 stalls. |
+
+### Measured 2026-09-02 — the horizontal window on the Extended strips, and the Newspaper's sentinel
+
+Same rig (`catalog-profile`, prod bundle at `:3101`, 40-step halfway drag), the two views the
+2026-08-27 table flagged. Before → after, on the same day, same build minus the change:
+
+| Section · view | desktop nodes / cards / long tasks / frame max | phone nodes / cards / long tasks / frame max |
+|---|---|---|
+| Movies Extended | 22,370 / 1,067 / 0 / 37 ms → **8,717 / 363 / 0 / 18 ms** | 21,959 / 1,067 / 0 / 34 ms → **5,744 / 231 / 0 / 18 ms** |
+| Arcade Extended | 15,700 / 779 / **2 (59 ms)** / 84 ms → **6,876 / 275 / 0 / 25 ms** | 15,173 / 779 / **2 (58 ms)** / 84 ms → **4,235 / 156 / 0 / 39 ms** |
+| Boardgames Extended | 3,024 / 73 → 2,450 / 50 | 2,854 / 73 → 2,080 / 42 |
+
+Listeners fell with the cards (Movies desktop 3,966 → 1,876). Heap 13 → 10 MB on Movies. The
+strip's reserved width equals its laid-out width (`strip-check.mjs`: `scrollWidth` 6654 px at rest,
+deep in the run and back on desktop Movies; 5550 on the phone, where the 100 px meta floor binds).
+
+The Newspaper was not in the 2026-08-27 table, and `newspaper-check.mjs` found why it never
+needed to be: on a cold load its sentinel was never observed (the effect was keyed on `[shown,
+atEnd]`, and the sentinel mounts after `StreamLoading`), so every front page stopped at three
+bands — "bands 3 → 3" on the old bundle after six scrolls to the bottom. After the callback-ref
+fix: 3 → 15 bands, the burst gate seen, and with `.np-band` under `content-visibility: auto` 11 of
+the 15 bands (desktop) / 13 (phone) are skipped at the landing with their covers unrequested.
 
 **Against the exit criterion** — bounded nodes/heap over a halfway drag: **met everywhere** (nodes
 and heap are flat in scroll depth; the window holds 1–6 bands and recycles the rest). 0 long tasks

@@ -1,3 +1,5 @@
+import { horizontalWindow } from "../../engine/horizontalWindow";
+
 /**
  * The Shelves' geometry, pure and shared: a book's resting spine width, a cover's shelf-fitted
  * dimensions, the spine prefix sums a shelf's spacers and windows are computed from. ONE source
@@ -59,16 +61,11 @@ export function relaxedGap(shelfH: number, n: number, unloaded: number, clientWi
   return fitGap > minGap ? Math.round(Math.min(maxGap, minGap + (fitGap - minGap) * 0.5)) : minGap;
 }
 
-/** The mounted slice of a long shelf: books whose slots fall within scrollLeft ± VIRT_KEEP (binary searches over the prefix). */
+/**
+ * The mounted slice of a long shelf: books whose slots fall within scrollLeft ± VIRT_KEEP. The
+ * mechanism is the engine's (`engine/horizontalWindow.ts`, shared with the Extended strips); this
+ * is the Shelves' parameterisation of it.
+ */
 export function virtualWindow(prefix: number[], n: number, gap: number, scrollLeft: number, clientWidth: number): { start: number; end: number } {
-  const left = scrollLeft - VIRT_KEEP;
-  const right = scrollLeft + clientWidth + VIRT_KEEP;
-  const pos = (i: number) => SHELF_PAD_LEFT + prefix[i] + i * gap;
-  let lo = 0;
-  let hi = n;
-  while (lo < hi) { const mid = (lo + hi) >> 1; if (pos(mid + 1) <= left) lo = mid + 1; else hi = mid; }
-  const start = lo;
-  lo = start; hi = n;
-  while (lo < hi) { const mid = (lo + hi) >> 1; if (pos(mid) <= right) lo = mid + 1; else hi = mid; }
-  return { start: Math.max(0, start - VIRT_SLACK), end: Math.min(n, lo + VIRT_SLACK) };
+  return horizontalWindow({ prefix, n, gap, padLeft: SHELF_PAD_LEFT, keepPx: VIRT_KEEP, slack: VIRT_SLACK }, scrollLeft, clientWidth);
 }

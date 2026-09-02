@@ -1,5 +1,6 @@
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { Fragment, memo, startTransition, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import CardImage from "../cards/CardImage";
+import useScrollBurst from "../engine/useScrollBurst";
 import { NO_GROUP } from "../state/useCatalogView";
 import type { CardGroup, CardItem } from "../types";
 import { StreamEmpty, StreamFailed, StreamLoading } from "./StreamStates";
@@ -12,6 +13,15 @@ import { GROUPS_PAGE_SIZE, useGroupedStream } from "./groupedStream";
  * Ported from the standalone's Newspaper layout; a "run" here is a CardGroup, so every section that
  * groups gets a front page. Already-shown bands are FROZEN while the pool grows, so appended groups
  * never reflow what the reader has passed.
+ *
+ * The page is append-only by design (frozen bands must stay put), so it cannot ride the band
+ * engine's recycling; it pays the engine's laws its own way instead: every renderer is memoised on
+ * the frozen band objects (a sentinel hit re-renders the two NEW bands, not the eighty behind them),
+ * pool growth and band growth are `startTransition`s, the scroll-burst hover gate is the engine's
+ * (`useScrollBurst`), and each band is a `.np-band` under `content-visibility: auto` — the
+ * browser's own windowing for a static stack, which skips the layout, paint and lazy covers of
+ * bands off screen. (The Laws reject `content-visibility` on a JS-WINDOWED band, whose measured
+ * height feeds a spacer estimate; nothing here measures, so the trap does not apply.)
  */
 export const NP_COLS_PER_BAND = 5;
 export const NP_MAX_BANDS = 80;
@@ -98,7 +108,7 @@ export function npBuildBands(pool: Run[], count: number, seed: number, perBand =
 
 const firstSentence = (t: string): string => { if (!t) return ""; const m = t.match(/^[^.!?]*[.!?]/); return m ? m[0] : t; };
 
-function Thumb({ item, height, onOpen, cap }: { item: CardItem; height: number; onOpen: (i: CardItem) => void; cap?: boolean }) {
+const Thumb = memo(function Thumb({ item, height, onOpen, cap }: { item: CardItem; height: number; onOpen: (i: CardItem) => void; cap?: boolean }) {
   const w = Math.round(height * (item.aspect || 0.66));
   return (
     <button type="button" className="np-thumb" style={{ width: w }} title={item.label ? `${item.title} · ${item.label}` : item.title} onClick={() => onOpen(item)}>
@@ -106,9 +116,9 @@ function Thumb({ item, height, onOpen, cap }: { item: CardItem; height: number; 
       {cap && item.label && <span className="np-thumb-cap">{item.label}</span>}
     </button>
   );
-}
+});
 
-function Feature({ run, flip, h, noun, onOpen, onOpenGroup }: { run: Run; flip: boolean; h: (n: number) => number; noun: string; onOpen: (i: CardItem) => void; onOpenGroup: ((r: Run) => void) | null }) {
+const Feature = memo(function Feature({ run, flip, h, noun, onOpen, onOpenGroup }: { run: Run; flip: boolean; h: (n: number) => number; noun: string; onOpen: (i: CardItem) => void; onOpenGroup: ((r: Run) => void) | null }) {
   const span = run.minY > 0 ? (run.minY === run.maxY ? `${run.minY}` : `${run.minY}–${run.maxY}`) : "";
   return (
     <article className={`np-lead${flip ? " np-lead-flip" : ""}`}>
@@ -140,9 +150,9 @@ function Feature({ run, flip, h, noun, onOpen, onOpenGroup }: { run: Run; flip: 
       </figure>
     </article>
   );
-}
+});
 
-function Columns({ runs, h, noun, onOpen, onOpenGroup }: { runs: Run[]; h: (n: number) => number; noun: string; onOpen: (i: CardItem) => void; onOpenGroup: ((r: Run) => void) | null }) {
+const Columns = memo(function Columns({ runs, h, noun, onOpen, onOpenGroup }: { runs: Run[]; h: (n: number) => number; noun: string; onOpen: (i: CardItem) => void; onOpenGroup: ((r: Run) => void) | null }) {
   return (
     <div className="np-cols">
       {runs.map((run) => {
@@ -162,9 +172,10 @@ function Columns({ runs, h, noun, onOpen, onOpenGroup }: { runs: Run[]; h: (n: n
       })}
     </div>
   );
-}
+});
 
 export default function NewspaperView({ source, state, coverScale }: ViewProps) {
+  const rootRef = useScrollBurst();
   const stream = useGroupedStream(source, state, NEWSPAPER_PER_GROUP);
   // Pool growth: later bands of groups, one at a time, as the sentinel consumes what is built.
   const [extraBands, setExtraBands] = useState<CardGroup[][]>([]);
@@ -187,7 +198,7 @@ export default function NewspaperView({ source, state, coverScale }: ViewProps) 
     const controller = new AbortController();
     aborterRef.current = controller;
     stream.fetchBand(i, controller.signal)
-      .then((groups) => { if (controller.signal.aborted || key !== stream.queryKey) return; nextRef.current = i + 1; setExtraBands((p) => [...p, groups]); })
+      .then((groups) => { if (controller.signal.aborted || key !== stream.queryKey) return; nextRef.current = i + 1; startTransition(() => setExtraBands((p) => [...p, groups])); })
       .catch(() => {})
       .finally(() => { if (aborterRef.current === controller) { aborterRef.current = null; busyRef.current = false; } });
   }, [stream, totalBands]);
@@ -211,24 +222,31 @@ export default function NewspaperView({ source, state, coverScale }: ViewProps) 
     return frozen.slice(0, shown);
   }, [runs, shown, seed]);
 
-  const sentinelRef = useRef<HTMLDivElement>(null);
+  // The sentinel is a CALLBACK ref held in state: the page body (and with it the sentinel) mounts
+  // only after `StreamLoading`, and an effect keyed on `[shown, atEnd]` alone never re-ran for that
+  // mount — so on a cold load nothing observed the sentinel and the front page stopped at its first
+  // three bands (found 2026-09-02 by the newspaper-check probe: "bands 3 → 3" on the old bundle).
+  const [sentinel, setSentinel] = useState<HTMLDivElement | null>(null);
   const atEnd = shown >= NP_MAX_BANDS;
   const needMoreRef = useRef(needMore); needMoreRef.current = needMore;
   useEffect(() => {
-    if (atEnd || typeof IntersectionObserver === "undefined") return undefined;
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return undefined;
+    if (atEnd || !sentinel || typeof IntersectionObserver === "undefined") return undefined;
     const io = new IntersectionObserver((entries) => {
       if (!entries.some((e) => e.isIntersecting)) return;
-      setShown((v) => Math.min(v + 2, NP_MAX_BANDS));
+      // Two more bands is a big commit; a transition keeps the scroll that reached the sentinel smooth.
+      startTransition(() => setShown((v) => Math.min(v + 2, NP_MAX_BANDS)));
       needMoreRef.current();
     }, { rootMargin: "900px 0px" });
     io.observe(sentinel);
     return () => io.disconnect();
-  }, [shown, atEnd]);
+  }, [sentinel, shown, atEnd]);
 
   const noun = source.itemNoun ?? "item";
-  const onOpenGroup = stream.openGroup ? (r: Run) => stream.openGroup!({ key: r.key, label: r.name, totalItems: r.count, renderTotal: r.items.length, items: r.items }) : null;
+  // Stable identities: the renderers are memoised on the FROZEN band objects, and a fresh callback per
+  // render would re-draw every band on every sentinel hit anyway.
+  const openGroup = stream.openGroup;
+  const onOpenGroup = useMemo(() => (openGroup ? (r: Run) => openGroup({ key: r.key, label: r.name, totalItems: r.count, renderTotal: r.items.length, items: r.items }) : null), [openGroup]);
+  const h = useCallback((n: number) => Math.round(n * coverScale), [coverScale]);
 
   if (state.group === NO_GROUP && source.groups.length === 0) return <StreamEmpty source={source} />;
   if (stream.loading && !stream.band0) return <StreamLoading />;
@@ -239,10 +257,9 @@ export default function NewspaperView({ source, state, coverScale }: ViewProps) 
   const yLo = years.length ? Math.min(...years) : 0;
   const yHi = years.length ? Math.max(...years) : 0;
   const total = runs.reduce((s, r) => s + r.count, 0);
-  const h = (n: number) => Math.round(n * coverScale);
   const groupNoun = source.groupNoun ?? "groups";
   return (
-    <div className="np">
+    <div className="np" ref={rootRef}>
       <header className="np-mast">
         <div className="np-mast-side np-mast-l">{stream.totalGroups.toLocaleString()} {groupNoun}</div>
         <h1 className="np-flag">The {source.title ?? "Catalog"} Ledger</h1>
@@ -253,11 +270,13 @@ export default function NewspaperView({ source, state, coverScale }: ViewProps) 
       {bands.map((band, bi) => (
         <Fragment key={bi}>
           {bi > 0 && <div className="np-band-rule" />}
-          <Feature run={band.feature} flip={band.flip} h={h} noun={noun} onOpen={stream.open} onOpenGroup={onOpenGroup} />
-          {band.cols.length > 0 && <><div className="np-rule-1" /><Columns runs={band.cols} h={h} noun={noun} onOpen={stream.open} onOpenGroup={onOpenGroup} /></>}
+          <section className="np-band">
+            <Feature run={band.feature} flip={band.flip} h={h} noun={noun} onOpen={stream.open} onOpenGroup={onOpenGroup} />
+            {band.cols.length > 0 && <><div className="np-rule-1" /><Columns runs={band.cols} h={h} noun={noun} onOpen={stream.open} onOpenGroup={onOpenGroup} /></>}
+          </section>
         </Fragment>
       ))}
-      {!atEnd && <div className="np-sentinel" ref={sentinelRef}>{hasMore ? "Continued — more below" : "The end of the run"}</div>}
+      {!atEnd && <div className="np-sentinel" ref={setSentinel}>{hasMore ? "Continued — more below" : "The end of the run"}</div>}
     </div>
   );
 }

@@ -31,6 +31,9 @@ export const MOVIE_SIMPLE_CELL = 200;
 // Poster thumbnail with a graceful fallback: when the image 404s (common for Misc videos, which
 // usually have no poster), swap in a placeholder instead of the browser's broken-image glyph.
 // FallbackImage is the site-wide convention for this — it also heals if the src later changes.
+// `retry`: this card lives in a streamed band, so the catalog's image-failure law applies (a
+// transient failure under a fling's burst is retried, and the placeholder is dormant, not final —
+// what the package card already does for these same posters on every other view).
 function CardPoster({ item, isAboveFold }) {
   const thumbUrl = MovieAPI.getPosterThumbnail(item.id, item.posterVersion, item.kind);
   return (
@@ -38,6 +41,7 @@ function CardPoster({ item, isAboveFold }) {
       className="card-poster-image"
       alt=""
       src={thumbUrl}
+      retry
       loading={isAboveFold ? "eager" : "lazy"}
       // lowercase: React 18 only knows the DOM attribute spelling (camelCase lands in v19) and
       // warns + drops the camelCase prop on every card render.
@@ -191,6 +195,7 @@ export const SimpleMovieCard = memo(function SimpleMovieCard({
             className="simple-card-poster-img"
             alt={item.title}
             src={thumbUrl}
+            retry
             loading={eager ? "eager" : "lazy"}
             fetchpriority={eager ? "high" : "auto"}
             decoding="async"

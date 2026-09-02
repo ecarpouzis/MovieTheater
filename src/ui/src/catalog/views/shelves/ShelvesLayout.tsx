@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { resolveScrollRoot, type ScrollRoot } from "../../engine/scroller";
+import { getScrollTop, resolveScrollRoot, scrollportTop, setScrollTop, topInset, type ScrollRoot } from "../../engine/scroller";
+import { DEAD_COOLDOWN_MS, RETRY_LIMIT, RETRY_STEP_MS } from "../../cards/CardImage";
 import type { CardGroup, CardItem } from "../../types";
 import Shelf from "./Shelf";
 import { SHELF_BASE_H } from "./geometry";
@@ -99,13 +100,10 @@ export default function ShelvesLayout({ slots, extras, scale, noun, onOpen, onOp
       const w = Math.max(0, Math.min(pendingJump.within, shelves.length - 1));
       if (shelves[w]) target = shelves[w];
     }
-    if (scroller) {
-      const top = target.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop;
-      scroller.scrollTo({ top: Math.max(0, top - 6) });
-    } else {
-      const inset = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--content-top-inset")) || 0;
-      window.scrollTo({ top: Math.max(0, target.getBoundingClientRect().top + window.scrollY - 8 - inset) });
-    }
+    // The engine's one reading line (scroller.ts): the resolved root's own coordinates, and the fixed
+    // phone top bar only when the window is the scroller.
+    const top = target.getBoundingClientRect().top - scrollportTop(scroller) + getScrollTop(scroller);
+    setScrollTop(scroller, Math.max(0, top - (scroller ? 6 : 8) - topInset(scroller)));
     if (loaded) onJumpHandled();
   }, [pendingJump, slots, onJumpHandled]);
 
@@ -125,7 +123,6 @@ export default function ShelvesLayout({ slots, extras, scale, noun, onOpen, onOp
     // prefetch on a slow device), full prefetch on the settle timers; unload far behind with a
     // wide hysteresis so load/unload never thrash.
     const V_MARGIN = 500; const V_ACTIVE = 120; const H_MARGIN = 600; const H_ACTIVE = 150; const H_UNLOAD = 2400;
-    const DEAD_COOLDOWN_MS = 15000;
     let vScrolling = false;
     let vSettleTimer: ReturnType<typeof setTimeout> | undefined;
     const retryTimers = new Set<ReturnType<typeof setTimeout>>();
@@ -220,15 +217,16 @@ export default function ShelvesLayout({ slots, extras, scale, noun, onOpen, onOp
     const onRootCancel = (e: PointerEvent) => { const bk = (e.target as HTMLElement)?.closest?.(".bk") as HTMLElement | null; if (bk) { const sbEl = bk.closest(".shelf-books") as HTMLElement | null; if (!(sbEl && autoExposed.get(sbEl) === bk)) hideBook(bk); } };
     const onRootContextMenu = (e: Event) => { if ((e.target as HTMLElement)?.closest?.(".bk")) e.preventDefault(); };
     // Delegated cover-load failure (capture: `error` does not bubble): retry with backoff while the
-    // hue shows; after 3 quick failures the book goes DORMANT (timestamped), not dead forever.
+    // hue shows; after RETRY_LIMIT quick failures the book goes DORMANT (timestamped), not dead
+    // forever — the same law, and the same numbers, as `CardImage` on every other view.
     const onImgError = (e: Event) => {
       const img = e.target as HTMLImageElement;
       if (!(img instanceof HTMLImageElement) || !img.dataset.src || !img.closest(".bk")) return;
       const tries = parseInt(img.dataset.retry || "0", 10) + 1;
       img.dataset.retry = String(tries);
       img.removeAttribute("src");
-      if (tries > 3) { img.dataset.dead = String(Date.now()); return; }
-      const t = setTimeout(() => { retryTimers.delete(t); scheduleLoad(); }, tries * 1500);
+      if (tries > RETRY_LIMIT) { img.dataset.dead = String(Date.now()); return; }
+      const t = setTimeout(() => { retryTimers.delete(t); scheduleLoad(); }, tries * RETRY_STEP_MS);
       retryTimers.add(t);
     };
     root.addEventListener("error", onImgError, true);

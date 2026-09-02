@@ -54,7 +54,9 @@ const BoardGameCard = memo(function BoardGameCard({ game, expansions, tooltipTri
               className="card-poster-image boardgame-card-poster-image"
               alt={game.name || "Board game"}
               src={thumbUrl}
+              retry
               loading={eager ? "eager" : "lazy"}
+              fetchpriority={eager ? "high" : "auto"}
               decoding="async"
               fallback={
                 <div className="card-poster-placeholder" aria-hidden="true">

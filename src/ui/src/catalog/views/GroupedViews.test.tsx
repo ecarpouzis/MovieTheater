@@ -44,6 +44,32 @@ describe("catalog/ExtendedView — strips per group over the grouped stream", ()
   });
 });
 
+describe("catalog/ExtendedView — a strip is windowed sideways like a Shelves plank", () => {
+  it("mounts only the cards near the scrollport, with exact-width spacers holding the rest of the run", async () => {
+    // happy-dom lays nothing out: give every element a 400 px scrollport so the window has something to measure.
+    const cw = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "clientWidth");
+    Object.defineProperty(HTMLElement.prototype, "clientWidth", { configurable: true, get: () => 400 });
+    try {
+      const { source } = makeSource(1, 60);
+      const { container } = render(<ExtendedView {...props(source)} />);
+      await waitFor(() => expect(container.querySelector(".bx-strip")).toBeInTheDocument());
+      const strip = container.querySelector(".bx-strip") as HTMLElement;
+      const mounted = strip.querySelectorAll(".bx-card").length;
+      expect(mounted).toBeGreaterThan(0);
+      expect(mounted).toBeLessThan(48);
+      // A 121 px card (184 × 0.66) + 14 px gap; the tail spacer covers the unmounted 48 − mounted cards and the gaps between them.
+      const spacers = strip.querySelectorAll<HTMLElement>(".bx-strip-spacer");
+      expect(spacers).toHaveLength(1);
+      const unmounted = 48 - mounted;
+      expect(spacers[0].style.flex).toBe(`0 0 ${unmounted * 121 + (unmounted - 1) * 14}px`);
+      expect(strip.dataset.mounted).toBe(`0-${mounted}`);
+    } finally {
+      if (cw) Object.defineProperty(HTMLElement.prototype, "clientWidth", cw);
+      else delete (HTMLElement.prototype as unknown as Record<string, unknown>).clientWidth;
+    }
+  });
+});
+
 describe("catalog/ShelvesView — a shelf per group with data-src covers", () => {
   it("renders band 0 as shelves of books and offers the letter pager when there is more than one band", async () => {
     const { source } = makeSource(45, 10);

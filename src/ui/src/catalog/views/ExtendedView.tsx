@@ -1,7 +1,8 @@
-import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import CatalogPager from "../pager/CatalogPager";
-import Card from "../cards/Card";
+import Card, { cardWidth } from "../cards/Card";
 import InfiniteBands, { type InfiniteBandsHandle } from "../engine/InfiniteBands";
+import { prefixSums, spacerWidths, useHorizontalWindow } from "../engine/horizontalWindow";
 import { NO_GROUP } from "../state/useCatalogView";
 import type { CardGroup, CardItem } from "../types";
 import FlatCardStream from "./FlatCardStream";
@@ -15,9 +16,25 @@ import { GROUPS_PAGE_SIZE, groupLetterBuckets, groupRunLabel, useGroupedStream }
  * streamed by the band engine. Each strip remembers its scroll position across band recycling,
  * shows edge chevrons only where it can scroll, and pulls the group's next page when the reader
  * nears its right edge. Ungrouped, it is simply the Grid.
+ *
+ * A strip is windowed sideways the way a Shelves plank is (`engine/horizontalWindow.ts`): it
+ * reserves its full run's width up front and mounts only the cards within half a scrollport of
+ * the visible ones, exact-width spacers standing in for the rest. A band mount is therefore
+ * ~20 strips × a screenful, not 20 × 48 — the band-mount long task the instruments measured on
+ * Arcade was the 960-card commit — and a strip grown by "more" pages stays bounded.
  */
 export const EXTENDED_PER_GROUP = 48;
 const STRIP_RATIO = 184 / 220;
+/** `.bx-strip`'s flex gap and left padding (catalog-grouped.css) — the window's geometry reads them. */
+export const STRIP_GAP = 14;
+const STRIP_PAD_LEFT = 2;
+/** A strip at or under this many cards mounts whole; past it the window pays for itself. */
+export const STRIP_VIRT_THRESHOLD = 16;
+export const STRIP_VIRT_SLACK = 4;
+/** Half a scrollport of mounted headroom either side of the visible cards. Module-level: the hook keys on its identity. */
+const stripKeep = (clientWidth: number) => Math.round(clientWidth * 0.5);
+/** Band 0's first strip is above the fold: this many of its covers load eagerly. */
+const STRIP_EAGER = 8;
 
 function ChevronIcon({ dir }: { dir: "l" | "r" }) {
   return (
@@ -36,11 +53,15 @@ function GroupIcon() {
 }
 
 /**
- * A horizontally-scrolling strip with edge chevrons (mounted only where it can scroll that way),
- * remembered scroll position (the store outlives band recycling), and a near-end trigger.
+ * A horizontally-scrolling strip of cards with edge chevrons (mounted only where it can scroll that
+ * way), remembered scroll position (the store outlives band recycling), a near-end trigger, and the
+ * engine's horizontal window over its run: `items` are laid out at `cardWidth` and only the slice
+ * near the scrollport is mounted, lead/tail spacers holding the rest of the width. `trailing` (the
+ * "more" button) sits after the tail spacer, at the run's true end.
  */
-export function Strip({ coverH, itemCount, groupKey, scrollStore, onNearEnd, children }: {
-  coverH: number; itemCount: number; groupKey: string; scrollStore: Map<string, number>; onNearEnd?: () => void; children: ReactNode;
+export function Strip({ items, coverH, metadata, hoverClass, onOpen, eagerCount = 0, groupKey, scrollStore, onNearEnd, trailing }: {
+  items: CardItem[]; coverH: number; metadata: ViewProps["metadata"]; hoverClass: string; onOpen: (i: CardItem) => void; eagerCount?: number;
+  groupKey: string; scrollStore: Map<string, number>; onNearEnd?: () => void; trailing?: ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [edges, setEdges] = useState({ left: false, right: false });
@@ -51,6 +72,8 @@ export function Strip({ coverH, itemCount, groupKey, scrollStore, onNearEnd, chi
     const right = el.scrollLeft + el.clientWidth < el.scrollWidth - 1;
     setEdges((prev) => (prev.left === left && prev.right === right ? prev : { left, right }));
   }, []);
+  // The restore runs BEFORE the window's layout effect (declaration order), so the first measured
+  // window is taken at the remembered scrollLeft, not at 0.
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -58,6 +81,13 @@ export function Strip({ coverH, itemCount, groupKey, scrollStore, onNearEnd, chi
     if (saved) el.scrollLeft = saved;
     update();
   }, [groupKey, scrollStore, update]);
+  const n = items.length;
+  const widths = useMemo(() => items.map((item) => cardWidth(item, coverH, { metadata })), [items, coverH, metadata]);
+  const prefix = useMemo(() => prefixSums(widths), [widths]);
+  const win = useHorizontalWindow(ref, { prefix, n, gap: STRIP_GAP, padLeft: STRIP_PAD_LEFT, keepPx: stripKeep, slack: STRIP_VIRT_SLACK, threshold: STRIP_VIRT_THRESHOLD });
+  const start = win ? Math.min(win.start, n) : 0;
+  const end = win ? Math.max(start, Math.min(win.end, n)) : n;
+  const spacers = spacerWidths(prefix, n, STRIP_GAP, start, end);
   const onScroll = () => {
     const el = ref.current;
     if (!el) return;
@@ -72,12 +102,19 @@ export function Strip({ coverH, itemCount, groupKey, scrollStore, onNearEnd, chi
     const ro = new ResizeObserver(update);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [update, itemCount, coverH]);
+  }, [update, n, coverH]);
   const scroll = (dir: -1 | 1) => { const el = ref.current; if (el) el.scrollBy({ left: dir * el.clientWidth * 0.8, behavior: "smooth" }); };
   return (
     <div className="bx-strip-wrap" style={{ "--cover-h": `${coverH}px` } as CSSProperties}>
       {edges.left && <button type="button" className="bx-strip-nav bx-strip-nav-l" aria-label="Scroll left" onClick={() => scroll(-1)}><ChevronIcon dir="l" /></button>}
-      <div className="bx-strip" ref={ref} onScroll={onScroll}>{children}</div>
+      <div className="bx-strip" ref={ref} onScroll={onScroll} data-mounted={win ? `${start}-${end}` : undefined}>
+        {start > 0 && <div className="bx-strip-spacer" aria-hidden="true" style={{ flex: `0 0 ${spacers.lead}px` }} />}
+        {items.slice(start, end).map((item, i) => (
+          <Card key={item.key} item={item} cellH={coverH} metadata={metadata} hoverClass={hoverClass} eager={start + i < eagerCount} onOpen={onOpen} />
+        ))}
+        {end < n && <div className="bx-strip-spacer" aria-hidden="true" style={{ flex: `0 0 ${spacers.tail}px` }} />}
+        {trailing}
+      </div>
       {edges.right && <button type="button" className="bx-strip-nav bx-strip-nav-r" aria-label="Scroll right" onClick={() => scroll(1)}><ChevronIcon dir="r" /></button>}
     </div>
   );
@@ -85,9 +122,47 @@ export function Strip({ coverH, itemCount, groupKey, scrollStore, onNearEnd, chi
 
 type Extra = { items: CardItem[]; loading: boolean; hasMore: boolean };
 
-/** One band of groups: header + strip per group, with per-group "more" that survives band recycling. */
-function GroupBand({ groups, cellH, metadata, hoverClass, noun, groupNoun, onOpen, onOpenGroup, loadMore, perGroupCap, extras, onLoadMore, scrollStore }: {
-  groups: CardGroup[]; cellH: number; metadata: ViewProps["metadata"]; hoverClass: string; noun: string; groupNoun: string;
+/**
+ * One group: header + strip. Memoized per GROUP so a "more" page landing for one group re-renders
+ * that group alone — `extras` is one object for the whole view, and a per-band memo alone re-drew
+ * every strip in every mounted band on each page.
+ */
+function GroupSection({ g, extra, stripH, metadata, hoverClass, noun, groupNoun, eagerCount, onOpen, onOpenGroup, loadMore, perGroupCap, onLoadMore, scrollStore }: {
+  g: CardGroup; extra: Extra | undefined; stripH: number; metadata: ViewProps["metadata"]; hoverClass: string; noun: string; groupNoun: string; eagerCount: number;
+  onOpen: (i: CardItem) => void; onOpenGroup: ((g: CardGroup) => void) | null;
+  loadMore: ((groupKey: string, skip: number) => Promise<CardItem[]>) | null; perGroupCap: number;
+  onLoadMore: (groupKey: string, count: number) => void; scrollStore: Map<string, number>;
+}) {
+  const all = useMemo(() => (extra ? [...g.items, ...extra.items] : g.items), [g.items, extra]);
+  const showMore = !!loadMore && (extra ? extra.hasMore : g.items.length >= perGroupCap) && all.length < g.totalItems;
+  const loadingMore = extra?.loading ?? false;
+  return (
+    <section className="bx-group" data-group-key={g.key}>
+      <header className="bx-group-head">
+        <h3 className={`bx-group-name${onOpenGroup ? " bx-clickable" : ""}`} onClick={onOpenGroup ? () => onOpenGroup(g) : undefined}>{g.label}</h3>
+        {onOpenGroup && (
+          <button type="button" className="bx-group-browse" title={`Open ${groupNoun.replace(/s$/, "")}`} onClick={() => onOpenGroup(g)}><GroupIcon /></button>
+        )}
+        <span className="bx-group-meta">{groupRunLabel(g, noun)}</span>
+        <span className="bx-group-rule" />
+      </header>
+      <Strip items={all} coverH={stripH} metadata={metadata} hoverClass={hoverClass} onOpen={onOpen} eagerCount={eagerCount}
+        groupKey={g.key} scrollStore={scrollStore}
+        onNearEnd={showMore && !loadingMore ? () => onLoadMore(g.key, all.length) : undefined}
+        trailing={showMore ? (
+          <button type="button" className="bx-strip-more" disabled={loadingMore} onClick={() => onLoadMore(g.key, all.length)}>
+            {loadingMore ? "…" : "more →"}
+          </button>
+        ) : null}
+      />
+    </section>
+  );
+}
+const GroupSectionMemo = memo(GroupSection);
+
+/** One band of groups: a section per group, with per-group "more" that survives band recycling. */
+function GroupBand({ groups, band, cellH, metadata, hoverClass, noun, groupNoun, onOpen, onOpenGroup, loadMore, perGroupCap, extras, onLoadMore, scrollStore }: {
+  groups: CardGroup[]; band: number; cellH: number; metadata: ViewProps["metadata"]; hoverClass: string; noun: string; groupNoun: string;
   onOpen: (i: CardItem) => void; onOpenGroup: ((g: CardGroup) => void) | null;
   loadMore: ((groupKey: string, skip: number) => Promise<CardItem[]>) | null; perGroupCap: number;
   extras: Record<string, Extra>; onLoadMore: (groupKey: string, count: number) => void; scrollStore: Map<string, number>;
@@ -95,35 +170,11 @@ function GroupBand({ groups, cellH, metadata, hoverClass, noun, groupNoun, onOpe
   const stripH = Math.round(cellH * STRIP_RATIO);
   return (
     <div className="bx-groups">
-      {groups.map((g) => {
-        const extra = extras[g.key];
-        const all = extra ? [...g.items, ...extra.items] : g.items;
-        const showMore = !!loadMore && (extra ? extra.hasMore : g.items.length >= perGroupCap) && all.length < g.totalItems;
-        const loadingMore = extra?.loading ?? false;
-        return (
-          <section key={g.key} className="bx-group" data-group-key={g.key}>
-            <header className="bx-group-head">
-              <h3 className={`bx-group-name${onOpenGroup ? " bx-clickable" : ""}`} onClick={onOpenGroup ? () => onOpenGroup(g) : undefined}>{g.label}</h3>
-              {onOpenGroup && (
-                <button type="button" className="bx-group-browse" title={`Open ${groupNoun.replace(/s$/, "")}`} onClick={() => onOpenGroup(g)}><GroupIcon /></button>
-              )}
-              <span className="bx-group-meta">{groupRunLabel(g, noun)}</span>
-              <span className="bx-group-rule" />
-            </header>
-            <Strip coverH={stripH} itemCount={all.length} groupKey={g.key} scrollStore={scrollStore}
-              onNearEnd={showMore && !loadingMore ? () => onLoadMore(g.key, all.length) : undefined}>
-              {all.map((item) => (
-                <Card key={item.key} item={item} cellH={stripH} metadata={metadata} hoverClass={hoverClass} onOpen={onOpen} />
-              ))}
-              {showMore && (
-                <button type="button" className="bx-strip-more" disabled={loadingMore} onClick={() => onLoadMore(g.key, all.length)}>
-                  {loadingMore ? "…" : "more →"}
-                </button>
-              )}
-            </Strip>
-          </section>
-        );
-      })}
+      {groups.map((g, i) => (
+        <GroupSectionMemo key={g.key} g={g} extra={extras[g.key]} stripH={stripH} metadata={metadata} hoverClass={hoverClass} noun={noun} groupNoun={groupNoun}
+          eagerCount={band === 0 && i === 0 ? STRIP_EAGER : 0}
+          onOpen={onOpen} onOpenGroup={onOpenGroup} loadMore={loadMore} perGroupCap={perGroupCap} onLoadMore={onLoadMore} scrollStore={scrollStore} />
+      ))}
     </div>
   );
 }
@@ -211,9 +262,9 @@ function ExtendedGrouped({ source, state, coverScale, metadata, hoverClass }: Vi
 
   const noun = source.itemNoun ?? "item";
   const groupNoun = source.groupNoun ?? "groups";
-  const renderBand = useCallback((groups: CardGroup[]) => (
+  const renderBand = useCallback((groups: CardGroup[], band: number) => (
     <GroupBandMemo
-      groups={groups} cellH={cellH} metadata={metadata} hoverClass={hoverClass} noun={noun} groupNoun={groupNoun}
+      groups={groups} band={band} cellH={cellH} metadata={metadata} hoverClass={hoverClass} noun={noun} groupNoun={groupNoun}
       onOpen={stream.open} onOpenGroup={stream.openGroup} loadMore={stream.loadMore} perGroupCap={EXTENDED_PER_GROUP}
       extras={extras} onLoadMore={onLoadMore} scrollStore={scrollStoreRef.current}
     />

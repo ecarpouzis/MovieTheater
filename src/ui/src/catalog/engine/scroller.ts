@@ -52,3 +52,34 @@ export function onRootScroll(root: ScrollRoot, handler: () => void): () => void 
   target.addEventListener("scroll", handler, { passive: true });
   return () => target.removeEventListener("scroll", handler);
 }
+
+/** The class the scroll-burst gate writes; `catalog-views.css` makes it `pointer-events: none`. */
+export const SCROLL_BURST_CLASS = "bx-inf-scrolling";
+/** How long after the last scroll event a burst is over. */
+export const SCROLL_SETTLE_MS = 160;
+
+/**
+ * The hover gate every scrolled surface wears: Chrome re-dispatches `pointerover` for content moving
+ * under a STATIONARY cursor, so every card passing under the mouse during a wheel scroll ran its
+ * hover transition — pure paint churn. From the first scroll event until SCROLL_SETTLE_MS after the
+ * last, `SCROLL_BURST_CLASS` sits on the surface and turns hit-testing off for its children: one
+ * class toggle per burst, no React state; wheel events fall through to the scroller.
+ *
+ * `el` is a getter because the surface may not be mounted yet when the gate is built.
+ */
+export function scrollBurstGate(el: () => HTMLElement | null, settleMs = SCROLL_SETTLE_MS): { onScroll(): void; dispose(): void } {
+  let scrolling = false;
+  let settleT: ReturnType<typeof setTimeout> | undefined;
+  return {
+    onScroll() {
+      if (!scrolling) { scrolling = true; el()?.classList.add(SCROLL_BURST_CLASS); }
+      if (settleT) clearTimeout(settleT);
+      settleT = setTimeout(() => { scrolling = false; el()?.classList.remove(SCROLL_BURST_CLASS); }, settleMs);
+    },
+    dispose() {
+      if (settleT) clearTimeout(settleT);
+      scrolling = false;
+      el()?.classList.remove(SCROLL_BURST_CLASS);
+    },
+  };
+}

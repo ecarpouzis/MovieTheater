@@ -21,14 +21,17 @@ function hueOf(id: string): number {
   return h;
 }
 
-function NodeTile({ node, cellH, hoverClass, noun, onOpen }: { node: DirectoryNode; cellH: number; hoverClass: string; noun: string; onOpen: (n: DirectoryNode) => void }) {
+/** A level's first tiles are above the fold: their art loads eagerly (the same dozen the Grid marks). */
+const DIR_EAGER = 12;
+
+function NodeTile({ node, cellH, hoverClass, noun, eager, onOpen }: { node: DirectoryNode; cellH: number; hoverClass: string; noun: string; eager: boolean; onOpen: (n: DirectoryNode) => void }) {
   const w = Math.round(cellH * 0.66);
   const hue = node.hue ?? hueOf(node.id);
   return (
     <div className={`bx-card bx-dir-node${hoverClass ? ` ${hoverClass}` : ""}`} style={{ "--aspect": 0.66 } as CSSProperties} role="button" tabIndex={0}
       onClick={() => onOpen(node)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(node); } }} aria-label={node.label}>
       <div className="bx-cover" style={{ height: cellH, width: w }}>
-        {node.imageUrl ? <CardImage src={node.imageUrl} hue={hue} /> : <img src={hueSvg(hue)} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />}
+        {node.imageUrl ? <CardImage src={node.imageUrl} hue={hue} eager={eager} /> : <img src={hueSvg(hue)} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />}
         <span className="bx-dir-badge" aria-hidden="true">▸</span>
       </div>
       <div className="bx-meta" style={{ width: w, minWidth: 100 }}>
@@ -96,7 +99,7 @@ export default function DirectoryView({ source, state, coverScale, metadata, hov
             <section className="bx-drill-section">
               {items.length > 0 && <div className="bx-drill-label">Folders</div>}
               <div className="bx-grid" style={{ "--cell": `${cellH}px` } as CSSProperties}>
-                {visibleNodes.map((n) => <NodeTile key={n.id} node={n} cellH={cellH} hoverClass={hoverClass} noun={source.itemNoun ?? "item"} onOpen={push} />)}
+                {visibleNodes.map((n, i) => <NodeTile key={n.id} node={n} cellH={cellH} hoverClass={hoverClass} noun={source.itemNoun ?? "item"} eager={i < DIR_EAGER} onOpen={push} />)}
               </div>
             </section>
           )}
@@ -104,7 +107,7 @@ export default function DirectoryView({ source, state, coverScale, metadata, hov
             <section className="bx-drill-section">
               {visibleNodes.length > 0 && <div className="bx-drill-label">{source.itemNoun ? `${source.itemNoun}s` : "Items"}</div>}
               <div className="bx-grid" style={{ "--cell": `${cellH}px` } as CSSProperties}>
-                {items.map((item) => <Card key={item.key} item={item} cellH={cellH} metadata={metadata} hoverClass={hoverClass} onOpen={source.onOpen} />)}
+                {items.map((item, i) => <Card key={item.key} item={item} cellH={cellH} metadata={metadata} hoverClass={hoverClass} eager={visibleNodes.length === 0 && i < DIR_EAGER} onOpen={source.onOpen} />)}
               </div>
             </section>
           )}

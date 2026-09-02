@@ -3,7 +3,7 @@ import {
   type CSSProperties, type ForwardedRef, type ReactNode,
 } from "react";
 import {
-  getScrollTop, onRootScroll, resolveScrollRoot, scrollportHeight, scrollportTop, setScrollTop, topInset, type ScrollRoot,
+  getScrollTop, onRootScroll, resolveScrollRoot, scrollBurstGate, scrollportHeight, scrollportTop, setScrollTop, topInset, type ScrollRoot,
 } from "./scroller";
 
 /**
@@ -38,7 +38,6 @@ export const MAX_INFLIGHT = 4;
 export const MIN_WANT_AGE = 150;
 export const RETRY_MS = 2500;
 export const JUMP_DEADLINE_MS = 6000;
-const SETTLE_MS = 160;
 const RESIZE_MS = 150;
 
 export interface InfiniteBandsProps<T> {
@@ -363,17 +362,12 @@ function InfiniteBandsInner<T>(
     if (!root) return undefined;
     scrollRootRef.current = resolveScrollRoot(root);
     let raf = 0;
-    // Hover gate: Chrome re-dispatches pointerover for content moving under a STATIONARY cursor, so
-    // every card passing under the mouse during a wheel scroll ran its hover transition. While
-    // scrolling, `.bx-inf-scrolling` turns off hit-testing for the stream's children — one class
-    // toggle per burst, no React state; wheel events fall through to the scroller.
-    let scrolling = false;
-    let settleT: ReturnType<typeof setTimeout> | undefined;
+    // The hover gate (scroller.ts `scrollBurstGate`): while scrolling, `.bx-inf-scrolling` turns off
+    // hit-testing for the stream's children, one class toggle per burst.
+    const gate = scrollBurstGate(() => rootRef.current);
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(() => { raf = 0; maintain(); });
-      if (!scrolling) { scrolling = true; rootRef.current?.classList.add("bx-inf-scrolling"); }
-      if (settleT) clearTimeout(settleT);
-      settleT = setTimeout(() => { scrolling = false; rootRef.current?.classList.remove("bx-inf-scrolling"); }, SETTLE_MS);
+      gate.onScroll();
     };
     let rt: ReturnType<typeof setTimeout> | undefined;
     const onResize = () => {
@@ -400,8 +394,7 @@ function InfiniteBandsInner<T>(
       window.removeEventListener("resize", onResize);
       if (raf) cancelAnimationFrame(raf);
       if (rt) clearTimeout(rt);
-      if (settleT) clearTimeout(settleT);
-      rootRef.current?.classList.remove("bx-inf-scrolling");
+      gate.dispose();
     };
   }, [maintain, queryKey]);
 
