@@ -31,6 +31,20 @@ html {
      reading line sits under it on desktop too (--section-bar-h is declared in catalog/bar/bar.css;
      the bar is hidden on the screening rooms, which are full-screen surfaces of their own). */
   --topbar-h: 48px;
+  /* The mirror image of --content-top-inset, for a control PINNED to the bottom of the scroller
+     (the CatalogPager strip). Zero on desktop, and that is not an oversight: the scroller there is
+     .app-content, and a scroll container's bottom padding shrinks the sticky constraint rectangle —
+     so the `padding-bottom: var(--music-miniplayer-height)` below ALREADY stops a `bottom: 0`
+     sticky at the top of the mini-player. Naming the bar's height again on the control adds it a
+     SECOND time (measured on prod 2026-09-01: a 72px bar left the letter strip floating 144px up,
+     which is the "the letter bar is floating" report). On a phone .app-content hands its scrolling
+     back to the window; that padding is then ordinary trailing space in the document and reserves
+     nothing, so the control has to carry the whole height itself.
+
+     Interop: padding-shrinks-the-sticky-rectangle is spec behavior, not a Chrome quirk — WPT
+     position-sticky-overflow-padding passes 3/3 in stable Chrome 152, Firefox 154 AND Safari 26.6
+     (wpt.fyi, checked 2026-09-01; Firefox also verified locally with a headless repro). */
+  --sticky-bottom-inset: 0px;
 }
 
 #root {
@@ -223,6 +237,9 @@ img {
     /* The fixed top bar's height plus the sticky section strip under it (R9 S1) — see the token's
        declaration. The strip is in flow, so the content's padding clears only the fixed bar. */
     --content-top-inset: calc(var(--topbar-h) + var(--section-bar-h, 44px));
+    /* The window is the scroller down here, so nothing reserves the mini-player's room for a
+       bottom-pinned sticky — see the token's declaration. */
+    --sticky-bottom-inset: var(--music-miniplayer-height, 0px);
   }
 
   .app-layout {

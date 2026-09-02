@@ -5,11 +5,20 @@
    cheapest ways to lose frames on a tablet.
 
    The bottom of the scrollport is NOT the bottom of the window while music is playing: the
-   mini-player is `position: fixed; bottom: 0` at z-index 900, so a strip stuck at 0 spends the
-   whole scroll parked underneath it — present in the DOM, clickable nowhere, and reported (music
-   library, 2026-08-09) as "the letter buttons are missing on this page". It stops where the bar
-   starts instead. --music-miniplayer-height is published on <html> by MusicMiniPlayer and is 0px
-   with nothing playing, so with no bar this is exactly the old rule. */
+   mini-player is `position: fixed; bottom: 0` at z-index 900, so a strip stuck at the window's
+   bottom spends the whole scroll parked underneath it — present in the DOM, clickable nowhere, and
+   reported (music library, 2026-08-09) as "the letter buttons are missing on this page". It stops
+   where the bar starts instead.
+
+   ⚠ How MUCH it has to lift is not the bar's height — it is whatever the scrollport has not already
+   reserved, which is why this reads --sticky-bottom-inset (index.css) and not
+   --music-miniplayer-height. On desktop the scroller is .app-content, and a scroll container's
+   bottom padding shrinks the sticky constraint rectangle: its `padding-bottom: <bar height>` alone
+   already stops a `bottom: 0` strip exactly at the top of the bar. Naming the height here as well
+   counted it twice and left the strip floating a whole bar's height above the bar — measured on
+   prod 2026-09-01 at 144px for a 72px bar, and reported as "the letter bar is floating". The token
+   is 0px there and the bar's full height on a phone, where the window scrolls and that padding
+   reserves nothing. Both ends are 0px with nothing playing, so with no bar this is the old rule. */
 /* ONE row, always. Wrapping put three rows of letters across the bottom third of a phone (2026-08-09)
    — a jump control that eats the content it exists to navigate. It swipes sideways instead, the way
    The Long Box's letter rail does: nowrap + overflow-x with the scrollbar hidden on both engines.
@@ -33,7 +42,7 @@
    unaffected: negative margins move the box, the sticky constraint follows it. */
 .catalog-pager {
   position: sticky;
-  bottom: var(--music-miniplayer-height, 0px);
+  bottom: var(--sticky-bottom-inset, 0px);
   z-index: 3;
   display: flex;
   flex-wrap: nowrap;
