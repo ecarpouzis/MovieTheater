@@ -9,6 +9,11 @@ COPY src/ui/package.json .
 COPY src/ui/package-lock.json .
 RUN npm install
 COPY src/ui/ .
+# The commit being built, for index.html's mt-build marker. Declared HERE, after `npm install`, so a
+# new SHA invalidates only the build layer and never the dependency layer. There is no .git in this
+# context, so without this the marker would read "unknown".
+ARG MT_BUILD=""
+ENV MT_BUILD=$MT_BUILD
 RUN npm run build
 
 # Build final release image

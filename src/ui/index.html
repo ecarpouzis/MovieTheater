@@ -5,13 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#000000" />
     <meta name="description" content="Movie Theater" />
-    <!-- Build marker. There is currently NO way to tell from outside which build prod is actually
+    <!-- Build marker. There is no other way to tell from outside which build prod is actually
          running: index.html's script tags only name the entry bundle, the app is code-split so the
          interesting chunks are lazily imported, and minification strips comments — so "is my change
          live?" turned into grepping every served chunk for a string literal (2026-07-24). This meta
-         tag is served uncached and unminified, so a single fetch answers it. Bump the date whenever
-         you want an unambiguous "did the rollout actually happen" probe. -->
-    <meta name="mt-build" content="2026-08-25-tsx" />
+         tag is served uncached and unminified, so a single fetch answers it.
+
+         It carries the COMMIT SHA and the build's UTC timestamp, stamped by the `mt-build-marker`
+         plugin in vite.config.js. It used to be a hand-bumped date string, which meant it read
+         `2026-08-25-tsx` before AND after every deploy for a week — a marker that cannot distinguish
+         a landed rollout from a failed one, sitting at the top of the deploy skill's verification
+         toolbox inviting a false "verified" (found 2026-09-02, after the facet-rail deploy). Do not
+         put the build id anywhere but index.html: the byte-compare recipe (deploy-db-ops) depends on
+         a local `npm run build` reproducing prod's CONTENT-HASHED chunk names, and a SHA baked into
+         the JS would change every chunk hash on every commit and break it. -->
+    <meta name="mt-build" content="%MT_BUILD%" />
     <!-- Favicons. The .ico (16/32/48) is the legacy + Windows path and is also what bare
          /favicon.ico probes get; the SVG is preferred by every current browser and is the one
          that stays sharp on hi-dpi tabs. sizes="32x32" on the .ico stops browsers assuming

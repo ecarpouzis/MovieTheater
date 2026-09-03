@@ -1,9 +1,31 @@
+import { execFileSync } from "node:child_process";
 import { defineConfig, transformWithEsbuild } from "vite";
 import react from "@vitejs/plugin-react";
 import { fileURLToPath } from "node:url";
 
+/**
+ * What build is this? CI passes MT_BUILD (the commit SHA); a local build asks git; a build with
+ * neither (the Docker image builds from a copy of src/ui with no .git) says so rather than lying.
+ * Appended with the build's UTC minute so re-running the SAME commit still produces a new marker —
+ * "did the rollout happen" must be answerable even when nothing in the tree changed.
+ */
+function buildId() {
+  const stamp = new Date().toISOString().slice(0, 16).replace(/[-:]/g, "").replace("T", "-");
+  const sha = process.env.MT_BUILD?.trim()
+    || (() => {
+      try { return `${execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim()}-local`; }
+      catch { return "unknown"; }
+    })();
+  return `${sha} ${stamp}`;
+}
+
 export default defineConfig({
   plugins: [
+    {
+      // Runs `pre` so the placeholder is gone before Vite's own %VITE_*% html-env pass sees it.
+      name: "mt-build-marker",
+      transformIndexHtml: { order: "pre", handler: (html) => html.replace("%MT_BUILD%", buildId()) },
+    },
     {
       name: "treat-js-files-as-jsx",
       enforce: "pre",
