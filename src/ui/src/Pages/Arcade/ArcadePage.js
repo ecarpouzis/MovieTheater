@@ -37,21 +37,29 @@ const GROUP_FACET_KEY = { system: "system", genre: "genre", maxPlayers: "players
 const QUALITY_KEY = "arcade.streamQuality";
 const BITRATE_PRESETS = [
   // 0 = Auto: the WORKER now DERIVES the ceiling from the frame it actually encodes — encoded pixels ×
-  // fps × a bits-per-pixel target (abr.go autoCeilingKbps), clamped to 5–25 Mbps. It is no longer a
+  // fps × a bits-per-pixel target (abr.go autoCeilingKbps), clamped to 5–40 Mbps. It is no longer a
   // per-system constant: that table could not see the core's real viewport, its scale, a core changing
   // resolution mid-game, or a render profile moving the frame. Measured live 2026-07-30: genesis 19328,
   // snes 15508, n64 13271, gc 14583, psp 12584. Auto is usually the RIGHT answer now — the manual
-  // presets below are for capping your own upstream, not for beating Auto.
+  // presets below cap the stream for the WEAKEST VIEWER's downlink (a tablet on Wi-Fi, a phone on
+  // 5G), not for beating Auto. Since the 2026-09-01 fiber cutover (~200 Mbps single-stream / ~630 Mbps
+  // aggregate up, measured from Ziggy) our own upstream is no longer what a preset protects: four
+  // remote friends at 25 Mbps each is ~100 Mbps up, which the old ~35 Mbps line could never serve and
+  // the fiber line does not notice.
   { label: "Auto · match the frame", value: 0 },
-  // 25 Mbps matches abrAutoMaxKbps, so a manual pick can reach what Auto can. Raised from 16 (2026-07-30)
-  // because a 960×672 Genesis frame derives 19328 — the old top preset sat BELOW Auto for 2D systems.
-  // ⚠ ArcadeController clamps this server-side; that clamp had to move to 25000 with it.
+  // 40 Mbps matches abrAutoMaxKbps (raised from 25 on 2026-09-02, the fiber re-baseline). The
+  // headroom is for the fattest frames we encode — capture-lane 1080p60 (Auto derives ~22.4) and
+  // hi-res 3D — on a viewer with a wired or strong Wi-Fi downlink. ⚠ The ceiling is a PERMISSION, not
+  // a target: the room still opens at 6 Mbps and climbs +15%/tick (~20 s to 40 Mbps from cold), and a
+  // weak peer is walked down from it within a second. ⚠ ArcadeController clamps this server-side and
+  // the worker's abrAutoMaxKbps must agree; all three moved together.
+  { label: "Fiber · 40 Mbps", value: 40000 },
+  // 25 was the top preset 2026-07-30 → 2026-09-02, sized to the old uplink; kept for anyone who chose it.
   { label: "LAN · 25 Mbps", value: 25000 },
-  // Kept as the old top preset for anyone who had chosen it deliberately.
+  // Kept as an older top preset for anyone who had chosen it deliberately.
   { label: "Very high · 16 Mbps", value: 16000 },
-  // 10 Mbps, best for hi-res 3D cores (GameCube 1280×1056, PS2 upscaled) on a fat pipe. At
-  // 4 remote players that's ~40 Mbps upstream, so it's really a post-FiOS / mostly-LAN setting; on
-  // cable uplinks prefer 5 or lower. Overkill (but harmless) for retro/2D. Server clamps 500–25000.
+  // 10 Mbps, best for hi-res 3D cores (GameCube 1280×1056, PS2 upscaled) when a viewer's downlink is
+  // the limit. Overkill (but harmless) for retro/2D. Server clamps 500–40000.
   { label: "High · 10 Mbps", value: 10000 },
   { label: "Sharp · 8 Mbps", value: 8000 },
   { label: "Balanced · 5 Mbps", value: 5000 },

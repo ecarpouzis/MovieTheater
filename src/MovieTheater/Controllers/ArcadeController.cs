@@ -1744,11 +1744,14 @@ namespace MovieTheater.Controllers
             // actually encodes: 1920x1080@60 x 0.18 bpp ≈ 22.4 Mbps, ABR-governed like any ceiling.
             // ⚠ Only flip this after verifying BY HASH that the deployed capture worker matches the GL
             // build — an older capture binary given vbr=0 falls to its yaml default, BELOW the old 12000.
-            // ⚠ Upper clamp is 25000 to match the lobby's top preset AND the worker's abrAutoMaxKbps. It
-            // was 20000, which would have silently turned a "LAN · 25 Mbps" pick into 20 Mbps — the kind
-            // of mismatch that reads as "the setting does nothing".
+            // ⚠ Upper clamp is 40000 to match the lobby's top preset ("Fiber · 40 Mbps") AND the worker's
+            // abrAutoMaxKbps — three places that move together. It was 20000 once, which silently turned a
+            // "LAN · 25 Mbps" pick into 20 Mbps — the kind of mismatch that reads as "the setting does
+            // nothing". 25000 (2026-07-30 → 2026-09-02) was sized to Ziggy's old ~35 Mbps uplink; the
+            // 2026-09-01 fiber cutover measured ~200 Mbps single-stream / ~630 Mbps aggregate up, so the
+            // cap is now about a viewer's downlink + decoder, not our egress.
             var vbr = request.VideoBitrateKbps > 0
-                ? Math.Clamp(request.VideoBitrateKbps, 500, 25000)
+                ? Math.Clamp(request.VideoBitrateKbps, 500, 40000)
                 : 0;
             if (vbr > 0)
                 descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&vbr=" + vbr };

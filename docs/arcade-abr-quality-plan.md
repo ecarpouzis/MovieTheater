@@ -16,8 +16,11 @@
   Noted latent trap: capture's Scale() says "nearest-neighbour" at scale 1.0 — fix before ever
   scaling capture, else the derive flips to the magnified-2d class. VBV moves with the new ceiling
   (kbps/20 ≈ 1120) — judge capture on a real display; that's the Phase 3 knob shifting as a side
-  effect. Phases 1, 1.5-Auto (need the baseline week), 3 (needs real-display A/B), 5 (fiber) remain
-  PLAN.
+  effect. Phases 1, 1.5-Auto (need the baseline week), 3 (needs real-display A/B) remain PLAN.
+- Phase 5 (fiber re-baseline) DONE 2026-09-02, the day after the cutover: uplink measured ~200 Mbps
+  single-stream / ~630 aggregate; the three clamps moved together 25000 → 40000 ("Fiber · 40 Mbps"
+  preset); `abrBppMagnified` 0.65 → 1.0 on a re-sweep to 50 Mbps that found the knee at ~1.0 bpp.
+  Multi-viewer capacity on the new link still owed a real remote-peer session (see Phase 5 below).
 
 ## The problem, stated honestly
 
@@ -315,15 +318,35 @@ they need to because it is a manual dropdown habit:
 - (Deferred idea, only if data shows it matters: warn in the lobby when a joining device forces
   the room's worst case.)
 
-## Phase 5 — Fiber re-baseline (~end of Aug 2026; do NOT pre-tune)
+## Phase 5 — Fiber re-baseline (DONE 2026-09-02; cutover was 2026-09-01)
 
-- The ramp does not get faster with fiber (GCC-bound) — warm start (Phase 1) is what makes a
-  bigger ceiling *feel* better instead of just making the climb longer.
-- If raising `abrAutoMaxKbps` = 25000: **three places move together** — the worker constant,
-  `Math.Clamp(..., 500, 25000)` in ArcadeController, and the lobby's top preset.
-- Re-measure with Phase-0 data at DIFFERENT ceilings before touching anything (BWE estimate is
-  bounded by what we send; a single room's `servable` says nothing about the new link).
-- Re-test multi-viewer capacity — uplink was never the tested dimension.
+What was measured before anything moved:
+
+- **Uplink**: curl to speed.cloudflare.com from Ziggy — ~200 Mbps on one TCP stream, ~630 Mbps
+  across four parallel streams (the old line: ~35 Mbps up). IPv4 is now CGNAT; the media plane is
+  IPv6-direct plus the Vultr door for v4-only viewers (`docs/site-ipv4-door.md`).
+- **Phase-0 rows** (ArcadeLinkStat, 2026-08-05 → 08-26, all pre-fiber): the 13 direct-path rooms at
+  the 25000 ceiling (Genesis, 08-15/16) sustained 0–14959 with `atCeilPct` 0 — the old uplink was
+  the wall, so those rows say nothing about the new link and are NOT its baseline.
+- **The 2D bpp sweep re-run to 50 Mbps** (`scripts/calibrate-arcade-bpp.sh` method, raw-vs-raw
+  scoring — see the measurement trap in the skill): worst-frame error 1.9e-4 @25 → 1.41e-4 @32 →
+  9.4e-5 @40 → 7.8e-5 @50. The "no knee" verdict of July was the sweep's range; the knee is ~1.0 bpp.
+
+What moved (worker fork + site, same day):
+
+- `abrAutoMaxKbps` 25000 → 40000, `Math.Clamp(..., 500, 40000)` in ArcadeController, lobby top
+  preset "Fiber · 40 Mbps" (25 kept as a preset for anyone who chose it).
+- `abrBppMagnified` 0.65 → 1.0: 3x gen/nes/snes Auto rooms derive 31–39 Mbps (were clamped at
+  25000); gb 4x ~22; smooth/3D untouched. ~3 s more cold climb for 2D rooms, priced in.
+- Not moved, on purpose: the 6000 opener, the ramp (GCC), `abrBppSmooth`, the capture lane.
+
+Still owed:
+
+- **Multi-viewer capacity on the new link** — needs real remote peers (the Ziggy harness is
+  same-host and never touches the uplink). Read `abr: summary-peer` rows dated after 2026-09-01,
+  compare rooms at DIFFERENT ceilings.
+- Warm start (Phase 1) is now the thing that makes a 39-Mbps Auto ceiling *feel* good at room
+  start; the fiber rows are its denominator once they exist.
 
 ---
 
