@@ -891,6 +891,14 @@ function TvPage({ userData }) {
       }
 
       if (video.paused || video.seeking || !video.readyState) return;
+      // A starving element is not drifting — it's waiting on bytes. Below HAVE_FUTURE_DATA the picture is
+      // frozen because the source isn't delivering, and a seek only makes that worse: the browser drops
+      // whatever it had buffered and re-opens the stream at a position with nothing loaded at all (on a
+      // direct-play file that's a fresh range request with a multi-second first byte; on HLS it's a
+      // playlist reload plus a segment fetch). The Lorax evening (2026-09-03) was exactly this loop —
+      // underrun, corrector seek 2 s later, longer underrun, seek again every cooldown. Let the element
+      // fill first; the gap it's fallen behind by is still there to correct once frames are flowing.
+      if (video.readyState < HTMLMediaElement.HAVE_FUTURE_DATA) return;
 
       const expected = anchor.position + (performance.now() - anchor.atMs) / 1000;
       // Both sides in CONTENT time. The channel clock states a content offset, while currentTime can

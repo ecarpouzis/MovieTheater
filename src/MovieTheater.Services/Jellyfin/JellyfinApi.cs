@@ -270,11 +270,21 @@ namespace MovieTheater.Services.Jellyfin
             string directPlayAudio = "aac,mp3" + (caps.Ac3 ? ",ac3" : "") + (caps.Eac3 ? ",eac3" : "")
                 + (caps.Flac ? ",flac" : "");
 
-            // MKV is the dominant library container. Chromium's <video> can play a Matroska file whose
-            // codecs it supports (canPlayType('video/x-matroska')); Firefox reports it but preloads the
-            // whole file (jellyfin-web #15521), so the client probe excludes it. When advertised, an
-            // H.264/HEVC + browser-decodable-audio MKV direct-plays (raw file, no ffmpeg) instead of
-            // being remuxed to HLS on every start.
+            // MKV is the dominant library container, and Chromium's <video> can play a Matroska file whose
+            // codecs it supports (canPlayType('video/x-matroska') — that's what caps.Mkv reports). It is
+            // deliberately NOT a direct-play container here any more. Direct play means Jellyfin's static
+            // /Videos/{id}/stream.mkv endpoint streaming the raw file off the NAS share, and that path was
+            // measured on 2026-09-03 at 3–12 Mbps from Jellyfin itself (5–8 Mbps through the gateway) while
+            // ffmpeg reading the same share ran 12× realtime and HLS segments left Caddy at 200–1000 Mbps.
+            // Root cause: Kestrel's SendFile fallback reads the file in 16 KB overlapped reads, and on an SMB
+            // share that pattern measures 1.7 MB/s against 64–83 MB/s for 64 KB-async or any sync read. A
+            // 2.5 Mbps 576p film (The Lorax, Family Movie Night) rode it just-in-time: 3–15 s to the first
+            // frame on every tune, underruns mid-film, and every browser seek re-opened the file with a
+            // multi-second first byte. The HLS copy path is the same bytes (video copied; ac3/eac3/flac
+            // copied when the client decodes them — see the transcoding profile below) served from the local
+            // transcode cache, so an MKV loses nothing by taking it. Re-enable mkv here only once the patched
+            // Jellyfin's static path (large sync reads) is deployed AND measured at a comfortable multiple of
+            // the library's remux bitrates.
             var directPlayProfiles = new List<object>
             {
                 new
@@ -285,16 +295,6 @@ namespace MovieTheater.Services.Jellyfin
                     AudioCodec = directPlayAudio,
                 },
             };
-            if (caps.Mkv)
-            {
-                directPlayProfiles.Add(new
-                {
-                    Container = "mkv",
-                    Type = "Video",
-                    VideoCodec = caps.Hevc ? "h264,hevc" : "h264",
-                    AudioCodec = directPlayAudio,
-                });
-            }
 
             // HDR passthrough only to HDR-capable clients (§14.5 stretch, done here for the
             // copy path): an SDR client that *copies* an HDR HEVC source renders washed-out,
