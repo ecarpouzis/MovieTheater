@@ -340,6 +340,19 @@ What moved (worker fork + site, same day):
   25000); gb 4x ~22; smooth/3D untouched. ~3 s more cold climb for 2D rooms, priced in.
 - Not moved, on purpose: the 6000 opener, the ramp (GCC), `abrBppSmooth`, the capture lane.
 
+Verified live the same evening (prod harness `drive-prod.mjs`, GL workers 1+2 recycled to fork
+`fe24711`, site `b6ce75c5` deployed — the lobby chunk carries "Fiber · 40 Mbps"):
+
+- Explicit 40000 (`--vbr 40000`, Sonic 2, gen): `Per-room encoder overrides: bitrate=40000` →
+  `abr: start … ceiling 40000` → summary `atCeilPct=96 cuts=0 starves=0` over 25 ticks. The old
+  site would have clamped that pick to 25000 before it ever reached the worker.
+- Auto (same game): `abr: auto ceiling 26507 — encode 768x576 (256x192 x3), magnified-2d, 1.000
+  bpp` at boot, then the per-tick derive followed Sonic's switch to 320x224 and the summary closed
+  at `ceil=38657 atCeilPct=91 cuts=0` — the derive, the K=5 commit and the new target all in one
+  room. (Harness rooms are same-host: they prove the plumbing, not the link.)
+- The capture worker binary was NOT swapped (still lags the fork); capture Auto derives 22394,
+  below either clamp, so it is unaffected. Swap it when convenient, as before.
+
 Still owed:
 
 - **Multi-viewer capacity on the new link** — needs real remote peers (the Ziggy harness is
