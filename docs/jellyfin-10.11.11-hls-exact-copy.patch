@@ -218,6 +218,50 @@ diff -ruN -x bin -x obj a/Jellyfin.Api/Controllers/KeyframeExtractionController.
 +    /// </summary>
 +    public IReadOnlyList<long>? KeyframeTicks { get; set; }
 +}
+diff -ruN -x bin -x obj a/Jellyfin.Api/Helpers/FileStreamResponseHelpers.cs b/Jellyfin.Api/Helpers/FileStreamResponseHelpers.cs
+--- a/Jellyfin.Api/Helpers/FileStreamResponseHelpers.cs	2026-06-06 11:37:28.000000000 -0400
++++ b/Jellyfin.Api/Helpers/FileStreamResponseHelpers.cs	2026-09-03 19:28:58.871385200 -0400
+@@ -106,10 +106,39 @@
+         string path,
+         string contentType)
+     {
+-        return new PhysicalFileResult(path, contentType) { EnableRangeProcessing = true };
++        // MovieTheater patch (2026-09-03): serve the file through our own FileStream instead of
++        // PhysicalFileResult. PhysicalFileResult ends in Kestrel's SendFileFallback, which opens the
++        // file with FileOptions.Asynchronous and copies it in 16 KB overlapped reads. On a library that
++        // lives on an SMB share that pattern is catastrophic: measured on the host against the same file,
++        // 16 KB async reads ran at 1.7 MB/s (≈9 ms per read — the redirector does no read-ahead for
++        // overlapped I/O) while synchronous reads ran at 66–83 MB/s regardless of size. Every direct-play
++        // session (raw MKV/MP4 via /Videos/{id}/stream) was therefore capped at ~12 Mbps and stalled on
++        // anything heavier than a 576p rip. A synchronous handle with a 1 MB buffer means the executor's
++        // 64 KB ReadAsync calls are served from the buffer and the share sees 1 MB sequential reads.
++        // Local files (HLS segments out of the transcode cache) are unaffected either way.
++        var stream = new FileStream(
++            path,
++            FileMode.Open,
++            FileAccess.Read,
++            FileShare.ReadWrite | FileShare.Delete,
++            bufferSize: StaticFileReadBufferSize,
++            FileOptions.SequentialScan);
++        return new FileStreamResult(stream, contentType)
++        {
++            EnableRangeProcessing = true,
++            // PhysicalFileResult derives this from the file; keep it so If-Range / If-Modified-Since keep
++            // working (browsers seek raw files with If-Range against the value they were first given).
++            LastModified = new DateTimeOffset(File.GetLastWriteTimeUtc(path)),
++        };
+     }
+ 
+     /// <summary>
++    /// Read buffer for static file responses (see <see cref="GetStaticFileResult"/>): one SMB read per
++    /// megabyte instead of one per 16 KB.
++    /// </summary>
++    private const int StaticFileReadBufferSize = 1024 * 1024;
++
++    /// <summary>
+     /// Returns a transcoded file from the server.
+     /// </summary>
+     /// <param name="state">The current <see cref="StreamState"/>.</param>
 diff -ruN -x bin -x obj a/Jellyfin.Api/Jellyfin.Api.csproj b/Jellyfin.Api/Jellyfin.Api.csproj
 --- a/Jellyfin.Api/Jellyfin.Api.csproj	2026-06-06 11:37:28.000000000 -0400
 +++ b/Jellyfin.Api/Jellyfin.Api.csproj	2026-09-01 20:19:56.171412800 -0400
