@@ -350,8 +350,16 @@ Verified live the same evening (prod harness `drive-prod.mjs`, GL workers 1+2 re
   bpp` at boot, then the per-tick derive followed Sonic's switch to 320x224 and the summary closed
   at `ceil=38657 atCeilPct=91 cuts=0` — the derive, the K=5 commit and the new target all in one
   room. (Harness rooms are same-host: they prove the plumbing, not the link.)
-- The capture worker binary was NOT swapped (still lags the fork); capture Auto derives 22394,
-  below either clamp, so it is unaffected. Swap it when convenient, as before.
+- Later the same evening (Eric: "when I stream Bloodborne it looks like potato"): the capture
+  pseudo-core got `bppTarget: 0.32` (1080p60 → 39.8 Mbps; the 0.18 class default it inherited was
+  cross-checked on GameCube-class 3D, and every August Bloodborne room derived 22394), the live
+  capture config was redeployed, and the capture worker binary was brought up to the fork build
+  (`ad98409a`; the old `435fc927` still carried the 25000 clamp and would have pinned the new
+  target there). Bloodborne harness room: `abr: auto ceiling 39813 — core-override, 0.320 bpp`,
+  `atCeilPct=98 cuts=0` over 79 ticks. Same-host, so it proves the ceiling, not the picture.
+- Same commit, movie/TV side: the ABR ladder gained 30 and 20 Mbps 4K rungs (probed: a 94.5 Mbps
+  4K HEVC source comes back 3840x2160 at both caps, 2560x1440 at 12) and a rung must sit ≤85% of
+  the source bitrate to count. Details in the `movie-streaming` skill.
 
 Still owed:
 
