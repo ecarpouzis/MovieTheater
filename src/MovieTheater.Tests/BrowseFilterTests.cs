@@ -47,7 +47,9 @@ namespace MovieTheater.Tests
             db.Movies.AddRange(
                 new Movie { id = 1, Title = "Heat", SimpleTitle = "Heat", ReleaseDate = new DateTime(1995, 12, 15) },
                 new Movie { id = 2, Title = "Hackers", SimpleTitle = "Hackers", ReleaseDate = new DateTime(1995, 9, 15) },
-                new Movie { id = 3, Title = "Halloween", SimpleTitle = "Halloween", ReleaseDate = new DateTime(1978, 10, 25) },
+                // Halloween carries its crew only in the LEGACY string column — the credit tables never
+                // got it. Both people legs (`q` and `person:`) have to read it, so one fixture does.
+                new Movie { id = 3, Title = "Halloween", SimpleTitle = "Halloween", Director = "John Carpenter", ReleaseDate = new DateTime(1978, 10, 25) },
                 new Movie { id = 4, Title = "Heathers", SimpleTitle = "Heathers", ImdbReleaseDate = new DateTime(1988, 3, 31) },
                 new Movie { id = 5, Title = "Hausu", SimpleTitle = "Hausu" /* undated */ });
             db.MovieGenres.AddRange(
@@ -138,6 +140,23 @@ namespace MovieTheater.Tests
             Assert.Equal(Ex(new int[] { 1 }, new int[] {  }), await RunAsync(F(q => q.genre = new[] { "Crime", "Drama" })));
             Assert.Equal(Ex(new int[] { 1, 2 }, new int[] { 101 }), await RunAsync(F(q => { q.genre = new[] { "Crime" }; q.exGenre = new[] { "Horror" }; })));
             Assert.Equal(Ex(new int[] { 1 }, new int[] {  }), await RunAsync(F(q => { q.q = "Hea"; q.genre = new[] { "Crime" }; })));
+        }
+
+        [Fact]
+        public async Task The_text_reaches_people_not_only_titles()
+        {
+            // The search box offers this as "in all fields". It read the two title columns only, so a
+            // search for an actor was a dead end (Eric, 2026-09-03: "when I search for Tom Hanks it
+            // doesn't work"). No title here contains "Pacino"; Heat and Hannibal are his credits.
+            Assert.Equal(Ex(new int[] { 1 }, new int[] { 100 }), await RunAsync(F(q => q.q = "Pacino")));
+            Assert.Equal(Ex(new int[] { 1 }, new int[] {  }), await RunAsync(F(q => q.q = "Michael Mann")));
+            // A title hit and a credit hit are the same row set as before, OR'd — "Hea" still finds the
+            // three H-titles, and a term that is both keeps both.
+            Assert.Equal(Ex(new int[] { 1, 4 }, new int[] {  }), await RunAsync(F(q => q.q = "Hea")));
+            // Legacy titles whose credits never made it into MovieCredit still answer, via the string columns.
+            Assert.Equal(Ex(new int[] { 3 }, new int[] {  }), await RunAsync(F(q => q.q = "Carpenter")));
+            // The people leg never widens a miss into a hit.
+            Assert.Equal(Ex(new int[] {  }, new int[] {  }), await RunAsync(F(q => q.q = "Nobody At All")));
         }
 
         [Fact]

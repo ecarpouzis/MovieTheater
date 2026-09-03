@@ -7,10 +7,16 @@
  * A DYNAMIC facet is asked too. The suggestion index is built from the facet lists the section loads
  * up front, and a dynamic facet has none by definition — Movies' People is a server typeahead, so
  * `facets.person` is always empty. That meant the box could never once suggest a person: typing
- * "Tom Hanks" offered only the free-text row, `q=` searches TITLES, and the answer was "No titles
- * match" for an actor with 34 of them (Eric, 2026-09-03). So on two characters the box also asks
- * every dynamic facet's `loadOptions`, debounced and aborted like the rail's own typeahead, and
- * merges what comes back. `person:` as a prefix scopes the ask to that facet alone.
+ * "Tom Hanks" offered only the free-text row and the answer was "No titles match" for an actor with
+ * 34 of them (Eric, 2026-09-03). So on two characters the box also asks every dynamic facet's
+ * `loadOptions`, debounced and aborted like the rail's own typeahead, and merges what comes back.
+ * `person:` as a prefix scopes the ask to that facet alone.
+ *
+ * The TEXT row is the other half of that report, and it was the half Eric clicked: it says "in all
+ * fields" and `q=` read the two title columns, so the top row of a search for an actor was a dead
+ * end even once the Person row sat under it. `q` now reaches credited people too
+ * (`BrowseFilter.Apply`), which is what the row has always claimed — so the row stays first and the
+ * Person row below it is the precise version of the same answer.
  */
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { SEARCH_FOCUS_EVENT, claimRailSearchFocus } from "../bar/useSlot";

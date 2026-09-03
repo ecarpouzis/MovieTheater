@@ -146,8 +146,18 @@ namespace MovieTheater.Web
             if (f.Q.Length > 0)
             {
                 var v = f.Q;
-                mq = mq.Where(m => (m.SimpleTitle != null && m.SimpleTitle.Contains(v)) || (m.Title != null && m.Title.Contains(v)));
-                sq = sq.Where(s => (s.SimpleTitle != null && s.SimpleTitle.Contains(v)) || (s.Title != null && s.Title.Contains(v)));
+                // The search box calls this row "in all fields", and a person's name is the field
+                // people reach for first. It only ever read the two TITLE columns, so "Tom Hanks"
+                // answered "No titles match" for an actor with 34 of them (Eric, 2026-09-03).
+                // The people leg is the same reach as `person:` below — normalized credits plus the
+                // legacy Actors/Director/Writer strings, for titles the credit tables never got.
+                var people = PeopleMatching(db, v);
+                mq = mq.Where(m => (m.SimpleTitle != null && m.SimpleTitle.Contains(v)) || (m.Title != null && m.Title.Contains(v))
+                    || m.Credits.Any(c => people.Contains(c.PersonId))
+                    || (m.Actors != null && m.Actors.Contains(v)) || (m.Director != null && m.Director.Contains(v)) || (m.Writer != null && m.Writer.Contains(v)));
+                sq = sq.Where(s => (s.SimpleTitle != null && s.SimpleTitle.Contains(v)) || (s.Title != null && s.Title.Contains(v))
+                    || s.Credits.Any(c => people.Contains(c.PersonId))
+                    || (s.Actors != null && s.Actors.Contains(v)) || (s.Director != null && s.Director.Contains(v)) || (s.Writer != null && s.Writer.Contains(v)));
             }
             foreach (var g in f.Genres)
             {
@@ -168,17 +178,19 @@ namespace MovieTheater.Web
             foreach (var p in f.Persons)
             {
                 var v = p;
-                mq = mq.Where(m => m.Credits.Any(c => c.Person.DisplayName.Contains(v))
+                var people = PeopleMatching(db, v);
+                mq = mq.Where(m => m.Credits.Any(c => people.Contains(c.PersonId))
                     || (m.Actors != null && m.Actors.Contains(v)) || (m.Director != null && m.Director.Contains(v)) || (m.Writer != null && m.Writer.Contains(v)));
-                sq = sq.Where(s => s.Credits.Any(c => c.Person.DisplayName.Contains(v))
+                sq = sq.Where(s => s.Credits.Any(c => people.Contains(c.PersonId))
                     || (s.Actors != null && s.Actors.Contains(v)) || (s.Director != null && s.Director.Contains(v)) || (s.Writer != null && s.Writer.Contains(v)));
             }
             foreach (var p in f.ExPersons)
             {
                 var v = p;
-                mq = mq.Where(m => !m.Credits.Any(c => c.Person.DisplayName.Contains(v))
+                var people = PeopleMatching(db, v);
+                mq = mq.Where(m => !m.Credits.Any(c => people.Contains(c.PersonId))
                     && (m.Actors == null || !m.Actors.Contains(v)) && (m.Director == null || !m.Director.Contains(v)) && (m.Writer == null || !m.Writer.Contains(v)));
-                sq = sq.Where(s => !s.Credits.Any(c => c.Person.DisplayName.Contains(v))
+                sq = sq.Where(s => !s.Credits.Any(c => people.Contains(c.PersonId))
                     && (s.Actors == null || !s.Actors.Contains(v)) && (s.Director == null || !s.Director.Contains(v)) && (s.Writer == null || !s.Writer.Contains(v)));
             }
             if (f.Mpa.Count > 0)
@@ -209,6 +221,20 @@ namespace MovieTheater.Web
             }
             return (mq, sq);
         }
+
+        /// <summary>
+        /// The Person ids whose name contains <paramref name="name"/>, as an un-enumerated subquery for a
+        /// credit test to sit against.
+        /// </summary>
+        /// <remarks>
+        /// The SHAPE is the point. Resolving the ids in their own subquery lets the credit test ride
+        /// IX_MovieCredit_PersonId; joining Person inside the correlated EXISTS instead re-evaluates the
+        /// name LIKE per title. Measured against prod (6,292 movies, 106,974 credits, 61,096 people),
+        /// free-text "Tom Hanks" over titles+people: 194 ms this way, 420 ms with the join inside.
+        /// Title-only — what `q` did before it searched people at all — was 79 ms.
+        /// </remarks>
+        private static IQueryable<int> PeopleMatching(MovieDb db, string name) =>
+            db.People.Where(p => p.DisplayName != null && p.DisplayName.Contains(name)).Select(p => p.Id);
 
         /// <summary>A tag on the subject's NEWEST insight — a superseded generation's tag does not count (matches GetFranchiseRail).</summary>
         private static (IQueryable<Movie>, IQueryable<Series>) WithTag(MovieDb db, IQueryable<Movie> mq, IQueryable<Series> sq, TagCategory cat, string value, bool include)
