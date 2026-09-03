@@ -80,6 +80,30 @@ describe("FacetOptions", () => {
     expect(pill).toHaveClass("bx-opt-pill");
   });
 
+  // Eric, 2026-09-03: "I would expect a + icon when I hover over things I add, and a - icon when a
+  // click would turn it into a negative filter." The glyph names the ROW's action.
+  it("the row's glyph is a + normally and a - where the click can only subtract", () => {
+    const { unmount } = render(<FacetOptions def={def} options={rows(1)} selected={[]} excluded={[]} onToggle={vi.fn()} />);
+    expect(document.querySelector(".bx-opt-glyph")?.textContent).toBe("+");
+    // ...and it lives INSIDE the row button, so it is an affordance and not a second control.
+    expect(document.querySelector(".bx-opt-glyph")?.closest("button")).toHaveAttribute("aria-label", "Include Tag 1");
+    unmount();
+    render(<FacetOptions def={{ ...def, includable: false }} options={rows(1)} selected={[]} excluded={[]} onToggle={vi.fn()} />);
+    expect(document.querySelector(".bx-opt-glyph")?.textContent).toBe("\u2212");
+  });
+
+  it("a dynamic facet with nothing typed asks for input instead of reporting No matches", async () => {
+    const loadOptions = vi.fn(async () => ({ items: [], total: 0 }));
+    render(<FacetOptions def={{ ...def, dynamic: true, label: "People" }} options={[]} selected={[]} excluded={[]} onToggle={vi.fn()} loadOptions={loadOptions} />);
+    expect(screen.getByText("Type 2+ letters to find people")).toBeInTheDocument();
+    expect(screen.queryByText("No matches")).toBeNull();
+    // One letter is below the server's floor, so nothing is asked and the hint stands.
+    fireEvent.change(screen.getByRole("textbox", { name: "Filter people" }), { target: { value: "t" } });
+    await act(async () => { await Promise.resolve(); });
+    expect(loadOptions).not.toHaveBeenCalled();
+    expect(screen.getByText("Type 2+ letters to find people")).toBeInTheDocument();
+  });
+
   it("a tile facet draws covers, a non-filterable facet has no +/-", () => {
     render(<FacetOptions def={{ ...def, render: "tile", filterable: false }} options={[{ value: 1, label: "Marvel", count: 3, imageUrl: "x.jpg" }]} selected={[]} excluded={[]} onToggle={vi.fn()} />);
     expect(document.querySelector("img.bx-opt-cover")).toHaveAttribute("src", "x.jpg");

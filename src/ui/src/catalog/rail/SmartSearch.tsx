@@ -3,11 +3,22 @@
  * prefix matches first, then by count) under a "search everything" row; type `token:` and the list
  * narrows to that facet. ↑/↓ move, Enter commits, Escape closes; a click outside closes. Committing a
  * facet row adds a filter, committing the text row sets `q`. Tokens come from the spec.
+ *
+ * A DYNAMIC facet is asked too. The suggestion index is built from the facet lists the section loads
+ * up front, and a dynamic facet has none by definition — Movies' People is a server typeahead, so
+ * `facets.person` is always empty. That meant the box could never once suggest a person: typing
+ * "Tom Hanks" offered only the free-text row, `q=` searches TITLES, and the answer was "No titles
+ * match" for an actor with 34 of them (Eric, 2026-09-03). So on two characters the box also asks
+ * every dynamic facet's `loadOptions`, debounced and aborted like the rail's own typeahead, and
+ * merges what comes back. `person:` as a prefix scopes the ask to that facet alone.
  */
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { SEARCH_FOCUS_EVENT, claimRailSearchFocus } from "../bar/useSlot";
 import { hueOf } from "../sources/hue";
-import type { FacetOptionRow, FacetSpec, FacetValue } from "./facetSpec";
+import type { FacetDef, FacetOptionRow, FacetSpec, FacetValue } from "./facetSpec";
+
+/** Same beat as the rail's own typeahead — keystrokes stay off the wire until you pause. */
+const SEARCH_DEBOUNCE_MS = 250;
 
 interface FilterSuggestion { kind: "filter"; key: string; value: FacetValue; display: string; typeLabel: string; count: number; hue?: number }
 interface TextSuggestion { kind: "text"; value: string }
@@ -34,20 +45,33 @@ export function buildSuggestionIndex(spec: FacetSpec, facets?: Record<string, Fa
   return idx;
 }
 
-export function suggestionsFor(raw: string, spec: FacetSpec, index: FilterSuggestion[]): Suggestion[] {
+/** The shortest query a dynamic facet's server will answer (`/API/BrowsePeople`). */
+export const MIN_DYNAMIC_QUERY = 2;
+
+/** `token:` at the head of the box, resolved against the spec. */
+export function scopeOf(raw: string, spec: FacetSpec): { def: FacetDef | null; term: string } {
+  const text = raw.trim();
+  const m = /^(\w+):\s*(.*)$/.exec(text);
+  if (!m) return { def: null, term: text };
+  const def = spec.facets.find((f) => f.token === m[1].toLowerCase());
+  return def ? { def, term: m[2].trim() } : { def: null, term: text };
+}
+
+export function suggestionsFor(raw: string, spec: FacetSpec, index: FilterSuggestion[], dynamic: FilterSuggestion[] = []): Suggestion[] {
   const text = raw.trim();
   if (!text) return [];
-  const m = /^(\w+):\s*(.*)$/.exec(text);
-  if (m) {
-    const def = spec.facets.find((f) => f.token === m[1].toLowerCase());
-    if (def) {
-      const term = m[2].toLowerCase();
-      return index.filter((s) => s.key === def.key && s.display.toLowerCase().includes(term)).slice(0, 8);
-    }
+  // The dynamic hits are already server-filtered by the term; deduped so a value that ALSO sits in
+  // the up-front list is offered once.
+  const seen = new Set(index.map((s) => `${s.key}\u0000${s.value}`));
+  const all = [...index, ...dynamic.filter((s) => !seen.has(`${s.key}\u0000${s.value}`))];
+  const { def, term: scopedTerm } = scopeOf(text, spec);
+  if (def) {
+    const term = scopedTerm.toLowerCase();
+    return all.filter((s) => s.key === def.key && s.display.toLowerCase().includes(term)).slice(0, 8);
   }
   const term = text.toLowerCase();
   const starts = (s: FilterSuggestion) => (s.display.toLowerCase().startsWith(term) ? 0 : 1);
-  const hits = index
+  const hits = all
     .filter((s) => s.display.toLowerCase().includes(term))
     .sort((a, b) => starts(a) - starts(b) || b.count - a.count)
     .slice(0, 7);
@@ -94,7 +118,30 @@ export default function SmartSearch({ spec, facets, onAdd, onText, big = false, 
   }, []);
 
   const index = useMemo(() => buildSuggestionIndex(spec, facets), [spec, facets]);
-  const suggestions = useMemo(() => suggestionsFor(q, spec, index), [q, spec, index]);
+
+  // The dynamic facets' hits, fetched as you type. The spec is held in a ref and the effect keys on
+  // `spec.identity` so a caller that rebuilds the spec object every render cannot turn this into a fetch
+  // loop.
+  const specRef = useRef(spec);
+  specRef.current = spec;
+  const [dynamicHits, setDynamicHits] = useState<FilterSuggestion[]>([]);
+  useEffect(() => {
+    const s = specRef.current;
+    const load = s.loadOptions;
+    const { def, term } = scopeOf(q, s);
+    const targets = s.facets.filter((f) => f.dynamic && f.filterable !== false && f.includable !== false && (!def || f.key === def.key));
+    if (!load || !targets.length || term.length < MIN_DYNAMIC_QUERY) { setDynamicHits([]); return; }
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      const rows = await Promise.all(targets.map((f) => load(f.key, term, 0, 6, controller.signal)
+        .then((r) => r.items.map((row): FilterSuggestion => ({ kind: "filter", key: f.key, value: row.value, display: row.label, typeLabel: f.one, count: row.count })))
+        .catch(() => [] as FilterSuggestion[])));
+      if (!controller.signal.aborted) setDynamicHits(rows.flat());
+    }, SEARCH_DEBOUNCE_MS);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [q, spec.identity]);
+
+  const suggestions = useMemo(() => suggestionsFor(q, spec, index, dynamicHits), [q, spec, index, dynamicHits]);
   useEffect(() => { setSel(0); setOpen(suggestions.length > 0); }, [suggestions]);
 
   const commit = (s: Suggestion) => {

@@ -11,8 +11,24 @@
  * (`shot-rail`): the label box bottomed out at 46px, so Movies' "Comedy" drew as "Come…" and
  * "Adventure" as "Adve…"; 65% of Boardgames' publishers and 44% of Music's artists were clipped.
  *
- * So: the square is gone (it did nothing), the "+" is gone (the ROW is the +, the way every facet
- * list on the web works), and the "−" shares the count's cell instead of taking a column of its own.
+ * So: the square is gone (it did nothing) and the row itself is the include control, the way every
+ * facet list on the web works. The counts and the two action glyphs share one cell at the row's end
+ * — the count at rest, the glyphs when you point at the row — so the label keeps its full width
+ * except where a control is actually being offered.
+ *
+ * THE GLYPH NAMES WHAT A CLICK WILL DO. The first cut of this (2026-09-02) deleted the "+" entirely
+ * on the reasoning that the row IS the "+", and revealed only the "−". Eric, the next morning: "I
+ * would expect a + icon when I hover over things I add, and a - icon when a click would turn it into
+ * a negative filter." He is right — a lone "−" reads as a property of the row ("this row is a
+ * minus"), not as an offer. So hovering shows BOTH: a "+" for what the row-click does, a "−" for
+ * the control that makes it negative. On a facet that can only subtract (`includable: false`) the
+ * row-click glyph is itself a "−", because that is what the click does.
+ *
+ * The same report caught the reveal being keyed on `:focus-within`: a MOUSE click leaves focus on
+ * the row, so the controls stayed lit on a row nobody was pointing at, with its count hidden, long
+ * after the pointer had gone. The reveal is `:has(:focus-visible)` — keyboard focus lights it up,
+ * a click does not.
+ *
  * Coarse pointers get the count and the "−" side by side, always visible, because the phone rail is
  * 390px wide and has the room the 236px desktop sider does not — the squeeze is desktop-only, so
  * only desktop pays for it.
@@ -25,6 +41,9 @@ import type { FacetMode } from "./useFacetState";
 
 const PAGE = 50;
 const SEARCH_DEBOUNCE_MS = 300;
+/** A dynamic facet is a TYPEAHEAD: its server (`/API/BrowsePeople`) answers an empty list below two
+ *  characters, so asking sooner spends a request to be told nothing. */
+const MIN_QUERY = 2;
 
 export interface FacetOptionsProps {
   def: FacetDef;
@@ -68,7 +87,7 @@ export default function FacetOptions({ def, options, selected, excluded, onToggl
   // keystrokes off the wire, the controller takes back the one that did go out.
   useEffect(() => {
     if (!dynamic || !loadOptions) return;
-    if (!q.trim()) { setSearchResults(null); return; }
+    if (q.trim().length < MIN_QUERY) { setSearchResults(null); return; }
     const id = ++searchId.current;
     const controller = new AbortController();
     const timer = setTimeout(async () => {
@@ -155,14 +174,24 @@ export default function FacetOptions({ def, options, selected, excluded, onToggl
           const on = isOn(o.value);
           const ex = isEx(o.value);
           const hue = o.hue ?? hueOf(o.label);
-          const rowClass = `bx-opt${on ? " on" : ""}${ex ? " ex" : ""}${def.render === "tile" ? " bx-opt-collection" : ""}${pill ? " bx-opt-pill" : ""}`;
+          const rowClass = `bx-opt${on ? " on" : ""}${ex ? " ex" : ""}${def.render === "tile" ? " bx-opt-collection" : ""}${pill ? " bx-opt-pill" : ""}${hasExcludeButton ? " bx-opt--hasexc" : ""}`;
           // Everything the row SAYS. Identical in both shapes below; only the element differs.
+          // The tail holds the count and the row-click glyph in ONE cell: the count at rest, the
+          // glyph on hover. The glyph is aria-hidden and lives INSIDE the row button on purpose --
+          // it is an affordance for what the row already does, not a second control, so clicking it
+          // is clicking the row and a screen reader is not read the same action twice.
           const body = (
             <>
               {def.render === "tile" && <TileImage src={o.imageUrl} hue={hue} alt="" />}
               {def.render === "swatch" && <span className="bx-opt-swatch" style={{ background: `oklch(0.78 0.14 ${hue})` }} aria-hidden="true" />}
               <span className="bx-opt-label" title={o.label}>{o.label}</span>
-              {def.showCounts !== false && <span className="bx-opt-count">{o.count.toLocaleString()}</span>}
+              {!pill && (
+                <span className="bx-opt-tail">
+                  {def.showCounts !== false && <span className="bx-opt-count">{o.count.toLocaleString()}</span>}
+                  <span className={`bx-opt-glyph${on ? " on" : ""}`} aria-hidden="true">{rowMode === "inc" ? "+" : "−"}</span>
+                </span>
+              )}
+              {pill && def.showCounts !== false && <span className="bx-opt-count">{o.count.toLocaleString()}</span>}
             </>
           );
           // A pill IS the control — one element, a real button, no tail. Everything else is a row
@@ -193,7 +222,17 @@ export default function FacetOptions({ def, options, selected, excluded, onToggl
           );
         })}
         {loading && <div className="bx-facet-loading">Loading…</div>}
-        {!loading && shown.length === 0 && <div className="bx-facet-empty">No matches</div>}
+        {/* A dynamic facet holds NOTHING until you type — its list is a server typeahead, not a
+            preloaded set. It used to render "No matches" in that state, which says the library has
+            no such people rather than "ask me something" (Eric, 2026-09-03: "The people dropdown
+            seems broken"). An empty answer to a REAL query is still "No matches". */}
+        {!loading && shown.length === 0 && (
+          <div className="bx-facet-empty">
+            {dynamic && q.trim().length < MIN_QUERY
+              ? `Type ${MIN_QUERY}+ letters to find ${def.label.toLowerCase()}`
+              : "No matches"}
+          </div>
+        )}
       </div>
     </div>
   );

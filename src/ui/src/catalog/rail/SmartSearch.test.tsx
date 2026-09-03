@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import type { FacetSpec } from "./facetSpec";
 import SmartSearch, { suggestionsFor, buildSuggestionIndex } from "./SmartSearch";
 
@@ -31,6 +31,43 @@ describe("suggestionsFor", () => {
   it("swatch facets carry a hue for the type badge", () => {
     const s = suggestionsFor("dark", spec, index);
     expect(s[1].kind === "filter" && typeof s[1].hue).toBe("number");
+  });
+});
+
+describe("dynamic facets", () => {
+  // The People facet is a server typeahead, so `facets.person` is ALWAYS empty and the box could
+  // never suggest a person: "Tom Hanks" fell through to a title-only search that found none of his
+  // 34 films (Eric, 2026-09-03). The box asks `loadOptions` too.
+  const dynSpec: FacetSpec = {
+    ...spec,
+    facets: [...spec.facets, { key: "person", token: "person", label: "People", one: "Person", valueType: "string", dynamic: true }],
+    loadOptions: async (key, q) => (key === "person" && "tom hanks".startsWith(q.toLowerCase())
+      ? { items: [{ value: "Tom Hanks", label: "Tom Hanks", count: 34 }], total: 1 }
+      : { items: [], total: 0 }),
+  };
+
+  it("offers a person the up-front facet lists cannot contain", async () => {
+    vi.useFakeTimers();
+    const onAdd = vi.fn();
+    render(<SmartSearch spec={dynSpec} facets={facets} onAdd={onAdd} onText={vi.fn()} />);
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "Tom" } });
+    // The debounce fires, then the fetch and the merge each need a microtask turn. `findBy*` cannot
+    // be used here: its waitFor runs on real timers and would hang against the fake ones.
+    await act(async () => { vi.advanceTimersByTime(300); });
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    fireEvent.click(screen.getByText("Tom Hanks"));
+    expect(onAdd).toHaveBeenCalledWith("person", "Tom Hanks");
+    vi.useRealTimers();
+  });
+
+  it("asks nothing below the server's two-character floor", async () => {
+    vi.useFakeTimers();
+    const loadOptions = vi.fn(async () => ({ items: [], total: 0 }));
+    render(<SmartSearch spec={{ ...dynSpec, loadOptions }} facets={facets} onAdd={vi.fn()} onText={vi.fn()} />);
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "t" } });
+    await act(async () => { vi.advanceTimersByTime(300); await Promise.resolve(); });
+    expect(loadOptions).not.toHaveBeenCalled();
+    vi.useRealTimers();
   });
 });
 

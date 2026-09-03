@@ -149,28 +149,51 @@ div.bx-opt-main { cursor: default; }
 .bx-opt-pill .bx-opt-label { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bx-opt.on .bx-opt-label { font-weight: 600; }
 .bx-opt.ex .bx-opt-label { text-decoration: line-through; color: var(--sub); }
-/* Tabular figures over a floor: one straight column of counts, and a cell of known size for the
-   "−" to sit in. */
+/* The end of the row is ONE cell of known width holding two things that are never both wanted: the
+   count at rest, and the glyph naming what a click on the row will do. Fixed width so the labels
+   above and below still truncate in a straight line, and so nothing moves when the two swap. */
+.bx-opt-tail { position: relative; flex: 0 0 auto; width: 34px; height: 22px; }
 .bx-opt-count {
-  flex: 0 0 auto; min-width: 30px; text-align: right;
+  position: absolute; right: 0; top: 50%; transform: translateY(-50%);
   font-family: var(--font-mono); font-size: 10px; font-variant-numeric: tabular-nums; color: var(--sub);
+  transition: opacity .12s ease;
 }
+/* Aria-hidden, and INSIDE the row button: an affordance for what the row already does, not a second
+   control. It says "+" because a click adds — or "−" on a facet whose click can only subtract. */
+.bx-opt-glyph {
+  position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+  width: 22px; height: 22px; border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--line); background: var(--bg); color: var(--sub);
+  font-size: 14px; font-weight: 700; line-height: 1;
+  opacity: 0; transition: opacity .12s ease; pointer-events: none;
+}
+.bx-opt-glyph.on { background: var(--ink); border-color: var(--ink); color: var(--bx-on-ink, var(--bg)); }
+/* A pill has no tail — its count sits in the flow beside the label. */
+.bx-opt-pill .bx-opt-count { position: static; transform: none; }
 .bx-opt-swatch { flex: 0 0 auto; width: 12px; height: 12px; border-radius: 3px; }
 
-/* Exclude is the second thought, so on a pointer device it costs no width until you reach for it:
-   it takes over the count's cell on hover, on focus, and whenever it is already on. (Coarse
-   pointers draw both, always — see the block at the foot of this section.) */
+/* Exclude gets its own lane, reserved only on the rows that HAVE one, so the label's right edge
+   never moves between states. The button is drawn only when the row is being pointed at (or is
+   already excluded) — at rest the row is just a label and a count. */
+.bx-opt--hasexc { padding-right: 27px; }
 .bx-opt-exc {
   appearance: none; cursor: pointer;
-  position: absolute; right: 5px; top: 50%; transform: translateY(-50%);
+  position: absolute; right: 3px; top: 50%; transform: translateY(-50%);
   width: 22px; height: 22px; padding: 0; border-radius: 5px;
   display: flex; align-items: center; justify-content: center;
   border: 1px solid var(--line); background: var(--bg); color: var(--sub);
   font: inherit; font-size: 14px; font-weight: 700; line-height: 1;
   opacity: 0; pointer-events: none; transition: opacity .12s ease;
 }
-.bx-opt:hover .bx-opt-exc, .bx-opt:focus-within .bx-opt-exc, .bx-opt.ex .bx-opt-exc { opacity: 1; pointer-events: auto; }
-.bx-opt:hover .bx-opt-count, .bx-opt:focus-within .bx-opt-count, .bx-opt.ex .bx-opt-count { visibility: hidden; }
+/* `:has(:focus-visible)`, NOT `:focus-within`. A mouse click leaves focus on the row it clicked, so
+   `:focus-within` kept a row lit — its count hidden, a bare "−" showing — long after the pointer had
+   moved on, on a row that was neither hovered nor selected (Eric, 2026-09-03: "I don't understand
+   why Comedy has a - icon over it when nothing is hovered over it and it isn't selected").
+   `:focus-visible` is the browser's own "the KEYBOARD is here" signal and a click does not set it. */
+.bx-opt:hover .bx-opt-glyph, .bx-opt:has(:focus-visible) .bx-opt-glyph { opacity: 1; }
+.bx-opt:hover .bx-opt-exc, .bx-opt:has(:focus-visible) .bx-opt-exc, .bx-opt.ex .bx-opt-exc { opacity: 1; pointer-events: auto; }
+.bx-opt:hover .bx-opt-count, .bx-opt:has(:focus-visible) .bx-opt-count, .bx-opt.ex .bx-opt-count { opacity: 0; }
 .bx-opt-exc:hover { border-color: var(--bx-danger); color: var(--bx-danger); }
 .bx-opt-exc:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
 .bx-opt-exc[aria-pressed="true"] { background: var(--bx-danger); border-color: var(--bx-danger); color: #fff; }
@@ -212,9 +235,11 @@ div.bx-opt-main { cursor: default; }
    ~26px and the desktop label still measures ~127px, which is every genre, mood and subgenre we
    have. */
 @media (hover: none), (any-pointer: coarse) {
-  .bx-opt { padding-right: 4px; }
+  .bx-opt, .bx-opt--hasexc { padding-right: 4px; }
   .bx-opt .bx-opt-exc { position: static; transform: none; opacity: 1; pointer-events: auto; margin-left: 2px; }
-  .bx-opt:hover .bx-opt-count, .bx-opt:focus-within .bx-opt-count, .bx-opt.ex .bx-opt-count { visibility: visible; }
+  /* The count stays; the hover glyph has no meaning without a pointer, so it is never drawn. */
+  .bx-opt .bx-opt-glyph { display: none; }
+  .bx-opt:hover .bx-opt-count, .bx-opt:has(:focus-visible) .bx-opt-count { opacity: 1; }
   .bx-opt.ex .bx-opt-count { opacity: .45; }
 }
 
