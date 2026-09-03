@@ -16,12 +16,34 @@ export const DIRECT_BPS = Number.POSITIVE_INFINITY;
 // The adaptive ladder, top to bottom. The top rung is lossless direct-stream (DIRECT_BPS); below it
 // are the transcode caps (mirroring the capped rungs of the manual QUALITY_LADDER). "Auto" walks the
 // whole ladder, so a fat connection gets the untouched file and a weak one steps down to a transcode.
-export const ABR_LADDER = [DIRECT_BPS, 12_000_000, 8_000_000, 4_000_000, 1_500_000];
+//
+// 30 and 20 Mbps were added 2026-09-02 (the fiber re-baseline). Until then the ladder went DIRECT →
+// 12, and that gap was deliberate: Ziggy's upstream was ~35 Mbps, so a 20–30 Mbps transcode could not
+// be fed with headroom anyway — a viewer who lost DIRECT on a 4K remux (50–80 Mbps) fell straight to
+// 12 Mbps, a cliff. The house is on fiber now (~200 Mbps up single-stream, ~630 aggregate), so the
+// binding constraint is the VIEWER's downlink, and a 4K remux over a 40–60 Mbps home connection has
+// two rungs that still look like 4K before the 1080p tier. (The server leaves the frame size to
+// Jellyfin above 5 Mbps — StreamController.MaxWidthForCeiling returns null — and Jellyfin picks the
+// width from the cap; a 7.6 Mbps cap already came back 2560 wide, so these come back 3840 on a 4K
+// source. Verify on master.m3u8 RESOLUTION, never assume — the movie-streaming skill has the probe.)
+export const ABR_LADDER = [DIRECT_BPS, 30_000_000, 20_000_000, 12_000_000, 8_000_000, 4_000_000, 1_500_000];
 
-// Highest *transcode* rung — the climb-to-lossless headroom test and the open-direct test key off it
-// (we can't compare a measured throughput against an infinite target).
+// Stand-in cost of the lossless tier when the SOURCE bitrate is unknown (rungCostBps). Deliberately
+// NOT the top transcode rung any more: a typical 1080p file runs 8–23 Mbps, so pricing an
+// unknown-bitrate DIRECT at 30 Mbps would hold a 40 Mbps link off the lossless tier for nothing. The
+// server reports the source bitrate on every session it can, so this fallback is rarely the gate.
 const TOP_FINITE = 12_000_000;
 const BOTTOM = ABR_LADDER[ABR_LADDER.length - 1];
+
+// A transcode rung only earns its restart if it is meaningfully BELOW the source's own bitrate: the
+// server can only re-encode into a ceiling below the source, so a cap above it hands back the identical
+// copy, and a cap a few percent below it re-encodes into nearly the same bytes (pays the restart AND a
+// generation loss for ~nothing). With the ladder this dense — 20 Mbps sits right under a 20–23 Mbps
+// 1080p remux — the margin matters: a rung must be at or under 85% of the source to count. Unknown
+// source bitrate → every rung counts (nothing to compare against). DIRECT is always useful.
+const USEFUL_RUNG_MAX_OF_SOURCE = 0.85;
+const usefulRung = (rung, sourceVideoBps) =>
+  !isFinite(rung) || !sourceVideoBps || rung <= sourceVideoBps * USEFUL_RUNG_MAX_OF_SOURCE;
 
 // Two user-selectable Auto modes (each a menu item, alongside the fixed rungs and "Original"). The
 // active quality key picks the profile — there is NO device sniffing; the viewer chooses.
@@ -78,7 +100,7 @@ const rungCostBps = (rung, sourceVideoBps) =>
 // stalled again and burned a second restart before reaching the rung that actually fit. When even the
 // lowest candidate lacks headroom, take it anyway — it's the least-bad rung on offer.
 export function rungDown(bps, sourceVideoBps, estimateBps) {
-  const useful = (rung) => rung < (bps ?? DIRECT_BPS) && (!sourceVideoBps || rung <= sourceVideoBps);
+  const useful = (rung) => rung < (bps ?? DIRECT_BPS) && usefulRung(rung, sourceVideoBps);
   const candidates = ABR_LADDER.filter(useful); // top→bottom
   if (!candidates.length) return BOTTOM;
   if (estimateBps && isFinite(estimateBps)) {
@@ -100,7 +122,10 @@ export const isBottomRung = (bps) => (bps ?? DIRECT_BPS) <= BOTTOM;
 export function climbTarget(currentBps, estimateBps, profile, sourceVideoBps) {
   if (!estimateBps || !isFinite(estimateBps)) return currentBps;
   const cur = currentBps ?? BOTTOM;
-  const eff = ABR_LADDER.filter((rung) => rung <= profile.ceilingBps); // top→bottom, capped at ceiling
+  // Capped at the profile ceiling, and skipping the rungs that would re-encode into ~the source's own
+  // size (usefulRung) — climbing onto one of those pays a restart for a picture no better than the rung
+  // below and no better than DIRECT would be.
+  const eff = ABR_LADDER.filter((rung) => rung <= profile.ceilingBps && usefulRung(rung, sourceVideoBps)); // top→bottom
   const supported = (rung) => estimateBps >= rungCostBps(rung, sourceVideoBps) * CLIMB_HEADROOM;
   const higher = eff.filter((rung) => rung > cur && supported(rung)); // top→bottom
   if (!higher.length) return currentBps;
@@ -116,7 +141,8 @@ export function climbTarget(currentBps, estimateBps, profile, sourceVideoBps) {
 // Null when there is nothing above the current rung to climb to.
 export function climbHoldBar(currentBps, profile, sourceVideoBps) {
   const cur = currentBps ?? BOTTOM;
-  const above = ABR_LADDER.filter((rung) => rung <= profile.ceilingBps && rung > cur); // top→bottom
+  // Same filter as climbTarget: the first step of any climb is the lowest USEFUL rung above current.
+  const above = ABR_LADDER.filter((rung) => rung <= profile.ceilingBps && rung > cur && usefulRung(rung, sourceVideoBps)); // top→bottom
   if (!above.length) return null;
   const next = above[above.length - 1]; // the LOWEST rung above current — the first step of any climb
   return rungCostBps(next, sourceVideoBps) * HOLD_HEADROOM;

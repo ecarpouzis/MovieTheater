@@ -46,6 +46,22 @@ emulator:
         capture:
           lib: capture
           roms: ["capture"]
+          # bppTarget: the bits-per-pixel-per-frame the DERIVED Auto ceiling is computed from
+          # (worker abr.go autoCeilingKbps). Without it the lane inherits the smooth/3D class default
+          # 0.18, which was cross-checked against GameCube-class flat-shaded 3D — NOT photoreal 1080p60.
+          # 1920x1080 @60 x 0.18 = 22.4 Mbps, and every Bloodborne room 2026-08 derived exactly that
+          # and looked like a potato (Eric, 2026-09-02): dark grainy scenes, chromatic aberration and
+          # fast camera motion are the worst case for a 22 Mbps CBR stream. 0.32 x 1080p60 = 39.8 Mbps,
+          # landing just under the 40000 abrAutoMaxKbps clamp (raised from 25000 on 2026-09-02 for the
+          # fiber uplink — the OLD capture binary would have clamped this at 25000; the lane binary was
+          # brought up to the fork the same day). Sized as a step, not a knee: no capture-lane SSIM
+          # sweep exists yet (the frame dump instrument is a libretro-lane feature), so this stands on
+          # the streaming-service reference band for photoreal 1080p60 (~35-50 Mbps) and on Eric's
+          # eyes. If it still reads soft, the next step is 60000 across ALL THREE clamps + bppTarget
+          # 0.48 — never this key alone above the clamp, or the derive silently pins at the clamp.
+          # ⚠ h264 rooms at this rate carry a ~2 s IDR burst (gop-size=120); a Wi-Fi tablet that has to
+          # fall back to h264 will be walked down by ABR — that is the codec, not the target.
+          bppTarget: 0.32
 
 # The capture caged mod (heavy browser lane). Only this worker sets enabled: true.
 capture:
@@ -144,8 +160,9 @@ encoder:
   list:
     av1:
       # gop-size=-1 + intra-refresh (patched nvcodec plugin); PLI responder = worker patch 0029.
-      # capture bitrate ceiling defaults higher than retro (1080p desktop) â€” the site's per-system
-      # Auto bitrate (capture ~12 Mbps) + ABR move it; this is the CBR base the encoder builds with.
+      # bitrate= here is only the CBR base the encoder is BUILT with; ABR replaces it on the first tick
+      # (room open 6000, ceiling = the derived Auto value — 1080p60 x the capture core's bppTarget
+      # above, ~39.8 Mbps since 2026-09-02 — or the lobby's explicit pick).
       # temporal-layers=3: same per-peer SVC as the retro pool (see config.worker-gl.yaml for the full
       # note). Verified at THIS lane's geometry — 1920x1080 @12 Mbps produces the same clean pyramid
       # (tid 0/1/2 = 30/30/60 frames of 120), so a weak viewer of a heavy title drops to 30 or 15 fps

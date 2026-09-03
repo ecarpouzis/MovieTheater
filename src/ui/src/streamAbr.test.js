@@ -9,11 +9,32 @@ import { DIRECT_BPS, ABR_PROFILES, rungDown, climbTarget, climbHoldBar, isBottom
 const KONG_BPS = 5_760_524;
 const SPACE_JAM_BPS = 20_371_866;
 
+// A fat 4K remux (the case the 30/20 Mbps rungs were added for on 2026-09-02, the fiber re-baseline):
+// every rung re-encodes, and a viewer who loses DIRECT should land on a rung that still looks like 4K.
+const FAT_4K_BPS = 60_000_000;
+
 describe("rungDown", () => {
   it("walks one rung at a time when the source bitrate is unknown", () => {
-    expect(rungDown(DIRECT_BPS)).toBe(12_000_000);
+    expect(rungDown(DIRECT_BPS)).toBe(30_000_000);
+    expect(rungDown(30_000_000)).toBe(20_000_000);
+    expect(rungDown(20_000_000)).toBe(12_000_000);
     expect(rungDown(12_000_000)).toBe(8_000_000);
     expect(rungDown(4_000_000)).toBe(1_500_000);
+  });
+
+  // The usefulness margin: a rung within 15% of the source re-encodes into ~the same bytes (a restart
+  // plus a generation loss for nothing), so it is skipped like a rung above the source. 20 Mbps sits
+  // at 98% of Space Jam's 20.37 Mbps video — not a real drop.
+  it("skips a rung that sits within 15% of the source bitrate", () => {
+    expect(rungDown(DIRECT_BPS, SPACE_JAM_BPS)).toBe(12_000_000);
+    expect(rungDown(DIRECT_BPS, SPACE_JAM_BPS, 40_000_000)).toBe(12_000_000); // 40/1.5 clears 20, but 20 is useless here
+  });
+
+  it("gives a fat 4K remux the 4K rungs before the 1080p cliff", () => {
+    expect(rungDown(DIRECT_BPS, FAT_4K_BPS)).toBe(30_000_000); // blind walk: one rung
+    expect(rungDown(DIRECT_BPS, FAT_4K_BPS, 50_000_000)).toBe(30_000_000); // 50/1.5 ≈ 33 → 30
+    expect(rungDown(DIRECT_BPS, FAT_4K_BPS, 40_000_000)).toBe(20_000_000); // 40/1.5 ≈ 26.7 → 20
+    expect(rungDown(DIRECT_BPS, FAT_4K_BPS, 25_000_000)).toBe(12_000_000); // 25/1.5 ≈ 16.7 → 12
   });
 
   it("clamps at the bottom rung", () => {
@@ -55,6 +76,30 @@ describe("rungDown", () => {
 
   it("falls back to the one-rung walk without an estimate", () => {
     expect(rungDown(DIRECT_BPS, SPACE_JAM_BPS, undefined)).toBe(12_000_000);
+  });
+});
+
+describe("the 4K rungs on the climb", () => {
+  it("climbs a fat 4K remux back onto 30 / 20 Mbps as the link allows, never straight to 1080p", () => {
+    // From 12 Mbps: 50 Mbps clears 30 (needs 45) but not DIRECT (60 × 1.5 = 90); 35 clears only 20 (30).
+    expect(climbTarget(12_000_000, 50_000_000, ABR_PROFILES.auto, FAT_4K_BPS)).toBe(30_000_000);
+    expect(climbTarget(12_000_000, 35_000_000, ABR_PROFILES.auto, FAT_4K_BPS)).toBe(20_000_000);
+    expect(climbTarget(12_000_000, 95_000_000, ABR_PROFILES.auto, FAT_4K_BPS)).toBe(DIRECT_BPS);
+  });
+
+  it("does not climb onto a rung within 15% of the source — DIRECT is the only step up from there", () => {
+    // Space Jam at 12 Mbps with a 31 Mbps link: 20 Mbps (98% of the source) is skipped; DIRECT clears.
+    expect(climbTarget(12_000_000, 31_000_000, ABR_PROFILES.auto, SPACE_JAM_BPS)).toBe(DIRECT_BPS);
+    // ...and with 30 Mbps of link neither DIRECT (30.6) nor the useless 20 rung qualifies: hold.
+    expect(climbTarget(12_000_000, 30_000_000, ABR_PROFILES.auto, SPACE_JAM_BPS)).toBe(12_000_000);
+    // The hold bar is priced off DIRECT, not the skipped 20 Mbps rung.
+    expect(climbHoldBar(12_000_000, ABR_PROFILES.auto, SPACE_JAM_BPS)).toBe(SPACE_JAM_BPS * 1.15);
+    // For the fat remux the first step up from 12 is the 20 Mbps rung.
+    expect(climbHoldBar(12_000_000, ABR_PROFILES.auto, FAT_4K_BPS)).toBe(20_000_000 * 1.15);
+  });
+
+  it("keeps Mobile Auto off the 4K rungs (its ceiling is 8 Mbps)", () => {
+    expect(climbTarget(1_500_000, 95_000_000, ABR_PROFILES["auto-mobile"], FAT_4K_BPS)).toBe(8_000_000);
   });
 });
 

@@ -15,6 +15,10 @@ export const QUALITY_LADDER = [
   { key: "auto", label: "Auto", bps: null, hint: "adapts to your connection" },
   { key: "auto-mobile", label: "Mobile Auto", bps: null, hint: "low data · caps at 1080p" },
   { key: "original", label: "Original", bps: null, hint: "direct stream when possible" },
+  // 30 / 20 Mbps (2026-09-02, fiber re-baseline): the rungs a 4K remux drops to before the 1080p tier.
+  // They only made sense once Ziggy's upstream stopped being ~35 Mbps — see streamAbr.ABR_LADDER.
+  { key: "2160-30", label: "4K", bps: 30_000_000, hint: "30 Mbps" },
+  { key: "2160-20", label: "4K", bps: 20_000_000, hint: "20 Mbps" },
   { key: "1080-12", label: "1080p", bps: 12_000_000, hint: "12 Mbps" },
   { key: "1080-8", label: "1080p", bps: 8_000_000, hint: "8 Mbps" },
   { key: "720-4", label: "720p", bps: 4_000_000, hint: "4 Mbps" },

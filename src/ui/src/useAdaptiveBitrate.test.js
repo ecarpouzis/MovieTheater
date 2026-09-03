@@ -41,8 +41,10 @@ describe("useAdaptiveBitrate", () => {
   it("drops a rung after two stall episodes", () => {
     const { hook, onAdapt } = setup();
     stallTwice(hook);
-    expect(onAdapt).toHaveBeenCalledWith(12_000_000);
-    expect(hook.result.current.autoBpsRef.current).toBe(12_000_000);
+    // No estimate, no source bitrate: the blind one-rung walk. The rung under DIRECT is 30 Mbps since
+    // the 2026-09-02 ladder (was 12) — a denser ladder makes the blind walk finer, not different.
+    expect(onAdapt).toHaveBeenCalledWith(30_000_000);
+    expect(hook.result.current.autoBpsRef.current).toBe(30_000_000);
   });
 
   // The restored fall-back: the video being COPIED is not a reason to keep stalling on it. This is
@@ -93,7 +95,7 @@ describe("useAdaptiveBitrate", () => {
     act(() => hook.result.current.handleBandwidth(13_000_000));
     vi.setSystemTime(Date.now() + 20_000); // estimate is 20s old by the first stall — says nothing now
     stallTwice(hook);
-    expect(onAdapt).toHaveBeenCalledWith(12_000_000);
+    expect(onAdapt).toHaveBeenCalledWith(30_000_000); // one rung under DIRECT on the 2026-09-02 ladder
   });
 
   // ── post-switch grace ──────────────────────────────────────────────────────
