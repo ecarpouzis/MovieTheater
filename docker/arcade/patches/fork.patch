@@ -7407,10 +7407,10 @@ index 0000000..55854fb
 +}
 diff --git a/pkg/worker/abr.go b/pkg/worker/abr.go
 new file mode 100644
-index 0000000..c196f24
+index 0000000..d3fc266
 --- /dev/null
 +++ b/pkg/worker/abr.go
-@@ -0,0 +1,1047 @@
+@@ -0,0 +1,1068 @@
 +package worker
 +
 +import (
@@ -7784,26 +7784,37 @@ index 0000000..c196f24
 +	//   The old "2D cores are cheap, the encoder sees flat NxN blocks" assumption is why every 3D
 +	//   system got raised off the flat 5000 default and 2D never did.
 +	//
-+	//   0.65 is MEASURED, not judged (scripts/calibrate-arcade-bpp.sh): 600 real Genesis frames
++	//   1.0 is MEASURED, not judged (scripts/calibrate-arcade-bpp.sh): 600 real Genesis frames
 +	//   re-encoded through these exact encoder params across a bitrate sweep, scored by SSIM against
 +	//   the same nearest-upscaled source. The result that matters is the TAIL, not the average —
-+	//   per-frame MEDIAN SSIM is identical (0.99994) from 5 to 25 Mbps, because a frame-wide mean
-+	//   averages localized blocking over 645,120 pixels and cannot see it. The WORST frames:
++	//   per-frame MEDIAN SSIM is identical (0.99994) from 5 to 50 Mbps, because a frame-wide mean
++	//   averages localized blocking over 645,120 pixels and cannot see it. The WORST frame (960x672@60):
 +	//
-+	//     5000 (0.129 bpp)  0.995696      16000 (0.413)  0.999585
-+	//     8000 (0.207)      0.998791      20000 (0.517)  0.999742
-+	//    12000 (0.310)      0.999352      25000 (0.646)  0.999811
++	//     5000 (0.129 bpp)  0.995696      20000 (0.517)  0.999742      40000 (1.033)  0.999906
++	//    12000 (0.310)      0.999352      25000 (0.646)  0.999811      50000 (1.292)  0.999922
++	//    16000 (0.413)      0.999585      32000 (0.827)  0.999859
 +	//
-+	//   Error (1-SSIM) on the hard frames falls 4.3e-3 -> 1.9e-4 across that range and is STILL
-+	//   improving at the top: there is no knee to calibrate to. For scroll-heavy pixel art the honest
-+	//   answer is "as much as the link allows", so the target is set to land a typical 2D frame near
-+	//   abrAutoMaxKbps and the CLAMP becomes the real policy. Matches the reported experience exactly
-+	//   (5000 blocked badly; 16000 "much better but still some artifacts").
++	//   Error (1-SSIM) on the hard frames: 4.3e-3 -> 1.9e-4 from 5 to 25 Mbps (2026-07-30 sweep),
++	//   then 1.9e-4 -> 9.4e-5 from 25 to 40 (halves again) but only -> 7.8e-5 at 50 (2026-09-02 sweep,
++	//   extended once the fiber uplink made >25 Mbps a question worth asking). THAT is the knee: ~1.0
++	//   bpp. Until 2026-09-02 the target was 0.65, chosen to land a 3x Genesis frame at the 25000
++	//   clamp — the clamp was the policy because Ziggy's old ~35 Mbps uplink was; the sweep had simply
++	//   stopped at 25. Matches the reported experience (5000 blocked badly; 16000 "much better but
++	//   still some artifacts"; 25000 visibly cleaner than 16000 — Eric, 2026-08-02).
++	//   Consequence at 1.0: gen/nes/snes 3x derive 31-39 Mbps, gb 4x ~22, so cold start climbs ~3 s
++	//   longer than at 0.65 (+15%/tick). The ceiling is still a PERMISSION — a viewer whose downlink
++	//   cannot take it is walked down within a second, exactly as before.
++	//
++	//   ⚠ Measurement trap (2026-09-02): scoring the decoded MKV straight against the raw reference
++	//   gave a flat 0.93 worst frame at EVERY bitrate — ffmpeg's ssim filter matched frames by PTS and
++	//   the av1parse/matroskamux timestamps drift, so it compared frame n to n±1 on a scroll. Decode to
++	//   raw with -fps_mode passthrough and compare raw-vs-raw (frame i to frame i); that reproduces
++	//   the July numbers to the digit.
 +	//
 +	//   SMOOTH/3D — gradients and motion that compensates well. 0.18 reproduces the hand-measured
 +	//   GameCube number almost exactly (1280x1056@60 -> 14.6 Mbps vs the table's 14000), which is the
 +	//   cross-check that this formula is calibrated and not invented.
-+	abrBppMagnified = 0.65
++	abrBppMagnified = 1.0
 +	// ⚠ NOT calibrated by the sweep above — that captured a 2D core only. 0.18 stands on the
 +	// independent agreement with the hand-measured GameCube number (1280x1056@60 -> 14.6 Mbps against
 +	// a table value of 14000, 4% apart). Re-run calibrate-arcade-bpp.sh against a 3D core before
@@ -7813,7 +7824,17 @@ index 0000000..c196f24
 +	// above a rate that stops being about quality. ABR still treats the result as a CEILING, not a
 +	// target — a weak peer is walked down from it within a second.
 +	abrAutoMinKbps = 5000
-+	abrAutoMaxKbps = 25000
++	// 25000 until 2026-09-02, and that number was Ziggy's OLD uplink talking (~35 Mbps up: one 25 Mbps
++	// room plus anything else saturated it), not a quality verdict. The 2026-09-01 fiber cutover
++	// measured ~200 Mbps up on a single stream and ~630 Mbps across four (curl to speed.cloudflare.com
++	// from Ziggy), so the clamp is now bounded by what a VIEWER's downlink and hardware decoder take
++	// comfortably, and by the cold-start ramp (+15%/tick is GCC's rate: 25000->40000 is ~3.4 s more
++	// climb). It MOVES TOGETHER with ArcadeController's Math.Clamp(..., 500, 40000) and the lobby's top
++	// preset ("Fiber · 40 Mbps") — a mismatch reads as "the setting does nothing". Note the derive
++	// itself barely reaches it: a 3x Genesis frame (960x672@60 x 0.65) lands at 25159, so raising
++	// the clamp changes Auto only for bigger magnified frames / a raised bppTarget; explicit picks
++	// are what use the headroom today.
++	abrAutoMaxKbps = 40000
 +	// Used only when geometry is not yet known, which should not happen at the call site.
 +	abrAutoFallbackKbps = 8000
 +
