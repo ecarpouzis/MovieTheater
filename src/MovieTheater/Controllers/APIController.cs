@@ -446,12 +446,30 @@ namespace MovieTheater.Controllers
 
             // The infinite (Seen/Want) path honors the browse sort; the bare-array restore path keeps its
             // SimpleTitle order (the client reorders it by the remembered on-screen sequence anyway).
+            //
+            // Both branches MATERIALIZE the id set and page in memory. They must not go through
+            // `PageMergedAsync`: that is built for a browse SCOPE, where the row set is large, unknown
+            // to the client and worth keying + ordering + windowing in SQL. An id set is the opposite
+            // — the client already holds it, it is small and bounded, and the keys UNION with the
+            // id filter pushed into both sides is pathological. Measured against prod, 2026-09-03,
+            // Eric's 1,331-title Seen list:
+            //
+            //     one page of 120 via PageMergedAsync ...... 10,800 ms   (and ~15,000 ms for page 1)
+            //     ALL 1,331 cards, materialized ............  1,365 ms
+            //
+            // Fetching the whole list was EIGHT TIMES faster than fetching one page of it, and the
+            // client pays that per-page cost 12 times over — about three minutes before Seen finished
+            // loading, ~15 s before the first card appeared ("clicking to see my 'Seen' movies took
+            // forever to load"). Neither the id filter (~100 ms at the DB) nor the age gate is at
+            // fault; it is only the paging machinery, and only when an id filter is under it.
+            //
+            // So: materialize, sort with the SAME comparer every other merged browse uses, and slice.
+            // The server stays the sort authority, and the cost no longer multiplies by page count.
+            var cards = await mq.Select(ToCardDto).ToListAsync(ct);
+            cards.AddRange(await sq.Select(ToSeriesCardDto).ToListAsync(ct));
             if (pageSize > 0)
-                return Ok(await PageMergedAsync(mq, sq, page, pageSize, NormalizeSort(sort), seed, ct));
-
-            var movies = await mq.Select(ToCardDto).ToListAsync(ct);
-            var series = await sq.Select(ToSeriesCardDto).ToListAsync(ct);
-            return Ok(movies.Concat(series).OrderBy(c => c.SimpleTitle, StringComparer.OrdinalIgnoreCase).ToList());
+                return Ok(PageCards(SortCards(cards, NormalizeSort(sort), seed), page, pageSize));
+            return Ok(cards.OrderBy(c => c.SimpleTitle, StringComparer.OrdinalIgnoreCase).ToList());
         }
 
         // Slim row shape for browse cards. Carries only the columns CardList /
