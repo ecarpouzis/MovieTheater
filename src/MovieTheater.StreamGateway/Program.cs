@@ -132,7 +132,7 @@ app.MapMethods($"/s/{{token}}/{MusicStreamRoutes.File}", new[] { "GET", "HEAD" }
 
     // The token URL is stable for its lifetime, so the browser may cache/reuse it across seeks.
     context.Response.Headers["Cache-Control"] = "private, max-age=3600";
-    return Results.File(full, MusicMimeTypes.FromExtension(Path.GetExtension(full)), enableRangeProcessing: true);
+    return NasFile(full, MusicMimeTypes.FromExtension(Path.GetExtension(full)));
 });
 
 // ── Music transcode lane (music-plan.md §Phase 7) ────────────────────────────────────────────────
@@ -597,7 +597,7 @@ app.MapMethods($"/s/{{token}}/{PhotoStreamRoutes.Thumb}", new[] { "GET", "HEAD" 
     // Derivative names carry a content key, so a given URL's bytes never change — but the URL itself
     // expires with its token, so the cache window is bounded by the capability either way.
     context.Response.Headers["Cache-Control"] = "private, max-age=3600";
-    return Results.File(full, "image/webp", enableRangeProcessing: true);
+    return NasFile(full, "image/webp");
 });
 
 app.MapMethods($"/s/{{token}}/{PhotoStreamRoutes.Original}", new[] { "GET", "HEAD" }, (HttpContext context, string token) =>
@@ -607,7 +607,7 @@ app.MapMethods($"/s/{{token}}/{PhotoStreamRoutes.Original}", new[] { "GET", "HEA
         return Results.StatusCode(status);
 
     context.Response.Headers["Cache-Control"] = "private, max-age=3600";
-    return Results.File(full, PhotoContentType(Path.GetExtension(full)), enableRangeProcessing: true);
+    return NasFile(full, PhotoContentType(Path.GetExtension(full)));
 });
 
 app.Map("/s/{token}/Videos/{**rest}", async (HttpContext context, string token, string rest) =>
@@ -637,6 +637,31 @@ app.Run();
 // Jellyfin item ids appear both dashed (URL path) and dashless (the stored id / token);
 // normalize so the confinement check matches either form.
 static string NormalizeItemId(string id) => id.Replace("-", "");
+
+// A file response for something that lives on the NAS share (music, photo originals — and the
+// derivative cache, harmlessly). NOT Results.File: that ends in Kestrel's SendFile fallback, which
+// opens the file with FileOptions.Asynchronous and copies it in 16 KB overlapped reads, and the SMB
+// redirector answers that pattern at ~1.7 MB/s (measured on Ziggy 2026-09-03: a FLAC track streamed
+// through this route at 0.8–1.0 MB/s; the identical pattern capped Jellyfin's direct play at
+// ~12 Mbps until its patch #3). Synchronous reads through a 1 MB buffer run 66–83 MB/s: the range
+// executor's 64 KB ReadAsync calls are served from the buffer and the share sees 1 MB sequential
+// reads. Range requests, HEAD and If-Range keep working — Results.Stream carries the same range
+// processing and takes the file's LastModified for the validators.
+static IResult NasFile(string path, string contentType)
+{
+    var stream = new FileStream(
+        path,
+        FileMode.Open,
+        FileAccess.Read,
+        FileShare.ReadWrite | FileShare.Delete,
+        bufferSize: 1024 * 1024,
+        FileOptions.SequentialScan);
+    return Results.Stream(
+        stream,
+        contentType,
+        lastModified: new DateTimeOffset(File.GetLastWriteTimeUtc(path)),
+        enableRangeProcessing: true);
+}
 
 // Content type for an ORIGINAL (photos-plan.md §2.2). Derivatives are always WebP and are typed at
 // their route. An unknown extension is served as a download rather than guessed at: the collection
