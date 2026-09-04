@@ -822,6 +822,42 @@ namespace MovieTheater.Services.Jellyfin
     {
         /// <summary>The pre-§14 universal baseline: H.264 in MPEG-TS, stereo, nothing fancy.</summary>
         public static readonly ClientCapabilities H264Baseline = new();
+
+        /// <summary>
+        /// Can this client decode <paramref name="audioCodec"/> out of the RAW file — i.e. is direct
+        /// play safe for it? This is the same answer the DirectPlayProfile's AudioCodec list gives
+        /// (<c>directPlayAudio</c> in <c>BuildWebDeviceProfile</c>): AAC/MP3 always, Dolby and FLAC only
+        /// when the client proved it decodes them, plus the WebM pair every Matroska-capable browser
+        /// carries. It exists because <b>Jellyfin skips its audio-codec check when no audio track in
+        /// the file is flagged default</b>. Measured against 10.11.11 on 2026-09-04 with "ac3" absent
+        /// from the mkv DirectPlayProfile: an H.264 + AC-3 MKV whose track IS flagged default comes
+        /// back <c>AudioCodecNotSupported</c> (Pete &amp; Pete, Rocko's), one whose track is NOT
+        /// (Green Papaya) comes back SupportsDirectPlay=true with no TranscodingUrl — the raw file,
+        /// unchecked. 343 of the library's files have that shape (177 ac3 + 149 eac3 + 17 dts MKVs
+        /// with no default-flagged audio). So the site holds the line itself, before the
+        /// PlaybackInfo call (after it there is no TranscodingUrl to fall back to).
+        ///
+        /// The failure this prevents is silent: the picture plays and the audio track is simply
+        /// dropped — no media error, no TranscodeReasons, nothing in any server log. A/B'd through
+        /// the real Start path in Edge on Ziggy (advertises <c>aac,flac</c>: Windows 11 Enterprise
+        /// ships no Dolby decoder, so its <c>audio/mp4; codecs="ac-3"</c> probe is false): Green
+        /// Papaya, American Pop and The Producers (1968) each direct-played with 0 audio bytes
+        /// decoded on the old controller and played HLS with audio on this one. The OTHER Edge in
+        /// the household (Dolby decoder present, advertises <c>aac,ac3,eac3,flac</c>) direct-played
+        /// AC-3 MKVs all August with sound — which is why this follows the client's own flags rather
+        /// than a blanket "no Dolby in Matroska" rule: a client that decodes it keeps direct play.
+        ///
+        /// Unknown/unlisted → false. Declining direct play costs an ffmpeg remux (HLS copy — same
+        /// video bytes), never fidelity, so this errs toward the HLS path.
+        /// </summary>
+        public bool CanDirectPlayAudio(string? audioCodec) => audioCodec?.ToLowerInvariant() switch
+        {
+            "aac" or "mp3" or "opus" or "vorbis" => true,
+            "ac3" => Ac3,
+            "eac3" => Eac3,
+            "flac" => Flac,
+            _ => false,
+        };
     }
 
     public class JellyfinApiOptions

@@ -268,14 +268,25 @@ namespace MovieTheater.Controllers
             // re-encode lays down seekable keyframes. An audio selection does NOT rule it out here —
             // whether it actually blocks direct play depends on whether it names a non-default track,
             // which is only knowable after Jellyfin describes the streams (below).
-            var allowDirectPlay = request.SubtitleStreamIndex == null && !request.ForceTranscode;
+            // ...and so does an audio track the client can't decode. The device profile already says
+            // which audio codecs may be handed over raw, but Jellyfin skips that check on a file whose
+            // audio track carries no default flag (see ClientCapabilities.CanDirectPlayAudio for the
+            // measurement): a browser without a Dolby decoder was handed such an AC-3 MKV whole and
+            // played it silent. Decided here, before the call, because once Jellyfin has answered
+            // "direct play" there is no TranscodingUrl to fall back to; declined, it returns the HLS
+            // copy — same video bytes, audio re-containered or re-encoded as the client needs. A null
+            // AudioCodec (unsynced row) declines too.
+            var caps = request.ToCapabilities();
+            var allowDirectPlay = request.SubtitleStreamIndex == null && !request.ForceTranscode
+                && caps.CanDirectPlayAudio(file.AudioCodec);
+
             var device = DeviceFor(userId.Value, request.DeviceToken);
             JellyfinPlaybackInfoResult info;
             try
             {
                 info = await jellyfin.GetPlaybackInfoAsync(
                     file.JellyfinItemId, request.MaxBitrateBps, request.AudioStreamIndex, request.SubtitleStreamIndex,
-                    startTicks, request.ToCapabilities(), allowDirectPlay, device: device);
+                    startTicks, caps, allowDirectPlay, device: device);
             }
             catch (Exception ex)
             {
@@ -343,7 +354,7 @@ namespace MovieTheater.Controllers
                 {
                     info = await jellyfin.GetPlaybackInfoAsync(
                         file.JellyfinItemId, request.MaxBitrateBps, effectiveAudioIndex, request.SubtitleStreamIndex,
-                        startTicks, request.ToCapabilities(), allowDirectPlay, source.Id, device);
+                        startTicks, caps, allowDirectPlay, source.Id, device);
                 }
                 catch (Exception ex)
                 {
