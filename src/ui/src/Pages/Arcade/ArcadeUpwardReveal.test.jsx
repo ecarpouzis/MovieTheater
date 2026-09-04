@@ -41,8 +41,6 @@ vi.mock("./GameModal", () => ({ default: () => null }));
 vi.mock("./HeavyGameModal", () => ({ default: () => null }));
 vi.mock("./LiveRooms", () => ({ default: () => null }));
 vi.mock("./SavesManager", () => ({ default: () => null }));
-vi.mock("./SavesVaultManager", () => ({ default: () => null }));
-vi.mock("./RetroAchievementsModal", () => ({ default: () => null }));
 vi.mock("./ConsoleCarousel", () => ({ default: () => null }));
 vi.mock("./useArcadeFilters", () => ({ default: () => ({ systems: [], genres: [], loading: false }), arcadeFilterKey: () => "scope" }));
 

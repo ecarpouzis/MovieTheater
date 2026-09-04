@@ -136,7 +136,10 @@ describe("/arcade/admin", () => {
   it("lists the arcade tools for an admin and refuses a member", async () => {
     const { default: ArcadeAdminPage } = await import("../Pages/Arcade/ArcadeAdminPage");
     mount("/arcade/admin", <ArcadeAdminPage userData={ADMIN} />);
-    await waitFor(() => expect(tabNames()).toEqual(["Overview", "Game config", "Saves vault", "RetroAchievements"]));
+    // Two tabs, not four: "Saves vault" and "RetroAchievements" read self-scoped endpoints
+    // (/API/Arcade/Saves/Mine, /API/Arcade/Trophies/Mine), so they are member surfaces on the arcade
+    // rail (/arcade/saves, /arcade/trophies) rather than operator tools on this shell.
+    await waitFor(() => expect(tabNames()).toEqual(["Overview", "Game config"]));
     cleanup();
     mount("/arcade/admin", <ArcadeAdminPage userData={MEMBER} />);
     expect(screen.getByText("Administrators only")).toBeTruthy();

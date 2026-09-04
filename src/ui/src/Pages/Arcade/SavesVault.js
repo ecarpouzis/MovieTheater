@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import { Button, Drawer, Empty, Input, Modal, Select, Space, Table, Tag, Typography, message } from "antd";
+import { Button, Empty, Input, Modal, Select, Space, Table, Tag, Typography, message } from "antd";
 import { MovieAPI } from "../../MovieAPI";
 import GameCover from "./GameCover";
 import { SYSTEM_LABEL, systemLabel } from "./arcadeSystems";
-import "./ArcadeModal.css";
-import { SHEET_Z } from "../../Components/sheetModal";
 
 const { Text } = Typography;
 const PAGE_SIZE = 20;
@@ -28,8 +26,14 @@ const SYSTEM_OPTIONS = Object.entries(SYSTEM_LABEL).map(([value, label]) => ({ v
  * game at a time, which doesn't scale once a player has touched dozens of titles. This is the
  * management surface for EVERYTHING a player has saved — always paged/searched/filtered
  * server-side (never "load everything"), since save rows can run into the thousands over time.
+ *
+ * It reads `/API/Arcade/Saves/Mine`, which is scoped to the SIGNED-IN USER by the auth cookie — this
+ * is a member's own shelf, not an operator report, which is why it hangs off the section rail rather
+ * than the admin shell. The body is a plain block so the page (`ArcadeSavesPage`) can own the chrome.
+ *
+ * `onResume(gameId, opts)` starts a room from a save; omit it to render the vault read-only.
  */
-function SavesVaultManager({ onClose, onResume }) {
+function SavesVault({ onResume }) {
   const [rows, setRows] = useState(null);
   const [totalCount, setTotalCount] = useState(0);
   const [totalSizeBytes, setTotalSizeBytes] = useState(0);
@@ -37,6 +41,9 @@ function SavesVaultManager({ onClose, onResume }) {
   const [system, setSystem] = useState("");
   const [page, setPage] = useState(1);
   const [busyId, setBusyId] = useState(null);
+  // Resuming is a POST and then a navigation, so it has a visible gap. In the Drawer this surface
+  // used to close on the click, which was the feedback; a page has to say so itself.
+  const [resumingId, setResumingId] = useState(null);
 
   const refresh = useCallback(() => {
     setRows(null);
@@ -112,7 +119,13 @@ function SavesVaultManager({ onClose, onResume }) {
           {onResume && r.kind !== "dirzip" && (
             <Button
               size="small" type="link"
-              onClick={() => { onClose(); onResume(r.gameId, r.slotId >= 1 ? { seedSlot: r.slotId } : {}); }}
+              loading={resumingId === r.id}
+              disabled={resumingId != null && resumingId !== r.id}
+              onClick={() => {
+                setResumingId(r.id);
+                Promise.resolve(onResume(r.gameId, r.slotId >= 1 ? { seedSlot: r.slotId } : {}))
+                  .finally(() => setResumingId(null));
+              }}
             >
               Resume
             </Button>
@@ -125,10 +138,8 @@ function SavesVaultManager({ onClose, onResume }) {
     },
   ];
 
-  // `arcade-drawer`: on a phone the 680px panel would hang off a ~390px screen, so
-  // ArcadeModal.css widens it to the full screen there.
   return (
-    <Drawer open title="My saves — all games" onClose={onClose} width={680} placement="right" className="arcade-drawer" zIndex={SHEET_Z}>
+    <div className="arcade-vault">
       <Space style={{ marginBottom: 12, width: "100%", justifyContent: "space-between" }} wrap>
         <Space wrap>
           <Input.Search
@@ -163,8 +174,8 @@ function SavesVaultManager({ onClose, onResume }) {
         locale={{ emptyText: <Empty description="No saves match those filters." /> }}
         size="small"
       />
-    </Drawer>
+    </div>
   );
 }
 
-export default SavesVaultManager;
+export default SavesVault;

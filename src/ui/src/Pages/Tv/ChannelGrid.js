@@ -26,8 +26,12 @@ export function clockLabel(ms) {
  * `onPickProgram(channel, program, rowItems)` — when given, a program cell SELECTS the show (the
  * guide page opens its detail panel) instead of tuning the channel; the channel button still
  * tunes. `selectedKey` (`${channelId}:${startUtc}`) marks the selected cell.
+ *
+ * `query` and `favoriteIds` narrow which ROWS are drawn (the guide page binds them to the section
+ * bar's search box and its Favourites pill). They filter here rather than in the caller because a
+ * search has to reach the PROGRAMS, and the lineup is fetched in this component.
  */
-function ChannelGrid({ open, channels, currentChannelId, onPick, onClose, onPickProgram, selectedKey }) {
+function ChannelGrid({ open, channels, currentChannelId, onPick, onClose, onPickProgram, selectedKey, query = "", favoriteIds = null }) {
   const [lineup, setLineup] = useState(null); // { serverNowUtc, hours, byId } or null while loading
   const [nowMs, setNowMs] = useState(() => Date.now());
   const scrollRef = useRef(null);
@@ -168,6 +172,23 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose, onPick
     didScrollRef.current = true;
   }, [open, lineup, nowPct]);
 
+  // The guide's filter. A row survives when it is a favourite (while the pill is on) AND matches the
+  // search — matched against the channel's own name and category AND against every program title in
+  // the fetched window, so typing a film's name finds the channel showing it. `idx` is taken BEFORE
+  // filtering: it is the channel NUMBER, which has to keep matching the 1-9 tune hotkeys.
+  const numbered = useMemo(() => {
+    const all = channels.map((ch, idx) => ({ ch, idx }));
+    const needle = query.trim().toLowerCase();
+    if (!needle && !favoriteIds) return all;
+    return all.filter(({ ch }) => {
+      if (favoriteIds && !favoriteIds.has(Number(ch.id))) return false;
+      if (!needle) return true;
+      if ((ch.name || "").toLowerCase().includes(needle)) return true;
+      if ((ch.category || "").toLowerCase().includes(needle)) return true;
+      return (lineup?.byId.get(ch.id)?.items || []).some((p) => (p.title || "").toLowerCase().includes(needle));
+    });
+  }, [channels, query, favoriteIds, lineup]);
+
   // Group channels by category so each shelf appears exactly once, even when a category's channels
   // aren't contiguous in sort order (e.g. a non-catalog channel wedged between them, or a sort-order
   // collision). Category order = first appearance; channel order within a category preserves the
@@ -175,7 +196,7 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose, onPick
   const grouped = useMemo(() => {
     const order = [];
     const byCat = new Map();
-    channels.forEach((ch, idx) => {
+    numbered.forEach(({ ch, idx }) => {
       const cat = ch.category || "Channels";
       if (!byCat.has(cat)) { byCat.set(cat, []); order.push(cat); }
       byCat.get(cat).push({ ch, idx });
@@ -186,7 +207,7 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose, onPick
       for (const item of byCat.get(cat)) out.push(item);
     }
     return out;
-  }, [channels]);
+  }, [numbered]);
 
   if (!open) return null;
 
@@ -213,6 +234,14 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose, onPick
               <div className="epg-nowflag" style={{ left: `${nowPct}%` }} aria-hidden="true" />
             </div>
           </div>
+
+          {channels.length > 0 && numbered.length === 0 && (
+            <div className="epg-nomatch">
+              {favoriteIds && favoriteIds.size === 0
+                ? "No favourite channels yet — open a show and use ♡ Favourite channel to add one."
+                : "No channel or programme matches that."}
+            </div>
+          )}
 
           {/* one row per channel, grouped by category (rows numbered by position) */}
           {grouped.map((g) => {

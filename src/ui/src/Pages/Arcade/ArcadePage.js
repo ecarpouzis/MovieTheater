@@ -8,10 +8,9 @@ import GameModal from "./GameModal";
 import HeavyGameModal from "./HeavyGameModal";
 import LiveRooms from "./LiveRooms";
 import SavesManager from "./SavesManager";
-import SavesVaultManager from "./SavesVaultManager";
-import RetroAchievementsModal from "./RetroAchievementsModal";
 import ConsoleCarousel from "./ConsoleCarousel";
 import { rememberLobbySearch } from "./arcadeLobbyState";
+import { createRoomAndGo, loadQuality, saveQuality } from "./arcadeRoomCreate";
 import { hasSaveStates, QUICK_SLOT } from "./arcadeSystems";
 import { parseSystems, toggleSystem } from "./arcadeSystemFilter";
 import { ARCADE_ENTITY_PARAMS, arcadeNarrows, legacyToArcadeSearch } from "./arcadeFacetSpec";
@@ -31,10 +30,10 @@ const { Text } = Typography;
 const GROUP_FACET_KEY = { system: "system", genre: "genre", maxPlayers: "players", variant: "variant", ra: "ra" };
 
 
-// Per-room stream quality the creator picks (arcade per-room bitrate/FEC). Persisted so a friend group
-// keeps its setting across sessions; applied to every room YOU start (one encoder per room = creator's
-// choice). Lower bitrate = smaller video bursts = smoother audio + less upstream for remote players.
-const QUALITY_KEY = "arcade.streamQuality";
+// The three quality dropdowns the creator picks from. What they WRITE, and how a room is started
+// from it, is `arcadeRoomCreate.js` (loadQuality / saveQuality / createRoomAndGo) — the saves page
+// starts rooms too. Applied to every room YOU start (one encoder per room = the creator's choice);
+// lower bitrate = smaller video bursts = smoother audio + less upstream for remote players.
 const BITRATE_PRESETS = [
   // 0 = Auto: the WORKER now DERIVES the ceiling from the frame it actually encodes — encoded pixels ×
   // fps × a bits-per-pixel target (abr.go autoCeilingKbps), clamped to 5–40 Mbps. It is no longer a
@@ -78,14 +77,6 @@ const NETWORK_OPTIONS = [
   { short: "Network: Remote", label: "Network: Remote · smoother for friends joining over the internet", value: "remote" },
   { short: "Network: 5G / Cellular", label: "Network: 5G / Cellular · steadiest picture on mobile data", value: "5g" },
 ];
-// What each profile actually sends (the worker never sees "profiles", only these params).
-// audioFec: 1 = on, 2 = off. paceMs: patch-0028 in-frame smoothing window (0 = off; 5G gets a
-// wider window because big keyframes at low cellular bitrates benefit from more spread).
-const NETWORK_PROFILES = {
-  lan: { audioFec: 1, paceMs: 0 },
-  remote: { audioFec: 1, paceMs: 5 },
-  "5g": { audioFec: 1, paceMs: 8 },
-};
 // Per-room video codec (worker patch 0036). AV1 is the better codec per bit, but a device without
 // HARDWARE AV1 decode — most tablets — still negotiates it (Chrome offers software dav1d) and then
 // can't decode 60fps in real time; the keyframeless AV1 stream gives it nothing to resync to, so
@@ -102,52 +93,6 @@ const CODEC_OPTIONS = [
   { short: "Codec: AV1", label: "Codec: AV1 · best picture (PCs & recent devices)", value: "av1" },
   { short: "Codec: H.264", label: "Codec: H.264 · smoothest on tablets & older devices", value: "h264" },
 ];
-// Resolve "auto" to a concrete codec for THIS device. powerEfficient is the hardware-decode signal —
-// smooth-but-software (dav1d on a big desktop) still reports smooth:true, and software AV1 is exactly
-// the tablet failure mode Auto exists to dodge, so the bar is powerEfficient. 1920x1080@60 is the
-// worst frame any lane sends today (capture); retro encodes larger canvases but at the same or lower
-// pixel rate. Any probe failure (old browser, Firefox without webrtc-type support) falls back to av1
-// — the status-quo default, so Auto can never be WORSE than before it existed.
-async function resolveAutoCodec() {
-  try {
-    const info = await navigator.mediaCapabilities.decodingInfo({
-      type: "webrtc",
-      video: { contentType: 'video/AV1; codecs="av01.0.08M.08"', width: 1920, height: 1080, bitrate: 12_000_000, framerate: 60 },
-    });
-    return info.supported && info.powerEfficient ? "av1" : "h264";
-  } catch { return "av1"; }
-}
-function loadQuality() {
-  try {
-    const q = JSON.parse(localStorage.getItem(QUALITY_KEY));
-    if (q && typeof q.videoBitrateKbps === "number") {
-      // Legacy audioFec-shaped values (pre network-profile) map to LAN — the old default behavior.
-      const network = NETWORK_PROFILES[q.network] ? q.network : "lan";
-      // Deliberate codec picks are NOT migrated to Auto — a chosen h264 often protects a JOINING
-      // tablet, which a creator-device probe cannot see. Deliberate = the codecChosen flag (set only
-      // by the Codec dropdown's own onChange), OR any stored "h264": av1 was the seeded default, so
-      // an un-flagged "av1" means "never picked" and gets Auto — which resolves back to av1 on every
-      // hardware-AV1 device and only changes behavior on the devices av1 was failing on.
-      const codec = (q.codecChosen === true && (q.codec === "h264" || q.codec === "av1")) || q.codec === "h264"
-        ? q.codec : "auto";
-      // networkChosen: set ONLY by the Network dropdown's own onChange, never by seeding — it is
-      // what lets an explicit "LAN · pace 0" beat the capture lane's server-side pace default.
-      // Legacy values (no flag) stay "not chosen" so those users keep the lane defaults.
-      // Both *Chosen flags must round-trip here: setQ persists {...prev, ...patch}, so a flag this
-      // function drops would be erased from storage by the next unrelated quality change.
-      return {
-        videoBitrateKbps: q.videoBitrateKbps, network, codec,
-        networkChosen: q.networkChosen === true, codecChosen: q.codecChosen === true,
-      };
-    }
-  } catch { /* ignore */ }
-  // Auto + LAN + Auto-codec. NOTE: a stored value is NOT migrated — someone who deliberately picked
-  // "Balanced · 5 Mbps" on a thin uplink should not be silently moved to Auto (whose ceiling reaches
-  // 14 Mbps on GameCube; ABR would walk it back, but the choice is theirs). They opt in by choosing
-  // Auto once.
-  return { videoBitrateKbps: 0, network: "lan", codec: "auto", networkChosen: false, codecChosen: false };
-}
-function saveQuality(q) { try { localStorage.setItem(QUALITY_KEY, JSON.stringify(q)); } catch { /* ignore */ } }
 
 /**
  * The /arcade lobby (docs/arcade-plan.md §7, redesigned per design_handoff_arcade_browse/README.md).
@@ -185,11 +130,6 @@ export default function ArcadePage({ userData }) {
   const [rooms, setRooms] = useState([]);
   const [renderers, setRenderers] = useState({}); // system → [{id,label,isDefault}] for the launch menu
   const [modalVersionId, setModalVersionId] = useState(null); // pre-selected version (a recent tile's save)
-  const [savesVaultOpen, setSavesVaultOpen] = useState(false); // the cross-game "My saves" drawer
-  // The RetroAchievements hub is a TAB on the canvas (Explore · Browse · Trophies · Admin), and
-  // the site's rule is that a modal lives in the URL — so the tab IS the modal: /arcade/trophies
-  // renders this same lobby with the hub open, and closing it goes back to /arcade.
-  const raOpen = location.pathname === "/arcade/trophies";
   const [optionsOpen, setOptionsOpen] = useState(false); // mobile: reveal the room-quality pills (desktop always shows them)
   const [creating, setCreating] = useState(0);
   const [manageSaves, setManageSaves] = useState(null); // { gameId, title } for the My Saves modal
@@ -496,28 +436,9 @@ export default function ArcadePage({ userData }) {
   }
 
   function doCreateRoom(versionId, opts) {
-    // Merge the creator's current stream quality (read fresh from storage so a mid-modal change wins).
-    // The network profile is unbundled HERE into the wire params (audioFec + paceMs) — the server and
-    // worker stay profile-agnostic. paceMs is sent ONLY for a deliberate dropdown pick: omitting it
-    // (server null) keeps the lane defaults (capture 8, GL 0), while an explicit LAN 0 must actually
-    // reach the server to beat the capture default.
-    const q = loadQuality();
-    const net = NETWORK_PROFILES[q.network] || NETWORK_PROFILES.lan;
-    const netParams = q.networkChosen ? net : { audioFec: net.audioFec };
-    // "auto" resolves to a concrete codec HERE (the room's encoder needs one) — the server and worker
-    // never see "auto". The probe is ~instant (cached capability lookup), so it rides the chain.
-    return Promise.resolve(q.codec === "auto" ? resolveAutoCodec() : q.codec)
-      .then((codec) => MovieAPI.createArcadeRoom(versionId, { ...opts, videoBitrateKbps: q.videoBitrateKbps, ...netParams, videoCodec: codec }))
-      .then(async (r) => {
-        if (r.status === 503) { message.warning("The arcade is full — every machine is in use. Try again shortly."); return null; }
-        if (!r.ok) { message.error("Couldn't start that game."); return null; }
-        return r.json();
-      })
-      .then((descriptor) => {
-        if (descriptor) history.push({ pathname: `/arcade/room/${descriptor.roomCode}`, state: { descriptor } });
-      })
-      .catch(() => message.error("Couldn't start that game."))
-      .finally(() => setCreating(0));
+    // The room-start itself (stored quality, network unbundling, codec resolution, the POST and the
+    // push into the room) lives in arcadeRoomCreate — the saves page starts rooms from a save too.
+    return createRoomAndGo(versionId, opts, history).finally(() => setCreating(0));
   }
 
   const joinRoom = (roomCode) => history.push(`/arcade/room/${roomCode}`);
@@ -548,7 +469,8 @@ export default function ArcadePage({ userData }) {
   // The section's bar tools (R9 S1): the two things you open + the Quality toggle, before the pills.
   const arcadeTools = (
     <>
-      <button type="button" className="bx-tool-btn" onClick={() => setSavesVaultOpen(true)}>💾 Saves</button>
+      {/* One saves surface, not two: the vault is `/arcade/saves` (also the rail's own row). */}
+      <button type="button" className="bx-tool-btn" onClick={() => history.push("/arcade/saves")}>💾 Saves</button>
       <button
         type="button"
         className={"bx-tool-btn" + (optionsOpen ? " on" : "")}
@@ -565,8 +487,10 @@ export default function ArcadePage({ userData }) {
       <div className="arcade-page__inner">
         {surfaces}
         {/* The header and its toolbar left the page in R9 S1: the SectionBar names the section, and
-            Saves · Trophies · Quality ride the bar's tools slot (see `arcadeTools` on the CatalogHost
-            below). The Quality controls open here, under the bar, only while the toggle is on.
+            Saves (a link to its page) + Quality ride the bar's tools slot (see `arcadeTools` on the
+            CatalogHost below). Trophies is a bar TAB and a rail row, both onto /arcade/trophies —
+            it is a page, not a dialog this lobby hosts. The Quality controls open here, under the
+            bar, only while the toggle is on.
             Quality applies only to rooms YOU start (one encoder per room = the creator's pick is what
             everyone gets). */}
         {optionsOpen && (
@@ -655,10 +579,6 @@ export default function ArcadePage({ userData }) {
       {manageSaves && (
         <SavesManager game={manageSaves} onClose={() => setManageSaves(null)} onResume={doCreateRoom} />
       )}
-      {savesVaultOpen && (
-        <SavesVaultManager onClose={() => setSavesVaultOpen(false)} onResume={doCreateRoom} />
-      )}
-      <RetroAchievementsModal open={raOpen} onClose={() => history.push({ pathname: "/arcade", search: location.search })} />
       {modalCard && openGameId != null && modalCard.game.lane === "heavy" && (
         <HeavyGameModal
           game={modalCard.game}

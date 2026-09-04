@@ -28,7 +28,17 @@ export const SCALE_MIN = 0.45;
 export const SCALE_MAX = 2.5;
 export const SCALE_STEP = 0.05;
 export const SCALE_DEFAULT = 1;
-export const SCALE_TOUCH_DEFAULT = 0.8;
+/**
+ * The touch default is not a round "a bit smaller than desktop" number: it is the pre-overhaul phone
+ * poster, restored. `CardList.css` sized the narrow-screen (≤640px) poster at 172px tall × 115 wide,
+ * and the movie grid's cell is 200 (`MOVIE_GRID_CELL`), so 0.86 × 200 = 172 puts the phone back
+ * exactly where it was. 0.8 (= 160) had been a guess carried over from an earlier slice.
+ *
+ * It costs no columns: `.bx-grid .bx-card--pkg .bx-meta` has a 120px floor, and both 160 (poster
+ * 106 wide) and 172 (poster 114) sit under it — the card box is 120 either way, so this only fills
+ * more of the box the phone was already reserving.
+ */
+export const SCALE_TOUCH_DEFAULT = 0.86;
 
 export const HOVER_EFFECTS: { value: HoverEffect; label: string }[] = [
   { value: "lift", label: "Lift" },

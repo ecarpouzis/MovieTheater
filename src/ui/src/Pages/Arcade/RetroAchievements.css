@@ -1,8 +1,9 @@
 /* RetroAchievements hub (account + trophy room) and the per-game achievement grid. Theme-aware via the
    arcade CSS variables so it reads correctly in both light and dark. */
 
-.ra-modal .ant-modal-body { padding-top: 8px; }
-.ra-modal__section-h {
+/* Was `.ra-modal__section-h` inside a dialog; the hub is `/arcade/trophies`, a page, and the dialog's
+   own `.ra-modal .ant-modal-body` padding rule went with it. */
+.ra-section-h {
   margin: 18px 0 10px;
   font-family: var(--font-display, inherit);
   font-size: 15px;

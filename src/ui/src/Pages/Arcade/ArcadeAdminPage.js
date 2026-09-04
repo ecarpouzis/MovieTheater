@@ -5,14 +5,16 @@ import { AdminCard, AdminStats, NeedsAttention } from "../../admin/AdminOverview
 import { MovieAPI } from "../../MovieAPI";
 import { useDebouncedCallback } from "../../hooks/useDebounce";
 import ArcadeGameConfig from "./ArcadeGameConfig";
-import SavesVaultManager from "./SavesVaultManager";
-import RetroAchievementsModal from "./RetroAchievementsModal";
 
 // `/arcade/admin?tab=` — the arcade's operator tools on the site's admin shell (R9 S6).
 //
-// All three tools are DIALOGS today (the per-game config opens from inside the game modal, the saves
-// vault is a drawer, the trophy hub is a modal) and this pass does not rewrite any of them: each tab
-// is the card that opens its tool. What is new is the URL and the Overview report.
+// It used to carry four tabs. Two of them were not operator tools at all: "Saves vault" opened
+// `/API/Arcade/Saves/Mine` under the description "every save state and battery save the arcade
+// holds, across every player", and "RetroAchievements" opened the hub that links YOUR RA account and
+// shows YOUR trophy room. Both endpoints are scoped to the signed-in user by the auth cookie, so an
+// admin was reading their own rows under an operator heading. They are member surfaces — the arcade
+// rail lists them at `/arcade/saves` and `/arcade/trophies`, where the movies rail lists Seen / Want
+// / Rate — and they no longer appear here.
 //
 // The per-game config has no page of its own because it is per GAME — so the tab adds the one thing
 // it was missing outside the game modal: a way to pick the game. Nothing inside the config changed.
@@ -58,34 +60,6 @@ function GameConfigTab() {
         )}
       </AdminCard>
       {picked && <ArcadeGameConfig game={picked} onClose={() => setPicked(null)} />}
-    </div>
-  );
-}
-
-function SavesVaultTab() {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="adm-tab">
-      <AdminCard
-        title="Saves vault"
-        description="Every save state and battery save the arcade holds, across every player and system: rename, download, delete, or resume a room straight from one. Deleting is the only destructive thing on this page — a save is the only copy."
-        actions={<Button type="primary" onClick={() => setOpen(true)}>Open the vault</Button>}
-      />
-      {open && <SavesVaultManager onClose={() => setOpen(false)} onResume={() => setOpen(false)} />}
-    </div>
-  );
-}
-
-function RaTab() {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="adm-tab">
-      <AdminCard
-        title="RetroAchievements"
-        description="The account link and the trophy room. Scoring itself runs on ONE site service account inside the worker — this panel is the human end of it."
-        actions={<Button type="primary" onClick={() => setOpen(true)}>Open the trophy hub</Button>}
-      />
-      <RetroAchievementsModal open={open} onClose={() => setOpen(false)} />
     </div>
   );
 }
@@ -167,8 +141,6 @@ export default function ArcadeAdminPage({ userData }) {
       tabs={[
         { key: "overview", label: "Overview", render: () => <ArcadeOverviewTab /> },
         { key: "game-config", label: "Game config", render: () => <GameConfigTab /> },
-        { key: "saves", label: "Saves vault", render: () => <SavesVaultTab /> },
-        { key: "ra", label: "RetroAchievements", render: () => <RaTab /> },
       ]}
     />
   );

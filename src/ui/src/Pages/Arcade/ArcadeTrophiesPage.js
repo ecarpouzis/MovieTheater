@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
-import { Modal, Spin, Button, Input, Tag, Empty, message } from "antd";
+import { Spin, Button, Input, Tag, Empty, message } from "antd";
 import { MovieAPI } from "../../MovieAPI";
 import ArcadeAchievements from "./ArcadeAchievements";
-import "../../Components/SheetModal.css";
+import "./ArcadePage.css";
 import "./RetroAchievements.css";
-import { SHEET_Z } from "../../Components/sheetModal";
 
 // ── Account panel: link/unlink the user's real retroachievements.org account + show their pulled RA
 // profile (points, rank, recent). The link is optional — the friends boards work without it; linking just
@@ -178,26 +177,46 @@ function TrophyRoom() {
   );
 }
 
-// The RetroAchievements hub — account link/profile on top, the trophy room below. Opened from the lobby.
-export default function RetroAchievementsModal({ open, onClose }) {
+/**
+ * `/arcade/trophies` — the RetroAchievements hub: the account link and profile on top, the trophy
+ * room below.
+ *
+ * It was a 720px antd Modal rendered OVER the lobby, because the bar draws Trophies as a tab and the
+ * site's rule is that a modal lives in the URL. The rule is right; the reading of it was not. A tab
+ * is navigation, and everywhere else on this site a tab is a page (`/arcade/explore`, `/music/rate`,
+ * every admin tab) — so this one made choosing Trophies mount the whole lobby as a backdrop: the
+ * catalog browse over ~13k cards, the renderer map, and a 12-second live-rooms poll running behind a
+ * dialog nobody could see past. The hub is a destination; it is a page now.
+ */
+export default function ArcadeTrophiesPage({ userData }) {
+  // The Trophies tab is not gated, so an anonymous visitor can land here. Every endpoint below is
+  // self-scoped and its MovieAPI wrapper swallows the 401 into an empty payload — which would draw
+  // "No trophies yet. Play a game that tracks achievements…" at someone who simply is not signed in.
+  if (!userData) {
+    return (
+      <div className="arcade-page">
+        <div className="arcade-page__inner" style={{ padding: 48 }}>
+          <Empty description="Sign in to see your trophies." />
+        </div>
+      </div>
+    );
+  }
   return (
-    <Modal
-      open={open}
-      onCancel={onClose}
-      footer={null}
-      width={720}
-      title="🏆 RetroAchievements"
-      className="ra-modal"
-      // Above the nav bar (1300). `sheet-modal` = the shared shell (bounded to the viewport, body
-      // scrolls, full screen on a phone); `--themed` gives it the arcade surface its trophy tiles
-      // and headings already paint themselves for. See Components/SheetModal.css.
-      zIndex={SHEET_Z}
-      wrapClassName="sheet-modal sheet-modal--themed"
-      destroyOnHidden
-    >
-      <RaAccount />
-      <div className="ra-modal__section-h">Your trophy room</div>
-      <TrophyRoom />
-    </Modal>
+    <div className="arcade-page">
+      <div className="arcade-page__inner">
+        <header className="arcade-header">
+          <div className="arcade-header__lede">
+            <h1 className="arcade-title">🏆 RetroAchievements</h1>
+            <p className="arcade-subtitle">
+              Everything you have unlocked in the arcade, game by game — and, if you link the
+              account below, what retroachievements.org has you down for as well.
+            </p>
+          </div>
+        </header>
+        <RaAccount />
+        <div className="ra-section-h">Your trophy room</div>
+        <TrophyRoom />
+      </div>
+    </div>
   );
 }

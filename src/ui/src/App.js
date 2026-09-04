@@ -52,6 +52,8 @@ const ArcadeExplorePage = lazy(() => import("./Pages/Arcade/ArcadeExplorePage"))
 const BoardgamesExplorePage = lazy(() => import("./Pages/BoardGames/BoardgamesExplorePage"));
 const TvAdminPage = lazy(() => import("./Pages/Tv/TvAdminPage"));
 const ArcadeAdminPage = lazy(() => import("./Pages/Arcade/ArcadeAdminPage"));
+const ArcadeTrophiesPage = lazy(() => import("./Pages/Arcade/ArcadeTrophiesPage"));
+const ArcadeSavesPage = lazy(() => import("./Pages/Arcade/ArcadeSavesPage"));
 const MusicAdminPage = lazy(() => import("./Pages/Music/MusicAdminPage"));
 const MusicRatePage = lazy(() => import("./Pages/Music/MusicRatePage"));
 const BoardgamesAdminPage = lazy(() => import("./Pages/BoardGames/BoardgamesAdminPage"));
@@ -170,9 +172,7 @@ function App() {
             <Route path="/channels" exact>
               <ChannelGuidePage userData={userData} setUserData={setUserData} />
             </Route>
-            {/* /arcade/trophies is the SAME lobby with the RetroAchievements hub open — the canvas
-                draws Trophies as a bar tab, and a modal on this site lives in the URL. */}
-            <Route path={["/arcade", "/arcade/trophies"]} exact>
+            <Route path="/arcade" exact>
               <ArcadePage userData={userData} />
             </Route>
             <Route path="/music" exact>
@@ -216,6 +216,16 @@ function App() {
             </Route>
             <Route path="/arcade/explore" exact>
               <ArcadeExplorePage userData={userData} />
+            </Route>
+            {/* The canvas draws Trophies as a bar tab, and every other tab on this site is a page.
+                Both of these were dialogs the LOBBY opened, which meant reaching them mounted the
+                whole ~13k-card lobby (plus its 12s live-rooms poll) as a backdrop. They are member
+                surfaces — the section rail lists them where the movies list Seen / Want / Rate. */}
+            <Route path="/arcade/trophies" exact>
+              <ArcadeTrophiesPage userData={userData} />
+            </Route>
+            <Route path="/arcade/saves" exact>
+              <ArcadeSavesPage userData={userData} />
             </Route>
             <Route path="/arcade/room/:code" exact>
               <ArcadeRoomPage />
