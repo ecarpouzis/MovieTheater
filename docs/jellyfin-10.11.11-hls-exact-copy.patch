@@ -1,6 +1,6 @@
 diff -ruN -x bin -x obj a/Jellyfin.Api/Controllers/DynamicHlsController.cs b/Jellyfin.Api/Controllers/DynamicHlsController.cs
 --- a/Jellyfin.Api/Controllers/DynamicHlsController.cs	2026-06-06 11:37:28.000000000 -0400
-+++ b/Jellyfin.Api/Controllers/DynamicHlsController.cs	2026-09-03 20:05:45.062431700 -0400
++++ b/Jellyfin.Api/Controllers/DynamicHlsController.cs	2026-09-03 20:44:14.464687000 -0400
 @@ -1420,6 +1420,18 @@
                  TranscodingJobType,
                  cancellationTokenSource.Token)
@@ -39,10 +39,19 @@ diff -ruN -x bin -x obj a/Jellyfin.Api/Controllers/DynamicHlsController.cs b/Jel
      }
  
      private async Task<ActionResult> GetDynamicSegment(StreamingRequestDto streamingRequest, int segmentId)
-@@ -1503,6 +1512,40 @@
+@@ -1485,6 +1494,7 @@
+             return await GetSegmentResult(state, playlistPath, segmentPath, segmentExtension, segmentId, job, cancellationToken).ConfigureAwait(false);
+         }
+ 
++        var isInitRequest = false;
+         using (await _transcodeManager.LockAsync(playlistPath, cancellationToken).ConfigureAwait(false))
+         {
+             var startTranscoding = false;
+@@ -1503,6 +1513,41 @@
                  _logger.LogDebug("Starting transcoding because fmp4 init file is being requested");
                  startTranscoding = true;
                  segmentId = 0;
++                isInitRequest = true;
 +
 +                // MovieTheater patch (2026-09-03): start the transcode AT THE JOIN POINT, not at zero.
 +                // hls.js asks for the fMP4 init file before its first media segment, and stock Jellyfin
@@ -80,7 +89,25 @@ diff -ruN -x bin -x obj a/Jellyfin.Api/Controllers/DynamicHlsController.cs b/Jel
              }
              else if (currentTranscodingIndex is null)
              {
-@@ -1606,8 +1649,6 @@
+@@ -1564,7 +1609,16 @@
+ 
+         _logger.LogDebug("returning {0} [general case]", segmentPath);
+         job ??= _transcodeManager.OnTranscodeBeginRequest(playlistPath, TranscodingJobType);
+-        return await GetSegmentResult(state, playlistPath, segmentPath, segmentExtension, segmentId, job, cancellationToken).ConfigureAwait(false);
++        // MovieTheater patch (2026-09-03): the init file is READY as soon as the first media segment
++        // exists. ffmpeg's hls muxer writes and closes the init file before it opens the first segment,
++        // so "segment N exists" proves the init is complete. GetSegmentResult's readiness rule is
++        // written for MEDIA segments — "this file exists AND the next one exists", because a media
++        // segment may still be being written — and applied to the init with index N it waited for
++        // segment N+1, i.e. a whole extra segment of encode time on every start (measured 0.8–2.6 s
++        // of the init request after the join-point spawn). Passing N-1 makes the rule read "init
++        // exists AND segment N exists", which is exactly the truth.
++        var readinessIndex = isInitRequest ? segmentId - 1 : segmentId;
++        return await GetSegmentResult(state, playlistPath, segmentPath, segmentExtension, readinessIndex, job, cancellationToken).ConfigureAwait(false);
+     }
+ 
+     private static double[] GetSegmentLengths(StreamState state)
+@@ -1606,8 +1660,6 @@
              state.BaseRequest.BreakOnNonKeyFrames = false;
          }
  
@@ -89,7 +116,7 @@ diff -ruN -x bin -x obj a/Jellyfin.Api/Controllers/DynamicHlsController.cs b/Jel
          var directory = Path.GetDirectoryName(outputPath) ?? throw new ArgumentException($"Provided path ({outputPath}) is not valid.", nameof(outputPath));
          var outputFileNameWithoutExtension = Path.GetFileNameWithoutExtension(outputPath);
          var outputPrefix = Path.Combine(directory, outputFileNameWithoutExtension);
-@@ -1616,7 +1657,43 @@
+@@ -1616,7 +1668,43 @@
  
          var segmentFormat = string.Empty;
          var segmentContainer = outputExtension.TrimStart('.');
@@ -133,7 +160,7 @@ diff -ruN -x bin -x obj a/Jellyfin.Api/Controllers/DynamicHlsController.cs b/Jel
          var hlsArguments = $"-hls_playlist_type {(isEventPlaylist ? "event" : "vod")} -hls_list_size 0";
  
          if (string.Equals(segmentContainer, "ts", StringComparison.OrdinalIgnoreCase))
-@@ -1672,7 +1749,7 @@
+@@ -1672,7 +1760,7 @@
              GetVideoArguments(state, startNumber, isEventPlaylist, segmentContainer),
              GetAudioArguments(state),
              maxMuxingQueueSize,
