@@ -1,7 +1,86 @@
 diff -ruN -x bin -x obj a/Jellyfin.Api/Controllers/DynamicHlsController.cs b/Jellyfin.Api/Controllers/DynamicHlsController.cs
 --- a/Jellyfin.Api/Controllers/DynamicHlsController.cs	2026-06-06 11:37:28.000000000 -0400
-+++ b/Jellyfin.Api/Controllers/DynamicHlsController.cs	2026-09-01 20:19:56.141736400 -0400
-@@ -1606,8 +1606,6 @@
++++ b/Jellyfin.Api/Controllers/DynamicHlsController.cs	2026-09-03 20:05:45.062431700 -0400
+@@ -1420,6 +1420,18 @@
+                 TranscodingJobType,
+                 cancellationTokenSource.Token)
+             .ConfigureAwait(false);
++        var request = BuildMainPlaylistRequest(state);
++        var playlist = _dynamicHlsPlaylistGenerator.CreateMainPlaylist(request);
++
++        return new FileContentResult(Encoding.UTF8.GetBytes(playlist), MimeTypes.GetMimeType("playlist.m3u8"));
++    }
++
++    /// <summary>
++    /// The playlist request for this stream — shared by the variant playlist and (MovieTheater patch) the
++    /// init-segment handler, so both see the SAME segment boundaries.
++    /// </summary>
++    private CreateMainPlaylistRequest BuildMainPlaylistRequest(StreamState state)
++    {
+         var mediaSourceId = state.BaseRequest.MediaSourceId;
+         double fps = state.TargetFramerate ?? 0.0f;
+         int segmentLength = state.SegmentLength * 1000;
+@@ -1431,7 +1443,7 @@
+             segmentLength = (int)Math.Ceiling(segmentLength * (nearestIntFramerate / fps));
+         }
+ 
+-        var request = new CreateMainPlaylistRequest(
++        return new CreateMainPlaylistRequest(
+             mediaSourceId is null ? null : Guid.Parse(mediaSourceId),
+             state.MediaPath,
+             segmentLength,
+@@ -1440,9 +1452,6 @@
+             "hls1/main/",
+             Request.QueryString.ToString(),
+             EncodingHelper.IsCopyCodec(state.OutputVideoCodec));
+-        var playlist = _dynamicHlsPlaylistGenerator.CreateMainPlaylist(request);
+-
+-        return new FileContentResult(Encoding.UTF8.GetBytes(playlist), MimeTypes.GetMimeType("playlist.m3u8"));
+     }
+ 
+     private async Task<ActionResult> GetDynamicSegment(StreamingRequestDto streamingRequest, int segmentId)
+@@ -1503,6 +1512,40 @@
+                 _logger.LogDebug("Starting transcoding because fmp4 init file is being requested");
+                 startTranscoding = true;
+                 segmentId = 0;
++
++                // MovieTheater patch (2026-09-03): start the transcode AT THE JOIN POINT, not at zero.
++                // hls.js asks for the fMP4 init file before its first media segment, and stock Jellyfin
++                // answers by spawning ffmpeg from the head of the file. A mid-file join (every channel
++                // tune, every resume) then asks for segment N a moment later, which kills that process and
++                // spawns a second one at N — two spawns, ~2–5 s of dead time, on every start (measured on
++                // the site's channel player: init 3.0 s + first segment 2.5 s). When the URL carries
++                // mtJoinTicks (the site appends the position the client is about to start from; the
++                // playlist copies the query string onto every segment and init URI), map it onto the
++                // SAME segment boundaries the playlist promised and spawn there with that start number.
++                // The init file is written immediately at any -ss, and the client's segment-N request
++                // then finds the running job already on N.
++                if (long.TryParse(Request.Query["mtJoinTicks"], NumberStyles.Integer, CultureInfo.InvariantCulture, out var joinTicks)
++                    && joinTicks > 0)
++                {
++                    var lengths = _dynamicHlsPlaylistGenerator.ComputeSegmentLengths(BuildMainPlaylistRequest(state));
++                    long cursor = 0;
++                    for (var i = 0; i < lengths.Count; i++)
++                    {
++                        // Same conversion the playlist writer uses, so the boundaries agree tick for tick.
++                        var lengthTicks = Convert.ToInt64(lengths[i] * TimeSpan.TicksPerSecond);
++                        if (joinTicks < cursor + lengthTicks)
++                        {
++                            segmentId = i;
++                            streamingRequest.CurrentRuntimeTicks = cursor;
++                            streamingRequest.ActualSegmentLengthTicks = lengthTicks;
++                            break;
++                        }
++
++                        cursor += lengthTicks;
++                    }
++
++                    _logger.LogDebug("Init file requested with mtJoinTicks={JoinTicks}: starting transcoding at segment {SegmentId}", joinTicks, segmentId);
++                }
+             }
+             else if (currentTranscodingIndex is null)
+             {
+@@ -1606,8 +1649,6 @@
              state.BaseRequest.BreakOnNonKeyFrames = false;
          }
  
@@ -10,7 +89,7 @@ diff -ruN -x bin -x obj a/Jellyfin.Api/Controllers/DynamicHlsController.cs b/Jel
          var directory = Path.GetDirectoryName(outputPath) ?? throw new ArgumentException($"Provided path ({outputPath}) is not valid.", nameof(outputPath));
          var outputFileNameWithoutExtension = Path.GetFileNameWithoutExtension(outputPath);
          var outputPrefix = Path.Combine(directory, outputFileNameWithoutExtension);
-@@ -1616,7 +1614,43 @@
+@@ -1616,7 +1657,43 @@
  
          var segmentFormat = string.Empty;
          var segmentContainer = outputExtension.TrimStart('.');
@@ -54,7 +133,7 @@ diff -ruN -x bin -x obj a/Jellyfin.Api/Controllers/DynamicHlsController.cs b/Jel
          var hlsArguments = $"-hls_playlist_type {(isEventPlaylist ? "event" : "vod")} -hls_list_size 0";
  
          if (string.Equals(segmentContainer, "ts", StringComparison.OrdinalIgnoreCase))
-@@ -1672,7 +1706,7 @@
+@@ -1672,7 +1749,7 @@
              GetVideoArguments(state, startNumber, isEventPlaylist, segmentContainer),
              GetAudioArguments(state),
              maxMuxingQueueSize,
@@ -393,7 +472,7 @@ diff -ruN -x bin -x obj a/src/Jellyfin.MediaEncoding.Hls/Jellyfin.MediaEncoding.
    <ItemGroup>
 diff -ruN -x bin -x obj a/src/Jellyfin.MediaEncoding.Hls/Playlist/DynamicHlsPlaylistGenerator.cs b/src/Jellyfin.MediaEncoding.Hls/Playlist/DynamicHlsPlaylistGenerator.cs
 --- a/src/Jellyfin.MediaEncoding.Hls/Playlist/DynamicHlsPlaylistGenerator.cs	2026-06-06 11:37:28.000000000 -0400
-+++ b/src/Jellyfin.MediaEncoding.Hls/Playlist/DynamicHlsPlaylistGenerator.cs	2026-09-01 20:19:56.206296000 -0400
++++ b/src/Jellyfin.MediaEncoding.Hls/Playlist/DynamicHlsPlaylistGenerator.cs	2026-09-03 20:05:16.034778000 -0400
 @@ -9,6 +9,7 @@
  using Jellyfin.MediaEncoding.Keyframes;
  using MediaBrowser.Common.Configuration;
@@ -402,7 +481,7 @@ diff -ruN -x bin -x obj a/src/Jellyfin.MediaEncoding.Hls/Playlist/DynamicHlsPlay
  using MediaBrowser.Controller.MediaEncoding;
  
  namespace Jellyfin.MediaEncoding.Hls.Playlist;
-@@ -17,16 +18,19 @@
+@@ -17,28 +18,53 @@
  public class DynamicHlsPlaylistGenerator : IDynamicHlsPlaylistGenerator
  {
      private readonly IServerConfigurationManager _serverConfigurationManager;
@@ -423,7 +502,17 @@ diff -ruN -x bin -x obj a/src/Jellyfin.MediaEncoding.Hls/Playlist/DynamicHlsPlay
          _extractors = extractors.Where(e => e.IsMetadataBased).ToArray();
      }
  
-@@ -37,8 +41,23 @@
+     /// <inheritdoc />
+     public string CreateMainPlaylist(CreateMainPlaylistRequest request)
+     {
++        var segments = ComputeSegmentLengths(request);
++        return BuildMainPlaylist(request, segments);
++    }
++
++    /// <inheritdoc />
++    public IReadOnlyList<double> ComputeSegmentLengths(CreateMainPlaylistRequest request)
++    {
+         IReadOnlyList<double> segments;
          // For video transcodes it is sufficient with equal length segments as ffmpeg will create new keyframes
          if (request.IsRemuxingVideo
              && request.MediaSourceId is not null
@@ -447,7 +536,19 @@ diff -ruN -x bin -x obj a/src/Jellyfin.MediaEncoding.Hls/Playlist/DynamicHlsPlay
              segments = ComputeSegments(keyframeData, request.DesiredSegmentLengthMs);
          }
          else
-@@ -106,6 +125,16 @@
+@@ -46,6 +72,11 @@
+             segments = ComputeEqualLengthSegments(request.DesiredSegmentLengthMs, request.TotalRuntimeTicks);
+         }
+ 
++        return segments;
++    }
++
++    private static string BuildMainPlaylist(CreateMainPlaylistRequest request, IReadOnlyList<double> segments)
++    {
+         var segmentExtension = EncodingHelper.GetSegmentFileExtension(request.SegmentContainer);
+ 
+         // http://ffmpeg.org/ffmpeg-all.html#toc-hls-2
+@@ -106,6 +137,16 @@
          return builder.ToString();
      }
  
@@ -464,7 +565,7 @@ diff -ruN -x bin -x obj a/src/Jellyfin.MediaEncoding.Hls/Playlist/DynamicHlsPlay
      private bool TryExtractKeyframes(Guid itemId, string filePath, [NotNullWhen(true)] out KeyframeData? keyframeData)
      {
          keyframeData = null;
-@@ -152,6 +181,45 @@
+@@ -152,6 +193,45 @@
          return false;
      }
  
@@ -512,14 +613,15 @@ diff -ruN -x bin -x obj a/src/Jellyfin.MediaEncoding.Hls/Playlist/DynamicHlsPlay
          if (keyframeData.KeyframeTicks.Count > 0 && keyframeData.TotalDuration < keyframeData.KeyframeTicks[^1])
 diff -ruN -x bin -x obj a/src/Jellyfin.MediaEncoding.Hls/Playlist/IDynamicHlsPlaylistGenerator.cs b/src/Jellyfin.MediaEncoding.Hls/Playlist/IDynamicHlsPlaylistGenerator.cs
 --- a/src/Jellyfin.MediaEncoding.Hls/Playlist/IDynamicHlsPlaylistGenerator.cs	2026-06-06 11:37:28.000000000 -0400
-+++ b/src/Jellyfin.MediaEncoding.Hls/Playlist/IDynamicHlsPlaylistGenerator.cs	2026-09-01 20:19:56.226065000 -0400
-@@ -1,3 +1,5 @@
++++ b/src/Jellyfin.MediaEncoding.Hls/Playlist/IDynamicHlsPlaylistGenerator.cs	2026-09-03 20:05:16.026768400 -0400
+@@ -1,3 +1,6 @@
 +using System;
++using System.Collections.Generic;
 +
  namespace Jellyfin.MediaEncoding.Hls.Playlist;
  
  /// <summary>
-@@ -11,4 +13,17 @@
+@@ -11,4 +14,26 @@
      /// <param name="request">An instance of the <see cref="CreateMainPlaylistRequest"/> class.</param>
      /// <returns>The playlist as a formatted string.</returns>
      string CreateMainPlaylist(CreateMainPlaylistRequest request);
@@ -536,6 +638,15 @@ diff -ruN -x bin -x obj a/src/Jellyfin.MediaEncoding.Hls/Playlist/IDynamicHlsPla
 +    /// <param name="filePath">The file path.</param>
 +    /// <returns><see langword="true"/> if per-keyframe segmentation will be used.</returns>
 +    bool WouldUseKeyframeSegments(Guid? mediaSourceId, string filePath);
++
++    /// <summary>
++    /// MovieTheater patch: the exact segment lengths (seconds) the main playlist for this request would
++    /// promise, in order. Lets a caller map a media position to the playlist index the client will ask
++    /// for, so a transcode can be started AT that segment instead of at zero.
++    /// </summary>
++    /// <param name="request">The playlist request.</param>
++    /// <returns>Segment lengths in seconds, one per playlist entry.</returns>
++    IReadOnlyList<double> ComputeSegmentLengths(CreateMainPlaylistRequest request);
  }
 diff -ruN -x bin -x obj a/tests/Jellyfin.MediaEncoding.Hls.Tests/Playlist/DynamicHlsPlaylistGeneratorTests.cs b/tests/Jellyfin.MediaEncoding.Hls.Tests/Playlist/DynamicHlsPlaylistGeneratorTests.cs
 --- a/tests/Jellyfin.MediaEncoding.Hls.Tests/Playlist/DynamicHlsPlaylistGeneratorTests.cs	2026-06-06 11:37:28.000000000 -0400

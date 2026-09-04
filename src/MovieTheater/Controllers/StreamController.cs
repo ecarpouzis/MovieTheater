@@ -503,6 +503,15 @@ namespace MovieTheater.Controllers
                     && MaxWidthForCeiling(request.MaxBitrateBps) is int maxWidth
                     && !transcodingUrl.Contains("MaxWidth=", StringComparison.OrdinalIgnoreCase))
                     transcodingUrl += $"&MaxWidth={maxWidth}";
+                // Tell the patched Jellyfin where playback will START. hls.js fetches the fMP4 init file
+                // before its first segment, and stock Jellyfin spawns ffmpeg from the head of the file for
+                // it — then kills and respawns at the join segment a moment later (two spawns, 2–5 s dead,
+                // on every channel tune and every resume; measured 2026-09-03). The patched init handler
+                // (hls-copy-freeze skill, patch #4) reads mtJoinTicks and spawns at that segment. The
+                // playlist copies the query string onto every segment URL, so the param rides along;
+                // stock Jellyfin ignores it.
+                if (startTicks > 0)
+                    transcodingUrl += $"&mtJoinTicks={startTicks}";
                 playbackUrl = ToGatewayUrl(transcodingUrl);
                 isHls = true;
             }

@@ -23,7 +23,13 @@ var app = builder.Build();
 var config = app.Configuration;
 string secret = config["StreamTokenSecret"]
     ?? throw new InvalidOperationException("StreamTokenSecret is required.");
-string jellyfinBase = (config["JellyfinBaseUrl"] ?? "http://localhost:8096").TrimEnd('/');
+// 127.0.0.1, never "localhost": Jellyfin's Kestrel binds 0.0.0.0:8096 only, and .NET resolves localhost
+// to ::1 FIRST. On Ziggy that connect attempt takes ~2.0 s to fail before the IPv4 fallback, and the
+// pooled connection that hides it is dropped after a minute idle — so the first proxied request after
+// any quiet minute (i.e. every channel tune's master.m3u8) paid 2 s for nothing (measured 2026-09-03:
+// 2,035 ms via the gateway vs 216 ms straight at Jellyfin, identical request). Prod config carries the
+// same value; keep both on the literal IPv4 loopback.
+string jellyfinBase = (config["JellyfinBaseUrl"] ?? "http://127.0.0.1:8096").TrimEnd('/');
 string jellyfinApiKey = config["JellyfinApiKey"]
     ?? throw new InvalidOperationException("JellyfinApiKey is required.");
 string siteOrigin = config["SiteOrigin"] ?? "https://your-movie-site.example";
