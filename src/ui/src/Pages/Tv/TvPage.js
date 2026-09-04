@@ -397,7 +397,9 @@ function TvPage({ userData }) {
   // Re-anchor the channel clock from a Now answer. The offset the server states was true about half a
   // round trip ago, so backdate by that much instead of pretending the answer was instantaneous (the
   // clamp keeps one pathological request from throwing the anchor seconds off).
-  const anchorSync = useCallback((nowData, rttMs) => {
+  // answeredAtMs: when the Now answer actually ARRIVED (performance.now()). Defaults to "just now"; a
+  // prefetched answer consumed later must anchor to its own arrival, not to when it was read.
+  const anchorSync = useCallback((nowData, rttMs, answeredAtMs) => {
     const position = nowData?.current?.offsetSeconds;
     if (typeof position !== "number") {
       syncRef.current = null;
@@ -406,9 +408,18 @@ function TvPage({ userData }) {
     syncRef.current = {
       itemId: nowData.current.itemId ?? null,
       position,
-      atMs: performance.now() - Math.min(rttMs, 2_000) / 2,
+      atMs: (answeredAtMs ?? performance.now()) - Math.min(rttMs, 2_000) / 2,
     };
   }, []);
+
+  // The FIRST tune's Now answer, requested the instant the page mounts with a channel id in the URL —
+  // in parallel with the channel list, instead of after it. The list is only needed for the chrome
+  // (name, category, the up/down order); the tune itself needs Now, and waiting on the list first cost
+  // the whole list round trip (~150–300 ms measured) on every cold open of /tv/<id>. Consumed exactly
+  // once, only by a tune for the same channel, only while fresh — a stale answer would anchor the drift
+  // corrector to the wrong instant.
+  const nowPrefetchRef = useRef(null);
+  const NOW_PREFETCH_FRESH_MS = 8_000;
 
   // ── tune to the channel's live position ─────────────────────────────────────
   const tune = useCallback(
@@ -439,10 +450,24 @@ function TvPage({ userData }) {
       setTimeout(() => setStaticBurst(false), 420);
 
       try {
-        const askedAt = performance.now();
+        let askedAt = performance.now();
+        let answeredAt = null;
+        let nowData = null;
+        // A mount-time prefetch for this very channel (see nowPrefetchRef): take it instead of paying a
+        // second round trip. Its own timestamps anchor the channel clock.
+        const pre = nowPrefetchRef.current;
+        nowPrefetchRef.current = null;
+        if (pre && String(pre.id) === String(chan.id) && performance.now() - pre.askedAt < NOW_PREFETCH_FRESH_MS) {
+          const answer = await pre.promise;
+          if (answer) {
+            nowData = answer;
+            askedAt = pre.askedAt;
+            answeredAt = pre.answeredAt;
+          }
+        }
         // No signal here: the monotonic tune id IS this call's cancellation — a superseded tune drops
         // its own answer, and aborting would also lose the presence beat the poll relies on.
-        const nowData = await MovieAPI.getChannelNow(chan.id);
+        if (!nowData) nowData = await MovieAPI.getChannelNow(chan.id);
         if (superseded()) return;
         setNow(nowData);
         if (!nowData.current) {
@@ -458,7 +483,7 @@ function TvPage({ userData }) {
         }
         currentItemIdRef.current = nowData.current.itemId ?? null;
         currentEndsAtRef.current = nowData.current.endsAtUtc ?? null;
-        anchorSync(nowData, performance.now() - askedAt);
+        anchorSync(nowData, (answeredAt ?? performance.now()) - askedAt, answeredAt ?? undefined);
 
         const loopTs = Date.now();
         const loop = retuneLoopRef.current;
@@ -782,6 +807,18 @@ function TvPage({ userData }) {
   );
 
   useEffect(() => {
+    // Overlap the first Now with the channel list (see nowPrefetchRef). Failures are swallowed: the
+    // tune simply asks again and surfaces its own error.
+    if (channelId) {
+      const record = { id: channelId, askedAt: performance.now(), answeredAt: null, promise: null };
+      record.promise = MovieAPI.getChannelNow(channelId)
+        .then((data) => {
+          record.answeredAt = performance.now();
+          return data;
+        })
+        .catch(() => null);
+      nowPrefetchRef.current = record;
+    }
     loadChannels();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
