@@ -309,12 +309,22 @@ namespace MovieTheater.Services.Jellyfin
             // copy path): an SDR client that *copies* an HDR HEVC source renders washed-out,
             // so restrict which ranges may be copied — non-HDR clients fall through to a
             // tonemapping transcode. The copy path is the only no-cost HDR passthrough.
-            // Dolby Vision (DOVI*) is split out: only a client that actually DECODES DV (≈Safari)
-            // may copy a DOVI source — a non-DV browser that copies it renders broken, so without
-            // the DV flag DOVI is excluded and the source tonemaps/transcodes instead.
-            string allowedRanges = caps.Hdr ? "SDR|HDR10|HLG|HDR10Plus" : "SDR";
+            // Dolby Vision is split by BASE LAYER (see allowedRanges below): profile-8 sources with a
+            // standard HDR10/HDR10+/HLG/SDR base copy to any client that copies that base; bare DOVI
+            // (profile 5) and the enhancement-layer profiles need a client that actually DECODES DV
+            // (≈Safari) — a non-DV browser that copies those renders broken, so they tonemap instead.
+            // Dolby Vision refinement (2026-09-03, Ballerina): Jellyfin classifies DV by what the BASE
+            // layer is. Profile 8.x carries a standard HDR10 / HDR10+ / HLG / SDR base layer plus RPU
+            // metadata that a non-DV decoder simply ignores, so "DOVIWithHDR10(Plus)" plays as plain
+            // HDR10 on any client that copies HDR10 (this is what jellyfin-web does too). Only a BARE
+            // "DOVI" range (profile 5 — no compatible base, renders green/purple without a DV decoder)
+            // and the enhancement-layer variants (profile 7) still need a real DV client. Ballerina
+            // (DV 8.1, 24.8 Mbps 4K) was being tone-map re-encoded for an HDR-capable Edge for no gain.
+            string allowedRanges = caps.Hdr
+                ? "SDR|HDR10|HLG|HDR10Plus|DOVIWithHDR10|DOVIWithHDR10Plus|DOVIWithHLG|DOVIWithSDR"
+                : "SDR|DOVIWithSDR";
             if (caps.DolbyVision)
-                allowedRanges += "|DOVI|DOVIWithHDR10|DOVIWithHLG|DOVIWithSDR|DOVIWithHDR10Plus";
+                allowedRanges += "|DOVI|DOVIWithEL|DOVIWithELHDR10";
 
             var codecProfiles = new List<object>
             {
