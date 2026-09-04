@@ -423,7 +423,9 @@ function TvPage({ userData }) {
 
   // ── tune to the channel's live position ─────────────────────────────────────
   const tune = useCallback(
-    async (chan) => {
+    // fromEnded: this tune was forced by the element's 'ended' event, not asked for by anyone — the
+    // only kind the retune-loop breaker below is allowed to count.
+    async (chan, { fromEnded = false } = {}) => {
       if (!chan) return;
       const seq = ++tuneSeqRef.current;
       const superseded = () => seq !== tuneSeqRef.current;
@@ -485,14 +487,23 @@ function TvPage({ userData }) {
         currentEndsAtRef.current = nowData.current.endsAtUtc ?? null;
         anchorSync(nowData, (answeredAt ?? performance.now()) - askedAt, answeredAt ?? undefined);
 
+        // The retune-loop breaker counts ONLY tunes the element itself forced by 'ending' — the
+        // signature of the bug it exists for (a copy join whose keyframe index can't seat the seek, so
+        // playback ends moments after every join). A viewer's own tunes — scrubs, skips, restarts,
+        // channel hops, resume — are deliberate and must never count: on 2026-09-03 four scrubs
+        // through Ballerina inside 20 s tripped it, the item was escalated to a forced re-encode at
+        // its own 24.8 Mbps 4K HEVC, that encode couldn't keep up, and the ABR then dropped the
+        // viewer to a 20 Mbps encode. "Fast scrubbing" read as "broken title".
         const loopTs = Date.now();
         const loop = retuneLoopRef.current;
-        if (loop.itemId === nowData.current.itemId && loopTs - loop.firstAt < RETUNE_LOOP_WINDOW_MS) {
-          loop.count += 1;
-        } else {
-          retuneLoopRef.current = { itemId: nowData.current.itemId, count: 1, firstAt: loopTs, escalated: false };
+        if (fromEnded) {
+          if (loop.itemId === nowData.current.itemId && loopTs - loop.firstAt < RETUNE_LOOP_WINDOW_MS) {
+            loop.count += 1;
+          } else {
+            retuneLoopRef.current = { itemId: nowData.current.itemId, count: 1, firstAt: loopTs, escalated: loop.itemId === nowData.current.itemId && loop.escalated };
+          }
         }
-        if (retuneLoopRef.current.count > RETUNE_LOOP_LIMIT) {
+        if (fromEnded && retuneLoopRef.current.count > RETUNE_LOOP_LIMIT) {
           if (!retuneLoopRef.current.escalated) {
             // The copy/remux path can't mid-join this title — its keyframe index doesn't map to the
             // requested seek, so playback 'ended' immediately on every retry. Escalate ONCE to a forced
@@ -969,7 +980,7 @@ function TvPage({ userData }) {
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return undefined;
-    const onEnded = () => channel && tune(channel);
+    const onEnded = () => channel && tune(channel, { fromEnded: true });
     const onPlaying = () => {
       setTuning(false); // first frames arrived — hide the "Tuning…" card
       if (pausedRef.current) videoRef.current?.pause(); // joined a frozen channel — hold the frame

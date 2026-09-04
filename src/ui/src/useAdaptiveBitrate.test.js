@@ -56,6 +56,24 @@ describe("useAdaptiveBitrate", () => {
     expect(onAdapt).toHaveBeenCalledWith(4_000_000);
   });
 
+  // The other half of the copy rule: a stall on a copied stream whose link MEASURABLY carries the
+  // source with headroom is not the wire's fault, and every rung below the source is a re-encode.
+  // Ballerina 2026-09-03: 24.8 Mbps 4K HEVC copy, estimate 1.36 Gbps, dropped to a 20 Mbps encode.
+  it("keeps a COPIED stream when the fresh estimate clears the source with headroom", () => {
+    const { hook, onAdapt } = setup({ copied: true, sourceVideoBps: 24_787_016 });
+    act(() => hook.result.current.handleBandwidth(1_362_770_115));
+    stallTwice(hook);
+    expect(onAdapt).not.toHaveBeenCalled();
+    expect(hook.result.current.autoBpsRef.current).toBe(DIRECT_BPS);
+  });
+
+  it("still drops a COPIED stream when the fresh estimate is BELOW the source — a thin link is real", () => {
+    const { hook, onAdapt } = setup({ copied: true, sourceVideoBps: 24_787_016 });
+    act(() => hook.result.current.handleBandwidth(15_000_000));
+    stallTwice(hook);
+    expect(onAdapt).toHaveBeenCalledWith(8_000_000);
+  });
+
   it("does not climb while the video is copied — every rung above it is the same bytes", () => {
     const { hook, onAdapt } = setup({ copied: true });
     act(() => hook.result.current.handleBandwidth(500_000_000));

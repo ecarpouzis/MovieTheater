@@ -30,6 +30,9 @@ const ABR_STALLS_TO_DOWNSHIFT = 2;
 // the ladder cascaded down (observed 2026-08-16: two drops 30s apart on one dip). A stall this soon
 // after a switch is the switch, not the link.
 const ABR_POST_SWITCH_GRACE_MS = 10_000;
+// A copied stream keeps its rung when the fresh estimate clears the source's bitrate by this much —
+// the same headroom the climb demands, so "safe to climb into" and "safe to stay on" agree.
+const ABR_COPY_STALL_HEADROOM = 1.5;
 
 // A throughput estimate older than this says nothing about the link that is stalling RIGHT NOW —
 // fall back to the blind one-rung walk rather than trust it.
@@ -117,10 +120,22 @@ export function useAdaptiveBitrate({ qualityKeyRef, profile, onAdapt, videoCopie
     stallEpisodesRef.current = recent;
     if (recent.length < ABR_STALLS_TO_DOWNSHIFT) return; // a lone transient stall — let the buffer recover
     if (now - lastSwitchAtRef.current < ABR_COOLDOWN_MS) return;
-    stallEpisodesRef.current = []; // consumed — start the count fresh after a downshift
-    demotionMultRef.current = Math.min(demotionMultRef.current * 2, ABR_DEMOTION_MULT_MAX);
     const est = lastEstimateRef.current;
     const freshBps = est && now - est.at <= ABR_ESTIMATE_FRESH_MS ? est.bps : undefined;
+    // A COPIED stream stalling on a link that measurably carries the source with headroom is not a
+    // bandwidth problem, and the only rungs below the source are re-encodes — dropping onto one
+    // trades a server-side hiccup (a spawn, a cold SMB open, a seek storm) for a permanently worse
+    // picture that the same server now has to encode. Ballerina, 2026-09-03: 24.8 Mbps 4K HEVC,
+    // estimate 1.36 Gbps, dropped to a 20 Mbps encode after a stall that had nothing to do with the
+    // wire. Without a fresh estimate the drop still runs (a thin remote link measures low or not
+    // at all), and a non-copied stream is unaffected.
+    const sourceBps = sourceVideoBpsRef?.current;
+    if (videoCopiedRef?.current && freshBps && sourceBps && freshBps >= sourceBps * ABR_COPY_STALL_HEADROOM) {
+      stallEpisodesRef.current = []; // the episode is explained — don't let it accumulate into a drop
+      return;
+    }
+    stallEpisodesRef.current = []; // consumed — start the count fresh after a downshift
+    demotionMultRef.current = Math.min(demotionMultRef.current * 2, ABR_DEMOTION_MULT_MAX);
     const from = autoBpsRef.current;
     const to = rungDown(from, sourceVideoBpsRef?.current, freshBps);
     // The emergency downgrade: the viewer's picture is being taken away because the stream kept
