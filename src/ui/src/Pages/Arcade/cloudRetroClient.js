@@ -931,8 +931,9 @@ export function createCloudRetroSession(descriptor, opts) {
     if (name !== "first-frame") return;
     const m = ttff.marks;
     try {
-      console.log(`[ttff] total ${m["first-frame"]}ms — ws-open ${m["ws-open"]} init ${m.init} dc-open ${m["dc-open"]} ` +
-        `game-start ${m["game-start"]} first-frame ${m["first-frame"]} (${descriptor.system || "?"})`);
+      console.log(`[ttff] total ${m["first-frame"]}ms — ws-open ${m["ws-open"]} init ${m.init} offer ${m.offer} ` +
+        `ice-checking ${m["ice-checking"]} ice-connected ${m["ice-connected"]} pc-connected ${m["pc-connected"]} ` +
+        `dc-open ${m["dc-open"]} gather-done ${m["gather-done"]} game-start ${m["game-start"]} first-frame ${m["first-frame"]} (${descriptor.system || "?"})`);
       onTtff && onTtff({ totalMs: m["first-frame"], marks: { ...m } });
     } catch { /* an observer's error must never touch the session */ }
   }
@@ -1471,7 +1472,16 @@ export function createCloudRetroSession(descriptor, opts) {
     pc.onconnectionstatechange = () => {
       if (pc.connectionState === "failed" || pc.connectionState === "disconnected")
         status(pc.connectionState);
+      if (pc.connectionState === "connected") ttffMark("pc-connected"); // ICE + DTLS up; SCTP/dc still to come
       if (pc.connectionState === "connected" && audioReceiverPc === pc) scheduleAudioJitterTiering();
+    };
+    // TTFF sub-marks for the transport hop (perf program P13): where inside init→dc-open the time goes.
+    // offer = the worker's SDP arrived (signaling path); ice-checking = both sides have candidates and
+    // checks started; ice-connected = a pair nominated; gather-done = our own gathering (STUN/TURN) finished.
+    pc.onicegatheringstatechange = () => { if (pc.iceGatheringState === "complete") ttffMark("gather-done"); };
+    pc.oniceconnectionstatechange = () => {
+      if (pc.iceConnectionState === "checking") ttffMark("ice-checking");
+      if (pc.iceConnectionState === "connected" || pc.iceConnectionState === "completed") ttffMark("ice-connected");
     };
 
     // Kick off: we are not the offerer — the server sends the SDP offer. sdp:"audio-pc" asks a
@@ -1627,6 +1637,7 @@ export function createCloudRetroSession(descriptor, opts) {
   }
 
   async function onSdp(sdpString) {
+    ttffMark("offer");
     // Appendix A1/A2: signal values are JSON-stringified.
     const desc = JSON.parse(sdpString);
     await pc.setRemoteDescription(desc);
