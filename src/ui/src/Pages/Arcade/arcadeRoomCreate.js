@@ -8,6 +8,7 @@
  */
 import { message } from "antd";
 import { MovieAPI } from "../../MovieAPI";
+import { arcadeDeviceId } from "./cloudRetroClient";
 
 // Per-room stream quality the creator picks (arcade per-room bitrate/FEC). Persisted so a friend
 // group keeps its setting across sessions; applied to every room YOU start (one encoder per room =
@@ -90,7 +91,7 @@ export function createRoomAndGo(gameId, opts, history) {
   const net = NETWORK_PROFILES[q.network] || NETWORK_PROFILES.lan;
   const netParams = q.networkChosen ? net : { audioFec: net.audioFec };
   return Promise.resolve(q.codec === "auto" ? resolveAutoCodec() : q.codec)
-    .then((codec) => MovieAPI.createArcadeRoom(gameId, { ...opts, videoBitrateKbps: q.videoBitrateKbps, ...netParams, videoCodec: codec }))
+    .then((codec) => MovieAPI.createArcadeRoom(gameId, { ...opts, videoBitrateKbps: q.videoBitrateKbps, ...netParams, videoCodec: codec, deviceId: arcadeDeviceId() }))
     .then(async (r) => {
       if (r.status === 503) { message.warning("The arcade is full — every machine is in use. Try again shortly."); return null; }
       if (!r.ok) { message.error("Couldn't start that game."); return null; }

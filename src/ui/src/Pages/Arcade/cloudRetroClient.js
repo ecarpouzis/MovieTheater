@@ -347,7 +347,7 @@ export { mappingRowsFor, SYSTEM_BUTTON_LABELS } from "./controllerMapDisplay";
 // Random and meaningless by construction: it identifies a browser profile to itself, nothing more.
 const ARCADE_DEVICE_ID_KEY = "arcade.deviceId";
 let cachedArcadeDeviceId = null;
-function arcadeDeviceId() {
+export function arcadeDeviceId() {
   if (cachedArcadeDeviceId) return cachedArcadeDeviceId;
   let id = "";
   try {
@@ -1498,6 +1498,10 @@ export function createCloudRetroSession(descriptor, opts) {
     // Observability only: the worker files the row, and nothing reads it back yet.
     const deviceId = arcadeDeviceId();
     if (deviceId) init.device_id = deviceId;
+    // warm_kbps (ABR plan Phase 1, perf program P10): the site's memory of what THIS device's link sustained
+    // last time, from the join descriptor. The worker seeds this peer's bandwidth estimator with it (and
+    // the room's opener when we are the creator) so a proven link skips the 20 s cold climb. Absent = cold.
+    if (!inputOnly && Number.isFinite(descriptor.warmKbps) && descriptor.warmKbps > 0) init.warm_kbps = descriptor.warmKbps | 0;
     try {
       const who = localStorage.getItem("Username");
       if (who) init.username = who;

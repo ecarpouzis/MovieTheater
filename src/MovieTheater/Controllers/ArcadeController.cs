@@ -701,6 +701,10 @@ namespace MovieTheater.Controllers
             /// Room-wide (one encoder per room), so it also rides every joiner's descriptor.</summary>
             public string? VideoCodec { get; set; }
 
+            /// <summary>The creator's device id (the same localStorage GUID the shim sends on INIT_WEBRTC),
+            /// so the descriptor can carry that device's warm-start hint (perf program P10). Optional.</summary>
+            public string? DeviceId { get; set; }
+
             /// <summary>Cheat ids the creator ticked in the lobby, as returned by <c>GET .../Cheats</c>:
             /// <c>"c{ArcadeCheat.Id}"</c> for a stored cheat, <c>"s:{optionKey}"</c> for a system-wide option
             /// cheat. Unknown ids are ignored, not rejected — a stale card in an open tab shouldn't fail the
@@ -1839,7 +1843,8 @@ namespace MovieTheater.Controllers
                 // attributed to the room host. Achievements/leaderboards are recorded for every room.
             }
 
-            return Json(ToJson(descriptor, discCount, competitive));
+            var warmCodec = codec == "" ? "av1" : codec;
+            return Json(ToJson(descriptor, discCount, competitive, await ComputeWarmKbpsAsync(userId.Value, request.DeviceId, warmCodec)));
         }
 
         // ── Durable saves (docs/arcade-saves-plan.md) ────────────────────────────────────────────────
@@ -3220,7 +3225,7 @@ namespace MovieTheater.Controllers
         }
 
         [HttpPost("/API/Arcade/Room/{code}/Join")]
-        public async Task<IActionResult> Join(string code)
+        public async Task<IActionResult> Join(string code, [FromQuery] string? deviceId = null)
         {
             var userId = GetCurrentUserId();
             if (userId == null)
@@ -3279,7 +3284,8 @@ namespace MovieTheater.Controllers
             if (joinCtrlScheme != "")
                 descriptor = descriptor with { WsUrl = descriptor.WsUrl + "&ctrlscheme=" + joinCtrlScheme };
 
-            return Json(ToJson(descriptor, discCount, session.IsCompetitive));
+            return Json(ToJson(descriptor, discCount, session.IsCompetitive,
+                await ComputeWarmKbpsAsync(userId.Value, deviceId, roomCodec == "" ? "av1" : roomCodec)));
         }
 
         /// <summary>
@@ -3517,7 +3523,35 @@ namespace MovieTheater.Controllers
             return (m3uKey ?? game.CloudRetroGameKey, discCount);
         }
 
-        private static object ToJson(ArcadeJoinDescriptor d, int discCount = 0, bool competitive = false) => new
+        // ── Warm start (ABR quality plan Phase 1, perf program P10, 2026-09-05) ────────────────────
+        // The worker mirrors every non-same-host peer's sustained rate to ArcadeLinkStat at room close, per
+        // user + device. This reads that memory back for the device about to join: the MIN of its last three
+        // DIRECT-path sessions on this codec within 12 h, haircut by link class (wired-class RTT < 1.5 ms → ×0.85,
+        // wireless → ×0.7). The descriptor carries it as `warmKbps`; the shim hands it to the worker on
+        // INIT_WEBRTC, which seeds that peer's estimator (and, for the creator, the room's opener). Conservative
+        // by design: warm-too-low costs a short ramp from a high floor, warm-too-high costs a wireless collapse.
+        // No rows, a new device, a private-mode browser (no device id) → 0 → today's cold opener.
+        private static readonly TimeSpan WarmStartTtl = TimeSpan.FromHours(12);
+        private async Task<int> ComputeWarmKbpsAsync(int userId, string? deviceId, string codec)
+        {
+            var dev = SanitizeDeviceId(deviceId);
+            if (string.IsNullOrEmpty(dev)) return 0;
+            var since = DateTime.UtcNow - WarmStartTtl;
+            var rows = await movieDb.ArcadeLinkStats
+                .Where(r => r.UserId == userId && r.DeviceId == dev && r.Path == "direct" && r.Codec == codec
+                            && r.CreatedUtc >= since && r.SustainedKbps > 0)
+                .OrderByDescending(r => r.CreatedUtc)
+                .Take(3)
+                .Select(r => new { r.SustainedKbps, r.RttMeanMs })
+                .ToListAsync();
+            if (rows.Count == 0) return 0;
+            var sustained = rows.Min(r => r.SustainedKbps);
+            var wired = rows.Average(r => r.RttMeanMs) < 1.5;
+            var warm = (int)(sustained * (wired ? 0.85 : 0.7));
+            return Math.Clamp(warm, 0, 40000);
+        }
+
+        private static object ToJson(ArcadeJoinDescriptor d, int discCount = 0, bool competitive = false, int warmKbps = 0) => new
         {
             roomCode = d.RoomCode,
             wsUrl = d.WsUrl,
@@ -3540,6 +3574,8 @@ namespace MovieTheater.Controllers
             // Whether the worker has this room's rewind ring armed. Per-CORE, so only the server can
             // answer it; the room page offers the Rewind control on this and nothing else.
             canRewind = d.CanRewind,
+            // Warm-start hint for THIS device (P10): the shim copies it onto its INIT_WEBRTC. Absent = cold.
+            warmKbps = warmKbps > 0 ? warmKbps : (int?)null,
             discCount,
             // The shim copies these straight into its t=104 GAME_START. Omitted when empty so a room with no
             // cheats sends the same packet it always did.

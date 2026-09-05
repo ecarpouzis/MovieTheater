@@ -1001,11 +1001,11 @@ function prewarmArcadeGame(gameId) {
   return fetch(`/API/Arcade/Game/${encodeURIComponent(gameId)}/Prewarm`, { method: "post" }).catch(() => {});
 }
 
-function createArcadeRoom(gameId, { newGame = false, seedSlot = 0, videoBitrateKbps = 0, audioFec = 0, paceMs = null, cheats = [], videoCodec = "", hwContext = "", renderProfile = "", controllerScheme = "", competitive = false } = {}) {
+function createArcadeRoom(gameId, { newGame = false, seedSlot = 0, videoBitrateKbps = 0, audioFec = 0, paceMs = null, cheats = [], videoCodec = "", hwContext = "", renderProfile = "", controllerScheme = "", competitive = false, deviceId = "" } = {}) {
   return fetch("/API/Arcade/Room", {
     method: "post",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ gameId, newGame, seedSlot, videoBitrateKbps, audioFec, paceMs, cheats, videoCodec, hwContext, renderProfile, controllerScheme, competitive }),
+    body: JSON.stringify({ gameId, newGame, seedSlot, videoBitrateKbps, audioFec, paceMs, cheats, videoCodec, hwContext, renderProfile, controllerScheme, competitive, deviceId }),
   });
 }
 
@@ -1170,8 +1170,11 @@ function bindArcadeRoom(code, cloudRetroRoomId) {
 }
 
 // Join an existing room → returns a join descriptor with the bound room_id and an assigned seat.
-function joinArcadeRoom(code) {
-  return fetch(`/API/Arcade/Room/${encodeURIComponent(code)}/Join`, { method: "post" });
+// deviceId (perf program P10): the shim's localStorage device GUID, so the descriptor can carry this
+// device's warm-start hint. Optional; a private-mode browser sends none and gets the cold opener.
+function joinArcadeRoom(code, deviceId = "") {
+  const q = deviceId ? `?deviceId=${encodeURIComponent(deviceId)}` : "";
+  return fetch(`/API/Arcade/Room/${encodeURIComponent(code)}/Join${q}`, { method: "post" });
 }
 
 // Presence heartbeat + room status ({ bound, maxPlayers, yourSlot, players[] }); the room page polls it.

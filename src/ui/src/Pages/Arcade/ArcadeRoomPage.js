@@ -2,7 +2,7 @@ import { useEffect, useReducer, useRef, useState } from "react";
 import { useHistory, useLocation, useParams } from "react-router-dom";
 import { Button, Space, Tag, Typography, message, Tooltip, Modal, Select, Checkbox } from "antd";
 import { MovieAPI } from "../../MovieAPI";
-import { createCloudRetroSession, arcadeInputHint, rotatedVideoSize, videoTransform, systemUsesMouse, findNewPad, pickAutoBindPads, livePads, getFaceSwapMode, setFaceSwapMode, getPadFaceSwapOverride, setPadFaceSwapOverride, controllerLabelFor, mappingRowsFor, getIgnoreStreamedPads, setIgnoreStreamedPads, isStreamedPad, getCustomGamepadProfile, setCustomGamepadProfile, resetCustomGamepadProfile, getCustomChords, setCustomChords, resetCustomChords, stickFoldFor, setStickFoldOverride, resetStickFoldOverride, getRightStickSwapX, setRightStickSwapX, PAD, effectiveFaceSwap, effectiveInputSystem, controllerSchemeFromWsUrl } from "./cloudRetroClient";
+import { createCloudRetroSession, arcadeDeviceId, arcadeInputHint, rotatedVideoSize, videoTransform, systemUsesMouse, findNewPad, pickAutoBindPads, livePads, getFaceSwapMode, setFaceSwapMode, getPadFaceSwapOverride, setPadFaceSwapOverride, controllerLabelFor, mappingRowsFor, getIgnoreStreamedPads, setIgnoreStreamedPads, isStreamedPad, getCustomGamepadProfile, setCustomGamepadProfile, resetCustomGamepadProfile, getCustomChords, setCustomChords, resetCustomChords, stickFoldFor, setStickFoldOverride, resetStickFoldOverride, getRightStickSwapX, setRightStickSwapX, PAD, effectiveFaceSwap, effectiveInputSystem, controllerSchemeFromWsUrl } from "./cloudRetroClient";
 import { DEFAULT_CHORDS, resolveChords } from "./controllerChords";
 import { SYSTEM_LABEL, systemLabel, NO_SAVE_STATE_SYSTEMS, HEAVY_LANE_SYSTEMS, QUICK_SLOT, hasSaveStates } from "./arcadeSystems";
 import { lobbyPath } from "./arcadeLobbyState";
@@ -285,7 +285,7 @@ export default function ArcadeRoomPage() {
     if (fromState) return fromState;
 
     for (let attempt = 0; attempt < 12; attempt++) {
-      const res = await MovieAPI.joinArcadeRoom(code);
+      const res = await MovieAPI.joinArcadeRoom(code, arcadeDeviceId());
       if (res.ok) return res.json();
       if (res.status === 409) {
         const body = await res.json().catch(() => ({}));
