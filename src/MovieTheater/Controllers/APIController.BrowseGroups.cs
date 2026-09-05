@@ -78,10 +78,10 @@ namespace MovieTheater.Controllers
             string? groupBy = null, string? types = null, string? mode = null, string? value = null,
             string? sort = null, int seed = 0,
             int groupsSkip = 0, int groupsTop = 0, int perGroupTop = 0, int perGroupSkip = 0,
-            string? singleGroupKey = null, [FromQuery] BrowseFilterQuery? fq = null, CancellationToken ct = default)
+            string? singleGroupKey = null, [FromQuery] BrowseFilterQuery? fq = null, [FromQuery(Name = "for")] string? forUser = null, CancellationToken ct = default)
         {
             var by = BrowseGroups.NormalizeGroupBy(groupBy);
-            var scope = await ResolveGroupScopeAsync(types, mode, value, BrowseFilter.From(fq), ct);
+            var scope = await ResolveGroupScopeAsync(types, mode, value, BrowseFilter.From(fq), forUser, ct);
             if (scope == null) return BadRequest(new { Message = $"Unknown title type '{types}'" });
             var index = await CachedGroupIndexAsync(scope, by, ct);
             var heads = index.Heads;
@@ -128,10 +128,10 @@ namespace MovieTheater.Controllers
 
         /// <summary>Letter → first group index over the grouped order, for the grouped views' letter rail.</summary>
         [HttpGet("/API/BrowseGroupLetters")]
-        public async Task<IActionResult> BrowseGroupLettersAsync(string? groupBy = null, string? types = null, string? mode = null, string? value = null, [FromQuery] BrowseFilterQuery? fq = null, CancellationToken ct = default)
+        public async Task<IActionResult> BrowseGroupLettersAsync(string? groupBy = null, string? types = null, string? mode = null, string? value = null, [FromQuery] BrowseFilterQuery? fq = null, [FromQuery(Name = "for")] string? forUser = null, CancellationToken ct = default)
         {
             var by = BrowseGroups.NormalizeGroupBy(groupBy);
-            var scope = await ResolveGroupScopeAsync(types, mode, value, BrowseFilter.From(fq), ct);
+            var scope = await ResolveGroupScopeAsync(types, mode, value, BrowseFilter.From(fq), forUser, ct);
             if (scope == null) return BadRequest(new { Message = $"Unknown title type '{types}'" });
             var index = await CachedGroupIndexAsync(scope, by, ct);
             var letters = BrowseGroups.GroupLetters(index.Heads, by).Select(l => new { letter = l.Letter, firstIndex = l.FirstIndex }).ToList();
@@ -168,14 +168,17 @@ namespace MovieTheater.Controllers
         /// facet rail's combinable filter (R9 S2) compose — a link from the old world still works, a rail
         /// selection narrows it further. Misc rides along only when nothing narrows the set.
         /// </summary>
-        private async Task<GroupScope?> ResolveGroupScopeAsync(string? types, string? mode, string? value, BrowseFilter? filter = null, CancellationToken ct = default)
+        private async Task<GroupScope?> ResolveGroupScopeAsync(string? types, string? mode, string? value, BrowseFilter? filter = null, string? forUser = null, CancellationToken ct = default)
         {
             filter ??= BrowseFilter.Empty;
             var typeScope = ParseTypeScope(types);
             if (!string.IsNullOrWhiteSpace(types) && typeScope.Count == 0) return null;
             var (mq, sq) = ApplyBrowseFilter(await GetBaseMovieQuery(ct), await GetBaseSeriesQuery(ct), mode, value);
             (mq, sq) = ApplyTypeScope(typeScope, mq, sq);
-            (mq, sq) = BrowseFilter.Apply(movieDb, mq, sq, filter, GetCurrentUserId());
+            // The list OWNER (`for=` names a friend; else the caller) is both the `my=` leg's user and, below,
+            // the scope's UserId — so the cache entry is keyed by whose lists it holds, not who asked.
+            var listOwner = await ResolveListOwnerAsync(forUser, ct);
+            (mq, sq) = BrowseFilter.Apply(movieDb, mq, sq, filter, listOwner);
             var v = (value ?? "").Trim();
             var filtered = v.Length > 0 || !filter.IsEmpty;
             // Misc has no genre/cast/title-search presence (see ApplyTypeScope) — it joins only the plain Type-scope browse.
@@ -189,7 +192,7 @@ namespace MovieTheater.Controllers
             {
                 Movies = mq, Series = sq, MiscCards = miscCards,
                 Misc = miscCards.Select(c => new BrowseGroups.MiscLight(c.id, c.SimpleTitle, c.Title, c.ReleaseDate?.Year)).ToList(),
-                UserId = GetCurrentUserId(), Age = age, TypeScope = typeScope, Mode = mode, Value = v,
+                UserId = listOwner, Age = age, TypeScope = typeScope, Mode = mode, Value = v,
                 FilterSig = filter.Sig, UserDependent = filter.My.Count > 0, Filtered = filtered,
             };
         }

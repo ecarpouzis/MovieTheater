@@ -56,7 +56,7 @@ import NavBar from "./NavBar";
 import { resetPhotosAlbum } from "../hooks/usePhotosAlbum";
 
 const noopSearchProps = Object.fromEntries(
-  ["search", "facetSearch", "restoreMovieIdsSearch", "moviesSeenSearch", "moviesWantToWatchSearch"]
+  ["search", "facetSearch", "restoreMovieIdsSearch", "moviesListSearch"]
     .map((k) => [k, vi.fn()])
 );
 
@@ -149,14 +149,26 @@ describe("the phone drawer is the section's sider", () => {
     expect(drawer.querySelector(".navbar-index-nav")).toBeTruthy();
   });
 
-  it("Movies: the Seen · Want · Rate rows AND the browse rail", async () => {
+  it("Movies: the Seen · Want · Rate rows AND the browse rail — with no 'My lists' section (the rows are the door)", async () => {
     renderNav("/");
     const drawer = await openDrawer();
     await waitFor(() => expect(railTitles(drawer).length).toBeGreaterThan(0));
 
     expect(railTitles(drawer)).toEqual(expect.arrayContaining(["Type", "Genre", "Years"]));
+    expect(railTitles(drawer)).not.toContain("My lists");
     expect(Array.from(drawer.querySelectorAll(".stat-label")).map((n) => n.textContent))
       .toEqual(["Seen", "Want to Watch", "Rate Movies"]);
+    // The "Lists for" switcher sits above the rows: whose lists the section is on.
+    expect(drawer.querySelector(".lists-for-select")).not.toBeNull();
+  });
+
+  it("Movies on a friend's lists (?for=): the rows count theirs and Rate Movies is gone", async () => {
+    renderNav("/?for=Alex&my=want");
+    const drawer = await openDrawer();
+    await waitFor(() => expect(railTitles(drawer).length).toBeGreaterThan(0));
+
+    expect(Array.from(drawer.querySelectorAll(".stat-label")).map((n) => n.textContent))
+      .toEqual(["Seen", "Want to Watch"]);
   });
 
   it("Arcade: the lobby's facet rail — the drawer Eric found empty", async () => {
@@ -234,7 +246,8 @@ describe("the phone top bar's magnifier", () => {
 
     // The section's search is the rail's SmartSearch, at the top of the rail — the phone bar has no
     // centre search box for it to portal into, so the drawer carries it.
-    const box = await within(drawer).findByRole("combobox");
+    // Two comboboxes live in the drawer since the "Lists for" switcher: the rail's SmartSearch is the one with the class.
+    const box = await within(drawer).findByRole("combobox", { name: (_, el) => el.classList.contains("bx-search-input") });
     await waitFor(() => expect(document.activeElement).toBe(box));
 
     // …and there is nowhere else to reach the filters from: no Filters pill, no full-page sheet.
@@ -246,7 +259,8 @@ describe("the phone top bar's magnifier", () => {
     renderNav("/");
     await openDrawer();
     const drawer = document.querySelector(".navbar-dropdown--open");
-    const box = await within(drawer).findByRole("combobox");
+    // Two comboboxes live in the drawer since the "Lists for" switcher: the rail's SmartSearch is the one with the class.
+    const box = await within(drawer).findByRole("combobox", { name: (_, el) => el.classList.contains("bx-search-input") });
     box.blur();
     expect(document.activeElement).not.toBe(box);
 

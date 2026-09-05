@@ -28,13 +28,14 @@ namespace MovieTheater.Controllers
         /// tags or certificates to filter on) — the same rule the type browse applies.
         /// </summary>
         [HttpGet("/API/Browse")]
-        public async Task<IActionResult> BrowseAsync([FromQuery] BrowseFilterQuery? fq = null, string? types = null, string? sort = null, int seed = 0, int page = 1, int pageSize = 60, CancellationToken ct = default)
+        public async Task<IActionResult> BrowseAsync([FromQuery] BrowseFilterQuery? fq = null, string? types = null, string? sort = null, int seed = 0, int page = 1, int pageSize = 60, [FromQuery(Name = "for")] string? forUser = null, CancellationToken ct = default)
         {
             var typeScope = ParseTypeScope(types);
             if (!string.IsNullOrWhiteSpace(types) && typeScope.Count == 0) return BadRequest(new { Message = $"Unknown title type '{types}'" });
             var filter = BrowseFilter.From(fq);
             var (mq, sq) = ApplyTypeScope(typeScope, await GetBaseMovieQuery(ct), await GetBaseSeriesQuery(ct));
-            (mq, sq) = BrowseFilter.Apply(movieDb, mq, sq, filter, GetCurrentUserId());
+            // `my=` reads the LIST OWNER's rows: the caller, or the friend `for=<username>` names.
+            (mq, sq) = BrowseFilter.Apply(movieDb, mq, sq, filter, await ResolveListOwnerAsync(forUser, ct));
             var s = NormalizeSort(sort);
             var wantMisc = typeScope.Contains(NormalizedTitleType.Misc) && !filter.HasFacets;
             if (!wantMisc) return Ok(await PageMergedAsync(mq, sq, page, pageSize, s, seed, ct));

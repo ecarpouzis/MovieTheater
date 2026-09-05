@@ -10,6 +10,7 @@
  * | `continue` | `/API/ContinueWatching` (R9 S7's one new movie read: a resume position had no route) |
  * | `now-on-tv` | the channel lineup `useChannelLineup` already builds for the homepage rail |
  * | `for-you` | `/API/Recommendations` (the `TitleRecommendation` rows the maintenance service keeps) |
+ * | `suggested` | the head of `/API/Me`'s `moviesSuggested` (newest first), resolved by `/API/GetMoviesByIds` |
  * | `recent` | `/API/Browse?sort=added` |
  * | `franchises` | `/API/BrowseGroups?groupBy=franchise` — GROUP cards, routed by facet |
  * | `franchise-run` | `/API/GetFranchiseRail` anchored on the spotlight title |
@@ -45,6 +46,9 @@ export interface MoviesExploreInput {
   continueWatching?: ContinueRow[];
   recommendations?: RecommendationRow[];
   franchiseGroups?: FranchiseGroupRow[];
+  /** What friends suggested to the viewer, newest first (the head of `userData.moviesSuggested`,
+   *  resolved to cards by `/API/GetMoviesByIds`). */
+  suggested?: MovieCardRow[];
   franchiseRun?: FranchiseRailDto | null;
   lineup?: LineupChannel[] | null;
   seed?: number;
@@ -62,6 +66,7 @@ export function moviesFacetHref(mode: string, value: string): string | null {
 }
 
 export const MOVIES_MORE: Record<string, string> = {
+  suggested: "/?my=suggested",
   "now-on-tv": "/channels",
   recent: "/?sort=added",
   random: "/?sort=random",
@@ -151,6 +156,7 @@ export function composeMoviesExplore(input: MoviesExploreInput): ExploreResponse
     exploreRail("continue", "Keep watching", "strip", (input.continueWatching ?? []).map(toContinueCard)),
     exploreRail("now-on-tv", "On TV right now", "strip", (input.lineup ?? []).map(toChannelCard), MOVIES_MORE["now-on-tv"]),
     exploreRail("for-you", "Picked for you", "strip", (input.recommendations ?? []).map(toRecommendationCard)),
+    exploreRail("suggested", "Suggested for you", "strip", (input.suggested ?? []).map(toCard), MOVIES_MORE.suggested),
     exploreRail("recent", "Just added to the library", "wall", (input.recent ?? []).map(toCard), MOVIES_MORE.recent),
     exploreRail("franchises", "Whole runs to binge", "strip", (input.franchiseGroups ?? []).map(toFranchiseCard), MOVIES_MORE.franchises),
     run
@@ -175,4 +181,4 @@ export function pickFranchiseRun(dto: FranchiseRailDto | null | undefined): { va
 }
 
 /** Rails whose point is that they are CURRENT — a shuffle would be a lie. */
-export const MOVIES_UNSEEDED_RAILS: ReadonlySet<string> = new Set(["continue", "now-on-tv", "for-you", "recent", "franchises", "franchise-run"]);
+export const MOVIES_UNSEEDED_RAILS: ReadonlySet<string> = new Set(["continue", "now-on-tv", "for-you", "suggested", "recent", "franchises", "franchise-run"]);

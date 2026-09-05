@@ -436,39 +436,45 @@ function beaconStopStream({ playSessionId, movieId = null, playableId = null, me
   }
 }
 
-function setWatchedState(username, movieID, isActive, kind = "movie") {
-  const url = "/API/SetViewingState";
-
-  return fetch(url, {
+// The ONE write to the lists (2026-09-04). `action`: SetWatched | SetWantToWatch. `forUserId` names
+// WHOSE list — null = the caller's own. A Want placed on a friend's list IS the suggestion (anyone
+// signed in); Seen on a friend's behalf needs a password-verified session (the server answers 403
+// otherwise). The actor is always the cookie identity. Resolves to the parsed body { success, message? }.
+function setViewingState({ kind = "movie", id, action, on, forUserId = null }) {
+  return fetch("/API/SetViewingState", {
     method: "post",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      Username: username,
-      MovieID: movieID,
-      Kind: kind,
-      SetActive: isActive,
-      Action: "SetWatched",
-    }),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ MovieID: id, Kind: kind, SetActive: on, Action: action, ForUserId: forUserId }),
+  }).then(async (r) => {
+    const body = await r.json().catch(() => ({}));
+    return { ...body, success: r.ok && body?.success !== false, status: r.status };
   });
 }
 
-function setWantToWatchState(username, movieID, isActive, kind = "movie") {
-  const url = "/API/SetViewingState";
+// Anyone's lists in /API/Me's array shape.
+function getUserLists(username, signal) {
+  return fetch(`/API/UserLists?user=${encodeURIComponent(username)}`, { signal, cache: "no-store" }).then((r) => {
+    if (!r.ok) throw new Error(`UserLists ${r.status}`);
+    return r.json();
+  });
+}
 
-  return fetch(url, {
-    method: "post",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      Username: username,
-      MovieID: movieID,
-      Kind: kind,
-      SetActive: isActive,
-      Action: "SetWantToWatch",
-    }),
+// The title sheet's provenance lines: the owner's Seen / Want marks with who placed them and when
+// (a Want placed by a friend is the suggestion), plus everybody else's marks on the title.
+function getViewingDetail(kind, id, username, signal) {
+  const who = username ? `&user=${encodeURIComponent(username)}` : "";
+  return fetch(`/API/ViewingDetail?kind=${encodeURIComponent(kind)}&id=${id}${who}`, { signal, cache: "no-store" }).then((r) => {
+    if (!r.ok) throw new Error(`ViewingDetail ${r.status}`);
+    return r.json();
+  });
+}
+
+// Everybody's Seen / Want lists (the caller included): the card's "3 have seen it" pill, the pills'
+// people menu, and the "Lists for" switcher all read this one communal copy.
+function getPeerLists(signal) {
+  return fetch("/API/PeerLists", { signal, cache: "no-store" }).then((r) => {
+    if (!r.ok) throw new Error(`PeerLists ${r.status}`);
+    return r.json();
   });
 }
 
@@ -1796,8 +1802,10 @@ const MovieAPI = {
   reportStreamProgress,
   stopStream,
   beaconStopStream,
-  setWatchedState,
-  setWantToWatchState,
+  setViewingState,
+  getUserLists,
+  getViewingDetail,
+  getPeerLists,
   setRatings,
   setRating,
   getTitlesByIds,

@@ -38,18 +38,28 @@ describe("FacetRail", () => {
     expect(screen.getByText("Marvel")).toBeInTheDocument();
   });
 
-  it("a grouped view shows the groups-only facet and the flags; a saved search applies and can be saved when filters are active", () => {
+  it("a grouped view shows the groups-only facet and the flags; saved views are one disclosure line at the foot, and open to apply", () => {
     const a = actions();
     const saved = { list: [{ id: "1", name: "Noir", search: "?f=tag:Noir" }], onApply: vi.fn(), onRemove: vi.fn(), onSave: vi.fn() };
     render(<FacetRail spec={spec} state={{ ...EMPTY_FACET_STATE, include: { tags: ["Noir"] } }} actions={a} facets={facets} grouped activeCount={1} saved={saved} />);
     expect(screen.getByText("Shelves")).toBeInTheDocument();
     expect(screen.getByText("My lists")).toBeInTheDocument();
+    // Collapsed by default: the line names the count, the pills are not drawn until it opens.
+    expect(screen.queryByText("★ Noir")).toBeNull();
+    const line = screen.getByRole("button", { name: /Saved views/ });
+    expect(line).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(line);
     fireEvent.click(screen.getByText("★ Noir"));
     expect(saved.onApply).toHaveBeenCalledWith("?f=tag:Noir");
-    fireEvent.click(screen.getByText("＋ Save view"));
-    fireEvent.change(screen.getByRole("textbox", { name: "Search name" }), { target: { value: "Mine" } });
-    fireEvent.keyDown(screen.getByRole("textbox", { name: "Search name" }), { key: "Enter" });
-    expect(saved.onSave).toHaveBeenCalledWith("Mine");
+    // "+ Save view" is the chip row's (RailChips), not the rail's — one door.
+    expect(screen.queryByText("＋ Save view")).toBeNull();
+  });
+
+  it("draws no saved-views line at all when there is nothing saved, and no flags section when the spec says the rows are the door", () => {
+    const saved = { list: [], onApply: vi.fn(), onRemove: vi.fn(), onSave: vi.fn() };
+    render(<FacetRail spec={{ ...spec, flagsRail: false }} state={EMPTY_FACET_STATE} actions={actions()} facets={facets} grouped activeCount={0} saved={saved} />);
+    expect(screen.queryByRole("button", { name: /Saved views/ })).toBeNull();
+    expect(screen.queryByText("My lists")).toBeNull();
   });
 
   // The rail has ONE shape now. The full-page `sheet` variant (a dialog with a backdrop, raised by

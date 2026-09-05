@@ -107,6 +107,15 @@ export interface FacetSpec {
   /** The fixed-scale ranges (age, minutes, weight) — see `RangeFacetDef`. */
   ranges?: RangeFacetDef[];
   flags?: FacetFlagDef[];
+  /** The flags section's title; defaults to "My lists". */
+  flagsLabel?: string;
+  /** The small key on a flag's chip; defaults to "my". Movies writes the friend's name there when the
+   *  browse is on a friend's lists (`for=`). */
+  flagsChipKey?: string;
+  /** False = the flags parse from the URL and show as chips, but the rail draws NO section for them —
+   *  Movies' Seen / Want are the sider's index rows, and a second door onto the same lists was the
+   *  duplicate-options bug (Eric, 2026-09-04). Default true. */
+  flagsRail?: boolean;
   loadFacets(signal?: AbortSignal): Promise<Record<string, FacetOptionRow[]>>;
   loadOptions?(key: string, q: string, skip: number, top: number, signal?: AbortSignal): Promise<{ items: FacetOptionRow[]; total: number }>;
 }

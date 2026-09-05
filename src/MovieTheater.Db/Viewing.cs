@@ -1,9 +1,21 @@
-﻿
+
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MovieTheater.Db
 {
+    /// <summary>
+    /// One mark on one user's lists: Seen, WantToWatch or Rated (<see cref="ViewingTypes"/>), against
+    /// exactly one of a Movie / Series / MiscVideo. A mark's existence IS its state — un-marking deletes
+    /// the row (the <see cref="ViewingEvent"/> journal keeps the history).
+    ///
+    /// <para>Provenance (2026-09-04): <see cref="CreatedUtc"/> and <see cref="CreatedByUserId"/> say when
+    /// the mark was made and by whom — the owner, or a friend marking on their behalf. A WantToWatch row
+    /// placed by somebody else IS a suggestion (there is no separate type). Rows older than the columns
+    /// carry nulls, which the UI reads as "before Sep 2026". Nothing derives recency from CreatedUtc:
+    /// the recommendation engine still orders by the monotonic <see cref="ViewingID"/>, which every row has.</para>
+    /// </summary>
     [Table("Viewing")]
     public class Viewing
     {
@@ -30,15 +42,30 @@ namespace MovieTheater.Db
         [ForeignKey(nameof(MiscVideoId))]
         public MiscVideo? MiscVideo { get; set; }
 
+        /// <summary>Whose list this mark is on.</summary>
         public int UserID { get; set; }
 
         [ForeignKey(nameof(UserID))]
         public User User { get; set; } = default!;
 
+        /// <summary>One of <see cref="ViewingTypes"/>.</summary>
+        [MaxLength(32)]
         public string? ViewingType { get; set; }
 
-
+        /// <summary>A rating's 0–100 score; null for the lists.</summary>
         public string? ViewingData { get; set; }
+
+        /// <summary>When the mark was made. Null = a row older than provenance (before Sept 2026).</summary>
+        public DateTime? CreatedUtc { get; set; }
+
+        /// <summary>Who made the mark — the owner themself, or the friend who placed it on their behalf
+        /// (a Want placed by a friend is a suggestion; Seen on someone's behalf needs a password-verified
+        /// session). Null = legacy. Restrict (the model) / NO_ACTION (the live table): a suggestion must
+        /// not vanish with the suggester's account.</summary>
+        public int? CreatedByUserId { get; set; }
+
+        [ForeignKey(nameof(CreatedByUserId))]
+        public User? CreatedByUser { get; set; }
 
     }
 }

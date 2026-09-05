@@ -115,6 +115,14 @@ namespace MovieTheater.Web
             (my ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 .Select(x => x.ToLowerInvariant()).Where(x => x is "seen" or "want" or "rated").Distinct().ToList();
 
+        /// <summary>The `my=` token → the Viewing row type it names.</summary>
+        public static string MyListViewingType(string list) => list switch
+        {
+            "seen" => ViewingTypes.Seen,
+            "want" => ViewingTypes.WantToWatch,
+            _ => ViewingTypes.Rated,
+        };
+
         public bool IsEmpty =>
             Q.Length == 0 && Genres.Count == 0 && ExGenres.Count == 0 && Franchises.Count == 0 && ExFranchises.Count == 0
             && Persons.Count == 0 && ExPersons.Count == 0 && Tags.Count == 0 && ExTags.Count == 0 && Mpa.Count == 0
@@ -209,12 +217,14 @@ namespace MovieTheater.Web
                 mq = mq.Where(m => (m.ReleaseDate != null ? m.ReleaseDate.Value.Year : m.ImdbReleaseDate != null ? m.ImdbReleaseDate.Value.Year : 9999) <= hi);
                 sq = sq.Where(s => (s.StartYear ?? (s.ReleaseDate != null ? s.ReleaseDate.Value.Year : s.ImdbReleaseDate != null ? s.ImdbReleaseDate.Value.Year : 9999)) <= hi);
             }
+            // `userId` is the LIST OWNER — the caller, or, with `for=<username>`, the friend whose lists
+            // the caller is browsing (the controller resolves it; the cache key carries the same id).
             if (f.My.Count > 0)
             {
                 if (userId is not int uid) return (mq.Where(m => false), sq.Where(s => false));
                 foreach (var list in f.My)
                 {
-                    var type = list switch { "seen" => "Seen", "want" => "WantToWatch", _ => "Rated" };
+                    var type = MyListViewingType(list);
                     mq = mq.Where(m => db.Viewings.Any(v => v.UserID == uid && v.ViewingType == type && v.MovieID == m.id));
                     sq = sq.Where(s => db.Viewings.Any(v => v.UserID == uid && v.ViewingType == type && v.SeriesId == s.Id));
                 }

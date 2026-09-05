@@ -229,3 +229,57 @@
   opacity: 1;
 }
 
+
+/* ── The "Lists for" switcher (2026-09-04) ──────────────────────────────────────────────────────── */
+/* The "Lists for" switcher: whose lists the section is on. An antd Select in the sider's input
+   tokens; on a friend it takes the want accent so the scope is visible before reading a label. */
+.lists-for {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 0 0 8px;
+}
+
+.lists-for-label {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--sidebar-text-muted);
+}
+
+.lists-for-select.ant-select {
+  width: 100%;
+}
+
+.lists-for-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  vertical-align: -4px;
+}
+
+.lists-for-dot--other {
+  background: var(--want-accent);
+}
+
+.lists-for--other .lists-for-select.ant-select .ant-select-selector,
+.lists-for--other .lists-for-select.ant-select {
+  border-color: var(--want-accent);
+}
+
+.lists-for-sub {
+  margin-left: auto;
+  padding-left: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+}

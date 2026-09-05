@@ -460,10 +460,11 @@ namespace MovieTheater.Channels
 
             if (filter.PathContains.Count > 0) { var pats = filter.PathContains; q = q.Where(m => m.Playable!.Files.Any(f => pats.Any(p => f.Path.Contains(p)))); }
 
-            if (filter.UnwatchedByUserId is int uid) q = q.Where(m => !movieDb.Viewings.Any(v => v.UserID == uid && v.MovieID == m.id && v.ViewingType == "Seen"));
-            if (filter.WantedByUserId is int wid) q = q.Where(m => movieDb.Viewings.Any(v => v.UserID == wid && v.MovieID == m.id && v.ViewingType == "WantToWatch"));
+            if (filter.UnwatchedByUserId is int uid) q = q.Where(m => !movieDb.Viewings.Any(v => v.UserID == uid && v.MovieID == m.id && v.ViewingType == ViewingTypes.Seen));
+            // "Wanted" = the user's queue, whoever placed each title there (a friend's Want IS a suggestion).
+            if (filter.WantedByUserId is int wid) q = q.Where(m => movieDb.Viewings.Any(v => v.UserID == wid && v.MovieID == m.id && v.ViewingType == ViewingTypes.WantToWatch));
             if (filter.RecommendedForUserId is int rmid) q = q.Where(m => movieDb.TitleRecommendations.Any(r => r.UserId == rmid && r.SubjectKind == InsightSubjectKind.Movie && r.SubjectId == m.id));
-            if (filter.MinViewers is int minv) q = q.Where(m => movieDb.Viewings.Where(v => v.MovieID == m.id && v.ViewingType == "Seen").Select(v => v.UserID).Distinct().Count() >= minv);
+            if (filter.MinViewers is int minv) q = q.Where(m => movieDb.Viewings.Where(v => v.MovieID == m.id && v.ViewingType == ViewingTypes.Seen).Select(v => v.UserID).Distinct().Count() >= minv);
             if (filter.AddedWithinDays is int days) { var since = DateTime.UtcNow.AddDays(-days); q = q.Where(m => m.UploadedDate != null && m.UploadedDate >= since); }
             if (filter.ReleasedWithinYears is int ry) { var cut = DateTime.UtcNow.Date.AddYears(-ry); q = q.Where(m => (m.ImdbReleaseDate ?? m.ReleaseDate) != null && (m.ImdbReleaseDate ?? m.ReleaseDate)! >= cut); }
 
@@ -542,10 +543,10 @@ namespace MovieTheater.Channels
                     >= s.Episodes.Count(e => e.Playable!.Files.Any(f => f.JellyfinItemId != null && f.MissingSinceUtc == null)));
             }
 
-            if (filter.UnwatchedByUserId is int uid) q = q.Where(s => !movieDb.Viewings.Any(v => v.UserID == uid && v.SeriesId == s.Id && v.ViewingType == "Seen"));
-            if (filter.WantedByUserId is int wid) q = q.Where(s => movieDb.Viewings.Any(v => v.UserID == wid && v.SeriesId == s.Id && v.ViewingType == "WantToWatch"));
+            if (filter.UnwatchedByUserId is int uid) q = q.Where(s => !movieDb.Viewings.Any(v => v.UserID == uid && v.SeriesId == s.Id && v.ViewingType == ViewingTypes.Seen));
+            if (filter.WantedByUserId is int wid) q = q.Where(s => movieDb.Viewings.Any(v => v.UserID == wid && v.SeriesId == s.Id && v.ViewingType == ViewingTypes.WantToWatch));
             if (filter.RecommendedForUserId is int rsid) q = q.Where(s => movieDb.TitleRecommendations.Any(r => r.UserId == rsid && r.SubjectKind == InsightSubjectKind.Series && r.SubjectId == s.Id));
-            if (filter.MinViewers is int minv) q = q.Where(s => movieDb.Viewings.Where(v => v.SeriesId == s.Id && v.ViewingType == "Seen").Select(v => v.UserID).Distinct().Count() >= minv);
+            if (filter.MinViewers is int minv) q = q.Where(s => movieDb.Viewings.Where(v => v.SeriesId == s.Id && v.ViewingType == ViewingTypes.Seen).Select(v => v.UserID).Distinct().Count() >= minv);
             if (filter.AddedWithinDays is int days) { var since = DateTime.UtcNow.AddDays(-days); q = q.Where(s => s.UploadedDate != null && s.UploadedDate >= since); }
             if (filter.ReleasedWithinYears is int ry) { var cut = DateTime.UtcNow.Date.AddYears(-ry); q = q.Where(s => (s.ImdbReleaseDate ?? s.ReleaseDate) != null && (s.ImdbReleaseDate ?? s.ReleaseDate)! >= cut); }
 
@@ -597,7 +598,7 @@ namespace MovieTheater.Channels
 
             if (filter.PathContains.Count > 0) { var pats = filter.PathContains; q = q.Where(mv => mv.Playable.Files.Any(f => pats.Any(p => f.Path.Contains(p)))); }
 
-            if (filter.UnwatchedByUserId is int uid) q = q.Where(mv => !movieDb.Viewings.Any(v => v.UserID == uid && v.MiscVideoId == mv.Id && v.ViewingType == "Seen"));
+            if (filter.UnwatchedByUserId is int uid) q = q.Where(mv => !movieDb.Viewings.Any(v => v.UserID == uid && v.MiscVideoId == mv.Id && v.ViewingType == ViewingTypes.Seen));
 
             foreach (var (ids, neg) in AiFilters(filter, InsightSubjectKind.MiscVideo))
                 q = neg ? q.Where(mv => !ids.Contains(mv.Id)) : q.Where(mv => ids.Contains(mv.Id));

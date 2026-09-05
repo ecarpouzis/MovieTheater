@@ -210,6 +210,28 @@ namespace MovieTheater.Db
                 .HasOne(v => v.MiscVideo).WithMany(mv => mv.Viewings)
                 .HasForeignKey(v => v.MiscVideoId).OnDelete(DeleteBehavior.Restrict);
 
+            // Provenance (2026-09-04): a SECOND navigation to User — who made the mark (the suggester, or
+            // the friend marking on the owner's behalf). Stated explicitly because two navs to one type
+            // are ambiguous by convention; Restrict so a suggestion outlives its suggester's account.
+            modelBuilder.Entity<Viewing>()
+                .HasOne(v => v.CreatedByUser).WithMany()
+                .HasForeignKey(v => v.CreatedByUserId).OnDelete(DeleteBehavior.Restrict);
+
+            // "This user's Seen (or Suggested) rows" is the question every list, the browse `my=` leg
+            // and the `my` group axis ask; the INCLUDE answers it without touching the row.
+            modelBuilder.Entity<Viewing>()
+                .HasIndex(v => new { v.UserID, v.ViewingType })
+                .HasDatabaseName("IX_Viewing_UserID_ViewingType")
+                .IncludeProperties(v => new { v.MovieID, v.SeriesId, v.MiscVideoId, v.CreatedByUserId, v.CreatedUtc });
+
+            // The lists' journal: "what happened to this person's lists, newest first" and a plain time
+            // walk for retention. No FKs by design (see the entity).
+            modelBuilder.Entity<ViewingEvent>()
+                .HasIndex(e => new { e.UserId, e.AtUtc })
+                .IsDescending(false, true);
+            modelBuilder.Entity<ViewingEvent>()
+                .HasIndex(e => e.AtUtc);
+
             // A misc video owns its Playable (Restrict, like Episode) and may relate to a Movie OR a
             // Series via two typed FKs (a bare id is ambiguous; see MiscVideo). Both relations Restrict
             // so reclassifying/removing a title never silently drops a misc video pointing at it.
@@ -937,6 +959,7 @@ namespace MovieTheater.Db
         public DbSet<MoviePosterDetails> MoviePosterDetails { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<Viewing> Viewings { get; set; }
+        public DbSet<ViewingEvent> ViewingEvents { get; set; }
         public DbSet<RatingMap> RatingMaps { get; set; }
         public DbSet<RatingMPA> RatingMpas { get; set; }
         public DbSet<UserSettings> UserSettings { get; set; }

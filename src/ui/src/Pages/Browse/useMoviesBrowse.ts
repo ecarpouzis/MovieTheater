@@ -18,24 +18,38 @@ export function moviesViewerIdentity(userData: { username?: string | null; ageRe
   return `${userData?.username ?? "anon"}:${userData?.ageRestriction ?? ""}`;
 }
 
-export function useMoviesFacetSpec(identity: string) {
+/** `listsOwner` (the friend named by `for=`, resolved to their display name by the caller — null =
+ *  the viewer's own) titles the rail's flags section and keys its chips. */
+export function useMoviesFacetSpec(identity: string, listsOwner: string | null = null) {
   const location = useLocation();
   const types = typesFromSearch(location.search).join(",");
-  return useMemo(() => moviesFacetSpec(identity, types ? types.split(",") : []), [identity, types]);
+  return useMemo(() => moviesFacetSpec(`${identity}:${listsOwner ?? ""}`, types ? types.split(",") : [], listsOwner), [identity, types, listsOwner]);
 }
 
-export const moviesCountKey = (state: FacetState) => ["movies", "count", facetStateKey(state)] as const;
+/** `forUser` = the `for=<username>` scope (whose lists `my=` reads) — part of the key, or Alex's
+ * `my=seen` count and mine would share one entry. */
+export const moviesCountKey = (state: FacetState, forUser: string | null = null) =>
+  ["movies", "count", facetStateKey(state), (forUser ?? "").toLowerCase()] as const;
 
 /** `/API/Browse` page 1 carries the count; one row is enough to read it. */
-export function browseTotalUrl(state: FacetState): string {
+export function browseTotalUrl(state: FacetState, forUser: string | null = null): string {
   const p = moviesFilterParams(state);
   const types = typesOf(state);
   if (types.length) p.set("types", types.join(","));
+  if (forUser) p.set("for", forUser);
   p.set("page", "1");
   p.set("pageSize", "1");
   return `/API/Browse?${p.toString()}`;
 }
 
+/** The `for=` scope of a search string, or null (duplicated from hooks/useUserLists to keep this file pure TS). */
+export function forUserOfSearch(search: string): string | null {
+  const v = (new URLSearchParams(search || "").get("for") || "").trim();
+  return v || null;
+}
+
 export function useMoviesResultTotal(state: FacetState, enabled = true) {
-  return useResultCount(moviesCountKey(state), ({ signal }) => fetch(browseTotalUrl(state), { signal }), enabled);
+  const location = useLocation();
+  const forUser = forUserOfSearch(location.search);
+  return useResultCount(moviesCountKey(state, forUser), ({ signal }) => fetch(browseTotalUrl(state, forUser), { signal }), enabled);
 }

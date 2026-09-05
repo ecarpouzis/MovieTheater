@@ -1,4 +1,5 @@
-/* Seen/Want actions — compact bordered pills, centered at the base of the card's right column. */
+/* Seen/Want actions — compact bordered pills, centered at the base of the card's right column.
+   SPLIT since 2026-09-05: the word toggles for me, the caret opens the people menu. */
 .viewing-options {
   display: flex;
   justify-content: center;
@@ -17,18 +18,36 @@
 }
 
 /* Outlined-neutral idle pill; filled when active. Auto width so the pair centers rather than
-   stretching across the column. */
+   stretching across the column. The pill is a row of two hit targets: the word and the caret. */
 .viewing-btn {
   display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 3px 14px;
-  cursor: pointer;
+  align-items: stretch;
   border: 1px solid var(--card-border);
   border-radius: 6px;
   background: transparent;
   color: var(--text-secondary);
+  overflow: hidden;
   transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+
+.viewing-btn-main {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 8px 3px 10px;
+  cursor: pointer;
+}
+
+/* The caret zone: a hairline, then a chevron. Its own hit target; hover lifts it. */
+.viewing-btn-caret {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 5px 0 4px;
+  border-left: 1px solid var(--card-border);
+  color: var(--text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
 }
 
 @media (hover: hover) {
@@ -36,12 +55,27 @@
     border-color: var(--accent);
     color: var(--accent);
   }
+
+  .viewing-btn-caret:hover {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
 }
 
 .viewing-btn--compact {
-  max-width: 100px;
-  padding: 2px 6px;
+  max-width: 120px;
   border: none;
+}
+
+.viewing-btn--compact .viewing-btn-main {
+  padding: 2px 4px 2px 6px;
+}
+
+/* On a phone the caret stays (Eric, 2026-09-05) — smaller, no hairline. */
+.viewing-btn--compact .viewing-btn-caret {
+  border-left: none;
+  padding: 0 4px 0 0;
+  font-size: 10px;
 }
 
 /* Seen active — filled accent */
@@ -60,6 +94,20 @@
   color: #fff;
 }
 
+.viewing-btn-seen--watched .viewing-btn-caret,
+.viewing-btn-want--wanted .viewing-btn-caret {
+  border-left-color: rgba(255, 255, 255, 0.35);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+@media (hover: hover) {
+  .viewing-btn-seen--watched .viewing-btn-caret:hover,
+  .viewing-btn-want--wanted .viewing-btn-caret:hover {
+    background: rgba(255, 255, 255, 0.18);
+    color: #fff;
+  }
+}
+
 .viewing-btn-icon {
   font-size: 14px;
   margin-right: 6px;
@@ -75,4 +123,92 @@
 
 .viewing-btn-label--compact {
   font-size: inherit;
+}
+
+/* ── The people menu (an antd Dropdown; rides the popup layer) ──────────────────────────────── */
+.pmenu {
+  width: 220px;
+  padding: 6px;
+  background: var(--card-surface);
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08), 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 9px 28px 8px rgba(0, 0, 0, 0.05);
+  text-align: left;
+}
+
+.pmenu-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 8px 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.pmenu-head i {
+  font-style: normal;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 10.5px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.pmenu-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 36px;
+  padding: 7px 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 13.5px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pmenu-row:hover {
+  background: var(--chip-neutral-bg);
+}
+
+.pmenu-row.you {
+  font-weight: 600;
+}
+
+.pmenu-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--chip-neutral-bg);
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.pmenu--seen .pmenu-row.on .pmenu-dot { background: var(--accent); color: #fff; }
+.pmenu--want .pmenu-row.on .pmenu-dot { background: var(--want-accent); color: #fff; }
+
+.pmenu-check {
+  margin-left: auto;
+  font-size: 13px;
+  display: inline-flex;
+  color: var(--text-secondary);
+}
+
+.pmenu-foot {
+  padding: 6px 8px 2px;
+  font-size: 11px;
+  color: var(--text-muted);
 }

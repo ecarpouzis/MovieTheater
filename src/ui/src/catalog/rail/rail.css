@@ -326,3 +326,23 @@ div.bx-opt-main { cursor: default; }
 
 /* The chips row over a section's results: nothing active → nothing drawn (RailChips). */
 .bx-chips-row:empty { display: none; }
+
+/* ── The head line as the delineation (2026-09-05) ───────────────────────────────────────────────
+   On the sider the rail follows the section's index rows; a bare "FILTERS" label ran into them. The
+   head line now carries a rule above it and the result count on its right. */
+.bx-rail-on-sider .bx-rail-top { margin: 6px 0 4px; padding-top: 12px; border-top: 1px solid var(--line); }
+.bx-rail-top .bx-rail-count { margin-left: auto; }
+
+/* ── Saved views as one disclosure line at the FOOT of the filters ───────────────────────────── */
+.bx-rail-savedwrap { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.bx-saved-line {
+  appearance: none; display: flex; align-items: center; gap: 8px; width: 100%; cursor: pointer;
+  padding: 6px 8px; border: 1px solid var(--line); border-radius: 7px; background: transparent;
+  color: var(--ink); font: inherit; font-size: 12px; text-align: left;
+}
+.bx-saved-line:hover { border-color: var(--ink); }
+.bx-saved-line-ic { color: var(--sub); font-size: 12px; }
+.bx-saved-line-n { margin-left: auto; font-family: var(--font-mono); font-size: 10px; color: var(--sub); }
+.bx-saved-line .bx-rsec-carat { font-size: 12px; }
+.bx-saved-line .bx-rsec-carat.open { transform: rotate(180deg); }
+.bx-saved-open { padding: 2px 0 2px 8px; margin-left: 8px; border-left: 1px solid var(--line); }

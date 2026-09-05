@@ -3505,6 +3505,12 @@ namespace MovieTheater.Db.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ViewingID"));
 
+                    b.Property<int?>("CreatedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("CreatedUtc")
+                        .HasColumnType("datetime2");
+
                     b.Property<int?>("MiscVideoId")
                         .HasColumnType("int");
 
@@ -3521,9 +3527,12 @@ namespace MovieTheater.Db.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ViewingType")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
 
                     b.HasKey("ViewingID");
+
+                    b.HasIndex("CreatedByUserId");
 
                     b.HasIndex("MiscVideoId");
 
@@ -3533,7 +3542,66 @@ namespace MovieTheater.Db.Migrations
 
                     b.HasIndex("UserID");
 
+                    SqlServerIndexBuilderExtensions.IncludeProperties(
+                        b.HasIndex("UserID", "ViewingType").HasDatabaseName("IX_Viewing_UserID_ViewingType"),
+                        new[] { "MovieID", "SeriesId", "MiscVideoId", "CreatedByUserId", "CreatedUtc" });
+
                     b.ToTable("Viewing");
+                });
+
+            modelBuilder.Entity("MovieTheater.Db.ViewingEvent", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<int?>("ActorUserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("AtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Data")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<int?>("MiscVideoId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("MovieID")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("SeriesId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ViewingType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AtUtc");
+
+                    b.HasIndex("UserId", "AtUtc")
+                        .IsDescending(false, true);
+
+                    b.ToTable("ViewingEvent");
                 });
 
             modelBuilder.Entity("MovieTheater.Db.ArcadeAchievementUnlock", b =>
@@ -4224,6 +4292,13 @@ namespace MovieTheater.Db.Migrations
                         .HasForeignKey("UserID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("MovieTheater.Db.User", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("CreatedByUser");
 
                     b.Navigation("MiscVideo");
 

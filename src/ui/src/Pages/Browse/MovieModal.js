@@ -1,8 +1,12 @@
-﻿import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect, useMemo, useRef } from "react";
 import { useHistory } from "react-router-dom";
 import { Modal, Spin, Input, Button, Checkbox, Slider, message } from "antd";
 import { MovieAPI } from "../../MovieAPI";
-import UserMovieOptions, { useViewingToggles } from "./UserMovieOptions";
+import UserMovieOptions, { peopleRowsFor, useViewingToggles } from "./UserMovieOptions";
+import ViewingProvenance from "./ViewingProvenance";
+import WhoMarks from "./WhoMarks";
+import { buildMarksIndex, useFriendMarksMode } from "./friendMarks";
+import { usePeerLists } from "../../hooks/useUserLists";
 import WatchButton from "../Watch/WatchButton";
 import FileMappingEditor from "./FileMappingEditor";
 import SubtitlePicker from "./SubtitlePicker";
@@ -43,12 +47,14 @@ function posterRgb(hex) {
 // reservation is released once the image lands, because posters are not all exactly 2:3 and a fixed
 // box would crop the ones that aren't. A poster that never arrives keeps the placeholder rather
 // than the browser's broken-image glyph — the FallbackImage convention the grid cards use.
-function ModalPoster({ movie, kind }) {
+function ModalPoster({ movie, kind, marks }) {
   const src = MovieAPI.getMoviePoster(movie.id, movie.posterVersion, kind);
   const [settled, setSettled] = useState(false);
   useEffect(() => { setSettled(false); }, [src]);
   return (
     <div className={`modal-poster-frame${settled ? "" : " modal-poster-frame--loading"}`}>
+      {/* Friends' marks — the same counts pill the card wears, a size up. */}
+      {marks && <WhoMarks marks={marks} large />}
       <FallbackImage
         className="modal-poster"
         alt={`${movie.title} poster`}
@@ -129,12 +135,48 @@ function YourRating({ id, kind, userData, setUserData }) {
   );
 }
 
-function MovieModal({ movieId, open, onClose, actorSearch, onBrowse, onOpenTitle, userData, setUserData, onToggleViewing, onMovieUpdated, onAddToPlaylist, kind = "movie" }) {
+// `listsFor`: whose lists the sheet's Seen / Want act on (hooks/useUserLists) — absent (Explore, the
+// standalone page) means the viewer's own. `peerLists`: everybody's lists (usePeerLists) when the page
+// already holds them; the sheet fetches its own copy otherwise.
+function MovieModal({ movieId, open, onClose, actorSearch, onBrowse, onOpenTitle, userData, setUserData, listsFor = null, peerLists = null, onToggleViewing, onMovieUpdated, onAddToPlaylist, kind = "movie" }) {
   const history = useHistory();
   // The section skin (catalog/skin): the sheet is a PORTAL, outside the section root, so the
   // backdrop + type tokens ride the wrap. `{}` while the section is on its own surface.
   const skinStyle = useRouteSkinStyle("movies");
-  const { toggleSeen, toggleWant } = useViewingToggles(userData, setUserData, onToggleViewing);
+  const scope = listsFor ?? { me: true, forUser: null, userId: null, username: userData?.username ?? null, lists: userData, setLists: setUserData };
+  const lists = scope.lists;
+  const ownPeers = usePeerLists(!!userData && !peerLists && open);
+  const peers = peerLists?.peers ?? ownPeers.peers;
+  const patchPeer = peerLists?.patchPeer ?? ownPeers.patchPeer;
+  const { toggleSeen, toggleWant, markFor, meId } = useViewingToggles({
+    lists, setLists: scope.setLists, forUserId: scope.me ? null : scope.userId,
+    onToggleViewing, peers, patchPeer, userData, setUserData,
+  });
+  const marksMode = useFriendMarksMode("movies");
+  const marks = useMemo(() => buildMarksIndex(peers, userData?.username, marksMode).get(movieId), [peers, userData?.username, marksMode, movieId]);
+  const people = useMemo(() => (userData && peers.length
+    ? { rows: (id, list) => peopleRowsFor(peers, meId, id, list), mark: markFor, canMarkSeen: !!userData.hasPassword }
+    : null), [userData, peers, meId, markFor]);
+
+  // Provenance (who placed each mark, when; who else has marked it) — its own small read so the sheet
+  // opens as fast as before; patched optimistically as the pills are pressed so the lines answer at once.
+  const [detail, setDetail] = useState(null);
+  const patchDetail = (patch) => setDetail((d) => ({ ...(d ?? { others: [] }), ...(typeof patch === "function" ? patch(d) : patch) }));
+  useEffect(() => {
+    if (!open || !movieId || !userData || kind === "misc") { setDetail(null); return undefined; }
+    const controller = new AbortController();
+    MovieAPI.getViewingDetail(kind, movieId, scope.me ? null : scope.forUser, controller.signal)
+      .then((d) => setDetail(d))
+      .catch(() => { /* the lines are a nicety; the pills still work */ });
+    return () => controller.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, movieId, kind, scope.me, scope.forUser, userData?.username]);
+
+  const nowMark = () => ({ atUtc: new Date().toISOString(), byUserId: meId, byUsername: userData?.username ?? null });
+  const onSeen = (id, k) => { const on = !(lists?.moviesSeen ?? []).includes(id); toggleSeen(id, k); patchDetail({ seen: on ? nowMark() : null }); };
+  const onWant = (id, k) => { const on = !(lists?.moviesToWatch ?? []).includes(id); toggleWant(id, k); patchDetail({ want: on ? nowMark() : null }); };
+  // "Not interested" on a suggestion = un-wanting it.
+  const onDismiss = () => onWant(movieId, kind);
   const [openSeasons, setOpenSeasons] = useState({});
   const [openEps, setOpenEps] = useState({});
   const isSeries = kind === "series";
@@ -504,7 +546,7 @@ function MovieModal({ movieId, open, onClose, actorSearch, onBrowse, onOpenTitle
       ) : movie ? (
         <div className="modal-body-wrapper">
           <div className="modal-poster-column">
-            <ModalPoster movie={movie} kind={kind} />
+            <ModalPoster movie={movie} kind={kind} marks={kind !== "misc" ? marks : undefined} />
           </div>
           <div className="modal-info-panel">
             {!editing ? (
@@ -787,7 +829,9 @@ function MovieModal({ movieId, open, onClose, actorSearch, onBrowse, onOpenTitle
                   )}
                 </div>
 
-                {userData && kind !== "misc" && <YourRating id={movie.id} kind={kind} userData={userData} setUserData={setUserData} />}
+                {/* The rating is the VIEWER's own: on a friend's lists it would silently rate for the
+                    viewer under "Alex's lists", so it is removed there, not disabled. */}
+                {userData && scope.me && kind !== "misc" && <YourRating id={movie.id} kind={kind} userData={userData} setUserData={setUserData} />}
 
                 <div className="modal-actions-row">
                   {!isSeries && (
@@ -795,16 +839,18 @@ function MovieModal({ movieId, open, onClose, actorSearch, onBrowse, onOpenTitle
                       <WatchButton movie={movie} userData={userData} onBeforeNavigate={onClose} />
                     </div>
                   )}
-                  {userData && (
+                  {userData && lists && (
                     <UserMovieOptions
                       id={movie.id}
                       kind={kind}
-                      isWatched={userData.moviesSeen.includes(movie.id)}
-                      isWanted={userData.moviesToWatch.includes(movie.id)}
-                      onToggleSeen={toggleSeen}
-                      onToggleWant={toggleWant}
+                      isWatched={(lists.moviesSeen ?? []).includes(movie.id)}
+                      isWanted={(lists.moviesToWatch ?? []).includes(movie.id)}
+                      people={people}
+                      onToggleSeen={onSeen}
+                      onToggleWant={onWant}
                     />
                   )}
+                  {userData && <ViewingProvenance detail={detail} scope={scope} viewer={userData.username} onDismiss={scope.me ? onDismiss : null} />}
                 </div>
 
                 {/* Playlist / watch-party actions. For a movie: its own playable. For a series: all

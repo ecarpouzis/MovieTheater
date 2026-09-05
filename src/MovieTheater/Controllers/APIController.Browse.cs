@@ -127,7 +127,7 @@ namespace MovieTheater.Controllers
         // no DB row order to walk) and the pager falls back to page numbers client-side. Only meaningful
         // for the alpha sort; the client never calls this under any other.
         [HttpGet("/API/BrowseLetters")]
-        public async Task<IActionResult> BrowseLetters(string type, string? mode = null, string? value = null, [FromQuery] Web.BrowseFilterQuery? fq = null, CancellationToken ct = default)
+        public async Task<IActionResult> BrowseLetters(string type, string? mode = null, string? value = null, [FromQuery] Web.BrowseFilterQuery? fq = null, [FromQuery(Name = "for")] string? forUser = null, CancellationToken ct = default)
         {
             var types = ParseTypeScope(type);
             if (types.Count == 0)
@@ -137,8 +137,10 @@ namespace MovieTheater.Controllers
 
             var (mq, sq) = ApplyBrowseFilter(await GetBaseMovieQuery(ct), await GetBaseSeriesQuery(ct), mode, value);
             (mq, sq) = ApplyTypeScope(types, mq, sq);
-            // The facet rail's filter composes with the legacy one (R9 S2), so the strip matches the grid.
-            (mq, sq) = Web.BrowseFilter.Apply(movieDb, mq, sq, Web.BrowseFilter.From(fq), GetCurrentUserId());
+            // The facet rail's filter composes with the legacy one (R9 S2), so the strip matches the grid —
+            // including WHOSE lists `my=` reads (`for=`), or the strip would bucket the caller's list while
+            // the grid pages the friend's.
+            (mq, sq) = Web.BrowseFilter.Apply(movieDb, mq, sq, Web.BrowseFilter.From(fq), await ResolveListOwnerAsync(forUser, ct));
 
             var keys = await OrderCardKeys(BuildCardKeys(mq, sq, "alpha"), "alpha").Select(k => k.SimpleTitle).ToListAsync(ct);
             var letters = Web.LetterBuckets.Walk(keys)

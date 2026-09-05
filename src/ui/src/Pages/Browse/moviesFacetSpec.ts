@@ -35,11 +35,14 @@ export const TAG_FACETS = [
 ] as const;
 const TAG_KEYS = new Set<string>(TAG_FACETS.map((t) => t.key));
 
-/** The viewer's lists: `my=seen,want,rated` — ANDed server-side; the sider's index rows write the same param. */
+/** The lists: `my=seen,want,rated` — ANDed server-side; the sider's index rows write the param and
+ * are its ONE door (the rail draws no section for these: `flagsRail: false`); the chips still show it.
+ * With `for=<username>` on the URL they are that person's lists instead (the server resolves the owner;
+ * the token vocabulary is the same). `rated` survives only for old links — no row offers it. */
 export const MY_FLAGS = [
-  { key: "seen", token: "seen", label: "Seen", title: "Only what you have marked seen" },
-  { key: "want", token: "want", label: "Want to watch", title: "Only your queue" },
-  { key: "rated", token: "rated", label: "Rated", title: "Only what you have rated" },
+  { key: "seen", token: "seen", label: "Seen", title: "Only what has been marked seen" },
+  { key: "want", token: "want", label: "Want to watch", title: "Only the queue" },
+  { key: "rated", token: "rated", label: "Rated", title: "Only what has been rated" },
 ] as const;
 
 /** "post-apocalypse" → "Post apocalypse" (the server's Humanize, for a chip whose option list is not loaded). */
@@ -77,7 +80,7 @@ async function getJson<T>(url: string, signal?: AbortSignal): Promise<T> {
  * its counts on (user + age gate); `types` is the scope the counts describe (the Long Box rule) —
  * the loaded lists re-fetch when the scope changes and ride the server's cache otherwise.
  */
-export function moviesFacetSpec(identity: string, types: readonly string[] = []): FacetSpec {
+export function moviesFacetSpec(identity: string, types: readonly string[] = [], listsOwner: string | null = null): FacetSpec {
   const scope = types.map(normalizeType).filter((t): t is MovieType => t != null);
   return {
     identity: `movies:${identity}:${scope.join(",")}`,
@@ -87,6 +90,9 @@ export function moviesFacetSpec(identity: string, types: readonly string[] = [])
     // two-thumb range under the MPA stops instead of at the foot of the rail.
     years: { decadesKey: "decades", decadePills: false, label: "Years", after: "mpa" },
     flags: MY_FLAGS.map((f) => ({ ...f })),
+    flagsRail: false,
+    // On a friend's lists (`for=<username>`) the chip says whose: "Alex Seen".
+    ...(listsOwner ? { flagsChipKey: listsOwner } : {}),
     facets: [
       { key: "type", token: "type", label: "Type", one: "Type", valueType: "string", defaultOpen: true, excludable: false },
       { key: "genre", token: "genre", label: "Genre", one: "Genre", valueType: "string", defaultOpen: true },

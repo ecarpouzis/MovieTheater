@@ -100,9 +100,9 @@ namespace MovieTheater.Web
         /// <summary>The viewer's own lists, in the order the rail lists them; the keys the `my=` param uses.</summary>
         public static readonly IReadOnlyList<(string Key, string Label, string ViewingType)> MyLists = new[]
         {
-            ("seen", "Seen", "Seen"),
-            ("want", "Want to watch", "WantToWatch"),
-            ("rated", "Rated", "Rated"),
+            ("seen", "Seen", ViewingTypes.Seen),
+            ("want", "Want to watch", ViewingTypes.WantToWatch),
+            ("rated", "Rated", ViewingTypes.Rated),
         };
 
         /// <summary>The Type-scope buckets as group keys — the same spelling the rail's Type facet writes.</summary>

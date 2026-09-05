@@ -79,7 +79,7 @@ export default function ActiveChips({ spec, state, actions, facets, onSave }: Ac
     if (!state.flags[flag.key]) continue;
     chips.push(
       <button key={`f:${flag.key}`} type="button" className="bx-chip" onClick={() => actions.setFlag(flag.key, false)} title="Remove">
-        <span className="bx-chip-k">my</span>{flag.label}<span className="bx-chip-x" aria-hidden="true">×</span>
+        <span className="bx-chip-k">{spec.flagsChipKey ?? "my"}</span>{flag.label}<span className="bx-chip-x" aria-hidden="true">×</span>
       </button>,
     );
   }

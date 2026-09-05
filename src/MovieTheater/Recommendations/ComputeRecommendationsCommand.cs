@@ -64,7 +64,7 @@ namespace MovieTheater.Recommendations
             if (!string.IsNullOrWhiteSpace(User))
                 userQuery = userQuery.Where(u => u.Username == User);
             var users = await userQuery
-                .Where(u => db.Viewings.Any(v => v.UserID == u.UserID && v.ViewingType == "Rated"))
+                .Where(u => db.Viewings.Any(v => v.UserID == u.UserID && v.ViewingType == ViewingTypes.Rated))
                 .Select(u => new { u.UserID, u.Username })
                 .OrderBy(u => u.UserID)
                 .ToListAsync();

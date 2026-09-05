@@ -42,12 +42,15 @@ const RAIL_SUBTITLES: Record<string, string> = {
   continue: "Pick up where you stopped — on any device",
   "now-on-tv": "The channels are running right now",
   "for-you": "From your ratings and what you have watched",
+  suggested: "From your friends · newest first",
   recent: "The newest arrivals on the shelf",
   franchises: "A whole franchise, in one place",
   random: "A shuffled handful of the library — roll again for more",
 };
 
 const TYPES = "Movies,Series";
+/** The head of the viewer's Suggested list the rail shows (the endpoint materializes every id it is given). */
+const SUGGESTED_RAIL_SIZE = 20;
 
 async function getJson<T>(url: string, signal?: AbortSignal): Promise<T> {
   const r = await fetch(url, { signal });
@@ -109,6 +112,24 @@ export default function MoviesExplorePage({ userData, setUserData }: MoviesExplo
     enabled: signedIn,
     staleTime: 30 * 60 * 1000,
   });
+  // What friends suggested (the Suggested feature): the head of the viewer's own id list, newest first,
+  // resolved to cards. Keyed on the ids themselves so a new suggestion refreshes it; only the head is
+  // sent because the endpoint materializes every id it is given. `pageSize=0` answers alphabetically,
+  // so the head's own order is restored client-side.
+  const suggestedIds = useMemo(() => ((userData?.moviesSuggested as number[] | undefined) ?? []).slice(0, SUGGESTED_RAIL_SIZE), [userData?.moviesSuggested]);
+  const suggested = useQuery({
+    queryKey: ["movies", "explore", "suggested", suggestedIds.join(",")],
+    queryFn: async ({ signal }) => {
+      const r = await fetch("/API/GetMoviesByIds", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(suggestedIds), signal });
+      if (!r.ok) throw new Error(`GetMoviesByIds → ${r.status}`);
+      const rows = (await r.json()) as MovieCardRow[] | { movies?: MovieCardRow[] };
+      const list = Array.isArray(rows) ? rows : (rows.movies ?? []);
+      const byId = new Map(list.map((m) => [m.id, m]));
+      return suggestedIds.map((id) => byId.get(id)).filter((m): m is MovieCardRow => !!m);
+    },
+    enabled: signedIn && suggestedIds.length > 0,
+    staleTime: 10 * 60 * 1000,
+  });
   // The franchise INDEX is the one heavy read on this page (it builds the group index server-side —
   // exactly what the catalog warmer keeps hot), so it waits until the reader has actually moved.
   const franchises = useQuery({
@@ -134,11 +155,12 @@ export default function MoviesExplorePage({ userData, setUserData }: MoviesExplo
     recent: recent.data?.movies,
     continueWatching: continueWatching.data?.items,
     recommendations: recommendations.data?.items,
+    suggested: suggested.data,
     franchiseGroups: franchises.data?.groups,
     franchiseRun: franchiseRun.data,
     lineup: streaming ? lineup : null,
     seed: seed || undefined,
-  }), [random.data, recent.data, continueWatching.data, recommendations.data, franchises.data, franchiseRun.data, lineup, streaming, seed]);
+  }), [random.data, recent.data, continueWatching.data, recommendations.data, suggested.data, franchises.data, franchiseRun.data, lineup, streaming, seed]);
 
   const ready = !random.isPending || !!random.data;
   const onSeed = useCallback((next: number) => {

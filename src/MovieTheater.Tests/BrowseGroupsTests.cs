@@ -88,7 +88,9 @@ namespace MovieTheater.Tests
                 new Viewing { ViewingID = 2, UserID = 42, SeriesId = 100, ViewingType = "Seen" },
                 new Viewing { ViewingID = 3, UserID = 42, MovieID = 2, ViewingType = "WantToWatch" },
                 new Viewing { ViewingID = 4, UserID = 42, MovieID = 1, ViewingType = "Rated", ViewingData = "88" },
-                new Viewing { ViewingID = 5, UserID = 7, MovieID = 4, ViewingType = "Seen" });
+                new Viewing { ViewingID = 5, UserID = 7, MovieID = 4, ViewingType = "Seen" },
+                // …and user 7 suggested Charlie to user 42: a Want on 42's list, placed by 7.
+                new Viewing { ViewingID = 6, UserID = 42, MovieID = 3, ViewingType = "WantToWatch", CreatedByUserId = 7 });
             db.MovieGenres.AddRange(
                 new MovieGenre { MovieID = 1, GenreId = 1 }, new MovieGenre { MovieID = 1, GenreId = 2 },
                 new MovieGenre { MovieID = 2, GenreId = 1 },
@@ -272,7 +274,7 @@ namespace MovieTheater.Tests
             Assert.Equal(new[] { "seen", "want", "rated" }, heads.Select(h => h.Key));
             Assert.Equal(new[] { "Seen", "Want to watch", "Rated" }, heads.Select(h => h.Label));
             Assert.Equal(2, heads[0].Count); // movie 1 + series 100
-            Assert.Equal(1, heads[1].Count);
+            Assert.Equal(2, heads[1].Count); // Bravo (own) + Charlie (placed by user 7 — a suggestion is a Want)
             Assert.Equal(1, heads[2].Count);
 
             var band = await BrowseGroups.BandAsync(db, db.Movies, db.Series, Misc, "my", new[] { "seen" }, "alpha", 0, 48, 0, userId: 42);

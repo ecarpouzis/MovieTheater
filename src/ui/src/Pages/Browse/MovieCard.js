@@ -3,6 +3,7 @@ import { Card } from "antd";
 import { MovieAPI } from "../../MovieAPI";
 import FallbackImage from "../../Components/FallbackImage";
 import UserMovieOptions from "./UserMovieOptions";
+import WhoMarks from "./WhoMarks";
 import "./CardList.css";
 
 /**
@@ -75,6 +76,8 @@ export const MovieCard = memo(function MovieCard({
   showOptions,
   isWatched,
   isWanted,
+  marks,
+  people,
   onMovieClick,
   onActorSearch,
   onToggleSeen,
@@ -100,6 +103,8 @@ export const MovieCard = memo(function MovieCard({
         <div className="card-content-wrapper">
           <div className="card-poster-container bx-cover">
             <CardPoster item={item} isAboveFold={eager} />
+            {/* Friends' marks — the counts pill on the poster corner; nothing when nobody has marked it. */}
+            {!isMisc && marks && <WhoMarks marks={marks} />}
           </div>
           <div className="card-right-col">
             <div
@@ -152,6 +157,7 @@ export const MovieCard = memo(function MovieCard({
                 kind={item.kind}
                 isWatched={isWatched}
                 isWanted={isWanted}
+                people={people}
                 onToggleSeen={onToggleSeen}
                 onToggleWant={onToggleWant}
               />
@@ -176,6 +182,8 @@ export const SimpleMovieCard = memo(function SimpleMovieCard({
   showOptions,
   isWatched,
   isWanted,
+  marks,
+  people,
   onMovieClick,
   onToggleSeen,
   onToggleWant,
@@ -200,6 +208,7 @@ export const SimpleMovieCard = memo(function SimpleMovieCard({
             fetchpriority={eager ? "high" : "auto"}
             decoding="async"
           />
+          {!isMisc && marks && <WhoMarks marks={marks} />}
         </div>
         <div
           className="simple-card-text"
@@ -215,6 +224,7 @@ export const SimpleMovieCard = memo(function SimpleMovieCard({
               kind={item.kind}
               isWatched={isWatched}
               isWanted={isWanted}
+              people={people}
               onToggleSeen={onToggleSeen}
               onToggleWant={onToggleWant}
               inline

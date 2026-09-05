@@ -3,6 +3,10 @@ import { useHistory, useLocation } from "react-router-dom";
 import { lazyWithReload as lazy } from "../../lazyWithReload";
 import { MovieCard, SimpleMovieCard, MOVIE_GRID_CELL } from "./MovieCard";
 import { useViewingToggles } from "./UserMovieOptions";
+import ListsScopeBanner from "./ListsScopeBanner";
+import useUserLists, { forUserOf, usePeerLists } from "../../hooks/useUserLists";
+import { FRIEND_MARKS_EXTRA, buildMarksIndex, useFriendMarksMode } from "./friendMarks";
+import { peopleRowsFor } from "./UserMovieOptions";
 import NowOnTvRail from "./NowOnTvRail";
 import PlaylistPickerModal from "../Tv/PlaylistPickerModal";
 import useIsMobile from "../../hooks/useIsMobile";
@@ -33,12 +37,15 @@ const DENSE_PAGE_SIZE = 500;
 // set). Past this the list simply stops growing — 10k tracked titles is far beyond any real list.
 const DENSE_MAX_ROWS = 12_000;
 
-// The viewer's list (`?my=`) whose membership each Viewing action defines — turning that action OFF
-// is what removes a card from the grid (see handleToggleViewing).
+// The list (`?my=`) whose membership each Viewing action defines — turning that action OFF on the
+// list's OWNER is what removes a card from the grid (see handleToggleViewing).
 const LIST_ACTION = {
   seen: "SetWatched",
   want: "SetWantToWatch",
 };
+
+// Hoisted: a fresh array per render would rebuild the source (and drop the reader's bands) every render.
+const MOVIES_TWEAK_EXTRAS = [FRIEND_MARKS_EXTRA];
 
 /**
  * The open title, read out of ?title=<kind>:<id> (the photos ?photo= pattern): a card click pushes
@@ -70,7 +77,7 @@ function isLandingSearch(search) {
 // heights, scroll position) when the list becomes a different list rather than merely a longer one.
 function listKeyOf(search) {
   if (search.pending) return "pending";
-  if (search.movieIds) return `ids:${search.movieIds.length}:${search.sort || ""}:${search.restoreOrder ? "restore" : ""}`;
+  if (search.movieIds) return `ids:${search.listKey || ""}:${search.movieIds.length}:${search.sort || ""}:${search.restoreOrder ? "restore" : ""}`;
   return search.url || "empty";
 }
 
@@ -93,8 +100,15 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
   const history = useHistory();
   const location = useLocation();
 
+  // Whose lists this browse is on (`?for=<username>`, the Suggested feature): the viewer's own, or a
+  // friend's copy in the same shape. The sets, the toggles and the rail's flag section all read it.
+  const scoped = useUserLists(forUserOf(location.search), userData, setUserData);
+  // Everybody's lists — the poster pill's counts and the pills' people menu (friends' marks).
+  const { peers, patchPeer } = usePeerLists(!!userData);
+  const marksMode = useFriendMarksMode("movies");
+
   // ── The facet rail's state (R9 S2): the URL is the filter; the sider rail reads the same URL. ──
-  const spec = useMoviesFacetSpec(moviesViewerIdentity(userData));
+  const spec = useMoviesFacetSpec(moviesViewerIdentity(userData), scoped.me ? null : scoped.username);
   const rail = useSectionRail("movies", spec, { entityParams: MOVIES_ENTITY_PARAMS });
   const facetState = rail.state;
   const facetActions = rail.actions;
@@ -331,21 +345,40 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
   // live context reaches them through one memoized bundle, so the renderer's identity changes
   // exactly when a card's appearance depends on something that changed — a Seen/Want set, the
   // searched person, the sign-in state — and not on every unrelated Browse render.
-  const seenSet = useMemo(() => new Set(userData?.moviesSeen), [userData?.moviesSeen]);
-  const wantSet = useMemo(() => new Set(userData?.moviesToWatch), [userData?.moviesToWatch]);
-  const { toggleSeen, toggleWant } = useViewingToggles(userData, setUserData, handleToggleViewing);
+  // The sets come from WHOSE lists the browse is on (`scoped.lists` = userData, or the friend's copy).
+  const lists = scoped.lists;
+  const seenSet = useMemo(() => new Set(lists?.moviesSeen), [lists?.moviesSeen]);
+  const wantSet = useMemo(() => new Set(lists?.moviesToWatch), [lists?.moviesToWatch]);
+  const { toggleSeen, toggleWant, markFor, meId } = useViewingToggles({
+    lists, setLists: scoped.setLists, forUserId: scoped.me ? null : scoped.userId,
+    onToggleViewing: handleToggleViewing, peers, patchPeer, userData, setUserData,
+  });
   const activeName = (search.facet?.include?.person?.[0] ?? "").toString().trim().toLowerCase();
+  // Friends' marks: title → who has seen / wants it, everybody but the viewer, under the ⚙ lever.
+  const marksIndex = useMemo(() => buildMarksIndex(peers, userData?.username, marksMode), [peers, userData?.username, marksMode]);
+  // The pills' people menu. `rows` reads the communal copy at OPEN time through a ref, so the menu
+  // is always current without the cards depending on `peers` for their identity.
+  const peersRef = useRef(peers);
+  peersRef.current = peers;
+  const meIdRef = useRef(meId);
+  meIdRef.current = meId;
+  const canMarkSeen = !!userData?.hasPassword;
+  const people = useMemo(() => (userData && peers.length
+    ? { rows: (id, list) => peopleRowsFor(peersRef.current, meIdRef.current, id, list), mark: markFor, canMarkSeen }
+    : null), [userData, peers.length, markFor, canMarkSeen]);
   const cardCtx = useMemo(() => ({
     simple: useSimpleStyle,
     activeName,
-    showOptions: !!userData,
+    showOptions: !!userData && !!lists,
     seenSet,
     wantSet,
+    marksIndex,
+    people,
     onMovieClick: handleOpenMovie,
     onActorSearch: handleActorSearch,
     onToggleSeen: toggleSeen,
     onToggleWant: toggleWant,
-  }), [useSimpleStyle, activeName, userData, seenSet, wantSet, handleOpenMovie, handleActorSearch, toggleSeen, toggleWant]);
+  }), [useSimpleStyle, activeName, userData, lists, seenSet, wantSet, marksIndex, people, handleOpenMovie, handleActorSearch, toggleSeen, toggleWant]);
 
   const renderCard = useCallback((item, view) => {
     const row = item.raw;
@@ -360,6 +393,8 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
         showOptions={cardCtx.showOptions}
         isWatched={cardCtx.showOptions ? cardCtx.seenSet.has(row.id) : false}
         isWanted={cardCtx.showOptions ? cardCtx.wantSet.has(row.id) : false}
+        marks={cardCtx.showOptions ? cardCtx.marksIndex.get(row.id) : undefined}
+        people={cardCtx.showOptions ? cardCtx.people : null}
         onMovieClick={cardCtx.onMovieClick}
         onActorSearch={cardCtx.onActorSearch}
         onToggleSeen={cardCtx.onToggleSeen}
@@ -406,7 +441,8 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
   const gridClass = useSimpleStyle ? "bx-grid--simple" : "bx-grid--movies";
   const source = useMemo(() => {
     const base = serverSource ?? listSource;
-    return base && { ...base, renderCard, gridClass, gridCell: MOVIE_GRID_CELL, dataVersion };
+    // The ⚙ panel's "Friends’ marks" lever rides the source's extras like a section backdrop would.
+    return base && { ...base, renderCard, gridClass, gridCell: MOVIE_GRID_CELL, dataVersion, tweakExtras: MOVIES_TWEAK_EXTRAS };
   }, [serverSource, listSource, renderCard, gridClass, dataVersion]);
 
   // While the dense list is still on the wire (or failed) the Grid shows the site-wide skeleton /
@@ -432,6 +468,7 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
       {/* Rail mounts regardless of the grid's loading state so its lineup + posters fetch in parallel
           with the movie grid (it self-gates on a streaming-enabled session), rather than only after. */}
       {isLandingSearch(location.search) && <NowOnTvRail userData={userData} setUserData={setUserData} />}
+      {userData && !scoped.me && <ListsScopeBanner scoped={scoped} />}
       <CatalogHost
         section="movies"
         source={source}
@@ -449,6 +486,8 @@ function Browse({ search, userData, setUserData, isAuthReady, simpleStyle }) {
           onOpenTitle={handleOpenMovie}
           userData={userData}
           setUserData={setUserData}
+          listsFor={scoped}
+          peerLists={{ peers, patchPeer }}
           onToggleViewing={handleToggleViewing}
           onMovieUpdated={useSimpleStyle ? undefined : handleMovieUpdated}
           onAddToPlaylist={openPlaylistPicker}

@@ -94,7 +94,9 @@ namespace MovieTheater.Tests
                 new Viewing { ViewingID = 1, UserID = 7, MovieID = 1, ViewingType = "Seen" },
                 new Viewing { ViewingID = 2, UserID = 7, MovieID = 2, ViewingType = "WantToWatch" },
                 new Viewing { ViewingID = 3, UserID = 7, SeriesId = 100, ViewingType = "Seen" },
-                new Viewing { ViewingID = 4, UserID = 8, MovieID = 3, ViewingType = "Seen" });
+                new Viewing { ViewingID = 4, UserID = 8, MovieID = 3, ViewingType = "Seen" },
+                // user 8 suggested Heathers to user 7 — a Want on 7's list, placed by 8.
+                new Viewing { ViewingID = 5, UserID = 7, MovieID = 4, ViewingType = "WantToWatch", CreatedByUserId = 8 });
             db.SaveChanges();
         }
 
@@ -182,9 +184,14 @@ namespace MovieTheater.Tests
             Assert.Equal(Ex(new int[] {  }, new int[] { 100, 101 }), await RunAsync(F(q => q.yearMin = 2010)));
             // the viewer's own lists: seen / want, per user; no user ⇒ nothing
             Assert.Equal(Ex(new int[] { 1 }, new int[] { 100 }), await RunAsync(F(q => q.my = "seen"), userId: 7));
-            Assert.Equal(Ex(new int[] { 2 }, new int[] {  }), await RunAsync(F(q => q.my = "want"), userId: 7));
+            // 7's Want list holds their own pick (2) AND the one a friend placed (4): a suggestion is a Want.
+            Assert.Equal(Ex(new int[] { 2, 4 }, new int[] {  }), await RunAsync(F(q => q.my = "want"), userId: 7));
             Assert.Equal(Ex(new int[] { 3 }, new int[] {  }), await RunAsync(F(q => q.my = "seen"), userId: 8));
             Assert.Equal(Ex(new int[] {  }, new int[] {  }), await RunAsync(F(q => q.my = "seen"), userId: null));
+            // The user id passed in is the list OWNER — what `for=` resolves to — so "8 browsing 7's list"
+            // is userId: 7; the placer's own Want list does not carry what they placed elsewhere.
+            Assert.Equal(Ex(new int[] {  }, new int[] {  }), await RunAsync(F(q => q.my = "want"), userId: 8));
+            Assert.Equal(new[] { "want" }, F(q => q.my = "Want,suggested,bogus").My);
         }
 
         [Fact]

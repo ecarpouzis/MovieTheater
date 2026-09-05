@@ -55,7 +55,7 @@ namespace MovieTheater.Recommendations
             var ratedRaw = new List<(int id, bool movie, double score, int vid)>();
             foreach (var v in viewings)
             {
-                if (v.ViewingType == "Rated" && int.TryParse(v.ViewingData, out var sc) && sc is >= 0 and <= 100)
+                if (v.ViewingType == ViewingTypes.Rated && int.TryParse(v.ViewingData, out var sc) && sc is >= 0 and <= 100)
                 {
                     if (v.MovieID is int mid) ratedRaw.Add((mid, true, sc, v.ViewingID));
                     else if (v.SeriesId is int sid) ratedRaw.Add((sid, false, sc, v.ViewingID));
@@ -268,10 +268,10 @@ namespace MovieTheater.Recommendations
             var mInsight = await CurrentInsightsAsync(db, InsightSubjectKind.Movie, eligibleMovieIds, cancel);
             var sInsight = await CurrentInsightsAsync(db, InsightSubjectKind.Series, eligibleSeriesIds, cancel);
 
-            var mViewers = await db.Viewings.Where(v => v.ViewingType == "Seen" && v.MovieID != null)
+            var mViewers = await db.Viewings.Where(v => v.ViewingType == ViewingTypes.Seen && v.MovieID != null)
                 .GroupBy(v => v.MovieID!.Value).Select(g => new { Id = g.Key, C = g.Select(v => v.UserID).Distinct().Count() })
                 .ToDictionaryAsync(x => x.Id, x => x.C, cancel);
-            var sViewers = await db.Viewings.Where(v => v.ViewingType == "Seen" && v.SeriesId != null)
+            var sViewers = await db.Viewings.Where(v => v.ViewingType == ViewingTypes.Seen && v.SeriesId != null)
                 .GroupBy(v => v.SeriesId!.Value).Select(g => new { Id = g.Key, C = g.Select(v => v.UserID).Distinct().Count() })
                 .ToDictionaryAsync(x => x.Id, x => x.C, cancel);
 

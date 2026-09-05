@@ -25,7 +25,7 @@ namespace MovieTheater.Services.Recommendations
         public async Task<string> StampAsync(MovieDb db, int userId, int maxLibId, CancellationToken cancel = default)
         {
             var agg = await db.Viewings
-                .Where(v => v.UserID == userId && v.ViewingType == "Rated")
+                .Where(v => v.UserID == userId && v.ViewingType == ViewingTypes.Rated)
                 .GroupBy(_ => 1)
                 .Select(g => new { Max = g.Max(v => v.ViewingID), Count = g.Count() })
                 .FirstOrDefaultAsync(cancel);
@@ -49,7 +49,7 @@ namespace MovieTheater.Services.Recommendations
         public async Task<string> SentinelAsync(MovieDb db, CancellationToken cancel = default)
         {
             var agg = await db.Viewings
-                .Where(v => v.ViewingType == "Rated")
+                .Where(v => v.ViewingType == ViewingTypes.Rated)
                 .GroupBy(_ => 1)
                 .Select(g => new { Max = g.Max(v => v.ViewingID), Count = g.Count() })
                 .FirstOrDefaultAsync(cancel);
@@ -67,7 +67,7 @@ namespace MovieTheater.Services.Recommendations
         {
             int maxLibId = await MaxLibIdAsync(db, cancel);
             // One grouped query for every rater's stamp inputs, instead of a per-user StampAsync round-trip.
-            var perUser = await db.Viewings.Where(v => v.ViewingType == "Rated")
+            var perUser = await db.Viewings.Where(v => v.ViewingType == ViewingTypes.Rated)
                 .GroupBy(v => v.UserID)
                 .Select(g => new { UserId = g.Key, Max = g.Max(v => v.ViewingID), Count = g.Count() })
                 .ToListAsync(cancel);

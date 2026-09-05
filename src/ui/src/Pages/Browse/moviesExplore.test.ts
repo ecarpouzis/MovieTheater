@@ -20,14 +20,20 @@ describe("Pages/Browse/moviesExplore — the Movies Explore composition (R9 S7)"
       recent: [row(20)],
       continueWatching: [{ card: row(30), percent: 42 }],
       recommendations: [{ card: row(40), reason: "Because you liked Heat" }],
+      suggested: [row(45), row(46)],
       franchiseGroups: [{ key: "mcu", label: "MCU", totalItems: 34, items: [row(50)] }],
       franchiseRun: { defaultFranchise: "alien", franchises: [{ value: "alien", count: 4, items: [{ id: 60, kind: "movie", title: "Alien", year: 1979 }] }] },
       lineup: [{ id: 9, name: "Noir 24/7", now: { title: "The Third Man", posterId: 11, posterVersion: 1, kind: "movie" } }],
       seed: 7,
     });
     expect(out.rails.map((r) => r.key)).toEqual([
-      "continue", "now-on-tv", "for-you", "recent", "franchises", "franchise-run", "random",
+      "continue", "now-on-tv", "for-you", "suggested", "recent", "franchises", "franchise-run", "random",
     ]);
+    // The suggestions keep the order they were handed in (newest first) and lead to the Suggested list.
+    const suggested = out.rails.find((r) => r.key === "suggested")!;
+    expect(suggested.items.map((i) => i.id)).toEqual([45, 46]);
+    expect(suggested.more?.href).toBe(MOVIES_MORE.suggested);
+    expect(MOVIES_UNSEEDED_RAILS.has("suggested")).toBe(true);
     expect(out.spotlight).toHaveLength(5);
     // The hero eats the first five of the shuffle; the grid rail gets the rest, never a duplicate.
     expect(out.rails.find((r) => r.key === "random")!.items.map((i) => i.id)).toEqual([6, 7]);

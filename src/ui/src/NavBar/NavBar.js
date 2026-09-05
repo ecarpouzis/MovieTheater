@@ -19,6 +19,7 @@ const UserSettingsModal = lazy(() => import("./UserSettingsModal"));
 // The playlists modal (Movies only) loads on demand when first opened from the sidebar pill.
 const MyPlaylistsModal = lazy(() => import("../Pages/Tv/MyPlaylistsModal"));
 import useIsMobile from "../hooks/useIsMobile";
+import useUserLists, { forUserOf } from "../hooks/useUserLists";
 import { loadTitleTypes, saveTitleTypes, loadSort, saveSort } from "../hooks/useMovieSearch";
 import { clearRailSearchFocus, requestRailSearchFocus } from "../catalog/bar/useSlot";
 import { parseFacetState, facetStateKey } from "../catalog/rail/facetUrl";
@@ -73,8 +74,7 @@ function NavBar({
   onUserLoggedIn,
   facetSearch,
   restoreMovieIdsSearch,
-  moviesSeenSearch,
-  moviesWantToWatchSearch,
+  moviesListSearch,
   collapsed,
   onCollapse,
   isAuthReady,
@@ -122,6 +122,14 @@ function NavBar({
   // magnifier opens this drawer and asks the rail's SmartSearch to focus, and a drawer that closes
   // before any rail claimed the request drops it. See catalog/bar/useSlot.ts.
   useEffect(() => { if (!drawerOpen) clearRailSearchFocus(); }, [drawerOpen]);
+
+  // Whose lists the movies browse is on (`?for=<username>`, the Suggested feature): the sider's index
+  // rows count these, the dispatcher pages these. Held in a ref for the effect below, which must NOT
+  // re-run on every Seen/Want edit (the lists object is replaced each time) — only on identity/ready.
+  const forUser = forUserOf(location.search);
+  const scoped = useUserLists(forUser, userData, setUserData);
+  const scopedListsRef = useRef(null);
+  scopedListsRef.current = scoped.lists;
 
   useEffect(() => {
     // The movies dispatcher belongs to the movies section only. Every other section owns its own
@@ -171,9 +179,13 @@ function NavBar({
     // part of the signature (its arrival must dispatch; its persistence must not re-dispatch on
     // every modal open/close riding the same route state).
     const restoreIds = Array.isArray(location.state?.browseMovieIds) ? location.state.browseMovieIds : null;
+    // Whose lists (`for=`) and whether that person's lists have arrived are part of the signature:
+    // switching Alex → me (same facets) must refetch, and the dense list must dispatch once it loads.
+    const scopedReady = scoped.me || scoped.ready;
     const dispatchSig = JSON.stringify({
       facet: facetStateKey(facetState), types, sort,
       auth: isAuthReady, user: userData?.username ?? null,
+      forUser: forUser ?? null, scopedReady,
       restore: restoreIds && restoreIds.length
         ? `${restoreIds.length}:${restoreIds[0]}:${restoreIds[restoreIds.length - 1]}`
         : null,
@@ -186,7 +198,7 @@ function NavBar({
     // The one browse: the facet state over the Type scope under the sort. With nothing else active
     // this is also the site's landing grid — Random is one of the sorts (and the default), so "the
     // landing" is just this browse under whichever sort the user last chose.
-    const browse = () => facetSearch(moviesFilterParams(facetState).toString(), types, sort, facetState);
+    const browse = () => facetSearch(moviesFilterParams(facetState).toString(), types, sort, facetState, forUser);
 
     if (plain) {
       // Nothing narrows the browse. Determine whether this is a hard browser reload
@@ -227,15 +239,21 @@ function NavBar({
     // The viewer's own list on its own (only the Type scope beside it) keeps the dense id-list path:
     // untoggling Seen/Want removes the card in place, which a paged scope cannot express until S3
     // seats these lists on the engine. Combined with any facet, the server filters the list.
-    const onlyList = lists.length === 1 && (lists[0] === "seen" || lists[0] === "want") && isPlainMoviesSearch({ ...facetState, flags: {} });
+    // The list is whoever's the URL says (`for=`): the viewer's own arrays, or the friend's copy —
+    // the same shape either way (hooks/useUserLists), read through the ref so this effect stays keyed
+    // on identity + readiness rather than on every edit of the arrays.
+    const DENSE_LISTS = { seen: "moviesSeen", want: "moviesToWatch", suggested: "moviesSuggested" };
+    const onlyList = lists.length === 1 && DENSE_LISTS[lists[0]] && isPlainMoviesSearch({ ...facetState, flags: {} });
     if (onlyList) {
       if (!isAuthReady) return;
       if (!userData) {
         browse();
         return;
       }
-      if (lists[0] === "seen") moviesSeenSearch(userData, types, sort);
-      else moviesWantToWatchSearch(userData, types, sort);
+      // A friend's lists still on the wire: wait — `scopedReady` flips the signature when they land.
+      if (!scopedReady) return;
+      const ids = scopedListsRef.current?.[DENSE_LISTS[lists[0]]] ?? [];
+      moviesListSearch(`${forUser ?? "me"}:${lists[0]}`, ids, types, sort);
       return;
     }
     browse();
@@ -253,8 +271,10 @@ function NavBar({
     history,
     facetSearch,
     restoreMovieIdsSearch,
-    moviesSeenSearch,
-    moviesWantToWatchSearch,
+    moviesListSearch,
+    forUser,
+    scoped.me,
+    scoped.ready,
   ]);
 
   const section = SECTIONS.find((sec) => sec.prefix && location.pathname.startsWith(sec.prefix))
@@ -416,8 +436,11 @@ function NavBar({
         onUserLoggedIn={onUserLoggedIn}
         setSettingsModalOpen={setSettingsModalOpen}
         onOpenPlaylists={() => setPlaylistsModalOpen(true)}
+        scoped={scoped}
       />
-      {railVisible && !isExploreRoute(location.pathname) && <MoviesSiderRail userData={userData} />}
+      {railVisible && !isExploreRoute(location.pathname) && (
+        <MoviesSiderRail userData={userData} listsOwner={scoped.me ? null : scoped.username} />
+      )}
     </>
   );
 

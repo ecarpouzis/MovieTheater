@@ -63,7 +63,7 @@ const familyMember = { ...userData, familyAlbum: true };
 // The big route-dispatch effect calls these; they're irrelevant to the footer.
 const noopSearchProps = Object.fromEntries(
   [
-    "search", "facetSearch", "restoreMovieIdsSearch", "moviesSeenSearch", "moviesWantToWatchSearch",
+    "search", "facetSearch", "restoreMovieIdsSearch", "moviesListSearch",
   ].map((k) => [k, vi.fn()])
 );
 

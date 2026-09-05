@@ -70,7 +70,7 @@ function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { theme, toggleTheme } = useTheme();
 
-  const { search, facetSearch, restoreMovieIdsSearch, moviesSeenSearch, moviesWantToWatchSearch } = useMovieSearch();
+  const { search, facetSearch, restoreMovieIdsSearch, moviesListSearch } = useMovieSearch();
 
   function applyUserData(responseData, username) {
     setUserData(responseData);
@@ -137,8 +137,7 @@ function App() {
           onUserLoggedIn={onUserLoggedIn}
           facetSearch={facetSearch}
           restoreMovieIdsSearch={restoreMovieIdsSearch}
-          moviesSeenSearch={moviesSeenSearch}
-          moviesWantToWatchSearch={moviesWantToWatchSearch}
+          moviesListSearch={moviesListSearch}
           collapsed={sidebarCollapsed}
           onCollapse={setSidebarCollapsed}
           isAuthReady={isAuthReady}

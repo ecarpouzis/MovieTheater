@@ -77,76 +77,24 @@ namespace MovieTheater.Controllers
             return await omdb.GetMovieByImdbId(imdbID);
         }
 
+        // Seen / Want — the one write endpoint for the lists. The rules (who may act on whose list, a Want
+        // placed for a friend is the suggestion, every change journalled) live in Web.ViewingWrites; this
+        // is the shell. The ACTOR is always the cookie identity — the body names whose list (ForUserId),
+        // never who is acting, so a passwordless login can't impersonate anyone.
         [HttpPost("/API/SetViewingState")]
-        public async Task<IActionResult> SetViewingState([FromBody] ViewingState viewingState)
+        public async Task<IActionResult> SetViewingState([FromBody] ViewingState viewingState, CancellationToken ct = default)
         {
             if (viewingState == null)
-            {
                 return BadRequest(new { Success = false, Message = "No User Movie Data Provided." });
-            }
 
-            // Act on the authenticated cookie identity, never the client-supplied username —
-            // otherwise anyone could edit a password-protected user's lists without the password.
             var currentUserId = GetCurrentUserId();
             if (!currentUserId.HasValue)
-            {
                 return Unauthorized(new { Success = false, Message = "Not logged in." });
-            }
 
-            var user = await movieDb.Users.FindAsync(currentUserId.Value);
-            if (user == null)
-            {
-                return Unauthorized(new { Success = false, Message = "No User Found." });
-            }
-
-            var action = viewingState.Action == ViewingType.SetWatched ? "Seen" : "WantToWatch";
-            // movie/series share an id space; misc videos have their own. The card's Kind says which
-            // target the id refers to, and which typed FK on Viewing to read/write.
-            bool isSeries = string.Equals(viewingState.Kind, "series", StringComparison.OrdinalIgnoreCase);
-            bool isMisc = string.Equals(viewingState.Kind, "misc", StringComparison.OrdinalIgnoreCase);
-            int id = viewingState.MovieID;
-
-            if (isSeries)
-            {
-                if (!await movieDb.Series.AnyAsync(s => s.Id == id))
-                    return BadRequest(new { Success = false, Message = "Invalid Series ID." });
-            }
-            else if (isMisc)
-            {
-                if (!await movieDb.MiscVideos.AnyAsync(mv => mv.Id == id))
-                    return BadRequest(new { Success = false, Message = "Invalid MiscVideo ID." });
-            }
-            else if (!await movieDb.Movies.AnyAsync(m => m.id == id))
-            {
-                return BadRequest(new { Success = false, Message = "Invalid Movie ID." });
-            }
-
-            var existingViewing = isSeries
-                ? await movieDb.Viewings.FirstOrDefaultAsync(e => e.UserID == user.UserID && e.SeriesId == id && e.ViewingType == action)
-                : isMisc
-                    ? await movieDb.Viewings.FirstOrDefaultAsync(e => e.UserID == user.UserID && e.MiscVideoId == id && e.ViewingType == action)
-                    : await movieDb.Viewings.FirstOrDefaultAsync(e => e.UserID == user.UserID && e.MovieID == id && e.ViewingType == action);
-            bool shouldCreateNew = existingViewing == null && viewingState.SetActive;
-            bool shouldDeleteExisting = existingViewing != null && !viewingState.SetActive;
-
-            if (shouldCreateNew)
-            {
-                var newViewing = new Viewing
-                {
-                    MovieID = (isSeries || isMisc) ? (int?)null : id,
-                    SeriesId = isSeries ? id : (int?)null,
-                    MiscVideoId = isMisc ? id : (int?)null,
-                    UserID = user.UserID,
-                    ViewingType = action,
-                };
-                await movieDb.Viewings.AddAsync(newViewing);
-            }
-            if (shouldDeleteExisting)
-            {
-                movieDb.Viewings.Remove(existingViewing);
-            }
-
-            await movieDb.SaveChangesAsync();
+            var result = await Web.ViewingWrites.ApplyAsync(movieDb, currentUserId.Value, IsPasswordVerified(), viewingState.ForUserId,
+                viewingState.Kind, viewingState.MovieID, viewingState.Action, viewingState.SetActive, DateTime.UtcNow, ct);
+            if (!result.Success)
+                return StatusCode(result.Status, new { Success = false, Message = result.Message });
             return Ok(new { Success = true });
         }
 
@@ -203,7 +151,7 @@ namespace MovieTheater.Controllers
 
             // Load the user's existing "Rated" rows for just these targets (one query).
             var existingRows = await movieDb.Viewings
-                .Where(v => v.UserID == uid && v.ViewingType == "Rated" &&
+                .Where(v => v.UserID == uid && v.ViewingType == ViewingTypes.Rated &&
                     ((v.MovieID != null && movieIds.Contains(v.MovieID.Value)) ||
                      (v.SeriesId != null && seriesIds.Contains(v.SeriesId.Value)) ||
                      (v.MiscVideoId != null && miscIds.Contains(v.MiscVideoId.Value))))
@@ -213,6 +161,7 @@ namespace MovieTheater.Controllers
 
             int updated = 0, skipped = 0, deleted = 0;
             bool rescored = false;
+            var now = DateTime.UtcNow;
             foreach (var item in items)
             {
                 var kind = NormKind(item.Kind);
@@ -225,7 +174,11 @@ namespace MovieTheater.Controllers
 
                 if (item.Value == null)
                 {
-                    if (existing != null) { movieDb.Viewings.Remove(existing); existingRows.Remove(existing); deleted++; }
+                    if (existing != null)
+                    {
+                        movieDb.Viewings.Remove(existing); existingRows.Remove(existing); deleted++;
+                        movieDb.ViewingEvents.Add(Web.ViewingWrites.Event(uid, uid, kind, item.Id, ViewingTypes.Rated, ViewingEvent.ActionRemoved, existing.ViewingData, now));
+                    }
                     else skipped++;
                     continue;
                 }
@@ -239,14 +192,21 @@ namespace MovieTheater.Controllers
                         SeriesId = kind == "series" ? item.Id : (int?)null,
                         MiscVideoId = kind == "misc" ? item.Id : (int?)null,
                         UserID = uid,
-                        ViewingType = "Rated",
+                        ViewingType = ViewingTypes.Rated,
                         ViewingData = data,
+                        CreatedUtc = now,
+                        CreatedByUserId = uid,
                     };
                     await movieDb.Viewings.AddAsync(row);
                     existingRows.Add(row);
                     updated++;
+                    movieDb.ViewingEvents.Add(Web.ViewingWrites.Event(uid, uid, kind, item.Id, ViewingTypes.Rated, ViewingEvent.ActionAdded, data, now));
                 }
-                else if (existing.ViewingData != data) { existing.ViewingData = data; rescored = true; updated++; }
+                else if (existing.ViewingData != data)
+                {
+                    existing.ViewingData = data; rescored = true; updated++;
+                    movieDb.ViewingEvents.Add(Web.ViewingWrites.Event(uid, uid, kind, item.Id, ViewingTypes.Rated, ViewingEvent.ActionRescored, data, now));
+                }
                 else skipped++;
             }
 

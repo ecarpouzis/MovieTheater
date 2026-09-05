@@ -184,11 +184,14 @@ export function useMovieSearch() {
   // scope, the BrowseFilterQuery params (`fqParams`, already serialized by moviesFilterParams) and
   // the sort. Every facet URL is a paged scope, so the catalog views and the letter strip ride it
   // like any other; `facet` keeps the parsed state on the search for the grid (the active person).
-  const facetSearch = useCallback((fqParams, types, sort, facet = null) => {
+  // `forUser` (the URL's `for=<username>`) rides the query so `my=` reads THAT person's lists — on the
+  // page URL and the letters URL alike, and `scopeOf` forwards it to the grouped views from there.
+  const facetSearch = useCallback((fqParams, types, sort, facet = null, forUser = null) => {
     const list = (Array.isArray(types) ? types : String(types ?? "").split(","))
       .map((t) => t.trim())
       .filter(Boolean);
-    const fq = fqParams ? `&${fqParams}` : "";
+    const forQs = forUser ? `&for=${encodeURIComponent(forUser)}` : "";
+    const fq = (fqParams ? `&${fqParams}` : "") + forQs;
     const typesQs = `types=${encodeURIComponent(list.join(","))}`;
     const lettersUrl = list.length && sort === "alpha" && !list.includes("Misc")
       ? `/API/BrowseLetters?type=${encodeURIComponent(list.join(","))}${fq}`
@@ -226,13 +229,17 @@ export function useMovieSearch() {
     movieIDListSearch(movieIds, movieIds, types);
   }, [movieIDListSearch]);
 
-  const moviesSeenSearch = useCallback((userData, types = null, sort = null) => {
-    if (userData) movieIDListSearch(userData.moviesSeen, null, types, sort);
-  }, [movieIDListSearch]);
-
-  const moviesWantToWatchSearch = useCallback((userData, types = null, sort = null) => {
-    if (userData) movieIDListSearch(userData.moviesToWatch, null, types, sort);
-  }, [movieIDListSearch]);
+  // One of the id lists — Seen / Want to watch / Suggested — whoever's they are (the caller passes the
+  // scoped lists' ids; see hooks/useUserLists). `listKey` rides the search so the dense source's
+  // identity changes when the list does, even between two lists of the same length.
+  const moviesListSearch = useCallback((listKey, ids, types = null, sort = null) => {
+    const movieIds = ids ?? [];
+    if (movieIds.length === 0) {
+      setSearch({ url: null, listKey, titleTypes: types, sort });
+      return;
+    }
+    setSearch({ movieIds, listKey, restoreOrder: null, titleTypes: types, sort, infinite: true });
+  }, []);
 
   return {
     search,
@@ -247,7 +254,6 @@ export function useMovieSearch() {
     facetSearch,
     movieIDListSearch,
     restoreMovieIdsSearch,
-    moviesSeenSearch,
-    moviesWantToWatchSearch,
+    moviesListSearch,
   };
 }

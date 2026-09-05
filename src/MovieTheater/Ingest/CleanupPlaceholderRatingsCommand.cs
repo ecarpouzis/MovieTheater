@@ -37,11 +37,11 @@ namespace MovieTheater.Ingest
 
             // Placeholder = a "Rated" row whose score is absent or "0". Real ratings (>= 1) are never matched.
             var placeholders = db.Viewings.Where(v =>
-                v.ViewingType == "Rated" && (v.ViewingData == null || v.ViewingData == "" || v.ViewingData == "0"));
+                v.ViewingType == ViewingTypes.Rated && (v.ViewingData == null || v.ViewingData == "" || v.ViewingData == "0"));
 
             var total = await placeholders.CountAsync();
             var kept = await db.Viewings.CountAsync(v =>
-                v.ViewingType == "Rated" && v.ViewingData != null && v.ViewingData != "" && v.ViewingData != "0");
+                v.ViewingType == ViewingTypes.Rated && v.ViewingData != null && v.ViewingData != "" && v.ViewingData != "0");
 
             var perUser = await placeholders
                 .GroupBy(v => v.UserID)
