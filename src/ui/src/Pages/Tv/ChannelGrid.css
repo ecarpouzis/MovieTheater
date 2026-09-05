@@ -39,66 +39,89 @@
   min-height: 0;
 }
 
-/* ── The detail panel (GuideDetail, v2): poster · body (eyebrow · title · meta · plot · actions · up
+/* ── The detail panel (GuideDetail, v2): poster · body (eyebrow · title · meta · plot · actions + up
    next) · the live preview column ────────────────────────────────────────────────────────────────
-   Themed like content (it is content), on the section's tokens; the guide beneath keeps its cable-box
-   ground. The preview column only exists from 768px up (`.guide-detail--preview`); phones get poster +
-   body. */
+   PART OF THE CABLE BOX, so dark-literal like the rest of this file — the 2026-09-05 design review:
+   on the light card tokens the panel was a white slab sitting on the near-black grid, and its teal
+   section accent fought the guide's blue. It now shares the guide header's ground and the guide's one
+   accent (#40a9ff), with the now line's red (#e3553f) for "now" and the slot's progress. The preview
+   column only exists from 768px up (`.guide-detail--preview`); phones get poster + body. */
 .guide-detail {
   position: relative;
   flex: 0 0 auto;
   display: grid;
   grid-template-columns: 112px minmax(0, 1fr);
-  gap: 18px;
-  padding: 14px 44px 14px 18px;
-  background: var(--card-surface);
-  color: var(--text-primary);
-  border-bottom: 1px solid var(--card-border);
+  gap: 20px;
+  padding: 16px 44px 14px 18px;
+  background: linear-gradient(to bottom, #111a28, #0c111a);
+  color: #e8eef6;
+  border-bottom: 1px solid rgba(64, 169, 255, 0.25);
 }
 .guide-detail--preview { grid-template-columns: 112px minmax(0, 1fr) 336px; }
 .guide-detail__poster { width: 112px; }
-.guide-detail__img { display: block; width: 112px; height: 168px; object-fit: cover; border-radius: 6px; background: #1a2230; }
-.guide-detail__img--empty { background: linear-gradient(135deg, #2b3a4a, #1a2530); }
-.guide-detail__body { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
-.guide-detail__eyebrow { margin: 0; font-family: var(--font-mono, ui-monospace, monospace); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-secondary); }
-.guide-detail__title { margin: 0; font-family: var(--font-display); font-size: 22px; font-weight: 700; line-height: 1.15; letter-spacing: -0.01em; }
-/* `2002 · PG · 1h 35m · IMDb 6.6 · Comedy` — the facts line under the title. */
-.guide-detail__meta { margin: 0; font-size: 12.5px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: 0.01em; color: var(--text-secondary); }
-.guide-detail__plot { margin: 2px 0 0; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); max-width: 72ch; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.guide-detail__actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
-.guide-detail__btn {
-  appearance: none; cursor: pointer; font: inherit; font-size: 12.5px; font-weight: 600;
-  height: 32px; padding: 0 12px; border-radius: 7px; border: 1px solid var(--card-border);
-  background: transparent; color: var(--text-primary);
+.guide-detail__img { display: block; width: 112px; height: 168px; object-fit: cover; border-radius: 6px; background: #1a2230; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45); }
+.guide-detail__img--empty { background: linear-gradient(160deg, #2b3a4a, #1a2530); }
+.guide-detail__body { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.guide-detail__eyebrow {
+  margin: 0; display: flex; align-items: center; gap: 7px; min-width: 0;
+  font-family: var(--font-mono, ui-monospace, monospace); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: rgba(232, 238, 246, 0.72);
 }
-.guide-detail__btn:hover { border-color: var(--accent); color: var(--accent); }
-.guide-detail__btn--primary, .guide-detail__btn--primary:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
-.guide-detail__btn--secondary { border-color: var(--accent); color: var(--accent); }
-.guide-detail__btn.is-on { border-color: var(--accent); color: var(--accent); }
-/* Up next rides under the actions: a row of small posters with their start times. */
-.guide-detail__next { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+.guide-detail__channel { color: #40a9ff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.guide-detail__sep { color: rgba(232, 238, 246, 0.3); }
+/* "now" carries the now line's red, with the dot the guide header's LIVE badge uses. */
+.guide-detail__now { color: #e3553f; display: inline-flex; align-items: center; gap: 5px; }
+.guide-detail__now::before { content: ""; width: 6px; height: 6px; border-radius: 3px; background: #e3553f; }
+.guide-detail__paused { color: #40a9ff; }
+.guide-detail__title { margin: 0; font-family: var(--font-display); font-size: 26px; font-weight: 700; line-height: 1.1; letter-spacing: -0.015em; color: #f7f9fc; }
+/* `1947 · [Approved] · 1h 37m · IMDb 8.0 · Film-Noir` — the facts line under the title. The
+   certificate is a boxed tag the way a real guide prints it; IMDb wears its own yellow. */
+.guide-detail__meta { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 0 8px; font-size: 12.5px; font-variant-numeric: tabular-nums; color: rgba(232, 238, 246, 0.78); }
+.guide-detail__meta-item { display: inline-flex; align-items: center; gap: 8px; }
+.guide-detail__tag {
+  display: inline-flex; align-items: center; height: 16px; padding: 0 5px; border-radius: 3px;
+  border: 1px solid rgba(232, 238, 246, 0.35); font-size: 10px; font-weight: 700; letter-spacing: 0.04em; color: rgba(232, 238, 246, 0.85);
+}
+.guide-detail__imdb { color: #f5c518; font-weight: 700; }
+.guide-detail__plot { margin: 4px 0 0; font-size: 13.5px; line-height: 1.5; color: rgba(232, 238, 246, 0.72); max-width: 68ch; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.guide-detail__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
+.guide-detail__btn {
+  appearance: none; cursor: pointer; font: inherit; font-size: 12.5px; font-weight: 600; letter-spacing: 0.01em;
+  display: inline-flex; align-items: center; gap: 7px;
+  height: 34px; padding: 0 14px; border-radius: 7px; border: 1px solid rgba(232, 238, 246, 0.16);
+  background: transparent; color: rgba(232, 238, 246, 0.8);
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.guide-detail__btn:hover { border-color: rgba(64, 169, 255, 0.6); color: #8fcbff; }
+.guide-detail__btn--primary, .guide-detail__btn--primary:hover { background: #40a9ff; border-color: #40a9ff; color: #06111f; }
+.guide-detail__btn--primary:hover { background: #5cb6ff; }
+.guide-detail__btn--secondary { border-color: rgba(64, 169, 255, 0.6); color: #8fcbff; }
+.guide-detail__btn--secondary:hover { background: rgba(64, 169, 255, 0.12); }
+.guide-detail__btn.is-on { border-color: rgba(227, 85, 63, 0.6); color: #ff8a78; }
+/* Up next rides at the right end of the action row: a row of small posters with their start times. */
+.guide-detail__next { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.guide-detail__next .guide-detail__eyebrow { font-size: 10px; color: rgba(232, 238, 246, 0.5); }
 .guide-detail__next-list { list-style: none; margin: 0; padding: 0; display: flex; gap: 8px; }
 .guide-detail__next-item { display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .guide-detail__next-img { display: block; width: 30px; height: 45px; object-fit: cover; border-radius: 3px; background: #1a2230; }
-.guide-detail__next-time { font-family: var(--font-mono, ui-monospace, monospace); font-size: 9.5px; color: var(--text-secondary); }
+.guide-detail__next-time { font-family: var(--font-mono, ui-monospace, monospace); font-size: 9.5px; color: rgba(232, 238, 246, 0.55); font-variant-numeric: tabular-nums; }
 .guide-detail__close {
   position: absolute; top: 8px; right: 8px; width: 30px; height: 30px; border: 0; border-radius: 7px;
-  background: transparent; color: var(--text-secondary); font-size: 18px; cursor: pointer;
+  background: transparent; color: rgba(232, 238, 246, 0.6); font-size: 18px; cursor: pointer;
 }
-.guide-detail__close:hover { background: var(--chip-neutral-bg); color: var(--text-primary); }
+.guide-detail__close:hover { background: rgba(232, 238, 246, 0.08); color: #fff; }
 /* The selected cell is outlined in the guide. */
 .epg-prog[aria-pressed="true"] { box-shadow: inset 0 0 0 2px #40a9ff; }
 
 /* ── The live preview (GuidePreview): a 16:9 frame over the poster, the picture fading in when the
-   first frame plays, the slot's progress strip beneath. Dark-literal like the grid: it is a picture
-   frame, and a still poster or a paused frame reads the same in both themes. */
+   first frame plays, a LIVE badge, the slot's progress strip beneath in the now line's red. */
 .guide-preview { display: flex; flex-direction: column; gap: 6px; width: 336px; }
 .guide-preview__frame {
   position: relative; width: 336px; height: 189px; overflow: hidden; border-radius: 8px;
-  background: #0b0f16; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+  background: #0b0f16; box-shadow: 0 0 0 1px rgba(64, 169, 255, 0.25), 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 .guide-preview__poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: brightness(0.55) saturate(0.9); }
-.guide-preview__poster--empty { background: linear-gradient(135deg, #2b3a4a, #1a2530); }
+.guide-preview__poster--empty { background: linear-gradient(160deg, #2b3a4a, #1a2530); }
 .guide-preview__video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; opacity: 0; transition: opacity 0.35s; }
 .guide-preview--playing .guide-preview__video { opacity: 1; }
 .guide-preview__arm {
@@ -106,23 +129,28 @@
   appearance: none; cursor: pointer; font: inherit; font-size: 13px; font-weight: 700;
   height: 36px; padding: 0 16px; border-radius: 18px; border: 1px solid rgba(255, 255, 255, 0.35);
   background: rgba(8, 12, 20, 0.7); color: #fff; backdrop-filter: blur(4px);
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
-.guide-preview__arm:hover { background: var(--accent); border-color: var(--accent); }
-.guide-preview__caption {
-  position: absolute; left: 10px; bottom: 8px; padding: 2px 8px; border-radius: 4px;
-  font-family: var(--font-mono, ui-monospace, monospace); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase;
+.guide-preview__arm:hover { background: #40a9ff; border-color: #40a9ff; color: #06111f; }
+.guide-preview__caption, .guide-preview__live {
+  position: absolute; padding: 2px 8px; border-radius: 4px; display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--font-mono, ui-monospace, monospace); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
   background: rgba(8, 12, 20, 0.7); color: rgba(255, 255, 255, 0.85);
 }
+.guide-preview__caption { left: 10px; bottom: 8px; }
+.guide-preview__live { left: 10px; top: 8px; }
+.guide-preview__live-dot { width: 6px; height: 6px; border-radius: 3px; background: #e3553f; }
 .guide-preview__mute {
   position: absolute; right: 8px; bottom: 8px; width: 30px; height: 30px; border: 0; border-radius: 15px;
-  background: rgba(8, 12, 20, 0.7); color: #fff; font-size: 14px; cursor: pointer; opacity: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(8, 12, 20, 0.7); color: #fff; cursor: pointer; opacity: 0;
   transition: opacity 0.15s;
 }
 .guide-preview__frame:hover .guide-preview__mute, .guide-preview__mute[aria-pressed="true"] { opacity: 1; }
-.guide-preview__slot { display: flex; flex-direction: column; gap: 4px; }
-.guide-preview__bar { display: block; height: 3px; border-radius: 2px; background: var(--chip-neutral-bg, rgba(127, 127, 127, 0.25)); overflow: hidden; }
-.guide-preview__bar-fill { display: block; height: 100%; background: var(--accent); }
-.guide-preview__times { font-family: var(--font-mono, ui-monospace, monospace); font-size: 10.5px; letter-spacing: 0.06em; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.guide-preview__slot { display: flex; flex-direction: column; gap: 5px; }
+.guide-preview__bar { display: block; height: 3px; border-radius: 2px; background: rgba(232, 238, 246, 0.12); overflow: hidden; }
+.guide-preview__bar-fill { display: block; height: 100%; background: #e3553f; }
+.guide-preview__times { display: flex; justify-content: space-between; font-family: var(--font-mono, ui-monospace, monospace); font-size: 10.5px; letter-spacing: 0.06em; color: rgba(232, 238, 246, 0.6); font-variant-numeric: tabular-nums; }
 
 @media (max-width: 1100px) {
   .guide-detail--preview { grid-template-columns: 96px minmax(0, 1fr) 272px; }
@@ -133,10 +161,12 @@
 }
 @media (max-width: 767px) {
   .guide-detail { grid-template-columns: 76px minmax(0, 1fr); gap: 12px; padding: 12px 40px 12px 12px; }
-  .guide-detail__img { width: 76px; height: 114px; }
+  .guide-detail__img { width: 76px; height: 114px; box-shadow: none; }
   .guide-detail__next { display: none; }
   .guide-detail__title { font-size: 18px; }
-  .guide-detail__plot { -webkit-line-clamp: 2; }
+  .guide-detail__meta { font-size: 11.5px; gap: 0 6px; }
+  .guide-detail__plot { -webkit-line-clamp: 2; font-size: 12.5px; }
+  .guide-detail__btn { height: 36px; }
 }
 
 /* Category band between channel groups (Channels 2.0). Sticky-left so the label stays visible while
@@ -331,10 +361,11 @@
   background: #161a26;
 }
 
-/* Now-playing poster on the sticky channel column (Channels 2.0). */
+/* Now-playing poster on the sticky channel column (Channels 2.0). 32px wide = a true 2:3 poster at
+   the 48px the 64px row leaves it; 44px cropped the art to a near square (the 2026-09-05 review). */
 .epg-chan-poster {
   flex: 0 0 auto;
-  width: 44px;
+  width: 32px;
   height: 100%;
   object-fit: cover;
   border-radius: 4px;

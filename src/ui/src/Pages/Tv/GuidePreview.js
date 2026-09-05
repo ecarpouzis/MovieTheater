@@ -167,8 +167,9 @@ export default function GuidePreview({ channelId, program, live, paused, armed, 
   else if (phase === "unavailable") caption = "Preview unavailable";
   else if (phase === "loading") caption = "Tuning preview…";
 
+  const playing = phase === "playing" && showVideo;
   return (
-    <div className={`guide-preview${phase === "playing" && showVideo ? " guide-preview--playing" : ""}`}>
+    <div className={`guide-preview${playing ? " guide-preview--playing" : ""}`}>
       <div className="guide-preview__frame">
         {poster ? (
           <FallbackImage src={poster} alt="" className="guide-preview__poster" fallback={<div className="guide-preview__poster guide-preview__poster--empty" />} />
@@ -180,9 +181,14 @@ export default function GuidePreview({ channelId, program, live, paused, armed, 
           <button type="button" className="guide-preview__arm" onClick={onArm}>▶ Preview</button>
         )}
         {caption && <span className="guide-preview__caption">{caption}</span>}
-        {phase === "playing" && showVideo && (
-          <button type="button" className="guide-preview__mute" aria-pressed={!muted} onClick={() => setMuted((m) => !m)} title={muted ? "Unmute preview" : "Mute preview"}>
-            {muted ? "🔇" : "🔊"}
+        {playing && <span className="guide-preview__live" aria-hidden="true"><span className="guide-preview__live-dot" />Live</span>}
+        {playing && (
+          <button type="button" className="guide-preview__mute" aria-pressed={!muted} onClick={() => setMuted((m) => !m)} title={muted ? "Unmute preview" : "Mute preview"} aria-label={muted ? "Unmute preview" : "Mute preview"}>
+            {muted ? (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z" /><path d="m22 9-6 6M16 9l6 6" /></svg>
+            ) : (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z" /><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13" /></svg>
+            )}
           </button>
         )}
       </div>
@@ -190,7 +196,8 @@ export default function GuidePreview({ channelId, program, live, paused, armed, 
         <div className="guide-preview__slot">
           <span className="guide-preview__bar" aria-hidden="true"><span className="guide-preview__bar-fill" style={{ width: `${elapsedPct}%` }} /></span>
           <span className="guide-preview__times">
-            {clockLabel(startMs)} – {clockLabel(endMs)}{live && left != null ? ` · ${left} min left` : ""}
+            <span>{clockLabel(startMs)} – {clockLabel(endMs)}</span>
+            {live && left != null && <span>{left} min left</span>}
           </span>
         </div>
       )}

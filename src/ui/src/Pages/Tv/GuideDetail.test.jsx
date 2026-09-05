@@ -43,8 +43,14 @@ describe("Tv/GuideDetail", () => {
   it("shows the show, its slot on the channel, the meta line, the plot and what's up next", () => {
     renderPanel();
     expect(screen.getByRole("heading", { name: "Out of the Past" })).toBeTruthy();
-    expect(screen.getByText(/Late Night Noir ·/)).toBeTruthy();
-    expect(screen.getByText("1947 · Approved · 2h · IMDb 8.0 · Film-Noir")).toBeTruthy();
+    expect(screen.getByText("Late Night Noir").className).toBe("guide-detail__channel");
+    expect(screen.getByText("now")).toBeTruthy();
+    // The meta line: year · certificate (a boxed tag) · slot length · IMDb score · genre.
+    expect(screen.getByText("1947")).toBeTruthy();
+    expect(screen.getByText("Approved").className).toBe("guide-detail__tag");
+    expect(screen.getByText("2h")).toBeTruthy();
+    expect(screen.getByText("IMDb").parentElement.textContent).toBe("IMDb 8.0");
+    expect(screen.getByText("Film-Noir")).toBeTruthy();
     expect(screen.getByText("A private eye escapes his past.")).toBeTruthy();
     expect(screen.getByText("Up next")).toBeTruthy();
     expect(screen.getByTitle("Laura")).toBeTruthy();
@@ -54,7 +60,11 @@ describe("Tv/GuideDetail", () => {
   it("headlines an episode by its series, with S/E and the episode title in the meta line", () => {
     renderPanel({ prog: { ...program, title: "George Lopez – S03E09 Fishing Cubans", seriesTitle: "George Lopez", episodeTitle: "Fishing Cubans", season: 3, episode: 9, year: 2002, rating: "TV-PG", imdbRating: null, genre: "Comedy", startUtc: at(20), endUtc: at(20, 30) } });
     expect(screen.getByRole("heading", { name: "George Lopez" })).toBeTruthy();
-    expect(screen.getByText("S03 E09 · Fishing Cubans · TV-PG · 30 min · Comedy")).toBeTruthy();
+    expect(screen.getByText("S03 E09")).toBeTruthy();
+    expect(screen.getByText("Fishing Cubans")).toBeTruthy();
+    expect(screen.getByText("TV-PG").className).toBe("guide-detail__tag");
+    expect(screen.getByText("30 min")).toBeTruthy();
+    expect(screen.getByText("Comedy")).toBeTruthy();
   });
 
   it("▶ Tune in joins the channel and Open title opens the movie sheet on the landing", () => {
@@ -68,7 +78,7 @@ describe("Tv/GuideDetail", () => {
   it("↺ Start over hands the room a restart intent; with others watching it is a vote", () => {
     renderPanel();
     const btn = screen.getByRole("button", { name: /start over/i });
-    expect(btn.textContent).toBe("↺ Start over");
+    expect(btn.textContent.trim()).toBe("Start over");
     fireEvent.click(btn);
     expect(screen.getByTestId("where").textContent).toBe("/tv/7?restart=1");
   });
@@ -87,7 +97,7 @@ describe("Tv/GuideDetail", () => {
   it("offers no Start over on a frozen channel, and says the channel is paused", () => {
     renderPanel({ row: { viewers: 1, paused: true } });
     expect(screen.queryByRole("button", { name: /start over/i })).toBeNull();
-    expect(screen.getByText(/· paused/)).toBeTruthy();
+    expect(screen.getByText("paused")).toBeTruthy();
   });
 
   it("mounts the preview column with the panel's arming state", () => {

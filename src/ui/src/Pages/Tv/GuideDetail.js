@@ -5,7 +5,7 @@ import FallbackImage from "../../Components/FallbackImage";
 import useFavoriteChannels from "./useFavoriteChannels";
 import { clockLabel } from "./ChannelGrid";
 import GuidePreview from "./GuidePreview";
-import { programMeta, programHeadline, restartHref, PREVIEW_MIN_WIDTH } from "./guideModel";
+import { programMetaItems, programHeadline, restartHref, PREVIEW_MIN_WIDTH } from "./guideModel";
 
 // Desktop/tablet get the live preview column; phones get the poster (see guideModel.js).
 function useWideEnough() {
@@ -21,10 +21,27 @@ function useWideEnough() {
   return wide;
 }
 
+// Stroke icons on the guide's 24 grid — the cable box draws its own glyphs, not the emoji font's.
+const PlayIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l12-7.5z" /></svg>
+);
+const RestartIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M3 12a9 9 0 1 0 3-6.7" /><path d="M3 4v5h5" />
+  </svg>
+);
+const HeartIcon = ({ filled }) => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <path d="M12 20.5s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 8a4.3 4.3 0 0 1 7.5 2.5c0 5.4-7.5 10-7.5 10z" />
+  </svg>
+);
+
 /**
  * The guide's detail panel (R9 S1c, v2 2026-09-04). Opens above the grid for the selected programme:
- * poster · headline · the meta line (year or S/E · certificate · length · IMDb · genre) · the plot ·
- * the actions · up next — and, on desktop, the live PREVIEW (GuidePreview) with the slot's progress.
+ * poster · headline · the meta line (year or S/E · certificate tag · length · IMDb · genre) · the
+ * plot · the actions · up next — and, on desktop, the live PREVIEW (GuidePreview) with the slot's
+ * progress. It is part of the cable box: it sits on the guide's own dark ground with the guide's blue
+ * as its one accent (the light card tokens put a white slab on the black grid — the 2026-09-05 review).
  *
  * Actions: ▶ Tune in joins the channel at the live offset. ↺ Start over joins AND casts the room's
  * Restart vote in the same tune (`/tv/<id>?restart=1`): alone, the channel restarts at once; with
@@ -48,7 +65,7 @@ export default function GuideDetail({ channel, program, rowItems, row, userData,
   const poster = program.posterId ? MovieAPI.getPosterThumbnail(program.posterId, program.posterVersion, program.kind) : null;
   const fav = isFavorite(channel.id);
   const canOpenTitle = program.posterId > 0 && (program.kind === "movie" || program.kind === "series");
-  const meta = programMeta(program, { full: true });
+  const meta = programMetaItems(program, { full: true });
   const headline = programHeadline(program);
   const canStartOver = live && !paused;
 
@@ -63,14 +80,29 @@ export default function GuideDetail({ channel, program, rowItems, row, userData,
       </div>
       <div className="guide-detail__body">
         <p className="guide-detail__eyebrow">
-          {channel.name} · {clockLabel(startMs)} – {clockLabel(endMs)}{live ? " · now" : ""}{paused ? " · paused" : ""}
+          <span className="guide-detail__channel">{channel.name}</span>
+          <span className="guide-detail__sep" aria-hidden="true">·</span>
+          <span>{clockLabel(startMs)} – {clockLabel(endMs)}</span>
+          {live && !paused && (<><span className="guide-detail__sep" aria-hidden="true">·</span><span className="guide-detail__now">now</span></>)}
+          {paused && (<><span className="guide-detail__sep" aria-hidden="true">·</span><span className="guide-detail__paused">paused</span></>)}
         </p>
         <h2 className="guide-detail__title">{headline}</h2>
-        {meta && <p className="guide-detail__meta">{meta}</p>}
+        {meta.length > 0 && (
+          <p className="guide-detail__meta">
+            {meta.map((item, i) => (
+              <span key={`${item.kind}-${i}`} className="guide-detail__meta-item">
+                {i > 0 && <span className="guide-detail__sep" aria-hidden="true">·</span>}
+                {item.kind === "tag" && <span className="guide-detail__tag">{item.text}</span>}
+                {item.kind === "imdb" && (<span><span className="guide-detail__imdb">IMDb</span> {item.text}</span>)}
+                {item.kind === "text" && <span>{item.text}</span>}
+              </span>
+            ))}
+          </p>
+        )}
         {program.plot && <p className="guide-detail__plot">{program.plot}</p>}
         <div className="guide-detail__actions">
           <button type="button" className="guide-detail__btn guide-detail__btn--primary" title={`Watch ${channel.name} live`} onClick={() => history.push(`/tv/${channel.id}`)}>
-            ▶ Tune in
+            <PlayIcon /> Tune in
           </button>
           {canStartOver && (
             <button
@@ -79,7 +111,7 @@ export default function GuideDetail({ channel, program, rowItems, row, userData,
               title={viewers > 0 ? "Others are watching — your vote to restart is cast when you tune in" : "Tune in and start this programme from the beginning"}
               onClick={() => history.push(restartHref(channel.id))}
             >
-              {viewers > 0 ? `↺ Vote to start over · ${viewers} watching` : "↺ Start over"}
+              <RestartIcon /> {viewers > 0 ? `Vote to start over · ${viewers} watching` : "Start over"}
             </button>
           )}
           {canOpenTitle && (
@@ -89,25 +121,25 @@ export default function GuideDetail({ channel, program, rowItems, row, userData,
           )}
           {userData && (
             <button type="button" className={`guide-detail__btn${fav ? " is-on" : ""}`} aria-pressed={fav} onClick={() => toggle(channel.id)}>
-              {fav ? "♥ Favourite channel" : "♡ Favourite channel"}
+              <HeartIcon filled={fav} /> Favourite channel
             </button>
           )}
+          {upNext.length > 0 && (
+            <div className="guide-detail__next">
+              <p className="guide-detail__eyebrow">Up next</p>
+              <ul className="guide-detail__next-list">
+                {upNext.map((p) => (
+                  <li key={p.startUtc} className="guide-detail__next-item" title={p.title}>
+                    {p.posterId ? (
+                      <FallbackImage src={MovieAPI.getPosterThumbnail(p.posterId, p.posterVersion, p.kind)} alt="" className="guide-detail__next-img" fallback={<div className="guide-detail__next-img guide-detail__img--empty" />} />
+                    ) : <div className="guide-detail__next-img guide-detail__img--empty" />}
+                    <span className="guide-detail__next-time">{clockLabel(Date.parse(p.startUtc))}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
-        {upNext.length > 0 && (
-          <div className="guide-detail__next">
-            <p className="guide-detail__eyebrow">Up next</p>
-            <ul className="guide-detail__next-list">
-              {upNext.map((p) => (
-                <li key={p.startUtc} className="guide-detail__next-item" title={p.title}>
-                  {p.posterId ? (
-                    <FallbackImage src={MovieAPI.getPosterThumbnail(p.posterId, p.posterVersion, p.kind)} alt="" className="guide-detail__next-img" fallback={<div className="guide-detail__next-img guide-detail__img--empty" />} />
-                  ) : <div className="guide-detail__next-img guide-detail__img--empty" />}
-                  <span className="guide-detail__next-time">{clockLabel(Date.parse(p.startUtc))}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
       </div>
       {wide && (
         <GuidePreview

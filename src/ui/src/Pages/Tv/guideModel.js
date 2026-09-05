@@ -73,28 +73,35 @@ function episodeCode(prog) {
 }
 
 /**
- * The parts of a programme's meta line, in display order. `{ full }` adds the IMDb score and genre
- * (the detail panel); the grid cell keeps the short form. Episodes lead with S/E and the episode's
- * own title, movies with the year; both end with the certificate and the slot length.
+ * The items of a programme's meta line, in display order, typed so the panel can draw the
+ * certificate as a boxed tag and the IMDb score in its yellow: `{ kind: "text" | "tag" | "imdb",
+ * text }`. `{ full }` adds the IMDb score and genre (the detail panel); the grid cell keeps the
+ * short form. Episodes lead with S/E and the episode's own title, movies with the year; both end
+ * with the certificate and the slot length.
  */
-export function programMetaParts(prog, { full = false } = {}) {
+export function programMetaItems(prog, { full = false } = {}) {
   if (!prog) return [];
-  const parts = [];
+  const items = [];
   const code = episodeCode(prog);
   if (code) {
-    parts.push(code);
-    if (prog.episodeTitle) parts.push(prog.episodeTitle);
+    items.push({ kind: "text", text: code });
+    if (prog.episodeTitle) items.push({ kind: "text", text: prog.episodeTitle });
   } else if (prog.year) {
-    parts.push(String(prog.year));
+    items.push({ kind: "text", text: String(prog.year) });
   }
-  if (prog.rating) parts.push(prog.rating);
+  if (prog.rating) items.push({ kind: "tag", text: prog.rating });
   const rt = runtimeLabel(prog.startUtc, prog.endUtc);
-  if (rt) parts.push(rt);
+  if (rt) items.push({ kind: "text", text: rt });
   if (full) {
-    if (prog.imdbRating != null && Number(prog.imdbRating) > 0) parts.push(`IMDb ${Number(prog.imdbRating).toFixed(1)}`);
-    if (prog.genre) parts.push(prog.genre);
+    if (prog.imdbRating != null && Number(prog.imdbRating) > 0) items.push({ kind: "imdb", text: Number(prog.imdbRating).toFixed(1) });
+    if (prog.genre) items.push({ kind: "text", text: prog.genre });
   }
-  return parts;
+  return items;
+}
+
+// The same line as plain strings (the grid cell, tooltips, tests).
+export function programMetaParts(prog, opts) {
+  return programMetaItems(prog, opts).map((i) => (i.kind === "imdb" ? `IMDb ${i.text}` : i.text));
 }
 
 export function programMeta(prog, opts) {
