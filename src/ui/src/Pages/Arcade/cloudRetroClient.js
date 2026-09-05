@@ -1470,6 +1470,7 @@ export function createCloudRetroSession(descriptor, opts) {
     pc.onconnectionstatechange = () => {
       if (pc.connectionState === "failed" || pc.connectionState === "disconnected")
         status(pc.connectionState);
+      if (pc.connectionState === "connected" && audioReceiverPc === pc) scheduleAudioJitterTiering();
     };
 
     // Kick off: we are not the offerer — the server sends the SDP offer. sdp:"audio-pc" asks a
@@ -1516,6 +1517,71 @@ export function createCloudRetroSession(descriptor, opts) {
   // CloudRetro (Pion) sends audio and video as SEPARATE m-lines/streams (and with arcade.audioPC,
   // separate PeerConnections) — collect EVERY inbound track into ONE MediaStream so the element
   // plays both; per-track srcObject assignment left the last track orphaning the first.
+  // ── Link-tiered audio jitter target (arcade perf program P4, 2026-09-05) ──────────────────────
+  // AUDIO_JITTER_MS (80; 150 psp) was one number for every link. A same-host harness, a wired LAN desktop
+  // and a phone on hotel Wi-Fi all got 80 ms of NetEq target, and audio sat ~80-100 ms behind video for
+  // everyone. The browser can read its own selected ICE pair once the audio PeerConnection is connected
+  // (getStats: candidate-pair RTT + the remote candidate's type/address), and jitterBufferTarget is
+  // settable at any time — so the target is re-tiered LATE, from the measured link, with no server help:
+  //   relay (TURN)                          -> 100 ms (a relayed path jitters more than a direct one)
+  //   loopback / private-LAN remote, RTT<3  ->  40 ms (same house, wired: the bursts NetEq must absorb are tiny)
+  //   everything else                       ->  80 ms (today's default)
+  //   a per-system floor (psp 150) always wins, and an explicit localStorage arcade.audioJitterMs override
+  //   (a human A/B knob) disables tiering entirely. arcade.audioJitterTiers=0 disables it too.
+  // Applied at +2 s (the pair is nominated) and re-checked at +10 s (RTT has settled). One [audio-jb] line.
+  let audioReceiver = null;      // the receiver carrying the audio track (on pc or apc)
+  let audioReceiverPc = null;    // the PeerConnection it belongs to — the one whose stats describe the link
+  let audioJitterApplied = null; // last target applied, ms
+  function applyAudioJitter(ms, why) {
+    if (!audioReceiver) return;
+    try { audioReceiver.jitterBufferTarget = ms; } catch { /* older browsers */ }
+    try { audioReceiver.playoutDelayHint = ms / 1000; } catch { /* non-Chrome */ }
+    if (audioJitterApplied !== ms) console.log(`[audio-jb] target ${ms}ms (${why})`);
+    audioJitterApplied = ms;
+  }
+  function audioJitterTiersEnabled() {
+    try {
+      if (localStorage.getItem("arcade.audioJitterTiers") === "0") return false;
+      const v = parseInt(localStorage.getItem("arcade.audioJitterMs"), 10);
+      if (Number.isFinite(v) && v >= 0) return false; // an explicit human override is not to be second-guessed
+    } catch { /* localStorage unavailable — tiering stays on */ }
+    return true;
+  }
+  const isPrivateAddr = (a) => {
+    if (!a) return false;
+    const s = String(a).toLowerCase();
+    return s === "127.0.0.1" || s === "::1" || s.startsWith("10.") || s.startsWith("192.168.") ||
+      /^172\.(1[6-9]|2\d|3[01])\./.test(s) || s.startsWith("fe80:") || s.startsWith("fc") || s.startsWith("fd");
+  };
+  async function tierAudioJitter(why) {
+    if (closed || !audioReceiver || !audioReceiverPc || !audioJitterTiersEnabled()) return;
+    if (typeof audioReceiverPc.getStats !== "function") return;
+    let pair = null, remote = null;
+    try {
+      const st = await audioReceiverPc.getStats();
+      const byId = new Map();
+      st.forEach((r) => byId.set(r.id, r));
+      st.forEach((r) => {
+        if (r.type === "transport" && r.selectedCandidatePairId) pair = byId.get(r.selectedCandidatePairId) || pair;
+      });
+      if (!pair) st.forEach((r) => { if (r.type === "candidate-pair" && r.nominated && r.state === "succeeded") pair = pair || r; });
+      if (pair && pair.remoteCandidateId) remote = byId.get(pair.remoteCandidateId) || null;
+    } catch { return; }
+    if (!pair) return; // not nominated yet — the +10 s pass will try again
+    const rttMs = pair.currentRoundTripTime != null ? pair.currentRoundTripTime * 1000 : null;
+    const kind = remote ? (remote.candidateType || remote.type) : null;
+    const floor = AUDIO_JITTER_BY_SYSTEM[String(descriptor.system || "").toLowerCase()] ?? 0;
+    let ms = AUDIO_JITTER_DEFAULT_MS, tier = "default";
+    if (kind === "relay") { ms = 100; tier = "relay"; }
+    else if (remote && isPrivateAddr(remote.address || remote.ip) && rttMs != null && rttMs < 3) { ms = 40; tier = "lan-wired"; }
+    ms = Math.max(ms, floor);
+    applyAudioJitter(ms, `${tier}, ${kind || "?"} ${remote ? (remote.address || remote.ip || "") : ""} rtt ${rttMs == null ? "?" : rttMs.toFixed(1)}ms, ${why}`);
+  }
+  function scheduleAudioJitterTiering() {
+    setTimeout(() => tierAudioJitter("+2s"), 2000);
+    setTimeout(() => tierAudioJitter("+10s"), 10000);
+  }
+
   function onInboundTrack(e) {
     // TTFF: the first PRESENTED frame is the end of the start path. rVFC fires once per presented frame,
     // so a one-shot registration on the video track's attach marks it (ttffMark dedupes a re-attach).
@@ -1525,6 +1591,14 @@ export function createCloudRetroSession(descriptor, opts) {
     const jbMs = e.track && e.track.kind === "audio" ? AUDIO_JITTER_MS : 0;
     try { e.receiver.jitterBufferTarget = jbMs; } catch { /* older browsers */ }
     try { e.receiver.playoutDelayHint = jbMs / 1000; } catch { /* non-Chrome */ }
+    if (e.track && e.track.kind === "audio") {
+      audioReceiver = e.receiver;
+      audioReceiverPc = (apc && apc.getReceivers && apc.getReceivers().includes(e.receiver)) ? apc : pc;
+      audioJitterApplied = jbMs;
+      // The track can attach before OR after the transport connects; the connected handlers below also
+      // schedule, and tierAudioJitter is idempotent, so scheduling from both sides is safe.
+      scheduleAudioJitterTiering();
+    }
     inboundStream.addTrack(e.track);
     if (videoEl && videoEl.srcObject !== inboundStream) {
       videoEl.srcObject = inboundStream;
@@ -1573,6 +1647,7 @@ export function createCloudRetroSession(descriptor, opts) {
     if (!apc) {
       apc = new RTCPeerConnection({ iceServers });
       apc.ontrack = onInboundTrack;
+      apc.onconnectionstatechange = () => { if (apc.connectionState === "connected") scheduleAudioJitterTiering(); };
       apc.onicecandidate = (e) => {
         if (e.candidate) send(T.SIGNAL, { ice: "aux:" + JSON.stringify(e.candidate) });
       };

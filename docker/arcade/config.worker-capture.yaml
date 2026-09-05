@@ -198,7 +198,15 @@ encoder:
       caps: video/x-h264,stream-format=byte-stream,alignment=au
     opus:
       encoder: opusenc
-      params: "audio-type=generic inband-fec=true packet-loss-percentage=15 frame-size=10 complexity=8 bitrate=96000"
+      # LOW-DELAY OPUS (arcade perf program P4, 2026-09-05). audio-type generic -> restricted-lowdelay: the
+      # game's PCM has no use for SILK/hybrid modes, and CELT-only cuts Opus's own algorithmic delay
+      # (~4 ms less lookahead). frame-size 20 -> 10: the 20 was set on 2026-07-29 chasing a crackle whose
+      # real cause turned out to be the N64 HLE audio microcode (see the note above) — 10 ms halves the
+      # framing delay and keeps in-band FEC/LBRR real (needs >= 10 ms). Audio used to sit ~80-100 ms behind
+      # video; this is the encoder half of closing that (the client's link-tiered jitter target is the
+      # other half). pipe.frameDur reads frame-size back, so RTP durations follow automatically.
+      # ROLLBACK: audio-type=generic frame-size=20. Keep the two lanes' params in lockstep.
+      params: "audio-type=restricted-lowdelay inband-fec=true packet-loss-percentage=15 frame-size=10 complexity=8 bitrate=96000"
   audio:
     codec: opus
 
