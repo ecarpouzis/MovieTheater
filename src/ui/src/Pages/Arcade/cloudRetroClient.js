@@ -38,6 +38,7 @@ const T = {
   // RetroAchievements unlock, pushed by the worker (Phase 1) when rcheevos fires an achievement so the room
   // can toast it live. Carries { id, title, description?, points, hardcore }. Inbound only.
   ACHIEVEMENT_UNLOCK: 160,
+  RUMBLE: 170, // worker -> this SEAT's connection: the core's rumble state for its pad (perf program P11)
 };
 
 // Button → bit positions, CONFIRMED against CloudRetro's JOYPAD_KEYS order (web/js/input/keys.js):
@@ -1791,6 +1792,28 @@ export function createCloudRetroSession(descriptor, opts) {
     reportAspect();
   }
 
+  // Rumble (perf program P11): the worker sends this seat's (strong, weak) pair on change. libretro rumble
+  // is a level ("until I say otherwise"); the Gamepad API plays timed effects, so each packet plays a
+  // long effect the next packet replaces, and (0,0) resets. Plays on the pad THIS seat drives: the pin
+  // for a local-player session, the latched pad for the primary. localStorage arcade.rumble=0 mutes it.
+  let rumbleMuted = false;
+  try { rumbleMuted = localStorage.getItem("arcade.rumble") === "0"; } catch { /* storage unavailable */ }
+  function applyRumble(p) {
+    if (rumbleMuted || spectator) return;
+    const idx = pinnedPad >= 0 ? pinnedPad : activePadIndex;
+    if (idx < 0) return;
+    let gp = null;
+    try { gp = navigator.getGamepads?.()[idx] || null; } catch { return; }
+    const act = gp && gp.vibrationActuator;
+    if (!act) return;
+    const strong = Math.max(0, Math.min(1, (p.strong | 0) / 65535));
+    const weak = Math.max(0, Math.min(1, (p.weak | 0) / 65535));
+    try {
+      if (strong === 0 && weak === 0) { act.reset?.(); return; }
+      act.playEffect?.("dual-rumble", { startDelay: 0, duration: 1000, strongMagnitude: strong, weakMagnitude: weak })?.catch?.(() => {});
+    } catch { /* a pad without rumble, or a browser without the API */ }
+  }
+
   function onGameStarted(p) {
     ttffMark("game-start");
     const roomId = p && (p.roomId || p.room_id);
@@ -1842,6 +1865,9 @@ export function createCloudRetroSession(descriptor, opts) {
       case T.APP_VIDEO_CHANGE:
         // Geometry/flip/rotation update (GL cores flip; some cores rotate).
         applyVideoTransform(data.p || {});
+        break;
+      case T.RUMBLE:
+        applyRumble(data.p || {});
         break;
       case T.ACHIEVEMENT_UNLOCK:
         // rcheevos unlocked an achievement (worker push) — hand it up for a live toast. Purely cosmetic;
