@@ -23,6 +23,9 @@ class FakeDataChannel {
     this.readyState = "open";
     this.sent = [];
     channels.push(this);
+    // A browser announces the open channel through onopen — and since perf program P2 that event is what
+    // sends t=104 (the old 100 ms readyState poll is now a 2 s safety net). Fire it like the fake socket does.
+    setTimeout(() => this.onopen && this.onopen(), 0);
   }
   send(data) { this.sent.push(data); }
   close() { this.readyState = "closed"; }
@@ -68,8 +71,8 @@ const descriptorFor = (over = {}) => ({
 
 /**
  * Walk the shim through INIT → (DataChannel opens) → t=104 GAME_START → the worker's GAME_START reply,
- * which is the moment a player claims its controller port. The shim only sends t=104 once the joypad
- * channel is open, on a 100 ms armed interval — so the timers must advance.
+ * which is the moment a player claims its controller port. The shim sends t=104 from the joypad
+ * channel's onopen (which the fake fires on the next tick) — so the timers must advance.
  */
 async function driveToGameStart() {
   const ws = sockets[0];

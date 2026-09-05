@@ -22,6 +22,9 @@ class FakeDataChannel {
     this.readyState = "open";
     this.sent = [];
     channels.push(this);
+    // A browser announces the open channel through onopen — and since perf program P2 that event is what
+    // sends t=104 (the old 100 ms readyState poll is now a 2 s safety net). Fire it like the fake socket does.
+    setTimeout(() => this.onopen && this.onopen(), 0);
   }
   send(data) { this.sent.push(data); }
   close() { this.readyState = "closed"; }
@@ -315,23 +318,35 @@ describe("cloudRetroClient — local multiplayer input-only sessions", () => {
     s.close();
   });
 
-  it("keepalive: the unchanged frame is re-sent ~1/s so a dropped release can't stick forever", async () => {
-    setPads(pad(0, [0]));
+  it("keepalive: a HELD frame is re-asserted within 150 ms, a neutral one ~1/s, so a dropped release can't stick", async () => {
+    setPads(pad(0)); // an idle pad: the session opens on a neutral frame
     const s = createCloudRetroSession(descriptorFor({ playerSlot: 0 }), { videoEl: null });
-    await driveToGameStart(sockets[0]);
+    await driveToGameStart(sockets[0]); // the channel opens (and the pump starts) in here
     const dc = channels.find((c) => c.label === "data");
-    dc.onopen?.();
-    await vi.advanceTimersByTimeAsync(100);
+    await vi.advanceTimersByTimeAsync(50);
+    const base = dc.sent.length; // whatever the neutral open cost; every count below is relative to it
+
+    setPads(pad(0, [0])); // press
+    await vi.advanceTimersByTimeAsync(20);
     const afterPress = dc.sent.length;
-    expect(afterPress).toBe(1); // send-on-change: one frame for the press, not one per 16 ms poll
+    expect(afterPress).toBe(base + 1); // send-on-change: one frame for the press, not one per poll tick
 
-    await vi.advanceTimersByTimeAsync(300);
-    expect(dc.sent.length).toBe(afterPress); // still quiet — the dedupe is intact
+    await vi.advanceTimersByTimeAsync(80);
+    expect(dc.sent.length).toBe(afterPress); // still quiet inside the held resync window — the dedupe is intact
 
-    await vi.advanceTimersByTimeAsync(800); // now past the resync interval
+    await vi.advanceTimersByTimeAsync(100); // past RESYNC_HELD_MS (150) since the press went out
     expect(dc.sent.length).toBe(afterPress + 1);
     const [resent, held] = [dc.sent[dc.sent.length - 1], dc.sent[afterPress - 1]].map((f) => new Int16Array(f)[0]);
     expect(resent).toBe(held); // absolute state, re-asserted — not an edge
+
+    setPads(pad(0)); // release: one frame for the edge...
+    await vi.advanceTimersByTimeAsync(20);
+    const afterRelease = dc.sent.length;
+    expect(new Int16Array(dc.sent[afterRelease - 1])[0]).toBe(0);
+    await vi.advanceTimersByTimeAsync(800);
+    expect(dc.sent.length).toBe(afterRelease); // ...and at neutral nothing is stuck, so the slow beat waits
+    await vi.advanceTimersByTimeAsync(300); // past RESYNC_NEUTRAL_MS (1000)
+    expect(dc.sent.length).toBe(afterRelease + 1);
     s.close();
   });
 
@@ -513,8 +528,8 @@ describe("cloudRetroClient — local multiplayer input-only sessions", () => {
   // chord-watcher's own isolated unit tests.
   it("onChordAction fires once the default quick-save chord (Select+R3) is held past its threshold", async () => {
     // Physical pad indices 8/11 are DEFAULT_GAMEPAD's SELECT/R3 (see cloudRetroClient.js) — held
-    // continuously from the start of the session.
-    setPads(pad(0, [8, 11]));
+    // continuously from the moment the channel is open (the pump, and so the chord clock, runs from then).
+    setPads(pad(0));
     const fired = [];
     const s = createCloudRetroSession(descriptorFor({ playerSlot: 0 }), {
       videoEl: null,
@@ -523,6 +538,7 @@ describe("cloudRetroClient — local multiplayer input-only sessions", () => {
     await driveToGameStart(sockets[0]);
     const dc = channels.find((c) => c.label === "data");
     dc.onopen?.();
+    setPads(pad(0, [8, 11]));
 
     await vi.advanceTimersByTimeAsync(500); // under quickSave's 600ms hold threshold
     expect(fired).toEqual([]);

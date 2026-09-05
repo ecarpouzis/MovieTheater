@@ -909,6 +909,7 @@ export function createCloudRetroSession(descriptor, opts) {
   let mouseDc = null; // stock CloudRetro's worker-created "mouse" channel (RETRO_DEVICE_MOUSE relative deltas)
   let inputTimer = null;
   let closed = false;
+  let gameStartSent = false; // t=104 goes out exactly once: from dc.onopen, or the slow fallback below
   const inboundStream = new MediaStream(); // audio + video tracks accumulate here (see ontrack)
   let lastAv = null; // last known video geometry (flip/rotation), re-applied whenever the track attaches
 
@@ -1049,7 +1050,16 @@ export function createCloudRetroSession(descriptor, opts) {
   const lKeys = { up: false, down: false, left: false, right: false };
   // Right-stick direction held via the keyboard (N64 C-buttons), when the profile maps them.
   const rKeys = { up: false, down: false, left: false, right: false };
-  const onKey = (down) => (e) => {
+  // Keyboard edges go out on the EVENT, not on the next poll tick (perf program P2, 2026-09-05): the poll
+  // used to be the only sender, so a keypress waited up to a full 16 ms interval before it left the browser
+  // — on top of the worker's own once-per-tick sampling. onKeyState mutates the live state exactly as
+  // before; onKey wraps it with an immediate pump, which dedupes (an unmapped key sends nothing) and is
+  // skipped during tape replay (the recorded run must not be contaminated by a stray key).
+  const onKey = (down) => {
+    const apply = onKeyState(down);
+    return (e) => { apply(e); if (!replaySource) pumpInput(); };
+  };
+  const onKeyState = (down) => (e) => {
     const bit = keymap[e.code];
     if (bit !== undefined) {
       e.preventDefault();
@@ -1272,7 +1282,13 @@ export function createCloudRetroSession(descriptor, opts) {
     tapeTraceOn = false;
   }
 
-  const RESYNC_MS = 1000;
+  // Keepalive resend of an UNCHANGED frame. The joypad channel is unreliable (maxRetransmits:0), so a
+  // lost packet is simply gone — and a lost RELEASE leaves the worker's virtual pad pressed until the next
+  // frame we send. While anything is held that costs at most RESYNC_HELD_MS (perf program P2, 2026-09-05:
+  // was 1000 — a lost release used to hold a button for a whole second); at neutral the slow beat is
+  // enough, nothing is stuck there. ~7 ten-byte frames a second while holding is noise on the wire.
+  const RESYNC_HELD_MS = 150;
+  const RESYNC_NEUTRAL_MS = 1000;
   let last = null;
   let lastSentAt = 0;
   // Read the physical controls and produce the frame this seat WOULD send. Split out of pumpInput so
@@ -1341,8 +1357,9 @@ export function createCloudRetroSession(descriptor, opts) {
     // window expire mid-hold, which is exactly when the release makes the echo look like a live pad.
     const now = Date.now();
     if (mask !== 0 || a[0] !== 0 || a[1] !== 0 || a[2] !== 0 || a[3] !== 0) lastNonNeutralOutputAt = now;
+    const neutral = mask === 0 && a[0] === 0 && a[1] === 0 && a[2] === 0 && a[3] === 0;
     if (last && last[0] === mask && last[1] === a[0] && last[2] === a[1] && last[3] === a[2] && last[4] === a[3]
-        && now - lastSentAt < RESYNC_MS)
+        && now - lastSentAt < (neutral ? RESYNC_NEUTRAL_MS : RESYNC_HELD_MS))
       return;
     last = [mask, a[0], a[1], a[2], a[3]];
     lastSentAt = now;
@@ -1376,6 +1393,7 @@ export function createCloudRetroSession(descriptor, opts) {
     // A spectator holds no controller port: no key/gamepad listeners, no poll, so pumpInput's dc.send
     // can never run. This is the single guard that keeps a watcher from touching the game.
     if (spectator) return;
+    if (inputTimer) return; // already started (a second onopen must not leak a second poll)
     // An input-only local-player session drives its pinned pad only — the PRIMARY session owns the
     // keyboard, and wiring it here too would send every keystroke to two seats at once.
     if (!inputOnly) {
@@ -1384,8 +1402,11 @@ export function createCloudRetroSession(descriptor, opts) {
     }
     window.addEventListener("blur", onWindowBlur);
     window.addEventListener("focus", onWindowFocus);
-    // Poll at ~60 Hz; only actually send on change (pumpInput dedupes).
-    inputTimer = setInterval(pumpInput, 16);
+    // Poll the pads at 4 ms (perf program P2, 2026-09-05; was 16): the Gamepad API has no edge events, so
+    // the poll interval IS the pad's input quantization — 16 ms cost ~8 ms on average before a press even
+    // left the browser. Sends still happen only on change (pumpInput dedupes), so a faster poll costs
+    // reads, not packets. Keyboard edges are sent from their own events (see onKey).
+    inputTimer = setInterval(pumpInput, 4);
   }
 
   function stopInput() {
@@ -1404,7 +1425,14 @@ export function createCloudRetroSession(descriptor, opts) {
     // or it silently never opens.
     dc = pc.createDataChannel("data", { negotiated: true, id: 0, ordered: false, maxRetransmits: 0 });
     dc.binaryType = "arraybuffer";
-    dc.onopen = () => { ttffMark("dc-open"); status("connected"); startInput(); };
+    dc.onopen = () => {
+      ttffMark("dc-open");
+      status("connected");
+      startInput();
+      // The channel opening IS the transport being up — start the game now (perf program P2, 2026-09-05).
+      // This used to be found by a 100 ms poll in connect(), which added up to 100 ms to every room start.
+      if (!gameStartSent) startGame();
+    };
     // The worker PUSHES async control/UI packets to us over this same negotiated channel (room.Send →
     // the peer data channel): e.g. an achievement unlock (t=160) or a mid-game video-geometry change.
     // They're the same JSON envelope the signaling WS carries, just arriving here as an ArrayBuffer, so
@@ -1577,6 +1605,8 @@ export function createCloudRetroSession(descriptor, opts) {
   }
 
   function startGame() {
+    if (gameStartSent) return;
+    gameStartSent = true;
     // Both creator and joiner send the room_id from the wsUrl. The creator's is now a DETERMINISTIC
     // save id (sv-…___game, docs/arcade-saves-plan.md) rather than empty: CloudRetro creates a fresh
     // room with exactly that id (it accepts a non-live <prefix>___<gameKey> id), which lets the gateway
@@ -1759,13 +1789,14 @@ export function createCloudRetroSession(descriptor, opts) {
     // first mount) — only a genuine, still-open failure should surface to the user.
     ws.onerror = () => { if (!closed) onError && onError(new Error("Signaling connection failed.")); };
     ws.onclose = () => { if (!closed) status("disconnected"); };
-    // The INIT (t=4) arrives right after open and drives setupPeer(); GAME_START fires once the
-    // DataChannel opens. Some builds send t=4 only after the WS is fully up, so also arm a fallback:
-    // if the channel opens we start the game.
+    // The INIT (t=4) arrives right after open and drives setupPeer(); GAME_START is sent from dc.onopen
+    // the moment the DataChannel opens. This slow poll is only the safety net for a channel that was
+    // already open before its onopen handler could fire (never observed; kept because the cost of a
+    // missed start is a room that never plays).
     const armStart = setInterval(() => {
-      if (closed) { clearInterval(armStart); return; }
+      if (closed || gameStartSent) { clearInterval(armStart); return; }
       if (dc && dc.readyState === "open") { clearInterval(armStart); startGame(); }
-    }, 100);
+    }, 2000);
   }
 
   function close() {
