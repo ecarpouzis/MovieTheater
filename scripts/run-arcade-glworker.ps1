@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Runs the Windows-native CloudRetro GL worker (roadmap WS-B) in a restart loop.
 
@@ -76,6 +76,16 @@ if (-not $IceIpMap) { Write-Warning "IceIpMap unset and ZIGGY_PUBLIC_IP not foun
 # parent spawns NORMAL children. Every worker ran at Normal for four days while this comment
 # claimed otherwise. The class must be set ON THE CHILD, after each spawn (see the loop below).
 (Get-Process -Id $PID).PriorityClass = 'High'
+
+# SCHEDULER SIZING (arcade perf program P3, 2026-09-05). Go sizes GOMAXPROCS ONCE, at process start,
+# from GetProcessAffinityMask (runtime/os_windows.go getproccount). The affinity below used to be applied
+# AFTER the worker had bound its port, so every worker ran 24 Ps (and 6 dedicated GC workers) on the 8
+# logical CPUs the mask then confined it to. Two fixes together: the mask + class now ride the LAUNCH
+# (`start /affinity /high`, below), so Go sees 8 CPUs from its first instruction, and GOMAXPROCS is
+# pinned explicitly so a future mask change can never silently reintroduce the oversubscription.
+# ⚠ Runtime-flow env vars are read by the worker at start: a plain `.stop` recycle re-spawns from THIS
+# already-running script and does NOT re-read the file — a change here needs the full TASK restart.
+$env:GOMAXPROCS = "8"
 
 # GStreamer DLLs (nvcodec, opus, etc.) resolve from the UCRT64 bin dir — must lead PATH.
 $env:Path = "$Ucrt64Bin;$env:Path"
@@ -157,7 +167,7 @@ while ($true) {
     # concurrent workers (worker-gl-2, capture) are never touched.
     Get-Job -State Completed -ErrorAction SilentlyContinue | Remove-Job -Force -ErrorAction SilentlyContinue
     Start-Job -ScriptBlock {
-        param($port)
+        param($port, $log)
         for ($i = 0; $i -lt 120; $i++) {
             Start-Sleep -Milliseconds 500
             $ep = Get-NetUDPEndpoint -LocalPort $port -ErrorAction SilentlyContinue | Select-Object -First 1
@@ -172,12 +182,21 @@ while ($true) {
                     # allowed, the EE and GS hot threads sometimes landed on the SAME physical core and
                     # robbed each other ~30% (meanTick 12ms <-> 20ms oscillation on identical content).
                     # 8 physical P-cores >> the worker's 4-5 hot threads; nothing is lost.
-                    try { $p.PriorityClass = 'High'; $p.ProcessorAffinity = [IntPtr]0x5555 } catch {}
+                    # Since perf program P3 the launch line sets both at process creation; this is the
+                    # belt to that braces. A worker found WITHOUT them here means `start` misbehaved
+                    # under Task Scheduler — worth knowing, so it is logged rather than silently fixed.
+                    try {
+                        $had = ($p.PriorityClass -eq 'High') -and ([int64]$p.ProcessorAffinity -eq 0x5555)
+                        if (-not $had) {
+                            $p.PriorityClass = 'High'; $p.ProcessorAffinity = [IntPtr]0x5555
+                            [System.IO.File]::AppendAllText($log, ("{0}  [runner] WARN: worker pid {1} was not launched at High/0x5555 (class={2} mask=0x{3:X}); fixed by the poller`r`n" -f (Get-Date -Format o), $p.Id, $p.PriorityClass, [int64]$p.ProcessorAffinity), [System.Text.Encoding]::UTF8)
+                        }
+                    } catch {}
                     break
                 }
             }
         }
-    } -ArgumentList $SinglePort | Out-Null
+    } -ArgumentList $SinglePort, $LogFile | Out-Null
     # DEBUG AUDIO CAPTURE (opt-in, marker-file gated). Drop a file named `.audiodump` in this worker's
     # ConfDir and the next spawn writes ~10s of the core's RAW PCM (S16LE stereo, pre-resample/Opus/
     # WebRTC) to <ConfDir>\audiodump\. Delete the marker to turn it off — no script edit needed, and
@@ -191,7 +210,13 @@ while ($true) {
     } else {
         Remove-Item Env:\CLOUD_GAME_AUDIO_DUMP_DIR -ErrorAction SilentlyContinue
     }
-    & cmd.exe /c "`"$WorkerExe`" --w-conf `"$ConfDir`" >> `"$LogFile`" 2>&1"
+    # `start "" /affinity 5555 /high /b /wait` creates the process WITH its mask and class (no window, same
+    # console, so the `>> log 2>&1` merge is inherited exactly as before; proven 2026-09-05: child saw
+    # mask=0x5555 class=High, stderr landed in the file). `& exit /b` hands the child's exit code back out
+    # of cmd — without it `cmd /c start /wait` reports 0 for every crash and the exitcode line below lies.
+    # The port-bind poller above is now only a VERIFY + fallback (it re-asserts the same values; no-op
+    # when start did its job). Affinity is hex without 0x for `start`.
+    & cmd.exe /c "start `"`" /affinity 5555 /high /b /wait `"$WorkerExe`" --w-conf `"$ConfDir`" >> `"$LogFile`" 2>&1 & exit /b"
     $code = $LASTEXITCODE
     Write-LogLine ("glworker EXITED exitcode={0} (0x{1:X8}) - restarting in 4s" -f $code, ($code -band 0xFFFFFFFF))
     Start-Sleep -Seconds 4
