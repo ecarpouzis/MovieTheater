@@ -7,10 +7,21 @@ import { nowPlaying } from "./channelNow";
 import { programHeadline, programMeta, rowMatches } from "./guideModel";
 
 const MS_PER_MIN = 60_000;
+const HOURS_DEFAULT = 6;
+const HOURS_MAX = 24; // the server clamps GuideGrid to 1–24 h
+const HOURS_STEP = 6;
+const NAV_STEP_MIN = 3 * 60; // ‹ / › move the timeline by three hours
 
 // "9:30" in the viewer's local time.
 export function clockLabel(ms) {
   return new Date(ms).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}
+
+// Is the keyboard busy with a text field? (The section bar's search box lives above the guide.)
+function typingTarget(e) {
+  const t = e.target;
+  if (!t || !t.tagName) return false;
+  return t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable;
 }
 
 /**
@@ -38,10 +49,28 @@ export function clockLabel(ms) {
  * Cells are title + a meta line (guide v2: `2002 · PG · 1h 35m`, `S03 E09 · Ep · TV-PG · 30 min`);
  * the plot lives in the page's detail panel. A block that began before the window is cut at the left
  * edge and marked with a ‹ so it reads as "continues" rather than "starts here".
+ *
+ * Guide v2.1 (2026-09-05), the four "further" moves:
+ *   * **Titles hug the visible edge.** The scroller publishes its scrollLeft as `--epg-scrollx`; each
+ *     block knows its drawn start/width in minutes (`--epg-l`, `--epg-w`) and CSS pads its text right
+ *     by however much of the block is hidden under the sticky column — a two-hour film scrolled
+ *     halfway keeps its name at the seam, as on a real guide, and ellipsizes as the visible part shrinks.
+ *   * **Arrow keys** (page mode only — the room has its own hotkeys): ↑/↓ the same moment on the row
+ *     above/below, ←/→ the previous/next programme, Enter tunes the selected channel. The selected cell
+ *     is scrolled into view, clear of the sticky column.
+ *   * **‹ Now ›** in the axis corner step the timeline three hours; stepping toward the fetched horizon
+ *     asks the server for six more hours (up to its 24 h cap) — an evening can be planned without a day
+ *     picker. Now jumps back to the window's start (which is ≤ 30 min before now).
+ *   * **Denser rows on tall screens** live in the CSS (`min-height: 1100px` → 56px rows).
  */
 function ChannelGrid({ open, channels, currentChannelId, onPick, onClose, onPickProgram, selectedKey, query = "", favoriteIds = null, onLineup }) {
   const [lineup, setLineup] = useState(null); // { serverNowUtc, hours, byId } or null while loading
   const [nowMs, setNowMs] = useState(() => Date.now());
+  const [hours, setHours] = useState(HOURS_DEFAULT);
+  const hoursRef = useRef(HOURS_DEFAULT);
+  hoursRef.current = hours;
+  const scrollRef = useRef(null);
+  const axisRef = useRef(null);
   const onLineupRef = useRef(onLineup);
   onLineupRef.current = onLineup;
 
@@ -57,7 +86,7 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose, onPick
       const timeout = setTimeout(() => ctrl.abort(), 12_000);
       let r;
       try {
-        r = await MovieAPI.getGuideGrid(6, ctrl.signal);
+        r = await MovieAPI.getGuideGrid(hoursRef.current, ctrl.signal);
       } finally {
         clearTimeout(timeout);
       }
@@ -69,7 +98,7 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose, onPick
       skewRef.current = Number.isFinite(serverNow) ? serverNow - Date.now() : 0;
       setLineup({
         serverNowUtc: data.serverNowUtc,
-        hours: data.hours || 6,
+        hours: data.hours || HOURS_DEFAULT,
         lookbackMinutes: data.lookbackMinutes ?? 30,
         byId,
       });
@@ -113,6 +142,12 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose, onPick
     return () => { stopped = true; clearTimeout(handle); clearInterval(handle); };
   }, [open, load]);
 
+  // A wider horizon (› toward the edge) re-fetches at once rather than waiting for the 60 s poll.
+  useEffect(() => {
+    if (!open || hours === HOURS_DEFAULT) return;
+    load();
+  }, [open, hours, load]);
+
   // Advance the now line + airing shading without re-fetching.
   useEffect(() => {
     if (!open) return undefined;
@@ -134,10 +169,31 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose, onPick
     return () => window.removeEventListener("keydown", onKey, true);
   }, [open, onClose]);
 
+  // Publish the horizontal scroll as a CSS variable (rAF-throttled) so clipped blocks can keep their
+  // text at the visible edge — see .epg-prog's padding-left in the CSS.
+  useEffect(() => {
+    if (!open) return undefined;
+    const el = scrollRef.current;
+    if (!el) return undefined;
+    let frame = 0;
+    let last = -1;
+    const publish = () => {
+      frame = 0;
+      const x = el.scrollLeft;
+      if (x === last) return;
+      last = x;
+      el.style.setProperty("--epg-scrollx", `${x}px`);
+    };
+    const onScroll = () => { if (!frame) frame = requestAnimationFrame(publish); };
+    publish();
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => { el.removeEventListener("scroll", onScroll); if (frame) cancelAnimationFrame(frame); };
+  }, [open, lineup]);
+
   // The time window: floor to the previous half hour for clean tick labels, and run out to the
   // fetched horizon so no program is clipped on the right.
   const win = useMemo(() => {
-    const hours = lineup?.hours || 6;
+    const hrs = lineup?.hours || HOURS_DEFAULT;
     const lookbackMin = lineup?.lookbackMinutes ?? 30;
     const serverNow = lineup ? Date.parse(lineup.serverNowUtc) : Date.now() + skewRef.current;
     const floor = new Date(serverNow);
@@ -146,7 +202,7 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose, onPick
     // be backed by programs on every channel — where it isn't, only the rows whose current program began
     // before the window fill to the edge and the rest start at a ragged x (the growing black gap).
     const startMs = Math.max(floor.getTime(), serverNow - lookbackMin * MS_PER_MIN);
-    const endMs = serverNow + hours * 60 * MS_PER_MIN;
+    const endMs = serverNow + hrs * 60 * MS_PER_MIN;
     const totalMin = (endMs - startMs) / MS_PER_MIN;
     // Ticks sit on real clock half hours rather than at multiples of the window start, so the labels stay
     // ":00 / :30" even when the clamp above pulls the window start off the half hour.
@@ -174,6 +230,34 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose, onPick
   // scrolled the window's start under the column: the now line vanished and every live block's title
   // ("‹ Green Mile, The") sat hidden behind the channel cell (2026-09-05).
 
+  // Pixels per minute as actually laid out (the CSS var changes per breakpoint).
+  const ppm = useCallback(() => {
+    const axis = axisRef.current;
+    const v = axis && win.totalMin ? axis.offsetWidth / win.totalMin : NaN;
+    return Number.isFinite(v) && v > 0 ? v : 9;
+  }, [win.totalMin]);
+
+  const scrollTo = useCallback((left, smooth = true) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const x = Math.max(0, left);
+    if (typeof el.scrollTo === "function") el.scrollTo({ left: x, behavior: smooth ? "smooth" : "auto" });
+    else el.scrollLeft = x;
+  }, []);
+
+  // ‹ / › step the timeline by three hours; › near the fetched horizon widens the fetch by six hours.
+  const stepTimeline = useCallback((dir) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const step = NAV_STEP_MIN * ppm();
+    const target = el.scrollLeft + dir * step;
+    scrollTo(target);
+    if (dir > 0 && target + el.clientWidth >= el.scrollWidth - step && hoursRef.current < HOURS_MAX) {
+      setHours((h) => Math.min(HOURS_MAX, h + HOURS_STEP));
+    }
+  }, [ppm, scrollTo]);
+  const jumpToNow = useCallback(() => scrollTo(0), [scrollTo]);
+
   // The guide's filter (guideModel.rowMatches — shared with the page, which auto-selects the first
   // VISIBLE row's programme). `idx` is taken BEFORE filtering: it is the channel NUMBER, which has to
   // keep matching the 1-9 tune hotkeys.
@@ -183,6 +267,75 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose, onPick
     if (!needle && !favoriteIds) return all;
     return all.filter(({ ch }) => rowMatches(ch, lineup?.byId.get(ch.id)?.items, needle, favoriteIds));
   }, [channels, query, favoriteIds, lineup]);
+
+  // Arrow-key navigation (page mode). The selection is the caller's (`selectedKey`); we only propose
+  // the next cell through onPickProgram, so the page keeps one source of truth.
+  useEffect(() => {
+    if (!open || !onPickProgram || !lineup) return undefined;
+    const onKey = (e) => {
+      if (typingTarget(e) || e.altKey || e.ctrlKey || e.metaKey) return;
+      const keys = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Enter"];
+      if (!keys.includes(e.key)) return;
+      const rows = numbered.filter(({ ch }) => lineup.byId.get(ch.id)?.items?.length);
+      if (rows.length === 0) return;
+      let rowIdx = -1;
+      let prog = null;
+      if (selectedKey) {
+        const sep = selectedKey.indexOf(":");
+        const chId = Number(selectedKey.slice(0, sep));
+        const startUtc = selectedKey.slice(sep + 1);
+        rowIdx = rows.findIndex(({ ch }) => Number(ch.id) === chId);
+        if (rowIdx >= 0) prog = lineup.byId.get(rows[rowIdx].ch.id).items.find((p) => p.startUtc === startUtc) || null;
+      }
+      const pick = (r, p) => {
+        const items = lineup.byId.get(r.ch.id).items;
+        if (p) onPickProgram(r.ch, p, items);
+      };
+      const at = (items, t) => items.find((p) => Date.parse(p.startUtc) <= t && t < Date.parse(p.endUtc)) || items.find((p) => Date.parse(p.endUtc) > t) || items[items.length - 1];
+      e.preventDefault();
+      if (rowIdx < 0 || !prog) {
+        // Nothing selected: any of the keys lands on the first row's current programme.
+        pick(rows[0], nowPlaying(lineup.byId.get(rows[0].ch.id).items, nowMs));
+        return;
+      }
+      const items = lineup.byId.get(rows[rowIdx].ch.id).items;
+      const i = items.indexOf(prog);
+      if (e.key === "Enter") onPick(rows[rowIdx].ch);
+      else if (e.key === "ArrowRight") { if (i < items.length - 1) pick(rows[rowIdx], items[i + 1]); }
+      else if (e.key === "ArrowLeft") { if (i > 0) pick(rows[rowIdx], items[i - 1]); }
+      else {
+        const next = rows[rowIdx + (e.key === "ArrowDown" ? 1 : -1)];
+        if (!next) return;
+        // The same moment on the other row: now for a live programme, else the selected one's start.
+        const live = Date.parse(prog.startUtc) <= nowMs && nowMs < Date.parse(prog.endUtc);
+        const t = live ? nowMs : Math.max(Date.parse(prog.startUtc), win.startMs);
+        pick(next, at(lineup.byId.get(next.ch.id).items, t));
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onPickProgram, onPick, lineup, numbered, selectedKey, nowMs, win.startMs]);
+
+  // Keep the selected cell in view, clear of the sticky column (a keyboard move can land off-screen).
+  useEffect(() => {
+    if (!open || !selectedKey) return undefined;
+    const frame = requestAnimationFrame(() => {
+      const el = scrollRef.current;
+      const cell = el?.querySelector('.epg-prog[aria-pressed="true"]');
+      const chan = el?.querySelector(".epg-chan");
+      if (!el || !cell || typeof cell.getBoundingClientRect !== "function") return;
+      const r = cell.getBoundingClientRect();
+      const s = el.getBoundingClientRect();
+      if (!r.width || !s.width) return;
+      const head = el.querySelector(".epg-timehead")?.offsetHeight || 0;
+      if (r.top < s.top + head) el.scrollTop -= s.top + head - r.top + 8;
+      else if (r.bottom > s.bottom) el.scrollTop += r.bottom - s.bottom + 8;
+      const visibleLeft = s.left + (chan?.offsetWidth || 0);
+      // Mostly hidden to the left, or off to the right: bring its start to the seam.
+      if (r.right < visibleLeft + 120 || r.left > s.right - 120) scrollTo(el.scrollLeft + (r.left - visibleLeft) - 8, false);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [open, selectedKey, scrollTo]);
 
   // Group channels by category so each shelf appears exactly once, even when a category's channels
   // aren't contiguous in sort order (e.g. a non-catalog channel wedged between them, or a sort-order
@@ -215,12 +368,19 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose, onPick
         <button className="epg-close" onClick={onClose} aria-label="Close guide">×</button>
       </div>
 
-      <div className="epg-scroll" style={{ "--epg-totalmin": win.totalMin }}>
+      <div className="epg-scroll" ref={scrollRef} style={{ "--epg-totalmin": win.totalMin }}>
         <div className="epg-body">
           {/* time axis */}
           <div className="epg-timehead">
-            <div className="epg-corner">Channel</div>
-            <div className="epg-axis">
+            <div className="epg-corner">
+              <span className="epg-corner-label">Channel</span>
+              <span className="epg-nav" role="group" aria-label="Move the timeline">
+                <button type="button" className="epg-nav-btn" onClick={() => stepTimeline(-1)} aria-label="Earlier" title="Earlier (3 h)">‹</button>
+                <button type="button" className="epg-nav-btn epg-nav-btn--now" onClick={jumpToNow} title="Back to now">Now</button>
+                <button type="button" className="epg-nav-btn" onClick={() => stepTimeline(1)} aria-label="Later" title="Later (3 h)">›</button>
+              </span>
+            </div>
+            <div className="epg-axis" ref={axisRef}>
               {win.ticks.map((t, i) => (
                 <div key={i} className="epg-tick" style={{ left: `${t.pct}%` }}>
                   <span className="epg-tick-label">{t.label}</span>
@@ -306,11 +466,15 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose, onPick
                     const elapsedPct = live ? ((nowMs - drawnStart) / (drawnEnd - drawnStart)) * 100 : 0;
                     const clipped = startMs < win.startMs;
                     const meta = programMeta(prog);
+                    // The block's drawn start and width in MINUTES — the CSS turns them into px with
+                    // --epg-ppm and pads the text past whatever the sticky column hides (--epg-scrollx).
+                    const drawnLeftMin = (drawnStart - win.startMs) / MS_PER_MIN;
+                    const drawnWidthMin = (drawnEnd - drawnStart) / MS_PER_MIN;
                     return (
                       <button
                         key={i}
                         className={`epg-prog${live ? " epg-prog--live" : ""}${endMs <= nowMs ? " epg-prog--past" : ""}${clipped ? " epg-prog--clipped" : ""}`}
-                        style={{ left: `${left}%`, width: `${width}%` }}
+                        style={{ left: `${left}%`, width: `${width}%`, "--epg-l": drawnLeftMin, "--epg-w": drawnWidthMin }}
                         aria-pressed={selectedKey != null && selectedKey === `${ch.id}:${prog.startUtc}` ? true : undefined}
                         onClick={() => (onPickProgram ? onPickProgram(ch, prog, row.items) : onPick(ch))}
                         title={`${prog.title} · ${clockLabel(startMs)}–${clockLabel(endMs)}`}

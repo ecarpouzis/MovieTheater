@@ -289,7 +289,9 @@
   width: var(--epg-chanw);
   display: flex;
   align-items: center;
-  padding: 0 12px;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 8px 0 12px;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.18em;
@@ -298,6 +300,17 @@
   background: linear-gradient(to bottom, #111a28, #0a0e16);
   border-right: 1px solid rgba(64, 169, 255, 0.3);
 }
+/* ‹ Now › — step the timeline three hours either way; › near the horizon fetches six more. */
+.epg-nav { display: inline-flex; align-items: center; gap: 2px; }
+.epg-nav-btn {
+  appearance: none; cursor: pointer; font: inherit; height: 22px; min-width: 22px; padding: 0 6px;
+  border: 1px solid rgba(64, 169, 255, 0.3); border-radius: 5px; background: rgba(64, 169, 255, 0.08);
+  color: #8fcbff; font-size: 14px; line-height: 1; font-weight: 700; letter-spacing: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background 0.15s, border-color 0.15s;
+}
+.epg-nav-btn--now { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; padding: 0 7px; }
+.epg-nav-btn:hover { background: rgba(64, 169, 255, 0.2); border-color: rgba(64, 169, 255, 0.6); color: #fff; }
 
 .epg-axis {
   position: relative;
@@ -511,6 +524,10 @@
   justify-content: center;
   gap: 3px;
   padding: 6px 9px;
+  /* Titles hug the visible edge: pad the text right by however much of this block sits under the sticky
+     channel column (scrollLeft − the block's drawn start), never past the block's own end (−80px keeps a
+     stub of title). A two-hour film scrolled halfway keeps its name at the seam, as on a real guide. */
+  padding-left: calc(9px + clamp(0px, var(--epg-scrollx, 0px) - var(--epg-l, 0) * var(--epg-ppm), max(0px, var(--epg-w, 0) * var(--epg-ppm) - 80px)));
   text-align: left;
   border: 1px solid rgba(232, 238, 246, 0.1);
   border-left: none; /* abutting blocks share one seam → a clean continuous schedule, not a chain of pills */
@@ -624,6 +641,23 @@
 }
 
 /* ── responsive scale ───────────────────────────────────────────────────────── */
+/* A tall monitor takes denser rows: two lines still fit in 56px, and two more channels show. */
+@media (min-height: 1100px) {
+  .epg {
+    --epg-rowh: 56px;
+  }
+  .epg-chan-poster {
+    width: 27px;
+  }
+  .epg-chan {
+    padding: 7px 10px;
+  }
+  .epg-prog {
+    padding-top: 5px;
+    padding-bottom: 5px;
+    gap: 2px;
+  }
+}
 @media (max-width: 1024px) {
   .epg {
     --epg-ppm: 7px;
@@ -654,6 +688,11 @@
   }
   .epg-chan-now-title {
     font-size: 12px;
+  }
+  .epg-corner { padding: 0 6px 0 9px; }
+  .epg-corner-label { display: none; }
+  .epg-prog {
+    padding-left: calc(8px + clamp(0px, var(--epg-scrollx, 0px) - var(--epg-l, 0) * var(--epg-ppm), max(0px, var(--epg-w, 0) * var(--epg-ppm) - 60px)));
   }
   .epg-prog {
     gap: 2px;
