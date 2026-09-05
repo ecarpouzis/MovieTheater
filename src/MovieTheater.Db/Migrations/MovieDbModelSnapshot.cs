@@ -661,6 +661,9 @@ namespace MovieTheater.Db.Migrations
                         .HasMaxLength(16)
                         .HasColumnType("nvarchar(16)");
 
+                    b.Property<int?>("TtffMs")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ArcadeGameId");

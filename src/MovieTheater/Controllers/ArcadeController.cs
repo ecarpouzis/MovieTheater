@@ -3322,8 +3322,11 @@ namespace MovieTheater.Controllers
             return Json(new { ok });
         }
 
+        /// <param name="ttffMs">Time-to-first-frame the browser measured for its session (ms from opening the
+        /// signaling socket to the first presented video frame). Sent on ONE beat once known; kept on the
+        /// session row if the row has none yet. A query param so an older tab's bodiless beat keeps working.</param>
         [HttpPost("/API/Arcade/Room/{code}/Heartbeat")]
-        public async Task<IActionResult> Heartbeat(string code)
+        public async Task<IActionResult> Heartbeat(string code, [FromQuery] int? ttffMs = null)
         {
             var userId = GetCurrentUserId();
             if (userId == null)
@@ -3393,6 +3396,17 @@ namespace MovieTheater.Controllers
                 await movieDb.ArcadeSessions
                     .Where(s => s.RoomCode == code && s.EndedUtc == null)
                     .ExecuteUpdateAsync(u => u.SetProperty(s => s.LastSeenUtc, beatNow));
+            }
+
+            // Time-to-first-frame (arcade perf program P1, 2026-09-05): the shim measures connect() -> first
+            // presented frame and the page carries it on one beat. Keep the FIRST sane value per session row:
+            // normally the creator's, the one that paid for ROM staging + core load. Observability only,
+            // nothing reads it back into a decision. Bounded so a broken client cannot store garbage.
+            if (ttffMs is > 0 and <= 600_000)
+            {
+                await movieDb.ArcadeSessions
+                    .Where(s => s.RoomCode == code && s.EndedUtc == null && s.TtffMs == null)
+                    .ExecuteUpdateAsync(u => u.SetProperty(s => s.TtffMs, ttffMs.Value));
             }
 
             var roster = status.PlayerUserIds.Concat(status.SpectatorUserIds).Distinct().ToList();

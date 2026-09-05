@@ -875,7 +875,7 @@ export function videoTransform(rot, flip) {
 }
 
 export function createCloudRetroSession(descriptor, opts) {
-  const { videoEl, onRoomId, onStatus, onError, onSeat, onAspect, onChordAction, onAchievement, customGamepadProfile: customGamepadProfileOverride } = opts || {};
+  const { videoEl, onRoomId, onStatus, onError, onSeat, onAspect, onChordAction, onAchievement, onTtff, customGamepadProfile: customGamepadProfileOverride } = opts || {};
   const status = (s) => onStatus && onStatus(s);
   // Watch-only seat. Trust the explicit flag, but fall back to the slot itself so an older descriptor
   // (or a hand-built one in a test) can't accidentally hand a watcher a controller.
@@ -911,6 +911,29 @@ export function createCloudRetroSession(descriptor, opts) {
   let closed = false;
   const inboundStream = new MediaStream(); // audio + video tracks accumulate here (see ontrack)
   let lastAv = null; // last known video geometry (flip/rotation), re-applied whenever the track attaches
+
+  // ── Time-to-first-frame marks (arcade perf program P1, 2026-09-05) ────────────────────────────
+  // Every hop of the room's start path, in ms since connect(): ws-open → init (t=4 handled) → dc-open
+  // (ICE + DTLS + SCTP up; this is what gates t=104) → game-start (t=104 answered: ROM staged, core
+  // loaded, emulator running) → first-frame (the first frame the <video> presented, via rVFC). The GAPS
+  // are the start path: dc-open−init is transport, game-start−dc-open is JIT extraction + core load +
+  // boot on the worker, first-frame−game-start is the first keyframe reaching the decoder. Until this
+  // existed nothing in the stack measured how long "Connecting…" really took. One `[ttff]` console line
+  // per session; onTtff() hands it to the room page, which carries it on its first heartbeat so the
+  // ArcadeSession row keeps it. Observability only — nothing adapts to these numbers.
+  const ttff = { t0: 0, marks: {} };
+  const nowMs = () => (typeof performance !== "undefined" && performance.now ? performance.now() : Date.now());
+  function ttffMark(name) {
+    if (!ttff.t0 || ttff.marks[name] != null) return;
+    ttff.marks[name] = Math.round(nowMs() - ttff.t0);
+    if (name !== "first-frame") return;
+    const m = ttff.marks;
+    try {
+      console.log(`[ttff] total ${m["first-frame"]}ms — ws-open ${m["ws-open"]} init ${m.init} dc-open ${m["dc-open"]} ` +
+        `game-start ${m["game-start"]} first-frame ${m["first-frame"]} (${descriptor.system || "?"})`);
+      onTtff && onTtff({ totalMs: m["first-frame"], marks: { ...m } });
+    } catch { /* an observer's error must never touch the session */ }
+  }
   // STUN entries carry only urls; a TURN entry also carries the ephemeral username/credential the site
   // minted for this join. Passing them through is what enables the last-resort relay path for clients
   // that can't reach a worker directly (guest/isolated SSID, hostile remote network). Mirrors the INIT
@@ -1381,7 +1404,7 @@ export function createCloudRetroSession(descriptor, opts) {
     // or it silently never opens.
     dc = pc.createDataChannel("data", { negotiated: true, id: 0, ordered: false, maxRetransmits: 0 });
     dc.binaryType = "arraybuffer";
-    dc.onopen = () => { status("connected"); startInput(); };
+    dc.onopen = () => { ttffMark("dc-open"); status("connected"); startInput(); };
     // The worker PUSHES async control/UI packets to us over this same negotiated channel (room.Send →
     // the peer data channel): e.g. an achievement unlock (t=160) or a mid-game video-geometry change.
     // They're the same JSON envelope the signaling WS carries, just arriving here as an ArrayBuffer, so
@@ -1466,6 +1489,11 @@ export function createCloudRetroSession(descriptor, opts) {
   // separate PeerConnections) — collect EVERY inbound track into ONE MediaStream so the element
   // plays both; per-track srcObject assignment left the last track orphaning the first.
   function onInboundTrack(e) {
+    // TTFF: the first PRESENTED frame is the end of the start path. rVFC fires once per presented frame,
+    // so a one-shot registration on the video track's attach marks it (ttffMark dedupes a re-attach).
+    if (e.track && e.track.kind === "video" && videoEl && videoEl.requestVideoFrameCallback) {
+      try { videoEl.requestVideoFrameCallback(() => ttffMark("first-frame")); } catch { /* older browsers */ }
+    }
     const jbMs = e.track && e.track.kind === "audio" ? AUDIO_JITTER_MS : 0;
     try { e.receiver.jitterBufferTarget = jbMs; } catch { /* older browsers */ }
     try { e.receiver.playoutDelayHint = jbMs / 1000; } catch { /* non-Chrome */ }
@@ -1655,6 +1683,7 @@ export function createCloudRetroSession(descriptor, opts) {
   }
 
   function onGameStarted(p) {
+    ttffMark("game-start");
     const roomId = p && (p.roomId || p.room_id);
     if (descriptor.isCreator && roomId) onRoomId && onRoomId(roomId);
     if (p && p.av) applyVideoTransform(p.av);
@@ -1681,6 +1710,7 @@ export function createCloudRetroSession(descriptor, opts) {
           const seen = new Set(fromCoordinator.map((s) => s.urls));
           iceServers = fromCoordinator.concat(iceServers.filter((s) => !seen.has(s.urls)));
         }
+        ttffMark("init");
         setupPeer();
         break;
       case T.INIT_WEBRTC:
@@ -1720,9 +1750,10 @@ export function createCloudRetroSession(descriptor, opts) {
   }
 
   function connect() {
+    ttff.t0 = nowMs();
     status("connecting");
     ws = new WebSocket(descriptor.wsUrl);
-    ws.onopen = () => { status("signalling"); };
+    ws.onopen = () => { ttffMark("ws-open"); status("signalling"); };
     ws.onmessage = (e) => handle(e.data);
     // Don't cry "connection failed" when WE closed it (session teardown / React StrictMode's throwaway
     // first mount) — only a genuine, still-open failure should surface to the user.

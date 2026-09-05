@@ -1182,8 +1182,12 @@ function releaseArcadeSeat(code, slot) {
   }).catch(() => {});
 }
 
-function arcadeHeartbeat(code) {
-  return fetch(`/API/Arcade/Room/${encodeURIComponent(code)}/Heartbeat`, { method: "post" }).catch(() => {});
+// ttffMs: the session's time-to-first-frame, carried on ONE beat (the first after it is known) so the
+// ArcadeSession row keeps it. A query param, not a body: the beat has always been a bodiless POST and
+// an older tab must keep beating (a [FromBody] with no content-type would 415 it).
+function arcadeHeartbeat(code, ttffMs) {
+  const q = Number.isFinite(ttffMs) && ttffMs > 0 ? `?ttffMs=${Math.round(ttffMs)}` : "";
+  return fetch(`/API/Arcade/Room/${encodeURIComponent(code)}/Heartbeat${q}`, { method: "post" }).catch(() => {});
 }
 
 function leaveArcadeRoom(code) {

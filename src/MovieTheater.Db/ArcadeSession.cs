@@ -61,5 +61,14 @@ namespace MovieTheater.Db
         /// signal that survives the restart, which is what <c>ArcadeRoomReaperService</c> reconciles on.
         /// </summary>
         public DateTime? LastSeenUtc { get; set; }
+
+        /// <summary>
+        /// Time-to-first-frame for this room, in ms: the creator's browser from opening the signaling socket to
+        /// the first presented video frame (ROM staging + core load + boot + WebRTC setup + first keyframe).
+        /// Reported once on a heartbeat (arcade perf program P1, 2026-09-05); the first sane value wins. Null =
+        /// never reported (a session older than the column, or a browser that never reached a frame).
+        /// Observability only.
+        /// </summary>
+        public int? TtffMs { get; set; }
     }
 }

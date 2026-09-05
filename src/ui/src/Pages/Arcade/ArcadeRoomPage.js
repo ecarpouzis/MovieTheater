@@ -253,6 +253,8 @@ export default function ArcadeRoomPage() {
   // goes live). Ref, not state — it must survive re-renders without re-triggering, and the onStatus
   // callback is captured once at mount so it can't read a re-rendered value anyway.
   const saveStateSeededRef = useRef(false);
+  // Time-to-first-frame reported by the shim, waiting for the next heartbeat to carry it (perf program P1).
+  const ttffPendingRef = useRef(null);
   const countCrash = () => {
     const n = (parseInt(sessionStorage.getItem(CRASH_KEY), 10) || 0) + 1;
     sessionStorage.setItem(CRASH_KEY, String(n));
@@ -356,6 +358,9 @@ export default function ArcadeRoomPage() {
       sessionRef.current = createCloudRetroSession(descriptor, {
         videoEl: videoRef.current,
         customGamepadProfile: customGamepadProfile,
+        // Time-to-first-frame (perf program P1): the shim reports it once; the next heartbeat carries it
+        // to the server (one beat, then cleared) so the session row keeps the number.
+        onTtff: (t) => { if (!cancelled && t && t.totalMs > 0) ttffPendingRef.current = t.totalMs; },
         onStatus: (s) => {
           if (cancelled) return;
           setStatus(s);
@@ -485,8 +490,11 @@ export default function ArcadeRoomPage() {
     let alive = true;
     const beat = () => {
       if (TERMINAL_STATUS.includes(statusRef.current)) return; // dead session asserts no presence
-      return MovieAPI.arcadeHeartbeat(code).then((r) => {
+      const ttffMs = ttffPendingRef.current;
+      return MovieAPI.arcadeHeartbeat(code, ttffMs).then((r) => {
         if (!alive || !r || !r.ok) return;
+        if (ttffMs && ttffPendingRef.current === ttffMs) ttffPendingRef.current = null; // delivered once
+
         return r.json().then((s) => {
           if (!alive) return;
           setPlayers(s.players || []);
