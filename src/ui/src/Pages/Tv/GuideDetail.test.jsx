@@ -15,7 +15,7 @@ vi.mock("./GuidePreview", () => ({
 
 /**
  * R9 S1c: the guide's click-a-show panel — description, ▶ Watch on the channel (tunes it), Open
- * title (the movie sheet on the landing), ♥ the channel (optimistic through setUserData), up next.
+ * title (the movie sheet on the landing), ♥ the channel (optimistic through setUserData).
  * Guide v2 (2026-09-04): the meta line, ▶ Tune in / ↺ Start over (the channel restart vote, carried
  * to the room as ?restart=1), and the preview column on desktop.
  */
@@ -40,7 +40,7 @@ function renderPanel({ userData = { favoriteChannels: [] }, prog = program, row 
 }
 
 describe("Tv/GuideDetail", () => {
-  it("shows the show, its slot on the channel, the meta line, the plot and what's up next", () => {
+  it("shows the show, its slot on the channel, the meta line and the plot", () => {
     renderPanel();
     expect(screen.getByRole("heading", { name: "Out of the Past" })).toBeTruthy();
     expect(screen.getByText("Late Night Noir").className).toBe("guide-detail__channel");
@@ -52,9 +52,6 @@ describe("Tv/GuideDetail", () => {
     expect(screen.getByText("IMDb").parentElement.textContent).toBe("IMDb 8.0");
     expect(screen.getByText("Film-Noir")).toBeTruthy();
     expect(screen.getByText("A private eye escapes his past.")).toBeTruthy();
-    expect(screen.getByText("Up next")).toBeTruthy();
-    expect(screen.getByTitle("Laura")).toBeTruthy();
-    expect(screen.getByTitle("Gilda")).toBeTruthy();
   });
 
   it("headlines an episode by its series, with S/E and the episode title in the meta line", () => {

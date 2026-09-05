@@ -38,9 +38,14 @@
   flex: 1 1 auto;
   min-height: 0;
 }
+/* On the page the guide's own header ("Channel Guide · clock · ×") is dead weight: the section bar
+   names the place, the panel carries the time, Back is the close. It stays in the in-room overlay,
+   where it is the only chrome. Hiding it here gives ~57px back to the rows (2026-09-05: at a 150%
+   Windows scale the page showed two channels). */
+.channel-guide-page .epg-head { display: none; }
 
-/* ── The detail panel (GuideDetail, v2): poster · body (eyebrow · title · meta · plot · actions + up
-   next) · the live preview column ────────────────────────────────────────────────────────────────
+/* ── The detail panel (GuideDetail, v2): poster · body (eyebrow · title · meta · plot · actions) · the
+   live preview column ───────────────────────────────────────────────────────────────────────────────
    PART OF THE CABLE BOX, so dark-literal like the rest of this file — the 2026-09-05 design review:
    on the light card tokens the panel was a white slab sitting on the near-black grid, and its teal
    section accent fought the guide's blue. It now shares the guide header's ground and the guide's one
@@ -57,7 +62,9 @@
   color: #e8eef6;
   border-bottom: 1px solid rgba(64, 169, 255, 0.25);
 }
-.guide-detail--preview { grid-template-columns: 112px minmax(0, 1fr) 336px; }
+/* The preview column is sized so the panel is the POSTER's height (168px + padding): a 16:9 frame at
+   288px is 162px, plus the progress strip. Taller frames made the panel ~250px and ate the rows. */
+.guide-detail--preview { grid-template-columns: 112px minmax(0, 1fr) 288px; }
 .guide-detail__poster { width: 112px; }
 .guide-detail__img { display: block; width: 112px; height: 168px; object-fit: cover; border-radius: 6px; background: #1a2230; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45); }
 .guide-detail__img--empty { background: linear-gradient(160deg, #2b3a4a, #1a2530); }
@@ -98,13 +105,6 @@
 .guide-detail__btn--secondary { border-color: rgba(64, 169, 255, 0.6); color: #8fcbff; }
 .guide-detail__btn--secondary:hover { background: rgba(64, 169, 255, 0.12); }
 .guide-detail__btn.is-on { border-color: rgba(227, 85, 63, 0.6); color: #ff8a78; }
-/* Up next rides at the right end of the action row: a row of small posters with their start times. */
-.guide-detail__next { display: flex; align-items: center; gap: 10px; margin-left: auto; }
-.guide-detail__next .guide-detail__eyebrow { font-size: 10px; color: rgba(232, 238, 246, 0.5); }
-.guide-detail__next-list { list-style: none; margin: 0; padding: 0; display: flex; gap: 8px; }
-.guide-detail__next-item { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-.guide-detail__next-img { display: block; width: 30px; height: 45px; object-fit: cover; border-radius: 3px; background: #1a2230; }
-.guide-detail__next-time { font-family: var(--font-mono, ui-monospace, monospace); font-size: 9.5px; color: rgba(232, 238, 246, 0.55); font-variant-numeric: tabular-nums; }
 .guide-detail__close {
   position: absolute; top: 8px; right: 8px; width: 30px; height: 30px; border: 0; border-radius: 7px;
   background: transparent; color: rgba(232, 238, 246, 0.6); font-size: 18px; cursor: pointer;
@@ -115,9 +115,9 @@
 
 /* ── The live preview (GuidePreview): a 16:9 frame over the poster, the picture fading in when the
    first frame plays, a LIVE badge, the slot's progress strip beneath in the now line's red. */
-.guide-preview { display: flex; flex-direction: column; gap: 6px; width: 336px; }
+.guide-preview { display: flex; flex-direction: column; gap: 5px; width: 288px; }
 .guide-preview__frame {
-  position: relative; width: 336px; height: 189px; overflow: hidden; border-radius: 8px;
+  position: relative; width: 288px; height: 162px; overflow: hidden; border-radius: 8px;
   background: #0b0f16; box-shadow: 0 0 0 1px rgba(64, 169, 255, 0.25), 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 .guide-preview__poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: brightness(0.55) saturate(0.9); }
@@ -147,22 +147,30 @@
   transition: opacity 0.15s;
 }
 .guide-preview__frame:hover .guide-preview__mute, .guide-preview__mute[aria-pressed="true"] { opacity: 1; }
-.guide-preview__slot { display: flex; flex-direction: column; gap: 5px; }
+.guide-preview__slot { display: flex; flex-direction: column; gap: 4px; }
 .guide-preview__bar { display: block; height: 3px; border-radius: 2px; background: rgba(232, 238, 246, 0.12); overflow: hidden; }
 .guide-preview__bar-fill { display: block; height: 100%; background: #e3553f; }
 .guide-preview__times { display: flex; justify-content: space-between; font-family: var(--font-mono, ui-monospace, monospace); font-size: 10.5px; letter-spacing: 0.06em; color: rgba(232, 238, 246, 0.6); font-variant-numeric: tabular-nums; }
 
-@media (max-width: 1100px) {
-  .guide-detail--preview { grid-template-columns: 96px minmax(0, 1fr) 272px; }
-  .guide-detail--preview .guide-detail__poster, .guide-detail--preview .guide-detail__img { width: 96px; }
-  .guide-detail--preview .guide-detail__img { height: 144px; }
-  .guide-preview, .guide-preview__frame { width: 272px; }
-  .guide-preview__frame { height: 153px; }
+/* Compact tier — a narrow body OR a short window (a laptop, a 150% Windows scale): smaller poster and
+   frame, a 22px title, a two-line plot, so the panel stays ~175px and the rows keep the screen. */
+@media (max-width: 1100px), (max-height: 820px) {
+  .guide-detail { gap: 16px; padding: 12px 44px 12px 16px; }
+  .guide-detail--preview { grid-template-columns: 96px minmax(0, 1fr) 240px; }
+  .guide-detail__poster, .guide-detail__img { width: 96px; }
+  .guide-detail__img { height: 144px; }
+  .guide-detail__body { gap: 4px; }
+  .guide-detail__title { font-size: 22px; }
+  .guide-detail__plot { -webkit-line-clamp: 2; margin-top: 2px; }
+  .guide-detail__actions { margin-top: 6px; }
+  .guide-detail__btn { height: 32px; padding: 0 12px; }
+  .guide-preview, .guide-preview__frame { width: 240px; }
+  .guide-preview__frame { height: 135px; }
 }
 @media (max-width: 767px) {
   .guide-detail { grid-template-columns: 76px minmax(0, 1fr); gap: 12px; padding: 12px 40px 12px 12px; }
-  .guide-detail__img { width: 76px; height: 114px; box-shadow: none; }
-  .guide-detail__next { display: none; }
+  .guide-detail__poster, .guide-detail__img { width: 76px; }
+  .guide-detail__img { height: 114px; box-shadow: none; }
   .guide-detail__title { font-size: 18px; }
   .guide-detail__meta { font-size: 11.5px; gap: 0 6px; }
   .guide-detail__plot { -webkit-line-clamp: 2; font-size: 12.5px; }

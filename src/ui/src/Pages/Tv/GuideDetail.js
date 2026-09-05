@@ -39,8 +39,10 @@ const HeartIcon = ({ filled }) => (
 /**
  * The guide's detail panel (R9 S1c, v2 2026-09-04). Opens above the grid for the selected programme:
  * poster · headline · the meta line (year or S/E · certificate tag · length · IMDb · genre) · the
- * plot · the actions · up next — and, on desktop, the live PREVIEW (GuidePreview) with the slot's
- * progress. It is part of the cable box: it sits on the guide's own dark ground with the guide's blue
+ * plot · the actions — and, on desktop, the live PREVIEW (GuidePreview) with the slot's progress.
+ * No "up next" strip: the grid to the right of the selected block IS what's next, and the strip
+ * wrapped under the buttons on a narrow body and doubled the panel's height (2026-09-05).
+ * It is part of the cable box: it sits on the guide's own dark ground with the guide's blue
  * as its one accent (the light card tokens put a white slab on the black grid — the 2026-09-05 review).
  *
  * Actions: ▶ Tune in joins the channel at the live offset. ↺ Start over joins AND casts the room's
@@ -50,7 +52,7 @@ const HeartIcon = ({ filled }) => (
  * cannot be started early on a shared timeline, and a frozen one has no clock to restart against.
  * Everything here comes from the guide payload the grid already holds — no second fetch.
  */
-export default function GuideDetail({ channel, program, rowItems, row, userData, setUserData, onClose, previewArmed = false, onArmPreview, nowMs }) {
+export default function GuideDetail({ channel, program, row, userData, setUserData, onClose, previewArmed = false, onArmPreview, nowMs }) {
   const history = useHistory();
   const { isFavorite, toggle } = useFavoriteChannels(userData, setUserData);
   const wide = useWideEnough();
@@ -61,7 +63,6 @@ export default function GuideDetail({ channel, program, rowItems, row, userData,
   const live = startMs <= at && at < endMs;
   const paused = !!row?.paused;
   const viewers = row?.viewers || 0;
-  const upNext = (rowItems || []).filter((p) => Date.parse(p.startUtc) >= endMs).slice(0, 4);
   const poster = program.posterId ? MovieAPI.getPosterThumbnail(program.posterId, program.posterVersion, program.kind) : null;
   const fav = isFavorite(channel.id);
   const canOpenTitle = program.posterId > 0 && (program.kind === "movie" || program.kind === "series");
@@ -123,21 +124,6 @@ export default function GuideDetail({ channel, program, rowItems, row, userData,
             <button type="button" className={`guide-detail__btn${fav ? " is-on" : ""}`} aria-pressed={fav} onClick={() => toggle(channel.id)}>
               <HeartIcon filled={fav} /> Favourite channel
             </button>
-          )}
-          {upNext.length > 0 && (
-            <div className="guide-detail__next">
-              <p className="guide-detail__eyebrow">Up next</p>
-              <ul className="guide-detail__next-list">
-                {upNext.map((p) => (
-                  <li key={p.startUtc} className="guide-detail__next-item" title={p.title}>
-                    {p.posterId ? (
-                      <FallbackImage src={MovieAPI.getPosterThumbnail(p.posterId, p.posterVersion, p.kind)} alt="" className="guide-detail__next-img" fallback={<div className="guide-detail__next-img guide-detail__img--empty" />} />
-                    ) : <div className="guide-detail__next-img guide-detail__img--empty" />}
-                    <span className="guide-detail__next-time">{clockLabel(Date.parse(p.startUtc))}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
           )}
         </div>
       </div>
