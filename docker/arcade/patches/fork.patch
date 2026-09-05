@@ -4535,7 +4535,7 @@ index 53c3a2d..e5db5d0 100644
  			zerolog.TimestampFieldName,
  			"pid",
 diff --git a/pkg/network/webrtc/factory.go b/pkg/network/webrtc/factory.go
-index 99e02b8..ca14ebc 100644
+index 99e02b8..b089782 100644
 --- a/pkg/network/webrtc/factory.go
 +++ b/pkg/network/webrtc/factory.go
 @@ -3,19 +3,51 @@ package webrtc
@@ -4654,7 +4654,7 @@ index 99e02b8..ca14ebc 100644
  	if conf.HasPortRange() {
  		if err = s.SetEphemeralUDPPortRange(conf.IcePorts.Min, conf.IcePorts.Max); err != nil {
  			return
-@@ -56,57 +138,306 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
+@@ -56,57 +138,313 @@ func NewApiFactory(conf config.Webrtc, log *logger.Logger, mod ModApiFun) (api *
  	}
  	if conf.HasSinglePort() {
  		var l any
@@ -4745,6 +4745,13 @@ index 99e02b8..ca14ebc 100644
  	s.EnableSCTPZeroChecksum(true)
 -	if len(conf.IpFilter) > 0 {
 -		s.SetIPFilter(func(i net.IP) (keep bool) {
++	// DTLS flight retransmit 1 s -> 100 ms (perf program P13, 2026-09-05). The client's [ttff] sub-marks put
++	// ~1040 ms between ice-connected and pc-connected on a same-host room: the exact shape of one lost
++	// handshake flight waiting out the RFC 6347 1 s initial RTO. Whichever side dropped the first flight
++	// (the browser's ClientHello arriving before our DTLS transport listens, or our reply), our own
++	// retransmits now come every 100 ms instead of 1 s. If the gap survives this, the loss is the
++	// browser's ClientHello and the fix is on the role (Pion as the DTLS client), not the timer.
++	s.SetDTLSRetransmissionInterval(100 * time.Millisecond)
 +
 +	// ── TAILSCALE / CGNAT IS NEVER A MEDIA PATH (policy, not configuration) ──────────────────────
 +	// The arcade's WebRTC must never traverse Tailscale. It is a mesh VPN built for remote admin, not
@@ -91571,10 +91578,10 @@ index 2840a0e..aa70436 100644
  			c.log.Warn().Msgf("unhandled packet type %v", x.T)
  		}
 diff --git a/pkg/worker/coordinatorhandlers.go b/pkg/worker/coordinatorhandlers.go
-index 6972cc7..d84ea67 100644
+index 6972cc7..f6b2f8d 100644
 --- a/pkg/worker/coordinatorhandlers.go
 +++ b/pkg/worker/coordinatorhandlers.go
-@@ -1,310 +1,778 @@
+@@ -1,310 +1,786 @@
 -package worker
 -
 -import (
@@ -91888,6 +91895,7 @@ index 6972cc7..d84ea67 100644
 +package worker
 +
 +import (
++	"time"
 +	"encoding/json"
 +	"fmt"
 +	"os"
@@ -91946,6 +91954,7 @@ index 6972cc7..d84ea67 100644
 +		}
 +	}()
 +
++	t0 := time.Now() // P13: the client saw ~800 ms between sending INIT_WEBRTC and receiving the offer
 +	peer := webrtc.New(c.log, factory)
 +	peer.SetWarmKbps(rq.WarmKbps) // before NewConnection: the estimator is constructed inside it (P10)
 +	// Per-room codec (patch 0036): the site's join descriptor hands every client of a room the
@@ -91969,6 +91978,7 @@ index 6972cc7..d84ea67 100644
 +	if err = peer.NewConnection(codec, splitAudio, inputOnly, func(ice *string) { c.IceCandidate(*ice, rq.Id) }); err != nil {
 +		return api.EmptyPacket
 +	}
++	tPC := time.Since(t0)
 +
 +	// Who this peer is, for the ABR link-stat mirror (Phase 0). Set before the peer joins the room, so
 +	// the ABR goroutine never observes a half-identified peer. Untrusted browser input — SetIdentity
@@ -91987,6 +91997,11 @@ index 6972cc7..d84ea67 100644
 +	if err != nil {
 +		return api.EmptyPacket
 +	}
++	tOffer := time.Since(t0)
++	defer func(start time.Time) {
++		c.log.Info().Msgf("rtc: init-webrtc handled in %dms (new-pc %dms, offer %dms, total incl. aux %dms) peer=%s",
++			time.Since(start).Milliseconds(), tPC.Milliseconds(), (tOffer - tPC).Milliseconds(), time.Since(start).Milliseconds(), rq.Id)
++	}(t0)
 +
 +	// The aux audio offer travels in the ice signal field ("aux-sdp:" envelope) — the coordinator
 +	// relays that string verbatim, and the browser buffers aux ICE until this lands. A failure here
