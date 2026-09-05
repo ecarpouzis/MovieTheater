@@ -994,6 +994,13 @@ function getArcadeRooms() {
 // Create a room for a game → returns the creator's join descriptor (empty room_id, isCreator).
 // paceMs: null = no deliberate Network pick (server applies lane defaults — capture 8ms, GL 0);
 // an explicit 0 means "pacing off" and is honored even on capture. Do NOT default it to 0.
+// Ask the gateway to stage a JIT-managed game's ROM now (arcade perf program P7): fired when its modal
+// shows a version, so the extraction that used to happen under "Connecting…" has usually finished
+// before Start. Idempotent and rate-limited server-side; a non-JIT version answers "staged".
+function prewarmArcadeGame(gameId) {
+  return fetch(`/API/Arcade/Game/${encodeURIComponent(gameId)}/Prewarm`, { method: "post" }).catch(() => {});
+}
+
 function createArcadeRoom(gameId, { newGame = false, seedSlot = 0, videoBitrateKbps = 0, audioFec = 0, paceMs = null, cheats = [], videoCodec = "", hwContext = "", renderProfile = "", controllerScheme = "", competitive = false } = {}) {
   return fetch("/API/Arcade/Room", {
     method: "post",
@@ -1866,6 +1873,7 @@ const MovieAPI = {
   getArcadeRenderers,
   getArcadeRooms,
   createArcadeRoom,
+  prewarmArcadeGame,
   getRetroAchievementsStatus,
   linkRetroAchievements,
   unlinkRetroAchievements,

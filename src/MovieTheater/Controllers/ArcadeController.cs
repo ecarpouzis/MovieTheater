@@ -2941,6 +2941,44 @@ namespace MovieTheater.Controllers
         /// <summary>Advance ONE staging chunk for a heavy title (the browser drives the loop — the
         /// bulk-job house rule: bounded per call, progress every chunk, resumable). Anyone age-visible
         /// may prepare; preparing is a disk copy, not a session, so it's allowed while someone plays.</summary>
+        // ── ROM prewarm (arcade perf program P7, 2026-09-05) ────────────────────────────────────────
+        // Per-user token bucket: a modal open is one call; nobody legitimately opens more than a few a
+        // minute, and the gateway serializes extractions anyway (MaxParallelExtractions), so this only
+        // stops a scripted client from queueing the whole catalogue.
+        private static readonly ConcurrentDictionary<int, (DateTime WindowStart, int Count)> prewarmBuckets = new();
+        private const int PrewarmPerMinute = 6;
+
+        /// <summary>Ask the gateway to stage this game's ROM now (JIT-managed titles only; anything else
+        /// answers "staged" and costs nothing). Fired by the game modal the moment a version is on screen,
+        /// so the extraction that used to run under "Connecting…" is usually done before Start. Same gates
+        /// as playing: signed-in + age-visible. Returns the gateway's stage state.</summary>
+        [HttpPost("/API/Arcade/Game/{gameId:int}/Prewarm")]
+        public async Task<IActionResult> PrewarmGame(int gameId)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+            var game = await movieDb.ArcadeGames.FirstOrDefaultAsync(g => g.Id == gameId && g.IsEnabled);
+            if (game == null) return NotFound();
+            if (string.IsNullOrEmpty(game.SourceArchivePath))
+                return Json(new { state = "staged", percent = 100 }); // not JIT-managed: the ROM is already on disk
+            var ageRestriction = await GetAgeRestrictionAsync(userId.Value);
+            if (game.RatingCeiling > ageRestriction)
+                return StatusCode(403, new { message = "This game isn't available on your account." });
+
+            var now = DateTime.UtcNow;
+            var bucket = prewarmBuckets.AddOrUpdate(userId.Value,
+                _ => (now, 1),
+                (_, cur) => now - cur.WindowStart >= TimeSpan.FromMinutes(1) ? (now, 1) : (cur.WindowStart, cur.Count + 1));
+            if (bucket.Count > PrewarmPerMinute)
+                return StatusCode(429, new { message = "Too many prewarm requests; try again in a minute." });
+
+            var resp = await CallGatewayAsync($"internal/rom-prewarm/{gameId}", new { });
+            if (resp == null || !resp.IsSuccessStatusCode)
+                return Json(new { state = "unavailable" }); // the gateway is not configured or unreachable: harmless, Start still stages inline
+            var body = await resp.Content.ReadAsStringAsync();
+            return Content(body, "application/json");
+        }
+
         [HttpPost("/API/Arcade/Heavy/Stage/{gameId:int}")]
         public async Task<IActionResult> HeavyStage(int gameId)
         {

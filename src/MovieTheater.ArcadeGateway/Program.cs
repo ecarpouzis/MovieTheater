@@ -162,6 +162,26 @@ app.MapGet("/healthz", () => Results.Text("ok"));
 //
 // Safe to expose: it takes a capability token like every other endpoint here, and returns nothing beyond
 // the state of a game the caller was already authorized to launch.
+// ROM PREWARM (arcade perf program P7, 2026-09-05). The site pod asks for a JIT-managed game's ROM to be
+// staged NOW — while the player is still reading the card — so the 10-40 s extraction that used to run
+// inline on the /w/{token} connect ("Connecting…") has usually finished before Start is pressed. Same
+// primitive the room page's /rom-status poll uses (BeginMaterialize: detached, joins an in-flight job,
+// MaxParallelExtractions still bounds the disk), reachable over the internal-secret channel instead of a
+// join token. Eviction is unchanged: a prewarmed game is merely warm, only in-session games are pinned.
+app.MapPost("/internal/rom-prewarm/{gameId:int}", (HttpContext ctx, int gameId) =>
+{
+    if (!InternalAuth(ctx)) return Results.Unauthorized();
+    if (romCache is null || !romCache.IsManaged(gameId))
+        return Results.Json(new { state = "unmanaged", percent = 100 });
+    var s = romCache.Status(gameId);
+    if (s.State == RomCache.StageState.Absent)
+    {
+        romCache.BeginMaterialize(gameId);
+        return Results.Json(new { state = "preparing", percent = 0 });
+    }
+    return Results.Json(new { state = s.State.ToString().ToLowerInvariant(), percent = s.Percent, error = s.Error });
+});
+
 app.MapGet("/rom-status/{token}", (HttpContext ctx, string token) =>
 {
     if (!ArcadeCapabilityToken.TryValidate(secret, token, out var payload) || payload is null)
