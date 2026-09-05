@@ -18,7 +18,9 @@
 
   --epg-ppm: 9px;
   --epg-chanw: 248px;
-  --epg-rowh: 96px;
+  /* Guide v2: cells are a headline + one meta line (the plot moved to the page's detail panel), so a
+     row is two lines tall and more channels fit on a screen. */
+  --epg-rowh: 64px;
 }
 
 /* /channels page (R9 S1c): the guide is a PAGE under the SectionBar, not a fixed overlay — a column
@@ -37,28 +39,33 @@
   min-height: 0;
 }
 
-/* ── The detail panel (GuideDetail): poster · title · slot · plot · actions · up next ─────────────
+/* ── The detail panel (GuideDetail, v2): poster · body (eyebrow · title · meta · plot · actions · up
+   next) · the live preview column ────────────────────────────────────────────────────────────────
    Themed like content (it is content), on the section's tokens; the guide beneath keeps its cable-box
-   ground. */
+   ground. The preview column only exists from 768px up (`.guide-detail--preview`); phones get poster +
+   body. */
 .guide-detail {
   position: relative;
   flex: 0 0 auto;
   display: grid;
-  grid-template-columns: 112px minmax(0, 1fr) auto;
+  grid-template-columns: 112px minmax(0, 1fr);
   gap: 18px;
-  padding: 14px 18px;
+  padding: 14px 44px 14px 18px;
   background: var(--card-surface);
   color: var(--text-primary);
   border-bottom: 1px solid var(--card-border);
 }
+.guide-detail--preview { grid-template-columns: 112px minmax(0, 1fr) 336px; }
 .guide-detail__poster { width: 112px; }
 .guide-detail__img { display: block; width: 112px; height: 168px; object-fit: cover; border-radius: 6px; background: #1a2230; }
 .guide-detail__img--empty { background: linear-gradient(135deg, #2b3a4a, #1a2530); }
-.guide-detail__body { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.guide-detail__body { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
 .guide-detail__eyebrow { margin: 0; font-family: var(--font-mono, ui-monospace, monospace); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-secondary); }
 .guide-detail__title { margin: 0; font-family: var(--font-display); font-size: 22px; font-weight: 700; line-height: 1.15; letter-spacing: -0.01em; }
-.guide-detail__plot { margin: 2px 0 0; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); max-width: 70ch; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.guide-detail__actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+/* `2002 · PG · 1h 35m · IMDb 6.6 · Comedy` — the facts line under the title. */
+.guide-detail__meta { margin: 0; font-size: 12.5px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: 0.01em; color: var(--text-secondary); }
+.guide-detail__plot { margin: 2px 0 0; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); max-width: 72ch; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.guide-detail__actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
 .guide-detail__btn {
   appearance: none; cursor: pointer; font: inherit; font-size: 12.5px; font-weight: 600;
   height: 32px; padding: 0 12px; border-radius: 7px; border: 1px solid var(--card-border);
@@ -66,12 +73,14 @@
 }
 .guide-detail__btn:hover { border-color: var(--accent); color: var(--accent); }
 .guide-detail__btn--primary, .guide-detail__btn--primary:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+.guide-detail__btn--secondary { border-color: var(--accent); color: var(--accent); }
 .guide-detail__btn.is-on { border-color: var(--accent); color: var(--accent); }
-.guide-detail__next { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
+/* Up next rides under the actions: a row of small posters with their start times. */
+.guide-detail__next { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
 .guide-detail__next-list { list-style: none; margin: 0; padding: 0; display: flex; gap: 8px; }
-.guide-detail__next-item { display: flex; flex-direction: column; align-items: center; gap: 3px; }
-.guide-detail__next-img { display: block; width: 44px; height: 66px; object-fit: cover; border-radius: 4px; background: #1a2230; }
-.guide-detail__next-time { font-family: var(--font-mono, ui-monospace, monospace); font-size: 10px; color: var(--text-secondary); }
+.guide-detail__next-item { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.guide-detail__next-img { display: block; width: 30px; height: 45px; object-fit: cover; border-radius: 3px; background: #1a2230; }
+.guide-detail__next-time { font-family: var(--font-mono, ui-monospace, monospace); font-size: 9.5px; color: var(--text-secondary); }
 .guide-detail__close {
   position: absolute; top: 8px; right: 8px; width: 30px; height: 30px; border: 0; border-radius: 7px;
   background: transparent; color: var(--text-secondary); font-size: 18px; cursor: pointer;
@@ -79,11 +88,55 @@
 .guide-detail__close:hover { background: var(--chip-neutral-bg); color: var(--text-primary); }
 /* The selected cell is outlined in the guide. */
 .epg-prog[aria-pressed="true"] { box-shadow: inset 0 0 0 2px #40a9ff; }
-@media (max-width: 768px) {
-  .guide-detail { grid-template-columns: 76px minmax(0, 1fr); gap: 12px; padding: 12px 12px 12px; }
+
+/* ── The live preview (GuidePreview): a 16:9 frame over the poster, the picture fading in when the
+   first frame plays, the slot's progress strip beneath. Dark-literal like the grid: it is a picture
+   frame, and a still poster or a paused frame reads the same in both themes. */
+.guide-preview { display: flex; flex-direction: column; gap: 6px; width: 336px; }
+.guide-preview__frame {
+  position: relative; width: 336px; height: 189px; overflow: hidden; border-radius: 8px;
+  background: #0b0f16; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+}
+.guide-preview__poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: brightness(0.55) saturate(0.9); }
+.guide-preview__poster--empty { background: linear-gradient(135deg, #2b3a4a, #1a2530); }
+.guide-preview__video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; opacity: 0; transition: opacity 0.35s; }
+.guide-preview--playing .guide-preview__video { opacity: 1; }
+.guide-preview__arm {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  appearance: none; cursor: pointer; font: inherit; font-size: 13px; font-weight: 700;
+  height: 36px; padding: 0 16px; border-radius: 18px; border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(8, 12, 20, 0.7); color: #fff; backdrop-filter: blur(4px);
+}
+.guide-preview__arm:hover { background: var(--accent); border-color: var(--accent); }
+.guide-preview__caption {
+  position: absolute; left: 10px; bottom: 8px; padding: 2px 8px; border-radius: 4px;
+  font-family: var(--font-mono, ui-monospace, monospace); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase;
+  background: rgba(8, 12, 20, 0.7); color: rgba(255, 255, 255, 0.85);
+}
+.guide-preview__mute {
+  position: absolute; right: 8px; bottom: 8px; width: 30px; height: 30px; border: 0; border-radius: 15px;
+  background: rgba(8, 12, 20, 0.7); color: #fff; font-size: 14px; cursor: pointer; opacity: 0;
+  transition: opacity 0.15s;
+}
+.guide-preview__frame:hover .guide-preview__mute, .guide-preview__mute[aria-pressed="true"] { opacity: 1; }
+.guide-preview__slot { display: flex; flex-direction: column; gap: 4px; }
+.guide-preview__bar { display: block; height: 3px; border-radius: 2px; background: var(--chip-neutral-bg, rgba(127, 127, 127, 0.25)); overflow: hidden; }
+.guide-preview__bar-fill { display: block; height: 100%; background: var(--accent); }
+.guide-preview__times { font-family: var(--font-mono, ui-monospace, monospace); font-size: 10.5px; letter-spacing: 0.06em; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+
+@media (max-width: 1100px) {
+  .guide-detail--preview { grid-template-columns: 96px minmax(0, 1fr) 272px; }
+  .guide-detail--preview .guide-detail__poster, .guide-detail--preview .guide-detail__img { width: 96px; }
+  .guide-detail--preview .guide-detail__img { height: 144px; }
+  .guide-preview, .guide-preview__frame { width: 272px; }
+  .guide-preview__frame { height: 153px; }
+}
+@media (max-width: 767px) {
+  .guide-detail { grid-template-columns: 76px minmax(0, 1fr); gap: 12px; padding: 12px 40px 12px 12px; }
   .guide-detail__img { width: 76px; height: 114px; }
   .guide-detail__next { display: none; }
   .guide-detail__title { font-size: 18px; }
+  .guide-detail__plot { -webkit-line-clamp: 2; }
 }
 
 /* Category band between channel groups (Channels 2.0). Sticky-left so the label stays visible while
@@ -291,9 +344,10 @@
   background: rgba(64, 169, 255, 0.1);
 }
 
-/* Stacked cell: channel id line on top, then the always-visible "what's on now" title + plot. This
-   is the answer to "what's playing" no matter how far the timeline is scrolled — the live block itself
-   can be scrolled off the left, but this stays pinned. */
+/* Stacked cell: channel id line on top, then the always-visible "what's on now" title. This is the
+   answer to "what's playing" no matter how far the timeline is scrolled — the live block itself can be
+   scrolled off the left, but this stays pinned. (The plot used to sit under it; guide v2 keeps the
+   description in the detail panel and the rows two lines tall.) */
 .epg-chan-body {
   flex: 1 1 auto;
   min-width: 0;
@@ -362,15 +416,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.epg-chan-now-desc {
-  font-size: 10.5px;
-  line-height: 1.28;
-  color: rgba(232, 238, 246, 0.58);
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-}
 .epg-chan-now--off {
   font-size: 12px;
   font-style: italic;
@@ -401,9 +446,9 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
+  justify-content: center;
   gap: 3px;
-  padding: 7px 9px;
+  padding: 6px 9px;
   text-align: left;
   border: 1px solid rgba(232, 238, 246, 0.1);
   border-left: none; /* abutting blocks share one seam → a clean continuous schedule, not a chain of pills */
@@ -436,7 +481,7 @@
   font-weight: 500;
 }
 .epg-prog--past .epg-prog-time,
-.epg-prog--past .epg-prog-desc {
+.epg-prog--past .epg-prog-meta {
   color: rgba(232, 238, 246, 0.38);
 }
 .epg-prog--past:hover {
@@ -477,18 +522,26 @@
   font-variant-numeric: tabular-nums;
   color: rgba(64, 169, 255, 0.85);
 }
-/* Plot blurb — fills the rest of the block height (time + title sit above it) so it uses the full bar
-   instead of being cut by a line beneath it. A soft bottom fade makes any overflow clip look intentional. */
-.epg-prog-desc {
+/* The meta line under the headline: `2002 · PG · 1h 35m` / `S03 E09 · Ep title · TV-PG · 30 min`.
+   One line, quiet, tabular so the numbers line up down a column of cells. */
+.epg-prog-meta {
   position: relative;
-  flex: 1 1 auto;
-  min-height: 0;
-  font-size: 12.5px;
-  line-height: 1.36;
-  color: rgba(232, 238, 246, 0.72);
+  flex: 0 0 auto;
+  font-size: 11px;
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+  color: rgba(232, 238, 246, 0.62);
+  white-space: nowrap;
   overflow: hidden;
-  -webkit-mask-image: linear-gradient(to bottom, #000 80%, transparent);
-  mask-image: linear-gradient(to bottom, #000 80%, transparent);
+  text-overflow: ellipsis;
+}
+/* A block that began before the window is cut at the left edge; the ‹ says "continues" (a real guide's
+   cue), so the cut is read as the window's, not the programme's. */
+.epg-prog-clip {
+  flex: 0 0 auto;
+  font-size: 13px;
+  line-height: 1;
+  color: rgba(64, 169, 255, 0.7);
 }
 
 .epg-filler {
@@ -520,17 +573,13 @@
   .epg {
     --epg-ppm: 6px;
     --epg-chanw: 158px;
-    --epg-rowh: 60px;
+    --epg-rowh: 52px;
   }
   .epg-head {
     padding: 10px 14px;
   }
   /* Drop the poster on phones so the narrow column keeps room for the name + now-playing title. */
   .epg-chan-poster {
-    display: none;
-  }
-  /* On phones the now-playing title is the priority; drop its plot blurb to keep the row compact. */
-  .epg-chan-now-desc {
     display: none;
   }
   .epg-chan-viewers,
@@ -544,24 +593,14 @@
   .epg-chan-now-title {
     font-size: 12px;
   }
-  /* Keep a description in each block on phones too, but a short clamped 2-line one (no full-height fill
-     or fade) so it informs without turning every cell into a wall of text. */
   .epg-prog {
-    justify-content: center;
     gap: 2px;
-    padding: 6px 9px;
+    padding: 5px 8px;
   }
   .epg-prog-title {
     font-size: 12px;
   }
-  .epg-prog-desc {
-    flex: 0 1 auto;
-    font-size: 10.5px;
-    line-height: 1.3;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    -webkit-mask-image: none;
-    mask-image: none;
+  .epg-prog-meta {
+    font-size: 10px;
   }
 }

@@ -800,9 +800,11 @@ async function channelJson(url, init) {
 
 // What's on right now: { current, next, skip, restart, viewers, paused }. Also the presence
 // heartbeat — the server counts a caller as watching (see the tv skill), so this is never a
-// throwaway read.
-function getChannelNow(id, signal) {
-  return channelJson(`/API/Channel/${id}/Now`, { signal });
+// throwaway read… unless `peek` is set: a peek is the read-only form the guide's live preview uses
+// (no vote weight, no telemetry beat, never auto-resumes a frozen channel; skip/restart come back
+// null and viewers carries the count only).
+function getChannelNow(id, signal, { peek = false } = {}) {
+  return channelJson(`/API/Channel/${id}/Now${peek ? "?peek=1" : ""}`, { signal });
 }
 
 // This channel's own lineup for the in-room guide list (the cross-channel EPG is getGuideGrid).

@@ -131,8 +131,16 @@ namespace MovieTheater.Controllers
             return Json(new { id = channel.Id, name = channel.Name, description = channel.Description, category = channel.Category, logoPath = channel.LogoPath });
         }
 
+        /// <summary>
+        /// What's on this channel right now, at what offset. This is ALSO the room's presence heartbeat
+        /// (§8): every plain call touches the skip/restart tally, records a telemetry beat and may
+        /// auto-resume a frozen channel. <paramref name="peek"/> is the one read that does NONE of that —
+        /// the guide's live preview uses it to land on the same frame the room would without becoming a
+        /// viewer: no vote weight, no telemetry, no auto-resume, no names. Same DTO; <c>skip</c> and
+        /// <c>restart</c> come back null and <c>viewers.names</c> empty.
+        /// </summary>
         [HttpGet("/API/Channel/{id}/Now")]
-        public async Task<IActionResult> Now(int id)
+        public async Task<IActionResult> Now(int id, bool peek = false)
         {
             var userId = GetCurrentUserId();
             if (userId == null)
@@ -151,7 +159,8 @@ namespace MovieTheater.Controllers
             // pause instant rather than the moving wall clock — the offset (and everything derived
             // from it) holds steady until someone resumes. The window's far edge is frozen too, so a
             // long pause doesn't drag the lineup forward day after day for a channel nobody is advancing.
-            var pausedAt = await TryAutoResumeAsync(channel, userId.Value, now);
+            // A peek must never resume anyone's pause: read the frozen instant as-is.
+            var pausedAt = peek ? channel.PausedAtUtc : await TryAutoResumeAsync(channel, userId.Value, now);
             var clock = pausedAt ?? now;
 
             // Read-only window: enough history to catch a long current item (a movie can run several
@@ -178,6 +187,12 @@ namespace MovieTheater.Controllers
                     kind = t.Kind ?? "movie",
                     posterVersion = t.PosterVersion,
                     title = t.Title ?? "",
+                    year = t.Year,
+                    rating = t.Rating,
+                    season = t.Season,
+                    episode = t.Episode,
+                    seriesTitle = t.SeriesTitle,
+                    episodeTitle = t.EpisodeTitle,
                     // Kind=Utc so this serializes with a trailing 'Z'. EF hands back Unspecified, which the
                     // browser reads as LOCAL time — hours off, which is what left the player's advance and
                     // prewarm timers armed for the wrong instant (the same trap the guide grid documents).
@@ -185,24 +200,32 @@ namespace MovieTheater.Controllers
                 };
             });
 
-            // Polling Now is also the presence heartbeat for the skip/restart tallies (§8)…
-            var status = skipService.Touch(id, current.Id, userId.Value);
-            // …and the durable viewing-telemetry beat (in-memory accumulate, periodic flush). A paused
-            // channel still counts: someone is parked on it, which is exactly the signal we're after.
-            viewTelemetry.RecordBeat(userId.Value, id, now);
+            ChannelSkipService.ChannelStatus? status = null;
+            var viewerIds = skipService.ViewerIds(id);
+            if (!peek)
+            {
+                // Polling Now is also the presence heartbeat for the skip/restart tallies (§8)…
+                status = skipService.Touch(id, current.Id, userId.Value);
+                // …and the durable viewing-telemetry beat (in-memory accumulate, periodic flush). A paused
+                // channel still counts: someone is parked on it, which is exactly the signal we're after.
+                viewTelemetry.RecordBeat(userId.Value, id, now);
+                viewerIds = skipService.ViewerIds(id);
+            }
 
             // Put names to the live presence so the viewer count can reveal who's connected. Yourself
-            // sorts first and is flagged, the rest alphabetically.
-            var viewerIds = skipService.ViewerIds(id);
-            var viewerNames = await movieDb.Users
-                .Where(u => viewerIds.Contains(u.UserID))
-                .Select(u => new { u.UserID, u.Username })
-                .ToListAsync();
+            // sorts first and is flagged, the rest alphabetically. A peek gets the count only.
+            var viewerNames = peek
+                ? new List<ViewerName>()
+                : await movieDb.Users
+                    .Where(u => viewerIds.Contains(u.UserID))
+                    .Select(u => new ViewerName(u.UserID, u.Username))
+                    .ToListAsync();
             var viewers = viewerNames
                 .OrderByDescending(u => u.UserID == userId.Value)
                 .ThenBy(u => u.Username)
                 .Select(u => new { name = u.Username ?? "Someone", you = u.UserID == userId.Value })
                 .ToList();
+            var viewerCount = peek ? viewerIds.Count : viewers.Count;
 
             var cur = titles.GetValueOrDefault(current.PlayableId);
 
@@ -231,9 +254,18 @@ namespace MovieTheater.Controllers
                     posterVersion = cur.PosterVersion,
                     title = cur.Title ?? "",
                     plot = cur.Plot,
+                    year = cur.Year,
+                    rating = cur.Rating,
+                    imdbRating = cur.ImdbRating,
+                    genre = cur.Genre,
+                    seriesTitle = cur.SeriesTitle,
+                    episodeTitle = cur.EpisodeTitle,
+                    season = cur.Season,
+                    episode = cur.Episode,
                     reason,
                     offsetSeconds = Math.Max(0, (clock - current.StartUtc).TotalSeconds),
                     durationSeconds = (current.EndUtc - current.StartUtc).TotalSeconds,
+                    startsAtUtc = DateTime.SpecifyKind(current.StartUtc, DateTimeKind.Utc),
                     endsAtUtc = DateTime.SpecifyKind(current.EndUtc, DateTimeKind.Utc),
                 },
                 next = nextItems,
@@ -241,11 +273,13 @@ namespace MovieTheater.Controllers
                 // viewers converge on the SAME frame instead of each drifting from its own join point.
                 serverNowUtc = DateTime.SpecifyKind(clock, DateTimeKind.Utc),
                 paused = pausedAt != null,
-                viewers = new { count = viewers.Count, names = viewers },
-                skip = new { viewers = status.Skip.Viewers, votes = status.Skip.Votes, required = status.Skip.Required, youVoted = status.Skip.YouVoted },
-                restart = new { viewers = status.Restart.Viewers, votes = status.Restart.Votes, required = status.Restart.Required, youVoted = status.Restart.YouVoted },
+                viewers = new { count = viewerCount, names = viewers },
+                skip = status is { } s1 ? new { viewers = s1.Skip.Viewers, votes = s1.Skip.Votes, required = s1.Skip.Required, youVoted = s1.Skip.YouVoted } : null,
+                restart = status is { } s2 ? new { viewers = s2.Restart.Viewers, votes = s2.Restart.Votes, required = s2.Restart.Required, youVoted = s2.Restart.YouVoted } : null,
             });
         }
+
+        private sealed record ViewerName(int UserID, string? Username);
 
         public class SkipRequest
         {
@@ -506,6 +540,14 @@ namespace MovieTheater.Controllers
                     kind = t.Kind ?? "movie",
                     posterVersion = t.PosterVersion,
                     title = t.Title ?? "",
+                    year = t.Year,
+                    rating = t.Rating,
+                    imdbRating = t.ImdbRating,
+                    genre = t.Genre,
+                    seriesTitle = t.SeriesTitle,
+                    episodeTitle = t.EpisodeTitle,
+                    season = t.Season,
+                    episode = t.Episode,
                     startUtc = i.StartUtc,
                     endUtc = i.EndUtc,
                 };
@@ -603,6 +645,15 @@ namespace MovieTheater.Controllers
                             posterVersion = t.PosterVersion,
                             title = t.Title ?? "",
                             plot = t.Plot,
+                            // The guide's meta line + detail panel (guide v2). Nullable — misc has none.
+                            year = t.Year,
+                            rating = t.Rating,
+                            imdbRating = t.ImdbRating,
+                            genre = t.Genre,
+                            seriesTitle = t.SeriesTitle,
+                            episodeTitle = t.EpisodeTitle,
+                            season = t.Season,
+                            episode = t.Episode,
                             // Pin Kind=Utc so these serialize with a trailing 'Z' and the client parses them
                             // in the same frame as serverNowUtc — EF hands back Unspecified, which would
                             // otherwise be read as browser-local and slide blocks off the "now" line.
@@ -891,22 +942,34 @@ namespace MovieTheater.Controllers
         // Poster + link info for one schedule item. PosterId + Kind ("movie"|"series"|"misc") pick the
         // right /Image route; PosterVersion cache-busts; LinkId is the watch-link id (0 = no link). A
         // value struct so a missing dictionary entry defaults cleanly (Kind/Title null → handled at use).
+        //
+        // The guide-facing facts ride along (guide v2): Year / Rating / ImdbRating / Genre for the detail
+        // panel's meta line, and for an episode the structured Series/Episode split so the grid can print
+        // the series as the cell title and "S03 E09 · Ep" beneath it, while Title keeps the composite
+        // "Series – S03E09 Ep" the search, the in-room list and the tests already read.
         private readonly struct TitleInfo
         {
-            public TitleInfo(int posterId, string kind, int posterVersion, int linkId, string title, string? plot)
-            { PosterId = posterId; Kind = kind; PosterVersion = posterVersion; LinkId = linkId; Title = title; Plot = plot; }
-            public int PosterId { get; }
-            public string Kind { get; }
-            public int PosterVersion { get; }
-            public int LinkId { get; }
-            public string Title { get; }
-            public string? Plot { get; }
+            public int PosterId { get; init; }
+            public string Kind { get; init; }
+            public int PosterVersion { get; init; }
+            public int LinkId { get; init; }
+            public string Title { get; init; }
+            public string? Plot { get; init; }
+            public int? Year { get; init; }
+            public string? Rating { get; init; }
+            public decimal? ImdbRating { get; init; }
+            public string? Genre { get; init; }
+            public string? SeriesTitle { get; init; }
+            public string? EpisodeTitle { get; init; }
+            public int? Season { get; init; }
+            public int? Episode { get; init; }
         }
 
-        // A one-liner for the guide blocks — trim a plot to a bounded length so the cross-channel payload
-        // stays small (the block clamps it to a couple of lines anyway).
+        // The plot for the guide's detail panel — bounded so the cross-channel payload stays small. The
+        // grid cells stopped printing it (guide v2: title + meta line), so it is paid for once per item
+        // and can afford a real paragraph.
         private static string? ShortPlot(string? s) =>
-            string.IsNullOrWhiteSpace(s) ? null : (s.Length > 160 ? s.Substring(0, 160).TrimEnd() + "…" : s);
+            string.IsNullOrWhiteSpace(s) ? null : (s.Length > 320 ? s.Substring(0, 320).TrimEnd() + "…" : s);
 
         // Resolve schedule-item PlayableIds to poster/link info for the lineup readout. Channels air
         // movies, episodes, and misc — each needs the right poster route. An episode shows its SERIES
@@ -917,15 +980,40 @@ namespace MovieTheater.Controllers
             var ids = playableIds.Distinct().ToList();
             var map = new Dictionary<int, TitleInfo>();
 
+            // Rating / year / IMDb precedence mirrors APIController.ToCardDto: the scraped IMDb columns
+            // first, the frozen legacy columns as the fallback, the inferred certificate last.
             var movies = await movieDb.Movies
                 .Where(m => m.PlayableId != null && ids.Contains(m.PlayableId.Value))
-                .Select(m => new { Pid = m.PlayableId!.Value, m.id, m.Title, m.Plot, Ver = m.PosterDetails != null ? m.PosterDetails.PosterVersion : 0 })
+                .Select(m => new
+                {
+                    Pid = m.PlayableId!.Value, m.id, m.Title, m.Plot,
+                    Ver = m.PosterDetails != null ? m.PosterDetails.PosterVersion : 0,
+                    Released = m.ReleaseDate ?? m.ImdbReleaseDate,
+                    Rating = m.MpaaRating ?? m.Rating ?? m.MpaaRatingInferred,
+                    Imdb = m.ImdbRatingScraped ?? m.imdbRating,
+                    m.Genre,
+                })
                 .ToListAsync();
-            foreach (var m in movies) map[m.Pid] = new TitleInfo(m.id, "movie", m.Ver, m.id, m.Title ?? "", ShortPlot(m.Plot));
+            foreach (var m in movies)
+                map[m.Pid] = new TitleInfo
+                {
+                    PosterId = m.id, Kind = "movie", PosterVersion = m.Ver, LinkId = m.id, Title = m.Title ?? "",
+                    Plot = ShortPlot(m.Plot), Year = m.Released?.Year, Rating = m.Rating, ImdbRating = m.Imdb, Genre = m.Genre,
+                };
 
             var eps = await movieDb.Episodes
                 .Where(e => e.PlayableId != null && ids.Contains(e.PlayableId.Value))
-                .Select(e => new { Pid = e.PlayableId!.Value, e.SeriesId, SeriesTitle = e.Series!.Title, SeriesPlot = e.Series!.Plot, e.SeasonNumber, e.EpisodeNumber, e.Title, Ver = e.Series!.PosterDetails != null ? e.Series.PosterDetails.PosterVersion : 0 })
+                .Select(e => new
+                {
+                    Pid = e.PlayableId!.Value, e.SeriesId, SeriesTitle = e.Series!.Title, SeriesPlot = e.Series!.Plot,
+                    e.SeasonNumber, e.EpisodeNumber, e.Title, EpisodePlot = e.Plot, EpisodeImdb = e.ImdbRating,
+                    Ver = e.Series!.PosterDetails != null ? e.Series.PosterDetails.PosterVersion : 0,
+                    Released = e.Series!.ReleaseDate ?? e.Series!.ImdbReleaseDate,
+                    StartYear = e.Series!.StartYear,
+                    Rating = e.Series!.MpaaRating ?? e.Series!.Rating ?? e.Series!.MpaaRatingInferred,
+                    SeriesImdb = e.Series!.ImdbRatingScraped ?? e.Series!.imdbRating,
+                    Genre = e.Series!.Genre,
+                })
                 .ToListAsync();
             foreach (var e in eps)
             {
@@ -934,7 +1022,15 @@ namespace MovieTheater.Controllers
                     ? $"{e.SeriesTitle} – {code}"
                     : $"{e.SeriesTitle} – {code} {e.Title}";
                 int sid = e.SeriesId ?? 0;
-                map[e.Pid] = new TitleInfo(sid, "series", e.Ver, sid, title, ShortPlot(e.SeriesPlot));
+                map[e.Pid] = new TitleInfo
+                {
+                    PosterId = sid, Kind = "series", PosterVersion = e.Ver, LinkId = sid, Title = title,
+                    // A real guide describes the EPISODE; the series blurb is the fallback for unscraped ones.
+                    Plot = ShortPlot(string.IsNullOrWhiteSpace(e.EpisodePlot) ? e.SeriesPlot : e.EpisodePlot),
+                    Year = e.StartYear ?? e.Released?.Year, Rating = e.Rating, ImdbRating = e.EpisodeImdb ?? e.SeriesImdb, Genre = e.Genre,
+                    SeriesTitle = e.SeriesTitle, EpisodeTitle = string.IsNullOrWhiteSpace(e.Title) ? null : e.Title,
+                    Season = e.SeasonNumber, Episode = e.EpisodeNumber,
+                };
             }
 
             var misc = await movieDb.MiscVideos
@@ -943,9 +1039,9 @@ namespace MovieTheater.Controllers
                 .ToListAsync();
             foreach (var mv in misc)
             {
-                if (mv.RelatedMovieId is int rm) map[mv.PlayableId] = new TitleInfo(rm, "movie", 0, rm, mv.Title ?? "", null);
-                else if (mv.RelatedSeriesId is int rs) map[mv.PlayableId] = new TitleInfo(rs, "series", 0, rs, mv.Title ?? "", null);
-                else map[mv.PlayableId] = new TitleInfo(mv.Id, "misc", 0, 0, mv.Title ?? "", null);
+                if (mv.RelatedMovieId is int rm) map[mv.PlayableId] = new TitleInfo { PosterId = rm, Kind = "movie", LinkId = rm, Title = mv.Title ?? "" };
+                else if (mv.RelatedSeriesId is int rs) map[mv.PlayableId] = new TitleInfo { PosterId = rs, Kind = "series", LinkId = rs, Title = mv.Title ?? "" };
+                else map[mv.PlayableId] = new TitleInfo { PosterId = mv.Id, Kind = "misc", Title = mv.Title ?? "" };
             }
 
             return map;

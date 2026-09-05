@@ -4,6 +4,7 @@ import { preloadImages } from "../../preloadImages";
 import "./ChannelGrid.css";
 import FallbackImage from "../../Components/FallbackImage";
 import { nowPlaying } from "./channelNow";
+import { programHeadline, programMeta, rowMatches } from "./guideModel";
 
 const MS_PER_MIN = 60_000;
 
@@ -30,12 +31,21 @@ export function clockLabel(ms) {
  * `query` and `favoriteIds` narrow which ROWS are drawn (the guide page binds them to the section
  * bar's search box and its Favourites pill). They filter here rather than in the caller because a
  * search has to reach the PROGRAMS, and the lineup is fetched in this component.
+ *
+ * `onLineup({ byId, serverNowUtc, skewMs })` fires after every successful load so the guide page can
+ * auto-select a programme and keep its detail panel on the same server clock as the now line.
+ *
+ * Cells are title + a meta line (guide v2: `2002 · PG · 1h 35m`, `S03 E09 · Ep · TV-PG · 30 min`);
+ * the plot lives in the page's detail panel. A block that began before the window is cut at the left
+ * edge and marked with a ‹ so it reads as "continues" rather than "starts here".
  */
-function ChannelGrid({ open, channels, currentChannelId, onPick, onClose, onPickProgram, selectedKey, query = "", favoriteIds = null }) {
+function ChannelGrid({ open, channels, currentChannelId, onPick, onClose, onPickProgram, selectedKey, query = "", favoriteIds = null, onLineup }) {
   const [lineup, setLineup] = useState(null); // { serverNowUtc, hours, byId } or null while loading
   const [nowMs, setNowMs] = useState(() => Date.now());
   const scrollRef = useRef(null);
   const didScrollRef = useRef(false);
+  const onLineupRef = useRef(onLineup);
+  onLineupRef.current = onLineup;
 
   // Track the server↔client clock skew captured at fetch time, so the "now" line sits where the
   // server thinks now is even if the browser clock is off.
@@ -65,6 +75,7 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose, onPick
         lookbackMinutes: data.lookbackMinutes ?? 30,
         byId,
       });
+      onLineupRef.current?.({ byId, serverNowUtc: data.serverNowUtc, skewMs: skewRef.current });
 
       // Preload every channel's now-playing poster up front (~121 small thumbs, one per row) so
       // scrolling the guide never snaps a poster in. "auto" priority — here the posters are the content.
@@ -172,21 +183,14 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose, onPick
     didScrollRef.current = true;
   }, [open, lineup, nowPct]);
 
-  // The guide's filter. A row survives when it is a favourite (while the pill is on) AND matches the
-  // search — matched against the channel's own name and category AND against every program title in
-  // the fetched window, so typing a film's name finds the channel showing it. `idx` is taken BEFORE
-  // filtering: it is the channel NUMBER, which has to keep matching the 1-9 tune hotkeys.
+  // The guide's filter (guideModel.rowMatches — shared with the page, which auto-selects the first
+  // VISIBLE row's programme). `idx` is taken BEFORE filtering: it is the channel NUMBER, which has to
+  // keep matching the 1-9 tune hotkeys.
   const numbered = useMemo(() => {
     const all = channels.map((ch, idx) => ({ ch, idx }));
     const needle = query.trim().toLowerCase();
     if (!needle && !favoriteIds) return all;
-    return all.filter(({ ch }) => {
-      if (favoriteIds && !favoriteIds.has(Number(ch.id))) return false;
-      if (!needle) return true;
-      if ((ch.name || "").toLowerCase().includes(needle)) return true;
-      if ((ch.category || "").toLowerCase().includes(needle)) return true;
-      return (lineup?.byId.get(ch.id)?.items || []).some((p) => (p.title || "").toLowerCase().includes(needle));
-    });
+    return all.filter(({ ch }) => rowMatches(ch, lineup?.byId.get(ch.id)?.items, needle, favoriteIds));
   }, [channels, query, favoriteIds, lineup]);
 
   // Group channels by category so each shelf appears exactly once, even when a category's channels
@@ -281,7 +285,6 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose, onPick
                     {np ? (
                       <span className="epg-chan-now">
                         <span className="epg-chan-now-title">{np.title}</span>
-                        {np.plot && <span className="epg-chan-now-desc">{np.plot}</span>}
                       </span>
                     ) : (
                       <span className="epg-chan-now epg-chan-now--off">Off air</span>
@@ -308,23 +311,26 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose, onPick
                     const drawnStart = Math.max(startMs, win.startMs);
                     const drawnEnd = Math.min(endMs, win.endMs);
                     const elapsedPct = live ? ((nowMs - drawnStart) / (drawnEnd - drawnStart)) * 100 : 0;
+                    const clipped = startMs < win.startMs;
+                    const meta = programMeta(prog);
                     return (
                       <button
                         key={i}
-                        className={`epg-prog${live ? " epg-prog--live" : ""}${endMs <= nowMs ? " epg-prog--past" : ""}`}
+                        className={`epg-prog${live ? " epg-prog--live" : ""}${endMs <= nowMs ? " epg-prog--past" : ""}${clipped ? " epg-prog--clipped" : ""}`}
                         style={{ left: `${left}%`, width: `${width}%` }}
                         aria-pressed={selectedKey != null && selectedKey === `${ch.id}:${prog.startUtc}` ? true : undefined}
                         onClick={() => (onPickProgram ? onPickProgram(ch, prog, row.items) : onPick(ch))}
                         title={`${prog.title} · ${clockLabel(startMs)}–${clockLabel(endMs)}`}
                       >
                         {live && <span className="epg-prog-elapsed" style={{ width: `${elapsedPct}%` }} aria-hidden="true" />}
-                        {/* Title + time share one line so the plot below gets the full remaining height.
-                            Title leads (aligns down the left edge for scanning); start time sits at right. */}
+                        {/* Headline + start time on one line; the meta line beneath. An episode is headlined by
+                            its series — the S/E and episode title are the meta's lead, as on a real guide. */}
                         <span className="epg-prog-head">
-                          <span className="epg-prog-title">{prog.title}</span>
+                          {clipped && <span className="epg-prog-clip" aria-hidden="true">‹</span>}
+                          <span className="epg-prog-title">{programHeadline(prog)}</span>
                           <span className="epg-prog-time">{clockLabel(startMs)}</span>
                         </span>
-                        {prog.plot && <span className="epg-prog-desc">{prog.plot}</span>}
+                        {meta && <span className="epg-prog-meta">{meta}</span>}
                       </button>
                     );
                   })}

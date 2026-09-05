@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { useParams, useHistory } from "react-router-dom";
+import { useParams, useHistory, useLocation } from "react-router-dom";
 import Hls from "hls.js";
 import { MovieAPI } from "../../MovieAPI";
 import { formatTime, TICKS_PER_SECOND } from "../Watch/VideoPlayer";
@@ -23,6 +23,7 @@ import { SubtitleStyleControls, SubtitleStylePreview, SubtitleSyncControls } fro
 
 import ChannelAdminModal from "./ChannelAdminModal";
 import ChannelGrid from "./ChannelGrid";
+import { restartIntent } from "./guideModel";
 import "./TvPage.css";
 import FallbackImage from "../../Components/FallbackImage";
 import { readStored, writeStored, STREAM_QUALITY_KEY } from "../../utils/storage";
@@ -37,6 +38,12 @@ import { readStored, writeStored, STREAM_QUALITY_KEY } from "../../utils/storage
  */
 function TvPage({ userData }) {
   const { channelId } = useParams();
+  const location = useLocation();
+  // The guide's "Start over" arrives as `/tv/<id>?restart=1` (guideModel.restartHref). Read ONCE, at
+  // first render — the channel effect below history.replace()s the bare path before the first tune
+  // runs — and consumed inside that tune: the Restart vote is cast between Now and Start, so a lone
+  // viewer lands at 0:00 in ONE tune (one ffmpeg), not tune → restart → tune.
+  const restartForRef = useRef(restartIntent(location.search) && channelId ? String(channelId) : null);
   const history = useHistory();
 
   const roomRef = useRef(null);
@@ -482,6 +489,33 @@ function TvPage({ userData }) {
           setRestart(null);
           setViewers(null);
           return;
+        }
+        // The guide's Start over: cast the room's Restart vote now, before anything is streamed. Alone,
+        // it carries and the schedule item rewinds to the top — re-read Now so this same tune joins at
+        // ~0:00. With others present the vote is merely cast; the tally below shows it. Either way the
+        // intent is spent — it never re-fires on a later re-tune or channel hop.
+        if (restartForRef.current != null && String(restartForRef.current) === String(chan.id)) {
+          restartForRef.current = null;
+          try {
+            const vote = await MovieAPI.voteChannelRestart(chan.id, nowData.current.itemId ?? 0);
+            if (superseded()) return;
+            if (vote.restarted) {
+              askedAt = performance.now();
+              nowData = await MovieAPI.getChannelNow(chan.id);
+              answeredAt = performance.now();
+              if (superseded()) return;
+              setNow(nowData);
+              if (!nowData.current) {
+                setOffAir(true);
+                setTuning(false);
+                return;
+              }
+            } else {
+              nowData = { ...nowData, restart: vote.restart || nowData.restart };
+            }
+          } catch {
+            /* the plain tune goes ahead at the live offset */
+          }
         }
         currentItemIdRef.current = nowData.current.itemId ?? null;
         currentEndsAtRef.current = nowData.current.endsAtUtc ?? null;

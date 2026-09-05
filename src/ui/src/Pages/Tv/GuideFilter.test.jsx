@@ -15,7 +15,7 @@ const GRID = {
   hours: 6,
   lookbackMinutes: 30,
   items: [
-    { id: 1, items: [{ title: "Out of the Past", startUtc: at(20), endUtc: at(22) }] },
+    { id: 1, items: [{ title: "Out of the Past", plot: "A private eye escapes his past.", year: 1947, rating: "Approved", startUtc: at(20), endUtc: at(22) }] },
     { id: 2, items: [{ title: "Duck Amuck", startUtc: at(20), endUtc: at(21) }] },
     { id: 3, items: [{ title: "Gilda", startUtc: at(20), endUtc: at(22) }] },
   ],
@@ -77,6 +77,14 @@ describe("Tv/ChannelGrid — the guide filter", () => {
     renderGuide({ favoriteIds: new Set() });
     await waitFor(() => expect(screen.getByText(/No favourite channels yet/)).toBeTruthy());
     expect(screen.queryByText("Late Night Noir")).toBeNull();
+  });
+
+  it("draws a cell as headline + meta line, and keeps the plot for the detail panel", async () => {
+    renderGuide();
+    // The title appears twice (the sticky channel column's "now" line and the cell itself).
+    await waitFor(() => expect(screen.getAllByText("Out of the Past").length).toBeGreaterThan(0));
+    expect(screen.getByText("1947 · Approved · 2h")).toBeTruthy();
+    expect(screen.queryByText("A private eye escapes his past.")).toBeNull();
   });
 
   it("says so when a search matches nothing", async () => {
