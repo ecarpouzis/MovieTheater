@@ -12,7 +12,7 @@ import { rowMatches } from "./guideModel";
  * The /channels destination IS the cross-channel grid guide (the EPG). It sits in the content
  * area under the SectionBar (R9 S1c — it used to pin itself fixed over the whole window) with the
  * real-TV-guide move above it: a detail panel at the top for the selected programme (poster, the meta
- * line, description, ▶ Tune in / ↺ Start over, Open title, ♥ the channel, up next — and, on desktop,
+ * line, description, ▶ Tune in / ↺ Start over, Open title, ♥ the channel — and, on desktop,
  * the live preview). Guide v2 (2026-09-04) made that panel behave like a cable box:
  *
  *   * something is ALWAYS selected: the first visible row's current programme is picked as soon as
@@ -160,7 +160,7 @@ export default function ChannelGuidePage({ userData, setUserData }) {
       <ChannelGrid
         open
         channels={channels}
-        currentChannelId={null}
+        currentChannelId={selected?.channel.id ?? null}
         onPick={(ch) => history.push("/tv/" + ch.id)}
         onPickProgram={onPickProgram}
         onLineup={onLineup}

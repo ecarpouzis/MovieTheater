@@ -314,7 +314,7 @@
 .epg-tick-label {
   position: absolute;
   left: 7px;
-  top: 10px;
+  top: 6px;
   font-size: 11.5px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
@@ -330,6 +330,26 @@
   background: #e3553f;
   transform: translateX(-1px);
 }
+/* The current time rides the flag, low in the axis so the half-hour labels above stay readable. */
+.epg-nowflag-time {
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 15px;
+  padding: 0 6px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  background: #e3553f;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
 
 /* ── channel rows ───────────────────────────────────────────────────────────── */
 .epg-row {
@@ -340,11 +360,14 @@
   content-visibility: auto;
   contain-intrinsic-size: var(--epg-rowh) 1200px;
 }
+/* In the room: the channel you are watching. On /channels: the row of the selected programme (the
+   page passes the selection as currentChannelId), so the eye ties the panel to its row. */
 .epg-row--current .epg-chan {
   box-shadow: inset 3px 0 0 #40a9ff;
+  background: #101826;
 }
 .epg-row--current .epg-track {
-  background: rgba(64, 169, 255, 0.04);
+  background: rgba(64, 169, 255, 0.05);
 }
 
 .epg-chan {

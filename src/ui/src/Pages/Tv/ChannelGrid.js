@@ -42,8 +42,6 @@ export function clockLabel(ms) {
 function ChannelGrid({ open, channels, currentChannelId, onPick, onClose, onPickProgram, selectedKey, query = "", favoriteIds = null, onLineup }) {
   const [lineup, setLineup] = useState(null); // { serverNowUtc, hours, byId } or null while loading
   const [nowMs, setNowMs] = useState(() => Date.now());
-  const scrollRef = useRef(null);
-  const didScrollRef = useRef(false);
   const onLineupRef = useRef(onLineup);
   onLineupRef.current = onLineup;
 
@@ -96,7 +94,6 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose, onPick
   // a frequent poll would be wasted work — the now line moves on its own between refreshes).
   useEffect(() => {
     if (!open) return undefined;
-    didScrollRef.current = false;
     let stopped = false;
     let handle;
     let attempt = 0;
@@ -171,17 +168,11 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose, onPick
 
   const nowPct = pct(nowMs);
 
-  // On first paint after a load, nudge the horizontal scroll so the now line is just inside the left
-  // edge with a little lead-in (helps on phones where the grid starts wider than the screen).
-  useEffect(() => {
-    if (!open || didScrollRef.current || !lineup) return;
-    const el = scrollRef.current;
-    const track = el?.querySelector(".epg-track");
-    if (!el || !track) return;
-    const trackLeft = track.offsetLeft;
-    el.scrollLeft = Math.max(0, trackLeft + (nowPct / 100) * track.offsetWidth - track.offsetWidth * 0.06);
-    didScrollRef.current = true;
-  }, [open, lineup, nowPct]);
+  // No first-paint scroll nudge. The window opens at most 30 min before now (the previous half hour),
+  // so the now line is never more than ~270px into the track and everything is in view at scrollLeft 0.
+  // The nudge this replaced added the track's own offsetLeft — which IS the sticky column's width — so it
+  // scrolled the window's start under the column: the now line vanished and every live block's title
+  // ("‹ Green Mile, The") sat hidden behind the channel cell (2026-09-05).
 
   // The guide's filter (guideModel.rowMatches — shared with the page, which auto-selects the first
   // VISIBLE row's programme). `idx` is taken BEFORE filtering: it is the channel NUMBER, which has to
@@ -224,7 +215,7 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose, onPick
         <button className="epg-close" onClick={onClose} aria-label="Close guide">×</button>
       </div>
 
-      <div className="epg-scroll" ref={scrollRef} style={{ "--epg-totalmin": win.totalMin }}>
+      <div className="epg-scroll" style={{ "--epg-totalmin": win.totalMin }}>
         <div className="epg-body">
           {/* time axis */}
           <div className="epg-timehead">
@@ -235,7 +226,9 @@ function ChannelGrid({ open, channels, currentChannelId, onPick, onClose, onPick
                   <span className="epg-tick-label">{t.label}</span>
                 </div>
               ))}
-              <div className="epg-nowflag" style={{ left: `${nowPct}%` }} aria-hidden="true" />
+              <div className="epg-nowflag" style={{ left: `${nowPct}%` }} aria-hidden="true">
+                <span className="epg-nowflag-time">{clockLabel(nowMs)}</span>
+              </div>
             </div>
           </div>
 
