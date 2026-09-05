@@ -43,6 +43,22 @@ namespace ArcadeCaptureHost
                 return 3;
             }
 
+            // Priority (2026-09-05): the worker that spawns us runs at HIGH (its runner raises the CHILD
+            // explicitly, because a raised class never inherits — Windows propagates only Idle/BelowNormal
+            // to children), so we started life at NORMAL, on the worker's inherited P-core mask, while the
+            // captured game runs at NORMAL across every P-core thread. A saturating title could starve the
+            // WGC frame thread. Raise ourselves once; a failure is logged and harmless.
+            try
+            {
+                using var self = Process.GetCurrentProcess();
+                self.PriorityClass = ProcessPriorityClass.High;
+                Emit($"{{\"event\":\"priority\",\"class\":\"{self.PriorityClass}\"}}");
+            }
+            catch (Exception ex)
+            {
+                Emit($"{{\"event\":\"error\",\"detail\":\"priority raise failed: {Escape(ex.Message)}\"}}");
+            }
+
             // The ring geometry is fixed for the room (the worker builds a fixed-geometry encode pipeline).
             // If width/height weren't passed, size to the window's first captured content (probed below).
             SharedFrameRing ring = null;

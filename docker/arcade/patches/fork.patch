@@ -9493,10 +9493,10 @@ index 0000000..0648c39
 +}
 diff --git a/pkg/worker/caged/capture/d3d11window.go b/pkg/worker/caged/capture/d3d11window.go
 new file mode 100644
-index 0000000..8af80b1
+index 0000000..327ea23
 --- /dev/null
 +++ b/pkg/worker/caged/capture/d3d11window.go
-@@ -0,0 +1,182 @@
+@@ -0,0 +1,190 @@
 +package capture
 +
 +// Window ZERO-COPY (capture lane v2). In v1 the ArcadeCaptureHost helper reads each WGC frame back to
@@ -9587,14 +9587,23 @@ index 0000000..8af80b1
 +
 +func (a *App) d11DurNs() uint64 { return uint64(time.Second / time.Duration(a.fps())) }
 +
++// d11WallDurNs stamps the push with the WALL-CLOCK gap since the previous push (caller holds d11Mu),
++// not the nominal 1/fps. See wallDur — the capture lane's frame source is WGC, which delivers only
++// what the game presents (56.8 fps on the 2026-09-02 Bloodborne room), and every one of those frames
++// stamped 1/60 s made the RTP video clock run ~6% slow (74.6 s of RTP time over 79.7 s of wall).
++func (a *App) d11WallDurNs(now time.Time) uint64 {
++	d := a.wallDur(a.d11LastPush, now)
++	a.d11LastPush = now
++	return uint64(d)
++}
++
 +// d11PushSlot copies shared texture[slot] into a pool buffer and pushes it (serialized under d11Mu so
 +// the media pipe's forced-keyframe counters stay single-threaded across the read loop and re-push).
 +func (a *App) d11PushSlot(slot int) {
 +	a.d11Mu.Lock()
 +	a.d11Black.Store(false)
 +	atomic.StoreInt32(&a.lastSlot, int32(slot))
-+	a.d11LastPush = time.Now()
-+	a.d11Sink.PushD3D11Slot(slot, a.width(), a.height(), a.d11DurNs())
++	a.d11Sink.PushD3D11Slot(slot, a.width(), a.height(), a.d11WallDurNs(time.Now()))
 +	a.d11Mu.Unlock()
 +	a.frameMu.Lock()
 +	a.frames++ // heartbeat counter (same lock v1 uses, so the tick read stays consistent)
@@ -9605,8 +9614,7 @@ index 0000000..8af80b1
 +func (a *App) d11PushBlack() {
 +	a.d11Mu.Lock()
 +	a.d11Black.Store(true)
-+	a.d11LastPush = time.Now()
-+	a.d11Sink.PushD3D11Black(a.width(), a.height(), a.d11DurNs())
++	a.d11Sink.PushD3D11Black(a.width(), a.height(), a.d11WallDurNs(time.Now()))
 +	a.d11Mu.Unlock()
 +}
 +
@@ -10619,10 +10627,10 @@ index 0000000..ffa2517
 +}
 diff --git a/pkg/worker/caged/capture/pipeline.go b/pkg/worker/caged/capture/pipeline.go
 new file mode 100644
-index 0000000..eedaea2
+index 0000000..8678ce2
 --- /dev/null
 +++ b/pkg/worker/caged/capture/pipeline.go
-@@ -0,0 +1,337 @@
+@@ -0,0 +1,372 @@
 +package capture
 +
 +/*
@@ -10846,22 +10854,58 @@ index 0000000..eedaea2
 +	a.lastFrame = a.lastFrame[:len(src)]
 +	copy(a.lastFrame, src)
 +	a.lastStride = stride
-+	a.lastDur = dur
-+	a.lastPush = time.Now()
++	a.lastDur = dur // nominal 1/fps: the first-push fallback only (see wallDur)
 +	a.pushLocked()
 +	a.frameMu.Unlock()
 +}
 +
-+// pushLocked emits the cached frame to videoCb. Caller holds frameMu.
++// wallDur is the duration a capture-lane frame is pushed with: the WALL-CLOCK gap since the previous
++// push, clamped, never the nominal 1/fps.
++//
++// Why (2026-09-05): pion advances a track's RTP timestamp by each sample's Duration, so the sum of the
++// durations we hand it IS the video clock the browser sees (webrtc.go, [ts-mono] / pendingNanos). The
++// libretro lanes can stamp 1/fps because a core paces itself at exactly its declared rate. This lane
++// cannot: its source is WGC, which delivers only what the game presents — the 2026-09-02 Bloodborne
++// room delivered 4527 frames in 79.7 s (56.8 fps), every one stamped 16.67 ms, so 74.6 s of RTP time
++// went by in 79.7 s of wall time: a video clock ~6% slow, ~5 s behind per 80 s played. webrtc.go's own
++// pendingNanos note names the consequence (the picture drifts behind its audio and it gets worse the
++// longer you play) and fixes it for SVC drops; it was never fixed at this source. The same rule makes
++// a re-pushed static frame carry its real ~500 ms instead of 16 ms.
++//
++// The gap BEFORE a frame is used as that frame's duration (the gap AFTER it is unknowable at push
++// time) — a one-frame phase shift with the rate exactly on wall-clock, versus a rate error that
++// compounds forever. Clamped to [1 ms, 2 s]: never <= 0 (pion's clock would stall — the [ts-mono]
++// probe counts that as a regression) and never a multi-second jump after a stall.
++func (a *App) wallDur(prev, now time.Time) time.Duration {
++	if prev.IsZero() {
++		return a.lastDurNominal()
++	}
++	d := now.Sub(prev)
++	if d < time.Millisecond {
++		d = time.Millisecond
++	} else if d > 2*time.Second {
++		d = 2 * time.Second
++	}
++	return d
++}
++
++// lastDurNominal is 1/fps — the duration of the very first push (no previous push to measure from).
++func (a *App) lastDurNominal() time.Duration { return time.Second / time.Duration(a.fps()) }
++
++// pushLocked emits the cached frame to videoCb, stamped with the wall-clock gap since the previous
++// push (wallDur), and records the push time. Caller holds frameMu.
 +func (a *App) pushLocked() {
 +	cb := a.videoCb
 +	if cb == nil || len(a.lastFrame) == 0 {
 +		return
 +	}
++	now := time.Now()
++	dur := a.wallDur(a.lastPush, now)
++	a.lastPush = now
 +	a.frames++
 +	cb(app.Video{
 +		Frame:    app.RawFrame{Data: a.lastFrame, Stride: a.lastStride, W: a.width(), H: a.height()},
-+		Duration: a.lastDur,
++		Duration: dur,
 +	})
 +}
 +
@@ -10878,8 +10922,7 @@ index 0000000..eedaea2
 +		case <-t.C:
 +			a.frameMu.Lock()
 +			if len(a.lastFrame) > 0 && time.Since(a.lastPush) > 500*time.Millisecond {
-+				a.lastPush = time.Now()
-+				a.pushLocked()
++				a.pushLocked() // stamps its own push time (and the real ~500 ms gap as the duration)
 +			}
 +			a.frameMu.Unlock()
 +		}
@@ -92133,10 +92176,10 @@ index 0000000..a98cd97
 +}
 diff --git a/pkg/worker/media/d3d11zerocopy.go b/pkg/worker/media/d3d11zerocopy.go
 new file mode 100644
-index 0000000..d76fe6d
+index 0000000..ac1cad7
 --- /dev/null
 +++ b/pkg/worker/media/d3d11zerocopy.go
-@@ -0,0 +1,308 @@
+@@ -0,0 +1,326 @@
 +package media
 +
 +// D3D11 cross-process zero-copy for the capture lane's WINDOW mode (capture lane v2).
@@ -92295,6 +92338,24 @@ index 0000000..d76fe6d
 +
 +	IDXGIKeyedMutex_ReleaseSync(d11_km[slot], 0);
 +	d11_push_buffer(src, mem, d11_w, d11_h, durNs);
++
++	// ALWAYS-ON appsrc-depth localization (2026-09-05) — the same line the GL head has carried since
++	// 2026-07-17 ([zc-appsrc], glzerocopy.go), which this lane shipped without. The appsrc queue and the
++	// pool behind it are UNBOUNDED: if the encoder ever stalls, frames pile up here and the latency never
++	// drains (a live source never pauses). A steady ~0-1 here means the backlog, if any, is downstream
++	// (encoder / video_q / pacer); a growing number is the evidence a max-buffers + leaky-type bound
++	// would need before it is added — the GL lane's blanket leaky appsrc shed frames in steady state and
++	// was reverted, so the bound is NOT applied on a guess. Every 600 pushes / ~10 s, so it is free.
++	{
++		static unsigned long long d11_push_n = 0;
++		if ((++d11_push_n % 600) == 0) {
++			guint64 lvlb = 0, lvlbytes = 0;
++			g_object_get(G_OBJECT(src), "current-level-buffers", &lvlb, "current-level-bytes", &lvlbytes, NULL);
++			g_printerr("[d11-appsrc] push#%llu appsrc queue: %llu buffers, %llu bytes (slot %d, %dx%d)\n",
++			           (unsigned long long) d11_push_n, (unsigned long long) lvlb, (unsigned long long) lvlbytes,
++			           slot, d11_w, d11_h);
++		}
++	}
 +	return 1;
 +}
 +
@@ -92842,10 +92903,10 @@ index 0000000..923f87c
 +	}
 +}
 diff --git a/pkg/worker/media/gstreamer.go b/pkg/worker/media/gstreamer.go
-index 4a6171f..87a31ac 100644
+index 4a6171f..d860996 100644
 --- a/pkg/worker/media/gstreamer.go
 +++ b/pkg/worker/media/gstreamer.go
-@@ -1,579 +1,1157 @@
+@@ -1,579 +1,1167 @@
 -package media
 -
 -import (
@@ -94290,7 +94351,17 @@ index 4a6171f..87a31ac 100644
 +		// videoconvert here would drag it back to system memory, the whole round trip v2 removes), and the
 +		// nvautogpu*enc reads the NV12 D3D11Memory straight out of VRAM. framerate on the source caps so a
 +		// static screen doesn't starve negotiation (the re-push ticker keeps frames flowing regardless).
-+		build.write("appsrc name=video_src is-live=true ")
++		//
++		// format=time (2026-09-05): appsrc defaults to a BYTES segment, and every GstD3D11 base-filter
++		// element downstream (d3d11convert here) calls gst_segment_to_stream_time(…, GST_FORMAT_TIME, …)
++		// on EVERY buffer — under a BYTES segment that is a GStreamer-CRITICAL per frame on the encoder's
++		// streaming thread (82k lines = 10.75 of the 11.4 MB glworker-3.log; 317k in the rotated one).
++		// Proven offline: filesrc (BYTES) ! d3d11upload ! d3d11convert asserts twice per buffer, the CPU and
++		// GL chains never do, and the same chain under a TIME segment is clean. No PTS is stamped (none of
++		// the other heads stamp one either): a TIME segment with PTS=NONE buffers is exactly what the GL
++		// head already flows, and basesrc does no clock sync without a timestamp. The GL/CPU heads keep
++		// their BYTES default — nothing on those chains asserts, and they are not being touched.
++		build.write("appsrc name=video_src is-live=true format=time ")
 +		var fn, fd C.gint
 +		C.doubleToFraction(C.gdouble(fps), &fn, &fd)
 +		build.writef(`caps="video/x-raw(memory:D3D11Memory),format=BGRA,width=%d,height=%d,framerate=%d/%d" `, w, h, int(fn), int(fd))
