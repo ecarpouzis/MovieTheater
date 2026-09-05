@@ -56,6 +56,7 @@ const NO_VALUES: FacetValue[] = [];
 function RailBody({ spec, state, actions, facets, facetsLoading, total, grouped, saved, activeCount, title, search = true }: FacetRailProps) {
   const [saving, setSaving] = useState(false);
   const [savedOpen, setSavedOpen] = useState(false);
+  const canSave = !!saved?.onSave && activeCount > 0;
   const noun = spec.noun ?? "results";
   // A fixed-scale range sits under the facet it names (`after`); the rest follow every facet.
   const rangesAfter = (key: string | null) => (spec.ranges ?? []).filter((r) => (key == null ? !r.after || !spec.facets.some((f) => f.key === r.after) : r.after === key));
@@ -120,28 +121,30 @@ function RailBody({ spec, state, actions, facets, facetsLoading, total, grouped,
         )}
       </div>
 
-      {/* Saved views: one disclosure line at the FOOT of the filters, drawn only when there are some
-          (or a save is in progress) — a minimally-used feature must not cost every rail its space
-          (Eric, 2026-09-04). "+ Save view" lives in the chip row over the results (RailChips). */}
-      {saved && (saving || saved.list.length > 0) && (
+      {/* Saved views: ONE disclosure line at the FOOT of the filters, in every section — collapsed, with
+          the count; open, the saved pills and "+ Save view" (drawn only while a filter is active). This
+          is the tool's one home (Eric, 2026-09-05): the chip row over the results offers no second
+          save button. A minimally-used feature costs one line, never a block. */}
+      {saved && (
         <div className="bx-rail-savedwrap">
-          {saving
-            ? <SaveSearchPrompt onSave={(name) => { saved.onSave?.(name); setSaving(false); }} onCancel={() => setSaving(false)} />
-            : (
-              <>
-                <button type="button" className="bx-saved-line" aria-expanded={savedOpen} onClick={() => setSavedOpen((v) => !v)}>
-                  <span className="bx-saved-line-ic" aria-hidden="true">★</span>
-                  Saved views
-                  <span className="bx-saved-line-n">{saved.list.length}</span>
-                  <span className={`bx-rsec-carat${savedOpen ? " open" : ""}`} aria-hidden="true">▾</span>
-                </button>
-                {savedOpen && (
-                  <div className="bx-saved-open">
+          <button type="button" className="bx-saved-line" aria-expanded={savedOpen} onClick={() => setSavedOpen((v) => !v)}>
+            <span className="bx-saved-line-ic" aria-hidden="true">★</span>
+            Saved views
+            <span className="bx-saved-line-n">{saved.list.length}</span>
+            <span className={`bx-rsec-carat${savedOpen ? " open" : ""}`} aria-hidden="true">▾</span>
+          </button>
+          {savedOpen && (
+            <div className="bx-saved-open">
+              {saving
+                ? <SaveSearchPrompt onSave={(name) => { saved.onSave?.(name); setSaving(false); }} onCancel={() => setSaving(false)} />
+                : (
+                  <>
                     <SavedSearchesRail list={saved.list} onApply={saved.onApply} onRemove={saved.onRemove} />
-                  </div>
+                    {canSave && <button type="button" className="bx-chip-save bx-rail-savebtn" onClick={() => setSaving(true)}>＋ Save view</button>}
+                  </>
                 )}
-              </>
-            )}
+            </div>
+          )}
         </div>
       )}
     </>

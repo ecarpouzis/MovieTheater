@@ -135,12 +135,12 @@ export function musicFacetSpec(identity: string, albums: readonly MusicAlbumRow[
     text: true,
     years: { decadesKey: "decades", decadePills: false },
     facets: [
-      { key: "kind", token: "kind", label: "Shelf", one: "Shelf", valueType: "string", render: "pill", defaultOpen: true, excludable: false, showCounts: false, labelOf: (v) => shelfOf(normalizeKind(String(v))).label },
-      { key: "artist", token: "artist", label: "Artist", one: "Artist", valueType: "number", defaultOpen: true },
+      { key: "kind", token: "kind", label: "Shelf", one: "Shelf", valueType: "string", render: "pill", excludable: false, showCounts: false, labelOf: (v) => shelfOf(normalizeKind(String(v))).label },
+      { key: "artist", token: "artist", label: "Artist", one: "Artist", valueType: "number" },
       // R9 S10. `dynamic` because music genre tags are an open set of thousands with no authority
       // behind them — the rail searches and pages the long tail instead of drawing it all. Counts
       // come from the shelf the browser already holds, so the option list costs no request.
-      { key: "genre", token: "genre", label: "Genre", one: "Genre", valueType: "string", dynamic: true, defaultOpen: true },
+      { key: "genre", token: "genre", label: "Genre", one: "Genre", valueType: "string", dynamic: true },
       { key: "tag", token: "tag", label: "Tag", one: "Tag", valueType: "string" },
     ],
     // The floor the URL already carried (`r=`, the codec's own param) — now that there is a score

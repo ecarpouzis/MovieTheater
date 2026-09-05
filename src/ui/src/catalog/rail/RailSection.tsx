@@ -1,15 +1,22 @@
-/** A collapsible rail section: a title, the active count as a badge, a carat. Opens by default when it has an active filter. */
+/**
+ * A collapsible rail section: a title, the active count as a badge, a carat. COLLAPSED by default,
+ * every section, every site section (Eric, 2026-09-05: phones and tablets are first-class, and an
+ * open Genre list is most of a phone's drawer) — an active filter shows as the badge, not as an open
+ * body. The reader's toggle holds while the section stays mounted. `defaultOpen` is accepted for
+ * compatibility and ignored.
+ */
 import { useState, type ReactNode } from "react";
 
 export interface RailSectionProps {
   title: string;
   count?: number;
+  /** @deprecated ignored since 2026-09-05 — every section starts collapsed. */
   defaultOpen?: boolean;
   children: ReactNode;
 }
 
-export default function RailSection({ title, count = 0, defaultOpen, children }: RailSectionProps) {
-  const [open, setOpen] = useState(!!defaultOpen || count > 0);
+export default function RailSection({ title, count = 0, children }: RailSectionProps) {
+  const [open, setOpen] = useState(false);
   return (
     <div className={`bx-rsec${open ? " open" : ""}`}>
       <button type="button" className="bx-rsec-head" onClick={() => setOpen((o) => !o)} aria-expanded={open}>

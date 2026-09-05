@@ -29,7 +29,7 @@ export const formatMinutes = (m: number): string => (m < 60 ? `${m}m` : Number.i
 export const playersFacetLabel = (v: FacetValue): string => (Number(v) >= PLAYERS_CAP ? `${PLAYERS_CAP}+` : String(v));
 
 export const BOARDGAME_RANGES: RangeFacetDef[] = [
-  { key: "age", token: "a", label: "Age", one: "Age", stops: AGE_STOPS, openTop: true, after: "players", defaultOpen: true },
+  { key: "age", token: "a", label: "Age", one: "Age", stops: AGE_STOPS, openTop: true, after: "players" },
   { key: "time", token: "t", label: "Play time", one: "Time", stops: TIME_STOPS, openTop: true, format: formatMinutes, after: "players" },
   { key: "weight", token: "w", label: "Weight", one: "Weight", stops: WEIGHT_STOPS, format: (v) => v.toFixed(1), after: "players" },
 ];
@@ -136,7 +136,7 @@ export function boardgamesFacetSpec(identity: string, games: readonly BoardgameR
     years: { decadesKey: "decades", decadePills: false },
     ranges: BOARDGAME_RANGES,
     facets: [
-      { key: "players", token: "players", label: "Players", one: "Players", valueType: "number", render: "pill", defaultOpen: true, excludable: false, labelOf: playersFacetLabel },
+      { key: "players", token: "players", label: "Players", one: "Players", valueType: "number", render: "pill", excludable: false, labelOf: playersFacetLabel },
       ...LINK_FACETS.map((f) => ({ key: f.key, token: f.key, label: f.label, one: f.one, valueType: "string" as const })),
     ],
     async loadFacets() {

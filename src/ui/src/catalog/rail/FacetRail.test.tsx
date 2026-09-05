@@ -34,7 +34,9 @@ describe("FacetRail", () => {
     expect(screen.queryByText("My lists")).toBeNull();
     expect(screen.getByText("Years")).toBeInTheDocument();
     expect(screen.getByText("Rating")).toBeInTheDocument();
-    // Collections is open by default: its tile is drawn.
+    // Every section starts COLLAPSED (2026-09-05): the tile is drawn only once the head is pressed.
+    expect(screen.queryByText("Marvel")).toBeNull();
+    fireEvent.click(screen.getByText("Collections"));
     expect(screen.getByText("Marvel")).toBeInTheDocument();
   });
 
@@ -51,14 +53,20 @@ describe("FacetRail", () => {
     fireEvent.click(line);
     fireEvent.click(screen.getByText("★ Noir"));
     expect(saved.onApply).toHaveBeenCalledWith("?f=tag:Noir");
-    // "+ Save view" is the chip row's (RailChips), not the rail's — one door.
-    expect(screen.queryByText("＋ Save view")).toBeNull();
+    // "+ Save view" lives INSIDE the disclosure (the tool's one home) and saves the current filters.
+    fireEvent.click(screen.getByText("＋ Save view"));
+    fireEvent.change(screen.getByRole("textbox", { name: "Search name" }), { target: { value: "Mine" } });
+    fireEvent.keyDown(screen.getByRole("textbox", { name: "Search name" }), { key: "Enter" });
+    expect(saved.onSave).toHaveBeenCalledWith("Mine");
   });
 
-  it("draws no saved-views line at all when there is nothing saved, and no flags section when the spec says the rows are the door", () => {
+  it("with nothing saved and no filter active the line is still there (count 0, no save button); no flags section when the spec says the rows are the door", () => {
     const saved = { list: [], onApply: vi.fn(), onRemove: vi.fn(), onSave: vi.fn() };
     render(<FacetRail spec={{ ...spec, flagsRail: false }} state={EMPTY_FACET_STATE} actions={actions()} facets={facets} grouped activeCount={0} saved={saved} />);
-    expect(screen.queryByRole("button", { name: /Saved views/ })).toBeNull();
+    const line = screen.getByRole("button", { name: /Saved views/ });
+    fireEvent.click(line);
+    expect(screen.getByText("Save a filter set to pin it here.")).toBeInTheDocument();
+    expect(screen.queryByText("＋ Save view")).toBeNull();
     expect(screen.queryByText("My lists")).toBeNull();
   });
 
@@ -90,6 +98,8 @@ describe("FacetRail — fixed-scale ranges", () => {
     const titles = Array.from(document.querySelectorAll(".bx-rail-facets .bx-rsec-title")).map((el) => el.textContent?.trim() ?? "");
     expect(titles.findIndex((t) => t.startsWith("Age"))).toBeGreaterThan(titles.findIndex((t) => t.startsWith("Collections")));
     expect(titles.findIndex((t) => t.startsWith("Age"))).toBeLessThan(titles.findIndex((t) => t.startsWith("Tags")));
+    // Collapsed by default (2026-09-05): open the range section to reach its thumbs.
+    fireEvent.click(screen.getByText("Age"));
     const from = screen.getByRole("slider", { name: "From age" }) as HTMLInputElement;
     const to = screen.getByRole("slider", { name: "To age" }) as HTMLInputElement;
     expect(from.value).toBe("2");

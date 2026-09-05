@@ -1,4 +1,4 @@
-import { render, screen, waitFor, cleanup } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, cleanup } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -59,6 +59,9 @@ describe("MusicSiderRail", () => {
     // R9 S10 added Genre (a dynamic long tail over the shelf rows) and the Rating floor.
     expect(Array.from(document.querySelectorAll(".bx-rsec-title")).map((e) => e.textContent)).toEqual(["Shelf", "Artist", "Genre", "Tag", "Years", "Rating"]);
     expect(api.getMusicArtists).toHaveBeenCalledWith("");
+    // Every section starts collapsed (2026-09-05): open the two whose rows the assertions read.
+    fireEvent.click(screen.getByText("Shelf"));
+    fireEvent.click(screen.getByText("Artist"));
     // The shelf pills carry no counts; the artist rows do. (The option lists load a tick after the rows.)
     await waitFor(() => expect(screen.getByText("Comedy")).toBeInTheDocument());
     expect(screen.getByText("Audiobooks")).toBeInTheDocument();

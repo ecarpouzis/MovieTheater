@@ -88,14 +88,15 @@ describe("SectionSiderRail", () => {
     render(<Wrapper><Harness /></Wrapper>);
     const box = screen.getByRole("combobox");
     expect(box).toBeInTheDocument();
-    // At the TOP of the rail: under the head line, above the facets. (Saved views moved to the FOOT of
-    // the rail on 2026-09-05 and are drawn only when there are some.)
+    // At the TOP of the rail: under the head line, above the facets — and above the saved views, which
+    // moved to the FOOT of the rail on 2026-09-05.
     const rail = document.querySelector(".bx-railbar")!;
     const head = rail.querySelector(".bx-rail-top")!;
     const facets = rail.querySelector(".bx-rail-facets")!;
+    const savedViews = rail.querySelector(".bx-rail-savedwrap")!;
     expect(head.compareDocumentPosition(box) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(facets.compareDocumentPosition(box) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
-    expect(rail.querySelector(".bx-rail-savedwrap")).toBeNull();
+    expect(facets.compareDocumentPosition(savedViews) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     await waitFor(() => expect(screen.getByText("7 things")).toBeInTheDocument());
   });
 

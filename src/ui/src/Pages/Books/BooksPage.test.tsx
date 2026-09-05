@@ -132,7 +132,8 @@ describe("Books/BooksPage — the gate, the pinning, the modals", () => {
     expect(await screen.findByText("Hellboy", { selector: ".bx-chip" })).toBeInTheDocument();
     expect(screen.getByText("Horror", { selector: ".bx-chip" })).toBeInTheDocument();
     expect(screen.getByText("Manga", { selector: ".bx-chip-ex" })).toBeInTheDocument();
-    expect(screen.getByText("＋ Save view")).toBeInTheDocument();
+    // The chip row offers no save button: "Saved views" at the foot of the rail is the one home (2026-09-05).
+    expect(screen.queryByText("＋ Save view")).toBeNull();
     fireEvent.click(screen.getByText("Clear all"));
     await waitFor(() => expect(document.querySelector(".bx-chiprow")).toBeNull());
     expect(document.querySelector(".bx-host")?.getAttribute("data-view")).toBe("wall");

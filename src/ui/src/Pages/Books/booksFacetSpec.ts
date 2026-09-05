@@ -28,7 +28,7 @@ export function booksFacetSpec(identity: string): FacetSpec {
       { key: "want", token: "want", label: "Want to read", title: "Only your queue", appliesTo: "groups" },
     ],
     facets: [
-      { key: "collections", token: "collection", label: "Collections", one: "Collection", valueType: "number", render: "tile", defaultOpen: true },
+      { key: "collections", token: "collection", label: "Collections", one: "Collection", valueType: "number", render: "tile" },
       { key: "series", token: "series", label: "Series", one: "Series", valueType: "number" },
       { key: "tags", token: "tag", label: "Tags", one: "Tag", valueType: "string", dynamic: true },
       { key: "authors", token: "author", label: "Writers", one: "Writer", valueType: "string", dynamic: true },

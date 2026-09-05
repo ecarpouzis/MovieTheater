@@ -26,20 +26,18 @@ function ListsForSwitcher({ scoped, userData }) {
   const { peers } = usePeerLists(!!userData);
   const value = scoped.me ? ME : (scoped.forUser ?? ME);
   const people = peers.filter((p) => !sameUser(p.username, userData?.username));
-  // A flex row, not inline text with a shifted glyph: the antd value line clips anything that
-  // hangs below the baseline, which is how the initial dot escaped the box on the first cut.
-  const opt = (initial, name, other) => (
-    <span className="lists-for-opt">
-      <span className={`lists-for-dot${other ? " lists-for-dot--other" : ""}`} aria-hidden="true">{initial}</span>
-      <span className="lists-for-name">{name}</span>
-    </span>
-  );
+  // The initial dot rides the Select's PREFIX slot (its own vertically-centred box), never the value
+  // line — antd clips whatever hangs below that line's baseline, which is how the dot escaped the
+  // box on the first two cuts. The dropdown rows draw their own dot through optionRender.
+  const initialOf = (name) => (name || "?")[0].toUpperCase();
   const options = [
-    { value: ME, label: opt((userData?.username || "?")[0].toUpperCase(), "Me", false) },
-    ...people.map((t) => ({ value: t.username, label: opt((t.username || "?")[0].toUpperCase(), t.username, true) })),
+    { value: ME, label: "Me", initial: initialOf(userData?.username), other: false },
+    ...people.map((t) => ({ value: t.username, label: t.username, initial: initialOf(t.username), other: true })),
   ];
   // An unknown name in the URL (a typo, a renamed account) still shows what the URL says.
-  if (value !== ME && !options.some((o) => o.value === value)) options.push({ value, label: value });
+  if (value !== ME && !options.some((o) => o.value === value)) options.push({ value, label: value, initial: initialOf(value), other: true });
+  const current = options.find((o) => o.value === value) ?? options[0];
+  const dot = (o) => <span className={`lists-for-dot${o.other ? " lists-for-dot--other" : ""}`} aria-hidden="true">{o.initial}</span>;
 
   const onChange = (next) => {
     const params = new URLSearchParams(location.pathname === "/" ? location.search : "");
@@ -60,9 +58,10 @@ function ListsForSwitcher({ scoped, userData }) {
       <span className="lists-for-label">Lists for</span>
       <Select
         className="lists-for-select"
-        size="small"
         value={value}
         options={options}
+        prefix={dot(current)}
+        optionRender={(o) => <span className="lists-for-opt">{dot(o.data)}<span className="lists-for-name">{o.data.label}</span></span>}
         onChange={onChange}
         getPopupContainer={getPopupContainer}
         aria-label="Whose lists"

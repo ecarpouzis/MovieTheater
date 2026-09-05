@@ -36,7 +36,7 @@ export function novelsFacetSpec(identity: string): FacetSpec {
     rating: { presets: NOVELS_RATING_PRESETS },
     flags: [{ key: "unknown", token: "unknown", label: "No metadata yet", title: "Only the books with no insight row — the pile to fix up" }],
     facets: [
-      { key: "authors", token: "author", label: "Authors", one: "Author", valueType: "string", defaultOpen: true, excludable: false },
+      { key: "authors", token: "author", label: "Authors", one: "Author", valueType: "string", excludable: false },
       { key: "series", token: "series", label: "Series", one: "Series", valueType: "string", excludable: false },
       { key: "tags", token: "tag", label: "Tags", one: "Tag", valueType: "string", labelOf: novelTagLabel },
       { key: "publishers", token: "publisher", label: "Publishers", one: "Publisher", valueType: "string", excludable: false },

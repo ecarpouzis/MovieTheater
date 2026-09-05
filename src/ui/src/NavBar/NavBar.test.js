@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -266,6 +266,8 @@ describe("the books rail", () => {
       expect(screen.queryByRole("combobox", { name: "Search" })).toBeNull();
       expect(await screen.findByText("42 comics")).toBeInTheDocument();
       expect(screen.getByText("Tags")).toBeInTheDocument();
+      // Every section starts collapsed (2026-09-05); the active value shows once the head is pressed.
+      fireEvent.click(screen.getByText("Tags"));
       expect(screen.getByRole("button", { name: "Include Noir" })).toHaveAttribute("aria-pressed", "true");
       cleanup();
       renderNav("/books/shelf", booksMember);

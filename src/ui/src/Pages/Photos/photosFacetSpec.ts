@@ -45,9 +45,9 @@ export function photosFacetSpec(identity: string, includeHidden: boolean): Facet
     text: true,
     years: { decadesKey: "decades", decadePills: false },
     facets: [
-      { key: "album", token: "album", label: "Album", one: "Album", valueType: "string", defaultOpen: true },
-      { key: "person", token: "person", label: "People", one: "Person", valueType: "number", defaultOpen: true },
-      { key: "kind", token: "kind", label: "Kind", one: "Kind", valueType: "string", render: "pill", defaultOpen: true, excludable: false, labelOf: (v) => KIND_LABELS[String(v)] ?? String(v) },
+      { key: "album", token: "album", label: "Album", one: "Album", valueType: "string" },
+      { key: "person", token: "person", label: "People", one: "Person", valueType: "number" },
+      { key: "kind", token: "kind", label: "Kind", one: "Kind", valueType: "string", render: "pill", excludable: false, labelOf: (v) => KIND_LABELS[String(v)] ?? String(v) },
       { key: "camera", token: "camera", label: "Camera", one: "Camera", valueType: "string" },
     ],
     async loadFacets(signal) {

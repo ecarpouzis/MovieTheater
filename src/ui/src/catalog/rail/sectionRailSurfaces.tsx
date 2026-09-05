@@ -48,7 +48,8 @@ export default function sectionRailSurfaces(rail: SectionRailState, isMobile: bo
         actions={rail.actions}
         facets={rail.facets.data}
         activeCount={rail.activeCount}
-        onSave={rail.saveCurrent}
+        // No save button here: "Saved views" at the foot of the rail is the tool's ONE home
+        // (Eric, 2026-09-05) — a second button over the results was the duplicate-options bug.
         className={chipsClassName}
       />
     ),

@@ -142,7 +142,7 @@ filter surface, so no bar tool below is a Filters pill.
 
 | Section | Bar tabs | Bar tools (after the search) | Phone drawer = the sider |
 |---|---|---|---|
-| Movies/TV | Explore - Browse - Channels* - Admin* | View - Items - Sort - gear - theme | user block - the **Lists for** switcher - Seen - Want to Watch - Rate Movies* (+ the Playlists pill) - the rail (Type - Genre - MPA rating - Years - Franchise - People - Mood - Subgenre - Era - Theme - Setting; NO "My lists" section — the rows are the door) - Saved views (a disclosure line at the foot, only when there are some) - Log Out |
+| Movies/TV | Explore - Browse - Channels* - Admin* | View - Items - Sort - gear - theme | user block - the **Lists for** switcher - Seen - Want to Watch - Rate Movies* (+ the Playlists pill) - the rail (Type - Genre - MPA rating - Years - Franchise - People - Mood - Subgenre - Era - Theme - Setting; NO "My lists" section — the rows are the door) - Saved views (ONE collapsed disclosure line at the foot, always drawn; "+ Save view" lives inside it) - Log Out |
 | TV (`/channels`) | Guide - Admin* | theme only (no CatalogHost) | user block - Guide - My playlists* - Log Out (no facet rail: the EPG has no catalog) |
 | Arcade | Explore - Browse - **Trophies** - Admin* | Saves - Quality - View - Items - Sort - gear - theme | user block - the rail (Genre - Players - Region - Mods & hacks - RetroAchievements) - Log Out |
 | Board games | Explore - Browse - Admin* | View - Items - Sort - gear - theme | user block - the rail (Players - Age - Play time - Weight - Publisher - Family - Designer - Category - Mechanic - Years) - the BGG badge - Log Out |
@@ -539,6 +539,11 @@ itself uses.
 | Books | Collection · Series · Publisher · Franchise · Author · Artist · Tag · Event | Years · Rating floor (`r=`) · Read/Want (`my=`) | `/API/Books/browse/facets` + `/facet-options` for the paged long tails | — |
 | Novels | include-only (author/series/publisher/decade — the host cannot exclude on these) | — | `/API/Books/novels/facets` | — |
 
+- **Every rail section starts COLLAPSED, every section of the site** (Eric, 2026-09-05: phones and tablets are
+  first-class and an open Genre list is most of a phone's drawer). `RailSection` ignores `defaultOpen`; an
+  active filter shows as the head badge. **Saved views** are ONE collapsed line at the FOOT of every rail,
+  always drawn (count 0 when empty); "+ Save view" lives inside it while a filter is active, and the chip
+  row offers no second save button.
 - **Specs**: `Pages/Books/booksFacetSpec.ts`, `novelsFacetSpec.ts`, `Pages/Browse/moviesFacetSpec.ts`
   (Type · Genre · MPA as one pill row of five stops · Years as the bare two-thumb range, placed under
   MPA by `years.after` · Franchise · People
