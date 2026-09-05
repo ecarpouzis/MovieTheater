@@ -5,7 +5,10 @@
 -- prod DB -- see the deploy-db-ops skill). Run it through SqlConnection split on GO, batch by batch,
 -- and read the PRINT / SELECT output back.
 --
--- !! NOT APPLIED YET. Replace this banner with the applied date + the read-back counts once it has run.
+-- APPLIED 2026-09-05 04:13 UTC through System.Data.SqlClient.SqlConnection, batch by batch, with a read-back:
+--   ViewingType narrowed; CreatedUtc / CreatedByUserId / FK / both indexes added; dbo.ViewingEvent created.
+--   Data step: 1,793 WantToWatch rows snapshotted to dbo._viewing_pre_suggested; 1,591 (every account but
+--   Eric's 202) attributed to Eric with a 'Migrated' journal row each. Per-list row counts unchanged.
 --
 -- What it does, in order:
 --   1. Viewing.ViewingType nvarchar(max) -> nvarchar(32), guarded by a MAX(LEN()) check (aborts if a
