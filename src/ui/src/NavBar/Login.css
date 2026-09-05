@@ -252,19 +252,40 @@
   width: 100%;
 }
 
+/* The value / option row: a flex line so the dot and the name share one centre and nothing hangs
+   below the baseline (the antd value line clips what does). */
+.lists-for-opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  line-height: 1;
+}
+
+.lists-for-select.ant-select .ant-select-content {
+  display: flex;
+  align-items: center;
+}
+
+.lists-for-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .lists-for-dot {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 18px;
   height: 18px;
-  margin-right: 8px;
+  flex-shrink: 0;
   border-radius: 50%;
   background: var(--accent);
   color: #fff;
   font-size: 9px;
   font-weight: 700;
-  vertical-align: -4px;
 }
 
 .lists-for-dot--other {

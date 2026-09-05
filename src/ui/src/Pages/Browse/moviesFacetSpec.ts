@@ -94,7 +94,10 @@ export function moviesFacetSpec(identity: string, types: readonly string[] = [],
     // On a friend's lists (`for=<username>`) the chip says whose: "Alex Seen".
     ...(listsOwner ? { flagsChipKey: listsOwner } : {}),
     facets: [
-      { key: "type", token: "type", label: "Type", one: "Type", valueType: "string", defaultOpen: true, excludable: false },
+      // Three fixed values on ONE line of pills, like the MPA stops — three open rows with counts
+      // spent a quarter of the sider on a choice of three (Eric, 2026-09-05); the total sits on the
+      // FILTERS head line. Still multi-select (Movies + Series is a real scope), so no `stops`.
+      { key: "type", token: "type", label: "Type", one: "Type", valueType: "string", render: "pill", showCounts: false, defaultOpen: true, excludable: false },
       { key: "genre", token: "genre", label: "Genre", one: "Genre", valueType: "string", defaultOpen: true },
       // `showCounts: false` is what puts the five stops on ONE line (Eric, canvas 2026-08-27):
       // "G 1,056" is twice the width of "G", and five of those wrap the rail into two rows.

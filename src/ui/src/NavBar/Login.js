@@ -26,12 +26,17 @@ function ListsForSwitcher({ scoped, userData }) {
   const { peers } = usePeerLists(!!userData);
   const value = scoped.me ? ME : (scoped.forUser ?? ME);
   const people = peers.filter((p) => !sameUser(p.username, userData?.username));
+  // A flex row, not inline text with a shifted glyph: the antd value line clips anything that
+  // hangs below the baseline, which is how the initial dot escaped the box on the first cut.
+  const opt = (initial, name, other) => (
+    <span className="lists-for-opt">
+      <span className={`lists-for-dot${other ? " lists-for-dot--other" : ""}`} aria-hidden="true">{initial}</span>
+      <span className="lists-for-name">{name}</span>
+    </span>
+  );
   const options = [
-    { value: ME, label: <span><span className="lists-for-dot">{(userData?.username || "?")[0].toUpperCase()}</span>Me</span> },
-    ...people.map((t) => ({
-      value: t.username,
-      label: <span><span className="lists-for-dot lists-for-dot--other">{(t.username || "?")[0].toUpperCase()}</span>{t.username}</span>,
-    })),
+    { value: ME, label: opt((userData?.username || "?")[0].toUpperCase(), "Me", false) },
+    ...people.map((t) => ({ value: t.username, label: opt((t.username || "?")[0].toUpperCase(), t.username, true) })),
   ];
   // An unknown name in the URL (a typo, a renamed account) still shows what the URL says.
   if (value !== ME && !options.some((o) => o.value === value)) options.push({ value, label: value });
