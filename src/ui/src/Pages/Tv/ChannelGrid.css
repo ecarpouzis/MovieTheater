@@ -55,8 +55,20 @@
   position: relative;
   flex: 0 0 auto;
   display: grid;
+  /* Flat children placed by area (GuideDetail.js): the text stacks beside the poster, top-aligned; a
+     final 1fr spacer row keeps the stack at the top when the poster is taller. */
   grid-template-columns: 112px minmax(0, 1fr);
-  gap: 20px;
+  grid-template-rows: auto auto auto auto auto 1fr;
+  grid-template-areas:
+    "poster eyebrow"
+    "poster title"
+    "poster meta"
+    "poster plot"
+    "poster actions"
+    "poster .";
+  column-gap: 20px;
+  row-gap: 6px;
+  align-items: start;
   padding: 16px 44px 14px 18px;
   background: linear-gradient(to bottom, #111a28, #0c111a);
   color: #e8eef6;
@@ -64,17 +76,31 @@
 }
 /* The preview column is sized so the panel is the POSTER's height (168px + padding): a 16:9 frame at
    288px is 162px, plus the progress strip. Taller frames made the panel ~250px and ate the rows. */
-.guide-detail--preview { grid-template-columns: 112px minmax(0, 1fr) 288px; }
-.guide-detail__poster { width: 112px; }
+.guide-detail--preview {
+  grid-template-columns: 112px minmax(0, 1fr) 288px;
+  grid-template-areas:
+    "poster eyebrow preview"
+    "poster title preview"
+    "poster meta preview"
+    "poster plot preview"
+    "poster actions preview"
+    "poster . preview";
+}
+.guide-detail__poster { grid-area: poster; width: 112px; }
+.guide-detail__eyebrow { grid-area: eyebrow; }
+.guide-detail__title { grid-area: title; }
+.guide-detail__meta { grid-area: meta; }
+.guide-detail__plot { grid-area: plot; }
+.guide-detail__actions { grid-area: actions; }
+.guide-preview { grid-area: preview; }
 .guide-detail__img { display: block; width: 112px; height: 168px; object-fit: cover; border-radius: 6px; background: #1a2230; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45); }
 .guide-detail__img--empty { background: linear-gradient(160deg, #2b3a4a, #1a2530); }
-.guide-detail__body { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
 .guide-detail__eyebrow {
-  margin: 0; display: flex; align-items: center; gap: 7px; min-width: 0;
+  margin: 0; display: flex; align-items: center; gap: 7px; min-width: 0; white-space: nowrap;
   font-family: var(--font-mono, ui-monospace, monospace); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase;
   color: rgba(232, 238, 246, 0.72);
 }
-.guide-detail__channel { color: #40a9ff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.guide-detail__channel { color: #40a9ff; flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .guide-detail__sep { color: rgba(232, 238, 246, 0.3); }
 /* "now" carries the now line's red, with the dot the guide header's LIVE badge uses. */
 .guide-detail__now { color: #e3553f; display: inline-flex; align-items: center; gap: 5px; }
@@ -90,8 +116,8 @@
   border: 1px solid rgba(232, 238, 246, 0.35); font-size: 10px; font-weight: 700; letter-spacing: 0.04em; color: rgba(232, 238, 246, 0.85);
 }
 .guide-detail__imdb { color: #f5c518; font-weight: 700; }
-.guide-detail__plot { margin: 4px 0 0; font-size: 13.5px; line-height: 1.5; color: rgba(232, 238, 246, 0.72); max-width: 68ch; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.guide-detail__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
+.guide-detail__plot { margin: 0; font-size: 13.5px; line-height: 1.5; color: rgba(232, 238, 246, 0.72); max-width: 68ch; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.guide-detail__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 4px; }
 .guide-detail__btn {
   appearance: none; cursor: pointer; font: inherit; font-size: 12.5px; font-weight: 600; letter-spacing: 0.01em;
   display: inline-flex; align-items: center; gap: 7px;
@@ -159,22 +185,47 @@
   .guide-detail--preview { grid-template-columns: 96px minmax(0, 1fr) 240px; }
   .guide-detail__poster, .guide-detail__img { width: 96px; }
   .guide-detail__img { height: 144px; }
-  .guide-detail__body { gap: 4px; }
+  .guide-detail { row-gap: 4px; }
   .guide-detail__title { font-size: 22px; }
-  .guide-detail__plot { -webkit-line-clamp: 2; margin-top: 2px; }
-  .guide-detail__actions { margin-top: 6px; }
+  .guide-detail__plot { -webkit-line-clamp: 2; }
+  .guide-detail__actions { margin-top: 2px; }
   .guide-detail__btn { height: 32px; padding: 0 12px; }
   .guide-preview, .guide-preview__frame { width: 240px; }
   .guide-preview__frame { height: 135px; }
 }
+/* Phones: the eyebrow runs across the top (clear of the ×), a small poster sits beside the title and
+   the facts, the plot takes the full width, and the actions are ONE row — Tune in and Start over share
+   it, Open title and Favourite shrink to icons. Before this the panel wrapped into ~260px of a 390px
+   screen (2026-09-05). */
 @media (max-width: 767px) {
-  .guide-detail { grid-template-columns: 76px minmax(0, 1fr); gap: 12px; padding: 12px 40px 12px 12px; }
-  .guide-detail__poster, .guide-detail__img { width: 76px; }
-  .guide-detail__img { height: 114px; box-shadow: none; }
-  .guide-detail__title { font-size: 18px; }
-  .guide-detail__meta { font-size: 11.5px; gap: 0 6px; }
-  .guide-detail__plot { -webkit-line-clamp: 2; font-size: 12.5px; }
-  .guide-detail__btn { height: 36px; }
+  .guide-detail {
+    grid-template-columns: 56px minmax(0, 1fr);
+    grid-template-rows: auto auto auto auto auto;
+    grid-template-areas:
+      "eyebrow eyebrow"
+      "poster title"
+      "poster meta"
+      "plot plot"
+      "actions actions";
+    column-gap: 12px;
+    row-gap: 5px;
+    padding: 10px 12px 12px;
+  }
+  .guide-detail__eyebrow { padding-right: 32px; font-size: 10px; }
+  .guide-detail__poster, .guide-detail__img { width: 56px; }
+  .guide-detail__img { height: 84px; border-radius: 4px; box-shadow: none; }
+  .guide-detail__title { font-size: 17px; line-height: 1.15; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .guide-detail__meta { font-size: 11.5px; gap: 0 6px; flex-wrap: nowrap; overflow: hidden; }
+  .guide-detail__meta-item { flex: 0 0 auto; gap: 6px; }
+  .guide-detail__meta-item[data-part="genre"] { display: none; }
+  .guide-detail__plot { -webkit-line-clamp: 2; font-size: 12.5px; line-height: 1.45; margin-top: 2px; }
+  .guide-detail__actions { flex-wrap: nowrap; gap: 6px; margin-top: 4px; }
+  .guide-detail__btn { height: 40px; padding: 0 10px; justify-content: center; }
+  .guide-detail__btn--primary, .guide-detail__btn--secondary { flex: 1 1 0; min-width: 0; }
+  .guide-detail__btn--secondary .guide-detail__btn-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .guide-detail__btn--ghost { flex: 0 0 40px; width: 40px; padding: 0; }
+  .guide-detail__btn--ghost .guide-detail__btn-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .guide-detail__close { top: 6px; right: 6px; }
 }
 
 /* Category band between channel groups (Channels 2.0). Sticky-left so the label stays visible while

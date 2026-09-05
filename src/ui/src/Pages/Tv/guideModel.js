@@ -94,7 +94,7 @@ export function programMetaItems(prog, { full = false } = {}) {
   if (rt) items.push({ kind: "text", text: rt });
   if (full) {
     if (prog.imdbRating != null && Number(prog.imdbRating) > 0) items.push({ kind: "imdb", text: Number(prog.imdbRating).toFixed(1) });
-    if (prog.genre) items.push({ kind: "text", text: prog.genre });
+    if (prog.genre) items.push({ kind: "text", text: prog.genre, part: "genre" });
   }
   return items;
 }

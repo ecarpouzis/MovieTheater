@@ -30,6 +30,11 @@ const RestartIcon = () => (
     <path d="M3 12a9 9 0 1 0 3-6.7" /><path d="M3 4v5h5" />
   </svg>
 );
+const InfoIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 8h.01" />
+  </svg>
+);
 const HeartIcon = ({ filled }) => (
   <svg width="13" height="13" viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" aria-hidden="true">
     <path d="M12 20.5s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 8a4.3 4.3 0 0 1 7.5 2.5c0 5.4-7.5 10-7.5 10z" />
@@ -51,6 +56,11 @@ const HeartIcon = ({ filled }) => (
  * tally. It is offered only for the programme airing now on an unfrozen channel — a future programme
  * cannot be started early on a shared timeline, and a frozen one has no clock to restart against.
  * Everything here comes from the guide payload the grid already holds — no second fetch.
+ *
+ * The children are FLAT (poster, eyebrow, title, meta, plot, actions, preview, close) so the CSS lays
+ * them out with grid areas per breakpoint: desktop stacks the text beside the poster with the preview
+ * on the right; a phone runs the eyebrow across the top, a small poster beside title + facts, the plot
+ * full width, and one action row where Open title / Favourite shrink to icons (2026-09-05).
  */
 export default function GuideDetail({ channel, program, row, userData, setUserData, onClose, previewArmed = false, onArmPreview, nowMs }) {
   const history = useHistory();
@@ -79,8 +89,7 @@ export default function GuideDetail({ channel, program, row, userData, setUserDa
           <div className="guide-detail__img guide-detail__img--empty" />
         )}
       </div>
-      <div className="guide-detail__body">
-        <p className="guide-detail__eyebrow">
+      <p className="guide-detail__eyebrow">
           <span className="guide-detail__channel">{channel.name}</span>
           <span className="guide-detail__sep" aria-hidden="true">·</span>
           <span>{clockLabel(startMs)} – {clockLabel(endMs)}</span>
@@ -91,7 +100,7 @@ export default function GuideDetail({ channel, program, row, userData, setUserDa
         {meta.length > 0 && (
           <p className="guide-detail__meta">
             {meta.map((item, i) => (
-              <span key={`${item.kind}-${i}`} className="guide-detail__meta-item">
+              <span key={`${item.kind}-${i}`} className="guide-detail__meta-item" data-part={item.part || item.kind}>
                 {i > 0 && <span className="guide-detail__sep" aria-hidden="true">·</span>}
                 {item.kind === "tag" && <span className="guide-detail__tag">{item.text}</span>}
                 {item.kind === "imdb" && (<span><span className="guide-detail__imdb">IMDb</span> {item.text}</span>)}
@@ -103,7 +112,7 @@ export default function GuideDetail({ channel, program, row, userData, setUserDa
         {program.plot && <p className="guide-detail__plot">{program.plot}</p>}
         <div className="guide-detail__actions">
           <button type="button" className="guide-detail__btn guide-detail__btn--primary" title={`Watch ${channel.name} live`} onClick={() => history.push(`/tv/${channel.id}`)}>
-            <PlayIcon /> Tune in
+            <PlayIcon /><span className="guide-detail__btn-label">Tune in</span>
           </button>
           {canStartOver && (
             <button
@@ -112,21 +121,20 @@ export default function GuideDetail({ channel, program, row, userData, setUserDa
               title={viewers > 0 ? "Others are watching — your vote to restart is cast when you tune in" : "Tune in and start this programme from the beginning"}
               onClick={() => history.push(restartHref(channel.id))}
             >
-              <RestartIcon /> {viewers > 0 ? `Vote to start over · ${viewers} watching` : "Start over"}
+              <RestartIcon /><span className="guide-detail__btn-label">{viewers > 0 ? `Vote to start over · ${viewers} watching` : "Start over"}</span>
             </button>
           )}
           {canOpenTitle && (
-            <button type="button" className="guide-detail__btn" onClick={() => history.push(`/?title=${program.kind}:${program.posterId}`)}>
-              Open title
+            <button type="button" className="guide-detail__btn guide-detail__btn--ghost" title="Open title" onClick={() => history.push(`/?title=${program.kind}:${program.posterId}`)}>
+              <InfoIcon /><span className="guide-detail__btn-label">Open title</span>
             </button>
           )}
           {userData && (
-            <button type="button" className={`guide-detail__btn${fav ? " is-on" : ""}`} aria-pressed={fav} onClick={() => toggle(channel.id)}>
-              <HeartIcon filled={fav} /> Favourite channel
+            <button type="button" className={`guide-detail__btn guide-detail__btn--ghost${fav ? " is-on" : ""}`} aria-pressed={fav} title="Favourite channel" onClick={() => toggle(channel.id)}>
+              <HeartIcon filled={fav} /><span className="guide-detail__btn-label">Favourite channel</span>
             </button>
           )}
         </div>
-      </div>
       {wide && (
         <GuidePreview
           channelId={channel.id}
