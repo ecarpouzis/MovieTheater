@@ -1505,7 +1505,7 @@ emulator:
         snes:
           scale: 3
           rewind: true
-          runAhead: 1   # P8 (2026-09-05): verify diff = 1 byte at 0xaa9 per frame with av=0 hidden frames (a timing flag); re-verify with av=3 owed
+          runAhead: 1   # P8: verify with av=3 hidden frames (fork 54e3a43, 2026-09-06) = 5 mismatches in 3,283 frames, APU sync phase — CLEARED
         nes:
           scale: 3
           rewind: true
@@ -1523,7 +1523,7 @@ emulator:
         gba:
           scale: 3
           rewind: true
-          runAhead: 1   # P8 (2026-09-05): verify diff = 2–6 bytes at 0x132..0x152 with av=0 hidden frames (header timing counters); re-verify with av=3 owed
+          runAhead: 1   # P8: verify differs every other frame by 2–6 bytes @0x132..0x152 (state-header scheduler counters), unchanged by av=3 — armed on the reading that it is bookkeeping phase, not RAM; frame-hash verify owed
         # Game Boy / Game Boy Color via mgba (same lib as GBA). The stock config only exposes gba+gbc
         # roms under the `gba` folder; the JIT catalog files per system (gb/, gbc/), so give each its own
         # core+folder. mgba plays all three. scale:3 for the same crispness rationale as the other 2D cores.
@@ -1549,7 +1549,7 @@ emulator:
           folder: genesis
           scale: 3   # 320x224 native -> 960x672 nearest (was 2; 3x matches snes/nes, costs NVENC nothing)
           rewind: true
-          runAhead: 1   # P8 (2026-09-05): verify diff = 1–16 bytes in 0x22bd0..0x234ae with av=0 hidden frames (audio/timer state); re-verify with av=3 owed
+          runAhead: 1   # P8: verify differs every other frame by 6–9 bytes @0x23418..0x23462 (sound-chip/cycle counters), unchanged by av=3 — armed on the reading that it is bookkeeping phase, not RAM; frame-hash verify owed
 
         # ARCADE (fbneo). The site's `arcade` system ingests into roms/mame and launches through the
         # core key `mame` (ArcadeIngestCommand.cs:242) -- the STOCK CloudRetro entry, which we had never
