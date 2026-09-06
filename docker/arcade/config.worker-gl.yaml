@@ -1505,6 +1505,7 @@ emulator:
         snes:
           scale: 3
           rewind: true
+          runAhead: 1   # P8 (2026-09-05): verify diff = 1 byte at a fixed offset (0xaa9) per frame — a timing flag, not divergence
         nes:
           scale: 3
           rewind: true
@@ -1512,13 +1513,15 @@ emulator:
           # the state from one frame ago and re-simulates it with the new input before the visible frame, so a
           # press lands one frame (16.7 ms) earlier than the game itself would show it. Armed on nestopia ONLY:
           # the determinism check (runAheadVerify) passed 3,908/3,908 frames of driven Mega Man 2 after the first
-          # boot frame. snes9x differed on every frame and genesis_plus_gx/mgba on exactly every other frame
-          # (a non-serialized parity item, under investigation) — do NOT arm those until the diff report clears
-          # them. Rollback = delete this key + .stop recycle. CLOUD_GAME_RUNAHEAD=0 kills it at runtime.
+          # boot frame. snes9x/genesis_plus_gx/mgba showed frame-parity mismatches that the fork's diff report
+          # (3d936c3) traced to 1–16 bytes of timing/audio counters at fixed offsets — the hidden run's av_enable=0
+          # side effect, identical to RetroArch's run-ahead — so they are armed too (see each block).
+          # Rollback = delete the key + .stop recycle. CLOUD_GAME_RUNAHEAD=0 kills it at runtime.
           runAhead: 1
         gba:
           scale: 3
           rewind: true
+          runAhead: 1   # P8 (2026-09-05): verify diff = 2–6 bytes at 0x132..0x152 (state header timing counters) — not divergence
         # Game Boy / Game Boy Color via mgba (same lib as GBA). The stock config only exposes gba+gbc
         # roms under the `gba` folder; the JIT catalog files per system (gb/, gbc/), so give each its own
         # core+folder. mgba plays all three. scale:3 for the same crispness rationale as the other 2D cores.
@@ -1542,6 +1545,7 @@ emulator:
           folder: genesis
           scale: 3   # 320x224 native -> 960x672 nearest (was 2; 3x matches snes/nes, costs NVENC nothing)
           rewind: true
+          runAhead: 1   # P8 (2026-09-05): verify diff = 1–16 bytes in 0x22bd0..0x234ae (audio/timer state) per frame — not divergence
 
         # ARCADE (fbneo). The site's `arcade` system ingests into roms/mame and launches through the
         # core key `mame` (ArcadeIngestCommand.cs:242) -- the STOCK CloudRetro entry, which we had never
