@@ -930,10 +930,11 @@ export function createCloudRetroSession(descriptor, opts) {
     ttff.marks[name] = Math.round(nowMs() - ttff.t0);
     if (name !== "first-frame") return;
     const m = ttff.marks;
+    const v = (k) => (m[k] == null ? "-" : m[k]);
     try {
-      console.log(`[ttff] total ${m["first-frame"]}ms — ws-open ${m["ws-open"]} init ${m.init} offer ${m.offer} ` +
-        `ice-checking ${m["ice-checking"]} ice-connected ${m["ice-connected"]} pc-connected ${m["pc-connected"]} ` +
-        `dc-open ${m["dc-open"]} gather-done ${m["gather-done"]} game-start ${m["game-start"]} first-frame ${m["first-frame"]} (${descriptor.system || "?"})`);
+      console.log(`[ttff] total ${v("first-frame")}ms — ws-open ${v("ws-open")} init ${v("init")} offer ${v("offer")} ` +
+        `ice-checking ${v("ice-checking")} ice-connected ${v("ice-connected")} pc-connected ${v("pc-connected")} ` +
+        `dc-open ${v("dc-open")} gather-done ${v("gather-done")} game-start ${v("game-start")} first-frame ${v("first-frame")} (${descriptor.system || "?"})`);
       onTtff && onTtff({ totalMs: m["first-frame"], marks: { ...m } });
     } catch { /* an observer's error must never touch the session */ }
   }
@@ -1369,8 +1370,8 @@ export function createCloudRetroSession(descriptor, opts) {
     const now = Date.now();
     if (mask !== 0 || a[0] !== 0 || a[1] !== 0 || a[2] !== 0 || a[3] !== 0) lastNonNeutralOutputAt = now;
     const neutral = mask === 0 && a[0] === 0 && a[1] === 0 && a[2] === 0 && a[3] === 0;
-    if (last && last[0] === mask && last[1] === a[0] && last[2] === a[1] && last[3] === a[2] && last[4] === a[3]
-        && now - lastSentAt < (neutral ? RESYNC_NEUTRAL_MS : RESYNC_HELD_MS))
+    const changed = !(last && last[0] === mask && last[1] === a[0] && last[2] === a[1] && last[3] === a[2] && last[4] === a[3]);
+    if (!changed && now - lastSentAt < (neutral ? RESYNC_NEUTRAL_MS : RESYNC_HELD_MS))
       return;
     last = [mask, a[0], a[1], a[2], a[3]];
     lastSentAt = now;
@@ -1379,7 +1380,9 @@ export function createCloudRetroSession(descriptor, opts) {
     // frame is ABSOLUTE STATE — the sent frames are exactly the changes, and a replay that reasserts
     // each one at its recorded time reproduces the whole timeline. (The 1 s keepalive resends ride
     // along harmlessly: replaying a redundant identical frame is a no-op the dedupe eats again.)
-    if (tape) tape.input(mask, a, clockStamp());
+    // Only CHANGES go into the tape: with the 150 ms held resync a keepalive is ~7 identical frames/s, and a
+    // tape that recorded them would diff against older tapes on nothing but the resync cadence.
+    if (tape && changed) tape.input(mask, a, clockStamp());
     try { dc.send(encodeInput(mask, a)); } catch { /* channel closing */ }
   }
 
@@ -1413,11 +1416,11 @@ export function createCloudRetroSession(descriptor, opts) {
     }
     window.addEventListener("blur", onWindowBlur);
     window.addEventListener("focus", onWindowFocus);
-    // Poll the pads at 4 ms (perf program P2, 2026-09-05; was 16): the Gamepad API has no edge events, so
+    // Poll the pads at 8 ms (perf program P2, 2026-09-05; was 16, briefly 4): the Gamepad API has no edge events, so
     // the poll interval IS the pad's input quantization — 16 ms cost ~8 ms on average before a press even
     // left the browser. Sends still happen only on change (pumpInput dedupes), so a faster poll costs
     // reads, not packets. Keyboard edges are sent from their own events (see onKey).
-    inputTimer = setInterval(pumpInput, 4);
+    inputTimer = setInterval(pumpInput, 8);
   }
 
   function stopInput() {
@@ -1521,17 +1524,7 @@ export function createCloudRetroSession(descriptor, opts) {
     // Observability only: the worker files the row, and nothing reads it back yet.
     const deviceId = arcadeDeviceId();
     if (deviceId) init.device_id = deviceId;
-    if (browserOffers) {
-      // Offer the media we want to RECEIVE (video always; audio here only when it is not on the aux PC) and
-      // let Pion answer onto those m-lines. The room's codec is Pion's business (its track decides).
-      pc.addTransceiver("video", { direction: "recvonly" });
-      if (!AUDIO_PC) pc.addTransceiver("audio", { direction: "recvonly" });
-      pc.createOffer().then((offer) => pc.setLocalDescription(offer)).then(() => {
-        init.sdp = JSON.stringify(pc.localDescription);
-        send(T.INIT_WEBRTC, init);
-      }).catch((err) => { onError && onError(err); });
-      return;
-    }
+
     // warm_kbps (ABR plan Phase 1, perf program P10): the site's memory of what THIS device's link sustained
     // last time, from the join descriptor. The worker seeds this peer's bandwidth estimator with it (and
     // the room's opener when we are the creator) so a proven link skips the 20 s cold climb. Absent = cold.
@@ -1540,6 +1533,20 @@ export function createCloudRetroSession(descriptor, opts) {
       const who = localStorage.getItem("Username");
       if (who) init.username = who;
     } catch { /* storage disabled — the row is simply not attributable, and the worker drops it */ }
+    if (browserOffers) {
+      // LAST, after warm_kbps and username are on `init` (an earlier placement dropped both: no warm start
+      // and no ArcadeLinkStat row for the peer). Offer the media we want to RECEIVE (video always; audio
+      // here only when it is not on the aux PC) and let Pion answer onto those m-lines. The room's codec
+      // is Pion's business (its track decides). Input-only seats never take this path: their "input-only"
+      // sdp marker is how the worker recognises them, and there is no relay field for it.
+      pc.addTransceiver("video", { direction: "recvonly" });
+      if (!AUDIO_PC) pc.addTransceiver("audio", { direction: "recvonly" });
+      pc.createOffer().then((offer) => pc.setLocalDescription(offer)).then(() => {
+        init.sdp = JSON.stringify(pc.localDescription);
+        send(T.INIT_WEBRTC, init);
+      }).catch((err) => { onError && onError(err); });
+      return;
+    }
     send(T.INIT_WEBRTC, init);
   }
 
@@ -1623,8 +1630,13 @@ export function createCloudRetroSession(descriptor, opts) {
   function onInboundTrack(e) {
     // TTFF: the first PRESENTED frame is the end of the start path. rVFC fires once per presented frame,
     // so a one-shot registration on the video track's attach marks it (ttffMark dedupes a re-attach).
-    if (e.track && e.track.kind === "video" && videoEl && videoEl.requestVideoFrameCallback) {
-      try { videoEl.requestVideoFrameCallback(() => ttffMark("first-frame")); } catch { /* older browsers */ }
+    if (e.track && e.track.kind === "video" && videoEl) {
+      if (videoEl.requestVideoFrameCallback) {
+        try { videoEl.requestVideoFrameCallback(() => ttffMark("first-frame")); } catch { /* older browsers */ }
+      } else {
+        // No rVFC (Safari, older Firefox): the element's first "playing" is the closest thing to a presented frame.
+        try { videoEl.addEventListener("playing", () => ttffMark("first-frame"), { once: true }); } catch { /* not an element */ }
+      }
     }
     const jbMs = e.track && e.track.kind === "audio" ? AUDIO_JITTER_MS : 0;
     try { e.receiver.jitterBufferTarget = jbMs; } catch { /* older browsers */ }

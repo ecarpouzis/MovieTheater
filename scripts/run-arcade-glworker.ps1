@@ -189,7 +189,9 @@ while ($true) {
                         $had = ($p.PriorityClass -eq 'High') -and ([int64]$p.ProcessorAffinity -eq 0x5555)
                         if (-not $had) {
                             $p.PriorityClass = 'High'; $p.ProcessorAffinity = [IntPtr]0x5555
-                            [System.IO.File]::AppendAllText($log, ("{0}  [runner] WARN: worker pid {1} was not launched at High/0x5555 (class={2} mask=0x{3:X}); fixed by the poller`r`n" -f (Get-Date -Format o), $p.Id, $p.PriorityClass, [int64]$p.ProcessorAffinity), [System.Text.Encoding]::UTF8)
+                            # Its own file: cmd holds the main log open for the worker's stdout, and an append to
+                            # that file from here is a sharing violation the catch below would swallow.
+                            [System.IO.File]::AppendAllText(($log + '.poller'), ("{0}  [runner] WARN: worker pid {1} was not launched at High/0x5555 (class={2} mask=0x{3:X}); fixed by the poller`r`n" -f (Get-Date -Format o), $p.Id, $p.PriorityClass, [int64]$p.ProcessorAffinity), [System.Text.Encoding]::UTF8)
                         }
                     } catch {}
                     break
