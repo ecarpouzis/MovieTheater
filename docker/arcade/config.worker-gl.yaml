@@ -1508,6 +1508,14 @@ emulator:
         nes:
           scale: 3
           rewind: true
+          # runAhead (perf program P8, 2026-09-05): one preemptive frame — on an input edge the frontend restores
+          # the state from one frame ago and re-simulates it with the new input before the visible frame, so a
+          # press lands one frame (16.7 ms) earlier than the game itself would show it. Armed on nestopia ONLY:
+          # the determinism check (runAheadVerify) passed 3,908/3,908 frames of driven Mega Man 2 after the first
+          # boot frame. snes9x differed on every frame and genesis_plus_gx/mgba on exactly every other frame
+          # (a non-serialized parity item, under investigation) — do NOT arm those until the diff report clears
+          # them. Rollback = delete this key + .stop recycle. CLOUD_GAME_RUNAHEAD=0 kills it at runtime.
+          runAhead: 1
         gba:
           scale: 3
           rewind: true
