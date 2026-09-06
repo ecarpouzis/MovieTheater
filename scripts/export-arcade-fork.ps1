@@ -60,7 +60,10 @@ function Invoke-Native {
 Write-Host "exporting $Base..$Branch -> $out"
 # git writes the file itself (--output). Do NOT pipe it through Set-Content: PowerShell 5.1 would
 # stamp a BOM on it and rewrite the line endings as CRLF, and `git apply` then rejects its own diff.
-Invoke-Native { & git -C $Repo diff $Base $Branch --output="$out" } "git diff"
+# --binary: cmd/worker/default.pgo (the PGO profile) is a binary file the fork changes. Without it git
+# writes "Binary files differ" and `git apply` refuses the whole patch ("cannot apply binary patch …
+# without full index line") — which is how the 2026-09-05 PGO recollect broke the export until this.
+Invoke-Native { & git -C $Repo diff --binary $Base $Branch --output="$out" } "git diff"
 
 $dirty = & git -C $Repo status --short
 if ($dirty) {
