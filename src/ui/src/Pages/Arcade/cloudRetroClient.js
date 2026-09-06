@@ -1007,15 +1007,22 @@ export function createCloudRetroSession(descriptor, opts) {
   // per-system value). Raise it if a system turns out to stall harder than this; lower it if the audio
   // ever feels detached from the action.
   const AUDIO_JITTER_BY_SYSTEM = { psp: 150 };
-  // BROWSER-OFFER MODE (perf program P13b, 2026-09-05) — A/B flag, default OFF. Today the WORKER offers
-  // (INIT_WEBRTC initiator:false), Pion writes a=setup:actpass and Chrome answers active: Chrome is the DTLS
-  // client and sends its ClientHello the instant ICE connects — before Pion's DTLS transport listens — so
-  // the flight is lost and Chrome waits out the RFC 6347 1 s RTO. Measured 1041 / 1057 ms between
-  // ice-connected and pc-connected on every same-host room, unchanged by Pion's own retransmit interval.
-  // With this on, THIS browser offers (recvonly transceivers), Pion answers as DTLS client (worker config
-  // webrtc.dtlsRole: 2) and sends its ClientHello only once it is ready. localStorage arcade.browserOffers=1.
+  // BROWSER-OFFER MODE (perf program P13b, 2026-09-05) — DEFAULT ON for Chromium-family browsers since the
+  // same night. When the WORKER offers (INIT_WEBRTC initiator:false), Pion writes a=setup:actpass and Chrome
+  // answers active: Chrome is the DTLS client and sends its ClientHello the instant ICE connects — before
+  // Pion's DTLS transport listens — so the flight is lost and Chrome waits out the RFC 6347 1 s RTO. Measured
+  // 1041 / 1057 ms between ice-connected and pc-connected on every same-host room, unchanged by Pion's own
+  // retransmit interval. With this on, THIS browser offers (recvonly transceivers), Pion answers as DTLS
+  // client (worker config webrtc.dtlsRole: 2) and sends its ClientHello only once it is ready. Measured
+  // 2026-09-05 on three rooms: that gap 1040 → 38 ms, first frame 2.4 s → 1.0 s, audio still arrives (aux PC).
+  // Verified only on Chromium; Firefox/Safari keep the worker-offer path until someone measures them there.
+  // Overrides: localStorage arcade.browserOffers = "1" forces on (any browser), "0" forces off.
   let BROWSER_OFFERS = false;
-  try { BROWSER_OFFERS = localStorage.getItem("arcade.browserOffers") === "1"; } catch { /* storage unavailable */ }
+  try {
+    const flag = localStorage.getItem("arcade.browserOffers");
+    const chromium = typeof navigator !== "undefined" && /Chrom(e|ium)\//.test(navigator.userAgent);
+    BROWSER_OFFERS = flag === "1" || (flag !== "0" && chromium);
+  } catch { /* storage unavailable — worker-offer path */ }
   const AUDIO_JITTER_DEFAULT_MS = 80;
   const AUDIO_JITTER_MS = (() => {
     try {
