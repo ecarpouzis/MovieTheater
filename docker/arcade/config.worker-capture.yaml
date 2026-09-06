@@ -212,3 +212,12 @@ encoder:
 
 storage:
   provider: ""    # never S3
+
+# DTLS ROLE WHEN ANSWERING (arcade perf program P13b, 2026-09-05). Only consulted when the BROWSER offers
+# (INIT_WEBRTC initiator:true — the shim's arcade.browserOffers=1 A/B flag): Pion then answers a=setup:active
+# and sends the DTLS ClientHello itself, once it is ready. Today's worker-offers rooms are untouched (Pion
+# never answers there). Why: with Chrome as DTLS client its ClientHello lands before Pion's DTLS transport
+# listens, the flight is lost and Chrome waits the RFC 6347 1 s RTO — measured 1041/1057 ms of every
+# same-host room start. 2 = webrtc.DTLSRoleClient (1 auto, 3 server).
+webrtc:
+  dtlsRole: 2

@@ -1006,6 +1006,15 @@ export function createCloudRetroSession(descriptor, opts) {
   // per-system value). Raise it if a system turns out to stall harder than this; lower it if the audio
   // ever feels detached from the action.
   const AUDIO_JITTER_BY_SYSTEM = { psp: 150 };
+  // BROWSER-OFFER MODE (perf program P13b, 2026-09-05) — A/B flag, default OFF. Today the WORKER offers
+  // (INIT_WEBRTC initiator:false), Pion writes a=setup:actpass and Chrome answers active: Chrome is the DTLS
+  // client and sends its ClientHello the instant ICE connects — before Pion's DTLS transport listens — so
+  // the flight is lost and Chrome waits out the RFC 6347 1 s RTO. Measured 1041 / 1057 ms between
+  // ice-connected and pc-connected on every same-host room, unchanged by Pion's own retransmit interval.
+  // With this on, THIS browser offers (recvonly transceivers), Pion answers as DTLS client (worker config
+  // webrtc.dtlsRole: 2) and sends its ClientHello only once it is ready. localStorage arcade.browserOffers=1.
+  let BROWSER_OFFERS = false;
+  try { BROWSER_OFFERS = localStorage.getItem("arcade.browserOffers") === "1"; } catch { /* storage unavailable */ }
   const AUDIO_JITTER_DEFAULT_MS = 80;
   const AUDIO_JITTER_MS = (() => {
     try {
@@ -1497,9 +1506,12 @@ export function createCloudRetroSession(descriptor, opts) {
     // the primary session already plays it) and counts this redundant receiver in the room's worst-peer
     // ABR pool, dragging the shared encoder's bitrate down for everyone. It never wants the aux audio PC
     // either (nothing to hear), so the two markers are mutually exclusive.
-    const init = inputOnly
+    let init = inputOnly
       ? { initiator: false, sdp: "input-only" }
       : (AUDIO_PC ? { initiator: false, sdp: "audio-pc" } : { initiator: false });
+    // Browser-offer mode: the sdp field carries OUR offer, so the aux-audio request moves to split_audio.
+    const browserOffers = BROWSER_OFFERS && !inputOnly;
+    if (browserOffers) init = { initiator: true, split_audio: !!AUDIO_PC };
     const codec = strFromWsUrl(descriptor.wsUrl, "codec");
     if (codec) init.video_codec = codec;
     // device_id + username (ABR quality plan, Phase 0): who this PEER is, for the worker's
@@ -1509,6 +1521,17 @@ export function createCloudRetroSession(descriptor, opts) {
     // Observability only: the worker files the row, and nothing reads it back yet.
     const deviceId = arcadeDeviceId();
     if (deviceId) init.device_id = deviceId;
+    if (browserOffers) {
+      // Offer the media we want to RECEIVE (video always; audio here only when it is not on the aux PC) and
+      // let Pion answer onto those m-lines. The room's codec is Pion's business (its track decides).
+      pc.addTransceiver("video", { direction: "recvonly" });
+      if (!AUDIO_PC) pc.addTransceiver("audio", { direction: "recvonly" });
+      pc.createOffer().then((offer) => pc.setLocalDescription(offer)).then(() => {
+        init.sdp = JSON.stringify(pc.localDescription);
+        send(T.INIT_WEBRTC, init);
+      }).catch((err) => { onError && onError(err); });
+      return;
+    }
     // warm_kbps (ABR plan Phase 1, perf program P10): the site's memory of what THIS device's link sustained
     // last time, from the join descriptor. The worker seeds this peer's bandwidth estimator with it (and
     // the room's opener when we are the creator) so a proven link skips the 20 s cold climb. Absent = cold.
@@ -1637,7 +1660,7 @@ export function createCloudRetroSession(descriptor, opts) {
   }
 
   async function onSdp(sdpString) {
-    ttffMark("offer");
+    ttffMark("offer"); // in browser-offer mode this is Pion's ANSWER arriving; same hop, same meaning for TTFF
     // Appendix A1/A2: signal values are JSON-stringified.
     const desc = JSON.parse(sdpString);
     await pc.setRemoteDescription(desc);
@@ -1645,6 +1668,7 @@ export function createCloudRetroSession(descriptor, opts) {
     while (pendingCandidates.length) {
       try { await pc.addIceCandidate(pendingCandidates.shift()); } catch (err) { onError && onError(err); }
     }
+    if (desc && desc.type === "answer") return; // browser-offer mode: nothing to answer, ICE runs from here
     const answer = await pc.createAnswer();
     await pc.setLocalDescription(answer);
     send(T.SIGNAL, { sdp: JSON.stringify(pc.localDescription) });
