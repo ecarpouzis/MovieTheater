@@ -12772,10 +12772,10 @@ index f3553b1..85b3408 100644
 +func (c *Caged) Close()                           { c.Emulator.Close() }
 +func (c *Caged) IsSupported() error               { return c.base.IsSupported() }
 diff --git a/pkg/worker/caged/libretro/frontend.go b/pkg/worker/caged/libretro/frontend.go
-index 6974d59..51857f5 100644
+index 6974d59..7ca84bd 100644
 --- a/pkg/worker/caged/libretro/frontend.go
 +++ b/pkg/worker/caged/libretro/frontend.go
-@@ -1,578 +1,3163 @@
+@@ -1,578 +1,3192 @@
 -package libretro
 -
 -import (
@@ -13587,14 +13587,29 @@ index 6974d59..51857f5 100644
 +	// raWarm: ticks still to run plainly after a (re)load before run-ahead/verify touch the state. The first
 +	// serialize after LoadGame is not a faithful restart point on nestopia (P8 verify 2026-09-05: exactly one
 +	// mismatch, on the first frame, then 0 in 3,908) — the core finishes initialising on its first retro_run.
++	// Re-armed on every raInvalid, so a rewind or fast-forward release also costs 30 plain ticks (~0.5 s
++	// without run-ahead) — accepted; the player is not reacting to anything in that half second.
++	// Ownership: written once in LoadCore before the emulator goroutine exists, thereafter only on the
++	// emulator goroutine under f.mu (the only ra* field with that split).
 +	raWarm int
++	// raAvOff: CLOUD_GAME_RUNAHEAD_AV=0 — run hidden frames with GET_AUDIO_VIDEO_ENABLE=0 (the RetroArch
++	// way). Default is OFF (hidden frames keep av=3): a core that honours the hint skips audio mixing on
++	// the hidden frame and its fractional sample accumulator lands a byte or two away from the visible run
++	// (snes9x 1 byte, genesis_plus_gx/mgba a handful, every other frame — P8 verify 2026-09-05), which is
++	// an audible timing drift per rollback and a false "not deterministic" from the verify. Delivery is
++	// suppressed regardless (raHidden → skipFrame, hiddenRun → audio batch dropped), so av=3 costs only
++	// the render/mix of a 2D frame.
++	raAvOff bool
++	// raWarned counts WARNs printed for this session (raMismatch resets every diag window and would re-arm
++	// the byte-diff scan forever on a core that mismatches every frame).
++	raWarned int
 +	// raInvalid: the ring describes a timeline that no longer exists — set by Load (t=107 / boot restore),
 +	// rewindStep, the FF/rewind tick branch and a mid-run geometry change; runAheadTick empties the ring
 +	// before it could roll back INTO the discarded timeline (a rewind release used to undo the rewind).
-+	raInvalid atomic.Bool
-+	inputGen      atomic.Uint64
-+	lastPadFrame  [4][16]byte // last RetroPad frame per port, for edge detection
-+	padEdgeMu     sync.Mutex  // two pion goroutines can write one port's slot across a seat handover
++	raInvalid    atomic.Bool
++	inputGen     atomic.Uint64
++	lastPadFrame [4][16]byte // last RetroPad frame per port, for edge detection
++	padEdgeMu    sync.Mutex  // two pion goroutines can write one port's slot across a seat handover
 +	// diag, reset every pace-diag window
 +	raRollbacks, raHiddenNs, raMismatch, raChecked int64
 +
@@ -13814,6 +13829,7 @@ index 6974d59..51857f5 100644
 +		default:
 +			f.runAhead = min(n, 3)
 +			f.raWarm = raWarmTicks
++			f.raAvOff = stdos.Getenv("CLOUD_GAME_RUNAHEAD_AV") == "0"
 +			f.runAheadArmed.Store(true)
 +			f.log.Info().Msgf("%v: run-ahead armed (%d frame(s)%s)", emu, f.runAhead, map[bool]string{true: ", VERIFY mode: determinism check only, no rollback", false: ""}[f.raVerify])
 +		}
@@ -16265,11 +16281,15 @@ index 6974d59..51857f5 100644
 +		} else {
 +			f.raHidden = true
 +			f.nano.SetHiddenRun(true)
-+			f.nano.SetAvEnable(0)
++			if f.raAvOff {
++				f.nano.SetAvEnable(0)
++			}
 +			for i := 0; i < n; i++ {
 +				f.nano.Run()
 +			}
-+			f.nano.SetAvEnable(3)
++			if f.raAvOff {
++				f.nano.SetAvEnable(3)
++			}
 +			f.nano.SetHiddenRun(false)
 +			f.raHidden = false
 +			f.raRollbacks++
@@ -16325,9 +16345,13 @@ index 6974d59..51857f5 100644
 +	}
 +	f.raHidden = true
 +	f.nano.SetHiddenRun(true)
-+	f.nano.SetAvEnable(0)
++	if f.raAvOff {
++		f.nano.SetAvEnable(0)
++	}
 +	f.nano.Run()
-+	f.nano.SetAvEnable(3)
++	if f.raAvOff {
++		f.nano.SetAvEnable(3)
++	}
 +	f.nano.SetHiddenRun(false)
 +	f.raHidden = false
 +	sb, err := nanoarch.SaveStateInto(nil)
@@ -16338,7 +16362,8 @@ index 6974d59..51857f5 100644
 +	f.raChecked++
 +	if !bytes.Equal(sa, sb) {
 +		f.raMismatch++
-+		if f.raMismatch <= 3 {
++		if f.raWarned < 3 {
++			f.raWarned++
 +			// Where and how much: a handful of bytes at a fixed offset is a counter/timestamp the core keeps
 +			// in its state (harmless to a rollback); differences spread across RAM are real divergence.
 +			diff, first, last := 0, -1, -1
@@ -16351,7 +16376,11 @@ index 6974d59..51857f5 100644
 +					last = i
 +				}
 +			}
-+			f.log.Warn().Msgf("run-ahead VERIFY: state after serialize→run→restore→run differs from run alone (%d vs %d bytes; %d bytes differ, offsets %#x..%#x) — this core is NOT deterministic across unserialize; do not arm it", len(sa), len(sb), diff, first, last)
++			if first < 0 {
++				f.log.Warn().Msgf("run-ahead VERIFY: state after serialize→run→restore→run differs from run alone only in length (%d vs %d bytes)", len(sa), len(sb))
++			} else {
++				f.log.Warn().Msgf("run-ahead VERIFY: state after serialize→run→restore→run differs from run alone (%d vs %d bytes; %d bytes differ, offsets %#x..%#x) — a few bytes at fixed offsets are timing counters; RAM-wide spread means this core is NOT deterministic across unserialize", len(sa), len(sb), diff, first, last)
++			}
 +		}
 +		// Put the real timeline back: the hidden re-run diverged from the frame the player saw.
 +		if err := nanoarch.RestoreSaveState(sa); err != nil {
@@ -19154,7 +19183,7 @@ index 669862d..0d94ba5 100644
 +    return ok;
 +}
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.go b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
-index 17f10fc..66877a1 100644
+index 17f10fc..d25c602 100644
 --- a/pkg/worker/caged/libretro/nanoarch/nanoarch.go
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
 @@ -4,9 +4,11 @@ import (
@@ -20258,7 +20287,7 @@ index 17f10fc..66877a1 100644
  		// if Libretro renders frame with OpenGL context
  		data_ = graphics.ReadFramebuffer(bytes, width, height)
  	}
-@@ -680,14 +1413,219 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
+@@ -680,7 +1413,216 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
  	// also we have an option of xN output frame magnification
  	// so, it may be rescaled
  
@@ -20456,6 +20485,13 @@ index 17f10fc..66877a1 100644
 +// of time already delivered, so it must reach neither the pipeline nor the pacer's audio clock.
 +var hiddenRun atomic.Bool
 +
++// lastBuffStatus is what the audio-buffer-status callback last told the core on a delivered frame; hidden
++// run-ahead frames replay it (see coreAudioSampleBatch). Emulator goroutine only.
++var lastBuffStatus struct {
++	occupancy int
++	underrun  bool
++}
++
 +// SetHiddenRun marks the frames run until the next call as hidden (see hiddenRun). Emulator goroutine only.
 +func (n *Nanoarch) SetHiddenRun(on bool) { hiddenRun.Store(on) }
 +
@@ -20469,18 +20505,34 @@ index 17f10fc..66877a1 100644
  }
  
  //export coreAudioSampleBatch
- func coreAudioSampleBatch(data unsafe.Pointer, frames C.size_t) C.size_t {
--	if Nan0.Stopped.Load() {
-+	if Nan0.Stopped.Load() || hiddenRun.Load() {
+@@ -688,6 +1630,18 @@ func coreAudioSampleBatch(data unsafe.Pointer, frames C.size_t) C.size_t {
+ 	if Nan0.Stopped.Load() {
  		return frames
  	}
++	if hiddenRun.Load() {
++		// A run-ahead re-simulation: the samples are a replay and are dropped, but a core that drives its
++		// frameskip off the buffer-status callback (mGBA) must hear the SAME answer the visible run of this
++		// frame heard, or the re-run diverges from the timeline it is supposed to reproduce (P8).
++		if Nan0.audioBuffCb != nil {
++			C.call_audio_buffer_status(Nan0.audioBuffCb, true, C.unsigned(lastBuffStatus.occupancy), C.bool(lastBuffStatus.underrun))
++		}
++		return frames
++	}
 +	audioClockFrames.Add(int64(frames))
 +	// Debug-only raw PCM capture, BEFORE resample/Opus/WebRTC (audiodump.go). One nil check when off.
 +	dumpAudio(data, int(frames), int(Nan0.sys.av.timing.sample_rate))
  	Nan0.Handlers.OnAudio(data, int(frames)<<1)
  
  	// Audio buffer status for the core (e.g. mGBA frameskip).
-@@ -739,7 +1677,13 @@ func coreGetCurrentFramebuffer() C.uintptr_t { return (C.uintptr_t)(graphics.GlF
+@@ -708,6 +1662,7 @@ func coreAudioSampleBatch(data unsafe.Pointer, frames C.size_t) C.size_t {
+ 			Nan0.audioDrift = -expectedNs * 4
+ 		}
+ 
++		lastBuffStatus.occupancy, lastBuffStatus.underrun = occupancy, underrun
+ 		C.call_audio_buffer_status(Nan0.audioBuffCb, true, C.unsigned(occupancy), C.bool(underrun))
+ 	}
+ 
+@@ -739,7 +1694,13 @@ func coreGetCurrentFramebuffer() C.uintptr_t { return (C.uintptr_t)(graphics.GlF
  
  //export coreGetProcAddress
  func coreGetProcAddress(sym *C.char) C.retro_proc_address_t {
@@ -20495,7 +20547,7 @@ index 17f10fc..66877a1 100644
  }
  
  //export coreEnvironment
-@@ -748,9 +1692,43 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -748,9 +1709,43 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  	// see core_environment_cgo
  
  	switch cmd {
@@ -20539,7 +20591,7 @@ index 17f10fc..66877a1 100644
  		if isGeometryDifferent(av.geometry) {
  			geometryChange(av.geometry)
  		}
-@@ -788,6 +1766,12 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -788,6 +1783,12 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  	case C.RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY:
  		*(**C.char)(data) = Nan0.cSaveDirectory
  		return true
@@ -20552,7 +20604,7 @@ index 17f10fc..66877a1 100644
  	case C.RETRO_ENVIRONMENT_SET_MESSAGE:
  		// only with the Libretro debug mode
  		if Nan0.log.GetLevel() < logger.InfoLevel {
-@@ -797,12 +1781,48 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -797,12 +1798,48 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  			return true
  		}
  		return false
@@ -20601,7 +20653,7 @@ index 17f10fc..66877a1 100644
  		if v, ok := Nan0.options[key]; ok {
  			// make Go strings null-terminated copies ;_;
  			Nan0.options[key] = v + "\x00"
-@@ -816,14 +1836,93 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -816,14 +1853,93 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  			return true
  		}
  		return false
@@ -20696,7 +20748,7 @@ index 17f10fc..66877a1 100644
  	case C.RETRO_ENVIRONMENT_SET_CONTROLLER_INFO:
  		if Nan0.log.GetLevel() > logger.DebugLevel {
  			return false
-@@ -851,7 +1950,18 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -851,7 +1967,18 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  		return true
  	case C.RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK:
  		Nan0.log.Debug().Msgf("Keyboard event callback was set")
@@ -20716,7 +20768,7 @@ index 17f10fc..66877a1 100644
  		return true
  	case C.RETRO_ENVIRONMENT_SET_AUDIO_BUFFER_STATUS_CALLBACK:
  		if data == nil {
-@@ -869,11 +1979,31 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -869,11 +1996,31 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  		Nan0.log.Info().Uint("latency_ms", uint(latency)).Msg("audio latency requested")
  		return true
  	}
@@ -20748,7 +20800,7 @@ index 17f10fc..66877a1 100644
  	var context graphics.Context
  	switch Nan0.Video.hw.context_type {
  	case C.RETRO_HW_CONTEXT_NONE:
-@@ -911,6 +2041,25 @@ func initVideo() {
+@@ -911,6 +2058,25 @@ func initVideo() {
  		if err != nil {
  			panic(err)
  		}
@@ -20774,7 +20826,7 @@ index 17f10fc..66877a1 100644
  	})
  
  	if Nan0.log.GetLevel() < logger.InfoLevel {
-@@ -918,12 +2067,31 @@ func initVideo() {
+@@ -918,12 +2084,31 @@ func initVideo() {
  	}
  }
  
@@ -20806,7 +20858,7 @@ index 17f10fc..66877a1 100644
  		if err := Nan0.glCtx.Deinit(); err != nil {
  			Nan0.log.Error().Err(err).Msg("deinit fail")
  		}
-@@ -932,9 +2100,243 @@ func deinitVideo() {
+@@ -932,9 +2117,243 @@ func deinitVideo() {
  	Nan0.Video.gl.autoCtx = false
  	Nan0.hackSkipHwContextDestroy = false
  	Nan0.hackSkipSameThreadSave = false
@@ -21050,7 +21102,7 @@ index 17f10fc..66877a1 100644
  type limit struct {
  	d  time.Duration
  	t  *time.Timer
-@@ -958,6 +2360,11 @@ func (d *limit) push(f func()) {
+@@ -958,6 +2377,11 @@ func (d *limit) push(f func()) {
  func geometryChange(geom C.struct_retro_game_geometry) {
  	Nan0.limiter(func() {
  		old := Nan0.sys.av.geometry
