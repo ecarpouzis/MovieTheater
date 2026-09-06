@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Button, Checkbox, Dropdown, Modal, Select, Space, Tooltip } from "antd";
 import { EllipsisOutlined } from "@ant-design/icons";
 import useMediaQuery from "../../hooks/useMediaQuery";
-import { MovieAPI } from "../../MovieAPI";
 import GameCover from "./GameCover";
 import CheatPicker from "./CheatPicker";
 import ArcadeGameConfig from "./ArcadeGameConfig";
@@ -67,16 +66,11 @@ export default function GameModal({ game, onClose, onStart, onManageSaves, creat
   const [cheats, setCheats] = useState([]);
   useEffect(() => { setCheats([]); }, [version?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ROM prewarm (arcade perf program P7, 2026-09-05): the moment a version is on screen, ask the gateway
-  // to stage its ROM. JIT titles used to pay 10-40 s of extraction inside "Connecting…"; a player reads a
-  // card for at least that long. Debounced so flicking through versions sends one call for the one that
-  // stays; idempotent and rate-limited server-side; non-JIT versions answer "staged" and cost nothing.
-  useEffect(() => {
-    const id = version?.id;
-    if (!id) return undefined;
-    const t = setTimeout(() => { try { MovieAPI.prewarmArcadeGame(id); } catch { /* no fetch (tests) */ } }, 400);
-    return () => clearTimeout(t);
-  }, [version?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  // No ROM prewarm on modal open (arcade perf program P7, 2026-09-05, withdrawn the same night): staging a
+  // JIT title the moment its card is on screen did cut a cold PS2 start from 40.7 s to 3.9 s, but Eric
+  // browses many cards without ever pressing Play, and every one of those would have extracted a multi-GB
+  // ISO into the ROM cache (disk churn + evictions of titles people DO play). The gateway/site endpoint
+  // (`POST /API/Arcade/Game/{id}/Prewarm`) stays for a trigger that means intent — nothing calls it today.
 
   // Renderer/core: the primary Start button sends nothing (renderProfile="" + hwContext="") so the
   // server applies this game's configured profile (⚙ Configure) or the system default. The dropdown
