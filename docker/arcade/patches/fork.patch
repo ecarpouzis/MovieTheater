@@ -12772,10 +12772,10 @@ index f3553b1..85b3408 100644
 +func (c *Caged) Close()                           { c.Emulator.Close() }
 +func (c *Caged) IsSupported() error               { return c.base.IsSupported() }
 diff --git a/pkg/worker/caged/libretro/frontend.go b/pkg/worker/caged/libretro/frontend.go
-index 6974d59..65b6aa8 100644
+index 6974d59..51857f5 100644
 --- a/pkg/worker/caged/libretro/frontend.go
 +++ b/pkg/worker/caged/libretro/frontend.go
-@@ -1,578 +1,3137 @@
+@@ -1,578 +1,3163 @@
 -package libretro
 -
 -import (
@@ -13584,6 +13584,10 @@ index 6974d59..65b6aa8 100644
 +	raFails       int         // serialize/restore failures; three in a row disarm
 +	raLastGen     uint64      // inputGen as of the last tick
 +	raHidden      bool        // true while hidden frames run (audio/video/dup delivery suppressed)
++	// raWarm: ticks still to run plainly after a (re)load before run-ahead/verify touch the state. The first
++	// serialize after LoadGame is not a faithful restart point on nestopia (P8 verify 2026-09-05: exactly one
++	// mismatch, on the first frame, then 0 in 3,908) — the core finishes initialising on its first retro_run.
++	raWarm int
 +	// raInvalid: the ring describes a timeline that no longer exists — set by Load (t=107 / boot restore),
 +	// rewindStep, the FF/rewind tick branch and a mid-run geometry change; runAheadTick empties the ring
 +	// before it could roll back INTO the discarded timeline (a rewind release used to undo the rewind).
@@ -13809,6 +13813,7 @@ index 6974d59..65b6aa8 100644
 +			f.log.Warn().Msgf("%v: run-ahead configured but this core is VFR (hidden frames would corrupt its frame-delta clock) — off", emu)
 +		default:
 +			f.runAhead = min(n, 3)
++			f.raWarm = raWarmTicks
 +			f.runAheadArmed.Store(true)
 +			f.log.Info().Msgf("%v: run-ahead armed (%d frame(s)%s)", emu, f.runAhead, map[bool]string{true: ", VERIFY mode: determinism check only, no rollback", false: ""}[f.raVerify])
 +		}
@@ -16235,6 +16240,12 @@ index 6974d59..65b6aa8 100644
 +			f.raRecycle(b)
 +		}
 +		f.raRing = f.raRing[:0]
++		f.raWarm = raWarmTicks
++	}
++	if f.raWarm > 0 {
++		f.raWarm--
++		f.tickLocked()
++		return
 +	}
 +
 +	n := f.runAhead
@@ -16290,6 +16301,9 @@ index 6974d59..65b6aa8 100644
 +	f.tickLocked()
 +}
 +
++// raWarmTicks: plain ticks after a (re)load before run-ahead or verify touch the state (see Frontend.raWarm).
++const raWarmTicks = 30
++
 +// runAheadVerify is the determinism check (see runAheadTick). One extra serialize, one restore and one
 +// hidden frame per tick; the visible timeline is always the real one.
 +func (f *Frontend) runAheadVerify() {
@@ -16324,8 +16338,20 @@ index 6974d59..65b6aa8 100644
 +	f.raChecked++
 +	if !bytes.Equal(sa, sb) {
 +		f.raMismatch++
-+		if f.raMismatch == 1 {
-+			f.log.Warn().Msgf("run-ahead VERIFY: state after serialize→run→restore→run differs from run alone (%d vs %d bytes) — this core is NOT deterministic across unserialize; do not arm it", len(sa), len(sb))
++		if f.raMismatch <= 3 {
++			// Where and how much: a handful of bytes at a fixed offset is a counter/timestamp the core keeps
++			// in its state (harmless to a rollback); differences spread across RAM are real divergence.
++			diff, first, last := 0, -1, -1
++			for i := 0; i < len(sa) && i < len(sb); i++ {
++				if sa[i] != sb[i] {
++					diff++
++					if first < 0 {
++						first = i
++					}
++					last = i
++				}
++			}
++			f.log.Warn().Msgf("run-ahead VERIFY: state after serialize→run→restore→run differs from run alone (%d vs %d bytes; %d bytes differ, offsets %#x..%#x) — this core is NOT deterministic across unserialize; do not arm it", len(sa), len(sb), diff, first, last)
 +		}
 +		// Put the real timeline back: the hidden re-run diverged from the frame the player saw.
 +		if err := nanoarch.RestoreSaveState(sa); err != nil {
