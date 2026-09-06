@@ -2611,10 +2611,10 @@ index 89d0628..5f5c31c 100644
  		return "LibNewGameList"
  	case PrevSessions:
 diff --git a/pkg/api/user.go b/pkg/api/user.go
-index e487b93..b17bed7 100644
+index e487b93..0bbe0af 100644
 --- a/pkg/api/user.go
 +++ b/pkg/api/user.go
-@@ -1,42 +1,115 @@
+@@ -1,42 +1,118 @@
 -package api
 -
 -type (
@@ -2770,13 +2770,16 @@ index e487b93..b17bed7 100644
 +		// 6 Mbps cold default, so a known-good wired link does not spend 20 s climbing to its ceiling.
 +		// 0/absent = no memory = today's behaviour. Per PEER, hence on this message and not on t=104.
 +		WarmKbps int `json:"warm_kbps,omitempty"`
++		// SplitAudio (perf program P13b): when the BROWSER offers (Initiator=true, Sdp = its offer), the
++		// "audio-pc" marker can no longer ride the sdp field, so the aux-audio request rides here instead.
++		SplitAudio bool `json:"split_audio,omitempty"`
 +	}
 +)
 diff --git a/pkg/api/worker.go b/pkg/api/worker.go
-index d8c7324..09adef1 100644
+index d8c7324..d44bb16 100644
 --- a/pkg/api/worker.go
 +++ b/pkg/api/worker.go
-@@ -1,75 +1,140 @@
+@@ -1,75 +1,141 @@
 -package api
 -
 -type (
@@ -2964,6 +2967,7 @@ index d8c7324..09adef1 100644
 +		DeviceId string `json:"device_id,omitempty"`
 +		Username string `json:"username,omitempty"`
 +		WarmKbps int    `json:"warm_kbps,omitempty"` // see api/user.go; relayed verbatim (P10)
++		SplitAudio bool `json:"split_audio,omitempty"` // see api/user.go; relayed verbatim (P13b)
 +	}
 +	InitWebrtcStreamResponse string
 +	// RumbleInfo is the worker -> browser rumble packet (PT Rumble): strong/weak are 0..65535 as the core set them.
@@ -3147,7 +3151,7 @@ index 0000000..d83f053
 +	}
 +}
 diff --git a/pkg/config/emulator.go b/pkg/config/emulator.go
-index baf701e..fd4e051 100644
+index baf701e..55ce2c8 100644
 --- a/pkg/config/emulator.go
 +++ b/pkg/config/emulator.go
 @@ -17,6 +17,53 @@ type Emulator struct {
@@ -3204,7 +3208,7 @@ index baf701e..fd4e051 100644
  }
  
  type LibretroConfig struct {
-@@ -69,24 +116,155 @@ func (lrp LibretroRemoteRepo) Guess() (LibretroRepoMapInfo, error) {
+@@ -69,24 +116,159 @@ func (lrp LibretroRemoteRepo) Guess() (LibretroRepoMapInfo, error) {
  		errors.New("core mapping not found for " + runtime.GOOS + ":" + runtime.GOARCH)
  }
  
@@ -3340,6 +3344,10 @@ index baf701e..fd4e051 100644
 +	// with CLOUD_GAME_RUNAHEAD_VERIFY=1 (see frontend.go runAheadVerify): a core that seeds anything from
 +	// the wall clock shows a one-frame "pop" on every input edge instead of less lag.
 +	RunAhead int
++	// RunAheadVerify runs the run-ahead determinism check on this core (see frontend.go runAheadVerify)
++	// without rolling back — the config-file twin of CLOUD_GAME_RUNAHEAD_VERIFY=1, so a verify pass needs
++	// only a config copy + a .stop recycle, not a task restart. Leave unset in production.
++	RunAheadVerify bool
  	Options         map[string]string
  	Options4rom     map[string]map[string]string // <(^_^)>
 +	Fps4rom         map[string]float64           // per-ROM forced framerate override (arcade per-game config)
@@ -3367,7 +3375,7 @@ index baf701e..fd4e051 100644
  	MaxThreads      int
  	UniqueSaveDir   bool
  	UsesLibCo       bool
-@@ -128,6 +306,9 @@ func (e Emulator) GetEmulator(rom string, path string) string {
+@@ -128,6 +310,9 @@ func (e Emulator) GetEmulator(rom string, path string) string {
  	return found
  }
  
@@ -4558,19 +4566,24 @@ index 923aeff..9d5209d 100644
  			if !conf.Recording.Enabled {
  				return api.ErrForbidden
 diff --git a/pkg/coordinator/userhandlers.go b/pkg/coordinator/userhandlers.go
-index 51e805c..4ca80fe 100644
+index 51e805c..3f2c1db 100644
 --- a/pkg/coordinator/userhandlers.go
 +++ b/pkg/coordinator/userhandlers.go
-@@ -13,7 +13,7 @@ func (u *User) HandleInitWebrtcStream(rq api.InitUserWebrtcStreamRequest) {
+@@ -13,7 +13,12 @@ func (u *User) HandleInitWebrtcStream(rq api.InitUserWebrtcStreamRequest) {
  		u.log.Warn().Msg("no worker assigned")
  		return
  	}
 -	resp, err := u.w.InitWebrtcStream(u.Id().String(), rq.Initiator, rq.Sdp)
-+	resp, err := u.w.InitWebrtcStream(u.Id().String(), rq.Initiator, rq.Sdp, rq.VideoCodec, rq.DeviceId, rq.Username, rq.WarmKbps)
++	// P13: the browser measured ~550 ms between sending INIT_WEBRTC and receiving the offer while the
++	// worker itself spent ~40 ms — this line says how long the coordinator's worker RPC took, so the
++	// remainder is attributable to the gateway/WS hops.
++	t0 := time.Now()
++	resp, err := u.w.InitWebrtcStream(u.Id().String(), rq.Initiator, rq.Sdp, rq.VideoCodec, rq.DeviceId, rq.Username, rq.WarmKbps, rq.SplitAudio)
++	u.log.Info().Msgf("webrtc init: worker RPC took %dms (initiator=%v)", time.Since(t0).Milliseconds(), rq.Initiator)
  	if err != nil || resp == nil || *resp == api.EMPTY {
  		u.log.Error().Err(err).Msg("malformed WebRTC init response")
  		return
-@@ -68,21 +68,54 @@ func (u *User) HandleStartGame(rq api.GameStartUserRequest, conf config.Coordina
+@@ -68,21 +73,54 @@ func (u *User) HandleStartGame(rq api.GameStartUserRequest, conf config.Coordina
  			u.Notify(api.ErrNoFreeSlots, "")
  			return
  		}
@@ -4627,7 +4640,7 @@ index 51e805c..4ca80fe 100644
  		return
  	}
  	u.log.Info().Str("id", startGameResp.Rid).Msg("Received room response from worker")
-@@ -107,6 +140,23 @@ func (u *User) HandleResetGame(rq api.ResetGameRequest) {
+@@ -107,6 +145,23 @@ func (u *User) HandleResetGame(rq api.ResetGameRequest) {
  	u.w.ResetGame(u.Id().String())
  }
  
@@ -4652,10 +4665,10 @@ index 51e805c..4ca80fe 100644
  	resp, err := u.w.SaveGame(u.Id().String())
  	if err != nil {
 diff --git a/pkg/coordinator/workerapi.go b/pkg/coordinator/workerapi.go
-index dbceaed..40a3e4a 100644
+index dbceaed..624a0dd 100644
 --- a/pkg/coordinator/workerapi.go
 +++ b/pkg/coordinator/workerapi.go
-@@ -1,64 +1,127 @@
+@@ -1,64 +1,128 @@
 -package coordinator
 -
 -import "github.com/giongto35/cloud-game/v3/pkg/api"
@@ -4742,7 +4755,7 @@ index dbceaed..40a3e4a 100644
 +// backstop against a hung worker, not a performance knob. A genuinely hung boot still fails, just later.
 +const GameStartTimeout = 60 * time.Second
 +
-+func (w *Worker) InitWebrtcStream(id string, initiator bool, sdp string, videoCodec string, deviceId, username string, warmKbps int) (*api.InitWebrtcStreamResponse, error) {
++func (w *Worker) InitWebrtcStream(id string, initiator bool, sdp string, videoCodec string, deviceId, username string, warmKbps int, splitAudio bool) (*api.InitWebrtcStreamResponse, error) {
 +	return api.UnwrapChecked[api.InitWebrtcStreamResponse](
 +		w.Send(api.InitWebrtcStream, api.InitWebrtcStreamRequest{
 +			Id: id, Initiator: initiator, Sdp: sdp, VideoCodec: videoCodec,
@@ -4751,6 +4764,7 @@ index dbceaed..40a3e4a 100644
 +			// dropped without an error anywhere.
 +			DeviceId: deviceId, Username: username,
 +			WarmKbps: warmKbps, // P10 warm start; a field missing here is silently dropped by the relay
++			SplitAudio: splitAudio, // P13b browser-offer mode
 +		}))
 +}
 +
@@ -12920,7 +12934,7 @@ index f3553b1..85b3408 100644
 +func (c *Caged) Close()                           { c.Emulator.Close() }
 +func (c *Caged) IsSupported() error               { return c.base.IsSupported() }
 diff --git a/pkg/worker/caged/libretro/frontend.go b/pkg/worker/caged/libretro/frontend.go
-index 6974d59..5ba6bbb 100644
+index 6974d59..684381f 100644
 --- a/pkg/worker/caged/libretro/frontend.go
 +++ b/pkg/worker/caged/libretro/frontend.go
 @@ -1,578 +1,3073 @@
@@ -13924,7 +13938,7 @@ index 6974d59..5ba6bbb 100644
 +	}
 +	// Run-ahead (P8). Capability gates here; the core's declared serialization quirks are only known once
 +	// the game is loaded, so runAheadTick re-checks them on its first tick.
-+	f.raVerify = stdos.Getenv("CLOUD_GAME_RUNAHEAD_VERIFY") == "1"
++	f.raVerify = stdos.Getenv("CLOUD_GAME_RUNAHEAD_VERIFY") == "1" || conf.RunAheadVerify
 +	if conf.RunAhead > 0 || f.raVerify {
 +		n := conf.RunAhead
 +		if n <= 0 {
@@ -92256,10 +92270,10 @@ index 2840a0e..aa70436 100644
  			c.log.Warn().Msgf("unhandled packet type %v", x.T)
  		}
 diff --git a/pkg/worker/coordinatorhandlers.go b/pkg/worker/coordinatorhandlers.go
-index 6972cc7..f6b2f8d 100644
+index 6972cc7..14f0f0a 100644
 --- a/pkg/worker/coordinatorhandlers.go
 +++ b/pkg/worker/coordinatorhandlers.go
-@@ -1,310 +1,786 @@
+@@ -1,310 +1,789 @@
 -package worker
 -
 -import (
@@ -92643,7 +92657,10 @@ index 6972cc7..f6b2f8d 100644
 +	// Patch 0020: a non-initiator browser can set the (otherwise unused) init sdp field to
 +	// "audio-pc" to ask for opus on a dedicated aux PeerConnection (see webrtc.go Peer.ac).
 +	// Old clients never send it → identical to stock.
-+	splitAudio := !rq.Initiator && rq.Sdp == "audio-pc"
++	// The aux audio PC is asked for by the "audio-pc" sdp marker when we offer, or by split_audio when the
++	// BROWSER offers (P13b: the browser offering makes us the DTLS client — see config webrtc.dtlsRole —
++	// which is what removes the ~1 s lost-ClientHello stall the [ttff] sub-marks exposed).
++	splitAudio := (!rq.Initiator && rq.Sdp == "audio-pc") || (rq.Initiator && rq.SplitAudio)
 +
 +	// A local co-op controller (an extra pad on a machine already playing the room's stream through its
 +	// primary session) sets the same init sdp field to "input-only": negotiate ONLY the input
