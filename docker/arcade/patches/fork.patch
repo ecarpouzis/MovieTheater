@@ -12772,10 +12772,10 @@ index f3553b1..85b3408 100644
 +func (c *Caged) Close()                           { c.Emulator.Close() }
 +func (c *Caged) IsSupported() error               { return c.base.IsSupported() }
 diff --git a/pkg/worker/caged/libretro/frontend.go b/pkg/worker/caged/libretro/frontend.go
-index 6974d59..7ca84bd 100644
+index 6974d59..e87338f 100644
 --- a/pkg/worker/caged/libretro/frontend.go
 +++ b/pkg/worker/caged/libretro/frontend.go
-@@ -1,578 +1,3192 @@
+@@ -1,578 +1,3207 @@
 -package libretro
 -
 -import (
@@ -13601,8 +13601,9 @@ index 6974d59..7ca84bd 100644
 +	// the render/mix of a 2D frame.
 +	raAvOff bool
 +	// raWarned counts WARNs printed for this session (raMismatch resets every diag window and would re-arm
-+	// the byte-diff scan forever on a core that mismatches every frame).
-+	raWarned int
++	// the byte-diff scan forever on a core that mismatches every frame). raFrameWarned: same, for the picture.
++	raWarned      int
++	raFrameWarned int
 +	// raInvalid: the ring describes a timeline that no longer exists — set by Load (t=107 / boot restore),
 +	// rewindStep, the FF/rewind tick branch and a mid-run geometry change; runAheadTick empties the ring
 +	// before it could roll back INTO the discarded timeline (a rewind release used to undo the rewind).
@@ -13610,8 +13611,9 @@ index 6974d59..7ca84bd 100644
 +	inputGen     atomic.Uint64
 +	lastPadFrame [4][16]byte // last RetroPad frame per port, for edge detection
 +	padEdgeMu    sync.Mutex  // two pion goroutines can write one port's slot across a seat handover
-+	// diag, reset every pace-diag window
-+	raRollbacks, raHiddenNs, raMismatch, raChecked int64
++	// diag, reset every pace-diag window. raFrameChecked/raFrameDiff: verify-mode PICTURE comparison (the
++	// hidden re-run's framebuffer hash vs the visible run's) — the criterion that matters to the player.
++	raRollbacks, raHiddenNs, raMismatch, raChecked, raFrameChecked, raFrameDiff int64
 +
 +	// Rumble (P11): per-port strong/weak state as the core last set it, and the sink the room installs.
 +	// A core sets rumble from inside retro_run — often every frame, often to the same value — so the
@@ -13830,6 +13832,7 @@ index 6974d59..7ca84bd 100644
 +			f.runAhead = min(n, 3)
 +			f.raWarm = raWarmTicks
 +			f.raAvOff = stdos.Getenv("CLOUD_GAME_RUNAHEAD_AV") == "0"
++			f.nano.SetFrameHash(f.raVerify) // verify mode also compares the PICTURE of the hidden re-run
 +			f.runAheadArmed.Store(true)
 +			f.log.Info().Msgf("%v: run-ahead armed (%d frame(s)%s)", emu, f.runAhead, map[bool]string{true: ", VERIFY mode: determinism check only, no rollback", false: ""}[f.raVerify])
 +		}
@@ -14731,9 +14734,9 @@ index 6974d59..7ca84bd 100644
 +					100*float64(diagNoSleep)/float64(max(diagTicks, 1)),
 +					float64(deficitNs)/1e6, float64(diagMaxDeficitNs)/1e6, diagForgiven)
 +				if f.runAheadArmed.Load() || f.raVerify {
-+					f.log.Info().Msgf("[runahead] rollbacks/s=%.1f hiddenMs/s=%.1f verify: checked=%d mismatch=%d ring=%d/%d",
-+						float64(f.raRollbacks)/winSec, float64(f.raHiddenNs)/1e6/winSec, f.raChecked, f.raMismatch, len(f.raRing), f.runAhead)
-+					f.raRollbacks, f.raHiddenNs, f.raChecked, f.raMismatch = 0, 0, 0, 0
++					f.log.Info().Msgf("[runahead] rollbacks/s=%.1f hiddenMs/s=%.1f verify: checked=%d mismatch=%d picture: checked=%d differ=%d ring=%d/%d",
++						float64(f.raRollbacks)/winSec, float64(f.raHiddenNs)/1e6/winSec, f.raChecked, f.raMismatch, f.raFrameChecked, f.raFrameDiff, len(f.raRing), f.runAhead)
++					f.raRollbacks, f.raHiddenNs, f.raChecked, f.raMismatch, f.raFrameChecked, f.raFrameDiff = 0, 0, 0, 0, 0, 0
 +				}
 +				diagWindow, diagTicks, diagSlow, diagMaxTickNs = now, 0, 0, 0
 +				diagSumTickNs, diagNoSleep, diagForgiven, diagMaxDeficitNs = 0, 0, 0, 0
@@ -16360,6 +16363,18 @@ index 6974d59..7ca84bd 100644
 +		return
 +	}
 +	f.raChecked++
++	// The picture: what the visible run drew vs what the hidden re-run of the same frame drew. A core that
++	// skipped the frame (no video callback) leaves a stale hash on one side; only compare when both are fresh.
++	if vis, hid := f.nano.FrameHashes(); vis != 0 && hid != 0 {
++		f.raFrameChecked++
++		if vis != hid {
++			f.raFrameDiff++
++			if f.raFrameWarned < 3 {
++				f.raFrameWarned++
++				f.log.Warn().Msgf("run-ahead VERIFY: the hidden re-run drew a DIFFERENT picture than the visible run (%#x vs %#x) — a rollback on this core would show a pop", hid, vis)
++			}
++		}
++	}
 +	if !bytes.Equal(sa, sb) {
 +		f.raMismatch++
 +		if f.raWarned < 3 {
@@ -19183,7 +19198,7 @@ index 669862d..0d94ba5 100644
 +    return ok;
 +}
 diff --git a/pkg/worker/caged/libretro/nanoarch/nanoarch.go b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
-index 17f10fc..d25c602 100644
+index 17f10fc..a852f23 100644
 --- a/pkg/worker/caged/libretro/nanoarch/nanoarch.go
 +++ b/pkg/worker/caged/libretro/nanoarch/nanoarch.go
 @@ -4,9 +4,11 @@ import (
@@ -20189,7 +20204,7 @@ index 17f10fc..d25c602 100644
  		now := time.Now()
  		Nan0.lastFrameDelta = float64(now.Sub(Nan0.LastFrameTime))
  		Nan0.LastFrameTime = now
-@@ -658,6 +1311,32 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
+@@ -658,6 +1311,49 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
  		return
  	}
  
@@ -20208,6 +20223,23 @@ index 17f10fc..d25c602 100644
 +	//
 +	// Skipping here also skips the blit/readback, the encode and the send — which is most of what
 +	// fast-forward is trying to buy in the first place.
++	// Run-ahead VERIFY (P8): hash the software framebuffer of this frame BEFORE the skip below, so a hidden
++	// re-run's picture can be compared with the visible run's. State bytes lie in both directions (scheduler
++	// counters differ after a restore while the picture is identical; a picture could differ on identical
++	// state bytes only through non-serialized render state) — the picture is what the player would see.
++	if frameHashOn.Load() && data != nil && data != C.RETRO_HW_FRAME_BUFFER_VALID {
++		bpp := Nan0.Video.PixFmt.BPP
++		pitch := packed
++		if pitch == 0 {
++			pitch = width * bpp
++		}
++		h := frameHash(unsafe.Slice((*byte)(data), pitch*height), width*bpp, pitch, height)
++		if hiddenRun.Load() {
++			hiddenFrameHash = h
++		} else {
++			visibleFrameHash = h
++		}
++	}
 +	if Nan0.Handlers.SkipFrame() {
 +		// The libretro sync-index protocol is per-FRAME, not per-DELIVERED-frame: a core that keys
 +		// its per-frame resources off get_sync_index desyncs if the index stops advancing (see
@@ -20222,7 +20254,7 @@ index 17f10fc..d25c602 100644
  	// calculate real frame width in pixels from packed data (realWidth >= width)
  	// some cores or games output zero pitch, i.e. N64 Mupen
  	bpp := Nan0.Video.PixFmt.BPP
-@@ -668,10 +1347,64 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
+@@ -668,10 +1364,64 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
  	bytes := packed * height
  
  	var data_ []byte
@@ -20287,7 +20319,7 @@ index 17f10fc..d25c602 100644
  		// if Libretro renders frame with OpenGL context
  		data_ = graphics.ReadFramebuffer(bytes, width, height)
  	}
-@@ -680,7 +1413,216 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
+@@ -680,7 +1430,245 @@ func coreVideoRefresh(data unsafe.Pointer, width, height uint, packed uint) {
  	// also we have an option of xN output frame magnification
  	// so, it may be rescaled
  
@@ -20485,6 +20517,35 @@ index 17f10fc..d25c602 100644
 +// of time already delivered, so it must reach neither the pipeline nor the pacer's audio clock.
 +var hiddenRun atomic.Bool
 +
++// frameHashOn arms the per-frame framebuffer hash in coreVideoRefresh (run-ahead VERIFY only — ~50 µs on a
++// 2D frame, never on in production). hiddenFrameHash / visibleFrameHash hold the last hidden and last visible
++// frame's hash; emulator goroutine only.
++var (
++	frameHashOn      atomic.Bool
++	hiddenFrameHash  uint64
++	visibleFrameHash uint64
++)
++
++// SetFrameHash arms or disarms the framebuffer hash (see frameHashOn).
++func (n *Nanoarch) SetFrameHash(on bool) { frameHashOn.Store(on) }
++
++// FrameHashes returns the last visible and last hidden frame hashes. Emulator goroutine only.
++func (n *Nanoarch) FrameHashes() (visible, hidden uint64) { return visibleFrameHash, hiddenFrameHash }
++
++// frameHash is FNV-1a over the visible bytes of each row (rowBytes of every pitch-strided row), so padding
++// bytes a core leaves uninitialised cannot make two identical pictures hash differently.
++func frameHash(buf []byte, rowBytes, pitch, rows uint) uint64 {
++	h := uint64(14695981039346656037)
++	for y := uint(0); y < rows; y++ {
++		row := buf[y*pitch : y*pitch+rowBytes]
++		for _, b := range row {
++			h ^= uint64(b)
++			h *= 1099511628211
++		}
++	}
++	return h
++}
++
 +// lastBuffStatus is what the audio-buffer-status callback last told the core on a delivered frame; hidden
 +// run-ahead frames replay it (see coreAudioSampleBatch). Emulator goroutine only.
 +var lastBuffStatus struct {
@@ -20505,7 +20566,7 @@ index 17f10fc..d25c602 100644
  }
  
  //export coreAudioSampleBatch
-@@ -688,6 +1630,18 @@ func coreAudioSampleBatch(data unsafe.Pointer, frames C.size_t) C.size_t {
+@@ -688,6 +1676,18 @@ func coreAudioSampleBatch(data unsafe.Pointer, frames C.size_t) C.size_t {
  	if Nan0.Stopped.Load() {
  		return frames
  	}
@@ -20524,7 +20585,7 @@ index 17f10fc..d25c602 100644
  	Nan0.Handlers.OnAudio(data, int(frames)<<1)
  
  	// Audio buffer status for the core (e.g. mGBA frameskip).
-@@ -708,6 +1662,7 @@ func coreAudioSampleBatch(data unsafe.Pointer, frames C.size_t) C.size_t {
+@@ -708,6 +1708,7 @@ func coreAudioSampleBatch(data unsafe.Pointer, frames C.size_t) C.size_t {
  			Nan0.audioDrift = -expectedNs * 4
  		}
  
@@ -20532,7 +20593,7 @@ index 17f10fc..d25c602 100644
  		C.call_audio_buffer_status(Nan0.audioBuffCb, true, C.unsigned(occupancy), C.bool(underrun))
  	}
  
-@@ -739,7 +1694,13 @@ func coreGetCurrentFramebuffer() C.uintptr_t { return (C.uintptr_t)(graphics.GlF
+@@ -739,7 +1740,13 @@ func coreGetCurrentFramebuffer() C.uintptr_t { return (C.uintptr_t)(graphics.GlF
  
  //export coreGetProcAddress
  func coreGetProcAddress(sym *C.char) C.retro_proc_address_t {
@@ -20547,7 +20608,7 @@ index 17f10fc..d25c602 100644
  }
  
  //export coreEnvironment
-@@ -748,9 +1709,43 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -748,9 +1755,43 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  	// see core_environment_cgo
  
  	switch cmd {
@@ -20591,7 +20652,7 @@ index 17f10fc..d25c602 100644
  		if isGeometryDifferent(av.geometry) {
  			geometryChange(av.geometry)
  		}
-@@ -788,6 +1783,12 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -788,6 +1829,12 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  	case C.RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY:
  		*(**C.char)(data) = Nan0.cSaveDirectory
  		return true
@@ -20604,7 +20665,7 @@ index 17f10fc..d25c602 100644
  	case C.RETRO_ENVIRONMENT_SET_MESSAGE:
  		// only with the Libretro debug mode
  		if Nan0.log.GetLevel() < logger.InfoLevel {
-@@ -797,12 +1798,48 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -797,12 +1844,48 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  			return true
  		}
  		return false
@@ -20653,7 +20714,7 @@ index 17f10fc..d25c602 100644
  		if v, ok := Nan0.options[key]; ok {
  			// make Go strings null-terminated copies ;_;
  			Nan0.options[key] = v + "\x00"
-@@ -816,14 +1853,93 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -816,14 +1899,93 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  			return true
  		}
  		return false
@@ -20748,7 +20809,7 @@ index 17f10fc..d25c602 100644
  	case C.RETRO_ENVIRONMENT_SET_CONTROLLER_INFO:
  		if Nan0.log.GetLevel() > logger.DebugLevel {
  			return false
-@@ -851,7 +1967,18 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -851,7 +2013,18 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  		return true
  	case C.RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK:
  		Nan0.log.Debug().Msgf("Keyboard event callback was set")
@@ -20768,7 +20829,7 @@ index 17f10fc..d25c602 100644
  		return true
  	case C.RETRO_ENVIRONMENT_SET_AUDIO_BUFFER_STATUS_CALLBACK:
  		if data == nil {
-@@ -869,11 +1996,31 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
+@@ -869,11 +2042,31 @@ func coreEnvironment(cmd C.unsigned, data unsafe.Pointer) C.bool {
  		Nan0.log.Info().Uint("latency_ms", uint(latency)).Msg("audio latency requested")
  		return true
  	}
@@ -20800,7 +20861,7 @@ index 17f10fc..d25c602 100644
  	var context graphics.Context
  	switch Nan0.Video.hw.context_type {
  	case C.RETRO_HW_CONTEXT_NONE:
-@@ -911,6 +2058,25 @@ func initVideo() {
+@@ -911,6 +2104,25 @@ func initVideo() {
  		if err != nil {
  			panic(err)
  		}
@@ -20826,7 +20887,7 @@ index 17f10fc..d25c602 100644
  	})
  
  	if Nan0.log.GetLevel() < logger.InfoLevel {
-@@ -918,12 +2084,31 @@ func initVideo() {
+@@ -918,12 +2130,31 @@ func initVideo() {
  	}
  }
  
@@ -20858,7 +20919,7 @@ index 17f10fc..d25c602 100644
  		if err := Nan0.glCtx.Deinit(); err != nil {
  			Nan0.log.Error().Err(err).Msg("deinit fail")
  		}
-@@ -932,9 +2117,243 @@ func deinitVideo() {
+@@ -932,9 +2163,243 @@ func deinitVideo() {
  	Nan0.Video.gl.autoCtx = false
  	Nan0.hackSkipHwContextDestroy = false
  	Nan0.hackSkipSameThreadSave = false
@@ -21102,7 +21163,7 @@ index 17f10fc..d25c602 100644
  type limit struct {
  	d  time.Duration
  	t  *time.Timer
-@@ -958,6 +2377,11 @@ func (d *limit) push(f func()) {
+@@ -958,6 +2423,11 @@ func (d *limit) push(f func()) {
  func geometryChange(geom C.struct_retro_game_geometry) {
  	Nan0.limiter(func() {
  		old := Nan0.sys.av.geometry
