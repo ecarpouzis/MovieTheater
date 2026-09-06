@@ -8023,10 +8023,10 @@ index 0000000..55854fb
 +}
 diff --git a/pkg/worker/abr.go b/pkg/worker/abr.go
 new file mode 100644
-index 0000000..4684fe9
+index 0000000..164ee63
 --- /dev/null
 +++ b/pkg/worker/abr.go
-@@ -0,0 +1,1080 @@
+@@ -0,0 +1,1089 @@
 +package worker
 +
 +import (
@@ -8872,16 +8872,25 @@ index 0000000..4684fe9
 +				// top layer if this peer was dropped back when the room had company. Multi-peer rooms
 +				// are untouched. (This was always mildly wrong for solo AV1 too — H.264-on-tablet is
 +				// just where it would finally have been felt.)
-+				if solo {
++				// A SAME-HOST peer gets the same treatment in ANY room, and additionally never binds the
++				// room bitrate: its media never crosses a network, so its GCC estimate measures our own
++				// encoder, not a link. Measured 2026-09-05 (arcade-mp-prod.mjs): a solo same-host creator
++				// sat at the ceiling with an estimate that had never needed to climb (12.8 Mbps against
++				// 33 sent); the moment a second peer joined, `solo` flipped, pickLayer read that stale
++				// estimate as starvation and dropped the CREATOR to layer 0 for ~8 s, and the bitrate path
++				// cut the room. Nothing was congested. (Only a viewer on Ziggy itself ever sees this.)
++				if solo || sameHost {
 +					if now := p.MaxTemporalLayer(); layers > 1 && now != layers-1 {
-+						log.Info().Msgf("abr: peer layer %d -> %d (solo room — full frame rate, bitrate adapts instead)",
-+							now, layers-1)
++						log.Info().Msgf("abr: peer layer %d -> %d (%s — full frame rate, bitrate adapts instead)",
++							now, layers-1, map[bool]string{true: "same-host peer", false: "solo room"}[sameHost])
 +						p.SetMaxTemporalLayer(layers - 1)
 +					}
 +					delete(layerDown, p)
 +					delete(starveHold, p)
-+					// Full stream ⇒ share is 100%: the room bitrate must respect the raw estimate.
-+					if worstServable == 0 || est < worstServable {
++					// Full stream ⇒ share is 100%: the room bitrate must respect the raw estimate — of a
++					// peer on a real link. A same-host estimate is left out (the all-same-host room case
++					// below already sits at the ceiling; a mixed room follows its remote peers).
++					if !sameHost && (worstServable == 0 || est < worstServable) {
 +						worstServable = est
 +						bindingPeer = p
 +					}
