@@ -1505,7 +1505,7 @@ emulator:
         snes:
           scale: 3
           rewind: true
-          runAhead: 1   # P8 (2026-09-05): verify diff = 1 byte at a fixed offset (0xaa9) per frame — a timing flag, not divergence
+          runAhead: 1   # P8 (2026-09-05): verify diff = 1 byte at 0xaa9 per frame with av=0 hidden frames (a timing flag); re-verify with av=3 owed
         nes:
           scale: 3
           rewind: true
@@ -1514,14 +1514,16 @@ emulator:
           # press lands one frame (16.7 ms) earlier than the game itself would show it. Armed on nestopia ONLY:
           # the determinism check (runAheadVerify) passed 3,908/3,908 frames of driven Mega Man 2 after the first
           # boot frame. snes9x/genesis_plus_gx/mgba showed frame-parity mismatches that the fork's diff report
-          # (3d936c3) traced to 1–16 bytes of timing/audio counters at fixed offsets — the hidden run's av_enable=0
-          # side effect, identical to RetroArch's run-ahead — so they are armed too (see each block).
+          # (3d936c3) traced to 1–16 bytes of timing/audio counters at fixed offsets — consistent with the hidden
+          # run's av_enable=0 skipping audio mixing (the review's reading; the same drift RetroArch's run-ahead has).
+          # Armed on that reading; the fork now keeps av=3 on hidden frames, and a re-verify with it is owed to
+          # turn the reading into evidence.
           # Rollback = delete the key + .stop recycle. CLOUD_GAME_RUNAHEAD=0 kills it at runtime.
           runAhead: 1
         gba:
           scale: 3
           rewind: true
-          runAhead: 1   # P8 (2026-09-05): verify diff = 2–6 bytes at 0x132..0x152 (state header timing counters) — not divergence
+          runAhead: 1   # P8 (2026-09-05): verify diff = 2–6 bytes at 0x132..0x152 with av=0 hidden frames (header timing counters); re-verify with av=3 owed
         # Game Boy / Game Boy Color via mgba (same lib as GBA). The stock config only exposes gba+gbc
         # roms under the `gba` folder; the JIT catalog files per system (gb/, gbc/), so give each its own
         # core+folder. mgba plays all three. scale:3 for the same crispness rationale as the other 2D cores.
@@ -1531,12 +1533,14 @@ emulator:
           roms: ["gb"]
           scale: 3
           rewind: true
+          runAhead: 1   # P8: same mgba core and state format as gba (armed there after the verify pass)
         gbc:
           lib: mgba_libretro
           folder: gbc
           roms: ["gbc"]
           scale: 3
           rewind: true
+          runAhead: 1   # P8: same mgba core and state format as gba (armed there after the verify pass)
 
         gen:
           # lib name verified live 2026-07-03 (Sonic 2 streams).
@@ -1545,7 +1549,7 @@ emulator:
           folder: genesis
           scale: 3   # 320x224 native -> 960x672 nearest (was 2; 3x matches snes/nes, costs NVENC nothing)
           rewind: true
-          runAhead: 1   # P8 (2026-09-05): verify diff = 1–16 bytes in 0x22bd0..0x234ae (audio/timer state) per frame — not divergence
+          runAhead: 1   # P8 (2026-09-05): verify diff = 1–16 bytes in 0x22bd0..0x234ae with av=0 hidden frames (audio/timer state); re-verify with av=3 owed
 
         # ARCADE (fbneo). The site's `arcade` system ingests into roms/mame and launches through the
         # core key `mame` (ArcadeIngestCommand.cs:242) -- the STOCK CloudRetro entry, which we had never
