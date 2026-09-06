@@ -1505,7 +1505,7 @@ emulator:
         snes:
           scale: 3
           rewind: true
-          runAhead: 1   # P8: verify with av=3 hidden frames (fork 54e3a43, 2026-09-06) = 5 mismatches in 3,283 frames, APU sync phase — CLEARED
+          runAhead: 1   # P8 VERIFIED 2026-09-06: picture compare 0 differing frames in 4,787 (state bytes 5/4,787, APU sync phase)
         nes:
           scale: 3
           rewind: true
@@ -1513,17 +1513,16 @@ emulator:
           # the state from one frame ago and re-simulates it with the new input before the visible frame, so a
           # press lands one frame (16.7 ms) earlier than the game itself would show it. Armed on nestopia ONLY:
           # the determinism check (runAheadVerify) passed 3,908/3,908 frames of driven Mega Man 2 after the first
-          # boot frame. snes9x/genesis_plus_gx/mgba showed frame-parity mismatches that the fork's diff report
-          # (3d936c3) traced to 1–16 bytes of timing/audio counters at fixed offsets — consistent with the hidden
-          # run's av_enable=0 skipping audio mixing (the review's reading; the same drift RetroArch's run-ahead has).
-          # Armed on that reading; the fork now keeps av=3 on hidden frames, and a re-verify with it is owed to
-          # turn the reading into evidence.
+          # boot frame. snes9x/genesis_plus_gx/mgba showed frame-parity mismatches in STATE BYTES that the fork's
+          # diff report traced to a few scheduler/sound-chip counter bytes at fixed offsets; the picture compare
+          # (fork 215f8e8: the hidden re-run's framebuffer hash vs the visible run's) then showed 0 / 0 / 1 differing
+          # frames in ~5,000 each — see each block. That is the criterion a player feels, and it is met.
           # Rollback = delete the key + .stop recycle. CLOUD_GAME_RUNAHEAD=0 kills it at runtime.
           runAhead: 1
         gba:
           scale: 3
           rewind: true
-          runAhead: 1   # P8: verify differs every other frame by 2–6 bytes @0x132..0x152 (state-header scheduler counters), unchanged by av=3 — armed on the reading that it is bookkeeping phase, not RAM; frame-hash verify owed
+          runAhead: 1   # P8 VERIFIED 2026-09-06: picture compare 0 differing frames in 5,055 (state bytes differ every other frame @0x132..0x152 = scheduler bookkeeping, picture identical)
         # Game Boy / Game Boy Color via mgba (same lib as GBA). The stock config only exposes gba+gbc
         # roms under the `gba` folder; the JIT catalog files per system (gb/, gbc/), so give each its own
         # core+folder. mgba plays all three. scale:3 for the same crispness rationale as the other 2D cores.
@@ -1549,7 +1548,7 @@ emulator:
           folder: genesis
           scale: 3   # 320x224 native -> 960x672 nearest (was 2; 3x matches snes/nes, costs NVENC nothing)
           rewind: true
-          runAhead: 1   # P8: verify differs every other frame by 6–9 bytes @0x23418..0x23462 (sound-chip/cycle counters), unchanged by av=3 — armed on the reading that it is bookkeeping phase, not RAM; frame-hash verify owed
+          runAhead: 1   # P8 VERIFIED 2026-09-06: picture compare 1 differing frame in 5,009 (a menu transition; state bytes differ every other frame @0x23418..0x23462 = sound-chip/cycle bookkeeping)
 
         # ARCADE (fbneo). The site's `arcade` system ingests into roms/mame and launches through the
         # core key `mame` (ArcadeIngestCommand.cs:242) -- the STOCK CloudRetro entry, which we had never
