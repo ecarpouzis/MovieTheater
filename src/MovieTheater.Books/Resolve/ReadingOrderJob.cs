@@ -222,10 +222,14 @@ ORDER BY i.Id"))
         }
 
         /// <summary>
-        /// The containment pull-in: in a REAL issue run (three or more orderable main-tier issues), a collected
-        /// edition whose span is known joins the main line at its span start. The negative suffix sorts it just
-        /// before the first issue it collects, and a WIDER span sorts first — so the omnibus precedes the TPB
-        /// that precedes the issues.
+        /// The containment pull-in: in a REAL issue run (three or more orderable main-tier issues), ANY row whose
+        /// span was selected joins the main line at its span start. The negative suffix sorts it just before the
+        /// first issue it collects, and a WIDER span sorts first — so the omnibus precedes the TPB that precedes
+        /// the issues.
+        ///
+        /// <para>The row's parsed tier does not gate this any more. A collected edition mis-parsed as a single
+        /// issue used to keep its wrong main-line NUMBER (the volume number read as an issue number) even though
+        /// its span said exactly where it belongs; now the span wins wherever there is one.</para>
         /// </summary>
         private static void PullInCollections(TargetWriter hot, int seriesId, List<Row> rows)
         {
@@ -234,8 +238,19 @@ ORDER BY i.Id"))
             var spans = LoadSpans(hot, seriesId);
             foreach (var r in rows)
             {
-                if (r.Tier != ReadingOrderParser.TierCollection || !spans.TryGetValue(r.ItemId, out var sp)) continue;
+                // A SELECTED span is the authority on where a row belongs, whatever TIER the parse gave it: the
+                // span says "this thing collects #a-#b", which is a containment position and a stronger
+                // statement than a format guess. (4,681 rows carried a span while sitting on the main line at
+                // the wrong number, because their filename's volume number had been read as an issue number.)
+                if (!spans.TryGetValue(r.ItemId, out var sp)) continue;
                 if (sp.End < sp.Start || sp.Start <= 0) continue;
+                // …but a row that already holds a number OF ITS OWN outside the collection tier is not moved.
+                // Provider spans are not clean enough to relocate an issue: a shell-page span claiming to
+                // collect a whole series dragged 1,647 genuine 32-page issues (2000 AD progs, "Iron Man 2020")
+                // and a shelf of numbered specials to the front of their runs. A collected edition is exempt
+                // because its number was never its own — it is the volume index, which is precisely what the
+                // collected-edition parse rule takes away.
+                if (r.Tier != ReadingOrderParser.TierCollection && r.Number != null) continue;
                 r.Tier = ReadingOrderParser.TierMain;
                 r.Number = sp.Start;
                 r.Suffix = -1 - (sp.End - sp.Start);
@@ -247,24 +262,50 @@ ORDER BY i.Id"))
         }
 
         /// <summary>
-        /// The one span per item, by the containment precedence <b>Locg &gt; Gcd &gt; Cv &gt; Curated</b>. LOCG
-        /// is first because it comes from an explicit per-issue containment edge list — the relationship behind
-        /// its own navigation — where GCD's reprint graph is spotty and ComicVine's is a free-text parse.
+        /// The one span per item, chosen by <see cref="SpanSelection.Select"/> — the precedence LOCG (with real
+        /// containment) &gt; { Gcd-by-title, Cv, Curated } by confidence &gt; LOCG without containment &gt;
+        /// issue-keyed Gcd, with degenerate "#N-#N" spans discarded on anything shaped like a collection.
+        /// One read per call: the candidates plus the two facts the selection needs about the item itself.
         /// </summary>
         public static Dictionary<int, (double Start, double End, EditionSource Source)> LoadSpans(TargetWriter hot, int? seriesId = null)
         {
+            // Narrowed by the ITEM's series, never by the span's own denormalized `SeriesId`: that copy goes
+            // stale when identity moves an item (1,397 of 9,911 rows disagree with `Item.SeriesId` today), and
+            // the per-series filter then silently hid the span from the very series that owns the book —
+            // "Wolverine Omnibus Book 03" kept a Curated #31-59 nobody could see. Item.SeriesId is the grouping
+            // authority everywhere else in these two jobs; it is the authority here too.
+            var where = seriesId == null ? "" : $" AND i.SeriesId = {seriesId}";
+            var byItem = new Dictionary<int, (bool IsCollection, int PageCount, List<SpanSelection.Candidate> Candidates)>();
+
+            foreach (var (itemId, payload) in hot.Pairs($@"
+SELECT ces.ItemId,
+       ces.Source || char(31) || coalesce(ces.IssueStart,'') || char(31) || coalesce(ces.IssueEnd,'') || char(31)
+    || coalesce(ces.Confidence,'') || char(31) || coalesce(ces.Note,'') || char(31)
+    || coalesce((SELECT l.MatchedKey FROM ItemProviderLink l
+                 WHERE l.ItemId = ces.ItemId AND l.Provider = {(int)Provider.Gcd}), '') || char(31)
+    || coalesce(cd.IsCollection, 0) || char(31) || coalesce(i.PageCount, 0)
+FROM CollectedEditionSpan ces
+JOIN Item i ON i.Id = ces.ItemId
+LEFT JOIN ComicDetail cd ON cd.ItemId = ces.ItemId
+WHERE ces.IssueStart IS NOT NULL AND ces.IssueEnd IS NOT NULL{where}"))
+            {
+                var p = payload!.Split(TargetWriter.Sep);
+                if (p[1].Length == 0 || p[2].Length == 0) continue;
+                var id = (int)itemId;
+                if (!byItem.TryGetValue(id, out var entry))
+                    byItem[id] = entry = (p[6] == "1", int.Parse(p[7]), new List<SpanSelection.Candidate>());
+                entry.Candidates.Add(new SpanSelection.Candidate(
+                    (EditionSource)int.Parse(p[0]),
+                    double.Parse(p[1], System.Globalization.CultureInfo.InvariantCulture),
+                    double.Parse(p[2], System.Globalization.CultureInfo.InvariantCulture),
+                    p[3].Length == 0 ? null : double.Parse(p[3], System.Globalization.CultureInfo.InvariantCulture),
+                    Blank(p[4]), Blank(p[5])));
+            }
+
             var spans = new Dictionary<int, (double, double, EditionSource)>();
-            var where = seriesId == null ? "" : $" AND SeriesId = {seriesId}";
-            // Reverse precedence order: a later load overwrites an earlier one.
-            foreach (var source in new[] { EditionSource.Curated, EditionSource.Cv, EditionSource.Gcd, EditionSource.Locg })
-                foreach (var (itemId, payload) in hot.Pairs(
-                    $"SELECT ItemId, coalesce(IssueStart,'') || char(31) || coalesce(IssueEnd,'') FROM CollectedEditionSpan WHERE Source = {(int)source}{where}"))
-                {
-                    var p = payload!.Split(TargetWriter.Sep);
-                    if (p[0].Length == 0 || p[1].Length == 0) continue;
-                    spans[(int)itemId] = (double.Parse(p[0], System.Globalization.CultureInfo.InvariantCulture),
-                                          double.Parse(p[1], System.Globalization.CultureInfo.InvariantCulture), source);
-                }
+            foreach (var (id, entry) in byItem)
+                if (SpanSelection.Select(entry.Candidates, entry.IsCollection, entry.PageCount) is SpanSelection.Candidate w)
+                    spans[id] = (w.Start, w.End, w.Source);
             return spans;
         }
 
@@ -352,6 +393,102 @@ SELECT s.Id,
 FROM Series s JOIN ReadingOrderEntry ro ON ro.SeriesId = s.Id
 GROUP BY s.Id ORDER BY s.Id"))
                 yield return seriesId + "," + string.Join(",", payload!.Split(TargetWriter.Sep));
+        }
+    }
+
+    /// <summary>
+    /// WHICH "this edition collects #a-#b" claim to believe when several providers disagree — the pure half of
+    /// <see cref="ReadingOrderJob.LoadSpans"/>, shared by the reading order and the containment job.
+    ///
+    /// <para>The old rule was source order alone (Locg &gt; Gcd &gt; Cv &gt; Curated) whatever the row said, and
+    /// it lost 491 of 739 disagreements to a lower-confidence answer: 3,900 GCD spans come from a match keyed on
+    /// the (wrongly parsed) ISSUE NUMBER, and many are degenerate "#44-#44" claims about a 1,226-page omnibus —
+    /// "Wolverine Omnibus Book 03" took Gcd #44-44 at 0.8 over Curated #31-59 at 0.97, "Saga Book 1" took Gcd
+    /// #1-6 over Cv #1-18 at 1.0.</para>
+    ///
+    /// <para><b>The rule now.</b> (a) A degenerate span (End == Start) on something shaped like a collection —
+    /// the parse says so, or it is <see cref="DegeneratePageFloor"/> pages or more — is DISCARDED: a book that
+    /// thick does not collect one issue. (b) An issue-keyed GCD span ranks BELOW Cv and Curated. (c) Among the
+    /// remaining Gcd/Cv/Curated claims the higher <c>Confidence</c> wins, with the old order as the tiebreak.
+    /// LOCG still leads — but only when its record has real containment, because a LOCG row reduced from a
+    /// single edge ("contained: 1") is a shell page, not a table of contents.</para>
+    /// </summary>
+    public static class SpanSelection
+    {
+        /// <summary>At or above this many pages, a "collects #N-#N" claim is self-evidently wrong.</summary>
+        public const int DegeneratePageFloor = 100;
+
+        /// <summary>One provider's claim about one item.</summary>
+        public readonly record struct Candidate(
+            EditionSource Source, double Start, double End, double? Confidence, string? Note, string? GcdMatchedKey);
+
+        private static readonly System.Text.RegularExpressions.Regex RxBareIssueKey =
+            new(@"^\s*\d+(?:\.\d+)?\s*$", System.Text.RegularExpressions.RegexOptions.Compiled);
+        private static readonly System.Text.RegularExpressions.Regex RxMatchByNum =
+            new(@"match-by:\s*num", System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Compiled);
+        private static readonly System.Text.RegularExpressions.Regex RxMatchByTitle =
+            new(@"match-by:\s*title", System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Compiled);
+        private static readonly System.Text.RegularExpressions.Regex RxContained =
+            new(@"contained:?\s*(\d+)|\b(\d+)\s+contained\b", System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Compiled);
+
+        /// <summary>
+        /// Was this GCD span matched on a BARE ISSUE NUMBER rather than the edition's title? The note says so
+        /// outright ("match-by: num" / "match-by: title"); when it is silent, a numeric `MatchedKey` on the GCD
+        /// link is the same signal. A title match keyed to a numeric volume ("Rachel Rising Vol. 01" → key "1",
+        /// "match-by: title") is NOT issue-keyed and keeps its rank.
+        /// </summary>
+        public static bool IsIssueKeyedGcd(Candidate c)
+        {
+            if (c.Source != EditionSource.Gcd) return false;
+            if (c.Note != null && RxMatchByNum.IsMatch(c.Note)) return true;
+            if (c.Note != null && RxMatchByTitle.IsMatch(c.Note)) return false;
+            return c.GcdMatchedKey != null && RxBareIssueKey.IsMatch(c.GcdMatchedKey);
+        }
+
+        /// <summary>A LOCG span backed by more than one containment edge (or by a range) is a real table of contents.</summary>
+        public static bool LocgHasRealContainment(Candidate c)
+        {
+            if (c.End > c.Start) return true;
+            if (c.Note == null) return true;
+            var m = RxContained.Match(c.Note);
+            if (!m.Success) return true;
+            var n = m.Groups[1].Success ? m.Groups[1].Value : m.Groups[2].Value;
+            return !int.TryParse(n, out var count) || count >= 2;
+        }
+
+        /// <summary>A "#N-#N" claim about a collection is no claim at all — it is the match's own key echoed back.</summary>
+        public static bool IsDiscardable(Candidate c, bool isCollection, int pageCount) =>
+            c.End <= c.Start && (isCollection || pageCount >= DegeneratePageFloor);
+
+        /// <summary>The class rank: lower is better. 0 LOCG-with-containment, 1 the confidence-ranked middle,
+        /// 2 LOCG without containment, 3 issue-keyed GCD.</summary>
+        public static int Rank(Candidate c) =>
+            c.Source == EditionSource.Locg ? (LocgHasRealContainment(c) ? 0 : 2)
+            : IsIssueKeyedGcd(c) ? 3
+            : 1;
+
+        /// <summary>The historical order, kept as the tiebreak when two claims rank and score the same.</summary>
+        private static int LegacyOrder(EditionSource s) => s switch
+        {
+            EditionSource.Locg => 0, EditionSource.Gcd => 1, EditionSource.Cv => 2, _ => 3,
+        };
+
+        /// <summary>The winner, or null when every claim was discarded (the edition stays a labelled leaf).</summary>
+        public static Candidate? Select(IReadOnlyList<Candidate> candidates, bool isCollection, int pageCount)
+        {
+            Candidate? best = null;
+            var bestKey = (Rank: int.MaxValue, Conf: double.MinValue, Legacy: int.MaxValue);
+            foreach (var c in candidates)
+            {
+                if (IsDiscardable(c, isCollection, pageCount)) continue;
+                var key = (Rank(c), c.Confidence ?? 0, LegacyOrder(c.Source));
+                if (key.Item1 > bestKey.Rank) continue;
+                if (key.Item1 == bestKey.Rank && key.Item2 < bestKey.Conf) continue;
+                if (key.Item1 == bestKey.Rank && key.Item2 == bestKey.Conf && key.Item3 >= bestKey.Legacy) continue;
+                best = c;
+                bestKey = key;
+            }
+            return best;
         }
     }
 }

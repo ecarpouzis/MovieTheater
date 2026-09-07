@@ -95,6 +95,27 @@ namespace MovieTheater.Books.Parse
         private static readonly Regex RxFolderPrefix = new(@"^[\s_#]*(?:0\d+|[0-9]+)[\s._-]+", RegexOptions.Compiled);
         private static readonly Regex RxFolderNoiseBracket = new(@"\(\s*(?!(?:19|20)\d{2}\s*\))[^()]*\)", RegexOptions.Compiled);
 
+        // ── collected-edition detection ──────────────────────────────────────────────────────────────────
+        /// <summary>A NUMBERED collected-edition label: "Vol. 07", "Volume 3", "Book 04", "Bk 2".</summary>
+        private static readonly Regex RxCollectedNumbered = new(
+            @"\b(?:Vol(?:ume)?|Book|Bk)\.?\s*#?\s*\d+\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        /// <summary>An UNNUMBERED collected-edition label: a format word, or an edition phrase.</summary>
+        private static readonly Regex RxCollectedWord = new(
+            @"\b(?:Omnibus|Compendium|Metrobook|TPB|Hardcover|Trade\s+Paperback)\b|\bHC\b" +
+            @"|\b(?:Epic|Complete|Deluxe|Absolute|Definitive|Library|Ultimate|Essential|Legendary|Oversized|Facsimile|Sundae|Collector['’]?s['’]?)" +
+            @"\s+(?:Collection|Edition|Library|Omnibus|Hardcover|HC)\b",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        /// <summary>The OMNIBUS-grade words — the widest collected level, matching `CollectionLevels.Resolve`.</summary>
+        private static readonly Regex RxOmnibusLabel = new(@"\b(?:Omnibus|Compendium)\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        /// <summary>The BOOK-grade labels: an enumerated "Book NN" line, a hardcover, or a deluxe/absolute/library edition.</summary>
+        private static readonly Regex RxBookLevelLabel = new(
+            @"\b(?:Book|Bk)\.?\s*#?\s*\d+\b|\bHardcover\b|\bHC\b|\bMetrobook\b" +
+            @"|\b(?:Deluxe|Absolute|Definitive|Library|Sundae|Collector['’]?s['’]?)\s+(?:Edition|Collection|Hardcover|HC)\b",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
         // ── format detection ─────────────────────────────────────────────────────────────────────────────
         private static readonly Regex RxFormatVol = new(@"\b(?:Vol(?:ume)?|v)\s*\d+\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly Regex RxFormatAnnual = new(@"\bannual\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
@@ -120,7 +141,7 @@ namespace MovieTheater.Books.Parse
         /// configured roots, so the folder components are taken RELATIVE to a root (the publisher is the first
         /// component after it) rather than from whatever the absolute path happens to start with.
         /// </summary>
-        public static Parsed Parse(string fileName, string filePath, Embedded? meta, IReadOnlyList<string> libraryRoots)
+        public static Parsed Parse(string fileName, string filePath, Embedded? meta, IReadOnlyList<string> libraryRoots, int pageCount = 0)
         {
             meta ??= new Embedded();
             var stem = System.IO.Path.GetFileNameWithoutExtension(fileName);
@@ -201,11 +222,28 @@ namespace MovieTheater.Books.Parse
             else if (folderPublisher != null) { bestPublisher = folderPublisher; pubSource = ParseSource.Folder; }
             else { bestPublisher = null; pubSource = ParseSource.None; }
 
-            var (format, formatRaw, isCollection) = DetectFormat(stem, meta.Format);
+            var (format, formatRaw, isCollection) = DetectFormat(stem, meta.Format, pageCount);
 
+            // Confidence reports which TIER the series came from; it is settled before the collected-edition
+            // rule moves the number, so promoting an edition never costs it a confidence grade.
             var confidence = seriesSource is ParseSource.Metadata or ParseSource.MetadataAlt ? Confidence.High
                 : bestIssue != null ? Confidence.Medium
                 : Confidence.Low;
+
+            // A collected edition has a VOLUME number, not an issue number. The issue ladder's rung 2
+            // ("Vol/Volume/Issue/Book/Bk N") still reads that N for genuine issues labelled that way (§2.5) —
+            // it is only here, where the label plus the size say COLLECTION, that N moves to VolumeNo and the
+            // issue number is dropped. Leaving it put "Saga Book 2" at #2 in the middle of the run it collects.
+            if (IsCollectedEdition(stem, pageCount))
+            {
+                var labelNo = ExtractVolumeNo(stem);
+                if (labelNo != null) bestVolumeNo = labelNo;
+                notes.Add(bestIssue == null
+                    ? $"collected edition ({pageCount} pages, no #N): format from the label"
+                    : $"collected edition ({pageCount} pages, no #N): issue '{bestIssue}' is the volume number — dropped");
+                bestIssue = null;
+                issueSource = ParseSource.None;
+            }
 
             return new Parsed(
                 string.IsNullOrWhiteSpace(bestSeries) ? null : bestSeries,
@@ -349,11 +387,59 @@ namespace MovieTheater.Books.Parse
         }
 
         /// <summary>
+        /// The page count at or above which a collected-edition LABEL outranks the embedded ComicInfo format.
+        /// Measured, not guessed: below 60 pages the labelled population is genuine floppies — mini-series parts
+        /// spelled "Book 01 (of 03)", European albums ("The Smurfs Vol. 20"), a printing-run label carried into
+        /// every issue ("Powers Vol. 2 07") — while at 60 and above it is TPBs, deluxe books, omnibuses and
+        /// compendia, with no floppy among them (see comic-parsing.md §2.5).
+        /// </summary>
+        public const int CollectionPageFloor = 60;
+
+        /// <summary>
+        /// Does this stem carry a collected-edition label AND no explicit <c>#N</c> issue token? "Vol. 07",
+        /// "Book 04", "Omnibus", "Compendium", "Epic Collection", "Deluxe Edition", "TPB", "HC". The absent
+        /// <c>#N</c> is half the signal: a publisher who prints "Vol. 2 #7" is numbering an ISSUE inside a run.
+        /// </summary>
+        public static bool HasCollectedEditionLabel(string stem) =>
+            !string.IsNullOrWhiteSpace(stem) && !RxHashNum.IsMatch(stem)
+            && (RxCollectedNumbered.IsMatch(stem) || RxCollectedWord.IsMatch(stem));
+
+        /// <summary>
+        /// The F1 rule. A collected-edition label with no <c>#N</c>, on a file thick enough to BE a collection,
+        /// is a collection — even when the embedded ComicInfo says "Single Issue" (9,407 files in 2,693 series
+        /// were tagged that way, and the issue ladder then read the volume number as an issue number and
+        /// interleaved the omnibus with the run it collects). Below <see cref="CollectionPageFloor"/> the
+        /// ComicInfo is trusted, because there the same labels really are issues.
+        /// </summary>
+        public static bool IsCollectedEdition(string stem, int pageCount) =>
+            pageCount >= CollectionPageFloor && HasCollectedEditionLabel(stem);
+
+        /// <summary>
+        /// Which collected FORMAT a label implies, aligned with <c>CollectionLevels.Resolve</c> so the format and
+        /// the containment level agree: Omnibus/Compendium → <see cref="ComicFormat.Omnibus"/> (level Omnibus);
+        /// "Book NN" / HC / Deluxe / Absolute / Library Edition → <see cref="ComicFormat.Hardcover"/>, the only
+        /// format that resolves to level Book; everything else (Vol NN, TPB, Epic/Complete Collection) →
+        /// <see cref="ComicFormat.Tpb"/> (level Volume).
+        /// </summary>
+        public static ComicFormat CollectedFormatFor(string stem) =>
+            RxOmnibusLabel.IsMatch(stem) ? ComicFormat.Omnibus
+            : RxBookLevelLabel.IsMatch(stem) ? ComicFormat.Hardcover
+            : ComicFormat.Tpb;
+
+        /// <summary>
         /// The format enum plus the RAW spelling it came from. v1 stored 33 free-text spellings in one column;
         /// v2 keeps the enum for querying and `FormatRaw` for the ones the map does not know.
+        ///
+        /// <para><paramref name="pageCount"/> is the F1 guard: 0 (the default, "unknown") can never promote a
+        /// row, so every caller that does not know the size keeps the old answer.</para>
         /// </summary>
-        public static (ComicFormat Format, string? Raw, bool IsCollection) DetectFormat(string fileName, string? metaFormat)
+        public static (ComicFormat Format, string? Raw, bool IsCollection) DetectFormat(string fileName, string? metaFormat, int pageCount = 0)
         {
+            // The label beats the ComicInfo spelling — but the RAW spelling is kept, because FormatRaw is
+            // provenance ("this file's ComicInfo said Single Issue"), not a second opinion on the format.
+            if (IsCollectedEdition(fileName, pageCount))
+                return (CollectedFormatFor(fileName), string.IsNullOrWhiteSpace(metaFormat) ? null : metaFormat.Trim(), true);
+
             if (!string.IsNullOrWhiteSpace(metaFormat))
             {
                 var raw = metaFormat.Trim();

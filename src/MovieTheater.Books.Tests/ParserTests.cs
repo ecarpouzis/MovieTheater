@@ -12,11 +12,16 @@ namespace MovieTheater.Books.Tests
     {
         private static readonly string[] Roots = { @"\\share\comics", @"\\share\books" };
 
-        private static ComicTitleParser.Parsed Parse(string relative, ComicTitleParser.Embedded? meta = null)
+        private static ComicTitleParser.Parsed Parse(string relative, ComicTitleParser.Embedded? meta = null, int pageCount = 0)
         {
             var path = @"\\share\comics\" + relative.Replace('/', '\\');
-            return ComicTitleParser.Parse(System.IO.Path.GetFileName(path), path, meta, Roots);
+            return ComicTitleParser.Parse(System.IO.Path.GetFileName(path), path, meta, Roots, pageCount);
         }
+
+        /// <summary>The ComicInfo those files carry: "Single Issue", which is what made this whole class of
+        /// misparse — 9,407 files in 2,693 series — invisible to the format detector.</summary>
+        private static ComicTitleParser.Embedded SingleIssueTag(string? number = null) =>
+            new(Series: null, Number: number, Format: "Single Issue");
 
         [Theory]
         // The title contains a bare 2000; the LEADING ZEROS on 0001 are what say "this is the index".
@@ -150,6 +155,96 @@ namespace MovieTheater.Books.Tests
             Assert.Equal(format, f);
             Assert.Null(raw);
             Assert.Equal(isCollection, collection);
+        }
+
+        // ── F1: a collected-edition label with no #N beats a "Single Issue" ComicInfo ────────────────────
+
+        [Theory]
+        // The seven Saga files. Three deluxe hardcovers (Book-level) and four TPBs (Volume-level), every one of
+        // them tagged "Single Issue" and every one of them previously landing on the main line at #1..#10.
+        [InlineData("Saga Book 1 (2014) (Saga 01-018) (digital-Empire).cbr", 505, ComicFormat.Hardcover, 1)]
+        [InlineData("Saga Book 2 (2017) (Digital) (Zone-Empire).cbr", 462, ComicFormat.Hardcover, 2)]
+        [InlineData("Saga Book 03 (2019) (Digital-Empire).cbz", 457, ComicFormat.Hardcover, 3)]
+        [InlineData("Saga Vol. 07 (2017) (Digital) (Zone-Empire).cbr", 152, ComicFormat.Tpb, 7)]
+        [InlineData("Saga Vol. 08 (2017) (Digital) (Zone-Empire).cbr", 153, ComicFormat.Tpb, 8)]
+        [InlineData("Saga Vol. 09 (2018) (Digital) (Zone-Empire).cbr", 152, ComicFormat.Tpb, 9)]
+        [InlineData("Saga Vol. 10 (2022) (Digital-Empire).cbz", 169, ComicFormat.Tpb, 10)]
+        // Compendium and Omnibus are omnibus-grade whatever else the name says.
+        [InlineData("The Walking Dead Compendium Book 04 (2019) (digital-Empire).cbz", 1204, ComicFormat.Omnibus, 4)]
+        [InlineData("Spawn Compendium Book 01 (2021) (F) (Digital) (danke-Empire).cbz", 1118, ComicFormat.Omnibus, 1)]
+        [InlineData("Wolverine Omnibus Book 03 (2023) (Digital) (Kileko-Empire).cbz", 1226, ComicFormat.Omnibus, 3)]
+        // "Epic Collection Vol. NN" is a numbered trade line — Volume grade.
+        [InlineData("Silver Surfer Epic Collection Vol. 14 - Sun Rise and Shadow Fall (2024) (Digital) (Shan-Empire).cbz", 474, ComicFormat.Tpb, 14)]
+        // A deluxe edition enumerated as "Book NN" is Book grade.
+        [InlineData("Ninjak - Deluxe Edition - Book 02 (2018) (digital) (Son of Ultron-Empire).cbr", 478, ComicFormat.Hardcover, 2)]
+        public void ACollectedEditionLabelWithNoHashBeatsASingleIssueTag(string fileName, int pages, ComicFormat format, int volume)
+        {
+            var parsed = Parse(@"Image\Saga (2012)\" + fileName, SingleIssueTag(), pages);
+            Assert.Equal(format, parsed.Format);
+            Assert.True(parsed.IsCollection);
+            Assert.Equal(volume, parsed.VolumeNo);
+            // The volume number is NOT an issue number: leaving it interleaved the edition with the run.
+            Assert.Null(parsed.IssueNo);
+            Assert.Equal(ParseSource.None, parsed.IssueSource);
+            // The ComicInfo spelling survives as provenance — FormatRaw says what the file claimed.
+            Assert.Equal("Single Issue", parsed.FormatRaw);
+            Assert.Contains("collected edition", parsed.ParseNotes);
+        }
+
+        [Theory]
+        // Genuine floppies whose names carry a collection-shaped label. All three are in the library; all three
+        // are under the page floor, which is the whole reason the floor exists.
+        // "Vol. 2" here is the PRINTING RUN carried into every issue's name.
+        [InlineData("Powers Vol. 2 01 (2004) (Digital) (ZoneKing-Empire).cbr", 22)]
+        // "Book 2" is the mini-series' own name; "001" is the issue inside it.
+        [InlineData("Zorro - Legendary Adventures Book 2 001 (2019) (digital) (Son of Ultron-Empire).cbr", 22)]
+        // "The Comic Book 01 (of 5)" — "Book" is part of the TITLE and the number is the issue.
+        [InlineData("Comic Book Guy - The Comic Book 01 (of 5) (2010) (4 covers) (digital) (Minutemen-InnerDemons).cbr", 28)]
+        public void AThinFileKeepsItsSingleIssueTagHoweverItIsLabelled(string fileName, int pages)
+        {
+            var parsed = Parse(@"Image\Whatever (2004)\" + fileName, SingleIssueTag("1"), pages);
+            Assert.Equal(ComicFormat.SingleIssue, parsed.Format);
+            Assert.False(parsed.IsCollection);
+            Assert.NotNull(parsed.IssueNo);
+        }
+
+        [Fact]
+        public void AnExplicitHashNumberMeansItIsAnIssueHoweverThickTheFile()
+        {
+            // "Vol. 2 #7" numbers an ISSUE inside a run — the '#' token is half the collected-edition signal.
+            var parsed = Parse(@"DC\Hellblazer (1988)\Hellblazer Vol. 2 #7 (1988).cbz", SingleIssueTag(), 400);
+            Assert.Equal(ComicFormat.SingleIssue, parsed.Format);
+            Assert.False(parsed.IsCollection);
+            Assert.Equal("7", parsed.IssueNo);
+        }
+
+        [Fact]
+        public void AnUnknownPageCountCanNeverPromoteARow()
+        {
+            // 0 = "we do not know", the default for every caller that has no size to offer.
+            var parsed = Parse(@"Image\Saga (2012)\Saga Vol. 07 (2017) (Digital) (Zone-Empire).cbr", SingleIssueTag());
+            Assert.Equal(ComicFormat.SingleIssue, parsed.Format);
+            Assert.False(parsed.IsCollection);
+        }
+
+        [Theory]
+        [InlineData("Wolverine Omnibus Book 03 (2023).cbz", ComicFormat.Omnibus)]
+        [InlineData("The Walking Dead Compendium Book 04 (2019).cbz", ComicFormat.Omnibus)]
+        [InlineData("Ninjak - Deluxe Edition - Book 02 (2018).cbr", ComicFormat.Hardcover)]
+        [InlineData("Astro City Metrobook Book 02 (2022).cbz", ComicFormat.Hardcover)]
+        [InlineData("Saga Vol. 07 (2017).cbr", ComicFormat.Tpb)]
+        [InlineData("Silver Surfer Epic Collection Vol. 14 (2024).cbz", ComicFormat.Tpb)]
+        [InlineData("Deadpool - The Complete Collection Vol. 02 (2019).cbz", ComicFormat.Tpb)]
+        public void TheCollectedFormatComesFromTheLabelKeyword(string stem, ComicFormat expected) =>
+            Assert.Equal(expected, ComicTitleParser.CollectedFormatFor(stem));
+
+        [Fact]
+        public void TheCollectedFormatAgreesWithTheContainmentLevel()
+        {
+            // The two ladders must not disagree, or an omnibus nests inside the TPB it contains.
+            Assert.Equal(CollectionLevel.Omnibus, CollectionLevels.Resolve(ComicFormat.Omnibus, "Single Issue", "Wolverine Omnibus Book 03.cbz", 1226));
+            Assert.Equal(CollectionLevel.Book, CollectionLevels.Resolve(ComicFormat.Hardcover, "Single Issue", "Saga Book 1.cbr", 505));
+            Assert.Equal(CollectionLevel.Volume, CollectionLevels.Resolve(ComicFormat.Tpb, "Single Issue", "Saga Vol. 07.cbr", 152));
         }
 
         [Fact]

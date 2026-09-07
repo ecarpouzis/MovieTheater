@@ -512,6 +512,7 @@ in `DerivedTable` with its fingerprint, row count and rebuild time by the job th
 | `books-signatures [--cache-dir] [--batch-size] [--max-batches] [--hash-bytes] [--reset] [--status]` | `ItemSignature` — archive fingerprint + page signature (ZIP central directory), cover dHash (local thumb); `--hash-bytes` adds whole-file SHA-256 for cbr/pdf/mobi | — |
 | `books-dedup [--csv] [--apply] [--reset] [--batch-size]` | `DuplicateGroup` / `DuplicateMember` with a suggested keeper — grouped across the whole table, idempotent; needs `books-signatures` first | — |
 | `books-fix-issue-numbers [--apply]` | Re-extracts `ComicDetail.IssueNo` from the filenames and reports what moved | — |
+| `books-reparse [--batch-size] [--after] [--max-batches] [--apply] [--top]` | Re-runs the whole comic parse over the STORED `Item.FileName`/`Path` + `ComicEmbedded` + `Item.PageCount` (no scan, no share access) and rewrites the format half of `ComicDetail` — `Format`, `FormatRaw`, `IsCollection`, `VolumeNo`, `IssueNo`, `IssueSource`, `ParseNotes`. Never clears or demotes on a silent parse; never touches `ParsedSeriesKey`/`Year`/`Publisher`; the issue ladder stays `books-fix-issue-numbers`' business. Chunked by `Item.Id`, dry run by default | — |
 | `books-parse-audit [--out]` | The parse-pipeline CSV, one row per comic with a source per field | — |
 | `books-series-{override,clearlink,namefix,prune,split-overmatch}` | Edits to the resolution INPUTS (and two read-only reports) | — |
 

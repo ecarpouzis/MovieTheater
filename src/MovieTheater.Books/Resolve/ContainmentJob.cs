@@ -18,9 +18,10 @@ namespace MovieTheater.Books.Resolve
     /// above is a CONTAINER.</para>
     ///
     /// <para><b>A container's span is never fabricated from page count.</b> The standalone tried that once and
-    /// labelled "Saga Vol 7" as collecting #1–6. A span comes ONLY from a `CollectedEditionSpan` row, whose
-    /// precedence is Locg &gt; Gcd &gt; Cv &gt; Curated; without one the edition stays a labelled leaf — you own
-    /// the book, we do not claim to know its contents.</para>
+    /// labelled "Saga Vol 7" as collecting #1–6. A span comes ONLY from a `CollectedEditionSpan` row, chosen by
+    /// <see cref="SpanSelection"/> (LOCG with real containment, then Gcd/Cv/Curated by confidence, then LOCG
+    /// without, then issue-keyed Gcd; degenerate "#N-#N" claims about a collection are discarded); without one
+    /// the edition stays a labelled leaf — you own the book, we do not claim to know its contents.</para>
     ///
     /// <para><b>The over-collection guard.</b> A `Series` that conflates runs which restart numbering makes the
     /// same issue number appear many times, so a "#1-6" edition spuriously overlaps every run's #1-6 (a real

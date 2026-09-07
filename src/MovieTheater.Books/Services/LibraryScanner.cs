@@ -476,7 +476,10 @@ namespace MovieTheater.Books.Services
                 meta == null ? null : new ComicTitleParser.Embedded(
                     meta.Series, meta.SeriesIndex, meta.AltSeries, meta.AltSeriesIndex,
                     meta.Volume, meta.PublicationDate, meta.Publisher, meta.Format),
-                rootPaths);
+                rootPaths,
+                // The page count is the collected-edition guard: a labelled "Vol. 07" of 152 pages is a TPB
+                // however its ComicInfo is tagged, while one of 22 pages is an issue (ComicTitleParser §F1).
+                item.PageCount ?? 0);
 
             var detail = await LoadAsync(db.ComicDetails, d => d.ItemId == item.Id, () => new ComicDetail { ItemId = item.Id }, db, ct);
             detail.ParsedSeriesKey = parsed.ParsedSeriesKey;
