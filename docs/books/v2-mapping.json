@@ -635,6 +635,17 @@
       ],
       "purpose": "ComicVine volume JSON lists (concepts/characters/locations/objects/teams) - all '[]' today",
       "cols": "CvVolumeId INTEGER, ConceptsJson TEXT, CharactersJson TEXT, LocationsJson TEXT, ObjectsJson TEXT, TeamsJson TEXT"
+    },
+    "CvVolumeDescription": {
+      "file": "legs",
+      "pk": [
+        "CvVolumeId"
+      ],
+      "purpose": "ComicVine volume descriptions from the offline rip - the 'Collected Editions' prose books-cv-spans parses",
+      "cols": "CvVolumeId INTEGER, Description TEXT, HasCollectedBlock INTEGER, ImportedAt TEXT",
+      "idx": [
+        "(HasCollectedBlock)"
+      ]
     }
   },
   "v1": {

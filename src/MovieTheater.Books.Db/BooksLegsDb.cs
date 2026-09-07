@@ -26,6 +26,7 @@ namespace MovieTheater.Books.Db
         public DbSet<LinkCandidates> LinkCandidates => Set<LinkCandidates>();
         public DbSet<MuSeriesRaw> MuSeriesRaws => Set<MuSeriesRaw>();
         public DbSet<CvVolumeRaw> CvVolumeRaws => Set<CvVolumeRaw>();
+        public DbSet<CvVolumeDescription> CvVolumeDescriptions => Set<CvVolumeDescription>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -147,6 +148,13 @@ namespace MovieTheater.Books.Db
                 e.ToTable("CvVolumeRaw");
                 e.HasKey(x => x.CvVolumeId);
                 e.Property(x => x.CvVolumeId).ValueGeneratedNever();
+            });
+            modelBuilder.Entity<CvVolumeDescription>(e =>
+            {
+                e.ToTable("CvVolumeDescription");
+                e.HasKey(x => x.CvVolumeId);
+                e.Property(x => x.CvVolumeId).ValueGeneratedNever();
+                e.HasIndex(x => x.HasCollectedBlock);
             });
         }
     }

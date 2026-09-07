@@ -56,43 +56,79 @@ namespace MovieTheater.Books.Tests
         public void AGcdSpanMatchedByTitleKeepsItsRankEvenWithANumericKey()
         {
             // "Rachel Rising Vol. 01" → GCD key "1", but the note says match-by: title. That is not the
-            // issue-keyed failure mode and the span is good (#1-6).
+            // issue-keyed failure mode and the span is good (#1-6): it stays in the title-matched class (3),
+            // not the issue-keyed safety-net class (5).
             var c = Gcd(1, 6, 0.9, ByTitle, "1");
             Assert.False(SpanSelection.IsIssueKeyedGcd(c));
-            Assert.Equal(1, SpanSelection.Rank(c));
+            Assert.Equal(3, SpanSelection.Rank(c));
             Assert.True(SpanSelection.IsIssueKeyedGcd(Gcd(44, 44, 0.8, ByNum, "3")));
+            Assert.Equal(5, SpanSelection.Rank(Gcd(44, 44, 0.8, ByNum, "3")));
             // With no note at all, a bare numeric match key is the only signal there is.
             Assert.True(SpanSelection.IsIssueKeyedGcd(Gcd(3, 3, 0.8, null, "3")));
             Assert.False(SpanSelection.IsIssueKeyedGcd(Gcd(3, 9, 0.8, null, "Saga Deluxe Edition Book One")));
         }
 
         [Fact]
-        public void HigherConfidenceWinsAmongTheMiddleSources()
+        public void TheSixClassesRankInOrder()
         {
-            // Gcd(by title) / Cv / Curated are all one class; the confidence decides, not the source order.
+            // 0 Curated, 1 Cv title-matched, 2 complete LOCG, 3 Gcd-by-title and legacy Cv, 4 partial LOCG,
+            // 5 issue-keyed Gcd.
+            Assert.Equal(0, SpanSelection.Rank(new(EditionSource.Curated, 31, 59, 0.97, "issue: indicia p2", null)));
+            Assert.Equal(1, SpanSelection.Rank(new(EditionSource.Cv, 1, 18, 0.94, "match-by: title; cv collected-editions", null)));
+            Assert.Equal(2, SpanSelection.Rank(new(EditionSource.Locg, 1, 12, 0.4, "12 contained", null)));
+            Assert.Equal(3, SpanSelection.Rank(Gcd(1, 6, 0.9, ByTitle, "1")));
+            Assert.Equal(3, SpanSelection.Rank(new(EditionSource.Cv, 1, 18, 1.0, null, null)));  // legacy: no note, ranks with GCD
+            Assert.Equal(4, SpanSelection.Rank(new(EditionSource.Locg, 1, 12, 0.4, "3 contained", null)));
+            Assert.Equal(5, SpanSelection.Rank(Gcd(44, 44, 0.8, ByNum, "3")));
+        }
+
+        [Fact]
+        public void CuratedBeatsEveryProducer()
+        {
             var candidates = new[]
             {
                 Gcd(21, 25, 0.9, ByTitle, "5"),
-                new SpanSelection.Candidate(EditionSource.Cv, 37, 42, 0.625, null, null),
-                new SpanSelection.Candidate(EditionSource.Curated, 55, 60, 0.98, "issue: indicia p2", null),
+                new SpanSelection.Candidate(EditionSource.Cv, 37, 42, 0.99, "match-by: title", null),
+                new SpanSelection.Candidate(EditionSource.Curated, 55, 60, 0.4, "issue: indicia p2", null),
             };
             Assert.Equal(EditionSource.Curated, SpanSelection.Select(candidates, true, 152)!.Value.Source);
         }
 
         [Fact]
-        public void LocgStillLeadsWhenItsRecordHasRealContainment()
+        public void ATitleMatchedComicVineSpanBeatsALocgTableOfContents()
         {
-            var locg = new SpanSelection.Candidate(EditionSource.Locg, 1, 12, 0.4, "contained: 12", null);
-            var cv = new SpanSelection.Candidate(EditionSource.Cv, 1, 18, 1.0, null, null);
-            Assert.Equal(EditionSource.Locg, SpanSelection.Select(new[] { locg, cv }, true, 400)!.Value.Source);
-            Assert.Equal(0, SpanSelection.Rank(locg));
+            // ComicVine's "Collected Editions" list is the publisher's own statement of what the edition
+            // collects; LOCG's is a scrape that truncates to whatever was seen.
+            var locg = new SpanSelection.Candidate(EditionSource.Locg, 1, 12, 0.4, "12 contained", null);
+            var cv = new SpanSelection.Candidate(EditionSource.Cv, 1, 18, 0.94, "match-by: title; cv collected-editions", null);
+            Assert.Equal(EditionSource.Cv, SpanSelection.Select(new[] { locg, cv }, true, 400)!.Value.Source);
+            // …but a LEGACY Cv row, with nothing in it saying how it was decided, does not: LOCG's complete
+            // table of contents outranks it.
+            var legacy = new SpanSelection.Candidate(EditionSource.Cv, 1, 18, 1.0, null, null);
+            Assert.Equal(EditionSource.Locg, SpanSelection.Select(new[] { locg, legacy }, true, 400)!.Value.Source);
+        }
 
-            // A LOCG row reduced from ONE edge is a shell page, not a table of contents: it falls behind Cv.
+        [Fact]
+        public void APartialLocgSpanIsALowerBoundNotARange()
+        {
+            // LOCG truncates its table of contents to the subset the scrape saw, so "#1-12 from 3 edges" says
+            // only that the edition collects SOMETHING between 1 and 12.
+            var full = new SpanSelection.Candidate(EditionSource.Locg, 1, 12, 0.4, "12 contained", null);
+            var partial = new SpanSelection.Candidate(EditionSource.Locg, 1, 12, 0.4, "3 contained", null);
+            Assert.True(SpanSelection.LocgIsComplete(full));
+            Assert.False(SpanSelection.LocgIsComplete(partial));
+            Assert.Equal(3, SpanSelection.ContainedCount("3 contained"));
+            Assert.Equal(1, SpanSelection.ContainedCount("contained: 1"));
+            Assert.Null(SpanSelection.ContainedCount(null));
+            // A partial LOCG (4) falls behind a GCD title match (3).
+            var gcd = Gcd(1, 6, 0.9, ByTitle, "1");
+            Assert.Equal(EditionSource.Gcd, SpanSelection.Select(new[] { partial, gcd }, true, 400)!.Value.Source);
+
+            // A LOCG row reduced from ONE edge is a shell page: on a book-sized item the claim is discarded.
             var shell = new SpanSelection.Candidate(EditionSource.Locg, 7, 7, 0.4, "contained: 1", null);
-            Assert.False(SpanSelection.LocgHasRealContainment(shell));
-            Assert.Equal(2, SpanSelection.Rank(shell));
-            // …and on a book-sized item that degenerate claim is discarded outright.
-            Assert.Equal(EditionSource.Cv, SpanSelection.Select(new[] { shell, cv }, true, 400)!.Value.Source);
+            Assert.Equal(4, SpanSelection.Rank(shell));
+            Assert.Equal(EditionSource.Cv, SpanSelection.Select(
+                new[] { shell, new SpanSelection.Candidate(EditionSource.Cv, 1, 18, 1.0, null, null) }, true, 400)!.Value.Source);
         }
 
         [Fact]

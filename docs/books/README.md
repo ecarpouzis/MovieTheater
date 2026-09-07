@@ -513,15 +513,28 @@ in `DerivedTable` with its fingerprint, row count and rebuild time by the job th
 | `books-dedup [--csv] [--apply] [--reset] [--batch-size]` | `DuplicateGroup` / `DuplicateMember` with a suggested keeper — grouped across the whole table, idempotent; needs `books-signatures` first | — |
 | `books-fix-issue-numbers [--apply]` | Re-extracts `ComicDetail.IssueNo` from the filenames and reports what moved | — |
 | `books-reparse [--batch-size] [--after] [--max-batches] [--apply] [--top]` | Re-runs the whole comic parse over the STORED `Item.FileName`/`Path` + `ComicEmbedded` + `Item.PageCount` (no scan, no share access) and rewrites the format half of `ComicDetail` — `Format`, `FormatRaw`, `IsCollection`, `VolumeNo`, `IssueNo`, `IssueSource`, `ParseNotes`. Never clears or demotes on a silent parse; never touches `ParsedSeriesKey`/`Year`/`Publisher`; the issue ladder stays `books-fix-issue-numbers`' business. Chunked by `Item.Id`, dry run by default | — |
+| `books-cv-descriptions-import --rip <comicdb_comicvine_*.db> [--legs] [--after] [--batch-size] [--max-batches] [--apply]` | Legs `CvVolumeDescription` — the ComicVine volume DESCRIPTIONS from the offline rip, the only place ComicVine publishes its "Collected Editions" list. Streams the 14.5 GB rip a page at a time; dry run by default | — |
+| `books-locg-reprints-import --dir <locg_cache/reprints> [--legs] [--after] [--batch-size] [--max-batches] [--apply]` | Legs `LocgContainment` — the cached REVERSE reprint edges (`<containedId>.json` listing the editions that reprint it). Chunked by the numeric file name, idempotent on the unique (container, contained) index; dry run by default | — |
+| `books-cv-spans [--legs] [--batch-size] [--resume] [--top] [--apply]` | `CollectedEditionSpan(Source=Cv)` — collected editions matched to ComicVine's own edition list by TITLE (`Note = "match-by: title; cv collected-editions"`). Chunked by `Series.Id`, delete-then-rewrite per series that HAS a block; dry run by default | `CollectedEditionSpan(Source=Cv)` |
+| `books-gcd-spans --gcd <gcd.db> [--batch-size] [--resume] [--top] [--apply]` | `CollectedEditionSpan(Source=Gcd)` — the GCD reprint graph, container = an issue that appears as `gcd_reprint.target_issue_id`, matched by TITLE only. **Deletes every existing GCD span in the window**, including the issue-keyed ones. Reads the dump read-only; dry run by default | `CollectedEditionSpan(Source=Gcd)` |
+| `books-locg-editions --rich <locg_cache/rich> [--legs] [--batch-size] [--resume] [--top] [--apply]` | Re-points `ItemProviderLink(Locg)` for collected editions at the LOCG record that IS the edition (a container with `LocgContainment` edges), so `books-collected-editions` can span it. `Method = "edition-title"`; dry run by default | — |
 | `books-parse-audit [--out]` | The parse-pipeline CSV, one row per comic with a source per field | — |
 | `books-series-{override,clearlink,namefix,prune,split-overmatch}` | Edits to the resolution INPUTS (and two read-only reports) | — |
 
 Contract notes worth knowing before running any of them:
 
 - **`books-scan` is dry-run by default**, and so are `books-dedup`, `books-import-calibre`,
-  `books-insight-import`, `books-curation-import`, `books-fix-issue-numbers`, `books-series-namefix` and
-  `books-series-prune`. `--apply` is the house rule. The derived rebuilds (`books-reading-order`,
+  `books-insight-import`, `books-curation-import`, `books-fix-issue-numbers`, `books-series-namefix`,
+  `books-series-prune`, `books-reparse`, the two rip importers (`books-cv-descriptions-import`,
+  `books-locg-reprints-import`) and the three containment producers (`books-cv-spans`, `books-gcd-spans`,
+  `books-locg-editions`). `--apply` is the house rule. The derived rebuilds (`books-reading-order`,
   `books-containment`, `books-collected-editions`) write by default but take `--dry-run` and `--resume`.
+- **A collected edition may be linked only to a provider CONTAINER record.** The three producers above match
+  on the edition TITLE and emit nothing when the provider does not have the edition; the number-matching path
+  that made "Saga Book 1" (505 pages) point at "Saga #1" (28 pages, no containment) is gone. Their run order
+  is `books-cv-descriptions-import` / `books-locg-reprints-import` → `books-cv-spans` / `books-gcd-spans` /
+  `books-locg-editions` → `books-resolve --series` → `books-collected-editions` → `books-reading-order` →
+  `books-containment` → `books-resolve`.
 - **The host's catalog cache expires itself.** Every Explore / facets / heads payload is bound to
   `CatalogCacheVersion`; the warmer trips it when the catalog fingerprint moves, and
   `POST /admin/cache/expire` does it on demand — no restart after a resolve or an import.

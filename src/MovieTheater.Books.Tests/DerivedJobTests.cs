@@ -250,8 +250,11 @@ namespace MovieTheater.Books.Tests
         }
 
         [Fact]
-        public void SpanPrecedenceIsLocgOverGcdOverCvOverCurated()
+        public void SpanPrecedenceIsCuratedFirstThenTheTitleMatchedProducers()
         {
+            // The order is `SpanSelection.Rank`, not the source enum: hand-read indicia first, then a ComicVine
+            // span produced by an edition-TITLE match, then a complete LOCG table of contents. Four noteless
+            // rows are all the operator ever had; the curated one is the only one that says how it was decided.
             using var f = Migrated();
             using (var hot = Writer(f))
             {
@@ -260,8 +263,19 @@ namespace MovieTheater.Books.Tests
                     hot.Upsert("CollectedEditionSpan", new { ItemId = 7, Source = source, SeriesId = 4, IssueStart = (double)source + 1, IssueEnd = 60.0 });
                 hot.Commit();
             }
-            using var w = f.Hot();
-            Assert.Equal(EditionSource.Locg, ReadingOrderJob.LoadSpans(w)[7].Source);
+            using (var w = f.Hot()) Assert.Equal(EditionSource.Curated, ReadingOrderJob.LoadSpans(w)[7].Source);
+
+            // Drop the curated row and the title-matched ComicVine span leads; without its note it would rank
+            // with GCD and the complete LOCG span would win instead.
+            using (var hot = Writer(f))
+            {
+                hot.Begin();
+                hot.Exec($"DELETE FROM CollectedEditionSpan WHERE ItemId = 7 AND Source = {(int)EditionSource.Curated}");
+                hot.Update("CollectedEditionSpan", "ItemId", 7, new { Note = "60 contained" });
+                hot.Exec($"UPDATE CollectedEditionSpan SET Note = 'match-by: title; cv collected-editions' WHERE ItemId = 7 AND Source = {(int)EditionSource.Cv}");
+                hot.Commit();
+            }
+            using (var w = f.Hot()) Assert.Equal(EditionSource.Cv, ReadingOrderJob.LoadSpans(w)[7].Source);
         }
 
         private static string Snapshot(V1Fixture f, string sql)

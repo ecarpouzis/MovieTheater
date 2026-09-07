@@ -262,8 +262,8 @@ ORDER BY i.Id"))
         }
 
         /// <summary>
-        /// The one span per item, chosen by <see cref="SpanSelection.Select"/> — the precedence LOCG (with real
-        /// containment) &gt; { Gcd-by-title, Cv, Curated } by confidence &gt; LOCG without containment &gt;
+        /// The one span per item, chosen by <see cref="SpanSelection.Select"/> — the precedence Curated &gt;
+        /// Cv-by-edition-title &gt; complete LOCG &gt; { Gcd-by-title, legacy Cv } &gt; partial LOCG &gt;
         /// issue-keyed Gcd, with degenerate "#N-#N" spans discarded on anything shaped like a collection.
         /// One read per call: the candidates plus the two facts the selection needs about the item itself.
         /// </summary>
@@ -406,12 +406,19 @@ GROUP BY s.Id ORDER BY s.Id"))
     /// "Wolverine Omnibus Book 03" took Gcd #44-44 at 0.8 over Curated #31-59 at 0.97, "Saga Book 1" took Gcd
     /// #1-6 over Cv #1-18 at 1.0.</para>
     ///
-    /// <para><b>The rule now.</b> (a) A degenerate span (End == Start) on something shaped like a collection —
-    /// the parse says so, or it is <see cref="DegeneratePageFloor"/> pages or more — is DISCARDED: a book that
-    /// thick does not collect one issue. (b) An issue-keyed GCD span ranks BELOW Cv and Curated. (c) Among the
-    /// remaining Gcd/Cv/Curated claims the higher <c>Confidence</c> wins, with the old order as the tiebreak.
-    /// LOCG still leads — but only when its record has real containment, because a LOCG row reduced from a
-    /// single edge ("contained: 1") is a shell page, not a table of contents.</para>
+    /// <para><b>The rule now</b> (2026-09-07, after the containment repair). (a) A degenerate span
+    /// (End == Start) on something shaped like a collection — the parse says so, or it is
+    /// <see cref="DegeneratePageFloor"/> pages or more — is DISCARDED: a book that thick does not collect one
+    /// issue. (b) The six classes, best first: <b>0</b> Curated (hand-read indicia); <b>1</b> Cv matched on the
+    /// EDITION TITLE against ComicVine's own "Collected Editions" list (`books-cv-spans`, note
+    /// <c>match-by: title</c>) — the publisher's own statement of what the edition collects; <b>2</b> a LOCG
+    /// span whose contained count EQUALS its width, i.e. a complete table of contents; <b>3</b> GCD matched on
+    /// the edition title, and a legacy Cv span with no title-match note (it may be right, but nothing in the
+    /// row says how it was decided); <b>4</b> a PARTIAL LOCG span — LOCG truncates to the subset it scraped, so
+    /// "#1-4" from three edges is a LOWER BOUND, not a range; <b>5</b> issue-keyed GCD, which
+    /// <c>books-gcd-spans</c> no longer produces and which survives only as a safety net for rows it has not
+    /// yet visited. (c) Within a class the higher <c>Confidence</c> wins, with the old source order as the
+    /// tiebreak.</para>
     /// </summary>
     public static class SpanSelection
     {
@@ -445,27 +452,43 @@ GROUP BY s.Id ORDER BY s.Id"))
             return c.GcdMatchedKey != null && RxBareIssueKey.IsMatch(c.GcdMatchedKey);
         }
 
-        /// <summary>A LOCG span backed by more than one containment edge (or by a range) is a real table of contents.</summary>
-        public static bool LocgHasRealContainment(Candidate c)
+        /// <summary>Was this span produced by an EDITION-TITLE match against a container record? Only the
+        /// containment-repair producers (`books-cv-spans`, `books-gcd-spans`) say so, and only they may.</summary>
+        public static bool IsTitleMatched(Candidate c) => c.Note != null && RxMatchByTitle.IsMatch(c.Note);
+
+        /// <summary>The number of contained issues a LOCG note reports ("{n} contained"), or null.</summary>
+        public static int? ContainedCount(string? note)
         {
-            if (c.End > c.Start) return true;
-            if (c.Note == null) return true;
-            var m = RxContained.Match(c.Note);
-            if (!m.Success) return true;
+            if (note == null) return null;
+            var m = RxContained.Match(note);
+            if (!m.Success) return null;
             var n = m.Groups[1].Success ? m.Groups[1].Value : m.Groups[2].Value;
-            return !int.TryParse(n, out var count) || count >= 2;
+            return int.TryParse(n, out var count) ? count : null;
         }
+
+        /// <summary>
+        /// A LOCG span is COMPLETE when the number of edges it was reduced from covers its whole width. LOCG
+        /// truncates to whatever the scrape actually saw, so a span reduced from three edges but spanning ten
+        /// issues is a lower bound on the range, not the range — and a span reduced from ONE edge is a shell
+        /// page, not a table of contents, whatever its width.
+        /// </summary>
+        public static bool LocgIsComplete(Candidate c) =>
+            ContainedCount(c.Note) is int n && n >= 2 && n >= (int)(c.End - c.Start) + 1;
 
         /// <summary>A "#N-#N" claim about a collection is no claim at all — it is the match's own key echoed back.</summary>
         public static bool IsDiscardable(Candidate c, bool isCollection, int pageCount) =>
             c.End <= c.Start && (isCollection || pageCount >= DegeneratePageFloor);
 
-        /// <summary>The class rank: lower is better. 0 LOCG-with-containment, 1 the confidence-ranked middle,
-        /// 2 LOCG without containment, 3 issue-keyed GCD.</summary>
-        public static int Rank(Candidate c) =>
-            c.Source == EditionSource.Locg ? (LocgHasRealContainment(c) ? 0 : 2)
-            : IsIssueKeyedGcd(c) ? 3
-            : 1;
+        /// <summary>The class rank: lower is better. 0 Curated, 1 Cv title-matched, 2 complete LOCG,
+        /// 3 GCD title-matched (and a legacy Cv row with no title-match note), 4 partial LOCG,
+        /// 5 issue-keyed GCD.</summary>
+        public static int Rank(Candidate c) => c.Source switch
+        {
+            EditionSource.Curated => 0,
+            EditionSource.Cv => IsTitleMatched(c) ? 1 : 3,
+            EditionSource.Locg => LocgIsComplete(c) ? 2 : 4,
+            _ => IsIssueKeyedGcd(c) ? 5 : 3,
+        };
 
         /// <summary>The historical order, kept as the tiebreak when two claims rank and score the same.</summary>
         private static int LegacyOrder(EditionSource s) => s switch

@@ -244,4 +244,13 @@ namespace MovieTheater.Books.Db
         public string? TeamsJson { get; set; }
     }
 
+    /// <summary>ComicVine volume descriptions from the offline rip - the 'Collected Editions' prose books-cv-spans parses</summary>
+    public sealed class CvVolumeDescription
+    {
+        public int CvVolumeId { get; set; }
+        public string? Description { get; set; }
+        public int? HasCollectedBlock { get; set; }
+        public DateTime? ImportedAt { get; set; }
+    }
+
 }
