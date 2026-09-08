@@ -59,6 +59,7 @@ namespace MovieTheater.BooksHost.Commands
             var batchSize = Math.Clamp(BatchSize, 50, 50_000);
             var cursor = After;
             int written = 0, kept = 0, unknown = 0, invalid = 0, missingItem = 0, printed = 0, batches = 0, blank = 0;
+            var retracted = 0;
 
             while (cursor < total)
             {
@@ -115,6 +116,14 @@ namespace MovieTheater.BooksHost.Commands
                         case CuratedSpanImport.Verdict.Unknown: unknown++; continue;
                         case CuratedSpanImport.Verdict.Kept: kept++; continue;
                         case CuratedSpanImport.Verdict.Invalid: invalid++; continue;
+                        case CuratedSpanImport.Verdict.Retract:
+                            unknown++;
+                            retracted++;
+                            hot.Exec(
+                                "DELETE FROM CollectedEditionSpan WHERE ItemId = $id AND Source = $src"
+                                + " AND ProviderRef LIKE 'model:%'",
+                                ("$id", line.ItemId), ("$src", (int)EditionSource.Curated));
+                            continue;
                     }
 
                     written++;
@@ -145,7 +154,7 @@ namespace MovieTheater.BooksHost.Commands
                 batches++;
                 await console.Output.WriteLineAsync(
                     $"{{ processed: {take}, remaining: {total - cursor}, nextCursor: \"{cursor}\", "
-                    + $"counts: {{ written: {written}, kept: {kept}, unknown: {unknown}, invalid: {invalid} }} }}  [curated-spans]");
+                    + $"counts: {{ written: {written}, retracted: {retracted}, kept: {kept}, unknown: {unknown}, invalid: {invalid} }} }}  [curated-spans]");
                 if (MaxBatches > 0 && batches >= MaxBatches) break;
             }
 
@@ -166,7 +175,7 @@ namespace MovieTheater.BooksHost.Commands
 
             await console.Output.WriteLineAsync(
                 $"done: {total - After} lines read{(blank > 0 ? $" ({blank} blank)" : "")}, "
-                + $"{{ written: {written}, kept: {kept}, unknown: {unknown}, invalid: {invalid}, missingItem: {missingItem} }}"
+                + $"{{ written: {written}, retracted: {retracted}, kept: {kept}, unknown: {unknown}, invalid: {invalid}, missingItem: {missingItem} }}"
                 + (Apply ? " and were written" : " (dry run — re-run with --apply)"));
             if (Apply)
                 await console.Output.WriteLineAsync(

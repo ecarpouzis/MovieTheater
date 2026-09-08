@@ -2,7 +2,7 @@
 
 What a collected edition *contains* decides which single issues are redundant copies. A file
 de-duplication reads containment, so a wrong span deletes a file we still want. **Correctness beats
-coverage**: a refusal is a first-class answer here, and the pass says "unknown" 17,411 times.
+coverage**: a refusal is a first-class answer here, and the pass says "unknown" 17,421 times.
 
 ## What this is
 
@@ -22,56 +22,108 @@ bounds, cumulative end-points, rows that match a *different* book (Omnibus / Com
 Masterworks / Epic Collection / foreign-language editions) — are exactly what a model reading the shelf
 can see and a script cannot.
 
-`flags.csv` is the human queue: 674 rows the pass wants eyes on, with the filename joined back in.
+`flags.csv` is the human queue: 718 rows the pass wants eyes on, imported into `ContainmentFlag` and
+worked through in the admin **Containment** tab.
 
 | flag | n | means |
 | --- | ---: | --- |
-| `label-ambiguous` | 419 | single issues wearing a `tpb` format, duplicate copies of one volume, cover-only files |
-| `overlap-in-series` | 114 | several relaunch ladders, each numbered from #1, share one Series |
+| `label-ambiguous` | 420 | single issues wearing a `tpb` format, duplicate copies of one volume, cover-only files |
+| `overlap-in-series` | 117 | several relaunch ladders, each numbered from #1, share one Series |
 | `conflated-series` | 110 | one provider span repeated across a whole shelf |
-| `provider-disagrees` | 27 | the legs contradict each other on the same book |
-| `arithmetic-odd` | 4 | the page count cannot fit the claimed issue count |
+| `provider-disagrees` | 29 | the legs contradict each other, or one names a different book |
+| `duplicate-edition` | 26 | two items in one series claim the same block of issues |
+| `arithmetic-odd` | 6 | the page count cannot hold the issue count the range claims |
+| `span-retracted` | 10 | the self-audit below withdrew a range the pass had written |
+
+## The pass audits itself
+
+Judgement at this scale needs a check that is not more judgement. `audit.py` (in the pass's working
+set) re-reads the packets against the answers and looks only for the shapes that would make a
+de-duplication delete the wrong file:
+
+- **partial overlap** inside one series — nesting is fine (an omnibus over its volumes), straddling is not;
+- **page arithmetic** — under 12 or over 60 pages per issue. Thick is safe (a book that collects more
+  than it claims only ever under-claims); **thin is the dangerous direction**, because it means the
+  range covers issues the book does not hold;
+- **the same range claimed twice** in one series;
+- **both legs agreeing against the pass**.
+
+That found 18 answers to change. Ten spans were **retracted** — a `cv` row that turned out to name a
+Conan *Omnibus* rather than the Epic Collection it sat on; `locg #1-191` on an 824-page Daredevil
+omnibus; a Visionaries book that is a *selection* inside #164-186 rather than the run; two Conan
+omnibus ranges the pass had tiled between neighbours while both legs said otherwise. Eight were
+**revised**: Scooby-Doo Team-Up's LOCG ladder numbers digital chapters two to the issue, and GCD's
+title match on volume 7 gives the print ladder away — so six volumes moved from `#1-12, #13-24, …` to
+`#1-6, #7-12, …`, and volumes 7 and 8 to `#37-43` and `#44-50`.
+
+Retraction is a real verdict, not an edit: an `unknown` line whose item still carries a row **this pass
+wrote** deletes it (`Verdict.Retract`), so an audit that corrects the pass can take a span back and not
+merely add. Gold is never retracted this way.
 
 ## Importing it
 
 ```
 books-curated-spans-import --in curated_spans.jsonl --db <books.db> --apply
+books-containment-flags-import --in flags.csv --db <books.db> --prune --apply
 ```
 
-Chunked by input line, resumable with `--after`, dry-run by default, idempotent on `(ItemId, Source)`.
-It writes `CollectedEditionSpan(Source = Curated)` with `ProviderRef = "model:<batch>"`, and it **never
-overwrites gold** — a Curated row this pass did not write is v1 quoting an edition's own indicia, and a
-disagreement is written to the flags CSV instead of displacing it.
+Both are chunked by input line, resumable with `--after`, dry-run by default, idempotent. The span
+importer **never overwrites gold** — a Curated row it did not write is v1 quoting an edition's own
+indicia, or a person typing it in the review screen — and a disagreement goes to the flags CSV instead
+of displacing it. The flag importer keys on `(ItemId, Flag)`: re-importing an edited sheet refreshes the
+evidence and leaves any verdict a person has already recorded alone.
 
-Then rebuild the derived tables:
+Then rebuild the derived tables, and produce the overlap groups:
 
 ```
-books-collected-editions  ->  books-reading-order  ->  books-containment  ->  books-resolve
+books-collected-editions -> books-reading-order -> books-containment -> books-resolve
+books-dedup-contained --reset --apply
 ```
 
-## What it changed (measured on a copy of the live db)
+## Reviewing it — `/books/admin?tab=containment`
+
+> The tab and its endpoints ship in the host binary, so they appear after an elevated
+> `.\scripts\deploy-books-host.ps1`. The DATA below lands with the CLI run alone.
+
+
+The flags are a queue, not a spreadsheet. Each row shows the file, the span it currently carries from
+every source, and the rest of its shelf, so the answer is usually visible without opening anything.
+Two verbs:
+
+- **Rule on the flag.** *Flag stands* keeps the item out of the de-duplication; *False alarm* lets it
+  back in.
+- **Type the range.** `PUT /admin/containment/spans/{itemId}` writes a `Curated` span at confidence 1.0
+  attributed to whoever typed it, with a `ProviderRef` of `admin:<user>` rather than `model:`. That
+  makes it gold: the pass will not overwrite it, and the de-duplication trusts it outright. A person who
+  can see the shelf outranks anything inferred from it.
+
+## What it changed (measured on the live database, 2026-09-08)
 
 | | before | after |
 | --- | ---: | ---: |
-| Curated spans | 1,047 | 4,090 |
-| containers decided by a Curated span (`CollectionNode.SpanSource = 5`) | 924 | 1,947 |
-| … by LOCG / GCD / CV | 1,316 / 404 / 801 | 1,010 / 315 / 315 |
-| containers with no span at all | 5,354 | 5,212 |
-| containers that resolve to real issues (`ContainsCount > 0`) | 1,628 | 1,699 |
-| implausible winning spans (page audit thin / thick) | 49 / 44 | 37 / 31 |
-| items ≥100pp with no span from any source | 16,363 | 16,003 |
+| Curated spans | 1,047 | 4,081 |
+| containers decided by a Curated span (`CollectionNode.SpanSource = 5`) | 500 | **1,941** |
+| … by LOCG / GCD / CV | 365 / 2,063 / 395 | 1,013 / 315 / 317 |
+| containers with no span at all | 5,658 | 5,213 |
+| containers that resolve to real issues (`ContainsCount > 0`) | 1,390 | 1,698 |
+| issue-keyed GCD spans (the volume ordinal read as an issue number) | 2,383 | **0** |
+| implausible winning spans (page audit thin / thick) | 49 / 44 | 38 / 32 |
+| items ≥100pp with no span from any source | 17,366 | 16,003 |
+| collected editions the parser can see at all | 10,904 | 20,498 |
 
-3,049 spans written, 38 kept, **0 invalid, 0 disagreements with a gold row** — where the pass and v1's
-indicia-derived rows both spoke, they agreed 38 times out of 38.
+3,041 spans written, 36 kept, **0 invalid, 0 missing items, 0 disagreements with a gold row** — where the
+pass and v1's indicia-derived rows both spoke, they agreed every time.
 
-`M5` (winners whose confidence is below a rival's) rises 297 → 477 by construction: Curated outranks
-every provider leg regardless of the number, which is the whole point of the precedence.
+`M5` (winners whose confidence is below a rival's) rises 297 → 474 by construction: Curated outranks every
+provider leg regardless of the number, which is the whole point of the precedence.
+
+469 overlap groups over 2,971 members; 344 containers skipped by the trust gates.
 
 ### Acceptance: Saga
 
 Saga (series 14966) is the shape everything else is checked against — nested Books over Volumes over
-issues. After the pass its report is identical to before, row for row, except that six spans are now
-sourced from `Curated` instead of `Cv`:
+issues. On the live database its report is identical, row for row, to the run proved on the copy — and
+identical to the pre-pass shape except that six spans are now sourced from `Curated` instead of `Cv`:
 
 ```
 Book 1  #1-18  (contains 7)     Vol. 07  #37-42
@@ -80,18 +132,39 @@ Book 03 #37-54  (contains 6)    Vol. 09  #49-54  (nested in Book 03)
                                 Vol. 10  #55-60
 ```
 
-## Trust classes for the file de-duplication
+## De-duplication
 
-Read `CollectionNode.SpanSource` and the span's `Confidence` before deleting anything.
+`books-dedup` groups files that ARE each other — same bytes, same pages, same cover. It has always
+declared a fourth relationship, `ContainedIn`, and never produced one, because no fingerprint can see
+that eighteen floppies and one Book 1 are the same reading. **`books-dedup-contained` produces it**,
+from containment.
 
-1. **Safe to act on** — `SpanSource = Curated` at confidence ≥ 0.8, or a Curated row this pass did not
-   write (gold: an edition quoting its own indicia). Two independent legs agreed, or the edition says so.
-2. **Act on with the filename in view** — `SpanSource = Curated` at 0.6–0.79. One leg, or a gap closed by
-   the ladder either side of it. The `Note` column carries the reasoning verbatim; read it.
-3. **Do not act on** — any container whose `SpanSource` is still `Locg`, `Gcd`, `Cv` or `Inferred`. The
-   pass looked at these and declined; the provider row that survives is the one it did not trust.
-4. **Never** — anything named in `flags.csv`. Duplicate copies, ladders sharing a Series, single issues
-   labelled `tpb`. These need a person.
+It reads the trust classes rather than the raw table:
 
-A book with no span contains nothing as far as this data is concerned. That is a refusal, not an
+1. Only a container whose winning span is `Curated` — a judged answer, not a provider leg the pass
+   looked at and declined.
+2. Only at confidence ≥ 0.8, unless the row is gold (indicia, or typed by a person), which is exempt.
+3. Never a container carrying an undecided `ContainmentFlag`, and never anything in a series flagged
+   `overlap-in-series` or `conflated-series` — those are the shelves where three runs each number from
+   #1 and "issue 5" names three different comics.
+
+The groups it writes are **flag-only**: `DuplicateDetectionService.ResolveAsync` refuses to bulk-resolve
+relationship 3, and the Duplicates tab hides the keeper radio for them. Owning both the floppies and the
+collection is legitimate — often wanted. The job's job is to show the overlap with its evidence; the
+decision stays a person's.
+
+They also get their own view — `GET /admin/containment/overlaps`, rendered at the foot of the Containment
+tab — because among thousands of signature groups in the Duplicates tab they would never be found.
+
+### Trust classes, for anything else that reads containment
+
+1. **Safe to act on** — `SpanSource = Curated` at confidence ≥ 0.8, or a Curated row the pass did not
+   write (gold: indicia, or a person).
+2. **Act on with the filename in view** — `SpanSource = Curated` at 0.6–0.79. One leg, or a gap closed
+   by the ladder either side of it. The `Note` column carries the reasoning verbatim; read it.
+3. **Do not act on** — any container still won by `Locg`, `Gcd`, `Cv` or `Inferred`. The pass looked at
+   these and declined; the provider row that survives is the one it did not trust.
+4. **Never** — anything with a Pending `ContainmentFlag`.
+
+A book with no span contains nothing *as far as this data is concerned*. That is a refusal, not an
 assertion that it collects nothing.

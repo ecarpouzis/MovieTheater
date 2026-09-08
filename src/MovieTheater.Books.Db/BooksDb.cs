@@ -34,6 +34,7 @@ namespace MovieTheater.Books.Db
         public DbSet<ReadingOrderEntry> ReadingOrderEntries => Set<ReadingOrderEntry>();
         public DbSet<CollectionNode> CollectionNodes => Set<CollectionNode>();
         public DbSet<CollectedEditionSpan> CollectedEditionSpans => Set<CollectedEditionSpan>();
+        public DbSet<ContainmentFlag> ContainmentFlags => Set<ContainmentFlag>();
         public DbSet<CvVolume> CvVolumes => Set<CvVolume>();
         public DbSet<CvIssue> CvIssues => Set<CvIssue>();
         public DbSet<LocgComic> LocgComics => Set<LocgComic>();
@@ -317,6 +318,18 @@ namespace MovieTheater.Books.Db
                 e.HasKey(x => new { x.ItemId, x.Source });
                 e.HasOne<Item>().WithMany().HasForeignKey(x => x.ItemId).OnDelete(DeleteBehavior.Restrict);
                 e.Property(x => x.Contiguous).HasDefaultValue(false);
+                e.HasIndex(x => x.SeriesId);
+            });
+            modelBuilder.Entity<ContainmentFlag>(e =>
+            {
+                e.ToTable("ContainmentFlag");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Id).ValueGeneratedNever();
+                e.Property(x => x.ItemId).HasDefaultValue(0);
+                e.HasOne<Item>().WithMany().HasForeignKey(x => x.ItemId).OnDelete(DeleteBehavior.Restrict);
+                e.HasOne<Series>().WithMany().HasForeignKey(x => x.SeriesId).OnDelete(DeleteBehavior.Restrict);
+                e.HasIndex(x => new { x.ItemId, x.Flag }).IsUnique();
+                e.HasIndex(x => x.ReviewState);
                 e.HasIndex(x => x.SeriesId);
             });
             modelBuilder.Entity<CvVolume>(e =>

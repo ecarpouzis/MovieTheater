@@ -10,13 +10,25 @@ import { bk } from "../../booksQuery";
 import { dedupResolve, dedupStart, fetchDedup, type DedupGroup } from "../adminApi";
 import JobCard from "../JobCard";
 
-const RELATIONSHIP: Record<number, string> = { 0: "Identical file", 1: "Same comic, different scan", 2: "Contained in" };
+// The service's own codes (DuplicateDetectionService: IdenticalFile 0, IdenticalContents 1,
+// SameComicDifferentScan 2, ContainedIn 3). These were off by one here, so a page-signature group
+// read as "different scan" and a cover-hash group read as "contained in".
+const RELATIONSHIP: Record<number, string> = {
+  0: "Identical file",
+  1: "Identical contents",
+  2: "Same comic, different scan",
+  3: "Held by a collected edition",
+};
+const CONTAINED_IN = 3;
 const fmtSize = (b: number) => (b >= 1 << 30 ? `${(b / (1 << 30)).toFixed(2)} GB` : b >= 1 << 20 ? `${(b / (1 << 20)).toFixed(1)} MB` : `${(b / 1024).toFixed(0)} KB`);
 
 function Group({ g, onResolved }: { g: DedupGroup; onResolved: () => void }) {
   const [keeper, setKeeper] = useState<number | null>(g.suggestedKeeperItemId ?? g.members[0]?.itemId ?? null);
   const resolve = useMutation({ mutationFn: () => dedupResolve(g.id, keeper ?? undefined), onSuccess: (r) => { message.success(`Group ${g.id}: hid ${r.hidden}.`); onResolved(); }, onError: (e) => message.error(e instanceof Error ? e.message : "Resolve refused.") });
-  const pending = g.reviewState === "Pending";
+  // A containment group is flag-only: owning the floppies AND the collection is legitimate, so there
+  // is nothing to hide and the host refuses to resolve one.
+  const contained = g.relationship === CONTAINED_IN;
+  const pending = g.reviewState === "Pending" && !contained;
   return (
     <div className="adm-group">
       <div className="adm-group-head">
@@ -27,12 +39,13 @@ function Group({ g, onResolved }: { g: DedupGroup; onResolved: () => void }) {
         {pending && (
           <Popconfirm title="Hide every member except the keeper?" onConfirm={() => resolve.mutate()}><Button size="small" type="primary" disabled={keeper == null} loading={resolve.isPending} style={{ marginLeft: "auto" }}>Hide the rest</Button></Popconfirm>
         )}
-        {!pending && <Tag style={{ marginLeft: "auto" }}>{g.reviewState}</Tag>}
+        {contained && <Tag color="blue" style={{ marginLeft: "auto" }}>overlap only — keeping both is fine</Tag>}
+        {!pending && !contained && <Tag style={{ marginLeft: "auto" }}>{g.reviewState}</Tag>}
       </div>
       <Radio.Group value={keeper} onChange={(e) => setKeeper(e.target.value)} disabled={!pending} className="adm-members">
         {g.members.map((m) => (
           <label key={m.itemId} className="adm-member">
-            <Radio value={m.itemId} />
+            {!contained && <Radio value={m.itemId} />}
             <img src={thumbUrl(m.itemId) ?? undefined} alt="" loading="lazy" />
             <div className="adm-member-text">
               <div><b>{m.fileName}</b> {m.role && <Tag>{m.role}</Tag>}{m.soleFileInFolder && <Tag color="orange">only file in folder</Tag>}{g.suggestedKeeperItemId === m.itemId && <Tag color="green">suggested keeper</Tag>}</div>

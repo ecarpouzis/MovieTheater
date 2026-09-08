@@ -175,3 +175,43 @@ export const booksJobApi: JobApi = {
   stopJob: (kind) => stopJob(kind),
   eventsUrl: (kind) => jobEventsUrl(kind),
 };
+
+// ── containment review ──
+//
+// The questions the containment model pass could not answer alone. `PUT spans/{itemId}` is the one
+// that FIXES something: a person saying what an edition collects outranks every inference, so it
+// lands as a Curated span attributed to them and the de-duplication's trust classes read it as gold.
+
+export interface ContainmentSpan { itemId: number; source: number; issueStart: number | null; issueEnd: number | null; editionTitle: string | null; confidence: number | null; providerRef: string | null; note: string | null }
+export interface ShelfNode { seriesId: number | null; itemId: number; fileName: string; pageCount: number | null; spanLabel: string | null; spanSource: number | null; containsCount: number | null; trackRole: number | null }
+export interface ContainmentFlag {
+  id: number; itemId: number; seriesId: number | null; flag: string | null; detail: string | null; source: string | null;
+  reviewState: string | null; note: string | null; decidedBy: string | null; decidedAt: string | null;
+  fileName: string | null; path: string | null; pageCount: number | null; isExcluded: boolean | null;
+  series: string | null; spans: ContainmentSpan[]; shelf: ShelfNode[];
+}
+export interface ContainmentFlagPage { totalCount: number; skip: number; top: number; items: ContainmentFlag[] }
+export interface ContainmentSummary {
+  flags: { flag: string; total: number; pending: number; accepted: number; dismissed: number }[];
+  curatedSpans: { gold: number; model: number };
+  containedGroups: number;
+}
+
+export const fetchContainmentSummary = (signal?: AbortSignal) => request<ContainmentSummary>("/containment/summary", undefined, signal);
+export const fetchContainmentFlags = (state: string, flag: string | undefined, skip: number, top: number, signal?: AbortSignal) =>
+  request<ContainmentFlagPage>(`/containment/flags${qs({ state, flag, skip, top })}`, undefined, signal);
+export const decideContainmentFlag = (id: number, state: string, note?: string) =>
+  request<{ id: number; reviewState: string }>(`/containment/flags/${id}/decide`, json("POST", { state, note: note ?? null }));
+export const setContainmentSpan = (itemId: number, start: number, end: number, title?: string, note?: string) =>
+  request<{ itemId: number; start: number; end: number }>(`/containment/spans/${itemId}`, json("PUT", { start, end, title: title ?? null, note: note ?? null }));
+export const clearContainmentSpan = (itemId: number) =>
+  request<{ itemId: number; cleared: boolean }>(`/containment/spans/${itemId}`, json("DELETE"));
+export const containedDedupStart = (reset = true) =>
+  request<JobStart>(`/containment/dedup/start${qs({ reset })}`, json("POST"));
+
+export interface OverlapMember { duplicateGroupId: number; itemId: number; role: string | null; fileName: string; path: string; pageCount: number | null }
+export interface OverlapGroup { id: number; confidence: string | null; evidence: string | null; reviewState: string | null; detectedAt: string | null; members: OverlapMember[] }
+export interface OverlapPage { totalCount: number; skip: number; top: number; groups: OverlapGroup[] }
+
+export const fetchOverlaps = (skip: number, top: number, signal?: AbortSignal) =>
+  request<OverlapPage>(`/containment/overlaps${qs({ skip, top })}`, undefined, signal);

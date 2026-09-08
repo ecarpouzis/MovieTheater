@@ -454,6 +454,7 @@ from what, and the reconciliation tools for when a series went wrong. Everything
 | `GET/PUT/DELETE /admin/kids-tags[/{category}/{tag}]` | The `KidSafeTag` allow-list |
 | `POST /admin/recompute/{what}` | Start the job that owns one derived table: `series`, `resolve`, `tags`, `reading-order`, `containment`, `collected-editions`, `ratings` |
 | `POST /admin/dedup/start` · `GET /admin/dedup` · `POST /admin/dedup/{id}/resolve` | Duplicate detection, review and resolution |
+| `GET /admin/containment/summary` · `/flags` · `/overlaps` · `POST /admin/containment/flags/{id}/decide` · `dedup/start` · `PUT/DELETE /admin/containment/spans/{itemId}` | The containment review queue: the model pass's flags, and the one edit that answers them — a hand-typed `CollectedEditionSpan(Source=Curated, ProviderRef="admin:<user>")` at confidence 1.0, which the pass will not overwrite |
 | `GET/PUT/DELETE /admin/normalization/aliases` · `POST /admin/normalization/apply?apply=` | The `TagAlias` map and the four tag-hygiene passes |
 | `GET /admin/series/summary` · `/{id}/aliases` · `/link-candidates` · `/decisions` · `/namefix` · `/split-overmatch` | Series reconciliation, read side |
 | `POST /admin/series/clear-link` · `set-link` · `fold` · `unify-folder` · `review` · `decisions/{id}/revert` · `prune` · `PUT /{id}/override` | Series reconciliation, write side — every one of them edits an INPUT |
@@ -511,6 +512,7 @@ in `DerivedTable` with its fingerprint, row count and rebuild time by the job th
 | `books-mu-import --file <export.json> [--legs]` | `MuSeries` (hot) + `MuSeriesRaw` (legs) | — |
 | `books-signatures [--cache-dir] [--batch-size] [--max-batches] [--hash-bytes] [--reset] [--status]` | `ItemSignature` — archive fingerprint + page signature (ZIP central directory), cover dHash (local thumb); `--hash-bytes` adds whole-file SHA-256 for cbr/pdf/mobi | — |
 | `books-dedup [--csv] [--apply] [--reset] [--batch-size]` | `DuplicateGroup` / `DuplicateMember` with a suggested keeper — grouped across the whole table, idempotent; needs `books-signatures` first | — |
+| `books-dedup-contained [--min-confidence] [--batch-size] [--resume] [--reset] [--top] [--apply]` | `DuplicateGroup(Relationship = ContainedIn)` — the single issues a collected edition already holds, which no signature can see. Only containers whose winning span is `Curated` at >= 0.8 (gold exempt), never one carrying a Pending `ContainmentFlag` or sitting in a series flagged `overlap-in-series` / `conflated-series`. Review-only: `ResolveAsync` refuses to bulk-resolve relationship 3 | `DuplicateGroup` / `DuplicateMember` |
 | `books-fix-issue-numbers [--apply]` | Re-extracts `ComicDetail.IssueNo` from the filenames and reports what moved | — |
 | `books-reparse [--batch-size] [--after] [--max-batches] [--apply] [--top]` | Re-runs the whole comic parse over the STORED `Item.FileName`/`Path` + `ComicEmbedded` + `Item.PageCount` (no scan, no share access) and rewrites the format half of `ComicDetail` — `Format`, `FormatRaw`, `IsCollection`, `VolumeNo`, `IssueNo`, `IssueSource`, `ParseNotes`. Never clears or demotes on a silent parse; never touches `ParsedSeriesKey`/`Year`/`Publisher`; the issue ladder stays `books-fix-issue-numbers`' business. Chunked by `Item.Id`, dry run by default | — |
 | `books-cv-descriptions-import --rip <comicdb_comicvine_*.db> [--legs] [--after] [--batch-size] [--max-batches] [--apply]` | Legs `CvVolumeDescription` — the ComicVine volume DESCRIPTIONS from the offline rip, the only place ComicVine publishes its "Collected Editions" list. Streams the 14.5 GB rip a page at a time; dry run by default | — |
@@ -518,6 +520,8 @@ in `DerivedTable` with its fingerprint, row count and rebuild time by the job th
 | `books-cv-spans [--legs] [--batch-size] [--resume] [--top] [--apply]` | `CollectedEditionSpan(Source=Cv)` — collected editions matched to ComicVine's own edition list by TITLE (`Note = "match-by: title; cv collected-editions"`). Chunked by `Series.Id`, delete-then-rewrite per series that HAS a block; dry run by default | `CollectedEditionSpan(Source=Cv)` |
 | `books-gcd-spans --gcd <gcd.db> [--batch-size] [--resume] [--top] [--apply]` | `CollectedEditionSpan(Source=Gcd)` — the GCD reprint graph, container = an issue that appears as `gcd_reprint.target_issue_id`, matched by TITLE only. **Deletes every existing GCD span in the window**, including the issue-keyed ones. Reads the dump read-only; dry run by default | `CollectedEditionSpan(Source=Gcd)` |
 | `books-locg-editions --rich <locg_cache/rich> [--legs] [--batch-size] [--resume] [--top] [--apply]` | Re-points `ItemProviderLink(Locg)` for collected editions at the LOCG record that IS the edition (a container with `LocgContainment` edges), so `books-collected-editions` can span it. `Method = "edition-title"`; dry run by default | — |
+| `books-curated-spans-import --in <curated_spans.jsonl> [--db] [--batch-size] [--after] [--max-batches] [--batch] [--flags] [--top] [--apply]` | `CollectedEditionSpan(Source=Curated, ProviderRef="model:<batch>")` from the model pass's judged containment. Never overwrites gold; an `unknown` line whose item still carries a row THIS pass wrote retracts it. Chunked by input line, dry run by default | `CollectedEditionSpan(Source=Curated)` |
+| `books-containment-flags-import --in <flags.csv> [--db] [--source] [--batch-size] [--after] [--prune] [--apply]` | `ContainmentFlag` — the pass's review queue, worked through at `/books/admin?tab=containment`. Keyed `(ItemId, Flag)`: re-importing refreshes the evidence and never overwrites a verdict a person recorded. `--prune` drops only Pending rows the sheet no longer carries | `ContainmentFlag` |
 | `books-parse-audit [--out]` | The parse-pipeline CSV, one row per comic with a source per field | — |
 | `books-series-{override,clearlink,namefix,prune,split-overmatch}` | Edits to the resolution INPUTS (and two read-only reports) | — |
 
@@ -526,15 +530,19 @@ Contract notes worth knowing before running any of them:
 - **`books-scan` is dry-run by default**, and so are `books-dedup`, `books-import-calibre`,
   `books-insight-import`, `books-curation-import`, `books-fix-issue-numbers`, `books-series-namefix`,
   `books-series-prune`, `books-reparse`, the two rip importers (`books-cv-descriptions-import`,
-  `books-locg-reprints-import`) and the three containment producers (`books-cv-spans`, `books-gcd-spans`,
-  `books-locg-editions`). `--apply` is the house rule. The derived rebuilds (`books-reading-order`,
+  `books-locg-reprints-import`), the three containment producers (`books-cv-spans`, `books-gcd-spans`,
+  `books-locg-editions`), the two containment imports (`books-curated-spans-import`,
+  `books-containment-flags-import`) and `books-dedup-contained`. `--apply` is the house rule. The derived rebuilds (`books-reading-order`,
   `books-containment`, `books-collected-editions`) write by default but take `--dry-run` and `--resume`.
 - **A collected edition may be linked only to a provider CONTAINER record.** The three producers above match
   on the edition TITLE and emit nothing when the provider does not have the edition; the number-matching path
   that made "Saga Book 1" (505 pages) point at "Saga #1" (28 pages, no containment) is gone. Their run order
   is `books-cv-descriptions-import` / `books-locg-reprints-import` → `books-cv-spans` / `books-gcd-spans` /
-  `books-locg-editions` → `books-resolve --series` → `books-collected-editions` → `books-reading-order` →
-  `books-containment` → `books-resolve`.
+  `books-locg-editions` → `books-resolve --series` → `books-curated-spans-import` →
+  `books-collected-editions` → `books-reading-order` → `books-containment` → `books-resolve` →
+  `books-containment-flags-import` → `books-dedup-contained`. What each edition collects is the model pass's
+  answer, not a leg's: see `docs/books/containment/README.md` for the pass, its self-audit and the trust
+  classes anything reading containment must respect.
 - **The host's catalog cache expires itself.** Every Explore / facets / heads payload is bound to
   `CatalogCacheVersion`; the warmer trips it when the catalog fingerprint moves, and
   `POST /admin/cache/expire` does it on demand — no restart after a resolve or an import.

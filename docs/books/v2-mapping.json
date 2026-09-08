@@ -297,6 +297,19 @@
         "(SeriesId)"
       ]
     },
+    "ContainmentFlag": {
+      "file": "hot",
+      "pk": [
+        "Id"
+      ],
+      "purpose": "One thing the containment pass wants a person to look at: a shelf whose relaunch ladders collide, a single issue wearing a collection format, two copies of one volume, a provider row naming a different book. The file de-duplication must never act on a flagged item, so the review state is the point.",
+      "cols": "Id INTEGER, ItemId INTEGER FK Item, SeriesId INTEGER FK Series NULL, Flag TEXT, Detail TEXT, Source TEXT, ReviewState TEXT, Note TEXT, DecidedBy TEXT, DecidedAt TEXT, CreatedAt TEXT",
+      "idx": [
+        "UNIQUE (ItemId, Flag)",
+        "(ReviewState)",
+        "(SeriesId)"
+      ]
+    },
     "CvVolume": {
       "file": "hot",
       "pk": [

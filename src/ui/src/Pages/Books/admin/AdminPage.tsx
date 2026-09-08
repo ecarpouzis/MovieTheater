@@ -1,5 +1,5 @@
 /**
- * `/books/admin?tab=` — the operator's ten tabs against the R6 admin API on the host, on the SITE's
+ * `/books/admin?tab=` — the operator's eleven tabs against the R6 admin API on the host, on the SITE's
  * admin shell (R9 S6: `src/ui/src/admin/AdminShell` IS this page's own tab row, lifted out so every
  * section wears it). The tab is in the URL (a link to "the Series tab" is a real link); a non-admin
  * never reaches this (BooksPage redirects), and the host re-checks `[Authorize(Policy = "admin")]`
@@ -17,6 +17,7 @@ const CollectionsTab = lazy(() => import("./tabs/CollectionsTab"));
 const NormalizationTab = lazy(() => import("./tabs/NormalizationTab"));
 const KidsTab = lazy(() => import("./tabs/KidsTab"));
 const DuplicatesTab = lazy(() => import("./tabs/DuplicatesTab"));
+const ContainmentTab = lazy(() => import("./tabs/ContainmentTab"));
 const ConfigTab = lazy(() => import("./tabs/ConfigTab"));
 const SystemTab = lazy(() => import("./tabs/SystemTab"));
 
@@ -29,6 +30,7 @@ export const ADMIN_TABS: AdminTabDef[] = [
   { key: "normalization", label: "Normalization", render: () => <NormalizationTab /> },
   { key: "kids", label: "Kids", render: () => <KidsTab /> },
   { key: "duplicates", label: "Duplicates", render: () => <DuplicatesTab /> },
+  { key: "containment", label: "Containment", render: () => <ContainmentTab /> },
   { key: "config", label: "Config", render: () => <ConfigTab /> },
   { key: "system", label: "System", render: () => <SystemTab /> },
 ];

@@ -55,6 +55,12 @@ namespace MovieTheater.Books.Resolve
             Write,
             /// <summary>The model declined to answer — counted, never written.</summary>
             Unknown,
+            /// <summary>
+            /// The model declined, AND a row this pass wrote earlier is standing there. Delete it. A span that
+            /// has been withdrawn must actually go away, or an audit that corrects the pass could only ever add.
+            /// Gold is never retracted this way — only rows whose ProviderRef says <c>model:</c>.
+            /// </summary>
+            Retract,
             /// <summary>An existing Curated row outranks the model's answer and stays.</summary>
             Kept,
             /// <summary>The line cannot be turned into a span.</summary>
@@ -108,7 +114,16 @@ namespace MovieTheater.Books.Resolve
                 detail = line.Error;
                 return Verdict.Invalid;
             }
-            if (line.Unknown) return Verdict.Unknown;
+            if (line.Unknown)
+            {
+                if (existing is { } prior && !prior.IsGold)
+                {
+                    flag = "span-retracted";
+                    detail = $"withdrew the model's own #{Fmt(prior.Start)}-{Fmt(prior.End)}: {line.Why}";
+                    return Verdict.Retract;
+                }
+                return Verdict.Unknown;
+            }
 
             if (line.Start is not { } s || line.End is not { } e)
             {

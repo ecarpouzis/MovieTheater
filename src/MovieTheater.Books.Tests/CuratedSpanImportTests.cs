@@ -112,5 +112,49 @@ namespace MovieTheater.Books.Tests
             Assert.Equal("pass1-b042", line.Batch);
             Assert.Equal(CuratedSpanImport.Verdict.Write, CuratedSpanImport.Decide(line, null, out _, out _));
         }
+        // ── retraction: an audit that corrects the pass must be able to take a span back ──
+
+        [Fact]
+        public void AWithdrawnAnswerDeletesTheRowThePassItselfWrote()
+        {
+            var line = CuratedSpanImport.Parse("""{"itemId": 5, "unknown": true, "why": "116pp cannot hold ten issues"}""", 1);
+            var mine = new CuratedSpanImport.Existing(9, 18, 0.85, "model:pass1");
+            Assert.Equal(CuratedSpanImport.Verdict.Retract, CuratedSpanImport.Decide(line, mine, out var flag, out var detail));
+            Assert.Equal("span-retracted", flag);
+            Assert.Contains("116pp cannot hold ten issues", detail);
+        }
+
+        [Fact]
+        public void AWithdrawnAnswerNeverTouchesGold()
+        {
+            // The pass declining is not evidence against an edition's own indicia, or against a person.
+            var line = CuratedSpanImport.Parse("""{"itemId": 5, "unknown": true, "why": "not evidenced"}""", 1);
+            foreach (var gold in new[] { new CuratedSpanImport.Existing(1, 18, 0.98, null),
+                                         new CuratedSpanImport.Existing(1, 18, 1.0, "admin:eric") })
+            {
+                Assert.Equal(CuratedSpanImport.Verdict.Unknown, CuratedSpanImport.Decide(line, gold, out var flag, out _));
+                Assert.Null(flag);
+            }
+        }
+
+        [Fact]
+        public void AWithdrawnAnswerWithNothingStandingIsJustUnknown()
+        {
+            var line = CuratedSpanImport.Parse("""{"itemId": 5, "unknown": true, "why": "manga volume"}""", 1);
+            Assert.Equal(CuratedSpanImport.Verdict.Unknown, CuratedSpanImport.Decide(line, null, out var flag, out _));
+            Assert.Null(flag);
+        }
+        [Fact]
+        public void AHandTypedSpanOutranksTheModelAndIsFlaggedWhenTheyDisagree()
+        {
+            // What the containment review screen writes: Curated, confidence 1.0, ProviderRef "admin:<user>".
+            // A person who can see the shelf beats an inference about it, so the model answer is KEPT OUT.
+            var typed = new CuratedSpanImport.Existing(1, 6, 1.0, "admin:eric");
+            var line = Span(5, 1, 12, 0.85);
+            Assert.Equal(CuratedSpanImport.Verdict.Kept, CuratedSpanImport.Decide(line, typed, out var flag, out var detail));
+            Assert.Equal("provider-disagrees", flag);
+            Assert.Contains("kept curated 1-6", detail);
+            Assert.Contains("model said 1-12", detail);
+        }
     }
 }

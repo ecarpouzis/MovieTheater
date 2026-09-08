@@ -416,6 +416,22 @@ namespace MovieTheater.Books.Db
         public DateTime? CreatedAt { get; set; }
     }
 
+    /// <summary>One thing the containment pass wants a person to look at: a shelf whose relaunch ladders collide, a single issue wearing a collection format, two copies of one volume, a provider row naming a different book. The file de-duplication must never act on a flagged item, so the review state is the point.</summary>
+    public sealed class ContainmentFlag
+    {
+        public int Id { get; set; }
+        public int ItemId { get; set; }
+        public int? SeriesId { get; set; }
+        public string? Flag { get; set; }
+        public string? Detail { get; set; }
+        public string? Source { get; set; }
+        public string? ReviewState { get; set; }
+        public string? Note { get; set; }
+        public string? DecidedBy { get; set; }
+        public DateTime? DecidedAt { get; set; }
+        public DateTime? CreatedAt { get; set; }
+    }
+
     /// <summary>ComicVine volume (series-level facts the modal shows)</summary>
     public sealed class CvVolume
     {

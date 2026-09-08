@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MovieTheater.Books.Db;
 
@@ -10,9 +11,11 @@ using MovieTheater.Books.Db;
 namespace MovieTheater.Books.Db.Migrations.Hot
 {
     [DbContext(typeof(BooksDb))]
-    partial class BooksDbModelSnapshot : ModelSnapshot
+    [Migration("20260908044341_ContainmentFlag")]
+    partial class ContainmentFlag
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.11");
