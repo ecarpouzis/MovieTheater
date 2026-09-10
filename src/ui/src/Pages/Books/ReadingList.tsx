@@ -15,6 +15,7 @@ const LEVEL_ORDER: Record<CollectionLevel, number> = { Issue: 0, Volume: 1, Book
 
 const level = (r: SeriesRunRow) => (r.collection ? LEVEL_ORDER[r.collection.level] ?? 0 : 0);
 const spanStart = (r: SeriesRunRow) => r.collection?.spanStart ?? null;
+const readIndex = (r: SeriesRunRow) => r.readingOrder?.readIndex ?? null;
 const inSpan = (ct: SeriesRunRow, p: number | null) =>
   p != null && ct.collection?.spanStart != null && ct.collection.spanEnd != null && p >= ct.collection.spanStart && p <= ct.collection.spanEnd;
 
@@ -57,13 +58,26 @@ export default function ReadingList({ rows, total, finishedIds, onOpen }: Readin
 
   const merged = useMemo(() => {
     const spanned = rootContainers.filter((ct) => ct.collection?.spanStart != null && ct.collection.spanEnd != null && ct.collection.spanEnd >= ct.collection.spanStart && ct.collection.spanStart > 0);
-    const unplaced = rootContainers.filter((ct) => !spanned.includes(ct));
+    // An edition whose range we own NONE of has no base position — a span is measured in owned files — but
+    // its range is known all the same, so it does not belong under "without a known range". Its reading-order
+    // row already places it (`Saga Book 02` collects #19-36 at ReadIndex 9, between Book 01 and Book 03), so
+    // it is spliced in against the ReadIndex of the rows around it, keeping its `collects` label and whatever
+    // nested under it. Only editions with no range at all trail at the end.
+    const ranged = rootContainers.filter((ct) => !spanned.includes(ct) && ct.collection?.spanLabel != null)
+      .sort((a, b) => (readIndex(a) ?? 1e9) - (readIndex(b) ?? 1e9) || a.item.id - b.item.id);
+    const unplaced = rootContainers.filter((ct) => !spanned.includes(ct) && !ranged.includes(ct));
     const covered = (p: number | null) => p != null && spanned.some((ct) => inSpan(ct, p));
     type Row = { kind: "container" | "book"; r: SeriesRunRow; pos: number; width: number };
     const items: Row[] = [];
     for (const ct of spanned) items.push({ kind: "container", r: ct, pos: ct.collection!.spanStart!, width: ct.collection!.spanEnd! - ct.collection!.spanStart! });
     for (const b of primary) if (!covered(spanStart(b))) items.push({ kind: "book", r: b, pos: spanStart(b) ?? Number.MAX_SAFE_INTEGER, width: 0 });
     items.sort((a, b) => a.pos - b.pos || (a.kind === b.kind ? 0 : a.kind === "container" ? -1 : 1) || b.width - a.width || a.r.item.id - b.r.item.id);
+    for (const ct of ranged) {
+      const ri = readIndex(ct);
+      const found = ri == null ? -1 : items.findIndex((it) => (readIndex(it.r) ?? 1e9) > ri);
+      const at = found < 0 ? items.length : found;
+      items.splice(at, 0, { kind: "container", r: ct, pos: items[at - 1]?.pos ?? 0, width: 0 });
+    }
     return { items, unplaced };
   }, [rootContainers, primary]);
 
