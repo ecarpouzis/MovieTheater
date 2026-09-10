@@ -276,7 +276,11 @@
 .cm-coll-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .cm-coll-collects, .cm-coll-n { font-family: var(--font-mono); font-size: 10.5px; color: var(--sub); }
 .cm-coll-year { font-family: var(--font-mono); font-size: 11px; color: var(--sub); }
-.cm-coll-kids { margin-left: 22px; padding-left: 10px; border-left: 2px solid var(--line); background: color-mix(in oklab, var(--ink) 2.5%, transparent); }
+/* A flex column, not a plain block: the nested rows are <button>s, and a button's automatic width
+   is fit-content whatever its `display` is — in a block parent the row shrank to its content and the
+   `auto` year column ended up hugging the title instead of sitting at the right edge. Stretching them
+   as flex items is what `.cm-order` already does for the top-level rows. */
+.cm-coll-kids { display: flex; flex-direction: column; margin-left: 22px; padding-left: 10px; border-left: 2px solid var(--line); background: color-mix(in oklab, var(--ink) 2.5%, transparent); }
 .cm-order { display: flex; flex-direction: column; margin-top: 4px; }
 .cm-order-row {
   display: grid; grid-template-columns: 26px 38px 1fr auto; align-items: center; gap: 14px;
