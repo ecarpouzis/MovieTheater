@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using MovieTheater.Books.Archives;
 using MovieTheater.Books.Db;
 
 namespace MovieTheater.Books.Projections
@@ -114,7 +115,8 @@ namespace MovieTheater.Books.Projections
         List<ProviderLinkRow> ProviderLinks,
         string? ThumbUrl,
         string? DownloadUrl,
-        string? PagesUrlTemplate);
+        string? PagesUrlTemplate,
+        string? ReaderFormat);
 
     /// <summary>
     /// Assembles an <see cref="ItemDetail"/>. Kept out of the controller because the media plane's manifest and
@@ -259,7 +261,8 @@ namespace MovieTheater.Books.Projections
                 external, readingOrder, collection, spans, credits, tags, seriesTags,
                 links.Select(l => new ProviderLinkRow(l.Provider, l.ProviderKey, l.Status, l.Quality, l.Method,
                     l.Confidence, l.Applied)).ToList(),
-                thumbUrl?.Invoke(item.Id), downloadUrl?.Invoke(item.Id), pagesUrlTemplate?.Invoke(item.Id));
+                thumbUrl?.Invoke(item.Id), downloadUrl?.Invoke(item.Id), pagesUrlTemplate?.Invoke(item.Id),
+                ReaderFormatFor(item));
         }
 
         /// <summary>
@@ -283,6 +286,25 @@ namespace MovieTheater.Books.Projections
             return new InsightBlock(row.ModelId, row.Confidence, row.Recognized, row.Rating, row.Synopsis,
                 row.Author, row.Artist, row.YearBegin, row.YearEnd, row.Maturity, row.GeneratedAt, tags);
         }
+
+        /// <summary>
+        /// <b>Which READER SURFACE this item needs</b> — the one answer the client is not allowed to derive for
+        /// itself from the extension.
+        ///
+        /// <para>6,768 books in this library are EPUBs saved as <c>.zip</c> (a sample of 200 found the OCF
+        /// signature in all 200). The archive readers have always coped — <see cref="ArchiveFormatSniffer"/>
+        /// routes by magic bytes — but the SPA picked its surface off <c>Item.Extension</c> and so opened every
+        /// one of them in the CANVAS reader, which looks inside an EPUB for image pages, finds none, and shows a
+        /// book that "will not open". Serving the sniffed answer here is what removes the guess.</para>
+        ///
+        /// <para>Only a BOOK with a generic container extension is sniffed, and only then is the file touched:
+        /// a comic reads on the canvas whichever of ZIP/RAR/7-Zip it turns out to be, so paying an SMB open per
+        /// modal for 118k comics would buy nothing. An unreadable or missing file yields the declared extension —
+        /// "trust the extension" is the sniffer's own fallback, and the reader then fails with its own message
+        /// rather than this one guessing.</para>
+        /// </summary>
+        public static string? ReaderFormatFor(Item item) => ArchiveFormatSniffer.ReaderFormatFor(
+            item.Kind == ItemKind.Book, item.Path, item.Extension, item.FileModifiedAt?.Ticks ?? 0);
 
         /// <summary>The path with its library root stripped — longest root first, so a nested root wins.</summary>
         public static string ToRelativePath(string path, IEnumerable<string> roots)

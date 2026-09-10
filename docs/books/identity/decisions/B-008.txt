@@ -1,0 +1,337 @@
+# B-008 — tier B: 146 shelves, almost all of them DC read-order event folders (Blackest Night, Infinite Crisis,
+# Final Crisis, the New 52 Trinity read order, the 32-title Futures End month) plus a tail of TV/movie tie-ins.
+# The shape of the batch: a folder whose leading number is a READING-ORDER position, one file per tie-in, and both
+# providers holding exactly one record per one-shot — so most lines are two legs agreeing on title, publisher, year
+# and a single 36-52 page issue, and the book gets its own I line with that issue id. Four systematic findings:
+# (1) the per-file ComicVine matcher picks the LEGACY volume for every New 52 file (Batman 1940 for Batman 2011,
+# Wonder Woman 1942, Nightwing 1996, Catwoman 1993, Supergirl 1996, Aquaman 1994) because it matches by issue
+# number — the New 52 volumes are CV 42721/42953/42720/42722/42949/43022 with GCD 61067/61069/61072/61074/61070/61178;
+# (2) DC's Blackest Night revival issues keep the ORIGINAL series' numbering and GCD keeps them in the original
+# series (The Power of SHAZAM! 5246 runs 1995-2010 for its 2010 #48; "Black Lantern Green Arrow #30" is GCD 44347
+# "Green Arrow" 2010, the three-issue Blackest Night tail of Green Arrow / Black Canary);
+# (3) five shelves are a fan-made DCP "Archive Edition"/"Essentials" compile or a story-only extract rather than a
+# published comic — those are refused or flagged, never linked;
+# (4) three shelves in this batch hold the same one-shot as a shelf in B-007 (Superman Prime, the Ray Palmer
+# Wildstorm special, Superman Beyond) — declared with merge-with rather than left to collide at the resolve.
+
+S 2723 cv=32002 gcd=44347 0.95 | our file "72 Black Lantern Green Arrow 30" (33pp) is Green Arrow #30, the March 2010 Blackest Night issue: CV 32002 "Green Arrow" (DC 2010, 3 issues) and GCD 44347 (DC 2010, #30 at 44 pages, #31 and #32) are the three-issue Blackest Night tail that carried on Green Arrow / Black Canary's numbering
+F 2723 wrong-cv-link | the stored CV 90105 "Green Arrow: Black Arrow" (2016, 1) is a collected edition, not the 2010 issue our file is
+I 16363 cv=200774 gcd=730677 0.9 | the issue's own records: CV issue 200774 is volume 32002's first issue and GCD 730677 is #30 (March 2010, 44 pages); GCD's 898829 is a second record for the same issue
+S 2829 cv=27386 gcd=38911 0.95 | CV 27386 "Blackest Night: Batman" (DC 2009, 3) and GCD 38911 (DC 2009-2009, 3) agree on publisher, year and count, and our three files name themselves "1 of 3", "2 of 3" and "3 of 3"
+S 2833 cv=27470 gcd=38962 0.95 | CV 27470 "Blackest Night: Superman" (DC 2009, 3) and GCD 38962 (DC 2009-2009, 3) agree on publisher, year and count, and our three files are its "1 of 3" through "3 of 3"
+S 2834 cv=27068 gcd=38376 0.95 | CV 27068 "Blackest Night: Tales of the Corps" (DC 2009, 3) and GCD 38376 (DC 2009-2009, 3) agree on publisher, year and count; our three "N of 3" files are that mini and the fourth file is its own 2010 collection, an edition of the same comic
+F 2834 needs-fetch cv=27068 | the volume has no CvVolume row; it was named from the local ComicVine rip
+I 19119 cv=- gcd=771117 isbn=9781401227906 0.95 | "COL Blackest Night - Tales of the Corps (2010)" at 163pp is GCD issue 771117 in series 51703, the 184-page 2010 collection of that three-issue mini
+S 2835 cv=27563 gcd=38982 0.95 | CV 27563 "Blackest Night: Titans" (DC 2009, 3) and GCD 38982 (DC 2009-2009, 3) agree on publisher, year and count, and our three files are its "1 of 3" through "3 of 3"
+F 14029 merge-with=19369 | S19369 is that same series' own shelf (32 files including #20, #41 and the 1998 #1,000,000 issue), so sharing CV 5515 is intended
+S 14029 cv=5515 gcd=5246 0.95 | our file is "Power of Shazam 48" (25pp), the 2010 Blackest Night revival issue, and GCD 5246 "The Power of SHAZAM!" spans 1995-2010 with 49 issues — the original series plus that one 2010 return — which is exactly what CV 5515 (DC 1995) records; the 1994 one-shots (4655, 23140) and the 2020/2023 rows are different books
+S 10126 cv=26964 gcd=37881 0.95 | CV 26964 "Justice League: Cry for Justice" (DC 2009, 7) and GCD 37881 (DC 2009-2010, 7) agree on publisher, span and count, our ladder is 1-4 of those seven, and the fifth file is the 2010 collection of the same run
+F 10126 needs-fetch cv=26964 | the volume has no CvVolume row; it was named from the local ComicVine rip
+I 67992 cv=- gcd=760734 isbn=9781401225674 0.95 | "COL Justice League - Cry For Justice (2010-06) TPB" at 197pp is GCD issue 760734 in series 49596, the 240-page 2010 collection
+S 3169 cv=34248 gcd=50859 0.95 | CV 34248 and GCD 50859 both record "Brightest Day: The Atom Special" as a single 2010 DC book of 36 pages, which is our one 26pp file
+I 16400 cv=- gcd=766969 0.9 | the one-shot's own record: GCD issue 766969, the 36-page 2010 special; ComicVine has not cached volume 34248's issue
+F 10154 merge-with=65009 | S65009 ("Justice League America (1960)", five files: #82, #83, #100) is the same 1960 run, so sharing CV 2014 is intended
+S 10154 cv=2014 gcd=1449 0.9 | the majority of these ten files are Justice League of America (1960): #8-10 (1962), #39-40 and #45-48, all inside CV 2014 (DC 1960, 261) and GCD 1449 (DC 1960-1987, 261); the named residue is item 16380, "Justice League of America 80 Page Giant 1", a separate 2009 book both providers index apart from the run
+S 20258 cv=33108 gcd=48583 0.9 | our 51pp file is the SPECIAL, not the trade: GCD 48583 "Titans: Villains for Hire Special" (DC 2010) is indexed at 60 pages while GCD 68089 "Titans: Villains for Hire" (2011) is a 164-page ISBN'd collection, and CV 33108 is that same 2010 special
+F 20258 wrong-cv-link | the stored CV 49113 "Titans: Villains for Hire" (2011, 1) is the collected edition; the book we hold is the 2010 special, CV 33108
+I 16448 cv=213640 gcd=756183 0.9 | the special's own records: CV issue 213640 (volume 33108) and GCD issue 756183 (60 pages); GCD's 1121229 is a second record for the same book
+S 7918 cv=77218 gcd=83249 0.9 | the numbered file is the one-shot that opened the crossover — "Green Lantern New Gods Godhead 001 (2014)" 40pp — which CV 77218 (DC 2014, 1) and GCD 83249 (DC 2014, one-shot) both record; the second file is the 407pp collection of the whole Godhead crossover, a different book with its own I line
+I 65990 cv=- gcd=1454933 isbn=9781401258474 0.9 | "COL Green Lantern - New Gods - Godhead (2015)" at 407pp is GCD issue 1454933 in series 92243, the 432-page 2015 collection; CV files that collection as volume 84425
+S 8923 cv=3604 gcd=3153 0.95 | CV 3604 "History of the DC Universe" (DC 1986, 2) and GCD 3153 (DC 1986, two 52-page issues with ISBNs 0-930289-17-X and -18-8) are the two-part 1986 series both our files collect; the 2023 rip is DC's new edition of the same work
+I 55299 cv=- gcd=2543625 isbn=9781779521392 0.95 | "COL History of the DC Universe (2023)" at 122pp is GCD issue 2543625 in series 201142, the 142-page 2023 edition
+N 8923 item 16774 ("COL History_of_the_DC_Universe", 85pp) is an older rip of the same work whose edition is not identifiable — it could be either 1986 issue's collection or the 1988 hardcover GCD 7779
+S 22900 cv=25187 gcd=10163 0.95 | CV 25187 and GCD 10163 both record "Batman: A Death in the Family" as a single 1988 DC book of 148 pages, which is our one 133pp file
+I 17991 cv=- gcd=95718 0.9 | the book's own record: GCD issue 95718, the 148-page 1988 collection; GCD's 1928569 and 2138404 are later printings of the same book
+S 14616 cv=31636 gcd=23102 0.95 | CV 31636 "The Return of Superman" (DC 1993, 1) and GCD 23102 "Superman: The Return of Superman" (DC 1993, 484 pages, ISBN 1563891492) are the same collection, which our 471pp "COL 03 - Return of Superman TPB" is
+I 16825 cv=- gcd=350609 isbn=1563891492 0.95 | the book's own record: GCD issue 350609, the 484-page 1993 trade
+S 17197 cv=36966 gcd=- 0.9 | CV 36966 "Superman: President Lex" (DC 2003, 1) is the collection our 257pp "COL Superman - President Lex TPB (2003)" is, and its year and publisher match the file exactly
+F 17197 provider-missing | the GCD dump holds no "Superman: President Lex" series under any spelling probed
+R 2050 | neither file is a published comic: item 17017 is "Batman 616a - Hush Interlude", an 8-page extract of Batman (1940) #616, and item 17836 is a DCP "Archive Edition" fan compile of the Heart of Hush storyline (Detective Comics #846-850) at 132pp — the stored CV 35076 "Batman: Hush" (2003, 2) is the collected edition of a different storyline
+F 2050 not-a-run | both items are fan-assembled extracts/compilations; the underlying comics are Batman (1940) #616 and Detective Comics (1937) #846-850
+F 17690 merge-with=20261 | S20261 holds another set of rips of the same three-issue Graduation Day mini; one comic, two shelves
+S 17690 cv=19106 gcd=14380 0.95 | CV 19106 "Titans/Young Justice: Graduation Day" (DC 2003, 3) and GCD 14380 (DC 2003, three issues at 40/40/36 pages) agree on publisher, year and count, and our ladder 1-3 is the whole mini at 23/23/22 pages
+R 17691 | two different comics on one shelf: items 17024 and 17032 are two copies of "Teen Titans and Outsiders Secret Files & Origins 2003" (55pp each) and item 17253 is the 2005 edition, and each year is its own record in both providers — CV 25401 / GCD 17886 for 2003 and CV 22028 / GCD 14512 for 2005; the stored CV 35920 "Titans Secret Files" (1999) is neither
+F 17691 split-needed | proposed: items 17024 and 17032 to CV 25401 / GCD 17886 (2003); item 17253 to CV 22028 / GCD 14512 (2005)
+I 17024 cv=- gcd=291822 0.9 | "Teen Titans and Outsiders Secret Files & Origins 2003" is GCD issue 291822, the 68-page 2003 book
+I 17032 cv=- gcd=291822 0.9 | the second copy of the same 2003 book — same record
+I 17253 cv=- gcd=250953 0.9 | "Teen Titans v3 Outsiders Secret Files Origins 2005" is GCD issue 250953, the 68-page 2005 book
+S 17253 cv=- gcd=17333 0.9 | our file is "Superman & Batman - Secret Files and Origins" (38pp) in the Public Enemies read-order folder, and the book that title names is GCD 17333 "Superman / Batman Secret Files 2003" (DC 2003, 1); the stored CV 31773 "Superman Secret Files" (1998, 2) is a different book five years earlier
+F 17253 wrong-cv-link | stored CV 31773 is Superman Secret Files (1998); the local rip holds no volume for the 2003 Superman/Batman secret files book
+S 9272 cv=18438 gcd=11337 0.95 | CV 18438 "Identity Crisis" (DC 2004, 7) and GCD 11337 (DC 2004-2005, seven 52-page issues) agree on publisher, span and count, and our ladder 1-7 is the complete mini; the extras file and the 2024 deluxe edition are the same comic in other forms
+N 9272 item 19331, "COL Identity Crisis 20th Anniversary Deluxe Edition (2024)" at 302pp, has no record in either provider — the GCD dump's newest Identity Crisis collection is 163644 (2016) and ComicVine's newest is 34002 (2006) — so that book's own edition is left unidentified
+S 17201 cv=158755 gcd=12162 0.95 | our file names its year: "00 Superman - Secret Files & Origins 2004" (21pp) is CV 158755 "Superman Secret Files And Origins 2004" (DC 2004, 1) and GCD 12162 (DC 2004, 52 pages); the per-file link 158756 is the 2005 edition, one year off
+I 17102 cv=- gcd=216436 0.9 | the book's own record: GCD issue 216436, the 52-page 2004 secret files special
+S 17687 cv=21506 gcd=12172 0.95 | our file is "Teen_Titans_Legion_Special" (40pp), which is CV 21506 "Teen Titans/Legion Special" (DC 2004, 1) and GCD 12172 (DC 2004, 52 pages)
+F 17687 wrong-cv-link | the stored CV 111850 "Teen Titans Special" (2018, 1) is a different book fourteen years later
+I 17144 cv=- gcd=216627 0.9 | the special's own record: GCD issue 216627, the 52-page 2004 Teen Titans / Legion Special
+S 19243 cv=25731 gcd=16116 0.95 | CV 25731 and GCD 16116 both record "The OMAC Project: Infinite Crisis Special" as a single 2006 DC book of 52 pages; our two 42pp files are two rips of it, one in the event folder and one under the title's own Specials folder, and ComicInfo Count "1" agrees
+I 17148 cv=- gcd=266828 0.9 | the special's own record: GCD issue 266828, the 52-page 2006 book; GCD 1575548 is a second record for it
+S 5004 cv=24042 gcd=16115 0.95 | CV 24042 and GCD 16115 both record "Day of Vengeance: Infinite Crisis Special" as a single 2006 DC book of 52 pages, and our two files (42pp and 40pp) are two rips of it in two event folders
+I 17205 cv=- gcd=266827 0.9 | the special's own record: GCD issue 266827, the 52-page 2006 book
+S 14388 cv=25736 gcd=16117 0.95 | CV 25736 and GCD 16117 both record "Rann / Thanagar War: Infinite Crisis Special" as a single 2006 DC book of 52 pages, and our two files (39pp and 37pp) are two rips of it
+I 17228 cv=- gcd=266829 0.9 | the special's own record: GCD issue 266829, the 52-page 2006 book
+S 14070 cv=25989 gcd=16063 0.95 | CV 25989 and GCD 16063 both record "Prelude to Infinite Crisis" as a single 2005 DC book (100 pages, ISBN 1-4012-0732-4), which is our 95pp file
+I 17996 cv=- gcd=266527 isbn=1401207324 0.95 | the book's own record: GCD issue 266527, the 100-page 2005 collection
+S 9430 cv=21773 gcd=17004 0.95 | CV 21773 and GCD 17004 both record "Infinite Crisis Secret Files 2006" as a single 2006 DC book of 68 pages, and our two files (52pp and 51pp) are two rips of it
+I 17361 cv=- gcd=276806 0.9 | the book's own record: GCD issue 276806, the 68-page 2006 secret files special
+S 34308 cv=18404 gcd=17005 0.95 | our file is "Teen Titans v3 - #Annual 01" (37pp) in the Infinite Crisis read-order folder, which is Teen Titans Annual #1 (2006) — CV 18404 "Teen Titans Annual" (DC 2006, 1) and GCD 17005 (DC 2006, 52 pages); the per-file link 116842 is the 2019 annual
+I 17407 cv=- gcd=276807 0.9 | the annual's own record: GCD issue 276807, the 52-page 2006 Teen Titans Annual
+S 11956 cv=2113 gcd=1554 0.9 | our file is a 24pp "Metal Men 45" floppy, and the only Metal Men series that reaches #45 is the original: CV 2113 (DC 1963, 56) and GCD 1554 (DC 1963-1978, 56); it sits in a 52 read-order folder as background reading
+F 11956 wrong-cv-link | the stored CV 27309 "Metal Men" (2009, 1) is a collected edition — GCD's matching row 38825 is a 204-page 2008/2009 trade — not the floppy our file is
+S 12606 cv=26038 gcd=1842 0.95 | CV 26038 and GCD 1842 both record "Mysterious Suspense" as a single 1968 Charlton book of 36 pages, which is our one 36pp file — the Question story reprinted in the 52 read-order folder
+I 17603 cv=- gcd=22206 0.9 | the issue's own record: GCD issue 22206, Charlton's 36-page 1968 one-shot
+S 2318 cv=22256 gcd=17494 0.95 | CV 22256 "Crisis Aftermath: The Battle for Blüdhaven" (DC 2006, 6) and GCD 17494 (DC 2006, 6) agree on publisher, year and count, and our ladder 1-6 is the whole mini; the seventh file is a DCP Essentials compile of the same six issues, a duplicate in another wrapper
+S 4359 cv=27522 gcd=18086 0.95 | CV 27522 "Crisis Aftermath: The Spectre" (DC 2006, 3) and GCD 18086 (DC 2006, 3) agree on publisher, year and count, and our ladder 1-3 is the whole mini
+S 6203 cv=- gcd=18427 0.9 | both files are rips of Green Lantern Corps #19 (2008), which is GCD 18427 "Green Lantern Corps" (DC 2006-2011, 63); the per-file link 162400 is the 2025 relaunch, matched by issue number alone, and the ComicVine half is right but withheld — see the N line
+N 6203 CV 18248 "Green Lantern Corps" (DC 2006, 63) is this run's volume, but it is the STORED CvVolumeId of S7927, whose five files are the 2007 Sinestro Corps Special and its Secret Files — linking it here would merge those onto the Corps run, so it is withheld until S7927 is re-linked
+F 7927 wrong-cv-link | S7927 ("Green Lantern Corps") holds the 2007 Sinestro Corps Special and Secret Files, not Green Lantern Corps issues; its stored CV 18248 is what keeps the real GLC shelves from taking that volume
+F 6203 merge-with=22910 | S22910 holds Green Lantern Corps #16 (2007) from the same run, filed under a filename fragment; the two shelves are one comic
+S 7930 cv=42805 gcd=102529 0.9 | a crossover has no single run record: our 316pp file is the 2011 collected edition of the Sinestro Corps War, which CV 42805 (DC 2011, 1) and GCD 102529 (DC 2011-2015, 1) both record; the underlying comics are Green Lantern (2005) #21-25 and Green Lantern Corps (2006) #14-19 plus the Tales one-shots
+N 7930 the earlier two-volume collection is CV 32780 / GCD 29682 (2008, 2) and GCD 36134 (2009, 2) — this shelf's book is the single-volume 2011 edition
+S 17551 cv=19311 gcd=27012 0.95 | CV 19311 and GCD 27012 both record "Tales of the Sinestro Corps: Superman-Prime" as a single December 2007 DC book of 56 pages, which is our 40pp file
+F 17551 merge-with=17554 | S17554 (batch B-007) holds another rip of this same one-shot in a different event folder; the two shelves are one comic, so sharing CV 19311 / GCD 27012 is intended
+I 17657 cv=115864 gcd=383155 0.95 | the one-shot's own records: CV issue 115864 (volume 19311) and GCD issue 383155 (December 2007, 56 pages)
+S 22910 cv=- gcd=18427 0.9 | our file "7._comic_green_lantern_corps_016__2007_" (23pp) is Green Lantern Corps #16 (2007), inside GCD 18427 (DC 2006-2011, 63) — the same run as S6203's #19, which is why the two shelves are declared a merge there; CV 18248 is withheld for the reason S6203's N line gives
+R 19456 | three tie-in issues from three different series, filed by crossover part: "838_...part 3" and "839_...part 7" are Detective Comics (1937) #838 and #839 and "671_...part 4" is Batman (1940) #671, all from The Resurrection of Ra's al Ghul (2007-08); no record covers the three, and the CV per-file link 31003 / GCD 30783 is the 264-page collection of the crossover, not a run
+F 19456 split-needed | proposed: the two Detective Comics files to Detective Comics (1937) and the Batman file to Batman (1940); the crossover's own record is the collection CV 31003 / GCD 30783
+R 22902 | the shelf name is a filename fragment: our single file "aftermath 840_After_the_Resurrection_(Countdown 17)" is Detective Comics (1937) #840, the coda to The Resurrection of Ra's al Ghul, and the stored CV 20573 "Aftermath" (Chaos! Comics 2000) is an unrelated comic
+F 22902 wrong-cv-link | stored CV 20573 is Chaos! Comics' 2000 "Aftermath"; this file is one issue of Detective Comics
+S 10172 cv=19134 gcd=26430 0.95 | our file is "Justice_League_of_America_-_Wedding_Special_01 (2007)" (39pp), which both providers record as CV 19134 "Justice League Wedding Special" (DC 2007, 1) and GCD 26430 (DC 2007, 52 pages); the per-file link 31248 is the 2009 JLA Special
+I 17707 cv=- gcd=374039 0.9 | the special's own record: GCD issue 374039, the 52-page 2007 wedding special
+S 18591 cv=18103 gcd=18440 0.9 | the blogspot suffix hides the issue number: our file is The Flash: The Fastest Man Alive #13 (2007), and that thirteen-issue 2006 series is CV 18103 (DC 2006, 13) and GCD 18440 (DC 2006-2007, 13)
+F 18591 wrong-cv-link | the stored CV 145041 "The Flash: The Fastest Man Alive" (2022, 3) is the later mini of the same name, sixteen years after our file
+F 14538 merge-with=4268 | S4268 holds another rip of this same Red Rain one-shot in a different Countdown folder; one comic, two shelves
+S 14538 cv=19618 gcd=27205 0.95 | CV 19618 and GCD 27205 both record "Countdown Presents: The Search for Ray Palmer: Red Rain" as a single 2008 DC book of 36 pages, which is our 25pp file
+I 17806 cv=- gcd=386453 0.9 | the one-shot's own record: GCD issue 386453, the 36-page 2008 special
+F 14539 merge-with=4269 | S4269 holds another rip of this same Red Son one-shot in a different Countdown folder; one comic, two shelves
+S 14539 cv=20435 gcd=27894 0.95 | CV 20435 and GCD 27894 both record "Countdown Presents: The Search for Ray Palmer: Red Son" as a single 2008 DC book of 36 pages, which is our 24pp file
+I 17808 cv=- gcd=394746 0.9 | the one-shot's own record: GCD issue 394746, the 36-page 2008 special
+S 21676 cv=19136 gcd=26427 0.95 | CV 19136 and GCD 26427 both record "Countdown Presents: The Search for Ray Palmer: Wildstorm" as a single November 2007 DC book of 36 pages, which is our 25pp file
+F 21676 merge-with=4264 | S4264 (batch B-007) holds another rip of this same one-shot under the Green Lantern Corps read-order folder; one comic, two shelves, so sharing CV 19136 / GCD 26427 is intended
+F 35125 merge-with=4266 | S4266 holds another rip of this same Crime Society one-shot in a different Countdown folder; one comic, two shelves
+S 35125 cv=19256 gcd=26573 0.95 | CV 19256 and GCD 26573 both record "Countdown Presents: The Search for Ray Palmer: Crime Society" as a single 2007 DC book of 40 pages, which is our 25pp file
+I 17805 cv=- gcd=374986 0.9 | the one-shot's own record: GCD issue 374986, the 40-page 2007 special
+S 35015 cv=45155 gcd=50396 0.9 | Batman R.I.P. ran inside Batman (1940) #676-681, so the storyline's own record is a collection: CV 45155 "Batman: R.I.P." (DC 2010, 1) and GCD 50396 (DC 2010, 228 pages, ISBN 978-1-4012-2576-6); this shelf holds four books of that storyline in four wrappers, two of them DCP fan compiles
+I 62844 cv=- gcd=568039 isbn=9781401220907 0.95 | "COL 05 Batman - R.I.P. - The Deluxe Edition (2009)" at 214pp is GCD issue 568039 in series 33920, the 232-page 2009 deluxe hardcover
+I 62883 cv=- gcd=1493087 isbn=9781401261894 0.95 | "Batman Unwrapped - R.I.P. (2015)" at 215pp is GCD issue 1493087 in series 93773, the 232-page 2015 Unwrapped edition
+N 35015 items 17837 and 17838 ("DCP_Archive_Edition_-_Batman_RIP._The_Great_Leap", 134pp, and "Scattered_Pieces", 47pp) are fan-assembled compilations of the tie-in issues, not published editions
+F 4620 merge-with=4628 | S4628 holds another rip of this same 2008 one-shot ("DC Universe - Last Will and Testament 001"); one comic, two shelves
+S 4620 cv=22764 gcd=31680 0.95 | CV 22764 and GCD 31680 both record "DC Universe: Last Will and Testament" as a single 2008 DC book of 52 pages, which is our 31pp file
+I 17869 cv=- gcd=538262 0.9 | the one-shot's own record: GCD issue 538262, the 52-page 2008 special
+S 6668 cv=23594 gcd=32422 0.95 | CV 23594 and GCD 32422 both record "Final Crisis: Resist" as a single 2008 DC book of 44 pages, and our two files (30pp and 28pp) are two rips of it in two Final Crisis folders
+I 19266 cv=- gcd=546364 0.9 | the one-shot's own record: GCD issue 546364, the 44-page 2008 book
+S 6670 cv=23487 gcd=32263 0.95 | CV 23487 and GCD 32263 both record "Final Crisis: Submit" as a single 2008 DC book of 44 pages, and our two files (33pp and 31pp) are two rips of it
+I 19263 cv=- gcd=545516 0.9 | the one-shot's own record: GCD issue 545516, the 44-page 2008 book
+S 6677 cv=22572 gcd=31530 0.9 | CV 22572 "Final Crisis: Revelations" (DC 2008) and GCD 31530 (DC 2008-2009, five 44-page issues) are the mini our files come from; the residue is that we hold only #1, #4 and #5 of the five (the reading-order prefixes 08, 21 and 27 are folder positions, not issue numbers) plus the 2009 collection
+I 19259 cv=- gcd=669519 isbn=9781401223229 0.95 | "COL Final Crisis - Revelations (2009)" at 150pp is GCD issue 669519 in series 38823, the 176-page 2009 collection
+S 6679 cv=25292 gcd=33306 0.95 | CV 25292 and GCD 33306 both record "Final Crisis: Secret Files" as a single 2009 DC book of 48 pages, which is our 33pp file (its creators are in the filename, not the title)
+I 17865 cv=- gcd=559938 0.9 | the book's own record: GCD issue 559938, the 48-page 2009 secret files special
+S 6680 cv=27175 gcd=30787 0.95 | CV 27175 and GCD 30787 both record "Final Crisis Sketchbook" as a single 2008 DC book of 36 pages, and our two files (24pp and 23pp) are two rips of it
+I 19292 cv=- gcd=528180 0.9 | the book's own record: GCD issue 528180, the 36-page 2008 sketchbook
+S 22917 cv=22763 gcd=31681 0.95 | our file "10_final_crisis_-_superman_beyond_3d_01__of_2_" is #1 of the two-issue Superman Beyond mini, which CV 22763 (DC 2008, 2) and GCD 31681 (DC 2008-2009, limited series, 2) both record
+F 22917 merge-with=6671 | S6671 holds the same two-issue mini (#1, #2 and a second rip of #2); the two shelves are one comic, so sharing CV 22763 / GCD 31681 is intended
+N 22917 ComicVine holds a duplicate volume for this mini — 150190, also "Final Crisis: Superman Beyond" 2008 with 2 issues — which is what the per-file matcher chose; 22763 is the one the local rip and the candidate search agree on
+S 18589 cv=26076 gcd=33627 0.9 | CV 26076 "The Flash: Rebirth" (DC 2009) and GCD 33627 (DC 2009-2010, 6) are the six-issue mini our files 01-06 are; the named residue is item 19069, "The Flash - Rebirth 001 (2016)", which is the DC Rebirth one-shot (CV 91099 / GCD 102824), a different comic
+I 74334 cv=- gcd=752706 isbn=9781401225681 0.95 | "COL The Flash Rebirth (2009) (Digital HC)" at 159pp is GCD issue 752706 in series 48040, the 176-page 2010 hardcover of the mini
+I 19069 cv=- gcd=1576959 0.9 | "The Flash - Rebirth 001 (2016)" is the 2016 DC Rebirth one-shot, GCD issue 1576959 in series 102824 — not part of the 2009 mini this shelf is
+R 22912 | the shelf name is a filename fragment: our single file "02 detective_853__2009_" is Detective Comics (1937) #853, part two of "Whatever Happened to the Caped Crusader?", and the stored CV 44298 "DC Silver Age Classics Detective Comics" (1992, 2) is a reprint line, not this issue
+F 22912 wrong-cv-link | stored CV 44298 is the 1992 Silver Age Classics reprint series; this file is one 2009 issue of Detective Comics
+S 12092 cv=31371 gcd=42763 0.95 | CV 31371 "Milestone Forever" (DC 2010, 2) and GCD 42763 (DC 2010, two 52-page issues) agree on publisher, year and count, and our ladder 1-2 is the whole mini
+S 19435 cv=27390 gcd=38920 0.95 | CV 27390 and GCD 38920 both record "The Red Circle: The Inferno" as a single 2009 DC book of 36 pages, which is our 25pp file — one of the four Red Circle one-shots in this folder
+I 17922 cv=- gcd=670217 0.9 | the one-shot's own record: GCD issue 670217, the 36-page 2009 book
+S 19436 cv=27257 gcd=38827 0.95 | CV 27257 and GCD 38827 both record "The Red Circle: The Hangman" as a single 2009 DC book of 36 pages, which is our 29pp file
+I 17923 cv=- gcd=669558 0.9 | the one-shot's own record: GCD issue 669558, the 36-page 2009 book
+S 19437 cv=27587 gcd=39009 0.95 | CV 27587 and GCD 39009 both record "The Red Circle: The Shield" as a single 2009 DC book of 36 pages, which is our 26pp file
+I 17924 cv=- gcd=671863 0.9 | the one-shot's own record: GCD issue 671863, the 36-page 2009 book
+S 19438 cv=27471 gcd=38970 0.95 | CV 27471 and GCD 38970 both record "The Red Circle: The Web" as a single 2009 DC book of 36 pages, which is our 26pp file
+I 17925 cv=- gcd=671561 0.9 | the one-shot's own record: GCD issue 671561, the 36-page 2009 book
+S 6808 cv=40779 gcd=59408 0.95 | CV 40779 and GCD 59408 both record "Flashpoint: Reverse-Flash" as a single 2011 DC one-shot of 36 pages, which is our 21pp file
+I 17930 cv=- gcd=849349 0.9 | the one-shot's own record: GCD issue 849349, the 36-page 2011 book
+S 18287 cv=5945 gcd=5733 0.95 | our file is The Creeper #1,000,000 — the 1998 DC One Million issue of the 1997 series — and CV 5945 "The Creeper" (DC 1997, 12) and GCD 5733 (DC 1997-1998, 12) are that series; ComicInfo says Series "The Creeper" / Volume 1997
+
+R 1881 | this shelf is at least four comics: 40 files are the New 52 Batman (2011) — ladder 0-33 plus Annuals 1-2 — 17 are Grant Morrison's run in Batman (1940), numbered 655-658, 663-666, 673-675, 684-686, 701-702 with Annuals 25-26, and the rest are two 2017 creator collections, a 2022 Batman Secret Files book and five Random House Batman Beyond kids digests; the per-file CV link 796 (Batman 1940) is right for a quarter of the files and wrong for the rest
+F 1881 split-needed | proposed: the #0-33 + Annual 1-2 block to CV 42721 / GCD 61067 (Batman 2011, 57); the #655-702 + Annual 25-26 block to CV 796 / GCD 141 (Batman 1940, 715); the Random House Batman Beyond digests and the two "Batman by ..." deluxe collections are separate books again
+S 2302 cv=64203 gcd=75117 0.95 | CV 64203 "Batman/Superman" (DC 2013, 33) and GCD 75117 "Batman / Superman" (DC 2013-2016, 33) agree on publisher, span and count, and our ladder 1-11 sits inside it over files dated August 2013 to July 2014
+F 2302 needs-fetch cv=64203 | the volume has no CvVolume row; it was named from the local ComicVine rip
+S 21955 cv=42953 gcd=61069 0.9 | the dominant run is the New 52 Wonder Woman: CV 42953 (DC 2011, 55) and GCD 61069 (DC 2011-2016, 55), which hold our ladder 1-33 including 23.1 and 23.2 over files dated November 2011 to September 2014; the named residue is four files that are other comics — Wonder Woman #4 and Annual #1 from the 2006 series, the 1998 #1,000,000 issue, and two later collections (Year One deluxe 2019, "by Mike Deodato" 2016)
+N 21955 the per-file CV link 18525 is Wonder Woman (1942) — the legacy-numbering trap the issue-number matcher falls into on every New 52 shelf
+S 2139 cv=42692 gcd=60920 0.9 | our ladder 0-40 is the New 52 Batman and Robin: CV 42692 (DC 2011, 45) and GCD 60920 (DC 2011-2015, 45) agree on publisher, span and count, and a ladder reaching #40 cannot be the stored 26-issue volume; the named residue is item 69978, the 2022 "Robin & Batman" collection, a different comic
+F 2139 wrong-cv-link | the stored CV 26584 "Batman and Robin" (2009, 26) is Morrison's earlier run — our ladder runs to #40, past its count, which is the cheapest mis-link test
+I 69978 cv=945986 gcd=- 0.9 | "Robin & Batman (2022)" at 131pp is CV issue 945986, the only issue of volume 144953 (DC 2022) — the collection of the three-issue Robin & Batman mini, not part of this run
+R 12955 | two runs on one shelf: 20 files are the New 52 Nightwing (2011) — ladder 0-18 and #25 — and seven are the 1996 series, #118-122 (2006) and #152-153 (2009), with a 2024 Year One deluxe collection beside them; the per-file link 5755 (Nightwing 1996) fits only the seven
+F 12955 split-needed | proposed: the #0-18 + #25 block to CV 42720 / GCD 61072 (Nightwing 2011, 31); the #118-122 and #152-153 files to CV 5755 / GCD 5516 (Nightwing 1996, 154); the "Nightwing - Year One 20th Anniversary Deluxe Edition (2024)" is a third book
+S 2179 cv=49112 gcd=65550 0.9 | our files are dated July 2012 to May 2013 and numbered 1-6 and 9, which is the SECOND Batman Incorporated series: CV 49112 "Batman, Incorporated" (DC 2012, 14) and GCD 65550 (DC 2012-2013, 14); the residue is the missing #7-8
+F 2179 wrong-cv-link | the stored CV 36705 "Batman Incorporated" (2011) is the first series — the 2011 run whose issues our 2012-2013 files are not
+S 3683 cv=42722 gcd=61074 0.95 | our ladder 0-18 plus #25 over files dated November 2011 to January 2014 is the New 52 Catwoman: CV 42722 (DC 2011, 53) and GCD 61074 (DC 2011-2016, 53) agree on publisher, span and count; the per-file link 4955 is the 1993 volume, matched by issue number alone
+R 17136 | two runs on one shelf: ten files are Supergirl (2005) #0-9, dated 2005-2006, and 23 are the New 52 Supergirl (2011) — ladder 0-13, 18-25 and #34 — which is why nine numbers name more than one file here; no record covers both
+F 17136 split-needed | proposed: the 2005-2006 files to CV 5766 / GCD (Supergirl 2005); the New 52 block to CV 42949 / GCD 61070 (Supergirl 2011, 41)
+S 1160 cv=43022 gcd=61178 0.9 | our two numbered files are Aquaman #15 and #16 (February and March 2013), inside the New 52 run CV 43022 (DC 2011, 55) / GCD 61178 (DC 2011-2016, 55); the named residue is the third file, a 428pp "80 Years of the King of the Seven Seas" anniversary anthology that is a different book (and the LOCG claim of #57-455 on it is the hull shape)
+S 17252 cv=63232 gcd=74884 0.95 | CV 63232 "Superman Unchained" (DC 2013, 9) and GCD 74884 (DC 2013-2015, nine 46-page issues) agree on publisher, span and count, and our ladder 1-9 is the complete run; the two extra files are two editions of one deluxe collection of it
+I 72933 cv=- gcd=1660371 isbn=9781401245221 0.95 | "COL Superman Unchained - Deluxe Edition (2014)" at 320pp is GCD issue 1660371 in series 110675, the 360-page 2014 deluxe hardcover
+I 73982 cv=- gcd=1660371 isbn=9781401245221 0.9 | "COL Superman Unchained Deluxe Edition (2023)" at 320pp is the same deluxe collection re-released — the duplicate-edition flag on this item is right; GCD's 2577063 (2023 ISBN 978-1-77952-623-6) is that later printing
+S 19345 cv=51843 gcd=75232 0.9 | our file is The Phantom Stranger #11 (October 2013), and the New 52 series was retitled from that issue: GCD 75232 "Trinity of Sin: The Phantom Stranger" (DC 2013-2014, 14) holds #11-22 while ComicVine keeps all 23 issues in volume 51843 (DC 2012)
+F 19345 wrong-cv-link | the stored CV 2437 "The Phantom Stranger" (1969, 42) is the Bronze Age series; our file is a 2013 issue
+S 17181 cv=73882 gcd=80679 0.95 | CV 73882 "Superman: Doomed" (DC 2014, 2) and GCD 80679 (DC 2014, 2) agree on publisher, year and count, and our two files are #1 (July 2014) and #2 (November 2014) of that two-issue bookend; the third file is the 502pp collection of the whole crossover
+I 72748 cv=- gcd=1516954 isbn=9781401257699 0.9 | "COL Superman - Doomed (2015)" at 502pp is GCD issue 1516954 in series 95259, the 548-page 2015 collection; GCD's 110706 is a second 2015 collection record (552 pages) for the same material
+S 14743 cv=75696 gcd=81828 0.95 | CV 75696 and GCD 81828 both record "Robin Rises: Omega" as a single 2014 DC book of 52 pages, which is our 40pp file
+I 19925 cv=- gcd=1243196 0.9 | the one-shot's own record: GCD issue 1243196, the 52-page 2014 book
+S 14742 cv=78998 gcd=85392 0.95 | CV 78998 and GCD 85392 both record "Robin Rises: Alpha" as a single 2014/2015 DC book of 52 pages, which is our 41pp file
+I 19926 cv=- gcd=1297024 0.9 | the one-shot's own record: GCD issue 1297024, the 52-page book
+S 382 cv=76720 gcd=82555 0.95 | CV 76720 and GCD 82555 both record "Action Comics: Futures End" as a single 2014 DC one-shot of 36 pages, and our two 24pp files are two rips of it — the September 2014 Futures End month, one issue per title
+I 18777 cv=- gcd=1249515 0.9 | the one-shot's own record: GCD issue 1249515, the 36-page 2014 book
+S 1164 cv=76718 gcd=82556 0.95 | CV 76718 and GCD 82556 both record "Aquaman: Futures End" as a single 2014 DC one-shot of 36 pages, and our two 24pp files are two rips of it
+I 18778 cv=- gcd=1249516 0.9 | the one-shot's own record: GCD issue 1249516, the 36-page 2014 book
+S 1179 cv=77085 gcd=82983 0.95 | CV 77085 and GCD 82983 both record "Aquaman and the Others: Futures End" as a single 2014 DC one-shot of 36 pages, which is our 24pp file
+I 18779 cv=- gcd=1256131 0.9 | the one-shot's own record: GCD issue 1256131, the 36-page 2014 book
+S 1871 cv=76839 gcd=82708 0.95 | CV 76839 and GCD 82708 both record "Batgirl: Futures End" as a single 2014 DC one-shot of 36 pages, and our two 24pp files are two rips of it
+I 18780 cv=- gcd=1251387 0.9 | the one-shot's own record: GCD issue 1251387, the 36-page 2014 book
+S 1946 cv=76848 gcd=82709 0.95 | CV 76848 and GCD 82709 both record "Batman: Futures End" as a single 2014 DC one-shot of 36 pages, which is our 23pp file
+I 18781 cv=- gcd=1251419 0.9 | the one-shot's own record: GCD issue 1251419, the 36-page 2014 book
+S 2009 cv=76961 gcd=82853 0.95 | CV 76961 and GCD 82853 both record "Batman / Superman: Futures End" as a single 2014 DC one-shot of 36 pages, which is our 23pp file
+I 18782 cv=- gcd=1253160 0.9 | the one-shot's own record: GCD issue 1253160, the 36-page 2014 book
+S 2140 cv=76952 gcd=82852 0.95 | CV 76952 and GCD 82852 both record "Batman and Robin: Futures End" as a single 2014 DC one-shot of 36 pages, and our two 24pp files are two rips of it
+I 18783 cv=- gcd=1253159 0.9 | the one-shot's own record: GCD issue 1253159, the 36-page 2014 book
+S 2360 cv=76960 gcd=82854 0.95 | CV 76960 and GCD 82854 both record "Batwoman: Futures End" as a single 2014 DC one-shot of 36 pages, which is our 24pp file
+I 18785 cv=- gcd=1253161 0.9 | the one-shot's own record: GCD issue 1253161, the 36-page 2014 book
+S 3103 cv=77086 gcd=82984 0.95 | CV 77086 and GCD 82984 both record "Booster Gold: Futures End" as a single 2014 DC one-shot of 36 pages, which is our 23pp file
+I 18787 cv=- gcd=1256138 0.9 | the one-shot's own record: GCD issue 1256138, the 36-page 2014 book
+S 3685 cv=77087 gcd=82985 0.95 | CV 77087 and GCD 82985 both record "Catwoman: Futures End" as a single 2014 DC one-shot of 36 pages, which is our 24pp file
+I 18788 cv=- gcd=1256140 0.9 | the one-shot's own record: GCD issue 1256140, the 36-page 2014 book
+S 4162 cv=76846 gcd=82711 0.95 | CV 76846 and GCD 82711 both record "Constantine: Futures End" as a single 2014 DC one-shot of 36 pages, which is our 22pp file
+I 18789 cv=- gcd=1251420 0.9 | the one-shot's own record: GCD issue 1251420, the 36-page 2014 book
+S 5411 cv=76717 gcd=82558 0.95 | CV 76717 and GCD 82558 both record "Detective Comics: Futures End" as a single 2014 DC one-shot of 36 pages, which is our 20pp file
+I 18790 cv=- gcd=1249518 0.9 | the one-shot's own record: GCD issue 1249518, the 36-page 2014 book
+S 7864 cv=76714 gcd=82560 0.95 | CV 76714 and GCD 82560 both record "Grayson: Futures End" as a single 2014 DC one-shot of 36 pages, which is our 24pp file
+I 18792 cv=- gcd=1249519 0.9 | the one-shot's own record: GCD issue 1249519, the 36-page 2014 book
+S 7874 cv=76715 gcd=82561 0.95 | CV 76715 and GCD 82561 both record "Green Arrow: Futures End" as a single 2014 DC one-shot of 36 pages, and our two 23pp files are two rips of it
+I 18793 cv=- gcd=1249523 0.9 | the one-shot's own record: GCD issue 1249523, the 36-page 2014 book
+S 7913 cv=76721 gcd=82562 0.95 | CV 76721 and GCD 82562 both record "Green Lantern: Futures End" as a single 2014 DC one-shot of 36 pages, which is our 24pp file
+I 18794 cv=- gcd=1249520 0.9 | the one-shot's own record: GCD issue 1249520, the 36-page 2014 book
+S 7920 cv=76959 gcd=82855 0.95 | CV 76959 and GCD 82855 both record "Green Lantern: New Guardians: Futures End" as a single 2014 DC one-shot of 36 pages, which is our 23pp file
+I 18795 cv=- gcd=1253162 0.9 | the one-shot's own record: GCD issue 1253162, the 36-page 2014 book
+S 7942 cv=76841 gcd=82712 0.95 | CV 76841 and GCD 82712 both record "Green Lantern Corps: Futures End" as a single 2014 DC one-shot of 36 pages, which is our 24pp file
+I 18796 cv=- gcd=1251421 0.9 | the one-shot's own record: GCD issue 1251421, the 36-page 2014 book
+S 8360 cv=77089 gcd=82987 0.95 | CV 77089 and GCD 82987 both record "Harley Quinn: Futures End" as a single 2014 DC one-shot of 36 pages, which is our 24pp file
+I 18797 cv=- gcd=1256144 0.9 | the one-shot's own record: GCD issue 1256144, the 36-page 2014 book
+S 10115 cv=76957 gcd=82856 0.95 | CV 76957 and GCD 82856 both record "Justice League: Futures End" as a single 2014 DC one-shot of 36 pages, and our two 24pp files are two rips of it
+I 18798 cv=- gcd=1253163 0.9 | the one-shot's own record: GCD issue 1253163, the 36-page 2014 book
+S 10128 cv=77090 gcd=82988 0.95 | CV 77090 and GCD 82988 both record "Justice League Dark: Futures End" as a single 2014 DC one-shot of 36 pages, which is our 24pp file
+I 18799 cv=- gcd=1256145 0.9 | the one-shot's own record: GCD issue 1256145, the 36-page 2014 book
+S 12845 cv=76842 gcd=82715 0.95 | CV 76842 and GCD 82715 both record "New Suicide Squad: Futures End" as a single 2014 DC one-shot of 36 pages, which is our 23pp file
+I 18801 cv=- gcd=1251428 0.9 | the one-shot's own record: GCD issue 1251428, the 36-page 2014 book
+S 15675 cv=77092 gcd=82990 0.95 | CV 77092 and GCD 82990 both record "Sinestro: Futures End" as a single 2014 DC one-shot of 36 pages, which is our 25pp file
+I 18804 cv=- gcd=1256147 0.9 | the one-shot's own record: GCD issue 1256147, the 36-page 2014 book
+S 17122 cv=76843 gcd=82716 0.95 | CV 76843 and GCD 82716 both record "Superboy: Futures End" as a single 2014 DC one-shot of 36 pages, which is our 24pp file
+I 18806 cv=- gcd=1251429 0.9 | the one-shot's own record: GCD issue 1251429, the 36-page 2014 book
+S 17141 cv=76954 gcd=82858 0.95 | CV 76954 and GCD 82858 both record "Supergirl: Futures End" as a single 2014 DC one-shot of 36 pages, which is our 24pp file
+I 18807 cv=- gcd=1253168 0.9 | the one-shot's own record: GCD issue 1253168, the 36-page 2014 book
+S 17186 cv=77094 gcd=82992 0.95 | CV 77094 and GCD 82992 both record "Superman: Futures End" as a single 2014 DC one-shot of 36 pages, which is our 23pp file
+I 18808 cv=- gcd=1256149 0.9 | the one-shot's own record: GCD issue 1256149, the 36-page 2014 book
+S 17284 cv=76958 gcd=82859 0.95 | CV 76958 and GCD 82859 both record "Superman / Wonder Woman: Futures End" as a single 2014 DC one-shot of 36 pages, which is our 21pp file
+I 18809 cv=- gcd=1253192 0.9 | the one-shot's own record: GCD issue 1253192, the 36-page 2014 book
+S 17378 cv=76712 gcd=82563 0.95 | CV 76712 and GCD 82563 both record "Swamp Thing: Futures End" as a single 2014 DC one-shot of 36 pages, which is our 22pp file
+I 18810 cv=- gcd=1249521 0.9 | the one-shot's own record: GCD issue 1249521, the 36-page 2014 book
+S 17668 cv=76955 gcd=82860 0.95 | CV 76955 and GCD 82860 both record "Teen Titans: Futures End" as a single 2014 DC one-shot of 36 pages, which is our 24pp file
+I 18811 cv=- gcd=1253183 0.9 | the one-shot's own record: GCD issue 1253183, the 36-page 2014 book
+S 18588 cv=77088 gcd=82986 0.95 | CV 77088 and GCD 82986 both record "The Flash: Futures End" as a single 2014 DC one-shot of 36 pages, which is our 22pp file
+I 18812 cv=- gcd=1256143 0.9 | the one-shot's own record: GCD issue 1256143, the 36-page 2014 book
+S 20477 cv=76962 gcd=82861 0.95 | CV 76962 and GCD 82861 both record "Trinity of Sin: Pandora: Futures End" as a single 2014 DC one-shot of 36 pages, which is our 22pp file
+I 18813 cv=- gcd=1253195 0.9 | the one-shot's own record: GCD issue 1253195, the 36-page 2014 book
+S 20479 cv=76716 gcd=82564 0.95 | CV 76716 and GCD 82564 both record "Trinity of Sin: The Phantom Stranger: Futures End" as a single 2014 DC one-shot of 36 pages, which is our 24pp file
+I 18814 cv=- gcd=1249522 0.9 | the one-shot's own record: GCD issue 1249522, the 36-page 2014 book
+S 21968 cv=76956 gcd=82862 0.95 | CV 76956 and GCD 82862 both record "Wonder Woman: Futures End" as a single 2014 DC one-shot of 36 pages, which is our 24pp file
+I 18815 cv=- gcd=1253196 0.9 | the one-shot's own record: GCD issue 1253196, the 36-page 2014 book
+
+S 14745 cv=86391 gcd=94616 0.95 | CV 86391 "Robin War" (DC 2015, 2) and GCD 94616 (DC 2016, limited series, 2) are the two-issue event our files 001 and 002 are (42pp each); the third file is its 238pp collection
+I 69983 cv=- gcd=1554754 isbn=9781401262082 0.95 | "Robin War (2016)" at 238pp is GCD issue 1554754 in series 99633, the 264-page collection
+F 22070 merge-with=22079 | S22079 is the Worlds' Finest shelf proper (20 files, #0-19 of the same New 52 run), so sharing CV 48417 is intended
+S 22070 cv=48417 gcd=63328 0.9 | our ladder 22-32 is the New 52 Worlds' Finest: CV 48417 (DC 2012, 33) and GCD 63328 (DC 2012-2015, 33) agree on publisher, span and count, and a ladder reaching #32 cannot be the stored three-issue 1990 volume
+F 22070 wrong-cv-link | the stored CV 31792 "World's Finest" (1990, 3) is a three-issue mini; our eleven files are #22-32, past its count
+S 2837 cv=39702 gcd=51693 0.95 | a collected line with no single run behind it: CV 39702 "Blackest Night: Black Lantern Corps" (DC 2010, 2) and GCD 51693 (DC 2010, two volumes at 264 and 248 pages) are the two books our two files are, ComicInfo naming that exact Series and Publisher
+I 19113 cv=- gcd=771112 isbn=9781401227845 0.95 | "COL Blackest Night - Black Lantern Corps v01 (2010)" at 230pp is GCD issue 771112, volume 1 of that collected line (264 pages)
+I 19114 cv=- gcd=771113 isbn=9781401227852 0.95 | "COL Blackest Night - Black Lantern Corps v02 (2010)" at 197pp is GCD issue 771113, volume 2 (248 pages)
+S 2838 cv=34668 gcd=51700 0.95 | CV 34668 and GCD 51700 both record "Blackest Night: Rise of the Black Lanterns" as a single 2010 DC collection (264 pages, ISBN 978-1-4012-2789-0), which is our 242pp file
+I 19118 cv=- gcd=771116 isbn=9781401227890 0.95 | the book's own record: GCD issue 771116, the 264-page 2010 collection
+S 4663 cv=10939 gcd=11864 0.95 | the RUN wins: our 500pp "COL DC - The New Frontier Deluxe Edition (2015)" collects the six-issue 2004 series, CV 10939 (DC 2004, 6) and GCD 11864 (DC 2004, 6), which agree on publisher, year and count
+F 4663 needs-fetch cv=10939 | the volume has no CvVolume row; it was named from the local ComicVine rip
+I 19163 cv=- gcd=1660464 isbn=9781401248888 0.95 | the deluxe edition's own record: GCD issue 1660464 in series 110689, the 528-page 2015 deluxe collection our 500pp file is
+S 4870 cv=151727 gcd=201524 0.95 | CV 151727 and GCD 201524 both record "Dark Crisis: Worlds Without a Justice League" as a single 2023 DC collection (184 pages, ISBN 978-1-77952-417-1), which is our 174pp file
+I 19150 cv=- gcd=2549488 isbn=9781779524171 0.95 | the book's own record: GCD issue 2549488, the 184-page 2023 collection
+S 4875 cv=110912 gcd=124428 0.9 | our file is "Dark Days - The Road to Metal (2018)" at 245pp, which CV 110912 (DC 2018, 1) and GCD 124428 (DC 2018, 264 pages, ISBN 978-1-4012-7819-9) both record; it collects the two Dark Days one-shots and their prologues, so no run record exists
+F 4875 wrong-cv-link | the stored CV 49344 "Dark Days" (2004, Infinity Verlag) is a German comic of the same name — the foreign-publisher trap
+I 19928 cv=- gcd=1808262 isbn=9781401278199 0.95 | the book's own record: GCD issue 1808262, the 264-page 2018 collection
+S 4906 cv=103508 gcd=115921 0.9 | the RUN wins: CV 103508 "Dark Nights: Metal" (DC 2017, 6) and GCD 115921 (DC 2017-2018, 6) are the six-issue event our deluxe-edition file collects; the residue is the two companion collections beside it, which are different books with their own I lines
+I 19929 cv=- gcd=1908800 isbn=9781401288587 0.9 | "COL Dark Nights - Metal - The Deluxe Edition (2018)" at 205pp is the deluxe collection of the six-issue event, GCD issue 1908800 in series 138288 (284 pages); GCD dates that record 2019, one year after our file's name
+I 19161 cv=- gcd=1818219 isbn=9781401277376 0.95 | "Dark Nights - Metal - Dark Knights Rising (2018)" at 191pp is GCD issue 1818219 in series 126063, the 224-page collection of the Dark Knights one-shots
+I 19162 cv=- gcd=1820474 isbn=9781401282981 0.95 | "COL Dark Nights - Metal - The Resistance (2018)" at 222pp is GCD issue 1820474 in series 126283, the 252-page tie-in collection
+S 6255 cv=119641 gcd=147265 0.95 | the RUN wins: CV 119641 "Event Leviathan" (DC 2019, 6) and GCD 147265 (DC 2019-2020, six 36-page issues) are the mini our 228pp collected file reproduces
+I 19166 cv=- gcd=2094430 isbn=9781401299590 0.95 | the collection's own record: GCD issue 2094430 in series 158132, the 272-page 2020 collection
+S 6671 cv=22763 gcd=31681 0.95 | CV 22763 "Final Crisis: Superman Beyond" (DC 2008, 2) and GCD 31681 (DC 2008-2009, limited series, 2) agree on publisher, span and count, and our files are #1, #2 and a second rip of #2 filed in two event folders
+S 6823 cv=108813 gcd=122297 0.95 | CV 108813 and GCD 122297 both record "Flashpoint Unwrapped" as a single 2018 DC book (168 pages, ISBN 978-1-4012-7767-3), which is our 154pp file
+I 19306 cv=- gcd=1787493 isbn=9781401277673 0.95 | the book's own record: GCD issue 1787493, the 168-page 2018 Unwrapped edition
+S 6822 cv=56699 gcd=- 0.9 | CV 56699 "Flashpoint Deluxe" (DC 2011, cached #1-5) is the digital deluxe edition of the five-issue event, which is exactly our ladder 1-5 — files named "Flashpoint Digital Deluxe 0N (of 05)" at 73-98 pages with three or four covers each, twice the page count of the print issues
+F 6822 provider-missing | GCD indexes the print run (58499, DC 2011, 5) but not these digital deluxe editions, whose extra pages and cover galleries make them a different product
+S 6821 cv=88445 gcd=- 0.9 | CV 88445 "Flashpoint Companion" (DC 2011, 1) is our single 22pp 2012 file, a promotional companion to the event
+F 6821 provider-missing | the GCD dump has no "Flashpoint Companion" series under any spelling probed
+S 6820 cv=142259 gcd=183620 0.95 | the RUN wins: CV 142259 "Flashpoint Beyond" (DC 2022, 7) and GCD 183620 (DC 2022, 7) are the seven-issue mini our 222pp collected file reproduces
+F 6820 wrong-cv-link | the stored CV 147053 (2022, 1) is the collected edition — the count-1 twin of GCD 193798 — not the seven-issue run
+I 19313 cv=- gcd=2463186 isbn=9781779517371 0.95 | the collection's own record: GCD issue 2463186, the 236-page 2022 collection
+S 6864 cv=68701 gcd=77312 0.95 | the RUN wins: CV 68701 "Forever Evil: A.R.G.U.S." (DC 2013, 6) and GCD 77312 (DC 2013-2014, 6) are the six-issue tie-in mini our 135pp collected file reproduces
+I 19932 cv=- gcd=1659902 isbn=9781401249397 0.95 | the collection's own record: GCD issue 1659902 in series 110604, the 148-page 2014 collection
+S 6865 cv=68151 gcd=76970 0.95 | the RUN wins: CV 68151 "Forever Evil: Arkham War" (DC 2013, 6) and GCD 76970 (DC 2013-2014, 6) are the six-issue tie-in mini our 182pp collected file reproduces
+I 19933 cv=- gcd=1659898 isbn=9781401249403 0.95 | the collection's own record: GCD issue 1659898 in series 110600, the 204-page 2014 collection
+S 10114 cv=132337 gcd=167147 0.95 | the RUN wins: CV 132337 "Justice League: Endless Winter" (DC 2020, 2) and GCD 167147 (DC 2021, 2) are the two-issue bookend our 220pp collected file reproduces along with its tie-ins
+F 10114 needs-fetch cv=132337 | the volume has no CvVolume row; it was named from the local ComicVine rip
+I 19335 cv=- gcd=2275888 isbn=9781779511539 0.95 | the collection's own record: GCD issue 2275888 in series 177786, the 240-page 2021 collection
+S 10193 cv=110752 gcd=124200 0.95 | the RUN wins: CV 110752 "Justice League: No Justice" (DC 2018, 4) and GCD 124200 (DC 2018, 4) are the four-issue weekly our 102pp collected file reproduces
+F 10193 wrong-cv-link | the stored CV 113714 (2018, 1) is the collected edition, the count-1 twin of GCD 129794, not the four-issue run
+I 19336 cv=- gcd=1849217 isbn=9781401283346 0.95 | the collection's own record: GCD issue 1849217, the 148-page 2018 collection
+S 10188 cv=118250 gcd=143770 0.9 | a crossover across several titles has no run record, so the collection is the identity: CV 118250 "Justice League/Aquaman: Drowned Earth" (DC 2019, 1) and GCD 143770 (DC 2019, 240 pages, ISBN 978-1-4012-9101-3) are our 202pp file
+F 10188 wrong-cv-link | the stored CV 114892 (2018, 1) is the 2018 one-shot that opened the crossover (GCD 132581), not the 2019 collection our file is
+I 19337 cv=- gcd=1947541 isbn=9781401291013 0.95 | the book's own record: GCD issue 1947541, the 240-page 2019 collection
+S 9748 cv=108945 gcd=122570 0.95 | CV 108945 and GCD 122570 both record "Jack Kirby 100th Celebration Collection" as a single 2018 DC book (196 pages, ISBN 978-1401274795), which is our 187pp file
+I 19338 cv=- gcd=1788585 isbn=9781401274795 0.95 | the book's own record: GCD issue 1788585, the 196-page 2018 collection
+S 10626 cv=153939 gcd=202900 0.95 | CV 153939 and GCD 202900 both record "Lazarus Planet" as a single 2023 DC collection (344 pages, ISBN 978-1-77952-333-4), which is our 330pp file
+I 19339 cv=- gcd=2560515 isbn=9781779523334 0.95 | the book's own record: GCD issue 2560515, the 344-page 2023 collection
+S 10627 cv=148842 gcd=197533 0.95 | the RUN wins: CV 148842 "Lazarus Planet: Revenge of the Gods" (DC 2023, 4) and GCD 197533 (DC 2023, 4) are the four-issue mini our 222pp collected file reproduces
+F 10627 wrong-cv-link | the stored CV 154551 (2023, 1) is the collected edition, the count-1 twin of GCD 205267, not the four-issue run
+I 19340 cv=- gcd=2575149 isbn=9781779524089 0.95 | the collection's own record: GCD issue 2575149, the 232-page 2023 collection
+S 1992 cv=30756 gcd=11679 0.95 | CV 30756 and GCD 11679 both record "Batman: Our Worlds at War" as a single 2001 DC one-shot of 52 pages, which is our 40pp file — one of the crossover's ten specials
+I 19344 cv=- gcd=203860 0.9 | the one-shot's own record: GCD issue 203860, the 52-page 2001 special
+S 6767 cv=30757 gcd=15237 0.95 | CV 30757 and GCD 15237 both record "Flash: Our Worlds at War" as a single 2001 DC one-shot of 52 pages, which is our 39pp file
+I 19345 cv=- gcd=260615 0.9 | the one-shot's own record: GCD issue 260615, the 52-page 2001 special
+S 12961 cv=30760 gcd=11690 0.95 | CV 30760 and GCD 11690 both record "Nightwing: Our Worlds at War" as a single 2001 DC one-shot of 56 pages, and our three files (36pp, 36pp, 37pp) are three rips of that one book in three folders
+I 19350 cv=- gcd=203881 0.9 | the one-shot's own record: GCD issue 203881, the 56-page 2001 special
+S 22710 cv=19122 gcd=15172 0.95 | CV 19122 and GCD 15172 both record "Young Justice: Our Worlds at War" as a single 2001 DC one-shot of 52 pages, and our two 38pp files are two rips of it; ComicInfo Count "1" agrees
+N 22710 the ComicInfo Web id 114252 on both files is a Glorith rip's own id, not a GCD issue id — not treated as an assertion
+I 19354 cv=- gcd=260202 0.9 | the one-shot's own record: GCD issue 260202, the 52-page 2001 special
+S 2078 cv=31294 gcd=24291 0.95 | CV 31294 and GCD 24291 both record "Batman Begins: The Movie & Other Tales of the Dark Knight" as a single 2005 DC book (164 pages, ISBN 1-4012-0440-6), which is our 156pp file
+I 19366 cv=- gcd=355988 isbn=1401204406 0.95 | the book's own record: GCD issue 355988, the 164-page 2005 collection
+S 1328 cv=93646 gcd=105775 0.9 | a digital-first serial whose only print record is the book: CV 93646 "Arrow: The Dark Archer" (DC 2016, 1) and GCD 105775 (DC 2016, 132 pages, ISBN 978-1-4012-6329-4) are our 127pp collected file; ComicVine also indexes the twelve digital chapters as volume 87343, which GCD does not hold
+I 19936 cv=- gcd=1618859 isbn=9781401263294 0.95 | the book's own record: GCD issue 1618859, the 132-page 2016 collection
+S 2167 cv=121595 gcd=98223 0.9 | our file is "Batman v Superman - Dawn of Justice #1 - Playground Heroes" (22pp), which is #1 of the four-issue General Mills giveaway series: CV 121595 (DC 2016, 4) and GCD 98223 (DC 2016, four 28-page issues); the per-file GCD link 98661 is the Batman v Superman Day special edition, copied from a folder neighbour
+I 19367 cv=- gcd=1544504 0.9 | the giveaway's own record: GCD issue 1544504, #1 of the 28-page General Mills series
+S 2171 cv=91589 gcd=- 0.9 | CV 91589 "Batman v Superman: Dawn of Justice - Upstairs/Downstairs" (DC 2016, 1) is our single 28pp promotional comic, matching by title, publisher and year
+F 2171 provider-missing | the GCD dump holds no row for this promotional book; its General Mills siblings are indexed as 98223 but this title is not among them
+S 35131 cv=128288 gcd=161555 0.95 | CV 128288 and GCD 161555 both record "Crisis on Infinite Earths: Paragons Rising The Deluxe Edition" as a single 2020 DC book (136 pages, ISBN 978-1-77950-509-5), which is our 105pp file, and ComicInfo names that exact series
+F 35131 wrong-cv-link | the stored CV 25735 "Crisis on Infinite Earths" (2000, 1) is a different book two decades earlier
+I 19937 cv=771787 gcd=2124515 isbn=9781779505095 0.95 | the book's own records: CV issue 771787 (volume 128288) and GCD issue 2124515, the 136-page 2020 deluxe edition
+S 15789 cv=48550 gcd=65266 0.9 | the RUN wins: our eight trade volumes collect Smallville Season 11, whose print issues are CV 48550 (DC 2012, 19) and GCD 65266 (DC 2012-2014, 19); the cap is that our eight books are the collected volumes, each of which ComicVine files as its own count-1 record
+F 15789 wrong-cv-link | the stored CV 47896 (2012, 69) is the digital-chapter volume — the chapters-vs-issues split — not the print run the trades collect
+N 15789 the eight volumes' own records are ComicVine's per-book volumes (60076 Guardian, 66375 Detective, 68318 Haunted, 72414 Argo, 77423 Olympus, 85449 Lantern, and unlocated ones for Alien and Chaos); GCD indexes the later spin-off minis (78026 Alien, 80261 Lantern, 82270 Chaos) but no collected line
+S 17346 cv=18794 gcd=23789 0.9 | the RUN wins: CV 18794 "Supernatural: Origins" (DC 2007, 6) and GCD 23789 (DC 2007, six 36-page issues) are the mini our 141pp collected file reproduces
+F 17346 wrong-cv-link | the stored CV 132365 (2008, 1) is the collected edition of that mini, not the run
+N 17346 the collection's own record is CV 132365, whose issue ComicVine has not cached, and GCD holds no collected row for it — so the book itself is left without an item-level id
+S 18611 cv=77238 gcd=83247 0.9 | the RUN wins: CV 77238 "The Flash: Season Zero" (DC 2014, 12 print issues) and GCD 83247 (DC 2014-2015, 12) are the run our 260pp collected file reproduces
+F 18611 wrong-cv-link | the stored CV 76835 (2014, 24) is the digital-chapter volume — twenty-four chapters against twelve print issues — the chapters-vs-issues split
+I 19940 cv=- gcd=1458097 isbn=9781401257712 0.95 | the collection's own record: GCD issue 1458097 in series 92482, the 268-page 2015 collection
+S 22703 cv=116299 gcd=- 0.9 | CV 116299 "Young Justice: Outsiders" (DC 2019, cached #1-2) is our ladder 1-2, four files being two rips each of the two issues of this DC Universe streaming exclusive
+F 22703 provider-missing | GCD indexes the print Young Justice titles but has no row for the 2019 Outsiders digital exclusive
+S 409 cv=11344 gcd=12294 0.9 | the RUN wins: CV 11344 "Adam Strange" (DC 2004, 8) and GCD 12294 (DC 2004-2005, 8) are the eight-issue mini our 399pp deluxe edition collects
+F 409 needs-fetch cv=11344 | the volume has no CvVolume row; it was named from the local ComicVine rip
+I 54000 cv=977291 gcd=2503765 isbn=9781779521460 0.95 | the deluxe edition's own records: CV issue 977291 (volume 148883 "Adam Strange: Between Two Worlds The Deluxe Edition", 2023) and GCD issue 2503765 in series 197535 (May 2023)
+S 94965 cv=25643 gcd=32602 0.9 | our ladder 0-12 over files dated 2009-2010 is Adventure Comics (2009): CV 25643 (DC 2009, 27) and GCD 32602 (DC 2009-2011, 27, its #1 indexed as "1 / 504" for the dual numbering); the named residue is item 55985, "Adventure Comics Special featuring the Guardian" (2009), a separate one-shot
+N 94965 the per-file CV link 3105 is Adventure Comics (1938) — the legacy-numbering trap again; the ComicInfo Count of 529 is that legacy count, not this volume's
+S 95025 cv=25789 gcd=7092 0.95 | CV 25789 and GCD 7092 both record "All-American Comics" (1999) as a single 36-page DC one-shot, which is our 23pp file — one of the 1999 Justice Society Returns specials
+I 55986 cv=- gcd=64207 0.9 | the one-shot's own record: GCD issue 64207, the 36-page 1999 book
+S 95027 cv=6596 gcd=7093 0.95 | CV 6596 "All Star Comics" (DC 1999, 2) and GCD 7093 (DC 1999, limited series, two 52-page issues) agree on publisher, year and count, and our ladder 1-2 is both of them

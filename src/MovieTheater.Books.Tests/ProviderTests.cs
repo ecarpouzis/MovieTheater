@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using MovieTheater.Books.Db;
 using MovieTheater.Books.Migration;
 using MovieTheater.Books.Providers;
+using MovieTheater.Books.Resolve;
 
 namespace MovieTheater.Books.Tests
 {
@@ -380,6 +381,90 @@ namespace MovieTheater.Books.Tests
             Assert.Equal("googlebooks", hit!.Provider);
             Assert.Equal(2, handler.Requests.Count);
             Assert.Contains(handler.Requests, r => r.Contains("openlibrary.org"));
+        }
+
+        // ── the ISBN leg (books) ─────────────────────────────────────────────────────────────────────────
+
+        private const string BibkeysJson = """
+        { "ISBN:9780316154604": {
+            "key": "/books/OL7255738M",
+            "title": "Lost Light",
+            "authors": [ { "name": "Michael Connelly" } ],
+            "publishers": [ { "name": "Little, Brown" } ],
+            "publish_date": "2003",
+            "number_of_pages": 405,
+            "subjects": [ { "name": "Detective and mystery stories" }, { "name": "Police" } ],
+            "cover": { "large": "https://covers.openlibrary.org/b/id/15182724-L.jpg" } } }
+        """;
+
+        [Fact]
+        public void AnOpenLibraryBibkeyRecordBecomesAWarehouseEdition()
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(BibkeysJson);
+            var record = doc.RootElement.GetProperty("ISBN:9780316154604");
+
+            var edition = IsbnEnrichScraper.Parse(record);
+            Assert.NotNull(edition);
+            Assert.Equal("Lost Light", edition!.Title);
+            Assert.Equal("Little, Brown", edition.Publishers);
+            Assert.Equal("2003", edition.PublishDate);
+            Assert.Equal(405, edition.Pages);
+            Assert.Equal("/books/OL7255738M", edition.OlEditionKey);
+            Assert.Contains("Detective and mystery stories", edition.SubjectsJson);
+            Assert.Contains("Michael Connelly", edition.AuthorsJson);
+            Assert.Contains("covers.openlibrary.org", edition.CoverUrl);
+
+            // A record with neither a title nor subjects is not worth a row.
+            using var empty = System.Text.Json.JsonDocument.Parse("{}");
+            Assert.Null(IsbnEnrichScraper.Parse(empty.RootElement));
+        }
+
+        [Fact]
+        public void TheIsbnFoldPutsOpenLibrarySubjectsOnBooksTheSeriesFoldCouldNeverReach()
+        {
+            using var f = Migrated();
+
+            // A book with a HYPHENATED Calibre ISBN, and a warehouse edition stored the bare way — the join
+            // that only works through NormalizeIsbn.
+            int bookId;
+            using (var db = new BooksDb(BooksDbOptions.Hot(f.HotPath)))
+            {
+                var id = db.Items.Where(i => i.Kind == ItemKind.Book).Select(i => i.Id).FirstOrDefault();
+                if (id == 0)
+                {
+                    db.Items.Add(new Item { Id = 900001, Kind = ItemKind.Book, Path = "x.epub", FileName = "x.epub" });
+                    id = 900001;
+                }
+                var detail = db.BookDetails.FirstOrDefault(b => b.ItemId == id);
+                if (detail == null) db.BookDetails.Add(new BookDetail { ItemId = id, Isbn = "978-0-316-15460-4" });
+                else detail.Isbn = "978-0-316-15460-4";
+                db.SaveChanges();
+                bookId = id;
+            }
+
+            new ProviderCacheStore(f.LegsPath).PutOpenLibraryEdition(
+                "9780316154604", "Lost Light", null, null, "2003", 405,
+                "[\"Detective and mystery stories\",\"Erotic stories\"]", null, "/books/OL7255738M", null);
+
+            using (var hot = new TargetWriter(f.HotPath, MappingContract.Load(), dryRun: false))
+            using (var legs = LegsTagFoldJob.OpenLegs(f.LegsPath))
+            {
+                var editions = LegsTagFoldJob.ReadOpenLibraryEditions(legs);
+                Assert.True(editions.ContainsKey("9780316154604"));
+
+                hot.Begin();
+                LegsTagFoldJob.FoldExternalBooksPage(hot, editions, 0, 5000, out var seen, out var written);
+                hot.Commit();
+                Assert.True(seen > 0);
+                Assert.Equal(1, written);
+            }
+
+            using var w = f.Hot();
+            var tags = w.Scalar<long>(
+                $"SELECT count(*) FROM ItemTag WHERE ItemId = {bookId} AND Source = {(int)TagSource.External}");
+            Assert.True(tags >= 2, $"expected the folded subjects on item {bookId}, got {tags}");
+            Assert.Equal(1L, w.Scalar<long>(
+                $"SELECT count(*) FROM ItemTag WHERE ItemId = {bookId} AND Source = {(int)TagSource.External} AND Value = 'Erotica'"));
         }
 
         // ── the leg importers ────────────────────────────────────────────────────────────────────────────

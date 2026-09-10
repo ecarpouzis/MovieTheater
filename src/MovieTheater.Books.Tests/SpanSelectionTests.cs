@@ -222,5 +222,45 @@ namespace MovieTheater.Books.Tests
             }
             Assert.Equal(406, w.Scalar<long>("SELECT CAST(ReadNumber AS INTEGER) FROM ReadingOrderEntry WHERE ItemId = 622"));
         }
+        [Fact]
+        public void AOneIssueCollectedEditionSurvivesWhenAPersonAssertedIt()
+        {
+            // Fables Vol. 22 "Farewell" IS issue #150 — a 131-page final issue sold as a volume. The
+            // degenerate guard exists to kill a provider echoing its own match key, not to overrule a
+            // judged answer, and discarding these cost 12 correct spans their win.
+            // vol 22, issue 150: the number is not the ordinal, so it is a range and not an echo of it.
+            var curated = new SpanSelection.Candidate(EditionSource.Curated, 150, 150, 0.9, "issue: cover 'FABLES 150 Farewell'", null);
+            Assert.False(SpanSelection.IsDiscardable(curated, isCollection: true, pageCount: 131, volumeNo: 22));
+            Assert.Equal(curated, SpanSelection.Select([curated], isCollection: true, pageCount: 131, volumeNo: 22));
+        }
+
+        [Fact]
+        public void AProviderEchoingItsOwnMatchKeyIsStillDiscarded()
+        {
+            // The case the guard was built for: GCD "#44-44" on a 1,226-page omnibus.
+            foreach (var src in new[] { EditionSource.Gcd, EditionSource.Locg, EditionSource.Cv })
+            {
+                var c = new SpanSelection.Candidate(src, 44, 44, 0.8, null, null);
+                Assert.True(SpanSelection.IsDiscardable(c, isCollection: true, pageCount: 1226));
+            }
+        }
+        [Fact]
+        public void ACuratedDegenerateThatMerelyRestatesTheVolumeOrdinalIsStillNoise()
+        {
+            // "Transformers Classics Vol. 01" recorded as #1-1 over 318 pages — the ordinal written where the
+            // range belonged. 30 curated degenerates equal their volume number and every one is an artefact.
+            var echo = new SpanSelection.Candidate(EditionSource.Curated, 1, 1, 0.97,
+                                                  "volume: intro names the real contents", null);
+            Assert.True(SpanSelection.IsDiscardable(echo, isCollection: true, pageCount: 318, volumeNo: 1));
+            Assert.Null(SpanSelection.Select([echo], isCollection: true, pageCount: 318, volumeNo: 1));
+        }
+
+        [Fact]
+        public void WithNoVolumeOrdinalToCompareACuratedDegenerateIsKept()
+        {
+            // Batman #238 is a 100pp giant with no volume ordinal of its own; nothing marks it as an echo.
+            var c = new SpanSelection.Candidate(EditionSource.Curated, 238, 238, 0.95, "issue: indicia", null);
+            Assert.False(SpanSelection.IsDiscardable(c, isCollection: true, pageCount: 100, volumeNo: null));
+        }
     }
 }

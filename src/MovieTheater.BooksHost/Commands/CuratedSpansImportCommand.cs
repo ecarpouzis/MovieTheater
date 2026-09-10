@@ -84,11 +84,13 @@ namespace MovieTheater.BooksHost.Commands
                 var existing = new Dictionary<int, CuratedSpanImport.Existing>();
                 foreach (var (id, payload) in hot.Pairs(
                     $@"SELECT ItemId, coalesce(IssueStart,'') || char(31) || coalesce(IssueEnd,'') || char(31)
-                           || coalesce(Confidence,'') || char(31) || coalesce(ProviderRef,'')
+                           || coalesce(Confidence,'') || char(31) || coalesce(ProviderRef,'') || char(31)
+                           || coalesce(Note,'')
                        FROM CollectedEditionSpan WHERE Source = {(int)EditionSource.Curated} AND ItemId IN ({idList})"))
                 {
                     var p = payload!.Split(TargetWriter.Sep);
-                    existing[(int)id] = new CuratedSpanImport.Existing(Dbl(p[0]), Dbl(p[1]), Dbl(p[2]), p[3].Length == 0 ? null : p[3]);
+                    existing[(int)id] = new CuratedSpanImport.Existing(Dbl(p[0]), Dbl(p[1]), Dbl(p[2]),
+                        p[3].Length == 0 ? null : p[3], p.Length > 4 && p[4].Length > 0 ? p[4] : null);
                 }
 
                 if (Apply) hot.Begin();
@@ -113,16 +115,29 @@ namespace MovieTheater.BooksHost.Commands
 
                     switch (verdict)
                     {
-                        case CuratedSpanImport.Verdict.Unknown: unknown++; continue;
+                        case CuratedSpanImport.Verdict.Unknown:
+                            unknown++;
+                            // A refusal is an ANSWER: this shelf was read and no range is known. Recorded as
+                            // a Curated row with no range — a tombstone — so the containment stays SILENT
+                            // instead of letting a provider leg fill the vacuum. §6.5 counted 746 containers
+                            // that went from honest silence to a leg's claim, and §2 is why that is the wrong
+                            // direction: a range nobody judged is what deletes files.
+                            Tombstone(hot, line, Apply);
+                            continue;
                         case CuratedSpanImport.Verdict.Kept: kept++; continue;
                         case CuratedSpanImport.Verdict.Invalid: invalid++; continue;
                         case CuratedSpanImport.Verdict.Retract:
                             unknown++;
                             retracted++;
+                            // Decide() only returns Retract for a row that is NOT proven — one whose note
+                            // quotes no issues, and which no person typed. Filtering the delete by
+                            // ProviderRef on top of that made a refusal silently do nothing to exactly the
+                            // rows §6.6 says are least trustworthy: Hellboy Omnibus Vol. 04 kept claiming
+                            // #11-12 after being read and found to collect two books from another Series.
                             hot.Exec(
-                                "DELETE FROM CollectedEditionSpan WHERE ItemId = $id AND Source = $src"
-                                + " AND ProviderRef LIKE 'model:%'",
+                                "DELETE FROM CollectedEditionSpan WHERE ItemId = $id AND Source = $src",
                                 ("$id", line.ItemId), ("$src", (int)EditionSource.Curated));
+                            Tombstone(hot, line, Apply);
                             continue;
                     }
 
@@ -180,6 +195,29 @@ namespace MovieTheater.BooksHost.Commands
             if (Apply)
                 await console.Output.WriteLineAsync(
                     "next: books-collected-editions -> books-reading-order -> books-containment -> books-resolve");
+        }
+
+        /// <summary>
+        /// Record a judged refusal: a Curated row with NO range, carrying the reason. `LoadSpans` drops the
+        /// item entirely when it sees one, so nothing downstream — reading order, containment, the
+        /// de-duplication — is offered a leg's guess about a shelf a person has already read and declined.
+        /// </summary>
+        private static void Tombstone(TargetWriter hot, CuratedSpanImport.Line line, bool apply)
+        {
+            if (!apply) return;
+            hot.Upsert("CollectedEditionSpan", new
+            {
+                ItemId = line.ItemId,
+                Source = EditionSource.Curated,
+                IssueStart = (double?)null,
+                IssueEnd = (double?)null,
+                EditionTitle = line.EditionTitle,
+                ProviderRef = line.Batch is { Length: > 0 } b ? $"model:{b}" : "model:refused",
+                Contiguous = false,
+                Confidence = (double?)null,
+                Note = line.Why is { Length: > 0 } w ? "refused: " + w : "refused",
+                CreatedAt = DateTime.UtcNow,
+            });
         }
 
         private static double? Dbl(string s) =>

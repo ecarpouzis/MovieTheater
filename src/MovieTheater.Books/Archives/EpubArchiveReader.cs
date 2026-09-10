@@ -48,7 +48,7 @@ namespace MovieTheater.Books.Archives
         public async Task<Stream> GetCoverAsync(string filePath)
         {
             EpubBook book;
-            try { book = await EpubReader.ReadBookAsync(filePath); }
+            try { book = await EpubParsing.ReadOrThrowAsync(filePath); }
             catch
             {
                 // VersOne could not parse the package at all. Some otherwise-readable EPUBs trip it up, so try a
@@ -91,7 +91,7 @@ namespace MovieTheater.Books.Archives
         {
             try
             {
-                var book = EpubReader.ReadBook(filePath);
+                var book = EpubParsing.ReadOrThrow(filePath);
                 var opf = book.Schema.Package.Metadata;
                 var pageCount = GetCachedImages(filePath).Count;
 
@@ -214,7 +214,7 @@ namespace MovieTheater.Books.Archives
             var key = CacheKey(filePath);
             if (cache.TryGetValue(key, out List<byte[]>? images) && images != null) return images;
 
-            var book = EpubReader.ReadBook(filePath);
+            var book = EpubParsing.ReadOrThrow(filePath);
             var imgMap = BuildImageMap(book);
             images = ExtractSpineImages(book, imgMap);
             if (images.Count == 0) images = imgMap.Values.ToList();

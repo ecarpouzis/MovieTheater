@@ -150,6 +150,12 @@ export interface ItemDetail {
   thumbUrl: string | null;
   downloadUrl: string | null;
   pagesUrlTemplate: string | null;
+  /**
+   * Which reader surface this item needs, as the HOST sniffed it — `".epub"` for the EPUB reader, anything
+   * else for the canvas. Never derive this from `summary.extension`: 6,768 books here are EPUBs saved as
+   * `.zip`, and reading the extension opens them in the canvas reader, which finds no image pages.
+   */
+  readerFormat: string | null;
 }
 
 export interface FolderNode {

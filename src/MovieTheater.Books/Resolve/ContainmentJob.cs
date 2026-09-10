@@ -48,8 +48,16 @@ namespace MovieTheater.Books.Resolve
             public int? ReadIndex;
             public string? ReadDate;
             public double? ReadNumber;
+            /// <summary>The parsed `ComicDetail.IssueNo`, when it is a number. The ladder's coordinate.</summary>
+            public double? IssueNumber;
             public double? SpanFromStart, SpanFromEnd;
             public EditionSource RangeSource = EditionSource.Cv;
+            /// <summary>The winning span's note — the only place a NON-CONTIGUOUS range states its holes.</summary>
+            public string? RangeNote;
+            /// <summary>The coordinates this container's own note DENIES; null when its range has no hole.</summary>
+            public HashSet<double>? ExcludedCoords;
+            /// <summary>`ComicDetail.IsCollection` — the flag the decision pass's coverage is built on (§14.13).</summary>
+            public bool IsCollection;
             public TrackRole TrackRole = TrackRole.Primary;
             public int SpanStart, SpanEnd, ContainsCount = 1;
             public int? ParentItemId;
@@ -136,6 +144,7 @@ SELECT i.Id,
        coalesce(cd.Format, 13) || char(31) || coalesce(cd.FormatRaw,'') || char(31) || coalesce(i.FileName,'') || char(31)
     || coalesce(i.PageCount, 0) || char(31) || coalesce(cd.VolumeNo,'') || char(31)
     || coalesce(ro.ReadIndex,'') || char(31) || coalesce(ro.ReadDate,'') || char(31) || coalesce(ro.ReadNumber,'')
+    || char(31) || coalesce(cd.IssueNo,'') || char(31) || coalesce(cd.IsCollection, 0)
 FROM Item i
 LEFT JOIN ComicDetail cd ON cd.ItemId = i.Id
 LEFT JOIN ReadingOrderEntry ro ON ro.ItemId = i.Id
@@ -154,12 +163,16 @@ ORDER BY i.Id"))
                     ReadIndex = p[5].Length == 0 ? null : int.Parse(p[5]),
                     ReadDate = Blank(p[6]),
                     ReadNumber = p[7].Length == 0 ? null : double.Parse(p[7], CultureInfo.InvariantCulture),
+                    IssueNumber = p.Length > 8 && double.TryParse(p[8], NumberStyles.Float, CultureInfo.InvariantCulture, out var ino)
+                        ? ino : null,
+                    IsCollection = p.Length > 9 && p[9] == "1",
                 };
                 if (spans.TryGetValue(book.ItemId, out var sp))
                 {
                     book.SpanFromStart = sp.Start;
                     book.SpanFromEnd = sp.End;
                     book.RangeSource = sp.Source;
+                    book.RangeNote = sp.Note;
                 }
                 books.Add(book);
             }
@@ -189,7 +202,15 @@ ORDER BY i.Id"))
                 b.SpanStart = b.SpanEnd = i + 1;
                 b.ContainsCount = 1;
                 b.SpanLabel = null;
-                num[i] = b.ReadNumber ?? b.VolumeNo ?? i + 1;
+                // The ISSUE number, not the reading-order number. They are the same on 87,069 of the 87,125
+                // single issues that have both — and the 56 that differ are all one shape: ComicVine numbering
+                // by ARC where the shelf numbers continuously. "Baltimore 006 - The Curse Bells 01 (of 05)" is
+                // the sixth Baltimore comic and the first Curse Bells comic, ComicVine says 1, and every
+                // collected edition on that shelf claims a range in the continuous numbering (#6-10, #11-15,
+                // ... #36-40). Ordering a shelf by the arc is defensible; nesting it by the arc is not, because
+                // the range it is being nested INTO is not in that coordinate. Reading order keeps its own
+                // answer — this changes nothing but the containment ladder.
+                num[i] = b.IssueNumber ?? b.ReadNumber ?? b.VolumeNo ?? i + 1;
             }
 
             foreach (var b in books.Where(b => b.Level > baseLevel))
@@ -204,12 +225,38 @@ ORDER BY i.Id"))
             // A container CONTAINS a base book when their issue ranges overlap. A base book's range is its own
             // span when it has one (a TPB volume), its issue number when it is a single issue, and NOTHING when
             // it is a volume with no known range — a volume number is not an issue number and cannot be nested.
+            //
+            // A SINGLE ISSUE MAY CARRY A SPAN ANYWAY, and it is always a bad provider link. LOCG matched
+            // `Lobster Johnson 001 - The Iron Prometheus 01 (of 05)` — a 27-page floppy — to the TRADE's record
+            // and wrote it a span of #2-4 "5 contained"; fifteen of that shelf's thirty-one issues carry one.
+            // Believing them puts the floppy in the ladder at someone else's coordinates, and the whole shelf
+            // shifts: Vol. 01 collected nothing and Vol. 02 collected #8-10. The file settles it before any
+            // provider does — twenty-seven pages is not five issues — so the span is believed only when the
+            // page arithmetic can hold it, and <see cref="PageArithmetic"/> already owns that judgement.
             var baseRange = new (double Lo, double Hi)[n];
             for (var i = 0; i < n; i++)
             {
                 var bb = baseBooks[i];
-                if (bb.SpanFromStart.HasValue && bb.SpanFromEnd.HasValue) baseRange[i] = (bb.SpanFromStart.Value, bb.SpanFromEnd.Value);
+                var hasSpan = bb.SpanFromStart.HasValue && bb.SpanFromEnd.HasValue;
+                // A base COLLECTION's own span defines the ladder only when it was JUDGED. A provider's
+                // title match on "Hellboy Vol. 03 - The Chained Coffin and Others" produced #88-91, and the
+                // twelve Hellboy volumes between them claim 1-4, 1-5, 88-91, 14-19, 1-4, 1-2, 1-2, 1-6, 1-8,
+                // 1-3, 1-2 and 1-3 — no ladder at all. The omnibuses above them are ranges over VOLUMES, and
+                // the coordinate has to be the same on both sides or nothing can nest (§4.2). Where the
+                // shelf's own judgement supplies the span it is used, which is what keeps Saga's volumes
+                // reading in issue numbers under their books.
+                // A single issue's span must be a RANGE to be a ladder coordinate. A degenerate "#26-26" on a
+                // 22-page floppy is the provider echoing its own match key — the shape SpanSelection.
+                // IsDiscardable already refuses — and believing it put `100 Years Quest 136` into the ladder at
+                // 26, where its volume claiming chapters 19-27 duly swallowed it. Page arithmetic cannot catch
+                // that one: 22 pages for one issue is perfectly plausible. Only the width tells them apart.
+                var spanDefinesTheLadder = hasSpan && (bb.Level == CollectionLevel.Issue
+                    ? bb.SpanFromEnd!.Value > bb.SpanFromStart!.Value
+                      && PageArithmetic.Flag(bb.PageCount, bb.SpanFromStart!.Value, bb.SpanFromEnd!.Value) != "thin"
+                    : bb.RangeSource == EditionSource.Curated);
+                if (spanDefinesTheLadder) baseRange[i] = (bb.SpanFromStart!.Value, bb.SpanFromEnd!.Value);
                 else if (bb.Level == CollectionLevel.Issue) baseRange[i] = (num[i] ?? i + 1, num[i] ?? i + 1);
+                else if (bb.VolumeNo is int volumeOrdinal) baseRange[i] = (volumeOrdinal, volumeOrdinal);
                 else baseRange[i] = (double.NaN, double.NaN);
             }
 
@@ -217,10 +264,20 @@ ORDER BY i.Id"))
                 foreach (var b in books.Where(b => b.Level > baseLevel && b.SpanFromStart.HasValue && b.SpanFromEnd.HasValue))
                 {
                     double es = b.SpanFromStart!.Value, ee = b.SpanFromEnd!.Value;
+                    // A range with a hole in it collects only what it holds. The note is where the hole is
+                    // stated — "Hellboy Omnibus Vol. 03 collects 8, 9, 12" over a bounding 8-12 — and without
+                    // this the two short-story volumes between them nest inside a book that never printed
+                    // them. Same evidence the de-duplication reads, so the shelf and the file agree.
+                    var excluded = SpanEvidence.ExcludedIssues(b.RangeNote, es, ee);
+                    b.ExcludedCoords = excluded;
                     int lo = int.MaxValue, hi = int.MinValue;
                     for (var i = 0; i < n; i++)
-                        if (!double.IsNaN(baseRange[i].Lo) && baseRange[i].Lo <= ee && baseRange[i].Hi >= es)
-                        { if (i < lo) lo = i; if (i > hi) hi = i; }
+                    {
+                        if (double.IsNaN(baseRange[i].Lo) || baseRange[i].Lo > ee || baseRange[i].Hi < es) continue;
+                        if (excluded != null && WhollyExcluded(baseRange[i], excluded)) continue;
+                        if (i < lo) lo = i;
+                        if (i > hi) hi = i;
+                    }
 
                     // The authoritative range is ALWAYS surfaced as the label, even when nothing it collects is
                     // owned — it still "collects #1-20"; there is just nothing to drill into.
@@ -232,25 +289,159 @@ ORDER BY i.Id"))
                     // Guard on the SPAN, not the match count: a clean collection's issues are CONTIGUOUS in the
                     // base sequence so span ≈ rangeSize; a conflated-run collision matches a handful scattered
                     // far apart, giving a small count yet an enormous span.
+                    //
+                    // The span is measured in COORDINATES, not in ladder positions. The library holds many
+                    // issues two and three times over — a chronology-tree rip beside a run rip — and counting
+                    // positions makes every one of those duplicates look like scatter. `Green Lantern Vol. 02`
+                    // collects #7-13, seven issues held as twenty-one files: twenty-one positions against an
+                    // allowance of twelve, so a range read straight off the book's own copyright page was
+                    // thrown away. Measured in coordinates it is seven against seven. Library-wide this was
+                    // discarding 269 judged ranges over 3,518 files.
+                    //
+                    // The guard's intent is untouched, because scatter is a property of the COORDINATES: a
+                    // claim of #1-5 whose matches land at #1 and #300 still covers hundreds of distinct
+                    // coordinates between them and is still rejected.
+                    if (lo != int.MaxValue)
+                    {
+                        var seen = new HashSet<double>();
+                        for (var i = lo; i <= hi; i++)
+                            if (!double.IsNaN(baseRange[i].Lo)) seen.Add(baseRange[i].Lo);
+                        span = seen.Count;
+                    }
                     if (lo == int.MaxValue || span > rangeSize * 1.3 + 3) { b.SpanStart = b.SpanEnd = 0; b.ContainsCount = 0; }
                     else { b.SpanStart = lo + 1; b.SpanEnd = hi + 1; b.ContainsCount = span; }
                 }
 
             var containers = books.Where(b => b.Level > baseLevel).ToList();
             if (containers.Count == 0) return;
+            var coordOf = new Dictionary<int, (double, double)>();
+            for (var i = 0; i < n; i++) coordOf[baseBooks[i].ItemId] = (baseRange[i].Lo, baseRange[i].Hi);
             foreach (var b in books)
             {
                 // A container that collects nothing we own has no position to be contained BY, so it stays a
                 // top-level leaf — otherwise every "empty" container nests under any other empty one.
-                if (b.SpanEnd <= 0) { b.ParentItemId = null; continue; }
+                //
+                // Unless BOTH sides state a JUDGED range, in which case the ranges alone settle it and the
+                // "every empty one nests under every other" failure cannot happen. `Saga Book 03` collects
+                // #37-54 and we own only #49-54 as files, so `Vol. 07` (#37-42) and `Vol. 08` (#43-48) have
+                // no position of their own and sat flat under "Editions without a known range" while `Vol.
+                // 09` — the one holding the files — nested correctly. The range IS known; there is simply
+                // nothing of it on disk. 419 editions on 75 shelves are in that shape. A provider's span is
+                // never enough here: an unjudged claim must not nest anything, and equal ranges are two
+                // editions of the same material, never one inside the other.
+                if (b.SpanEnd <= 0)
+                {
+                    b.ParentItemId = null;
+                    if (b.TrackRole != TrackRole.Container || b.RangeSource != EditionSource.Curated
+                        || !b.SpanFromStart.HasValue || !b.SpanFromEnd.HasValue) continue;
+                    double bs = b.SpanFromStart.Value, be = b.SpanFromEnd.Value;
+                    Book? byRange = null;
+                    foreach (var p in containers)
+                    {
+                        if (p.Level <= b.Level || p.ItemId == b.ItemId) continue;
+                        if (p.RangeSource != EditionSource.Curated || !p.SpanFromStart.HasValue || !p.SpanFromEnd.HasValue) continue;
+                        // "A container that is not flagged as a collection is a container nobody judged"
+                        // (PLAN §14.13) — the decision pass's coverage is built on `IsCollection = 1`, so a
+                        // book without the flag was never read, and a range on it is unreviewed. The
+                        // positional pass is kept clear of them by the data; this pass reaches editions the
+                        // positional one never could, so it has to ask. `Iron Man Epic Collection` (S9575) is
+                        // the shelf that bought it: a mixed shelf of unrelated trades, each judged in ITS OWN
+                        // coordinates, where item 82200 (`Iron Man 2020 (2018)`, unflagged, whose #1-6 is
+                        // really Machine Man #1-4) took `Ultimate Iron Man` #1-5 inside it.
+                        if (!p.IsCollection) continue;
+                        double ps = p.SpanFromStart.Value, pe = p.SpanFromEnd.Value;
+                        if (ps > bs || pe < be) continue;
+                        if (ps == bs && pe == be) continue;      // the same material, twice — not a nesting
+                        // The same page and hole tests the positional pass makes, for the same reasons.
+                        if (p.PageCount > 0 && b.PageCount > 0 && p.PageCount < b.PageCount) continue;
+                        if (p.ExcludedCoords != null && WhollyExcluded((bs, be), p.ExcludedCoords)) continue;
+                        if (byRange == null || pe - ps < byRange.SpanFromEnd!.Value - byRange.SpanFromStart!.Value) byRange = p;
+                    }
+                    b.ParentItemId = byRange?.ItemId;
+                    continue;
+                }
                 Book? parent = null;
+                var mine = coordOf.TryGetValue(b.ItemId, out var c) ? c : (double.NaN, double.NaN);
                 foreach (var p in containers)
-                    if (p.Level > b.Level && p.ItemId != b.ItemId
-                        && p.SpanStart <= b.SpanStart && p.SpanEnd >= b.SpanEnd
-                        && (parent == null || p.SpanEnd - p.SpanStart < parent.SpanEnd - parent.SpanStart))
-                        parent = p;
+                {
+                    if (p.Level <= b.Level || p.ItemId == b.ItemId) continue;
+                    if (p.SpanStart > b.SpanStart || p.SpanEnd < b.SpanEnd) continue;
+                    // A book cannot be inside a book with fewer pages than itself. The positional tests
+                    // above are about coordinates and say nothing about size, so where two editions of the
+                    // same material both became containers the smaller one could swallow the larger:
+                    // `Sex Criminals - The Complete Edition` (715pp) sat inside `Big Hard Sex Criminals
+                    // Book 02` (252pp), and `The Flash Vol. 14` (#750-755, 191pp) inside the 103pp deluxe
+                    // edition of #750 alone, because both ranges open at the same coordinate. Five edges
+                    // were impossible in this way. Unknown page counts are not evidence, so a zero on
+                    // either side skips the test rather than rejecting the parent.
+                    if (p.PageCount > 0 && b.PageCount > 0 && p.PageCount < b.PageCount) continue;
+                    // A container's node range is a CONTIGUOUS run of base positions, so a hole in its real
+                    // contents survives into the parent test unless it is asked again here. Hellboy Omnibus
+                    // Vol. 03 spans positions 8..12 and holds 8, 9 and 12; without this, the two short-story
+                    // volumes between them nest inside a book that never printed them.
+                    if (p.ExcludedCoords != null && !double.IsNaN(mine.Item1)
+                        && WhollyExcluded(mine, p.ExcludedCoords)) continue;
+                    // And the child's own coordinate has to be INSIDE the range the container claims. The
+                    // test above is positional, and a position window is not a range: `Aquaman Vol. 01`
+                    // collects #1-8, but the window that holds those eight also holds files numbered outside
+                    // them, and without this they nest inside a book that never printed them. Thirteen
+                    // containers were doing that, one of them nesting thirty-five coordinates its own range
+                    // excludes. Over-claiming is the direction that loses files, so the range is asked again
+                    // here — exactly as the gap is on the line above.
+                    if (p.SpanFromStart.HasValue && p.SpanFromEnd.HasValue && !double.IsNaN(mine.Item1)
+                        && (mine.Item2 < p.SpanFromStart.Value || mine.Item1 > p.SpanFromEnd.Value)) continue;
+                    if (parent == null || IsInnerThan(p, parent)) parent = p;
+                }
                 b.ParentItemId = parent?.ItemId;
             }
+        }
+
+        /// <summary>
+        /// Which of two eligible containers is the TIGHTER parent. The positional span is the first word — the
+        /// smallest window that still covers the child — but positions are measured in the base books we OWN,
+        /// so two containers of different sizes routinely tie there.
+        ///
+        /// <para>`Saga Book 03` collects #37-54 and `Vol. 09` collects #49-54; we own only #49-54 as files, so
+        /// both measure 8-13 and the tie went to whichever came first by item id — the BOOK — putting issues
+        /// #49-54 beside the Volume that holds them instead of inside it. On an equal window the INNERMOST
+        /// container wins: the lower <see cref="CollectionLevel"/> first (a Volume sits inside a Book), then
+        /// the narrower JUDGED range, then the smaller page count. Unknown page counts are not evidence, so a
+        /// zero on either side leaves the incumbent alone — the same rule the eligibility tests use.</para>
+        ///
+        /// <para><b>Ahead of all of it: a book nobody flagged as a collection never displaces one that is</b>
+        /// (PLAN §14.13, the same guard the judged-range pass carries). The positional pass has no
+        /// `IsCollection` test — it was kept clear of unflagged containers by the item order alone, and
+        /// preferring the inner level took that accident away: `Green Hornet - Sky Lights Collection` (Level
+        /// Volume, unflagged, S7899) took five files off `Green Hornet Omnibus v01`, and
+        /// `The Amazing Spider-Man (2023) (DCP Webrips)` (S34339) took three off the Spider-Man omnibus. Both
+        /// tripped `audit_containment`'s "a container that is not flagged as a collection". It costs exactly
+        /// those two edges; eligibility is untouched.</para>
+        /// </summary>
+        private static bool IsInnerThan(Book candidate, Book incumbent)
+        {
+            int cw = candidate.SpanEnd - candidate.SpanStart, iw = incumbent.SpanEnd - incumbent.SpanStart;
+            if (cw != iw) return cw < iw;
+            if (candidate.IsCollection != incumbent.IsCollection) return candidate.IsCollection;
+            if (candidate.Level != incumbent.Level) return candidate.Level < incumbent.Level;
+            double cr = JudgedWidth(candidate), ir = JudgedWidth(incumbent);
+            if (cr != ir) return cr < ir;
+            if (candidate.PageCount > 0 && incumbent.PageCount > 0 && candidate.PageCount != incumbent.PageCount)
+                return candidate.PageCount < incumbent.PageCount;
+            return false;
+        }
+
+        /// <summary>The width of a container's judged range, or +∞ when it has none — no range is not narrow.</summary>
+        private static double JudgedWidth(Book b) =>
+            b.SpanFromStart.HasValue && b.SpanFromEnd.HasValue
+                ? b.SpanFromEnd.Value - b.SpanFromStart.Value
+                : double.PositiveInfinity;
+
+        /// <summary>Every whole number this base book occupies is one the container's own note denies.</summary>
+        private static bool WhollyExcluded((double Lo, double Hi) range, HashSet<double> excluded)
+        {
+            for (var v = Math.Ceiling(range.Lo); v <= Math.Floor(range.Hi); v++)
+                if (!excluded.Contains(v)) return false;
+            return Math.Ceiling(range.Lo) <= Math.Floor(range.Hi);
         }
 
         private static SpanSource SpanSourceFor(EditionSource source) => source switch

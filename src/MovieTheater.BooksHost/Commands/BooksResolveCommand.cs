@@ -25,7 +25,7 @@ namespace MovieTheater.BooksHost.Commands
         [CommandOption("fts", Description = "Also rebuild ItemFts (default true).")] public bool Fts { get; set; } = true;
         [CommandOption("series", Description = "Rebuild the SERIES IDENTITY first (aliases, survivors, Item.SeriesId, merges, counts, spans) — comics THEN books.")] public bool SeriesIdentity { get; set; }
         [CommandOption("book-series", Description = "Rebuild the BOOK series links only (book: rows, Item.SeriesId for books, counts, spans) — no comic identity pass. No comic row is read or written.")] public bool BookSeries { get; set; }
-        [CommandOption("tags", Description = "Also rewrite the External/MU/GCD tag folds from the legs file.")] public bool Tags { get; set; }
+        [CommandOption("tags", Description = "Also rewrite the External (series + ISBN-keyed books)/MU/GCD tag folds from the legs file.")] public bool Tags { get; set; }
 
         public async ValueTask ExecuteAsync(IConsole console)
         {

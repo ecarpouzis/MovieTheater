@@ -84,6 +84,53 @@ namespace MovieTheater.Books.Archives
             }
         }
 
+        /// <summary>
+        /// <b>Which READER SURFACE an item needs</b> — the one answer no caller is allowed to derive for itself
+        /// from the stored extension, and the memoized form of <see cref="ResolveReaderExtension"/>.
+        ///
+        /// <para>6,768 books in this library are EPUBs saved as <c>.zip</c> (the OCF signature was found in all
+        /// 200 of a 200-file sample). The archive readers have always coped, because they route by magic bytes —
+        /// but four places asked the EXTENSION instead and so treated every one of those books as a comic: the
+        /// SPA opened the canvas reader (which looks inside an EPUB for image pages, finds none, and shows a book
+        /// that "will not open"), <c>/epub/*</c> 404'd, the grid cover came from spine page 0 rather than the
+        /// declared cover, and the EPUB resource route 404'd every image a chapter referenced. All four now ask
+        /// here.</para>
+        ///
+        /// <para><b>Only a BOOK with a generic container extension is sniffed</b>, and only then is the file
+        /// touched. A comic reads on the canvas whichever of ZIP/RAR/7-Zip it turns out to be, so paying an SMB
+        /// open per request for 118k comics would buy nothing. An unreadable or missing file yields the declared
+        /// extension — "trust the extension" is this class's own fallback, and the reader then fails with its own
+        /// message rather than this one guessing.</para>
+        ///
+        /// <para>The answer is memoized on <c>(path, mtime ticks)</c>, because it is asked once per resource an
+        /// EPUB chapter references, not once per book. A replaced file changes its ticks and so misses the cache;
+        /// the map is bounded by <see cref="ReaderFormatCacheLimit"/> and cleared wholesale when it is reached,
+        /// which costs one re-sniff per live book and cannot leak.</para>
+        /// </summary>
+        public static string? ReaderFormatFor(bool isBook, string filePath, string? declaredExtension, long fileTicks)
+        {
+            if (!isBook) return declaredExtension;
+            if (!GenericBookContainers.Contains(declaredExtension ?? "")) return declaredExtension;
+
+            var key = (filePath, fileTicks);
+            if (readerFormatCache.TryGetValue(key, out var hit)) return hit;
+
+            var resolved = ResolveReaderExtension(filePath, declaredExtension);
+            if (readerFormatCache.Count >= ReaderFormatCacheLimit) readerFormatCache.Clear();
+            readerFormatCache[key] = resolved;
+            return resolved;
+        }
+
+        /// <summary>The extensions that say nothing about what is inside, on the BOOK side. A <c>.cbz</c>/<c>.cbr</c>
+        /// on a book is not sniffed: it already names the canvas reader, which is where it would land anyway.</summary>
+        private static readonly HashSet<string> GenericBookContainers =
+            new(StringComparer.OrdinalIgnoreCase) { ".zip", ".rar" };
+
+        private const int ReaderFormatCacheLimit = 20_000;
+
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<(string Path, long Ticks), string>
+            readerFormatCache = new();
+
         /// <summary>Classify the container from its first bytes. Unopenable ⇒ <see cref="Container.Unknown"/>.</summary>
         public static Container Detect(string filePath)
         {

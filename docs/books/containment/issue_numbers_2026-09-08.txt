@@ -1,0 +1,129 @@
+# Issue-number repair, 2026-09-08
+
+PLAN.md §6.3 — the parser took the arc's number from "Baltimore 016 - The Infernal Train 01 (of 03)",
+so five different files were all issue #1 and no issue could attach to a collected edition's range.
+
+Rule: ComicTitleParser's new library-index rung. Applied with
+  books-fix-issue-numbers --only "\(\s*(?:[0-9]+\s+)?of\s+[0-9]+\s*\)" --apply
+scoped to the population that rung explains. Unscoped the same verb proposes 4,835 changes (17,641
+before the collection/ComicInfo guards) — most of them unrelated drift, some worse than what is stored.
+
+Backup taken first: data/books/v2/backup-20260908-141722/
+
+## The 101 rows
+
+      374  '2' -> '371'   2000 AD 0371 - Dredd - Super Bowl (2 of 2).cbr
+    11528  '4' -> '9'   Elephantmen 2259 009 - Simple Truth 04 (of 06) (2022) (digital) (Son of Ultron-Empire).cbr
+    12715  '1' -> '13'   X 013 - Better Off Dead 01 (of 04) (2014) (digital) (Son of Ultron-Empire).cbr
+    12716  '2' -> '14'   X 014 - Better Off Dead 02 (of 04) (2014) (digital) (Son of Ultron-Empire).cbr
+    12717  '3' -> '15'   X 015 - Better Off Dead 03 (of 04) (2014) (digital) (Son of Ultron-Empire).cbr
+    12718  '4' -> '16'   X 016 - Better Off Dead 04 (of 04) (2014) (digital) (Son of Ultron-Empire).cbr
+    12719  '1' -> '17'   X 017 - Flesh and Blood 01 (of 04) (2014) (digital) (Son of Ultron-Empire).cbr
+    12720  '2' -> '18'   X 018 - Flesh and Blood 02 (of 04) (2014) (digital) (Son of Ultron-Empire).cbr
+    12721  '3' -> '19'   X 019 - Flesh and Blood 03 (of 04) (2014) (digital) (Son of Ultron-Empire).cbr
+    12722  '4' -> '20'   X 020 - Flesh and Blood 04 (of 04) (2014) (digital) (Son of Ultron-Empire).cbr
+    13246  '1' -> '6'   Baltimore 006 - The Curse Bells 01 (of 05) (2011) (digital-Empire).cbr
+    13247  '2' -> '7'   Baltimore 007 - The Curse Bells 02 (of 05) (2011) (digital-Empire).cbr
+    13248  '3' -> '8'   Baltimore 008 - The Curse Bells 03 (of 05) (2011) (digital-Empire).cbr
+    13249  '4' -> '9'   Baltimore 009 - The Curse Bells 04 (of 05) (2011) (digital-Empire).cbr
+    13250  '5' -> '10'   Baltimore 010 - The Curse Bells 05 (of 05) (2011) (digital-Empire).cbr
+    13251  '1' -> '11'   Baltimore 011 - Dr. Leskovar's Remedy 01 (of 02) (2012) (Digital) (Nahga-Empire).cbr
+    13252  '2' -> '12'   Baltimore 012 - Dr. Leskovar's Remedy 02 (of 02) (2012) (Digital) (Nahga-Empire).cbr
+    13256  '1' -> '16'   Baltimore 016 - The Infernal Train 01 (of 03) (2013) (digital) (Son of Ultron-Empire) (fixed).cbr
+    13257  '2' -> '17'   Baltimore 017 - The Infernal Train 02 (of 03) (2013) (digital) (Son of Ultron-Empire).cbr
+    13258  '3' -> '18'   Baltimore 018 - The Infernal Train 03 (of 03) (2013) (digital) (Son of Ultron-Empire).cbr
+    13259  '1' -> '19'   Baltimore 019 - Chapel of Bones 01 (of 02) (2014) (digital) (Son of Ultron-Empire).cbr
+    13260  '2' -> '20'   Baltimore 020 - Chapel of Bones 02 (of 02) (2014) (digital) (Son of Ultron-Empire).cbr
+    13261  '1' -> '21'   Baltimore 021 - The Witch of Harju 01 (of 03) (2014) (digital) (Son of Ultron-Empire).cbr
+    13262  '2' -> '22'   Baltimore 022 - The Witch of Harju 02 (of 03) (2014) (digital) (Son of Ultron-Empire).cbr
+    13263  '3' -> '23'   Baltimore 023 - The Witch of Harju 03 (of 03) (2014) (digital) (Son of Ultron-Empire).cbr
+    13264  '1' -> '24'   Baltimore 024 - The Wolf and the Apostle 01 (of 02) (2014) (digital) (Son of Ultron-Empire).cbr
+    13265  '2' -> '25'   Baltimore 025 - The Wolf and the Apostle 02 (of 02) (2014) (digital) (Son of Ultron-Empire).cbr
+    13266  '1' -> '26'   Baltimore 026 - The Cult of the Red King 01 (of 05) (2015) (digital) (Son of Ultron-Empire).cbr
+    13267  '2' -> '27'   Baltimore 027 - The Cult of the Red King 02 (of 05) (2015) (digital) (Son of Ultron-Empire).cbr
+    13268  '3' -> '28'   Baltimore 028 - The Cult of the Red King 03 (of 05) (2015) (digital) (Son of Ultron-Empire).cbr
+    13269  '4' -> '29'   Baltimore 029 - The Cult of the Red King 04 (of 05) (2015) (digital) (Son of Ultron-Empire).cbr
+    13270  '5' -> '30'   Baltimore 030 - The Cult of the Red King 05 (of 05) (2015) (digital) (Son of Ultron-Empire).cbr
+    13271  '1' -> '31'   Baltimore 031 - Empty Graves 01 (of 05) (2016) (digital) (Son of Ultron-Empire).cbr
+    13272  '2' -> '32'   Baltimore 032 - Empty Graves 02 (of 05) (2016) (digital) (Son of Ultron-Empire).cbr
+    13273  '3' -> '33'   Baltimore 033 - Empty Graves 03 (of 05) (2016) (digital) (Son of Ultron-Empire).cbr
+    13274  '4' -> '34'   Baltimore 034 - Empty Graves 04 (of 05) (2016) (digital) (Son of Ultron-Empire).cbr
+    13275  '5' -> '35'   Baltimore 035 - Empty Graves 05 (of 05) (2016) (digital) (Son of Ultron-Empire).cbr
+    13276  '1' -> '36'   Baltimore 036 - The Red Kingdom 01 (of 05) (2017) (digital) (Son of Ultron-Empire).cbr
+    13277  '2' -> '37'   Baltimore 037 - The Red Kingdom 02 (of 05) (2017) (digital) (Son of Ultron-Empire).cbr
+    13278  '3' -> '38'   Baltimore 038 - The Red Kingdom 03 (of 05) (2017) (digital) (Son of Ultron-Empire).cbr
+    13279  '4' -> '39'   Baltimore 039 - The Red Kingdom 04 (of 05) (2017) (digital) (Son of Ultron-Empire).cbr
+    13280  '5' -> '40'   Baltimore 040 - The Red Kingdom 05 (of 05) (2017) (digital) (Son of Ultron-Empire).cbr
+    14847  '1' -> '9'   Abe Sapien - 009 - The Devil Does Not Jest 01 (of 02) (2011) (digital) (G85NW-Empire).cbr
+    14848  '2' -> '10'   Abe Sapien - 010 - The Devil Does Not Jest 02 (of 02) (2011) (digital) (G85NW-Empire).cbr
+    14852  '1' -> '4'   Abe Sapien 004 - The New Race of Men 01 (of 02) (2013) (digital) (Son of Ultron-Empire).cbr
+    14853  '2' -> '5'   Abe Sapien 005 - The New Race of Men 02 (of 02) (2013) (digital) (Son of Ultron-Empire).cbr
+    14854  '1' -> '6'   Abe Sapien 006 - The Shape of Things to Come 01 (of 02) (2013) (digital) (Son of Ultron-Empire).cbr
+    14855  '2' -> '7'   Abe Sapien 007 - The Shape of Things to Come 02 (of 02) (2013) (digital) (Son of Ultron-Empire).cbr
+    14857  '1' -> '9'   Abe Sapien 009 - To the Last Man 01 (of 03) (2014) (digital) (Son of Ultron-Empire).cbr
+    14858  '2' -> '10'   Abe Sapien 010 - To the Last Man 02 (of 03) (2014) (digital) (Son of Ultron-Empire).cbr
+    14859  '3' -> '11'   Abe Sapien 011 - To the Last Man 03 (of 03) (2014) (digital) (Son of Ultron-Empire).cbr
+    14864  '1' -> '16'   Abe Sapien 016 - Sacred Places 01 (of 02) (2014) (digital) (Son of Ultron-Empire).cbr
+    14865  '2' -> '17'   Abe Sapien 017 - Sacred Places 02 (of 02) (2014) (digital) (Son of Ultron-Empire).cbr
+    14876  '1' -> '28'   Abe Sapien 028 - The Garden (II) 01 (of 02) (2015) (digital) (Son of Ultron-Empire).cbr
+    14877  '2' -> '29'   Abe Sapien 029 - The Garden (II) 02 (of 02) (2015) (digital) (Son of Ultron-Empire).cbr
+    14971  '1' -> '6'   Lobster Johnson 006 - The Burning Hand 01 (of 05) (2012) (digital-Empire).cbr
+    14972  '2' -> '7'   Lobster Johnson 007 - The Burning Hand 02 (of 05) (2012) (Digital) (G85-Empire).cbr
+    14973  '3' -> '8'   Lobster Johnson 008 - The Burning Hand 03 (of 05) (2012) (AngelKing-Empire).cbr
+    14974  '4' -> '9'   Lobster Johnson 009 - The Burning Hand 04 (of 05) (2012) (digital-Empire).cbr
+    14975  '5' -> '10'   Lobster Johnson 010 - The Burning Hand 05 (of 05) (2012) (digital-Empire).cbr
+    14979  '1' -> '14'   Lobster Johnson 014 - A Scent of Lotus 01 (of 02) (2013) (digital) (Son of Ultron-Empire).cbr
+    14980  '2' -> '15'   Lobster Johnson 015 - A Scent of Lotus 02 (of 02) (2013) (digital) (Son of Ultron-Empire).cbr
+    14981  '1' -> '16'   Lobster Johnson 016 - Get the Lobster 01 (of 05) (2014) (digital) (Son of Ultron-Empire).cbr
+    14982  '2' -> '17'   Lobster Johnson 017 - Get the Lobster 02 (of 05) (2014) (digital) (Son of Ultron-Empire).cbr
+    14983  '3' -> '18'   Lobster Johnson 018 - Get the Lobster 03 (of 05) (2014) (digital) (Son of Ultron-Empire).cbr
+    14984  '4' -> '19'   Lobster Johnson 019 - Get the Lobster 04 (of 05) (2014) (digital) (Son of Ultron-Empire).cbr
+    14985  '5' -> '20'   Lobster Johnson 020 - Get the Lobster 05 (of 05) (2014) (digital) (Son of Ultron-Empire).cbr
+    14989  '1' -> '24'   Lobster Johnson 024 - Metal Monsters of Midtown 01 (of 03) (2016) (digital) (Son of Ultron-Empire).cbr
+    14990  '2' -> '25'   Lobster Johnson 025 - Metal Monsters of Midtown 02 (of 03) (2016) (digital) (Son of Ultron-Empire).cbr
+    14991  '3' -> '26'   Lobster Johnson 026 - Metal Monsters of Midtown 03 (of 03) (2016) (digital) (Son of Ultron-Empire).cbr
+    14993  '1' -> '28'   Lobster Johnson 028 - The Pirate's Ghost 01 (of 03) (2017) (digital) (Son of Ultron-Empire).cbr
+    14994  '2' -> '29'   Lobster Johnson 029 - The Pirate's Ghost 02 (of 03) (2017) (digital) (Son of Ultron-Empire).cbr
+    14995  '3' -> '30'   Lobster Johnson 030 - The Pirate's Ghost 03 (of 03) (2017) (digital) (Son of Ultron-Empire).cbr
+    15010  '1' -> '6'   Sir Edward Grey, Witchfinder 006 - Lost and Gone Forever 01 (of 05) (2011) (digital-Empire).cbr
+    15011  '2' -> '7'   Sir Edward Grey, Witchfinder 007 - Lost and Gone Forever 02 (of 05) (2011) (digital-Empire).cbr
+    15012  '3' -> '8'   Sir Edward Grey, Witchfinder 008 - Lost and Gone Forever 03 (of 05) (2011) (digital-Empire).cbr
+    15013  '4' -> '9'   Sir Edward Grey, Witchfinder 009 - Lost and Gone Forever 04 (of 05) (2011) (digital-Empire).cbr
+    15014  '5' -> '10'   Sir Edward Grey, Witchfinder 010 - Lost and Gone Forever 05 (of 05) (2011) (digital-Empire).cbr
+    15015  '1' -> '11'   Sir Edward Grey, Witchfinder 011 - The Mysteries of Unland 01 (of 05) (2014) (digital) (Son of Ultron-Empire).cbr
+    15016  '2' -> '12'   Sir Edward Grey, Witchfinder 012 - The Mysteries of Unland 02 (of 05) (2014) (digital) (Son of Ultron-Empire).cbr
+    15017  '3' -> '13'   Sir Edward Grey, Witchfinder 013 - The Mysteries of Unland 03 (of 05) (2014) (digital) (Son of Ultron-Empire).cbr
+    15018  '4' -> '14'   Sir Edward Grey, Witchfinder 014 - The Mysteries of Unland 04 (of 05) (2014) (digital) (Son of Ultron-Empire).cbr
+    15019  '5' -> '15'   Sir Edward Grey, Witchfinder 015 - The Mysteries of Unland 05 (of 05) (2014) (digital) (Son of Ultron-Empire).cbr
+    15020  '1' -> '16'   Sir Edward Grey, Witchfinder 016 - City of the Dead 01 (of 05) (2016) (digital) (Son of Ultron-Empire).cbr
+    15021  '2' -> '17'   Sir Edward Grey, Witchfinder 017 - City of the Dead 02 (of 05) (2016) (digital) (Son of Ultron-Empire).cbr
+    15022  '3' -> '18'   Sir Edward Grey, Witchfinder 018 - City of the Dead 03 (of 05) (2016) (digital) (Son of Ultron-Empire).cbr
+    15023  '4' -> '19'   Sir Edward Grey, Witchfinder 019 - City of the Dead 04 (of 05) (2016) (digital) (Son of Ultron-Empire).cbr
+    15024  '5' -> '20'   Sir Edward Grey, Witchfinder 020 - City of the Dead 05 (of 05) (2016) (digital) (Son of Ultron-Empire).cbr
+    15025  '1' -> '21'   Sir Edward Grey, Witchfinder 021 - The Gates of Heaven 01 (of 05) (2018) (digital) (Son of Ultron-Empire).cbr
+    15026  '2' -> '22'   Sir Edward Grey, Witchfinder 022 - The Gates of Heaven 02 (of 05) (2018) (digital) (Son of Ultron-Empire).cbr
+    15027  '3' -> '23'   Sir Edward Grey, Witchfinder 023 - The Gates of Heaven 03 (of 05) (2018) (digital) (Son of Ultron-Empire).cbr
+    15028  '4' -> '24'   Sir Edward Grey, Witchfinder 024 - The Gates of Heaven 04 (of 05) (2018) (digital) (Son of Ultron-Empire).cbr
+    15029  '5' -> '25'   Sir Edward Grey, Witchfinder 025 - The Gates of Heaven 05 (of 05) (2018) (digital) (Son of Ultron-Empire).cbr
+    19748  '1' -> '3'   Iron Squad 003 - Pacific Invasion 01 (of 02) (2015) (webrip) (MagicMan-DCP).cbr
+    19749  '2' -> '4'   Iron Squad 004 - Pacific Invasion 02 (of 02) (2015) (webrip) (MagicMan-DCP).cbr
+    19750  '1' -> '5'   Iron Squad 005 - Operation Rebalance 01 (of 02) (2015) (webrip) (MagicMan-DCP).cbr
+    19751  '2' -> '6'   Iron Squad 006 - Operation Rebalance 02 (of 02) (2015) (webrip) (MagicMan-DCP).cbr
+    23008  '1' -> '6'   Blacksad 006 - They All Fall Down 01 (of 02) (2023) (digital) (Mr Norrell-Empire).cbr
+    23009  '2' -> '7'   Blacksad 007 - They All Fall Down 02 (of 02) (2023) (digital) (Mr Norrell-Empire).cbr
+   106323  '1' -> '3'   Husk 003 - Critical Mass 01 (of 2) (2015) (digital) (MagicMan-DCP).cbr
+   106324  '2' -> '4'   Husk 004 - Critical Mass 02 (of 2) (2015) (digital) (MagicMan-DCP).cbr
+
+## Plus one by hand
+
+  15002  '16' -> '0'   Sir Edward Grey, Witchfinder 000 - Murderous Intent (2008) (from MySpace Dark Horse Presents #16)
+         — 16 was the DHP issue it was printed in, not this series' number. No (of N) marker, so the rung
+           does not reach it. With this the Witchfinder ladder tiles 0-25 with no duplicate.
+
+## Ladders after
+
+  S1810  Baltimore        40 issues  1-40   no dupes, no gaps
+  S10839 Lobster Johnson  31 issues  1-31   no dupes, no gaps
+  S9637  Iron Squad        6 issues  1-6    no dupes, no gaps
+  S15695 Witchfinder      26 issues  0-25   no dupes, no gaps
+  S64085 Abe Sapien (2013) still collides — it conflates the 2008 and 2013 runs (§6.4), not this defect

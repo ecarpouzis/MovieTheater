@@ -1,0 +1,460 @@
+# B-006 — 150 tier-B shelves: the tail of BOOM! Studios (The D-Z titles + WWE), then Caliber Comics,
+# Cinebook, Clover Press and a 70-shelf block of **ComiXology Originals**, which is the batch's real story.
+# The BOOM half behaves exactly as B-004/B-005: run + a same-title count-1 trade record a year later in
+# both providers, the stored link on the trade eleven times.
+# Conventions this batch adds:
+# (a) **ComiXology Originals is a two-provider split, not a missing leg.** ComicVine indexes the DIGITAL
+#     serial under the creator's own imprint (Best Jackett Press, Curt Pires, Stout Club, New Wave Comics,
+#     4Twenty, Comicraft, Dazzling Urbanite, Migdal, Sablevision, Wimzi...), count 4-6; the GCD dump holds
+#     ONLY Dark Horse's later PRINT repackaging, count 1-3, one to three years later. That is the ledger's
+#     Best Jackett shape and it is systematic here: 30 of the ~70 CmX shelves pair that way. I have taken
+#     the ruling's second option — link the Dark Horse reprint and say so — which caps every one of them at
+#     0.9; where GCD has no Dark Horse row at all it is `gcd=-` + provider-missing.
+# (b) The CmX per-file CV leg is the count-1 COLLECTED record about a third of the time (Lost on Planet
+#     Earth, The Final Girls, Superfreaks, Edgeworld, Barnstormers, Mistland, Goliath Girls, Funny Creek) —
+#     the same trade-record trap as BOOM, at a different set of publishers.
+# (c) ComicVine mints TWIN volumes for several Stout Club / Shadow Valley CmX series (Funny Creek 129224 +
+#     129225, Hailstone 135976 + 135977, Goliath Girls 112399 + 112400) — capped and named.
+# (d) Cinebook second legs are found by dropping the English subtitle to the ORIGINAL abbreviation: "HSE"
+#     (GCD 179495, Cinebook 2020, 3) is the second leg for the shelf our files call "HSE - Human Stock
+#     Exchange". Cinebook's GCD rows carry [en-gb] and the Cinebook publisher — that column is the test.
+# (e) Caliber's digital line re-serialises 1990s one-shots under a new numbering (Worlds of H.P. Lovecraft
+#     1-10) — GCD holds a row per ORIGINAL one-shot and neither provider has anything spanning ten.
+
+S 18438 cv=136439 gcd=172732 0.95 | CV 136439 "The Down River People" 2021 Archaia (1) and GCD 172732 (Boom! Studios 2021-2021, 1) agree on name, year, publisher-family and count, and the single 205pp file is that OGN
+I 10850 cv=- gcd=s172732 isbn=- 0.95 | the one 205pp book is the whole of GCD 172732, Boom! Studios 2021-2021, count 1
+
+S 18542 cv=98562 gcd=- 0.9 | the run wins on one leg: CV 98562 "The Expanse Origins" 2017 Boom (4) is the four-issue mini our 127pp COL file collects, and the STORED link 108521 is the same-title 2018 count-1 record; GCD holds only that trade row (120715) and no four-issue Origins series
+F 18542 wrong-cv-link | stored cv 108521 "The Expanse: Origins" 2018 Boom count 1 is the collected edition; the run is cv 98562 count 4
+F 18542 provider-missing | GCD indexes the Origins trade (120715) but not the 2017 four-issue run
+I 10857 cv=- gcd=s120715 isbn=- 0.9 | the book carries the file's (2018) and is GCD 120715 "The Expanse: Origins" 2018-2018 Boom! Studios count 1
+
+S 18540 cv=132605 gcd=167742 0.95 | the run wins: CV 132605 "The Expanse" 2020 Boom (4) and GCD 167742 (Boom! Studios 2020-2021, 4) agree on publisher, start year and count 4, and a 126pp trade is right for four issues; ComicInfo Series says "The Expanse"
+I 11906 cv=- gcd=s174709 isbn=- 0.9 | the book carries the file's (2021) and is GCD 174709 "The Expanse" 2021-2021 Boom! Studios count 1, which CV 138118 repeats
+
+S 18636 cv=38698 gcd=53872 0.95 | the run wins: CV 38698 "The Foundation" 2007 Boom (5) and GCD 53872 "Foundation" 2007-2008 Boom! Studios (5) agree on publisher, start year and count 5, and a 127pp trade is right for five issues; the STORED link 55052 is the 2008 count-1 record, the trade
+F 18636 wrong-cv-link | stored cv 55052 "The Foundation" 2008 Boom count 1 is the collected edition; the run is cv 38698 count 5
+I 10863 cv=- gcd=s53871 isbn=- 0.9 | the book carries the file's (2008) and is GCD 53871 "The Foundation" 2008-2008 Boom! Studios count 1
+
+S 18710 cv=119378 gcd=216976 0.95 | CV 119378 "Grand Abyss Hotel" 2019 Archaia (1) and GCD 216976 "The Grand Abyss Hotel" 2019-2019 Boom! Studios (1) agree on year, publisher-family and count, and ComicInfo Series repeats the full title on the single 108pp file
+I 10864 cv=- gcd=s216976 isbn=- 0.95 | the one 108pp book is the whole of GCD 216976, Boom! Studios 2019-2019, count 1
+
+S 18713 cv=159841 gcd=229067 0.9 | CV 159841 "The Graveyard Club" 2024 Boom (1, cached #1-1, ratio 1/1) matches our single 92pp "001 - Revenge Game" file with ladder 1, and GCD 229067 "The Graveyard Club" Boom! Studios (1) is the same book; capped because the two legs disagree on the year (CV and the file 2024, GCD 2025)
+I 10865 cv=- gcd=s229067 isbn=- 0.9 | the one 92pp file is the whole of GCD 229067, Boom! Studios, count 1
+
+S 18723 cv=117060 gcd=- 0.9 | one leg plus our own naming and year: CV 117060 "The Great Wiz and the Ruckus" 2019 Boom (1) matches the single 209pp file, its (2019) and ComicInfo Series repeating the title; a direct GCD probe returns 0 hits
+F 18723 provider-missing | GCD holds no "The Great Wiz and the Ruckus" row
+
+S 18878 cv=22655 gcd=20680 0.9 | the run wins: CV 22655 "The Killer" 2006 Archaia (10) and GCD 20680 "The Killer" 2006-2009 Archaia Studios Press (10) agree on publisher, start year and count 10, and a 767pp "Complete The Killer" omnibus is right for ten ~50pp albums; capped because the second file, "The Killer - Affairs of the State" (175pp, 2022), is a later series and a different comic
+N 18878 GCD 216909 "The Killer" 2007-2013 Archaia (4) and CV 124983 (2007 Archaia, 3 — the per-file leg) are the later Archaia sequel volumes that "Affairs of the State" belongs to
+
+S 18902 cv=74123 gcd=80867 0.95 | the run wins: CV 74123 "The Last Broadcast" 2014 Archaia (7) and GCD 80867 (Boom! Studios 2014-2014, 7) agree on publisher, year and count 7, and a 209pp trade is right for seven issues; the 2015 count-1 pair (CV 83962 / GCD 216695) is the trade
+I 10876 cv=- gcd=s216695 isbn=- 0.9 | the book carries the file's (2015) and is GCD 216695 "The Last Broadcast" 2015-2015 Boom! Studios count 1
+
+S 18904 cv=87168 gcd=95374 0.95 | the run wins: CV 87168 "The Last Contract" 2016 Boom (4) and GCD 95374 (Boom! Studios 2016-2016, 4) agree on publisher, year and count 4, and a 112pp trade is right for four issues; the 2017 count-1 pair (CV 101782 / GCD 216694) is the trade
+I 10877 cv=- gcd=s216694 isbn=- 0.9 | the book carries the file's (2017) and is GCD 216694 "The Last Contract" 2017-2017 Boom! Studios count 1
+
+S 18924 cv=133071 gcd=168456 0.95 | the run wins: CV 133071 "The Last Witch" 2021 Boom (5) and GCD 168456 (Boom! Studios 2021-2021, 5) agree on publisher, year and count 5, and a 208pp trade is right for five ~40pp issues; the STORED link 138806 is the same-year count-1 record, the trade
+F 18924 wrong-cv-link | stored cv 138806 "The Last Witch" 2021 Boom count 1 is the collected edition; the run is cv 133071 count 5
+I 10878 cv=- gcd=s175890 isbn=- 0.9 | the book is the trade GCD 175890 "The Last Witch" 2021-? Boom! Studios count 1, beside the 5-issue run 168456
+
+S 19004 cv=129817 gcd=164483 0.95 | CV 129817 "The Lost City of Heracleon" 2020 Archaia (1) and GCD 164483 (Boom! Studios 2020-2020, 1) agree on name, year, publisher-family and count, and ComicInfo Series repeats it on the 226pp file
+I 10879 cv=- gcd=s164483 isbn=- 0.95 | the one 226pp book is the whole of GCD 164483, Boom! Studios 2020-2020, count 1
+
+S 19037 cv=120111 gcd=156718 0.9 | CV 120111 "The Magicians: Alice's Story" 2019 Archaia (1) and GCD 156718 (Boom! Studios 2019-2019, 1) agree on the full title, year, publisher-family and count, and the single 209pp file carries the same year; capped because GCD holds a second same-title count-1 row a year later (165957, 2020)
+N 19037 GCD twins 156718 (2019) and 165957 (2020); the parent five-issue Magicians series is CV 122650 / GCD 164438
+
+S 19046 cv=121399 gcd=154342 0.95 | CV 121399 "The Man Who Came Down the Attic Stairs" 2019 Archaia (1) and GCD 154342 (Boom! Studios 2019-2019, 1) agree on the full title, year, publisher-family and count, and ComicInfo Series repeats it on the 49pp file
+I 10887 cv=- gcd=s154342 isbn=- 0.95 | the one 49pp book is the whole of GCD 154342, Boom! Studios 2019-2019, count 1
+
+S 19193 cv=148998 gcd=197982 0.95 | the run wins: CV 148998 "The Neighbors" 2023 Boom (5) and GCD 197982 (Boom! Studios 2023-2023, 5) agree on publisher, year and count 5, and a 129pp trade is right for five issues; GCD 207339 (2023, 1) is the trade
+I 10889 cv=- gcd=s207339 isbn=- 0.9 | the book is the collection GCD 207339 "The Neighbors" 2023-2023 Boom! Studios count 1, beside the 5-issue run 197982
+
+S 19239 cv=103103 gcd=- 0.9 | one leg plus our own naming and year: CV 103103 "The Not-So Secret Society" 2017 Boom (1) is the only record of that name in either provider and matches the single 124pp file and its (2017); a direct GCD probe returns 0 hits
+F 19239 provider-missing | GCD holds no "The Not-So Secret Society" row
+
+S 19381 cv=143536 gcd=181653 0.95 | CV 143536 "The Princess Who Saved Her Friends" 2022 Boom (1) and GCD 181653 (Boom! Studios 2022-2022, 1) agree on the full title, year, publisher and count; the "ladder 2" is the reading-order prefix in the filename, not an issue number
+I 10892 cv=- gcd=s181653 isbn=- 0.95 | the one 41pp book is the whole of GCD 181653, Boom! Studios 2022-2022, count 1
+
+S 19382 cv=136013 gcd=- 0.9 | one leg plus our own naming: CV 136013 "The Princess Who Saved Herself" Boom (1) is the only record of that title in either provider and our single 19pp file is that book; capped because CV dates it 2021 while the file and the folder say 2015, and a direct GCD probe returns 0 hits
+F 19382 provider-missing | GCD holds no "The Princess Who Saved Herself" row in any spelling probed
+
+S 19430 cv=81504 gcd=142409 0.9 | this line was published as albums, not a numbered run: CV 81504 "The Realist" 2015 Archaia (2) matches our two COL volumes exactly, and GCD 142409 "The Realist" 2015-2015 Boom! Studios agrees on year and publisher-family; capped because GCD files a row per BOOK (142409 for v01, 203742 "The Realist: Plug and Play" for v02) while CV keeps one volume
+I 10893 cv=- gcd=s142409 isbn=- 0.95 | v01 is GCD 142409 "The Realist" 2015-2015 Boom! Studios count 1
+I 10894 cv=- gcd=s203742 isbn=- 0.95 | v02 is GCD 203742 "The Realist: Plug and Play" 2017-2017 Boom! Studios count 1, matching the file's own subtitle and (2017)
+
+S 19503 cv=131349 gcd=165326 0.95 | CV 131349 "The Sacrifice of Darkness" 2020 Archaia (1) and GCD 165326 (Boom! Studios 2020-2020, 1) agree on name, year, publisher-family and count, and ComicInfo Series repeats it on the 131pp file
+I 10895 cv=- gcd=s165326 isbn=- 0.95 | the one 131pp book is the whole of GCD 165326, Boom! Studios 2020-2020, count 1
+
+S 19528 cv=24659 gcd=27191 0.95 | the run wins: CV 24659 "Savage Brothers" 2006 Boom (3) and GCD 27191 "Savage Brothers" 2006-2007 Boom! Studios (3) agree on publisher, start year and count 3, and a 95pp Deluxe Edition is right for three issues; the per-file CV leg 55846 is the 2007 count-1 trade record
+N 19528 the file's own edition is CV 74747 "The Savage Brothers: Deluxe Edition" 2014 Boom count 1, for which GCD holds only Ankama's 2017 French row (137451) — the book has no I line
+
+S 19547 cv=149451 gcd=199014 0.95 | the run wins: CV 149451 "The Seasons Have Teeth" 2023 Boom (4) and GCD 199014 (Boom! Studios 2023-2023, 4) agree on publisher, year and count 4, and a 113pp COL file is right for four issues; ComicInfo Series repeats the title
+I 10897 cv=- gcd=s206724 isbn=- 0.9 | the book is the collection GCD 206724 "The Seasons Have Teeth" 2023-2023 Boom! Studios count 1, beside the 4-issue run 199014
+
+S 19611 cv=95237 gcd=- 0.9 | one leg plus our own naming and year: CV 95237 "The Signature Art of Brian Stelfreeze" 2016 Boom (1) matches the single 198pp art book and its (2016); direct GCD and rip probes both return 0 hits
+F 19611 provider-missing | GCD holds no "The Signature Art of Brian Stelfreeze" row
+
+S 19652 cv=154532 gcd=205363 0.95 | the run wins: CV 154532 "The Space Between" 2023 Boom (4) and GCD 205363 (Boom! Studios 2023-2024, 4) agree on publisher, start year and count 4, and a 130pp trade is right for four issues; the 2024 count-1 pair (CV 159333 / GCD 213905) is the trade
+I 10905 cv=- gcd=s213905 isbn=- 0.9 | the book carries the file's (2024) and is GCD 213905 "The Space Between" 2024-2024 Boom! Studios count 1
+
+S 19665 cv=82987 gcd=90489 0.95 | the run wins: CV 82987 "The Spire" 2015 Boom (8) and GCD 90489 (Boom! Studios 2015-2016, 8) agree on publisher, start year and count 8, and a 202pp trade is right for eight issues; the 2016 count-1 pair (CV 96678 / GCD 217426) is the trade
+I 10906 cv=- gcd=s217426 isbn=- 0.9 | the book carries the file's (2016) and is GCD 217426 "The Spire" 2016-2016 Boom! Studios count 1
+
+S 19771 cv=112357 gcd=144242 0.95 | the run wins: CV 112357 "The Thrilling Adventure Hour" 2018 Boom (4) and GCD 144242 (Boom! Studios 2018-2018, 4) agree on publisher, year and count 4, and a 113pp COL file is right for four issues; the STORED link 112209 is the same-year count-1 record under the subtitle, i.e. the trade
+F 19771 wrong-cv-link | stored cv 112209 "The Thrilling Adventure Hour: A Spirited Romance" 2018 Archaia count 1 is the collected edition; the run is cv 112357 count 4
+
+S 19868 cv=101965 gcd=114818 0.95 | the run wins: CV 101965 "The Unsound" 2017 Boom (6) and GCD 114818 (Boom! Studios 2017-2017, 6) agree on publisher, year and count 6, and a 157pp trade is right for six issues; the 2018 count-1 pair (CV 110769 / GCD 124594) is the trade
+I 10908 cv=- gcd=s124594 isbn=- 0.9 | the book carries the file's (2018) and is GCD 124594 "The Unsound" 2018-2018 Boom! Studios count 1
+
+S 19968 cv=118879 gcd=145171 0.9 | CV 118879 "The Woods Yearbook Edition" 2019 Boom (3) and GCD 145171 (Boom! Studios 2019-2019, 3) agree on name, year, publisher and count 3, and our three ~290pp Yearbook books are those three; capped because a Yearbook Edition is a collected line over BOOM's 36-issue The Woods rather than a run of its own, and because count 3 is exactly the number of BOOKS we hold
+N 19968 the material inside is BOOM's "The Woods" 2014 ongoing
+
+S 20282 cv=84301 gcd=92151 0.95 | the run wins: CV 84301 "Toil and Trouble" 2015 Boom (6) and GCD 92151 (Boom! Studios 2015-2016, 6) agree on publisher, start year and count 6, and a 157pp trade is right for six issues; the 2016 count-1 pair (CV 94145 / GCD 217068) is the trade
+I 10923 cv=- gcd=s217068 isbn=- 0.9 | the book carries the file's (2016) and is GCD 217068 "Toil and Trouble" 2016-2016 Boom! Studios count 1
+
+S 20339 cv=76936 gcd=215942 0.95 | CV 76936 "Too Much Coffee Man: Cutie Island" 2012 Boom (1) and GCD 215942 (Boom! Studios 2012-2012, 1) agree on the full title, year, publisher and count; Adhesive's 1993 "Too Much Coffee Man" run (CV 24103 / GCD 42758) is a different comic
+I 10924 cv=- gcd=s215942 isbn=- 0.95 | the one 190pp book is the whole of GCD 215942, Boom! Studios 2012-2012, count 1
+
+S 20431 cv=73116 gcd=80198 0.95 | the run wins: CV 73116 "Translucid" 2014 Boom (6) and GCD 80198 (Boom! Studios 2014-2014, 6) agree on publisher, year and count 6, and a 158pp COL file is right for six issues; the 2015 count-1 pair (CV 81249 / GCD 217444) is the trade
+I 10925 cv=- gcd=s217444 isbn=- 0.9 | the book carries the file's (2015) and is GCD 217444 "Translucid" 2015-2015 Boom! Studios count 1
+
+S 20586 cv=81101 gcd=88043 0.95 | the run wins: CV 81101 "UFOlogy" 2015 Boom (6) and GCD 88043 (Boom! Studios 2015-2015, 6) agree on publisher, year and count 6, and a 151pp trade is right for six issues; the 2016 count-1 pair (CV 89808 / GCD 217459) is the trade
+I 10930 cv=- gcd=s217459 isbn=- 0.9 | the book carries the file's (2016) and is GCD 217459 "UFOlogy" 2016-2016 Boom! Studios count 1
+
+S 20815 cv=26379 gcd=36744 0.95 | the run wins: CV 26379 "Unthinkable" 2009 Boom (5) and GCD 36744 (Boom! Studios 2009-2009, 5) agree on publisher, year and count 5, and a 127pp trade is right for five issues; the STORED link 56252 is the same-year count-1 record, the trade
+F 20815 wrong-cv-link | stored cv 56252 "Unthinkable" 2009 Boom count 1 is the collected edition; the run is cv 26379 count 5
+I 10946 cv=- gcd=s53852 isbn=- 0.9 | the book is the trade GCD 53852 "Unthinkable" 2009-2009 Boom! Studios count 1, beside the 5-issue run 36744
+
+S 21153 cv=137456 gcd=173805 0.95 | CV 137456 "WWE The New Day: Power of Positivity" 2021 Boom (2) and GCD 173805 (Boom! Studios 2021-2021, 2) agree on the full title, year, publisher and count 2, and our one 114pp file is one of that two-book line — the count is not merely our holdings
+
+S 21149 cv=114921 gcd=- 0.9 | one leg plus our own naming: CV 114921 "WWE Original Graphic Novel: Undertaker: Rise of the Deadman" 2018 Boom (1) matches our single 112pp file, its (2018) and ComicInfo Series "WWE Original Graphic Novel: Undertaker"; direct GCD probes on both the full title and the subtitle return 0 hits, and every dump "Undertaker" row is Dargaud's European western
+F 21149 provider-missing | GCD holds no WWE Undertaker OGN row
+
+S 21150 cv=107671 gcd=120060 0.95 | CV 107671 "WWE Royal Rumble 2018 Special" 2018 Boom (1) and GCD 120060 (Boom! Studios 2018-2018, 1) agree on the full title, year, publisher and count, and 42pp is right for a one-shot special; the "ladder 2018" is the year read as an issue number
+I 11011 cv=- gcd=s120060 isbn=- 0.95 | the one 42pp special is the whole of GCD 120060, Boom! Studios 2018-2018, count 1
+
+S 21155 cv=118006 gcd=143636 0.95 | CV 118006 "WWE: Wrestlemania 2019 Special" 2019 Boom (1) and GCD 143636 (Boom! Studios 2019-2019, [one-shot] 1) agree on the full title, year, publisher and count, the per-file GCD method is num, and ComicInfo Series repeats it on a 44pp file
+I 11014 cv=- gcd=s143636 isbn=- 0.95 | the one 44pp special is the whole of GCD 143636, Boom! Studios 2019-2019, count 1
+
+S 21157 cv=118156 gcd=143502 0.95 | CV 118156 "WWE: NXT Takeover" 2019 Boom (1) and GCD 143502 (Boom! Studios 2019-2019, 1) agree on name, year, publisher and count, and ComicInfo Series repeats it on the 112pp file; the 2018 NXT Takeover one-shots (Redemption, The Blueprint, Proving Ground, Into the Fire) are separate records
+I 11910 cv=- gcd=s143502 isbn=- 0.95 | the one 112pp book is the whole of GCD 143502, Boom! Studios 2019-2019, count 1
+
+S 21151 cv=121729 gcd=151120 0.95 | CV 121729 "WWE Smackdown" 2019 Boom (1) and GCD 151120 "WWE SmackDown" 2019-2019 Boom! Studios ([one-shot] 1) agree on year, publisher and count, the per-file GCD method is num, and a 27pp file with ladder 1 is a one-shot
+I 11911 cv=- gcd=s151120 isbn=- 0.95 | the one 27pp file is the whole of GCD 151120, Boom! Studios 2019-2019, count 1
+
+S 21282 cv=94826 gcd=108235 0.95 | the run wins: CV 94826 "Warlords of Appalachia" 2016 Boom (4) and GCD 108235 (Boom! Studios 2016-2017, 4) agree on publisher, start year and count 4, and a 111pp trade is right for four issues; the 2017 count-1 pair (CV 103125 / GCD 217510) is the trade
+I 10979 cv=- gcd=s217510 isbn=- 0.9 | the book carries the file's (2017) and is GCD 217510 "Warlords of Appalachia" 2017-2017 Boom! Studios count 1
+
+S 21344 cv=126575 gcd=185528 0.95 | CV 126575 "We Served the People: My Mother's Stories" 2020 Archaia (1) and GCD 185528 (Boom! Studios 2020-2020, 1) agree on the full title, year, publisher-family and count, and ComicInfo Publisher says "BOOM! - Archaia"
+I 10983 cv=- gcd=s185528 isbn=- 0.95 | the one 160pp book is the whole of GCD 185528, Boom! Studios 2020-2020, count 1
+
+S 21418 cv=113467 gcd=145933 0.95 | the run wins: CV 113467 "Welcome To Wanderland" 2018 Boom (4) and GCD 145933 (Boom! Studios 2018-2019, 4) agree on publisher, start year and count 4, and a 112pp trade is right for four issues; the 2019 count-1 pair (CV 121403 / GCD 217519) is the trade
+I 10992 cv=- gcd=s217519 isbn=- 0.9 | the book carries the file's (2019) and is GCD 217519 "Welcome to Wanderland" 2019-2019 Boom! Studios count 1
+
+S 21449 cv=115095 gcd=180359 0.95 | CV 115095 "Wet Hot American Summer" 2018 Boom (1) and GCD 180359 (Boom! Studios 2018-2018, 1) agree on name, year, publisher and count, and ComicInfo Series repeats it on the 140pp file
+I 10993 cv=- gcd=s180359 isbn=- 0.95 | the one 140pp book is the whole of GCD 180359, Boom! Studios 2018-2018, count 1
+
+S 21537 cv=92582 gcd=- 0.9 | one leg plus our own naming and year: CV 92582 "What Is It?" 2016 Boom (1) is the only record of that title in either provider and matches the single 55pp file and its (2016); a direct GCD probe returns 0 hits and the dump's only near-name is Drawn & Quarterly's "What It Is"
+F 21537 provider-missing | GCD holds no BOOM "What Is It?" row
+
+S 21577 cv=52439 gcd=217067 0.95 | CV 52439 "Where's My Shoggoth?" 2012 Archaia (1) and GCD 217067 (Archaia Studios Press 2012-2012, 1) agree on name, year, publisher and count, and 46pp is right for a picture book
+I 11000 cv=- gcd=s217067 isbn=- 0.95 | the one 46pp book is the whole of GCD 217067, Archaia Studios Press 2012-2012, count 1
+
+S 21642 cv=125801 gcd=158158 0.95 | the run wins: CV 125801 "Wicked Things" 2020 Boom (6) and GCD 158158 (Boom! Studios 2020-2020, 6) agree on publisher, year and count 6, and a 161pp trade is right for six issues; ComicInfo Publisher "BOOM! Box" fits, and the 2021 count-1 pair (CV 135401 / GCD 171818) is the trade
+I 11001 cv=- gcd=s171818 isbn=- 0.9 | the book carries the file's (2021) and is GCD 171818 "Wicked Things" 2021-2021 Boom! Studios count 1
+
+S 21760 cv=115773 gcd=142377 0.95 | the run wins: CV 115773 "Wizard Beach" 2018 Boom (5) and GCD 142377 (Boom! Studios 2018-2019, 5) agree on publisher, start year and count 5, and a 127pp trade is right for five issues; the 2019 count-1 pair (CV 121878 / GCD 182496) is the trade
+I 11006 cv=- gcd=s182496 isbn=- 0.9 | the book carries the file's (2019) and is GCD 182496 "Wizard Beach" 2019-2019 Boom! Studios count 1
+
+S 21953 cv=126576 gcd=162764 0.95 | CV 126576 "Wonder Pony" 2020 Boom (1) and GCD 162764 (Boom! Studios 2020-2020, 1) agree on name, year, publisher and count, and ComicInfo Series repeats it on the 109pp file
+N 21953 GCD 198355 "Wonder Pony" Editions Jungle 2018 is the French original this BOOM edition translates
+I 11007 cv=- gcd=s162764 isbn=- 0.95 | the one 109pp book is the whole of GCD 162764, Boom! Studios 2020-2020, count 1
+
+S 22208 cv=24020 gcd=18553 0.95 | the run wins: CV 24020 "X Isle" 2006 Boom (5) and GCD 18553 "X Isle" 2006-2007 Boom! Studios (5) agree on publisher, start year and count 5, and a 126pp COL file is right for five issues; the per-file CV leg 57245 is the 2007 count-1 trade record
+I 11034 cv=- gcd=s53735 isbn=- 0.9 | the book carries the file's (2007) and is GCD 53735 "X Isle" 2007-2007 Boom! Studios count 1
+
+S 22776 cv=154596 gcd=205502 0.95 | the run wins: CV 154596 "Zawa + The Belly of the Beast" 2023 Boom (5) and GCD 205502 (Boom! Studios 2023-2024, 5) agree on publisher, start year and count 5, and a 148pp trade is right for five issues; GCD 216904 (2024, 1) is the trade
+I 11035 cv=- gcd=s216904 isbn=- 0.9 | the book carries the file's (2024) and is GCD 216904 "Zawa + the Belly of the Beast" 2024-2024 Boom! Studios count 1
+
+S 571 cv=37782 gcd=6986 0.95 | CV 37782 "Alan Moore's Songbook" 1998 Caliber Comics (1) and GCD 6986 (Caliber Press 1998-1998, 1) agree on name, year, publisher and count, and the single 68pp file is that book
+I 11043 cv=- gcd=s6986 isbn=- 0.95 | the one 68pp book is the whole of GCD 6986, Caliber Press 1998-1998, count 1
+
+S 18664 cv=123316 gcd=160662 0.95 | CV 123316 "The Geek of the Gods" 2019 Caliber Comics (1) and GCD 160662 (Caliber Press 2020-2020, 1) are each the only record of that name in their source and agree on publisher and count 1; ComicInfo Publisher says "Caliber Comics" and the one-year drift is cover-date drift
+I 11044 cv=- gcd=s160662 isbn=- 0.95 | the one 101pp book is the whole of GCD 160662, Caliber Press, count 1
+
+S 19807 cv=97771 gcd=- 0.9 | one leg plus the collection's own assertion: CV 97771 "The Tower of the Comic Book Freaks" 2017 Caliber Comics (1) matches the single 269pp file, its (2017) and ComicInfo Publisher "Caliber Comics"; direct GCD and rip probes both return 0 hits
+F 19807 provider-missing | GCD holds no "The Tower of the Comic Book Freaks" row
+
+S 4459 cv=110947 gcd=- 0.9 | the run wins on one leg: CV 110947 "Cursed Land" 2018 Caliber Comics (3) is the three-issue run our "COL Cursed Land v01" collects, and the STORED link 117115 is the same-title 2019 count-1 record; GCD holds only that trade row (143833) and no three-issue series
+F 4459 wrong-cv-link | stored cv 117115 "Cursed Land" 2019 Caliber Comics count 1 is the collected edition; the run is cv 110947 count 3
+F 4459 provider-missing | GCD indexes the Cursed Land collection but not the 2018 three-issue run
+I 11912 cv=- gcd=s143833 isbn=- 0.9 | the book is the collection GCD 143833 "Cursed Land" 2019-2019 Caliber Press count 1
+
+S 5390 cv=130698 gcd=198214 0.95 | CV 130698 "Descent Into Dread" 2020 Caliber Comics (1) and GCD 198214 "Descent into Dread" 2020-2020 Caliber Press (1) agree on name, year, publisher and count, and ComicInfo Series / Publisher repeats it on the 105pp horror anthology
+I 11913 cv=- gcd=s198214 isbn=- 0.95 | the one 105pp anthology is the whole of GCD 198214, Caliber Press 2020-2020, count 1
+
+S 10807 cv=119920 gcd=- 0.9 | the run wins on one leg: CV 119920 "Live Die Reload" 2019 Caliber Comics (5) is the five-issue run our 134pp "COL Live Die Reload v01" collects, and the STORED link 120312 is the same-year count-1 record; GCD holds only that trade row (149307)
+F 10807 wrong-cv-link | stored cv 120312 "Live Die Reload" 2019 Caliber Comics count 1 is the collected edition; the run is cv 119920 count 5
+F 10807 provider-missing | GCD indexes the collection but not the five-issue run
+I 11914 cv=- gcd=s149307 isbn=- 0.9 | the book is the collection GCD 149307 "Live Die Reload" 2019-? Caliber Press count 1
+
+S 17077 cv=128215 gcd=- 0.9 | one leg plus the collection's own assertion: CV 128215 "Sunshine Doom 1971" 2020 Caliber Comics (1) is the only record of that name in either provider, and it matches the single 106pp file, its (2020) and ComicInfo Publisher "Caliber Comics"; a direct GCD probe returns 0 hits
+F 17077 provider-missing | GCD holds no "Sunshine Doom 1971" row
+
+R 19984 | ten files, ten separate Caliber one-shots adapting one Lovecraft story each, and GCD holds a row per ORIGINAL one-shot while nothing in either provider spans ten: The Alchemist (CV 46475 / GCD 39923), Beyond the Wall of Sleep (GCD 39920), The Lurking Fear (CV 46543 / GCD 39922), The Tomb (CV 46607 / GCD 39921), The Music of Erich Zann (CV 46503 / GCD 39763), Arthur Jermyn (GCD 39770), Dagon (GCD 39772), The Statement of Randolph Carter (CV 46525 / GCD 10488), The Picture in the House (CV 42591 / GCD 39766); the per-file CV leg 102463 "H.P. Lovecraft's Worlds" 2017 Caliber has count 2 against our ladder 1-10, the cheapest mis-link test there is
+F 19984 split-needed | one shelf per story, as both providers index them; the 01-10 numbering is Caliber's 2014 digital re-release order, not a series both providers hold
+I 11046 cv=- gcd=s39923 isbn=- 0.95 | "01 - The Alchemist" is GCD 39923 "Worlds of H. P. Lovecraft: The Alchemist" 1997-1997 Caliber Press count 1
+I 11047 cv=- gcd=s39920 isbn=- 0.95 | "02 - Beyond the Wall of Sleep" is GCD 39920 "Worlds of H. P. Lovecraft: Beyond the Wall of Sleep" 1998-1998 Caliber Press count 1
+I 11048 cv=- gcd=s39922 isbn=- 0.95 | "03 - The Lurking Fear" is GCD 39922 "Worlds of H. P. Lovecraft: The Lurking Fear" 1997-1997 Caliber Press count 1
+I 11049 cv=- gcd=s39921 isbn=- 0.95 | "04 - The Tomb" is GCD 39921 "Worlds of H. P. Lovecraft: The Tomb" 1997-1997 Caliber Press count 1
+I 11050 cv=- gcd=s39763 isbn=- 0.95 | "05 - The Music of Erich Zann" is GCD 39763 "The Worlds of H. P. Lovecraft: The Music of Erich Zann" 1993-1993 Caliber Press count 1
+I 11051 cv=- gcd=s39770 isbn=- 0.95 | "06 - Arthur Jermyn" is GCD 39770 "The Worlds of H. P. Lovecraft: Arthur Jermyn" 1993-1993 Caliber Press count 1
+I 11052 cv=- gcd=s39772 isbn=- 0.9 | "07 - Dagon" (49pp, twice the others) is GCD 39772 "The Worlds of H. P. Lovecraft: Dagon" 1993-1993 Caliber Press, which is count 2
+I 11053 cv=- gcd=s10488 isbn=- 0.95 | "08 - The Statement of Randoph Carter" is GCD 10488 "The Worlds of H.P. Lovecraft: The Statement of Randolph Carter" 1996-1996 Caliber Press count 1
+I 11054 cv=- gcd=s39766 isbn=- 0.95 | "09 - The Picture in the House" is GCD 39766 "The Worlds of H. P. Lovecraft: The Picture in the House" 1993-1993 Caliber Press count 1
+
+S 179 cv=147169 gcd=208285 0.9 | the publisher column is the test for a Cinebook album: CV 147169 "A Christmas Carol: A Ghost Story" 2022 Cinebook (1) and GCD 208285 "A Christmas Carol" [en-gb] Cinebook (1) are the only Cinebook rows of that title in either source, and our single 71pp album matches the one-album-per-file shape; capped because the years differ (CV and the file 2022, GCD 2023) and the GCD row drops the subtitle
+I 11916 cv=- gcd=s208285 isbn=- 0.9 | the one 71pp album is GCD 208285 "A Christmas Carol" [en-gb] Cinebook count 1
+
+S 62304 cv=140428 gcd=191076 0.9 | CV 140428 "Akkad" 2021 Europe Comics (2) and GCD 191076 "Akkad" [en-gb] 2022-2022 (2) agree on count 2 and the English-language edition, and our two files are Book 01 and Book 02; capped because the GCD row carries no publisher at all and its year is a year later than the files'
+
+S 1395 cv=154396 gcd=208284 0.95 | CV 154396 "Asterios: The Minotaur" 2023 Cinebook (1) and GCD 208284 "Asterios the Minotaur" [en-gb] 2023-2023 Cinebook (1) agree on year, publisher and count, and our single 74pp album carries the same year — the publisher column separates it from Splitter's German edition (CV 153632)
+I 11917 cv=- gcd=s208284 isbn=- 0.95 | the one 74pp album is the whole of GCD 208284, Cinebook 2023-2023, count 1
+
+S 2403 cv=152520 gcd=- 0.9 | one leg plus our own ladder: CV 152520 "Before Blake & Mortimer" 2023 Cinebook (2, cached #1-2, ratio 2/2 = 1.00) matches our two files exactly ("001 - The U Ray", "002 - The Fiery Arrow", 58pp each) and their (2023); a direct GCD probe returns 0 hits
+F 2403 provider-missing | GCD indexes Cinebook's main Blake & Mortimer line (48133) but has no "Before Blake & Mortimer" row
+
+S 2591 cv=69985 gcd=57445 0.95 | CV 69985 "Billy & Buddy" Cinebook (9) and GCD 57445 "Billy & Buddy" [en-gb] 2009-? Cinebook ([ongoing series] 9) agree on the exact name, the Cinebook publisher and count 9, and our ladder 1-2, 6, 8-9 sits inside it at ~51pp per album; the GCD per-file method was round2-folder, but name, publisher and count corroborate it independently
+
+S 2734 cv=161377 gcd=217850 0.95 | CV 161377 "Black Mary" 2024 Cinebook (2, ratio 2/2 = 1.00) and GCD 217850 "Black Mary" [en-gb] 2024-2024 Cinebook (2) agree on year, publisher and count 2, our ladder is exactly 1-2, and ComicInfo Publisher says Cinebook — the Splitter/Glénat rows are the German and French editions
+
+S 17899 cv=56474 gcd=3890 0.95 | the file's own year decides the edition: "The Adventures of Blake and Mortimer 001 (1989) - The Time Trap" (64pp) matches CV 56474 (Catalan Communications 1989, 2) and GCD 3890 (Catalan Communications 1989-1990, 2), which agree on publisher, years and count 2 — not Cinebook's later 30-album line (CV 26988 / GCD 48133)
+N 17899 the file sits in a Cinebook folder but is Catalan Communications' 1989 English edition; the publisher column is the only test
+
+S 4983 cv=48214 gcd=65199 0.95 | CV 48214 "Darwin's Diaries" 2011 Cinebook (3, cached #1-3) and GCD 65199 "Darwin's Diaries" [en-gb] 2011-? Cinebook (3) agree on year, publisher and count 3, our three COL albums are v01-v03 at 58pp each, and ComicInfo Series / Publisher repeats it
+
+S 6128 cv=161559 gcd=213618 0.9 | CV 161559 "Emilie's Inheritance" 2024 Cinebook and GCD 213618 "Emilie's Inheritance" [en-gb] 2024-? Cinebook agree on year and publisher, and our two albums are #1 and #2 of that line; capped because the counts disagree (CV 2, GCD 4) — CV's 2 is exactly our holdings, GCD's 4 the fuller line
+
+S 8239 cv=98923 gcd=179495 0.95 | a re-probe on the abbreviation found the second leg: GCD 179495 "HSE" 2020-2020 Cinebook (3) is the English edition our three "HSE - Human Stock Exchange 001-003" files are, and CV 98923 "Human Stock Exchange" 2017 Europe Comics (3, cached #1-3, ratio 3/3 = 1.00) agrees on count 3 and the English digital edition; GCD 132154 "HSE" Dargaud (3) is the French original
+N 8239 the packet's dump lookup probed only the long English title and found nothing; "HSE" is the spelling GCD files it under
+
+S 11052 cv=119110 gcd=- 0.9 | one leg plus our own naming: CV 119110 "Lucky Luke Saddles Up" 2019 Europe Comics (1) is the only record of that title in either provider, and our single 65pp file is tagged "(Europe Comics)" with the same year; a direct GCD probe returns 0 hits
+F 11052 provider-missing | GCD holds no "Lucky Luke Saddles Up" row; its Lucky Luke rows are all album lines in other languages
+
+S 11054 cv=121268 gcd=149589 0.9 | CV 121268 "Lucky Luke: The Complete Collection" 2019 Cinebook and GCD 149589 "Lucky Luke - The Complete Collection" [en-gb] 2019-? Cinebook agree on the full name, year and publisher, and our two COL volumes (214pp, 218pp) are v01 and v02 of it; capped because the counts disagree (CV 5, GCD 6) and because a Complete Collection is a reprint line over Cinebook's 83-album Lucky Luke rather than a run
+N 11054 the material inside is Cinebook's "Lucky Luke" album line, CV 48134, 83 albums
+
+S 12783 cv=150657 gcd=202796 0.95 | CV 150657 "Neptune" 2023 Cinebook (2, cached #1-2, ratio 2/2 = 1.00) and GCD 202796 "Neptune" [en-gb] 2023-? Cinebook (2) agree on year, publisher and count 2, and our two "Episode 01/02" files at 66pp each are those two albums; the third file is the run's OWN collection (133pp = both episodes), which costs nothing
+N 12783 the collected file sits under ComiXology Originals\Neptune (2024) while the two albums sit under Cinebook — one comic, two folders
+
+S 16315 cv=52103 gcd=57408 0.95 | CV 52103 "Spirou & Fantasio" 2009 Cinebook (20) and GCD 57408 "Spirou & Fantasio" [en-gb] 2009-? Cinebook (22) agree on the exact name, the Cinebook publisher and the 2009 start, and our eighteen files are Cinebook albums 001-018; the parsed ladder (5-8, 12, 15-16, 33-43) is the ORIGINAL Dupuis album number in each filename's parentheses, not a Cinebook coordinate, and GCD's 22 against CV's 20 is staleness on an open-ended line
+S 16313 cv=52103 gcd=57408 0.9 | the same Cinebook line: this shelf holds one file, "Spirou & Fantasio 017 (012) - The Marsupilamis' Nest", split off from S16315 by the parenthetical original-album number in its name; ComicInfo Series "Spirou & Fantasio" / Publisher "Cinebook" places it in CV 52103 / GCD 57408
+F 16313 merge-with=16315 | one Cinebook album line, two shelves — the "(012)" in this filename parsed as a different key from its seventeen siblings
+
+S 63633 cv=140231 gcd=179531 0.9 | CV 140231 "Texas Jack" 2021 Cinebook (2) and GCD 179531 "Texas Jack" [en-gb] 2021-2021 (2) agree on year, the English edition and count 2, and our one file is "Book 01" of that two-book line; capped because the GCD row carries no publisher and we hold only one of the two
+
+S 20878 cv=48628 gcd=57407 0.9 | CV 48628 "Valerian and Laureline" 2010 Cinebook (23) and GCD 57407 "Valerian and Laureline" [en-gb] 2010-2019 Cinebook (23) agree on the exact name, publisher, start year and count 23, and the per-file GCD method is num on 24 of 25 files; capped because our ladder reaches 24 — one past both counts — and because #1 is present twice (the standard rip and an "Extended Version")
+N 20878 GCD 127475 "Valerian and Laureline" [en-gb] 2018-? Cinebook count 1 may be where album 24 ("Where Stories Are Born", 2023) belongs
+
+S 10300 cv=125834 gcd=157836 0.95 | CV 125834 "Kevin Eastman's Totally Twisted Tales" 2020 Clover Press (1) and GCD 157836 (Clover Press 2020-2020, 1) agree on the full name, year, publisher and count, and the single 94pp file is that book
+I 11454 cv=- gcd=s157836 isbn=- 0.95 | the one 94pp book is the whole of GCD 157836, Clover Press 2020-2020, count 1
+
+S 19666 cv=125984 gcd=158272 0.95 | CV 125984 "The Spirit: An 80th Anniversary Celebration" 2020 Clover Press (1) and GCD 158272 (Clover Press 2020-2020, 1) agree on the full name, year, publisher and count, and ComicInfo Series / Publisher repeats it on the 82pp file
+I 11455 cv=- gcd=s158272 isbn=- 0.95 | the one 82pp book is the whole of GCD 158272, Clover Press 2020-2020, count 1
+
+S 5986 cv=99859 gcd=112950 0.95 | CV 99859 "Eartha" 2017 Fantagraphics (1) and GCD 112950 "Eartha" 2017-2017 Fantagraphics (1) agree on name, year, publisher and count, and the single 258pp file is that book — the publisher column says Fantagraphics even though the file sits in the ComiXology Originals folder
+I 11516 cv=- gcd=s112950 isbn=- 0.95 | the one 258pp book is the whole of GCD 112950, Fantagraphics 2017-2017, count 1
+
+S 130 cv=129844 gcd=190229 0.9 | the ComiXology split: CV 129844 "Forty Seconds" 2020 Jeremy Haun (5) is the digital serial under the creator's imprint that ComicInfo Publisher "Jeremy Haun" names, and GCD holds only Dark Horse's print repackaging, 190229 "40 Seconds" 2022 (1); the two files are the same ~120pp book ripped twice under the two spellings of its title, not two comics
+N 130 the per-file CV leg 135362 "40 Seconds" 2021 Dark Horse count 1 is the print collection, not the serial
+
+S 418 cv=136873 gcd=182823 0.9 | the ComiXology split: CV 136873 "Adora and the Distance" 2021 Dazzling Urbanite (1) matches ComicInfo Publisher "Dazzling Urbanite" and the file's (2021), and GCD holds only Dark Horse's print repackaging, 182823 "Adora and the Distance" 2022 (1)
+
+S 324 cv=122565 gcd=169115 0.9 | the ComiXology split: CV 122565 "AFTERLIFT" 2019 JAMS + JELLIES (5) is the five-part digital serial (ComicInfo Series "AFTERLIFT", Publisher "Zdarsco, Inc.") that our 125pp file collects, and GCD holds only Dark Horse's print repackaging, 169115 "Afterlift" 2021 (1)
+
+S 1362 cv=111306 gcd=- 0.9 | the run wins on one leg: CV 111306 "Ask For Mercy: The Key To Forever" 2018 Comicraft (6) is the six-part digital serial our 156pp "Book 01" collects, ComicInfo Publisher says Comicraft, and CV 118833 (2019, count 1) is that book's own trade record; GCD holds no per-season row
+F 1362 provider-missing | GCD's only Ask for Mercy row is 199369, Dark Horse 2023-?, count 2 — a print repackaging that spans seasons and cannot be assigned to one of them
+N 1362 the Ask For Mercy seasons are CV 111306 (S1, 6) · 120233 (S2 "The Center of Everything That Is", 5) · 129417 (S3 "World of Disquiet", 6) · 146096 (S4, 6), each with a count-1 trade record beside it
+
+S 1364 cv=129417 gcd=- 0.9 | the run wins on one leg: our file is "Book 03 - World of Disquiet" (143pp) and CV 129417 "Ask For Mercy Season Three: World of Disquiet" 2020 Comicraft (6) is the six-part serial it collects; CV 136542 (2021, count 1) is the trade record of that same book, and GCD has no per-season row
+F 1364 provider-missing | GCD indexes only Dark Horse's spanning "Ask for Mercy" (199369)
+
+S 1365 cv=120233 gcd=- 0.9 | the run wins on one leg: our file is "Book 02 - The Heart of the Earth" (138pp) and Season Two's serial is CV 120233 "Ask For Mercy Season Two: The Center of Everything That Is" 2019 Comicraft (5); the per-file leg 127940 is the same season's count-1 trade record, which carries our book's exact subtitle
+F 1365 provider-missing | GCD indexes only Dark Horse's spanning "Ask for Mercy" (199369)
+N 1365 CV names the Season Two serial and its trade differently ("The Center of Everything That Is" vs "The Heart of the Earth"); the trade's title is the one on our file
+
+S 1366 cv=118832 gcd=- 0.9 | one leg plus our own naming: CV 118832 "Ask For Mercy: Ask For Budgie" 2019 Comicraft (1) matches our single 27pp one-shot, its (2019) and ComicInfo Series repeating the title; the "ladder 2" is the reading-order prefix in the filename
+F 1366 provider-missing | GCD indexes only Dark Horse's spanning "Ask for Mercy" (199369)
+
+S 1412 cv=137826 gcd=189070 0.9 | the ComiXology split and a sequel residue: CV 137826 "Astonishing Times" 2021 self published (5, cached #1-2) is the digital serial our v01 collects and ComicInfo Publisher "Frank Barbiere" names it, and GCD holds only Dark Horse's print repackaging 189070 (2022, 1); capped because the second file, "v02 - Rise of the Kokin" (2024), collects a separate later series (CV 162051)
+
+S 1854 cv=144158 gcd=201905 0.9 | the run wins: CV 144158 "Barnstormers" 2022 Best Jackett Press (5) is the ComiXology serial our 142pp file collects, and GCD 201905 "Barnstormers" 2023 Dark Horse (3) is its print repackaging; the STORED link 138684 is Insight Comics' 2021 "Barnstormers!", a different publisher's book
+F 1854 wrong-cv-link | stored cv 138684 "Barnstormers!" 2021 Insight Comics count 1 is an Insight Editions title (GCD 175748), not the Best Jackett comic
+
+S 11300 cv=146066 gcd=203385 0.9 | the ComiXology split: CV 146066 "Beatrix Rose: Vigilante" 2021 Unputdownable Limited (5) matches ComicInfo Series "Mark Dawson's Beatrix Rose: Vigilante (Comixology Originals)" / Publisher "Unputdownable Limited", and GCD holds only Dark Horse's print repackaging 203385 (2023, 1) that our 118pp COL file is
+
+S 2787 cv=154380 gcd=218314 0.9 | the ComiXology split: CV 154380 "Black Sight" 2023 Stephanie Phillips (5, cached #1-1) is the digital serial our 121pp "COL Black Sight v01" collects, and GCD holds only Dark Horse's print repackaging 218314 (2024, 1)
+
+S 2936 cv=146253 gcd=209480 0.9 | the ComiXology split: CV 146253 "Blood Oath" 2021 New Wave Comics (5) matches ComicInfo Series "Blood Oath (Comixology Originals)" / Publisher "New Wave Comics", and GCD holds only Dark Horse's print repackaging 209480 (2024, 1)
+
+S 3093 cv=146095 gcd=- 0.9 | one leg plus the collection's own assertion: CV 146095 "Book of Evil" 2022 Best Jackett Press (4, cached #1-1) matches ComicInfo Series "Book of Evil (Comixology Originals)" / Publisher "Best Jackett Press" and our 167pp COL file; GCD's only Book of Evil row is Splitter's 2024 German edition
+F 3093 provider-missing | GCD has no English "Book of Evil" row, only 211459 (Splitter, German)
+
+S 3285 cv=154379 gcd=219151 0.9 | the ComiXology split: CV 154379 "By a Thread" 2023 Best Jackett Press (4, cached #1-1) is the digital serial our 122pp "COL By a Thread v01" collects, and GCD holds only Dark Horse's print repackaging 219151 (2024, 1)
+
+S 3308 cv=128835 gcd=181212 0.9 | the ComiXology split: CV 128835 "CREMA" 2020 self published (1) matches the single 50pp file and its (2020), and GCD holds only Dark Horse's print repackaging 181212 "Crema" (2022, 1)
+
+S 3715 cv=146116 gcd=213765 0.9 | the ComiXology split: CV 146116 "Census" 2021 Dazzling Urbanite (5, cached #1-1) is the digital serial our 108pp "COL Census Vol. 01" collects, and GCD holds only Dark Horse's print repackaging 213765 (2024, 1)
+
+S 3946 cv=139529 gcd=205795 0.9 | the ComiXology split: CV 139529 "Clear" 2021 Best Jackett Press (6) matches ComicInfo Series "Clear" / Publisher "Best Jackett Press" and is the serial our 137pp COL file collects; GCD holds only Dark Horse's print repackaging — 197452 (2023, 3 issues) and its collected edition 205795 (2023, 1), which is what our single book is
+
+S 4029 cv=157461 gcd=- 0.9 | one leg plus our own naming: CV 157461 "Cold Hard Cash" 2024 Comixology (5, cached #1-1) is the digital serial our 111pp "COL Cold Hard Cash v01 - A Martha Chainey Escapade" collects, and the filename and folder both carry 2024
+F 4029 provider-missing | GCD holds no "Cold Hard Cash" row of any kind
+
+S 4030 cv=142949 gcd=202604 0.9 | the ComiXology split: CV 142949 "Cold Iron" 2022 Final Form (4) matches our four single issues with ladder 1-4, and GCD holds only Dark Horse's print repackaging 202604 (2023, 1)
+
+S 5352 cv=146267 gcd=177040 0.9 | the file, not the shelf name, decides: our single 129pp file is "Delver - Season 02 (2021)" and CV 146267 "Delver Season Two" 2022 Iron Circus Comics (1) is that book, while the STORED link 121599 is Delver Season One; GCD holds only Dark Horse's two-volume print repackaging 177040 (2021-?)
+F 5352 wrong-cv-link | stored cv 121599 "Delver Season One" 2019 Iron Circus Comics count 1 is the previous season; the file is Season 02
+N 5352 the underlying serial is CV 117209 "Delver" 2019 Iron Circus Comics, 5 issues
+
+S 5768 cv=137522 gcd=194409 0.9 | the ComiXology split: CV 137522 "Double Walker" 2021 self published (1) matches ComicInfo Series "Double Walker" / Publisher "Michael Conrad" and the file's (2021), and GCD holds only Dark Horse's print repackaging 194409 (2022, 1)
+
+S 5788 cv=122240 gcd=177467 0.9 | the ComiXology split: CV 122240 "Dracula: Son of the Dragon" 2019 Sablevision (1) matches ComicInfo Series / Publisher "Sablevision" and the file's (2019), and GCD holds only Dark Horse's print repackaging 177467 (2021, 1)
+
+S 5889 cv=152153 gcd=221879 0.9 | the ComiXology split: CV 152153 "Duck and Cover" 2023 Best Jackett Press (4, cached #1-1) is the serial our judged #1-4 book collects, and GCD holds only Dark Horse's print repackaging — 215087 (2024-?, 3 issues) and the collected 221879 (2025, 1), which is what our single 112pp book is
+N 5889 Cat-Head Comics' 1988 "Duck & Cover" (CV 53979 / GCD 40970) is a different comic that shares the name
+
+S 5895 cv=144160 gcd=216930 0.9 | the ComiXology split: CV 144160 "Dudley Datson and the Forever Machine" 2022 Best Jackett Press (5, cached #1-1) is the serial our judged #1-5 book collects, and GCD holds only Dark Horse's print repackaging — 211344 (2024, 3) and the collected 216930 (2024, 1), which is what our 119pp book is
+
+S 6034 cv=130295 gcd=188482 0.9 | the run wins inside the ComiXology split: CV 130295 "Edgeworld" 2020 Wimzi, Inc. (6) is the digital serial our 137pp "COL Edgeworld v01 - A Little Chaos in Your Life" collects (the per-file leg 135649 is that book's own count-1 record), ComicInfo Publisher says "Wimzi, Inc.", and GCD holds only Dark Horse's print repackaging 188482 (2022-?, 2)
+F 6034 merge-with=6033 | the Edgeworld serial sits on its own shelf: S6033 already stores cv 130295, so that shelf and this collected volume are one comic and the resolve merges them — declared rather than left to happen silently
+
+S 6083 cv=134358 gcd=- 0.9 | one leg plus our own ladder: CV 134358 "Elephantmen 2259" 2021 Comicraft (cached #6-8) matches our three single issues #6, #7 and #8 and ComicInfo Series "Elephantmen 2259" / Publisher "Comicraft"; GCD indexes only Image's original Elephantmen and Dark Horse's 2261 omnibus, nothing for 2259
+F 6083 provider-missing | GCD has no Elephantmen 2259 row
+N 6083 the fourth file, "COL Elephantmen - 2259 v01 - Manmade Monsters", is CV 135799 "Elephantmen 2259: Manmade Monsters" 2021 Comicraft — the run's own trade
+
+S 6085 cv=115880 gcd=- 0.9 | one leg plus our own naming and year: CV 115880 "Elephantmen 2261: Holiday Special" 2018 Comicraft (1, ratio 1/1 = 1.00) matches the single 37pp file, its (2018) and ComicInfo Series repeating the full title; the "ladder 2261" is the year in the title read as an issue number
+F 6085 provider-missing | GCD has no Elephantmen 2261 Holiday Special row
+
+R 6088 | two files, two different arcs, and ComicVine mints a volume per arc with nothing spanning them: "Vol. 01 - The Death of Shorty" collects CV 111307 (2018 Comicraft, 5, no CvVolume row) and "Vol. 02 - The Pentalion Job" collects CV 118678 (2019 Comicraft, 4); each also has its own count-1 trade record (118677 and 122573), and the only GCD row for the title is Dark Horse's later omnibus 200617
+F 6088 split-needed | proposed runs: Elephantmen 2261: The Death of Shorty = cv 111307 (item 11530) · Elephantmen 2261: The Pentalion Job = cv 118678 (item 11531)
+F 6088 needs-fetch cv=111307 | the Death of Shorty volume has no CvVolume row — named from the local ComicVine rip
+
+S 6087 cv=135259 gcd=- 0.9 | one leg plus our own ladder: CV 135259 "Elephantmen 2262: Hip Flask" 2021 Comicraft (4, cached #1-4, ratio 4/4 = 1.00) matches our four single issues 001-004 exactly, and ComicInfo Series repeats the full title on all four
+F 6087 provider-missing | GCD has no Elephantmen 2262 row
+
+S 6173 cv=162441 gcd=- 0.9 | one leg plus our own ladder: CV 162441 "Endless" 2024 Curt Pires (5, cached #1-5, ratio 5/5 = 1.00) matches our five single issues 001-005 and their (2024); neither the v1 search nor the rip names any other volume
+F 6173 provider-missing | GCD holds no 2024 "Endless" row
+
+S 6648 cv=121293 gcd=- 0.9 | one leg plus the collection's own assertion: CV 121293 "Field Tripping" 2019 Future Skeletons (2) matches ComicInfo Series "Field Tripping" / Publisher "James Asmus" and our 128pp collected file; CV 143031 is the same title at count 1, the trade record
+F 6648 needs-fetch cv=121293 | right id, no CvVolume row — named from the local ComicVine rip
+F 6648 provider-missing | GCD holds no "Field Tripping" row
+
+S 7053 cv=129224 gcd=193733 0.9 | the run wins inside the ComiXology split: CV 129224 "Funny Creek" 2020 Stout Club (5) is the digital serial our 138pp COL file collects, ComicInfo Publisher says "Stout Club", and GCD holds only Dark Horse's print repackaging 193733 (2022, 1); capped because ComicVine mints TWIN volumes for this serial (129224 and 129225, both Stout Club 2020 count 5) and twin count-1 trade records (131303, 131304)
+
+S 7767 cv=112399 gcd=- 0.9 | the run wins on one leg: CV 112399 "Goliath Girls" 2018 Shadow Valley (5) is the digital serial our 139pp file collects and ComicInfo Publisher says "Shadow Valley"; capped because ComicVine mints TWIN volumes for it (112399 and 112400, both count 5) and twin count-1 trade records (136296, 136297 — the per-file leg)
+F 7767 provider-missing | GCD holds no "Goliath Girls" row
+
+S 7825 cv=156400 gcd=- 0.9 | one leg plus our own ladder: CV 156400 "Grammaton Punch" 2023 Comixology (5) matches our five single issues 001-005 with ladder 1-5 and ComicInfo Series "Grammaton Punch" / Publisher "Miles Gunter"
+F 7825 provider-missing | GCD holds no "Grammaton Punch" row
+
+S 7850 cv=112401 gcd=- 0.9 | one leg plus our own ladder: CV 112401 "Grave Danger" 2018 Comix AF (5, cached #1-4) matches our four single issues 001-004 and their (2018); neither the v1 search nor the rip names any other volume
+F 7850 partial-rip | the shelf holds #1-4 of a five-issue serial (ratio 4/5 = 0.80); #5 is missing
+F 7850 provider-missing | GCD holds no "Grave Danger" row
+
+S 8268 cv=135977 gcd=202174 0.9 | the ComiXology split: CV 135977 "Hailstone" 2021 Stout Club (5) matches our five single issues, every filename says "(of 05)", ComicInfo Publisher says "Stout Club", and GCD holds only Dark Horse's print repackaging 202174 (2023, 1); capped because ComicVine mints a TWIN volume 135976, identical in name, year, publisher and count
+
+S 8332 cv=158154 gcd=- 0.9 | one leg plus our own naming and year: CV 158154 "Hard Style Juice" 2024 Comixology (5) is the digital serial our 122pp file collects, and the folder and filename both say 2024
+F 8332 provider-missing | GCD holds no "Hard Style Juice" row
+
+S 8927 cv=112403 gcd=- 0.9 | one leg plus our own naming and year: CV 112403 "Hit Reblog: Comics That Caught Fire" 2018 Bedside Press (1) is the only record of that title in either provider and matches the single 132pp file and its (2018)
+F 8927 provider-missing | GCD holds no "Hit Reblog" row
+
+S 9357 cv=123750 gcd=183336 0.9 | the ComiXology split: CV 123750 "In The Flood" 2019 Piper Snow Productions (1) matches ComicInfo Series "In the Flood" / Publisher "Piper Snow Productions" and the file's (2019), and GCD holds only Dark Horse's print repackaging 183336 (2022, 1)
+
+S 10740 cv=122724 gcd=186605 0.9 | the ComiXology split: CV 122724 "Liebestrasse" 2019 self published (1) matches ComicInfo Series "Liebestrasse" / Publisher "Greg Expectations, LLC" and the file's (2019), and GCD holds only Dark Horse's print repackaging 186605 (2022, 1)
+
+S 10969 cv=138002 gcd=200382 0.9 | the ComiXology split with a season residue: CV 138002 "Lost Falls" 2021 self published (4, cached #1-4) matches our four single issues 001-004 and ComicInfo Publisher "Curt Pires", and GCD holds only Dark Horse's print repackaging 200382 (2023, 1); capped because the fifth file, "Lost Falls Season 02 (2024)" (121pp), collects a later season and is a different comic
+
+S 10972 cv=126361 gcd=174653 0.9 | the run wins inside the ComiXology split: CV 126361 "Lost on Planet Earth" 2020 Death Rattle (5) is the serial our 129pp file collects (the STORED link 130640 is the same title at count 1, the trade), ComicInfo Publisher says "Death Rattle", and GCD holds only Dark Horse's print repackaging 174653 (2021, 1)
+F 10972 wrong-cv-link | stored cv 130640 "Lost On Planet Earth" 2020 Death Rattle count 1 is the collected edition; the serial is cv 126361 count 5
+
+S 11019 cv=158457 gcd=189384 0.9 | the ComiXology split: CV 158457 "Love and War" 2021 Comixology (5, cached #1-5, ratio 5/5 = 1.00) matches our five single issues 001-005, and GCD holds only Dark Horse's print repackaging 189384 (2022, 1)
+
+S 11910 cv=140365 gcd=203785 0.9 | the collection's own assertion decides it: ComicInfo Series "Memoria" / Publisher "Curt Pires" on the single 132pp (2021) file matches CV 140365 "Memoria" 2021 self published (1), and GCD holds only Dark Horse's print repackaging 203785 (2023, 1); the per-file CV leg 151549 is Fanfare/Ponent Mon's unrelated "Memoria"
+
+S 12011 cv=157690 gcd=- 0.9 | one leg plus our own naming and year: CV 157690 "Midstate" 2024 Comixology (5, cached #1-1) is the digital serial our 127pp "COL MidState v01" collects, and the folder and filename both say 2024
+F 12011 provider-missing | GCD holds no "Midstate" row
+
+S 12225 cv=159067 gcd=- 0.9 | the run wins on one leg: CV 159067 "Mistland" 2024 Stout Club (5) is the digital serial our 126pp file collects; the per-file leg 162038 is the same title at count 1, that book's own trade record
+F 12225 provider-missing | GCD holds no "Mistland" row
+
+S 12282 cv=155865 gcd=218319 0.9 | the ComiXology split: CV 155865 "Money" 2023 Curt Pires (5, cached #1-1) matches ComicInfo Series "Money (Comixology Originals)" / Publisher "Curt Pires" and our 120psp "COL Money v01", and GCD holds only Dark Horse's print repackaging 218319 (2024, 1)
+
+S 12791 cv=146708 gcd=- 0.9 | one leg plus our own naming and year: CV 146708 "New America" 2022 Curt Pires (3) matches the single 122pp file and its (2022); GCD's only "New America" row is Eclipse's 1987 four-issue series, a different comic
+F 12791 needs-fetch cv=146708 | right id, no CvVolume row — named from the local ComicVine rip
+F 12791 provider-missing | GCD has no 2022 "New America" row
+
+S 12902 cv=156821 gcd=- 0.9 | one leg plus our own naming: CV 156821 "Nice Jewish Boys" 2023 Migdal Comics (5) is the digital serial our 135pp file collects, and the folder says 2023 while the file says 2024
+F 12902 provider-missing | GCD holds no "Nice Jewish Boys" row
+
+S 12930 cv=146118 gcd=212411 0.9 | the ComiXology split: CV 146118 "Night At the Belfry" 2021 Xavier Saxon (1) matches ComicInfo Series "Night at the Belfry (Comixology Originals)" / Publisher "Xavier Saxon", and GCD holds only Dark Horse's print repackaging 212411 (2024, 1)
+
+S 13064 cv=151408 gcd=- 0.9 | one leg plus our own ladder: CV 151408 "Nostalgia" 2023 B2D2 Productions (5, cached #1-4) matches our four single issues 001-004 and ComicInfo Series "Nostalgia" / Publisher "B2D2 Productions"
+F 13064 partial-rip | the shelf holds #1-4 of a five-issue serial (ratio 4/5 = 0.80); #5 is missing
+F 13064 provider-missing | GCD holds no "Nostalgia" row
+
+S 13585 cv=161636 gcd=218648 0.95 | CV 161636 "Parliament of Rooks" 2024 Ablaze (5) and GCD 218648 "Parliament of Rooks" 2024-2025 Ablaze Publishing (5) agree on publisher, year and count 5, and our 206pp softcover collects that five-issue Ablaze printing
+N 13585 CV 156921 "Parliament of Rooks" 2023 Comicraft count 5 is the earlier ComiXology Originals digital serial of the same comic
+
+S 14271 cv=121609 gcd=- 0.9 | the run wins on one leg: CV 121609 "Quarter Killer" 2019 self published (5) is the digital serial our 139pp file collects and ComicInfo Publisher says "Vita Ayala"; CV 126290 (2020, count 1) is that book's own trade record
+F 14271 provider-missing | GCD holds no "Quarter Killer" row
+
+S 14368 cv=159296 gcd=- 0.9 | one leg plus our own naming and year: CV 159296 "Raise Hell" 2024 Comixology (4, cached #1-1) is the digital serial our 150pp "COL Raise Hell v01" collects, and the folder says 2024; GCD's "Raise Hell!" 171378 is a 2020 self-published book by a different creator
+F 14368 provider-missing | GCD has no 2024 Comixology "Raise Hell" row
+
+S 14528 cv=141799 gcd=200782 0.9 | the ComiXology split: CV 141799 "Red Tag" 2022 Stout Club (5) matches our five single issues, every filename says "(of 05)", and GCD holds only Dark Horse's print repackaging 200782 (2023, 1)
+
+S 14612 cv=147086 gcd=- 0.9 | one leg plus our own naming: CV 147086 "Retroverse" 2022 Scorched Earth Productions (5) is the digital serial our 122pp file collects, and the folder says 2022
+F 14612 provider-missing | GCD holds no "Retroverse" row
+
+S 15501 cv=157395 gcd=- 0.9 | one leg plus our own naming and year: CV 157395 "She's Running on Fumes" 2024 Comixology (6) is the digital serial our 152pp file collects, and the folder and filename both say 2024
+F 15501 provider-missing | GCD holds no "She's Running on Fumes" row
+
+S 15669 cv=154381 gcd=221075 0.9 | the ComiXology split: CV 154381 "Simulation Theory" 2023 Curt Pires (5, cached #1-1) is the serial our judged #1-5 book collects, and GCD holds only Dark Horse's print repackaging 221075 (2025, 1)
+
+S 15825 cv=136998 gcd=- 0.9 | one leg plus the collection's own assertion: CV 136998 "Snow Angels Season One" 2021 4Twenty Limited (1, ratio 1/1 = 1.00) matches our single 91pp "Snow Angels, Season 01" file and ComicInfo Series / Publisher "4TWENTY LIMITED"
+F 15825 provider-missing | GCD's Snow Angels rows are Dark Horse's print repackaging (182147, 2 volumes) and its Library Edition (197453), neither of which can be assigned to one season
+S 15826 cv=136999 gcd=- 0.9 | one leg plus the collection's own assertion: CV 136999 "Snow Angels Season Two" 2021 4Twenty Limited (cached #1-6) matches our six single issues 005-010 — the second season's six parts — and ComicInfo Series "Snow Angels Season Two" / Publisher "4TWENTY LIMITED" on all six
+F 15826 provider-missing | as with Season One, GCD holds only Dark Horse's two-volume repackaging 182147 and the Library Edition 197453
+
+S 15842 cv=118454 gcd=- 0.7 | plausible but a real doubt: the v1 leg puts our single 142pp "Socrates (2019)" file on CV 118454 "POLIS: The Trial of Socrates" 2019 Big Things Productions (2), which is the only 2019 Socrates record in either provider — but the titles do not match, that volume has no CvVolume row, its count is 2 against our one book, and GCD has nothing at all
+F 15842 needs-web | is the ComiXology Original "Socrates" (2019, 142pp) the same book as CV 118454 "POLIS: The Trial of Socrates", or a different comic ComicVine does not index?
+
+S 16863 cv=118008 gcd=173836 0.9 | the ComiXology split: CV 118008 "Stone Star" 2019 Swords & Sassery (5, cached #1-1) is the digital serial our 129pp "Vol. 01 - Fight of Flight" collects and ComicInfo Publisher says "Jim Zub", and GCD holds only Dark Horse's print repackaging 173836 (2021-?, 2)
+
+S 17135 cv=111309 gcd=- 0.9 | the run wins on one leg: CV 111309 "Superfreaks" 2018 Big Head Little Arms (5) is the digital serial our 153pp "COL Superfreaks v01 - The New Wave" collects, and the STORED link 112410 is that book's own count-1 record
+F 17135 wrong-cv-link | stored cv 112410 "Superfreaks: The New Wave" 2018 Big Head Little Arms count 1 is the collected edition; the serial is cv 111309 count 5
+F 17135 provider-missing | GCD holds no "Superfreaks" row
+
+S 17763 cv=112412 gcd=- 0.9 | one leg plus our own ladder: CV 112412 "Teenage Wasteland" 2018 Haunted Vault Studios (3, cached #1-3, ratio 3/3 = 1.00) matches our three single issues 001-003 and ComicInfo Series / Publisher "Haunted Vault Studios"
+F 17763 provider-missing | GCD holds no Haunted Vault "Teenage Wasteland" row
+
+S 18111 cv=121406 gcd=171401 0.9 | the ComiXology split: CV 121406 "The Black Ghost" 2019 New Wave Comics (5, cached #1-1) is the digital serial our 134pp "v01 - Hard Revolution" collects and ComicInfo Publisher says "New Wave Comics", and GCD holds only Dark Horse's print repackaging 171401 (2021-?, 2)
+
+S 18331 cv=121748 gcd=179089 0.9 | the collection's own assertion decides among six same-named volumes: ComicInfo Series "The Dark" / Publisher "Sablevision" on the single 126pp (2019) file matches CV 121748 "The Dark" 2019 Sablevision (1), and GCD holds only Dark Horse's print repackaging 179089 (2021, 1)
+
+S 18574 cv=134861 gcd=200380 0.9 | the run wins inside the ComiXology split: CV 134861 "The Final Girls" 2021 Fiction & Feeling (5) is the serial our 159pp file collects (the STORED link 136295 is the same title at count 1, the trade), ComicInfo Publisher says "Fiction & Feeling", and GCD holds only Dark Horse's print repackaging 200380 (2023, 1)
+F 18574 wrong-cv-link | stored cv 136295 "The Final Girls" 2021 Fiction & Feeling count 1 is the collected edition; the serial is cv 134861 count 5
+
+S 19195 cv=143774 gcd=203394 0.9 | the ComiXology split: CV 143774 "The Never Ending Party" 2022 Corallo Publishing (5) matches ComicInfo Series "The Never Ending Party (comiXology Originals)" / Publisher "Corallo Publishing", and GCD holds only Dark Horse's print repackaging 203394 "The Never-Ending Party" (2023, 1)
+
+S 19328 cv=144498 gcd=192605 0.9 | the ComiXology split: CV 144498 "The Panic" 2022 Migdal Comics (5) matches ComicInfo Series "The Panic (Comixology Originals)" / Publisher "Migdal Comics", and GCD holds only Dark Horse's print repackaging 192605 (2022, 1) — the EC-era "Panic" rows are a different comic entirely
+
+S 19685 cv=115279 gcd=184775 0.9 | the ComiXology split: CV 115279 "The Stone King" 2018 self published (4, cached #1-1) is the digital serial our 128pp "Vol. 01" collects and ComicInfo Publisher says "Kel McDonald", and GCD holds only Dark Horse's print repackaging 184775 "Stone King" (2022, 1)
+
+S 20456 cv=122584 gcd=178734 0.9 | the ComiXology split: CV 122584 "Tremor Dose" 2019 Mystery School Comics Group (1) matches ComicInfo Series "Tremor Dose" / Publisher "Michael Conrad" and the file's (2019), and GCD holds only Dark Horse's print repackaging 178734 (2021, 1)
+
+S 20465 cv=- gcd=213155 0.9 | one leg plus the collection's own assertion: GCD 213155 "Trick Pony" 2024-2024 Dark Horse (1) is the print repackaging of this ComiXology Original, whose ComicInfo Publisher is "Greg Expectations, LLC" and whose two files are the same 125pp book ripped twice; ComicVine has no volume for it at all
+F 20465 wrong-cv-link | stored cv 99871 "One Trick Pony" 2017 Harry N. Abrams count 1 is Nathan Hale's unrelated Abrams graphic novel (GCD 115852 / 125788), not this 2023 ComiXology book

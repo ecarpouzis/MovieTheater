@@ -207,8 +207,9 @@ WHERE s.Id NOT IN (SELECT DISTINCT SeriesId FROM SeriesAlias) AND a.SeriesId <> 
         /// <summary>
         /// Move every series-keyed row off the merged-away ids onto their survivor, with the §6.2 collision rules:
         /// links and the series rating keep the SURVIVOR's row, marks OR their flags / keep the higher rating /
-        /// join the notes, tags UNION, and the derived per-issue tables are simply re-keyed (their own jobs
-        /// recompute them). Then append the redirect row. Idempotent: merged-away ids are deleted right after and
+        /// join the notes, tags UNION, and the derived per-issue tables plus the judged `ContainmentFlag` rows are
+        /// simply re-keyed (their own jobs recompute the derived ones; the judgements are kept). Then append the
+        /// redirect row. Idempotent: merged-away ids are deleted right after and
         /// are never reused, and an already-logged `SeriesMerge` row is left alone.
         /// </summary>
         private static int MergeMinorities(TargetWriter hot, Action<string> log)
@@ -250,6 +251,13 @@ WHERE s.Id NOT IN (SELECT DISTINCT SeriesId FROM SeriesAlias) AND a.SeriesId <> 
                 hot.Exec("UPDATE ReadingOrderEntry SET SeriesId = $new WHERE SeriesId = $old", ("$old", oldId), ("$new", newId));
                 hot.Exec("UPDATE CollectionNode SET SeriesId = $new WHERE SeriesId = $old", ("$old", oldId), ("$new", newId));
                 hot.Exec("UPDATE CollectedEditionSpan SET SeriesId = $new WHERE SeriesId = $old", ("$old", oldId), ("$new", newId));
+
+                // ContainmentFlag — a JUDGED fact about an item (the 2026-09-08 containment pass), holding a
+                // RESTRICT foreign key to Series. The rows are never dropped on a merge: the item moves to the
+                // survivor and its judgement moves with it, so this is a plain re-key. No collision is possible —
+                // the table's UNIQUE index is (ItemId, Flag), and an item belongs to ONE shelf, so two shelves
+                // being merged can never hold a flag for the same item.
+                hot.Exec("UPDATE ContainmentFlag SET SeriesId = $new WHERE SeriesId = $old", ("$old", oldId), ("$new", newId));
 
                 hot.Exec("INSERT INTO SeriesMerge (OldSeriesId, NewSeriesId, MergedAt) VALUES ($old, $new, $at) ON CONFLICT(OldSeriesId) DO NOTHING",
                     ("$old", oldId), ("$new", newId), ("$at", TargetWriter.ToDb(DateTime.UtcNow)));

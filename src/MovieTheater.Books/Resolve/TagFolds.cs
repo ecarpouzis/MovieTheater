@@ -82,7 +82,30 @@ namespace MovieTheater.Books.Resolve
             ("dystopia", "Dystopian"),
             ("post-apocalyptic", "Post-Apocalyptic"), ("apocalyptic", "Post-Apocalyptic"),
             ("young adult", "Teen"),
+            // Open Library's own vocabulary for the shelf this library has a lot of and could not see: it spells
+            // it "Erotic fiction" / "Erotic stories" / "Love stories", none of which any keyword above matched,
+            // so an ISBN-identified romance folded to nothing at all.
+            ("erotic", "Erotica"), ("love stories", "Romance"), ("man-woman relationships", "Romance"),
         };
+
+        /// <summary>
+        /// An ISBN reduced to the characters that identify it — digits and a trailing check X. Calibre stores
+        /// them hyphenated (<c>0-00-224616-3</c>) and the Open Library leg stores them bare
+        /// (<c>0002246163</c>), so neither side can be joined to the other as written.
+        /// </summary>
+        public static string? NormalizeIsbn(string? isbn)
+        {
+            if (string.IsNullOrWhiteSpace(isbn)) return null;
+            Span<char> buf = stackalloc char[isbn.Length];
+            var n = 0;
+            foreach (var c in isbn)
+            {
+                if (char.IsAsciiDigit(c)) buf[n++] = c;
+                else if (c is 'x' or 'X') buf[n++] = 'X';
+            }
+            // 10 and 13 are the only real lengths; anything else is a mangled field, not an identifier.
+            return n is 10 or 13 ? new string(buf[..n]) : null;
+        }
 
         public static SortedSet<string> FoldSubjects(string? subjectsJson)
         {

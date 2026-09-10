@@ -1,0 +1,583 @@
+# B-038 — 150 tier-B shelves: the tail of IDW's Star Trek and alphabet folders, then Icon, then Image
+# from '68 to Bingo Love. Same IDW trade trap as B-037 and at the same rate — 39 `wrong-cv-link` lines,
+# every one a same-title COUNT-1 record minted a year after a mini while the run sits one line below it
+# in "CV candidates" with a matching count-N row in the GCD dump.
+#
+# Findings worth the ledger:
+#  (1) **A second 1.0 from a barcode.** S19751's file carries an EAN13 read off the page, 9781631404894,
+#      and GCD issue 2768685 — issue #[1] of series 117236 "The Obscure Cities" (IDW 2016, 128pp), titled
+#      "Theory of the Grain of Sand" — prints exactly that ISBN. That probe also produced a **new instance
+#      of the Cinebook shape inside IDW**: GCD keeps ONE series for IDW's seven-album Obscure Cities line
+#      while ComicVine mints a volume per album (96106 for this one).
+#  (2) **A GCD series can span a shelf ComicVine splits by YEAR.** The X-Files X-Mas Special is one GCD
+#      series 85395 with issues #2014, #2015, #2016 (52pp each), while ComicVine has three count-1 volumes
+#      (79032, 86799, 97086). Per the ledger's Earth-Prime rule the provider that spans the shelf carries
+#      the S line; ComicVine takes `provider-missing`. GCD 98146 does the same for the two X-Files
+#      Deviations one-shots, and 77394 did it for My Little Pony's annuals in B-037.
+#  (3) **Five reprint/edition shelves where the ORIGINAL wins** (the EC-Archives ruling, applied where
+#      BOTH legs hold the original as a discrete series): The Last One (Vertigo 1993, CV 4969 / GCD 4650),
+#      Zero Girl (Vertigo 2000, CV 18563 / GCD 24057), Bang!Tango (Vertigo 2009, CV 25733 / GCD 33888),
+#      100% (Vertigo 2002, CV 19316 / GCD 17577) and Voyage to the Deep (Dell 1962, CV 2074 / GCD 1512).
+#      Each keeps the modern printing on its `I` line. A FACSIMILE of a single issue is NOT this shape —
+#      Star Trek's three facsimile editions keep their own records, with an `N` naming what they reproduce.
+#  (4) **Four shelves are several comics** and take `R` + `split-needed`: The Cape (the 2011 mini's trade
+#      and the 2012 sequel's trade), Astro City (three 2004 one-shots, a 2022 special and a Metrobook),
+#      plus the two-run shape on The Mirror War (capped at 0.9, not split, because one run dominates).
+#  (5) **Reprint-library lines carrying their own S at 0.9 with an `N`**: Star Trek Archives (5 volumes,
+#      GCD page counts within 2-7pp of our rips), Astro City Metrobook, Battle Chasers Anthology (its run
+#      is split Image #1-4 / DC #5-9 / Image, so no single run record) and Battlepug: The Compugdium.
+#  (6) The GCD dump is blind to a cluster of one-book IDW/Image titles — A Land Called Tarot, Batula,
+#      Adrift (Image 2015), Sam Kieth's Maxx Artist's Edition, The Man from the Great North, Star Trek's
+#      Scheimer Barrier, Best of Captain Picard, Captain's Log and TNG: Hive — nine honest
+#      `provider-missing` flags, every one confirmed by a direct probe rather than assumed.
+
+# ── Star Trek (completed / TPBs / one-shots) ─────────────────────────────────────────────────────
+S 16467 cv=144894 gcd=188630 0.95 | the stored link is the run: CV 144894 "Star Trek: Picard - Stargazer" (IDW 2022, 3 issues) and GCD 188630 (IDW 2022, 3) agree on publisher, year and count, and our 87pp 2023 COL file with ComicInfo Series "Star Trek: Picard—Stargazer" is those three issues collected
+F 16467 needs-fetch cv=144894 | CV 144894 has no CvVolume row (it was named from the local rip); Phase C.1 must fetch it or the shelf keeps its parsed-key name
+I 31935 cv=1121470 gcd=2537960 isbn=9781684059706 0.95 | the trade our file rips: GCD issue 2537960 (April 2023, 100pp, ISBN 978-1684059706) against our 87pp, and CV 1121470, the only issue of volume 165677 "Star Trek: Picard - Stargazer" 2023
+
+S 16469 cv=146195 gcd=192405 0.95 | the stored link is the run: CV 146195 "Star Trek: Resurgence" (IDW 2022, 5 issues) and GCD 192405 (IDW 2022-2023, 5) agree on publisher, years and count, and our 116pp 2023 COL file is those five issues collected
+I 31936 cv=1057359 gcd=2567856 isbn=9798887240404 0.95 | the trade our file rips: GCD issue 2567856 (September 2023, 124pp, ISBN 979-8-88724-040-4) against our 116pp, and CV 1057359, the only issue of volume 158338
+
+S 16432 cv=52448 gcd=139919 0.95 | CV 52448 "Star Trek: Romulans Treasury Edition" (IDW 2012, one issue 358998) and GCD 139919 (IDW, September 2012, 76pp against our 72pp rip) agree on name, publisher and year; the treasury format is a genuine one-book record here, like IDW's other Treasury Editions
+I 31937 cv=358998 gcd=1919025 0.95 | the book's own record: GCD issue 1919025 (IDW, September 2012, 76pp) and CV 358998, the only issue of volume 52448 — the treasury our 72pp file rips
+
+S 16471 cv=27126 gcd=39146 0.95 | the RUN wins: CV 27126 and GCD 39146 both hold "Star Trek: Spock: Reflections" as IDW's FOUR-issue 2009 mini, and our 104pp file is those four issues collected; GCD's 2010 row 125943 gives that trade 108pp with ISBN 1600105904
+F 16471 wrong-cv-link | stored CV 79658 "Star Trek: Spock Reflections" 2010 IDW one issue 477641 is the collected edition, not the four-issue 2009 run
+I 31938 cv=477641 gcd=1816566 isbn=9781600105906 0.9 | the trade our file rips: GCD issue 1816566 (IDW, 2010, 108pp, ISBN 1600105904) against our 104pp, and CV 477641, volume 79658's only issue
+
+S 16472 cv=147021 gcd=193937 0.95 | the stored link is the run: CV 147021 "Star Trek: Strange New Worlds - The Illyrian Enigma" (IDW 2022, 4 issues) and GCD 193937 (IDW 2022-2023, 4) agree on publisher, years and count, and our 101pp COL file is those four issues collected
+I 31939 cv=1057362 gcd=2572420 isbn=9798887240398 0.95 | the trade our file rips: GCD issue 2572420 (September 2023, 108pp, ISBN 979-8-88724-039-8) against our 101pp, and CV 1057362, the only issue of volume 158344
+
+S 16404 cv=153202 gcd=203227 0.95 | the stored link is the run: CV 153202 "Star Trek: Strange New Worlds – The Scorpius Run" (IDW 2023, 5 issues) and GCD 203227 (IDW 2023-2024, 5) agree on publisher, years and count, and our 128pp 2024 COL file is those five issues collected
+I 31940 cv=1058977 gcd=2635541 isbn=9798887240756 0.95 | the trade our file rips: GCD issue 2635541 (June 2024, ISBN 979-8-88724-075-6) and CV 1058977, the only issue of volume 158444 "Star Trek: Strange New Worlds – The Scorpius Run" 2024
+
+S 16473 cv=153590 gcd=- 0.9 | CV 153590 "Star Trek: The Animated Celebration Presents The Scheimer Barrier" (IDW 2023, 4 issues, cached #1-4) matches our ladder 1-4 exactly, and all four files carry ComicInfo Series of that same title and Publisher "IDW"; their 7-9pp lengths are the digital-short format
+F 16473 provider-missing | a direct probe of the GCD dump for "Scheimer Barrier" returns nothing — neither the four-part serial nor CV's count-1 collected record 154228 is indexed there
+N 16473 CV 154228 (IDW 2023, one issue 1025354) is the collected edition of these four shorts; we hold the shorts, not that book
+
+S 16474 cv=138813 gcd=175918 0.9 | the dominant run: CV 138813 "Star Trek: The Mirror War" (IDW 2021, 9 issues) and GCD 175918 (IDW 2021-2022, 9) agree on publisher, years and count, and our 193pp "COL 01" file is that run collected; the residue is item 31473, "Warriors of the Mirror War", a DIFFERENT comic (GCD 200884, IDW 2023, count 1) collecting the Mirror War one-shots
+I 31472 cv=1045021 gcd=- 0.9 | the trade our 193pp file rips: CV 1045021, the only issue of volume 156877 "Star Trek: The Mirror War" 2023 — GCD's matching count-1 row 200883 is that same collection
+I 31473 cv=- gcd=s200884 0.9 | the odd book out: GCD series 200884 "Star Trek: Warriors of the Mirror War" (IDW 2023, 1) is our 122pp second file; ComicVine has no volume of that name at all, so only the GCD series can be named
+
+S 16406 cv=150495 gcd=200571 0.95 | the stored link is the run: CV 150495 "Star Trek: The Motion Picture - Echoes" (IDW 2023, 5 issues) and GCD 200571 (IDW 2023, 5) agree on publisher, year and count, and our 137pp 2024 file is those five issues collected
+I 31941 cv=1068306 gcd=2619451 isbn=9798887240763 0.95 | the trade our file rips: GCD issue 2619451 (March 2024, ISBN 979-8-88724-076-3) and CV 1068306, the only issue of volume 159556
+
+S 16408 cv=29865 gcd=46318 0.95 | the RUN wins: CV 29865 and GCD 46318 both hold "Star Trek: The Next Generation: Ghosts" as IDW's FIVE-issue 2009-2010 mini, and our 123pp file is those five issues collected; GCD's 2010 row 162879 is the count-1 collection
+F 16408 wrong-cv-link | stored CV 61028 "Star Trek: The Next Generation: Ghosts" 2010 IDW one issue 401566 is the collected edition, not the five-issue run
+I 31942 cv=401566 gcd=2133633 0.9 | the trade our file rips: GCD issue 2133633 (IDW, June 2010) and CV 401566, the only issue of volume 61028
+
+S 16440 cv=52244 gcd=- 0.9 | CV 52244 "Star Trek: The Next Generation - Hive" (IDW 2012, 4 issues) is the four-issue mini our 106pp 2013 COL file collects — 4 x 24pp plus covers — and it is the only record either provider holds under that name
+F 16440 provider-missing | a direct probe of the GCD dump for "Next Generation Hive" returns nothing; the dump indexes IDW's TNG Omnibus and Ghosts but not Hive in either shape
+
+S 16476 cv=101456 gcd=114202 0.95 | the RUN wins: CV 101456 "Star Trek: Mirror Broken" (IDW 2017, 5) and GCD 114202 (IDW 2017, 5 issues at 32pp, May-October 2017) agree on publisher, year and count, and our 138pp COL file is those five issues collected
+F 16476 wrong-cv-link | stored CV 101284 "Star Trek: The Next Generation: Mirror Broken" 2017 IDW one issue 594560 is the collected edition, not the five-issue run
+I 31944 cv=594560 gcd=1788142 isbn=9781684051458 0.95 | the trade our file rips: GCD issue 1788142 of series 122512 (March 2018, 140pp, ISBN 978-1-68405-145-8) against our 138pp, and CV 594560, volume 101284's only issue
+
+S 16478 cv=112354 gcd=127057 0.95 | the stored link is the run: CV 112354 "Star Trek: The Next Generation: Terra Incognita" (IDW 2018, 6 issues) and GCD 127057 (IDW 2018, 6) agree on publisher, year and count, and our 147pp 2019 COL file is those six issues collected
+I 31945 cv=707389 gcd=1958660 isbn=9781684054299 0.95 | the trade our file rips: GCD issue 1958660 (April 2019, 148pp — one off our 147pp — ISBN 978-1-68405-429-9) and CV 707389, the only issue of volume 118624
+
+S 16409 cv=18866 gcd=35856 0.95 | the RUN wins: CV 18866 and GCD 35856 both hold "Star Trek: The Next Generation: The Space Between" as IDW's SIX-issue 2007 series, and our 151pp file is those six issues collected — 6 x 24pp plus covers
+F 16409 wrong-cv-link | stored CV 117786 "Star Trek: The Next Generation: The Space Between" 2007 IDW one issue 704181 is the collected edition, not the six-issue run
+I 31946 cv=704181 gcd=- 0.9 | the trade our file rips: CV 704181, the only issue of volume 117786; the GCD dump indexes only the six-issue run 35856 and no collected row for it
+
+S 16477 cv=110478 gcd=124069 0.95 | the RUN wins: CV 110478 and GCD 124069 both hold "Star Trek: The Next Generation: Through the Mirror" as IDW's FIVE-issue 2018 mini, and our 124pp COL file is those five issues collected; GCD's count-1 row 129351 gives that trade 124pp — page for page our rip
+F 16477 wrong-cv-link | stored CV 113422 "Star Trek: The Next Generation: Through the Mirror" 2018 IDW one issue 684578 is the collected edition, not the five-issue run
+I 31947 cv=684578 gcd=1845631 isbn=9781684053438 0.95 | the trade our file rips: GCD issue 1845631 (October 2018, 124pp, exactly our 124pp, ISBN 978-1-68405-343-8) and CV 684578, volume 113422's only issue
+
+S 16480 cv=116801 gcd=139368 0.95 | the RUN wins: CV 116801 and GCD 139368 both hold "Star Trek: The Q Conflict" as IDW's SIX-issue 2019 mini, and our 145pp COL file is those six issues collected; GCD's count-1 row 151526 gives that trade 148pp
+F 16480 wrong-cv-link | stored CV 122412 "Star Trek: The Q Conflict" 2019 IDW one issue 724725 is the collected edition, not the six-issue run
+I 31948 cv=724725 gcd=2032633 isbn=9781684055531 0.95 | the trade our file rips: GCD issue 2032633 (October 2019, 148pp, ISBN 978-1-68405-553-1) against our 145pp, and CV 724725, volume 122412's only issue
+
+S 16484 cv=132112 gcd=166678 0.95 | the stored link is the run: CV 132112 "Star Trek: Voyager—Seven's Reckoning" (IDW 2020, 4 issues) and GCD 166678 (IDW 2020-2021, 4) agree on publisher, years and count, and our 95pp 2021 COL file is those four issues collected
+I 31949 cv=881391 gcd=2265949 isbn=9781684058129 0.95 | the trade our file rips: GCD issue 2265949 (July 2021, 100pp, ISBN 978-1-68405-812-9) against our 95pp, and CV 881391, the only issue of volume 138429
+
+S 16443 cv=19191 gcd=26730 0.95 | the RUN wins: CV 19191 and GCD 26730 both hold "Star Trek: Year Four" as IDW's SIX-issue 2007-2008 series, and our 149pp COL file is those six issues collected — 6 x 24pp plus covers
+F 16443 wrong-cv-link | stored CV 73519 "Star Trek: Year Four" 2008 IDW one issue 451964 is the collected edition, not the six-issue run
+I 31950 cv=451964 gcd=- 0.9 | the trade our file rips: CV 451964, the only issue of volume 73519; the GCD dump holds only the six-issue run 26730 and no collected row
+
+S 16414 cv=25362 gcd=117403 0.95 | the archive LINE is the identity: CV 25362 "Star Trek Archives" (IDW 2008, 5 issues named "Volume 1: Best of Peter David" … "Volume 5: The Best of Captain Kirk") and GCD 117403 (IDW 2008-2009, 6) name our five files one for one, and GCD's page counts track our rips within 2-7pp (148/146, 164/162, 188/184, 148/141, 156/157)
+N 16414 what these volumes reprint is DC's 1984-1996 Star Trek and Deep Space Nine runs and Marvel's DS9 — no single original series either leg holds, which is why the archive line carries the S
+I 31482 cv=149767 gcd=1742683 isbn=9781600102424 0.95 | Vol. 01 "Best of Peter David": GCD issue 1742683 (September 2008, 148pp, ISBN 978-1-60010-242-4) against our 146pp, and CV 149767, volume 25362's #1
+I 31483 cv=149768 gcd=1742684 isbn=9781600102653 0.95 | Vol. 02 "Best of Borg": GCD issue 1742684 (November 2008, 164pp, ISBN 978-1-60010-265-3) against our 162pp, and CV 149768, volume 25362's #2
+I 31484 cv=149769 gcd=1742685 isbn=9781600102783 0.95 | Vol. 03 "The Gary Seven Collection": GCD issue 1742685 (January 2009, 188pp, ISBN 978-1-60010-278-3) against our 184pp, and CV 149769, volume 25362's #3
+I 31485 cv=163219 gcd=1742686 isbn=9781600102905 0.95 | Vol. 04 "Best of Deep Space Nine": GCD issue 1742686 (March 2009, 148pp, ISBN 978-1-60010-290-5) against our 141pp, and CV 163219, volume 25362's #4
+I 31486 cv=535512 gcd=1742687 isbn=9781600105715 0.95 | Vol. 05 "The Best of Kirk": GCD issue 1742687 (July 2009, 156pp, ISBN 978-1-60010-571-5) against our 157pp, and CV 535512, volume 25362's #5
+
+S 16456 cv=109998 gcd=123714 0.95 | the RUN wins: CV 109998 and GCD 123714 both hold "Star Trek: Discovery: Succession" as IDW's FOUR-issue 2018 mini, and our 146pp COL file is those four issues collected; GCD's count-1 row 131367 gives that trade 148pp with ISBN 978-1-68405-360-5
+F 16456 wrong-cv-link | stored CV 114224 "Star Trek: Discovery - Succession" 2018 IDW one issue 687991 is the collected edition, not the four-issue run
+I 31951 cv=687991 gcd=1857201 isbn=9781684053605 0.95 | the trade our file rips: GCD issue 1857201 (November 2018, 148pp, ISBN 978-1-68405-360-5) against our 146pp, and CV 687991, volume 114224's only issue
+
+S 16455 cv=117549 gcd=142336 0.95 | CV 117549 "Star Trek: Discovery: Captain Saru" (IDW 2019, one issue 702765) and GCD 142336 (IDW, February 2019, 52pp against our 45pp rip) agree on name, publisher and year, and our file's ComicInfo Series says the same
+I 31492 cv=702765 gcd=1936480 0.95 | the book's own record: GCD issue 1936480 (IDW, February 2019, 52pp) and CV 702765, the only issue of volume 117549 — the one-shot our 45pp file rips
+
+S 16403 cv=86718 gcd=95023 0.95 | the RUN wins: CV 86718 and GCD 95023 both hold "Star Trek: Starfleet Academy" as IDW's FIVE-issue 2015-2016 mini, and our 127pp file is those five issues collected; Marvel's 1996 twenty-issue series of that name is a different comic on decade and publisher
+F 16403 wrong-cv-link | stored CV 92486 "Star Trek: Starfleet Academy" 2016 IDW one issue 540823 is the collected edition, not the five-issue run
+I 31953 cv=540823 gcd=1742244 isbn=9781631406638 0.95 | the trade our file rips: GCD issue 1742244 of series 117359 (July 2016, ISBN 978-1631406638) and CV 540823, volume 92486's only issue
+
+S 16407 cv=147928 gcd=- 0.9 | CV 147928 "Star Trek: The Next Generation - Best of Captain Picard" (IDW 2022, one issue 967927) matches our 96pp 2022 file's title, year and publisher exactly; it is a "Best of" anthology, so a count of 1 is the real shape
+F 16407 provider-missing | a direct probe of the GCD dump for "Best of Captain Picard" returns nothing — the dump's only near hits are DC's and Marvel UK's TNG runs, different comics
+I 31518 cv=967927 gcd=- 0.9 | the book's own record is CV 967927, the only issue of volume 147928 — IDW's 2022 Best of Captain Picard anthology our 96pp file rips
+
+S 16417 cv=149443 gcd=182813 0.95 | CV 149443 "Star Trek Classics: The Mirror Universe Saga" (IDW 2022, one issue 983076) and GCD 182813 (IDW, March 2022, 204pp, ISBN 978-1-68405-873-0) agree on name, publisher and year, and 204pp is two off our 202pp COL rip
+N 16417 what it reprints is DC's 1984 Star Trek #9-16; DC's own 1991 collection of that arc is a separate book in both legs (CV 66453 / GCD 23133)
+I 31519 cv=983076 gcd=2378943 isbn=9781684058730 0.95 | the book's own record: GCD issue 2378943 (March 2022, 204pp, ISBN 978-1-68405-873-0) and CV 983076, the only issue of volume 149443
+
+S 16392 cv=67448 gcd=162877 0.95 | CV 67448 "Star Trek: Best of Klingons" (IDW 2013, one issue 425961) and GCD 162877 (IDW, August 2013, ISBN 978-1613777251) agree on name, publisher and year against our 208pp COL rip; a "Best of" anthology is genuinely one book
+I 31521 cv=425961 gcd=2133620 isbn=9781613777251 0.95 | the book's own record: GCD issue 2133620 (IDW, August 2013, ISBN 978-1613777251) and CV 425961, the only issue of volume 67448
+
+S 16396 cv=142625 gcd=184101 0.95 | CV 142625 "Star Trek: Ferengi" (IDW 2022, one issue 919936) and GCD 184101 (IDW, April 2022, 52pp against our 47pp rip) agree on name, publisher and year
+I 31523 cv=919936 gcd=2391813 0.95 | the book's own record: GCD issue 2391813 (IDW, April 2022, 52pp) and CV 919936, the only issue of volume 142625
+
+S 16412 cv=93222 gcd=139615 0.95 | CV 93222 "Star Trek: 50th Anniversary Cover Celebration" (IDW 2016, one issue 544798) and GCD 139615 (IDW, August 2016, 56pp against our 55pp rip) agree on name, publisher and year
+I 31531 cv=544798 gcd=1917641 0.95 | the book's own record: GCD issue 1917641 (IDW, August 2016, 56pp — one off our 55pp) and CV 544798, the only issue of volume 93222
+
+S 16415 cv=91492 gcd=- 0.9 | CV 91492 "Star Trek: Captain's Log" (IDW 2011, one issue 535972) is the collection our 107pp TPB rips — the four 2010 Captain's Log one-shots (Pike, Sulu, Jellico, Harriman) at ~28pp each
+F 16415 provider-missing | GCD indexes the four one-shots separately (52465 Pike, 52934 Sulu, 52958 Jellico, 51749 Harriman) but has no row for the 2011 collection this shelf holds
+I 31532 cv=535972 gcd=- 0.9 | the trade our file rips: CV 535972, the only issue of volume 91492 — IDW's 2011 collection of the four Captain's Log one-shots
+
+S 16418 cv=99829 gcd=112738 0.95 | CV 99829 "Star Trek: Deviations" (IDW 2017, one issue 587202) and GCD 112738 (IDW, March 2017, 44pp against our 50pp rip) agree on name, publisher and year; Deviations was a line of standalone one-shots
+I 31533 cv=587202 gcd=1681112 0.95 | the book's own record: GCD issue 1681112 (IDW, March 2017, 44pp) and CV 587202, the only issue of volume 99829
+
+S 16421 cv=99229 gcd=112525 0.95 | CV 99229 "Star Trek Gold Key 100-Page Spectacular" (IDW 2017, one issue 583618) and GCD 112525 (IDW, February 2017, 104pp against our 99pp rip) agree on name, publisher and year; the "100" in our ladder is the page count in the title, not an issue number
+I 31534 cv=583618 gcd=1677907 0.95 | the book's own record: GCD issue 1677907 (IDW, February 2017, 104pp) and CV 583618, the only issue of volume 99229
+
+S 16427 cv=33106 gcd=47526 0.95 | the RUN wins: CV 33106 "Star Trek: Leonard McCoy - Frontier Doctor" (IDW 2010, 4) and GCD 47526 "Star Trek: Leonard McCoy, Frontier Doctor" (IDW 2010, 4) agree on publisher, year and count, and our 104pp 2016 TPB is those four issues collected
+F 16427 wrong-cv-link | stored CV 91493 "Star Trek: Leonard McCoy: Frontier Doctor" 2010 IDW one issue 535973 is the collected edition, not the four-issue run
+I 31535 cv=535973 gcd=- 0.9 | the trade our file rips: CV 535973, the only issue of volume 91493; the GCD dump holds only the four-issue run and no collected row for it
+
+S 16429 cv=21044 gcd=30129 0.95 | the RUN wins: CV 21044 and GCD 30129 both hold "Star Trek: New Frontier" as IDW's FIVE-issue 2008 mini, and our 137pp 2016 TPB is those five issues collected — 5 x 24pp plus covers
+F 16429 wrong-cv-link | stored CV 91494 "Star Trek: New Frontier" 2009 IDW one issue 535974 is the collected edition, not the five-issue run
+I 31536 cv=535974 gcd=- 0.9 | the trade our file rips: CV 535974, the only issue of volume 91494; the GCD dump holds only the five-issue 2008 run 30129
+
+S 16446 cv=165658 gcd=197884 0.95 | CV 165658 "Star Trek: Aliens" (IDW 2023, one issue 1121381) and GCD 197884 (IDW, February 2023, 140pp, ISBN 978-1-68405-969-0) agree on name, publisher and year, and 140pp is eleven off our 129pp rip; our file's ComicInfo Series says the same
+I 31520 cv=1121381 gcd=2508264 isbn=9781684059690 0.95 | the book's own record: GCD issue 2508264 (February 2023, 140pp, ISBN 978-1-68405-969-0) and CV 1121381, the only issue of volume 165658
+
+S 16449 cv=127664 gcd=174761 0.95 | the facsimile is its own book: CV 127664 "Star Trek: Debt of Honor Facsimile Edition" (IDW 2020, one issue 766356) and GCD 174761 (IDW, June 2021, 100pp) agree on name and publisher, and 100pp is two off our 98pp rip
+N 16449 what it reproduces is DC's 1992 "Star Trek: Debt of Honor" graphic novel (CV 62726 / GCD 4415, 100pp, ISBN 1-56389-031-3) — the same page count, a different book
+I 31522 cv=766356 gcd=2251654 0.95 | the printing we hold: GCD issue 2251654 (IDW, June 2021, 100pp) and CV 766356, the only issue of volume 127664 — the facsimile, not DC's 1992 original
+
+S 16459 cv=129897 gcd=163604 0.95 | CV 129897 "Star Trek: Hell's Mirror" (IDW 2020, one issue 796423) and GCD 163604 (IDW, August 2020, 36pp against our 30pp rip) agree on name, publisher and year, and our file's ComicInfo Series says the same
+I 31524 cv=796423 gcd=2145802 0.95 | the book's own record: GCD issue 2145802 (IDW, August 2020, 36pp) and CV 796423, the only issue of volume 129897
+
+S 16461 cv=116800 gcd=139369 0.95 | CV 116800 "Star Trek: IDW 20/20" (IDW 2019, one issue 699119) and GCD 139369 (IDW, January 2019, 36pp against our 28pp rip) agree on name, publisher and year; the "20" in our ladder is the 20/20 of the title
+I 31526 cv=699119 gcd=1915558 0.95 | the book's own record: GCD issue 1915558 (IDW, January 2019, 36pp) and CV 699119, the only issue of volume 116800
+
+S 16475 cv=123631 gcd=153734 0.95 | the facsimile is its own book: CV 123631 "Star Trek: The Motion Picture Facsimile Edition" (IDW 2019, one issue 731171) and GCD 153734 (IDW, December 2019, 68pp against our 65pp rip) agree on name, publisher and year
+N 16475 what it reproduces is Marvel's 1980 movie adaptation, one issue of a run neither leg holds as a standalone book — which is why the facsimile record carries the S rather than an original
+I 31527 cv=731171 gcd=2048452 0.95 | the book's own record: GCD issue 2048452 (IDW, December 2019, 68pp) and CV 731171, the only issue of volume 123631
+
+S 16479 cv=135434 gcd=171840 0.95 | the facsimile is its own book: CV 135434 "Star Trek: The Next Generation: The Gift Facsimile Edition" (IDW 2021, one issue 843368) and GCD 171840 (IDW, February 2021, 64pp against our 60pp rip) agree on name, publisher and year
+I 31528 cv=843368 gcd=2216905 0.95 | the book's own record: GCD issue 2216905 (IDW, February 2021, 64pp) and CV 843368, the only issue of volume 135434 — the facsimile our file rips
+
+S 16483 cv=123372 gcd=153586 0.95 | CV 123372 "Star Trek: Voyager: Mirrors and Smoke One-Shot" (IDW 2019, one issue 730172) and GCD 153586 (IDW, October 2019, 36pp against our 32pp rip) agree on name, publisher and year; IDW's 2012 "Smoke and Mirrors" is a different comic
+I 31529 cv=730172 gcd=2047037 0.95 | the book's own record: GCD issue 2047037 (IDW, October 2019, 36pp) and CV 730172, the only issue of volume 123372
+
+# ── IDW S–Z ──────────────────────────────────────────────────────────────────────────────────────
+S 16777 cv=121201 gcd=150207 0.95 | the stored link is the run: CV 121201 "Starcadia Quest" (IDW 2019, 3 issues) and GCD 150207 (IDW 2019-2020, 3) agree on publisher, years and count, and our 89pp 2020 file with ComicInfo Series "Starcadia Quest: Heart of a Star" is those three issues collected
+I 31954 cv=748164 gcd=2125793 isbn=9781684056460 0.95 | the trade our file rips: GCD issue 2125793 (May 2020, 80pp, ISBN 978-1-68405-646-0) against our 89pp, and CV 748164, the only issue of volume 126355
+
+S 16974 cv=108226 gcd=120602 0.95 | the RUN wins: CV 108226 and GCD 120602 both hold "Stretch Armstrong and the Flex Fighters" as IDW's THREE-issue 2018 mini, and our 71pp file is those three issues collected
+F 16974 wrong-cv-link | stored CV 111016 "Stretch Armstrong and the Flex Fighters" 2018 IDW one issue 670585 is the collected edition, not the three-issue run
+I 31955 cv=670585 gcd=1981406 0.9 | the trade our file rips: GCD issue 1981406 of series 148502 (IDW, 2018) and CV 670585, volume 111016's only issue
+
+S 16980 cv=83772 gcd=91721 0.95 | the stored link is the run: CV 83772 "String Divers" (IDW 2015, 5 issues) and GCD 91721 (IDW 2015, 5) agree on publisher, year and count, and our 118pp 2016 COL file is those five issues collected
+I 31956 cv=518757 gcd=2742115 isbn=9781631405600 0.95 | the trade our file rips: GCD issue 2742115 of series 224343 (IDW, 2016, 120pp, ISBN 978-1631405600) against our 118pp, and CV 518757, the only issue of volume 88778 "String Divers" 2016
+
+S 17048 cv=115364 gcd=134449 0.95 | the stored link is the run: CV 115364 "Sukeban Turbo" (IDW 2018, 4 issues) and GCD 134449 (IDW 2018-2019, 4) agree on publisher, years and count, and our 119pp 2019 file with ComicInfo Publisher "IDW" is those four issues collected; the Glénat and Norma rows are the French and Spanish editions
+I 31957 cv=714570 gcd=2005011 isbn=9781684054817 0.95 | the trade our file rips: GCD issue 2005011 of series 149356 (August 2019, ISBN 978-1-68405-481-7) and CV 714570, the only issue of volume 120439
+
+S 17103 cv=95703 gcd=109935 0.95 | CV 95703 "Super Weird Heroes" (IDW 2016, 2 issues named "Volume 1: Outrageous But Real!" and "Volume 2: Preposterous But True!") and GCD 109935 (IDW 2016-2018, 2) agree on publisher, years and count, and our single file is Vol. 01 — GCD's first issue gives it 332pp against our 319pp rip
+I 31958 cv=558270 gcd=1656736 isbn=9781631407451 0.95 | the book's own record: GCD issue 1656736 (November 2016, 332pp, ISBN 978-1631407451) against our 319pp, and CV 558270, volume 95703's #1 "Outrageous But Real!"
+
+S 17342 cv=23518 gcd=17507 0.95 | the RUN wins: CV 23518 and GCD 17507 both hold "Supermarket" as IDW's FOUR-issue 2006 mini, and our 107pp "Cash Money Edition" is that run collected — GCD's 2009 row 39755 gives that edition 108pp, one page off our rip
+F 17342 wrong-cv-link | stored CV 37476 "Supermarket (Cash Money Edition)" 2009 IDW one issue 249185 is the 2009 re-issue of the collection, not the four-issue 2006 run
+F 17342 merge-with=17341 | S17341 "Supermarket" already carries CV 23518, the four-issue 2006 run; this shelf is that run's Cash Money collection, so the two are one comic and the merge is intended
+I 31550 cv=249185 gcd=681081 0.95 | the printing we hold: GCD issue 681081 (IDW, January 2009, 108pp against our 107pp) and CV 249185, the only issue of volume 37476 — the Cash Money Edition
+
+S 17483 cv=157813 gcd=210162 0.95 | CV 157813 "Taka" (IDW 2024, one issue 1052661) and GCD 210162 (IDW, March 2024, ISBN 978-1-68405-976-8) agree on name, publisher and year against our 257pp 2024 rip whose ComicInfo Publisher is "IDW Publishing"; the Taka Takata rows are a French series
+I 31959 cv=1052661 gcd=2617439 isbn=9781684059768 0.95 | the book's own record: GCD issue 2617439 (IDW, March 2024, ISBN 978-1-68405-976-8) and CV 1052661, the only issue of volume 157813
+
+R 18194 | two files, two comics: item 31962 "The Cape (2012)" (133pp) is the collection of IDW's 2011 four-issue mini (CV 41613 / GCD 60385) and item 31963 "The Cape - 1969 (2013)" (104pp) is the collection of the 2012 SEQUEL (CV 49891 / GCD 66593, also four issues); the stored CV 41613 describes only the first, and applying it would hand the sequel the first run's identity
+F 18194 split-needed | proposed runs: The Cape on CV 41613 / GCD 60385 holding item 31962, and The Cape: 1969 on CV 49891 / GCD 66593 holding item 31963 — GCD's two count-1 collections (161606 at 132pp, 161605 at 104pp) match our two files page for page
+I 31962 cv=337757 gcd=2124764 isbn=9781613771969 0.95 | the trade our 133pp file rips: GCD issue 2124764 (IDW, May 2012, 132pp, ISBN 978-1613771969) and CV 337757, the only issue of volume 49387 "The Cape" 2012
+I 31963 cv=382814 gcd=2124763 isbn=9781613775455 0.95 | the trade our 104pp file rips: GCD issue 2124763 (IDW, January 2013, 104pp — page for page our rip — ISBN 978-1613775455) and CV 382814, the only issue of volume 56403 "Joe Hill's The Cape: 1969"
+
+S 18513 cv=94868 gcd=108271 0.95 | the stored link is the run: CV 94868 "The Electric Sublime" (IDW 2016, 4 issues) and GCD 108271 (IDW 2016-2017, 4) agree on publisher, years and count, and our 112pp 2017 file is those four issues collected
+I 31964 cv=590670 gcd=2712717 isbn=9781631408663 0.95 | the trade our file rips: GCD issue 2712717 of series 221344 (April 2017, 104pp, ISBN 9781631408663) against our 112pp, and CV 590670, the only issue of volume 100542
+
+S 18684 cv=160401 gcd=185954 0.95 | CV 160401 "The Girl and the Glim" (IDW 2022, one issue 1073880) and GCD 185954 (IDW, June 2022, ISBN 9781684057412) agree on name, publisher and year against our 130pp 2022 rip
+I 31965 cv=1073880 gcd=2411188 isbn=9781684057412 0.95 | the book's own record: GCD issue 2411188 (IDW, June 2022, ISBN 9781684057412) and CV 1073880, the only issue of volume 160401
+
+S 18778 cv=55824 gcd=71164 0.95 | the RUN wins: CV 55824 and GCD 71164 both hold "The High Ways" as IDW's FOUR-issue 2012-2013 mini, and our 102pp file is those four issues collected; GCD's count-1 row 222942 gives that trade 104pp with ISBN 978-1613776797
+F 18778 wrong-cv-link | stored CV 64693 "The High Ways" 2013 IDW one issue 415258 is the collected edition, not the four-issue run
+I 31966 cv=415258 gcd=2728331 isbn=9781613776797 0.95 | the trade our file rips: GCD issue 2728331 (July 2013, 104pp against our 102pp, ISBN 978-1613776797) and CV 415258, volume 64693's only issue
+
+S 18779 cv=109057 gcd=134766 0.95 | the RUN wins: CV 109057 and GCD 134766 both hold "The Highest House" as IDW's SIX-issue 2018 mini, and our 172pp COL file is those six issues collected; GCD's count-1 row 134765 gives that trade 160pp with ISBN 978-1684053544
+F 18779 wrong-cv-link | stored CV 115544 "The Highest House" 2018 IDW one issue 693310 is the collected edition, not the six-issue run
+I 31967 cv=693310 gcd=1877127 isbn=9781684053544 0.95 | the trade our file rips: GCD issue 1877127 (November 2018, 160pp, ISBN 978-1684053544) against our 172pp, and CV 693310, volume 115544's only issue
+
+S 18811 cv=70070 gcd=78609 0.95 | the RUN wins: CV 70070 and GCD 78609 both hold "The Illegitimates" as IDW's SIX-issue 2013-2014 mini, and our 149pp COL file is those six issues collected; GCD's count-1 row 222996 gives that trade 152pp with ISBN 978-1631400360
+F 18811 wrong-cv-link | stored CV 76634 "The Illegitimates" 2014 IDW one issue 463501 is the collected edition, not the six-issue run
+I 31968 cv=463501 gcd=2729029 isbn=9781631400360 0.95 | the trade our file rips: GCD issue 2729029 (August 2014, 152pp against our 149pp, ISBN 978-1631400360) and CV 463501, volume 76634's only issue
+
+S 18915 cv=4969 gcd=4650 0.95 | the ORIGINAL wins: our 186pp file is IDW's 2016 collection of DC/Vertigo's SIX-issue 1993 "The Last One", which both legs hold — CV 4969 (DC 1993, 6) and GCD 4650 (DC, 1993, 6) — and 6 x 32pp is the arithmetic that fits our rip
+F 18915 wrong-cv-link | stored CV 94593 "The Last One" 2016 IDW one issue 552085 is the 2016 collected EDITION, not the 1993 six-issue Vertigo series it reprints
+I 31970 cv=552085 gcd=2733920 isbn=9781631406850 0.95 | the printing we hold: GCD issue 2733920 of series 223593 (IDW, October 2016, 208pp, ISBN 978-1631406850) against our 186pp, and CV 552085, volume 94593's only issue
+
+S 18967 cv=105334 gcd=212230 0.95 | CV 105334 "The Little Book of Knowledge: Tattoos" (IDW 2017, one issue 630571) and GCD 212230 (IDW, October 2017, 72pp against our 75pp rip, ISBN 978-1-68405-067-3) agree on name, publisher and year; the sibling Heavy Metal and New Hollywood volumes are the line's other books
+I 31971 cv=630571 gcd=2631318 isbn=9781684050673 0.95 | the book's own record: GCD issue 2631318 (October 2017, 72pp, ISBN 978-1-68405-067-3) and CV 630571, the only issue of volume 105334
+
+S 19053 cv=105715 gcd=- 0.9 | CV 105715 "The Man From the Great North" (IDW 2017, one issue 634216) matches our file exactly — "The Man from the Great North (Hugo Pratt) (2017)", 111pp, IDW's English edition of Pratt's album — and it is the only record either provider holds under that title
+F 19053 provider-missing | a direct probe of the GCD dump for "Man from the Great North" returns nothing; the dump's near hits are Eastern Color's 1950s "Tales from the Great Book", a different comic entirely
+I 31972 cv=634216 gcd=- 0.9 | the book's own record is CV 634216, the only issue of volume 105715 — IDW's 2017 Hugo Pratt album our 111pp c2c scan rips
+
+S 14990 cv=88435 gcd=- 0.9 | CV 88435 "Sam Kieth's Maxx Artist's Edition" (IDW 2016, one issue 517130) is the only record either provider holds for this oversized art book, and our file names it exactly — "Sam Kieth's The Maxx Artist Edition (2015) (IDW)" at 158pp
+F 14990 provider-missing | a direct probe of the GCD dump for "Maxx Artist" returns nothing — GCD indexes Image's 1993 Maxx run and its foreign editions but no IDW Artist's Edition
+I 31602 cv=517130 gcd=- 0.9 | the book's own record is CV 517130, the only issue of volume 88435 — IDW's Artist's Edition our 158pp c2c scan rips
+
+S 19133 cv=123854 gcd=154253 0.95 | CV 123854 "The Mighty Elvis: A Graphic Biography" (IDW 2020, one issue 731957) and GCD 154253 (IDW; Yoe Books, November 2019, 74pp against our 64pp rip, ISBN 978-1-68405-560-9) agree on name and publisher a year apart in their dating, and our file's ComicInfo Series says the same
+I 31973 cv=731957 gcd=2052046 isbn=9781684055609 0.95 | the book's own record: GCD issue 2052046 (IDW; Yoe Books, November 2019, 74pp, ISBN 978-1-68405-560-9) and CV 731957, the only issue of volume 123854
+
+S 19169 cv=130361 gcd=164018 0.95 | CV 130361 "The Mueller Report Graphic Novel" (IDW 2020, one issue 799883) and GCD 164018 (IDW, August 2020, 208pp, ISBN 978-1-68405-668-2) agree on name, publisher and year; Simon & Schuster's "Mueller Report Illustrated" is a different book on publisher
+I 31975 cv=799883 gcd=2148374 isbn=9781684056682 0.95 | the book's own record: GCD issue 2148374 (August 2020, 208pp, ISBN 978-1-68405-668-2) against our 196pp, and CV 799883, the only issue of volume 130361
+
+S 66050 cv=9374 gcd=10156 0.95 | the RUN wins: our books are "The Red Star Deluxe Edition Vol. 01 and 02", and both legs hold the run they collect — CV 9374 "The Red Star" (Image 2000, cached #1-9) and GCD 10156 (Image 2000-2002, 10); the deluxe line itself is CV 78206 (IDW 2014, 2 issues named "Volume One" and "Volume Two"), which is exactly our two books
+N 66050 the open label-ambiguous ContainmentFlag is right: items 31630 and 37045 are the same 228pp Deluxe Edition Vol. 01 from one ripper filed twice, which costs the line nothing
+I 31630 cv=470456 gcd=- 0.9 | Vol. 01: CV 470456, volume 78206's #1 named "Volume One" (IDW, May 2014); the GCD dump has no row for IDW's Red Star Deluxe Edition line
+I 37045 cv=470456 gcd=- 0.9 | the same book from the same rip filed a second time under Image\Red Star: CV 470456, volume 78206's #1 "Volume One"
+I 31631 cv=537861 gcd=- 0.9 | Vol. 02: CV 537861, volume 78206's #2 named "Volume Two" (IDW, March 2016) — our 257pp file
+
+S 19482 cv=57963 gcd=72400 0.95 | the RUN wins: CV 57963 and GCD 72400 both hold "The Rocketeer: Hollywood Horror" as IDW's FOUR-issue 2013 mini, and our 104pp COL file is those four issues collected; GCD's count-1 row 85012 gives that trade 112pp with ISBN 978-1-61377-686-5
+F 19482 wrong-cv-link | stored CV 65385 "The Rocketeer: Hollywood Horror" 2013 IDW one issue 417861 is the collected edition, not the four-issue run
+I 31641 cv=417861 gcd=1287805 isbn=9781613776865 0.95 | the trade our file rips: GCD issue 1287805 (July 2013, 112pp, ISBN 978-1-61377-686-5) against our 104pp, and CV 417861, volume 65385's only issue
+
+S 19484 cv=108135 gcd=120603 0.95 | CV 108135 "The Rocketeer: The Best of Rocketeer Adventures: Funko Edition" (IDW 2018, one issue 655332) and GCD 120603 (IDW, January 2018, 52pp against our 43pp rip) agree on that unusual full title, publisher and year
+I 31642 cv=655332 gcd=1779607 0.95 | the book's own record: GCD issue 1779607 (IDW, January 2018, 52pp) and CV 655332, the only issue of volume 108135
+
+S 19487 cv=102213 gcd=115688 0.95 | CV 102213 "The Rocketeer: High Flying Adventures" (IDW 2017, one issue 602947) and GCD 115688 (IDW, June 2017, 268pp, ISBN 978-1-63140-905-9) agree on name, publisher and year, and 268pp is eight off our 260pp rip
+N 19487 this omnibus collects IDW's Rocketeer Adventures (CV 40236 / GCD 58678, 4) and Rocketeer Adventures 2; neither leg treats it as an issue of those runs
+I 31640 cv=602947 gcd=1724361 isbn=9781631409059 0.95 | the book's own record: GCD issue 1724361 (June 2017, 268pp, ISBN 978-1-63140-905-9) and CV 602947, the only issue of volume 102213
+
+S 36150 cv=31346 gcd=68200 0.95 | the RUN wins: CV 31346 and GCD 68200 both hold "The Rocketeer: Cargo of Doom" as IDW's FOUR-issue 2012 mini, and our 132pp file is those four issues collected; GCD's 2013 row 72684 gives that trade 144pp with ISBN 978-1-61377-565-3
+F 36150 wrong-cv-link | stored CV 54389 "The Rocketeer: Cargo of Doom" 2013 IDW one issue 390928 is the collected edition, not the four-issue run
+I 31639 cv=390928 gcd=1092985 isbn=9781613775653 0.95 | the trade our file rips: GCD issue 1092985 (February 2013, 144pp, ISBN 978-1-61377-565-3) against our 132pp, and CV 390928, volume 54389's only issue
+
+S 19483 cv=152230 gcd=202234 0.95 | the stored link is the run: CV 152230 "The Rocketeer: In the Den of Thieves" (IDW 2023, 4 issues) and GCD 202234 (IDW 2023, 4) agree on publisher, year and count, and our 116pp 2024 file is those four issues collected
+I 31976 cv=- gcd=2625197 isbn=9798887240831 0.9 | the trade our file rips: GCD issue 2625197 of series 211332 (IDW, 2024, ISBN 979-8-88724-083-1); ComicVine has no count-1 collected record for this mini
+
+S 19488 cv=142221 gcd=183597 0.95 | the stored link is the run: CV 142221 "The Rocketeer: The Great Race" (IDW 2022, 4 issues) and GCD 183597 (IDW 2022, 4) agree on publisher, year and count, and our 138pp 2023 file with the matching ComicInfo Series is those four issues collected
+I 31977 cv=1006531 gcd=2498413 isbn=9781684059447 0.95 | the trade our file rips: GCD issue 2498413 of series 197153 (January 2023, ISBN 978-1-68405-944-7) and CV 1006531, the only issue of volume 152898
+
+S 19486 cv=86784 gcd=95096 0.95 | the stored link is the run: CV 86784 "The Rocketeer At War" (IDW 2015, 4 issues) and GCD 95096 (IDW 2015-2016, 4) agree on publisher, years and count, and our 128pp 2016 file is those four issues collected
+I 31978 cv=544795 gcd=1936049 isbn=9781631405846 0.95 | the trade our file rips: GCD issue 1936049 of series 142282 (August 2016, 136pp, ISBN 978-1631405846) against our 128pp, and CV 544795, the only issue of volume 93220
+
+S 19662 cv=109062 gcd=160267 0.95 | the RUN wins: CV 109062 and GCD 160267 both hold "The Spider King" as IDW's FOUR-issue 2018 mini, and our 151pp file with ComicInfo Series "The Spider King" is those four issues collected; GCD's count-1 row 127193 has ISBN 978-1-68405-266-0, the trade
+F 19662 wrong-cv-link | stored CV 112352 "The Spider King" 2018 IDW one issue 677320 is the collected edition, not the four-issue run
+I 31979 cv=677320 gcd=1827822 isbn=9781684052660 0.95 | the trade our file rips: GCD issue 1827822 (August 2018, ISBN 978-1-68405-266-0) and CV 677320, volume 112352's only issue
+
+S 19667 cv=75726 gcd=81844 0.95 | the stored link is the run: CV 75726 "The Squidder" (IDW 2014, 4 issues) and GCD 81844 (IDW 2014, 4) agree on publisher, year and count, and our 128pp 2015 file is those four issues collected
+I 31980 cv=477884 gcd=- 0.9 | the trade our file rips: CV 477884, the only issue of volume 79732 "The Squidder" 2015; the GCD dump holds only the four-issue run and no collected row
+
+S 19751 cv=96106 gcd=117236 1.0 | our own file asserts the book: an EAN13 read off the page reads 9781631404894, and GCD issue 2768685 — issue #[1] of series 117236 "The Obscure Cities" (IDW 2016, 128pp), titled "Theory of the Grain of Sand" — prints exactly that ISBN; ComicVine mints a volume per album (96106, IDW 2016) where GCD keeps the seven-album line
+I 31981 cv=562398 gcd=2768685 isbn=9781631404894 1.0 | the book's own record, asserted by the barcode on the page: GCD issue 2768685 (IDW, November 2016, 128pp, ISBN 9781631404894) against our 134pp rip, and CV 562398, the only issue of volume 96106
+
+# ── The X-Files ──────────────────────────────────────────────────────────────────────────────────
+S 20004 cv=88784 gcd=98146 0.9 | our single file is "The X-Files - Deviations 01 (2016)" at 34pp: ComicVine mints a volume per one-shot (88784, IDW 2016, issue 518763) while GCD keeps ONE series 98146 whose two issues are #2016 (March 2016, 44pp) and #2017 (March 2017, 40pp) — we hold the first, which is why this is 0.9 rather than 0.95
+I 31645 cv=518763 gcd=1542802 0.95 | the book's own record: GCD issue 1542802 (#2016, March 2016, 44pp) and CV 518763, the only issue of volume 88784 — the 2016 Deviations one-shot our 34pp file rips
+
+S 20011 cv=- gcd=85395 0.9 | GCD spans this shelf and ComicVine does not: series 85395 "The X-Files X-Mas Special" (IDW 2014-2016, 3) has issues #2014, #2015 and #2016 at 52pp each, which is exactly our three files (50pp, 52pp, 49pp), while ComicVine files each year as its own count-1 volume — 79032, 86799 and 97086
+F 20011 provider-missing | ComicVine has no volume spanning the three X-Mas Specials; linking any one of its three count-1 volumes would describe a third of the shelf
+I 31680 cv=474652 gcd=1297039 0.95 | the 2014 special: GCD issue 1297039 (#2014, December 2014, 52pp against our 50pp) and CV 474652, the only issue of volume 79032
+I 31681 cv=508919 gcd=1664114 0.95 | the 2015 special: GCD issue 1664114 (#2015, December 2015, 52pp — page for page our rip) and CV 508919, the only issue of volume 86799
+I 31682 cv=569377 gcd=1664115 0.95 | the 2016 special: GCD issue 1664115 (#2016, December 2016, 52pp against our 49pp) and CV 569377, the only issue of volume 97086
+
+S 20012 cv=34418 gcd=51420 0.95 | the stored link is the run: CV 34418 "The X-Files/30 Days of Night" (DC/WildStorm 2010, 6 issues) and GCD 51420 (DC, 2010-2011, 6) agree on publisher, years and count, and our 147pp COL file is those six issues collected
+I 31683 cv=277671 gcd=1656905 isbn=9781401231781 0.95 | the trade our file rips: GCD issue 1656905 of series 110004 (DC, September 2011, 148pp — one off our 147pp — ISBN 978-1-4012-3178-1) and CV 277671, the only issue of volume 41162
+
+S 46924 cv=115365 gcd=134438 0.95 | CV 115365 "The X-Files: Case Files" (IDW 2018, one issue 692374) and GCD 134438 "X-Files Case Files" (IDW 2018, 1, ISBN 1684053986) agree on publisher and year against our 97pp file, whose ComicInfo Series is "The X-Files: Case Files"
+I 31982 cv=692374 gcd=1875958 isbn=9781684053988 0.9 | the book's own record: GCD issue 1875958 (IDW, December 2018, ISBN 1684053986) and CV 692374, the only issue of volume 115365
+
+S 46925 cv=105571 gcd=117846 0.95 | the RUN wins: CV 105571 and GCD 117846 both hold "The X-Files: JFK Disclosure" as IDW's TWO-issue 2017 mini, and our 64pp 2018 file is those two issues collected — 2 x 32pp
+I 31983 cv=669411 gcd=- 0.9 | the trade our file rips: CV 669411, the only issue of volume 110780 "The X-Files: JFK Disclosure" 2018; the GCD dump holds only the two-issue 2017 run
+
+S 20006 cv=102218 gcd=115078 0.95 | CV 102218 "The X-Files: Origins—Dog Days of Summer" (IDW 2017, 4) and GCD 115078 "The X-Files Origins II: Dog Days of Summer" (IDW 2017, 4) agree on publisher, year and count, and our ladder is 1-4 at 24-27pp; GCD's "II" is the sequel numbering the first Origins mini (105890, 2016) lacks
+
+S 20014 cv=83845 gcd=91723 0.95 | the RUN wins: CV 83845 and GCD 91723 both hold "The X-Files: Season 11" as IDW's EIGHT-issue 2015-2016 series, and our 227pp "Complete Season 11" file is those eight issues collected — 8 x 24pp plus covers
+I 31984 cv=637567 gcd=1759330 isbn=9781684050215 0.95 | the collection our file rips: GCD issue 1759330 of series 118666 (IDW, 2017, ISBN 9781684050215) and CV 637567, the only issue of volume 106051 "The X-Files: Complete Season 11"
+
+S 20008 cv=75729 gcd=81846 0.95 | the RUN wins: CV 75729 and GCD 81846 both hold "The X-Files: Year Zero" as IDW's FIVE-issue 2014 mini, and our 122pp 2015 file is those five issues collected; Topps' 1997 "X-Files: Ground Zero" is a different comic on decade and publisher
+I 31985 cv=481639 gcd=- 0.9 | the trade our file rips: CV 481639, the only issue of volume 80465 "The X-Files: Year Zero" 2015; the GCD dump holds only the five-issue 2014 run
+
+# ── IDW T–Z, Usagi, V-Wars, Wynonna ──────────────────────────────────────────────────────────────
+S 9900 cv=63291 gcd=74962 0.95 | the stored link is the run: CV 63291 "Thumbprint" (IDW 2013, 3 issues) and GCD 74962 (IDW 2013, 3) agree on publisher, year and count, and our 122pp file with ComicInfo Series "Joe Hill's Thumbprint" is those three issues collected
+F 9900 needs-fetch cv=63291 | CV 63291 has no CvVolume row (it was named from the local rip); Phase C.1 must fetch it or the shelf keeps its parsed-key name
+I 31986 cv=436241 gcd=1168528 isbn=9781613777480 0.95 | the trade our file rips: GCD issue 1168528 of series 78045 (IDW, November 2013, ISBN 9781613777480) and CV 436241, the only issue of volume 69875 "Thumbprint" 2013
+
+S 20206 cv=127942 gcd=160977 0.95 | CV 127942 "Tiananmen 1989: Our Shattered Hopes" (IDW 2020, one issue 768386) and GCD 160977 (IDW, June 2020, 120pp against our 118pp rip, ISBN 9781684056996) agree on name, publisher and year; the 1989 in our ladder is the title's date
+I 31987 cv=768386 gcd=2119888 isbn=9781684056996 0.95 | the book's own record: GCD issue 2119888 (June 2020, 120pp, ISBN 9781684056996) and CV 768386, the only issue of volume 127942
+
+S 20216 cv=102851 gcd=115543 0.95 | the stored link is the run: CV 102851 "Time & Vine" (IDW 2017, 4 issues) and GCD 115543 (IDW 2017, 4) agree on publisher, year and count, and our 186pp 2018 file with ComicInfo Series "Time & Vine" is those four issues collected
+I 31988 cv=655336 gcd=1779609 0.9 | the trade our file rips: GCD issue 1779609 of series 120606 (IDW, 2018) and CV 655336, the only issue of volume 108137 "Time & Vine" 2018
+
+S 20510 cv=144586 gcd=188285 0.95 | the stored link is the run: CV 144586 "Trve Kvlt" (IDW 2022, 5 issues) and GCD 188285 (IDW 2022, 5) agree on publisher, year and count, and our 137pp 2023 COL file with ComicInfo Series "Trve Kvlt" is those five issues collected
+I 31989 cv=1006326 gcd=2562758 isbn=9781684059959 0.95 | the trade our file rips: GCD issue 2562758 of series 203155 (August 2023, ISBN 978-1-68405-995-9) and CV 1006326, the only issue of volume 152884, which ComicVine spells "True Kvlt"
+
+S 20754 cv=124414 gcd=- 0.9 | the RUN wins: CV 124414 "Underwhere" (IDW 2017, 4 issues) is the four-issue mini our 105pp 2018 file collects, and the stored CV 109735 is the same publisher with a count of 1 — the trade record a year later
+F 20754 wrong-cv-link | stored CV 109735 "Underwhere" 2018 IDW one issue 665695 is the collected edition, not the four-issue run
+F 20754 provider-missing | the GCD dump holds no IDW "Underwhere" in either shape — only KESI Entertainment's unrelated 1995 one-shot 25808
+I 31990 cv=665695 gcd=- 0.9 | the trade our file rips: CV 665695, the only issue of volume 109735, IDW's 2018 collection of the four-issue run
+
+S 3805 cv=137236 gcd=173629 0.95 | CV 137236 "Chibi Usagi: Attack of the Heebie Chibis" (IDW 2021, one issue 866273) and GCD 173629 (IDW, June 2021, 148pp, ISBN 978-1-68405-790-0) agree on name, publisher and year, and 148pp is four off our 144pp rip
+I 31991 cv=866273 gcd=2236072 isbn=9781684057900 0.95 | the book's own record: GCD issue 2236072 (June 2021, 148pp, ISBN 978-1-68405-790-0) and CV 866273, the only issue of volume 137236
+
+S 20863 cv=73429 gcd=80401 0.95 | the RUN wins: our file is "COL V-Wars v02 - All of Us Monsters", the second trade of IDW's ELEVEN-issue V-Wars, which both legs hold — CV 73429 (IDW 2014, 11) and GCD 80401 (IDW 2014-2015, 11); the stored CV 81969 is the same publisher with a count of 1, the trade record
+F 20863 wrong-cv-link | stored CV 81969 "V-Wars: All of Us Monsters" 2015 IDW one issue 488690 is the second collected volume, not the eleven-issue run
+F 20863 merge-with=20864 | S20863 (v02) and S20864 (v01) are the two trades of ONE run, IDW's eleven-issue V-Wars, split into a shelf apiece by the subtitle in each filename
+I 31712 cv=488690 gcd=- 0.9 | the trade our 137pp file rips: CV 488690, the only issue of volume 81969 "V-Wars: All of Us Monsters" 2015; the GCD dump has no collected row for V-Wars
+
+S 20864 cv=73429 gcd=80401 0.95 | the RUN wins: our file is "COL V-Wars v01 - Crimson Queen", the first trade of the same eleven-issue run — CV 73429 (IDW 2014, 11) and GCD 80401 (IDW 2014-2015, 11) — and the stored CV 77444 is its count-1 trade record
+F 20864 wrong-cv-link | stored CV 77444 "V-Wars: Crimson Queen" 2014 IDW one issue 467688 is the first collected volume, not the eleven-issue run
+I 31711 cv=467688 gcd=- 0.9 | the trade our 116pp file rips: CV 467688, the only issue of volume 77444 "V-Wars: Crimson Queen" 2014
+
+S 21077 cv=87639 gcd=95869 0.95 | the RUN wins: CV 87639 and GCD 95869 both hold "Victorie City" as IDW's FOUR-issue 2016 mini, and our 117pp file is those four issues collected — 4 x 28pp plus covers
+F 21077 wrong-cv-link | stored CV 92488 "Victorie City" 2016 IDW one issue 540829 is the collected edition, not the four-issue run
+I 31992 cv=540829 gcd=- 0.9 | the trade our file rips: CV 540829, the only issue of volume 92488; the GCD dump holds only the four-issue run 95869
+
+S 21141 cv=2074 gcd=1512 0.9 | the ORIGINAL wins: our 179pp COL file is IDW's 2019 collection of Dell's FOUR-issue 1962-1964 "Voyage to the Deep", which both legs hold — CV 2074 (Dell 1962, 4) and GCD 1512 (Dell, 1962-1964, four issues at 36pp) — and 4 x 36 = 144pp under our 179pp with the archive apparatus
+F 21141 wrong-cv-link | stored CV 116929 "Voyage to the Deep" 2019 IDW one issue 699942 is the 2019 archive EDITION, not the 1962 Dell series it reprints
+I 31995 cv=699942 gcd=1923595 isbn=9781684054503 0.95 | the printing we hold: GCD issue 1923595 of series 140239 (IDW, February 2019, 184pp, ISBN 978-1-68405-450-3) against our 179pp, and CV 699942, volume 116929's only issue
+
+S 21142 cv=129656 gcd=163180 0.95 | the stored link is the run: CV 129656 "Voyage to the Stars" (IDW 2020, 4 issues) and GCD 163180 (IDW 2020-2021, 4) agree on publisher, years and count, and our 100pp 2021 file is those four issues collected
+I 31996 cv=861847 gcd=2230232 isbn=9781684057986 0.95 | the trade our file rips: GCD issue 2230232 of series 173236 (June 2021, 96pp, ISBN 978-1-68405-798-6) against our 100pp, and CV 861847, the only issue of volume 136953
+
+S 22120 cv=88419 gcd=97536 0.9 | the RUN wins: CV 88419 and GCD 97536 both hold "Wynonna Earp" as IDW's EIGHT-issue 2016 series, and our 315pp "Strange Inheritance" file is that run collected; the doubt keeping this at 0.9 is that 315pp is far more than 8 x 24pp, so the volume also carries the 1996 Image material
+F 22120 wrong-cv-link | stored CV 89630 "Wynonna Earp: Strange Inheritance" 2016 IDW one issue 524924 is the collected edition, not the eight-issue 2016 run
+F 22120 merge-with=22118 | S22118 "Wynonna Earp" already carries CV 88419, the eight-issue 2016 run; this shelf is that run's Strange Inheritance collection, so the two are one comic and the merge is intended
+I 32041 cv=524924 gcd=2723832 0.95 | the trade our file rips: GCD issue 2723832 of series 222681 (IDW, 2016) and CV 524924, volume 89630's only issue — "Strange Inheritance"
+
+S 22121 cv=139890 gcd=180657 0.95 | CV 139890 "Wynonna Earp: All In" (IDW 2021, one issue 891827) and GCD 180657 (IDW, September 2021, ISBN 9781684058686) agree on name and publisher a year apart in their dating, and our file is "COL Wynonna Earp - All In (2021)" at 450pp in a Deluxe Edition folder
+N 22121 this omnibus collects IDW's 2016 eight-issue run, Season Zero and the Legends/Homecoming one-shots — several runs, which is why the collected record rather than any one run carries the S
+I 33880 cv=891827 gcd=2304136 isbn=9781684058686 0.95 | the book's own record: GCD issue 2304136 (September 2021, ISBN 9781684058686) and CV 891827, the only issue of volume 139890
+
+S 22119 cv=102796 gcd=115369 0.95 | the stored link is the run: CV 102796 "Wynonna Earp Season Zero" (IDW 2017, 5 issues) and GCD 115369 (IDW 2017, 5) agree on publisher, year and count, and our 119pp 2018 file is those five issues collected
+I 33881 cv=658763 gcd=- 0.9 | the trade our file rips: CV 658763, the only issue of volume 108558 "Wynonna Earp: Season Zero" 2018; the GCD dump holds only the five-issue run
+
+S 22642 cv=95704 gcd=109406 0.95 | the stored link is the run: CV 95704 "Yakuza Demon Killers" (IDW 2016, 4 issues) and GCD 109406 "Yakuza: Demon Killers" (IDW 2016-2017, 4) agree on publisher, years and count, and our 105pp 2017 file is those four issues collected
+I 32042 cv=598291 gcd=- 0.9 | the trade our file rips: CV 598291, the only issue of volume 101761 "Yakuza Demon Killers" 2017; the GCD dump holds only the four-issue run
+
+S 22656 cv=147079 gcd=185287 0.95 | CV 147079 "Yellow Cab" (IDW 2022, one issue 961628) and GCD 185287 (IDW, May 2022, ISBN 9781684058921) agree on name, publisher and year against our 172pp rip; the Vents d'Ouest row 176384 is the French original edition
+I 32043 cv=961628 gcd=2403862 isbn=9781684058921 0.95 | the book's own record: GCD issue 2403862 (IDW, May 2022, ISBN 9781684058921) and CV 961628, the only issue of volume 147079
+
+S 22786 cv=18563 gcd=24057 0.95 | the ORIGINAL wins: our 120pp 2017 file is IDW's edition of Sam Kieth's FIVE-issue 2000-2001 Vertigo series, which both legs hold — CV 18563 "Zero Girl" (DC 2000, 5) and GCD 24057 (DC, 2001, 5) — and 5 x 24pp is the arithmetic that fits
+F 22786 wrong-cv-link | stored CV 32737 "Zero Girl" 2001 DC one issue 209904 is DC's own collected edition of that series; our file is IDW's 2017 edition, and neither is the run
+I 32048 cv=628354 gcd=1742717 isbn=9781631409714 0.95 | the printing we hold: GCD issue 1742717 of series 117476 (IDW, October 2017, ISBN 9781631409714) and CV 628354, the only issue of volume 104916 "Zero Girl" 2017
+
+# ── Icon ─────────────────────────────────────────────────────────────────────────────────────────
+S 15275 cv=47946 gcd=65020 0.95 | the RUN wins: CV 47946 "The Secret Service" (Marvel/Icon 2012, 6) and GCD 65020 (Marvel, 2012-2013, six issues at 32-52pp, June 2012 - June 2013) agree on publisher, years and count, and our 156pp file is those six issues collected
+I 30219 cv=446627 gcd=- 0.9 | the trade our file rips: CV 446627, the only issue of volume 71997 "The Secret Service: Kingsman" (Marvel 2014), the collection of the six-issue run; the GCD dump indexes only the run and its foreign editions
+
+S 9365 cv=36353 gcd=53026 0.95 | CV 36353 "Incognito: Bad Influences" (Marvel/Icon 2010, 5) and GCD 53026 (Marvel, 2010-2011, limited series, 5) agree on publisher, years and count, our ladder is 1-5 at 29-32pp, and every filename says "(of 05)" — the solicited length agreeing with both
+N 9365 GCD 71258 and CV 154346 are the same mini's 2011 collected edition, which we do not hold; our five files are the floppies
+
+S 14041 cv=57179 gcd=71998 0.95 | CV 57179 "Powers: The Bureau" (Marvel/Icon 2013, 12) and GCD 71998 "Powers: Bureau" (Marvel 2013-2014, 12) agree on publisher, years and count, and our ladder is 1-12 at 22-33pp; the two extra files are 1pp "Cover ONLY" variant scans of #1, which is the whole of the ratio and not a second run
+
+# ── Image ────────────────────────────────────────────────────────────────────────────────────────
+S 3 cv=81363 gcd=88340 0.95 | CV 81363 "'68: Bad Sign" (Image 2015, one issue 486182) and GCD 88340 (Image, 2015, 32pp against our 27pp rip) agree on name, publisher and year; the OS in our filename is "one-shot" and the ladder value 68 is the title
+I 32815 cv=486182 gcd=1339855 0.95 | the book's own record: GCD issue 1339855 (Image, 2015, 32pp) and CV 486182, the only issue of volume 81363 — the one-shot our 27pp file rips
+
+S 4 cv=68934 gcd=77529 0.95 | CV 68934 "'68: Hallowed Ground" (Image 2013, one issue 432361) and GCD 77529 "'68 Hallowed Ground" (Image, November 2013, 1) agree on name, publisher and year against our 32pp one-shot rip
+I 32816 cv=432361 gcd=1156929 0.95 | the book's own record: GCD issue 1156929 (#1, Image, November 2013) and CV 432361, the only issue of volume 68934 — the one-shot our 32pp file rips
+
+S 6 cv=80467 gcd=86925 0.95 | the file is the GUTS 'N GLORY one-shot, not the Jungle Jim mini: CV 80467 "'68 Jungle Jim: Guts'N'Glory" (Image 2015, one issue 481642) and GCD 86925 "'68 Jungle Jim: Guts 'n Glory One-Shot" (Image, March 2015, 32pp — page for page our rip) name it in both legs
+F 6 wrong-cv-link | stored CV 59512 "'68: Jungle Jim" 2013 Image 4 issues is the earlier four-issue mini, not the 2015 Guts 'n Glory one-shot this shelf holds
+I 32817 cv=481642 gcd=1326694 0.95 | the book's own record: GCD issue 1326694 (Image, March 2015, 32pp, exactly our rip) and CV 481642, the only issue of volume 80467
+
+S 5 cv=76871 gcd=82726 0.95 | the RUN wins: CV 76871 and GCD 82726 both hold "'68: Homefront" as Image's FOUR-issue 2014 mini, and our judged range for item 33959 is #1-4 — the whole of it — in a 147pp COL v05 file
+F 5 wrong-cv-link | stored CV 87418 "'68: Homefront" 2016 Image one issue 511546 is the collected edition, not the four-issue 2014 run
+I 33959 cv=511546 gcd=- 0.9 | the trade our file rips: CV 511546, the only issue of volume 87418 "'68: Homefront" 2016; the GCD dump holds only the four-issue run 82726
+
+S 16 cv=19316 gcd=17577 0.95 | the ORIGINAL wins: our file is "100% (Remastered) (2002, 2020)" at 261pp, and both legs hold Paul Pope's FIVE-issue 2002-2003 Vertigo series — CV 19316 (DC 2002, 5) and GCD 17577 (DC, 2002-2003, 5); the 2020 Image edition is the remaster our rip carries
+I 36084 cv=739519 gcd=- 0.9 | the printing we hold: CV 739519, the only issue of volume 125458 "100%" (Image 2020) — the remastered edition our 261pp file rips; the GCD dump indexes DC's printings, not Image's
+
+S 29 cv=159562 gcd=213338 0.95 | CV 159562 "1949" (Image 2024, one issue 1068336) and GCD 213338 (Image, 2024, ISBN 9781534397101) agree on name, publisher and year against our 120pp rip; the 1949 in our ladder is the title
+I 36210 cv=1068336 gcd=2641193 isbn=9781534397101 0.95 | the book's own record: GCD issue 2641193 (Image, 2024, ISBN 9781534397101) and CV 1068336, the only issue of volume 159562
+
+S 69 cv=144584 gcd=188245 0.95 | the stored link is the run: CV 144584 "20th Century Men" (Image 2022, 6 issues) and GCD 188245 (Image 2022-, 6) agree on publisher, year and count, and our judged range for item 36211 is #1-6 — the whole run in a 252pp COL v01
+I 36211 cv=1014623 gcd=2533131 isbn=9781534324541 0.95 | the trade our file rips: GCD issue 2533131 of series 200786 (Image, 2023, ISBN 1534324542) and CV 1014623, the only issue of volume 153573
+
+S 73 cv=115429 gcd=135450 0.95 | CV 115429 "24 Panels" (Image 2018, one issue 692465) and GCD 135450 (Image, 2018, 1) agree on name, publisher and year against our 108pp benefit-anthology rip; the ladder value 24 is the title
+I 36212 cv=692465 gcd=1880836 0.95 | the book's own record: GCD issue 1880836 (Image, 2018) and CV 692465, the only issue of volume 115429 — the anthology our 108pp file rips
+
+S 95 cv=65956 gcd=209298 0.95 | CV 65956 "39 Minutes" (Image 2013, one issue 420181) and GCD 209298 (Image, July 2013, 132pp against our 130pp COL rip, ISBN 9781607067566) agree on name, publisher and year; Top Cow's 2010 Pilot Season one-shot (CV 35642 / GCD 52788) is the earlier, separate book
+I 34316 cv=420181 gcd=2611647 isbn=9781607067566 0.95 | the book's own record: GCD issue 2611647 (July 2013, 132pp against our 130pp, ISBN 9781607067566) and CV 420181, the only issue of volume 65956
+
+S 99 cv=145367 gcd=190245 0.95 | the stored link is the run: CV 145367 "3Keys" (Image 2022, 5 issues) and GCD 190245 (Image 2022-2023, 5) agree on publisher, years and count, and our 154pp 2023 file with ComicInfo Series "3Keys" is those five issues collected
+I 36214 cv=1020506 gcd=2524759 isbn=9781534324909 0.95 | the trade our file rips: GCD issue 2524759 of series 199737 (Image, 2023, ISBN 1534324909) and CV 1020506, the only issue of volume 153856
+
+S 156 cv=157720 gcd=211345 0.95 | probing the bare number finds both legs: CV 157720 "7174AD" (Image 2024, 1) and GCD 211345 "7174 AD" (Image 2024-, issue #1 April 2024 at 52pp against our 44pp rip) agree on publisher and year, and our file is "7174 AD 001 (2024)" with ComicInfo Series "7174 A.D."
+I 36215 cv=- gcd=2625244 0.9 | the book's own record: GCD issue 2625244 (#1, Image, April 2024, 52pp); ComicVine's volume 157720 has no cached issue to name
+
+S 1100 cv=141807 gcd=183233 0.95 | the file is "7174 Annual (2022)": CV 141807 "7174 Annual" (Image 2022, 1) and GCD 183233 (Image, March 2022, 92pp against our 84pp rip) agree on name, publisher and year — the per-file matcher's CV 104595 is Image's unrelated 2017 anthology literally titled "Annual"
+I 37906 cv=- gcd=2383084 0.9 | the book's own record: GCD issue 2383084 (Image, March 2022, 92pp against our 84pp); ComicVine's volume 141807 has no cached issue to name
+
+S 168 cv=127829 gcd=160944 0.95 | CV 127829 "920London" (Image 2020, one issue 767893) and GCD 160944 (Image, June 2020, 140pp against our 138pp rip, ISBN 978-1-534-31504-4) agree on name, publisher and year
+I 36092 cv=767893 gcd=2119789 isbn=9781534315044 0.95 | the book's own record: GCD issue 2119789 (June 2020, 140pp, ISBN 978-1-534-31504-4) and CV 767893, the only issue of volume 127829
+
+S 200 cv=154234 gcd=204877 0.95 | the stored link is the run: CV 154234 "A Haunted Girl" (Image 2023, 4 issues) and GCD 204877 (Image 2023-2024, 4) agree on publisher, years and count, and our 138pp 2024 file is those four issues collected
+I 36222 cv=1069832 gcd=2632576 isbn=9781534397774 0.95 | the trade our file rips: GCD issue 2632576 of series 212413 (Image, 2024, ISBN 9781534397774) and CV 1069832, the only issue of volume 159777
+
+S 206 cv=98751 gcd=- 0.9 | CV 98751 "A Land Called Tarot" (Image 2017, one issue 580783) matches our 103pp file's name, publisher and year, and its ComicInfo Series and Publisher say "A Land Called Tarot" / "Image"
+F 206 provider-missing | a direct probe of the GCD dump for "A Land Called Tarot" returns nothing; its only near hit is Marvel's 2007 "The Marvel Tarot", a different comic
+I 36223 cv=580783 gcd=- 0.9 | the book's own record is CV 580783, the only issue of volume 98751 — Gael Bertrand's 2017 Image graphic novel our 103pp file rips
+
+S 229 cv=23274 gcd=31023 0.95 | the stored link is the run: CV 23274 "A Red Mass for Mars" (Image 2008, 4 issues) and GCD 31023 "Red Mass for Mars" (Image 2008-2010, 4) agree on publisher, years and count, and our 119pp 2010 file is those four issues collected
+I 35214 cv=538379 gcd=944890 0.9 | the trade our file rips: GCD issue 944890 of series 65556 (Image, 2010) and CV 538379, the only issue of volume 91985 "A Red Mass for Mars" 2010
+
+S 250 cv=140002 gcd=179152 0.95 | the stored link is the run: CV 140002 "A Thing Called Truth" (Image 2021, 5 issues) and GCD 179152 (Image 2021-2022, 5) agree on publisher, years and count, and our 140pp 2022 file is those five issues collected
+I 36226 cv=973132 gcd=2393970 isbn=9781534322103 0.95 | the trade our file rips: GCD issue 2393970 of series 184132 (#1, Image, April 2022, ISBN 1534322108) and CV 973132, the only issue of volume 148505
+
+S 267 cv=69355 gcd=77777 0.95 | the RUN wins: CV 69355 and GCD 77777 both hold "A Voice in the Dark" as Image's SEVEN-issue 2013-2014 series, and our judged range for item 35085 is #1-7 — the whole run in a 211pp COL v01
+F 267 wrong-cv-link | stored CV 75371 "A Voice in the Dark" 2014 Image one issue 458647 is the collected edition, not the seven-issue run
+I 35085 cv=458647 gcd=- 0.9 | the trade our file rips: CV 458647, the only issue of volume 75371; the GCD dump holds the seven-issue run 77777 and the 2014 sequel 82995 but no collected row
+
+S 62279 cv=95805 gcd=109619 0.95 | CV 95805 "A.D.: After Death" (Image 2016, 3 issues named "Book One", "Book Two", "Book Three") and GCD 109619 (2016-2017, 3, issues at 76/92/100pp) agree on count and years, and our three files say "Book 01 (of 03)" through "Book 03 (of 03)" at 72/80/87pp
+I 32972 cv=558987 gcd=1653919 0.95 | Book 01: GCD issue 1653919 (November 2016, 76pp against our 72pp) and CV 558987, volume 95805's #1 "Book One"
+I 32973 cv=571700 gcd=1661920 0.95 | Book 02: GCD issue 1661920 (December 2016, 92pp against our 80pp) and CV 571700, volume 95805's #2 "Book Two"
+I 32974 cv=594989 gcd=1700027 0.95 | Book 03: GCD issue 1700027 (May 2017, 100pp against our 87pp) and CV 594989, volume 95805's #3 "Book Three"
+
+S 286 cv=148786 gcd=197456 0.95 | CV 148786 "A.R.C." (Image 2023, one issue 975990, cached #1-1) and GCD 197456 (Image, March 2023, 1) agree on name, publisher and year, and our file's ComicInfo Series is "A.R.C. (one-shot)" — the ladder value 1 is that one-shot's number
+I 36228 cv=975990 gcd=2502150 0.95 | the book's own record: GCD issue 2502150 (Image, March 2023) and CV 975990, the only issue of volume 148786 — the 53pp one-shot our file rips
+
+S 354 cv=144032 gcd=187077 0.95 | the stored link is the run: CV 144032 "Above Snakes" (Image 2022, 5 issues) and GCD 187077 (Image 2022-, 5) agree on publisher, year and count, and our 122pp 2023 COL file with ComicInfo Series "Above Snakes" is those five issues collected
+I 36229 cv=1049766 gcd=2482085 isbn=9781534324565 0.95 | the trade our file rips: GCD issue 2482085 of series 195305 (Image, 2023, ISBN 1534324569) and CV 1049766, the only issue of volume 157444
+
+S 419 cv=82997 gcd=- 0.9 | CV 82997 "Adrift" (Image 2015, one issue 493827, cached #1-1) matches our single 23pp file "Adrift 001 (2015)" — one issue, one record, the right publisher and year; Humanoids' 2017 "Adrift" is a different comic
+F 419 provider-missing | a direct probe of the GCD dump for "Adrift" returns only Humanoids' 2017 book and Boom's Marceline Gone Adrift — no Image 2015 row
+I 34547 cv=493827 gcd=- 0.9 | the book's own record is CV 493827, volume 82997's only cached issue — the 2015 Image one-shot our 23pp file rips
+
+S 483 cv=100352 gcd=158262 0.95 | CV 100352 "Afar" (Image 2017, one issue 589848) and GCD 158262 (Image, March 2017, 170pp against our 160pp rip, ISBN 978-1-63215-941-0) agree on name, publisher and year
+I 33988 cv=589848 gcd=2096256 isbn=9781632159410 0.95 | the book's own record: GCD issue 2096256 (March 2017, 170pp, ISBN 978-1-63215-941-0) and CV 589848, the only issue of volume 100352
+
+S 548 cv=158094 gcd=211995 0.95 | the RUN wins: CV 158094 and GCD 211995 both hold "Ain't No Grave" as Image's FIVE-issue 2024 series, and our judged range for item 36238 is #1-5 — the whole run in a 152pp COL v01
+F 548 wrong-cv-link | stored CV 162179 "Ain't No Grave" 2024 Image one issue 1093003 is the collected edition, not the five-issue run
+I 36238 cv=1093003 gcd=2684896 isbn=9781534331488 0.95 | the trade our file rips: GCD issue 2684896 of series 218335 (Image, 2024, ISBN 9781534331488) and CV 1093003, volume 162179's only issue
+
+S 553 cv=3665 gcd=3220 0.9 | the ORIGINAL wins: our two books are "Airboy Archives v01" and "v02", and both legs hold the run they reprint — CV 3665 "Airboy" (Eclipse 1986, 50) and GCD 3220 (Eclipse, 1986-1989, fifty issues at 20pp); 313pp and 300pp is about sixteen of those issues apiece, which is why this is 0.9 and not 0.95
+N 553 the archive line itself is CV 72277 / GCD 79530 (IDW 2014-2017, 5 volumes); we hold two of the five, and the open provider-disagrees flag on item 34592 is the LOCG bridge giving both volumes the identical span 1-50, which is the line's span, not either book's
+I 34592 cv=447525 gcd=1188185 isbn=9781613779002 0.95 | Vol. 01: GCD issue 1188185 (IDW, February 2014, 316pp against our 313pp, ISBN 978-1-61377-900-2) and CV 447525, volume 72277's #1 named "Volume 1"
+I 34593 cv=462910 gcd=1247901 isbn=9781631400100 0.9 | Vol. 02: GCD issue 1247901 (IDW, ISBN 978-1-63140-010-0), the archive line's second book, and CV 462910, volume 72277's #2 named "Volume 2" — our 300pp rip
+
+S 590 cv=68903 gcd=77526 0.95 | the RUN wins: CV 68903 and GCD 77526 both hold "Alex + Ada" as Image's FIFTEEN-issue 2013-2015 series, and our judged range for item 35751 is #1-15 — the whole run in a 378pp "Complete Collection Deluxe Edition"
+F 590 wrong-cv-link | stored CV 75730 "Alex + Ada" 2014 Image 3 issues is the three-volume TRADE line (GCD 155071), not the fifteen-issue run our deluxe omnibus collects
+I 35751 cv=558439 gcd=- 0.9 | the omnibus our file rips: CV 558439, the only issue of volume 95716 "Alex + Ada The Complete Collection: Deluxe Edition" (Image 2016); the GCD dump holds the run and the trade line but no deluxe row
+
+S 700 cv=146747 gcd=193729 0.95 | the stored link is the run: CV 146747 "All Against All" (Image 2022, 5 issues) and GCD 193729 "All against All" (Image 2022-, 5) agree on publisher, year and count, and our 144pp 2023 file is those five issues collected
+I 36239 cv=1000070 gcd=2553578 isbn=9781534399877 0.95 | the trade our file rips: GCD issue 2553578 of series 201915 (Image, 2023, ISBN 1534399879) and CV 1000070, the only issue of volume 152086
+
+S 719 cv=158702 gcd=213506 0.95 | CV 158702 "All the Things We Didn't Do Last Night" (Image 2024, one issue 1061925) and GCD 213506 "All the Things We Didn't Do Last Night" (Image, 2024, 1) agree on that long title, publisher and year against our 35pp rip
+I 36240 cv=1061925 gcd=2643904 0.95 | the book's own record: GCD issue 2643904 (Image, 2024) and CV 1061925, the only issue of volume 158702 — the 35pp one-shot our file rips
+
+S 800 cv=45574 gcd=64703 0.95 | the RUN wins: CV 45574 and GCD 64703 both hold "Alpha Girl" as Image's FIVE-issue 2012 mini, and our judged range for item 35516 is #1-5 — the whole run in a 135pp COL v01
+F 800 wrong-cv-link | stored CV 58041 "Alpha Girl" 2013 Image one issue 388814 is the collected edition, not the five-issue run
+I 35516 cv=388814 gcd=- 0.9 | the trade our file rips: CV 388814, the only issue of volume 58041; the GCD dump holds the five-issue run 64703 and Tokyopop's German edition but no US collected row
+
+S 934 cv=47813 gcd=65018 0.95 | the RUN wins: CV 47813 and GCD 65018 both hold "America's Got Powers" as Image's SEVEN-issue 2012-2013 series, and our 177pp COL file is those seven issues collected
+F 934 wrong-cv-link | stored CV 77447 "America's Got Powers" 2014 Image one issue 467693 is the collected edition, not the seven-issue run
+I 34493 cv=467693 gcd=- 0.9 | the trade our file rips: CV 467693, the only issue of volume 77447; the GCD dump holds the run 65018 and the Panini foreign editions but no US collected row
+
+S 95101 cv=19591 gcd=29821 0.95 | CV 19591 "Ant" (Image 2005) and GCD 29821 (Image, 2005-2021, was ongoing, 12) agree on publisher and start year, and GCD's twelve-issue span 2005-2021 is exactly our ladder — #1-8 from 2005-2006 plus the #12 dated 2021 that a 2005-only record could not hold
+N 95101 CV 139836 "Ant" (Image 2021, 6) is the later relaunch and GCD 63047 a 2006 one-shot; neither covers our #1-8 plus #12
+
+S 1129 cv=144971 gcd=189087 0.95 | the stored link is the run: CV 144971 "Antioch" (Image 2022, 2 issues) and GCD 189087 (Image 2022-, 2) agree on publisher, year and count, and our 107pp 2023 file with ComicInfo Series "Antioch" is those two issues collected
+I 36258 cv=1069747 gcd=2593163 isbn=9781534399884 0.95 | the trade our file rips: GCD issue 2593163 of series 207369 (Image, 2023, ISBN 1534399887) and CV 1069747, the only issue of volume 159771
+
+S 1136 cv=161040 gcd=217353 0.95 | CV 161040 "Anzuelo" (Image 2024, one issue 1077729) and GCD 217353 (Image, 2024, ISBN 9798368809267) agree on name, publisher and year against our 307pp Emma Rios book; the second file is a 2pp signed-bookplate scan, which costs the line nothing
+I 36259 cv=1077729 gcd=2673903 isbn=9798368809267 0.95 | the book's own record: GCD issue 2673903 (Image, 2024, ISBN 9798368809267) and CV 1077729, the only issue of volume 161040 — our 307pp rip
+
+S 1142 cv=113216 gcd=128789 0.95 | CV 113216 "Aphrodite IX: Ares" (Image 2018, one issue 683716) and GCD 128789 (Image, September 2018, 1) agree on name, publisher and year against our 33pp one-shot rip; the 2013 eleven-issue Aphrodite IX is the parent series, not this book
+I 33050 cv=683716 gcd=1843457 0.95 | the book's own record: GCD issue 1843457 (Image, September 2018) and CV 683716, the only issue of volume 113216
+
+S 1194 cv=152407 gcd=200607 0.95 | the RUN wins: CV 152407 and GCD 200607 both hold "Arcade Kings" as Image/Skybound's FIVE-issue 2023 series, and our judged range for item 36261 is #1-5 — the whole run in a 211pp COL v01 whose ComicInfo Publisher says "Image - Skybound"
+F 1194 wrong-cv-link | stored CV 160239 "Arcade Kings" 2023 Image one issue 1072736 is the collected edition, not the five-issue run
+I 36261 cv=1072736 gcd=2589350 isbn=9781534399051 0.95 | the trade our file rips: GCD issue 2589350 of series 206862 (#1, Image, ISBN 1534399054) and CV 1072736, volume 160239's only issue
+
+S 1329 cv=141402 gcd=180464 0.95 | the RUN wins: CV 141402 and GCD 180464 both hold "Arrowsmith: Behind Enemy Lines" as Image's SIX-issue 2022 series, and our judged range for item 36263 is #1-6 — the whole run in a 168pp COL v02
+F 1329 wrong-cv-link | stored CV 149802 "Arrowsmith: Behind Enemy Lines" 2022 Image one issue 985787 is the collected edition, not the six-issue run
+I 36263 cv=985787 gcd=- 0.9 | the trade our file rips: CV 985787, the only issue of volume 149802; the GCD dump holds only the six-issue run 180464
+
+S 1330 cv=31630 gcd=17898 0.95 | the RUN wins: our judged range for item 36262 is #1-6, and both legs hold "Arrowsmith" as DC/Cliffhanger's SIX-issue 2003-2004 series — CV 31630 (DC 2003, 6) and GCD 17898 (DC, 2003-2004, 6); "So Smart in Their Fine Uniforms" is what the collection was titled
+F 1330 wrong-cv-link | stored CV 43791 "Arrowsmith: So Smart in Their Fine Uniforms" 2004 DC one issue 301031 is the collected edition, not the six-issue run
+I 36262 cv=301031 gcd=- 0.9 | the trade our 2022-dated file rips: CV 301031, the only issue of volume 43791; GCD holds two printings of that collection (23816, DC 2004; 209005, Image 2024) and our file matches neither year, so no single GCD issue can be named
+
+S 1344 cv=32864 gcd=51727 0.95 | the RUN wins: our six judged ranges are #0-4, #5-8, #9-13, #14-18, #19-24 and #25-29 — thirty consecutive issues — and both legs hold "Artifacts" as Top Cow/Image's long run (CV 32864, 2010, 41; GCD 51727, 2010-2014, 40); the stored CV 44029 is the six-volume TRADE line whose count equals exactly the books we own
+F 1344 wrong-cv-link | stored CV 44029 "Artifacts" 2011 Image 6 issues is the collected line (GCD 155223), not the 40-issue run our six trades collect
+I 34901 cv=302639 gcd=2059739 isbn=9781607062011 0.95 | v1 TPB: GCD issue 2059739 (#1, January 2011, 164pp against our 159pp, ISBN 978-1-60706-201-1) and CV 302639, volume 44029's #1 "Volume 1"
+I 34902 cv=327557 gcd=2059740 isbn=9781607062110 0.95 | v2 TPB: GCD issue 2059740 (#2, August 2011, 164pp against our 146pp, ISBN 978-1-60706-211-0) and CV 327557, volume 44029's #2
+I 34903 cv=350604 gcd=2059741 isbn=9781607064251 0.95 | v3 TPB: GCD issue 2059741 (#3, February 2012, 164pp against our 145pp, ISBN 978-1-60706-425-1) and CV 350604, volume 44029's #3
+I 34904 cv=350605 gcd=2059742 isbn=9781607065623 0.95 | v4 TPB: GCD issue 2059742 (#4, July 2012, 160pp against our 135pp, ISBN 978-1-60706-562-3) and CV 350605, volume 44029's #4
+I 34905 cv=404724 gcd=2059743 isbn=9781607066644 0.95 | v5 TPB: GCD issue 2059743 (#5, May 2013, 160pp against our 163pp, ISBN 978-1-60706-664-4) and CV 404724, volume 44029's #5
+I 34906 cv=441439 gcd=2059744 isbn=9781607066903 0.95 | v6 TPB: GCD issue 2059744 (#6, December 2013, 148pp against our 147pp, ISBN 978-1-60706-690-3) and CV 441439, volume 44029's #6
+
+S 1436 cv=144144 gcd=183342 0.9 | the reprint-LIBRARY line: CV 144144 "Astro City Metrobook" (Image 2022, 6 issues named "Volume 1" to "Volume 6") and GCD 183342 (Image 2022-, 6, at 500/500/500/516/532/498pp) agree on publisher, year and count, and GCD's page counts sit within 20pp of our five 482-524pp books
+N 1436 what these omnibuses reprint is Astro City across Image (1995), Homage and DC/Vertigo — a run split across three publishers with no single run record, which is why the library line carries the S
+I 36270 cv=938351 gcd=2384000 isbn=9781534322042 0.95 | Book 01: GCD issue 2384000 (#1, March 2022, 500pp, ISBN 978-1-5343-2204-2) against our 486pp, and CV 938351, volume 144144's #1 "Volume 1"
+I 36269 cv=972967 gcd=2494635 isbn=9781534324626 0.95 | Book 03: GCD issue 2494635 (#3, February 2023, 500pp, ISBN 978-1-5343-2462-6) against our 482pp, and CV 972967, volume 144144's #3 "Volume 3"
+I 36272 cv=1034962 gcd=2574889 isbn=9781534399716 0.95 | Book 04: GCD issue 2574889 (#4, October 2023, 516pp, ISBN 978-1-5343-9971-6) against our 502pp, and CV 1034962, volume 144144's #4 "Volume 4"
+I 36273 cv=1054270 gcd=2617013 0.95 | Book 05: GCD issue 2617013 (#5, March 2024, 532pp against our 524pp, ISBN 1534397094) and CV 1054270, volume 144144's #5 "Volume 5"
+I 36274 cv=1125139 gcd=2704381 isbn=9781534350380 0.95 | Book 06: GCD issue 2704381 (#6, January 2025, 498pp — two off our 496pp — ISBN 9781534350380) and CV 1125139, volume 144144's #6 "Volume 6"
+
+R 1431 | five files, five different comics: three 2004 DC one-shots (A Visitor's Guide, CV 18183 / GCD 12139; the Supersonic-subtitled Astro City Special, CV 25753 / GCD 12140; the 9pp On Mulberry Street prelude from the Astro City/Arrowsmith Flip Book, CV 25754 / GCD 13136), Image's 2022 That Was Then… Special (CV 142090 / GCD 183339) and a 488pp Metrobook that belongs to the Metrobook line on S1436; the per-file matcher stamped Norma Editorial's Spanish "Astro City" on all five
+F 1431 split-needed | proposed runs: one shelf per one-shot on the four records above, and item 36271 to the Astro City Metrobook line (CV 144144 / GCD 183342, its #2)
+I 36265 cv=106486 gcd=215980 0.95 | A Visitor's Guide: GCD issue 215980 (DC, December 2004, 52pp against our 49pp) and CV 106486, the only issue of volume 18183 "Astro City: A Visitor's Guide"
+I 36266 cv=151834 gcd=215981 0.95 | the Supersonic Special: GCD issue 215981 (#1 of "Astro City Special", DC, October 2004, 44pp against our 32pp) and CV 151834, the only issue of volume 25753
+I 36267 cv=913814 gcd=2383973 0.95 | That Was Then… Special: GCD issue 2383973 (Image, March 2022, 36pp — page for page our rip) and CV 913814, the only issue of volume 142090
+I 36268 cv=151835 gcd=235006 0.9 | the flip-book prelude: GCD issue 235006 (#1 of "Astro City / Arrowsmith", DC, June 2004, 36pp) and CV 151835, the only issue of volume 25754, whose issue name is "On Mulberry Street: A Prelude" — our 9pp file is that half of the flip book
+I 36271 cv=945465 gcd=2428437 isbn=9781534323179 0.95 | Metrobook Book 02: GCD issue 2428437 (#2, August 2022, 500pp against our 488pp, ISBN 978-1-5343-2317-9) and CV 945465, volume 144144's #2 "Volume 2"
+
+S 62350 cv=158856 gcd=200787 0.95 | CV 158856 "Ava's Demon" (Image 2023, 2 issues named "Book One: Reborn" and "Book Two: Aftermath") and GCD 200787 (Image 2023-, 2) name our two files exactly — "Book 01 - Reborn (2023)" and "Book 02 - Aftermath (2024)"; the 2014 Michelle Czajkowski row is the webcomic's self-published edition
+I 36275 cv=1063178 gcd=2533161 isbn=9781534324381 0.95 | Book 01 "Reborn": GCD issue 2533161 (#1, ISBN 1534324380) and CV 1063178, volume 158856's #1 — our 284pp rip
+I 36276 cv=1063179 gcd=2633781 isbn=9781534398528 0.95 | Book 02 "Aftermath": GCD issue 2633781 (#2, ISBN 9781534398528) and CV 1063179, volume 158856's #2 — our 331pp rip
+
+S 1780 cv=25794 gcd=77917 0.95 | the RUN wins: CV 25794 and GCD 77917 both hold "Bad Dog" as Image's SIX-issue series (2009-2014), and our 203pp "COL Bad Dog v01 - In the Land of Milk and Honey" is that run collected; Fantagraphics' 2013 "Bad Dog" is a different comic on publisher
+F 1780 wrong-cv-link | stored CV 75733 "Bad Dog: In the Land of Milk and Honey" 2014 Image one issue 459715 is the collected edition, not the six-issue run
+I 35430 cv=459715 gcd=- 0.9 | the trade our file rips: CV 459715, the only issue of volume 75733; the GCD dump holds only the six-issue run 77917
+
+S 1792 cv=19132 gcd=26453 0.9 | the RUN wins: CV 19132 "Bad Planet" (Image 2005, 6) and GCD 26453 (Image, 2005-2008, 7) are the run our 184pp "COL Bad Planet v1 (Digital TPB+ Extras)" collects; the count disagreement 6 against 7 is the unexplained residue that keeps this at 0.9
+I 34259 cv=468380 gcd=- 0.9 | the trade our file rips: CV 468380, the only issue of volume 77674 "Bad Planet" (Raw Studios 2010); GCD carries TWIN Raw Studios rows for that book, 197127 and 197128, so no single GCD issue can be named
+
+S 1819 cv=25733 gcd=33888 0.95 | the ORIGINAL wins: our 138pp file is Image's 2015 collection of Vertigo's SIX-issue 2009 "Bang! Tango", which both legs hold — CV 25733 (DC 2009, 6) and GCD 33888 (DC, 2009, 6) — and 6 x 24pp is the arithmetic that fits
+I 34845 cv=479285 gcd=2656667 isbn=9781632152503 0.95 | the printing we hold: GCD issue 2656667 of series 215283 (Image, 2015, ISBN 978-1-63215-250-3) and CV 479285, the only issue of volume 79984 "Bang! Tango" 2015
+
+S 1865 cv=25181 gcd=14267 0.95 | the RUN wins: CV 25181 and GCD 14267 both hold "Bastard Samurai" as Image's THREE-issue 2002 mini, and our 118pp "COL Bastard Samurai v1" is those three issues collected; GCD's 62978 (Image 2002-2007, 1) gives that collection 112pp with ISBN 1582402833
+F 1865 wrong-cv-link | stored CV 54739 "Bastard Samurai" 2007 Image one issue 372634 is the collected edition, not the three-issue 2002 run
+I 35554 cv=372634 gcd=906529 isbn=1582402833 0.95 | the trade our file rips: GCD issue 906529 (#1 of series 62978, Image 2002, 112pp against our 118pp, ISBN 1582402833) and CV 372634, volume 54739's only issue
+
+S 2317 cv=121553 gcd=150547 0.9 | the collected LINE is the identity: CV 121553 "Battle Chasers Anthology" (Image 2019, one issue 720066) and GCD 150547 (Image, September 2019, 316pp, ISBN 9781534315228) agree on name, publisher and year, and 316pp is twelve off our 304pp rip
+N 2317 what it collects is Battle Chasers #1-9, a run split across publishers — GCD holds it as Image 10169 (#1-4), DC 10170 (1999-2001) and Image 10171 — so there is no single run record to take instead
+I 32872 cv=720066 gcd=2017290 isbn=9781534315228 0.95 | the book's own record: GCD issue 2017290 (September 2019, 316pp, ISBN 9781534315228) and CV 720066, the only issue of volume 121553
+
+S 2333 cv=116671 gcd=138367 0.9 | the omnibus LINE is the identity: CV 116671 "Battlepug: The Compugdium" (Image 2019, one issue 698495) and GCD 138367 (Image, January 2019, 340pp, ISBN 978-1-5343-1028-5) agree on name, publisher and year, and 340pp is three off our 337pp rip
+N 2333 what it collects is Mike Norton's Battlepug from DARK HORSE (CV 50157 / GCD 66562, 5 volumes) before the 2019 Image relaunch — a run split across publishers, which caps this at 0.9
+I 35960 cv=698495 gcd=1910721 isbn=9781534310285 0.95 | the book's own record: GCD issue 1910721 (January 2019, 340pp, ISBN 978-1-5343-1028-5) and CV 698495, the only issue of volume 116671
+
+S 2356 cv=50772 gcd=- 0.9 | CV 50772 "Batula" (Image 2012, one issue 347302) is the only record either provider holds for this title, and it matches our 30pp 2012 file's name, publisher and year
+F 2356 provider-missing | a direct probe of the GCD dump for "Batula" returns nothing; the packet's only GCD hit was Image's Free Comic Book Day 2012 anthology, reached by the year alone
+I 34402 cv=347302 gcd=- 0.9 | the book's own record is CV 347302, the only issue of volume 50772 — the 2012 Image one-shot our 30pp file rips
+
+S 2370 cv=157978 gcd=211793 0.95 | the stored link is the run: CV 157978 "Bear Pirate Viking Queen" (Image 2024, 3 issues) and GCD 211793 (Image 2024, 3) agree on publisher, year and count, and our 152pp COL v01 is those three issues collected
+I 36278 cv=- gcd=2653382 isbn=9781534382619 0.9 | the trade our file rips: GCD issue 2653382 of series 214679 (Image, 2024, ISBN 9781534382619); ComicVine has no count-1 collected record for this mini
+
+S 2508 cv=143766 gcd=186330 0.95 | the stored link is the run: CV 143766 "Beware the Eye of Odin" (Image 2022, 4 issues) and GCD 186330 (Image 2022, 4) agree on publisher, year and count, and our 163pp file with ComicInfo Series "Beware the Eye of Odin" is those four issues collected
+I 36279 cv=- gcd=2465679 isbn=9781534324527 0.9 | the trade our file rips: GCD issue 2465679 of series 193881 (Image, 2022, ISBN 1534324526); ComicVine's only other record is the 2015 ashcan 142667, not a collection
+
+S 2537 cv=80485 gcd=86926 0.95 | the RUN wins: CV 80485 and GCD 86926 both hold "Big Man Plans" as Image's FOUR-issue 2015 mini, and our 110pp COL file is those four issues collected; GCD's count-1 row 95142 (December 2015, ISBN 978-1-63215-622-8) is that trade
+F 2537 wrong-cv-link | stored CV 86339 "Big Man Plans" 2015 Image one issue 507221 is the collected edition, not the four-issue run
+I 34599 cv=507221 gcd=1515804 isbn=9781632156228 0.95 | the trade our file rips: GCD issue 1515804 (December 2015, ISBN 978-1-63215-622-8) and CV 507221, volume 86339's only issue
+
+S 2538 cv=164377 gcd=182877 0.9 | the shelf is the 2022 EXTENDED EDITION, a different book from the 2015 Image trade on S2537: CV 164377 "Big Man Plans" (Exploding Albatross Funnybooks 2022, one issue 1110826) and GCD 182877 (Albatross, 2022, 140pp against our 122pp, ISBN 978-1-949889-96-3) agree on year and on the small-press publisher, though our ComicInfo says "Dark Horse"
+F 2538 wrong-cv-link | stored CV 80485 "Big Man Plans" 2015 Image 4 issues is the original mini, which S2537's trade already carries; this shelf holds the 2022 Albatross Extended Edition
+I 34600 cv=1110826 gcd=2379262 isbn=9781949889963 0.9 | the printing we hold: GCD issue 2379262 (Albatross, 2022, 140pp, ISBN 978-1-949889-96-3) and CV 1110826, the only issue of volume 164377 — our 122pp Extended Edition rip
+
+S 2594 cv=108724 gcd=121864 0.95 | CV 108724 "Bingo Love" (Image 2018, one issue 660037) and GCD 121864 (Image, February 2018, 92pp against our 89pp rip, ISBN 9781534307506) agree on name, publisher and year; the Jackpot Edition (CV 115042 / GCD 133185) is the later expanded printing
+I 36286 cv=660037 gcd=1785825 isbn=9781534307506 0.95 | the book's own record: GCD issue 1785825 (February 2018, 92pp, ISBN 9781534307506) and CV 660037, the only issue of volume 108724

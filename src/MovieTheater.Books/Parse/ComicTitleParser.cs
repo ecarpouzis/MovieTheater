@@ -78,11 +78,30 @@ namespace MovieTheater.Books.Parse
         private static readonly Regex RxOfN = new(@"\(\s*0*(\d+)\s+(?:of|de|di|von|van|z)\s+\d+\s*\)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly Regex RxNumBeforeOfParen = new(@"\b0*(\d+)\s*\(\s*(?:of|de|di|von|van|z)\s+\d+\s*\)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly Regex RxSlashN = new(@"\(\s*0*(\d+)\s*/\s*(?!(?:19|20)\d{2}\b)\d+\s*\)", RegexOptions.Compiled);
+        /// <summary>The "(of N)" mini-series marker, in both spellings: "01 (of 05)" and "(1 of 5)".</summary>
+        private static readonly Regex RxOfMarker =
+            new(@"\(\s*(?:\d+\s+)?(?:of|de|di|von|van|z)\s+\d+\s*\)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        /// <summary>
+        /// A library index: the file's place in a continuous per-series numbering, printed right after the
+        /// series name and ahead of the arc's own title — the leading 016 of
+        /// "Baltimore 016 - The Infernal Train 01 (of 03)", the 11 of
+        /// "The Acme Novelty Library 11 - Jimmy Corrigan 05 (of 08)".
+        ///
+        /// <para>Up to three digits, or four when zero-padded, and it must be followed by a spaced dash. A
+        /// bare four-digit number is a year or part of the title ("Cyberpunk 2077 - Kickdown 01 (of 04)"), and
+        /// an unspaced dash is a date ("Fantastic Four vs. the X-Men, 1986-11-04").</para>
+        /// </summary>
+        private static readonly Regex RxLibraryIndex =
+            new(@"^.*?[A-Za-z].*?\s+-?\s*(0\d{1,3}|[1-9]\d{0,2})\s*-\s", RegexOptions.Compiled);
         private static readonly Regex RxZeroPadBeforeYear = new(@"\b0+(\d+)\b.+?\(\s*(?:19|20)\d{2}\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly Regex RxNumBeforeYear = new(@"\b0*(\d+)\b.+?\(\s*(?:19|20)\d{2}\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly Regex RxNumBeforeBareYear = new(@"\b0*(\d+)\s+(?:19|20)\d{2}\s*$", RegexOptions.Compiled);
         private static readonly Regex RxNumBeforeParenOrEnd = new(@"\b0*(\d+)\s*(?:\[|\(|$)", RegexOptions.Compiled);
         private static readonly Regex RxAnyNum = new(@"(?<![.\d])\b0*(\d+)\b(?![.\d])", RegexOptions.Compiled);
+        /// <summary>A ComicInfo number that is a plain number followed by a mini-series count: "01 (of 04)".</summary>
+        private static readonly Regex RxMetaOfCount =
+            new(@"^\s*(\d{1,5}(?:\.\d+)?)\s*\(\s*(?:of|de|di|von|van|z)\s*\.?\s*\d+\s*\)\s*$",
+                RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly Regex RxVolExtract = new(@"\b(?:Vol(?:ume)?|Book|Bk)\.?\s*#?\s*0*(\d+)\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly Regex RxVPrefixExtract = new(@"\sv(\d+)\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly Regex RxParenYear = new(@"\((\d{4})\)", RegexOptions.Compiled);
@@ -203,8 +222,8 @@ namespace MovieTheater.Books.Parse
 
             string? bestIssue;
             ParseSource issueSource;
-            if (!IsGarbageIssueNumber(meta.Number)) { bestIssue = meta.Number!.Trim(); issueSource = ParseSource.Metadata; }
-            else if (!IsGarbageIssueNumber(meta.AltNumber)) { bestIssue = meta.AltNumber!.Trim(); issueSource = ParseSource.MetadataAlt; }
+            if (!IsGarbageIssueNumber(meta.Number)) { bestIssue = NormalizeMetaNumber(meta.Number!); issueSource = ParseSource.Metadata; }
+            else if (!IsGarbageIssueNumber(meta.AltNumber)) { bestIssue = NormalizeMetaNumber(meta.AltNumber!); issueSource = ParseSource.MetadataAlt; }
             else if (fnIssue != null && !IsGarbageIssueNumber(fnIssue))
             {
                 bestIssue = fnIssue;
@@ -298,8 +317,31 @@ namespace MovieTheater.Books.Parse
         public static string? ExtractIssueNo(string raw)
         {
             if (string.IsNullOrWhiteSpace(raw)) return null;
+            // The rightmost explicit #N — but a #N inside BRACKETS is a cross-reference to somewhere else,
+            // not this file's number. "2000AD #1002b (JDMeg. #3.20-3.25) Judge Dredd - Fading of the Light"
+            // is prog 1002 citing where the strip also ran; taking the citation collapsed 535 progs onto the
+            // Megazine's volume numbers, most of them onto 3. Prefer the rightmost UNBRACKETED one, and fall
+            // back to the old behaviour when every #N is bracketed (the name has nothing else to offer).
             var hm = RxHashNum.Matches(raw);
-            if (hm.Count > 0) return NormNumber(hm[^1].Groups[1].Value);        // rightmost explicit #N
+            if (hm.Count > 0)
+            {
+                var depth = BracketDepths(raw);
+                for (var i = hm.Count - 1; i >= 0; i--)
+                    if (depth[hm[i].Index] == 0) return NormNumber(hm[i].Groups[1].Value);
+                return NormNumber(hm[^1].Groups[1].Value);
+            }
+            // Two numbering systems in one name. "Baltimore 016 - The Infernal Train 01 (of 03)" carries the
+            // library's continuous 016 AND the mini-series' own 01, and the ladder below reaches the arc's
+            // number first — which is why five different Baltimore files all parsed as issue 1 and no issue
+            // could ever attach to a collected edition's range. When an "(of N)" marker says a mini-series is
+            // being counted, an index ahead of it is the series' own number and wins. Measured over the live
+            // file: 101 files in ten series, and the shape rejects every number that belongs to a title
+            // instead ("Cyberpunk 2077 - Kickdown 01 (of 04)", "Fantastic Four vs. the X-Men, 1986-11-04").
+            if (RxOfMarker.IsMatch(raw))
+            {
+                var li = RxLibraryIndex.Match(raw);
+                if (li.Success) return NormNumber(li.Groups[1].Value);
+            }
             foreach (var rx in new[] { RxVolNum, RxOfN, RxNumBeforeOfParen, RxSlashN, RxZeroPadBeforeYear, RxNumBeforeYear, RxNumBeforeBareYear, RxNumBeforeParenOrEnd })
             {
                 var m = rx.Match(raw);
@@ -313,6 +355,37 @@ namespace MovieTheater.Books.Parse
                 if (int.TryParse(val, out var n) && (n < 1900 || n > 2099)) return NormNumber(val);
             }
             return null;
+        }
+
+        /// <summary>
+        /// A ComicInfo number is taken verbatim, and 965 comics carry the mini-series count with it —
+        /// <c>"01 (of 04)"</c>, which is a string, not a number, and so can never sort, compare, or attach to
+        /// a collected edition's range. The count is not part of the number; strip it.
+        ///
+        /// <para>Only that shape. <c>"Annual 04"</c>, <c>"Part 03"</c>, <c>"18 (GL I Only)"</c> and
+        /// <c>"22 (Edit)"</c> — 54 more — carry a real qualifier, and reducing them to a bare number would
+        /// collide them with the ordinary issue of that number. They are left exactly as they are.</para>
+        /// </summary>
+        public static string NormalizeMetaNumber(string raw)
+        {
+            var s = raw.Trim();
+            var m = RxMetaOfCount.Match(s);
+            return m.Success ? NormNumber(m.Groups[1].Value) : s;
+        }
+
+        /// <summary>Bracket nesting depth at each character position — ( [ { all count.</summary>
+        private static int[] BracketDepths(string s)
+        {
+            var depth = new int[s.Length];
+            var d = 0;
+            for (var i = 0; i < s.Length; i++)
+            {
+                var c = s[i];
+                if (c is '(' or '[' or '{') { d++; depth[i] = d; }
+                else if (c is ')' or ']' or '}') { depth[i] = d; d = Math.Max(0, d - 1); }
+                else depth[i] = d;
+            }
+            return depth;
         }
 
         public static int? ExtractYearFromFilename(string raw)

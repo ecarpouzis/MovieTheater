@@ -4,6 +4,7 @@ using MovieTheater.Books.Access;
 using MovieTheater.Books.Archives;
 using MovieTheater.Books.Db;
 using MovieTheater.Books.Media;
+using MovieTheater.Books.Projections;
 
 namespace MovieTheater.Books.Controllers
 {
@@ -127,7 +128,13 @@ namespace MovieTheater.Books.Controllers
             if (item == null) return null;
             // Not an EPUB ⇒ 404, the same answer as "no such item": the caller learns nothing about what the id
             // actually is.
-            return ".epub".Equals(item.Extension, StringComparison.OrdinalIgnoreCase) ? item : null;
+            //
+            // The question is asked of the SNIFFED format, not the stored extension. 6,768 books here are EPUBs
+            // named `.zip`, and every route on this controller used to 404 for them while the archive readers —
+            // which have always routed by magic bytes — served their pages happily. One answer, one source:
+            // `ItemDetailBuilder.ReaderFormatFor` is what the client is told, and it is what is enforced here.
+            return ".epub".Equals(ItemDetailBuilder.ReaderFormatFor(item), StringComparison.OrdinalIgnoreCase)
+                ? item : null;
         }
 
         private bool NotModified(int id, string what, Item item, TimeSpan? maxAge = null)

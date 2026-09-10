@@ -43,10 +43,21 @@ namespace MovieTheater.Books.Resolve
         }
 
         /// <summary>The Curated row an item already carries, if any.</summary>
-        public sealed record Existing(double? Start, double? End, double? Confidence, string? ProviderRef)
+        public sealed record Existing(double? Start, double? End, double? Confidence, string? ProviderRef,
+                                      string? Note = null)
         {
-            /// <summary>A row this pass did not write — v1's indicia-quoted gold.</summary>
+            /// <summary>A row this pass did not write — what used to be called gold.</summary>
             public bool IsGold => ProviderRef is null || !ProviderRef.StartsWith("model:", StringComparison.Ordinal);
+
+            /// <summary>
+            /// The row can point at the book's own words for its range: its note quotes an indicia naming
+            /// exactly the issues it claims. THIS is what makes a stored row hard to displace, and the label
+            /// is not — gold confirms at 47.8% against issue-level truth. A row typed by hand in the review
+            /// screen is a person's answer and outranks a file read the same way.
+            /// </summary>
+            public bool IsProven =>
+                (ProviderRef?.StartsWith("admin:", StringComparison.Ordinal) ?? false)
+                || SpanEvidence.SelfProving(Note, Start ?? 0, End ?? -1);
         }
 
         public enum Verdict
@@ -116,7 +127,7 @@ namespace MovieTheater.Books.Resolve
             }
             if (line.Unknown)
             {
-                if (existing is { } prior && !prior.IsGold)
+                if (existing is { } prior && !prior.IsProven)
                 {
                     flag = "span-retracted";
                     detail = $"withdrew the model's own #{Fmt(prior.Start)}-{Fmt(prior.End)}: {line.Why}";
@@ -149,9 +160,12 @@ namespace MovieTheater.Books.Resolve
             var differs = existing.Start != s || existing.End != e;
             if (line.Confidence >= (existing.Confidence ?? 0))
             {
-                if (differs && existing.IsGold)
+                if (differs && existing.IsProven)
                 {
-                    // Equal confidence never displaces gold: the indicia beat an inference at the same number.
+                    // Equal confidence never displaces a PROVEN row — one whose note quotes the book naming
+                    // exactly these issues, or one a person typed. It is the quotation that holds the line,
+                    // not the provenance: the four Hellboy omnibus rows that named the wrong volumes were all
+                    // "gold", and none of them quotes a number at all.
                     flag = "provider-disagrees";
                     detail = $"kept curated {Fmt(existing.Start)}-{Fmt(existing.End)} (conf {Fmt(existing.Confidence)}); "
                            + $"model said {Fmt(s)}-{Fmt(e)} (conf {Fmt(line.Confidence)})";

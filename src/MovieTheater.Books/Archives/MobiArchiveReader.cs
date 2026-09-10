@@ -10,6 +10,13 @@ namespace MovieTheater.Books.Archives
     /// MOBI has no page model — a PSEUDO-PAGE rendering of the extracted readable text, greeked into lines so a
     /// reader can page through something rather than nothing. It is a fallback format in this library, not a
     /// first-class one; the real reading experience for prose is EPUB.
+    ///
+    /// <para><b><c>.azw3</c> is read here too.</b> Amazon's KF8 is the same PalmDB container with a second,
+    /// newer record set inside it, so the two things this reader actually does — scan the raw bytes for the
+    /// embedded JPEG jacket, and greek whatever readable text it can find — work on it unchanged. Nothing else
+    /// claimed the extension, so 556 books failed with "No archive reader for extension '.azw3'" and had no
+    /// cover at all; <see cref="Services.LibraryScanner"/> has always mapped both to
+    /// <see cref="Db.ContainerFormat.Mobi"/>, and this closes the gap on the read side.</para>
     /// </summary>
     public sealed class MobiArchiveReader : IArchiveReader
     {
@@ -17,8 +24,11 @@ namespace MovieTheater.Books.Archives
         private const int LinesPerPage = 48;
         private const int MaxPages = 5000;
 
+        /// <summary>The PalmDB-family extensions this reader claims. Both are the same container.</summary>
+        private static readonly string[] Extensions = [".mobi", ".azw3"];
+
         public bool CanHandle(string fileExtension) =>
-            ".mobi".Equals(fileExtension, StringComparison.OrdinalIgnoreCase);
+            Extensions.Contains(fileExtension, StringComparer.OrdinalIgnoreCase);
 
         public Task<int> GetPageCountAsync(string filePath)
         {

@@ -1,0 +1,28 @@
+# R-006 — a two-shelf REVISIT. S18118 "The Black Moon Chronicles" and S18130 "The Black Moon Chronicles -
+# The Prophecy" were both given ComicVine volume 99886 in earlier files with no declared merge, which would
+# have fused them silently at the rebuild. Read together they are ONE comic, and the merge is intended.
+#
+# The evidence is arithmetic, not naming. S18130 holds exactly one file — item 22999, "COL The Black Moon
+# Chronicles v13 - The Prophecy (2018) (Europe Comics) (Digital-Empire).cbr", 51pp — and S18118 holds item
+# 23376, "The Black Moon Chronicles 13 - The Prophecy (2018) (Europe Comics) (Digital-Empire).cbr", also
+# 51pp, from the same ripper in the same year with the same page count. They are two rips of album 13 of one
+# line, and the only reason they sit on different shelves is that one filename puts the subtitle after a
+# "v13" the parser read as part of the title. Two of S18118's own files do the same thing without escaping
+# the shelf ("COL … v08 - The Sword of Justice" beside "08 - The Sword of Justice", and "COL … v20 - A
+# Gateway to Hell" beside "20 - A Gateway to Hell"), which is the same duplication pattern and confirms the
+# reading: this ripper reissued some albums under a "COL … vNN" name.
+#
+# The second leg. Europe Comics is the digital English imprint and the Grand Comics Database holds no Europe
+# Comics rows at all — probing "Black Moon Chronicles" in the dump returns nothing. Under Eric's ruling the
+# original-language row is the right comic in the wrong language: Ledroit and Froideval's line is Dargaud's
+# "Chroniques de la lune noire", GCD 89245 (Dargaud 1994-?, 24 albums), whose #13 is "La prophétie" (issue
+# 1353377) — the same album number, the same title translated. That pins both shelves to one album of one
+# line and settles the question the earlier files left open.
+#
+# These lines supersede the earlier ones for S18118 and S18130.
+
+S 18118 cv=99886 gcd=89245 0.9 | CV 99886 "The Black Moon Chronicles" (Europe Comics 2017, 21 cached issues #1-21) is our own line exactly — its issue titles are our filenames ("The Sign of Darkness", "Dragon Winds", "The Marks of Demons" … "Sic Transit Gloria Mundi") — and the second leg is the French original, GCD 89245 "Chroniques de la lune noire" (Dargaud 1994-?, 24 albums), whose numbered albums translate one for one; 0.9 because the GCD row is the other language, per the Europe Comics ruling
+N 18118 our 22 files are 20 distinct albums plus two duplicate "COL … vNN" rips (item 22994 = album 8 "The Sword of Justice", item 23006 = album 20 "A Gateway to Hell"); album 19 "Just Another Week" (CV issue 697925) is the one we do not hold, and GCD 73431 (Zenda 1989-1992, 4) is the first four albums' original publisher
+S 18130 cv=99886 gcd=89245 0.9 | the same comic as S18118: this shelf's single file is album 13 of that line, and it is CV 99886's issue 663413 "The Prophecy" and GCD 89245's #13 "La prophétie" — the ids are shared deliberately, and the merge below says so
+F 18130 merge-with=18118 | one comic, two shelves: item 22999 ("COL The Black Moon Chronicles v13 - The Prophecy (2018)", 51pp) is the same album, the same year, the same ripper and the same page count as S18118's item 23376 ("The Black Moon Chronicles 13 - The Prophecy (2018)", 51pp) — the shelf split only because the "v13 -" form put the subtitle where the parser reads a title
+I 22999 cv=663413 gcd=1353377 isbn=2205057758 0.9 | album 13's own record, covering both rips of it (item 22999 on S18130 and item 23376 on S18118): CV issue 663413 is volume 99886's #13 "The Prophecy" (2018-03-31) and GCD issue 1353377 is series 89245's #13 "La prophétie" (Dargaud, Sept 2006), the French original of the same album

@@ -43,6 +43,12 @@ namespace MovieTheater.BooksHost.Commands
             services.AddSingleton<SignatureJob>();
             services.AddSingleton<InsightImportService>();
             services.AddSingleton<CurationImportService>();
+            // The series-identity editors. Without these `books-series-clearlink` and `books-series-override`
+            // resolve nothing and die with "No service for type ...", which is how a wrong ComicVine link
+            // stayed unfixable: nine Fairy Tail spin-offs all pointed at volume 46777, so the resolver folded
+            // ten separate manga into one Series and no verb could take the link away.
+            services.AddSingleton<SeriesNamesService>();
+            services.AddSingleton<SeriesMismatchService>();
             return services.BuildServiceProvider();
         }
     }

@@ -46,6 +46,66 @@ namespace MovieTheater.Books.Tests
         /// date is stripped before the scan. Here the strip also takes the number with it and the answer is
         /// NOTHING — which is the correct outcome: a wrong number would be worse than no number.
         /// </summary>
+        [Theory]
+        // A padded library index ahead of the arc's own "(of N)" count is the series' number. Baltimore's
+        // ladder tiles 1-40 with it and collides on five different #1s without it — and a range cannot be
+        // judged while the numbering under it is wrong.
+        [InlineData("Baltimore 016 - The Infernal Train 01 (of 03) (2013) (digital) (Son of Ultron-Empire)", "16")]
+        [InlineData("Baltimore 006 - The Curse Bells 01 (of 05) (2011) (digital-Empire)", "6")]
+        [InlineData("Sir Edward Grey, Witchfinder 021 - The Gates of Heaven 01 (of 05) (2018) (digital)", "21")]
+        [InlineData("Lobster Johnson 024 - Metal Monsters of Midtown 01 (of 03) (2016) (digital)", "24")]
+        [InlineData("Abe Sapien - 009 - The Devil Does Not Jest 01 (of 02) (2011) (digital) (G85NW-Empire)", "9")]
+        [InlineData("X 013 - Better Off Dead 01 (of 04) (2014) (digital) (Son of Ultron-Empire)", "13")]
+        [InlineData("2000 AD 0371 - Dredd - Super Bowl (2 of 2)", "371")]
+        [InlineData("The Acme Novelty Library 11 - Jimmy Corrigan 05 (of 08)", "11")]
+        public void APaddedLibraryIndexOutranksTheArcsOwnNumber(string stem, string expected) =>
+            Assert.Equal(expected, ComicTitleParser.ExtractIssueNo(stem));
+
+        [Theory]
+        // The shape is the discriminator, and these are why it has to be. Each carries a number that belongs
+        // to the title (or a date) ahead of an "(of N)" arc count, and each already parses correctly.
+        [InlineData("Cyberpunk 2077 - Kickdown 01 (of 04) (2024) (digital) (Son of Ultron-Empire)", "1")]
+        [InlineData("Fantastic Four vs. the X-Men, 1986-11-04 (#01) (of 04) (digital) (Glorith-HD)", "1")]
+        [InlineData("Doppelganger 01 (of 04) (2017)", "1")]
+        public void AnUnpaddedNumberInTheTitleIsNotALibraryIndex(string stem, string expected) =>
+            Assert.Equal(expected, ComicTitleParser.ExtractIssueNo(stem));
+
+        [Theory]
+        // A #N inside brackets cites another publication. 2000AD prog 1002 also ran in the Judge Dredd
+        // Megazine, and taking the citation put 535 progs on the Megazine's volume numbers.
+        [InlineData("2000AD #1002b (JDMeg. #3.20-3.25) Judge Dredd (America II) - Fading of the Light", "1002")]
+        [InlineData("2000AD #741b (JDMeg. #1.11-1.17) Judge Dredd - Raptaur (JDMeg. #297 - Reprint)", "741")]
+        [InlineData("2000AD #1033 Judge Dredd - He Came from Outer Space", "1033")]
+        public void ABracketedHashNumberIsACrossReferenceNotTheNumber(string stem, string expected) =>
+            Assert.Equal(expected, ComicTitleParser.ExtractIssueNo(stem));
+
+        [Fact]
+        public void WhenEveryHashNumberIsBracketedTheLastOneStillAnswers()
+        {
+            // The fallback: a name with nothing outside brackets has only the citation to offer.
+            Assert.Equal("7", ComicTitleParser.ExtractIssueNo("Some Special (#7)"));
+        }
+
+        [Theory]
+        // 965 comics store the mini-series count inside the ComicInfo number, so IssueNo is a string that can
+        // never sort, compare, or attach to a range.
+        [InlineData("01 (of 04)", "1")]
+        [InlineData("4 (of 4)", "4")]
+        [InlineData("02 (OF 05)", "2")]
+        [InlineData("5.1 (of 6)", "5.1")]
+        public void TheMiniSeriesCountIsNotPartOfTheNumber(string raw, string expected) =>
+            Assert.Equal(expected, ComicTitleParser.NormalizeMetaNumber(raw));
+
+        [Theory]
+        // The 54 that carry a real qualifier keep it: "Annual 4" is not issue 4.
+        [InlineData("Annual 04")]
+        [InlineData("Part 03")]
+        [InlineData("18 (GL I Only)")]
+        [InlineData("22 (Edit)")]
+        [InlineData("7")]
+        public void AQualifiedNumberIsLeftAlone(string raw) =>
+            Assert.Equal(raw, ComicTitleParser.NormalizeMetaNumber(raw));
+
         [Fact]
         public void AnIsoDateNeverBecomesTheIssueNumber() =>
             Assert.Null(ComicTitleParser.ExtractIssueNo("Crisis_002_Fleetway_1988-10-01_Slinky_J_"));

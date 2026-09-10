@@ -919,7 +919,25 @@ namespace MovieTheater.Books.Services
             var known = await db.Items.AsNoTracking()
                 .Where(i => roots.Select(r => r.Id).Contains(i.RootId))
                 .Select(i => new { i.Id, i.Path, i.FileSize, i.FileModifiedAt }).ToListAsync(ct);
-            var byPath = known.ToDictionary(i => i.Path, StringComparer.OrdinalIgnoreCase);
+            // FIRST-WINS, not ToDictionary. `IX_Item_Path` is a BINARY unique index, so the table may legally
+            // hold two items whose paths differ only in CASE — 21 of them do, all one Calibre book split across
+            // a case-variant author folder ("Megan hart" / "Megan Hart"). The share is case-INSENSITIVE, so the
+            // lookup has to be too, and a plain ToDictionary threw on the collision and took the whole preview
+            // down. A preview must never be the thing that fails: it is what a destructive job prints before it
+            // runs. The pairs are counted and named in the log so they can be merged, which is the real fix.
+            var byPath = new Dictionary<string, (int Id, string Path, long? FileSize, DateTime? FileModifiedAt)>(
+                StringComparer.OrdinalIgnoreCase);
+            var collisions = 0;
+            foreach (var i in known)
+            {
+                if (byPath.TryAdd(i.Path, (i.Id, i.Path, i.FileSize, i.FileModifiedAt))) continue;
+                collisions++;
+                logger.LogWarning(
+                    "scan preview: two items differ only by case on {Path} (item {Item}, also item {Other}) — one book, two rows",
+                    i.Path, i.Id, byPath[i.Path].Id);
+            }
+            if (collisions > 0)
+                logger.LogWarning("scan preview: {Count} case-colliding item path(s); the first of each pair was used.", collisions);
 
             int add = 0, change = 0, folders = 0, files = 0;
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

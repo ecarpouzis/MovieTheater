@@ -21,14 +21,31 @@ namespace MovieTheater.Books.Resolve
     ///
     /// <para><b>What it will and will not trust.</b> Only a container whose winning span is <c>Curated</c> — a
     /// judged answer, not a provider leg the containment pass looked at and declined — and only at or above
-    /// <see cref="MinConfidence"/>, unless the row is v1 gold quoting the edition's own indicia. A container
+    /// <see cref="MinConfidence"/>. Two things are exempt from that floor, and neither is a label: a row whose
+    /// note QUOTES the book's indicia naming exactly these issues (<see cref="SpanEvidence.SelfProving"/>), and
+    /// a range a person typed in the review screen. Provenance alone earns nothing — rows inherited from v1
+    /// confirm against issue-level truth at 47.8%, worse than the model pass's own. A container
     /// carrying an undecided <see cref="ContainmentFlag"/>, or sitting in a series flagged
     /// <c>overlap-in-series</c> or <c>conflated-series</c>, is skipped outright: those are the shelves where
     /// several relaunch ladders each number from #1, and an issue "inside" a span there may belong to a
     /// different run entirely. Chunked by <c>Series.Id</c>, resumable, dry-run by default.</para>
+    ///
+    /// <para><b>A range with a hole in it claims only what it holds.</b> A span is two numbers, so
+    /// "Originally published in single magazine form in CHECKMATE 13-19, 26-31" is stored as 13-31 and the
+    /// six issues the book never printed look exactly like the thirteen it did. The note's own quotation
+    /// names the hole, and <see cref="SpanEvidence.ExcludedIssues"/> reads it: those issues are dropped from
+    /// the group, as is any child inside a gapped range whose issue number cannot be read. Thirty-seven live
+    /// rows are shaped this way — Checkmate, Superman Vol. 06, the Hickman X-Men omnibus, Fables Vol. 04,
+    /// four Wonder Woman volumes that collect only the odd issues. This relationship is what a file
+    /// de-duplication reads, so the asymmetry decides it: over-claiming loses files, under-claiming only
+    /// fails to save space.</para>
     /// </summary>
     public static class ContainedDuplicateJob
     {
+        /// <summary>Fewest pages a file can have and still BE an issue. Below this it is a cover scan or a
+        /// fragment, and a collected edition does not make it redundant.</summary>
+        public const int MinIssuePages = 8;
+
         public const string CursorKey = "books:dedup-contained:cursor";
 
         /// <summary>Below this a judged span is evidence for a human, not grounds for a duplicate group.</summary>
@@ -94,7 +111,7 @@ namespace MovieTheater.Books.Resolve
                           n.SeriesId || char(31) || coalesce(n.SpanLabel,'') || char(31)
                        || coalesce(s.Confidence,'') || char(31) || coalesce(s.ProviderRef,'') || char(31)
                        || coalesce(CAST(s.IssueStart AS TEXT),'') || char(31) || coalesce(CAST(s.IssueEnd AS TEXT),'')
-                       || char(31) || coalesce(s.EditionTitle,'')
+                       || char(31) || coalesce(s.EditionTitle,'') || char(31) || coalesce(s.Note,'')
                    FROM CollectionNode n
                    JOIN CollectedEditionSpan s ON s.ItemId = n.ItemId AND s.Source = {(int)EditionSource.Curated}
                    WHERE n.SeriesId IN ({idList}) AND n.TrackRole = {(int)TrackRole.Container}
@@ -112,35 +129,76 @@ namespace MovieTheater.Books.Resolve
                 var start = p[4];
                 var end = p[5];
                 var title = p[6];
+                var note = p.Length > 7 ? p[7] : "";
 
                 if (alreadyGrouped.Contains(itemId)) continue;
-                var isGold = !providerRef.StartsWith("model:", StringComparison.Ordinal);
+
+                // The exemption belongs to the QUOTATION, not to the label. A row whose note quotes the
+                // book's indicia naming exactly these issues has proved itself; every other row — gold or
+                // model — has to clear the confidence floor. Gold confirms at 47.8% against issue-level
+                // truth, so `not written by this pass` earns nothing on its own.
+                var selfProving = SpanEvidence.SelfProving(note, start.Length == 0 ? 0 : double.Parse(start, CultureInfo.InvariantCulture),
+                                                                 end.Length == 0 ? -1 : double.Parse(end, CultureInfo.InvariantCulture));
+                var typedByHand = providerRef.StartsWith("admin:", StringComparison.Ordinal);
                 if (poisonedSeries.Contains(seriesId) || flaggedItems.Contains(itemId)
-                    || (!isGold && (conf ?? 0) < minConfidence))
+                    || (!selfProving && !typedByHand && (conf ?? 0) < minConfidence))
                 {
                     skipped++;
                     continue;
                 }
 
-                var children = hot.Pairs(
-                    $@"SELECT i.Id, coalesce(r.ReadNumber,'') FROM CollectionNode n
+                // The span stores two numbers, so an edition collecting "CHECKMATE 13-19, 26-31" is stored as
+                // 13-31 and #20-25 arrive here looking redundant with a book that never printed them. The
+                // note's own quotation names the gap; honour it (SpanEvidence.ExcludedIssues). A child whose
+                // issue number cannot be read is dropped from a gapped container too — inside a range with a
+                // known hole, an unreadable number cannot be shown to be outside it, and claiming wrongly is
+                // the direction that loses files.
+                var excluded = SpanEvidence.ExcludedIssues(note, start.Length == 0 ? 0 : double.Parse(start, CultureInfo.InvariantCulture),
+                                                                 end.Length == 0 ? -1 : double.Parse(end, CultureInfo.InvariantCulture));
+                var childRows = hot.Pairs(
+                    $@"SELECT i.Id, coalesce(cd.IssueNo,'') || char(31) || coalesce(i.PageCount, 0) FROM CollectionNode n
                        JOIN Item i ON i.Id = n.ItemId
-                       LEFT JOIN ReadingOrderEntry r ON r.ItemId = i.Id
+                       LEFT JOIN ComicDetail cd ON cd.ItemId = i.Id
                        WHERE n.ParentItemId = {itemId} AND n.TrackRole = {(int)TrackRole.Primary}
-                         AND coalesce(i.IsExcluded, 0) = 0")
-                    .Select(c => (int)c.Item1).Distinct().ToList();
+                         AND coalesce(i.IsExcluded, 0) = 0");
+                var children = new List<int>();
+                var dropped = 0;
+                var covers = 0;
+                foreach (var (childIdL, packed) in childRows.DistinctBy(c => c.Item1))
+                {
+                    var parts = (packed ?? "").Split(TargetWriter.Sep);
+                    var issueNo = parts[0];
+                    if (excluded != null)
+                    {
+                        if (!double.TryParse(issueNo, NumberStyles.Float, CultureInfo.InvariantCulture, out var n)
+                            || excluded.Contains(n)) { dropped++; continue; }
+                    }
+                    // A one-page file is a VARIANT COVER SCAN, not the issue. Nightwing v4 alone holds 159 such
+                    // files, and a trade that collects #1-8 does not contain the cover art someone ripped out of
+                    // #3 — calling it a duplicate invites deleting the only copy of that cover. Anything under
+                    // MinIssuePages is held back and counted, never enrolled as a contained member.
+                    if (parts.Length > 1 && int.TryParse(parts[1], out var pages) && pages > 0 && pages < MinIssuePages)
+                    { covers++; continue; }
+                    children.Add((int)childIdL);
+                }
                 if (children.Count == 0) { skipped++; continue; }
 
-                var evidence = $"{(title.Length > 0 ? title : label)} covers #{Trim(start)}-{Trim(end)}; "
-                             + $"the library holds {children.Count} of those issues as separate files"
-                             + (isGold ? " (span from the edition's own indicia)"
-                                       : $" (judged span, confidence {conf?.ToString("0.##", CultureInfo.InvariantCulture)})");
+                var evidence = $"{(title.Length > 0 ? title : label)} covers #{Trim(start)}-{Trim(end)}"
+                             + (excluded != null
+                                ? $" except #{string.Join(", #", excluded.OrderBy(x => x).Select(x => Trim(x.ToString("0.##", CultureInfo.InvariantCulture))))}"
+                                  + $", which its own indicia excludes ({dropped} owned file(s) held back)"
+                                : "")
+                             + $"; the library holds {children.Count} of those issues as separate files"
+                             + (covers > 0 ? $" ({covers} one- or two-page cover scan(s) held back, not duplicates)" : "")
+                             + (selfProving ? " (the edition's own indicia names exactly these issues)"
+                                : typedByHand ? " (range entered by hand in the containment review)"
+                                : $" (judged span, confidence {conf?.ToString("0.##", CultureInfo.InvariantCulture)})");
 
                 hot.Exec(
                     @"INSERT INTO DuplicateGroup (Relationship, Confidence, Evidence, SuggestedKeeperItemId, ReviewState, DetectedAt)
                       VALUES ($rel, $conf, $ev, NULL, $state, $now)",
                     ("$rel", DuplicateRelationship.ContainedIn),
-                    ("$conf", isGold || (conf ?? 0) >= 0.85 ? "High" : "Medium"),
+                    ("$conf", selfProving || typedByHand || (conf ?? 0) >= 0.85 ? "High" : "Medium"),
                     ("$ev", evidence), ("$state", "Pending"),
                     ("$now", DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture)));
                 var groupId = hot.Scalar<long>("SELECT last_insert_rowid()");

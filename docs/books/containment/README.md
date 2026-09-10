@@ -1,5 +1,13 @@
 # Collected-edition containment — the model pass
 
+> **Superseded in part, 2026-09-08.** Verification against issue-level ground truth found this pass is
+> not yet safe to de-duplicate files against: only **43.6%** of its 4,081 ranges are proven, and spot
+> checks turned up whole error classes the original audit never tested for (a gap in Bone's ladder, a
+> Hellboy omnibus contradicting its own note, hulls flattened over non-contiguous collections such as
+> Checkmate `13-19, 26-31` recorded as `13-31`). **`PLAN.md` in this folder is the current plan and
+> supersedes the trust classes below.** The numbers here remain accurate as a record of what the first
+> pass did.
+
 What a collected edition *contains* decides which single issues are redundant copies. A file
 de-duplication reads containment, so a wrong span deletes a file we still want. **Correctness beats
 coverage**: a refusal is a first-class answer here, and the pass says "unknown" 17,421 times.
@@ -143,7 +151,8 @@ It reads the trust classes rather than the raw table:
 
 1. Only a container whose winning span is `Curated` — a judged answer, not a provider leg the pass
    looked at and declined.
-2. Only at confidence ≥ 0.8, unless the row is gold (indicia, or typed by a person), which is exempt.
+2. Only at confidence ≥ 0.8 — unless the note quotes the indicia naming exactly those issues, or a
+   person typed the range, which are the only exemptions.
 3. Never a container carrying an undecided `ContainmentFlag`, and never anything in a series flagged
    `overlap-in-series` or `conflated-series` — those are the shelves where three runs each number from
    #1 and "issue 5" names three different comics.
@@ -158,13 +167,20 @@ tab — because among thousands of signature groups in the Duplicates tab they w
 
 ### Trust classes, for anything else that reads containment
 
-1. **Safe to act on** — `SpanSource = Curated` at confidence ≥ 0.8, or a Curated row the pass did not
-   write (gold: indicia, or a person).
-2. **Act on with the filename in view** — `SpanSource = Curated` at 0.6–0.79. One leg, or a gap closed
-   by the ladder either side of it. The `Note` column carries the reasoning verbatim; read it.
-3. **Do not act on** — any container still won by `Locg`, `Gcd`, `Cv` or `Inferred`. The pass looked at
+**Corrected 2026-09-08.** The original version of this list granted class 1 to any Curated row this pass
+did not write — "gold". Measured against issue-level truth, those rows confirm at **47.8%** against
+**83.7%** for the pass's own, and only **564 of 988** carry an indicia quotation at all. Provenance earns
+nothing; the quotation does.
+
+1. **Safe to act on** — the row's `Note` QUOTES the book's indicia naming exactly the issues the range
+   claims (`SpanEvidence.SelfProving`), or a person typed the range in the review screen
+   (`ProviderRef = admin:<user>`).
+2. **Act on with the filename in view** — `SpanSource = Curated` at confidence ≥ 0.8 without a
+   quotation. The `Note` carries the reasoning verbatim; read it.
+3. **Evidence only, not grounds** — `Curated` below 0.8, whatever its provenance.
+4. **Do not act on** — any container still won by `Locg`, `Gcd`, `Cv` or `Inferred`. The pass looked at
    these and declined; the provider row that survives is the one it did not trust.
-4. **Never** — anything with a Pending `ContainmentFlag`.
+5. **Never** — anything with a Pending `ContainmentFlag`.
 
 A book with no span contains nothing *as far as this data is concerned*. That is a refusal, not an
 assertion that it collects nothing.

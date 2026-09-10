@@ -49,12 +49,27 @@ namespace MovieTheater.Books.Tests
         }
 
         [Fact]
-        public void EvenAtEqualConfidenceGoldIsNotDisplaced()
+        public void EvenAtEqualConfidenceAProvenRowIsNotDisplaced()
         {
-            var gold = new CuratedSpanImport.Existing(31, 59, 0.9, "issue: p001 back cover");
+            // What holds the line is the QUOTATION. This row points at the book naming exactly #31-59, so a
+            // judgement at the same confidence does not get to overwrite it.
+            var proven = new CuratedSpanImport.Existing(31, 59, 0.9,
+                null, "issue: indicia p001: 'Originally published in single magazine form as EXAMPLE 31-59'");
             var line = Span(1, 44, 44, 0.9);
-            Assert.Equal(CuratedSpanImport.Verdict.Kept, CuratedSpanImport.Decide(line, gold, out var flag, out _));
+            Assert.Equal(CuratedSpanImport.Verdict.Kept, CuratedSpanImport.Decide(line, proven, out var flag, out _));
             Assert.Equal("provider-disagrees", flag);
+        }
+
+        [Fact]
+        public void ARowThatQuotesNoNumbersIsNotProtectedByItsProvenance()
+        {
+            // PLAN.md §6.6, and the four Hellboy omnibus rows that named the wrong volumes. "p001 back cover"
+            // is a citation, not a quotation: it names no issues, so it proves nothing, and a shelf judgement
+            // at equal-or-better confidence replaces it. Gold confirms at 47.8%; the label buys nothing.
+            var unproven = new CuratedSpanImport.Existing(31, 59, 0.9, null, "issue: p001 back cover");
+            var line = Span(1, 44, 44, 0.9);
+            Assert.Equal(CuratedSpanImport.Verdict.Write, CuratedSpanImport.Decide(line, unproven, out var flag, out _));
+            Assert.Null(flag);
         }
 
         [Fact]
@@ -125,16 +140,34 @@ namespace MovieTheater.Books.Tests
         }
 
         [Fact]
-        public void AWithdrawnAnswerNeverTouchesGold()
+        public void AWithdrawnAnswerNeverTouchesAProvenRowOrAPerson()
         {
-            // The pass declining is not evidence against an edition's own indicia, or against a person.
+            // Declining is not evidence against an edition's own words, or against a person who typed one.
             var line = CuratedSpanImport.Parse("""{"itemId": 5, "unknown": true, "why": "not evidenced"}""", 1);
-            foreach (var gold in new[] { new CuratedSpanImport.Existing(1, 18, 0.98, null),
-                                         new CuratedSpanImport.Existing(1, 18, 1.0, "admin:eric") })
+            foreach (var kept in new[]
             {
-                Assert.Equal(CuratedSpanImport.Verdict.Unknown, CuratedSpanImport.Decide(line, gold, out var flag, out _));
+                new CuratedSpanImport.Existing(1, 18, 0.98, null,
+                    "issue: indicia p2: 'Originally published in single magazine form as EXAMPLE 1-18'"),
+                new CuratedSpanImport.Existing(1, 18, 1.0, "admin:eric"),
+            })
+            {
+                Assert.Equal(CuratedSpanImport.Verdict.Unknown, CuratedSpanImport.Decide(line, kept, out var flag, out _));
                 Assert.Null(flag);
             }
+        }
+
+        [Fact]
+        public void AWithdrawnAnswerDoesRetractAnUnprovenRow()
+        {
+            // A shelf that has been read and found to hold no answer must be able to withdraw one that was
+            // never evidenced — otherwise a wrong range outlives the judgement that disproved it. Hellboy
+            // Omnibus Vol. 04 claimed #11-12 while collecting two books from another Series entirely.
+            var line = CuratedSpanImport.Parse("""{"itemId": 5, "unknown": true, "why": "collects another Series"}""", 1);
+            var unproven = new CuratedSpanImport.Existing(11, 12, 0.9, null,
+                "volume: indicia p2: 'This book collects the graphic novels Hellboy in Hell Volumes 1 & 2'");
+            Assert.Equal(CuratedSpanImport.Verdict.Retract, CuratedSpanImport.Decide(line, unproven, out var flag, out var detail));
+            Assert.Equal("span-retracted", flag);
+            Assert.Contains("11-12", detail);
         }
 
         [Fact]

@@ -1,0 +1,118 @@
+MANGA SWEEP — the 214 shelves that do NOT tile, classified.
+Produced 2026-09-08 after manga_sweep.py was run over all 591 non-null manga shelves
+(377 wrote a decision file; these 214 did not). Read-only: nothing here was applied.
+
+Two bugs were found and fixed IN the sweep before this list was trusted — see the notes at the foot.
+
+
+A. THE RIPS NAME NO CHAPTER AT ALL — a real refusal.        194 shelves, 1,374 volumes
+------------------------------------------------------------------------------------
+Every one of these 1,374 archives opens, holds page images, and NOT ONE page name carries a
+chapter token. They number pages inside the volume and nothing more:
+
+    Bleach v1\Bleach v1-001.jpg
+    Death Note Vol. 01 (2005) (Digital TPB) (DarkZone-Empire) 002.jpg
+    Naruto v01 (2003) (Digital) (AnHeroGold-Empire)\001.jpg
+    Case Closed v01 (2004) (Digital) (AnHeroGold-Empire)\...
+
+Nothing can be read from them; a volume ordinal is not a chapter number (PLAN.md §4.2), so
+they are refused. This is the dominant convention of the older Viz/Empire rips. They need a
+different source (the volume's own contents page, or the publisher), not a better regex.
+
+
+B. THE 20 SHELVES WHERE SOME VOLUME DOES STATE ITS CHAPTERS
+------------------------------------------------------------------------------------
+   sid    shelf                         cause                    evidence (one line)
+
+conflation — several distinct works share one Series id (do NOT fix here; splitting is separate)
+ 12716  Naruto                    conflation      74 vols, only the two spin-offs name chapters:
+                                                  "Konoha's Story-The Steam Ninja Scrolls v01" c1-6 and
+                                                  "Sasuke's Story v01" c1-5, both starting at c1
+ 15458  Shaman King               conflation      six works in one id: main (c1-c300), Flowers, Marcos,
+                                                  Red Crimson, The Super Star, Zero — each has a v01 at c1-c4..c1-c8
+ 57289  JoJo's Bizarre Adventure  conflation      five Parts in one id; Golden Wind v01 c1-15 and
+                                                  Stone Ocean v01 c1-17 both claim c1 (PLAN.md §4.2's JoJo collision)
+ 14579  Rent-a-Girlfriend         conflation      the spin-off "Rent-a-(Really Shy!)-Girlfriend v01" c1-6 is
+                                                  filed in the main shelf against "Rent-A-Girlfriend v01" c1-5
+
+two editions of the same run filed under one Series id
+  6752  Fist Of The North Star    two editions    2021 Omnibus v01-v13 tiles c1-c174; the 1987-89 originals
+                                                  v18-v27 sit beside it, each naming exactly one chapter
+                                                  (c153, c162, c171, c180 ... 9 apart)
+ 64960  Initial D                 two editions    48 danke-Empire singles tile c1-c719; the 2024 Omnibus
+                                                  v01-v03 re-covers c1-21 / c22-43 / c44-65
+
+genuine overlap between adjacent volumes
+  6846  Fly Me to the Moon        overlap         v22 c199-209 overlaps v23 c208-218 (and v14 ends c136,
+                                                  v15 opens c141 — a four-chapter gap)
+  7827  Grand Blue                overlap         v15 c58-62 overlaps v16 c62-65
+ 14423  Real Girl                 overlap         v03 c9-12 overlaps v04 c12-15
+ 21091  Vinland Saga              overlap         v05 c57-72 overlaps v06 c72-86
+
+the chapter numbers are LOCAL to the volume — not a series coordinate at all
+  5436  Devilman                  per-volume no.  v02 c1-5, v03 c1-4, v04 c1-4, v05 c1-4 — every volume restarts
+ 20844  Urusei Yatsura            per-volume no.  all 16 omnibuses read c1-c17 .. c1-c22
+ 23754  Oishinbo                  per-volume no.  the a-la-carte volumes each restart: v01 c1-10, v02 c1-6, v03 c1-6
+
+partial or mixed naming inside one shelf
+  1287  Aria                      mixed rips      the real label is "Navigation NN" (dir `ARIA vol.9 Navigation 41`),
+                                                  which nothing reads; 4 of 12 volumes carry cNN tokens and v09
+                                                  carries a single spurious c2
+  5817  Dragon Head               mixed rips      three scanlation groups: v01 names only c9-11, v07 restarts at
+                                                  c1-7, v08/v09/v10 name one chapter each (c72, c77, c84)
+  8732  Hell's Paradise           mixed rips      v04's ONLY token is `- c000 (v04) - p000` (front matter);
+                                                  v05, v06 name nothing
+  8301  Hanaotoko                 mixed rips      v03 reads c0-c40 against v02's c14-c26 — a c0 extras page plus
+                                                  a stray high token
+
+defects underneath the ranges
+ 23759  Onepunch-man              IDENTITY        all ten items are 15-25pp WEBCOMIC SINGLE CHAPTERS
+                                                  (`Onepunch-Man ch097 (v2) (Webcomic) (Batoto).cbr`) carrying
+                                                  IsCollection=1. The `(v2)` is the scanlation revision, not a volume
+ 16610  Star Wars: The Mandalorian  DUPLICATE     two items, identical filename, 157pp each, both c1-c4 —
+                                                  the same rip filed twice, not two volumes
+
+
+C. TRAPS THE TOOLS LEARNED (or still owe)
+------------------------------------------------------------------------------------
+FIXED in manga_sweep.py this run:
+ 1. `(c2c)` — the scanlation tag for "cover to cover" — was read as CHAPTER 2. Because
+    RX_CHAP.search takes the first match in a filename, on a page named `... (c2c) ... c003 ...`
+    the tag OUTRANKED the real chapter. Now a chapter number may not be followed by a letter
+    (the `x<n>` extra marker excepted). Moved 5 shelves NO -> LADDER and corrected the low end
+    of several others.
+ 2. RX_VOLNO held literal BACKSPACE bytes where `\b` was intended (PLAN.md §10.2 — a shell
+    heredoc ate the escapes). It therefore matched NOTHING: volno() returned the 10,000
+    sentinel for every volume and the volume-order guard the tool is built around was inert;
+    the "volume order and chapter order disagree" test was really a FILENAME-order test, which
+    SQLite's case-sensitive ORDER BY made wrong on its own (a lone lowercase "got" in one
+    Slime filename sank v01 to the end of the shelf). With the guard live it flipped
+    Onepunch-man out of a false LADDER (it had claimed c93-c104 across ten "volumes") and
+    four shelves into real ones.
+ 3. A shelf name with an unrenderable character (a manga title with a star) raised
+    UnicodeEncodeError at the END of a batch, after every archive had been read, and the state
+    file was only written after the loop — so the whole batch's work was lost. stdout is now
+    reconfigured and the state is checkpointed after EVERY shelf.
+
+STILL OWED:
+ 4. A `c0` / `c000` page is front matter or a prologue, not chapter zero. It collapses a
+    volume's low end and manufactures overlaps — the whole March Comes in Like a Lion tail
+    (v08-v16) fails for this reason alone, and Hanaotoko and Hell's Paradise are damaged by it.
+    Same family as the `c051x1` bonus-chapter rule already in the tool.
+ 5. `single volume` is accepted as a LADDER: 64 of the 377 files rest on ONE volume that
+    states chapters, with no sibling to check it against. Six of those sit on shelves of more
+    than three volumes (S557 Akame ga Kill!, S1349 As The Gods Will: The Second Series,
+    S5805 Dragon Ball Super, S13015 No Longer Human, S19970 World is Dancing,
+    S64737 Fushigi Yugi) — and in three of them the one ranged volume is a SPIN-OFF
+    (Akame ga KILL! ZERO v09, Fushigi Yugi - Byakko Senki v01, No Longer Human Omnibus).
+ 6. 16 of the 377 ladder shelves carry more than one title stem. The ladder tiles only because
+    the other work in the shelf was refused for naming no chapter; if it is ever ranged it will
+    collide. The clear ones: S13245 One Piece (holds "One Piece - Ace's Story The Manga"
+    v01 c1-2, v02 c3-4, while the main run's 84 held volumes below v085 name nothing),
+    S67 20th Century Boys (The Perfect Edition), S2669 Black Cat (a Marvel
+    "Black Cat by Jed MacKay Omnibus" filed in the manga shelf), S557, S7764 Golgo 13,
+    S13015, S15318, S22969 Your Name., S64737.
+    S2308 Battle Angel Alita Last Order is the benign case: Omnibus v01-v05 c1-c93 and singles
+    v16-v19 c94-c124 genuinely continue one another.
+ 7. 41 manga collection items have a NULL SeriesId and are on no shelf, so the sweep never
+    sees them.

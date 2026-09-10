@@ -151,6 +151,15 @@ namespace MovieTheater.BooksHost.Commands
     /// <c>books-fix-issue-numbers</c> — re-run the issue ladder over the stored filenames and report (or fix)
     /// the rows whose `IssueNo` disagrees. This is the verb that corrected 3,328 values when the mini-series
     /// "NN (of MM)" rule landed: the parse rules moved, so the stored answers had to.
+    ///
+    /// <para><b>It re-runs the ladder, so it may only overwrite what the ladder wrote.</b> Two rows are off
+    /// limits and a dry run over the live file shows why: unguarded, this verb proposed 17,641 changes where
+    /// the ladder rule that prompted the run accounts for about a hundred. The rest were rows the ladder does
+    /// not own. A COLLECTION is the larger half — `books-reparse` deliberately moves a collected edition's
+    /// number out of `IssueNo` and into `VolumeNo` ("Judge Anderson - The Psi Files Vol. 02" is not issue 2),
+    /// and this verb reading the same filename hands it straight back. A number that came from the embedded
+    /// ComicInfo is the other — that is <c>ParseSource.Metadata</c>, which outranks the filename by design,
+    /// and re-deriving it from the name is a demotion, not a correction. Both are skipped and counted.</para>
     /// </summary>
     [Command("books-fix-issue-numbers", Description = "Re-extract issue numbers from filenames and report (or --apply) the ones that changed.")]
     public class BooksFixIssueNumbersCommand : ICommand
@@ -162,19 +171,31 @@ namespace MovieTheater.BooksHost.Commands
         [CommandOption("batch-size", Description = "Items per batch (default 5000).")] public int BatchSize { get; set; } = 5000;
         [CommandOption("apply", Description = "Actually write. Without it the verb only reports.")] public bool Apply { get; set; }
         [CommandOption("top", Description = "How many changes to print (default 30).")] public int Top { get; set; } = 30;
+        [CommandOption("only", Description = "Only consider file names matching this regex — scope a ladder change to the population that ladder rule explains.")]
+        public string? Only { get; set; }
 
         public async ValueTask ExecuteAsync(IConsole console)
         {
             using var hot = HotFile.Open(config, DbPath);
+            // A ladder change explains a SHAPE of file name, and the stored answers it does not explain came
+            // from somewhere else — v1, a since-retired rule, a hand fix. A full-population run over the live
+            // file proposes 4,835 changes after the collection and ComicInfo guards, of which the rule that
+            // prompted this run accounts for about a hundred; the rest are unrelated drift, some of it worse
+            // than what is stored ("FCBD 2022 25 Years of Buffy" is not issue 2022). So scope the run.
+            var only = string.IsNullOrWhiteSpace(Only)
+                ? null
+                : new System.Text.RegularExpressions.Regex(Only, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
             long after = 0;
             var changed = 0;
             var printed = 0;
+            int skippedCollections = 0, skippedMetadata = 0;
             var batch = Math.Max(100, BatchSize);
 
             while (true)
             {
                 var rows = hot.Pairs($@"
 SELECT i.Id, coalesce(i.FileName,'') || char(31) || coalesce(cd.IssueNo,'')
+    || char(31) || cd.IsCollection || char(31) || cd.IssueSource
 FROM Item i JOIN ComicDetail cd ON cd.ItemId = i.Id
 WHERE i.Id > {after} AND i.Kind = 0 ORDER BY i.Id LIMIT {batch}");
                 if (rows.Count == 0) break;
@@ -183,9 +204,13 @@ WHERE i.Id > {after} AND i.Kind = 0 ORDER BY i.Id LIMIT {batch}");
                 foreach (var (id, payload) in rows)
                 {
                     var p = payload!.Split(MovieTheater.Books.Migration.TargetWriter.Sep);
+                    if (only != null && !only.IsMatch(p[0])) continue;
                     var current = p[1].Length == 0 ? null : p[1];
                     var proposed = ComicTitleParser.ExtractIssueNo(Path.GetFileNameWithoutExtension(p[0]));
                     if (proposed == null || string.Equals(proposed, current, StringComparison.Ordinal)) continue;
+                    if (p[2] == "1") { skippedCollections++; continue; }
+                    if (p[3] == ((int)ParseSource.Metadata).ToString() || p[3] == ((int)ParseSource.MetadataAlt).ToString())
+                    { skippedMetadata++; continue; }
                     changed++;
                     if (printed++ < Math.Max(1, Top))
                         await console.Output.WriteLineAsync($"  {id,7}  '{current}' -> '{proposed}'   {p[0]}");
@@ -198,6 +223,9 @@ WHERE i.Id > {after} AND i.Kind = 0 ORDER BY i.Id LIMIT {batch}");
             }
 
             await console.Output.WriteLineAsync($"done: {changed} issue number(s) differ" + (Apply ? " and were written" : " (dry run — re-run with --apply)"));
+            await console.Output.WriteLineAsync(
+                $"left alone: {skippedCollections} collection(s) (their number belongs in VolumeNo), "
+              + $"{skippedMetadata} row(s) whose number came from the embedded ComicInfo");
             if (Apply) await console.Output.WriteLineAsync("next: books-reading-order (the order reads IssueNo)");
         }
     }

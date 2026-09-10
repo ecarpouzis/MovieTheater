@@ -1,0 +1,605 @@
+# B-033 — 150 tier-B shelves, the second half of the "Graphic Novels\_<Publisher>" tree: HarperAlley,
+# Henry Holt, Houghton Mifflin, Iron Circus, NBM (43 shelves of it), the New York Review of Comics,
+# Nobrow, Pantheon, Peow, Penguin/Random House Graphic, Renegade Arts, Retrofit, Scholastic/Graphix and
+# SelfMadeHero. Same house shape as B-032: one book, one CV count-1 volume, one GCD count-1 series with
+# the same publisher and year -> two legs, 0.95, plus the book's own `I` line.
+# Conventions this batch taught:
+#  * NBM is the most completely indexed publisher in either provider — 40 of 43 NBM shelves paired
+#    cleanly, the "… in Comics!" biography line included; only Buja's Diary, Elvis and An Enchantment
+#    are absent from the GCD dump.
+#  * Scholastic/Graphix is the opposite of NBM: GCD mints a SERIES PER BOOK (Animorphs, Banana Fox,
+#    I Survived's later volumes) or TWIN rows per book (Drama, Guts, Hey Kiddo, Space Dumplins, Positively
+#    Izzy, Baby-Sitters Club), and the twin is separated by our rip's PAGE COUNT more often than not.
+#  * ComicVine mints a volume per BOOK on Scholastic's long lines while GCD keeps one series (Dog Man:
+#    CV 93629 is a count-1 stub, GCD 106235 runs to 14) — the Cinebook shape, inverted from Animorphs
+#    where ComicVine spans and GCD splits. Whichever provider spans carries the S line.
+#  * SelfMadeHero's English editions are in ComicVine but GCD often files them [en-gb] under the same
+#    title one year later; "FUN" and "Hair Shirt" are indexed by BOTH providers only in the German
+#    avant-verlag edition, so the per-file matcher picks a German volume for an English rip.
+#  * Two shelves in this batch are ONE book split by a filename (Love Me Please! S11000/S11001) and two
+#    more are one line split by a subfolder (Baby-Sitters Club S1758/S18048); `merge-with` on both pairs.
+
+S 16912 cv=136648 gcd=- 0.9 | CV 136648 "Strange Planet: The Sneaking, Hiding, Vibrating Creature" 2021 HarperCollins count 1 reproduces our filename and year exactly, and the sibling "Strange Planet" (CV 123016) is a separate volume so this is not a truncated key; GCD has no row
+F 16912 provider-missing | the GCD dump holds "Strange Planet" (152846) and "Stranger Planet" (162600) but no picture-book spin-off
+I 26572 cv=857714 gcd=- 0.9 | the 2021 HarperCollins picture book, CV's only issue, our 42pp rip
+
+S 18673 cv=137523 gcd=174172 0.95 | CV 137523 "The Ghoul Next Door" 2021 HarperCollins count 1 and GCD 174172 with the same title, 2021-2021, HarperCollins count 1 agree, and our ComicInfo says Series "The Ghoul Next Door" Publisher "HarperCollins"
+I 26579 cv=869669 gcd=2240912 0.95 | the 2021 HarperAlley book, our 197pp rip; both legs hold exactly one record
+
+S 18782 cv=153172 gcd=203381 0.95 | CV 153172 "The Hills of Estrella Roja" 2023 HarperCollins count 1 and GCD 203381 with the same title, 2023-2023, Houghton Mifflin count 1 agree — Clarion (our ComicInfo Publisher) is the Houghton Mifflin imprint HarperCollins now owns — and both our files are the same 398/400pp book
+I 26580 cv=1010453 gcd=2564593 0.95 | the 2023 Clarion/HarperAlley book, DrVink 400pp rip
+I 26581 cv=1010453 gcd=2564593 0.95 | second rip of the same book (XRA-Empire, 398pp)
+
+S 18784 cv=157134 gcd=228143 0.9 | CV 157134 "The Hobbit: A Graphic Novel" 2024 William Morrow and Company count 1 matches our ComicInfo Publisher "William Morrow Paperbacks" and the file's 2024; GCD's only modern row is 228143 "The Hobbit Graphic Novel: Revised and Expanded" 2025 HarperCollins — the same book one printing on, which is the unexplained residue
+N 18784 the Eclipse 1989-1990 rows (CV 27025/52567, GCD 22086/28897) are the ORIGINAL Wenzel adaptation; the 2024 William Morrow book is its revised re-release, not a new comic
+I 26582 cv=1047120 gcd=- 0.9 | the 2024 William Morrow printing, CV's only issue; GCD indexes only the 2025 revised edition
+
+S 18840 cv=153144 gcd=- 0.9 | CV 153144 "The Infinity Particle" 2023 HarperCollins count 1 reproduces our ComicInfo Series and Publisher and the file's 2023 year; the GCD dump has no row for it
+F 18840 provider-missing | GCD returns nothing for "Infinity Particle" under any spelling
+I 26583 cv=1010212 gcd=- 0.9 | the 2023 HarperAlley book, CV's only issue, our 271pp rip
+
+S 19274 cv=155166 gcd=- 0.9 | CV 155166 "The Ojja-Wojja" 2023 HarperCollins count 1 reproduces our ComicInfo Series and Publisher and the file's 2023 year; nothing else in either provider carries the name
+F 19274 provider-missing | the GCD dump returns nothing for "Ojja"
+I 26585 cv=1033385 gcd=- 0.9 | the 2023 Balzer+Bray/HarperCollins book, CV's only issue, our 190pp rip
+
+S 20207 cv=144638 gcd=178612 0.95 | CV 144638 "Tidesong" 2021 HarperCollins count 1 and GCD 178612 "Tidesong" 2021-2021 HarperCollins count 1 agree on title, year, publisher and count, corroborated by our ComicInfo
+I 26592 cv=943155 gcd=2282099 0.95 | the Quill Tree/Harper Alley 2021 book, our 231pp rip; GCD 190658 is the 2022 French edition
+
+S 20308 cv=156762 gcd=159343 0.95 | CV 156762 "Tom the Dancing Bug" 1992 HarperCollins count 1 and GCD 159343 "Tom the Dancing Bug" 1992-1992 HarperCollins count 1 agree exactly; GCD's issue is 84pp against our 85pp c2c scan, and the Mansion Comics 1995 and Clover Press 2020-22 rows are later collections
+I 26593 cv=1044392 gcd=2106141 0.95 | the 1992 HarperCollins collection, 84pp in GCD vs our 85pp scan
+
+S 715 cv=153145 gcd=203380 0.9 | CV 153145 "All the Lovely Bad Ones" 2023 HarperCollins count 1 matches our ComicInfo and both files' 2023, and GCD holds the same title at 2023 Houghton Mifflin as TWIN rows (203380 and 203777) with no page counts to choose between them
+I 26531 cv=1010214 gcd=2564592 0.9 | the 2023 Clarion/HarperCollins book, Salem-Empire 162pp rip; one of two indistinguishable rows
+I 26534 cv=1010214 gcd=2564592 0.9 | second rip of the same book (DrVink-DCP, 160pp)
+
+S 5923 cv=153149 gcd=- 0.9 | CV 153149 "Dungeons & Dragons: Dungeon Club" 2022 HarperCollins count 2 with cached #1-2 matches our two volumes exactly (Roll Call 2023, Time to Party 2024) and our ComicInfo Series names both subtitles; GCD has no English row
+F 5923 provider-missing | the GCD dump's only Dungeon Club row is 212656, the 2024 GERMAN HarperCollins edition of book 1
+I 26545 cv=1010218 gcd=- 0.9 | v01 Roll Call, Harper Alley 2023, CV issue 1010218
+I 26546 cv=1071728 gcd=- 0.9 | v02 Time to Party, Harper Alley 2024, CV issue 1071728
+
+S 9548 cv=101193 gcd=224559 0.95 | CV 101193 "Invisible Emmie" 2017 HarperCollins count 1 and GCD 224559 "Invisible Emmie" 2017-2017 HarperCollins count 1 agree, our ComicInfo repeats both, and GCD's 192pp issue is our 193pp rip
+I 26547 cv=594208 gcd=2744847 0.95 | Emmie & Friends Book 01, HarperCollins 2017, GCD 192pp vs our 193pp
+
+S 13971 cv=110526 gcd=124118 0.95 | CV 110526 "Positively Izzy" 2018 HarperCollins count 1 and GCD's 2018 HarperCollins rows agree on title, year and publisher, and of the twin rows 124118's 228pp issue is exactly our 227pp rip where 124115 records no page count
+I 26548 cv=668817 gcd=1806319 0.95 | Emmie & Friends Book 02, the 228pp printing picked on page count over its blank twin
+
+S 14569 cv=152487 gcd=184674 0.9 | CV 152487 "Remarkably Ruby" 2022 HarperCollins count 1 matches our ComicInfo and the file's 2022, and GCD holds "Remarkably Ruby (Emmie & Friends)" 2022 HarperCollins as TWIN rows (184674, 184675) with no page counts to separate them
+I 26552 cv=1003402 gcd=2398463 0.9 | Emmie & Friends Book 06, HarperCollins 2022, our 386pp rip; one of two indistinguishable rows
+
+S 17366 cv=152489 gcd=224522 0.95 | our file is "Emmie & Friends Book 07 - Surprisingly Sarah (2023)" with ComicInfo Series "Surprisingly Sarah": CV 152489 "Surprisingly Sarah" 2023 HarperCollins count 1 and GCD 224522 with the same title, 2023-2023, HarperCollins count 1 agree, and GCD's 352pp issue is our 350pp rip
+F 17366 wrong-cv-link | the stored link CV 105248 "Sarah" 2017 Éditions Glénat is a French album line, reached by the truncated key "Sarah"; it is a different comic in a different language
+I 26553 cv=1003413 gcd=2744415 0.95 | Surprisingly Sarah, HarperCollins 2023, GCD 352pp vs our 350pp rip
+
+S 20505 cv=135840 gcd=- 0.9 | CV 135840 "Truly Tyler" 2021 HarperCollins count 1 matches our ComicInfo Series and Publisher and the file's 2021; the GCD dump has no row for it, and its "Tyler Cross" hits are a Dargaud crime series
+F 20505 provider-missing | GCD indexes no "Truly Tyler"; the Emmie & Friends line is only partly in the dump
+I 26551 cv=846995 gcd=- 0.9 | Emmie & Friends Book 05, HarperCollins 2021, CV's only issue, our 386pp rip
+
+S 7279 cv=139213 gcd=176748 0.95 | CV 139213 "Garlic & the Vampire" 2021 HarperCollins count 1 and GCD 176748 "Garlic and the Vampire" 2021-2021 HarperCollins count 1 agree on title, year, publisher and count; our ComicInfo Publisher "Quill Tree Books" is a HarperCollins imprint
+I 26558 cv=886117 gcd=2267677 0.95 | the Quill Tree/HarperCollins 2021 book, our 160pp rip
+
+S 7280 cv=152444 gcd=190790 0.95 | CV 152444 "Garlic & the Witch" 2022 HarperCollins count 1 and GCD 190790 "Garlic and the Witch" 2022-2022 HarperCollins count 1 agree; the sequel is correctly its own shelf rather than folded into Garlic & the Vampire
+I 26559 cv=1002935 gcd=2440918 0.95 | the HarperCollins 2022 sequel, our 161pp rip
+
+S 2849 cv=144399 gcd=188687 0.9 | CV 144399 "Blackwater" 2022 Henry Holt and Co. count 1 matches our ComicInfo Publisher exactly, and GCD holds the same title at 2022 Henry Holt as TWIN rows (188687, 188688) with no page counts to separate them
+I 27257 cv=941406 gcd=2427779 0.9 | the Henry Holt (BYR) 2022 book, DrVink 304pp rip; one of two indistinguishable rows
+I 26597 cv=941406 gcd=2427779 0.9 | second rip of the same 304pp book (XRA-Empire)
+
+S 30 cv=138401 gcd=175508 0.95 | CV 138401 "1984: The Graphic Novel" 2021 Houghton Mifflin Harcourt count 1 and GCD 175508 with the same title, 2021-2021, Houghton Mifflin count 1 agree; GCD's 232pp issue is our 220pp rip, and the Splitter/Soleil/Ullstein rows are other languages of the same adaptation
+I 26603 cv=881312 gcd=2257923 0.95 | the 2021 HMH English edition, 232pp in GCD vs our 220pp rip
+
+S 3612 cv=130792 gcd=145017 0.9 | GCD keeps ONE series for the line — 145017 "Carmen Sandiego" 2019-? Houghton Mifflin count 3, whose #[3] is "The Chasing Paper Caper" — while ComicVine mints a volume per book (130792, 2020 Houghton Mifflin Harcourt count 1); the year disagreement (CV 2020 vs our file's 2019) and GCD's twin row 145018 cap this at 0.9
+F 3612 merge-with=3613 | this shelf and S3613/S3615 are three books of the one Houghton Mifflin line GCD indexes as series 145017; ComicVine's per-book volumes split them
+I 26604 cv=805325 gcd=2152824 0.9 | The Chasing Paper Caper, GCD 145017 #[3], our 136pp rip
+
+S 3613 cv=121679 gcd=145017 0.9 | GCD 145017's #[2] is "The Fishy Treasure Caper" and CV 121679 "Carmen Sandiego: The Fishy Treasure Caper" 2019 Houghton Mifflin Harcourt count 1 names the same book with the same year and publisher; GCD's twin row 145018 and the per-book/per-line split cap this at 0.9
+F 3613 merge-with=3612 | one Houghton Mifflin Carmen Sandiego line (GCD 145017) cut into three shelves by ComicVine's per-book volumes
+I 26605 cv=720893 gcd=2020459 0.9 | The Fishy Treasure Caper, GCD 145017 #[2], our 130pp rip
+
+S 3615 cv=118810 gcd=145017 0.9 | GCD 145017's #[1] is "The Sticky Rice Caper" and CV 118810 "Carmen Sandiego: The Sticky Rice Caper" 2019 Houghton Mifflin Harcourt count 1 names the same book, same year, same publisher; the twin row 145018 caps this at 0.9
+F 3615 merge-with=3612 | third book of the same Houghton Mifflin line (GCD 145017)
+I 26607 cv=707945 gcd=1961277 0.9 | The Sticky Rice Caper, GCD 145017 #[1], our 129pp rip
+
+S 18079 cv=48683 gcd=37576 0.95 | CV 48683 "The Best American Comics" 2006 Houghton Mifflin Harcourt count 14 and GCD 37576 "The Best American Comics" 2006-2019 Houghton Mifflin count 14 agree on start year, publisher and count, and the GCD year span reproduces the shelf's own 2006-2019 header; our 14 files are SEVEN annuals ripped twice (the same fylgja rips under two folders), which is why the ratio is 0.50
+N 18079 the seven years we hold (2012-2015, 2017-2019) each appear twice, once under Graphic Novels\The Best American Comics and once under _Houghton Mifflin Harcourt; the page counts are identical pair by pair
+I 27188 cv=360839 gcd=1040322 0.95 | the 2012 annual (ed. Mouly), GCD 392pp vs our 364pp rip
+I 26608 cv=360839 gcd=1040322 0.95 | second rip of the 2012 annual, same 364pp
+I 27189 cv=428912 gcd=1158009 0.95 | the 2013 annual (ed. Jeff Smith), GCD 408pp vs our 407pp rip
+I 26609 cv=428912 gcd=1158009 0.95 | second rip of the 2013 annual, same 407pp
+I 27190 cv=467758 gcd=1317674 0.95 | the 2014 annual (ed. Scott McCloud), GCD 408pp vs our 400pp rip
+I 26610 cv=467758 gcd=1317674 0.95 | second rip of the 2014 annual, same 400pp
+I 27191 cv=716659 gcd=1477202 0.95 | the 2015 annual (ed. Jonathan Lethem), GCD 408pp vs our 389pp rip
+I 26611 cv=716659 gcd=1477202 0.95 | second rip of the 2015 annual, same 389pp
+I 27192 cv=716179 gcd=1773883 0.95 | the 2017 annual (ed. Ben Katchor), GCD 408pp vs our 387pp rip
+I 26613 cv=716179 gcd=1773883 0.95 | second rip of the 2017 annual, same 387pp
+I 27193 cv=714012 gcd=1855060 0.95 | the 2018 annual (ed. Phoebe Gloeckner), GCD 424pp vs our 410pp rip
+I 26614 cv=714012 gcd=1855060 0.95 | second rip of the 2018 annual, same 410pp
+I 27194 cv=725767 gcd=2047039 0.95 | the 2019 annual (ed. Jillian Tamaki), GCD 408pp vs our 384pp rip
+I 26615 cv=725767 gcd=2047039 0.95 | second rip of the 2019 annual, same 384pp
+
+S 1821 cv=128078 gcd=169336 0.95 | CV 128078 "Banned Book Club" 2020 Iron Circus Comics count 1 and GCD 169336 "Banned Book Club" 2019-2019 Iron Circus Comics count 1 agree on title, publisher and count, and our ComicInfo Publisher is "Iron Circus Comics"; GCD's 204pp issue is our 199pp rip
+I 26616 cv=769565 gcd=2195915 0.95 | the Iron Circus edition, 204pp in GCD vs our 199pp rip
+
+S 13615 cv=133336 gcd=173222 0.95 | CV 133336 "Patience & Esther: An Edwardian Romance" 2021 Iron Circus Comics count 1 and GCD 173222 with that exact title, 2020-2020, Iron Circus Comics count 1 agree; our ComicInfo Series repeats the full subtitle and GCD's 332pp issue is our 326pp rip
+I 26618 cv=825426 gcd=2230111 0.95 | the Iron Circus book, 332pp in GCD vs our 326pp rip
+
+S 18293 cv=133837 gcd=171738 0.95 | CV 133837 "The Crossroads at Midnight" 2021 Iron Circus Comics count 1 and GCD 171738 with the same title, 2020-2020, Iron Circus Comics count 1 agree; GCD's 356pp issue is our 350pp rip and the First/DC "Crossroads" rows are different comics
+I 26621 cv=828652 gcd=2215390 0.95 | the Iron Circus collection, 356pp in GCD vs our 350pp rip
+
+S 22633 cv=136059 gcd=187898 0.95 | CV 136059 "YOU DIED: An Anthology of the Afterlife" 2021 Iron Circus Comics count 1 and GCD 187898 "You Died: An Anthology of the Afterlife" 2021-2021 Iron Circus Comics count 1 agree on all four columns, corroborated by our ComicInfo
+I 26627 cv=849099 gcd=2423599 0.95 | the Iron Circus 2021 anthology, our 272pp rip
+
+S 15803 cv=60731 gcd=76145 0.9 | CV 60731 "Smut Peddler" 2012 count 2 has issues #1 "GN" (2012) and #2 "Volume 2" (2014), which is exactly our two files; GCD holds only 2012 rows, as TWIN series 76145/76146 with one issue each, so no GCD record covers the 2014 edition
+I 26619 cv=400576 gcd=1138190 0.9 | the 2012 edition, GCD 348pp against our 339pp rip; one of two indistinguishable 2012 Iron Circus rows
+I 26620 cv=469632 gcd=- 0.9 | the 2014 Edition, CV issue 469632 dated 2014-11-30; GCD indexes no 2014 printing
+
+S 18949 cv=85578 gcd=182885 0.9 | GCD 182885 "The Less Than Epic Adventures of TJ and Amal" 2011-2014 E. K. Weaver count 3 matches our three volumes and their 2011/2012/2014 years exactly, while CV 85578 is a count-1 record for the 2015 Iron Circus omnibus — the counts disagree, which is the residue
+I 26623 cv=- gcd=2379715 0.9 | v01 (2011), GCD 182885 #1; ComicVine indexes only the collected omnibus
+I 26624 cv=- gcd=2379716 0.9 | v02 (2012) at 185pp is GCD 182885 #2, the middle book of E. K. Weaver's 2011-2014 three-volume line; CV 85578 is the 2015 omnibus, so no per-book CV issue exists
+I 26625 cv=- gcd=2379717 0.9 | v03 (2014) at 218pp is GCD 182885 #3, the last book of the 2011-2014 line and our newest file year; ComicVine holds only the 2015 collected omnibus, so cv=-
+
+S 577 cv=120939 gcd=150613 0.95 | CV 120939 "Albert Einstein: The Poetry of Real" 2019 NBM count 1 and GCD 150613 with the same title, 2019-2019, NBM count 1 agree on all four columns; the Nobrow/Dargaud "Einstein" rows lose on publisher
+I 26635 cv=717466 gcd=2017578 0.95 | CV 120939's only issue 717466 and GCD 150613's only 2019 NBM issue are the same book, and our file "Albert Einstein - The Poetry of Real (2019)" at 132pp is that single volume
+
+S 594 cv=144637 gcd=182753 0.95 | CV 144637 "Alfred HITCHCOCK" 2022 NBM count 1 and GCD 182753 "Alfred Hitchcock: Master of Suspense" 2022-2022 NBM count 1 agree on year, publisher and count, and GCD's title is our filename; the Splitter/Glénat 2-volume rows are the German and French editions
+I 26636 cv=943153 gcd=2378106 0.95 | the NBM 2022 English edition, our 313pp rip
+
+S 2541 cv=147699 gcd=187654 0.95 | CV 147699 "Big Scoop Of Ice Cream" 2022 NBM count 1 and GCD 187654 "Big Scoop of Ice Cream" 2022-2022 NBM count 1 agree on title, year, publisher and count
+I 26637 cv=966740 gcd=2421363 0.95 | CV 147699's sole issue 966740 and GCD 187654's sole 2022 NBM issue are one book, and our file "Big Scoop of Ice Cream (NBM 2022) (webrip)" at 136pp is that volume
+
+S 3039 cv=124170 gcd=155195 0.95 | CV 124170 "Bob Marley in Comics" 2020 NBM count 1 and GCD 155195 with the same title, 2020-2020, NBM count 1 agree, and our ComicInfo says Series "Bob Marley in Comics!" Publisher "NBM Publishing"
+I 26638 cv=733212 gcd=2059172 0.95 | the NBM 2020 volume of the "in Comics!" line, our 178pp webrip
+
+S 3247 cv=58985 gcd=- 0.9 | CV 58985 "Buja's Diary" 2005 NBM count 1 matches our ComicInfo Series and Publisher ("NBM Publishing") and the file's 2005; the GCD dump has no row for it under any spelling
+F 3247 provider-missing | GCD indexes no "Buja's Diary"; its only "Diary" hit is Yen Press's 2019 book
+I 26639 cv=393599 gcd=- 0.9 | the NBM 2005 Korean-comics collection, CV's only issue, our 274pp rip
+
+S 3374 cv=138403 gcd=175949 0.95 | CV 138403 "Canciones: of Federico Garcia Lorca" 2021 NBM count 1 and GCD 175949 "Canciones of Federico Garcia Lorca" 2021-2021 NBM count 1 agree on year, publisher and count and on the title but for the colon
+I 26640 cv=881314 gcd=2261497 0.95 | CV 138403's only issue 881314 and GCD 175949's only 2021 NBM issue are the same book, and our 163pp "Canciones - of Federico Garcia Lorca (NBM 2021) (webrip)" file is it
+
+S 6124 cv=95277 gcd=- 0.9 | CV 95277 "Elvis" 2016 NBM count 1 matches our filename, its (2016) and the NBM tag in the rip name; GCD holds nine "Elvis" series and not one of them is NBM's
+F 6124 provider-missing | GCD's "Elvis" rows are Egmont, Salleck, Bamboo, Jungle, Carabas, Bladkompaniet — all other publishers and languages
+I 26650 cv=555695 gcd=- 0.9 | the NBM 2016 English album, CV's only issue, our 82pp rip
+
+S 6735 cv=84315 gcd=95849 0.95 | CV 84315 "Fires Above Hyperion" 2015 NBM count 1 and GCD 95849 with the same title, 2015-2015, NBM count 1 agree, our ComicInfo Publisher is "NBM ComicsLit", and GCD's 100pp issue is our 99pp rip
+I 26652 cv=499118 gcd=1526851 0.95 | the NBM ComicsLit 2015 book, 100pp in GCD vs our 99pp
+
+S 6859 cv=122202 gcd=151413 0.95 | CV 122202 "The Forbidden Harbor" 2019 NBM count 1 and GCD 151413 "Forbidden Harbor" 2019-2019 NBM count 1 agree on year, publisher and count; our undated file carries "NBM 2015" in the rip name but 320pp matches the single NBM English edition both legs hold
+I 26654 cv=723764 gcd=2028058 0.95 | the NBM English edition of Chiappori/Mattotti's album, our 320pp webrip
+
+S 7508 cv=128823 gcd=159667 0.95 | CV 128823 "Giant" 2020 NBM count 1 and GCD 159667 "Giant" 2020-2020 NBM count 1 agree on title, year, publisher and count; GCD's 128pp issue is our 123pp rip and the Dargaud/Europe Comics rows are the French original
+I 26655 cv=780954 gcd=2111293 0.95 | the NBM 2020 English edition, 128pp in GCD vs our 123pp
+
+S 9537 cv=76647 gcd=156086 0.95 | CV 76647 "Invincible Days" 2014 NBM count 1 and GCD 156086 with the same title, 2014-2014, NBM count 1 agree, our ComicInfo Publisher is "NBM ComicsLit", and GCD's 136pp issue is our 131pp rip
+I 26657 cv=463557 gcd=2068982 0.95 | the NBM ComicsLit 2014 book, 136pp in GCD vs our 131pp
+
+S 10713 cv=128725 gcd=163282 0.95 | CV 128725 "Leonardo Da Vinci: The Renaissance of the World" 2020 NBM count 1 and GCD 163282 with the same title, 2020-2020, NBM count 1 agree on all four columns
+I 26658 cv=780225 gcd=2139437 0.95 | the NBM 2020 book, our 130pp webrip; the Norma 2019 row is its Spanish edition
+
+S 11000 cv=137705 gcd=175950 0.95 | this shelf's one file is "Love Me Please - The Story of Janis Joplin (2021) (NBM)": CV 137705 "Love Me Please!: The Story of Janis Joplin" 2021 NBM count 1 and GCD 175950 "Love Me Please: The Story of Janis Joplin" 2021-2021 NBM count 1 agree on title, year, publisher and count
+F 11000 merge-with=11001 | S11000 and S11001 are the SAME book split into two shelves by the subtitle in one filename — a 162pp XRA-Empire rip here and a 153pp MagicMan webrip there
+N 11000 the per-file pick CV 105236 "Please Love Me !" 2015 Tonkam count 10 is a Japanese series reached by word-order noise, not this book
+I 26659 cv=872921 gcd=2261498 0.95 | the NBM 2021 Janis Joplin biography, our 162pp rip
+
+S 11001 cv=137705 gcd=175950 0.95 | the stored link is already right: CV 137705 "Love Me Please!: The Story of Janis Joplin" 2021 NBM count 1 and GCD 175950 with the same title, year, publisher and count agree, and this file is the MagicMan webrip of the very book S11000 holds
+I 26660 cv=872921 gcd=2261498 0.95 | the NBM 2021 book, 153pp webrip of the same 2021 edition
+
+S 11979 cv=133853 gcd=169719 0.95 | CV 133853 "Michael Jackson in Comics" 2021 NBM count 1 and GCD 169719 with the same title, 2021-2021, NBM count 1 agree, and our ComicInfo says Series "Michael Jackson in Comics!" Publisher "NBM Publishing"
+I 26661 cv=828717 gcd=2199632 0.95 | the NBM 2021 volume of the "in Comics!" line, our 194pp webrip
+
+S 12982 cv=158546 gcd=- 0.9 | CV 158546 "Nina Simone in Comics" 2024 NBM count 1 matches our ComicInfo Series "Nina Simone in Comics!" and Publisher "NBM Publishing" and the file's 2024; the GCD dump has no row for this volume of the line
+F 12982 provider-missing | GCD indexes most of NBM's "in Comics!" line but not the 2024 Nina Simone volume
+I 26663 cv=1060220 gcd=- 0.9 | the NBM 2024 book, CV's only issue, our 142pp webrip
+
+S 13817 cv=125968 gcd=159668 0.95 | CV 125968 "Phoolan Devi: Rebel Queen" 2020 NBM count 1 and GCD 159668 "Phoolan Devi, Rebel Queen" 2020-2020 NBM count 1 agree on year, publisher and count; the Virgin Comics "Devi" rows are a different comic
+I 26665 cv=743286 gcd=2111294 0.95 | the NBM 2020 English edition, our 225pp webrip
+
+S 13831 cv=160611 gcd=222245 0.95 | CV 160611 "Pink Floyd in Comics" 2024 NBM count 1 and GCD 222245 with the same title, 2024-2024, NBM count 1 agree, and our ComicInfo says Series "Pink Floyd in Comics!" Publisher "NBM Publishing"
+I 26666 cv=1075588 gcd=2720269 0.95 | the NBM 2024 volume of the "in Comics!" line, our 234pp webrip
+
+S 14093 cv=158453 gcd=- 0.9 | CV 158453 "Prince in Comics" 2023 NBM count 1 matches our ComicInfo Series "Prince in Comics!" and Publisher "NBM Publishing" and the file's 2023; the GCD dump has no row for this volume
+F 14093 provider-missing | GCD holds no "Prince in Comics" row at any year, only unrelated "The Prince" books
+I 26668 cv=1059240 gcd=- 0.9 | the NBM 2023 book, CV's only issue, our 152pp webrip
+
+S 17999 cv=144771 gcd=180561 0.95 | CV 144771 "The Art of Sushi" 2022 NBM count 1 and GCD 180561 with the same title, 2021-2021, NBM count 1 agree on title, publisher and count; GCD's 160pp issue is our 159pp rip and the file itself says "NBM 2021"
+I 26673 cv=944162 gcd=2302759 0.95 | the NBM edition, 160pp in GCD vs our 159pp webrip
+
+S 18074 cv=115539 gcd=133234 0.95 | CV 115539 "The Beatles in Comics!" 2018 NBM count 1 and GCD 133234 with the identical title, 2018-2018, NBM count 1 agree; GCD's 232pp issue is our 226pp rip and the Dell/Pendulum/Personality "Beatles" rows are different comics
+I 26674 cv=693300 gcd=1871509 0.95 | the NBM 2018 volume of the "in Comics!" line, 232pp in GCD vs our 226pp
+
+S 18428 cv=132464 gcd=168483 0.95 | CV 132464 "The Disney Bros.: The Fabulous Story of Walt and Roy" 2020 NBM count 1 and GCD 168483 "The Disney Bros: The Fabulous Story of Walt and Roy" 2021-2021 NBM count 1 agree on publisher, count and title but for the period; GCD's 120pp issue is our 115pp rip
+I 26676 cv=820538 gcd=2183734 0.95 | the NBM English edition, 120pp in GCD vs our 115pp webrip
+
+S 19013 cv=57203 gcd=- 0.9 | CV 57203 "An Enchantment" 2013 NBM count 1 matches our filename ("The Louvre Collection - An Enchantment (2013) (NBM)") and its year; GCD holds NBM's other Louvre books (58225 The Sky over the Louvre, 111610 Rohan at the Louvre) but no row for this one
+F 19013 provider-missing | GCD indexes the NBM Louvre line only partly and has no "An Enchantment"
+I 26677 cv=386210 gcd=- 0.9 | the NBM 2013 Louvre Collection album, CV's only issue, our 71pp rip
+
+S 19394 cv=112839 gcd=129375 0.95 | CV 112839 "The Provocative Colette" 2018 NBM count 1 and GCD 129375 with the same title, 2018-2018, NBM count 1 agree on all four columns, corroborated by our ComicInfo Publisher "NBM"
+I 26690 cv=679738 gcd=1845794 0.95 | CV 112839's sole issue 679738 and GCD 129375's sole 2018 NBM issue are one book; our 116pp XRA-Empire rip carries ComicInfo Series "The Provocative Colette" and Publisher "NBM"
+
+S 19441 cv=127660 gcd=163283 0.95 | CV 127660 "Red Mother With Child" 2020 NBM count 1 and GCD 163283 "The Red Mother with Child" 2020-2020 NBM count 1 agree on year, publisher and count; the Boom! Studios "The Red Mother" rows are a different comic entirely
+I 26691 cv=766340 gcd=2139438 0.95 | the NBM 2020 English edition, our 145pp webrip
+
+S 19492 cv=117891 gcd=143101 0.95 | CV 117891 "The Rolling Stones in Comics" 2019 NBM count 1 and GCD 143101 with the identical title, 2019-2019, NBM count 1 agree on all four columns
+I 26692 cv=704529 gcd=1941996 0.95 | the NBM 2019 volume of the "in Comics!" line, our 194pp rip
+
+S 19567 cv=137027 gcd=173576 0.95 | CV 137027 "The Secrets of Chocolate: A Gourmand's Trip Through A Top Chef's Atelier" 2021 NBM count 1 and GCD 173576 with that exact subtitle, 2021-2021, NBM count 1 agree
+I 26694 cv=862895 gcd=2235663 0.95 | CV 137027's only issue 862895 and GCD 173576's only 2021 NBM issue are the same book, our 114pp MagicMan-DCP webrip of the full "A Gourmand's Trip Through a Top Chef's Atelier" title
+
+S 19699 cv=135590 gcd=171717 0.95 | CV 135590 "The Stringer" 2021 NBM count 1 and GCD 171717 "The Stringer" 2021-2021 NBM count 1 agree on title, year, publisher and count; Image's 2023 "Stringer" is a different comic
+I 26696 cv=845031 gcd=2215287 0.95 | CV 135590's only issue 845031 and GCD 171717's only 2021 NBM issue are one book; our 152pp NBM 2021 webrip is it, and Image's 2023 "Stringer" (CV 152873) is a different comic
+
+S 21939 cv=134277 gcd=171715 0.95 | CV 134277 "Women Discoverers: Top Women In Science" 2021 NBM count 1 and GCD 171715 with the same title, 2021-2021, NBM count 1 agree; GCD's 104pp issue brackets our two rips at 88pp and 98pp of the one book
+I 26699 cv=833067 gcd=2215285 0.95 | CV 134277's sole issue 833067 and GCD 171715's sole 2021 NBM issue are one book; this 88pp XRA-Empire rip and the 98pp MagicMan rip (26700) are two rips of it, both under GCD's 104pp count
+I 26700 cv=833067 gcd=2215285 0.95 | second rip of the same book (MagicMan webrip, 98pp)
+
+S 24292 cv=51654 gcd=55267 0.95 | CV 51654 "Dungeon Monstres" 2008 NBM count 6 and GCD 55267 "Dungeon Monstres" 2008-2016 NBM count 6 agree on start year, publisher and count; our five albums are #1-5 of that six-volume line and CV's cached #1-5 names our five subtitles exactly
+I 26645 cv=354223 gcd=1103216 0.95 | v01 The Crying Giant (2008), our 98pp rip
+I 26646 cv=354598 gcd=1103217 0.95 | v02 - The Dark Lord (2008), our 99pp itsGucci rip, is #2 of the six-volume NBM line CV 51654 / GCD 55267, and CV's cached #2 carries that same subtitle
+I 26647 cv=354889 gcd=1103218 0.95 | v03 - Heartbreaker (2010), our 99pp Santa Anna rip, is #3 of the same NBM line, its subtitle matching CV 51654's cached #3 and its year inside GCD 55267's 2008-2016 span
+I 26648 cv=355179 gcd=1661842 0.95 | v04 Night of the Ladykiller (2011), GCD 100pp = our 100pp rip
+I 26649 cv=492317 gcd=1661843 0.95 | v05 My Son the Killer (2015), GCD 100pp = our 100pp rip
+
+S 10979 cv=52724 gcd=51487 0.95 | CV 52724 "Lost In Time: Labyrinths" 1986 NBM count 1 and GCD 51487 with the identical title, 1986-1986, NBM count 1 agree on all four columns, and our filename says "NBM Publishing 1986"
+I 27942 cv=360148 gcd=769672 0.95 | CV 52724's only issue 360148 and GCD 51487's only 1986 NBM issue are the same album; our file "Lost in Time 01 - Labyrinths (NBM Publishing 1986)" at 61pp names publisher and year outright
+
+S 19108 cv=27138 gcd=51297 0.9 | both legs are NBM's English "The Mercenary" album line and the EAN13 read off item 26687 (9781561631988) IS GCD issue 768628's barcode — #7 "Lost Civilization", 1997, ISBN 1-56163-198-1 — but CV 27138 stops at 3 albums and GCD 51297 at 8 while we hold 11, so both counts sit below our ladder
+N 19108 GCD splits this line three ways: 186520 (1985, three single albums), 51297 (1985-1999, eight, the 2-in-1 editions our files match by ISBN) and 73682 (1988-1999, eight); "Vol. 00 - Jubilee Edition" (Arboris 1998, 11pp) and "Vol. 11 - The Flight" are in none of them
+I 26687 cv=- gcd=768628 isbn=9781561631988 1.0 | the barcode read off the page equals GCD issue 768628's own barcode: The Mercenary #7 Lost Civilization, NBM 1997, 52pp
+I 26685 cv=- gcd=768626 0.9 | "Vol. 07 - The Voyage (NBM 1995)" 48pp is GCD 51297 #5, ISBN 1-56163-122-1, 52pp
+I 26686 cv=- gcd=768627 0.9 | "Vol. 08 - Year 1000 The End of the World (NBM 1996)" 51pp is GCD 51297 #6, ISBN 1-56163-161-2
+I 26684 cv=- gcd=768625 0.9 | "Vol. 06 - The Black Globe (NBM 1994)" 50pp is GCD 51297 #4, ISBN 1-56163-097-7, 52pp
+I 26683 cv=- gcd=768624 0.9 | "Vol. 05 - The Fortress (NBM 1991)" 49pp is GCD 51297 #3, ISBN 1-56163-024-1
+I 26688 cv=- gcd=768629 0.9 | "Vol. 10 - Giants (NBM 1999)" 50pp is GCD 51297 #8, ISBN 1-56163-235-X
+
+S 22839 cv=119116 gcd=150525 0.9 | our five files are the Europe Comics digital albums: CV 119116 "Zombillenium" Europe Comics count 4 has cached #1-4 naming Gretchen / Human Resources / Control Freaks / Royal Witchcraft, exactly our first four filenames, and GCD holds no Europe Comics row at all — 150525 "Zombillenium" 2013-? NBM count 4 is the same comic in NBM's English print edition, with the same four subtitles
+F 22839 needs-fetch | cv=119116 has no CvVolume row — it was named from the local ComicVine rip and Phase C.1 must fetch it
+I 26701 cv=708981 gcd=2023033 0.9 | album 01 Gretchen, GCD's NBM printing is 56pp against our 50pp Europe Comics rip
+I 26702 cv=711735 gcd=2023034 0.9 | album 02 - Human Resources, our 52pp Europe Comics digital rip; CV 119116's cached #2 and GCD 150525 #2 in NBM's English print edition carry that same subtitle
+I 26703 cv=713693 gcd=2023035 0.9 | album 03 - Control Freaks, our 50pp Europe Comics rip; CV 119116 #3 and NBM's GCD 150525 #3 both carry that subtitle, the print edition being the same comic under another imprint
+I 26704 cv=719137 gcd=2023036 0.9 | album 04 - Royal Witchcraft, our 50pp Europe Comics rip and the fourth and last of both CV 119116's cached #1-4 and GCD 150525's NBM count of 4
+N 22839 the fifth file is a 106pp двух-album bind-up "05-06 - Black Friday / Sabbath Grand Derby (2023)" that neither provider indexes
+
+S 546 cv=89140 gcd=98726 0.95 | CV 89140 "Agony" 2016 New York Review Comics count 1 and GCD 98726 "Agony" 2016-2016 The New York Review of Books count 1 agree on title, year, publisher and count; the 1987 Pantheon and 1992 Maro rows are earlier editions of Mark Beyer's book
+I 26706 cv=521393 gcd=1548653 0.95 | CV 89140's only issue 521393 and GCD 98726's only 2016 New York Review of Books issue are the same edition of Mark Beyer's book; our 186pp "(NYRC) (Digital-SD)" rip is that printing, not the 1987 Pantheon or 1992 Maro row
+
+S 15784 cv=113208 gcd=128819 0.95 | CV 113208 "Slum Wolf" 2018 New York Review Comics count 1 and GCD 128819 "Slum Wolf" 2018-2018 The New York Review of Books count 1 agree; GCD's 340pp issue is our 334pp rip and both files are the same tunafan rip
+I 26708 cv=683676 gcd=1843510 0.95 | the NYRC 2018 Tadao Tsuge collection, 340pp in GCD vs our 334pp
+I 45346 cv=683676 gcd=1843510 0.95 | duplicate 334pp rip of the same book, filed under Manga\Slum Wolf (2018)
+
+S 15838 cv=160282 gcd=202646 0.95 | CV 160282 "Social Fiction" New York Review Comics count 1 and GCD 202646 "Social Fiction" 2023-2023 The New York Review of Books count 1 agree on title, publisher and count; GCD's 196pp issue is our 197pp rip, and the French rows (Humanoïdes 2024, Vertige Graphic 2003) are other languages
+I 26709 cv=1073100 gcd=2558686 0.95 | the NYRC 2023 Chantal Montellier collection, 196pp in GCD vs our 197pp
+
+S 19219 cv=110545 gcd=124088 0.95 | CV 110545 "The New World: Comics from Mauretania" 2018 New York Review Comics count 1 and GCD 124088 with the identical title, 2018-2018, The New York Review of Books count 1 agree on all four columns
+I 26710 cv=668666 gcd=1805985 0.95 | the NYRC 2018 Chris Reynolds collection, our 272pp rip
+
+S 21123 cv=105281 gcd=117709 0.95 | CV 105281 "Voices in the Dark" 2017 New York Review Comics count 1 and GCD 117709 with the same title, 2017-2017, The New York Review of Books count 1 agree on all four columns
+I 26711 cv=630409 gcd=1744514 0.95 | the NYRC 2017 Ulli Lust edition, our 370pp rip
+
+S 22657 cv=109524 gcd=123474 0.95 | CV 109524 "Yellow Negroes and Other Imaginary Creatures" 2018 New York Review Comics count 1 and GCD 123474 with the identical title, 2018-2018, The New York Review of Books count 1 agree; GCD's 116pp issue is our 120pp rip
+I 26712 cv=664703 gcd=1798473 0.95 | the NYRC 2018 Yvan Alagbé collection, 116pp in GCD vs our 120pp
+
+S 21569 cv=153040 gcd=192303 0.95 | CV 153040 "Where Black Stars Rise" 2022 Tor Books count 1 and GCD 192303 with the same title, 2022-2022, Tor Books count 1 agree, and our ComicInfo Publisher is "Tor Nightfire"
+I 27943 cv=1009239 gcd=2449421 0.95 | the Tor Nightfire 2022 book, our 128pp rip
+
+S 9344 cv=134869 gcd=- 0.9 | CV 134869 "In Pieces" 2013 Nobrow count 1 matches our filename, its (2013) and the EAN13 9781907704581 read off item 26713 (a Nobrow ISBN prefix); GCD has no row for it and the barcode matches no GCD issue
+F 9344 provider-missing | the GCD dump's "In Pieces" hits are AdHouse 2020 and Humanoids 2020, different comics
+I 26713 cv=840535 isbn=9781907704581 gcd=- 0.9 | Marion Fayolle's Nobrow 2013 book; the barcode read off the page is its ISBN
+I 27368 cv=840535 gcd=- 0.9 | second, undated rip of the same 61pp book, filed loose in Graphic Novels
+
+S 19740 cv=134871 gcd=150816 0.95 | CV 134871 "The Tenderness of Stones" 2019 New York Review Comics count 1 and GCD 150816 with the same title, 2019-2019, The New York Review of Books count 1 agree; GCD's 144pp issue is our 138pp rip
+I 26716 cv=840533 gcd=2021206 0.95 | the NYRC 2019 Marion Fayolle book, 144pp in GCD vs our 138pp
+
+R 11869 | two DIFFERENT books share this shelf and neither dominates: "01 Mean Girls Club" (item 26714, 23pp, 2016) is CV 87622 / GCD 95866 (Nobrow 2016, GCD's issue is 28pp) and "02 Mean Girls Club - Pink Dawn" (item 26715, 97pp, 2018) is CV 110692 / GCD 124288 (Nobrow 2018); the stored link CV 87622 covers only the 2016 minicomic and its count of 1 against our two files is what the 2.00 ratio is
+F 11869 split-needed | proposed runs: item 26714 -> cv=87622 gcd=95866; item 26715 -> cv=110692 gcd=124288
+I 26714 cv=512517 gcd=1527414 0.95 | Mean Girls Club, Nobrow 2016, GCD 28pp against our 23pp rip
+I 26715 cv=669244 gcd=1807213 isbn=9781910620229 0.9 | Mean Girls Club: Pink Dawn, Nobrow 2018; the EAN13 read off the page is a Nobrow ISBN the GCD row does not record
+
+S 1396 cv=35697 gcd=48389 0.95 | CV 35697 "Asterios Polyp" 2009 Pantheon Books count 1 and GCD 48389 "Asterios Polyp" 2009-2009 Pantheon count 1 agree on title, year, publisher and count; GCD's 352pp issue is our 320pp rip and the Sins Entido / Casterman / Oog & Blik / Eichborn rows are translations
+I 26717 cv=236132 gcd=755189 0.95 | the Pantheon 2009 first edition, 352pp in GCD vs our 320pp scan
+
+S 2950 cv=150152 gcd=207919 0.95 | CV 150152 "Blood of the Virgin" 2023 Pantheon Books count 1 and GCD 207919 "Blood of the Virgin" 2023-2023 Pantheon count 1 agree; the Reprodukt and Cornélius rows are the German and French editions of the same book
+I 26718 cv=988014 gcd=2599471 0.95 | the Pantheon 2023 edition, our 294pp rip
+
+S 6125 cv=23587 gcd=45997 0.95 | CV 23587 "Embroideries" 2005 Pantheon Books count 1 and GCD 45997 "Embroideries" 2005-2005 Pantheon count 1 agree on all four columns; GCD's 150pp issue is our 149pp rip
+I 26719 cv=141491 gcd=740658 0.95 | the Pantheon 2005 Satrapi book, 150pp in GCD vs our 149pp
+
+S 9233 cv=158978 gcd=220696 0.95 | CV 158978 "I'm So Glad We Had This Time Together" 2024 Pantheon Books count 1 and GCD 220696 with the full subtitle ": A Memoir", 2024-2024, Pantheon count 1 agree, our ComicInfo repeats the title and publisher, and GCD's 504pp issue is our 502pp rip
+I 26721 cv=1063668 gcd=2707917 0.95 | the Pantheon 2024 memoir, 504pp in GCD vs our 502pp
+
+S 6681 cv=160092 gcd=218796 0.95 | CV 160092 "Final Cut" 2024 Pantheon Books count 1 and GCD 218796 "Final Cut" 2024-2024 Pantheon count 1 agree; GCD 218797 is the Jonathan Cape UK printing of the same Charles Burns book, and the "Human Target: Final Cut" rows are a different comic
+I 27944 cv=1071704 gcd=2688080 0.95 | the Pantheon 2024 US edition, our 227pp rip
+
+S 14577 cv=135726 gcd=172309 0.95 | CV 135726 "Renoir: Father and Son" 2021 Pegasus count 1 and GCD 172309 with the same title, 2021-2021, Pegasus Books count 1 agree on all four columns; the NYRC/Kitchen Sink "Father & Son" rows are different comics
+I 26724 cv=845894 gcd=2221163 0.95 | the Pegasus Books 2021 edition, our 130pp rip
+
+S 1135 cv=161489 gcd=233700 0.9 | CV 161489 "Anzu and the Realm of Darkness" 2024 Viking Press count 1 matches our filename and its 2024, and GCD 233700 carries the same title at [en-gb] 2024 Bonnier Books UK count 1 — the same book, but the British edition, so the publisher column does not agree
+I 26727 cv=1080671 gcd=- 0.9 | the Viking/Penguin 2024 US edition, CV's only issue; GCD indexes only the Bonnier Books UK printing
+
+S 4778 cv=149857 gcd=214585 0.95 | CV 149857 "Danger and Other Unknown Risks" 2023 Penguin Group count 1 and GCD 214585 with the same title, 2023-2023, Penguin Random House count 1 agree, our ComicInfo Publisher is "Penguin Workshop", and GCD's 212pp issue is our 204pp rip
+I 26728 cv=986008 gcd=2652712 0.95 | the Penguin Workshop 2023 book, 212pp in GCD vs our 204pp
+
+S 190 cv=151979 gcd=184874 0.95 | CV 151979 "A Frog in the Fall" 2022 count 1 and GCD 184874 "A Frog in the Fall (and Later On)" 2022-2022 PEOW! Studio count 1 agree on year and count and GCD supplies the parenthetical our filename carries; GCD's 340pp issue against our 242pp rip is the Peow oversize format
+I 26733 cv=999295 gcd=2400187 0.95 | the PEOW! Studio 2022 book, our 242pp rip
+
+S 16364 cv=141756 gcd=184872 0.9 | CV 141756 "Stages of Rot" 2019 PEOW! Studio count 1 and GCD 184872 "Stages of Rot" [en-se] 2022-2022 PEOW! Studio count 1 agree on title, publisher and count, but the years differ and our file says "2019, 2nd edition" — the GCD row is a later printing
+I 26734 cv=909603 gcd=2400185 0.9 | the PEOW! Studio edition; GCD's only row is the 2022 printing, ours the 2019 second edition
+
+S 22091 cv=119659 gcd=- 0.9 | CV 119659 "Wrecked Hearts" 2016 PEOW! Studio count 1 matches our filename and its 2016; the GCD dump has no row for it under any spelling
+F 22091 provider-missing | GCD indexes PEOW! Studio only sparsely (A Frog in the Fall, Stages of Rot) and has no "Wrecked Hearts"
+I 26735 cv=1105974 gcd=- 0.9 | the PEOW! Studio 2016 book, CV's only issue, our 139pp rip
+
+S 4075 cv=145037 gcd=180533 0.95 | CV 145037 "Coming Back" 2022 Random House count 1 and GCD 180533 "Coming Back" 2022-2022 Penguin Random House count 1 agree on title, year, publisher and count, and our ComicInfo Publisher is "Random House Graphic"
+I 26744 cv=946580 gcd=2302389 0.95 | the Random House Graphic edition, our 262pp rip
+
+S 4296 cv=129815 gcd=163287 0.95 | CV 129815 "Crabapple Trouble" 2020 Random House count 1 and GCD 163287 with the same title, 2020-2020, Penguin Random House count 1 agree, corroborated by our ComicInfo Publisher "Random House Graphic"
+I 26745 cv=795981 gcd=2139531 0.95 | the Random House Graphic 2020 book, our 181pp rip
+
+S 8733 cv=153382 gcd=- 0.9 | CV 153382 "Hellaween" 2023 Penguin Group count 1 is the only record of that name in either provider and matches our file's (2023) and its Razorbill ComicInfo publisher, a Penguin imprint
+F 8733 provider-missing | the GCD dump returns nothing for "Hellaween" at any year
+I 26749 cv=1012419 gcd=- 0.9 | the Razorbill/Penguin 2023 book, CV's only issue, our 208pp rip
+
+S 12304 cv=136985 gcd=173387 0.95 | CV 136985 "Monster Friends" 2021 Random House count 1 and GCD 173387 "Monster Friends" 2021-2021 Penguin Random House count 1 agree, corroborated by our ComicInfo Publisher "Random House Graphic"; the Komikku French rows are a different comic
+I 26752 cv=862076 gcd=2233085 0.95 | the Random House Graphic 2021 book, our 272pp rip
+
+S 13443 cv=146415 gcd=190789 0.95 | CV 146415 "Other Ever Afters" Random House count 1 and GCD 190789 "Other Ever Afters: New Queer Fairy Tales" 2022-2022 Penguin Random House count 1 agree on publisher and count and GCD supplies the subtitle our filename drops; our ComicInfo says "Random House Graphic"
+I 26755 cv=957066 gcd=2440917 0.95 | the Random House Graphic 2022 book, our 234pp rip
+
+S 19164 cv=148624 gcd=197651 0.95 | CV 148624 "The Moth Keeper" 2023 Random House count 1 and GCD 197651 with the same title, 2023-2023, Penguin Random House count 1 agree on all four columns; the Dark Horse "The Moth" rows are a different comic
+I 26756 cv=973770 gcd=2505653 0.95 | the Random House Graphic 2023 book, our 276pp rip
+
+S 19499 cv=124412 gcd=155072 0.9 | CV 124412 "The Runaway Princess" 2020 Random House count 1 matches our ComicInfo Publisher "Random House Graphic" and the file's 2020, and GCD holds the same title at 2020 Penguin Random House as TWIN rows (155072, 155073) with no page counts to separate them; the Harlequin volume of the same name is a different comic
+I 26757 cv=734366 gcd=2058246 0.9 | the Random House Graphic 2020 book, our 272pp rip; one of two indistinguishable rows
+
+S 9035 cv=147901 gcd=182351 0.95 | CV 147901 "Housecat Trouble" 2022 Random House count 1 and GCD 182351 "Housecat Trouble" 2022-2022 Penguin Random House count 1 agree on all four columns, corroborated by our ComicInfo Publisher
+I 26750 cv=967686 gcd=2367726 0.95 | the Random House Graphic 2022 book, our 176pp rip
+
+S 9036 cv=147903 gcd=- 0.9 | CV 147903 "Housecat Trouble: Lost and Found" Random House count 1 matches our filename and its 2023 and our ComicInfo Publisher "Random House Graphic"; GCD indexes only the first book (182351) and no sequel
+F 9036 provider-missing | the GCD dump has no "Housecat Trouble: Lost and Found" row
+I 26751 cv=967724 gcd=- 0.9 | the Random House Graphic 2023 sequel, CV's only issue, our 192pp rip
+
+S 7363 cv=131583 gcd=- 0.9 | CV 131583 "Genghis Con" 2020 Genghis Comics count 1 is the only record of that name in either provider and matches our file's title; the rip says "(2021) (Renegade)" against ComicVine's 2020 self-imprint, which is the residue
+F 7363 provider-missing | the GCD dump returns no "Genghis Con" row; its "Genghis" hits are Grimtoad, Genghis Khan and Alley Oop
+I 26740 cv=815380 gcd=- 0.9 | the 2020/2021 Renegade Arts printing, CV's only issue, our 115pp rip
+
+S 19664 cv=117470 gcd=142148 0.95 | CV 117470 "The Spine Chillers" 2019 Renegade Arts Entertainment count 1 and GCD 142148 with the same title, [en-ca] 2019-2019, Renegade Arts Entertainment count 1 agree on all four columns
+I 26743 cv=702514 gcd=1935073 0.95 | the Renegade Arts 2019 book, our 115pp rip
+
+S 3049 cv=118084 gcd=143587 0.95 | CV 118084 "Bogart Creek" 2019 Renegade Arts Entertainment count 2 (cached #1-2) and GCD 143587 "Bogart Creek" [en-ca] 2019-? Renegade Arts Entertainment count 3 agree on start year and publisher, our two volumes are #1 and #2 of that line, and GCD's third volume with an open end year is staleness above our holdings rather than residue
+I 26736 cv=705278 gcd=1945096 0.95 | v01 (2019), our 139pp Lynx-Empire rip, is #1 of CV 118084's cached #1-2 and the first issue of GCD 143587 "Bogart Creek" [en-ca] 2019-?, Renegade Arts on both sides
+I 26737 cv=818636 gcd=2331930 0.95 | v02 (2020), our 139pp Lynx-Empire rip, is #2 of the same Renegade Arts line — CV 118084's second cached issue and GCD 143587's 2020 volume
+
+S 14543 cv=77170 gcd=130547 0.9 | CV 77170 "Jeff Martin's War of 1812: Redcoats-ish" 2014 Renegade Arts Entertainment count 2 with cached #1-2 matches our two volumes and their 2014/2018 years, and GCD 130547 "Redcoats-ish: Jeff Martin's War of 1812" 2014-2018 Renegade Arts Entertainment reproduces that exact span — but with a count of 1 against our two books
+I 26741 cv=466530 gcd=1851972 0.9 | v1 (2014), our 115pp rip; the single GCD issue covers the line's first volume
+I 26742 cv=686292 gcd=- 0.9 | v2 (2018), CV issue 686292; GCD's row records only one issue
+
+S 979 cv=82016 gcd=- 0.9 | CV 82016 "An Entity Observes All Things" 2015 Retrofit Comics count 1 matches our filename and its 2015 exactly; the GCD dump has no row for it
+F 979 provider-missing | GCD indexes Retrofit Comics thinly and returns nothing for this title
+I 26277 cv=488856 gcd=- 0.9 | the Retrofit Comics 2015 collection, CV's only issue, our 152pp rip
+
+S 21321 cv=94839 gcd=- 0.9 | CV 94839 "We All Wish for Deadly Force" 2016 Retrofit Comics count 1 matches our filename and its 2016; the GCD dump has no row for it under any spelling
+F 21321 provider-missing | GCD returns nothing for "Deadly Force"; Retrofit Comics is barely indexed there
+I 26278 cv=553115 gcd=- 0.9 | the Retrofit Comics 2016 collection, CV's only issue, our 84pp rip
+
+S 1058 cv=130852 gcd=- 0.9 | CV 130852 "Animorphs: The Graphic Novel" 2020 Scholastic Book Services count 6 spans the line and its cached #1-5 name The Invasion / The Visitor / The Encounter / The Message / The Predator, which is where our v01, v04 and v05 sit; GCD mints a SERIES PER BOOK here so no GCD row covers the shelf
+F 1058 provider-missing | GCD holds 165464 (The Invasion 2020), 177062 (The Visitor), 192286 (The Encounter), 214779 (The Message), 214757 (The Predator) — one series per book, none spanning
+I 26773 cv=806681 gcd=2158367 0.95 | Vol. 01 The Invasion (2020), our 238pp rip
+I 26776 cv=1051972 gcd=- 0.9 | Vol. 04 The Message (2023), CV issue 1051972; GCD's per-book rows for it are 214779/214780, twins with nothing to separate them
+I 26777 cv=1073758 gcd=- 0.9 | Vol. 05 The Predator (2024), CV issue 1073758; GCD's rows 214757/214758 are likewise twins
+
+S 18523 cv=130852 gcd=192286 0.9 | this shelf's one file is "Animorphs Graphic Novel Vol. 03 - The Encounter (2022)": CV 130852's #3 is "Volume 3: The Encounter" and GCD 192286 "Animorphs the Graphic Novel: The Encounter" 2022-2022 Scholastic count 1 is 216pp against our 205pp rip; the per-file pick CV 109192 "Encounter" 2018 Lion Forge count 10 is a completely different comic caught by the truncated key
+F 18523 merge-with=1058 | this is Animorphs book 3, split from S1058 because the parser read ComicInfo Series "The Encounter" instead of the Animorphs line
+I 26775 cv=950530 gcd=2449154 0.95 | Vol. 03 The Encounter, Scholastic 2022, GCD 216pp vs our 205pp
+
+S 1758 cv=33837 gcd=91329 0.9 | CV 33837 "The Baby-Sitters Club" Scholastic count 16 has cached #1-13 naming every one of our thirteen files in order, and GCD 91329 "The Baby-Sitters Club" 2015-? Scholastic count 16 agrees on publisher and count with #1 at 196pp against our 194pp rip; GCD's twin row 150518 (same title, same year, 16) is what caps this at 0.9
+I 26778 cv=350925 gcd=1445493 0.9 | 01 Kristy's Great Idea, 196pp in GCD vs our 194pp
+I 26779 cv=350926 gcd=1445494 0.9 | 02 The Truth about Stacey, 148pp in GCD vs our 149pp
+I 26780 cv=350927 gcd=1734209 0.9 | 03 Mary Anne Saves the Day, 164pp in GCD vs our 163pp
+I 26781 cv=350928 gcd=2660387 0.9 | 04 Claudia and Mean Janine, 180pp in GCD = our 180pp
+I 26782 cv=622971 gcd=1734210 0.9 | 05 Dawn and the Impossible Three, 164pp in GCD vs our 162pp
+I 26783 cv=682573 gcd=- 0.9 | 06 Kristy's Big Day (2018), CV issue 682573
+I 26784 cv=718804 gcd=- 0.9 | 07 Boy-Crazy Stacey (2019), CV issue 718804
+I 26785 cv=796953 gcd=- 0.9 | 08 Logan Likes Mary Anne! (2020), CV issue 796953
+I 26786 cv=825580 gcd=- 0.9 | 09 Claudia and the New Girl (2021), CV issue 825580
+I 26787 cv=883984 gcd=- 0.9 | 10 Kristy and the Snobs (2021), CV issue 883984
+I 26788 cv=918793 gcd=- 0.9 | 11 Good-bye Stacey, Good-bye (2021), CV issue 918793
+I 26789 cv=955835 gcd=- 0.9 | 12 Jessi's Secret Language (2022), CV issue 955835
+I 26790 cv=962449 gcd=- 0.9 | 13 Mary Anne's Bad Luck Mystery (2023), CV issue 962449
+
+S 18048 cv=33837 gcd=91329 0.9 | this shelf is the SAME line: six "Full-Color Edition" files whose titles and page counts (194/149/163/179/158/159) match CV 33837's cached #1-6 and GCD 91329's first six issues; our ComicInfo Series is literally "The Baby-Sitters Club" with Publisher "Scholastic - Graphix", and GCD's twin row 150518 caps it at 0.9
+F 18048 merge-with=1758 | one Scholastic Baby-Sitters Club line cut into two shelves by the "Full Color Editions" subfolder; these six books are re-rips of S1758's 01-06
+I 26793 cv=350925 gcd=1445493 0.9 | v01 Kristy's Great Idea Full-Color Edition (2015)
+I 26794 cv=350926 gcd=1445494 0.9 | v02 The Truth About Stacey Full-Color Edition (2015)
+I 26795 cv=350927 gcd=1734209 0.9 | v03 Mary Anne Saves the Day Full-Color Edition (2015)
+I 26796 cv=350928 gcd=2660387 0.9 | v04 Claudia and Mean Janine Full-Color Edition (2016)
+I 26797 cv=622971 gcd=1734210 0.9 | v05 Dawn and the Impossible Three Full-Color Edition (2017)
+I 26798 cv=682573 gcd=1734212 0.9 | v06 Kristy's Big Day Full-Color Edition (2018)
+
+S 1813 cv=132927 gcd=168493 0.9 | CV 132927 "Banana Fox" 2020 Scholastic count 2 has cached #1 "And the Secret Sour Society", which is our one file, and GCD holds "Banana Fox and the Secret Sour Society" 2021 Scholastic as TWIN rows (168493, 169041) with no page counts to separate them
+I 27947 cv=823392 gcd=2183820 0.9 | Banana Fox 01 - Banana Fox and the Secret Sour Society (2021), our 83pp rip
+
+S 3066 cv=4691 gcd=5884 0.9 | the RUN wins and the judged ranges say which run: our nine colour volumes are judged #1-6, #7-11, #12-19, #20-27, #28-32, #33-37, #38-43, #44-49, #50-55 — the complete 55-issue Bone, which ComicVine keeps as one volume (4691, 1991 Cartoon Books, count 55) while GCD splits it by publisher; 5884 (1997-2004 Cartoon Books, #21-55) is the majority leg
+N 3066 the GCD split is 4347 (Cartoon Books 1991-1995, #1-20), 5415 (Image 1995-1997) and 5884 (Cartoon Books 1997-2004, #21-55); the books we hold are Scholastic's colour line (CV 42089 / GCD 21462, both count 9), which the `I` lines take
+I 26810 cv=286567 gcd=334604 0.95 | Vol. 01 Out from Boneville, Scholastic Feb 2005, GCD 148pp vs our 143pp; judged #1-6
+I 26811 cv=286568 gcd=334605 0.95 | Vol. 02 The Great Cow Race, Scholastic Aug 2005, GCD 148pp vs our 122pp; judged #7-11
+I 26812 cv=286569 gcd=334606 0.95 | Vol. 03 Eyes of the Storm, GCD 196pp vs our 174pp; judged #12-19
+I 26813 cv=286570 gcd=334607 0.95 | Vol. 04 The Dragonslayer, GCD 180pp vs our 175pp; judged #20-27
+I 26814 cv=286571 gcd=334608 0.95 | Vol. 05 Rock Jaw: Master of the Eastern Border, GCD 132pp vs our 117pp; judged #28-32
+I 26815 cv=286572 gcd=334609 0.95 | Vol. 06 Old Man's Cave, GCD 132pp vs our 119pp; judged #33-37
+I 26816 cv=286565 gcd=334610 0.95 | Vol. 07 Ghost Circles, GCD 160pp vs our 153pp; judged #38-43
+I 26817 cv=286573 gcd=334611 0.95 | Vol. 08 Treasure Hunters, GCD 148pp vs our 137pp; judged #44-49
+I 26818 cv=286574 gcd=334612 0.95 | Vol. 09 Crown of Horns, GCD 228pp vs our 220pp; judged #50-55
+N 3066 item 26825 "(2001) Bone 01 - 10th Anniversary Special Edition" (37pp) is a Cartoon Books anniversary reprint of issue #1 that neither provider indexes separately
+
+S 3070 cv=103631 gcd=208884 0.9 | CV 103631 "Bone: More Tall Tales" 2023 Scholastic count 1 and GCD's 2023 Scholastic rows agree on title, year, publisher and count, and of the twin rows 208884's 132pp issue is the closer to our 128pp scan; the twin itself caps this at 0.9
+I 26807 cv=1049418 gcd=2608843 0.9 | the Scholastic 2023 book, GCD 132pp vs our 128pp scan; one of two 2023 Scholastic rows
+
+S 3072 cv=69564 gcd=76900 0.95 | CV 69564 "Bone Tall Tales" 2010 Scholastic count 1 and GCD 76900 "Bone Tall Tales" 2010-2010 Scholastic count 1 agree on all four columns; GCD's 132pp issue is our 117pp rip
+I 26809 cv=294350 gcd=1144970 0.95 | the Scholastic 2010 book, 132pp in GCD vs our 117pp
+
+S 3074 cv=51539 gcd=- 0.9 | CV 51539 "Bone Mini-Comic" 2008 Cartoon Books count 3 matches our three 4pp files and their ladder 1-3 exactly; the GCD dump has no row for the mini-comics
+F 3074 provider-missing | GCD indexes no "Bone Mini Comic" series at any year
+
+S 3068 cv=51538 gcd=32373 0.9 | CV 51538 "Bone: Happy Halloween" 2008 Cartoon Books count 2 has issues numbered 2008 and 2010, which is exactly our two files, while GCD mints a series PER YEAR (32373 for 2008, 52442 for 2010, both 16pp against our 17pp rips) so no single GCD row covers the shelf
+I 26826 cv=353789 gcd=545970 0.95 | the 2008 Halloween giveaway, GCD 16pp vs our 17pp rip
+I 26827 cv=353790 gcd=779468 0.95 | the 2010 Halloween giveaway, GCD 16pp vs our 17pp rip
+
+S 3069 cv=61893 gcd=12308 0.95 | CV 61893 "Bone Holiday Special" 1993 Cartoon Books count 1 and GCD 12308 "Bone Holiday Special" 1993-1993 Cartoon Books count 1 agree on all four columns; GCD's 20pp issue is our 21pp rip
+I 26823 cv=405024 gcd=220367 0.95 | the Cartoon Books 1993 holiday special, 20pp in GCD vs our 21pp
+
+S 3073 cv=82475 gcd=77058 0.95 | CV 82475 "Bone Handbook" 2010 Scholastic count 1 and GCD 77058 "Bone Handbook" 2010-2010 Scholastic count 1 agree on all four columns; GCD's 134pp issue is our 127pp rip
+I 26828 cv=317862 gcd=1147619 0.95 | the Scholastic 2010 handbook, 134pp in GCD vs our 127pp
+
+S 3081 cv=51075 gcd=15194 0.95 | CV 51075 "Bone Sourcebook" 1995 Image count 1 and GCD 15194 "Bone Sourcebook" 1995-1995 Image count 1 agree on all four columns; GCD's 16pp issue is exactly our 16pp rip
+I 26824 cv=349210 gcd=260370 0.95 | the Image 1995 Bone Sourcebook, CV 51075's only issue and GCD 15194's only issue, whose 16pp is exactly our 16pp "(1995) Bone Sourcebook.cbr"
+
+S 17003 cv=24734 gcd=20650 0.95 | CV 24734 "Stupid Stupid Rat Tails" 1999 Cartoon Books count 3 and GCD 20650 "Stupid, Stupid Rat Tails" 1999-2001 Cartoon Books count 3 agree on start year, publisher and count, and GCD's three 36pp issues are exactly our three 36pp files with ladder 1-3
+N 17003 GCD 21466 is a separate 2000 Cartoon Books one-shot of the same name (count 1) which our numbered three-issue ladder is not
+
+S 18531 cv=138752 gcd=175723 0.95 | CV 138752 "The Epic Tales of Captain Underpants: The Xtreme Xploits of the Xplosive Xmas" 2021 Scholastic count 1 and GCD 175723 with that exact title, 2021-2021, Scholastic count 1 agree on all four columns
+I 27949 cv=883515 gcd=2259287 0.95 | the Scholastic 2021 special, our 65pp rip
+
+S 24291 cv=- gcd=106235 0.9 | GCD 106235 "Dog Man" 2016-? Scholastic count 14 spans the whole line and its issue titles are our twelve filenames in order, from #1 (248pp against our 243pp rip) to #12 The Scarlet Shedder; ComicVine mints a volume per BOOK here, so its "Dog Man" 93629 is a count-1 stub covering only volume 1
+F 24291 provider-missing | ComicVine has no volume spanning the line — 93629 (Dog Man), 97457 (Unleashed), 107142 (and Cat Kid), 123350 (Fetch-22), 134733 (Mothering Heights) are one volume per book
+I 26834 cv=547185 gcd=1621183 0.95 | v01 (2016), our 243pp DrVink rip against GCD 106235 #1's 248pp; CV 93629's single issue 547185 is this same first book, ComicInfo Publisher "Scholastic Inc."
+I 26835 cv=571846 gcd=1743585 0.95 | v02 Dog Man Unleashed (2017), CV volume 97457's only issue
+I 26836 cv=- gcd=1743586 0.9 | v03 - A Tale of Two Kitties (2017), our 250pp rip, is GCD 106235 #3 by title and year; ComicVine mints a volume per book here and holds no issue for it inside the "Dog Man" line
+I 26837 cv=647999 gcd=1771886 0.9 | v04 Dog Man and Cat Kid (2017), CV volume 107142's only issue
+I 26838 cv=- gcd=1912058 0.9 | v05 - Lord of the Fleas (2018), our 247pp rip, is GCD 106235 #5 by title and year; ComicVine has no issue for it inside the "Dog Man" volume, only per-book stubs
+I 26839 cv=- gcd=1912059 0.9 | v06 - Brawl of the Wild (2019), our 220pp rip, is GCD 106235 #6 by title and year; CV's "Dog Man" 93629 is a count-1 stub that does not reach the sixth book
+I 26840 cv=- gcd=2009356 0.9 | v07 For Whom the Ball Rolls (2019), GCD 248pp vs our 237pp rip
+I 26841 cv=730059 gcd=2046635 0.9 | v08 Fetch-22 (2019), CV volume 123350's only issue
+I 26842 cv=- gcd=2147375 0.9 | v09 - Grime and Punishment (2020), our 237pp rip, is GCD 106235 #9 by title and year; ComicVine holds only a separate count-1 volume per Dog Man book, none cached for this one
+I 26843 cv=839808 gcd=2215363 0.9 | v10 Mothering Heights (2021), CV volume 134733's only issue
+I 26844 cv=- gcd=2512083 0.9 | v11 Twenty Thousand Fleas Under the Sea (2023)
+I 26845 cv=- gcd=2674755 0.9 | v12 - The Scarlet Shedder (2024), our 224pp rip, is GCD 106235 #12 and the last book we hold of that 14-count Scholastic line; ComicVine indexes no issue for it
+
+S 6759 cv=144990 gcd=190774 0.95 | CV 144990 "Five Nights at Freddy's: Fazbear Frights Graphic Novel Collection" 2022 Scholastic count 5 (cached #1-4) and GCD 190774 with that exact title, 2022-?, Scholastic count 4 agree on start year and publisher, and our four volumes are #1-4 of both; ComicVine's fifth volume with an open line is staleness above our holdings
+I 26846 cv=946334 gcd=2823083 0.95 | v01 (2022), our 193pp DrVink rip, is #1 of CV 144990's cached #1-4 and of GCD 190774's four Scholastic volumes; the file's ComicInfo Series is the full collection title
+I 26847 cv=977947 gcd=2823084 0.95 | v02 (2023), our 192pp DrVink rip, is #2 of the same Scholastic line — CV 144990's second cached issue and GCD 190774 #2, publisher agreeing with ComicInfo "Scholastic Inc."
+I 26848 cv=1045747 gcd=2823085 0.95 | v03 (2023), our 193pp DrVink rip, is #3 of CV 144990's cached #1-4 and GCD 190774 #3, the second of the collection's two 2023 volumes
+I 26849 cv=1080669 gcd=2823086 0.95 | v04 (2024), our 193pp DrVink rip, is #4 — the last of GCD 190774's count of 4 and the fourth of CV 144990's cached issues, CV's fifth sitting above our holdings
+
+S 8882 cv=114449 gcd=132077 0.95 | CV 114449 "Hey, Kiddo" 2018 Scholastic count 1 and GCD's 2018 Scholastic rows agree on title, year and publisher, and of the twin rows 132077's 328pp issue is the one our 292pp rip belongs to where 132076 records no page count at all
+I 27952 cv=689122 gcd=1861221 0.95 | the Scholastic 2018 memoir, 328pp in GCD vs our 292pp rip
+
+S 9214 cv=124776 gcd=156130 0.9 | CV 124776 "I Survived" 2020 Scholastic count 13 and GCD 156130 "I Survived (The Graphic Novel)" 2020-? Scholastic count 10 both name our ten books by title; the counts disagree (13 vs 10 vs our 10) and GCD's numbering swaps our #09 and #10, so the pairing carries an unexplained residue
+N 9214 GCD 156130 numbers "The Battle of D-Day, 1944" as #9 and "The Destruction of Pompeii, AD 79" as #10, the reverse of our filenames; the `I` lines below match by TITLE, not by number
+I 26935 cv=736232 gcd=2112377 0.95 | 01 The Sinking of the Titanic, 1912 (2020), GCD 168pp vs our 163pp
+I 26936 cv=766185 gcd=2126745 0.95 | 02 - The Shark Attacks of 1916 (2020), our 162pp Hourman-DCP rip; CV 124776 issue 766185 and GCD 156130's second graphic novel carry that title and year, and both number it #2
+I 26937 cv=825096 gcd=2187054 0.95 | 03 - The Nazi Invasion, 1944 (2021), our 161pp Hourman-DCP rip; CV 124776 issue 825096 and GCD 156130 #3 name that title and 2021 year, both inside the run's numbering
+I 26938 cv=877793 gcd=2653805 0.95 | 04 The Attacks of September 11, 2001 (2021)
+I 26939 cv=956509 gcd=2653806 0.95 | 05 The Attack of the Grizzlies, 1967 (2022)
+I 26940 cv=955607 gcd=2653807 0.95 | 06 - I Survived Hurricane Katrina, 2005 (2022), our 162pp rip; CV 124776 issue 955607 and GCD 156130's Katrina volume agree on title and 2022 year, below the #09/#10 swap
+I 26941 cv=992084 gcd=2653808 0.95 | 07 - The Great Chicago Fire, 1871 (2023), our 165pp rip whose ComicInfo Series reads "(I Survived Graphic Novel #7)"; CV 124776 issue 992084 and GCD 156130 #7 agree with it
+I 26942 cv=- gcd=2653809 0.9 | 08 The American Revolution, 1776 (2023); ComicVine's cached list skips this volume
+I 26943 cv=- gcd=2653811 0.9 | 09 The Destruction of Pompeii, AD 79 (2024) — GCD files it as #10
+I 26944 cv=1089644 gcd=2653810 0.95 | 10 The Battle of D-Day, 1944 (2024) — GCD files it as #9
+
+S 5826 cv=52074 gcd=161847 0.9 | CV 52074 "Drama" 2012 Scholastic count 1 and GCD's 2012 Scholastic rows agree on title, year and publisher, and of the twin rows 161847's 244pp issue is the closer to our 242pp rip (86792 records 234pp); the twin caps this at 0.9
+I 26950 cv=356818 gcd=2126039 0.9 | Raina Telgemeier's Scholastic 2012 book, 244pp in GCD vs our 242pp rip
+
+S 8206 cv=121369 gcd=150566 0.9 | CV 121369 "Guts" 2019 Scholastic count 1 and GCD's 2019 Scholastic rows agree on title, year and publisher, and of the twin rows 150566's 228pp issue is our 227pp rip where 150565 records no page count
+I 26949 cv=719258 gcd=2017422 0.9 | Raina Telgemeier's Scholastic 2019 book, 228pp in GCD vs our 227pp rip
+
+S 15952 cv=84131 gcd=92399 0.9 | CV 84131 "Space Dumplins" 2015 Scholastic count 1 and GCD's 2015 Scholastic rows agree on title, year and publisher, and of the twin rows 92399's 324pp issue is the one our 309pp rip belongs to where 157565 records no page count
+I 27957 cv=498326 gcd=1457502 0.9 | the Scholastic 2015 book, 324pp in GCD vs our 309pp rip
+
+S 17902 cv=101804 gcd=115539 0.95 | CV 101804 "The Adventures of John Blake" 2017 Scholastic count 1 and GCD 115539 "The Adventures of John Blake: Mystery of the Ghost Ship" 2017-2017 Scholastic count 1 agree on year, publisher and count and GCD supplies the subtitle our filename carries; GCD's 168pp issue is our 161pp rip
+I 27960 cv=598552 gcd=1722741 0.95 | the Scholastic 2017 book, 168pp in GCD vs our 161pp
+
+S 3351 cv=141914 gcd=- 0.9 | CV 141914 "The Dragon Prince: Callum's Spellbook" 2020 Scholastic count 1 reproduces our ComicInfo Series "Callum's Spellbook (The Dragon Prince)" and Publisher "Scholastic Inc." with the file's 2020; GCD has no English Dragon Prince row
+F 3351 provider-missing | GCD's Dragon Prince rows are Cross Cult's German editions (172329, 212110) and Image's 2008 "Dragon Prince", not Scholastic's tie-in books
+I 26952 cv=944561 gcd=- 0.9 | the Scholastic 2020 companion book, CV's only issue, our 165pp rip
+
+S 5819 cv=151234 gcd=216434 0.95 | this shelf's one file is "The Dragon Prince - Bloodmoon Huntress (2022)": CV 151234 "The Dragon Prince: Bloodmoon Huntress" 2022 Scholastic count 1 and GCD 216434 with that exact title, 2022-2022, Scholastic count 1 agree on all four columns; the per-file pick CV 130794 "The Dragon Prince" is a different Scholastic book of the line
+I 26954 cv=994334 gcd=2666482 0.95 | the Scholastic 2022 Bloodmoon Huntress graphic novel, our 129pp rip
+
+S 18518 cv=49599 gcd=58669 0.9 | CV 49599 "Emperor's New Clothes" 1950 Dell count 1 and GCD 58669 "The Emperor's New Clothes" 1950-1950 Dell count 1 agree on title, year, publisher and count, and GCD's 36pp issue is consistent with our 28pp rip of a Dell one-shot; the folder's "(2020)" is the rip year, which is the doubt
+I 27963 cv=339828 gcd=835052 0.9 | the Dell 1950 one-shot, GCD 36pp against our 28pp rip
+
+S 18699 cv=65327 gcd=39597 0.95 | CV 65327 "The Good Neighbors" 2008 Scholastic count 3 and GCD 39597 "The Good Neighbors" 2008-2008 Scholastic count 3 agree on year, publisher and count, and GCD's three issues are Kin / Kith / Kind, the three books our single 360pp 2023 omnibus collects
+N 18699 our one file is the 2023 Graphix complete-collection edition of the three 2008-2010 books; neither provider indexes that omnibus, so no `I` line can be written for item 27964
+
+S 20781 cv=159938 gcd=211767 0.95 | CV 159938 "Unico: Awakening" 2024 Scholastic count 1 and GCD 211767 with the same title, 2024-2024, Scholastic count 1 agree on all four columns; the Kodansha/Digital Manga "Unico" rows are Tezuka's original series
+I 27968 cv=1071062 gcd=2627369 0.95 | Unico: Awakening v01, Scholastic 2024, our 213pp rip
+
+S 301 cv=121368 gcd=150580 0.95 | CV 121368 "The ABC of Typography" 2019 SelfMadeHero count 1 and GCD 150580 "ABC of Typography" [en-gb] 2019-2019 SelfMadeHero count 1 agree on year, publisher and count, our ComicInfo says Series "ABC of Typography" Publisher "SelfMadeHero", and GCD's 136pp issue is our 121pp rip
+I 27003 cv=719257 gcd=2017465 0.95 | the SelfMadeHero 2019 book, 136pp in GCD vs our 121pp
+
+S 812 cv=126359 gcd=161232 0.95 | CV 126359 "Altitude" 2020 SelfMadeHero count 1 and GCD 161232 "Altitude" [en-gb] 2020-2020 SelfMadeHero count 1 agree on all four columns
+I 27004 cv=748226 gcd=2122735 0.95 | the SelfMadeHero 2020 book, our 295pp rip
+
+S 6371 cv=124788 gcd=124059 0.9 | both legs hold this comic only in its GERMAN edition and they agree with each other: CV 124788 "Fun" 2018 Avant-Verlag count 1 and GCD 124059 "Fun" [de] 2018-2018 avant-verlag count 1, whose 304pp issue is our 295pp rip — our file is the SelfMadeHero English edition of Paolo Bacilieri's book, which neither provider indexes
+I 27008 cv=736321 gcd=1805723 0.9 | the avant-verlag printing stands in for the SelfMadeHero English edition we hold; 304pp in GCD vs our 295pp rip
+
+S 8269 cv=86028 gcd=206706 0.95 | our file sits in _Self Made Hero and CV 86028 "Hair Shirt" 2011 SelfMadeHero count 1 and GCD 206706 "Hair Shirt" [en-gb] 2011-2011 SelfMadeHero count 1 agree on title, year, publisher and count; the per-file pick CV 127492 is the same book's German avant-verlag edition
+I 27009 cv=505904 gcd=2588793 0.95 | the SelfMadeHero 2011 English edition, our 128pp rip; GCD 140586 is the 2010 Gallimard French printing
+
+S 9678 cv=38580 gcd=34849 0.9 | CV 38580 "It's Dark in London" 1997 Serpent's Tail count 1 and GCD 34849 "It's Dark in London" [en-gb] 1996-1996 Serpent's Tail count 1 agree on title, publisher and count; our file is the 2012 SelfMadeHero reissue of that anthology, which neither leg indexes, and the years differ by one between the legs
+I 27010 cv=258880 gcd=582079 0.9 | the Serpent's Tail edition both legs hold; our 135pp file is the 2012 SelfMadeHero reissue of it
+
+S 9944 cv=40027 gcd=58032 0.95 | CV 40027 "Johnny Cash: I See a Darkness" 2009 Harry N. Abrams count 1 and GCD 58032 with the same title, 2009-2009, Harry N. Abrams count 1 agree on all four columns; GCD's 228pp issue is our 219pp rip
+N 9944 GCD 81929 is the same 2009 book's SelfMadeHero UK printing, which is the folder our file sits in; the Casterman, ECC and Planeta rows are translations
+I 27011 cv=269642 gcd=58032 0.9 | the 2009 edition, 228pp in GCD vs our 219pp rip; whether we hold the Abrams or the SelfMadeHero printing the file does not say
+
+S 11189 cv=119346 gcd=146532 0.95 | CV 119346 "Maggy Garrisson" 2019 SelfMadeHero count 1 and GCD 146532 "Maggy Garrisson" [en-gb] 2019-2019 SelfMadeHero count 1 agree on all four columns; GCD's 156pp issue is our 148pp rip and the Dupuis/Schreiber & Leser rows are the French original and German edition
+I 27015 cv=709917 gcd=1974244 0.95 | the SelfMadeHero 2019 English omnibus, 156pp in GCD vs our 148pp
+
+S 13460 cv=111713 gcd=125789 0.95 | CV 111713 "Out in the Open" 2018 SelfMadeHero count 1 and GCD 125789 "Out in the Open" [en-gb] 2018-2018 SelfMadeHero count 1 agree on all four columns
+I 27016 cv=674002 gcd=1815083 0.95 | the SelfMadeHero 2018 book, our 136pp rip
+
+S 13521 cv=68347 gcd=82315 0.95 | CV 68347 "Pachyderme" 2012 SelfMadeHero count 1 and GCD 82315 "Pachyderme" [en-gb] 2013-2013 SelfMadeHero count 1 agree on title, publisher and count with a one-year catalogue offset; GCD's 96pp issue is our 88pp rip and the 2009 Gallimard row is the French original
+I 27017 cv=428936 gcd=1247026 0.95 | the SelfMadeHero English edition, 96pp in GCD vs our 88pp
+
+S 14443 cv=114521 gcd=82316 0.95 | CV 114521 "Rebetiko" 2012 SelfMadeHero count 1 and GCD 82316 "Rebetiko" [en-gb] 2013-2013 SelfMadeHero count 1 agree on title, publisher and count with the same one-year offset, and our file is dated (2013)
+I 27018 cv=689397 gcd=1247028 0.95 | the SelfMadeHero English edition, our 121pp rip
+
+S 14678 cv=77289 gcd=- 0.9 | CV 77289 "Ricky Rouse Has A Gun" 2014 SelfMadeHero count 1 matches our filename and its 2014 exactly; the GCD dump has no row for it under any spelling
+F 14678 provider-missing | GCD's "Ricky" hits are Pines 1953 and France Loisirs 1985, different comics; SelfMadeHero's 2014 title is absent
+I 27019 cv=467135 gcd=- 0.9 | the SelfMadeHero 2014 book, CV's only issue, our 179pp rip
+
+S 15033 cv=44326 gcd=138856 0.9 | CV 44326 "SandCastle" 2013 SelfMadeHero count 1 and GCD 138856 "Sandcastle" [en-gb] 2011-2011 SelfMadeHero count 1 agree on title, publisher and count, and GCD's 120pp issue is our 108pp rip, but the years disagree by two and our file says (2011)
+I 27020 cv=304991 gcd=1913670 0.9 | the SelfMadeHero English edition of Lévy/Prado's book, 120pp in GCD vs our 108pp
+
+S 18262 cv=111068 gcd=125715 0.95 | CV 111068 "The Communist Manifesto: A Graphic Novel" 2018 SelfMadeHero count 1 and GCD 125715 "The Communist Manifesto" [en-gb] 2018-2018 SelfMadeHero count 1 agree on year, publisher and count, corroborated by our ComicInfo Series and Publisher
+I 27021 cv=670704 gcd=1814632 0.95 | the SelfMadeHero 2018 adaptation, our 59pp rip
+
+S 18330 cv=138580 gcd=175664 0.9 | CV 138580 "The Dancing Plague" 2021 SelfMadeHero count 1 and GCD 175664 "The Dancing Plague" [en-gb] 2021-2021 SelfMadeHero count 1 agree on title, year, publisher and count, but ComicVine carries a SECOND volume for the same book (137755, also 2021 SelfMadeHero, issue 873258) which is the unexplained residue
+I 27022 cv=882582 gcd=2259030 0.9 | the SelfMadeHero 2021 book; ComicVine holds two volumes for it and the per-file matcher chose 138580
+
+S 19189 cv=52633 gcd=72920 0.95 | CV 52633 "The Nao of Brown" 2012 SelfMadeHero count 1 and GCD 72920 "The Nao of Brown" [en-gb] 2012-2012 SelfMadeHero count 1 agree on all four columns; GCD's 216pp issue brackets our two rips of the same book (209pp and 208pp)
+I 27535 cv=359891 gcd=1095277 0.95 | the SelfMadeHero 2012 book, Lo Pan 209pp rip
+I 27030 cv=359891 gcd=1095277 0.95 | second rip of the same book (Dipole-Empire, 208pp)
+
+S 19634 cv=106722 gcd=119772 0.95 | CV 106722 "The Smell of Starving Boys" 2017 SelfMadeHero count 1 and GCD 119772 with the same title, [en-gb] 2018-2018, SelfMadeHero count 1 agree on title, publisher and count; GCD's 120pp issue is our 113pp rip and our file is dated (2018)
+I 27031 cv=644455 gcd=1772773 0.95 | the SelfMadeHero English edition, 120pp in GCD vs our 113pp
+
+S 19705 cv=126653 gcd=161235 0.95 | CV 126653 "The Summer of Her Life" 2020 SelfMadeHero count 1 and GCD 161235 with the same title, [en-gb] 2020-2020, SelfMadeHero count 1 agree on all four columns
+I 27032 cv=758724 gcd=2122738 0.95 | the SelfMadeHero 2020 book, our 83pp rip
+
+S 21313 cv=118878 gcd=145170 0.95 | CV 118878 "Waves" 2019 Archaia count 1 and GCD 145170 "Waves" 2019-2019 Boom! Studios count 1 agree — Archaia is BOOM's imprint and our ComicInfo Publisher is literally "BOOM! Studios" — and GCD's 104pp issue is our 93pp rip
+I 27033 cv=708072 gcd=1962480 0.95 | the Archaia/BOOM 2019 book, 104pp in GCD vs our 93pp rip
+
+S 22994 cv=72433 gcd=81626 0.9 | CV 72433 "Aama" 2014 SelfMadeHero count 4 names our four volumes by subtitle (The Smell of Warm Dust, The Invisible Throng, The Desert of Mirrors, You Will Be Glorious My Daughter) and GCD 81626 "Aama" [nl] 2014-? Sherpa count 4 is the same four-album line in Dutch — the right comic in the wrong language, linked per the standing ruling
+I 26999 cv=448069 gcd=1226944 0.9 | v01 The Smell of Warm Dust (2013), GCD's Dutch printing is 96pp against our 88pp rip
+I 27000 cv=470541 gcd=1454157 0.9 | v02 - The Invisible Throng (2014), our 88pp Dipole-Empire rip; CV 72433 names that subtitle as #2 and GCD 81626 [nl] Sherpa #2 is the same album in Dutch per the standing ruling
+I 27001 cv=489392 gcd=1540038 0.9 | v03 - The Desert of Mirrors (2015), our 88pp Dipole-Empire rip; CV 72433's third subtitle is our filename and GCD 81626 #3 is the Dutch printing of the same album
+I 27002 cv=501089 gcd=1565624 0.9 | v04 You Will Be Glorious, My Daughter (2015)
+
+R 2458 | our three files are SelfMadeHero's "Best of Enemies: A History of US and Middle East Relations" volumes 1-3 (1783-1953, 1953-1984, 1984-2013) with ComicInfo Publisher "SelfMadeHero", and NEITHER provider indexes them: the ComicVine rip has no volume named "Best of Enemies" at all and the GCD dump only 41101 "Airboy - 1942: Best of Enemies" (Moonstone 2009), a different comic
+F 2458 wrong-cv-link | the stored link CV 34367 "Airboy 1942: Best of Enemies" 2009 Moonstone count 1 is a Golden-Age aviation one-shot, not the SelfMadeHero history line
+F 2458 provider-missing | no record of SelfMadeHero's "Best of Enemies" exists in the ComicVine rip or the GCD dump
+
+S 4756 cv=44325 gcd=82191 0.95 | CV 44325 "Dance by the Light of the Moon" 2010 SelfMadeHero count 1 and GCD 82191 with the same title, [en-gb] 2010-2010, SelfMadeHero count 1 agree on all four columns
+I 27012 cv=304990 gcd=1246252 0.95 | the SelfMadeHero 2010 Vanistendael book, our 149pp rip
+
+S 21559 cv=59206 gcd=82194 0.95 | CV 59206 "When David Lost His Voice" 2013 SelfMadeHero count 1 and GCD 82194 with the same title, [en-gb] 2012-2012, SelfMadeHero count 1 agree on title, publisher and count with a one-year catalogue offset; our file is dated (2012)
+I 27014 cv=394768 gcd=1246270 0.95 | the SelfMadeHero English edition, our 261pp rip
+
+S 19020 cv=45957 gcd=125194 0.95 | CV 45957 "Lovecraft Anthology" 2011 SelfMadeHero count 2 (cached #1-2) and GCD 125194 "The Lovecraft Anthology" [en-gb] 2011-2012 SelfMadeHero count 2 agree on start year, publisher and count, and GCD's #2 at 132pp is our 118pp v02 rips; the third file is the label-ambiguous duplicate of v02
+I 27024 cv=316145 gcd=1811596 0.95 | v01 (2011), our 112pp Foyle-DCP rip, is #1 of CV 45957's cached #1-2 and the 2011 issue of GCD 125194 "The Lovecraft Anthology" [en-gb] SelfMadeHero
+I 27025 cv=362219 gcd=1913667 0.95 | v02 (2012), our 118pp Foyle-DCP rip against GCD 125194 #2's 132pp count, and CV 45957's second cached issue; item 27026 is a duplicate rip of this same book
+I 27026 cv=362219 gcd=1913667 0.95 | duplicate rip of v02 (the flag names 27025/27026 as duplicates)
+
+S 18193 cv=98878 gcd=110996 0.95 | CV 98878 "The Can Opener's Daughter" 2017 SelfMadeHero count 1 and GCD 110996 with the same title, [en-gb] 2016-2016, SelfMadeHero count 1 agree on title, publisher and count, our ComicInfo repeats both, and GCD's 164pp issue is our 161pp rip
+I 27028 cv=581498 gcd=1662939 0.95 | book 02 of the Motherless Oven trilogy, SelfMadeHero, 164pp in GCD vs our 161pp

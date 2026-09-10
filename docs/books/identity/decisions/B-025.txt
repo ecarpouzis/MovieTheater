@@ -1,0 +1,395 @@
+# B-025 — 150 shelves, and 146 of them are ONE folder: Europe Comics, the digital English imprint that
+# publishes Dargaud / Dupuis / Le Lombard / Glénat albums. The tier-B shape is the same on almost every
+# shelf: ComicVine holds a Europe Comics volume whose count equals our ladder exactly (the rips are
+# 45-160pp albums, one album per file, numbered in reading order), and the Grand Comics Database holds NO
+# Europe Comics rows at all. So the second leg has to be the SAME comic in another edition, and this batch
+# found it three ways, in this order of preference:
+#   (1) an ENGLISH PRINT sister edition — Cinebook, Titan, Nobrow, Fantagraphics: the same text, not a
+#       translation, and a real second leg (0.95 when the counts also agree): Memories from the Civil War
+#       (Cinebook 185274), Miss Endicott (185268), Mutations (185503), Wyoming Doll (163305), Nowhere Girl
+#       (Nobrow 190651), The Extraordinary (Titan 173267), Spirou & Fantasio (Cinebook 57408).
+#   (2) the ORIGINAL-LANGUAGE row (Eric's ruling: the right comic in the wrong language), at 0.9 with the
+#       language named: Medina (Le Lombard 53908), Otaku Blue (Dargaud 132460), Shelley (126637), Rampokan
+#       (Dupuis 148385), Tanz! (Le Lombard 220154), Trap (Dargaud 167643), Zaroff (158891), Nocéan (222834),
+#       Omni-visibilis (83344), Le temps des Mitaines (219531), Les souris de Leningrad (150208), Soon
+#       (157288), Raj (Dargaud 120583), Malaterre (Sherpa 195526).
+#   (3) nothing — `gcd=-` + `F provider-missing`, at 0.9 on the ComicVine volume plus our own naming, years
+#       and count. That is 111 of the 150 shelves and it is the honest answer, not a gap in the reading.
+#
+# Findings worth the ledger:
+#  (1) **The accent is the whole miss.** The packet probes the ENGLISH title, so a French original with a
+#      diacritic is invisible: "Nocean" returns nothing, "Nocéan" returns GCD 222834 (Dupuis 2023, 3). The
+#      ComicVine candidate list is where the accented spelling is sitting — re-probe the dump with it.
+#  (2) A Europe Comics shelf whose ComicVine volume is NOT a Europe Comics volume is the tell that the comic
+#      is somebody else's: S18546's three albums are Titan's ExtraOrdinary (CV 135879 / GCD 173267, both
+#      count 5) and S19888's four 30pp floppies are IDW's The Veil (CV 26723 / GCD 39852, both count 4) —
+#      the "(Europe Comics)" in those filenames is the ripper's tag, not the publisher.
+#  (3) S16312's stored CV 27781 is Dupuis' Spirou MAGAZINE (4,351 issues) hung on two Cinebook albums — the
+#      biggest hull in the batch. The albums are Cinebook's Spirou & Fantasio #19-20.
+#  (4) ComicVine mints a volume per BOOK on several of these lines (Menji, Yojimbot, Story Without a Hero,
+#      The Grande Odalisque) exactly as it does on Cinebook and Epic Collection lines.
+
+# ── the Europe Comics shelves with an ENGLISH PRINT sister edition in GCD ────────────────────────
+S 11913 cv=123624 gcd=185274 0.95 | two legs on the same three albums: CV 123624 "Memories From The Civil War" (Europe Comics 2019, 3) and GCD 185274 (Cinebook [en-gb] 2022, 3) agree on a three-album line, our ladder 1-3 over 58pp files is exactly that, and all three ComicInfo blocks say Series "Memories from the Civil War" / Publisher "Europe Comics" — Cinebook is the English PRINT edition of the same translation, not another language
+S 12201 cv=125072 gcd=185268 0.95 | CV 125072 "Miss Endicott" (Europe Comics 2020, 2) and GCD 185268 (Cinebook [en-gb] 2022, 2) agree on a two-album line, our ladder 1-2 at 82pp each is both albums, and ComicInfo says Series "Miss Endicott" / Publisher "Europe Comics" on both files; GCD also holds the German (50856 Piredda) and the Le Lombard original (126514), both count 2
+S 12497 cv=126965 gcd=185503 0.95 | CV 126965 "Mutations" (Europe Comics 2020, 2) and GCD 185503 (Cinebook [en-gb] 2022, 2) agree on a two-album line and our ladder 1-2 at 64 and 66pp is both; the Dargaud original (GCD 126976, 2018-2020, 2) and its Benelux twin (163064) carry the same count, so all three editions agree on the arithmetic
+S 22122 cv=117783 gcd=163305 0.95 | CV 117783 "Wyoming Doll" (Europe Comics 2019, one issue 704006) and GCD 163305 (Cinebook [en-gb] 2020, 1) agree on a single 2019/2020 English album against our 69pp rip; GCD also holds Dargaud's 1999 French first edition (107515) and the German Mosaik edition (85513), all count 1 — one book in four editions
+I 23997 cv=704006 gcd=s163305 0.95 | the book's own record: CV issue 704006 is volume 117783's only issue and GCD series 163305 is Cinebook's single-album English edition of it; the issue-level GCD id is not in view, so the claim stays at the series
+S 13088 cv=137085 gcd=190651 0.9 | CV 137085 "Nowhere Girl" (Europe Comics 2021, one issue 864437) against our 116pp rip; GCD holds the Dargaud French original (191903, 2021, 1), the Nobrow English print edition (190651, 2022, 1) and the German Reprodukt (191669) — one book, four editions, and the English print sister is taken as the leg with the translation difference the only doubt
+I 23918 cv=864437 gcd=s190651 0.9 | the book's own record: CV issue 864437 is volume 137085's only issue; GCD's Nobrow [en-gb] 2022 series 190651 is the English print edition of the same album, cited at the series because no issue id is in view
+S 18546 cv=135879 gcd=173267 0.95 | not a Europe Comics comic at all: CV 135879 "ExtraOrdinary" (Titan Comics 2021, 5) and GCD 173267 (Titan [en-gb] 2021-?, 5) agree on publisher, year and count, our three albums are #1-3 of that five-album line ("Orsay's Hands", "Juliette's Eyes", "Melek's Head" at 154, 136 and 142pp), and the folder name "The Extraodinary (2021)" is a typo of the same title
+S 16312 cv=52103 gcd=57408 0.95 | our two files are Cinebook's Spirou & Fantasio albums #19 "The Visitor from the Mesozoic" (2022) and #20 "The Dark Side of the Z" (2023): CV 52103 "Spirou & Fantasio" (Cinebook 2009, 20) and GCD 57408 (Cinebook 2009-?, 22) agree on publisher and start year, and our ladder 19-20 sits at the end of both counts
+F 16312 wrong-cv-link | stored CV 27781 "Spirou" (Dupuis 1938, 4,351 issues) is the weekly MAGAZINE — the largest hull in this batch — hung on two 50-66pp album translations by the bare word "Spirou"
+S 19888 cv=26723 gcd=39852 0.95 | not a Europe Comics comic either: four 30-32pp floppies named "The Veil 01 (of 04)" through "04 (of 04)", which is IDW's 2009 series — CV 26723 "Veil" (IDW 2009, 4) and GCD 39852 "The Veil" (IDW 2009, was ongoing series, 4) agree on publisher, year and count and the GCD leg matched four of our files by number; the fifth file is a 10pp partial rip of #3
+F 19888 partial-rip | item 23467 ("The Veil 03 (Digital) (Europe Comics)", 10pp) is a truncated second rip of #3, which is why number 3 names two files; the folder's "Europe Comics" tag is the ripper's, not the publisher's
+
+# ── the Europe Comics shelves whose second leg is the ORIGINAL-LANGUAGE row ──────────────────────
+S 11884 cv=117104 gcd=53908 0.9 | CV 117104 "Medina" (Europe Comics 2019, 3) and GCD 53908 "Medina" (Le Lombard [nl-be] 2010, 3) agree on a three-album line and our ladder 1-3 ("The Drax", "BOSO 1", "The Sacrificed") at 49-57pp is all three; Le Lombard is the original publisher and the GCD row is the Dutch-language edition of the same albums
+S 13442 cv=118365 gcd=132460 0.9 | CV 118365 "Otaku Blue" (Europe Comics 2019, 2) and GCD 132460 "Otaku Blue" (Dargaud [fr] 2012-2013, 2) agree on a two-album line; we hold only #1 ("Tokyo Underground", 57pp), and the GCD row is the French original of the same two albums
+S 15525 cv=117106 gcd=126637 0.9 | CV 117106 "Shelley" (Europe Comics 2019, 2) and GCD 126637 "Shelley" (Le Lombard [fr-be] 2012, 2) agree on a two-album line; we hold #1 ("Percy Shelley", 70pp) and the GCD row is the French-language original of the same pair
+S 14380 cv=128013 gcd=148385 0.9 | CV 128013 "Rampokan" (Europe Comics 2020, 2) and GCD 148385 "Rampokan" (Dupuis [nl-be] 2018, 2) agree on a two-book line, and our two books are named "v01 - Java" and "v02 - Celebes" at 74 and 101pp, which is Peter van Dongen's two-part work; GCD also holds the older Oog & Blik (54566) and avant-verlag (54554) editions at count 2
+S 17617 cv=131070 gcd=220154 0.9 | CV 131070 "Tanz!" (Europe Comics 2020, 2) and GCD 220154 "Tanz !" (Le Lombard [fr-be] 2020, 1) are the same work: Europe Comics cut the single French album into "Part 01" (138pp) and "Part 02" (112pp), which is why the counts read 2 against 1 and the two halves total 250 pages
+S 20439 cv=120765 gcd=167643 0.9 | CV 120765 "Trap" (Europe Comics 2019, one issue 716796) and GCD 167643 "Trap" (Dargaud [fr] 2019, 1) agree on year and a single book; our 180pp rip is the whole album and the GCD row is the French original
+I 23988 cv=716796 gcd=s167643 0.9 | the book's own record: CV issue 716796 is volume 120765's only issue and GCD 167643 is Dargaud's 2019 French original of the same album, cited at the series
+S 22765 cv=120766 gcd=158891 0.9 | CV 120766 "Zaroff" (Europe Comics 2019, 2) and GCD 158891 "Zaroff" (Le Lombard [fr-be] 2019, 1) are the same 2019 album — our single 90pp file is the whole book; GCD also holds the Swedish (158890) and German Splitter (160557) editions of it, all count 1, against ComicVine's count of 2
+S 13036 cv=148549 gcd=222834 0.9 | the accent was the whole miss: the packet probed "Nocean" and found nothing, but "Nocéan" returns GCD 222834 (Dupuis 2023-?, 3), the French original of CV 148549 "Nocean" (Europe Comics 2023, one issue 973337); our file is "Nocean 001 - Atari and Tika (2023)" at 63pp, album one of that line
+I 23916 cv=973337 gcd=s222834 0.9 | the book's own record: CV issue 973337 is volume 148549's only issue, and Dupuis' French line GCD 222834 holds the same album as its #1; the issue id is not in view so the claim stays at the series
+S 13223 cv=134632 gcd=83344 0.9 | CV 134632 "Omni-Visibilis" (Europe Comics 2021, one issue 839109) and GCD 83344 "Omni-visibilis" (Dupuis [fr-be] 2010, 1) are the same single album — our 154pp rip against the French original; GCD also holds Salleck's German edition (87601, 2012, 1)
+I 23921 cv=839109 gcd=s83344 0.9 | the book's own record: CV issue 839109 is volume 134632's only issue and GCD 83344 is Dupuis' 2010 French original of the same album
+S 19153 cv=126964 gcd=219531 0.9 | CV 126964 "The Mitaines Gang" (Europe Comics 2020, 2) and GCD 219531 "Le temps des Mitaines" (Dargaud [fr] 2020, 3) are the same line under its French title — our two albums are "A Bear's Tale" (125pp) and "Fox-Hearted" (78pp), books 1 and 2 of the three Dargaud counts; the ComicVine candidate list is where the French spelling was sitting (CV 141681)
+S 18965 cv=121980 gcd=150208 0.9 | the French title is a different sentence: CV 121980 "The Lions of Leningrad" (Europe Comics 2019, 2) and GCD 150208 "Les souris de Leningrad" (Zéphyr Éditions [fr] 2019-?, 2) agree on year and a two-album line, and our ladder 1-2 ("I am Chapayev" 51pp, "City of Death" 49pp) is both; the GCD row named in the packet under the English title (206281, Naval Institute Press 2022) is a prose book, not this comic
+S 63476 cv=126966 gcd=157288 0.9 | CV 126966 "Soon" (Europe Comics 2020, 2) carries both our files, and GCD 157288 "Soon" (Dargaud [fr] 2019, 1) is the French original — one album that Europe Comics split into "Book 01" (130pp) and "Book 02" (105pp), which is why the counts read 2 against 1; GCD also holds the German Carlsen (167899) and Spanish Nuevo Nueve (178993) editions at count 1
+S 14371 cv=132053 gcd=120583 0.9 | CV 132053 "Raj" (Europe Comics 2020, 2) carries our ladder 1-2 ("The Missing Nabobs of the City of Gold", "An Oriental Gentleman", both 50pp), and GCD 120583 "Raj" (Dargaud [fr] 2007-2011, 4) is the French original line those two albums open; Cinebook's English row (189064) counts only 1 and so covers less of our shelf than the original does
+S 11236 cv=117103 gcd=195526 0.9 | CV 117103 "Malaterre" (Europe Comics 2019, 2) and GCD 195526 "Malaterre" (Sherpa [nl] 2023-?, 2) agree on a two-album line and our ladder 1-2 at 89 and 113pp is both; the GCD row is the Dutch-language edition of the same Dargaud original
+S 11163 cv=139084 gcd=177840 0.9 | CV 139084 "Mademoiselle Baudelaire" (Europe Comics 2021, one issue 885336) and GCD 177840 (Splitter Verlag [de] 2021, 1) are the same single 2021 album — our 154pp rip; ComicVine also holds the Dupuis French original (137608, issue 871635) and the Splitter German (168522), so three editions of one book agree on year and extent
+I 23902 cv=885336 gcd=s177840 0.9 | the book's own record: CV issue 885336 is volume 139084's only issue; GCD's only row for this album is Splitter's German edition (series 177840), so the claim is the right comic in the wrong language
+
+# ── the Europe Comics shelves GCD does not index at all ──────────────────────────────────────────
+S 10980 cv=138375 gcd=- 0.9 | CV 138375 "Lost In the Future" (Europe Comics 2021, 2) matches our ladder 1-2 exactly — "001 - The Storm (2021)" at 122pp and "002 - Trapped! (2022)" at 102pp, one album per file in the folder Europe Comics\Lost in the Future (2021)
+F 10980 provider-missing | the GCD dump holds no row of this title in any language; its only hits are reached through unrelated ComicVine candidates ("Booster Gold: Future Lost", "2021 Lost Children")
+S 10989 cv=121981 gcd=- 0.9 | CV 121981 "Louisiana: The Color of Blood" (Europe Comics 2019, 2) matches our two files, whose own names say "01 (of 03)" and "02 (of 03)" at 59pp each — the solicited length of three albums, of which the provider counts the two published by 2021
+F 10989 provider-missing | the GCD dump has no row for this title in any language
+S 10997 cv=136288 gcd=- 0.9 | CV 136288 "Love Love Love" (Europe Comics 2021, 3) matches our complete ladder 1-3 ("Yeah Yeah Yeah", "Bang Bang Shoot Shoot", "Beep Beep Yeah", 56-67pp), one album per file
+F 10997 provider-missing | GCD's only same-name row is 211186 (Nuevo Nueve [es] 2023, count 1), a single Spanish volume against our three albums — the arithmetic refuses it, and the Dupuis French original (CV 136232, count 2) has no GCD row
+S 11093 cv=148098 gcd=- 0.9 | CV 148098 "Léo in Little Pieces" (Europe Comics 2023, one issue 969503) is a single 157pp album and our one file is it, in its own folder Europe Comics\Léo in Little Pieces (2023)
+F 11093 provider-missing | the GCD dump has no row of this title in any language
+I 23901 cv=969503 gcd=- 0.9 | the book's own record: CV issue 969503 is volume 148098's only issue; the GCD dump has nothing for it, so the ComicVine issue is the only item-level record this book has
+S 11243 cv=120182 gcd=- 0.9 | CV 120182 "Mamma Mia!" (Europe Comics 2019, one issue 713686) and our single file "Mamma Mia! 01 - Just the Girls (2019)" at 49pp agree on year and a single album
+F 11243 provider-missing | GCD's three same-name rows are other books entirely — Suhrkamp [de] 2018, Delcourt [fr] 2005 and Diogenes [de-ch] 1965 — none of them a 2019 album line, so none is taken
+I 23904 cv=713686 gcd=- 0.9 | the book's own record: CV issue 713686 is volume 120182's only issue and no GCD row for this 2019 album exists
+S 11253 cv=157672 gcd=- 0.9 | CV 157672 "Man and Superwoman" (Europe Comics 2024, one issue 1051383) is a single 98pp book, and our file's ComicInfo says Series "Man and Superwoman" / Publisher "Europe Comics" — the collection's own assertion agreeing with the volume
+F 11253 provider-missing | the GCD dump has no row for this title; its hits are all reached through the unrelated candidate "Superwoman"
+I 23905 cv=1051383 gcd=- 0.9 | the book's own record: CV issue 1051383 is volume 157672's only issue, and no GCD row exists for it
+S 11279 cv=139086 gcd=- 0.9 | CV 139086 "Marathon" (Europe Comics 2021, one issue 885338) is a single 120pp album; ComicVine also holds the Dargaud French original (156055, issue 1040405), which agrees on year and extent
+F 11279 provider-missing | GCD's only "Marathon" row is 79616 (First Second 2012), Boaz Yakin's unrelated graphic novel, and the Dargaud original has no GCD row
+I 23906 cv=885338 gcd=- 0.9 | the book's own record: CV issue 885338 is volume 139086's only issue; the Dargaud French edition is CV 1040405 and neither has a GCD row
+S 11323 cv=134008 gcd=- 0.9 | CV 134008 "Marsupilami: The Beast" (Europe Comics 2021, one issue 829606) matches our single 151pp file, whose own name says "01 (of 02)" — the first half of a two-album story in the folder Marsupilami (2017)\Marsupilami - The Beast (2021)
+F 11323 provider-missing | GCD's "Marsupilami" rows are the parent album line at Dupuis, Cinebook, Carlsen and others; none of them is this two-album spin-off, and taking one would be the hull shape
+I 23907 cv=829606 gcd=- 0.9 | the book's own record: CV issue 829606 is volume 134008's only issue; the GCD dump has no row for this spin-off
+S 12303 cv=128709 gcd=- 0.9 | CV 128709 "Monster Delights" (Europe Comics 2020, 2) matches our complete ladder 1-2 ("The Heart of Winter" 2020, "A Heart of Gold" 2021, both 49pp) in the folder Europe Comics\Monster Delights (2020)
+F 12303 provider-missing | the GCD dump has no row for this title in any language
+S 12524 cv=152090 gcd=- 0.9 | CV 152090 "My Heart in Braille" (Europe Comics 2023, one issue 1000213) is a single 75pp album and our one file is it
+F 12524 provider-missing | the GCD dump has no row for this title in any language
+I 23910 cv=1000213 gcd=- 0.9 | the book's own record: CV issue 1000213 is volume 152090's only issue and no GCD row exists
+S 12730 cv=136289 gcd=- 0.9 | CV 136289 "Nationalist Love" (Europe Comics 2021, one issue 853436) is a single 286pp book — the page count is a full-length graphic novel, matching a one-issue volume rather than an album line
+F 12730 provider-missing | the GCD dump has no row for this title in any language
+I 23912 cv=853436 gcd=- 0.9 | the book's own record: CV issue 853436 is volume 136289's only issue and no GCD row exists
+S 12781 cv=153777 gcd=- 0.9 | CV 153777 "Nephilim" (Europe Comics 2023, one issue 1019232) matches our single file "Nephilim 001 - On the Trail of the Ancients (2023)" at 57pp — an album, ladder 1
+F 12781 provider-missing | the GCD dump has no row for this title; the Aurora Publishing "Nephilim" (CV 46456, 2008) is a manga and is rejected on publisher and year
+I 23914 cv=1019232 gcd=- 0.9 | the book's own record: CV issue 1019232 is volume 153777's only issue and no GCD row exists
+S 12915 cv=140151 gcd=- 0.9 | CV 140151 "Night Cry" (Europe Comics 2021, one issue 894569) is a single 144pp album and our one file is it, in its own 2021 folder
+F 12915 provider-missing | the GCD dump has no row for this title in any language
+I 23915 cv=894569 gcd=- 0.9 | the book's own record: CV issue 894569 is volume 140151's only issue and no GCD row exists
+S 13102 cv=157710 gcd=- 0.9 | CV 157710 "Nunuche: Fluffy Like Cotton Candy" (Europe Comics 2023, one issue 1051860) is a single 84pp book and our one file carries that whole title verbatim
+F 13102 provider-missing | the GCD dump has no row for this title in any language
+I 23919 cv=1051860 gcd=- 0.9 | the book's own record: CV issue 1051860 is volume 157710's only issue and no GCD row exists
+S 13161 cv=119113 gcd=- 0.9 | CV 119113 "Of Gods and Men" (Europe Comics 2019, cached #1-4) matches our complete ladder 1-4 — four albums at 56-68pp with subtitles "The End of the Beginning", "Between Day and Night", "A Small Town in America" and "A Castle in Bavaria"
+F 13161 provider-missing | the GCD dump has no row for this title in any language
+S 13209 cv=128710 gcd=- 0.9 | CV 128710 "Olive" (Europe Comics 2020, cached #1-4) matches our complete ladder 1-4 at 57-58pp, and ComicVine's Dupuis French original (136235, 2020, 4) carries the same count of four albums
+F 13209 provider-missing | the GCD dump has no row for this title as a 2020 album line in any language
+S 13215 cv=155148 gcd=- 0.9 | CV 155148 "Olympic Games in Ancient Greece" (Europe Comics 2023, one issue 1033299) is a single 86pp book and our one file carries that title verbatim
+F 13215 provider-missing | the GCD dump has no row for this title in any language
+I 23920 cv=1033299 gcd=- 0.9 | the book's own record: CV issue 1033299 is volume 155148's only issue and no GCD row exists
+S 13251 cv=128012 gcd=- 0.9 | CV 128012 "One of Those Days" (Europe Comics 2020, one issue 768657) is a single 108pp album and our one file is it
+F 13251 provider-missing | GCD's same-name rows (166373 Penguin Random House 2020, 43857 [sv-se] 2001) are other books; the Penguin one is a prose/cartoon collection and is rejected on publisher
+I 23922 cv=768657 gcd=- 0.9 | the book's own record: CV issue 768657 is volume 128012's only issue and no GCD row for this album exists
+S 13377 cv=133308 gcd=- 0.9 | CV 133308 "Open-Hearted" (Europe Comics 2021, one issue 825201) is a single 185pp book and our one file is it, in its own 2021 folder
+F 13377 provider-missing | the GCD dump has no row for this title in any language
+I 23923 cv=825201 gcd=- 0.9 | the book's own record: CV issue 825201 is volume 133308's only issue and no GCD row exists
+S 13379 cv=109879 gcd=- 0.9 | CV 109879 "Operation Copperhead" (Europe Comics 2018, 4) matches our complete ladder 1-4 at 38-58pp, and the packet's own note says the ComicVine search and the local rip name no other volume at all
+F 13379 provider-missing | the GCD dump has no row for this title in any language
+S 13818 cv=145357 gcd=- 0.9 | CV 145357 "Pickhead" (Europe Comics 2022, 2) covers our single file "Pickhead 001 - Bayou Beasties (2022)" at 49pp, album one of two
+F 13818 provider-missing | the GCD dump has no row for this title in any language
+S 13860 cv=128711 gcd=- 0.9 | CV 128711 "Planet of Science" (Europe Comics 2020, one issue 780150) is the single 81pp book our file names in full as "Planet of Science - The Universal Encyclopedia of Scientists"
+F 13860 provider-missing | GCD's "Planet Comics" hits are a different title reached through a ComicVine candidate; nothing indexes this book
+I 23927 cv=780150 gcd=- 0.9 | the book's own record: CV issue 780150 is volume 128711's only issue and no GCD row exists
+S 14049 cv=155109 gcd=- 0.9 | CV 155109 "Praising the Surface: Behind the Scenes of Reality TV" (Europe Comics 2023, one issue 1033030) is a single 120pp book whose full title our filename repeats verbatim
+F 14049 provider-missing | the GCD dump has no row for this title in any language
+I 23929 cv=1033030 gcd=- 0.9 | the book's own record: CV issue 1033030 is volume 155109's only issue and no GCD row exists
+S 14254 cv=143767 gcd=- 0.9 | CV 143767 "Pygmalion and the Ivory Virgin" (Europe Comics 2022, one issue 931880) is a single 81pp album and our one file is it
+F 14254 provider-missing | the GCD dump has no row for this title; the "Pygmalion" hits are French manga and prose editions reached through a candidate
+I 23930 cv=931880 gcd=- 0.9 | the book's own record: CV issue 931880 is volume 143767's only issue and no GCD row exists
+S 14365 cv=137736 gcd=- 0.9 | CV 137736 "Rainbow Girls" (Europe Comics 2021, one issue 873096) matches our single file "Rainbow Girls 001 - Let's Save Lulu! (2021)" at 101pp, ladder 1
+F 14365 provider-missing | the GCD dump has no row for this title; the "Rainbow" hits are British weeklies and French manga reached through a candidate
+I 23931 cv=873096 gcd=- 0.9 | the book's own record: CV issue 873096 is volume 137736's only issue and no GCD row exists
+S 14580 cv=117105 gcd=- 0.9 | CV 117105 "Renée Stone" (Europe Comics 2019, 3) matches our complete ladder 1-3 — "Murder in Abyssinia" (2019), "The Red Sea Trap" (2020) and "The Treasure of Assurbanipal" (2022) at 63-66pp
+F 14580 provider-missing | the GCD dump has no row for this title in any language
+S 14587 cv=145319 gcd=- 0.9 | CV 145319 "Republic of the Skull" (Europe Comics 2022, 2) matches our two files, whose own names read "Part 01" (94pp) and "Part 02" (116pp) — a single work in two halves
+F 14587 provider-missing | the GCD dump has no row for this title in any language
+S 14644 cv=110846 gcd=- 0.9 | CV 110846 "Revolutions" (Europe Comics 2018, 5) covers our ladder 1-3 ("Parabola", "Ellipse", "Monochrome" at 49-50pp); the count above our holdings on a line still running is staleness, not residue
+F 14644 provider-missing | the GCD dump has no row for this title in any language
+S 15073 cv=126423 gcd=- 0.9 | CV 126423 "Saturday and Sunday" (Europe Comics 2020, 2) covers both files — "001 - Rock Heaven" (49pp) and "02 - Hearts of Palm" (50pp) — and ComicInfo says Series "Saturday and Sunday" / Publisher "Europe Comics"
+F 15073 provider-missing | the GCD dump has no row for this title in any language
+S 15151 cv=147103 gcd=- 0.9 | CV 147103 "Scattered Pages" (Europe Comics 2022, one issue 961768) is a single 139pp book and our one file is it
+F 15151 provider-missing | the GCD dump has no row for this title in any language
+I 23932 cv=961768 gcd=- 0.9 | the book's own record: CV issue 961768 is volume 147103's only issue and no GCD row exists
+S 15158 cv=140160 gcd=- 0.9 | CV 140160 "School of Love" (Europe Comics 2021, one issue 894631) matches our single file "School of Love 001 - Secrets of the Heart (2021)" at 97pp, ladder 1
+F 15158 provider-missing | the GCD dump has no row for this title in any language
+I 23933 cv=894631 gcd=- 0.9 | the book's own record: CV issue 894631 is volume 140160's only issue and no GCD row exists
+S 15712 cv=143768 gcd=- 0.9 | CV 143768 "Sixty Years in Winter" (Europe Comics 2022, one issue 931881) is a single 116pp book and our one file is it
+F 15712 provider-missing | the GCD dump has no row for this title in any language
+I 23938 cv=931881 gcd=- 0.9 | the book's own record: CV issue 931881 is volume 143768's only issue and no GCD row exists
+S 15767 cv=118367 gcd=- 0.9 | CV 118367 "Sleeping Beauty" (Europe Comics 2019, 3) matches our complete ladder 1-3 at 49-51pp across files dated 2019 and 2021 in the folder Europe Comics\Sleeping Beauty (2019)
+F 15767 provider-missing | GCD's same-name rows are Dell's 1950 Disney one-shot and Magazine Enterprises' 1958 book — different comics of a shared fairy-tale title
+S 15843 cv=152569 gcd=- 0.9 | CV 152569 "Sofia" (Europe Comics 2023, one issue 1003885) matches our single file "Sofia 001 - Red Chair Beach (2023)" at 86pp, ladder 1
+F 15843 provider-missing | the GCD dump has no row for this title in any language
+I 23940 cv=1003885 gcd=- 0.9 | the book's own record: CV issue 1003885 is volume 152569's only issue and no GCD row exists
+S 15870 cv=139679 gcd=- 0.9 | CV 139679 "Someone To Talk To" (Europe Comics 2021, one issue 890129) is a single 245pp book — a full-length graphic novel, which is why the volume counts one issue
+F 15870 provider-missing | the GCD dump has no row for this title in any language
+I 23941 cv=890129 gcd=- 0.9 | the book's own record: CV issue 890129 is volume 139679's only issue and no GCD row exists
+S 15934 cv=131069 gcd=- 0.9 | CV 131069 "Soulscape" (Europe Comics 2020, one issue 809765) is a single 72pp album and our one file is it
+F 15934 provider-missing | the GCD dump returned nothing at all for this title
+I 23942 cv=809765 gcd=- 0.9 | the book's own record: CV issue 809765 is volume 131069's only issue and no GCD row exists
+S 16316 cv=115231 gcd=- 0.9 | CV 115231 "Spirou: The Diary of a Naive Young Man" (Europe Comics 2018, one issue 691894) is a single 68pp album — Émile Bravo's Spirou one-off, not part of the numbered album line on S16312
+F 16316 provider-missing | the GCD dump has no row for this title in any language
+I 23341 cv=691894 gcd=- 0.9 | the book's own record: CV issue 691894 is volume 115231's only issue and no GCD row exists
+S 6999 cv=149165 gcd=- 0.9 | CV 149165 "Friends of Spirou" (Europe Comics 2023, one issue 980274) matches our single file "Friends of Spirou 001 - A Friend of Spirou Is Honest and True ... (2023)" at 65pp, ladder 1
+F 6999 provider-missing | the GCD dump has no row for this title; the "Spirou" hits are the Dupuis magazine and its foreign reprints, which would be the hull shape
+I 23943 cv=980274 gcd=- 0.9 | the book's own record: CV issue 980274 is volume 149165's only issue and no GCD row exists
+S 16314 cv=125073 gcd=- 0.9 | CV 125073 "Spirou: Hope Against All Odds" (Europe Comics 2020, 2) matches our ladder 1-2 at 89 and 91pp in the folder Spirou (2018)\Spirou Hope Against All Odds (2020), and ComicInfo says Series "Spirou Hope Against All Odds" / Publisher "Europe Comics"
+F 16314 provider-missing | the GCD dump has no row for this title in any language
+S 16882 cv=110847 gcd=145010 0.9 | CV 110847 "Story Without A Hero" (Europe Comics 2018, one issue 669823) and GCD 145010 (Cinebook [en-gb] 2019, 1) are the same 58pp album; the residue is item 23343, "Twenty Years Later", the sequel album that ComicVine mints as its own volume 111646 — the per-book volume shape — which caps this at 0.9
+I 23342 cv=669823 gcd=s145010 0.9 | the book's own record: CV issue 669823 is volume 110847's only issue and GCD's Cinebook English print edition 145010 is the same album
+I 23343 cv=673799 gcd=- 0.9 | the second book's own record: CV issue 673799 is volume 111646 "Twenty Years Later"'s only issue (Europe Comics 2018), the sequel album filed on the same shelf; Cinebook's English edition is CV 118607 and the GCD dump has no row for either
+S 16983 cv=120763 gcd=- 0.9 | CV 120763 "Striped Pajamas" (Europe Comics 2019, one issue 716794) is a single 93pp book and our one file is it
+F 16983 provider-missing | the GCD dump has no row for this title in any language
+I 23944 cv=716794 gcd=- 0.9 | the book's own record: CV issue 716794 is volume 120763's only issue and no GCD row exists
+S 17374 cv=150665 gcd=- 0.9 | CV 150665 "Swamp - A Summer in the Bayou" (Europe Comics 2023, one issue 991580) is a single 156pp book whose full title our filename repeats
+F 17374 provider-missing | the GCD dump has no row for this title in any language
+I 23945 cv=991580 gcd=- 0.9 | the book's own record: CV issue 991580 is volume 150665's only issue and no GCD row exists
+S 17389 cv=150666 gcd=- 0.9 | CV 150666 "Swamplands" (Europe Comics 2023, one issue 991581) matches our single file "Swamplands 001 - Sombra (2023)" at 95pp, ladder 1
+F 17389 provider-missing | the GCD dump has no row for this title in any language
+I 23946 cv=991581 gcd=- 0.9 | the book's own record: CV issue 991581 is volume 150666's only issue and no GCD row exists
+S 17390 cv=125779 gcd=- 0.9 | CV 125779 "Swan Song" (Europe Comics 2020, 2) matches our complete ladder 1-2 at 65 and 72pp, and both files' ComicInfo says Series "Swan Song" / Publisher "Europe Comics"
+F 17390 provider-missing | the GCD dump has no row for this title as a 2020 album line
+S 17446 cv=145356 gcd=- 0.9 | CV 145356 "T'Zee: An African Tragedy" (Europe Comics 2022, one issue 949659) is a single 158pp book whose full title our filename repeats
+F 17446 provider-missing | the GCD dump has no row for this title in any language
+I 23948 cv=949659 gcd=- 0.9 | the book's own record: CV issue 949659 is volume 145356's only issue and no GCD row exists
+S 17545 cv=127279 gcd=- 0.9 | CV 127279 "Tales of the Mist" (Europe Comics 2020, one issue 763313) is a single 120pp album and our one file is it
+F 17545 provider-missing | the GCD dump has no row for this title in any language
+I 23949 cv=763313 gcd=- 0.9 | the book's own record: CV issue 763313 is volume 127279's only issue and no GCD row exists
+S 17586 cv=142592 gcd=- 0.9 | CV 142592 "Tangier in the Rain" (Europe Comics 2022, one issue 919548) is a single 119pp book and our one file is it
+F 17586 provider-missing | the GCD dump has no row for this title in any language
+I 23950 cv=919548 gcd=- 0.9 | the book's own record: CV issue 919548 is volume 142592's only issue and no GCD row exists
+S 17769 cv=116615 gcd=- 0.9 | CV 116615 "Telemachus" (Europe Comics 2019, 3) matches our complete ladder 1-3 — "In Search of Ulysses", "At the Gates of Hades" and "In the City of Men" at 49-66pp
+F 17769 provider-missing | the GCD dump has no row for this title in any language
+S 17926 cv=95973 gcd=- 0.9 | CV 95973 "The Amazing Adventures of Jules" (Europe Comics 2016, 3) matches our complete ladder 1-3 at 57pp each, across files dated 2016 and 2020 in one folder
+F 17926 provider-missing | GCD's "Amazing Adventures" rows are Marvel and Ziff-Davis comics reached through a candidate, not this album line
+S 17965 cv=142684 gcd=- 0.9 | CV 142684 "The Archipelago on Fire" (Europe Comics 2022, 2) matches our two files, whose own names read "Part 01" (54pp) and "Part 02" (45pp) — Jules Verne adapted in two halves
+F 17965 provider-missing | the GCD dump has no row for this title in any language
+S 17972 cv=116609 gcd=- 0.9 | CV 116609 "The Art of Dying" (Europe Comics 2019, one issue 697923) is a single 68pp album and our one file is it
+F 17972 provider-missing | the GCD dump has no row for this title in any language
+I 23951 cv=697923 gcd=- 0.9 | the book's own record: CV issue 697923 is volume 116609's only issue and no GCD row exists
+S 18046 cv=126960 gcd=- 0.9 | CV 126960 "The Aviator" (Europe Comics 2020, 3) matches our complete ladder 1-3 — "Take-Off", "The Long Climb", "Airmail to Africa" at 57-67pp, all dated 2020
+F 18046 provider-missing | the GCD dump has no row for this title in any language
+S 18117 cv=117671 gcd=- 0.9 | CV 117671 "The Black Moon Arcana" (Europe Comics 2019, 4) matches our complete ladder 1-4 — "Ghorghor Bey", "Heads-or-Tails", "Parsifal", "Greldinard" at 49-67pp; the packet's own note says no other ComicVine volume of this name exists
+F 18117 provider-missing | the GCD dump has no row for this title in any language
+S 18118 cv=99886 gcd=- 0.9 | CV 99886 "The Black Moon Chronicles" (Europe Comics 2017, 21) carries all 22 files and our ladder runs 1-9, 11-14, 17-18, 20-21 against that count of 21, with four ComicInfo blocks saying Series "The Black Moon Chronicles" / Publisher "Europe Comics"; the one duplicated number is album 8, which is on the shelf twice (item 22994 and item 23371, both 50pp)
+F 18118 provider-missing | the GCD dump has no row for this title in any language; the French original (Les Chroniques de la Lune Noire) is not reachable from the English spelling the packet probes
+S 18182 cv=118359 gcd=- 0.9 | CV 118359 "The Bugle Boy" (Europe Comics 2019, one issue 706201) is a single 65pp album and our one file is it
+F 18182 provider-missing | the GCD dump has no row for this title in any language
+I 23952 cv=706201 gcd=- 0.9 | the book's own record: CV issue 706201 is volume 118359's only issue and no GCD row exists
+S 18185 cv=137733 gcd=- 0.9 | CV 137733 "The Butcher" (Europe Comics 2021, 3) matches our complete ladder 1-3 — "Demon's Scent", "The Bird in the Cage" (both 30pp) and "Hunter and Prey" (35pp)
+F 18185 provider-missing | GCD's same-name rows are DC's 1990 five-issue miniseries (14772) and its Spanish edition — a different comic of a shared name, rejected on publisher and decade
+S 18210 cv=114472 gcd=- 0.9 | CV 114472 "The Children" (Europe Comics 2018, one issue 689260) is a single 81pp album and our one file is it
+F 18210 provider-missing | the GCD dump returned nothing for this title
+I 23953 cv=689260 gcd=- 0.9 | the book's own record: CV issue 689260 is volume 114472's only issue and no GCD row exists
+S 18281 cv=146409 gcd=- 0.9 | CV 146409 "The Court Charade" (Europe Comics 2022, one issue 957055) is a single 101pp album and our one file is it
+F 18281 provider-missing | the GCD dump has no row for this title in any language
+I 23954 cv=957055 gcd=- 0.9 | the book's own record: CV issue 957055 is volume 146409's only issue and no GCD row exists
+S 18283 cv=145749 gcd=- 0.9 | CV 145749 "The Coyote and the Snake" (Europe Comics 2022, one issue 952837) is a single 144pp book and our one file is it
+F 18283 provider-missing | the GCD dump has no row for this title; the "Coyote" and "Snake" hits are separate manga and album lines reached through candidates
+I 23955 cv=952837 gcd=- 0.9 | the book's own record: CV issue 952837 is volume 145749's only issue and no GCD row exists
+S 18372 cv=116612 gcd=- 0.9 | CV 116612 "The Daughters of Salem" (Europe Comics 2019, 2) matches our ladder 1-2 at 106 and 101pp, and both filenames carry the full subtitle "How we sent our children to their deaths"
+F 18372 provider-missing | the GCD dump has no row for this title in any language
+S 18399 cv=117100 gcd=- 0.9 | CV 117100 "The Defender" (Europe Comics 2019, 3) matches our complete ladder 1-3 — "Legal Eagle", "Back to Iraq", "The Law of the Desert" at 57-58pp
+F 18399 provider-missing | GCD's "Defender" rows are the Comic Book Legal Defense Fund's promos, a different publication reached through a candidate
+S 18422 cv=126961 gcd=- 0.9 | CV 126961 "The Diary of the (Nearly) Zero-Waste Family" (Europe Comics 2020, one issue 761307) is a single 131pp book whose parenthesised title our filename repeats exactly
+F 18422 provider-missing | the GCD dump has no row for this title in any language
+I 23956 cv=761307 gcd=- 0.9 | the book's own record: CV issue 761307 is volume 126961's only issue and no GCD row exists
+S 18443 cv=109280 gcd=- 0.9 | CV 109280 "The Dream of Jerusalem" (Europe Comics 2018, cached #1-4) matches our complete ladder 1-4 — "The Holy Militia", "The Divine Ordeal", "The White Spear", "Ecce Homo" at 49-50pp, all 2018
+F 18443 provider-missing | the GCD dump has no row for this title; its hits are reached through the truncated candidate "The Dream"
+S 63690 cv=95994 gcd=- 0.9 | CV 95994 "The Eagles of Rome" (Europe Comics 2015, 6) carries all six of our files, which are named "Book 01" through "Book 06" at 61-84pp across 2015-2023 — one album per book, count and ladder agreeing exactly
+F 63690 provider-missing | the GCD dump has no row for this title in any language
+S 18561 cv=137082 gcd=- 0.9 | CV 137082 "The Famous Quartet of Piraeus" (Europe Comics 2021, one issue 864434) is a single 84pp album and our one file is it
+F 18561 provider-missing | the GCD dump returned nothing for this title
+I 23958 cv=864434 gcd=- 0.9 | the book's own record: CV issue 864434 is volume 137082's only issue and no GCD row exists
+S 18626 cv=143006 gcd=- 0.9 | CV 143006 "The Forest of Time" (Europe Comics 2022, 2) matches our complete ladder 1-2 — "Children of the Stone" (2022) and "Envoys of No Return" (2023), both 49pp
+F 18626 provider-missing | the GCD dump has no row for this title in any language
+S 18648 cv=150113 gcd=- 0.9 | CV 150113 "The Frontier" (Europe Comics 2023, one issue 987640) matches our single 219pp file "The Frontier 001 (2023)"; ComicVine also holds Le Lombard's original line (164566, 2023, 3), of which this is the first book
+F 18648 provider-missing | GCD's "Frontier" rows are Rue de Sèvres, Magnetic Press, Splitter and Glénat books of a shared word, none of them Le Lombard's 2023 line
+I 23959 cv=987640 gcd=- 0.9 | the book's own record: CV issue 987640 is volume 150113's only issue; the Le Lombard original's issue is CV 1112145 and neither has a GCD row
+S 18691 cv=145342 gcd=- 0.9 | CV 145342 "The Gold Chase" (Europe Comics 2022, 2) matches our complete ladder 1-2 at 66 and 65pp across files dated 2022 and 2023
+F 18691 provider-missing | the GCD dump has no row for this title; its hits are DC's "Chase" and APComics' "The Chase" reached through a truncated candidate
+S 18711 cv=110953 gcd=- 0.9 | CV 110953 "The Grande Odalisque" (Europe Comics 2018, 2) carries all three files: the two Europe Comics albums ("The Grande Odalisque" 124pp and "02 - Olympia" 135pp) plus item 25201, Fantagraphics' 2021 English print edition of the first book at 125pp — one comic in two editions, which costs nothing
+I 25201 cv=827899 gcd=s169356 0.95 | the printing we hold: CV issue 827899 is volume 133688 "The Grande Odalisque" (Fantagraphics 2021)'s only issue and GCD 169356 is the same Fantagraphics 2021 edition; the Dupuis French first edition is GCD 75700 (2012, count 1)
+S 18745 cv=128707 gcd=- 0.9 | CV 128707 "The Grémillet Sisters" (Europe Comics 2020, 4) matches our complete ladder 1-4 at 74-76pp across 2020-2023, and the packet's own note says no other ComicVine volume of this name exists
+F 18745 provider-missing | the GCD dump has no row for this title in any language
+S 18874 cv=137084 gcd=- 0.9 | CV 137084 "The Keeper of the Little Folk" (Europe Comics 2021, 2) matches our complete ladder 1-2 — "The Fairy Balm" (56pp) and "The Dragon's Tears" (54pp)
+F 18874 provider-missing | the GCD dump has no row for this title in any language
+S 18893 cv=138374 gcd=- 0.9 | CV 138374 "The Lab" (Europe Comics 2021, one issue 881216) is the 109pp album in the folder Europe Comics\The Lab (2021); the residue is item 110729, a 180pp 2020 book from the Top Shelf folder whose ComicInfo says Publisher "IDW" — a different comic of the same name, which caps this at 0.9
+F 18893 misfiled | item 110729 ("The Lab (2020) (Digital-Empire)", 180pp, folder Top Shelf, ComicInfo Publisher "IDW") is Top Shelf/IDW's 2020 graphic novel, CV 126149 (issue 744560) / GCD 160976, not the Europe Comics album this shelf is named for
+I 23961 cv=881216 gcd=- 0.9 | the book's own record: CV issue 881216 is volume 138374's only issue and no GCD row exists for the Europe Comics album
+I 110729 cv=744560 gcd=s160976 0.95 | the misfiled book's own record: CV issue 744560 is volume 126149 "The Lab" (Top Shelf 2020)'s only issue and GCD 160976 is IDW's 2020 row for the same book, matching its ComicInfo Publisher
+S 18964 cv=131068 gcd=- 0.9 | CV 131068 "The Lion of Judah" (Europe Comics 2020, 3) matches our complete ladder 1-3 at 59-62pp across 2020-2022
+F 18964 provider-missing | GCD's "Lion of Judah" row (30118, Wisdom Entertainment 1991) is a different comic, and the "Lion" hits are British weeklies reached through a candidate
+S 18989 cv=155143 gcd=- 0.9 | CV 155143 "The Loneliness of the Abyss" (Europe Comics 2023, one issue 1033234) is a single 54pp album and our one file is it
+F 18989 provider-missing | the GCD dump has no row for this title in any language
+I 23962 cv=1033234 gcd=- 0.9 | the book's own record: CV issue 1033234 is volume 155143's only issue and no GCD row exists
+S 19001 cv=134631 gcd=- 0.9 | CV 134631 "The Lost Ages" (Europe Comics 2021, 2) matches our complete ladder 1-2 — "The Fort on the Moors" (58pp) and "The Land of the Hordes" (60pp)
+F 19001 provider-missing | the GCD dump has no row for this title in any language
+S 19049 cv=138376 gcd=- 0.9 | CV 138376 "The Man Who Invented the World" (Europe Comics 2021, one issue 881218) is a single 78pp album and our one file is it
+F 19049 provider-missing | the GCD dump returned nothing for this title
+I 23964 cv=881218 gcd=- 0.9 | the book's own record: CV issue 881218 is volume 138376's only issue and no GCD row exists
+S 19051 cv=129822 gcd=222192 0.9 | CV 129822 "The Man Who Shot Chris Kyle: An American Legend" (Europe Comics 2020, 2) carries our two webrips, named "Part 1" (75pp) and "Part 2" (95pp), and GCD 222192 is Titan's [en-gb] 2022 one-volume English print edition of the same work — the count reads 1 against 2 because Europe Comics split the album in half
+S 19052 cv=135480 gcd=- 0.9 | CV 135480 "The Man For the Job" (Europe Comics 2021, one issue 843917) is a single 139pp book and our one webrip is it
+F 19052 provider-missing | the GCD dump has no row for this title in any language
+I 23963 cv=843917 gcd=- 0.9 | the book's own record: CV issue 843917 is volume 135480's only issue and no GCD row exists
+S 19082 cv=126422 gcd=- 0.9 | CV 126422 "The Mask Of A Thousand Tears" (Europe Comics 2020, 2) matches our complete ladder 1-2 ("Death Walks with Me" 63pp, "The Price of My Suffering" 72pp) and ComicInfo says Series "The Mask of a Thousand Tears" / Publisher "Europe Comics"
+F 19082 provider-missing | the GCD dump has no row for this title; its "The Mask" hits are Dark Horse and its foreign editions reached through a truncated candidate
+S 19148 cv=138377 gcd=- 0.9 | CV 138377 "The Misfits Club For Girls" (Europe Comics 2021, 5) covers our ladder 1-4 — "Paloma", "Celeste", "Sierra", "Apolline", all 59pp — with the fifth album not yet held; the packet's own note says no other ComicVine volume of this name exists
+F 19148 provider-missing | the GCD dump has no row for this title in any language
+S 19150 cv=156571 gcd=- 0.9 | CV 156571 "The Missing Play" (Europe Comics 2024, one issue 1043494) is a single 161pp book, and our file's ComicInfo says Series "The Missing Play" / Publisher "Europe Comics" — the collection's own assertion agreeing with the volume
+F 19150 provider-missing | the GCD dump has no row for this title in any language
+I 23965 cv=1043494 gcd=- 0.9 | the book's own record: CV issue 1043494 is volume 156571's only issue and no GCD row exists
+S 19152 cv=154071 gcd=- 0.9 | CV 154071 "The Mist-Walker" (Europe Comics 2023, one issue 1024068) matches our single file "The Mist-Walker 001 - The Breath of Things (2023)" at 134pp, ladder 1
+F 19152 provider-missing | the GCD dump has no row for this title in any language
+I 23966 cv=1024068 gcd=- 0.9 | the book's own record: CV issue 1024068 is volume 154071's only issue and no GCD row exists
+S 19159 cv=143771 gcd=- 0.9 | CV 143771 "The Monstrous Dreams of Mr. Providence" (Europe Comics 2022, one issue 931884) is a single 118pp book and our one file is it
+F 19159 provider-missing | GCD's "Providence" rows are Avatar Press and its foreign editions reached through a truncated candidate, a different comic entirely
+I 23967 cv=931884 gcd=- 0.9 | the book's own record: CV issue 931884 is volume 143771's only issue and no GCD row exists
+S 19172 cv=111643 gcd=- 0.9 | CV 111643 "The Music Box" (Europe Comics 2018, cached #1-5) matches our complete ladder 1-5 at 56-58pp across 2018-2022 — "Welcome to Pandorient" through "The Silken Eagle Feathers"
+F 19172 provider-missing | GCD's same-name rows are Cydonia Press' 2000 series (142379) and a French Petit à Petit book (139766), neither this album line
+S 19282 cv=129825 gcd=- 0.9 | CV 129825 "The Omniscients" (Europe Comics 2020, 3) covers our ladder 1-2 ("Phenomena" 65pp, "The Others" 49pp); ComicVine also holds Le Lombard's French original "Les Omniscients" (169579, 2020) at six or seven albums, so the line is longer than either our holdings or the English count
+F 19282 provider-missing | the GCD dump has no row for this title under either the English or the French spelling
+S 19315 cv=130528 gcd=- 0.9 | CV 130528 "The Other Side of the Border" (Europe Comics 2020, one issue 802953) is a single 67pp album and our one file is it
+F 19315 provider-missing | the GCD dump has no row for this title; its hits are DC's "The Other Side" reached through a truncated candidate
+I 23970 cv=802953 gcd=- 0.9 | the book's own record: CV issue 802953 is volume 130528's only issue and no GCD row exists
+S 19421 cv=155142 gcd=- 0.9 | CV 155142 "The Race of the Century" (Europe Comics 2023, one issue 1033296) is a single 94pp book; the parsed ladder of "1904" is the year in the subtitle "Saint-Louis, 1904", not an issue number
+F 19421 provider-missing | the GCD dump has no row for this title in any language
+I 23971 cv=1033296 gcd=- 0.9 | the book's own record: CV issue 1033296 is volume 155142's only issue and no GCD row exists
+S 19450 cv=115230 gcd=- 0.9 | CV 115230 "The Regiment – The True Story of the SAS" (Europe Comics 2018, 3) covers our ladder 1-2 at 67 and 59pp; ComicVine also holds Cinebook's English print edition (122904, 2019, 3) and Le Lombard's French original (105241), all agreeing on a three-album line
+F 19450 provider-missing | the GCD dump has no row for this title under the English or the French spelling; its only hit is Glénat's unrelated "SAS" (135145) reached through a candidate
+S 19527 cv=128715 gcd=- 0.9 | CV 128715 "The Sauroktones" (Europe Comics 2020, 6) matches our complete ladder 1-6 at 28-54pp, all dated 2020, and the packet's own note says no other ComicVine volume of this name exists
+F 19527 provider-missing | the GCD dump has no row for this title in any language
+S 19536 cv=144868 gcd=- 0.9 | CV 144868 "The School For Little Monsters" (Europe Comics 2022, one issue 945005) is the single 104pp book our webrip names as "01 - It's Tough Being Flop!"
+F 19536 provider-missing | GCD's "Little Monsters" rows are Image's 2022 series and its foreign editions reached through a truncated candidate
+I 23974 cv=945005 gcd=- 0.9 | the book's own record: CV issue 945005 is volume 144868's only issue and no GCD row exists
+S 19551 cv=139678 gcd=- 0.9 | CV 139678 "The Secret Garden" (Europe Comics 2021, 2) matches our two files, whose own names read "Part 01" (98pp) and "Part 02" (108pp) — the Burnett adaptation in two halves
+F 19551 provider-missing | GCD has no row for this adaptation; the same-title hits are prose and other publishers' adaptations reached through candidates
+S 19681 cv=128712 gcd=- 0.9 | CV 128712 "The Stars of History: Charlie Chaplin" (Europe Comics 2020, one issue 780151) is a single 73pp album — ComicVine mints one volume per subject in this line, and its sibling is S19682
+F 19681 provider-missing | GCD's "Charlie Chaplin" rows are 1970s European reprint series reached through a candidate, not this 2020 album
+I 23453 cv=780151 gcd=- 0.9 | the book's own record: CV issue 780151 is volume 128712's only issue and no GCD row exists
+S 19682 cv=132055 gcd=- 0.9 | CV 132055 "The Stars of History: Marilyn Monroe" (Europe Comics 2020, one issue 818826) is a single 104pp album — the second subject of the same line, minted as its own volume exactly as the Chaplin book is
+F 19682 provider-missing | the GCD dump has no row for this album in any language
+I 23454 cv=818826 gcd=- 0.9 | the book's own record: CV issue 818826 is volume 132055's only issue and no GCD row exists
+S 19690 cv=136290 gcd=- 0.9 | CV 136290 "The Story of the Velvet Underground" (Europe Comics 2021, one issue 853437) is a single 80pp book and our one file is it
+F 19690 provider-missing | the GCD dump has no row for this title; its hits are "Underground" and "Velvet" rows reached through truncated candidates
+I 23977 cv=853437 gcd=- 0.9 | the book's own record: CV issue 853437 is volume 136290's only issue and no GCD row exists
+S 19797 cv=135481 gcd=- 0.9 | CV 135481 "The Tiger Awakens: The Return of John Chinaman" (Europe Comics 2021, 2) matches our two files, whose own names say "01 (of 02)" and "02 (of 02)" at 61 and 77pp — the solicited length agreeing with the count
+F 19797 provider-missing | the GCD dump has no row for this two-album spin-off; the "Chinaman" rows are the parent Dupuis series and would be the hull shape
+S 19818 cv=128713 gcd=- 0.9 | CV 128713 "The Transporter" (Europe Comics 2020, 4) matches our complete ladder 1-4 at 57-62pp across 2020-2023, and the packet's own note says no other ComicVine volume of this name exists
+F 19818 provider-missing | the GCD dump has no row for this title in any language
+S 19823 cv=95970 gcd=- 0.9 | CV 95970 "Agrippina" (Europe Comics 2016, 2) is Claire Bretécher's line, of which our single 49pp file is one album; ComicInfo says Series "The Trials of Agrippina" / Publisher "Europe Comics", which is the English title Europe Comics gave it
+F 19823 provider-missing | GCD's "Agrippina" rows (Methuen [en-gb] 1991, Heinemann [en-gb] 1992, Rowohlt [de], Hammarström & Åberg [sv-se]) are earlier editions of other albums in the same line, none matching this one, so none is taken
+S 19837 cv=134009 gcd=- 0.9 | CV 134009 "The Two Lives of Penelope" (Europe Comics 2021, one issue 829607) is a single 88pp book and our one webrip is it
+F 19837 provider-missing | the GCD dump has no row for this title in any language
+I 23979 cv=829607 gcd=- 0.9 | the book's own record: CV issue 829607 is volume 134009's only issue and no GCD row exists
+S 19860 cv=152868 gcd=- 0.9 | CV 152868 "The Unicorn Legacy" (Europe Comics 2023, one issue 1006416) matches our single file "The Unicorn Legacy 001 - Call of the Goddess (2023)" at 80pp, ladder 1
+F 19860 provider-missing | the GCD dump returned nothing for this title
+I 23980 cv=1006416 gcd=- 0.9 | the book's own record: CV issue 1006416 is volume 152868's only issue and no GCD row exists
+S 19864 cv=129827 gcd=- 0.9 | CV 129827 "The Universe Chronicles" (Europe Comics 2020, 2) carries both files — "01 - Alpha Cygna" (59pp, a webrip) and "002 - The Time-Eaters" (57pp) — the two albums of the line
+F 19864 provider-missing | the GCD dump has no row for this title in any language
+S 19929 cv=141440 gcd=- 0.9 | CV 141440 "The White Lady" (Europe Comics 2022, one issue 904514) is a single 207pp book and our one file is it
+F 19929 provider-missing | the GCD dump returned nothing for this title
+I 23981 cv=904514 gcd=- 0.9 | the book's own record: CV issue 904514 is volume 141440's only issue and no GCD row exists
+S 19962 cv=141728 gcd=- 0.9 | CV 141728 "The Wolf Queen" (Europe Comics 2022, one issue 909169) matches our single file "The Wolf Queen 001 - The Rebellion of Petigré (2022)" at 55pp, ladder 1
+F 19962 provider-missing | the GCD dump has no row for this title; the "Wolf" hits are Image and European books reached through a truncated candidate
+I 23982 cv=909169 gcd=- 0.9 | the book's own record: CV issue 909169 is volume 141728's only issue and no GCD row exists
+S 20022 cv=140480 gcd=- 0.9 | CV 140480 "The Young Woman and the Sea" (Europe Comics 2021, one issue 898818) is a single 115pp book and our one file is it
+F 20022 provider-missing | the GCD dump has no row for this title in any language
+I 23984 cv=898818 gcd=- 0.9 | the book's own record: CV issue 898818 is volume 140480's only issue and no GCD row exists
+S 20023 cv=128014 gcd=- 0.9 | CV 128014 "The Zolas" (Europe Comics 2020, one issue 768662) is a single 113pp book and our one file is it
+F 20023 provider-missing | the GCD dump returned nothing for this title
+I 23985 cv=768662 gcd=- 0.9 | the book's own record: CV issue 768662 is volume 128014's only issue and no GCD row exists
+S 20042 cv=129826 gcd=- 0.9 | CV 129826 "They Called Him Charles" (Europe Comics 2020, one issue 796038) is a single short book — our file is 25pp, which is why the volume counts one issue rather than an album line
+F 20042 provider-missing | the GCD dump has no row for this title; its hits are "They Called Us Enemy" reached through a candidate
+I 23986 cv=796038 gcd=- 0.9 | the book's own record: CV issue 796038 is volume 129826's only issue and no GCD row exists
+S 19980 cv=130273 gcd=- 0.9 | CV 130273 "The World of Thorgal: Kriss of Valnor" (Europe Comics 2020, 8) matches our complete ladder 1-8 at 49-60pp across 2020-2021 — the whole spin-off line, count and ladder agreeing exactly
+F 19980 provider-missing | the GCD dump has no row for this spin-off under its English title; the "Thorgal" rows are the parent line and would be the hull shape
+S 19982 cv=130272 gcd=- 0.9 | CV 130272 "The World of Thorgal: Wolfcub" (Europe Comics 2020, cached #1-7) matches our complete ladder 1-7 at 50pp each across 2020-2021 — the sibling spin-off to S19980, minted as its own volume
+F 19982 provider-missing | the GCD dump has no row for this spin-off under its English title
+S 20160 cv=119114 gcd=- 0.9 | CV 119114 "Through Lya's Eyes" (Europe Comics 2019, 3) matches our complete ladder 1-3 at 64-66pp across 2019-2021, and ComicInfo says Series "Through Lya's Eyes" / Publisher "Europe Comics"
+F 20160 provider-missing | the GCD dump has no row for this title in any language
+S 20234 cv=109883 gcd=- 0.9 | CV 109883 "Tiny Fox and Great Boar" (Europe Comics 2018, 5) matches our complete ladder 1-5 at 49-50pp across 2018-2020, and the packet's own note says no other ComicVine volume of this name exists
+F 20234 provider-missing | the GCD dump has no row for this title in any language
+S 20306 cv=130529 gcd=- 0.9 | CV 130529 "Tom Thomson: Sketches of Springtime" (Europe Comics 2020, one issue 802954) is a single 144pp book whose full title our filename repeats
+F 20306 provider-missing | the GCD dump has no row for this title in any language
+I 23987 cv=802954 gcd=- 0.9 | the book's own record: CV issue 802954 is volume 130529's only issue and no GCD row exists
+S 20372 cv=105367 gcd=- 0.9 | CV 105367 "Tramp" (Europe Comics 2017, 11) matches our complete ladder 1-11 at 49-62pp across 2017-2020, and ComicVine's Dargaud French original (105265, 1993, 11) carries exactly the same count of eleven albums — two ComicVine editions agreeing on the arithmetic
+F 20372 provider-missing | GCD's "Tramp" rows are German (comicplus+, Carlsen, Phoenix) and Dutch partial editions at counts 1, 3 and 6, none of them the eleven-album Dargaud line our files are
+S 20446 cv=150842 gcd=- 0.9 | CV 150842 "Treasure" (Europe Comics 2023, one issue 993135) matches our single file "Treasure 001 - The Red Wave (2023)" at 81pp, ladder 1
+F 20446 provider-missing | GCD's "Treasure" rows are Digital Manga, Yaoi Press and a Fleetway weekly — different comics of a shared word
+S 20531 cv=149170 gcd=- 0.9 | CV 149170 "Twin" (Europe Comics 2023, 2) matches our complete ladder 1-2 — "Inseparable" (177pp) and "Separated" (216pp), both 2023
+F 20531 provider-missing | the GCD dump has no row for this title; its hits are "Twin Milf" reached through a candidate
+S 20557 cv=142585 gcd=- 0.9 | CV 142585 "U4" (Europe Comics 2022, 5) matches our complete ladder 1-5 — "Jules", "Koridwen", "Stéphane", "Yannis", "Khronos" at 141-143pp each, all 2022; the packet's own note says no other ComicVine volume of this name exists
+F 20557 provider-missing | the GCD dump has no row for this title in any language
+S 20842 cv=140142 gcd=- 0.9 | CV 140142 "Urbex" (Europe Comics 2021, one issue 894381) matches our single file "Urbex 001 - Villa Pandora (2021)" at 58pp, ladder 1
+F 20842 provider-missing | the GCD dump has no row for this title in any language
+I 23991 cv=894381 gcd=- 0.9 | the book's own record: CV issue 894381 is volume 140142's only issue and no GCD row exists
+S 21389 cv=156101 gcd=- 0.9 | CV 156101 "Webster & Jones: Space Agents" (Europe Comics 2023, one issue 1040710) is a single 102pp book and our one file is it
+F 21389 provider-missing | the GCD dump has no row for this title in any language
+I 23992 cv=1040710 gcd=- 0.9 | the book's own record: CV issue 1040710 is volume 156101's only issue and no GCD row exists
+S 21587 cv=133309 gcd=- 0.9 | CV 133309 "White All Around" (Europe Comics 2021, one issue 825202) is a single 140pp book and our one file is it
+F 21587 provider-missing | the GCD dump returned nothing for this title
+I 23993 cv=825202 gcd=- 0.9 | the book's own record: CV issue 825202 is volume 133309's only issue and no GCD row exists
+S 21591 cv=109286 gcd=- 0.9 | CV 109286 "White Claw" (Europe Comics 2018, 3) matches our complete ladder 1-3 — "The Egg of the Dragon Queen", "The Revolt of the Monkey People", "The Way of the Sword" at 49-52pp, all 2018
+F 21591 provider-missing | the GCD dump has no row for this title in any language
+S 21713 cv=116616 gcd=- 0.9 | CV 116616 "Wings of War: Adler" (Europe Comics 2019, cached #1-4) matches our complete ladder 1-4 — "Truth or Lies", "Good or Evil", "You or Me", "Here or There" at 51-52pp; its sibling half of the line is S21714
+F 21713 provider-missing | the GCD dump has no row for this title; its only hit is Charlton's "War Wings" reached through a candidate
+S 21714 cv=116617 gcd=- 0.9 | CV 116617 "Wings of War: Eagle" (Europe Comics 2019, cached #1-4) matches our complete ladder 1-4 — "The Eye of the Storm", "The Game of Deception", "The Roots of Evil", "Redemption" at 51-52pp; ComicVine mints Adler and Eagle as two volumes and our folders keep the same split
+F 21714 provider-missing | the GCD dump has no row for this title in any language
+S 22805 cv=143155 gcd=- 0.9 | CV 143155 "Zoc" (Europe Comics 2022, one issue 926644) is a single 157pp book; ComicVine also holds Dargaud's French original (158852, 2022, issue 1063132), agreeing on year and extent
+F 22805 provider-missing | the GCD dump has no row for this title under either spelling
+I 24000 cv=926644 gcd=- 0.9 | the book's own record: CV issue 926644 is volume 143155's only issue; the Dargaud original's issue is CV 1063132 and neither has a GCD row
+S 11922 cv=142009 gcd=- 0.9 | CV 142009 "Menji and the Sea Dragon" (Europe Comics 2022, one issue 912902) is album one, and this line is the per-book volume shape: album two carries its own volume, CV 154114 "Menji and the Ruins of Mount Mystery" (2023, issue 1024770), which is why the ratio reads 2/1 on a two-file shelf
+F 11922 provider-missing | the GCD dump has no row for this title in any language
+I 23235 cv=912902 gcd=- 0.9 | the book's own record: CV issue 912902 is volume 142009's only issue — "Menji 001 - ...and the Sea Dragon (2022)", 51pp
+I 23236 cv=1024770 gcd=- 0.9 | the second book's own record: CV issue 1024770 is volume 154114 "Menji and the Ruins of Mount Mystery" (Europe Comics 2023)'s only issue — our file "Menji 002 - ...and the Ruins of Mount Mystery (2023)" at 49pp
+S 101535 cv=135482 gcd=- 0.9 | the three Yojimbot subfolders are three ComicVine volumes, one per book, selected by year: this shelf is "Yojimbot v1 - Metal Silence (2021)" and CV 135482 "Yojimbot" (Europe Comics 2021, 3) is the 2021 volume whose three chapters are our three files (56, 38 and 57pp)
+F 101535 provider-missing | GCD's only Yojimbot row is 219154 (Dark Horse 2024-?, 2), the later American print collection at a different count, so it cannot serve as a per-book leg
+S 101536 cv=142647 gcd=- 0.9 | this shelf is "Yojimbot v2 - Night of Rust (2022)" and CV 142647 "Yojimbot" (Europe Comics 2022, 3) is the 2022 volume; our three files are numbered 002.1, 002.2 and 002.3 at 58, 46 and 57pp, which is why the ladder reads a single 2
+F 101536 provider-missing | the GCD dump holds only the 2024 Dark Horse collection (219154, count 2), not the Europe Comics per-book volumes
+S 101537 cv=154094 gcd=- 0.9 | this shelf is "Yojimbot v3 - Steel Snow (2023)" and CV 154094 "Yojimbot" (Europe Comics 2023, 3) is the 2023 volume; our three files are numbered 003.1, 003.2 and 003.3 at 52, 51 and 47pp, which is why the ladder reads a single 3
+F 101537 provider-missing | the GCD dump holds only the 2024 Dark Horse collection (219154, count 2)
+N 101535 the three volumes 135482 / 142647 / 154094 are ComicVine's per-book split of one Yojimbot line; the packet's per-file matcher stamped 142647 on all nine files of all three shelves, which is why every one of them looked like the same comic
+
+# ── the two shelves that are not one comic ───────────────────────────────────────────────────────
+S 11793 cv=144903 gcd=- 0.9 | two of three files are Europe Comics' Masks: CV 144903 "Masks" (Europe Comics 2022, 2) covers "001 - The Mask Without a Face" (2022, 88pp) and "002 - The Eclipse Mask" (2023, 89pp), our ladder 1-2; the residue is item 21937, a 255pp Dynamite trade of a different comic, which caps this at 0.9
+F 11793 wrong-cv-link | stored CV 54311 "Masks" (Dynamite 2012, 8) is Dynamite's pulp-heroes crossover, which is item 21937's comic and not the two 2022 albums this shelf is mostly made of
+F 11793 misfiled | item 21937 ("COL Masks (2013) (Digital) (F) (DR & Quinch-Empire)", 255pp, folder Dynamite\Masks (2013), ComicInfo Publisher "Dynamite Entertainment") is the collection of Dynamite's eight-issue 2012 series, not a Europe Comics album
+I 21937 cv=423690 gcd=s102528 0.95 | the misfiled book's own record: CV issue 423690 is volume 66794 "Masks" (Dynamite 2013, count 1)'s only issue — the collected edition of the eight-issue run (CV 54311 / GCD 70166) — and GCD 102528 is the same 2013 Dynamite collected row
+R 22049 | two files, two comics and no run between them: item 23996 is Europe Comics' 2022 album "World Without End" (194pp, CV 144164, issue 938739) and item 108292 is "World Without End - The Complete Collection (2016)" (206pp), the Dover collection of DC's 1990 six-issue Vertigo miniseries (CV 30810 / GCD 14739); the stored CV 30810 is right for the second file and wrong for the first, and nothing spans both
+F 22049 split-needed | proposed: the DC 1990 six-issue series (CV 30810 / GCD 14739) with its 2016 Dover collection for item 108292, and Europe Comics' 2022 one-book album (CV 144164) for item 23996 — two comics that share only a common phrase for a title
+I 108292 cv=554070 gcd=- 0.9 | the book's own record: CV issue 554070 is volume 95043 "World Without End: The Complete Collection" (Dover Publications 2016)'s only issue, the collection of the DC 1990 run; the GCD dump holds the run (14739) but no row for this 2016 Dover collection
+I 23996 cv=938739 gcd=- 0.9 | the other book's own record: CV issue 938739 is volume 144164 "World Without End" (Europe Comics 2022)'s only issue, our 194pp album; the GCD dump has no row for it

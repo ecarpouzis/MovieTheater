@@ -383,12 +383,11 @@ namespace MovieTheater.Books.Archives
             _ => "application/octet-stream",
         };
 
-        // RELAXED: real-world EPUBs violate the spec constantly, and a strict parse would refuse books that read
-        // perfectly well in every other reader.
-        // The parser is annotated as possibly returning null; in practice it throws on an unparseable file
-        // instead, and every caller here is already inside a try that treats a throw as "not an EPUB we can
-        // read". The bang says that out loud rather than adding a null branch no input can reach.
+        // Real-world EPUBs violate the spec constantly, and a strict parse refuses books that read perfectly
+        // well in every other reader — see EpubParsing for the measurement that settles which preset, and why
+        // it is now shared with EpubArchiveReader instead of each half choosing its own. A file this cannot
+        // parse THROWS, and every caller treats that as "not an EPUB we can read".
         private EpubBook GetBook(string normalizedPath) =>
-            bookCache.GetOrAdd(normalizedPath, static p => EpubReader.ReadBook(p, EpubReaderOptionsPreset.RELAXED)!);
+            bookCache.GetOrAdd(normalizedPath, static p => EpubParsing.ReadOrThrow(p));
     }
 }

@@ -135,6 +135,8 @@ namespace MovieTheater.Books.Resolve
         private static List<Row> BuildRows(TargetWriter hot, int seriesId, int? claudeYear)
         {
             var rows = new List<Row>();
+            var shelf = new List<(Row Row, double Ours)>();
+            var collections = new List<(Row Row, ReadingOrderParser.NormalizedDate Own)>();
             // Everything one series needs, in one read: the parse, the embedded date, the matched CV issue and
             // the matched prog date. Items are the unit; a series holds a few hundred at most.
             foreach (var (itemId, payload) in hot.Pairs($@"
@@ -142,8 +144,10 @@ SELECT i.Id,
        coalesce(i.FileName,'') || char(31) || coalesce(cd.IssueNo,'') || char(31) || coalesce(cd.Format, 13) || char(31)
     || coalesce(cd.VolumeNo,'') || char(31) || coalesce(cd.Year,'') || char(31) || coalesce(ce.PublicationDate,'') || char(31)
     || coalesce(cvi.IssueNumber,'') || char(31) || coalesce(cvi.CoverDate, cvi.StoreDate, '') || char(31)
-    || coalesce(bp.CoverDate,'') || char(31) || coalesce(cd.FormatRaw,'')
+    || coalesce(bp.CoverDate,'') || char(31) || coalesce(cd.FormatRaw,'') || char(31) || coalesce(cd.IsCollection, 0)
+    || char(31) || CASE WHEN cvi.Id IS NOT NULL AND s.CvVolumeId IS NOT NULL AND cvi.VolumeId = s.CvVolumeId THEN 1 ELSE 0 END
 FROM Item i
+LEFT JOIN Series s ON s.Id = i.SeriesId
 LEFT JOIN ComicDetail cd ON cd.ItemId = i.Id
 LEFT JOIN ComicEmbedded ce ON ce.ItemId = i.Id
 LEFT JOIN ItemProviderLink cvl ON cvl.ItemId = i.Id AND cvl.Provider = {(int)Provider.Cv} AND cvl.Status = {(int)LinkStatus.Matched}
@@ -164,6 +168,12 @@ ORDER BY i.Id"))
                 var cvDate = Blank(p[7]);
                 var progDate = Blank(p[8]);
                 var formatRaw = Blank(p[9]);
+                var isCollection = p.Length > 10 && p[10] == "1";
+                // Is the matched ComicVine record an ISSUE OF THIS SHELF'S OWN RUN? That is the v1
+                // match-a-collection-to-the-issue-numbered-like-its-volume shape. A link into a DIFFERENT
+                // ComicVine volume is a match against the edition's own record, and its cover date is the
+                // trade's own printing date — the book's own fact, not an issue number coincidence.
+                var cvIsOwnRun = p.Length > 11 && p[11] == "1";
 
                 var haveCvIssue = cvNumber != null || cvDate != null;
                 ReadingOrderParser.IssueOrder issue;
@@ -209,16 +219,152 @@ ORDER BY i.Id"))
                 if (!orderable) source = ReadingOrderSource.Unordered;
 
                 _ = formatRaw;
-                rows.Add(new Row
+                var row = new Row
                 {
                     ItemId = (int)itemId, SeriesId = seriesId, Tier = tier, Number = number, Suffix = issue.Suffix,
                     Date = date.Iso, DatePrecision = date.Precision, Source = source, Confidence = confidence,
                     Notes = issue.Note, Orderable = orderable,
-                });
+                };
+                rows.Add(row);
+                if (tier == ReadingOrderParser.TierMain && number != null
+                    && ReadingOrderParser.ParseIssue(issueNo, format, fileName).Number is double ours)
+                    shelf.Add((row, ours));
+                // A collection's own imprint date — the (b) fallback of the container-date rule. It is computed
+                // here because this is the only place the row's local inputs are in hand.
+                // A collection's OWN date — the (b) fallback of the container-date rule. Where the row is dated
+                // by an issue of this shelf's own run it is the by-number match, and the book's own date is the
+                // local chain instead; anything else already IS the book's own (its edition record, its
+                // ComicInfo, its year). Computed here because this is the only place those inputs are in hand.
+                if (isCollection)
+                    collections.Add((row, cvIsOwnRun ? ResolveDate(pubDate, year, claudeYear).Date : date));
             }
 
-            PullInCollections(hot, seriesId, rows);
+            ReconcileCollapsedShelf(shelf);
+
+            // Spans are read at most once per series, and only when something actually asks for them.
+            Dictionary<int, (double Start, double End, EditionSource Source, string? Note)>? spanCache = null;
+            Dictionary<int, (double Start, double End, EditionSource Source, string? Note)> Spans() =>
+                spanCache ??= LoadSpans(hot, seriesId);
+
+            DateContainers(hot, seriesId, rows, collections, Spans);
+            PullInCollections(rows, Spans);
             return rows;
+        }
+
+        /// <summary>
+        /// <b>A collection is dated by what it COLLECTS, never by a per-file provider link.</b>
+        ///
+        /// <para>v1 matched a collected edition to the ComicVine issue whose number equals its VOLUME number, and
+        /// the match survived into v2's `ItemProviderLink(Cv)`: `Saga Vol. 07` carried issue #7's cover date
+        /// (2012-11-01) though it collects #37-42, `Vol. 08` carried #8's, `Book 03` carried #3's. Since
+        /// `ReadDate` is the top source of every item's resolved year (`ItemResolver.ResolveDate`), a shelf of
+        /// trades printed 2014-2022 all read as 2012.</para>
+        ///
+        /// <para>The rule, for a row the parse calls a collection and whose SELECTED span is a JUDGED
+        /// (<see cref="EditionSource.Curated"/>) range — an unjudged provider claim is not enough to re-date a
+        /// book: <b>(a)</b> the cover date of the FIRST issue of that range, taken from `CvIssue` for the
+        /// shelf's `Series.CvVolumeId` when it is cached, else from the OWNED issue file carrying that number;
+        /// <b>(b)</b> failing both, the book's OWN date. NEVER the shelf's own issue matched by number.</para>
+        ///
+        /// <para><b>Where that line falls.</b> The defect is a link to an ISSUE OF THIS SHELF'S RUN picked
+        /// because its number equals the trade's volume ordinal — Saga Vol. 07 → Saga #7. A link into a
+        /// DIFFERENT ComicVine volume is a match against the edition's own record in a collected-editions
+        /// volume, and its cover date is the trade's printing date: `Terry Moore's Echo Vol. 01` links to CV
+        /// volume 47310 #1 at 2009-05-31 while the shelf's run is volume 20806, and its filename says 2018
+        /// because that is when it was scanned. So (b) is the local chain
+        /// (`ComicEmbedded.PublicationDate` → `ComicDetail.Year` → the insight year) for a same-run match, and
+        /// otherwise whatever the row already had. Live, the two halves are 2,611 and 3,301 rows.</para>
+        ///
+        /// <para>Numbered issue files are untouched, and so is the ordering: a pulled-in collection is placed by
+        /// its span number and negative suffix (<see cref="PullInCollections"/>), not by its date.</para>
+        /// </summary>
+        private static void DateContainers(
+            TargetWriter hot, int seriesId, List<Row> rows,
+            List<(Row Row, ReadingOrderParser.NormalizedDate Own)> collections,
+            Func<Dictionary<int, (double Start, double End, EditionSource Source, string? Note)>> spans)
+        {
+            if (collections.Count == 0) return;
+            var byItem = spans();
+            var judged = collections
+                .Select(c => (c.Row, c.Own, Span: byItem.TryGetValue(c.Row.ItemId, out var sp) ? sp : default))
+                .Where(c => c.Span.Source == EditionSource.Curated && c.Span.Start > 0 && c.Span.End >= c.Span.Start)
+                .ToList();
+            if (judged.Count == 0) return;
+
+            // The issues we OWN, by number — a collection row can never date another (a trade's own number is
+            // the volume ordinal, not an issue number).
+            var owned = new Dictionary<double, (string Iso, DatePrecision Precision)>();
+            var isCollection = collections.Select(c => c.Row.ItemId).ToHashSet();
+            foreach (var r in rows)
+                if (!isCollection.Contains(r.ItemId) && r.Number is double n && r.Date is string iso
+                    && !owned.ContainsKey(n))
+                    owned[n] = (iso, r.DatePrecision);
+
+            // The shelf's ComicVine volume, whether or not any of its issues is a file we hold.
+            var cached = new Dictionary<double, string>();
+            foreach (var (_, payload) in hot.Pairs($@"
+SELECT cvi.Id, coalesce(cvi.IssueNumber,'') || char(31) || coalesce(cvi.CoverDate, cvi.StoreDate, '')
+FROM CvIssue cvi JOIN Series s ON s.CvVolumeId = cvi.VolumeId
+WHERE s.Id = {seriesId} AND cvi.IssueNumber IS NOT NULL"))
+            {
+                var p = payload!.Split(TargetWriter.Sep);
+                if (p[1].Length == 0) continue;
+                if (double.TryParse(p[0], System.Globalization.NumberStyles.Float,
+                                    System.Globalization.CultureInfo.InvariantCulture, out var num)
+                    && !cached.ContainsKey(num)) cached[num] = p[1];
+            }
+
+            foreach (var (row, own, span) in judged)
+            {
+                if (cached.TryGetValue(span.Start, out var cvIso)
+                    && ReadingOrderParser.NormalizeDate(cvIso) is { Iso: not null } d)
+                {
+                    row.Date = d.Iso;
+                    row.DatePrecision = d.Precision;
+                }
+                else if (owned.TryGetValue(span.Start, out var file))
+                {
+                    row.Date = file.Iso;
+                    row.DatePrecision = file.Precision;
+                }
+                else if (own.Iso != null)
+                {
+                    row.Date = own.Iso;
+                    row.DatePrecision = own.Precision;
+                }
+                // Only the DATE changes. A row that could not be ordered before is not made orderable here —
+                // `PullInCollections` is what puts a judged edition on the main line, and it owns that decision.
+            }
+        }
+
+        /// <summary>
+        /// A shelf whose reading numbers COLLAPSE it is being numbered in somebody else's coordinate.
+        ///
+        /// <para>ComicVine numbers by MINISERIES. Our forty Baltimore files carry a continuous library index and
+        /// each arc's own count in the same name — "Baltimore 016 - The Infernal Train 01 (of 03)" — and where a
+        /// file is the first of its arc, ComicVine says 1. Ten of them said 1, so the shelf read
+        /// 001, 006, 011, 016, 019, 021, 024, 026, 031, 036 and only then 002. Witchfinder collapsed 26 files
+        /// onto 10 numbers, Iron Squad 6 onto 2.</para>
+        ///
+        /// <para>The test needs no provider and no judgement about who is right in general: if OUR parsed issue
+        /// numbers tell more of these files apart than the numbers we are about to store, the numbers we are
+        /// about to store cannot be this shelf's order. Measured over the live library it fires on seven series
+        /// and 2,482 files, six of them this exact shape. Everywhere else ComicVine keeps the say it has earned.</para>
+        /// </summary>
+        private static void ReconcileCollapsedShelf(List<(Row Row, double Ours)> shelf)
+        {
+            if (shelf.Count == 0) return;
+            var stored = shelf.Select(x => x.Row.Number).Distinct().Count();
+            var ours = shelf.Select(x => x.Ours).Distinct().Count();
+            if (ours <= stored) return;
+            foreach (var (row, mine) in shelf)
+            {
+                row.Number = mine;
+                row.Source = row.Date != null ? ReadingOrderSource.IssueNoDate : ReadingOrderSource.IssueNo;
+                row.Notes = string.IsNullOrEmpty(row.Notes)
+                    ? "shelf order taken from the filename: the provider numbering collapsed this series"
+                    : row.Notes + "; shelf order taken from the filename: the provider numbering collapsed this series";
+            }
         }
 
         /// <summary>
@@ -231,11 +377,13 @@ ORDER BY i.Id"))
         /// issue used to keep its wrong main-line NUMBER (the volume number read as an issue number) even though
         /// its span said exactly where it belongs; now the span wins wherever there is one.</para>
         /// </summary>
-        private static void PullInCollections(TargetWriter hot, int seriesId, List<Row> rows)
+        private static void PullInCollections(
+            List<Row> rows,
+            Func<Dictionary<int, (double Start, double End, EditionSource Source, string? Note)>> loadSpans)
         {
             if (rows.Count(r => r.Tier == ReadingOrderParser.TierMain && r.Orderable) < 3) return;
 
-            var spans = LoadSpans(hot, seriesId);
+            var spans = loadSpans();
             foreach (var r in rows)
             {
                 // A SELECTED span is the authority on where a row belongs, whatever TIER the parse gave it: the
@@ -267,7 +415,7 @@ ORDER BY i.Id"))
         /// issue-keyed Gcd, with degenerate "#N-#N" spans discarded on anything shaped like a collection.
         /// One read per call: the candidates plus the two facts the selection needs about the item itself.
         /// </summary>
-        public static Dictionary<int, (double Start, double End, EditionSource Source)> LoadSpans(TargetWriter hot, int? seriesId = null)
+        public static Dictionary<int, (double Start, double End, EditionSource Source, string? Note)> LoadSpans(TargetWriter hot, int? seriesId = null)
         {
             // Narrowed by the ITEM's series, never by the span's own denormalized `SeriesId`: that copy goes
             // stale when identity moves an item (1,397 of 9,911 rows disagree with `Item.SeriesId` today), and
@@ -275,7 +423,18 @@ ORDER BY i.Id"))
             // "Wolverine Omnibus Book 03" kept a Curated #31-59 nobody could see. Item.SeriesId is the grouping
             // authority everywhere else in these two jobs; it is the authority here too.
             var where = seriesId == null ? "" : $" AND i.SeriesId = {seriesId}";
-            var byItem = new Dictionary<int, (bool IsCollection, int PageCount, List<SpanSelection.Candidate> Candidates)>();
+
+            // A judged REFUSAL is recorded as a Curated row with no range — a tombstone. It means the shelf
+            // was read and no range is known, and it has to be louder than a provider leg, or the vacuum just
+            // refills: retracting Hellboy Omnibus Vol. 04's wrong #11-12 handed the book straight to a GCD
+            // #1-10 that is wronger. §6.5 measured 746 containers that went from honest silence to a leg's
+            // claim this way. Silence is the answer; these items are dropped before anything is ranked.
+            var refused = hot.Pairs($@"
+SELECT ces.ItemId, '' FROM CollectedEditionSpan ces JOIN Item i ON i.Id = ces.ItemId
+WHERE ces.Source = {(int)EditionSource.Curated} AND ces.IssueStart IS NULL{where}")
+                .Select(r => (int)r.Item1).ToHashSet();
+            var byItem = new Dictionary<int, (bool IsCollection, int PageCount, double? VolumeNo,
+                                              List<SpanSelection.Candidate> Candidates)>();
 
             foreach (var (itemId, payload) in hot.Pairs($@"
 SELECT ces.ItemId,
@@ -283,7 +442,8 @@ SELECT ces.ItemId,
     || coalesce(ces.Confidence,'') || char(31) || coalesce(ces.Note,'') || char(31)
     || coalesce((SELECT l.MatchedKey FROM ItemProviderLink l
                  WHERE l.ItemId = ces.ItemId AND l.Provider = {(int)Provider.Gcd}), '') || char(31)
-    || coalesce(cd.IsCollection, 0) || char(31) || coalesce(i.PageCount, 0)
+    || coalesce(cd.IsCollection, 0) || char(31) || coalesce(i.PageCount, 0) || char(31)
+    || coalesce(cd.VolumeNo, '')
 FROM CollectedEditionSpan ces
 JOIN Item i ON i.Id = ces.ItemId
 LEFT JOIN ComicDetail cd ON cd.ItemId = ces.ItemId
@@ -292,8 +452,13 @@ WHERE ces.IssueStart IS NOT NULL AND ces.IssueEnd IS NOT NULL{where}"))
                 var p = payload!.Split(TargetWriter.Sep);
                 if (p[1].Length == 0 || p[2].Length == 0) continue;
                 var id = (int)itemId;
+                if (refused.Contains(id)) continue;
                 if (!byItem.TryGetValue(id, out var entry))
-                    byItem[id] = entry = (p[6] == "1", int.Parse(p[7]), new List<SpanSelection.Candidate>());
+                    byItem[id] = entry = (p[6] == "1", int.Parse(p[7]),
+                                          p.Length > 8 && p[8].Length > 0
+                                              ? double.Parse(p[8], System.Globalization.CultureInfo.InvariantCulture)
+                                              : null,
+                                          new List<SpanSelection.Candidate>());
                 entry.Candidates.Add(new SpanSelection.Candidate(
                     (EditionSource)int.Parse(p[0]),
                     double.Parse(p[1], System.Globalization.CultureInfo.InvariantCulture),
@@ -302,10 +467,11 @@ WHERE ces.IssueStart IS NOT NULL AND ces.IssueEnd IS NOT NULL{where}"))
                     Blank(p[4]), Blank(p[5])));
             }
 
-            var spans = new Dictionary<int, (double, double, EditionSource)>();
+            var spans = new Dictionary<int, (double, double, EditionSource, string?)>();
             foreach (var (id, entry) in byItem)
-                if (SpanSelection.Select(entry.Candidates, entry.IsCollection, entry.PageCount) is SpanSelection.Candidate w)
-                    spans[id] = (w.Start, w.End, w.Source);
+                if (SpanSelection.Select(entry.Candidates, entry.IsCollection, entry.PageCount, entry.VolumeNo)
+                        is SpanSelection.Candidate w)
+                    spans[id] = (w.Start, w.End, w.Source, w.Note);
             return spans;
         }
 
@@ -476,8 +642,27 @@ GROUP BY s.Id ORDER BY s.Id"))
             ContainedCount(c.Note) is int n && n >= 2 && n >= (int)(c.End - c.Start) + 1;
 
         /// <summary>A "#N-#N" claim about a collection is no claim at all — it is the match's own key echoed back.</summary>
-        public static bool IsDiscardable(Candidate c, bool isCollection, int pageCount) =>
-            c.End <= c.Start && (isCollection || pageCount >= DegeneratePageFloor);
+        /// <summary>
+        /// A degenerate span (<c>End &lt;= Start</c>) on a collection-shaped book is normally a number echoed
+        /// back rather than a range — a 1,226-page omnibus does not collect one issue.
+        ///
+        /// <para>Two different things produce one: a provider echoing its own match key, and a curated row
+        /// that recorded the VOLUME ORDINAL where the range belonged ("Transformers Classics Vol. 01" →
+        /// <c>#1-1</c> over 318 pages, its own note naming the real contents). Both are noise, and the
+        /// discriminator is the ordinal: 30 curated degenerates equal their volume number, and every one is an
+        /// artefact.</para>
+        ///
+        /// <para>What survives is the genuine one-issue edition, where the number is NOT the ordinal — Batman
+        /// #238, a 100-page giant; Fables Vol. 22 "Farewell", which IS issue #150. Discarding those cost 19
+        /// correct spans their win and left the books with no containment at all.</para>
+        /// </summary>
+        public static bool IsDiscardable(Candidate c, bool isCollection, int pageCount, double? volumeNo = null)
+        {
+            if (c.End > c.Start) return false;
+            if (c.Source != EditionSource.Curated) return isCollection || pageCount >= DegeneratePageFloor;
+            // a curated degenerate that merely restates the volume ordinal is the ordinal, not a range
+            return volumeNo is { } v && Math.Abs(c.Start - v) < 0.001;
+        }
 
         /// <summary>The class rank: lower is better. 0 Curated, 1 Cv title-matched, 2 complete LOCG,
         /// 3 GCD title-matched (and a legacy Cv row with no title-match note), 4 partial LOCG,
@@ -497,13 +682,14 @@ GROUP BY s.Id ORDER BY s.Id"))
         };
 
         /// <summary>The winner, or null when every claim was discarded (the edition stays a labelled leaf).</summary>
-        public static Candidate? Select(IReadOnlyList<Candidate> candidates, bool isCollection, int pageCount)
+        public static Candidate? Select(IReadOnlyList<Candidate> candidates, bool isCollection, int pageCount,
+                                        double? volumeNo = null)
         {
             Candidate? best = null;
             var bestKey = (Rank: int.MaxValue, Conf: double.MinValue, Legacy: int.MaxValue);
             foreach (var c in candidates)
             {
-                if (IsDiscardable(c, isCollection, pageCount)) continue;
+                if (IsDiscardable(c, isCollection, pageCount, volumeNo)) continue;
                 var key = (Rank(c), c.Confidence ?? 0, LegacyOrder(c.Source));
                 if (key.Item1 > bestKey.Rank) continue;
                 if (key.Item1 == bestKey.Rank && key.Item2 < bestKey.Conf) continue;

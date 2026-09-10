@@ -288,7 +288,12 @@ namespace MovieTheater.Books.Services
 
             Group(c => c.ContentFingerprint, IdenticalFile, "High", "identical content fingerprint");
             Group(c => c.PageSignature, IdenticalContents, "High", "identical page signature");
-            Group(c => c.CoverPHash?.ToString(CultureInfo.InvariantCulture), SameComicDifferentScan, "Medium", "identical cover hash");
+            // A cover dHash of ZERO is a uniform image — a blank, solid or all-black cover — so it says nothing
+            // about which book this is. Grouping on it put 312 unrelated items ("Annuals.cbz", "WWho.cbz",
+            // "ST_Specials.cbz", …) into ONE duplicate group on 2026-09-09. Absence of evidence is not evidence
+            // of a match, and a review sheet that has to be disbelieved is worse than a shorter one.
+            Group(c => c.CoverPHash is null or 0 ? null : c.CoverPHash.Value.ToString(CultureInfo.InvariantCulture),
+                  SameComicDifferentScan, "Medium", "identical cover hash");
             return clusters;
         }
 

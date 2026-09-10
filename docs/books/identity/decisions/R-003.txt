@@ -1,0 +1,18 @@
+# R-003 — the two wave-1 blockers the full dry run surfaced (lead's reading, 2026-09-10).
+#
+# S19410 and S66039 both landed on CV 112965 / GCD 127969, the sixteen-issue Punisher (2018) run, and both readings
+# are right: S66039 holds "Vol. 01-03" (World War Frank / War in Bagalia / Street by Street) and S19410 holds
+# "War Machine Vol. 01-02" — two publishers' editions of the SAME run's trades. Two shelves on one run is exactly the
+# case the merge flag exists for, so this file says so.
+#
+# Item 25257's ISBN 9781596439689 resolves in the legs file and the GCD dump to GCD issue 1265664 in series 83906
+# ("The Invincible Haggard West" #101 — First Second's 2013 one-shot prologue to Battling Boy). The reader recorded
+# the collection's own assertion; the id is now written beside it.
+
+S 19410 cv=112965 gcd=127969 0.9 | the RUN wins: our two "The Punisher - War Machine" trades at 136pp and 111pp collect CV 112965 "The Punisher" (2018 Marvel, 16) and GCD 127969 (2018-2019 Marvel, 16), which agree on publisher, start year and a sixteen-issue count — the same run S66039's "Vol. 01-03" trades collect, so the two shelves are one run in two editions
+F 19410 merge-with=66039 | S66039 (The Punisher, four "Vol. 01-03" trades with judged ranges #1-5, #6-11, #12-16) and this shelf (War Machine Vol. 01-02, 136pp + 111pp) are both trade editions of Punisher (2018) CV 112965 / GCD 127969; sharing the volume is intended
+F 19410 wrong-cv-link | the stored link CV 111150 "The Punisher: War Machine" (2018 Marvel, 2) is the collected series whose count equals the two BOOKS we hold, not the sixteen-issue Punisher (2018) run — CV 112965
+
+S 2355 cv=68141 gcd=- 0.9 | an OGN line, not a run: CV 68141 "Battling Boy" (2013 First Second Books, 1, cached #1-1) is the 2013 book, and our three files are the three books of that line in publication order — the 34pp prologue "The Death of Haggard West" (2013), the 198pp "Battling Boy" (2013) and the 159pp "The Rise of Aurora West" (2014)
+F 2355 provider-missing | the GCD dump holds TWO indistinguishable First Second rows (85800 and 152992, both "Battling Boy" 2013-2013 with count 1) and Bao Publishing's Italian 105107; the per-file leg took 231423, Dargaud's French edition, which the publisher column rejects
+I 25257 cv=- gcd=1265664 isbn=9781596439689 0.9 | "Battling Boy Vol. 00 - The Death of Haggard West (2013)" carries EAN 9781596439689 on its own scanned page 64, and that ISBN is GCD issue 1265664 in series 83906 ("The Invincible Haggard West" #101, First Second 2013) in both the legs file and the dump — the collection's own assertion, now with the record it names

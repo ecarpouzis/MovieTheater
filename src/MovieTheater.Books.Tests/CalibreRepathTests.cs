@@ -1,6 +1,8 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
+using MovieTheater.Books;
+using MovieTheater.Books.Archives;
 using MovieTheater.Books.Db;
 using MovieTheater.Books.Services;
 
@@ -672,6 +674,204 @@ CREATE TABLE data (id INTEGER PRIMARY KEY, book INTEGER, format TEXT, name TEXT)
         {
             await using var db = f.HotDb();
             return await db.Items.AsNoTracking().FirstAsync(i => i.Id == 102);
+        }
+
+        // ── format upgrades ───────────────────────────────────────────────────────────────────────────────
+        //
+        // Converting the library's unreadable containers (12,804 RARs of HTML, 4,240 MOBI/AZW3, 11,433 books in
+        // formats the scanner never accepted) writes an EPUB BESIDE each original — nothing is deleted from the
+        // share. From the catalog's side that is a book which suddenly has a better format than the one its item
+        // sits on, and the item has to follow, because a second item for the same book would split one reader's
+        // position, marks, insights and series link across a readable copy and an unreadable one.
+
+        /// <summary>An <see cref="LibraryScanner.IFileSystem"/> that knows about exactly the files it is told about.</summary>
+        private sealed class FakeFs(params string[] present) : LibraryScanner.IFileSystem
+        {
+            private readonly HashSet<string> files = new(present, StringComparer.OrdinalIgnoreCase);
+            public bool FileExists(string path) => files.Contains(path);
+            public bool DirectoryExists(string path) => true;
+            public IEnumerable<string> EnumerateDirectories(string path) => Array.Empty<string>();
+            public IEnumerable<string> EnumerateFiles(string path) => Array.Empty<string>();
+            public (long Length, DateTime ModifiedUtc) FileInfo(string path) => (0, default);
+            public DateTime DirectoryModifiedUtc(string path) => default;
+        }
+
+        private static async Task<CalibreBatchResult> ImportAsync(
+            V1Fixture f, string metadata, LibraryScanner.IFileSystem fs, bool apply = true)
+        {
+            var importer = new CalibreImportService(NullLogger<CalibreImportService>.Instance, fs);
+            await using var db = f.HotDb();
+            await importer.ResetAsync(db);
+            return await importer.RunBatchAsync(db, metadata, f.CalibreLinkPath, 100, apply, LibraryRoot);
+        }
+
+        private const string EpubPath =
+            LibraryRoot + @"\Aldous Huxley\Brave New World (844)\Brave New World - Aldous Huxley.epub";
+
+        [Fact]
+        public void ResolvePathsOrdersCandidatesByHowWellTheSiteCanReadThem()
+        {
+            var book = new CalibreImportService.CalibreBook(
+                844, "Brave New World", "Aldous Huxley/Brave New World (844)",
+                "Brave New World - Aldous Huxley", null, null, null, null, null, null, null, null, null,
+                Formats: "RAR,MOBI,EPUB,PDF");
+
+            var paths = CalibreImportService.ResolvePaths(LibraryRoot, book);
+
+            // Calibre's own order is the order the formats were ADDED. The catalog needs the readable one first,
+            // because candidates[0] is both the re-path fallback and the target of an upgrade.
+            Assert.Equal(
+                new[] { ".epub", ".pdf", ".mobi", ".rar" },
+                paths.Select(Path.GetExtension).ToArray());
+        }
+
+        [Fact]
+        public async Task AConvertedBookMovesItsExistingItemOntoTheEpubInsteadOfGrowingASecondOne()
+        {
+            using var f = Migrated();
+            await ShapeLikeCalibreAsync(f, ".rar");
+            // What conversion leaves behind: the original RAR is still there, and an EPUB now sits beside it.
+            var metadata = BuildCalibre(f, "Aldous Huxley/Brave New World (844)", "Brave New World - Aldous Huxley", "RAR", "EPUB");
+
+            var r = await ImportAsync(f, metadata, new FakeFs(EpubPath));
+
+            Assert.Equal(1, r.Upgraded);
+            Assert.Equal(0, r.Repathed);     // the folder did not move — only the format did
+            Assert.Equal(0, r.UpgradesMissing);
+
+            await using var db = f.HotDb();
+            var item = await db.Items.AsNoTracking().FirstAsync(i => i.Id == 101);
+            Assert.Equal(EpubPath, item.Path);
+            Assert.Equal(".epub", item.Extension);
+            Assert.Equal("Brave New World - Aldous Huxley.epub", item.FileName);
+            Assert.Equal(TitleFolderId, item.FolderId);              // the SAME row, re-pointed
+            Assert.Equal(1, await db.Items.CountAsync(i => i.CalibreBookId == 844));
+        }
+
+        [Fact]
+        public async Task AnUpgradeFoldsInTheDuplicateRowAScanAlreadyMadeForTheNewFile()
+        {
+            using var f = Migrated();
+            await ShapeLikeCalibreAsync(f, ".rar");
+            // The order that actually happens in the field: books-scan runs before books-import-calibre, sees the
+            // new EPUB as a file nothing claims, and indexes it as its own item. The upgrade has to absorb it.
+            await using (var seed = f.HotDb())
+            {
+                var rar = await seed.Items.FirstAsync(i => i.Id == 101);
+                seed.Items.Add(new Item
+                {
+                    Id = 400, RootId = rar.RootId, FolderId = TitleFolderId, TopFolderId = AuthorFolderId,
+                    Kind = ItemKind.Book, Path = EpubPath, FileName = "Brave New World - Aldous Huxley.epub",
+                    Extension = ".epub", Title = "Brave New World", NormalizedTitle = "brave new world",
+                });
+                await seed.SaveChangesAsync();
+            }
+            var metadata = BuildCalibre(f, "Aldous Huxley/Brave New World (844)", "Brave New World - Aldous Huxley", "RAR", "EPUB");
+
+            var r = await ImportAsync(f, metadata, new FakeFs(EpubPath));
+
+            Assert.Equal(1, r.Upgraded);
+            Assert.Equal(1, r.DuplicatesMerged);
+
+            await using var db = f.HotDb();
+            Assert.Null(await db.Items.AsNoTracking().FirstOrDefaultAsync(i => i.Id == 400));
+            var item = await db.Items.AsNoTracking().FirstAsync(i => i.Id == 101);
+            Assert.Equal(EpubPath, item.Path);
+        }
+
+        [Fact]
+        public async Task AnUpgradeIsRefusedWhenTheBetterFormatIsAPhantomRow()
+        {
+            using var f = Migrated();
+            await ShapeLikeCalibreAsync(f, ".rar");
+            var metadata = BuildCalibre(f, "Aldous Huxley/Brave New World (844)", "Brave New World - Aldous Huxley", "RAR", "EPUB");
+
+            // Calibre says EPUB; the share does not have one. Trading an unreadable book for a MISSING one is
+            // strictly worse, so nothing moves and the refusal is counted.
+            var r = await ImportAsync(f, metadata, new FakeFs());
+
+            Assert.Equal(0, r.Upgraded);
+            Assert.Equal(1, r.UpgradesMissing);
+
+            await using var db = f.HotDb();
+            var item = await db.Items.AsNoTracking().FirstAsync(i => i.Id == 101);
+            Assert.Equal(".rar", item.Extension);
+        }
+
+        [Fact]
+        public async Task AnItemAlreadyOnTheBestFormatIsNeverTouched()
+        {
+            using var f = Migrated();
+            await ShapeLikeCalibreAsync(f);   // .epub, and Calibre holds a PDF as well
+            var before = await SnapshotAsync(f);
+            var metadata = BuildCalibre(f, "Aldous Huxley/Brave New World (844)", "Brave New World - Aldous Huxley", "EPUB", "PDF");
+
+            // The guard that keeps 89k settled EPUB books out of this branch entirely — an upgrade only ever
+            // moves an item UP the ranking, never sideways and never down.
+            var r = await ImportAsync(f, metadata, new FakeFs(EpubPath));
+
+            Assert.Equal(0, r.Upgraded);
+            Assert.Equal(0, r.UpgradesMissing);
+            Assert.Equal(before, await SnapshotAsync(f));
+        }
+
+        [Fact]
+        public async Task AnUpgradeDropsTheStaleThumbnailAndAPlainRepathKeepsIt()
+        {
+            // A thumbnail that exists is what makes `books-thumbs` SKIP an item, so an unreadable book's
+            // typeset title card would outlive the conversion that gave it a real cover unless the upgrade
+            // throws it away. A plain re-path is the opposite case: same bytes, still the right picture.
+            using var f = Migrated();
+            var cacheDir = Path.Combine(f.WorkDir, "thumbs-" + Guid.NewGuid().ToString("N")[..8]);
+            Directory.CreateDirectory(cacheDir);
+            var thumbs = new ThumbnailService(
+                Array.Empty<IArchiveReader>(), new BooksOptions { CacheDir = cacheDir },
+                NullLogger<ThumbnailService>.Instance);
+
+            async Task<CalibreBatchResult> ImportWithThumbsAsync(string metadata, LibraryScanner.IFileSystem fs)
+            {
+                var importer = new CalibreImportService(NullLogger<CalibreImportService>.Instance, fs, thumbs);
+                await using var db = f.HotDb();
+                await importer.ResetAsync(db);
+                return await importer.RunBatchAsync(db, metadata, f.CalibreLinkPath, 100, apply: true, LibraryRoot);
+            }
+
+            // 1. an upgrade: .rar item, Calibre now also holds the EPUB
+            await ShapeLikeCalibreAsync(f, ".rar");
+            await File.WriteAllTextAsync(thumbs.GetCachePath(101), "a placeholder jacket");
+            Assert.True(thumbs.Exists(101));
+
+            var upgrade = await ImportWithThumbsAsync(
+                BuildCalibre(f, "Aldous Huxley/Brave New World (844)", "Brave New World - Aldous Huxley", "RAR", "EPUB"),
+                new FakeFs(EpubPath));
+
+            Assert.Equal(1, upgrade.Upgraded);
+            Assert.False(thumbs.Exists(101));
+
+            // 2. a plain re-path: Calibre renamed the title folder, the file is the same book
+            await File.WriteAllTextAsync(thumbs.GetCachePath(101), "the real cover");
+            var repath = await ImportWithThumbsAsync(
+                BuildCalibre(f, "Aldous Huxley/Brave New World Revisited (844)",
+                             "Brave New World Revisited - Aldous Huxley", "EPUB"),
+                new FakeFs(EpubPath));
+
+            Assert.Equal(1, repath.Repathed);
+            Assert.Equal(0, repath.Upgraded);
+            Assert.True(thumbs.Exists(101));
+        }
+
+        [Fact]
+        public async Task ADryRunCountsTheUpgradeAndWritesNothing()
+        {
+            using var f = Migrated();
+            await ShapeLikeCalibreAsync(f, ".rar");
+            var before = await SnapshotAsync(f);
+            var metadata = BuildCalibre(f, "Aldous Huxley/Brave New World (844)", "Brave New World - Aldous Huxley", "RAR", "EPUB");
+
+            var r = await ImportAsync(f, metadata, new FakeFs(EpubPath), apply: false);
+
+            Assert.Equal(1, r.Upgraded);
+            Assert.Equal(before, await SnapshotAsync(f));
         }
 
         /// <summary>Every path this feature can move, as one comparable string.</summary>

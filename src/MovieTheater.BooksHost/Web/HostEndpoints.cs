@@ -110,7 +110,12 @@ namespace MovieTheater.BooksHost.Web
                 // For an EPUB, page 0 means THE COVER, not spine page 0 — the first spine document of a
                 // reflowable novel is routinely a title page. The variant keeps the two apart in the byte cache
                 // and in the ETag, so a browser holding the old spine image re-fetches.
-                var serveCover = page == 0 && ".epub".Equals(item.Extension, StringComparison.OrdinalIgnoreCase);
+                //
+                // Asked of the SNIFFED format: the 6,768 EPUBs stored as `.zip` are books, and reading their
+                // cover off spine page 0 is exactly the mistake this branch exists to avoid.
+                var readerFormat = ArchiveFormatSniffer.ReaderFormatFor(
+                    item.Kind == ItemKind.Book, item.Path, item.Extension, ticks);
+                var serveCover = page == 0 && ".epub".Equals(readerFormat, StringComparison.OrdinalIgnoreCase);
                 var pageKey = serveCover ? "cover" : page.ToString();
 
                 // The ETag is fully determined by the catalog row, so a revalidation is answered BEFORE the
@@ -153,7 +158,14 @@ namespace MovieTheater.BooksHost.Web
                 var (tokenValid, item) = await access.ResolveAsync(db, token, id, ctx.RequestAborted);
                 if (!tokenValid) return Results.StatusCode(StatusCodes.Status403Forbidden);
                 if (item == null) return Results.NotFound();
-                if (!".epub".Equals(item.Extension, StringComparison.OrdinalIgnoreCase)) return Results.NotFound();
+                // The SNIFFED format, not the stored extension — see ArchiveFormatSniffer.ReaderFormatFor. An
+                // EPUB stored as `.zip` reaches its chapters through /epub/*, so every image, font and stylesheet
+                // those chapters reference has to resolve here too.
+                if (!".epub".Equals(
+                        ArchiveFormatSniffer.ReaderFormatFor(item.Kind == ItemKind.Book, item.Path, item.Extension,
+                            item.FileModifiedAt?.Ticks ?? 0),
+                        StringComparison.OrdinalIgnoreCase))
+                    return Results.NotFound();
                 if (string.IsNullOrWhiteSpace(path)) return Results.NotFound();
 
                 // The href is normalized (…/.. resolved) before it is looked up, so it can only ever name

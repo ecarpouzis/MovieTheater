@@ -1651,6 +1651,9 @@ namespace MovieTheater.Books.Db.Migrations.Hot
                         .HasColumnType("INTEGER")
                         .HasDefaultValue(0);
 
+                    b.Property<int?>("TitleId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int?>("YearEnd")
                         .HasColumnType("INTEGER");
 
@@ -1665,6 +1668,8 @@ namespace MovieTheater.Books.Db.Migrations.Hot
                     b.HasIndex("Franchise");
 
                     b.HasIndex("ParsedKey");
+
+                    b.HasIndex("TitleId");
 
                     b.HasIndex("Name", "Id");
 
@@ -1841,6 +1846,54 @@ namespace MovieTheater.Books.Db.Migrations.Hot
                     b.HasIndex("Category", "Value", "SeriesId");
 
                     b.ToTable("SeriesTag", (string)null);
+                });
+
+            modelBuilder.Entity("MovieTheater.Books.Db.SeriesTitle", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Franchise")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Note")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("PublisherId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("RunCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0);
+
+                    b.Property<int?>("YearEnd")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("YearStart")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Franchise");
+
+                    b.HasIndex("Key")
+                        .IsUnique();
+
+                    b.HasIndex("Name", "Id");
+
+                    b.ToTable("SeriesTitle", (string)null);
                 });
 
             modelBuilder.Entity("MovieTheater.Books.Db.SystemState", b =>
@@ -2123,6 +2176,14 @@ namespace MovieTheater.Books.Db.Migrations.Hot
                         .HasForeignKey("ItemId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("MovieTheater.Books.Db.Series", b =>
+                {
+                    b.HasOne("MovieTheater.Books.Db.SeriesTitle", null)
+                        .WithMany()
+                        .HasForeignKey("TitleId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("MovieTheater.Books.Db.SeriesAlias", b =>

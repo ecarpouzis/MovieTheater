@@ -110,6 +110,155 @@ ON CONFLICT(WorkKey) DO UPDATE SET Title = excluded.Title, SubjectsJson = exclud
             cmd.ExecuteNonQuery();
         }
 
+        /// <summary>
+        /// One Open Library EDITION, keyed by its ISBN — the row
+        /// <see cref="Resolve.LegsTagFoldJob.FoldExternalBooksPage"/> folds onto a book.
+        ///
+        /// <para>The ISBN is stored NORMALIZED (<see cref="Resolve.TagFolds.NormalizeIsbn"/>), because that is
+        /// the only form both sides of the join can agree on: Calibre writes it hyphenated and the v1 leg wrote
+        /// it bare. A caller passing the raw field is normalized here rather than at every call site.</para>
+        /// </summary>
+        public void PutOpenLibraryEdition(
+            string isbn, string? title, string? authorsJson, string? publishers, string? publishDate,
+            int? pages, string? subjectsJson, string? coverUrl, string? olEditionKey, string? olWorkKey)
+        {
+            if (!Enabled) return;
+            var key = Resolve.TagFolds.NormalizeIsbn(isbn);
+            if (key == null) return;
+
+            using var conn = Open(readOnly: false);
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"
+INSERT INTO OpenLibraryEdition (Isbn, Title, AuthorsJson, Publishers, PublishDate, Pages, SubjectsJson, CoverUrl, OlEditionKey, OlWorkKey, ImportedAt)
+VALUES ($i, $t, $a, $p, $d, $n, $s, $c, $e, $w, $at)
+ON CONFLICT(Isbn) DO UPDATE SET
+    Title = excluded.Title, AuthorsJson = excluded.AuthorsJson, Publishers = excluded.Publishers,
+    PublishDate = excluded.PublishDate, Pages = excluded.Pages, SubjectsJson = excluded.SubjectsJson,
+    CoverUrl = excluded.CoverUrl, OlEditionKey = excluded.OlEditionKey, OlWorkKey = excluded.OlWorkKey,
+    ImportedAt = excluded.ImportedAt";
+            cmd.Parameters.AddWithValue("$i", key);
+            cmd.Parameters.AddWithValue("$t", (object?)title ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("$a", (object?)authorsJson ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("$p", (object?)publishers ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("$d", (object?)publishDate ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("$n", (object?)pages ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("$s", (object?)subjectsJson ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("$c", (object?)coverUrl ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("$e", (object?)olEditionKey ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("$w", (object?)olWorkKey ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("$at", DateTime.UtcNow.ToString("O"));
+            cmd.ExecuteNonQuery();
+        }
+
+        /// <summary>
+        /// Many cached responses on ONE connection.
+        ///
+        /// <para>Every other method here opens its own connection, which is right for the one-key-at-a-time
+        /// scrapers. A bulk job asks about thousands of keys per batch, and a fresh connection to a 300 MB
+        /// SQLite file per key — with <c>Pooling = false</c>, so nothing is reused — is what made the ISBN
+        /// pass spend its time opening files instead of fetching.</para>
+        /// </summary>
+        public Dictionary<string, string> GetMany(Provider provider, IReadOnlyCollection<string> requestKeys)
+        {
+            var found = new Dictionary<string, string>(StringComparer.Ordinal);
+            if (!Enabled || requestKeys.Count == 0) return found;
+
+            using var conn = Open(readOnly: true);
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT RequestKey, ResponseJson FROM ProviderResponseCache WHERE Provider = $p AND RequestKey = $k";
+            cmd.Parameters.AddWithValue("$p", (int)provider);
+            var key = cmd.Parameters.Add("$k", Microsoft.Data.Sqlite.SqliteType.Text);
+            foreach (var k in requestKeys)
+            {
+                key.Value = k;
+                using var rd = cmd.ExecuteReader();
+                if (rd.Read() && !rd.IsDBNull(1)) found[k] = rd.GetString(1);
+            }
+            return found;
+        }
+
+        /// <summary>Many cached responses written in ONE transaction on ONE connection.</summary>
+        public void PutMany(Provider provider, IReadOnlyCollection<(string RequestKey, string Json)> entries)
+        {
+            if (legsPath == null || entries.Count == 0) return;
+
+            using var conn = Open(readOnly: false);
+            using var tx = conn.BeginTransaction();
+            using var cmd = conn.CreateCommand();
+            cmd.Transaction = tx;
+            cmd.CommandText = @"
+INSERT INTO ProviderResponseCache (Provider, RequestKey, ResponseJson, FetchedAt) VALUES ($p, $k, $j, $t)
+ON CONFLICT(Provider, RequestKey) DO UPDATE SET ResponseJson = excluded.ResponseJson, FetchedAt = excluded.FetchedAt";
+            cmd.Parameters.AddWithValue("$p", (int)provider);
+            var key = cmd.Parameters.Add("$k", Microsoft.Data.Sqlite.SqliteType.Text);
+            var json = cmd.Parameters.Add("$j", Microsoft.Data.Sqlite.SqliteType.Text);
+            cmd.Parameters.AddWithValue("$t", DateTime.UtcNow.ToString("O"));
+            foreach (var (k, j) in entries)
+            {
+                key.Value = k;
+                json.Value = j;
+                cmd.ExecuteNonQuery();
+            }
+            tx.Commit();
+        }
+
+        /// <summary>Many Open Library editions written in ONE transaction on ONE connection.</summary>
+        public void PutOpenLibraryEditions(IReadOnlyCollection<OpenLibraryEditionRow> rows)
+        {
+            if (!Enabled || rows.Count == 0) return;
+
+            using var conn = Open(readOnly: false);
+            using var tx = conn.BeginTransaction();
+            using var cmd = conn.CreateCommand();
+            cmd.Transaction = tx;
+            cmd.CommandText = @"
+INSERT INTO OpenLibraryEdition (Isbn, Title, AuthorsJson, Publishers, PublishDate, Pages, SubjectsJson, CoverUrl, OlEditionKey, OlWorkKey, ImportedAt)
+VALUES ($i, $t, $a, $p, $d, $n, $s, $c, $e, $w, $at)
+ON CONFLICT(Isbn) DO UPDATE SET
+    Title = excluded.Title, AuthorsJson = excluded.AuthorsJson, Publishers = excluded.Publishers,
+    PublishDate = excluded.PublishDate, Pages = excluded.Pages, SubjectsJson = excluded.SubjectsJson,
+    CoverUrl = excluded.CoverUrl, OlEditionKey = excluded.OlEditionKey, OlWorkKey = excluded.OlWorkKey,
+    ImportedAt = excluded.ImportedAt";
+            var text = new[] { "$i", "$t", "$a", "$p", "$d", "$s", "$c", "$e", "$w" }
+                .Select(n => cmd.Parameters.Add(n, Microsoft.Data.Sqlite.SqliteType.Text)).ToArray();
+            var pages = cmd.Parameters.Add("$n", Microsoft.Data.Sqlite.SqliteType.Integer);
+            cmd.Parameters.AddWithValue("$at", DateTime.UtcNow.ToString("O"));
+
+            foreach (var r in rows)
+            {
+                var key = Resolve.TagFolds.NormalizeIsbn(r.Isbn);
+                if (key == null) continue;
+                object?[] values = [key, r.Title, r.AuthorsJson, r.Publishers, r.PublishDate,
+                                    r.SubjectsJson, r.CoverUrl, r.OlEditionKey, r.OlWorkKey];
+                for (var i = 0; i < text.Length; i++) text[i].Value = values[i] ?? DBNull.Value;
+                pages.Value = (object?)r.Pages ?? DBNull.Value;
+                cmd.ExecuteNonQuery();
+            }
+            tx.Commit();
+        }
+
+        /// <summary>One warehouse edition row, as a bulk writer takes it.</summary>
+        public sealed record OpenLibraryEditionRow(
+            string Isbn, string? Title, string? AuthorsJson, string? Publishers, string? PublishDate,
+            int? Pages, string? SubjectsJson, string? CoverUrl, string? OlEditionKey, string? OlWorkKey);
+
+        /// <summary>The normalized ISBNs the warehouse already holds an edition for — the job's skip set.</summary>
+        public HashSet<string> OpenLibraryEditionIsbns()
+        {
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            if (!Enabled) return seen;
+            using var conn = Open(readOnly: true);
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT Isbn FROM OpenLibraryEdition";
+            using var rd = cmd.ExecuteReader();
+            while (rd.Read())
+            {
+                var key = Resolve.TagFolds.NormalizeIsbn(rd.IsDBNull(0) ? null : rd.GetValue(0).ToString());
+                if (key != null) seen.Add(key);
+            }
+            return seen;
+        }
+
         private SqliteConnection Open(bool readOnly)
         {
             var conn = new SqliteConnection(new SqliteConnectionStringBuilder

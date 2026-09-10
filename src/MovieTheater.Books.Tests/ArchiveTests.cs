@@ -286,6 +286,35 @@ namespace MovieTheater.Books.Tests
             Assert.Equal(".epub", ArchiveFormatSniffer.ResolveReaderExtension(fixture.EpubPath, ".epub"));
         }
 
+        /// <summary>
+        /// The READER SURFACE — the answer four call sites used to derive for themselves from the stored
+        /// extension, and got wrong for the 6,768 books here that are EPUBs saved as <c>.zip</c>: the SPA opened
+        /// them on the canvas (which looks inside an EPUB for image pages and finds none), <c>/epub/*</c> 404'd,
+        /// the grid cover came from spine page 0, and every image a chapter referenced 404'd too.
+        /// </summary>
+        [Fact]
+        public void The_reader_surface_is_sniffed_for_a_book_and_taken_on_trust_for_a_comic()
+        {
+            // A book named .zip that IS an EPUB gets the EPUB reader; one that is really a comic does not.
+            Assert.Equal(".epub", ArchiveFormatSniffer.ReaderFormatFor(true, fixture.EpubAsZipPath, ".zip", 1));
+            Assert.Equal(".cbz", ArchiveFormatSniffer.ReaderFormatFor(true, fixture.ComicAsZipPath, ".zip", 1));
+
+            // A COMIC is never sniffed here: it reads on the canvas whichever container it turns out to be, so
+            // paying an SMB open per request for 118k comics would buy nothing. The declared extension stands.
+            Assert.Equal(".zip", ArchiveFormatSniffer.ReaderFormatFor(false, fixture.EpubAsZipPath, ".zip", 1));
+
+            // A format-specific extension is never second-guessed, on either side.
+            Assert.Equal(".epub", ArchiveFormatSniffer.ReaderFormatFor(true, fixture.EpubPath, ".epub", 1));
+            Assert.Equal(".pdf", ArchiveFormatSniffer.ReaderFormatFor(true, fixture.CbzPath, ".pdf", 1));
+
+            // A missing file yields the declared extension — the reader then fails with its own message rather
+            // than this one guessing.
+            Assert.Equal(".zip", ArchiveFormatSniffer.ReaderFormatFor(true, fixture.MissingPath, ".zip", 1));
+
+            // Memoized on (path, ticks), so the answer is stable and a second ask costs nothing.
+            Assert.Equal(".epub", ArchiveFormatSniffer.ReaderFormatFor(true, fixture.EpubAsZipPath, ".zip", 1));
+        }
+
         /// <summary>A <c>.rar</c> reaches the reader that can open RAR, instead of no reader at all.</summary>
         [Fact]
         public void A_rar_reaches_a_reader()
@@ -522,6 +551,65 @@ namespace MovieTheater.Books.Tests
             Assert.NotNull(result.Error);
             // The ARCHIVE was the problem, so this is the case that may set the broken flag.
             Assert.True(result.ArchiveUnreadable);
+        }
+
+        [Fact]
+        public void The_mobi_reader_claims_azw3_because_kf8_is_the_same_palmdb_container()
+        {
+            var reader = new MobiArchiveReader();
+            Assert.True(reader.CanHandle(".mobi"));
+            Assert.True(reader.CanHandle(".azw3"));
+            Assert.True(reader.CanHandle(".AZW3"));
+            Assert.False(reader.CanHandle(".epub"));
+        }
+
+        [Fact]
+        public async Task A_book_with_no_usable_cover_gets_a_generated_jacket_and_a_comic_does_not()
+        {
+            using var scratch = new ArchiveFixture();
+            var thumbnails = scratch.Thumbnails();
+
+            // No placeholder offered — the comic behaviour, unchanged: a failure stays a failure.
+            var comic = await thumbnails.TryGetOrGenerateAsync(
+                ArchiveFixture.MissingItemId, scratch.MissingPath, ".cbz");
+            Assert.False(comic.Success);
+            Assert.False(comic.Placeholder);
+
+            // The same unreadable file, offered a jacket — what a BOOK gets.
+            var book = await thumbnails.TryGetOrGenerateAsync(
+                ArchiveFixture.MissingItemId, scratch.MissingPath, ".cbz",
+                new PlaceholderCover("A Book With No Cover", "Nobody At All"));
+            Assert.True(book.Success, book.Error);
+            Assert.True(book.Placeholder);
+            Assert.True(File.Exists(book.Path!));
+
+            // The reason survives on the result — the caller decides what to record — and the file is still
+            // reported as unreadable, which is what keeps ItemState.IsBroken honest.
+            Assert.NotNull(book.Error);
+            Assert.True(book.ArchiveUnreadable);
+
+            using var written = Image.Load(book.Path!);
+            Assert.True(written.Width <= ThumbnailService.TargetWidth);
+            Assert.True(written.Height <= ThumbnailService.TargetHeight);
+        }
+
+        [Fact]
+        public async Task An_extension_no_reader_claims_still_gets_a_jacket_when_one_is_offered()
+        {
+            using var scratch = new ArchiveFixture();
+            var path = Path.Combine(scratch.WorkDir, "mystery.xyz");
+            await File.WriteAllTextAsync(path, "not a book this codebase can read");
+
+            var withoutJacket = await scratch.Thumbnails().TryGetOrGenerateAsync(4242, path, ".xyz");
+            Assert.False(withoutJacket.Success);
+            Assert.Contains("No archive reader", withoutJacket.Error);
+
+            var withJacket = await scratch.Thumbnails().TryGetOrGenerateAsync(
+                4243, path, ".xyz", new PlaceholderCover("Mystery", null));
+            Assert.True(withJacket.Success, withJacket.Error);
+            Assert.True(withJacket.Placeholder);
+            // "No reader" says nothing about the bytes, so this must NOT be reported as a broken archive.
+            Assert.False(withJacket.ArchiveUnreadable);
         }
 
         // ── the thumbnail job ─────────────────────────────────────────────────────────────────────────────

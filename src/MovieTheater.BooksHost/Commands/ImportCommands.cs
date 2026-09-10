@@ -29,6 +29,12 @@ namespace MovieTheater.BooksHost.Commands
         [CommandOption("max-batches", Description = "Stop after this many batches (0 = until done).")] public int MaxBatches { get; set; }
         [CommandOption("apply", Description = "Actually write. Without it the verb only reports what would match.")] public bool Apply { get; set; }
         [CommandOption("reset", Description = "Forget the saved cursor and start from the first book.")] public bool Reset { get; set; }
+        // An UPGRADE has to drop the item's cached thumbnail, or books-thumbs — which only generates what is
+        // MISSING — skips it forever and the typeset title card outlives the cover it was standing in for.
+        // ThumbnailService.Delete is a no-op when no cache dir is configured, so without this the drop is
+        // SILENT: the run still prints "their cached thumbnail was dropped" and nothing is dropped. That is
+        // what happened to 23,575 books on 2026-09-09.
+        [CommandOption("cache-dir", Description = "Thumbnail cache root (default Books:CacheDir). Needed so an upgrade can drop the stale cover.")] public string? CacheDir { get; set; }
 
         public async ValueTask ExecuteAsync(IConsole console)
         {
@@ -37,7 +43,7 @@ namespace MovieTheater.BooksHost.Commands
             if (!File.Exists(metadata)) throw new CommandException($"Calibre metadata.db not found at {metadata}", 2);
             var link = LinkPath ?? config.CalibreLinkPath;
 
-            await using var provider = CommandServices.Build(config, dbPath);
+            await using var provider = CommandServices.Build(config, dbPath, CacheDir);
             var service = provider.GetRequiredService<CalibreImportService>();
             await using var scope = provider.CreateAsyncScope();
             var db = scope.ServiceProvider.GetRequiredService<BooksDb>();
@@ -45,10 +51,12 @@ namespace MovieTheater.BooksHost.Commands
             if (Reset) await service.ResetAsync(db);
 
             long matched = 0, unmatched = 0, filled = 0, repathed = 0, foldersFixed = 0, dupesMerged = 0, collisions = 0, unbroken = 0, retired = 0;
+            long upgraded = 0, upgradesMissing = 0;
             string? retireRefused = null;
             var reachedEndOfCalibre = false;
             var batches = 0;
             long? after = null; // dry run: the cursor lives here, not in the store
+            var thumbsConfigured = !string.IsNullOrWhiteSpace(CacheDir ?? config.CacheDir);
             await console.Output.WriteLineAsync($"metadata: {metadata}" + Environment.NewLine + $"library root: {LibraryRoot ?? Path.GetDirectoryName(Path.GetFullPath(metadata))}  (paths are composed under this and compared with Item.Path)");
             while (MaxBatches <= 0 || batches < MaxBatches)
             {
@@ -61,6 +69,7 @@ namespace MovieTheater.BooksHost.Commands
                     matched += r.Matched; unmatched += r.Unmatched; filled += r.Filled;
                     repathed += r.Repathed; foldersFixed += r.FoldersFixed;
                     dupesMerged += r.DuplicatesMerged; collisions += r.Collisions; unbroken += r.Unbroken;
+                    upgraded += r.Upgraded; upgradesMissing += r.UpgradesMissing;
                 }
                 // The retirement sweep runs ON the terminal batch — the one the accumulator above skips — so its
                 // counts are taken here, outside that guard, or they would be thrown away.
@@ -73,8 +82,21 @@ namespace MovieTheater.BooksHost.Commands
 
             await console.Output.WriteLineAsync(
                 $"done: matched {matched}, unmatched {unmatched}, filled {filled}, repathed {repathed}, folders-fixed {foldersFixed},"
-                + $" duplicates-merged {dupesMerged}, collisions {collisions}, unbroken {unbroken}, retired {retired} over {batches} batch(es)"
+                + $" duplicates-merged {dupesMerged}, collisions {collisions}, unbroken {unbroken}, retired {retired},"
+                + $" upgraded {upgraded} over {batches} batch(es)"
                 + (Apply ? "" : " (dry run — nothing written)"));
+            if (upgraded > 0)
+                await console.Output.WriteLineAsync(
+                    $"{upgraded} item(s) moved onto a better format the book now has (a converted EPUB beside an unreadable original)."
+                    + (thumbsConfigured
+                        ? " Run books-thumbs afterwards: their cached thumbnail was dropped so a real cover replaces the title card."
+                        : " WARNING: no thumbnail cache is configured (--cache-dir / Books:CacheDir), so their STALE title cards were NOT dropped."
+                          + " books-thumbs only generates what is MISSING and will skip every one of them. Delete those items' cached"
+                          + " thumbnails, or re-run with --cache-dir, before running books-thumbs."));
+            if (upgradesMissing > 0)
+                await console.Output.WriteLineAsync(
+                    $"NOTE: {upgradesMissing} book(s) advertise a better format that is NOT on the share — a phantom Calibre format row."
+                    + " Those items were left on the file they have.");
             if (retireRefused != null)
                 await console.Output.WriteLineAsync($"WARNING: the retirement sweep REFUSED to run — {retireRefused}");
             if (!reachedEndOfCalibre)

@@ -125,6 +125,52 @@ namespace MovieTheater.Books.Tests
         }
 
         [Fact]
+        public void AMergeCarriesTheJudgedContainmentFlagsOntoTheSurvivor()
+        {
+            using var f = Migrated();
+
+            // Same INPUT edit as the merge test above — "Doppelganger" (series 3, holding item 6) gains ComicVine
+            // volume 796, so it folds into Batman (series 2). Plus a containment judgement on its item: the row
+            // holds a RESTRICT foreign key to Series, so a merge that does not carry it fails the whole commit.
+            using (var w = f.Hot(dryRun: false))
+            {
+                w.Begin();
+                w.Upsert("SeriesKeyLink", new
+                {
+                    ParsedKey = "Doppelganger",
+                    Provider = Provider.Cv,
+                    ProviderKey = 796,
+                    Status = LinkStatus.Matched,
+                    Score = 100,
+                    AttemptCount = 1,
+                });
+                w.Exec(@"INSERT INTO ContainmentFlag (ItemId, SeriesId, Flag, Detail, Source, ReviewState, CreatedAt)
+                         VALUES (6, 3, 'label-ambiguous', 'collected edition or single issue?', 'model-pass', 'Pending', '2026-09-08 00:00:00')");
+                w.Commit();
+            }
+
+            Rebuild(f);
+
+            using var hot = f.Hot();
+            var survivor = hot.Scalar<long>("SELECT Id FROM Series WHERE CanonicalKey = 'cv:796'");
+            Assert.Equal(0, hot.Scalar<long>("SELECT count(*) FROM Series WHERE Id = 3"));
+
+            // The judgement is KEPT and now names the survivor — a containment fact is about the item, and the
+            // item moved. Nothing still names the deleted id.
+            Assert.Equal(1, hot.Scalar<long>("SELECT count(*) FROM ContainmentFlag WHERE ItemId = 6"));
+            Assert.Equal(survivor, hot.Scalar<long>("SELECT SeriesId FROM ContainmentFlag WHERE ItemId = 6"));
+            Assert.Equal("Pending", hot.Scalar<string>("SELECT ReviewState FROM ContainmentFlag WHERE ItemId = 6"));
+            Assert.Equal(0, hot.Scalar<long>("SELECT count(*) FROM ContainmentFlag WHERE SeriesId = 3"));
+
+            // and it is stable: a second pass writes the same thing
+            Assert.Equal(0, SeriesResolver.Diff(hot).Total);
+            var once = Snapshot(f);
+            Rebuild(f);
+            Assert.Equal(once, Snapshot(f));
+            Assert.Equal(survivor, hot.Scalar<long>("SELECT SeriesId FROM ContainmentFlag WHERE ItemId = 6"));
+        }
+
+        [Fact]
         public void ADisplayNameOverrideWinsTheNameAndSurvivesTheRebuild()
         {
             using var f = Migrated();

@@ -10,13 +10,14 @@ namespace MovieTheater.Books.Services
     public sealed record CalibreBatchResult(
         int Processed, long Remaining, long? NextCursor, int Matched, int Unmatched, int Filled,
         int Repathed = 0, int FoldersFixed = 0, int DuplicatesMerged = 0, int Collisions = 0, int Unbroken = 0,
-        int Retired = 0, string? RetireRefused = null)
+        int Retired = 0, string? RetireRefused = null, int Upgraded = 0, int UpgradesMissing = 0)
     {
         public bool Done => Processed == 0 || NextCursor == null;
         public override string ToString() =>
             $"{{ processed: {Processed}, remaining: {Remaining}, nextCursor: \"{NextCursor}\", unmatched: {Unmatched} }}"
             + $"  [matched: {Matched}, filled: {Filled}, repathed: {Repathed}, folders-fixed: {FoldersFixed}, "
-            + $"duplicates-merged: {DuplicatesMerged}, collisions: {Collisions}, unbroken: {Unbroken}, retired: {Retired}]"
+            + $"duplicates-merged: {DuplicatesMerged}, collisions: {Collisions}, unbroken: {Unbroken}, retired: {Retired}, "
+            + $"upgraded: {Upgraded}, upgrades-missing: {UpgradesMissing}]"
             + (RetireRefused == null ? "" : $"  [retire REFUSED: {RetireRefused}]");
     }
 
@@ -62,7 +63,27 @@ namespace MovieTheater.Books.Services
         public const int DefaultBatchSize = 500;
 
         private readonly ILogger<CalibreImportService> logger;
-        public CalibreImportService(ILogger<CalibreImportService> logger) => this.logger = logger;
+        /// <summary>
+        /// <paramref name="files"/> is the FORMAT-UPGRADE probe's only reach outside the database — the same
+        /// seam <see cref="LibraryScanner"/> uses, so a test can drive an upgrade without a share. Everything
+        /// else this service does is bookkeeping between Calibre's <c>metadata.db</c> and the catalog.
+        ///
+        /// <para><paramref name="thumbnails"/> is used for ONE thing: dropping the cached thumbnail of an item
+        /// that has just been upgraded onto a different file. Optional, so a test — and any caller with no
+        /// thumbnail cache configured — is unaffected.</para>
+        /// </summary>
+        public CalibreImportService(
+            ILogger<CalibreImportService> logger,
+            LibraryScanner.IFileSystem? files = null,
+            ThumbnailService? thumbnails = null)
+        {
+            this.logger = logger;
+            this.files = files ?? LibraryScanner.PhysicalFileSystem.Instance;
+            this.thumbnails = thumbnails;
+        }
+
+        private readonly LibraryScanner.IFileSystem files;
+        private readonly ThumbnailService? thumbnails;
 
         /// <summary>One row of the standalone's <c>calibre_link.json</c> — the record of which item is which book.</summary>
         public sealed record Link(int ComicId, int CalibreId);
@@ -195,6 +216,7 @@ FROM books b WHERE b.id > $after ORDER BY b.id LIMIT $n";
                 .ToDictionaryAsync(i => i.Path, StringComparer.OrdinalIgnoreCase, ct);
 
             int matched = 0, unmatched = 0, filled = 0, repathed = 0, foldersFixed = 0, dupesMerged = 0, collisions = 0, unbroken = 0;
+            int upgraded = 0, upgradesMissing = 0;
             // Folders emptied by a re-path are only PROVABLY empty once the batch's moves are saved, so the
             // candidates are collected here and swept after SaveChanges — never deleted on a guess.
             var huskCandidates = new HashSet<int>();
@@ -211,12 +233,50 @@ FROM books b WHERE b.id > $after ORDER BY b.id LIMIT $n";
                 var needsRepath = matchedBy != MatchedBy.Path && candidates.Count > 0
                     && !candidates.Any(p => string.Equals(p, item.Path, StringComparison.OrdinalIgnoreCase));
 
-                if (!apply) { filled++; if (needsRepath) repathed++; continue; }
+                // A FORMAT UPGRADE: the item sits on a real file, but Calibre now holds a format this site reads
+                // BETTER (see FormatRank). That is what a converted book looks like from here — the unreadable
+                // original is still on the share beside its new EPUB, deliberately, so the item has to be told
+                // which of the two it is. Without this the next scan indexes the EPUB as a SECOND item and the
+                // pair splits one book's reading position, marks, insights and series link in half.
+                //
+                // Existence is checked because a format row can outlive its file (the library carries a few
+                // phantom rows on early ids), and re-pointing a live item at a file that is not there would
+                // trade an unreadable book for a missing one. It is one stat per upgrade, once — a settled
+                // library takes this branch for nothing.
+                var better = !needsRepath && candidates.Count > 0
+                             && FormatRank(Path.GetExtension(candidates[0])) < FormatRank(item.Extension)
+                    ? candidates[0] : null;
+                var needsUpgrade = better != null
+                    && !string.Equals(better, item.Path, StringComparison.OrdinalIgnoreCase);
+                if (needsUpgrade && !files.FileExists(better!)) { needsUpgrade = false; upgradesMissing++; }
 
-                if (needsRepath)
+                if (!apply) { filled++; if (needsRepath) repathed++; if (needsUpgrade) upgraded++; continue; }
+
+                if (needsRepath || needsUpgrade)
                 {
-                    var outcome = await RepathAsync(db, item, candidates, huskCandidates, ct);
-                    if (outcome.Repathed) repathed++;
+                    var outcome = await RepathAsync(db, item, candidates, huskCandidates, preferBest: needsUpgrade, ct);
+                    if (outcome.Repathed)
+                    {
+                        if (needsUpgrade)
+                        {
+                            upgraded++;
+                            // THE CACHED THUMBNAIL NOW DESCRIBES THE WRONG FILE, so it is deleted here.
+                            //
+                            // `books-thumbs` generates what is MISSING and skips an item whose thumbnail exists —
+                            // and for an unreadable book that thumbnail is the typeset title card the job wrote
+                            // precisely because no artwork could be found. Leaving it would mean 28,500 books
+                            // that now HAVE a real cover keeping their placeholder for good, since the one job
+                            // that would replace it is the one that skips them. Delete-then-generate-missing is
+                            // the documented way to rebuild a thumbnail (ThumbnailJob has no "regenerate all"
+                            // mode by design), and this is the moment we know the source changed.
+                            //
+                            // Only on an UPGRADE. A plain re-path follows a renamed folder to the SAME bytes,
+                            // where the thumbnail is still correct and throwing it away would cost a re-decode
+                            // of every book Calibre ever renames.
+                            thumbnails?.Delete(item.Id);
+                        }
+                        else repathed++;
+                    }
                     foldersFixed += outcome.FoldersFixed;
                     dupesMerged += outcome.DuplicatesMerged;
                     collisions += outcome.Collisions;
@@ -267,9 +327,10 @@ FROM books b WHERE b.id > $after ORDER BY b.id LIMIT $n";
 
             var remaining = Scalar(calibre, "SELECT count(*) FROM books WHERE id > " + nextCursor);
             logger.LogInformation(
-                "calibre batch: processed {N}, matched {Matched}, unmatched {Unmatched}, repathed {Repathed}, merged {Merged}, collisions {Collisions}, remaining {Remaining}",
-                books.Count, matched, unmatched, repathed, dupesMerged, collisions, remaining);
-            return new CalibreBatchResult(books.Count, remaining, nextCursor, matched, unmatched, filled, repathed, foldersFixed, dupesMerged, collisions, unbroken);
+                "calibre batch: processed {N}, matched {Matched}, unmatched {Unmatched}, repathed {Repathed}, upgraded {Upgraded}, merged {Merged}, collisions {Collisions}, remaining {Remaining}",
+                books.Count, matched, unmatched, repathed, upgraded, dupesMerged, collisions, remaining);
+            return new CalibreBatchResult(books.Count, remaining, nextCursor, matched, unmatched, filled, repathed, foldersFixed, dupesMerged, collisions, unbroken,
+                Upgraded: upgraded, UpgradesMissing: upgradesMissing);
         }
 
         /// <summary>
@@ -337,11 +398,17 @@ FROM books b WHERE b.id > $after ORDER BY b.id LIMIT $n";
         /// candidates and never gets here.</para>
         /// </summary>
         private async Task<RepathOutcome> RepathAsync(
-            BooksDb db, Item item, IReadOnlyList<string> candidates, HashSet<int> huskCandidates, CancellationToken ct)
+            BooksDb db, Item item, IReadOnlyList<string> candidates, HashSet<int> huskCandidates,
+            bool preferBest, CancellationToken ct)
         {
-            var chosen = candidates.FirstOrDefault(p =>
-                             string.Equals(Path.GetExtension(p), item.Extension, StringComparison.OrdinalIgnoreCase))
-                         ?? candidates[0];
+            // A re-path keeps the item on ITS OWN format — Calibre renamed a folder, it did not change what this
+            // item is. An UPGRADE is the opposite move and says so: take the best format the book now has
+            // (candidates are ordered by FormatRank), which is the whole point of the call.
+            var chosen = preferBest
+                ? candidates[0]
+                : candidates.FirstOrDefault(p =>
+                      string.Equals(Path.GetExtension(p), item.Extension, StringComparison.OrdinalIgnoreCase))
+                  ?? candidates[0];
 
             // Clear the target BEFORE anything else moves, so this item's own pending Path write is never the
             // thing that has to be un-done. `IX_Item_Path` is a BINARY unique index (the column carries no
@@ -763,17 +830,51 @@ FROM books b WHERE b.id > $after ORDER BY b.id LIMIT $n";
         public static string? ResolvePath(string libraryRoot, CalibreBook book) => ResolvePaths(libraryRoot, book).FirstOrDefault();
 
         /// <summary>
-        /// One candidate path per format Calibre holds for the book. A book with a PDF and an EPUB is two files on
-        /// the share, and the catalog may hold either (or both, as separate items) - the first data row is not
-        /// enough (that is how the 2026-08-26 import matched 0 books by path).
+        /// One candidate path per format Calibre holds for the book, BEST FORMAT FIRST. A book with a PDF and an
+        /// EPUB is two files on the share, and the catalog may hold either (or both, as separate items) - the
+        /// first data row is not enough (that is how the 2026-08-26 import matched 0 books by path).
+        ///
+        /// <para>The order is <see cref="FormatRank"/>'s, not Calibre's, because <c>candidates[0]</c> is what a
+        /// re-path falls back to and what a format UPGRADE moves to. Calibre's own order is its <c>data</c> row
+        /// order — an accident of which format was added first.</para>
         /// </summary>
         public static IReadOnlyList<string> ResolvePaths(string libraryRoot, CalibreBook book)
         {
             if (string.IsNullOrWhiteSpace(book.RelPath) || string.IsNullOrWhiteSpace(book.FileName)) return Array.Empty<string>();
             var dir = Path.Combine(libraryRoot, book.RelPath.Replace('/', Path.DirectorySeparatorChar));
             var formats = (book.Formats ?? "epub").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            return formats.Select(f => Path.Combine(dir, book.FileName + "." + f)).ToList();
+            return formats
+                .Select(f => Path.Combine(dir, book.FileName + "." + f.ToLowerInvariant()))
+                .OrderBy(p => FormatRank(Path.GetExtension(p)))
+                .ToList();
         }
+
+        /// <summary>
+        /// <b>How well this site can READ a format</b>, lowest is best. It exists so that one Calibre book stays
+        /// ONE catalog item sitting on the best file the book has.
+        ///
+        /// <para>Calibre keeps every format of a book side by side in one folder, so converting the library's
+        /// unreadable containers to EPUB adds a second file next to each original rather than replacing it (the
+        /// originals are kept — nothing is ever deleted from the share). Without a preference the scanner would
+        /// then index BOTH and the library would grow ~28,500 duplicate rows, each pair splitting the reader's
+        /// position, marks, insights and series link between a readable copy and an unreadable one.</para>
+        ///
+        /// <para>The ranking is by READER SURFACE, not by fidelity: EPUB is the one real prose reader; PDF and
+        /// the comic archives are true page images on the canvas; AZW3/MOBI render only greeked pseudo-pages;
+        /// <c>.zip</c>/<c>.rar</c> are unnamed containers that have to be sniffed; anything else has no reader at
+        /// all and ranks last, so it can only ever be moved AWAY from.</para>
+        /// </summary>
+        public static int FormatRank(string? extension) => (extension ?? "").ToLowerInvariant() switch
+        {
+            ".epub" => 0,
+            ".pdf" => 1,
+            ".cbz" or ".cbr" or ".cb7" or ".cbt" => 2,
+            ".azw3" => 3,
+            ".mobi" => 4,
+            ".zip" => 5,
+            ".rar" or ".7z" => 6,
+            _ => 7,
+        };
 
         private static string? Blank(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
 

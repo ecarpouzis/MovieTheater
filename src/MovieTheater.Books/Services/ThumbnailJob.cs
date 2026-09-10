@@ -7,7 +7,8 @@ namespace MovieTheater.Books.Services
     /// <summary>What one batch did. This is the whole observability contract: a caller prints it, accumulates it,
     /// and stops when <see cref="Remaining"/> hits zero or <see cref="Processed"/> stops moving.</summary>
     public sealed record ThumbnailBatchResult(
-        int Processed, long Remaining, long? NextCursor, int Generated, int Skipped, int Failed, int ErrorsCleared = 0)
+        int Processed, long Remaining, long? NextCursor, int Generated, int Skipped, int Failed,
+        int ErrorsCleared = 0, int Placeholders = 0)
     {
         /// <summary>A batch that moved no cursor is the end of the run (or a defect) — either way, stop.</summary>
         public bool Done => Processed == 0 || NextCursor == null;
@@ -46,6 +47,7 @@ namespace MovieTheater.Books.Services
         public const string SkippedKey = "books:thumbs:skipped";
         public const string FailedKey = "books:thumbs:failed";
         public const string ClearedKey = "books:thumbs:cleared";
+        public const string PlaceholdersKey = "books:thumbs:placeholders";
         public const string StartedAtKey = "books:thumbs:startedAt";
 
         public const int DefaultBatchSize = 200;
@@ -101,7 +103,20 @@ namespace MovieTheater.Books.Services
                 .Where(i => !i.IsExcluded && i.Id > cursor)
                 .OrderBy(i => i.Id)
                 .Take(batchSize)
-                .Select(i => new { i.Id, i.Path, i.Extension, i.FileSize, i.FileModifiedAt })
+                .Select(i => new
+                {
+                    i.Id,
+                    i.Path,
+                    i.Extension,
+                    i.FileSize,
+                    i.FileModifiedAt,
+                    i.Kind,
+                    // What a generated jacket gets typeset with, when it comes to that. ResolvedTitle is the
+                    // Calibre/embedded title where there is one and the file name where there is not, which is
+                    // the same ladder the card in the grid shows.
+                    Title = i.ResolvedTitle ?? i.Title,
+                    Author = i.ResolvedCreatorsCsv,
+                })
                 .ToListAsync(ct);
 
             if (batch.Count == 0)
@@ -111,7 +126,7 @@ namespace MovieTheater.Books.Services
                 return new ThumbnailBatchResult(0, 0, null, 0, 0, 0);
             }
 
-            int generated = 0, skipped = 0, failed = 0, cleared = 0;
+            int generated = 0, skipped = 0, failed = 0, cleared = 0, placeholders = 0;
             var states = new Dictionary<int, ItemState>();
 
             // The STALE errors in this batch, pre-loaded in ONE indexed range read.
@@ -158,14 +173,32 @@ namespace MovieTheater.Books.Services
                     continue;
                 }
 
-                var result = await thumbnails.TryGetOrGenerateAsync(item.Id, item.Path, item.Extension);
+                // ONLY BOOKS opt in to a generated jacket. A comic that will not open is a defect to chase — a
+                // plausible cover over it would hide the defect — but a prose book in a text-only container
+                // (a .rar of .txt/.rtf/.html, or a .mobi whose embedded JPEG is a variant ImageSharp cannot
+                // decode) has no artwork to find and never will, so a title card is the honest best answer.
+                var placeholder = item.Kind == ItemKind.Book
+                    ? new PlaceholderCover(item.Title, item.Author)
+                    : null;
+
+                var result = await thumbnails.TryGetOrGenerateAsync(item.Id, item.Path, item.Extension, placeholder);
                 var state = await LoadOrCreateStateAsync(db, states, item.Id, ct);
                 state.ThumbnailCheckedAt = DateTime.UtcNow;
 
                 if (result.Success)
                 {
-                    generated++;
+                    if (result.Placeholder) placeholders++; else generated++;
+
+                    // A jacket is a real thumbnail, so no ThumbnailError stands against it — recording one would
+                    // put every text-only book into /admin/broken as a false "broken" tag. Whether the FILE is
+                    // broken is answered below, on its own flag, which nothing retracts.
                     state.ThumbnailError = null;
+                    if (result.Placeholder && result.ArchiveUnreadable)
+                    {
+                        state.IsBroken = true;
+                        state.BrokenReason = Truncate(result.Error ?? "unknown error", 500);
+                        state.BrokenCheckedAt = state.ThumbnailCheckedAt;
+                    }
                     if (result.Width is int w && result.Height is int h)
                     {
                         state.CoverWidth = w;
@@ -198,6 +231,7 @@ namespace MovieTheater.Books.Services
             await AddLongAsync(db, SkippedKey, skipped, ct);
             await AddLongAsync(db, FailedKey, failed, ct);
             await AddLongAsync(db, ClearedKey, cleared, ct);
+            await AddLongAsync(db, PlaceholdersKey, placeholders, ct);
             if (await ReadRowAsync(db, StartedAtKey, ct) == null)
                 await WriteAsync(db, StartedAtKey, DateTime.UtcNow.ToString("O"), ct);
 
@@ -207,10 +241,11 @@ namespace MovieTheater.Books.Services
 
             var remaining = await db.Items.AsNoTracking().CountAsync(i => !i.IsExcluded && i.Id > nextCursor, ct);
             logger.LogInformation(
-                "thumbs batch: processed {Processed}, generated {Generated}, skipped {Skipped}, failed {Failed}, errors-cleared {Cleared}, remaining {Remaining}, nextCursor {Cursor}",
-                batch.Count, generated, skipped, failed, cleared, remaining, nextCursor);
+                "thumbs batch: processed {Processed}, generated {Generated}, jackets {Placeholders}, skipped {Skipped}, failed {Failed}, errors-cleared {Cleared}, remaining {Remaining}, nextCursor {Cursor}",
+                batch.Count, generated, placeholders, skipped, failed, cleared, remaining, nextCursor);
 
-            return new ThumbnailBatchResult(batch.Count, remaining, nextCursor, generated, skipped, failed, cleared);
+            return new ThumbnailBatchResult(
+                batch.Count, remaining, nextCursor, generated, skipped, failed, cleared, placeholders);
         }
 
         public static string FileSignature(long fileSize, DateTime? modifiedAt) =>

@@ -597,7 +597,7 @@ namespace MovieTheater.Books.Controllers
         {
             using var hot = new TargetWriter(dbPath, MappingContract.Load(), dryRun: false);
             var counts = LegsTagFoldJob.RunAll(hot, legsPath, _ => { });
-            return new JobProgress(counts.External + counts.Mu + counts.Gcd, 0, null, 0, counts.ToString());
+            return new JobProgress(counts.External + counts.ExternalBooks + counts.Mu + counts.Gcd, 0, null, 0, counts.ToString());
         }
 
         private static JobProgress DrainCollectedEditions(string dbPath, string legsPath, int batchSize)

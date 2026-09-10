@@ -1,0 +1,326 @@
+# B-007 — tier B: 150 shelves in five blocks — ComiXology Originals singletons, the CBLDF giveaways, Comico,
+# ComixTribe, the whole CrossGen line, DC Black Label trades, the DC Ink / DC Zoom original graphic novels, and a
+# tail of DC event read-order folders. The second leg was found for most of them by re-probing the GCD dump with
+# a spelling the packet did not try: GCD titles Comico's "Comico Primer" plainly "Primer" (14288), CrossGen's
+# Space Ace is in the dump under publisher CrossGen (25051) while ComicVine's "Space Ace" 2003 is Arcana's
+# 2009-2010 book, and "Catwoman - Soulstealer (The Graphic Novel)" is indexed with the parenthesis (172862).
+# Three conventions carried the DC blocks: (1) on a Black Label trade shelf the RUN wins and the count-1 record
+# a year later is the trade, which gets the book's own I line with its ISBN — the stored CV link was that trade
+# record on seven shelves (F wrong-cv-link); (2) every DC Ink / DC Zoom OGN has exactly one CV count-1 volume and
+# one GCD count-1 series whose page count is 6-20 pages above our rip, which is the ad/blank-page difference, not
+# a different book; (3) the DC event read-order folders hold a second rip of an issue that also lives elsewhere —
+# residue, never a second run. GCD splits annuals into their own series where ComicVine keeps them in the ongoing
+# (Justice League America Annual 3991/4368, Green Lantern Annual 4399/4740), and that is how the two Green Lantern
+# v3 annuals on S64825 were pulled off a German Dino Verlag stored link.
+
+S 21100 cv=159451 gcd=176452 0.9 | a ComiXology Originals English digital edition neither provider indexes: the only comic either holds by this name in this window is the same 2021 graphic biography in translation — CV 159451 (La otra h, Spanish, 2022) and GCD 176452 (Knesebeck, German, 2021, the same year as our 122pp file); GCD's other row 219483 is the French Des ronds dans l'O edition (ISBN 978-2-374-18123-3). Linked under the wrong-language ruling; no English record exists
+N 21100 the three provider rows are three language editions (es/de/fr) of one book — if the lead ever fetches the English ComiXology record, that is the one that belongs here
+
+S 21101 cv=128599 gcd=189388 0.9 | the ComiXology split: ComicVine indexes the digital original under the creator's own imprint (128599 "Virtually Yours" 2020, self published, 1 issue dated 2020-07-15, ComicInfo Publisher "Jeremy Holt Books") and GCD holds only Dark Horse's 2022 print repackaging (189388, 116 pages, ISBN 9781506726502) of the same book, our 112pp file
+I 11990 cv=778921 gcd=2431270 isbn=9781506726502 0.9 | the book's own records: CV issue 778921 is volume 128599's only issue (2020-07-15, the digital edition our file is) and GCD 2431270 is Dark Horse's 116-page print edition of it — one comic, two editions
+
+S 21161 cv=154070 gcd=- 0.9 | our single file is "Wag - The Collected Edition (2023)" at 146pp with ComicInfo Series "Wag (Comixology Originals)" / Publisher "Paranoid Schizoid", and CV 154070 "Wag" (Paranoid Schizoid 2023, 5 issues dated 2023-09 to 2024-01) is the digital serial it collects — the RUN wins over the collection, and the collected edition's own record is in neither provider
+F 21161 provider-missing | the GCD dump holds no "Wag" series at all — the ComiXology Originals shape where GCD only ever indexes a later print repackaging, and there is none
+
+S 21342 cv=140139 gcd=184129 0.9 | the ComiXology split again: CV 140139 "We Only Kill Each Other" (2021, Stephanie Phillips's own imprint, 5 chapters) is the digital serial our 121pp "COL ... v01 (2021)" collects, and GCD 184129 (Dark Horse, April 2022, 140 pages, ISBN 9781506728087) is the print repackaging of the same work — the two legs are one comic in two channels
+I 11992 cv=1120657 gcd=2393915 isbn=9781506728087 0.9 | the collected book's own records: CV issue 1120657 is the "TPB" issue of Dark Horse volume 165577 and GCD 2393915 is that same 140-page print collection; our file is its 2021 digital form
+
+R 3296 | three yearly CBLDF giveaway handbooks, and no record spans them: our files are the 2015 (16pp), 2016 (16pp) and 2017 (13pp) editions, while ComicVine files them as CV 84314 "CBLDF Banned Books Week Handbook" (2015, 1 issue, #0 dated 2015-09-30) and CV 94108 "CBLDF Presents: Banned Books Week Handbook" (2016, 2 issues numbered "2016" and "2017") — the Archie holiday-annual shape, one comic per year, with the year in the filename as the only selector; GCD indexes none of them
+F 3296 split-needed | proposed: item 11462 (2015) to CV 84314; items 11463 (2016) and 11464 (2017) to CV 94108, whose two issues are literally numbered by those years
+I 11462 cv=499113 gcd=- 0.9 | "CBLDF Banned Books Week Handbook (2015)" 16pp is CV issue 499113, the only issue of volume 84314, cover-dated 2015-09-30; GCD does not index the CBLDF giveaways
+I 11463 cv=549595 gcd=- 0.9 | "CBLDF Banned Books Week Handbook (2016)" 16pp is CV issue 549595, the issue numbered "2016" of volume 94108 (dated 2016-09-30)
+I 11464 cv=620245 gcd=- 0.9 | "CBLDF Banned Books Week Handbook (2017)" 13pp is CV issue 620245, the issue numbered "2017" of volume 94108 (dated 2017-08-31)
+
+S 14370 cv=65456 gcd=- 0.9 | CV 65456 is this exact title ("Raising A Reader! How Comics & Graphic Novels Can Help Your Kids Love To Read!", 2013, 1 issue) and our single 13pp file carries the same year; the 2014 CBLDF reprint is a different record (CV 73558 "CBLDF Presents Raising A Reader!") and the year in our filename is the selector
+F 14370 provider-missing | the GCD dump holds no CBLDF giveaway of this title in any year
+
+S 18189 cv=73164 gcd=113595 0.95 | CV 73164 (Image 2014, 1 issue, the "TPB" issue 450751) and GCD 113595 (Image, 2014, 232 pages, ISBN 978-1-60706-937-9) agree on publisher, year and a single book, and our file is a 226pp rip of that 232-page collection of the Liberty annuals
+I 11488 cv=450751 gcd=1692907 isbn=9781607069379 0.95 | the book's own records: CV issue 450751 ("TPB") of volume 73164 and GCD issue 1692907, 232 pages, both Image 2014
+
+S 19829 cv=51356 gcd=3757 0.9 | GCD 3757 "The True North" (Comic Legends Legal Defense Fund, Canada, 1988) is indexed at exactly our file's 68 pages, and CV 51356 is the same 1988 CLLDF book; the residue is CV's count of 2 — its second issue (734397, 1991) is True North II, which we do not hold
+I 11489 cv=351850 gcd=45480 0.9 | the anthology's own records: CV issue 351850 is volume 51356's 1988 issue and GCD 45480 is the 68-page 1988 book, the page count our file reproduces exactly
+
+S 4063 cv=21266 gcd=14288 0.95 | the dump names it plainly: GCD 14288 "Primer" (Comico 1982-1984, 6 issues at 40/36/36/44/44/44 pages) is our ladder 1-6 at 40/34/36/44/44/44 pages, page for page, and CV 21266 "Comico Primer" (Comico 1982, 6, cached #1-6) agrees on publisher, year and count
+N 4063 GCD drops the publisher prefix the covers carry, which is why the packet's lookups found nothing — probing "Primer" with year 1982 finds it
+
+S 11186 cv=3421 gcd=2952 0.9 | the RUN wins: our four "Mage - The Hero Discovered v1-v4" trades (118+98+93+106 = 415 pages) collect the fifteen 36-page issues of Comico's 1984 series, which is CV 3421 (Comico 1984, 15) and GCD 2952 "Mage" (Comico 1984-1986, 15); the cap is that the four-volume trade line our books belong to is not one of GCD's collected rows (3541/223800 are Donning's three 1987-88 volumes, 39039 is Image's eight)
+N 11186 the four books' own edition records are not identified — no four-volume Mage: The Hero Discovered collected line exists in either provider
+
+S 13504 cv=66625 gcd=- 0.9 | CV 66625 "Oxymoron" (ComixTribe 2013, 4 issues dated 2013-08 to 2013-11, each with the story titles our four files carry) is our complete ladder 1-4 over files dated 2013; GCD's only ComixTribe Oxymoron is 91835 "Oxymoron: The Loveliest Nightmare" (2015, 4), which ComicVine indexes separately as 83970 — a later series, not this one
+F 13504 provider-missing | the GCD dump has no row for the 2013 Oxymoron; taking its 2015 "Loveliest Nightmare" row would hand this shelf the sequel
+
+S 14904 cv=58582 gcd=- 0.9 | the shelf is ComixTribe's SCAM (CV 58582, 2013, 5 issues) and our one file is its Free Comic Book Day #0 — "SCAM 00 (of 05) (FCBD) (2014)" — which both providers index as its own record rather than as part of the run; the run itself has no GCD row
+F 14904 provider-missing | GCD holds the FCBD ashcan (81097) but no series for ComixTribe's five-issue Scam
+I 11993 cv=452074 gcd=1211720 0.95 | the book's own records: CV issue 452074 is #0 of volume 73588 "Scam: Crosswords" (ComixTribe, 2014-05-31) and GCD 1211720 is "Scam #0: Crosswords FCBD 2014" (May 2014, 32 pages) — the same giveaway our 18pp rip is
+
+S 17657 cv=34096 gcd=- 0.9 | CV 34096 "Tears of the Dragon" (ComixTribe 2010, 3 issues, cached #1-2) covers our two files numbered 001 and 002 and dated 2010, and no other provider record of that name exists at that publisher
+F 17657 provider-missing | the GCD dump holds no "Tears of the Dragon" series — the small-press ComixTribe gap
+
+S 337 cv=22741 gcd=11508 0.95 | CV 22741 (CrossGen 2004, 3, cached #1-3) and GCD 11508 "Abadazad" (CrossGen 2004-2004, 3) agree on publisher, year and count, and our ladder 1-3 is exactly those three issues; the Swedish and Finnish rows (23959, 157792) are rejected on publisher
+S 1202 cv=- gcd=10836 0.9 | GCD 10836 "Archard's Agents" (CrossGen 2003-2003) holds three issues ALL numbered 1, dated January 2003, November 2003 and April 2004 — the three one-shots our "v1 001", "v2 001" and "v3 001" files are, which is why one number names three files here; ComicVine mints a volume per book instead (25117, 28325, and 21976 "Deadly Dare"), so no single CV volume can carry the shelf
+N 1202 the three CV volumes are per-book: 25117 (Jan 2003) = v1, 28325 "The Case of the Puzzled Pugilist" (Nov 2003) = v2, 21976 "Archard's Agents: Deadly Dare" (Apr 2004) = v3; they are on the I lines rather than the S line because linking one would mislabel the other two
+I 11651 cv=148324 gcd=127894 0.9 | "Archard's Agents v1 001" (16pp) is CV volume 25117's only issue (2003-01-01) and GCD issue 127894, the January 2003 book of series 10836
+I 11652 cv=174409 gcd=167100 0.9 | "Archard's Agents v2 001" (22pp) is CV issue 174409 "The Case of the Puzzled Pugilist" (volume 28325, 2003-11-01) and GCD issue 167100, the November 2003 book
+I 11653 cv=132591 gcd=167101 0.9 | "Archard's Agents v3 001" (33pp) is CV issue 132591 "Deadly Dare" (volume 21976, 2004-04-01) and GCD issue 167101, the April 2004 book — the third of the three one-shots
+S 3143 cv=24070 gcd=10793 0.95 | CV 24070 "Brath" (CrossGen 2003, 15, cached #1-14) and GCD 10793 (CrossGen 2003-2004, 15) agree on publisher, years and count; our fifteen files are the #000 Prequel plus the complete ladder 1-14
+S 3837 cv=21268 gcd=10792 0.95 | GCD 10792 "Chimera" (CrossGen 2003-2003, 4) matches our four files, which name themselves "1 of 4" through "4 of 4" — the solicited length the filenames carry — and CV 21268 is the same 2003 CrossGen volume; the Fantagraphics, PictureBox and 5th Panel rows are other comics entirely
+S 4387 cv=24071 gcd=11952 0.95 | CV 24071 "Crossgen Primer" (CrossGen 2000, 1) and GCD 11952 "CrossGen Primer" (CrossGen with Gareb Shamus Enterprises, 2000, 1) are the same giveaway, and our shelf is that single 15pp file
+S 4388 cv=27897 gcd=161324 0.95 | CV 27897 "CrossGen Sampler" (CrossGen 2000, 1) and GCD 161324 (CrossGen 2000-2000, 1) agree on publisher, year and a single book, which is our one 33pp file
+S 4389 cv=27893 gcd=9972 0.95 | CV 27893 "CrossGenesis" (CrossGen 2000, 1) and GCD 9972 "Crossgenesis" (CrossGen 2000-2000, 1) agree on publisher, year and count; the German 111322 is Dino's translation, rejected on publisher
+S 4405 cv=27894 gcd=- 0.9 | CV 27894 "Crossgen Illustrated" (CrossGen 2001, 1) is our single 33pp file, and the same-publisher siblings in the dump (Primer 11952, Sampler 161324) show the dump does hold this line — it simply has no row for the Illustrated volume
+F 4405 provider-missing | no "CrossGen Illustrated" series exists in the GCD dump under any spelling probed
+S 4433 cv=9210 gcd=9964 0.95 | CV 9210 "Crux" (CrossGen 2001, cached #1-33) and GCD 9964 (CrossGen 2001-2004, 33) agree on publisher, span and count, and our ladder is a complete 1-33; the 3-issue CrossGen rows (65599, CV 140046) are the collected editions and the German 52192/111323 are Dino's
+S 5372 cv=22277 gcd=- 0.9 | CV 22277 "DemonWars: Eye for an Eye" (CrossGen 2003, 5, cached #1-5) is our complete ladder 1-5, filed as "DemonWars v2 - Eye for an Eye 001-005" in the CrossGen folder
+F 5372 provider-missing | the GCD dump's only DemonWars rows are Del Rey's 2007-2008 manga adaptations (65272, 234907, 234908); CrossGen's 2003 series is not indexed
+S 6060 cv=11958 gcd=12978 0.95 | CV 11958 "El Cazador" (CrossGen 2003, cached #1-6) and GCD 12978 (CrossGen 2003-2004, 6) agree on publisher, span and count, and our ladder 1-6 is the whole run
+S 6061 cv=32895 gcd=15169 0.95 | CV 32895 and GCD 15169 both record "El Cazador: The Bloody Ballad of Blackjack Tom" as a single 2004 CrossGen book, which is our one 24pp file — the one-shot spun off the run on S6060
+S 10430 cv=11959 gcd=12979 0.95 | CV 11959 (CrossGen 2004, 5, cached #1-5) and GCD 12979 "Kiss Kiss Bang Bang" (CrossGen 2004-2004, 5) agree on publisher, year and count, and our ladder 1-5 is complete
+S 11303 cv=21085 gcd=10860 0.95 | CV 21085 (CrossGen 2003, 5, cached #1-5) and GCD 10860 "Mark of Charon" (CrossGen 2003-2003, 5) agree on publisher, year and count; our ladder 1-5 is the whole mini
+S 11844 cv=27898 gcd=175383 0.95 | CV 27898 and GCD 175383 both record "Masters of the Universe Encyclopedia" as a single 2003 CrossGen book, and our one 37pp file is it — the encyclopedia one-shot, not part of the Image/MVCreations MOTU runs the candidate lists offer
+S 11823 cv=23085 gcd=62435 0.95 | CV 23085 and GCD 62435 both record "Masters of the Universe, Icons of Evil: Beastman" as a single 2003 book at Image/MVCreations, which is our one 39pp file; its three sibling one-shots are S11824-S11826
+S 11824 cv=23113 gcd=62434 0.95 | CV 23113 and GCD 62434 both record "Masters of the Universe, Icons of Evil: Mer-Man" as a single 2003 CrossGen book — our one 38pp file, one of four Icons of Evil one-shots in this folder
+S 11825 cv=24476 gcd=65586 0.95 | CV 24476 and GCD 65586 both record "Masters of the Universe, Icons of Evil: Trapjaw" as a single 2003 CrossGen book, which is our one 39pp file
+S 11826 cv=24477 gcd=14994 0.95 | CV 24477 and GCD 14994 both record "Masters of the Universe, Icons of Evil: Tri-Klops" as a single 2003 CrossGen book, which is our one 37pp file
+S 11828 cv=24475 gcd=65587 0.95 | CV 24475 (CrossGen 2003, 3, cached #1-3) and GCD 65587 "Masters of the Universe: Rise of the Snake Men" (CrossGen 2003-2004, 3) agree on publisher and count, and our ladder 1-3 is the whole mini
+S 11934 cv=9206 gcd=9960 0.95 | CV 9206 "Meridian" (CrossGen 2000, cached #1-44) and GCD 9960 (CrossGen 2000-2004, 44) agree on publisher, span and count, and our ladder 1-44 is complete; the French, Italian and German rows are translations
+S 12616 cv=9205 gcd=9959 0.95 | CV 9205 "Mystic" (CrossGen 2000, 43, cached #1-43) and GCD 9959 (CrossGen 2000-2003, 43) agree on publisher, span and count, and our ladder 1-43 is complete; the 44th file is the run's own 2024 omnibus, an edition of the same comic, which costs nothing and takes its own I line
+I 12015 cv=1068856 gcd=2654401 isbn=9781302958770 0.9 | "COL Mystic Omnibus (2024)" at 1059pp is Marvel's 2024 omnibus of this CrossGen run: CV issue 1068856 ("HC", volume 159640, 2024-09-05) and GCD issue 2654401 in series 214868 (2024, 1160 pages); the cap is GCD's second row 2654403, the direct-market ISBN variant of the same book
+S 12752 cv=9212 gcd=9966 0.95 | CV 9212 "Negation" (CrossGen 2002, cached #1-27) and GCD 9966 (CrossGen 2002-2004, 28) agree on publisher and span, and our 28 files are the #000 Prequel plus the complete ladder 1-27 — 28 books, GCD's count exactly
+S 12753 cv=38884 gcd=10608 0.95 | CV 38884 "Negation Lawbringer" (CrossGen 2002, 1, cached #1-1) and GCD 10608 "Negation: Lawbringer" (CrossGen 2002-2002, 1) are the same one-shot, which is our single 24pp file
+S 12754 cv=21299 gcd=11308 0.95 | CV 21299 "Negation War" (CrossGen 2004, 2, cached #1-2) and GCD 11308 (CrossGen 2004-2004, 2) agree on publisher, year and count, and our ladder 1-2 is the whole mini
+S 14727 cv=18992 gcd=29463 0.9 | the run changed publisher mid-stream, so ComicVine keeps one volume (18992 "Rob Zombie's Spookshow International", 2003, 9, cached #1-9 = our ladder) while GCD splits it in two: 15052 (CrossGen 2003, 3) and 29463 (MVCreations 2004, 6); the majority leg is 29463, and 3 + 6 = 9 is our count
+N 14727 the split is real, not a duplicate: GCD's CrossGen row 15052 holds #1-3 and its MVCreations row 29463 the remaining six
+S 14886 cv=9214 gcd=9968 0.95 | CV 9214 "Ruse" (CrossGen 2001, cached #1-26) and GCD 9968 (CrossGen 2001-2003, 26) agree on publisher, span and count; our 26 files are the ladder 1-26 under two capitalisations of the same "(Comics) - Ruse (NNN of 026)" rip name
+S 15077 cv=9217 gcd=9971 0.95 | CV 9217 and GCD 9971 both record "Saurians: Unnatural Selection" as a two-issue 2002 CrossGen series, which is our ladder 1-2
+S 15161 cv=9207 gcd=9961 0.95 | CV 9207 "Scion" (CrossGen 2000, 43, cached #1-43) and GCD 9961 (CrossGen 2000-2004, 43) agree on publisher, span and count, and our ladder 1-43 is complete
+S 9915 cv=21727 gcd=15335 0.9 | CV 21727 "John Carpenter's Snake Plissken Chronicles" (CrossGen 2002, 4, cached #1-4) is our complete ladder 1-4 and GCD 15335 is the same title at CrossGen in 2003-2004; the unexplained residue is GCD's count of 5 against ComicVine's 4 and our four files
+S 15848 cv=9215 gcd=9969 0.95 | CV 9215 "Sojourn" (CrossGen 2001, cached #1-34) and GCD 9969 (CrossGen 2001-2004, 35) agree on publisher and span, and our 35 files are the #000 Prequel plus the complete ladder 1-34 — GCD's 35 exactly
+S 15868 cv=21301 gcd=10794 0.95 | CV 21301 "Solus" (CrossGen 2003, 8, cached #1-8) and GCD 10794 (CrossGen 2003-2003, 8) agree on publisher, year and count, and our ladder 1-8 is complete
+S 15943 cv=- gcd=25051 0.9 | GCD 25051 "Space Ace" is CrossGen's own 2003 series — three issues dated September, September and November 2003 at 36 pages — which is our ladder 1-3 at 25/25/23 pages in the CrossGen folder; ComicVine's "Space Ace" 2003 (27895) is Arcana Studio's, and its six issues are dated 2009-2010, so it is a different comic
+F 15943 provider-missing | the local ComicVine rip holds no CrossGen Space Ace volume; the per-file link 58104 is a 2013 self-published book and 27895 is Arcana's 2009-2010 series
+S 18292 cv=11106 gcd=12039 0.95 | CV 11106 "Crossovers" (CrossGen 2003, 9) and GCD 12039 "The Crossovers" (CrossGen 2003-2003, 9) agree on publisher, year and count, and our ladder 1-9 is complete
+S 18579 cv=9209 gcd=9963 0.95 | CV 9209 "The First" (CrossGen 2000, 37, cached #1-37) and GCD 9963 (CrossGen 2000-2003, 37) agree on publisher, span and count, and our ladder 1-37 is complete
+S 19334 cv=9213 gcd=9967 0.95 | CV 9213 "The Path" (CrossGen 2002, 23, cached #1-23) and GCD 9967 (CrossGen 2002-2004, 24) agree on publisher and span, and our 24 files are the #000 Prequel plus the ladder 1-23 — GCD's 24 exactly
+S 19613 cv=11957 gcd=12977 0.95 | CV 11957 "The Silken Ghost" (CrossGen 2003, 5, cached #1-5) and GCD 12977 "Silken Ghost" (CrossGen 2003-2003, 5) agree on publisher, year and count, and our ladder 1-5 is complete
+S 21314 cv=9216 gcd=9970 0.95 | CV 9216 "Way of the Rat" (CrossGen 2002, 24, cached #1-24) and GCD 9970 (CrossGen 2002-2004, 24) agree on publisher, span and count, and our ladder 1-24 is complete; the count-1 rows (CV 64874, GCD 65595, 65596) are collected editions
+
+S 767 cv=115555 gcd=134584 0.9 | CV 115555 "All Star Superman (DC Black Label Edition)" (DC 2018, 1) and GCD 134584 "All-Star Superman" (DC, 2018, 308 pages, ISBN 978-1-4012-9083-2) are the same oversized 2018 reissue, and our file is a 298pp rip of it; the cap is that GCD's title drops the edition tag, so the pairing rests on the year, the publisher and the page count
+I 19396 cv=- gcd=1876464 isbn=9781401290832 0.9 | the book's own record: GCD issue 1876464, DC's 2018 308-page Black Label edition of All-Star Superman, which our 298pp file reproduces; ComicVine has not cached the volume's issue
+S 4662 cv=117177 gcd=160881 0.9 | CV 117177 "DC: The New Frontier (DC Black Label Edition)" (DC 2019, 1) and GCD 160881 "DC: The New Frontier" (DC, April 2019, 524 pages, ISBN 978-1-4012-9092-4) are the same 2019 Black Label reissue, and our file is a 500pp rip of it; GCD's other rows are the 2004 six-issue run (11864), the 2004-05 two-volume collection (23754) and the 2015 deluxe (110689)
+I 19456 cv=- gcd=2119663 isbn=9781401290924 0.9 | the book's own record: GCD issue 2119663, the April 2019 524-page Black Label edition; our file is its 500pp rip
+S 1183 cv=143435 gcd=185800 0.95 | the RUN wins: our single 162pp "COL Aquaman - Andromeda (2023)" collects DC's three-issue 2022 Black Label mini, which is CV 143435 (DC 2022, 3) and GCD 185800 (DC 2022-2022, 3) — the two legs agree on publisher, year and count, and ComicInfo says Series "Aquaman: Andromeda" / Volume "2022"
+I 19942 cv=1043290 gcd=2580779 isbn=9781779517333 0.95 | the trade's own records: CV issue 1043290 (volume 156536, DC 2023) and GCD issue 2580779 (2023, 176 pages) — the collected edition our file is
+S 1863 cv=122475 gcd=151431 0.95 | the RUN wins: our 188pp "COL Basketful of Heads (2020)" collects the seven-issue Hill House mini, CV 122475 (DC 2019, 7) and GCD 151431 (DC 2019-2020, 7), which agree on publisher, span and count; the count-1 rows a year later (CV 130124, GCD 163675) are this trade
+I 19943 cv=797684 gcd=2146405 isbn=9781779502971 0.95 | the trade's own records: CV issue 797684 (volume 130124, 2020-09-08) and GCD issue 2146405 (2020, 192 pages) — our 188pp file
+S 2187 cv=132336 gcd=167146 0.95 | CV 132336 "Batman/Catwoman" (DC 2020, 12) and GCD 167146 "Batman / Catwoman" (DC 2021-2022, 12) agree on publisher and a twelve-issue mini, our ladder 1-10 sits inside it over files dated 2021-2022, and all ten ComicInfo blocks say Series "Batman/Catwoman (2020-)" / Publisher "DC"; the per-file GCD link 175271 is ECC Ediciones' Spanish edition, rejected on publisher
+S 2222 cv=113690 gcd=129789 0.95 | the RUN wins: our 175pp "COL Batman - Damned (2019)" collects the three-issue 2018 Black Label mini, CV 113690 (DC 2018, 3) and GCD 129789 (DC 2018-2019, 3), which agree on publisher, span and count; ComicInfo says Series "Batman: Damned" / Volume "2018"
+I 19944 cv=717908 gcd=2012812 isbn=9781401291402 0.95 | the trade's own records: CV issue 717908 (volume 121065, 2019-09-04) and GCD issue 2012812 (2019, 184 pages) — the hardcover our 175pp file is
+S 2244 cv=119367 gcd=146019 0.95 | the RUN wins: our 180pp "COL Batman - Last Knight on Earth (2020)" collects the three-issue 2019 mini, CV 119367 (DC 2019, 3) and GCD 146019 (DC 2019-2020, 3), agreeing on publisher, span and count; ComicInfo says Volume "2019"
+I 19945 cv=745564 gcd=2100364 isbn=9781401294960 0.95 | the trade's own records: CV issue 745564 (volume 126259, 2020-04-07) and GCD issue 2100364 (2020, 192 pages)
+S 1991 cv=140524 gcd=179561 0.95 | the RUN wins: CV 140524 "Batman: One Dark Knight" (DC 2021, 3) and GCD 179561 (DC 2022-2022, 3) are the three-issue Black Label mini our 165pp collected file reproduces; the stored link was the trade record, not the run
+F 1991 wrong-cv-link | the stored CV 146569 "Batman: One Dark Knight" (2022, 1) is the collected edition — the count-1 record a year after the mini — and the run is CV 140524
+I 19946 cv=957927 gcd=2429927 isbn=9781779510280 0.95 | the trade's own records: CV issue 957927 (volume 146569, 2022-09-01) and GCD issue 2429927 (2022, 176 pages) — the book our file is
+S 2027 cv=139546 gcd=176786 0.95 | the RUN wins: our 161pp "COL Batman - The Imposter (2022)" collects the three-issue 2021 Black Label mini, CV 139546 (DC 2021, 3) and GCD 176786 (DC 2021-2021, 3), which agree on publisher, year and count
+I 19947 cv=908359 gcd=2353930 isbn=9781779514325 0.95 | the trade's own records: CV issue 908359 (volume 141697, 2022-02-23) and GCD issue 2353930 (2022, 176 pages)
+S 2036 cv=129774 gcd=163211 0.95 | the RUN wins: CV 129774 "Batman: Three Jokers" (DC 2020, 3) and GCD 163211 (DC 2020-2020, 3) are the three-issue Black Label mini our 162pp collected file reproduces; the stored link was the count-1 collected record
+F 2036 wrong-cv-link | the stored CV 131983 (2020, 1) is the collected hardcover, not the three-issue run — the same shape GCD shows as 166579 beside the run 163211
+I 19948 cv=818613 gcd=2163978 isbn=9781779500236 0.95 | the trade's own records: CV issue 818613 (volume 131983, 2020-11-17) and GCD issue 2163978 (2020, 168 pages); GCD's 2627169 is the later 2023 reprint of the same book
+S 2299 cv=104775 gcd=117217 0.95 | the RUN wins: both our files are the same 224pp "COL Batman - White Knight (2018)" trade, filed twice (once under the White Knight Universe folder, once under the Batman minis folder), and it collects the eight-issue 2017 mini — CV 104775 (DC 2017, 8) and GCD 117217 (DC 2017-2018, 8), agreeing on publisher, span and count
+I 19949 cv=686978 gcd=1854771 isbn=9781401279592 0.95 | the trade's own records: CV issue 686978 (volume 114046, 2018-10-03) and GCD issue 1854771 (2018, 236 pages) — our 224pp rip
+I 63959 cv=686978 gcd=1854771 isbn=9781401279592 0.95 | the second copy of the same trade, filed under the Batman miniseries folder: same records, same 224 pages
+S 1919 cv=120301 gcd=149018 0.95 | the RUN wins: our 275pp "COL Batman - Curse of the White Knight the Deluxe Edition (2022)" is judged #1-8 and collects the eight-issue 2019 sequel mini, CV 120301 (DC 2019, 8) and GCD 149018 (DC 2019-2020, 8), which agree on publisher, span and count
+I 19950 cv=- gcd=2266600 isbn=9781779512581 0.9 | the book's own record: GCD issue 2266600 in series 176592, the 276-page deluxe edition (2020 [December 2021]) whose page count our 275pp file reproduces; the standard 280-page collection is GCD 2147455 / CV 798847, a different printing
+S 2300 cv=122964 gcd=152841 0.95 | CV 122964 and GCD 152841 both record "Batman: White Knight Presents Von Freeze" as a single 2019/2020 DC book at 60 pages, which is our one 56pp file — a one-shot, not part of the eight-issue White Knight run
+I 19951 cv=728316 gcd=2039137 0.9 | the one-shot's own records: CV issue 728316 (volume 122964, 2020-01-01) and GCD issue 2039137 (60 pages); the cap is GCD's second record 2081352 for the same book, a cover variant
+S 2044 cv=131310 gcd=165283 0.95 | the RUN wins: our 168pp "COL Batman - White Knight Presents - Harley Quinn (2021)" collects the six-issue 2020 mini, CV 131310 (DC 2020, 6) and GCD 165283 (DC 2020-2021, 6), which agree on publisher, span and count
+I 19952 cv=864690 gcd=2235499 isbn=9781779510143 0.95 | the trade's own records: CV issue 864690 (volume 137155, 2021-06-29) and GCD issue 2235499 (2021, 176 pages)
+S 1911 cv=142034 gcd=183161 0.95 | the RUN wins: our 262pp "COL Batman - Beyond the White Knight (2023)" collects the eight-issue 2022 mini, CV 142034 (DC 2022, 8) and GCD 183161 (DC 2022-2023, 8), which agree on publisher, span and count
+I 19432 cv=- gcd=2544679 isbn=9781779518521 0.9 | the trade's own record: GCD issue 2544679 (2023, 272 pages), the collected edition our 262pp file is; ComicVine's matching count-1 volume 151346 has no cached issue
+S 2043 cv=150170 gcd=200157 0.95 | the RUN wins: our 160pp "COL Batman - White Knight Presents - Generation Joker (2024)" collects the six-issue 2023 mini, CV 150170 (DC 2023, 6) and GCD 200157 (DC 2023-2023, 6), which agree on publisher, year and count
+I 19954 cv=- gcd=2624590 isbn=9781779524904 0.9 | the trade's own record: GCD issue 2624590 (2024, 168 pages), the collected edition our 160pp file is
+S 18337 cv=130282 gcd=163898 0.95 | CV 130282 and GCD 163898 both record "Dark Knight Returns: The Golden Child: The Deluxe Edition" as a single 2020 DC book (88 pages), which is our one 81pp file; the 2019/2020 standard edition is a separate record (CV 123374, GCD 153504)
+I 19440 cv=798848 gcd=2147581 isbn=9781779503916 0.95 | the book's own records: CV issue 798848 (volume 130282, 2020-09-15) and GCD issue 2147581 (2020, 88 pages)
+S 4782 cv=124096 gcd=154352 0.95 | the RUN wins: our 160pp "COL Daphne Byrne (2020)" collects the six-issue Hill House mini, CV 124096 (DC 2020, 6) and GCD 154352 (DC 2020-2020, 6), which agree on publisher, year and count; the stored link was the collected record
+F 4782 wrong-cv-link | the stored CV 131616 "Daphne Byrne" (2020, 1) is the trade — the count-1 twin GCD also mints (165915) — not the six-issue run CV 124096
+I 19955 cv=815618 gcd=2160602 isbn=9781779504654 0.95 | the trade's own records: CV issue 815618 (volume 131616, 2020-11-03) and GCD issue 2160602 (2020, 168 pages)
+S 8333 cv=11051 gcd=11982 0.9 | the RUN wins: CV 11051 "Hard Time" (DC 2004, 12) and GCD 11982 (DC 2004-2005, 12) agree on publisher, span and count, and our file is "COL Hard Time - The Complete Series (2020)" at 459pp; the named residue is that this collection also carries Hard Time Season Two (CV 27553 / GCD 17486, 7 issues), so no single run record covers all 468 of its pages
+I 19957 cv=815619 gcd=2160603 isbn=9781779508218 0.95 | the collection's own records: CV issue 815619 (volume 131617 "Hard Time: The Complete Series", 2020-11-03) and GCD issue 2160603 (2020, 468 pages) — our 459pp file
+S 8734 cv=129997 gcd=163476 0.95 | the RUN wins: our 151pp "COL Hellblazer - Rise and Fall (2021)" collects the three-issue 2020 Black Label mini, CV 129997 (DC 2020, 3) and GCD 163476 (DC 2020-2021, 3), which agree on publisher, span and count
+I 19958 cv=845254 gcd=2218971 isbn=9781779504661 0.95 | the trade's own records: CV issue 845254 (volume 135656, 2021-04-27) and GCD issue 2218971 (2021, 160 pages)
+S 9952 cv=121889 gcd=150945 0.95 | the RUN wins: our 280pp "Joker - Harley - Criminal Sanity (2021)" collects the eight-issue Black Label mini, CV 121889 "Joker/Harley: Criminal Sanity" (DC 2019, 8) and GCD 150945 (DC 2019-2021, 8), which agree on publisher, span and count; the per-file CV link 138748 is the collected record
+I 19959 cv=883434 gcd=2260484 isbn=9781779512024 0.95 | the collection's own records: CV issue 883434 (volume 138748, 2021-09-06) and GCD issue 2260484 (2021, 312 pages) — our 280pp file
+S 9964 cv=122480 gcd=151448 0.95 | the RUN wins: our 145pp "COL Joker - Killer Smile (2020)" collects the three-issue 2019 Black Label mini, CV 122480 (DC 2019, 3) and GCD 151448 (DC 2019-2020, 3), which agree on publisher, span and count
+I 19960 cv=798853 gcd=2147582 isbn=9781779502698 0.95 | the trade's own records: CV issue 798853 (volume 130284, 2020-09-15) and GCD issue 2147582 (2020, 160 pages)
+S 9967 cv=127880 gcd=160885 0.95 | no issue run exists: Azzarello and Bermejo's Joker was published as a book, and CV 127880 "Joker: The Deluxe Edition" (DC 2020, 1) and GCD 160885 (DC 2020, 160 pages, ISBN 978-1-4012-9428-1) are that deluxe reissue, which our 151pp file is
+I 19961 cv=768243 gcd=2119624 isbn=9781401294281 0.95 | the book's own records: CV issue 768243 (volume 127880, 2020-06-16) and GCD issue 2119624 (2020, 160 pages)
+S 13912 cv=125116 gcd=156324 0.95 | the RUN wins: our 171pp "COL Plunge (2020)" collects the six-issue Hill House mini, CV 125116 (DC 2020, 6) and GCD 156324 (DC 2020-2020, 6), which agree on publisher, year and count; the stored link was the collected record
+F 13912 wrong-cv-link | the stored CV 131985 "Plunge" (2020, 1) is the trade, the count-1 twin of GCD 166582, not the six-issue run CV 125116
+I 19963 cv=- gcd=2163981 isbn=9781779506887 0.9 | the trade's own record: GCD issue 2163981 (2020, 176 pages), the collected edition our 171pp file is
+S 14550 cv=139669 gcd=176957 0.95 | the RUN wins: our 166pp "Refrigerator Full of Heads (2022)" collects the six-issue Hill House sequel mini, CV 139669 (DC 2021, 6) and GCD 176957 (DC 2021-2022, 6), which agree on publisher, span and count
+I 19964 cv=958002 gcd=2440338 isbn=9781779516909 0.95 | the trade's own records: CV issue 958002 (volume 146599, 2022-10-01) and GCD issue 2440338 (2022, 176 pages)
+S 14645 cv=34402 gcd=51696 0.9 | Matt Kindt's Revolver was published as a Vertigo original graphic novel, not a run: CV 34402 (DC 2010, 1) and GCD 51696 (DC 2010-2010, 1) are that book, and our file is DC's 2021 Black Label reissue of it (194pp), which GCD indexes separately as 170916
+I 19965 cv=- gcd=2210180 isbn=9781401222420 0.9 | the edition our file actually is: GCD issue 2210180 in series 170916, DC's 2021 196-page reissue of Revolver — the year in our filename and the page count both point here rather than at the 2010 first printing
+S 14831 cv=131090 gcd=164959 0.95 | the RUN wins: our 310pp "COL Rorschach (2022)" collects the twelve-issue Black Label maxi, CV 131090 (DC 2020, 12) and GCD 164959 (DC 2020-2021, 12), which agree on publisher, span and count
+I 19967 cv=899341 gcd=2286095 isbn=9781779512048 0.9 | the collection's own records: CV issue 899341 (volume 140550, 2021-12-24) and GCD issue 2286095 (2021, 320 pages); the cap is GCD's second collected row 194335 (2022, ISBN 978-1-77951-748-7), which our file's (2022) year could equally name
+S 17042 cv=138019 gcd=174593 0.95 | the RUN wins: our 159pp "COL Suicide Squad - Get Joker! (2022)" collects the three-issue 2021 Black Label mini, CV 138019 (DC 2021, 3) and GCD 174593 (DC 2021-2022, 3), which agree on publisher, span and count
+I 19968 cv=- gcd=2416195 isbn=9781779514257 0.9 | the trade's own record: GCD issue 2416195 (2022, 168 pages), the collected edition our 159pp file is
+S 17379 cv=140612 gcd=179785 0.95 | the RUN wins: our 146pp "COL Swamp Thing - Green Hell (2023)" collects the three-issue Black Label mini, CV 140612 (DC 2022, 3) and GCD 179785 (DC 2022-2023, 3), which agree on publisher, span and count
+I 19970 cv=- gcd=2559444 isbn=9781779517234 0.9 | the trade's own record: GCD issue 2559444 (2023, 168 pages), the collected edition our 146pp file is
+S 17398 cv=131615 gcd=165876 0.95 | the RUN wins: CV 131615 "Sweet Tooth: The Return" (DC 2020, 6) and GCD 165876 (DC 2021-2021, 6) are the six-issue mini our 142pp collected file reproduces; the stored link was the count-1 collected record
+F 17398 wrong-cv-link | the stored CV 138315 (2021, 1) is the trade — the twin of GCD 175171 — not the six-issue run CV 131615
+I 19971 cv=880302 gcd=2255181 isbn=9781779510327 0.95 | the trade's own records: CV issue 880302 (volume 138315, 2021-08-18) and GCD issue 2255181 (2021, 156 pages)
+S 18432 cv=122788 gcd=152525 0.95 | the RUN wins: CV 122788 "The Dollhouse Family" (DC 2019, 6) and GCD 152525 (DC 2020-2020, 6) are the six-issue Hill House mini our 160pp collected file reproduces; the stored link was the collected record
+F 18432 wrong-cv-link | the stored CV 131084 (2020, 1) is the trade, the twin of GCD 164956, not the six-issue run CV 122788
+I 19972 cv=809807 gcd=2154754 isbn=9781779504647 0.95 | the trade's own records: CV issue 809807 (volume 131084, 2020-10-13) and GCD issue 2154754 (2020, 168 pages)
+S 19466 cv=145673 gcd=191368 0.95 | the RUN wins: our 229pp "COL The Riddler - Year One (2023)" collects the six-issue 2022 Black Label mini, CV 145673 (DC 2022, 6) and GCD 191368 (DC 2022-2023, 6), which agree on publisher, span and count; ComicInfo says Volume "2022"
+I 19978 cv=1038281 gcd=2580866 isbn=9781779523068 0.95 | the trade's own records: CV issue 1038281 (volume 155689, 2023-11-01) and GCD issue 2580866 (2023, 240 pages)
+S 19521 cv=147197 gcd=194289 0.95 | the RUN wins: CV 147197 "The Sandman Universe: Dead Boy Detectives" (DC 2023, 6) and GCD 194289 (DC 2023-2023, 6) are the six-issue mini our 168pp file collects; the stored link was the count-1 collected record
+F 19521 wrong-cv-link | the stored CV 156760 (2023, 1) is the collected edition, the twin of GCD 205457, not the six-issue run CV 147197
+I 19979 cv=1044358 gcd=2576346 isbn=9781779523297 0.95 | the collection's own records: CV issue 1044358 (volume 156760, 2023-11-01) and GCD issue 2576346 (2023, 180 pages)
+S 19524 cv=142258 gcd=183619 0.95 | the RUN wins: our 172pp "COL The Sandman Universe - Nightmare Country (2023)" collects the six-issue 2022 mini, CV 142258 (DC 2022, 6) and GCD 183619 (DC 2022-2022, 6), which agree on publisher, year and count; ComicInfo says Volume "2022"
+I 19980 cv=- gcd=2514690 isbn=9781779518415 0.9 | the trade's own record: GCD issue 2514690 in series 198516 (2023, 192 pages), the collected edition our 172pp file is
+S 19522 cv=149389 gcd=198834 0.95 | the RUN wins: our 197pp "COL ... Nightmare Country - The Glass House (2024)" collects the six-issue 2023 sequel mini, CV 149389 (DC 2023, 6) and GCD 198834 (DC 2023-2024, 6), which agree on publisher, span and count
+I 19981 cv=1050668 gcd=2620122 isbn=9781779520722 0.95 | the trade's own records: CV issue 1050668 (volume 157537, 2024-04-03) and GCD issue 2620122 (2024, 216 pages)
+
+S 1781 cv=157536 gcd=210562 0.95 | CV 157536 "Bad Dream: A Dreamer Story" (DC 2024, 1) and GCD 210562 (DC 2024, 212 pages, ISBN 978-1-77951-045-7) are the same young-adult original graphic novel, and our single file is a 194pp rip of it
+I 19579 cv=1050665 gcd=2620123 isbn=9781779510457 0.95 | the book's own records: CV issue 1050665 (volume 157536) and GCD issue 2620123, DC's 2024 212-page OGN
+S 1847 cv=158470 gcd=212621 0.95 | CV 158470 "Barda" (DC 2024, 1) and GCD 212621 (DC 2024, 212 pages, ISBN 978-1-77951-113-3) are the same 2024 OGN, and our single file is a 207pp rip of it
+I 19580 cv=1059312 gcd=2634504 isbn=9781779511133 0.95 | the book's own records: CV issue 1059312 (volume 158470) and GCD issue 2634504, the 212-page 2024 book
+S 1850 cv=159106 gcd=212320 0.95 | CV 159106 "Barkham Asylum" (DC 2024, 1) and GCD 212320 (DC 2024, 164 pages, ISBN 978-1-77950-500-2) are the same 2024 OGN; our two files (149pp and 148pp) are two rips of that one book, filed once under DC Ink and once under the Batman one-shots folder
+I 19581 cv=1064972 gcd=2631987 isbn=9781779505002 0.95 | the book's own records: CV issue 1064972 (volume 159106) and GCD issue 2631987, DC's 164-page 2024 OGN
+I 63932 cv=1064972 gcd=2631987 isbn=9781779505002 0.95 | the second rip of the same book under the Batman miniseries folder — same records
+S 2057 cv=130858 gcd=164675 0.95 | CV 130858 "Batman Adventures: Nightwing Rising" (DC 2020, 1) and GCD 164675 (DC 2020, 180 pages, ISBN 978-1-77950-722-8) are the same collection, and our file is a 175pp rip of it
+I 19583 cv=806725 gcd=2152830 isbn=9781779507228 0.95 | the book's own records: CV issue 806725 (volume 130858) and GCD issue 2152830, the 180-page 2020 book
+S 2668 cv=122176 gcd=151246 0.95 | CV 122176 "Black Canary: Ignite" (DC 2019, 1) and GCD 151246 (DC 2019, 164 pages, ISBN 978-1-4012-8620-0) are the same 2019 OGN; our two files (138pp and 139pp) are two rips of it, filed under DC Ink and DC Zoom
+I 19584 cv=723737 gcd=2026748 isbn=9781401286200 0.95 | the book's own records: CV issue 723737 (volume 122176) and GCD issue 2026748, the 164-page 2019 OGN
+I 19633 cv=723737 gcd=2026748 isbn=9781401286200 0.95 | the second rip of the same book under DC Zoom — same records
+S 3205 cv=149002 gcd=197536 0.95 | CV 149002 "Bruce Wayne: Not Super" (DC 2023, 1) and GCD 197536 (DC 2023, 164 pages, ISBN 978-1-77950-767-9) are the same 2023 OGN, and our file is a 152pp rip of it
+I 19585 cv=978781 gcd=2503766 isbn=9781779507679 0.95 | the book's own records: CV issue 978781 (volume 149002) and GCD issue 2503766
+S 3698 cv=136524 gcd=172862 0.95 | the dump indexes it with the parenthesis our filename carries: GCD 172862 "Catwoman: Soulstealer (The Graphic Novel)" (DC, August 2021, 212 pages, ISBN 9781401296414) and CV 136524 (DC 2021, 1) are the same book, and our file is "Catwoman - Soulstealer (The Graphic Novel) (2021)" at 207pp
+I 19586 cv=856403 gcd=2227488 isbn=9781401296414 0.95 | the book's own records: CV issue 856403 (volume 136524) and GCD issue 2227488, the 212-page 2021 OGN
+S 3930 cv=152046 gcd=201738 0.95 | CV 152046 "Clark & Lex" (DC 2023, 1) and GCD 201738 (DC 2023, 164 pages, ISBN 978-1-77950-210-0) are the same 2023 OGN, and our file is a 158pp rip of it
+I 19587 cv=999435 gcd=2551551 isbn=9781779502100 0.95 | the book's own records: CV issue 999435 (volume 152046) and GCD issue 2551551
+S 4161 cv=146147 gcd=190060 0.95 | CV 146147 "Constantine: Distorted Illusions" (DC 2022, 1) and GCD 190060 (DC 2022, 196 pages, ISBN 978-1-77950-773-0) are the same 2022 OGN, and our file is a 180pp rip of it
+I 19588 cv=955355 gcd=2436120 isbn=9781779507730 0.95 | the book's own records: CV issue 955355 (volume 146147) and GCD issue 2436120
+S 5449 cv=156711 gcd=204758 0.95 | CV 156711 "Diana and the Hero's Journey" (DC 2023, 1) and GCD 204758 (DC 2023, 164 pages, ISBN 978-1-77950-969-7) are the same 2023 OGN, and our file is a 147pp rip of it
+I 19589 cv=1044153 gcd=2571998 isbn=9781779509697 0.95 | the book's own records: CV issue 1044153 (volume 156711) and GCD issue 2571998
+S 7158 cv=143330 gcd=185129 0.95 | CV 143330 "Galaxy: The Prettiest Star" (DC 2022, 1) and GCD 185129 (DC 2022, 212 pages, ISBN 978-1-4012-9853-1) are the same 2022 OGN, and our file is a 197pp rip of it
+I 19590 cv=929076 gcd=2401636 isbn=9781401298531 0.95 | the book's own records: CV issue 929076 (volume 143330) and GCD issue 2401636
+S 7585 cv=149594 gcd=199160 0.95 | CV 149594 "Girl Taking Over: A Lois Lane Story" (DC 2023, 1) and GCD 199160 (DC 2023, 212 pages, ISBN 978-1-77950-777-8) are the same 2023 OGN, and our file is a 200pp rip of it
+I 19591 cv=984516 gcd=2519031 isbn=9781779507778 0.95 | the book's own records: CV issue 984516 (volume 149594) and GCD issue 2519031
+S 7818 cv=126261 gcd=158741 0.95 | CV 126261 "Gotham High" (DC 2020, 1) and GCD 158741 (DC 2020, 212 pages, ISBN 978-1-4012-8624-8) are the same 2020 OGN, and our file is a 200pp rip of it
+I 19592 cv=745566 gcd=2100504 isbn=9781401286248 0.95 | the book's own records: CV issue 745566 (volume 126261) and GCD issue 2100504
+S 7879 cv=141833 gcd=182378 0.95 | CV 141833 "Green Arrow: Stranded" (DC 2022, 1) and GCD 182378 (DC 2022, 164 pages, ISBN 978-1-77950-121-9) are the same 2022 OGN, and our file is a 156pp rip of it
+I 19593 cv=910562 gcd=2369549 isbn=9781779501219 0.95 | the book's own records: CV issue 910562 (volume 141833) and GCD issue 2369549
+S 7908 cv=145924 gcd=190613 0.95 | CV 145924 "Green Lantern: Alliance" (DC 2022, 1) and GCD 190613 (DC 2022, 148 pages, ISBN 978-1-77950-380-0) are the same 2022 OGN, and our file is a 142pp rip of it
+I 19594 cv=954024 gcd=2440340 isbn=9781779503800 0.95 | the book's own records: CV issue 954024 (volume 145924) and GCD issue 2440340
+S 9178 cv=137840 gcd=174368 0.95 | CV 137840 "I Am Not Starfire" (DC 2021, 1) and GCD 174368 (DC 2021, 188 pages, ISBN 978-1-77950-126-4) are the same 2021 OGN, and our file is a 168pp rip of it
+I 19598 cv=873917 gcd=2248074 isbn=9781779501264 0.95 | the book's own records: CV issue 873917 (volume 137840) and GCD issue 2248074
+S 10863 cv=129372 gcd=162822 0.95 | CV 129372 "Lois Lane and the Friendship Challenge" (DC 2020, 1) and GCD 162822 (DC 2020, 156 pages, ISBN 978-1-4012-9637-7) are the same 2020 OGN, and our webrip file is 154pp of that 156-page book
+I 19599 cv=790242 gcd=2133380 isbn=9781401296377 0.95 | the book's own records: CV issue 790242 (volume 129372) and GCD issue 2133380
+S 11932 cv=117977 gcd=142947 0.95 | CV 117977 "Mera: Tidebreaker" (DC 2019, 1) and GCD 142947 (DC 2019, 212 pages, ISBN 978-1-4012-8339-1) are the same 2019 OGN, and our file is a 205pp rip of it
+I 19600 cv=704793 gcd=1941551 isbn=9781401283391 0.95 | the book's own records: CV issue 704793 (volume 117977) and GCD issue 1941551
+S 12218 cv=141434 gcd=180528 0.95 | CV 141434 "Mister Miracle: The Great Escape" (DC 2022, 1) and GCD 180528 (DC 2022, 212 pages, ISBN 978-1-77950-125-7) are the same 2022 OGN, and our file is a 206pp rip of it; the dump row was found by dropping the "(2022)" filing suffix from our own key
+I 19601 cv=904510 gcd=2302376 isbn=9781779501257 0.95 | the book's own records: CV issue 904510 (volume 141434) and GCD issue 2302376
+S 12515 cv=146813 gcd=188862 0.95 | CV 146813 "My Buddy, Killer Croc" (DC 2022, 1) and GCD 188862 (DC 2022, 156 pages, ISBN 978-1-77950-124-0) are the same 2022 OGN, and our file is a 149pp rip of it
+I 19602 cv=959625 gcd=2428670 isbn=9781779501240 0.95 | the book's own records: CV issue 959625 (volume 146813) and GCD issue 2428670
+S 12598 cv=126564 gcd=159397 0.95 | CV 126564 "My Video Game Ate My Homework" (DC 2020, 1) and GCD 159397 (DC 2020, 164 pages, ISBN 978-1-4012-9326-0) are the same 2020 OGN, and our file is a 156pp rip of it
+I 19603 cv=755030 gcd=2106840 isbn=9781401293260 0.95 | the book's own records: CV issue 755030 (volume 126564) and GCD issue 2106840
+S 13095 cv=133948 gcd=169737 0.95 | CV 133948 "Nubia: Real One" (DC 2021, 1) and GCD 169737 (DC 2021, 212 pages, ISBN 978-1-4012-9640-7) are the same 2021 OGN, and our file is a 207pp rip of it
+I 19604 cv=829288 gcd=2199717 isbn=9781401296407 0.95 | the book's own records: CV issue 829288 (volume 133948) and GCD issue 2199717
+S 13930 cv=136528 gcd=172865 0.95 | CV 136528 "Poison Ivy: Thorns" (DC 2021, 1) and GCD 172865 (DC 2021, 196 pages) are the same 2021 OGN, and our file is a 187pp rip of it; GCD's ISBN field on that issue carries the price appended to the number, so no clean ISBN is quoted here
+I 19605 cv=856409 gcd=2227490 0.95 | the book's own records: CV issue 856409 (volume 136528) and GCD issue 2227490, DC's 196-page 2021 OGN
+S 14910 cv=150709 gcd=197104 0.95 | CV 150709 "Shazam!: Thundercrack" (DC 2023, 1) and GCD 197104 "Shazam! Thundercrack" (DC 2023, 164 pages, ISBN 978-1-77950-502-6) are the same 2023 OGN, and our file is a 155pp rip of it
+I 19606 cv=991886 gcd=2497654 isbn=9781779505026 0.95 | the book's own records: CV issue 991886 (volume 150709) and GCD issue 2497654
+S 17138 cv=24489 gcd=32926 0.95 | the RUN wins: CV 24489 "Supergirl: Cosmic Adventures in the 8th Grade" (DC 2009, six issues dated February to July 2009 in the local rip) and GCD 32926 (DC 2009, six 36-page issues over the same months) are the six-issue mini our two collected files reproduce — one the 2009 first collection, one DC's 2020 reissue
+F 17138 needs-fetch cv=24489 | the volume has no CvVolume row; it was named from the local ComicVine rip, where its six issues are cached
+I 70491 cv=- gcd=695324 isbn=9781401225063 0.95 | "COL Supergirl - Cosmic Adventures in the 8th Grade (2009)" at 146pp is GCD issue 695324 in series 40943, the 148-page 2009 [February 2010] collection — the page count matches within two
+I 19608 cv=- gcd=2215392 isbn=9781779506702 0.9 | "COL Supergirl - Cosmic Adventures in the 8th Grade (2020)" at 159pp is GCD issue 2215392 in series 171740, DC's November 2020 reissue; its page count is not indexed, so the year in our filename carries the choice
+S 17326 cv=154260 gcd=204515 0.95 | CV 154260 "Superman: The Harvests of Youth" (DC 2023, 1) and GCD 204515 (DC 2023, 212 pages, ISBN 978-1-77951-105-8) are the same 2023 OGN, and our file is a 199pp rip of it
+I 19609 cv=1026098 gcd=2571138 isbn=9781779511058 0.95 | the book's own records: CV issue 1026098 (volume 154260) and GCD issue 2571138
+S 19179 cv=137158 gcd=173550 0.95 | CV 137158 and GCD 173550 both record "The Mystery of the Meanest Teacher: A Johnny Constantine Graphic Novel" as a single 2021 DC book (164 pages, ISBN 978-1-77950-123-3), and our file is a 155pp rip of it
+I 19615 cv=864697 gcd=2235503 isbn=9781779501233 0.95 | the book's own records: CV issue 864697 (volume 137158) and GCD issue 2235503
+S 19291 cv=125425 gcd=156758 0.95 | CV 125425 "The Oracle Code" (DC 2020, 1) and GCD 156758 (DC 2020, 212 pages, ISBN 978-1-4012-9066-5) are the same 2020 OGN, and our file is a 193pp rip of it
+I 19616 cv=739377 gcd=2079774 isbn=9781401290665 0.95 | the book's own records: CV issue 739377 (volume 125425) and GCD issue 2079774
+S 19695 cv=160444 gcd=215903 0.95 | CV 160444 "The Strange Case of Harleen and Harley" (DC 2024, 1) and GCD 215903 (DC 2024, 196 pages, ISBN 978-1-77950-975-8) are the same 2024 OGN, and our file is a 186pp rip of it
+I 19617 cv=1074156 gcd=2661328 isbn=9781779509758 0.95 | the book's own records: CV issue 1074156 (volume 160444) and GCD issue 2661328
+S 20063 cv=160445 gcd=215904 0.95 | CV 160445 "This Land is Our Land: A Blue Beetle Story" (DC 2024, 1) and GCD 215904 (DC 2024, 212 pages, ISBN 978-1-77952-282-5) are the same 2024 OGN, and our file is a 205pp rip of it
+I 19618 cv=1074157 gcd=2661329 isbn=9781779522825 0.95 | the book's own records: CV issue 1074157 (volume 160445) and GCD issue 2661329
+S 20742 cv=118653 gcd=144599 0.95 | CV 118653 "Under the Moon: A Catwoman Tale" (DC 2019, 1) and GCD 144599 (DC 2019, 228 pages, ISBN 978-1-4012-8591-3) are the same 2019 OGN, and our file is a 219pp rip of it; the FCBD edition is a separate record in both (CV 118782, GCD 144837)
+I 19619 cv=707496 gcd=1955446 isbn=9781401285913 0.95 | the book's own records: CV issue 707496 (volume 118653) and GCD issue 1955446
+S 20769 cv=138902 gcd=176030 0.95 | CV 138902 "Unearthed: A Jessica Cruz Story" (DC 2021, 1) and GCD 176030 (DC 2021, 212 pages, ISBN 9781779500519) are the same 2021 OGN, and our file is a 199pp rip of it
+I 19620 cv=884579 gcd=2262121 isbn=9781779500519 0.95 | the book's own records: CV issue 884579 (volume 138902) and GCD issue 2262121
+S 21076 cv=131622 gcd=165886 0.95 | CV 131622 "Victor and Nora: A Gotham Love Story" (DC 2020, 1) and GCD 165886 (DC 2020, 204 pages, ISBN 978-1-4012-9639-1) are the same 2020 OGN, and our file is a 196pp rip of it
+I 19621 cv=815625 gcd=2160388 isbn=9781401296391 0.95 | the book's own records: CV issue 815625 (volume 131622) and GCD issue 2160388
+S 21332 cv=133147 gcd=168607 0.95 | CV 133147 "We Found A Monster" (DC 2021, 1) and GCD 168607 (DC 2021, 164 pages, ISBN 978-1-77950-052-6) are the same 2021 OGN, and our file is a 137pp rip of it
+I 19622 cv=824254 gcd=2184909 isbn=9781779500526 0.95 | the book's own records: CV issue 824254 (volume 133147) and GCD issue 2184909
+S 21584 cv=138750 gcd=175817 0.95 | CV 138750 "Whistle: A New Gotham City Hero" (DC 2021, 1) and GCD 175817 (DC 2021, 212 pages, ISBN 9781401293222) are the same 2021 OGN, and our file is a 192pp rip of it
+I 19623 cv=883437 gcd=2260486 isbn=9781401293222 0.95 | the book's own records: CV issue 883437 (volume 138750) and GCD issue 2260486
+S 21976 cv=159610 gcd=214373 0.95 | CV 159610 "Wonder Woman: The Adventures of Young Diana" (DC 2024, 1) and GCD 214373 (DC 2024, 196 pages, ISBN 978-1-77952-713-4) are the same 2024 collection, and our two files (192pp and 195pp) are two rips of that one book
+I 19624 cv=1068666 gcd=2651136 isbn=9781779527134 0.95 | the book's own records: CV issue 1068666 (volume 159610) and GCD issue 2651136
+I 19625 cv=1068666 gcd=2651136 isbn=9781779527134 0.95 | the second rip (webrip, 195pp) of the same book — same records
+S 22668 cv=127882 gcd=160889 0.95 | CV 127882 "You Brought Me The Ocean" (DC 2020, 1) and GCD 160889 (DC 2020, 212 pages, ISBN 978-1-4012-9081-8) are the same 2020 OGN, and our file is a 194pp rip of it
+I 19626 cv=768245 gcd=2119626 isbn=9781401290818 0.95 | the book's own records: CV issue 768245 (volume 127882) and GCD issue 2119626
+S 22681 cv=152871 gcd=202700 0.95 | CV 152871 "Young Alfred: Pain In The Butler" (DC 2023, 1) and GCD 202700 (DC 2023, 164 pages, ISBN 978-1-77950-971-0) are the same 2023 OGN, and our file is a 158pp rip of it
+I 19627 cv=1006283 gcd=2559445 isbn=9781779509710 0.95 | the book's own records: CV issue 1006283 (volume 152871) and GCD issue 2559445
+S 22775 cv=144699 gcd=187390 0.95 | CV 144699 "Zatanna: The Jewel of Gravesend" (DC 2022, 1) and GCD 187390 (DC 2022, 212 pages, ISBN 978-1-4012-9638-4) are the same 2022 OGN, and our file is a 197pp rip of it
+I 19628 cv=943495 gcd=2419805 isbn=9781401296384 0.95 | the book's own records: CV issue 943495 (volume 144699) and GCD issue 2419805
+S 1298 cv=132450 gcd=167365 0.95 | CV 132450 "ArkhaManiacs" (DC 2020, 1) and GCD 167365 "Arkhamaniacs" (DC 2020, 148 pages, ISBN 978-1-4012-9827-2) are the same 2020 OGN, and our file is a 144pp rip of it
+I 19629 cv=820298 gcd=2173453 isbn=9781401298272 0.95 | the book's own records: CV issue 820298 (volume 132450) and GCD issue 2173453; GCD's 2581648 is the later reprint of the same book
+S 2147 cv=160226 gcd=177649 0.95 | CV 160226 "Batman and Robin and Howard" (DC 2021, 1) and GCD 177649 (DC 2021, 156 pages, ISBN 978-1-4012-9768-8) are the same 2021 OGN, and our file is a 150pp rip of it; the 2024 four-issue series (CV 140124 / GCD 209774) is the sequel, not this book
+I 19630 cv=1072543 gcd=2274303 isbn=9781401297688 0.95 | the book's own records: CV issue 1072543 (volume 160226) and GCD issue 2274303
+S 2149 cv=138178 gcd=175117 0.95 | CV 138178 and GCD 175117 both record the 2021 Free Comic Book Day flipbook pairing Batman and Robin...and Howard with Amethyst: Princess of Gemworld as a single 36-page DC giveaway, which is our one 35pp file
+I 19631 cv=878403 gcd=2254766 0.95 | the giveaway's own records: CV issue 878403 (volume 138178) and GCD issue 2254766, the 36-page 2021 FCBD flipbook
+S 2177 cv=144856 gcd=188553 0.95 | CV 144856 "Batman's Mystery Casebook" (DC 2022, 1) and GCD 188553 (DC 2022, 148 pages, ISBN 978-1-77950-586-6) are the same 2022 OGN, and our file is a 144pp rip of it; the Batman Day special edition is a separate record in both
+I 19632 cv=944873 gcd=2427248 isbn=9781779505866 0.95 | the book's own records: CV issue 944873 (volume 144856) and GCD issue 2427248
+S 6452 cv=152872 gcd=201032 0.95 | CV 152872 "Fann Club: Batman Squad" (DC 2023, 1) and GCD 201032 (DC 2023, 148 pages, ISBN 978-1-77950-889-8) are the same 2023 OGN, and our file is a 143pp rip of it
+I 19638 cv=1006284 gcd=2539044 isbn=9781779508898 0.95 | the book's own records: CV issue 1006284 (volume 152872) and GCD issue 2539044
+S 6770 cv=133527 gcd=169074 0.95 | CV 133527 "Flash Facts" (DC 2021, 1) and GCD 169074 (DC 2021, 164 pages, ISBN 978-1-77950-382-4) are the same 2021 anthology OGN; our two files are two copies of the same 152pp rip, filed under DC Zoom and under the Flash trades folder
+I 19639 cv=827096 gcd=2190616 isbn=9781779503824 0.95 | the book's own records: CV issue 827096 (volume 133527) and GCD issue 2190616
+I 74389 cv=827096 gcd=2190616 isbn=9781779503824 0.95 | the second copy of the same book under the Flash trades folder — same records
+S 10519 cv=136527 gcd=172866 0.95 | CV 136527 "Krypto the Superdog" (DC 2021, 1) and GCD 172866 (DC 2021, 148 pages, ISBN 978-1-77950-927-7) are the same 2021 OGN, and our file is a 145pp rip of it; the 2006 six-issue series (CV 18142) is a different comic
+I 19640 cv=856407 gcd=2227491 isbn=9781779509277 0.95 | the book's own records: CV issue 856407 (volume 136527) and GCD issue 2227491
+S 11970 cv=135833 gcd=172247 0.95 | CV 135833 "Metropolis Grove" (DC 2021, 1) and GCD 172247 (DC 2021, 156 pages, ISBN 978-1-77950-053-3) are the same 2021 OGN, and our file is a 147pp rip of it
+I 19641 cv=846950 gcd=2220499 isbn=9781779500533 0.95 | the book's own records: CV issue 846950 (volume 135833) and GCD issue 2220499
+S 19560 cv=121551 gcd=150509 0.9 | CV 121551 "The Secret Spiral of Swamp Kid" (DC 2019, 1) and GCD 150509 (DC 2019, 180 pages, ISBN 978-1-4012-9068-9) are the same 2019 OGN; the residue is our file's 97 pages against the book's 180, which reads as a two-page-per-image rip rather than a different book
+I 19645 cv=720056 gcd=2017095 isbn=9781401290689 0.9 | the book's own records: CV issue 720056 (volume 121551) and GCD issue 2017095, DC's 180-page 2019 OGN
+S 24288 cv=88007 gcd=104805 0.9 | a book line, not a run: CV 88007 "DC Comics: Secret Hero Society" (Scholastic 2016, 5 volumes titled Study Hall of Justice, Fort Solitude, Detention of Doom, Science Fair Crisis, Field Trip Disaster) and GCD 104805 (Scholastic, same five titles at 184 pages each) agree title for title, and our four files are volumes 1, 2, 4 and 5 of that line; the cap is GCD's second row 115661, a four-volume paperback line with different ISBNs for the same books
+I 19637 cv=514336 gcd=1609651 isbn=9780545825016 0.95 | "Study Hall of Justice (2016)" 178pp is volume 1: CV issue 514336 and GCD issue 1609651 (184 pages)
+I 19635 cv=575916 gcd=1724047 isbn=9780545876841 0.95 | "Fort Solitude (2017)" 174pp is volume 2: CV issue 575916 and GCD issue 1724047 (184 pages)
+I 19636 cv=701966 gcd=1929859 isbn=9781338273281 0.95 | "Science Fair Crisis (2019)" 179pp is volume 4: CV issue 701966 and GCD issue 1929859 (February 2019, 184 pages)
+I 19634 cv=721250 gcd=2020274 isbn=9781338273298 0.95 | "Field Trip Disaster (2019)" 174pp is volume 5: CV issue 721250 and GCD issue 2020274 (184 pages)
+S 17096 cv=130863 gcd=142948 0.9 | the Super Sons OGN line was published as books, not issues: GCD 142948 "Super Sons" (DC 2019-2020, three graphic novels — The Polarshield Project, The Foxglove Mission and, at 164 pages, Escape to Landis) is the line, and CV 130863 "Super Sons: Escape to Landis" (DC 2020, 1) is the single volume our 157pp file is; the cap is that the GCD leg reached us by round2-folder, though the record's own titles and years check out
+I 19644 cv=806729 gcd=2152836 isbn=9781401286415 0.95 | the book's own records: CV issue 806729 ("Book 3" of volume 130863) and GCD issue 2152836, volume 3 of series 142948 (December 2020, 164 pages)
+
+S 10123 cv=4368 gcd=3991 0.95 | GCD gives DC's annuals their own series where ComicVine does too here: CV 4368 "Justice League America Annual" (DC 1991, 6) and GCD 3991 (DC 1991-1996, 6, its #6 dated August 1992 at 68 pages) both hold the book our single file is — "Justice League America Annual 06 Maximum Eclipse", a 57pp rip; the per-file link 2014 is the 1960 Justice League of America, a different comic entirely
+I 15607 cv=35147 gcd=50658 0.95 | the annual's own records: CV issue 35147 (#6 of volume 4368, 1992-08-05) and GCD issue 50658 (#6, August 1992, 68 pages)
+F 6789 merge-with=7965 | S7965 ("Green Lantern/Flash: Faster Friends", five files including both halves) is the same two-issue crossover volume, so sharing CV 5952 is intended
+S 6789 cv=5952 gcd=13830 0.95 | a two-part crossover each provider files its own way: ComicVine keeps one volume (5952 "Green Lantern/Flash: Faster Friends", DC 1997, 2 issues) while GCD splits it by cover title into 5740 (Green Lantern / Flash #1) and 13830 (Flash / Green Lantern #2, February 1997, 52 pages) — our single file is "Flash Green Lantern Faster Friends 02", the second half, so 13830 is its series
+I 15835 cv=44469 gcd=61169 0.95 | the book's own records: CV issue 44469 (#2 of volume 5952, 1997-03-31) and GCD issue 61169 (#2, February 1997, 52 pages) — our 52pp file, page for page
+S 7977 cv=30377 gcd=25685 0.9 | CV 30377 "Green Lantern: Fear Itself" (DC 1999, 1, its issue dated 1999-06-01) and GCD 25685 (DC, June 1999, 88 pages) are the same graphic novel, which our 81pp "Fear Itself HC" file is; the cap is GCD's twin row 14820 ([November] 1999, 84 pages), the softcover printing of the same book
+I 15889 cv=187195 gcd=365222 0.9 | the book's own records: CV issue 187195 (volume 30377, June 1999) and GCD issue 365222, the 88-page June 1999 hardcover; GCD 256385 is the 84-page later printing
+S 64825 cv=4740 gcd=4399 0.95 | both files are Green Lantern v3 ANNUALS — #7 "Ghosts" (1998) and #8 "Grunts" (1999) — and both providers give the annuals their own series: CV 4740 "Green Lantern Annual" (DC 1992, 9, its #7 dated 1998-11 and #8 dated 1999-10) and GCD 4399 (DC 1992-2000, 9, #7 November 1998 at 52 pages and #8 October 1999 at 56 pages) against our 39pp and 37pp rips
+F 64825 wrong-cv-link | the stored CV 69441 is Dino Verlag's German "Green Lantern" (1999, 9) — a foreign-language link on two American annuals; the English pair is CV 4740 / GCD 4399
+I 15875 cv=45478 gcd=62322 0.95 | "Green Lantern v3 Annual 07 Ghosts" is CV issue 45478 ("The Corpse Corps!", 1998-11-01) and GCD issue 62322 (#7, November 1998, 52 pages)
+I 15897 cv=46054 gcd=62961 0.95 | "Green Lantern v3 Annual 08 Grunts" is CV issue 46054 (1999-10-01) and GCD issue 62961 (#8, October 1999, 56 pages)
+S 7955 cv=22295 gcd=16149 0.95 | CV 22295 "Green Lantern / Adam Strange" (DC 2000, 1) and GCD 16149 (DC, October 2000, 36 pages) are the same Circle of Fire one-shot, which is our single 23pp file; the per-file GCD link 10303 is the two-issue "Circle of Fire" umbrella, the hull shape
+I 15936 cv=134059 gcd=267016 0.95 | the one-shot's own records: CV issue 134059 (volume 22295, 2000-10-31) and GCD issue 267016 (October 2000, 36 pages)
+S 7958 cv=22294 gcd=14476 0.95 | CV 22294 "Green Lantern / Power Girl" (DC 2000, 1) and GCD 14476 (DC, October 2000, 36 pages) are the same Circle of Fire one-shot, which is our single 24pp file; the umbrella series 10303 is rejected for the same reason as on S7955
+I 15935 cv=134052 gcd=250351 0.95 | the one-shot's own records: CV issue 134052 (volume 22294, 2000-10-01) and GCD issue 250351 (October 2000, 36 pages)
+S 7959 cv=22300 gcd=16148 0.95 | CV 22300 "Green Lantern / Atom" (DC 2000, 1) and GCD 16148 (DC, October 2000, 36 pages) are the same Circle of Fire one-shot, which is our single 24pp file
+I 15934 cv=134105 gcd=267015 0.95 | the one-shot's own records: CV issue 134105 (volume 22300, 2000-10-31) and GCD issue 267015 (October 2000, 36 pages)
+S 7953 cv=30005 gcd=17036 0.95 | CV 30005 and GCD 17036 both record "Green Lantern Secret Files and Origins 2005" as a single 52-page June 2005 DC book; our two files are not two issues but two extracts of that one book — "Main Story Only" (34pp) and "PreRebirth Story Only" (7pp) — which is the whole of the 2.00 ratio here
+F 7953 partial-rip | items 16113 and 16105 are story-only extracts of the same 52-page issue, filed in two different event read-order folders
+I 16113 cv=184615 gcd=276937 0.9 | the issue's own records: CV issue 184615 (volume 30005, 2005-06-01) and GCD issue 276937 (June 2005, 52 pages); this file is its main story
+S 17549 cv=19220 gcd=26597 0.95 | CV 19220 and GCD 26597 both record "Tales of the Sinestro Corps: Cyborg-Superman" as a single December 2007 DC book (40 pages), and our two 25pp files are two rips of it, one in each of two event read-order folders
+I 16204 cv=115168 gcd=375111 0.95 | the one-shot's own records: CV issue 115168 (volume 19220, 2007-12-01) and GCD issue 375111 (December 2007, 40 pages)
+S 17552 cv=19171 gcd=26491 0.95 | CV 19171 and GCD 26491 both record "Tales of the Sinestro Corps: Parallax" as a single November 2007 DC book (36 pages), and our two 24pp files are two rips of it in two event folders
+I 16202 cv=114722 gcd=374766 0.9 | the one-shot's own records: CV issue 114722 (volume 19171, 2007-11-01) and GCD issue 374766 (November 2007, 36 pages); GCD's 1262057 is a duplicate record for the same book
+S 17554 cv=19311 gcd=27012 0.95 | CV 19311 and GCD 27012 both record "Tales of the Sinestro Corps: Superman-Prime" as a single December 2007 DC book (56 pages), which is our one 39pp file; the "13" in the filename is the folder's reading-order position, not an issue number
+I 16208 cv=115864 gcd=383155 0.95 | the one-shot's own records: CV issue 115864 (volume 19311, 2007-12-01) and GCD issue 383155 (December 2007, 56 pages)
+S 17553 cv=20095 gcd=27932 0.95 | CV 20095 and GCD 27932 both record "Tales of the Sinestro Corps: Ion" as a single January 2008 DC book (36 pages), and our two 21pp files are two rips of it in two event folders
+I 16211 cv=119967 gcd=394854 0.95 | the one-shot's own records: CV issue 119967 (volume 20095, 2008-01-01) and GCD issue 394854 (January 2008, 36 pages)
+S 4264 cv=19136 gcd=26427 0.95 | CV 19136 and GCD 26427 both record "Countdown Presents: The Search for Ray Palmer: Wildstorm" as a single November 2007 DC book (36 pages), which is our one 25pp file
+I 16224 cv=114442 gcd=374035 0.95 | the one-shot's own records: CV issue 114442 (volume 19136, 2007-11-01) and GCD issue 374035 (November 2007, 36 pages)
+S 6665 cv=23536 gcd=32345 0.95 | CV 23536 and GCD 32345 both record "Final Crisis: Rage of the Red Lanterns" as a single December 2008 DC book (44 pages), and our three files are three rips of that one issue — two event read-order folders plus the title's own — which is the whole of the 2.00 ratio
+I 19257 cv=141192 gcd=545887 0.9 | the one-shot's own records: CV issue 141192 (volume 23536, 2008-12-01) and GCD issue 545887 (December 2008, 44 pages); GCD's 898241/898273/898476 are cover-variant records of the same book

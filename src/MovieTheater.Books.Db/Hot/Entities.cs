@@ -203,6 +203,8 @@ namespace MovieTheater.Books.Db
         public int? YearEnd { get; set; }
         public bool IsOngoing { get; set; }
         public string? Franchise { get; set; }
+        /// <summary>The TITLE these runs belong to (<see cref="SeriesTitle"/>), or null when it stands alone.</summary>
+        public int? TitleId { get; set; }
         public int? PublisherId { get; set; }
         public int? CvVolumeId { get; set; }
         public int? ExternalWorkId { get; set; }
@@ -210,6 +212,36 @@ namespace MovieTheater.Books.Db
         public SynopsisSource ResolvedSynopsisSource { get; set; }
         public int? ResolvedRating { get; set; }
         public DateTime? ResolvedAt { get; set; }
+    }
+
+    /// <summary>
+    /// The TITLE a set of runs belongs to — the tier between <c>Franchise</c> and <c>Series</c>.
+    ///
+    /// <para>Issue numbers restart with every relaunch, so <c>Series</c> has to stay RUN-grained: a shelf
+    /// holding "Green Lantern v2 (1960)" and "v3 (1990)" at once cannot carry a correct collected-edition
+    /// range, because #1-6 names two different comics. Everything that decides containment is keyed that
+    /// way already — <c>CollectionNode</c>, <c>ReadingOrderEntry</c>, and <c>Series.CvVolumeId</c> (ComicVine
+    /// models one volume per run).</para>
+    ///
+    /// <para>But those two runs ARE the same title, printed by the same publisher with the same conventions:
+    /// where the indicia sits, how much front matter a trade carries, how the trades are numbered. Reading
+    /// one run teaches the rest, which is what turns 794 unrelated shelves into 250 related jobs. Facts that
+    /// belong to the title rather than to any one run live here.</para>
+    /// </summary>
+    public sealed class SeriesTitle
+    {
+        public int Id { get; set; }
+        /// <summary>The grouping key — for a split run it is exact, being the stem the split itself wrote.</summary>
+        public string Key { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string? Franchise { get; set; }
+        public int? PublisherId { get; set; }
+        public int? YearStart { get; set; }
+        public int? YearEnd { get; set; }
+        /// <summary>How many Series rows point here — denormalized so a title can be ranked without a join.</summary>
+        public int RunCount { get; set; }
+        public string? Note { get; set; }
+        public DateTime? CreatedAt { get; set; }
     }
 
     /// <summary>Every parsed spelling -> its canonical Series (DERIVED)</summary>

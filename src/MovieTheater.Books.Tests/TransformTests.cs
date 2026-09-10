@@ -163,5 +163,31 @@ namespace MovieTheater.Books.Tests
             Assert.Equal(new[] { "Action", "Anime Adaptation", "Post-Apocalyptic", "Science Fiction", "Seinen" }, TagFolds.FoldMu("[\"Action\",\"Sci-fi\",\"Seinen\"]", "[\"Post-Apocalyptic\",\"Adapted to Anime\"]"));
             Assert.Equal(new[] { "Science Fiction", "Superhero" }, TagFolds.FoldGcd("science fiction;superhero;advocacy"));
         }
+
+        [Fact]
+        public void AnIsbnNormalizesToTheOnlyFormBothSidesCanJoinOn()
+        {
+            // Calibre writes it hyphenated, the Open Library leg bare — neither joins to the other as written.
+            Assert.Equal("0002246163", TagFolds.NormalizeIsbn("0-00-224616-3"));
+            Assert.Equal("0002246163", TagFolds.NormalizeIsbn("0002246163"));
+            Assert.Equal("9780316154604", TagFolds.NormalizeIsbn("978-0-316-15460-4"));
+            Assert.Equal("080442957X", TagFolds.NormalizeIsbn("0-8044-2957-x"));   // the check digit is upper X
+
+            // 10 and 13 are the only real lengths; anything else is a mangled field, not an identifier.
+            Assert.Null(TagFolds.NormalizeIsbn("12345"));
+            Assert.Null(TagFolds.NormalizeIsbn("not-an-isbn"));
+            Assert.Null(TagFolds.NormalizeIsbn(""));
+            Assert.Null(TagFolds.NormalizeIsbn(null));
+        }
+
+        [Fact]
+        public void OpenLibrarySubjectsForRomanceAndEroticaReachTheFold()
+        {
+            // Open Library's own spellings — none of which the original SubjectMap matched, so an
+            // ISBN-identified romance folded to nothing at all.
+            Assert.Contains("Erotica", TagFolds.FoldSubjects("[\"Erotic stories, American\"]"));
+            Assert.Contains("Romance", TagFolds.FoldSubjects("[\"Love stories\"]"));
+            Assert.Contains("Romance", TagFolds.FoldSubjects("[\"Man-woman relationships\"]"));
+        }
     }
 }

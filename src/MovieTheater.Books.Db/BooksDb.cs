@@ -35,6 +35,7 @@ namespace MovieTheater.Books.Db
         public DbSet<CollectionNode> CollectionNodes => Set<CollectionNode>();
         public DbSet<CollectedEditionSpan> CollectedEditionSpans => Set<CollectedEditionSpan>();
         public DbSet<ContainmentFlag> ContainmentFlags => Set<ContainmentFlag>();
+        public DbSet<SeriesTitle> SeriesTitles => Set<SeriesTitle>();
         public DbSet<CvVolume> CvVolumes => Set<CvVolume>();
         public DbSet<CvIssue> CvIssues => Set<CvIssue>();
         public DbSet<LocgComic> LocgComics => Set<LocgComic>();
@@ -184,7 +185,21 @@ namespace MovieTheater.Books.Db
                 e.HasIndex(x => new { x.Name, x.Id });
                 e.HasIndex(x => x.ParsedKey);
                 e.HasIndex(x => x.Franchise);
+                e.HasIndex(x => x.TitleId);
+                e.HasOne<SeriesTitle>().WithMany().HasForeignKey(x => x.TitleId).OnDelete(DeleteBehavior.Restrict);
                 e.HasIndex(x => new { x.ResolvedRating, x.Id }).IsDescending(true, false);
+            });
+            modelBuilder.Entity<SeriesTitle>(e =>
+            {
+                e.ToTable("SeriesTitle");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Id).ValueGeneratedNever();
+                e.Property(x => x.Key).IsRequired();
+                e.Property(x => x.Name).IsRequired();
+                e.Property(x => x.RunCount).HasDefaultValue(0);
+                e.HasIndex(x => x.Key).IsUnique();
+                e.HasIndex(x => x.Franchise);
+                e.HasIndex(x => new { x.Name, x.Id });
             });
             modelBuilder.Entity<SeriesAlias>(e =>
             {

@@ -68,7 +68,11 @@ export default function ReadPage({ userData }: ReadPageProps) {
     return isKidAccount(userData) || fromKids ? kidStyleOf(userData?.booksKidsStyle) : undefined;
   }, [userData]);
 
-  const isEpub = (detail?.summary.extension ?? "").toLowerCase() === ".epub";
+  // The HOST decides the surface, not the extension. 6,768 books in this library are EPUBs saved as `.zip`;
+  // asking `summary.extension` opened every one of them in the CANVAS reader, which looks inside an EPUB for
+  // image pages, finds none, and shows a book that "will not open". `readerFormat` is the sniffed answer, and
+  // the extension is only the fallback for a host too old to send it.
+  const isEpub = (detail?.readerFormat ?? detail?.summary.extension ?? "").toLowerCase() === ".epub";
 
   return (
     <div className="books-reader" data-kids-style={kidsStyle} data-testid="books-reader">

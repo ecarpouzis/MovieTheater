@@ -1,0 +1,339 @@
+# B-001 — 150 tier-B shelves: 2000AD/Rebellion (98), AC Comics (50), AWA Upshot (2).
+#
+# TIER B means one recorded leg, so the work on this batch was FINDING the second one. The packet's
+# "GCD dump:" line is a lookup on the shelf's PARSED KEY, and on Rebellion shelves that key is a
+# mangled filename ("Judge Dredd - The Cursed Earth" for a book actually called "Judge Dredd: The
+# Cursed Earth Uncensored"). Re-probing the same dump with the RECORD's spelling — the title the CV
+# candidate list already showed me — found the missing GCD series on 14 shelves the packet reported
+# as having none: 224303 Complete Bad Company, 190085 Cursed Earth Uncensored, 112605 A.B.C. Warriors
+# Mek Files, 193412 Solo Missions, 190558 Hondo City Justice, 191950 Ampney Crucis, 119474 Sci-Fi
+# Thrillers, 122128 Brothers of the Blood, 130313 Anderson Deep End, 160044 Smash! Special, 51959
+# Complete D.R. & Quinch, 67428 Life and Death of Johnny Alpha, 23992 Untold Origin, 23706 Rio Rita,
+# 25152 Femforce Spotlight, 113002 Misty. That is the single biggest finding of the batch: on a tier-B
+# Rebellion shelf, "the dump names no other series" usually means the KEY was wrong, not the dump.
+#
+# Rebellion's own conventions, as they read here: one 100-350pp collected book per file, "COL <Title>
+# vNN - <Subtitle> (YYYY) (digital) (<ripper>).cbr", and BOTH providers mint one record per BOOK for
+# the Judge Dredd TPB line — so a shelf of one book with CV count 1 and a GCD count-1 row of the same
+# year is not a "matches our holdings" trap, it is simply how a one-shot graphic novel is indexed.
+# Where CV mints a volume per book but GCD keeps one series for the line (Johnny Alpha v09+v10), the
+# two shelves share the GCD id and take F merge-with, the Epic-Collection shape from the ledger.
+#
+# AC Comics behaved exactly as the ledger says: one folder per title, CV and GCD each holding one
+# record with the same publisher, year and count, and a ratio > 1 that is always duplicate printings
+# (Big 'Uns #1 five times, Haunted Horseman twice). 41 of the 50 AC shelves are 0.95 on that pair.
+#
+# WEB: 0 fetches; the three hosts 403 per the brief. Two shelves needed an outside answer and carry
+# F needs-web (S48, S6699) and are at 0.7 / R rather than guessed.
+#
+# I LINES: 82 written. Almost every shelf here is a single collected book, so the shelf's identity and
+# the book's are the same question. Our data holds no CvIssue id for any of these volumes and no GCD
+# ISSUE id, so every I line uses the permitted gcd=s<series> form (plus the two scanned ISBNs). Where
+# neither provider names a series for the book, no I line was written and the S/R clause says so.
+
+S 15925 cv=89413 gcd=100740 0.95 | CV 89413 (Rebellion 2016, 1) and GCD 100740 (Rebellion 2016-2016, en-gb, 1) independently record one Rebellion book of 2016 called "Sooner or Later", and our shelf is exactly one 94pp file dated 2016; the CV near-names (Maybe Later, 28 Days Later) are other titles at other publishers
+I 4152 gcd=s100740 0.95 | the single 94pp book IS the whole of GCD series 100740 (one issue, Rebellion 2016) and of CV volume 89413; no GCD issue id for it exists in our dump, so the series is the finest id available
+S 19670 cv=48261 gcd=191253 0.95 | CV 48261 (Rebellion 2010, 1) and GCD 191253 (Rebellion 2010-2010, en-gb, 1) agree on publisher, year and a single book; our one file is 196pp dated 2010, and the 1985 Eagle Comics 6-issue run (CV 24138 / GCD 22230) is excluded by publisher and twenty-five years
+I 4154 gcd=s191253 0.95 | the 196pp 2010 Rebellion collection is the only issue of GCD 191253 and the only issue of CV 48261
+S 57295 cv=106858 gcd=119703 0.95 | CV 106858 (Rebellion 2017, 3) and GCD 119703 (Rebellion 2017-2021, format "collected edition", 3) agree on publisher, start year and a three-book line; our single 164pp file is named "Book 1" of it, so 1 of 3 with no arithmetic to contradict
+I 4153 gcd=s119703 0.9 | item 4153 is Book 1 of the three-volume GCD 119703 / CV 106858 line; the per-volume issue id is not in our dump so the series is the finest id, and the LOCG bridge naming "Book 1 HC" is corroboration only, never a leg
+S 49 cv=162428 gcd=- 0.9 | the book asserts its own identity in ComicInfo — Series "2000 AD Vs Battle Action: Comics Collide!", Volume 2024, Count 1, Publisher Rebellion — and CV 162428 (Rebellion 2024, 1, cached #1-1) matches all four; GCD holds no row under any spelling I probed, so one leg plus the collection's own assertion
+F 49 provider-missing | no GCD series for this 2024 Rebellion crossover one-shot under "2000 AD vs Battle Action", "Comics Collide" or either half of the title
+R 6699 | "COL Fire Candy Vol 1.cbz" sits in 2000AD\2000AD (1977)\2000AD (Unsorted)\2000 AD 0000-0249 with no year, no page count and no ComicInfo; neither provider holds anything called Fire Candy (0 hits in the CV rip and 0 in the GCD dump, exact and substring), the CV name-search returned only Candy Candy / Candy / Fire Fire Fire at other publishers, and the only GCD link is a round2-folder copy of the neighbour prog shelf's series 11289 "2000 AD" (IPC, 443 issues) — the hull shape the ledger says was wrong in 23 of 23 checks
+F 6699 needs-web | what is "Fire Candy Vol 1", and is it a 2000AD strip collection at all or a manga misfiled into the prog folder? Nothing in our two providers names it
+S 45 cv=70733 gcd=119474 0.95 | CV 70733 ("2000 AD Presents Sci-Fi Thrillers", Rebellion 2014, 1) and GCD 119474 ("2000 A.D Presents Sci-fi Thrillers", Rebellion 2013-2013, 1) are the same one-volume book with a one-year cover-date offset; our three files are 292/292/291pp rips of that one 2013 book by two rippers, which is why the shelf shows three files and a count of one
+I 4157 gcd=s119474 0.9 | the 292pp DR & Quinch-Empire rip of the single Rebellion Sci-Fi Thrillers volume, GCD 119474's only issue
+I 4150 gcd=s119474 0.9 | the 291pp Torquemada digital-HD rip of the same single volume; items 4157, 4173 and 4150 are three rips of one book, not three books
+S 48 cv=43353 gcd=39325 0.7 | CV 43353 and GCD 39325 agree exactly with each other (IPC Magazines, 1977-1977, one issue) but NOT with our file, which is "2000AD Summer Special (2015) (Digital-Empire).cbr", 51pp; no provider holds a 2015 summer special under any spelling I probed, and on this batch the Empire rips' (YYYY) is the publication year every other time (Misty Winter Special 2020, Smash! Special 2020), so either the rip is mislabelled or the 2015 special is unindexed — plausible but a real doubt
+F 48 needs-web | did Rebellion publish a "2000 AD Summer Special" in 2015, and does it have its own ComicVine volume / GCD series distinct from the 1977 IPC one?
+S 12773 cv=67254 gcd=192737 0.95 | CV 67254 ("Nemesis the Warlock: Deviant Edition", Rebellion 2013, 1) and GCD 192737 ("Nemesis the Warlock Deviant Edition", Rebellion 2013-2013, 1) agree on title, publisher, year and a single book; our one file is 240pp dated 2013
+I 4187 gcd=s192737 0.95 | the 240pp Deviant Edition is the only issue of GCD 192737 and of CV 67254
+S 259 cv=150479 gcd=196539 0.95 | CV 150479 and GCD 196539 both record "A Very British Affair: The Best of Classic Romance Comics", Rebellion, 2023, one volume; our single 228pp 2023 file is that book and nothing else in either provider carries the title
+I 4188 gcd=s196539 0.95 | the 228pp 2023 anthology is the whole of GCD 196539 / CV 150479
+S 296 cv=73920 gcd=112605 0.95 | the stored link is wrong (below); re-probing the dump with the RECORD's spelling found GCD 112605 "A.B.C. Warriors: The Mek Files" (Rebellion 2014, 3) which agrees with CV 73920 "A.B.C. Warriors: The Mek-Files" (Rebellion 2014, 4) on publisher and start year, and our three files are v01 (2014), v02 (2014), v03 (2015) of exactly that line — GCD's 3 is our holding and CV's 4 is the later volume, staleness above our ladder, not residue
+F 296 wrong-cv-link | stored CV 21833 is "ABC Warriors" 1982 Titan Comics (4), Titan's 1980s album line, not Rebellion's 2014 Mek Files; the six GCD "ABC Warriors" rows the packet showed are all Arboris/Soleil/Glénat/Zenda foreign-language albums, rejected on the publisher column alone
+I 4190 gcd=s112605 0.9 | Mek Files v01 (2014, 278pp), the first volume of GCD 112605 / CV 73920
+I 4191 gcd=s112605 0.9 | Mek Files v02 (2014, 214pp), the second volume of the same line
+I 4192 gcd=s112605 0.9 | Mek Files v03 (2015, 272pp), the third volume of the same line
+S 298 cv=48240 gcd=- 0.9 | CV 48240 "ABC Warriors The Shadow Warriors" (Rebellion 2009, 1) is the only record of this title in either provider, and our two files are "…Shadow Warriors 01 44p" and "02 48p" — 92pp between them, which is one Rebellion collection split in two by the ripper, not two issues; the count of 1 against a two-file shelf is what caps this at one leg plus our own naming
+F 298 provider-missing | no GCD series for "ABC Warriors: The Shadow Warriors" under any spelling (0 hits exact, 0 substring); GCD holds only the foreign-language ABC Warriors albums
+N 298 the shelf's 1988 year is not in either filename and is not the record's year; the two files carry no year at all
+S 299 cv=71632 gcd=193412 0.95 | CV 71632 ("ABC Warriors: The Solo Missions", Rebellion 2014, 1) and GCD 193412 ("A.B.C. Warriors: The Solo Missions", Rebellion 2014-2014, 1) agree on publisher, year and one volume — the dump hit only on the punctuated spelling, which the packet's parsed key missed; our one 95pp file is dated 2014
+I 4196 gcd=s193412 0.95 | the 95pp 2014 Solo Missions collection is the only issue of GCD 193412 / CV 71632
+S 373 cv=48242 gcd=98736 0.95 | CV 48242 (Rebellion 2008, 2, cached #1-2) and GCD 98736 "The Complete Ace Trucking Co." (Rebellion 2008-2008, 2) agree on publisher, year and a two-volume set, and we hold exactly v01 (2008, 322pp) and v02 (2009, 340pp) — a work published as volumes with no issue run behind it, so the collected line IS the identity
+I 4198 gcd=s98736 0.9 | The Complete Ace Trucking Co. v01, the first of GCD 98736's two volumes
+I 4199 gcd=s98736 0.9 | The Complete Ace Trucking Co. v02, the second of the same two
+S 972 cv=46044 gcd=191950 0.9 | CV 46044 "Ampney Crucis Investigates:" (Rebellion 2012, 1) and GCD 191950 "Ampney Crucis Investigates... Vile Bodies" (Rebellion 2012-2012, 1) are the same 2012 collection; our two files are the raw strip extracts it collects — "2000AD #1611-1616 … Vile Bodies" (36pp) and "#1666-1671 & Prog 2010 … The End of the Pier Show" (42pp) — so the second arc is a residue the one-volume record does not cover
+N 972 the shelf's "ladder 1611, 1666" is prog numbers read as issue numbers — the wrong-coordinate shape, and the whole of the 2/1 ratio
+S 1779 cv=76945 gcd=224303 0.95 | the dump does hold this book, under the full title the packet's key dropped: GCD 224303 "The Complete Bad Company" (Rebellion 2011-2011, 1) agrees with CV 76945 "The Complete Bad Company" (Rebellion 2011, 1) on publisher, year and one volume, and our single file is 372pp dated 2011
+F 1779 wrong-cv-link | stored CV 55268 is "Bad Company" 1987 Titan Comics (4) — Titan's 1980s album line, not the 2011 Rebellion omnibus; it also has no CvVolume row
+N 1779 the underlying run is split across publishers — GCD 3747 (Fleetway/Quality 1988-1990, 19) and GCD 166741 (Titan 1987-1988, 4) — which is why the omnibus line, not a run, is the identity here
+I 4203 gcd=s224303 0.95 | the 372pp Complete Bad Company is the only issue of GCD 224303 / CV 76945
+S 2658 cv=167650 gcd=235675 0.95 | CV 167650 (Rebellion 2022, 1, cached #1-1) and GCD 235675 (Rebellion 2022-2022, 1) agree on publisher, year and one volume; the containment pass judged item 4210 to cover #1-4, which is the four-part strip this 83pp book collects, and 1 of 1 judged fits
+I 4210 gcd=s235675 0.95 | the 83pp "Black Beth v01 - Vengeance Be Thy Name" is the only issue of GCD 235675 / CV 167650
+S 2712 cv=48254 gcd=191867 0.95 | CV 48254 and GCD 191867 both record "Black Hawk The Intergalactic Gladiator", Rebellion, 2011, one volume; our one file is 279pp dated 2011 and no other record of the title exists in either provider
+I 4211 gcd=s191867 0.95 | the 279pp 2011 collection is the whole of GCD 191867 / CV 48254
+S 57279 cv=103690 gcd=118892 0.95 | CV 103690 (Rebellion 2017, 5) and GCD 118892 (Rebellion 2017-?, 6) agree on publisher and start year, and our five files are Book 01 (2017) through Book 05 (2022) in an unbroken volume ladder; GCD's sixth against a series whose end year is "?" is staleness above our holdings, not residue
+I 4212 gcd=s118892 0.9 | Brink Book 01 (2017, 99pp), volume 1 of GCD 118892
+I 4213 gcd=s118892 0.9 | Brink Book 02 (2018, 101pp), volume 2 of the same line
+I 4214 gcd=s118892 0.9 | Brink Book 03 (2019, 117pp), volume 3 of the same line
+I 4215 gcd=s118892 0.9 | Brink Book 04 (2021, 117pp), volume 4 of the same line
+I 4216 gcd=s118892 0.9 | Brink Book 05 (2022, 133pp), volume 5 of the same line
+S 23129 cv=48410 gcd=- 0.9 | CV 48410 "Button Man" (Rebellion 2003, 4, cached #1-4) matches our four files exactly — v01 The Killing Game, v02 The Confession of Harry Exton, v03 Killer Killer, v04 The Hitmans Daughter — a four-volume collected line and four books; GCD holds no English row at all, so this rests on one leg plus our own volume ladder
+F 23129 needs-fetch cv=48410 | the volume has no CvVolume row; it was named from the local rip
+F 23129 provider-missing | every GCD "Button Man" row is a translation — Arboris (nl) 31966/42631/112497, Egmont Ehapa (de) 65837, Panini Deutschland (de) 165251 — and the original language here is English, so no foreign row can stand in for it
+S 3850 cv=48407 gcd=180366 0.95 | CV 48407 "Chopper Surf's Up" (Rebellion 2010, 1) and GCD 180366 "Chopper: Surf's Up" (Rebellion 2010-2010, 1) agree on publisher, year and one volume; our single 308pp file is the 2013 reprint of that book
+I 4222 gcd=s180366 0.95 | the 308pp Chopper - Surfs Up is the only issue of GCD 180366 / CV 48407
+S 4496 cv=34633 gcd=51959 0.9 | our file is "The Complete D.R. & Quinch (2010) (digital-HD)", 128pp; GCD splits the printings — 43125 (Rebellion 2006) and 51959 (Rebellion 2010-2010, 1) — and 51959 is literally our book, while CV keeps only one record of the work, 34633 "Complete D.R. and Quinch" (Rebellion 2006, 1); same comic, two printings, which is why this is 0.9 rather than a clean pair
+F 4496 wrong-cv-link | stored CV 66924 is "D.R. & Quinch" 2001 Dude Comics — the Spanish edition (GCD 67158 [es] 2001-? Dude Comics), rejected on the publisher and language columns
+I 4223 gcd=s51959 0.9 | the 128pp 2010 Rebellion printing is the only issue of GCD 51959
+S 4749 cv=85818 gcd=111217 0.95 | CV 85818 "Dan Dare: The 2000 AD Years" (Rebellion 2015, 2) and GCD 111217 "Dan Dare The 2000 AD Years" (2015-?, 2, dump-only, linked on 2/2 files by fulldump-rematch) agree on start year and a two-volume set, and we hold Vol. 01 (2015, 278pp) and v02 (2016, 340pp) — both volumes, 2 of 2
+I 4225 gcd=s111217 0.9 | Dan Dare - The 2000AD Years Vol. 01 (2015), volume 1 of GCD 111217
+I 4224 gcd=s111217 0.9 | Dan Dare - The 2000AD Years v02 (2016), volume 2 of the same set
+S 5276 cv=120186 gcd=- 0.9 | our file is "COL Deathwish Vol. 01 - Best Wishes (2019)", 116pp, and CV 120186 "Deathwish: Best Wishes" (Rebellion 2019, 1) matches the title, subtitle, publisher and year exactly; GCD holds only the 1994 DC Deathwish (5177, 4 issues), a different comic twenty-five years earlier
+F 5276 wrong-cv-link | the per-file link is CV 159884 "Deathwish" at "Lesser Known Comics" with no year — a name-only stamp on the wrong publisher
+F 5276 provider-missing | no GCD series for Rebellion's 2019 Deathwish: Best Wishes
+S 23238 cv=22951 gcd=24369 0.9 | CV 22951 (Rebellion 2004, 2, cached #1-2) and GCD 24369 (DC 2004-2005, 2) are the same two-volume Devlin Waugh collected line under its two distributors, and our v01 Swimming in Blood (2014) and v02 Red Tide (2015) are those two volumes reissued; the residue is v03 Blood Debt (2021), a third book beyond both counts
+N 23238 ComicVine also mints a volume per book here — 145637 Swimming in Blood (2014), 82746 Red Tide (2015), 135890 Blood Debt (2021) — and 135890 is the record for our third file, which the 2-volume line does not cover
+N 23238 item 4229 (Devlin Waugh v03 - Blood Debt, 2021, 175pp) gets no I line: its own record is CV VOLUME 135890, which is not an item-level id, and no GCD series or issue for it exists in our data
+S 6649 cv=162602 gcd=207368 0.9 | CV 162602 (Rebellion 2023, 2) and GCD 207368 (Rebellion 2023-2023, 2) agree on publisher, year and a two-volume line, and our "COL Fiends of the Eastern Front v01 (2023)" (149pp) is v01 of it; the residue is the 2013 116pp file, an earlier one-volume edition of the same material that neither 2023 record covers (GCD's 189794 2006 and 191324 2010 are the two earlier printings)
+F 6649 needs-fetch cv=162602 | the volume has no CvVolume row; it was named from the local rip
+I 4232 gcd=s207368 0.9 | the 2023 v01 (149pp) is volume 1 of GCD 207368 / CV 162602
+I 4231 gcd=s189794 0.7 | the 2013 116pp "COL Fiends of the Eastern Front" is one of the earlier one-volume printings; GCD holds two of them (189794 2006, 191324 2010) and nothing in the file distinguishes which, so this is a review-queue guess at the 2006 row
+S 6697 cv=147186 gcd=236980 0.95 | CV 147186 (Rebellion 2022, 1, cached #1-1) and GCD 236980 (Rebellion 2022-2022, 1) both record "Finn: Origins" as one 2022 Rebellion volume; our single file is 163pp dated 2022, and the 1993 Fleetway Quality "Finn" (CV 51360, 4) is a different comic
+I 4233 gcd=s236980 0.95 | the 163pp Finn v01 - Origins is the only issue of GCD 236980 / CV 147186
+S 6734 cv=138793 gcd=- 0.9 | CV 138793 "Firekind" (Rebellion 2021, 1) is the only record of the title in either provider and matches our single 88pp 2021 file on title, publisher and year; the CV name-search returned only unrelated 2021 annuals, so this is one leg plus our own naming and year
+F 6734 provider-missing | no GCD series for Rebellion's 2021 Firekind collection (0 hits exact and substring)
+S 570 cv=23166 gcd=18753 0.95 | CV 23166 and GCD 18753 both record "The Complete Alan Moore Future Shocks", Rebellion, 2006, one volume; our single 176pp file is the 2011 reprint of that book and no other record carries the title
+I 4235 gcd=s18753 0.95 | the 176pp Complete Alan Moore Future Shocks is the only issue of GCD 18753 / CV 23166
+S 7600 cv=48404 gcd=122122 0.95 | CV 48404 (Rebellion 2002, 1) and GCD 122122 "Glimmer Rats" (en-gb, Rebellion 2002-2002, 1) agree on publisher, year and one volume; GCD's other row 42856 is Dark Horse's 2002 US edition of the same book, distinguished by the publisher column exactly as the ledger prescribes
+I 4236 gcd=s122122 0.95 | the 66pp Glimmer Rats collection is the only issue of the Rebellion row GCD 122122
+S 7999 cv=121007 gcd=222934 0.95 | CV 121007 and GCD 222934 both record "Grey Area: A Long Way Home", Rebellion, 2019, one volume, and our single 213pp file is "Grey Area v02 - A Long Way Home (2019)"; the sibling volume This Island Earth has its own pair of records and its own shelf
+I 4238 gcd=s222934 0.95 | the 213pp A Long Way Home is the only issue of GCD 222934 / CV 121007
+S 8000 cv=107571 gcd=122390 0.95 | CV 107571 and GCD 122390 both record "Grey Area: This Island Earth", Rebellion, 2018, one volume; our single 180pp file is dated 2017 in the rip, a one-year cover-date offset, and the CV name-search's other "Grey" hits are Viz/Tokuma manga
+I 4237 gcd=s122390 0.95 | the 180pp This Island Earth is the only issue of GCD 122390 / CV 107571
+S 9937 cv=131664 gcd=- 0.9 | CV 131664 "John Steel Files" (Rebellion 2020, 1) matches our single 132pp 2020 file on title, publisher and year; GCD's only John Steel rows are Western's 1964 "John Steele, Secret Agent" (12679) and a Norwegian 244-issue weekly (36043), both rejected on publisher and language
+F 9937 provider-missing | no GCD series for Rebellion's 2020 John Steel Files
+S 5863 cv=102192 gcd=130313 0.9 | GCD 130313 "Anderson: The Deep End" (Rebellion 2017-2017, 1) is the second leg the packet's key missed, and it agrees with CV on publisher, year and one volume; the cap is that ComicVine holds TWIN records for this one book — 102192 "Dredd/Anderson: The Deep End" (which is our filename exactly) and 102101 "Anderson: The Deep End" (which is GCD's spelling), both Rebellion 2017 count 1
+I 4243 gcd=s130313 isbn=9781781085530 0.9 | the book's own scanned EAN13 barcode is 9781781085530 and the 101pp file is the only issue of GCD 130313; the ISBN is the collection's own assertion but nothing in our data resolves it, so it is recorded rather than claimed as a 1.0
+S 9998 cv=40229 gcd=44048 0.95 | CV 40229 "Judge Anderson: PSI Files" (Rebellion 2010, 5) and GCD 44048 "Judge Anderson: The Psi Files" (Rebellion 2009-?, 5, linked on 8/10 files by number) agree on publisher and a five-volume line, and we hold Vol. 01-05 twice over — 4244-4248 (JeffAlbertson-DCP) and 4410-4414 (Digital-Empire) — so ten files, five books, and the duplicate rips cost nothing
+I 4244 gcd=s44048 0.9 | Judge Anderson - The Psi Files Vol. 01 (435pp), volume 1 of GCD 44048; item 4410 is the second rip of this same book
+I 4245 gcd=s44048 0.9 | Vol. 02, volume 2 of the same line; item 4411 is its second rip
+I 4246 gcd=s44048 0.9 | Vol. 03, volume 3 of the same line; item 4412 is its second rip
+I 4247 gcd=s44048 0.9 | Vol. 04, volume 4 of the same line; item 4413 is its second rip
+I 4248 gcd=s44048 0.9 | Vol. 05, volume 5 of the same line; item 4414 is its second rip
+S 10000 cv=48419 gcd=51560 0.95 | CV 48419 and GCD 51560 both record "Judge Death: My Name Is Death", Rebellion, 2005, one volume; our single 118pp file is dated 2005 and the sibling Young Death book has its own records
+I 4249 gcd=s51560 0.95 | the 118pp My Name is Death is the only issue of GCD 51560 / CV 48419
+S 10001 cv=48420 gcd=116260 0.95 | CV 48420 (Rebellion 2008, 1, cached #1-1) and GCD 116260 "Judge Death: Young Death - Boyhood of a Superfiend" (Rebellion 2008-2008, 1) agree on publisher, year and one volume; our file carries the full subtitle and is 101pp dated 2008
+I 4250 gcd=s116260 0.95 | the 101pp Young Death - Boyhood of a Superfiend is the only issue of GCD 116260 / CV 48420
+S 9505 cv=80621 gcd=194116 0.95 | CV 80621 and GCD 194116 both record "Insurrection: Liberty", Rebellion, 2015, one volume, and our single file is "COL Insurrection v02 - Liberty (2015)", 99pp — the second volume of the Insurrection line, whose first volume is shelf S9504 in the same folder
+F 9505 merge-with=9504 | one folder, 2000AD\…\Insurrection (2009), split into two shelves by the subtitle in this one filename; S9504 holds Insurrection v01 twice and a second rip of this very book (item 4461)
+I 4409 gcd=s194116 0.95 | the 99pp Insurrection v02 - Liberty is the only issue of GCD 194116 / CV 80621
+S 5861 cv=115609 gcd=136567 0.9 | both providers hold TWIN records for this book — CV 115609 (Rebellion 2018, 1) with 113925 (Rebellion 2018, 2), GCD 136567 (2018, 1) with 204614 (2018, 2) — and our shelf is one 101pp file, so the count-1 pair is the arithmetic that fits; the "(2000)" in the filename is the strip's original Megazine date, not the collection's
+N 5861 the stored link is the count-2 twin CV 113925, which also has no CvVolume row; it is a duplicate record of the same book rather than a different comic, so no wrong-cv-link is claimed
+I 4456 gcd=s136567 0.9 | the 101pp Dredd - Final Judgement is the only issue of GCD 136567; GCD's twin 204614 records the same book with a count of 2
+S 5862 cv=79995 gcd=194097 0.95 | CV 79995 and GCD 194097 both record "Dredd: Urban Warfare", Rebellion, 2015, one volume; our single 100pp file is dated 2015 and the CV name-search's other "Urban" hits are Splitter and Moving Target titles
+I 4457 gcd=s194097 0.95 | the 100pp Dredd - Urban Warfare is the only issue of GCD 194097 / CV 79995
+S 8965 cv=75582 gcd=190558 0.95 | the dump does hold it, under the full title with "& More" that the parsed key truncated: GCD 190558 "Hondo City Justice: Revenge of the 47 Ronin & More" (Rebellion 2014-2014, 1) agrees with CV 75582 (Rebellion 2014, 1) on publisher, year and one volume, and our file is 164pp dated 2014
+N 8965 the shelf's "ladder 47" is the 47 of "47 Ronin" read as an issue number — the wrong-coordinate shape and the whole of the 1/1 ratio
+I 4458 gcd=s190558 0.95 | the 164pp Revenge of the 47 Ronin & More is the only issue of GCD 190558 / CV 75582
+S 8966 cv=58762 gcd=176529 0.95 | CV 58762 and GCD 176529 both record "Hondo City Law", Rebellion, 2011, one volume; our single 164pp file is dated 2011
+I 4459 gcd=s176529 0.95 | the 164pp Hondo City Law is the only issue of GCD 176529 / CV 58762
+S 9504 cv=48399 gcd=191911 0.9 | CV 48399 (Rebellion 2010, 1, cached #1-1) and GCD 191911 (Rebellion 2011-2011, 1) agree on publisher and a one-volume record, and ComicInfo says Series "Insurrection" / Publisher "Rebellion"; two of our three files are that volume (4408 the 2013 Torquemada rip, 4460 the 2011 JeffAlbertson rip), and the residue is item 4461, Vol. 02 Liberty, a different book with its own records
+F 9504 merge-with=9505 | S9505 is the same folder's Liberty volume; items 4409 and 4461 are two rips of that one book, split across the two shelves
+I 4408 gcd=s191911 0.9 | Insurrection v01 (2013 rip, 129pp), the only issue of GCD 191911; item 4460 is the second rip of the same book
+I 4461 gcd=s194116 0.9 | Insurrection Vol. 02 - Liberty (2015 rip, 100pp) is S9505's book — GCD 194116 / CV 80621 — filed onto this shelf as well
+S 10003 cv=51358 gcd=43818 0.9 | the run wins: CV 51358 "Judge Dredd America" and GCD 43818 "Judge Dredd: America" both record Fleetway/Quality, 1993, two issues, and our two files are one 164pp collected edition of that material ripped twice; the residue is that the book we hold is the later collection, which both providers ALSO index separately (CV 40914 / GCD 190279, Rebellion 2008, count 1)
+F 10003 needs-fetch cv=51358 | the volume has no CvVolume row; it was named from the local rip
+I 4462 gcd=s190279 0.9 | the 164pp "Judge Dredd - America (2012)" collection's own record is the Rebellion 2008 count-1 series GCD 190279 (CV 40914); item 106366 is an identical second rip filed under Misc\Judge Dredd (2013)
+S 10005 cv=48508 gcd=122128 0.95 | the dump holds it under the record's spelling, "Brothers of the Blood" rather than our filename's "Brothers in Blood": GCD 122128 (Rebellion 2006-2006, 1) agrees with CV 48508 (Rebellion 2006, 1) on publisher, year and one volume, and our file is 181pp dated 2006
+I 4463 gcd=s122128 isbn=9781904265856 0.95 | the book's own scanned EAN13 is 9781904265856 and the 181pp file is the only issue of GCD 122128 / CV 48508
+S 10006 cv=100699 gcd=- 0.9 | CV 100699 "Judge Dredd: The Cape & Cowl Crimes" (Rebellion 2017, 1) matches our single 165pp 2017 file on title, publisher and year; GCD has no row under the ampersand or "and" spelling, and every CV alternative is a Judge Dredd ongoing at another publisher
+F 10006 provider-missing | no GCD series for Rebellion's 2017 The Cape & Cowl Crimes
+S 10009 cv=100050 gcd=122130 0.95 | CV 100050 and GCD 122130 both record "Judge Dredd: Every Empire Falls", Rebellion, 2017, one volume; our single 244pp file is dated 2017
+I 4465 gcd=s122130 0.95 | the 244pp Every Empire Falls is the only issue of GCD 122130 / CV 100050
+S 10010 cv=40471 gcd=13304 0.9 | the run wins: CV 40471 "Judge Dredd Legends of the Law" and GCD 13304 both record DC, 1994-1995, thirteen issues, and our single 177pp "v01 (2022)" is Rebellion's collected volume of that run; the residue is that we hold one volume of the collection rather than the issues
+N 10010 the collected edition's own record is CV volume 147187 (Rebellion 2022, 1, cached #1-1); no GCD series exists for it, so the book itself gets no item-level id here
+S 10011 cv=48510 gcd=183754 0.95 | CV 48510 (Rebellion 2008, 1) and GCD 183754 "Judge Dredd: Mandroid" (en-gb, Rebellion 2007-2007, 1) agree on publisher and one volume with a one-year cover-date offset; our file is 165pp dated 2007, matching GCD, and the Soleil [fr] row 125000 is rejected on language
+I 4467 gcd=s183754 0.95 | the 165pp Mandroid is the only issue of GCD 183754 / CV 48510
+S 10013 cv=71073 gcd=78699 0.95 | the run wins and the stored link is a different comic: all three files are "Judge Dredd - Mega-City Two (2014)", 145pp, the trade of IDW's five-issue mini, and CV 71073 (IDW 2014, 5) and GCD 78699 (IDW 2014-2014, 5) agree exactly on publisher, year and length
+F 10013 wrong-cv-link | stored CV 52428 is "Judge Dredd: Mega-City Masters" 2010 Simon and Schuster (3) — a different title, publisher and decade; the shelf's NAME comes from that wrong link, not from any file on it
+I 4469 gcd=s223498 0.9 | the trade's own container record is the IDW 2014 count-1 series GCD 223498 (CV 76740); items 30882 and 106367 are two further identical rips of this same 145pp book under IDW\Judge Dredd and Misc\Judge Dredd (2013)
+S 10016 cv=113513 gcd=190089 0.95 | CV 113513 and GCD 190089 both record "Judge Dredd: Nobody Apes the Law!", Rebellion, 2018, one volume; our single 149pp file is dated 2018
+I 4470 gcd=s190089 0.95 | the 149pp Nobody Apes the Law is the only issue of GCD 190089 / CV 113513
+S 10017 cv=19993 gcd=183755 0.95 | CV 19993 (Rebellion 2007, 1) and GCD 183755 "Judge Dredd: Origins" (Rebellion 2008-2008, 1) agree on publisher and one volume with a one-year offset; our file is 195pp dated 2008, matching GCD, and CV's "Essential Judge Dredd: Origins" 138336 is the later 2021 re-edition
+I 4471 gcd=s183755 0.95 | the 195pp Judge Dredd - Origins is the only issue of GCD 183755 / CV 19993
+S 10018 cv=48488 gcd=127186 0.95 | CV 48488 and GCD 127186 both record "Judge Dredd: Satan's Island", Rebellion, 2005, one volume; our single 117pp file is dated 2006, a one-year cover-date offset
+I 4472 gcd=s127186 0.95 | the 117pp Satan's Island is the only issue of GCD 127186 / CV 48488
+S 10021 cv=48461 gcd=155208 0.95 | CV 48461 and GCD 155208 both record "Judge Dredd: The Carlos Ezquerra Collection", Rebellion, 2007, one volume; our single 245pp file is the 2017 reprint, and IDW's "The Complete Carlos Ezquerra" (CV 34635, 2 volumes) is a different line at a different publisher
+I 4473 gcd=s155208 0.95 | the 245pp Carlos Ezquerra Collection is the only issue of GCD 155208 / CV 48461
+S 10022 cv=48490 gcd=158892 0.95 | CV 48490 and GCD 158892 both record "Judge Dredd: The Chief Judge's Man", Rebellion, 2006, one volume; our single 118pp file is dated 2006
+I 4474 gcd=s158892 0.95 | the 118pp The Chief Judge's Man is the only issue of GCD 158892 / CV 48490
+S 10023 cv=92185 gcd=190085 0.95 | our file is "Judge Dredd - The Cursed Earth [Uncensored] (2016)", and re-probing the dump with THAT title found GCD 190085 "Judge Dredd: The Cursed Earth Uncensored" (Rebellion 2016-2016, 1), which agrees with CV 92185 (Rebellion 2016, 1) on publisher, year and one volume — the uncensored edition is a distinct publication from the 2003 Titan Cursed Earth
+F 10023 wrong-cv-link | stored CV 62135 is "Judge Dredd: The Cursed Earth" 2003 Titan Comics (with GCD 44035 as its pair) — the earlier censored Titan edition, thirteen years and one publisher away from our file
+I 4475 gcd=s190085 0.95 | the 193pp Cursed Earth [Uncensored] is the only issue of GCD 190085 / CV 92185
+S 10024 cv=78906 gcd=183468 0.95 | CV 78906 (Rebellion 2014, 2) and GCD 183468 (Rebellion 2014-?, 2) agree on publisher, year and a two-volume line; our two files are byte-identical 359pp rips of "The Daily Dredds v01 - 1981-1986 (2014)", one book of the two
+I 4476 gcd=s183468 0.9 | The Daily Dredds v01 (359pp), volume 1 of GCD 183468 / CV 78906; item 106373 is the identical second rip under Misc\Judge Dredd (2013)
+S 10027 cv=48513 gcd=122118 0.95 | CV 48513 (Rebellion 2009, 1) and GCD 122118 "Judge Dredd: The Pit" (Rebellion 2008-2008, 1) agree on publisher and one volume with a one-year offset; our file is 211pp dated 2008, matching GCD, and the 1997 Hamlyn Pit (CV 58758) is the earlier prose-format edition
+I 4477 gcd=s122118 0.95 | the 211pp Judge Dredd - The Pit is the only issue of GCD 122118 / CV 48513
+S 10028 cv=40041 gcd=55379 0.95 | CV 40041 (Rebellion 2010, 4) and GCD 55379 (Rebellion 2010-?, 4) agree on publisher, start year and a four-volume line, and our single 312pp file is "The Restricted Files v01 (2012)", volume 1 of the four
+I 4478 gcd=s55379 0.9 | The Restricted Files v01 (312pp), volume 1 of GCD 55379 / CV 40041
+S 10029 cv=121008 gcd=- 0.9 | CV 121008 "Judge Dredd: The Small House" (Rebellion 2019, 1) matches our single 100pp 2019 file on title, publisher and year; GCD holds nothing under the title exact or substring, and the CV alternatives are all Judge Dredd ongoings
+F 10029 provider-missing | no GCD series for Rebellion's 2019 The Small House
+S 10030 cv=48489 gcd=34744 0.95 | CV 48489 and GCD 34744 both record "Judge Dredd: Total War", Rebellion, 2005, one volume; our single 149pp file is the 2013 reprint, and the several Apocalypse War records the name-search returned are a different story and different books
+I 4480 gcd=s34744 0.95 | the 149pp Total War is the only issue of GCD 34744 / CV 48489
+S 10031 cv=66347 gcd=192659 0.95 | CV 66347 and GCD 192659 both record "Judge Dredd: Trifecta", Rebellion, 2013, one volume; our two files are identical 177pp rips of that one TPB, filed once under Judge Dredd TPBs and once under Misc\Judge Dredd (2013)
+I 4481 gcd=s192659 0.95 | the 177pp Trifecta TPB is the only issue of GCD 192659 / CV 66347; item 106374 is the identical second rip
+S 18062 cv=54232 gcd=193413 0.9 | one collection, two printings, and each provider indexes a different one: CV 54232 "Batman/Judge Dredd Collection" (DC 2012, 1) is the DC printing and GCD 193413 "The Batman/Judge Dredd Collection" (en-gb, Rebellion 2014-2014, 1) is the 2014 Rebellion printing our two identical 302pp files actually are; GCD's 110312 is its row for the DC printing, so the two legs describe the same book under two imprints
+I 4485 gcd=s193413 0.9 | the 302pp 2014 Rebellion printing is the only issue of GCD 193413; item 106383 is the identical second rip under Misc\Judge Dredd (2013)
+R 23592 | this shelf is two complete collected LINES that both number from v01: items 4493-4496 are "Karl the Viking the Collection v01-v04 (2008) (Trigo&MickRC)" at 126-129pp, which is CV 46698 / GCD 87995 "Karl the Viking" (Don Lawrence Collection 2008, 4), and items 4497-4498 are "Karl the Viking v01-v02 (2022) (Mr Norrell-Empire)" at 244-245pp, which is CV 146917 (Rebellion 2022, 2) and has no GCD row at all; applying either record hands the other line's four or two books the wrong publisher, decade and volume count
+F 23592 split-needed | proposed: items 4493-4496 -> cv=46698 gcd=87995 (Don Lawrence Collection, 2008, 4 volumes); items 4497-4498 -> cv=146917 gcd=- (Rebellion, 2022, 2 volumes so far)
+S 4322 cv=115608 gcd=- 0.9 | CV 115608 "Creepy Creations" (Rebellion 2018, 1) matches our single 114pp 2018 file on title, publisher and year; GCD holds nothing under the title and the CV alternatives are Warren/Publicness "Creepy", a different magazine
+F 4322 provider-missing | no GCD series for Rebellion's 2018 Ken Reid Creepy Creations collection
+S 10412 cv=125961 gcd=- 0.9 | CV 125961 "Kingmaker: A World Lost" (Rebellion 2020, 1) matches our file "COL Kingmaker v01 - A World Lost (2020)", 146pp, on title, subtitle, publisher and year; GCD holds nothing under "Kingmaker" at all
+F 10412 wrong-cv-link | stored CV 68306 is "Lost World" 1995 Millennium Publications — the subtitle's last two words matched a different comic at a different publisher twenty-five years earlier, and it has no CvVolume row
+F 10412 provider-missing | no GCD series for Rebellion's Kingmaker
+S 11095 cv=109168 gcd=- 0.9 | CV 109168 "M.A.C.H. 1" (Rebellion 2018, 2) matches our file "COL M.A.C.H. 1 v01 - The John Probe Mission Files (2018)", 228pp, as volume 1 of a two-volume line; GCD's only M.A.C.H. 1 row is 17640 (Fleetway/Quality 1991-1991, 9), the US floppy reprint series, which is a different publication
+F 11095 provider-missing | no GCD series for Rebellion's 2018 M.A.C.H. 1 collected line
+S 11902 cv=48341 gcd=112904 0.95 | CV 48341 and GCD 112904 both record "Meltdown Man", Rebellion, 2010, one volume; our single 243pp file is dated 2010 and every CV alternative is a different "Meltdown"
+I 4518 gcd=s112904 0.95 | the 243pp Meltdown Man is the only issue of GCD 112904 / CV 48341
+S 12227 cv=93931 gcd=113002 0.95 | our file is "COL Misty v02 - The Sentinels & End of the Line... (2017)", 115pp — volume 2 of Rebellion's Misty collected line — and CV 93931 "Misty" (Rebellion 2016, 3) and GCD 113002 "Misty" (Rebellion 2016-?, 3) agree on publisher, start year and a three-volume line, so v02 of 3 fits both
+F 12227 wrong-cv-link | stored CV 78467 is "The Sentinels" 2014 "David Duke Press" — the subtitle taken as a title at an unrelated publisher; the CV rip's other Sentinels rows (Drumfish, Standard, Marvel) are equally unrelated
+I 4523 gcd=s113002 0.9 | Misty v02 - The Sentinels & End of the Line (115pp), volume 2 of GCD 113002 / CV 93931
+S 12231 cv=132266 gcd=187928 0.95 | CV 132266 and GCD 187928 both record "Misty Winter Special 2020", Rebellion, 2020, one issue; our single 52pp file is "Misty Winter Special (2020) (Digital-Empire)" and the 1978-79 IPC Misty specials are different publications
+I 4525 gcd=s187928 0.95 | the 52pp 2020 Winter Special is the only issue of GCD 187928 / CV 132266
+S 12232 cv=130830 gcd=215496 0.95 | CV 130830 and GCD 215496 both record "Misty & Scream! Halloween Special 2020", Rebellion, 2020, one issue; our single 52pp file carries that exact title and year
+I 4520 gcd=s215496 0.95 | the 52pp 2020 Halloween Special is the only issue of GCD 215496 / CV 130830
+S 15190 cv=104879 gcd=- 0.9 | CV 104879 "Scream! & Misty Special" (Rebellion 2017, 2) matches our two files — the 2017 (51pp) and 2018 (52pp) Halloween Specials — on publisher, start year and a count of 2 that is exactly the two annual specials we hold; GCD holds no row for the 2017/2018 specials, only the separate 2020 one
+F 15190 provider-missing | no GCD series covering Rebellion's 2017 and 2018 Scream! & Misty Halloween Specials
+S 12771 cv=95879 gcd=3524 0.9 | our ten files are 46-140pp story-arc BOOKS ("01 The World of Termight" … "10 The Final Conflict"), not floppies, and CV 95879 (Titan Comics 1983, 9) and GCD 3524 (Titan 1983-1989, 9) agree on publisher, start year and a nine-book album line; the tenth book is the unexplained residue that caps this at 0.9
+F 12771 wrong-cv-link | stored CV 40266 is "Nemesis the Warlock" 1989 Quality Communications (19) — the US floppy reprint series (GCD 43806, Fleetway/Quality 1989-1991, 19), a different format and publisher from our ten albums, and it has no CvVolume row
+S 13381 cv=122829 gcd=- 0.9 | ComicVine mints twins for this book — 119359 (Rebellion 2019, 4) and 122829 (Rebellion 2019, 1) — and our shelf is one 190pp 2019 file, so the count-1 record is the arithmetic that fits; GCD holds only 101563, Panini Deutschland's five-volume German edition of the French original, rejected on the publisher column
+F 13381 provider-missing | no English GCD series for Rebellion's 2019 Operation Overlord; the underlying work is the French Glénat album line (CV 91690, 5 volumes)
+S 14849 cv=120474 gcd=- 0.9 | CV 120474 "Roy of the Rovers: The Best of the 1950s" (Rebellion 2019, 1) matches our single 148pp 2019 file on title, publisher and year, and its sibling decade volumes (1960s 120769, 1970s 128412, 1980s 136574) are separate CV volumes, so this is one book not part of a numbered set; GCD holds none of them
+F 14849 provider-missing | no GCD series for Rebellion's Roy of the Rovers "Best of the decade" volumes
+S 14916 cv=- gcd=160044 0.9 | GCD 160044 "Smash! Special" (Rebellion 2020-2020, 1) is our file exactly — "SMASH! 2020 Special (2020) (Digital-Empire)", 68pp — and it is the only record of that special in either provider; ComicVine has no row for it, so this rests on the GCD leg plus our own title and year
+F 14916 wrong-cv-link | stored CV 110762 is "Smash" 2018 Candlewick Press (2), a US children's graphic novel; CV's Rebellion "Smash!" 157446 (2023, 3) is the later revival and the Odhams/IPC Smash! (37297/37585) is the 1966-71 weekly
+F 14916 provider-missing | ComicVine has no volume for Rebellion's 2020 Smash! Special
+I 4557 gcd=s160044 0.9 | the 68pp SMASH! 2020 Special is the only issue of GCD 160044
+S 15134 cv=98071 gcd=197238 0.95 | CV 98071 (Rebellion 2017, 3, cached #1-3) and GCD 197238 (en-gb, Rebellion 2017-?, 3) agree on publisher, start year and a three-volume line, and we hold v01 (2017), v02 (2017) and v03 (2021) — all three; the 2003-2007 Dark Horse Scarlet Traces books are the earlier US editions at a different publisher
+I 4550 gcd=s197238 0.9 | Scarlet Traces v01 (2017, 146pp), volume 1 of GCD 197238 / CV 98071
+I 4551 gcd=s197238 0.9 | Scarlet Traces v02 (2017, 221pp), volume 2 of the same line
+I 4552 gcd=s197238 0.9 | Scarlet Traces v03 (2021, 130pp), volume 3 of the same line
+S 19460 cv=133175 gcd=221978 0.95 | CV 133175 and GCD 221978 both record "The Return of Sexton Blake", Rebellion, 2020, one volume; our single 100pp file is dated 2020 and the Bear Alley Sexton Blake Annual (CV 58107) is a different publication
+I 4554 gcd=s221978 0.95 | the 100pp Return of Sexton Blake is the only issue of GCD 221978 / CV 133175
+S 16799 cv=43367 gcd=37849 0.95 | CV 43367 (IPC Magazines 1978, 1, cached #1-1) and GCD 37849 (en-gb, IPC 1978-1978, 1) agree on publisher, year and one issue; our single 52pp file is "Starlord Summer Special 1978" and the "ladder 1978" is that year read as an issue number
+I 4583 gcd=s37849 0.95 | the 52pp 1978 Starlord Summer Special is the only issue of GCD 37849 / CV 43367
+S 16988 cv=48219 gcd=190721 0.95 | CV 48219 and GCD 190721 both record "Strontium Dog: Blood Moon", Rebellion, 2010, one volume; our single 164pp file is "Strontium Dog v08 - Blood Moon (2010)", one book of the collected line whose volumes each carry their own record
+I 4592 gcd=s190721 0.95 | the 164pp Blood Moon is the only issue of GCD 190721 / CV 48219
+S 16989 cv=109419 gcd=123039 0.9 | CV 109419 (Rebellion 2018, 1) and GCD 123039 (Rebellion 2018-2018, 1) agree on publisher, year and one volume for our single 148pp "Strontium Dog v11 - Repo Men (2018)"; the cap is GCD's twin adjacent row 173102, an identical second record of the same book
+I 4595 gcd=s123039 0.9 | the 148pp Repo Men is the only issue of GCD 123039; GCD 173102 is its duplicate row
+S 16990 cv=48216 gcd=42900 0.95 | CV 48216 (Rebellion 2007, 4, cached #1-4) and GCD 42900 (Rebellion 2006-2008, 4) agree on publisher and a four-volume line, we hold all four (v01-v04, various reprintings 2009-2013), and all four ComicInfo blocks say Series "Strontium Dog Search/Destroy Agency Files" / Publisher "Rebellion" — the collection asserting the same thing both legs do
+I 4585 gcd=s42900 0.9 | Search-Destroy Agency Files 01 (365pp, 5th print), volume 1 of GCD 42900 / CV 48216
+I 4586 gcd=s42900 0.9 | Search-Destroy Agency Files 02 (404pp, 3rd print), volume 2 of the same line
+I 4587 gcd=s42900 0.9 | Search-Destroy Agency Files 03 (403pp, 2nd print), volume 3 of the same line
+I 4588 gcd=s42900 0.9 | Search-Destroy Agency Files 04 (388pp, 2nd print), volume 4 of the same line
+S 16991 cv=48217 gcd=190280 0.95 | CV 48217 and GCD 190280 both record "Strontium Dog: The Final Solution", Rebellion, 2008, one volume; our single 210pp file is "v05 - The Final Solution (2011, 2nd print)", the same book reprinted
+I 4589 gcd=s190280 0.95 | the 210pp The Final Solution is the only issue of GCD 190280 / CV 48217
+S 16992 cv=48218 gcd=122126 0.95 | CV 48218 and GCD 122126 both record "Strontium Dog: The Kreeler Conspiracy", Rebellion, 2008, one volume; our single 212pp file is "v06 - The Kreeler Conspiracy (2009)"
+I 4590 gcd=s122126 0.95 | the 212pp The Kreeler Conspiracy is the only issue of GCD 122126 / CV 48218
+S 16993 cv=79441 gcd=67428 0.9 | GCD keeps ONE series for this two-book sub-line — 67428 "Strontium Dog: The Life and Death of Johnny Alpha" (Rebellion 2012-2015, 2) — while ComicVine mints a volume per book, and CV 79441 is the Dogs of War half (Rebellion 2015, 1); our file is "v10 - Dogs of War (2015)", 147pp, the second of GCD 67428's two issues
+F 16993 merge-with=16994 | the Epic-Collection shape: S16993 (Dogs of War) and S16994 (The Project) are the two books of the single GCD series 67428, split into two shelves because ComicVine gave each its own volume
+I 4594 gcd=s67428 0.9 | Dogs of War (147pp, 2015) is one of the two issues of GCD 67428; CV records it as volume 79441
+S 16994 cv=106805 gcd=67428 0.9 | the same two-book GCD series 67428 (Rebellion 2012-2015, 2) covers this shelf's book, and CV 106805 "…The Project" (Rebellion 2012, 1) is ComicVine's per-book volume for it; our file is "v09 - The Project (2012)", 147pp, the first of the two
+I 4593 gcd=s67428 0.9 | The Project (147pp, 2012) is the other of GCD 67428's two issues; CV records it as volume 106805
+S 16995 cv=146560 gcd=224742 0.9 | CV 146560 "Strontium Dog: The Son" (Rebellion 2022, 1) and GCD 224742 (en-gb, Rebellion 2022 title, 1) are the only records of the title and agree on publisher and one volume; the unexplained residue is GCD's year, recorded as 2018-2018 against our file's and CV's 2022
+I 4596 gcd=s224742 0.9 | the 132pp "Strontium Dog v12 - The Son (2022)" is the only issue of GCD 224742 / CV 146560
+S 16996 cv=48220 gcd=190532 0.95 | CV 48220 and GCD 190532 both record "Strontium Dog: Traitor to His Kind", Rebellion, 2009, one volume; our single 212pp file is "v07 - Traitor to His Kind (2009)"
+I 4591 gcd=s190532 0.95 | the 212pp Traitor to His Kind is the only issue of GCD 190532 / CV 48220
+S 17511 cv=147161 gcd=- 0.9 | CV 147161 "Tales from the Black Museum" (Rebellion 2021, 2, cached #1-2) matches our two files — v01 (2021, 102pp) and v02 (2022, 106pp) — on publisher, start year and a two-volume line we hold complete; GCD holds nothing under the title exact or substring
+F 17511 provider-missing | no GCD series for Rebellion's Tales from the Black Museum volumes
+S 18016 cv=159752 gcd=- 0.9 | CV 159752 "The Astounding Jason Hyde" (Rebellion 2022, 1) matches our single 210pp 2022 file on title, publisher and year; GCD holds nothing under the title and the CV alternatives are Astounding Comix / Alan Class titles
+F 18016 provider-missing | no GCD series for Rebellion's 2022 The Astounding Jason Hyde
+S 1807 cv=110906 gcd=124576 0.95 | CV 110906 (Rebellion 2018, 3) and GCD 124576 (en-gb, Rebellion 2018-2018, 3) agree on publisher, year and a three-book set, and our three files are "Ballad of Halo Jones Book 01/02/03 (Color) (2018)" — all three of that set; the 2013 B&W single volume and the 2023 colour omnibus are separate publications on their own shelves in the same folder
+I 4602 gcd=s124576 0.9 | Halo Jones Book 01 (Color, 2018, 66pp), book 1 of GCD 124576 / CV 110906
+I 4603 gcd=s124576 0.9 | Halo Jones Book 02 (Color, 2018, 67pp), book 2 of the same set
+I 4604 gcd=s124576 0.9 | Halo Jones Book 03 (Color, 2018, 99pp), book 3 of the same set
+S 63663 cv=60959 gcd=192516 0.95 | CV 60959 (Rebellion 2013, 1) and GCD 192516 (en-gb, Rebellion 2013-2013, 1) agree on publisher, year and one volume; our single file is "The Ballad of Halo Jones Book 01 (2013) (B&W)", 210pp — the one-volume B&W edition, which GCD indexes separately from the 1986 Titan (3334), 2005 DC (12955), 2006 Rebellion (81102), 2018 colour (124576) and 2023 omnibus (197255) editions
+I 4605 gcd=s192516 0.95 | the 210pp 2013 B&W Halo Jones is the only issue of GCD 192516 / CV 60959
+S 18053 cv=153070 gcd=197255 0.95 | CV 153070 "The Ballad of Halo Jones: Full Colour Omnibus Edition" (Rebellion 2023, 1) and GCD 197255 (en-gb, Rebellion 2023-2023, 1) agree on publisher, year and one volume; our single 241pp file is that omnibus, filed in its own "Omnibus Edition" subfolder
+I 5861 gcd=s197255 0.95 | the 241pp Full Colour Omnibus Edition is the only issue of GCD 197255 / CV 153070
+S 18381 cv=48268 gcd=44044 0.95 | CV 48268 and GCD 44044 both record "The Dead Man", Rebellion, 2009, one volume; our single 101pp file is dated 2009 and every CV alternative is a different comic entirely
+I 4606 gcd=s44044 0.95 | the 101pp The Dead Man is the only issue of GCD 44044 / CV 48268
+S 19663 cv=135238 gcd=171763 0.9 | CV 135238 and GCD 171763 both record "The Spider's Syndicate of Crime" at Rebellion in 2021, which is our single 148pp 2021 file; the unexplained residue is the count — CV says 1, GCD says 3 with an open end year, and only one book is on the shelf
+I 4615 gcd=s171763 0.9 | the 148pp The Spider's Syndicate of Crime is the first issue of GCD 171763 / the whole of CV 135238
+S 19766 cv=114317 gcd=159943 0.95 | CV 114317 (Rebellion 2018, 4) and GCD 159943 (en-gb, Rebellion 2018-?, 3) agree on publisher and start year, and our three files are v01 (2018), v02 (2020), v03 (2021); CV's fourth against GCD's open end year is staleness above our holdings, and Hibernia's 2007/2014 Thirteenth Floor (CV 43503/88335, GCD 176295) is a different publisher's earlier reprint
+I 4616 gcd=s159943 0.9 | The Thirteenth Floor v01 (2018, 177pp), volume 1 of GCD 159943 / CV 114317
+I 4617 gcd=s159943 0.9 | The Thirteenth Floor v02 (2020, 163pp), volume 2 of the same line
+I 4618 gcd=s159943 0.9 | The Thirteenth Floor v03 (2021, 181pp), volume 3 of the same line
+S 22781 cv=77721 gcd=- 0.9 | CV 77721 "Zenith: Phase One" (Rebellion 2014, 1, cached #1-1) matches our single 117pp file "COL Zenith v01 - Phase One (2014)" on title, publisher and year; GCD holds no Rebellion Zenith row at all
+F 22781 provider-missing | GCD's only Zenith rows are the Fleetway/Quality US reprint minis 24983 "Zenith Phase I" (1992, 3) and 24982 "Zenith Phase II" (1993, 3) — a different format and publisher from Rebellion's 2014-15 collected volumes; I took the Rebellion volume on all three Zenith shelves rather than the Fleetway mini on two of them and nothing on the third
+S 22783 cv=78585 gcd=- 0.9 | CV 78585 "Zenith: Phase Two" (Rebellion 2014, 1) matches our single 117pp "COL Zenith v02 - Phase Two (2014)" on title, publisher and year; GCD holds only the 1993 Fleetway/Quality reprint mini (24982, 3 issues), a different publication
+F 22783 provider-missing | no GCD series for Rebellion's 2014 Zenith Phase Two collected volume
+S 22782 cv=81322 gcd=- 0.9 | CV 81322 "Zenith: Phase Three" (Rebellion 2015, 1) matches our single 149pp "COL Zenith v03 - Phase Three (2015)" on title, publisher and year; GCD has no Phase Three row in any form, Fleetway/Quality having reprinted only Phases I and II
+F 22782 provider-missing | no GCD series for Zenith Phase Three at any publisher
+S 703 cv=29159 gcd=25073 0.95 | CV 29159 (AC Comics 2000, 1, cached #1-1) and GCD 25073 (AC 2000-2000, 1) agree on publisher, year and one issue, ComicInfo says Series "All Hitler Comics" / Publisher "AC Comics", and the 2/1 ratio is two rips of the same 45pp issue #1 (a plain scan and a high-res rescan)
+S 1305 cv=3899 gcd=3477 0.9 | CV 3899 (AC Comics 1987, 3) and GCD 3477 "The Armageddon Factor" (AC 1987-1987, 2) agree on publisher and year, our complete ladder 1-2 (36pp + 28pp, both 1987) matches GCD's 2 exactly and both ComicInfo blocks say AC Comics; the unexplained residue is CV's third issue against a GCD series whose end year is closed at 1987
+S 2524 cv=24055 gcd=- 0.9 | CV 24055 "Big 'Uns" (AC Comics 1988, 2) matches our ladder 1-2 and all seven ComicInfo blocks say Series "Big 'Uns" / Publisher "AC Comics"; the seven files are five printings of #1 (1st, 2nd, c2c, a 48pp 2nd edition, a plain scan) and two rips of #2 (2004), which is the whole of the duplicate-number report
+F 2524 provider-missing | the nearest GCD row is 23997 "Big 'Uns: Giant Women on the Rampage" (AC 1998-2004, 3) — a different title whose span begins ten years after our #1 and whose count is 3, so it is rejected rather than taken
+S 3016 cv=27786 gcd=22412 0.95 | CV 27786 (AC Comics 1989, 1, cached #1-1) and GCD 22412 "The Blue Bulleteer" (AC 1989-1989, 1) agree on publisher, year and one issue; our single file is "Blue Bulleteer 001 (1989)", 36pp, and the 1996 Blue Bulleteer (CV 34441 / GCD 22413) is the separate later one-shot
+S 3017 cv=50861 gcd=25117 0.95 | CV 50861 and GCD 25117 both record "Blue Bulleteer Pulp Fiction Portfolio", AC, 2003, one issue; our single file is an 8pp portfolio dated 2003, and the two Blue Bulleteer comics (1989, 1996) are different publications
+S 3672 cv=66438 gcd=- 0.9 | CV 66438 "Cat-Man Ashcan" (AC Comics 1995, 2, cached #1-2) matches the two AC files on this shelf — Cat-Man 001 (1995) and 002 (1996), 34pp each, in AC Comics\Cat-Man (001-002)(1995-1996) — a complete two-issue ladder; the third file is a Dynamite book folded on, flagged below, and GCD's only "Cat Man" row is Seven Seas' 2025 manga
+F 3672 misfiled | item 21856 is "Cat-Man and Kitten 001 (2022) (3 covers) (Digital) (DR & Quinch-Empire)" under Dynamite\Cat-Man and Kitten (2022), ComicInfo Series "Cat-Man One Shot" / Publisher "Dynamite Entertainment" — Dynamite's 2022 one-shot (CV 146667), not AC's 1995 Cat-Man, and the whole of the 3/2 = 1.50 ratio
+F 3672 provider-missing | no GCD series for AC's 1995-96 Cat-Man
+S 4971 cv=51151 gcd=25078 0.95 | CV 51151 and GCD 25078 both record "Darkshade", AC, 2004, one issue; our single 38pp file is dated 2004 and AC's Scarlet Scorpion/Darkshade (CV 63958, 1995) is a different book
+S 5293 cv=28780 gcd=22418 0.95 | CV 28780 and GCD 22418 both record "Deep Dimension Horror", AC, 1994, one issue; our single 39pp file is dated 1994 and no other record of the title exists
+S 6607 cv=32005 gcd=- 0.9 | CV 32005 "Fem Forever" (AC Comics 1977, 1, cached #1-1) matches our single 11pp file "Fem Forever 1977 (1977) (paragon)" on title, publisher and year, and the "ladder 1977" is that year read as an issue number; GCD holds nothing under the title
+F 6607 provider-missing | no GCD series for AC/Paragon's 1977 Fem Forever
+S 1785 cv=27785 gcd=15148 0.95 | CV 27785 (AC Comics 1995, 1) and GCD 15148 "Bad Girl Backlash!" (AC 1995-1995, 1) agree on publisher, year and one issue; our two 47pp files are the same book filed twice, once as "Bad Girl Backlash (1995)" and once as "Femforce - Bad Girl Backlash! (1995) (AC)"
+S 6613 cv=66294 gcd=41652 0.95 | CV 66294 and GCD 41652 both record "FemForce: Claws of the She-Cat", AC, 2004, one issue; our single 38pp file is dated 2004 and AC's Rampaging She-Cat (2003) is the separate previous special
+S 6614 cv=31578 gcd=3479 0.95 | CV 31578 and GCD 3479 both record "FemForce: Out of the Asylum Special", AC, 1987, one issue; our single 35pp file is dated 1987 and CV's "Femforce Special" 21425 (1984, 2) is a different book
+S 6615 cv=21424 gcd=25080 0.95 | CV 21424 and GCD 25080 both record "Femforce: Rampaging She-Cat", AC, 2003, one issue; our single 47pp file is dated 2003
+S 6616 cv=31580 gcd=25133 0.95 | CV 31580 and GCD 25133 both record "FemForce: The Capricorn Chronicles", AC, 1994, one issue; our single 107pp file is dated 1994
+S 6617 cv=37174 gcd=25081 0.95 | CV 37174 and GCD 25081 both record "Femforce: Time Storm", AC, 1997, one issue; our single 84pp file is dated 1997
+S 6619 cv=146327 gcd=25158 0.95 | CV 146327 and GCD 25158 both record "Femforce Big 'Uns Portfolio", AC, 1999, one issue; our single file is a 6pp portfolio, and AC's "Big 'Uns" comic (CV 24055, 1988) is a different publication on its own shelf
+S 6620 cv=31579 gcd=23706 0.95 | the dump holds it under the short title the parsed key missed: GCD 23706 "Rio Rita" (AC 1994-1994, 1) agrees with CV 31579 "Femforce Femme Fatal: Rio Rita" (AC Comics 1994, 1) on publisher, year and one issue, and our single 76pp file is dated 1994
+S 6621 cv=21420 gcd=13125 0.95 | CV 21420 and GCD 13125 both record "FemForce Frightbook", AC, 1992, one issue; our single 36pp file is dated 1992
+S 6623 cv=21422 gcd=25132 0.95 | CV 21422 and GCD 25132 both record "Femforce: Origins", AC, 1997, one issue; our single 100pp file is "Femforce Origins (1997) (Paragon)"
+S 6627 cv=62689 gcd=25152 0.95 | the dump holds it under its full subtitled name: GCD 25152 "Femforce Spotlight: A Bill Black Retrospective…" (AC 2002-2002, 1) agrees with CV 62689 "Femforce Spotlight" (AC Comics 2002, 1) on publisher, year and one issue, and our file is "Femforce Spotlight - A Bill Black Retrospective (2002)", 25pp
+S 6628 cv=62688 gcd=25161 0.95 | CV 62688 and GCD 25161 both record "Femforce Swimsuit Portfolio", AC, 2000, one issue; our single file is a 17pp portfolio
+S 6630 cv=21421 gcd=23672 0.95 | CV 21421 and GCD 23672 both record "FemForce in the House of Horror", AC, 1989, one issue; our single 36pp file is dated 1989 and AC's "Horror House" (CV 23243, 1994) is a different book
+S 15241 cv=63989 gcd=25150 0.95 | CV 63989 (AC Comics 1996, 1, cached #1-1) and GCD 25150 (AC 1996-1996, 1) both record "Secret Files of the Femforce" as one issue; our single 26pp file is numbered 0, which is the issue AC published
+S 17444 cv=21439 gcd=23989 0.95 | CV 21439 "Synn: Girl From LSD" and GCD 23989 "Synn, the Girl from LSD" both record AC, 1990, one issue; our single 54pp file carries GCD's spelling and the 1990 date
+S 18686 cv=63449 gcd=25163 0.9 | CV 63449 (AC Comics 1991, 1) and GCD 25163 (AC 1991-1991, 2) agree on publisher and year for "The Girls of the Femforce", and our two 11pp files are the same book filed twice (once under Femforce, once under its own folder); the unexplained residue is GCD's second issue, which we do not hold and CV does not record
+S 6658 cv=- gcd=16459 0.9 | GCD 16459 "Fighting Yank Retro Comics" (AC 1997-1997, 1) matches our single file "Fighting Yank Retro Comics 001 (1997) 46p" on title, publisher, year and one issue; ComicVine has no volume of that name — its nearest rows are "Retro Comics" 21438 (AC 1997, 5) and "Fighting Yank" 58030 (AC 2001, 5), two different AC series
+F 6658 provider-missing | ComicVine holds no volume for AC's 1997 Fighting Yank Retro Comics
+S 7516 cv=66687 gcd=25162 0.95 | CV 66687 and GCD 25162 both record "Giant Women Portfolio", AC, 2002, one issue; our single file is a 7pp portfolio dated 2002
+S 7745 cv=28997 gcd=25131 0.95 | CV 28997 (AC Comics 1999, 1, cached #1-1) and GCD 25131 (AC 1999-1999, 1) both record "Golden Age Sheena Queen of the Jungle" as one issue; our single 86pp file is numbered 001 (1999) and ComicInfo says AC Comics
+S 7746 cv=28998 gcd=25151 0.95 | CV 28998 (AC Comics 2002, 2, cached #1-2) and GCD 25151 "Golden-Age Treasury" (AC 2003-2003, 2) agree on publisher and a two-volume set, and we hold v01 (255pp) and v02 (252pp) — both of them
+I 5172 gcd=s25151 0.9 | Golden Age Treasury v01 (255pp), volume 1 of GCD 25151 / CV 28998
+I 5173 gcd=s25151 0.9 | Golden Age Treasury v02 (252pp), volume 2 of the same set
+S 7868 cv=62853 gcd=210017 0.95 | CV 62853 (AC Comics 1998, 1, cached #1-1) and GCD 210017 "The Great American Western Sampler" (AC 1998-1998, 1) agree on publisher, year and one issue; our single 80pp file is numbered 001 (1998) with ComicInfo Publisher "AC Comics"
+S 8436 cv=21433 gcd=19655 0.95 | CV 21433 (AC Comics 1999, 1, cached #1-1) and GCD 19655 "The Haunted Horseman" (AC 1999-1999, 1) agree on publisher, year and one issue; the 2/1 ratio is two rips of that one issue (44pp and 46pp) and both ComicInfo blocks say AC Comics
+S 8971 cv=67071 gcd=19656 0.95 | CV 67071 and GCD 19656 both record "Hopalong Cassidy and the Five Men of Evil", AC, 1991, one issue; our single 68pp file is dated 1991, and Dell's and DC's Hopalong Cassidy ongoings are different comics forty years earlier
+S 7741 cv=5822 gcd=5596 0.9 | CV 5822 and GCD 5596 both record "Golden-Age Men of Mystery", AC, 1996-1999, fifteen issues — publisher, span and count all agreeing — and our sixteen files run 002-017 over exactly those years; the unexplained residue is that our ladder reaches 17 while both providers stop at 15
+N 7741 issue 001 of this AC line is not missing — it was published as "Golden Age Mystery Men" and is shelf S7743, with its own CV volume 133479 and GCD series 5597
+S 7743 cv=133479 gcd=5597 0.95 | CV 133479 and GCD 5597 both record "Golden-Age Mystery Men", AC, 1996, one issue; our single file is "Golden Age Mystery Men 001 (AC 1996)", 54pp, and the 15-issue "Men of Mystery" line (CV 5822 / GCD 5596) is the sibling series it precedes
+S 12208 cv=21434 gcd=23704 0.95 | CV 21434 and GCD 23704 both record "Miss Victory Golden Anniversary Special", AC, 1991, one issue; our single 68pp file is dated 1991 and AC's "Ms. Victory Special" (CV 21435, 1985) is a different book
+S 12952 cv=25843 gcd=54693 0.9 | CV 25843 "Nightveil/Colt One-Shot" and GCD 54693 "Nightveil / Colt One-Shot" are the only records of this title anywhere and both are AC one-shots; the unexplained residue is the year — GCD and our 70pp file say 1996, CV says 1992
+S 13167 cv=27798 gcd=23705 0.95 | CV 27798 and GCD 23705 both record "Official Golden-Age Hero & Heroine Directory", AC, 1997, one issue; our single 77pp file is dated 1997
+S 13565 cv=61275 gcd=25914 0.95 | CV 61275 (AC Comics 1981, 1, cached #1-1) and GCD 25914 "The Paragon Pretty Girl Portfolio" (AC 1981-1981, 1) agree on publisher, year and one issue; our two 22pp files are the 1st and 2nd printings of that one portfolio, which is the whole of the 1/1 duplicate report
+S 14074 cv=67492 gcd=19659 0.95 | CV 67492 (AC Comics 1989, 1, cached #1-1) and GCD 19659 "The Presto Kid" (AC 1989-1989, 1) agree on publisher, year and one issue; our single 37pp file is "Presto Kid 001 (1989)" with ComicInfo Publisher "AC Comics"
+S 14619 cv=67555 gcd=25123 0.95 | CV 67555 (AC Comics 2002, 1, cached #1-1) and GCD 25123 "The Return of the Black Phantom" (AC 2002-2002, 1) agree on publisher, year and one issue; our single 42pp file is numbered 001 (2002), and GCD 27298 / CV 52798 are the 1948 Vital Publications original AC is reprinting
+S 14848 cv=61723 gcd=25127 0.9 | CV 61723 and GCD 25127 both record "Roy Rogers and the 4th of July Bandits" as one AC issue dated 1992 — two independent legs agreeing on publisher, year and count — and the unexplained residue is our own naming, since the file and its folder both say 1990
+S 15503 cv=34610 gcd=23987 0.95 | CV 34610 (AC Comics 1996, 1) and GCD 23987 (AC 1995-1995, 1) both record "She-Cat Chronicles" as one AC issue with a one-year cover-date offset; our single 110pp file is dated 1996, matching CV, and AC's She-Cat ongoing (CV 22946, 6 issues, 1989) is a different comic
+S 15706 cv=- gcd=25148 0.9 | GCD 25148 "Sisters in S-I-N: Special Edition - The Fearforce versus The Femforce" (AC 2003-2003, 1) is our file's title word for word, and our single file is 143pp dated 2003; ComicVine holds no record of this special
+F 15706 wrong-cv-link | stored CV 21425 is "Femforce Special" 1984 AC Comics (2) — a different book nineteen years earlier; CV's nearest real match, 31577 "Sisters In S-I-N" (AC 1995, 1), is the 1995 comic, not the 2003 Special Edition
+F 15706 provider-missing | ComicVine has no volume for AC's 2003 Sisters in S-I-N Special Edition
+S 18750 cv=36142 gcd=25120 0.95 | CV 36142 (AC Comics 2002, 1, cached #1-1) and GCD 25120 "Hand of Zorro" (AC 2002-2002, 1) agree on publisher, year and one issue; our single 42pp file is "The Hand Of Zorro 001 (2002)" with ComicInfo Publisher "AC Comics"
+S 20154 cv=67769 gcd=4274 0.95 | CV 67769 and GCD 4274 both record "Thrilling Planet Tales", AC, 1991, one issue; our single 68pp file is dated 1991 and AC's Thrilling Wonder Tales (1991) is the separate sibling one-shot
+S 20157 cv=67804 gcd=13130 0.95 | CV 67804 and GCD 13130 both record "Thrilling Wonder Tales", AC, 1991, one issue; our single 36pp file is dated 1991 and AC's Thrilling Planet Tales (1991) is the separate sibling one-shot
+S 20821 cv=21441 gcd=23992 0.95 | the dump holds it with the article the parsed key dropped: GCD 23992 "The Untold Origin of the Femforce" (AC 1989-1989, 1) agrees with CV 21441 (AC Comics 1989, 1) on publisher, year and one issue, and our two 68pp files are the same book filed twice; AC's "Untold Origin of Ms. Victory" (GCD 21154 / CV 32003) is the separate companion book
+S 21073 cv=26205 gcd=22421 0.95 | CV 26205 (AC Comics 1986, 1, cached #1-1) and GCD 22421 "The Vic Bridges Fazers Sketchbook and Fact File" (AC 1986-1986, 1) agree on publisher, year and one issue; our single 37pp file is numbered 001 (1986) with ComicInfo Publisher "AC Comics"
+S 21599 cv=66193 gcd=20000 0.95 | CV 66193 (AC Comics 1970, 1, cached #1-1) and GCD 20000 (AC 1970-1970, 1) both record "White Savage" as one issue; our single 21pp file is numbered 001 (1970) with ComicInfo Series "White Savage" / Publisher "AC Comics"
+S 22694 cv=36000 gcd=23993 0.95 | CV 36000 (AC Comics 1992, 1, cached #1-1) and GCD 23993 (AC 1992-1992, 1) both record "Young Gun" as one issue; our single 36pp file is "Young Gun 001" with ComicInfo Series "Young Gun" / Publisher "AC Comics"
+S 367 cv=143974 gcd=186783 0.95 | the run wins: CV 143974 and GCD 186783 both record "Absolution" at AWA Studios in 2022 with five issues, and our single 113pp file is the trade that collects them; both providers also mint the trade's own count-1 record a year later (CV 159788 / GCD 195264, 2023), the Dynamite/IDW shape the ledger names, and Avatar's 2009 Absolution (CV 26683 / GCD 37572, 7) is a different comic
+F 367 needs-fetch cv=143974 | the volume has no CvVolume row; it was named from the local rip
+I 9835 gcd=s195264 0.9 | the 113pp "Absolution (2023)" trade's own container record is the AWA 2023 count-1 series GCD 195264 (CV volume 159788), not the five-issue run
+S 955 cv=130931 gcd=164624 0.95 | the run wins: CV 130931 (AWA Studios 2020, 5) and GCD 164624 (AWA 2020-2021, 5) agree on publisher, span and a five-issue run, ComicInfo says Series "American Ronin" / Publisher "AWA Studios", and our single 124pp file is the trade collecting those five
+I 9836 gcd=s170991 0.9 | the 124pp "American Ronin (2021)" trade's own container record is the AWA 2021 count-1 series GCD 170991 (CV volume 134576); Panini España's 150866 is the Spanish edition, rejected on publisher
