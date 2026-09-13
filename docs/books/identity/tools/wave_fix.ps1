@@ -39,8 +39,10 @@ if ($Resolve) {
         python "$tools/reseat_flags.py" --apply }
     Step "merge_refusals --apply (refusals for every edition the rebuild moved)" {
         python "$tools/merge_refusals.py" --from $snap --wave $Wave --apply }
-    Step "pass2 (re-expand the decision files, including the refusals just written)" { python "$ctools/pass2.py" }
 }
+# pass2 ALWAYS runs (2026-09-11): wave 3's resume skipped it, imported the previous wave's stale pass2_spans.jsonl,
+# and the refusals merge_refusals had just written never reached the DB — 16 CV-derived spans nested files unjudged.
+Step "pass2 (re-expand the decision files, including the refusals just written)" { python "$ctools/pass2.py" }
 Step "check_decisions (every containment decision file must pass)" { python "$ctools/check_decisions.py" }
 Step "books-curated-spans-import --apply (refusals retract the pass's own rows; gold is never touched)" {
     & $exe books-curated-spans-import --in "$ctools/pass2_spans.jsonl" --db $db --batch wave1-fix --apply }
@@ -48,6 +50,8 @@ Step "run_chain3.ps1 (collected-editions -> reading-order -> containment)" { pws
 Step "SeriesTitle.RunCount recount (one row went stale when a merge deleted a run)" {
     python -c "import sqlite3; c=sqlite3.connect('$db'); n=c.execute('UPDATE SeriesTitle SET RunCount=(SELECT count(*) FROM Series s WHERE s.TitleId=SeriesTitle.Id) WHERE RunCount<>(SELECT count(*) FROM Series s WHERE s.TitleId=SeriesTitle.Id)').rowcount; c.commit(); print('RunCount rows corrected:', n)" }
 
+Step "SeriesTitle prune (a merge deleted the last run of a title; nothing but Series.TitleId references it)" {
+    python -c "import sqlite3; c=sqlite3.connect('$db'); n=c.execute('DELETE FROM SeriesTitle WHERE NOT EXISTS (SELECT 1 FROM Series s WHERE s.TitleId=SeriesTitle.Id)').rowcount; c.commit(); print('orphan titles pruned:', n)" }
 Step "audit_containment" { python "$ctools/audit_containment.py" }
 Step "overclaim_check" { python "$ctools/overclaim_check.py" }
 Step "overlap_check --all" { python "$ctools/overlap_check.py" --all }

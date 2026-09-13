@@ -22,6 +22,7 @@ Writes `docs/books/identity/withheld.txt`. Reads decision files and the live DB,
 import os
 import re
 import sys
+HERE = os.path.dirname(os.path.abspath(__file__))
 
 import idbase
 from idbase import Evidence
@@ -108,6 +109,24 @@ for sid, vid, partner, base, text in pairs:
 live = {sid: v for sid, v in rows.items() if sid in ev.shelf_set}
 dropped = sorted(set(rows) - set(live))
 
+# Stale pairs (added 2026-09-11): a pair a LATER revisit batch already re-read, or whose withheld id is now the
+# shelf's stored link (the wave landed it), is finished — listing it again sent 44 of 46 shelves back to a reader.
+import json as _json, re as _re
+_st = _json.load(open(os.path.join(HERE, os.pardir, "state.json"), encoding="utf-8")) if os.path.exists(
+    os.path.join(HERE, os.pardir, "state.json")) else {}
+_revisited = {}
+for _r in _st.get("revisits", []):
+    for _sid in _r["ids"]:
+        _revisited.setdefault(_sid, set()).add(_r["batch"])
+stale = []
+for sid, (batch, why) in list(live.items()):
+    m = _re.search(r"withheld cv=(\d+)", why)
+    stored = ev.series.get(sid, {}).get("cvVolumeId")
+    if m and stored == int(m.group(1)):
+        stale.append((sid, "landed")); del live[sid]
+    elif sid in _revisited and batch not in _revisited[sid]:
+        stale.append((sid, "re-read in " + ",".join(sorted(_revisited[sid])))); del live[sid]
+
 lines = [f"# Withheld ComicVine ids and their partners — {len(live)} shelf/shelves, "
          f"{len([p for p in pairs if p[0] is not None])} withheld id(s)",
          "# Both sides of every pair are listed: neither can be decided without the other.",
@@ -124,5 +143,7 @@ n_flag = len([p for p in pairs if p[0] is None])
 print(f"{len(live)} shelf/shelves -> {OUT}")
 print(f"   {n_with} withheld-cv note(s), {n_flag} out-of-batch wrong-cv-link flag(s)")
 print(f"   {len([p for p in pairs if p[0] is not None and p[2] is None])} withheld note(s) named no live partner")
+if stale:
+    print(f"   {len(stale)} stale pair(s) skipped (already landed or re-read): {stale[:6]}")
 if dropped:
     print(f"   {len(dropped)} shelf/shelves dropped — no longer file-holding (a landed wave moved them): {dropped[:8]}")

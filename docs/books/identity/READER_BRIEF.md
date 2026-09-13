@@ -308,6 +308,102 @@ F 16797 misfiled | items 82880-82882 ("11 Starlord 1.cbr" … 36-37pp) sit under
 - GCD hides behind a LONGER title too ("… and the Tale of Azkon's Heart", "Holiday Party (One-Shot)"), not only a
   shorter one — probe both directions before `provider-missing`.
 - A facsimile of a SINGLE issue is its own book; a reprint edition of a whole series is not — the original wins.
+- Legendary Comics and Mad Cave mint the same-title count-1 collected record beside every mini in BOTH providers
+  (the Image/IDW/BOOM shape); the stored link is that record on half their shelves, and its `ratio 0/N` LOOKS like
+  a missing rip rather than a wrong record.
+- Lion Forge / Magnetic Press is a FORMAT split, not a missing leg: ComicVine serialises each European album into
+  N digital chapters while GCD holds the one collected book (Meka 4↔1, Naja 10↔1). Pair them at 0.9; when our file
+  is the whole album the stored link is the chapter volume.
+- Dark Horse / DC Jinxworld re-issues of Bendis's 1990s Caliber/Image books (Jinx, Torso, Goldfish, Powers) are
+  PRINTINGS: the S line takes the first edition both legs hold, the `I` line the Jinxworld printing.
+- GCD labels every modern MAD book "EC" where ComicVine and ComicInfo say DC — the same publisher's imprint, not a
+  rejection.
+- `(of NN)` in a filename can contradict both providers (Transformers #1 40th Anniversary: count 1 in both legs,
+  file says "01 (of 04)") — that residue caps at 0.9.
+- A folder that is a ripper's READING ORDER over several separately published arcs (The Ride, Revolution) has no
+  spanning record — the ladder is arc numbers, not issue numbers.
+- GCD's exact filing recovers legs the probe misses: singular/plural ("Greeting", "Return"), two words ("Super
+  Hero"), a spelled ordinal ("Fortieth"), a dropped subtitle, or the colon form ("Jinx: Torso") — try each before
+  `provider-missing`.
+- MANGA shelves: the per-file CV matcher picks a FOREIGN-LANGUAGE volume on about half (Carlsen/Egmont/Cross
+  Cult, Glénat/Ki-oon/Kazé, Panini España/Norma/Ivrea, JBC, Altraverse) and the STORED link is the JAPANESE
+  original on most of the rest — the English pair is in "CV local rip" + "GCD dump" every time.
+- GCD hides English manga behind a LONGER title far more than a shorter one ("Oishinbo a la Carte", "Neon
+  Genesis Evangelion 3-in-1 Edition", "Fairy Tail S: Tales from Fairy Tail") and occasionally a typo ("Fairy Tale:
+  Fairy Girls"); the mirror exists too (no ComicVine Viz volume for JoJo Parts 1-3 while GCD has all six → `cv=-`).
+- A spin-off family carries the PARENT run per-file (all eight Fairy Tail side shelves stamped 46777) — reject.
+- A publisher change mid-line (Vertical → Kodansha USA) splits the GCD leg while CV keeps one volume (Ajin, CITY,
+  Miss Nagatoro): one S line, the GCD row that holds the wider span, `N` naming the other.
+- Page count tells GCD twins apart (a 32pp sampler vs the 256pp anthology); a count-0 GCD row (236534 "Cells at
+  Work! Lady") is an empty stub, not a leg.
+- Where GCD has no English row for a manga, readers have linked the same work's Japanese original (else the
+  European edition) at 0.9 with the language named — the Europe Comics ruling extended to manga, CONFIRMED by
+  Eric 2026-09-10: the right comic in another language beats no leg.
+- A LeDuch (Markosia) rip's ComicInfo `Web` id IS a ComicVine ISSUE id — 11 of 11 resolved to the stored
+  volume's own issue (Androsaurs' resolved to #2, the v02 file we hold): the 1.0 shape.
+- Star Wars manga needs BOTH spellings: ComicVine files Dark Horse's 1999 adaptations as "Manga Star Wars:
+  <Film>", GCD as "Star Wars: … — Manga"; neither probe finds the other.
+- Scanlation shelves are readable and the filename's TITLE and YEAR decide them (Usagi Drop ≠ the English "Bunny
+  Drop"; 24-30pp Slayers floppies = Central Park Media, not Tokyopop's graphic novels).
+- The count-1-trade-as-stored-link artefact runs at Marvel too (14 Star Wars shelves in one batch); a collected
+  series whose count equals exactly our two books is the matches-our-holdings trap.
+- Kodansha Comics USA digital-first and Markosia / Digital Manga Publishing are honest GCD holes — re-probe once
+  (short, long, licensor prefix), then `provider-missing`.
+- A truncated parsed key reaches a wholly different comic ("Original Sin" → the Marvel event, "The Battle" → a
+  1972 Chick tract, "Wonder" → a 1942 British weekly) — the filename's full title decides, never the key.
+- RULING (lead, 2026-09-10, from S16653 Star Wars Legends Epic Collections): the ARCHIVE ruling (take the run's
+  records) applies only when the collected line has NO record of its own. When either provider carries the
+  line (Epic Collection, Omnibus, Masterworks…) the LINE wins at 0.9 with an `N` naming the run — never link a
+  trade shelf to an ongoing it would merge into.
+- Marvel Infinity Comics are a TOTAL GCD hole (~115 shelves): ComicVine indexes every serial as its own volume,
+  GCD indexes none, and every GCD hit is the PRINT comic of a similar name, years off. `gcd=-` +
+  `provider-missing` at 0.9 is the honest shape; probing harder buys nothing.
+- Star Wars "Marvel Edition" digital trades (Kileko/Zone/Shan-Empire): both providers mint a same-title count-1
+  record the year the trade shipped beside the 4-6 issue run; the stored link is the trade on 36 of 150 shelves.
+- Episodes IV/V film adaptations have no series record of their own (they sit INSIDE Star Wars 1977); the 2015
+  collected record carries them with an `N`. Episodes I/II/III/VI take the Dark Horse / 1983 Marvel original.
+- ComicInfo `Volume` holding a 4-digit ComicVine volume id (not a year) is a 1.0 assertion like the 6-digit
+  case (Ka-Zar v2 1974: `Volume 2692` + `Count 20` = CV 2692) and disproves the per-file matcher's pick.
+- Marika-Empire and Glorith-HD `Web` ids are ComicVine ISSUE ids of the stored volume (7 of 7 here).
+- Creator-named collected lines both legs carry with a multi-volume count (FF by Ryan North 6, Deadpool by Ziglar
+  3) take the line at 0.9 + `N` naming the run — the run record is usually absent from rip and dump.
+- Old Marvel folders cut into `vN (year)` shelves: the per-file matcher picks the wrong DECADE by issue number
+  (Amazing Adventures 1961 on the 1970 run, Ka-Zar 1997 on 1974, Kull 1971 on 1982/1983). The folder's `vN (year)`
+  suffix and ComicInfo `Volume` beat it every time.
+- Epic Collection / Modern Era Epic LINES: probe the line name WITHOUT the volume subtitle — six "empty" packets
+  held a GCD line row that way (Black Widow Epic 158119, Carnage Epic 183078, Daredevil Modern Era 209809).
+- A GCD collected series numbers its issues by VOLUME and titles them with the volume SUBTITLE — that, not the
+  page count, places a trade when a shelf holds several volumes of one line.
+- GCD filing quirks that recovered legs: drop "Comics" from a title, "and" for "&", "Digest" appended, reversed
+  or reordered name lists ("Deadpool / Amazing Spider-Man / Hulk: Identity Wars").
+- Marvel UK: GCD keeps ONE series across a weekly's title changes ("Super Spider-Man" 2407, 153 issues) while CV
+  mints a volume per title; the quarterly "ThunderCats Collected Comics" is ONE CV volume and FIVE GCD series
+  (one per season) — the Archie holiday split with ComicVine on the spanning side.
+- `_2099 Marvel` shelves carry a truncated key ("Doom", "Ghost Rider") that reaches the 20th-century namesake;
+  the folder's "<Title> 2099" is the identity and both providers hold it.
+- Marvel "Saga" primers (7-11pp) and "Update '89" (filed by both providers as plain "The Official Handbook of the
+  Marvel Universe" 1989) are GCD holes like the Infinite Comics.
+- `round2-folder` / `round2-series` was wrong on 10 of 13 shelves carrying it in B-053..B-055, including one link
+  stamped on four sibling one-shot shelves in one folder — verify each by title + count + years, never by method.
+- A `<Title> vN (<year>)` folder holding only a collected edition is the RUN's folder — the run takes the S
+  line, the trade an `I` line; a `_Trades` / `_Minis` / `_One-shots` bucket is the opposite (the book's own
+  count-1 record, minted by BOTH providers, wins).
+- A stored link that is the same title a DIFFERENT DECADE later is a new cluster (Fist of Khonshu 2024 on the
+  1985 Moon Knight run; a 1971 Sub-Mariner Annual on the 1998 annual) — years decide, never the title.
+- Scholastic / Abrams all-ages Marvel books are in ComicVine under the real publisher and in GCD only
+  sometimes — the publisher column, not the title, is the test.
+- A ComicInfo `Volume` holding a 5-digit ComicVine id (Hulk Comic 37309) is the same 1.0 assertion as the 4- and
+  6-digit cases.
+- The checker refuses an S line on a shelf with an OPEN conflated-series flag: write `R` + `F split-needed`
+  with the run's own ids in the R clause AND an `N` (`cv=… gcd=…`), so clearing the flag makes it one edit.
+- GCD hides behind the definite article too ("Spider-Man vs. The Black Cat" 40812) and behind ComicVine's
+  spelling of a one-shot the parsed key never reached (four Thunderbolts one-shots) — probe the CV name in GCD.
+- `lookup.py --year` separates same-title relaunches (Superior Spider-Man 2018 vs 2013); "Lethal Protector II"
+  is its own 5-issue run in both legs, not the 2022 Lethal Protector.
+- Where the arithmetic refuses the run, say so and override: a 201pp digest is not a 4-issue mini; a 551pp
+  vertical rip is the 8-chapter Infinite Comic, not the 4-issue print mini.
+- Epic Collection shape is total at Marvel: CV mints a volume per BOOK, GCD keeps one line row; the CV per-book
+  issues are labelled "Volume N" and match filenames volume-for-volume — the cheapest per-book verification.
 
 ## Report back (≤ 25 lines)
 Per batch `{shelves, S by confidence, R, F by flag, I}`; conventions learned (one line each — they go into this

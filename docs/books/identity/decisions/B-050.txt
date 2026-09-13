@@ -1,0 +1,257 @@
+# B-050 — two blocks. The first is the tail of the Krakoa-era X-Men folder (2022-2025 trades and
+# one-shots); the second, and most of the batch, is Marvel's _Infinity Comics folder: 60-odd
+# vertical-scroll digital-first series ripped as (digital-mobile) files.
+# Standing finding for the whole Infinity Comics block: ComicVine indexes every one of these as its own
+# volume and the per-file matcher lands on it at ratio 1.00, while GCD indexes NONE of them — its hits
+# are always the print comic of a similar name. So every Infinity Comic shelf here is `gcd=-` +
+# F provider-missing at 0.9, which is the honest shape, not a failure to look.
+# The Krakoa block repeats B-049's trade shape: a count-1 collected record minted a year after each
+# mini in both providers, with the run one line below it.
+# Four Marika-Empire rips (S22342, S22562, S14941, and the ComicInfo Volume on S14941) carry ComicInfo
+# Web / Volume ids that ARE ComicVine ids — the 1.0 shape.
+
+S 22486 cv=148937 gcd=196838 0.95 | CV 148937 "X-Men: Hellfire Gala - Immortal " 2022 Marvel count 1 (issue 978392) and GCD 196838 same title 2022-2022 Marvel count 1 agree on publisher, year and count; ComicInfo Series and Publisher on our 195pp COL file name it exactly
+I 49882 cv=978392 gcd=s196838 0.95 | one 195pp collected edition with exactly one record in each provider; it collects the 2022 gala tie-ins, which have their own separate records
+S 14937 cv=145971 gcd=192533 0.95 | our single 142pp "Sabretooth & The Exiles" file is the trade of the five-issue mini both legs hold: CV 145971 "Sabretooth and the Exiles" 2022 Marvel 5 and GCD 192533 same title 2023-2023 Marvel [limited series] 5 agree on publisher and count; the per-file pick CV 5041 is the 1993 Sabretooth mini, thirty years off
+I 49887 gcd=s208402 0.9 | GCD 208402 "Sabretooth and the Exiles" 2023-2023 Marvel count 1 is the collected-edition record minted beside the five-issue run, and our 142pp file is that trade
+S 14943 cv=145971 gcd=192533 0.95 | the six 1pp variant-cover packs span #1-4 of the same five-issue mini: CV 145971 "Sabretooth and the Exiles" 2022 Marvel 5 is reached by the per-file matcher on 6/6 files and GCD 192533 (2023-2023 Marvel limited series, count 5) agrees on count and publisher
+F 14943 merge-with=14937 | this variant-cover subfolder and the trade shelf S14937 are the same folder "2022.11.09 - Sabretooth & the Exiles" and the same five-issue run
+F 14943 partial-rip | every file here is a 1pp variant cover of #1-4; no interior rip of any issue is present
+S 15681 cv=153615 gcd=204108 0.9 | the 332pp file collects the whole Sins of Sinister event (the one-shot, three four-issue minis and Dominion), so no run record spans it; each leg holds several count-1 Marvel rows and the later-minted ones — CV 153615 (issue 1014917) against 147646 (issue 966426), GCD 204108 against 195668 — are the collection rather than the January 2023 one-shot
+I 49987 cv=1014917 gcd=s204108 0.9 | CV volume 153615's single issue 1014917 and GCD's second 2023 Marvel count-1 row 204108; the 332pp count rules out the ~40pp one-shot the earlier rows describe
+S 2626 cv=148091 gcd=196591 0.95 | CV 148091 "Bishop: War College" 2023 Marvel 5 and GCD 196591 same title 2023-2023 Marvel 5 agree on publisher, year and count; our 145pp COL file is the trade of that five-issue mini and ComicInfo Series and Publisher name it
+I 49988 cv=1013864 gcd=s203858 0.9 | the trade's own records are CV 153505 "Bishop: War Collage " 2023 Marvel count 1 (issue 1013864 — ComicVine's own typo for Collège) and GCD 203858 (2023-2023 Marvel count 1)
+S 3520 cv=148474 gcd=194905 0.95 | a direct lookup gives the run in both legs: CV 148474 "Betsy Braddock: Captain Britain" 2023 Marvel 5 and GCD 194905 same title 2023-2023 Marvel 5 agree on publisher, year and count, and our 145pp COL file is the trade of that five-issue mini
+I 49989 cv=1043385 gcd=s208332 0.9 | the trade's own records are CV 156560 "Betsy Braddock: Captain Britain" 2024 Marvel count 1 (issue 1043385) and GCD 208332 "Captain Britain: Betsy Braddock" 2023-2023 Marvel count 1, the title ComicInfo Series repeats
+S 14810 cv=148664 gcd=197358 0.95 | our 125pp file is the trade of the 2023 Rogue & Gambit mini: CV 148664 "Rogue & Gambit" 2023 Marvel 5 and GCD 197358 same title 2023-2023 Marvel 5 agree on publisher, year and count
+F 14810 wrong-cv-link | the stored link 107513 is "Rogue & Gambit" 2018 Marvel count 5, the PREVIOUS series of that name — an off-by-one-volume match five years early, and it has no CvVolume row either
+I 49990 cv=1040081 gcd=s207602 0.9 | the trade's own records are CV 156017 "Rogue & Gambit: Power Play" 2024 Marvel count 1 (issue 1040081) and GCD 207602 (2024-2024 Marvel count 1), which reproduce the filename's subtitle
+S 102433 cv=148781 gcd=197926 0.95 | the judged range on our 128pp file is #1-5 and both legs hold that five-issue mini: CV 148781 "X-23: Deadly Regenesis" 2023 Marvel 5 and GCD 197926 same title 2023-2023 Marvel 5 agree on publisher, year and count; ComicInfo Series names it
+F 102433 wrong-cv-link | the per-file matcher reached CV 35496 "X-23" 2010 Marvel count 21 by reading the "23" of the character's name as an issue number — the wrong-coordinate lie the ladder value of 23 records
+I 49991 cv=1020813 gcd=s204470 0.9 | the trade's own records are CV 153915 "X-23: Deadly Regenesis" 2023 Marvel count 1 (issue 1020813) and GCD 204470 (2023-2023 Marvel count 1)
+S 22448 cv=151708 gcd=201848 0.95 | CV 151708 "X-Men: Before The Fall - Heralds of Apocalypse " 2023 Marvel count 1 (issue 997400) and GCD 201848 same title 2023-2023 Marvel [one-shot] count 1 agree on publisher, year and count; ComicInfo Series and Volume 2023 name it exactly
+I 49903 cv=997400 gcd=s201848 0.95 | a 35pp one-shot with one record in each provider; the leading "03" in the filename is the ripper's reading order, not an issue number
+S 22449 cv=151052 gcd=201264 0.95 | CV 151052 "X-Men: Before the Fall – Mutant First Strike" 2023 Marvel count 1 (issue 993583) and GCD 201264 same title 2023-2023 Marvel [one-shot] count 1 agree on publisher, year and count; ComicInfo Series names it verbatim
+I 49902 cv=993583 gcd=s201264 0.95 | a 34pp one-shot with one record in each provider, both minted for the 2023 Before the Fall week
+S 22450 cv=151912 gcd=202069 0.95 | CV 151912 "X-Men: Before the Fall - Sinister Four" 2023 Marvel count 1 (issue 998591) and GCD 202069 same title 2023-2023 Marvel [one-shot] count 1 agree on publisher, year and count; ComicInfo Series and Volume 2023 confirm it
+I 49904 cv=998591 gcd=s202069 0.95 | a 35pp one-shot with one record in each provider, one of four separate Before the Fall books in this folder
+S 22451 cv=150028 gcd=200228 0.95 | CV 150028 "X-Men: Before the Fall - Sons of X" 2023 Marvel count 1 (issue 987192) and GCD 200228 same title 2023-2023 Marvel [one-shot] count 1 agree on publisher, year and count; ComicInfo Series names it
+I 49901 cv=987192 gcd=s200228 0.95 | a 35pp one-shot with one record in each provider
+S 22274 cv=153042 gcd=- 0.9 | CV 153042 "X-Men: Hellfire Gala Last Rites Infinity Comic" 2023 Marvel count 1 (issue 1009198) matches our single (digital-mobile) 19pp file exactly; GCD indexes no Infinity Comic, and its Hellfire Gala rows are the print one-shots
+F 22274 provider-missing | GCD does not index Marvel's Infinity Comics line
+I 49905 cv=1009198 0.9 | CV volume 153042's single issue 1009198 is this vertical-format digital chapter; the (digital-mobile) rip tag identifies the edition
+S 22487 cv=152567 gcd=202417 0.95 | our 78pp giant-size file is the 2023 gala one-shot, and each leg holds exactly one 2023 Marvel record of that name: CV 152567 "X-Men: Hellfire Gala" 2023 Marvel count 1 (issue 1003871) and GCD 202417 same title 2023-2023 Marvel count 1; ComicInfo Series says "X-Men: Hellfire Gala 2023"
+F 22487 wrong-cv-link | the per-file matcher reached CV 153656, Marvel UK/Panini UK's edition, rejected on the publisher column
+I 49906 cv=1003871 gcd=s202417 0.9 | CV volume 152567's issue 1003871 and GCD 202417 are the 2023 gala book; the 2021 and 2022 galas are separate records in both providers and the year in the filename is the selector
+S 1405 cv=152649 gcd=202908 0.95 | a direct lookup gives the run in both legs: CV 152649 "Astonishing Iceman" 2023 Marvel 5 and GCD 202908 same title 2023-2024 Marvel 5 agree on publisher, year and count, and our 138pp COL file is the trade of that five-issue mini
+I 49992 cv=1056327 gcd=s212028 0.9 | the trade's own records are CV 158233 "Astonishing Iceman: Out Cold" 2024 Marvel count 1 (issue 1056327) and GCD 212028 (2024-2024 Marvel count 1), which reproduce the filename's subtitle
+S 3822 cv=152893 gcd=203131 0.95 | CV 152893 "Children of the Vault " 2023 Marvel 4 and GCD 203131 same title 2023-2024 Marvel 4 agree on publisher, year and count; our 122pp COL file is the trade of that four-issue mini
+I 49993 cv=1045825 gcd=s209185 0.9 | the trade's own records are CV 156974 "Children of the Vault" 2024 Marvel count 1 (issue 1045825) and GCD 209185 (2023-2023 Marvel count 1)
+S 7455 cv=155157 gcd=206424 0.95 | the crossover ran as an Alpha one-shot, tie-in issues and an Omega one-shot, so no run record spans it and the collected record is the identity: CV 155157 "Ghost Rider/Wolverine: Weapons of Vengeance" 2023 Marvel count 1 (issue 1033283) and GCD 206424 same title 2023-2023 Marvel count 1 agree exactly
+I 49994 cv=1033283 gcd=s206424 0.95 | one 120pp collected edition with one record in each provider; the Alpha (CV 152897) and Omega (CV 153361) one-shots are separate records
+S 20673 cv=153018 gcd=203283 0.95 | CV 153018 "Uncanny Avengers" 2023 Marvel 5 and GCD 203283 same title 2023-2024 Marvel 5 agree on publisher, year and count; our 163pp COL file is the trade of that five-issue 2023 mini, not of the 2012 or 2015 series of the same name
+I 49912 cv=1056328 gcd=s212030 0.9 | the trade's own records are CV 158234 "Uncanny Avengers: The Resistance" 2024 Marvel count 1 (issue 1056328) and GCD 212030 (2024-2024 Marvel count 1)
+S 14431 cv=153121 gcd=203465 0.95 | CV 153121 "Realm of X" 2023 Marvel 4 and GCD 203465 same title 2023-2024 Marvel 4 agree on publisher, year and count; our 122pp COL file is the trade of that four-issue mini
+I 49997 cv=1061582 gcd=s213226 0.9 | the trade's own records are CV 158658 "Realm of X" 2024 Marvel count 1 (issue 1061582) and GCD 213226 (2024-2024 Marvel count 1)
+S 6433 cv=152123 gcd=202202 0.95 | both files are the same 37pp one-shot ripped once into the Krakoa folder and once into Marvel\_Ms. Marvel: CV 152123 "Fallen Friend: The Death of Ms. Marvel" 2023 Marvel count 1 (issue 1000229) and GCD 202202 "Fallen Friend" 2023-2023 Marvel [one-shot] count 1 agree on publisher, year and count, and ComicInfo Series says "Fallen Friend" with Volume 2023
+F 6433 duplicate-shelf | items 49915 and 83766 are byte-for-byte the same book filed twice; the shelf carries no comic that S6434 does not
+F 6433 merge-with=6434 | S6434 ("Fallen Friend: The Death of Ms. Marvel", batch B-049) holds the same one-shot under its full title — the two shelves are one comic and the shared ComicVine link is intended
+I 49915 cv=1000229 gcd=s202202 0.95 | CV volume 152123's issue 1000229 and GCD series 202202 are this 37pp one-shot
+S 12429 cv=157335 gcd=210149 0.9 | both legs carry the same two-volume collected line independently — CV 157335 "Ms. Marvel: The New Mutant" 2024 Marvel 2 and GCD 210149 same title 2023-2024 Marvel [collected edition] 2 — and every file on the shelf is a volume of it; 0.9 because the line's two books collect two different minis and we hold only one of them
+N 12429 the first mini is CV 153238 / GCD 203582 "Ms. Marvel: The New Mutant" 2023 Marvel, four issues; the second book of the collected line is Mutant Menace, which is why the shelf's files span two folders and the LOCG bridge names a Mutant Menace TP
+I 49916 gcd=s210149 0.9 | the 121pp Shan-Empire rip of "The New Mutant Vol. 02" is the second volume of GCD's two-volume collected line 210149; item 83767 is the same file filed a second time
+I 50011 gcd=s210149 0.9 | the 115pp Kileko-Empire rip of the same "The New Mutant Vol. 02" book — a second rip of one volume, which is what the pending label-ambiguous flag on item 83768 records
+S 20684 cv=153606 gcd=204331 0.95 | a direct lookup gives the run in both legs: CV 153606 "Uncanny Spider-Man " 2023 Marvel 5 and GCD 204331 same title 2023-2024 Marvel 5 agree on publisher, year and count, and our 187pp COL file is the trade of that five-issue mini
+I 49998 cv=1060351 gcd=s213039 0.9 | the trade's own records are CV 158563 "Uncanny Spider-Man: Fall of X" 2024 Marvel count 1 (issue 1060351) and GCD 213039 (2024-2024 Marvel count 1)
+S 22342 cv=154998 gcd=206349 1.0 | the file's ComicInfo Web id is 1032224, which is the ComicVine ISSUE id of volume 154998 "X-Men Blue: Origins" 2024 Marvel count 1 — a Marika-Empire rip asserting its own record — and GCD 206349 same title 2024-2024 Marvel [one-shot] count 1 agrees on publisher, year and count
+I 49999 cv=1032224 gcd=s206349 1.0 | the collection asserts this exact ComicVine issue id in ComicInfo Web and it is volume 154998's only issue; the book is a 36pp one-shot
+S 6426 cv=159520 gcd=214743 0.95 | the 385pp file collects two separate five-issue minis (Fall of the House of X and Rise of the Powers of X), so no run record spans it: CV 159520 "Fall of the House of X/Rise of the Powers of X" 2024 Marvel count 1 (issue 1068118) and GCD 214743 same title 2024-2024 Marvel count 1 agree exactly
+I 49917 cv=1068118 gcd=s214743 0.95 | one collected edition with one record in each leg; the 2025 Omnibus (CV 166169 / GCD 226388) is a separate, larger book
+S 5056 cv=156494 gcd=207711 0.95 | CV 156494 "Dead X-Men" 2024 Marvel 4 and GCD 207711 same title 2024-2024 Marvel 4 agree on publisher, year and count; our 110pp COL file is the trade of that four-issue mini and ComicInfo Series names it
+I 50010 cv=1071816 gcd=s215535 0.9 | the trade's own records are CV 160115 "Dead X-Men" 2024 Marvel count 1 (issue 1071816) and GCD 215535 (2024-2024 Marvel count 1)
+S 22478 cv=158742 gcd=- 0.9 | the stored CV 158742 "X-Men: From the Ashes Sampler" 2024 Marvel count 1 (issue 1062234) matches our 33pp file at ratio 1.00 and ComicInfo Series and Publisher reproduce it; GCD indexes no From the Ashes sampler, only a 1990 Uncanny X-Men book of a similar name
+F 22478 provider-missing | GCD has no row for Marvel's 2024 From the Ashes Sampler
+I 50029 cv=1062234 0.9 | CV volume 158742's single issue 1062234 is this 33pp promotional sampler
+S 22265 cv=158418 gcd=- 0.95 | the stored CV 158418 "X-Men: From the Ashes Infinity Comic" 2024 Marvel 25 has cached #1-25 against our complete ladder 1-25 at ratio 1.00, and four Marika-Empire files carry ComicInfo Web ids (1060842, 1061730, 1067840, 1068536) which are ComicVine issue ids of that volume; GCD indexes no Infinity Comics
+F 22265 provider-missing | GCD does not index Marvel's Infinity Comics line, so the GCD leg is honestly absent rather than unfound
+S 12751 cv=160905 gcd=217315 0.95 | CV 160905 "Negasonic Teenage Warhead" 2025 Marvel count 1 (issue 1076615) and GCD 217315 same title 2025-2025 Marvel [one-shot] count 1 agree on publisher, year and count, and both per-file legs reach them on 2/2 files
+I 50486 cv=1076615 gcd=s217315 0.95 | the 44pp file is the one-shot itself; the second file on the shelf is a 1pp Audrey Mok variant cover of it
+S 14941 cv=161785 gcd=219107 1.0 | the ComicInfo Volume field on our rip holds the six-digit number 161785, which IS the ComicVine volume id of "Sabretooth: The Dead Don't Talk" 2025 Marvel 5, and the two Web ids 1086218 and 1092999 are its issue ids; GCD 219107 "Sabretooth: The Dead Don’t Talk" 2025-2025 Marvel [limited series] 5 agrees on publisher, year and count
+N 14941 we hold only #1-2 of the five issues; the other five files are 1pp variant covers of #1, and the count of 5 in both legs is above our holdings rather than below it
+S 11208 cv=161957 gcd=219638 0.9 | the shelf's dominant run is the 2025 Magik series: CV 161957 "Magik" 2025 Marvel 10 and GCD 219638 "Magik" 2025-2025 Marvel [was ongoing series] 10 agree on publisher, year and count; 0.9 because four files are a wholly different comic
+F 11208 split-needed | items 86849-86852 ("001 Magik 001 (1983)" … "004 Magik 004 (1984)", 23-24pp, Minutemen-FactorX) are the 1983 limited series — CV 3230 "Magik (Storm and Illyana Limited Series)" 1983 Marvel 4 and GCD 2750 "Magik (Illyana and Storm Limited Series)" 1983-1984 Marvel 4 — filed under _X-Men Complete Chronology V2, and they are why the ladder reads 1-4 and #1 names more than one file
+F 11208 partial-rip | of the 2025 series only #1 is actually ripped; nine of the remaining files are 1pp variant covers of that issue
+S 22562 cv=162064 gcd=220195 1.0 | the file's ComicInfo Web id is 1091221, which is the ComicVine ISSUE id of volume 162064 "X-Men: Xavier's Secret" 2025 Marvel count 1 — the Marika-Empire 1.0 shape — and GCD 220195 same title 2025-2025 Marvel [one-shot] count 1 agrees on publisher, year and count
+I 51976 cv=1091221 gcd=s220195 1.0 | the collection asserts this issue id and it is the volume's only issue; the book is a 44pp one-shot
+S 776 cv=141883 gcd=- 0.9 | the stored CV 141883 "Alligator Loki Infinity Comic" 2022 Marvel 48 has cached #1-44 against our complete ladder 1-44 at ratio 0.92, the shortfall being four chapters published after the rip; GCD indexes no Infinity Comics at all
+F 776 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 849 cv=154227 gcd=- 0.9 | the stored CV 154227 "Amazing Spider-Man: Hunted Infinity Comic " 2023 Marvel 12 has cached #1-12 against our complete ladder 1-12 at ratio 1.00, and the 53-123pp vertical page counts are the digital-first format; GCD has no row for it
+F 849 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 859 cv=150652 gcd=- 0.9 | the stored CV 150652 "Amazing Spider-Man: Spider-Verse Infinity Comic " 2023 Marvel has cached #1-14 against our complete ladder 1-14 and the per-file matcher lands on it on 14/14 files; the 66-145pp vertical counts are the digital-first format and GCD has no row
+F 859 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 1116 cv=148489 gcd=- 0.9 | the stored CV 148489 "Ant-Man and the Wasp: Lost and Found Infinity Comic" 2023 Marvel has cached #1-10 against our complete ladder 1-10 on 10/10 files; GCD's only nearby row 133133 is the 2018 print one-shot of that name, a different comic five years earlier
+F 1116 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 1407 cv=160456 gcd=- 0.9 | the stored CV 160456 "Astonishing Spider-Man Infinity Comic " 2024 Marvel has cached #1-13 against our complete ladder 1-13 on 13/13 files; GCD's Astonishing Spider-Man rows are all Panini UK reprint magazines, rejected on the publisher column
+F 1407 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 1569 cv=158642 gcd=- 0.9 | the stored CV 158642 "Avengers Academy: Marvel's Voices Infinity Comic" 2024 Marvel has cached #1-29 against our ladder 0-29 on 31/31 files; the extra two files are a 1pp #000 teaser and a #020.5 interlude, both parts of the same serial
+F 1569 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 1605 cv=142067 gcd=- 0.9 | the stored CV 142067 "Avengers Forever - Infinity Comic " 2022 Marvel 4 has cached #1-4 against our complete ladder 1-4 at ratio 1.00; GCD's "Avengers Forever" rows are the fifteen-issue 2022 print series and its trades, a different comic
+F 1605 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 1626 cv=154150 gcd=- 0.9 | the stored CV 154150 "Avengers United Infinity Comic" 2023 Marvel 63 has cached #1-63 against our complete ladder 1-63 at ratio 1.00 — count, span and holdings all agree; GCD has no row for it
+F 1626 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 1627 cv=147318 gcd=- 0.9 | the stored CV 147318 "Avengers Unlimited Infinity Comic" 2022 Marvel 65 has cached #1-65 against our complete ladder 1-65 at ratio 1.00; GCD has no row for it
+F 1627 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 2377 cv=160465 gcd=- 0.9 | the stored CV 160465 "Beastly Buddies Infinity Comic " 2024 Marvel 10 has cached #1-6 matching our ladder 1-6 on 6/6 files; the count of 10 is above our holdings, which is a rip that stopped rather than a wrong record
+F 2377 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 2760 cv=147345 gcd=- 0.9 | the stored CV 147345 "Who Is the Black Panther Infinity Comic" 2022 Marvel 12 has cached #1-12 against our complete ladder 1-12 at ratio 1.00; GCD's Black Panther hits are all Panini France and Panini Deutschland editions, rejected on the publisher column
+F 2760 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 2797 cv=139042 gcd=- 0.9 | the stored CV 139042 "Black Widow Infinity Comic" 2021 Marvel count 1 (issue 885169) matches our single file at ratio 1.00; GCD's nearest rows are Marvel-Verse and Infinity Countdown print books, different comics
+F 2797 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 2859 cv=151760 gcd=- 0.9 | the stored CV 151760 "Blade: First Bite Infinity Comic " 2023 Marvel 4 has cached #1-4 against our complete ladder 1-4 at ratio 1.00; GCD's only "First Bite" row is a 2008 Chick Publications tract
+F 2859 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 3208 cv=152070 gcd=- 0.9 | the stored CV 152070 "Brute Force Infinity Comic " 2023 Marvel has cached #1-6 against our complete ladder 1-6 on 6/6 files; GCD's Brute Force rows are the 1990 four-issue print series and a 2018 collection, different comics
+F 3208 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 3410 cv=139043 gcd=- 0.9 | the stored CV 139043 "Captain America Infinity Comic" 2021 Marvel 4 has cached #1-4 against our complete ladder 1-4 at ratio 1.00; GCD's only nearby row is the 2020 Marvel-Verse print digest
+F 3410 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 3543 cv=154352 gcd=- 0.9 | the stored CV 154352 "Captain Marvel: The Last of the Marvels Infinity Comic " 2023 Marvel 12 has cached #1-12 against our complete ladder 1-12 at ratio 1.00; GCD has no row for it
+F 3543 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 3680 cv=159138 gcd=- 0.9 | the stored CV 159138 "Catpool Infinity Comic" 2024 Marvel count 1 (issue 1065591) matches our single file at ratio 1.00 and the folder name reproduces the title; GCD has no Catpool row of any kind
+F 3680 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 4247 cv=150125 gcd=- 0.9 | the stored CV 150125 "Cosmo the Spacedog Infinity Comic" 2023 Marvel 6 has cached #1-6 against our complete ladder 1-6 at ratio 1.00; GCD has no Cosmo the Spacedog row
+F 4247 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 5095 cv=139394 gcd=- 0.9 | the stored CV 139394 "Deadpool: Invisible Touch Infinity Comic" 2021 Marvel 5 has cached #1-5 against our complete ladder 1-5 at ratio 1.00, and the folder is "Deadpool - Infinity Comic v1 (2021)"; GCD has no row
+F 5095 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 5746 cv=160182 gcd=- 0.9 | the stored CV 160182 "Doodlepool Infinity Comic" 2024 Marvel count 1 (issue 1072135) matches our single file at ratio 1.00; it sits in the "Deadpool - Infinity Comic v2 (2024)" folder but is its own titled serial, and GCD has no row
+F 5746 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 5126 cv=158747 gcd=- 0.9 | the stored CV 158747 "Deadpool Kills the Marvel Universe Infinity Comic" 2024 Marvel 4 has cached #1-4 against our complete ladder 1-4 at ratio 1.00; GCD's rows of that name are the 2012 four-issue print mini and its trade, twelve years earlier
+F 5126 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 5157 cv=158628 gcd=- 0.9 | the stored CV 158628 "Deadpool vs. Wolverine Slash ‘Em Up – Infinity Comic" 2024 Marvel has cached #1-6 against our complete ladder 1-6 on 6/6 files; GCD's only hit is the 2017 "Wolverine vs. Deadpool" print collection
+F 5157 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 5158 cv=158749 gcd=- 0.9 | the stored CV 158749 "Deadpool vs. Wolverine: The Deep End Infinity Comic" 2024 Marvel has cached #1-5 against our complete ladder 1-5 on 5/5 files; it is a separate serial from Slash 'Em Up and GCD has no row for either
+F 5158 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 5422 cv=147983 gcd=- 0.9 | the stored CV 147983 "Devil Dinosaur Infinity Comic" 2023 Marvel 4 has cached #1-3 matching our ladder 1-3; the count of 4 is above our holdings, and GCD's only Devil Dinosaur row is the 1978 print series
+F 5422 provider-missing | GCD does not index Marvel's Infinity Comics line
+R 5636 | two different Infinity Comic serials on one shelf, eight files each, both numbered #1-8, which is why all eight numbers name more than one file: the folder "Doctor Strange - The Way of the Weird Infinity Comic (2022)" is CV 143368 (2022 Marvel, cached #1-7) and the folder "Doctor Strange The Last Days of Magic - Infinity Comic (2023)" is CV 149245 "Doctor Strange: The Last Days of Magic Infinity Comic" 2023 Marvel 8, found by a direct lookup; the stored link stamps the 2022 volume on all sixteen files
+F 5636 split-needed | proposed runs: the eight 2022 files -> CV 143368 (which also has no CvVolume row and would need a fetch); the eight 2023 files -> CV 149245
+F 5636 provider-missing | GCD indexes neither serial — its "Doctor Strange: Last Days of Magic" row 100623 is the 2016 print one-shot
+S 5701 cv=159086 gcd=- 0.9 | the stored CV 159086 "Dogpool Infinity Comic" 2024 Marvel has cached #1-6 against our complete ladder 1-6 on 6/6 files; GCD has no Dogpool row
+F 5701 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 5702 cv=159144 gcd=- 0.9 | the stored CV 159144 "Dogpool Team-Up Infinity Comic " 2024 Marvel count 1 (issue 1065676) matches our single file at ratio 1.00; it is a separate one-shot serial from Dogpool Infinity Comic even though both sit in the same folder
+F 5702 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 6032 cv=151276 gcd=- 0.9 | the stored CV 151276 "Edge of Venomverse Unlimited Infinity Comic" 2023 Marvel has cached #1-12 against our complete ladder 1-12 on 12/12 files; GCD's Edge of Venomverse rows are the 2017 five-issue print mini and its trade
+F 6032 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 6233 cv=141397 gcd=- 0.9 | the shelf's parsed key was truncated to "Eternals - The", and the per-file matcher then reached CV 133080, the twelve-issue 2021 Eternals ongoing; the folder's own name and a direct lookup give the right comic, CV 141397 "Eternals: The 500 Year War: Infinity Comic" 2022 Marvel 7, matching our complete ladder 1-7
+F 6233 wrong-cv-link | the per-file link 133080 "Eternals" 2021 Marvel 12 is the print ongoing, reached by a truncated key and issue numbers 1-7
+F 6233 provider-missing | GCD has no row for the 500 Year War Infinity Comic
+S 6465 cv=140125 gcd=- 0.9 | the stored CV 140125 "Fantastic Four: Infinity Comic" 2021 Marvel 4 has cached #1-4 against our complete ladder 1-4 at ratio 1.00; GCD's only hit is a 2000 Marvel Selects reprint
+F 6465 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 7135 cv=153924 gcd=- 0.9 | the stored CV 153924 "G.O.D.S. Infinity Comic" 2023 Marvel has cached #1-8 against our complete ladder 1-8, and ComicInfo Series, Volume and Publisher on seven files name it; GCD 204659 "G.O.D.S." is the eight-issue PRINT series, a different comic
+F 7135 provider-missing | GCD does not index Marvel's Infinity Comics line; its G.O.D.S. rows are the print series and its trade
+S 7434 cv=139510 gcd=- 0.9 | the stored CV 139510 "Ghost Rider: Kushala Infinity Comic" 2021 Marvel 8 has cached #1-8 against our complete ladder 1-8 at ratio 1.00; GCD's Ghost Rider rows are print ongoings and Panini editions
+F 7434 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 7529 cv=139045 gcd=- 0.9 | the stored CV 139045 "Giant-Size Little Marvels Infinity Comic" 2021 Marvel 8 has cached #1-7 matching our ladder 1-7; the count of 8 is above our holdings, which is a rip one chapter short rather than a wrong record
+F 7529 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 8165 cv=150407 gcd=- 0.9 | the stored CV 150407 "Guardians of the Galaxy: The Jewel of Death Infinity Comic" 2023 Marvel 4 has cached #1-4 against our complete ladder 1-4 at ratio 1.00; GCD's only hit is the 2016 Guardians of Infinity print book
+F 8165 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 8170 cv=150126 gcd=- 0.9 | the stored CV 150126 "Guardians of the Galaxy: Somebody's Got to Do It Infinity Comic" 2023 Marvel 24 has cached #1-24 against our complete ladder 1-24 at ratio 1.00; GCD has no row for it
+F 8170 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 9009 cv=159506 gcd=- 0.9 | the stored CV 159506 "House of Harkness Infinity Comic " 2024 Marvel has cached #1-15 against our complete ladder 1-15 on 15/15 files; GCD has no House of Harkness row
+F 9009 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 9124 cv=139919 gcd=- 0.9 | the stored CV 139919 "Hulkling & Wiccan Infinity Comic" 2021 Marvel 4 has cached #1-4 against our complete ladder 1-4 at ratio 1.00; GCD's only hit is the 2021 Last Annihilation print one-shot
+F 9124 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 9175 cv=153496 gcd=- 0.9 | the stored CV 153496 "I Am Groot Infinity Comic " 2023 Marvel has cached #1-6 against our complete ladder 1-6 on 6/6 files; GCD's I Am Groot rows are the 2017 five-issue print mini and its trade
+F 9175 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 9436 cv=141946 gcd=- 0.9 | the stored CV 141946 "Infinite Possibilities: Infinity Comic" 2022 Marvel count 1 (issue 912062) matches our single file at ratio 1.00 and the folder name reproduces the title; GCD has no row
+F 9436 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 9449 cv=157501 gcd=- 0.9 | the stored CV 157501 "Infinity Paws Infinity Comic" 2024 Marvel 10 has cached #1-10 against our complete ladder 1-10 at ratio 1.00; GCD has no Infinity Paws row
+F 9449 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 9680 cv=139047 gcd=- 0.9 | the stored CV 139047 "It's Jeff Infinity Comic" 2021 Marvel 49 has cached #1-42 matching our ladder 1-42; the count of 49 is above our holdings on a serial still running, which is staleness rather than residue
+F 9680 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 9800 cv=160083 gcd=- 0.9 | the stored CV 160083 "Jeff Week Infinity Comic" 2024 Marvel 5 has cached #1-5 against our complete ladder 1-5 at ratio 1.00; it is a separate serial from It's Jeff and GCD has no row for either
+F 9800 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 10262 cv=148490 gcd=- 0.9 | the stored CV 148490 "Kang the Conqueror: Only Myself Left to Conquer Infinity Comic" 2023 Marvel has cached #1-10 against our complete ladder 1-10 on 10/10 files; GCD 181094 of that name is the 2021 print one-shot
+F 10262 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 10315 cv=158231 gcd=- 0.9 | the stored CV 158231 "Kid Juggernaut: Marvel's Voices Infinity Comic " 2024 Marvel has cached #1-6 against our complete ladder 1-6 on 6/6 files; GCD has no Kid Juggernaut row
+F 10315 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 10737 cv=150340 gcd=- 0.9 | the stored CV 150340 "Li'l Rocket Infinity Comic" 2023 Marvel has cached #1-6 against our complete ladder 1-6 on 6/6 files; GCD has no Li'l Rocket row
+F 10737 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 10869 cv=153838 gcd=- 0.9 | the stored CV 153838 "Loki: The God Who Fell to Earth Infinity Comic" 2023 Marvel has cached #1-10 against our complete ladder 1-10 on 10/10 files; GCD 177061 of that name is the 2019 print collection, four years earlier
+F 10869 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 11006 cv=144562 gcd=- 0.9 | the stored CV 144562 "Love Unlimited Infinity Comic" 2022 Marvel 72 has cached #1-72 against our complete ladder 1-72 at ratio 1.00 — count, span and holdings all agree; GCD has no row
+F 11006 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 11057 cv=140242 gcd=- 0.9 | the stored CV 140242 "Lucky the Pizza Dog: Infinity Comic" 2021 Marvel count 1 (issue 895709) matches our single file at ratio 1.00 and the folder name reproduces the title; GCD has no row
+F 11057 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 11408 cv=141871 gcd=- 0.9 | the stored CV 141871 "Marvel Fairy Tales Infinity Comic" 2022 Marvel 4 has cached #1-4 against our complete ladder 1-4 at ratio 1.00; GCD has no row
+F 11408 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 11524 cv=141832 gcd=- 0.9 | the stored CV 141832 "Marvel Meow: Infinity Comic" 2022 Marvel 36 has cached #1-24 matching our ladder 1-24; the count of 36 is above our holdings on a serial that kept running, and GCD's Marvel Meow rows are Viz's print art books
+F 11524 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 11525 cv=149244 gcd=- 0.9 | the stored CV 149244 "Marvel Meow and Pizza Dog Infinity Comic" 2023 Marvel 4 has cached #1-4 against our complete ladder 1-4 at ratio 1.00; it is a separate serial from Marvel Meow and GCD has no row for it
+F 11525 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 11537 cv=154980 gcd=- 0.9 | the stored CV 154980 "Marvel Mutts Infinity Comic " 2023 Marvel 24 has cached #1-12 matching our ladder 1-12; the count of 24 is above our holdings, and GCD's only hit is a 1979 Marvel UK weekly
+F 11537 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 11723 cv=144359 gcd=- 0.9 | the stored CV 144359 "Marvel's Voices Infinity Comic" 2022 Marvel 100 has cached #1-100 against our complete ladder 1-100 at ratio 1.00 — count, span and holdings all agree; GCD's Marvel's Voices rows are the print one-shots
+F 11723 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 12041 cv=141651 gcd=- 0.9 | our single file is "Ghost Ridin' to Love" and CV 141651 "Mighty Marvel Holiday Special: Ghost Ridin' to Love: Infinity Comic" 2022 Marvel count 1 (issue 907771) names it exactly; this folder holds five separately titled holiday specials, each its own ComicVine volume
+F 12041 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 12042 cv=139834 gcd=- 0.9 | the stored CV 139834 "Mighty Marvel Holiday Special: Halloween with the Rhino Infinity Comic" 2021 Marvel count 1 (issue 891567) matches our single file at ratio 1.00; the subtitle in the filename is the selector among the folder's five specials
+F 12042 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 12043 cv=141428 gcd=- 0.9 | the stored CV 141428 "Mighty Marvel Holiday Special: Happy Holidays, Mr. Howlett: Infinity Comic" 2021 Marvel count 1 (issue 904293) matches our single file at ratio 1.00 and reproduces the filename's subtitle
+F 12043 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 12044 cv=141427 gcd=- 0.9 | the stored CV 141427 "Mighty Marvel Holiday Special: Iceman's New Year's Resolutions: Infinity Comic" 2021 Marvel count 1 (issue 904292) matches our single file at ratio 1.00 and reproduces the filename's subtitle
+F 12044 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 12045 cv=141650 gcd=- 0.9 | our single file is "Year of the Wong" and CV 141650 "Mighty Marvel Holiday Special: Year of the Wong: Infinity Comic" 2022 Marvel count 1 (issue 907769) names it exactly, one of the five separately titled specials in this folder
+F 12045 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 12411 cv=159139 gcd=- 0.9 | the stored CV 159139 "Mousepool Infinity Comic" 2024 Marvel count 1 (issue 1065590) matches our single file at ratio 1.00 and the folder name reproduces the title; GCD has no Mousepool row
+F 12411 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 12434 cv=154353 gcd=- 0.9 | the stored CV 154353 "Ms. Marvel: Generation Why Infinity Comic" 2023 Marvel has cached #1-9 against our complete ladder 1-9 on 9/9 files; GCD has no row for it
+F 12434 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 12435 cv=153253 gcd=- 0.9 | the stored CV 153253 "Ms. Marvel: The New Mutant Infinity Comic " 2023 Marvel 4 has cached #1-4 against our complete ladder 1-4 at ratio 1.00; GCD's two "Ms. Marvel: The New Mutant" rows (203582 count 4, 210149 count 2) are the PRINT mini and its trades, which are shelf S12429
+F 12435 provider-missing | GCD does not index Marvel's Infinity Comics line; the print series of the same name is a different comic
+S 12436 cv=147384 gcd=- 0.9 | the stored CV 147384 "Ms. Marvel: Bottled Up Infinity Comic" 2022 Marvel count 1 (issue 963955) matches our single file at ratio 1.00 and the folder name reproduces the title; GCD has no row
+F 12436 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 12439 cv=147368 gcd=- 0.9 | the stored CV 147368 "Ms. Marvel: No Normal Infinity Comic" 2022 Marvel has cached #1-9 against our complete ladder 1-9 on 9/9 files; GCD has no row for it
+F 12439 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 12658 cv=147385 gcd=- 0.9 | the stored CV 147385 "Namor: The Black Tide Infinity Comic" 2022 Marvel 10 has cached #1-10 against our complete ladder 1-10 at ratio 1.00; GCD has no row for it
+F 12658 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 13620 cv=144561 gcd=- 0.9 | the stored CV 144561 "Patsy Walker Infinity Comic" 2022 Marvel 4 has cached #1-4 against our complete ladder 1-4 at ratio 1.00 with a one-year cover-date offset; GCD's Patsy Walker rows are the 1945-1965 print run and the 2008 Hellcat series
+F 13620 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 14789 cv=150184 gcd=- 0.9 | the stored CV 150184 "Rocket Raccoon & Groot: Tall Tails Infinity Comic " 2023 Marvel 20 has cached #1-20 against our complete ladder 1-20 at ratio 1.00; GCD's hits are print Rocket Raccoon series and Panini editions
+F 14789 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 15114 cv=159213 gcd=- 0.9 | the stored CV 159213 "Savage Wolverine Infinity Comic " 2024 Marvel 8 has cached #1-8 against our complete ladder 1-8 at ratio 1.00; GCD's Savage Wolverine rows are the 2013-2015 print ongoing and its trades
+F 15114 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 15249 cv=151434 gcd=- 0.9 | the stored CV 151434 "Secret Invasion Infinity Comic" 2023 Marvel has cached #1-18 against our complete ladder 1-18 on 18/18 files; GCD has no row for it
+F 15249 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 15466 cv=140169 gcd=- 0.9 | the stored CV 140169 "Shang-Chi: Brothers & Sisters Infinity Comic" 2021 Marvel 8 has cached #1-8 against our complete ladder 1-8 at ratio 1.00; GCD has no row for it
+F 15466 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 15511 cv=147369 gcd=- 0.9 | the stored CV 147369 "She-Hulk: Law and Disorder Infinity Comic" 2022 Marvel 12 has cached #1-12 against our complete ladder 1-12 at ratio 1.00; GCD's She-Hulk rows are the 2022 print ongoing and Panini editions
+F 15511 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 16032 cv=141378 gcd=- 0.9 | the stored CV 141378 "Spider-Bot: Infinity Comic" 2021 Marvel 12 has cached #1-12 against our complete ladder 1-12 at ratio 1.00; GCD has no Spider-Bot row
+F 16032 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 16168 cv=149237 gcd=- 0.9 | the stored CV 149237 "Spider-Man & Hulk: Toilet Paper Infinity Comic" 2023 Marvel count 1 (issue 980917) matches our single file at ratio 1.00 and the folder name reproduces the title; GCD's hits are 1982 Spider-Man and Hulk print books
+F 16168 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 16164 cv=153351 gcd=- 0.9 | the stored CV 153351 "Spider-Man Unlimited Infinity Comic" 2023 Marvel has cached #1-50 against our complete ladder 1-50 on 50/50 files; GCD has no row for it
+F 16164 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 16257 cv=142336 gcd=- 0.9 | the stored CV 142336 "Spider-Verse Unlimited - Infinity Comic" 2022 Marvel 53 has cached #1-53 against our complete ladder 1-53 at ratio 1.00 — count, span and holdings all agree; GCD has no row
+F 16257 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 16298 cv=139818 gcd=- 0.9 | the stored CV 139818 "Spine-Tingling Spider-Man: Infinity Comic" 2021 Marvel 8 has cached #1-8 against our complete ladder 1-8 at ratio 1.00; GCD has no row for it
+F 16298 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 16357 cv=144062 gcd=- 0.9 | the stored CV 144062 "Squirrel Girl: The Unbeatable Radio Show Infinity Comic" 2022 Marvel count 1 (issue 937065) matches our single file at ratio 1.00; GCD's only hit is a 2018 Marvel Rising print one-shot
+F 16357 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 16917 cv=147505 gcd=- 0.9 | the stored CV 147505 "Strange Tales: Clea, Wong & America Infinity Comic" 2022 Marvel count 1 (issue 964973) matches our single file at ratio 1.00 and the folder name reproduces the title; GCD has no row
+F 16917 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 16918 cv=151587 gcd=- 0.9 | the stored CV 151587 "Strange Tales: Secret Invasion Infinity Comic " 2023 Marvel count 1 (issue 996430) matches our single file at ratio 1.00; it is a separate serial from the eighteen-chapter Secret Invasion Infinity Comic on S15249
+F 16918 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 17447 cv=147414 gcd=- 0.9 | the stored CV 147414 "T.E.S.T. Kitchen Halloween Special Infinity Comic" 2022 Marvel count 1 (issue 964099) matches our single file at ratio 1.00; the folder holds four separately titled T.E.S.T. Kitchen serials, each its own volume
+F 17447 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 17448 cv=147415 gcd=- 0.9 | the stored CV 147415 "T.E.S.T. Kitchen Holiday Special Infinity Comic" 2022 Marvel count 1 (issue 964101) matches our single file at ratio 1.00 and reproduces the filename's subtitle
+F 17448 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 17449 cv=147417 gcd=- 0.9 | the stored CV 147417 "T.E.S.T. Kitchen Infinity Comic" 2022 Marvel 4 has cached #1-4 against our complete ladder 1-4 at ratio 1.00 — the base serial, distinct from the three holiday specials in the same folder
+F 17449 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 17450 cv=147416 gcd=- 0.9 | the stored CV 147416 "T.E.S.T. Kitchen Thanksgiving Special Infinity Comic" 2022 Marvel count 1 (issue 964102) matches our single file at ratio 1.00 and reproduces the filename's subtitle
+F 17450 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 19014 cv=159673 gcd=- 0.9 | the stored CV 159673 "The Lovable Lockheed Infinity Comic" 2024 Marvel 6 has cached #1-6 against our complete ladder 1-6 at ratio 1.00; GCD has no Lovable Lockheed row
+F 19014 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 20080 cv=147428 gcd=- 0.9 | the stored CV 147428 "Thor: God of Thunder - The God Butcher Infinity Comic" 2022 Marvel has cached #1-7 against our complete ladder 1-7 on 7/7 files; GCD's Thor: God of Thunder rows are the 2013 print ongoing and its trades
+F 20080 provider-missing | GCD does not index Marvel's Infinity Comics line
+S 20623 cv=156236 gcd=- 0.9 | the stored CV 156236 "Ultimate Spider-Man Infinity Comic " 2024 Marvel 24 has cached #1-12 matching our ladder 1-12, and ComicInfo Series names it on all twelve files; the count of 24 is above our holdings on a serial that kept running
+F 20623 provider-missing | GCD does not index Marvel's Infinity Comics line

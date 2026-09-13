@@ -1,0 +1,453 @@
+# B-059 — Marvel's Spider-Man family (Spider-Girl, Spider-Ham, Spider-Punk, Amazing/Spectacular/Sensational
+# Spider-Man trades and one-shots, Spider-Woman, Squadron Supreme, Squirrel Girl, Thanos). 150 shelves, and
+# ~110 of them are ONE book. Two folder shapes decide nearly the whole batch, and they point opposite ways:
+#   * a file sitting directly in a BUCKET (`00 TPBs`, `__OGNs, Minis & One-shots`, `_Trades, minis and
+#     one-shots`, `Original Graphic Novels`, `00 Annuals and Specials`, `__Omnibus Editions`) names no run —
+#     the BOOK's own count-1 record, which Marvel-era shelves get minted in BOTH providers, is the identity;
+#   * a `<Title> [vN] (<year>)` per-title folder holding only a collected edition is the RUN's folder — the
+#     run takes the S line and the trade takes an I line. That is where every `wrong-cv-link` here comes from:
+#     the stored link is the count-1 trade record on 19 of these shelves, exactly the IDW/BOOM/Image shape.
+# I overrode "the run wins" only where the arithmetic refuses it (a 201pp digest is not a 4-issue mini, a
+# 551pp vertical rip is not a 4-issue print mini) or where the run already owns another shelf (Thanos 2003).
+# Surprises: GCD hides "Spider-Man vs. Black Cat" as "Spider-Man vs. The Black Cat" (40812) — the packet's
+# probe missed it by one article; and the Epic Collection shape is total here (CV a volume per BOOK, GCD one
+# line row: 74602 for ASM, 210504 for Spider-Girl Modern Era).
+
+# ── Spider-Girl / Spider-Ham / Spider-Punk ────────────────────────────────────────────────────────────────
+S 16005 cv=114127 gcd=- 0.9 | our own ComicInfo Series names "Spectacular Spider-Girl: Who Killed Gwen Reilly?" and Publisher Marvel, and CV 114127 (Marvel 2010, count 1, issue 687190) is that book exactly; a GCD probe on the full title and on the bare "Who Killed Gwen Reilly" returns nothing at all, so the second leg does not exist rather than being unfound
+F 16005 provider-missing | GCD indexes no row under this digest's title — the only GCD hits in the family are 48351 "Spectacular Spider-Girl" 2010 (the 4-issue print run) and 229295 (the sibling shelf's "Last Stand" digest)
+I 93774 cv=687190 gcd=- 0.9 | the 217pp digest is the whole shelf, so the book's record is the shelf's: CV issue 687190 of volume 114127, Marvel 2010, and GCD carries no issue for it
+S 16004 cv=36651 gcd=229295 0.95 | CV 36651 "Spectacular Spider-Girl: The Last Stand" 2010 Marvel count 1 (issue 243645) and GCD 229295 of the same title, year, publisher and count 1 agree, and our ComicInfo Series says the same string; the 4-issue print run (CV 33063 / GCD 48351) cannot be this book because 4 issues is ~88pp against our 201pp
+N 16004 the print run this digest draws on is CV 33063 / GCD 48351 "Spectacular Spider-Girl" 2010 Marvel 4; the page arithmetic (201pp vs ~88pp) is why the digest, not the run, carries this shelf
+I 93999 cv=243645 gcd=s229295 0.95 | the single 201pp file IS the digest, so its record is the shelf's pair: CV issue 243645 and GCD series 229295, both Marvel 2010 count 1
+S 16041 cv=161166 gcd=210504 0.9 | CV 161166 "Spider-Girl Modern Era Epic Collection: Keeping the Faith" 2024 Marvel count 1 (issue 1078646) is the BOOK, and a re-probe of the LINE name without its volume subtitle found GCD 210504 "Spider-Girl Modern Era Epic Collection" 2024-? Marvel 3 — the Epic Collection shape, CV a volume per book against GCD's one line row, so the two legs describe different granularities
+F 16041 merge-with=16042 | the two Spider-Girl Modern Era Epic Collection shelves are one folder cut in two by the volume subtitle in each filename; they share GCD line 210504, and the line is what both books belong to
+I 93785 cv=1078646 gcd=s210504 0.9 | the 381pp file is volume 05 "Keeping the Faith"; CV issue 1078646 is its own record and GCD 210504 is the only GCD row that covers it
+S 16042 cv=157406 gcd=210504 0.9 | CV 157406 "Spider-Girl Modern Era Epic Collection: Legacy" 2024 Marvel count 1 (issue 1049420) matches our ComicInfo Series exactly, and GCD 210504 is the line row (2024-?, Marvel, 3 volumes) that covers this book; CV has no series-level record for the line
+I 93784 cv=1049420 gcd=s210504 0.9 | the 459pp file is volume 01 "Legacy"; CV issue 1049420 is its record and GCD's line 210504 is the only GCD row holding it
+S 16059 cv=138861 gcd=176056 0.95 | CV 138861 (Scholastic Book Services 2021, count 1, issue 884408) and GCD 176056 "Spider-Ham: Great Power, No Responsibility" 2021 Scholastic count 1 agree on title, year, publisher and count, and our ComicInfo Publisher says "Scholastic - Graphix"; the two files are two rips of one 77-82pp book, which costs nothing
+I 93839 cv=884408 gcd=s176056 0.95 | the Hourman-DCP 82pp rip of the one book this shelf is; both legs mint exactly one record for it
+I 95623 cv=884408 gcd=s176056 0.95 | the dekabro-Empire 77pp rip of the same book — a duplicate edition of one comic, not a second comic
+S 16060 cv=34028 gcd=50808 0.95 | CV 34028 "The Amazing Spider-Ham Special 25th Anniversary Issue" 2010 Marvel count 1 (issue 221877) and GCD 50808 "Spider-Ham 25th Anniversary Special" 2010 Marvel count 1 are the same one-shot under the two providers' spellings, and our single 42pp file's year matches both
+I 93840 cv=221877 gcd=s50808 0.95 | the shelf is one 42pp one-shot, so the book's record and the shelf's are the same question and both legs answer it identically
+S 16061 cv=155949 gcd=207770 0.95 | CV 155949 "Spider-Ham: A Pig in Time" 2024 Scholastic Book Services count 1 (issue 1039456) and GCD 207770 of the same title, Scholastic, count 1 agree; GCD dates it 2023 and the file 2024, the usual solicit-versus-ship gap, and ComicInfo Publisher "Scholastic - Graphix" rejects the Elvifrance/Ediperiodici "Pig" rows on the publisher column
+I 93838 cv=1039456 gcd=s207770 0.95 | the single 78pp Scholastic book is the shelf; CV issue 1039456 and GCD 207770 are its two records
+S 16254 cv=149620 gcd=198059 0.95 | CV 149620 "Spider-Punk: Battle of the Banned" 2023 Marvel count 1 (issue 984710) and GCD 198059 of the same title, year, publisher and count agree, and ComicInfo Series/Publisher say the same; the Panini UK pair (CV 154027 / GCD 205193) is rejected on the publisher column alone
+I 94000 cv=984710 gcd=s198059 0.95 | the 109pp Digital-Empire file is the whole shelf and both legs mint one record for it
+
+# ── Amazing Spider-Man: annuals, specials and the 00 TPBs bucket ──────────────────────────────────────────
+S 10405 cv=22508 gcd=31819 0.95 | CV 22508 "King-Size Spider-Man Summer Special" 2008 Marvel count 1 (issue 135111) and GCD 31819 of the identical title, year, publisher and count agree; the file is a single 65pp one-shot in the Annuals and Specials bucket, which names no run
+I 93897 cv=135111 gcd=s31819 0.95 | one 65pp one-shot, one record in each provider — the shelf's identity and the book's are the same
+S 29274 cv=27969 gcd=39628 0.9 | the 92pp file is the collected "Amazing Spider-Man Presents: Anti-Venom - New Ways to Live", the same comic S886 holds twice at 74pp; CV 27969 (2009 Marvel 3) and GCD 39628 (2009 Marvel 3) are the run it collects, and the per-file pick CV 43148 "The Return of Anti-Venom" 2011 is a different book a year later
+F 29274 merge-with=886 | this shelf and S886 are the same comic filed under two names — "The Amazing Spider-Man Presents - Anti-Venom" in 00 Annuals and Specials and the full "New Ways to Live" title in the OGN bucket
+F 29274 duplicate-shelf | items 93899 (92pp) and S886's 95957/97984 (74pp each) are rips of one collected edition; the 18pp spread is rip padding, not a second comic
+S 844 cv=48970 gcd=65543 0.95 | CV 48970 "Amazing Spider-Man: Ends of the Earth" 2012 Marvel count 1 (issue 335956) and GCD 65543 of the same title, year, publisher and count agree; the file sits loose in the 00 TPBs bucket, which names no run, so the book's own record is the shelf
+I 93900 cv=335956 gcd=s65543 0.95 | the single 186pp Kileko trade is the shelf; both providers mint exactly one record for it
+S 850 cv=44977 gcd=74104 0.95 | CV 44977 "Spider-Man: Masques" 2012 Marvel count 1 (issue 309610) and GCD 74104 "Spider-Man: Masques" 2011 Marvel count 1 are the same trade one solicitation year apart, and our 130pp file carries the same title under its Amazing prefix
+I 93901 cv=309610 gcd=s74104 0.95 | one 130pp trade, one count-1 record in each provider
+S 851 cv=58038 gcd=70601 0.95 | CV 58038 "Spider-Man: Nothing Can Stop the Juggernaut" 2012 Marvel count 1 (issue 388798) and GCD 70601 of the same title, year, publisher and count agree; the two 164pp files are byte-identical-length rips by Asgard and Minutemen of one book
+I 93902 cv=388798 gcd=s70601 0.95 | the Asgard-Empire 164pp rip of the one trade this shelf holds
+I 95768 cv=388798 gcd=s70601 0.95 | the Minutemen-Slayer 164pp rip of the same trade, filed a second time under the OGN bucket
+S 854 cv=49870 gcd=74108 0.95 | CV 49870 "Spider-Man: Perceptions" 2012 Marvel count 1 (issue 342228) and GCD 74108 of the same title, year, publisher and count agree, and the 115pp file is the only thing on the shelf
+I 93903 cv=342228 gcd=s74108 0.95 | one 115pp trade in the TPB bucket with one record in each provider
+S 857 cv=72919 gcd=74092 0.95 | CV 72919 "Spider-Man: Revenge of the Sinister Six" 2012 Marvel count 1 (issue 450021) and GCD 74092 of the same title, year and count agree; "Amazing" in our filename is the ripper's prefix, and the 1995 Sinister Six trade (CV 29734) is the sibling shelf S858
+I 93904 cv=450021 gcd=s74092 0.95 | the single 165pp Asgard trade is this shelf entire
+S 858 cv=29734 gcd=74077 0.95 | CV 29734 "Spider-Man: Sinister Six" 2009 Marvel count 1 (issue 183023) and GCD 74077 of the same title, year, publisher and count agree; the 2019 GCD row 145740 is a later printing and the 2012 "Revenge of" trade is the sibling shelf S857
+I 93905 cv=183023 gcd=s74077 0.95 | one 214pp trade, one record in each provider, both dated 2009 like the file
+S 900 cv=93365 gcd=105638 0.95 | CV 93365 "Amazing Spider-Man: Amazing Grace" 2016 Marvel count 1 (issue 546050, cached #1-1) and GCD 105638 of the same title, year, publisher and count agree, and our ComicInfo Series says the same string
+F 900 merge-with=898 | S900 (121pp Zone rip in 00 TPBs) and S898 (123pp Zone rip filed under Point One) are two rips of the one "Amazing Grace" trade that the filename "Vol. 01.1" split into two shelves
+I 94015 cv=546050 gcd=s105638 0.95 | the 121pp COL file is that trade; both legs mint one record for it
+S 898 cv=93365 gcd=105638 0.95 | the same book as S900 — CV 93365 (Marvel 2016, count 1, issue 546050) and GCD 105638 agree on title, year, publisher and count, and the ".1" in our filename is the ASM legacy point-one numbering, not a different comic
+I 95940 cv=546050 gcd=s105638 0.95 | the 123pp "Vol. 01.1 - Amazing Grace" rip is the same trade S900 holds at 121pp
+S 13779 cv=30309 gcd=- 0.9 | CV 30309 "Peter Parker: Spider-Man: Return of the Goblin" 2002 Marvel count 1 (issue 186656) matches our filename's title and the 2003 rip year, and the 97pp file is a single trade in the TPB bucket; GCD probes on both the colon and the comma spelling return nothing
+F 13779 provider-missing | GCD holds the ongoing "Peter Parker: Spider-Man" 9876 (1999-2003, 57) and the German/Spanish Panini editions, but no row for this trade under either spelling
+I 93958 cv=186656 gcd=- 0.9 | the single 97pp Kileko trade is the shelf; CV issue 186656 is its only item-level record
+S 15335 cv=28115 gcd=35452 0.9 | CV 28115 "Sensational Spider-Man: Feral" 2007 Marvel count 1 (issue 172619) and GCD 35452 of the same title, 2007, Marvel, count 1 agree with the file's own (2007); GCD carries a twin row 35451 dated 2006 for the same book, so the printing is not settled beyond doubt
+N 15335 the GCD twins are 35452 (2007) and 35451 (2006) — the same trade indexed twice; 35452 is taken because both the file and the CV volume say 2007
+I 94001 cv=172619 gcd=s35452 0.9 | the 111pp Kileko trade; the twin GCD row 35451 is why this is 0.9 and not 0.95
+S 16081 cv=27863 gcd=27798 0.95 | CV 27863 "Spider-Man: Back in Black" 2008 Marvel count 1 (issue 170819) and GCD 27798 of the same title, Marvel, count 1 (2007) agree, and ComicInfo Series says "Spider-Man: Back In Black"; the second file is the same trade re-filed under _Marvel Major Event Chronology, the DC-events shape, not a second run
+I 94002 cv=170819 gcd=s27798 0.95 | the 333pp Kileko (F) rip of the Back in Black trade
+I 116712 cv=170819 gcd=s27798 0.95 | the 339pp Kileko rip of the same trade, filed a second time inside the Civil War chronology folder
+S 16096 cv=27219 gcd=162320 0.9 | CV 27219 "Spider-Man: Identity Crisis" 1998 Marvel count 1 (issue 165785) is the first edition and GCD 162320 of the same title, Marvel, count 1 is the 2012 printing; the two legs name one comic but not one printing, and our rip is a 2018 re-release, so the edition is the unexplained residue
+I 94004 cv=165785 gcd=s162320 0.9 | the single 200pp Shadowcat file; CV carries the 1998 record and GCD only the 2012 printing, so the pair is cross-edition
+S 16105 cv=38267 gcd=31938 0.95 | CV 38267 "Spider-Man: Maximum Carnage" 1993 Marvel count 1 (issue 256217) and GCD 31938 of the same title, Marvel, count 1 (1994) agree within the usual solicit-versus-ship year; the two 331pp files are one rip filed twice, once in 00 TPBs and once in the Maximum Carnage chronology folder
+I 94005 cv=256217 gcd=s31938 0.95 | the 331pp Kileko Digital-SD rip of the Maximum Carnage trade
+I 116458 cv=256217 gcd=s31938 0.95 | the identical 331pp rip re-filed under _Marvel Major Event Chronology — residue, not a second comic
+S 16107 cv=36727 gcd=67151 0.9 | CV 36727 "Amazing Spider-Man: One Moment in Time" 2010 Marvel count 1 (issue 244845) and GCD 67151 "Spider-Man: One Moment in Time" 2010 Marvel count 1 agree on year, publisher and count; GCD carries a second row 75393 dated 2011 for the same book, so the printing is not settled
+I 94006 cv=244845 gcd=s67151 0.9 | the 155pp Minutemen rip; the GCD twin 75393 (2011) is the doubt
+S 16111 cv=50409 gcd=74109 0.95 | CV 50409 "Spider-Man: Return of the Burglar" 2012 Marvel count 1 (issue 345543) and GCD 74109 of the same title, year, publisher and count agree; the Black Cat candidates are a different book and are rejected on the title
+I 94008 cv=345543 gcd=s74109 0.95 | the single 176pp Shadowcat trade is the whole shelf
+S 16112 cv=38274 gcd=191949 0.9 | the file is "COL Spider-Man - Revenge of the Green Goblin (2002)", and CV 38274 (2002 Marvel count 1, issue 256235) with GCD 191949 (2002 Marvel count 1) are that 2002 collection in both providers; the 430pp rip is far more than the 3-issue 2000 mini could yield, which is the residue that caps this
+F 16112 wrong-cv-link | the stored link is CV 20677 "Spider-Man: Revenge of the Green Goblin" 2000 Marvel 3 — the three-issue mini (GCD 18333), not the 2002 collection our single file is, and it has no CvVolume row either
+I 94009 cv=256235 gcd=s191949 0.9 | the 430pp collection; both legs mint a 2002 count-1 record and the page count is the open question
+S 16115 cv=49728 gcd=162319 0.95 | CV 49728 "Spider-Man: Spider-Hunt" 2012 Marvel count 1 (issue 341202) and GCD 162319 of the same title, year, publisher and count agree; the Kraven's Hunt candidates are different comics rejected on the title
+I 94010 cv=341202 gcd=s162319 0.95 | the single 271pp Shadowcat trade is the shelf
+S 16119 cv=42927 gcd=74100 0.9 | CV 42927 "Spider-Man: The Death of Jean DeWolff" 2011 Marvel count 1 (issue 293162) and GCD 74100 of the same title, 2011, Marvel, count 1 agree; GCD also holds 217440 dated 2013, which is our rip's year, so which printing we hold is unsettled
+I 94011 cv=293162 gcd=s74100 0.9 | the 170pp Zone rip dated 2013; the 2011 pair is taken as the first edition and the 2013 GCD twin named
+S 16182 cv=27220 gcd=40812 0.95 | the packet's probe missed GCD by one article — a re-probe of "Spider-Man vs. the Black Cat" returns GCD 40812 (2005 Marvel count 1), which pairs with CV 27220 "Spider-Man vs. Black Cat" 2005 Marvel count 1 (issue 165786) on title, year, publisher and count
+I 94013 cv=165786 gcd=s40812 0.95 | the single 128pp Kileko file is the shelf; the GCD row is only reachable under the definite article
+S 16184 cv=27282 gcd=40843 0.95 | CV 27282 "Spider-Man vs. Silver Sable" 2006 Marvel count 1 (issue 166264) and GCD 40843 of the identical title, year, publisher and count agree, and ComicInfo Series says the same string
+I 94014 cv=166264 gcd=s40843 0.95 | one 145pp trade, one count-1 record in each provider
+S 16239 cv=41275 gcd=73311 0.95 | CV 41275 "Spider-Man: The Original Clone Saga" 2011 Marvel count 1 (issue 278684) and GCD 73311 of the same title, year, publisher and count agree, and ComicInfo Series repeats it; "The Real Clone Saga" (S16125) is a different book of the same year
+I 94012 cv=278684 gcd=s73311 0.95 | the single 496pp Zone omnibus-sized trade is the whole shelf
+S 19893 cv=126607 gcd=- 0.9 | CV 126607 "The Villainous Venom Battles Spider-Man" 2020 Marvel count 1 (issue 755868) matches our ComicInfo Series and Publisher exactly and the 96pp file's year; a direct GCD probe of the full title returns nothing, so the second leg is absent rather than unfound
+F 19893 provider-missing | GCD indexes no row for this 2020 all-ages book under its own title; its only near hit is 225269 "Spider-Man: The Vengeance of Venom", a different comic
+I 94016 cv=755868 gcd=- 0.9 | the single 96pp Zone rip; CV issue 755868 is its only item-level record in our data
+S 893 cv=35415 gcd=53010 0.9 | CV 35415 "The Amazing Spider-Man by JMS Ultimate Collection" 2009 Marvel 5 (cached #1-5) and GCD 53010 of the same title, 2009-2010, Marvel, 5 agree on publisher, years and count — but the count equals exactly the five books we hold, the matches-our-holdings shape, and this is a creator-named collected line rather than a run
+N 893 the run underneath is Amazing Spider-Man (1963) across J. Michael Straczynski's #30-545; neither the CV rip nor the GCD dump carries a run-level record for that stretch, which is why the line carries the shelf
+I 93952 cv=233715 gcd=s53010 0.9 | Book One, 373pp — CV issue 233715 "Book One" of volume 35415
+I 93953 cv=244343 gcd=s53010 0.9 | Book Two, 392pp — CV issue 244343 "Book Two"
+I 93954 cv=244344 gcd=s53010 0.9 | Book Three, 399pp — CV issue 244344 "Book Three"
+I 93955 cv=244430 gcd=s53010 0.9 | Book Four, 448pp — CV issue 244430 "Book Four"
+I 93956 cv=244450 gcd=s53010 0.9 | Book Five, 504pp — CV issue 244450 "Book Five"
+S 843 cv=27082 gcd=31456 0.95 | CV 27082 "Spider-Man: Birth of Venom" 2007 Marvel count 1 (issue 164280) and GCD 31456 of the same title, year, publisher and count agree; the leading "02" is the ripper's reading-order position inside the Road To and Birth of Venom folder, not an issue number
+I 94018 cv=164280 gcd=s31456 0.95 | the 343pp Asgard rip of the Birth of Venom trade is this shelf entire
+S 16241 cv=131000 gcd=175643 0.95 | CV 131000 "Spider-Man: The Road To Venom" 2020 Marvel count 1 (issue 807668, cached #1-1) and GCD 175643 of the same title, year, publisher and count agree, and ComicInfo Series repeats the string
+I 94017 cv=807668 gcd=s175643 0.95 | the 352pp Kileko rip; the "01" prefix is the reading-order position in the same folder
+S 16245 cv=43029 gcd=225269 0.95 | CV 43029 "Spider-Man: The Vengeance of Venom" 2011 Marvel count 1 (issue 293610) and GCD 225269 of the same title, year, publisher and count agree, and ComicInfo Series says "Spider-Man: Vengeance of Venom"
+I 94019 cv=293610 gcd=s225269 0.95 | the 302pp Kileko rip, the "03" being the folder's reading-order position
+S 891 cv=18772 gcd=5272 0.95 | CV 18772 "Amazing Spider-Man Super Special" 1995 Marvel count 1 (issue 110899) and GCD 5272 "The Amazing Spider-Man Super Special" 1995 Marvel count 1 agree on year, publisher and count; the separate "Spider-Man Super Special" (CV 23406 / GCD 5300) is a different 1995 book
+I 95938 cv=110899 gcd=s5272 0.95 | the single 25pp Shadowcat rip of the 1995 Super Special is the whole shelf
+S 861 cv=42958 gcd=177526 0.95 | CV 42958 "Spider-Man: The Next Chapter" 2011 Marvel 3 and GCD 177526 of the same title, 2011-2012, Marvel, 3 agree on publisher, years and count 3, and our two shelves together hold exactly volumes 01, 02 and 03 of that three-volume line
+F 861 merge-with=16238 | one Trades folder split into two shelves by the volume subtitle: S861 holds Vol. 01 and S16238 Vols 02-03 of the same GMVMVD rip of the same collected line
+I 94509 cv=293335 gcd=s177526 0.95 | Vol. 01, 375pp — CV issue 293335 "Volume One" of volume 42958
+S 16238 cv=42958 gcd=177526 0.95 | the same three-volume line as S861 — CV 42958 (2011 Marvel 3) and GCD 177526 (2011-2012 Marvel 3) agree, ComicInfo Series says "Spider-Man: The Next Chapter" on both files, and these are its volumes 02 and 03
+I 94510 cv=315553 gcd=s177526 0.95 | Vol. 02, 343pp — CV issue 315553 "Volume Two"
+I 94511 cv=351476 gcd=s177526 0.95 | Vol. 03, 379pp — CV issue 351476 "Volume Three"
+
+# ── runs whose folder holds the trades ────────────────────────────────────────────────────────────────────
+S 94797 cv=55552 gcd=71030 0.95 | the folder is the run's own `04 Superior Spider-Man v1 (2014)`, and CV 55552 "Superior Spider-Man" 2013 Marvel 34 pairs with GCD 71030 of the same title, 2013-2014, Marvel, 34 on publisher, years and count; our six numbered trades plus the omnibus collect that 34-issue run, while GCD 77791 count 6 merely equals the six BOOKS we hold
+F 94797 merge-with=17159 | S17159 'Superior Spider-Man' holds the 2013 run's issue files and already stores CV 55552; this shelf is that run's six trades plus its omnibus
+N 94797 GCD 77791 "Superior Spider-Man" 2013-2014 [collected edition] 6 is the collected record the per-file leg picked — its count is exactly our trade count, the matches-our-holdings shape, so it carries the I lines and not the S line
+I 94727 cv=- gcd=s77791 0.9 | Vol. 01 - My Own Worst Enemy, 114pp, volume 1 of the six-volume GCD collected series 77791; ComicVine mints no per-volume record for this line in our rip
+I 94728 cv=- gcd=s77791 0.9 | Vol. 02 - A Troubled Mind, 107pp, volume 2 of GCD collected series 77791
+I 94729 cv=- gcd=s77791 0.9 | Vol. 03 - No Escape, 130pp, volume 3 of GCD collected series 77791
+I 94730 cv=- gcd=s77791 0.9 | Vol. 04 - Necessary Evil, 108pp, volume 4 of GCD collected series 77791
+I 94731 cv=- gcd=s77791 0.9 | Vol. 05 - Superior Venom, 150pp, volume 5 of GCD collected series 77791
+I 94732 cv=- gcd=s77791 0.9 | Vol. 06 - Goblin Nation, 150pp, volume 6 of GCD collected series 77791
+I 95939 cv=1000341 gcd=s201869 0.95 | the 907pp Superior Spider-Man Omnibus (2023) is its own book: CV 152127 issue 1000341 and GCD 201869, both Marvel 2023 count 1
+S 863 cv=89345 gcd=99294 0.9 | CV 89345 "Amazing Spider-Man: Worldwide" 2016 Marvel 9 and GCD 99294 of the same title, 2016-2018, Marvel, 9 agree on publisher, years and count 9, and our judged ranges run #1-5, #6-11, #12-15, #16-19, #20-24, #25-28 then the legacy #792-801 — the collected LINE, not the ASM ongoing it would merge five shelves into
+F 863 wrong-cv-link | the per-file matcher stamped CV 153744 "The Amazing Spider-Man: Worldwide" 2016 Marvel UK/Panini UK 9 on all ten files; the English Marvel volume 89345 is in the local rip and the Panini row is rejected on the publisher column
+N 863 the run underneath is Amazing Spider-Man (2015, v4/legacy v1); items 93950/94748 and 93951/94749 and 118237/94744 are duplicate rips of one block each, which is why the duplicate-edition flags are open
+I 94741 cv=523247 gcd=s99294 0.9 | Worldwide Vol. 01, 141pp, judged #1-5 — CV issue 523247 "Volume 1"
+I 94742 cv=538663 gcd=s99294 0.9 | Worldwide Vol. 02, 129pp, judged #6-11 — CV issue 538663 "Volume 2"
+I 94743 cv=558954 gcd=s99294 0.9 | Worldwide Vol. 03, 130pp, judged #12-15 — CV issue 558954 "Volume 3"
+I 94745 cv=594957 gcd=s99294 0.9 | Worldwide Vol. 05, 149pp, judged #20-24 — CV issue 594957 "Volume 5"
+I 94746 cv=609336 gcd=s99294 0.9 | Worldwide Vol. 06, 152pp, judged #25-28 — CV issue 609336 "Volume 6"
+I 94747 cv=655498 gcd=s99294 0.9 | Worldwide Vol. 07, 166pp — CV issue 655498 "Volume 7"; LOCG straddles the legacy renumbering here, which is the open provider-disagrees flag
+I 94748 cv=674121 gcd=s99294 0.9 | Worldwide Vol. 08, 118pp, judged #792-796 — CV issue 674121 "Volume 8"
+I 94749 cv=694902 gcd=s99294 0.9 | Worldwide Vol. 09, 165pp, judged #797-801 — CV issue 694902 "Volume 9"
+I 93950 cv=674121 gcd=s99294 0.9 | the "Dan Slott Spider-Man Vol. 51" rip of Worldwide Vol. 08, the duplicate edition of item 94748's block
+I 93951 cv=694902 gcd=s99294 0.9 | the "Dan Slott Spider-Man Vol. 52" rip of Worldwide Vol. 09, the duplicate edition of item 94749's block
+S 864 cv=128891 gcd=176129 0.95 | CV 128891 "Amazing Spider-Man 2099 Companion" 2020 Marvel count 1 (issue 781562) and GCD 176129 of the identical title, year, publisher and count agree, and ComicInfo Series repeats it on both files; the round2-folder GCD pick 194339 is Panini France's recueil and is rejected on the publisher column
+I 94757 cv=781562 gcd=s176129 0.95 | the 285pp Zone rip filed as ASM Vol. 07.5 in the v5.1 folder
+I 118424 cv=781562 gcd=s176129 0.95 | the identical 285pp LuCaZ rip re-filed under the 2099 chronology folder — residue, not a second comic
+S 901 cv=122215 gcd=151259 0.95 | the run is the 2019 one-shot: CV 122215 "Amazing Spider-Man: Full Circle" 2019 Marvel count 1 (issue 723851) and GCD 151259 of the same title, 2019, Marvel, one-shot agree, and ComicInfo Volume says 2019; the second file is that comic's own 2020 trade, one comic in two editions
+I 94768 cv=723851 gcd=s151259 0.95 | the 88pp "Full Circle 001 (2019)" file is the one-shot itself
+I 95573 cv=744570 gcd=s176146 0.9 | the 126pp "(2020)" file is the trade of it — CV 126152 issue 744570 and GCD 176146, both count 1
+S 902 cv=121059 gcd=150099 0.95 | CV 121059 "Amazing Spider-Man: Going Big" 2019 Marvel count 1 (issue 718122) and GCD 150099 of the same title, 2019, Marvel, One-Shot agree, and ComicInfo Series and Volume 2019 say the same
+I 94769 cv=718122 gcd=s150099 0.95 | the single 30pp one-shot is the whole shelf
+S 15336 cv=120573 gcd=149475 0.95 | CV 120573 "The Sensational Spider-Man: Self-Improvement" 2019 Marvel count 1 (issue 715317) and GCD 149475 of the same title, 2019, Marvel, one-shot agree, and ComicInfo Series and Volume 2019 match
+I 94773 cv=715317 gcd=s149475 0.95 | the single 38pp 2019 one-shot is the whole shelf, so CV issue 715317 and GCD series 149475 are its own two records
+S 16225 cv=119876 gcd=148423 0.95 | CV 119876 "Spider-Man: Reptilian Rage" 2019 Marvel count 1 (issue 712546) and GCD 148423 of the same title, 2019, Marvel, one-shot agree, and ComicInfo Series and Volume 2019 say the same
+I 94774 cv=712546 gcd=s148423 0.95 | the single 23pp 2019 one-shot is the whole shelf, so CV issue 712546 and GCD series 148423 are its own two records
+S 466 cv=19159 gcd=17311 0.95 | CV 19159 "The Adventures of Spider-Man" 1996 Marvel 12 and GCD 17311 of the same title, 1996-1997, Marvel, 12 agree on publisher, years and count, and our ladder is a complete 1-12 with ComicInfo Volume 1996 on all twelve files
+S 16144 cv=26486 gcd=- 0.9 | CV 26486 "Spider-Man Family Featuring Amazing Friends" 2006 Marvel count 1 (issue 158095, cached #1-1, ratio 1/1) matches the file's title and 2006 year and our ladder of 1; GCD probes under both the "Featuring" and the bare "Amazing Friends" spelling return nothing
+F 16144 provider-missing | GCD holds only "Spider-Man and His Amazing Friends" 2603 (1981) and the Marvel UK weekly 31499 — different comics rejected on year and publisher
+I 95943 cv=158095 gcd=- 0.9 | the single 88pp one-shot; CV issue 158095 is its only item-level record
+S 16179 cv=155068 gcd=206338 0.9 | CV 155068 "Friendly Neighborhood Spider-Man by Tom Taylor" 2023 Marvel count 1 (issue 1032855) and GCD 206338 "Spider-Man by Tom Taylor" 2023 Marvel count 1 are one book under the two providers' spellings, and our ComicInfo Series uses GCD's; it is a creator-named collected line, so 0.9 with the run named
+N 16179 the run it collects is Friendly Neighborhood Spider-Man (2019), CV 116368, 14 issues — linking this Deluxe Edition shelf there would merge it into that run's own shelf
+I 95945 cv=1032855 gcd=s206338 0.9 | the single 345pp Digital-Empire deluxe is the shelf; both legs mint one count-1 record for it
+R 24300 | three co-equal miniseries sit on one shelf, each numbered from #1 and each with its own trade: "City at War" (CV 117754 / GCD 142392, 6 issues), "Velocity" (CV 120950 / GCD 149953, 5) and "The Black Cat Strikes" (CV 124279 / GCD 154786, 5); the stored link CV 120950 is Velocity's run stamped on all three files, so applying it would give City at War and Black Cat Strikes the Velocity identity
+F 24300 split-needed | propose three shelves: City at War cv=117754 gcd=142392, Velocity cv=120950 gcd=149953, The Black Cat Strikes cv=124279 gcd=154786 — one folder, three separately published minis
+N 24300 cv=117754 gcd=142392 is City at War; cv=120950 gcd=149953 is Velocity; cv=124279 gcd=154786 is The Black Cat Strikes
+I 94824 cv=723126 gcd=s161904 0.95 | Vol. 01 - City at War, 141pp — CV 122070 issue 723126 (TPB) and GCD 161904, both Marvel 2019 count 1
+I 94825 cv=738064 gcd=s176706 0.95 | Vol. 02 - Velocity, 110pp — CV 125194 issue 738064 and GCD 176706, both Marvel count 1
+I 94826 cv=801566 gcd=s175976 0.95 | Vol. 03 - The Black Cat Strikes, 112pp — CV 130409 issue 801566 and GCD 175976, both Marvel 2020 count 1
+S 15133 cv=45101 gcd=62834 0.95 | the folder is the run's own `Scarlet Spider v2 (2012)`, CV 45101 "Scarlet Spider" 2012 Marvel 26 and GCD 62834 of the same title, 2012-2014, Marvel, 26 agree on publisher, years and count, and our four trades' judged ranges #1-6, #7-15, #16-20, #21-25 tile that run
+F 15133 needs-fetch cv=45101 | the right volume has no CvVolume row — it was named from the local rip, so Phase C.1 must fetch it
+N 15133 GCD 213595 "Scarlet Spider" 2013-2014 Marvel 4 is the collected record whose count equals exactly our four books; it carries the I lines, not the S line
+I 94883 cv=- gcd=s213595 0.9 | v01 - Life After Death, 151pp, judged #1-6 — volume 1 of GCD collected series 213595
+I 94884 cv=- gcd=s213595 0.9 | v02 - Lone Star, 151pp, judged #7-15 — volume 2 of GCD collected series 213595
+I 94885 cv=- gcd=s213595 0.9 | v03 - The Big Leagues, 136pp, judged #16-20 — volume 3 of GCD collected series 213595
+I 94886 cv=- gcd=s213595 0.9 | v04 - Into The Grave, 112pp, judged #21-25 — volume 4 of GCD collected series 213595
+S 15334 cv=5788 gcd=5557 0.95 | CV 5788 "The Sensational Spider-Man" 1996 Marvel 37 and GCD 5557 of the same title, 1996-1998, Marvel, 35 agree on publisher and years, the count gap being CV's inclusion of the #-1 and #0 issues; our ladder 0-6 and 25-28 sits inside both
+F 15334 needs-fetch cv=5788 | the 1996 volume has no CvVolume row and was named from the local rip
+S 16178 cv=101637 gcd=114316 0.95 | CV 101637 "Spider-Man by Todd Dezago & Mike Wieringo" 2017 Marvel count 1 (issue 597202) and GCD 114316, which spells the same title with "and" for "&", agree on year, publisher and count 1, and ComicInfo Series repeats the CV string
+N 16178 the run it collects is Sensational Spider-Man (1996), CV 5788 / GCD 5557, whose files are shelf S15334 in the same folder
+I 94898 cv=597202 gcd=s114316 0.95 | the single 446pp Relic-Empire volume is the shelf; both legs mint one record and GCD only under the "and" spelling
+S 16006 cv=11069 gcd=12001 0.9 | the folder is `03 The Spectacular Spider-Man v2 (2003)`, CV 11069 "Spectacular Spider-Man" 2003 Marvel 27 and GCD 12001 of the same title, 2003-2005, Marvel, 27 agree on publisher, years and count, and our judged ranges #1-5, #6-10 and #23-26 sit inside it; one 1989 issue file is foreign to the run, which caps this
+F 16006 misfiled | item 87487 "022 Spectacular Spider-Man 158 (1989)" is an issue of the 1976 run (CV 2870 / GCD 2359), re-filed here from the X-Men Complete Chronology folder; it is why the per-file matcher stamped the 1976 legacy volume on all eight files
+N 16006 GCD 63977 "Spectacular Spider-Man" 2003-2005 Marvel 6 is the collected record whose count equals our six trades; items 95171 and 117889 are duplicate rips of Vol. 04
+I 95168 cv=- gcd=s63977 0.9 | Vol. 01 - The Hunger, 121pp, judged #1-5 — volume 1 of GCD collected series 63977
+I 95169 cv=- gcd=s63977 0.9 | Vol. 02 - Countdown, 124pp, judged #6-10 — volume 2 of GCD collected series 63977
+I 95170 cv=- gcd=s63977 0.9 | Vol. 03 - Here There Be Monsters, 100pp — volume 3 of GCD collected series 63977
+I 95171 cv=- gcd=s63977 0.9 | Vol. 04 - Disassembled, 143pp — volume 4 of GCD collected series 63977
+I 95172 cv=- gcd=s63977 0.9 | Vol. 05 - Sins Remembered, 101pp, judged #23-26 — volume 5 of GCD collected series 63977
+I 95173 cv=- gcd=s63977 0.9 | Vol. 06 - Final Curtain, 146pp — volume 6 of GCD collected series 63977
+I 117889 cv=- gcd=s63977 0.9 | the duplicate 143pp rip of Vol. 04 - Disassembled, filed under the Avengers Disassembled chronology folder
+S 16220 cv=73188 gcd=208253 0.95 | CV 73188 "Spider-Man Newspaper Strips" 2014 Marvel 2 and GCD 208253 of the identical title, 2014, Marvel, 2 agree on publisher, year and count; this is a volume-published reprint line with no issue run, so the collected series is the identity
+I 95277 cv=450782 gcd=s208253 0.95 | Vol. 01, 344pp — CV issue 450782 "Volume 1" of volume 73188
+I 95278 cv=468260 gcd=s208253 0.95 | Vol. 02, 314pp — CV issue 468260 "Volume 2"
+S 16147 cv=109421 gcd=- 0.9 | our ladder is a complete 1-6 of 21-22pp chapter files, and CV 109421 "Spider-Man J" 2018 Marvel 6 is the only record whose count reaches it; a GCD probe of "Spider-Man J" returns nothing in any spelling
+F 16147 wrong-cv-link | the stored link CV 76943 "Spider-Man J" 2008 Marvel has only #1-2 cached and a count of 2 — our ladder runs to 6, past that volume's whole length, which is the cheapest mis-link test there is
+F 16147 provider-missing | GCD indexes no Spider-Man J at all; the Kodansha row CV 66048 is the Japanese original and is rejected on the publisher column
+S 99970 cv=10760 gcd=11672 0.9 | CV 10760 "Spider-Man Unlimited" 1999 Marvel 6 and GCD 11672 of the same title, 1999-2000, Marvel, 5 agree on publisher and years, and our ladder 1-5 with "(of 05)" in every filename matches GCD's 5; the extra file is the #0.5 mail-away, which GCD indexes as its own row
+N 99970 the #0.5 Wizard mail-away (item 95298) is GCD 80902 "Spider-Man Unlimited" 1999 Marvel; Wizard, count 1 — a different comic, which is why this is 0.9
+S 99972 cv=4421 gcd=4049 1.0 | the collection asserts the volume itself: one file's ComicInfo Series is literally "Spider-Man cvv4421" and ComicInfo Count says 98, and CV 4421 "Spider-Man" 1990 Marvel 100 pairs with GCD 4049 "Spider-Man" 1990-1998 Marvel 100 on publisher, years and count; the per-file pick CV 43261 is Panini France and is rejected on the publisher column
+N 99972 our ladder 6-16, 18-25, 29-31, 35-37, 41-43, 45, 51-75, 88-92 sits wholly inside #1-98; the two COL files are the run's own trades and cost nothing
+I 95951 cv=837521 gcd=- 0.9 | "Spider-Man by Todd McFarlane - The Complete Collection" (2021), 406pp, judged #1-16 — CV 134430 issue 837521; GCD carries no row for it
+I 95952 cv=171748 gcd=s32296 0.95 | "Spider-Man Vol. 01 - Torment" (1990), 114pp, judged #1-5 — CV 28017 issue 171748 and GCD 32296, both Marvel 1992 count 1
+S 35951 cv=134056 gcd=174398 0.95 | CV 134056 "Spider-Man: Bloodline" 2021 Marvel count 1 (issue 830061) and GCD 174398 of the same title, Marvel, count 1 agree, and ComicInfo Publisher says Marvel; the per-file pick CV 154288 is the Marvel UK/Panini UK edition and is rejected on the publisher column
+I 95953 cv=830061 gcd=s174398 0.95 | the single 133pp Digital-Empire file is the shelf, and the English Marvel pair is the right territory
+S 17164 cv=65629 gcd=75648 0.95 | the folder is the run's own `Superior Spider-Man Team-Up (2013)`, and CV 65629 "Superior Spider-Man Team-Up" 2013 Marvel 12 pairs with GCD 75648 of the same title, 2013-2014, Marvel, 12 on publisher, years and count; our single file is one trade of that run
+F 17164 merge-with=17161 | S17161 'Superior Spider-Man Team-Up' holds seventeen issue files of the same 2013 run and already stores CV 65629; this shelf is one of its trades
+F 17164 wrong-cv-link | the stored link CV 65197 "Superior Spider-Man Team-Up: Superiority Complex" 2013 count 1 is the TRADE record, not the twelve-issue run whose folder this is
+I 95342 cv=417217 gcd=s155967 0.95 | the 115pp "Superiority Complex" trade — CV 65197 issue 417217 and GCD 155967, both Marvel 2013 count 1
+S 94798 cv=116160 gcd=136330 0.95 | the folder is `Superior Spider-Man v2 (2019)`, and a re-probe by year found the pair: CV 116160 "Superior Spider-Man" 2018 Marvel 12 and GCD 136330 "Superior Spider-Man" 2019 Marvel 12 agree on publisher and count 12; the per-file pick CV 55552 is the 2013 run, a different decade; the single "Vol. 02 - Otto-Matic" trade's own record is in neither leg
+S 19656 cv=27251 gcd=1873 0.95 | CV 27251 "The Spectacular Spider-Man Magazine" 1968 Marvel 2 (cached #1-2, ratio 2/2) and GCD 1873 "The Spectacular Spider-Man" 1968-1968 Marvel 2 agree on publisher, year and count, and our ladder is a complete 1-2 of 66-68pp magazine files
+S 101369 cv=28576 gcd=40659 0.95 | CV 28576 "Web of Spider-Man" 2009 Marvel 12 and GCD 40659 of the same title, 2009-2010, Marvel, 12 agree on publisher, years and count, and our ladder is a complete 1-12; the 1985 run 3059 is the same title a generation earlier
+S 16247 cv=102482 gcd=115146 0.9 | the book is a Complete Collection line record both providers carry: CV 102482 "Spider-Man: Webspinners: The Complete Collection" 2017 Marvel count 1 (issue 605129) and GCD 115146 of the same title, year, publisher and count, matching our ComicInfo Series exactly
+F 16247 wrong-cv-link | the stored link CV 52577 "Complete Spider-Man" 1990 Marvel UK/Panini UK 3 is the truncated key reaching a Marvel UK weekly (GCD 66120, 24 issues), a different comic in a different country
+N 16247 the run it reprints is Webspinners: Tales of Spider-Man (1999), CV 9375, 18 issues; GCD's dump holds no row for that run
+I 95955 cv=605129 gcd=s115146 0.9 | the single 470pp Zone rip is the Complete Collection volume itself
+
+# ── the __OGNs, Minis & One-shots bucket: loose files ─────────────────────────────────────────────────────
+S 845 cv=72837 gcd=80427 0.95 | CV 72837 "Amazing Spider-Man: Family Business" 2014 Marvel count 1 (issue 449746) and GCD 80427 of the same title, 2014, Marvel, count 1 agree with our file's own 2014; GCD 126247 is the 2018 reprinting of the same book
+I 95572 cv=449746 gcd=s80427 0.95 | the 99pp Minutemen rip of the 2014 original-graphic-novel printing
+S 852 cv=44164 gcd=79630 0.95 | CV 44164 "Prevent Child Abuse America Presents: Amazing Spider-Man on Bullying Prevention" 2003 Marvel count 1 (issue 303730) and GCD 79630 with the identical long title, year, publisher and count agree
+I 95575 cv=303730 gcd=s79630 0.95 | the single 19pp giveaway comic is the whole shelf
+S 11277 cv=32935 gcd=48352 0.95 | CV 32935 "Many Loves Of The Amazing Spider-Man" 2010 Marvel count 1 (issue 212049) and GCD 48352 "The Many Loves of the Amazing Spider-Man" 2010 Marvel count 1 agree on year, publisher and count
+I 95608 cv=212049 gcd=s48352 0.95 | the single 41pp Shadowcat rip is the shelf
+S 16062 cv=146956 gcd=192287 0.9 | CV 146956 "Spider-Ham: Hollywood May-Ham" 2022 Scholastic Book Services count 1 (issue 960771) and GCD 192287 of the same title, 2022, Scholastic, count 1 agree, and ComicInfo Publisher says "Scholastic - Graphix"; GCD carries a twin row 200889 for the same book, so which printing is open
+N 16062 the GCD twins are 192287 and 200889, both "Spider-Ham: Hollywood May-Ham" 2022 Scholastic count 1
+I 95624 cv=960771 gcd=s192287 0.9 | the single 80pp dekabro rip; the untelled GCD twin is the doubt
+S 16082 cv=38263 gcd=79847 0.95 | CV 38263 "Spider-Man: Black Cat" 2010 Marvel count 1 (issue 256145) and GCD 79847 of the identical title, year, publisher and count agree; "Spider-Man vs. Black Cat" (S16182) is a different 2005 book
+I 95652 cv=256145 gcd=s79847 0.95 | the single 133pp Zone rip of the 2010 trade is the whole shelf; CV issue 256145 and GCD series 79847 are its two records
+S 16087 cv=43780 gcd=86621 0.95 | CV 43780 "Spider-Man: Deadly Foes of Spider-Man" 2011 Marvel count 1 (issue 300936) and GCD 86621 of the same title, year, publisher and count agree; the file sits loose in the OGN bucket, which names no run
+N 16087 the run it collects is Deadly Foes of Spider-Man (1991), CV 4588 / GCD 4237, a four-issue mini
+I 95670 cv=300936 gcd=s86621 0.95 | the single 208pp Zone rip of the 2011 trade is the whole shelf; CV issue 300936 and GCD series 86621 are its two records
+S 16091 cv=33873 gcd=18339 0.95 | CV 33873 "Spider-Man: Fear Itself" 1992 Marvel count 1 (issue 220213) and GCD 18339 of the same title, 1992, Marvel, count 1 agree with the file's own (1992); the 2009 pair (CV 25383 / GCD 33415) is the later reprint and the 2011 "Fear Itself: Spider-Man" is a different comic
+I 95674 cv=220213 gcd=s18339 0.95 | the single 64pp Minutemen "digital OGN" rip of the 1992 graphic novel
+S 16118 cv=104639 gcd=116989 0.95 | CV 104639 "Spider-Man: Daily Bugle" 2017 Marvel count 1 (issue 625325) and GCD 116989 "Spider-Man: The Daily Bugle" 2017 Marvel count 1 agree on year, publisher and count; the 1996 and 2006 Daily Bugle series are different comics
+I 95710 cv=625325 gcd=s116989 0.95 | the single 265pp Zone rip of the 2017 trade is the whole shelf; CV issue 625325 and GCD series 116989 are its two records
+S 16121 cv=49869 gcd=69768 0.95 | CV 49869 "Amazing Spider-Man: The Graphic Novels" 2012 Marvel count 1 (issue 342227) and GCD 69768 "Spider-Man: The Graphic Novels" 2012 Marvel count 1 agree on year, publisher and count; the Süddeutsche Zeitung "Graphic Novels" rows are rejected on the publisher column
+I 95715 cv=342227 gcd=s69768 0.95 | the single 265pp Zone rip of the 2012 collection is the whole shelf; CV issue 342227 and GCD series 69768 are its two records
+S 16128 cv=106044 gcd=- 0.9 | CV 106044 "Spider-Man: The World's Greatest Super Hero" 2012 Marvel count 1 (issue 637522) matches the file's title and year exactly; a direct GCD probe of the full title returns nothing, so the second leg is absent
+F 16128 provider-missing | GCD's only near rows are the Marvel UK weekly "Super Spider-Man" 2407 and a Greek edition — different comics rejected on publisher and country
+I 95722 cv=637522 gcd=- 0.9 | the single 117pp Zone rip; CV issue 637522 is its only item-level record
+S 16162 cv=44692 gcd=223514 0.95 | CV 44692 "The Amazing Spider-Man: Through the Decades" 2011 Marvel count 1 (issue 307684) and GCD 223514 "Spider-Man: Through the Decades" 2011 Marvel count 1 agree on year, publisher and count
+I 95750 cv=307684 gcd=s223514 0.95 | the single 262pp Zone rip of the 2011 collection is the whole shelf; CV issue 307684 and GCD series 223514 are its two records
+R 16181 | the file is a 20pp 1996 giveaway called "Spider-Man in Amazing Adventures" and neither provider holds it: a direct probe of that title returns nothing in the ComicVine rip or the GCD dump, and the per-file pick CV 34307 / GCD 10548 "Adventures in Reading Starring the Amazing Spider-Man" is a 1990-1993 Marvel/reading-programme comic reached by word overlap, not the same book
+F 16181 provider-missing | neither leg carries a 1996 "Spider-Man in Amazing Adventures"; the book's own record is not in our data
+S 16212 cv=155534 gcd=207305 0.95 | CV 155534 "Spider-Man: Great Power, Great Mayhem" 2023 Marvel count 1 (issue 1036375) and GCD 207305 of the identical title, 2023, Marvel, count 1 agree, and ComicInfo Series repeats the string
+I 95685 cv=1036375 gcd=s207305 0.95 | the single 127pp dekabro rip is the shelf
+R 17946 | the item is a ONE-PAGE 2014 Mashable web graphic, "The Amazing Style of Spider-Man"; it is not a published comic and neither provider holds it, while the per-file pick CV 85076 "The Amazing Spider-Man" 2015 Marvel 51 is the ongoing reached by the words "Amazing Spider-Man" alone and would hand a 51-issue run to a single page
+F 17946 not-a-run | a 1pp infographic is not a publishing run and has no issue-level record in either leg
+S 18006 cv=162065 gcd=- 0.9 | CV 162065 "The Art of the Amazing Spider-Man" 2024 Dark Horse Comics count 1 (issue 1091222) matches the file's title, year and the John Romita Sr. subject; Dark Horse art books are systematically absent from GCD, and the dump returns nothing for it
+F 18006 provider-missing | GCD indexes no Dark Horse art book of this title; its only hit is 105638 "Amazing Spider-Man: Amazing Grace", a different comic
+I 95784 cv=1091222 gcd=- 0.9 | the single 203pp Son of Ultron rip of the art book; CV issue 1091222 is its only item-level record
+S 860 cv=37819 gcd=25818 0.95 | CV 37819 "Spider-Man: Spirits of the Earth" 1990 Marvel count 1 (issue 251050) and GCD 25818 of the identical title, 1990, Marvel, count 1 agree with the file's own (1990)
+I 95956 cv=251050 gcd=s25818 0.95 | the single 80pp Shadowcat rip of the 1990 graphic novel
+S 906 cv=124676 gcd=155385 0.9 | CV 124676 "Amazing Spider-Man: Daily Bugle" 2020 Marvel 2 (cached #1-2, ratio 2/2) and GCD 155385 "Amazing Spider-Man: The Daily Bugle" 2020 Marvel 2 agree on year, publisher and count, and our ladder is 1-2; both filenames say "(of 05)", which contradicts both providers' count and is the residue
+S 886 cv=27969 gcd=39628 0.95 | the folder is the run's own `Amazing Spider-Man Presents - Anti-Venom - New Ways to Live (2010)`, and CV 27969 (2009 Marvel 3) pairs with GCD 39628 "The Amazing Spider-Man Presents: Anti-Venom: New Ways to Live" 2009 Marvel 3 on publisher, year and count 3; our two 74pp files are two rips of that run's trade
+I 95957 cv=222979 gcd=s232612 0.9 | the 74pp Minutemen "digital TPB" — the trade's own record is CV 34181 issue 222979 and GCD 232612, both "Spider-Man: Anti-Venom" Marvel 2010 count 1
+I 97984 cv=222979 gcd=s232612 0.9 | the 74pp Lovag rip of the same trade, re-filed under the Venom folder
+
+# ── per-title folders in the OGN bucket: the run wins ─────────────────────────────────────────────────────
+S 5071 cv=145625 gcd=191460 0.95 | the folder is `Deadly Neighborhood Spider-Man v1 (2022)`, and CV 145625 (2022 Marvel 5) pairs with GCD 191460 of the same title, 2022-2023, Marvel, 5 on publisher, years and count; our single file is that run's trade
+I 95959 cv=991443 gcd=s200649 0.95 | the 106pp Shan-Empire trade — CV 150627 issue 991443 and GCD 200649, both Marvel 2023 count 1
+S 96657 cv=144308 gcd=187865 0.95 | the folder is `Edge of Spider-Verse v2 (2022)`, and CV 144308 "Edge of Spider-Verse" 2022 Marvel 5 pairs with GCD 187865 of the same title, year, publisher and count 5; ComicInfo Series says "Edge Of Spider-Verse" and our single file is that run's trade
+I 95960 cv=977267 gcd=s196127 0.9 | the 163pp "COL Edge of Spider-Verse (2023)" trade — CV 148865 issue 977267 and GCD 196127, the count-1 collected records of the 2022 mini
+S 6027 cv=150034 gcd=200144 0.95 | the folder is `Edge of Spider-Verse v3 (2023)`, and CV 150034 "Edge of Spider-Verse" 2023 Marvel 4 pairs with GCD 200144 of the same title, year, publisher and count 4; the file is that run's collected edition
+F 6027 wrong-cv-link | the stored link CV 154406 "Edge of Spider-Verse: Bleeding Edge" 2023 count 1 is the TRADE record minted a year after the four-issue run whose folder this is
+I 95961 cv=1027589 gcd=s205233 0.95 | the 136pp "Bleeding Edge" trade — CV 154406 issue 1027589 and GCD 205233, both Marvel 2023 count 1; the Panini UK twins 157185/214299 are rejected on publisher
+S 6030 cv=156963 gcd=209135 0.95 | the folder is `Edge of Spider-Verse v4 (2024)`, and CV 156963 "Edge of Spider-Verse" 2024 Marvel 4 pairs with GCD 209135 of the same title, year, publisher and count 4; the file is that run's collected edition
+F 6030 wrong-cv-link | the stored link CV 160433 "Edge of Spider-Verse: Spider-Society" 2024 count 1 is the trade record, not the four-issue 2024 run
+I 95590 cv=1074069 gcd=s216454 0.95 | the 121pp "Spider-Society" trade — CV 160433 issue 1074069 and GCD 216454, both Marvel 2024 count 1
+S 7737 cv=146113 gcd=192943 0.95 | the folder is `Gold Goblin v1 (2023)`, and CV 146113 "Gold Goblin" 2022 Marvel 5 pairs with GCD 192943 "Gold Goblin" 2023 Marvel 5 on publisher and count 5 across the usual solicit-versus-ship year; ComicInfo Series says "Gold Goblin"
+F 7737 wrong-cv-link | the stored link CV 151517 "Gold Goblin " 2023 count 1 is the trade record minted beside the five-issue run, the Marvel/IDW count-1 shape
+I 95962 cv=996028 gcd=s201433 0.95 | the 114pp Shan-Empire trade — CV 151517 issue 996028 and GCD 201433, both Marvel 2023 count 1
+S 13049 cv=134390 gcd=170935 0.95 | the folder is `Non-Stop Spider-Man v1 (2021)`, and CV 134390 "Non-Stop Spider-Man" 2021 Marvel 5 pairs with GCD 170935 of the same title, year, publisher and count 5; our single file is that run's trade
+I 95964 cv=929549 gcd=s180095 0.95 | the 122pp "Big Brain Play" trade — CV 143430 issue 929549 and GCD 180095, both count 1; the Panini Verlag row 141531 is rejected on publisher
+S 16189 cv=38272 gcd=32674 0.95 | CV 38272 "Spider-Man/Doctor Octopus: Negative Exposure" 2004 Marvel count 1 (issue 256233) and GCD 32674, which spells it with spaces round the slash, agree on year, publisher and count; the folder is a two-title bucket that names no run
+N 16189 the run it collects is Doctor Octopus: Negative Exposure (2003), CV 19447 / GCD 16139, five issues
+I 95630 cv=256233 gcd=s32674 0.95 | the single 125pp Minutemen trade is the shelf
+S 16190 cv=38271 gcd=33960 0.95 | CV 38271 "Spider-Man/Doctor Octopus: Year One" 2005 Marvel count 1 (issue 256232) and GCD 33960 of the same title, 2005, Marvel, count 1 agree; the 2004 five-issue run (CV 19445 / GCD 18335) is the comic they collect
+I 95631 cv=256232 gcd=s33960 0.95 | the single 125pp Minutemen rip of the collected edition is the shelf
+S 16167 cv=21696 gcd=18334 0.95 | CV 21696 "Spider-Man/Doctor Octopus: Out of Reach" 2004 Marvel 5 and GCD 18334 of the same title, 2004, Marvel, 5 agree on publisher, year and count, and our ladder is a complete 1-5 of 23-24pp issue files; GCD 33962 count 1 is that run's trade
+S 16196 cv=31408 gcd=4478 0.95 | CV 31408 "Spider-Man/Dr. Strange: The Way to Dusty Death" 1992 Marvel count 1 (issue 195705, cached #1-1) and GCD 4478 of the same title, 1992, Marvel, count 1 agree, and ComicInfo Volume says 1992 — the first edition both legs hold
+I 95967 cv=603139 gcd=s115047 0.9 | our 65pp file is the 2017 re-release, whose own records are CV 102278 issue 603139 and GCD 115047, both Marvel 2017 count 1
+S 16138 cv=33403 gcd=73776 0.95 | CV 33403 "Spider-Man and the Fantastic Four: Silver Rage" 2007 Marvel count 1 (issue 216550) and GCD 73776 of the same title, year, publisher and count agree, and ComicInfo Series repeats the string
+N 16138 the run it collects is Spider-Man and the Fantastic Four (2007), CV 18482 / GCD 22286, four issues
+I 95968 cv=216550 gcd=s73776 0.95 | the single 105pp Digital-Empire file is the shelf
+S 16137 cv=18898 gcd=21023 0.9 | the folder is `Spider-Man & Power Pack (2007)`, and CV 18898 "Spider-Man and Power Pack" 2007 Marvel 4 pairs with GCD 21023 of the same title, 2007, Marvel, 4 on publisher, year and count; our single 98pp file is that four-issue run's collected edition, and the 1984 one-shot CV 34520 is a different comic
+F 16137 wrong-cv-link | the stored link CV 129206 "Spider-Man and Power Pack: Big-City Super Heroes" 2007 count 1 is the trade record, not the four-issue run whose folder this is
+I 95969 cv=786042 gcd=- 0.9 | the 98pp trade's own record is CV 129206 issue 786042; GCD indexes the four-issue run but no row for its collection
+S 892 cv=87477 gcd=- 0.9 | the file is 551pp, which is eight Infinite-Comic chapters of ~69 vertical pages and not a four-issue print mini of ~88; CV 87477 "Amazing Spider-Man & Silk: Spider(Fly) Effect Infinite Comic" 2016 Marvel 8 is the only record whose shape fits, and GCD indexes no Marvel Infinite Comic
+F 892 merge-with=17943 | S17943 'Amazing Spider-Man & Silk: Spider(Fly) Effect Infinite Comic' holds EIGHT chapter files and already stores CV 87477 — the eight chapters our single 551pp file is the whole of
+F 892 wrong-cv-link | the stored link CV 94248 "Amazing Spider-Man & Silk: The Spider(Fly) Effect" 2016 count 1 is the print trade's record, whose page arithmetic cannot reach 551
+F 892 provider-missing | GCD holds only the print mini 97967 (4) and its trade 106568 (1); it indexes no Infinite Comics at all
+N 892 the print mini beside it is CV 88547 / GCD 97967 "Amazing Spider-Man & Silk: The Spider(fly) Effect" 2016 Marvel 4 — the same story in the other format
+S 16076 cv=122667 gcd=151884 0.95 | the folder is `Spider-Man & Venom - Double Trouble (2020)`, and CV 122667 "Spider-Man & Venom: Double Trouble" 2019 Marvel 4 pairs with GCD 151884 of the same title, 2020, Marvel, 4 on publisher and count; our single file is that run's collected edition
+F 16076 wrong-cv-link | the stored link CV 126298 count 1 is the trade record minted beside the four-issue run whose folder this is
+I 95972 cv=745819 gcd=s176438 0.95 | the 106pp Kileko trade — CV 126298 issue 745819 and GCD 176438, both Marvel 2020 count 1
+S 16192 cv=9469 gcd=10261 0.95 | the folder is `Spider-Man - Black Cat - The Evil That Men Do (2002)`, and CV 9469 (2002 Marvel 6) pairs with GCD 10261 "Spider-Man / Black Cat: The Evil That Men Do" 2002-2006 Marvel 6 on publisher, start year and count 6; our single 162pp file is that six-issue run's collected edition
+I 95973 cv=132709 gcd=- 0.9 | the trade's own record is CV 22015 "Spider-Man and the Black Cat: The Evil That Men Do" 2006 issue 132709; GCD carries no row for the collection, only the run
+S 16093 cv=6014 gcd=5806 0.9 | the folder is `Spider-Man - Hobgoblin Lives (2011)`, and CV 6014 "Spider-Man: Hobgoblin Lives" 1997 Marvel 3 pairs with GCD 5806 of the same title, 1997, Marvel, 3 on publisher, year and count; our 182pp trade exceeds three issues, so it carries extra material and that residue caps this
+F 16093 wrong-cv-link | the stored link CV 40747 "Spider-Man: Hobgoblin Lives" 2011 count 1 is the trade record, not the three-issue 1997 mini
+I 95975 cv=274798 gcd=s197491 0.9 | the 182pp Minutemen trade — CV 40747 issue 274798 and GCD 197491, both 2011 count 1; GCD also holds a 1998 printing 197488
+S 99965 cv=22673 gcd=15942 0.95 | the folder is `Spider-Man - India v1 (2005)`, and CV 22673 "Spider-Man: India" 2004 Marvel 4 pairs with GCD 15942 of the same title, 2005, Marvel, limited series, 4 on publisher and count 4; our single file is that four-issue run's collected edition
+F 99965 merge-with=99968 | this shelf (the 2017 trade rip) and S99968 (the four issue files, ladder 1-4) are the same comic in two folders, `Spider-Man - India v1 (2005)` and `Spider-Man India v1 (2004)`
+I 95976 cv=873641 gcd=- 0.9 | the 88pp trade's own record is CV 137800 "Spider-Man: India" 2005 Marvel issue 873641; GCD has no row for the collection
+S 99968 cv=22673 gcd=15942 0.95 | the same run as S99965 — CV 22673 (2004 Marvel 4) and GCD 15942 (2005 Marvel limited series 4) agree on publisher and count, and here the shelf holds the four issue files themselves with a complete ladder 1-4 at 22-24pp
+S 16214 cv=151261 gcd=201305 0.95 | the folder is `Spider-Man - India v2 (2023)`, and CV 151261 "Spider-Man: India" 2023 Marvel 5 pairs with GCD 201305 of the same title, 2023, Marvel, 5 on publisher, year and count; our single file is that five-issue run's collected edition
+F 16214 needs-fetch cv=151261 | the 2023 volume has no CvVolume row — it was named from the local rip, so Phase C.1 must fetch it
+I 95977 cv=1050580 gcd=s210774 0.95 | the 115pp "Seva" trade — CV 157507 issue 1050580 and GCD 210774, both Marvel 2024 count 1; the Panini UK row 214777 is rejected on publisher
+S 16100 cv=117766 gcd=142393 0.95 | the folder is `Spider-Man - Life Story v1 (2019)`, and CV 117766 "Spider-Man: Life Story" 2019 Marvel 6 pairs with GCD 142393 of the same title, year, publisher and count 6; our single file is that six-issue run's collected edition
+F 16100 wrong-cv-link | the stored link CV 122196 "Spider-Man: Life Story" 2019 count 1 is the trade record, not the six-issue run whose folder this is
+I 95978 cv=723759 gcd=s179484 0.9 | our file says "(2021, 2nd edition)", so the printing we hold is GCD 179484 (2021 Marvel count 1); CV keeps one trade record, issue 723759 of volume 122196
+S 16123 cv=5328 gcd=5045 0.9 | the folder is `Spider-Man - Mutant Agenda (1993)`, and CV 5328 "Spider-Man: The Mutant Agenda" 1994 Marvel 4 pairs with GCD 5045 of the same title, 1994, Marvel, 4 on publisher, year and count; our 134pp trade runs past four issues' worth, which is the residue
+F 16123 merge-with=16218 | S16218 'Spider-Man: The Mutant Agenda' already holds the five issue files of this same 1994 four-issue run and already stores CV 5328; this shelf is that run's trade
+I 95980 cv=370578 gcd=s218639 0.9 | the 134pp Zone trade — CV 54343 issue 370578 and GCD 218639, both Marvel 2012 count 1
+S 16223 cv=9470 gcd=10262 0.95 | the folder is `Spider-Man - Quality of Life (2002)`, and CV 9470 "Spider-Man: Quality of Life" 2002 Marvel 4 pairs with GCD 10262 of the same title, year, publisher and count 4; ComicInfo Series says "Spider-Man: Quality Of Life" and our 112pp file is that run's collected edition
+F 16223 wrong-cv-link | the stored link CV 134431 "Spider-Man: Quality of Life" 2002 count 1 is the trade record minted beside the four-issue run
+I 95981 cv=837522 gcd=- 0.9 | the 112pp trade's own record is CV 134431 issue 837522; GCD carries only the four-issue run, no row for the collection
+S 16125 cv=25144 gcd=40950 0.95 | the folder is `Spider-Man - The Clone Saga (2010)`, and CV 25144 "Spider-Man: The Clone Saga" 2009 Marvel 6 pairs with GCD 40950 of the same title, 2009-2010, Marvel, 6 on publisher, years and count 6; our 148pp file is that six-issue run's collected edition, published as "The Real Clone Saga"
+F 16125 wrong-cv-link | the stored link CV 34091 "Spider-Man: The Real Clone Saga" 2010 count 1 is the trade record, not the six-issue run whose folder this is
+I 95983 cv=222241 gcd=s229037 0.9 | the 148pp Minutemen "digital TPB" — CV 34091 issue 222241 and GCD 229037; GCD carries a twin row 229038 for the same book
+S 16120 cv=21004 gcd=18328 0.95 | CV 21004 "Spider-Man: The Final Adventure" 1996 Marvel 4 and GCD 18328 of the same title, 1995-1996, Marvel, limited series, 4 agree on publisher, years and count, and our ladder is a complete 1-4 with "(of 04)" in every filename
+S 16236 cv=145970 gcd=192394 0.95 | the folder is `Spider-Man - The Lost Hunt (2023)`, and CV 145970 "Spider-Man: The Lost Hunt" 2022 Marvel 5 pairs with GCD 192394 of the same title, 2023, Marvel, 5 on publisher and count 5; our single file is that five-issue run's collected edition
+F 16236 wrong-cv-link | the stored link CV 151709 "Spider-Man: The Lost Hunt" 2023 count 1 is the trade record minted beside the run
+I 95984 cv=997418 gcd=s201530 0.95 | the 121pp Shan-Empire trade — CV 151709 issue 997418 and GCD 201530, both Marvel 2023 count 1
+S 16126 cv=135391 gcd=- 0.9 | the folder is `Spider-Man - The Spider's Shadow v1 (2021)`, and CV 135391 "Spider-Man: The Spider's Shadow" 2021 Marvel 5 is the run our single 129pp file collects; a direct GCD probe of the title returns nothing in any spelling
+F 16126 wrong-cv-link | the stored link CV 139572 "Spider-Man: The Spider's Shadow" 2021 count 1 is the trade record minted beside the five-issue run
+F 16126 provider-missing | GCD indexes neither the 2021 five-issue run nor its collection under this title
+I 95985 cv=889544 gcd=- 0.9 | the 129pp Digital-Empire trade's own record is CV 139572 issue 889544; GCD has none
+S 16155 cv=119400 gcd=- 0.9 | our file is the 2019 Complete Collection, a collected LINE with a record of its own: CV 119400 "Spider-Man Noir: The Complete Collection" 2019 Marvel count 1 (issue 710115) matches our ComicInfo Series exactly; GCD's dump holds no row for the Complete Collection
+F 16155 wrong-cv-link | the stored link CV 33405 "Spider-Man Noir" 2009 Marvel count 1 is the 2009 mini's own trade, a decade earlier and a different book from the 244pp Complete Collection
+F 16155 provider-missing | GCD has the 2009 run 33156 (4) and its trade 77013/236188, but no Complete Collection row
+N 16155 the runs it reprints are Spider-Man Noir (2009), CV 24916 / GCD 33156, four issues, and its 2010 sequel Eyes Without a Face
+I 95986 cv=710115 gcd=- 0.9 | the single 244pp Zone rip is the Complete Collection volume; CV issue 710115 is its only item-level record
+S 16154 cv=125476 gcd=156768 0.95 | CV 125476 "Spider-Man Noir" 2020 Marvel 5 and GCD 156768 of the same title, 2020, Marvel, limited series, 5 agree on publisher, year and count, and our ladder 2-5 of 19-21pp issue files sits inside it; ComicInfo Series says "Spider-Man Noir (2020)"
+F 16154 merge-with=16153 | S16153 'Spider-Man Noir' already stores CV 125476 and holds the #1 our ladder 2-5 is missing — one 2020 five-issue mini split across two shelves
+S 16166 cv=41430 gcd=196585 0.95 | CV 41430 "Spider-Man Visionaries: Roger Stern" 2007 Marvel count 1 (issue 280474, cached #1-1) and GCD 196585 of the identical title, year, publisher and count agree, and ComicInfo Series repeats the string
+I 95987 cv=280474 gcd=s196585 0.95 | the single 252pp Zone rip of the 2007 Visionaries volume is the whole shelf; CV issue 280474 and GCD series 196585 are its records
+S 16253 cv=157036 gcd=209378 0.95 | the folder is `Spider-Punk - Arms Race (2024)`, and CV 157036 "Spider-Punk: Arms Race" 2024 Marvel 4 pairs with GCD 209378 of the same title, year, publisher and count 4; our single 100pp file is that run's collected edition
+F 16253 wrong-cv-link | the stored link CV 159645 "Spider-Punk: Arms Race" 2024 count 1 is the trade record minted beside the four-issue run
+I 95988 cv=1068851 gcd=s214895 0.95 | the 100pp Shan-Empire trade — CV 159645 issue 1068851 and GCD 214895, both Marvel 2024 count 1
+S 16270 cv=111375 gcd=- 0.9 | our ladder is a complete 1-6 of 24pp issue files and CV 111375 "Spidey: School's Out" 2018 Marvel 6 matches it on title, year, publisher and count; GCD's only row for the title is 134260 count 1, which is the collection and cannot hold a six-issue ladder
+F 16270 provider-missing | GCD indexes no six-issue "Spidey: School's Out" series, only the count-1 collected record 134260
+S 16280 cv=118146 gcd=143500 0.95 | CV 118146 "Spidey: Freshman Year" 2019 Marvel count 1 (issue 705484) and GCD 143500 of the identical title, year, publisher and count agree, and ComicInfo Series repeats the string
+N 16280 the run it collects is Spidey (2016), CV 86399 / GCD 94630, twelve issues, whose files are a different shelf — linking there would merge them
+I 95989 cv=705484 gcd=s143500 0.95 | the single 261pp digital-Empire volume is the shelf
+S 16297 cv=153485 gcd=204054 0.95 | the folder is `Spine-Tingling Spider-Man v1 (2023)`, and the stored CV 153485 "Spine-Tingling Spider-Man" 2023 Marvel 5 pairs with GCD 204054 of the same title, 2023-2024, Marvel, 5 on publisher, years and count 5
+I 95990 cv=1053050 gcd=s211416 0.95 | the 175pp Shan-Empire trade — CV 157864 issue 1053050 and GCD 211416, both Marvel 2024 count 1
+S 17433 cv=123412 gcd=153551 0.95 | the folder is `Symbiote Spider-Man - Alien Reality v1 (2020)`, and CV 123412 "Symbiote Spider-Man: Alien Reality" 2019 Marvel 5 pairs with GCD 153551 of the same title, 2020, Marvel, 5 on publisher and count 5; our single file is that run's collected edition
+F 17433 wrong-cv-link | the stored link CV 129480 "Symbiote Spider-Man: Alien Reality" 2020 count 1 is the trade record minted beside the five-issue run
+I 95991 cv=792450 gcd=s176115 0.95 | the 121pp Kileko trade — CV 129480 issue 792450 and GCD 176115, both Marvel 2020 count 1; the Televisa row 164393 is rejected on publisher
+S 17432 cv=137889 gcd=174473 0.95 | the folder is `Symbiote Spider-Man - Crossroads (2021)`, and the stored CV 137889 "Symbiote Spider-Man: Crossroads" 2021 Marvel 5 pairs with GCD 174473 of the same title, 2021-2022, Marvel, 5 on publisher, years and count 5
+I 95992 cv=985909 gcd=s180601 0.95 | the 121pp Digital-Empire trade — CV 149826 issue 985909 and GCD 180601, both Marvel count 1
+S 94732 cv=- gcd=173083 0.9 | a direct probe of the punctuated title found GCD 173083 "W.E.B. of Spider-Man" 2021 Marvel 5, which is the run our single 107pp collected file covers; the ComicVine rip holds no volume under that punctuation, and the per-file pick CV 3519 "Web of Spider-Man" 1985 Marvel 131 is the 1980s ongoing reached by dropping the periods
+F 94732 provider-missing | the ComicVine rip has no "W.E.B. of Spider-Man" volume at all, so the CV leg is genuinely absent rather than unfound; the trade's own record is in neither leg
+
+# ── omnibus and Epic Collection lines ─────────────────────────────────────────────────────────────────────
+S 16185 cv=113261 gcd=128750 0.95 | CV 113261 "Spider-Man Vs. Venom Omnibus" 2018 Marvel count 1 (issue 683836) and GCD 128750 of the same title, 2018, Marvel, count 1 agree; our 1133pp file is the 2023 reprinting of that one omnibus volume
+F 16185 wrong-cv-link | the stored link CV 19639 "Spider-Man Vs. Venom" 1990 Marvel count 1 is the 1990 trade, a different book three decades earlier that the truncated title reached
+I 95796 cv=683836 gcd=s128750 0.95 | the single 1133pp JTR webrip is the omnibus; both legs mint one count-1 record for it
+S 871 cv=- gcd=74602 0.9 | GCD 74602 "Amazing Spider-Man Epic Collection" 2013-? Marvel [collected edition] 26 is the LINE and it matched all eleven of our files by volume number; ComicVine mints a volume per BOOK on this line (77149, 97134, 110903 …) and has no series-level record, so cv is genuinely '-' rather than withheld
+N 871 the run underneath is Amazing Spider-Man (1963); our judged ranges #1-17, #18-38, #39-52, #53-67, #86-104, #105-123, #165-185, #259-272, #289-294, #311-325, #381-393 are volumes 1, 2, 3, 4, 6, 7, 10, 15, 17, 19 and 26 of the line
+I 95797 cv=466509 gcd=s74602 0.95 | Vol. 01 - Great Power, 505pp, judged #1-17 — CV 77149 issue 466509, labelled "Volume 1"
+I 95798 cv=570027 gcd=s74602 0.95 | Vol. 02 - Great Responsibility, 494pp, judged #18-38 — CV 97134 issue 570027, labelled "Volume 2"
+I 95799 cv=670105 gcd=s74602 0.95 | Vol. 03 - Spider-Man No More, 397pp, judged #39-52 — CV 110903 issue 670105, labelled "Volume 3"
+I 95800 cv=711938 gcd=s74602 0.95 | Vol. 04 - The Goblin Lives, 495pp, judged #53-67 — CV 119744 issue 711938, labelled "Volume 4"
+I 95802 cv=890995 gcd=s74602 0.95 | Vol. 06 - The Death of Captain Stacy, 438pp, judged #86-104 — CV 139777 issue 890995, labelled "Volume 6"
+I 95803 cv=594105 gcd=s74602 0.95 | Vol. 07 - The Goblin's Last Stand, 448pp, judged #105-123 — CV 101161 issue 594105, labelled "Volume 7"
+I 95806 cv=1057258 gcd=s74602 0.95 | Vol. 10 - Big Apple Battleground, 519pp, judged #165-185 — CV 158331 issue 1057258, labelled "Volume 10"
+I 95807 cv=453652 gcd=s74602 0.95 | Vol. 15 - Ghosts of the Past, 473pp, judged #259-272 — CV 74202 issue 453652, labelled "Volume 15"
+I 95808 cv=599856 gcd=s74602 0.95 | Vol. 17 - Kraven's Last Hunt, 497pp, judged #289-294 — CV 101919 issue 599856, labelled "Volume 17"
+I 95810 cv=709196 gcd=s74602 0.95 | Vol. 19 - Assassin Nation, 481pp, judged #311-325 — CV 119132 issue 709196, labelled "Volume 19"
+I 95817 cv=914401 gcd=s74602 0.95 | Vol. 26 - Lifetheft, 482pp, judged #381-393 — CV 142111 issue 914401, labelled "Volume 26"
+S 16194 cv=160114 gcd=- 1.0 | the collection asserts the id itself: this Marika-Empire rip's ComicInfo Web is 1071810, which is the ComicVine ISSUE id of volume 160114 "Spider-Man/Deadpool Modern Era Epic Collection: 'Til Death Do Us..." 2024 Marvel count 1, and the CV leg agrees; GCD indexes nothing for the line
+F 16194 provider-missing | GCD carries no row for the Spider-Man/Deadpool Modern Era Epic Collection under any spelling, volume subtitle or line name
+F 16194 merge-with=35949 | Books 01 and 02 of one Modern Era Epic Collection folder were cut into two shelves by the volume subtitle; ComicVine mints a volume per book, which is what split them
+I 95821 cv=1071810 gcd=- 1.0 | the 433pp Book 02 file carries its own ComicVine issue id 1071810 in ComicInfo Web, which resolves to volume 160114
+S 35949 cv=154405 gcd=- 0.9 | CV 154405 "Spider-Man/Deadpool Modern Era Epic Collection: Isn't It Bromantic" 2023 Marvel count 1 (issue 1027588, cached #1-1) matches our ComicInfo Series string exactly and the file's Book 01 position; GCD holds nothing for the line
+F 35949 provider-missing | the GCD dump returns no row for this line or this volume; its nearest hits are the 2016 "Spider-Man/Deadpool: Isn't It Bromantic" trade and a Panini UK Marvel Select edition
+I 95820 cv=1027588 gcd=- 0.9 | the 375pp Book 01 file; CV issue 1027588 is its only item-level record
+
+# ── Spider-Woman, Squadron Supreme, Squirrel Girl ─────────────────────────────────────────────────────────
+S 16266 cv=18292 gcd=16464 0.95 | the folder is `Spider-Woman - Origin (Jessica Drew) (2006)`, and the stored CV 18292 "Spider-Woman: Origin" 2006 Marvel 5 pairs with GCD 16464 of the same title, year, publisher and count 5; our single 115pp file is that five-issue run's collected edition
+I 95997 cv=216682 gcd=s25827 0.9 | the 115pp Kileko trade — CV 33423 issue 216682 and GCD 25827, both 2007 count 1; GCD carries a twin 58598 for the same book
+S 99975 cv=9573 gcd=10380 0.95 | CV 9573 "Spider-Woman" 1999 Marvel 18 and GCD 10380 of the same title, 1999-2000, Marvel, was-ongoing, 18 agree on publisher, years and count, and our ladder is a complete 1-18
+S 16263 cv=28083 gcd=39711 0.95 | the folder is `Spider-Woman v4 (Jessica Drew) (2009)`, and CV 28083 "Spider-Woman" 2009 Marvel 7 pairs with GCD 39711 of the same title, 2009-2010, Marvel, 7 on publisher, years and count 7; our single 170pp file is that seven-issue run's collected edition
+I 95999 cv=246731 gcd=s228541 0.9 | the 170pp "Agent of S.W.O.R.D." trade — CV 36990 issue 246731 and GCD 228541, both 2010 count 1; GCD carries a 2011 twin 228538
+S 16264 cv=- gcd=102651 0.9 | GCD 102651 "Spider-Woman: Shifting Gears" 2016-2017 Marvel [collected edition] 3 is the trade LINE and its count is exactly our three books; ComicVine mints a volume per BOOK (90890, 97434, 101790) with no series-level record, so cv is genuinely absent rather than withheld
+N 16264 the run underneath is Spider-Woman (2015/2016), CV 86127 / GCD 94001, 17 issues; our judged ranges #1-5, #8-12 and #13-17 tile it, and linking this trade shelf there would merge it into the run's own shelf
+I 95915 cv=533038 gcd=s102651 0.9 | Vol. 01 - Baby Talk, 114pp, judged #1-5 — CV 90890 issue 533038, labelled "Volume 1"
+I 95916 cv=571685 gcd=s102651 0.9 | Vol. 02 - Civil War II, 110pp, judged #8-12 — CV 97434 issue 571685, labelled "Volume 2"
+I 95917 cv=598387 gcd=s102651 0.9 | Vol. 03 - Scare Tactics, 121pp, judged #13-17 — CV 101790 issue 598387, labelled "Volume 3"
+S 100000 cv=3511 gcd=3050 0.95 | CV 3511 "Squadron Supreme" 1985 Marvel 12 and GCD 3050 of the same title, 1985-1986, Marvel, Limited Series, 12 agree on publisher, years and count, and our ladder is a complete 1-12 with "(of 12)" in every filename
+F 100000 merge-with=16344 | S16344 'Squadron Supreme' already stores CV 3511 and holds five more files of the same 1985 twelve-issue limited series
+S 16348 cv=18307 gcd=17565 0.9 | the folder is `Squadron Supreme v2 (2006)`, and CV 18307 "Squadron Supreme" 2006 Marvel 7 pairs with GCD 17565 of the same title, 2006, Marvel, 7 on publisher, year and count; our single 168pp file is a trade drawn from that run, and its "Pre-War Years" scope is the residue that caps this
+I 97920 cv=172522 gcd=s63013 0.9 | the 168pp EJGriffin trade — CV 28099 issue 172522 and GCD 63013, both "Squadron Supreme: The Pre-War Years" 2009 count 1; GCD also holds a 2006 row 36928
+S 100001 cv=86716 gcd=94824 0.95 | CV 86716 "Squadron Supreme" 2015 Marvel 15 and GCD 94824 of the same title, 2016-2017, Marvel, was-ongoing, 15 agree on publisher and count 15 across the cover-date offset, and our ladder is a complete 1-15; the single COL file is that run's own trade, which costs nothing
+I 96041 cv=535366 gcd=- 0.9 | the 151pp "Vol. 01 - By Any Means Necessary!" trade — CV 91297 issue 535366, Marvel 2016 count 1; GCD has no row for it
+S 16346 cv=126300 gcd=51969 0.95 | the file sits in a `Trades, minis and one-shots` bucket that names no run, and CV 126300 "Squadron Supreme: Hyperion vs Nighthawk" 2007 Marvel count 1 (issue 746022) pairs with GCD 51969 of the same title, 2007, Marvel, count 1
+N 16346 the run it collects is Squadron Supreme: Hyperion vs. Nighthawk (2007), CV 30439 / GCD 33422, four issues — our 97pp file is about four issues' worth
+I 96042 cv=746022 gcd=s51969 0.95 | the single 97pp Shan-Empire Digital-HD rip is the shelf
+S 16349 cv=137622 gcd=174081 0.95 | CV 137622 "Squadron Supreme vs. Avengers" 2021 Marvel count 1 (issue 871797) and GCD 174081 of the identical title, year, publisher and count agree, and the file is a single 345pp collection in a bucket folder
+I 96043 cv=871797 gcd=s174081 0.95 | the single 345pp 2021 collection is the whole shelf; CV issue 871797 and GCD series 174081 are its two records
+S 19845 cv=94668 gcd=107885 0.95 | CV 94668 "The Unbeatable Squirrel Girl Beats Up the Marvel Universe" 2016 Marvel count 1 (issue 552173) and GCD 107885 of the identical long title, year, publisher and count agree; the Original Graphic Novels folder names no run
+I 96045 cv=552173 gcd=s107885 0.95 | the single 115pp Kileko rip of the OGN is the shelf
+S 19847 cv=92396 gcd=104353 0.95 | CV 92396 "The Unbeatable Squirrel Girl & the Great Lakes Avengers" 2016 Marvel count 1 (issue 540091) and GCD 104353 of the identical title, year, publisher and count agree
+I 96044 cv=540091 gcd=s104353 0.95 | the single 262pp AnHeroGold rip is the shelf
+
+# ── Thanos ───────────────────────────────────────────────────────────────────────────────────────────────
+R 17837 | the folder is Jim Starlin's Infinity TRILOGY and it holds three separately published graphic novels plus their omnibus, each with its own record in both providers: Infinity Revelation (CV 76263 / GCD 82160, 2014), Infinity Relativity (CV 82377 / GCD 93233, 2015) and Infinity Finale (CV 89625 / GCD 99641, 2016); the stored CV 76263 is the FIRST book's record stamped on all four files, which would hand Relativity and Finale the Revelation identity
+F 17837 split-needed | propose three shelves plus the omnibus: Revelation cv=76263 gcd=82160, Relativity cv=82377 gcd=93233, Finale cv=89625 gcd=99641, and the 904pp Infinity Saga Omnibus on GCD 175548
+N 17837 cv=76263 gcd=82160 Revelation; cv=82377 gcd=93233 Relativity; cv=89625 gcd=99641 Finale; the omnibus is GCD 175548 "Thanos: The Infinity Saga Omnibus" 2020 Marvel count 1 with no ComicVine volume in our rip
+I 96060 cv=461741 gcd=s82160 0.95 | 01 Thanos - The Infinity Revelation, 99pp — CV 76263 issue 461741 and GCD 82160, both Marvel 2014 count 1
+I 96061 cv=490893 gcd=s93233 0.95 | 02 Thanos - The Infinity Relativity, 101pp — CV 82377 issue 490893 and GCD 93233, both Marvel 2015 count 1
+I 96062 cv=525039 gcd=s99641 0.95 | 03 Thanos - The Infinity Finale, 104pp — CV 89625 issue 525039 and GCD 99641, both Marvel 2016 count 1
+I 97922 cv=- gcd=s175548 0.9 | the 904pp Thanos - The Infinity Saga Omnibus (2022 rip) — GCD 175548, Marvel 2020 count 1; the ComicVine rip holds no volume for the omnibus
+S 94801 cv=20764 gcd=19287 0.95 | CV 20764 "Thanos" 2003 Marvel 12 and GCD 19287 of the same title, 2003-2004, Marvel, was-ongoing, 12 agree on publisher, years and count, and our ladder 7-12 sits inside it; the 2016/2017 Thanos volumes are a different decade
+F 94801 merge-with=17821 | S17821 'Thanos' already stores CV 20764 and holds three more files of the same 2003-2004 twelve-issue run
+S 17857 cv=123132 gcd=153107 0.95 | CV 123132 "Thanos: Zero Sanctuary" 2019 Marvel count 1 (issue 728991) and GCD 153107 of the identical title, year, publisher and count agree, and ComicInfo Series repeats the string
+N 17857 the run it collects is Thanos (2019), CV 118536, six issues; the GCD dump holds no row for that run, which is why the trade record carries the shelf
+I 97924 cv=728991 gcd=s153107 0.95 | the single 143pp Kileko trade is the shelf
+S 17836 cv=159361 gcd=214492 0.95 | CV 159361 "Thanos: Return of the Mad Titan" 2024 Marvel count 1 (issue 1067470) and GCD 214492 of the identical title, year, publisher and count agree; every "Titan" candidate is a different publisher's comic rejected on the publisher column
+N 17836 the run it collects is Thanos (2024), CV 154554, four issues, for which the GCD dump holds no row
+I 97925 cv=1067470 gcd=s214492 0.95 | the single 113pp Shan-Empire trade is the shelf
+S 17850 cv=118000 gcd=- 0.9 | CV 118000 "The Thanos Wars: Infinity Origin" 2019 Marvel count 1 (issue 704832) matches the file's title and year, and our 769pp JTR rip is one omnibus volume; the GCD dump returns no row for it
+F 17850 provider-missing | GCD holds the individual Starlin graphic novels but no "Thanos Wars: Infinity Origin" omnibus row
+I 97926 cv=704832 gcd=- 0.9 | the single 769pp omnibus; CV issue 704832 is its only item-level record
+S 11761 cv=122491 gcd=151470 0.95 | CV 122491 "Marvel-Verse: Thanos" 2019 Marvel count 1 (issue 725264) and GCD 151470 of the identical title, year, publisher and count agree, and ComicInfo Series repeats the string
+I 96074 cv=725264 gcd=s151470 0.95 | the single 120pp Kileko trade is the shelf
+S 17834 cv=85969 gcd=93789 0.95 | CV 85969 "Thanos: Cosmic Powers" 2015 Marvel count 1 (issue 505527) and GCD 93789 of the identical title, year, publisher and count agree; the 1994 "Cosmic Powers" six-issue series is a different comic
+I 96075 cv=505527 gcd=s93789 0.95 | the single 291pp Asgard trade is the shelf
+S 17845 cv=126606 gcd=- 0.9 | CV 126606 "Thanos Loses" 2020 Marvel count 1 (issue 755867) matches our ComicInfo Series and Publisher and the file's year; a direct probe of "Thanos Loses" finds nothing at all in the GCD dump
+F 17845 provider-missing | GCD indexes no "Thanos Loses"; its nearest hits are the Marvel Tales and Marvel-Verse Thanos volumes, different books
+I 96080 cv=755867 gcd=- 0.9 | the single 138pp Zone rip; CV issue 755867 is its only item-level record
+S 17849 cv=52520 gcd=68696 0.95 | CV 52520 "Thanos: The Final Threat" 2012 Marvel count 1 (issue 359254) and GCD 68696 of the identical title, year, publisher and count agree; the Stratum Comics "The Threat" rows are rejected on the publisher column
+I 96082 cv=359254 gcd=s68696 0.95 | the single 74pp Zone rip of the 2012 trade is the whole shelf; CV issue 359254 and GCD series 68696 are its two records
+S 26552 cv=57667 gcd=73339 0.95 | CV 57667 "Avengers: Avengers vs. Thanos" 2013 Marvel count 1 (issue 387638) and GCD 73339 "Avengers vs. Thanos" 2013 Marvel count 1 agree on year, publisher and count; the 2018 same-title pair is a later, different collection
+I 96083 cv=387638 gcd=s73339 0.95 | the single 454pp Zone rip of the 2013 collection is the whole shelf; CV issue 387638 and GCD series 73339 are its records
+S 2740 cv=115237 gcd=133721 0.95 | the folder is `Black Order v1 (2019)`, and CV 115237 "Black Order" 2018 Marvel 5 pairs with GCD 133721 "Black Order" 2019 Marvel 5 on publisher and count 5; our single 113pp file is that five-issue run's collected edition, and the "ladder 2019" is the year read as a number
+F 2740 wrong-cv-link | the stored link CV 118504 "The Black Order: The Warmasters of Thanos" 2019 count 1 is the trade record minted beside the five-issue run
+I 97927 cv=706943 gcd=s144406 0.95 | the 113pp Zone trade — CV 118504 issue 706943 and GCD 144406, both Marvel 2019 count 1
+S 17854 cv=68974 gcd=153975 0.95 | CV 68974 "Thanos: Redemption" 2013 Marvel count 1 (issue 432503) and GCD 153975 of the identical title, year, publisher and count agree, and ComicInfo Series repeats the string
+N 17854 the run it collects is Thanos (2003), CV 20764 / GCD 19287, whose own files are shelf S94801 — linking this trade there would merge the two shelves
+I 97928 cv=432503 gcd=s153975 0.95 | the single 265pp Kileko trade is the shelf
+S 17841 cv=109630 gcd=123362 0.95 | CV 109630 "Thanos: The Infinity Siblings" 2018 Marvel count 1 (issue 664926, cached #1-1) and GCD 123362 of the identical title, year, publisher and count agree, and the "01" prefix is the trilogy folder's reading order
+I 96076 cv=664926 gcd=s123362 0.95 | the single 102pp Kileko rip of the graphic novel is the shelf
+S 17855 cv=115282 gcd=133729 0.95 | CV 115282 "Thanos: The Infinity Conflict" 2018 Marvel count 1 (issue 692084) and GCD 133729 of the identical title, year, publisher and count agree, and ComicInfo Series repeats the string
+I 96077 cv=692084 gcd=s133729 0.95 | the single 103pp Kileko rip of the graphic novel is the shelf
+S 17856 cv=121745 gcd=150731 0.95 | CV 121745 "Thanos: The Infinity Ending" 2019 Marvel count 1 (issue 721176) and GCD 150731 of the identical title, year, publisher and count agree, and ComicInfo Series repeats the string
+I 96078 cv=721176 gcd=s150731 0.95 | the single 109pp Kileko rip of the graphic novel is the shelf
+S 17843 cv=33509 gcd=49426 0.9 | the folder is `Thanos Imperative (2011)`, and CV 33509 "The Thanos Imperative" 2010 Marvel 6 pairs with GCD 49426 of the same title, 2010-2011, Marvel, 6 on publisher, years and count 6; our 201pp file also carries the Ignition and Devastation one-shots, which is the residue
+F 17843 merge-with=19747 | S19747 'The Thanos Imperative' holds the twelve files of the same 2010 run and already stores CV 33509; this shelf is that run's trade
+F 17843 wrong-cv-link | the stored link CV 39255 "Thanos Imperative" 2011 count 1 is the trade record minted beside the six-issue run
+I 97929 cv=265155 gcd=s73367 0.9 | the 201pp Kileko trade — CV 39255 issue 265155 and GCD 73367; GCD carries a twin row 73368 for the same book
+S 17846 cv=4425 gcd=4053 0.95 | the folder is `Thanos Quest (1990)`, and the stored CV 4425 "The Thanos Quest" 1990 Marvel 2 pairs with GCD 4053 of the same title, 1990, Marvel, 2 on publisher, year and count; our single 100pp file is that two-issue run's collected edition
+I 97931 cv=- gcd=s69107 0.9 | our file is the 2012 printing, GCD 69107 "Thanos Quest" 2012 Marvel count 1; the ComicVine rip's only trade record is the 2000 one-shot 53791, a different printing

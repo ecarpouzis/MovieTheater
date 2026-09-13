@@ -48,13 +48,28 @@ CHECKS = [
      FROM Series s WHERE s.CvVolumeId IS NOT NULL AND s.Id IN ({SH})
      GROUP BY s.CvVolumeId HAVING count(*) > 1""", False),
 
+    # The guard exists for a pass that called a CONFLATED shelf one comic. A Manual link on an ALIAS key that only
+    # some of the shelf's files carry (wave 3: 'Bloodstrike v1 (1993)' on S2988, which also holds Assassin,
+    # Brutalists and Battle Blood) named a subset correctly; the split is still owed, and revisit.txt carries it.
     ("THIS PASS wrote a Manual CV/GCD SeriesKeyLink for a key on a shelf with an OPEN conflated-series flag", f"""
      SELECT k.ParsedKey, k.Provider, k.ProviderKey
      FROM SeriesKeyLink k JOIN SeriesAlias a ON a.ParsedKey = k.ParsedKey
      JOIN ContainmentFlag f ON f.SeriesId = a.SeriesId
      WHERE k.Status = 5 AND k.Provider IN (0,3) AND f.Flag = 'conflated-series' AND {OPEN_FLAG}
        AND EXISTS (SELECT 1 FROM SeriesInferenceDecision d
-                   WHERE d.Class = 'identity' AND d.SeriesKey = k.ParsedKey)""", False),
+                   WHERE d.Class = 'identity' AND d.SeriesKey = k.ParsedKey)
+       AND NOT EXISTS (SELECT 1 FROM Item i JOIN ComicDetail cd ON cd.ItemId = i.Id
+                       WHERE i.SeriesId = a.SeriesId AND cd.ParsedSeriesKey <> k.ParsedKey)""", False),
+
+    ("LEAD a Manual link on an ALIAS key of a shelf with an OPEN conflated-series flag — the key names a subset; the SPLIT is owed (revisit.txt)", f"""
+     SELECT k.ParsedKey, k.Provider, k.ProviderKey, a.SeriesId
+     FROM SeriesKeyLink k JOIN SeriesAlias a ON a.ParsedKey = k.ParsedKey
+     JOIN ContainmentFlag f ON f.SeriesId = a.SeriesId
+     WHERE k.Status = 5 AND k.Provider IN (0,3) AND f.Flag = 'conflated-series' AND {OPEN_FLAG}
+       AND EXISTS (SELECT 1 FROM SeriesInferenceDecision d
+                   WHERE d.Class = 'identity' AND d.SeriesKey = k.ParsedKey)
+       AND EXISTS (SELECT 1 FROM Item i JOIN ComicDetail cd ON cd.ItemId = i.Id
+                   WHERE i.SeriesId = a.SeriesId AND cd.ParsedSeriesKey <> k.ParsedKey)""", True),
 
     # A decision whose shelf a landed wave MERGED AWAY is a decision that took effect, not a dangling
     # reference — `check_identity.py` already reads `SeriesMerge` to say so, and this must agree with it or
@@ -65,6 +80,10 @@ CHECKS = [
      WHERE d.Class = 'identity' AND d.SeriesKey IS NOT NULL
        AND NOT EXISTS (SELECT 1 FROM SeriesAlias a WHERE a.ParsedKey = d.SeriesKey)
        AND NOT EXISTS (SELECT 1 FROM Series s WHERE s.ParsedKey = d.SeriesKey)
+       -- a per-file key still carried by files on a live shelf is an alias in force (wave 3 raised 15 of
+       -- these: refused shelves whose files parse to several keys, e.g. 'Love and Rockets - New Stories')
+       AND NOT EXISTS (SELECT 1 FROM ComicDetail cd JOIN Item i ON i.Id = cd.ItemId
+                       WHERE cd.ParsedSeriesKey = d.SeriesKey AND i.SeriesId IS NOT NULL)
        AND NOT EXISTS (SELECT 1 FROM SeriesMerge m
                        WHERE 'S' || m.OldSeriesId = d.Target OR cast(m.OldSeriesId AS TEXT) = d.Target
                           OR d.Target LIKE '%S' || m.OldSeriesId)""", False),
