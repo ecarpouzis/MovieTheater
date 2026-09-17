@@ -1,0 +1,224 @@
+# C-019 — DC Superman/Action Comics/Swamp Thing/Teen Titans shelves. Heavy legacy-numbered DC ongoings with the
+# per-file matcher's wrong-relaunch/legacy-volume trap everywhere (Superman, Action Comics, Swamp Thing, Teen
+# Titans all show it in both directions — old volume stamped on new files AND new volume stamped on old files).
+# Many singleton one-shot trades resolved cleanly off GCD dump exact name/year hits despite GCD per-file's
+# round2-folder mis-stamping every one of them to a folder neighbour (Elseworlds: Superman / DC Comics Presents /
+# Batman / Titans-Young Justice). Several "trades collect a numbered run" shelves where the run's own GCD row
+# was buried under a collected-edition twin.
+
+S 100133 cv=773 gcd=116 0.95 | CV 773 "Superman" 1939 DC 488 issues and GCD 116 "Superman" 1939-1986 DC 423 issues agree on publisher and start year 1939, our ladder 1-415 sits inside both counts; the per-file matcher's "Superman Year One" pick on 258/261 files is the wrong-relaunch trap, rejected
+R 468 | this shelf holds two runs: the 1987 legacy Adventures of Superman ongoing (#428-649 + Annuals 1-5 + #0, CV 3778 "Adventures of Superman" 1987 DC 228 issues / GCD 3345 1987-2006, ~180 files, v1 per-file stamped 3778 on all 230/230 by the legacy-volume trap) and the 2013-2014 digital-first weekly "Adventures of Superman" (#1-51, 46 files by Minutemen-PhD, GCD 74653 2013-2014 DC count 17 on 12/230 files); item 72989's "COL Adventures of Superman v01 (2014)" trade is flagged conflated-series because CV actually offers "Superman: The City of Tomorrow Volume 1" #573-576 for it, a genuinely different comic
+F 468 split-needed | run A = legacy 1987 ongoing #428-649+Annuals+#0, CV 3778 / GCD 3345 (dominant, ~180 files); run B = 2013-2014 digital-first weekly #1-51, GCD 74653, CV volume not resolved in packet
+N 468 cv=3778 gcd=3345 | run A: legacy Adventures of Superman (1987-2006)
+N 468 cv=- gcd=74653 | run B: 2013-2014 digital-first weekly Adventures of Superman #1-51
+F 468 needs-web | item 72989's actual comic ("Superman: The City of Tomorrow" per CV, vs the "COL Adventures of Superman v01" filename) needs confirmation — the conflated-series flag looks genuine, not stale
+S 17909 cv=3778 gcd=3345 0.9 | same 1987-2006 legacy Adventures of Superman ongoing as S468 (same primary folder "04 The Adventures of Superman (1987)"), issue range 424-611 fits inside CV 3778's cached #0-642 and GCD 3345's 1987-2006 span; the round2-folder tag on 18/22 files is unreliable but the numeric issue fit is real
+F 17909 merge-with=468 | this shelf's 22 files sit in the same folder as S468 and are the same legacy ongoing, split apart by a filename-casing parse quirk ("The adventures of superman" vs "Adventures of Superman")
+S 100135 cv=3816 gcd=3386 0.95 | CV 3816 "Superman" 1987 DC 228 issues (from the local-rip lookup) and GCD 3386 "Superman" 1987-2006 DC 231 issues agree on publisher/year, ladder 0-226 sits inside both counts; the per-file matcher's "Superman Year One" stamp on 189/189 files is the wrong-relaunch trap, rejected
+S 94856 cv=4571 gcd=4215 0.95 | CV 4571 and GCD 4215 "Superman: The Man of Steel" 1991 DC both matched on all 125/125 files, ladder 1-134 sits inside CV's 136 and GCD's 138 counts, publisher and year agree
+F 65813 merge-with=100133 | same spanning legacy CV 773 "Superman" 1939 volume as S100133, a later era of the same continuously-numbered run
+S 65813 cv=773 gcd=16530 0.95 | CV 773 "Superman" 1939 DC 488 issues is the spanning legacy volume already stored and caching our #650-714 range (yearΔ0), continuing the same numbering after Infinite Crisis; GCD splits the era into its own row 16530 "Superman" 2006-2011 DC which matches all 65/65 files exactly — pairing the spanning CV volume with the majority-era GCD row per the era-retitled-arc convention
+S 17226 cv=28066 gcd=13312 0.95 | CV 28066 and GCD 13312 "Superman 80-Page Giant" 1999 DC both count 3 issues and match on the single file #2, publisher and year agree, subset of a 3-issue run is expected
+S 17195 cv=37083 gcd=41823 0.9 | GCD 41823 "Superman: Last Stand of New Krypton" (2010, limited series, 3 issues) matches our three single-issue files exactly; CV 37083 "Superman: New Krypton" (yearΔ0, cached #1-4, ratio 3/4=0.75) is CV's record for the same mini under a saga-wide name; the four "COL ... New Krypton Vol. 01-04" trades collect the broader New Krypton saga (GCD's twin collected-edition rows 49582/36625, count 4) and are residue naming the wider line, not a second run
+N 17195 gcd=49582 | the four "New Krypton" trade volumes are the saga-wide collected line (count 4, matches our 4 COL files) — broader than the Last Stand mini
+R 421 | this shelf mixes stray 1930s-40s Golden Age Adventure Comics single pages/issues (#4,5,7) pulled from DC crossover reading-order folders (Blackest Night, JSA Returns) with 2010 Adventure Comics (vol.2, 2009 relaunch) tie-in issues #008-011 filed under the New Krypton folder; CV linked 3105 "Adventure Comics" 1938 (472 issues, ratio 8/472=0.02) only weakly fits the old fragments and GCD per-file only matched 1/8 files (series 7106, a 1999 one-shot) — too thin and mixed to call a single identity
+F 421 misfiled | items under #DC Events/Blackest Night and JSA Returns folders are event-reading-order duplicates of issues that live on their own title's shelf, not a distinct run here
+R 17172 | this shelf holds two distinct trade lines each restarting at "Vol. 01": the New 52 "Superman - Action Comics" Vol. 01-09 (2012-2016, collecting CV 42563 "Action Comics" 2011 DC, GCD lines 78050/76455 count 9) and the 2018 Bendis-era "Action Comics" Vol. 01-03 (2019-2020, collecting the post-#1000 legacy-numbered continuation, CV 118148 "Superman: Action Comics" 2019 count 5, GCD 143595 count 3); the stored link CV 5975 "Superman: The Action Comics Archives" 1997 (ratio 0/6, cached #1-6 unmatched) is a wrong, unrelated 1997 archive line
+F 17172 split-needed | the shelf is two eras' trade lines, not one
+F 17172 wrong-cv-link | stored CV 5975 is the wrong 1997 archive line
+N 17172 cv=50973 gcd=78050 | New 52-era "Superman - Action Comics" trades Vol.01-09, count 9, matches our 9 files
+N 17172 cv=118148 gcd=143595 | 2018 Bendis-era "Action Comics" trades Vol.01-03, count 5, our 3 files fit inside
+F 94962 merge-with=94960 | same spanning GCD 59922 "Action Comics" 2011-? ongoing row as S94960, an earlier point-issue era of the same continuously-numbered run
+S 94962 cv=42563 gcd=59922 0.95 | GCD 59922 "Action Comics" 2011- DC (ongoing, 199 issues) matched all 4/4 point-issue files (#23.1-23.4) correctly; the per-file CV matcher's stamp of legacy volume 18005 "Action Comics" 1938 is the wrong-relaunch/legacy-volume trap (matched by issue number coincidence) — the correct 2011 volume is CV 42563 "Action Comics" 2011 DC Comics 57, seen in local-rip lookups for sibling shelves
+S 17287 cv=69570 gcd=77871 0.9 | CV 69570 "Superman: H'el On Earth" (2013, 1 issue 435045) is this trade's own record; GCD carries a twin pair (77871 2013, 110567 2014) for the same book — taking the 2013 row that matches CV's year; GCD per-file's page-rematch to series 106859 is unreliable, rejected
+S 17288 cv=80014 gcd=91525 0.9 | CV 80014 "Superman: Krypton Returns" (2015, 1 issue 479247) is this trade's own record; GCD carries a twin pair (91525, 110692) both 2015 DC count 1 for the same book — the twin caps confidence at 0.9
+S 100136 cv=42986 gcd=59921 0.9 | GCD 59921 "Superman" 2011-2016 DC (ongoing, 57 issues) is the New 52 Superman v3 run and matches the judged trade ranges (#1-52 across 7 judged COL volumes conf 0.95 each) and the point-issue files; CV's real volume is 42986 "Superman" 2011 DC Comics 57 (seen in sibling-shelf rip lookups), not the per-file matcher's wrong stamps ("Superman Year One" 119775, Titan reprint 77202)
+N 100136 stale-flag | overlap-in-series on item 72586 is the cross-shelf Vol.04 collision described in the ledger for many-vN Superman/DC franchises, not conflation within this shelf
+S 17193 cv=85314 gcd=93064 0.95 | CV 85314 and GCD 93064 "Superman: Lois & Clark" (2015-2016, DC, both count 8) agree on publisher/year/count, judged item 72593 covers #1-8 (conf 0.88) matching the trade; the "and"/"&" spelling difference is cosmetic
+S 100137 cv=91298 gcd=- 0.9 | CV 91298 "Superman" 2016 DC Comics (45 issues, from the local-rip lookup) is the Rebirth-era Superman v4 ongoing, matching the judged trade ranges (#1-45 across six 0.95-confidence judged items); the per-file matcher's "Superman Year One" 119775 stamp on all 7 files is the wrong-relaunch trap; no exact GCD ongoing-series id surfaced — GCD's 111062 is the trade collected-edition record, not the ongoing
+F 100137 provider-missing | GCD's specific ongoing-series row for Superman (2016 Rebirth) did not surface in the packet; only its collected-edition row (111062) and foreign trade rows appeared
+R 389 | "Action Comics Vol. 04.5 - The Oz Effect - Deluxe Edition" (2018) collects an arc from the Action Comics 2016 Rebirth run (same CV 91078/GCD 59922 identity as sibling shelf S94960), but no CV or GCD candidate in the packet is named "Oz Effect" specifically — the trade's own record is not in our data, so no id can be written
+F 389 needs-web | the exact CV/GCD record for "Action Comics: The Oz Effect" needs confirmation; it belongs under Action Comics (2016), same identity as S94960
+S 94960 cv=91078 gcd=59922 0.9 | our files (#1000 single issue, COL trades Vol.01-05, Action Comics Special 01) are the 2016 Rebirth-era Action Comics continuing legacy numbering (#957-1000+); CV keeps a separate era volume 91078 "Action Comics" 2016 DC (136 issues, from sibling-shelf rip lookups) while GCD keeps one spanning ongoing row 59922 "Action Comics" 2011-? DC (199 issues) covering both New52 and Rebirth eras — pairing CV's era volume with GCD's majority spanning row; the per-file matcher's stamp of legacy CV 18005 "Action Comics" 1938 on 8/8 files is the wrong-relaunch trap; the provider-disagrees flags on LOCG issue-range claims are item-level, not blocking
+S 11250 cv=85940 gcd=93774 0.95 | CV 85940 and GCD dump 93774 "DC Comics Presents: Superman: Lois & Clark 100-Page Super Spectacular" (2015/2016 DC, count 1) agree exactly on name and year; GCD's per-file pick of 139781 "Man and Superman 100-Page Super Spectacular" is a different one-shot, rejected
+S 17168 cv=141436 gcd=180519 0.95 | CV 141436 and GCD dump 180519 "Superman & Robin Special" (2022, DC, count 1) agree exactly on name and year; GCD per-file's round2-folder pick of 139781 is the folder-neighbour trap, rejected
+S 385 cv=110490 gcd=123953 0.95 | CV 110490 and GCD dump 123953 "Action Comics Special" (2018, DC, count 1) agree exactly on name and year (matches our shelf's stated 2018 years); GCD per-file's pick of 203397 "Action Comics Presents: Doomsday Special" (2023) is a different, similarly-titled one-shot two years off — the parsed key's wording is misleading but the year decides
+S 17239 cv=100065 gcd=117286 0.95 | CV 100065 and GCD 117286 "Superman: The Golden Age Dailies" (2017-2019, IDW Publishing, 3 volumes) agree on publisher, era and count; the 16 files (barcodes on items 72650/72651/72653 matching separate IDW volume ISBNs) are the strip-daily content of those three collected editions, years 1942-1959 fit a dailies reprint spanning that era
+S 19978 cv=4037 gcd=3632 0.95 | CV 4037 and GCD 3632 "The World of Metropolis"/"World of Metropolis" (1988, DC, 4 issues) agree exactly; our 8 files are a duplicate rip of the same 4-issue mini under two parsed-key spellings ("The World of..." vs "World of..."), ratio 2.00 reflects the double rip, not two runs
+S 14433 cv=30490 gcd=12329 0.95 | CV 30490 and GCD dump 12329 "Realworlds: Superman" (2000, DC, count 1) agree exactly by name and year; GCD per-file's round2-folder pick of 120686 "Elseworlds: Superman" is the folder-neighbour trap, rejected
+S 17271 cv=36772 gcd=- 0.9 | CV 36772 "Superman vs. Muhammad Ali" (2010, DC, matches our 2010-dated file) is the reprint edition's own record; GCD's dump shows only foreign-language printings of the same book (pt-br 2011, de 2012, fr 2012 collector) with no English row
+F 17271 provider-missing | GCD has no English-language row for the 2010 Superman vs. Muhammad Ali reprint, only foreign editions
+S 17294 cv=32150 gcd=6174 0.95 | CV 32150 and GCD dump 6174 "Superman: A Nation Divided" (1999, DC, count 1) agree exactly by name and year; GCD per-file's round2-folder pick of 120686 "Elseworlds: Superman" is rejected as the folder-neighbour trap
+S 17298 cv=29063 gcd=6004 0.95 | CV 29063 and GCD dump 6004 "Superman: Distant Fires" (1998, DC, count 1) agree exactly by name and year; GCD per-file's round2-folder pick of 120686 rejected
+S 17303 cv=111266 gcd=5254 0.95 | CV 111266 and GCD dump 5254 "Superman: Kal" (1995, DC, count 1) agree exactly; several foreign-language rows (Zinco, Titan, Mythos) exist but 5254 is the US DC edition matching our file; GCD per-file's round2-folder pick rejected
+S 17319 cv=26829 gcd=4665 0.95 | CV 26829 and GCD dump 4665 "Superman: Speeding Bullets" (1993, DC, count 1) agree exactly; GCD per-file's round2-folder pick of 120686 rejected
+S 17323 cv=31781 gcd=3624 1.0 | ComicInfo Web on the file is "199233", exactly the stored CV issue id for volume 31781 — the collection's own assertion; GCD dump 3624 "Superman: The Earth Stealers" (1988, DC, count 1) agrees on name and year
+S 17333 cv=31485 gcd=6010 0.95 | CV 31485 and GCD dump 6010 "Superman: War of the Worlds" (DC, count 1, CV 1999/GCD 1998 cover-vs-copyright year offset) agree by name; GCD per-file's round2-folder pick of 120686 rejected
+S 19712 cv=28133 gcd=6177 0.95 | CV 28133 and GCD dump 6177 "The Superman Monster" (1999, DC, count 1) agree exactly; GCD per-file's round2-folder pick rejected
+S 66557 cv=21028 gcd=7764 0.9 | CV 21028 and GCD 7764 "All New Collectors' Edition" (1977/78, DC, count 6 vs 7) agree by name and era — the treasury-sized line (C-54 Superman vs Wonder Woman per the label-ambiguous flag on duplicate copies); GCD per-file's round2-folder pick of "Batman" 141 is the folder-neighbour trap, rejected; item 72688/63917 being duplicate copies of the same book is item-level, not blocking
+S 17169 cv=138503 gcd=175403 0.95 | CV 138503 and GCD dump 175403 "Superman '78" (2021-2022, DC, count 6) agree exactly on name, year and count; our single file is part of this 6-issue mini (the "78" in the ladder is the title's own "'78" parsed as a number, not a real issue number)
+S 17170 cv=154545 gcd=205439 0.9 | GCD 205439 "Superman '78: The Metal Curtain" (2024, DC, limited series 6 issues) matched 12/13 files exactly; CV 154545 has no CvVolume row (named from the local rip); ratio 2.17 reflects two-cover variant duplicates within the 6-issue count, not two runs
+F 17170 needs-fetch cv=154545 | named from the local rip, no CvVolume row yet
+S 17182 cv=36355 gcd=58617 0.95 | CV 36355 and GCD 58617 "Superman: Earth One" (2010-2015, DC, graphic novel line, count 3) agree on name, publisher and count; each of our 3 files is one of the three hardcover OGN volumes; GCD dump's twin row 94162 (2013-2015) is the same line under a slightly different date range
+S 17327 cv=4571 gcd=4215 0.9 | this shelf holds legacy Superman: The Man of Steel (1991) ongoing issues/annuals (same CV 4571/GCD 4215 identity as S94856) plus later trade collections of that run (GCD 24612, count 9, 2003-2016) and a separate, differently-dated 2020 4-volume "Superman: The Man of Steel" line (CV 129773/GCD 163210, unrelated new material) named as residue; label-ambiguous flag on item 72824 (a City of Tomorrow book stamped on Vol.02) is item-level
+N 17327 cv=129773 gcd=163210 | the 2020 "Superman: The Man of Steel" 4-volume line is a distinct, differently-dated modern series sharing the classic title, not part of the 1991 run
+F 17327 merge-with=94856 | same underlying 1991 Man of Steel ongoing as S94856
+S 17230 cv=5767 gcd=5531 0.95 | CV 5767 and GCD 5531 "Superman Adventures" (1996-2002, DC ongoing) agree, matched 31/36 files directly; the 4 "judged" trade volumes (conf 0.9, covering #1-35) collect this same run per GCD's twin collected-edition row 93777 — the run wins per the trades-vs-run ruling
+S 17246 cv=3120 gcd=2634 0.95 | CV 3120 and GCD dump 2634 "The Phantom Zone" (1982, DC, count 4) agree exactly on name, year, count, our ladder 1-4 fills it completely; GCD per-file's round2-folder pick of "DC Comics Presents" is the folder-neighbour trap, rejected
+S 2196 cv=120912 gcd=149883 0.9 | CV 120912 and GCD 149883 "Batman / Superman" (2019-2021, DC, ongoing, 22 issues) agree exactly on name, year and count — independently confirmed via the local-rip lookup despite GCD per-file's round2-folder tag; ladder 1,22 fits inside the 22-issue count
+S 18388 cv=112576 gcd=- 0.9 | CV 112576 "The Death of Superman" (2018 trade collecting the 1992-93 crossover, 12 chapters) matches our 13 files' 1-12 reading-order chapters; ratio 12/12=1.00 confirms the chapter count exactly; the 25-year gap is the 2018 reprint trade vs. the 1993 original story, not a mismatch; no confirmed GCD id surfaced in the packet
+F 18388 provider-missing | no GCD candidate for this specific reading-order trade surfaced in the packet dump
+S 17348 cv=92976 gcd=105114 0.9 | CV 92976 (no CvVolume row) and GCD 105114 "Superwoman" (2016-2018, DC, 18 issues) agree on name/year/count; the three judged trade volumes (conf 0.8-0.9) collect the full #1-18 run — the run wins per the trades-vs-run ruling
+F 17348 needs-fetch cv=92976 | named from the local rip, no CvVolume row yet
+S 100163 cv=3465 gcd=2999 0.95 | CV 3465 and GCD 2999 "Swamp Thing" (1985-1996, DC, 133 issues) matched 98/104 and 104/104 files respectively; ladder 2-6,74-171 sits inside the 133-issue count; the UK Titan collected-edition minority (GCD 53463, 3 files) is a reprint of the same run, not a second run
+S 14969 cv=3465 gcd=2636 0.9 | CV linked 38005 "The Saga of Swamp Thing" (cached #1-6) fits 0 of the 6 judged trade ranges (#20-64) — wrong link; these trades collect the Alan Moore-era Saga of Swamp Thing, the same spanning CV volume as S100163 (CV 3465 "Swamp Thing" 1986, 126 issues) under GCD's earlier-title-era row 2636 "The Saga of Swamp Thing" (1982-1985); GCD's own collected-edition twin (38630, 2009-2011, count 6) matched all 7/7 files but names the TRADE, not the run
+F 14969 wrong-cv-link | stored CV 38005 fits 0 of 6 judged ranges
+F 14969 merge-with=100163 | same underlying Swamp Thing (1982/1985 title-era) ongoing as S100163's identity
+S 36014 cv=2556 gcd=2034 0.9 | CV 2556 and GCD 2034 "Swamp Thing" (1972-1976, DC, 24 issues) agree exactly on name/year/count — the original Bronze Age run; our 6 files are assorted trades/omnibus editions of that run (Jack in the Green, Bronze Age, Root of All Evil, Trial), collected mainly via GCD's "Swamp Thing: The Bronze Age" line (130902, count 3, matched 3/6 files) which is the trade record, not the run
+S 100166 cv=42599 gcd=68208 0.9 | CV 42599 "Swamp Thing" (2011, DC, 42 issues, seen in sibling-shelf rip lookups) and GCD 68208 "Swamp Thing" (2012-2016, DC, collected edition 7) together identify the New 52 Swamp Thing v5 run; the 5 judged trades (conf 0.97, covering #0-40) collect it; the per-file matcher's stamp of legacy CV 3465 "Swamp Thing" 1986 on 5/5 is the wrong-relaunch trap
+S 19715 cv=134142 gcd=170016 0.95 | CV 134142 and GCD 170016 "The Swamp Thing" (2021-2022, DC, limited series, 16 issues) agree exactly on name/year/count, matched majority of files directly; the 2 judged trades (conf 0.8-0.9, #1-10) collect this same run via GCD's twin collected-edition row 178871
+S 944 cv=5228 gcd=4938 0.95 | CV 5228 and GCD 4938 "American Freak: A Tale of the Un-Men" (1994, DC, 5 issues) matched all 15/15 files on both legs exactly ("the dump names no other series"); ratio 3.00 reflects a triple duplicate rip of the same 5-issue mini, not three runs
+S 19842 cv=19007 gcd=25997 0.95 | CV 19007 and GCD 25997 "The Un-Men" (2007-2008, DC, 13 issues) matched all 25/25 files; ratio 1.92 reflects a near-double duplicate rip of the same 13-issue run, not two runs
+S 17642 cv=139802 gcd=177229 0.9 | CV 139802 and GCD dump 177229 "Task Force Z" (2021-2022, DC, 12 issues) agree on name/count; the 2 judged trades (conf 0.9 each, #1-12) collect the full run — the run wins over GCD's collected-edition twin row 191859
+S 17674 cv=134719 gcd=171160 0.9 | CV 134719 (no CvVolume row) and GCD dump 171160 "Teen Titans Academy" (2021-2022, DC, 15 issues) agree by name/count; the 2 judged trades (conf 0.8-0.9, #1-15) collect the full run
+F 17674 needs-fetch cv=134719 | named from the local rip, no CvVolume row yet
+S 100217 cv=2279 gcd=1733 0.95 | GCD 1733 "Teen Titans" (1966-1978, DC, 53 issues) matched all 30/30 files exactly; CV's real volume is 2279 "Teen Titans" 1966 DC Comics 53 (seen in a sibling-shelf rip lookup), not the per-file matcher's wrong stamp of the 2003 relaunch (10414) — the wrong-relaunch/legacy-volume trap in reverse
+F 100219 merge-with=65856 | S65856 "Teen Titans (2003)" (batch C-008) is the same run
+S 100219 cv=10414 gcd=11297 0.95 | CV 10414 and GCD 11297 "Teen Titans" (2003-2011, DC, 100 issues) matched 72/73 and 71/73 files respectively; ladder 27-28,32-100 sits inside the 100-issue count; the 2 judged trades (conf 0.92, minor residue) are a later 2017-2018 collected line (GCD 114838), not this run
+S 17692 cv=57673 gcd=110341 0.95 | CV 57673 and GCD 110341 "Teen Titans By Geoff Johns Omnibus" (2013, DC, count 1) agree exactly on name and year, confirmed by the OpenLibrary external work link
+S 100220 cv=43004 gcd=61186 0.9 | CV 43004 and GCD 61186 "Teen Titans" (2011-2014, DC, 33 issues) directly identify the New 52 v4 (2011) run; the 4 judged trades (conf 0.97, #1-30) collect it per GCD's collected-edition twin 78089 — the run wins; per-file's stray stamps of the 2014 (75697) and 2003 (10414) volumes are residue/mismatches on individual files
+S 100221 cv=- gcd=91277 0.7 | GCD 91277 "Teen Titans" (2015-2017, DC, collected editions, count 4) matches our 4 judged trades (conf 0.97, #1-24) exactly and its dates fit the v5 (2014) run's trade schedule; the per-file CV stamp of 95242 is the same volume identified for S100222's v6 (2016) run (count 47, matching that ongoing's count, not v5's) so it is rejected here rather than risk a false cross-shelf merge — the real v5 (2014) CV volume is not confirmed in the packet
+F 100222 merge-with=65858 | S65858 "Teen Titans" (2016-2017, batch C-009, keyed "Teen Titans (2016)") is the same v6 run
+S 100222 cv=95242 gcd=108551 0.9 | CV 95242 and GCD 108551 "Teen Titans" (2016-2021, DC, 47 issues) directly identify the v6 (2016) run; the 7 judged trades (conf 0.8-0.97) collect it via GCD's twin collected-edition rows (143596, 114838); the per-file matcher's majority stamp of legacy CV 10414 (2003 run) on 10/12 files is the wrong-relaunch trap
+F 14615 merge-with=4594 | S4594 "DC Special: The Return of Donna Troy" (batch A-007) is the same book
+S 14615 cv=21375 gcd=14387 0.95 | CV 21375 and GCD dump 14387 "DC Special: The Return of Donna Troy" (2005, DC, count 4) agree exactly on name/year/count, our ladder 1-4 fills it completely; GCD per-file's round2-folder pick of "Titans/Young Justice: Graduation Day" is the folder-neighbour trap, rejected
+S 19212 cv=3316 gcd=2842 0.9 | CV 3316 and GCD 2842 "The New Teen Titans" (1984-1988, DC, 49 issues) agree exactly on name/year/count — the run; 13/15 files are trades of it (GCD's collected-edition line 88093, 2014-2022, count 14) — the run wins per the trades-vs-run ruling
+S 58364 cv=3324 gcd=2851 0.95 | CV 3324 and GCD dump 2851 "Tales of the Teen Titans" (1984-1988, DC, 51 issues) agree exactly on name/year/count; our ladder 44,50 sits inside the cached range, ratio 0.06 is a normal small subset of a long-running title
+
+# Repair pass (2026-09-16): the previous reader folded every collected edition/trade/OGN into S clauses and N notes
+# without writing the book's own I line. This block adds one I line per COL/collection item named in the packet's
+# "N collections" counts across every S/R shelf above, using lookup.py --issues on the collected-line CV volume and
+# a direct GCD-series-by-id query for the matching GCD collected line, order-matched to each trade's Vol./Book number
+# and cross-checked by title where the dump carries one. Genuine gaps (no CV or GCD record found after re-probing
+# with/without licensor prefixes, "the", "of") are written cv=- / gcd=- rather than guessed.
+N 468 item 72989 no-record | item 72989 "COL Adventures of Superman v01 (2014)" carries an open conflated-series flag (CV offers "Superman: The City of Tomorrow Volume 1" #573-576 instead) and no confirmed record surfaced locally; matches F 468 needs-web
+I 72538 cv=- gcd=760723 0.9 | Vol.01 = GCD 49582 "Superman: New Krypton" 2010-2011 issue #1 (760723), the collected line already named on this shelf's N line; no distinct CV trade volume found apart from the mini's own CV 37083
+I 72539 cv=- gcd=776253 0.9 | Vol.02 = GCD 49582 issue #2 (776253), same four-volume New Krypton collected line that matches our four COL files by count
+I 72540 cv=- gcd=814191 0.9 | Vol.03 = GCD 49582 issue #3 (814191), continuing the same four-volume collected-line order
+I 72547 cv=- gcd=841164 0.9 | Vol.04 = GCD 49582 issue #4 (841164), completing the four-volume New Krypton collected line
+I 72568 cv=348336 gcd=1168534 0.9 | Vol.01 "Superman and the Men of Steel" = CV 50973 issue #1 (348336) and GCD 78050 issue #1 (1168534), exact title match on both legs; GCD twin row 76455 (same count 9) caps this at 0.9
+I 72569 cv=400135 gcd=1170759 0.9 | Vol.02 "Bulletproof" = CV 50973 #2 (400135) / GCD 78050 #2 (1170759), exact title match; twin GCD 76455 caps at 0.9
+I 72570 cv=436183 gcd=1170766 0.9 | Vol.03 "At the End of Days" = CV 50973 #3 (436183) / GCD 78050 #3 (1170766), exact title match on both legs
+I 72571 cv=460294 gcd=1245060 0.9 | Vol.04 "Hybrid" = CV 50973 #4 (460294) / GCD 78050 #4 (1245060), exact title match on both legs
+I 72572 cv=474599 gcd=1388395 0.9 | Vol.05 "What Lies Beneath" = CV 50973 #5 (474599) / GCD 78050 #5 (1388395), exact title match on both legs
+I 72573 cv=491496 gcd=1387240 0.9 | Vol.06 "Superdoom" = CV 50973 #6 (491496) / GCD 78050 #6 (1387240), exact title match on both legs
+I 72574 cv=508876 gcd=1516894 0.9 | Vol.07 "Under the Skin" = CV 50973 #7 (508876) / GCD 78050 #7 (1516894), exact title match on both legs
+I 72575 cv=540059 gcd=1604210 0.9 | Vol.08 "Truth" = CV 50973 #8 (540059) / GCD 78050 #8 (1604210), exact title match on both legs
+I 72576 cv=569317 gcd=1660194 0.9 | Vol.09 "Last Rites" = CV 50973 #9 (569317) / GCD 78050 #9 (1660194), exact title match, completing the nine-volume New 52 collected line
+I 72627 cv=705419 gcd=1944998 0.95 | Vol.01 "Invisible Mafia" = CV 118148 issue #1 (705419) and GCD 143595 issue #1 (1944998), exact title/year match on both legs; this shelf's own overlap-in-series flag names the cross-shelf Vol.01 collision, not conflation here
+I 72628 cv=725995 gcd=2035186 0.95 | Vol.02 "Leviathan Rising" = CV 118148 #2 (725995) / GCD 143595 #2 (2035186), exact title match on both legs
+I 72629 cv=760400 gcd=2104560 0.95 | Vol.03 "Leviathan Hunt" = CV 118148 #3 (760400) / GCD 143595 #3 (2104560), exact title match, completing the three-volume Bendis-era collected line
+I 72584 cv=435045 gcd=1165118 0.95 | "H'el on Earth" trade = CV 69570 issue #1 (435045) and GCD 77871's sole issue (1165118), both single-record collected editions of the same book, name and year agree
+I 72587 cv=479247 gcd=1446960 0.95 | "Krypton Returns" trade = CV 80014 issue #1 (479247) and GCD 91525's sole issue (1446960), single-record match on both legs, name and year agree
+I 72582 cv=- gcd=1124060 0.9 | Vol.01 "What Price Tomorrow?" = GCD 75137 issue #1 (1124060), exact title match; no distinct CV trade volume found separate from the ongoing CV 42986
+I 72583 cv=- gcd=1124065 0.9 | Vol.02 "Secrets and Lies" = GCD 75137 issue #2 (1124065), exact title match, same gap on the CV side
+I 72585 cv=- gcd=1172582 0.9 | Vol.03 "Fury At World's End" = GCD 75137 issue #3 (1172582), exact title match, same gap on the CV side
+I 72586 cv=- gcd=1246019 0.9 | Vol.04 "Psi War" = GCD 75137 issue #4 (1246019), matches the dump's "Psi-War" title; this item also carries the shelf's overlap-in-series flag, which names a cross-shelf Vol.04 collision, not conflation here
+I 72588 cv=- gcd=1449121 0.9 | Vol.05 "Under Fire" = GCD 75137 issue #5 (1449121), exact title match, completing GCD's five-volume collected line
+N 100136 item 72589 no-record | Vol.06 "The Men of Tomorrow" (2015) — GCD's collected line stops at five volumes and no CV trade volume was found; genuine provider gap, not a guess
+N 100136 item 72590 no-record | Vol.07 "Before Truth" (2016) — same gap as Vol.06, no CV or GCD record found for this specific trade after re-probing
+N 100136 item 72591 no-record | Vol.08 "Return to Glory" (2016) — same gap, the GCD collected line for this era stops at Vol.05
+N 17193 item 72593 no-record | this single volume collects the entire 8-issue Superman: Lois and Clark mini (already CV 85314 / GCD 93064, this shelf's own S-line identity) into one TPB; no separate trade-level record exists apart from the mini's own 8 issues
+I 72599 cv=- gcd=1663360 0.95 | Vol.01 "Son of Superman" = GCD 111062 issue #1 (1663360), exact title match; no CV trade volume found, only the wrong-stamped "Superman Year One" 119775
+I 72600 cv=- gcd=1688649 0.95 | Vol.02 "Trials of the Super Son" = GCD 111062 #2 (1688649), exact title match
+I 72601 cv=- gcd=1724391 0.95 | Vol.03 "Multiplicity" = GCD 111062 #3 (1724391), exact title match
+I 72603 cv=- gcd=1762491 0.95 | Vol.04 "Black Dawn" = GCD 111062 #4 (1762491), exact title match
+I 72604 cv=- gcd=1799091 0.95 | Vol.05 "Hopes and Fears" = GCD 111062 #5 (1799091), exact title match
+I 72605 cv=- gcd=1830978 0.95 | Vol.06 "Imperius Lex" = GCD 111062 #6 (1830978), exact title match
+I 72606 cv=- gcd=1876442 0.95 | Vol.07 "Bizarroverse" = GCD 111062 #7 (1876442), exact title match, all seven volumes' titles match this GCD collected line in order; no CV trade volume found for the line
+N 389 item 72613 no-record | "Action Comics: The Oz Effect - Deluxe Edition" trade's own CV/GCD record was not found in the packet or by re-probing several spellings locally; matches F 389 needs-web
+I 72608 cv=686342 gcd=1851394 0.95 | "Action Comics 1000: The Deluxe Edition" = CV 113929 issue #1 (686342) and GCD 130346's sole issue (1851394), exact name/year match on both legs
+N 94960 item 72609 no-record | "Path of Doom" (2017) trade — no CV or GCD record found under this name after re-probing with the "Action Comics:" prefix; genuine provider gap
+N 94960 item 72610 no-record | "Welcome to the Planet" (2017) trade — same gap, no record found after re-probing
+N 94960 item 72611 no-record | "Men of Steel" (2017) trade — same gap; this item also carries a provider-disagrees flag on LOCG's #1058-1060 claim (item-level, not blocking)
+N 94960 item 72612 no-record | "The New World" (2017) trade — same gap, no record found after re-probing
+N 94960 item 72614 no-record | "Booster Shot" (2018) trade — same gap; five of this shelf's six trades have no per-book CV/GCD record at all despite re-probing
+N 66557 item 63917 no-record | C-54 "Superman vs. Wonder Woman" facsimile is part of the CV 21028 / GCD 7764 treasury line already on this shelf's S line; CV's issue list is not cached and no facsimile-specific record was found
+N 66557 item 72688 no-record | duplicate copy of item 63917 (this shelf's label-ambiguous flag), same C-54 book, same gap
+N 66557 item 72689 no-record | C-55 "Superboy and the Legion of Super-Heroes" facsimile, same CV 21028 / GCD 7764 treasury line, no book-level record found despite re-probing several title spellings
+I 72749 cv=239858 gcd=833853 0.95 | Vol.01 "Superman: Earth One" = CV 36355 issue #1 (239858) and GCD 58617 issue #1 (833853), title and year match on both legs
+I 72750 cv=364118 gcd=1028956 0.95 | Vol.02 "Book 2" = CV 36355 #2 (364118) / GCD 58617 #2 (1028956), title and year match on both legs
+I 72751 cv=478596 gcd=1338856 0.95 | Vol.03 "Book 3" = CV 36355 #3 (478596) / GCD 58617 #3 (1338856), completing the three-volume Earth One line
+I 72823 cv=795902 gcd=2139089 0.9 | Vol.01 (2020) = CV 129773 issue #1 (795902, "Vol. 1") and GCD 163210 issue #1 (2139089), page counts (478 vs 488pp) and order both agree
+I 72824 cv=826311 gcd=2188358 0.9 | Vol.02 (2020) = CV 129773 #2 (826311, "Vol. 2") / GCD 163210 #2 (2188358), page counts (542 vs 552pp) agree; this shelf's label-ambiguous flag names a DIFFERENT per-file mis-stamp (a City of Tomorrow issue), not this order-matched id
+I 72825 cv=856410 gcd=2227501 0.9 | Vol.03 (2021) = CV 129773 #3 (856410, "Vol. 3") / GCD 163210 #3 (2227501), page counts (460 vs 472pp) agree
+I 72826 cv=941415 gcd=2362737 0.9 | Vol.04 (2022) = CV 129773 #4 (941415, "Vol. 4") / GCD 163210 #4 (2362737), page counts (489 vs 528pp) agree, completing the 2020-2022 Man of Steel collected line
+I 72827 cv=- gcd=356675 0.9 | Vol.05 (2006) = GCD 24612 issue #5 (356675, 2007, 212pp vs our 208pp); no distinct CV trade volume found apart from the ongoing CV 4571, order- and page-count-matched only (GCD titles not populated for this row)
+I 72828 cv=- gcd=503852 0.9 | Vol.06 (2008) = GCD 24612 issue #6 (503852, 2008, 212pp vs our 208pp), same order/page-count match
+I 72829 cv=- gcd=1070911 0.9 | Vol.07 (2013) = GCD 24612 issue #7 (1070911, 2013, 196pp vs our 187pp), same order/page-count match
+I 72830 cv=- gcd=1172580 0.9 | Vol.08 (2014) = GCD 24612 issue #8 (1172580, 2014, 244pp vs our 237pp), same order/page-count match
+I 72831 cv=- gcd=1642983 0.9 | Vol.09 (2016) = GCD 24612 issue #9 (1642983, 2017, 284pp vs our 251pp), completing the nine-volume 2003-2017 Man of Steel collected line
+I 72879 cv=505503 gcd=1493142 0.95 | Vol.01 = CV 85967 issue #1 (505503, "Volume 1") and GCD 93777 issue #1 (1493142), both four-volume "Superman Adventures" 2015-2018 collected lines, page counts (237 vs 244pp) agree
+I 72880 cv=531864 gcd=1575823 0.95 | Vol.02 = CV 85967 #2 (531864, "Volume 2") / GCD 93777 #2 (1575823), page counts (239 vs 244pp) agree
+I 72881 cv=597176 gcd=1704717 0.95 | Vol.03 = CV 85967 #3 (597176, "Volume 3") / GCD 93777 #3 (1704717), page counts (244 vs 252pp) agree
+I 72882 cv=649717 gcd=1771194 0.95 | Vol.04 = CV 85967 #4 (649717, "Volume 4") / GCD 93777 #4 (1771194), page counts (240 vs 244pp) agree, completing the four-volume Superman Adventures collected line
+N 18388 item 16823 no-record | "COL 01 - The Death of Superman TPB" (165pp) is a single bound volume of the same 12-chapter reprint already identified as CV 112576 (12 chapters cached as issues #1-12); no distinct single-record TPB row exists apart from those chapter records, consistent with this shelf's F provider-missing note
+I 73021 cv=594099 gcd=1696214 0.95 | "Who Killed Superwoman?" = CV 101218 issue #1 (594099) and GCD 113810 issue #1 (1696214), exact title match on both legs
+I 73022 cv=643022 gcd=1762493 0.95 | "Rediscovery" = CV 106557 issue #1 (643022) / GCD 113810 #2 (1762493), exact title match on both legs
+I 73023 cv=670732 gcd=1809239 0.95 | "The Midnight Hour" = CV 111057 issue #1 (670732) / GCD 113810 #3 (1809239), exact title match, completing the three-volume Superwoman collected line
+I 73137 cv=1070970 gcd=2653236 0.95 | "Book 01 - Wild Things" = CV 159912 issue #1 (1070970, "Book One: Wild Things") and GCD 214551 issue #1 (2653236, "Wild Things"), exact title match on both legs, a distinct 2024-25 two-book reprint line separate from S100163's own numbered run
+I 73131 cv=183519 gcd=666215 0.95 | Vol.01 "Book One" = CV 29810 issue #1 (183519) and GCD 38630 issue #1 (666215), both six-volume collected lines for the same Alan Moore-era Saga of the Swamp Thing
+I 73132 cv=184776 gcd=691876 0.95 | Vol.02 "Book Two" = CV 29810 #2 (184776) / GCD 38630 #2 (691876), exact title match on both legs
+I 73133 cv=220560 gcd=763302 0.95 | Vol.03 "Book Three" = CV 29810 #3 (220560) / GCD 38630 #3 (763302), exact title match on both legs
+I 73134 cv=259149 gcd=799508 0.95 | Vol.04 "Book Four" = CV 29810 #4 (259149) / GCD 38630 #4 (799508), exact title match on both legs
+I 73135 cv=277555 gcd=893498 0.95 | Vol.05 "Book Five" = CV 29810 #5 (277555) / GCD 38630 #5 (893498), exact title match on both legs
+I 73136 cv=301679 gcd=893509 0.95 | Vol.06 "Book Six" = CV 29810 #6 (301679) / GCD 38630 #6 (893509), completing the six-volume Saga of the Swamp Thing collected line
+I 73024 cv=686995 gcd=1855035 0.95 | Bronze Age Vol.01 "Volume One" = CV 114091 issue #1 (686995) and GCD 130902 issue #1 (1855035), page counts (305 vs 308pp) agree
+I 73025 cv=732690 gcd=2053132 0.95 | Bronze Age Vol.02 "Volume Two" = CV 114091 #2 (732690) / GCD 130902 #2 (2053132), page counts (444 vs 452pp) agree
+I 73130 cv=829289 gcd=2199727 0.95 | Bronze Age Vol.03 "Volume Three" = CV 114091 #3 (829289) / GCD 130902 #3 (2199727), page counts (412 vs 420pp) agree, completing the three-volume Bronze Age line
+I 73139 cv=496381 gcd=1443430 0.9 | "The Root of All Evil" = CV 83594 issue #1 (496381, already in this shelf's own CV candidates) and GCD 91082 issue #1 (1443430, titled "The Root of All Evil"), a direct GCD-series query recovered the row the packet's own dump lookup missed
+I 73140 cv=537923 gcd=1593862 0.9 | "Trial By Fire" = CV 91905 issue #1 (537923, already in this shelf's own CV candidates) and GCD 91082 issue #3 (1593862, titled "Trial by Fire"), same GCD series as the Root of All Evil trade above
+I 73175 cv=500279 gcd=1458098 0.95 | "Swamp Thing by Scott Snyder: The Deluxe Edition" (collecting Vol.01-03/#0-18) = CV 84607 issue #1 (500279) and GCD 92483's sole issue (1458098), exact title/year match on both legs, one deluxe bind of GCD 68208's first three trades
+I 73176 cv=- gcd=1212075 0.95 | Vol.04 "Seeder" = GCD 68208 issue #4 (1212075), exact title match; no distinct CV trade volume found beyond the ongoing CV 42599
+I 73177 cv=- gcd=1379273 0.95 | Vol.05 "The Killing Field" = GCD 68208 #5 (1379273), exact title match
+I 73178 cv=- gcd=1378851 0.95 | Vol.06 "The Sureen" = GCD 68208 #6 (1378851), exact title match
+I 73179 cv=- gcd=1527946 0.95 | Vol.07 "Season's End" = GCD 68208 #7 (1527946), exact title match, completing the seven-volume New 52 Swamp Thing collected line
+I 73186 cv=938493 gcd=2283650 0.95 | Vol.01 "Becoming" = CV 144153 issue #1 (938493) and GCD 178871 issue #1 (2283650), exact title match on both legs
+I 73187 cv=956337 gcd=2425233 0.95 | Vol.02 "Conduit" = CV 146312 issue #1 (956337) and GCD 178871 issue #2 (2425233), exact title match on both legs, completing the two-volume 2021-2022 collected line
+I 73211 cv=958001 gcd=2446927 0.95 | Vol.01 "Death's Door" = CV 146598 issue #1 (958001) and GCD 191859 issue #1 (2446927), exact title match on both legs
+I 73212 cv=988761 gcd=2511741 0.95 | Vol.02 "What's Eating You" = CV 150279 issue #1 (988761, "Volume Two") and GCD 191859 issue #2 (2511741, "What's Eating You?"), completing the two-volume Task Force Z collected line
+I 73213 cv=- gcd=2371212 0.9 | Vol.01 "X Marks the Spot" = GCD 182372 issue #1 (2371212), exact title match; no CV trade volume found for this specific volume despite re-probing
+I 73214 cv=957977 gcd=2439729 0.95 | Vol.02 "Exit Wounds" = CV 146589 issue #1 (957977) and GCD 182372 issue #2 (2439729), exact title match on both legs, completing the two-volume Teen Titans Academy collected line
+F 17692 wrong-cv-link | the S line's CV 57673/GCD 110341 names a 2013 one-shot omnibus edition; item 73371 "Book 03 (2019)" is the third volume of the separate three-book "Teen Titans by Geoff Johns" line (CV 100385/GCD 113116), confirmed by lookup.py
+I 73371 cv=709178 gcd=1963150 0.95 | "Book 03" = CV 100385 issue #3 (709178, "Book Three") and GCD 113116 issue #3 (1963150), completing the three-book Geoff Johns Teen Titans reprint omnibus line, distinct from the S line's 2013 one-shot record
+I 73369 cv=589814 gcd=1687115 0.95 | "Book 01" = CV 100385 issue #1 (589814, "Book One") and GCD 113116 issue #1 (1687115); this replaces the packet's own per-file GCD pick 114838 (the 2016 Percy-run trade line), a wrong-series per-file match on this shelf
+I 73370 cv=658711 gcd=1780662 0.95 | "Book 02" = CV 100385 #2 (658711, "Book Two") and GCD 113116 #2 (1780662), continuing the Geoff Johns omnibus reprint line, not the 2016 Percy-run trades
+I 73375 cv=356139 gcd=1171053 0.95 | Vol.01 "It's Our Right To Fight" = CV 51909 issue #1 (356139, "Vol. 1") and GCD 78089 issue #1 (1171053), exact title match on both legs
+I 73376 cv=- gcd=1171104 0.9 | Vol.02 "The Culling" = GCD 78089 issue #2 (1171104), exact title match; the CV candidate "The Culling: Rise of the Ravagers" 56245 is the story-arc title, not this collected edition
+I 73377 cv=- gcd=1171116 0.9 | Vol.03 "Death of the Family" = GCD 78089 issue #3 (1171116), exact title match; no CV trade volume found
+I 73378 cv=- gcd=1243202 0.9 | Vol.04 "Light and Dark" = GCD 78089 issue #4 (1243202), exact title match; no CV trade volume found
+I 73379 cv=- gcd=1660442 0.9 | Vol.05 "The Trial of Kid Flash" = GCD 78089 issue #5 (1660442), exact title match, completing the five-volume Teen Titans (2011) collected line
+I 73380 cv=- gcd=1445290 0.9 | Vol.01 "Blinded by the Light" = GCD 91277 issue #1 (1445290), exact title match; no CV trade volume found
+I 73381 cv=518845 gcd=1544793 0.95 | Vol.02 "Rogue Targets" = CV 88779 issue #1 (518845, "Volume 2") and GCD 91277 issue #2 (1544793), exact title match on both legs
+I 73382 cv=- gcd=1618169 0.9 | Vol.03 "The Sum of its Parts" = GCD 91277 issue #3 (1618169), exact title match; no CV trade volume found
+I 73383 cv=579300 gcd=1671819 0.95 | Vol.04 "When Titans Fall" = CV 98537 issue #1 (579300, "Volume 4") and GCD 91277 issue #4 (1671819), completing the four-volume Teen Titans (2014) collected line
+I 73388 cv=601778 gcd=1713935 0.95 | Vol.01 "Damian Knows Best" = CV 102138 issue #1 (601778, "Volume 1") and GCD 114838 issue #1 (1713935), exact title match on both legs
+I 73389 cv=- gcd=1788610 0.9 | Vol.02 "The Rise of Aqualad" = GCD 114838 issue #2 (1788610), exact title match; no CV trade volume found despite re-probing
+I 73390 cv=- gcd=1854834 0.9 | Vol.03 "The Return of Kid Flash" = GCD 114838 issue #3 (1854834), exact title match, completing the three-volume 2016 Teen Titans (Percy-era) collected line
+I 73391 cv=705420 gcd=1945000 0.95 | Vol.01 "Full Throttle" = CV 118149 issue #1 (705420, "Volume 1") and GCD 143596 issue #1 (1945000), exact title match on both legs
+I 73392 cv=723741 gcd=2026758 0.95 | Vol.02 "Turn It Up" = CV 122180 issue #1 (723741, "Volume 2") and GCD 143596 issue #2 (2026758), exact title match on both legs
+I 73394 cv=- gcd=2102059 0.9 | Vol.03 "Seek and Destroy" = GCD 143596 issue #3 (2102059), exact title match; no CV trade volume found despite re-probing
+I 73395 cv=829290 gcd=2196880 0.95 | Vol.04 "Robin No More" = CV 133949 issue #1 (829290, "Volume 4") and GCD 143596 issue #4 (2196880), completing the four-volume 2019-2021 Teen Titans collected line
+I 73405 cv=465827 gcd=1338125 0.95 | Vol.01 = CV 76977 issue #1 (465827, "Volume One") and GCD 88093 issue #1 (1338125), both fourteen-volume "The New Teen Titans" collected lines
+I 73406 cv=484884 gcd=1338539 0.95 | Vol.02 = CV 76977 #2 (484884, "Volume Two") / GCD 88093 #2 (1338539)
+I 73407 cv=500274 gcd=1458094 0.95 | Vol.03 = CV 76977 #3 (500274, "Volume Three") / GCD 88093 #3 (1458094)
+I 73408 cv=511493 gcd=1526433 0.95 | Vol.04 = CV 76977 #4 (511493, "Volume Four") / GCD 88093 #4 (1526433)
+I 73409 cv=541171 gcd=1605695 0.95 | Vol.05 = CV 76977 #5 (541171, "Volume Five") / GCD 88093 #5 (1605695)
+I 73410 cv=580725 gcd=1673742 0.95 | Vol.06 = CV 76977 #6 (580725, "Volume Six") / GCD 88093 #6 (1673742)
+I 73411 cv=616150 gcd=1729105 0.95 | Vol.07 = CV 76977 #7 (616150, "Volume Seven") / GCD 88093 #7 (1729105)
+I 73412 cv=647920 gcd=1769705 0.95 | Vol.08 = CV 76977 #8 (647920, "Volume Eight") / GCD 88093 #8 (1769705)
+I 73413 cv=678516 gcd=1830976 0.95 | Vol.09 = CV 76977 #9 (678516, "Volume Nine") / GCD 88093 #9 (1830976)
+I 73414 cv=702817 gcd=1938969 0.95 | Vol.10 = CV 76977 #10 (702817, "Volume Ten") / GCD 88093 #10 (1938969)
+I 73415 cv=763259 gcd=2113042 0.95 | Vol.11 = CV 76977 #11 (763259, "Volume Eleven") / GCD 88093 #11 (2113042)
+I 73416 cv=823029 gcd=2181890 0.95 | Vol.12 = CV 76977 #12 (823029, "Volume Twelve") / GCD 88093 #12 (2181890); Vol.13 is not on this shelf, matching CV 76977's own uncollected #13
+I 73418 cv=956317 gcd=2418743 0.95 | Vol.14 = CV 76977 #14 (956317, "Volume Fourteen") / GCD 88093 #14 (2418743), completing the fourteen-volume New Teen Titans collected line held on this shelf

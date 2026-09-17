@@ -41,4 +41,26 @@ namespace MovieTheater.Books.Db
     public enum GroupType { Series = 0, Volume = 1, Collection = 2, Publisher = 3, Decade = 4 }
     /// <summary>Stored as int. Vocabulary from v2-mapping.json enums["Item.ResolvedSynopsisSource"].</summary>
     public enum SynopsisSource { None = 0, Cv = 1, Embedded = 2, Locg = 3, External = 4, Mu = 5, CvDeck = 6, AI = 7 }
+
+    /// <summary>
+    /// Which link statuses a CONSUMER may believe, stated once.
+    ///
+    /// <para><c>Matched</c> is a matcher's answer; <c>Manual</c> is a person's — the identity pass writes
+    /// 32,072 of them at <c>Method = 'identity-read'</c>, and the containment review screen writes more. A
+    /// Manual row is the higher-grade read, so every place that treats a Matched link as usable must treat a
+    /// Manual one as usable too. Wave 6 is why this is written down: a book whose ComicVine link the identity
+    /// pass CONFIRMED (same issue id, now Manual) fell out of the reading order's cover-date join and the
+    /// Walking Dead compendiums re-dated themselves from 2009 to their file years.</para>
+    ///
+    /// <para>The exception is a MATCHER deciding whether to act — re-pointing or re-scraping a link — where
+    /// Matched-only is the point, because a person's row is exactly what must not be overwritten.</para>
+    /// </summary>
+    public static class LinkStatuses
+    {
+        /// <summary>For LINQ: <c>LinkStatuses.Usable.Contains(l.Status)</c> translates to an IN.</summary>
+        public static readonly LinkStatus[] Usable = [LinkStatus.Matched, LinkStatus.Manual];
+
+        /// <summary>For the raw-SQL jobs: <c>WHERE l.Status IN {LinkStatuses.UsableSql}</c>.</summary>
+        public const string UsableSql = "(1, 5)";
+    }
 }

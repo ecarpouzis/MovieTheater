@@ -1,0 +1,365 @@
+# C-052 — Marvel tier-C, mostly Ultimate X-Men/Avengers trades, What If bucket, Wolverine v2/v3/Origins/Epic
+# Collection, X-Men singleton minis (Bishop/Brotherhood/Cable/Cyclops/Death of X/Excalibur/Firestar/Gambit).
+# Conventions confirmed here: the Panini Comics/foreign-publisher per-file stamp (CV 69993 "Wolverine") recurs
+# across every Wolverine v2/v3/v6/2012 shelf — always wrong, the English volume sits in "CV local rip" or a
+# fresh lookup.py probe. Epic Collection shape (CV per book, GCD one line row 80971) confirmed again for the
+# five Wolverine Epic Collection singletons. "What If" is a bucket folder holding several unrelated comics
+# (v1 1977 reprint trades, v2 1989 ongoing split across two shelves by folder, one-shots) — read the files.
+
+S 66150 cv=7258 gcd=7826 0.95 | CV 7258 "Ultimate X-Men" (2001, Marvel, 101 issues) and GCD 7826 (2001-2009, Marvel, 100 issues) agree on publisher/year/count; issue names "World Tour" #16-19, "Hellfire and Brimstone" #21-25, "Blockbuster" #34-39, "Magnetic North" #61-65, "Cable" #75-78 match our trade subtitles exactly (lookup.py --issues 7258)
+F 66150 wrong-cv-link | stored link 157127 "Ultimate X-Men" 2024 has no CvVolume row and is stamped on all 24 files including 2002-2014 collections that predate 2024 — it is the 2024 relaunch, not the 2001-2009 run these trades collect
+F 66150 merge-with=66149 | shelf 66149 ("Ultimate X-Men", parsed key "Ultimate X-Men (2006)") already stores cv=7258, the same 2001-2009 run
+N 66150 | 24 collected-edition I lines not individually probed this pass (scope) — owed if the lead wants per-trade container ids
+
+R 66351 | mixes three unrelated comics under a stray "X-Men (2005)" key: items 97160/97162 are duplicate .cbr rips of Ultimate X-Men (2001) Vol.13/14, judged #61-65/#66-71, which is CV 7258/GCD 7826 (see S66150); item 86105 is "X-Men: The End" Book 01 (judged #1-6, its own record, not probed here); item 90386 is "X-Men 198 Files 001" from the X-Men Complete Chronology folder; the stored link CV 71921 (Editorial Televisa 2005, ratio 0.02) fits none of them
+F 66351 misfiled | 97160/97162 belong with S66150's run; 86105 and 90386 are each their own separate comic and need their own probe
+
+S 20612 cv=42947 gcd=61242 0.95 | CV 42947 and GCD 61242 (2011-2013, Marvel, "was ongoing series") both name "Ultimate Comics X-Men"; our ladder #13-18 sits inside GCD's 34-issue count; the 12 files are two copies each of #13-18 (6 from the title folder, 6 duplicate copies filed again under the Major Event Chronology tie-in folder) — residue, not a second run
+
+S 20613 cv=62468 gcd=156942 0.95 | CV 62468 and GCD 156942 both name "Ultimate Comics X-Men By Brian Wood" 2013-2014 Marvel, count 3, matching our three volumes 1:1 (this is a volume-published trilogy, not issues-behind-a-trade)
+F 20613 wrong-cv-link | GCD per-file's round2-folder pick (156941 "…by Nick Spencer", 2/3 files) is the sibling run, not this one; 156942 (title match, count 3) is correct
+
+S 68336 cv=27388 gcd=38919 0.95 | CV 27388 (18 issues) and GCD dump 38919 "Ultimate Avengers" (2009-2011, Marvel, 18 issues) match on publisher/year/count; our #1-3 (of 06 solicited) sits inside
+F 68336 wrong-cv-link | GCD per-file num-matched a later unrelated "Avengers" ongoing (48969, 2010-2013) by issue-number coincidence; use dump 38919
+
+S 12854 cv=31727 gcd=51586 0.95 | CV 31727 "Ultimate New Ultimates" (2010, Marvel) and GCD dump 51586 (2010-2011, Marvel, 5 issues) both match our #1-5 ladder exactly, confirmed by the rip lookup's own "5" count on 31727
+F 12854 wrong-cv-link | per-file matched 61378, a German Panini Verlag single-issue foreign edition, not the English 5-issue run
+
+S 20640 cv=95843 gcd=109552 0.9 | CV 95843 (no CvVolume row, Phase C.1 must fetch) and GCD 109552 ("was ongoing series") both name the 10-issue 2016-2017 Ultimates 2 run; judged ranges #1-6 (Vol.01 Troubleshooters) and #7-9 (Vol.02 Eternity War) sit inside
+F 20640 needs-fetch cv=95843 | named from the local rip, no CvVolume row cached
+I 97273 cv=603147 gcd=- 0.9 | Vol.01's own CV record "Ultimates 2: Troubleshooters" 2017 Marvel, issue 603147, per CV candidates
+I 97274 cv=641420 gcd=- 0.9 | Vol.02's own CV record "Ultimates 2: Eternity War" 2017 Marvel, issue 641420 — corrects the label-ambiguous flag, whose per-file link pointed at Vol.01's book instead
+
+S 21000 cv=86263 gcd=94496 0.95 | CV 86263 and GCD 94496 ("was ongoing series") both name the 13-issue 2015-2016 "Venom: Space Knight" run, Marvel; our #11-12 loose issues plus judged trade ranges #1-6/#7-13 sit inside that span
+
+S 21032 cv=- gcd=134263 0.9 | GCD 134263 "Venom by Donny Cates" (2019-2021, Marvel, collected edition, count 6) matches our six volumes (Rex/Abyss/Absolute Carnage/Venom Island/Venom Beyond/King in Black) 1:1 by count and subtitle
+F 21032 wrong-cv-link | CV per-file stamped volume 115417 (cached to 1 issue only) across all 6 trades; each trade's own CV record sits in "CV candidates" instead
+N 21032 | these trades likely collect the Venom (2018) ongoing under Donny Cates via the King in Black legacy renumbering to #200 (see S101296) — not verified, a revisit could add C lines if confirmed
+I 97332 cv=706975 gcd=- 0.9 | Vol.02 "The Abyss" own CV record, issue 706975
+I 97334 cv=736693 gcd=- 0.9 | Vol.03 "Absolute Carnage" own CV record, issue 736693
+I 97335 cv=781567 gcd=- 0.9 | Vol.04 "Venom Island" own CV record, issue 781567
+I 97336 cv=837525 gcd=- 0.9 | Vol.05 "Venom Beyond" own CV record, issue 837525
+N 21032 no-item-record | Book 01 "Rex" (97987) and Vol.06 "King in Black" (97337) have no per-book CV/GCD id in the packet; not probed further
+
+S 101296 cv=110770 gcd=124196 0.9 | CV local rip 110770 and GCD dump 124196 both name the 2018-2021 Marvel "Venom" ongoing (35 issues, English); our two annuals plus #200 (a legacy-renumbered late issue) sit under this run
+F 101296 wrong-cv-link | per-file picked Italian/German Panini imprints (126627/143395/122045) instead of the English Marvel ongoing
+N 101296 | item 97331 "Venom by Donny Cates Vol.01 - Rex" appears to duplicate item 97987 on S21032 (same trade, two shelves) — flagged for the lead, not resolved here
+
+S 21015 cv=158150 gcd=212194 0.9 | CV 158150 and GCD 212194 agree: Marvel 2024 limited series, 5 issues; the 20 1pp variant-cover files of #1-5 are residue (Marvel Variant Covers convention), not a second run
+F 21015 misfiled | item 97977 "Venom - Separation Anxiety (2016)" (343pp) predates the 2024 mini by 8 years and is a different one-shot; its own record is CV 97084/GCD 196335 per the CV local rip/GCD dump blocks
+F 21015 merge-with=20998 | shelf 20998 ("Venom - Separation Anxiety - The King In Purple") already stores cv=158150, the same 2024 mini
+I 97977 cv=569356 gcd=s196335 0.9 | own 2016 one-shot record (issue 569356 / series 196335) named in the packet's own CV local rip / GCD dump blocks
+
+S 21053 cv=158545 gcd=213133 0.95 | CV 158545 and GCD 213133 agree: Marvel 2024 limited series, 4 issues; the 24 1pp variant covers of #1-4 are residue, and the trade collects the run itself (residue, costs nothing)
+I 97404 cv=1075778 gcd=- 0.9 | the trade's own CV record 160710, issue 1075778, per CV candidates
+
+S 21478 cv=30340 gcd=48226 0.95 | CV 30340 (issue 186920) and GCD 48226 both name the 2009/2010 "What If? World War Hulk" one-shot; all 3 files are duplicate rips of the same issue (residue)
+
+S 36271 cv=28489 gcd=27819 0.9 | CV 28489 and GCD 27819 "What If? Classic" both count 7, matching our seven Vol.01-07 trades exactly (a reprint LINE of the 1977 run); items 97440 (Newer Fantastic Four one-shot) and 97457 (#200) are different one-shots, residue named not counted
+F 36271 misfiled | items 86643/86759/86802 ("What If v1 031/027/033") carry numbers belonging to What If v2 (1989) — see S21522/S101404 — not the 1977 v1 run despite the filename's "v1" label
+I 97440 cv=147292 gcd=- 0.9 | own CV record "What If? Newer Fantastic Four" (volume 24926), issue 147292, per the CV per-file block
+N 36271 | item 97457 "What If 200 (2011)" is likely a legacy-numbered issue or its own special of the 1977 run; not probed further
+
+S 21522 cv=4249 gcd=3864 0.9 | CV 4249 (no CvVolume row — Phase C.1 must fetch) and GCD 3864 ("was ongoing series") both count 115 for the 1989-1998 "What If...?" v2 run; residue = roughly a dozen separate one-shots (Civil War/Planet Hulk/Fallen Son/House of M/Secret Wars/Back in Black/Annihilation/Special 001), each its own record per the GCD per-file one-shot series shown
+F 21522 needs-fetch cv=4249 | named from the local rip, no CvVolume row cached
+
+S 101404 cv=4249 gcd=3864 0.9 | same 1989-1998 "What If...?" v2 run as S21522 (CV 4249/GCD 3864 "was ongoing series" 115 issues) — this shelf's "v3 (1997)" folder label is misleading; filenames are literally "What If V2 0XX"; our ladder covers issues in the 1-114 range not held by S21522
+F 101404 merge-with=21522 | both shelves hold pieces of the same What If v2 (1989) 115-issue run under CV 4249/GCD 3864
+F 101404 needs-fetch cv=4249 | named from the local rip, no CvVolume row cached
+
+S 21521 cv=157037 gcd=209409 0.9 | CV 157037 and GCD 209409 agree: Marvel 2024 limited series, 5 issues; item 91677 "What If — The Venom Symbiote Possessed Deadpool (2011)" is a different, older one-shot wrongly stamped with the 2024 volume, residue named
+F 21521 misfiled | item 91677 (2011) is not part of the 2024 "What If...? Venom" mini; own record not probed here
+
+S 21465 cv=154115 gcd=- 0.9 | CV candidate 154115 "What If?: Into The Multiverse Omnibus" (count 2) directly matches our filename's "Book 02"; no GCD record found for this omnibus in the dump
+F 21465 wrong-cv-link | round2-folder stamped 175652 "What If?: The Original Marvel Series Omnibus" — a differently-named omnibus line
+F 21465 merge-with=21529 | shelf 21529 ("What If?: Into The Multiverse Omnibus") already stores cv=154115, the same omnibus
+
+S 101454 cv=4250 gcd=3865 0.95 | CV local rip 4250 "Wolverine" (1988, Marvel, 192 issues) and GCD 3865 (1988-2003, "was ongoing series", 190 issues) both match ComicInfo Volume "1988"/Count "189" and our #45-189 ladder; the two "by Larry Hama & Marc Silvestri" trades are the run's own reprint, residue at no cost
+F 101454 wrong-cv-link | per-file matched 69993 "Wolverine" Panini Comics (foreign publisher), not the English Marvel volume 4250
+
+S 21844 cv=27131 gcd=11776 1.0 | ComicInfo Web "164832" equals CV issue 164832, the stored volume's own issue (the ripper's Web-id-is-CV-issue shape); GCD dump 11776 "Wolverine 2000" (2000, Marvel, 1 issue) matches by title
+F 21844 wrong-cv-link | GCD per-file round2-folder stamped a neighbour one-shot (7737 "Logan: Path of the Warlord"); use dump 11776
+
+S 21845 cv=27132 gcd=11777 1.0 | ComicInfo Web "164833" equals CV issue 164833, the stored volume's own issue; GCD dump 11777 "Wolverine 2001" matches by title/year
+F 21845 wrong-cv-link | same round2-folder stamp (7737) as S21844; use dump 11777
+
+S 21853 cv=137509 gcd=80971 0.9 | CV 137509 (issue 869600) is this Epic Collection's own volume ("Blood and Claws"); GCD 80971 "Wolverine Epic Collection" is the one line-row GCD keeps for the whole 11-volume line (Epic Collection shape); siblings S21854/21856/21857/21858 share it
+F 21853 merge-with=21854 | Epic Collection line siblings sharing GCD 80971
+
+S 21854 cv=125689 gcd=80971 0.9 | CV 125689 (issue 740894) is this Epic Collection's own volume ("Inner Fury"); GCD 80971 is the line's one shared row
+F 21854 merge-with=21856 | Epic Collection line siblings sharing GCD 80971
+
+S 21856 cv=157408 gcd=80971 0.9 | CV 157408 (issue 1049421) is this Epic Collection's own volume ("The Return Of Weapon X"); GCD 80971 is the line's one shared row
+F 21856 merge-with=21857 | Epic Collection line siblings sharing GCD 80971
+
+S 21857 cv=151521 gcd=80971 0.9 | CV 151521 (issue 996059) is this Epic Collection's own volume ("To The Bone"); GCD 80971 is the line's one shared row; "the dump names no other series" confirms no better candidate
+F 21857 merge-with=21858 | Epic Collection line siblings sharing GCD 80971
+
+S 21858 cv=144800 gcd=80971 0.9 | CV 144800 (issue 944339) is this Epic Collection's own volume ("Tooth And Claw"); GCD 80971 is the line's one shared row
+F 21858 merge-with=21853 | Epic Collection line siblings sharing GCD 80971, closing the chain back to S21853
+
+S 21797 cv=21230 gcd=72770 0.9 | our file is explicitly "(Complete Edition)", matching CV 21230 "Wolverine: Enemy of the State - The Complete Edition" (issue 127621) by title exactly; GCD dump 72770 "Wolverine: Enemy of the State" (2005-2006, 2 issues) is the nearest GCD record
+F 21797 wrong-cv-link | stored CV 43098 is "Black Panther: Enemy of the State" — an entirely different title
+
+S 21927 cv=79321 gcd=- 0.7 | CV candidate 79321 "Death of Wolverine" (2015, Marvel, issue 475657) is plausibly the Vol.10 trade's own record for the 2014 4-issue "Death of Wolverine" mini it reprints; no matching GCD record surfaced; real doubt — the 2008-dated candidates (29500/61875/73828) are a different, earlier one-shot of the same title
+F 21927 needs-web | confirm whether CV 79321 (2015) or 79793 ("Wolverine and the X-Men: Death of Wolverine" tie-in) is this Vol.10 trade's true record
+
+S 101456 cv=10809 gcd=11723 0.95 | CV 10809 (2003, Marvel, 75 issues, lookup.py) and GCD 11723 (2003-2009, Marvel, "was ongoing series", 81 issues) both match the shelf's own "Wolverine v3 (2003)" folder label; our #0-74 ladder plus judged trade ranges sit inside
+F 101456 wrong-cv-link | per-file matched foreign 69993 "Wolverine" Panini Comics instead of the English 2003 Marvel volume 10809
+
+S 21814 cv=18130 gcd=17574 0.95 | CV 18130 and GCD 17574 both name "Wolverine: Origins" 2006-2010 Marvel, 50 issues; our #1-50 ladder and 9 trade volumes (own reprints, residue) sit inside
+N 21814 | flag "the cv rows match Wolverine by Daniel Way Complete Collection books" on item 97812 — Wolverine Origins Vol.01-09 (Kileko-Empire) collect this same run and are not a different Complete Collection edition; no action needed
+
+S 21883 cv=49053 gcd=153342 0.9 | CV 49053 and GCD 153342 both name "Wolverine and the X-Men by Jason Aaron" with count 8, matching our eight volumes exactly (creator-named collected line)
+F 21883 wrong-cv-link | per-file stamped the 1-issue Omnibus record (74656) across 7 of 8 separate trade volumes
+
+S 101455 cv=35263 gcd=52076 0.95 | CV 35263 (2010, Marvel, 40 issues, lookup.py) and GCD 52076 (2010-2013, Marvel, "was ongoing series", 39 issues) both match; our legacy-numbered ladder #305-317 sits inside
+F 101455 wrong-cv-link | per-file matched foreign 69993 "Wolverine" Panini Comics again
+F 101455 merge-with=21932 | shelf 21932 ("Wolverine: Wolverine Goes To Hell") already stores cv=35263, the same 2010-2013 run
+
+S 101459 cv=71431 gcd=78901 0.95 | CV 71431 and GCD 78901 both name "Wolverine" 2014 Marvel, 12 issues, matching the folder's "v6 (2014)" label exactly; our #1-12 ladder (mostly 1pp variant-cover residue, ratio 3.17) sits inside
+F 101459 wrong-cv-link | per-file matched foreign 69993 "Wolverine" Panini Comics again; the 1pp variant covers double/triple the file count without a second run
+
+S 21922 cv=- gcd=104143 0.9 | GCD 104143 "Wolverine: Old Man Logan" (2015-2018, Marvel, collected edition, count 12) matches our Vol.06/09/10 trades (part of the line collecting the 2016 Old Man Logan ongoing — see S13205)
+F 21922 wrong-cv-link | per-file CV 31674 (issue 198497) is the 2008 ORIGINAL Old Man Logan arc within Wolverine v3, wrong for these 2016+ trades
+
+S 13205 cv=87624 gcd=96095 0.9 | CV 87624 (no CvVolume row, Phase C.1 must fetch) and GCD 96095 ("was ongoing series") both count 50 for the 2016-2018 Old Man Logan run; our judged trade ranges plus Vol.00 Warzones and the loose variant covers sit inside
+F 13205 needs-fetch cv=87624 | named from the local rip, no CvVolume row cached
+N 13205 | item 118134 duplicates item 97888 (Vol.00 Warzones) per the label-ambiguous flag — same record, no action needed
+
+S 21831 cv=21576 gcd=30810 0.95 | CV 21576 (issue 130339) and GCD dump 30810 both name "Wolverine: The Amazing Immortal Man & Other Bloody Tales" 2008 Marvel, 1 issue, exactly
+F 21831 wrong-cv-link | round2-folder stamped the neighbour "Wolverine: Origins" series (17574)
+
+S 11656 cv=41039 gcd=59599 0.95 | CV 41039 (no CvVolume row — Phase C.1 must fetch) and GCD 59599 both name "Marvel Universe vs. Wolverine" 2011 Marvel, 4 issues, matching our #1-4 ladder; 7 files are duplicate rips (residue)
+F 11656 needs-fetch cv=41039 | named from the local rip, no CvVolume row cached
+
+S 102418 cv=39223 gcd=56292 0.9 | CV 39223 and GCD 56292 both name "5 Ronin" 2011 Marvel, 5-issue anthology mini featuring Wolverine (lookup.py); our single 134pp trade collects it
+F 102418 wrong-cv-link | per-file stamped foreign 69993 "Wolverine" Panini Comics instead of the "5 Ronin" anthology
+
+S 21807 cv=156648 gcd=208746 0.9 | CV 156648 and GCD 208746 both name "Wolverine: Madripoor Knights" 2024 Marvel, 5 issues; our #4 loose issue and the collected trade sit inside
+
+S 21862 cv=26226 gcd=35758 0.95 | CV 26226 and GCD 35758 both name "Wolverine Noir" 2009 Marvel, 4 issues, matching our ladder exactly (7 files = mostly 2 copies, residue)
+
+S 747 cv=53919 gcd=69860 0.95 | CV 53919 (cached #1-41) and GCD 69860 ("was ongoing series", 41 issues) both name the 2012-2015 All-New X-Men run; 10 of 10 judged trade ranges fit; residue = the Guardians of the Galaxy crossover book filed under both titles (items 80299/84240, same "Trial of Jean Grey" story) and one 2017 MU tie-in (101935)
+
+S 754 cv=- gcd=100913 0.9 | GCD 100913 "All-New X-Men: Inevitable" (2016-2017, collected edition, count 4) matches our four volumes exactly by title and count
+F 754 wrong-cv-link | per-file stamped 77305 "All-New X-Men" (2014, a different 4-issue collected-edition series), not the "Inevitable" line
+
+S 1415 cv=23541 gcd=31675 0.95 | CV 23541 and GCD 31675 both name "Astonishing X-Men: Ghost Boxes" 2008-2009 Marvel, 2 issues, matching our ladder exactly (4 files = 2 copies, residue)
+
+S 94821 cv=5536 gcd=5274 0.95 | CV 5536 (1995, Marvel, 4 issues, per CV local rip on S64178) and GCD 5274 (1995-1995, Limited Series, 4 issues) both match the folder's "v1 (1995)" label and our #1-4 ladder exactly
+F 94821 wrong-cv-link | per-file matched the wrong-relaunch 2004 68-issue Whedon volume (10746) by issue-number coincidence
+
+S 64178 cv=18027 gcd=10767 0.95 | CV 18027 and GCD 10767 both name "Astonishing X-Men" 1999 Marvel, 3 issues, matching our #1-3 ladder (6 files = 2 copies, residue)
+
+S 94822 cv=10746 gcd=63031 0.9 | CV 10746 (2004, Marvel, 68 issues) and GCD 63031 (2004-2013, collected edition, 12 issues) both name the Whedon-launched "Astonishing X-Men" run/line; our 11 volumes (Companion + Ultimate Collection Books 01-02 + Vol.05-12) sit inside
+F 94822 wrong-cv-link | 2 files stamped the foreign Panini España volume (41783)
+F 94822 merge-with=64179 | shelf 64179 ("Astonishing X-Men (2004)") already stores cv=10746, the same run
+
+S 94823 cv=102882 gcd=115509 0.9 | CV 102882 and GCD 115509 (lookup.py) both name the 2017-2019 "Astonishing X-Men" run (17 issues, Marvel), which our two Charles Soule volumes collect; GCD's own "by Charles Soule" collected line (122300, count 2) is the trades' own record
+F 94823 wrong-cv-link | per-file matched 10746 (2004 Whedon run) instead of the 2017 run
+F 94823 merge-with=1424 | shelf 1424 ("Astonishing X-Men by Matt Rosenberg: Until Our Hearts Stop") already stores cv=102882, the same 2017-2019 run
+
+S 22544 cv=25714 gcd=34172 0.95 | CV 25714 and GCD 34172 both name "X-Men: The Times & Life of Lucas Bishop" 2009 Marvel, 3 issues, matching our ladder exactly (6 files = 2 copies, residue)
+
+S 18180 cv=9169 gcd=9911 0.95 | CV 9169 and GCD 9911 both name "The Brotherhood" 2001-2002 Marvel, 9 issues, matching our #1-8 ladder (16 files = 2 copies each, residue)
+
+S 95933 cv=4993 gcd=4675 0.95 | CV 4993 and GCD 4675 both name "Cable" 1993-2002 Marvel, 108 issues, matching ComicInfo Volume "1993" and our #21-107 ladder exactly; foreign Spanish per-file rows and the 2 trades are residue
+F 95933 merge-with=64363 | shelf 64363 ("Cable (1993)") already stores cv=4993, the same run
+
+S 95935 cv=20805 gcd=29892 0.9 | CV 20805 and GCD 29892 (lookup.py) both name "Cable" 2008-2010 Marvel, 25 issues; our four trades (Messiah War/Waiting for the End of the World/Stranded/Homecoming) collect this run
+F 95935 wrong-cv-link | per-file matched the 1993 volume (wrong-relaunch trap) and a Spanish edition (36328), not the English 2008 volume 20805
+
+S 95934 cv=101767 gcd=114411 0.9 | CV 101767 and GCD 114411 (lookup.py) both name "Cable" 2017-2018 Marvel, 15 issues, matching the shelf's "v1 (2017)" label; our three trades collect it
+F 95934 wrong-cv-link | per-file stamped the wrong-relaunch 1993 volume (4993) instead of the 2017 volume
+
+S 64465 cv=9461 gcd=10250 0.95 | CV 9461 and GCD 10250 both name "Cyclops" 2001-2002 Marvel, 4 issues, matching our ladder exactly (8 files = 2 copies, residue)
+
+S 22315 cv=7198 gcd=7760 0.95 | CV 7198 and GCD 7760 (dropped "The", lookup.py) both name "X-Men: Search for Cyclops" 2000-2001 Marvel, 4 issues, matching our ladder exactly (8 files = 2 copies, residue)
+
+S 5230 cv=94620 gcd=104771 0.95 | CV 94620 and GCD 104771 both name "Death of X" 2016-2017 Marvel, 4 issues, matching our #1-4 ladder exactly
+
+S 94591 cv=4052 gcd=3648 0.95 | CV 4052 and GCD 3648 both name "Excalibur" 1988-1998 Marvel, 126 issues, matching ComicInfo Volume "1988"/Count "125" and our #68-125 ladder exactly; 3 files stamped to a Philippine edition (182016) are residue
+
+S 94592 cv=22316 gcd=20462 0.95 | CV 22316 (2001, Marvel, 4 issues, per CV local rip) and GCD 20462 (2001-2001, Limited Series, 4 issues) both match our #1-4 ladder exactly
+F 94592 wrong-cv-link | per-file stamped the wrong-relaunch 1988 126-issue volume (4052) instead of the 2001 mini
+
+S 6305 cv=122488 gcd=- 0.9 | CV 122488 "Excalibur" (2019, Marvel, 26 issues) is the Krakoa-era run all five "by Tini Howard" trades collect; the judged ranges sum to #1-26, matching CV's count exactly; no single GCD row spans it — GCD splits the trades into two collected-edition rows (175481 count 4, 174661 count 2) instead
+N 6305 | GCD's twin "by Tini Howard" collected-edition rows (175481/174661) are per-trade records, not a run row
+
+S 6736 cv=3631 gcd=3181 0.95 | CV 3631 and GCD 3181 both name "Firestar" 1986 Marvel, 4-issue Limited Series, matching our #1-4 ladder (8 files = 2 copies, residue)
+I 103655 cv=208692 gcd=47698 0.95 | own 2010 one-shot record (volume 32668, issue 208692/series 47698), separate from the 1986 mini
+
+S 64744 cv=11879 gcd=12890 0.95 | CV 11879 and GCD 12890 both name "Gambit" 1997 Marvel, 4 issues, matching our #1-4 ladder exactly (7 files = mostly 2 copies, residue)
+
+# --- repair pass: I lines for every collected edition (coordinator directive) ---
+# shelf S747
+I 80299 cv=454369 gcd=2617589 0.95 | same Guardians of the Galaxy/All-New X-Men: The Trial of Jean Grey record as item 84240
+I 84236 cv=395410 gcd=- 0.9 | CV All-New X-Men: Yesterday's X-Men (2013) names our own "All-New X-Men Vol. 01 - Yesterday's X-Men"
+I 84237 cv=407169 gcd=- 0.9 | CV All-New X-Men: Here To Stay (2013) names our own "All-New X-Men Vol. 02 - Here To Stay"
+I 84238 cv=1040803 gcd=- 0.9 | CV All-New X-Men: Out of Their Depth (2013) names our own "All-New X-Men Vol. 03 - Out of Their Depth"
+I 84239 cv=451940 gcd=- 0.9 | CV All-New X-Men: All-Different (2014) names our own "All-New X-Men Vol. 04 - All-Different"
+I 84240 cv=454369 gcd=2617589 0.95 | CV Guardians of the Galaxy/All-New X-Men: The Trial of Jean Grey (2014) names our own "Guardians of the Galaxy-All-New X-Men - The Trial of Jean Grey"; GCD Guardians of the Galaxy / All-New X-Men: The Trial of Jean Grey (2014) names it too
+I 84241 cv=465335 gcd=- 0.9 | CV All-New X-Men: One Down (2014) names our own "All-New X-Men Vol. 05 - One Down"
+I 84242 cv=483056 gcd=- 0.9 | CV All-New X-Men: The Ultimate Adventure (2015) names our own "All-New X-Men Vol. 06 - The Ultimate Adventure"
+I 84243 cv=495263 gcd=- 0.9 | CV All-New X-Men: The Utopians (2015) names our own "All-New X-Men Vol. 07 - The Utopians"
+N 84244 no-record | probed "All-New X-Men Collection", "All-New X-Men Vol. 1 Collection"; no CV/GCD row for this digital-collection bundle
+N 84245 no-record | same digital-collection bundle shape as Book 01
+N 84246 no-record | same digital-collection bundle shape as Book 01
+N 84247 no-record | same digital-collection bundle shape as Book 01
+# shelf S754
+I 84248 cv=528498 gcd=- 0.9 | CV All-New X-Men: Inevitable: Ghosts of Cyclops (2016) names our own "All-New X-Men - Inevitable Vol. 01 - Ghosts of Cyclops"
+I 84249 cv=552999 gcd=- 0.9 | CV All-New X-Men: Inevitable: Apocalypse Wars (2016) names our own "All-New X-Men - Inevitable Vol. 02 - Apocalypse Wars"
+I 84250 cv=582515 gcd=- 0.9 | CV All-New X-Men: Inevitable: Hell Hath So Much Fury (2017) names our own "All-New X-Men - Inevitable Vol. 03 - Hell Hath So Much Fury"
+I 84251 cv=616183 gcd=- 0.9 | CV All-New X-Men: Inevitable: IvX (2017) names our own "All-New X-Men - Inevitable Vol. 04 - IvX"
+# shelf S6305
+I 85966 cv=878298 gcd=- 0.9 | CV 138154 "Excalibur by Tini Howard" (2021, count 2) Vol.1 is the "Collection Book" bundle's own record
+I 84476 cv=885080 gcd=- 0.9 | CV 126520 "Excalibur by Tini Howard" Vol.3, matching our Vol. 03 (2021)
+I 84474 cv=751964 gcd=2257401 0.95 | CV Excalibur by Tini Howard (2020) names our own "Excalibur by Tini Howard Vol. 01"; GCD Excalibur by Tini Howard (2020) names it too
+I 84475 cv=819827 gcd=- 0.9 | CORRECTION: CV 126520 "Excalibur by Tini Howard" (2020, count 4) Vol.2 — the individually-numbered volume matching our own Vol. 02, not the Collection Book's Vol.2
+I 84477 cv=910247 gcd=- 0.9 | CV 126520 "Excalibur by Tini Howard" Vol.4, matching our Vol. 04 (2022)
+# shelf S13205
+I 97888 cv=507056 gcd=1505959 0.95 | Old Man Logan line, Volume 0 (Warzones!)
+I 97889 cv=539261 gcd=1602262 0.95 | Old Man Logan line, Volume 1 (Berzerker)
+I 97890 cv=553026 gcd=1637940 0.95 | Old Man Logan line, Volume 2 (Bordertown)
+I 97891 cv=576643 gcd=1667257 0.95 | Old Man Logan line, Volume 3 (The Last Ronin)
+I 97892 cv=598392 gcd=1708621 0.95 | Old Man Logan line, Volume 4 (Old Monsters)
+I 97893 cv=625332 gcd=1737151 0.95 | Old Man Logan line, Volume 5 (Past Lives)
+I 97895 cv=655515 gcd=2434225 0.95 | Old Man Logan line, Volume 6 Black and White Edition (Days of Anger)
+I 97896 cv=676716 gcd=1824071 0.95 | Old Man Logan line, Volume 7 (Scarlet Samurai)
+I 97897 cv=683844 gcd=1843116 0.95 | Old Man Logan line, Volume 8 (To Kill For)
+I 118134 cv=507056 gcd=1505959 0.95 | duplicate rip of item 97888, the same Old Man Logan Vol.00 Warzones! book
+# shelf S20613
+I 97182 cv=407180 gcd=2080264 0.95 | CV Ultimate Comics X-Men By Brian Wood (2013) names our own "Ultimate Comics X-Men By Brian Wood Vol. 01"; GCD Ultimate Comics X-Men by Brian Wood (2013) names it too
+I 97183 cv=425296 gcd=2080265 0.95 | CV Ultimate Comics X-Men By Brian Wood (2013) names our own "Ultimate Comics X-Men By Brian Wood Vol. 02"; GCD Ultimate Comics X-Men by Brian Wood (2013) names it too
+I 97184 cv=446093 gcd=2080266 0.95 | CV Ultimate Comics X-Men By Brian Wood (2013) names our own "Ultimate Comics X-Men By Brian Wood Vol. 03"; GCD Ultimate Comics X-Men by Brian Wood (2013) names it too
+# shelf S21000
+I 97315 cv=539791 gcd=- 0.9 | CV Venom: Space Knight: Agent of the Cosmos (2016) names our own "Venom - Space Knight Vol. 01 - Agent of the Cosmos"
+I 97316 cv=562609 gcd=- 0.9 | CV Venom: Space Knight - Enemies And Allies (2016) names our own "Venom - Space Knight Vol. 02 - Enemies and Allies"
+# shelf S21032
+I 97987 cv=726225 gcd=1875128 0.95 | CV Venom by Donny Cates (2019) names our own "Venom by Donny Cates Book 01"; GCD Venom by Donny Cates (2019) names it too
+I 97337 cv=882699 gcd=- 0.9 | CV Venom By Donny Cates: King In Black (2021) names our own "Venom by Donny Cates Vol. 06 - King In Black"
+# shelf S21465
+I 97624 cv=1081971 gcd=2685186 0.95 | CV What If?: Into The Multiverse Omnibus  (2023) names our own "What If - Into The Multiverse Omnibus Book 02"; GCD What If?: Into the Multiverse Omnibus (2023) names it too
+# shelf S21521
+I 97622 cv=1074068 gcd=- 0.9 | CV What If...?: Venom (2024) names our own "What If... Venom"
+# shelf S21797
+I 97803 cv=127621 gcd=- 0.9 | CV Wolverine: Enemy of the State - The Complete Edition (2006) names our own "Wolverine Vol. 04 - Enemy of the State (Complete Edition)"
+# shelf S21807
+I 98057 cv=1090248 gcd=- 0.9 | CV Wolverine: Madripoor Knights (2025) names our own "Wolverine - Madripoor Knights"
+# shelf S21814
+I 97812 cv=168660 gcd=- 0.9 | CV Wolverine Origins: Born in Blood (2007) names our own "Wolverine Origins Vol. 01 - Born In Blood"
+I 97813 cv=168677 gcd=- 0.9 | CV Wolverine Origins: Savior (2007) names our own "Wolverine Origins Vol. 02 - Savior"
+I 97814 cv=168692 gcd=- 0.9 | CV Wolverine Origins: Swift and Terrible (2007) names our own "Wolverine Origins Vol. 03 - Swift and Terrible"
+I 97815 cv=168826 gcd=- 0.9 | CV Wolverine Origins: Our War (2008) names our own "Wolverine Origins Vol. 04 - Our War"
+I 97816 cv=168827 gcd=2724067 0.95 | CV Wolverine Origins: Deadpool (2008) names our own "Wolverine Origins Vol. 05 - Deadpool"; GCD Wolverine Origins: Deadpool (2023) names it too
+I 97818 cv=186395 gcd=1212873 0.95 | CV Wolverine Origins: Dark Reign (2009) names our own "Wolverine Origins Vol. 07 - Dark Reign"; GCD Wolverine Origins: Dark Reign (2009) names it too
+I 97819 cv=204642 gcd=1212322 0.95 | CV Wolverine Origins: Romulus (2010) names our own "Wolverine Origins Vol. 08 - Romulus"; GCD Wolverine Origins: Romulus (2009) names it too
+I 97820 cv=211148 gcd=2383076 0.95 | CV Wolverine Origins: Seven the Hard Way (2010) names our own "Wolverine Origins Vol. 09 - Seven The Hard Way"; GCD Wolverine Origins: Seven the Hard Way (2010) names it too
+N 97817 no-record | probed "Wolverine Origins: Original Sin" exact and --contains; no CV/GCD row for this trade
+# shelf S21853
+I 97647 cv=869600 gcd=- 0.9 | CV Wolverine Epic Collection: Blood and Claws (2021) names our own "Wolverine Epic Collection Vol. 03 - Blood and Claws"
+# shelf S21854
+I 97648 cv=740894 gcd=- 0.9 | CV Wolverine Epic Collection: Inner Fury (2020) names our own "Wolverine Epic Collection Vol. 06 - Inner Fury"
+# shelf S21856
+I 97655 cv=1049421 gcd=- 0.9 | CV Wolverine Epic Collection: The Return of Weapon X (2024) names our own "Wolverine Epic Collection Vol. 14 - The Return Of Weapon X"
+# shelf S21857
+I 97649 cv=996059 gcd=- 0.9 | CV Wolverine Epic Collection: To the Bone (2023) names our own "Wolverine Epic Collection Vol. 07 - To The Bone"
+# shelf S21858
+I 97651 cv=944339 gcd=- 0.9 | CV Wolverine Epic Collection: Tooth and Claw (2022) names our own "Wolverine Epic Collection Vol. 09 - Tooth And Claw"
+# shelf S21883
+I 97841 cv=395424 gcd=- 0.9 | CV Wolverine and the X-Men by Jason Aaron (2012) names our own "Wolverine and the X-Men By Jason Aaron Vol. 03"
+I 97844 cv=425181 gcd=- 0.9 | CV Wolverine and the X-Men by Jason Aaron (2012) names our own "Wolverine and the X-Men By Jason Aaron Vol. 06"
+I 97839 cv=336301 gcd=- 0.9 | CV Wolverine and the X-Men by Jason Aaron (2012) names our own "Wolverine and the X-Men by Jason Aaron Vol. 01"
+I 97840 cv=387899 gcd=- 0.9 | CV Wolverine and the X-Men by Jason Aaron (2012) names our own "Wolverine and the X-Men by Jason Aaron Vol. 02"
+I 97842 cv=402614 gcd=- 0.9 | CV Wolverine and the X-Men by Jason Aaron (2012) names our own "Wolverine and the X-Men by Jason Aaron Vol. 04"
+I 97843 cv=414101 gcd=- 0.9 | CV Wolverine and the X-Men by Jason Aaron (2012) names our own "Wolverine and the X-Men by Jason Aaron Vol. 05"
+I 97845 cv=431679 gcd=- 0.9 | CV Wolverine and the X-Men by Jason Aaron (2012) names our own "Wolverine and the X-Men by Jason Aaron Vol. 07"
+I 97846 cv=452018 gcd=- 0.9 | CV Wolverine and the X-Men by Jason Aaron (2012) names our own "Wolverine and the X-Men by Jason Aaron Vol. 08"
+# shelf S21922
+I 97894 cv=655514 gcd=1777754 0.95 | Old Man Logan line, Volume 6 (Days of Anger, plain edition)
+I 97898 cv=694155 gcd=1878784 0.95 | Old Man Logan line, Volume 9 (The Hunter and the Hunted)
+I 97899 cv=696963 gcd=1891187 0.95 | Old Man Logan line, Volume 10 (End of the World)
+# shelf S21927
+I 97809 cv=475657 gcd=892316 0.95 | CV Death of Wolverine (2015) names our own "Wolverine Vol. 10 - The Death of Wolverine"; GCD Wolverine: The Death of Wolverine (2008) names it too
+# shelf S36271
+I 97458 cv=175521 gcd=394379 0.95 | CV What If? Classic (2005) names our own "What If Classic Vol. 01"; GCD What If? Classic (2004) names it too
+I 97459 cv=175572 gcd=394380 0.95 | CV What If? Classic (2005) names our own "What If Classic Vol. 02"; GCD What If? Classic (2004) names it too
+I 97460 cv=175593 gcd=394381 0.95 | CV What If? Classic (2005) names our own "What If Classic Vol. 03"; GCD What If? Classic (2004) names it too
+I 97461 cv=175729 gcd=394382 0.95 | CV What If? Classic (2005) names our own "What If Classic Vol. 04"; GCD What If? Classic (2004) names it too
+I 97462 cv=185211 gcd=799567 0.95 | CV What If? Classic (2005) names our own "What If Classic Vol. 05"; GCD What If? Classic (2004) names it too
+I 97463 cv=192526 gcd=799568 0.95 | CV What If? Classic (2005) names our own "What If Classic Vol. 06"; GCD What If? Classic (2004) names it too
+I 97464 cv=261667 gcd=799569 0.95 | CV What If? Classic (2005) names our own "What If Classic Vol. 07"; GCD What If? Classic (2004) names it too
+# shelf S66150
+I 97138 cv=731598 gcd=- 0.9 | CV Ultimate X-Men Collection (2019) names our own "Ultimate X-Men Collection Book 01"
+I 97139 cv=731599 gcd=- 0.9 | CV Ultimate X-Men Collection (2019) names our own "Ultimate X-Men Collection Book 02"
+I 97140 cv=731600 gcd=- 0.9 | CV Ultimate X-Men Collection (2019) names our own "Ultimate X-Men Collection Book 03"
+I 97141 cv=731601 gcd=- 0.9 | CV Ultimate X-Men Collection (2019) names our own "Ultimate X-Men Collection Book 04"
+I 97142 cv=731726 gcd=- 0.9 | CV Ultimate X-Men Collection (2019) names our own "Ultimate X-Men Collection Book 05"
+I 97143 cv=731727 gcd=- 0.9 | CV Ultimate X-Men Collection (2019) names our own "Ultimate X-Men Collection Book 06"
+I 97144 cv=731728 gcd=- 0.9 | CV Ultimate X-Men Collection (2019) names our own "Ultimate X-Men Collection Book 07"
+I 97145 cv=731729 gcd=- 0.9 | CV Ultimate X-Men Collection (2019) names our own "Ultimate X-Men Collection Book 08"
+I 97146 cv=731730 gcd=- 0.9 | CV Ultimate X-Men Collection (2019) names our own "Ultimate X-Men Collection Book 09"
+I 97147 cv=235317 gcd=- 0.9 | CV Ultimate X-Men: The Tomorrow People (2001) names our own "Ultimate X-Men Vol. 01 - The Tomorrow People"
+I 97149 cv=235319 gcd=- 0.9 | CV Ultimate X-Men: World Tour (2002) names our own "Ultimate X-Men Vol. 03 - World Tour"
+I 97150 cv=235320 gcd=- 0.9 | CV Ultimate X-Men: Hellfire and Brimstone (2003) names our own "Ultimate X-Men Vol. 04 - Hellfire & Brimstone"
+I 97153 cv=235443 gcd=- 0.9 | CV Ultimate X-Men: Blockbuster (2004) names our own "Ultimate X-Men Vol. 07 - Blockbuster"
+I 97154 cv=235444 gcd=- 0.9 | CV Ultimate X-Men: New Mutants (2004) names our own "Ultimate X-Men Vol. 08 - New Mutants"
+I 97155 cv=235447 gcd=- 0.9 | CV Ultimate X-Men: The Tempest (2004) names our own "Ultimate X-Men Vol. 09 - The Tempest"
+I 97156 cv=235448 gcd=- 0.9 | CV Ultimate X-Men: Cry Wolf (2005) names our own "Ultimate X-Men Vol. 10 - Cry Wolf"
+I 97157 cv=235449 gcd=- 0.9 | CV Ultimate X-Men: The Most Dangerous Game (2005) names our own "Ultimate X-Men Vol. 11 - The Most Dangerous Game"
+I 97159 cv=235541 gcd=- 0.9 | CV Ultimate X-Men: Hard Lessons (2006) names our own "Ultimate X-Men Vol. 12 - Hard Lessons"
+I 97161 cv=235543 gcd=- 0.9 | CV Ultimate X-Men: Magnetic North (2006) names our own "Ultimate X-Men Vol. 13 - Magnetic North"
+I 97163 cv=235546 gcd=- 0.9 | CV Ultimate X-Men: Phoenix? (2006) names our own "Ultimate X-Men Vol. 14 - Phoenix"
+I 97165 cv=235552 gcd=- 0.9 | CV Ultimate X-Men: Magical (2007) names our own "Ultimate X-Men Vol. 15 - Magical"
+I 97166 cv=235554 gcd=- 0.9 | CV Ultimate X-Men: Cable (2007) names our own "Ultimate X-Men Vol. 16 - Cable"
+I 97168 cv=235555 gcd=- 0.9 | CV Ultimate X-Men: Sentinels (2008) names our own "Ultimate X-Men Vol. 17 - Sentinels"
+I 97190 cv=1046475 gcd=2608569 0.95 | CV Ultimate X-Men Omnibus (2022) names our own "Ultimate X-Men Omnibus Book 02"; GCD Ultimate X-Men Omnibus (2022) names it too
+# shelf S66351
+I 97160 cv=235543 gcd=- 0.9 | CV Ultimate X-Men: Magnetic North (2006) names our own "Ultimate X-Men Vol. 13 - Magnetic North"
+I 97162 cv=235546 gcd=- 0.9 | CV Ultimate X-Men: Phoenix? (2006) names our own "Ultimate X-Men Vol. 14 - Phoenix"
+I 86105 cv=189819 gcd=529056 0.95 | CV 30746 "X-Men: The End: Book 1: Dreamers & Demons" (issue 189819) is this trade's own record; GCD 70376 "X-Men: The End" (TPB-numbered collected line) issue #1 (529056) is titled "Dreamers & Demons" exactly
+# shelf S94822
+I 84264 cv=756653 gcd=2263478 0.95 | CV Astonishing X-Men Companion (2020) names our own "Astonishing X-Men Companion"; GCD Astonishing X-Men Companion (2020) names it too
+I 84265 cv=- gcd=1171016 0.9 | GCD Astonishing X-Men by Joss Whedon & John Cassaday Ultimate Collection (2012) names our own "Astonishing X-Men by Joss Whedon & John Cassaday Ultimate Collection Book 01"
+I 84266 cv=- gcd=1171017 0.9 | GCD Astonishing X-Men by Joss Whedon & John Cassaday Ultimate Collection (2012) names our own "Astonishing X-Men by Joss Whedon & John Cassaday Ultimate Collection Book 02"
+I 84267 cv=185128 gcd=870794 0.95 | CV Astonishing X-Men: Ghost Box (2009) names our own "Astonishing X-Men Vol. 05 - Ghost Box"; GCD Astonishing X-Men: Ghost Box (2009) names it too
+I 84268 cv=241082 gcd=1086979 0.95 | CV Astonishing X-Men: Exogenetic (2010) names our own "Astonishing X-Men Vol. 06 - Exogenetic"; GCD Astonishing X-Men: Exogenetic (2010) names it too
+I 84269 cv=304661 gcd=2460169 0.95 | CV Astonishing X-Men: Monstrous (2011) names our own "Astonishing X-Men Vol. 07 - Monstrous"; GCD Astonishing X-Men: Monstrous (2011) names it too
+I 84270 cv=315536 gcd=2460291 0.95 | CV Astonishing X-Men: Children of the Brood (2012) names our own "Astonishing X-Men Vol. 08 - Children of the Brood"; GCD Astonishing X-Men: Children of the Brood (2012) names it too
+I 84271 cv=336405 gcd=2470482 0.95 | CV Astonishing X-Men: Exalted (2012) names our own "Astonishing X-Men Vol. 09 - Exalted"; GCD Astonishing X-Men: Exalted (2012) names it too
+I 84272 cv=388846 gcd=- 0.9 | CV Astonishing X-Men: Northstar (2013) names our own "Astonishing X-Men Vol. 10 - Northstar"
+I 84273 cv=395412 gcd=- 0.9 | CV Astonishing X-Men: Weaponized (2013) names our own "Astonishing X-Men Vol. 11 - Weaponized"
+I 84274 cv=438111 gcd=- 0.9 | CV Astonishing X-Men: Unmasked (2013) names our own "Astonishing X-Men Vol. 12 - Unmasked"
+# shelf S94823
+I 84275 cv=660653 gcd=- 0.9 | CV 108796 "Astonishing X-Men by Charles Soule: Life of X" 2018 Marvel is this trade's own record; no GCD row found
+I 84276 cv=678525 gcd=- 0.9 | CV 112564 "Astonishing X-Men by Charles Soule: A Man Called X" 2018 Marvel is this trade's own record; no GCD row found
+# shelf S95933
+I 84379 cv=425515 gcd=- 0.9 | CV Cable: The Shining Path (2002) names our own "Cable Vol. 01 - Shining Path"
+I 84380 cv=274879 gcd=- 0.9 | CV Cable: The End (2002) names our own "Cable Vol. 02 - The End"
+# shelf S95934
+I 84385 cv=644500 gcd=- 0.9 | CV Cable: Conquest (2017) names our own "Cable Vol. 01 - Conquest"
+I 84386 cv=665906 gcd=- 0.9 | CV Cable: The Newer Mutants (2018) names our own "Cable Vol. 02 - The Newer Mutants"
+I 84387 cv=685836 gcd=- 0.9 | CV Cable: Past Fears (2018) names our own "Cable Vol. 03 - Past Fears"
+# shelf S95935
+I 84381 cv=204066 gcd=- 0.9 | CV Cable: Messiah War (2008) names our own "Cable Vol. 01 - Messiah War"
+I 84382 cv=204067 gcd=- 0.9 | CV Cable: Waiting for the End of the World (2009) names our own "Cable Vol. 02 - Waiting For the End of the World"
+I 84383 cv=204288 gcd=- 0.9 | CV Cable: Stranded (2010) names our own "Cable Vol. 03 - Stranded"
+I 84384 cv=222242 gcd=- 0.9 | CV Cable: Homecoming (2010) names our own "Cable Vol. 04 - Homecoming"
+# shelf S101296
+I 97331 cv=692563 gcd=- 0.9 | CV Venom by Donny Cates: Rex (2018) names our own "Venom by Donny Cates Vol. 01 - Rex"
+# shelf S101454
+I 97643 cv=414107 gcd=1105265 0.95 | CV Wolverine by Larry Hama and Marc Silvestri (2013) names our own "Wolverine by Larry Hama & Marc Silvestri Vol. 01"; GCD Wolverine by Larry Hama & Marc Silvestri (2013) names it too
+I 97644 cv=443379 gcd=1174518 0.95 | CV Wolverine by Larry Hama and Marc Silvestri (2013) names our own "Wolverine by Larry Hama & Marc Silvestri Vol. 02"; GCD Wolverine by Larry Hama & Marc Silvestri (2013) names it too
+# shelf S101456
+I 97998 cv=308204 gcd=223516 0.95 | CV 44773 and GCD 223516 both name "Wolverine by Greg Rucka Ultimate Collection" 2011 Marvel exactly
+I 97800 cv=236737 gcd=- 0.9 | CV Wolverine: The Brotherhood (2004) names our own "Wolverine Vol. 01 - Brotherhood"
+I 97801 cv=237582 gcd=- 0.9 | CV Wolverine: Coyote Crossing (2004) names our own "Wolverine Vol. 02 - Coyote Crossing"
+I 97802 cv=237584 gcd=- 0.9 | CV Wolverine: Return of the Native (2004) names our own "Wolverine Vol. 03 - Return Of The Native"
+I 97804 cv=- gcd=1077148 0.9 | no CV record found; GCD 72055 "House of M: World of M Featuring Wolverine" 2006 Marvel is the nearest record for this House of M tie-in trade
+I 97805 cv=186402 gcd=- 0.9 | CV Wolverine: Origins & Endings (2007) names our own "Wolverine Vol. 06 - Origins & Endings"
+I 97806 cv=138868 gcd=394274 0.95 | CV Wolverine: Blood & Sorrow (2007) names our own "Wolverine Vol. 07 - Blood & Sorrow"; GCD Wolverine: Blood & Sorrow (2007) names it too
+I 97807 cv=171452 gcd=- 0.9 | CV Wolverine: Civil War (2007) names our own "Wolverine Vol. 08 - Civil War"
+I 97808 cv=132521 gcd=1105274 0.95 | CV Wolverine: Evolution (2007) names our own "Wolverine Vol. 09 - Evolution"; GCD Wolverine: Evolution (2008) names it too
+I 97811 cv=198497 gcd=- 0.9 | CV Wolverine: Old Man Logan (2009) names our own "Wolverine Vol. 12 - Old Man Logan"
+I 117941 cv=198497 gcd=- 0.9 | CV Wolverine: Old Man Logan (2009) names our own "Wolverine Vol. 12 - Old Man Logan"

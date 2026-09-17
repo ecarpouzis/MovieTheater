@@ -1,0 +1,12 @@
+# R-023 — LEAD revisit after wave 5's containment audit. S100573 is the "06 The Flash v2 (2007)" folder shelf: its own
+# GCD key link (Provider 3, ParsedKey "The Flash v2 (2007)") is 26125 "The Flash" 2007-2009 — Flash vol. 2 resuming Wally
+# West's numbering at #231 — but the per-file matcher stamped CV 1995 (the 1959 run) on it by legacy-number coincidence.
+# C-008 then read that shared stored id as "the same 1959 run split across shelves" and merged S28629 (the real 1959
+# shelf, 239 files, CV 1995 / GCD 1428) and the #DC Events Flash bucket (17 files) into it. The shelf is now two runs.
+# The stored CV 1995 is right for 239 of 273 files, so it is NOT cleared here (no wrong-cv-link); the split pass moves
+# the 17 v2 files to S94717. Audit failure this fixes: the 1975 100pp "The Flash 232" nested the 2007 22pp "The Flash 232".
+R 100573 | two runs share this shelf after the wave-5 merge: 239 files from "03 The Flash v1 (1963)" are The Flash 1959 (CV 1995 / GCD 1428, #123-350 ladder) and 17 files from "06 The Flash v2 (2007)" (#231-247, 2007-2009) are Flash vol. 2 continuing Wally West's 1987 numbering (CV 3790 / GCD 26125, the shelf's own GCD key link) — the same numbers 231-247 name two different comics here
+F 100573 split-needed | proposed: (a) The Flash 1959 = CV 1995 / GCD 1428, the 239 "v1 (1963)" files + the 17 "#DC Events" files (1959 issues by number); (b) The Flash v2 (2007) #231-247 = CV 3790 / GCD 26125, 17 files, merge-with S94717 "The Flash v2 (1987)" (CV 3790) once split
+N 100573 the C-008 merge-with was declared on a SHARED STORED id (CV 1995 on both shelves) without checking that the id fit this shelf's own key and GCD link; the stored id is kept because it is right for 239 of 273 files
+N 100573 the two runs' ids: The Flash 1959 CV 1995 / GCD 1428 (246 issues, 1959-1985) · The Flash vol. 2 CV 3790 / GCD 26125 for the 2007-2009 resumption #231-247 (GCD splits the 1987-2006 and 2007-2009 stretches, CV keeps one volume 3790)
+C 73897 cv=1995 gcd=1428 #232-232 0.95 | "The Flash 232 (1975) (c2c)" 100pp is issue #232 of The Flash 1959 (CV 1995 / GCD 1428; gold span, indicia-confirmed single issue) — the range counts in the 1959 run, so the 2007 "The Flash 232" (GCD issue 370666 in series 26125) is not inside it

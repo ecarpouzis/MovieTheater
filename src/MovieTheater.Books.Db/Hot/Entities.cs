@@ -448,6 +448,20 @@ namespace MovieTheater.Books.Db
         public DateTime? CreatedAt { get; set; }
     }
 
+    /// <summary>Which RUN a collected edition's range counts in, named on any leg that has a run concept (Cv volume, Gcd series, Mu series, Barney, Marvel, Inducks), and the range IN THAT RUN'S numbering. Several rows per span = the same run on several legs AND several runs in one book (a trade collecting two minis, an omnibus); none = unknown, or the shelf's own identity. IssueStart/IssueEnd NULL = the same range as the span's own. Cascades with its span so a retracted or re-imported range cannot orphan its refs.</summary>
+    public sealed class CollectedEditionSpanRun
+    {
+        public int ItemId { get; set; }
+        public EditionSource Source { get; set; }
+        public Provider Provider { get; set; }
+        public string ProviderKey { get; set; } = "";
+        /// <summary>The range in THIS run's numbering (Return of the Master = CV 51622 #1-5 = GCD 71228 #103-107). NULL = the span's own range, which is the ordinary one-run case.</summary>
+        public double? IssueStart { get; set; }
+        public double? IssueEnd { get; set; }
+        public double? Confidence { get; set; }
+        public DateTime? CreatedAt { get; set; }
+    }
+
     /// <summary>One thing the containment pass wants a person to look at: a shelf whose relaunch ladders collide, a single issue wearing a collection format, two copies of one volume, a provider row naming a different book. The file de-duplication must never act on a flagged item, so the review state is the point.</summary>
     public sealed class ContainmentFlag
     {

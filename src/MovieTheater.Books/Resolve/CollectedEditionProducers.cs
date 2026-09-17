@@ -261,7 +261,7 @@ ORDER BY i.Id"))
             foreach (var (id, payload) in hot.Pairs($@"
 SELECT i.SeriesId, l.SecondaryKey || char(31) || count(*)
 FROM Item i JOIN ItemProviderLink l ON l.ItemId = i.Id
-WHERE l.Provider = {(int)Provider.Cv} AND l.Status = {(int)LinkStatus.Matched} AND l.SecondaryKey IS NOT NULL
+WHERE l.Provider = {(int)Provider.Cv} AND l.Status IN {LinkStatuses.UsableSql} AND l.SecondaryKey IS NOT NULL
   AND i.SeriesId IN ({seriesIdList})
 GROUP BY i.SeriesId, l.SecondaryKey"))
             {

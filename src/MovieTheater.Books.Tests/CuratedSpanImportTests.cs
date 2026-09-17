@@ -1,3 +1,5 @@
+using MovieTheater.Books.Db;
+using MovieTheater.Books.Migration;
 using MovieTheater.Books.Resolve;
 
 namespace MovieTheater.Books.Tests
@@ -188,6 +190,153 @@ namespace MovieTheater.Books.Tests
             Assert.Equal("provider-disagrees", flag);
             Assert.Contains("kept curated 1-6", detail);
             Assert.Contains("model said 1-12", detail);
+
+            // …and an AGREEING line at the same confidence leaves the row alone rather than rewriting its
+            // ProviderRef to `model:` — what a person typed stays attributed to the person.
+            Assert.Equal(CuratedSpanImport.Verdict.Kept,
+                CuratedSpanImport.Decide(Span(5, 1, 6, 1.0), typed, out var flag2, out _));
+            Assert.Null(flag2);
         }
+
+        [Fact]
+        public void AnIdentityPassRangeOutranksTheModelAndIsFlaggedWhenTheyDisagree()
+        {
+            // Eric's ruling: an `identity:` row is a reader's answer off the whole provider packet, and every
+            // landing re-runs pass2 into this verb — so a model line at equal or greater confidence must not
+            // overwrite it, and `unknown` must not retract it. Same class as admin / self-proving.
+            var read = new CuratedSpanImport.Existing(1, 5, 0.95, "identity:B-061");
+            var line = Span(5, 1, 4, 0.95);
+            Assert.Equal(CuratedSpanImport.Verdict.Kept, CuratedSpanImport.Decide(line, read, out var flag, out var detail));
+            Assert.Equal("provider-disagrees", flag);
+            Assert.Contains("kept curated 1-5", detail);
+            Assert.Contains("model said 1-4", detail);
+
+            var withdrawn = CuratedSpanImport.Parse("""{"itemId": 5, "unknown": true, "why": "not evidenced"}""", 1);
+            Assert.Equal(CuratedSpanImport.Verdict.Unknown, CuratedSpanImport.Decide(withdrawn, read, out var flag2, out _));
+            Assert.Null(flag2);
+
+            // An AGREEING model line does not rewrite it either: the range is already there, and the write
+            // would swap `identity:B-061` for `model:…` and demote the row out of the proven class.
+            Assert.Equal(CuratedSpanImport.Verdict.Kept,
+                CuratedSpanImport.Decide(Span(5, 1, 5, 0.95), read, out var flag3, out _));
+            Assert.Null(flag3);
+        }
+
+        // ── the run refs: which RUN the range counts in, across a re-import ──────────────────────────
+
+        [Fact]
+        public void AReImportKeepsTheRunRefsAReaderPutOnTheSpan()
+        {
+            // The wave pipeline's hazard, exactly as `books-curated-spans-import` meets it: the retraction
+            // path DELETEs the Curated row, the foreign key cascades, and a reader's "#1-5 OF Wake the Devil"
+            // goes with it. The verb reads the refs before it writes and puts them back; this does what the
+            // verb does, against a real file, so the cascade in the assertion is the real cascade.
+            using var f = Migrated();
+            using (var hot = Writer(f))
+            {
+                hot.Begin();
+                hot.Upsert("CollectedEditionSpan", new
+                {
+                    ItemId = 7, Source = EditionSource.Curated, SeriesId = 1, IssueStart = 1.0, IssueEnd = 5.0,
+                    ProviderRef = "identity:B-061", Contiguous = true, Confidence = 0.95, Note = "read",
+                    CreatedAt = DateTime.UtcNow,
+                });
+                hot.Upsert("CollectedEditionSpanRun", new
+                {
+                    ItemId = 7, Source = EditionSource.Curated, Provider = Provider.Cv, ProviderKey = "13579",
+                    IssueStart = 1.0, IssueEnd = 5.0, Confidence = 0.95, CreatedAt = DateTime.UtcNow,
+                });
+                hot.Upsert("CollectedEditionSpanRun", new
+                {
+                    ItemId = 7, Source = EditionSource.Curated, Provider = Provider.Gcd, ProviderKey = "2468",
+                    IssueStart = 103.0, IssueEnd = 107.0, Confidence = 0.95, CreatedAt = DateTime.UtcNow,
+                });
+                // the second mini this book collects, on the SAME leg — impossible before the PK widened
+                hot.Upsert("CollectedEditionSpanRun", new
+                {
+                    ItemId = 7, Source = EditionSource.Curated, Provider = Provider.Cv, ProviderKey = "24680",
+                    IssueStart = 1.0, IssueEnd = 4.0, Confidence = 0.9, CreatedAt = DateTime.UtcNow,
+                });
+                hot.Commit();
+            }
+
+            using (var hot = Writer(f))
+            {
+                var runs = CuratedSpanRuns.Read(hot, "7");
+                Assert.Equal(3, runs[7].Count);
+                var second = runs[7].Single(r => r.Key == "24680");
+                Assert.Equal((Provider.Cv, 1.0, 4.0, 0.9), (second.Provider, second.Start, second.End, second.Confidence));
+
+                hot.Begin();
+                // the verb's retraction path: delete, then write the row again
+                hot.Exec("DELETE FROM CollectedEditionSpan WHERE ItemId = 7 AND Source = $s",
+                    ("$s", (int)EditionSource.Curated));
+                Assert.Equal(0, hot.Scalar<long>("SELECT count(*) FROM CollectedEditionSpanRun WHERE ItemId = 7"));
+                hot.Upsert("CollectedEditionSpan", new
+                {
+                    ItemId = 7, Source = EditionSource.Curated, SeriesId = 1, IssueStart = 1.0, IssueEnd = 6.0,
+                    ProviderRef = "model:pass2", Contiguous = true, Confidence = 0.9, Note = "re-imported",
+                    CreatedAt = DateTime.UtcNow,
+                });
+                Assert.Equal(3, CuratedSpanRuns.Reattach(hot, 7, runs, apply: true));
+                hot.Commit();
+            }
+
+            using var w = f.Hot();
+            Assert.Equal(3, w.Scalar<long>("SELECT count(*) FROM CollectedEditionSpanRun WHERE ItemId = 7"));
+            Assert.Equal("13579,24680", w.Scalar<string>(
+                $"SELECT group_concat(ProviderKey) FROM (SELECT ProviderKey FROM CollectedEditionSpanRun "
+                + $"WHERE ItemId = 7 AND Provider = {(int)Provider.Cv} ORDER BY ProviderKey)"));
+            Assert.Equal("2468", w.Scalar<string>(
+                $"SELECT ProviderKey FROM CollectedEditionSpanRun WHERE ItemId = 7 AND Provider = {(int)Provider.Gcd}"));
+            // and the RANGES came back with them: the GCD leg numbers these same issues #103-107
+            Assert.Equal(103.0, w.Scalar<double>(
+                $"SELECT IssueStart FROM CollectedEditionSpanRun WHERE ItemId = 7 AND Provider = {(int)Provider.Gcd}"));
+            Assert.Equal(4.0, w.Scalar<double>(
+                "SELECT IssueEnd FROM CollectedEditionSpanRun WHERE ItemId = 7 AND ProviderKey = '24680'"));
+            // and the span itself was re-written, so this is a re-import and not a no-op
+            Assert.Equal(6.0, w.Scalar<double>("SELECT IssueEnd FROM CollectedEditionSpan WHERE ItemId = 7 AND Source = 3"));
+        }
+
+        [Fact]
+        public void TheWinningSpansRunRefsTravelWithIt()
+        {
+            // `ReadingOrderJob.LoadSpans` is where every consumer gets its answer, so the refs have to arrive
+            // with the SELECTED span and be attributed to the source that won.
+            using var f = Migrated();
+            using (var hot = Writer(f))
+            {
+                hot.Begin();
+                hot.Upsert("CollectedEditionSpan", new
+                {
+                    ItemId = 7, Source = EditionSource.Curated, SeriesId = 1, IssueStart = 1.0, IssueEnd = 5.0,
+                    ProviderRef = "identity:B-061", Contiguous = true, Confidence = 0.95, Note = "read",
+                    CreatedAt = DateTime.UtcNow,
+                });
+                hot.Upsert("CollectedEditionSpanRun", new
+                {
+                    ItemId = 7, Source = EditionSource.Curated, Provider = Provider.Cv, ProviderKey = "13579",
+                    IssueStart = 1.0, IssueEnd = 5.0, Confidence = 0.95, CreatedAt = DateTime.UtcNow,
+                });
+                hot.Commit();
+            }
+            using var w = f.Hot();
+            var span = ReadingOrderJob.LoadSpans(w)[7];
+            Assert.Equal(EditionSource.Curated, span.Source);
+            var run = Assert.Single(span.Runs!);
+            Assert.Equal(Provider.Cv, run.Provider);
+            Assert.Equal("13579", run.Key);
+            Assert.Equal((1.0, 5.0), (run.Start, run.End));
+        }
+
+        private static V1Fixture Migrated()
+        {
+            var f = new V1Fixture();
+            var summary = f.Engine(f.Options()).Run();
+            if (summary.Stopped) throw new InvalidOperationException("fixture migration stopped: " + summary.StopReason);
+            return f;
+        }
+
+        private static TargetWriter Writer(V1Fixture f) => new(f.HotPath, MappingContract.Load(), dryRun: false);
     }
 }

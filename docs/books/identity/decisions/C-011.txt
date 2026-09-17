@@ -1,0 +1,125 @@
+# C-011 — DC Batman-family tier-C shelves (Aquaman v7/v8, Azrael, Batgirl v1-v6, the Batman-family sprawl:
+# Detective Comics classic+Rebirth, Batman classic+New52+Rebirth, Batman Beyond eras, Batman and Robin eras,
+# a dozen one-off Batman minis/one-shots). Two shelf-level overlap-in-series flags (Batgirl v4, Detective Comics
+# v1, Batman and Robin v3) each turned out to be ONE continuously-numbered run mislabeled by several "Vol. 01"
+# creative-team trade names, not a genuine second comic — R + split-needed is written because the flag mechanically
+# requires it, with the true single identity named in N so clearing the flag is a one-line fix. The per-file
+# matcher's legacy-volume trap recurs constantly on 1pp variant-cover files and old scans (Batman 1940 stamped
+# across 2011-2025 shelves, Batgirl 2000 stamped across 2008/2016/2025 shelves, Batman Beyond 2016 stamped across
+# 1999/2010 shelves) — corrected against each packet's own candidate/dump lists. Two "Batman (1940)" shelves
+# (S64223, S95393) are the same classic run split by a bucket-vs-completed-series folder difference — merge-with.
+
+F 95121 merge-with=1160 | --all reports cv=43022 already the stored CvVolumeId of shelf 1160 (also "Aquaman" 2011 DC), a duplicate rip of the same run decided in an earlier batch
+S 95121 cv=43022 gcd=61178 0.9 | CV 43022 and GCD 61178 both "Aquaman" 2011-2016 DC, 55 issues; the 8 judged trades (conf 0.95-0.97) collectively span #1-52 fitting inside; the two ".1/.2" tie-in files (#23.1/23.2) and one trade per-file to this row; the rest of the per-file matcher mismatched to the unrelated 1994 run (5230) or foreign/collected residues, rejected in favor of the shelf's own dominant New-52 identity
+
+S 1182 cv=116956 gcd=139778 0.95 | CV 116956 issue 700113 and GCD dump row 139778 both "Aquaman/Suicide Squad: Sink Atlantis" 2019 DC, exact one-shot match; GCD's per-file pick (111240, round2-folder, a different collected-edition series) rejected
+
+S 95122 cv=91738 gcd=103459 0.9 | CV 91738 and GCD 103459 both "Aquaman" 2016-2021 DC, 66 issues; item 58792 "Aquaman 066 (2021)" is the run's own issue #66, confirmed on GCD 103459; our 9 judged trades (conf 0.92-0.97) collectively span #1-65, both the "v8.1" (Drowning..Kingslayer) and "v8.2" (Unspoken Water..Echoes) sub-eras continue this SAME series without a restart; per-file mostly mismatched to the unrelated 1994 run or standalone GCD collected-edition rows for individual trades, rejected
+
+S 1711 cv=5490 gcd=13575 0.9 | CV 5490 spans the whole shelf per-file (90/90, one continuous #1-100 ladder across a mid-run retitle); GCD splits by title-change into the majority era 13575 "Azrael: Agent of the Bat" 1998-2003 (54 issues, 55/90 files) and the minority era 5220 "Azrael" 1995-1998 (47 issues, 32/90 files) — spanning-volume convention, no split needed
+N 1711 GCD 5220 "Azrael" 1995-1998 DC covers the earlier plain-titled files #8-39 (32/90), the same continuous run under its original title, not a second series
+
+F 4504 merge-with=4546 | --all reports cv=18099 already the stored CvVolumeId of shelf 4546 (also "DC First: Batgirl/Joker" 2002 DC), a duplicate rip of the same one-shot decided in an earlier batch
+S 4504 cv=18099 gcd=10196 0.95 | CV 18099 issue 105999 and GCD dump row 10196 both "DC First: Batgirl/Joker" 2002 DC, exact one-shot match (ComicInfo's "DC 1st" is the same title, numeral spelling); GCD's per-file pick (10166, round2-folder, "Batman: Batgirl" a different one-shot) rejected
+
+F 95377 merge-with=1868 | --all reports cv=7205 already the stored CvVolumeId of shelf 1868 (also "Batgirl" 2000-2006 DC), a duplicate rip of the same run decided in an earlier batch
+S 95377 cv=7205 gcd=7768 0.95 | CV 7205 and GCD 7768 both "Batgirl" 2000-2006 DC, 73 issues, per-file matches 36/39 numbered files cleanly; ladder 38-73 fits inside 1-73; the 3 judged trades (conf 0.97 each) fit the earlier #1-37 span, residue is GCD's own small collected-edition rows for those trades, costs nothing
+
+S 95378 cv=22245 gcd=31350 0.95 | GCD 31350 (2008-2009 DC limited, 6 issues) matches all 6/6 files; CV's own local-rip candidate 22245 (2008 DC, 6 issues) agrees; ladder 1-6 fits exactly ("of 06" confirms); the per-file matcher instead stamped all 6 files to 7205 (the 2000 ongoing), wrong volume by low issue-number coincidence
+
+R 95379 | an open overlap-in-series flag blocks an S line here (item 58970: three curated Vol.01 rows give overlapping #1-6/#1-12 ranges within one Series); reading the shelf, this looks like ONE continuous run misfiled as two "Vol. 01"s — Gail Simone's 2011 New 52 launch and the 2014 "Batgirl of Burnside" relaunch are NOT two restarts: the containment pass's own judged ranges already number them continuously #1-52 (58970 #1-6 ... 58975 #35-40 ... 58977 #46-52), and CV 42604 / GCD 60829 (both "Batgirl" 2011-2016, 53 issues) span the whole thing
+F 95379 split-needed | the flag requires this shape even though the evidence points to a single run: CV 42604 / GCD 60829 "Batgirl" 2011-2016 DC, 53 issues, covers the full continuous #1-52 ladder (Gail Simone era + Burnside era, per the containment pass's own judged ranges)
+N 95379 cv=42604 gcd=60829 — the single continuous "Batgirl" 2011-2016 run (53 issues) this shelf actually is, per the judged ranges; the "overlap-in-series" flag concerns duplicate Vol.01 LABELS, not a genuine second comic
+
+S 95380 cv=92542 gcd=104513 0.9 | CV 92542 and GCD 104513 both "Batgirl" 2016-2020 DC, 50 issues; our 8 judged trades (Beyond Burnside through Joker War, conf 0.9-0.97) collectively span #1-50 fitting exactly; the per-file matcher instead matched small GCD collected-edition/foreign rows for individual trades (113042, 120628, etc.), each the trade's own record, not the run
+
+S 95381 cv=160861 gcd=215073 0.9 | CV 160861 and GCD 215073 both "Batgirl" 2025- DC; GCD per-file matches all 4/4 files; ladder 1-4 fits; the count difference (15 cached vs 20) is normal staleness on an ongoing with no end year yet; the per-file matcher stamped all 4/4 to the unrelated 2000 volume (7205), wrong by low issue-number coincidence
+
+F 1880 wrong-cv-link | stored link cv=146597 (cached #1-2, count 3) is GCD's own collected-edition row (191858) matching our exact 3 trades — the matches-our-holdings trap; the true run is CV 140426 / GCD 179198 (both count 19), matching our judged trade span #1-19
+S 1880 cv=140426 gcd=179198 0.9 | our 3 trades (judged #1-19) collect DC's 19-issue "Batgirls" run (CV 140426/GCD 179198); the annual has its own record below
+I 59989 cv=957797 gcd=s193123 0.95 | "Batgirls 2022 Annual", its own record: CV volume 146538 issue 957797, GCD series 193123 "Batgirls 2022 Annual" 2022 DC, both count 1 — exact match
+
+S 2183 cv=153719 gcd=204224 0.9 | this 277pp trade collects both Gotham War tie-in minis; CV 153719 and GCD 204224 both "Batman/Catwoman: The Gotham War: Red Hood" 2023 DC (2 issues) is the larger of the two collected, matching the stored link's cached #2; the trade also collects "Battle Lines", named below
+F 2183 needs-fetch cv=153719 | no CvVolume row, named from the local rip only
+N 2183 cv=153250 gcd=203351 — "Battle Lines" tie-in (1 issue), also collected in this same trade alongside Red Hood
+
+S 95396 cv=91273 gcd=103016 0.9 | CV 91273 and GCD 103016 both "Batman" 2016-2026 DC, ~162-163 issues; our ladder (86-89,92,99-100,108,121,125-127,135,138-157,181) plus 7 judged trades (conf 0.85-0.97) spans #86-157, fitting inside; per-file mostly mismatched the 1pp variant-cover files to the 1940 legacy volume (796) by issue-number coincidence; item 59004 is misfiled, named below
+F 95396 misfiled | item 59004 "Batman 428 Robin Lives" (digital) does not fit this 2016-2026 run's #86-157 span and is a separate one-shot/imaginary-story reprint filed here by title coincidence
+
+R 94865 | an open overlap-in-series flag blocks an S line here (item 61408: five curated Vol.01 rows for 2012/2017/2021/2023/2024 sit in one Series numbered #1-1093); reading the shelf, DC Rebirth (2016) restored Detective Comics' ORIGINAL legacy numbering and never restarted it again — the "v1.1..v1.4" folders are successive creative-team eras of ONE continuously-numbered run, confirmed by GCD's own spanning row 60830 (2011-present, 233 issues, 78/97 files majority) and by the judged trade ranges themselves running #934 straight through #1093 with no restart
+F 94865 split-needed | the flag requires this shape even though the evidence points to a single run: CV 91098 / GCD 60830 "Detective Comics" 2016- DC, covers the continuous Rebirth-numbered #934-1093+ span (all four "v1.x" sub-eras)
+N 94865 cv=91098 gcd=60830 — the single continuous Rebirth-numbered "Detective Comics" run this shelf actually is; the "overlap-in-series" flag concerns duplicate Vol.01 LABELS across creative-team eras, not a genuine second comic
+
+S 66519 cv=160294 gcd=216143 0.9 | CV 160294 and GCD dump row 216143 both "Absolute Batman" 2024- DC; our ladder 2-4 fits; GCD's per-file pick (111241, an unrelated 2017-2020 collected edition) rejected
+
+F 64223 merge-with=95393 | same classic run as 95393 (the "_Completed Series\02 Batman v1 (1940)" primary shelf) — this shelf is a scattered secondary collection of the same 1940-2011 run across DC Events reading-order folders and trade/archive folders, both per-file to CV 796 / GCD 141
+S 64223 cv=796 gcd=141 0.9 | the stored CV link 796 "Batman" 1940-2011(?) DC (716 issues, no CvVolume row) is confirmed by all 7 judged trade ranges fitting (conf 0.9-0.97, spanning #404-675); GCD's own classic row 141 (1940-2011 DC, 715 issues) agrees; merges into 95393; the 10 "Absolute Batman v1 (2024)\Variant Covers" files are a 2024 series misfiled onto this classic shelf, named below
+F 64223 needs-fetch cv=796 | no CvVolume row, named from the local rip only
+F 64223 misfiled | 10 files under "Absolute Batman v1 (2024)" (items 59171, 59175-59184, matched to GCD's unrelated 2017-2020 collected-edition row 111241) are issue #1 of the 2024 "Absolute Batman" series (see sibling shelf S66519, cv=160294/gcd=216143), not the classic 1940 run
+
+S 1920 cv=157401 gcd=210279 0.95 | CV 157401 and GCD 210279 both "Batman: Dark Age" 2024-2025 DC, 6 issues, per-file matches all 18/18 files including variant covers; ladder 1-6 fits exactly
+
+S 1923 cv=161607 gcd=218479 0.95 | CV 161607 and GCD 218479 both "Batman: Dark Patterns" 2025-2026 DC, 12 issues, per-file matches both files; ladder 1-2 fits inside 1-12
+F 1923 needs-fetch cv=161607 | no CvVolume row, named from the local rip only
+
+S 2102 cv=153563 gcd=203865 0.95 | CV 153563 and GCD 203865 both "Batman: Gargoyle of Gotham" 2023- DC, per-file matches all 13/13 files including the Noir Edition duplicates and variant covers; ladder 1-3 fits
+
+S 1966 cv=152902 gcd=203711 0.9 | CV 152902 "Batman: Justice Buster" 2023 DC per-file matches all 17/17 files; GCD 203711 (2023-2025 DC/Kodansha) is the same title and era, though its cached count (4) is clearly stale/incomplete against our own #1-19 span; the per-file GCD match instead went to a small German co-edition (203442, 4/17), not a second run
+
+S 1981 cv=154820 gcd=205897 0.95 | CV 154820 and GCD 205897 both "Batman: Off-World" 2024-2025 DC, 6 issues, per-file matches all 19/19 files including variants; ladder 1-6 fits exactly
+
+F 95388 merge-with=2018 | --all reports cv=150430 already the stored CvVolumeId of shelf 2018 (also "Batman: The Brave and the Bold" 2023 DC), a duplicate rip of the same run decided in an earlier batch
+S 95388 cv=150430 gcd=200392 0.95 | CV 150430 and GCD 200392 both "Batman: The Brave and the Bold" 2023-2025 DC; GCD per-file matches all 52/52 files, CV matches 50/52 (2 residual files mismatched to the unrelated 2009 series); ladder 1-20 fits exactly
+
+S 2042 cv=139039 gcd=- 0.9 | CV 139039 "Batman: Wayne Family Adventures" 2021 Line Webtoon (189 issues cached to #122) per-file matches all 46/46 files; ladder 1-15,17-22,102-122 sits inside; GCD's only English-adjacent dump rows (202901 count 5, French 211708 count 3) don't reach our span
+F 2042 provider-missing | GCD has no English row spanning this webtoon's digital-first numbering; the dump's partial rows don't reach our #1-122 span
+
+F 2079 merge-with=94749 | --all reports cv=82383 already the stored CvVolumeId of shelf 94749 (also "Batman Beyond" 2015 DC, the same 16-issue 2.0 webcomic), a duplicate rip decided in an earlier batch
+S 2079 cv=82383 gcd=89715 0.9 | the "Batman Beyond 2.0" trades (Rewired, Justice Lords Beyond) collect this 16-issue digital-first webcomic run (CV 82383 "Batman Beyond" 2015 DC / GCD 89715 2015-2016 DC, both count 16); the shelf's other two one-shots (Hush Beyond 2011, Batgirl Beyond 2014) are separate standalone specials, named on their own I lines below
+I 59528 cv=449579 gcd=- 0.9 | "Batman Beyond - Batgirl Beyond" (2014), its own CV record: volume 72784 issue 449579
+I 59529 cv=- gcd=s54468 0.9 | "Batman Beyond - Hush Beyond" (2011), an 8-chapter digital-first webcomic collected as one book; GCD series 54468 "Batman Beyond" 2011 DC (8 issues) is its own record, agreeing with CV's own volume candidate 38094 (also count 8); no distinct issue-level id found on either leg
+
+S 94746 cv=6420 gcd=6258 0.95 | CV 6420 and GCD 6258 both "Batman Beyond" 1999 DC, 6 issues, per-file matches all 6/6 files ("of 06" confirms); the per-file matcher instead stamped 6/6 files to 95201 (the 2016 series), wrong volume by low issue-number coincidence
+
+S 94747 cv=6421 gcd=6259 0.9 | GCD 6259 (1999-2001 DC, 24 issues) matches 22/24 files, CV's own 1999-dated volume 6421 (24 issues) agrees; ladder 1-24 fits exactly; residue is 2/24 files matching the earlier 6-issue mini (6258), a duplicate-rip-adjacent overlap at the seam, not a second run
+
+S 94748 cv=34005 gcd=50442 0.95 | CV 34005 and GCD 50442 both "Batman Beyond" 2010-2011 DC, 6 issues, ladder 1-6 fits exactly ("of 06" confirms); the per-file matcher instead stamped all 6/6 files to 95201 (the 2016 series), wrong volume by low issue-number coincidence; 1 residual file matched GCD's neighbouring 2011 ongoing (54468), negligible
+
+S 94750 cv=95201 gcd=108555 0.9 | our 2 numbered files (#33-34, 2019) match GCD 108555 (2016-2021 DC ongoing, 50 issues) and CV's own 95201 (same count); the 8 collected trades (Escaping the Grave..The Eradication Agenda) are this run's own trade editions (GCD's collected-edition row 115152/CV 102445, both count 8, matching the 8 trades) — the run's own trades beside its issues, costs nothing
+
+F 2060 misfiled | item 19916 "Batman and Robin Annual 001 - March 2013" is a stray from the 2011 New-52 "Batman and Robin" ongoing (an unrelated era), not part of the 2024 "Year One" mini
+S 2060 cv=160394 gcd=214154 0.9 | CV 160394 "Batman and Robin: Year One" 2024 DC per-file matches all 10/10 files; GCD 214154 (2024-2025 DC collected edition) is the best-fitting GCD row (6/10 files) for the same era; ladder 1-4 fits; residue is the misfiled 2013 annual, named above
+
+R 94555 | an open overlap-in-series flag blocks an S line here (item 59477: three curated Vol.01 rows numbered from #1 within one Series); reading the shelf, this looks like ONE continuous run: GCD 203863 "Batman and Robin" 2023-2026 DC (30 issues) matches 61/63 files (97%), our own ladder runs cleanly #1-17 with no restart, and CV's own candidate 153462 (2023 DC, 30 issues) agrees on count
+F 94555 split-needed | the flag requires this shape even though the evidence points to a single run: CV 153462 / GCD 203863 "Batman and Robin" 2023-2026 DC, 30 issues, covers the continuous #1-17 ladder (plus the 2024 Annual)
+N 94555 cv=153462 gcd=203863 — the single continuous "Batman and Robin" 2023-2026 run this shelf actually is; the "overlap-in-series" flag concerns duplicate Vol.01 LABELS (trades named "Vol.01" for different arcs), not a genuine second comic
+
+S 4893 cv=158859 gcd=213632 0.95 | CV 158859 and GCD 213632 both "Dark Knights of Steel: Allwinter" 2024-2025 DC, 6 issues, per-file matches all 19/19 files including variants; ladder 1-6 fits exactly
+
+S 4901 cv=127927 gcd=160883 0.9 | CV 127927 and GCD 160883 both "Dark Nights: Death Metal" 2020-2021 DC, 7 issues; our numbered #1 file matches, and the Deluxe Edition trade (judged #1-7, conf 0.75) collects the same run; residue is "The Darkest Knight" (2021), a separate epilogue one-shot, named below
+F 4901 needs-fetch cv=127927 | no CvVolume row, named from the local rip only
+I 59624 cv=- gcd=s171944 0.9 | "Dark Nights - Death Metal - The Darkest Knight" (2021), its own record: GCD 171944 "Dark Nights: Death Metal: The Darkest Knight" 2021 DC, a separate epilogue one-shot from the 7-issue mini
+
+R 18069 | this shelf mixes two "Batman & Scooby-Doo Mysteries" seasonal maxi-runs under one continuous-looking ladder: a 2021-2022 run (Extravaganza one-shot + trades Vol.01/02 judged #1-6/#7-12, CV 135342, GCD dump 171769, both 12 issues) and a separate 2024 "(of 12)" season (its own #1-12 numbering, likely CV 155828 "2024 DC Comics 12" per the local rip) — per-file evidence is too thin (GCD matched only 2/22 files) to confirm whether these are the same run continuing or two distinct seasonal launches sharing low numbers
+F 18069 split-needed | run A: 2021-2022 run, CV 135342 / GCD 171769, 12 issues (Extravaganza + trades #1-12); run B: 2024 "(of 12)" season, likely CV 155828, GCD id unconfirmed
+N 18069 cv=135342 gcd=171769 — run A (2021-2022, 12 issues)
+N 18069 cv=155828 gcd=- — run B (2024 season, "of 12" framing); GCD id not confirmed, needs a probe
+
+F 94763 merge-with=5409 | --all reports cv=18058 already the stored CvVolumeId of shelf 5409 (also "Detective Comics" 1937-2011 DC), a duplicate rip of the same run decided in an earlier batch
+S 94763 cv=18058 gcd=87 0.95 | CV 18058 and GCD 87 both "Detective Comics" 1937-2011 DC, 883 issues, per-file matches the near-totality of files (893/894 and 872/894 respectively); ladder 1-881 plus annuals sits inside; the label-ambiguous flag is item-level and does not block an S
+
+R 2095 | this shelf holds two unrelated Batman Day giveaways from different years, neither a numbered run: the 2017 "Batman Day Special Edition" one-shot (item 62590, its own record below) and two 2024 "Batman Day - Detective Comics 027" facsimile-edition variant covers (items 60576/60577) with no clean CV/GCD record found in this packet
+I 62590 cv=622871 gcd=- 0.7 | "Batman Day Special Edition 001 (2017)", CV candidate 104455 issue 622871 (a twin exists at 104478 issue 622884, both DC 2017 one-shots; which printing is unclear) — plausible but a real doubt
+N 2095 items 60576/60577 ("Batman Day 2024 - Detective Comics 027" facsimile variants) have no clean per-title record in this packet's dump; not resolved here
+
+S 95393 cv=796 gcd=141 0.95 | CV 796 and GCD 141 both "Batman" 1940-2011 DC, ~715-716 issues, per-file matches the vast majority (725/730 and 660/730); ladder 0-713 sits inside; the label-ambiguous flag is item-level and does not block an S; 64223 merges in as the same run
+
+S 64246 cv=96129 gcd=77783 0.9 | all 12 items are COL trades of the "Batman: Detective Comics" branded line (2012-2019); CV's own local-rip id 96129 and GCD's collected-edition row 77783 (both count 9, "Batman - Detective Comics" 2012-2017 DC) are this trade line's own record; GCD carries a twin adjacent row (77579, same count 9) matching some of the same trades, named below, not a second line
+F 64246 needs-fetch cv=96129 | no CvVolume row, named from the local rip only
+N 64246 GCD 77579 "Batman - Detective Comics" 2013-2017 DC Collected Edition (count 9) is a twin of 77783 for the same trade line, matched on 3/12 files
+
+S 95394 cv=42721 gcd=61067 0.9 | GCD 61067 (2011-2016 DC, 57 issues) matches the New-52 tie-in files (#23.1-23.4) and CV's own 2011-dated volume 42721 (57 issues) agrees exactly; our 9 judged trades (conf 0.9-0.97) span #1-52 fitting inside; the per-file matcher mostly mismatched the COL files to the unrelated 1940 legacy volume (796), rejected
+
+S 34696 cv=86221 gcd=94487 0.95 | CV 86221 issue 506621 and GCD dump row 94487 both "Batman: Endgame #40 Director's Cut" 2015-2016 DC, exact one-shot match; GCD's per-file pick (61067, round2-folder, the 2011-2016 ongoing) rejected
+
+S 2288 cv=103802 gcd=116109 0.9 | CV 103802 and GCD 116109 both "Batman: Rebirth Deluxe Edition" 2017-2018 DC; our item is Book 04 of this line (GCD's cached count of 3 is likely stale/incomplete rather than a real mismatch); GCD's per-file pick (177857, round2-folder, an unrelated Spanish "Batman" row) rejected; both files are duplicate copies of the same book (label-ambiguous flag, item-level, doesn't block)

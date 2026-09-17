@@ -141,7 +141,7 @@ namespace MovieTheater.Books.Services
             {
                 foreach (var st in await db.ItemStates.AsNoTracking().Where(s => chunk.Contains(s.ItemId)).ToListAsync(ct)) states[st.ItemId] = st;
                 cvLinked.UnionWith(await db.ItemProviderLinks.AsNoTracking()
-                    .Where(l => chunk.Contains(l.ItemId) && l.Provider == Provider.Cv && l.Status == LinkStatus.Matched)
+                    .Where(l => chunk.Contains(l.ItemId) && l.Provider == Provider.Cv && LinkStatuses.Usable.Contains(l.Status))
                     .Select(l => l.ItemId).ToListAsync(ct));
                 userState.UnionWith(await db.UserItemStates.AsNoTracking().Where(s => chunk.Contains(s.ItemId)).Select(s => s.ItemId).ToListAsync(ct));
             }

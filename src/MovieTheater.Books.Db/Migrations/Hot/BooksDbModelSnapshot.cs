@@ -118,6 +118,39 @@ namespace MovieTheater.Books.Db.Migrations.Hot
                     b.ToTable("CollectedEditionSpan", (string)null);
                 });
 
+            modelBuilder.Entity("MovieTheater.Books.Db.CollectedEditionSpanRun", b =>
+                {
+                    b.Property<int>("ItemId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Source")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Provider")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ProviderKey")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double?>("Confidence")
+                        .HasColumnType("REAL");
+
+                    b.Property<DateTime?>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double?>("IssueEnd")
+                        .HasColumnType("REAL");
+
+                    b.Property<double?>("IssueStart")
+                        .HasColumnType("REAL");
+
+                    b.HasKey("ItemId", "Source", "Provider", "ProviderKey");
+
+                    b.HasIndex("Provider", "ProviderKey");
+
+                    b.ToTable("CollectedEditionSpanRun", (string)null);
+                });
+
             modelBuilder.Entity("MovieTheater.Books.Db.CollectionNode", b =>
                 {
                     b.Property<int>("ItemId")
@@ -1997,6 +2030,15 @@ namespace MovieTheater.Books.Db.Migrations.Hot
                         .WithMany()
                         .HasForeignKey("ItemId")
                         .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("MovieTheater.Books.Db.CollectedEditionSpanRun", b =>
+                {
+                    b.HasOne("MovieTheater.Books.Db.CollectedEditionSpan", null)
+                        .WithMany()
+                        .HasForeignKey("ItemId", "Source")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 

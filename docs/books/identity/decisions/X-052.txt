@@ -1,0 +1,252 @@
+# X-052 — Marvel trade-shelf item pass (Spider-Woman/Thor/Ultimate/Venom/Wolverine/X-Men/X-Factor/X-Force
+# reprint-line and Epic Collection shelves). Heavy use of lookup.py --issues and a direct gcd_issue
+# query corrected several packet per-file picks (round2-folder, page-rematch, and outright misses).
+
+I 95915 cv=- gcd=1576733 0.95 | shelf's own trade record: gcd 102651#1 "Baby Talk" 124pp isbn 978-0-7851-9622-8 vs our 114pp, exact title match to Vol.01
+I 95916 cv=- gcd=1661649 0.95 | shelf's own trade record: gcd 102651#2 "Civil War II" 116pp vs our 110pp, exact title match to Vol.02
+I 95917 cv=- gcd=1708613 0.95 | shelf's own trade record: gcd 102651#3 "Scare Tactics" 116pp isbn 978-1-302-90330-5 vs our 121pp, exact title match to Vol.03
+C 95915 cv=86127 gcd=94001 #1-5 0.9 | shelf's N names the underlying run Spider-Woman (2015/2016) CV 86127 / GCD 94001, 17 issues; judged range #1-5 is trade Vol.01
+C 95916 cv=86127 gcd=94001 #8-12 0.9 | same run CV 86127 / GCD 94001; judged range #8-12 is trade Vol.02 "Civil War II"
+C 95917 cv=86127 gcd=94001 #13-17 0.9 | same run CV 86127 / GCD 94001; judged range #13-17 is trade Vol.03 "Scare Tactics"
+
+I 96720 cv=- gcd=2187446 0.95 | shelf's own trade record: gcd 168846#1 "The Devourer King" 148pp isbn 978-1-302-92086-9 vs our 136pp, num-matched
+I 96725 cv=- gcd=2569720 0.9 | shelf's own trade record: gcd 168846#6 "Blood of the Fathers" 156pp vs our 142pp; per-file flagged fulldump-rematch but title/ordinal is exact
+C 96720 cv=123862 gcd=154263 #1-6 0.9 | lookup.py "Thor" --year 2020 finds CV 123862 / GCD 154263 (35 issues), the run the shelf's own N names but did not id; judged #1-6 is trade Vol.01
+C 96725 cv=123862 gcd=154263 #31-35 0.9 | same run CV 123862 / GCD 154263; judged #31-35 is trade Vol.06 "Blood of the Fathers"
+
+I 96765 cv=- gcd=1205407 0.9 | Epic Collection line 74601 Vol.01 "The God of Thunder" 484pp vs our 480pp; per-file flagged round2-folder but title/ordinal is exact (twin gcd row 2385943 exists, same page count)
+
+I 118909 cv=- gcd=2009606 0.9 | in the Marvel Major Event Chronology tie-in folder the RUN rule stands: the shelf itself is the run (CV 113217/GCD 128739); this trade's own collected-edition record is GCD series 142951 issue 2009606 (num-matched), not the per-file ordinal pick (cv 687002 is just run issue #2, not this trade's own id)
+
+I 96823 cv=- gcd=1098287 0.95 | shelf's own trade record: gcd 73270#1 212pp isbn 0-7851-2404-7 vs our 210pp
+I 96824 cv=- gcd=1098288 0.95 | shelf's own trade record: gcd 73270#2 220pp isbn 0-7851-2405-5 vs our 221pp
+
+I 96844 cv=- gcd=2039308 0.9 | shelf's own trade record: gcd 145092#1 436pp isbn 978-1-302-91810-1 vs our 401pp, num-matched
+I 96845 cv=- gcd=2141556 0.95 | shelf's own trade record: gcd 145092#2 452pp isbn 978-1-302-92386-0 vs our 444pp
+
+I 96852 cv=- gcd=2425713 0.9 | shelf's own trade record: gcd 77971#3 268pp isbn 978-1-302-90901-7 vs our 261pp; a twin row (1166740, same 268pp, different isbn) exists so capped at 0.9
+I 96853 cv=- gcd=2685515 0.9 | shelf's own trade record: gcd 77971#4 244pp isbn 978-1-302-91131-7 vs our 240pp; twin row 1185994 exists, capped at 0.9
+
+I 97035 cv=- gcd=2557652 0.9 | Epic Collection line 202496 Vol.01 "Justice, Like Lightning" 524pp vs our 507pp; per-file flagged round2-folder but title/ordinal is exact
+
+I 79097 cv=- gcd=1343364 0.7 | this book is NOT Ultimate Elektra (2004): "Elektra by Greg Rucka Ultimate Collection" is the "Ultimate Collection" reprint brand for Rucka's Elektra (2001) Marvel Knights ongoing, a different comic entirely; its own record is GCD series 88752 issue 1343364 (title-matched only, no page/isbn corroboration in the packet, real doubt)
+N 6071 misfiled | item 79097 "Elektra by Greg Rucka Ultimate Collection" is Rucka's Elektra (2001) ongoing reprint, not this shelf's Ultimate Marvel "Ultimate Elektra" (2004) mini — five of our seven files are the actual mini, this one book is a different comic sharing only the word "Ultimate"
+
+I 97073 cv=725839 gcd=- 0.9 | lookup.py --issues 122591 gives clean per-book ids for CV "Ultimate Fantastic Four Collection" (2019): #1=725839 matches Book 01; GCD confirmed 0 hits for the collected line
+I 97074 cv=726532 gcd=- 0.9 | same CV collection, #2=726532 matches Book 02
+I 97075 cv=726533 gcd=- 0.9 | same CV collection, #3=726533 matches Book 03
+I 97076 cv=726535 gcd=- 0.9 | same CV collection, #5=726535 matches Book 05
+I 97077 cv=726536 gcd=- 0.9 | same CV collection, #6=726536 matches Book 06
+N 20617 correction | CV 122591 DOES carry per-book issue ids (lookup.py --issues 122591: #1 725839 … #6 726536, matching each book's own volume number exactly) — the shelf's own N saying "the five books' own record cannot be written as an I line" undersold this; GCD still has no row for the collected line
+
+I 97262 cv=- gcd=1950523 0.9 | shelf's own trade record: gcd 144129#[nn] 616pp, title-matched; two twin rows exist (2611109/2611015, same 616pp) so capped at 0.9
+
+I 97264 cv=- gcd=556236 0.95 | shelf's own trade record: gcd 33035#1, num-matched, our file 153pp
+I 97265 cv=- gcd=556237 0.95 | shelf's own trade record: gcd 33035#2, num-matched, our file 156pp
+
+I 97271 cv=- gcd=1594965 0.9 | shelf's own trade record: gcd 103617#1 "Start with Impossible" 148pp isbn 978-0-7851-9670-9 vs our 131pp
+I 97272 cv=- gcd=1660438 0.9 | shelf's own trade record: gcd 103617#2 "Civil War II" 140pp isbn 978-1-302-49509-1 vs our 126pp
+C 97271 cv=85972 gcd=93790 #1-6 0.9 | shelf's N names the underlying run Ultimates (2015/2016) CV 85972 / GCD 93790, twelve issues; judged #1-6 is trade Vol.01
+C 97272 cv=85972 gcd=93790 #7-12 0.9 | same run CV 85972 / GCD 93790; judged #7-12 is trade Vol.02 "Civil War II"
+
+I 97981 cv=- gcd=2412866 0.9 | direct probe of ComicInfo Series "Venom by Daniel Way: The Complete Collection" returns GCD 186124 issue 2412866, 428pp isbn 978-1-302-91380-9 vs our 413pp; the earlier 2011 edition (CV 39595/GCD 186125) is a different, smaller collection per the shelf's N
+
+I 97379 cv=- gcd=2277890 0.95 | shelf's own trade record: gcd 150109#1 140pp isbn 978-1-302-91723-4 vs our 133pp
+
+I 97420 cv=- gcd=1181249 0.95 | shelf's own trade record: gcd 79158#1 428pp isbn 978-0-7851-8534-5 vs our 432pp
+I 97421 cv=- gcd=1181250 0.9 | shelf's own trade record: gcd 79158#2 isbn 978-0785185352, no page count given to cross-check; per-file flagged fulldump-rematch but num/title agree
+
+I 97623 cv=- gcd=2571773 0.9 | shelf's own trade record: gcd 204679#1 1248pp, title-matched; a twin row (2572872, same page count) exists so capped at 0.9
+
+I 97625 cv=- gcd=2259138 0.9 | shelf's own trade record: gcd 175652#1 780pp, num-matched; two further twin rows (2259339/2259495, same page count) exist, capped at 0.9
+I 97626 cv=- gcd=2357694 0.9 | shelf's own trade record: gcd 175652#2 1032pp, num-matched; two further twin rows (2364834/2365017) exist, capped at 0.9
+
+I 97833 cv=- gcd=865235 0.9 | own record: GCD 59929#1 "Wolverine: Wolverine Goes to Hell" (num-matched); shelf's own N already flags four competing count-1 records for this trade (CV 39248/45481, GCD 161859/225271) as the reason the run rather than the trade carries the shelf — same ambiguity applies to the I line, kept at the shelf's own 0.9 rather than higher
+
+I 97916 cv=819154 gcd=- 0.9 | lookup.py --issues 132138 gives CV "Wolverine by Benjamin Percy" (2020) Volume 1 = issue 819154, exact ordinal/title match; GCD series 172129 has no cached issue-level row for #1, so gcd=- rather than the shelf's uncertain page-rematch guess (flagged label-ambiguous in the shelf's own N)
+I 97917 cv=883367 gcd=2258757 0.95 | same CV volume 132138 Volume 2 = 883367 (exact), GCD num-matched issue 2258757 agrees
+I 97918 cv=908722 gcd=2357691 0.95 | same CV volume 132138 Volume 3 = 908722 (exact), GCD num-matched issue 2357691 agrees
+I 97919 cv=963725 gcd=2465513 0.95 | same CV volume 132138 Volume 4 = 963725 (exact), GCD num-matched issue 2465513 agrees
+N 21885 correction | CV volume 132138 "Wolverine by Benjamin Percy" gives clean per-book issue ids (819154/883367/908722/963725) confirmed via lookup.py --issues; GCD 172129 has no cached issue-level row for Vol.01, explaining why item 97916 was flagged label-ambiguous — its own record still exists on the CV leg alone
+
+I 98111 cv=- gcd=2406653 0.9 | own trade record: GCD series 185553 issue 2406653, title-matched, distinct from the run's own dump series (7739) the shelf identity carries
+
+I 98013 cv=174244 gcd=307364 0.9 | shelf's own trade record: gcd 19517#1 108pp isbn 0-7851-1826-8 vs our 92pp
+I 98014 cv=174247 gcd=307365 0.9 | shelf's own trade record: gcd 19517#2 132pp isbn 0-7851-1883-7 vs our 115pp
+I 98015 cv=174254 gcd=307366 0.9 | shelf's own trade record: gcd 19517#3 116pp isbn 0-7851-2065-3 vs our 102pp
+I 98016 cv=131196 gcd=552661 0.9 | shelf's own trade record: gcd 19517#4 108pp isbn 0-7851-2066-1 vs our 94pp, LOCG isbn bridge also agrees
+
+I 98100 cv=276141 gcd=669590 0.9 | shelf's own trade record: gcd 38849#1 "Wolverine / Hulk" isbn 0-7851-1138-7, title-matched to "Vol.01 Wolverine-Hulk"
+I 98101 cv=197572 gcd=1105172 0.9 | shelf's own trade record: gcd 38849#2 "Meltdown", title-matched
+I 98102 cv=197574 gcd=1105173 0.9 | shelf's own trade record: gcd 38849#3 "Law of the Jungle", title-matched
+I 98103 cv=197575 gcd=1105174 0.9 | shelf's own trade record: gcd 38849#4 "Xisle", title-matched
+I 98104 cv=197577 gcd=1105176 0.9 | shelf's own trade record: gcd 38849#6 "Marc Silvestri", title-matched (Vol.05 not held per shelf's N)
+
+I 98091 cv=576915 gcd=1729156 0.9 | shelf's own trade record: gcd 116042#1 508pp isbn 978-1-302-90472-2 vs our 496pp
+I 98092 cv=616204 gcd=1729152 0.9 | shelf's own trade record: gcd 116042#2 484pp isbn 978-1-302-90738-9 vs our 462pp
+I 98093 cv=648887 gcd=1769765 0.9 | shelf's own trade record: gcd 116042#3 500pp isbn 978-1-302-90768-6 vs our 492pp
+I 98094 cv=670765 gcd=1809264 0.9 | shelf's own trade record: gcd 116042#4 484pp isbn 978-1-302-90952-9 vs our 474pp, num-matched on both legs
+
+I 84234 cv=- gcd=2282383 0.9 | lookup.py --contains "Adventures of the X-Men" finds GCD 178663 "Clear and Present Dangers" (2019, count 1), issue 2282383, 180pp vs our 170pp — the packet's own per-file probe found nothing (gcd -/- st2 ?)
+I 84235 cv=- gcd=2037369 0.9 | same probe finds GCD 152556 "Rites of Passage" (2019, count 1... in GCD dump this id string collides with an unrelated CV volume number, but the GCD series itself is confirmed), issue 2037369, 148pp vs our 145pp
+
+I 84277 cv=696938 gcd=1891069 0.95 | lookup.py "Astonishing X-Men" --contains --year 2019 finds CV 116362 / GCD 137203 "Astonishing X-Men by Matt Rosenberg: Until Our Hearts Stop" (2019, count 1), issue 696938/1891069, 148pp vs our 142pp — corrects the packet's round2-folder pick (GCD 123681, Panini Deutschland, a foreign edition)
+N 1424 correction | item 84277's own record is CV 116362/696938, GCD 137203/1891069 "Until Our Hearts Stop" — the per-file round2-folder pick (123681, Panini Deutschland) was wrong as flagged
+
+I 84376 cv=131179 gcd=1099268 0.9 | shelf's own trade record: gcd 73449#1, num-matched, our file 221pp
+I 84377 cv=172258 gcd=1099269 0.9 | shelf's own trade record: gcd 73449#2 244pp isbn 978-0-7851-3744-3 vs our 227pp
+I 84378 cv=351478 gcd=1099270 0.9 | shelf's own trade record: gcd 73449#3 212pp isbn 978-0-7851-5972-8 vs our 179pp
+
+I 84459 cv=198688 gcd=1029802 0.95 | shelf's own trade record: both legs agree, gcd 69666#1 244pp isbn 978-0-7851-3740-5 vs our 224pp
+I 84460 cv=198689 gcd=1029803 0.95 | shelf's own trade record: gcd 69666#2 244pp isbn 978-0-7851-4455-7 vs our 238pp
+I 84461 cv=284401 gcd=2131708 0.95 | shelf's own trade record: gcd 69666#3 220pp isbn 978-0-7851-5543-0 vs our 210pp
+
+I 84462 cv=246736 gcd=783496 0.95 | shelf's own trade record: gcd 52998#1 220pp isbn 978-0-7851-4456-4 vs our 208pp
+I 84463 cv=246737 gcd=783497 0.95 | shelf's own trade record: gcd 52998#2 236pp isbn 978-0-7851-4929-3 vs our 223pp
+I 84464 cv=249230 gcd=792257 0.95 | shelf's own trade record: gcd 52998#3 276pp isbn 978-0-7851-4952-1 vs our 270pp
+
+I 84469 cv=254508 gcd=814769 0.95 | lookup.py "Excalibur" --year 2004 --contains finds CV 38072 "Excalibur: Forging the Sword" / GCD 814769 (series 56708), exact title match — corrects the packet's per-file pick (cv 30178 under volume 4052, the 1988 Excalibur run, a cross-shelf legacy stamp)
+I 84470 cv=254510 gcd=814770 0.95 | same probe finds CV 38073 "Excalibur: Saturday Night Fever" / GCD 814770, exact title match — corrects the same cross-shelf stamp (cv 30308/4052)
+N 94593 correction | items 84469/84470 have their own count-1 CV records (38072/254508 "Forging the Sword", 38073/254510 "Saturday Night Fever") paired with GCD series 56708 — the per-file cv pick (30178/30308 under volume 4052, the 1988 Excalibur run) was a cross-shelf ordinal stamp, corrected via lookup.py
+
+I 84532 cv=156748 gcd=- 0.9 | lookup.py finds CV 26338 "X-Men: First Class - Mutant Mayhem" (2008) issue 156748, exact title match; GCD has no row under any spelling (0 hits) — the packet's per-file gcd pick (2773426/228153) was the WRONG series (228153 is a foreign/later 2011 "X-Men: First Class" collected edition, confirmed by querying gcd_series directly)
+I 84533 cv=176069 gcd=942003 0.9 | lookup.py finds CV 28571 "X-Men: First Class: Band of Brothers" (2008) issue 176069 and GCD 65249 issue 942003 124pp isbn 978-0-7851-2599-0 vs our 124pp — corrects the same wrong series-228153 pick
+I 84534 cv=175652 gcd=2836921 0.9 | lookup.py finds CV 28514 "X-Men: First Class: The Wonder Years" (2009) issue 175652 and GCD 237446 issue 2836921 — corrects the same wrong series-228153 pick (which the packet itself already showed as "-/228153" for this book, no candidate)
+N 34916 correction | gcd series 228153 ("X-Men: First Class" 2011, a later unrelated collected edition per gcd_series query) is NOT this trade line's record; the true per-book records are CV 26338/28571/28514 paired with GCD -/65249/237446 (GCD has no row for Vol.01 "Mutant Mayhem" — provider-missing)
+
+I 84558 cv=164842 gcd=911799 0.95 | shelf's own trade record: gcd 63087#1 188pp isbn 978-0-7851-3729-0 vs our 181pp
+I 84559 cv=381787 gcd=1052556 0.95 | shelf's own trade record: gcd 63087#2 212pp isbn 978-0-7851-6790-7 vs our 191pp
+
+I 84544 cv=516098 gcd=1536947 0.95 | shelf's own trade record: gcd 97283#1 436pp isbn 978-0-7851-9685-3 vs our 423pp
+I 84545 cv=694936 gcd=1880692 0.95 | shelf's own trade record: gcd 97283#2 412pp isbn 978-1-302-91375-5 vs our 401pp
+
+I 84644 cv=- gcd=1747047 0.9 | own trade record: GCD series 118040 #1 "Natural Selection", title-matched, isbn 978-1-302-90736-5
+I 84645 cv=- gcd=1793041 0.95 | own trade record: GCD series 118040 #2 "Survival of the Fittest" 140pp isbn 978-1-302-90737-2 vs our 137pp
+
+I 84665 cv=- gcd=1947950 0.9 | lookup of GCD series 119591's own issue rows finds #3 "Amazing Friends" = 1947950, 148pp vs our 141pp, exact title match — corrects the packet's page-rematch pick (1771537, "#1 Thawing Out")
+N 9264 correction | item 84665's own record is GCD 1947950 "#3 Amazing Friends" of the trade line 119591 — the per-file page-rematch pick (1771537, "#1 Thawing Out") named the wrong issue in the same series
+
+I 84690 cv=- gcd=1139661 0.9 | lookup.py "X-Men Legacy: Legion" --contains finds GCD 76283#1 "Prodigal" 140pp isbn 978-0-7851-6249-0 vs our 135pp, exact title match — the packet's per-file leg found nothing (gcd -/- st2 ?)
+I 84691 cv=- gcd=1139674 0.9 | same GCD 76283#2 "Invasive Exotics" 140pp isbn 978-0-7851-6718-1 vs our 132pp
+I 84692 cv=667668 gcd=1159456 0.95 | GCD 76283#3 "Revenants" 140pp isbn 978-0-7851-6719-8 vs our 124pp; CV also has its own count-1 volume 110121/667668 "Revenants" — both legs now agree
+I 84693 cv=- gcd=2503741 0.9 | same GCD 76283#4 "For We Are Many" 140pp isbn 978-0-7851-5432-7 vs our 124pp
+N 22376 correction | GCD 76283 (the "matches-our-holdings" collected line the shelf's own N named but rejected as the S id) IS each book's own I-level record — #1-4 name exactly our four trades' titles; the packet's per-file leg showed no candidate at all for any of the four
+
+I 84701 cv=1044015 gcd=2608537 0.95 | lookup.py "Magneto: Magneto Was Right" finds CV 156674/1044015 AND GCD 208815/2608537 (116pp vs our 101pp) — corrects the shelf's own N, which wrongly claimed "the GCD dump names no count-1 row for it"
+N 11210 correction | GCD DOES hold a count-1 row for "Magneto: Magneto Was Right" (208815/2608537) — the shelf's own N was wrong on this point
+
+I 84718 cv=748557 gcd=2255611 0.95 | shelf's own trade record: gcd 175103#1 180pp isbn 978-1-302-91994-8 vs our 177pp
+I 84719 cv=817886 gcd=2255612 0.9 | shelf's own trade record: gcd 175103#2 164pp isbn 978-1-302-92147-7 vs our 157pp
+I 84720 cv=881492 gcd=2255613 0.95 | shelf's own trade record: gcd 175103#3 172pp isbn 978-1-302-92718-9 vs our 163pp
+I 84721 cv=908467 gcd=2357689 0.95 | shelf's own trade record: gcd 175103#4 180pp isbn 978-1-302-92719-6 vs our 175pp
+C 84718 cv=122218 gcd=151261 #1-6 0.9 | lookup.py "Marauders" --year 2019 finds CV 122218 / GCD 151261, the 27-issue run (2019-2022) the shelf's N names but does not id; judged #1-6 is trade Vol.01
+C 84719 cv=122218 gcd=151261 #7-12 0.9 | same 27-issue run CV 122218 / GCD 151261 Marauders (2019-2022); judged #7-12 is trade Vol.02
+C 84720 cv=122218 gcd=151261 #13-18 0.9 | same 27-issue run CV 122218 / GCD 151261 Marauders (2019-2022); judged #13-18 is trade Vol.03
+C 84721 cv=122218 gcd=151261 #19-27 0.9 | same 27-issue run CV 122218 / GCD 151261 Marauders (2019-2022); judged #19-27 is trade Vol.04
+
+I 84732 cv=690815 gcd=1864024 0.95 | shelf's own trade record: gcd 132587#1 484pp isbn 978-1-302-91325-0 vs our 465pp
+I 84733 cv=723758 gcd=2274187 0.95 | shelf's own trade record: gcd 132587#2 476pp isbn 978-1-302-92062-3 vs our 455pp
+
+I 84796 cv=153497 gcd=640118 0.95 | shelf's own trade record: gcd 37060#1 244pp vs our 238pp
+I 84797 cv=153645 gcd=640119 0.95 | shelf's own trade record: gcd 37060#2 236pp vs our 232pp
+I 84798 cv=154118 gcd=640120 0.9 | shelf's own trade record: gcd 37060#3 260pp vs our 245pp
+I 84799 cv=154135 gcd=640121 0.9 | shelf's own trade record: gcd 37060#4 232pp isbn 978-0-7851-3728-3 vs our 221pp
+I 84800 cv=202147 gcd=735019 0.9 | shelf's own trade record: gcd 37060#5 280pp isbn 978-0-7851-4460-1 vs our 269pp
+I 84801 cv=284854 gcd=860762 0.95 | shelf's own trade record: gcd 37060#6 264pp isbn 978-0-78515-544-7 vs our 265pp
+I 84802 cv=341551 gcd=944846 0.95 | shelf's own trade record: gcd 37060#7 236pp isbn 978-0-78515-971-1 vs our 229pp
+
+I 85388 cv=- gcd=1594767 0.9 | shelf's own trade record: GCD series 103618#1 "Survival of the Fittest", num-matched, our file 110pp
+I 85389 cv=- gcd=1649530 0.9 | shelf's own trade record: GCD series 103618#2 "Apocalypse Wars", num-matched
+I 85390 cv=- gcd=1669888 0.9 | shelf's own trade record: GCD series 103618#3 "Waking From the Dream", num-matched
+I 85391 cv=- gcd=1723409 0.9 | shelf's own trade record: GCD series 103618#4 "IvX", num-matched
+
+I 85393 cv=711964 gcd=1978993 0.9 | lookup.py finds CV 119782 "Uncanny X-Men: Cyclops and Wolverine" (2019) Vol.1=711964 and GCD 147849 "Uncanny X-Men: Wolverine and Cyclops" (GCD reverses the word order) issue 1978993, 140pp vs our 181pp — corrects the per-file pick (149407, a Panini Deutschland foreign edition confirmed by name)
+I 85396 cv=1136065 gcd=- 0.9 | this is a different book from 85393: it is the single-issue "Uncanny X-Men #1 Director's Cut" (CV 167304/1136065), filed under Annuals and Specials, not a second copy of the trade; GCD has no equivalent — corrects the same wrong 149407 pick
+N 20719 correction | items 85393/85396 are different books both wrongly stamped with GCD 149407 (Panini Deutschland "Uncanny X-Men"): 85393 is trade Vol.01 "Cyclops and Wolverine" (CV 119782/GCD 147849), 85396 is the single-issue "Uncanny X-Men #1 Director's Cut" (CV 167304, gcd=-)
+
+N 85480 no-record | probed "Wolverine and the X-Men" (2014) and "Wolverine & the X-Men: Tomorrow Never Learns" exact and --contains: 0 CV/GCD hits under any spelling; only the run's own dump-only series 79392 exists, no trade-level row
+N 85481 no-record | probed "Wolverine and the X-Men: Death of Wolverine" exact and --contains: 0 CV/GCD hits; same gap as 85480, no trade-level row on either leg
+
+I 85484 cv=562970 gcd=1655283 0.9 | shelf's own trade record: gcd 104522#2 472pp isbn 978-1-302-90117-2 vs our 459pp, title "v02" matches ordinal exactly though the packet's own per-file leg found nothing
+
+I 85696 cv=222605 gcd=1029798 0.9 | shelf's own trade record: gcd 69665#1 isbn 0785118721, num-matched, our file 133pp
+I 85697 cv=222612 gcd=1029799 0.95 | shelf's own trade record: gcd 69665#2 148pp isbn 078512456X vs our 145pp
+I 85698 cv=222629 gcd=1029800 0.9 | shelf's own trade record: gcd 69665#3 140pp isbn 978-0-7851-2457-3 vs our 173pp
+I 85699 cv=222635 gcd=1029801 0.9 | shelf's own trade record: gcd 69665#4 188pp isbn 9780785127451 vs our 205pp
+
+I 85781 cv=781568 gcd=2169545 0.95 | lookup.py --issues 128897 gives clean per-book ids for CV "X-Force by Benjamin Percy" (2020): Volume 1 = 781568, matches per-file gcd 2169545 (num)
+I 85782 cv=820819 gcd=2217919 0.95 | same CV volume Volume 2 = 820819, matches per-file gcd 2217919 (num)
+I 85783 cv=885982 gcd=2264306 0.95 | same CV volume Volume 3 = 885982, matches per-file gcd 2264306 (num)
+I 85784 cv=908723 gcd=2357692 0.95 | same CV volume Volume 4 = 908723, matches per-file gcd 2357692 (num)
+
+I 86044 cv=- gcd=1641178 0.7 | genuine doubt: gcd 108550#1 "The World Is a Vampire" (116pp) is the 2015 Warzones mini's own trade (CV 82858); our shelf's own S ties this book to the 2016 ongoing (CV 89284/GCD 98748) whose own issue #3 shares that same chapter title — could not resolve which product this file actually is
+I 118148 cv=- gcd=1641178 0.7 | same file/identity question as 86044 (identical title "Vol.01 The World Is A Vampire", different rip group), additionally filed in the Warzones chronology folder which supports it being the mini's trade rather than the ongoing's
+I 86045 cv=- gcd=2481083 0.9 | GCD 195187 "X-Men '92" (2017, 3-issue trade line for the ongoing) #2 = 2481083 matches Vol.02's ordinal and title "Lilapalooza"; no page/isbn cross-check available in the packet
+N 22222 doubt | items 86044/118148 ("Vol.01 The World Is A Vampire") collide in name with the 2015 Warzones mini's own trade of the identical title (CV 82858/GCD 108550) — real doubt whether these files are the 2016 ongoing's Vol.01 or a mislabeled rip of the mini's trade; capped at 0.7 pending a web check
+
+I 86205 cv=- gcd=912159 0.9 | own trade record: GCD series 63123#1, num-matched, title "Back In Action"
+I 86206 cv=- gcd=912160 0.9 | own trade record: GCD series 63123#2, num-matched, title "Scream A Little Scream"
+I 86207 cv=- gcd=912161 0.9 | own trade record: GCD series 63123#3, num-matched, title "Perfect World"
+
+I 86310 cv=- gcd=2278788 0.9 | own trade record: GCD series 178322#1 "The Missing Links" 148pp isbn 978-1-302-92804-9 vs our 141pp
+I 86311 cv=- gcd=2399189 0.9 | own trade record: GCD series 178322#2 "Mutant Mayhem" 140pp isbn 978-1-302-92805-6 vs our 135pp — corrects the packet, which had stamped the SAME issue (#1, 2278788) on both books
+
+I 86001 cv=270558 gcd=2733016 0.9 | shelf's own trade record: gcd 223524#1 148pp isbn 978-0-7851-5503-4 vs our 136pp; per-file round2-series flag was already verified correct in the shelf's own N (title, publisher, count)
+I 86002 cv=273106 gcd=2733017 0.9 | shelf's own trade record: gcd 223524#2 116pp isbn 978-0-7851-5518-8 vs our 222pp
+I 86003 cv=286863 gcd=2733018 0.9 | shelf's own trade record: gcd 223524#3 140pp isbn 978-0-7851-5526-3 vs our 163pp
+I 86004 cv=286954 gcd=2733019 0.9 | shelf's own trade record: gcd 223524#4 172pp isbn 978-0-7851-5532-4 vs our 119pp
+I 86005 cv=295217 gcd=2733020 0.9 | shelf's own trade record: gcd 223524#5 132pp isbn 978-0-7851-5536-2 vs our 161pp
+I 86006 cv=295218 gcd=2733021 0.9 | shelf's own trade record: gcd 223524#6 172pp isbn 978-0-7851-5537-9 vs our 133pp
+I 86007 cv=301803 gcd=2733022 0.9 | shelf's own trade record: gcd 223524#7 148pp isbn 978-0-7851-5538-6 vs our 105pp
+
+I 86016 cv=140141 gcd=545269 0.9 | this trade is the shelf's own established one-shot pair (CV 23350 issue 140141 / GCD 32183 issue 545269); the 147pp file is larger than the 52pp one-shot alone, likely bundled bonus material, but no separate record exists for a bigger edition
+
+I 86033 cv=745820 gcd=2253999 0.95 | shelf's own trade record: gcd 174891#1 188pp isbn 978-1-302-91981-8 vs our 179pp
+I 86034 cv=817898 gcd=2254000 0.9 | shelf's own trade record: gcd 174891#2 156pp isbn 978-1-302-91982-5 vs our 145pp
+I 86035 cv=879516 gcd=2254001 0.95 | shelf's own trade record: gcd 174891#3 148pp isbn 978-1-302-92491-1 vs our 144pp
+
+I 87989 cv=1064372 gcd=2647946 0.95 | shelf's own trade record: gcd 213984#1 340pp isbn 978-1-302-95843-5 vs our 336pp
+
+I 86401 cv=587406 gcd=1680414 0.9 | Epic Collection line 112667 Vol.01 "The Sword Is Drawn" 500pp vs our 473pp; per-file flagged round2-folder but title/ordinal is exact
+
+I 86420 cv=583734 gcd=1677428 0.95 | Epic Collection line 112457 Vol.01 "Genesis & Apocalypse" 460pp vs our 457pp
+
+I 86423 cv=693476 gcd=1876455 0.9 | same Epic Collection line 112457 Vol.07 "All-New, All-Different X-Factor" 460pp vs our 452pp; per-file flagged round2-folder but title/ordinal is exact
+
+I 86427 cv=588581 gcd=1683134 0.9 | Epic Collection line 112917 Vol.01 "Under the Gun" 500pp vs our 463pp
+
+I 86432 cv=474847 gcd=1251195 0.9 | Epic Collection line 82692 Vol.01 "Children of the Atom" 524pp vs our 523pp; twin rows (2271704/2621080, same page count) exist so capped at 0.9; per-file flagged round2-folder but title/ordinal is exact
+
+I 86442 cv=511937 gcd=1339631 0.9 | same Epic Collection line 82692 Vol.12 "The Gift" 516pp vs our 506pp; twin row 2636873 exists so capped at 0.9
+
+I 86109 cv=- gcd=2690923 0.9 | own trade record: GCD series 219194#1, num-matched, 214pp vs our 323pp (large gap, likely bonus/back-matter difference; title/ordinal solid)
+I 86110 cv=- gcd=2690924 0.95 | own trade record: GCD series 219194#2, 308pp vs our 306pp
+I 92977 cv=- gcd=2593315 0.9 | lookup.py "X-Men: The Hidden Years Omnibus" finds GCD 207404, 648pp vs our 624pp — the packet's own per-file leg found nothing (gcd -/219194 st3 title, no specific row); a twin row (2593419, same page count) exists so capped at 0.9
+N 22541 correction | the omnibus (item 92977) DOES have its own GCD record (207404/2593315) that the packet's per-file leg missed entirely
+
+I 85978 cv=182879 gcd=- 0.9 | lookup.py --issues 29714 finds CV "X-Men: Kitty Pryde and Wolverine" (2008) issue 182879, exact title match; GCD confirmed 0 hits under any spelling — corrects the shelf's own N, which understated this as having no CV record either
+N 10436 correction | the trade's own CV record IS in our data (29714/182879) — the shelf's N only checked GCD and wrongly implied neither leg had it
+
+I 87213 cv=41391 gcd=57661 0.95 | plain issue #3 of the shelf's own run (CV 5568/GCD 5309), both legs agree, our file 40pp vs 52pp
+I 87214 cv=41994 gcd=58347 0.95 | plain issue #7 of the same run, both legs agree, our file 38pp vs 52pp
+
+I 92997 cv=713940 gcd=- 0.9 | lookup.py finds CV 120257 "Havok & Wolverine: Meltdown" (2019, matching our digital trade's year) issue 713940; GCD holds only the 1990 print editions (46769/46770) and the Graphitti Designs signed hardcover (209780, wrongly picked by the packet's per-file leg per the shelf's own N) — provider-missing on GCD for the 2019 edition
+N 8440 correction | item 92997's own record is CV 120257/713940 (2019 digital trade); GCD's rows are all older/foreign printings, none matching our edition — gcd=- rather than the packet's wrong pick (209780, the signed hardcover)
+
+I 84835 cv=711953 gcd=1978750 0.95 | lookup.py finds CV 119765 / GCD 147851 "New X-Men: The Quest For Magik: The Complete Collection" (2019), issue 711953/1978750, 396pp vs our 385pp — corrects the per-file ordinal pick (103142/11667, just issue #3 of the shelf's unrelated 4-issue "X-Men: Magik" mini)
+N 22282 correction | item 84835 is a different, larger product than the shelf's four "X-Men: Magik" floppies (CV 11667) — its own record is CV 119765/711953, GCD 147851/1978750; no judged range given so no C line
+
+I 85975 cv=307721 gcd=2114285 0.95 | lookup.py finds CV 44705 / GCD 160110 "Jubilee by Robert Kirkman" (2011), issue 307721/2114285, 148pp vs our 143pp — corrects the shelf's own N, which claimed neither leg carried this trade
+N 9996 correction | both legs DO carry this trade's own record (CV 44705/307721, GCD 160110/2114285) — the shelf's N was wrong to say the GCD dump names no series for it
+
+I 84844 cv=133279 gcd=568512 0.95 | lookup.py finds CV 22156 / GCD 33983 "Nightcrawler: The Devil Inside" (2005), issue 133279/568512 — corrects the packet's page-rematch pick (GCD 89549, the unrelated 2014-2015 Nightcrawler's collected edition) already flagged wrong by the shelf's own N
+N 65353 correction | item 84844's own record is CV 22156/133279, GCD 33983/568512 "The Devil Inside" — confirms and completes the shelf's N, which knew the per-file pick was wrong but did not have the right id
+
+I 116640 cv=- gcd=2476401 0.9 | lookup.py "House of M Omnibus" finds GCD 194818, issue 2476401, 1376pp vs our 1299pp; CV has 0 hits (provider-missing); a twin row (2481447, same page count) exists so capped at 0.9 — corrects the packet, which had stamped both omnibus books with the same wrong id (2693583/219466)
+I 116641 cv=- gcd=2646574 0.9 | same probe finds GCD 213750 "House of M Omnibus Companion", issue 2646574, 800pp vs our 737pp; twin row 2646657 exists, capped at 0.9
+N 9010 correction | GCD DOES hold both omnibus records (194818 Omnibus, 213750 Companion) that the packet's per-file leg missed — it had wrongly stamped both books with the same id (2693583/219466); CV genuinely has neither (0 hits, matching the shelf's own N on that leg)
+
+I 117898 cv=200198 gcd=1174590 0.95 | lookup.py finds CV 31903/200198 and GCD 78297/1174590 "House of M: Spider-Man" (2006), 124pp vs our 121pp — corrects the shelf's own N, which claimed the GCD dump names none
+N 16094 correction | GCD DOES carry this trade's own record (78297/1174590) — the shelf's N was wrong on that point; CV 31903/200198 (already known to the shelf) agrees
+
+N 116728 no-record | "Civil War Files - Deluxe Edition" (335pp) has no record of its own; probed "Civil War Files Deluxe" exact and --contains: 0 CV/GCD hits; only the plain 52pp handbook (CV 18530/GCD 19521, the shelf's own S) exists in the catalogs

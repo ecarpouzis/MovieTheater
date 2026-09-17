@@ -1,0 +1,524 @@
+# D-011 - tier D (no stored provider leg), 120 shelves in three unrelated blocks:
+#   (A) the tail of `Heavy Metal\Heavy Metal Magazine (1977)` - 21 more `_Back Issues\YYYY` per-issue
+#       shelves (2004-2011), 12 more `special` shelves (2004-2008), the `metal-hurlant` folder and four
+#       loose Heavy Metal / Titan books. Read exactly as D-010: CV 19498 / GCD 110631 for the monthly
+#       (merge into S8533), CV 35025 "Heavy Metal Special" / GCD 77284 for the seasonal companion
+#       (merge into S8537, the anchor D-010 set). The filename's VVxNN is ComicVine's issue NAME.
+#   (B) Humanoids' English programme - one book, one count-1 record per leg, and 2022-2023 Life Drawn
+#       titles that are past the ComicVine rip's horizon (GCD-only) or past BOTH (R).
+#   (C) IDW and Image - the count-1-trade-as-stored-link population this ledger already knows, read the
+#       usual way: the numbered RUN takes the S, the trade takes the `I`.
+# What this batch taught, in order of how much work it saved:
+#   1. `SELECT * FROM gcd_series WHERE publisher_id=<n>` and a LIKE on `cv_vol.name` beat every normalised
+#      probe on a tier-D shelf, because the shelf key is a truncation. `lookup.py "Corazas"` returns
+#      nothing; `LIKE '%Best of Teenage%'` found the whole "Best of Teenage Mutant Ninja Turtles
+#      Collection" line (CV 157473 / GCD 186233) that "Best of TMNT Collection" cannot reach.
+#   2. Two ripper spellings that hide a record from the normaliser: the SLASHED O ("Gødland Finale" CV
+#      69879) and a SPACE inside the word ("How Toons: Tools of Mass Construction" CV 75884).
+#   3. Titan's Druillet Library and IDW's Godzilla Rivals one-shots are the Silver Sprocket shape at its
+#      purest - one record per BOOK in BOTH catalogs and no spanning row anywhere - so a shelf holding
+#      several of them is R + split-needed, not a comic.
+#   4. The barcode lane paid again: four EAN-13s on the Obscure Cities shelf resolved to `gcd_issue.isbn`
+#      outright, and one of them (9781628472271) proved the book is Alaxis Press's 2014 printing and not
+#      the IDW line's own volume - a 1.0 that also corrects which SERIES the book belongs to.
+
+# ---- (A) _Back Issues\YYYY 2004-2011: 21 single-issue shelves of Heavy Metal Magazine ----
+S 35473 cv=19498 gcd=110631 0.95 | one issue of the magazine: the file is the September 2004 number, which is CV 19498's cached issue 146499 named "Vol. 28, No. 4" (cover date 2004-09) and GCD 110631's issue 558491, number 4 of 330 (cover date 2004-09, 132pp against our 112pp rip) - two legs on one cover month, and the filename's own "28x04" is that volume and number on both legs
+F 35473 merge-with=8533 | a single back issue of the same magazine as shelf 8533, cut into a shelf of its own by the ripper's "Heavy_Metal-2004-09-28x04" filename
+I 29550 cv=146499 gcd=558491 0.95 | the September 2004 issue on both legs: CV issue 146499 "Vol. 28, No. 4" of volume 19498 and GCD issue 558491 (number 4, 132pp) of series 110631, against our 112pp rip
+
+S 35474 cv=19498 gcd=110631 0.95 | one issue of the magazine: the file is the November 2004 number, which is CV 19498's cached issue 146500 named "Vol. 28, No. 5" (cover date 2004-11) and GCD 110631's issue 558492, number 5 of 330 (cover date 2004-11, 132pp against our 112pp rip) - two legs on one cover month, and the filename's own "28x05" is that volume and number on both legs
+F 35474 merge-with=8533 | a single back issue of the same magazine as shelf 8533, cut into a shelf of its own by the ripper's "Heavy_Metal-2004-11-28x05" filename
+I 29551 cv=146500 gcd=558492 0.95 | the November 2004 issue on both legs: CV issue 146500 "Vol. 28, No. 5" of volume 19498 and GCD issue 558492 (number 5, 132pp) of series 110631, against our 112pp rip
+
+S 35475 cv=19498 gcd=110631 0.95 | one issue of the magazine: the file is the January 2005 number, which is CV 19498's cached issue 146501 named "Vol. 28, No. 6" (cover date 2005-01) and GCD 110631's issue 558493, number 6 of 330 (cover date 2005-01, 132pp against our 108pp rip) - two legs on one cover month, and the filename's own "28x06" is that volume and number on both legs
+F 35475 merge-with=8533 | a single back issue of the same magazine as shelf 8533, cut into a shelf of its own by the ripper's "Heavy_Metal-2005-01-28x06" filename
+I 29555 cv=146501 gcd=558493 0.95 | the January 2005 issue on both legs: CV issue 146501 "Vol. 28, No. 6" of volume 19498 and GCD issue 558493 (number 6, 132pp) of series 110631, against our 108pp rip
+
+S 35476 cv=19498 gcd=110631 0.95 | one issue of the magazine: the file is the March 2005 number, which is CV 19498's cached issue 146502 named "Vol. 29, No. 1" (cover date 2005-03) and GCD 110631's issue 558494, number 1 of 330 (cover date 2005-03, 132pp against our 113pp rip) - two legs on one cover month, and the filename's own "29x01" is that volume and number on both legs
+F 35476 merge-with=8533 | a single back issue of the same magazine as shelf 8533, cut into a shelf of its own by the ripper's "Heavy_Metal-2005-03-29x01" filename
+I 29556 cv=146502 gcd=558494 0.95 | the March 2005 issue on both legs: CV issue 146502 "Vol. 29, No. 1" of volume 19498 and GCD issue 558494 (number 1, 132pp) of series 110631, against our 113pp rip
+
+S 35477 cv=19498 gcd=110631 0.95 | one issue of the magazine: the file is the May 2005 number, which is CV 19498's cached issue 146503 named "Vol. 29, No. 2" (cover date 2005-05) and GCD 110631's issue 558495, number 2 of 330 (cover date 2005-05, 132pp against our 113pp rip) - two legs on one cover month, and the filename's own "29x02" is that volume and number on both legs
+F 35477 merge-with=8533 | a single back issue of the same magazine as shelf 8533, cut into a shelf of its own by the ripper's "Heavy_Metal-2005-05-29x02" filename
+I 29557 cv=146503 gcd=558495 0.95 | the May 2005 issue on both legs: CV issue 146503 "Vol. 29, No. 2" of volume 19498 and GCD issue 558495 (number 2, 132pp) of series 110631, against our 113pp rip
+
+S 35478 cv=19498 gcd=110631 0.95 | one issue of the magazine: the file is the July 2005 number, which is CV 19498's cached issue 146504 named "Vol. 29, No. 3" (cover date 2005-07) and GCD 110631's issue 558496, number 3 of 330 (cover date 2005-07, 132pp against our 130pp rip) - two legs on one cover month, and the filename's own "29x03" is that volume and number on both legs
+F 35478 merge-with=8533 | a single back issue of the same magazine as shelf 8533, cut into a shelf of its own by the ripper's "Heavy_Metal-2005-07-29x03" filename
+I 29558 cv=146504 gcd=558496 0.95 | the July 2005 issue on both legs: CV issue 146504 "Vol. 29, No. 3" of volume 19498 and GCD issue 558496 (number 3, 132pp) of series 110631, against our 130pp rip
+
+S 35479 cv=19498 gcd=110631 0.95 | one issue of the magazine: the file is the September 2005 number, which is CV 19498's cached issue 146505 named "Vol. 29, No. 4" (cover date 2005-09) and GCD 110631's issue 558497, number 4 of 330 (cover date 2005-09, 132pp against our 120pp rip) - two legs on one cover month, and the filename's own "29x04" is that volume and number on both legs
+F 35479 merge-with=8533 | a single back issue of the same magazine as shelf 8533, cut into a shelf of its own by the ripper's "Heavy_Metal-2005-09-29x04" filename
+I 29559 cv=146505 gcd=558497 0.95 | the September 2005 issue on both legs: CV issue 146505 "Vol. 29, No. 4" of volume 19498 and GCD issue 558497 (number 4, 132pp) of series 110631, against our 120pp rip
+
+S 35480 cv=19498 gcd=110631 0.95 | one issue of the magazine: the file is the November 2005 number, which is CV 19498's cached issue 146506 named "Vol. 29, No. 5" (cover date 2005-11) and GCD 110631's issue 558498, number 5 of 330 (cover date 2005-11, 132pp against our 127pp rip) - two legs on one cover month, and the filename's own "29x05" is that volume and number on both legs
+F 35480 merge-with=8533 | a single back issue of the same magazine as shelf 8533, cut into a shelf of its own by the ripper's "Heavy_Metal-2005-11-29x05" filename
+I 29560 cv=146506 gcd=558498 0.95 | the November 2005 issue on both legs: CV issue 146506 "Vol. 29, No. 5" of volume 19498 and GCD issue 558498 (number 5, 132pp) of series 110631, against our 127pp rip
+
+S 35482 cv=19498 gcd=110631 0.95 | one issue of the magazine: the file is the January 2006 number, which is CV 19498's cached issue 146507 named "Vol. 29, No. 6" (cover date 2006-01) and GCD 110631's issue 558499, number 6 of 330 (cover date 2006-01, 132pp against our 111pp rip) - two legs on one cover month, and the filename's own "29x06" is that volume and number on both legs
+F 35482 merge-with=8533 | a single back issue of the same magazine as shelf 8533, cut into a shelf of its own by the ripper's "Heavy_Metal-2006-01-29x06" filename
+I 29564 cv=146507 gcd=558499 0.95 | the January 2006 issue on both legs: CV issue 146507 "Vol. 29, No. 6" of volume 19498 and GCD issue 558499 (number 6, 132pp) of series 110631, against our 111pp rip
+
+S 35483 cv=19498 gcd=110631 0.95 | one issue of the magazine: the file is the March 2006 number, which is CV 19498's cached issue 146508 named "Vol. 30, No. 1" (cover date 2006-03) and GCD 110631's issue 558500, number 1 of 330 (cover date 2006-03, 132pp against our 124pp rip) - two legs on one cover month, and the filename's own "30x01" is that volume and number on both legs
+F 35483 merge-with=8533 | a single back issue of the same magazine as shelf 8533, cut into a shelf of its own by the ripper's "Heavy_Metal-2006-03-30x01" filename
+I 29565 cv=146508 gcd=558500 0.95 | the March 2006 issue on both legs: CV issue 146508 "Vol. 30, No. 1" of volume 19498 and GCD issue 558500 (number 1, 132pp) of series 110631, against our 124pp rip
+
+S 35484 cv=19498 gcd=110631 0.95 | one issue of the magazine: the file is the May 2006 number, which is CV 19498's cached issue 146509 named "Vol. 30, No. 2" (cover date 2006-05) and GCD 110631's issue 558501, number 2 of 330 (cover date 2006-05, 132pp against our 111pp rip) - two legs on one cover month, and the filename's own "30x02" is that volume and number on both legs
+F 35484 merge-with=8533 | a single back issue of the same magazine as shelf 8533, cut into a shelf of its own by the ripper's "Heavy_Metal-2006-05-30x02" filename
+I 29566 cv=146509 gcd=558501 0.95 | the May 2006 issue on both legs: CV issue 146509 "Vol. 30, No. 2" of volume 19498 and GCD issue 558501 (number 2, 132pp) of series 110631, against our 111pp rip
+
+S 35485 cv=19498 gcd=110631 0.95 | one issue of the magazine: the file is the July 2006 number, which is CV 19498's cached issue 146510 named "Vol. 30, No. 3" (cover date 2006-07) and GCD 110631's issue 558502, number 3 of 330 (cover date 2006-07, 126pp against our 117pp rip) - two legs on one cover month, and the filename's own "30x03" is that volume and number on both legs
+F 35485 merge-with=8533 | a single back issue of the same magazine as shelf 8533, cut into a shelf of its own by the ripper's "Heavy_Metal-2006-07-30x03" filename
+I 29567 cv=146510 gcd=558502 0.95 | the July 2006 issue on both legs: CV issue 146510 "Vol. 30, No. 3" of volume 19498 and GCD issue 558502 (number 3, 126pp) of series 110631, against our 117pp rip
+
+S 35486 cv=19498 gcd=110631 0.95 | one issue of the magazine: the file is the September 2006 number, which is CV 19498's cached issue 146511 named "Vol. 30, No. 4" (cover date 2006-09) and GCD 110631's issue 558503, number 4 of 330 (cover date 2006-09, 132pp against our 116pp rip) - two legs on one cover month, and the filename's own "30x04" is that volume and number on both legs
+F 35486 merge-with=8533 | a single back issue of the same magazine as shelf 8533, cut into a shelf of its own by the ripper's "Heavy_Metal-2006-09-30x04" filename
+I 29568 cv=146511 gcd=558503 0.95 | the September 2006 issue on both legs: CV issue 146511 "Vol. 30, No. 4" of volume 19498 and GCD issue 558503 (number 4, 132pp) of series 110631, against our 116pp rip
+
+S 35487 cv=19498 gcd=110631 0.95 | one issue of the magazine: the file is the November 2006 number, which is CV 19498's cached issue 146512 named "Vol. 30, No. 5" (cover date 2006-11) and GCD 110631's issue 558504, number 5 of 330 (cover date 2006-11, 132pp against our 115pp rip) - two legs on one cover month, and the filename's own "30x05" is that volume and number on both legs
+F 35487 merge-with=8533 | a single back issue of the same magazine as shelf 8533, cut into a shelf of its own by the ripper's "Heavy_Metal-2006-11-30x05" filename
+I 29569 cv=146512 gcd=558504 0.95 | the November 2006 issue on both legs: CV issue 146512 "Vol. 30, No. 5" of volume 19498 and GCD issue 558504 (number 5, 132pp) of series 110631, against our 115pp rip
+
+S 35488 cv=19498 gcd=110631 0.95 | one issue of the magazine: the file is the January 2007 number, which is CV 19498's cached issue 146513 named "Vol. 30, No. 6" (cover date 2007-01) and GCD 110631's issue 558505, number 6 of 330 (cover date 2007-01, 132pp against our 115pp rip) - two legs on one cover month, and the filename's own "30x06" is that volume and number on both legs
+F 35488 merge-with=8533 | a single back issue of the same magazine as shelf 8533, cut into a shelf of its own by the ripper's "Heavy_Metal-2007-01-30x06" filename
+I 29577 cv=146513 gcd=558505 0.95 | the January 2007 issue on both legs: CV issue 146513 "Vol. 30, No. 6" of volume 19498 and GCD issue 558505 (number 6, 132pp) of series 110631, against our 115pp rip
+
+S 35489 cv=19498 gcd=110631 0.95 | one issue of the magazine: the file is the March 2007 number, which is CV 19498's cached issue 146514 named "Vol. 31, No. 1" (cover date 2007-03) and GCD 110631's issue 558506, number 1 of 330 (cover date 2007-03, 132pp against our 113pp rip) - two legs on one cover month, and the filename's own "31x01" is that volume and number on both legs
+F 35489 merge-with=8533 | a single back issue of the same magazine as shelf 8533, cut into a shelf of its own by the ripper's "Heavy_Metal-2007-03-31x01" filename
+I 29578 cv=146514 gcd=558506 0.95 | the March 2007 issue on both legs: CV issue 146514 "Vol. 31, No. 1" of volume 19498 and GCD issue 558506 (number 1, 132pp) of series 110631, against our 113pp rip
+
+S 35490 cv=19498 gcd=110631 0.95 | one issue of the magazine: the file is the May 2008 number, which is CV 19498's cached issue 143882 named "Vol. 32, No. 2" (cover date 2008-05) and GCD 110631's issue 558514, number 2 [3] of 330 (cover date 2008-05, 124pp against our 105pp rip) - two legs on one cover month, and the filename's own "32x02" is that volume and number on both legs
+F 35490 merge-with=8533 | a single back issue of the same magazine as shelf 8533, cut into a shelf of its own by the ripper's "Heavy_Metal-2008-05-32x02" filename
+I 29585 cv=143882 gcd=558514 0.95 | the May 2008 issue on both legs: CV issue 143882 "Vol. 32, No. 2" of volume 19498 and GCD issue 558514 (number 2 [3], 124pp) of series 110631, against our 105pp rip
+
+S 35491 cv=19498 gcd=110631 0.95 | one issue of the magazine: the file is the July 2008 number, which is CV 19498's cached issue 146581 named "Vol. 32, No. 3" (cover date 2008-07) and GCD 110631's issue 558515, number 3 [4] of 330 (cover date 2008-07, 124pp against our 122pp rip) - two legs on one cover month, and the filename's own "32x03" is that volume and number on both legs
+F 35491 merge-with=8533 | a single back issue of the same magazine as shelf 8533, cut into a shelf of its own by the ripper's "Heavy_Metal-2008-07-32x03" filename
+I 29586 cv=146581 gcd=558515 0.95 | the July 2008 issue on both legs: CV issue 146581 "Vol. 32, No. 3" of volume 19498 and GCD issue 558515 (number 3 [4], 124pp) of series 110631, against our 122pp rip
+
+S 35492 cv=19498 gcd=110631 0.95 | one issue of the magazine: the file is the September 2008 number, which is CV 19498's cached issue 139184 named "Vol. 32, No. 6" (cover date 2008-09) and GCD 110631's issue 558517, number 6 of 330 (cover date 2008-09, 124pp against our 124pp rip) - two legs on one cover month, and the filename's own "32x06" is that volume and number on both legs; GCD carries a second row 2627403 for the same September 2008 number, a twin that blocks nothing at series level but caps the book's own line
+F 35492 merge-with=8533 | a single back issue of the same magazine as shelf 8533, cut into a shelf of its own by the ripper's "Heavy_Metal-2008-09-32x06" filename
+I 29587 cv=139184 gcd=558517 0.95 | the September 2008 issue on both legs: CV issue 139184 "Vol. 32, No. 6" of volume 19498 and GCD issue 558517 (number 6, 124pp) of series 110631, against our 124pp rip
+
+S 35493 cv=19498 gcd=110631 0.95 | one issue of the magazine: the file is the March 2009 number, which is CV 19498's cached issue 175785 named "Vol. 33, No. 1" (cover date 2009-03) and GCD 110631's issue 591224, number 1 of 330 (cover date 2009-03, 124pp against our 114pp rip) - two legs on one cover month, and the filename's own "33x01" is that volume and number on both legs
+F 35493 merge-with=8533 | a single back issue of the same magazine as shelf 8533, cut into a shelf of its own by the ripper's "Heavy_Metal-2009-03-33x01" filename
+I 29594 cv=175785 gcd=591224 0.95 | the March 2009 issue on both legs: CV issue 175785 "Vol. 33, No. 1" of volume 19498 and GCD issue 591224 (number 1, 124pp) of series 110631, against our 114pp rip
+
+S 35494 cv=19498 gcd=110631 0.95 | one issue of the magazine: the file is the March 2011 number, which is CV 19498's cached issue 255392 named "Vol. XXXV, No.1" (cover date 2011-03) and GCD 110631's issue 934765, number 1 of 330 (cover date 2011-03, 124pp against our 105pp rip) - two legs on one cover month, and the filename's "35x01" is what ComicVine reads as "Vol. XXXV, No.1"
+F 35494 merge-with=8533 | a single back issue of the same magazine as shelf 8533, cut into a shelf of its own by the ripper's "Heavy_Metal-2011-03-35x01" filename
+I 29933 cv=255392 gcd=934765 0.95 | the March 2011 issue on both legs: CV issue 255392 "Vol. XXXV, No.1" of volume 19498 and GCD issue 934765 (number 1, 124pp) of series 110631, against our 105pp rip
+
+
+# ---- (A) _Back Issues\YYYY\special 2004-2008: 12 single-issue shelves of the companion magazine (CV 35025 / GCD 77284) ----
+S 8662 cv=35025 gcd=77284 0.95 | one issue of the seasonal companion magazine: CV 35025 "Heavy Metal Special" 1989 Heavy Metal, 53 issues, and GCD 77284 "Heavy Metal Special Editions" 1981-2008 Heavy Metal, 50, are the same line on two legs and both name this file's special - CV issue 268685 "Sci-Fi Special Vol. 18, No. 1" (2004-04-01) and GCD issue 1155268 as number 1 titled "Sci-Fi Special" (cover date 2004-04, 132pp against our 115pp) - which is also what our filename's "SE-18X01" and the file's own subtitle say
+F 8662 merge-with=8537 | the same magazine as shelf 8537, the anchor D-010 set for this line: each year's `special` folder holds one file, so every issue we hold sits on its own shelf
+I 29552 cv=268685 gcd=1155268 0.95 | the book's own record on both legs: CV issue 268685 "Sci-Fi Special Vol. 18, No. 1" of volume 35025 and GCD issue 1155268 of series 77284, number 1 "Sci-Fi Special" cover date 2004-04, 132pp against our 115pp rip
+
+S 8665 cv=35025 gcd=77284 0.95 | one issue of the seasonal companion magazine: CV 35025 "Heavy Metal Special" 1989 Heavy Metal, 53 issues, and GCD 77284 "Heavy Metal Special Editions" 1981-2008 Heavy Metal, 50, are the same line on two legs and both name this file's special - CV issue 268686 "Adventure Special Vol. 18, No. 2" (2004-08-01) and GCD issue 1155267 as number 2 titled "Adventure Special" (cover date 2004-07, 132pp against our 113pp) - which is also what our filename's "SE-18X02" and the file's own subtitle say
+F 8665 merge-with=8537 | the same magazine as shelf 8537, the anchor D-010 set for this line: each year's `special` folder holds one file, so every issue we hold sits on its own shelf
+I 29553 cv=268686 gcd=1155267 0.95 | the book's own record on both legs: CV issue 268686 "Adventure Special Vol. 18, No. 2" of volume 35025 and GCD issue 1155267 of series 77284, number 2 "Adventure Special" cover date 2004-07, 132pp against our 113pp rip
+
+S 8667 cv=35025 gcd=77284 0.9 | one issue of the seasonal companion magazine: CV 35025 "Heavy Metal Special" 1989 Heavy Metal, 53 issues, and GCD 77284 "Heavy Metal Special Editions" 1981-2008 Heavy Metal, 50, are the same line on two legs and both name this file's special - CV issue 268687 "Sirens Special Vol. 18, No. 3" (2004-12-01) and GCD issue 1155266 as number 3 titled "Sirens Special" (cover date 2004-10, 132pp against our 103pp) - which is also what our filename's "SE-20X02" and the file's own subtitle say; what caps this at 0.9 is that the filename's "SE-20X02" names Vol. 20 No. 2 while BOTH legs put this special at Vol. 18 No. 3 - the title and the October-2004 date are what agree, and Vol. 20 No. 2 is the 2006 Sky Doll Special on shelf 8682 of this batch
+F 8667 merge-with=8537 | the same magazine as shelf 8537, the anchor D-010 set for this line: each year's `special` folder holds one file, so every issue we hold sits on its own shelf
+I 29554 cv=268687 gcd=1155266 0.9 | the book's own record on both legs: CV issue 268687 "Sirens Special Vol. 18, No. 3" of volume 35025 and GCD issue 1155266 of series 77284, number 3 "Sirens Special" cover date 2004-10, 132pp against our 103pp rip
+
+S 8673 cv=35025 gcd=77284 0.95 | one issue of the seasonal companion magazine: CV 35025 "Heavy Metal Special" 1989 Heavy Metal, 53 issues, and GCD 77284 "Heavy Metal Special Editions" 1981-2008 Heavy Metal, 50, are the same line on two legs and both name this file's special - CV issue 268689 "Mystery Special Vol. 19, No. 2" (2005-08-01) and GCD issue 1155263 as number 2 titled "Mystery Special" (cover date 2005-07, 132pp against our 125pp) - which is also what our filename's "SE-19X02" and the file's own subtitle say
+F 8673 merge-with=8537 | the same magazine as shelf 8537, the anchor D-010 set for this line: each year's `special` folder holds one file, so every issue we hold sits on its own shelf
+I 29561 cv=268689 gcd=1155263 0.95 | the book's own record on both legs: CV issue 268689 "Mystery Special Vol. 19, No. 2" of volume 35025 and GCD issue 1155263 of series 77284, number 2 "Mystery Special" cover date 2005-07, 132pp against our 125pp rip
+
+S 35481 cv=35025 gcd=77284 0.95 | one issue of the seasonal companion magazine: CV 35025 "Heavy Metal Special" 1989 Heavy Metal, 53 issues, and GCD 77284 "Heavy Metal Special Editions" 1981-2008 Heavy Metal, 50, are the same line on two legs and both name this file's special - CV issue 241161 "Digitized Special Vol. 19, No. 3" (2005-12-01) and GCD issue 1155262 as number 3 titled "Digitized Special" (cover date 2005-10, 134pp against our 122pp) - which is also what our filename's "SE-19X03" and the file's own subtitle say
+F 35481 merge-with=8537 | the same magazine as shelf 8537, the anchor D-010 set for this line: each year's `special` folder holds one file, so every issue we hold sits on its own shelf
+I 29562 cv=241161 gcd=1155262 0.95 | the book's own record on both legs: CV issue 241161 "Digitized Special Vol. 19, No. 3" of volume 35025 and GCD issue 1155262 of series 77284, number 3 "Digitized Special" cover date 2005-10, 134pp against our 122pp rip
+
+S 8679 cv=35025 gcd=77284 0.95 | one issue of the seasonal companion magazine: CV 35025 "Heavy Metal Special" 1989 Heavy Metal, 53 issues, and GCD 77284 "Heavy Metal Special Editions" 1981-2008 Heavy Metal, 50, are the same line on two legs and both name this file's special - CV issue 268690 "Steam Punk Special Vol. 20 No. 1" (2006-04-01) and GCD issue 1155261 as number 1 titled "Steam Punk Special" (cover date 2006-04, 132pp against our 122pp) - which is also what our filename's "SE-20X01" and the file's own subtitle say
+F 8679 merge-with=8537 | the same magazine as shelf 8537, the anchor D-010 set for this line: each year's `special` folder holds one file, so every issue we hold sits on its own shelf
+I 29570 cv=268690 gcd=1155261 0.95 | the book's own record on both legs: CV issue 268690 "Steam Punk Special Vol. 20 No. 1" of volume 35025 and GCD issue 1155261 of series 77284, number 1 "Steam Punk Special" cover date 2006-04, 132pp against our 122pp rip
+
+S 8682 cv=35025 gcd=77284 0.95 | one issue of the seasonal companion magazine: CV 35025 "Heavy Metal Special" 1989 Heavy Metal, 53 issues, and GCD 77284 "Heavy Metal Special Editions" 1981-2008 Heavy Metal, 50, are the same line on two legs and both name this file's special - CV issue 268691 "Sky Doll Special Vol. 20, No. 2" (2006-08-01) and GCD issue 1155260 as number 2 titled "Sky Doll Special" (cover date 2006-07, 132pp against our 147pp) - which is also what our filename's "SE-20X02" and the file's own subtitle say
+F 8682 merge-with=8537 | the same magazine as shelf 8537, the anchor D-010 set for this line: each year's `special` folder holds one file, so every issue we hold sits on its own shelf
+I 29571 cv=268691 gcd=1155260 0.95 | the book's own record on both legs: CV issue 268691 "Sky Doll Special Vol. 20, No. 2" of volume 35025 and GCD issue 1155260 of series 77284, number 2 "Sky Doll Special" cover date 2006-07, 132pp against our 147pp rip
+
+S 8685 cv=35025 gcd=77284 0.95 | one issue of the seasonal companion magazine: CV 35025 "Heavy Metal Special" 1989 Heavy Metal, 53 issues, and GCD 77284 "Heavy Metal Special Editions" 1981-2008 Heavy Metal, 50, are the same line on two legs and both name this file's special - CV issue 268692 "Halloween Special Vol. 20, No. 3" (2006-12-01) and GCD issue 1155258 as number 3 titled "Halloween Special" (cover date 2006-10, 132pp against our 132pp) - which is also what our filename's "SE-20X03" and the file's own subtitle say
+F 8685 merge-with=8537 | the same magazine as shelf 8537, the anchor D-010 set for this line: each year's `special` folder holds one file, so every issue we hold sits on its own shelf
+I 29572 cv=268692 gcd=1155258 0.95 | the book's own record on both legs: CV issue 268692 "Halloween Special Vol. 20, No. 3" of volume 35025 and GCD issue 1155258 of series 77284, number 3 "Halloween Special" cover date 2006-10, 132pp against our 132pp rip
+
+S 8688 cv=35025 gcd=77284 0.95 | one issue of the seasonal companion magazine: CV 35025 "Heavy Metal Special" 1989 Heavy Metal, 53 issues, and GCD 77284 "Heavy Metal Special Editions" 1981-2008 Heavy Metal, 50, are the same line on two legs and both name this file's special - CV issue 268693 "Genesis Special Vol. 21, No. 1" (2007-04-01) and GCD issue 763238 as number 1 titled "Genesis Special" (cover date 2007-04, 124pp against our 124pp) - which is also what our filename's "SE-21X01" and the file's own subtitle say
+F 8688 merge-with=8537 | the same magazine as shelf 8537, the anchor D-010 set for this line: each year's `special` folder holds one file, so every issue we hold sits on its own shelf
+I 29579 cv=268693 gcd=763238 0.95 | the book's own record on both legs: CV issue 268693 "Genesis Special Vol. 21, No. 1" of volume 35025 and GCD issue 763238 of series 77284, number 1 "Genesis Special" cover date 2007-04, 124pp against our 124pp rip
+
+S 8689 cv=35025 gcd=77284 0.95 | one issue of the seasonal companion magazine: CV 35025 "Heavy Metal Special" 1989 Heavy Metal, 53 issues, and GCD 77284 "Heavy Metal Special Editions" 1981-2008 Heavy Metal, 50, are the same line on two legs and both name this file's special - CV issue 268694 "Upload Special Vol. 21 No. 2" (2007-08-01) and GCD issue 763239 as number 2 titled "Upload Special" (cover date 2007-07, 132pp against our 123pp) - which is also what our filename's "SE-21X02" and the file's own subtitle say
+F 8689 merge-with=8537 | the same magazine as shelf 8537, the anchor D-010 set for this line: each year's `special` folder holds one file, so every issue we hold sits on its own shelf
+I 29580 cv=268694 gcd=763239 0.95 | the book's own record on both legs: CV issue 268694 "Upload Special Vol. 21 No. 2" of volume 35025 and GCD issue 763239 of series 77284, number 2 "Upload Special" cover date 2007-07, 132pp against our 123pp rip
+
+S 8690 cv=35025 gcd=77284 0.95 | one issue of the seasonal companion magazine: CV 35025 "Heavy Metal Special" 1989 Heavy Metal, 53 issues, and GCD 77284 "Heavy Metal Special Editions" 1981-2008 Heavy Metal, 50, are the same line on two legs and both name this file's special - CV issue 268696 "Chaos Special Vol. 22, No. 1" (2008-04-01) and GCD issue 1294713 as number 2 [1] titled "Chaos Special" (cover date 2008-04, 124pp against our 111pp) - which is also what our filename's "SE-22X01" and the file's own subtitle say
+F 8690 merge-with=8537 | the same magazine as shelf 8537, the anchor D-010 set for this line: each year's `special` folder holds one file, so every issue we hold sits on its own shelf
+I 29590 cv=268696 gcd=1294713 0.95 | the book's own record on both legs: CV issue 268696 "Chaos Special Vol. 22, No. 1" of volume 35025 and GCD issue 1294713 of series 77284, number 2 [1] "Chaos Special" cover date 2008-04, 124pp against our 111pp rip
+
+S 8540 cv=35025 gcd=77284 0.95 | one issue of the seasonal companion magazine: CV 35025 "Heavy Metal Special" 1989 Heavy Metal, 53 issues, and GCD 77284 "Heavy Metal Special Editions" 1981-2008 Heavy Metal, 50, are the same line on two legs and both name this file's special - CV issue 268697 "Overload Special Vol. 22, No. 2" (2008-08-01) and GCD issue 1798377 as number 5 [2] titled "Overload Special" (cover date 2008-07, 156pp against our 157pp) - which is also what our filename (which names only the season) and the file's own subtitle say
+F 8540 merge-with=8537 | the same magazine as shelf 8537, the anchor D-010 set for this line: each year's `special` folder holds one file, so every issue we hold sits on its own shelf
+I 29589 cv=268697 gcd=1798377 0.95 | the book's own record on both legs: CV issue 268697 "Overload Special Vol. 22, No. 2" of volume 35025 and GCD issue 1798377 of series 77284, number 5 [2] "Overload Special" cover date 2008-07, 156pp against our 157pp rip
+
+
+# ---- (A) Heavy Metal\...\metal-hurlant and four loose books ----------------------------------------
+S 11952 cv=30007 gcd=- 0.9 | "Metal Hurlant 33bis.cbr" 146pp is a bis issue of the FRENCH magazine, not of the American one: CV 30007 "Metal Hurlant" 1974 Les Humanoides Associes, 166 cached issues, holds "33bis" as issue 862119 with cover date 1978-09, exactly beside its "33" (193114, same month), and the file's own number is that bis; the GCD dump has no row for the French Metal Hurlant at all - its only "Metal Hurlant" rows are Humanoids' 2002 English series 17214, the 2011 157498 and the 2012 Chronicles 122354
+F 11952 merge-with=11953 | S11953 is the same French magazine (its "57bis") under the same metal-hurlant folder - one comic, two single-issue shelves
+F 11952 provider-missing | the GCD dump indexes no Les Humanoides Associes "Metal Hurlant"; the French original of the magazine this whole folder tree is named after is simply absent from it
+I 29354 cv=862119 gcd=- 0.9 | the September-1978 bis issue: CV 30007's cached issue 862119 numbered "33bis", against our 146pp rip; GCD has no issue for the French magazine
+
+S 11953 cv=30007 gcd=- 0.9 | "Metal Hurlant 57bis.cbr" 142pp is the November-1980 bis issue of the French magazine: CV 30007 "Metal Hurlant" 1974 Les Humanoides Associes, 166 cached issues, holds "57bis" as issue 862127 dated 1980-11 beside its "57" (193138, same month), and the rip has 23 such bis numbers to choose from - ours is the one the filename names; the GCD dump holds no French Metal Hurlant row
+F 11953 provider-missing | as with S11952, GCD indexes only the Humanoids English series, never Les Humanoides Associes' own magazine
+I 29374 cv=862127 gcd=- 0.9 | the November-1980 bis issue, CV 30007's cached issue 862127 numbered "57bis", against our 142pp rip
+
+R 11954 | "Metal Hurlant Corazas Coleccion Humanoides By Ayala Crg.cbr" 52pp names a Spanish album from the Coleccion Humanoides line, and an exact and a substring probe of both "Corazas" and "Coleccion Humanoides" returns zero rows in the ComicVine rip and zero in the GCD dump; the packet's candidates were all reached by the two words "Metal Hurlant", and the only Spanish Humanoides rows either catalog holds are Norma's "Coleccion Moebius Metal Hurlant" (GCD 123951, nine issues), a different line
+F 11954 provider-missing | neither catalog indexes the Coleccion Humanoides "Corazas" album in any spelling probed
+
+R 20545 | "Tygra Hielo Y Fuego - Reportaje (Metal Hurlant Espanol 16 [X Exodo]) [X Elteclista][Crg].cbr" is 18 pages and says what it is: a REPORTAJE - a magazine feature on Bakshi's "Fire and Ice" - cut out of Metal Hurlant Espanol #16, not a comic either catalog would index; probing "Tygra" returns zero rows in both, and the ladder entry 16 is the host magazine's issue number, not this item's
+F 20545 not-a-run | an 18pp magazine article extracted from one issue of a Spanish licensed edition: a reader extract of the D-007/D-009 kind, with no published comic behind it
+
+S 9312 cv=57506 gcd=51317 0.9 | "Immortal's fete (1980)" is a literal rendering of Enki Bilal's "La Foire aux immortels" (1980), the first Nikopol book, and the English edition both legs hold is CV 57506 "Gods in Chaos" 1987 Catalan Communications count 1 (issue 387137, 1987-11) and GCD 51317 "Gods in Chaos" 1987-1987 Catalan Communications count 1 (issue 768635, ISBN 0874160499); our 63pp sits against a ~64pp album, and the French line (CV 23507 / GCD 61216, three albums) confirms the 1980 date the filename carries - what caps this at 0.9 is the "(Heavy Metal remix)" tag, which says the pages were taken from the magazine serialisation rather than from the album
+I 29936 cv=387137 gcd=768635 isbn=0874160499 0.9 | the single 1987 Catalan Communications English album on both legs, against our 63pp "Heavy Metal remix" rip - the remix itself is a printing neither catalog mints
+
+R 19356 | this shelf is two DIFFERENT Druillet books that share nothing but Titan's line name in their ComicInfo Series: "Lone Sloane 07 - Babel (2023)" 62pp is CV 154360 / GCD 209446 "Lone Sloane: Babel" 2023 Titan count 1, and "The Druillet Library - Vuzz (2022)" 138pp is GCD 209454 "Vuzz" 2022 Titan count 1 (ComicVine's only Vuzz, 85799, is Dargaud's 1974 French album); Titan's Druillet Library is the Silver Sprocket shape - one record per BOOK in both catalogs (209446 Babel, 209447 Gail, 209452 Chaos, 209453 Delirius, 209454 Vuzz, 209455 Salammbo, 209456 The Night) and no spanning row anywhere, so no one id describes this shelf
+F 19356 split-needed | Lone Sloane: Babel = CV 154360 / GCD 209446 (item 29735); Vuzz = cv=- / GCD 209454 (item 110573) - two separately published Titan albums, and the two files also sit in two different folders (Heavy Metal\Lone Sloane and Titan Comics\The Druillet Library), which is why they were ever one shelf
+I 29735 cv=1027322 gcd=2612518 isbn=9781787740174 0.95 | "Lone Sloane 07 - Babel": CV 154360's only issue 1027322 (HC, 2023-10-30) and GCD 209446's only issue 2612518 (94pp, ISBN 9781787740174, August 2023) are the same Titan book on two legs, 94pp against our 62pp rip
+I 110573 cv=- gcd=2612543 isbn=9781785866654 0.9 | "The Druillet Library - Vuzz": GCD 209454's only issue 2612543 (ISBN 9781785866654, August 2022) is Titan's English Vuzz, against our 138pp rip; ComicVine indexes no Titan Vuzz volume - its only Vuzz, 85799, is Dargaud's 1974 French album
+
+S 14389 cv=143374 gcd=- 0.9 | our single 210pp "Ranx (2021)" is the whole Ranx cycle in one book, and the record of that book is CV 143374 "RANX: The Collected Edition" 2022 Heavy Metal count 1 (issue 931123, 2022-07-23) - the publisher, the extent and the filename's year all fit; the GCD dump has no row for the Heavy Metal collected edition, only the 1996 Heavy Metal three-album line 51338 that it collects and a shelf of European editions (Albin Michel 167123, Catalan 51230, Kult 57682/57816, Himalaya 78403, Glenat 94519, Cobolt 144157)
+F 14389 provider-missing | GCD indexes no 2021/2022 Heavy Metal "RANX: The Collected Edition"; its Heavy Metal Ranx row is the 1996 three-album series
+I 29941 cv=931123 gcd=- 0.9 | the book itself: CV 143374's only issue 931123, the 2022 Heavy Metal collected edition, against our 210pp rip
+C 29941 gcd=51338 #1-3 0.9 | what the book collects: GCD 51338 "Ranx" 1996-1996 Heavy Metal count 3 is Heavy Metal's own three-album English Ranx line (issues 2752688 #1, 2752689 #2 and 768727 #3 "Amen!", ISBN 1-882931-32-7), and a 210pp single volume against three ~70pp albums is that line entire
+
+S 14478 cv=128961 gcd=- 0.9 | CV 128961 "The Angels Wanna Wear My Red Shoes" 2020 VIRUS count 4 (issues 782410, 796225, 820626, 820627, July-December 2020) carries our filename's whole parenthesised title and its 2020, and VIRUS is Heavy Metal's imprint - the folder reads Heavy Metal\The Angels Wanna Wear My Red Shoes (2020) and ComicInfo Publisher says Heavy Metal; our ladder is 1 of that four
+F 14478 merge-with=10 | S10 is issues #2-4 of the same four-issue VIRUS run on the same CV 128961 with the same gcd=-; this shelf is its #1
+F 14478 provider-missing | the GCD dump holds no row of this title for Heavy Metal, VIRUS or anyone else; its only "Red Shoes" is NBM's 2015 "The Red Shoes and Other Tales"
+
+# ---- (B) Humanoids -------------------------------------------------------------------------------
+R 5566 | this folder is TWO co-equal runs, not one: ComicVine indexes "District 14: Season 1" as CV 82282 (Humanoids, 12 episodes, whose issue names are our twelve filenames word for word - "Are You An Anarchist?", "Bambell Tower", "The Tables Turn" … "Escape by any means possible. . .") and "District 14: Season 2" as CV 82547 (Humanoids, 15 episodes, of which our three are issues 845777 "Red Pepper Valley", 845779 "The Picnic" and 845778 "The Last Zip-Line"); that is why three numbers (10, 11, 12) each name two files, and neither season's record spans the other
+F 5566 split-needed | District 14 Season 1 = CV 82282 / gcd=- (items 29836-29847, episodes 1-12 complete); District 14 Season 2 = CV 82547 / gcd=- (items 29848-29850, episodes 10-12 of 15); the GCD dump holds no District 14 row of either season
+F 5566 provider-missing | GCD indexes no Humanoids "District 14"; its only "District" hits are Marvel's District X
+
+S 8300 cv=- gcd=216500 0.9 | GCD 216500 "Hanami: You, Me, & 200 Sq Ft in Japan" 2024-2024 Humanoids count 1 (issue 2666703, 144pp, ISBN 9781643376653) is our filename's whole title, publisher and year, and 144pp sits against our 142pp rip; the ComicVine rip has no volume of this title - its candidates here were reached by the bare words "you" and "me" - and the shelf's parsed key "Hanami - You, Me, and" is the truncation that hid it
+F 8300 provider-missing | ComicVine indexes no Humanoids / Life Drawn "Hanami"; GCD's other Hanami rows are Dark Horse's 2007 manga and two French albums
+I 29966 cv=- gcd=2666703 isbn=9781643376653 0.9 | the single 2024 Humanoids book, 144pp against our 142pp webrip
+
+S 15027 cv=81982 gcd=- 0.9 | the RUN wins: our 128pp "COL Sanctum Redux v02 - Damned" is a collected volume of CV 81982 "Sanctum Redux" 2015 Humanoids count 5, the five-issue run, and CV 81981 "Sanctum Redux" 2015 Humanoids count 1 (issue 488732, "GN") is the collected record minted beside it; the GCD dump has no "Sanctum Redux" row at all - its Humanoids Sanctum rows are 54234 (2002-2003, 2) and 149259 (2017, 1), the earlier and later series
+F 15027 merge-with=35884 | S35884 is volumes 01, 03, 04 and 05 of the same five-album Humanoids line on the same CV 81982 with the same gcd=-, read in another batch; this shelf is its volume 02
+F 15027 provider-missing | GCD indexes no Humanoids "Sanctum Redux" in any spelling probed, only the 2002 "Sanctum" and the 2017 one
+I 29898 cv=488732 gcd=- 0.9 | the collected book: CV 81981's only issue 488732, the 2015 Humanoids graphic novel, against our 128pp rip; GCD mints no record for it
+
+S 16885 cv=- gcd=198275 0.9 | GCD 198275 "Storyboarding for Wim Wenders: Visions of Wenders" 2023-2023 Humanoids count 1 (issue 2512089) reproduces our filename's whole title and publisher; the ComicVine rip has no volume of it - every candidate the packet offered was reached by the bare word "Visions" (Caliber 1994, Gary Cook 1979) - and the 2022/2023 year puts the book past the January-2026 rip's coverage of Humanoids' Life Drawn line
+F 16885 provider-missing | ComicVine indexes no Humanoids "Storyboarding for Wim Wenders"
+I 29994 cv=- gcd=2512089 0.9 | the single 2023 Humanoids book, GCD 198275's only issue, against our 156pp rip
+
+S 18203 cv=- gcd=214426 0.9 | GCD 214426 "The Cat from the Kimono" 2023-2023 Humanoids count 1 (issue 2651857, 104pp, ISBN 9781643376516) is our filename's title, publisher and year, and 104pp sits against our 92pp rip; ComicVine has no volume of this title and its candidates were reached by "cat" and "kimono" separately (Zenescope's Cheshire Cat, Dark Horse's Okimono Kimono)
+F 18203 provider-missing | ComicVine indexes no Humanoids "The Cat from the Kimono"
+I 29998 cv=- gcd=2651857 isbn=9781643376516 0.9 | the single 2023 Humanoids book, 104pp against our 92pp webrip
+
+R 18693 | "The Golden Voice - The Ballad of Cambodian Rock's Lost Queen (Humanoids 2023)" 200pp is in NEITHER catalog: an exact and a substring probe of "The Golden Voice", a LIKE on '%Golden Voice%' in both cv_vol and gcd_series, and probes of "Cambodian" and of the full subtitle all return nothing but CV 102659 "Golden Voices: Frank Sinatra", a different book; ComicInfo asserts Series "The Golden Voice - The Ballad of Cambodian Rock's Lost Queen" and Publisher "Life Drawn", so the comic is real and 2023 Life Drawn is simply past both catalogs' horizon for this title
+F 18693 provider-missing | neither ComicVine nor GCD holds this 2023 Humanoids / Life Drawn book under any spelling probed
+
+S 11949 cv=85439 gcd=83092 0.9 | our "COL Metabarons Genesis - Castaka v01 - The First Ancestor" 60pp is book one of a two-book line: CV 85439 "Metabarons Genesis: Castaka" 2015 Humanoids count 2 names its issues 503638 "Book 1: The First Ancestor" and 503639 "Book 2: The Rival Twins" - our two filenames exactly - and GCD mints the first book its own row, 83092 "Metabarons Genesis: Castaka" 2014-2014 Humanoids count 1 (issue 1259041, ISBN 978-1-59465-053-6, dated 2014-03, our filename's year); what caps this at 0.9 is that GCD splits the line into three count-1 rows (83092 for 2014, 126998 for 2015, 126999 for 2016) where ComicVine keeps one two-issue volume
+F 11949 merge-with=11950 | S11950 is book two of the same two-book line under the same `03 Castaka (2014)` folder, and ComicVine's volume 85439 covers both - one comic cut into two shelves by the subtitle in the filename
+I 30021 cv=503638 gcd=1259041 isbn=978-1-59465-053-6 0.9 | book one on both legs: CV 85439's issue 503638 "Book 1: The First Ancestor" and GCD 83092's only issue, against our 60pp rip
+
+S 11950 cv=85439 gcd=126998 0.7 | book two of the same line: CV 85439's issue 503639 is named "Book 2: The Rival Twins", our filename word for word, and the volume's count of 2 is exactly the two books this folder holds; the GCD side is the doubt that keeps this at 0.7 - GCD has three count-1 "Metabarons Genesis: Castaka" rows (83092 dated 2014, 126998 dated 2015, 126999 dated 2016) with no titles and no ISBNs on the latter two, so which of 126998 and 126999 is book two and which is a later printing cannot be settled from the dump
+I 30022 cv=503639 gcd=- 0.9 | book two's own record on the ComicVine side is issue 503639 "Book 2: The Rival Twins" of volume 85439; no GCD issue id is claimed, for the reason in the S clause
+
+R 20159 | "Through Clouds of Smoke - Freud's Final Days (Humanoids 2023)" 133pp is in neither catalog: an exact probe of the title, a substring probe of "Freud" (which returns fifteen unrelated books in each) and a LIKE on '%Clouds of Smoke%' in both cv_vol and gcd_series all return nothing; ComicInfo asserts Series "Through Clouds of Smoke - Freud's Final Days" and Publisher "Life Drawn", the same 2023 Humanoids imprint as S18693, so the comic is real and unindexed
+F 20159 provider-missing | neither catalog holds this 2023 Humanoids / Life Drawn book; the 2022-2023 Life Drawn list is the single biggest no-record cluster in this batch
+
+# ---- (C) IDW Hasbro ------------------------------------------------------------------------------
+S 4001 cv=45130 gcd=62853 0.95 | a one-shot annual with its own record on both legs: CV 45130 "Cobra Annual 2012: The Origin Of Cobra Commander" 2012 IDW count 1 (issue 311017) and GCD 62853 of the same title, 2012-2012 IDW count 1 (three cover rows, the base 904950 at 52pp against our 54pp), agree on title, publisher, year and count; the filename's leading "26" is this book's position in the G.I. Joe IDW Chronology read order, not an issue number, which is why the ladder reads 26
+I 32085 cv=311017 gcd=904950 0.9 | the January-2012 annual on both legs, GCD's base cover row at 52pp against our 54pp "(3 covers)" rip; GCD mints two further rows (921087, 921103) for the other two covers, which is what caps this at 0.9
+
+S 4000 cv=55572 gcd=222202 0.95 | a collected edition both providers mint and nothing else describes: CV 55572 "G.I. Joe: Cobra - Son of the Snake" 2013 IDW count 1 (issue 378921, labelled "TPB") and GCD 222202 "Cobra: Son of the Snake" 2013-2013 IDW count 1 (issue 2720104, 104pp, ISBN 978-1613775479) agree on title, publisher, year and count, and 104pp is our 104pp exactly
+I 33890 cv=378921 gcd=2720104 isbn=978-1613775479 0.95 | the 2013 IDW trade on both legs, 104pp against our 104pp rip
+N 4000 the numbered run underneath is IDW's Cobra (CV 40346, 2011, 21 issues; GCD 68467, 2012-2013, 12): this shelf is one trade in a read-order folder of its own, and linking it to that ongoing would merge a trade shelf into the run, which the ledger forbids
+
+S 14318 cv=109574 gcd=159411 0.95 | a one-shot: CV 109574 "ROM: Tales of the Solstar Order One-Shot" 2018 IDW count 1 (issue 664788, "Battle Scars", 2018-03-31) and GCD 159411 "ROM: Tales of the Solstar Order" 2018-2018 IDW count 1 (issue 2106904, 44pp) agree on title, publisher, year and count, and 44pp sits against our 39pp rip; IDW's ROM ongoing (CV 92485 / GCD 104631, 14) is a different series and this book sits in its `Annuals and Specials` folder
+I 32252 cv=664788 gcd=2106904 0.95 | the March-2018 one-shot on both legs, 44pp against our 39pp rip
+
+S 14319 cv=92485 gcd=104631 0.9 | a shelf that is ONLY variant covers still identifies its comic: "ROM 001 Variant Covers (35 covers) (covers only) (2016-07)" is 36 one-page cover scans of ROM #1, and the comic is IDW's 2016 relaunch - CV 92485 "ROM" 2016 IDW count 14 and GCD 104631 "Rom" 2016-2017 IDW count 14 agree on publisher, year and count, and the file's own 2016-07 date is that run's first month; Marvel's 1979 ROM (CV 3010 / GCD 2516, 75) is the same bare title a different decade
+F 14319 merge-with=14320 | S14320 is the same run's #2 cover pack in the same `Variant Covers` folder - one comic, two cover-pack shelves
+F 14319 partial-rip | 36 one-page cover images and no interior pages: the shelf holds no readable issue of the comic it identifies
+N 14319 C-040 read S14317 as two co-equal ROM runs and refused it (R + split-needed) naming CV 92485 / GCD 104631 for the IDW half, so these two cover packs carry no collision with a landed shelf; whether they should later join the IDW ROM run is the lead's call once S14317 is split
+
+S 14320 cv=92485 gcd=104631 0.9 | the companion cover pack: "ROM 002 Variant Covers (4 vovers) (covers only) (2016-08)" is four one-page cover scans of ROM #2, August 2016, which is the second month of the same IDW relaunch - CV 92485 "ROM" 2016 IDW 14 / GCD 104631 "Rom" 2016-2017 IDW 14 - and the ladder entry 2 is that issue number
+F 14320 partial-rip | four one-page cover images, 4pp in total, with no interior pages of ROM #2
+
+S 2463 cv=157473 gcd=186233 0.95 | the collected LINE, which both legs carry: CV 157473 "Best of Teenage Mutant Ninja Turtles Collection" 2022 IDW (issues 1050470 "Vol. 1" … 1146984 "Vol. 4") and GCD 186233 of the same title, 2022-? IDW count 6 (issue 2635706 as #4, ISBN 979-8-88724109-8, on sale 2024-06-04) agree on title, publisher and start year, and our one file is volume 04 dated 2024 - exactly that row; the count difference (3 cached against 6) is staleness of the January-2026 rip on an open-ended line, not residue, and the shelf's parsed key "Best of TMNT Collection" is what hid the record from every probe
+I 32433 cv=1146984 gcd=2635706 isbn=979-8-88724109-8 0.95 | volume 04 on both legs, the June-2024 book, against our 285pp rip
+N 2463 what the line reprints is IDW's per-character "TMNT: Best of X" one-shots, which both catalogs mint one record per book (GCD 214408 Donatello, 214437 Raphael, 214438 Leonardo … 214453 Krang; CV 130734, 132281, 141244, 157643, 158135, 166019) - there is no single run for a `C` line to name
+
+S 17458 cv=158091 gcd=211815 0.95 | CV 158091 "Teenage Mutant Ninja Turtles: Black, White & Green" 2024 IDW count 4 and GCD 211815 "Teenage Mutant Ninja Turtles: Black White & Green" 2024-2024 IDW count 4 agree on title, publisher, year and a four-issue count, and our ladder 2-4 of 39-41pp issue files sits inside it; the count-1 records beside them (CV 167770, GCD 217525 at 168pp) are the collected trade, not the run
+F 17458 merge-with=17748 | S17748 is issue #001 of the same four-issue IDW run on the same CV 158091 / GCD 211815 ids; this shelf is its #002-004
+N 17458 we hold #2-4 of four; issue #1 is not on this shelf, and the collected trade (CV 167770 issue 1138925 / GCD 217525 issue 2678602, ISBN 979-8-88724-157-9) is not here either
+
+S 17459 cv=157528 gcd=210792 0.95 | a one-shot both legs mint: CV 157528 "Teenage Mutant Ninja Turtles: Saturday Morning Adventures - April Special" 2024 IDW count 1 (issue 1050639, 2024-04-03) and GCD 210792 "Teenage Mutant Ninja Turtles: April Special" 2024-2024 IDW count 1 (base cover row 2621190, 48pp, on sale 2024-04-03) are the same book on the same day, and 48pp sits against our 46pp rip; GCD drops the "Saturday Morning Adventures" from its title, which is why the shelf's own doubled key never reached it
+I 32369 cv=1050639 gcd=2621190 0.9 | the April-2024 special on both legs; GCD mints three further cover rows (2621267, 2621858, 2621856) for the same book, which caps this at 0.9
+
+S 68047 cv=50804 gcd=78043 0.9 | six volumes of IDW's black-and-white reprint line: CV 50804 "Teenage Mutant Ninja Turtles: The Ultimate Collection" 2011 IDW count 7 (issues 347470 "Vol. 1" … 1079031 "Vol. 7") and GCD 78043 of the same title, 2011-2023 IDW count 7 (issues 1168520 #1 … 2499608 #7, each with its own ISBN), agree on publisher, start year and a seven-volume count, and our v01-v06 are six of that seven; what caps this at 0.9 is the name - our filenames call it "The Ultimate Black & White Collection", which is what the line reprints rather than its indicia title, and neither catalog holds a series of that name - plus GCD's second round 117842 (2017-, 7), the softcover printing
+I 32403 cv=347470 gcd=1168520 isbn=978-1-61377-007-8 0.9 | volume 1 on both legs against our 312pp rip
+I 32404 cv=347467 gcd=1168533 isbn=978-1-61377-088-7 0.9 | volume 2 on both legs against our 268pp rip
+I 32405 cv=347469 gcd=1168535 isbn=978-1-61377-138-9 0.9 | volume 3 on both legs against our 269pp rip
+I 32406 cv=396459 gcd=1170758 isbn=978-1-61377-496-0 0.9 | volume 4 on both legs against our 240pp rip
+I 32407 cv=436239 gcd=1170767 isbn=978-1-61377-553-0 0.9 | volume 5 on both legs against our 182pp rip
+I 32408 cv=508913 gcd=1514976 0.9 | volume 6 on both legs (GCD's row carries no ISBN) against our 253pp rip
+
+S 17466 cv=149473 gcd=199241 0.95 | the RUN wins: our single 142pp file is the collected edition of a five-issue crossover, and that run is CV 149473 "Teenage Mutant Ninja Turtles/Usagi Yojimbo: WhereWhen" 2023 IDW count 5 and GCD 199241 "Teenage Mutant Ninja Turtles / Usagi Yojimbo: Wherewhen" 2023-2023 IDW count 5, which agree on publisher, year and count; the count-1 records beside them (CV 156073 / GCD 209380) are the #1 Director's Cut, a different book
+N 32410 no-record | the collected trade's own record is in neither catalog: a LIKE on '%Wherewhen%' in cv_vol and gcd_series returns only the five-issue run and the Director's Cut one-shot, so our 142pp collection has no item-level row to carry
+
+S 20383 cv=53103 gcd=53982 0.95 | the reprint LINE, which both legs carry at the same extent: CV 53103 "Transformers: The IDW Collection" 2010 IDW (eight issues named "Volume One" … "Volume Eight", 2010-05 to 2013-05) and GCD 53982 "The Transformers: The IDW Collection" 2010-2011 IDW count 8 (issues 793716 … 2186820, each with its own ISBN and on-sale date) agree volume for volume with our eight files' Book 01-08 and their 2010-2013 dates; the later phases are separate records (CV 76743 Phase Two, 145602 Phase Three)
+I 32558 cv=362276 gcd=793716 isbn=978-1-60010-667-5 0.95 | Book 01 on both legs, on sale 2010-05-26, against our 386pp rip
+I 32559 cv=362277 gcd=793718 isbn=978-1-60010-751-1 0.95 | Book 02 on both legs against our 372pp rip
+I 32560 cv=362278 gcd=814539 isbn=978-1-60010-856-3 0.95 | Book 03 on both legs against our 339pp rip
+I 32561 cv=362279 gcd=839681 isbn=978-1-60010-938-6 0.95 | Book 04 on both legs against our 366pp rip
+I 32562 cv=362280 gcd=901360 isbn=978-1-61377-052-8 0.95 | Book 05 on both legs against our 357pp rip
+I 32563 cv=362281 gcd=2186818 isbn=978-1-61377-183-9 0.95 | Book 06 on both legs against our 364pp rip
+I 32564 cv=362190 gcd=2186819 isbn=978-1-61377-406-9 0.95 | Book 07 on both legs against our 403pp rip
+I 32565 cv=407009 gcd=2186820 isbn=978-1-61377-627-8 0.95 | Book 08 on both legs against our 376pp rip
+
+# ---- (C) IDW -------------------------------------------------------------------------------------
+S 5018 cv=19592 gcd=26135 0.9 | the shelf is an 11pp fragment of one book, and the book is named by its own folder: `30 Days of Night Vol. 05 - Three Tales (2006)\03 Picking Up the Pieces`, i.e. CV 19592 "30 Days of Night: Three Tales" 2006 IDW count 1 (issue 117421) and GCD 26135 of the same title, 2006-2006 IDW count 1 (issue 370699, 132pp, ISBN 9781933239927); probing "Picking Up the Pieces" returns zero rows in both catalogs, so the epilogue has no record of its own and the ladder entry 30 is the "30" of the title
+F 5018 partial-rip | 11 pages of a 132pp collection: the shelf holds only the epilogue story, not the book
+I 31727 cv=117421 gcd=370699 isbn=9781933239927 0.7 | the book our fragment comes out of, 132pp against our 11pp - the id is the collection's, which is why this is 0.7 and not the S line's 0.9
+
+S 85 cv=19274 gcd=26508 0.95 | a `<Title> (<year>)` folder holding only the collected edition is the RUN's folder: the run is CV 19274 "30 Days of Night: Beyond Barrow" 2007 IDW count 3 and GCD 26508 of the same title, 2007-2007 IDW count 3, which agree on publisher, year and a three-issue count, and the folder reads `30 Days of Night Vol. 09 - Beyond Barrow (2007)`
+I 30265 cv=135772 gcd=2680877 isbn=9781600101557 1.0 | the collection asserts its own identity: the EAN-13 read off item 30265 is 9781600101557, which is exactly GCD 217820's single issue's ISBN (2680877, 104pp, March 2008), and ComicVine mints that trade as 22623's only issue 135772 - a barcode and a leg agreeing outright
+
+S 5017 cv=154722 gcd=214640 0.95 | the Deluxe Edition LINE, carried by both legs: CV 154722 "30 Days of Night Deluxe Edition" 2023 IDW (issues 1030140 "Book One" 2023-10 and 1099027 "Book Two" 2024-08) and GCD 214640 of the same title, 2023-? IDW count 3 (issues 2653167 #1 on sale 2023-10-10, 2653318 #2 on 2024-08-20, 2836162 #3 in 2026), agree on title, publisher and start year, and our file is Book 01 dated 2023 with ComicInfo Series "30 Days of Night Deluxe Edition: Book One"
+F 5017 merge-with=57286 | S57286 is Book 02 of the same line in the same `_Deluxe Editions` folder - one collected line cut into two shelves by the book number
+I 30285 cv=1030140 gcd=2653167 isbn=979-8-88724-047-3 0.95 | Book One on both legs, on sale 2023-10-10, against our 436pp rip
+
+S 57286 cv=154722 gcd=214640 0.95 | Book 02 of the same line: CV 154722's issue 1099027 is named "Book Two" and dated 2024-08, GCD 214640's issue 2653318 is its #2 on sale 2024-08-20 with ISBN 9798887241050, and our file is "COL 30 Days of Night Deluxe Edition - Book 02 (2024)" at 473pp - title, publisher, book number and year agree on both legs
+I 30286 cv=1099027 gcd=2653318 isbn=9798887241050 0.95 | Book Two on both legs, on sale 2024-08-20, against our 473pp rip
+
+R 66436 | "COL Alex Raymond Rip Kirby v2 - The Complete Comic Strips 1948-1951 (IDW 2010)" is a year-range newspaper-strip archive, and neither catalog indexes IDW's Library of American Comics strip volumes: a LIKE on '%Rip Kirby%' in cv_vol returns eighteen rows, all of them 1948-1992 comic-book and album reprints from Feature Productions, Atlas, Yaffa, Fratelli Spada, Pacific Comics Club and Comic Art, and a LIKE on '%Rip Kirby%Complete%' returns nothing in either catalog - the ledger's own note names Rip Kirby among the strip archives with no provider record
+F 66436 provider-missing | IDW's "Rip Kirby: The Complete Comic Strips" hardcover line is in neither catalog; what both hold are the strip's comic-book reprints, a different product
+
+S 3376 cv=- gcd=218819 0.9 | GCD 218819 "Caniff: A Visual Biography" 2011-2011 IDW count 1 (issue 2688197, 360pp, ISBN 9781600109201) is our filename's title, publisher and year, and 360pp sits against our 329pp rip; the ComicVine rip has no volume of it - its candidates were reached by the bare letters "IDW" (Coming Attractions, The First 10 Years, the Transformers Collection)
+F 3376 provider-missing | ComicVine indexes no IDW "Caniff: A Visual Biography"
+I 31764 cv=- gcd=2688197 isbn=9781600109201 0.9 | the single 2011 IDW book, 360pp against our 329pp rip
+
+S 3395 cv=- gcd=185961 0.9 | GCD 185961 "Captain Action: The Classic Collection" 2022-2022 IDW count 1 (issue 2411231, 152pp, ISBN 9781684058907) is our filename's whole title and its 2022, ComicInfo says IDW, and 152pp sits against our 148pp rip; ComicVine holds no volume of this title - only DC's 1968 "Captain Action" (2391) and Moonstone's and Karl Art's revivals, all different comics
+F 3395 provider-missing | ComicVine indexes no IDW "Captain Action: The Classic Collection"
+I 31765 cv=- gcd=2411231 isbn=9781684058907 0.9 | the single 2022 IDW book, 152pp against our 148pp rip
+
+S 4016 cv=- gcd=198903 0.9 | GCD 198903 "Codex Black" 2023-? IDW count 2 names its two books by our two filenames' subtitles - issue 2653224 as #1 "A Fire Among Clouds" (ISBN 978-1-68405-959-1, 2023-04-04) and issue 2653401 as #2 "Bird of Ill Omen" (ISBN 979-8-88724-091-6, 2024-08-20) - and our file is Book 02, "Bird of Ill Omen", dated 2024; the ComicVine rip has no Codex Black volume at all, its candidates reached by the bare words "black" and "bird" (Viz's manga, Shogakukan's original)
+F 4016 merge-with=35105 | S35105 is Book 01 of the same two-book line in the same `Codex Black (2023)` folder, and GCD 198903 covers both - one comic cut into two shelves by the subtitle
+F 4016 provider-missing | ComicVine indexes no IDW "Codex Black"
+I 30426 cv=- gcd=2653401 isbn=979-8-88724-091-6 0.9 | Book 02 on the GCD side, on sale 2024-08-20, against our 319pp rip
+
+S 35105 cv=- gcd=198903 0.9 | Book 01 of the same line: GCD 198903's issue 2653224 is its #1 titled "A Fire Among Clouds" with ISBN 978-1-68405-959-1 and an April-2023 on-sale date, which is our filename and our ComicInfo Series "Codex Black (Book One): A Fire Among Clouds" exactly, and ComicInfo Publisher says IDW; ComicVine has no volume of this line
+F 35105 provider-missing | ComicVine indexes no IDW "Codex Black"
+I 30425 cv=- gcd=2653224 isbn=978-1-68405-959-1 0.9 | Book 01 on the GCD side, on sale 2023-04-04, against our 321pp rip
+
+S 4238 cv=- gcd=199803 0.9 | GCD 199803 "Cosmic Cadets" 2023-? IDW count 2 names its #1 "Contact!" at 160pp with ISBN 978-1-60309-520-4 and an April-2023 on-sale date, which is our filename and our ComicInfo Series "Cosmic Cadets (Book One): Contact!" exactly; 160pp sits against our 157pp rip, ComicInfo Publisher says Top Shelf Productions and GCD files post-2016 Top Shelf under IDW, the imprint difference the ledger already records; ComicVine has no volume of this line - its candidates were all Top Shelf samplers
+F 4238 provider-missing | ComicVine indexes no Top Shelf / IDW "Cosmic Cadets"
+I 31780 cv=- gcd=2525513 isbn=978-1-60309-520-4 0.9 | Book One on the GCD side, 160pp against our 157pp rip
+
+R 5916 | "Dungeons & Dragons - Sampler (2023)" 36pp is a free promotional sampler and neither catalog indexes it: an exact probe of "Dungeons & Dragons Sampler" returns zero rows in both, a substring probe of "Dungeons and Dragons" in the GCD dump returns only a Panini Brasil crossover, and the 2010-2016 IDW D&D series the packet offers (CV 34871 count 16, 90079 count 5; GCD 60606, 70290, 101008) are runs this 36pp sampler is not part of
+F 5916 provider-missing | neither catalog holds IDW's 2023 "Dungeons & Dragons Sampler"; promotional samplers are a systematic hole
+
+R 24293 | this shelf is FOUR separately published one-shots, each with its own count-1 record in BOTH catalogs, and no row anywhere spans them: "King Ghidorah vs. SpaceGodzilla" = CV 161155 / GCD 217858, "Mechagodzilla vs. King Ghidorah" = CV 160217 / GCD 216028, "Mothra Vs. Hedorah" = CV 158405 / GCD 212763 and "vs. Manda" = CV 159135 / GCD 214065, all 2024 IDW, all count 1; GCD 195569 "Godzilla Rivals" 2023-? count 4 looks like the line but its issues are named "Round One" … "Round Four" (2484404, 2653182, 2653191, 2732904) - the collected trades, not these one-shots
+F 24293 split-needed | four co-equal one-shots: item 30625 -> CV 161155 / GCD 217858; item 30626 -> CV 160217 / GCD 216028; item 30627 -> CV 158405 / GCD 212763; item 30628 -> CV 159135 / GCD 214065
+I 30625 cv=1078603 gcd=2681577 0.9 | "King Ghidorah vs. SpaceGodzilla", CV 161155's only issue and GCD 217858's base cover row (52pp against our 48pp); GCD mints two further cover rows, which caps this at 0.9
+I 30626 cv=1072375 gcd=2661967 0.9 | "Mechagodzilla vs. King Ghidorah", October 2024 on both legs, 52pp against our 46pp; two further GCD cover rows
+I 30627 cv=1058690 gcd=2635653 0.9 | "Mothra Vs. Hedorah", June 2024 on both legs, 52pp against our 49pp; two further GCD cover rows
+I 30628 cv=1065525 gcd=2648819 0.9 | "Godzilla Rivals: Vs. Manda", July 2024 on both legs, 52pp against our 50pp; two further GCD cover rows
+
+S 7656 cv=- gcd=191965 0.9 | GCD 191965 "Godzilla: Best of Mothra" 2022-2022 IDW count 1 (issue 2446971, on sale 2022-10-26) is our filename's title, publisher and year; the ComicVine rip has no volume of it - its nearest rows are the later "Godzilla: Best of Mechagodzilla" 155937, "Best of Gigan" 155395 and "Best of Destoroyah" 157167, and the two-volume "Best of Godzilla" collected line (CV 159334 / GCD 217142), a different product
+F 7656 provider-missing | ComicVine indexes no IDW "Godzilla: Best of Mothra", though it holds the rest of the Best of line
+I 30645 cv=- gcd=2446971 0.9 | the single October-2022 IDW one-shot, GCD 191965's only issue, against our 95pp rip
+
+S 66455 cv=- gcd=214839 0.9 | GCD 214839 "Godzilla: The Complete Monsters & Protectors" 2024-2024 IDW count 1 (issue 2654246, 288pp, ISBN 979-8-88724-093-0, on sale 2024-08-27) is our filename's whole title and year, and 288pp is our 287pp rip within one page; ComicVine has no volume of the omnibus, only the runs it collects
+F 66455 provider-missing | ComicVine indexes no IDW "Godzilla: The Complete Monsters & Protectors"
+I 31836 cv=- gcd=2654246 isbn=979-8-88724-093-0 0.9 | the single 2024 IDW omnibus, 288pp against our 287pp rip
+N 66455 the runs the omnibus collects are CV 135568 / GCD 172069 "Godzilla: Monsters & Protectors" (2021, 5) and CV 145536 / GCD 190859 "…All Hail the King!" (2022, 5), plus the Rise Up! and Summer Smash one-shots - two numbered minis, so no single `C` range states it
+
+S 14353 cv=75887 gcd=81959 0.95 | the RUN wins: our two files are the first two collected volumes of a twelve-issue run, and that run is CV 75887 "Ragnarök" 2014 IDW count 12 and GCD 81959 "Ragnarök" 2014-2017 IDW count 12, which agree on publisher, span and count; the collected line beside them is CV 86164 / 102794 (count-1 volumes per book) and GCD 112693 "Ragnarök" 2015-2017 IDW count 3, whose issue titles are our two filenames' subtitles
+I 31198 cv=506308 gcd=1680783 isbn=978-1631400681 0.95 | volume 01 "Last God Standing" on both legs - CV 86164's only issue and GCD 112693's #1 at 168pp - against our 156pp rip
+I 31199 cv=608232 gcd=1745048 isbn=978-1-63140-883-0 0.95 | volume 02 "The Lord of the Dead" on both legs - CV 102794's only issue and GCD 112693's #2 at 168pp - against our 158pp rip
+
+S 15429 cv=78362 gcd=84864 0.95 | CV 78362 "Shadow Show: Stories In Celebration of Ray Bradbury" 2014 IDW count 5 and GCD 84864 of the same title, 2014-2015 IDW count 5, agree on publisher, span and a five-issue count, our ladder 1-5 is complete over five 22-26pp issue files dated 2014-2015, and each filename carries its own "(of 05)"; the count-1 records beside them (CV 83151 / GCD 162816, 132pp) are the collected trade
+N 15429 the one number that names two files is 5: item 31909 is a 1pp "Shane Pierce Subscription variant" cover of #5, a duplicate rip of the same issue and not a second comic
+
+R 15898 | "COL Sonic the Hedgehog - Knuckles' Greatest Hits (2023)" 96pp is in neither catalog: an exact probe of "Sonic the Hedgehog Knuckles Greatest Hits", a substring probe of "Knuckles" (which returns twelve Archie and Fleetway books and IDW's 2024 "Knuckles' 30th Anniversary Special", CV 161158 / GCD 217717) and a LIKE on '%Greatest Hits%' in both catalogs all fail to reach it; ComicInfo asserts Series "Sonic The Hedgehog: Knuckles' Greatest Hits" and Publisher IDW, so the 2023 collection is real and unindexed
+F 15898 provider-missing | neither catalog holds IDW's "Sonic the Hedgehog: Knuckles' Greatest Hits" collection
+
+S 35933 cv=- gcd=224281 0.9 | GCD 224281 "Sonic the Hedgehog: The IDW Comic Art Collection" 2023-2023 IDW count 1 (issue 2740852, 120pp, ISBN 979-8887240428) is our ComicInfo Series word for word and 120pp is our 120pp exactly; the ComicVine rip has no volume of it - its candidates were reached by "IDW Collection" (Transformers, G.I. Joe) and by the bare "Sonic the Hedgehog"
+F 35933 provider-missing | ComicVine indexes no IDW "Sonic the Hedgehog: The IDW Comic Art Collection"
+I 31339 cv=- gcd=2740852 isbn=979-8887240428 0.9 | the single 2023 IDW art book, 120pp against our 120pp rip
+
+S 66488 cv=- gcd=145727 0.9 | GCD 145727 "Team Sonic Racing Plus Deluxe Turbo Championship Edition" 2019-2019 IDW count 1 (issue 1968243, 48pp, on sale 2019-05-22) reproduces our filename's entire absurd title and its 2019, and 48pp sits against our 52pp rip; the ComicVine rip holds no volume of it
+F 66488 provider-missing | ComicVine indexes no IDW "Team Sonic Racing Plus Deluxe Turbo Championship Edition"
+I 31341 cv=- gcd=1968243 0.9 | the single May-2019 IDW one-shot, 48pp against our 52pp rip
+
+S 16468 cv=150164 gcd=200019 0.95 | a Free Comic Book Day one-shot both legs mint: CV 150164 "Star Trek Free Comic Book Day" 2023 IDW count 1 (issue 988033, named "Prelude to Star Trek: Day of Blood; Lower Decks #1 Excerpt", 2023-05-07) and GCD 200019 of the same title, 2023-2023 IDW count 1 (issue 2526974, 32pp, on sale 2023-05-06), agree on title, publisher, year and count, and ComicVine's issue name is our ComicInfo Series "Star Trek: Prelude to Day of Blood (FCBD 2023)"; 32pp sits against our 26pp rip
+I 31409 cv=988033 gcd=2526974 0.95 | the May-2023 FCBD book on both legs, 32pp against our 26pp rip
+
+S 16431 cv=53942 gcd=72872 0.9 | the collected LINE wins because both legs carry it at exactly our extent: CV 53942 "Star Trek" 2012 IDW count 13, whose issue names are our thirteen volumes' arcs ("Where No Man Has Gone Before", "Operation: Annihilate!" … "Legacy of Spock"), and GCD 72872 "Star Trek" 2012-2016 IDW count 13, whose issues carry a matching ISBN and page count per volume (108pp for vols 1-7, 156/156/124/124/128/144 for 8-13 against our 106-149pp), agree volume for volume with our Vol. 01-13 dated 2012-2016; the numbered run underneath is CV 42972 / GCD 61079 "Star Trek" 2011-2016 IDW, 58-60 issues, and linking this trade shelf to it would merge it into the ongoing
+N 16431 the run these thirteen volumes collect is IDW's Star Trek 2011-2016 ongoing (CV 42972, 60 cached issues; GCD 61079, 60) - named here rather than on a `C` line because the shelf's judged ranges are the collected line's volume numbers, not issue numbers
+I 31497 cv=370169 gcd=1094937 isbn=978-1-61377-150-1 0.95 | volume 01 on both legs, 108pp against our 106pp rip
+I 31498 cv=370170 gcd=1094940 isbn=978-1-61377-286-7 0.95 | volume 02 on both legs, 108pp against our 106pp rip
+I 31499 cv=367754 gcd=1094947 isbn=978-1-61377-515-8 0.95 | volume 03 on both legs, 108pp against our 113pp rip
+I 31500 cv=392393 gcd=1094948 isbn=978-1-61377-590-5 0.95 | volume 04 on both legs, 108pp against our 107pp rip
+I 31501 cv=415259 gcd=1124946 isbn=978-1-61377-687-2 0.95 | volume 05 on both legs, 108pp against our 107pp rip
+I 31502 cv=433206 gcd=1159302 isbn=978-1-61377-796-1 0.95 | volume 06 "After Darkness" on both legs, 108pp against our 106pp rip
+I 31503 cv=448029 gcd=1735929 isbn=978-1-61377-882-1 0.95 | volume 07 "The Khitomer Conflict" on both legs, 108pp against our 106pp rip
+I 31504 cv=466355 gcd=1735930 isbn=978-1-63140-021-6 0.95 | volume 08 on both legs, 156pp against our 144pp rip
+I 31505 cv=485541 gcd=1735931 isbn=978-1-63140-276-0 0.95 | volume 09 "The Q Gambit" on both legs, 156pp against our 149pp rip
+I 31506 cv=499775 gcd=1735932 isbn=978-1-63140-381-1 0.95 | volume 10 on both legs, 124pp against our 111pp rip
+I 31507 cv=511541 gcd=1735933 isbn=978-1-63140-521-1 0.95 | volume 11 on both legs, 124pp against our 111pp rip
+I 31508 cv=537863 gcd=1735934 isbn=978-1-63140-664-5 0.95 | volume 12 on both legs, 128pp against our 120pp rip
+I 31509 cv=557197 gcd=1735935 isbn=978-1-63140-775-8 0.95 | volume 13 "Legacy of Spock" on both legs, 144pp against our 143pp rip
+
+S 19103 cv=117546 gcd=142345 0.95 | a one-shot both legs mint under the same odd name: CV 117546 "The Maxx 100-Page Giant" 2019 IDW count 1 (issue 702761, 2019-02) and GCD 142345 of the same title, 2019-2019 IDW count 1 (issue 1936502, 100pp, February 2019), agree on title, publisher, year and count, and 100pp sits against our 96pp rip; the ladder entry 100 is the "100" of "100-Page Giant", not an issue number, and the Maxx runs the packet offers (CV 5168 Image 1993, 69578 Maxximized 2013) are different series
+I 31610 cv=702761 gcd=1936502 0.95 | the February-2019 IDW one-shot on both legs, 100pp against our 96pp rip
+
+S 19158 cv=104734 gcd=111984 0.9 | CV 104734 "The Monstrous Collection of Steve Niles and Bernie Wrightson" 2011 IDW count 1 (issue 625776, "HC/SC") and GCD 111984 of the same title, 2011-2011 IDW count 1 (issue 1673783, 206pp, ISBN 978-1613770177), agree on title, publisher, year and count, and 206pp sits against our 192pp rip; our file is dated 2020 and GCD mints further printing rows (2615750, 2615749 in 2013, and 119291 for a 2017 round), which is what caps this at 0.9
+I 31974 cv=625776 gcd=1673783 isbn=978-1613770177 0.9 | the collection's first edition on both legs, 206pp against our 192pp rip; the printing our 2020-dated file actually is has no row of its own
+
+S 19246 cv=- gcd=117236 0.9 | GCD 117236 "The Obscure Cities" 2016-? IDW count 7 is the collected line this shelf mostly is, and four of our files' own EAN-13 barcodes resolve straight to its issues' ISBNs: 9781631409424 -> issue 1741408 "Samaris" (96pp), 9781684058037 -> 2449655 "The Fever in Urbicande" (104pp), 9781684057313 -> 2399135 "The Tower" (112pp), and its remaining rows match "The Shadow of a Man" (2217591, 104pp vs our 109pp), "The Invisible Frontier" (2462607, 140pp vs 139pp) and "The Theory of the Grain of Sand" (2768685, 128pp vs 134pp); the ComicVine rip has no Obscure Cities volume at all
+F 19246 provider-missing | ComicVine indexes no IDW "The Obscure Cities"; its "Cities of the Fantastic" rows are NBM's earlier English albums and GCD holds only one of those (51483)
+I 31616 cv=- gcd=1741408 isbn=9781631409424 1.0 | the collection asserts it: item 31616's EAN-13 is 9781631409424, exactly the ISBN of GCD 117236's "Samaris" issue, 96pp against our 96pp rip
+I 31617 cv=- gcd=2449655 isbn=9781684058037 1.0 | item 31617's EAN-13 9781684058037 is the ISBN of GCD 117236's "The Fever in Urbicande" issue, 104pp against our 108pp rip
+I 31618 cv=- gcd=2399135 isbn=9781684057313 1.0 | item 31618's EAN-13 9781684057313 is the ISBN of GCD 117236's "The Tower" issue, 112pp against our 116pp rip
+I 31621 cv=- gcd=2364078 isbn=978-1628472271 1.0 | the barcode also corrects the SERIES: item 31621's EAN-13 9781628472271 is not the IDW line's Leaning Girl but GCD 182138 "The Leaning Girl" 2014, issue 2364078, 180pp against our 179pp rip - Alaxis Press's own printing
+I 31622 cv=- gcd=2217591 isbn=978-1-68405-693-4 0.9 | "The Shadow of a Man", GCD 117236's February-2021 issue, 104pp against our 109pp rip
+I 31623 cv=- gcd=2462607 isbn=9781684058785 0.9 | "The Invisible Frontier", GCD 117236's November-2022 issue, 140pp against our 139pp rip for the doubled Vol. 08-09
+I 31624 cv=- gcd=2768685 isbn=9781631404894 0.9 | "Theory of the Grain of Sand", GCD 117236's November-2016 issue, 128pp against our 134pp rip for the doubled Vol. 10-11
+I 31620 cv=394448 gcd=- 0.7 | "Brusel": the only record of an English Brusel is CV 59108 "Cities of the Fantastic: Brusel" 2001 NBM count 1, issue 394448, while our filename dates the book 1992 (the French album's year) and GCD holds no Brusel row at all - a real doubt, so the review queue
+N 31619 no-record | "The Road to Armilia (1988)" 61pp has no English record in either catalog: GCD's only Armilia is the French original line 82700 "Les Cités obscures" (Casterman 1983-), whose #4 is "La route d'Armilia" at 60pp (issue 1251250), and ComicVine indexes neither the French line nor an English edition
+
+S 66497 cv=- gcd=112032 0.9 | GCD 112032 "The Rocketeer: The Complete Adventures" 2015-2015 IDW count 1 (issue 1674035, 150pp, ISBN 978-1631402272) is our filename's title, publisher and year, and 150pp sits against our 147pp rip; GCD indexes the 2009 edition separately as 48905, which is why this is 0.9, and the ComicVine rip has no volume of either
+F 66497 provider-missing | ComicVine indexes no IDW "The Rocketeer: The Complete Adventures" of either year
+I 31643 cv=- gcd=1674035 isbn=978-1631402272 0.9 | the 2015 IDW edition, 150pp against our 147pp rip; GCD 48905 is the 2009 printing
+
+S 46923 cv=101458 gcd=114203 0.95 | a one-shot both legs mint: CV 101458 "The X-Files Funko Universe One Shot" 2017 IDW count 1 (issue 595500, 2017-05-31) and GCD 114203 "The X-Files Funko Universe" 2017-2017 IDW count 1 (base cover row 1700255, 36pp, on sale 2017-05-17) agree on title, publisher, year and count, and 36pp is our 26pp rip's book with its Funko covers counted
+I 31675 cv=595500 gcd=1700255 0.9 | the May-2017 one-shot on both legs; GCD mints three further cover rows (1845448-1845450), which caps this at 0.9
+
+S 21121 cv=- gcd=187158 0.9 | GCD 187158 "Voices That Count" 2022-2022 IDW count 1 (issue 2418608, 132pp, ISBN 978-1-68405-917-1) is our ComicInfo Series and Publisher exactly, and 132pp sits against our 111pp rip; the ComicVine rip has no volume of it - its candidates were reached by the single words "count", "that" and "voices"
+F 21121 provider-missing | ComicVine indexes no IDW "Voices That Count"
+I 31994 cv=- gcd=2418608 isbn=978-1-68405-917-1 0.9 | the single 2022 IDW anthology, 132pp against our 111pp rip
+
+S 22672 cv=- gcd=224547 0.9 | GCD 224547 "You Wish" 2024-? IDW count 2 holds issue 2744861 as #1 (ISBN 978-1-60309-532-7, on sale 2024-01-09) and 2744881 as #2 "Wishborn" (2025), and our two files are both Book 1 at 144pp and 145pp - one book ripped twice, not two books; ComicInfo Publisher says Top Shelf Productions, which GCD files under IDW, the imprint difference the ledger records, and the ComicVine rip has no volume of this line
+F 22672 provider-missing | ComicVine indexes no Top Shelf / IDW "You Wish"
+I 32047 cv=- gcd=2744861 isbn=978-1-60309-532-7 0.9 | Book 1, GCD 224547's #1 on sale 2024-01-09, against our 144pp DrVink rip
+I 110750 cv=- gcd=2744861 isbn=978-1-60309-532-7 0.9 | the same Book 1, a second rip of it (DR & Quinch-Empire, 145pp) - one comic, two files, which is the whole of this shelf's file count
+
+# ---- (C) Image -----------------------------------------------------------------------------------
+S 96 cv=- gcd=218589 0.9 | GCD 218589 "3D Anomaly" 2024-2024 Image count 1 (issue 2686582, ISBN 9781534352872, on sale 2024-12-11) is our filename's title, publisher and year; the ComicVine rip has no volume of it - its candidates were reached by "3D" and "anomaly" separately (Fantagraphics' 3D Sweeties, Anomaly Productions' Rubicon)
+F 96 provider-missing | ComicVine indexes no Image "3D Anomaly"
+I 36213 cv=- gcd=2686582 isbn=9781534352872 0.9 | the single December-2024 Image book, against our 182pp rip
+
+S 15746 cv=143540 gcd=185932 0.95 | the RUN wins: our one 130pp trade collects a four-issue run, and that run is CV 143540 "Skybound Presents Afterschool" 2022 Image count 4 and GCD 185932 of the same title, 2022-2022 Image count 4, which agree on publisher, year and count; the count-1 records beside them (CV 164355 issue 1110001, GCD 193722 issue 2462183, ISBN 1534323392) are the collected volume our file actually is
+I 36230 cv=1110001 gcd=2462183 isbn=1534323392 0.95 | the collected volume on both legs, December 2022, against our 130pp rip
+
+R 9555 | "Iphigenia in Aulis (2022)" 135pp, filed under Image\Age of Bronze (1998), is in neither catalog: an exact and a substring probe of "Iphigenia" and a LIKE on '%Iphigenia%' in both cv_vol and gcd_series return zero rows, and the Age of Bronze records that do exist (GCD 10228 the 33-issue run, 11427 and 40135 the four-volume collections, 129354 the 2018 three-volume round; CV's Age of Bronze volumes likewise) name no book of this title; a 135pp 2022 volume under that name is either a later collected volume neither catalog has reached or a reader's gathering of the Iphigenia chapters
+F 9555 provider-missing | neither catalog indexes a 2022 "Iphigenia in Aulis"; the question for the web lane is whether it is a genuine Age of Bronze volume or a chapter gathering
+
+S 1280 cv=100069 gcd=224113 0.9 | both legs mint the collected volume our 115pp file is: CV 100069 "8house: Arclight" 2017 Image count 1 (issue 588586) and GCD 224113 "Arclight" 2017-2017 Image count 1 (issue 2739490, 128pp, ISBN 9781534300972, on sale 2017-03-22), and 128pp sits against our 115pp; what keeps this at 0.9 rather than taking the run is that the run has no clean record - GCD splits it into 8House (90228, 2015, 5) plus "Arclight" (110323, 2016-2017, holding only #3 and #4 at 32pp each) while ComicVine keeps one "8House" volume of 7 (82957), so the two legs cannot be paired on the issues
+I 35530 cv=588586 gcd=2739490 isbn=9781534300972 0.9 | the March-2017 collected volume on both legs, 128pp against our 115pp rip
+N 1280 the underlying serial is the Arclight arc of Image's 8House anthology: CV 82957 "8House" 2015 Image 7, GCD 90228 "8House" 2015 Image 5 and GCD 110323 "Arclight" 2016-2017 Image holding #3-4 - three partial records of one run, which is why no `C` range is stated here
+
+S 3075 cv=145123 gcd=189393 0.95 | the RUN wins: our 150pp "Bone Orchard Mythos Vol. 02 - Ten Thousand Black Feathers" collects a five-issue mini, and that mini is CV 145123 "Bone Orchard: Ten Thousand Black Feathers" 2022 Image count 5 and GCD 189393 of the same title, 2022-2023 Image count 5, which agree on publisher, span and count; the count-1 records beside them (CV 153293 issue 1011239, GCD 200399 issue 2529324, ISBN 1534325883) are the trade
+I 36317 cv=1011239 gcd=2529324 isbn=1534325883 0.95 | the May-2023 trade on both legs, against our 150pp rip
+N 3075 the Mythos line's other books are their own records (CV 143729 / GCD 186168 "The Passageway", CV 148710 "The Bone Orchard Mythos Prelude") - this shelf holds only volume 02
+
+S 4344 cv=89771 gcd=- 0.9 | CV 89771 "Criminal: 10th Anniversary Special Edition" 2016 Image count 1 (issue 526085, 2016-04-30) is our filename's book - a 64pp one-shot in the `Criminal v1 (2015)` folder dated 2016 - and the GCD dump has no row for it: a substring probe of "Criminal" returns Marvel's 2006 run (20108), the Criminal Macabre family and Novelty's 1948 "Criminals on the Run", never the anniversary special
+F 4344 provider-missing | GCD indexes no Image "Criminal: 10th Anniversary Special Edition"
+I 35914 cv=526085 gcd=- 0.9 | the April-2016 one-shot, CV 89771's only issue, against our 64pp rip
+
+S 4483 cv=20255 gcd=36784 0.95 | the RUN wins: our 192pp "COL Cyberforce v01 - Rising From the Ashes" sits in the `Cyber Force v3 (2006)` folder and collects that relaunch, which is CV 20255 "Cyber Force" 2006 Image count 7 and GCD 36784 "Cyberforce" 2006-2006 Image count 7 - two legs on the same publisher, year and seven-issue count; the 1992 and 1993 Cyberforce volumes (CV 18360/18361, GCD 14587/14377) are earlier runs of the same bare title and lose on the year
+I 37913 cv=- gcd=2116200 isbn=1-58240-708-8 0.9 | the trade itself: GCD 160421 "Cyberforce" 2006 Image count 1, its only issue 2116200, is titled "Rising From the Ashes" at 212pp against our 192pp rip; the ComicVine rip mints no volume for the 2006 trade
+
+R 5782 | "Dracula - A Storybook Portfolio (JH Williams III) (2024)" 165pp is in neither catalog: a LIKE on '%Storybook Portfolio%' returns zero rows in cv_vol and in gcd_series, a substring probe of "Storybook" returns nineteen unrelated licensed books, and the "Dracula" rows both catalogs hold for 2023-2024 are Orlok Press's, Odd Publishing's, ABDO's, Dark Horse's and Splitter's editions of the novel, none of them an Image portfolio by J. H. Williams III
+F 5782 provider-missing | neither catalog indexes Image's 2024 "Dracula: A Storybook Portfolio"; an art portfolio is the kind of book both systematically miss
+
+S 6262 cv=- gcd=189075 0.9 | GCD 189075 "Everyday Hero Machine Boy" 2022-2022 Image count 1 (issue 2429645, ISBN 1534321306, on sale 2022-09-07) is our filename's whole title and year, and ComicInfo Publisher says "Image - Skybound"; the ComicVine rip has no volume of it - its candidates were reached by "machine" and "everyday" separately
+F 6262 provider-missing | ComicVine indexes no Image / Skybound "Everyday Hero Machine Boy"
+I 36484 cv=- gcd=2429645 isbn=1534321306 0.9 | the single September-2022 Image book, against our 198pp rip
+
+S 6563 cv=158835 gcd=207178 0.9 | the Deluxe Edition line, which both legs carry at our extent: CV 158835 "Fear Agent 20th Anniversary Deluxe Edition" 2023 Image count 2 (issues 1063074 "Volume One", 1069815 "Volume Two") and GCD 207178 of the same title, 2023-2023 Image count 2 as indexed, agree on title, publisher, year and a two-book count against our Book 01 and Book 02; what caps this at 0.9 is that GCD holds FOUR rows for those two books (2590914/2706677 for volume one, 2703403/2706676 for volume two) - two printings each
+I 34253 cv=1063074 gcd=2590914 isbn=978-1-5343-2660-6 0.9 | Book 01 on both legs, December 2023, against our 512pp rip; GCD's second printing of it is 2706677
+I 34254 cv=1069815 gcd=2703403 isbn=978-1-5343-2661-3 0.9 | Book 02 on both legs, December 2023, against our 524pp rip; GCD's second printing of it is 2706676
+N 6563 what the line reprints is Dark Horse's 2005-2011 Fear Agent (CV 20725, 27 issues; GCD 27671 sixteen and 42842 six, a publisher-era split) - named here rather than on a `C` line because the shelf carries no judged range
+
+S 6642 cv=157432 gcd=210490 0.95 | the RUN wins: our 136pp "COL Feral v01 - Indoor Cats" collects the first arc of an ongoing, and that ongoing is CV 157432 "Feral" 2024 Image count 23 and GCD 210490 "Feral" 2024-? Image count 23, which agree on publisher, year and count; the count-3/4 records beside them (CV 159816 with issues named "1: Indoor Cats", "2: Cat Lady", "3: Nine Lives"; GCD 215093 with the same four titles) are the collected line
+F 6642 merge-with=6641 | S6641 is issues #6-9 of the same twenty-three-issue Image run on the same CV 157432 / GCD 210490 ids; this shelf is its first collected volume
+I 36492 cv=1070171 gcd=2655590 isbn=978-1534372962 0.95 | volume 01 "Indoor Cats" on both legs, September 2024, against our 136pp rip
+
+S 10288 cv=70829 gcd=38796 0.95 | the anthology's eight-volume Random House line, which both legs carry: CV 70829 "Flight" 2005 Random House (issues 441873 "Volume One" … 441880 "Volume Eight") and GCD 38796 "Flight" 2006-2011 Random House count 8 (issues 669395-669400, 770960, 1124190, each with its own ISBN and page count) agree volume for volume, and our five files are volumes 1, 2, 3, 5 and 7 whose page counts land on GCD's rows within a page or two; Image's own rows (CV 25860 / GCD 13105, two issues) are the 2004-2005 first printings of volumes 1-2 only
+I 76064 cv=441875 gcd=669397 isbn=0-345-49039-8 1.0 | the collection asserts it: item 76064's EAN-13 is 9780345490391, the ISBN-13 of GCD 669397's ISBN-10 0-345-49039-8, volume 3 at 356pp against our 356pp rip
+I 76065 cv=441877 gcd=669399 isbn=978-0-345-50589-7 1.0 | item 76065's EAN-13 9780345505897 is GCD 669399's ISBN exactly, volume 5 at 372pp against our 372pp rip
+I 76066 cv=441879 gcd=770960 isbn=978-0-345-51737-1 0.95 | volume 7 on both legs, 292pp against our 292pp rip; the file's CODE128 "W7-BHV-815" is a library sticker, not a product code
+I 35842 cv=441873 gcd=669395 isbn=978-0-345-49636-2 0.7 | volume 1 on both legs at 212pp against our 211pp epub, but ComicInfo Publisher says "Inklore" - a 2023 Penguin Random House imprint neither catalog indexes - so which printing this retail ebook is cannot be settled
+I 76063 cv=441874 gcd=669396 isbn=978-0-345-49637-9 0.7 | volume 2 on both legs at 436pp against our 419pp epub; the same Inklore reissue problem as volume 1
+N 10288 the first printings of volumes 1-2 were Image's (GCD 13105's issues 234653 at 212pp and 666134 at 436pp, ISBNs 1-58240-381-3 and 1-58240-477-1), which is why this shelf sits in Image\Flight (2004) while its record is Random House's
+
+S 7140 cv=25887 gcd=30402 0.95 | CV 25887 "G.I. Joe Sigma 6" 2005 Devil's Due count 6 and GCD 30402 "G.I. Joe: Sigma 6" 2005-2006 Devil's Due Publishing count 6 agree on publisher, span and a six-issue count, our ladder 1-6 is complete over six 25-27pp files dated 2005-2006, and three of the filenames carry their own "(of 6)"; the folder's Image root is the Devil's Due era's filing, not a publisher claim
+
+S 5897 cv=155730 gcd=206733 0.95 | the RUN wins: our 123pp "COL Duke v01 - Knowing Is Half the Battle" collects a five-issue mini, and that mini is CV 155730 "Duke" 2023 Image count 5 and GCD 206733 "Duke" 2023-2024 Image count 5, which agree on publisher, span and count; the count-1 records beside them (CV 158960 issue 1063669 "Volume 1: Knowing Is Half the Battle", GCD 212790) are the trade, and the Le Lombard / Erko / ECC "Duke" rows are a different comic entirely
+I 37922 cv=1063669 gcd=2636788 isbn=9781534327986 0.9 | the trade on both legs, June 2024, 132pp against our 123pp rip; GCD mints a twin row 2635805 for the same book, which caps this at 0.9
+
+S 66454 cv=74901 gcd=- 0.9 | CV 74901 "Glory: The Complete Saga" 2014 Image count 1 (issue 456590, "HC", 2014-05-31) is our filename's book - "COL Glory - The Complete Saga HC (2014)" at 332pp - and the GCD dump has no row for it: a LIKE on '%Complete Saga%' returns twenty-three rows in cv_vol and eight in gcd_series, and the Glory one is ComicVine's alone
+F 66454 provider-missing | GCD indexes no Image "Glory: The Complete Saga"; its Glory rows are the 1995-1996 run (16210, 16 issues) and the crossover one-shots
+I 33984 cv=456590 gcd=- 0.9 | the 2014 Image hardcover, CV 74901's only issue, against our 332pp rip
+
+S 7646 cv=18917 gcd=26089 0.95 | CV 18917 "Gødland" 2005 Image count 36 and GCD 26089 "Godland" 2005-2013 Image count 37 agree on publisher, start year and very nearly on count, and our ladder 1-36 is the run complete over thirty-six 18-44pp issue files; the slashed O in ComicVine's spelling is why the shelf's own key never reached it, and GCD 59719 "Godland" 2006-2014 Image count 6 is the collected line beside the run
+N 7646 GCD's 37 against our 36 and ComicVine's 36 is the run's Finale, which is this batch's own shelf 7647 - a separate book, not a missing issue
+
+S 7647 cv=69879 gcd=- 0.9 | CV 69879 "Gødland Finale" 2013 Image count 1 (issue 436250, December 2013) is our filename's book exactly, and the slashed O is the whole reason an exact probe of "Godland Finale" returns nothing; the GCD dump has no row for the Finale - its Godland rows are the 37-issue run 26089 and the six-volume collected line 59719
+F 7647 provider-missing | GCD indexes no Image "Gødland Finale" under either spelling
+I 33094 cv=436250 gcd=- 0.9 | the December-2013 one-shot, CV 69879's only issue, against our 77pp rip
+
+S 9061 cv=75884 gcd=- 0.9 | CV 75884 "How Toons: Tools of Mass Construction" 2014 Image count 1 (issue 460343, "TPB", 2014-07-31) is our filename's book, and the SPACE ComicVine puts inside "How Toons" is why an exact probe of "Howtoons Tools of Mass Construction" returns nothing in either catalog; ComicInfo asserts Series "Howtoons" and Publisher Image, and the GCD dump has no row for this volume - its Howtoons rows are the [Re]Ignition run 82157 and its collection 86837
+F 9061 provider-missing | GCD indexes no Image "Howtoons: Tools of Mass Construction" under either spacing
+I 36777 cv=460343 gcd=- 0.9 | the July-2014 Image collection, CV 75884's only issue, against our 292pp rip
+
+S 9062 cv=76267 gcd=82157 0.95 | the RUN wins: our 141pp "COL Howtoons - (Re)ignition v01" collects a five-issue run, and that run is CV 76267 "Howtoons [Re]Ignition" 2014 Image count 5 and GCD 82157 of the same title, 2014-2014 Image count 5, which agree on publisher, year and count; the count-1 records beside them (CV 80311 issue 480717, GCD 86837 issue 1326346 at 164pp, ISBN 978-1-63215-056-1) are the trade our file is
+I 36776 cv=480717 gcd=1326346 isbn=978-1-63215-056-1 0.95 | the March-2015 trade on both legs, 164pp against our 141pp rip
+
+S 10595 cv=146224 gcd=192243 0.95 | a line published as books, so the collected series IS the identity: CV 146224 "Lastman" 2022 Image count 6 (issues 955699 "Book 1" … 1085527 "Book 6") and GCD 192243 "Lastman" 2022-? Image count 6 (issues 2449871-2683566, each with its own ISBN and on-sale date) agree on title, publisher, year and a six-book count, and our file is Book 03 dated 2023; Casterman's French rows (73912, 82117, 214499) and Reprodukt's German (86076) are the original-language editions
+F 10595 merge-with=65056 | S65056 is another part of the same six-book Image Lastman line on the same CV 146224 / GCD 192243 ids; this shelf is its Book 03
+I 36867 cv=1048389 gcd=2580350 isbn=1534325816 0.95 | Book 03 on both legs, on sale 2023-11-15, against our 416pp rip
+
+S 10714 cv=- gcd=214222 0.9 | GCD 214222 "Leone, Notes on a Life" 2021-2021 Image count 1 (issue 2649829) is our ComicInfo Series "Leone: Notes on Life" under GCD's own comma-and-"a" spelling, with the same publisher and year; the ComicVine rip has no volume of it - its candidates were reached by the bare words "notes" and "Leone" (Bonelli's Napoleone, Glénat's Sergio Leone)
+F 10714 provider-missing | ComicVine indexes no Image "Leone: Notes on a Life"
+I 36873 cv=- gcd=2649829 0.9 | the single 2021 Image book, GCD 214222's only issue, against our 125pp rip
+
+R 11167 | "Madman - For the Record (2009)" is 8 pages - a promotional preview, not a comic either catalog indexes: a LIKE on '%For the Record%' returns zero rows in cv_vol and in gcd_series, and the Madman records both hold (CV 4923 Tundra 1992, 5391 Dark Horse Comics 1994, 29781 Image 2007; GCD 4596, 60115, 73516) are runs an 8pp handout is not part of
+F 11167 provider-missing | neither catalog indexes Image's 2009 8pp "Madman: For the Record"
+
+S 66474 cv=137468 gcd=194662 0.9 | the omnibus LINE wins, because both legs mint it and linking a `Deluxe Edition` shelf to the ongoing would merge it into the run's own shelf: CV 137468 "Middlewest: The Complete Tale" 2021 Image count 1 (issue 869183, "HC", 2021-07-11) and GCD 194662 of the same title, 2021-2021 Image count 1 (issue 2473620, ISBN 9781534319103, on sale 2021-07-07), agree on title, publisher, year and count against our 528pp file; GCD mints a second round 194663 (2023), which is what caps this at 0.9
+I 35992 cv=869183 gcd=2473620 isbn=9781534319103 0.9 | the July-2021 omnibus on both legs, against our 528pp rip; GCD 194663 is the 2023 printing
+N 66474 the run it collects is CV 115404 / GCD 134943 "Middlewest" 2018-2020 Image, 18 issues, with a three-volume trade line beside it (CV 119297 / GCD 145684) - named here rather than on a `C` line because the shelf carries no judged range
+
+S 12421 cv=- gcd=215443 0.9 | GCD 215443 "Mr. Lovenstein Presents Feelings" 2024-2024 Image count 1 (issue 2658403, ISBN 9781534349520, on sale 2024-09-18) is our filename's whole title, publisher and year; the ComicVine rip has no volume of it - its candidates were reached by "presents Mr." and "feelings" separately
+F 12421 provider-missing | ComicVine indexes no Image "Mr. Lovenstein Presents Feelings"
+I 36927 cv=- gcd=2658403 isbn=9781534349520 0.9 | the single September-2024 Image book, against our 245pp rip
+
+S 13581 cv=53678 gcd=45156 0.9 | GCD indexes printings and the S line takes the first edition both legs hold: Andi Watson's "Paris" was published as a four-issue run by Slave Labor - CV 53678 "Paris" 2005 SLG Publishing count 4 and GCD 45156 "Paris" 2005-2006 Slave Labor count 4, which agree on publisher, span and count - and our file is Image's 2022 collected reissue of it, which GCD mints separately as 186837; what caps this at 0.9 is that the two legs describe a floppy run while our single file is a 151pp collection
+I 36971 cv=- gcd=2417186 isbn=1534321209 0.9 | the printing we hold: GCD 186837 "Paris" 2022-2022 Image count 1, its only issue 2417186 at 160pp, ISBN 1534321209, on sale 2022-07-06, against our 151pp rip; ComicVine mints no volume for the Image reissue
+N 13581 GCD 168874 "Paris" 2007 Slave Labor count 1 is the first collected edition, and 99122 (Carlsen), 99822 (Egmont) and 144154 (Cobolt) are the German and Danish editions of the same book
+
+R 20925 | this shelf is TWO separately published one-shots of one crossover, one from each publisher, and both catalogs mint them apart: book 01 is Harris Comics' - CV 19895 "Vampirella/Shadowhawk" 1995 Harris count 1 (issue 119114, named "Creatures of the Night book 1") and GCD 5412 "Vampirella/Shadowhawk Creatures of the Night" 1995-1995 Harris count 1 (issue 56566 at 52pp) - and book 02 is Image's: CV 74148 "Shadowhawk/Vampirella" 1995 Image count 1 (issue 124014, "Creatures of the Night book 2") and GCD 5421 "Shadowhawk - Vampirella: Creatures of the Night" 1995-1995 Image count 1 (issue 56572, numbered #2, 52pp); the ledger's own rule is that a crossover published as separate one-shots is separate records per title
+F 20925 split-needed | Vampirella/Shadowhawk book 1 (item 37156) = CV 19895 / GCD 5412, Harris Comics 1995; Shadowhawk/Vampirella book 2 (item 37157) = CV 74148 / GCD 5421, Image 1995 - two publishers, two records, one shelf
+I 37156 cv=119114 gcd=56566 0.95 | book 01 on both legs, Harris Comics February 1995, 52pp against our 43pp rip
+I 37157 cv=124014 gcd=56572 0.95 | book 02 on both legs, Image February 1995, 52pp against our 41pp rip
+
+S 15995 cv=49933 gcd=184051 0.9 | a `_Trades, Minis and One-shots` bucket takes the book's own count-1 record where both providers mint it: CV 49933 "Spawn: The Complete Armageddon Collection" 2007 Image count 1 (issue 342835, "TPB", 2007-10-31) and GCD 184051 "Spawn Armageddon Complete Collection" 2007-2007 Image count 1 (issue 2390929) are the same 2007 omnibus, and our 366pp file is that book; what caps this at 0.9 is the year - our rip is dated 2019 and ComicVine mints the later printing separately as 124576 (2020), so which printing we hold is not settled
+I 33830 cv=342835 gcd=2390929 0.9 | the 2007 omnibus on both legs against our 366pp rip; CV 124576 is the 2020 reissue and CV 49931 "Spawn: The Armageddon Collection" 2006 Image count 2 is the earlier two-volume form
+
+S 15996 cv=124577 gcd=74976 0.9 | both legs mint the collection our 306pp file is: CV 124577 "Spawn: Endgame Collection" 2020 Image count 1 (issue 735159, cover-dated 2019-12) and GCD 74976 "Spawn: Endgame Collection" 2010-2010 Image count 1 (issue 1120579, 312pp, ISBN 978-1-60706-235-6), and 312pp sits against our 306pp; what caps this at 0.9 is the ten-year gap between the two legs' dates - GCD indexes the 2010 printing and ComicVine the 2019/2020 one, and our file is dated 2019
+I 33814 cv=735159 gcd=1120579 isbn=978-1-60706-235-6 0.9 | the Endgame collection on both legs, 312pp against our 306pp rip
+N 15996 what it collects is CV 36379 / GCD 117683 "Spawn: Endgame", the 2009-2010 arc of the Spawn ongoing - stated as a note because the shelf carries no judged range
+
+S 8789 cv=11426 gcd=12380 0.95 | a `<Title> (<year>)` folder holding only the collected edition is the RUN's folder: the folder reads `Hellspawn (2000)`, the run is CV 11426 "Hellspawn" 2000 Image count 16 and GCD 12380 "Hellspawn" 2000-2003 Image count 16, which agree on publisher, span and count, and our file's judged range is #1-16 - that sixteen exactly
+I 33993 cv=412249 gcd=2302674 0.9 | the collection itself: CV 63888 "Hellspawn: The Complete Collection" 2010 Image count 1, its only issue 412249 (HC, 2010-08-17), and GCD 180547's only issue 2302674, against our 386pp rip; GCD mints a second round 221777 (2025), which caps this at 0.9
+
+S 15992 cv=20618 gcd=6224 0.95 | the same shape: the folder reads `Spawn - The Dark Ages (1999)` and the run is CV 20618 "Spawn: The Dark Ages" 1999 Image count 28 and GCD 6224 "Spawn: The Dark Ages" 1999-2001 Image count 28, which agree on publisher, span and a twenty-eight-issue count; our single 692pp file is the complete collection of it, and Image's 2025 relaunch (CV 168598 / GCD 229840, 6) is a different comic
+I 33995 cv=423719 gcd=2686583 isbn=9781534377653 0.9 | the collection: CV 66800 "Spawn: The Dark Ages The Complete Collection" 2013 Image count 1, its only issue 423719 (HC, 2013-07-31), and GCD 218590's only issue 2686583 (2024-12-11) against our 692pp rip; the two legs date the printing eleven years apart, which caps this at 0.9
+
+S 63480 cv=6391 gcd=6225 0.95 | the same shape again: the folder reads `Spawn - The Undead (1999)` and the run is CV 6391 "Spawn: The Undead" 1999 Image count 9 (issues 103996-104003 plus 46066, June 1999 to February 2000) and GCD 6225 "Spawn: The Undead" 1999-2000 Image count 9 (issues 230678-230681, 62974 …, 36pp each), which agree on publisher, span and a nine-issue count
+I 33996 cv=412251 gcd=2291015 0.9 | the collected edition our 226pp file is: CV 63890 "Spawn: The Undead" 2008 Image count 1, its only issue 412251 (TPB, 2008-06-19), and GCD 179744's only issue 2291015; neither leg gives the book a page count, which is what keeps this at 0.9

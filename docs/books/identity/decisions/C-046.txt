@@ -1,0 +1,217 @@
+# C-046 — Marvel back-catalog + current-ongoings mix (34 shelves). Conventions confirmed: the 2022-2025
+# Marvel-ongoing shape (clean GCD per-file pair, legacy bare-title CV stamp on 1pp variant packs) recurs on
+# Avengers Assemble/Deadpool/Deadpool-Wolverine; several "NO CvVolume ROW" legacy volumes (Avengers, Daredevil,
+# Defenders v1, Doctor Strange v2, Miles Morales v1, Hulk v2) needed Phase C.1 fetch flags; several GCD rows only
+# surfaced via direct lookup.py, never in the packet's own per-file/dump blocks (Captain Marvel 2014/2023,
+# Defenders 1972, Miles Morales v2) — always re-probe by exact name before writing provider-missing.
+
+S 65629 cv=4936 gcd=14420 0.7 | CV 4936 "Shadowhawk" (1992, Image) is the shelf's only 1992-era CV volume; our 19 files (#0-18, 1992-1995) are one continuously-published Image book marketed mid-run as "Series II"/"Series III" without restarting the overall numbering; GCD splits it into a 5-issue mini (4610, 1992-1993) and an 8-issue "was ongoing" continuation (14420, 1994-1995); per-file matches to 41049 (2005-2006 revival, 3/19 files) are a wrong-relaunch stamp with no 2005+ files present
+N 65629 mini-leg | GCD 4610 "Shadowhawk" 1992-1993 (5 issues) names the shelf's #0-4 leg of the same continuous run
+
+S 64198 cv=159703 gcd=215256 0.95 | GCD 215256 "Avengers Assemble" 2024-2025 Marvel (limited series, 5 issues) matches all 15/15 files cleanly; CV 159703 "Avengers Assemble" 2024 Marvel (5 issues, cached #3-5) is the correct volume despite the per-file matcher's 2012 legacy stamp (vol 46569) on 11/15 1pp-variant files
+
+S 64542 cv=157504 gcd=210709 0.95 | GCD 210709 "Deadpool" 2024-2025 Marvel (15 issues) matches 57/58 files; CV 157504 "Deadpool" 2024 Marvel (15 issues) is the correct volume despite the per-file matcher's 1997 legacy stamp (vol 6000) on 55/58 1pp-variant files
+
+S 24543 cv=161844 gcd=219430 0.95 | GCD 219430 "Deadpool / Wolverine" 2025-2025 (10 issues) matches all 10/10 files; CV 161844 "Deadpool/Wolverine" 2025 Marvel (10 issues, cached #1) is the US edition despite the per-file matcher's 2023 UK/Panini reprint stamp (152438) on 9/10 variant files
+
+R 64672 | this shelf mixes three Fantastic Four identities: the dominant v7 ongoing (CV 145912/GCD 192395, 2022-2025, 33 issues cached #1-30, ~85+ issue files + its own "by Ryan North" Vol.01/03/04 trades + 2023 Annual), the prior v6 ongoing (CV 112685/GCD 127448, 2018-2022, 48 issues — confirmed by direct lookup.py, count and years matching exactly) represented here ONLY by 11 "COL Fantastic Four Vol.01-11" trades (79784-79794; its own GCD collected-edition row 141720, count 11, matches exactly) plus two misfiled single issues (118479-118480, #029-030, 2021), and Hickman's 2009 Fantastic Four run reprinted in two "Complete Collection" Book 03/04 trades (79741-79742) — eleven whole trades of a different completed run is a co-equal identity per the residue ruling ("two or more whole trades of a DIFFERENT run... even at 6:2"), not shelf residue
+F 64672 split-needed | proposed: v7 (2022-2025) cv=145912 gcd=192395 as the dominant identity (~85+ files + its own trades); v6 (2018-2022) cv=112685 gcd=127448 for items 79784-79794 (COL Vol.01-11) + 118479-118480 (issues 029-030); Hickman's 2009 run (items 79741-79742, Complete Collection Book 03-04) needs its own ids, not resolved this pass
+N 64672 if-not-split | should the lead prefer one S line over an R: v7 is dominant at cv=145912 gcd=192395, with the v6 trades/issues and Hickman book as named residue instead
+
+S 12076 cv=146734 gcd=193893 0.9 | the "#MARVEL CURRENT ONGOING TITLES" v2 folder (2022-2026, CV 146734/GCD 193893 — GCD id only surfaced via direct lookup.py, not in the packet's own blocks) holds 60/76 files including nearly the whole ladder from #6 up; the shelf's dismissed overlap-in-series flag names the real second ladder — 6 issue files + 6 trades (95824, 95829-95833) of the completed v1 (2019-2022, CV 115897/GCD 135468, #1-42, confirmed via lookup.py --issues) — as residue, not a conflation to split
+N 12076 stale-flag | overlap-in-series Dismissed: the two Vol.01s are v1 (2019-2022, CV115897/GCD135468) and v2 (2022-2026, CV146734/GCD193893); v1's issues+trades are named on N/I, v2 is the shelf's dominant identity
+N 12076 v1-residue | v1 (2019-2022, CV115897/GCD135468, #1-42) contributes 6 issue files + 6 trades (95824, 95829-95833) to this shelf, all with I lines below
+I 95829 gcd=2049827 0.95 | GCD 148840 (Miles Morales collected-edition line, v1) row #1 "Straight Out of Brooklyn" (140pp/ISBN 978-1-302-91478-3) vs our 135pp rip, title match exact
+I 95830 gcd=2060205 0.95 | GCD 148840 row #2 "Bring on the Bad Guys" (116pp) vs our 110pp, title match exact
+I 95831 gcd=2150916 0.95 | GCD 148840 row #3 "Family Business" (116pp) vs our 112pp, title match exact
+I 95832 gcd=2214025 0.95 | GCD 148840 row #4 "Ultimatum" (140pp) vs our 133pp, title match exact
+I 95833 gcd=2262192 0.95 | GCD 148840 row #5 "The Clone Saga" (172pp) vs our 165pp, title match exact
+I 95824 gcd=2000704 0.9 | GCD 149130 "Miles Morales: Spider-Man" 2019 one-shot omnibus (244pp, ISBN 978-1302918071) is the only 2019 count-1 Marvel Miles Morales collected record; our rip is 223pp, a ±21pp gap wider than usual but title and year match exactly
+I 48142 gcd=2559519 0.95 | GCD 202709 (Miles Morales: Spider-Man by Cody Ziglar collected line, v2) row #1 "Trial by Spider" (132pp/ISBN 978-1-302-94852-8) vs our 121pp, title match exact
+I 48143 gcd=2611326 0.95 | GCD 202709 row #2 "Bad Blood" (116pp) vs our 110pp, title match exact
+I 48144 gcd=2650883 0.95 | GCD 202709 row #3 "Gang War" (116pp) vs our 112pp, title match exact; item 118629 is a duplicate copy per the shelf's label-ambiguous flag
+I 118629 gcd=2650883 0.9 | duplicate copy of item 48144 "Gang War" — same GCD row
+I 48145 gcd=2670694 0.95 | GCD 202709 row #4 "Retribution" (148pp) vs our 136pp, title match exact
+C 48142 cv=146734 gcd=193893 #1-6 0.9 | "Trial by Spider" collects issues #1-6 of "Miles Morales: Spider-Man" v2 (CV146734/GCD193893, 2022-2026, ~40 issues), the run named on the shelf's S line
+C 48143 cv=146734 gcd=193893 #7-12 0.9 | "Bad Blood" collects issues #7-12 of the same v2 run (CV146734/GCD193893, 2022-2026, ~40 issues)
+C 48144 cv=146734 gcd=193893 #13-17 0.9 | "Gang War" collects the Gang War tie-in issues #13-17 of the same v2 run (CV146734/GCD193893, 2022-2026)
+C 118629 cv=146734 gcd=193893 #13-17 0.9 | duplicate copy of item 48144 "Gang War", same v2 run (CV146734/GCD193893) and range #13-17
+C 48145 cv=146734 gcd=193893 #18-21 0.9 | "Retribution" collects the following arc #18-21 of the same v2 run (CV146734/GCD193893, 2022-2026)
+
+S 4962 cv=4587 gcd=4236 0.95 | CV 4587/GCD 4236 "Darkhawk" 1991-1995 Marvel match our ladder inside the 51-issue run (7-9/9 files); item 83149 (#051, 2018 one-shot legacy continuation, GCD 119041) is minor residue
+I 98709 cv=48759 gcd=73454 0.9 | "COL Darkhawk Classic Vol.01" (214pp, judged #1-9) matches CV candidate 48759 "Darkhawk Classic" 2012 (issue 335286) and GCD 73454 "Darkhawk Classic" 2012 collected edition — both count-1 trade records named identically
+
+S 64531 cv=2675 gcd=2161 0.95 | CV 2675/GCD 2161 "The Deadly Hands of Kung Fu" 1974-1977 Marvel (33 issues) match our full #1-33 ladder; the 2014 4-issue mini (GCD 80682, round2-series stamp on 4/33 files) is a wrong-relaunch, rejected
+
+R 6312 | this shelf mixes the dominant 2001 ongoing (CV 6983/GCD 7516, 100 issues, ~204/222 files + its own 16-volume trade line GCD 53302 "Down the Rabbit Hole"...) with the 2018 mini (CV 109764/GCD 130419, 12 issues), represented by two whole trades ("Test of Time"/"Trial of the Exiles") — the overlap-in-series flag's "three Vol.01s" names this genuine second identity; the third "Vol.01," on the Complete/Ultimate Collection omnibus (85967/84503), only repackages the 2001 run's own issues, not a separate work
+F 6312 split-needed | proposed: 2001 run cv=6983 gcd=7516 (dominant, ~204/222 files + trades 84478-84494); 2018 mini cv=109764 gcd=130419 for trades 84501-84502; the Complete/Ultimate Collection omnibus (85967, 84503) repackages the 2001 run and is not a third identity
+I 84478 gcd=787873 0.9 | GCD 53302 row #1 "Down the Rabbit Hole" (116pp/ISBN 0-7851-0833-5) vs our 109pp; a twin printing row (1217476, 100pp) also exists
+I 84479 gcd=787874 0.95 | GCD 53302 row #2 "A World Apart" (164pp) vs our 159pp
+I 84480 gcd=787875 0.95 | GCD 53302 row #3 "Out of Time" (196pp) vs our 188pp
+I 84481 gcd=787876 0.95 | GCD 53302 row #4 "Legacy" (148pp) vs our 149pp, near-exact
+I 84482 gcd=787877 0.95 | GCD 53302 row #5 "Unnatural Instincts" (148pp) vs our 133pp
+I 84483 gcd=787878 0.95 | GCD 53302 row #6 "Fantastic Voyage" (172pp) vs our 177pp
+I 84484 gcd=787879 0.95 | GCD 53302 row #7 "A Blink in Time" (196pp) vs our 208pp
+I 84485 gcd=787880 0.95 | GCD 53302 row #8 "Earn Your Wings" (148pp) vs our 140pp
+I 84486 gcd=787881 0.95 | GCD 53302 row #9 "Bump in the Night" (172pp) vs our 159pp
+I 84487 gcd=787882 0.95 | GCD 53302 row #10 "Age of Apocalypse" (132pp) vs our 125pp
+I 84488 gcd=787883 0.95 | GCD 53302 row #11 "Timebreakers" (172pp) vs our 170pp
+I 84489 gcd=787884 0.95 | GCD 53302 row #12 "World Tour Book 1" (148pp) vs our 145pp
+I 84490 gcd=787885 0.9 | GCD 53302 row #13 "World Tour Book 2" (220pp) vs our 207pp HD rip; duplicate rip beside item 84491
+I 84491 gcd=787885 0.9 | duplicate SD rip of the same "World Tour Book 2" beside item 84490
+I 84492 gcd=787886 0.95 | GCD 53302 row #14 "New Exiles" (188pp) vs our 176pp
+I 84493 gcd=787887 0.95 | GCD 53302 row #15 "Enemy of the Stars" (124pp) vs our 123pp, near-exact
+I 84494 gcd=787888 0.95 | GCD 53302 row #16 "Starting Over" (188pp) vs our 182pp
+I 84501 gcd=1851951 0.95 | GCD 130419 row #1 "Test of Time" (140pp/ISBN 978-1-302-91165-2) vs our 130pp — the 2018 mini's own trade
+I 84502 gcd=1932001 0.95 | GCD 130419 row #2 "The Trial of the Exiles" (140pp) vs our 133pp
+I 85967 cv=686378 gcd=1877379 0.9 | GCD 134833 "Exiles: The Complete Collection" (484pp/ISBN 978-1-302-91399-1) and CV issue 686378 (via candidate volume 113867) both match this 465pp omnibus; item 84503 is a duplicate rip of the same book under a different filename
+I 84503 cv=686378 gcd=1877379 0.9 | duplicate rip of item 85967 "Exiles: The Complete Collection" under the filename "Ultimate Collection v01"
+C 84501 cv=109764 gcd=130419 #1-6 0.9 | "Test of Time" collects the first half of the 2018 Exiles mini (12 issues in two 6-issue volumes)
+C 84502 cv=109764 gcd=130419 #7-12 0.9 | "The Trial of the Exiles" collects the second half of the 2018 mini
+
+S 65131 cv=4058 gcd=3654 0.95 | CV 4058/GCD 3654 "Marvel Comics Presents" 1988-1995 Marvel (175 issues) match 519/523 and 338/523 files across our full #1-175 ladder; the ratio 2.99 is split-story files (A/B/C/D Story chapters) plus duplicate full-issue rescans, not separate runs; the 2007-2008 12-issue revival (GCD 26502, 4/523 files) is minor residue, named
+N 65131 residue | 2007-2008 12-issue MCP revival (GCD 26502) contributes ~4 files as residue
+
+R 11597 | this shelf mixes two different comics under one "Marvel Super-Heroes v1 (1967)" folder: the genuine US 1967 original (CV 2353/GCD 1810, #12-20, 8 files, ComicInfo Publisher "Marvel Comics") and the UK weekly "Marvel Super-Heroes" (1979, CV 3088 Marvel UK/Panini UK, #377-395, ~24-25 files carrying ComicInfo Volume=3088 and Publisher "Marvel UK/Panini UK") that the per-file matcher wrongly stamped 41/41 onto the US volume
+F 11597 split-needed | proposed: US original (1967) cv=2353 gcd=1810 for items #12-20; UK weekly (1979) cv=3088 gcd=? for items #377-395 (ComicInfo Volume=3088 asserts this directly) — no GCD id for the UK weekly resolved this pass
+F 11597 misfiled | the UK "Marvel Super-Heroes" (1979) issues sit under the US "Marvel Super-Heroes v1 (1967)" folder; ComicInfo Volume=3088 / Publisher="Marvel UK/Panini UK" on 24-25 files is the tell
+
+S 11600 cv=1283 gcd=655 0.9 | CV 1283/GCD 655 "Marvel Tales" 1949-1957 Marvel (67 issues) match the dominant #98-154 ladder (9/11 files); items 86628 (#30, 1971) and 86687 (#262, "v2") belong to the 1966-1994 continuation (GCD 1747), two misfiled single issues, named residue
+N 11600 residue | items 86628 (#30) and 86687 (#262) are Marvel Tales v2 (1966-1994, GCD1747), not the 1949-1957 run
+
+S 47159 cv=2576 gcd=2056 0.95 | CV 2576/GCD 2056 "Marvel Team-Up" 1972-1985 Marvel (150 issues) match 192/196 and 161/196 files across the #1-150 ladder; the Annual (GCD 2351, 6/196) and the 8 own Masterworks trades (GCD 55448) are named residue/collections; the 2004 Marvel Team-Up mini (GCD 15313, 25 issues, 7/196 files) is a separate later run, minor residue
+I 83316 gcd=805397 0.9 | GCD 55448 row 1 (256pp) vs our 249pp; a twin hardcover/softcover row 974336 also exists
+I 83317 gcd=952408 0.9 | GCD 55448 row 2 (264pp) vs our 251pp; twin 974344
+I 83318 gcd=1806588 0.9 | GCD 55448 row 3 (280pp) vs our 266pp; twin 2178028
+I 83319 gcd=1891108 0.9 | GCD 55448 row 4 (304pp) vs our 280pp; twin 2178020
+I 83320 gcd=2177816 0.9 | GCD 55448 row 5 (308pp) vs our 274pp; twin 2178030
+I 83321 gcd=2258756 0.9 | GCD 55448 row 6 (324pp) vs our 299pp; twin 2259494
+I 83322 gcd=2591744 0.9 | GCD 55448 row 7 (312pp) vs our 297pp; twin 2592078
+I 83323 gcd=2691479 0.9 | GCD 55448 row 8 (352pp) vs our 339pp; twin 2694423
+
+S 12313 cv=100829 gcd=113547 0.9 | CV 100829/GCD 113547 "Monsters Unleashed" 2017-2018 Marvel (12 issues) match our #1-12 ladder (12/14, 7/14 files); item 101937 "Champions 001.MU" is a Champions tie-in (CV 94612), named residue
+N 101943 no-record | "COL Monsters Unleashed Vol.01 - Monster Mash" (105pp) has no matching count-1 collected-edition record among this pass's CV/GCD candidates; the closest candidate (GCD 113813 "Champions" collected ed, count 5) matches a Champions trade instead, not probed further this pass
+
+S 16916 cv=18066 gcd=824 0.9 | CV 18066 "Strange Tales" 1951-1968 Marvel matches ALL 135/135 files as one volume; GCD splits the legacy-numbered continuation into 824 (1951-1968, 127/135 files, the dominant leg) and 2128 (1973-1976, "was ongoing", 4/135 files, our #170-181 tail) — both are the same continuously-numbered run per CV's single volume; taking the majority GCD leg, naming the split
+N 16916 gcd-split | GCD 2128 (1973-1976) covers our tail issues #170-181, the same continuously-numbered run as 824 per CV's single volume
+
+S 66130 cv=2582 gcd=2063 0.95 | CV 2582/GCD 2063 "Tomb of Dracula" 1972-1979 Marvel (70 issues) match 25/26 and 22/26 files; judged ranges (items 83485, 103496) confirm the trades collect this same run
+I 103496 gcd=1741430 0.95 | GCD 117229 row 1 (516pp/ISBN 978-1-302-90931-4) vs our 507pp
+I 103497 gcd=1854821 0.95 | GCD 117229 row 2 "A World Apart" companion (500pp) vs our 484pp Complete Collection Vol.02
+I 103498 gcd=2023910 0.9 | GCD 117229 row 3 (500pp); our rip page count unlisted (?pp)
+I 103499 gcd=2170061 0.95 | GCD 117229 row 4 (492pp) vs our 490pp, near-exact
+I 83485 cv=891000 0.95 | CV 139779 issue 1 "Volume 1" (2021-10-25) vs our 317pp Masterworks trade
+I 83486 cv=1026653 0.95 | CV 139779 issue 2 "Volume 2" (2022-11-01) vs our 321pp
+I 83487 cv=1026652 0.9 | CV 139779 issue 3 "Volume 3" (2023-10-24) vs our 365pp — the shelf's own label-ambiguous flag notes this CV row's own categorization looks like a Complete Collection book, but it is still the correct per-rip id for Masterworks Vol.03
+I 83488 cv=1074072 0.95 | CV 139779 issue 4 "Volume 4" (2024-10-16) vs our 390pp
+N 83092 no-record | "Tomb of Dracula 010 - Facsimile Edition (1973)" single-issue facsimile of #10 — no distinct facsimile record found among this pass's candidates
+N 83093 no-record | "Tomb of Dracula Facsimile Edition 001 (2022)" — same, no distinct facsimile record found
+
+S 21239 cv=2649 gcd=2134 0.95 | CV 2649/GCD 2134 "War is Hell" 1973-1975 Marvel (15 issues) match all 7/7 files; our #9-15 ladder sits inside the cached range
+
+S 790 cv=3217 gcd=2737 0.95 | CV 3217/GCD 2737 "Alpha Flight" 1983-1994 Marvel (130 issues) match 247/251 and 198/251 files across our #0-130 ladder; judged range confirms the Classic Vol.03 trade; residue = the Spanish co-edition (29346), the 2011 mini (58694, its own separate later run, minor), and the X-Men/Alpha Flight crossover (3062, minor)
+N 52338 no-record | "Alpha Flight Classic Vol.01" (199pp) — no matching collected-edition candidate surfaced in this pass's packet data
+N 52339 no-record | "Alpha Flight Classic Vol.02" (295pp) — same
+N 52340 no-record | "Alpha Flight Classic Vol.03" (301pp, judged #20-29) — same; judged range already ties it to the run's own numbering
+N 52369 no-record | "Alpha Flight by Greg Pak & Fred Van Lente Vol.01" (136pp) — same
+
+S 792 cv=11291 gcd=12237 0.9 | CV 11291/GCD 12237 "Alpha Flight" 1997-1999 Marvel (21/20 issues) match our #1-20 ladder (23/26, 11/26 files); residue = the Spanish co-edition (29368, 13/26 files, the per-file matcher's favoured foreign leg) and 3 files wrongly stamped to the 1983 volume (legacy stamp, rejected)
+
+S 64185 cv=2128 gcd=1571 0.9 | GCD 1571 "The Avengers" 1963-1996 Marvel (402 issues) matches 395/511 files across our #1-402 ladder; CV 2128 has no CvVolume row yet (Phase C.1 fetch owed) but is the local-rip's own name match; judged ranges (items 117740, 53508, 53509) confirm collected editions inside this run; residue = the 2010-2013 volume (48969, 26/511, separate later era, minor), the UK weekly reprint (31614, 6/511), and the current German edition (208667, 11/511)
+F 64185 needs-fetch cv=2128 | no CvVolume row exists yet for "The Avengers" 1963 Marvel; Phase C.1 must fetch it from the local rip's own name match
+N 117740 no-record | duplicate copy of item 52882 "Vol.03 - Prelude to Infinity" (judged #12-17); no distinct collected-edition CV/GCD id found for this trade this pass
+N 53508 no-record | trade collecting this run's judged #57-63; no distinct collected-edition CV/GCD id found for it in this pass
+N 53509 no-record | trade collecting this run's judged #64-76; no distinct collected-edition CV/GCD id found for it in this pass
+
+S 12792 cv=11497 gcd=12464 0.9 | CV 11497/GCD 12464 "New Avengers" 2005-2010 Marvel (64 issues) match 73/74 and 38/74 files; GCD's matches to series 50320 (New Avengers 2010-2013 v2, 15/74 files) are a wrong-relaunch number-coincidence stamp — CV's near-unanimous per-file link (73/74) confirms one volume; the New Avengers/Transformers crossover (26005, 4/74) is minor residue
+I 52853 gcd=s31872 0.9 | GCD 31872 "New Avengers" 2006-2010 collected-edition series (count 12) — Vol.01 "Breakout" is this run's own trade
+I 116634 gcd=s31872 0.9 | duplicate copy of item 52853 "Vol.01 - Breakout" per the shelf's label-ambiguous flag, same GCD 31872 series
+I 52854 gcd=s31872 0.9 | GCD 31872 "New Avengers" 2006-2010 collected-edition series (count 12) — Vol.02 "The Sentry"
+I 52855 gcd=s31872 0.9 | GCD 31872 "New Avengers" 2006-2010 collected-edition series (count 12) — Vol.03 "Secrets & Lies"
+I 52856 gcd=s31872 0.9 | GCD 31872 "New Avengers" 2006-2010 collected-edition series (count 12) — Vol.04 "Collective"
+I 52857 gcd=s31872 0.9 | GCD 31872 "New Avengers" 2006-2010 collected-edition series (count 12) — Vol.05 "Civil War"
+I 117912 gcd=s31872 0.9 | duplicate copy of item 52857 "Vol.05 - Civil War" per the shelf's label-ambiguous flag, same GCD 31872 series
+I 52858 gcd=s31872 0.9 | GCD 31872 "New Avengers" 2006-2010 collected-edition series (count 12) — Vol.06 "Revolution"
+I 52859 gcd=s31872 0.9 | GCD 31872 "New Avengers" 2006-2010 collected-edition series (count 12) — Vol.07 "The Trust"
+I 52860 gcd=s31872 0.9 | GCD 31872 "New Avengers" 2006-2010 collected-edition series (count 12) — Vol.08 "Secret Invasion Book 1"
+I 52861 gcd=s31872 0.9 | GCD 31872 "New Avengers" 2006-2010 collected-edition series (count 12) — Vol.09 "Secret Invasion Book 2"
+I 52862 gcd=s31872 0.9 | GCD 31872 "New Avengers" 2006-2010 collected-edition series (count 12) — Vol.10 "Power"
+I 52863 gcd=s31872 0.9 | GCD 31872 "New Avengers" 2006-2010 collected-edition series (count 12) — Vol.11 "Search for the Sorcerer Supreme"
+I 52864 gcd=s31872 0.9 | GCD 31872 "New Avengers" 2006-2010 collected-edition series (count 12) — Vol.12 "Powerloss"
+I 52865 gcd=s31872 0.9 | GCD 31872 "New Avengers" 2006-2010 collected-edition series (count 12) — Vol.13 "Siege"
+N 53988 no-record | "New Avengers - Letters Home (Military Special)" (2007, 24pp) one-shot — no distinct CV/GCD record found this pass
+I 53482 cv=- gcd=s26005 0.9 | GCD 26005 "New Avengers / Transformers" limited series (4 issues, 2007) — issue 01 of 04
+I 53483 cv=- gcd=s26005 0.9 | GCD 26005 "New Avengers / Transformers" limited series (4 issues, 2007) — issue 02 of 04
+I 53484 cv=- gcd=s26005 0.9 | GCD 26005 "New Avengers / Transformers" limited series (4 issues, 2007) — issue 03 of 04
+I 53485 cv=- gcd=s26005 0.9 | GCD 26005 "New Avengers / Transformers" limited series (4 issues, 2007) — issue 04 of 04
+
+S 15232 cv=33350 gcd=49024 0.9 | CV 33350/GCD 49024 "Secret Avengers" 2010-2013 Marvel (39 issues) match 19/21 and 14/21 files across our ladder (all numbers ≤28, inside the 39-issue run); GCD's matches to the 2013-2014 relaunch (71935, 4/21 files, items 52012/117520-117522) are a wrong-relaunch number-coincidence stamp, named
+N 15232 residue | items 52012 (2013 variant), 117520, 117521, 117522 (#013-015, 2014) belong to the 2013-2014 relaunch (GCD 71935), not this shelf's 2010 run
+I 53062 cv=315552 0.9 | CV candidate 45830 "Fear Itself: Secret Avengers" (2012, 1 issue) matches this item's own ComicInfo Series tag "Fear Itself: Secret Avengers" exactly
+N 53060 no-record | "Secret Avengers Vol.01 - The Mission To Mars" (135pp) — no matching collected-edition candidate found in this pass
+N 53061 no-record | "Secret Avengers Vol.02 - Eyes of the Dragon" (178pp) — same
+
+S 64379 cv=6458 gcd=6296 0.9 | GCD 6296 "Captain Marvel" 2000-2002 Marvel (35 issues) matches 34/37 files (92%) across our #0-35 ladder; CV 6458 (2000, 36 issues) is the matching volume despite the per-file matcher's majority legacy 1968 stamp (vol 2401, 22/37 files)
+
+S 64380 cv=18296 gcd=- 0.7 | CV 18296 "Captain Marvel" 2002 Marvel (25 issues) is the only CV volume matching our 4 "Nothing to Lose/Coven/Crazy Like a Fox/Odyssey" trades (2003-2004); no GCD series surfaced for this exact 2002 run in this pass's lookups
+F 64380 needs-fetch cv=18296 | CV 18296 "Captain Marvel" 2002 Marvel (25 issues) needs a fetch; no CvVolume row confirmed this pass
+N 77611 no-record | "Vol.01 - Nothing to Lose" (2003) — no distinct collected-edition CV/GCD id found for this trade this pass
+N 77612 no-record | "Vol.02 - Coven" (2003) — no distinct collected-edition CV/GCD id found for this trade this pass
+N 77613 no-record | "Vol.03 - Crazy Like A Fox" (2004) — no distinct collected-edition CV/GCD id found for this trade this pass
+N 77614 no-record | "Vol.04 - Odyssey" (2004) — no distinct collected-edition CV/GCD id found for this trade this pass
+
+S 64382 cv=72272 gcd=79503 0.95 | CV 72272/GCD 79503 "Captain Marvel" 2014-2015 Marvel (15 issues, confirmed via direct lookup.py) match exactly by count and year; a numbered run exists so it is the shelf's identity, with the 3 owned trades on I lines
+I 77633 gcd=1288336 0.95 | GCD 84970 row 1 "Higher, Further, Faster, More" (140pp/ISBN 978-0-7851-9013-4) vs our 134pp
+I 77634 gcd=1338937 0.95 | GCD 84970 row 2 "Stay Fly" (124pp) vs our 118pp
+I 77635 gcd=1449347 0.95 | GCD 84970 row 3 "Alis Volat Propriis" (100pp) vs our 87pp
+
+S 64384 cv=154291 gcd=205183 0.95 | CV 154291/GCD 205183 "Captain Marvel" 2023-2024 Marvel (10 issues, GCD id confirmed via direct lookup.py) match exactly by count; CV's per-file link is clean (23/23) while GCD's per-file matcher missed the US row and matched only foreign co-editions (German/Dutch/French)
+N 77667 no-record | "Captain Marvel by Alyssa Wong Vol.01 - The Omen" (130pp) — no distinct collected-edition record found this pass
+N 77668 no-record | "Captain Marvel by Alyssa Wong Vol.02 - The Undone" (114pp) — no distinct collected-edition record found this pass
+
+S 64501 cv=2190 gcd=1636 0.9 | CV 2190 (no CvVolume row, Phase C.1 fetch owed)/GCD 1636 "Daredevil" 1964-1998 Marvel (381 issues) match 428/433 and 382/433 files across our #1-380 ladder; residue = the 1998-2011 vol.2 continuation (GCD 6026, 10/433, a separate later run) and foreign co-editions (French/Spanish, 4/433)
+F 64501 needs-fetch cv=2190 | CV 2190 "Daredevil" 1964 Marvel (381 issues) needs a fetch; no CvVolume row confirmed this pass
+N 47980 no-record | "Daredevil Omnibus Book 01" (2017, 1082pp) collects the shelf's own legacy run's early issues; no distinct collected-edition id found this pass; duplicate copy at item 46978
+N 46978 no-record | duplicate copy of item 47980 "Daredevil Omnibus Book 01"; no distinct collected-edition id found this pass
+N 46967 diff-run | "Daredevil by Mark Waid Omnibus Book 01" (706pp) collects Mark Waid's Daredevil run (2011 vol.3 relaunch), a different CV/GCD volume than this shelf's 1964 legacy identity — not resolved this pass
+N 46968 diff-run | "by Waid & Samnee Omnibus Book 02" (725pp) — same
+N 83039 no-record | "Daredevil Facsimile Edition 183 (2023)" single-issue facsimile of #183 — no distinct facsimile record found this pass
+
+S 64541 cv=22955 gcd=32043 0.9 | CV 22955/GCD 32043 "Deadpool" 2008-2012 Marvel (65-67 issues) match 23/35 and 19/35 files (majority); the per-file matcher's 1997-volume legacy stamp (vol 6000, 10/35 files) is a wrong-relaunch trap
+I 78466 gcd=1171219 0.95 | GCD 78140 row 1 "Secret Invasion" (124pp/ISBN 978-0-7851-3273-8) vs our 130pp
+I 117927 gcd=1171219 0.9 | duplicate rip of item 78466 "Secret Invasion" under a different filename
+I 78467 gcd=1171220 0.95 | GCD 78140 row 2 "Dark Reign" (124pp) vs our 125pp
+I 117947 gcd=1171220 0.9 | duplicate rip of item 78467 "Dark Reign"
+I 78468 gcd=1171221 0.95 | GCD 78140 row 3 "X Marks the Spot" (148pp) vs our 150pp
+I 78469 gcd=1171222 0.95 | GCD 78140 row 4 "Monkey Business" (124pp) vs our 127pp
+I 78470 gcd=1171223 0.95 | GCD 78140 row 5 "What Happened in Vegas" (116pp) vs our 113pp
+I 78471 gcd=1171224 0.95 | GCD 78140 row 6 "I Rule, You Suck" (124pp) vs our 119pp
+I 78472 gcd=1171225 0.95 | GCD 78140 row 7 "Space Oddity" (124pp) vs our 123pp
+I 78473 gcd=1171226 0.95 | GCD 78140 row 8 "Operation Annihilation" (116pp) vs our 106pp
+I 78474 gcd=1171227 0.95 | GCD 78140 row 9 "Institutionalized" (116pp) vs our 116pp, exact
+I 78475 gcd=1171228 0.95 | GCD 78140 row 10 "Evil Deadpool" (140pp) vs our 145pp
+N 78476 no-record | "Vol.11 - Dead" (302pp) — no matching row in GCD 78140 (only 10 rows, #1-10); no other candidate found this pass
+
+S 64562 cv=2569 gcd=2048 0.9 | GCD 2048 "The Defenders" 1972-1986 Marvel (152 issues) matches CV 2569's count exactly (152, no CvVolume row, Phase C.1 fetch owed); GCD's per-file matcher missed this row and matched only later relaunches (7145 2001, 62406 2012) by number coincidence — wrong-relaunch stamps, named
+F 64562 needs-fetch cv=2569 | CV 2569 "The Defenders" 1972 Marvel (152 issues) needs a fetch; no CvVolume row confirmed this pass
+
+S 64563 cv=6645 gcd=7145 0.95 | CV 6645/GCD 7145 "Defenders" 2001-2002 Marvel (12 issues) match our full #1-12 ladder (12/12 GCD, 11/12 CV)
+
+S 64590 cv=2676 gcd=2162 0.9 | GCD 2162 "Doctor Strange" 1974-1987 Marvel (81 issues) matches CV 2676 (no CvVolume row, Phase C.1 fetch owed) on 77/93 files (83%) across our #1-81 ladder; residue = the Australian co-edition (75264, 4/93) and the 2015-2018 relaunch matched by number coincidence (92881, 3/93)
+F 64590 needs-fetch cv=2676 | CV 2676 "Doctor Strange" 1974 Marvel (81 issues) needs a fetch; no CvVolume row confirmed this pass
+
+S 64768 cv=4397 gcd=4025 0.95 | GCD 4025 "Ghost Rider" 1990-1998 Marvel (94 issues) matches ALL 29/29 files; CV 4397 is the correct volume despite the per-file matcher's 1973-legacy stamp (vol 2636, 8/29 files) — wrong-relaunch, rejected
+
+S 64928 cv=20291 gcd=28683 0.9 | GCD 28683 "Hulk" 2008-2012 Marvel (58 issues) matches CV 20291 (no CvVolume row, Phase C.1 fetch owed) on 43/52 files (83%) across our ladder
+F 64928 needs-fetch cv=20291 | CV 20291 "Hulk" 2008 Marvel (58 issues) needs a fetch; no CvVolume row confirmed this pass
+N 81067 no-record | "Vol.01 - Red Hulk" — GCD's collected-edition series 73891 (count 6) likely covers this line but exact per-volume ids were not resolved this pass
+N 81068 no-record | "Vol.02 - Red & Green" — GCD's collected-edition series 73891 (count 6) likely covers this line but exact per-volume ids were not resolved this pass
+N 81069 no-record | "Vol.03 - Hulk No More" — GCD's collected-edition series 73891 (count 6) likely covers this line but exact per-volume ids were not resolved this pass
+N 81070 no-record | "Vol.04 - Hulk vs. X-Force" — GCD's collected-edition series 73891 (count 6) likely covers this line but exact per-volume ids were not resolved this pass
+N 81071 no-record | "Vol.05 - Fall of the Hulks" — GCD's collected-edition series 73891 (count 6) likely covers this line but exact per-volume ids were not resolved this pass
+N 81072 no-record | "Vol.06 - World War Hulks" — GCD's collected-edition series 73891 (count 6) likely covers this line but exact per-volume ids not resolved; item 117367 is a duplicate rip of the same book
+N 117367 no-record | duplicate rip of item 81072 "Vol.06 - World War Hulks"; no distinct collected-edition id resolved this pass
+N 81198 diff-run | "Hulk by Jeph Loeb - The Complete Collection Book 02" (375pp) collects this same 2008 Loeb run's issues in omnibus form — no distinct CV/GCD id resolved this pass
+N 97267 misfiled | "Ultimate Hulk Annual 01 (2009)" is an Ultimate-universe one-shot, not part of this 616-continuity run — minor residue, no id resolved
+
+S 98240 cv=36282 gcd=52511 0.9 | the shelf's own key "Loki v2 (2010)" and GCD's clean 100% match (52511, 2010-2011, 4 issues) confirm CV 36282 "Loki" 2010 Marvel (4 issues) as the identity; the per-file matcher's majority pick (vol 11023, 2004, also a 4-issue mini, 3/4 files) is the same-issue-count "ladder coincidence" trap

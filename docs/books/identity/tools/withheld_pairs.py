@@ -120,7 +120,9 @@ for _r in _st.get("revisits", []):
         _revisited.setdefault(_sid, set()).add(_r["batch"])
 stale = []
 for sid, (batch, why) in list(live.items()):
-    m = _re.search(r"withheld cv=(\d+)", why)
+    # only the WITHHELD side is "landed" when its stored link equals the id; a partner row also names the id
+    # ("partner of the withheld cv=N") and its stored link IS that id by definition — it was being dropped
+    m = _re.match(r"withheld cv=(\d+)", why)
     stored = ev.series.get(sid, {}).get("cvVolumeId")
     if m and stored == int(m.group(1)):
         stale.append((sid, "landed")); del live[sid]

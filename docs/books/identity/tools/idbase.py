@@ -33,8 +33,13 @@ PREFIX = "\\\\Library\\Public\\5 - Comics\\"
 
 # PLAN §6.8. Provider is stored as the enum INT everywhere (SeriesKeyLink, ItemProviderLink,
 # LinkCandidates), which is why every query below compares against a number, never a name.
-P_CV, P_EXTERNAL, P_LOCG, P_GCD, P_MU, P_BARNEY = 0, 1, 2, 3, 4, 5
+P_CV, P_EXTERNAL, P_LOCG, P_GCD, P_MU, P_BARNEY, P_MARVEL, P_INDUCKS = 0, 1, 2, 3, 4, 5, 6, 7
 ST_MATCHED, ST_MANUAL = 1, 5
+
+# The legs a RUN can be named on (the `C` line, SPAN_RUN_IDS.md). LOCG has no usable series identity in our
+# data and Open Library is work/edition-level, so neither is here: those stay ITEM legs on the `I` line.
+RUN_LEGS = {"cv": P_CV, "gcd": P_GCD, "mu": P_MU, "barney": P_BARNEY, "marvel": P_MARVEL,
+            "inducks": P_INDUCKS}
 
 # The population, stated once. Every count in every tool is defined over exactly this set.
 SHELF_SQL = """SELECT s.Id FROM Series s
@@ -54,6 +59,57 @@ RX_DIGITS = re.compile(r"\d+")
 RX_CV_WEB = re.compile(r"comicvine\.gamespot\.com/[^/]+/4000-(\d+)")
 RX_ART = re.compile(r"^(the|a|an)\s+", re.I)
 RX_NONWORD = re.compile(r"[^a-z0-9]+")
+
+
+RX_C_RANGE = re.compile(r"^#(\d{1,5}(?:\.\d+)?)-(\d{1,5}(?:\.\d+)?)$")
+
+
+def parse_c_head(head):
+    """The `C` line's head — everything before the `|` — as (itemId, {leg: key}, a, b, conf, error).
+
+    `C <itemId> cv=<volumeId>|- gcd=<seriesId>|- [mu=] [barney=] [inducks=] [marvel=] #<a>-<b> <conf>`
+
+    One parser, in idbase, for the same reason the tier rule is here: the checker refuses a line, the
+    applier writes it and `scan_decisions` counts it, and a line the three of them read differently is a
+    row written against a range nobody approved. `error` non-None means nothing else in the tuple is
+    trustworthy. Ids are returned AS TYPED — validating them against a catalog is the checker's job.
+    """
+    toks = head.split()
+    if not toks or toks[0] != "C":
+        return (None, {}, None, None, None, "not a C line")
+    toks = toks[1:]
+    if not toks or not toks[0].lstrip("-").isdigit():
+        return (None, {}, None, None, None, "C needs an item id")
+    item_id = int(toks[0])
+    ids, a, b, conf, bad = {}, None, None, None, []
+    for t in toks[1:]:
+        if "=" in t:
+            k, _, v = t.partition("=")
+            if k not in RUN_LEGS:
+                bad.append(f"unknown leg '{k}=' (expected one of {', '.join(sorted(RUN_LEGS))})")
+            elif v not in ("", "-"):
+                ids[k] = v
+            continue
+        m = RX_C_RANGE.match(t)
+        if m:
+            if a is not None:
+                bad.append(f"two ranges on one C line ('{t}')")
+            a, b = float(m.group(1)), float(m.group(2))
+            continue
+        if conf is None:
+            conf = t
+        else:
+            bad.append(f"unreadable token '{t}'")
+    if a is None:
+        bad.append("no #<a>-<b> range")
+    return (item_id, ids, a, b, conf, "; ".join(bad) if bad else None)
+
+
+def fmt_num(x):
+    """A coordinate as the decision files write it: `5`, not `5.0`; `5.5` stays `5.5`."""
+    if x is None:
+        return "?"
+    return str(int(x)) if float(x) == int(float(x)) else ("%g" % float(x))
 
 
 def num(s):
@@ -382,6 +438,15 @@ def resolve_decision_file(arg):
 
 
 RX_REVISIT = re.compile(r"^R-(\d+)$")
+RX_ITEMS = re.compile(r"^X-(\d+)$")
+
+
+def is_item_batch(path):
+    """An `X-NNN` batch decides BOOKS, not shelves (TOOLS_TODO 16): its `.ids` holds ITEM ids and its lines
+    carry only `I` / `C` / `N` — the shelf's identity already stands from its own S line. The kind is read
+    off the NAME because a file of integers cannot say which id space its numbers are in, and a batch of
+    item ids checked as though they were shelves would report a batch as covered with nothing decided."""
+    return bool(RX_ITEMS.match(os.path.splitext(os.path.basename(str(path)))[0]))
 RX_DECIDES = re.compile(r"^([SR])\s+S?(\d+)\b")
 RX_FLAG = re.compile(r"^F\s+S?(\d+)\s+(\S+)")
 
@@ -403,7 +468,8 @@ def scan_decisions(paths=None):
 
     -> (decides, winner, superseded, dupes)
        decides    {file: {"sids": set, "rank": int|None, "kinds": {sid: 'S'|'R'},
-                          "confs": {sid: str|None}, "flags": {sid: [flag, ...]}}}
+                          "confs": {sid: str|None}, "flags": {sid: [flag, ...]},
+                          "collects": {itemId: [({leg: key}, a, b, conf), ...]}}}
        winner     {sid: file}                     the line in force
        superseded {sid: [file, ...]}              earlier files a revisit overrode, oldest first
        dupes      {sid: [file, ...]}              decided in two or more NON-revisit files — a defect
@@ -414,7 +480,7 @@ def scan_decisions(paths=None):
     decides = {}
     for p in paths:
         rec = {"sids": set(), "rank": revisit_rank(p), "kinds": {}, "confs": {}, "flags": {},
-               "flags_full": {}, "cv": {}, "gcd": {}}
+               "flags_full": {}, "cv": {}, "gcd": {}, "collects": {}}
         for raw in open(p, encoding="utf-8"):
             line = raw.strip()
             if not line or line.startswith("#"):
@@ -435,6 +501,15 @@ def scan_decisions(paths=None):
                     if g.isdigit():
                         rec["gcd"][sid] = int(g)
                 rec["confs"][sid] = conf
+                continue
+            if line.startswith("C "):
+                # The book's CONTENT: "this book collects #a-b of THAT run". Kept beside the shelf lines
+                # because the applier lands it on the item's Curated span and has to know which file owns it.
+                # A LIST since TOOLS_TODO 17: one `C` per (leg, run), so a trade collecting two minis — and
+                # every omnibus — writes several, each with the range in ITS run's numbering.
+                iid, ids, a, b, conf, err = parse_c_head(line.split("|", 1)[0])
+                if iid is not None and not err:
+                    rec["collects"].setdefault(iid, []).append((ids, a, b, conf))
                 continue
             mf = RX_FLAG.match(line)
             if mf:
@@ -463,12 +538,111 @@ def scan_decisions(paths=None):
     return decides, winner, superseded, dupes
 
 
+ACCEPTED_CONF = ("1.0", "0.95", "0.9")
+
+
+def i_line_items(decides=None):
+    """Every item id any decision file gives an `I` line.
+
+    Read off the FILES rather than off `ItemProviderLink`, because a batch that has been read but not yet
+    landed has answered its books all the same — and the item pass must not hand those books out again.
+    """
+    if decides is None:
+        decides, _w, _s, _d = scan_decisions()
+    out = set()
+    for p in decides:
+        for raw in open(p, encoding="utf-8"):
+            line = raw.strip()
+            if not line.startswith("I "):
+                continue
+            head = line.split("|", 1)[0].split()
+            if len(head) > 1 and head[1].isdigit():
+                out.add(int(head[1]))
+    return out
+
+
+def item_population(ev, decides=None, winner=None):
+    """The ITEM pass's two populations (TOOLS_TODO 16), in ONE place, for the same reason the tier rule is
+    here: `next_batch.py --items` hands the books out and `identity_coverage.py` counts what is left, and a
+    drifted definition is a book that is never emitted and never missed.
+
+      no_i  a COLLECTED EDITION on an ACCEPTED shelf with no `I` line anywhere — the 7,501 books tier A and
+            early tier B read before "I lines are never optional" (READER_BRIEF).
+      no_c  a book on a shelf whose S is a COLLECTED LINE, carrying a judged Curated range and NO
+            `CollectedEditionSpanRun` row: the range is stated in nobody's numbering (SPAN_RUN_IDS.md
+            rollout 5). A "collected line" is a shelf whose S line names one leg only because ComicVine
+            indexes no trade line (`cv=-` with a gcd id — the Dark Horse chain shape), or a shelf holding
+            books and NOT ONE numbered issue file, which is what a trade/omnibus line looks like on disk.
+
+    -> {"accepted", "line_shelves", "no_i", "no_c", "shelf_of", "book", "no_span"}
+    """
+    if decides is None or winner is None:
+        decides, winner, _s, _d = scan_decisions()
+    accepted, line_shelves = set(), set()
+    # A "collected line" is decided by what the S's GCD series IS (legs GcdSeries.Format), not by the shelf's
+    # shape: a trades-only shelf whose S names a RUN (Titans 2016, Trinity 2016) collects that run, so its
+    # ranges count in the shelf's own identity and no `C` is owed — X-013..X-015 handed 187 such books out as
+    # owed and the reader rightly skipped them. Owed = the S's series is a collected edition on GCD, or the S
+    # has only a GCD leg whose format GCD does not state (ambiguous → ask).
+    fmt = {}
+    try:
+        _legs = sqlite3.connect(f"file:{HOT.replace('books.db', 'books-legs.db')}?mode=ro", uri=True)
+        fmt = {r[0]: (r[1] or "").lower() for r in _legs.execute("SELECT GcdSeriesId, Format FROM GcdSeries")}
+        _legs.close()
+    except sqlite3.Error:
+        pass
+    for sid in ev.shelves:
+        w = winner.get(sid)
+        if not w:
+            continue
+        rec = decides[w]
+        if rec["kinds"].get(sid) != "S" or rec["confs"].get(sid) not in ACCEPTED_CONF:
+            continue
+        accepted.add(sid)
+        cv, gcd = rec["cv"].get(sid), rec["gcd"].get(sid)
+        f = fmt.get(gcd, "") if gcd is not None else ""
+        if gcd is not None and "collected edition" in f:
+            line_shelves.add(sid)
+        elif cv is None and gcd is not None and not re.search(r"ongoing|limited|mini|one-shot|series|graphic novel|magazine", f):
+            line_shelves.add(sid)
+
+    have_i = i_line_items(decides)
+    has_runs = bool(ev.con.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='CollectedEditionSpanRun'").fetchone())
+    judged, with_runs = {}, set()
+    for iid, a in ev.con.execute(
+            "SELECT ItemId, IssueStart FROM CollectedEditionSpan WHERE Source = 3 AND IssueStart IS NOT NULL"):
+        judged[iid] = a
+    if has_runs:
+        with_runs = {r[0] for r in ev.con.execute(
+            "SELECT DISTINCT ItemId FROM CollectedEditionSpanRun WHERE Source = 3")}
+
+    shelf_of, book, no_i, no_c, no_span = {}, {}, [], [], []
+    for iid, sid, iscol, fn, pages in ev.con.execute("""
+            SELECT i.Id, i.SeriesId, coalesce(cd.IsCollection,0), i.FileName, coalesce(i.PageCount,0)
+            FROM Item i LEFT JOIN ComicDetail cd ON cd.ItemId = i.Id
+            WHERE i.Kind = 0 AND coalesce(i.IsExcluded,0) = 0 AND i.SeriesId IS NOT NULL
+            ORDER BY i.SeriesId, i.Path, i.FileName"""):
+        if sid not in accepted or not iscol:
+            continue
+        shelf_of[iid] = sid
+        book[iid] = (fn, pages, bool(iscol))
+        if iid not in have_i:
+            no_i.append(iid)
+        if sid in line_shelves and iid not in with_runs:
+            (no_c if iid in judged else no_span).append(iid)
+    return {"accepted": accepted, "line_shelves": line_shelves, "no_i": no_i, "no_c": no_c,
+            "no_span": no_span, "shelf_of": shelf_of, "book": book}
+
+
 def load_state():
     if os.path.exists(STATE):
         with open(STATE, encoding="utf-8") as f:
             return json.load(f)
-    return {"cursors": {"A": 0, "B": 0, "C": 0, "D": 0}, "emitted": [], "checked": [], "landed": [],
-            "waves": []}
+    # "X" is the ITEM pass's cursor — how many BOOKS have been handed out — kept beside the tier cursors
+    # because it is the same kind of fact: where the emission got to.
+    return {"cursors": {"A": 0, "B": 0, "C": 0, "D": 0, "X": 0}, "emitted": [], "items": [], "checked": [],
+            "landed": [], "waves": []}
 
 
 def save_state(st):

@@ -86,6 +86,8 @@ namespace MovieTheater.Books.Resolve
             return new List<string>();
         }
 
+        // `lk.Status IN (1, 5)` is LinkStatuses.Usable — Matched or Manual — spelled out because this SQL is
+        // a plain const: a LOCG link a person made resolves a title exactly as a matched one does.
         private const string ItemSql = @"
 SELECT i.Id, i.Kind, i.Title, i.SeriesId, i.PublisherId,
        cd.ParsedSeriesKey, cd.IssueNo, cd.Year AS ParsedYear, cd.VolumeNo, cd.Publisher AS ParsedPublisher, cd.IsCollection,
@@ -125,7 +127,7 @@ LEFT JOIN Series s ON s.Id = i.SeriesId
 LEFT JOIN CvVolume cv ON cv.Id = s.CvVolumeId
 LEFT JOIN ExternalWork ew ON ew.Id = s.ExternalWorkId
 LEFT JOIN MuSeries mu ON mu.Id = s.MuSeriesId
-LEFT JOIN ItemProviderLink lk ON lk.ItemId = i.Id AND lk.Provider = 2 AND lk.Status = 1 AND lk.Quality IN (2, 3)
+LEFT JOIN ItemProviderLink lk ON lk.ItemId = i.Id AND lk.Provider = 2 AND lk.Status IN (1, 5) AND lk.Quality IN (2, 3)
 LEFT JOIN LocgComic lc ON lc.LocgComicId = CAST(lk.ProviderKey AS INTEGER)
 LEFT JOIN Insight si ON si.SubjectKind = 1 AND si.SubjectId = i.SeriesId AND si.IsCurrent = 1
 LEFT JOIN Insight bi ON bi.SubjectKind = 0 AND bi.SubjectId = i.Id AND bi.IsCurrent = 1

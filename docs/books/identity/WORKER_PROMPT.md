@@ -12,3 +12,6 @@ Your batches: {{BATCHES}} — each is `F:\Work\MovieTheater\docs\books\identity\
 and `<name>.ids` (the shelf ids you must cover). Write `F:\Work\MovieTheater\docs\books\identity\decisions\<name>.txt`
 per batch with the Write tool, run `python F:\Work\MovieTheater\docs\books\identity\tools\check_identity.py <name>`
 until it prints 0 failing, then the next batch. Report back as the brief says.
+
+Write a `C` line (the brief's grammar) for every collected edition whose range counts in a run other than the
+shelf's own identity — chains of minis, trade and omnibus lines, archive lines — naming the run on every leg you can.

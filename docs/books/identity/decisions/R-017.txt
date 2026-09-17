@@ -1,0 +1,32 @@
+# R-017 — revisit batch of four withheld pairs (three Golden-Age DC title splits + one Green Lantern Corps
+# Blackest-Night stray). Each stored-link collision resolved by reading the partner's own files. Two pairs
+# (All-Star Comics / Green Lantern Corps) turned out to be the SAME comic: a small bucket-folder shelf holding
+# a partial-content extract or a duplicate rip of an issue already on the big shelf's own ladder — merge-with,
+# both shelves left at the same ids. The other two (Adventure Comics / All-American Comics) turned out to hold
+# a DIFFERENT comic than the big v1-(year) shelf: small "plain-named" shelves in DC-Events / trades-bucket
+# folders whose files are the 1999 one-shot and/or (Adventure only) the 2009-2011 vol.2 relaunch, stamped with
+# the golden-age volume by the per-file matcher on low issue-number coincidence — re-linked to their own records.
+
+S 94963 cv=3105 gcd=98 0.9 | CV 3105 (1938 DC, 472 issues, one spanning volume through the 1983-2011 legacy renumbering) per-file matches all 287/287 files; GCD splits by era, the majority row 98 (1938-1983, 472 issues) covers 243/287, and the residue is the 2009-2011 legacy-numbered tail (series 32602, 6 files) plus foreign reprints (150355 en-ph 7 files, 32363 en-ca 1 file) — no longer withheld now that 421 is re-linked to its own different volume below
+N 94963 GCD 32602 "Adventure Comics" 2009-2011 DC covers our legacy-numbered #516-521 tail (6 of 287 files); 150355 [en-ph] and 32363 [en-ca] are foreign reprints of the same golden-age run, not a second comic
+
+F 421 wrong-cv-link | stored link cv=3105 is 94963's 1938-spanning golden-age volume, stamped here by the per-file matcher on the low issue numbers 4/5/7/8/9/10/11 that happen to also exist in the 1938 ladder; the folders (DC Events\...Green Lantern Corps\144 Blackest Night, and \_Superman\_Completed Series\09 Superman - New Krypton) and the "(2010)"/"(Digital-HD)" filenames on 72548/72553/72556/72560 place these as Adventure Comics vol.2 (2009-2011) issues 8-11, and 16321/16329/16356 as that same volume's issues 4/5/7, not the 1938 run (whose own ladder on 94963 starts at #35)
+S 421 cv=25643 gcd=32602 0.9 | Adventure Comics vol.2 2009-2011 (CV 25643 / GCD 32602, both DC Comics, both count 27) covers 7/8 files here (issues 4,5,7,8,9,10,11, named per the Blackest Night and New Krypton reading-order folders); residue is the 1999 one-shot, item 66652, on its own I line below
+I 66652 cv=153273 gcd=s7106 0.9 | the 1999 one-shot's own record: CV volume 25938 issue 153273, GCD one-shot series 7106 "Adventure Comics" 1999-1999 DC — both count 1, ComicInfo Series/Volume/Count on this file say "Adventure Comics"/"1999"/"1" — residue on shelf 421 which is otherwise Adventure Comics vol.2
+
+S 95024 cv=20663 gcd=112 0.95 | CV 20663 (1939 DC, 102 issues) and GCD 112 (1939-1948 DC, 102 issues) agree on publisher, year and count; our ladder 1,16-17,19-20,32,53 sits inside the cached span; no longer withheld now that 722 is re-linked to its own 1999 one-shot record below
+
+F 722 wrong-cv-link | stored link cv=20663 is 95024's 1939 volume, wrong for this shelf; our one file is "All-American Comics, 1999-03-00 (#01) (digital) (Glorith-Novus-HD)", the 1999 one-shot — CV 25789 issue 152142 and GCD 7092 (1999-1999 DC one-shot, count 1) both agree, and ComicInfo Volume "1999" Count "1" on the file itself confirms it
+F 722 merge-with=95025 | --all reports cv=25789 already the stored CvVolumeId of shelf 95025 (also the 1999 "All-American Comics" one-shot), a duplicate rip of the same book decided in an earlier batch
+S 722 cv=25789 gcd=7092 0.95 | CV 25789 issue 152142 and GCD 7092 both agree: DC, 1999, count 1, one-shot, matching the file's own ComicInfo Volume/Count — a different comic from 95024's 1939 run
+
+F 64120 merge-with=95026 | this 12pp file is "All-Star Comics 008 (1941) (Wonder Woman origin only)", a partial-content extract of All-Star Comics #8 (1941), already inside 95026's ladder 1-74; both shelves per-file match CV 2833 / GCD 140 on their own files, so it is the same comic, not a second run
+S 64120 cv=2833 gcd=140 0.9 | merges into 95026 (All-Star Comics v1 1940); same CV/GCD pair as the partner's own issue #8, a Wonder-Woman-origin-only 12pp extract of an issue already held whole on the big shelf
+
+S 95026 cv=2833 gcd=140 0.9 | CV 2833 (1940 DC, 74 issues, one volume spanning both DC eras) per-file matches all 75/75 files; GCD splits by era, the majority row 140 (1940-1951, 57 issues) covers 57/75, the revival row 2321 (1976-1978, 17 issues) covers the other 17/75 — spanning-volume convention, no split needed; no longer withheld, 64120 merges in as the same comic
+N 95026 GCD 2321 "All-Star Comics" 1976-1978 DC covers the revival-era files #58-74 (17/75 files), not a second run
+
+F 94608 merge-with=102449 | these 3 files are Green Lantern Corps #61-63 (2011), filed under the DC Events\148 War of the Green Lanterns reading-order folder as a second rip; both per-file match CV 18248 / GCD 18427 on 3/3 files, and 102449's own ladder (…, 58-63) already holds #61-63 — a duplicate rip, not a new run
+S 94608 cv=18248 gcd=18427 0.9 | merges into 102449 (Green Lantern Corps 2006); duplicate rip of #61-63, already on the partner's own ladder, filed a second time under the Blackest Night/War of the Green Lanterns reading-order folder
+
+S 102449 cv=18248 gcd=18427 0.95 | CV 18248 (2006 DC, 63 issues) and GCD 18427 (2006-2011 DC, 63 issues) agree on publisher, year and count; per-file matches 34/39 files, the other 5 being the shelf's own collected trades (residue that costs nothing per the trade-beside-its-issues ruling); tier A shelf, 94608 merges in as a duplicate rip of #61-63

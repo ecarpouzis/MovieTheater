@@ -1,0 +1,21 @@
+# R-011 — the two partners that were HOLDING the volumes R-010's shelves earned. Both stored links are
+# wrong and both partners have a comic of their own to be re-linked to, so nothing is lost by the clear:
+# S14117 is Image's 2022 sequel "Prodigy: The Icarus Society", which ComicVine does index (143976) —
+# B-063 wrote gcd only because the exact-name probe missed it; a `--contains "Icarus Society"` probe
+# finds both the 5-issue run and its count-1 trade. S6791 is not a shelf of its own comic at all but two
+# loose issues of the classic Uncanny X-Men run (the 1997 Flashback #-1 and #482 from 2007) re-filed under
+# two reading-order folders, so it takes the classic run's ids and merges into S19852, the single-file
+# shelf B-061 gave the same two ids for exactly the same 1997 issue.
+
+# ── Millarworld (Dark Horse)\Prodigy (2018) — the sequel, not the parent run
+S 14117 cv=143976 gcd=186838 0.95 | two independent legs on the sequel: CV 143976 "Prodigy: The Icarus Society" 2022 Image count 5 and GCD 186838 "Prodigy: The Icarus Society" 2022-2022 Image count 5 agree on publisher, year and count, GCD's rows running #1 (2022-07-06) to #5 (2022-11-16) at 32-40pp, which is the five-issue mini our single 140pp file 104761 "Prodigy v02 - The Icarus Society" collects
+F 14117 wrong-cv-link | the stored link CV 115757 "Prodigy" 2018 Image count 6 is the PARENT run — the 2018 comic whose trade is S14119's only file — and its own packet shows ratio 0/6, no issue of it on this shelf; the folder-wide Millarworld stamp put it on the sequel, and B-063 could not correct it because "Prodigy: The Icarus Society" returns 0 exact hits in the ComicVine rip
+I 104761 cv=1010510 gcd=2477927 isbn=1534324550 0.95 | the trade's own record in both legs: CV 153174 "Prodigy: The Icarus Society" 2023 Image count 1 holds issue 1010510 marked "TPB" (2023-01-01), and GCD 194937 "Prodigy: The Icarus Society" 2023-2023 Image count 1 holds issue 2477927 with ISBN 1534324550 and key date 2023-01-11 — the same January 2023 collection, which is why our file is named v02 (2023) though the issues are 2022
+
+# ── the two loose Uncanny X-Men issues
+S 6791 cv=3092 gcd=2605 0.9 | neither file is a comic of its own: item 88618 "009 Flashback - Uncanny X-Men -1 (1997)" 22pp is Uncanny X-Men #-1, the 1997 Flashback issue, and item 82714 "Uncanny X-men 482.cbr" 23pp is #482 from the 2007 Rise and Fall of the Shi'ar Empire arc — both are single issues of the classic run, CV 3092 "The Uncanny X-Men" 1981 Marvel 405 and GCD 2605 "The Uncanny X-Men" 1981-2011 Marvel 405, whose span covers 1997 and 2007 alike; 0.9 because two stray issues in two reading-order folders give no ladder to check the count against
+F 6791 wrong-cv-link | the stored link CV 43785 "Uncanny X-Men" 2011 Marvel count 20 is the Gillen relaunch, held complete as ladder 1-20 on S101234 — its cached span is #1-1 and the packet's own ratio is 0.02, because neither a 1997 minus-one issue nor #482 can be an issue of a 20-issue 2011 relaunch; the yearΔ 18 the packet prints is the whole of the mis-link
+F 6791 merge-with=19852 | S19852 "The Uncanny X-Men -001" is a single 22pp file of the SAME 1997 Flashback issue in the Uncanny X-Men v1 (1975) folder's Annuals and Specials, decided in B-061 at cv=3092 gcd=2605; item 88618 here is a second rip of that one comic, so the two shelves are the same comic and the shared link is a declared merge, not an accident
+F 6791 partial-rip | two issues (#-1 and #482) out of a 405-issue run, pulled in only as reading-order positions of Marvel\_X-Men\_X-Men Complete Chronology V2\0325 Flashback and Marvel\_Marvel Cosmic\05b War of Kings Prologue\003 Rise and Fall of the Shiar Empire
+N 6791 the GCD per-file leg here is round2-folder and wrong as usual — series 4675 "Cable" 1993-2002 Marvel 108, copied from a folder neighbour in the Cosmic reading order, names neither of our two files
+N 14117 with this shelf on CV 143976 the stored 115757 is free, which is the id R-010 puts on S14119; the two Prodigy shelves stay separate comics and no merge-with is declared between them

@@ -315,7 +315,7 @@ SELECT i.SeriesId,
        sum(lc.CommunityRating * coalesce(lc.RatingCount, {DefaultVotes})) || char(31)
     || sum(coalesce(lc.RatingCount, {DefaultVotes})) || char(31) || count(*)
 FROM Item i
-JOIN ItemProviderLink l ON l.ItemId = i.Id AND l.Provider = {(int)Provider.Locg} AND l.Status = {(int)LinkStatus.Matched}
+JOIN ItemProviderLink l ON l.ItemId = i.Id AND l.Provider = {(int)Provider.Locg} AND l.Status IN {LinkStatuses.UsableSql}
 JOIN LocgComic lc ON lc.LocgComicId = CAST(l.ProviderKey AS INTEGER)
 WHERE lc.CommunityRating > 0 AND i.SeriesId IS NOT NULL
 GROUP BY i.SeriesId"))
@@ -335,7 +335,7 @@ GROUP BY i.SeriesId"))
             foreach (var (itemId, payload) in hot.Pairs($@"
 SELECT l.ItemId, max(lc.CommunityRating) || char(31) || coalesce(max(lc.RatingCount), 0)
 FROM ItemProviderLink l JOIN LocgComic lc ON lc.LocgComicId = CAST(l.ProviderKey AS INTEGER)
-WHERE l.Provider = {(int)Provider.Locg} AND l.Status = {(int)LinkStatus.Matched} AND lc.CommunityRating > 0
+WHERE l.Provider = {(int)Provider.Locg} AND l.Status IN {LinkStatuses.UsableSql} AND lc.CommunityRating > 0
   AND l.ItemId > {after} AND l.ItemId <= {upto}
 GROUP BY l.ItemId"))
             {

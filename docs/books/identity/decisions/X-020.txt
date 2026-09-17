@@ -1,0 +1,221 @@
+# X-020 — item batch, 44 shelves already decided. Recurring shape: on manga shelves with a clean per-volume
+# GCD issue pool in the header, the per-file GCD picker falls back to a st3 title-only match and STAMPS ONE
+# volume's id (almost always #1's) across every book on the shelf (A Bride's Story 12/12, A Galaxy Next Door
+# 6/6, A Witch's Printing Office 6/6, The Collected Toppi 4/6, APOSIMZ, Powers 5/5) — corrected throughout by
+# matching the header's own numbered gcd issues pool by ordinal position. Several per-file CV picks land on a
+# foreign-language twin volume of the SAME title (A Silent Voice: Milky Way Ediciones/Spanish and Egmont
+# Ehapa/German on 3 of 7 files; APOSIMZ: Éditions Glénat/French on all 9; After Hours: Shogakukan/Japanese
+# original on all 3) — rejected in favor of the shelf's own English-language volume. lookup.py surfaced real
+# trade/collected records the packet's pool did not show for: Outpost Zero Complete Collection, Port of Earth
+# Deluxe Edition, Prism Stalker: The Weeping Star, Shirtless Bear-Fighter 2, Stray Dogs: Dog Days, The Good
+# Asian 1936 Deluxe Edition, Li'l Depressed Boy vol.05, Tokyo Ghost Complete Edition, Powers: The Best Ever
+# (a different edition than the library line, possibly misfiled).
+
+I 36148 cv=726029 gcd=2035122 isbn=978-1534313545 0.95 | Vol.01 (of 04), already correctly picked, isbn asserted on the gcd row
+I 36149 cv=763844 gcd=2789817 0.95 | Vol.02 "The Gun in the Puddle", already correctly picked by the packet
+I 36150 cv=812585 gcd=2789818 0.95 | Vol.03 (of 04), already correctly picked by the packet
+I 36151 cv=829332 gcd=2789819 0.95 | Vol.04 (of 04), already correctly picked by the packet
+
+I 35770 cv=516981 gcd=- 0.9 | Vol.01, already correctly picked; GCD holds no record for this webcomic (provider-missing, per the shelf's own gcd=- identity)
+I 35771 cv=522444 gcd=- 0.9 | Vol.02, already correctly picked; provider-missing, same as v01
+I 35772 cv=527177 gcd=- 0.9 | Vol.03, already correctly picked; provider-missing, same as v01
+I 35773 cv=531921 gcd=- 0.9 | Vol.04, already correctly picked; provider-missing, same as v01
+I 35774 cv=605092 gcd=- 0.9 | Vol.05, already correctly picked; provider-missing, same as v01
+
+N 35989 no-record | own trade record not found in the packet's pool but found via lookup.py: GCD 199376 "Outpost Zero: The Complete Collection" (2023, count 1); ComicVine holds no matching record (probed exact title, 0 hits); the shelf's own N called this absent from both legs
+
+I 36158 cv=582570 gcd=1822937 isbn=978-1-5343-0140-5 0.95 | Vol.01 "One Weirdest Weekend", already correctly picked
+I 36159 cv=594149 gcd=1822938 isbn=978-1-5343-0156-6 0.95 | Vol.02 "Too Super For School", already correctly picked
+
+I 34540 cv=204619 gcd=393928 isbn=978-1-58240-824-8 0.95 | vol.01, already correctly picked, isbn asserted on the gcd row
+I 34541 cv=204620 gcd=739652 isbn=978-1-58240-920-7 0.95 | vol.02, already correctly picked, isbn asserted on the gcd row
+I 34542 cv=204621 gcd=739653 isbn=978-1-58240-974-0 0.95 | vol.03, already correctly picked, isbn asserted on the gcd row
+I 34543 cv=204622 gcd=739654 isbn=978-1-60706-188-5 0.95 | vol.04, already correctly picked, isbn asserted on the gcd row
+
+I 33987 cv=- gcd=s213776 0.9 | own record: GCD 213776 "Port of Earth Deluxe Edition" (2024, count 1) — found via lookup.py, not in the packet's pool (shelf's N called it absent); ComicVine holds no matching record
+
+I 35760 cv=- gcd=s202803 0.9 | own record: GCD 202803 "Prism Stalker: The Weeping Star" (2023, count 1, Dark Horse) — found via lookup.py, not in the packet's pool; ComicVine holds no matching record for this Dark Horse book
+
+I 34021 cv=471990 gcd=- 0.9 | trade's own record: CV 78558 "Red City" issue 471990 "TPB", already correctly picked; GCD names no series but the run (provider-missing, per the shelf's own N)
+
+I 37064 cv=133602 gcd=1142059 0.95 | issue #3 of CV 20508/GCD 76693, already correctly picked; the shelf's own N confirms the "COL" prefix is a filing mistake — this is a single issue, not a collection
+
+I 35968 cv=1073051 gcd=2653394 0.9 | own record: CV 160280 "Satellite Sam Compendium" issue 1073051 — found via lookup.py; GCD 214680 matches the already-picked per-file id 2653394 (the shelf's N undersold this as absent from GCD)
+
+I 37130 cv=1081242 gcd=- 0.9 | own record: the shelf's own identity CV 161585 issue 1081242, the only record of this 559pp omnibus in either leg (per the shelf's own S clause)
+
+I 37136 cv=961642 gcd=2440015 isbn=978-1-5343-2129-8 0.95 | Book 1 "Pirate's Daughter", already correctly picked, isbn asserted
+I 37137 cv=1027796 gcd=2567998 isbn=978-1-5343-9993-8 0.9 | Book 2 "Black Wave", matches the shelf's own #2 pool row despite a round2-series method tag
+
+I 34884 cv=1072204 gcd=s199378 0.9 | own record: CV 106693 "Shirtless Bear-Fighter" issue 1072204 "Volume 2" (already correctly picked); GCD 199378 "Shirtless Bear-Fighter 2" (2023, count 1) found via lookup.py — the packet's per-file gcd pick (1727185/115082) was the FIRST series' own #2 by ordinal — reject
+
+I 36168 cv=719333 gcd=2016084 0.95 | already correctly picked by the packet's per-file match
+
+I 37218 cv=1073101 gcd=2645439 isbn=9781534327252 0.95 | shelf's own #1, already correctly picked (cv was blank in the per-file field, filled from the header's own cv issues pool)
+
+I 33270 cv=829856 gcd=2424678 0.9 | Book 01 = shelf's own #1; gcd already correctly picked, cv filled from the header's own cv issues pool (per-file cv was blank, st0)
+I 33271 cv=900357 gcd=2424679 0.9 | Book 02 = shelf's own #2; gcd already correctly picked, cv filled from the header pool
+I 33272 cv=941527 gcd=2424680 0.9 | Book 03 = shelf's own #3; gcd already correctly picked, cv filled from the header pool
+I 33273 cv=960192 gcd=2568000 0.9 | Book 04 = shelf's own #4; gcd already correctly picked, cv filled from the header pool
+I 33274 cv=1013666 gcd=2568001 0.9 | Book 05 = shelf's own #5; gcd already correctly picked, cv filled from the header pool
+I 33275 cv=1095940 gcd=2766909 0.9 | Book 06 = shelf's own #6; gcd already correctly picked, cv filled from the header pool
+
+I 33825 cv=322050 gcd=s117682 0.9 | v01, cv already correctly picked; gcd series is the shelf's own identity 117682, no issue-level id given in the packet's pool
+I 33826 cv=322051 gcd=s117682 0.9 | v02, cv already correctly picked; same gcd series as v01, no issue-level id in the pool
+
+N 37246 collects the 2-issue 2021-2022 "Stray Dogs: Dog Days" sequel mini in full (CV 140617/GCD 179974, "Part 1"/"Part 2") — no judged range is given in the packet, so no C line is written here
+I 37246 cv=- gcd=s187367 0.9 | trade's own record: GCD 187367 "Stray Dogs: Dog Days" (2022, count 1) — found via lookup.py; ComicVine mints only the 2-issue mini (140617), no trade-level volume; the packet's per-file pick (gcd 2212883/170062) is the FIRST "Stray Dogs" series' own #2 by ordinal — reject
+
+I 37939 cv=1066597 gcd=2645534 isbn=1534327754 0.9 | own record: the shelf's own identity CV 159231/GCD 213625 issue #1, isbn asserted; the packet's per-file cv pick was blank (mismapped to volume 39843, the ongoing)
+
+I 36175 cv=671364 gcd=1841432 0.95 | Vol.01, already correctly picked by the packet's per-file match
+I 36176 cv=719334 gcd=2017556 isbn=9781534311404 0.95 | Vol.02, already correctly picked, isbn asserted on the gcd row
+I 36177 cv=816384 gcd=2409978 0.9 | Vol.03, already correctly picked by the packet's per-file match
+I 36178 cv=885710 gcd=2409979 0.9 | Vol.04, already correctly picked by the packet's per-file match
+I 36179 cv=941215 gcd=2409980 0.9 | Vol.05, already correctly picked by the packet's per-file match
+
+I 36181 cv=846074 gcd=- 0.9 | own record: CV 135759 "Tartarus: Threading the Infinite" issue 846074 "Volume Two" (found via lookup.py, not the packet's per-file pick which was just the run's #2 by ordinal); GCD's only collected row for this title (164376) is a count-1 stub for Vol.01, not this book — provider-missing, confirming the shelf's own N
+
+I 36182 cv=921165 gcd=- 0.9 | own record: the shelf's own identity CV 142771 issue 921165, the only record of this 755pp omnibus in either leg (per the shelf's own S clause)
+
+I 35996 cv=129102 gcd=- 0.9 | Volume 1 = shelf's own CV 21374 issue #1 (129102), already correctly picked; GCD holds no record at all for this compendium (probed exact title, 0 hits, provider-missing)
+
+I 35635 cv=829854 gcd=s176348 0.9 | v01 "Volume One" = shelf's own CV 134043 issue #1 (829854), already correctly picked; GCD is ambiguous between twin rows 176348/215439 per the shelf's own N, so series form only, isbn 978-1-5343-1793-2 asserted on the #1 row shown in the packet's own pool
+I 35636 cv=896220 gcd=s176348 0.9 | v02 "Volume Two" = shelf's own CV 134043 issue #2 (896220), already correctly picked; same GCD twin-row ambiguity as v01
+
+I 33961 cv=517850 gcd=1542744 0.9 | Vol.01 "The Seduction", already correctly picked by the packet's per-file match
+
+I 37378 cv=- gcd=s200983 0.9 | own record: GCD 200983 "The Good Asian 1936 Deluxe Edition" (2023, count 1) — found via lookup.py; ComicVine holds no matching Deluxe Edition record (probed exact title, 0 hits)
+
+I 34800 cv=309862 gcd=- 0.9 | own record: CV 44988 "The Li'l Depressed Boy: Lonely Heart Blues" issue 309862 "Volume 0" (named by the shelf's own N); GCD names no series but the run (provider-missing)
+I 34801 cv=310733 gcd=- 0.9 | own record: CV 45078 "...She is Staggering" issue 310733 "Volume One" (named by the shelf's own N); provider-missing on gcd
+I 34802 cv=363541 gcd=- 0.9 | own record: CV 53478 "...Movin' Right Along" issue 363541 "Volume Two" (named by the shelf's own N); provider-missing on gcd
+I 34803 cv=402419 gcd=- 0.9 | own record: CV 61367 "...Got Your Money" issue 402419 "Volume Three" (named by the shelf's own N); provider-missing on gcd
+I 34804 cv=402324 gcd=- 0.9 | own record: CV 61329 "...Love Is A Place" issue 402324 "Volume Four" (named by the shelf's own N); provider-missing on gcd
+I 34805 cv=495305 gcd=- 0.9 | own record: CV 83332 "...Supposed To Be There Too" issue 495305 "TPB" — found via lookup.py (the shelf's N named a different, 5-issue CV volume 77221; this count-1 trade record is the right one); provider-missing on gcd
+
+I 36193 cv=825522 gcd=- 0.9 | own record: CV 133361 "The Marked: Origins" issue 825522 "Volume Two" (named by the shelf's own N); GCD holds no matching row (provider-missing, confirmed 0 hits via lookup.py)
+
+I 35905 cv=672314 gcd=1814898 0.95 | Vol.01 "New Brooklyn", already correctly picked by the packet's per-file match
+
+I 37943 cv=998537 gcd=- 0.9 | own record: CV 151907 "The Scumbag Complete Deluxe Edition" issue 998537 "HC" (named by the shelf's own N); GCD holds no record (provider-missing); judged range REFUSED so no C line
+
+N 33953 no-record | "The Complete Collection" omnibus has no matching record in either leg — probed the exact title via lookup.py, 0 hits; the packet's per-file gcd pick (537535/31605) is "The Sword" 2008-2010 Image's regular 4-volume TRADE series, not a complete-collection omnibus — reject
+
+I 33973 cv=507817 gcd=1514388 0.9 | Vol.01 "Blood Like Tar", already correctly picked by the packet's per-file match
+
+I 34359 cv=946492 gcd=2414642 isbn=978-1-5343-2128-1 0.95 | Book 01 (of 03), already correctly picked, isbn asserted on the gcd row
+I 34360 cv=1038891 gcd=2625191 isbn=978-1-5343-2519-7 0.95 | Book 02 (of 03), uses the shelf's own #2 from the header pool (the packet's per-file picks were blank/title-only)
+
+I 34369 cv=254512 gcd=789623 isbn=978-1-60706-076-5 0.9 | Book 01, cv already correctly picked; gcd filled from the shelf's own #1 pool row (packet's per-file gcd was blank)
+I 34370 cv=359862 gcd=1170852 isbn=978-1-60706-596-8 0.9 | Book 02, cv already correctly picked; gcd filled from the shelf's own #2 pool row
+I 34371 cv=502198 gcd=1527776 isbn=978-1-632-15456-9 0.9 | Book 03, cv already correctly picked; gcd filled from the shelf's own #3 pool row
+I 34372 cv=721073 gcd=2020074 isbn=978-1-5343-1340-8 0.9 | Book 04, cv already correctly picked; gcd filled from the shelf's own #4 pool row
+
+I 35994 cv=606611 gcd=- 0.9 | own record: CV 102617 "Tokyo Ghost Complete Edition" issue 606611 "HC" (named by the shelf's own N, found via lookup.py); GCD holds no matching record (provider-missing)
+
+I 34136 cv=382614 gcd=1253811 isbn=978-1-60706-441-1 0.9 | Vol.01 own record: CV 48449 "Witch Doctor: Under the Knife" issue 382614 "Volume 1" (found via lookup.py, matches title exactly, already correctly picked); gcd 1253811 matches the shelf's own #1 pool row by isbn despite a round2-folder method tag — trusted since it is the shelf's own numbered pool, not a folder-neighbour stamp
+I 34137 cv=280581 gcd=1253852 isbn=978-1607066934 0.9 | Vol.02 "Mal Practice" = shelf's own #2, already correctly picked by the packet
+
+I 36047 cv=843356 gcd=2748086 isbn=9781534317314 0.9 | Book 02, already correctly picked by the packet's per-file match
+I 36048 cv=1014040 gcd=2748087 isbn=9781534399471 0.9 | Book 03, uses the shelf's own #3 from the header pool (the packet's per-file picks were blank/title-only)
+
+I 37624 cv=955936 gcd=2431341 isbn=9781506730172 0.9 | v01, cv already correctly picked; gcd already correctly picked (matches the shelf's own #1 pool row, isbn asserted)
+I 37625 cv=965144 gcd=2465644 isbn=9781506730189 0.9 | v02, cv already correctly picked; gcd corrected to the shelf's own #2 pool row (packet's per-file pick reused #1's id 2431341 on all six)
+I 37626 cv=1045417 gcd=2510655 isbn=9781506730196 0.9 | v03, cv already correctly picked; gcd corrected to the shelf's own #3 pool row, same reused-stamp correction as v02
+I 37627 cv=1045418 gcd=2555475 isbn=9781506730202 0.9 | v04, cv already correctly picked; gcd corrected to the shelf's own #4 pool row, same correction
+I 37628 cv=1045428 gcd=2575918 isbn=9781506730219 0.9 | v05, cv already correctly picked; gcd corrected to the shelf's own #5 pool row, same correction
+I 37636 cv=- gcd=s163473 0.9 | own record: GCD 163473 "Powers: The Best Ever" (2020, DC, count 1) — found via lookup.py; this is a DIFFERENT collected edition (Icon-era Powers v4 material, per its own folder) than the library line v01-v05, not part of CV 146264; ComicVine holds no matching record; the packet's per-file picks (cv 965144/146264, gcd 2465644/189386) are v02's own ids, wrongly reused — reject
+N 37636 this item's folder ("05 Powers v4 (Icon) (2015)") and its own record (DC 2020, not Dark Horse 2022) suggest it may be misfiled onto S102127's Dark Horse library-line shelf — flagged for the lead's revisit since an X-batch may not write F/S
+
+I 37684 cv=696305 gcd=- 0.9 | Vol.01 own record: CV 116242 "Cellies" issue 696305 "Volume One" (found via lookup.py, named by the shelf's own N); GCD names no series but the run (provider-missing)
+I 37685 cv=715108 gcd=- 0.9 | Vol.02 own record: CV 116242 issue 715108 "Volume Two"; provider-missing on gcd, same as v01
+
+I 37979 cv=713546 gcd=1945388 0.9 | own record: CV 120151 "Stiletto" issue 713546 "TPB", already correctly picked; gcd 1945388 is the shelf's own #1 pool row, already correctly picked too — the shelf's N undersold this as absent
+
+I 37812 cv=705802 gcd=1950990 isbn=9781549302893 0.9 | Vol.01 "The Mighty Deep", cv already correctly picked; gcd filled from the shelf's own #1 pool row (isbn asserted)
+I 37813 cv=845198 gcd=- 0.9 | Vol.02 "Into the Sun" = shelf's own #2, already correctly picked (cv); GCD's pool only lists a #1 row — no #2 row exists (provider-missing)
+
+I 37980 cv=688192 gcd=1953596 0.9 | Book 01 "The Green Pig", already correctly picked by the packet's per-file match
+
+I 37818 cv=717858 gcd=- 0.9 | v01 = shelf's own CV 121055 issue 717858 (flagged GN), already correctly picked; GCD holds no record (provider-missing)
+N 37819 no-record | v02 has no record in either leg — probed "Witchy" broadly via lookup.py; the only hits are unrelated (a Goon crossover, a Disney story) or Akileos' 2024 French edition (169148), wrong language; CV 121055 is a count-1 volume (v01 only)
+
+I 38079 cv=939084 gcd=- 0.9 | v01 "Roll for Initiative" = CV 144203 issue 939084 "Vol. 1", already correctly picked; GCD holds only the run's own issue rows (178841 #1-5), no trade-level record — provider-missing
+
+I 38087 cv=1048533 gcd=2625127 isbn=9781960578792 0.9 | v01, both legs already correctly picked, isbn asserted on the gcd row
+I 38088 cv=1076863 gcd=2714161 0.9 | v02, cv already correctly picked; gcd corrected to the shelf's own #2 pool row (packet's per-file pick reused v01's id 2625127)
+
+I 39271 cv=819386 gcd=1881390 isbn=978-2-8189-3603-0 0.9 | Vol.01 = shelf's own #1, already correctly picked (cv); gcd is the shelf's own French-language #1 row, the Europe Comics shape per the shelf's own S line pairing English CV with the French GCD original
+I 39272 cv=821353 gcd=1881391 isbn=978-2-8189-4170-6 0.9 | Vol.02 = shelf's own #2, same English-CV/French-GCD pairing as v01
+
+I 39273 cv=698532 gcd=1914846 isbn=978-1-942367-91-8 0.9 | v01 "The Enchanted World", both legs already correctly picked
+I 39274 cv=714548 gcd=2157082 isbn=978-1-942367-92-5 0.9 | v02 "North America", cv already correctly picked; gcd corrected to the shelf's own #2 pool row (packet's per-file pick reused v01's id 1914846)
+I 39275 cv=735408 gcd=2157081 isbn=978-1-942367-93-2 0.9 | v03 "South America", cv already correctly picked; gcd corrected to the shelf's own #3 pool row, same reused-stamp correction
+I 39276 cv=803825 gcd=2157080 isbn=978-1-942367-96-3 0.9 | v04 "The Cradle of Life", cv already correctly picked; gcd corrected to the shelf's own #4 pool row, same correction
+I 39277 cv=827890 gcd=2256611 isbn=978-1-951719-04-3 0.9 | v05 "The Eastern Path", cv already correctly picked; gcd corrected to the shelf's own #5 pool row, same correction
+I 39278 cv=872301 gcd=2256610 isbn=978-1-951719-18-0 0.9 | v06 "Japan", both legs already correctly picked
+
+I 39289 cv=841492 gcd=s173059 0.9 | chapter 004 = shelf's own CV 133937 issue #4 (841492), already correctly picked; GCD's pool has only one ambiguous row (2229123#[nn]) for the whole series — series form only
+
+I 42026 cv=931243 gcd=1880018 isbn=978-2-7234-5993-8 0.9 | this 644pp file is the complete Ultra Heaven (all 3 volumes); using the shelf's own #1 cv/gcd ids since no dedicated "complete edition" record exists in either leg
+
+I 45789 cv=821252 gcd=2177689 isbn=9781975319175 0.95 | v01 = CV 132577/GCD 167514 issue #1, matches by number and isbn; the packet's per-file picks were both blank
+
+I 46157 cv=278284 gcd=849420 isbn=978-0-316-18099-3 0.95 | v01, both legs already correctly picked by the packet
+I 46158 cv=316866 gcd=900952 isbn=978-0-316-19446-4 0.95 | v02, cv already correctly picked; gcd corrected to the shelf's own #2 pool row (packet's per-file pick reused v01's id 849420 on all twelve)
+I 46159 cv=323694 gcd=954023 isbn=978-0-316-21034-8 0.95 | v03, cv already correctly picked; gcd corrected to the shelf's own #3 pool row, same reused-stamp correction
+I 46160 cv=381470 gcd=1138205 isbn=978-0-316-23203-6 0.95 | v04, cv already correctly picked; gcd corrected to the shelf's own #4 pool row, same correction
+I 46161 cv=426934 gcd=1143420 isbn=978-0-3162-4309-4 0.95 | v05, cv already correctly picked; gcd corrected to the shelf's own #5 pool row, same correction
+I 46162 cv=468978 gcd=1514221 isbn=978-0-316-33610-9 0.95 | v06, cv already correctly picked; gcd corrected to the shelf's own #6 pool row, same correction
+I 46163 cv=507637 gcd=1514222 isbn=978-0-316-34893-5 0.95 | v07, cv already correctly picked; gcd corrected to the shelf's own #7 pool row, same correction
+I 46164 cv=550276 gcd=1727847 isbn=978-0-316-31762-7 0.95 | v08, cv already correctly picked; gcd corrected to the shelf's own #8 pool row, same correction
+I 46165 cv=622715 gcd=1808471 isbn=978-0-316-56262-1 0.95 | v09, cv already correctly picked; gcd corrected to the shelf's own #9 pool row, same correction
+I 46166 cv=692394 gcd=1887458 isbn=978-1-9753-2798-9 0.95 | v10, cv already correctly picked; gcd corrected to the shelf's own #10 pool row, same correction
+I 46167 cv=716707 gcd=2011044 isbn=9781975384920 0.95 | v11, cv already correctly picked; gcd corrected to the shelf's own #11 pool row, same correction
+I 46168 cv=802735 gcd=2149603 isbn=9781975333195 0.95 | v12, cv already correctly picked; gcd corrected to the shelf's own #12 pool row, same correction
+
+I 46169 cv=920351 gcd=2398931 isbn=9781646514632 0.95 | v01, both legs already correctly picked by the packet
+I 46170 cv=937518 gcd=2419609 isbn=9781646514649 0.95 | v02, cv already correctly picked; gcd corrected to the shelf's own #2 pool row (packet's per-file pick reused v01's id 2398931 on all six)
+I 46171 cv=949672 gcd=2528906 0.95 | v03, cv already correctly picked; gcd corrected to the shelf's own #3 pool row, same reused-stamp correction
+I 46172 cv=961914 gcd=2528907 0.95 | v04, cv already correctly picked; gcd corrected to the shelf's own #4 pool row, same correction
+I 46173 cv=1000469 gcd=2555589 isbn=9781646516827 0.95 | v05, cv already correctly picked; gcd corrected to the shelf's own #5 pool row, same correction
+I 46174 cv=1047911 gcd=2631500 isbn=9781646518845 0.95 | v06, cv already correctly picked; gcd corrected to the shelf's own #6 pool row, same correction
+
+I 46175 cv=736861 gcd=- 0.9 | v01, cv already correctly picked; GCD holds no record for this North Stars Pictures line (provider-missing, matches the shelf's own gcd=- identity)
+I 46176 cv=739442 gcd=- 0.9 | v02, cv already correctly picked; provider-missing, same as v01
+I 46177 cv=745554 gcd=- 0.9 | v03, cv already correctly picked; provider-missing, same as v01
+I 46178 cv=759162 gcd=- 0.9 | v04, cv already correctly picked; provider-missing, same as v01
+I 46179 cv=798962 gcd=- 0.9 | v05, cv already correctly picked; provider-missing, same as v01
+I 46180 cv=809748 gcd=- 0.9 | v06, cv already correctly picked; provider-missing, same as v01
+I 46181 cv=817350 gcd=- 0.9 | v07, cv already correctly picked; provider-missing, same as v01
+I 46182 cv=821715 gcd=- 0.9 | v08, cv already correctly picked; provider-missing, same as v01
+
+I 42030 cv=489798 gcd=1674720 isbn=978-1-63236-056-4 0.95 | v01, cv corrected from a Spanish-language twin volume (147949, Milky Way Ediciones) to the shelf's own CV 82194 issue #1; gcd already correctly picked
+I 42031 cv=496298 gcd=1674721 0.95 | v02, same Spanish-twin cv correction as v01; gcd corrected to the shelf's own #2 pool row
+I 42032 cv=501553 gcd=1674722 0.95 | v03, same Spanish-twin cv correction; gcd corrected to the shelf's own #3 pool row
+I 42033 cv=506553 gcd=1674723 0.95 | v04, same Spanish-twin cv correction; gcd corrected to the shelf's own #4 pool row
+I 42034 cv=510866 gcd=1674724 0.95 | v05, cv corrected from a German-language twin (103917, Egmont Ehapa) to CV 82194 issue #5; gcd corrected to the shelf's own #5 pool row
+I 42035 cv=525877 gcd=1674725 0.95 | v06, same German-twin cv correction as v05; gcd corrected to the shelf's own #6 pool row
+I 42036 cv=531704 gcd=1674726 0.95 | v07, same German-twin cv correction as v05; gcd corrected to the shelf's own #7 pool row
+
+I 46183 cv=731127 gcd=2050148 isbn=9781975331467 0.95 | v01, both legs already correctly picked by the packet
+I 46184 cv=751064 gcd=2105532 isbn=9781975399344 0.95 | v02, cv already correctly picked; gcd corrected to the shelf's own #2 pool row (packet's per-file pick reused v01's id 2050148 on all six)
+I 46185 cv=770036 gcd=2121309 isbn=9781975309930 0.95 | v03, cv already correctly picked; gcd corrected to the shelf's own #3 pool row, same reused-stamp correction
+I 46186 cv=821249 gcd=2174969 isbn=9781975316990 0.95 | v04, cv already correctly picked; gcd corrected to the shelf's own #4 pool row, same correction
+I 46187 cv=893953 gcd=2418436 0.95 | v05, cv already correctly picked; gcd corrected to the shelf's own #5 pool row, same correction
+I 46188 cv=935562 gcd=2418437 0.95 | v06, cv already correctly picked; gcd corrected to the shelf's own #6 pool row, same correction
+
+I 41225 cv=687933 gcd=1864893 isbn=9781947194304 0.9 | v01, cv corrected from Éditions Glénat's French edition (153728, per the shelf's own N) to CV 114209 issue #1; gcd already correctly picked
+I 41226 cv=697298 gcd=1905381 0.9 | v02, same French-twin cv correction as v01; gcd corrected to the shelf's own #2 pool row (packet's per-file pick reused v01's gcd id)
+I 41227 cv=712254 gcd=1980779 0.9 | v03, same French-twin cv correction; gcd corrected to Vertical row #3 (the packet's per-file pick was the later Kodansha USA series 173844's issue #7, wrongly reused)
+I 41228 cv=735179 gcd=2063698 0.9 | v04, same French-twin cv correction; gcd corrected to Vertical row #4, same wrong-series correction as v03
+I 41229 cv=769829 gcd=2145697 0.9 | v05, same French-twin cv correction; gcd corrected to Vertical row #5, same correction
+I 41230 cv=824563 gcd=2186056 0.9 | v06, same French-twin cv correction; gcd corrected to Vertical row #6, the last of that publisher row (the shelf's own N: GCD splits the line into two publisher rows)
+I 41231 cv=868302 gcd=2238007 0.9 | v07, same French-twin cv correction; gcd corrected to Kodansha USA row 173844's own #7 (queried directly, isbn 9781647290559) — the line moved publisher branding here per the shelf's own N
+I 41232 cv=905293 gcd=2301979 0.9 | v08, same French-twin cv correction; gcd corrected to Kodansha USA row 173844's own #8 (isbn 9781647290610), not v07's id reused
+I 41233 cv=935470 gcd=2415718 0.9 | v09, same French-twin cv correction; gcd corrected to Kodansha USA row 173844's own #9 (isbn 9781647291006), not v07's id reused
+
+I 46189 cv=601605 gcd=1817926 0.95 | v01, cv corrected from Shogakukan's Japanese original (166581) to the shelf's own English CV 102089 issue #1; gcd corrected to the shelf's own #1 pool row (packet's per-file pick reused it for all three anyway, so this one was already right)
+I 46190 cv=672772 gcd=1817927 0.95 | v02, same Japanese-original cv correction as v01; gcd corrected to the shelf's own #2 pool row (packet's per-file pick had reused v01's gcd id here)
+I 46191 cv=694735 gcd=1884854 isbn=978-1-9747-0071-4 0.95 | v03, same Japanese-original cv correction as v01; gcd corrected to the shelf's own #3 pool row, isbn asserted

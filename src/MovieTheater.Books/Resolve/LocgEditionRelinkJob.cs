@@ -116,6 +116,8 @@ namespace MovieTheater.Books.Resolve
             foreach (var (itemId, payload) in hot.Pairs($@"
 SELECT i.Id, i.SeriesId || char(31) || l.ProviderKey
 FROM Item i JOIN ItemProviderLink l ON l.ItemId = i.Id
+-- Matched ONLY, deliberately: this job RE-POINTS the link it reads, and a Manual row is a person's answer
+-- about which LOCG record the edition is. LinkStatuses.Usable is for consumers; a re-matcher is not one.
 WHERE l.Provider = {(int)Provider.Locg} AND l.Status = {(int)LinkStatus.Matched} AND l.ProviderKey IS NOT NULL
   AND i.SeriesId IN ({idList})"))
             {

@@ -311,6 +311,20 @@
     "(SeriesId)"
    ]
   },
+  "CollectedEditionSpanRun": {
+   "file": "hot",
+   "pk": [
+    "ItemId",
+    "Source",
+    "Provider",
+    "ProviderKey"
+   ],
+   "purpose": "Which RUN a collected edition's range counts in, on any leg that has a run concept (Cv volume, Gcd series, Mu series, Barney, Marvel, Inducks), and the range in THAT run's numbering - several rows per span is the same run on several legs AND several runs in one book (a trade of two minis, an omnibus); none is unknown or the shelf's own identity; IssueStart/IssueEnd NULL is the span's own range",
+   "cols": "ItemId INTEGER FK CollectedEditionSpan, Source INTEGER, Provider INTEGER, ProviderKey TEXT, IssueStart REAL NULL, IssueEnd REAL NULL, Confidence REAL NULL, CreatedAt TEXT",
+   "idx": [
+    "(Provider, ProviderKey)"
+   ]
+  },
   "ContainmentFlag": {
    "file": "hot",
    "pk": [

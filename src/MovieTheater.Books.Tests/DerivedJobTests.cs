@@ -48,6 +48,32 @@ namespace MovieTheater.Books.Tests
             Assert.Equal((long)Confidence.High, w.Scalar<long>("SELECT Confidence FROM ReadingOrderEntry WHERE ItemId = 1"));
         }
 
+        [Fact]
+        public void AManualComicVineLinkDatesABookExactlyLikeAMatchedOne()
+        {
+            // Wave 6's defect. The identity pass CONFIRMS a link and stores it Manual (`identity-read`), which
+            // is the higher-grade read — and every consumer joining on Matched alone then lost the book: the
+            // Walking Dead compendiums re-dated from 2009-05-28 to their file years (source ComicVine -> a
+            // local fallback). A Manual link is at least as usable as a Matched one (LinkStatuses.Usable).
+            using var f = Migrated();
+            using (var hot = Writer(f))
+            {
+                hot.Begin();
+                hot.Exec($"UPDATE ItemProviderLink SET Status = $st, Method = 'identity-read' "
+                       + $"WHERE ItemId = 1 AND Provider = {(int)Provider.Cv}", ("$st", (int)LinkStatus.Manual));
+                hot.Commit();
+                ReadingOrderJob.RunAll(hot, 50, _ => { });
+            }
+
+            using var w = f.Hot();
+            Assert.Equal(1, w.Scalar<long>(
+                $"SELECT count(*) FROM ItemProviderLink WHERE ItemId = 1 AND Provider = {(int)Provider.Cv} "
+              + $"AND Status = {(int)LinkStatus.Manual}"));
+            Assert.Equal((long)ReadingOrderSource.ComicVine, w.Scalar<long>("SELECT Source FROM ReadingOrderEntry WHERE ItemId = 1"));
+            Assert.Equal("1977-02-26", w.Scalar<string>("SELECT ReadDate FROM ReadingOrderEntry WHERE ItemId = 1"));
+            Assert.Equal((long)Confidence.High, w.Scalar<long>("SELECT Confidence FROM ReadingOrderEntry WHERE ItemId = 1"));
+        }
+
         private const string OrderSql =
             "SELECT ItemId, coalesce(CAST(ReadIndex AS TEXT),'') || '|' || Source || '|' || coalesce(ReadDate,'') FROM ReadingOrderEntry ORDER BY ItemId";
 
@@ -416,6 +442,349 @@ namespace MovieTheater.Books.Tests
             ContainmentJob.BuildSeries(books);
 
             Assert.Equal(new[] { 8, 9, 12 }, books.Where(b => b.ParentItemId == 103).Select(b => b.ItemId).OrderBy(x => x));
+        }
+
+        // ── the run refs: "#1-4" and "#1-5" are not one range inside another when the runs differ ───────
+
+        /// <summary>Run refs as a reader's `C` lines make them: (leg, key) with no range of its own, which
+        /// means "the range on the span". The four-part form below adds the range in THAT run's numbering.</summary>
+        private static IReadOnlyList<ReadingOrderJob.SpanRun> Runs(params (Provider P, string Key)[] xs) =>
+            xs.Select(x => new ReadingOrderJob.SpanRun(x.P, x.Key, null, null)).ToList();
+
+        private static IReadOnlyList<ReadingOrderJob.SpanRun> Runs(params (Provider P, string Key, double A, double B)[] xs) =>
+            xs.Select(x => new ReadingOrderJob.SpanRun(x.P, x.Key, x.A, x.B)).ToList();
+
+        /// <summary>A Hellboy-shaped shelf: a trade of one mini, and a book that collects another mini.</summary>
+        private static List<ContainmentJob.Book> TwoMinis(
+            IReadOnlyList<ReadingOrderJob.SpanRun>? trade, IReadOnlyList<ReadingOrderJob.SpanRun>? book) =>
+        [
+            new ContainmentJob.Book
+            {
+                ItemId = 101, SeriesId = 1, Level = CollectionLevel.Volume, PageCount = 130, IsCollection = true,
+                SpanFromStart = 1, SpanFromEnd = 4, RangeSource = EditionSource.Curated, Runs = trade,
+            },
+            new ContainmentJob.Book
+            {
+                ItemId = 201, SeriesId = 1, Level = CollectionLevel.Book, PageCount = 400, IsCollection = true,
+                SpanFromStart = 1, SpanFromEnd = 5, RangeSource = EditionSource.Curated, Runs = book,
+            },
+        ];
+
+        [Fact]
+        public void TwoJudgedRangesCountedInDifferentRunsNeverNest()
+        {
+            // Hellboy Vol. 01 collects Seed of Destruction #1-4; Vol. 02 collects Wake the Devil #1-5. The
+            // numbers say "1-4 is inside 1-5" and the numbers are talking about two different comics.
+            var books = TwoMinis(
+                Runs((Provider.Cv, "10")),
+                Runs((Provider.Cv, "20")));
+            ContainmentJob.BuildSeries(books);
+            Assert.Null(books.Single(b => b.ItemId == 101).ParentItemId);
+        }
+
+        [Fact]
+        public void TheSameRunOnBothSidesNestsAsItAlwaysDid()
+        {
+            var books = TwoMinis(
+                Runs((Provider.Cv, "10")),
+                Runs((Provider.Cv, "10")));
+            ContainmentJob.BuildSeries(books);
+            Assert.Equal(201, books.Single(b => b.ItemId == 101).ParentItemId);
+        }
+
+        [Fact]
+        public void NoRunRefOnEitherSideIsTodaysBehaviour()
+        {
+            // The veto has to be ARMED by a reader. 20,498 collected editions carry no ref at all, and not
+            // one of their nestings may change because this field exists.
+            Assert.Equal(201, Parent(TwoMinis(null, null)));
+            Assert.Equal(201, Parent(TwoMinis(Runs((Provider.Cv, "10")), null)));
+            Assert.Equal(201, Parent(TwoMinis(null, Runs((Provider.Cv, "20")))));
+            // …and legs that do not overlap say nothing about each other
+            Assert.Equal(201, Parent(TwoMinis(Runs((Provider.Cv, "10")),
+                                              Runs((Provider.Gcd, "99")))));
+
+            static int? Parent(List<ContainmentJob.Book> books)
+            {
+                ContainmentJob.BuildSeries(books);
+                return books.Single(b => b.ItemId == 101).ParentItemId;
+            }
+        }
+
+        [Fact]
+        public void TheRangeBasedParentTestRefusesADifferentRunToo()
+        {
+            // Saga's shape — a container with nothing of its own on disk, placed by its range alone — with
+            // the ranges belonging to two different runs. Base books are issues #49-54, so neither container
+            // holds a file and both fall to the range-based test.
+            var books = new List<ContainmentJob.Book>();
+            for (var i = 1; i <= 6; i++)
+                books.Add(new ContainmentJob.Book
+                {
+                    ItemId = i, SeriesId = 1, Level = CollectionLevel.Issue, ReadIndex = i, PageCount = 24,
+                    IssueNumber = 48 + i, ReadNumber = 48 + i,
+                });
+            books.Add(new ContainmentJob.Book
+            {
+                ItemId = 101, SeriesId = 1, Level = CollectionLevel.Volume, PageCount = 150, IsCollection = true,
+                SpanFromStart = 37, SpanFromEnd = 42, RangeSource = EditionSource.Curated,
+                Runs = Runs((Provider.Cv, "10")),
+            });
+            books.Add(new ContainmentJob.Book
+            {
+                ItemId = 102, SeriesId = 1, Level = CollectionLevel.Book, PageCount = 500, IsCollection = true,
+                SpanFromStart = 37, SpanFromEnd = 54, RangeSource = EditionSource.Curated,
+                Runs = Runs((Provider.Cv, "20")),
+            });
+
+            ContainmentJob.BuildSeries(books);
+            Assert.Equal(0, books.Single(b => b.ItemId == 101).SpanEnd);      // it really is the range-based path
+            Assert.Null(books.Single(b => b.ItemId == 101).ParentItemId);
+
+            // the same shelf with one run: the volume nests in the book, as it does live
+            books.Single(b => b.ItemId == 102).Runs = Runs((Provider.Cv, "10"));
+            ContainmentJob.BuildSeries(books);
+            Assert.Equal(102, books.Single(b => b.ItemId == 101).ParentItemId);
+        }
+
+        // ── a range counted in a run only reaches files that are IN that run ────────────────────────────
+
+        /// <summary>
+        /// The Baltimore / Lobster Johnson shape: ten files a ripper numbered 001-010 over two miniseries,
+        /// and Vol. 02, whose judged range is now the SECOND mini's own #1-5 rather than the folder's #6-10.
+        /// <paramref name="linked"/> gives files 6-10 a ComicVine link into volume 20 at issue numbers 1-5.
+        /// </summary>
+        private static List<ContainmentJob.Book> RenumberedChain(bool linked, string? volOfVolume2 = "20")
+        {
+            var books = new List<ContainmentJob.Book>();
+            for (var i = 1; i <= 10; i++)
+                books.Add(new ContainmentJob.Book
+                {
+                    ItemId = i, SeriesId = 1, Level = CollectionLevel.Issue, ReadIndex = i, PageCount = 27,
+                    IssueNumber = i, ReadNumber = i,
+                    FileRuns = !linked ? null
+                        : new Dictionary<Provider, string> { [Provider.Cv] = i <= 5 ? "10" : "20" },
+                    ProviderIssueNumber = !linked ? null : i <= 5 ? i : i - 5,
+                });
+            books.Add(new ContainmentJob.Book
+            {
+                ItemId = 102, SeriesId = 1, Level = CollectionLevel.Volume, PageCount = 150, IsCollection = true,
+                SpanFromStart = 1, SpanFromEnd = 5, RangeSource = EditionSource.Curated,
+                Runs = volOfVolume2 == null ? null : Runs((Provider.Cv, volOfVolume2)),
+            });
+            return books;
+        }
+
+        [Fact]
+        public void ARangeCountedInARunReachesNothingOnARefusedShelfWhoseFilesHaveNoLinks()
+        {
+            // No file says which run it is in, and the shelf has no identity of its own. "#1-5 of volume 20"
+            // must NOT collect the ripper's 001-005, which are the other mini. Flat is right until the split.
+            var books = RenumberedChain(linked: false);
+            ContainmentJob.BuildSeries(books, shelfRuns: null);
+
+            var vol2 = books.Single(b => b.ItemId == 102);
+            Assert.Equal("#1-5", vol2.SpanLabel);          // the range is still stated
+            Assert.Equal(0, vol2.ContainsCount);           // it just reaches nothing
+            Assert.All(books.Where(b => b.ItemId <= 10), b => Assert.Null(b.ParentItemId));
+        }
+
+        [Fact]
+        public void AFileLinkedIntoTheRunNestsAtTheProvidersIssueNumberNotTheRippersOwn()
+        {
+            // Same shelf, with the links the packet would have: 006-010 are volume 20's issues #1-5. They
+            // nest — by the provider's numbers, which is what the range is written in — and 001-005, which
+            // are volume 10, do not.
+            var books = RenumberedChain(linked: true);
+            ContainmentJob.BuildSeries(books, shelfRuns: null);
+
+            Assert.Equal(new[] { 6, 7, 8, 9, 10 },
+                books.Where(b => b.ParentItemId == 102).Select(b => b.ItemId).OrderBy(x => x));
+            Assert.Equal(5, books.Single(b => b.ItemId == 102).ContainsCount);
+        }
+
+        [Fact]
+        public void AShelfWhoseOwnIdentityIsTheRunBehavesExactlyAsItDidBefore()
+        {
+            // The ordinary case, and the one that must not move: the shelf IS volume 20, so its files are in
+            // that run by living here, links or no links, and the range counts them by their own numbers.
+            var books = RenumberedChain(linked: false);
+            ContainmentJob.BuildSeries(books,
+                new Dictionary<Provider, string> { [Provider.Cv] = "20" });
+
+            Assert.Equal(new[] { 1, 2, 3, 4, 5 },
+                books.Where(b => b.ParentItemId == 102).Select(b => b.ItemId).OrderBy(x => x));
+        }
+
+        [Fact]
+        public void AFilesOwnLinkOutranksTheShelfIdentityWhenTheyDisagree()
+        {
+            // S100573, as wave 5's audit found it: a merge on a wrong stored link put Flash (1959) and Flash
+            // v2 (2007-2009) on one shelf, whose identity is CV 1995 (the 1959 run). Both runs have a #232.
+            // The 1975 file's gold #232-232 must not swallow the 2007 file, whose own GCD link names series
+            // 26125 — Wally West's run. The shelf makes a file eligible only when the file does not say
+            // otherwise.
+            var nineteenSeventyFive = new ContainmentJob.Book
+            {
+                ItemId = 1, SeriesId = 1, Level = CollectionLevel.Volume, PageCount = 100, IsCollection = true,
+                SpanFromStart = 232, SpanFromEnd = 232, RangeSource = EditionSource.Curated,
+                Runs = Runs((Provider.Cv, "1995")),
+            };
+            var twoThousandSeven = new ContainmentJob.Book
+            {
+                ItemId = 2, SeriesId = 1, Level = CollectionLevel.Issue, PageCount = 22, ReadIndex = 1,
+                IssueNumber = 232, ReadNumber = 232,
+                FileRuns = new Dictionary<Provider, string> { [Provider.Gcd] = "26125" },
+            };
+            var alsoNineteenFiftyNine = new ContainmentJob.Book
+            {
+                ItemId = 3, SeriesId = 1, Level = CollectionLevel.Issue, PageCount = 36, ReadIndex = 2,
+                IssueNumber = 232, ReadNumber = 232,
+            };
+            var shelf = new Dictionary<Provider, string> { [Provider.Cv] = "1995", [Provider.Gcd] = "1234" };
+
+            var books = new List<ContainmentJob.Book> { nineteenSeventyFive, twoThousandSeven, alsoNineteenFiftyNine };
+            ContainmentJob.BuildSeries(books, shelf);
+
+            Assert.Null(books.Single(b => b.ItemId == 2).ParentItemId);      // its own link says another run
+            Assert.Equal(1, books.Single(b => b.ItemId == 3).ParentItemId);  // no link of its own: the shelf decides
+        }
+
+        [Fact]
+        public void ARangeWithNoRunRefsIsMeasuredExactlyAsItIsToday()
+        {
+            // The 20,498 editions nobody has read yet. Even where the files carry links into another volume,
+            // a range that names no run is positional, as it has always been.
+            var books = RenumberedChain(linked: true, volOfVolume2: null);
+            ContainmentJob.BuildSeries(books, shelfRuns: null);
+
+            Assert.Equal(new[] { 1, 2, 3, 4, 5 },
+                books.Where(b => b.ParentItemId == 102).Select(b => b.ItemId).OrderBy(x => x));
+        }
+
+        [Fact]
+        public void EqualRangesInDifferentRunsAreNotTwoEditionsOfOneComic()
+        {
+            // The range-based pass treats an EQUAL range as "the same material, twice" and refuses to nest
+            // it. With different runs it is not the same material either — the refusal is the same, the
+            // reason is not, and neither book may end up inside the other.
+            var books = TwoMinis(
+                Runs((Provider.Cv, "10")),
+                Runs((Provider.Cv, "20")));
+            books.Single(b => b.ItemId == 201).SpanFromEnd = 4;
+            ContainmentJob.BuildSeries(books);
+            Assert.Null(books.Single(b => b.ItemId == 101).ParentItemId);
+            Assert.Null(books.Single(b => b.ItemId == 201).ParentItemId);
+        }
+
+        // ── per-run RANGES: one book, several runs, each counted in its own numbering (TOOLS_TODO 17) ────
+
+        [Fact]
+        public void ATradeCollectingTwoMinisReachesBothSetsOfFilesInEachMinisOwnNumbering()
+        {
+            // The shape a single `C` line could not state: one book collecting TWO runs, whose numbering
+            // differs (Hellboy Vol. 06/12, Hell on Earth Vol. 02/04/05/07, every omnibus). Ten files a ripper
+            // numbered 001-010: 001-005 are ComicVine volume 10 issues #1-5, 006-010 are volume 20 issues
+            // #101-105 — the legacy-numbered continuation. The book names both runs, each with ITS range.
+            var books = new List<ContainmentJob.Book>();
+            for (var i = 1; i <= 10; i++)
+                books.Add(new ContainmentJob.Book
+                {
+                    ItemId = i, SeriesId = 1, Level = CollectionLevel.Issue, ReadIndex = i, PageCount = 27,
+                    IssueNumber = i, ReadNumber = i,
+                    FileRuns = new Dictionary<Provider, string> { [Provider.Cv] = i <= 5 ? "10" : "20" },
+                    ProviderIssueNumber = i <= 5 ? i : 95 + i,
+                });
+            books.Add(new ContainmentJob.Book
+            {
+                ItemId = 102, SeriesId = 1, Level = CollectionLevel.Omnibus, PageCount = 600, IsCollection = true,
+                // the span's own range is the FIRST C line's, as apply_identity writes it
+                SpanFromStart = 1, SpanFromEnd = 5, RangeSource = EditionSource.Curated,
+                Runs = Runs((Provider.Cv, "10", 1, 5), (Provider.Cv, "20", 101, 105)),
+            });
+
+            ContainmentJob.BuildSeries(books, shelfRuns: null);
+
+            Assert.Equal(Enumerable.Range(1, 10),
+                books.Where(b => b.ParentItemId == 102).Select(b => b.ItemId).OrderBy(x => x));
+            Assert.Equal(10, books.Single(b => b.ItemId == 102).ContainsCount);
+        }
+
+        [Fact]
+        public void AFileInNeitherNamedRunIsStillRefused()
+        {
+            // The same book, and a file whose own ComicVine link names a third volume. Naming two runs widens
+            // what a range reaches; it does not stop the veto being a veto.
+            var books = new List<ContainmentJob.Book>
+            {
+                new()
+                {
+                    ItemId = 1, SeriesId = 1, Level = CollectionLevel.Issue, ReadIndex = 1, PageCount = 27,
+                    IssueNumber = 1, ReadNumber = 1,
+                    FileRuns = new Dictionary<Provider, string> { [Provider.Cv] = "99" }, ProviderIssueNumber = 1,
+                },
+                new()
+                {
+                    ItemId = 2, SeriesId = 1, Level = CollectionLevel.Issue, ReadIndex = 2, PageCount = 27,
+                    IssueNumber = 2, ReadNumber = 2,
+                    FileRuns = new Dictionary<Provider, string> { [Provider.Cv] = "20" }, ProviderIssueNumber = 101,
+                },
+                new()
+                {
+                    ItemId = 102, SeriesId = 1, Level = CollectionLevel.Omnibus, PageCount = 600, IsCollection = true,
+                    SpanFromStart = 1, SpanFromEnd = 5, RangeSource = EditionSource.Curated,
+                    Runs = Runs((Provider.Cv, "10", 1, 5), (Provider.Cv, "20", 101, 105)),
+                },
+            };
+
+            ContainmentJob.BuildSeries(books, shelfRuns: null);
+
+            Assert.Null(books.Single(b => b.ItemId == 1).ParentItemId);
+            Assert.Equal(102, books.Single(b => b.ItemId == 2).ParentItemId);
+        }
+
+        [Fact]
+        public void TwoJudgedRangesAreComparedInTheRunTheyShare()
+        {
+            // Return of the Master: CV 51622 #1-5 IS GCD 71228 #103-107. A trade that states the CV numbering
+            // and a book that states the GCD numbering of the SAME issues must not be read as #1-5 inside
+            // #103-107 by arithmetic — the shared run's own ranges are the ones compared, and there they are
+            // the same material, twice.
+            var books = TwoMinis(
+                Runs((Provider.Cv, "51622", 1, 5), (Provider.Gcd, "71228", 103, 107)),
+                Runs((Provider.Gcd, "71228", 103, 107)));
+            books.Single(b => b.ItemId == 201).SpanFromStart = 103;
+            books.Single(b => b.ItemId == 201).SpanFromEnd = 107;
+            ContainmentJob.BuildSeries(books);
+            Assert.Null(books.Single(b => b.ItemId == 101).ParentItemId);
+        }
+
+        [Fact]
+        public void AnOmnibusThatAlsoNamesASecondRunStillHoldsTheTradeOfTheFirst()
+        {
+            // …and the mirror: an equal range is "the same material twice" only when the two books name the
+            // same material. The omnibus collects this whole mini AND another, so the trade sits inside it.
+            var books = TwoMinis(
+                Runs((Provider.Cv, "10", 1, 4)),
+                Runs((Provider.Cv, "10", 1, 4), (Provider.Cv, "20", 1, 5)));
+            ContainmentJob.BuildSeries(books);
+            Assert.Equal(201, books.Single(b => b.ItemId == 101).ParentItemId);
+        }
+
+        [Fact]
+        public void ARunNamedTwiceOnOneLegIsComparableWhenEitherKeyMatches()
+        {
+            // Comparability is per (leg, key), not per leg: a book naming two ComicVine volumes shares a
+            // coordinate system with the trade of either of them, and with the trade of neither third one.
+            var twoRuns = Runs((Provider.Cv, "10"), (Provider.Cv, "20"));
+            Assert.Equal(201, Parent(TwoMinis(Runs((Provider.Cv, "20")), twoRuns)));
+            Assert.Null(Parent(TwoMinis(Runs((Provider.Cv, "30")), twoRuns)));
+
+            static int? Parent(List<ContainmentJob.Book> books)
+            {
+                ContainmentJob.BuildSeries(books);
+                return books.Single(b => b.ItemId == 101).ParentItemId;
+            }
         }
 
         [Fact]

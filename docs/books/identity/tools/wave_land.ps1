@@ -12,6 +12,11 @@
 # cv: key and RENAMES linked ones (§6.5, §6.6), and the backup taken in step 1 is the only way back.
 #
 # Run it yourself, at the console, with the batches named. It is deliberately not callable without them.
+#
+# Any batch KIND may be named: a tier batch (A-/B-/C-/D-), a revisit (R-) or an ITEM batch (X-), which decides
+# BOOKS rather than shelves (TOOLS_TODO 16) and whose lines are only I / C / N. The steps are the same for all
+# three -- an X- batch simply lands no SeriesKeyLink rows and merges nothing -- so the only thing this script
+# has to do about them is refuse a name whose decision file is not there, before the backup is taken.
 
 param(
     [Parameter(Mandatory = $true)][string]$Wave,
@@ -43,7 +48,12 @@ function Step([string]$label, [scriptblock]$body) {
 }
 
 $files = $Batches | ForEach-Object { "$repo/docs/books/identity/decisions/$_.txt" }
-Write-Host "wave: $($Batches -join ', ')"
+$missing = $files | Where-Object { -not (Test-Path $_) }
+if ($missing) {
+    Write-Host "STOP: no decision file for: $($missing -join ', ')" -ForegroundColor Red
+    exit 2
+}
+Write-Host "wave: $($Batches -join ', ')  (kinds: $((($Batches | ForEach-Object { $_.Substring(0,1) }) | Sort-Object -Unique) -join ' '))"
 
 Step "check_identity --all (cross-file merge and duplicate rules, not just this wave's grammar)" { python "$tools/check_identity.py" --all }
 Step "backup_live (SQLite online backup of books.db + books-legs.db)" { python "$ctools/backup_live.py" }

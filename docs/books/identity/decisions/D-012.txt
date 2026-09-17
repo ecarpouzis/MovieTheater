@@ -1,0 +1,722 @@
+# D-012 - tier D (no stored provider leg), 120 shelves: the tail of Image, Jinxworld, Legendary, Lion Forge /
+# Magnetic Press and Mad Cave, the whole `Magazines\MAD Magazine` and `Magazines\Viz` trees, and then 80
+# shelves of `Manga\` - which is what this batch really is.
+# Five things did the work, and four of them are spellings:
+#   1. An ACCENT hides a 26-volume Yen Press line: `lookup.py "Murcielago"` returns one Polish row, while
+#      `LIKE '%Murci%'` returns CV 98316 / GCD 118173 "Murciélago" (Yen Press, 23/26) - our twenty volumes.
+#      The same class of miss as D-011's slashed O and inner space.
+#   2. The MANGA population splits three ways and the split is legible from the file count: an ENGLISH
+#      licensed line both legs hold (Viz / Kodansha USA / Seven Seas / Yen Press - 26 shelves, clean 0.95),
+#      a SCANLATION of a work with no English edition at all (link the Japanese original at 0.9 with the
+#      language named, per the confirmed 2026-09-10 ruling - 8 shelves), and a scanlation of a work NEITHER
+#      catalog indexes in ANY language (Akai Yuki, Alexandros, G Senjou Heaven's Door, Waga Na wa Nero,
+#      Watashitachi no Shiawase na Jikan, Yuureitou, Exon Depot, Kouishou Rajio, Atomic Love - R, 9 shelves).
+#      The packet's `MU / External` line is the tell for the third class: an MU id and nothing else.
+#   3. FIVE landed shelves are the other half of a shelf in this batch, and all five were found by grepping
+#      the ids before writing: Dragon Ball Super v01-v10 belong to S5805 (v11-v22), the four Viz magazine
+#      issues to S21115, Kingdom v08/v17 to S10406, Appleseed v01/v02 to S1153 (v03/v04) and w0rldtr33
+#      v01/v02 to S22963. That is the single biggest yield in the batch: ten of its shelves are merges.
+#   4. MAD's 2024-2025 DIGITAL SHORTS are a total hole in both catalogs - "MAD - Spy vs Spy" 001-023,
+#      "MAD Short Cuts" and the six "Sergio Aragonés Presents a MAD Look at ___" shelves are 5-19pp
+#      `digital-mobile` webcomics off madmagazine.com, and eight shelves of this batch are that one thing.
+#      The magazine itself is indexed twice over (CV 9318 / GCD 10092 for 1952, CV 109775 / GCD 123822 for
+#      the 2018 relaunch, where GCD files modern MAD under "EC" as the ledger already records).
+#   5. An ARTBOOK or GUIDEBOOK beside a manga run is its own provider hole: the Fujiko Mine design artbook,
+#      the two 3-Gatsu no Lion Review Guidebooks, the MHA Easy Illustration Guide and the Fruits Basket
+#      illustration book are all R + provider-missing, while the Attack on Titan Guidebook is in ComicVine
+#      alone (CV 76996) - the line between them is whether the book got a Western licensed edition.
+
+# ---- Image, Jinxworld, Legendary, Lion Forge / Magnetic Press, Mad Cave --------------------------------
+S 19023 cv=127165 gcd=160570 0.95 | the RUN wins: our 158pp "COL The Ludocrats v01" collects a five-issue mini, and that mini is CV 127165 "The Ludocrats" 2020 Image count 5 and GCD 160570 of the same title, 2020-2020 Image count 5, which agree on publisher, year and count; the count-1 records beside them (CV 132118 issue 819060, GCD 236164 issue 2828298) are the trade our file is
+I 36191 cv=819060 gcd=2828298 0.95 | the November-2020 trade on both legs against our 158pp rip
+
+S 20231 cv=20554 gcd=- 0.9 | our single 201pp "COL Time² Omnibus (2022)" collects the whole of Howard Chaykin's Time², and the run is CV 20554 "Time²" 1986 First count 2 - the two 1986-1987 First Comics albums the folder `Image\Time² (1987)` names; the GCD dump holds no "Time²" row in any spelling probed, and Image's 2022 omnibus is in neither catalog
+F 20231 provider-missing | neither leg indexes Image's 2022 Time² omnibus, and GCD has no row for First Comics' Time² either
+N 37468 no-record | the omnibus we hold has no item-level record on either leg; what it collects is CV 20554's two 1986-1987 First albums
+
+R 20232 | "Timing-Luck (2024)" 219pp is in neither catalog: an exact probe of "Timing Luck" returns zero rows in the ComicVine rip and zero in the GCD dump, a LIKE on '%Timing%' in cv_vol returns only two Harlequin and Irodori romance one-shots, and the packet's own candidates were reached by the single words "timing" and "luck"
+F 20232 provider-missing | neither catalog holds Image's 2024 "Timing/Luck"
+
+S 20537 cv=146093 gcd=192246 0.95 | the RUN wins: our 201pp "Two Graves - Wish You Were Here" collects a six-issue mini, and that mini is CV 146093 "Two Graves" 2022 Image count 6 and GCD 192246 of the same title, 2022-? Image count 6, which agree on publisher, year and count; GCD 205216 (2023, count 1, issue 2574907 titled "Wish You Were Here", ISBN 1534325972) is the trade our file is
+I 37528 cv=- gcd=2574907 isbn=1534325972 0.9 | the October-2023 trade: GCD 205216's only issue, titled with our filename's own subtitle; the ComicVine rip mints no volume for the Two Graves trade
+
+S 22964 cv=149811 gcd=199739 0.9 | the RUN wins: our 176pp "COL w0rldtr33 v02 - Network" collects part of an Image ongoing, and that ongoing is CV 149811 "w0rldtr33" 2023 Image (16 cached issues) and GCD 199739 "W0rldtr33" 2023-? Image count 20, which agree on publisher and year on an open-ended run; the collected line beside them is CV 159769 (two issues named "Volume 1/ Terminal" and "Volume 2/ Network") and GCD 205569 (three), and 0.9 is the open end
+F 22964 merge-with=22963 | S22963 was read in C-033 as this same ongoing on the same two ids (its #12 floppy); this trade shelf and S22965 are the same comic
+I 37599 cv=1071796 gcd=2660460 isbn=9781534379299 0.95 | volume 2 "Network" on both collected legs, September 2024, against our 176pp rip
+
+S 22965 cv=149811 gcd=199739 0.9 | volume 1 of the same ongoing's collected line: CV 159769's issue 1069744 is named "Volume 1/ Terminal", our filename word for word, and GCD 205569's #1 (issue 2578287, ISBN 1534398651, November 2023) is the same book, so the comic is CV 149811 / GCD 199739, the 2023 Image ongoing both legs carry
+F 22965 merge-with=22963 | the same ongoing as S22963 and S22964, cut into a third shelf by the volume subtitle in the filename
+I 37598 cv=1069744 gcd=2578287 isbn=1534398651 0.95 | volume 1 "Terminal" on both collected legs, November 2023, against our 169pp rip
+
+S 6887 cv=- gcd=220334 0.9 | GCD 220334 "Fortune and Glory: The Musical" 2025-2025 Dark Horse count 1 (issue 2704319, 148pp, ISBN 9781506737195, on sale 2025-01-22) is our filename's whole title and publisher, and 148pp sits against our 137pp rip; the ComicVine rip has no volume of it, and the earlier "Fortune and Glory" rows (Oni 1999/2000, DC 2019, Dark Horse 2023) are Bendis's original memoir, a different book
+F 6887 provider-missing | ComicVine indexes no Dark Horse / Jinxworld "Fortune and Glory: The Musical"
+I 37952 cv=- gcd=2704319 isbn=9781506737195 0.9 | the single 2025 Dark Horse book, 148pp against our 137pp rip
+
+S 6710 cv=- gcd=147436 0.9 | GCD 147436 "Firebrand: The Initiation of Natali Presano" 2019-2019 Legendary count 1 (issue 1975972, ISBN 978-1-68116-055-9, April 2019) is our filename's whole title, publisher and year, and ComicInfo says Series "Firebrand" / Publisher "Legendary"; the ComicVine rip's only "Firebrand" is DC's 1996 nine-issue run (34387), a different comic
+F 6710 provider-missing | ComicVine indexes no Legendary "Firebrand: The Initiation of Natali Presano"
+I 37648 cv=- gcd=1975972 isbn=978-1-68116-055-9 0.9 | the single 2019 Legendary book against our 169pp rip
+
+S 8484 cv=- gcd=195486 0.9 | GCD 195486 "Head Wounds: Sparrow" 2023-2023 Legendary count 1 (issue 2483957, ISBN 978-1-68116-090-0) is our filename's title and ComicInfo Publisher "Legendary"; our file is dated 2022 against the record's 2023, which is the one-year lead a solicitation date gives, and the ComicVine rip has no volume of this title - its candidates were reached by "wounds" and "sparrow" separately
+F 8484 provider-missing | ComicVine indexes no Legendary "Head Wounds: Sparrow"
+I 37649 cv=- gcd=2483957 isbn=978-1-68116-090-0 0.9 | the single Legendary book against our 145pp rip
+
+S 62876 cv=112181 gcd=126891 0.95 | CV 112181 "Herakles" 2018 Magnetic Press count 3 (issues 676735 "Book 1", 699186 "Book 2", 713298 "Book 3") and GCD 126891 "Herakles" 2018-? Lion Forge count 3 (issues 1824676 #1, 1915857 #2, 2195485 #3, each 168pp with its own ISBN) agree on year and a three-book count - Magnetic Press and Lion Forge are the same house's two imprints, the publisher difference the ledger already records for Top Shelf/IDW - and our Book 01 is that #1 at 168pp against our 159pp rip
+I 37967 cv=676735 gcd=1824676 isbn=978-1-942367-49-9 0.95 | Book 1 on both legs, July 2018, 168pp against our 159pp rip
+
+S 101315 cv=112210 gcd=142134 0.95 | CV 112210 "Voltron Legendary Defender" 2018 Lion Forge Comics count 5 and GCD 142134 of the same title, 2018-2018 Lion Forge count 5, agree on publisher, year and a five-issue count, our four 29-32pp files are numbered 001-004 of that five, and the folder reads `Voltron - Legendary Defender v3 (2018)`; the 2016 and 2017 volumes (CV 92215/98403, GCD 118204/142135) are the earlier two series of the same title
+N 101315 the shelf's label-ambiguous flag is right and harmless: items 37768-37771 are single 32pp ISSUES, not collections, which is why no `I` line is owed here - their identity follows from the run and their numbers 1-4
+
+S 13517 cv=105998 gcd=118472 0.95 | CV 105998 "POS" 2017 Lion Forge Comics count 1 (issue 636475) and GCD 118472 "POS: Piece of Sh*t" 2017-2017 Lion Forge count 1 (issue 1751533, ISBN 9781942367468, on sale 2017-11-08) agree on publisher, year and count, and GCD spells out the subtitle our filename censors as "Sh-t"
+I 37803 cv=636475 gcd=1751533 isbn=9781942367468 0.95 | the single November-2017 Lion Forge book against our 256pp rip
+
+S 11788 cv=156754 gcd=- 0.9 | CV 156754 "Mary Shelley's Frankenstein by Georges Bess" 2023 Magnetic Press count 1 (issue 1044355) is our filename's whole title, publisher and year; the GCD dump has no row for it - its "Mary Shelley's Frankenstein" rows are Penguin's 2005 adaptation (61540) and Topps' 1994 four-issue movie tie-in (15153), different books
+F 11788 provider-missing | GCD indexes no Magnetic Press "Mary Shelley's Frankenstein by Georges Bess"
+I 37974 cv=1044355 gcd=- 0.9 | the single 2023 Magnetic Press album, CV 156754's only issue, against our 197pp rip
+
+S 18444 cv=- gcd=120208 0.9 | GCD 120208 "The Dream of the Butterfly" 2018-? Lion Forge count 2 names its two books by our two filenames' subtitles - issue 1776449 as #1 "Rabbits of the Moon" (ISBN 9781941302392, January 2018) and issue 1823060 as #2 "Dreaming a Revolution" (ISBN 9781941302552, July 2018) - and our file is volume 02, "Dreaming a Revolution"; the ComicVine rip has no volume of this line, its candidates all reached by the bare word "Dreaming"
+F 18444 merge-with=18445 | S18445 is volume 01 of the same two-book line in the same `The Dream of the Butterfly (2017)` folder, and GCD 120208 covers both
+F 18444 provider-missing | ComicVine indexes no Lion Forge "The Dream of the Butterfly"
+I 37810 cv=- gcd=1823060 isbn=9781941302552 0.9 | volume 02 "Dreaming a Revolution" on the GCD side, July 2018, against our 113pp rip
+
+S 18445 cv=- gcd=120208 0.9 | volume 01 of the same line: GCD 120208's issue 1776449 is its #1 titled "Rabbits of the Moon" with ISBN 9781941302392 and a January-2018 on-sale date, which is our filename's "v01 - Rabbits on the Moon" but for a preposition; ComicVine holds no volume of the line
+F 18445 provider-missing | ComicVine indexes no Lion Forge "The Dream of the Butterfly"
+I 37809 cv=- gcd=1776449 isbn=9781941302392 0.9 | volume 01 on the GCD side against our 113pp rip
+
+S 329 cv=- gcd=223301 0.9 | GCD 223301 "Attaboy" 2024-2024 Mad Cave Studios count 1 (issue 2730549, 88pp, ISBN 978-1545811757) is our filename's title, publisher and year, and 88pp sits against our 79pp rip; the ComicVine rip has no volume of it and its candidates were the 2024 MAD and Zenescope specials reached by the bare year
+F 329 provider-missing | ComicVine indexes no Mad Cave / Maverick "Attaboy"
+I 37984 cv=- gcd=2730549 isbn=978-1545811757 0.9 | the single 2024 Mad Cave book, 88pp against our 79pp rip
+
+S 13075 cv=134186 gcd=171231 0.95 | the RUN wins: our 142pp "COL Nottingham v02 - A King's Ransom" collects part of a fifteen-issue run, and that run is CV 134186 "Nottingham" 2021 Mad Cave Studios count 15 and GCD 171231 of the same title, 2021-2024 Mad Cave Studios count 15, which agree on publisher, year and count; the collected line beside them is CV 161592, whose issue 1001996 is named "Volume 2: A King's Ransom", our filename word for word, and the Cinebook, Le Lombard and Splitter rows are the licensed European editions
+I 38023 cv=1001996 gcd=- 0.9 | volume 2 "A King's Ransom" of the collected line, CV 161592's own issue, December 2022; GCD's only Mad Cave Nottingham collected row (184690) is a 32pp promotional issue, not this 142pp trade
+
+S 17772 cv=- gcd=219085 0.9 | GCD 219085 "Teleportation and Other Luxuries" 2024-2024 Mad Cave Studios count 1 (issue 2689742, 182pp, ISBN 9781545812242, November 2024) is our filename's whole title, publisher and year, and 182pp sits against our 177pp rip; the ComicVine rip has no volume of it - its "Teleportation" rows are Drakoo's and Splitter's "Teleportation Inc.", a different book
+F 17772 provider-missing | ComicVine indexes no Mad Cave / Maverick "Teleportation and Other Luxuries"
+I 38069 cv=- gcd=2689742 isbn=9781545812242 0.9 | the single 2024 Maverick book, 182pp against our 177pp rip
+
+# ---- Magazines\MAD Magazine -----------------------------------------------------------------------------
+R 21540 | "What Me Worry - The Art and Humor of MAD Magazine (2024 Norman Rockwell Museum)" 62pp is an exhibition catalogue, not a comic: a LIKE on '%Me Worry%' returns zero rows in cv_vol and in gcd_series, an exact probe returns nothing in either, and the nearest records are Warner's 1980 "Mad Worry Book" (CV 29667) and Watson-Guptill's 2002 "Mad Art" (CV 45365 / GCD 148600), two different books
+F 21540 not-a-run | a museum exhibition catalogue about MAD, which neither catalog indexes as a comic
+
+R 11104 | "MAD - Spy vs Spy" 001-023 are twenty-two `digital-mobile` files of 5-11 pages each, dated 2024-2025: MAD's own web shorts, which neither catalog indexes. A substring probe of "Spy vs Spy" returns fourteen ComicVine rows and fifteen GCD rows, every one of them a 1965-2025 Warner / New American Library / Watson-Guptill / EC BOOK collection, and none of them a 2024 serial of 6-11pp instalments; the 2011 "Mad Presents Spy vs. Spy" (GCD 54550) is this batch's own S11112
+F 11104 provider-missing | MAD's 2024-2025 digital Spy vs Spy shorts are in neither catalog
+F 11104 mobile-rip | every file is a `digital-mobile` vertical reformat of 5-11pp, which is why the page counts match no print record
+
+S 11149 cv=9318 gcd=10092 0.95 | the magazine in its comic-book years: CV 9318 "MAD" 1952 DC Comics count 550 and GCD 10092 "Mad" 1952-2018 EC count 550 agree on start year and on a 550-issue count, and our twenty-three 36-37pp files are the ladder 1-23 - exactly the 1952-1955 comic-book run before the magazine reformat, which is what the folder `MAD Magazine v1 (1952) (Scans)\(1952-1955) MAD Comics` says; GCD files the whole line under "EC" where ComicVine says DC, the same publisher's imprint the ledger already records
+N 11149 no per-volume `I` lines are written here because the packet folds fourteen of the twenty-three filenames into two same-skeleton ranges without their item ids; the per-issue mapping (our #1-23 onto GCD 10092's and CV 9318's first twenty-three issues) is the item pass's work
+
+S 98289 cv=109775 gcd=123822 0.95 | the 2018 relaunch: CV 109775 "MAD Magazine" 2018 DC Comics count 46 and GCD 123822 "Mad" 2018-? EC count 51 agree on start year on an open-ended line, our forty-one 55-77pp files are the ladder 1-41 inside it, and twenty-three files assert ComicInfo Series "MAD Magazine" / Volume "2018" with Publisher "DC" or "MAD"; GCD's "Mad Magazine" row 83558 is Horwitz's Australian edition, 1978-2010, and loses on publisher and span
+N 98289 as with S11149 the packet folds thirty-nine of the forty-one filenames into one range without item ids, so the per-issue `I` lines belong to the item pass
+
+R 23645 | "MAD Short Cuts" is nine `digital-mobile` files of 6-16 pages, each named for a single gag strip ("A Fairy Tale We'd Like to See - Goldilocks", "Brown Bear 001", "Projectile Vomit Baby", "The Zit" …), dated 2024-2025: MAD's web shorts again, and an exact probe of "Mad Short Cuts" returns zero rows in both catalogs while "Short Cuts" returns only Viz's 2002 manga (CV 93494 / GCD 44546) and a BuzzBoy one-shot
+F 23645 provider-missing | neither catalog indexes MAD's 2024-2025 "Short Cuts" web strips
+F 23645 mobile-rip | nine vertical `digital-mobile` files of 6-16pp, one gag each
+
+R 11105 | "MAD About Superheroes (2002)" 149pp is in neither catalog: a LIKE on '%About Superheroes%' returns zero rows in cv_vol and in gcd_series, and the "Mad About" books both hold are "Mad About Comic Strips" (CV 43267 / GCD 33168, 2003), "Mad About Mad" (CV 43397 / GCD 25302) and a 2026 "Mad About DC" (GCD 234553) - three different titles, none of them this one; ComicInfo asserts Series "MAD About Superheroes" and Publisher DC
+F 11105 provider-missing | neither catalog holds DC's 2002 "MAD About Superheroes"
+
+S 11112 cv=- gcd=54550 0.9 | GCD 54550 "Mad Presents Spy vs. Spy" 2011-2011 EC count 1 (issue 796677, 60pp) is our filename's title, publisher-imprint and year exactly, and ComicInfo asserts Series "MAD Presents Spy vs Spy" / Publisher DC - the DC/EC imprint difference the ledger records for modern MAD; the ComicVine rip has no volume of it, its only near row being Horwitz's 1989 Australian Spy vs Spy special (55788)
+F 11112 provider-missing | ComicVine indexes no 2011 "Mad Presents Spy vs. Spy"
+I 38810 cv=- gcd=796677 0.9 | the single 2011 book, GCD 54550's only issue at 60pp against our 76pp "Top Secret Files!" rip
+
+R 15370 | "Sergio Aragonés Presents a MAD Look at Food Trucks" 001-002 are two `digital-mobile` files of 12-13pp from 2024 - MAD's web shorts, like S11104 and S23645. A substring probe of "Mad Look" returns eight ComicVine and six GCD rows, every one a 1966-1989 Warner / New American Library paperback ("A Mad Look at Old Movies", "at TV", "at the Future", "at the 50's", "at the 60's"), and none of them a 2024 serial
+F 15370 provider-missing | neither catalog indexes the 2024-2025 "Sergio Aragonés Presents a MAD Look at ___" web shorts
+
+R 15371 | the same shape as S15370: one 13pp `digital-mobile` 2024 file, "a MAD Look at Hospitals", from the same `Sergio Aragonés Presents a MAD Look at ___ (2024)` folder; neither catalog holds any 2024 "Mad Look" record, only the Warner Books paperbacks of 1966-1989 named on S15370
+F 15371 provider-missing | as S15370 - MAD's 2024 web shorts are in neither catalog
+
+R 15372 | the same shape: three `digital-mobile` files of 12-15pp, "a MAD Look at Picnics" 001-003, dated 2024-2025; the probes that fail are the same ones, and the Aragonés records both catalogs do hold are Bongo's "Sergio Aragonés Funnies" (CV 42381 / GCD 60122) and the Groo series, different comics
+F 15372 provider-missing | as S15370 - no 2024-2025 "MAD Look at" record in either catalog
+
+R 15373 | the same shape: two `digital-mobile` files of 15-19pp, "a MAD Look at Practical Jokes" 001-002, 2024; no 2024 "Mad Look" row exists in either catalog and DC's 1966 "Joker's Practical Jokes!" (CV 57034) is a different comic entirely
+F 15373 provider-missing | as S15370 - MAD's 2024 web shorts are in neither catalog
+
+R 15374 | the same shape: two `digital-mobile` files of 13-15pp, "a MAD Look at Virtual Reality" 001-002, dated 2024-2025; the same probes fail the same way
+F 15374 provider-missing | as S15370 - MAD's 2024-2025 web shorts are in neither catalog
+
+R 15375 | the same shape: two `digital-mobile` files of 13-15pp, "a MAD Look at the Future" 001-002, 2024. This one has a decoy - GCD 182132 "A Mad Look at the Future" 1978-1978 Warner Books count 1 and CV 29310 of the same title carry our shelf's exact words, but they are a 1978 paperback collection, forty-six years and one format away from two 2024 vertical web shorts
+F 15375 provider-missing | neither catalog holds the 2024 web short; the identically titled 1978 Warner paperback is a different book
+
+# ---- Magazines\Viz (the UK humour magazine) ------------------------------------------------------------
+S 21118 cv=32718 gcd=44235 0.95 | one issue of the UK humour magazine: CV 32718 "Viz" 1979 (cached #201-340) holds our #215 as issue 566204 dated 2012-05, and GCD 44235 "Viz" [en-gb] 1979-2021 Dennis Publishing count 309 holds it as issue 1001149 numbered 215; the filename "Viz 215 [2012-05]" gives both the number and the month, and the shelf name "Viz  May" is the parser reading the month as a title
+F 21118 merge-with=21115 | S21115 was read in C-034 as this same magazine on these same two ids (76 files); the five `Magazines\Viz (1979)` shelves in this batch are single issues of it that the "Viz  <Month>" keys cut off
+I 39121 cv=566204 gcd=1001149 0.95 | Viz #215, May 2012, on both legs against our 52pp rip
+
+S 21117 cv=32718 gcd=44235 0.95 | the same magazine's #216: CV 32718's cached issue 566205 is dated 2012-06 and GCD 44235's issue 1001150 is numbered 216, which is what "Viz 216 [2012-06]" says; the file also carries an EAN-13 of 9770952796153, the magazine's ISSN-based product code (977-0952796 is Viz's ISSN 0952-7961), which neither leg records per issue
+F 21117 merge-with=21115 | the same magazine as S21115, cut into its own shelf by the "Viz  Jun" key
+I 39122 cv=566205 gcd=1001150 0.95 | Viz #216, June 2012, on both legs against our 52pp rip
+
+S 21116 cv=32718 gcd=44235 0.95 | the same magazine's #217: CV 32718's issue 566206 is dated 2012-08 and GCD 44235's issue 1092808 is numbered 217, matching "Viz 217 [2012-08]" on the month and the number
+F 21116 merge-with=21115 | the same magazine as S21115, cut into its own shelf by the "Viz  Aug" key
+I 39123 cv=566206 gcd=1092808 0.95 | Viz #217, August 2012, on both legs against our 52pp rip
+
+S 21119 cv=32718 gcd=44235 0.95 | the same magazine's #218: CV 32718's issue 566207 is dated 2012-09 and GCD 44235's issue 1092809 is numbered 218, matching "Viz 218 [2012-09]"; the shelf's own years read 2010-2010, which is the parser and not the file
+F 21119 merge-with=21115 | the same magazine as S21115, cut into its own shelf by the "Viz  Sep" key
+I 39124 cv=566207 gcd=1092809 0.95 | Viz #218, September 2012, on both legs against our 52pp rip
+
+S 21120 cv=32718 gcd=44235 0.95 | the same magazine's #231: CV 32718's issue 910049 is dated 2013-12 and GCD 44235's issue 1294154 is numbered 231, matching "Viz 231 [2013-12]"; the ladder reads 1 because the parser took "231 & Dec-Jan" as a title
+F 21120 merge-with=21115 | the same magazine as S21115, cut into its own shelf by the "Viz 231 & Dec-Jan" key
+I 39130 cv=910049 gcd=1294154 0.95 | Viz #231, December 2013, on both legs against our 52pp rip
+
+# ---- Magnetic Press ------------------------------------------------------------------------------------
+R 7024 | "Frontier Sketchbook (2024) (Digital)" 40pp: the GCD dump holds TWO Magnetic Press "Frontier" rows for 2024 - 221671 (issue 2716573, ISBN 978-1-962413-02-2) and 221672 (issue 2716574, ISBN 978-1-962413-01-5) - and neither is named a sketchbook, neither carries a page count, and the file's own EAN-13 0794677894450 matches neither ISBN; a 40pp sketchbook supplement fits two rows equally badly, and ComicVine has no Magnetic Press Frontier at all
+F 7024 provider-missing | neither catalog names a "Frontier Sketchbook"; the two GCD rows are the album itself in two printings or editions
+
+S 17777 cv=135209 gcd=196786 0.9 | Temudjin is a French album line and the only records of it are the original-language ones both legs hold: CV 135209 "Temudjin" 2013 Daniel Maghen count 2 (issues 841726 "Temudjin" and 841727 "Le voyage immobile") and GCD 196786 of the same title, 2013-2015 Daniel Maghen count 2 (issues 2494610 and 2494611), agree on publisher, span and count; our 188pp file is Magnetic Press's 2022 English edition, which neither catalog indexes - the right comic in the wrong language, linked per the Delcourt/Europe Comics ruling
+F 17777 provider-missing | neither catalog holds Magnetic Press's English "Temudjin"; CV 143551 "Temudjin" 2020 Spaceman Books/Project is a different publisher's book of the same name
+I 39994 cv=841726 gcd=2494610 isbn=978-2-356-74025-0 0.7 | the French first album, which our English edition translates - a 0.7 because the printing we hold has no record of its own on either leg
+
+# ---- Manga\ (loose scanlations with no catalog record at all) ------------------------------------------
+R 556 | "Akai Yuki (Red Snow) [kickthekitty][Sherlock].cbz" 237pp is a scanlation of a work neither catalog indexes in any language: exact and substring probes of "Akai Yuki" return zero rows in both, a LIKE on '%Akai Yuki%' likewise, and "Red Snow" returns only Drawn & Quarterly's 2009 Susumu Katsumata book (CV 85252 / GCD 81218), a different comic; the only record of any kind is MangaUpdates 22462334986 "Akai Yuki" 2005, which is not a leg this ledger links on an S line
+F 556 provider-missing | neither ComicVine nor GCD holds "Akai Yuki" in Japanese or in English
+
+R 593 | "Alexandros (2003) (Hox & HappyScans!)" 242pp: exact and substring probes of "Alexandros" return zero rows in both catalogs and a LIKE on '%Alexandros%' returns nothing; the file's EAN-13 1920922016004 is not a real product code (192-prefixed codes are in-house, and it matches no `gcd_issue.isbn` or `.barcode`), and the packet's MuSeriesLink is status 3 - no MangaUpdates match either
+F 593 provider-missing | neither catalog indexes "Alexandros"; the scanlation's own barcode resolves to nothing
+
+R 7088 | "G Senjou Heaven's Door (2001)" 612pp is a scanlation with no catalog record: exact and substring probes of "G Senjou Heaven's Door" return zero rows in both, and the nearest rows are Epoch's 2001 "The Door" (CV 50491 / GCD 57337) and Seven Seas' "Angel Beats!: Heaven's Door", different comics; MangaUpdates 49120213870 matches at 1.0 but MU is not a leg an S line may carry
+F 7088 provider-missing | neither catalog holds "G Senjou Heaven's Door" in any language
+
+R 21162 | "Waga Na wa Nero (1998-1999) (ShoujoMagic & Hox)" 504pp: no record in either catalog under the full title or any substring, and the "Nero" rows both hold are Standaard Uitgeverij's Flemish comic strip (163 issues) and Dupuis' and Casterman's editions of it, a wholly different comic; MangaUpdates 6406876239 is the only record anywhere
+F 21162 provider-missing | neither catalog indexes "Waga Na wa Nero"
+
+R 21303 | "Watashitachi no Shiawase na Jikan (2008)" 254pp: no record in either catalog, and the GCD row the packet reached ("Watashi no Shiawase na Kekkon", Square Enix 2019) is a different work found by a partial-word match; MangaUpdates 57153146014 matches at 1.0 and is the only record
+F 21303 provider-missing | neither catalog holds "Watashitachi no Shiawase na Jikan"
+
+R 22743 | "Yuureitou (2010-2014)" 2090pp is the complete series in one file and neither catalog indexes it: exact and substring probes return zero rows in both, and the packet's candidates were reached by the bare word "manga"; MangaUpdates 2803521324 is the only record
+F 22743 provider-missing | neither catalog holds "Yuureitou" in Japanese or in English
+
+R 6323 | "Exon Depot (1992) (Hoyeru)" 15pp: no record in either catalog under the title or any substring, and Dark Horse's "Intron Depot" (CV 21497, Shirow's art books) is a different work the parser reached by one letter; MangaUpdates 53262802208 matches at 1.0 and is the only record
+F 6323 provider-missing | neither catalog holds Masamune Shirow's "Exon Depot" short
+
+R 23599 | "Kouishou Rajio" is four 9-14pp chapter files (v02 c19-c22) plus one partial v01 collection, and neither catalog indexes the series: exact and substring probes of "Kouishou Rajio" return zero rows in both, and a LIKE on '%Kouishou%' likewise; MangaUpdates 25180974242 "Kouishou Radio" 2010 is the only record, and the one number naming two files is the "2" the parser took from "Vol.002"
+F 23599 provider-missing | neither catalog holds "Kouishou Rajio"
+
+R 1468 | "Atomic Love (Jiro Ishikawa) (2019) (tunafan)" 122pp: exact and substring probes of "Atomic Love" and a LIKE on '%Atomic Love%' return zero rows in both catalogs, and the packet's candidates ("Atomic Frenchie", "Atomic Knights", "Tommy Atomic") were reached by the single word; MangaUpdates 68189586559 "Atomic Love" 1999 is the only record
+F 1468 provider-missing | neither catalog holds Jiro Ishikawa's "Atomic Love"
+
+R 9499 | "Innocent Rouge Gaiden [HWMN]" is 30 pages - one gaiden chapter of Shin'ichi Sakamoto's Innocent Rouge, not a comic of its own. The series itself is indexed (CV 91054 "Innocent Rouge" 2015 Shueisha 12, CV 100928 Tonkam, GCD 121291 Delcourt "Innocent - Rouge" 12) but the gaiden has no record in either catalog under any spelling, and a 30pp side story is the reader-extract shape this ledger does not link
+F 9499 provider-missing | neither catalog indexes the Innocent Rouge gaiden as a separate record
+
+R 9951 | "Jojo's Bizarre Adventure - Free Comic Book Day 2015 Edition (FCBD 2015)" 34pp: an exact probe of the full title and a LIKE on '%JoJo%' return no Free Comic Book Day record in either catalog - ComicVine's JoJo volumes are the Viz part-runs (21526 Stardust Crusaders 16, 76787 Phantom Blood, 81452 Battle Tendency, 95392 Stardust Crusaders) and GCD's is 27115, none of them an FCBD sampler
+F 9951 provider-missing | neither catalog holds Viz's 2015 JoJo FCBD sampler
+
+R 12240 | "Mobile Suit Gundam - The Revival of Zeon (Complete)" 146pp: a LIKE on '%Revival of Zeon%' returns zero rows in cv_vol and in gcd_series, an exact probe returns nothing, and the packet's candidates were the Gundam Wing FCBD book and three editions of "Gundam: The Origin", different comics
+F 12240 provider-missing | neither catalog holds "Mobile Suit Gundam: The Revival of Zeon"
+
+R 12528 | "My Hero Academia - The Official Easy Illustration Guide (2023)" 98pp: a LIKE on '%Illustration Guide%' returns zero rows in both catalogs and an exact probe returns nothing; both index the manga itself many times over (CV 83681 Viz 42, GCD 105138 Carlsen 42 and a dozen licensed editions) but neither indexes this how-to-draw book
+F 12528 provider-missing | neither catalog holds Viz's "My Hero Academia: The Official Easy Illustration Guide"
+
+R 66451 | "Fruits Basket - Complete Anime Natsuki Takaya Illustrations (2023)" 190pp: the packet found no candidate of any kind for this shelf - not one CV row, not one GCD row, not an MU link - and an exact probe of the title returns nothing in either catalog; it is an anime illustration book, the same provider hole as S12528 and S18412
+F 66451 provider-missing | neither catalog holds the Fruits Basket anime illustration book
+
+R 18412 | "The Design Artbook of Lupin III the Woman Called Fujiko Mine" 69pp: an artbook for the 2012 anime, and neither catalog indexes it - the only Lupin rows either holds are Tokyopop's 2002 manga (CV 34684 / GCD 20939), Dargaud's and Carlsen's anthologies, and this batch's own "50 Animated Years" book
+F 18412 provider-missing | neither catalog holds the Fujiko Mine design artbook
+
+R 83 | "3-Gatsu no Lion Review Guidebook - Beginner" 18pp is a promotional booklet for the March Comes in Like a Lion manga, not a comic: an exact probe of its title returns nothing in either catalog, the packet's candidates were all IPC's British weekly "Lion" reached by one word, and 18 pages is the reader-extract extent; the manga itself is this batch's S11289
+F 83 provider-missing | neither catalog holds the 3-Gatsu no Lion Review Guidebooks
+
+R 84 | the companion booklet: "3-Gatsu no Lion Review Guidebook - Intermediate" 21pp, from the same `3-Gatsu no Lion Review Guidebook` folder, with the same absence of any record in either catalog under the title or any substring of it
+F 84 provider-missing | neither catalog holds the 3-Gatsu no Lion Review Guidebooks
+
+S 17352 cv=157112 gcd=- 0.7 | CV 157112 "Bessatsu Kamen Rider Saber Manga: Kamen Rider Buster" 2022 (publisher recorded as "Unknown Publisher") count 1 is the only catalog record of our file's ComicInfo Series "Supplementary Volume, Kamen Rider Saber Manga: Kamen Rider Buster" - "Bessatsu" being Japanese for "supplementary volume" - but our file is a 30pp scanlation of a 2021 Toei Tokusatsu Fan Club serial, the record is dated 2022 and its publisher is blank, so this goes to the review queue rather than the ledger; the GCD dump has no Kamen Rider row in English at all
+F 17352 provider-missing | GCD indexes no Kamen Rider Buster; ComicVine's row has no publisher and a one-year-later date
+N 43609 no-record | the 30pp chapter we hold has no item-level record: CV 157112 caches no issue rows in the rip and GCD holds nothing for the title
+
+# ---- Manga\ (the Japanese original is the only record - linked at 0.9, language named) ------------------
+S 6899 cv=107466 gcd=- 0.9 | "Fourteen (1990-1995).cbz" is 4,264 pages - Kazuo Umezu's complete twenty-volume "Fourteen" in a single file - and the only record of it is the Japanese original: CV 107466 "Fourteen" 1990 Shogakukan count 20, whose start year and twenty-volume count match the filename's 1990-1995 span exactly; CV 50827 "Fourteen" 2001 Shogakukan count 13 is the later bunkoban reissue, and the GCD dump has no row for either
+F 6899 provider-missing | GCD indexes no "Fourteen"; ComicVine holds only the Japanese Shogakukan editions, and no English licence exists
+N 42017 no-record | one 4,264pp file holding twenty volumes has no item-level record on either leg; CV 107466's volumes would each need their own file to be linked
+
+S 16862 cv=60417 gcd=- 0.9 | our seventeen volumes are JoJo Part 6 complete, and the record that matches them is the Japanese original: CV 60417 "Stone Ocean" 2000 Shueisha count 17 agrees on the seventeen-volume count and on the folder's own "JoJo's Bizarre Adventure Part 06 - Stone Ocean (2000)"; the ComicVine rip has no Viz English "Stone Ocean" volume (its JoJo Viz rows stop at Stardust Crusaders and Battle Tendency) and the GCD dump has none either, so this is the scanlation-of-an-unlicensed-part shape
+F 16862 provider-missing | neither catalog holds an English Stone Ocean edition; CV 120493 is Tonkam's French and 64081 Tong Li's Chinese
+
+S 23597 cv=80580 gcd=223026 0.9 | both legs hold the Japanese original at exactly our extent: CV 80580 "Kokō no Hito" 2008 Shueisha count 17 and GCD 223026 "孤高の人 [Kokou no Hito / Kokō no Hito]" 2008-2011 Shueisha count 17 agree on publisher, start year and a seventeen-volume count, and our seventeen c01-c170 scanlation volumes are that series entire; no English licence exists, so the original-language row is the right comic in the wrong language
+F 23597 provider-missing | neither catalog holds an English "Kokou no Hito"; the macron spelling is why the shelf's own key reached neither row
+
+S 53 cv=129677 gcd=- 0.9 | "2001+5 [Yukinobu Hoshino]" 270pp is Hoshino's sequel collection to 2001 Nights, and the record is the Japanese original: CV 129677 "2001+5" 2006 Futabasha count 1 (issue 795642, named "Space Fantasia Sakuhinshu", February 2006) is the book our filename names, with CV 129678 the 2009 reissue and CV 134248 Flashbook's Italian edition; no English edition exists and the GCD dump has no row of this title
+F 53 provider-missing | neither an English "2001+5" nor any GCD row exists; the ladder entry 5 is the "+5" of the title
+I 45748 cv=795642 gcd=- 0.7 | the 2006 Futabasha collection, CV 129677's only issue, against our 270pp scanlation - a 0.7 because the file is an English fan translation of that Japanese book, an edition neither leg records
+
+S 10410 cv=74502 gcd=- 0.7 | "Kingdom v08v2 [TurnipFarmers]" is a volume of the English scanlation of Yasuhisa Hara's Kingdom, and the only record is the Japanese original: CV 74502 "Kingdom" 2006 Shueisha (77 cached volumes), whose issue 455444 is its #8 - our volume number; this is the shape and the confidence C-034 set on S10406 of the same rip, and GCD's 175348 is the dump-only Japanese row that reader rejected as a leg
+F 10410 merge-with=10406 | S10406 was read in C-034 as this same English scanlation of the same Japanese original; the two "Kingdom vNNv2" shelves in this batch are single volumes of it
+I 44939 cv=455444 gcd=- 0.7 | volume 8 of CV 74502's Japanese original against our 205pp English scanlation; the file's EAN-13 1929979005054 is a scanlator-assigned code matching no `gcd_issue` row
+
+S 10411 cv=74502 gcd=- 0.7 | volume 17 of the same English scanlation: CV 74502's cached issue 455455 is its #17, which is our filename's "v17v2", and the same reasoning as S10410 and the landed S10406 applies
+F 10411 merge-with=10406 | the same scanlation as S10406 and S10410, cut into a third shelf by the "v17v2" key
+I 44948 cv=455455 gcd=- 0.7 | volume 17 of CV 74502's Japanese original against our 202pp English scanlation
+
+S 73843 cv=50750 gcd=- 0.9 | "Emerging" v01-v02 is the complete English scanlation of Masaya Hokazono's two-volume series, and the record that matches is the Japanese original: CV 50750 "Emerging" 2004 Kodansha count 2 agrees on the year the folder names and on a two-volume count; the GCD dump holds only Kurokawa's 2006 French edition (140956), a third territory, and no English licence exists
+F 73843 provider-missing | neither catalog holds an English "Emerging"; GCD's only row is the French
+
+S 10717 cv=97670 gcd=- 0.9 | "COL Les Misérables v01 (2022) (Omnibus Edition)" 454pp collects the first seven volumes of Takahiro Arai's manga adaptation, and the record of that work is the Japanese original: CV 97670 "Les Miserables" 2013 Shogakukan count 8 agrees on the folder's own "Les Miserables (2013)" and on the eight-volume extent our judged #1-7 sits inside; the GCD rows are Daedalus's Flemish, Jungle's and Nobi Nobi's and Kurokawa's French and Walker Books' British prose adaptation - no row for this omnibus
+F 10717 provider-missing | neither catalog holds the 2022 English omnibus edition of Arai's Les Misérables
+C 43618 cv=97670 #1-7 0.9 | what the omnibus collects: CV 97670 "Les Miserables" 2013 Shogakukan count 8 is the eight-volume Japanese line (issues 574270-574277, "Vol. 1" to "Vol. 8"), and the containment pass judged this 454pp file #1-7 of it - seven of that eight
+
+S 1351 cv=- gcd=209016 0.7 | our five DeathToll scanlation volumes of "As the Gods Will" have no English record, and the only catalog row of the work is a third territory's: GCD 209016 "As the Gods Will" 2024-2024 Panini Deutschland count 5, whose five-volume count matches our five files and whose title is the English one Panini kept; ComicVine has no row at all. A German licence standing in for an unlicensed English fan translation is the review queue, not the ledger
+F 1351 provider-missing | neither catalog holds a Japanese or English "As the Gods Will"; GCD's only row is Panini Deutschland's German edition
+
+S 128 cv=22641 gcd=42131 0.9 | our forty volumes are Yuzo Takada's complete 3x3 Eyes, and the English record both legs hold covers only its start: CV 22641 "3x3 Eyes" 1995 Dark Horse count 8 and GCD 42131 "3x3 Eyes" 1995-2004 Dark Horse count 10 are the same Dark Horse line, agreeing on publisher and start year; a provider count BELOW our ladder is a real doubt, which is what keeps this at 0.9, and the residue is that Dark Horse also broke the line into separately titled minis (CV 22643 / GCD 24631 "Curse of the Gesu", 5) and Innovation published the first five issues in 1991 (CV 56958 / GCD 24985)
+N 128 no per-volume `I` lines: the packet folds thirty-nine of the forty filenames into two same-skeleton ranges without item ids, and in any case Dark Horse's ten volumes cannot be mapped onto forty Japanese tankōbon
+
+S 23014 cv=142419 gcd=183019 0.9 | the English licence both legs hold: CV 142419 "Alice in Borderland" 2022 Viz count 9 and GCD 183019 of the same title, 2022-2024 Viz count 9, agree on publisher, year and count, and our eighteen c01-c65 volumes are the Japanese eighteen that Viz publishes as nine two-in-one volumes - the doubling the ledger records for Erased and Monster, and the reason no 1:1 per-volume mapping is safe
+N 23014 no per-volume `I` lines: our eighteen single volumes against Viz's nine two-in-one books have no safe 1:1 mapping (the Erased ruling), and the French Delcourt row GCD 221292 / CV 96385 that DOES have eighteen is a foreign edition, not our comic's own
+
+S 11289 cv=- gcd=201159 0.9 | the English licence is GCD 201159 "March Comes in Like a Lion" 2023-? Denpa count 4, an open-ended line whose start year matches our v01-v03 files dated 2023-2024 and whose title is our filename exactly; ComicVine has no English volume of Chica Umino's series at all, and a provider count below our seventeen volumes on an open-ended line is the real doubt here
+F 11289 provider-missing | ComicVine indexes no English "March Comes in Like a Lion"; GCD's other row, 132291, is Dargaud's French seventeen-volume edition - the count that matches our files exactly and is therefore the matches-our-holdings trap
+N 11289 no per-volume `I` lines: Denpa's four published volumes cannot carry our v04-v17, which are fan translations of volumes the English line has not reached
+
+# ---- Manga\ (the English licensed line - both legs, clean) ---------------------------------------------
+S 70 cv=55947 gcd=67435 0.95 | CV 55947 "Naoki Urasawa's 21st Century Boys" 2013 Viz count 2 (issues 392331 "Vol. 1" and 392409 "Vol. 2") and GCD 67435 of the same title, 2013-2013 Viz count 2 (issues 976018 "Death of the Friend" and 976019 "20th Century Boy", 204pp each with their own ISBNs) agree on publisher, year and a two-volume count, and our two files are that two at 198pp and 195pp
+I 40790 cv=392331 gcd=976018 isbn=978-1-4215-4326-0 0.95 | volume 1 on both legs, January 2013, 204pp against our 198pp rip
+I 40791 cv=392409 gcd=976019 isbn=978-1-4215-4327-7 0.95 | volume 2 on both legs, March 2013, 204pp against our 195pp rip
+
+S 1156 cv=21494 gcd=42141 0.9 | this shelf is volume 01 of the same four-book Dark Horse Appleseed line B-043 read as S1153 (its v03 and v04): GCD 42141 "Appleseed" 1993-1995 Dark Horse count 4 names its issues by our filenames' subtitles, #1 "The Promethean Challenge" being issue 711112, and CV 21494 "Appleseed" 1995 Dark Horse count 4 is the same line; the 0.9 is the two legs' start years (1995 against 1993) and the 2007-2008 dates in our filenames, which are Dark Horse's later printing (CV 65278, whose issue 417424 is Book One)
+F 1156 merge-with=1153 | S1153 is volumes 03-04 of this same four-book line in the same `Appleseed (1985)\Appleseed (1985)` folder; S1155 here is volume 02
+I 46257 cv=417424 gcd=711112 0.9 | Book One "The Promethean Challenge": the printing we hold is Dark Horse's 2007 round, CV 65278's issue 417424, against GCD 42141's #1; our 185pp rip
+
+S 1155 cv=21494 gcd=42141 0.9 | volume 02 of the same line: GCD 42141's issue 711114 is its #2 "Prometheus Unbound", our filename word for word, and CV 65278's issue 417425 is "Book Two: Prometheus Unbound" of the 2007-2008 printing our file is dated to
+F 1155 merge-with=1153 | the same four-book Dark Horse line as S1153 and S1156
+I 46258 cv=417425 gcd=711114 0.9 | Book Two "Prometheus Unbound", the 2007-2008 printing, against our 192pp rip
+
+S 18192 cv=39082 gcd=44628 0.95 | CV 39082 "Cain Saga" 2006 Viz count 5 and GCD 44628 "The Cain Saga" 2006-2007 Viz count 5 agree on publisher, span and a five-volume count, and both split volume 4 into two parts exactly as our two files do - CV's issues 482864 "The Seal of the Red Ram Part 1" and 482865 "Part 2", GCD's #4 (Part 1) and #4 (Part 2)
+F 18192 merge-with=18191 | S18191 is volumes 01-03 of the same five-book Viz line on the same CV 39082 / GCD 44628 ids; this shelf is the two halves of its volume 04
+I 44215 cv=482864 gcd=732510 isbn=978-1-4215-0475-9 0.95 | volume 4 part 1 on both legs, April 2007, against our 206pp rip
+I 44216 cv=482865 gcd=732511 isbn=978-1-4215-0899-3 0.95 | volume 4 part 2 on both legs, June 2007, against our 197pp rip
+
+S 1480 cv=76996 gcd=- 0.9 | CV 76996 "Attack on Titan Guidebook" 2014 Kodansha Comics USA count 1 (issue 465908, "SC", September 2014) is our filename's book - "Attack on Titan Guidebook - Inside & Outside (2014)" at 320pp - and the GCD dump has no row for it: its Attack on Titan rows are the 34-volume Kodansha USA line (68693) and the Carlsen German editions, never the guidebook
+F 1480 provider-missing | GCD indexes no "Attack on Titan Guidebook"
+I 40758 cv=465908 gcd=- 0.9 | the single September-2014 Kodansha USA guidebook, CV 76996's only issue, against our 320pp rip
+
+S 66441 cv=106657 gcd=119802 0.95 | CV 106657 "Attack on Titan: No Regrets Complete Color Edition" 2017 Kodansha Comics USA count 1 (issue 644264, "HC") and GCD 119802 of the identical title, 2018-2018 Kodansha USA count 1 (issue 1772812, ISBN 978-1632365323), agree on title, publisher and count against our single 386pp file; the one-year gap between the legs is the usual solicitation-to-on-sale spread
+I 40754 cv=644264 gcd=1772812 isbn=978-1632365323 0.95 | the Complete Color Edition on both legs against our 386pp rip
+
+S 66462 cv=- gcd=161591 0.9 | GCD 161591 "I Had That Same Dream Again: The Complete Manga Collection" 2020-2020 Seven Seas Entertainment count 1 (issue 2124680, ISBN 978-1-64505-491-7, July 2020) is our filename's whole title and year; the packet found no ComicVine candidate of any kind for this shelf and an exact probe returns none
+F 66462 provider-missing | ComicVine indexes no Seven Seas "I Had That Same Dream Again"
+I 44855 cv=- gcd=2124680 isbn=978-1-64505-491-7 0.9 | the single July-2020 Seven Seas omnibus against our 523pp rip
+
+S 11011 cv=103593 gcd=117891 0.95 | CV 103593 "Love & Lies" 2017 Kodansha Comics USA count 13 and GCD 117891 "Love and Lies" 2017-2022 Kodansha USA count 13 agree on publisher, start year and a thirteen-volume count, and our single file is v01 of that thirteen; the Kazé and Pika rows are the German and French licences
+I 40198 cv=615895 gcd=1746083 0.95 | volume 1 on both legs, August 2017, against our 194pp rip
+
+S 8195 cv=36464 gcd=20366 0.95 | CV 36464 "Gundam Wing" 2000 Tokyopop count 3 and GCD 20366 of the same title, 2000-2004 Tokyopop count 3, agree on publisher, start year and a three-volume count, and our single "[JGP] Gundam Wing v1 ver1.5" 95pp file is volume 1 of that three with a judged range of #1-4
+F 8195 merge-with=8193 | S8193 is volumes 2-3 of the same three-book Tokyopop line on the same CV 36464 / GCD 20366 ids, read in another batch; this shelf is its volume 1
+I 46323 cv=240659 gcd=321160 0.9 | volume 1 on both legs, May 2000, against our 95pp rip; the "ver1.5" in the filename is the scanlation group's revision, a printing neither leg records
+
+S 8194 cv=49934 gcd=44461 0.95 | the RUN wins: our 152pp single file is the collected edition of a four-issue mini, and that mini is CV 49934 "Mobile Suit Gundam Wing: Blind Target" 2001 Viz count 4 and GCD 44461 "Mobile Suit Gundam Wing Blind Target" 2001-2001 Viz count 4, which agree on publisher, year and count; the count-1 records beside them (CV 50073 issue 343403, GCD 44730 issue 733258) are the collection
+I 47976 cv=343403 gcd=733258 0.95 | the collected edition on both legs against our 152pp rip
+
+S 10285 cv=- gcd=41912 0.9 | the RUN wins: our two files are the same Dark Horse Domu trade ripped twice, and the run under it is GCD 41912 "Domu: A Child's Dream" 1995-1995 Dark Horse count 3 - the three-issue English mini; the ComicVine rip has no Dark Horse Domu volume at all, only Futabasha's Japanese original (41594), and GCD 41604 (1996-2001, count 1) is the collected edition our files are
+F 10285 provider-missing | ComicVine indexes no Dark Horse "Domu: A Child's Dream", only the Japanese Futabasha original
+I 39997 cv=- gcd=1052368 isbn=1-56971-611-0 0.9 | the 2001 printing of the trade, which our filenames name: GCD 41604's second issue, ISBN 1-56971-611-0, against our 244pp rip (the 1996 first printing is issue 702882 at 242pp)
+I 42021 cv=- gcd=1052368 isbn=1-56971-611-0 0.9 | the same 2001 trade, a second identical 244pp METASON rip of it - which is what the shelf's label-ambiguous flag names
+
+S 7857 cv=169702 gcd=215995 0.9 | CV 169702 "Gravitation: Collector's Edition" 2024 Seven Seas Entertainment and GCD 215995 of the same title, 2024-2025 Seven Seas Entertainment count 7, are the same line on two legs and our two 378pp/381pp files are its first two volumes; what caps this at 0.9 is that the ComicVine rip caches only one issue of the line against GCD's seven
+I 44794 cv=1150791 gcd=2666612 0.9 | volume 1 of the Collector's Edition, June 2024 on the ComicVine side, against our 378pp rip
+I 44795 cv=- gcd=2666613 0.9 | volume 2 on the GCD side; ComicVine's rip caches no second issue for volume 169702
+
+S 8400 cv=- gcd=144943 0.7 | "COL Haru Hana – The Complete Collection (2010)" 527pp collects the whole of Yuana Kazumi's series, and the only catalog record of the work is a third territory's: GCD 144943 "Haru Hana" 2008-2009 Tonkam count 3, the French edition, whose three volumes our single collection gathers; ComicVine has no row at all and MangaUpdates 59834817963 "HaruHana" 2004 confirms the title but is not a leg. A French licence standing in for an English collection neither catalog holds belongs in the review queue
+F 8400 provider-missing | neither catalog holds an English "Haru Hana"; GCD's only row is Tonkam's French
+
+S 1057 cv=149078 gcd=- 0.9 | CV 149078 "50 Animated Years of Lupin The 3rd" 2022 Magnetic Press count 1 (issue 979596, November 2022) is our filename's book - "50 Animated Years of Lupin III (2022)" at 202pp - with the "III" and "The 3rd" the only difference; the GCD dump has no row for it, its Lupin rows being Tokyopop's 2002 manga (20939) and Carlsen's German anthology (193210)
+F 1057 provider-missing | GCD indexes no Magnetic Press "50 Animated Years of Lupin the 3rd"
+I 45067 cv=979596 gcd=- 0.9 | the single November-2022 Magnetic Press book, CV 149078's only issue, against our 202pp rip
+N 1057 the ladder entry 50 is the "50" of the title, not an issue number
+
+S 2660 cv=53290 gcd=46743 0.95 | CV 53290 "Black Blizzard" 2010 Drawn & Quarterly count 1 (issue 362806, "TPB", March 2010) and GCD 46743 "Black Blizzard" [en-ca] 2010-2010 Drawn & Quarterly count 1 (issue 744486, 140pp, ISBN 978-1-77046-012-6, on sale 2010-03-24) agree on title, publisher, year and count, and 140pp sits against our 136pp rip; the filename's 1956 is the year Tatsumi drew it, not the edition's
+I 42019 cv=362806 gcd=744486 isbn=978-1-77046-012-6 0.95 | the single 2010 Drawn & Quarterly edition on both legs, 140pp against our 136pp rip
+
+S 12757 cv=155135 gcd=206722 0.95 | CV 155135 "Neighborhood Story (Omnibus)" 2023 Viz count 4 and GCD 206722 "Neighborhood Story" 2023-2024 Viz count 4 agree on publisher, span and a four-volume omnibus count, and our two files are its v01 and v02 dated 2023 and 2024
+
+S 13431 cv=141895 gcd=183018 0.95 | CV 141895 "Orochi" 2022 Viz count 4 and GCD 183018 "Orochi: The Perfect Edition" 2022-2023 Viz count 4 agree on publisher, span and a four-volume count, and our four files are that four; the Japanese Akita Shoten and Shogakukan rows (CV 105003, GCD 109729/183020/161547) are the originals and Le Lézard Noir's is the French
+
+S 12586 cv=- gcd=209431 0.9 | GCD 209431 "My Name Is Shingo: The Perfect Edition" 2024-? Viz count 6 is our three files' line exactly - ComicInfo asserts Series "My Name Is Shingo" and Publisher "Viz Media" on all three - and our v01-v03 sit inside that six; the ComicVine rip has no volume of it, its candidates reached by the words "my name is"
+F 12586 provider-missing | ComicVine indexes no Viz "My Name Is Shingo"
+
+S 67392 cv=- gcd=148683 0.9 | GCD 148683 "Magus of the Library" 2019-? Kodansha USA count 8 is our seven files' line: an open-ended English line whose start year matches our v01 dated 2019, and our v01-v07 sit inside that eight; the packet found no ComicVine candidate at all for this shelf and an exact probe returns none, while Carlsen's 150621 and Ki-oon's 235968 are the German and French licences
+F 67392 provider-missing | ComicVine indexes no Kodansha USA "Magus of the Library"
+
+S 12529 cv=111026 gcd=126623 0.95 | CV 111026 "My Hero Academia: Vigilantes" 2018 Viz count 15 and GCD 126623 of the same title, 2018-2023 Viz count 15, agree on publisher, span and a fifteen-volume count, and our fifteen files are that fifteen complete
+
+S 12237 cv=114691 gcd=132126 0.95 | CV 114691 "Mob Psycho 100" 2018 Dark Horse count 14 and GCD 132126 of the same title, 2018-? Dark Horse count 16, agree on publisher and start year, and our thirteen v01-v13 files sit inside both; the Kurokawa, Carlsen, Ivrea and Panini rows are the licensed European editions and Shogakukan's 94194 the Japanese original
+N 47975 no-record | "Mob Psycho 100 - Reigen - The Man with Level 131 Max Spirit Power! (2020)" 196pp is the spin-off volume filed in this shelf's `Annuals and Specials` folder, and it has no record in either catalog - the "Reigen" rows both hold (CV 130058, GCD 78908 and 184533) are an unrelated German-language book; it is also why the ladder reads 131
+
+S 10235 cv=140377 gcd=179335 0.95 | CV 140377 "Kaiju No. 8" 2021 Viz count 14 and GCD 179335 of the same title, 2021-? Viz count 15, agree on publisher and start year on an open-ended line, and our ten v01-v10 files dated 2021-2024 sit inside both; Crunchyroll's 163723/191753 is the same manga's other English licensor and the 2026 Pegasus row is Turkish
+
+S 12480 cv=98316 gcd=118173 0.95 | the accent is the whole difficulty: CV 98316 "Murciélago" 2017 Yen Press count 23 and GCD 118173 "Murciélago" 2017-? Yen Press count 26 agree on publisher, start year and an open-ended line, and our twenty v01-v20 files dated 2017-2022 sit inside both; a `lookup.py "Murcielago"` probe returns only Waneko's Polish edition (118781), which is why the packet showed no English leg at all
+
+S 6002 cv=27357 gcd=42822 0.9 | CV 27357 "Eden: It's an Endless World!" 2005 Dark Horse count 14 and GCD 42822 "Eden: It's an Endless World" 2005-2014 Dark Horse count 14 agree on publisher, span and a fourteen-volume count; our eighteen files are the complete Japanese eighteen, so the English line stops four volumes short of our ladder - a count below our holdings, which is the real doubt that caps this at 0.9
+
+S 5710 cv=100674 gcd=- 0.9 | CV 100674 "Domestic Girlfriend" 2017 Kodansha Comics USA count 28 is our shelf exactly: twenty-eight volumes, start year 2017, and our twenty-eight files run v01-v28 dated 2017-2021 with contiguous judged ranges #1-276; the GCD dump has no row for the English line at all, and CV 92225 "Domestic na Kanojo" 2014 Kodansha is the Japanese original
+F 5710 provider-missing | GCD indexes no Kodansha USA "Domestic Girlfriend"
+
+S 5389 cv=98035 gcd=118476 0.95 | CV 98035 "Descending Stories: Showa Genroku Rakugo Shinju" 2017 Kodansha Comics USA count 10 and GCD 118476 of the same full title, 2017-2019 Kodansha USA count 10, agree on publisher, span and a ten-volume count, and our ten files are that ten complete; the shelf's own key "Descending Stories" is the truncation that hid both
+
+S 3534 cv=103755 gcd=119671 0.95 | CV 103755 "Captain Harlock: Dimensional Voyage" 2017 Seven Seas Entertainment count 10 and GCD 119671 of the same title, 2017-2019 Seven Seas Entertainment count 10, agree on publisher, span and a ten-volume count, and our ten files dated 2017-2019 are that ten complete; Ablaze's "Space Pirate Captain Harlock" (CV 136918 / GCD 174115) is a different, later series
+
+S 66463 cv=29535 gcd=38847 0.95 | CV 29535 "Ikigami: The Ultimate Limit" 2009 Viz count 10 and GCD 38847 of the same title, 2009-2014 Viz count 10, agree on publisher, span and a ten-volume count, and our ten files dated 2009-2014 are that ten complete; the four EAN-13s the files carry (9781421526782, 9781421526799, 9781421526812, 9781421531656) are Viz's own ISBNs for volumes 1, 2, 4 and 5, which GCD's issue rows for this series do not record
+
+S 73842 cv=131761 gcd=166377 0.95 | CV 131761 "Blue Giant Omnibus" 2020 Seven Seas Entertainment count 5 and GCD 166377 "Blue Giant [Omnibus]" 2020-2022 Seven Seas Entertainment count 5 agree on publisher, span and a five-volume omnibus count, and our five files are that five - each one a v01-02 / v03-04 / … pairing of the ten Japanese volumes (CV 96808 / GCD 166347, Shogakukan 2013-2017)
+
+S 7035 cv=91726 gcd=113399 0.95 | CV 91726 "Fruits Basket Collector's Edition" 2016 Yen Press count 12 and GCD 113399 of the same title, 2016-2017 Yen Press count 12, agree on publisher, span and a twelve-volume count, and our twelve files dated 2016-2017 are that twelve complete; Tokyopop's 23-volume line (CV 23253 / GCD 20223) is the earlier English edition of the same manga
+
+S 11305 cv=155881 gcd=196854 0.95 | CV 155881 "Marmalade Boy: Collector's Edition" 2023 Seven Seas Entertainment count 5 and GCD 196854 of the same title, 2023-2024 Seven Seas Entertainment count 5, agree on publisher, span and a five-volume count, and our five files dated 2023-2024 are that five complete
+
+S 2308 cv=27342 gcd=79125 0.9 | the shelf holds two editions of one comic and both are indexed: CV 27342 "Battle Angel Alita: Last Order" 2003 Kodansha Comics USA count 19 is the nineteen-volume line our v16-v19 singles belong to, and GCD 79125 "Battle Angel Alita: Last Order Omnibus" 2013-2014 Kodansha USA count 5 is the five-volume omnibus line our other five files are; 0.9 because the two legs describe those two editions rather than one, and because GCD splits the singles between Viz (44296 six, 44297 fifteen) and Kodansha USA (72458 four, our v16-v19)
+N 2308 the ComicVine omnibus line is CV 59520 "Battle Angel Alita: Last Order Omnibus" 2013 Kodansha Comics USA count 5 (issues 395743, 422547, 445238, 461030, 472995) - named here because an S line carries one volume id and this shelf's nine files need two
+I 40659 cv=395743 gcd=1180383 isbn=978-1-612622910 0.95 | omnibus volume 1 on both legs against our 652pp rip
+I 40660 cv=422547 gcd=1180384 isbn=978-1-612622927 0.95 | omnibus volume 2 on both legs against our 650pp rip
+I 40661 cv=445238 gcd=1180394 isbn=978-1-612622934 0.95 | omnibus volume 3 on both legs against our 649pp rip
+I 40662 cv=461030 gcd=1245646 isbn=978-1-612622941 0.95 | omnibus volume 4 on both legs against our 614pp rip
+I 40663 cv=472995 gcd=1814934 isbn=9781612622958 0.95 | omnibus volume 5 on both legs, December 2014, against our 559pp rip
+I 40664 cv=372466 gcd=1087361 isbn=978-1-61262-275-0 0.95 | single volume 16 on both legs - CV 27342's #16 and GCD 72458's #16 - against our 183pp rip
+I 40665 cv=388600 gcd=1087375 isbn=978-1-61262-296-5 0.95 | single volume 17 on both legs against our 202pp rip
+I 40666 cv=427738 gcd=1143418 isbn=978-1-61262-297-2 0.95 | single volume 18 "Alita is Dead?!" on both legs against our 223pp rip
+I 40667 cv=465056 gcd=1814944 isbn=9781612629209 0.95 | single volume 19 "The Last Order" on both legs, September 2014, against our 209pp rip
+
+S 7764 cv=38809 gcd=16635 0.9 | the majority edition takes the shelf: thirteen of our fifteen files are v01-v13 of Viz's 2006-2008 line, which is CV 38809 "Golgo 13" 2006 Viz count 13 and GCD 16635 "Golgo 13" 2006-2008 Viz count 13 - two legs agreeing on publisher, span and count - and their volume subtitles ("Supergun", "Hydra", "Power to the People" …) are our filenames' own; 0.9 is the residue named below
+F 7764 partial-rip | items 43421 and 43422 ("Golgo 13 Book 02 - Galinpero" 1986 and "Book 04 - The Ivory Connection" 1987) are two volumes of an EARLIER and different English edition - Leed Publishing's 1986-1989 line, GCD 161861 count 4 and CV 62832 / 61493 - not of the 2006 Viz thirteen, and two books of another edition is what holds this shelf to 0.9
+
+S 19390 cv=6671 gcd=7176 0.95 | CV 6671 "The Professional: Golgo 13" 1991 Viz count 3 and GCD 7176 of the same title, 1991-1992 Viz count 3, agree on publisher, span and a three-issue count, and our ladder 1-3 of 47-52pp issue files is that three complete; the folder reads `The Professional - Golgo 13 (1991)` and the files credit Leed's 1991 licence
+
+S 5806 cv=101150 gcd=119347 0.95 | volume 09 of Viz's English Dragon Ball Super line, which B-044 read as S5805 on these same two ids: CV 101150 "Dragon Ball Super" 2017 Viz count 23 names its issue 766202 "Battle's End and Aftermath" - our filename's own subtitle - and GCD 119347, 2017-? Viz count 24, holds it as #9 (issue 2115906, 192pp against our 193pp)
+F 5806 merge-with=5805 | S5805 is v11-v22 of this same line; the ten `03 Dragon Ball Super (2015)` shelves in this batch are its v01-v10, each cut off by the volume subtitle in the filename
+I 41655 cv=766202 gcd=2115906 isbn=978-1-9747-1236-6 0.95 | volume 9 on both legs, June 2020, 192pp against our 193pp rip
+
+S 5807 cv=101150 gcd=119347 0.95 | volume 04 of the same line: CV 101150's issue 696233 is named "Last Chance For Hope", our filename word for word, and GCD 119347's #4 is issue 1889831 (200pp, ISBN 978-1-9747-0144-5, January 2019) against our 198pp rip
+F 5807 merge-with=5805 | the same Viz line as S5805, cut into its own shelf by the volume subtitle
+I 41650 cv=696233 gcd=1889831 isbn=978-1-9747-0144-5 0.95 | volume 4 on both legs, January 2019, 200pp against our 198pp rip
+
+S 5808 cv=101150 gcd=119347 0.95 | volume 10 of the same line: CV 101150's issue 797006 is named "Moro's Wish" and GCD 119347's #10 is issue 2142492 (192pp, ISBN 978-1-9747-1526-8, September 2020) against our 193pp rip
+F 5808 merge-with=5805 | the same Viz line as S5805
+I 41656 cv=797006 gcd=2142492 isbn=978-1-9747-1526-8 0.95 | volume 10 on both legs, September 2020, 192pp against our 193pp rip
+
+S 5809 cv=101150 gcd=119347 0.95 | volume 08 of the same line: CV 101150's issue 738945 is named "Sign of Son Goku's Awakening" and GCD 119347's #8 is issue 2078641 (192pp, ISBN 978-1-9747-0941-0) against our 199pp rip
+F 5809 merge-with=5805 | the same Viz line as S5805
+I 41654 cv=738945 gcd=2078641 isbn=978-1-9747-0941-0 0.95 | volume 8 on both legs, early 2020, 192pp against our 199pp rip
+
+S 5810 cv=101150 gcd=119347 0.95 | volume 05 of the same line, and the one where GCD records the subtitle too: its #5 is issue 1961165 titled "The Decisive Battle! Farewell, Trunks!" (196pp, ISBN 978-1-9747-0458-3, May 2019), our filename exactly, and CV 101150's issue 707981 carries the same name
+F 5810 merge-with=5805 | the same Viz line as S5805
+I 41651 cv=707981 gcd=1961165 isbn=978-1-9747-0458-3 0.95 | volume 5 on both legs, May 2019, 196pp against our 190pp rip
+
+S 5811 cv=101150 gcd=119347 0.95 | volume 06 of the same line: CV 101150's issue 717950 is named "The Super Warriors Gather!" and GCD 119347's #6 is issue 2013500 (192pp, ISBN 978-1-9747-0520-7, September 2019) against our 193pp rip
+F 5811 merge-with=5805 | the same Viz line as S5805
+I 41652 cv=717950 gcd=2013500 isbn=978-1-9747-0520-7 0.95 | volume 6 on both legs, September 2019, 192pp against our 193pp rip
+
+S 5812 cv=101150 gcd=119347 0.95 | volume 02 of the same line: CV 101150's issue 643243 is named "The Winning Universe Is Decided!", our filename word for word, and GCD 119347's #2 is issue 1771241 (216pp, ISBN 9781421596471, November 2017) against our 214pp rip
+F 5812 merge-with=5805 | the same Viz line as S5805
+I 41648 cv=643243 gcd=1771241 isbn=9781421596471 0.95 | volume 2 on both legs, November 2017, 216pp against our 214pp rip
+
+S 5813 cv=101150 gcd=119347 0.95 | volume 03 of the same line: our filename reads "The Zero Human Project" where ComicVine's issue 675812 is named "Zero Mortal Project!", the same volume under Viz's own final wording, and GCD 119347's #3 is issue 1822835 (208pp, ISBN 978-1-4215-9946-5, July 2018) against our 208pp rip exactly
+F 5813 merge-with=5805 | the same Viz line as S5805
+I 41649 cv=675812 gcd=1822835 isbn=978-1-4215-9946-5 0.95 | volume 3 on both legs, July 2018, 208pp against our 208pp rip
+
+S 5814 cv=101150 gcd=119347 0.95 | volume 07 of the same line: CV 101150's issue 729332 is named "Universe Survival! The Tournament of Power Begins!!", our filename but for the final punctuation, and GCD 119347's #7 is issue 2045696 (192pp, ISBN 978-1-9747-0777-5, December 2019) against our 193pp rip
+F 5814 merge-with=5805 | the same Viz line as S5805
+I 41653 cv=729332 gcd=2045696 isbn=978-1-9747-0777-5 0.95 | volume 7 on both legs, December 2019, 192pp against our 193pp rip
+
+S 5815 cv=101150 gcd=119347 0.95 | volume 01 of the same line: CV 101150's issue 594007 is named "Warriors From Universe 6!", our filename's own subtitle, and GCD 119347's #1 is issue 1771240 (192pp, ISBN 978-1-4215-9254-1, May 2017) against our 191pp rip
+F 5815 merge-with=5805 | the same Viz line as S5805
+I 41647 cv=594007 gcd=1771240 isbn=978-1-4215-9254-1 0.95 | volume 1 on both legs, May 2017, 192pp against our 191pp rip
+
+S 10568 cv=42292 gcd=15640 0.95 | CV 42292 "Lady Snowblood" 2005 Dark Horse count 4 and GCD 15640 of the same title, 2005-2006 Dark Horse count 4, agree on publisher, span and a four-volume count, and both name their volumes by our filenames' subtitles - #1 "The Deep-Seated Grudge Pt. 1" and #2 "Pt. 2" being CV's issues 288690/288691 and GCD's 263316/263317 at 292pp and 228pp
+F 10568 merge-with=10567 | S10567 is volumes 03-04 of the same four-volume line in the same `Lady Snowblood (1972)` folder, split off by the "Retribution Part" subtitle
+I 40679 cv=288690 gcd=263316 isbn=1-59307-385-2 0.95 | volume 1 on both legs, September 2005, 292pp against our 281pp rip
+I 40680 cv=288691 gcd=263317 isbn=1-59307-443-3 0.95 | volume 2 on both legs, December 2005, 228pp against our 212pp rip
+
+S 10567 cv=42292 gcd=15640 0.95 | volumes 03-04 of the same four-volume Dark Horse line: CV 42292's issues 288706 "Retribution Pt. 1" and 288692 "Retribution Pt. 2" and GCD 15640's #3 (263318, 228pp) and #4 (289033, 300pp) are our two files' own subtitles and extents
+I 40681 cv=288706 gcd=263318 isbn=978-1-59307-458-6 0.95 | volume 3 on both legs, March 2006, 228pp against our 218pp rip
+I 40682 cv=288692 gcd=289033 isbn=978-1-59307-532-3 0.95 | volume 4 on both legs, June 2006, 300pp against our 279pp rip
+
+S 6545 cv=120381 gcd=- 0.9 | CV 120381 "Farewell, My Dear Cramer" 2019 Kodansha Comics USA count 13 is the English line our fifty-five files belong to - ComicVine counts the thirteen collected volumes where our rip is the chapter-by-chapter digital release, 35-70pp per file, ladder 1-55 - and the GCD dump has no row for the series in any language; CV 163290 is Penguin Random House Grupo Editorial's Spanish licence
+F 6545 provider-missing | GCD indexes no "Farewell, My Dear Cramer"
+N 6545 the fifty-five files are Kodansha's digital-first single chapters, not the thirteen volumes ComicVine counts, so no per-book `I` line maps onto them; the packet also folds all fifty-five filenames into one range without item ids
+
+# ---- Manga\ (Éclair: four anthologies, no English record on either leg) --------------------------------
+S 22973 cv=- gcd=136191 0.7 | "Éclair Orange (2020)" 272pp is the first of Yen Press's four "Éclair" girls'-love anthologies - ComicInfo asserts Series "Éclair" and Publisher "Yen Press" - and neither catalog holds the English edition: the only record of the book anywhere is GCD 136191 "Éclair" [de] 2018-2018 Altraverse count 1, a German licence of the same Japanese anthology, which per the lead's third-territory ruling goes to the review queue at 0.7 rather than into the ledger
+F 22973 provider-missing | neither catalog holds Yen Press's English "Éclair"; GCD's only row is Altraverse's German
+
+S 22974 cv=- gcd=142650 0.7 | "Éclair Blanche (2020)" 264pp, the second anthology of the same line, and the same shape: GCD 142650 "Éclair blanche" [de] 2019-2019 Altraverse count 1 is the German licence of this exact volume and the only record either catalog holds; ComicVine has none
+F 22974 provider-missing | neither catalog holds Yen Press's English "Éclair Blanche"
+
+S 22975 cv=- gcd=148818 0.7 | "Éclair Bleue (2020)" 257pp: GCD 148818 "Éclair bleue" [de] 2019-2019 Altraverse count 1 is the German licence of this volume and the only record in either catalog, ComicVine's candidates having been reached by the bare words "bleue" and "2020"
+F 22975 provider-missing | neither catalog holds Yen Press's English "Éclair Bleue"
+
+S 22976 cv=- gcd=152476 0.7 | "Éclair Rouge (2020)" 255pp: GCD 152476 "Éclair rouge" [de] 2019-2019 Altraverse count 1 is the German licence of this volume and the only record in either catalog; the four `Manga\Eclairs (2020)` shelves therefore take four different German rows and do not merge
+F 22976 provider-missing | neither catalog holds Yen Press's English "Éclair Rouge"
+
+S 3243 cv=168967 gcd=- 0.7 | "Bug Boy.cbz" 201pp is an English edition of Tadashi Matsumori's 1975 manga - the file carries its own EAN-13, 9780974596112, i.e. ISBN 978-0-9745961-1-2, an English-language small-press code that matches no `gcd_issue.isbn` and no `.barcode` in the dump - and the only catalog record of the work anywhere is a third territory's: CV 168967 "Bug Boy" 2019 Dynamic Italia count 1 (issue 1146879), the Italian edition. Per the lead's third-territory ruling that is the review queue, not the ledger
+F 3243 provider-missing | neither catalog holds the English "Bug Boy"; the GCD dump has no row of the title at all and ComicVine's only one is Italian
+N 39998 no-record | the English edition we hold, ISBN 978-0-9745961-1-2, has no item-level record on either leg; the Italian volume's issue 1146879 is a different edition
+
+# ---- per-volume `I` lines, mapped file order onto each leg's own volume list by ordinal -------
+# S7035: 12 files against Yen Press's twelve-volume Collector's Edition (cv 12 / gcd 12 rows)
+I 43287 cv=537136 gcd=1690559 0.95 | volume 1 of Yen Press's twelve-volume Collector's Edition: CV issue 537136 named "Vol. 1" and GCD issue 1690559 numbered 1, mapped by ordinal onto our own v01 file
+I 43288 cv=537825 gcd=1690560 0.95 | volume 2 of Yen Press's twelve-volume Collector's Edition: CV issue 537825 named "Vol. 2" and GCD issue 1690560 numbered 2, mapped by ordinal onto our own v02 file
+I 43289 cv=540776 gcd=1690561 0.95 | volume 3 of Yen Press's twelve-volume Collector's Edition: CV issue 540776 named "Vol. 3" and GCD issue 1690561 numbered 3, mapped by ordinal onto our own v03 file
+I 43290 cv=547203 gcd=1690562 0.95 | volume 4 of Yen Press's twelve-volume Collector's Edition: CV issue 547203 named "Vol. 4" and GCD issue 1690562 numbered 4, mapped by ordinal onto our own v04 file
+I 43291 cv=551123 gcd=1690563 0.95 | volume 5 of Yen Press's twelve-volume Collector's Edition: CV issue 551123 named "Vol. 5" and GCD issue 1690563 numbered 5, mapped by ordinal onto our own v05 file
+I 43292 cv=555363 gcd=1690564 0.95 | volume 6 of Yen Press's twelve-volume Collector's Edition: CV issue 555363 named "Vol. 6" and GCD issue 1690564 numbered 6, mapped by ordinal onto our own v06 file
+I 43293 cv=558289 gcd=1690565 0.95 | volume 7 of Yen Press's twelve-volume Collector's Edition: CV issue 558289 named "Vol. 7" and GCD issue 1690565 numbered 7, mapped by ordinal onto our own v07 file
+I 43294 cv=569558 gcd=1690566 0.95 | volume 8 of Yen Press's twelve-volume Collector's Edition: CV issue 569558 named "Vol. 8" and GCD issue 1690566 numbered 8, mapped by ordinal onto our own v08 file
+I 43295 cv=578207 gcd=1690567 0.95 | volume 9 of Yen Press's twelve-volume Collector's Edition: CV issue 578207 named "Vol. 9" and GCD issue 1690567 numbered 9, mapped by ordinal onto our own v09 file
+I 43296 cv=581455 gcd=1690568 0.95 | volume 10 of Yen Press's twelve-volume Collector's Edition: CV issue 581455 named "Vol. 10" and GCD issue 1690568 numbered 10, mapped by ordinal onto our own v10 file
+I 43297 cv=588430 gcd=1690569 0.95 | volume 11 of Yen Press's twelve-volume Collector's Edition: CV issue 588430 named "Vol. 11" and GCD issue 1690569 numbered 11, mapped by ordinal onto our own v11 file
+I 43298 cv=595598 gcd=1690570 0.95 | volume 12 of Yen Press's twelve-volume Collector's Edition: CV issue 595598 named "Vol. 12" and GCD issue 1690570 numbered 12, mapped by ordinal onto our own v12 file
+
+# S11305: 5 files against Seven Seas' five-volume Collector's Edition (cv 5 / gcd 5 rows)
+I 43655 cv=1039086 gcd=2495508 isbn=978-1-63858-534-3 0.95 | volume 1 of Seven Seas' five-volume Collector's Edition: CV issue 1039086 named "Volume 1" and GCD issue 2495508 numbered 1, mapped by ordinal onto our own v01 file
+I 43656 cv=1039087 gcd=2532484 isbn=978-1-63858-535-0 0.95 | volume 2 of Seven Seas' five-volume Collector's Edition: CV issue 1039087 named "Volume 2" and GCD issue 2532484 numbered 2, mapped by ordinal onto our own v02 file
+I 43657 cv=1039088 gcd=2569786 isbn=978-1-63858-536-7 0.95 | volume 3 of Seven Seas' five-volume Collector's Edition: CV issue 1039088 named "Volume 3" and GCD issue 2569786 numbered 3, mapped by ordinal onto our own v03 file
+I 43658 cv=1039089 gcd=2598576 isbn=978-1-63858-537-4 0.95 | volume 4 of Seven Seas' five-volume Collector's Edition: CV issue 1039089 named "Volume 4" and GCD issue 2598576 numbered 4, mapped by ordinal onto our own v04 file
+I 43659 cv=1075129 gcd=2632175 isbn=978-1-63858-538-1 0.95 | volume 5 of Seven Seas' five-volume Collector's Edition: CV issue 1075129 named "Volume 5" and GCD issue 2632175 numbered 5, mapped by ordinal onto our own v05 file
+
+# S12757: 2 files against Viz's four-volume omnibus line (cv 4 / gcd 4 rows)
+I 45130 cv=1033194 gcd=2591370 isbn=978-1-9747-4089-5 0.95 | volume 1 of Viz's four-volume omnibus line: CV issue 1033194 named "Vol. 1" and GCD issue 2591370 numbered 1, mapped by ordinal onto our own v01 file
+I 45131 cv=1075132 gcd=2626239 isbn=978-1-9747-4343-8 0.95 | volume 2 of Viz's four-volume omnibus line: CV issue 1075132 named "Vol. 2" and GCD issue 2626239 numbered 2, mapped by ordinal onto our own v02 file
+
+# S13431: 4 files against Viz's four-volume Perfect Edition (cv 4 / gcd 4 rows)
+I 43760 cv=911174 gcd=2385029 isbn=978-1-9747-2583-0 0.95 | volume 1 of Viz's four-volume Perfect Edition: CV issue 911174 named "Volume 1" and GCD issue 2385029 numbered 1, mapped by ordinal onto our own v01 file
+I 43761 cv=937520 gcd=2419706 isbn=978-1-9747-2942-5 0.95 | volume 2 of Viz's four-volume Perfect Edition: CV issue 937520 named "Volume 2" and GCD issue 2419706 numbered 2, mapped by ordinal onto our own v02 file
+I 43762 cv=959058 gcd=2478919 isbn=978-1-9747-2943-2 0.95 | volume 3 of Viz's four-volume Perfect Edition: CV issue 959058 named "Volume 3" and GCD issue 2478919 numbered 3, mapped by ordinal onto our own v03 file
+I 43763 cv=978713 gcd=2511090 isbn=978-1-9747-2944-9 0.95 | volume 4 of Viz's four-volume Perfect Edition: CV issue 978713 named "Volume 4" and GCD issue 2511090 numbered 4, mapped by ordinal onto our own v04 file
+
+# S12586: 3 files against Viz's six-volume Perfect Edition (cv 0 / gcd 6 rows)
+I 43675 cv=- gcd=2615614 isbn=978-1-9747-4272-1 0.9 | volume 1 of Viz's six-volume Perfect Edition: no CV issue and GCD issue 2615614 numbered 1, mapped by ordinal onto our own v01 file
+I 43676 cv=- gcd=2643249 isbn=978-1-9747-4585-2 0.9 | volume 2 of Viz's six-volume Perfect Edition: no CV issue and GCD issue 2643249 numbered 2, mapped by ordinal onto our own v02 file
+I 43677 cv=- gcd=2670469 isbn=978-1-9747-4750-4 0.9 | volume 3 of Viz's six-volume Perfect Edition: no CV issue and GCD issue 2670469 numbered 3, mapped by ordinal onto our own v03 file
+
+# S67392: 7 files against Kodansha USA's eight-volume line (cv 0 / gcd 8 rows)
+I 43627 cv=- gcd=1987924 isbn=9781632368232 0.9 | volume 1 of Kodansha USA's eight-volume line: no CV issue and GCD issue 1987924 numbered 1, mapped by ordinal onto our own v01 file
+I 43628 cv=- gcd=2017454 isbn=9781632368454 0.9 | volume 2 of Kodansha USA's eight-volume line: no CV issue and GCD issue 2017454 numbered 2, mapped by ordinal onto our own v02 file
+I 43629 cv=- gcd=2078229 isbn=9781632368461 0.9 | volume 3 of Kodansha USA's eight-volume line: no CV issue and GCD issue 2078229 numbered 3, mapped by ordinal onto our own v03 file
+I 43630 cv=- gcd=2277674 isbn=9781632369161 0.9 | volume 4 of Kodansha USA's eight-volume line: no CV issue and GCD issue 2277674 numbered 4, mapped by ordinal onto our own v04 file
+I 43631 cv=- gcd=2287893 isbn=9781646512133 0.9 | volume 5 of Kodansha USA's eight-volume line: no CV issue and GCD issue 2287893 numbered 5, mapped by ordinal onto our own v05 file
+I 43632 cv=- gcd=2503776 isbn=9781646514052 0.9 | volume 6 of Kodansha USA's eight-volume line: no CV issue and GCD issue 2503776 numbered 6, mapped by ordinal onto our own v06 file
+I 43633 cv=- gcd=2634902 isbn=9781646515820 0.9 | volume 7 of Kodansha USA's eight-volume line: no CV issue and GCD issue 2634902 numbered 7, mapped by ordinal onto our own v07 file
+
+# S12529: 15 files against Viz's fifteen-volume line (cv 15 / gcd 15 rows)
+I 39463 cv=670623 gcd=1823492 isbn=978-1-9747-0159-9 0.95 | volume 1 of Viz's fifteen-volume line: CV issue 670623 named "I'm Here" and GCD issue 1823492 numbered 1, mapped by ordinal onto our own v01 file
+I 39464 cv=686832 gcd=1855067 isbn=978-1-9747-0185-8 0.95 | volume 2 of Viz's fifteen-volume line: CV issue 686832 named "Crossing Lines" and GCD issue 1855067 numbered 2, mapped by ordinal onto our own v02 file
+I 39465 cv=696222 gcd=1889830 isbn=978-1-9747-0257-2 0.95 | volume 3 of Viz's fifteen-volume line: CV issue 696222 named "Senpai" and GCD issue 1889830 numbered 3, mapped by ordinal onto our own v03 file
+I 39466 cv=705333 gcd=1944126 isbn=978-1-9747-0436-1 0.95 | volume 4 of Viz's fifteen-volume line: CV issue 705333 named "Family" and GCD issue 1944126 numbered 4, mapped by ordinal onto our own v04 file
+I 39467 cv=712885 gcd=1987327 isbn=978-1-9747-0772-0 0.95 | volume 5 of Viz's fifteen-volume line: CV issue 712885 named "Day-Tripping Down to Naniwa!" and GCD issue 1987327 numbered 5, mapped by ordinal onto our own v05 file
+I 39468 cv=721016 gcd=2020177 isbn=978-1-9747-1053-9 0.95 | volume 6 of Viz's fifteen-volume line: CV issue 721016 named " A Rational Man" and GCD issue 2020177 numbered 6, mapped by ordinal onto our own v06 file
+I 39469 cv=766206 gcd=2115996 isbn=978-1-9747-1066-9 0.95 | volume 7 of Viz's fifteen-volume line: CV issue 766206 named "Limits and Catastrophe" and GCD issue 2115996 numbered 7, mapped by ordinal onto our own v07 file
+I 39470 cv=815133 gcd=2159704 isbn=978-1-9747-1763-7 0.95 | volume 8 of Viz's fifteen-volume line: CV issue 815133 named "Glass Sky" and GCD issue 2159704 numbered 8, mapped by ordinal onto our own v08 file
+I 39471 cv=831676 gcd=2203544 isbn=978-1-9747-1979-2 0.95 | volume 9 of Viz's fifteen-volume line: CV issue 831676 named "Graduation and Career Path" and GCD issue 2203544 numbered 9, mapped by ordinal onto our own v09 file
+I 39472 cv=868361 gcd=2237987 isbn=978-1-9747-2293-8 0.95 | volume 10 of Viz's fifteen-volume line: CV issue 868361 named "The Queen Descends" and GCD issue 2237987 numbered 10, mapped by ordinal onto our own v10 file
+I 39473 cv=892055 gcd=2274233 isbn=978-1-9747-2516-8 0.95 | volume 11 of Viz's fifteen-volume line: CV issue 892055 named "Underground Fighting Tournament" and GCD issue 2274233 numbered 11, mapped by ordinal onto our own v11 file
+I 39474 cv=914729 gcd=2385012 isbn=978-1-9747-2716-2 0.95 | volume 12 of Viz's fifteen-volume line: CV issue 914729 named " Might Signal" and GCD issue 2385012 numbered 12, mapped by ordinal onto our own v12 file
+I 39475 cv=945977 gcd=2429710 isbn=978-1-9747-3237-1 0.95 | volume 13 of Viz's fifteen-volume line: CV issue 945977 named "Faceless Invasion" and GCD issue 2429710 numbered 13, mapped by ordinal onto our own v13 file
+I 39476 cv=988287 gcd=2530248 isbn=978-1-9747-3665-2 0.95 | volume 14 of Viz's fifteen-volume line: CV issue 988287 named "Things That Live in the Abyss" and GCD issue 2530248 numbered 14, mapped by ordinal onto our own v14 file
+I 39477 cv=1024120 gcd=2572814 isbn=978-1-9747-4064-2 0.95 | volume 15 of Viz's fifteen-volume line: CV issue 1024120 named "Futures for All" and GCD issue 2572814 numbered 15, mapped by ordinal onto our own v15 file
+
+# S12237: 13 files against Dark Horse's line (cv 14 / gcd 16 rows)
+I 46310 cv=689732 gcd=1862743 isbn=9781506709871 0.95 | volume 1 of Dark Horse's line: CV issue 689732 named "Volume 1" and GCD issue 1862743 numbered 1, mapped by ordinal onto our own v01 file
+I 46311 cv=702939 gcd=1936083 isbn=9781506709888 0.95 | volume 2 of Dark Horse's line: CV issue 702939 named "Volume 2" and GCD issue 1936083 numbered 2, mapped by ordinal onto our own v02 file
+I 46312 cv=714181 gcd=1998974 isbn=9781506709895 0.95 | volume 3 of Dark Horse's line: CV issue 714181 named "Volume 3" and GCD issue 1998974 numbered 3, mapped by ordinal onto our own v03 file
+I 46313 cv=741737 gcd=2091034 isbn=9781506713694 0.95 | volume 4 of Dark Horse's line: CV issue 741737 named "Volume 4" and GCD issue 2091034 numbered 4, mapped by ordinal onto our own v04 file
+I 46314 cv=770145 gcd=2121226 isbn=978-1-50671-370-0 0.95 | volume 5 of Dark Horse's line: CV issue 770145 named "Volume 5" and GCD issue 2121226 numbered 5, mapped by ordinal onto our own v05 file
+I 46315 cv=810548 gcd=2152625 isbn=1-50671-371-8 0.95 | volume 6 of Dark Horse's line: CV issue 810548 named "Volume 6" and GCD issue 2152625 numbered 6, mapped by ordinal onto our own v06 file
+I 46316 cv=891760 gcd=2272068 isbn=9781506727592 0.95 | volume 7 of Dark Horse's line: CV issue 891760 named "Volume 7" and GCD issue 2272068 numbered 7, mapped by ordinal onto our own v07 file
+I 46317 cv=928097 gcd=2398908 isbn=9781506727608 0.95 | volume 8 of Dark Horse's line: CV issue 928097 named "Volume 8" and GCD issue 2398908 numbered 8, mapped by ordinal onto our own v08 file
+I 46318 cv=945071 gcd=2425834 isbn=9781506727615 0.95 | volume 9 of Dark Horse's line: CV issue 945071 named "Volume 9" and GCD issue 2425834 numbered 9, mapped by ordinal onto our own v09 file
+I 46319 cv=969811 gcd=2493033 isbn=9781506730721 0.95 | volume 10 of Dark Horse's line: CV issue 969811 named "Volume 10" and GCD issue 2493033 numbered 10, mapped by ordinal onto our own v10 file
+I 46320 cv=987168 gcd=2527048 isbn=9781506730738 0.95 | volume 11 of Dark Horse's line: CV issue 987168 named "Volume 11" and GCD issue 2527048 numbered 11, mapped by ordinal onto our own v11 file
+I 46321 cv=1038453 gcd=2566869 isbn=9781506730745 0.95 | volume 12 of Dark Horse's line: CV issue 1038453 named "Volume 12" and GCD issue 2566869 numbered 12, mapped by ordinal onto our own v12 file
+I 46322 cv=1042255 gcd=2603227 isbn=9781506737980 0.95 | volume 13 of Dark Horse's line: CV issue 1042255 named "Volume 13" and GCD issue 2603227 numbered 13, mapped by ordinal onto our own v13 file
+
+# S10235: 10 files against Viz's line (cv 14 / gcd 15 rows)
+I 44913 cv=897777 gcd=2287899 isbn=978-1-9747-2598-4 0.95 | volume 1 of Viz's line: CV issue 897777 named "Vol. 1" and GCD issue 2287899 numbered 1, mapped by ordinal onto our own v01 file
+I 44914 cv=915299 gcd=2385010 isbn=978-1-9747-2714-8 0.95 | volume 2 of Viz's line: CV issue 915299 named "Vol. 2" and GCD issue 2385010 numbered 2, mapped by ordinal onto our own v02 file
+I 44915 cv=936002 gcd=2418394 isbn=978-1-9747-2899-2 0.95 | volume 3 of Viz's line: CV issue 936002 named "Vol. 3" and GCD issue 2418394 numbered 3, mapped by ordinal onto our own v03 file
+I 44916 cv=950136 gcd=2440081 isbn=978-1-9747-3234-0 0.95 | volume 4 of Viz's line: CV issue 950136 named "Vol. 4" and GCD issue 2440081 numbered 4, mapped by ordinal onto our own v04 file
+I 44917 cv=951630 gcd=2479748 isbn=978-1-9747-3418-4 0.95 | volume 5 of Viz's line: CV issue 951630 named "Vol. 5" and GCD issue 2479748 numbered 5, mapped by ordinal onto our own v05 file
+I 44918 cv=982498 gcd=2524662 isbn=978-1-9747-3633-1 0.95 | volume 6 of Viz's line: CV issue 982498 named "Vol. 6" and GCD issue 2524662 numbered 6, mapped by ordinal onto our own v06 file
+I 44919 cv=1000062 gcd=2555681 isbn=978-1-9747-3869-4 0.95 | volume 7 of Viz's line: CV issue 1000062 named "Vol. 7" and GCD issue 2555681 numbered 7, mapped by ordinal onto our own v07 file
+I 44920 cv=1024118 gcd=2572811 isbn=978-1-9747-4062-8 0.95 | volume 8 of Viz's line: CV issue 1024118 named "Vol. 8" and GCD issue 2572811 numbered 8, mapped by ordinal onto our own v08 file
+I 44921 cv=1038877 gcd=2611398 isbn=978-1-9747-4301-8 0.95 | volume 9 of Viz's line: CV issue 1038877 named "Vol. 9" and GCD issue 2611398 numbered 9, mapped by ordinal onto our own v09 file
+I 44922 cv=1058672 gcd=2636344 isbn=978-1-9747-4699-6 0.95 | volume 10 of Viz's line: CV issue 1058672 named "Vol. 10" and GCD issue 2636344 numbered 10, mapped by ordinal onto our own v10 file
+
+# S12480: 20 files against Yen Press's line (cv 25 / gcd 26 rows)
+I 42842 cv=578217 gcd=1747625 0.95 | volume 1 of Yen Press's line: CV issue 578217 named "Vol. 1" and GCD issue 1747625 numbered 1, mapped by ordinal onto our own v01 file
+I 42843 cv=596857 gcd=1747626 0.95 | volume 2 of Yen Press's line: CV issue 596857 named "Vol. 2" and GCD issue 1747626 numbered 2, mapped by ordinal onto our own v02 file
+I 42844 cv=615897 gcd=1747627 0.95 | volume 3 of Yen Press's line: CV issue 615897 named "Vol. 3" and GCD issue 1747627 numbered 3, mapped by ordinal onto our own v03 file
+I 42845 cv=634251 gcd=1747628 isbn=9780316473194 0.95 | volume 4 of Yen Press's line: CV issue 634251 named "Vol. 4" and GCD issue 1747628 numbered 4, mapped by ordinal onto our own v04 file
+I 42846 cv=657256 gcd=1786441 isbn=9780316473200 0.95 | volume 5 of Yen Press's line: CV issue 657256 named "Vol. 5" and GCD issue 1786441 numbered 5, mapped by ordinal onto our own v05 file
+I 42847 cv=666708 gcd=1800803 isbn=9780316473217 0.95 | volume 6 of Yen Press's line: CV issue 666708 named "Vol. 6" and GCD issue 1800803 numbered 6, mapped by ordinal onto our own v06 file
+I 42848 cv=677442 gcd=1825327 isbn=9780316473231 0.95 | volume 7 of Yen Press's line: CV issue 677442 named "Vol. 7" and GCD issue 1825327 numbered 7, mapped by ordinal onto our own v07 file
+I 42849 cv=690660 gcd=1865722 isbn=9781975302474 0.95 | volume 8 of Yen Press's line: CV issue 690660 named "Vol. 8" and GCD issue 1865722 numbered 8, mapped by ordinal onto our own v08 file
+I 42850 cv=697321 gcd=1921260 isbn=9781975302481 0.95 | volume 9 of Yen Press's line: CV issue 697321 named "Vol. 9" and GCD issue 1921260 numbered 9, mapped by ordinal onto our own v09 file
+I 42851 cv=706687 gcd=1953325 isbn=9781975302498 0.95 | volume 10 of Yen Press's line: CV issue 706687 named "Vol. 10" and GCD issue 1953325 numbered 10, mapped by ordinal onto our own v10 file
+I 42852 cv=714534 gcd=2005028 isbn=9781975302504 0.95 | volume 11 of Yen Press's line: CV issue 714534 named "Vol. 11" and GCD issue 2005028 numbered 11, mapped by ordinal onto our own v11 file
+I 42853 cv=726444 gcd=2035678 isbn=9781975332020 0.95 | volume 12 of Yen Press's line: CV issue 726444 named "Vol. 12" and GCD issue 2035678 numbered 12, mapped by ordinal onto our own v12 file
+I 42854 cv=734504 gcd=2058747 isbn=9781975332051 0.95 | volume 13 of Yen Press's line: CV issue 734504 named "Vol. 13" and GCD issue 2058747 numbered 13, mapped by ordinal onto our own v13 file
+I 42855 cv=759239 gcd=2106934 isbn=9781975307936 0.95 | volume 14 of Yen Press's line: CV issue 759239 named "Vol. 14" and GCD issue 2106934 numbered 14, mapped by ordinal onto our own v14 file
+I 42856 cv=796013 gcd=2136643 isbn=9781975308971 0.95 | volume 15 of Yen Press's line: CV issue 796013 named "Vol. 15" and GCD issue 2136643 numbered 15, mapped by ordinal onto our own v15 file
+I 42857 cv=819798 gcd=2170771 isbn=9781975316723 0.95 | volume 16 of Yen Press's line: CV issue 819798 named "Vol. 16" and GCD issue 2170771 numbered 16, mapped by ordinal onto our own v16 file
+I 42858 cv=902813 gcd=2293872 isbn=9781975335793 0.95 | volume 17 of Yen Press's line: CV issue 902813 named "Vol. 17" and GCD issue 2293872 numbered 17, mapped by ordinal onto our own v17 file
+I 42859 cv=906789 gcd=2302017 isbn=9781975336417 0.95 | volume 18 of Yen Press's line: CV issue 906789 named "Vol. 18" and GCD issue 2302017 numbered 18, mapped by ordinal onto our own v18 file
+I 42860 cv=934907 gcd=2406627 isbn=9781975344337 0.95 | volume 19 of Yen Press's line: CV issue 934907 named "Vol. 19" and GCD issue 2406627 numbered 19, mapped by ordinal onto our own v19 file
+I 42861 cv=959914 gcd=2459894 isbn=9781975349707 0.95 | volume 20 of Yen Press's line: CV issue 959914 named "Vol. 20" and GCD issue 2459894 numbered 20, mapped by ordinal onto our own v20 file
+
+# S6002: 18 files against Dark Horse's fourteen-volume line (cv 14 / gcd 14 rows)
+I 44529 cv=166650 gcd=714319 isbn=1-59307-406-9 0.9 | volume 1 of Dark Horse's fourteen-volume line: CV issue 166650 named "Vol. 1" and GCD issue 714319 numbered 1, mapped by ordinal onto our own v01 file
+I 44530 cv=172549 gcd=714320 isbn=1-59307-454-9 0.9 | volume 2 of Dark Horse's fourteen-volume line: CV issue 172549 named "Vol. 2" and GCD issue 714320 numbered 2, mapped by ordinal onto our own v02 file
+I 44531 cv=172548 gcd=714321 0.9 | volume 3 of Dark Horse's fourteen-volume line: CV issue 172548 named "Vol.3" and GCD issue 714321 numbered 3, mapped by ordinal onto our own v03 file
+I 44532 cv=172456 gcd=714322 0.9 | volume 4 of Dark Horse's fourteen-volume line: CV issue 172456 named "Vol. 4" and GCD issue 714322 numbered 4, mapped by ordinal onto our own v04 file
+I 44533 cv=172457 gcd=714323 0.9 | volume 5 of Dark Horse's fourteen-volume line: CV issue 172457 named "Vol. 5" and GCD issue 714323 numbered 5, mapped by ordinal onto our own v05 file
+I 44534 cv=172459 gcd=714324 0.9 | volume 6 of Dark Horse's fourteen-volume line: CV issue 172459 named "Vol. 6" and GCD issue 714324 numbered 6, mapped by ordinal onto our own v06 file
+I 44535 cv=172460 gcd=714325 0.9 | volume 7 of Dark Horse's fourteen-volume line: CV issue 172460 named "Vol. 7" and GCD issue 714325 numbered 7, mapped by ordinal onto our own v07 file
+I 44536 cv=172461 gcd=714326 0.9 | volume 8 of Dark Horse's fourteen-volume line: CV issue 172461 named "Vol. 8" and GCD issue 714326 numbered 8, mapped by ordinal onto our own v08 file
+I 44537 cv=172463 gcd=714327 0.9 | volume 9 of Dark Horse's fourteen-volume line: CV issue 172463 named "Vol. 9" and GCD issue 714327 numbered 9, mapped by ordinal onto our own v09 file
+I 44538 cv=172464 gcd=714328 0.9 | volume 10 of Dark Horse's fourteen-volume line: CV issue 172464 named "Vol. 10" and GCD issue 714328 numbered 10, mapped by ordinal onto our own v10 file
+I 44539 cv=172465 gcd=714329 0.9 | volume 11 of Dark Horse's fourteen-volume line: CV issue 172465 named "Vol. 11" and GCD issue 714329 numbered 11, mapped by ordinal onto our own v11 file
+I 44540 cv=172466 gcd=714330 0.9 | volume 12 of Dark Horse's fourteen-volume line: CV issue 172466 named "Vol. 12" and GCD issue 714330 numbered 12, mapped by ordinal onto our own v12 file
+I 44541 cv=326156 gcd=873401 isbn=978-1-59582-763-0 0.9 | volume 13 of Dark Horse's fourteen-volume line: CV issue 326156 named "Vol. 13" and GCD issue 873401 numbered 13, mapped by ordinal onto our own v13 file
+I 44542 cv=449567 gcd=1194811 isbn=978-1-61655-288-6 0.9 | volume 14 of Dark Horse's fourteen-volume line: CV issue 449567 named "Vol. 14" and GCD issue 1194811 numbered 14, mapped by ordinal onto our own v14 file
+N 44543 no-record | volume 15 of this shelf sits past the end of both legs' volume lists (Dark Horse's fourteen-volume line, cv 14 / gcd 14 rows), so no per-book row exists for it
+N 44544 no-record | volume 16 of this shelf sits past the end of both legs' volume lists (Dark Horse's fourteen-volume line, cv 14 / gcd 14 rows), so no per-book row exists for it
+N 44545 no-record | volume 17 of this shelf sits past the end of both legs' volume lists (Dark Horse's fourteen-volume line, cv 14 / gcd 14 rows), so no per-book row exists for it
+N 44546 no-record | volume 18 of this shelf sits past the end of both legs' volume lists (Dark Horse's fourteen-volume line, cv 14 / gcd 14 rows), so no per-book row exists for it
+
+# S5710: 28 files against Kodansha USA's twenty-eight-volume line (cv 28 / gcd 0 rows)
+I 42557 cv=591665 gcd=- 0.9 | volume 1 of Kodansha USA's twenty-eight-volume line: CV issue 591665 named "Vol. 1" and no GCD issue, mapped by ordinal onto our own v01 file
+I 42558 cv=594885 gcd=- 0.9 | volume 2 of Kodansha USA's twenty-eight-volume line: CV issue 594885 named "Vol. 2" and no GCD issue, mapped by ordinal onto our own v02 file
+I 42559 cv=601611 gcd=- 0.9 | volume 3 of Kodansha USA's twenty-eight-volume line: CV issue 601611 named "Vol. 3" and no GCD issue, mapped by ordinal onto our own v03 file
+I 42560 cv=608357 gcd=- 0.9 | volume 4 of Kodansha USA's twenty-eight-volume line: CV issue 608357 named "Vol. 4" and no GCD issue, mapped by ordinal onto our own v04 file
+I 42561 cv=615880 gcd=- 0.9 | volume 5 of Kodansha USA's twenty-eight-volume line: CV issue 615880 named "Vol. 5" and no GCD issue, mapped by ordinal onto our own v05 file
+I 42562 cv=621788 gcd=- 0.9 | volume 6 of Kodansha USA's twenty-eight-volume line: CV issue 621788 named "Vol. 6" and no GCD issue, mapped by ordinal onto our own v06 file
+I 42563 cv=626209 gcd=- 0.9 | volume 7 of Kodansha USA's twenty-eight-volume line: CV issue 626209 named "Vol. 7" and no GCD issue, mapped by ordinal onto our own v07 file
+I 42564 cv=630665 gcd=- 0.9 | volume 8 of Kodansha USA's twenty-eight-volume line: CV issue 630665 named "Vol. 8" and no GCD issue, mapped by ordinal onto our own v08 file
+I 42565 cv=634233 gcd=- 0.9 | volume 9 of Kodansha USA's twenty-eight-volume line: CV issue 634233 named "Vol. 9" and no GCD issue, mapped by ordinal onto our own v09 file
+I 42566 cv=638226 gcd=- 0.9 | volume 10 of Kodansha USA's twenty-eight-volume line: CV issue 638226 named "Vol. 10" and no GCD issue, mapped by ordinal onto our own v10 file
+I 42567 cv=643241 gcd=- 0.9 | volume 11 of Kodansha USA's twenty-eight-volume line: CV issue 643241 named "Vol. 11" and no GCD issue, mapped by ordinal onto our own v11 file
+I 42568 cv=646297 gcd=- 0.9 | volume 12 of Kodansha USA's twenty-eight-volume line: CV issue 646297 named "Vol. 12" and no GCD issue, mapped by ordinal onto our own v12 file
+I 42569 cv=649387 gcd=- 0.9 | volume 13 of Kodansha USA's twenty-eight-volume line: CV issue 649387 named "Vol. 13" and no GCD issue, mapped by ordinal onto our own v13 file
+I 42570 cv=652422 gcd=- 0.9 | volume 14 of Kodansha USA's twenty-eight-volume line: CV issue 652422 named "Vol. 14" and no GCD issue, mapped by ordinal onto our own v14 file
+I 42571 cv=655306 gcd=- 0.9 | volume 15 of Kodansha USA's twenty-eight-volume line: CV issue 655306 named "Vol. 15" and no GCD issue, mapped by ordinal onto our own v15 file
+I 42572 cv=664159 gcd=- 0.9 | volume 16 of Kodansha USA's twenty-eight-volume line: CV issue 664159 named "Vol. 16" and no GCD issue, mapped by ordinal onto our own v16 file
+I 42573 cv=670612 gcd=- 0.9 | volume 17 of Kodansha USA's twenty-eight-volume line: CV issue 670612 named "Vol. 17" and no GCD issue, mapped by ordinal onto our own v17 file
+I 42574 cv=709891 gcd=- 0.9 | volume 18 of Kodansha USA's twenty-eight-volume line: CV issue 709891 named "Vol. 18" and no GCD issue, mapped by ordinal onto our own v18 file
+I 42575 cv=714491 gcd=- 0.9 | volume 19 of Kodansha USA's twenty-eight-volume line: CV issue 714491 named "Vol. 19" and no GCD issue, mapped by ordinal onto our own v19 file
+I 42576 cv=717236 gcd=- 0.9 | volume 20 of Kodansha USA's twenty-eight-volume line: CV issue 717236 named "Vol. 20" and no GCD issue, mapped by ordinal onto our own v20 file
+I 42577 cv=719875 gcd=- 0.9 | volume 21 of Kodansha USA's twenty-eight-volume line: CV issue 719875 named "Vol. 21" and no GCD issue, mapped by ordinal onto our own v21 file
+I 42578 cv=724732 gcd=- 0.9 | volume 22 of Kodansha USA's twenty-eight-volume line: CV issue 724732 named "Vol. 22" and no GCD issue, mapped by ordinal onto our own v22 file
+I 42579 cv=733468 gcd=- 0.9 | volume 23 of Kodansha USA's twenty-eight-volume line: CV issue 733468 named "Vol. 23" and no GCD issue, mapped by ordinal onto our own v23 file
+I 42580 cv=748126 gcd=- 0.9 | volume 24 of Kodansha USA's twenty-eight-volume line: CV issue 748126 named "Vol. 24" and no GCD issue, mapped by ordinal onto our own v24 file
+I 42581 cv=768351 gcd=- 0.9 | volume 25 of Kodansha USA's twenty-eight-volume line: CV issue 768351 named "Vol. 25" and no GCD issue, mapped by ordinal onto our own v25 file
+I 42582 cv=791534 gcd=- 0.9 | volume 26 of Kodansha USA's twenty-eight-volume line: CV issue 791534 named "Vol. 26" and no GCD issue, mapped by ordinal onto our own v26 file
+I 42583 cv=809792 gcd=- 0.9 | volume 27 of Kodansha USA's twenty-eight-volume line: CV issue 809792 named "Vol. 27" and no GCD issue, mapped by ordinal onto our own v27 file
+I 42584 cv=827943 gcd=- 0.9 | volume 28 of Kodansha USA's twenty-eight-volume line: CV issue 827943 named "Vol. 28" and no GCD issue, mapped by ordinal onto our own v28 file
+
+# S5389: 10 files against Kodansha USA's ten-volume line (cv 10 / gcd 10 rows)
+I 43172 cv=576563 gcd=1751629 0.95 | volume 1 of Kodansha USA's ten-volume line: CV issue 576563 named "The Stage Is Set" and GCD issue 1751629 numbered 1, mapped by ordinal onto our own v01 file
+I 43173 cv=610620 gcd=1751630 0.95 | volume 2 of Kodansha USA's ten-volume line: CV issue 610620 named "Past Promises" and GCD issue 1751630 numbered 2, mapped by ordinal onto our own v02 file
+I 43174 cv=622717 gcd=1751631 0.95 | volume 3 of Kodansha USA's ten-volume line: CV issue 622717 named "Closed Curtains" and GCD issue 1751631 numbered 3, mapped by ordinal onto our own v03 file
+I 43175 cv=636503 gcd=1751632 isbn=9781632364722 0.95 | volume 4 of Kodansha USA's ten-volume line: CV issue 636503 named "Lonely at the Top" and GCD issue 1751632 numbered 4, mapped by ordinal onto our own v04 file
+I 43176 cv=660123 gcd=1786408 isbn=9781632365439 0.95 | volume 5 of Kodansha USA's ten-volume line: CV issue 660123 named "A New Era" and GCD issue 1786408 numbered 5, mapped by ordinal onto our own v05 file
+I 43177 cv=666696 gcd=1801016 isbn=9781632365446 0.95 | volume 6 of Kodansha USA's ten-volume line: CV issue 666696 named "The Next Chapter" and GCD issue 1801016 numbered 6, mapped by ordinal onto our own v06 file
+I 43178 cv=672095 gcd=1815112 isbn=9781632365453 0.95 | volume 7 of Kodansha USA's ten-volume line: CV issue 672095 named "The Tides of Change" and GCD issue 1815112 numbered 7, mapped by ordinal onto our own v07 file
+I 43179 cv=679149 gcd=1835393 isbn=9781632365460 0.95 | volume 8 of Kodansha USA's ten-volume line: CV issue 679149 named "Hidden Secrets" and GCD issue 1835393 numbered 8, mapped by ordinal onto our own v08 file
+I 43180 cv=686806 gcd=1854941 isbn=9781632366610 0.95 | volume 9 of Kodansha USA's ten-volume line: CV issue 686806 named "Decisive Moment" and GCD issue 1854941 numbered 9, mapped by ordinal onto our own v09 file
+I 43181 cv=694741 gcd=1889844 isbn=9781632366627 0.95 | volume 10 of Kodansha USA's ten-volume line: CV issue 694741 named "The Stage Is Set" and GCD issue 1889844 numbered 10, mapped by ordinal onto our own v10 file
+
+# S3534: 10 files against Seven Seas' ten-volume line (cv 10 / gcd 10 rows)
+I 44227 cv=617506 gcd=1771861 isbn=978-1-626925-69-4 0.95 | volume 1 of Seven Seas' ten-volume line: CV issue 617506 named "The Legend Reborn!" and GCD issue 1771861 numbered 1, mapped by ordinal onto our own v01 file
+I 44228 cv=643235 gcd=1771862 isbn=978-1-626925-99-1 0.95 | volume 2 of Seven Seas' ten-volume line: CV issue 643235 named "In the Beginning..." and GCD issue 1771862 numbered 2, mapped by ordinal onto our own v02 file
+I 44229 cv=666689 gcd=1800981 isbn=978-1-626926-94-3 0.95 | volume 3 of Seven Seas' ten-volume line: CV issue 666689 named "Undersea Mysteries" and GCD issue 1800981 numbered 3, mapped by ordinal onto our own v03 file
+I 44230 cv=666690 gcd=1800982 isbn=978-1-626927-28-5 0.95 | volume 4 of Seven Seas' ten-volume line: CV issue 666690 named "Home Invasion" and GCD issue 1800982 numbered 4, mapped by ordinal onto our own v04 file
+I 44231 cv=682369 gcd=1841780 isbn=978-1-626928-23-7 0.95 | volume 5 of Seven Seas' ten-volume line: CV issue 682369 named "Know Thine Enemy" and GCD issue 1841780 numbered 5, mapped by ordinal onto our own v05 file
+I 44232 cv=691779 gcd=1876540 isbn=978-1-626929-42-5 0.95 | volume 6 of Seven Seas' ten-volume line: CV issue 691779 named "Caught In A Trap!" and GCD issue 1876540 numbered 6, mapped by ordinal onto our own v06 file
+I 44233 cv=696715 gcd=1891645 isbn=978-1-626929-78-4 0.95 | volume 7 of Seven Seas' ten-volume line: CV issue 696715 named "Trouble On the Home Front" and GCD issue 1891645 numbered 7, mapped by ordinal onto our own v07 file
+I 44234 cv=705794 gcd=1950040 isbn=978-1-64275*021-8 0.95 | volume 8 of Seven Seas' ten-volume line: CV issue 705794 named "Fighting Frenzy" and GCD issue 1950040 numbered 8, mapped by ordinal onto our own v08 file
+I 44235 cv=715069 gcd=2006312 isbn=978-1-64275-115-4 0.95 | volume 9 of Seven Seas' ten-volume line: CV issue 715069 named "The Final Confrontation Draws Near" and GCD issue 2006312 numbered 9, mapped by ordinal onto our own v09 file
+I 44236 cv=730146 gcd=2046912 isbn=978-1-64275-712-5 0.95 | volume 10 of Seven Seas' ten-volume line: CV issue 730146 named "Across the Ocean of Stars" and GCD issue 2046912 numbered 10, mapped by ordinal onto our own v10 file
+
+# S66463: 10 files against Viz's ten-volume line (cv 10 / gcd 10 rows)
+I 43528 cv=182103 gcd=669581 0.95 | volume 1 of Viz's ten-volume line: CV issue 182103 named "Vol. 1" and GCD issue 669581 numbered 1, mapped by ordinal onto our own v01 file
+I 43529 cv=182104 gcd=732653 0.95 | volume 2 of Viz's ten-volume line: CV issue 182104 named "Vol. 2" and GCD issue 732653 numbered 2, mapped by ordinal onto our own v02 file
+I 43530 cv=182676 gcd=732654 0.95 | volume 3 of Viz's ten-volume line: CV issue 182676 named "Vol. 3" and GCD issue 732654 numbered 3, mapped by ordinal onto our own v03 file
+I 43531 cv=196523 gcd=732655 0.95 | volume 4 of Viz's ten-volume line: CV issue 196523 named "Vol. 4" and GCD issue 732655 numbered 4, mapped by ordinal onto our own v04 file
+I 43532 cv=228688 gcd=755468 0.95 | volume 5 of Viz's ten-volume line: CV issue 228688 named "Vol. 5" and GCD issue 755468 numbered 5, mapped by ordinal onto our own v05 file
+I 43533 cv=228689 gcd=771768 0.95 | volume 6 of Viz's ten-volume line: CV issue 228689 named "Vol. 6" and GCD issue 771768 numbered 6, mapped by ordinal onto our own v06 file
+I 43534 cv=285931 gcd=868054 isbn=978-1-42153-668-2 0.95 | volume 7 of Viz's ten-volume line: CV issue 285931 named "Vol. 7" and GCD issue 868054 numbered 7, mapped by ordinal onto our own v07 file
+I 43535 cv=352603 gcd=1139424 isbn=978-1-4215-4188-4 0.95 | volume 8 of Viz's ten-volume line: CV issue 352603 named "Vol. 8" and GCD issue 1139424 numbered 8, mapped by ordinal onto our own v08 file
+I 43536 cv=422548 gcd=1139436 isbn=978-1-4215-5307-8 0.95 | volume 9 of Viz's ten-volume line: CV issue 422548 named "Vol. 9" and GCD issue 1139436 numbered 9, mapped by ordinal onto our own v09 file
+I 43537 cv=462959 gcd=1932157 isbn=978-1-4215-6641-2 0.95 | volume 10 of Viz's ten-volume line: CV issue 462959 named "Vol. 10" and GCD issue 1932157 numbered 10, mapped by ordinal onto our own v10 file
+
+# S23597: 17 files against Shueisha's seventeen-volume Japanese original (cv 17 / gcd 17 rows)
+I 44992 cv=482035 gcd=2815515 0.9 | volume 1 of Shueisha's seventeen-volume Japanese original: CV issue 482035 named "Kōsha Tōhan" and GCD issue 2815515 numbered 1, mapped by ordinal onto our own v01 file
+I 44993 cv=482036 gcd=2815516 0.9 | volume 2 of Shueisha's seventeen-volume Japanese original: CV issue 482036 named "Anti-Hero" and GCD issue 2815516 numbered 2, mapped by ordinal onto our own v02 file
+I 44994 cv=482037 gcd=2815517 0.9 | volume 3 of Shueisha's seventeen-volume Japanese original: CV issue 482037 named "Gō ka Higō ka" and GCD issue 2815517 numbered 3, mapped by ordinal onto our own v03 file
+I 44995 cv=482038 gcd=2815518 0.9 | volume 4 of Shueisha's seventeen-volume Japanese original: CV issue 482038 named "Mitō no Jōheki" and GCD issue 2815518 numbered 4, mapped by ordinal onto our own v04 file
+I 44996 cv=482039 gcd=2815519 0.9 | volume 5 of Shueisha's seventeen-volume Japanese original: CV issue 482039 named "Junshin" and GCD issue 2815519 numbered 5, mapped by ordinal onto our own v05 file
+I 44997 cv=482040 gcd=2815520 0.9 | volume 6 of Shueisha's seventeen-volume Japanese original: CV issue 482040 named "Nani ga Tame ni Kare wa Noboru" and GCD issue 2815520 numbered 6, mapped by ordinal onto our own v06 file
+I 44998 cv=482041 gcd=2815521 0.9 | volume 7 of Shueisha's seventeen-volume Japanese original: CV issue 482041 named "Kodoku no Yama" and GCD issue 2815521 numbered 7, mapped by ordinal onto our own v07 file
+I 44999 cv=482042 gcd=2815522 0.9 | volume 8 of Shueisha's seventeen-volume Japanese original: CV issue 482042 named "Memento Mori" and GCD issue 2815522 numbered 8, mapped by ordinal onto our own v08 file
+I 45000 cv=482043 gcd=2815523 0.9 | volume 9 of Shueisha's seventeen-volume Japanese original: CV issue 482043 named "Ketsubetsu Gyō" and GCD issue 2815523 numbered 9, mapped by ordinal onto our own v09 file
+I 45001 cv=482044 gcd=2815524 0.9 | volume 10 of Shueisha's seventeen-volume Japanese original: CV issue 482044 named "Yuihin" and GCD issue 2815524 numbered 10, mapped by ordinal onto our own v10 file
+I 45002 cv=482045 gcd=2815525 0.9 | volume 11 of Shueisha's seventeen-volume Japanese original: CV issue 482045 named "Tōtetsu no Takashi" and GCD issue 2815525 numbered 11, mapped by ordinal onto our own v11 file
+I 45003 cv=482046 gcd=2815526 0.9 | volume 12 of Shueisha's seventeen-volume Japanese original: CV issue 482046 named "Katō Buntarō" and GCD issue 2815526 numbered 12, mapped by ordinal onto our own v12 file
+I 45004 cv=482047 gcd=2815527 0.9 | volume 13 of Shueisha's seventeen-volume Japanese original: CV issue 482047 named "Niritsuhaihan" and GCD issue 2815527 numbered 13, mapped by ordinal onto our own v13 file
+I 45005 cv=482048 gcd=2815528 0.9 | volume 14 of Shueisha's seventeen-volume Japanese original: CV issue 482048 named "K2 Azuma Kabe" and GCD issue 2815528 numbered 14, mapped by ordinal onto our own v14 file
+I 45006 cv=482049 gcd=2815529 0.9 | volume 15 of Shueisha's seventeen-volume Japanese original: CV issue 482049 named "Eiyū" and GCD issue 2815529 numbered 15, mapped by ordinal onto our own v15 file
+I 45007 cv=482050 gcd=2815530 0.9 | volume 16 of Shueisha's seventeen-volume Japanese original: CV issue 482050 named "Tandoku Gyōja" and GCD issue 2815530 numbered 16, mapped by ordinal onto our own v16 file
+I 45008 cv=482051 gcd=2815531 0.9 | volume 17 of Shueisha's seventeen-volume Japanese original: CV issue 482051 named "Junkyōsha" and GCD issue 2815531 numbered 17, mapped by ordinal onto our own v17 file
+
+# S16862: 17 files against Shueisha's seventeen-volume Japanese original (cv 17 / gcd 0 rows)
+I 39836 cv=399633 gcd=- 0.9 | volume 1 of Shueisha's seventeen-volume Japanese original: CV issue 399633 named "Shūjin Bangō FE40536 Cujoh Jolyne" and no GCD issue, mapped by ordinal onto our own v01 file
+I 39837 cv=399634 gcd=- 0.9 | volume 2 of Shueisha's seventeen-volume Japanese original: CV issue 399634 named "Green Dolphin Street Keimusho no Menkainin" and no GCD issue, mapped by ordinal onto our own v02 file
+I 39838 cv=399635 gcd=- 0.9 | volume 3 of Shueisha's seventeen-volume Japanese original: CV issue 399635 named "Prisoner of Love" and no GCD issue, mapped by ordinal onto our own v03 file
+I 39839 cv=399636 gcd=- 0.9 | volume 4 of Shueisha's seventeen-volume Japanese original: CV issue 399636 named "Ikuzo! Foo Fighters" and no GCD issue, mapped by ordinal onto our own v04 file
+I 39840 cv=399637 gcd=- 0.9 | volume 5 of Shueisha's seventeen-volume Japanese original: CV issue 399637 named "Savage Garden Sakusen (Nakaniwa e Mukae!)" and no GCD issue, mapped by ordinal onto our own v05 file
+I 39841 cv=399638 gcd=- 0.9 | volume 6 of Shueisha's seventeen-volume Japanese original: CV issue 399638 named "Shūchū Gōu Keihō Hatsurei" and no GCD issue, mapped by ordinal onto our own v06 file
+I 39842 cv=399639 gcd=- 0.9 | volume 7 of Shueisha's seventeen-volume Japanese original: CV issue 399639 named "Ultra Security Chōbatsubō" and no GCD issue, mapped by ordinal onto our own v07 file
+I 39843 cv=399640 gcd=- 0.9 | volume 8 of Shueisha's seventeen-volume Japanese original: CV issue 399640 named "Moe yo Dragon's Dream" and no GCD issue, mapped by ordinal onto our own v08 file
+I 39844 cv=399641 gcd=- 0.9 | volume 9 of Shueisha's seventeen-volume Japanese original: CV issue 399641 named "Midoriiro no Tanjō" and no GCD issue, mapped by ordinal onto our own v09 file
+I 39845 cv=399642 gcd=- 0.9 | volume 10 of Shueisha's seventeen-volume Japanese original: CV issue 399642 named "Awaken-Mezame" and no GCD issue, mapped by ordinal onto our own v10 file
+I 39846 cv=399643 gcd=- 0.9 | volume 11 of Shueisha's seventeen-volume Japanese original: CV issue 399643 named "Mukae! Tengoku no Toki" and no GCD issue, mapped by ordinal onto our own v11 file
+I 39847 cv=399644 gcd=- 0.9 | volume 12 of Shueisha's seventeen-volume Japanese original: CV issue 399644 named "Datsugoku e..." and no GCD issue, mapped by ordinal onto our own v12 file
+I 39848 cv=399645 gcd=- 0.9 | volume 13 of Shueisha's seventeen-volume Japanese original: CV issue 399645 named "Sora Takaku Sky High!" and no GCD issue, mapped by ordinal onto our own v13 file
+I 39849 cv=399646 gcd=- 0.9 | volume 14 of Shueisha's seventeen-volume Japanese original: CV issue 399646 named "Tengoku no Toki Shingetsu Made Ato Mikka" and no GCD issue, mapped by ordinal onto our own v14 file
+I 39850 cv=399647 gcd=- 0.9 | volume 15 of Shueisha's seventeen-volume Japanese original: CV issue 399647 named "Heavy Weather" and no GCD issue, mapped by ordinal onto our own v15 file
+I 39851 cv=399648 gcd=- 0.9 | volume 16 of Shueisha's seventeen-volume Japanese original: CV issue 399648 named "Cape Canaveral Nite" and no GCD issue, mapped by ordinal onto our own v16 file
+I 39852 cv=399649 gcd=- 0.9 | volume 17 of Shueisha's seventeen-volume Japanese original: CV issue 399649 named "Made in Heaven" and no GCD issue, mapped by ordinal onto our own v17 file
+
+# S1351: 5 files against Panini Deutschland's five-volume German edition (cv 0 / gcd 5 rows)
+I 42967 cv=- gcd=2609549 0.7 | volume 1 of Panini Deutschland's five-volume German edition: no CV issue and GCD issue 2609549 numbered 1, mapped by ordinal onto our own v01 file
+I 42968 cv=- gcd=2622932 0.7 | volume 2 of Panini Deutschland's five-volume German edition: no CV issue and GCD issue 2622932 numbered 2, mapped by ordinal onto our own v02 file
+I 42969 cv=- gcd=2637445 0.7 | volume 3 of Panini Deutschland's five-volume German edition: no CV issue and GCD issue 2637445 numbered 3, mapped by ordinal onto our own v03 file
+I 42970 cv=- gcd=2659790 0.7 | volume 4 of Panini Deutschland's five-volume German edition: no CV issue and GCD issue 2659790 numbered 4, mapped by ordinal onto our own v04 file
+I 42971 cv=- gcd=2672422 0.7 | volume 5 of Panini Deutschland's five-volume German edition: no CV issue and GCD issue 2672422 numbered 5, mapped by ordinal onto our own v05 file
+
+# S73842: 5 files against Seven Seas' five-volume omnibus line (cv 5 / gcd 5 rows)
+I 43099 cv=816852 gcd=2166988 isbn=978-1-64505-864-9 0.95 | volume 1 of Seven Seas' five-volume omnibus line: CV issue 816852 named "Vol. 1-2" and GCD issue 2166988 numbered 1-2, mapped by ordinal onto our own v01 file
+I 43100 cv=843555 gcd=2217629 isbn=978-1-64505-865-6 0.95 | volume 2 of Seven Seas' five-volume omnibus line: CV issue 843555 named "Vol. 3-4: Giant Steps" and GCD issue 2217629 numbered 3-4, mapped by ordinal onto our own v02 file
+I 43101 cv=874047 gcd=2248724 isbn=978-1-64827-248-6 0.95 | volume 3 of Seven Seas' five-volume omnibus line: CV issue 874047 named "Vol. 5-6: Maiden Voyage" and GCD issue 2248724 numbered 5-6, mapped by ordinal onto our own v03 file
+I 43102 cv=906129 gcd=2296623 isbn=978-1-64827-347-6 0.95 | volume 4 of Seven Seas' five-volume omnibus line: CV issue 906129 named "Vol. 7-8: Live In Japan" and GCD issue 2296623 numbered 7-8, mapped by ordinal onto our own v04 file
+I 43103 cv=912648 gcd=2382602 isbn=978-1-63858-158-1 0.95 | volume 5 of Seven Seas' five-volume omnibus line: CV issue 912648 named "Vol. 9-10: Kind of Blue" and GCD issue 2382602 numbered 9-10, mapped by ordinal onto our own v05 file
+
+# S7764: 13 files against Viz's thirteen-volume line (cv 13 / gcd 13 rows)
+I 43423 cv=260481 gcd=274553 isbn=978-1-4215-0251-9 0.9 | volume 1 of Viz's thirteen-volume line: CV issue 260481 named "Supergun" and GCD issue 274553 numbered 1, mapped by ordinal onto our own v01 file
+I 43424 cv=260482 gcd=289034 isbn=978-1-4215-0382-0 0.9 | volume 2 of Viz's thirteen-volume line: CV issue 260482 named "Hydra" and GCD issue 289034 numbered 2, mapped by ordinal onto our own v02 file
+I 43425 cv=260483 gcd=299354 isbn=978-1-4215-0462-9 0.9 | volume 3 of Viz's thirteen-volume line: CV issue 260483 named "Power to the People" and GCD issue 299354 numbered 3, mapped by ordinal onto our own v03 file
+I 43426 cv=260484 gcd=307351 isbn=978-1-4215-0463-6 0.9 | volume 4 of Viz's thirteen-volume line: CV issue 260484 named "The Orbital Hit" and GCD issue 307351 numbered 4, mapped by ordinal onto our own v04 file
+I 43427 cv=260485 gcd=321628 isbn=978-1-4215-0464-3 0.9 | volume 5 of Viz's thirteen-volume line: CV issue 260485 named "Wiseguy" and GCD issue 321628 numbered 5, mapped by ordinal onto our own v05 file
+I 43428 cv=260486 gcd=328675 isbn=978-1-4215-0465-0 0.9 | volume 6 of Viz's thirteen-volume line: CV issue 260486 named "One Minute Past Midnight" and GCD issue 328675 numbered 6, mapped by ordinal onto our own v06 file
+I 43429 cv=260487 gcd=328676 isbn=978-1-4215-0962-4 0.9 | volume 7 of Viz's thirteen-volume line: CV issue 260487 named "Eye of God" and GCD issue 328676 numbered 7, mapped by ordinal onto our own v07 file
+I 43430 cv=260488 gcd=335782 isbn=978-1-4215-0963-1 0.9 | volume 8 of Viz's thirteen-volume line: CV issue 260488 named "Gravestone in Sicily" and GCD issue 335782 numbered 8, mapped by ordinal onto our own v08 file
+I 43431 cv=260489 gcd=355112 isbn=978-1-4215-0964-8 0.9 | volume 9 of Viz's thirteen-volume line: CV issue 260489 named "Headhunter" and GCD issue 355112 numbered 9, mapped by ordinal onto our own v09 file
+I 43432 cv=260490 gcd=355113 isbn=978-1-4215-0965-5 0.9 | volume 10 of Viz's thirteen-volume line: CV issue 260490 named "Wasteland" and GCD issue 355113 numbered 10, mapped by ordinal onto our own v10 file
+I 43433 cv=260491 gcd=383052 isbn=978-1-4215-0966-2 0.9 | volume 11 of Viz's thirteen-volume line: CV issue 260491 named "The Wrong Man" and GCD issue 383052 numbered 11, mapped by ordinal onto our own v11 file
+I 43434 cv=260492 gcd=383053 isbn=978-1-4215-0967-9 0.9 | volume 12 of Viz's thirteen-volume line: CV issue 260492 named "Shadow of Death" and GCD issue 383053 numbered 12, mapped by ordinal onto our own v12 file
+I 43435 cv=260493 gcd=383054 isbn=978-1-4215-1531-1 0.9 | volume 13 of Viz's thirteen-volume line: CV issue 260493 named "Flagburner" and GCD issue 383054 numbered 13, mapped by ordinal onto our own v13 file
+
+# S19390: 3 files against Viz's three-issue 1991 mini (cv 3 / gcd 3 rows)
+I 43436 cv=47599 gcd=64663 0.95 | volume 1 of Viz's three-issue 1991 mini: CV issue 47599 named "1" and GCD issue 64663 numbered 1, mapped by ordinal onto our own v01 file
+I 43437 cv=47600 gcd=64664 0.95 | volume 2 of Viz's three-issue 1991 mini: CV issue 47600 named "2" and GCD issue 64664 numbered 2, mapped by ordinal onto our own v02 file
+I 43438 cv=47601 gcd=64665 0.95 | volume 3 of Viz's three-issue 1991 mini: CV issue 47601 named "3" and GCD issue 64665 numbered 3, mapped by ordinal onto our own v03 file
+
+# S73843: 2 files against Kodansha's two-volume Japanese original (cv 2 / gcd 0 rows)
+I 42186 cv=347151 gcd=- 0.9 | volume 1 of Kodansha's two-volume Japanese original: CV issue 347151 named "Vol. 1" and no GCD issue, mapped by ordinal onto our own v01 file
+I 42187 cv=740371 gcd=- 0.9 | volume 2 of Kodansha's two-volume Japanese original: CV issue 740371 named "Vol. 2" and no GCD issue, mapped by ordinal onto our own v02 file
+

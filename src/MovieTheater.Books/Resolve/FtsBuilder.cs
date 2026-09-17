@@ -10,6 +10,8 @@ namespace MovieTheater.Books.Resolve
     /// </summary>
     public static class FtsBuilder
     {
+        // `lk.Status IN (1, 5)` is LinkStatuses.Usable — Matched or Manual — spelled out because this SQL is
+        // a plain const. A hand-made LOCG link is as good a source for the index as a matched one.
         private const string BodySql = @"
 SELECT i.Id,
        coalesce(i.ResolvedTitle, i.Title, ''), coalesce(i.ResolvedSeries, ''), coalesce(i.ResolvedCreatorsCsv, ''), coalesce(i.ResolvedPublisher, ''),
@@ -29,7 +31,7 @@ LEFT JOIN ExternalWork ew ON ew.Id = s.ExternalWorkId
 LEFT JOIN MuSeries mu ON mu.Id = s.MuSeriesId
 LEFT JOIN ComicEmbedded ce ON ce.ItemId = i.Id
 LEFT JOIN BookDetail bd ON bd.ItemId = i.Id
-LEFT JOIN ItemProviderLink lk ON lk.ItemId = i.Id AND lk.Provider = 2 AND lk.Status = 1 AND lk.Quality IN (2, 3)
+LEFT JOIN ItemProviderLink lk ON lk.ItemId = i.Id AND lk.Provider = 2 AND lk.Status IN (1, 5) AND lk.Quality IN (2, 3)
 LEFT JOIN LocgComic lc ON lc.LocgComicId = CAST(lk.ProviderKey AS INTEGER)
 LEFT JOIN Insight si ON si.SubjectKind = 1 AND si.SubjectId = i.SeriesId AND si.IsCurrent = 1
 LEFT JOIN Insight bi ON bi.SubjectKind = 0 AND bi.SubjectId = i.Id AND bi.IsCurrent = 1

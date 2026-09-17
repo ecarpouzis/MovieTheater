@@ -60,6 +60,7 @@ namespace MovieTheater.BooksHost.Commands
             var cursor = After;
             int written = 0, kept = 0, unknown = 0, invalid = 0, missingItem = 0, printed = 0, batches = 0, blank = 0;
             var retracted = 0;
+            var runsKept = 0;
 
             while (cursor < total)
             {
@@ -80,6 +81,15 @@ namespace MovieTheater.BooksHost.Commands
                 foreach (var (id, payload) in hot.Pairs(
                     $"SELECT Id, coalesce(SeriesId, '') FROM Item WHERE Id IN ({idList})"))
                     series[(int)id] = payload is { Length: > 0 } s ? int.Parse(s, CultureInfo.InvariantCulture) : null;
+
+                // The span's RUN REFS (`CollectedEditionSpanRun`), read BEFORE anything is written. They say
+                // which run the range counts in — the fact the identity pass's `C` lines store — and they hang
+                // off the span by a CASCADing foreign key, so the retraction path's DELETE takes them with it.
+                // Read here, re-attached after each write, they survive a re-import of the model's own rows.
+                // (A `Write` upserts rather than deleting, so it would keep them anyway; the re-attach is
+                // unconditional because "which path deletes the row" is not a thing this verb should have to
+                // stay right about.)
+                var runs = CuratedSpanRuns.Read(hot, idList);
 
                 var existing = new Dictionary<int, CuratedSpanImport.Existing>();
                 foreach (var (id, payload) in hot.Pairs(
@@ -123,6 +133,7 @@ namespace MovieTheater.BooksHost.Commands
                             // that went from honest silence to a leg's claim, and §2 is why that is the wrong
                             // direction: a range nobody judged is what deletes files.
                             Tombstone(hot, line, Apply);
+                            runsKept += Reattach(hot, line.ItemId, runs, Apply);
                             continue;
                         case CuratedSpanImport.Verdict.Kept: kept++; continue;
                         case CuratedSpanImport.Verdict.Invalid: invalid++; continue;
@@ -138,6 +149,9 @@ namespace MovieTheater.BooksHost.Commands
                                 "DELETE FROM CollectedEditionSpan WHERE ItemId = $id AND Source = $src",
                                 ("$id", line.ItemId), ("$src", (int)EditionSource.Curated));
                             Tombstone(hot, line, Apply);
+                            // …and the DELETE above just cascaded this item's run refs away. The range is
+                            // withdrawn; WHICH RUN the book counts in is not, and it was read by a person.
+                            runsKept += Reattach(hot, line.ItemId, runs, Apply);
                             continue;
                     }
 
@@ -162,6 +176,7 @@ namespace MovieTheater.BooksHost.Commands
                         Note = line.Rationale,
                         CreatedAt = DateTime.UtcNow,
                     });
+                    runsKept += Reattach(hot, line.ItemId, runs, Apply);
                 }
                 if (Apply) hot.Commit();
 
@@ -169,7 +184,7 @@ namespace MovieTheater.BooksHost.Commands
                 batches++;
                 await console.Output.WriteLineAsync(
                     $"{{ processed: {take}, remaining: {total - cursor}, nextCursor: \"{cursor}\", "
-                    + $"counts: {{ written: {written}, retracted: {retracted}, kept: {kept}, unknown: {unknown}, invalid: {invalid} }} }}  [curated-spans]");
+                    + $"counts: {{ written: {written}, retracted: {retracted}, kept: {kept}, unknown: {unknown}, invalid: {invalid}, runRefsKept: {runsKept} }} }}  [curated-spans]");
                 if (MaxBatches > 0 && batches >= MaxBatches) break;
             }
 
@@ -190,7 +205,8 @@ namespace MovieTheater.BooksHost.Commands
 
             await console.Output.WriteLineAsync(
                 $"done: {total - After} lines read{(blank > 0 ? $" ({blank} blank)" : "")}, "
-                + $"{{ written: {written}, retracted: {retracted}, kept: {kept}, unknown: {unknown}, invalid: {invalid}, missingItem: {missingItem} }}"
+                + $"{{ written: {written}, retracted: {retracted}, kept: {kept}, unknown: {unknown}, invalid: {invalid}, "
+                + $"missingItem: {missingItem}, runRefsKept: {runsKept} }}"
                 + (Apply ? " and were written" : " (dry run — re-run with --apply)"));
             if (Apply)
                 await console.Output.WriteLineAsync(
@@ -219,6 +235,15 @@ namespace MovieTheater.BooksHost.Commands
                 CreatedAt = DateTime.UtcNow,
             });
         }
+
+        /// <summary>
+        /// Put back the run refs this item's Curated span carried before the verb touched it. A no-op for the
+        /// overwhelming majority of items, which have none; for the ones a reader judged, it is the difference
+        /// between "collects #1-5 of Wake the Devil" and "collects #1-5" of whatever the shelf happens to be.
+        /// </summary>
+        private static int Reattach(TargetWriter hot, int itemId,
+            Dictionary<int, List<CuratedSpanRuns.Ref>> runs, bool apply) =>
+            CuratedSpanRuns.Reattach(hot, itemId, runs, apply);
 
         private static double? Dbl(string s) =>
             s.Length == 0 ? null : double.Parse(s, CultureInfo.InvariantCulture);

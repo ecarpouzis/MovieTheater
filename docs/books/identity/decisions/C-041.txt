@@ -1,0 +1,276 @@
+# C-041 — the Avengers franchise wall (Ant-Man/Avengers/New Avengers/Mighty Avengers/Secret Avengers/Uncanny
+# Avengers/Young Avengers). The per-file matcher stamps the 1963 original (CV 2128/GCD 1571) across nearly every
+# modern Avengers relaunch shelf — the wrong-relaunch trap at franchise scale; a fresh name lookup recovered the
+# right modern volume every time (95222, 95223, 95226, 95227, 95228, 14413-style). Trade-heavy shelves (New
+# Avengers v1, Uncanny Avengers v1, Avengers v3/v5/v8) are single-leg 0.9s with many I lines from gcd_issue
+# subtitle matches. Epic Collection singleton shelves (1591-1600, 1633/1635/1636) are one clean CV-name-assertion
+# + the shared "collected editions" GCD line each.
+
+S 95103 cv=79255 gcd=85747 0.95 | CV 79255 and GCD 85747 (Marvel 2015, 5 issues) agree; our floppies (mostly 1pp variant-cover extracts, residue costs nothing) plus a judged trade and an Annual (residue) sit inside
+F 95103 merge-with=1110 | same "Ant-Man" (2015) 5-issue mini as the undecided S1110 (a duplicate #1 variant-cover extract), ingested from a separate folder
+I 52389 cv=- gcd=90346 0.9 | Vol.01 Second-Chance Man trade — GCD 90346 (2015, collected edition); no CV trade id found
+
+S 9645 cv=18227 gcd=23462 0.95 | CV 18227 and GCD 23462 (Marvel 2006-2007, 12 issues) agree; our #7-12 floppies plus a judged trade (#1-6) cover the run — the trade is the run's own, no residue cost
+I 52403 cv=- gcd=74374 0.9 | Vol.01 Low-Life trade — GCD 74374 (2007, collected edition, 2 volumes); no CV trade id found
+
+S 18041 cv=2128 gcd=1571 0.95 | CV 2128 (found in the local rip, "The Avengers" 1963 Marvel, 403 issues) and GCD 1571 (Marvel 1963-1996, 402 issues) agree; our #4,8,13-402 (heavily duplicate-ripped) sits inside; a UK Marvel reprint (GCD 31614) and a Filipino edition (GCD 165705) are foreign residue, rejected
+F 18041 merge-with=64185 | same 1963-1996 "Avengers" legacy run as the undecided S64185 (floppies #350-403 plus later-era residue), a huge ongoing ingested from more than one folder
+
+S 95220 cv=2128 gcd=1571 0.9 | CV 2128 and GCD 1571 (Marvel 1963-1996, the main "Avengers" run) both cover these Annuals (#1-2,6-7,9-17,19-20,22-23, 1967-1994) per the GCD dump lookup; the per-file picks (Western Publishing 1968, a 2023 relaunch, German/Australian foreign editions) are all wrong-coordinate/foreign mismatches — rejected; capped at 0.9 since no per-file GCD confirmation landed correctly
+F 95220 merge-with=18041 | this shelf is only the Annuals of the same 1963-1996 "Avengers" run as S18041 (CV 2128/GCD 1571) — same comic, filed as its own folder
+
+S 7518 cv=2677 gcd=2163 0.9 | CV 2677 and GCD 2163 (Marvel 1974-1975, 5 issues) agree; our #1-4 sits inside; one file is the 2008 "Giant-Size Avengers/Invaders" one-shot (CV 20232/GCD 28930) — residue, a different comic, named
+
+S 95222 cv=6742 gcd=7252 0.95 | CV 6742 (found via name lookup, "Avengers" 1996 Marvel, 13 issues) and GCD 7252 (Marvel 1996-1997, 13 issues) agree exactly; our #1-13 matches; the per-file CV pick (2128, the original 1963 volume) is a wrong-relaunch mismatch, and GCD's majority per-file pick (29658, Panini France) is a foreign-language mismatch — both rejected
+
+S 95223 cv=7084 gcd=7636 0.95 | CV 7084 (found via name lookup, "Avengers" 1998 Marvel, 89 issues) and GCD 7636 (Marvel 1998-2004, 89 issues) agree exactly — the legacy-numbered vol.3 (89 issues published as #1-84 then #500-503 after a numbering jump); our seven judged trades (#57-61, #62-64, #65-70, #71-76, #77-81, #82-84, #500-503) all sit within this one run; the per-file CV pick (2128, the 1963 original) and GCD's foreign per-file picks are all wrong — rejected
+I 52844 cv=203097 gcd=1098166 0.9 | Vol.06 World Trust (#57-61) — CV 32308/203097 and GCD 73249/1098166 (136pp, ISBN 978-0-7851-4473-1) agree; file 118pp
+I 52845 cv=202627 gcd=1098168 0.9 | Vol.07 Standoff (#62-64) — CV 32286/202627 and GCD 73250/1098168 (128pp, ISBN 978-0-7851-4467-0) agree; file 113pp
+I 52846 cv=213715 gcd=1098167 0.9 | Vol.08 Red Zone (#65-70) — CV 33111/213715 and GCD 73251/1098167 (152pp, ISBN 978-0-7851-4466-3) agree; file 132pp
+I 52847 cv=231806 gcd=- 0.9 | Vol.09 Search for She-Hulk (#71-76) — CV 35131/231806 (2010); no GCD record found
+N 52848 no-record | Vol.10 "Lionheart of Avalon" trade — probed exact, no hit on either leg
+N 52849 no-record | Vol.11 "Once an Invader" trade — probed exact, no hit on either leg
+I 52850 cv=203433 gcd=1331249 0.9 | Vol.12 Disassembled (#500-503) — CV 32342/203433 (2006) and GCD 87445/1331249 (ISBN 0-7851-2294-X) agree
+
+S 94665 cv=11497 gcd=12464 0.95 | CV 11497 and GCD 12464 (Marvel 2005-2010, 64 issues) agree; all 13 trades (Vol.01-13, "Breakout" through "Siege") collect this one run — the run's own trades, no residue cost
+F 94665 merge-with=12792 | same "New Avengers" 2005-2010 run (v1) as the undecided S12792 (floppies #16-24), a legacy ongoing ingested from more than one folder
+I 52853 cv=- gcd=541528 0.9 | Vol.01 Breakout — GCD 31872/541528 (132pp, subtitle matches); file 137pp
+I 52854 cv=- gcd=541529 0.9 | Vol.02 The Sentry — GCD 541529 (subtitle "Sentry" matches); file 112pp
+I 52855 cv=- gcd=541530 0.9 | Vol.03 Secrets & Lies — GCD 541530 (132pp, subtitle matches); file 109pp
+I 52856 cv=- gcd=541531 0.9 | Vol.04 The Collective — GCD 541531 (124pp, subtitle matches); file 100pp
+I 52857 cv=- gcd=541532 0.9 | Vol.05 Civil War — GCD 541532 (124pp, subtitle matches); file 110pp
+I 52858 cv=- gcd=900717 0.9 | Vol.06 Revolution — GCD 900717 (132pp, subtitle matches); file 127pp
+I 52859 cv=- gcd=900718 0.9 | Vol.07 The Trust — GCD 900718 (188pp, subtitle matches); file 155pp
+I 52860 cv=- gcd=900719 0.9 | Vol.08 Secret Invasion Book 1 — GCD 900719 (124pp, subtitle matches); file 112pp
+I 52861 cv=- gcd=900720 0.9 | Vol.09 Secret Invasion Book 2 — GCD 900720 (132pp, subtitle matches); file 107pp
+I 52862 cv=- gcd=900721 0.9 | Vol.10 Power — GCD 900721 (124pp, subtitle matches); file 112pp
+I 52863 cv=- gcd=900722 0.9 | Vol.11 Search for the Sorcerer Supreme — GCD 900722 (116pp, subtitle matches); file 87pp
+I 52864 cv=- gcd=900723 0.9 | Vol.12 Powerloss — GCD 900723 (148pp, subtitle matches); file 125pp
+I 52865 cv=233511 gcd=- 0.9 | Vol.13 Siege — CV 35402/233511 "New Avengers: Siege" 2010 Marvel; no GCD record found
+
+S 1694 cv=33495 gcd=49475 0.95 | the file's abbreviated title "Avngrs -Prime 04" is Avengers: Prime #4 — CV 33495 and GCD 49475 (Marvel 2010-2011, 5 issues) agree exactly; misfiled under the "New Avengers v2" folder, not that trade line
+F 1694 merge-with=1619 | same "Avengers: Prime" #4 (2010) as A-032's S1619 (they hold #1-5, we hold the misfiled duplicate #4) - same comic
+F 1694 misfiled | item 52874 is Avengers: Prime #4, a separate 2010 5-issue Bendis miniseries, filed under the New Avengers v2 folder by mistake
+
+S 12801 cv=39277 gcd=61326 0.9 | CV 39277 and GCD 61326 (Marvel 2011-2013, "New Avengers by Brian Michael Bendis", 5 volumes) agree; a twin GCD row (70374) duplicates the set — capped at 0.9
+F 12801 merge-with=12800 | same "New Avengers by Brian Michael Bendis" collected line as B-072's S12800 (Vol.01, our shelf holds Vol.01-05) - same comic, same trade line
+I 52875 cv=265179 gcd=883715 0.9 | Vol.01 — CV 265179 and GCD 883715 (168pp) agree; file 178pp
+I 52876 cv=292766 gcd=883720 0.9 | Vol.02 — CV 292766 and GCD 883720 (176pp) agree; file 147pp
+I 52877 cv=341462 gcd=953047 0.9 | Vol.03 — CV 341462 and GCD 953047 (192pp) agree; file 152pp
+I 52878 cv=372564 gcd=1038092 0.9 | Vol.04 — CV 372564 and GCD 1038092 (172pp) agree; file 143pp
+I 52879 cv=388849 gcd=1087109 0.9 | Vol.05 — CV 388849 and GCD 1087109 (120pp) agree; file 99pp
+
+S 95226 cv=54428 gcd=70263 0.9 | CV 54428 (Marvel 2012/2013, 46 issues) and GCD 70263 (Marvel 2013-2015, 46 issues) agree on count; our #34.1 plus six judged trades (#1-6 through #29-34, conf 0.97) sit inside; the per-file CV pick (2128, the 1963 original) and GCD's foreign per-file picks are wrong-relaunch/foreign mismatches — capped at 0.9 for indirect confirmation
+I 52880 cv=397746 gcd=- 0.9 | Vol.01 Avengers World — CV 60066/397746 (2013); no GCD trade record found
+N 52881 no-record | Vol.02 "The Last White Event" — probed exact, no hit on either leg
+I 52882 cv=68369 gcd=- 0.9 | Vol.03 Prelude to Infinity — CV 68369 (2013); no GCD record
+I 52883 cv=70940 gcd=- 0.9 | Vol.04 Infinity — CV 70940 (2014); no GCD record
+I 52884 cv=460618 gcd=- 0.9 | Vol.05 Adapt or Die — CV 75929/460618 (2014); no GCD record
+I 52885 cv=77988 gcd=- 0.9 | Vol.06 Infinite Avengers — CV 77988 (2014); no GCD record
+
+S 94666 cv=55330 gcd=70463 0.9 | CV 55330 and GCD 70463 (Marvel 2013-2015, 33 issues) agree; our four trades (Everything Dies, Infinity, Other Worlds, A Perfect World) collect this run — the per-file CV pick (11497, the DIFFERENT 2004 New Avengers volume) is a wrong-relaunch mismatch
+N 94666 stale-flag | overlap-in-series names the 2013 Vol.01 "gcd 1-6" colliding with the 2004 run's own series — a cross-shelf Vol.01 collision with the sibling S94665 shelf, not conflation on this shelf
+I 52886 cv=415612 gcd=1171023 0.9 | Vol.01 Everything Dies — CV 64774/415612 and GCD 78083/1171023 (160pp, subtitle matches) agree; file 151pp
+I 52887 cv=440817 gcd=1171021 0.9 | Vol.02 Infinity — CV 70582/440817 and GCD 1171021 (152pp) agree; file 170pp
+I 52888 cv=457975 gcd=1217406 0.9 | Vol.03 Other Worlds — CV 75246/457975 and GCD 1217406 (144pp) agree; file 132pp
+I 52889 cv=469737 gcd=1759107 0.9 | Vol.04 A Perfect World — CV 78018/469737 and GCD 1759107 (152pp, subtitle matches) agree; file 142pp
+
+S 1689 cv=79464 gcd=92245 0.9 | CV 79464 and GCD 92245 (Marvel 2015-2016, "Time Runs Out", 4 volumes) agree; a twin GCD row (89288) duplicates the set — capped at 0.9; all 8 files are duplicated copies of the 4 volumes (flagged label-ambiguous)
+I 52894 cv=476230 gcd=1454936 0.9 | Vol.01 — CV 476230 and GCD 1454936 (148pp) agree; file 144pp
+I 118076 cv=476230 gcd=1454936 0.9 | duplicate of Vol.01 (flagged label-ambiguous)
+I 52895 cv=480942 gcd=1484980 0.9 | Vol.02 — CV 480942 and GCD 1484980 (140pp) agree; file 129pp
+I 118077 cv=480942 gcd=1484980 0.9 | duplicate rip of the same Vol.02 "Time Runs Out" trade as item 52895 (flagged label-ambiguous)
+I 52896 cv=488642 gcd=1524745 0.9 | Vol.03 — CV 488642 and GCD 1524745 (140pp) agree; file 129pp
+I 118078 cv=488642 gcd=1524745 0.9 | duplicate rip of the same Vol.03 "Time Runs Out" trade as item 52896 (flagged label-ambiguous)
+I 52897 cv=492210 gcd=1537772 0.9 | Vol.04 — CV 492210 and GCD 1537772 (156pp) agree; file 149pp
+I 118079 cv=492210 gcd=1537772 0.9 | duplicate rip of the same Vol.04 "Time Runs Out" trade as item 52897 (flagged label-ambiguous)
+
+S 757 cv=85928 gcd=93781 0.9 | CV 85928 and GCD 93781 (Marvel 2015-2016, 15 issues) agree; our #0-1,13-15 floppies plus three judged trades (#1-6, #7-12, #13-15) cover the run; one Skottie Young variant-cover extract is residue, costs nothing; capped at 0.9 for the flagged provider-disagreement on Vol.01
+I 52909 cv=- gcd=1559065 0.9 | Vol.01 Magnificent Seven — GCD 100294/1559065 (172pp, subtitle matches); per the flag, CV's #1-12 candidate describes the hardcover, not this 161pp softcover — cv left as "-"
+I 52910 cv=- gcd=1628468 0.9 | Vol.02 Family Business — GCD 1628468 (148pp, subtitle matches); file 141pp
+I 52911 cv=- gcd=1673751 0.9 | Vol.03 Civil War II — GCD 1673751 (116pp, subtitle matches); file 98pp
+
+S 94667 cv=85301 gcd=93240 0.95 | CV 85301 (found via name lookup, "New Avengers" 2015 Marvel, 18 issues) and GCD 93240 (Marvel 2015-2017, 18 issues) agree exactly; our #14-18 sits inside; the per-file CV pick (11497, the 2004 volume) is a wrong-relaunch mismatch; GCD's Mexican Spanish per-file pick is a foreign-language mismatch — both rejected
+F 94667 merge-with=12793 | same "New Avengers" 2015-2017 run (v4) as B-053's S12793 (their trades #1-6/#7-11 vs our floppies #14-18) - a legacy ongoing ingested from more than one folder
+
+S 13150 cv=95431 gcd=108753 0.95 | CV 95431 and GCD 108753 (Marvel 2016-2017, 9 issues) agree; our #8-9 floppies plus two judged trades (#1-4, #5-9) cover the run
+I 52920 cv=603131 gcd=1717314 0.9 | Vol.01 Taking Back Justice — CV 102271/603131 and GCD 115037/1717314 (140pp) agree; file 137pp
+I 52921 cv=625320 gcd=1737137 0.9 | Vol.02 In Plain Sight — CV 104629/625320 and GCD 1737137 (116pp) agree; file 102pp
+
+S 1667 cv=101764 gcd=- 0.9 | file's own title "Avengers Vol. 01.1 - Four" matches CV 101764 "Avengers: Four" 2017 Marvel/issue 598366 exactly by name and year; no confirmed GCD record (per-file matched only a French series which is a wrong-coordinate mismatch)
+
+S 95227 cv=95402 gcd=108745 0.95 | CV 95402 (found via name lookup, "Avengers" 2016 Marvel, 36 issues) and GCD 108745 (Marvel 2017-2018, 36 issues) agree exactly; our judged trade (#1-6, "Kang War One") sits inside; the per-file picks (2128 the 1963 original; a French edition) are wrong-relaunch/foreign mismatches — rejected
+F 95227 merge-with=95221 | same "Avengers" 2016-2018 run (vol.6, legacy-numbered) as B-053's S95221 (their floppies #672-690 vs our trade #1-6 "Kang War One") - same comic, floppies vs. trade split across folders
+
+S 95228 cv=110496 gcd=123960 0.95 | CV 110496 (found via direct query, "Avengers" 2018 Marvel, 66 issues) and GCD 123960 (Marvel 2018-2023, 66 issues) agree exactly; our #1 (1,000,000 BC prequel + Annual, residue) plus seven Jason Aaron judged trades (#1-6 through #63-66) sit inside; the per-file picks (144093 German, 2128 the 1963 original, 150431 the 2023 legacy relaunch) are all wrong-coordinate/foreign mismatches — rejected
+F 95228 merge-with=1649 | same "Avengers" 2018-2023 run (Jason Aaron, vol.8) as A-022's S1649 (their trades #7-30 vs our #1-6 through #63-66) - same comic split across folders
+I 52951 cv=687003 gcd=1855036 0.9 | Vol.01 Final Host (#1-6) — CV 114043/687003 and GCD 130905/1855036 (164pp) agree; file 154pp
+I 52957 cv=824078 gcd=2200896 0.9 | Vol.07 Age of Khonshu (#31-38) — CV 133095/824078 and GCD 2200896 (188pp) agree; file 179pp
+I 52958 cv=866704 gcd=2235868 0.9 | Vol.08 Enter the Phoenix (#39-45) — CV 137260/866704 and GCD 2235868 (172pp) agree; file 160pp
+I 52959 cv=965487 gcd=2296360 0.9 | Vol.09 World War She-Hulk (#46-50) — CV 147537/965487 and GCD 2296360 (188pp) agree; file 175pp
+I 52960 cv=965488 gcd=2434713 0.9 | Vol.10 The Death Hunters (#51-56) — CV 147539/965488 and GCD 2434713 (180pp) agree; file 173pp
+I 52961 cv=985722 gcd=2490863 0.9 | Vol.11 History's Mightiest Heroes (#57-62) — CV 149784/985722 and GCD 2490863 (140pp) agree; file 133pp
+N 52962 no-record | Vol.12 "Avengers Assemble" (#63-66, 2023) — probed exact on both legs, no hit
+
+R 1566 | no clean candidate found: the file's ComicInfo title "Avengers 750 Sketchbook" doesn't match its own filename "Secrets of the Avengers #50," and none of the CV/GCD candidates (all Avengers-branded but wrong decade/language) fit; GCD's per-file pick (200634, round2-folder) is a wrong-coordinate mismatch
+N 1566 no-record | "Avengers 750 Sketchbook" / "Secrets of the Avengers #50" — genuinely unclear which comic this is; not found under either title on either leg
+
+S 20225 cv=147148 gcd=194497 0.95 | file's title "Timeless 001 (2023)" matches CV 147148/issue962069 "Timeless" 2023 Marvel and GCD 194497 (2023, one-shot) exactly; the stored CV link (106769, Soleil's unrelated French "Timeless Romance") is wrong
+F 20225 wrong-cv-link | stored CV 106769 "Timeless Romance" 2017 Soleil is an unrelated French comic
+
+S 1548 cv=18419 gcd=23309 0.95 | CV 18419 and GCD 23309 (Marvel 2007-2010, 35 issues) agree; our #1-35 (heavily duplicate-ripped) plus two judged trades (#14-19, #26-30) cover the run; an Annual, a "Featuring Reptil" one-shot, and a Special are residue, named
+I 53001 cv=- gcd=906371 0.9 | Vol.03 Secret Invasion (#14-19) — GCD 33992/906371 (144pp, subtitle matches); file 148pp
+I 53002 cv=- gcd=906373 0.9 | Vol.05 Dreams & Nightmares (#26-30) — GCD 906373 (120pp, subtitle matches); file 145pp
+
+S 1567 cv=64683 gcd=75233 0.95 | CV 64683 and GCD 75233 (Marvel 2013-2014, 12 issues) agree; our #7 floppy plus two judged trades (#1-6, #7-12) cover the run
+I 53006 cv=440815 gcd=1217413 0.9 | Vol.01 Human After All — CV 70580/440815 and GCD 81428/1217413 (140pp, subtitle matches) agree; file 146pp
+I 53007 cv=457974 gcd=1217987 0.9 | Vol.02 12000 AD — CV 75245/457974 and GCD 1217987 (140pp, subtitle matches) agree; file 142pp
+
+S 15080 cv=118663 gcd=144638 0.9 | CV 118663 (Marvel 2019, named from rip) and GCD 144638 (Marvel 2019-2022, 29 issues) agree on the run; our #18 floppy plus four named trades (Vol.02-05) sit inside
+I 53048 cv=787828 gcd=- 0.9 | Vol.02 To Dine With Doom — CV 129258/787828 (2020); no GCD record
+I 53049 cv=832891 gcd=- 0.9 | Vol.03 Enter the Dragon — CV 134228/832891 (2021); no GCD record
+I 53050 cv=885082 gcd=- 0.9 | Vol.04 King in Black — CV 138987/885082 (2021); no GCD record
+I 53051 cv=924784 gcd=- 0.9 | Vol.05 Defilement of All Things — CV 143013/924784 (2022); no GCD record
+
+S 15233 cv=117989 gcd=142962 0.95 | file's title matches CV 117989/issue704825 and GCD 142962 exactly (both "Secret Avengers by Rick Remender: The Complete Collection", 2019); the per-file GCD pick (49024, round2-folder, the original ongoing) is wrong — rejected
+
+S 94690 cv=33350 gcd=49024 0.95 | CV 33350 and GCD 49024 (Marvel 2010-2013, 39 issues) agree; our #16-21 floppies plus two trades (GCD's own collected-edition series 60593) sit inside; one German per-file pick is foreign residue, rejected
+F 94690 merge-with=15232 | same "Secret Avengers" 2010-2013 run (v1) as the undecided S15232 (floppies #1-4,26-28), ingested from a separate folder
+I 53060 cv=260056 gcd=870733 0.9 | Vol.01 Mission to Mars — CV 38780/260056 and GCD 60593/870733 (140pp, subtitle matches) agree; file 135pp
+I 53061 cv=- gcd=870743 0.9 | Vol.02 Eyes of the Dragon — GCD 870743 (176pp, subtitle matches); no CV record found
+
+S 94691 cv=57180 gcd=71935 0.9 | CV 57180 (found via name lookup, "Secret Avengers" 2013 Marvel, 16 issues) and GCD 71935 (Marvel 2013-2014, 16 issues) agree; our three trades (Reverie, Iliad, How to Maim a Mockingbird) collect this run; the per-file picks (33350 the 2010 volume; German/mixed-era GCD picks) are wrong — rejected
+I 53064 cv=423829 gcd=- 0.9 | Vol.01 Reverie — CV 66835/423829 (2013); no GCD record found
+I 53065 cv=446626 gcd=- 0.9 | Vol.02 Iliad — CV 71996/446626 (2014); no GCD record found
+I 53066 cv=451342 gcd=- 0.9 | Vol.03 How to Maim a Mockingbird — CV 73328/451342 (2014, spelled "MA.I.M."); no GCD record found
+
+S 94692 cv=72274 gcd=79505 0.95 | CV 72274 (found via name lookup, "Secret Avengers" 2014 Marvel, 15 issues) and GCD 79505 (Marvel 2014-2015, 15 issues) agree exactly; our #1-15 matches; the per-file pick (33350, the 2010 volume) is a wrong-relaunch mismatch — rejected
+
+S 12039 cv=118255 gcd=143861 0.95 | file's title matches CV 118255/issue705924 and GCD 143861 exactly (both "Mighty Avengers by Dan Slott: The Complete Collection", 2019); the per-file GCD pick (22524, round2-folder, the original ongoing) is wrong — rejected
+
+R 12038 | two Mighty Avengers runs share this shelf: the 2007 original (CV 18239/GCD 22524, 36 issues, our #1-14,18,21-26 plus its own trades Vol.01-04 + a Bendis Complete Collection) and the 2013 relaunch (CV 67223/GCD 76468, 14 issues, our floppies plus its own trades Vol.01-03 "No Single Hero"/"Family Bonding"/"Not Your Father's Avengers") — both substantial (21/48 and 18/48 files), not residue; the overlap-in-series flag (2013 Vol.01 gcd1-6 vs 2007 Vol.01 gcd1-6) is TRUE of this shelf, not stale, since both ladders live here together
+F 12038 split-needed | Mighty Avengers (2007) = CV 18239/GCD 22524 (36 issues); Mighty Avengers (2013) = CV 67223/GCD 76468 (14 issues)
+I 53102 cv=- gcd=1183876 0.9 | Vol.01 The Ultron Initiative (2007 run) — GCD 79072/1183876 (176pp, subtitle matches); file 150pp
+I 53103 cv=- gcd=1185304 0.9 | Vol.02 Venom Bomb — GCD 1185304 (136pp, subtitle matches); file 112pp
+I 53104 cv=- gcd=1180250 0.9 | Vol.03 Secret Invasion Book 1 — GCD 1180250 (120pp, subtitle matches); file 87pp
+I 116958 cv=- gcd=1180250 0.9 | duplicate rip of Vol.03 (flagged label-ambiguous)
+I 53105 cv=- gcd=1180438 0.9 | Vol.04 Secret Invasion Book 2 — GCD 1180438 (128pp, subtitle matches); file 120pp
+I 116959 cv=- gcd=1180438 0.9 | duplicate rip of Vol.04 (flagged label-ambiguous)
+N 53957 no-record | "Mighty Avengers by Brian Michael Bendis - The Complete Collection" (2017, 457pp, collects the whole 2007 run) — no exact id resolved in this pass
+I 53121 cv=448252 gcd=- 0.9 | Vol.01 No Single Hero (2013 run, #1-5 judged) — CV 72488/448252; no GCD record found
+I 53122 cv=461272 gcd=- 0.9 | Vol.02 Family Bonding (2013 run) — CV 76162/461272; no GCD record found
+I 53123 cv=473208 gcd=- 0.9 | Vol.03 Original Sin - Not Your Father's Avengers (2013 run) — CV 78796/473208; no GCD record found
+
+S 3486 cv=78045 gcd=84499 0.95 | CV 78045 and GCD 84499 (Marvel 2014-2015, 9 issues) agree; our #1-9 (heavily duplicate-ripped, plus a Skottie Young variant extract) sits inside
+
+S 94727 cv=52880 gcd=78168 0.9 | CV 52880 (Marvel 2012, 26 issues) and GCD 78168 (Marvel 2014-2015, collected edition, 5 volumes) agree; a twin GCD row (78167) duplicates the set — capped at 0.9; foreign per-file picks (Dutch, French) are residue, rejected
+F 94727 merge-with=20672 | same "Uncanny Avengers" 2012-2014 run (v1) as the undecided S20672 (floppies #1,6,12,23 + Annual; a v2 2015 floppy there is that shelf's own residue), ingested from a separate folder
+I 53135 cv=- gcd=1171407 0.9 | Vol.01 Red Shadow — GCD 1171407 (140pp, subtitle matches); file 123pp
+I 53136 cv=- gcd=1327356 0.9 | Vol.02 Apocalypse Twins — GCD 1327356 (164pp, subtitle matches); file 142pp
+I 53137 cv=- gcd=1327357 0.9 | Vol.03 Ragnarok Now — GCD 1327357 (140pp, subtitle matches); file 132pp
+I 53138 cv=- gcd=1353476 0.9 | Vol.04 Avenge the Earth — GCD 1353476 (140pp, subtitle matches); file 116pp
+I 53139 cv=- gcd=1443454 0.9 | Vol.05 AXIS Prelude — GCD 1443454 (148pp, subtitle matches); file 139pp
+
+S 94728 cv=79736 gcd=92132 0.9 | CV 79736 (found via name lookup, "Uncanny Avengers" 2015 Marvel, 5 issues) and GCD 92132 (2015, page-rematch) agree on the 2015 relaunch; the per-file pick (52880, the 2012 volume) is a wrong-relaunch mismatch — rejected
+
+S 94729 cv=85318 gcd=93076 0.95 | CV 85318 (found via name lookup, "Uncanny Avengers" 2015 Marvel, 30 issues) and GCD 93076 (Marvel 2015-2018, 30 issues) agree exactly; our #24-25 matches; the per-file pick (52880, the 2012 volume) is a wrong-relaunch mismatch — rejected
+
+S 1633 cv=157860 gcd=130433 0.9 | file's title matches CV 157860/issue1053043 exactly ("Avengers West Coast Epic Collection: Ultron Unbound", 2024); GCD line series 130433's own issue 2625772 (492pp, ISBN 978-1-302-95644-8, subtitle "Ultron Unbound") confirms it by subtitle and page count; ComicVine mints a volume per book on this line while GCD keeps one series for the whole line
+F 1633 merge-with=1635 | ComicVine mints a volume per book on "Avengers West Coast Epic Collection" while GCD (130433) keeps one series for the whole line — same GCD identity as sibling shelves S1635/S1636, each a different volume
+F 1633 merge-with=1636 | see above
+
+S 1635 cv=130576 gcd=130433 0.9 | file's title matches CV 130576/issue803693 exactly ("...Tales to Astonish", 2020); GCD line series 130433's own issue 2156049 (460pp, ISBN 978-1-302-92316-7, subtitle "Tales to Astonish") confirms it by subtitle and page count
+F 1635 merge-with=1633 | same GCD line series (130433) as sibling shelves — see S1633's note
+
+S 1636 cv=132764 gcd=130433 0.9 | file's title matches CV 132764/issue822553 exactly ("...Vision Quest", 2020); GCD line series 130433's own issue 2186137 (492pp, ISBN 978-1-302-92742-4, subtitle "Vision Quest") confirms it by subtitle and page count
+F 1636 merge-with=1633 | same GCD line series (130433) as sibling shelves — see S1633's note
+
+S 22687 cv=56117 gcd=71284 0.9 | CV 56117 (found via name lookup, "Young Avengers" 2013 Marvel, 15 issues) and GCD 71284/76284 (Marvel 2013-2014, 15 issues, its own collected-edition series) agree; our three trades (#1-5,#6-10,#11-15) plus a variant sit inside; the stored CV link (11870, the 2005 original, flagged label-ambiguous as "the 2005 Sidekicks book") is wrong for this identity; the Heinberg & Cheung Omnibus (collecting the 2005 original) and "Young Avengers Presents" (2008 anthology) are residue, each a single item of a different run
+F 22687 wrong-cv-link | stored CV 11870 (2005 "Young Avengers") doesn't match the shelf's dominant 2013 identity; flag calls it "the 2005 Sidekicks book" confusion
+I 53962 cv=971649 gcd=- 0.9 | Heinberg & Cheung Omnibus (2022) — CV 148259/971649 exact title+year match; no GCD record found
+C 53962 cv=11870 gcd=12880 #1-12 0.9 | collects the 2005 12-issue original "Young Avengers" run (CV 11870/GCD 12880)
+I 53963 cv=199301 gcd=- 0.9 | Young Avengers Presents (2008) — CV vol 31802/issue199301 matches file exactly; no GCD record found
+I 53288 cv=- gcd=1139664 0.7 | Vol.01 Style > Substance (#1-5) — GCD 76284/1139664 (132pp, subtitle matches); the flag calls the CV per-book pick a mismatch ("the 2005 Sidekicks book") so cv left "-"; capped at the judged range's real doubt
+I 53289 cv=- gcd=1174516 0.9 | Vol.02 Alternative Culture (#6-10) — GCD 1174516 (116pp, subtitle matches)
+I 53290 cv=- gcd=1190969 0.9 | Vol.03 Mic-Drop at the Edge of Time and Space (#11-15) — GCD 1190969 (116pp, subtitle matches)
+
+S 1591 cv=136149 gcd=74603 0.9 | file's title matches CV 136149/issue851451 exactly ("Avengers Epic Collection: A Traitor Stalks Among Us", 2021); GCD line series 74603's own issue 2230606 (404pp, ISBN 978-1-302-92911-4, subtitle matches) confirms it; ComicVine mints a volume per book on this line while GCD keeps one series for the whole line
+F 1591 merge-with=1593 | same GCD line series (74603, "Avengers Epic Collection") as every sibling shelf below — ComicVine mints a volume per book, GCD keeps one series for the line
+F 1591 merge-with=1594 | see above
+F 1591 merge-with=1595 | see above
+F 1591 merge-with=1597 | see above
+F 1591 merge-with=1598 | see above
+F 1591 merge-with=1599 | see above
+F 1591 merge-with=1600 | see above
+
+S 1593 cv=131882 gcd=74603 0.9 | file's title matches CV 131882/issue817883 exactly ("...Heavy Metal", 2020); GCD line series 74603's own issue 2170562 (516pp, ISBN 978-1-302-92315-0, subtitle matches) confirms it
+F 1593 merge-with=1591 | same GCD line series (74603) as sibling shelves — see S1591's note
+
+S 1594 cv=144780 gcd=74603 0.9 | file's title matches CV 144780/issue944331 exactly ("...Kang War", 2022); GCD line series 74603's own issue 2422603 (508pp, ISBN 978-1-302-93352-4, subtitle matches) confirms it
+F 1594 merge-with=1591 | same GCD line series (74603) as sibling shelves — see S1591's note
+
+S 1595 cv=144785 gcd=74603 0.9 | file's title matches CV 144785/issue944349 exactly ("...The Crossing Line", 2021); GCD line series 74603's own issue 2364835 (524pp, ISBN 978-1-302-93444-6, subtitle matches) confirms it
+F 1595 merge-with=1591 | same GCD line series (74603) as sibling shelves — see S1591's note
+
+S 1597 cv=153155 gcd=74603 0.9 | file's title matches CV 153155/issue1010295 exactly ("...The Gathering", 2023); GCD line series 74603's own issue 2563774 (516pp, ISBN 978-1-302-95367-6, subtitle matches) confirms it
+F 1597 merge-with=1591 | same GCD line series (74603) as sibling shelves — see S1591's note
+
+S 1598 cv=153798 gcd=74603 0.9 | file's title matches CV 153798/issue1019321 exactly ("...The Yesterday Quest", 2023); GCD line series 74603's own issue 2569722 (500pp, ISBN 978-1-302-94876-4, subtitle matches) confirms it
+F 1598 merge-with=1591 | same GCD line series (74603) as sibling shelves — see S1591's note
+
+S 1599 cv=129190 gcd=74603 0.9 | file's title matches CV 129190/issue785740 exactly ("...This Beachhead Earth", 2020); GCD line series 74603's own issue 2138207 (508pp, ISBN 978-1-302-92197-2, subtitle matches) confirms it
+F 1599 merge-with=1591 | same GCD line series (74603) as sibling shelves — see S1591's note
+
+S 1600 cv=90398 gcd=74603 0.9 | file's title matches CV 90398/issue529650 exactly ("...Under Siege", 2016); GCD line series 74603's own issue 1566784 (460pp, ISBN 978-0-7851-9539-9, subtitle matches) confirms it
+F 1600 merge-with=1591 | same GCD line series (74603) as sibling shelves — see S1591's note
+
+R 1523 | no candidate matches: "Avengers - Everyday Heroes" (16pp) is not found under this title on either leg (likely a promotional/PSA one-shot); GCD's per-file pick (123359, "Avengers: Shards of Infinity", round2-folder) is an unrelated wrong-coordinate match
+N 1523 no-record | "Avengers - Everyday Heroes" — probed exact and --contains on both legs, no hit; possibly a promotional/giveaway comic outside CV/GCD's scope
+
+S 1547 cv=22448 gcd=13150 0.95 | file's title "Avengers - The Crossing" matches CV 22448/issue134725 and GCD dump 13150 exactly (both "Avengers: The Crossing" 1995 Marvel one-shot); the per-file GCD pick (1867, the Iron Man ongoing, round2-folder) is a wrong-coordinate mismatch — rejected
+
+S 1622 cv=18534 gcd=- 0.9 | file's title "Avengers - Strikefile / Avengers Strikefile" matches CV 18534/issue108917 exactly (1994 Marvel one-shot); the per-file pick ("Avengers: Shards of Infinity", round2-folder) is an unrelated wrong-coordinate match
+F 1622 provider-missing | no GCD record found for "Avengers Strikefile" (gcd=-)
+
+S 1640 cv=44477 gcd=62496 0.95 | the file's misspelled "X-Sancation" is "X-Sanction" — CV 44477 and GCD 62496 (both Marvel 2012, 4 issues) agree exactly, matching "(of 4)"; the per-file GCD pick (123359, round2-folder) is an unrelated wrong-coordinate match — rejected
+F 1640 merge-with=1641 | same "Avengers: X-Sanction" (2012) 4-issue mini as the undecided S1641 (the correctly-spelled/filed floppies #1-4), our shelf holds the misspelled duplicate
+
+S 95214 cv=36665 gcd=53275 0.95 | CV 36665 (found via name lookup, "Avengers: Earth's Mightiest Heroes" 2011 Marvel, 4 issues) and GCD 53275 (Marvel 2011, 4 issues) agree exactly, matching "(of 04)"; the per-file CV pick (19690, the 2005 volume) is a wrong-relaunch mismatch — rejected
+
+R 1604 | the shelf's own conflated-series flag is TRUE: the 1998 12-issue "Avengers Forever" mini (CV 11015/GCD 11946, collected twice as a 2009 digest reprint, judged #1-12) and the 2022-2023 "Avengers Forever" ongoing (GCD 180126, our #12-15 floppies plus two judged trades "Lords of Earthly Vengeance" #1-5 and "The Pillars" #6-11) are two distinct runs sharing only a title; plus "Avengers - Ultron Forever" (2015 one-shot, CV 81085/GCD 88041) is a third, unrelated comic
+F 1604 split-needed | Avengers Forever (1998 mini) = CV 11015/GCD 11946; Avengers Forever (2022 ongoing) = GCD 180126, per-file names CV 140532 as a candidate (needs-fetch); Avengers: Ultron Forever (2015 one-shot) = CV 81085/GCD 88041
+F 1604 needs-fetch cv=140532 | "Avengers Forever" 2021/2022 Marvel, per-file pick, no CvVolume row confirmed
+N 1604 for the lead's flag-clearing edit: 1998 mini = cv=11015 gcd=11946; 2022 ongoing = gcd=180126 cv=140532(tentative); Ultron Forever one-shot = cv=81085 gcd=88041
+I 53977 cv=- gcd=s11946 0.9 | "Avengers Forever" (2009 digest reprint) collects the 1998 12-issue mini (GCD 11946); no dedicated collected-edition GCD row found, using the series form
+I 117877 cv=- gcd=s11946 0.9 | duplicate rip of the same 1998-mini reprint
+N 53421 no-record | Vol.01 "Lords of Earthly Vengeance" trade (2022 run) — probed exact, no hit on either leg
+N 53422 no-record | Vol.02 "The Pillars" trade (2022 run) — probed exact, no hit on either leg
+I 53973 cv=81085 gcd=88041 0.9 | "Avengers - Ultron Forever" (2015 one-shot) — CV 81085/issue484892 and GCD 88041 (both 2015, one-shot) agree; a twin-heavy GCD row (6 near-duplicate rows) suggests multiple printings
+
+S 36402 cv=149555 gcd=199551 0.95 | file's title matches CV 149555/issue984065 and GCD 199551 exactly (both "Avengers Assemble Omega" 2023 Marvel one-shot); the stored CV link (56522, the unrelated 2005 volume) is wrong
+F 36402 wrong-cv-link | stored CV 56522 "Avengers: Assemble" 2005 Marvel is unrelated
+
+R 1527 | this shelf conflates two things: the 2000 4-issue "Avengers Infinity" mini (CV 6730/GCD 7239, our #4 floppy plus its own 104pp TPB reprint, judged #1-4) and the 2013 Hickman "Infinity" event's 1046pp hardcover collection (CV 70940/issue 442406, matching the file's own ComicInfo Web id) — the shelf's own arithmetic-odd flag is TRUE: 1046pp cannot be a 4-issue mini
+F 1527 split-needed | Avengers Infinity (2000 mini) = CV 6730/GCD 7239; the 1046pp HC (item 117741) is the 2013 "Infinity" event collection, CV 70940 (Web id 442406 on the file matches this volume's own issue exactly)
+I 117741 cv=442406 gcd=- 0.95 | the file's own ComicInfo Web=442406 matches CV issue 442406 of vol 70940 "Avengers: Infinity" (2014) exactly — the Hickman event HC, not the 2000 mini
+N 53978 no-record | the 104pp TPB reprint of the 2000 4-issue mini — judged range #1-4 carries a real doubt; no distinct trade-level id found on either leg beyond the shelf's own linked CV 6730 (the run, not the trade)
+
+S 12794 cv=18113 gcd=21219 0.9 | CV 18113 and GCD 21219 (Marvel 2007, limited series, 5 issues) agree for the mini itself (our #5 floppy); the 2006 one-shot "New Avengers: Illuminati" (CV 18180/GCD 17392) is a different, earlier comic — residue, one file, named
+I 53951 cv=33054 gcd=911798 0.9 | 2008 softcover trade — CV 33054/issue212987 and GCD 63033/911798 (132pp, ISBN 978-0-7851-2437-5) agree; file 115pp
+I 53987 cv=- gcd=911797 0.9 | 2012 HC — GCD 63034/911797 (132pp, ISBN 978-0-7851-2436-8); file 111pp; twin printing of the same content, no distinct CV id
+
+S 12796 cv=32450 gcd=46835 0.95 | CV 32450 and GCD 46835 (Marvel 2010, 3 issues) agree, matching "(of 03)"; our #1-3 (duplicated) matches
+
+S 1545 cv=34241 gcd=51070 0.95 | CV 34241 and GCD 51070 (Marvel 2010-2012, 9 issues) agree; our #1-9 (heavily duplicate-ripped) plus a "...Young Avengers" tie-in one-shot (GCD 56559, residue) plus the run's own collected trade sit inside — no residue cost beyond the tie-in
+I 53523 cv=- gcd=2178019 0.9 | trade — GCD 167911/2178019 (252pp, ISBN 978-0-7851-3549-4); file 234pp; a twin row (175252) exists; no distinct CV record
+
+S 22435 cv=3867 gcd=3443 0.95 | CV 3867 and GCD 3443 (Marvel 1987, 4 issues) agree; our #1-4 (duplicated) plus a "X-Men vs. Avengers (2016)" reprint trade sit inside — the trade is the run's own, no residue cost
+I 53546 cv=191724 gcd=1098933 0.9 | trade (2016 reprint of the 2010 printing) — CV 30966/191724 and GCD 73328/1098933 (132pp, ISBN 978-0-7851-3809-9) agree; file 136pp
+I 93105 cv=191724 gcd=1098933 0.9 | duplicate copy of the same "X-Men vs. Avengers" (2016) trade as item 53546
+
+S 1656 cv=57667 gcd=73339 0.9 | file's year (2013) matches CV 57667/issue387638 and GCD dump 73339 (both "Avengers vs. Thanos" 2013 Marvel); the stored CV link (109593, the 2018 reprint) is wrong for this printing
+F 1656 merge-with=26552 | same "Avengers vs. Thanos" (2013) one-shot as B-059's S26552 - same comic, a duplicate rip in another folder
+F 1656 wrong-cv-link | stored CV 109593 is the 2018 True Believers reprint; this 453pp file is the original 2013 collection
+
+R 20597 | two unrelated comics share this shelf: the 1988 4-issue "Black Panther" mini (CV 4045/GCD 3640, our #1-4) and the 2024 "Ultimate Black Panther" ongoing (GCD 208771, cv=156647 per the stored link, our #8 floppy plus a variant-cover extract) — different eras, both whole, not residue
+F 20597 split-needed | Black Panther (1988) = CV 4045/GCD 3640; Ultimate Black Panther (2024) = CV 156647/GCD 208771

@@ -9,12 +9,18 @@ the extra rules PLAN §7-S names — and one of them is not bookkeeping but a sa
 sharing a `cv=` MERGE those two shelves at the next `books-resolve --series` (§6.5), which is right for a
 duplicated shelf and catastrophic for two different runs, so it is refused unless one line says so.
 
-Grammar (PLAN §7-S):
+Grammar (PLAN §7-S, and SPAN_RUN_IDS.md for `C`):
     S <sid> cv=<volumeId>|- gcd=<gcdSeriesId>|- <conf> | <evidence>
     R <sid> | <why no identity can be stored>
     F <sid> <flag> | <detail>
     I <itemId> cv=<issueId>|- gcd=<issueId>|- isbn=<isbn>|- <conf> | <evidence>
-    N <sid> <note>
+    C <itemId> cv=<volumeId>|- gcd=<seriesId>|- [mu=] [barney=] [inducks=] [marvel=] #<a>-<b> <conf> | <evidence>
+    N <sid|itemId> <note>          (`N <itemId> no-record | why` is an item batch's refusal)
+
+An `X-NNN` batch is the ITEM pass (TOOLS_TODO 16): its `.ids` holds ITEM ids, its lines are only `I` / `C` /
+`N`, and its coverage contract is "every book in the batch has an `I` line or an explicit `N <item>
+no-record`". The shelf-must-be-decided rule a `C` line carries is satisfied there by the shelf's own landed
+`S` — the batch is emitted FROM those shelves and re-states none of them.
 """
 import os
 import re
@@ -45,14 +51,31 @@ class Checker:
             self.merged[old] = new
         self.all_series = {r[0] for r in self.con.execute("SELECT Id FROM Series")}
         self.conflated = {r[0] for r in self.con.execute(
-            """SELECT SeriesId FROM ContainmentFlag WHERE Flag='conflated-series' AND SeriesId IS NOT NULL
+            """SELECT SeriesId FROM ContainmentFlag WHERE Flag IN ('conflated-series','overlap-in-series') AND SeriesId IS NOT NULL
                AND (ReviewState IS NULL OR ReviewState IN ('','Pending','Open'))""")}
+        # An S a later REVISIT file has overridden is no longer the line in force: the open-flag rule must not
+        # fail the audit-trail copy of it in the older batch (R-016 refused S66039 over A-022's S).
+        _d, _w, _sup, _dup = idbase.scan_decisions()
+        self.superseded_pairs = {(sid, os.path.basename(f)) for sid, olds in _sup.items() for f in olds}
 
     def item_exists(self, iid):
         if self.items is None:
             self.items = {r[0] for r in self.con.execute(
                 "SELECT Id FROM Item WHERE Kind = 0 AND coalesce(IsExcluded,0) = 0")}
         return iid in self.items
+
+    def item_shelf(self, iid):
+        """The shelf a book sits on — a `C` line's range is judged on ITS shelf, so the file that decides
+        that shelf is the file allowed to say what the book collects."""
+        if getattr(self, "_item_shelf", None) is None:
+            self._item_shelf = {r[0]: r[1] for r in self.con.execute(
+                "SELECT Id, SeriesId FROM Item WHERE Kind = 0 AND coalesce(IsExcluded,0) = 0")}
+        return self._item_shelf.get(iid)
+
+    def mu_series_exists(self, mid):
+        if getattr(self, "_mu", None) is None:
+            self._mu = {r[0] for r in self.con.execute("SELECT Id FROM MuSeries")}
+        return mid in self._mu
 
     def cv_volume_exists(self, vid):
         """Real means: we hold the volume, or the local ComicVine rip does. Nothing is accepted on the
@@ -152,8 +175,15 @@ def parse(path, ck, errors):
     else:
         want = [int(x) for x in open(ip, encoding="utf-8").read().split()]
 
-    decided, out = {}, {"S": [], "R": [], "F": [], "I": [], "N": [], "landed": []}
+    items_batch = idbase.is_item_batch(path)
+    decided, out = {}, {"S": [], "R": [], "F": [], "I": [], "C": [], "N": [], "landed": [],
+                        "no_record": set(), "kind": "X" if items_batch else "S"}
     cv_seen, gcd_seen, merges = {}, {}, set()
+    # (itemId, leg, key) -> line number. Since TOOLS_TODO 17 a book may carry SEVERAL `C` lines — one per
+    # (leg, run) — so the thing that may not be said twice is a run, not an item.
+    collected = {}
+    c_shelves = []          # (loc, itemId, shelf) — checked against `want`/`decided` once the file is read
+    i_items = set()         # every item this file gives an `I` line, for the item batch's coverage
 
     for n, raw in enumerate(open(path, encoding="utf-8"), 1):
         line = raw.strip()
@@ -161,7 +191,7 @@ def parse(path, ck, errors):
             continue
         kind, _, rest = line.partition(" ")
         loc = f"{base}:{n}"
-        if kind not in ("S", "R", "F", "I", "N"):
+        if kind not in ("S", "R", "F", "I", "C", "N"):
             errors.append(f"{loc}: unknown directive '{kind}'")
             continue
         if kind == "N":
@@ -169,7 +199,17 @@ def parse(path, ck, errors):
             if not head.lstrip("S").isdigit():
                 errors.append(f"{loc}: N needs a shelf id")
                 continue
-            out["N"].append((int(head.lstrip("S")), note.strip()))
+            nid = int(head.lstrip("S"))
+            out["N"].append((nid, note.strip()))
+            # `N <itemId> no-record | why` is the item pass's one refusal: this book has no record of its
+            # own in any catalog we hold. It is the only thing that covers a book in an `X-` batch other
+            # than an `I` line, and it has to be EXPLICIT — silence is what the batch exists to remove.
+            if note.strip().lower().startswith("no-record"):
+                if len(note.split("|", 1)[-1].strip()) < MIN_EVIDENCE:
+                    errors.append(f"{loc}: N {nid} no-record needs a reason of at least {MIN_EVIDENCE} "
+                                  f"characters after '|' — what was looked for and where")
+                else:
+                    out["no_record"].add(nid)
             continue
         if "|" not in rest:
             errors.append(f"{loc}: no '|' clause — every decision must say what agreed")
@@ -228,8 +268,8 @@ def parse(path, ck, errors):
             if len(why) < MIN_EVIDENCE:
                 errors.append(f"{loc}: evidence clause is {len(why)} characters, minimum {MIN_EVIDENCE} — "
                               f"name WHAT agreed and the arithmetic that held")
-            if sid in ck.conflated:
-                errors.append(f"{loc}: S on S{sid}, which carries an OPEN conflated-series flag — a shelf "
+            if sid in ck.conflated and (sid, base) not in ck.superseded_pairs:
+                errors.append(f"{loc}: S on S{sid}, which carries an OPEN conflated-series / overlap-in-series flag — a shelf "
                               f"that is several runs has no one identity (PLAN §3.3); write F + R")
             if cvv is not None:
                 if not cvv.isdigit() or not ck.cv_volume_exists(int(cvv)):
@@ -276,7 +316,54 @@ def parse(path, ck, errors):
                     errors.append(f"{loc}: unknown GCD issue id {g}")
             if not any(kv.get(k) for k in ("cv", "gcd", "isbn")):
                 errors.append(f"{loc}: I item {iid} names no id")
+            i_items.add(iid)
             out["I"].append((iid, kv.get("cv"), kv.get("gcd"), kv.get("isbn"), conf, why))
+            continue
+
+        if kind == "C":
+            # "This book collects issues a-b of THAT run." The ids name a RUN on any leg that has one; the
+            # range is in that run's numbering, which is the whole point — a range with no run named is the
+            # shelf's own coordinate system, and that is what the `C` line exists to stop assuming.
+            iid, ids, a, b, conf, err = idbase.parse_c_head("C " + " ".join(head))
+            if err:
+                errors.append(f"{loc}: {err}")
+                continue
+            # One `C` per (item, leg, run). Several are not only allowed but required for a trade that
+            # collects two minis and for every omnibus (TOOLS_TODO 17) — what would be a defect is saying
+            # the SAME run twice, because the two lines would then disagree about one row's range.
+            for leg, key in sorted(ids.items()):
+                if (iid, leg, key) in collected:
+                    errors.append(f"{loc}: item {iid} already names {leg}={key} on line "
+                                  f"{collected[(iid, leg, key)]} — one C line per (book, leg, run); a "
+                                  f"second range for the same run is two answers to one question")
+                collected[(iid, leg, key)] = n
+            if not ck.item_exists(iid):
+                errors.append(f"{loc}: unknown item id {iid}")
+            else:
+                c_shelves.append((loc, iid, ck.item_shelf(iid)))
+            if not ids:
+                errors.append(f"{loc}: C item {iid} names no run — at least one of "
+                              f"{', '.join(sorted(idbase.RUN_LEGS))} must carry an id")
+            if a is not None and b is not None and a > b:
+                errors.append(f"{loc}: range #{a:g}-{b:g} is not ascending")
+            if conf not in idbase.CONFIDENCES:
+                errors.append(f"{loc}: bad confidence '{conf}' — must be one of {', '.join(idbase.CONFIDENCES)}")
+            if len(why) < MIN_EVIDENCE:
+                errors.append(f"{loc}: evidence clause is {len(why)} characters, minimum {MIN_EVIDENCE} — "
+                              f"name the run (its title, year, count) and why this book is that range")
+            # cv / gcd / mu are checked against a catalog we hold; barney, marvel and inducks have no local
+            # catalog at all (the Disney series code `us/LTSMB`, a 2000 AD index key), so they stand as typed.
+            if ids.get("cv") is not None:
+                if not ids["cv"].isdigit() or not ck.cv_volume_exists(int(ids["cv"])):
+                    errors.append(f"{loc}: unknown ComicVine volume id {ids['cv']} — not in CvVolume, the "
+                                  f"local rip, or any stored candidate")
+            if ids.get("gcd") is not None:
+                if not ids["gcd"].isdigit() or not ck.gcd_series_exists(int(ids["gcd"])):
+                    errors.append(f"{loc}: unknown GCD series id {ids['gcd']} — not in legs.GcdSeries or the dump")
+            if ids.get("mu") is not None:
+                if not ids["mu"].isdigit() or not ck.mu_series_exists(int(ids["mu"])):
+                    errors.append(f"{loc}: unknown MangaUpdates series id {ids['mu']} — not in MuSeries")
+            out["C"].append((iid, ids, a, b, conf, why))
             continue
 
     for vid, sids in cv_seen.items():
@@ -287,7 +374,43 @@ def parse(path, ck, errors):
         if len(set(sids)) > 1 and not (set(sids) & merges):
             errors.append(f"{base}: shelves {sorted(set(sids))} share gcd={gid} with no 'F <sid> merge-with=' line")
 
-    if want is not None:
+    # A `C` line belongs to the file that READ that book's shelf. Without this a batch could rewrite the
+    # containment of a shelf nobody in this pass looked at — and a Curated span is what the file
+    # de-duplication acts on.
+    # In an item batch the `.ids` are BOOKS, so the shelves this file may speak for are their shelves —
+    # each already decided by the `S` line the batch was emitted from, which is what the rule asks for.
+    allowed = set(decided) | ({ck.item_shelf(i) for i in (want or ())} if items_batch else set(want or ()))
+    # A shelf this file decided that a landed wave then MERGED AWAY carries its books to the survivor
+    # (Criminal S96188 -> S4343 in wave 7): the C lines were read on the shelf the file decided and landed
+    # there; the survivor is the same shelf under a new id. Follow the resolver's own record to closure.
+    frontier = set(allowed)
+    while frontier:
+        nxt = {ck.merged[s] for s in frontier if s in ck.merged} - allowed
+        allowed |= nxt
+        frontier = nxt
+    for loc, iid, shelf in c_shelves:
+        if shelf is None:
+            errors.append(f"{loc}: item {iid} sits on no shelf — a C line's range is judged on its shelf")
+        elif allowed and shelf not in allowed:
+            errors.append(f"{loc}: item {iid} belongs to shelf S{shelf}, which this file neither decides nor "
+                          f"holds in its .ids — say what a book collects only on a shelf you have read")
+
+    if want is not None and items_batch:
+        # The item pass's coverage contract: every BOOK in the batch is answered, by its own record (`I`) or
+        # by an explicit refusal (`N <item> no-record`). A `C` line is not coverage — it says what the book
+        # collects, not what the book IS — which is the gap TOOLS_TODO 16 exists to close.
+        alive = [i for i in want if ck.item_exists(i)]
+        missing = [i for i in alive if i not in i_items and i not in out["no_record"]]
+        stray = sorted({i for i in i_items if i not in set(want)})
+        if missing:
+            errors.append(f"{base}: {len(missing)} book(s) in the batch have no I line and no "
+                          f"'N <item> no-record | why': items {sorted(missing)[:12]}")
+        if stray:
+            errors.append(f"{base}: {len(stray)} I line(s) for books not in this batch: {stray[:12]}")
+        for sid, _why in out["S"] + [(s, w) for s, w in out["R"]]:
+            errors.append(f"{base}: an X- batch carries only I / C / N lines — S{sid} re-decides a shelf "
+                          f"whose identity already stands (write a revisit batch instead)")
+    elif want is not None:
         alive = [s for s in want if s in ck.shelves]
         missing = [s for s in alive if s not in decided]
         extra = [s for s in decided if s not in set(want)]
@@ -323,7 +446,8 @@ def main():
         rev = "revisit" if idbase.revisit_rank(path) is not None else ""
         landed = f"  {len(out['landed'])} landed" if out["landed"] else ""
         print(f"  {tag} {os.path.basename(path):<16} {len(out['S']):>4} S {len(out['R']):>4} R "
-              f"{len(out['F']):>3} F {len(out['I']):>3} I {len(out['N']):>3} N  {rev}{landed}")
+              f"{len(out['F']):>3} F {len(out['I']):>3} I {len(out['C']):>3} C {len(out['N']):>3} N  "
+              f"{rev}{landed}")
         all_landed.extend((os.path.basename(path), sid, new) for sid, new in out["landed"])
         for e in errors:
             print(f"        {e}")
@@ -388,11 +512,21 @@ def main():
                     refused.add(sid)
                 elif sid in rec["cv"]:
                     decided_cv[sid] = rec["cv"][sid]
+        # …nor is a partner whose stored link apply's rule 1 will CLEAR: decided `S cv=-` (or `R`) while
+        # flagged wrong-cv-link (the Abe Sapien pair, R-022: the trade line S64085 sheds the 2013 run's
+        # 59507 so the run S101653 can keep it). Computed here, before the loop, so the loop can see it.
+        cleared = set()
+        for p2, rec in _decides.items():
+            for sid, fls in rec.get("flags_full", {}).items():
+                if winner.get(sid) != p2 or not any(fl.split("=")[0] == "wrong-cv-link" for fl in fls):
+                    continue
+                if rec["kinds"].get(sid) == "R" or (rec["kinds"].get(sid) == "S" and rec["cv"].get(sid) is None):
+                    cleared.add(sid)
         for vid, sids in sorted(cv_owner.items()):
             others = stored.get(vid, set()) - sids
-            # a partner re-linked elsewhere, or refused, is not a partner
+            # a partner re-linked elsewhere, refused, or cleared at apply, is not a partner
             others = {o for o in others
-                      if not (o in refused or (o in decided_cv and decided_cv[o] != vid))}
+                      if not (o in refused or o in cleared or (o in decided_cv and decided_cv[o] != vid))}
             if not others:
                 continue
             declared = {t for s in sids for t in merge_targets.get(s, set())}
@@ -401,7 +535,9 @@ def main():
                 total += 1
                 print(f"        FAIL cv={vid} on shelf/shelves {sorted(sids)} is ALREADY the stored "
                       f"CvVolumeId of {sorted(undeclared)} — the resolve merges them; declare it with "
-                      f"'F {sorted(sids)[0]} merge-with={sorted(undeclared)[0]}' or link a different volume")
+                      f"'F {sorted(sids)[0]} merge-with={sorted(undeclared)[0]}' if it is the SAME comic; if the partner is a "
+                      f"different comic, write the S line with cv=- and 'N {sorted(sids)[0]} withheld cv={vid} — … S{sorted(undeclared)[0]} …' "
+                      f"(withheld_pairs.py queues both sides for a revisit batch)")
         # Rule 1 of the applier CLEARS the stored Cv link of any shelf that is refused (or linked to
         # nothing) while carrying `wrong-cv-link`. That clear is what stops wave 2's fusion, so it must be
         # visible here, beside the collision rule it interacts with, rather than only in the apply log.

@@ -54,9 +54,16 @@ namespace MovieTheater.Books.Resolve
             /// exactly the issues it claims. THIS is what makes a stored row hard to displace, and the label
             /// is not — gold confirms at 47.8% against issue-level truth. A row typed by hand in the review
             /// screen is a person's answer and outranks a file read the same way.
+            ///
+            /// <para>An <c>identity:</c> row joins them (Eric's ruling, 2026-09-16). It is the identity pass's
+            /// answer, read off the whole provider packet for that shelf — the higher-grade read — and every
+            /// landing re-runs <c>pass2</c> into this verb, so without this a model line at equal-or-greater
+            /// confidence would overwrite the range a reader wrote minutes earlier, and an <c>unknown</c> line
+            /// would retract it. The correct data has to persist; a disagreement is flagged, not written.</para>
             /// </summary>
             public bool IsProven =>
                 (ProviderRef?.StartsWith("admin:", StringComparison.Ordinal) ?? false)
+                || (ProviderRef?.StartsWith("identity:", StringComparison.Ordinal) ?? false)
                 || SpanEvidence.SelfProving(Note, Start ?? 0, End ?? -1);
         }
 
@@ -160,6 +167,12 @@ namespace MovieTheater.Books.Resolve
             var differs = existing.Start != s || existing.End != e;
             if (line.Confidence >= (existing.Confidence ?? 0))
             {
+                if (existing.IsProven && !differs)
+                    // The same range, from a lesser read. Rewriting it would replace the row's ProviderRef
+                    // and Note with this pass's — demoting an `admin:`/`identity:`/quoted row to `model:`
+                    // and making it overwritable next time. Nothing would be gained: the range is already
+                    // there. So the row stands, untouched and still proven (Eric, 2026-09-16).
+                    return Verdict.Kept;
                 if (differs && existing.IsProven)
                 {
                     // Equal confidence never displaces a PROVEN row — one whose note quotes the book naming

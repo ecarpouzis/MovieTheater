@@ -86,7 +86,10 @@ CHECKS = [
                        WHERE cd.ParsedSeriesKey = d.SeriesKey AND i.SeriesId IS NOT NULL)
        AND NOT EXISTS (SELECT 1 FROM SeriesMerge m
                        WHERE 'S' || m.OldSeriesId = d.Target OR cast(m.OldSeriesId AS TEXT) = d.Target
-                          OR d.Target LIKE '%S' || m.OldSeriesId)""", False),
+                          OR d.Target LIKE '%S' || m.OldSeriesId
+                          -- a clear-link decision's Target is the PROVIDER ('Cv'); its shelf is on the
+                          -- evidence line ("F 12048 wrong-cv-link") — wave 5: S12048 merged into S63133
+                          OR d.EvidenceJson LIKE '%"line": "F ' || m.OldSeriesId || ' %')""", False),
 
     ("LEAD an identity decision against a shelf a landed wave merged away (it took effect)", """
      SELECT d.Id, d.SeriesKey, d.Target FROM SeriesInferenceDecision d
@@ -95,7 +98,8 @@ CHECKS = [
        AND NOT EXISTS (SELECT 1 FROM Series s WHERE s.ParsedKey = d.SeriesKey)
        AND EXISTS (SELECT 1 FROM SeriesMerge m
                    WHERE 'S' || m.OldSeriesId = d.Target OR cast(m.OldSeriesId AS TEXT) = d.Target
-                      OR d.Target LIKE '%S' || m.OldSeriesId)""", True),
+                      OR d.Target LIKE '%S' || m.OldSeriesId
+                      OR d.EvidenceJson LIKE '%"line": "F ' || m.OldSeriesId || ' %')""", True),
 
     ("an ItemProviderLink whose item no longer exists", """
      SELECT l.ItemId, l.Provider, l.ProviderKey FROM ItemProviderLink l

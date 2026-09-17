@@ -4,6 +4,7 @@
 `python next_batch.py --redo A-002 A-005 ...`                     regenerate emitted batches, same ids
 `python next_batch.py --revisit 17809 1448 [--note "why"]`        re-read named shelves after a ruling changed
 `python next_batch.py --revisit-file revisit.txt [--note "why"]`  the same, taking the sids from a sheet
+`python next_batch.py --items [--books 150] [--dry-run]`          an `X-NNN` batch of BOOKS on decided shelves
 
 A batch of 120 tier-A shelves can be 400 lines or 4,000 depending on how many of them are 60-file runs that
 do not fold, so a shelf count is not a workload. This fills a batch to ~1,400 packet lines, subject to a
@@ -34,6 +35,8 @@ import identity_packet
 CEILING = {"A": 150, "B": 150, "C": 60, "D": 120}
 TARGET_LINES = 1400
 SOLO_LINES = 300
+# The ITEM pass is sized in BOOKS, not lines: a book is two lines and the reader's cost is per book.
+BOOK_CEILING = 150
 
 # --redo takes a LIST: after a packet-shape change every pending batch is regenerated in one call, and a
 # batch that has already been read is regenerated with the ids it was emitted with, so a decision file
@@ -56,11 +59,15 @@ while k < len(sys.argv):
     k += 1
 tier = (opt.get("tier") or "A").upper()
 target = int(opt.get("lines") or TARGET_LINES)
+ITEMS = "--items" in sys.argv
+DRY = "--dry-run" in sys.argv
 
 os.makedirs(idbase.BATCHES, exist_ok=True)
 st = idbase.load_state()
 st.setdefault("cursors", {"A": 0, "B": 0, "C": 0, "D": 0})
+st["cursors"].setdefault("X", 0)
 st.setdefault("emitted", [])
+st.setdefault("items", [])
 
 ev = Evidence()
 ctx = identity_packet.Ctx(ev)
@@ -80,6 +87,91 @@ def write_batch(name, blocks, ids):
         f.write("\n".join(str(s) for s in ids) + "\n")
     return len(lines)
 
+
+if ITEMS:
+    # ── the ITEM pass (TOOLS_TODO 16) ────────────────────────────────────────────────────────────
+    # The shelves are decided; these are the BOOKS on them that are not. Two populations, defined once
+    # in idbase so the emitter and `identity_coverage.py` cannot drift: a collected edition with no `I`
+    # line of its own, and a book on a collected LINE whose judged range names no run. They overlap
+    # heavily (a trade-line book is usually both), so the batch is their UNION, grouped by shelf —
+    # shelf context is the whole reason an item-level answer is cheap.
+    decides, winner, _sup, _dup = idbase.scan_decisions()
+    pop = idbase.item_population(ev, decides, winner)
+    want = {i: pop["shelf_of"][i] for i in pop["no_i"]}
+    want.update({i: pop["shelf_of"][i] for i in pop["no_c"]})
+    done = {i for b in st["items"] for i in b["ids"]}
+    todo = [i for i in want if i not in done]
+
+    folders = {}
+    for sid, path in ev.con.execute("""SELECT i.SeriesId, i.Path FROM Item i
+                                       WHERE i.Kind = 0 AND coalesce(i.IsExcluded,0) = 0
+                                         AND i.SeriesId IS NOT NULL"""):
+        if sid in ev.shelf_set:
+            folders.setdefault(sid, Counter())[idbase.short_path(os.path.dirname(path or ""))] += 1
+    dom = {sid: c.most_common(1)[0][0] for sid, c in folders.items()}
+    by_shelf = {}
+    for iid in todo:
+        by_shelf.setdefault(want[iid], []).append(iid)
+    order = sorted(by_shelf, key=lambda s: (dom.get(s, ""), s))
+
+    def decision_of(sid):
+        """The winning S line for a shelf, and the notes beside it — restated, never re-decided."""
+        w = winner.get(sid)
+        rec = decides[w]
+        line = ""
+        for raw in open(w, encoding="utf-8"):
+            t = raw.strip()
+            if t.startswith(("S ", "S" + str(sid))) and t.split()[1].lstrip("S").isdigit() \
+                    and int(t.split()[1].lstrip("S")) == sid:
+                line = t.split("|", 1)[0] + "| " + (t.split("|", 1)[1].strip()[:150] if "|" in t else "")
+                break
+        notes = []
+        for raw in open(w, encoding="utf-8"):
+            t = raw.strip()
+            if t.startswith("N ") and t.split()[1].lstrip("S").isdigit() \
+                    and int(t.split()[1].lstrip("S")) == sid:
+                notes.append(t[2:].strip())
+        return {"line": line or f"S {sid} (see {os.path.basename(w)})", "cv": rec["cv"].get(sid),
+                "gcd": rec["gcd"].get(sid), "conf": rec["confs"].get(sid),
+                "batch": os.path.splitext(os.path.basename(w))[0], "notes": notes}
+
+    cap = int(opt.get("books") or BOOK_CEILING)
+    take_ids, blocks, n_books = [], [], 0
+    for sid in order:
+        its = sorted(by_shelf[sid])
+        if take_ids and n_books + len(its) > cap:
+            break
+        blocks.append(identity_packet.item_packet(sid, ev, ctx, its, decision_of(sid)))
+        take_ids += its
+        n_books += len(its)
+        if n_books >= cap:
+            break
+
+    name = f"X-{1 + len(st['items']):03d}"
+    counts = {"books without an I line": len(pop["no_i"]),
+              "line-shelf books with a judged range and no run ref": len(pop["no_c"]),
+              "line-shelf books with NO judged range at all (not in this population)": len(pop["no_span"]),
+              "union still to hand out": len(todo), "accepted shelves": len(pop["accepted"]),
+              "collected-line shelves": len(pop["line_shelves"])}
+    if DRY:
+        print({"batch": name, "books": n_books, "shelves": len(blocks), "DRY RUN": True})
+        for k, v in counts.items():
+            print(f"   {v:>8,}  {k}")
+        print("\n" + "\n".join(blocks[0] if blocks else ["(nothing to emit)"]))
+        raise SystemExit(0)
+    if not take_ids:
+        print({"batch": None, "books": 0, "remaining": 0})
+        raise SystemExit(0)
+    written = write_batch(name, blocks, take_ids)
+    st["items"].append({"batch": name, "kind": "X", "ids": take_ids, "shelves": len(blocks),
+                        "lines": written, "at": time.strftime("%Y-%m-%d %H:%M:%S")})
+    st["cursors"]["X"] = st["cursors"].get("X", 0) + len(take_ids)
+    idbase.save_state(st)
+    print({"batch": name, "books": len(take_ids), "shelves": len(blocks), "lines": written,
+           "remaining": len(todo) - len(take_ids)})
+    for k, v in counts.items():
+        print(f"   {v:>8,}  {k}")
+    raise SystemExit(0)
 
 if revisit or opt.get("revisit-file"):
     # A revisit re-decides shelves that were already read, because the RULING changed — not because the

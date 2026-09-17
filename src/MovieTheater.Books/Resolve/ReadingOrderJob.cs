@@ -29,6 +29,27 @@ namespace MovieTheater.Books.Resolve
         /// <summary>The persisted cursor — the SAME key the admin recompute route pages with (see <see cref="JobCursor"/>).</summary>
         public const string CursorKey = "books:recompute:reading-order";
 
+        /// <summary>
+        /// One run a span's range counts in: the leg it is named on, the run's id there, and the range in
+        /// THAT run's numbering (null = the same range as the span's own, which is the ordinary case).
+        ///
+        /// <para>A LIST, not a map keyed by leg: a trade may collect two minis and an omnibus four, so one
+        /// book names several runs on the SAME leg (Hellboy Vol. 06/12, every Library Edition). The same run
+        /// named on two legs is two entries too — that is what makes two spans comparable on any shared
+        /// (leg, key).</para>
+        /// </summary>
+        public readonly record struct SpanRun(Provider Provider, string Key, double? Start, double? End);
+
+        /// <summary>
+        /// The one span an item is believed to have, plus the RUNS that range counts in.
+        ///
+        /// <para><paramref name="Runs"/> is the span's <c>CollectedEditionSpanRun</c> rows — "#1-5 OF Wake
+        /// the Devil", named on whichever legs have a run concept. Null or empty means unknown, which is what
+        /// almost every span says and is NOT a claim that two spans describe the same run.</para>
+        /// </summary>
+        public readonly record struct SpanInfo(double Start, double End, EditionSource Source, string? Note,
+            IReadOnlyList<SpanRun>? Runs = null);
+
         private sealed class Row
         {
             public int ItemId;
@@ -150,9 +171,9 @@ FROM Item i
 LEFT JOIN Series s ON s.Id = i.SeriesId
 LEFT JOIN ComicDetail cd ON cd.ItemId = i.Id
 LEFT JOIN ComicEmbedded ce ON ce.ItemId = i.Id
-LEFT JOIN ItemProviderLink cvl ON cvl.ItemId = i.Id AND cvl.Provider = {(int)Provider.Cv} AND cvl.Status = {(int)LinkStatus.Matched}
+LEFT JOIN ItemProviderLink cvl ON cvl.ItemId = i.Id AND cvl.Provider = {(int)Provider.Cv} AND cvl.Status IN {LinkStatuses.UsableSql}
 LEFT JOIN CvIssue cvi ON cvi.Id = CAST(cvl.ProviderKey AS INTEGER)
-LEFT JOIN ItemProviderLink bl ON bl.ItemId = i.Id AND bl.Provider = {(int)Provider.Barney} AND bl.Status = {(int)LinkStatus.Matched}
+LEFT JOIN ItemProviderLink bl ON bl.ItemId = i.Id AND bl.Provider = {(int)Provider.Barney} AND bl.Status IN {LinkStatuses.UsableSql}
 LEFT JOIN BarneyProg bp ON bp.ProgNo = CAST(bl.ProviderKey AS INTEGER)
 WHERE i.SeriesId = {seriesId} AND i.Kind = 0 AND coalesce(i.IsExcluded, 0) = 0
 ORDER BY i.Id"))
@@ -242,8 +263,8 @@ ORDER BY i.Id"))
             ReconcileCollapsedShelf(shelf);
 
             // Spans are read at most once per series, and only when something actually asks for them.
-            Dictionary<int, (double Start, double End, EditionSource Source, string? Note)>? spanCache = null;
-            Dictionary<int, (double Start, double End, EditionSource Source, string? Note)> Spans() =>
+            Dictionary<int, SpanInfo>? spanCache = null;
+            Dictionary<int, SpanInfo> Spans() =>
                 spanCache ??= LoadSpans(hot, seriesId);
 
             DateContainers(hot, seriesId, rows, collections, Spans);
@@ -281,7 +302,7 @@ ORDER BY i.Id"))
         private static void DateContainers(
             TargetWriter hot, int seriesId, List<Row> rows,
             List<(Row Row, ReadingOrderParser.NormalizedDate Own)> collections,
-            Func<Dictionary<int, (double Start, double End, EditionSource Source, string? Note)>> spans)
+            Func<Dictionary<int, SpanInfo>> spans)
         {
             if (collections.Count == 0) return;
             var byItem = spans();
@@ -379,7 +400,7 @@ WHERE s.Id = {seriesId} AND cvi.IssueNumber IS NOT NULL"))
         /// </summary>
         private static void PullInCollections(
             List<Row> rows,
-            Func<Dictionary<int, (double Start, double End, EditionSource Source, string? Note)>> loadSpans)
+            Func<Dictionary<int, SpanInfo>> loadSpans)
         {
             if (rows.Count(r => r.Tier == ReadingOrderParser.TierMain && r.Orderable) < 3) return;
 
@@ -415,7 +436,7 @@ WHERE s.Id = {seriesId} AND cvi.IssueNumber IS NOT NULL"))
         /// issue-keyed Gcd, with degenerate "#N-#N" spans discarded on anything shaped like a collection.
         /// One read per call: the candidates plus the two facts the selection needs about the item itself.
         /// </summary>
-        public static Dictionary<int, (double Start, double End, EditionSource Source, string? Note)> LoadSpans(TargetWriter hot, int? seriesId = null)
+        public static Dictionary<int, SpanInfo> LoadSpans(TargetWriter hot, int? seriesId = null)
         {
             // Narrowed by the ITEM's series, never by the span's own denormalized `SeriesId`: that copy goes
             // stale when identity moves an item (1,397 of 9,911 rows disagree with `Item.SeriesId` today), and
@@ -467,11 +488,33 @@ WHERE ces.IssueStart IS NOT NULL AND ces.IssueEnd IS NOT NULL{where}"))
                     Blank(p[4]), Blank(p[5])));
             }
 
-            var spans = new Dictionary<int, (double, double, EditionSource, string?)>();
+            // The run refs of every span in scope, keyed by (item, source) — the WINNING span's refs are the
+            // ones that travel, so they are attached after the selection, not before it. One sweep, the same
+            // shape as the candidate read above; items with none (almost all of them) get null.
+            var runsBySpan = new Dictionary<(int ItemId, EditionSource Source), List<SpanRun>>();
+            foreach (var (itemId, payload) in hot.Pairs($@"
+SELECT r.ItemId, r.Source || char(31) || r.Provider || char(31) || r.ProviderKey || char(31)
+    || coalesce(r.IssueStart,'') || char(31) || coalesce(r.IssueEnd,'')
+FROM CollectedEditionSpanRun r
+JOIN Item i ON i.Id = r.ItemId{where}"))
+            {
+                var p = payload!.Split(TargetWriter.Sep);
+                if (p.Length < 3 || p[2].Length == 0) continue;
+                var key = ((int)itemId, (EditionSource)int.Parse(p[0]));
+                if (!runsBySpan.TryGetValue(key, out var list)) runsBySpan[key] = list = new List<SpanRun>();
+                list.Add(new SpanRun((Provider)int.Parse(p[1]), p[2], Dbl(p, 3), Dbl(p, 4)));
+            }
+
+            static double? Dbl(string[] p, int at) =>
+                p.Length > at && p[at].Length > 0
+                    ? double.Parse(p[at], System.Globalization.CultureInfo.InvariantCulture) : null;
+
+            var spans = new Dictionary<int, SpanInfo>();
             foreach (var (id, entry) in byItem)
                 if (SpanSelection.Select(entry.Candidates, entry.IsCollection, entry.PageCount, entry.VolumeNo)
                         is SpanSelection.Candidate w)
-                    spans[id] = (w.Start, w.End, w.Source, w.Note);
+                    spans[id] = new SpanInfo(w.Start, w.End, w.Source, w.Note,
+                        runsBySpan.TryGetValue((id, w.Source), out var runs) ? runs : null);
             return spans;
         }
 

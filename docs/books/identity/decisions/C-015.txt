@@ -1,0 +1,218 @@
+# C-015 — Injustice Years/JSA/Justice Society/Justice League (huge vertical)/Legion of Super-Heroes/Legionnaires/
+# Lobo/Lois Lane/Martian Manhunter shelves. Recurring shapes: DC's digital-first Injustice "Year N" chapters vs
+# GCD's print-issue count (the same digital-chapter/print-issue split throughout); the per-file CV matcher's
+# wrong-relaunch trap hit nearly every JLA/Legion/Lobo/Martian Manhunter shelf with a same-title later or earlier
+# volume; round2-folder's usual one-shot bleed; several open overlap-in-series flags on Justice League/Justice
+# League Dark/Justice League International/Legion/Lobo shelves turned out to describe franchise-wide "every era
+# gets a Vol.01" naming collisions across SIBLING shelves, not real conflation on the flagged shelf (stale-flag,
+# accepted failures); S9479 (eleven Injustice trades, one per "Year") and S17151 (a Legion misc bucket) were real
+# multi-comic conflations and got split. lookup.py recovered ids the packet's own blocks didn't surface for most
+# modern DC ongoings (Injustice Years Four/Five, Justice League Dark both eras, Justice League International,
+# Justice League 2016, Legion 2005/2011/2014, Lobo 2014, JLA: Year One).
+
+S 102393 cv=81822 gcd=89287 0.9 | CV 81822 "Injustice: Gods Among Us Year Four" 2015 (count 24) matches our full digital-chapter ladder exactly; GCD 89287 (count 12, print issues) corroborates on 12/24 files — the same digital-chapter/print-issue split as the other Injustice years; per-file CV stamped the parent Year One volume (55835) across all 24 files (wrong-relaunch trap)
+F 102393 wrong-cv-link | per-file CV stamped the parent Year One volume (55835) title-wide
+
+S 102392 cv=86759 gcd=95468 0.9 | CV 86759 "Injustice: Gods Among Us Year Five" 2015 (count 40) matches our digital-chapter ladder closely (39 files); GCD 95468 (count 20, print issues) corroborates on 20/39 files — the digital-chapter/print-issue split; per-file CV stamped the parent Year One volume (55835) across all 39 files (wrong-relaunch trap)
+F 102392 wrong-cv-link | per-file CV stamped the parent Year One volume (55835) title-wide
+
+R 9479 | eleven print-edition trades collecting five different Injustice "years," each a separate run with its own shelf elsewhere in this project (S9480 Year One, S102395 Year Two, S102394 Year Three, S102393 Year Four, S102392 Year Five) — no single spanning identity
+F 9479 split-needed | see R clause and I lines
+I 66311 cv=- gcd=71777 0.9 | Year One Vol.01: collects part of the Year One run (S9480: CV 55835/GCD 71777, volume-level, no per-trade issue id)
+I 66312 cv=- gcd=71777 0.9 | Year One Vol.02: same Year One run as item 66311
+I 66313 cv=- gcd=78647 0.9 | Year Two Vol.01: collects the Year Two run (S102395: CV 70687/GCD 78647, volume-level, no per-trade issue id)
+I 66314 cv=- gcd=78647 0.9 | Year Two Vol.02: same Year Two run as item 66313
+I 66315 cv=- gcd=83898 0.9 | Year Three Vol.01: collects the Year Three run (S102394: CV 77226/GCD 83898, volume-level, no per-trade issue id)
+I 66316 cv=- gcd=83898 0.9 | Year Three Vol.02: same Year Three run as item 66315
+I 66317 cv=- gcd=89287 0.9 | Year Four Vol.01: collects the Year Four run (S102393: CV 81822/GCD 89287, volume-level, no per-trade issue id)
+I 66318 cv=- gcd=89287 0.9 | Year Four Vol.02: same Year Four run as item 66317
+I 66319 cv=- gcd=95468 0.9 | Year Five Vol.01: collects the Year Five run (S102392: CV 86759/GCD 95468, volume-level, no per-trade issue id)
+I 66320 cv=- gcd=95468 0.9 | Year Five Vol.02: same Year Five run as item 66319
+I 66321 cv=- gcd=95468 0.9 | Year Five Vol.03: same Year Five run as item 66319
+
+S 94639 cv=6331 gcd=6160 0.95 | CV 6331 and GCD 6160 (both "JSA" 1999-2006 DC, count 87) agree exactly on the great majority of files (35/38 CV, 31/38 GCD); ComicInfo Count "88"x3 corroborates; residue = 3 files that are actually Hawkman 2002 issues (CV 9402/GCD 10188), misfiled onto this shelf
+F 94639 misfiled | 3 files are Hawkman 2002 issues (CV 9402/GCD 10188), not JSA
+F 94639 merge-with=9736 | shelf 9736 (another batch) already links the same CV 6331 "JSA" 1999 volume — same comic
+
+S 94640 cv=160863 gcd=217178 0.9 | CV 160863 "JSA" 2025 DC (count 13) and GCD 217178 "JSA" 2025-? DC ongoing (count 20) agree on name/year, matched on all 4/4 files by GCD; per-file CV stamped the legacy 1999 volume (6331) on 1 file (wrong-relaunch trap)
+F 94640 wrong-cv-link | per-file CV stamped the legacy 1999 volume on 1/4 files
+
+S 98027 cv=- gcd=4200 1.0 | ComicInfo asserts Volume "1991" on all 8 files, matching the folder "v1 (1991)"; GCD 4200 "Justice Society of America" 1991-1991 DC (an 8-issue limited series) agrees exactly on count; per-file CV stamped the unrelated 2007 volume (18052) title-wide (wrong-relaunch trap); no local CV rip entry exists for the 1991 mini
+F 98027 wrong-cv-link | per-file CV stamped the 2007 volume (18052) across the whole shelf
+F 98027 provider-missing | no local CV rip entry for the 1991 mini
+
+S 98029 cv=18052 gcd=20856 0.95 | CV 18052 and GCD 20856 (both "Justice Society of America" 2007-2011 DC, count 54) agree exactly, matched on 18/25 files; our floppies + trades (judged ranges through #40ish) sit inside the span — residue = the German edition and a 2024-2025 collected-edition stamp on 1 file, not different comics
+F 98029 merge-with=65021 | shelf 65021 (another batch) already links the same CV 18052 "Justice Society of America" 2007 volume — same comic
+
+S 98030 cv=146561 gcd=193234 0.95 | CV 146561 and GCD 193234 (both "Justice Society of America" 2022-2024 DC, count 12) agree exactly, matched on 36/37 files by GCD; our ladder #1-12 sits inside the span; per-file CV stamped the unrelated 2007 legacy volume (18052) on 29/37 files (wrong-relaunch trap)
+F 98030 wrong-cv-link | per-file CV stamped the unrelated 2007 legacy volume on the majority of files
+
+S 9745 cv=23539 gcd=11338 0.95 | CV 23539 and GCD 11338 (both "JSA: Strange Adventures" 2004-2005 DC, count 6) agree exactly on all 12/12 files (ratio 2.00 = duplicate rips of the same 6 issues, not residue)
+
+S 5969 cv=6660 gcd=7162 0.95 | CV 6660 and GCD 7162 (both "JSA: The Liberty File" 2000-2000, count 2) agree exactly on all 4/4 files (ratio 2.00 = duplicate rips of the same 2 issues, not residue)
+
+S 722 cv=25789 gcd=7092 0.95 | CV 25789 (issue 152142) and GCD 7092 (1999-1999, count 1) agree exactly for this one-shot; the stored/linked CV 20663 (the 1939 original, 102 issues) is wrong for this item
+F 722 wrong-cv-link | stored link 20663 is the unrelated 1939 original, not this 1999 one-shot
+
+S 17280 cv=19172 gcd=1027 0.95 | CV 19172 (cached #1-147, ratio 0.15 = normal partial holding of a 163-issue run) and GCD 1027 (both "Superman's Pal, Jimmy Olsen" 1954-1974 DC, count 163) agree exactly, matched on 17/25 files; our ladder sits inside the span; the "by Jack Kirby" trade (judged #133-148) collects the run's own Kirby-era issues, costing nothing
+
+S 10105 cv=42488 gcd=60709 0.9 | CV 42488 (cached #1-52, ratio 1.42) and GCD 60709 (both "Justice League" 2011-2016 DC, count 57) agree exactly, matched on 84/85 (CV) and 24/85 (GCD, low due to the variant-cover pile) files; our ladder #1-23,23.1,24-52 sits inside the span
+F 10105 merge-with=94649 | same 2011-2016 New 52 Justice League run as S94649 (CV 42488/GCD 60709 on both shelves)
+
+S 10119 cv=161842 gcd=218722 0.95 | CV 161842 and GCD 218722 (both "Justice League: The Atom Project" 2025-2025 DC, count 6) agree exactly on both files; our #1-2 sit inside the cached span of a recent 6-issue limited series
+
+S 64455 cv=23382 gcd=10316 0.9 | dominant reprint line (CV 23382 / GCD 10316, both "Crisis on Multiple Earths" 2002-2013 DC, count 6), our 4 judged trades (2 are duplicate copies of Book 01, per the open label-ambiguous flag) collect it; residue = 3 files from the newer, unrelated 2021-2023 reprint line (CV 133945/GCD 169731, count 3), a different set of trades sharing the same umbrella title
+F 64455 misfiled | 3 files belong to the 2021-2023 "Crisis on Multiple Earths" reprint line (CV 133945/GCD 169731), not the 2002-2013 line
+
+S 9733 cv=6170 gcd=5980 0.9 | CV 6170 (cached #1-2, no CvVolume row — F needs-fetch) and GCD 5980 (both "JLA: World Without Grown-Ups" 1998-1998, count 2) agree exactly, matched on 4/5 files; our ratio 2.00 reflects duplicate rips of the same 2 issues
+F 9733 needs-fetch cv=6170 | no CvVolume row in cache
+
+S 9704 cv=5957 gcd=5747 0.9 | dominant 1997 JLA ongoing (CV 5957 / GCD 5747, both count 126), matching most of the shelf's ladder (#0-23,28-31,35,46,59,107-125); ComicInfo also tags 12 files "JLA: Year One" — a distinct 1998 12-issue miniseries (CV 6171/GCD 5981, found via lookup.py), residue named; items 15876/15896's EAN-13 barcode "0761941210209" is a genuine 1.0-shape assertion on those specific items
+F 9704 misfiled | 12 files tagged ComicInfo Series "JLA: Year One" are the separate 1998 miniseries (CV 6171/GCD 5981), not the 1997 ongoing's ladder
+
+S 10191 cv=33082 gcd=48415 0.95 | CV 33082 and GCD 48415 (both "Justice League: Generation Lost" 2010-2011 DC, count 24) agree exactly on all 37 files (ratio 1.54 = duplicate rips of the same 24 issues, not residue)
+
+S 10122 cv=10065 gcd=10924 0.95 | CV 10065 and GCD 10924 (both "Justice League Adventures" 2002-2004 DC, count 34) agree exactly; our full ladder #1-34 matches the complete run
+
+S 98026 cv=4198 gcd=3804 0.9 | CV 4198 and GCD 3804 (both "Justice League America" 1989-1996 DC, count 89) agree, matched on 78/84 files by GCD; the ComicInfo Volume "1987"/"1989" split reflects the same continuously-numbered run before/after the "America" subtitle was added, not two runs; per-file CV stamped the unrelated 1960 legacy volume (2014) on 76/84 files (wrong-relaunch trap)
+F 98026 wrong-cv-link | per-file CV stamped the unrelated 1960 legacy volume across most files
+
+S 94779 cv=42996 gcd=61184 0.9 | our 6 trades collect the New 52 Justice League Dark ongoing (CV 42996 / GCD 61184, both count 43, found via lookup.py); per the trades-vs-run ruling the run wins over the 6-volume collected-edition record (GCD 78801, count 6 = our trade count exactly, the matches-our-holdings trap)
+F 94779 wrong-cv-link | per-file CV/GCD scattered onto a German edition (61600/66484) on 1-2 files
+F 94779 merge-with=10127 | shelf 10127 (another batch) already links the same CV 42996 "Justice League Dark" 2011 volume — same comic
+
+S 94780 cv=112455 gcd=127112 0.9 | CV 112455 and GCD 127112 (both "Justice League Dark" 2018-2021 DC, count 29) agree exactly, matched on 4/8 files by GCD; our floppies #12-14,29 and the 4 trades (judged #1-28) sit inside the span; per-file CV stamped the unrelated 2011 legacy volume (42996) on 6/8 files (wrong-relaunch trap)
+N 94780 stale-flag | the open overlap-in-series flag describes a Vol.01-naming collision with the SIBLING 2011 shelf (S94779), not two runs conflated on this one shelf, which is one continuous 2018-2021 ongoing
+F 94780 wrong-cv-link | per-file CV stamped the unrelated 2011 legacy volume on 6/8 files
+
+S 10134 cv=111994 gcd=126440 0.9 | CV 111994 and GCD 126440 (both "Justice League Giant" 2018-2019 DC) agree by name/year; our single #1 sits inside the span of a multi-issue giant series
+
+S 94643 cv=42590 gcd=59309 0.9 | CV 42590 and GCD 59309 (both "Justice League International" 2011-2012 DC, count 12, found via lookup.py) agree exactly, matched on 6/7 files by GCD; our ladder #7-12 sits inside the span; per-file CV stamped the unrelated 1987 legacy volume (3798) across all 7 files (wrong-relaunch trap)
+N 94643 stale-flag | the open overlap-in-series flag describes a collision between the 2011 Vol.01 range and the 1987 reprint ladder, but our files are all 2011 New 52 issues (#7-12) — the 1987 stamp is simply the per-file matcher's wrong-relaunch trap, not a second run present on the shelf
+F 94643 wrong-cv-link | per-file CV stamped the unrelated 1987 legacy volume across the whole shelf
+F 94643 merge-with=10137 | shelf 10137 (another batch) already links the same CV 42590 "Justice League International" 2011 volume — same comic
+
+S 10139 cv=113886 gcd=130351 0.9 | CV 113886 (count 25) and GCD 130351 (2018-2020, count 25) agree exactly; our 4 trades (judged ranges through #25) collect the run; per the trades-vs-run ruling the run wins over the 4-volume collected-edition record (GCD 145316, count 4 = our trade count exactly, the matches-our-holdings trap)
+
+S 10107 cv=124950 gcd=156019 0.95 | CV 124950 (issue 736990) and GCD 156019 (2020-2020, count 1) agree exactly for this one-shot; the round2-folder GCD stamp (10453, "Justice League Quarterly") is rejected
+F 10107 wrong-cv-link | round2-folder stamped an unrelated 1990s quarterly
+
+S 10142 cv=73216 gcd=80308 0.9 | CV 73216 and GCD 80308 (both "Justice League United" 2014-2016 DC, count 17) agree exactly, matched on 7/10 files; our ladder #1,11-16 (2 trades judged #0-10) sits inside the span; the shortfall reflects normal partial holdings of the ongoing, not residue
+
+S 10146 cv=11057 gcd=11988 0.9 | dominant 2004 Justice League Unlimited ongoing (CV 11057 / GCD 11988, both count 46), matched on 46/58 GCD files, our ladder #1-46; residue = 9 files from a 2025 revival (GCD 216154 "Justice League Unlimited" 2025-? DC ongoing, count 19) and 3 one-shot specials each with its own clean CV per-file match
+F 10146 misfiled | items 66694-66702 (9 files, "001-003 (2025)" + variants) are a 2025 revival (GCD 216154), not part of the 2004 ongoing's ladder
+I 67441 cv=129772 gcd=- 0.9 | "Galactic Justice" (2020) own record: CV volume 129772 issue 795901; no GCD id shown in this packet
+I 67442 cv=133529 gcd=- 0.9 | "Hocus Pocus" (2020) own record: CV volume 133529 issue 827113; no GCD id shown in this packet
+I 67443 cv=131618 gcd=- 0.9 | "Time After Time" (2020) own record: CV volume 131618 issue 815620; no GCD id shown in this packet
+
+S 94644 cv=2014 gcd=1449 0.95 | CV 2014 and GCD 1449 (both "Justice League of America" 1960-1987 DC, count 261) agree exactly on all 261/261 (CV) and 208/261 (GCD) files; our ladder sits inside the span
+
+S 94647 cv=- gcd=90178 0.7 | folder "v4 (2015)"; GCD 90178 "Justice League of America" 2015-2016 DC (count 10) is the best-fitting English candidate for our single #5 file (found via lookup.py); no local CV rip entry exists for this volume; per-file GCD instead matched a German printing (101804) by number only — real doubt given only one file and no independent corroboration
+F 94647 provider-missing | no local CV rip entry for the 2015 Justice League of America volume
+
+S 94648 cv=- gcd=112291 0.7 | GCD 112291 "Justice League of America" 2017-2018 DC (was ongoing, count 29, found via lookup.py) is the underlying Rebirth-era run our floppy #1 and 5 trades most likely collect; no local CV rip entry exists; the per-file matcher scattered across an unrelated 1977 Tempo Books paperback (2427) and an unrelated 2008-2012 volume (31928) — real doubt given the thin per-file coverage (1/6 for the run itself)
+N 94648 stale-flag | the open overlap-in-series flag describes four JLA "Vol.01"s across the whole franchise's sibling shelves, not necessarily several runs conflated on this one shelf
+F 94648 provider-missing | no local CV rip entry for the 2017 Justice League of America volume
+
+S 94649 cv=42488 gcd=60709 0.9 | CV 42488 and GCD 60709 (both "Justice League" 2011-2016 DC, count 57) agree exactly, matched on 13/14 (CV) and 5/14 (GCD) files; our floppies #23,52 and 8 trades (judged #1-50) sit inside the span — the run's own trades beside its issues; per-file CV stamped the unrelated 2016 volume (92373) on 1 file
+F 94649 merge-with=10105 | same 2011-2016 New 52 Justice League run as S10105 (CV 42488/GCD 60709 on both shelves)
+
+S 94650 cv=92373 gcd=104347 0.9 | CV 92373 and GCD 104347 (both "Justice League" 2016-2018 DC, count 43, found via lookup.py) agree exactly, matched on 1/9 files by GCD; our folder "v3 (2016)" confirms; per-file CV stamped the unrelated 2011 legacy volume (42488) across the whole shelf, and GCD mostly matched the collected-edition record (111398, count 7)
+N 94650 stale-flag | the open overlap-in-series flag describes five Justice League "Vol.01"s across sibling shelves in the franchise, not necessarily several runs conflated on this shelf
+F 94650 wrong-cv-link | per-file CV stamped the unrelated 2011 legacy volume across the whole shelf
+
+S 10201 cv=132451 gcd=- 0.9 | CV 132451 (issue 820300) is this one-shot's own direct record; no GCD row was found via a direct name probe; the per-file GCD stamp (134253, the parent 2018-2021 collected-edition series) is rejected
+F 10201 wrong-cv-link | per-file GCD stamped the parent collected-edition series, not this specific one-shot
+F 10201 provider-missing | no GCD row found for this one-shot
+
+S 94867 cv=- gcd=125721 0.7 | GCD 125721 "Justice League" 2018-2022 DC was ongoing (count 75) matches folder "v4 (2018)", though only matched 2/15 files directly — real doubt given the thin coverage; no local CV rip entry names this specific volume (per-file CV stamped the unrelated 2011 legacy volume 42488 on 13/15 files, wrong-relaunch trap)
+F 94867 wrong-cv-link | per-file CV stamped the unrelated 2011 legacy volume across most files
+F 94867 provider-missing | no local CV rip entry for the 2018 Justice League volume
+
+S 10152 cv=123230 gcd=153240 0.95 | CV 123230 and GCD 153240 (both "Justice League by Scott Snyder: The Deluxe Edition" 2019-2022 DC, count 3) agree exactly; the round2-folder GCD stamp (180013, German edition) is rejected
+F 10152 wrong-cv-link | round2-folder stamped an unrelated German edition
+F 10152 merge-with=10153 | shelf 10153 (another batch) already links the same CV 123230 volume — same comic
+
+S 10183 cv=154189 gcd=204653 0.95 | CV 154189 and GCD 204653 (both "Justice League vs. Godzilla vs. Kong" 2023-2024 DC, count 7) agree exactly, matched on 28/29 files; our ladder #1-7 (29 files, many variant covers) sits inside the span
+
+S 10630 cv=5754 gcd=5515 0.95 | ComicInfo asserts Count "2"; CV 5754 and GCD 5515 (both "League of Justice" 1996-1996 DC, count 2) agree exactly on all 5/5 files (ratio 2.50 = duplicate rips of the same 2 issues)
+
+S 17259 cv=89178 gcd=- 0.9 | CV 89178 "Superman and the Justice League America" 2016 DC (cached #1-2) matches our 3 files (2 collections + a duplicate copy per the open label-ambiguous flag); no GCD row found via direct probe — gcd=-; the round2-folder GCD stamp (120686, "Elseworlds: Superman") is rejected
+F 17259 wrong-cv-link | round2-folder stamped an unrelated Elseworlds collected edition
+F 17259 provider-missing | no GCD row found for this one-shot/mini
+
+S 98212 cv=- gcd=2540 0.9 | GCD 2540 "The Legion of Super-Heroes" 1980-1984 DC (55 issues) matches our folder "v2 (1980)" and the legacy-continuing numbering (our ladder reaches #297, ComicInfo Count "313" asserting the eventual final legacy number); no local CV rip entry exists for this specific volume — per-file CV stamped the later 1989 (v4) and 2019 volumes by issue-number/title coincidence (wrong-relaunch trap)
+F 98212 wrong-cv-link | per-file CV stamped the 1989 and 2019 volumes, neither of which is this legacy-numbered 1980-1984 run
+F 98212 provider-missing | no local CV rip entry for the 1980-1984 volume
+
+S 10691 cv=68647 gcd=- 0.7 | CV 68647 "Legion of Super-Heroes: The Great Darkness Saga" 1989 DC (issue 431167) is a plausible match by name; GCD offers two candidates (110488 2014 count1, 10569 1989 count2) without a clear per-file signal to choose between them, and a competing CV candidate (36970, the 2010 "Deluxe Edition") is also plausible — real doubt; the per-file GCD stamp (74348, a different collected-edition series via collapse-rematch) is rejected
+F 10691 wrong-cv-link | per-file GCD stamped an unrelated collected-edition series (74348)
+F 10691 needs-web | which specific printing/GCD row this "Great Darkness Saga" reprint trade is
+
+S 98213 cv=- gcd=2835 0.9 | GCD 2835 "Legion of Super-Heroes" 1984-1989 DC (was ongoing, count 63) matches folder "v3 (1984)" and our ladder #1-63 exactly, matched on 79/82 files; no local CV rip entry for this specific volume — per-file CV stamped the later 1989 volume across the whole shelf (wrong-relaunch trap)
+F 98213 wrong-cv-link | per-file CV stamped the later 1989 volume across the whole shelf
+F 98213 provider-missing | no local CV rip entry for the 1984-1989 volume
+
+S 98214 cv=4201 gcd=3810 0.95 | CV 4201 and GCD 3810 (both "Legion of Super-Heroes" 1989-2000 DC, count 127) agree exactly, matched on 127/133 files; our ladder #0-125 plus 7 annuals sits inside the span
+
+S 10699 cv=4971 gcd=4652 0.95 | CV 4971 (cached #1-81, ratio 0.95) and GCD 4652 (both "Legionnaires" 1993-2000 DC, count 83) agree exactly, matched on 75/81 files; the 3 annual floppies (GCD 4959) and the "Book One/Two" trades (GCD 113415) are the run's own annual/reprint editions, costing nothing; the "1000000" special is DC's One Million tie-in issue, part of the same run's numbering
+
+R 17151 | this shelf is a misc bucket of at least seven distinct Legion-adjacent comics with no spanning identity: two 1989-run floppies belonging to S98214's ladder (items 16858 #86, 18052 the "1000000" tie-in), "Batman '66 Meets the Legion of Super-Heroes" (2-3 files), "Legion of Super-Heroes Secret Files and Origins" (2 files, direct CV match), a "Beginning of Tomorrow" trade+floppy pair, four "Supergirl and the Legion of Super-Heroes" trades, a Legion v7 (2011) trade matching sibling shelf S98217, and a standalone "Superman Plus Legion of Super-Heroes" one-shot
+F 17151 split-needed | see R clause
+F 17151 merge-with=98214 | items 16858, 18052 are 1989-run issues (#86, the "1000000" tie-in) belonging to S98214's ladder
+F 17151 merge-with=98217 | item 68053 ("Vol.02 - Trial of the Legion") is a trade of the 2011 run identified on S98217
+I 61543 cv=- gcd=s115514 0.9 | "Batman '66 Meets the Legion of Super-Heroes" #1: CV candidate 102083, GCD series 115514, count matches by name/year
+I 61544 cv=- gcd=s115514 0.9 | "Batman '66 Meets the Legion of Super-Heroes" #2: same series as item 61543
+I 67745 cv=20906 gcd=- 0.9 | "Legion of Super-Heroes Secret Files and Origins" #1: CV volume 20906, direct per-file match; no GCD id shown
+I 67746 cv=20906 gcd=- 0.9 | "Legion of Super-Heroes Secret Files and Origins" #2: same volume as item 67745
+N 17151 "Beginning of Tomorrow" (67999/68029), the four Supergirl and the Legion trades (68038-68041), and "Superman Plus Legion of Super-Heroes" (72926) are each their own standalone books; specific ids not resolved here
+F 17151 needs-web | own CV/GCD records for "Beginning of Tomorrow", the Supergirl-and-Legion Vol.03-06 trades, and "Superman Plus Legion of Super-Heroes"
+
+S 98215 cv=11059 gcd=11990 0.7 | CV 11059 and GCD 11990 (both "Legion of Super-Heroes" 2005-2006 DC) agree on name/year/publisher, matching our folder "v5 (2005)"; the counts (30 vs 15) both undercount our judged trade range (through #50), suggesting incomplete provider indexing rather than a different comic — real doubt; per-file CV mostly stamped unrelated later volumes (4201, 33225)
+F 98215 wrong-cv-link | per-file CV stamped the 1989 and 2010 volumes on 2/4 files
+
+S 98217 cv=- gcd=59311 0.9 | GCD 59311 "Legion of Super-Heroes" 2011-2013 DC (count 24, found via lookup.py) matches our 3 trades (judged #1-23, nearly the entire run) and the folder "v7 (2011)"; per the trades-vs-run ruling the run wins over the 3-volume collected-edition record (GCD 74348, count 3 = our trade count exactly, the matches-our-holdings trap); no local CV rip entry for this volume
+N 98217 stale-flag | the open overlap-in-series flag describes several Legion "Vol.01"s across sibling shelves, not necessarily conflation on this one shelf, whose 3 trades collect one continuous run
+F 98217 provider-missing | no local CV rip entry for the 2011 volume
+
+S 10681 cv=42686 gcd=59312 0.9 | our 2 distinct trades (one held as a duplicate copy per the open label-ambiguous flag) collect the 2011 New 52 Legion Lost ongoing (CV 42686 / GCD 59312, both count 17); per the trades-vs-run ruling the run wins over the 2-volume collected-edition record (GCD 76265, count 2 = our trade count exactly, the matches-our-holdings trap); the stored/linked CV 10944 is the unrelated original 2000 mini, wrong for these files
+F 10681 wrong-cv-link | stored link 10944 is the unrelated 2000 mini, not the 2011 New 52 series
+
+S 65063 cv=122626 gcd=151954 0.9 | CV 122626 and GCD 151954 (both "Legion of Super-Heroes" 2019-2021 DC, count 12) agree exactly on the floppy #1 (of 2); the trade (Vol.01 Millennium, judged #1-6) is the run's own trade beside its issues; the per-file GCD stamp on the trade (74348, an unrelated 2012-2014 collected edition) is rejected
+F 65063 wrong-cv-link | per-file GCD stamped an unrelated 2012-2014 collected edition on the trade
+
+S 10827 cv=160001 gcd=215551 0.95 | CV 160001 (issue 1071389) and GCD 215551 (2024-2024, count 1) agree exactly on all 3/3 files (base + 2 variants, all #1)
+
+S 94655 cv=18356 gcd=14695 0.95 | CV 18356 and GCD 14695 (both "Lobo" 1993-1999 DC, count 66) agree exactly, matched on 54/65 files; our ladder #0-64 plus 3 annuals sits inside the span
+
+S 10832 cv=20653 gcd=14715 0.95 | CV 20653 (issue 123880) and GCD 14715 (1995-1995, count 1) agree exactly for this one-shot; the round2-folder GCD stamp (14695, the generic Lobo ongoing) is rejected
+F 10832 wrong-cv-link | round2-folder stamped the generic Lobo ongoing
+
+S 10834 cv=35201 gcd=7734 0.95 | CV 35201 (issue 241003) and GCD 7734 (1995-1995, count 1) agree exactly for this one-shot; the round2-folder GCD stamp (14695) is rejected
+F 10834 wrong-cv-link | round2-folder stamped the generic Lobo ongoing
+
+S 10835 cv=31461 gcd=- 0.9 | CV 31461 (issue 196317) is this one-shot's own direct record; no GCD row found via direct probe; the round2-folder GCD stamp (14695, generic Lobo ongoing) is rejected
+F 10835 wrong-cv-link | round2-folder stamped the generic Lobo ongoing
+F 10835 provider-missing | no GCD row found for this one-shot
+
+S 94656 cv=77220 gcd=83251 0.9 | our 2 trades collect the 2014 Lobo ongoing (CV 77220 / GCD 83251, both count 13, found via lookup.py); per the trades-vs-run ruling the run wins over the 2-volume collected-edition record (GCD 91524, count 2 = our trade count exactly, the matches-our-holdings trap)
+N 94656 stale-flag | the open overlap-in-series flag describes a Vol.01-naming collision with the 1993 run's own trades, not two runs conflated on this shelf, whose 2 trades collect one continuous 2014 run
+F 94656 wrong-cv-link | per-file CV stamped the unrelated 1993 legacy volume (18356) on 1/2 files
+
+S 10820 cv=19235 gcd=14700 0.9 | dominant "Lobo: A Contract on Gawd" mini (4/6 files): CV 19235 and GCD 14700 (both 1994, count 4) agree exactly; residue = 1 file ("36 Lobo 1000000", the One Million tie-in, part of the v2 1993 run's numbering — see S94655) and 1 file (the Giffen & Grant anthology reprint trade, own record not resolved here)
+F 10820 misfiled | item 18050 ("36 Lobo 1000000", 1998) belongs to the v2 1993 run's numbering (S94655: CV 18356/GCD 14695), not this mini
+F 10820 needs-web | own CV/GCD record for the "Lobo by Keith Giffen & Alan Grant" (2018) anthology reprint trade
+
+S 10859 cv=3609 gcd=3158 0.9 | dominant 1986 Lois Lane mini (#1-2, 2/5 files): CV 3609 and GCD 3158 (both 1986, count 2) agree exactly; residue = 2 Annual files belonging to the long-running 1958 "Superman's Girl Friend, Lois Lane" title (S17274's own run, not this mini) and 1 file (#6, 2020) from the unrelated 2019-2020 Rucka Lois Lane miniseries
+F 10859 misfiled | items 68184/68185 ("Lois Lane Annual" 01/02, 1962-63) belong to S17274's 1958-1974 "Superman's Girl Friend, Lois Lane" run, not this 1986 mini
+F 10859 misfiled | item 19168 ("Lois Lane 006", 2020) is from the unrelated 2019-2020 Rucka miniseries (CV candidate 120013, count 12), not this 1986 mini
+N 10859 2020 Lois Lane mini's own id: CV candidate 120013 "Lois Lane" 2019 DC 12 issues; GCD dump 148548 "Lois Lane" 2019-2020 DC 12 — count matches exactly
+
+S 17274 cv=19245 gcd=1296 0.95 | CV 19245 and GCD 1296 (both "Superman's Girl Friend, Lois Lane" 1958-1974 DC, count 137) agree exactly on all 137/137 files; our complete ladder #1-137 matches the entire run exactly
+
+S 98467 cv=6176 gcd=5986 0.95 | CV 6176 and GCD 5986 (both "Martian Manhunter" 1998-2001 DC, count 38) agree exactly, matched on 19/21 files; our ladder #18-36 sits inside the span; the 2 trades (Vol.01/02) collect the run's earlier issues — the run's own trades beside its issues; per-file CV stamped the unrelated 2015 volume (82658) on 2 files
+F 98467 wrong-cv-link | per-file CV stamped the unrelated 2015 volume on 2/21 files
+F 98467 merge-with=65116 | shelf 65116 (another batch) already links the same CV 6176 "Martian Manhunter" 1998 volume — same comic
+
+S 98468 cv=18626 gcd=19562 0.95 | CV 18626 and GCD 19562 (both "Martian Manhunter" 2006-2007 DC, count 8) agree exactly, matched on all 8/8 files by GCD; our complete ladder #1-8 (of 8) matches the entire limited series
+F 98468 wrong-cv-link | per-file CV stamped the unrelated 1998 volume on 4/8 files

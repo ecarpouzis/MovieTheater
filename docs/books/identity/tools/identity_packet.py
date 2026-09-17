@@ -392,6 +392,127 @@ def packet(sid, ev, ctx):
     return L
 
 
+def item_packet(sid, ev, ctx, items, decision):
+    """One block of an `X-` ITEM batch (TOOLS_TODO 16): the shelf's DECIDED identity, and the books of it
+    this batch is asking about, with the per-book candidates a reader needs to write an `I` (the book's own
+    record) or a `C` (what it collects).
+
+    The shelf is not re-decided here, so nothing that argues about the shelf's identity is printed: no
+    candidate lists, no arithmetic, no lookups. What IS printed is the pool an item-level answer comes out
+    of — the linked volume's ISSUE ids, the GCD series' issue rows with their page counts and ISBNs (the
+    strongest per-book check there is, ±10pp on 100+ books), the judged ranges, the ComicInfo assertions and
+    the barcodes — plus the shelf's own `N` notes, because on a chain-of-minis shelf that is where the reader
+    who decided it wrote down which mini is which.
+
+    `decision` = {"line", "cv", "gcd", "conf", "batch", "notes": [...]}
+    """
+    con, L = ev.con, []
+    s = ev.series.get(sid)
+    if s is None:
+        return [f"== X S{sid}  (no longer a file-holding comic shelf)"]
+    years = f"{s['yearStart'] or '?'}-{s['yearEnd'] or '?'}"
+    total_books = ev.collections.get(sid, 0)
+    L.append(f"== X S{sid} {s['name']}  years {years}  {ev.size.get(sid, 0)} files / {total_books} "
+             f"collections  ·  {len(items)} book(s) in this batch")
+    L.append(f"   identity: {decision['line'].strip()}   [{decision['batch']}]"
+             + (f"  ·  CV {_vol_line(decision['cv'], ev, ctx)}" if decision.get("cv") else "")
+             + (f"  ·  GCD {_gcd_line(decision['gcd'], ev, ctx)}" if decision.get("gcd") else ""))
+    for note in decision.get("notes", ())[:6]:
+        # the minis, named in prose by the shelf's own reader — the `C` lines' raw material
+        L.append(f"   N: {note[:300]}")
+
+    if decision.get("cv"):
+        iss = ctx.cv_issue_ids(decision["cv"], cap=80)
+        if iss:
+            L.append("   cv issues: " + " · ".join(
+                f"{i}#{n or '?'}" + (f" {(d or '')[:4]}" if d else "") for i, n, d in iss)
+                     + ("  …" if len(iss) == 80 else ""))
+    if decision.get("gcd") and ctx.gcd is not None:
+        rows = ctx.gcd.execute(
+            "SELECT id, number, page_count, isbn, title FROM gcd_issue "
+            "WHERE series_id = ? AND coalesce(deleted,0) = 0 ORDER BY sort_code, id LIMIT 80",
+            (decision["gcd"],)).fetchall()
+        if rows:
+            L.append("   gcd issues: " + " · ".join(
+                f"{r[0]}#{r[1] or '?'}"
+                + (f" {int(float(r[2]))}pp" if r[2] not in (None, "") else "")
+                + (f" isbn {r[3]}" if r[3] else "")
+                + (f' "{r[4][:40]}"' if r[4] else "")
+                for r in rows) + ("  …" if len(rows) == 80 else ""))
+        for lsid, lname, sup in con.execute(
+                "SELECT LocgSeriesId, SeriesName, Support FROM legs.LocgSeriesInference WHERE GcdSeriesId=? "
+                "ORDER BY Support DESC LIMIT 2", (decision["gcd"],)):
+            L.append(f'   bridge: gcd {decision["gcd"]} -> LOCG {lsid} "{lname}" support {sup}  '
+                     f'(a support count is not a name check)')
+
+    q = ",".join("?" * len(items))
+    spans = {r[0]: r[1:] for r in con.execute(
+        f"""SELECT ItemId, IssueStart, IssueEnd, Confidence, ProviderRef, EditionTitle
+            FROM CollectedEditionSpan WHERE Source = 3 AND ItemId IN ({q})""", list(items))}
+    runs = {}
+    if con.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='CollectedEditionSpanRun'").fetchone():
+        for r in con.execute(f"""SELECT ItemId, Provider, ProviderKey FROM CollectedEditionSpanRun
+                                 WHERE Source = 3 AND ItemId IN ({q})""", list(items)):
+            runs.setdefault(r[0], []).append(f"{_LEG_OF.get(r[1], r[1])}={r[2]}")
+    emb = {r[0]: r[1:] for r in con.execute(
+        f"""SELECT ItemId, Series, Volume, Count, Web, Identifier, Notes FROM ComicEmbedded
+            WHERE ItemId IN ({q})""", list(items))}
+    codes = {r[0]: r[1] for r in con.execute(
+        f"""SELECT ItemId, CodesJson FROM legs.BarcodeScan WHERE ItemId IN ({q})
+            AND CodesJson IS NOT NULL AND CodesJson NOT IN ('','[]')""", list(items))}
+    links = {}
+    for r in con.execute(f"""SELECT ItemId, Provider, ProviderKey, SecondaryKey, Status, Method
+                             FROM ItemProviderLink WHERE ItemId IN ({q})""", list(items)):
+        links.setdefault(r[0], []).append(
+            f"{_LEG_OF.get(r[1], r[1])} {r[2] or '-'}/{r[3] or '-'} st{r[4]} {r[5] or '?'}")
+
+    L.append("   books:")
+    for iid, fn, path, pages, iscol in con.execute(
+            f"""SELECT i.Id, i.FileName, i.Path, coalesce(i.PageCount,0), coalesce(cd.IsCollection,0)
+                FROM Item i LEFT JOIN ComicDetail cd ON cd.ItemId = i.Id
+                WHERE i.Id IN ({q}) ORDER BY i.Path, i.FileName""", list(items)):
+        bits = []
+        sp = spans.get(iid)
+        if sp and sp[0] is not None:
+            bits.append(f"judged #{fmt(sp[0])}-{fmt(sp[1])} conf {sp[2] if sp[2] is not None else '?'} "
+                        f"({sp[3] or '?'})")
+        elif sp:
+            bits.append(f"judged: REFUSED ({sp[3] or '?'})")
+        # The marker names the books that OWE a `C`: a judged range on a collected-LINE shelf counts in the
+        # run the book collects, never in the line. Printing "NO RUN REF" on every book (X-001..X-003) made the
+        # marker noise and the reader wrote one C in 442 books; the population is idbase.item_population's no_c.
+        owed = getattr(ctx, "_c_owed", None)
+        if owed is None:
+            owed = ctx._c_owed = set(idbase.item_population(ev)["no_c"])
+        if iid in runs:
+            bits.append("runs " + " ".join(runs[iid]))
+        elif iid in owed:
+            bits.append("C OWED (collected-line shelf: the judged range counts in the run this book collects)")
+        e = emb.get(iid)
+        if e:
+            bits.append("ComicInfo " + " ".join(
+                f"{k}={v}" for k, v in zip(("Series", "Volume", "Count", "Web", "Id", "Notes"), e)
+                if v not in (None, "")) [:170])
+        if iid in codes:
+            bits.append(f"barcode {codes[iid][:52]}")
+        if iid in links:
+            bits.append("linked " + " · ".join(links[iid][:3]))
+        L.append(f"     [{iid}]{' COL' if iscol else ''} {fn} ({pages or '?'}pp)  " + "  |  ".join(bits))
+        folder = short_path(os.path.dirname(path or ""))
+        if folder:
+            L.append(f"            {folder}")
+    return L
+
+
+_LEG_OF = {idbase.P_CV: "cv", idbase.P_EXTERNAL: "ext", idbase.P_LOCG: "locg", idbase.P_GCD: "gcd",
+           idbase.P_MU: "mu", idbase.P_BARNEY: "barney", idbase.P_MARVEL: "marvel",
+           idbase.P_INDUCKS: "inducks"}
+
+
+def fmt(x):
+    return idbase.fmt_num(x)
+
+
 def _issue_note(vid, count, ctx):
     """`issue <id>` for a one-issue volume — the id an `I` line actually needs (TOOLS_TODO 12)."""
     if count != 1:

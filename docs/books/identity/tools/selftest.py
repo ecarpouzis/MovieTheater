@@ -308,7 +308,9 @@ CASES = [
      "bad confidence"),
     ("bad-conflated", [conflated],
      f"S {conflated} cv={vol_a} gcd=- 0.9 | {E}\n",
-     "OPEN conflated-series flag"),
+     # the checker now refuses on `overlap-in-series` too and says so in the same sentence, so the
+     # assertion is on the part of the message that is the RULE, not on its current wording
+     "OPEN conflated-series"),
     ("bad-shared-cv", [good_a, good_b],
      f"S {good_a} cv={vol_a} gcd=- 0.9 | {E}\nS {good_b} cv={vol_a} gcd=- 0.9 | {E}\n",
      f"share cv={vol_a}"),
@@ -417,6 +419,194 @@ check("SeriesKeyLink rows      : 0" in r.stdout,
       "apply_identity writes no link at all once the revisit lowered the confidence", r.stdout[-400:])
 print("   " + "\n   ".join(l for l in r.stdout.strip().splitlines() if "==" in l or "superseded" in l
                            or "] link" in l or "] review" in l))
+
+# ── part 5: the `C` line — what a book collects, and OF WHICH RUN (SPAN_RUN_IDS.md) ─────────────
+# A `C` line writes a Curated span, and a Curated span is what the file de-duplication acts on, so the
+# grammar is tested the same way as the rest: one file that must be accepted and landed (dry), and one
+# wrong file per rule.
+print("\nthe C line — collects #a-b of which run")
+c_sid = c_item = c_vol = None
+for _sid, _iid in con.execute(
+        """SELECT i.SeriesId, i.Id FROM Item i JOIN ComicDetail cd ON cd.ItemId = i.Id
+           WHERE cd.IsCollection = 1 AND i.Kind = 0 AND coalesce(i.IsExcluded,0) = 0
+             AND i.SeriesId IS NOT NULL
+             AND NOT EXISTS (SELECT 1 FROM CollectedEditionSpan s WHERE s.ItemId = i.Id AND s.Source = 3)
+           LIMIT 4000"""):
+    if (_sid in ev.shelf_set and not ev.conflated_open(_sid) and ev.keys.get(_sid)
+            and ev.series[_sid]["cvVolumeId"] in ev.cv_volume):
+        c_sid, c_item, c_vol = _sid, _iid, ev.series[_sid]["cvVolumeId"]
+        break
+
+if c_item is None:
+    check(False, "found no collected edition without a Curated span to test the C line on")
+else:
+    CE = (f"the trade's copyright page names ComicVine volume {c_vol} and the four issues it collects, and "
+          f"its page count matches those four at 22pp apiece")
+    CWHY = ("CV volume and the GCD series agree on the 1998 start year and the run length, and our "
+            "filenames number 1-12 with no gap")
+
+    def c_file(tag, body, ids=None):
+        with open(os.path.join(OUT, tag + ".ids"), "w", encoding="utf-8") as f:
+            f.write("\n".join(str(i) for i in (ids or [c_sid])) + "\n")
+        p = os.path.join(OUT, tag + ".txt")
+        with open(p, "w", encoding="utf-8") as f:
+            f.write("# selftest: the C line\n" + body)
+        return p
+
+    GOODC = (f"S {c_sid} cv={c_vol} gcd=- 0.9 | {CWHY}\n"
+             f"C {c_item} cv={c_vol} gcd=- #1-4 0.95 | {CE}\n")
+    good_c_path = c_file("C-930", GOODC)
+    errors = []
+    outc = check_identity.parse(good_c_path, ck, errors)
+    check(not errors, f"C-930: a good C line is accepted ({len(outc['C'])} C)", str(errors[:3]))
+    check(len(outc["C"]) == 1 and outc["C"][0][0] == c_item and outc["C"][0][1] == {"cv": str(c_vol)}
+          and outc["C"][0][2] == 1 and outc["C"][0][3] == 4,
+          "C-930: the line parses into (item, {leg: key}, a, b)", str(outc["C"][:1]))
+    _d5, _w5, _s5, _dup5 = idbase.scan_decisions([good_c_path])
+    check(_d5[good_c_path]["collects"].get(c_item) == [({"cv": str(c_vol)}, 1.0, 4.0, "0.95")],
+          "C-930: scan_decisions records it under 'collects' as a LIST (one entry per (leg, run))",
+          str(_d5[good_c_path]["collects"]))
+
+    r = subprocess.run([sys.executable, os.path.join(idbase.HERE, "apply_identity.py"), good_c_path],
+                       capture_output=True, text=True, encoding="utf-8", errors="replace")
+    check("] collect " in r.stdout and f"#1-4 of cv={c_vol}" in r.stdout,
+          "C-930: the apply dry run plans the Curated span and names the run", r.stdout[-500:])
+    check("CollectedEditionSpan    : 1 inserted" in r.stdout,
+          "C-930: exactly one span is inserted (the book had none)", r.stdout[-700:])
+    check("CollectedEditionSpanRun : 1" in r.stdout,
+          "C-930: and one run ref goes with it", r.stdout[-700:])
+    check("(dry run — nothing written" in r.stdout, "C-930: it is a DRY run", r.stdout[-200:])
+    print("   " + "\n   ".join(l for l in r.stdout.splitlines() if "] collect" in l or "CollectedEditionSpan" in l))
+
+    C_CASES = [
+        ("bad-c-unknown-id",
+         f"S {c_sid} cv={c_vol} gcd=- 0.9 | {CWHY}\nC {c_item} cv=999999999 gcd=- #1-4 0.95 | {CE}\n",
+         "unknown ComicVine volume id"),
+        ("bad-c-descending",
+         f"S {c_sid} cv={c_vol} gcd=- 0.9 | {CWHY}\nC {c_item} cv={c_vol} gcd=- #5-1 0.95 | {CE}\n",
+         "is not ascending"),
+        ("bad-c-twice",
+         f"S {c_sid} cv={c_vol} gcd=- 0.9 | {CWHY}\nC {c_item} cv={c_vol} gcd=- #1-4 0.95 | {CE}\n"
+         f"C {c_item} cv={c_vol} gcd=- #5-8 0.95 | {CE}\n",
+         "one C line per (book, leg, run)"),
+        ("bad-c-no-run",
+         f"S {c_sid} cv={c_vol} gcd=- 0.9 | {CWHY}\nC {c_item} cv=- gcd=- #1-4 0.95 | {CE}\n",
+         "names no run"),
+        ("bad-c-no-range",
+         f"S {c_sid} cv={c_vol} gcd=- 0.9 | {CWHY}\nC {c_item} cv={c_vol} gcd=- 0.95 | {CE}\n",
+         "no #<a>-<b> range"),
+    ]
+    for name, body, expect in C_CASES:
+        p = c_file(name, body)
+        errors = []
+        check_identity.parse(p, ck, errors)
+        hit = [e for e in errors if expect in e]
+        check(bool(hit), f"{name}: rejected for '{expect}'",
+              f"errors were: {errors or '(none — the checker ACCEPTED a bad C line)'}")
+        if hit:
+            print(f"        {hit[0]}")
+
+    # ── part 5b: SEVERAL `C` lines for one book — a trade of two minis, an omnibus (TOOLS_TODO 17) ──
+    print("\nseveral C lines for one book — one per (leg, run), each in ITS run's numbering")
+    second = vol_b if vol_b != c_vol else vol_a
+    CE2 = (f"the second mini this book collects is ComicVine volume {second}, whose five issues are the "
+           f"back half of the book by page count and by the copyright page's second block")
+    multi = c_file("C-940",
+                   f"S {c_sid} cv={c_vol} gcd=- 0.9 | {CWHY}\n"
+                   f"C {c_item} cv={c_vol} #1-4 0.95 | {CE}\n"
+                   f"C {c_item} cv={second} #1-5 0.9 | {CE2}\n")
+    errors = []
+    outm = check_identity.parse(multi, ck, errors)
+    check(not errors, "C-940: two C lines for one book, on DIFFERENT runs, are accepted", str(errors[:3]))
+    check(len(outm["C"]) == 2, "C-940: both lines parse", str(outm["C"]))
+    _d6, _w6, _s6, _dup6 = idbase.scan_decisions([multi])
+    check(len(_d6[multi]["collects"].get(c_item, [])) == 2,
+          "C-940: scan_decisions keeps both", str(_d6[multi]["collects"]))
+
+    r = subprocess.run([sys.executable, os.path.join(idbase.HERE, "apply_identity.py"), multi],
+                       capture_output=True, text=True, encoding="utf-8", errors="replace")
+    check("CollectedEditionSpanRun : 2" in r.stdout,
+          "C-940: TWO run refs are planned — one per run, each with its own range", r.stdout[-700:])
+    check("CollectedEditionSpan    : 1 inserted" in r.stdout,
+          "C-940: and ONE span, whose range is the FIRST line's", r.stdout[-700:])
+    check("run ref only (a second run of this book)" in r.stdout,
+          "C-940: the second line is named as what it is", r.stdout[-900:])
+    print("   " + "\n   ".join(l for l in r.stdout.splitlines()
+                               if "] collect" in l or "CollectedEditionSpan" in l))
+
+    same_run = c_file("C-941",
+                      f"S {c_sid} cv={c_vol} gcd=- 0.9 | {CWHY}\n"
+                      f"C {c_item} cv={c_vol} #1-4 0.95 | {CE}\n"
+                      f"C {c_item} cv={c_vol} gcd=- #5-8 0.9 | {CE2}\n")
+    errors = []
+    check_identity.parse(same_run, ck, errors)
+    check(any("one C line per (book, leg, run)" in e for e in errors),
+          "C-941: the SAME run twice is refused — two answers to one question", str(errors[:3]))
+
+# ── part 6: the ITEM batch (`X-NNN`) — books, not shelves (TOOLS_TODO 16) ───────────────────────
+print("\nthe X- item batch — I / C / N over BOOKS on a shelf whose S already stands")
+x_item = x_other = None
+for _sid, _iid in con.execute(
+        """SELECT i.SeriesId, i.Id FROM Item i JOIN ComicDetail cd ON cd.ItemId = i.Id
+           WHERE cd.IsCollection = 1 AND i.Kind = 0 AND coalesce(i.IsExcluded,0) = 0
+             AND i.SeriesId IS NOT NULL LIMIT 4000"""):
+    if _sid not in ev.shelf_set:
+        continue
+    if x_item is None:
+        x_item = _iid
+    elif _iid != x_item:
+        x_other = _iid
+        break
+
+if x_item is None or x_other is None:
+    check(False, "found no two collected editions to build an item batch from")
+else:
+    XE = ("the book's own ComicVine issue record, named on its copyright page and matching our rip's page "
+          "count to within four pages")
+    XN = ("no record of this book exists in either catalogue: the dump holds the print line only and the "
+          "rip has no volume of this name in any year")
+
+    def x_file(tag, body, ids):
+        with open(os.path.join(OUT, tag + ".ids"), "w", encoding="utf-8") as f:
+            f.write("\n".join(str(i) for i in ids) + "\n")
+        p = os.path.join(OUT, tag + ".txt")
+        with open(p, "w", encoding="utf-8") as f:
+            f.write("# selftest: an item batch\n" + body)
+        return p
+
+    covered = x_file("X-900",
+                     f"I {x_item} cv=- gcd=- isbn=9781506713434 0.9 | {XE}\n"
+                     f"N {x_other} no-record | {XN}\n",
+                     [x_item, x_other])
+    errors = []
+    outx = check_identity.parse(covered, ck, errors)
+    check(not errors, "X-900: an I line and an explicit no-record cover the batch", str(errors[:3]))
+    check(outx["kind"] == "X" and outx["no_record"] == {x_other},
+          "X-900: it is read AS an item batch and the refusal is recorded", str(outx["kind"]))
+
+    bare = x_file("X-901", f"I {x_item} cv=- gcd=- isbn=9781506713434 0.9 | {XE}\n", [x_item, x_other])
+    errors = []
+    check_identity.parse(bare, ck, errors)
+    check(any("no I line and no" in e and str(x_other) in e for e in errors),
+          "X-901: a book left unanswered fails the batch", str(errors[:3]))
+
+    silent = x_file("X-902", f"N {x_other} no-record | {XN}\n", [x_item, x_other])
+    errors = []
+    check_identity.parse(silent, ck, errors)
+    check(any("no I line and no" in e for e in errors),
+          "X-902: and a `C`-only or note-only answer is not coverage either", str(errors[:3]))
+
+    short = x_file("X-903", f"I {x_item} cv=- gcd=- isbn=9781506713434 0.9 | {XE}\n"
+                            f"N {x_other} no-record | not found\n", [x_item, x_other])
+    errors = []
+    check_identity.parse(short, ck, errors)
+    check(any("no-record needs a reason" in e for e in errors),
+          "X-903: a refusal must say what was looked for", str(errors[:3]))
+
+    r = subprocess.run([sys.executable, os.path.join(idbase.HERE, "apply_identity.py"), covered],
+                       capture_output=True, text=True, encoding="utf-8", errors="replace")
+    check("] isbn " in r.stdout and "SeriesKeyLink rows      : 0" in r.stdout,
+          "X-900: apply lands its item links and touches no shelf", r.stdout[-700:])
 
 print(f"\n{len(failures)} failure(s)")
 if not KEEP:

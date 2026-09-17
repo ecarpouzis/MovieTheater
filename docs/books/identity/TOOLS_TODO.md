@@ -64,3 +64,45 @@
     prune verb doing the same before deleting. Present to Eric with the 31 listed.
 15. A comic Series row with NULL ParsedKey would be deleted by the finish phase without appearing in MergeMap —
     zero today; add an audit_identity invariant so it stays zero.
+
+# Added 2026-09-16 — Eric: "close the gap there" (the ITEM pass, after wave 5 and the span-run-refs tooling)
+16. **Item pass tooling** — the coverage partition shows 7,501 collected editions on ACCEPTED shelves with no `I`
+    line (tier A / early tier B, before "I lines are never optional"), plus every chain-of-minis / trade-line /
+    omnibus book that needs a `C` line (SPAN_RUN_IDS.md). One pass closes both:
+    - `next_batch.py --items` emits `X-NNN` batches of BOOKS grouped by shelf: each packet block = the shelf's
+      landed/decided identity (S line, cv/gcd, name, years) + its books lacking an `I` line or (for a book whose
+      Curated span has no run rows on a shelf whose S is a collected line) a `C` line, with the per-book
+      candidates the identity packet already prints (CV issue ids via the line's `--issues`, GCD issue rows,
+      ISBN, LOCG bridge, judged range). Cap ~150 books per batch; `.ids` lists ITEM ids.
+    - Decision files for `X-` batches carry ONLY `I` / `C` / `N` lines (no S/R: the shelf identity stands);
+      `check_identity` accepts that kind (coverage = every item id in `.ids` has an `I` or an explicit
+      `N <item> no-record | why`), `apply_identity` lands them like any other I/C lines, and wave landing
+      includes `X-` batches. `identity_coverage.py` gains the two counts (books without I; line-shelf books
+      without C) so the pass has a partition to drive to zero.
+    - Sonnet reads them (item-level work suits it); Opus only for shelves the reader flags.
+17. **Per-run ranges on the run table** (Opus, R-020..R-022 rewrite): a `C` line carries ONE range for ONE item, and
+    `CollectedEditionSpanRun`'s PK is (ItemId, Source, Provider) — so a trade collecting TWO minis (Hellboy Vol. 06/12,
+    Hell on Earth Vol. 02/04/05/07, Baltimore Vol. 03-05, Lobster Johnson Vol. 03/05/06, Abe Sapien Vol. 02, every
+    omnibus / Library Edition — ~30 books in those three files, named only on N lines) cannot be stated, and legs that
+    number the same issues differently (Return of the Master = CV 51622 #1-5 = GCD 71228 #103-107) get one range.
+    Fix: widen the PK to (ItemId, Source, Provider, ProviderKey) and put IssueStart/IssueEnd ON the run row (the
+    span's own range stays the shelf-numbered one); grammar = several `C` lines per item, one per (leg, run), each
+    with the range in THAT run's numbering; apply writes one run row per C; ContainmentJob compares two spans on any
+    shared (Provider, key) using the run rows' ranges. Build it with 16 (the item pass), then the item pass writes
+    the second C lines for the ~30 books and every omnibus.
+
+18. **Packet: print what a trade collects from GCD's own reprint data** (R-025): `gcd_reprint` + `gcd_story` joined story →
+    reprint → origin issue → series gives each collected edition's contents outright; `gcd_series.notes` states ranges in
+    prose. Neither is in the packet or lookup.py today — add a `collects:` line per book (and `lookup.py --collects <issue>`)
+    so readers stop deriving C ranges from page arithmetic.
+
+19. **Tier D packet: probe the FILE's full title, not the parsed key** (D-001..D-003): with no stored leg the candidate
+    probe falls back on the shelf's parsed key, i.e. the folder's words ("Dark Horse Maverick 2000" on 20+ shelves, "The
+    Originals" on every ComiXology shelf) — the record was found by re-probing the file's own title on a third of shelves.
+    identity_packet should probe each FILE's title (minus the ripper suffix) and the ComicInfo Title/Series before the key.
+    Addendum (D-009): on ~80 shelves the parsed key is a TRUNCATION or a ripper tag, so the candidate block is actively
+    misleading (every Star Trek / Heavy Metal packet was handed 'Hanna-Barbera Yogi Bear'); also probe gcd_issue.barcode on
+    the 11-digit UPC core and print the hit.
+    Addendum (D-012): identity_packet FOLDS runs of >= 6 same-skeleton filenames into a range WITHOUT item ids, so a
+    shelf like 3x3 Eyes v01-v39 cannot get per-volume I lines from the packet — the X item pass covers them (they show
+    as "NO I line"), or the packet should list item ids in the fold.

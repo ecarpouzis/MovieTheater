@@ -34,6 +34,7 @@ namespace MovieTheater.Books.Db
         public DbSet<ReadingOrderEntry> ReadingOrderEntries => Set<ReadingOrderEntry>();
         public DbSet<CollectionNode> CollectionNodes => Set<CollectionNode>();
         public DbSet<CollectedEditionSpan> CollectedEditionSpans => Set<CollectedEditionSpan>();
+        public DbSet<CollectedEditionSpanRun> CollectedEditionSpanRuns => Set<CollectedEditionSpanRun>();
         public DbSet<ContainmentFlag> ContainmentFlags => Set<ContainmentFlag>();
         public DbSet<SeriesTitle> SeriesTitles => Set<SeriesTitle>();
         public DbSet<CvVolume> CvVolumes => Set<CvVolume>();
@@ -334,6 +335,20 @@ namespace MovieTheater.Books.Db
                 e.HasOne<Item>().WithMany().HasForeignKey(x => x.ItemId).OnDelete(DeleteBehavior.Restrict);
                 e.Property(x => x.Contiguous).HasDefaultValue(false);
                 e.HasIndex(x => x.SeriesId);
+            });
+            modelBuilder.Entity<CollectedEditionSpanRun>(e =>
+            {
+                e.ToTable("CollectedEditionSpanRun");
+                // ProviderKey is IN the key: one book may collect TWO runs on the same leg (a trade of two
+                // minis, every omnibus and Library Edition), and a key of (ItemId, Source, Provider) can hold
+                // only one of them — the second `C` line would overwrite the first.
+                e.HasKey(x => new { x.ItemId, x.Source, x.Provider, x.ProviderKey });
+                // CASCADE, not Restrict: the span is the fact, the run ref is a property OF that fact. A
+                // retracted or re-imported span must not leave a ref behind claiming a run for a range that
+                // no longer exists — the import verb re-attaches the ones it means to keep.
+                e.HasOne<CollectedEditionSpan>().WithMany()
+                    .HasForeignKey(x => new { x.ItemId, x.Source }).OnDelete(DeleteBehavior.Cascade);
+                e.HasIndex(x => new { x.Provider, x.ProviderKey });
             });
             modelBuilder.Entity<ContainmentFlag>(e =>
             {

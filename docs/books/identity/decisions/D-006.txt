@@ -1,0 +1,467 @@
+# D-006 — tier D (no stored provider leg), 120 shelves: the tail of Fantagraphics (the strip-reprint LINES —
+# Maakies, Macanudo, Pogo, Peanuts Every Sunday, Popeye Sundays, Crepax, Young Romance — plus the artist
+# folders), the whole First Second list, Frank Miller Presents, Glénat scanlations, and the long
+# `Graphic Novels` bucket folder.
+# Four shapes. (1) The LINE volume against per-book GCD rows, or the reverse: ComicVine keeps ONE "Maakies"
+# volume of 6 whose issue names are our six filenames while GCD mints a row per book (and the same folder
+# split hits Pogo, Peanuts, Popeye Sundays, Crepax, History Comics) — those shelves are merge chains, and
+# the per-book page counts and ISBNs place every volume. (2) The 2022-2025 Fantagraphics / First Second /
+# D&Q singleton GCD indexes and the ComicVine rip does not — `cv=- gcd=<row>` + provider-missing. (3) The
+# `Graphic Novels` bucket is a folder, not a run: ~55 unrelated one-off books, most of them micro-press,
+# self-published, webrip or scanlation, and the packet's candidate block returned the SAME six noise rows
+# ("The Discworld Graphic Novels", "Dr. Seuss Graphic Novels", "Graphic Novels as Philosophy") on nearly
+# every one of them because the parsed key is the folder name. Every decision here comes from re-probing
+# the file's own title; where that finds nothing in either catalog the honest line is R + provider-missing,
+# and that is the single commonest verdict in this batch. (4) Scanlations of French albums take the
+# original-language row where one exists (the Europe Comics ruling), and an R where it does not.
+
+# ---- Fantagraphics: singles and lines ------------------------------------------------------------------
+S 68141 cv=158447 gcd=212263 0.95 | CV 158447 "The Complete Web of Horror" 2024 Fantagraphics count 1 (issue 1059087, "HC", 2024-06-08) and GCD 212263 (2024-2024 Fantagraphics, issue 2631629, 298pp, ISBN 978-1-68396-937-2) agree on title, publisher, year and count, and 298pp sits against our 291pp rip
+I 25191 cv=1059087 gcd=2631629 isbn=978-1-68396-937-2 0.95 | the two legs' single issues for the 2024 Fantagraphics hardcover
+
+S 3218 cv=89002 gcd=- 0.9 | CV 89002 "Buddy Does Seattle" 2005 Fantagraphics count 1 (issue 520498) is the Hate collection our 337pp "(2012, 4th edition)" file is; probing the GCD dump for "Buddy Does Seattle" and "Buddy Does Jersey" returns nothing, its only "Buddy" row being D.C. Thomson's 1981 British weekly (32577)
+F 3218 provider-missing | GCD indexes no Fantagraphics "Buddy Does Seattle" collection in any printing
+I 25963 cv=520498 0.9 | the single issue of CV 89002; our file is the 2012 fourth printing, which neither leg indexes separately
+
+R 13149 | "Occultos (Laura Perez) (2024) (Fantagraphics)" returns zero rows in both catalogs: probing ComicVine and the GCD dump for "Occultos" finds nothing, and the file's own EAN-13 9781683969990 (a Fantagraphics 978-1-68396 prefix) matches no gcd_issue ISBN or barcode either
+F 13149 provider-missing | a 2024 Fantagraphics book past the ComicVine rip's horizon and not yet in the GCD dump; the barcode search was the strongest test available and it found nothing
+
+S 14290 cv=138044 gcd=- 0.9 | CV 138044 "Queen of the Ring: Wrestling Drawings by Jaime Hernandez 1980-2020" 2021 Fantagraphics count 1 (issue 876862, "HC", 2021-08-06) carries our file's whole title; probing the GCD dump for "Queen of the Ring" returns nothing, its "Ring" hits being Dark Horse's and Glénat's horror manga
+F 14290 provider-missing | GCD indexes no Fantagraphics "Queen of the Ring" art book
+I 24692 cv=876862 0.9 | the single issue of CV 138044, the 2021 Fantagraphics hardcover, against our 128pp rip; the ladder entry 1980 is the first year in the title
+
+S 5384 cv=22349 gcd=55927 0.95 | ComicVine keeps ONE volume for the whole Maakies book line — CV 22349 "Maakies" 2000 Fantagraphics count 6, whose issue #4 is titled "Der Struwwelmaakies" (134337, 2005-06) — while GCD mints a row per book, 55927 "Der Struwwelmaakies" 2005-2005 Fantagraphics count 1 (issue 807730, ISBN 1-56097-654-3); our filename's "04" is that same ordinal
+F 5384 merge-with=14071 | Fantagraphics\Maakies (1994) is cut into SIX shelves by the book subtitle; all six are CV 22349, one 6-book line
+I 24868 cv=134337 gcd=807730 isbn=1-56097-654-3 0.95 | book 4 of the line on both legs, against our 96pp rip
+
+S 10790 cv=22349 gcd=55933 0.95 | CV 22349's issue #6 is "Little Maakies On the Prairie" (669961, 2010-12) and GCD 55933 "Little Maakies on the Prairie" 2010-2010 Fantagraphics count 1 (issue 807727, 120pp, ISBN 978-1-60699-392-7) is the same book; 120pp against our 121pp rip and our ComicInfo names the series and Fantagraphics
+F 10790 merge-with=14071 | one of six shelves of the same Fantagraphics Maakies book line under CV 22349
+I 24870 cv=669961 gcd=807727 isbn=978-1-60699-392-7 0.95 | book 6 of the line on both legs, 120pp against our 121pp
+
+S 11138 cv=22349 gcd=55934 0.95 | CV 22349's issue #5 is "The Maakies with the Wrinkled Knees" (134338, 2008-03) and GCD 55934 "Maakies with the Wrinkled Knees" 2008-2008 Fantagraphics count 1 (issue 807726, ISBN 978-1-56097-893-0) is the same book, matching our ComicInfo Series and Publisher
+F 11138 merge-with=14071 | one of six shelves of the same Maakies line
+I 24869 cv=134338 gcd=807726 isbn=978-1-56097-893-0 0.95 | book 5 of the line on both legs, against our 121pp rip
+
+S 14071 cv=22349 gcd=55936 0.95 | CV 22349's issue #1 is "Premillenial Maakies" (134333, 2006-10) and GCD 55936 "Premillennial Maakies: The First Five Years" 2006-2006 Fantagraphics count 1 (issue 807724, ISBN 1-56097-778-7) is our "01 Premillennial Maakies - The First Five Years (2006)"
+F 14071 merge-with=18795 | the six Maakies shelves (S5384, S10790, S11138, S14071, S18795, S21564) are one 6-book Fantagraphics line under CV 22349
+I 24865 cv=134333 gcd=807724 isbn=1-56097-778-7 0.95 | book 1 of the line on both legs, against our 265pp rip
+
+S 18795 cv=22349 gcd=55937 0.95 | CV 22349's issue #2 is "The House at Maakies Corner" (134335, 2003-01) and GCD 55937 (2002-2002 Fantagraphics, issue 807723, ISBN 1-56097-508-3) is the same book; our ComicInfo Series and the filename's "02" both agree
+F 18795 merge-with=14071 | one of six shelves of the same Maakies line
+I 24866 cv=134335 gcd=807723 isbn=1-56097-508-3 0.95 | book 2 of the line on both legs, against our 98pp rip
+
+S 21564 cv=22349 gcd=55938 0.95 | CV 22349's issue #3 is "When We Were Very Maakies" (134336, 2004-05) and GCD 55938 (2004-2004 Fantagraphics, issue 807722, ISBN 1-56097-590-3) is the same book, matching our filename's "03" and year
+F 21564 merge-with=14071 | one of six shelves of the same Maakies line
+I 24867 cv=134336 gcd=807722 isbn=1-56097-590-3 0.95 | book 3 of the line on both legs, against our 97pp rip
+
+S 11141 cv=154889 gcd=205614 0.95 | CV 154889 "Macanudo: Optimism is for the Brave" 2023 Fantagraphics count 1 (issue 1031418) and GCD 205614 "Macanudo: Optimism Is for the Brave" 2023-2023 Fantagraphics count 1 (issue 2579110) agree on title, publisher, year and count against our 176pp file and our ComicInfo
+N 11141 Fantagraphics mints a record per BOOK for Macanudo on both legs (no line volume); the underlying Spanish original is GCD 105614 "Macanudo" 2001-? Ediciones de la Flor, 10 volumes, which we do not hold
+I 24874 cv=1031418 gcd=2579110 0.95 | the two legs' single issues for the 2023 Fantagraphics volume, our filename's "02" being the ripper's ordinal
+
+S 11142 cv=- gcd=218920 0.9 | GCD 218920 "Macanudo: The Way of the Penguin" 2024-2024 Fantagraphics count 1 (issue 2688783, 184pp, ISBN 9781683969976) matches our 160pp 2024 file title for title; the ComicVine rip holds only the 2023 "Optimism" volume of this Fantagraphics line, not this one
+F 11142 provider-missing | ComicVine has no 2024 Fantagraphics "Macanudo: The Way of the Penguin"
+I 24875 gcd=2688783 isbn=9781683969976 0.9 | GCD's 184pp 2024 Fantagraphics issue against our 160pp rip
+
+S 11143 cv=- gcd=191931 0.9 | GCD 191931 "Macanudo: Welcome to Elsewhere" 2022-2022 Fantagraphics count 1 (issue 2446674, ISBN 9781683965565) matches our "01 Macanudo - Welcome to Elsewhere (2022) (Fantagraphics)" exactly; the ComicVine rip has no row and its "Elsewhere" candidates are Image's and Marvel's unrelated series
+F 11143 provider-missing | ComicVine indexes no Fantagraphics "Macanudo: Welcome to Elsewhere"
+I 24873 gcd=2446674 isbn=9781683965565 0.9 | GCD's single 2022 Fantagraphics issue against our 172pp rip
+
+S 35672 cv=152816 gcd=202869 0.95 | the file is Werewolf Jones & Sons Deluxe Summer Fun Annual, and both legs mint it: CV 152816 "Werewolf Jones & Sons Deluxe Summer Fun Annual" 2023 Fantagraphics count 1 (issue 1005756, "HC", 2023-08-04) and GCD 202869 (2023-2023 Fantagraphics, issue 2560331) agree on title, publisher, year and count
+N 35672 the shelf name and ComicInfo say "Megg, Mogg and Owl", the ripper's franchise label; the Amsterdam collection is a separate record (CV 89794 / GCD 115799) and Simon Hanselmann's 2022 self-published version is GCD 223307
+I 24703 cv=1005756 gcd=2560331 0.95 | the two legs' single issues for the 2023 Fantagraphics annual against our 98pp rip
+
+S 66476 cv=78379 gcd=66678 0.95 | CV 78379 "Nancy Loves Sluggo" 2014 Fantagraphics count 1, whose single issue 471412 is titled "Volume 3: 1949-1951", and GCD 66678 "Nancy Complete Dailies" 2012-? Fantagraphics count 3, whose issue "1949-1951" (1287438, 336pp, ISBN 9781606997772) is titled "Nancy Loves Sluggo" — the same book, the two legs disagreeing only on whether the line or the book carries the name; 336pp against our 344pp
+I 25986 cv=471412 gcd=1287438 isbn=9781606997772 0.95 | volume 3 of the Fantagraphics Nancy dailies line, 1949-1951, on both legs
+
+S 66468 cv=- gcd=63235 0.9 | GCD 63235 "Life's a Bitch: The Complete Bitchy Bitch Stories" 2005-2005 Fantagraphics count 1 (issue 918269, 276pp, ISBN 156097656X) matches our "COL Life's a Bitch - The Complete Bitchy Bitch Stories Vol. 01 (2005)" and its 267pp; the ComicVine rip has no row for it
+F 66468 provider-missing | ComicVine indexes no Fantagraphics "Life's a Bitch" collection
+I 25965 gcd=918269 isbn=156097656X 0.9 | GCD's 276pp 2005 Fantagraphics issue against our 267pp rip
+
+S 13672 cv=69169 gcd=78271 0.95 | one Fantagraphics line on both legs: CV 69169 "Peanuts Every Sunday" 2013 Fantagraphics count 10 and GCD 78271 (2013-2022 Fantagraphics, count 10) agree on publisher, span and count, and each numbers its volumes by the year range — #9 is "Vol. 9: 1991-1995" (CV issue 882864) and "1991-1995" (GCD issue 2282008), our ComicInfo Series exactly
+F 13672 merge-with=13671 | S13671 holds volumes 01-04 and more of this same Fantagraphics "Peanuts Every Sunday" line and already stores CV 69169
+I 24713 cv=882864 gcd=2282008 isbn=9781683964636 0.95 | volume 9 (1991-1995) of the line on both legs, against our 266pp rip
+
+S 13919 cv=45012 gcd=62043 0.95 | CV 45012 "Pogo: The Complete Syndicated Comic Strips" 2011 Fantagraphics count 8 and GCD 62043 (2011-? Fantagraphics, count 8) agree on publisher, start year and count, and their volume subtitles match our two files exactly — #6 "Clean as a Weasel" (CV 733890 / GCD 2063686, 368pp vs our 361pp) and #7 "Pockets Full of Pie" (CV 817460 / GCD 2162740, 364pp vs our 357pp)
+F 13919 merge-with=13920 | the Fantagraphics\Pogo (1948) folder is split into two shelves by a ComicInfo Series spelling ("Pogo: The Complete Daily & Sunday Comic Strips" on these two, "Pogo: The Complete Syndicated Comic Strips" on the other six); one eight-volume line
+I 24887 cv=733890 gcd=2063686 isbn=978-1-68396-243-4 0.95 | volume 6 "Clean as a Weasel", 368pp against our 361pp
+I 24888 cv=817460 gcd=2162740 isbn=978-1-68396-376-9 0.95 | volume 7 "Pockets Full of Pie", 364pp against our 357pp
+
+S 13920 cv=45012 gcd=62043 0.95 | the same eight-volume Fantagraphics line as S13919: CV 45012 count 8 and GCD 62043 count 8 both title their volumes with our filenames' subtitles, and GCD's page counts 316/364/376/372/368/380 for #1-5 and #8 sit within ±10pp of our 309/357/369/365/360/372
+F 13920 merge-with=13919 | S13919 holds volumes 6 and 7 of this same line, split off by a different ComicInfo Series spelling
+I 24882 cv=309926 gcd=901121 isbn=978-1-56097-869-5 0.95 | volume 1 "Through the Wild Blue Wonder", GCD 316pp against our 309pp second printing
+I 24883 cv=373406 gcd=1043385 isbn=978-1-60699-584-6 0.95 | volume 2 "Bona Fide Balderdash", GCD 364pp against our 357pp
+I 24884 cv=469031 gcd=1287439 isbn=9781606996942 0.95 | volume 3 "Evidence to the Contrary", GCD 376pp against our 369pp
+I 24885 cv=654006 gcd=1775831 isbn=978-1-60699-863-2 0.95 | volume 4 "Under the Bamboozle Bush", GCD 372pp against our 365pp
+I 24886 cv=688203 gcd=1856979 isbn=978-1-68396-133-8 0.95 | volume 5 "Out of This World at Home", GCD 368pp against our 360pp
+I 24889 cv=1062969 gcd=2467482 isbn=9781683964711 0.95 | volume 8 "Hijinks from the Horn of Plenty", GCD 380pp against our 372pp
+
+S 13955 cv=139195 gcd=179342 0.95 | CV 139195 "The E.C. Segar Popeye Sundays" 2021 Fantagraphics count 4 and GCD 179342 "Popeye" 2021-2024 Fantagraphics count 4 are one line, and #4 on each is "Swee'Pea & Eugene the Jeep" (CV issue 1078667 / GCD issue 2682199, ISBN 9798875000010) — our filename exactly
+I 24893 cv=1078667 gcd=2682199 isbn=9798875000010 0.95 | volume 4 of the Segar Popeye Sundays line on both legs, against our 149pp rip
+
+S 4328 cv=- gcd=98689 0.9 | GCD keeps ONE row for the line — 98689 "The Complete Crepax" 2016-? Fantagraphics count 9, whose issue titles are our six filenames' subtitles volume for volume (Dracula/Frankenstein, The Time Eaters, Evil Spells, Private Life, American Stories, Dangerous Liaisons) — while ComicVine mints a count-1 volume per BOOK (89153, 97412, 107757, 117625, 123791, 134860), so no ComicVine line volume exists
+F 4328 provider-missing | ComicVine has no series-level "The Complete Crepax" volume; it indexes each book separately, which is why the S carries cv=-
+I 24442 cv=521403 gcd=1548332 isbn=978-1-60699-890-8 0.95 | volume 1, GCD 466pp against our 460pp rip
+I 24443 cv=571742 gcd=1663435 isbn=978-1-60699-973-8 0.95 | volume 2 "The Time Eaters", GCD 424pp against our 407pp rip
+I 24444 cv=638273 gcd=1775683 isbn=978-1-68396-058-4 0.95 | volume 3 "Evil Spells", CV issue labelled "Volume 3", against our 431pp rip
+I 24445 cv=703081 gcd=1936430 isbn=9781683961376 0.95 | volume 4 "Private Life", CV volume 117625's single issue, against our 457pp rip
+I 24446 cv=731844 gcd=2053939 isbn=978-1-68396-265-6 0.95 | volume 5 "American Stories", CV volume 123791's single issue, against our 453pp rip
+I 24447 cv=840404 gcd=2215359 isbn=9781683963592 0.95 | volume 6 "Dangerous Liaisons", CV issue labelled "Volume 6", against our 450pp rip
+
+S 18550 cv=40267 gcd=15815 0.9 | the 2024 Fantagraphics Freak Brothers collected line has no record of its own on either leg (ComicVine holds only its volume 1, CV 160718 "High Times and Misdemeanors"), so the S takes the run it reprints: CV 40267 "The Fabulous Furry Freak Brothers" 1971 Rip Off Press count 14 and GCD 15815 (1971-2003 Rip Off Press, 13 issues of 52pp) agree on publisher, start year and count
+F 18550 merge-with=18549 | S18549 holds volumes 04 and 06 of this same 2022-2023 Fantagraphics Freak Brothers collected line and already stores CV 40267
+N 25010 no-record | our book is volume 2 of Fantagraphics' 2024 line, "The 7th Voyage of Fabulous Furry Freak Brothers and Other Follies"; probing both catalogs for "7th Voyage" and for the Fantagraphics line returns only volume 1 (CV 160718, issue 1075817) — volume 2 is indexed by neither, and the Knockabout/Rip Off collections (GCD 46319, 48422, 81623) are different editions
+
+S 22717 cv=65705 gcd=63124 0.9 | CV 65705 "Young Romance: Simon & Kirby 1940-1950" 2013 Fantagraphics count 3, whose issues are "Part 1/2/3", matches our three "Vol. 01/02/03" files at 91/87/86pp, and GCD 63124 "Young Romance: The Best of Simon & Kirby's Romance Comics" 2012-? Fantagraphics count 2 is the same material in PRINT volumes of 216pp and 208pp — the digital release split the two books into three parts
+N 22717 the count disagreement is a format split, not residue: GCD indexes two print volumes (issues 912626 and 1192656) where ComicVine indexes the three-part digital release; Eclipse's 1988 "Real Love: The Best of Simon and Kirby Romance Comics" (CV 47660) is a different, earlier book
+I 24521 cv=419090 gcd=912626 isbn=978-160699-502-0 0.9 | digital Part 1; GCD's print volume 1 (216pp) covers it
+I 24522 cv=419091 gcd=912626 isbn=978-160699-502-0 0.9 | digital Part 2; it falls inside GCD's print volume 1 as well — the three digital parts do not map one-to-one onto the two print books
+I 24523 cv=419092 gcd=1192656 isbn=978-1-60699-732-1 0.9 | digital Part 3; GCD's print volume 2 (208pp) is the nearer match by content order
+
+R 19739 | "The Tell-Tale Heart by Alberto Breccia (Scanlation)" is a 13pp extract of Breccia's Poe adaptation with no publisher named and no record of its own: the candidates are three different Poe books — GCD 72802 "The Tell-Tale Heart and Other Stories" 1988 Fantagraphics (36pp), Malibu/Eternity's 38444 of the same year (CV 74384) and Capstone's 2013 110580 — and none is a Breccia collection; openlibrary OL41059W is the Poe story, not an edition
+F 19739 provider-missing | Breccia's Spanish-language Poe adaptations are indexed by neither catalog, and a 13pp scanlation names no edition to choose between the 1988 books
+
+S 10497 cv=- gcd=214156 0.9 | GCD 214156 "Kommix" 2024-2024 Fantagraphics count 1 (issue 2649456, 88pp, ISBN 978-1-68396-957-0) matches our 82pp "Kommix (Charles Burns) (2024) (Fantagraphics)" on title, publisher and year; the ComicVine rip has no row and its candidates are all Fantagraphics Studio Editions reached by the publisher name
+F 10497 provider-missing | ComicVine indexes no 2024 Fantagraphics "Kommix"
+I 25974 gcd=2649456 isbn=978-1-68396-957-0 0.9 | GCD's 88pp 2024 Fantagraphics issue against our 82pp rip; openlibrary OL37623044W is the same work
+
+S 9664 cv=44091 gcd=59325 0.95 | CV 44091 "Isle of 100,000 Graves" 2011 Fantagraphics count 1 (issue 303144) and GCD 59325 (2011-2011 Fantagraphics, issue 847477, 60pp, ISBN 978-1-60699-442-9) agree on title, publisher, year and count, 60pp against our 58pp rip; the shelf key "Isle of" and ladder 0 are the parser losing the "100,000"
+I 24346 cv=303144 gcd=847477 isbn=978-1-60699-442-9 0.95 | the two legs' single issues for Jason's 2011 Fantagraphics book
+
+S 9166 cv=- gcd=208940 0.9 | GCD 208940 "Hypericum" 2024-2024 Fantagraphics count 1 (issue 2609160) is the English edition our 144pp file is (avant-verlag's 199858 is the 2023 German one); the ComicVine rip has no Hypericum row at all
+F 9166 provider-missing | ComicVine indexes no Fantagraphics "Hypericum"
+I 24790 gcd=2609160 0.9 | GCD's single Fantagraphics issue; our filename dates it 2023 and GCD 2024, the usual digital/print lead; openlibrary OL37579141W is the same work
+
+R 18665 | "The Ghastly Ones & Other Fiendish Frolics (Richard Sala) (1995)" returns zero rows in both catalogs: probing for "Ghastly Ones" and "Ghastly" finds nothing, and the file's own EAN-13 9780916397401 (a Kitchen Sink Press 0-916397 prefix) matches no gcd_issue ISBN or barcode
+F 18665 provider-missing | Kitchen Sink's 1995 Richard Sala book is in neither catalog; the barcode probe was the strongest test available
+
+S 66483 cv=128131 gcd=161256 0.95 | CV 128131 "Streets of Paris, Streets of Murder" 2020 Fantagraphics count 2 and GCD 161256 "Streets of Paris, Streets of Murder: The Complete Graphic Noir of Manchette & Tardi" 2020-2020 Fantagraphics count 2 agree on publisher, year and count, and our four files are two duplicate rips each of volumes 1 and 2
+F 66483 partial-rip | items 24811/24921 are the same 169pp volume 1 and 24812/24922 the same 207pp volume 2, filed once under Fantagraphics and once under Fantagraphics\_Tardi — the shelf's own label-ambiguous flag says exactly this
+I 24921 cv=769903 gcd=2122980 isbn=978-1-68396-286-1 0.95 | volume 1 on both legs, against our 169pp rip
+I 24811 cv=769903 gcd=2122980 isbn=978-1-68396-286-1 0.95 | the duplicate rip of volume 1, byte-identical at 169pp
+I 24922 cv=806680 gcd=2153302 isbn=9781683963202 0.95 | volume 2 on both legs, against our 207pp rip
+I 24812 cv=806680 gcd=2153302 isbn=9781683963202 0.95 | the duplicate rip of volume 2, byte-identical at 207pp
+
+# ---- First Second ---------------------------------------------------------------------------------------
+R 325 | "ALIEEEN (2006) (First Second)" returns zero rows in both catalogs: probing ComicVine and the GCD dump for "ALIEEEN" and its variants finds nothing, and the packet's candidates are all "First"/"Second" substring noise from the folder name
+F 325 provider-missing | Lewis Trondheim's 2006 First Second book is indexed by neither catalog under this title
+
+S 356 cv=76754 gcd=96911 0.95 | CV 76754 "Above the Dreamless Dead" 2014 First Second count 1 (issue 464077, "HC") and GCD 96911 "Above the Dreamless Dead: World War I in Poetry and Comics" 2014-2014 First Second count 1 (issue 1531908, 152pp, ISBN 978-1-62672-065-7) agree on publisher, year and count, 152pp against our 143pp rip
+I 25251 cv=464077 gcd=1531908 isbn=978-1-62672-065-7 0.95 | the two legs' single issues for the 2014 First Second anthology
+
+S 1757 cv=71475 gcd=81525 0.95 | CV 71475 "Baby's In Black" 2014 First Second count 1 (issue 444612, "GN") and GCD 81525 "Baby's in Black" 2014-2014 First Second count 1 (issue 1224692, 212pp, ISBN 9781596439184) agree on publisher, year and count, 212pp against our 210pp rip; GCD 81523 is First Second's 2012 first printing and the Kodansha/Oog & Blik/Kultura Gniewu rows are other territories
+I 25254 cv=444612 gcd=1224692 isbn=9781596439184 0.95 | the 2014 First Second printing our file is, on both legs
+
+S 3280 cv=- gcd=183598 0.9 | GCD 183598 "Button Pusher" 2022-2022 First Second count 1 (issue 2385162) matches our 256pp 2022 file on title, publisher and year; the ComicVine rip has no row and its candidates (Panini's "Der Button", Alternative's "Power Button", Fantagraphics' "Bottomless Belly Button") are different comics
+F 3280 provider-missing | ComicVine indexes no First Second "Button Pusher"
+I 25273 gcd=2385162 0.9 | GCD's single 2022 First Second issue; openlibrary OL25477963W is the same work
+
+S 5415 cv=- gcd=231873 0.9 | GCD 231873 "Detective Sweet Pea" 2024-2024 First Second count 1 (issue 2803081) matches our ComicInfo (Series "Detective Sweet Pea - The Case of the Golden Bone", Publisher First Second) and our 213pp 2024 file; the ComicVine rip has no row and its "Bone" candidates are Jeff Smith's series in six territories
+F 5415 provider-missing | ComicVine indexes no First Second "Detective Sweet Pea"
+I 25293 gcd=2803081 0.9 | GCD's single 2024 First Second issue against our 213pp rip
+
+S 6049 cv=- gcd=210109 0.9 | GCD 210109 "Einstein" 2022-2022 First Second is the only record in either catalog for our "Einstein (First Second 2022)" 304pp file — the ComicVine rip's Einstein volumes are Nobrow's 2016 (91889), Norma's 2023 (163975) and Digital Manga's Edu-Manga, and GCD's other rows are Knesebeck's German, Dargaud's French and Panini's German editions
+F 6049 provider-missing | ComicVine indexes no First Second "Einstein"; GCD's row exists but carries no issue rows at all, so no item-level id can be given
+I 25295 gcd=s210109 0.9 | the GCD series row is the only identity available — 210109 holds no indexed issues, so the `s` form is the honest item-level answer for our single 304pp file
+
+S 6644 cv=50171 gcd=73880 0.95 | CV 50171 "Feynman" 2011 First Second count 1 (issue 344202, "GN") and GCD 73880 "Feynman" 2011-2011 First Second count 1 (issue 1106690, 252pp, ISBN 9781596432598) agree on publisher, year and count, 252pp against our 282pp rip; GCD 70886 is the 2013 First Second paperback and 106437/100544 the French and German editions
+I 25298 cv=344202 gcd=1106690 isbn=9781596432598 0.95 | the 2011 First Second first edition our file names, on both legs
+
+S 8904 cv=- gcd=178120 0.9 | GCD 178120 "Himawari House" 2021-2021 First Second count 1 (issue 2278093) matches our 382pp 2021 file on title, publisher and year; the ComicVine rip has no row and its "Himawari" candidates are Akita Shoten's and Glénat Spain's manga
+F 8904 provider-missing | ComicVine indexes no First Second "Himawari House"
+I 25302 gcd=2278093 0.9 | GCD's single 2021 First Second issue against our 382pp rip; openlibrary OL24607815W is the same work
+
+R 9141 | "Hungry Ghost (2023)" (First Second per our ComicInfo) returns zero rows in both catalogs: probing for the singular title finds nothing, and every "Hungry Ghosts" record (Dark Horse's 2018 Bourdain mini CV 108252 / GCD 120517 and its collection, Lucha's 2014, Dynamite's Uncanny arc) is a different comic
+F 9141 provider-missing | Victoria Ying's 2023 First Second book is indexed by neither catalog
+
+S 9332 cv=- gcd=190891 0.9 | GCD 190891 "Improve: How I Discovered Improv and Conquered Social Anxiety" 2022-2022 First Second count 1 (issue 2441235) carries our file's whole title and matches our ComicInfo Series and Publisher; the ComicVine rip has no row and its candidates are substring noise ("Anxiety", "How Good Was I?", "Social Fiction")
+F 9332 provider-missing | ComicVine indexes no First Second "Improve"
+I 25311 gcd=2441235 0.9 | GCD's single 2022 First Second issue against our 241pp rip
+
+R 10926 | "Look on the Bright Side (2023)" (First Second per our ComicInfo) returns zero rows in both catalogs: probing for the full title finds nothing, and the candidates are NBM's "Look" (CV 100421 / GCD 114029), Harlequin's "Walk On the Wild Side" and Marvel's "Strange Academy: Bright Side"
+F 10926 provider-missing | this 2023 First Second book is indexed by neither catalog; openlibrary OL31144799W is our only external record
+
+S 14160 cv=- gcd=192645 0.9 | GCD 192645 "Prunella and the Cursed Skull Ring" 2022-2022 First Second count 1 (issue 2452093) matches our 160pp 2022 file title for title; the ComicVine rip has no row and its candidates ("Skull", "The Ring") are the parsed key reaching bare words
+F 14160 provider-missing | ComicVine indexes no First Second "Prunella and the Cursed Skull Ring"
+I 25335 gcd=2452093 0.9 | GCD's single 2022 First Second issue; openlibrary OL39182555W is the same work
+
+R 14649 | "Reynard's Tale - A Story of Love and Mischief (First Second 2023)" returns zero rows in both catalogs: probing for "Reynard's Tale" and "Reynard" finds only an unrelated "Reynard City Chronicles" in ComicVine, and the packet's candidates are "A Love Story" substring noise
+F 14649 provider-missing | this 2023 First Second book is indexed by neither catalog, though our ComicInfo asserts the title and publisher
+
+S 16288 cv=101214 gcd=126700 0.9 | our file is Spill Zone volume 2: GCD 126700 "Spill Zone" 2019-2020 First Second count 2 has issue #2 titled "The Broken Vow" (1987449, 244pp, ISBN 9781250309426) against our 235pp rip, and ComicVine keeps one volume for the line, CV 101214 "Spill Zone" 2017 First Second count 2
+F 16288 merge-with=16287 | S16287 holds Spill Zone v01 of the same First Second two-book line and already stores CV 101214
+N 16288 GCD carries TWO First Second Spill Zone rows — 126409 (2017-, the first book) and 126700 (2019-2020, holding both books) — and Rue de Sèvres' 142725 is the French edition
+I 25348 cv=- gcd=1987449 isbn=9781250309426 0.9 | volume 2 "The Broken Vow", GCD's 244pp against our 235pp rip; the ComicVine rip caches no issues for volume 101214
+
+R 18073 | "The Bawk-ness Monster (Cryptid Kids) (2023)" (First Second per our ComicInfo) returns zero rows in both catalogs: probing for "Bawk-ness" finds nothing at all, and every candidate is a "Monster" substring hit in six languages
+F 18073 provider-missing | this 2023 First Second kids' book is indexed by neither catalog
+
+S 18726 cv=143656 gcd=180889 0.95 | CV 143656 "The Greatest Thing" 2022 First Second count 1 (issue 931028, "GN", 2022-02-01) and GCD 180889 "The Greatest Thing" 2022-2022 First Second count 1 (issue 2306091) agree on title, publisher, year and count against our 336pp Sarah Winifred Searle file
+I 25359 cv=931028 gcd=2306091 0.95 | the two legs' single issues for the 2022 First Second book
+
+R 19966 | "The Wondrous Wonders" (two rips, 164pp and 163pp, First Second per our ComicInfo) returns zero rows in both catalogs: probing for the full title finds nothing, and the candidates are EC's 1947 "Wonders of Wire Rope" and Source Point's "Era of Great Wonders"
+F 19966 provider-missing | Camille Jourdy's First Second translation is indexed by neither catalog; the two files are duplicate rips dated 2020 and 2022
+
+S 20445 cv=- gcd=198318 0.9 | GCD 198318 "Travis Daventhorpe for the Win!" 2023-2023 First Second count 1 (issue 2512419) matches our ComicInfo Series and Publisher and our 268pp 2023 file; the ComicVine rip has no row and its "Travis" candidates are Delcourt's and Bunte Dimensionen's European series
+F 20445 provider-missing | ComicVine indexes no First Second "Travis Daventhorpe"
+I 25377 gcd=2512419 0.9 | GCD's single 2023 First Second issue; openlibrary OL28059769W is the same work
+
+S 13628 cv=72483 gcd=- 0.9 | CV 72483 "Paul Pope: Monsters & Titans" 2014 Image count 1 (issue 448242, "SC", 2014-03-01) is the Battling Boy tour sketchbook our 105pp file is; probing the GCD dump for "Monsters & Titans" and "Monsters and Titans" returns nothing, its Battling Boy rows (85800, 152992) being the graphic novel itself
+F 13628 provider-missing | GCD indexes no "Paul Pope: Monsters & Titans"; the book is filed under FirstSecond\Battling Boy but was published by Image
+I 25260 cv=448242 0.9 | the single issue of CV 72483, the 2014 Image tour sketchbook
+
+S 23540 cv=- gcd=163496 0.9 | GCD keeps a line row — 163496 "History Comics" 2020-? First Second — whose issues are titled with our filenames' subtitles, while ComicVine mints a volume per BOOK (128293 Great Chicago Fire, 128294 Roanoke, 131288 Challenger, 133839 Wild Mustang, 152560 Rosa Parks), so no ComicVine line volume exists
+N 23540 GCD carries a TWIN line row 163497 with the same three books at different ISBNs, and files two of our volumes outside the line altogether (The Wild Mustang as 169652/169655); Rosa Parks & Claudette Colvin has no GCD row at all
+I 25303 cv=1003835 gcd=- 0.9 | Rosa Parks & Claudette Colvin, CV 152560's single issue (2023); GCD indexes no row for this volume
+I 25304 cv=812085 gcd=2159053 isbn=9781250174307 0.9 | The Challenger Disaster, CV 131288's issue and GCD 163496's 132pp row, against our 130pp rip
+I 25305 cv=771935 gcd=2124649 isbn=9781250174260 0.9 | The Great Chicago Fire, CV 128293's issue and GCD 163496's 132pp row, against our 130pp rip
+I 25306 cv=771966 gcd=2124660 isbn=9781250174352 0.9 | The Roanoke Colony, CV 128294's issue and GCD 163496's 132pp row, against our 128pp rip
+I 25307 cv=828655 gcd=2199567 0.9 | The Wild Mustang, CV 133839's issue (2021-02-17) and GCD 169652's single 2021 First Second issue, which GCD files outside the History Comics line row
+
+S 8957 cv=- gcd=209419 0.95 | GCD 209419 "Homicide: The Graphic Novel" 2023-2023 First Second count 2 matches our ComicInfo Series and Publisher and our two files volume for volume — issue 1 is 332pp against our 163pp digital part and issue 2 is 408pp against our 400pp; the ComicVine rip has no row at all
+F 8957 provider-missing | ComicVine indexes no First Second "Homicide: The Graphic Novel"
+I 25308 gcd=2612454 isbn=978-1-250-62462-8 0.9 | volume 1, GCD's 332pp 2023 issue against our 163pp rip (the digital release splits the book)
+I 25309 gcd=2612455 isbn=978-1-250-62463-5 0.9 | volume 2, GCD's 408pp 2023 issue against our 400pp rip
+
+R 21454 | "What Happens Next 001 - Talent Show Troubles / 002 - Science Fair Frenzy (First Second, 2023)" returns zero rows in both catalogs: probing for "What Happens Next" finds nothing, and the candidates are Harlequin's "What Happens in Vegas" and DC's "The Next Batman: Second Son"
+F 21454 provider-missing | this 2023 First Second two-book kids' line is indexed by neither catalog
+
+S 11081 cv=- gcd=226387 0.9 | GCD 226387 "Lunar New Year Love Story" 2024-2024 Macmillan Publishing count 1 (issue 2759899) matches our ComicInfo Series and our 352pp 2024 file; First Second is a Macmillan imprint, which is how GCD files it, and the ComicVine rip has no row
+F 11081 provider-missing | ComicVine indexes no First Second / Macmillan "Lunar New Year Love Story"
+I 25400 gcd=2759899 0.9 | GCD's single 2024 Macmillan (First Second) issue; openlibrary OL37513949W is the same work
+
+S 13851 cv=- gcd=226386 0.9 | GCD 226386 "Plain Jane and the Mermaid" 2024-2024 Macmillan Publishing count 1 (issue 2759898) matches our 370pp Vera Brosgol file and our ComicInfo Publisher "First Second", which GCD files under its Macmillan parent; the ComicVine rip has no row and its "Jane" candidates are Boom!'s, Casterman's and a Daily Mirror strip
+F 13851 provider-missing | ComicVine indexes no First Second "Plain Jane and the Mermaid"
+I 25405 gcd=2759898 0.9 | GCD's single 2024 Macmillan (First Second) issue; openlibrary OL37935970W is the same work
+
+# ---- Frank Miller Presents, Glénat ---------------------------------------------------------------------
+S 6921 cv=148985 gcd=193162 0.95 | CV 148985 "Ronin Book II" 2022 Frank Miller Presents count 6 and GCD 193162 "Ronin Book II" 2022-? Frank Miller Presents LLC count 6 agree on publisher, year and count, and our four files are #1-4 of that six-issue run (GCD's issues are 60/60/52/52pp against our 48/55/47/47pp, each indexed twice for its variant cover); our ComicInfo says "Frank Miller's Ronin Book II" / Frank Miller Presents
+N 6921 the shared EAN-13 0860008930521 on items 25406 and 25409 is the publisher's UPC prefix repeated across the run, not an issue-specific barcode; we hold #1-4 of 6
+
+R 19184 | see above — the 2023 Glénat adaptation of Eco's novel is indexed by neither ComicVine nor the GCD dump under its English or French title, and the only candidates are the Marvel Black Widow storyline of the same name
+F 19184 provider-missing | neither catalog holds the Glénat "Le Nom de la rose" album line
+
+S 1794 cv=150151 gcd=- 0.9 | our two scanlation files name Glénat and the years 2021 and 2024, and CV 150151 "Mauvaise Réputation" 2021 Éditions Glénat count 2 is that French original — the same publisher, the same start year and the same two-book count; the GCD dump holds only Dark Dragon Books' Dutch translation, 186138 "Bad Reputation" 2022, 2 volumes
+F 1794 provider-missing | GCD indexes no Glénat "Mauvaise Réputation"; its only row for this comic is the Dutch licensed edition
+N 1794 the ladder reads 2 because both filenames end "1 of 2" and "2 of 2"; they are the two albums of the French line, not two rips of one
+
+# ---- The `Graphic Novels` bucket folder ----------------------------------------------------------------
+S 177 cv=42113 gcd=62522 0.9 | CV 42113 "Child's Life and Other Stories" 1998 count 1 (issue 286857) and GCD 62522 "A Child's Life and Other Stories" 1998-1998 North Atlantic Books count 1 (issue 902867, 148pp, ISBN 9781883319717) are Phoebe Gloeckner's book, 148pp against our 155pp rip; our filename's 2000 is the second printing, which neither leg indexes separately
+I 27208 cv=286857 gcd=902867 isbn=9781883319717 0.9 | the two legs' single issues for the 1998 North Atlantic Books edition; openlibrary OL35066W is the same work
+
+S 210 cv=- gcd=237637 0.9 | GCD 237637 "A Lungful of Brine" 2022-2022 Afterlight Comics count 1 (issue 2838708) matches our 93pp 2022 file title for title and publisher; the ComicVine rip has no row and its candidates are the folder-name noise ("Graphic Horror", "Discworld Graphic Novels")
+F 210 provider-missing | ComicVine indexes no Afterlight Comics "A Lungful of Brine"
+I 27213 gcd=2838708 isbn=9798986591605 0.9 | GCD's single 2022 Afterlight issue; the EAN-13 read off our own pages is an Afterlight 979-8-9865916 prefix consistent with it
+
+S 294 cv=- gcd=224176 0.9 | GCD 224176 "ABC Disgusting" 2015-2015 Pak Man Productions count 1 (issue 2739797, ISBN 9780996307727) matches our 34pp 2015 file title for title; the ComicVine rip has no row and returned only the folder's own name as noise
+F 294 provider-missing | ComicVine indexes no Pak Man Productions "ABC Disgusting"
+I 26122 gcd=2739797 isbn=9780996307727 0.9 | GCD's single 2015 issue against our 34pp rip
+
+R 326 | "333 AM Stories (2024) (Afterlight Comics)" returns zero rows in both catalogs: probing for "AM Stories", "3:33" and "333" with Afterlight finds nothing, and the parsed key "AM Stories" reaches only Image's "Sam Stories: Legs"; the ladder entry 333 is the title's own numeral
+F 326 provider-missing | this 2024 Afterlight Comics anthology is indexed by neither catalog
+
+S 490 cv=- gcd=185843 0.9 | GCD 185843 "After Lambana: Myth And Magic in Manila (A Graphic Novel)" 2022-2022 Tuttle Publishing count 1 (issue 2409421) matches our ComicInfo (Series "After Lambana", Publisher "Tuttle Publishing") and our 183pp 2022 file; the ComicVine rip has no row
+F 490 provider-missing | ComicVine indexes no Tuttle Publishing "After Lambana"
+I 27222 gcd=2409421 0.9 | GCD's single 2022 Tuttle issue; openlibrary OL25612011W is the same work
+
+R 974 | "Amy and Jordon at Beach Lake (1980) (Mark Beyer Mini)" is an 11pp minicomic with no record: probing both catalogs finds only the later COLLECTIONS of the strip — GCD 92976 "Amy + Jordan" 2004 Pantheon, 92975 Cambourakis 2013, 93370 Maro Verlag 1996, 93371 Sketch Studio 1993 — none of them this 1980 mini
+F 974 provider-missing | Mark Beyer's 1980 self-published minicomic is indexed by neither catalog; the "Amy + Jordan" rows are the 1988-1996 strip's collections
+
+S 984 cv=140430 gcd=- 0.9 | our 2020 scanlation is of the FRENCH original, and CV 140430 "Anaïs Nin" 2021 Casterman count 1 (issue 910999) is that book; the English edition (CV 156362 / GCD 201174 "Anaïs Nin: A Sea of Lies" 2023 Fantagraphics) came three years after our file and the German (141880 Splitter) and Spanish (143485 Garbuix) are other territories
+F 984 provider-missing | GCD indexes no Casterman "Anaïs Nin dans le miroir"; its only row for this comic is Fantagraphics' 2023 English edition
+I 27234 cv=910999 0.9 | the single issue of CV 140430, Casterman's original, which our 187pp scanlation translates
+
+R 1147 | "Apocalypse Dad (2016)" returns zero rows in both catalogs: probing for the full title finds nothing, and the candidates are Dupuis' French "Dad" series (CV 91648 / GCD 131417) and Europe Comics' digital edition of it, a different comic reached by the bare second word
+F 1147 provider-missing | this 45pp 2016 book is indexed by neither catalog
+
+S 1284 cv=32437 gcd=48022 1.0 | the file's own EAN-13 9781401210670 is exactly GCD issue 752680's ISBN 978-1-4012-1067-0 for "Area 10" 2010 DC (Vertigo Crime), 192pp against our 190pp rip, and ComicVine mints the same book as CV 32437 "Area 10" 2010 DC Comics count 1, issue 204530 "HC"
+I 26101 cv=204530 gcd=752680 isbn=978-1-4012-1067-0 1.0 | the barcode read off our own pages equals GCD's ISBN for the single 2010 Vertigo Crime issue, with both legs agreeing; GCD 109987 is the 2011 paperback
+
+S 1755 cv=- gcd=159494 0.9 | GCD 159494 "Baby in the Boneyard" [en-it] 2019-2019 Hollow Press count 1 (issue 2107290) matches our "Baby in the Boneyard (Jesse Jacobs) (Hollow Press, 2019)" on title, publisher and year; the ComicVine rip has no row and its "Boneyard" candidates are NBM's Richard Moore series
+F 1755 provider-missing | ComicVine indexes no Hollow Press "Baby in the Boneyard"
+I 27244 gcd=2107290 0.9 | GCD's single 2019 Hollow Press issue against our 31pp rip; openlibrary OL32104823W is the same work
+
+R 1797 | "BadGuys (2010) (GN)" returns zero rows in both catalogs under that spelling: probing for "BadGuys" and "Bad Guys" with 2010 finds only Kickstart's 2010 one-shot (CV 43456 / GCD 54532), SLG's Gargoyles spin-off and Scholastic's later kids' line, none of them this 96pp book
+F 1797 provider-missing | neither catalog holds a 2010 graphic novel titled "BadGuys" as one word; openlibrary OL3929210W is our only external record
+
+R 1804 | "Baldwin's Big Adventure (2022) (Curiosity)" returns zero rows in both catalogs: probing for the full title finds nothing, and the candidates (Silver Sprocket's "Snake Pit's Big Adventure", New England Comics' Tick special) are different books; our ComicInfo names Dynamite as publisher, which no Dynamite record supports
+F 1804 provider-missing | this 28pp 2022 Curiosity book is indexed by neither catalog
+
+S 2443 cv=- gcd=213389 0.9 | GCD 213389 "Bernadette" 2019-2019 Tinto Press count 1 (issue 2642060, 46pp) matches our 47pp 2019 file — a one-page difference — while GCD's other "Bernadette" rows are Bayard Presse's French children's weekly across five eras (1923-1963) and the ComicVine rip has nothing at all
+F 2443 provider-missing | ComicVine indexes no Tinto Press "Bernadette"
+I 27254 gcd=2642060 0.9 | GCD's single 46pp 2019 Tinto Press issue against our 47pp rip
+
+R 2522 | "Bible John.cbr" (49pp, no year, no publisher in the filename) returns zero rows in both catalogs: probing for "Bible John" finds nothing, and the only candidate the parsed key reached is Lion Publishing's "The Lion Graphic Bible" (CV 71031), a different book
+F 2522 provider-missing | no record in either catalog, and the file carries no year, publisher or barcode to probe with
+
+R 2910 | "Blane Throttle (2016)" returns zero rows in both catalogs: probing for "Blane Throttle" and "Throttle" with 2016 finds nothing, and the packet's candidate block is entirely the `Graphic Novels` folder-name noise
+F 2910 provider-missing | this 42pp 2016 book is indexed by neither catalog
+
+S 3391 cv=- gcd=58488 0.9 | GCD 58488 "Capacity" 2008-2008 Secret Acres count 1 (issue 833757, 340pp, ISBN 978-0-9799609-2-5, with a second printing row 1949068 at the same ISBN) is Theo Ellsworth's book, 340pp against our 339pp rip — a one-page difference; our filename's 2015 is a later printing, and GCD 95750 is the 2013 French edition
+F 3391 provider-missing | ComicVine indexes no Secret Acres "Capacity"
+I 27266 gcd=833757 isbn=978-0-9799609-2-5 0.9 | GCD's 340pp Secret Acres issue against our 339pp rip; openlibrary OL13837039W is the same work
+
+S 3653 cv=- gcd=152030 0.9 | GCD 152030 "Cassandra Darke" [en-gb] 2018-2018 Jonathan Cape count 1 (issue 2035382, 104pp, ISBN 978-0-22408-909-8) is Posy Simmonds' book, 104pp against our 103pp rip; the ComicVine rip has no row and GCD's other rows (Reprodukt, De Harmonie, Denoël) are the German, Dutch and French editions
+F 3653 provider-missing | ComicVine indexes no Jonathan Cape "Cassandra Darke"
+I 27270 gcd=2035382 isbn=978-0-22408-909-8 0.9 | GCD's 104pp 2018 Jonathan Cape issue against our 103pp rip; openlibrary OL20936213W is the same work
+
+R 3789 | "Chasse Galerie - The Legend of the Flying Canoe (2019)" returns zero rows in both catalogs: probing for "Chasse Galerie" and "Flying Canoe" finds nothing, and GCD's "Chasse" hits are unrelated French albums (Partie de chasse, Chasseurs d'or)
+F 3789 provider-missing | this 13pp 2019 book is indexed by neither catalog
+
+R 4051 | "Come Find Me - The Loom 2003 (2016)" returns zero rows in both catalogs: probing for "Come Find Me" finds only DSTLRY's 2024 "Come Find Me: An Autumnal Offering" (CV 160697) and its ashcan, eight years later and a different publication; the ladder entry 2003 is part of the title, not an issue number
+F 4051 provider-missing | this 17pp 2016 book is indexed by neither catalog
+
+R 4057 | "Comic Arf (2008)" returns zero rows in both catalogs: probing for "Comic Arf" and "Arf" finds nothing, and the file's own EAN-13 9781560979128 (a Fantagraphics 978-1-56097 prefix) matches no gcd_issue ISBN or barcode either
+F 4057 provider-missing | Craig Yoe's 2008 Fantagraphics Arf anthology is in neither catalog; openlibrary OL5753380W is our only external record
+
+R 4148 | "Confetti (2015)" returns zero rows in both catalogs: probing for "Confetti" finds only Mad Cave's 2023 "Confetti Realms" (CV 154241 / GCD 224293), a different comic eight years later
+F 4148 provider-missing | this 184pp 2015 book is indexed by neither catalog
+
+R 4159 | "Constantin de Chamberly - Barbarian, Aesthete and Philanthropist (2023) (Scanlation)" returns zero rows in both catalogs: probing for "Chamberly" and the full title finds nothing in either, and the packet's candidates are the folder's own name
+F 4159 provider-missing | this 2023 French album (scanlated) is indexed by neither catalog under its English title, and the filename gives no publisher to probe the original with
+
+R 4329 | "Crescent Loop (2018) (Decadence Comics) (Lando)" returns zero rows in both catalogs: probing for "Crescent Loop" finds nothing, and the "Crescent" hits (Advent 2022, B-Line 1996, a 2019 self-published book) are different comics
+F 4329 provider-missing | Decadence Comics' small-run British books are indexed by neither catalog
+
+S 5190 cv=- gcd=203133 0.9 | GCD 203133 "Dear Mother & Other Stories" 2021-2021 Strangers count 1 (issue 2562333, 62pp) matches our 64pp 2021 file — the ampersand being the only difference — and the ComicVine rip has no row at all
+F 5190 provider-missing | ComicVine indexes no Strangers "Dear Mother & Other Stories"
+I 27295 gcd=2562333 isbn=9798985274547 0.9 | GCD's 62pp 2021 Strangers issue against our 64pp rip; the EAN-13 read off our own pages is a 979-8-9852745 self-publisher prefix consistent with it
+
+R 5286 | "Decodependence (2023)" returns zero rows in both catalogs: probing for "Decodependence" finds nothing at all in either, and the packet's candidate block is entirely `Graphic Novels` folder noise
+F 5286 provider-missing | this 165pp 2023 book is indexed by neither catalog; openlibrary OL35770953W is our only external record
+
+S 5377 cv=53461 gcd=125269 0.9 | our 156pp "Dennis Worden's Stickboy Saga (2017)" is the self-published collected Stickboy: GCD 125269 "Stickboy" 2017-2017 Dennis Worden count 4 is that 2017 self-published line, and the underlying run is CV 53461 "Stickboy" 1988 Fantagraphics count 8 / GCD 16868 (1988-1990 Fantagraphics, 3), with Revolutionary's 52105 and Starhead's 52106 the later publishers
+N 5377 Stickboy changed publisher three times (Fantagraphics 1988, Revolutionary 1990, Starhead 1993) before Worden's own 2017 collection; no single record spans the strip, and the 2017 line is four books of which we hold one compiled file
+
+R 5881 | "Dry Cleaning (2022) (Scanlation)" returns zero rows in both catalogs: probing for "Dry Cleaning" finds nothing, and the only "Dry" candidates are Markosia's 2019 four-issue series and its 2021 collection, a different comic
+F 5881 provider-missing | this 144pp 2022 scanlated album is indexed by neither catalog
+
+S 5901 cv=42440 gcd=38254 0.95 | CV 42440 "Dumped" 2002 Oni Press count 1 (issue 289836) and GCD 38254 "Dumped" 2002-2002 Oni Press count 1 (issue 649427, 60pp, ISBN 1-929998-41-4) agree on title, publisher, year and count, 60pp against our 59pp rip; the "One-Shot" in our filename is the format, not part of the title
+I 26170 cv=289836 gcd=649427 isbn=1-929998-41-4 0.95 | the two legs' single issues for Andi Watson's 2002 Oni one-shot
+
+S 6329 cv=54234 gcd=33190 1.0 | the EAN-13 read off our own pages, 9780967056678, is GCD issue 558454's ISBN 0-967-05667-5 for "Expo 2000" 2000 Small Press Expo/SPX count 1 (356pp against our 357pp), and ComicVine mints the same anthology as CV 54234 "EXPO 2000" 2000 Small Press Expo count 1, issue 369666
+F 6329 merge-with=15382 | S15382 (D-005) is a two-page Seth extract cut out of this same anthology, filed under Drawn & Quarterly\_Seth\Ice Cream Man
+N 6329 the two files are duplicate rips of one 357pp book, filed under Graphic Novels and under Misc\SPX; the ladder entry 2000 is the year in the title
+I 27311 cv=369666 gcd=558454 isbn=0-967-05667-5 1.0 | the 2000 SPX anthology, its barcode matching GCD's ISBN exactly
+I 107453 cv=369666 gcd=558454 isbn=0-967-05667-5 1.0 | the duplicate rip of the same 357pp anthology, carrying the same barcode
+
+S 6387 cv=- gcd=203980 0.9 | GCD 203980 "Fae Archaic" 2018-2018 Kirt Burdick count 1 (issue 2567887, 76pp, ISBN 978-0-578-55644-4) matches our 68pp 2018 file, and our ComicInfo's publisher "KIRTTRIK" is Kirt Burdick's own imprint; the ComicVine rip has no row and its "Archaic" hits are Ahoy's and Fenickx's series
+F 6387 provider-missing | ComicVine indexes no Kirt Burdick "Fae Archaic"
+I 27313 gcd=2567887 isbn=978-0-578-55644-4 0.9 | GCD's 76pp 2018 issue against our 68pp rip
+
+R 6549 | "Fashion Forecasts (2018)" returns zero rows in both catalogs: probing for "Fashion Forecasts" finds nothing at all, and the packet's candidate block is entirely `Graphic Novels` folder noise
+F 6549 provider-missing | this 75pp 2018 book is indexed by neither catalog
+
+S 6643 cv=- gcd=198627 0.9 | GCD 198627 "Festival of Shadows: A Japanese Ghost Story" 2023-2023 Tuttle Publishing count 1 (issue 2514768) matches our "Festival of Shadows (2023) (Tuttle)" on title, publisher and year; the ComicVine rip has no row and its only "Festival" hit is A-Plus Comics' 1989 one-shot
+F 6643 provider-missing | ComicVine indexes no Tuttle Publishing "Festival of Shadows"
+I 27318 gcd=2514768 0.9 | GCD's single 2023 Tuttle issue against our 166pp rip
+
+S 6836 cv=51958 gcd=34932 0.7 | the file is "Flood (Darwination-DCP).cbz" with no year, no page count and no publisher, and the only Flood book in either catalog is Eric Drooker's — CV 51958 "Flood! A Novel in Pictures" 1992 Four Walls Eight Windows count 1 and GCD 34932 of the same year — but nothing in the filename distinguishes which of its four printings this rip is, which is a real doubt
+F 6836 merge-with=6837 | S6837 holds "Flood! A Novel in Pictures (2015)", the same book's fourth edition; these two shelves are one comic split by a truncated filename
+N 6836 the printings are GCD 34932 (1992 Four Walls Eight Windows), 34933 (2002 Dark Horse), 34934 (2007 Dark Horse) and 89362 (2015 Dark Horse); the rip names none of them
+
+S 6837 cv=51958 gcd=34932 0.9 | GCD indexes printings, so the S takes the first edition both legs hold: CV 51958 "Flood! A Novel in Pictures" 1992 Four Walls Eight Windows count 1 (issue 356431) and GCD 34932 of the same title, publisher and year; the book we hold is the 2015 Dark Horse fourth edition, which our ComicInfo also names
+F 6837 merge-with=6836 | S6836's untitled "Flood" rip is the same book
+I 27321 cv=488750 gcd=1355395 isbn=1-61655-729-X 0.9 | the printing we hold is CV 81992 "Flood! A Novel in Pictures Fourth Edition" 2015 Dark Horse, issue 488750, and GCD 89362's issue 1355395 of the same year
+
+R 6840 | "Flower of a New World (2020)" returns zero rows in both catalogs: probing for the full title finds nothing in either, and the packet's candidate block is entirely `Graphic Novels` folder noise
+F 6840 provider-missing | this 50pp 2020 book is indexed by neither catalog
+
+S 6882 cv=- gcd=100613 0.9 | our 229pp English "Fort Wheeling (2016)" is Hugo Pratt's album, and GCD holds only the original-language editions — 100613 "Fort Wheeling" 1976-1976 Casterman (French) is the first, with 49183/49184 the later Casterman printings, 65748 Comicothek's German and 202958/202959 Schreiber & Leser's; the ComicVine rip has no Fort Wheeling volume at all
+F 6882 provider-missing | neither catalog indexes an English-language "Fort Wheeling"; the French Casterman original is the right comic in the wrong language
+N 6882 ComicVine's "Wheeling" (93833, 1975 Mondadori) is the Italian edition of the same work under the short title
+
+R 6973 | "Free to be Tough (2021)" returns zero rows in both catalogs: probing for the full title finds nothing, and the candidates (Kodansha's "Be Free!", Eco Comics' "Tough Guy") are different comics reached by single words
+F 6973 provider-missing | this 44pp 2021 book is indexed by neither catalog
+
+S 7006 cv=156649 gcd=- 0.9 | CV 156649 "Frogboy" 2022 Chapterhouse Comics count 1 is our "FrogBoy - Punk Rock & Roller Derby (2021)": Lev Gleason (our ComicInfo's publisher) and Chapterhouse are the same house, and the file's EAN-13 9781988247786 is a 978-1-988247 Chapterhouse/Lev Gleason prefix; the GCD dump has no Frogboy row
+F 7006 provider-missing | GCD indexes no Lev Gleason / Chapterhouse "Frogboy"
+I 27326 cv=- isbn=9781988247786 0.9 | the barcode read off our own pages is the book's own ISBN; the ComicVine rip caches no issue for volume 156649, so no item-level CV id exists
+
+S 7045 cv=34160 gcd=32586 0.95 | CV 34160 "Fun Home: A Family Tragicomic" 2006 Houghton Mifflin Harcourt count 1 (issue 222877, "OGN", 2006-06) and GCD 32586 "Fun Home: A Family Tragicomic" 2006-2006 Houghton Mifflin count 1 (issue 552622, 248pp, ISBN 978-0-618-47794-4) agree on publisher, year and count, 248pp against our 242pp rip of the 2006 hardback our filename names
+F 7045 merge-with=7044 | S7044 holds a second rip of the same 2006 Houghton Mifflin "Fun Home: A Family Tragicomic" and already stores CV 34160
+I 26126 cv=222877 gcd=552622 isbn=978-0-618-47794-4 0.95 | the 2006 Houghton Mifflin hardcover on both legs; GCD 25503 is the 2007 paperback and the Denoël / Carlsen / XTRA rows are other territories
+
+R 7051 | "Funk Soul Samurai (2014)" returns zero rows in both catalogs: probing for the full title finds nothing in either, and the packet's candidate block is entirely `Graphic Novels` folder noise
+F 7051 provider-missing | this 24pp 2014 book is indexed by neither catalog
+
+R 7146 | "GRIMLAND Ascension (2022)" returns zero rows in both catalogs: probing for "Grimland" finds nothing, the "Ascension" hits are Image's 1997 series and its European licensed editions, and the file's EAN-13 9789152741665 (a Swedish 978-91 prefix) matches no gcd_issue ISBN or barcode
+F 7146 provider-missing | this Swedish-published 2022 book is indexed by neither catalog; the barcode probe was the strongest test available
+
+S 7151 cv=49698 gcd=54528 0.9 | CV 49698 "When I'm Old and Other Stories" 2002 Alternative Comics count 1 (issue 340869) and GCD 54528 "When I'm Old and Other Stories" 2003-2003 Alternative Comics count 1 (issue 796410, 132pp, ISBN 1-891867-43-1) are Gabrielle Bell's book, 132pp against our 131pp rip — a one-page difference
+N 7151 ComicVine carries the same book twice (49698 and 64883, both 2002 Alternative Comics count 1), which caps this at 0.9; our two files are duplicate rips filed under Graphic Novels and Graphic Novels\Gabrielle Bell
+I 26123 cv=340869 gcd=796410 isbn=1-891867-43-1 0.9 | the Alternative Comics collection on both legs, 132pp against our 131pp
+I 26299 cv=340869 gcd=796410 isbn=1-891867-43-1 0.9 | the duplicate rip of the same 131pp book under Graphic Novels\Gabrielle Bell
+
+R 7189 | "Gardener (Matt Emmons) (2022)" returns zero rows in both catalogs: probing for "Gardener" finds only Oni's "The Sprite and the Gardener" (CV 136488 / GCD 179266), DC's Batman Secret Files and Express Newspapers' 1946 "Adam the Gardener", none of them this book
+F 7189 provider-missing | Matt Emmons's 2022 book is indexed by neither catalog
+
+S 7598 cv=125578 gcd=157493 0.95 | CV 125578 "Glass Town: The Imaginary World of the Brontës" 2020 Harry N. Abrams count 1 (issue 740108) and GCD 157493 of the same title, publisher and year (issue 2086009, 232pp, ISBN 9781419732683) agree on all four columns, 232pp against our 217pp rip
+I 27338 cv=740108 gcd=2086009 isbn=9781419732683 0.95 | the two legs' single issues for the 2020 Abrams book
+
+R 7698 | "Going Remote - A Teacher's Journey (2023) (Seven Stories)" returns zero rows in both catalogs: probing for "Going Remote" finds nothing, and the candidates are Double Take's "Remote", Kodansha's manga and Fantagraphics' "Journey", reached by single words
+F 7698 provider-missing | this 2023 Seven Stories Press book is indexed by neither catalog, though our ComicInfo asserts the title and publisher
+
+R 7861 | "Gray Cells (2022)" (Markosia per our ComicInfo) returns zero rows in both catalogs: probing for "Gray Cells" finds nothing, and the "Gray" hits are Clover Press's 2021 series and Matin Calme's French edition; Markosia is a known GCD hole
+F 7861 provider-missing | Markosia's small-press list is systematically absent from both catalogs
+
+R 7862 | "Gray is Not a Color (2012)" returns zero rows in both catalogs: probing for the full title finds nothing in either, and the packet's candidate block is entirely `Graphic Novels` folder noise
+F 7862 provider-missing | this 37pp 2012 book is indexed by neither catalog
+
+S 8306 cv=- gcd=52552 0.9 | GCD 52552 "Chloe" 2002-2002 Chrome Fetus Comix count 1 (issue 781218, 140pp, ISBN 978-1-60699-430-6) is Hans Rickheit's book — Chrome Fetus is his own imprint — and 140pp sits against our 133pp web rip; the ComicVine rip's "Chloe" rows are NBM's 2017 series and an unattributed one-shot
+F 8306 provider-missing | ComicVine indexes no Hans Rickheit "Chloe"
+I 27349 gcd=781218 isbn=978-1-60699-430-6 0.9 | GCD's 140pp Chrome Fetus issue against our 133pp rip
+
+S 8814 cv=- gcd=204064 0.9 | GCD 204064 "Herbie's Song" 2022-2022 Kirt Burdick count 1 (issue 2568247, 12pp) matches our 10pp 2022 file and our ComicInfo's "Self-Published"; the ComicVine rip has no row and its candidates are ".Self" substring noise
+F 8814 provider-missing | ComicVine indexes no Kirt Burdick "Herbie's Song"
+I 27354 gcd=2568247 0.9 | GCD's 12pp 2022 issue against our 10pp rip
+
+S 8972 cv=29458 gcd=82335 0.95 | CV 29458 "Chiggers" 2008 Simon and Schuster count 1 (issue 181801, 2008-06) and GCD 82335 "Chiggers" 2008-2008 Simon and Schuster count 1 (issue 1247122, 184pp, ISBN 978-1-4169-3584-1) agree on title, publisher, year and count, 184pp against our 178pp rip
+I 26060 cv=181801 gcd=1247122 isbn=978-1-4169-3584-1 0.95 | the two legs' single issues for Hope Larson's 2008 book
+
+R 9002 | "House of Delusion (2021)" returns zero rows in both catalogs: probing for the full title finds nothing in either, and the packet's candidate block is entirely `Graphic Novels` folder noise
+F 9002 provider-missing | this 47pp 2021 book is indexed by neither catalog
+
+S 9164 cv=- gcd=233384 0.9 | GCD 233384 "Hyper-Capitalism: The Modern Economy, Its Values, and How to Change Them" 2018-2018 Scribe count 1 (issue 2813929, ISBN 9781911617488) matches our ComicInfo (Series "Hyper-Capitalism", Publisher "Scribe") and our 239pp file; the ComicVine rip has no row and its "Hyper" hits are Dark Horse's HYPER SCAPE and Arcana's Hyper-Actives
+F 9164 provider-missing | ComicVine indexes no Scribe "Hyper-Capitalism"
+N 9164 GCD carries a TWIN row 233391 for the same book under The New Press, the US publisher; our ComicInfo names Scribe, which picks 233384
+
+S 9235 cv=- gcd=224137 0.9 | GCD 224137 "I'm a Horse, Bitch" 2013-2013 Lauren Barnett count 1 (issue 2739648) matches our 21pp 2013 file title for title; the ComicVine rip has no row and returned only folder-name noise
+F 9235 provider-missing | ComicVine indexes no Lauren Barnett "I'm a Horse, Bitch"
+I 27362 gcd=2739648 0.9 | GCD's single 2013 self-published issue against our 21pp rip
+
+R 9242 | "I, Witness (2012)" (Orca Book Publishers per our ComicInfo) returns zero rows in both catalogs: probing for "I, Witness" finds nothing, and the "Witness" hits (Marvel's 1948 one-shot, HarperCollins' Christie adaptation, VLE's Arkadian) are different books
+F 9242 provider-missing | Orca Book Publishers' 2012 title is indexed by neither catalog
+
+S 9351 cv=- gcd=223039 0.9 | GCD 223039 "In the Dark" 2014-2014 IDW count 1 (issue 2729269, 336pp, ISBN 978-1613779347) is the 2014 IDW horror anthology our two files are, and the ComicVine rip has no row — its candidates are DC's "Justice League Dark: In the Dark", Image's "Alone In The Dark" and other in-the-dark titles
+F 9351 provider-missing | ComicVine indexes no IDW 2014 "In the Dark" anthology
+N 9351 the two files are duplicate rips of one book (374pp and 373pp) filed under Graphic Novels and under IDW\In The Dark (2014)
+I 26076 gcd=2729269 isbn=978-1613779347 0.9 | GCD's 336pp 2014 IDW issue against our 374pp rip
+I 31850 gcd=2729269 isbn=978-1613779347 0.9 | the duplicate 373pp rip of the same 2014 IDW anthology
+
+R 9406 | "Incubation (2015) (Charles Burns) (Pigeon Press)" returns zero rows in both catalogs: probing for "Incubation" finds only IPP Comix's 1998 German book (GCD 169805), DC's Superboy arc and a Dark Horse Aliens collection, none of them Burns's 2015 Pigeon Press mini
+F 9406 provider-missing | Charles Burns's self-published Pigeon Press minis are indexed by neither catalog
+
+S 9703 cv=109394 gcd=98112 0.7 | our 49pp file is a scanlation of Jano's "Gazoline et la planète rouge", and neither catalog holds the French original — what both hold is the GERMAN edition, CV 109394 "Gazoline und der rote Planet" 1991 Semmel Verlach count 1 (issue 663947) and GCD 98112 of the same title, publisher and year — the right comic in the wrong language, with the original absent, which is a real doubt
+F 9703 provider-missing | neither catalog indexes the French Jano album our scanlation is made from; only Semmel Verlach's German licensed edition exists as a row
+
+S 9792 cv=76728 gcd=123249 0.95 | CV 76728 "Jaybird" 2014 Dark Horse count 1 (issue 463960) and GCD 123249 "Jaybird" 2014-2014 Dark Horse count 1 (issue 1796685, 136pp, ISBN 978-1-61655-469-9) agree on title, publisher, year and count, 136pp against our 119pp rip; the Erko German (98205) and Prestige Dutch (92910) rows are other territories
+I 27377 cv=463960 gcd=1796685 isbn=978-1-61655-469-9 0.95 | the two legs' single issues for the 2014 Dark Horse edition; our filename's 2020 is a later digital release
+
+S 10232 cv=113888 gcd=130493 0.95 | CV 113888 "Kafkaesque: Fourteen Stories" 2018 W. W. Norton & Company count 1 (issue 686329, "GN", 2018-09-26) and GCD 130493 of the same title, publisher and year (issue 1851800, 168pp, ISBN 9780393635621) agree on all four columns, 168pp against our 161pp rip
+I 27380 cv=686329 gcd=1851800 isbn=9780393635621 0.95 | the two legs' single issues for Peter Kuper's 2018 Norton book
+
+S 10312 cv=42943 gcd=- 0.9 | CV 42943 "Kid Beowulf" 2009 self published count 6 is the line, and its issue #3 is titled "Kid Beowulf and the Rise of El Cid" (409140) — our "Kid Beowulf - The Rise of El Cid (2018)"; probing the GCD dump for "Kid Beowulf" returns nothing at all, its "El Cid" rows being Spanish, German and Swedish albums
+F 10312 provider-missing | GCD indexes no Kid Beowulf book in any printing
+I 27382 cv=409140 0.9 | CV 42943 issue #3, the Rise of El Cid volume, against our 251pp 2018 rip
+
+R 10367 | "Kindred (2017)" (Abrams ComicArts per our ComicInfo) returns zero rows in both catalogs for that publisher: probing for "Kindred" finds Image's 1994 series and its 1995 collection, DC's "The Kindred II" and two Dark Horse Predator minis, none of them the Octavia Butler adaptation
+F 10367 provider-missing | Abrams ComicArts' 2017 "Kindred: A Graphic Novel Adaptation" is indexed by neither catalog
+
+S 10572 cv=82923 gcd=54494 0.9 | GCD 54494 "The Laid-Back Adventures of Suzie and Jonnie" [en-gb] 1981-1981 Antonio A. Ghura count 1 (issue 799392, 52pp) matches our 52pp "(1981)" file page for page, and ComicVine holds the same book as CV 82923 "The Laid Back Adventures Of Suzie and Jonnie" count 1 (issue 493543), dated 2015 for a later release
+I 27386 cv=493543 gcd=799392 0.9 | the 1981 Ghura edition our file is, 52pp on both the GCD row and our rip
+
+R 10581 | "Larf - Ashley Spires (2012)" (Kids Can Press per our ComicInfo) returns zero rows in both catalogs: probing for "Larf" finds only DC's Larfleeze titles and a Swedish "Smugglarflickorna", none of them this children's book
+F 10581 provider-missing | Kids Can Press's 2012 "Larf" is indexed by neither catalog
+
+R 10598 | "Last On His Feet - Jack Johnson and the Battle of the Century (Liveright 2023)" returns zero rows in both catalogs: probing for "Last on His Feet" finds nothing, and the candidates (Image's "The Last Battle", Marvel's "Century") are reached by single words
+F 10598 provider-missing | Liveright's 2023 book is indexed by neither catalog, though our ComicInfo asserts the title and publisher

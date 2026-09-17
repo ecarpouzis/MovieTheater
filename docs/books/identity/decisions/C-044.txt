@@ -1,0 +1,237 @@
+# C-044 — Marvel Doctor Doom / Elektra / Eternals / Fantastic Four / Marvel Knights / Ghost Rider / Guardians of
+# the Galaxy / Drax shelves. The wrong-relaunch trap runs near-universal on Fantastic Four and Ghost Rider legacy
+# shelves (the 1961 Fantastic Four and 1973 Ghost Rider volumes get stamped on every later relaunch's files).
+# Fantastic Four Epic Collections (9 singleton shelves, GCD 79136) repeat the Epic Collection line shape and are
+# chained by merge-with. Several Marvel-era runs (Fantastic Four 1998→2003 renumbering, Ghost Rider 2019/2022,
+# Guardians of the Galaxy 2019/2020) have "no CvVolume row" or no CV volume at all in the rip — needs-fetch /
+# provider-missing throughout. S64201 and S11441 are genuine bucket-folder conflations (several different titles
+# sharing a folder) — R + split-needed. S7436's overlap-in-series flag is TRUE: two different Epic Collection
+# lines (main vs Danny Ketch) both labelled Vol.01.
+
+S 5635 cv=38739 gcd=- 1.0 | ComicInfo Web id 259755 equals CV 38739's own issue id exactly (a genuine 1.0 assertion) for "Doctor Strange Sorcerer Supreme Ashcan" (1995); GCD per-file's pick (55404, "From the Marvel Vault") is a round2-folder mismatch; no GCD row found for this Ashcan (gcd=-)
+F 5635 provider-missing | no GCD row found (gcd=-)
+
+S 5598 cv=121896 gcd=150929 0.9 | CV 121896 and GCD 150929 "Doctor Doom" (2019-2021 Marvel, 10 issues) agree; our floppy #6-10 plus the Vol.01 trade (judged #1-5) fit inside
+I 79081 cv=- gcd=2248214 0.9 | Vol.01 "Pottersville" (2020, 135pp, judged #1-5 conf 0.9) — GCD174386/2248214 (#1, 140pp), title matches; CV121896 caches only single-issue floppies, no collected-edition CV volume found
+
+S 18514 cv=3340 gcd=2868 0.9 | CV 3340 and GCD 2868 "The Elektra Saga" (1984 Marvel, 4-issue mini) agree; our #1 sits inside (only 1 of 4 issues owned, a real gap)
+
+S 96692 cv=9408 gcd=10194 0.95 | CV 9408 and GCD 10194 "Elektra" (2001-2004 Marvel, 35 issues) agree exactly with our ladder 1-35; residue = 11 files matched to the German Panini Deutschland edition by per-file GCD, a foreign mismatch
+
+S 101835 cv=73240 gcd=80317 0.9 | CV 73240 and GCD 80317 "Elektra" (2014-2015 Marvel, 11 issues) agree; our two trades (judged #1-11) fit inside; residue = a 1pp Skottie Young variant of #01
+I 79133 cv=469716 gcd=- 0.9 | Vol.01 "Bloodlines" (2014, 97pp, judged #1-5 conf 0.9) — CV77997/469716 "Volume 1", exact title+ordinal match; no GCD row found
+I 79134 cv=487427 gcd=- 0.9 | Vol.02 "Reverence" (2015, 121pp, judged #6-11 conf 0.9) — CV81665/487427 "Volume 2", exact title+ordinal match; no GCD row found
+
+S 96743 cv=133080 gcd=168396 0.9 | CV 133080 and GCD 168396 "Eternals" (2021-2022 Marvel, 12 issues) is the run our two numbered trades collect (judged #1-12); GCD's collected-edition twin 175610 names the trade line; per-file CV's pick of 2858 (1976 legacy) on 2/3 files is a wrong-relaunch mismatch, rejected
+F 96743 merge-with=6234 | same CV133080 as S6234's own "Eternals: The Heretic" one-shot (see S6234)
+I 79146 cv=- gcd=2258785 0.9 | Vol.01 "Only Death Is Eternal" (154pp, judged #1-6 conf 0.9) — GCD175610/2258785 (#1, 164pp), title matches; CV133080 caches only single-issue floppies
+I 79147 cv=- gcd=2426196 0.9 | Vol.02 "Hail Thanos" (152pp, judged #7-12 conf 0.9) — GCD175610/2426196 (#2, 140pp), title matches
+I 79145 cv=984871 gcd=2499549 0.9 | Vol.00 "A History Written In Blood" (2023, 113pp) — CV149634/984871 and GCD197270/2499549 (116pp), exact title match; a recap/prelude volume, no judged range
+
+S 6234 cv=- gcd=182932 0.9 | GCD's own one-shot series 182932 "Eternals: The Heretic" (2022 Marvel) matches our file exactly; CV's per-file pick (133080, the concurrent 12-issue ongoing, see S96743) is a residue mismatch — no distinct CV one-shot record found
+
+R 7523 | two unrelated comics decades apart share this title: the 1974-1975 Marvel "Giant-Size Fantastic Four" (CV2683/GCD2169, 5 issues, our #2-4) and the 2024 one-shot revival (CV157035/GCD209412, exact title match, our #1 plus a duplicate and two Ron Lim variant covers) — a same-bare-title-different-decade cluster, not one run
+F 7523 split-needed | 1974-1975 run = CV2683/GCD2169; 2024 one-shot = CV157035/GCD209412
+
+S 6489 cv=50297 gcd=40640 0.95 | CV 50297/345121 and GCD 40640 "Fantastic Four Ashcan" (1994, exact title match) agree exactly; per-file GCD's pick (20524, Dutch Juniorpress) is a round2-folder foreign mismatch
+
+S 64669 cv=2045 gcd=1482 0.9 | CV 2045 "Fantastic Four" (1961 Marvel, 416 issues, no CvVolume row — named from rip) and GCD 1482 (1961-1996 Marvel, 416 issues, dominant per-file match on 52/90 files) agree; our scattered ladder (annuals, event tie-ins, a misfiled single issue 338, an Omnibus trade, and a Complete Collection trade) all sit inside the run
+F 64669 needs-fetch cv=2045 | "Fantastic Four" 1961 Marvel, named from the local rip, no CvVolume row
+F 64669 merge-with=94594 | same 1961-1996 Fantastic Four ongoing (CV2045/GCD1482) as S94594, fragments of the same run split across on-disk folders
+I 79740 cv=717539 gcd=- 0.9 | "Fantastic Four by Jonathan Hickman - The Complete Collection Book 02" (2019, 416pp) — CV112949/717539 "Volume 2", exact ordinal match; collects a LATER Hickman run (2009+), a different run from the 1961-1996 legacy ongoing; no GCD row found; see S64201 for the Hickman run's identity
+
+S 94594 cv=2045 gcd=1482 0.95 | CV 2045 "Fantastic Four" (1961, 416 issues, no CvVolume row) and GCD 1482 (1961-1996 Marvel, 416 issues, matching on 416/422 files) agree exactly; our ladder 1-416 fits; residue = 6 Omnibus trades (Book 01-04, Byrne Omnibus Book 02, Straczynski trade) plus a few foreign per-file mismatches
+F 94594 needs-fetch cv=2045 | named from the local rip, no CvVolume row
+F 94594 merge-with=64669 | same 1961-1996 Fantastic Four ongoing (CV2045/GCD1482) as S64669, fragments of the same run split across on-disk folders
+I 79607 cv=223627 gcd=2215978 0.9 | Fantastic Four Omnibus Book 01 (2018 3rd ed, 839pp, judged #1-30 conf 0.98) — CV34278/223627 "Volume One" and GCD14052/2215978 (#1, 848pp; several twin printings exist) agree
+I 79608 cv=223683 gcd=2250963 0.9 | Book 02 (2021 3rd ed, 825pp, judged #31-60 conf 0.98) — CV34278/223683 "Volume Two" and GCD14052/2250963 (#2, 832pp; twin printings exist) agree
+I 79609 cv=487393 gcd=2260723 0.9 | Book 03 (2021 2nd ed, 945pp, judged #61-93 conf 0.98) — CV34278/487393 "Volume Three" and GCD14052/2260723 (#3, 960pp; twin printings exist) agree
+I 79610 cv=884481 gcd=2260762 0.9 | Book 04 (2021, 809pp, judged #94-125 conf 0.98) — CV34278/884481 "Volume Four" and GCD14052/2260762 (#4, 820pp; twin printing 2260805) agree
+I 79604 cv=259825 gcd=351576 0.9 | "Fantastic Four by J. Michael Straczynski" (2016, 145pp) — CV38750/259825 and GCD23365/351576 (152pp), exact title match
+I 79606 cv=435863 gcd=1166038 0.9 | "Fantastic Four by John Byrne Omnibus Book 02" (2023, 1208pp, judged #261-295 conf 0.96) — CV43976/435863 "Volume 2" (same volume as S6515's Book 01) and GCD62174/1166038 (#2, 1232pp; twin printing 1331827) agree
+
+S 6515 cv=43976 gcd=62174 0.95 | CV 43976 and GCD 62174 "Fantastic Four by John Byrne Omnibus" (2011-2013 Marvel, 2 count) agree exactly with our Book 01 (of 2); per-file GCD's pick (1482, the whole 1961 ongoing) is a round2-folder mismatch
+
+S 94597 cv=- gcd=10251 0.9 | GCD 10251 "Fantastic Four" (1996-1997 Marvel, 13-issue limited run) matches our #13; no ComicVine volume found for this short-lived relaunch (cv=-); per-file CV's pick (2045, the 1961 legacy volume) is a wrong-relaunch mismatch, rejected
+F 94597 provider-missing | no ComicVine volume found for this 1996-1997 mini (cv=-)
+
+S 94598 cv=6211 gcd=11218 0.9 | CV 6211 "Fantastic Four" (1998 Marvel, 173 issues) and GCD 11218 (1998-2011 Marvel, 160 issues) is the run our ladder 45-70 sits inside; same run as S94595 (our #500-571, the legacy-renumbered continuation) — GCD keeps one spanning row across the numbering jump; per-file GCD's pick (1482, the 1961 legacy volume, round2-series) on all 26/26 files is a wrong-relaunch mismatch, rejected
+F 94598 merge-with=94595 | same 1998-2011 continuously-numbered run (CV6211/GCD11218) as S94595, split by folder into "v3 (1998)" and "v1 (2003)" shelves at the legacy renumbering (#70→#500)
+
+S 6529 cv=117585 gcd=142250 0.9 | CV 117585 "Fantastic Four: Heroes Return: The Complete Collection" (2019 Marvel, 4-book line, exact title match) and GCD's own collected-edition series 142250 (4 count) agree; the stored CV link (52553, a 1977 Marvel UK reprint line) is wrong-cv-link
+F 6529 merge-with=6463 | same collected line (CV117585) as landed shelf S6463 "Fantastic Four - Heroes Return"
+F 6529 wrong-cv-link | stored CV link 52553 is the 1977 Marvel UK "Complete Fantastic Four" reprint line, not this 2019 collected line
+
+S 94595 cv=6211 gcd=11218 0.9 | same 1998-2011 continuously-numbered "Fantastic Four" run as S94598 (CV6211/GCD11218) — the legacy-renumbered continuation (our #500-571); per-file CV's pick of 2045 (1961 legacy) on all 72/72 files is a wrong-relaunch mismatch, rejected
+F 94595 merge-with=94598 | same run as S94598, split by folder at the legacy renumbering
+
+R 11441 | bucket folder holding at least five unrelated items: "Marvel Knights Double Shot" (2002, 4-issue mini, CV11197/GCD dump has it), "Marvel Knights by Dixon & Barreto: Defenders of the Streets" (its own trade, CV114418), "Captain America - Marvel Knights" Vol.01/02 (CV88735, its own 2-book line), "Marvel Knights Marvel Boy by Morrison & Jones" (its own trade), and "Marvel Knights 4" floppies #15-24 (misfiled, belongs with S11452's run GCD11299) plus a misfiled "Marvel Knights v1 006" single issue — no single record spans the bucket; the per-file CV pick of 9119 ("Marvel Knights" 2000 mini) on 16/21 files is a mis-stamp, since none of our files are that mini's own floppies
+F 11441 split-needed | Double Shot mini = CV11197; Dixon&Barreto trade = CV114418; Captain America Marvel Knights = CV88735; Marvel Knights 4 floppies = GCD11299 (see S11452)
+F 11441 misfiled | the "Marvel Knights 4" #15-24 floppies belong with S11452's run (GCD11299); item 89269 (Marvel Knights v1 #006) is a stray single issue of the unrelated 2000 mini
+I 100827 cv=689047 gcd=- 0.9 | "Marvel Knights by Dixon & Barreto - Defenders of the Streets" (2018, 356pp) — CV114418/689047, exact title match
+I 101989 cv=693465 gcd=1876466 0.9 | "Marvel Knights Marvel Boy by Morrison & Jones" (2018, 140pp) — CV115577/693465 and GCD134587/1876466 (164pp), exact title match
+I 77174 cv=518853 gcd=1546519 0.9 | "Captain America - Marvel Knights" Vol.01 (2016, 396pp) — CV88735/518853 "Volume 1" and GCD98280/1546519 (#1, 412pp, title "Marvel Knights") agree
+I 77175 cv=593253 gcd=1693499 0.9 | Vol.02 (2017, 479pp) — CV88735/593253 "Volume 2" and GCD98280/1693499 (#2, 492pp) agree
+
+S 11442 cv=117974 gcd=- 0.9 | CV 117974 (2019, issue704819, exact title match) is this book's own record; per-file GCD's pick (11299, the Marvel Knights 4 ongoing) is a round2-folder mismatch; no matching GCD collected-edition row found (gcd=-)
+F 11442 provider-missing | no GCD row for this Complete Collection (gcd=-)
+
+S 11452 cv=21736 gcd=11299 0.95 | CV 21736 and GCD 11299 "Marvel Knights 4" (2004-2006 Marvel) agree; our #25-27 sit inside (30-issue CV count vs 27 GCD count, both fit); the ladder gap is honest (earlier issues owned on S11441, misfiled)
+F 11452 merge-with=11441 | S11441 holds this same run's #15-24 misfiled in its bucket folder
+
+R 64201 | shelf conflates three different Hickman lines: "FF by Jonathan Hickman" (our own name, 4 books, CV42957/GCD64712 or twin 218487), "Avengers by Jonathan Hickman: The Complete Collection" (3 books, CV129900/GCD164932), and "New Avengers by Jonathan Hickman" (2 books, own CV/GCD not probed) — genuinely different titles (Fantastic Four vs Avengers vs New Avengers), not one run
+F 64201 split-needed | FF by Hickman = CV42957/GCD64712 (or twin 218487); Avengers Complete Collection = CV129900/GCD164932; New Avengers by Hickman = own record, not probed this pass
+I 79733 cv=293334 gcd=933793 0.9 | FF Vol.01 (128pp) — CV42957/293334 "Volume One" and GCD64712/933793 (#1, 140pp, title "Marvel Knights"[sic, GCD mistitles]) agree
+I 79734 cv=313542 gcd=933794 0.9 | FF Vol.02 (134pp) — CV42957/313542 "Volume Two" and GCD64712/933794 (#2, 148pp) agree
+I 79736 cv=345523 gcd=933795 0.9 | FF Vol.03 (121pp) — CV42957/345523 "Volume Three" and GCD64712/933795 (#3, 132pp) agree
+I 79738 cv=404916 gcd=1095151 0.9 | FF Vol.04 (162pp) — CV42957/404916 "Volume Four" and GCD64712/1095151 (#4, 172pp) agree
+I 52898 cv=796426 gcd=2154691 0.9 | "Avengers by Jonathan Hickman - Complete Collection" Book.01 (329pp) — CV129900/796426 "Vol. 1" and GCD164932/2154691 (#1, 340pp) agree
+I 52899 cv=819824 gcd=2182483 0.9 | Book.02 (337pp) — CV129900/819824 "Vol. 2" and GCD164932/2182483 (#2, 348pp) agree
+I 52900 cv=827675 gcd=2216005 0.9 | Book.03 (505pp) — CV129900/827675 "Vol. 3" and GCD164932/2216005 (#3, 516pp) agree
+I 52906 cv=485966 gcd=1491792 0.9 | "New Avengers by Jonathan Hickman" Vol.01 (303pp) — CV81304/485966 "Volume 1" and GCD93607/1491792 (#1, 312pp) agree
+I 52907 cv=504946 gcd=1491789 0.9 | Vol.02 (271pp) — CV81304/504946 "Volume 2" and GCD93607/1491789 (#2, 288pp) agree
+
+S 6365 cv=54295 gcd=70167 0.9 | CV 54295 and GCD 70167 "FF" (2013-2014 Marvel, 16 issues) agree exactly with our ladder 1-16; per-file CV's majority pick (39453, the 2011 Hickman "FF" spinoff, 23 issues) is a wrong-relaunch mismatch on 23/24 files, rejected
+F 6365 misfiled | 6 "Ultimate FF" (2014) floppies are Ultimate Comics' "Ultimate Fantastic Four" spinoff, a different franchise; "FF 50 Fantastic Years" (2010) is an unrelated anniversary one-shot
+
+S 94599 cv=- gcd=69567 0.9 | GCD 69567 "Fantastic Four" (2013-2014 Marvel, 17 issues) matches our ladder 1-16 exactly; no ComicVine volume found for this Fraction relaunch in the rip (cv=-); per-file CV's pick (2045, 1961 legacy) on all 16/16 files is a wrong-relaunch mismatch, rejected
+F 94599 provider-missing | no ComicVine volume for this 2013-2014 run (cv=-)
+
+S 94600 cv=71949 gcd=- 0.9 | CV 71949 "Fantastic Four" (2014 Marvel, 18 issues) is the run our three trades collect from; GCD's collected-edition twin 90316 (4 count) names the trade line; per-file CV's stray pick of 2045 (1961 legacy) on 2/3 files is a wrong-relaunch mismatch, rejected
+F 94600 merge-with=94596 | same 2014 Fantastic Four ongoing (CV71949) as landed shelf S94596 "Fantastic Four"
+I 79777 cv=- gcd=1429326 0.9 | Vol.01 "The Fall of the Fantastic Four" (111pp) — GCD90316/1429326 (#1, 132pp), title matches
+I 79778 cv=- gcd=1429327 0.9 | Vol.02 "Original Sin" (103pp) — GCD90316/1429327 (#2, 116pp), title matches
+I 79779 cv=- gcd=1429328 0.9 | Vol.03 "Back in Blue" (111pp) — GCD90316/1429328 (#3, 124pp), title matches
+
+S 94601 cv=145912 gcd=141720 0.9 | GCD 141720 "Fantastic Four" (2019-? Marvel, 11-book collected line) matches our ladder (Director's Cut #6, Vol.01-11 trades); CV 145912 "Fantastic Four" 2022 Marvel (33 issues) is the closest per-file CV match (6/12 files) for the run; per-file's other picks (2045 1961 legacy, 142786 German edition) are mismatches
+F 94601 needs-fetch cv=145912 | the run's own 2018-launch CV volume (pre-2022) is not resolved in this pass; 145912 may only cover the later portion
+
+S 6483 cv=140141 gcd=178130 0.95 | CV 140141/894377 and GCD 178130 "Fantastic Four Anniversary Tribute" (2022, exact title match) agree; per-file GCD's pick (147504, German Panini) is a round2-folder foreign mismatch
+
+S 6496 cv=160126 gcd=79136 0.9 | CV 160126 "Fantastic Four Epic Collection: Counter-Earth Must Die" (2024, issue1071859, ComicInfo Web assertion matches) and GCD's line series 79136 "Fantastic Four Epic Collection" (22 books) agree — Epic Collection line shape
+F 6496 merge-with=6497 | singleton Epic Collection shelves sharing GCD 79136's line
+
+S 6497 cv=144900 gcd=79136 0.9 | CV 144900 "Fantastic Four Epic Collection: Annihilus Revealed" (2022, issue945892, exact title match) and GCD's line series 79136 agree
+F 6497 merge-with=6498 | same GCD 79136 line
+
+S 6498 cv=131537 gcd=79136 0.9 | CV 131537 "Fantastic Four Epic Collection: At War With Atlantis" (2020, issue814968, exact title match) and GCD's line series 79136 agree
+F 6498 merge-with=6499 | same GCD 79136 line
+
+S 6499 cv=138613 gcd=79136 0.9 | CV 138613 "Fantastic Four Epic Collection: Battle of the Behemoths" (2021, issue882695, exact title match) and GCD's line series 79136 agree
+F 6499 merge-with=6501 | same GCD 79136 line
+
+S 6501 cv=153272 gcd=79136 0.9 | CV 153272 "Fantastic Four Epic Collection: The Crusader Syndrome" (2023, issue1011152, exact title match) and GCD's line series 79136 agree
+F 6501 merge-with=6502 | same GCD 79136 line
+
+S 6502 cv=149043 gcd=79136 0.9 | CV 149043 "Fantastic Four Epic Collection: The Dream is Dead" (2023, issue979317, exact title match) and GCD's line series 79136 agree
+F 6502 merge-with=6503 | same GCD 79136 line
+
+S 6503 cv=119753 gcd=79136 0.9 | CV 119753 "Fantastic Four Epic Collection: The More Things Change..." (2019, issue711946, exact title match) and GCD's line series 79136 agree
+F 6503 merge-with=6504 | same GCD 79136 line
+
+S 6504 cv=126609 gcd=79136 0.9 | CV 126609 "Fantastic Four Epic Collection: The Name Is Doom" (2020, issue756654, exact title match) and GCD's line series 79136 agree
+F 6504 merge-with=6505 | same GCD 79136 line
+
+S 6505 cv=111826 gcd=79136 0.9 | CV 111826 "Fantastic Four Epic Collection: The New Fantastic Four" (2018, issue675139, exact title match) and GCD's line series 79136 agree
+F 6505 merge-with=6496 | same GCD 79136 line, closes the chain with S6496-6504
+
+S 6511 cv=34680 gcd=14806 0.95 | CV 34680 and GCD 14806 "Fantastic Four Visionaries: George Pérez" (2005-2006, 2 count) agree exactly; the label-ambiguous/span-retracted flags concern the containment pass's own range, not this shelf's identity
+
+S 6513 cv=29259 gcd=65576 0.95 | CV 29259 and GCD 65576 "Fantastic Four Visionaries: Walter Simonson" (2007-2009, 3 count) agree exactly; per-file GCD's stray pick (16680, the John Byrne Visionaries line) on 2/3 files is a round2-folder mismatch
+
+S 19753 cv=3245 gcd=2767 0.9 | CV 3245 and GCD 2767 "The Thing" (1983-1986 Marvel, 36 issues) agree; our #23-36 sit inside (13 of 36 issues owned, a real gap) plus an Omnibus trade
+I 79997 cv=961464 gcd=2465506 0.9 | "The Thing Omnibus" (2022, 1150pp) — CV146948/961464 and GCD193841/2465506 (1168pp; twin printing 2466739), exact title match
+
+S 6478 cv=150718 gcd=15701 0.9 | CV 25548/150718 "Fantastic Four: The Wedding Special" (2006, exact year match) and GCD 15701 (2006, exact title+year match) agree; the stored CV link (115881, a 2018 reprint) is wrong-cv-link
+F 6478 wrong-cv-link | stored CV link 115881 is a 2018 reprint edition (yearΔ 12), not the 2006 original
+
+S 6531 cv=30421 gcd=- 1.0 | ComicInfo Web id 187352 equals CV 30421's own issue id exactly (a genuine 1.0 assertion) for "Fantastic Four: The Fantastic 4th Voyage of Sinbad" (2001); per-file GCD's pick (1482, the whole 1961 ongoing) is a round2-folder mismatch; no GCD row found (gcd=-)
+F 6531 provider-missing | no GCD row found (gcd=-)
+
+S 64767 cv=2636 gcd=2120 0.95 | CV 2636 and GCD 2120 "Ghost Rider" (1973-1983 Marvel, 81 issues) agree exactly; our ladder 1-81 fits; residue = "The Complete Series by Rob Williams" trade, "Spirits of Ghost Rider: Mother of Demons" one-shot, "Ghost Rider Vol.05 Final Vengeance" (a later-era trade), and "Ghost Rider Epic Collection Vol.02" (own records below/on sibling shelves)
+N 80213 no-record | "Ghost Rider: The Complete Series by Rob Williams" (2012, 229pp) — probed "Ghost Rider Complete Series Rob Williams" and "Ghost Rider by Rob Williams" on both legs, 0 hits; genuine gap
+I 80223 cv=124990 gcd=- 0.9 | "Spirits of Ghost Rider: Mother of Demons" (2020, 33pp) — CV124990/issue737167, GCD's own one-shot series 156133 per-file confirms it
+I 80231 cv=1077823 gcd=- 0.9 | "Ghost Rider Vol.05 - Final Vengeance" (2024, 147pp) — CV161056/1077823 "Volume 5", exact ordinal match; GCD209876 caches only floppy issues, no collected-edition row
+I 80257 cv=160709 gcd=s184834 0.9 | "Ghost Rider Epic Collection Vol.02 - The Salvation Run" (2024, 405pp) — CV160709 and GCD's line series 184834, exact title match; same Epic Collection line as S7436's "Hell on Wheels" Vol.01
+
+S 97142 cv=4397 gcd=4025 0.95 | CV 4397 and GCD 4025 "Ghost Rider" (1990-1998 Marvel, 94 issues) agree exactly; our ladder 1-24,26,28,31,93 fits; per-file CV's stray pick (2636, 1973 legacy) on 8/28 files is a wrong-relaunch mismatch
+F 97142 merge-with=64768 | same 1990-1998 Ghost Rider ongoing (CV4397/GCD4025) as landed shelf S64768 "Ghost Rider"
+
+S 64769 cv=11183 gcd=12118 0.95 | CV 11183 and GCD 12118 "Ghost Rider" (2001-2002 Marvel, 6-issue mini) agree exactly; our ladder 1-6 plus #0.5 fits; per-file GCD's stray pick (175476, French edition) on 1/7 files is a foreign mismatch
+
+S 97144 cv=18138 gcd=18651 0.9 | CV 18138 and GCD 18651 "Ghost Rider" (2006-2009 Marvel, 35 issues) agree exactly; our ladder 20-35 sits inside plus three judged trades (#1-13); per-file CV's pick of 2636 (1973 legacy) on all 19/19 files is a wrong-relaunch mismatch, rejected
+I 80210 cv=203184 gcd=- 0.9 | Vol.01 "Vicious Cycle" (127pp, judged #1-5 conf 0.97) — CV32328/203184, exact title match; no GCD row found
+N 80211 no-record | Vol.02 "The Life and Death of Johnny Blaze" (160pp, judged #6-11 conf 0.9) — probed "Life and Death of Johnny Blaze" on both legs, 0 hits; genuine gap
+I 80212 cv=203186 gcd=- 0.9 | Vol.03 "Apocalypse Soon" (84pp, judged #12-13 conf 0.97) — CV32330/203186, exact title match; no GCD row found
+
+S 734 cv=72579 gcd=79792 0.9 | CV 72579 and GCD 79792 "All-New Ghost Rider" (2014-2015 Marvel, 12 issues) agree exactly on count; our two trades (judged #1-12) collect half the run, a real gap, not residue; GCD per-file's own pick (89415) matches this shelf's own dump record
+I 80215 cv=467195 gcd=- 0.9 | Vol.01 "Engines of Vengeance" (110pp, judged #1-5 conf 0.9) — CV77304/467195, exact title match; no GCD row found
+I 80216 cv=489312 gcd=- 0.9 | Vol.02 "Legend" (149pp, judged #6-12 conf 0.9) — CV82100/489312 "Volume 2", exact ordinal match; no GCD row found
+
+S 64771 cv=121736 gcd=150725 0.9 | CV 121736 and GCD 150725 "Ghost Rider" (2019-2020 Marvel, 7 issues) agree exactly; our Director's Cut #1 plus two trades (Vol.01/02) fit inside; item 80224 is a duplicate copy of 80214 (label-ambiguous flag)
+N 80214 no-record | Vol.01 "The King of Hell" (2020, 143pp) — probed "Ghost Rider King of Hell" on both legs; only an unrelated Halloween Comic Fest promo found, rejected; no matching collected-edition record; duplicate copy 80224 is the same book
+N 80225 no-record | Vol.02 "Hearts Of Darkness II" (2020, 137pp) — probed "Ghost Rider Hearts of Darkness II" on both legs, 0 hits; genuine gap
+
+S 94603 cv=141707 gcd=182068 0.9 | CV 141707 and GCD 182068 "Ghost Rider" (2022-2024 Marvel, 21 issues) agree exactly; our #17 plus four judged trades fit inside; per-file GCD's stray pick (2120, 1973 legacy) on 1/5 files is a wrong-relaunch mismatch, rejected
+I 80227 cv=965504 gcd=- 0.9 | Vol.01 "Unchained" (142pp) — CV147556/965504 "Volume One", exact title match; no GCD row found
+I 80228 cv=984706 gcd=- 0.9 | Vol.02 "Shadow Country" (159pp) — CV149609/984706 "Volume 2", exact title match; no GCD row found
+N 80229 no-record | Vol.03 "Dragged Out Of Hell" (135pp) — probed "Ghost Rider Dragged Out Of Hell" on both legs, 0 hits; too new for the rip/dump, honest gap
+N 80230 no-record | Vol.04 "Rite of Passage" (132pp) — probed "Ghost Rider Rite of Passage" on both legs, 0 hits; too new for the rip/dump, honest gap
+
+R 7436 | shelf conflates two separate Epic Collection lines both labelled "Vol.01" plus an unrelated one-shot: "Ghost Rider Epic Collection" (Johnny Blaze era, CV144790/GCD184834, our "Hell on Wheels" Vol.01) and "Ghost Rider: Danny Ketch Epic Collection" (CV154102/GCD204677, our "Vengeance Reborn" Vol.01) — the overlap-in-series flag is TRUE, not stale
+F 7436 split-needed | main line Vol.01 "Hell on Wheels" = CV144790/GCD184834; Danny Ketch line Vol.01 "Vengeance Reborn" = CV154102/GCD204677; the one-shot is a third, unrelated item
+I 80256 cv=144790 gcd=s184834 0.9 | "Hell on Wheels" (425pp) — CV144790, GCD's line 184834, exact title match
+I 80255 cv=154102 gcd=s204677 0.9 | "Vengeance Reborn" (453pp) — CV154102, GCD's line 204677 (2 count), exact title match
+I 51654 cv=160201 gcd=216024 0.9 | "Ghost Rider - Robbie Reyes Special" (2024, 27pp) — CV160201/issue1072215, GCD216024, exact title match
+
+S 7451 cv=18646 gcd=9826 0.9 | CV 18646/110019 and GCD 9826 "Ghost Rider, Wolverine, Punisher: Hearts of Darkness" (1991, exact match) is the original printing; the 2017 file is a later reprint edition of the same story
+I 80270 cv=580752 gcd=- 0.9 | the 2017 reprint edition (102pp) — CV98741/580752; GCD's own 2017 printing record is 111981 (series-level, no issue id probed this pass)
+
+S 7454 cv=35150 gcd=4453 0.95 | CV 35150/231932 and GCD 4453 "Ghost Rider / Captain America: Fear" (1992, exact title match) agree exactly; per-file GCD's pick (25782, "Mythos: Ghost Rider") is a round2-folder mismatch
+
+S 7453 cv=4790 gcd=4452 0.95 | CV 4790 and GCD 4452 "Ghost Rider / Blaze: Spirits of Vengeance" (1992-1994 Marvel, 23 issues) agree exactly; our #1-6 sit inside (17 issues not owned, a real gap)
+
+S 8162 cv=- gcd=99634 0.9 | GCD's collected-edition series 99634 "Guardians of the Galaxy: New Guard" (2016-2017 Marvel, 4-book line, matches all 5/5 files) names our four trades; CV's linked pick (80115 "Marvel Universe Guardians of the Galaxy", a different digital-first title) is a mismatch; the promo one-shot "Hi-Tech Heroes Presented by Hanes" (2017) is residue, its own record not probed this pass
+F 8162 wrong-cv-link | stored CV link 80115 is a different title ("Marvel Universe Guardians of the Galaxy"), not this New Guard trade line
+I 80305 cv=525025 gcd=- 0.9 | Vol.01 "Emperor Quill" (104pp) — CV89594/525025 "Volume 1", exact title+ordinal match; no GCD row found
+I 80306 cv=558967 gcd=- 0.9 | Vol.02 "Wanted" (131pp) — CV95825/558967 "Volume 2", exact title+ordinal match; no GCD row found
+N 80307 no-record | Vol.03 "Civil War II" (115pp) — probed "Guardians of the Galaxy New Guard Civil War II" on both legs, 0 hits; genuine gap
+I 80308 cv=603122 gcd=- 0.9 | Vol.04 "Grounded" (131pp) — CV102258/603122 "Volume 4", exact title+ordinal match; no GCD row found
+I 80303 cv=594395 gcd=- 0.9 | "Hi-Tech Heroes Presented by Hanes" (2017, 11pp) — CV101241/594395, exact title match; a promo one-shot, no GCD row found
+
+S 8160 cv=- gcd=113817 0.9 | GCD's own one-shot series 113817 "Guardians of the Galaxy: Mission Breakout" (2017) matches our file exactly; CV's linked pick (85290, the 2015-2017 ongoing, no CvVolume row) is the parent run, not this one-shot's own record
+
+S 735 cv=101158 gcd=113811 0.9 | CV 101158 and GCD 113811 "All-New Guardians of the Galaxy" (2017 Marvel, 12 issues) is the run our three trades plus annual collect from; GCD's collected-edition twin 118812 (3 count) names the trade line
+I 80309 cv=641395 gcd=- 0.9 | Vol.01 "Communication Breakdown" (86pp, judged #1-6 conf 0.7) — CV106274/641395 "Volume 1", exact title match; flagged arithmetic-odd (86pp for 6 issues, possibly a partial scan); no GCD row found
+I 80310 cv=647934 gcd=- 0.9 | Vol.02 "Riders In The Sky" (146pp, judged #7-12 conf 0.9) — CV107128/647934 "Volume 2", exact title match; no GCD row found
+N 80311 no-record | Vol.03 "Infinity Quest" (129pp, judged #146-150 conf 0.9) — probed "All-New Guardians of the Galaxy Infinity Quest" on both legs, 0 hits; a later, non-contiguous judged range (likely a different arc/legacy numbering), genuine gap
+
+S 94616 cv=- gcd=138278 0.9 | GCD 138278 "Guardians of the Galaxy" (2019-2020 Marvel, 12 issues) is the run our two trades collect from; no ComicVine volume found for this run in the rip (cv=-); per-file CV's pick (57960, the 2013 legacy volume) on both files is a wrong-relaunch mismatch, rejected
+F 94616 provider-missing | no ComicVine volume for the 2019-2020 run (cv=-)
+I 80312 cv=- gcd=2145800 0.9 | Vol.01 "The Final Gauntlet" (143pp) — GCD149640/2145800 (#1, 148pp), title matches
+I 80313 cv=- gcd=2145799 0.9 | Vol.02 "Faithless" (168pp) — GCD149640/2145799 (#2, 180pp), title matches
+
+S 94617 cv=- gcd=155084 0.9 | GCD 155084 "Guardians of the Galaxy" (2020-2021 Marvel, 18 issues) is the Al Ewing run our three trades collect from; no ComicVine volume found in the rip (cv=-); per-file CV's picks (4398 1990, 57960 2013 legacy) are wrong-relaunch mismatches
+F 94617 provider-missing | no ComicVine volume for the 2020-2021 Al Ewing run (cv=-)
+I 80314 cv=- gcd=2233143 0.9 | Vol.01 "Then It's Us" (122pp) — GCD173404/2233143 (#1, 132pp), exact title match
+I 80315 cv=- gcd=2233144 0.9 | Vol.02 "Here We Make Our Stand" (144pp) — GCD173404/2233144 (#2, 164pp), exact title match
+I 80316 cv=- gcd=2277480 0.9 | Vol.03 "We're Super Heroes" (136pp) — GCD173404/2277480 (#3, 148pp), exact title match
+
+S 5837 cv=18291 gcd=17616 0.95 | CV 18291 and GCD 17616 "Drax the Destroyer" (2005-2006 Marvel, 4-issue mini) agree exactly; our ladder 1-4 (duplicated rip, ratio 2.00) matches
+
+S 5836 cv=85753 gcd=93590 0.9 | CV 85753 "Drax" (2015 Marvel, 11 issues, no CvVolume row — named from rip) and GCD 93590 (2016 Marvel, 11 issues) agree; our two trades (judged #1-11) fit inside
+F 5836 needs-fetch cv=85753 | named from the local rip, no CvVolume row
+I 80327 cv=531881 gcd=- 0.9 | Vol.01 "The Galaxy's Best Detective" (110pp, judged #1-5 conf 0.9) — CV90702/531881 "Volume 1", exact title+ordinal match; no GCD row found
+I 80328 cv=558964 gcd=- 0.9 | Vol.02 "The Children's Crusade" (132pp, judged #6-11 conf 0.9) — CV95819/558964 "Volume 2", exact title+ordinal match; no GCD row found
+
+S 14788 cv=86989 gcd=104355 0.9 | CV 86989 "Rocket Raccoon & Groot" (2016 Marvel, 10 issues, no CvVolume row) and GCD 104355 (2016, 3-book collected edition) agree; our Vol.01/02 trades (judged #1-10) fit inside; residue = the 2013 "Complete Collection" and 2014 "Ultimate Collection" (likely twin editions of the same earlier Rocket Raccoon & Groot mini, own records not probed)
+F 14788 needs-fetch cv=86989 | named from the local rip, no CvVolume row
+I 80334 cv=540081 gcd=- 0.9 | Vol.01 "Tricks of the Trade" (127pp, judged #1-6 conf 0.9) — CV92386/540081 "Volume 1", exact title+ordinal match; no GCD row found
+I 80335 cv=557374 gcd=- 0.9 | Vol.02 "Civil War II" (113pp, judged #7-10 conf 0.9) — CV95606/557374 "Volume 2", exact title+ordinal match; no GCD row found; duplicate copy 118877 per label-ambiguous flag
+I 80332 cv=396609 gcd=1098985 0.9 | "Rocket Raccoon & Groot - The Complete Collection" (2013, 272pp) — CV46366/396609 and GCD73369/1098985, exact title match
+N 80333 no-record | "Rocket Raccoon And Groot Ultimate Collection" (2014, 272pp) — probed "Rocket Raccoon and Groot Ultimate Collection" on both legs, 0 hits; likely a twin edition of item 80332 (identical page count) but no distinct record found
+
+S 8148 cv=80454 gcd=86985 0.95 | CV 80454 and GCD 86985 "Guardians Team-Up" (2015 Marvel, 10 issues) agree; our ladder 1,3,6-10 plus two trades (judged #1-10) fit inside; GCD's collected-edition twin 93354 names the trade line
+
+S 8453 cv=33513 gcd=49438 0.9 | CV 33513 and GCD 49438 "Hawkeye & Mockingbird" (2010-2011 Marvel, 6 issues) agree exactly on count; our #1 plus the "Ghosts" trade (judged #1-6) fit inside; per-file GCD's pick (48968, "Atlas") is a round2-folder mismatch
+I 81957 cv=260581 gcd=- 0.9 | "Hawkeye and Mockingbird - Ghosts" (2011, 166pp, judged #1-6 conf 0.9) — CV38826/260581, exact title match; collects the run named on the S line; no GCD collected-edition row found (GCD dump has only 49438, the ongoing series itself)

@@ -255,7 +255,7 @@ WHERE coalesce(l.MuSeriesId, s.MuSeriesId) IS NOT NULL"))
             var links = new List<(int ItemId, string GcdIssueId)>();
             foreach (var (itemId, key) in hot.Pairs($@"
 SELECT ItemId, ProviderKey FROM ItemProviderLink
-WHERE Provider = {(int)Provider.Gcd} AND Status = {(int)LinkStatus.Matched} AND ProviderKey IS NOT NULL AND ItemId > {after}
+WHERE Provider = {(int)Provider.Gcd} AND Status IN {LinkStatuses.UsableSql} AND ProviderKey IS NOT NULL AND ItemId > {after}
 ORDER BY ItemId LIMIT {batchSize}"))
                 links.Add(((int)itemId, key!));
 

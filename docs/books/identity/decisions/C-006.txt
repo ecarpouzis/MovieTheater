@@ -1,0 +1,199 @@
+# C-006: Boom! Studios small-press tail (Mighty Morphin/Power Rangers spinoffs, Mouse Guard,
+# Planet of the Apes, Sons of Anarchy, Steven Universe, WWE, Warhammer, Wild's End, Wynd), the
+# Cinebook European-album shelves (GCD's per-file matcher regularly picks a foreign-language
+# co-edition — French/Dutch/German/Spanish — over the English row; take the English row when
+# present, note the wrong-language reject), and the ComiXology Originals shelves (GCD holds only
+# a LATER print reprint at a different publisher/count — the digital-first CV record is the
+# identity per the established Best-Jackett/ComiXology-Originals ruling).
+
+S 98523 cv=- gcd=189937 0.9 | our #119-122 (2024) match GCD189937 "Mighty Morphin Power Rangers" 2022-2024 was-ongoing count23 exactly (unflagged num match); the per-file CV pick (87332, the main 2016 hull id) is a bare-name stamp, no distinct CV volume surfaced for this v1(2022) phase
+F 98523 needs-web | no distinct CV volume found for the 2022-2024 phase specifically
+
+S 14382 cv=154058 gcd=204664 0.9 | CV154058 and GCD204664 "Ranger Academy" 2023-2024 both count12 agree, dominant 4/6 files num-matched; our #9-12 fit, the two trades match the same line's collected-edition entries
+
+S 12173 cv=159637 gcd=215036 0.95 | CV159637 and GCD215036 "Minor Arcana" 2024 both count15 agree exactly, unflagged num match, our #1-3 fits (partial rip)
+
+S 12197 cv=101401 gcd=114087 0.9 | CV101401 (top-scored, count8) and GCD114087 "Misfit City" 2017 limited series count8 agree exactly, our two trades collect the run; stored link CV106892 (count2 = matches-our-2-trades trap) and GCD119265 (count2) rejected
+F 12197 wrong-cv-link | stored 106892 (count2) is the collected-volume-count trap, the run is CV101401 count8
+
+R 12406 | shelf is a bucket of separate Mouse Guard books, each with its own record: the main trilogy (Fall 1152/Winter 1152/Black Axe, cv=22330 gcd=18998, both count6), "Legends of the Guard" trilogy (cv=63091/80612 gcd=49498, count4), "The Owlhen Caregiver" one-shot (2021, cv=137585 gcd=174018), "Art of Bricks" (2016, cv=140370), "Baldwin the Brave & Other Tales" (2014, cv=78073), and two reference/retrospective books (Alphabet Book, The Art of Mouse Guard 2005-2015) with no CV/GCD record surfaced — no spanning record
+F 12406 split-needed | several co-equal Mouse Guard collected books share the folder
+N 12406 main trilogy (Fall/Winter/Black Axe, 2007-2013) cv=22330 gcd=18998
+N 12406 Legends of the Guard (2010-2015) cv=63091 gcd=49498
+N 12406 The Owlhen Caregiver (2021) cv=137585 gcd=174018
+
+S 13198 cv=- gcd=61697 0.9 | our COL "Old City Blues Vol.01 (2012)" 129pp graphic novel matches GCD61697 "Old City Blues" 2011 graphic novel count1 (num-matched cleanly); CV's per-file pick (67108, count4) belongs to the "v02" 4-issue mini (see sibling S99043), rejected here
+F 13198 needs-web | no CV volume found for the standalone Vol.01 graphic novel specifically
+
+S 99043 cv=67108 gcd=- 0.9 | CV67108 "Old City Blues" 2013 Archaia count4 matches our v02 "01-04 (of 4)" mini exactly; GCD's per-file pick (216911, count1) is vol01's own graphic-novel record, wrong count for this 4-issue mini
+F 99043 provider-missing | no GCD row found specific to the 4-issue v02 mini
+
+S 13426 cv=131701 gcd=165956 0.9 | CV131701 and GCD165956 "Origins" 2020-2021 Boom! Studios both count6 agree, our #1-6 num-matched dominant (6/11 files); the 5 "Ultimate Origins" files are Marvel's unrelated 2008 miniseries misfiled here from the chronology folder
+F 13426 misfiled | items 117171-117175 "Ultimate Origins 01-05 (of 05) (2011)" are Marvel's 2008 Ultimate Origins, not part of Boom!'s "Origins"
+
+R 13484 | shelf is a bucket of the original 2015 4-issue "Over the Garden Wall" mini (cv=84123 gcd=91983, both count4, residue) plus a later 2016-2018 ongoing collected in 5 trade volumes (Vol.01-05, judged spans #1-20) whose CV/GCD ids are both matches-our-holdings traps (CV candidate "100090 Over The Garden Wall 2017 count5" / GCD120059 "collected edition" count5) — no clean run id found; plus several standalone one-shot specials each with their own record (Circus Friends cv=121727, Hollow Town cv=120021 gcd=131882, Distillatoria gcd=217085) — no spanning record
+F 13484 split-needed | original mini vs later ongoing vs several one-shot specials share the folder
+N 13484 original 2015 mini #1-4 cv=84123 gcd=91983
+N 13484 2016-2018 ongoing (5 trade volumes, #1-20ish) cv=- gcd=- (matches-holdings traps rejected: cv=100090 count5, gcd=120059 count5)
+N 13484 one-shot specials: Circus Friends cv=121727; Hollow Town cv=120021 gcd=131882; Distillatoria gcd=217085
+
+R 13863 | shelf is a bucket of separate Planet of the Apes Boom! lines/one-shots: the main 2011-2012 ongoing (cv=39882 gcd=57809, both count16, dominant on 14/17 files) with its 5-issue "collected" GCD twin (96844, matches-holdings trap); "Cataclysm" mini (2013-2014, 3 trades, cv=60925 gcd=90585, both count3); "Green Lantern" crossover mini (2017, #1-6 of 6, gcd=111880 count6); several standalone one-shots each with its own count-1 record (Ursus cv=115271, The Time of Man cv=114905, The Simian Age cv=115899 gcd=211823, Visionaries cv=112964, Artist Tribute cv=118259); and two Omnibus trades (Before/After the Fall) — no spanning record
+F 13863 split-needed | several co-equal Apes lines/one-shots/omnibuses share the folder
+N 13863 main ongoing (2011-2012) #1-16 cv=39882 gcd=57809
+N 13863 Cataclysm (2013-2014) cv=60925 gcd=90585
+N 13863 Green Lantern crossover (2017) #1-6 cv=- gcd=111880
+N 13863 one-shots: Ursus cv=115271; The Time of Man cv=114905; The Simian Age cv=115899 gcd=211823; Visionaries cv=112964; Artist Tribute cv=118259
+
+S 13866 cv=103523 gcd=115970 0.9 | CV103523 and GCD115970 "Planet of the Apes: Archive" 2017-2018 both count4 agree exactly, unflagged num match, OL bridge confirms; stored link CV49156 (count5, a different Apes record) is wrong-cv-link
+F 13866 wrong-cv-link | stored 49156 (count5) does not match this 4-volume Archive line, the correct id is CV103523
+
+R 14554 | shelf conflates what may be duplicate rips of the same "Regular Show" trade line by two ripper groups (Salem-Empire's v01/v04/v05/v06/v10 vs Empire's Vol.01-09) per the open flag on item10617, both number from #1; CV73115 and GCD93394 "Regular Show" 2014-2018 collected editions count10 dominate (12/16 files); the underlying 40-issue ongoing is CV61288/GCD74424 (2013-2016, count40), which the trades collect
+F 14554 split-needed | two ripper ladders for the same nominal 10-volume trade line, per the open conflated-series flag — needs a person to confirm duplicate vs distinct
+N 14554 Regular Show trades (2014-2018) cv=- gcd=93394 (collected editions, count10)
+N 14554 underlying ongoing (2013-2016) #1-40ish cv=61288 gcd=74424
+
+R 14751 | shelf holds two different comics: "RoboCop - Dead or Alive" (Boom! Studios, 2015-2017, 3 trades, gcd=162778 count3, no clean CV id surfaced beyond stored 44460 which is a different Red5 title) and the standalone Red5 "Dead or Alive" (2022, cv=157381 "Dead or Alive" 2022 Red5 issue1049161)
+F 14751 split-needed | RoboCop trades vs the standalone 2022 Red5 one-shot are different comics
+F 14751 wrong-cv-link | stored 44460 (2011 Red5) matches neither cleanly, closer to the 2022 file (via candidate 157381) than the RoboCop trades
+N 14751 RoboCop - Dead or Alive (2015-2017) cv=- gcd=162778
+N 14751 Dead or Alive (2022, Red5) cv=157381 gcd=-
+
+S 14827 cv=117467 gcd=141784 0.9 | CV117467 (count12, already stored) and GCD141784 "Ronin Island" 2019-2020 limited series count12 agree exactly, our three trades' judged ranges (#1-4/5-8/9-12) sum to the full run; GCD's other pick (162763, collected edition count3 = matches-our-holdings trap) rejected
+
+S 14915 cv=95746 gcd=116721 0.9 | CV95746 and GCD116721 "SLAM! - The Next Jam" 2017 both count4 agree, dominant 4/6 files num-matched (our #1-4 fit); the COL Vol.01 trade is the run's own trade (GCD115829 collected editions count2, residue); "WWE Summer Slam 2017" is a different, misfiled comic
+F 14915 misfiled | item 11012 "WWE Summer Slam 2017" is a different comic, not part of the SLAM! run
+
+S 15877 cv=121102 gcd=160025 0.9 | CV121102 (count48, already stored) and GCD160025 "Something Is Killing the Children" 2019 ongoing count48 agree exactly, our eight trades' judged ranges (#1-40) collect the run; GCD's dominant per-file pick (164325, collected edition count9) is the matches-our-8-trades trap, rejected; residue = the two Art-of books, the Pen & Ink one-shot, and the #000 prequel one-shot, each a different item, named
+F 15877 needs-web | Art of.../Pen & Ink/#000 items have no ids surfaced in the packet, left as residue
+
+S 9028 cv=139867 gcd=177298 0.95 | CV139867 and GCD177298 "House of Slaughter" 2021-2025 was ongoing both count30 agree exactly, dominant 9/13 files num-matched, our #21-29 fit; the two collected-edition GCD twins (186137/183983) match our 4 trade volumes, residue costing nothing (the run's own trades)
+
+R 15920 | shelf conflates two Sons of Anarchy lines per the open flag on item10741: the main 2013-2015 ongoing #1-25 (cv=67326 no CvVolume row, gcd=76471, both count25, our #15-25 + Vol.01-03 trades) and "Redwood Original" (2016-2018, cv=92970 gcd=105366, both count12, our 3 trades)
+F 15920 split-needed | main ongoing vs Redwood Original share one DB Series per the open conflated-series flag on item10741
+F 15920 needs-fetch cv=67326 | no CvVolume row cached, named from the local rip
+N 15920 Sons of Anarchy (2013-2015) #1-25 cv=67326 gcd=76471
+N 15920 Sons of Anarchy: Redwood Original (2016-2018) cv=92970 gcd=105366
+
+S 16845 cv=76271 gcd=82163 0.9 | CV76271 and GCD82163 "Steven Universe" 2014-2018 both count8 agree, matching the underlying v1 line our 2 trades collect (GCD115223 count2 matches the trades specifically); the four standalone one-shot specials (Camp Pining Play, Crystal Clean, Ultimate Dough-Down, Welcome to Beach City) and 2016 Special are separate KaBOOM! one-shots, named residue, no ids surfaced
+
+S 16846 cv=- gcd=117636 0.9 | GCD117636 "Steven Universe" 2017-2020 collected edition count9 matches (OL external work "Steven Universe 2017" confirms genuinely); no CV candidate found in the packet
+F 16846 needs-web | no CV volume found for the v2(2017) trade line
+
+R 100034 | our eight trade volumes (Vol.01-05,07-09) are the 2017-2020 "Steven Universe" v2 line, matching GCD117636 "Steven Universe" 2017-2020 collected edition/ongoing count9 (OL external work "Steven Universe 2017" on sibling S16846 confirms genuinely) — the shelf's own overlap-in-series flag records that two ladders each contribute a Vol.01 (this v2 line vs the v1 line on sibling S16845); no clean CV id surfaced beyond the v1 hull-stamp (76271)
+F 100034 split-needed | v2 (2017) line vs v1 (2014) line share one DB Series per the open overlap-in-series flag on item10777
+N 100034 Steven Universe v2 (2017-2020) cv=- gcd=117636
+
+R 16999 | shelf holds three different "Stuff of Nightmares" one-shots, each with its own record: "Slay Ride" (2023, gcd=206548), "Red Murder" (2023, cv=158908 gcd=204440), and "The Monster Makers" (2023, COL trade, no id surfaced); stored link CV145202 (2022, count4) is the underlying anthology mini none of the three specifically match
+F 16999 split-needed | three different one-shots, no shared numbering
+N 16999 Stuff of Nightmares - Slay Ride (2023) cv=- gcd=206548
+N 16999 Stuff of Nightmares - Red Murder (2023) cv=158908 gcd=204440
+N 16999 Stuff of Nightmares - The Monster Makers (2023) cv=- gcd=-
+
+R 7823 | shelf conflates the original 4-issue "Supurbia" mini (2012, Vol.01 trade, cv=46358 gcd=63941, both count4 — GCD twin 54306 also count4) with the ongoing's #1-12 (Vol.02-04 trades, gcd=70357 count12) per the open flag on item10798
+F 7823 split-needed | mini vs ongoing's later issues share one DB Series per the open conflated-series flag on item10798
+N 7823 Supurbia mini (2012) Vol.01 cv=46358 gcd=63941
+N 7823 Supurbia ongoing #1-12 (2012-2013) Vol.02-04 cv=- gcd=70357
+
+S 18039 cv=116677 gcd=141474 0.9 | CV116677 (no CvVolume row, needs-fetch) and GCD141474 "The Avant-Guards" 2019 was-ongoing both count8 agree, dominant 2/3 files; our three trades collect the run
+F 18039 needs-fetch cv=116677 | no CvVolume row cached, named from the local rip
+
+S 18808 cv=49948 gcd=66456 0.9 | CV49948 (count12, already stored) and GCD66456 "The Hypernaturals" 2012-2013 was-ongoing count12 agree exactly, our #001 + three trades collect the run; GCD's dominant per-file pick (86261, collected edition count3 = matches-our-holdings trap) rejected
+
+S 19063 cv=135563 gcd=171967 0.9 | CV135563 and GCD171967 "The Many Deaths of Laila Starr" 2021 both count5 agree, our COL trade collects it (judged#1-5); the Pen & Ink one-shot (2023, gcd=203226) is a different companion book, residue named
+
+R 20517 | our 4 files "Turncoat 01-04 (of 04) (2016)" don't match the stored CV95842 (T-Publications, count1, ratio 4.00 — a single-issue record, not our 4-issue mini); no other CV/GCD candidate surfaced ("the local rip names no volume but the one above")
+F 20517 provider-missing | no 4-issue CV/GCD record found for this mini beyond the mismatched count-1 stub
+
+S 21158 cv=109465 gcd=123256 0.9 | CV109465 (local rip, count4) and GCD123256 "WWE: Then. Now. Forever." 2018-2019 collected edition count4 agree, our three trades fit; residue = "WWE - Forever" one-shot (2019, cv=116848 gcd=140136), a different comic, named
+
+R 21147 | our #21-25 + five trade volumes (Vol.01-05) are the "WWE" 2017-2019 Boom! Studios ongoing, CV98079 and GCD112087 both count25 agree (dominant 5/10 files), the trades match GCD's collected-edition row 120391 (count6, residue); the shelf's own overlap-in-series flag records that GCD's blocks for Vol.03/04/05 overlap each other — a data-quality note, not a second comic
+F 21147 split-needed | GCD block overlap on Vol.03/04/05 flagged as overlap-in-series on item11026 — treated as a single WWE ongoing here, no second comic identified
+N 21147 WWE (2017-2019) #1-25 cv=98079 gcd=112087
+
+R 21266 | shelf is a bucket of at least seven separate Warhammer 40,000 minis/lines spanning two publishers/eras: BOOM! Studios 2006-2008 (Damnation Crusade #1-6, Blood and Thunder #1-4, Exterminatus #1-5, Defenders of Ultramar #1-4, Fire & Honor #1-4, each its own mini, plus a Convention Special and Cover Gallery) and Titan Comics 2016-2018 (the main trades v01-03 + Dawn of War #1-4 + Deathwatch #1-4); no CV candidate scored above 0 for any of them, and GCD only offers unrelated German/French editions on 18/36 files
+F 21266 split-needed | seven-plus co-equal Warhammer 40,000 minis/lines share one bucket folder across two publishers
+F 21266 provider-missing | no English-language CV/GCD record found for any of the BOOM!/Titan Warhammer 40,000 minis in the packet
+
+S 21341 cv=130048 gcd=163766 0.9 | CV130048 (count15, already stored) and GCD163766 "We Only Find Them When They're Dead" 2020-2022 count15 (from the dump) agree exactly, our three trades' judged ranges (#1-5/6-10/11-15) collect the run; GCD's per-file picks (171215 count1, 172281 count3) are narrower sub-records, rejected in favour of the full-run dump match
+
+R 24319 | shelf holds four separate "What Were They Thinking!" anthology one-shots, each with its own CV record: "Journal My War" (2005, cv=24019), "Monster Mash-Up" (2006, cv=56979), "Some People Never Learn" (2006, cv=57013), "Go West Young Man" (2007, cv=55468) — no spanning record, GCD's per-file pick (14198, one-shot) covers 3/4 generically
+F 24319 split-needed | four co-equal anthology one-shots share the shelf, one file each
+N 24319 Journal My War (2005) cv=24019 gcd=-
+N 24319 Monster Mash-Up (2006) cv=56979 gcd=-
+N 24319 Some People Never Learn (2006) cv=57013 gcd=-
+N 24319 Go West Young Man (2007) cv=55468 gcd=-
+
+S 21562 cv=161850 gcd=219432 0.95 | CV161850 and GCD219432 "When I Lay My Vengeance upon Thee" 2025 both count5 agree exactly, unflagged num match, our #1 fits
+
+S 21657 cv=76879 gcd=82732 0.9 | CV76879 and GCD82732 "Wild's End" 2014-2015 miniseries both count6 agree, our three original trades (Vol.01-03) + the Deluxe Book01 omnibus (judged #1-4) collect this original 6-issue mini; residue = "Vol.04 - Beyond the Sea" (2024), a separate new 6-issue series (cv=151678 gcd=201441), named
+N 21657 Wild's End - Beyond the Sea (2023-2024) cv=151678 gcd=201441
+
+S 22115 cv=127982 gcd=217530 0.9 | CV127982 (count10) and GCD217530 "Wynd" 2021 collected edition (count4, partial) agree by title/dates, our three Book01-03 trades collect the original run; residue = "Power of the Blood" #1-2 (2024-2025, cv=161163 gcd=217569, count8/6), a separate sequel series, named
+N 22115 Wynd - The Power of the Blood (2024-2025) cv=161163 gcd=217569
+
+S 22810 cv=45270 gcd=31132 0.9 | CV45270 (no CvVolume row, needs-fetch) and GCD31132 "Zombie Tales" 2007-2009 Boom! Studios count4 agree, our two Omnibus trades collect the anthology line
+F 22810 needs-fetch cv=45270 | no CvVolume row cached, named from the local rip
+
+S 22643 cv=2605 gcd=2088 0.95 | CV2605 and GCD2088 "Yang" 1973-1986 Charlton both count16 agree exactly, unflagged num match, our #1-3 fits (partial rip)
+
+S 1122 cv=48187 gcd=65200 0.9 | CV48187 and GCD65200 "Antares"[en-gb] 2011-2015 Cinebook both count6 agree, OL external work confirms; GCD's round2-folder pick (57458, "Aldebaran," a different Cinebook series by the same author) rejected, our #1-6 fits
+F 1122 merge-with=1121 | already-landed shelf S1121 (batch A-006) independently linked the same CV48187/GCD65200 "Antares" English Cinebook edition (a second rip, different file group)
+
+S 2566 cv=69985 gcd=57445 0.9 | CV69985 and GCD57445 "Billy & Buddy"[en-gb] 2009 Cinebook both count9 agree, LOCG bridge confirms, our #3-5,7 fit (partial rip)
+F 2566 merge-with=2591 | already-landed shelf S2591 (batch B-006) independently linked the same CV69985/GCD57445 "Billy & Buddy" English Cinebook edition (a second rip, different file group)
+
+S 9502 cv=38893 gcd=57463 0.95 | CV38893 and GCD57463 "Insiders"[en-gb] 2009 Cinebook both count7 agree exactly, unflagged num match, OL external work confirms, our #1-3 fits (partial rip)
+
+S 11051 cv=48134 gcd=- 0.9 | CV48134 "Lucky Luke" 2006 Cinebook count83 matches our ladder 1-83 exactly (ratio 83/83=1.00); GCD's per-file matches are all foreign editions (Polish/Croatian/Norwegian/Italian, 40/87 files) — no English-language GCD row found in the packet
+F 11051 provider-missing | no English Cinebook GCD row found for Lucky Luke, only foreign editions
+
+S 11903 cv=26987 gcd=57452 0.95 | CV26987 and GCD57452 "Melusine"[en-gb] 2007 Cinebook both count5 agree exactly, unflagged num match, our #1 fits
+
+S 13394 cv=43178 gcd=57467 0.9 | CV43178 and GCD57467 "Orbital"[en-gb] 2009 Cinebook both count~8 agree, dominant 3/8 files (English edition); other per-file matches are French/Dutch original-language editions, wrong-language rejects, our #1-4,6-8 fits
+
+S 18922 cv=92866 gcd=117883 0.95 | CV92866 and GCD117883 "The Last Templar"[en-gb] 2016 Cinebook both count6 agree exactly, unflagged num match, our #1-2 fits
+
+S 21318 cv=68090 gcd=75254 0.9 | CV68090 and GCD75254 "Wayne Shelton"[en-gb] 2013 Cinebook both count5 agree, dominant 2/3 files; the Spanish per-file pick (234233) is a wrong-language reject, our #1-3 fits
+
+S 22617 cv=42117 gcd=57409 0.9 | CV42117 and GCD57409 "XIII"[en-gb] 2010 Cinebook count26 agree, dominant 16/26 files (English edition), OL external work confirms; the Dutch per-file pick (62159) on 6/26 is a wrong-language reject, our #1-26 fits
+
+S 22640 cv=52335 gcd=57456 0.9 | CV52335 and GCD57456 "Yakari"[en-gb] 2005 Cinebook count~22/23 agree closely, dominant 17/20 files, OL external work confirms; the German per-file pick (85056) on 3/20 is a wrong-language reject, our #1-21 fits
+
+S 3156 cv=121148 gcd=- 0.9 | CV121148 "Breaklands" 2019 Justin Jordan count5 (the digital-first ComiXology Original) matches our trade collecting the season; GCD only holds the later 2021 Dark Horse print repackaging (170526, count1), a different count — the digital serial is the identity per the ComiXology-Originals provider-split ruling
+F 3156 provider-missing | GCD lacks the digital-first ComiXology Original, only the 2021 Dark Horse reprint at a different count
+
+S 3373 cv=144159 gcd=- 0.9 | CV144159 "Canary" 2022 Best Jackett Press count6 is the digital-first ComiXology Original per the ledger's Best-Jackett ruling; GCD holds only later reprints at different counts (213610 Dark Horse count1, 205386 dump-only count3), none matching
+F 3373 provider-missing | GCD has no Best Jackett Press original, only later reprints at different counts
+
+S 5351 cv=117209 gcd=- 0.9 | CV117209 "Delver" 2019 Iron Circus Comics count5 is the digital-first original; GCD only holds the later 2021 Dark Horse reprint (177040, count2, different count) — the ComiXology-Originals provider-split shape
+F 5351 provider-missing | GCD lacks the Iron Circus Comics original, only the later Dark Horse reprint
+
+S 6082 cv=133982 gcd=- 0.9 | CV133982 "Elephantmen 2239: War Toys" 2021 Comicraft count4 exactly matches our trade's title; no GCD data present in the packet at all
+F 6082 provider-missing | no GCD block in the packet
+
+S 6873 cv=128128 gcd=- 0.9 | CV128128 "Forgotten Home Season One" 2020 Vices Press issue769900 exactly matches our trade's title; GCD only holds the later 2022 Dark Horse reprint (183080), the ComiXology-Originals provider-split shape
+F 6873 provider-missing | GCD lacks the Vices Press original, only the later Dark Horse reprint
+
+S 7473 cv=162651 gcd=- 0.9 | CV162651 "GhostBox" 2024 Comixology count2 matches our #1-3 (partial ongoing, ratio 1.50 slight overshoot is fine for an ongoing) by title and publisher; no GCD candidate found — the dump's "TezuComi" matches are an unrelated Japanese manga via bad candidate scoring
+F 7473 provider-missing | no GCD row found for GhostBox
+
+S 11 cv=139917 gcd=- 0.9 | CV139917 ".Self" 2021 Christopher Sebela count5 is the digital-first original; GCD only holds the later 2023 Dark Horse reprint (200618, count1) — the ComiXology-Originals provider-split shape
+F 11 provider-missing | GCD lacks the original, only the later Dark Horse reprint
+
+S 17922 cv=139788 gcd=- 0.7 | CV139788 "The All-Nighter" 2021 JAMS+JELLIES count15 matches our title exactly (Season 01-03 collecting the 15-issue run); no clean GCD row found, the dump's "All Nighter" 2011 Image match is unrelated
+F 17922 provider-missing | GCD dump has no "The All-Nighter" row, only an unrelated 2011 Image title
+
+S 19379 cv=72477 gcd=- 0.9 | CV72477 "The Pride" 2014 Queer Comix count6 matches, our "Season2" maps to cached#2-2; no GCD data present in the packet
+F 19379 provider-missing | no GCD block in the packet
+
+R 21088 | our file "Vincent Van Gogh - Sadness Will Last Forever (2019)" doesn't match the stored CV164452 (a different, unrelated 2021 Nobi Nobi manga also just titled "Van Gogh"); no clean candidate found — GCD's "Vincent" NBM 2019 count3 (143839) is a different, unrelated NBM biography line
+F 21088 wrong-cv-link | stored 164452 is an unrelated 2021 Nobi Nobi "Van Gogh" manga
+F 21088 provider-missing | no clean CV/GCD record found for this specific title
+
+S 8798 cv=54741 gcd=- 0.9 | CV54741 "Defend Comics" 2012 CBLDF issue372636 exactly matches our file's 2012 date (closer than the stored 2016 link); no GCD data present in the packet
+F 8798 wrong-cv-link | stored 90260 (2016, count2) is a later/different edition, the 2012 match is CV54741
+
+S 3297 cv=81139 gcd=- 0.9 | CV81139 "CBLDF Defender" 2015 Creator Owned Comics count8 matches our v1 #1-8 exactly; residue = v2 #1-4 (2017, cv=99852, count4, a different Creator Owned Comics id), the sequel volume, named; no GCD data present in the packet
+F 3297 provider-missing | no GCD block in the packet
+
+S 19447 cv=49335 gcd=75504 0.9 | CV49335 (count11) and GCD75504 "The Red Ten" 2013-2018 limited series (count10) agree closely, our #0-8 num-matched on 8/9 files

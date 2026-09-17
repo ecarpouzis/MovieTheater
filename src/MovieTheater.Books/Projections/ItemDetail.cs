@@ -58,8 +58,14 @@ namespace MovieTheater.Books.Projections
     public sealed record CollectionBlock(CollectionLevel Level, TrackRole TrackRole, int? SpanStart, int? SpanEnd,
         int ContainsCount, int? ParentItemId, SpanSource SpanSource, string? SpanLabel);
 
+    /// <summary><c>Runs</c> says WHICH RUN the range counts in, per leg, AND the range in that run's own
+    /// numbering — the fact that tells "#1-4 of Seed of Destruction" from "#1-5 of Wake the Devil" on one
+    /// Hellboy shelf, and that lets one book state both (a trade of two minis, an omnibus). A ref with no
+    /// range of its own counts in the span's. Empty is the normal case and means nobody has said; it is never
+    /// a claim that the range counts in the shelf's own run.</summary>
     public sealed record EditionSpanBlock(EditionSource Source, int? SeriesId, double? IssueStart, double? IssueEnd,
-        string? EditionTitle, string? ProviderRef, bool Contiguous, double? Confidence, string? Note);
+        string? EditionTitle, string? ProviderRef, bool Contiguous, double? Confidence, string? Note,
+        List<SpanRunRef> Runs);
 
     /// <summary>Credits and tags carry their SOURCE, and the client groups by it — the same person arriving from
     /// two legs is one row per leg, not a silently deduplicated single row.</summary>
@@ -213,7 +219,7 @@ namespace MovieTheater.Books.Projections
 
             // ComicVine's ISSUE row hangs off the item's own link, unlike the volume, which is the series'.
             CvIssueBlock? cvIssue = null;
-            var cvLink = links.FirstOrDefault(l => l.Provider == Provider.Cv && l.Status == LinkStatus.Matched);
+            var cvLink = links.FirstOrDefault(l => l.Provider == Provider.Cv && LinkStatuses.Usable.Contains(l.Status));
             if (cvLink != null && int.TryParse(cvLink.ProviderKey, out var cvIssueId))
                 cvIssue = await db.CvIssues.AsNoTracking().Where(i => i.Id == cvIssueId)
                     .Select(i => new CvIssueBlock(i.Id, i.VolumeId, i.Name, i.IssueNumber, i.CoverDate, i.StoreDate,
@@ -242,11 +248,22 @@ namespace MovieTheater.Books.Projections
                     n.ParentItemId, n.SpanSource, n.SpanLabel))
                 .FirstOrDefaultAsync(ct);
 
-            var spans = await db.CollectedEditionSpans.AsNoTracking().Where(s => s.ItemId == item.Id)
+            // The spans, then the run refs of those spans. The second read is skipped entirely when the item
+            // has no span, which is the common case; the item modal has no legs context, so a GCD run arrives
+            // as its id with no name (SpanRunRefs says why).
+            var spanRows = await db.CollectedEditionSpans.AsNoTracking().Where(s => s.ItemId == item.Id)
                 .OrderBy(s => s.Source).ThenBy(s => s.IssueStart)
-                .Select(s => new EditionSpanBlock(s.Source, s.SeriesId, s.IssueStart, s.IssueEnd, s.EditionTitle,
-                    s.ProviderRef, s.Contiguous, s.Confidence, s.Note))
+                .Select(s => new { s.Source, s.SeriesId, s.IssueStart, s.IssueEnd, s.EditionTitle,
+                    s.ProviderRef, s.Contiguous, s.Confidence, s.Note })
                 .ToListAsync(ct);
+            var spanRuns = spanRows.Count == 0
+                ? []
+                : await SpanRunRefs.LoadAsync(db, [item.Id], ct: ct);
+            var spans = spanRows
+                .Select(s => new EditionSpanBlock(s.Source, s.SeriesId, s.IssueStart, s.IssueEnd, s.EditionTitle,
+                    s.ProviderRef, s.Contiguous, s.Confidence, s.Note,
+                    SpanRunRefs.For(spanRuns, item.Id, s.Source)))
+                .ToList();
 
             var credits = await db.ItemCredits.AsNoTracking().Where(c => c.ItemId == item.Id)
                 .OrderBy(c => c.Source).ThenBy(c => c.Ordinal)

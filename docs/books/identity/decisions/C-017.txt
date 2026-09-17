@@ -1,0 +1,70 @@
+# C-017 — DC Superboy tail + Supergirl family + Superman/Action Comics head. Same wrong-relaunch legacy-stamp
+# trap runs through the whole Superboy/Supergirl run of shelves (per-file matcher keeps reaching for the
+# 1949 Superboy / 1996 Supergirl volumes). Action Comics v1 (2018)/(1938) both show CV keeping ONE spanning
+# volume across DC's era-retitled/legacy-renumbered eras while GCD names each era its own row — pair CV with
+# the majority-era GCD row per the publisher-change/legacy-numbering ruling. S17167 "Superman" is a genuine
+# multi-era DC-Events bucket with no single dominant match and no blocking flag — split needed.
+
+S 100130 cv=5261 gcd=4973 0.95 | GCD 4973 "Superboy" 1994-2002 DC count 102 matched 89/91 files (dominant) and CV 5261 agrees (same run); ComicInfo Count "100" / Publisher "DC Comics" confirm; the CV per-file stamp of the 1949 legacy volume (19154) on 78/91 files is the legacy trap, rejected; the trade (71992) is this run's own collection
+F 100130 wrong-cv-link | CV per-file matcher stamped the 1949 Superboy volume (19154) across 78/91 files by issue-number coincidence
+
+S 100131 cv=- gcd=53013 0.9 | GCD 53013 "Superboy" 2011-2011 DC count 11 matched all 11/11 files, ComicInfo Count "11" confirms exactly; the CV per-file stamp of the 1949 legacy volume (19154) on all 11 files is the legacy trap, rejected; no correct CV id surfaces in this packet
+F 100131 wrong-cv-link | CV per-file matcher stamped the 1949 Superboy volume (19154) across all 11 files by issue-number coincidence
+
+S 100132 cv=- gcd=74702 0.9 | GCD 74702 "Superboy" 2012-2015 DC "Collected Edition" count 5 exactly matches our five trades (70351-70355, Incubation...Paradox); the New 52 Superboy ongoing's own run-level id is not clearly surfaced in this packet (matches-our-holdings caution); CV per-file's 1949 stamp (19154) on 3/5 files is the legacy trap, rejected
+F 100132 wrong-cv-link | CV per-file matcher stamped the 1949 Superboy volume across 3/5 files
+N 100132 stale-flag | the overlap-in-series flag (several Superboy ladders each a Vol.01) names the trades-vs-legacy-numbering pattern shared with sibling Superboy shelves (v1/v3/v4/v5), not an actual overlap within this shelf's own five trades
+
+S 100129 cv=4378 gcd=4002 0.95 | CV 4378 and GCD 4002 both "Superboy" 1990-1991 DC count 18, matched 18/23 and 18/23 files (dominant); residue (5/23 files stamped to the 1949 legacy volume, 1 file to the Spanish Zinco edition) named, not a split
+F 100129 wrong-cv-link | CV per-file matcher stamped the 1949 legacy volume onto 5/23 files (issues #12-22, published 1991-1992, beyond the 18-issue run's own numbering)
+
+S 17144 cv=136890 gcd=173189 0.95 | CV 136890 and GCD 173189 both "Supergirl: Woman of Tomorrow" 2021-2022 DC count 8, cached range covers all our issues; ratio 2.00 is the 2024 digital-mobile re-release duplicating the 2021 print numbering (both editions of the same 8-issue mini), plus 2021 variant-cover packs
+
+S 4855 cv=92177 gcd=104132 0.7 | CV candidate 92177 "Daring New Adventures of Supergirl" 2016 DC count 2 and GCD 104132 "Daring New Adventures of Supergirl" 2016-2017 DC collected edition count 2 match our two Daring New Adventures trades (70409-70410, packet's own judged confidence 0.65/0.6 already flags real doubt); the stored CV link 75250 (a 1980 Murray Comics Australian reprint) is unrelated, rejected; the original 1982-1983 run is named in N
+F 4855 wrong-cv-link | stored CV 75250 is an unrelated 1980 Australian Murray Comics reprint
+N 4855 archive | GCD 2626 "The Daring New Adventures of Supergirl" 1982-1983 DC (13 issues) is the original run these trades collect
+I 19939 cv=94245 gcd=- 0.7 | CV candidate 94245 issue 550319 "Adventures of Supergirl" 2016 DC may match this separate one-shot compilation; low confidence, distinct from the Daring New Adventures trades
+
+S 94708 cv=5766 gcd=5530 0.95 | CV 5766 and GCD 5530 both "Supergirl" 1996-2003 DC count 81, matched 35/35 and 30/35 files; the 5 trades (70445-70449, judged #1-43) collect issues 1-81; residue (5/35 files matched to unrelated 2016-2018 records) named, not a split
+N 94708 residue | 5/35 files also matched unrelated 2016-2018 Supergirl records (GCD 96088, 108364) — per-file noise, not a second run
+
+S 94709 cv=18012 gcd=14121 0.9 | CV 18012 (named via sibling packets' rip lookups) and GCD 14121 both "Supergirl" 2005-2011 DC count 68 agree; GCD matched 14/24 files (dominant); the thirteen trades (70450-70473, judged #0-59) collect this run; CV per-file's 1996 stamp (5766) on 19/24 files is the legacy trap, rejected
+F 94709 wrong-cv-link | CV per-file matcher stamped the 1996 Supergirl volume (5766) across 19/24 files by issue-number coincidence
+
+S 94710 cv=42949 gcd=78993 0.9 | CV 42949 "Supergirl" 2011 DC count 41 (the New 52 ongoing, named via sibling packet) and GCD 78993 "Supergirl" 2012-2015 DC collected edition count 6 (matching our six trades exactly — matches-our-holdings caution, capped) collect this run per trades-vs-run; CV per-file's 1996 stamp (5766) on all 6 files is the legacy trap, rejected
+F 94710 wrong-cv-link | CV per-file matcher stamped the 1996 Supergirl volume across all 6 files
+
+S 94711 cv=- gcd=114161 0.9 | GCD 114161 "Supergirl" 2017-2019 DC collected edition count 4 exactly matches our four trades (70480-70483, Rebirth-era); CV per-file's 1996 stamp (5766) on all 4 files is the legacy trap, rejected; no distinct CV id for the 2016/2017 run surfaces in this packet
+F 94711 wrong-cv-link | CV per-file matcher stamped the 1996 Supergirl volume across all 4 files
+
+S 94712 cv=- gcd=144393 0.9 | GCD 144393 "Supergirl" 2019-2020 DC collected edition count 3 matches our three trades (70484-70486) plus the annual (71995); CV per-file's 1996 stamp (5766) on all 4 files is the legacy trap, rejected; no distinct CV id for this era surfaces in this packet
+F 94712 wrong-cv-link | CV per-file matcher stamped the 1996 Supergirl volume across all 4 files
+
+S 17153 cv=30431 gcd=4663 1.0 | CV candidate 30431 issue 187424 and GCD dump 4663 both "Supergirl / Lex Luthor Special" 1993 DC exactly match our file's own title and year; the stored CV link 36420 ("Luthor" 2010) is unrelated, rejected
+F 17153 wrong-cv-link | stored CV 36420 "Luthor" 2010 DC is a different, later one-shot; GCD per-file round2-folder matched the unrelated "Superboy Plus" (5762)
+F 17153 merge-with=17152 | shelf S17152 (decided A-011.txt) is the same "Supergirl/Lex Luthor Special" 1993 DC one-shot, cv=30431/gcd=4663 — same comic, another rip
+
+S 17204 cv=137844 gcd=174371 0.95 | CV 137844 and GCD 174371 both "Superman: Son of Kal-El" 2021-2023 DC count 18, matched 5/9 files (dominant), the three trades (73017-73019, judged #1-15) plus the annual and issues #1,16-18 fill the run; residue (2/9 files matched the French edition) named, not a split
+
+R 388 | no CV or GCD record for this specific "Action Comics.5 - Lois and Clark - Doom Rising" (2024) trade surfaces in this packet; the candidates shown (CV 85314/93684, GCD 93774/105767) are the unrelated 2015-2016 "Superman: Lois and Clark" mini/specials; GCD per-file round2-folder matched the unrelated Action Comics ongoing (59922), rejected — no id can be stored
+F 388 wrong-cv-link | GCD per-file round2-folder matched the unrelated Action Comics ongoing (59922)
+F 388 needs-web | is there a ComicVine/GCD record for the 2024 "Action Comics.5: Lois and Clark – Doom Rising" trade collecting Action Comics tie-in material?
+
+S 94961 cv=- gcd=59922 0.9 | GCD 59922 "Action Comics" 2011-? DC ongoing (count 199, legacy-numbered #957+) is the majority-era row here, matching 80/89 files; CV keeps ONE spanning "Action Comics" volume (18005) across all eras, but that id is already the declared identity of the merged S94959/S381 cluster (the original 1938-2011 GCD row, 97) — withheld here since GCD plainly treats this as a different row/era, not merged
+N 94961 withheld cv=18005 — the spanning ComicVine volume is S94959's identity (merged with S381); this shelf keeps its own majority-era GCD row (59922) per the publisher-change/era-retitling ruling
+N 94961 stale-flag | the conflated-series flag (2017/2021/2022/2024 Vol.NN ladders in one Series) is DC's per-era "Vol.01" trade-line restarts (v1.1-v1.4 sub-folders) over one continuously-numbered legacy run (#957-1082+) within THIS shelf's own GCD row, not several co-equal minis
+
+S 17188 cv=161221 gcd=216834 0.95 | CV 161221 issue 1078868 and GCD dump 216834 both "Superman: House of Brainiac" 2024 DC exactly match the trade (70585); the second file (70610) is a variant cover of the separate "House of Brainiac Special" one-shot (CV 157938/GCD 211431), named below
+I 70610 cv=157938 gcd=s211431 0.9 | CV 157938 issue 1053532 and GCD 211431 both "Superman: House of Brainiac Special" 2024 DC one-shot match this variant-cover file
+F 17188 wrong-cv-link | GCD per-file round2-folder matched the unrelated Action Comics ongoing (59922)
+
+R 17167 | this DC-Events reading-order shelf mixes files from at least four different Superman eras with no single per-file dominance (max 9/96 GCD matches): v2 1987-2006 (GCD 3386, 231 issues, items "Superman v2 0xx-2xx"), v4 2011-2016 New 52 (GCD 59921, 57 issues, items "Superman 001-052"), an Italian Play Press edition (GCD 28776, dump-only, 3 files), and material from the original 1939-1986 continuous-numbering series (issues 650-699/691/698-699, matching CV local-rip 773 "Superman" 1939 DC 488); CV per-file stamped ALL 96 files to the unrelated "Superman Year One" (119775, 3 issues) — a total hull mismatch
+F 17167 split-needed | run A = GCD 3386 "Superman" 1987-2006 DC (v2); run B = GCD 59921 "Superman" 2011-2016 DC (v4); run C = CV 773 "Superman" 1939 DC (original continuous numbering, items #650-699/691/698-699); minor Italian Play Press residue (GCD 28776, 3 files)
+F 17167 wrong-cv-link | CV per-file matcher stamped the unrelated "Superman: Year One" (119775, a 3-issue 2019 mini) across all 96 files
+N 17167 cv=- gcd=3386 | run B (v2 1987-2006)
+N 17167 cv=- gcd=59921 | run C (v4 2011-2016)
+N 17167 cv=773 gcd=- | original 1939 continuous-numbering material (issues 650-699 range)
+
+S 10446 cv=155829 gcd=207424 0.95 | CV 155829 and GCD 207424 both "Kneel Before Zod" 2024 DC limited series count 8, matched all 25/25 files; ratio 3.12 is the variant-cover-pack convention
+
+S 12503 cv=158379 gcd=212375 0.95 | CV 158379 and GCD 212375 both "My Adventures with Superman" 2024-2025 DC limited series count 6, matched all 16/16 files; ratio 2.67 is the variant-cover-pack convention

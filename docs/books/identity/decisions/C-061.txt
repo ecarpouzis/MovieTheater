@@ -1,0 +1,287 @@
+# C-061 — Marvel Punisher/Spider-Man tail, Titan Comics (Doctor Who, Blade Runner, Bloodborne, misc licensed),
+# Top Shelf, Valiant (Bloodshot/Britannia/Divinity family), Source Point Press, Scout Comics, TKO Shorts.
+# Titan Comics shelves are riddled with the count-1-trade-as-stored-link shape and per-file legacy/foreign
+# stamps; several licensed-game minis (Dark Souls, Tekken, Minions) had their linked CV id simply wrong
+# (different comic of the same bare title). TKO Shorts' three shelves are each one story-issue of the same
+# 9-part anthology ongoing, correctly filed as separate shelves by story title, not a collision. Convention
+# learned the hard way: an `I` line's cv= wants the TRADE's own ISSUE id (lookup.py --issues <volume>), never
+# the volume id itself — a multi-issue CV volume with no distinct trade-level catalog entry gets cv=- and a
+# gcd=s<series> fallback instead of an invented issue id. The checker also refuses an S line outright on any
+# OPEN conflated-series flag regardless of the one-leg/stale-flag ruling; those shelves go R + F split-needed
+# + N here, with the coextensive-line evidence preserved in the N clause for the lead to apply on review.
+
+S 14213 cv=4066 gcd=3662 0.95 | CV 4066 "The Punisher War Journal" 1988 Marvel 80 issues and GCD 3662 "The Punisher War Journal" 1988-1995 Marvel 80 agree on publisher, year and count; our ladder to #80 sits inside both, matched per-file on 8/67 despite round2-series noise on the Fraction-run files
+I 82488 cv=700147 gcd=s139723 0.9 | "Punisher War Journal by Matt Fraction: The Complete Collection" Book 01 matches CV volume 116985's own issue 700147 and GCD's collected-edition series 139723
+N 14213 fraction-collection | item 82488 collects part of the 2007-2009 Fraction run (CV 18152/GCD 20797, 26-27 issues); no judged sub-range given so no C line was written, to avoid inventing a split
+I 83945 cv=549521 gcd=s106341 0.9 | "Punisher War Journal by Carl Potts & Jim Lee" (2016) matches CV volume 94136's own issue 549521 and GCD 106341, found via lookup.py --contains
+I 83949 cv=991442 gcd=s200651 0.9 | 2023 digital one-shot collection matches CV volume 150631's own issue 991442 and GCD 200651, both count 1
+
+S 65609 cv=25640 gcd=33729 0.95 | CV 25640 "Secret Warriors" 2009 Marvel 28 issues and GCD 33729 (2009-2011, Marvel, 28) agree on publisher/year/count; matched per-file on 10/20, the 1-2pp files are variant-cover residue costing nothing
+I 93247 cv=489325 gcd=s89422 0.9 | "Complete Collection Book 01" matches CV volume 82106's own issue 489325 and GCD's collected-edition series 89422
+I 93248 cv=497716 gcd=s89422 0.9 | "Complete Collection Book 02" matches CV volume 82106's own issue 497716, same GCD series
+I 93250 cv=199293 gcd=- 0.9 | "Vol. 01 - Nick Fury, Agent of Nothing" matches CV volume 31798's own issue 199293 (lookup.py --issues)
+I 93251 cv=204287 gcd=- 0.9 | "Vol. 02 - God of Fear, God of War" matches CV volume 32418's own issue 204287
+I 93252 cv=228405 gcd=- 0.9 | "Vol. 03 - Wake the Beast" matches CV volume 34796's own issue 228405
+I 93253 cv=241155 gcd=- 0.9 | "Vol. 04 - Last Ride of the Howling Commandos" matches CV volume 36511's own issue 241155
+I 93254 cv=278668 gcd=- 0.9 | "Vol. 05 - Night" matches CV volume 41263's own issue 278668
+I 93255 cv=293590 gcd=- 0.9 | "Vol. 06 - Wheels Within Wheels" matches CV volume 43026's own issue 293590
+I 93968 cv=344752 gcd=- 0.9 | "Omnibus" (2023) matches CV volume 50242's own issue 344752
+I 117116 cv=204287 gcd=- 0.9 | second rip of Vol. 02, same as 93251 (CV volume 32418 issue 204287) per the label-ambiguous flag
+N 65609 | items 93251 and 117116 are duplicate rips of Vol. 02 - God of Fear, God of War per the label-ambiguous flag
+
+S 16191 cv=101491 gcd=114168 1.0 | CV 101491 "Spider-Man/Spider-Gwen: Sitting In A Tree" 2017 Marvel and GCD's exact-title dump hit 114168 both count 1, matching our single 144pp book; the per-file round2-folder pick (94626 "Spider-Gwen") is rejected per its own ⚠ warning
+I 93690 cv=595701 gcd=s114168 1.0 | book's own record: CV volume 101491's issue 595701, GCD's exact-title series 114168
+
+S 6997 cv=17998 gcd=15309 0.9 | CV 17998 "Friendly Neighborhood Spider-Man" 2005 Marvel 24 issues and GCD 15309 (2005-2007, 24) agree on publisher/year/count; our #24 file and its Complete Collection match this volume on 3/3 files
+N 6997 stale-flag | the conflated-series flag names the 2019 Marvel relaunch (CV 116368/GCD 137205), which shares only the plain ComicInfo Series text with our 2005 content; no 2019 files sit on this shelf, so this is a title-text collision, not real data conflation
+I 94817 cv=592612 gcd=s113550 0.9 | "...Peter David: The Complete Collection" (2017) matches CV volume 100843's own issue 592612 and GCD 113550
+I 116706 cv=- gcd=s15309 0.7 | "Vol. 02 - Mystery Date" trade has no distinct per-book id found; the shelf's own 2005 run's GCD series stands in
+
+S 65685 cv=5048 gcd=4734 0.95 | CV 5048 "Spider-Man Unlimited" 1993 Marvel 22 issues and GCD 4734 (1993-1998, 22) agree fully, matched per-file on all 10 files; ladder 1-14 sits inside the cached span
+
+S 11648 cv=85120 gcd=92884 0.9 | CV 85120 (named from the local rip, no CvVolume row) and GCD 92884 "Marvel Universe Guardians of the Galaxy" 2015-2017 [was ongoing] both count 23 issues; our 4 issue files plus 5 collected volumes match the ongoing majority
+F 11648 needs-fetch cv=85120 | named from the local rip, no CvVolume row cached
+I 51851 cv=- gcd=s98746 0.7 | "Vol. 02" matches GCD's collected-edition row 98746 (count 6, matches-our-holdings) — no per-book issue id found
+I 51852 cv=- gcd=s98746 0.7 | "Vol. 03" matches GCD's collected-edition row 98746, count 6, matches-our-holdings
+I 51853 cv=- gcd=s98746 0.7 | "Vol. 04" matches GCD's collected-edition row 98746, count 6, matches-our-holdings
+I 51854 cv=- gcd=s98746 0.7 | "Vol. 05" matches GCD's collected-edition row 98746, count 6, matches-our-holdings
+I 51855 cv=- gcd=s98746 0.7 | "Vol. 06" matches GCD's collected-edition row 98746, count 6, matches-our-holdings
+
+S 65925 cv=4545 gcd=4189 0.9 | CV 4545 "Black Hood" 1991 DC Comics (no CvVolume row) and GCD 4189 "Black Hood" 1991-1992 DC both count 12, matching ladder 1-12 + annual; the per-file round2-series pick (86903, Archie's 2015 relaunch) is the wrong-relaunch trap and rejected
+F 65925 needs-fetch cv=4545 | named from the local rip, no CvVolume row
+
+S 65926 cv=94996 gcd=108398 0.95 | CV 94996 "The Black Hood" 2016 Archie Comics 5 issues and GCD 108398 (2016-2017, Archie, 5) agree fully, matched per-file on all 5/5 files
+
+R 29138 | shelf holds two unrelated comics sharing only a title: DC Black Label's "Rogues" (2022, CV 141994, GCD 182865, count 4) as item 19966's collection, and Scout Comics' unrelated 2024 "Rogues" #1 (CV 156200) as item 109937 — two different publishers/runs
+F 29138 split-needed | should split into a DC Black Label sub-shelf and a Scout Comics sub-shelf
+I 19966 cv=- gcd=s182865 0.9 | DC Black Label's "Rogues" (2022) collected edition matches GCD 182865 (DC, count 4); no distinct trade-level CV issue id isolated from volume 141994
+
+S 15425 cv=- gcd=141505 0.7 | this single 167pp trade collects Scout Comics' "Shadow Play" mini (GCD 141505, 2019-2020, 6 issues); no CV id for the underlying run was found (only an unrelated 1982 Western Publishing namesake and a 2018 Ashcan)
+F 15425 wrong-cv-link | the per-file CV pick (36541, "Shadow Play" 1982 Western Publishing) is a wrong-era namesake, not this Scout mini
+I 109939 cv=- gcd=s224280 0.7 | the trade's own GCD collected-edition record (224280, Scout Comics, count 1) matches this book per the packet's own per-file pick
+N 15425 | the underlying 6-issue run's own CV id was not found; only the collected-edition GCD row (224280) and the run-level GCD row (141505) are known
+
+S 15595 cv=155705 gcd=201227 0.95 | CV 155705 and GCD 201227 "Sidequest" both 2023 Scout Comics count 3, matched per-file on our #1 file
+
+S 18512 cv=131362 gcd=168051 0.9 | CV 131362 and GCD 168051 "The Electric Black Presents" 2020-2021 Scout Comics both count 3, matched per-file majority on 3/4 files; the one collected trade of the earlier "The Electric Black" ongoing is residue
+I 109452 cv=- gcd=s144757 0.9 | "COL The Electric Black v01" collects the 2019 Scout Comics ongoing itself (GCD 144757, count 4), a related but separate series from "Presents"
+C 109452 cv=118508 gcd=144757 #1-4 0.9 | the trade collects the complete 4-issue "The Electric Black" (2019) ongoing, both legs count 4
+
+S 21347 cv=152411 gcd=197988 0.95 | CV 152411 and GCD 197988 "We Wicked Ones" both 2023 Scout Comics count 6, matched per-file on our #1 file
+
+S 13905 cv=110109 gcd=123898 0.9 | CV 110109 and GCD 123898 "Please Destroy My Enemies" both Silver Sprocket count 1; the file's 2016 vs the record's 2018 is a print-vs-creation year gap, not a mismatch
+
+S 5375 cv=103577 gcd=- 0.7 | CV 103577 "Demons" 2016 Insane Comics 10 issues matches our files per-file on 3/3; no GCD row found (only unrelated Silver Surfer "Inner Demons" hits in the dump)
+F 5375 provider-missing | GCD holds no "Demons" row for Insane Comics 2016
+
+R 3188 | shelf holds two co-equal 3-issue minis: "Broken Gargoyles" v1 (CV 129870, GCD 163724, 2020) and "Broken Gargoyles: Sin and Virtue" v2 (CV 137214, GCD 184343, 2021) in separate subfolders — not one run
+F 3188 split-needed | v1 files carry cv=129870/gcd=163724, v2 files cv=137214/gcd=184343; the per-file CV pick stamps 129870 across all 6 files (title-wide stamp), wrong for the 3 v2 files
+
+S 97298 cv=140335 gcd=179055 0.9 | CV 140335 and GCD 179055 "Good Boy" 2021-2022 Source Point Press count 3 both match our v1 3-issue ladder; file 3's 2022 cover date is late shipping of the same limited series, not GCD's separate v2 (185713, fresh #1 in 2022, count 4)
+
+S 14881 cv=137959 gcd=176324 0.95 | CV 137959 and GCD 176324 "Runes" both 2021 Source Point Press count 4, matched per-file on our #1 file
+
+S 17966 cv=- gcd=192458 0.9 | GCD 192458 "The Argus" 2022-2023 Source Point Press count 4 matches our folder (Source Point Press, 2022) and ladder 1-4 on all 4 files; the stored CV link (125445, "Action Lab" 2020) is a different publisher/comic entirely
+F 17966 wrong-cv-link | CV 125445 names Action Lab's 2020 "The Argus", not Source Point Press's 2022 series our files are from
+
+S 19943 cv=139908 gcd=177418 0.9 | CV 139908 (issue 891855) matched per-file on all 3 files despite a cached count of 1 undershooting our 3-issue ladder; GCD 177418 confirms count 3, Source Point Press 2021 — CV's count is stale, not a wrong id
+
+S 14708 cv=134210 gcd=166431 0.9 | this file is TKO Shorts #007, part of TKO Studios' "TKO Shorts" ongoing anthology (CV 134210, GCD 166431, both count 9); the round2-folder GCD warning is a false positive here since the file is literally numbered within that ongoing
+
+S 14828 cv=134210 gcd=166431 0.9 | TKO Shorts #008 "Roofstompers", same TKO Studios anthology ongoing as S14708 (CV 134210/GCD 166431, count 9)
+F 14828 merge-with=14708 | same "TKO Shorts" anthology ongoing (CV 134210/GCD 166431), a different story-issue of the one 9-part series
+
+S 18564 cv=134210 gcd=166431 0.9 | TKO Shorts #002 "The Father of All Things", same TKO Studios anthology ongoing (CV 134210/GCD 166431, count 9)
+F 18564 merge-with=14708 | same "TKO Shorts" anthology ongoing (CV 134210/GCD 166431), a different story-issue of the one 9-part series
+
+S 1380 cv=141937 gcd=182825 0.9 | CV 141937 and GCD 182825 "Assassin's Creed Valhalla: Forgotten Myths" both 2022 Dark Horse Comics count 3; the per-file pick (147402) is a single-issue stub volume for the same book, not the series
+
+S 2862 cv=120232 gcd=148828 0.9 | CV 120232 and GCD 148828 "Blade Runner 2019" both 2019-2020 Titan Comics count 12; the FCBD one-shot + 3 collected volumes are trades of this run (per-file GCD picks 152805/157917/229814 are foreign/collected-edition variants, not the run itself)
+F 2862 misfiled | item 110060 "Blade Runner 2039 Vol. 01 - Luv" (folder Blade Runner 2039 (2023)) is 2039-line content, see S2865
+I 110050 cv=- gcd=s152805 0.7 | "Vol. 01 - Los Angeles" matches GCD 152805 (English collected-edition span 2019-2021)
+I 111858 cv=- gcd=s152805 0.7 | second rip of Vol. 01 - Los Angeles, same book as 110050
+I 110051 cv=- gcd=s152805 0.7 | "Vol. 02 - Off World" (judged #5-8), same collected-edition span
+I 110052 cv=- gcd=s152805 0.7 | "Vol. 03 - Home Again, Home Again" (judged #9-12), same collected-edition span
+N 2862 | items 110050 and 111858 are duplicate rips of Vol. 01, per the label-ambiguous flag; item 111857 (FCBD one-shot) has no distinct FCBD id found in the packet
+
+S 2864 cv=132618 gcd=168062 0.9 | CV 132618 (no CvVolume row) and GCD 168062 "Blade Runner 2029" both Titan English count 12; the per-file French pick (192428) and German dump rows are rejected on language
+F 2864 needs-fetch cv=132618 | named from the local rip, no CvVolume row
+I 110053 cv=- gcd=s175445 0.7 | "Vol. 01 - Reunion" matches GCD's English collected-edition row 175445
+I 110054 cv=- gcd=s175445 0.7 | "Vol. 02 - Echoes" same collected-edition row
+I 110055 cv=- gcd=s175445 0.7 | "Vol. 03 - Redemption" same collected-edition row
+
+S 2865 cv=146794 gcd=193782 0.9 | CV 146794 and GCD 193782 "Blade Runner 2039" both 2022-2024 Titan Comics, matched per-file on 4/5 files (issues #9-12); the 1 collected-edition file is residue
+I 110061 cv=- gcd=s214913 0.7 | "COL Vol. 02 - Upgrade" matches GCD's collected-edition row 214913 (2023-2024, Titan, count 3)
+N 2865 | item 110060 "Blade Runner 2039 Vol. 01 - Luv" is misfiled onto S2862's packet; it is this shelf's Vol. 01, matching gcd=s214913/cv=- alongside 110061
+
+S 2953 cv=108799 gcd=127363 0.9 | CV 108799 (no CvVolume row) and GCD's issue-run row 127363 "Bloodborne" 2018-2019 Titan Comics count 16 are the underlying comic our 4 trades collect; GCD's "collected editions" row 131781 (count 6, matches-our-holdings trap) and the foreign per-file picks are rejected
+F 2953 needs-fetch cv=108799 | named from the local rip, no CvVolume row
+I 110075 cv=- gcd=s131781 0.7 | "Vol. 01 - The Death of Sleep" — no per-book issue id isolated, GCD's multi-volume collected series only
+I 110076 cv=- gcd=s131781 0.7 | "Vol. 02 - The Healing Thirst", same multi-volume collected series as Vol. 01
+I 110077 cv=- gcd=s131781 0.7 | "Vol. 03 - A Song of Crows", same multi-volume collected series as Vol. 01
+I 110078 cv=- gcd=s131781 0.7 | "Vol. 04 - The Veil Torn Asunder", same multi-volume collected series as Vol. 01
+
+S 4123 cv=159622 gcd=208813 0.9 | CV 159622 "Conan the Barbarian: Battle of the Black Stone" 2024 and GCD 208813 (2024, Titan, count 4) both name this arc of the 2023 Titan Conan ongoing, matching our 4 issue files exactly
+
+S 102443 cv=- gcd=209652 0.9 | GCD 209652 "The Savage Sword of Conan" 2024-? Titan count 13 is the correct record (found via lookup.py --year 2024); ComicVine has no "Savage Sword of Conan" 2024 Titan volume at all, and the per-file picks (CV 2701, 1974 Marvel; GCD round2-series 28720, Dark Horse 2007) are both wrong-era/wrong-publisher legacy stamps
+F 102443 wrong-cv-link | rejects both the CV 2701 (1974 Marvel) and GCD round2 28720 (Dark Horse 2007) legacy stamps
+
+S 35173 cv=156697 gcd=211022 0.95 | CV 156697 and GCD 211022 "Dark Souls: The Willow King" both 2024 Titan Comics count 4, matched per-file on all 4 files; the stored/linked CV 94112 ("Legends of the Flame" 2016, an earlier separate mini) is wrong
+F 35173 wrong-cv-link | linked CV 94112 names the 2016 "Legends of the Flame" mini, not "The Willow King" (2024) our 4 files are from
+
+S 5045 cv=112303 gcd=127346 0.9 | CV 112303 and GCD 127346 "Dead Life" both 2018 Titan Comics [Limited Series] count 3, matched per-file on the English row; the other file's Dutch per-file pick (123992) is the same comic in translation
+
+S 5029 cv=151361 gcd=205468 0.9 | CV 151361 and GCD 205468 "Dead by Daylight" both 2023-2024 Titan Comics count 4, majority of the shelf (3/4 files, found via lookup.py); the per-file picks (CV 71155 "The Dead" 2014 self-published; GCD round2-folder 56736 "Our Story Thus Far", a known-wrong stamp) are rejected
+F 5029 misfiled | item 27511 "The Dead" (2020, Broken Icon Comics, Graphic Novels folder) is a different comic filed onto this Titan "Dead by Daylight" shelf
+I 27511 cv=741149 gcd=- 1.0 | ComicInfo Web id 741149 equals CV volume 125725's own issue id exactly, a clean 1.0 assertion; no matching GCD row found
+
+S 5670 cv=81103 gcd=- 0.7 | CV 81103 "Doctor Who: The Ninth Doctor" 2015 Titan Comics matched per-file on all 11/11 files despite thin caching; GCD's per-file pick (111485, collected editions, count 4) covers only the trade and the dump splits the run into two rows (88071 original 5, 119642 continuation 4) that don't clean-map our continuous #6-15 ladder
+F 5670 provider-missing | GCD has no single row spanning the continuously-numbered #6-15 ladder
+I 110181 cv=- gcd=s88071 0.7 | "Vol. 01 - Weapons of Past Destruction" (judged #1-5), own record not confidently isolated; the run's own GCD row stands in
+
+S 96497 cv=75901 gcd=81992 0.95 | CV 75901 "Doctor Who: The Eleventh Doctor" 2014 Titan Comics count 15 matched per-file on all 7 files; GCD splits into the ongoing row 81992 (issues, 5/7) and the collected-editions row 95180 (trades, 2/7) — same comic, both legs agree on title/publisher/year
+I 110192 cv=- gcd=s95180 0.9 | "Vol. 01 - After Life" matches GCD's collected-editions row 95180
+I 110193 cv=- gcd=s95180 0.9 | "Vol. 02 - Serve You" same collected-editions row
+
+S 96500 cv=75900 gcd=118849 0.7 | this single-file shelf's own record: CV 75900 matched per-file on the one file, and GCD's Year Two ongoing row (118849) fits Vol. 04 - The Endless Song; Year One's row (81995) has no files here
+F 96500 merge-with=5674 | S5674 is already resolved to the same CV 75900 "Doctor Who: The Tenth Doctor" (2014) — same comic, this shelf is a leftover single-book fragment of it
+N 96500 stale-flag | the flag ("Year One and Year Two share these Series... gcd gives both a Vol. 01 range") describes GCD's own Year One/Year Two split, not real conflation on this one-book shelf
+I 110237 cv=- gcd=s118849 0.7 | this book's own record; no distinct trade-level id found beyond the Year Two ongoing series
+
+S 96501 cv=77596 gcd=83664 0.95 | CV 77596 "Doctor Who: The Twelfth Doctor" matched per-file on all 8 files; GCD splits issues (83664, 6/8) and trades (111484, 1/8), same comic
+I 110314 cv=- gcd=s111484 0.9 | "Vol. 01 - Terrorformer" matches GCD's collected-editions row 111484
+I 110312 cv=- gcd=s111484 0.9 | "v03 - Hyperion" same collected-editions row
+
+S 6780 cv=103604 gcd=117421 0.95 | CV 103604 and GCD 117421 "Flash Gordon Sundays: Dan Barry" both 2017 Titan Comics count 1, exact title match to our single 226pp volume
+I 110379 cv=616227 gcd=s117421 0.9 | book's own record: CV volume 103604's issue 616227, same as the shelf's sole identity
+
+S 6781 cv=89781 gcd=136647 0.95 | CV 89781 and GCD 136647 "Flash Gordon Dailies: Dan Barry" both 2016 Titan Comics count 2, exact title match (found via lookup.py); the per-file round2-folder GCD pick (234827, a different artist's "Austin Briggs" line) is rejected
+I 110377 cv=526126 gcd=s136647 0.9 | Vol. 01 - The City of Ice matches CV volume 89781's own issue 526126, the first book of this 2-volume set
+I 110378 cv=559018 gcd=s136647 0.9 | Vol. 02 - The Lost Continent matches CV volume 89781's own issue 559018, the second book of this 2-volume set
+
+R 8190 | shelf holds three separate Gun Honey-franchise comics: the main "Gun Honey" 2021 ongoing (CV 139282, collected in v01/v02 trades), "Gun Honey: Collision Course" (2024, CV 158158, GCD 212396, 4 issue files), and "Heat Seeker: Combustion: A Gun Honey Series" (2024, CV 161048, GCD 217706, merges onto S8504) — the conflated-series flag is TRUE
+F 8190 split-needed | main ongoing = CV 139282; Collision Course items 110396-399 = CV 158158/GCD 212396
+F 8190 merge-with=8504 | item 110400 "Heat Seeker - Combustion... 001" is the same 4-issue miniseries as S8504's #002
+I 110393 cv=- gcd=s193647 0.9 | "COL Gun Honey v01" collects the main 2021 ongoing (GCD's collected-edition row 193647)
+I 110394 cv=- gcd=s193647 0.9 | "COL Gun Honey v02 - Blood for Blood" same collected-edition row
+
+S 8504 cv=161048 gcd=217706 0.9 | CV 161048 and GCD 217706 "Heat Seeker: Combustion: A Gun Honey Series" both 2024 Titan Comics count 4, matches our #002 file (issue #001 sits on sibling S8190)
+F 8504 merge-with=8190 | issue #001 of this same 4-issue miniseries is filed on S8190 as item 110400
+
+S 10747 cv=- gcd=145686 0.9 | this is a chain-of-minis shelf (Dust/Waves/Strings/Tracks/Coming Home/Settling Dust, each its own 4-issue CV mini restarting at #1); GCD holds a coextensive collected-editions LINE (145686, 2019-2022 Titan, count 7) spanning them, matched per-file on 6/10 files — the one-leg ruling applies
+N 10747 stale-flag | the conflated flag is true only of the individual CV mini volumes; GCD's line 145686 is coextensive with the shelf, satisfying the one-leg ruling
+N 10747 | "Life is Strange - Forget-Me-Not" (items 110429-432) is its own 2023-2024 4-issue mini, CV 155554/GCD 210553, distinct from the chain above
+I 110433 cv=- gcd=s145686 0.9 | "Vol. 01 - Dust" collects CV 119295 "Life Is Strange: Dust", issue 709675
+C 110433 cv=119295 #1-4 0.9 | Vol. 01 collects the complete 4-issue "Dust" mini
+I 110434 cv=- gcd=s145686 0.9 | "Vol. 02 - Waves" collects CV 122654 "Life Is Strange: Waves", issue 726165
+C 110434 cv=122654 #1-4 0.9 | Vol. 02 collects the complete 4-issue "Waves" mini
+I 110435 cv=- gcd=s145686 0.9 | "Vol. 03 - Strings" collects CV 126292 "Life Is Strange: Strings", issue 745810
+C 110435 cv=126292 #1-4 0.9 | Vol. 03 collects the complete 4-issue "Strings" mini
+I 110436 cv=- gcd=s145686 0.9 | "Vol. 04 - Partners in Time - Tracks" collects CV 135270 "Life Is Strange: Tracks", issue 842102
+C 110436 cv=135270 #1-4 0.9 | Vol. 04 collects the complete 4-issue "Tracks" mini
+I 110437 cv=- gcd=s145686 0.7 | "Vol. 05 - Coming Home" — no distinct CV mini id found in the packet
+I 110438 cv=- gcd=s145686 0.7 | "Vol. 06 - Settling Dust" — no distinct CV mini id found
+
+R 12162 | shelf holds two different comics: "Minions" trades v01/v02 (2015, CV 82776, GCD 90124) and the unrelated 2-issue "Minions: Mini Boss" (2022, CV 145855) — two items each, not residue
+F 12162 split-needed | v01/v02 (110456-457) = CV 82776/GCD 90124; Mini Boss 001-002 (110451-452) = CV 145855, no GCD row found
+I 110456 cv=- gcd=s90124 0.9 | "COL Minions v01" collects part of the 2015 Titan 2-issue run
+I 110457 cv=- gcd=s90124 0.9 | "COL Minions v02" collects the remainder of the 2015 Titan 2-issue run
+
+S 47907 cv=134354 gcd=- 0.7 | CV 134354 "Minions: Sports" 2021 Titan Comics count 2 matches our #002 file (confirmed via lookup.py, 0 GCD hits); the round2-folder pick (133778, "Minions: Viva Le Boss") is a folder-neighbour stamp
+F 47907 wrong-cv-link | GCD's round2-folder pick is a wrong neighbour stamp, not this comic
+
+S 12883 cv=113473 gcd=129362 0.9 | CV 113473 "Newbury & Hobbes: The Undying" 2018 Titan Comics and GCD 129362 (2018-2019, Titan, count 4) agree, matched per-file on our #1 file
+
+S 14764 cv=10781 gcd=11694 0.9 | this 3-volume archive line reprints the original 1984-1989 Comico "Robotech: The Macross Saga" run (CV 10781, 36 issues; GCD 11694, 35 issues) per the ARCHIVE-original ruling — not the unrelated 2003 DC Comics 4-issue miniseries (CV 43948/GCD 24650) the packet's "CV linked" field names
+F 14764 wrong-cv-link | the packet's "CV linked" field (43948, 2003 DC Comics) is a different, unrelated "Robotech: The Macross Saga" miniseries
+I 110504 cv=- gcd=s127371 0.9 | "Vol. 01" uses the archive-line's own collected-edition record GCD 127371 (2018, Titan, count 3)
+I 110505 cv=- gcd=s127371 0.9 | "Vol. 02" matches the archive-line's own collected-edition record GCD 127371
+I 110506 cv=- gcd=s127371 0.9 | "Vol. 03" matches the archive-line's own collected-edition record GCD 127371
+N 14764 | items 110504 and 111899 are duplicate rips of Vol. 01, per the label-ambiguous flag
+
+R 15269 | shelf holds two 2-issue minis both titled "Secret Life of Pets" (v1 001-002, v2 001-002); CV 122150/GCD 145687 count only 2, covering v1 — v2's own record was not found in the packet
+F 15269 split-needed | v1 (110538-539) = CV 122150/GCD 145687; v2 (110540-541) needs its own id, not found
+
+S 17768 cv=- gcd=119644 0.7 | GCD 119644 "Tekken" 2018 Titan [collected edition] count 1 is the only match found (via lookup.py) for this Titan 2017-2018 release; ComicVine has no Titan "Tekken" volume at all
+F 17768 wrong-cv-link | linked CV 57979 (2013 TidalWave) and candidate 21510 (2001 Image) are unrelated "Tekken Forever" comics
+I 111907 cv=- gcd=s119644 0.7 | "COL Tekken v01 - Blood Feud" matches GCD's collected-edition row 119644
+
+S 11288 cv=66338 gcd=226461 0.9 | CV 66338 "March" 2013 Top Shelf spans all 3 volumes; GCD splits by publisher era (75662 Top Shelf for Vol.01, 226461 IDW for Vol.02-03 after Top Shelf's IDW distribution deal) — majority (2/3) on the IDW row
+I 110707 cv=421756 gcd=s75662 0.9 | Vol. 01 (2013), CV volume 66338's own issue 421756, Top Shelf-era GCD record
+I 110708 cv=476859 gcd=s226461 0.9 | Vol. 02 (2015), CV issue 476859, IDW-distributed
+I 110709 cv=542507 gcd=s226461 0.9 | Vol. 03 (2016), CV issue 542507, IDW-distributed
+
+S 12774 cv=- gcd=70684 0.9 | this trilogy (Heart of Ice/Roses of Berlin/River of Ghosts) is Alan Moore's "Nemo" line, GCD 70684 "Nemo: Heart of Ice" 2013 Top Shelf/Knockabout found via lookup.py; the per-file CV/GCD picks (107339 "Nemo" 2017 IDW; round2-folder 11058, the parent League comic) are both wrong for this specific trilogy
+F 12774 misfiled | item 31884 "Nemo" (2017, 167pp) is IDW's unrelated Blue Fox-adjacent "Nemo" (CV 114140), not part of this Top Shelf trilogy
+F 12774 wrong-cv-link | per-file CV 107339 and the round2-folder GCD pick (11058, the parent League comic) are both wrong
+I 31884 cv=687237 gcd=- 0.7 | IDW's 2017 "Nemo" one-shot own record: CV volume 114140's issue 687237
+I 110734 cv=- gcd=s70684 0.7 | "Vol. 1 - Heart of Ice" own record, matching the trilogy's GCD row found via lookup
+I 110735 cv=- gcd=s70684 0.7 | "Vol. 2 - The Roses of Berlin" — no distinct GCD row found beyond Vol.1's, same trilogy fallback
+I 110736 cv=- gcd=s70684 0.7 | "Vol. 3 - River of Ghosts" — no distinct GCD row found beyond Vol.1's, same trilogy fallback
+
+S 18928 cv=10196 gcd=11058 0.9 | CV 10196 (no CvVolume row) and GCD 11058 "The League of Extraordinary Gentlemen" 2002-2003 DC count 6 anchor Vol. 01, matched per-file majority; each later volume (Vol.02, Century, Tempest) is its own separately-published run collected in this shelf's other trades
+F 18928 needs-fetch cv=10196 | named from the local rip, no CvVolume row
+I 110730 cv=- gcd=s11058 0.7 | Vol. 01 (2002) is the entire 6-issue original run bound as one trade; no distinct trade-level id exists on either leg beyond the run's own ids
+I 110731 cv=- gcd=s16801 0.7 | Vol. 02 (2003) matches GCD 16801 (2000-2003, DC, count 2, found via lookup.py)
+I 110733 cv=- gcd=s37470 0.9 | Vol. 03 - Century (2014) matches GCD 37470 "...Century" 2009-2012 Top Shelf/Knockabout count 3 (found via lookup.py)
+C 110733 gcd=37470 #1-3 0.9 | collects the complete 3-part "Century" maxi-series, a separate run from Vol.01's DC-era League
+I 110737 cv=732566 gcd=s134061 0.7 | Vol. 04 - The Tempest (2020) matches CV volume 124082's own issue 732566; GCD's closest row is 134061 (2018, IDW/Knockabout, count 1), a year gap, capped
+C 110737 cv=112151 #1-6 0.7 | Vol. 04 collects the complete 6-part "The Tempest" maxi-series (CV 112151, 2018 Top Shelf); range not independently confirmed by a judged split
+
+S 18929 cv=- gcd=27630 0.9 | GCD 27630 "The League of Extraordinary Gentlemen: Black Dossier" 2008-2008 DC count 1 is the exact-title match (found via lookup.py) for this 195pp book; the packet's per-file pick (25626) is a truncated generic "League" row missing the "Black Dossier" subtitle; no confirmed CV id
+F 18929 wrong-cv-link | the packet's linked/candidate CV picks (10196, 6569, 33608) name the parent League volumes, not this specific one-shot
+
+S 2970 cv=81357 gcd=88490 0.9 | CV 81357 "Bloodshot Reborn" 2015 DMG/Valiant Entertainment count 19 matched per-file on all 7 files; GCD 88490 (2015-2017, Valiant, count 19) agrees exactly
+N 2970 | items 110801 (v04) and 110803 (Deluxe Ed. Book 02) both claim #14-18 — two editions of the same block, per the duplicate-edition flag
+I 110798 cv=499734 gcd=- 0.9 | v01 - Colorado matches CV volume 84413's own issue 499734
+I 110799 cv=514423 gcd=- 0.9 | v02 - The Hunt matches CV volume 87938's own issue 514423 (found via lookup.py --contains)
+I 110800 cv=539229 gcd=- 0.9 | v03 - The Analog Man matches CV volume 92171's own issue 539229 (not to be confused with the Director's Cut one-shot's own volume, 88375)
+I 110801 cv=571653 gcd=- 0.9 | v04 - Bloodshot Island matches CV volume 97408's own issue 571653
+I 110802 cv=562588 gcd=- 0.7 | Deluxe Edition Book 01 matches CV volume 96131's own issue 562588 (twin-book record)
+I 110803 cv=630511 gcd=- 0.7 | Deluxe Edition Book 02 matches CV volume 96131's own issue 630511, same twin record
+
+S 95771 cv=81357 gcd=88490 0.9 | issue #000 matches the same CV 81357/GCD 88490 Bloodshot Reborn run as S2970 — a prequel/zero issue of that run, not a distinct "v2"
+F 95771 merge-with=2970 | this #000 issue belongs to the same 2015-2017 run filed on S2970
+
+S 95772 cv=50367 gcd=66766 0.9 | CV 50367 "Bloodshot" 2012 DMG/Valiant Entertainment count 16 and GCD 66766 (2012-2013, Valiant, count 14) are the underlying run our 9 trades collect; the per-file CV pick (5067, 1993 legacy stamp) and GCD's collected-edition row (114602, matches-our-holdings trap) are rejected
+F 95772 wrong-cv-link | per-file CV 5067 is the 1993 legacy volume, not the 2012 relaunch
+I 110815 cv=- gcd=s66766 0.7 | v01 Setting the World on Fire, collects #1-4 of the shelf's own run per the judged range
+I 110816 cv=- gcd=s66766 0.7 | v02 The Rise and the Fall, collects #5-9 per the judged range
+I 110817 cv=- gcd=s66766 0.7 | v03 Harbinger Wars, collects #10-13 per the judged range
+I 110818 cv=- gcd=s66766 0.7 | v04 H.A.R.D. Corps, collects #14-17 per the judged range
+I 110819 cv=- gcd=s66766 0.7 | v05 Get Some!, collects #18-19 per the judged range
+I 110820 cv=- gcd=s66766 0.7 | v06 The Glitch and Other Tales, collects #24-26 per the judged range
+I 110821 cv=- gcd=s114602 0.7 | Deluxe Edition Book 01, collects #1-9 per the judged range, GCD's collected-edition series 114602
+I 110822 cv=- gcd=s114602 0.7 | Deluxe Edition Book 02, collects #14-21 per the judged range
+I 110823 cv=- gcd=s114602 0.7 | Definitive Edition, collects #1-13 per the judged range
+
+S 95773 cv=121568 gcd=153588 0.9 | CV 121568 "Bloodshot" 2019 DMG/Valiant Entertainment count 13 is the underlying 2019 relaunch; GCD's per-file picks are era-mismatched (114602 is 2012, French 196313 is a foreign trade), so gcd=153588 (the 2019 collected-edition row, count 4 = matches-our-4-books) stands at 0.9
+F 95773 wrong-cv-link | per-file CV 5067 (1993 legacy stamp) is rejected
+I 110824 cv=- gcd=s153588 0.7 | Book 01, collects #1-5 per the judged range
+I 110825 cv=- gcd=s153588 0.7 | Book 02, collects #6-8 per the judged range
+I 110826 cv=- gcd=s153588 0.7 | Book 03, collects #9-12 per the judged range
+I 110827 cv=- gcd=s153588 0.7 | Book 04, collects #13-19 per the judged range
+
+S 3095 cv=144217 gcd=201352 0.95 | CV 144217 and GCD 201352 "Book of Shadows" both 2022-2023 DMG/Valiant Entertainment count 4, matched per-file on 4/5 files
+F 3095 misfiled | item 44265 "Corpse Party - Book of Shadows" is an unrelated Yen Press manga omnibus (Manga\Corpse Party folder)
+I 44265 cv=638223 gcd=- 0.9 | "Corpse Party: Book of Shadows" matches CV volume 106090's own issue 638223
+
+R 3181 | shelf holds three co-equal Britannia minis, each restarting at #1: v01 "Britannia" (CV 94261/GCD 106727, 2016, 4), v02 "We Who Are About to Die" (CV 100972/GCD 113711, 2017, 4), v03 "Lost Eagles of Rome" (GCD 114617, 2017, 3) — the conflated-series flag is TRUE
+F 3181 split-needed | v01=CV94261/GCD106727; v02=CV100972/GCD113711; v03=GCD114617 (no CV id confirmed)
+N 3181 | item 110834 "Britannia - The Great Fire of Rome" (2024, GCD 214117, Alien Books) is a later, different-publisher continuation of the franchise
+I 110835 cv=- gcd=s106727 0.7 | v01 collected trade has no distinct trade-level id; the run's own GCD series stands in (CV 94261 is the 4-issue floppy run, not a separate TPB catalog entry)
+C 110835 cv=94261 gcd=106727 #1-4 0.9 | v01 collects the complete 4-issue "Britannia" mini
+I 110836 cv=- gcd=s113711 0.7 | v02 "We Who Are About to Die" trade, same shape — run-level id only
+C 110836 cv=100972 gcd=113711 #1-4 0.9 | v02 collects the complete 4-issue "We Who Are About to Die" mini
+I 110837 cv=- gcd=s114617 0.7 | v03 "Lost Eagles of Rome" matches GCD 114617; no CV id confirmed
+I 111958 cv=- gcd=s106727 0.7 | Deluxe Edition's judged #1-4 range collects v01 "Britannia"; no distinct compilation-level id found
+C 111958 cv=94261 gcd=106727 #1-4 0.9 | Deluxe Edition collects v01 "Britannia" complete
+
+R 5571 | shelf holds three co-equal "Divinity" minis: I (CV 79993/GCD 86553, 2015, 4), II (CV 89778, 2016, 4, no GCD row found), III (2 editions, own id not found) — no coextensive line
+F 5571 split-needed | Div I = CV 79993/GCD 86553; Div II = CV 89778; Div III's own id not found
+I 110838 cv=- gcd=s86553 0.7 | "Divinity I Deluxe Edition" collects the complete Div I mini; no distinct compilation-level id, the run's own GCD series stands in
+C 110838 cv=79993 gcd=86553 #1-4 0.9 | collects the complete 4-issue Divinity I mini
+N 5571 | items 110839 "Divinity II" (CV volume 89778, 4 issues, no per-book issue id isolated and no GCD row), 110840 "Divinity III - Heroes of the Glorious Stalinverse" and 110841 "Divinity III - Stalinverse" (possibly a duplicate/variant edition of 110840) have no id on either leg beyond what the F line already names
+
+S 6225 cv=150710 gcd=- 0.7 | CV 150710 "Eternal Warrior: Scorched Earth" 2023 DMG/Valiant Entertainment (issue 991887) matches both files (the 2021 preview + 2023 2nd edition of the same one-shot); no matching GCD row found
+F 6225 provider-missing | GCD holds no "Eternal Warrior: Scorched Earth" one-shot row

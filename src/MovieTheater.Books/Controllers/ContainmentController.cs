@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using MovieTheater.Books.Db;
 using MovieTheater.Books.Identity;
 using MovieTheater.Books.Migration;
+using MovieTheater.Books.Projections;
 using MovieTheater.Books.Resolve;
 using MovieTheater.Books.Services;
 
@@ -116,9 +117,17 @@ namespace MovieTheater.Books.Controllers
                 .ToListAsync(ct);
             var series = await db.Series.AsNoTracking().Where(s => seriesIds.Contains(s.Id))
                 .Select(s => new { s.Id, s.Name, s.CanonicalKey }).ToListAsync(ct);
-            var spans = await db.CollectedEditionSpans.AsNoTracking().Where(s => itemIds.Contains(s.ItemId))
+            var spanRows = await db.CollectedEditionSpans.AsNoTracking().Where(s => itemIds.Contains(s.ItemId))
                 .Select(s => new { s.ItemId, s.Source, s.IssueStart, s.IssueEnd, s.EditionTitle, s.Confidence, s.ProviderRef, s.Note })
                 .ToListAsync(ct);
+            // WHICH RUN each judged range counts in. On a shelf of unrelated minis this is the difference
+            // between two editions of one comic and two comics that both number from #1 — the question the
+            // reviewer is here to answer — so it travels with the span, named where a leg's catalog can name it.
+            var spanRuns = await SpanRunRefs.LoadAsync(db, itemIds, options.LegsDbPath, ct);
+            var spans = spanRows
+                .Select(s => new { s.ItemId, s.Source, s.IssueStart, s.IssueEnd, s.EditionTitle, s.Confidence,
+                    s.ProviderRef, s.Note, Runs = SpanRunRefs.For(spanRuns, s.ItemId, s.Source) })
+                .ToList();
 
             // The rest of the shelf: a flag about one volume is almost always a question about the ladder.
             var siblings = await (from n in db.CollectionNodes.AsNoTracking()

@@ -54,6 +54,16 @@ namespace MovieTheater.Books.Resolve
             public EditionSource RangeSource = EditionSource.Cv;
             /// <summary>The winning span's note — the only place a NON-CONTIGUOUS range states its holes.</summary>
             public string? RangeNote;
+            /// <summary>The RUNS the range counts in (<c>CollectedEditionSpanRun</c>), each with its own range
+            /// in that run's numbering; null when nobody said. Several entries on one leg = a book collecting
+            /// several runs (a trade of two minis, an omnibus).</summary>
+            public IReadOnlyList<ReadingOrderJob.SpanRun>? Runs;
+            /// <summary>The runs THIS FILE is in, from its own matched <c>ItemProviderLink</c> rows (Cv volume,
+            /// Gcd series). Null when nothing linked it — which on a ripper-renumbered shelf is most files.</summary>
+            public IReadOnlyDictionary<Provider, string>? FileRuns;
+            /// <summary>The issue number the ComicVine link gives this file, when it is a number. On a shelf a
+            /// ripper renumbered 001-040 this is the coordinate the run's own editions are counted in.</summary>
+            public double? ProviderIssueNumber;
             /// <summary>The coordinates this container's own note DENIES; null when its range has no hole.</summary>
             public HashSet<double>? ExcludedCoords;
             /// <summary>`ComicDetail.IsCollection` — the flag the decision pass's coverage is built on (§14.13).</summary>
@@ -84,7 +94,7 @@ namespace MovieTheater.Books.Resolve
             {
                 var books = LoadBooks(hot, seriesId);
                 if (books.Count == 0) { hot.Exec($"DELETE FROM CollectionNode WHERE SeriesId = {seriesId}"); continue; }
-                BuildSeries(books);
+                BuildSeries(books, LoadShelfRuns(hot, seriesId));
                 hot.Exec($"DELETE FROM CollectionNode WHERE SeriesId = {seriesId}");
                 foreach (var b in books)
                 {
@@ -135,9 +145,62 @@ namespace MovieTheater.Books.Resolve
             return total;
         }
 
+        /// <summary>
+        /// The runs the SHELF itself is, as the identity pass stored them: the ComicVine volume on
+        /// <c>Series</c>, and the GCD series on the shelf's own <c>SeriesKeyLink(Provider=Gcd, Status=Manual)</c>
+        /// row (its own parsed key first, then any alias of it). A file on a shelf whose identity IS the run a
+        /// container names needs no link of its own — it is in that run by living here.
+        /// </summary>
+        internal static Dictionary<Provider, string> LoadShelfRuns(TargetWriter hot, int seriesId)
+        {
+            var runs = new Dictionary<Provider, string>();
+            foreach (var (_id, payload) in hot.Pairs($@"
+SELECT s.Id, coalesce(s.CvVolumeId,'') || char(31)
+    || coalesce((SELECT k.ProviderKey FROM SeriesKeyLink k
+                 WHERE k.Provider = {(int)Provider.Gcd} AND k.Status = {(int)LinkStatus.Manual}
+                   AND k.ProviderKey IS NOT NULL AND k.ParsedKey = s.ParsedKey),
+                (SELECT k.ProviderKey FROM SeriesKeyLink k
+                 JOIN SeriesAlias a ON a.ParsedKey = k.ParsedKey AND a.SeriesId = s.Id
+                 WHERE k.Provider = {(int)Provider.Gcd} AND k.Status = {(int)LinkStatus.Manual}
+                   AND k.ProviderKey IS NOT NULL LIMIT 1), '')
+FROM Series s WHERE s.Id = {seriesId}"))
+            {
+                var p = payload!.Split(TargetWriter.Sep);
+                if (p[0].Length > 0) runs[Provider.Cv] = p[0];
+                if (p.Length > 1 && p[1].Length > 0) runs[Provider.Gcd] = p[1];
+            }
+            return runs;
+        }
+
         private static List<Book> LoadBooks(TargetWriter hot, int seriesId)
         {
             var spans = ReadingOrderJob.LoadSpans(hot, seriesId);
+
+            // Which run each FILE is in by its own matched link, and the issue number that link gives it.
+            // SecondaryKey is where this pass's shelf-level rollups read the volume / series from; CvIssue is
+            // preferred for ComicVine because it is the record itself rather than a denormalised copy.
+            var fileRuns = new Dictionary<int, Dictionary<Provider, string>>();
+            var providerNumber = new Dictionary<int, double>();
+            foreach (var (itemId, payload) in hot.Pairs($@"
+SELECT l.ItemId, l.Provider || char(31)
+    || coalesce((SELECT ci.VolumeId FROM CvIssue ci
+                 WHERE l.Provider = {(int)Provider.Cv} AND ci.Id = CAST(l.ProviderKey AS INTEGER)),
+                coalesce(l.SecondaryKey, '')) || char(31)
+    || coalesce((SELECT ci.IssueNumber FROM CvIssue ci
+                 WHERE l.Provider = {(int)Provider.Cv} AND ci.Id = CAST(l.ProviderKey AS INTEGER)), '')
+FROM ItemProviderLink l JOIN Item i ON i.Id = l.ItemId
+WHERE i.SeriesId = {seriesId} AND l.Status IN {LinkStatuses.UsableSql}
+  AND l.Provider IN ({(int)Provider.Cv}, {(int)Provider.Gcd})"))
+            {
+                var p = payload!.Split(TargetWriter.Sep);
+                if (p.Length < 2 || p[1].Length == 0) continue;
+                var id = (int)itemId;
+                if (!fileRuns.TryGetValue(id, out var map)) fileRuns[id] = map = new Dictionary<Provider, string>();
+                map[(Provider)int.Parse(p[0])] = p[1];
+                if (p.Length > 2 && double.TryParse(p[2], NumberStyles.Float, CultureInfo.InvariantCulture, out var pn))
+                    providerNumber[id] = pn;
+            }
+
             var books = new List<Book>();
             foreach (var (itemId, payload) in hot.Pairs($@"
 SELECT i.Id,
@@ -166,6 +229,8 @@ ORDER BY i.Id"))
                     IssueNumber = p.Length > 8 && double.TryParse(p[8], NumberStyles.Float, CultureInfo.InvariantCulture, out var ino)
                         ? ino : null,
                     IsCollection = p.Length > 9 && p[9] == "1",
+                    FileRuns = fileRuns.TryGetValue((int)itemId, out var fr) ? fr : null,
+                    ProviderIssueNumber = providerNumber.TryGetValue((int)itemId, out var pn) ? pn : null,
                 };
                 if (spans.TryGetValue(book.ItemId, out var sp))
                 {
@@ -173,14 +238,19 @@ ORDER BY i.Id"))
                     book.SpanFromEnd = sp.End;
                     book.RangeSource = sp.Source;
                     book.RangeNote = sp.Note;
+                    book.Runs = sp.Runs;
                 }
                 books.Add(book);
             }
             return books;
         }
 
-        /// <summary>The pure decision — one series' books in, their nodes' fields set in place.</summary>
-        public static void BuildSeries(List<Book> books)
+        /// <summary>
+        /// The pure decision — one series' books in, their nodes' fields set in place.
+        /// <paramref name="shelfRuns"/> is the shelf's OWN identity per leg (<see cref="LoadShelfRuns"/>): it
+        /// is what lets an unlinked file be in the run a container names, because the shelf is that run.
+        /// </summary>
+        public static void BuildSeries(List<Book> books, IReadOnlyDictionary<Provider, string>? shelfRuns = null)
         {
             var levelCounts = books.GroupBy(b => b.Level).ToDictionary(g => g.Key, g => g.Count());
             var baseLevel = levelCounts.Where(kv => kv.Value >= RunFloor).Select(kv => (CollectionLevel?)kv.Key).Min()
@@ -273,8 +343,15 @@ ORDER BY i.Id"))
                     int lo = int.MaxValue, hi = int.MinValue;
                     for (var i = 0; i < n; i++)
                     {
-                        if (double.IsNaN(baseRange[i].Lo) || baseRange[i].Lo > ee || baseRange[i].Hi < es) continue;
-                        if (excluded != null && WhollyExcluded(baseRange[i], excluded)) continue;
+                        if (double.IsNaN(baseRange[i].Lo)) continue;
+                        // …and the coordinate has to be in the RUN this range is counted in, or the file is
+                        // not measured against it at all (see CoordAgainst). When that run's row carries its
+                        // OWN range — a trade collecting two minis states each mini's #1-5 — that range is
+                        // what this file is measured against, not the span's bounding one.
+                        if (!CoordAgainst(baseBooks[i], baseRange[i], b, shelfRuns, out var mine, out var vs)) continue;
+                        var (clo, chi) = vs ?? (es, ee);
+                        if (mine.Lo > chi || mine.Hi < clo) continue;
+                        if (excluded != null && WhollyExcluded(mine, excluded)) continue;
                         if (i < lo) lo = i;
                         if (i > hi) hi = i;
                     }
@@ -301,12 +378,28 @@ ORDER BY i.Id"))
                     // The guard's intent is untouched, because scatter is a property of the COORDINATES: a
                     // claim of #1-5 whose matches land at #1 and #300 still covers hundreds of distinct
                     // coordinates between them and is still rejected.
+                    //
+                    // A book that collects SEVERAL runs is allowed all of them: the coordinates are counted
+                    // per run (a #1 of one mini and a #1 of another are two different issues, and each run's
+                    // own width is its own allowance), which is what keeps an omnibus of two five-issue minis
+                    // from reading as ten coordinates scattered over a claim of five.
                     if (lo != int.MaxValue)
                     {
-                        var seen = new HashSet<double>();
+                        var seen = new HashSet<(double, double, double)>();
+                        var runsUsed = new HashSet<(double Lo, double Hi)>();
                         for (var i = lo; i <= hi; i++)
-                            if (!double.IsNaN(baseRange[i].Lo)) seen.Add(baseRange[i].Lo);
+                        {
+                            if (double.IsNaN(baseRange[i].Lo)) continue;
+                            // the same coordinate — and the same run's range — the matching used, so a file
+                            // this range cannot measure does not widen the scatter it is judged by
+                            if (!CoordAgainst(baseBooks[i], baseRange[i], b, shelfRuns, out var mine, out var vs))
+                                continue;
+                            var bucket = vs ?? (es, ee);
+                            runsUsed.Add(bucket);
+                            seen.Add((bucket.Lo, bucket.Hi, mine.Lo));
+                        }
                         span = seen.Count;
+                        if (runsUsed.Count > 0) rangeSize = runsUsed.Sum(r => r.Hi - r.Lo + 1);
                     }
                     if (lo == int.MaxValue || span > rangeSize * 1.3 + 3) { b.SpanStart = b.SpanEnd = 0; b.ContainsCount = 0; }
                     else { b.SpanStart = lo + 1; b.SpanEnd = hi + 1; b.ContainsCount = span; }
@@ -349,9 +442,21 @@ ORDER BY i.Id"))
                         // coordinates, where item 82200 (`Iron Man 2020 (2018)`, unflagged, whose #1-6 is
                         // really Machine Man #1-4) took `Ultimate Iron Man` #1-5 inside it.
                         if (!p.IsCollection) continue;
-                        double ps = p.SpanFromStart.Value, pe = p.SpanFromEnd.Value;
-                        if (ps > bs || pe < be) continue;
-                        if (ps == bs && pe == be) continue;      // the same material, twice — not a nesting
+                        // Two judged ranges counted in DIFFERENT runs are not measured against each other at
+                        // all (see <see cref="ComparableRuns"/>): Hellboy Vol. 01's #1-4 is Seed of Destruction
+                        // and Vol. 02's #1-5 is Wake the Devil, and neither the "#1-4 is inside #1-5" reading
+                        // nor the "equal ranges are one comic twice" reading is true of them.
+                        // …and when both name the SAME run and that run's rows carry ranges, THOSE are the
+                        // ranges compared: the shelf-numbered span of an omnibus says nothing about where a
+                        // mini's own #1-5 sits inside it.
+                        if (!RunOverlay(p, b, out var pr, out var br)) continue;
+                        double ps = pr?.Lo ?? p.SpanFromStart.Value, pe = pr?.Hi ?? p.SpanFromEnd.Value;
+                        double cs = br?.Lo ?? bs, ce = br?.Hi ?? be;
+                        if (ps > cs || pe < ce) continue;
+                        // …the same material, twice — not a nesting. But an omnibus that names a run the trade
+                        // does not is not the same material even where their ranges for the run they share are
+                        // equal: it collects that whole mini AND another one.
+                        if (ps == cs && pe == ce && SameMaterial(p, b)) continue;
                         // The same page and hole tests the positional pass makes, for the same reasons.
                         if (p.PageCount > 0 && b.PageCount > 0 && p.PageCount < b.PageCount) continue;
                         if (p.ExcludedCoords != null && WhollyExcluded((bs, be), p.ExcludedCoords)) continue;
@@ -361,10 +466,16 @@ ORDER BY i.Id"))
                     continue;
                 }
                 Book? parent = null;
-                var mine = coordOf.TryGetValue(b.ItemId, out var c) ? c : (double.NaN, double.NaN);
+                var own = coordOf.TryGetValue(b.ItemId, out var c) ? c : (double.NaN, double.NaN);
                 foreach (var p in containers)
                 {
                     if (p.Level <= b.Level || p.ItemId == b.ItemId) continue;
+                    // The same run test the range-based pass makes below: a container whose judged range is
+                    // counted in a different run than the child's cannot hold it, whatever the positions say.
+                    if (!ComparableRuns(p, b)) continue;
+                    // …and for a loose issue file the question is the other one: is this FILE in the run that
+                    // range is counted in? The answer also chooses the coordinate it is measured by.
+                    if (!CoordAgainst(b, own, p, shelfRuns, out var mine, out var vs)) continue;
                     if (p.SpanStart > b.SpanStart || p.SpanEnd < b.SpanEnd) continue;
                     // A book cannot be inside a book with fewer pages than itself. The positional tests
                     // above are about coordinates and say nothing about size, so where two editions of the
@@ -388,8 +499,14 @@ ORDER BY i.Id"))
                     // containers were doing that, one of them nesting thirty-five coordinates its own range
                     // excludes. Over-claiming is the direction that loses files, so the range is asked again
                     // here — exactly as the gap is on the line above.
-                    if (p.SpanFromStart.HasValue && p.SpanFromEnd.HasValue && !double.IsNaN(mine.Item1)
-                        && (mine.Item2 < p.SpanFromStart.Value || mine.Item1 > p.SpanFromEnd.Value)) continue;
+                    // …in the numbering the file is counted in: `vs` is the container's range for THIS file's
+                    // run when that run's row carries one (a two-mini trade), else the span's own.
+                    if ((vs is not null || (p.SpanFromStart.HasValue && p.SpanFromEnd.HasValue))
+                        && !double.IsNaN(mine.Item1))
+                    {
+                        var (plo, phi) = vs ?? (p.SpanFromStart!.Value, p.SpanFromEnd!.Value);
+                        if (mine.Item2 < plo || mine.Item1 > phi) continue;
+                    }
                     if (parent == null || IsInnerThan(p, parent)) parent = p;
                 }
                 b.ParentItemId = parent?.ItemId;
@@ -428,6 +545,152 @@ ORDER BY i.Id"))
             if (candidate.PageCount > 0 && incumbent.PageCount > 0 && candidate.PageCount != incumbent.PageCount)
                 return candidate.PageCount < incumbent.PageCount;
             return false;
+        }
+
+        /// <summary>
+        /// Whether a loose ISSUE file may be measured against one container's judged range at all, and in
+        /// which coordinate.
+        ///
+        /// <para><b>The defect.</b> Baltimore (S1810) and Lobster Johnson (S10839) are chains of miniseries a
+        /// ripper renumbered continuously — 001-040, 001-031 — with no provider link on a single file. Once a
+        /// `C` line moves a trade's range out of the ripper's numbering into its own mini's (`Vol. 02 - The
+        /// Burning Hand` collects #1-5 OF the Burning Hand, not #6-10 of the folder), the positional pass
+        /// would hand it files 001-005 — which are The Iron Prometheus. The numbers match; they are numbers
+        /// about a different comic.</para>
+        ///
+        /// <para><b>The rule.</b> A range that names a run counts a file only when the file is IN that run:
+        /// by its own matched link (<see cref="Book.FileRuns"/> — the ComicVine volume of its issue, the GCD
+        /// series of its issue), or because the shelf's own identity IS that run, which is the ordinary case
+        /// and changes nothing. A file that is in the run by its own link but was renumbered by the ripper is
+        /// then measured by the PROVIDER's issue number, because that is the numbering the range is written
+        /// in. A range with no run refs is measured exactly as it is today.</para>
+        ///
+        /// <para>On a refused shelf whose files carry no links, such a range therefore collects nothing, and
+        /// the books sit flat. That is the honest answer until the split pass gives each mini its own shelf —
+        /// and it is the direction that does not lose files.</para>
+        /// </summary>
+        internal static bool CoordAgainst(Book file, (double Lo, double Hi) own, Book container,
+            IReadOnlyDictionary<Provider, string>? shelfRuns, out (double Lo, double Hi) coord) =>
+            CoordAgainst(file, own, container, shelfRuns, out coord, out _);
+
+        /// <inheritdoc cref="CoordAgainst(Book, ValueTuple{double, double}, Book, IReadOnlyDictionary{Provider, string}, out ValueTuple{double, double})"/>
+        /// <param name="against">The container's range IN THE RUN THE FILE IS IN, when that run's row carries
+        /// one — a book collecting two minis states each mini's own #1-5, and a file of the second mini must be
+        /// measured against THAT range, not against the span's own (which is only ever one of them). Null = the
+        /// span's own range, unchanged.</param>
+        internal static bool CoordAgainst(Book file, (double Lo, double Hi) own, Book container,
+            IReadOnlyDictionary<Provider, string>? shelfRuns, out (double Lo, double Hi) coord,
+            out (double Lo, double Hi)? against)
+        {
+            coord = own;
+            against = null;
+            if (container.Runs is not { Count: > 0 } runs) return true;       // nobody named a run: today
+            if (file.Level != CollectionLevel.Issue) return true;             // judged ranges: ComparableRuns
+            // Contradiction is judged PER LEG, not per row: a container may now name two runs on one leg (an
+            // omnibus of two minis), and a file that is in the second of them has not contradicted anything by
+            // failing to be in the first. A leg contradicts when the file has a key there and NOT ONE of the
+            // container's runs on that leg is it.
+            var matchedOn = new HashSet<Provider>();
+            var claimedOn = new HashSet<Provider>();
+            foreach (var (provider, key, start, end) in runs)
+                if (file.FileRuns is { } fr && fr.TryGetValue(provider, out var mine))
+                {
+                    claimedOn.Add(provider);
+                    if (!string.Equals(mine, key, StringComparison.OrdinalIgnoreCase)) continue;
+                    matchedOn.Add(provider);
+                    if (start is { } lo && end is { } hi) against ??= (lo, hi);
+                }
+            var byOwnLink = matchedOn.Count > 0;
+            var contradicted = claimedOn.Count > matchedOn.Count;
+            // A file's OWN link is more specific than the shelf it happens to sit on, and it wins. S100573
+            // holds Flash (1959) and Flash v2 (2007-2009) after a merge on a wrong stored link: the shelf's
+            // identity is CV 1995 (1959), so the shelf test alone let the 1975 "The Flash 232" (100pp, gold
+            // #232-232) swallow the 2007 "The Flash 232" — a 22pp file whose own GCD link names series 26125,
+            // Wally West's run. A file that says it is in a different run is not in this one, whatever the
+            // shelf says.
+            if (contradicted) { against = null; return false; }
+            if (!byOwnLink)
+            {
+                if (shelfRuns is not { } sr) return false;
+                var byShelf = false;
+                foreach (var (provider, key, start, end) in runs)
+                    if (sr.TryGetValue(provider, out var shelf)
+                        && string.Equals(shelf, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        byShelf = true;
+                        if (start is { } lo && end is { } hi) against = (lo, hi);
+                        break;
+                    }
+                if (!byShelf) { against = null; return false; }
+                // …and the shelf may only speak for a file that has not contradicted it on some OTHER leg.
+                // On S100573 the span names the ComicVine volume, which the 2007 file's links say nothing
+                // about; what it does say is GCD series 26125, where the shelf says the 1959 run. A file
+                // that disagrees with the shelf is not in the shelf's run, so the shelf cannot lend it one.
+                foreach (var (provider, shelf) in sr)
+                    if (file.FileRuns is { } fr2 && fr2.TryGetValue(provider, out var mine2)
+                        && !string.Equals(mine2, shelf, StringComparison.OrdinalIgnoreCase)) { against = null; return false; }
+                return true;
+            }
+            if (file.ProviderIssueNumber is double pn) coord = (pn, pn);
+            return true;
+        }
+
+        /// <summary>
+        /// Whether two books' ranges are in the same coordinate system at all.
+        ///
+        /// <para>A <c>CollectedEditionSpan</c> says "#a-b"; it does not say #a-b OF WHAT, and on a shelf whose
+        /// books each collect a different mini (Hellboy, B.P.R.D., Ether, Pathfinder) the answer differs per
+        /// book. <c>CollectedEditionSpanRun</c> is where a reader records it, per leg. When both sides are
+        /// JUDGED ranges that name the same leg with DIFFERENT keys, they are not comparable: neither nests in
+        /// the other, and equal ranges are not "two editions of the same material" — they are two different
+        /// comics that both number from #1.</para>
+        ///
+        /// <para>Unknown on either side — no refs, or no leg in common — is today's behaviour, unchanged. This
+        /// is a veto a reader has to arm; it never fires on its own.</para>
+        /// </summary>
+        internal static bool ComparableRuns(Book a, Book b) => RunOverlay(a, b, out _, out _);
+
+        /// <summary>
+        /// <see cref="ComparableRuns"/>, and — when the two books name the SAME run and both carry a range for
+        /// it — the two ranges IN THAT RUN'S NUMBERING, which are then the ones to compare.
+        ///
+        /// <para>Since TOOLS_TODO 17 a book may name several runs, so "comparable" is per (leg, key): sharing
+        /// ANY (leg, key) makes them comparable, and it is that shared run's coordinates both ranges are read
+        /// in. A leg in common on which the keys never match is the veto — two different comics that both
+        /// number from #1. Either side carrying no range for the shared run falls back to the span's own,
+        /// which is what a NULL start/end means.</para>
+        /// </summary>
+        internal static bool RunOverlay(Book a, Book b,
+            out (double Lo, double Hi)? forA, out (double Lo, double Hi)? forB)
+        {
+            forA = forB = null;
+            if (a.RangeSource != EditionSource.Curated || b.RangeSource != EditionSource.Curated) return true;
+            if (a.Runs is not { Count: > 0 } x || b.Runs is not { Count: > 0 } y) return true;
+            var legInCommon = false;
+            foreach (var p in x)
+                foreach (var q in y)
+                {
+                    if (p.Provider != q.Provider) continue;
+                    legInCommon = true;
+                    if (!string.Equals(p.Key, q.Key, StringComparison.OrdinalIgnoreCase)) continue;
+                    if (p.Start is { } ps && p.End is { } pe) forA = (ps, pe);
+                    if (q.Start is { } qs && q.End is { } qe) forB = (qs, qe);
+                    return true;
+                }
+            return !legInCommon;
+        }
+
+        /// <summary>
+        /// Whether two books with an equal range describe the SAME material. Two editions of one mini do; an
+        /// omnibus that also names a second run does not, and must be allowed to hold the trade whose whole
+        /// mini it collects. Unknown on either side is today's answer — equal ranges are one comic twice.
+        /// </summary>
+        private static bool SameMaterial(Book a, Book b)
+        {
+            if (a.Runs is not { Count: > 0 } x || b.Runs is not { Count: > 0 } y) return true;
+            static HashSet<(Provider, string)> Keys(IReadOnlyList<ReadingOrderJob.SpanRun> r) =>
+                r.Select(v => (v.Provider, v.Key.ToLowerInvariant())).ToHashSet();
+            return Keys(x).SetEquals(Keys(y));
         }
 
         /// <summary>The width of a container's judged range, or +∞ when it has none — no range is not narrow.</summary>
@@ -505,7 +768,7 @@ ORDER BY i.Id"))
             foreach (var (itemId, payload) in hot.Pairs($@"
 SELECT i.Id, coalesce(i.SeriesId,'') || char(31) || l.ProviderKey
 FROM Item i JOIN ItemProviderLink l ON l.ItemId = i.Id
-WHERE l.Provider = {(int)Provider.Locg} AND l.Status = {(int)LinkStatus.Matched} AND l.ProviderKey IS NOT NULL
+WHERE l.Provider = {(int)Provider.Locg} AND l.Status IN {LinkStatuses.UsableSql} AND l.ProviderKey IS NOT NULL
   AND i.SeriesId IS NOT NULL AND i.Id > {after}
 ORDER BY i.Id LIMIT {batchSize}"))
             {

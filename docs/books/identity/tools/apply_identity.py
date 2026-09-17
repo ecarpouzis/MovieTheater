@@ -19,7 +19,15 @@ What it writes, per PLAN §7 Phase 0:
   S, confidence 0.7     nothing linked; SeriesMatchReview(Scope='series', State='review') only.
   every line            one SeriesInferenceDecision(Class='identity') carrying the evidence sentence and an
                         UndoJson of the rows as they were, so a wave can be walked back row by row.
-  I                     ItemProviderLink(Status=5 Manual, Method='identity-read', Confidence).
+  I                     ItemProviderLink(Status=5 Manual, Method='identity-read', Confidence) — one row per
+                        named leg, and the ISBN on Provider=1 External in the shape that leg already uses.
+  C                     the item's CollectedEditionSpan(Source=Curated): inserted when it has none, rewritten
+                        when the row there is this pass's (`identity:`) or the model's (`model:`), and left
+                        alone — run refs only, plus a printed CONFLICT — when it is gold, `admin:` or
+                        self-proving. Either way one CollectedEditionSpanRun row per (leg, run) ON EVERY `C`
+                        line for that book, each carrying the range in THAT run's numbering (SPAN_RUN_IDS.md,
+                        TOOLS_TODO 17). A book may have several `C` lines — a trade of two minis, an omnibus —
+                        and the span's own range is the FIRST of them, unless a proven row already holds one.
 
 ⚠ Linking two shelves to one CV volume MERGES them at the next `books-resolve --series` (§6.5) and linking
 renames the shelf (§6.6). Both are intended; both are why the checker runs first and why the wave recipe
@@ -65,7 +73,28 @@ existing = {(r[0], r[1]): dict(zip(("ParsedKey", "Provider", "ProviderKey", "Sta
             for r in ro.execute("SELECT ParsedKey, Provider, ProviderKey, Status, Score FROM SeriesKeyLink")}
 item_links = {(r[0], r[1]): dict(zip(("ItemId", "Provider", "ProviderKey", "SecondaryKey", "Status", "Method"), r))
               for r in ro.execute("SELECT ItemId, Provider, ProviderKey, SecondaryKey, Status, Method "
-                                  "FROM ItemProviderLink WHERE Provider IN (0,3)")}
+                                  "FROM ItemProviderLink WHERE Provider IN (0,1,3)")}
+
+# ── the ISBN's home (SPAN_RUN_IDS.md) ────────────────────────────────────────────────────────────
+# The `I` line's ISBN used to be DROPPED here ("ItemProviderLink has no ISBN column"), so an Open Library
+# bridge a reader had established survived only as prose in the evidence. It goes on
+# `ItemProviderLink(Provider=1 External)` in the shape the External leg already uses, and that shape was
+# read off the data before it was copied: `SeriesKeyLink(Provider=1).ProviderKey` holds OUR
+# `ExternalWork.Id` (700 rows, values 1,2,3…), not the Open Library work id — the same id
+# `Series.ExternalWorkId` carries and `ItemDetail` resolves the External block from. So: ProviderKey is the
+# ExternalWork row id when one of our 691 works already carries this ISBN, else the literal `isbn:<isbn>`
+# (nothing to point at yet, and the ISBN must still be queryable); SecondaryKey is ALWAYS the bare ISBN, so
+# one column answers "which book is this" whichever branch was taken.
+ext_by_isbn = {}
+for _wid, _isbn in ro.execute("SELECT Id, Isbn FROM ExternalWork WHERE Isbn IS NOT NULL AND Isbn <> ''"):
+    for _one in re.split(r"[,;\s]+", str(_isbn)):
+        _k = re.sub(r"[^0-9Xx]", "", _one).upper()
+        if len(_k) in (10, 13):
+            ext_by_isbn.setdefault(_k, _wid)
+
+
+def norm_isbn(s):
+    return re.sub(r"[^0-9Xx]", "", str(s or "")).upper()
 
 # Precedence, decided once in idbase and printed beside every write: a shelf re-read after a sharpened
 # ruling is decided in an R- file, and THAT line is the one stored. The original file is never edited —
@@ -117,6 +146,84 @@ for _p in files:
             (_want_cv if _m.group(1) == "cv" else _want_gcd).add(int(_m.group(2)))
 _fill_from_dumps(_want_cv - set(cv_issue_volume), _want_gcd - set(gcd_issue_series))
 
+# ── what a `C` line lands on: the item's Curated span, and the run refs it already carries ───────
+CURATED = 3          # EditionSource.Curated
+RX_QUOTE = re.compile(r"['‘“](.*?)['’”]", re.S)
+RX_YEAR = re.compile(r"\b(19|20)\d{2}\b")
+RX_RANGE = re.compile(r"#?(\d{1,4})\s*(?:-|–|—|�|through|thru|to)\s*#?(\d{1,4})", re.I)
+RX_SINGLE = re.compile(r"#?(?<![\d.])(\d{1,4})(?![\d.])")
+
+
+def quoted_issues(note):
+    """The issue numbers the note's quoted indicia names — a port of `SpanEvidence.QuotedIssues` (C#),
+    kept in step with it because the SAME judgement decides whether a row may be overwritten."""
+    if not note or not note.strip():
+        return None
+    m = RX_QUOTE.search(note)
+    if not m:
+        return None
+    text = RX_YEAR.sub(" ", m.group(1))
+    out = set()
+    for a, b in ((int(x), int(y)) for x, y in RX_RANGE.findall(text)):
+        if b < a or b - a > 500:
+            continue
+        out.update(range(a, b + 1))
+    for s in RX_SINGLE.findall(RX_RANGE.sub(" ", text)):
+        out.add(int(s))
+    return out or None
+
+
+def self_proving(note, start, end):
+    """`SpanEvidence.SelfProving`: the note quotes the book and the quote names exactly this range."""
+    q = quoted_issues(note)
+    if q is None or start is None or end is None or end < start:
+        return False
+    want = set(range(int(start), int(end) + 1))
+    return q == want
+
+
+_c_items = set()
+for _p in files:
+    for _raw in open(_p, encoding="utf-8"):
+        _l = _raw.strip()
+        if not _l.startswith("C "):
+            continue
+        _iid, _ids, _a, _b, _cf, _err = idbase.parse_c_head(_l.split("|", 1)[0])
+        if _iid is not None:
+            _c_items.add(_iid)
+
+curated_span = {}        # itemId -> (start, end, confidence, providerRef, note)
+curated_runs = {}        # itemId -> {(provider(int), key): (confidence, start, end)}
+# The run table arrives with the `SpanRunRef` migration. Until the lead has applied it the dry run must
+# still work (that is how a wave is read BEFORE the backup), so its absence is reported, not thrown — and
+# an --apply carrying C lines is refused below, because a range landed without its run ref is the very
+# ambiguity the line exists to remove.
+HAS_RUN_TABLE = bool(ro.execute(
+    "SELECT 1 FROM sqlite_master WHERE type='table' AND name='CollectedEditionSpanRun'").fetchone())
+# …and the PER-RUN RANGE columns of the `SpanRunRange` migration. A table without them cannot hold a
+# trade's two minis at all (the PK is still (ItemId, Source, Provider), so the second run overwrites the
+# first), so it is the same refusal as a missing table rather than a silent half-write.
+HAS_RUN_RANGE = HAS_RUN_TABLE and {"IssueStart", "IssueEnd"} <= {
+    r[1] for r in ro.execute("PRAGMA table_info(CollectedEditionSpanRun)")}
+if _c_items:
+    _ids_list = sorted(_c_items)
+    for _chunk in [_ids_list[i:i + 900] for i in range(0, len(_ids_list), 900)]:
+        _q = ",".join("?" * len(_chunk))
+        for r in ro.execute(
+                f"""SELECT ItemId, IssueStart, IssueEnd, Confidence, ProviderRef, Note
+                    FROM CollectedEditionSpan WHERE Source = {CURATED} AND ItemId IN ({_q})""", _chunk):
+            curated_span[r[0]] = tuple(r[1:])
+        if HAS_RUN_RANGE:
+            for r in ro.execute(
+                    f"""SELECT ItemId, Provider, ProviderKey, Confidence, IssueStart, IssueEnd
+                        FROM CollectedEditionSpanRun WHERE Source = {CURATED} AND ItemId IN ({_q})""", _chunk):
+                curated_runs.setdefault(r[0], {})[(r[1], str(r[2]))] = (r[3], r[4], r[5])
+        elif HAS_RUN_TABLE:
+            for r in ro.execute(
+                    f"""SELECT ItemId, Provider, ProviderKey, Confidence
+                        FROM CollectedEditionSpanRun WHERE Source = {CURATED} AND ItemId IN ({_q})""", _chunk):
+                curated_runs.setdefault(r[0], {})[(r[1], str(r[2]))] = (r[3], None, None)
+
 # Rule 10 of the checker stops complaining about a stored-CvVolumeId collision when the partner shelf is
 # refused or re-linked — and that is only SOUND if the partner's stored link is actually cleared. Wave 2
 # proved the gap: `R 34939` + `F split-needed` (Cosplayers) left cv 72946 on the refused shelf, and the
@@ -132,8 +239,13 @@ for _p, _rec in _decides.items():
             claimed_by.setdefault(_vol, set()).add(_sid)
 
 STAMP = time.strftime("%Y%m%d-%H%M%S")
+# The DATETIME columns (`CollectedEditionSpan.CreatedAt`) are read back by EF, which wants the shape
+# TargetWriter writes; STAMP is the pass's own label and is not a date to anything downstream.
+NOW = time.strftime("%Y-%m-%d %H:%M:%S")
 totals = {"keylink": 0, "keylink_cv": 0, "keylink_gcd": 0, "decision": 0, "review": 0, "itemlink": 0,
-          "refused": 0, "itemlink_manual_overwrite": 0, "cleared": 0}
+          "refused": 0, "itemlink_manual_overwrite": 0, "cleared": 0, "isbn": 0,
+          "span_insert": 0, "span_update": 0, "spanrun": 0, "c_lines": 0, "c_books": 0}
+conflicts = []       # C lines whose range disagrees with a gold/proven row — kept, never written
 keylink_overwrite = Counter()     # previous Status of every SeriesKeyLink row this pass would replace
 uninterpretable = []              # lines the applier cannot turn into a write — must be zero before landing
 linked_cv = {}                    # cv volume id -> [sid, ...], for the merge-without-merge-with check
@@ -163,6 +275,7 @@ for path in files:
     out["R"] = [r for r in out["R"] if r[0] in own]
     out["F"] = [r for r in out["F"] if r[0] in own or r[0] not in WINNER]
     out["I"] = [r for r in out["I"] if item_shelf.get(r[0]) not in set(skipped)]
+    out["C"] = [r for r in out["C"] if item_shelf.get(r[0]) not in set(skipped)]
 
     batch_plan = []
     for sid, cvv, gcdv, conf, why in out["S"]:
@@ -299,11 +412,8 @@ for path in files:
         print(f"   [{base}] flag   S{sid:<7} {flag} — {detail[:70]}")
 
     for iid, cvi, gcdi, isbn, conf, why in out["I"]:
-        if cvi is None and gcdi is None:
-            # an ISBN-only I line: real evidence, but ItemProviderLink has no column for it, so it is
-            # recorded as a decision and named here rather than silently doing nothing
-            uninterpretable.append(f"[{base}] I {iid}: only isbn={isbn} — no provider column to store it in; "
-                                   f"the decision row keeps the evidence")
+        if cvi is None and gcdi is None and not isbn:
+            uninterpretable.append(f"[{base}] I {iid}: names no id at all")
         if iid not in item_shelf:
             uninterpretable.append(f"[{base}] I {iid}: the item is excluded or has no shelf")
         # An `I` id comes in two shapes and they mean different things. An ISSUE id names the exact record
@@ -344,8 +454,33 @@ for path in files:
             totals["itemlink"] += 1
             print(f"   [{base}] item   {iid:<8} {shape} conf {conf} {note}")
         if isbn:
-            print(f"   [{base}] note   item {iid} isbn={isbn} — kept in the decision's evidence only "
-                  f"(ItemProviderLink has no ISBN column)")
+            # The Open Library bridge, persisted (see `ext_by_isbn` above for the shape and why it is that
+            # shape). A `-` never reaches here: the checker maps it to None.
+            nisbn = norm_isbn(isbn)
+            if not nisbn:
+                uninterpretable.append(f"[{base}] I {iid}: isbn={isbn} is not an ISBN — nothing to store")
+            else:
+                work = ext_by_isbn.get(nisbn)
+                pk = str(work) if work else f"isbn:{nisbn}"
+                was = item_links.get((iid, idbase.P_EXTERNAL))
+                if was and was["Status"] == 5:
+                    totals["itemlink_manual_overwrite"] += 1
+                batch_plan.append((
+                    """INSERT INTO ItemProviderLink (ItemId, Provider, ProviderKey, SecondaryKey, Status, Method, Confidence, AttemptCount, AttemptedAt)
+                       VALUES (?,?,?,?,5,'identity-read',?,coalesce((SELECT AttemptCount FROM ItemProviderLink WHERE ItemId=? AND Provider=?),0),?)
+                       ON CONFLICT(ItemId, Provider) DO UPDATE SET
+                         ProviderKey=excluded.ProviderKey, SecondaryKey=excluded.SecondaryKey, Status=5,
+                         Method='identity-read', Confidence=excluded.Confidence,
+                         AttemptedAt=excluded.AttemptedAt, Error=NULL""",
+                    (iid, idbase.P_EXTERNAL, pk, nisbn, float(conf), iid, idbase.P_EXTERNAL, STAMP),
+                    {"table": "ItemProviderLink", "key": [iid, idbase.P_EXTERNAL], "was": was}))
+                totals["itemlink"] += 1
+                totals["isbn"] += 1
+                print(f"   [{base}] isbn   {iid:<8} isbn {nisbn} -> ItemProviderLink(External) "
+                      f"ProviderKey={pk}"
+                      + (f" (ExternalWork {work}, the Open Library work we already hold)" if work
+                         else " (no ExternalWork row carries this ISBN yet)")
+                      + ("" if not was else f" (was {was['ProviderKey']} status {was['Status']})"))
         batch_plan.append(("""INSERT INTO SeriesInferenceDecision
                               (SeriesKey, Class, Action, Target, Confidence, EvidenceJson, State, UndoJson, DecidedBy, DecidedAt)
                               VALUES (NULL, 'identity', 'item-link', ?, ?, ?, 'Applied', '[]', 'identity-pass', ?)""",
@@ -354,6 +489,114 @@ for path in files:
                             STAMP),
                            {"table": "SeriesInferenceDecision", "key": [f"item:{iid}"], "was": None}))
         totals["decision"] += 1
+
+    # ── the `C` lines: what this book collects, and OF WHICH RUN (SPAN_RUN_IDS.md) ───────────────
+    # Three shapes, and which one applies is decided by the row that is already there — never by the
+    # reader, who cannot see it. A row this pass wrote (`identity:`) or the model wrote (`model:`) is
+    # rewritten; anything else — v1's gold, an `admin:` row somebody typed in the review screen, a row
+    # whose note QUOTES the book naming exactly its range — keeps its range and gains only the run refs,
+    # with the disagreement printed as a CONFLICT for Eric. The same order of trust `CuratedSpanImport`
+    # applies to the model pass, for the same reason: over-claiming is the direction that loses files.
+    #
+    # A book may carry SEVERAL `C` lines since TOOLS_TODO 17 — one per (leg, run) — because a trade can
+    # collect two minis and an omnibus four, each in its OWN numbering. They are grouped here: the item's
+    # span is written ONCE, from the FIRST line (the order the reader wrote them in is the order they are
+    # applied in), and every line contributes its own run row carrying its own range.
+    c_by_item = {}
+    for rec_c in out["C"]:
+        c_by_item.setdefault(rec_c[0], []).append(rec_c)
+
+    for iid, lines_c in c_by_item.items():
+        totals["c_books"] += 1
+        totals["c_lines"] += len(lines_c)
+        _iid, ids, a, b, conf, why = lines_c[0]
+        shelf = item_shelf.get(iid)
+        prior = curated_span.get(iid)
+        ref = f"identity:{base}"
+        undo = []
+        if prior is None:
+            mode = "insert"
+        else:
+            p_start, p_end, _p_conf, p_ref, p_note = prior
+            gold = not (p_ref or "").startswith(("model:", "identity:"))
+            proven = (p_ref or "").startswith("admin:") or self_proving(p_note, p_start, p_end)
+            mode = "runs-only" if (gold or proven) else "update"
+            if mode == "runs-only" and (p_start != a or p_end != b):
+                conflicts.append((base, iid, names.get(shelf, "?"), p_start, p_end, p_ref, a, b, conf, why))
+
+        if mode == "insert":
+            undo.append({"table": "CollectedEditionSpan", "key": [iid, CURATED], "was": None})
+            batch_plan.append((
+                """INSERT INTO CollectedEditionSpan
+                   (ItemId, Source, SeriesId, IssueStart, IssueEnd, EditionTitle, ProviderRef, Contiguous,
+                    Confidence, Note, CreatedAt)
+                   VALUES (?,?,?,?,?,NULL,?,1,?,?,?)""",
+                (iid, CURATED, shelf, a, b, ref, float(conf), why, NOW), undo[-1]))
+            totals["span_insert"] += 1
+        elif mode == "update":
+            undo.append({"table": "CollectedEditionSpan", "key": [iid, CURATED],
+                         "was": {"IssueStart": prior[0], "IssueEnd": prior[1], "Confidence": prior[2],
+                                 "ProviderRef": prior[3], "Note": prior[4]}})
+            batch_plan.append((
+                """UPDATE CollectedEditionSpan
+                   SET IssueStart = ?, IssueEnd = ?, Confidence = ?, Note = ?, ProviderRef = ?,
+                       SeriesId = coalesce(SeriesId, ?), Contiguous = 1, CreatedAt = ?
+                   WHERE ItemId = ? AND Source = ?""",
+                (a, b, float(conf), why, ref, shelf, NOW, iid, CURATED), undo[-1]))
+            totals["span_update"] += 1
+
+        # The run refs REPLACE whatever the span carried: the lines are the whole statement of which runs the
+        # ranges count in, and a leftover ref from an earlier reading would silently contradict them.
+        was_runs = curated_runs.get(iid) or {}
+        if was_runs:
+            undo.append({"table": "CollectedEditionSpanRun", "key": [iid, CURATED],
+                         "was": [{"Provider": p, "ProviderKey": k, "Confidence": v[0],
+                                  "IssueStart": v[1], "IssueEnd": v[2]}
+                                 for (p, k), v in sorted(was_runs.items())]})
+            batch_plan.append(("DELETE FROM CollectedEditionSpanRun WHERE ItemId = ? AND Source = ?",
+                               (iid, CURATED), undo[-1]))
+        # one row per (leg, run) ON EVERY line for this book, each with the range in THAT run's numbering
+        wrote = {}
+        for _i, l_ids, l_a, l_b, l_conf, _l_why in lines_c:
+            for leg, key in sorted(l_ids.items()):
+                prov = idbase.RUN_LEGS[leg]
+                if (prov, str(key)) in wrote:
+                    continue                    # the checker refuses this; never write it twice regardless
+                wrote[(prov, str(key))] = (l_a, l_b)
+                undo.append({"table": "CollectedEditionSpanRun", "key": [iid, CURATED, prov, str(key)],
+                             "was": ({"Confidence": was_runs[(prov, str(key))][0],
+                                      "IssueStart": was_runs[(prov, str(key))][1],
+                                      "IssueEnd": was_runs[(prov, str(key))][2]}
+                                     if (prov, str(key)) in was_runs else None)})
+                batch_plan.append((
+                    """INSERT INTO CollectedEditionSpanRun
+                       (ItemId, Source, Provider, ProviderKey, IssueStart, IssueEnd, Confidence, CreatedAt)
+                       VALUES (?,?,?,?,?,?,?,?)
+                       ON CONFLICT(ItemId, Source, Provider, ProviderKey) DO UPDATE SET
+                         IssueStart = excluded.IssueStart, IssueEnd = excluded.IssueEnd,
+                         Confidence = excluded.Confidence, CreatedAt = excluded.CreatedAt""",
+                    (iid, CURATED, prov, str(key), l_a, l_b, float(l_conf), NOW), undo[-1]))
+                totals["spanrun"] += 1
+
+        for k, (_i, l_ids, l_a, l_b, l_conf, l_why) in enumerate(lines_c):
+            run_text = " ".join(f"{leg}={l_ids[leg]}" for leg in sorted(l_ids))
+            head = f"collect {iid:<8}" if k == 0 else f"collect +{iid:<7}"
+            print(f"   [{base}] {head} #{idbase.fmt_num(l_a)}-{idbase.fmt_num(l_b)} of {run_text} "
+                  f"conf {l_conf}"
+                  + (f" -> Curated span {mode}" if k == 0 else " -> run ref only (a second run of this book)")
+                  + ("" if prior is None or k else
+                     f" (was #{idbase.fmt_num(prior[0])}-{idbase.fmt_num(prior[1])} ref {prior[3]})"))
+            batch_plan.append(("""INSERT INTO SeriesInferenceDecision
+                                  (SeriesKey, Class, Action, Target, Confidence, EvidenceJson, State, UndoJson, DecidedBy, DecidedAt)
+                                  VALUES (?, 'identity', 'collects', ?, ?, ?, 'Applied', ?, 'identity-pass', ?)""",
+                               (primary.get(shelf),
+                                f"item:{iid} {run_text} #{idbase.fmt_num(l_a)}-{idbase.fmt_num(l_b)}",
+                                l_conf,
+                                json.dumps({"batch": base, "line": f"C {iid}", "evidence": l_why,
+                                            "mode": mode if k == 0 else "runs-only"}, ensure_ascii=False),
+                                json.dumps(undo if k == 0 else [], ensure_ascii=False), STAMP),
+                               {"table": "SeriesInferenceDecision", "key": [f"item:{iid}"], "was": None}))
+            totals["decision"] += 1
 
     plan.append((base, batch_plan))
 
@@ -370,7 +613,27 @@ for (prov, st, same), n in sorted(keylink_overwrite.items(), key=lambda x: -x[1]
 print(f"  SeriesInferenceDecision : {totals['decision']:,}   (of which refusals {totals['refused']:,})")
 print(f"  SeriesMatchReview       : {totals['review']:,}")
 print(f"  ItemProviderLink        : {totals['itemlink']:,}   "
-      f"(overwriting an existing Status=5 Manual row: {totals['itemlink_manual_overwrite']:,})")
+      f"(overwriting an existing Status=5 Manual row: {totals['itemlink_manual_overwrite']:,}; "
+      f"of them ISBN/External rows: {totals['isbn']:,})")
+print(f"  CollectedEditionSpan    : {totals['span_insert']:,} inserted, {totals['span_update']:,} updated   "
+      f"({totals['c_lines']:,} C line(s) over {totals['c_books']:,} book(s))")
+print(f"  CollectedEditionSpanRun : {totals['spanrun']:,}   (which run each range counts in, and the range "
+      f"in THAT run's numbering)")
+if conflicts:
+    print(f"\n  CONFLICTS: {len(conflicts)} C line(s) disagree with a gold / admin / self-proving Curated row. "
+          f"The stored range is KEPT and only the run refs are written — these are Eric's questions.")
+    for cb, iid, shelf, ps, pe, pref, a, b, conf, why in conflicts:
+        print(f"       [{cb}] item {iid:<8} {shelf[:34]:<34} stored #{idbase.fmt_num(ps)}-{idbase.fmt_num(pe)} "
+              f"({pref}) vs read #{idbase.fmt_num(a)}-{idbase.fmt_num(b)} at {conf}")
+        print(f"                {why[:110]}")
+if (totals['span_insert'] or totals['span_update'] or totals['spanrun'] or conflicts) and not HAS_RUN_RANGE:
+    print("\n  !! CollectedEditionSpanRun "
+          + ("does not exist in this database yet" if not HAS_RUN_TABLE
+             else "has no IssueStart/IssueEnd and its key cannot hold two runs of one book")
+          + " — apply the `SpanRunRef` + `SpanRunRange` migrations (books-db-migrate) before landing a wave "
+            "that carries C lines.")
+    if APPLY:
+        raise SystemExit("refused: C lines were read but the run table cannot hold them")
 print(f"  SeriesKeyLink CLEARED   : {totals['cleared']:,}   (refused shelves whose stored Cv link the reader called wrong)")
 
 # ── the two things that must be zero before a landing ────────────────────────────────────────────

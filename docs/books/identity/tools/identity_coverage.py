@@ -360,8 +360,26 @@ for k in ITEMS:
     print(f"  {ic[k]:>9,}  {k}")
 print(f"  {'-'*9}")
 ic_sum = sum(ic.values())
+
 print(f"  {ic_sum:>9,}  accounted for; population {ev.total_items:,}; "
       f"UNACCOUNTED {ev.total_items - ic_sum:,}")
+
+# ── the ITEM PASS's own two counts (TOOLS_TODO 16) ───────────────────────────────────────────────
+# The partition above says how many books have no record; it does not say how many of them the item pass
+# still has to hand out, nor anything at all about the OTHER gap — a judged range on a collected line that
+# is stated in nobody's numbering. These are the two numbers `next_batch.py --items` drives to zero, and
+# they come from the same definition the emitter uses (idbase.item_population), so they cannot drift.
+pop = idbase.item_population(ev, decides, winner)
+st = idbase.load_state()
+handed = {i for b in st.get("items", ()) for i in b["ids"]}
+union = set(pop["no_i"]) | set(pop["no_c"])
+print()
+print(f"  item pass (X- batches): {len(pop['accepted']):,} accepted shelves, of them "
+      f"{len(pop['line_shelves']):,} decided to a COLLECTED LINE")
+print(f"  {len(pop['no_i']):>9,}  collected editions on an accepted shelf with NO `I` line")
+print(f"  {len(pop['no_c']):>9,}  line-shelf books with a judged range and NO run ref (`C` owed)")
+print(f"  {len(pop['no_span']):>9,}  line-shelf books with no judged range at all (containment's gap, not this pass's)")
+print(f"  {len(union - handed):>9,}  in the union and not yet in an X- batch   <- drive to zero")
 
 bad = ((len(sh) - shelf_sum) or (ev.total_items - item_sum) or (len(sh) - dec_sum)
        or (ev.total_items - ic_sum))

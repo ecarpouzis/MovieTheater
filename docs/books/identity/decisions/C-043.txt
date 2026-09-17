@@ -1,0 +1,312 @@
+# C-043 — Marvel Conan / Daredevil / Deadpool / Defenders / Dazzler / Doctor Strange shelves. Epic Collection
+# lines throughout (Conan Chronicles, Daredevil, Deadpool, Defenders, Doctor Strange) repeat the standard shape:
+# CV mints a volume per book, GCD keeps one line series (round2-folder ⚠ but correct by the Epic Collection rule).
+# The per-file CV/GCD matchers stamp the 1964 Daredevil / 1974 Doctor Strange / 1997 Deadpool / 1972 Defenders
+# legacy volumes across nearly every later relaunch's trades (wrong-relaunch trap, near-100% on some shelves).
+# S4086 (Conan) is a genuine multi-run conflation: the 2004-2008 Dark Horse Conan #1-50 ongoing plus its own
+# Omnibus reprint line, and a SEPARATE later-era trade-vol line (Cimmeria..A Witch Shall Be Born) collecting the
+# renamed continuation ongoings (Cimmerian/Road of Kings/Barbarian 2012/Avenger) that have no floppies on this
+# shelf — R + split-needed, with full I lines for both trade lines (DB-queried gcd_issue for exact per-book ids).
+# S4112/S96119 and S96256/S4824 are each one run split across two shelves by parsed-key/title variance —
+# merge-with both ways. Several "no CvVolume row" Deadpool minis (Circle Chase, Kills Deadpool) get needs-fetch.
+
+S 4099 cv=133357 gcd=139728 0.9 | CV 133357 "Conan Chronicles Epic Collection: The Song of Bêlit" (2021 Marvel, exact title match, issue 825512) and GCD's line series 139728 "Conan Chronicles Epic Collection" (2019-2021, 8 books) agree — Epic Collection line shape: CV mints a volume per book, GCD keeps one series for the whole line
+
+R 4086 | this shelf conflates the original Dark Horse Conan (2004) #1-50 ongoing (CV 10612/GCD 11511, 48/70 files, our Marvel-Edition digital reissue 001-050) plus its own 7-book Omnibus reprint (CV 96281/GCD 110169) with a SEPARATE later trade-vol line (Vol.07-20 "Cimmeria" through "A Witch Shall Be Born", GCD twin rows 42717/87096) collecting the renamed continuation ongoings (Conan the Cimmerian/Road of Kings/Conan the Barbarian 2012/Conan the Avenger, all named in the shelf's own folders) that have no floppies on this shelf — the conflated-series flag is TRUE of this shelf, not stale
+F 4086 split-needed | 2004-2008 #1-50 run = CV 10612/GCD 11511 (our floppy ladder) + its Omnibus (CV 96281/GCD 110169); the 2008-2016 continuation trades = GCD 42717 (twin 87096), no CV line id found, no floppies present
+I 12727 cv=563682 gcd=1657623 0.9 | Conan Omnibus Book 01 "Birth of the Legend" (456pp) — CV 96281/563682 and GCD 110169/1657623 (476pp) agree, title matches exactly
+I 12728 cv=594388 gcd=1704945 0.9 | Book 02 "City of Thieves" (450pp) — CV 96281/594388, GCD 110169/1704945 (400pp), title matches
+I 12729 cv=611961 gcd=1725211 0.9 | Book 03 "Ancient Gods and Sorcerers" (438pp) — CV 96281/611961, GCD 110169/1725211 (464pp)
+I 12730 cv=669416 gcd=1806796 0.9 | Book 04 "Mercenaries and Madness" (437pp) — CV 96281/669416, GCD 110169/1806796 (456pp)
+I 12731 cv=675869 gcd=1822512 0.9 | Book 05 "Piracy and Passion" (424pp) — CV 96281/675869, GCD 110169/1822512 (432pp)
+I 12732 cv=683741 gcd=1843264 0.9 | Book 06 "Savagery and Sorrow" (439pp) — CV 96281/683741, GCD 110169/1843264 (448pp)
+I 12733 cv=691960 gcd=1849077 0.9 | Book 07 "Witchcraft and Warfare" (419pp) — CV 96281/691960, GCD 110169/1849077 (448pp)
+I 12752 gcd=713840 0.9 | Vol.07 "Cimmeria" (2009, 215pp) — GCD 42717/713840 (220pp), title match; twin row 87096/648053 also exists; cv=-
+I 12753 gcd=760726 0.9 | Vol.08 "Black Colossus" (2010, 161pp) — GCD 42717/760726 (172pp); twin 87096/757700; cv=-
+I 12754 gcd=945598 0.9 | Vol.09 "Free Companions" (2010, 188pp) — GCD 42717/945598 (196pp); twin 87096/1331318; cv=-
+I 12755 gcd=945600 0.9 | Vol.11 "Road of Kings" (2012, 149pp) — GCD 42717/945600 (156pp); twin 87096/1331651; cv=-
+I 12756 gcd=1048961 0.9 | Vol.12 "Throne of Aquilonia" (2012, 153pp) — GCD 42717/1048961 (156pp); twin 87096/1331828; cv=-
+I 12757 gcd=1048964 0.9 | Vol.13 "Queen of the Black Coast" (2013, 151pp) — GCD 42717/1048964 (156pp); twin 87096/1331833; cv=-
+I 12758 gcd=1171334 0.9 | Vol.14 "The Death" (2013, 150pp) — GCD 42717/1171334; twin 87096/1331837; cv=-
+I 12759 gcd=1236900 0.9 | Vol.15 "The Nightmare of the Shallows" (2014, 150pp) — GCD 42717/1236900; twin 87096/1331898; cv=-
+I 12760 gcd=1328000 0.9 | Vol.16 "The Song of Bêlit" (2014, 176pp) — GCD 42717/1328000; twin 87096/1332013; cv=-
+I 12761 gcd=1446418 0.9 | Vol.17 "Shadows Over Kush" (2015, 152pp) — GCD 42717/1446418; twin 87096/1332044; cv=-
+I 12762 gcd=1531965 0.9 | Vol.18 "The Damned Horde" (2015, 144pp) — GCD 42717/1531965; twin 87096/1453619; cv=-
+I 12763 gcd=1608859 0.9 | Vol.19 "Xuthal of the Dusk" (2016, 169pp) — GCD 42717/1608859 (180pp); twin 87096/1542242; cv=-
+I 12764 gcd=1665709 0.9 | Vol.20 "A Witch Shall Be Born" (2016, 144pp) — GCD 42717/1665709; twin 87096/1621143; cv=-
+
+S 4112 cv=116245 gcd=136765 0.9 | CV 116245 "Conan the Barbarian" (2019 Marvel, 25 issues) and GCD 136765 (2019-2021 Marvel, 25 issues, dump) name the Jim Zub ongoing this trade collects from; folder holds only this one collected edition so the run takes the S line
+F 4112 merge-with=96119 | same folder (Marvel\_Conan the Barbarian\Conan the Barbarian (2019 Marvel)\Conan the Barbarian v3 (2019)), same 2019-2021 ongoing (CV116245/GCD136765) split across two shelves by parsed key
+N 4112 stale-flag | overlap-in-series names three different Vol.01 trades across this folder's shelves (this shelf's Zub Vol.01, S96119's Aaron/Asrar Book One, and S96119's misfiled Zub Vol.02) — a cross-shelf Vol.01 collision, not conflation on this single-item shelf
+I 78338 gcd=2240802 0.9 | Vol.01 "Into the Crucible" — GCD 174133/2240802 (148pp, title matches); file 137pp; cv=-
+
+S 96119 cv=116245 gcd=136765 0.9 | same 2019-2021 Marvel "Conan the Barbarian" ongoing as S4112 (CV116245/GCD136765, 25 issues) — this folder was split into two shelves by parsed key; per-file CV's pick of 2471 (1970 Marvel legacy, 275 issues) on 1/3 files is a wrong-relaunch stamp, rejected
+F 96119 merge-with=4112 | same folder as S4112, same ongoing
+F 96119 misfiled | item 78339 (Zub Vol.02 "Land of the Lotus") continues S4112's Vol.01 trade line (GCD 174133), filed here alongside the unrelated Aaron/Asrar "Life and Death of Conan" pair
+N 96119 stale-flag | conflated-series names the 1970/2019/2023 Conan the Barbarian eras sharing one Series — this shelf's own three files are all 2019-2021 material (the Aaron/Asrar pair and the misfiled Zub Vol.02); the per-file CV pick of the 1970 legacy volume on 1/3 files is the mismatch the flag is reacting to, not a genuine second run on this shelf
+I 78336 gcd=2012538 0.9 | "Life and Death of Conan" Book One — GCD 148576/2012538 (164pp, title matches); file 158pp; cv=-
+I 78337 gcd=2215104 0.9 | Book Two — GCD 148576/2215104 (140pp); file 137pp; cv=-
+I 78339 gcd=2275041 0.9 | Zub Vol.02 "Land of the Lotus" — GCD 174133/2275041 (172pp, title matches); file 167pp; continues S4112's Vol.01; cv=-
+
+S 94687 cv=- gcd=140323 0.9 | GCD 140323 "Savage Sword of Conan" (2019-2020 Marvel, 12 issues) names the 2019 relaunch ongoing that both our floppy #12 and the Vol.02 trade "Conan the Gambler" collect from; per-file CV picks (2701 the 1974 legacy series, 133719 the German Panini Verlag edition) are wrong-relaunch/foreign mismatches; no ComicVine volume exists for this ongoing in the rip
+F 94687 provider-missing | no ComicVine volume for the 2019-2020 Marvel "Savage Sword of Conan" ongoing (cv=-)
+N 94687 stale-flag | overlap-in-series names the 2019 relaunch's #1 restart colliding with Dark Horse's separately-numbered 2007-2016 "Collected Editions" reprint ladder (GCD 28720) — a naming coincidence against a DIFFERENT, rejected record, not conflation of this shelf's own two 2019-2020 items
+I 78351 gcd=2270117 0.9 | Vol.02 "Conan The Gambler" (2020, 136pp) — GCD 177097/2270117 (140pp), exact title match; cv=-
+
+S 96253 cv=2190 gcd=1636 0.95 | CV 2190 and GCD 1636 "Daredevil" (Marvel 1964-1998, 381 issues) agree; our ladder 1-380 plus annuals fits inside, matching 386/389 and 358/389 files; residue = foreign per-file picks (Semic/Planeta/Panini legs) on a few files
+I 47980 cv=580744 gcd=1678568 0.9 | Daredevil Omnibus Book 01 (2017, 1082pp, judged #1-41 conf 1.0) — CV 98730/580744 "Volume 1" and twin GCD rows 112556/1678568 or 1678895 (1096pp) agree; collects part of the run named on the S line
+
+S 4806 cv=2190 gcd=1636 0.9 | the July 1997 "-1" Flashback issue of the main Daredevil (1964) ongoing (CV 2190/GCD 1636) — GCD's own series carries an issue "-1" (twin rows 60498/1579376, 36pp vs our 24pp); per-file GCD's pick (round2-folder, French Semic 50569) and CV candidates (Marvels Comics reprint, Facsimile, Masterworks) are all wrong-coordinate mismatches
+F 4806 merge-with=96253 | the "-1" Flashback issue is part of the main Daredevil (1964) ongoing, same as S96253
+F 4806 merge-with=64501 | same 1964-1998 Daredevil ongoing (CV2190/GCD1636) as landed shelf S64501 "Daredevil (1964)"
+
+S 96254 cv=6209 gcd=6026 0.9 | CV 6209 "Daredevil" (1998 Marvel, 134 issues) and GCD 6026 (1998-2011 Marvel, 132 issues, dominant per-file match on 30/43 files) are Daredevil vol.2 (1998); per-file CV's pick (2190, the 1964 legacy volume) on all 43/43 files is a wrong-relaunch stamp, rejected; our ladder (1,20-25,51-55,94-114,495,501-507) sits inside the run's legacy renumbering through the #500s
+I 46911 cv=695643 gcd=1883969 0.9 | Vol.02 "Parts of a Hole" (2003, 161pp, judged #9-15 conf 0.95) — CV116071/695643 "Marvel Knights Daredevil by Mack & Quesada: Parts of A Whole" and GCD135968/1883969 "...Parts of a Hole" (180pp), a 2018 remaster reprint edition of this trade (title spelling varies Whole/Hole)
+N 46919 no-record | Vol.22 "Shadowland" (2011, 141pp, judged #508-512 conf 0.95) — collects the legacy-renumbered tail of the run named on the S line; probed "Daredevil: Shadowland" — only a much larger Omnibus record found (CV108581/GCD120694), rejected on page-count/scope; no small-trade record found
+
+S 4795 cv=34850 gcd=232065 0.95 | CV 34850 "Daredevil: Guardian Devil" (2010 Marvel, issue 229847) and GCD 232065 (2010, exact title match) agree; both our files (the 2010 Vol.01 reprint and a 1998-original-TPB-printing rip of the same story) are printings of this one collected story
+
+S 4826 cv=36980 gcd=71783 0.9 | CV 36980 and GCD 71783 "Daredevil by Brian Michael Bendis & Alex Maleev Ultimate Collection" (2010 Marvel, 3-book line, exact GCD title match) agree; same 3-book line as S4827 (Book 2), split into two shelves by a parsed-key title variant
+F 4826 merge-with=4827 | same 3-book collected line (CV36980/GCD71783), Book 1+3 here vs Book 2 on S4827, split by title-parsing variant
+
+S 4827 cv=36980 gcd=71783 0.9 | same 3-book Ultimate Collection line as S4826 (CV36980/GCD71783 — GCD's own dump entry is an exact title match); this file's per-file CV pick (30861, the 2-book Bendis/Maleev Omnibus) is wrong-cv-link, a different, larger collected edition
+F 4827 wrong-cv-link | per-file CV picked 30861 "Daredevil Omnibus by Brian Michael Bendis and Alex Maleev" (2 count) instead of the 3-book Ultimate Collection line 36980
+F 4827 merge-with=4826 | same line, see S4826
+
+S 4849 cv=32466 gcd=36923 0.95 | CV 32466 and GCD 36923 "Daredevil: The Devil, Inside and Out" (2006-2007 Marvel, 2 count) agree exactly with our two parts; GCD per-file's picks (31442 legacy 1967, 220168 French) are wrong-coordinate mismatches
+
+S 5994 cv=154566 gcd=205429 0.95 | CV 154566 and GCD 205429 "Echo: The Saga of Maya Lopez" (2023 Marvel, exact title match) agree; GCD per-file's pick (11254, unrelated Norwegian Daredevil) is a round2-folder mismatch
+
+S 34722 cv=72417 gcd=79658 0.9 | same 2014-2015 Marvel "Daredevil" ongoing (CV72417/GCD79658) as S64502 (which holds this run's own floppy issues #6-7) — these two trades (Vol.04/05, "by Mark Waid & Chris Samnee") are further volumes of that Waid-written run's own collected line, split from S64502 by the trade-title creator-branding change
+F 34722 merge-with=64502 | same 2014-2015 ongoing (CV72417/GCD79658), trades of the same run split across two shelves by title-parsing on the "& Chris Samnee" credit
+I 46923 gcd=1531587 0.9 | Vol.04 (296pp) — GCD 193316/1531587 (#4, 320pp), the "by Mark Waid & Chris Samnee" collected line; cv=-
+I 46924 gcd=1566180 0.9 | Vol.05 (201pp) — GCD 193316/1566180 (#5, 224pp); cv=-
+
+S 64502 cv=72417 gcd=79658 0.9 | CV 72417 "Daredevil" (2014 Marvel, 21 issues) and GCD 79658 (2014-2015 Marvel, 20 issues) agree; our floppy #6-7 sits inside; GCD per-file's stray pick (31442, 1967 one-shot) on 1/4 files is a mismatch
+I 46921 cv=342037 gcd=952406 0.9 | Vol.02 "by Mark Waid" (2014, 168pp, judged #10-15 conf 0.8) — CV45530/342037 "Devil and the Details" and GCD64482/952406 (140pp) agree, ordinal #2 of the "Daredevil by Mark Waid" 7-book line
+I 46922 cv=359212 gcd=1010743 0.9 | Vol.03 "by Mark Waid" (2014, 293pp) — CV45530/359212 "Omega Effect" and GCD64482/1010743 (168pp) agree, ordinal #3 of the line
+
+S 96255 cv=116964 gcd=139716 0.95 | CV 116964 and GCD 139716 "Daredevil" (2019-2022 Marvel, 36 issues) — our judged ranges span #1-36 across the six items (Director's Cut #1, Vol.05-07 #21-36, Book 02-03 "To Heaven Through Hell" #11-30), all fitting inside the 36-issue run; per-file CV's pick of 144027 (the SEPARATE 2022 14-issue relaunch) on 3/6 files is a wrong-relaunch mismatch, rejected
+F 96255 merge-with=64504 | same 2019-2022 Daredevil ongoing (CV116964/GCD139716) as landed shelf S64504 "Daredevil"
+I 46938 cv=828991 gcd=- 0.9 | Vol.05 "Truth-Dare" (2021, 142pp, judged #21-25 conf 0.95) — CV133901/828991 "Volume 5", exact ordinal match; no GCD row found
+I 46939 cv=885972 gcd=- 0.9 | Vol.06 "Doing Time" (2021, 118pp, judged #26-30 conf 0.95) — CV139160/885972 "Volume 6", exact ordinal match; no GCD row found
+I 46940 cv=948721 gcd=- 0.9 | Vol.07 "Lockdown" (2021, 143pp, judged #31-36 conf 0.95) — CV145212/948721 "Volume 7", exact ordinal match; no GCD row found
+I 46942 cv=931103 gcd=2381423 0.9 | Book.02 "To Heaven Through Hell Vol.02" (2022, 223pp, judged #11-20 conf 0.95) — CV134646/931103 "Volume 2" and GCD171411/2381423 (232pp) agree
+I 46943 cv=953717 gcd=2446270 0.9 | Book.03 "...Vol.03" (2022, 260pp, judged #21-30 conf 0.95) — CV134646/953717 "Volume 3" and GCD171411/2446270 (272pp) agree
+
+R 4824 | shelf conflates two unrelated comics sharing the conflated-series flag: the 2003 Ultimate Marvel one-shot "Ultimate Daredevil and Elektra" (CV38522/GCD17361, 4-issue mini, our TPB item 97960) and the 2022-2023 "Daredevil & Elektra by Chip Zdarsky" 3-book collected line (CV149239/GCD196830, our Vol.02/03 items 46946/46947, continuing S96256's Vol.01) — the conflated-series flag is TRUE, not stale
+F 4824 split-needed | Ultimate one-shot = CV38522/GCD17361 (item 97960); Zdarsky "Red Fist Saga" line = CV149239/GCD196830 (items 46946/46947), same line as S96256's Vol.01
+F 4824 merge-with=96256 | items 46946/46947 (Vol.02/03 of "Daredevil & Elektra by Chip Zdarsky") continue S96256's Vol.01 of the same 3-book line (CV149239/GCD196830)
+I 97960 cv=258523 gcd=s17361 0.9 | "Ultimate Daredevil and Elektra" TPB (2003, 128pp) — CV38522/258523 is the TPB's own issue record; GCD only indexes the 4-issue mini (17361), no separate collected edition
+I 46946 cv=1003838 gcd=2557635 0.9 | Vol.02 "The Red Fist Saga Part Two" (2023, 112pp) — CV149239/1003838 and GCD196830/2557635 (116pp) agree, title matches
+I 46947 cv=1029724 gcd=2578795 0.9 | Vol.03 "Part Three" (2024, 114pp) — CV149239/1029724 and GCD196830/2578795 (116pp) agree
+
+S 96256 cv=149239 gcd=196830 0.9 | CV 149239 and GCD 196830 "Daredevil & Elektra by Chip Zdarsky" (2022-2023, 3-book line) — our Vol.01 "The Red Fist Saga Part One" is #1 of that line; GCD per-file's pick (207588, a French edition) is a foreign mismatch; siblings Vol.02/03 are misfiled on S4824
+F 96256 merge-with=4824 | items 46946/46947 on S4824 continue this line
+I 46945 cv=980931 gcd=2494781 0.9 | Vol.01 "The Red Fist Saga Part One" (2023, 144pp) — CV149239/980931 and GCD196830/2494781 (148pp) agree
+
+S 4813 cv=144405 gcd=79137 0.9 | CV 144405 "Daredevil Epic Collection: Dead Man's Hand" (2022 Marvel, issue 941967, exact title match) and GCD's line series 79137 "Daredevil Epic Collection" (18 books) agree — Epic Collection line shape
+F 4813 merge-with=4814 | singleton Epic Collection shelves sharing GCD 79137's line, per the Epic Collection shape (CV mints a volume per book, GCD keeps one series for the line)
+
+S 4814 cv=144408 gcd=79137 0.9 | CV 144408 "Daredevil Epic Collection: Going Out West" (2021 Marvel, issue 944235, exact title match) and GCD's line series 79137 agree, same Epic Collection line shape
+F 4814 merge-with=4815 | same GCD 79137 line as S4813/S4815/S4816
+
+S 4815 cv=152900 gcd=79137 0.9 | CV 152900 "Daredevil Epic Collection: Into the Fire" (2023 Marvel, issue 1006552, exact title match) and GCD's line series 79137 agree
+F 4815 merge-with=4816 | same GCD 79137 line as S4813/S4814/S4816
+
+S 4816 cv=132134 gcd=79137 0.9 | CV 132134 "Daredevil Epic Collection: Last Rites" (2020 Marvel, issue 819149, exact title match) and GCD's line series 79137 agree
+F 4816 merge-with=4813 | same GCD 79137 line as S4813/S4814/S4815
+
+S 4825 cv=30861 gcd=- 0.9 | CV 30861 "Daredevil Omnibus by Brian Michael Bendis and Alex Maleev" (2008 Marvel, cached #1-2, matches both our books exactly); no GCD collected-edition row found for this specific Omnibus (gcd=-); per-file GCD's pick (220168, French) is a round2-folder foreign mismatch
+F 4825 provider-missing | no GCD row for this Bendis/Maleev Omnibus (gcd=-)
+
+S 4828 cv=30111 gcd=- 0.9 | CV 30111 "Daredevil Omnibus by Ed Brubaker" (2009 Marvel, 2 count) matches our two Omnibus books exactly by count; no GCD row found (gcd=-); per-file GCD's pick (220168, French) is a round2-folder foreign mismatch
+F 4828 provider-missing | no GCD row for this Omnibus (gcd=-)
+
+S 4810 cv=34741 gcd=51958 0.95 | CV 34741 and GCD 51958 "Daredevil Black & White" (2010 Marvel, exact title match, single issue) agree exactly; GCD per-file's pick (30655, "Blood of the Tarantula" one-shot) is a round2-folder mismatch
+
+S 4800 cv=71980 gcd=- 0.9 | CV 71980 "Daredevil: Road Warrior Infinite Comic" (2014 Marvel, 4 issues) matches our ladder 1-4 (duplicated rip, ratio 2.00, each issue ripped as "+cover"/"2 covers" variant — residue, costs nothing); Infinite Comics are a GCD hole (gcd=-)
+F 4800 provider-missing | Marvel Digital Comics Unlimited/Infinite Comic exclusive, absent from GCD
+
+S 64525 cv=3083 gcd=2596 0.9 | CV 3083 and GCD 2596 "Dazzler" (1981-1986 Marvel, 42 issues) agree exactly on count with our ladder 1-42; residue = duplicate/variant rips (ratio 1.90, various rippers), a Facsimile Edition reprint, and four Masterworks trades + one Omnibus collecting the run
+I 79940 cv=1074073 gcd=2666348 0.9 | Dazzler Omnibus Book 01 (2024, 1352pp) — CV160437/1074073 and GCD216394/2666348 ([nn], 1368pp) agree, collects #1-42 named on the S line
+N 83040 no-record | Facsimile Edition 001 (2019, 35pp) reprints #1 of the run named on the S line — probed "Dazzler" year 2019 on both legs, 0 hits; genuine gap
+I 83250 cv=742426 gcd=2103152 0.9 | Marvel Masterworks Dazzler Vol.01 (2020, 366pp) — CV125819/742426 and GCD159017/2103152 (376pp) agree
+I 83251 cv=839820 gcd=2214002 0.9 | Vol.02 (2021, 323pp) — CV125819/839820 and GCD159017/2214002 (332pp) agree
+I 83252 cv=941423 gcd=2401749 0.9 | Vol.03 (2022, 302pp) — CV125819/941423 and GCD159017/2401749 (312pp) agree
+I 83253 cv=979319 gcd=2509761 0.9 | Vol.04 (2023, 344pp) — CV125819/979319 and GCD159017/2509761 (352pp) agree
+
+S 5101 cv=- gcd=4686 0.9 | GCD 4686 "Deadpool: The Circle Chase" (1993 Marvel, 4-issue limited series) matches our ladder 1-4 exactly (8/8 files, duplicate rip residue); no ComicVine volume found in the rip (cv=-)
+F 5101 provider-missing | no ComicVine volume found for this 1993 mini (cv=-)
+
+S 64540 cv=6000 gcd=5791 0.9 | CV 6000 "Deadpool" (1997 Marvel, 71 issues, no CvVolume row — named from rip) and GCD 5791 (1997-2002 Marvel, 70 issues) agree; our ladder 0-69 sits inside; two 2024 Facsimile Edition variant covers (1pp each) and one misfiled 2021 issue are residue
+F 64540 needs-fetch cv=6000 | "Deadpool" 1997 Marvel, named from the local rip, no CvVolume row
+
+S 96323 cv=22955 gcd=32043 0.9 | CV 22955 "Deadpool" (2008 Marvel, 67 issues) and GCD 32043 (2008-2012 Marvel, 65 issues, dominant ongoing) agree; our floppy #8-9/900/1000 plus 11 judged trades spanning #1-63 fit inside; per-file CV's pick of 6000 (the 1997 legacy volume) on 11/16 files is a wrong-relaunch stamp, rejected
+F 96323 merge-with=64541 | same 2008-2012 Deadpool ongoing (CV22955/GCD32043) as landed shelf S64541 "Deadpool"
+I 78466 cv=- gcd=1171219 0.9 | Vol.01 "Secret Invasion" (2009, 130pp, judged #1-5 conf 0.97) — GCD78140/1171219 (124pp), title matches
+I 78467 cv=- gcd=1171220 0.9 | Vol.02 "Dark Reign" (2009, 125pp, judged #6-12 conf 0.95) — GCD78140/1171220 (124pp); twin rows 2812670/2812671
+I 78468 cv=- gcd=1171221 0.9 | Vol.03 "X Marks Spot" (2010, 150pp, judged #13-18 conf 0.9) — GCD78140/1171221 (148pp); twin rows 2804203/2804204
+I 78469 cv=- gcd=1171222 0.9 | Vol.04 "Monkey Business" (2011, 127pp, judged #19-22 conf 0.95) — GCD78140/1171222 (124pp)
+I 78470 cv=- gcd=1171223 0.9 | Vol.05 "What Happened In Vegas" (2011, 113pp, judged #23-26 conf 0.9) — GCD78140/1171223 (116pp); twin 2660102
+I 78471 cv=- gcd=1171224 0.9 | Vol.06 "I Rule You Suck" (2011, 119pp, judged #27-31 conf 0.97) — GCD78140/1171224 (124pp)
+I 78472 cv=- gcd=1171225 0.9 | Vol.07 "Space Oddity" (2011, 123pp, judged #32-35 conf 0.9) — GCD78140/1171225 (124pp)
+I 78473 cv=- gcd=1171226 0.9 | Vol.08 "Operation Annihilation" (2012, 106pp, judged #36-39 conf 0.9) — GCD78140/1171226 (116pp)
+I 78474 cv=- gcd=1171227 0.9 | Vol.09 "Institutionalized" (2012, 116pp, judged #40-44 conf 0.97) — GCD78140/1171227 (116pp exact); twin 2527950
+I 78475 cv=- gcd=1171228 0.9 | Vol.10 "Evil Deadpool" (2012, 145pp, judged #45-49 conf 0.97) — GCD78140/1171228 (140pp)
+I 78476 cv=372454 gcd=202164 0.9 | Vol.11 "Dead" (2013, 302pp, judged #50-63 conf 0.97) — CV54677/372454 "Deadpool: Dead" and GCD202164, exact title match
+
+S 96324 cv=53726 gcd=69743 0.9 | CV 53726 "Deadpool" (2012 Marvel, 45 issues) and GCD 69743 (2013-2015 Marvel, 45 issues) agree exactly on count; our floppy #45 plus 8 judged trades spanning #1-44 fit inside; per-file CV's pick of 6000 (1997 legacy) on all 10/10 files is a wrong-relaunch stamp, rejected
+I 78481 cv=407172 gcd=- 0.9 | Vol.01 "Dead Presidents" (2013, 134pp, judged #1-6 conf 0.97) — CV62460/407172, exact title match; no GCD row found
+I 78482 cv=422833 gcd=- 0.9 | Vol.02 "Soul Hunter" (2013, 131pp, judged #7-12 conf 0.97) — CV66634/422833, exact title match; no GCD row found
+I 78483 cv=438112 gcd=- 0.9 | Vol.03 "The Good, The Bad, and The Ugly" (2014, 155pp, judged #13-19 conf 0.97) — CV70140/438112, exact title match; no GCD row found
+I 78484 cv=453653 gcd=- 0.9 | Vol.04 "Deadpool vs. S.H.I.E.L.D." (2014, 127pp, judged #20-25 conf 0.97) — CV74203/453653, exact title match; no GCD row found
+N 78485 no-record | Vol.05 "Wedding of Deadpool" (2014, 154pp, judged #26-28 conf 0.97) — probed "Wedding of Deadpool" and "Deadpool Wedding" on both legs; only an unrelated "True Believers" cheap-reprint GCD row found, rejected; no matching record
+I 78486 cv=471591 gcd=- 0.9 | Vol.06 "Original Sin" (2014, 140pp, judged #29-34 conf 0.95) — CV78444/471591, exact title match; no GCD row found
+I 78487 cv=482347 gcd=- 0.9 | Vol.07 "AXIS" (2015, 122pp, judged #35-40 conf 0.97) — CV80651/482347, exact title match; no GCD row found
+I 78488 cv=489898 gcd=- 0.9 | Vol.08 "All Good Things" (2015, 167pp, judged #41-44 conf 0.97) — CV82196/489898, exact title match; no GCD row found
+
+S 5143 cv=92360 gcd=105147 0.9 | GCD 105147 "Deadpool & the Mercs for Money" (2016-2017 Marvel, 10 issues) spans both the original 5-issue mini (Vol.00 "Merc Madness") and its 2017 ongoing continuation (Vol.01-02, our #1-8, plus the Skottie Young variant of the mini's #01); CV 92360 (no CvVolume row, named from rip) is the per-file match on all 4/4 files; the conflated-series flag names a real two-arc conflation that GCD's own single record already reconciles
+N 5143 stale-flag | conflated-series names the 2016 mini and its 2016-2017 ongoing continuation sharing one Series — GCD's own dump record (105147, 10 issues) already spans both as one continuous publication, so the S line stands
+F 5143 needs-fetch cv=92360 | "Deadpool & The Mercs For Money" 2016 Marvel, named from the local rip, no CvVolume row
+I 78489 cv=- gcd=s105147 0.9 | Vol.00 "Merc Madness" (2016, 162pp) collects the original 2016 5-issue mini within GCD 105147's span; the series' own issue rows are mostly untitled duplicates, no clean per-book match found
+I 78490 cv=- gcd=s105147 0.9 | Vol.01 "Mo' Mercs, Mo' Monkeys" (2017, 111pp, judged #1-5 conf 0.9) — GCD 105147's span covers this trade; no clean per-book issue row (untitled duplicates)
+I 78491 cv=- gcd=s105147 0.9 | Vol.02 "IvX" (2017, 113pp, judged #6-8 conf 0.9) — GCD 105147's span covers this trade; no clean per-book issue row (untitled duplicates)
+
+S 5107 cv=97875 gcd=100290 0.9 | CV 97875 "Deadpool: World's Greatest" (2017 Marvel) and GCD 100290 (2016-2017 Marvel, 10-book collected line, dominant per-file match 9/11) name this trade line; CV's count (5) undershoots our 11 books, a real doubt capped at 0.9; GCD's twin row 111064 (5 count) also names part of the line
+I 78492 cv=615018 gcd=1728005 0.9 | Vol.00 "Deadpool 2099" (2017, 102pp, judged #1-5 conf 0.9) — CV103510/615018 and GCD115926/1728005 (120pp), exact title+year match
+I 78493 cv=575555 gcd=1559161 0.9 | Vol.01 "Millionaire With A Mouth" (2016, 105pp, judged #1-5 conf 0.9) — CV97875/575555 "Volume 1" and GCD100290/1559161 (124pp), ordinal #1 of the line
+I 78494 cv=626280 gcd=1578431 0.9 | Vol.02 "End Of Error" (2016, 125pp, judged #6-7 conf 0.65) — CV97875/626280 "Volume 2" and GCD100290/1578431 (140pp), ordinal #2 of the line
+I 78495 cv=650915 gcd=1618176 0.9 | Vol.03 "Deadpool vs. Sabretooth" (2016, 107pp, judged #8-12 conf 0.9) — CV97875/650915 "Volume 3" and GCD100290/1618176 (116pp), ordinal #3 of the line
+I 78496 cv=683218 gcd=1641238 0.9 | Vol.04 "Temporary Insanitation" (2016, 118pp, judged #13-13 conf 0.7) — CV97875/683218 "Volume 4" and GCD100290/1641238 (124pp), ordinal #4 of the line
+I 78497 cv=682651 gcd=1660420 0.9 | Vol.05 "Civil War II" (2017, 143pp, judged #14-19 conf 0.9) — CV97875/682651 "Volume 5" and GCD100290/1660420 (140pp), ordinal #5 of the line
+I 78498 cv=- gcd=1693503 0.9 | Vol.06 "Patience - Zero" (2017, 157pp, judged #20-25 conf 0.7) — GCD100290/1693503 (156pp), title matches; CV97875 caches only Vol.01-05, no per-book id for this one
+I 78499 cv=- gcd=1704725 0.9 | Vol.07 "Deadpool Does Shakespeare" (2017, 113pp, judged #26-27 conf 0.8) — GCD100290/1704725 (116pp), title matches
+I 78500 cv=- gcd=1729116 0.9 | Vol.08 "'Till Death Do Us..." (2017, 132pp, judged #28-29 conf 0.65) — GCD100290/1729116 (140pp), title matches
+I 78501 cv=- gcd=1734617 0.9 | Vol.09 "Deadpool In Space" (2017, 108pp, judged #30-30 conf 0.8) — GCD100290/1734617 (116pp), title matches
+I 78502 cv=- gcd=1746674 0.9 | Vol.10 "Secret Empire" (2017, 136pp, judged #31-36 conf 0.9) — GCD100290/1746674 (140pp), title matches
+
+S 5149 cv=- gcd=162795 0.9 | GCD's line series 162795 "Deadpool by Skottie Young" (2018-2019 Marvel, 3-book collected edition) matches our three volumes exactly (3/3 files); ComicVine mints a volume per book instead of one line id (116246/120392/122486, see the I lines), not a single line id; per-file CV's pick (91096, the "Color Your Own" activity book) is wrong-cv-link
+F 5149 wrong-cv-link | per-file CV picked 91096 "Color Your Own Young Marvel by Skottie Young" (an unrelated activity book), not this collected line
+I 78503 cv=116246 gcd=- 0.9 | Vol.01 "Mercin' Hard For The Money" — CV 116246/issue696351, exact title match
+I 78504 cv=120392 gcd=- 0.9 | Vol.02 "Good Night" — CV 120392/issue714659, exact title match
+I 78505 cv=122486 gcd=- 0.9 | Vol.03 "Weasel Goes To Hell" — CV 122486/issue725262, exact title match
+
+S 5111 cv=21748 gcd=60236 0.9 | CV 21748 and GCD 60236 "Deadpool Classic" (2008-2019 Marvel, 23-book collected line) agree exactly with our 23 "Deadpool Classic" volumes; residue = 2 "Deadpool Classic Companion" volumes (CV81400/GCD123975, a separate reprint line collecting different material); the conflated-series flag names these two non-overlapping reprint lines, not a true run conflict
+N 5111 stale-flag | conflated-series names "Deadpool Classic" (23 books, own #1-23 numbering) and "Deadpool Classic Companion" (2 books, own separate numbering) sharing one Series — they reprint different, non-overlapping material under separate numbering, not incompatible ranges of one run
+I 78515 gcd=863461 0.9 | Vol.01 (252pp) — GCD 60236/863461 (268pp); cv=-
+I 78516 gcd=863462 0.9 | Vol.02 (247pp) — GCD 60236/863462 (260pp); cv=-
+I 78517 gcd=863463 0.9 | Vol.03 (270pp) — GCD 60236/863463 (284pp); cv=-
+I 78518 gcd=863464 0.9 | Vol.04 (271pp) — GCD 60236/863464 (300pp); cv=-
+I 78519 gcd=863465 0.9 | Vol.05 (256pp) — GCD 60236/863465 (276pp); cv=-
+I 78520 gcd=1098939 0.9 | Vol.06 (302pp) — GCD 60236/1098939 (316pp); cv=-
+I 78521 gcd=1098940 0.9 | Vol.07 (254pp) — GCD 60236/1098940 (276pp); cv=-
+I 78522 gcd=1098941 0.9 | Vol.08 (196pp) — GCD 60236/1098941 (200pp); cv=-
+I 78523 gcd=1170918 0.9 | Vol.09 (271pp) — GCD 60236/1170918 (276pp); cv=-
+I 78524 gcd=1340867 0.9 | Vol.10 (272pp) — GCD 60236/1340867 (276pp); cv=-
+I 78525 gcd=1370218 0.9 | Vol.11 "Merc With A Mouth" (367pp) — GCD 60236/1370218 (380pp), title matches; cv=-
+I 78526 gcd=1422493 0.9 | Vol.12 "Deadpool Corps" (481pp) — GCD 60236/1422493 (452pp), title matches; cv=-
+I 78527 gcd=1422494 0.9 | Vol.13 "Deadpool Team-Up" (439pp) — GCD 60236/1422494 (452pp), title matches; cv=-
+I 78528 gcd=1503738 0.9 | Vol.14 "Suicide Kings" (424pp) — GCD 60236/1503738 (396pp), title matches; cv=-
+I 78529 gcd=1540386 0.9 | Vol.15 "All The Rest" (351pp) — GCD 60236/1540386 (364pp), title matches; cv=-
+I 78530 gcd=1578429 0.9 | Vol.16 "Killogy" (265pp) — GCD 60236/1578429 (284pp), title matches; cv=-
+I 78531 gcd=1746281 0.9 | Vol.17 "Headcanon" (369pp) — GCD 60236/1746281 (388pp), title matches; cv=-
+I 78532 gcd=1722627 0.9 | Vol.18 "Deadpool vs. Marvel" (476pp) — GCD 60236/1722627 (492pp), title matches; cv=-
+I 78533 gcd=1737126 0.9 | Vol.19 "Make War, Not Love" (296pp) — GCD 60236/1737126 (332pp), title matches; cv=-
+I 78534 gcd=1769736 0.9 | Vol.20 "Ultimate Deadpool" (479pp) — GCD 60236/1769736 (508pp), title matches; cv=-
+I 78535 gcd=1776105 0.9 | Vol.21 "DvX" (361pp) — GCD 60236/1776105 (372pp), title matches; cv=-
+I 78536 gcd=1808318 0.9 | Vol.22 "Murder Most Fowl" (337pp) — GCD 60236/1808318 (348pp), title matches; cv=-
+I 78537 gcd=1928489 0.9 | Vol.23 "Mercs for Money" (406pp) — GCD 60236/1928489 (436pp), title matches; cv=-
+I 78513 cv=- gcd=1802362 0.9 | Deadpool Classic Companion Vol.01 (2015, 362pp) — GCD 123975/1802362 ([nn], 388pp); CV 81400 (2-book) is the per-line id, no per-book CV issue id probed
+I 78514 cv=- gcd=1802361 0.9 | Deadpool Classic Companion Vol.02 (2018, 469pp) — GCD 123975/1802361 (#2, 500pp); CV 81400 (2-book) is the per-line id
+
+S 5115 cv=- gcd=179386 0.9 | GCD's line series 179386 "Deadpool Epic Collection" (2021-?, 6 books) matches our two volumes; CV mints a volume per book (146072 "Mission Improbable", 151978 "Dead Reckoning", both exact title matches, see I lines) rather than one line id
+F 5115 merge-with=5116 | singleton/multi-book Epic Collection shelves sharing GCD 179386's line, per the Epic Collection shape
+I 78539 cv=146072 gcd=- 0.9 | Vol.02 "Mission Improbable" — CV 146072/issue955128, exact title match
+I 78541 cv=151978 gcd=- 0.9 | Vol.04 "Dead Reckoning" — CV 151978/issue999118, exact title match
+
+S 5116 cv=159642 gcd=179386 0.9 | CV 159642 "Deadpool Epic Collection: Johnny Handsome" (2024, issue1068854, exact title match) and GCD's line series 179386 agree — Epic Collection line shape
+F 5116 merge-with=5117 | same GCD 179386 line as S5115/S5117
+
+S 5117 cv=156021 gcd=179386 0.9 | CV 156021 "Deadpool Epic Collection: Drowning Man" (2024, issue1040075, exact title match) and GCD's line series 179386 agree
+F 5117 merge-with=5115 | same GCD 179386 line as S5115/S5116
+
+R 5080 | bucket folder holding fragments of unrelated eras: #900/#1000 legacy-numbered issues of the 2008-2012 ongoing (CV22955/GCD32043, see S96323), issue #17 a 2010 one-shot (GCD52109), "Deadpool by Kelly Thompson" (2023, its own collected line), and "The Ones With Deadpool" (2015, an anthology one-shot) — no single record spans the bucket
+F 5080 split-needed | #900/1000 = CV22955/GCD32043 (S96323's run); #17 = GCD52109 one-shot; Kelly Thompson trade and "Ones With Deadpool" have their own ids below
+I 78598 cv=478138 gcd=207018 0.95 | "The Ones With Deadpool" (2015, 123pp) — CV 79775/478138 and GCD 207018 exact title match
+I 78613 cv=984902 gcd=2507528 0.9 | "Deadpool by Kelly Thompson" (2023, 241pp, judged #1-10 conf 0.95) — CV 149631/984902 and GCD 197838/2507528 (260pp) "King Deadpool by Kelly Thompson" agree (title variant)
+
+S 533 cv=10925 gcd=11848 0.95 | CV 10925 and GCD 11848 "Agent X" (2002-2003 Marvel, 15 issues) agree exactly; our ladder 1-15 matches, ratio 2.00 is a duplicate rip (two folders of the same floppies), residue
+
+S 5088 cv=142334 gcd=185859 0.9 | CV 142334 and GCD 185859 "Deadpool: Bad Blood" (2022-2023 Marvel, 4-issue mini) agree; our ladder 1-4 matches; residue = a separate 2017 one-shot of the same title (GCD 114162, its own record), predating and distinct from this mini
+I 78585 cv=595686 gcd=114162 0.9 | the 2017 one-shot "Deadpool: Bad Blood" (108pp) — CV 101476/595686 and GCD 114162 (2017, exact title+year match) agree; a separate, earlier work from the 2022 mini
+
+S 102372 cv=59624 gcd=5003 0.95 | CV 59624 and GCD 5003 "Deadpool" (1994 Marvel, 4-issue limited series) agree exactly; our ladder 1-4 (duplicated rip, ratio 2.00) matches; per-file CV's pick of 6000 (1997 legacy) on all 8/8 files is a wrong-relaunch stamp, rejected
+
+S 5122 cv=64684 gcd=75234 0.9 | CV 64684 "Deadpool Kills Deadpool" (2013 Marvel, 4 issues, no CvVolume row — named from rip) and GCD 75234 (2013, "4 issue mini-series") agree exactly; our ladder 1-4 (duplicate rip, ratio 2.00) matches
+F 5122 needs-fetch cv=64684 | "Deadpool Kills Deadpool" 2013 Marvel, named from the local rip, no CvVolume row
+
+S 94585 cv=2569 gcd=2048 0.95 | CV 2569 and GCD 2048 "The Defenders" (1972-1986 Marvel, 152 issues) agree exactly; our ladder 1-91 (through 1981) sits inside; per-file GCD's pick (7145, the 2001 relaunch) is a round2-series mismatch, rejected
+F 94585 merge-with=64562 | same 1972-1986 Defenders ongoing (CV2569/GCD2048) as landed shelf S64562 "Defenders (1972)"
+
+S 94586 cv=6645 gcd=7145 0.95 | CV 6645 and GCD 7145 "Defenders" (2001-2002 Marvel, 12 issues) agree exactly; our ladder 1-12 matches; the stray per-file CV pick (2569, the 1972 legacy volume) on 1/12 files is a wrong-relaunch mismatch
+
+S 94588 cv=102109 gcd=114844 0.9 | CV 102109 and GCD 114844 "Defenders" (2017-2018 Marvel, 10-issue ongoing) is the run our two trades collect (Vol.01/02, GCD's own collected-edition twin 119221 on the I lines below); per-file CV's pick (2569, 1972 legacy) on both files is a wrong-relaunch mismatch
+I 78753 gcd=1766129 0.9 | Vol.01 "Diamonds Are Forever" — GCD 119221/1766129 (156pp, title matches); file 120pp; cv=-
+I 78754 gcd=1815887 0.9 | Vol.02 "Kingpins of New York" — GCD 119221/1815887 (140pp, exact page match); file 109pp; cv=-
+
+S 5306 cv=158646 gcd=106500 0.9 | CV 158646 "Defenders Epic Collection: Enter - The Headmen" (2024, issue1061549, exact title match) and GCD's line series 106500 "Defenders Epic Collection" (7 books) agree — Epic Collection line shape
+F 5306 merge-with=5307 | singleton Epic Collection shelves sharing GCD 106500's line, per the Epic Collection shape
+
+S 5307 cv=147058 gcd=106500 0.9 | CV 147058 "Defenders Epic Collection: The Day of the Defenders" (2022, issue962312, exact title match) and GCD's line series 106500 agree
+F 5307 merge-with=5306 | same GCD 106500 line as S5306
+
+S 5647 cv=4786 gcd=4448 0.9 | CV 4786 "Doctor Strange, Sorcerer Supreme Annual" (1975 Marvel, 4 issues) and GCD 4448 (1992-1994, 3 issues) agree; our Annual #2-4 sit inside (Annual #1 missing, a real gap, not residue)
+
+S 96492 cv=2676 gcd=2162 0.95 | CV 2676 and GCD 2162 "Doctor Strange" (1974-1987 Marvel, 81 issues) agree exactly; our ladder 1-81 (with Annual 1) matches on 81/81 and 77/81 files; residue = 4 files matched to the 1975 Newton Comics Australian reprint by per-file GCD, a foreign mismatch
+F 96492 merge-with=64590 | same 1974-1987 Doctor Strange ongoing (CV2676/GCD2162) as landed shelf S64590 "Doctor Strange (1974)"
+
+S 96493 cv=- gcd=13324 0.9 | GCD 13324 "Doctor Strange" (1999 Marvel, 4-issue limited series) matches our ladder 1-4 exactly; no ComicVine volume found for this mini (cv=-); per-file CV's pick (2676, the 1974 legacy volume) on all 4/4 files is a wrong-relaunch stamp, rejected
+F 96493 provider-missing | no ComicVine volume for this 1999 mini (cv=-)
+
+S 96494 cv=85094 gcd=92881 0.9 | CV 85094 and GCD 92881 "Doctor Strange" (2015-2018 Marvel, 37 issues) is the ongoing our 5 trades collect (#1-26 judged); GCD's collected-edition series 100622 (4 count, see I lines) names the trade line; per-file CV's pick (2676, 1974 legacy) on all 5/5 files is a wrong-relaunch stamp, rejected
+I 78982 gcd=1562783 0.9 | Vol.01 "The Way of the Weird" — GCD100622/1562783 (144pp), title matches; file 126pp; cv=-
+I 78983 gcd=1676294 0.9 | Vol.02 "The Last Days of Magic" — GCD100622/1676294 (176pp exact); file 162pp; cv=-
+I 78984 gcd=1676300 0.9 | Vol.03 "Blood In The Aether" — GCD100622/1676300 (144pp); file 144pp exact; cv=-
+I 78985 gcd=1735452 0.9 | Vol.04 "Mr. Misery" — GCD100622/1735452 (144pp, "Mr. Misery Premiere"); file 140pp; cv=-
+I 78986 cv=652628 gcd=- 0.9 | Vol.05 "Secret Empire" (2018, 140pp, judged #17-20 conf 0.82) — CV107646/652628 "Volume 5", exact ordinal match; not in GCD100622's 4-count collected line, no GCD row found
+
+S 5639 cv=95211 gcd=108564 0.9 | CV 95211 and GCD 108564 "Doctor Strange and the Sorcerers Supreme" (2016-2017 Marvel, 12 issues) agree; our floppy #1-6 plus the Vol.02 trade (judged #7-12) fit inside
+I 78993 cv=- gcd=1761031 0.9 | Vol.02 "Time After Time" (2017, 123pp, judged #7-12 conf 0.9) — GCD114314/1761031 "Time after Time" (140pp), exact title match; CV95211 caches only single-issue floppies, no collected-edition CV volume found
+
+S 96495 cv=148962 gcd=197924 0.9 | CV 148962 and GCD 197924 "Doctor Strange" (2023-2024 Marvel, 18 issues) agree exactly; our two "by Mark Waid" books (judged #1-20) sit inside; per-file GCD's picks (Panini Deutschland/UK foreign editions) are rejected
+F 96495 merge-with=96496 | same 2023-2024 ongoing (CV148962/GCD197924) as S96496, split by folder (Deluxe Editions subfolder vs Variant Covers subfolder)
+I 78994 cv=1036039 gcd=2589919 0.9 | Book.01 (2023, 256pp, judged #1-11 conf 0.97) — CV155525/1036039 "Volume 1" and GCD206999/2589919 (268pp) agree
+I 78995 cv=1065660 gcd=2649065 0.9 | Book.02 (2024, 365pp, judged #12-20 conf 0.92) — CV155525/1065660 "Volume 2" and GCD206999/2649065 (380pp) agree
+
+R 16888 | mostly clean: our Vol.01-03 trades (judged #1-12) collect part of the 2020-2022 main ongoing (CV125477/GCD156773, 18 issues); the flag names a real conflation — "Strange Academy: Finals" is a SEPARATE 6-issue mini (CV145695) sharing the Series with the main run, filed as this shelf's Vol.04, plus two more one-off items ("Year One"/"Year Two" recap OGNs and "The Deadly Field Trip" one-shot, each with their own record) — the true identity splits main-run trades from the Finals mini as co-equal, not mere residue
+F 16888 split-needed | main ongoing = CV125477/GCD156773 (Vol.01-03); "Strange Academy: Finals" = CV145695, a separate 6-issue mini (item 79978)
+I 79001 cv=149651 gcd=- 0.9 | "Year One" (2023, 298pp) — CV149651/issue985028, exact title match
+I 79002 cv=156395 gcd=- 0.9 | "Year Two" (2024, 280pp) — CV156395/issue1042428, exact title match
+I 79003 cv=828996 gcd=2442924 0.9 | Vol.01 "First Class" (2021, 152pp, judged #1-6 conf 0.8) — CV133905/828996 and GCD191043/2442924 (328pp), exact title match
+I 79004 cv=891003 gcd=- 0.9 | Vol.02 "Bright Side" (2021, 141pp, judged #7-12 conf 0.7) — CV139780/891003, exact title match; no GCD row found
+I 79005 cv=950076 gcd=- 0.9 | Vol.03 "Wish-Craft" (2022, 141pp) — CV145422/950076, exact title match; no GCD row found
+I 79978 cv=145695 gcd=- 0.9 | Vol.04 "Finals" (2023, 141pp) — CV145695 "Strange Academy: Finals" (2022 Marvel, 6-issue mini), a separate mini sharing this shelf's Series with the main run
+I 79982 cv=157150 gcd=- 0.9 | "The Deadly Field Trip" (2024, 119pp) — CV157150, exact title match
+
+S 5219 cv=139125 gcd=176414 0.9 | CV 139125 and GCD 176414 "Death of Doctor Strange" (2021-2022 Marvel, 5-issue mini) is the run; our Vol.01 trade collects it, and Vol.02 "...Companion" is a separate companion volume (GCD 182775/2378232, its own record)
+I 79006 cv=- gcd=2378233 0.9 | "Death of Doctor Strange" trade (2022, 143pp) — GCD182776/2378233 (148pp), title matches; collects the 5-issue mini named on the S line; no CV collected-edition volume found
+I 79007 cv=- gcd=2378232 0.9 | "...Companion" (2022, 227pp) — GCD 182775/2378232 ([nn], 236pp), exact title match
+
+S 96496 cv=148962 gcd=197924 0.9 | same 2023-2024 Marvel "Doctor Strange" ongoing as S96495 (CV148962/GCD197924, 18 issues); our files are mostly 1pp MikeNY76-Empire variant-cover packs (28/29, standard residue) plus one Vol.02 trade "The War-Hound of the Vishanti" (judged #6-10 conf 0.82); per-file CV's pick of 2676 (1974 legacy) on 19/29 files is a wrong-relaunch stamp, rejected
+F 96496 merge-with=96495 | same 2023-2024 ongoing (CV148962/GCD197924) as S96495
+N 79011 no-record | Vol.02 "The War-Hound of the Vishanti" (2024, 116pp, judged #6-10 conf 0.82) — probed "War-Hound of the Vishanti" on both legs, 0 hits; too new/small for the rip and dump, honest gap
+
+S 5630 cv=133481 gcd=108389 0.9 | CV 133481 "Doctor Strange Epic Collection: Alone Against Eternity" (2021, issue826677, exact title match) and GCD's line series 108389 "Doctor Strange Epic Collection" (11 books) agree — Epic Collection line shape
+F 5630 merge-with=5631 | singleton Epic Collection shelves sharing GCD 108389's line, per the Epic Collection shape
+
+S 5631 cv=144899 gcd=108389 0.9 | CV 144899 "Doctor Strange Epic Collection: Infinity War" (2022, issue945891, exact title match) and GCD's line series 108389 agree
+F 5631 merge-with=5632 | same GCD 108389 line as S5630/S5632
+
+S 5632 cv=138724 gcd=108389 0.9 | CV 138724 "Doctor Strange Epic Collection: The Vampiric Verses" (2021, issue883355, exact title match) and GCD's line series 108389 agree
+F 5632 merge-with=5630 | same GCD 108389 line as S5630/S5631

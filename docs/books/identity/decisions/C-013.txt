@@ -1,0 +1,217 @@
+# C-013 — DC Batman-family/Batwoman/Birds of Prey/Black.../Blue Beetle/Bombshells/Booster Gold/Captain Atom/
+# Catwoman/Challengers/Checkmate/Cyborg/DC one-shots+holiday+Pride/DC vs Vampires/DCeased/Damage/Deadman/
+# Deathstroke shelves. Recurring shapes: round2-folder stamps a wrong GCD one-shot on nearly every single-file
+# DC special (rejected every time it appears, per the ledger); the per-file CV matcher's wrong-relaunch trap
+# (legacy volume stamped by issue-number coincidence) hit almost every DC ongoing with a modern relaunch;
+# several trade-only shelves are the run wearing a collected-edition GCD/CV id that happens to equal our trade
+# count (matches-our-holdings trap), resolved via lookup.py against the true run id where the packet didn't
+# show one. lookup.py (local CV rip + GCD dump by name/year) was used throughout to recover ids the packet's
+# own candidate/dump blocks didn't surface.
+
+S 2259 cv=26065 gcd=3348 0.9 | CV 26065 "Batman: Son of the Demon" 1987 DC 1 issue (cached #1-1, ratio 1.00) matches our single 79pp file exactly; GCD carries TWIN 1987-1987 count-1 rows for this graphic novel (3348, 25742) — the twin-GCD-rows shape, capped at 0.9; the round2-folder per-file GCD stamp (113414, "Batman: Legacy") is rejected
+N 2259 twin GCD rows for this one-shot: 3348 and 25742, both "Batman: Son of the Demon" 1987-1987 DC count 1
+
+R 1928 | stored CV 11174 "Batman: Family" 2002 DC 8 issues (cached #1-4, ratio 0/8) is a DIFFERENT, unrelated 2002 mini by name coincidence; the four files are "Death of the Family" (2012-13) crossover trades collecting story from across the Batman line, not a single ongoing run — no spanning CV/GCD record for this trade tetralogy appears anywhere in the packet (CV 106850/89428 are single-issue reprint/essentials records, not the four-volume set); GCD dump's only "Batman: Family" hit (12109) is the same wrong 2002 series the flag warns about
+F 1928 wrong-cv-link | stored link 11174 is an unrelated 2002 8-issue mini; the open conflated-series flag is correct that Death of the Family trades do not belong in "Batman: Family"
+F 1928 provider-missing | no CV/GCD record for the "Death of the Family" trade set was found in this packet
+
+S 2241 cv=113855 gcd=130347 0.9 | dominant Knightquest run (2/3 files, items 62747-62748): CV 113855 and GCD 130347 (both "Batman: Knightquest: The Crusade" 2018 DC, count 2) agree exactly on our 2 trades; item 113973 ("Free Country: A Tale of the Children's Crusade", 2015 Vertigo one-shot, folder "Vertigo\The Children's Crusade (1993)") is residue — a different comic, misfiled by folder proximity
+F 2241 misfiled | item 113973 "Free Country" is Vertigo's 2015 one-shot sequel to Gaiman's 1993 "The Children's Crusade", not a Knightquest issue; the stored CV link (21255, the 1993 series itself) is wrong for this item too
+N 2241 stale-flag | the open conflated-series flag names "Knightquest volumes sit in the Children's Crusade Series", but the evidence is one dominant Knightquest run plus a single misfiled unrelated one-shot, not several co-equal runs numbering from #1
+I 113973 cv=501001 gcd=92604 0.9 | "Free Country: A Tale of the Children's Crusade" own record: CV volume 84761 issue 501001 (2015 DC) and GCD 92604 (2015-2015 DC, count 1) agree by name/year exactly
+
+S 1974 cv=53584 gcd=79127 0.9 | CV 53584 "Batman: Li'l Gotham" 2012 DC (cached #1-2, matching our 2 trades exactly) and GCD 79127 "Batman: Li'l Gotham" 2014-2014 DC Collected Edition count 2 agree on our 2 trades (Vol.01/02) exactly, matched by number on both files
+F 1974 needs-fetch cv=53584 | CV 53584 has no CvVolume row in cache — named from the local rip
+
+S 1979 cv=19706 gcd=92620 0.9 | dominant run (4/6 files, Vol.01-04 "No Man's Land" 2011-2014 trades): CV 19706 (cached #1-4, no CvVolume row — F needs-fetch) and GCD 92620 "Batman: No Man's Land" 2011-2012 DC collected edition count 4 agree exactly; residue = 2 files "Road to No Man's Land" Vol.01-02 (2015-2016), a different, prequel collected work (CV 85081 "Batman: Road To No Man's Land" 2015 DC count 2 matches those 2 files exactly; no GCD record found — GCD's per-file matcher instead mismatched them to the French series 161099 by page-rematch)
+F 1979 needs-fetch cv=19706 | CV 19706 has no CvVolume row in cache
+F 1979 misfiled | items 62761-62762 ("Road to No Man's Land" Vol.01-02) are DC's prequel collection, CV 85081 count 2 exact match, not part of the No Man's Land 4-volume trade series; no GCD leg found
+
+S 94561 cv=36950 gcd=53444 0.9 | our 6 trades (Vol.01-06) collect the 2011 New 52 Batwoman ongoing; CV 36950 "Batwoman" 2011 DC (folder-year match) and GCD 53444 "Batwoman" 2011-2015 DC count 42 (the run itself, found via dump lookup — not surfaced by the per-file matcher, which instead split the shelf across two GCD collected-edition rows, 66358 count 4 + 71298 count 6, that together equal our 6 trades)
+F 94561 merge-with=2359 | shelf 2359 (another batch) already links the same CV 36950 "Batwoman" 2011 volume — same comic
+N 94561 GCD collected-edition rows 66358 (4) and 71298 (6) together account for all 6 trades chronologically — not two different comics
+
+S 94562 cv=106110 gcd=118594 0.95 | CV 106110 "Batwoman" 2017 DC 3 issues and GCD 118594 "Batwoman" 2018-2019 DC 3 issues (found via lookup.py, not in the packet's own candidate list) agree exactly on our 3 trades ("The Many Arms of Death"/"Wonderland"/"Fall of the House of Kane"); the per-file CV stamp of 36950 (the 2011 legacy volume) on all 3 files is the wrong-relaunch trap
+F 94562 wrong-cv-link | per-file CV stamped the 2011 legacy volume (36950), not this 2017 Rebirth run
+N 94562 stale-flag | the open overlap-in-series flag treats "Many Arms of Death" (2017) and "Hydrology" (New 52) as conflated, but Hydrology's files live entirely on sibling shelf S94561 — this shelf holds only the 2017 Rebirth run's own three trades
+
+S 95486 cv=6498 gcd=6991 0.95 | CV 6498 and GCD 6991 (both "Birds of Prey" 1999-2009 DC, 127 issues) agree exactly; our floppy ladder 22-80,92-103 (71-72/75 files) sits inside the cached span; the two trades (63019 judged #1-11, 63020 judged #12-21) are the run's own trade collecting its earliest issues — costs nothing per the residue ruling
+F 95486 merge-with=2613 | shelf 2613 (another batch) already links the same CV 6498 "Birds of Prey" 1999 volume — same comic
+N 95486 item 63017 "Birds of Prey - Whitewater" (2022, 212pp) is a standalone graphic novel, not part of the 1999 ongoing; its own record was not resolved in this packet
+
+S 95488 cv=- gcd=61066 0.9 | our folder "Birds of Prey v3 (2011)" and GCD 61066 "Birds of Prey" 2011-2014 DC 35 issues agree; our judged trade range (#1-34 across Vol.01-05) fits the 35-issue ongoing; the per-file CV matcher stamped the legacy 1999 volume (6498) on 4/6 files (wrong-relaunch trap) and the collected-edition volume (52139, count 5 = our trade count exactly) on the other 2 — neither is the 2011 run's own CV id, which has no entry in our local rip
+F 95488 wrong-cv-link | per-file CV stamps (6498, 52139) are not the 2011 run's own volume
+F 95488 provider-missing | no local ComicVine rip entry for the 2011 Birds of Prey volume
+
+S 95489 cv=153328 gcd=203335 0.9 | dominant 2023 ongoing (61/63 files by GCD number match): CV 153328 "Birds of Prey" 2023 DC (16/63 files, the rest of the variant-cover pile mis-stamped to legacy 6498 by the per-file matcher) and GCD 203335 "Birds of Prey" 2023-2026 DC 28 issues agree on name/year; the Megadeath trade (63042, judged #1-6) is the run's own trade beside its issues, costing nothing; "Uncovered" one-shot (63991) is residue named separately
+N 95489 stale-flag | the open overlap-in-series flag describes "four separate runs each contributing a Vol.01", but the evidence is one continuous 2023-2026 ongoing (GCD 203335) plus its own Megadeath trade and Uncovered one-shot — no second numbered run is present
+F 95489 misfiled | item 63991 "Birds of Prey - Uncovered" (2024, 43pp) is a separate variant-cover one-shot artbook, not part of the ongoing's ladder; own record not resolved here
+
+S 11409 cv=1066 gcd=423 0.95 | CV 1066 and GCD 423 (both "The Marvel Family" 1945-1954 Fawcett, 89 issues, found via lookup.py) agree exactly; our file's "[Fawcett]" tag and c2c scan confirm the original, not the stored 2017 Gwandanaland PD-reprint line
+F 11409 wrong-cv-link | stored CV 113123 is Gwandanaland Comics' 2017 facsimile reprint imprint, not the 1945 Fawcett original
+
+S 2643 cv=143747 gcd=186215 0.9 | dominant 2022 ongoing (7/13 files: floppies #07-12 + trade Vol.01 "Theogony" collecting #1-6): CV 143747 (cached #1-12) and GCD 186215 "Black Adam" 2022-2023 DC limited series count 12 agree exactly; residue = 6 files from the unrelated 2007-2008 "Black Adam: The Dark Age" mini, folded in from the DC\#DC Events chronology folder
+F 2643 misfiled | items 17635-17640 ("Black_Adam_01-06 (of 6)", 2007-2008) are the separate "Black Adam: The Dark Age" mini under the #DC Events folder, not part of the 2022 run's ladder
+N 2643 "The Dark Age" mini's own record not fully resolved — CV candidates 19003 (2007) / 43703 (2008 printing)
+
+S 2664 cv=161310 gcd=216781 0.95 | CV 161310 and GCD 216781 (both "Black Canary: Best of the Best" 2025 DC, count 6) agree exactly; our #1-2 sit inside the cached span of a still-publishing 6-issue limited series — the shortfall is normal partial holdings, not residue
+
+S 95609 cv=161012 gcd=216780 0.95 | CV 161012 and GCD 216780 (both "Black Lightning" 2025 DC, count 5) agree exactly; our #1-2 sit inside the cached span of a recent 5-issue limited series
+
+S 3008 cv=19402 gcd=127 0.9 | our folder "00 Blue Beetle v1 (1939) (Fox)" #51: CV 19402 (1939 Fox, 59 issues) and GCD 127 (1940-1950 Fox, 40 issues, confirmed by an independent name+year lookup.py probe, not just the flagged round2-folder method) agree on the same Fox Blue Beetle; our #51 exceeds GCD's cached 40-issue count, most likely GCD undercounting a long Golden Age Fox run rather than a different comic
+F 3008 merge-with=94563 | shelf 94563 (another batch) already links the same CV 19402 "Blue Beetle" 1939 volume — same comic
+
+S 94564 cv=3595 gcd=3142 0.95 | CV 3595 and GCD 3142 (both "Blue Beetle" 1986 DC, 24 issues) agree exactly; our ladder 12-24 sits inside the span, matched on all 13/13 files by GCD; the per-file CV stamp of 19402 (1939 Fox) is the wrong-relaunch trap
+F 94564 wrong-cv-link | per-file CV stamped the 1939 Fox legacy volume
+F 94564 merge-with=95783 | same 1986 DC 24-issue run split across two sibling shelves (this = #12-24, S95783 = #1-11)
+
+S 95783 cv=3595 gcd=3142 0.95 | CV 3595 and GCD 3142 (both "Blue Beetle" 1986 DC, 24 issues) agree exactly on all 11/11 files, our ladder 1-11 sits inside the span
+F 95783 merge-with=94564 | same 1986 DC 24-issue run split across two sibling shelves (this = #1-11, S94564 = #12-24)
+
+S 94566 cv=42970 gcd=61071 0.9 | our trade "Vol.01 - Metamorphosis" collects the 2011 New 52 Blue Beetle ongoing (CV 42970 / GCD 61071, both count 17, 2011-2013 — found via lookup.py); per the trades-vs-run ruling the run wins over the 2-volume collected-edition record (CV 54022 / GCD 75387, count 2 = our TPB count exactly, the matches-our-holdings trap)
+F 94566 wrong-cv-link | per-file CV stamped the unrelated 1939 Fox volume (19402)
+
+S 94567 cv=94410 gcd=106850 0.9 | our trade "Vol.01 - The More Things Change" collects the 2016 Rebirth Blue Beetle ongoing (CV 94410 / GCD 106850, both count 18, 2016-2018 — found via lookup.py); per the trades-vs-run ruling the run wins over the 3-volume collected-edition record (CV 101382 / GCD 114006, count 3 = our trade count exactly, the matches-our-holdings trap)
+F 94567 wrong-cv-link | per-file CV stamped the unrelated 1939 Fox volume (19402)
+N 94567 stale-flag | the open overlap-in-series flag notes GCD "Metamorphosis" (75387, on sibling S94566) and "The More Things Change" (114006) both carry ranges starting at #1 — those are two DIFFERENT shelves' trades of two different runs, not two runs conflated on this one-file shelf
+F 94567 merge-with=95785 | shelf 95785 (another batch) already links the same CV 94410 "Blue Beetle" 2016 volume — same comic
+
+S 4508 cv=83493 gcd=91521 0.95 | CV 83493 "DC Comics Bombshells" 2015 DC (cached #1-100) matches our full 100-chapter digital ladder exactly (ratio 1.01, all 6 trades judged-fit); GCD 91521 (2015-2017, "was ongoing") corroborates on the issues it indexes and GCD's own collected-edition row 97961 (count 6) matches our 6 trades exactly; GCD's lower per-file issue count reflects print-vs-digital-chapter numbering, not a different comic
+N 4508 the open provider-disagrees flag (item 63420, LOCG vs GCD chapter-count mismatch) is the same digital/print numbering split, not a different comic
+
+S 3064 cv=103689 gcd=116551 0.9 | CV 103689 (no CvVolume row — F needs-fetch) cached #1-32 matches our full digital-chapter ladder exactly on all 35/35 files; GCD 116551 "Bombshells: United" 2017-2018 corroborates by name/year on 19/35 (print-issue numbering, the same digital/print split as the parent Bombshells run) and GCD's own collected-edition row 126282 matches our 3 trades exactly (count 3)
+F 3064 needs-fetch cv=103689 | no CvVolume row in cache
+
+S 3105 cv=123102 gcd=153071 0.95 | CV 123102 (issue 728885) and GCD 153071 "Booster Gold: The Big Fall" 2019-2019 DC count 1 agree exactly for this single trade; the per-file GCD stamp (3143, 1986 ongoing) is the flagged round2-folder error, rejected
+F 3105 wrong-cv-link | round2-folder stamped an unrelated 1986 ongoing
+
+S 94568 cv=3596 gcd=3143 1.0 | ComicInfo asserts Series "Booster Gold" Volume "1986" Count "25" on all 13 files; CV 3596 and GCD 3143 (both "Booster Gold" 1986-1988 DC, 25 issues) both agree exactly; our ladder 13-25 sits inside the span
+F 94568 wrong-cv-link | per-file CV stamped the 2007 volume (19025) by issue-number coincidence (wrong-relaunch trap)
+
+S 94569 cv=19025 gcd=36808 0.9 | our 6 trades collect the 2007 Booster Gold ongoing (CV 19025, 49 issues, matches folder "v2 (2007)"); GCD splits its collected-edition indexing into two chronological rows (36808 count 4 + 30784 count 2 = 6, together matching all 6 trades) rather than one; per the trades-vs-run ruling the ongoing's own id is the S line
+N 94569 GCD rows 36808 (4) and 30784 (2) together account for all 6 trades chronologically — not two different comics
+F 94569 merge-with=3101 | shelf 3101 (another batch) already links the same CV 19025 "Booster Gold" 2007 volume — same comic
+
+S 3513 cv=18298 gcd=17786 1.0 | ComicInfo asserts Series "Captain Atom: Armageddon" Count "9" on 10 files; CV 18298 and GCD 17786 (both "Captain Atom: Armageddon" 2005-2006 DC, 9 issues) agree exactly; our ladder 1-9 (34 files, ratio 3.78) sits inside the span — the duplicate rips (Glorith-Novus-HD, Kryptonia-DCP, Shadowcat-Empire, digital-Empire, a chronological-date-named copy) are re-rips of the same 9 issues, not residue
+
+S 3512 cv=42917 gcd=61073 0.9 | our 2 trades (judged #1-6, #7-12) collect the New 52 Captain Atom ongoing (CV 42917 / GCD 61073, both count 13, 2011-2012, matching folder "v3 (2011)" — found via lookup.py); per the trades-vs-run ruling the run wins over the 2-volume collected-edition record (CV 54369 / GCD 79446, count 2 = our trade count exactly, the matches-our-holdings trap)
+F 3512 wrong-cv-link | per-file CV stamped the 1987 legacy volume (3782) on one file
+
+S 64393 cv=4955 gcd=4634 0.9 | dominant 1993 Catwoman ongoing (CV 4955 / GCD 4634, both count 96); our ladder 1-2,25-94 (85/86 CV, 71/86 GCD files) sits inside the cached #0-94 span; the two "by Jim Balent" omnibus trades are the run's own reprint, costing nothing; residue = 6 files (17447-17452, "Catwoman V2 053-058") from the unrelated 2002 Catwoman v2 run and 4 files (61464-61467, "Catwoman 034-037" 2021-2022) from the unrelated 2018 Catwoman v5 run
+F 64393 misfiled | items 17447-17452 are 2002 Catwoman v2 #53-58 (GCD 7910, 2002-2010), not part of the 1993 run's ladder — see the open label-ambiguous flag on item 17447
+F 64393 misfiled | items 61464-61467 are 2018 Catwoman v5 #34-37 (GCD 126584), not part of the 1993 run's ladder
+
+S 96003 cv=7328 gcd=7910 0.9 | our 6 trades (judged #1-83, matching count 83 exactly) collect the 2002 Catwoman ongoing (CV 7328 / GCD 7910, both count 83, 2002-2010); per the trades-vs-run ruling the run wins over the 6-volume collected-edition record (GCD 74888, count 6 = our trade count exactly, the matches-our-holdings trap)
+F 96003 wrong-cv-link | per-file CV stamped the legacy 1993 volume (4955) on all 6 files (wrong-relaunch trap)
+
+S 96004 cv=42722 gcd=61074 0.9 | our 8 trades collect the New 52 Catwoman ongoing (CV 42722 / GCD 61074, both count 53, 2011-2016 — found via lookup.py); per the trades-vs-run ruling the run wins over the 8-volume collected-edition record (CV 94785 / GCD 74886, count 8 = our trade count exactly, the matches-our-holdings trap)
+F 96004 wrong-cv-link | per-file CV stamped the legacy 1993 volume (4955) on all 8 files (wrong-relaunch trap)
+F 96004 merge-with=3683 | shelf 3683 (another batch) already links the same CV 42722 "Catwoman" 2011 volume — same comic
+
+S 96005 cv=112028 gcd=126584 0.9 | dominant 2018 Catwoman ongoing (CV 112028 / GCD 126584 "ongoing series", count 81/87), matching 123/133 GCD files; the two trade groups ("Copycats"-era Vol.01-05 and "Dangerous Liaisons"-era Vol.01-04, incl. the 149934/gcd192078 collected-edition stamp on 4 files) are the run's own trades beside its issues, costing nothing; per-file CV matcher stamped the legacy 1993 volume (4955) on 129/133 files (wrong-relaunch trap)
+F 96005 wrong-cv-link | per-file CV stamped the legacy 1993 volume (4955) on most files
+
+S 3691 cv=127622 gcd=160321 0.95 | CV 127622 (issue 766104) and GCD 160321 (2020-2020, count 1) agree exactly for this one-shot; the round2-folder GCD stamp (108743, "Election Night") is rejected
+F 3691 wrong-cv-link | round2-folder stamped an unrelated one-shot
+
+S 3694 cv=34614 gcd=13550 0.95 | CV 34614 (issue 226592) and GCD 13550 (2002-2002, count 1) agree exactly for this one-shot; the round2-folder GCD stamp (108743, "Election Night") is rejected
+F 3694 wrong-cv-link | round2-folder stamped an unrelated one-shot
+
+S 96026 cv=1866 gcd=1293 0.95 | CV 1866 and GCD 1293 (both "Challengers of the Unknown" 1958, 87 issues) agree exactly; our floppies #74,82-87 sit inside the span; the Kirby omnibus trade is the run's own reprint, costing nothing
+
+S 96028 cv=5944 gcd=5732 0.95 | CV 5944 and GCD 5732 (both "Challengers of the Unknown" 1997-1998, 18 issues) agree exactly, matched on all 18/18 files by GCD
+F 96028 wrong-cv-link | per-file CV partially stamped the legacy 1958 volume (1866) on 10/18 files
+
+S 96030 cv=- gcd=217919 0.9 | our folder "v5 (2025)" and GCD 217919 "Challengers of the Unknown" 2025-2025 DC limited series (5 issues) agree on year/count; our #1-2 fits; no local ComicVine rip entry for the 2025 volume exists
+F 96030 wrong-cv-link | per-file CV stamped the legacy 1958 volume (1866)
+F 96030 provider-missing | no local CV rip entry for the 2025 volume
+
+S 96031 cv=18427 gcd=17693 0.9 | CV 18427 "Checkmate" 2006 DC 31 issues and GCD 17693 "Checkmate" 2006-2008 DC 31 issues (Was Ongoing) agree exactly; our judged trades ("Checkmate by Greg Rucka" Book 01/02) collect #1-31, the entire run, and floppies #26-31 sit inside it; per-file CV/GCD stamps (3986 legacy 1988, 161623 French edition) are rejected
+F 96031 wrong-cv-link | per-file CV/GCD stamps (3986, 161623) do not match this 2006 English run
+
+S 94757 cv=94266 gcd=106566 0.9 | CV 94266 and GCD 106566 (both "Cyborg" 2016-2018, count 23 — found via lookup.py) agree; our floppies #21-23 only fit a run reaching at least 23 issues, over the shorter 2015/12-issue volume (83480/90892) the per-file matcher stamped by issue-number coincidence; the 3 trades ("The Imitation of Life"/"Danger in Detroit"/"Singularity") collect the same 23-issue run's early arcs, matched by GCD's collected-edition row 113045 (count 3, our trade count exactly)
+N 94757 stale-flag | the open overlap-in-series flag treats "Unplugged" and "The Imitation of Life" as two different runs both starting at #1, but the evidence (a continuous 23-issue GCD ongoing reaching our own #21-23 floppies) shows one run whose early arc is titled "The Imitation of Life" in the trade, not a second series
+F 94757 wrong-cv-link | per-file CV stamped the shorter 2015 volume (83480) by issue-number coincidence
+
+S 10962 cv=23372 gcd=2985 1.0 | ComicInfo Web "140269" is a Marika-Empire rip's ComicVine ISSUE id, matching the stored CV 23372 issue 140269 exactly (the Marika-Empire 1.0 shape); GCD 2985 "The Losers Special" 1985-1985 DC count 1 independently agrees; the round2-folder GCD stamp (141, "Batman" 715 issues) is rejected
+F 10962 wrong-cv-link | round2-folder stamped an unrelated Batman ongoing
+
+S 4655 cv=132461 gcd=167360 0.95 | CV 132461 (issue 820471) and GCD 167360 (2021-2021, count 1) agree exactly for this one-shot; the round2-folder GCD stamp (33152, "DCU Holiday Special") is rejected
+F 4655 wrong-cv-link | round2-folder stamped an unrelated holiday one-shot
+
+S 20243 cv=140427 gcd=179195 0.95 | CV 140427 (issue 898185) and GCD 179195 ("'Tis the Season to Be Freezin'" 2022-2022, count 1) agree exactly for this one-shot; the round2-folder GCD stamp (33152) is rejected
+F 20243 wrong-cv-link | round2-folder stamped an unrelated holiday one-shot
+
+S 4677 cv=143037 gcd=6150 0.95 | CV 143037 (issue 175629) and GCD 6150 (1999-1999, count 1) agree exactly for this one-shot; the round2-folder GCD stamp (5734, "DC Universe Holiday Bash", the PRIOR year's one-shot) is rejected
+F 4677 wrong-cv-link | round2-folder stamped the previous year's one-shot
+
+S 4661 cv=131092 gcd=164958 0.95 | CV 131092 (issue 809832) and GCD 164958 (2020-2020, count 1) agree exactly for this one-shot; the round2-folder GCD stamp (131198, "Cursed Comics Cavalcade") is rejected
+F 4661 wrong-cv-link | round2-folder stamped an unrelated anthology one-shot
+
+R 4675 | three different year-specific one-shots share this shelf, the Archie-holiday-annual shape, no spanning record: 2008 (item 64034), 2009 (item 64035), 2010 (item 64036)
+F 4675 split-needed | see R clause and I lines
+I 64034 cv=23491 gcd=32279 0.95 | 2008 "DCU Halloween Special": CV issue 140890, GCD 32279 count 1 agree exactly
+I 64035 cv=177713 gcd=39999 0.95 | 2009 "DCU Halloween Special '09": CV volume 28830 issue 177713, GCD 39999 count 1 agree exactly
+I 64036 cv=239203 gcd=52929 0.95 | 2010 "DCU Halloween Special 2010": CV volume 36257 issue 239203, GCD 52929 count 1 agree exactly
+
+S 4561 cv=110505 gcd=- 0.9 | CV 110505 "DC Nation" 2018 DC (cached #0-6, 7 issues) matches our anthology floppies #0-6 (ratio 1.29); no clean GCD anthology-series row was found for this title/year in the packet (per-file only partially matched, 1 file each, to two different one-off entries) — gcd=-; residue = 2 files of "DC Nation Presents DC: Future State" (2021), a different promotional one-shot line
+F 4561 provider-missing | no GCD row for "DC Nation" 2018 matching our #0-6 ladder was found in this packet
+F 4561 misfiled | items 64012/64064 ("DC Nation Presents DC Future State", 2021, one a duplicate "(F)" rip) are a separate promotional one-shot, not part of the 2018 anthology's ladder
+
+S 4505 cv=160186 gcd=215452 1.0 | ComicInfo Web "1072173" (a Marika-Empire rip) is a ComicVine ISSUE id under stored volume 160186 (the Marika-Empire 1.0 shape); GCD 215452 "DC All In Special" 2024-2024 DC one-shot count 1 independently agrees on 5/6 files; our 6 files (1 base + 5 variant covers) are all #1
+
+S 4648 cv=160199 gcd=215453 0.95 | CV 160199 (issue 1072205) and GCD 215453 (2024-2024, count 1) agree exactly on all 3/3 files (1 base + 2 variant covers, all #1)
+
+S 4569 cv=149935 gcd=184234 0.95 | CV 149935 (issue 986264) and GCD 184234 (2022-2022, count 1) agree exactly for this one-shot; the round2-folder GCD stamp (212622, "A Celebration of Rachel Pollack", an unrelated later one-shot) is rejected
+F 4569 wrong-cv-link | round2-folder stamped an unrelated 2024 one-shot
+
+S 4565 cv=156491 gcd=208356 0.9 | CV candidate 156491 (issue 1042818) and GCD 208356 (2024-2024, count 1, found via lookup.py) agree exactly by name/year for this one-shot (4 files, all #1: base + 3 variants); the round2-folder GCD stamp (212822, "DC Pride: Uncovered" ×3) is rejected
+F 4565 wrong-cv-link | round2-folder stamped an unrelated "DC Pride: Uncovered" one-shot on 3/4 files
+
+R 4568 | six different DC Pride comics share this generic shelf, the Archie-holiday-annual shape, no spanning record: the 2021 one-shot (item 64118 variant), 2022 (items 64106/64119), 2023 (items 64107/64120), 2024 (items 64108/64121-64124), and two themed anthology trades "Better Together" (item 64099) and "Love and Justice" (item 64100)
+F 4568 split-needed | see R clause and I lines; six distinct one-shots/trades filed under one generic "DC Pride" shelf name
+I 64118 cv=136747 gcd=173015 0.9 | 2021 DC Pride one-shot (variant cover held): CV 136747, GCD 173015, count 1, agree by name/year
+I 64106 cv=143432 gcd=s185803 0.9 | 2022 DC Pride 001: CV 143432, GCD series 185803 "DC Pride 2022" 2022-2022 count 1, agree by name/year
+I 64107 cv=150683 gcd=s200814 0.9 | 2023 DC Pride 001: CV 150683, GCD series 200814 "DC Pride 2023" 2023-2023 count 1, agree by name/year
+I 64108 cv=158286 gcd=212435 0.9 | 2024 DC Pride 001: CV 158286, GCD 212435 "DC Pride 2024" 2024-2024 count 1 (found via lookup.py), agree by name/year
+I 64099 cv=- gcd=212481 0.9 | "DC Pride: Better Together" (2024) trade: GCD 212481 count 1 (found via lookup.py); no local CV entry
+I 64100 cv=- gcd=212323 0.9 | "DC Pride: Love and Justice" (2024) trade: GCD 212323 count 1 (found via lookup.py); no local CV entry
+
+S 4576 cv=158463 gcd=212822 0.95 | CV 158463 and GCD 212822 (both "DC Pride: Uncovered" 2024-2024, count 1) agree exactly on all 7/7 files (1 base + 6 variant covers, all #1)
+
+S 4606 cv=105616 gcd=117983 0.95 | CV 105616 (issue 633038) and GCD 117983 (2017-2017, count 1) agree exactly for this one-shot; the round2-folder GCD stamp (103606, generic "DC Super Hero Girls" graphic-novel series) is rejected
+F 4606 wrong-cv-link | round2-folder stamped the generic graphic-novel series
+
+S 4609 cv=121375 gcd=151384 0.95 | CV 121375 (issue 719297) and GCD 151384 (2019-2019, count 1) agree exactly for this one-shot; the round2-folder GCD stamp (103606) is rejected
+F 4609 wrong-cv-link | round2-folder stamped the generic graphic-novel series
+
+R 4596 | two separate 12-chapter digital-first minis share this shelf, each numbered 001-012 independently: "Past Times at Super Hero High" (2016, CV 94694, files dated 2016-2017) and "Out of the Bottle" (2017, CV 100719, files dated 2017) — both found via lookup.py; GCD indexes no per-chapter row for either (only a count-1 2018 TPB stub, 127297, and a generic 4-count graphic-novel series, 103606)
+F 4596 split-needed | see R clause
+F 4596 provider-missing | GCD indexes no per-chapter row for either digital-first mini
+N 4596 cv=94694 gcd=- | "Past Times at Super Hero High" run (12 chapters, 2016-2017)
+N 4596 cv=100719 gcd=- | "Out of the Bottle" run (12 chapters, 2017)
+
+S 4631 cv=159245 gcd=214135 0.9 | dominant "DC vs. Vampires: World War V" limited series (CV 159245 / GCD 214135, both count 12, 2024-2025) matches 19/23 files (6 floppies + 13 variant covers); the per-file CV stamp of 139800 (the unrelated original 2021 mini) on all 23 files is a title-wide stamp; residue = "All-Out War" (2022-2023 miniseries + trade), "Hunters" (2022 one-shot), and the base Vol.01/02 trades (the original 2021 mini's own collected editions, GCD 189801 count 2 matches those 2 trades exactly) — three further distinct comics in the franchise
+F 4631 wrong-cv-link | per-file CV stamped 139800 (the original 2021 mini) across all 23 files including the unrelated World War V ones
+F 4631 misfiled | items 64206/64207/65972 ("All-Out War" parts + "Hunters") and 64208/64209 (base Vol.01/02 trades of the original 2021 mini) are three further distinct comics sharing the franchise shelf, not World War V
+N 4631 base trades (64208/64209) = the original 2021 "DC vs. Vampires" mini's own collected editions, CV 139800 / GCD 189801 (count 2, matches exactly)
+
+S 4684 cv=144434 gcd=187858 0.9 | dominant "War of the Undead Gods" limited series (CV 144434 / GCD 187858, both count 8, 2022-2023) matches our 8 floppies "01-08 (of 08)" exactly; residue = 2 trades of the earlier, unrelated 2019 "DCeased" mini (CV 118648 / GCD 144592, both count 6) — a different comic in the same franchise
+F 4684 misfiled | items 64213/65974 (base "DCeased" trade + its "Deluxe Edition") are the earlier 2019 6-issue mini's own collected editions, not part of the War of the Undead Gods ladder
+N 4684 the "DCeased" 2019 mini: cv=118648 gcd=144592 (both count 6) — the base trade and its Deluxe Edition are two editions of the same 6-issue mini, costing nothing between themselves
+
+S 96237 cv=107941 gcd=120158 0.9 | CV 107941 and GCD 120158 (both "Damage" 2018-2019 DC, count 16) agree exactly; our floppies #13-16 sit inside the span and the 2 trades (judged #1-6, #7-12) collect its earlier issues — the run's own trades beside its issues; per-file CV matcher stamped the legacy 1994 volume (5242) instead
+F 96237 wrong-cv-link | per-file CV stamped the unrelated 1994 volume across all 7 files
+
+S 94578 cv=3443 gcd=2976 1.0 | ComicInfo asserts Series "Deadman" Volume "1985" on all 7 files; CV 3443 and GCD 2976 (both "Deadman" 1985, count 7 — found via lookup.py) agree exactly; our complete ladder #1-7 matches the full 7-issue limited series
+F 94578 wrong-cv-link | per-file CV stamped the 2006 volume (18118) by issue-number coincidence (wrong-relaunch trap)
+
+S 5271 cv=139232 gcd=176363 0.9 | CV 139232 and GCD 176363 (both "Deathstroke Inc." 2021-2023 DC, count 15) agree exactly; our floppies #8-9 sit inside the span and the 2 trades (judged #1-9, #10-15) collect the whole run — the run's own trades beside its issues
+
+S 94581 cv=- gcd=15128 0.9 | our folder "Deathstroke v1 (1991)" is one continuously-numbered run that GCD splits by title change into two era rows: "Deathstroke, the Terminator" 1991-1994 (GCD 10465, found via lookup.py, covering annuals #1-4 and floppies #35-46) and "Deathstroke" 1995-1996 (GCD 15128, covering floppies #47-60, matched 13/30 files by number); per the publisher/title-change-mid-stream convention the majority-matched era (15128) carries the S line, with the earlier era named; no local ComicVine rip entry exists for either era
+N 94581 earlier era = GCD 10465 "Deathstroke, the Terminator" 1991-1994 DC 40 issues, covering our annuals #1-4 and floppies #35-46
+F 94581 provider-missing | no local CV rip entry for either era of this run
+
+S 5272 cv=- gcd=88153 0.9 | GCD 88153 "Deathstroke the Terminator" 2015-2019 DC collected edition (count 5) matches our 5 trades exactly, spanning the underlying 2014-2016 Higgins run (CV 77678/GCD 83897, #1-20 — found via lookup.py) and continuing into the 2016 Priest run (no local CV/GCD id found) as one continuous trade line; residue = floppy #13 "The Powers That Be", which belongs to the UNRELATED 1991 run identified on sibling shelf S94581 (GCD 10465), not this modern trade line
+F 5272 misfiled | item 15603 ("07 Deathstroke the Terminator 13 The Powers That Be", 1991-era) belongs to the 1991 run on S94581 (GCD 10465), not these modern trades
+N 5272 underlying runs collected by these trades: the 2014-2016 Higgins run (CV 77678/GCD 83897, #1-20) and the 2016 Priest run continuing to #34 (no local CV/GCD id found for the later chapters)
