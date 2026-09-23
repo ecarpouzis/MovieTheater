@@ -6,8 +6,10 @@ exe, never open a book archive, and never touch another batch's files.
 
 Read `F:\Work\MovieTheater\docs\books\identity\READER_BRIEF.md` in full first — it is the whole contract. Two
 sections are the ones you live in: **"The lines you write"** (the `I`, `C` and `N` grammar, the several-`C`-per-
-book rule, and the paragraph on `X-` batches) and the **rulings** on books getting their own line. Do not read
-anything else before starting.
+book rule, and the paragraph on `X-` batches) and the **rulings** on books getting their own line. Then read the
+`## Conventions for this batch` block at the top of each batch file — the conventions-ledger entries whose tags
+match that batch's shelves. **Do not open `LEDGER.md` whole**; `grep` it for a publisher or folder word if a
+shelf needs a convention the block lacks. Do not read anything else before starting.
 
 Your batches: {{BATCHES}} — each is `F:\Work\MovieTheater\docs\books\identity\batches\<name>.txt` (the packets)
 and `<name>.ids`, which here holds **ITEM ids: books, not shelves**.
@@ -22,6 +24,9 @@ per book, and there are only two questions:
    volume's ISSUE ids (an `I` wants the issue, never the volume); `gcd issues:` lists the GCD series' issue rows
    with page counts and ISBNs — our rips match a trade's row within ±10pp, and an EAN-13 on the file that equals
    a row's ISBN or UPC is a 1.0. `linked …` shows what v1 already matched, which is evidence, not an answer.
+   `gcd notes:` (under the pool) and `gcd notes <id>` / `gcd_reprint <id>` (under a book) are GCD's own statement
+   of what that trade collects — usually the `C` range outright; `⚠ RANGE CONTRADICTED` flags a judged range
+   GCD's note disagrees with (read both, then write the `C` you can defend).
 2. **What does it collect, and of which run?** → a `C` line, required whenever the range counts in a run that is
    NOT the shelf's own identity, and one line per (leg, run): a trade of two minis and every omnibus gets
    several, each with the range in THAT run's numbering. `C OWED` on a book marks exactly the gap this pass closes — a judged range on a collected-line
@@ -41,13 +46,14 @@ backslashes), run `python F:\Work\MovieTheater\docs\books\identity\tools\check_i
 prints 0 failing, then the next batch.
 
 Local lookups when the packet's pool does not hold the answer:
-`python lookup.py "<name>" [--year YYYY] [--contains]` and `python lookup.py --issues <volumeId>` from
-`docs\books\identity\tools`. The web is closed (comics.org, comicvine.gamespot.com and leagueofcomicgeeks.com
+`python lookup.py "<name>" [--year YYYY] [--contains]`, `python lookup.py --issues <volumeId>` and
+`python lookup.py --collects <gcdIssueId>` from `docs\books\identity\tools` — or put them all in a file, one per
+line, and run `python lookup.py --batch <file>` once (the indexes load once, not per spelling). The web is closed (comics.org, comicvine.gamespot.com and leagueofcomicgeeks.com
 all 403 the fetch tool) — do not try.
 
 ## Report back (≤ 25 lines)
 
-Per batch `{books, I by confidence, C, no-record, N}`; per-book conventions learned (one line each — they go
-into the brief's ledger); systemic findings (a shelf whose `S` looks wrong, a provider pool that misled, a
+Per batch `{books, I by confidence, C, no-record, N}`; per-book conventions learned (one line each, naming the
+publisher or folder shape — the lead adds them to LEDGER.md with tags); systemic findings (a shelf whose `S` looks wrong, a provider pool that misled, a
 packet block that was empty when it should not have been); any instruction-vs-code conflict presented, not
 resolved. If a Stop hook repeats a finding, answer once and end.

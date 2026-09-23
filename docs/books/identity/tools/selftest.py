@@ -608,6 +608,149 @@ else:
     check("] isbn " in r.stdout and "SeriesKeyLink rows      : 0" in r.stdout,
           "X-900: apply lands its item links and touches no shelf", r.stdout[-700:])
 
+# ── part 7: the ledger moved out of the brief, and nothing was lost (TOOLS_TODO 20) ─────────────────
+# The brief as it stood BEFORE the move is read back out of git at the last commit that carried the ledger,
+# re-cut by the same parser the migration used, and compared entry for entry with LEDGER.md: same count,
+# same order, the same text byte for byte. Then every entry must be REACHABLE — carry a tag some shelf can
+# produce and match a batch carrying that tag — or be a ruling the brief now carries verbatim.
+import ledger
+
+print("\nthe conventions ledger — moved, tagged, every entry reachable")
+PRE_MOVE_COMMIT = "68c2f5ad"
+entries = ledger.load()
+try:
+    old = subprocess.run(["git", "-C", idbase.ROOT, "show", f"{PRE_MOVE_COMMIT}:docs/books/identity/READER_BRIEF.md"],
+                         capture_output=True, text=True, encoding="utf-8", errors="replace")
+    old_text = old.stdout if old.returncode == 0 else None
+except OSError:
+    old_text = None
+if old_text is None:
+    check(False, f"the pre-move brief is readable from git ({PRE_MOVE_COMMIT})", "git show failed")
+else:
+    before = ledger.parse_brief_ledger(old_text)
+    check(len(before) == len(entries) and len(before) > 300,
+          f"LEDGER.md holds every entry the brief held ({len(before)} before, {len(entries)} after)")
+    changed = [k for k, (a, b) in enumerate(zip(before, entries), 1) if a != b["text"]]
+    check(not changed, "every entry's text is verbatim, in order", f"differs at L-{changed[:5]}")
+brief = open(ledger.BRIEF, encoding="utf-8").read()
+check("## Conventions ledger" not in brief and len(brief.encode("utf-8")) < 20000,
+      f"the brief no longer carries the ledger ({len(brief.encode('utf-8')):,} bytes)")
+vocab = ledger.vocabulary()
+untagged = [e["id"] for e in entries if not e["tags"]]
+check(not untagged, "every entry carries at least one tag", str(untagged[:5]))
+bad_tags = sorted({t for e in entries for t in e["tags"] if t not in vocab and t != "ruling"})
+check(not bad_tags, "every tag is one a shelf or a batch kind can produce", str(bad_tags[:8]))
+unreachable = []
+for e in entries:
+    if "ruling" in e["tags"]:
+        if e["text"] not in brief:
+            unreachable.append(e["id"] + " (ruling not in the brief)")
+        continue
+    why = ledger.unreachable_reason(e)
+    if why:
+        unreachable.append(f"{e['id']} ({why})")
+check(not unreachable, "every entry is reachable — some shelf could match it, or it is a ruling the brief "
+                       "carries verbatim", str(unreachable[:6]))
+
+
+def _m(tags, text, stags, hay):
+    return ledger.match_shelf({"id": "L-000", "tags": set(tags), "text": text}, set(stags), hay.lower())
+
+
+BATMAN = "- The per-file matcher stamps Batman (1940) across every modern Batman relaunch shelf."
+check(_m({"pub:dc", "sig:legacy-stamp"}, BATMAN, {"pub:dc"}, "dc\\batman (2016) | batman") and
+      not _m({"pub:dc", "sig:legacy-stamp"}, BATMAN, {"pub:dc"}, "vertigo\\sandman (1989) | the sandman") and
+      not _m({"pub:dc", "sig:legacy-stamp"}, BATMAN, {"pub:image", "sig:legacy-stamp"}, "image\\batman | batman"),
+      "a big-house entry needs its house AND a keyword of its own on the shelf (Batman, not Sandman)")
+check(_m({"pub:dynamite", "sig:trade-link"}, "- Dynamite: the count-1 record a year after every mini.",
+         {"pub:dynamite", "sig:trade-link"}, "dynamite\\foo (2012)") and
+      not _m({"pub:dynamite", "sig:trade-link"}, "- Dynamite: the count-1 record a year after every mini.",
+             {"pub:dynamite", "sig:probe"}, "dynamite\\foo (2012)"),
+      "a house-wide lesson about one signal needs that signal (a near-universal one does not count)")
+check(_m({"pub:marvel", "folder:variant-covers"}, "x", {"pub:marvel", "folder:variant-covers"}, "") and
+      not _m({"pub:marvel", "folder:variant-covers"}, "x", {"pub:marvel"}, ""),
+      "a publisher + folder-shape entry needs both")
+check(_m({"pub:ac"}, "- AC Comics: folder shape", {"pub:ac"}, "ac comics\\x"),
+      "a small house matches on the house alone")
+check(_m({"sig:round2"}, "x", {"sig:round2"}, "") and not _m({"ruling", "sig:round2"}, "x", {"sig:round2"}, "")
+      and not _m({"tier:A", "pass:item"}, "x", {"tier:A", "pass:item"}, ""),
+      "a topic entry matches its signal; a ruling is never re-attached; tier:/pass: alone never qualify")
+_tagger = ledger.ShelfTagger(ev)
+blk = ledger.block_for(ev, [midsize], "A", tagger=_tagger, entries=entries)
+check(blk[0].startswith("## Conventions for this batch") and any(l.startswith("[L-") for l in blk),
+      f"a batch block for S{midsize} opens the file and carries tagged entries", blk[0][:120])
+_big = [s for s in ev.shelves if ev.series[s]["name"] and _tagger.tags(s) & {"pub:marvel", "pub:dc"}][:150]
+blk = ledger.block_for(ev, _big, "A", tagger=_tagger, entries=entries)
+_shown = sum(1 for l in blk if l.startswith("[L-"))
+_bytes = len("\n".join(blk).split("\n+")[0].encode("utf-8"))
+check(_shown <= ledger.CAP_ENTRIES and _bytes <= ledger.CAP_BYTES + 1500 and any(l.startswith("+") for l in blk),
+      f"a 150-shelf DC/Marvel block is capped ({_shown} entries, {_bytes:,} bytes) and names the rest at its foot")
+_body = "== S1 x\n   files: a\n\n== S2 y\n"
+_text = "\n".join(blk) + "\n" + _body
+check(ledger.split_block(_text)[1] == _body, "split_block hands back the packet body byte for byte")
+
+# ── part 8: GCD's own "Collects …" notes (TOOLS_TODO 18 + 21) ──────────────────────────────────────────
+import gcdnotes
+
+print("\nGCD notes — the parser and the contradiction shapes")
+p = gcdnotes.parse_notes("Collects Batman / Superman (DC, 2019 series) #7-15 and Batman / Superman Annual "
+                         "(DC, 2020 series) #1.\n\nSecond printing available #2.")
+check([e["ranges"] for e in p] == [[(7.0, 15.0)], [(1.0, 1.0)]],
+      "two series, two ranges; the printing paragraph is not read", str(p))
+check(gcdnotes.parse_notes("Collects [gcd_link_series](3201) #1-5.")[0]["sid"] == 3201,
+      "a linked series id is carried")
+p1 = gcdnotes.parse_notes("Collects Bloodshot (Valiant, 2019 series) #1-6")
+check(gcdnotes.contradiction((1, 6), p1) is None, "a judged range the notes state fits")
+check((gcdnotes.contradiction((1, 4), p1) or ("",))[0] == "count", "a shorter judged range is a COUNT contradiction")
+check((gcdnotes.contradiction((103, 108), p1) or ("",))[0] == "offset",
+      "the same count in other numbers is an OFFSET, not a count")
+check(gcdnotes.contradiction((103, 108), p1, runs=[(1, 6)]) is None,
+      "an offset the book's run row already states is answered")
+
+# ── part 9: lookup --batch, next_batch --out, triage_09 chunks (TOOLS_TODO 22 / 20 / 23) ──────────────
+print("\nthe new drivers — one call for many lookups, emission that emits nothing, a chunked triage")
+qf = os.path.join(OUT, "lookup-batch.txt")
+with open(qf, "w", encoding="utf-8") as f:
+    f.write('# two spellings and an issue list\n"Gen 13" --year 1994\n"Heavy Metal Magazine"\n--collects 2213270\n')
+r = subprocess.run([sys.executable, os.path.join(idbase.HERE, "lookup.py"), "--batch", qf],
+                   capture_output=True, text=True, encoding="utf-8", errors="replace")
+check(r.stdout.count(">>> ") == 3 and "3 queries" in r.stdout, "lookup --batch answers every query under its own head",
+      r.stdout[-300:])
+import hashlib
+
+
+def _snapshot():
+    """state.json's hash and the batches/ listing (name, size) — what a real emission changes."""
+    h = hashlib.sha256(open(idbase.STATE, "rb").read()).hexdigest()
+    return h, sorted((f, os.path.getsize(os.path.join(idbase.BATCHES, f))) for f in os.listdir(idbase.BATCHES))
+
+
+# A `--help` probe once emitted the real batch A-035 (the script read every unknown flag as "emit tier A").
+# Each of these must write NOTHING to batches/ or state.json.
+before = _snapshot()
+for argv, want in ((["--help"], "Hand the reader"), ([], "name a mode"), (["--bogus"], "unknown option"),
+                   (["--tier", "A", "--dry-run"], "'tier': 'A'")):
+    r = subprocess.run([sys.executable, os.path.join(idbase.HERE, "next_batch.py")] + argv,
+                       capture_output=True, text=True, encoding="utf-8", errors="replace")
+    after = _snapshot()
+    check(after == before and want in (r.stdout + r.stderr),
+          f"next_batch {' '.join(argv) or '(bare)'}: says so and leaves state.json + batches/ untouched",
+          (r.stdout + r.stderr)[-300:])
+state_before = open(idbase.STATE, "rb").read()
+outdir = os.path.join(OUT, "emit")
+r = subprocess.run([sys.executable, os.path.join(idbase.HERE, "next_batch.py"), "--revisit", str(midsize),
+                    "--out", outdir], capture_output=True, text=True, encoding="utf-8", errors="replace")
+emitted = [f for f in os.listdir(outdir) if f.endswith(".txt")] if os.path.isdir(outdir) else []
+check(open(idbase.STATE, "rb").read() == state_before and emitted,
+      "next_batch --out writes the batch into the scratch dir and leaves state.json alone", r.stdout[-300:])
+if emitted:
+    head = open(os.path.join(outdir, emitted[0]), encoding="utf-8").readline()
+    check(head.startswith("## Conventions for this batch"), "an emitted batch opens with its conventions block", head)
+r = subprocess.run([sys.executable, os.path.join(idbase.HERE, "triage_09.py"), "--limit", "40"],
+                   capture_output=True, text=True, encoding="utf-8", errors="replace")
+check("'processed': 40" in r.stdout and "'nextCursor'" in r.stdout and "'remaining'" in r.stdout,
+      "triage_09 does a bounded chunk and prints {processed, remaining, nextCursor, counts}", r.stdout[-400:])
+
 print(f"\n{len(failures)} failure(s)")
 if not KEEP:
     print(f"(files kept in {OUT} — inspect them, they are the worked examples)")

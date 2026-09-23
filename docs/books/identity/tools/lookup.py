@@ -2,68 +2,144 @@
 probed with a spelling of YOUR choosing, exact first and then as a substring.
 
     python lookup.py "Battle Action" [--year 1977] [--contains]
+    python lookup.py --issues <cvVolumeId>          the issue ids / numbers of one CV volume
+    python lookup.py --collects <gcdIssueId>        what GCD says a trade collects (notes + gcd_reprint)
+    python lookup.py --batch <file>                 many of the above in one call, one query per line
 
 Exact = the normalised name matches (the packet's own rule). --contains = the normalised name CONTAINS the
 probe, capped at 25 hits per source, sorted by year. --year keeps hits within ±1 of the year.
 This is a lookup whose results you read; it decides nothing.
+
+`--batch` (TOOLS_TODO 22) exists because the indexes take a few seconds to load and a reader chasing five
+spellings of one title paid that, and a tool round-trip, five times. A batch file holds one query per line in
+exactly the shape of the command line (`"Gen 13" --year 1994 --contains`, `--issues 4050`, `--collects 2213270`);
+blank lines and `#` comments are skipped, and every answer is headed by the query that produced it.
 """
+import os
+import shlex
 import sys
+
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+except Exception:
+    pass
 
 from idbase import Evidence, norm_name
 from identity_packet import Ctx
+import gcdnotes
 
-args = [a for a in sys.argv[1:] if not a.startswith("--")]
-if not args:
-    raise SystemExit(__doc__)
-probe = norm_name(args[0])
-year = None
-for k, a in enumerate(sys.argv):
-    if a == "--year" and k + 1 < len(sys.argv):
-        year = int(sys.argv[k + 1])
-        if sys.argv[k + 1] in args:
-            args.remove(sys.argv[k + 1])
-contains = "--contains" in sys.argv
+_ctx = []
 
-ctx = Ctx(Evidence())
 
-# ── --issues <volId>: the issue ids of one volume (TOOLS_TODO 12) ───────────────────────────────
-# An `I` line names an ISSUE, and the packet mostly shows VOLUMES; ~2,000 I lines were written `cv=-`
-# for want of this. cvref's cv_iss is indexed on volId, so it is a lookup, not a scan.
-if "--issues" in sys.argv:
-    k = sys.argv.index("--issues")
-    vol = int(sys.argv[k + 1])
-    rows = ctx.cvref.execute(
+def ctx():
+    if not _ctx:
+        _ctx.append(Ctx(Evidence()))
+    return _ctx[0]
+
+
+def issues(vol):
+    """--issues <volId>: the issue ids of one volume (TOOLS_TODO 12). An `I` line names an ISSUE, and the packet
+    mostly shows VOLUMES; ~2,000 I lines were written `cv=-` for want of this. cvref's cv_iss is indexed on
+    volId, so it is a lookup, not a scan."""
+    c, out = ctx(), []
+    rows = c.cvref.execute(
         "SELECT issueId, number, name, coverDate, storeDate FROM cv_iss WHERE volId=? ORDER BY numKey, issueId",
-        (vol,)).fetchall() if ctx.cvref is not None else []
-    v = ctx.cv_index()
+        (vol,)).fetchall() if c.cvref is not None else []
+    v = c.cv_index()
     meta = next((r for rs in v.values() for r in rs if r[0] == vol), None)
     if meta:
-        print(f'volume {vol} "{meta[1]}" {meta[3] or "?"} {meta[5] or "?"} — {meta[4] or "?"} issues per the rip')
-    print(f"{len(rows)} cached issue(s)")
+        out.append(f'volume {vol} "{meta[1]}" {meta[3] or "?"} {meta[5] or "?"} — {meta[4] or "?"} issues per the rip')
+    out.append(f"{len(rows)} cached issue(s)")
     for iid, num_, name, cd, sd in rows:
-        print(f"   issue {iid:<9} #{str(num_ or '?'):<8} {cd or sd or '':<12} {(name or '')[:60]}")
-    raise SystemExit(0)
+        out.append(f"   issue {iid:<9} #{str(num_ or '?'):<8} {cd or sd or '':<12} {(name or '')[:60]}")
+    return out
 
 
+def collects(gid):
+    """--collects <gcdIssueId> (TOOLS_TODO 18): GCD's notes clause and its gcd_reprint roll-up for one issue."""
+    n = ctx().notes
+    row = n.issue(gid)
+    if not row:
+        return [f"no GCD issue {gid} in the dump"]
+    out = [f"GCD issue {gid}: #{row['number']} of {row['series']} ({row['year']}) s{row['seriesId']}, "
+           f"{row['pages'] or '?'}pp"]
+    parsed = gcdnotes.parse_notes(row["notes"])
+    for e in parsed:
+        out.append(f"   notes:   {e['name'] or '?'}{' [s' + str(e['sid']) + ']' if e['sid'] else ''} "
+                   f"{gcdnotes.fmt_ranges(e['ranges'])}")
+    for sid, nm, rg, k in n.reprints(gid):
+        out.append(f"   reprint: s{sid} {nm} {gcdnotes.fmt_ranges(rg) if rg else '(unnumbered)'}  [{k} stories]")
+    if not parsed and row["notes"]:
+        out.append(f"   (notes carry no collect clause): {row['notes'][:200]!r}")
+    return out
 
-def keep(y):
-    return year is None or (y is not None and abs(int(y) - year) <= 1)
+
+def names(text, year=None, contains=False):
+    c, out = ctx(), []
+    probe = norm_name(text)
+
+    def keep(y):
+        return year is None or (y is not None and abs(int(y) - year) <= 1)
+
+    cv = c.cv_index()
+    hits = list(cv.get(probe, ()))
+    if contains:
+        hits += [r for k, rs in cv.items() if probe in k and k != probe for r in rs]
+    hits = [h for h in hits if keep(h[3])][:25]
+    out.append(f"ComicVine rip — {len(hits)} hit(s) for '{probe}'" + (f" year {year}±1" if year else ""))
+    for h in sorted(hits, key=lambda h: (h[3] or 0)):
+        out.append(f'   {h[0]} "{h[1]}" {h[3] or "?"} {h[5] or "?"} {h[4] or "?"} issues')
+    gc = c.gcd_index()
+    hits = list(gc.get(probe, ()))
+    if contains:
+        hits += [r for k, rs in gc.items() if probe in k and k != probe for r in rs]
+    hits = [h for h in hits if keep(h[2])][:25]
+    out.append(f"GCD dump — {len(hits)} hit(s)")
+    for h in sorted(hits, key=lambda h: (h[2] or 0)):
+        out.append(f'   {h[0]} "{h[1]}" {h[2] or "?"}-{h[3] or "?"} {h[6] or "?"} [{h[5] or ""}] {h[4] or "?"} issues')
+    return out
 
 
-cv = ctx.cv_index()
-hits = list(cv.get(probe, ()))
-if contains:
-    hits += [r for k, rs in cv.items() if probe in k and k != probe for r in rs]
-hits = [h for h in hits if keep(h[3])][:25]
-print(f"ComicVine rip — {len(hits)} hit(s) for '{probe}'" + (f" year {year}±1" if year else ""))
-for h in sorted(hits, key=lambda h: (h[3] or 0)):
-    print(f'   {h[0]} "{h[1]}" {h[3] or "?"} {h[5] or "?"} {h[4] or "?"} issues')
+def run(argv):
+    """One query in command-line shape -> its answer lines."""
+    if "--issues" in argv:
+        return issues(int(argv[argv.index("--issues") + 1]))
+    if "--collects" in argv:
+        return collects(int(argv[argv.index("--collects") + 1]))
+    year = None
+    if "--year" in argv:
+        year = int(argv[argv.index("--year") + 1])
+    skip = {argv.index("--year") + 1} if "--year" in argv else set()
+    args = [a for k, a in enumerate(argv) if not a.startswith("--") and k not in skip]
+    if not args:
+        return ["(no name to probe)"]
+    return names(args[0], year, "--contains" in argv)
 
-gc = ctx.gcd_index()
-hits = list(gc.get(probe, ()))
-if contains:
-    hits += [r for k, rs in gc.items() if probe in k and k != probe for r in rs]
-hits = [h for h in hits if keep(h[2])][:25]
-print(f"GCD dump — {len(hits)} hit(s)")
-for h in sorted(hits, key=lambda h: (h[2] or 0)):
-    print(f'   {h[0]} "{h[1]}" {h[2] or "?"}-{h[3] or "?"} {h[6] or "?"} [{h[5] or ""}] {h[4] or "?"} issues')
+
+def main():
+    argv = sys.argv[1:]
+    if not argv:
+        raise SystemExit(__doc__)
+    if "--batch" in argv:
+        path = argv[argv.index("--batch") + 1]
+        if not os.path.isfile(path):
+            raise SystemExit(f"no such batch file: {path}")
+        n = 0
+        for raw in open(path, encoding="utf-8"):
+            line = raw.strip()
+            if not line or line.startswith("#"):
+                continue
+            n += 1
+            print(f"\n>>> {line}")
+            try:
+                q = shlex.split(line, posix=True)
+                print("\n".join(run(q)))
+            except (ValueError, IndexError) as e:
+                print(f"   (unreadable query: {e})")
+        print(f"\n{n} quer{'y' if n == 1 else 'ies'}")
+        return
+    print("\n".join(run(argv)))
+
+
+if __name__ == "__main__":
+    main()

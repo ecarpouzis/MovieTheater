@@ -19,10 +19,13 @@ import re
 import sys
 from collections import Counter, defaultdict
 
+import gcdnotes
 import idbase
 from idbase import Evidence, num, norm_name, short_path
 
 RX_DIGITS = re.compile(r"\d+")
+# A 60-trade shelf would otherwise print 60 notes lines; the first twenty show the shape, the rest are a lookup.
+GCD_SAYS_CAP = 20
 
 
 # ── the FOLD RULE ────────────────────────────────────────────────────────────────────────────────
@@ -98,6 +101,16 @@ class Ctx:
         self.cvrip = None
         self._gcd_index = None
         self._cv_index = None
+        # GCD's own statement of what a trade collects (TOOLS_TODO 18 + 21) — one parser, shared with the
+        # population contradiction check, so the packet and the count cannot read a note two ways
+        self.notes = gcdnotes.Notes(self.gcd, ev.con)
+        self._judged = None
+
+    def judged(self):
+        """({itemId: (a, b)} Curated spans, {itemId: [(a, b)]} their run rows) — read once per run."""
+        if self._judged is None:
+            self._judged = gcdnotes.judged_ranges(self.ev.con)
+        return self._judged
 
     # The GCD dump has an index on gcd_series.name, but SQLite will not use a BINARY index for a
     # case-insensitive LIKE, and the dump's spellings do not match ours case for case. gcd_series is
@@ -268,6 +281,23 @@ def packet(sid, ev, ctx):
     if ours:
         L.append("   ours:    " + "; ".join(ours))
 
+    # ── what GCD says each trade collects (TOOLS_TODO 18 + 21). Only books GCD has a statement about print,
+    # so a shelf of floppies costs nothing; a contradicted judged range is flagged, never corrected.
+    judged, runs = ctx.judged()
+    says = []
+    for r in rows:
+        if not r[4]:
+            continue
+        got = ctx.notes.book_lines(r[0], judged.get(r[0]), runs.get(r[0], ()), indent="")
+        if got:
+            says.append(f"[{r[0]}] " + "  |  ".join(got))
+    if says:
+        L.append("   GCD says: " + says[0])
+        L.extend("             " + x for x in says[1:GCD_SAYS_CAP])
+        if len(says) > GCD_SAYS_CAP:
+            L.append(f"             … {len(says) - GCD_SAYS_CAP} more book(s) with GCD notes (`python gcdnotes.py "
+                     f"--issue <id>`)")
+
     # ── the legs. Every id printed once: a block that only repeats the linked volume taught the reader
     # nothing on 780 of 783 tier-A shelves, so it is reduced to a statement that the lookup AGREED. The
     # moment anything disagrees, the full block comes back — disagreement is the whole signal (§4.3).
@@ -429,7 +459,7 @@ def item_packet(sid, ev, ctx, items, decision):
                      + ("  …" if len(iss) == 80 else ""))
     if decision.get("gcd") and ctx.gcd is not None:
         rows = ctx.gcd.execute(
-            "SELECT id, number, page_count, isbn, title FROM gcd_issue "
+            "SELECT id, number, page_count, isbn, title, notes FROM gcd_issue "
             "WHERE series_id = ? AND coalesce(deleted,0) = 0 ORDER BY sort_code, id LIMIT 80",
             (decision["gcd"],)).fetchall()
         if rows:
@@ -439,6 +469,15 @@ def item_packet(sid, ev, ctx, items, decision):
                 + (f" isbn {r[3]}" if r[3] else "")
                 + (f' "{r[4][:40]}"' if r[4] else "")
                 for r in rows) + ("  …" if len(rows) == 80 else ""))
+            # the notes of those same rows (TOOLS_TODO 21): on a collected line each row IS a trade, and its
+            # "Collects X #a-b" is the `C` line's range in the run's own numbering
+            said = []
+            for r in rows:
+                for e in gcdnotes.parse_notes(r[5]):
+                    said.append(f"{r[0]}#{r[1] or '?'} {e['name'] or '?'}"
+                                f"{' [s' + str(e['sid']) + ']' if e['sid'] else ''} {gcdnotes.fmt_ranges(e['ranges'])}")
+            if said:
+                L.append("   gcd notes:  " + " · ".join(said)[:1600])
         for lsid, lname, sup in con.execute(
                 "SELECT LocgSeriesId, SeriesName, Support FROM legs.LocgSeriesInference WHERE GcdSeriesId=? "
                 "ORDER BY Support DESC LIMIT 2", (decision["gcd"],)):
@@ -501,6 +540,8 @@ def item_packet(sid, ev, ctx, items, decision):
         folder = short_path(os.path.dirname(path or ""))
         if folder:
             L.append(f"            {folder}")
+        judged, jruns = ctx.judged()
+        L.extend(ctx.notes.book_lines(iid, judged.get(iid), jruns.get(iid, ()), indent="            "))
     return L
 
 

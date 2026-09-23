@@ -106,3 +106,24 @@
     Addendum (D-012): identity_packet FOLDS runs of >= 6 same-skeleton filenames into a range WITHOUT item ids, so a
     shelf like 3x3 Eyes v01-v39 cannot get per-volume I lines from the packet — the X item pass covers them (they show
     as "NO I line"), or the packet should list item ids in the fold.
+# Added 2026-09-22 after wave 12 (Eric: defer the 0.9s; make workers cheaper to start)
+20. **Slim the brief.** READER_BRIEF.md is 110 KB; 96 KB is the conventions ledger (335 entries) that every worker
+    reads and carries through ~100 tool calls. Move the ledger to `LEDGER.md` with every entry TAGGED (publisher /
+    imprint / folder pattern / tier / topic); promote the few entries that apply everywhere into Rulings; the brief
+    keeps the contract only (~15 KB target). The packet builder (identity_packet.py / next_batch.py) attaches, per
+    batch, ONLY the ledger entries whose tags match that batch's shelves (a ## Conventions for this batch block at
+    the top of the batch file). No ledger entry may be lost; selftest proves the round-trip (every entry reachable).
+21. **Packet: GCD's own "Collects …" notes.** R-028/X-062 settled most C ranges from gcd_issue.notes
+    ("Collects X #a-b") and it overturned four judged ranges (Bloodshot 2019 Books 1-4, Life Is Strange: Coming
+    Home, American Vampire Book One, the X-Men chronology). Print the notes line on every GCD issue row a packet shows
+    for a trade (with gcd_reprint, TODO 18, if not already there), and flag in the packet any judged range that the
+    notes contradict (RANGE CONTRADICTED by GCD notes: judged #a-b, GCD says #c-d).
+22. **lookup.py --batch <file>**: answer many name / volume probes in one call (one line per query), so a reader
+    does not spend a tool round-trip per spelling.
+23. **0.9 triage (`triage_09.py`, read-only, chunked by shelf id with a cursor):** the 6,327 shelves at 0.9 are NOT
+    re-read blind. List only those with a SIGNAL, one row per (shelf, signal, detail): (a) a CV volume or GCD series
+    claimed by another shelf's S line or by an I/C line elsewhere; (b) a majority of the shelf's per-file CV links
+    disagree with its S volume; (c) a C line / judged range / GCD notes range that does not fit the S run's count or
+    numbering; (d) an open ContainmentFlag; (e) 21+ files; (f) touched by a landed merge or split since it was
+    decided. Print totals per signal and the de-duplicated shelf count. Feed format = what next_batch.py can emit as
+    a tier-S2 batch. Signal-free 0.9 shelves stay at 0.9 and are DONE.

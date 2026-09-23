@@ -290,7 +290,7 @@ top, dry-run by default).
 | `identity_coverage.py` | Regenerates every table in §2 from the live DB; prints the tier partition of §7-S forced to sum to the shelf population, and the item partition forced to sum to 118,440. Zero unaccounted or it fails. |
 | `audit_identity.py` | Invariants over the population, each a count that must be 0: `CvVolumeId` on two file-holding shelves; a `CvVolumeId` THIS PASS wrote on a `conflated-series` shelf still flagged open (v1's 80 such shelves are a counted LEAD until the pass reaches them); an `ItemProviderLink` on an item that no longer exists (links on EXCLUDED items — 966 — are a lead); `SeriesTitle` orphan; `RunCount` disagreement; title whose runs disagree on franchise; a Provider=Gcd `SeriesKeyLink` whose `GcdSeriesId` is not in legs `GcdSeries`; a `SeriesInferenceDecision(Class='identity')` whose target shelf no longer exists. Plus LEADS (reported, not failures): shelves whose CV year gap > 1, count ratio outside 0.5–2, CvVolumeId with no CvVolume row. |
 | `identity_packet.py <sid> …` | The per-shelf evidence packet, §7-S below. Reduction-free in the v3 sense: every filename, folded only as specified. |
-| `next_batch.py [--tier A\|B\|C\|D] [--size N]` | Reads `state.json`, emits `batches/<tier>-<nnn>.txt` (the packets) and `batches/<tier>-<nnn>.ids`, advances the cursor, prints `{tier, batch, shelves, remaining}`. Ordering within a tier: by the shelf's dominant folder path, so neighbours sit together. Resumable: a batch already emitted is never re-emitted; `--redo <batch>` regenerates one. |
+| `next_batch.py --tier A\|B\|C\|D [--lines N]` (tier required; `--help` / unknown flags / a bare run emit nothing; `--out DIR` / `--dry-run` write elsewhere and leave state.json alone) | Reads `state.json`, emits `batches/<tier>-<nnn>.txt` (the packets) and `batches/<tier>-<nnn>.ids`, advances the cursor, prints `{tier, batch, shelves, remaining}`. Ordering within a tier: by the shelf's dominant folder path, so neighbours sit together. Resumable: a batch already emitted is never re-emitted; `--redo <batch>` regenerates one. |
 | `check_identity.py [batch …]` | The coverage contract (§7-S grammar). Every shelf in the batch's `.ids` has exactly one `S` or `R`; every id named exists in our tables/dumps; confidence is from the §4 vocabulary; no two `S` share a `cv=`/`gcd=` without `merge-with`; an `S` on an open `conflated-series` shelf is a failure; an `S` whose evidence clause is shorter than 40 characters is a failure. Reports every file, exits non-zero on any failure — like `check_decisions.py`. |
 | `apply_identity.py [batch …] [--apply]` | Writes accepted lines (conf ≥ 0.9): `SeriesKeyLink(ParsedKey, Provider=0, ProviderKey=vol, Status=5 Manual, Score=conf×100)` for **every parsed key aliased to the shelf**; `SeriesKeyLink(Provider=3, ProviderKey=gcdSeriesId, Status=5)` for `gcd=`; one `SeriesInferenceDecision(Class='identity', Action, Target, Confidence, EvidenceJson={batch,line,evidence}, UndoJson={previous rows}, DecidedBy='identity-pass', State)` per line; 0.7 lines → `SeriesMatchReview(Scope='series', Key=ParsedKey, State='review', Note=evidence)`; `R` lines → a `SeriesInferenceDecision(Action='refuse')` so refusals are counted in the DB, not only in files. `I` lines → `ItemProviderLink(Status=5, Method='identity-read', Confidence)`. Prints per-batch counts; refuses a batch that fails `check_identity.py`; flushes an undo jsonl per batch. |
 | `wave_land.ps1` | §12's landing recipe as one script, each step printing and stopping on non-zero. |
@@ -666,3 +666,17 @@ python docs/books/identity/tools/identity_coverage.py                      shelf
 ```
 Progress is reported as the coverage partition, never as "batches done". No-progress safety: a tier whose
 cursor has not advanced after two worker rounds stops the loop and gets reported.
+
+**S.2 order (2026-09-22, after wave 12; Eric: "defer the 0.9s").** The 0.9s are NOT re-read blind. First the
+shelves that are open by construction: every 0.7, every `R`, every `F split-needed`, and the containment gap
+(a shelf whose open ContainmentFlag or unjudged span blocks its books). Only then the 0.9s, and only those
+`tools/triage_09.py` lists with a signal — (a) its CV volume / GCD series claimed by another live shelf's S or
+by an I/C line on another shelf's book (declared merge-with partners excluded), (b) a per-file CV majority
+naming another volume, (c) a judged range / own-run `C` / GCD "Collects" note that does not fit the S run,
+(d) an open ContainmentFlag, (e) 21+ files, (f) touched by a merge or a split after its wave landed. Measured
+2026-09-22: 1,451 of 6,327 0.9 shelves carry a signal; the other 4,876 stay at 0.9 and are DONE.
+`python tools/triage_09.py --all --out triage.tsv` (chunked, read-only) → `python tools/next_batch.py
+--s2-file triage.tsv` emits them as `R-NNN` revisits (60 shelves / ~1,400 lines a batch, resumable via
+state.json `s2`; named `R-` because only an `R-` file supersedes the earlier decision). Every batch file now
+opens with its `## Conventions for this batch` block (`tools/ledger.py`, LEDGER.md) — the brief carries the
+contract only.

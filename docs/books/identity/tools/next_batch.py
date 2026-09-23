@@ -1,10 +1,25 @@
 """Hand the reader the next batch of shelves, sized by what a reader actually pays for: LINES. Resumable.
 
-`python next_batch.py [--tier A|B|C|D] [--lines 1400]`
+`python next_batch.py --tier A|B|C|D [--lines 1400]`            (the tier is REQUIRED: a bare run emits nothing)
 `python next_batch.py --redo A-002 A-005 ...`                     regenerate emitted batches, same ids
 `python next_batch.py --revisit 17809 1448 [--note "why"]`        re-read named shelves after a ruling changed
 `python next_batch.py --revisit-file revisit.txt [--note "why"]`  the same, taking the sids from a sheet
 `python next_batch.py --items [--books 150] [--dry-run]`          an `X-NNN` batch of BOOKS on decided shelves
+`python next_batch.py --s2-file triage.tsv [--shelves 60]`        the S.2 pass: triaged 0.9s, as `R-NNN` batches
+any of the above + `--out DIR`                                    write the batch into DIR and leave state.json alone
+any of the above + `--dry-run`                                    the same, into a throwaway temp directory
+`--help` prints this and exits; an unknown option exits with nothing written.
+
+Every batch file opens with a `## Conventions for this batch` block (TOOLS_TODO 20): the LEDGER.md entries whose
+tags match the batch's shelves (`ledger.py`). The brief no longer carries the ledger, so the batch has to.
+
+`--out DIR` exists so the tools can be exercised against the live population without emitting anything: the
+files land in DIR, state.json is not written, and no cursor moves — the next real emission is unaffected.
+
+`--s2-file` (PLAN §12, TOOLS_TODO 23) takes `triage_09.py`'s sheet — one row per (shelf, signal) — and hands the
+shelves out in folder order, `S2_CEILING` per batch, resumably (state.json `s2`: the shelves already emitted).
+They are named `R-NNN`, not `S2-NNN`: a decision file supersedes an earlier one ONLY when idbase.revisit_rank
+reads an `R-` name, so an `S2-` file re-deciding a 0.9 shelf would be a duplicate decision to the checker.
 
 A batch of 120 tier-A shelves can be 400 lines or 4,000 depending on how many of them are 60-file runs that
 do not fold, so a shelf count is not a workload. This fills a batch to ~1,400 packet lines, subject to a
@@ -29,6 +44,7 @@ from collections import Counter
 import idbase
 from idbase import Evidence
 import identity_packet
+import ledger
 
 # B was 100 when a packet was 12 lines. Compaction put a clean one-leg shelf at 5-8, so 100 shelves no
 # longer fills a batch and the reader pays a round trip for half a workload.
@@ -37,10 +53,29 @@ TARGET_LINES = 1400
 SOLO_LINES = 300
 # The ITEM pass is sized in BOOKS, not lines: a book is two lines and the reader's cost is per book.
 BOOK_CEILING = 150
+# S.2 shelves were each triaged IN because something about them is wrong or unproven — tier C's reading, so
+# tier C's ceiling.
+S2_CEILING = 60
 
 # --redo takes a LIST: after a packet-shape change every pending batch is regenerated in one call, and a
 # batch that has already been read is regenerated with the ids it was emitted with, so a decision file
 # written against it still covers it exactly.
+# The argument guard (2026-09-22). This script WRITES batches/ and state.json, and it used to treat anything it
+# did not recognise — `--help`, a typo, no argument at all — as "emit the next tier-A batch": a `--help` probe
+# emitted the real batch A-035 and moved cursor A 3971 -> 4011. So: every flag must be known, a tier emission
+# must name its tier, `--help` only prints, and `--dry-run` on ANY mode writes into a throwaway directory.
+KNOWN = {"--tier", "--lines", "--redo", "--revisit", "--revisit-file", "--note", "--items", "--books", "--dry-run",
+         "--s2-file", "--shelves", "--out"}
+if any(a in ("-h", "--help", "/?") for a in sys.argv[1:]):
+    print(__doc__)
+    raise SystemExit(0)
+unknown = [a for a in sys.argv[1:] if a.startswith("-") and a not in KNOWN]
+if unknown:
+    raise SystemExit(f"unknown option(s) {unknown} — nothing emitted.\n{__doc__}")
+MODES = ("--tier", "--redo", "--revisit", "--revisit-file", "--items", "--s2-file")
+if not any(m in sys.argv[1:] for m in MODES):
+    raise SystemExit(f"name a mode ({' / '.join(MODES)}) — a bare run emits nothing.\n{__doc__}")
+
 opt, redo, revisit = {}, [], []
 k = 1
 while k < len(sys.argv):
@@ -57,13 +92,32 @@ while k < len(sys.argv):
         k += 2
         continue
     k += 1
-tier = (opt.get("tier") or "A").upper()
+tier = (opt.get("tier") or "").upper()
 target = int(opt.get("lines") or TARGET_LINES)
 ITEMS = "--items" in sys.argv
 DRY = "--dry-run" in sys.argv
+OUTDIR = opt.get("out")
+if DRY and not OUTDIR and not ITEMS:
+    # the item pass's --dry-run only prints; every other mode renders for real, so a dry run renders into a
+    # directory nobody reads
+    import tempfile
+    OUTDIR = tempfile.mkdtemp(prefix="next_batch-dry-")
+if OUTDIR:
+    if os.path.abspath(OUTDIR) == os.path.abspath(idbase.BATCHES):
+        raise SystemExit("--out must not be batches/ — that is what a real emission writes")
+    os.makedirs(OUTDIR, exist_ok=True)
 
 os.makedirs(idbase.BATCHES, exist_ok=True)
 st = idbase.load_state()
+
+
+def save_state(state):
+    """state.json is the emission ledger; a run writing into --out emitted nothing and records nothing."""
+    if OUTDIR:
+        print(f"   (--out {OUTDIR}: state.json not written)")
+        return
+    idbase.save_state(state)
+
 st.setdefault("cursors", {"A": 0, "B": 0, "C": 0, "D": 0})
 st["cursors"].setdefault("X", 0)
 st.setdefault("emitted", [])
@@ -77,14 +131,30 @@ def render(sid):
     return identity_packet.packet(sid, ev, ctx)
 
 
-def write_batch(name, blocks, ids):
+_tagger, _entries = [], []
+
+
+def conventions(shelves, kind):
+    """The batch's slice of the ledger (TOOLS_TODO 20) — built once per run, prepended to the packets."""
+    if not _tagger:
+        _tagger.append(ledger.ShelfTagger(ev))
+        _entries.extend(ledger.load())
+    return ledger.block_for(ev, shelves, kind, tagger=_tagger[0], entries=_entries)
+
+
+def write_batch(name, blocks, ids, shelves=None, kind=None):
+    """`lines` returned is the PACKET line count (what the sizing rule is about); the conventions block rides
+    on top of it and is reported separately."""
+    head = conventions(shelves if shelves is not None else ids, kind)
     lines = []
     for b in blocks:
         lines += b + [""]
-    with open(os.path.join(idbase.BATCHES, name + ".txt"), "w", encoding="utf-8") as f:
-        f.write("\n".join(lines))
-    with open(os.path.join(idbase.BATCHES, name + ".ids"), "w", encoding="utf-8") as f:
+    where = OUTDIR or idbase.BATCHES
+    with open(os.path.join(where, name + ".txt"), "w", encoding="utf-8") as f:
+        f.write("\n".join(head + lines))
+    with open(os.path.join(where, name + ".ids"), "w", encoding="utf-8") as f:
         f.write("\n".join(str(s) for s in ids) + "\n")
+    print(f"   {head[0]}")
     return len(lines)
 
 
@@ -136,12 +206,13 @@ if ITEMS:
                 "batch": os.path.splitext(os.path.basename(w))[0], "notes": notes}
 
     cap = int(opt.get("books") or BOOK_CEILING)
-    take_ids, blocks, n_books = [], [], 0
+    take_ids, blocks, n_books, take_shelves = [], [], 0, []
     for sid in order:
         its = sorted(by_shelf[sid])
         if take_ids and n_books + len(its) > cap:
             break
         blocks.append(identity_packet.item_packet(sid, ev, ctx, its, decision_of(sid)))
+        take_shelves.append(sid)
         take_ids += its
         n_books += len(its)
         if n_books >= cap:
@@ -162,15 +233,82 @@ if ITEMS:
     if not take_ids:
         print({"batch": None, "books": 0, "remaining": 0})
         raise SystemExit(0)
-    written = write_batch(name, blocks, take_ids)
+    written = write_batch(name, blocks, take_ids, shelves=take_shelves, kind="X")
     st["items"].append({"batch": name, "kind": "X", "ids": take_ids, "shelves": len(blocks),
                         "lines": written, "at": time.strftime("%Y-%m-%d %H:%M:%S")})
     st["cursors"]["X"] = st["cursors"].get("X", 0) + len(take_ids)
-    idbase.save_state(st)
+    save_state(st)
     print({"batch": name, "books": len(take_ids), "shelves": len(blocks), "lines": written,
            "remaining": len(todo) - len(take_ids)})
     for k, v in counts.items():
         print(f"   {v:>8,}  {k}")
+    raise SystemExit(0)
+
+
+def dominant_folders():
+    """The shelf's dominant folder, one sweep over the items — the ordering key of every shelf batch."""
+    folders = {}
+    for sid, path in ev.con.execute("""SELECT i.SeriesId, i.Path FROM Item i
+                                       WHERE i.Kind = 0 AND coalesce(i.IsExcluded,0) = 0 AND i.SeriesId IS NOT NULL"""):
+        if sid in ev.shelf_set:
+            folders.setdefault(sid, Counter())[idbase.short_path(os.path.dirname(path or ""))] += 1
+    return {sid: c.most_common(1)[0][0] for sid, c in folders.items()}
+
+
+def pack(todo, cap):
+    """Fill one batch from `todo` in order: ~TARGET_LINES of packets, at most `cap` shelves, and a shelf whose
+    own packet exceeds SOLO_LINES gets a batch to itself (PLAN §7-S)."""
+    take, blocks, total = [], [], 0
+    for sid in todo[:cap + 8]:
+        block = render(sid)
+        if len(block) + 1 > SOLO_LINES:
+            if take:
+                break
+            return [sid], [block]
+        if take and (total + len(block) + 1 > target or len(take) >= cap):
+            break
+        take.append(sid)
+        blocks.append(block)
+        total += len(block) + 1
+    return take, blocks
+
+
+if opt.get("s2-file"):
+    # ── S.2 (PLAN §12 as re-ordered 2026-09-22, TOOLS_TODO 23) ──────────────────────────────────
+    # The 0.9s are not re-read blind: triage_09.py lists the ones carrying a signal, and only those come here.
+    # Emitted as REVISITS (see the docstring for why the name is `R-`), resumably: `st["s2"]` remembers every
+    # shelf handed out, so re-running after a crash or a landing continues where it stopped.
+    rf = opt["s2-file"]
+    path = rf if os.path.isfile(rf) else os.path.join(idbase.ROOT, rf)
+    if not os.path.isfile(path):
+        raise SystemExit(f"no such triage sheet: {rf}")
+    sids = []
+    for raw in open(path, encoding="utf-8"):
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        head = line.split()[0].lstrip("S")
+        if head.isdigit():
+            sids.append(int(head))
+    st.setdefault("s2", [])
+    st.setdefault("revisits", [])
+    done = {s for b in st["s2"] for s in b["ids"]}
+    dom = dominant_folders()
+    todo = sorted({s for s in sids if s in ev.shelf_set and s not in done}, key=lambda s: (dom.get(s, ""), s))
+    gone = len({s for s in sids if s not in ev.shelf_set})
+    if not todo:
+        print({"batch": None, "shelves": 0, "remaining": 0, "gone since triage": gone})
+        raise SystemExit(0)
+    take, blocks = pack(todo, int(opt.get("shelves") or S2_CEILING))
+    name = f"R-{1 + len(st['revisits']):03d}"
+    n = write_batch(name, blocks, take, kind="S2")
+    note = opt.get("note") or f"S.2: 0.9 shelves carrying a triage signal (source: {os.path.basename(rf)})"
+    st["revisits"].append({"batch": name, "ids": take, "lines": n, "note": note, "source": os.path.basename(rf),
+                           "s2": True, "at": time.strftime("%Y-%m-%d %H:%M:%S")})
+    st["s2"].append({"batch": name, "ids": take, "at": time.strftime("%Y-%m-%d %H:%M:%S")})
+    save_state(st)
+    print({"batch": name, "shelves": len(take), "lines": n, "remaining": len(todo) - len(take),
+           "gone since triage": gone})
     raise SystemExit(0)
 
 if revisit or opt.get("revisit-file"):
@@ -205,10 +343,10 @@ if revisit or opt.get("revisit-file"):
     st.setdefault("revisits", [])
     name = f"R-{1 + len(st['revisits']):03d}"
     note = opt.get("note") or f"re-read after a sharpened ruling (source: {source})"
-    n = write_batch(name, [render(s) for s in ids], ids)
+    n = write_batch(name, [render(s) for s in ids], ids, kind="R")
     st["revisits"].append({"batch": name, "ids": ids, "lines": n, "note": note, "source": source,
                            "at": time.strftime("%Y-%m-%d %H:%M:%S")})
-    idbase.save_state(st)
+    save_state(st)
     print({"batch": name, "shelves": len(ids), "lines": n, "gone": len(gone), "note": note})
     if gone:
         print(f"   skipped (no longer a file-holding comic shelf): {gone}")
@@ -225,11 +363,11 @@ if redo:
         ids = [s for s in rec["ids"] if s in ev.shelf_set]
         gone = [s for s in rec["ids"] if s not in ev.shelf_set]
         was = rec.get("lines")
-        n = write_batch(name, [render(s) for s in ids], ids)
+        n = write_batch(name, [render(s) for s in ids], ids, kind=rec["tier"])
         rec["lines"] = n
         print({"tier": rec["tier"], "batch": name, "shelves": len(ids), "lines": n, "was": was,
                "gone since emission": len(gone)})
-    idbase.save_state(st)
+    save_state(st)
     raise SystemExit(0)
 
 if tier not in CEILING:
@@ -268,10 +406,10 @@ for sid in todo[:CEILING[tier] + 8]:
 
 n = 1 + sum(1 for b in st["emitted"] if b["tier"] == tier)
 name = f"{tier}-{n:03d}"
-written = write_batch(name, blocks, take)
+written = write_batch(name, blocks, take, kind=tier)
 st["emitted"].append({"batch": name, "tier": tier, "ids": take, "lines": written,
                       "at": time.strftime("%Y-%m-%d %H:%M:%S")})
 st["cursors"][tier] = st["cursors"].get(tier, 0) + len(take)
-idbase.save_state(st)
+save_state(st)
 print({"tier": tier, "batch": name, "shelves": len(take), "lines": written,
        "remaining": len(todo) - len(take)})
