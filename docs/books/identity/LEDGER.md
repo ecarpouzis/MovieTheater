@@ -1808,3 +1808,11 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   Berger's Everything Vol. 2 collects "what would have been #6-10" (trade-only issues). Boom's Fence and Adventure Time
   OGN lines: some trade-line volumes are OGNs — no issue range applies. A 2000 AD strip-collection's prog ranges are N
   lines, never C lines onto the weekly (L-333, reaffirmed R-094) (R-095).
+
+[L-362] pub:archie pub:boom kind:digital pub:dc
+- Archie Forsythe-DCP Christmas Spectaculars: the filename year is the COVER year and ComicInfo Notes carry the UPC,
+  which equals GCD's row barcode — a 1.0 assertion. Boom: a trade line spanning several runs (Wynd Books, WWE Then. Now.
+  Forever., MM/PR Deluxe) is its own identity with C lines onto each run. ComiXology: a per-file CV link to a count-1
+  volume ("Digital Collection One", "TPB") is the collection's OWN record (its I line); a link to the 5-8 issue serial
+  means the run wins. DC's Green Lantern trades exist as HC (77116) and SC (77117) GCD series — pick ONE edition per
+  shelf (R-096/R-097).

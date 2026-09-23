@@ -1,0 +1,262 @@
+## Conventions for this batch (35 shown of 89 matched; 361 in LEDGER.md; 5 shelf/shelves: folder:vn-year ×5 · pub:archie ×2 · pub:small-press ×1 · folder:sequel-subfolder ×1 · pub:aftershock ×1 · pub:dc ×1 · kind:foreign ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-124] (5 shelf/shelves) folder:bucket folder:vn-year pass:item sig:trade-link
+- A `<Title> vN (<year>)` folder holding only a collected edition is the RUN's folder — the run takes the S
+  line, the trade an `I` line; a `_Trades` / `_Minis` / `_One-shots` bucket is the opposite (the book's own
+  count-1 record, minted by BOTH providers, wins).
+[L-191] (5 shelf/shelves) folder:sequel-subfolder folder:vn-year pass:revisit sig:stale-flag
+- On a wave-2 `NN <Title> vN (<year>)` split-out shelf (ids S94xxx+) an `overlap-in-series` flag is stale by
+  construction — the colliding Vol. 01s now sit on sibling shelves (13 of 14 in R-016); the lead dismisses the flag.
+[L-272] (5 shelf/shelves) folder:vn-year
+- A ripper's `vNN` can be offset by one from the album's own subtitle (Carthago Adventures) — the title decides.
+[L-281] (5 shelf/shelves) folder:bucket folder:events folder:vn-year
+- A chronology folder's ORDER prefix ("04 Dragon Ball - Full Color Freeza Arc v01") gets read by the per-file num
+  matcher as the ISSUE number — v01 in folder "04" linked to issue #4; the true mapping is the shelf's own vNN by
+  ordinal. Any "NN Title vNN" bucket naming is this trap.
+[L-046] (2 shelf/shelves) pub:action-lab pub:aftershock pub:small-press sig:probe
+- Small-press American floppies (Action Lab, Aftershock minis, Behemoth) are thin in GCD → `provider-missing` on
+  the GCD side is common and honest.
+[L-049] (2 shelf/shelves) kind:kids kind:strip pub:archie pub:boom
+- BOOM's licensed-kids folders (Ben 10, Ice Age, Garfield, BOOM! Box Mix Tape) file a new record per book/year in
+  both providers — the Archie holiday-annual shape; the year in the filename selects.
+[L-056] (2 shelf/shelves) pub:archie pub:dc sig:probe
+- The Archie-holiday split runs BOTH ways: GCD mints six one-shot series for DC's Earth-Prime week while CV keeps
+  one 6-issue volume — whichever provider spans the shelf carries the S line; the other takes `provider-missing`.
+[L-120] (2 shelf/shelves) kind:weekly pub:archie pub:marvel
+- Marvel UK: GCD keeps ONE series across a weekly's title changes ("Super Spider-Man" 2407, 153 issues) while CV
+  mints a volume per title; the quarterly "ThunderCats Collected Comics" is ONE CV volume and FIVE GCD series
+  (one per season) — the Archie holiday split with ComicVine on the spanning side.
+[L-156] (2 shelf/shelves) pub:archie pub:valiant
+- Acclaim's Eternal Warriors is the Archie-holiday split with ComicVine on the spanning side: CV 26146 count 6 vs six
+  separate GCD one-shot series (15146, 21569-21572, 21589).
+[L-335] (2 shelf/shelves) pub:archie
+- Archie 2019+ "Archie & Friends" one-shots: GCD 188076 is ONE numbered series (Back to School = #3) while CV mints
+  a volume per one-shot — the holiday split (L-056): the GCD row goes on the I line.
+[L-361] (2 shelf/shelves) pub:archie pub:boom pub:dark-horse
+- Archie holiday specials: GCD names each series by COVER year (on sale Dec Y = series Y+1) while CV uses the on-sale
+  year; page count separates them (24pp up to Dec 2019, 36pp from Dec 2020). Sabrina (2000) #1-37 and Sabrina the
+  Teenage Witch (2003) #38-104 are one continuous numbering, but BOTH catalogues cut at #37/#38 — two runs. Dark Horse /
+  Berger's Everything Vol. 2 collects "what would have been #6-10" (trade-only issues). Boom's Fence and Adventure Time
+  OGN lines: some trade-line volumes are OGNs — no issue range applies. A 2000 AD strip-collection's prog ranges are N
+  lines, never C lines onto the weekly (L-333, reaffirmed R-094) (R-095).
+[L-113] (5 shelf/shelves) sig:comicinfo sig:stamp
+- ComicInfo `Volume` holding a 4-digit ComicVine volume id (not a year) is a 1.0 assertion like the 6-digit
+  case (Ka-Zar v2 1974: `Volume 2692` + `Count 20` = CV 2692) and disproves the per-file matcher's pick.
+[L-016] (4 shelf/shelves) sig:comicinfo
+- Glorith rips' ComicInfo `Web` ids are NOT GCD issue ids in our dump (29 checked: missing or unrelated). Never
+  claim 1.0 from one. A ComicInfo `Volume` holding a 6-digit number IS a ComicVine volume id (Lex and the City =
+  162184) — a genuine 1.0 assertion.
+[L-032] (4 shelf/shelves) sig:comicinfo
+- A Marika-Empire rip's ComicInfo `Web` id IS a ComicVine ISSUE id (21/21 resolve to the stored volume) — the
+  1.0 shape. The ripper decides: Glorith's Web ids are not GCD issue ids. Check one against the rip before
+  claiming 1.0 on a new ripper.
+[L-114] (4 shelf/shelves) sig:comicinfo
+- Marika-Empire and Glorith-HD `Web` ids are ComicVine ISSUE ids of the stored volume (7 of 7 here).
+[L-003] (1 shelf/shelves) folder:events folder:sequel-subfolder pub:ablaze pub:action-lab pub:aftershock
+- Aftershock / Action Lab / Ablaze: 4–5 issue minis; sequels in `v2 - <Subtitle>` subfolders → two runs;
+  Ablaze's Cimmerian line numbers its subfolders in READING order (`05 …`, `06 …`), not issue order.
+[L-018] (1 shelf/shelves) kind:foreign pub:dc
+- Stored links that are the PARENT ongoing (Harley Quinn Road Trip → the ongoing), a different publisher
+  (Justice → Panini; Inferno → Games Workshop), or an empty stub (Arkham Horror) → `F wrong-cv-link`.
+[L-051] (1 shelf/shelves) pub:bongo pub:dc pub:small-press sig:probe
+- GCD spellings that hide a hit: Bongo's annual is plainly "Treehouse of Horror" (5435); Miller's 1983 series is
+  "Rōnin" (2721); Comico's Primer is "Primer" (14288). DC's Blackest Night revival issues sit in the ORIGINAL
+  series (Power of SHAZAM! 5246 runs 1995-2010).
+[L-052] (1 shelf/shelves) pub:dc sig:stamp sig:twin
+- The per-file CV matcher picks the LEGACY volume for every New 52 shelf (Batman 1940, Wonder Woman 1942, Nightwing
+  1996, Catwoman 1993) because it matched by issue number — the stored link on a 2011 shelf that names a 1940
+  volume is `wrong-cv-link`, the 2011 volume is in the rip.
+[L-055] (1 shelf/shelves) pub:dc pub:small-press sig:probe
+- ComicVine splits ONE line across two spellings of its own ("Batman Arkham: X" vs "Batman: Arkham: X"). GCD
+  prefixes titles the packet probes without ("Batman: Catwoman Defiant", "The Blue Beetle" for the 2006 series).
+[L-064] (3 shelf/shelves) pass:item sig:twin
+- GCD indexes PRINTINGS: the S line takes the first edition both legs agree on; the `I` line takes the printing
+  we hold (page counts match the edition's row). GCD issue ids for books come from `gcd_issue` — prefer the
+  issue id to the `s<series>` form; use `s<series>` only for twin/variant rows.
+[L-085] (3 shelf/shelves) sig:barcode sig:trade-link sig:twin
+- `gcd_issue` carries the trade's page count AND ISBN: it matched our rips within ±10pp on 100+ books and told
+  two same-title count-1 rows apart (an 8pp ashcan is not a twin of the trade).
+[L-101] (3 shelf/shelves) sig:twin
+- Page count tells GCD twins apart (a 32pp sampler vs the 256pp anthology); a count-0 GCD row (236534 "Cells at
+  Work! Lady") is an empty stub, not a leg.
+[L-128] (3 shelf/shelves) sig:split sig:stale-flag
+- The checker refuses an S line on a shelf with an OPEN conflated-series flag: write `R` + `F split-needed`
+  with the run's own ids in the R clause AND an `N` (`cv=… gcd=…`), so clearing the flag makes it one edit.
+[L-139] (1 shelf/shelves) pub:dark-horse pub:millarworld pub:small-press sig:round2 sig:stamp
+- A folder-wide CV stamp exists too: Space Goat's Evil Dead 2 programme (CV 20289 on 37 files) and Millarworld's Dark
+  Horse folder (CV 115757 on the sequel) stamp ONE wrong volume across a folder — the `round2-folder` shape on the CV side.
+[L-140] (1 shelf/shelves) kind:strip pub:lion-forge-magnetic pub:scout pub:small-press sig:probe
+- Bubble Comics (Exlibrium, Major Grom, Igor Grom, Meteora), Space Between, Scout/Roar, Strip For Me, Studio D., Imagine
+  Bin, SAF Comics, Magnetic Press and Lost His Keys Man are total GCD holes — ComicVine-only is the honest answer there.
+[L-148] (1 shelf/shelves) pub:small-press sig:probe
+- GCD files New England Comics' Tick specials under the POSSESSIVE ComicVine drops ("The Tick's Big Romantic Adventure"
+  15953, "The Tick's Big Back to School Special" 15958) — re-probe with `Tick's`.
+[L-162] (1 shelf/shelves) kind:foreign pub:dc sig:probe
+- A SPACE inside a title hides the English record in BOTH providers: "Gen 13: Armageddon" (CV 19859/GCD 27648) and
+  "Superman/Gen 13" (CV 26595/GCD 16731) are invisible to a "Gen13" probe — that is why such packets offer only foreign editions.
+[L-181] (3 shelf/shelves) sig:split
+- A ripper's CONTINUOUS numbering can hide several published comics: Gung-Ho 001-014 = Gung-Ho (7) + Sexy Beast (4) +
+  Anger (4); the trailing number after each filename subtitle is the real run's number, and a ladder running PAST the
+  linked count is the tell → `R` + split-needed, never `S` the first run.
+[L-183] (1 shelf/shelves) folder:sequel-subfolder pub:ablaze pub:action-lab pub:aftershock pub:ahoy pub:american-gothic sig:split
+- The numbered "01 …/02 …/03 …" (or vN) subfolder is the small-press SEQUEL marker at Action Lab, Aftershock, Ahoy,
+  Ablaze and American Gothic alike (Danger Doll Squad, Rough Riders, Voracious, We Live, Killbox, E-Ratic, The Wrong
+  Earth): each subfolder is a co-equal mini with its own record → `R` + split-needed unless one dominates by proportion.
+[L-193] (3 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-194] (3 shelf/shelves) sig:legacy-stamp
+- A legacy-renumbered arc collected under its own title ("Punisher: War Machine") belongs to the parent volume's
+  count: CV 90118 / GCD 100917 count 28 = #1-17 + #218-228 — the arithmetic that split S66039.
+[L-195] (1 shelf/shelves) pub:dc sig:legacy-stamp sig:stamp
+- Trade SUBTITLES tell two same-title relaunches apart when the per-file matcher cannot (Batman Beyond 2015 = Brave
+  New Worlds / City of Yesterday / Wired for Death; 2016 = Escaping the Grave / Rise of the Demon / The Long Payback).
+[L-197] (1 shelf/shelves) pub:dc sig:legacy-stamp sig:stamp
+- The per-file matcher's "wrong RELAUNCH" trap: it stamps the LATER same-title volume onto files dated to the earlier
+  era by issue-number coincidence (Wonder Woman 2016, Batman 2016, JLA v2/v3, Firestorm, Hawk and Dove v5, Atari Force
+  v2, Adventure Comics 2010) — the tell is files whose years or numbers predate or exceed the stamped volume's own.
+[L-210] (1 shelf/shelves) pub:dc sig:legacy-stamp sig:probe sig:stamp
+- The wrong-relaunch trap is near-universal on any DC title with 3+ relaunches (Green Arrow, Green Lantern, Harley
+  Quinn, Justice League, Legion, Lobo, Martian Manhunter, Doom Patrol): the matcher stamps the oldest legacy volume or
+  the largest/most-recent one across every sibling shelf; `lookup.py` by name + year recovers the true id.
+
++54 more matched entries not shown: L-211, L-212, L-214, L-220, L-242, L-245, L-255, L-263, L-271, L-299, L-310, L-330, L-334, L-336, L-348, L-014, L-065, L-097, L-099, L-123, L-252, L-262, L-274, L-288, L-290, L-291, L-293, L-352, L-354, L-013, L-043, L-050, L-072, L-088, L-089, L-095, L-096, L-118, L-125, L-150, L-157, L-159, L-163, L-177, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-341, L-346, L-347 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S95056 American Mythology Monsters  [split]  6 files / 0 collections  decided in R-095 (R)
+   decided: R 95056 | signal d (label-ambiguous #154 on 6651) exposes TWO co-equal runs on this shelf: "American Mythology Monsters 001-003 (2020-2021)" 26pp in the "…v1 (2020)" folder = CV 133182 (American Mythology 2021, 3, issues 2021-01-14 / 02-20 / 03-27) = GCD 168712 (2021-?, #1 row dated 2020); "American Mythology Monsters v2 001-003 (2021)" 29-31pp in "…v2 (2021)" = CV 137574 (2021, 3, issues 2021-07-15 / 10-09 / 12-24) = GCD 187848 (2021, 3 rows 2021-07-14 / 10-06 / 12-22); B-002's S paired v2's CV 137574 with v1's GCD 168712 — a MIXED pair — and every number 1-3 names two files; no single record spans both
+   F 95056 split-needed | items 6651-6653 ("American Mythology Monsters v2 001-003 (2021)", key "American Mythology Monsters v2 (2021)") -> their own run cv=137574 gcd=187848; items 6648-6650 (v1) stay as cv=133182 gcd=168712 (3:3, either may stay); the v3 run is S95058 (CV 144299 / GCD 187847)
+   N 95056 cv=133182 gcd=168712 — the S line for the v1 half once v2 moves; label-ambiguous #154 ("single issues carry a collection format") is answered by the split, the six files are 26-31pp single issues of two runs
+   named: S95058 American Mythology Monsters  3 files  keys: "American Mythology Monsters v3 (2022)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   keys now: "American Mythology Monsters v1 (2020)" x3 · "American Mythology Monsters v2 (2021)" x3
+   groups (title x folder): 2
+   G1 "American Mythology Monsters" in American Mythology\American Mythology Monsters (2020)\American Mythology Monsters v1 (2020) — 3 file(s), numbers 1-3, pp 26-26; cv per-file 137574x3; gcd per-file 168712x3; key 'American Mythology Monsters v1 (2020)'
+      [6648] American Mythology Monsters 001 (2020) (digital) (Son of Ultron-Empire).cbr (26pp)
+      [6649] American Mythology Monsters 002 (2021) (digital) (Son of Ultron-Empire).cbr (26pp)
+      [6650] American Mythology Monsters 003 (2021) (digital) (Son of Ultron-Empire).cbr (26pp)
+   G2 "American Mythology Monsters" in American Mythology\American Mythology Monsters (2020)\American Mythology Monsters v2 (2021) — 3 file(s), numbers 1-3, pp 29-31; cv per-file 137574x3; gcd per-file 168712x2, 187848x1; key 'American Mythology Monsters v2 (2021)'
+      [6651] American Mythology Monsters v2 001 (2021) (digital) (Son of Ultron-Empire).cbr (31pp)
+      [6652] American Mythology Monsters v2 002 (2021) (digital) (Son of Ultron-Empire).cbr (29pp)
+      [6653] American Mythology Monsters v2 003 (2021) (digital) (Son of Ultron-Empire).cbr (30pp)
+
+== S1216 Archie and Me  [split]  4 files / 1 collections  decided in R-095 (R)
+   decided: R 1216 | signal b (per-file CV 24359, the 1964 original, on 3/4) hides TWO co-equal lines on this shelf: "COL Archie and Me v01 (2018)" 227pp and "Archie & Me 002 (2019)" 227pp are Books 1-2 of the reprint book line CV 115034 "Archie and Me" (Archie 2018, 2: issue 691403 Book 1 2018-11-07, issue 714314 Book 2 2019-07-25) = GCD 133332 (2018-2019, 2 rows 1871697 / 2000409, both 228pp); "Archie and Me Digest 012 (2018)" 121pp and "Archie & Me Digest 015 (2019)" 183pp are issues #12 and #15 of the digest run CV 105297 "Archie and Me Comics Digest" (Archie 2017, 23) = GCD 117633 (Archie 2017-2020, 23: #12 row 1871692 2018-11-07 132pp, #15 row 1925980 2019-02-20 196pp); C-004's S named only the book line
+   F 1216 split-needed | items 7538 ("Archie & Me Digest 015 (2019)") and 7539 ("Archie and Me Digest 012 (2018)") -> "Archie and Me Comics Digest (2017)" cv=105297 gcd=117633 (no shelf holds cv=105297); items 7537 and 7540 stay as the book line cv=115034 gcd=133332
+   N 1216 cv=115034 gcd=133332 — the S line for the kept book line once the digests move; C-004's wrong-cv-link on the stored 24359 (the 1964 original, 161 issues) still holds
+   nearby: S1212 "Archie" 525f [shares gcd=10447 (collected by item 7540) — S cv=9628 gcd=10447 (R-095 0.9)] keys: "Archie"
+   keys now: "Archie & Me" x1 · "Archie & Me Digest" x1 · "Archie and Me Digest" x1 · "Archie and Me" x1
+   groups (title x folder): 4
+   G1 "Archie & Me" in Archie\Archie & Me v1 (1964) — 1 file(s), numbers 2, pp 227-227; cv per-file 115034x1; gcd per-file 133332x1; key 'Archie & Me'
+      [7537] Archie & Me 002 (2019) (Digital) (Shadowcat-Empire).cbz (227pp)
+   G2 "Archie & Me Digest" in Archie\Archie & Me v1 (1964) — 1 file(s), numbers 15, pp 183-183; cv per-file 105297x1; gcd per-file 117633x1; key 'Archie & Me Digest'
+      [7538] Archie & Me Digest 015 (2019) (Digital) (Shadowcat-Empire).cbz (183pp)
+   G3 "Archie and Me" in Archie\Archie & Me v1 (1964) — 1 file(s), 1 COL, pp 227-227; cv per-file 115034x1; gcd per-file 133332x1; key 'Archie and Me'
+      [7540] COL Archie and Me v01 (2018) (Digital) (Shadowcat-Empire).cbz (227pp)
+         own record cv 115034 / gcd s133332 "Archie and Me" (issue 1871697) COLLECTS: gcd=11549 Archie and Me (1964) #3-4, #6-10, #14-18, #21-23 · gcd=285 Archie Comics (1942) #95 · gcd=10447 Archie (1959) #106
+   G4 "Archie and Me Digest" in Archie\Archie & Me v1 (1964) — 1 file(s), numbers 12, pp 121-121; cv per-file 105297x1; gcd per-file 117633x1; key 'Archie and Me Digest'
+      [7539] Archie and Me Digest 012 (2018) (Digital) (Shadowcat-Empire).cbz (121pp)
+
+== S1061 Animosity  [split]  31 files / 0 collections  decided in R-095 (S)
+   decided: S 1061 cv=92728 gcd=104784 0.9 | signal e (31 files) is the run plus one complete spin-off mini: CV 92728 "Animosity" (Aftershock 2016, 28, #1-28 cached) = GCD 104784 (AfterShock 2016-2020, 28) agree exactly and our ladder 1-28 (28 files in "01 Animosity v1 (2016)") fills them, 28 ComicInfo Series "Animosity"; 0.9 because the "02 Animosity - The Rise (2017)" subfolder holds all three issues of a separate mini with its own records, which is why 1-3 each name two files
+   F 1061 split-needed | items 5727-5729 "Animosity - The Rise 001-003 (2017)" (31-33pp) -> "Animosity: The Rise (2017)" cv=98321 gcd=111710 — CV 98321 (Aftershock 2017, 3: The Rise / Red Letter / The Resistance, 2017-01..09) = GCD 111710 (AfterShock 2017, 3 rows 2017-01-25..09-06); no shelf holds cv=98321 (who-stores: 0); the 28-issue run stays
+   N 1061 the Rise files' current key "Animosity - The Rise" is aliased to the parent in SeriesKeyLink (cv=92728 / gcd=104784 Manual) — the split must RESPELL it (e.g. "Animosity: The Rise (2017)"), per L-336, or the items will not move
+   nearby: S1062 "Animosity: Evolution" 10f [title+1 — S cv=105296 gcd=117632 (A-002 0.95)] keys: "Animosity - Evolution"
+   keys now: "Animosity" x28 · "Animosity - The Rise" x3
+   groups (title x folder): 2
+   G1 "Animosity" in Aftershock\Animosity (2016)\01 Animosity v1 (2016) — 28 file(s), numbers 1-28, pp 25-36; cv per-file 92728x28; gcd per-file 104784x28; key 'Animosity'
+      e.g. Animosity 001 (2016) (digital) (Son of Ultron-Empire).cbr
+        5699 #1 2016 32pp · 5700 #2 2016 34pp · 5701 #3 2016 36pp · 5702 #4 2016 35pp · 5703 #5 2017 33pp · 5704 #6 2017 33pp · 5705 #7 2017 29pp · 5706 #8 2017 31pp · 5707 #9 2017 30pp
+        5708 #10 2017 30pp · 5709 #11 2017 31pp · 5710 #12 2018 29pp · 5711 #13 2018 30pp · 5712 #14 2018 31pp · 5713 #15 2018 30pp · 5714 #16 2018 29pp · 5715 #17 2018 30pp · 5716 #018 2019 26pp
+        5717 #019 2019 25pp · 5718 #020 2019 28pp · 5719 #021 2019 27pp · 5720 #022 2019 31pp · 5721 #023 2019 27pp · 5722 #024 2019 29pp · 5723 #025 2019 27pp · 5724 #026 2020 28pp
+        5725 #027 2020 30pp · 5726 #28 2020 27pp
+   G2 "Animosity - The Rise" in Aftershock\Animosity (2016)\02 Animosity - The Rise (2017) — 3 file(s), numbers 1-3, pp 31-33; cv per-file 92728x3; gcd per-file 111710x3; key 'Animosity - The Rise'
+      [5727] Animosity - The Rise 001 (2017) (digital) (Son of Ultron-Empire).cbr (33pp)
+      [5728] Animosity - The Rise 002 (2017) (digital) (Son of Ultron-Empire).cbr (31pp)
+      [5729] Animosity - The Rise 003 (2017) (digital) (Son of Ultron-Empire).cbr (32pp)
+
+== S66125 Tom Strong  [split]  47 files / 1 collections  decided in R-095 (S)
+   decided: S 66125 cv=6566 gcd=7061 0.9 | signal e (47 files) is the run plus two rips of a separate mini plus one OGN trade: CV 6566 "Tom Strong" (DC 1999, 36) = GCD 7061 (DC 1999-2006, 36), our ladder 1-36 (36 files in "Tom Strong v1 (1999)") fills it; 0.9 because "Tom Strong and the Robots of Doom" (10 files, two rips) and the "Planet of Peril" trade are different comics
+   F 66125 split-needed | items 6859-6862 ("…Robots of Doom 01-04 (of 6)", subfolder "Tom Strong v1 (1999)\Tom Strong and the Robots of Doom (2010)") and 6899-6904 ("…01-06 (of 06)", folder "Robots of Doom (2010)") -> "Tom Strong and the Robots of Doom (2010)" cv=33669 gcd=49878 — CV 33669 (DC 2010, 6, 2010-08..2011-01) = GCD 49878 (DC 2010-2011, 6); #1-4 are ripped twice (dupes); no shelf holds cv=33669 (SeriesKeyLink key "Tom Strong and the Robots of Doom (2010)" owned by no Series)
+   N 7973 its key "Tom Strong and the Planet of Peril (1999)" is aliased to the parent (cv=6566 / gcd=7061 Manual) — a stale alias the lead may want to clear; the book itself is residue (one trade of a mini no shelf holds)
+   keys now: "Tom Strong (1999)" x36 · "Tom Strong and the Robots of Doom (2010)" x10 · "Tom Strong and the Planet of Peril (1999)" x1
+   groups (title x folder): 4
+   G1 "Tom Strong and the Robots of Doom" in Americas Best Comics\Tom Strong\Robots of Doom (2010) — 4 file(s), numbers 1-4, pp 22-23; cv per-file 33669x4; gcd per-file 49878x4; key 'Tom Strong and the Robots of Doom (2010)'
+      e.g. Tom Strong and the Robots of Doom 01 (of 6) (2010) (digital-Empire).cbz
+        6859 #1 2010 22pp · 6860 #2 2010 22pp · 6861 #3 2010 22pp · 6862 #4 2010 23pp
+   G2 "Tom Strong" in Americas Best Comics\Tom Strong\Tom Strong v1 (1999) — 36 file(s), numbers 1-36, pp 22-36; cv per-file 6566x36; gcd per-file 7061x31, 39228x5; key 'Tom Strong (1999)'
+      e.g. Tom Strong 001 (1999) (2 covers) (HD) (digital-Empire).cbr
+        6863 #1 1999 36pp · 6864 #2 1999 25pp · 6865 #3 1999 25pp · 6866 #4 1999 25pp · 6867 #5 1999 25pp · 6868 #6 2000 25pp · 6869 #7 2000 25pp · 6870 #8 2000 25pp · 6871 #9 2000 25pp
+        6872 #10 2000 25pp · 6873 #11 2001 25pp · 6874 #12 2001 25pp · 6875 #13 2001 25pp · 6876 #14 2001 25pp · 6877 #15 2002 23pp · 6878 #16 2002 25pp · 6879 #17 2002 23pp · 6880 #18 2002 22pp
+        6881 #19 2003 25pp · 6882 #20 2003 25pp · 6883 #21 2003 25pp · 6884 #22 2003 25pp · 6885 #23 2004 25pp · 6886 #24 2004 25pp · 6887 #25 2004 25pp · 6888 #26 2004 25pp · 6889 #27 2004 25pp
+        6890 #28 2004 25pp · 6891 #29 2004 25pp · 6892 #30 2005 25pp · 6893 #31 2005 25pp · 6894 #32 2005 25pp · 6895 #33 2005 23pp · 6896 #34 2005 25pp · 6897 #35 2006 23pp · 6898 #36 2006 23pp
+   G3 "Tom Strong and the Planet of Peril (2014) (digital) (Son of Ultron-Empire)" in Americas Best Comics\Tom Strong\Tom Strong v1 (1999)\Tom Strong and the Planet of Peril (2014) — 1 file(s), 1 COL, pp 140-140; cv per-file 75138x1; gcd per-file 81425x1; key 'Tom Strong and the Planet of Peril (1999)'
+      [7973] COL Tom Strong and the Planet of Peril (2014) (digital) (Son of Ultron-Empire).cbr (140pp)
+         own record cv 75138 / gcd s81425 "Tom Strong and the Planet of Peril" (issue 1217409) COLLECTS: gcd=75728 Tom Strong and the Planet of Peril (2013) #1-6
+   G4 "Tom Strong and the Robots of Doom" in Americas Best Comics\Tom Strong\Tom Strong v1 (1999)\Tom Strong and the Robots of Doom (2010) — 6 file(s), numbers 1-6, pp 22-23; cv per-file 33669x6; gcd per-file 49878x6; key 'Tom Strong and the Robots of Doom (2010)'
+      e.g. Tom Strong and the Robots of Doom 01 (of 06) (2010) (digital-Empire).cbz
+        6899 #1 2010 22pp · 6900 #2 2010 22pp · 6901 #3 2010 22pp · 6902 #4 2010 23pp · 6903 #5 2010 22pp · 6904 #6 2011 23pp
+
+== S14949 Sabrina the Teenage Witch  [split]  67 files / 6 collections  decided in R-095 (S)
+   decided: S 14949 cv=22714 gcd=86275 0.9 | signals b (per-file CV 22745, the 1971 run, on 41/61) and e (67 files) hide a retitle: our v3 folder numbers #1-57 + #101-104 continuously, but BOTH legs cut at #37/#38 — #1-37 (2000-2002, "The Animated Series") is CV 7298 "Sabrina" (Archie 2000, 37) = GCD 7875 "Sabrina" (2000-2002, 37), and #38-104 is CV 22714 "Sabrina the Teenage Witch" (Archie 2003, 67, cached #38-104) = GCD 86275 (2003-2009, 67); the four Magic Within trades (judged #58-100) and issues #38-57, #101-104 belong to 22714, which carries the shelf; 0.9 for the #1-37 run and two residue trades
+   F 14949 split-needed | items 7737-7773 (the 36 files "Sabrina the Teenage Witch 001-037 (2000-2002)", #8 absent; #11-37 subtitled "The Animated Series") -> "Sabrina (2000)" cv=7298 gcd=7875 — both legs agree on the #37/#38 cut (unlike Archie S1212), and no shelf holds cv=7298 (who-stores: 0); the #38-104 issues and the trades stay
+   N 14949 R-005's wrong-cv-link on the stored 22745 (the 1971 run, S99610's S) still holds; R-005's I lines on the four Magic Within trades (7799-7802) and the two residue trades (7635, 7636) are restated below
+   N 7635 "60 Magical Stories" is an anthology digest (GCD reprint roll-up: Archie's Madhouse #22, #24 … scattered stories) — no C line, per L-269
+   named: S1212 Archie  525 files  keys: "Archie"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S99610 "Sabrina the Teenage Witch" 61f [shares cv=22745, shares gcd=17209, named S99610 in the decision's R/N lines — S cv=22745 gcd=17209 (R-061 0.9)] keys: "Sabrina the Teenage Witch v1 (1971)"
+   nearby: S99611 "Sabrina the Teenage Witch" 36f [title — S cv=11042 gcd=11973 (R-095 0.9)] keys: "Sabrina the Teenage Witch v2 (1996)"
+   nearby: S14950 "Sabrina the Teenage Witch (2019-)" 1f [title — S cv=154131 gcd=203844 (R-064 0.95)] keys: "Sabrina the Teenage Witch (2019-)"
+   nearby: S99613 "Sabrina the Teenage Witch" 1f [title — S cv=117988 gcd=143162 (B-003 0.95)] keys: "Sabrina the Teenage Witch v4 (2019)"
+   keys now: "Sabrina the Teenage Witch v3 (2000)" x61 · "Sabrina the Teenage Witch - The Magic Within (2013)" x4 · "Sabrina the Teenage Witch (1971)" x1 · "Sabrina the Teenage Witch" x1
+   groups (title x folder): 4
+   G1 "Sabrina the Teenage Witch - 60 Magical Stories (2022) (digital) (DrVink)" in Archie\Sabrina the Teenage Witch — 1 file(s), 1 COL, pp 512-512; cv per-file 145938x1; gcd per-file 189097x1; key 'Sabrina the Teenage Witch (1971)'
+      [7635] COL Sabrina the Teenage Witch - 60 Magical Stories (2022) (digital) (DrVink).cbz (512pp)
+         own record cv 145938 / gcd s189097 "Sabrina: 60 Magical Stories" (issue 2429795) COLLECTS: gcd=12505 Archie's Madhouse (1959) #22, #24, #37, #48, #53, #59
+   G2 "Sabrina the Teenage Witch - Something Wicked (2021) (digital) (Salem-Empire)" in Archie\Sabrina the Teenage Witch — 1 file(s), 1 COL, pp 147-147; cv per-file 134575x1; key 'Sabrina the Teenage Witch'
+      [7636] COL Sabrina the Teenage Witch - Something Wicked (2021) (digital) (Salem-Empire).cbr (147pp)
+   G3 "Sabrina the Teenage Witch" in Archie\Sabrina the Teenage Witch\Sabrina the Teenage Witch v3 (2000) — 61 file(s), numbers 1-7, 9-57, 101-104, pp 22-27; cv per-file 22745x41, 22714x20; gcd per-file 86275x25, 17209x5; key 'Sabrina the Teenage Witch v3 (2000)'
+      e.g. Sabrina the Teenage Witch 001 (2000) (digital) (ZERO-rips).cbr
+        7737 #1 2000 24pp · 7738 #2 2000 23pp · 7739 #3 2000 24pp · 7740 #4 2000 24pp · 7741 #5 2000 23pp · 7742 #6 2000 25pp · 7743 #7 2000 23pp · 7745 #9 2000 24pp · 7746 #10 2000 24pp
+        7774 #38 2003 25pp · 7775 #39 2003 25pp · 7776 #40 2003 24pp · 7777 #41 2003 25pp · 7778 #42 2003 23pp · 7779 #43 2003 24pp · 7780 #44 2003 25pp · 7781 #45 2003 24pp · 7782 #46 2003 25pp
+        7783 #47 2003 24pp · 7784 #48 2003 24pp · 7785 #49 2003 25pp · 7786 #50 2003 25pp · 7787 #51 2003 25pp · 7788 #52 2004 25pp · 7789 #53 2004 25pp · 7790 #54 2004 25pp · 7791 #55 2004 22pp
+        7792 #56 2004 25pp · 7793 #57 2004 27pp · 7794 #101 2009 24pp
+      [7747] Sabrina the Teenage Witch 011 - The Animated Series (2000) (digital-SD) (Minutemen-Mookie).cbr (24pp)
+      [7748] Sabrina the Teenage Witch 012 - The Animated Series (2000) (digital-SD) (Minutemen-Mookie).cbr (25pp)
+      [7749] Sabrina the Teenage Witch 013 - The Animated Series (2001) (digital-SD) (Minutemen-Mookie).cbr (24pp)
+      [7750] Sabrina the Teenage Witch 014 - The Animated Series (2001) (digital-SD) (Minutemen-Mookie).cbr (25pp)
+      [7751] Sabrina the Teenage Witch 015 - The Animated Series (2001) (digital-SD) (Minutemen-Mookie).cbr (25pp)
+      [7752] Sabrina the Teenage Witch 016 - The Animated Series (2001) (digital-SD) (Minutemen-Mookie).cbr (25pp)
+      [7753] Sabrina the Teenage Witch 017 - The Animated Series (2001) (digital-SD) (Minutemen-Mookie).cbr (25pp)
+      [7754] Sabrina the Teenage Witch 018 - The Animated Series (2001) (digital-SD) (Minutemen-Mookie).cbr (25pp)
+      [7755] Sabrina the Teenage Witch 019 - The Animated Series (2001) (digital-SD) (Minutemen-Mookie).cbr (24pp)
+      [7756] Sabrina the Teenage Witch 020 - The Animated Series (2001) (digital-SD) (Minutemen-Mookie).cbr (24pp)
+      [7757] Sabrina the Teenage Witch 021 - The Animated Series (2001) (digital-SD) (Minutemen-Mookie).cbr (25pp)
+      [7758] Sabrina the Teenage Witch 022 - The Animated Series (2001) (digital-SD) (Minutemen-Mookie).cbr (25pp)
+      [7759] Sabrina the Teenage Witch 023 - The Animated Series (2001) (digital-SD) (Minutemen-Mookie).cbr (25pp)
+      [7760] Sabrina the Teenage Witch 024 - The Animated Series (2001) (digital-SD) (Minutemen-Mookie).cbr (24pp)
+      [7761] Sabrina the Teenage Witch 025 - The Animated Series (2002) (digital-SD) (Minutemen-Mookie).cbr (24pp)
+      [7762] Sabrina the Teenage Witch 026 - The Animated Series (2002) (digital-SD) (Minutemen-Mookie).cbr (25pp)
+      [7763] Sabrina the Teenage Witch 027 - The Animated Series (2002) (digital-SD) (Minutemen-Mookie).cbr (25pp)
+      [7764] Sabrina the Teenage Witch 028 - The Animated Series (2002) (digital-SD) (Minutemen-Mookie).cbr (24pp)
+      [7765] Sabrina the Teenage Witch 029 - The Animated Series (2002) (digital-SD) (Minutemen-Mookie).cbr (25pp)
+      [7766] Sabrina the Teenage Witch 030 - The Animated Series (2002) (digital-SD) (Minutemen-Mookie).cbr (24pp)
+      [7767] Sabrina the Teenage Witch 031 - The Animated Series (2002) (digital-SD) (Minutemen-Mookie).cbr (23pp)
+      [7768] Sabrina the Teenage Witch 032 - The Animated Series (2002) (digital-SD) (Minutemen-Mookie).cbr (24pp)
+      [7769] Sabrina the Teenage Witch 033 - The Animated Series (2002) (digital-SD) (Minutemen-Mookie).cbr (24pp)
+      [7770] Sabrina the Teenage Witch 034 - The Animated Series (2002) (digital-SD) (Minutemen-Mookie).cbr (24pp)
+      [7771] Sabrina the Teenage Witch 035 - The Animated Series (2002) (digital-SD) (Minutemen-Mookie).cbr (24pp)
+      [7772] Sabrina the Teenage Witch 036 - The Animated Series (2002) (digital) (Minutemen-Mookie).cbr (24pp)
+      [7773] Sabrina the Teenage Witch 037 - The Animated Series (2002) (digital) (Minutemen-Mookie).cbr (24pp)
+      [7795] Sabrina the Teenage Witch 101 - Young Salem (2009) (digital) (Minutemen-Mookie).cbr (24pp)
+      [7796] Sabrina the Teenage Witch 102 - Young Salem (2009) (digital) (Minutemen-Mookie).cbr (24pp)
+      [7797] Sabrina the Teenage Witch 103 - Young Salem (2009) (digital) (Minutemen-Mookie).cbr (24pp)
+      [7798] Sabrina the Teenage Witch 104 - Young Salem (2009) (digital) (Minutemen-Mookie).cbr (23pp)
+   G4 "Sabrina the Teenage Witch - The Magic Within" in Archie\Sabrina the Teenage Witch\Sabrina the Teenage Witch v3 (2000)\Trades — 4 file(s), 4 COL, pp 240-278; cv per-file 58550x4; gcd per-file 74428x4; key 'Sabrina the Teenage Witch - The Magic Within (2013)'
+      [7799] COL Sabrina the Teenage Witch - The Magic Within Vol. 01 (2013) (digital) (Minutemen-Mookie).cbr (278pp)
+         own record cv 58550 / gcd s74428 "Sabrina the Teenage Witch: The Magic Within" (issue 1111855) COLLECTS: gcd=86275 Sabrina the Teenage Witch (2003) #58-68
+      [7800] COL Sabrina the Teenage Witch - The Magic Within Vol. 02 (2013) (digital) (Minutemen-Mookie).cbr (240pp)
+         own record cv 58550 / gcd s74428 "Sabrina the Teenage Witch: The Magic Within" (issue 1156454) COLLECTS: gcd=86275 Sabrina the Teenage Witch (2003) #68
+      [7801] COL Sabrina the Teenage Witch - The Magic Within Vol. 03 (2013) (digital) (Minutemen-Mookie).cbr (256pp)
+      [7802] COL Sabrina the Teenage Witch - The Magic Within Vol. 04 (2014) (digital) (Minutemen-Mookie).cbr (272pp)

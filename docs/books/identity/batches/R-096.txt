@@ -1,0 +1,291 @@
+## Conventions for this batch (33 shown of 87 matched; 361 in LEDGER.md; 17 shelf/shelves: pub:dc ×12 · folder:sequel-subfolder ×2 · pub:archie ×2 · kind:new ×2 · folder:bucket ×2 · folder:vn-year ×1 · pub:marvel ×1 · folder:events ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-212] (12 shelf/shelves) pub:dc sig:collision sig:legacy-stamp
+- A continuation of legacy numbering (#201+ picking up a prior volume's own numbering, Green Lantern Corps S94605→
+  S94610) is the SAME run as the prior volume — merge-with, not a separate id.
+[L-222] (12 shelf/shelves) pub:dc sig:collision
+- Second-rip fragments of shelves already read in earlier batches (Flash Secret Files, Spectre 1992, Teen Titans
+  2003/2016, Wonder Woman 1942/2016, Zatanna 1993, Donna Troy) surface as `--all` collisions — `merge-with` after
+  grepping the partner's name and count.
+[L-237] (12 shelf/shelves) pass:revisit pub:dc sig:collision sig:comicinfo
+- Action Comics: CV 18005 stops at #904 (2011); the Rebirth continuation #957+ is CV 91078 (ComicInfo `Volume`
+  asserts it) — the "v1 (2016)" and "v1 (2018)" folder shelves are one run (R-019 merge-with).
+[L-245] (12 shelf/shelves) pass:revisit pub:dc sig:collision sig:legacy-stamp sig:split sig:stamp
+- A SHARED STORED ComicVine id is not proof of one run: `merge-with` on it only after the id fits BOTH shelves' own
+  keys and GCD links. C-008 merged the real Flash 1959 shelf into the "The Flash v2 (2007)" folder shelf because both
+  stored CV 1995 — but that shelf's own key and GCD link (26125, 2007-2009) said Flash vol. 2; the stamp was the
+  legacy-number trap. The merged shelf became two runs (R-023, R + split). When a shelf's GCD leg contradicts its
+  stored CV id, the CV id is the suspect, and the merge is `F wrong-cv-link` on the mis-stamped shelf instead.
+[L-360] (12 shelf/shelves) pub:dc pub:image sig:probe
+- Wildstorm / Image: "Gen 13" needs the SPACE on both legs; every Gen13 one-shot has a count-1 record on both legs, so
+  a "Gen13 Assorted" bucket is a split, not provider-missing; CV 5667 is the whole #0-77 run while GCD splits it 5417
+  (Image) / 14809 (DC). DC/Wildstorm World of Warcraft rips named "v2 #NNN - Title (MM-DD-YYYY)" are the 2008 ongoing
+  (CV 19669), their date = GCD's on-sale date. Blackthorne 3-D titles live on CV only as issues of "Blackthorne 3-D
+  Series" (12050); GCD gives each title its own series (Gumby in 3-D = 38332). NBM Dungeon: Zenith is CV 52034 / GCD
+  55263; the 2021 GCD "Dungeon: X" rows are the re-edition line. Crusade's 2020-22 Tucci Shi books are CV-only (GCD rows
+  are 2024-25 reprints) (R-091/R-092).
+[L-013] (17 shelf/shelves) sig:probe
+- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
+  with the other spelling.
+[L-014] (17 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-030] (17 shelf/shelves) sig:collision
+- One folder split into two shelves by a subtitle in one filename (Analog, Witch Doctor) → `F merge-with=<sid>`.
+[L-043] (17 shelf/shelves) sig:probe
+- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
+  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
+[L-050] (17 shelf/shelves) sig:probe
+- When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
+  punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
+  abbreviation the publisher uses ("HSE").
+[L-072] (17 shelf/shelves) sig:probe
+- GCD hides behind the SUBTITLE: "The Hunting Accident", "Giraffes on Horseback Salad", "Undesirables" return
+  nothing under their full titles — re-probe the SHORT title before writing `provider-missing`.
+[L-088] (17 shelf/shelves) sig:probe
+- GCD hides behind a LONGER title too ("… and the Tale of Azkon's Heart", "Holiday Party (One-Shot)"), not only a
+  shorter one — probe both directions before `provider-missing`.
+[L-089] (17 shelf/shelves) sig:probe
+- A facsimile of a SINGLE issue is its own book; a reprint edition of a whole series is not — the original wins.
+[L-095] (17 shelf/shelves) sig:probe
+- A folder that is a ripper's READING ORDER over several separately published arcs (The Ride, Revolution) has no
+  spanning record — the ladder is arc numbers, not issue numbers.
+[L-096] (17 shelf/shelves) sig:probe
+- GCD's exact filing recovers legs the probe misses: singular/plural ("Greeting", "Return"), two words ("Super
+  Hero"), a spelled ordinal ("Fortieth"), a dropped subtitle, or the colon form ("Jinx: Torso") — try each before
+  `provider-missing`.
+[L-118] (17 shelf/shelves) sig:probe
+- A GCD collected series numbers its issues by VOLUME and titles them with the volume SUBTITLE — that, not the
+  page count, places a trade when a shelf holds several volumes of one line.
+[L-125] (17 shelf/shelves) sig:probe
+- A stored link that is the same title a DIFFERENT DECADE later is a new cluster (Fist of Khonshu 2024 on the
+  1985 Moon Knight run; a 1971 Sub-Mariner Annual on the 1998 annual) — years decide, never the title.
+[L-151] (17 shelf/shelves) sig:collision sig:withheld
+- The withheld rule beats the checker's merge-with remedy text: a stored-link collision with a DIFFERENT comic is
+  `cv=-` + `N withheld cv=<id> … S<partner>`, never a merge (S101634 vs S22834); merge-with only for the same comic.
+[L-157] (17 shelf/shelves) sig:probe
+- A GCD row with ZERO issues is an empty stub, not a leg (Skull Cat 197154, Rivers of London: Stray Cat Blues 213823,
+  Archer & Armstrong: Revival 164703) → `provider-missing`.
+[L-159] (17 shelf/shelves) sig:probe
+- An exact-name probe can miss a sequel the rip DOES hold: `--contains "Icarus Society"` found CV 143976 after the
+  exact "Prodigy: The Icarus Society" probe returned nothing — try `--contains` on the subtitle before `provider-missing`.
+[L-160] (17 shelf/shelves) pass:revisit sig:withheld
+- A withheld shelf with NO GCD leg to keep becomes `R` + `N withheld cv=<id> … S<partner>` (S4944, S99691) — the
+  revisit pair re-links the partner and then the S line can be written.
+[L-163] (17 shelf/shelves) sig:probe
+- GCD hides behind a bracketed alternate title: "War Stories: J for Jenny [War Story: J for Jenny]" (10937), "Dance Like
+  Everybody's Watching! [A Zits Treasury]" (132081), "You're Out of Your Mind, Charlie Brown! [Horizontal]" (155990).
+[L-177] (17 shelf/shelves) sig:probe
+- A bracketed publisher series number becomes a phantom ladder entry: Thun'da's "[A1-056]/[A1 073]/[A1 083]" produced
+  ladder 56/73/83 and a ratio 5.00 — read the bracket, not the ladder.
+[L-193] (17 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-204] (17 shelf/shelves) pass:item pass:revisit sig:probe
+- `lookup.py --issues <collected-line volume>` names each TRADE's own ComicVine ISSUE id: 71 of 73 `I` lines in
+  R-018 carry an item-level CV id instead of `cv=-`.
+[L-253] (17 shelf/shelves) sig:probe
+- A subtitle can name a SEQUEL series filed on the first run's shelf (Wild's End "Beyond the Sea" = CV 151678 /
+  GCD 201441, not the 2014 run) — the `C` names the sequel run.
+[L-264] (17 shelf/shelves) sig:probe
+- Title-only (st3) GCD matches reuse ONE gcd id across every volume of a line (Golden City ×10, Windmaker,
+  Tarzan Kubert Years) — re-derive each book from the shelf's own numbered pool.
+[L-267] (17 shelf/shelves) sig:probe
+- A GCD "collected edition" series sits beside the genuine RUN under a different id (Dept H 100362 vs 111468, Harrow
+  County 89353 vs 94662, Sword Daughter 125748 vs 134585) — the `C` names the run; `lookup.py` by title finds it.
+[L-273] (17 shelf/shelves) sig:probe
+- The Adventures of Tintin: every per-file gcd pick (60515/108543) was wrong; the shelf's own gcd pool matched by
+  ENGLISH title was right for all 23 — the pool over the pick, again.
+[L-292] (17 shelf/shelves) sig:probe
+- A stored English digital volume's cached rip may cover only its last issues (Suzuka #13-18 of 18) — the earlier
+  books take gcd-only identities from the GCD series' full list, cv=-.
+[L-294] (17 shelf/shelves) pass:item sig:probe
+- ITEM PASS (X-046..X-048): a shelf can hold TWO published editions of one work with no shared pool (Monster: the
+  18-volume line beside the 2014 "Two-in-One" Perfect Edition) — each edition needs its own pool or an honest
+  no-record, never a mapping across editions. When a shelf's file count exceeds its pool, the excess usually
+  belongs to a CONTINUATION volume the shelf's own `N` names (Ranma 1/2 v22-38 → CV 26409 / GCD 17651) — the pool
+  for it must be pulled (`lookup.py --issues`, `gcd_issue WHERE series_id=?`) before writing no-record. GCD may mint
+  a "collected edition" row for only the FIRST of a same-title pair (Zombie Makeout Club) — the second is gcd=-.
+[L-341] (17 shelf/shelves) sig:probe
+- GCD name shapes that hide a record from an exact probe (R-065): a dropped licensor/author prefix (Insight "H. G.
+  Wells:", FSG "Shirley Jackson's"), a dropped leading "The" (DC "Origin of Hordak", IDW "Dark Judges"), a dropped
+  subtitle (IDW TMNT "Saturday Morning Adventures"), a BRACKETED subtitle (IDW RID 2015 "[Animated Series]"), a spelled
+  volume ordinal ("Comic Book History of Comics Volume 2"), a lengthened title (First Second "Prince of Persia the
+  Graphic Novel"). CV spells "'Til" where rippers write "'till".
+[L-346] (17 shelf/shelves) sig:probe
+- GCD name shapes (R-071): a run filed with its subtitle DROPPED (Oni "Dead of Winter" 116730, the subtitle moved onto
+  the trade row); ", Chapter II:" where CV writes " II:"; an event prefix ("Doctor Who Event 2016:"); "Special
+  Edition" appended to KODT specials. Titan Doctor Who "Year Two" runs ARE in the fixed CV index (84960 / 87162) — L-152's
+  "not in the ComicVine rip" is obsolete; the "Year Two v04" trades are run-wins into the issue shelves. Marvel event
+  chronology trade shelves (Death of Captain America, New Guard) are run-wins into the main run shelf.
+
++54 more matched entries not shown: L-347, L-281, L-004, L-044, L-049, L-056, L-120, L-124, L-156, L-175, L-335, L-361, L-007, L-191, L-217, L-290, L-006, L-021, L-033, L-045, L-052, L-060, L-116, L-127, L-136, L-142, L-174, L-176, L-178, L-184, L-185, L-195, L-321, L-333, L-342, L-016, L-032, L-085, L-113, L-114, L-269, L-272, L-041, L-064, L-074, L-083, L-101, L-123, L-150, L-192, L-194, L-250, L-310, L-330 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S103941 Gen13: Bikini Pin-up Special (1997)  [tier D]   keys: Gen13: Bikini Pin-up Special (1997)  years 1994-1994  1 files / 0 collections
+   split run: "Gen13: Bikini Pin-up Special (1997)" run={"cv": 27600, "gcd": 58970} (new shelf from P-031) — seed the S line from these ids, then verify them
+   folders: [1] Wildstorm\Gen13 (1994)\Gen13 Assorted
+   files:   [114918] Gen13 - Bikini Pin-up Special.cbr (20pp)
+
+== S103942 Gen13: Carny Folk (2000)  [tier D]   keys: Gen13: Carny Folk (2000)  years 2000-2000  1 files / 0 collections
+   split run: "Gen13: Carny Folk (2000)" run={"cv": 27597, "gcd": 24463} (new shelf from P-031) — seed the S line from these ids, then verify them
+   folders: [1] Wildstorm\Gen13 (1994)\Gen13 Assorted
+   files:   [114919] Gen13 - Carny Folk (2000) (DigitalPajamas-DCP).cbr (37pp)
+   GCD dump:       24463 "Gen13: Carny Folk" 2000-2000 DC [] 1 (via our own name without the filing suffix "Gen13: Carny Folk")   (dump lookup)
+
+== S103943 Gen13: European Vacation (1997)  [tier D]   keys: Gen13: European Vacation (1997)  years 1994-1994  1 files / 0 collections
+   split run: "Gen13: European Vacation (1997)" run={"cv": 27442, "gcd": 73658} (new shelf from P-031) — seed the S line from these ids, then verify them
+   folders: [1] Wildstorm\Gen13 (1994)\Gen13 Assorted
+   files:   [114920] Gen13 - European Vacation Collection.cbr (48pp)
+
+== S103944 Gen13: Going West (1999)  [tier D]   keys: Gen13: Going West (1999)  years 1999-1999  1 files / 0 collections
+   split run: "Gen13: Going West (1999)" run={"cv": 27448, "gcd": 14810} (new shelf from P-031) — seed the S line from these ids, then verify them
+   folders: [1] Wildstorm\Gen13 (1994)\Gen13 Assorted
+   files:   [114921] Gen13 - Going West (1999) (DigitalPajamas-DCP).cbr (23pp)
+
+== S103945 Gen13: Grunge Saves the World (1999)  [tier D]   keys: Gen13: Grunge Saves the World (1999)  years 1999-1999  1 files / 0 collections
+   split run: "Gen13: Grunge Saves the World (1999)" run={"cv": 27599, "gcd": 14539} (new shelf from P-031) — seed the S line from these ids, then verify them
+   folders: [1] Wildstorm\Gen13 (1994)\Gen13 Assorted
+   files:   [114922] Gen13 - Grunge Saves the World 01 (1999) (DigitalPajamas-DCP).cbr (52pp)
+   ours:    ladder 1
+
+== S103946 Gen13: Medicine Song (2001)  [tier D]   keys: Gen13: Medicine Song (2001)  years 2001-2001  1 files / 0 collections
+   split run: "Gen13: Medicine Song (2001)" run={"cv": 27449, "gcd": 14540} (new shelf from P-031) — seed the S line from these ids, then verify them
+   folders: [1] Wildstorm\Gen13 (1994)\Gen13 Assorted
+   files:   [114929] Gen13 - Medicine Song 2001.cbr (51pp)
+   ours:    ladder 2001
+
+== S103947 Gen13: Rave (1995)  [tier D]   keys: Gen13: Rave (1995)  years 1994-1994  1 files / 0 collections
+   split run: "Gen13: Rave (1995)" run={"cv": 24177, "gcd": 119999} (new shelf from P-031) — seed the S line from these ids, then verify them
+   folders: [1] Wildstorm\Gen13 (1994)\Gen13 Assorted
+   files:   [114932] Gen13 - Rave.cbr (35pp)
+
+== S103948 Gen13: Science Friction (2001)  [tier D]   keys: Gen13: Science Friction (2001)  years 1994-1994  1 files / 0 collections
+   split run: "Gen13: Science Friction (2001)" run={"cv": 27450, "gcd": 24446} (new shelf from P-031) — seed the S line from these ids, then verify them
+   folders: [1] Wildstorm\Gen13 (1994)\Gen13 Assorted
+   files:   [114933] Gen13 - Science Friction.cbr (50pp)
+
+== S103949 Gen13: The Unreal World (1996)  [tier D]   keys: Gen13: The Unreal World (1996)  years 1994-1994  1 files / 0 collections
+   split run: "Gen13: The Unreal World (1996)" run={"cv": 23128, "gcd": 12381} (new shelf from P-031) — seed the S line from these ids, then verify them
+   folders: [1] Wildstorm\Gen13 (1994)\Gen13 Assorted
+   files:   [114937] Gen13 - The Unreal World.cbr (34pp)
+
+== S103950 Gen13: Wired (1999)  [tier D]   keys: Gen13: Wired (1999)  years 1994-1994  1 files / 0 collections
+   split run: "Gen13: Wired (1999)" run={"cv": 27446, "gcd": 14811} (new shelf from P-031) — seed the S line from these ids, then verify them
+   folders: [1] Wildstorm\Gen13 (1994)\Gen13 Assorted
+   files:   [114938] Gen13 - Wired - 01.cbz (23pp)
+   ours:    ladder 1
+
+== S103940 Gen13 Yearbook '97 (1997)  [tier D]   keys: Gen13 Yearbook '97 (1997)  years 1994-1994  1 files / 0 collections
+   split run: "Gen13 Yearbook '97 (1997)" run={"cv": 27398, "gcd": 153221} (new shelf from P-031) — seed the S line from these ids, then verify them
+   folders: [1] Wildstorm\Gen13 (1994)\Gen13 Assorted
+   files:   [114939] Gen13 - Yearbook 97.cbr (31pp)
+   ours:    ladder 97
+
+== S7305 Gen13  [tier D]   keys: Gen13  years 1994-1994  1 files / 0 collections
+   split: the KEPT half of the P-031 split — moved out -> S103941 "Gen13: Bikini Pin-up Special (1997)"; S103942 "Gen13: Carny Folk (2000)"; S103943 "Gen13: European Vacation (1997)"; S103944 "Gen13: Going West (1999)"; S103945 "Gen13: Grunge Saves the World (1999)"; S103946 "Gen13: Medicine Song (2001)"; S103947 "Gen13: Rave (1995)"; S103948 "Gen13: Science Friction (2001)"; S103949 "Gen13: The Unreal World (1996)"; S103950 "Gen13: Wired (1999)"; S103940 "Gen13 Yearbook '97 (1997)"; re-identify what stayed
+   folders: [1] Wildstorm\Gen13 (1994)\Gen13 Assorted
+   files:   [114917] Gen13 - A Christmas Caper.cbr (50pp)
+   GCD dump:       150321 "Gen13" [en-ph] 1997-1998 Universal Records Publishing [] ? · 51668 "Gen13" [it] 1998-? Edizioni Star Comics [] 24 · 25414 "Gen13" 2007-2009 DC [] 4   (dump lookup)
+   MU / External:  ExternalWork 16 "Gen13" openlibrary /works/OL19151997W
+
+== S3566 Captain Marvel: The End  [tier D]   keys: Captain Marvel: The End  years 2020-2020  1 files / 0 collections
+   split: KEPT WHOLE by the P-031 split reader (split: false, nothing moved) — the shelf now holds ONE file: item 77647 Captain Marvel - The End 001 (2020) 30pp = CV 124678 / GCD 155398. The Ultimate End trade 118107 named in R-092's F lin…; decide the shelf as ONE run (S, residue named in the clause) so its F split-needed is retired, or R if it still cannot be one
+   folders: [1] Marvel\_Captain Marvel\13 Captain Marvel v10 (2019)\Annuals and Specials
+   files:   [77647] Captain Marvel - The End 001 (2020) (Digital) (Zone-Empire).cbr (30pp)
+   ours:    ladder 1; ComicInfo Series: "Captain Marvel: The End"x1; ComicInfo Publisher: "Marvel"x1
+   CV candidates:  56017 "Marvel: The End" 2013 Marvel 1 issue 381075 s95 · 34102 "Captain Marvel: The Death of Captain Marvel" 2010 Marvel 1 issue 222331 s80 · 18296 "Captain Marvel" 2002 Marvel 25 s77 · 6458 "Captain Marvel" 1999 Marvel 36 s76 · 2401 "Captain Marvel" 1968 Marvel 62 s72 · 124678 "Captain Marvel: The End" 2020 Marvel 1 issue 735517 s65   (v1 search)
+   CV local rip:   124678 "Captain Marvel: The End" 2020 Marvel 1 issue 735517 · 142181 "Captain Marvel" 2020 Panini Verlag 6 (via CV candidate name "Captain Marvel") · 116365 "Captain Marvel" 2019 Marvel 50 (via CV candidate name "Captain Marvel") · 126626 "Captain Marvel" 2019 Panini Comics 20 (via CV candidate name "Captain Marvel") · 105506 "Captain Marvel" 2017 Marvel 5 (via CV candidate name "Captain Marvel") · 120109 "Captain Marvel" 2017 Panini Verlag 2 (via CV candidate name "Captain Marvel")   (rip lookup)
+   GCD dump:       155398 "Captain Marvel: The End" 2020-2020 Marvel [] 1 · 163553 "Captain Marvel: The End" [es-mx] 2020-2020 Editorial Televisa [] 1 · 155498 "Captain Marvel" [de] 2020-2024 Panini Deutschland [] 10 (via CV candidate name "Captain Marvel") · 137204 "Captain Marvel" 2019-2023 Marvel [] 50 (via CV candidate name "Captain Marvel") · 165728 "Captain Marvel" 2019-2023 Marvel [] 10 (via CV candidate name "Captain Marvel") · 175218 "Captain Marvel" [fr] 2019-2022 Panini France [] 7 (via CV candidate name "Captain Marvel")   (dump lookup)
+
+== S18524 The End  [tier B]   keys: End | The End  years 2013-2016  2 files / 0 collections
+   folders: [1] Fantagraphics · [1] _Marvel Major Event Chronology (digital)\2015.05 - Secret Wars\03 Battleworld
+   files:   [25194] The End (2013) (digital-Empire).cbz (79pp) | [118107] Ultimate End (2016) (Digital) (Kileko-Empire).cbr (115pp)
+   ours:    judged item 118107 #1-5 conf 0.9
+   CV linked:      vol 63308 "The End" 2013 Fantagraphics 1 issues issue 410387  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 0/?; none cached
+   CV candidates:  (= linked) · 52979 "The End" 2007 Fantagraphics 1 issue 361386 s106 · 74172 "The End" 2014 Padraic Productions 1 issue 453609 s94 · 56017 "Marvel: The End" 2013 Marvel 1 issue 381075 s88 · 51488 "End" 1998 Slab-O-Concrete 2 s60 · 92835 "End" 2013 Splitter 1 issue 542873 s58 · 81568 "End" 2012 Bao Publishing 1 issue 487036 s58   (v1 search)
+   CV local rip:   (= linked) · 92835 "End" 2013 Splitter 1 issue 542873 · 74172 "The End" 2014 Padraic Productions 1 issue 453609 · 81568 "End" 2012 Bao Publishing 1 issue 487036 · 52979 "The End" 2007 Fantagraphics 1 issue 361386 · 129901 "The End" 2020 Marvel 1 issue 796439   (rip lookup)
+   GCD dump:       75012 "The End" 2013-2013 Fantagraphics [] 1 · 88653 "End" [de] 2013-2013 Splitter Verlag [] 1 · 79406 "End" [nl] 2014-? Silvester [] 1 · 124832 "END" [fr] 2012-2012 Soleil [] 1 · 206220 "END" [fr] 2017-2017 Pascal Cataye [] 1 · 142719 "The End" [fr] 2018-2018 Rue de Sèvres [] 1   (dump lookup)
+
+== S66465 Judge Dredd The Complete Case Files  [tier C] · gap 29  keys: Judge Dredd - The Complete Case Files  years 1977-2022  52 files / 44 collections
+   folders: [41] 2000AD\Judge Dredd Complete Case Files + TPBs\Judge Dredd - The Complete Case Files · [6] 2000AD\2000AD (1977)\2000AD (Unsorted)\Judge Dredd\Judge Dredd The Complete Case Files (2-17) · [5] Misc\Judge Dredd (2013)\Judge Dredd - The Complete Case Files (2006)
+   files:   Judge Dredd - The Complete Case Files 12.cbz … Judge Dredd - The Complete Case Files 17.cbz  (6 files)
+            [4415] COL Judge Dredd - The Complete Case Files v01 (2009, 7th Print) (digital) (F) (Ampersand).cbr (327pp)
+            [4416] COL Judge Dredd - The Complete Case Files v02 (2009) (digital) (Ampersand).cbr (322pp) | [4417] COL Judge Dredd - The Complete Case Files v03 (2006) (Digital).cbz (242pp)
+            [4418] COL Judge Dredd - The Complete Case Files v04 (2006) (Digital).cbz (387pp) | [4419] COL Judge Dredd - The Complete Case Files v05 (2006) (Digital).cbz (403pp)
+            [4420] COL Judge Dredd - The Complete Case Files v06 (Maximum Colour Edition).cbr (357pp) | [4421] COL Judge Dredd - The Complete Case Files v07 (Maximum Colour Edition).cbr (415pp)
+            [4422] COL Judge Dredd - The Complete Case Files v08 (Maximum Colour Edition).cbr (481pp) | [4423] COL Judge Dredd - The Complete Case Files v09 (Maximum Colour Edition).cbr (553pp)
+            [4424] COL Judge Dredd - The Complete Case Files v10 (Maximum Colour Edition).cbr (488pp) | [4425] COL Judge Dredd - The Complete Case Files v11 (Maximum Colour Edition).cbr (423pp)
+            [4426] COL Judge Dredd - The Complete Case Files v12 (Maximum Colour Edition).cbr (498pp) | [4427] COL Judge Dredd - The Complete Case Files v13 (Maximum Colour Edition).cbr (547pp)
+            [4428] COL Judge Dredd - The Complete Case Files v14 (Maximum Colour Edition).cbr (475pp)
+            [4429] COL Judge Dredd - The Complete Case Files v14.5 (Bonus Megazine Collection 001).cbr (448pp)
+            [4430] COL Judge Dredd - The Complete Case Files v15 (Maximum Colour Edition).cbr (487pp) | [4431] COL Judge Dredd - The Complete Case Files v16.cbr (532pp)
+            [4432] COL Judge Dredd - The Complete Case Files v17 (Maximum Colour Edition).cbr (474pp) | [4433] COL Judge Dredd - The Complete Case Files v18 (2013) (digital) (juvecube).cbr (307pp)
+            [4434] COL Judge Dredd - The Complete Case Files v19 (2013) (digital) (juvecube).cbr (323pp) | [4435] COL Judge Dredd - The Complete Case Files v20 (2013) (digital) (juvecube).cbr (323pp)
+            [4436] COL Judge Dredd - The Complete Case Files v21 (2013) (digital) (juvecube).cbr (323pp) | [4437] COL Judge Dredd - The Complete Case Files v22 (2014) (digital) (juvecube).cbr (308pp)
+            [4438] COL Judge Dredd - The Complete Case Files v23 (2014) (digital) (juvecube).cbr (322pp) | [4439] COL Judge Dredd - The Complete Case Files v24 (2015) (digital) (juvecube).cbr (322pp)
+            [4440] COL Judge Dredd - The Complete Case Files v25 (2015) (digital) (juvecube).cbr (321pp) | [4441] COL Judge Dredd - The Complete Case Files v26 (2016) (digital-Empire).cbr (288pp)
+            [4442] COL Judge Dredd - The Complete Case Files v27 (2016) (digital-Empire).cbr (305pp) | [4443] COL Judge Dredd - The Complete Case Files v28 (2016) (digital-Empire).cbr (295pp)
+            [4444] COL Judge Dredd - The Complete Case Files v29 (2017) (digital) (juvecube).cbr (292pp) | [4445] COL Judge Dredd - The Complete Case Files v30 (2017) (digital) (juvecube).cbr (292pp)
+            [4446] COL Judge Dredd - The Complete Case Files v31 (2018) (digital) (Minutemen-juvecube).cbr (291pp)
+            [4447] COL Judge Dredd - The Complete Case Files v32 (2018) (digital) (Minutemen-juvecube).cbr (308pp)
+            [4448] COL Judge Dredd - The Complete Case Files v33 (2019) (digital) (Minutemen-juvecube).cbr (276pp)
+            [4449] COL Judge Dredd - The Complete Case Files v34 (2019) (digital) (Minutemen-juvecube).cbr (292pp)
+            [4450] COL Judge Dredd - The Complete Case Files v35 (2020) (digital) (Minutemen-juvecube).cbr (308pp)
+            [4451] COL Judge Dredd - The Complete Case Files v36 (2021) (digital) (Minutemen-juvecube).cbr (306pp)
+            [4452] COL Judge Dredd - The Complete Case Files v37 (2021) (digital) (Minutemen-juvecube).cbr (291pp)
+            [4453] COL Judge Dredd - The Complete Case Files v38 (2021) (digital) (Minutemen-juvecube).cbz (516pp)
+            [4454] COL Judge Dredd - The Complete Case Files v39 (2022) (digital) (Minutemen-juvecube).cbz (612pp)
+            [4455] COL Judge Dredd - The Complete Case Files v40 (2022) (digital) (Minutemen-juvecube).cbz (548pp)
+            [106368] Judge Dredd - The Complete Case Files 01 (2006) (Digital) (digitAL).cbr (340pp) | [106369] COL Judge Dredd - The Complete Case Files 02 (2006) (Digital) (Z6-Empire).cbr (322pp)
+            [106370] Judge Dredd - The Complete Case Files 03 (2006) (Digital).cbz (242pp) | [106371] COL Judge Dredd - The Complete Case Files 04 (2006) (Digital).cbz (387pp)
+            [106372] COL Judge Dredd - The Complete Case Files 05 (2006) (Digital).cbz (403pp)
+   ours:    ladder 1, 3, 12-17; judged item 4415 #2-60 conf 0.97; judged item 4416 #61-115 conf 0.95; judged item 4417 #116-154 conf 0.95; judged item 4418 #156-207 conf 0.95; judged item 4419 #208-270 conf 0.95; judged item 4420 #271-321 conf 0.95; judged item 4421 #322-375 conf 0.95; judged item 4422 #376-423 conf 0.95; judged item 4423 #424-473 conf 0.95; judged item 4424 #474-522 conf 0.95; judged item 4425 #523-570 conf 0.95; judged item 4426 #571-618 conf 0.95; judged item 4427 #619-661 conf 0.95; judged item 4428 #662-699 conf 0.92; judged item 4430 #700-735 conf 0.95; judged item 4431 #736-775 conf 0.95; judged item 4432 #776-803 conf 0.95; judged item 4433 #804-829 conf 0.92; judged item 4434 #830-855 conf 0.92; judged item 4435 #856-887 conf 0.92; judged item 4436 #888-915 conf 0.92; judged item 4437 #916-939 conf 0.95; judged item 4438 #940-958 conf 0.9; judged item 4439 #959-983 conf 0.95; judged item 4440 #984-1028 conf 0.92; judged item 4441 #1029-1052 conf 0.92; judged item 4442 #1053-1083 conf 0.92; judged item 4443 #1084-1110 conf 0.95; judged item 4444 #1111-1140 conf 0.95; judged item 4445 #1141-1164 conf 0.92; judged item 4446 #1165-1185 conf 0.92; judged item 4447 #1186-1222 conf 0.95; judged item 4448 #1223-1249 conf 0.95; judged item 4449 #1250-1275 conf 0.9; judged item 4450 #1276-1301 conf 0.95; judged item 4451 #1302-1335 conf 0.95; judged item 4452 #1336-1364 conf 0.95; judged item 4453 #1365-1387 conf 0.95; judged item 4454 #1388-1407 conf 0.95; judged item 4455 #1408-1436 conf 0.95; barcode item 4453 [{"type": "EAN13", "data": "9781781089415", "page": "dredd_t; barcode item 4454 [{"type": "EAN13", "data": "9781786184634", "page": "dredd_t; barcode item 4455 [{"type": "EAN13", "data": "9781786185839", "page": "dredd_t
+   GCD says: [4416] gcd_reprint 643099: s11290 2000 AD and Starlord (1978) #86-108, #110-115 [29 stories] · s11289 2000 AD (1977) #61-70, #73-76, #79-85 [26 stories]
+             [4417] gcd_reprint 643100: s11291 2000 AD and Tornado (1979) #127-154 [29 stories] · s11290 2000 AD and Starlord (1978) #116-126 [13 stories] · s35335 2000 AD Annual (1978) #1979 [1 story]
+             [4418] gcd_reprint 714563: s11289 2000 AD (1977) #178-207 [45 stories] · s11291 2000 AD and Tornado (1979) #156-177 [33 stories]
+             [4419] gcd_reprint 714564: s11289 2000 AD (1977) #208-267, #269-270 [69 stories]
+             [4420] gcd_reprint 714565: s11289 2000 AD (1977) #271-321 [53 stories]
+             [4421] gcd_reprint 714566: s11289 2000 AD (1977) #322-350, #353-375 [54 stories]
+             [4422] gcd_reprint 714567: s11289 2000 AD (1977) #376-423 [62 stories]
+             [4423] gcd_reprint 714568: s11289 2000 AD (1977) #424-473 [60 stories]
+             [4424] gcd_reprint 714569: s11289 2000 AD (1977) #474-522 [57 stories] · s39173 2000 AD Sci-Fi Special (1978) #1985 [1 story]
+             [4425] gcd_reprint 714570: s11295 2000 AD (1987) #536-570 [41 stories] · s11289 2000 AD (1977) #523-535 [16 stories]
+             [4426] gcd_reprint 714571: s11295 2000 AD (1987) #571-618 [49 stories]
+             [4427] gcd_reprint 714572: s11295 2000 AD (1987) #619-661 [43 stories]
+             [4428] gcd_reprint 714573: s11295 2000 AD (1987) #662-699 [43 stories]
+             [4430] gcd_reprint 714574: s11295 2000 AD (1987) #700-735 [36 stories] · s60197 Judge Dredd the Megazine (1990) #1-10 [10 stories]
+             [4431] gcd_reprint 778795: s11295 2000 AD (1987) #736-775 [40 stories] · s60197 Judge Dredd the Megazine (1990) #11-20 [10 stories]
+             [4432] gcd_reprint 814234: s11295 2000 AD (1987) #776-803 [38 stories] · s60198 Judge Dredd the Megazine (1992) #1-11 [14 stories]
+             [4433] gcd_reprint 951685: s11295 2000 AD (1987) #804-829 [26 stories] · s60198 Judge Dredd the Megazine (1992) #12-26 [15 stories]
+             [4434] gcd_reprint 951686: s11295 2000 AD (1987) #830-855 [27 stories] · s60198 Judge Dredd the Megazine (1992) #27-43 [17 stories]
+             [4435] gcd_reprint 1149222: s11295 2000 AD (1987) #853, #856-887 [33 stories] · s60198 Judge Dredd the Megazine (1992) #44-56 [13 stories]
+             [4436] gcd_reprint 1149223: s11295 2000 AD (1987) #888-915 [37 stories] · s60198 Judge Dredd the Megazine (1992) #57-68 [16 stories]
+             … 22 more book(s) with GCD notes (`python gcdnotes.py --issue <id>`)
+   CV linked:      vol 19995 "Judge Dredd The Complete Case Files" 2006 Rebellion 47 issues; cached #1-47 (47); yearΔ 29; ratio 8/47 = 0.17; 1 of 40 judged fit
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD dump:       37387 "Judge Dredd: The Complete Case Files" [en-gb] 2005-? Rebellion [] 50   (dump lookup)
+
+== S1231 Archie Christmas Spectacular  [tier B]   keys: Archie Christmas Spectacular (2025) | Archie Christmas Spectacular (Forsythe-DCP  years 2025-2026  2 files / 0 collections
+   folders: [2] Archie\_Archie Holiday Books
+   files:   [7939] Archie Christmas Spectacular (2025) (Forsythe-DCP).cbr (35pp) | [7940] Archie Christmas Spectacular (Variant Covers) (2025) (Forsythe-DCP.cbr (8pp)
+   ours:    ComicInfo Series: "Archie Christmas Spectacular (2025)"x1; ComicInfo Publisher: "Archie Comic Publications, Inc."x1
+   CV linked:      vol 168947 "Archie Christmas Spectacular" 2025 Archie Comics 1 issues issue 1146752; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range; v1 per-file: same volume on 1/2 files
+   CV candidates:  (= linked) · 132477 "Archie Christmas Spectacular" 2020 Archie Comics 1 issue 820608 s70 · 140551 "Archie Christmas Spectacular" 2021 Archie Comics 1 issue 899342 s70 · 157220 "Archie Christmas Spectacular" 2023 Archie Comics 1 issue 1048130 s70 · 161434 "Archie Christmas Spectacular" 2024 Archie Comics 1 issue 1080246 s70 · 123424 "Archie Christmas Spectacular" 2019 Archie Comics 1 issue 730422 s70 · 156805 "Archie Christmas Spectacular" 2023 Archie Comics 1 issue 1044608 s70   (v1 search)
+   CV local rip:   (= linked) · 161434 "Archie Christmas Spectacular" 2024 Archie Comics 1 issue 1080246 · 156805 "Archie Christmas Spectacular" 2023 Archie Comics 1 issue 1044608 · 157220 "Archie Christmas Spectacular" 2023 Archie Comics 1 issue 1048130 · 140551 "Archie Christmas Spectacular" 2021 Archie Comics 1 issue 899342 · 132477 "Archie Christmas Spectacular" 2020 Archie Comics 1 issue 820608   (rip lookup)
+   GCD dump:       218361 "Archie Christmas Spectacular" 2025-2025 Archie [] 1 · 207594 "Archie Christmas Spectacular" 2024-2024 Archie [] 1 · 230329 "Archie Christmas Spectacular" 2026-2026 Archie [] 1 · 193767 "Archie Christmas Spectacular" 2023-2023 Archie [] 1 · 179173 "Archie Christmas Spectacular" 2022-2022 Archie [] 1 · 167909 "Archie Christmas Spectacular" 2021-2021 Archie [] 1   (dump lookup)
+
+== S1229 Archie Christmas Spectacular (2021)  [tier C] · gap 4  keys: Archie Christmas Spectacular (2021)  years 2022-2022  1 files / 0 collections
+   folders: [1] Archie\_Archie Holiday Books
+   files:   [7937] Archie Christmas Spectacular (2022) (Forsythe-DCP).cbr (29pp)
+   ours:    ladder 1; ComicInfo Series: "Archie Christmas Spectacular (2021)"x1; ComicInfo Publisher: "Archie"x1
+   CV per-file (v1): vol 140551 "Archie Christmas Spectacular" 2021 Archie Comics 1 issue 899342 on 1/1 files
+   CV candidates:  (= per-file) · 132477 "Archie Christmas Spectacular" 2020 Archie Comics 1 issue 820608 s85 · 157220 "Archie Christmas Spectacular" 2023 Archie Comics 1 issue 1048130 s85 · 168947 "Archie Christmas Spectacular" 2025 Archie Comics 1 issue 1146752 s85 · 161434 "Archie Christmas Spectacular" 2024 Archie Comics 1 issue 1080246 s85 · 123424 "Archie Christmas Spectacular" 2019 Archie Comics 1 issue 730422 s85 · 156805 "Archie Christmas Spectacular" 2023 Archie Comics 1 issue 1044608 s85   (v1 search)
+   CV local rip:   (= per-file) · 156805 "Archie Christmas Spectacular" 2023 Archie Comics 1 issue 1044608 (via our own name without the filing suffix "Archie Christmas Spectacular") · 157220 "Archie Christmas Spectacular" 2023 Archie Comics 1 issue 1048130 (via our own name without the filing suffix "Archie Christmas Spectacular") · 132477 "Archie Christmas Spectacular" 2020 Archie Comics 1 issue 820608 (via our own name without the filing suffix "Archie Christmas Spectacular") · 161434 "Archie Christmas Spectacular" 2024 Archie Comics 1 issue 1080246 (via our own name without the filing suffix "Archie Christmas Spectacular") · 123424 "Archie Christmas Spectacular" 2019 Archie Comics 1 issue 730422 (via our own name without the filing suffix "Archie Christmas Spectacular")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 119254 "Archie Christmas Spectacular" 2018-2018 Archie [one-shot] 1 on 1/1 files
+   GCD dump:       179173 "Archie Christmas Spectacular" 2022-2022 Archie [] 1 (via our own name without the filing suffix "Archie Christmas Spectacular") · 167909 "Archie Christmas Spectacular" 2021-2021 Archie [] 1 (via our own name without the filing suffix "Archie Christmas Spectacular") · 193767 "Archie Christmas Spectacular" 2023-2023 Archie [] 1 (via our own name without the filing suffix "Archie Christmas Spectacular") · 153788 "Archie Christmas Spectacular" 2020-2020 Archie [] 1 (via our own name without the filing suffix "Archie Christmas Spectacular") · 207594 "Archie Christmas Spectacular" 2024-2024 Archie [] 1 (via our own name without the filing suffix "Archie Christmas Spectacular") · 135692 "Archie Christmas Spectacular" 2019-2019 Archie [] 1 (via our own name without the filing suffix "Archie Christmas Spectacular")   (dump lookup)
+   bridges:        gcd 119254 -> LOCG 205924 "Archie Halloween Spectacular" support 1
