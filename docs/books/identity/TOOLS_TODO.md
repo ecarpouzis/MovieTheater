@@ -167,3 +167,12 @@
 
 # Added 2026-09-23 after TODO 30's finding
 32. **S.2 signal: probe-blind provider-missing.** Until TODO 30, ~34k of 154k CV volumes (names with of/the/and/a) could not be found by an exact probe, so earlier `F provider-missing` / `cv=-` lines may have missed a volume that exists. Re-probe every winning `cv=-` / provider-missing shelf with the fixed index (read-only, chunked) and feed the hits to the S.2 worklist (and triage_09 as signal (g)).
+# Added 2026-09-23 after R-032
+33. **Keep split pairs together.** After a split, a KEPT half usually still stores the CV volume of the run that moved
+    off it, so the new shelf's "run wins" S collides (R-032 had to withhold 10 cv ids, L-151). (a) `check_splits
+    --landed` sheet rows carry a `pair=<P-shelf>` group; `next_batch --revisit-file` must never cut a batch
+    inside a group (halve by groups); (b) the kept-half packet prints `stored cv <id> = the moved run's` when its
+    stored CvVolumeId equals a moved item's `run` cv, prompting `F wrong-cv-link`.
+34. **lookup.py --shelf <sid>** (keys, files, stored cv/gcd, S line in force) and **--who-stores cv=<id>|gcd=<id>**
+    (every live shelf storing it, incl. alias SeriesKeyLinks). R-032's reader spent ~12 calls building these by hand.
+35. Rule 31 must also cover EMPTY shelves: wave 19's S96256 (R-032 cv=144027) merged undeclared into the empty S64503, which stored 144027 with no files (the reader had flagged it on an N line). Treat a stored CvVolumeId on ANY live Series row, file-holding or not, as a merge partner that needs a declared merge-with or a pre-landing clear.

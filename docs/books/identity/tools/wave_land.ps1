@@ -81,6 +81,12 @@ Step "check_decisions (976 files, 0 failing)" { python "$ctools/check_decisions.
 Step "audit_issue_details (0 defects, 3 understood leads)" { python "$ctools/audit_issue_details.py" }
 Step "armed_unjudged_check (0 with LIVE EXPOSURE)" { python "$ctools/armed_unjudged_check.py" }
 Step "coverage_ledger (0 unaccounted)" { python "$ctools/coverage_ledger.py" }
+# A merge that deletes a run leaves its SeriesTitle.RunCount stale (wave 19: title 51, 8 -> 7) — wave_fix.ps1 has
+# always done this; the landing now does too, so the audit below never halts on bookkeeping.
+Step "SeriesTitle.RunCount recount (a merge deleted a run)" {
+    python -c "import sqlite3; c=sqlite3.connect('$db'); n=c.execute('UPDATE SeriesTitle SET RunCount=(SELECT count(*) FROM Series s WHERE s.TitleId=SeriesTitle.Id) WHERE RunCount<>(SELECT count(*) FROM Series s WHERE s.TitleId=SeriesTitle.Id)').rowcount; c.commit(); print('RunCount rows corrected:', n)" }
+Step "SeriesTitle prune (a merge deleted the last run of a title)" {
+    python -c "import sqlite3; c=sqlite3.connect('$db'); n=c.execute('DELETE FROM SeriesTitle WHERE NOT EXISTS (SELECT 1 FROM Series s WHERE s.TitleId=SeriesTitle.Id)').rowcount; c.commit(); print('orphan titles pruned:', n)" }
 Step "audit_identity (0 failures)" { python "$tools/audit_identity.py" }
 Step "identity_coverage (both partitions sum; the shelf count must have fallen by exactly the merge-with count)" { python "$tools/identity_coverage.py" }
 # PLAN §8 gives this line as `tools/runsql.py` + `tools/sql/series_report.sql`; there is no `tools/` at the
