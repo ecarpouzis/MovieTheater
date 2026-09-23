@@ -1684,3 +1684,12 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
 - Manga (Yen Press / Seven Seas / Kodansha / Viz): the fixed CV index now reaches the count-1 ENGLISH volumes that
   D-012/D-013 called provider-missing; an English CV record replaces a third-territory GCD licence (a German / French
   row) as the identity (R-067).
+
+[L-345] pub:marvel sig:probe
+- Marvel on GCD (R-069): "&" for "and" (Infinity Gauntlet, Gods & Gladiators, Rise & Fall); runs filed under an imprint
+  or shortened name ("Punisher MAX: …", "Ant-Man and Wasp Prelude", "Spider-Man: Spider's Shadow") — a trade's
+  `--collects` roll-up names the run's GCD id fastest; a special's name carries its cover year ("Punisher: X-Mas Special
+  2006"). Masterworks lines HAVE a CV line volume with "Volume N" issues (23402 ASM, 35197 FF, 35188 Sub-Mariner, 59106
+  ToS, 23450 TtA) → the line is the S (it spans several titles), one I per book; GCD keeps separate series for second
+  printings (FF 61146, ASM 52975) — match by year. Digital-first runs (Daughters of the Dragon 2018, Back to Basics,
+  Long Live the King, Purple Daughter) have no GCD series: provider-missing is right.

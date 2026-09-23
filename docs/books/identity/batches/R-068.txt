@@ -1,0 +1,179 @@
+## Conventions for this batch (30 shown of 61 matched; 344 in LEDGER.md; 1 shelf/shelves: pub:fantagraphics ×1 · kind:collected-line ×1 · folder:graphic-novels ×1 · kind:trade-only ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-021] (1 shelf/shelves) pub:dark-horse pub:disney pub:dstlry pub:dynamite pub:fantagraphics pub:idw
+- The Disney folder is publisher-agnostic (Joe Books, Dark Horse, IDW, Dynamite, Fantagraphics, Yen Press on one
+  shelf) — the provider's publisher column is the only test. DSTLRY filenames' "(N covers)" is a cover count.
+[L-321] (1 shelf/shelves) kind:foreign kind:new pub:dark-horse pub:drawn-quarterly pub:fantagraphics pub:first-second sig:probe sig:split tier:D
+- TIER D (D-004..D-006): one CV volume per LINE vs one GCD row per BOOK is what cuts a tier-D folder into shelves
+  (Maakies, Black Moon Chronicles, Wunderwaffen, Ekho, Moebius Library) — `--issues <line volume>` resolves the whole
+  folder by subtitle; the reverse (GCD keeps the line, CV per book: Don Rosa Library, Complete Crepax, History
+  Comics) → cv=- on the S, per-book CV issues on the I. 2022-25 Fantagraphics / D&Q / First Second / Dark Horse
+  singletons are past the rip's horizon → GCD-only cv=- + provider-missing (~150 of 360). A GCD row with count 0 and a
+  "do not add issues" note naming its constituents IS the finding (R + split with those ids); a GCD row with zero
+  indexed issues but the right title still carries the S, the I takes `gcd=s<series>`. GCD splits a run at a mid-run
+  trademark retitle (Tommy Gun: Wizards 149904 / Machine Gun: Wizards 153050 vs CV's one 120928). LEAD RULING: when
+  the ONLY catalog record of a comic is a third-territory licence (a German Splitter edition of a French album whose
+  original is in neither catalog) link it at 0.7 + provider-missing — the review queue, not an applied identity —
+  so the web lane gets a concrete question instead of a refusal.
+[L-342] (1 shelf/shelves) pub:fantagraphics
+- Fantagraphics singletons are often ONE numbered row of a GCD line (EC Artists' Library, Freak Brothers Follies) while
+  CV mints a volume per book — probe the LINE name before provider-missing. A line spanning several works keeps its
+  own identity; a one-volume edition / omnibus of ONE run on its own shelf is a merge into the live run shelf (Bone,
+  Mask of Fudo, Tenement — R-065).
+[L-135] (1 shelf/shelves) kind:collected-line
+- An Epic / Complete Collection LINE is found by probing the line name with NO volume subtitle: "Generation X Epic
+  Collection" → GCD 174151, shared by four sibling shelves.
+[L-164] (1 shelf/shelves) kind:archive kind:collected-line kind:strip sig:probe
+- Year-by-year archives of a newspaper/web strip (Doonesbury, Dennis the Menace, Rip Kirby, The Little King) have no record
+  in either provider → R + provider-missing; where a provider holds the strip's own collected line (Cyanide & Happiness,
+  Oglaf) pair at 0.9 as a format split.
+[L-186] (1 shelf/shelves) kind:collected-line
+- REMINDER (lead ruling, applied again on Princeless S14096): a collected LINE with its own record (GCD 106434, nine
+  trades) wins over the first mini's run; linking the first four-issue mini to a nine-volume trade shelf is wrong-cv-link.
+[L-244] (1 shelf/shelves) kind:collected-line pass:item
+- A trade collecting TWO minis, and an omnibus, cannot yet be stated by a `C` line (one range, one run, one per item):
+  name the runs on an `N` for now — TOOLS_TODO 17 adds per-run ranges and several `C` per item.
+[L-246] (1 shelf/shelves) kind:collected-line pass:item
+- ITEM PASS (X-001..X-003): on RUN-identity shelves the per-file GCD link reuses the run's own series matched to ONE
+  issue by number for vol. 01 only, while later volumes resolve to a real collected-edition series — check whether
+  vol. 01's link differs in kind from vol. 02+ before trusting it (Kevin Keller, Mega Man, Klaus, Dark Crystal …).
+[L-247] (1 shelf/shelves) kind:collected-line
+- A `C` that restates the shelf's own run needs its ids repeated in the clause to clear 40 characters; the clause is
+  the evidence, not a pointer. A shelf's own collected LINE and the run it collects are two records (Invisible
+  Kingdom: line GCD 151274 vs run CV 117748 / GCD 142448; Goldie Vance: line CV 94628 vs run CV 89593) — the `C`
+  names the RUN.
+[L-248] (1 shelf/shelves) kind:collected-line
+- Sibling shelves of one franchise can share one real GCD collected-edition line (Fence S6636/S6639/S6640 → 123731);
+  the sibling's landed S is evidence for the weak per-file matches on the others.
+[L-251] (1 shelf/shelves) kind:collected-line
+- Deluxe / Yearbook / Omnibus editions of the shelf's own ongoing with NO judged range get an `N` naming the
+  relationship, never an invented `C` range (the range is containment's to read).
+[L-258] (1 shelf/shelves) kind:collected-line sig:stamp
+- A degenerate packet block can stamp ONE GCD issue id onto every book of a shelf (Green Arrow S97350, six eras of
+  collected lines) — resolve only by each series' full issue list matched by title, never by the stamp.
+[L-269] (1 shelf/shelves) kind:collected-line kind:trade-only
+- An omnibus bundling several minis gets one `C` per mini at that mini's full range; an anthology TPB ("… and
+  Others") is not a numbered run and gets an `N`, not a forced `C`.
+[L-275] (1 shelf/shelves) kind:collected-line pass:item sig:probe sig:trade-link
+- A count-1/2/3 trade record the shelf's `N` called absent is often in the catalogs under a spelling the packet
+  never probed ("The Adventures of …", "Complete Collection", "Deluxe") — probe before writing no-record.
+[L-279] (1 shelf/shelves) kind:collected-line
+- Blade of the Immortal (S23118) is the canonical "line + run" shape: GCD's 31 collected-edition rows are the `I`
+  identities (cv=- — ComicVine mints only the floppy volume), and the floppy run CV 9069 is what every `C` names,
+  ranges #0-206 ascending across the 31 books. A single-leg shelf's books inherit the shelf's 0.9, never more.
+[L-282] (1 shelf/shelves) kind:collected-line
+- A `gcd=-` / dump-only shelf's books inherit the shelf's 0.9 (Cells at Work! Lady, Dragon Head); an exact edition
+  can exist on GCD alone and be absent from ComicVine entirely (Cat Shit One Omnibus GCD 186621 → 0.9, cv=-).
+[L-285] (1 shelf/shelves) kind:collected-line pass:item sig:stamp
+- ITEM PASS (X-031..X-033): JoJo's Bizarre Adventure part-shelves are double-stamped — per-file CV is the whole-saga
+  hardcover omnibus volume (165667, one issue per PART) and per-file GCD the umbrella whole-saga series (27115) by
+  raw issue number; both wrong for all 37 books. Parts 1-3 have no CV softcover record (cv=-); Parts 4-5 do.
+[L-286] (1 shelf/shelves) kind:collected-line sig:probe
+- A shelf-level "no record" `N` can be wrong for an English product too (Innocent Omnibus: CV 157999 / GCD 206125
+  under "Innocent Omnibus") — probe the edition's own name before inheriting the shelf's gap.
+[L-287] (1 shelf/shelves) kind:collected-line pass:item
+- A series can be wrong on BOTH legs at once (Hunter x Hunter, Inuyashiki, Kakegurui Twin): the header pool by
+  ordinal is the only source; an omnibus with no dedicated record on either leg is `N no-record`, never a mapping.
+[L-289] (1 shelf/shelves) kind:collected-line kind:manga pass:item
+- ITEM PASS (X-037..X-039): one GCD issue row can cover TWO of our volumes when GCD's count undershoots (PTSD Radio,
+  Ojojojo) — both books share the id at 0.9; a genuine 2-in-1 omnibus whose header rows read #1-2 / #3-4 maps 1:1
+  at 0.95 (Orb). A 2-vol English omnibus against a 4-vol Japanese original has no safe mapping → `gcd=s<series>`.
+[L-291] (1 shelf/shelves) kind:collected-line kind:foreign pass:item
+- ITEM PASS (X-040..X-042): a run you can NAME but whose GCD rows carry no page counts gives no safe per-volume
+  range (SPRIGGAN Deluxe → GCD 188803) — `N`, not a guessed `C`; a per-file link can point at a foreign edition of
+  the WRONG book entirely (Summer Wars: the Complete Edition has its own one-shot record CV 155900 / GCD 142966).
+[L-309] (1 shelf/shelves) kind:collected-line pass:item sig:probe
+- A collected line's own issue rows carry the trade's SUBTITLE as the issue title, so once one book of a line is
+  identified, `--issues <volume>` or `gcd_issue WHERE series_id=?` resolves the whole Vol. 01-N run in one query —
+  "own container id not probed" is never a valid no-record.
+[L-314] (1 shelf/shelves) kind:collected-line pass:item
+- `cvref.normName` drops "the / a / an / of / and" everywhere, not just leading articles — a word-preserving
+  normalizer misses ~90% of exact matches; replicate cvref's tokenizer when matching titles by script. A bare
+  trailing-number fallback (trade "01" → run issue #1) is safe only for mislabeled single-issue files, never for
+  "Vol." / "Book" / dash-subtitled titles (it matched an 824pp omnibus to issue #1). One CV issue id reused across
+  two differently titled books on a shelf is a sign of two eras, not one book. A digital "Collection Book NN"
+  bundle is a different catalog shape from a "Vol. NN" trade and is often uncatalogued — honest no-record.
+[L-013] (1 shelf/shelves) sig:probe
+- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
+  with the other spelling.
+[L-014] (1 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-016] (1 shelf/shelves) sig:comicinfo
+- Glorith rips' ComicInfo `Web` ids are NOT GCD issue ids in our dump (29 checked: missing or unrelated). Never
+  claim 1.0 from one. A ComicInfo `Volume` holding a 6-digit number IS a ComicVine volume id (Lex and the City =
+  162184) — a genuine 1.0 assertion.
+[L-030] (1 shelf/shelves) sig:collision
+- One folder split into two shelves by a subtitle in one filename (Analog, Witch Doctor) → `F merge-with=<sid>`.
+[L-032] (1 shelf/shelves) sig:comicinfo
+- A Marika-Empire rip's ComicInfo `Web` id IS a ComicVine ISSUE id (21/21 resolve to the stored volume) — the
+  1.0 shape. The ripper decides: Glorith's Web ids are not GCD issue ids. Check one against the rip before
+  claiming 1.0 on a new ripper.
+[L-043] (1 shelf/shelves) sig:probe
+- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
+  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
+[L-050] (1 shelf/shelves) sig:probe
+- When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
+  punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
+  abbreviation the publisher uses ("HSE").
+
++31 more matched entries not shown: L-064, L-072, L-074, L-083, L-085, L-088, L-089, L-095, L-096, L-101, L-113, L-114, L-118, L-125, L-151, L-157, L-159, L-160, L-163, L-177, L-193, L-204, L-250, L-253, L-264, L-267, L-273, L-292, L-294, L-310, L-341 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S68158 The EC Artists' Library  [tier D]   keys: The EC Artists' Library  years 2012-2024  28 files / 26 collections
+   split run: "The EC Artists' Library" run={"gcd": 69863} (new shelf from P-020) — seed the S line from these ids, then verify them
+   folders: [26] Fantagraphics\The EC Artists' Library (2012) · [1] Fantagraphics · [1] Graphic Novels
+   files:   [25187] The Bitter End and Other Stories (2024) (digital) (DrVink-DCP).cbz (238pp)
+            [24976] COL The EC Artists' Library v01 - Corpse on the Imjin! and Other Stories (2012) (Digital) (TLK-EMPIRE-HD).cbr (241pp)
+            [24977] COL The EC Artists' Library v02 - Came the Dawn and Other Stories (2012) (Digital) (TLK-EMPIRE-HD).cbr (209pp)
+            [24978] COL The EC Artists' Library v03 - 50 Girls 50 and Other Stories (2013) (Digital) (TLK-EMPIRE-HD).cbr (266pp)
+            [24979] COL The EC Artists' Library v04 - 'Taint the Meat...It's the Humanity! (2013) (Digital) (TLK-EMPIRE-HD).cbr (225pp)
+            [24980] COL The EC Artists' Library v05 - Fall Guy For Murder and Other Stories (2013) (Digital) (TLK-EMPIRE-HD).cbr (210pp)
+            [24981] COL The EC Artists' Library v06 - Child of Tomorrow and Other Stories (2013) (Digital) (TLK-EMPIRE-HD).cbr (218pp)
+            [24982] COL The EC Artists' Library v07 - Sucker Bait and Other Stories (2014) (Digital) (Bean-Empire).cbz (217pp)
+            [24984] COL The EC Artists' Library v09 - Judgment Day and Other Stories (2014) (Digital) (Bean-Empire).cbz (191pp)
+            [24985] COL The EC Artists' Library v10 - Bomb Run and Other Stories (2014) (Digital) (TLK-EMPIRE-HD).cbr (265pp)
+            [24986] COL The EC Artists' Library v11 - Aces High (2014) (Digital) (TLK-EMPIRE-HD).cbr (211pp)
+            [24987] COL The EC Artists' Library v12 - Spawn of Mars and Other Stories (2015) (Digital) (TLK-EMPIRE-HD).cbr (241pp)
+            [24988] COL The EC Artists' Library v13 - Grave Business and Other Stories (2015) (Digital) (TLK-EMPIRE-HD).cbr (225pp)
+            [24989] COL The EC Artists' Library v14 - Forty Whacks and Other Stories (2015) (Digital) (TLK-EMPIRE-HD).cbr (203pp)
+            [24990] COL The EC Artists' Library v15 - The High Cost of Dying and Other Stories (2016) (Digital) (TLK-EMPIRE-HD).cbr (177pp)
+            [24991] COL The EC Artists' Library v16 - The Living Mummy and Other Stories (Jack Davis) (2016) (Digital) (Bean-Empire) (Fantagraphics).cbz (225pp)
+            [24992] COL The EC Artists' Library v17 - Voodoo Vengeance and Other Stories (Johnny Craig) (2016) (Digital) (Bean-Empire).cbz (217pp)
+            [24993] COL The EC Artists' Library v18 - The Million Year Picnic and Other Stories (Will Elder) (2017) (Digital) (Bean-Empire).cbz (220pp)
+            [24994] COL The EC Artists' Library v19 - The Thing from the Grave and Other Stories (Joe Orlando) (2017) (Digital) (Bean-Empire).cbz (240pp)
+            [24995] COL The EC Artists' Library v20 - Daddy Lost His Head and Other Stories (Jack Kamen) (2017) (Digital) (Bean-Empire).cbz (185pp)
+            [24996] COL The EC Artists' Library v21 - Master Race and Other Stories (Bernie Krigstein) (2018) (Digital) (Bean-Empire).cbz (240pp)
+            [24997] COL The EC Artists' Library v22 - Death Stand and Other Stories (Jack Davis) (2018) (Digital) (Bean-Empire).cbz (277pp)
+            [24998] COL The EC Artists' Library v23 - Doctor of Horror and Other Stories (2018) (Digital) (Bean-Empire).cbz (226pp)
+            [25006] COL The EC Artists' Library v31 - Three for the Money and Other Stories (2021) (Digital) (Bean-Empire).cbz (240pp)
+            [25007] COL The EC Artists' Library v32 - Code Of Honor and Other Stories (2022) (Digital) (Lo Pan).cbr (261pp)
+            [25008] COL The EC Artists' Library v33 - Deadly Beloved and Other Stories (2023) (Digital) (Lo Pan).cbr (273pp)
+            [25009] COL The EC Artists' Library v34 - The Planetoid and Other Stories (2023) (Digital) (danke-Empire).cbz (231pp)
+            [26113] Zero Hour and Other Stories (2014) (Digital) (Bean-Empire).cbz (169pp)
+   ours:    ComicInfo Series: "The EC Comics Library"x1; ComicInfo Publisher: "Fantagraphics"x1; barcode item 24984 [{"type": "EAN13", "data": "9781606997277", "page": "s (2014; barcode item 26113 [{"type": "EAN13", "data": "9781606997048", "page": "s (2014
+   GCD says: [24976] gcd_reprint 1033241: s762 Two-Fisted Tales (1950) #18-32, #35 [28 stories] · s834 Frontline Combat (1951) #1-9, #11-12, #14 [19 stories] · s14397 Two-Fisted Tales Annual (1952) #1 [1 story]
+             [24977] gcd_reprint 1034721: s913 Shock SuspenStories (1952) #3-15 [13 stories] · s784 Haunt of Fear (1950) #4-6 [5 stories] · s761 Tales from the Crypt (1950) #21, #24-25 [3 stories] · s759 Crime SuspenStories (1950) #1, #3 [2 stories]
+             [24978] gcd_reprint 1100560: s835 Weird Fantasy (1951) #14-21 [10 stories] · s836 Weird Science (1951) #15-22 [8 stories] · s1065 Weird Science-Fantasy (1954) #23-25, #28-29 [5 stories] · s759 Crime SuspenStories (1950) #13, #16-17 [3 stories]
+             [24979] gcd_reprint 1102480: s761 Tales from the Crypt (1950) #23-46 [24 stories] · s12149 Three Dimensional Tales from the Crypt of Terror (1954) #2 [1 story] · s69863 The Fantagraphics EC Artists' Library (2012) #1 [1 story]
+             [24980] gcd_reprint 1149220: s12404 Vault of Horror (1950) #21-31 [11 stories] · s759 Crime SuspenStories (1950) #8-12, #14-18 [10 stories] · s784 Haunt of Fear (1950) #12-13 [2 stories] · s69863 The Fantagraphics EC Artists' Library (2012) #1 [1 story]
+             [24981] gcd_reprint 1149238: s836 Weird Science (1951) #5-9, #14 [7 stories] · s835 Weird Fantasy (1951) #6-9 [6 stories] · s764 Weird Science (1950) #12-15 [5 stories] · s763 Weird Fantasy (1950) #13-17 [5 stories]
+             [24982] gcd_reprint 1179163: s12404 Vault of Horror (1950) #26-33 [8 stories] · s784 Haunt of Fear (1950) #14-21 [8 stories] · s761 Tales from the Crypt (1950) #32-38 [7 stories] · s759 Crime SuspenStories (1950) #14-15 [2 stories]
+             [24984] gcd_reprint 1218639: s1065 Weird Science-Fantasy (1954) #23-25, #27-29 [6 stories] · s835 Weird Fantasy (1951) #17-22 [6 stories] · s836 Weird Science (1951) #17-22 [6 stories] · s913 Shock SuspenStories (1952) #7, #9-10 [3 stories]
+             [24985] gcd_reprint 1218663: s762 Two-Fisted Tales (1950) #19-29, #31, #35 [25 stories] · s834 Frontline Combat (1951) #2-11 [17 stories] · s69863 The Fantagraphics EC Artists' Library (2012) #1 [1 story]
+             [24986] gcd_reprint 1283984: s759 Crime SuspenStories (1950) #15, #19, #21, #23, #25, #27 [7 stories] · s913 Shock SuspenStories (1952) #8, #14-18 [6 stories] · s834 Frontline Combat (1951) #10-15 [6 stories] · s1149 Aces High (1955) #1-5 [5 stories]
+             [24987] gcd_reprint 1300587: s836 Weird Science (1951) #5-12 [11 stories] · s835 Weird Fantasy (1951) #6-12 [10 stories] · s763 Weird Fantasy (1950) #13-17 [5 stories] · s764 Weird Science (1950) #12-14 [3 stories]
+             [24988] gcd_reprint 1426443: s761 Tales from the Crypt (1950) #25-31 [7 stories] · s759 Crime SuspenStories (1950) #6-12 [7 stories] · s784 Haunt of Fear (1950) #8-13 [6 stories] · s12404 Vault of Horror (1950) #20, #22-25 [5 stories]
+             [24989] gcd_reprint 1463824: s759 Crime SuspenStories (1950) #2, #4-17 [16 stories] · s913 Shock SuspenStories (1952) #1-8 [8 stories] · s69863 The Fantagraphics EC Artists' Library (2012) #1 [1 story]
+             [24990] gcd_reprint 1536899: s759 Crime SuspenStories (1950) #18-23 [7 stories] · s913 Shock SuspenStories (1952) #9-13, #15 [6 stories] · s762 Two-Fisted Tales (1950) #35-36 [2 stories] · s12404 Vault of Horror (1950) #33-34 [2 stories]
+             [24991] gcd_reprint 1609430: s12404 Vault of Horror (1950) #17-26 [11 stories] · s784 Haunt of Fear (1950) #4-13 [10 stories] · s759 Crime SuspenStories (1950) #4-5, #7, #9-12 [9 stories] · s913 Shock SuspenStories (1952) #2-3 [2 stories]
+             [24992] gcd_reprint 1648489: s759 Crime SuspenStories (1950) #1-7 [7 stories] · s12404 Vault of Horror (1950) #14-20 [7 stories] · s784 Haunt of Fear (1950) #5, #7, #10 [5 stories] · s761 Tales from the Crypt (1950) #20, #22-24 [4 stories]
+             [24993] gcd_reprint 1666527: s1063 Panic (1954) #1-12 [15 stories] · s835 Weird Fantasy (1951) #17-21 [5 stories] · s761 Tales from the Crypt (1950) #37-38 [2 stories] · s759 Crime SuspenStories (1950) #17-18 [2 stories]
+             [24994] gcd_reprint 1724162: s1063 Panic (1954) #1-9 [9 stories] · s761 Tales from the Crypt (1950) #27-30, #35, #37, #39, #46 [8 stories] · s759 Crime SuspenStories (1950) #16, #22, #24, #26 [4 stories] · s784 Haunt of Fear (1950) #9, #12 [3 stories]
+             [24995] gcd_reprint 1745809: s784 Haunt of Fear (1950) #4, #6-7, #9-11, #13-14 [9 stories] · s12404 Vault of Horror (1950) #15-22, #25 [9 stories] · s761 Tales from the Crypt (1950) #20, #22, #25, #27-30 [7 stories] · s69863 The Fantagraphics EC Artists' Library (2012) #1 [1 story]
+             [24996] gcd_reprint 1776839: s1149 Aces High (1955) #1-5 [5 stories] · s1153 Incredible Science Fiction (1955) #30-33 [4 stories] · s759 Crime SuspenStories (1950) #22, #24-25, #27 [4 stories] · s12404 Vault of Horror (1950) #36, #38-40 [4 stories]
+             … 6 more book(s) with GCD notes (`python gcdnotes.py --issue <id>`)

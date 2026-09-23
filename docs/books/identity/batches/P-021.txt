@@ -1,0 +1,176 @@
+## Conventions for this batch (30 shown of 57 matched; 344 in LEDGER.md; 1 shelf/shelves: pub:fantagraphics ×1 · kind:collected-line ×1 · kind:trade-only ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-021] (1 shelf/shelves) pub:dark-horse pub:disney pub:dstlry pub:dynamite pub:fantagraphics pub:idw
+- The Disney folder is publisher-agnostic (Joe Books, Dark Horse, IDW, Dynamite, Fantagraphics, Yen Press on one
+  shelf) — the provider's publisher column is the only test. DSTLRY filenames' "(N covers)" is a cover count.
+[L-321] (1 shelf/shelves) kind:foreign kind:new pub:dark-horse pub:drawn-quarterly pub:fantagraphics pub:first-second sig:probe sig:split tier:D
+- TIER D (D-004..D-006): one CV volume per LINE vs one GCD row per BOOK is what cuts a tier-D folder into shelves
+  (Maakies, Black Moon Chronicles, Wunderwaffen, Ekho, Moebius Library) — `--issues <line volume>` resolves the whole
+  folder by subtitle; the reverse (GCD keeps the line, CV per book: Don Rosa Library, Complete Crepax, History
+  Comics) → cv=- on the S, per-book CV issues on the I. 2022-25 Fantagraphics / D&Q / First Second / Dark Horse
+  singletons are past the rip's horizon → GCD-only cv=- + provider-missing (~150 of 360). A GCD row with count 0 and a
+  "do not add issues" note naming its constituents IS the finding (R + split with those ids); a GCD row with zero
+  indexed issues but the right title still carries the S, the I takes `gcd=s<series>`. GCD splits a run at a mid-run
+  trademark retitle (Tommy Gun: Wizards 149904 / Machine Gun: Wizards 153050 vs CV's one 120928). LEAD RULING: when
+  the ONLY catalog record of a comic is a third-territory licence (a German Splitter edition of a French album whose
+  original is in neither catalog) link it at 0.7 + provider-missing — the review queue, not an applied identity —
+  so the web lane gets a concrete question instead of a refusal.
+[L-342] (1 shelf/shelves) pub:fantagraphics
+- Fantagraphics singletons are often ONE numbered row of a GCD line (EC Artists' Library, Freak Brothers Follies) while
+  CV mints a volume per book — probe the LINE name before provider-missing. A line spanning several works keeps its
+  own identity; a one-volume edition / omnibus of ONE run on its own shelf is a merge into the live run shelf (Bone,
+  Mask of Fudo, Tenement — R-065).
+[L-135] (1 shelf/shelves) kind:collected-line
+- An Epic / Complete Collection LINE is found by probing the line name with NO volume subtitle: "Generation X Epic
+  Collection" → GCD 174151, shared by four sibling shelves.
+[L-164] (1 shelf/shelves) kind:archive kind:collected-line kind:strip sig:probe
+- Year-by-year archives of a newspaper/web strip (Doonesbury, Dennis the Menace, Rip Kirby, The Little King) have no record
+  in either provider → R + provider-missing; where a provider holds the strip's own collected line (Cyanide & Happiness,
+  Oglaf) pair at 0.9 as a format split.
+[L-186] (1 shelf/shelves) kind:collected-line
+- REMINDER (lead ruling, applied again on Princeless S14096): a collected LINE with its own record (GCD 106434, nine
+  trades) wins over the first mini's run; linking the first four-issue mini to a nine-volume trade shelf is wrong-cv-link.
+[L-244] (1 shelf/shelves) kind:collected-line pass:item
+- A trade collecting TWO minis, and an omnibus, cannot yet be stated by a `C` line (one range, one run, one per item):
+  name the runs on an `N` for now — TOOLS_TODO 17 adds per-run ranges and several `C` per item.
+[L-246] (1 shelf/shelves) kind:collected-line pass:item
+- ITEM PASS (X-001..X-003): on RUN-identity shelves the per-file GCD link reuses the run's own series matched to ONE
+  issue by number for vol. 01 only, while later volumes resolve to a real collected-edition series — check whether
+  vol. 01's link differs in kind from vol. 02+ before trusting it (Kevin Keller, Mega Man, Klaus, Dark Crystal …).
+[L-247] (1 shelf/shelves) kind:collected-line
+- A `C` that restates the shelf's own run needs its ids repeated in the clause to clear 40 characters; the clause is
+  the evidence, not a pointer. A shelf's own collected LINE and the run it collects are two records (Invisible
+  Kingdom: line GCD 151274 vs run CV 117748 / GCD 142448; Goldie Vance: line CV 94628 vs run CV 89593) — the `C`
+  names the RUN.
+[L-248] (1 shelf/shelves) kind:collected-line
+- Sibling shelves of one franchise can share one real GCD collected-edition line (Fence S6636/S6639/S6640 → 123731);
+  the sibling's landed S is evidence for the weak per-file matches on the others.
+[L-251] (1 shelf/shelves) kind:collected-line
+- Deluxe / Yearbook / Omnibus editions of the shelf's own ongoing with NO judged range get an `N` naming the
+  relationship, never an invented `C` range (the range is containment's to read).
+[L-258] (1 shelf/shelves) kind:collected-line sig:stamp
+- A degenerate packet block can stamp ONE GCD issue id onto every book of a shelf (Green Arrow S97350, six eras of
+  collected lines) — resolve only by each series' full issue list matched by title, never by the stamp.
+[L-269] (1 shelf/shelves) kind:collected-line kind:trade-only
+- An omnibus bundling several minis gets one `C` per mini at that mini's full range; an anthology TPB ("… and
+  Others") is not a numbered run and gets an `N`, not a forced `C`.
+[L-275] (1 shelf/shelves) kind:collected-line pass:item sig:probe sig:trade-link
+- A count-1/2/3 trade record the shelf's `N` called absent is often in the catalogs under a spelling the packet
+  never probed ("The Adventures of …", "Complete Collection", "Deluxe") — probe before writing no-record.
+[L-279] (1 shelf/shelves) kind:collected-line
+- Blade of the Immortal (S23118) is the canonical "line + run" shape: GCD's 31 collected-edition rows are the `I`
+  identities (cv=- — ComicVine mints only the floppy volume), and the floppy run CV 9069 is what every `C` names,
+  ranges #0-206 ascending across the 31 books. A single-leg shelf's books inherit the shelf's 0.9, never more.
+[L-282] (1 shelf/shelves) kind:collected-line
+- A `gcd=-` / dump-only shelf's books inherit the shelf's 0.9 (Cells at Work! Lady, Dragon Head); an exact edition
+  can exist on GCD alone and be absent from ComicVine entirely (Cat Shit One Omnibus GCD 186621 → 0.9, cv=-).
+[L-285] (1 shelf/shelves) kind:collected-line pass:item sig:stamp
+- ITEM PASS (X-031..X-033): JoJo's Bizarre Adventure part-shelves are double-stamped — per-file CV is the whole-saga
+  hardcover omnibus volume (165667, one issue per PART) and per-file GCD the umbrella whole-saga series (27115) by
+  raw issue number; both wrong for all 37 books. Parts 1-3 have no CV softcover record (cv=-); Parts 4-5 do.
+[L-286] (1 shelf/shelves) kind:collected-line sig:probe
+- A shelf-level "no record" `N` can be wrong for an English product too (Innocent Omnibus: CV 157999 / GCD 206125
+  under "Innocent Omnibus") — probe the edition's own name before inheriting the shelf's gap.
+[L-287] (1 shelf/shelves) kind:collected-line pass:item
+- A series can be wrong on BOTH legs at once (Hunter x Hunter, Inuyashiki, Kakegurui Twin): the header pool by
+  ordinal is the only source; an omnibus with no dedicated record on either leg is `N no-record`, never a mapping.
+[L-289] (1 shelf/shelves) kind:collected-line kind:manga pass:item
+- ITEM PASS (X-037..X-039): one GCD issue row can cover TWO of our volumes when GCD's count undershoots (PTSD Radio,
+  Ojojojo) — both books share the id at 0.9; a genuine 2-in-1 omnibus whose header rows read #1-2 / #3-4 maps 1:1
+  at 0.95 (Orb). A 2-vol English omnibus against a 4-vol Japanese original has no safe mapping → `gcd=s<series>`.
+[L-291] (1 shelf/shelves) kind:collected-line kind:foreign pass:item
+- ITEM PASS (X-040..X-042): a run you can NAME but whose GCD rows carry no page counts gives no safe per-volume
+  range (SPRIGGAN Deluxe → GCD 188803) — `N`, not a guessed `C`; a per-file link can point at a foreign edition of
+  the WRONG book entirely (Summer Wars: the Complete Edition has its own one-shot record CV 155900 / GCD 142966).
+[L-309] (1 shelf/shelves) kind:collected-line pass:item sig:probe
+- A collected line's own issue rows carry the trade's SUBTITLE as the issue title, so once one book of a line is
+  identified, `--issues <volume>` or `gcd_issue WHERE series_id=?` resolves the whole Vol. 01-N run in one query —
+  "own container id not probed" is never a valid no-record.
+[L-314] (1 shelf/shelves) kind:collected-line pass:item
+- `cvref.normName` drops "the / a / an / of / and" everywhere, not just leading articles — a word-preserving
+  normalizer misses ~90% of exact matches; replicate cvref's tokenizer when matching titles by script. A bare
+  trailing-number fallback (trade "01" → run issue #1) is safe only for mislabeled single-issue files, never for
+  "Vol." / "Book" / dash-subtitled titles (it matched an 824pp omnibus to issue #1). One CV issue id reused across
+  two differently titled books on a shelf is a sign of two eras, not one book. A digital "Collection Book NN"
+  bundle is a different catalog shape from a "Vol. NN" trade and is often uncatalogued — honest no-record.
+[L-013] (1 shelf/shelves) sig:probe
+- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
+  with the other spelling.
+[L-014] (1 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-016] (1 shelf/shelves) sig:comicinfo
+- Glorith rips' ComicInfo `Web` ids are NOT GCD issue ids in our dump (29 checked: missing or unrelated). Never
+  claim 1.0 from one. A ComicInfo `Volume` holding a 6-digit number IS a ComicVine volume id (Lex and the City =
+  162184) — a genuine 1.0 assertion.
+[L-032] (1 shelf/shelves) sig:comicinfo
+- A Marika-Empire rip's ComicInfo `Web` id IS a ComicVine ISSUE id (21/21 resolve to the stored volume) — the
+  1.0 shape. The ripper decides: Glorith's Web ids are not GCD issue ids. Check one against the rip before
+  claiming 1.0 on a new ripper.
+[L-043] (1 shelf/shelves) sig:probe
+- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
+  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
+[L-050] (1 shelf/shelves) sig:probe
+- When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
+  punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
+  abbreviation the publisher uses ("HSE").
+[L-064] (1 shelf/shelves) pass:item sig:twin
+- GCD indexes PRINTINGS: the S line takes the first edition both legs agree on; the `I` line takes the printing
+  we hold (page counts match the edition's row). GCD issue ids for books come from `gcd_issue` — prefer the
+  issue id to the `s<series>` form; use `s<series>` only for twin/variant rows.
+
++27 more matched entries not shown: L-072, L-085, L-088, L-089, L-095, L-096, L-101, L-113, L-114, L-118, L-125, L-157, L-159, L-163, L-177, L-193, L-194, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-310, L-330, L-341 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S18549 The Fabulous Furry Freak Brothers  [split]  17 files / 3 collections  decided in R-066 (S)
+   decided: S 18549 cv=40267 gcd=15815 0.9 | the 14 UCC files T00-T13 (Misc\Underground\Gilbert Shelton Collection, 26-53pp) are Rip Off Press' The Fabulous Furry Freak Brothers: CV 40267 (Rip Off Press 1971, 14, cached #0-13) holds exactly #0-13 and GCD 15815 (Rip Off Press 1971-2003, 13 rows #1-13, 36/52pp) the same run less #0; publisher and start year agree; 0.9 because three Fantagraphics Follies books of another line (GCD 184192) sit here too — see split-needed
+   F 18549 split-needed | items 25010 ("COL … v02 - The 7th Voyage of Fabulous Furry Freak Brothers and Other Follies", 148pp = GCD 184192 #7 2622793, 152pp), 25011 ("v04 - Grass Roots and Other Follies", 146pp = GCD 184192 #4 2515557, 152pp) and 25013 ("v06 - The Idiots Abroad and Other Follies", 145pp = GCD 184192 #6 2394620, 152pp) join S18551 (S cv=- gcd=184192, the Follies line) under its key "The Fabulous Furry Freak Brothers - The Freak Brothers in the 21st Century and Other Follies" — three whole books of a different line, a co-equal run, not residue; S18551 is cv=- so no merge-with can carry them
+   F 18549 needs-fetch cv=142359 | the Idiots Abroad book's CV volume (I line parent) has no CvVolume row
+   F 18549 needs-fetch cv=149296 | the Grass Roots book's CV volume (I line parent) has no CvVolume row
+   N 25010 anthology: GCD rolls it up to Freak Brothers 1971 #1 + #3-4, Fat Freddy's Cat #1-2, Best of Rip Off Press #2/#4, Mother's Oats #3 and more — several runs, not one numbered run, so no C (L-269)
+   N 25011 anthology: Fat Freddy's Cat 1977 #3-5, Freak Brothers 1971 #5, Rip Off Comix #1-6 (GCD roll-up of 2515557) — no C
+   N 25013 anthology: Freak Brothers 1971 #8-10 (the Idiots Abroad serial) + Fat Freddy's Cat #6 (GCD roll-up of 2394620) — the Freak Brothers stretch counts in S18549's own run, so a C is optional; left as N because the book mixes two runs
+   named: S18551 The Fabulous Furry Freak Brothers: In the 21st Century and Other Follies  1 files  keys: "The Fabulous Furry Freak Brothers - The Freak Brothers in the 21st Century and Other Follies"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S20560 "Adventures of Fat Freddy's Cat" 7f [shares gcd=17294 (collected by item 25011) — S cv=25987 gcd=17294 (D-016 0.95)] keys: "UCC - Fat Freddy s Cat T1 Gilbert Shelton en" | "UCC - Fat Freddy s Cat T2 Gilbert Shelton en" | "UCC - Fat Freddy s Cat T3 Gilbert Shelton en" | "UCC - Fat Freddy s Cat T4 Gilbert Shelton en" (+3 more: lookup.py --shelf 20560)
+   keys now: "The Fabulous Furry Freak Brothers" x2 · "The Fabulous Furry Freak Brothers - The 7th Voyage of Fabulous Furry Freak Brothers and Other Follies" x1 · "UCC - The Fabulous Furry Freak Brothers T00 Gilbert Shelton en" x1 · "UCC - The Fabulous Furry Freak Brothers T01 Gilbert Shelton en" x1 · "UCC - The Fabulous Furry Freak Brothers T02 Gilbert Shelton en" x1 · "UCC - The Fabulous Furry Freak Brothers T03 Gilbert Shelton en" x1 · "UCC - The Fabulous Furry Freak Brothers T04 Gilbert Shelton en" x1 · "UCC - The Fabulous Furry Freak Brothers T05 Gilbert Shelton en" x1 · "UCC - The Fabulous Furry Freak Brothers T06 Gilbert Shelton en" x1 · "UCC - The Fabulous Furry Freak Brothers T07 Gilbert Shelton en" x1 · "UCC - The Fabulous Furry Freak Brothers T08 Gilbert Shelton en" x1 · "UCC - The Fabulous Furry Freak Brothers T09 Gilbert Shelton en" x1 · "UCC - The Fabulous Furry Freak Brothers T10 Gilbert Shelton en" x1 · "UCC - The Fabulous Furry Freak Brothers T11 Gilbert Shelton en" x1 · "UCC - The Fabulous Furry Freak Brothers T12 Gilbert Shelton en" x1 · "UCC - The Fabulous Furry Freak Brothers T13 Gilbert Shelton en" x1
+   groups (title x folder): 15
+   G1 "The Fabulous Furry Freak Brothers" in Fantagraphics\The Fabulous Furry Freak Brothers — 3 file(s), 3 COL, pp 145-148; cv per-file 149296x1, 142359x1; gcd per-file 184192x3; key 'The Fabulous Furry Freak Brothers - The 7th Voyage of Fabulous Furry Freak Brothers and Other Follies' | 'The Fabulous Furry Freak Brothers'
+      [25010] COL The Fabulous Furry Freak Brothers v02 - The 7th Voyage of Fabulous Furry Freak Brothers and Other Follies (2024) (Fantagraphics) (digital) (DrVink-DCP).cbz (148pp)  key="The Fabulous Furry Freak Brothers - The 7th Voyage of Fabulous Furry Freak Brothers and Other Follies"
+         own record gcd s184192 "The Fabulous Furry Freak Brothers Follies" (issue 2622793) COLLECTS: gcd=15815 The Fabulous Furry Freak Brothers (1971) #1, #3-4 · gcd=17294 Fat Freddy's Cat (1977) #1-2 · gcd=46411 The Best of The Rip Off Press (1973) #2, #4 · gcd=17229 Mother's Oats Comix (1969) #3  ⚠ the stored GCD row looks like another book — these are ITS contents, not probed
+      [25011] COL The Fabulous Furry Freak Brothers v04 - Grass Roots and Other Follies (2023) (digital) (DrVink).cbz (146pp)
+         own record cv 149296 / gcd s184192 "The Fabulous Furry Freak Brothers Follies" (issue 2515557) COLLECTS: gcd=17294 Fat Freddy's Cat (1977) #3-5 · gcd=15815 The Fabulous Furry Freak Brothers (1971) #5 · gcd=17118 Rip Off Comix (1977) #1-6
+      [25013] COL The Fabulous Furry Freak Brothers v06 - The Idiots Abroad and Other Follies (2022) (digital) (DrVink).cbz (145pp)
+         own record cv 142359 / gcd s184192 "The Fabulous Furry Freak Brothers Follies" (issue 2394620) COLLECTS: gcd=15815 The Fabulous Furry Freak Brothers (1971) #8-10 · gcd=17294 Fat Freddy's Cat (1977) #6
+   G2 "UCC_-_The_Fabulous_Furry_Freak_Brothers_T00__Gilbert_Shelton___en" in Misc\Underground\Gilbert Shelton Collection\The Fabulous Furry Freak Brothers — 1 file(s), pp 28-28; cv per-file 40267x1; key 'UCC - The Fabulous Furry Freak Brothers T00 Gilbert Shelton en'
+      [108147] UCC_-_The_Fabulous_Furry_Freak_Brothers_T00__Gilbert_Shelton___en_.cbr (28pp)
+   G3 "UCC_-_The_Fabulous_Furry_Freak_Brothers_T01__Gilbert_Shelton___en" in Misc\Underground\Gilbert Shelton Collection\The Fabulous Furry Freak Brothers — 1 file(s), pp 53-53; cv per-file 40267x1; gcd per-file 15815x1; key 'UCC - The Fabulous Furry Freak Brothers T01 Gilbert Shelton en'
+      [108148] UCC_-_The_Fabulous_Furry_Freak_Brothers_T01__Gilbert_Shelton___en_.cbr (53pp)
+   G4 "UCC_-_The_Fabulous_Furry_Freak_Brothers_T02__Gilbert_Shelton___en" in Misc\Underground\Gilbert Shelton Collection\The Fabulous Furry Freak Brothers — 1 file(s), pp 53-53; cv per-file 40267x1; gcd per-file 15815x1; key 'UCC - The Fabulous Furry Freak Brothers T02 Gilbert Shelton en'
+      [108149] UCC_-_The_Fabulous_Furry_Freak_Brothers_T02__Gilbert_Shelton___en_.cbr (53pp)
+   G5 "UCC_-_The_Fabulous_Furry_Freak_Brothers_T03__Gilbert_Shelton___en" in Misc\Underground\Gilbert Shelton Collection\The Fabulous Furry Freak Brothers — 1 file(s), pp 35-35; cv per-file 40267x1; gcd per-file 15815x1; key 'UCC - The Fabulous Furry Freak Brothers T03 Gilbert Shelton en'
+      [108150] UCC_-_The_Fabulous_Furry_Freak_Brothers_T03__Gilbert_Shelton___en_.cbr (35pp)
+   G6 "UCC_-_The_Fabulous_Furry_Freak_Brothers_T04__Gilbert_Shelton___en" in Misc\Underground\Gilbert Shelton Collection\The Fabulous Furry Freak Brothers — 1 file(s), pp 52-52; cv per-file 40267x1; gcd per-file 15815x1; key 'UCC - The Fabulous Furry Freak Brothers T04 Gilbert Shelton en'
+      [108151] UCC_-_The_Fabulous_Furry_Freak_Brothers_T04__Gilbert_Shelton___en_.cbr (52pp)
+   G7 "UCC_-_The_Fabulous_Furry_Freak_Brothers_T05__Gilbert_Shelton___en" in Misc\Underground\Gilbert Shelton Collection\The Fabulous Furry Freak Brothers — 1 file(s), pp 52-52; cv per-file 40267x1; gcd per-file 15815x1; key 'UCC - The Fabulous Furry Freak Brothers T05 Gilbert Shelton en'
+      [108152] UCC_-_The_Fabulous_Furry_Freak_Brothers_T05__Gilbert_Shelton___en_.cbr (52pp)
+   G8 "UCC_-_The_Fabulous_Furry_Freak_Brothers_T06__Gilbert_Shelton___en" in Misc\Underground\Gilbert Shelton Collection\The Fabulous Furry Freak Brothers — 1 file(s), pp 52-52; cv per-file 40267x1; gcd per-file 15815x1; key 'UCC - The Fabulous Furry Freak Brothers T06 Gilbert Shelton en'
+      [108153] UCC_-_The_Fabulous_Furry_Freak_Brothers_T06__Gilbert_Shelton___en_.cbr (52pp)
+   G9 "UCC_-_The_Fabulous_Furry_Freak_Brothers_T07__Gilbert_Shelton___en" in Misc\Underground\Gilbert Shelton Collection\The Fabulous Furry Freak Brothers — 1 file(s), pp 52-52; cv per-file 40267x1; gcd per-file 15815x1; key 'UCC - The Fabulous Furry Freak Brothers T07 Gilbert Shelton en'
+      [108154] UCC_-_The_Fabulous_Furry_Freak_Brothers_T07__Gilbert_Shelton___en_.cbr (52pp)
+   G10 "UCC_-_The_Fabulous_Furry_Freak_Brothers_T08__Gilbert_Shelton___en" in Misc\Underground\Gilbert Shelton Collection\The Fabulous Furry Freak Brothers — 1 file(s), pp 35-35; cv per-file 40267x1; gcd per-file 15815x1; key 'UCC - The Fabulous Furry Freak Brothers T08 Gilbert Shelton en'
+      [108155] UCC_-_The_Fabulous_Furry_Freak_Brothers_T08__Gilbert_Shelton___en_.cbr (35pp)
+   G11 "UCC_-_The_Fabulous_Furry_Freak_Brothers_T09__Gilbert_Shelton___en" in Misc\Underground\Gilbert Shelton Collection\The Fabulous Furry Freak Brothers — 1 file(s), pp 26-26; cv per-file 40267x1; gcd per-file 15815x1; key 'UCC - The Fabulous Furry Freak Brothers T09 Gilbert Shelton en'
+      [108156] UCC_-_The_Fabulous_Furry_Freak_Brothers_T09__Gilbert_Shelton___en_.cbr (26pp)
+   G12 "UCC_-_The_Fabulous_Furry_Freak_Brothers_T10__Gilbert_Shelton___en" in Misc\Underground\Gilbert Shelton Collection\The Fabulous Furry Freak Brothers — 1 file(s), pp 37-37; cv per-file 40267x1; gcd per-file 15815x1; key 'UCC - The Fabulous Furry Freak Brothers T10 Gilbert Shelton en'
+      [108157] UCC_-_The_Fabulous_Furry_Freak_Brothers_T10__Gilbert_Shelton___en_.cbr (37pp)
+   G13 "UCC_-_The_Fabulous_Furry_Freak_Brothers_T11__Gilbert_Shelton___en" in Misc\Underground\Gilbert Shelton Collection\The Fabulous Furry Freak Brothers — 1 file(s), pp 37-37; cv per-file 40267x1; gcd per-file 15815x1; key 'UCC - The Fabulous Furry Freak Brothers T11 Gilbert Shelton en'
+      [108158] UCC_-_The_Fabulous_Furry_Freak_Brothers_T11__Gilbert_Shelton___en_.cbr (37pp)
+   G14 "UCC_-_The_Fabulous_Furry_Freak_Brothers_T12__Gilbert_Shelton___en" in Misc\Underground\Gilbert Shelton Collection\The Fabulous Furry Freak Brothers — 1 file(s), pp 37-37; cv per-file 40267x1; gcd per-file 15815x1; key 'UCC - The Fabulous Furry Freak Brothers T12 Gilbert Shelton en'
+      [108159] UCC_-_The_Fabulous_Furry_Freak_Brothers_T12__Gilbert_Shelton___en_.cbr (37pp)
+   G15 "UCC_-_The_Fabulous_Furry_Freak_Brothers_T13__Gilbert_Shelton___en" in Misc\Underground\Gilbert Shelton Collection\The Fabulous Furry Freak Brothers — 1 file(s), pp 37-37; cv per-file 40267x1; gcd per-file 15815x1; key 'UCC - The Fabulous Furry Freak Brothers T13 Gilbert Shelton en'
+      [108160] UCC_-_The_Fabulous_Furry_Freak_Brothers_T13__Gilbert_Shelton___en_.cbr (37pp)
