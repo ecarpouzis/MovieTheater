@@ -1800,3 +1800,11 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   Series" (12050); GCD gives each title its own series (Gumby in 3-D = 38332). NBM Dungeon: Zenith is CV 52034 / GCD
   55263; the 2021 GCD "Dungeon: X" rows are the re-edition line. Crusade's 2020-22 Tucci Shi books are CV-only (GCD rows
   are 2024-25 reprints) (R-091/R-092).
+
+[L-361] pub:archie pub:dark-horse pub:boom
+- Archie holiday specials: GCD names each series by COVER year (on sale Dec Y = series Y+1) while CV uses the on-sale
+  year; page count separates them (24pp up to Dec 2019, 36pp from Dec 2020). Sabrina (2000) #1-37 and Sabrina the
+  Teenage Witch (2003) #38-104 are one continuous numbering, but BOTH catalogues cut at #37/#38 — two runs. Dark Horse /
+  Berger's Everything Vol. 2 collects "what would have been #6-10" (trade-only issues). Boom's Fence and Adventure Time
+  OGN lines: some trade-line volumes are OGNs — no issue range applies. A 2000 AD strip-collection's prog ranges are N
+  lines, never C lines onto the weekly (L-333, reaffirmed R-094) (R-095).
