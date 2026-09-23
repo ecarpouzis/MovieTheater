@@ -1727,3 +1727,11 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   Vampirella FCBD file is #0 of the 2019 run (its EAN = GCD's #0 barcode). Filename misspellings ("Jordon") and one-word
   spellings ("BadGuys") hid real records — probe the corrected / spaced spelling. Quality's American Judge Dredd: CV 3928
   keeps #1-61 as ONE run while GCD splits it at #8 (3341 / 3511) (R-075).
+
+[L-352] kind:foreign sig:probe
+- Scanlations of French albums (Glénat / Casterman / Dargaud; "(F)" / "(Scanlation)" files): the English title is a
+  translation — probe the FRENCH title with its accents kept ("joueur d'echecs" = 0 hits, "Joueur d'échecs" hits) and
+  link the original (L-024). A leading numeral can be part of the title ("2 Sisters"), not a ladder number. Rebellion
+  strip collections sit under the line name "War Picture Library" #[n] (the Wildcat shape, L-347). GCD splits the
+  1985-87 GL Corps annual by cover title (33216 / 33217 / 2978) where CV keeps one volume (21324); GCD brackets the
+  ripper's running Abe Sapien number ([6], [9]) (R-076/R-077).

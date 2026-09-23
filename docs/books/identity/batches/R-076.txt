@@ -1,0 +1,304 @@
+## Conventions for this batch (35 shown of 127 matched; 351 in LEDGER.md; 17 shelf/shelves: pub:dark-horse ×12 · folder:vn-year ×8 · kind:new ×6 · pub:dc ×5 · folder:sequel-subfolder ×4 · kind:trade-only ×4 · kind:collected-line ×4 · pub:delcourt ×2)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-321] (8 shelf/shelves) kind:foreign kind:new pub:dark-horse pub:drawn-quarterly pub:fantagraphics pub:first-second sig:probe sig:split tier:D
+- TIER D (D-004..D-006): one CV volume per LINE vs one GCD row per BOOK is what cuts a tier-D folder into shelves
+  (Maakies, Black Moon Chronicles, Wunderwaffen, Ekho, Moebius Library) — `--issues <line volume>` resolves the whole
+  folder by subtitle; the reverse (GCD keeps the line, CV per book: Don Rosa Library, Complete Crepax, History
+  Comics) → cv=- on the S, per-book CV issues on the I. 2022-25 Fantagraphics / D&Q / First Second / Dark Horse
+  singletons are past the rip's horizon → GCD-only cv=- + provider-missing (~150 of 360). A GCD row with count 0 and a
+  "do not add issues" note naming its constituents IS the finding (R + split with those ids); a GCD row with zero
+  indexed issues but the right title still carries the S, the I takes `gcd=s<series>`. GCD splits a run at a mid-run
+  trademark retitle (Tommy Gun: Wizards 149904 / Machine Gun: Wizards 153050 vs CV's one 120928). LEAD RULING: when
+  the ONLY catalog record of a comic is a third-territory licence (a German Splitter edition of a French album whose
+  original is in neither catalog) link it at 0.7 + provider-missing — the review queue, not an applied identity —
+  so the web lane gets a concrete question instead of a refusal.
+[L-124] (9 shelf/shelves) folder:bucket folder:vn-year pass:item sig:trade-link
+- A `<Title> vN (<year>)` folder holding only a collected edition is the RUN's folder — the run takes the S
+  line, the trade an `I` line; a `_Trades` / `_Minis` / `_One-shots` bucket is the opposite (the book's own
+  count-1 record, minted by BOTH providers, wins).
+[L-281] (9 shelf/shelves) folder:bucket folder:events folder:vn-year
+- A chronology folder's ORDER prefix ("04 Dragon Ball - Full Color Freeza Arc v01") gets read by the per-file num
+  matcher as the ISSUE number — v01 in folder "04" linked to issue #4; the true mapping is the shelf's own vNN by
+  ordinal. Any "NN Title vNN" bucket naming is this trap.
+[L-030] (17 shelf/shelves) sig:collision
+- One folder split into two shelves by a subtitle in one filename (Analog, Witch Doctor) → `F merge-with=<sid>`.
+[L-151] (17 shelf/shelves) sig:collision sig:withheld
+- The withheld rule beats the checker's merge-with remedy text: a stored-link collision with a DIFFERENT comic is
+  `cv=-` + `N withheld cv=<id> … S<partner>`, never a merge (S101634 vs S22834); merge-with only for the same comic.
+[L-160] (17 shelf/shelves) pass:revisit sig:withheld
+- A withheld shelf with NO GCD leg to keep becomes `R` + `N withheld cv=<id> … S<partner>` (S4944, S99691) — the
+  revisit pair re-links the partner and then the S line can be written.
+[L-191] (8 shelf/shelves) folder:sequel-subfolder folder:vn-year pass:revisit sig:stale-flag
+- On a wave-2 `NN <Title> vN (<year>)` split-out shelf (ids S94xxx+) an `overlap-in-series` flag is stale by
+  construction — the colliding Vol. 01s now sit on sibling shelves (13 of 14 in R-016); the lead dismisses the flag.
+[L-193] (16 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-272] (8 shelf/shelves) folder:vn-year
+- A ripper's `vNN` can be offset by one from the album's own subtitle (Carthago Adventures) — the title decides.
+[L-212] (5 shelf/shelves) pub:dc sig:collision sig:legacy-stamp
+- A continuation of legacy numbering (#201+ picking up a prior volume's own numbering, Green Lantern Corps S94605→
+  S94610) is the SAME run as the prior volume — merge-with, not a separate id.
+[L-214] (5 shelf/shelves) pub:dc sig:legacy-stamp sig:stamp sig:twin
+- The wrong-relaunch / legacy-volume stamp ran at 70-95% of files on Midnighter, Mister Miracle, Robin, Nightwing,
+  Supergirl, Plastic Man and Suicide Squad shelves in C-016 — assume it on any DC relaunch shelf and verify by year.
+[L-222] (5 shelf/shelves) pub:dc sig:collision
+- Second-rip fragments of shelves already read in earlier batches (Flash Secret Files, Spectre 1992, Teen Titans
+  2003/2016, Wonder Woman 1942/2016, Zatanna 1993, Donna Troy) surface as `--all` collisions — `merge-with` after
+  grepping the partner's name and count.
+[L-237] (5 shelf/shelves) pass:revisit pub:dc sig:collision sig:comicinfo
+- Action Comics: CV 18005 stops at #904 (2011); the Rebirth continuation #957+ is CV 91078 (ComicInfo `Volume`
+  asserts it) — the "v1 (2016)" and "v1 (2018)" folder shelves are one run (R-019 merge-with).
+[L-245] (5 shelf/shelves) pass:revisit pub:dc sig:collision sig:legacy-stamp sig:split sig:stamp
+- A SHARED STORED ComicVine id is not proof of one run: `merge-with` on it only after the id fits BOTH shelves' own
+  keys and GCD links. C-008 merged the real Flash 1959 shelf into the "The Flash v2 (2007)" folder shelf because both
+  stored CV 1995 — but that shelf's own key and GCD link (26125, 2007-2009) said Flash vol. 2; the stamp was the
+  legacy-number trap. The merged shelf became two runs (R-023, R + split). When a shelf's GCD leg contradicts its
+  stored CV id, the CV id is the suspect, and the merge is `F wrong-cv-link` on the mis-stamped shelf instead.
+[L-013] (14 shelf/shelves) sig:probe
+- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
+  with the other spelling.
+[L-014] (14 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-043] (14 shelf/shelves) sig:probe
+- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
+  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
+[L-050] (14 shelf/shelves) sig:probe
+- When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
+  punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
+  abbreviation the publisher uses ("HSE").
+[L-072] (14 shelf/shelves) sig:probe
+- GCD hides behind the SUBTITLE: "The Hunting Accident", "Giraffes on Horseback Salad", "Undesirables" return
+  nothing under their full titles — re-probe the SHORT title before writing `provider-missing`.
+[L-088] (14 shelf/shelves) sig:probe
+- GCD hides behind a LONGER title too ("… and the Tale of Azkon's Heart", "Holiday Party (One-Shot)"), not only a
+  shorter one — probe both directions before `provider-missing`.
+[L-089] (14 shelf/shelves) sig:probe
+- A facsimile of a SINGLE issue is its own book; a reprint edition of a whole series is not — the original wins.
+[L-095] (14 shelf/shelves) sig:probe
+- A folder that is a ripper's READING ORDER over several separately published arcs (The Ride, Revolution) has no
+  spanning record — the ladder is arc numbers, not issue numbers.
+[L-096] (14 shelf/shelves) sig:probe
+- GCD's exact filing recovers legs the probe misses: singular/plural ("Greeting", "Return"), two words ("Super
+  Hero"), a spelled ordinal ("Fortieth"), a dropped subtitle, or the colon form ("Jinx: Torso") — try each before
+  `provider-missing`.
+[L-118] (14 shelf/shelves) sig:probe
+- A GCD collected series numbers its issues by VOLUME and titles them with the volume SUBTITLE — that, not the
+  page count, places a trade when a shelf holds several volumes of one line.
+[L-125] (14 shelf/shelves) sig:probe
+- A stored link that is the same title a DIFFERENT DECADE later is a new cluster (Fist of Khonshu 2024 on the
+  1985 Moon Knight run; a 1971 Sub-Mariner Annual on the 1998 annual) — years decide, never the title.
+[L-157] (14 shelf/shelves) sig:probe
+- A GCD row with ZERO issues is an empty stub, not a leg (Skull Cat 197154, Rivers of London: Stray Cat Blues 213823,
+  Archer & Armstrong: Revival 164703) → `provider-missing`.
+[L-159] (14 shelf/shelves) sig:probe
+- An exact-name probe can miss a sequel the rip DOES hold: `--contains "Icarus Society"` found CV 143976 after the
+  exact "Prodigy: The Icarus Society" probe returned nothing — try `--contains` on the subtitle before `provider-missing`.
+[L-163] (14 shelf/shelves) sig:probe
+- GCD hides behind a bracketed alternate title: "War Stories: J for Jenny [War Story: J for Jenny]" (10937), "Dance Like
+  Everybody's Watching! [A Zits Treasury]" (132081), "You're Out of Your Mind, Charlie Brown! [Horizontal]" (155990).
+[L-177] (14 shelf/shelves) sig:probe
+- A bracketed publisher series number becomes a phantom ladder entry: Thun'da's "[A1-056]/[A1 073]/[A1 083]" produced
+  ladder 56/73/83 and a ratio 5.00 — read the bracket, not the ladder.
+[L-204] (14 shelf/shelves) pass:item pass:revisit sig:probe
+- `lookup.py --issues <collected-line volume>` names each TRADE's own ComicVine ISSUE id: 71 of 73 `I` lines in
+  R-018 carry an item-level CV id instead of `cv=-`.
+[L-253] (14 shelf/shelves) sig:probe
+- A subtitle can name a SEQUEL series filed on the first run's shelf (Wild's End "Beyond the Sea" = CV 151678 /
+  GCD 201441, not the 2014 run) — the `C` names the sequel run.
+[L-264] (14 shelf/shelves) sig:probe
+- Title-only (st3) GCD matches reuse ONE gcd id across every volume of a line (Golden City ×10, Windmaker,
+  Tarzan Kubert Years) — re-derive each book from the shelf's own numbered pool.
+[L-267] (14 shelf/shelves) sig:probe
+- A GCD "collected edition" series sits beside the genuine RUN under a different id (Dept H 100362 vs 111468, Harrow
+  County 89353 vs 94662, Sword Daughter 125748 vs 134585) — the `C` names the run; `lookup.py` by title finds it.
+[L-273] (14 shelf/shelves) sig:probe
+- The Adventures of Tintin: every per-file gcd pick (60515/108543) was wrong; the shelf's own gcd pool matched by
+  ENGLISH title was right for all 23 — the pool over the pick, again.
+[L-292] (14 shelf/shelves) sig:probe
+- A stored English digital volume's cached rip may cover only its last issues (Suzuka #13-18 of 18) — the earlier
+  books take gcd-only identities from the GCD series' full list, cv=-.
+
++92 more matched entries not shown: L-294, L-341, L-346, L-347, L-060, L-197, L-211, L-230, L-234, L-235, L-236, L-291, L-020, L-023, L-029, L-188, L-219, L-233, L-243, L-135, L-164, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-290, L-309, L-314, L-040, L-052, L-063, L-070, L-082, L-092, L-093, L-158, L-195, L-198, L-199, L-210, L-242, L-265, L-299, L-113, L-016, L-032, L-064, L-085, L-097, L-101, L-114, L-175, L-252, L-274, L-288, L-293, L-310, L-011, L-015, L-031, L-065, L-087, L-099, L-123, L-139, L-194, L-203, L-205, L-215, L-228, L-254, L-255, L-260, L-262, L-302, L-323, L-329, L-330, L-348, L-007, L-217 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S64825 Green Lantern Annual  [tier C] · gap 32  keys: Green Lantern (1999)  years 1960-1999  3 files / 0 collections
+   split run: "Green Lantern (1999)" run={"cv": 4740, "gcd": 4399} (new shelf from P-023) — seed the S line from these ids, then verify them
+   folders: [1] DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\088 The Choice · [1] DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\090 In Effigy · [1] DC\_Green Lantern\_Completed Series\03 Green Lantern v3 (1990)\Annuals and Specials
+   files:   [15875] 01 Green Lantern v3 Annual 07  Ghosts.cbz (39pp) | [15897] 08 Green Lantern v3 Annual 08  Grunts.cbz (37pp)
+            [65177] Green Lantern Annual 003 (1994) (Digital) (Shadowcat-Empire).cbz (54pp)
+   ours:    ladder 3; ComicInfo Series: "Green Lantern"x2, "Green Lantern Annual"x1; ComicInfo Volume: "3"x2, "1990"x1; ComicInfo Publisher: "DC Comics"x2, "DC"x1
+   CV linked:      vol 4740 "Green Lantern Annual" 1992 DC Comics 9 issues; cached #1-9 (9); yearΔ 32; ratio 1/9 = 0.11; no judged range
+   CV per-file (v1): vol 2839 "Green Lantern" 1960 DC Comics 205 on 1/3 files
+   CV local rip:   (= linked) · 63534 "Green Lantern Annual" 1998 DC Comics 1 issue 411496 · 51615 "Green Lantern Annual" 2012 DC Comics 4 · 120397 "The Green Lantern Annual" 2018 DC Comics 1 issue 714618 · 28230 "Green Lantern" 1975 Murray Comics 2 (via the parsed key without the filing suffix "Green Lantern")   (rip lookup)
+   GCD dump:       118736 "Green Lantern Annual" [en-gb] 1967-? Thorpe & Porter [] 1 · 2978 "Green Lantern Annual" 1987-1987 DC [] 1 · 4399 "Green Lantern Annual" 1992-2000 DC [] 9 · 68233 "Green Lantern Annual" 2012-2015 DC [] 4 · 149299 "The Green Lantern Annual" 2019-2019 DC [] 1 · 1448 "Green Lantern" 1960-1986 DC [] 205 (via the parsed key without the filing suffix "Green Lantern")   (dump lookup)
+
+== S102410 Tales of the Green Lantern Corps Annual  [tier C] · gap 25  keys: Tales of the Green Lantern Corps Annual  years 1960-1981  2 files / 0 collections
+   split run: "Tales of the Green Lantern Corps Annual" run={"cv": 21324, "gcd": 33216} (new shelf from P-023) — seed the S line from these ids, then verify them
+   folders: [1] DC\_Green Lantern\_Completed Series\02 Green Lantern v2 (1960)\Annuals and Specials · [1] DC\_Green Lantern\_Completed Series\03 Green Lantern v3 (1990)\Annuals and Specials
+   files:   [65986] Tales of the Green Lantern Corps Annual, 1986-12-00 (#02) (digital) (Glorith-HD).cbz (42pp) | [65176] Green Lantern Annual 001 (1985) (Digital) (Shadowcat-Empire).cbz (40pp)
+   ours:    ladder 1-2; ComicInfo Series: "Green Lantern Annual"x1, "Tales of the Green Lantern Corps Annual"x1; ComicInfo Volume: "1960"x1, "1985"x1; ComicInfo Publisher: "DC"x1, "DC Comics"x1; ComicInfo Web: "134743"x1
+   CV linked:      vol 21324 "Tales of the Green Lantern Corps Annual" 1985 DC Comics 3 issues; cached #1-3 (3); yearΔ 25; ratio 2/3 = 0.67; no judged range
+   CV per-file (v1): vol 2839 "Green Lantern" 1960 DC Comics 205 on 1/2 files · vol 3077 "Tales of the Green Lantern Corps" 1981 DC Comics 3 on 1/2 files
+   CV candidates:  (= linked) · 38955 "Green Lantern: Tales of the Sinestro Corps" 2008 DC Comics 1 issue 261622 s40 · 56372 "Green Lantern Corps Annual" 2013 DC Comics 2 s38 · 39681 "Tales of the Green Lantern Corps" 2009 DC Comics 3 s33 · 18248 "Green Lantern Corps" 2006 DC Comics 63 s30 · 3600 "The Green Lantern Corps" 1986 DC Comics 19 s30 · 81464 "Convergence Green Lantern Corps" 2015 DC Comics 2 s13   (v1 search)
+   CV local rip:   (= linked) · 28230 "Green Lantern" 1975 Murray Comics 2 (via CV name "Green Lantern") · 25944 "Green Lantern" 1941 DC Comics 38 (via CV name "Green Lantern") · 4363 "Green Lantern" 1990 DC Comics 183 (via CV name "Green Lantern")   (rip lookup)
+   GCD per-file:   series 34735 "Green Lantern" [es] 1986-1988 Zinco [fue una serie en curso] 29 on 1/2 files; methods numx1
+   GCD dump:       33216 "Tales of the Green Lantern Corps Annual" 1985-1985 DC [] 1 · 1448 "Green Lantern" 1960-1986 DC [] 205 (via CV name "Green Lantern") · 51036 "Green Lantern" [fr] 1972-1981 Arédit-Artima [] 35 (via CV name "Green Lantern") · 166171 "Green Lantern" [en-ph] 1972-1974 National Book Store [] 2 (via CV name "Green Lantern") · 7041 "Green Lantern" [en-au] 1975-1976 K. G. Murray [] 2 (via CV name "Green Lantern") · 212 "Green Lantern" 1941-1949 DC [] 38 (via CV name "Green Lantern")   (dump lookup)
+   bridges:        gcd 34735 -> LOCG 111929 "Green Lantern" support 1
+
+== S103870 Suicide Squad v2 (2001)  [tier D]   keys: Suicide Squad v2 (2001)  years 2021-2021  1 files / 1 collections
+   split run: "Suicide Squad v2 (2001)" run={"cv": 19127, "gcd": 10779} (new shelf from P-023) — seed the S line from these ids, then verify them
+   folders: [1] DC\_Suicide Squad\02 Suicide Squad v2 (2001)
+   files:   [70007] COL Suicide Squad - Casualties of War (2021) (digital) (Son of Ultron-Empire).cbr (298pp)
+   GCD says: [70007] gcd notes 2235506 (#[nn] of Suicide Squad: Casualties of War): Suicide Squad (DC, 2001 series) #1-12  |  gcd_reprint 2235506: s10779 Suicide Squad (2001) #1-12 [25 stories]
+   CV local rip:   134141 "Suicide Squad" 2021 DC Comics 15 (via our own name without the filing suffix "Suicide Squad") · 123666 "Suicide Squad" 2019 DC Comics 11 (via our own name without the filing suffix "Suicide Squad") · 111236 "Suicide Squad" 2017 Panini Verlag 24 (via our own name without the filing suffix "Suicide Squad") · 120666 "Suicide Squad" 2017 DC Comics 8 (via our own name without the filing suffix "Suicide Squad") · 93205 "Suicide Squad" 2016 DC Comics 50 (via our own name without the filing suffix "Suicide Squad") · 138170 "Suicide Squad" 2016 Urban Comics 2 (via our own name without the filing suffix "Suicide Squad")   (rip lookup)
+   GCD dump:       170019 "Suicide Squad" 2021-2022 DC [] 15 (via our own name without the filing suffix "Suicide Squad") · 153642 "Suicide Squad" 2020-2021 DC [] 11 (via our own name without the filing suffix "Suicide Squad") · 166668 "Suicide Squad" [de] 2020-2021 Panini Deutschland [] 2 (via our own name without the filing suffix "Suicide Squad") · 178189 "Suicide Squad" 2022-2022 DC [] 2 (via our own name without the filing suffix "Suicide Squad") · 185976 "Suicide Squad" [de] 2022-2022 Panini Deutschland [] 3 (via our own name without the filing suffix "Suicide Squad") · 125873 "Suicide Squad" [de] 2018-2019 Panini Deutschland [] 3 (via our own name without the filing suffix "Suicide Squad")   (dump lookup)
+
+== S103869 Suicide Squad Special: War Crimes (2016)  [tier D]   keys: Suicide Squad Special: War Crimes (2016)  years 2016-2016  1 files / 0 collections
+   split run: "Suicide Squad Special: War Crimes (2016)" run={"cv": 93683, "gcd": 105770} (new shelf from P-023) — seed the S line from these ids, then verify them
+   folders: [1] DC\_Suicide Squad\_Trades, Minis and One-shots
+   files:   [70092] Suicide Squad Special - War Crimes 001 (2016) (Digital) (Zone-Empire).cbr (43pp)
+   ours:    ladder 1
+   CV local rip:   93683 "Suicide Squad Special: War Crimes" 2016 DC Comics 1 issue 547258 (via our own name without the filing suffix "Suicide Squad Special: War Crimes")   (rip lookup)
+   GCD dump:       105770 "Suicide Squad Special: War Crimes" 2016-2016 DC [] 1 (via our own name without the filing suffix "Suicide Squad Special: War Crimes")   (dump lookup)
+
+== S17022 Suicide Squad  [tier D]   keys: Suicide Squad  years 2017-2017  1 files / 0 collections
+   split: the KEPT half of the P-023 split — moved out -> S103870 "Suicide Squad v2 (2001)"; S103869 "Suicide Squad Special: War Crimes (2016)"; re-identify what stayed
+   folders: [1] DC\_Suicide Squad\06 Suicide Squad v5 (2016)\Annuals and Specials
+   files:   [70025] Suicide Squad - Director's Cut 001 (2017) (Digital) (Thornn-Empire).cbr (65pp)
+   ours:    ladder 1
+   CV local rip:   111236 "Suicide Squad" 2017 Panini Verlag 24 · 120666 "Suicide Squad" 2017 DC Comics 8 · 93205 "Suicide Squad" 2016 DC Comics 50 · 138170 "Suicide Squad" 2016 Urban Comics 2 · 123666 "Suicide Squad" 2019 DC Comics 11 · 127677 "Suicide Squad" 2013 Panini Verlag 2   (rip lookup)
+   GCD dump:       112598 "Suicide Squad" 2017-2019 DC [] 8 · 113472 "Suicide Squad" [de] 2017-2019 Panini Deutschland [] 24 · 119917 "Suicide Squad" [de] 2017-2019 Panini Deutschland [] 3 · 140602 "Suicide Squad" [es-mx] 2017-? Editorial Televisa [] 25 · 105496 "Suicide Squad" 2016-2019 DC [] 50 · 112374 "Suicide Squad" [nl] 2016-2016 RW Uitgeverij [] 1   (dump lookup)
+
+== S344 Abe Sapien: The Drowning  [tier A]   keys: Abe Sapien - The Drowning and Other Stories  years 2008-2023  6 files / 0 collections
+   split run: "Abe Sapien - The Drowning and Other Stories" run={"cv": 20473, "gcd": 31065} (new shelf from P-023) — seed the S line from these ids, then verify them
+   folders: [5] Dark Horse\Hellboy, B.P.R.D. & Related\Abe Sapien (2008)\v1 (2008) · [1] Dark Horse\Hellboy, B.P.R.D. & Related\Abe Sapien (2008)\# Trades
+   files:   [14829] Abe Sapien - The Drowning and Other Stories (2023) (digital) (Son of Ultron-Empire).cbr (442pp)
+            [14839] Abe Sapien - 001 - The Drowning 01 (of 05) (2008) (Digital) (Empire-G85).cbr (27pp) | [14840] Abe Sapien - 002 - The Drowning 02 (of 05) (2008) (Digital) (Empire-G85).cbr (27pp)
+            [14841] Abe Sapien - 003 - The Drowning 03 (of 05) (2008) (Digital) (Empire-G85).cbr (27pp) | [14842] Abe Sapien - 004 - The Drowning 04 (of 05) (2008) (Digital) (Empire-G85).cbr (27pp)
+            [14843] Abe Sapien - 005 - The Drowning 05 (of 05) (2008) (Digital) (Empire-G85).cbr (28pp)
+   ours:    ladder 1-5
+   CV linked:      vol 20473 "Abe Sapien: The Drowning" 2008 Dark Horse Comics 5 issues; cached #1-5 (5); yearΔ 0; ratio 5/5 = 1.00; no judged range
+   CV per-file (v1): vol 59507 "Abe Sapien" 2013 Dark Horse Comics 36 on 5/6 files · vol 44829 "Abe Sapien: The Drowning" 2008 Dark Horse Comics 1 issue 308772 on 1/6 files
+   CV candidates:  (= linked) · 112158 "Abe Sapien: The Drowning and Other Stories" 2018 Dark Horse Comics 1 issue 676575 s65 · 101917 "Abe Sapien: Lost Lives and Other Stories" 2017 Dark Horse Comics 1 issue 599820 s30 · 152283 "Abe Sapien" 2012 Norma Editorial 2 s23 · 128305 "Abe Sapien" 2010 Delcourt 7 s15 · 29118 "Abe Sapien: The Haunted Boy" 2009 Dark Horse Comics 1 issue 179133 s14 · 79551 "Abe Sapien: Sacred Places" 2015 Dark Horse Comics 1 issue 476755 s10   (v1 search)
+   CV local rip:   (= linked) · 112158 "Abe Sapien: The Drowning and Other Stories" 2018 Dark Horse Comics 1 issue 676575 · 128305 "Abe Sapien" 2010 Delcourt 7 (via CV name "Abe Sapien") · 152283 "Abe Sapien" 2012 Norma Editorial 2 (via CV name "Abe Sapien")   (rip lookup)
+   GCD per-file:   series 32029 "Abe Sapien" 2008-2017 Dark Horse [Collected] 9 on 1/6 files; methods numx1
+   GCD dump:       (= per-file) · 31065 "Abe Sapien: The Drowning" 2008-2008 Dark Horse [] 5 · 126798 "Abe Sapien: The Drowning and Other Stories" 2018-2018 Dark Horse [] 1 · 202797 "Abe Sapien: The Drowning and Other Stories" 2023-2023 Dark Horse [] 1 · 67258 "Abe Sapien" [fr] 2010-2020 Delcourt [] 7 (via CV name "Abe Sapien") · 73562 "Abe Sapien" 2013-2016 Dark Horse [] 36 (via CV name "Abe Sapien")   (dump lookup)
+   bridges:        gcd 32029 -> LOCG 100323 "Abe Sapien" support 16 · gcd 32029 -> OL /works/OL17388608W "None" isbnSupport 16
+
+== S103862 Abe Sapien: The Haunted Boy (2009)  [tier B]   keys: Abe Sapien: The Haunted Boy (2009)  years 2019-2019  1 files / 0 collections
+   split run: "Abe Sapien: The Haunted Boy (2009)" run={"cv": 29118, "gcd": 40647} (new shelf from P-023) — seed the S line from these ids, then verify them
+   folders: [1] Dark Horse\Hellboy, B.P.R.D. & Related\Abe Sapien (2008)\v1 (2008)
+   files:   [14844] Abe Sapien - 006 - The Haunted Boy (2009) (digital) (G85NW-Empire).cbr (30pp)
+   ours:    ladder 6
+   CV per-file (v1): vol 128305 "Abe Sapien" 2010 Delcourt 7 on 1/1 files
+   CV local rip:   (= per-file) · 59507 "Abe Sapien" 2013 Dark Horse Comics 36 (via CV name "Abe Sapien") · 152283 "Abe Sapien" 2012 Norma Editorial 2 (via CV name "Abe Sapien") · 29118 "Abe Sapien: The Haunted Boy" 2009 Dark Horse Comics 1 issue 179133 (via our own name without the filing suffix "Abe Sapien: The Haunted Boy")   (rip lookup)
+   GCD dump:       73562 "Abe Sapien" 2013-2016 Dark Horse [] 36 (via CV name "Abe Sapien") · 67258 "Abe Sapien" [fr] 2010-2020 Delcourt [] 7 (via CV name "Abe Sapien") · 40647 "Abe Sapien: The Haunted Boy" 2009-2009 Dark Horse [] 1 (via our own name without the filing suffix "Abe Sapien: The Haunted Boy") · 32029 "Abe Sapien" 2008-2017 Dark Horse [] 9 (via CV name "Abe Sapien")   (dump lookup)
+
+== S103861 Abe Sapien: The Abyssal Plain (2010)  [tier C] · ratio 0.29  keys: Abe Sapien: The Abyssal Plain (2010)  years 2010-2012  2 files / 0 collections
+   split run: "Abe Sapien: The Abyssal Plain (2010)" run={"cv": 33998, "gcd": 49587} (new shelf from P-023) — seed the S line from these ids, then verify them
+   folders: [2] Dark Horse\Hellboy, B.P.R.D. & Related\Abe Sapien (2008)\v1 (2008)
+   files:   [14845] Abe Sapien - 007 - The Abyssal Plain 01 (2010) (Digital) (Empire-G85).cbr (26pp) | [14846] Abe Sapien - 008 - The Abyssal Plain 02 (2010) (Digital) (Empire-G85).cbr (25pp)
+   ours:    ladder 1-2
+   CV per-file (v1): vol 128305 "Abe Sapien" 2010 Delcourt 7 on 2/2 files
+   CV local rip:   (= per-file) · 33998 "Abe Sapien: The Abyssal Plain" 2010 Dark Horse Comics 2 (via our own name without the filing suffix "Abe Sapien: The Abyssal Plain") · 152283 "Abe Sapien" 2012 Norma Editorial 2 (via CV name "Abe Sapien") · 59507 "Abe Sapien" 2013 Dark Horse Comics 36 (via CV name "Abe Sapien")   (rip lookup)
+   GCD per-file:   series 67258 "Abe Sapien" [fr] 2010-2020 Delcourt [série continue [ongoing series]] 7 on 2/2 files; methods numx2
+   GCD dump:       (= per-file) · 49587 "Abe Sapien: The Abyssal Plain" 2010-2010 Dark Horse [] 2 (via our own name without the filing suffix "Abe Sapien: The Abyssal Plain") · 32029 "Abe Sapien" 2008-2017 Dark Horse [] 9 (via CV name "Abe Sapien") · 73562 "Abe Sapien" 2013-2016 Dark Horse [] 36 (via CV name "Abe Sapien")   (dump lookup)
+   bridges:        gcd 67258 -> LOCG 100323 "Abe Sapien" support 7
+
+== S101651 v1 (2008)  [tier C] · gap 3  keys: v1 (2008)  years 2013-2013  2 files / 0 collections
+   split: the KEPT half of the P-023 split — moved out -> S344 "Abe Sapien - The Drowning and Other Stories"; S103862 "Abe Sapien: The Haunted Boy (2009)"; S103861 "Abe Sapien: The Abyssal Plain (2010)"; re-identify what stayed
+   folders: [2] Dark Horse\Hellboy, B.P.R.D. & Related\Abe Sapien (2008)\v1 (2008)
+   files:   [14847] Abe Sapien - 009 - The Devil Does Not Jest 01 (of 02) (2011) (digital) (G85NW-Empire).cbr (24pp)
+            [14848] Abe Sapien - 010 - The Devil Does Not Jest 02 (of 02) (2011) (digital) (G85NW-Empire).cbr (24pp)
+   ours:    ladder 9-10
+   CV per-file (v1): vol 59507 "Abe Sapien" 2013 Dark Horse Comics 36 on 2/2 files
+   CV local rip:   (= per-file) · 152283 "Abe Sapien" 2012 Norma Editorial 2 (via CV name "Abe Sapien") · 128305 "Abe Sapien" 2010 Delcourt 7 (via CV name "Abe Sapien")   (rip lookup)
+   GCD per-file:   series 67258 "Abe Sapien" [fr] 2010-2020 Delcourt [série continue [ongoing series]] 7 on 2/2 files; methods numx2
+   GCD dump:       (= per-file) · 73562 "Abe Sapien" 2013-2016 Dark Horse [] 36 (via CV name "Abe Sapien") · 32029 "Abe Sapien" 2008-2017 Dark Horse [] 9 (via CV name "Abe Sapien")   (dump lookup)
+   bridges:        gcd 67258 -> LOCG 100323 "Abe Sapien" support 7
+
+== S103866 Joy Operations 2 (2024)  [tier B]   keys: Joy Operations 2 (2024)  years 2021-2021  2 files / 0 collections
+   split run: "Joy Operations 2 (2024)" run={"cv": 158558, "gcd": 213151} (new shelf from P-023) — seed the S line from these ids, then verify them
+   folders: [1] Dark Horse\Joy Operations (2021) · [1] Jinxworld (Dark Horse)\Joy Operations (2021)
+   files:   [15187] Joy Operations 2 (2025) (digital) (Son of Ultron-Empire).cbr (95pp) | [37618] Joy Operations 2 (2025) (digital) (Son of Ultron-Empire).cbr (95pp)
+   ours:    ladder 2; 1 number(s) name more than one file: 2; judged item 15187 #1-4 conf 0.9
+   CV per-file (v1): vol 140216 "Joy Operations" 2021 Dark Horse Comics 5 on 2/2 files
+   CV local rip:   (= per-file) · 145323 "Joy Operations" 2022 Dark Horse Comics 1 issue 949407 (via CV name "Joy Operations") · 158558 "Joy Operations 2" 2024 Dark Horse Comics 4 (via our own name without the filing suffix "Joy Operations 2")   (rip lookup)
+   GCD dump:       178391 "Joy Operations" 2021-2022 Dark Horse [] 5 (via CV name "Joy Operations") · 189078 "Joy Operations" 2022-2022 Dark Horse [] 1 (via CV name "Joy Operations") · 213151 "Joy Operations 2" 2024-? Dark Horse [] 4 (via our own name without the filing suffix "Joy Operations 2") · 220333 "Joy Operations 2" 2025-2025 Dark Horse [] 1 (via our own name without the filing suffix "Joy Operations 2")   (dump lookup)
+
+== S9992 Joy Operations  [tier B]   keys: Joy Operations  years 2021-2022  2 files / 0 collections
+   split: the KEPT half of the P-023 split — moved out -> S103866 "Joy Operations 2 (2024)"; re-identify what stayed
+   folders: [1] Dark Horse\Joy Operations (2021) · [1] Jinxworld (Dark Horse)\Joy Operations (2021)
+   files:   [15186] Joy Operations (2022) (digital) (Son of Ultron-Empire).cbr (132pp) | [37617] Joy Operations (2022) (digital) (Son of Ultron-Empire).cbr (132pp)
+   ours:    judged item 15186 #1-5 conf 0.95
+   CV linked:      vol 140216 "Joy Operations" 2021 Dark Horse Comics 5 issues; cached #2-2 (1); yearΔ 0; ratio 0/5; 1 of 1 judged fit
+   CV local rip:   (= linked) · 145323 "Joy Operations" 2022 Dark Horse Comics 1 issue 949407   (rip lookup)
+   GCD dump:       178391 "Joy Operations" 2021-2022 Dark Horse [] 5 · 189078 "Joy Operations" 2022-2022 Dark Horse [] 1   (dump lookup)
+
+== S103867 Minor Threats (2022)  [tier D]   keys: Minor Threats (2022)  years 2023-2023  1 files / 1 collections
+   split run: "Minor Threats (2022)" run={"cv": 144737, "gcd": 188484} (new shelf from P-023) — seed the S line from these ids, then verify them
+   folders: [1] Dark Horse\Minor Threats (2022)
+   files:   [14531] COL Minor Threats Vol. 01 - A Quick End to a Long Beginning (2023) (digital) (F) (Son of Ultron-Empire).cbr (136pp)
+   ours:    ComicInfo Series: "Minor Threats"x1; ComicInfo Publisher: "Dark Horse"x1
+   CV local rip:   144737 "Minor Threats" 2022 Dark Horse Comics 4 (via our own name without the filing suffix "Minor Threats")   (rip lookup)
+   GCD dump:       202176 "Minor Threats" 2023-? Dark Horse [] 2 (via our own name without the filing suffix "Minor Threats") · 188484 "Minor Threats" 2022-2023 Dark Horse [] 4 (via our own name without the filing suffix "Minor Threats")   (dump lookup)
+
+== S103868 Minor Threats: The Fastest Way Down (2024)  [tier B]   keys: Minor Threats: The Fastest Way Down (2024)  years 2022-2022  1 files / 1 collections
+   split run: "Minor Threats: The Fastest Way Down (2024)" run={"cv": 157524, "gcd": 210695} (new shelf from P-023) — seed the S line from these ids, then verify them
+   folders: [1] Dark Horse\Minor Threats (2022)
+   files:   [14532] COL Minor Threats Vol. 02 - The Fastest Way Down (2024) (digital) (Son of Ultron-Empire).cbr (134pp)
+   CV per-file (v1): vol 144737 "Minor Threats" 2022 Dark Horse Comics 4 on 1/1 files
+   CV local rip:   (= per-file) · 157524 "Minor Threats: The Fastest Way Down" 2024 Dark Horse Comics 4 (via our own name without the filing suffix "Minor Threats: The Fastest Way Down")   (rip lookup)
+   GCD dump:       188484 "Minor Threats" 2022-2023 Dark Horse [] 4 (via CV name "Minor Threats") · 202176 "Minor Threats" 2023-? Dark Horse [] 2 (via CV name "Minor Threats") · 210695 "Minor Threats: The Fastest Way Down" 2024-2024 Dark Horse [] 4 (via our own name without the filing suffix "Minor Threats: The Fastest Way Down")   (dump lookup)
+
+== S103864 From the World of Minor Threats: The Brood (2024)  [tier C] · gap 2  keys: From the World of Minor Threats: The Brood (2024)  years 2022-2022  2 files / 0 collections
+   split run: "From the World of Minor Threats: The Brood (2024)" run={"cv": 161632, "gcd": 218584} (new shelf from P-023) — seed the S line from these ids, then verify them
+   folders: [2] Dark Horse\Minor Threats (2022)\From the World of Minor Threats - The Brood (2024)
+   files:   [14529] From the World of Minor Threats - The Brood 001 (2024) (digital) (Son of Ultron-Empire).cbr (29pp)
+            [14530] From the World of Minor Threats - The Brood 002 (2025) (digital) (Son of Ultron-Empire).cbr (29pp)
+   ours:    ladder 1-2
+   CV per-file (v1): vol 144737 "Minor Threats" 2022 Dark Horse Comics 4 on 2/2 files
+   CV local rip:   (= per-file) · 161632 "From the World of Minor Threats: The Brood" 2024 Dark Horse Comics 4 (via our own name without the filing suffix "From the World of Minor Threats: The Brood")   (rip lookup)
+   GCD per-file:   series 218584 "From the World of Minor Threats: The Brood" 2024-2025 Dark Horse [limited series] 4 on 2/2 files; methods numx2
+   GCD dump:       (= per-file) · 188484 "Minor Threats" 2022-2023 Dark Horse [] 4 (via CV name "Minor Threats") · 202176 "Minor Threats" 2023-? Dark Horse [] 2 (via CV name "Minor Threats")   (dump lookup)
+
+== S103863 From the World of Minor Threats: The Alternates (2023)  [tier B]   keys: From the World of Minor Threats: The Alternates (2023)  years 2023-2023  1 files / 0 collections
+   split run: "From the World of Minor Threats: The Alternates (2023)" run={"cv": 153594, "gcd": 204009} (new shelf from P-023) — seed the S line from these ids, then verify them
+   folders: [1] Dark Horse\Minor Threats (2022)\From the World of Minor Threats - The Alternates (2023)
+   files:   [15951] From the World of Minor Threats - The Alternates (2023) (digital) (Son of Ultron-Empire).cbr (139pp)
+   ours:    judged item 15951 #1-4 conf 0.9
+   CV per-file (v1): vol 144737 "Minor Threats" 2022 Dark Horse Comics 4 on 1/1 files
+   CV local rip:   (= per-file) · 153594 "From the World of Minor Threats: The Alternates" 2023 Dark Horse Comics 4 (via our own name without the filing suffix "From the World of Minor Threats: The Alternates")   (rip lookup)
+   GCD dump:       202176 "Minor Threats" 2023-? Dark Horse [] 2 (via CV name "Minor Threats") · 204009 "From the World of Minor Threats: The Alternates" 2023-2023 Dark Horse [] 4 (via our own name without the filing suffix "From the World of Minor Threats: The Alternates") · 188484 "Minor Threats" 2022-2023 Dark Horse [] 4 (via CV name "Minor Threats") · 211343 "From the World of Minor Threats: The Alternates" 2024-2024 Dark Horse [] 1 (via our own name without the filing suffix "From the World of Minor Threats: The Alternates")   (dump lookup)
+
+== S7019 Minor Threats  [tier C] · by 2  keys: From the World of Minor Threats - Barfly  years 2022-2023  4 files / 0 collections
+   split: the KEPT half of the P-023 split — moved out -> S103867 "Minor Threats (2022)"; S103868 "Minor Threats: The Fastest Way Down (2024)"; S103864 "From the World of Minor Threats: The Brood (2024)"; S103863 "From the World of Minor Threats: The Alternates (2023)"; re-identify what stayed
+   ⚠ stored cv 144737 = the moved run's — the run that left this shelf is CV 144737; unless this half IS that run, write `F 7019 wrong-cv-link` and give the S line this half's own id (or cv=-) so the new shelf can keep 144737
+   folders: [4] Dark Horse\Minor Threats (2022)\From the World of Minor Threats - Barfly (2024)
+   files:   [14525] From the World of Minor Threats - Barfly 001 (2024) (digital) (Son of Ultron-Empire).cbr (27pp)
+            [14526] From the World of Minor Threats - Barfly 002 (2024) (digital) (Son of Ultron-Empire).cbr (27pp)
+            [14527] From the World of Minor Threats - Barfly 003 (2024) (digital) (Son of Ultron-Empire).cbr (27pp)
+            [14528] From the World of Minor Threats - Barfly 004 (2024) (digital) (Son of Ultron-Empire).cbr (27pp)
+   ours:    ladder 1-4
+   CV linked:      vol 144737 "Minor Threats" 2022 Dark Horse Comics 4 issues; cached #1-4 (4); yearΔ 0; ratio 4/4 = 1.00; no judged range; v1 per-file: same volume on 4/4 files
+   CV local rip:   (= linked) · 158808 "From the World of Minor Threats: Barfly" 2024 Dark Horse Comics 4   (rip lookup)
+   GCD per-file:   series 213679 "From the World of Minor Threats: Barfly" 2024-2024 Dark Horse [limited series] 4 on 4/4 files; methods numx4
+   GCD dump:       (= per-file) · 188484 "Minor Threats" 2022-2023 Dark Horse [] 4 · 202176 "Minor Threats" 2023-? Dark Horse [] 2 · 222466 "From the World of Minor Threats: Barfly" 2025-2025 Dark Horse [] 1   (dump lookup)
+
+== S20856 Usagi Yojimbo: Crossroads  [tier D]   keys: Usagi Yojimbo: Crossroads  years 2023-2023  2 files / 2 collections
+   split run: "Usagi Yojimbo: Crossroads" run={"gcd": 147897} (new shelf from P-023) — seed the S line from these ids, then verify them
+   folders: [2] Dark Horse\Usagi Yojimbo (1987)\_Trade Paper Back Editions
+   files:   [13712] COL Usagi Yojimbo Vol. 37 - Crossroads (2022) (digital) (Son of Ultron-Empire).cbr (140pp)
+            [13713] COL Usagi Yojimbo Vol. 38 - The Green Dragon (2023) (digital) (Son of Ultron-Empire).cbr (140pp)
+   ours:    ComicInfo Series: "Usagi Yojimbo: Crossroads"x1, "Usagi Yojimbo: The Green Dragon"x1; ComicInfo Publisher: "IDW"x2
+   GCD says: [13712] gcd_reprint 2452880: s147897 Usagi Yojimbo (2019) #23-27 [5 stories]
+             [13713] gcd_reprint 2523339: s147897 Usagi Yojimbo (2019) #28-31 [4 stories]
+   CV candidates:  43045 "Usagi Yojimbo" 1987 Fantagraphics 7 s70 · 3897 "Usagi Yojimbo" 1987 Fantagraphics 38 s70 · 156932 "Usagi Yojimbo: Crossroads" 2022 IDW Publishing 1 issue 1045619 s65 · 119731 "Usagi Yojimbo" 2019 IDW Publishing 31 s30 · 170197 "Usagi Yojimbo" 2017 Dantes Verlag 27 s15 · 5183 "Usagi Yojimbo" 1993 Mirage 16 s15   (v1 search)
+   CV local rip:   156932 "Usagi Yojimbo: Crossroads" 2022 IDW Publishing 1 issue 1045619 · 119731 "Usagi Yojimbo" 2019 IDW Publishing 31 (via CV candidate name "Usagi Yojimbo") · 170197 "Usagi Yojimbo" 2017 Dantes Verlag 27 (via CV candidate name "Usagi Yojimbo") · 124091 "Usagi Yojimbo" 1998 Planeta DeAgostini 31 (via CV candidate name "Usagi Yojimbo") · 5845 "Usagi Yojimbo" 1996 Dark Horse Comics 165 (via CV candidate name "Usagi Yojimbo") · 5183 "Usagi Yojimbo" 1993 Mirage 16 (via CV candidate name "Usagi Yojimbo")   (rip lookup)
+   GCD dump:       214520 "Usagi Yojimbo" [pt-br] 2021-? Hyperion Comics [] 5 (via CV candidate name "Usagi Yojimbo") · 160732 "Usagi Yojimbo" 2020-2023 IDW [] 5 (via CV candidate name "Usagi Yojimbo") · 219286 "Usagi Yojimbo" [fi] 2020-? Zum Teufel [] 5 (via CV candidate name "Usagi Yojimbo") · 147897 "Usagi Yojimbo" 2019-2022 IDW [] 31 (via CV candidate name "Usagi Yojimbo") · 205714 "Usagi Yojimbo" [fr-ch] 2019-? Editions Paquet SARL [] 3 (via CV candidate name "Usagi Yojimbo") · 124378 "Usagi Yojimbo" [de] 2018-2018 Dantes Verlag [] 1 (via CV candidate name "Usagi Yojimbo")   (dump lookup)

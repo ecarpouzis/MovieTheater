@@ -1,0 +1,592 @@
+## Conventions for this batch (32 shown of 72 matched; 351 in LEDGER.md; 60 shelf/shelves: folder:graphic-novels ×60 · kind:new ×13 · pub:trade-house ×7 · kind:trade-only ×4 · kind:collected-line ×4 · pub:markosia ×1 · pub:dynamite ×1 · pub:avatar ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-014] (60 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-030] (60 shelf/shelves) sig:collision
+- One folder split into two shelves by a subtitle in one filename (Analog, Witch Doctor) → `F merge-with=<sid>`.
+[L-151] (60 shelf/shelves) sig:collision sig:withheld
+- The withheld rule beats the checker's merge-with remedy text: a stored-link collision with a DIFFERENT comic is
+  `cv=-` + `N withheld cv=<id> … S<partner>`, never a merge (S101634 vs S22834); merge-with only for the same comic.
+[L-160] (60 shelf/shelves) pass:revisit sig:withheld
+- A withheld shelf with NO GCD leg to keep becomes `R` + `N withheld cv=<id> … S<partner>` (S4944, S99691) — the
+  revisit pair re-links the partner and then the S line can be written.
+[L-013] (59 shelf/shelves) sig:probe
+- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
+  with the other spelling.
+[L-043] (59 shelf/shelves) sig:probe
+- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
+  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
+[L-050] (59 shelf/shelves) sig:probe
+- When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
+  punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
+  abbreviation the publisher uses ("HSE").
+[L-072] (59 shelf/shelves) sig:probe
+- GCD hides behind the SUBTITLE: "The Hunting Accident", "Giraffes on Horseback Salad", "Undesirables" return
+  nothing under their full titles — re-probe the SHORT title before writing `provider-missing`.
+[L-088] (59 shelf/shelves) sig:probe
+- GCD hides behind a LONGER title too ("… and the Tale of Azkon's Heart", "Holiday Party (One-Shot)"), not only a
+  shorter one — probe both directions before `provider-missing`.
+[L-089] (59 shelf/shelves) sig:probe
+- A facsimile of a SINGLE issue is its own book; a reprint edition of a whole series is not — the original wins.
+[L-095] (59 shelf/shelves) sig:probe
+- A folder that is a ripper's READING ORDER over several separately published arcs (The Ride, Revolution) has no
+  spanning record — the ladder is arc numbers, not issue numbers.
+[L-096] (59 shelf/shelves) sig:probe
+- GCD's exact filing recovers legs the probe misses: singular/plural ("Greeting", "Return"), two words ("Super
+  Hero"), a spelled ordinal ("Fortieth"), a dropped subtitle, or the colon form ("Jinx: Torso") — try each before
+  `provider-missing`.
+[L-118] (59 shelf/shelves) sig:probe
+- A GCD collected series numbers its issues by VOLUME and titles them with the volume SUBTITLE — that, not the
+  page count, places a trade when a shelf holds several volumes of one line.
+[L-125] (59 shelf/shelves) sig:probe
+- A stored link that is the same title a DIFFERENT DECADE later is a new cluster (Fist of Khonshu 2024 on the
+  1985 Moon Knight run; a 1971 Sub-Mariner Annual on the 1998 annual) — years decide, never the title.
+[L-157] (59 shelf/shelves) sig:probe
+- A GCD row with ZERO issues is an empty stub, not a leg (Skull Cat 197154, Rivers of London: Stray Cat Blues 213823,
+  Archer & Armstrong: Revival 164703) → `provider-missing`.
+[L-159] (59 shelf/shelves) sig:probe
+- An exact-name probe can miss a sequel the rip DOES hold: `--contains "Icarus Society"` found CV 143976 after the
+  exact "Prodigy: The Icarus Society" probe returned nothing — try `--contains` on the subtitle before `provider-missing`.
+[L-163] (59 shelf/shelves) sig:probe
+- GCD hides behind a bracketed alternate title: "War Stories: J for Jenny [War Story: J for Jenny]" (10937), "Dance Like
+  Everybody's Watching! [A Zits Treasury]" (132081), "You're Out of Your Mind, Charlie Brown! [Horizontal]" (155990).
+[L-177] (59 shelf/shelves) sig:probe
+- A bracketed publisher series number becomes a phantom ladder entry: Thun'da's "[A1-056]/[A1 073]/[A1 083]" produced
+  ladder 56/73/83 and a ratio 5.00 — read the bracket, not the ladder.
+[L-193] (59 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-204] (59 shelf/shelves) pass:item pass:revisit sig:probe
+- `lookup.py --issues <collected-line volume>` names each TRADE's own ComicVine ISSUE id: 71 of 73 `I` lines in
+  R-018 carry an item-level CV id instead of `cv=-`.
+[L-253] (59 shelf/shelves) sig:probe
+- A subtitle can name a SEQUEL series filed on the first run's shelf (Wild's End "Beyond the Sea" = CV 151678 /
+  GCD 201441, not the 2014 run) — the `C` names the sequel run.
+[L-264] (59 shelf/shelves) sig:probe
+- Title-only (st3) GCD matches reuse ONE gcd id across every volume of a line (Golden City ×10, Windmaker,
+  Tarzan Kubert Years) — re-derive each book from the shelf's own numbered pool.
+[L-267] (59 shelf/shelves) sig:probe
+- A GCD "collected edition" series sits beside the genuine RUN under a different id (Dept H 100362 vs 111468, Harrow
+  County 89353 vs 94662, Sword Daughter 125748 vs 134585) — the `C` names the run; `lookup.py` by title finds it.
+[L-273] (59 shelf/shelves) sig:probe
+- The Adventures of Tintin: every per-file gcd pick (60515/108543) was wrong; the shelf's own gcd pool matched by
+  ENGLISH title was right for all 23 — the pool over the pick, again.
+[L-292] (59 shelf/shelves) sig:probe
+- A stored English digital volume's cached rip may cover only its last issues (Suzuka #13-18 of 18) — the earlier
+  books take gcd-only identities from the GCD series' full list, cv=-.
+[L-294] (59 shelf/shelves) pass:item sig:probe
+- ITEM PASS (X-046..X-048): a shelf can hold TWO published editions of one work with no shared pool (Monster: the
+  18-volume line beside the 2014 "Two-in-One" Perfect Edition) — each edition needs its own pool or an honest
+  no-record, never a mapping across editions. When a shelf's file count exceeds its pool, the excess usually
+  belongs to a CONTINUATION volume the shelf's own `N` names (Ranma 1/2 v22-38 → CV 26409 / GCD 17651) — the pool
+  for it must be pulled (`lookup.py --issues`, `gcd_issue WHERE series_id=?`) before writing no-record. GCD may mint
+  a "collected edition" row for only the FIRST of a same-title pair (Zombie Makeout Club) — the second is gcd=-.
+[L-341] (59 shelf/shelves) sig:probe
+- GCD name shapes that hide a record from an exact probe (R-065): a dropped licensor/author prefix (Insight "H. G.
+  Wells:", FSG "Shirley Jackson's"), a dropped leading "The" (DC "Origin of Hordak", IDW "Dark Judges"), a dropped
+  subtitle (IDW TMNT "Saturday Morning Adventures"), a BRACKETED subtitle (IDW RID 2015 "[Animated Series]"), a spelled
+  volume ordinal ("Comic Book History of Comics Volume 2"), a lengthened title (First Second "Prince of Persia the
+  Graphic Novel"). CV spells "'Til" where rippers write "'till".
+[L-346] (59 shelf/shelves) sig:probe
+- GCD name shapes (R-071): a run filed with its subtitle DROPPED (Oni "Dead of Winter" 116730, the subtitle moved onto
+  the trade row); ", Chapter II:" where CV writes " II:"; an event prefix ("Doctor Who Event 2016:"); "Special
+  Edition" appended to KODT specials. Titan Doctor Who "Year Two" runs ARE in the fixed CV index (84960 / 87162) — L-152's
+  "not in the ComicVine rip" is obsolete; the "Year Two v04" trades are run-wins into the issue shelves. Marvel event
+  chronology trade shelves (Death of Captain America, New Guard) are run-wins into the main run shelf.
+[L-347] (59 shelf/shelves) sig:probe
+- Name shapes that hid records (R-072): a creators' prefix on BOTH legs ("Paknadel & Trakhanov's Turncoat", Boom);
+  ComiXology Originals writing a symbol as a word ("dotSelf" = ".Self") and one-word GCD spellings ("The AllNighter");
+  biography books that are English editions of Italian BeccoGiallo originals (link the Italian row, L-024); a 2019+
+  Rebellion strip collection as a numbered volume of a GCD book line named for the source weekly ("Wildcat" #2 =
+  Loner); "Magazine" / "Year One" suffixes (Archie, Action Lab) — for a one-volume "Year One", pages / issue size
+  picks the run. A DC deluxe of one run or one one-shot is run-wins (GCD's notes say which).
+[L-126] (7 shelf/shelves) kind:kids pub:marvel pub:trade-house
+- Scholastic / Abrams all-ages Marvel books are in ComicVine under the real publisher and in GCD only
+  sometimes — the publisher column, not the title, is the test.
+[L-241] (7 shelf/shelves) kind:kids pub:papercutz-nbm pub:trade-house sig:split sig:stale-flag
+- Juvenile franchise reboots (Geronimo / Thea Stilton: original run, Papercutz HC reissue, Scholastic Graphix reboot)
+  are several co-existing lines on one shelf — R + split, not stale.
+[L-322] (7 shelf/shelves) folder:bucket folder:graphic-novels folder:variant-covers kind:fan pub:heavy-metal pub:trade-house sig:barcode sig:probe sig:twin tier:D
+- TIER D (D-007..D-009): the `Graphic Novels` bucket's publisher sub-folders are TRADE houses — GCD indexes them,
+  the CV rip largely does not (cv=- gcd=<row> + provider-missing at 0.9), and GCD mints TWIN rows for
+  HarperCollins / Andrews McMeel / Abrams / Scholastic books more often than not (0.9). Heavy Metal's 1977-79
+  album line is in both catalogs under the ALBUM's own title — the `Heavy_Metal-19NN-PR-` prefix hides it; probe
+  the bare title. A `\Covers` folder of 1pp index sheets ("84Monthly.cbz") is R + not-a-run (unlike variant-cover
+  packs, which identify their mini). Files tagged "(compilation)", "(panels)", "Portfolio", "(short)", "from
+  <anthology> #NN" are reader extracts → not-a-run. Search `gcd_issue.barcode` on the 11-digit UPC core, not only
+  the EAN-13 / ISBN — it found four barcodes the full-code query missed. `cvref.normName` drops "the" everywhere:
+  probe "Star Trek: Next Generation".
+
++40 more matched entries not shown: L-325, L-016, L-032, L-113, L-114, L-135, L-164, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-314, L-064, L-085, L-101, L-123, L-150, L-310, L-068, L-074, L-083, L-103, L-107, L-145, L-147, L-229, L-250 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S6836 Flood  [tier D]   keys: Flood  years ?-?  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [26165] Flood (Darwination-DCP).cbz (?pp)
+   CV candidates:  58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s15 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3 · 86527 "Disney Graphic Novels" 2015 NBM 4 s3 · 109403 "Graphic Novels Krimi" 2013 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels") · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 (via CV candidate name "Graphic Novels as Philosophy") · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 (via CV candidate name "Dr. Seuss Graphic Novels")   (rip lookup)
+   GCD dump:       140032 "Flood!" [fr] 2009-2009 Éditions Tanibis [] 1 · 104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+
+== S6840 Flower of a New World  [tier D]   keys: Flower of a New World  years 2020-2020  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27322] Flower of a New World (2020) (digital) (Mr Norrell-Empire).cbr (50pp)
+   CV candidates:  58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s15 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3 · 86527 "Disney Graphic Novels" 2015 NBM 4 s3 · 109403 "Graphic Novels Krimi" 2013 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 (via CV candidate name "Graphic Novels as Philosophy") · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 (via CV candidate name "Dr. Seuss Graphic Novels") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels")   (rip lookup)
+   GCD dump:       104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+
+== S6973 Free to be Tough  [tier D]   keys: Free to be Tough  years 2021-2021  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27325] Free to be Tough (2021) (whocares).cbr (44pp)
+   CV candidates:  104354 "Be Free!" 1984 Kodansha 12 s55 · 71862 "Tough Guy: Graphic Novel" 2011 Eco Comics 1 issue 446062 s27 · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s15 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3 · 86527 "Disney Graphic Novels" 2015 NBM 4 s3   (v1 search)
+   CV local rip:   71862 "Tough Guy: Graphic Novel" 2011 Eco Comics 1 issue 446062 (via CV candidate name "Tough Guy: Graphic Novel") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels") · 104354 "Be Free!" 1984 Kodansha 12 (via CV candidate name "Be Free!")   (rip lookup)
+   GCD dump:       104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+
+== S7051 Funk Soul Samurai  [tier D]   keys: Funk Soul Samurai  years 2014-2014  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27331] Funk Soul Samurai (2014) (digital-Empire).cbz (24pp)
+   CV candidates:  58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s15 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3 · 86527 "Disney Graphic Novels" 2015 NBM 4 s3 · 109403 "Graphic Novels Krimi" 2013 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 (via CV candidate name "Graphic Novels as Philosophy") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels") · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 (via CV candidate name "Dr. Seuss Graphic Novels")   (rip lookup)
+   GCD dump:       104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+
+== S7146 GRIMLAND Ascension  [tier D]   keys: GRIMLAND Ascension  years 2022-2022  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27344] GRIMLAND Ascension (2022) (digital) (DrVink-HD).cbz (74pp)
+   ours:    barcode item 27344 [{"type": "EAN13", "data": "9789152741665", "page": "GRIMLAN
+   CV candidates:  20237 "Ascension" 1997 Image 24 s40 · 89659 "Ascension" 1998 Splitter 16 s40 · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s15 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3 · 86527 "Disney Graphic Novels" 2015 NBM 4 s3   (v1 search)
+   CV local rip:   89659 "Ascension" 1998 Splitter 16 (via CV candidate name "Ascension") · 20237 "Ascension" 1997 Image 24 (via CV candidate name "Ascension") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels")   (rip lookup)
+   GCD dump:       188710 "Ascension" 2022-? Final Impact Comics [] 1 (via CV candidate name "Ascension") · 120812 "Ascension" [fr] 2010-2014 Delcourt [] 17 (via CV candidate name "Ascension") · 32925 "Ascension" [de] 2000-2001 Infinity Verlag [] 6 (via CV candidate name "Ascension") · 32927 "Ascension" [de] 2000-2000 Infinity Verlag [] 3 (via CV candidate name "Ascension") · 131639 "Ascension" [fr] 1999-1999 Dargaud [] 1 (via CV candidate name "Ascension") · 52925 "Ascension" [fr] 1998-2000 Semic S.A. [] 12 (via CV candidate name "Ascension")   (dump lookup)
+
+== S7189 Gardener  [tier D]   keys: Gardener  years 2022-2022  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27332] Gardener (Matt Emmons) (2022) (digital) (JeffAlbertson-DCP).cbz (281pp)
+   CV candidates:  58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s15 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3 · 86527 "Disney Graphic Novels" 2015 NBM 4 s3 · 109403 "Graphic Novels Krimi" 2013 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 (via CV candidate name "Dr. Seuss Graphic Novels") · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 (via CV candidate name "Graphic Novels as Philosophy") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels")   (rip lookup)
+   GCD dump:       104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+
+== S7698 Going Remote: A Teacher's Journey  [tier D]   keys: Going Remote: A Teacher's Journey  years 2023-2023  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27339] Going Remote - A Teacher's Journey (2023) (Seven Stories) (Digital) (XRA-Empire).cbz (152pp)
+   ours:    ComicInfo Series: "Going Remote: A Teacher's Journey"x1; ComicInfo Publisher: "Seven Stories Press"x1
+   CV candidates:  63168 "Journey" 1987 Fantagraphics 2 s48 · 54539 "Journey" 2008 IDW Publishing 2 s48 · 38047 "Remote" 2002 Kodansha 10 s40 · 84600 "Remote" 2015 Double Take 5 s40 · 3252 "Journey" 1983 Fantagraphics 27 s40 · 171997 "Remote Space " 2024 Image 1 s35   (v1 search)
+   CV local rip:   84600 "Remote" 2015 Double Take 5 (via CV candidate name "Remote") · 54539 "Journey" 2008 IDW Publishing 2 (via CV candidate name "Journey") · 38047 "Remote" 2002 Kodansha 10 (via CV candidate name "Remote") · 63168 "Journey" 1987 Fantagraphics 2 (via CV candidate name "Journey") · 3252 "Journey" 1983 Fantagraphics 27 (via CV candidate name "Journey")   (rip lookup)
+   GCD dump:       109172 "Remote" 2016-2016 Double Take [] 1 (via CV candidate name "Remote") · 92408 "Remote" 2015-2016 Double Take [] 5 (via CV candidate name "Remote") · 31913 "Journey" 2008-2009 IDW [] 2 (via CV candidate name "Journey") · 132966 "Remote" [fr] 2005-2007 Pika Édition [] 10 (via CV candidate name "Remote") · 24240 ".remote." 2004-2006 Tokyopop [] 10 (via CV candidate name "Remote") · 31990 "Journey" 1987-1990 Fantagraphics [] 2 (via CV candidate name "Journey")   (dump lookup)
+
+== S7861 Gray Cells  [tier D]   keys: Gray Cells  years 2021-2021  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27341] Gray Cells (2022) (digital) (DrVink-DCP).cbz (150pp)
+   ours:    ComicInfo Publisher: "Markosia Enterprises Ltd"x1
+   CV candidates:  65430 "Cells" 1998 self published 1 issue 417984 s55 · 138108 "Gray" 2021 Clover Press 1 issue 877817 s55 · 66181 "Binary Gray" 2012 Assailant Comics 1 issue 421260 s44 · 161747 "Marriage Gray" 2021 Shueisha 7 s29 · 70577 "Shades of Gray" 1994 Lady Luck Ltd. 9 s28 · 158701 "Cells at Work! Lady" 2023 Kodansha Comics USA 5 s27   (v1 search)
+   CV local rip:   138108 "Gray" 2021 Clover Press 1 issue 877817 (via CV candidate name "Gray") · 65430 "Cells" 1998 self published 1 issue 417984 (via CV candidate name "Cells") · 66181 "Binary Gray" 2012 Assailant Comics 1 issue 421260 (via CV candidate name "Binary Gray")   (rip lookup)
+   GCD dump:       182759 "Gray" 2021-? Clover Press [] 2 (via CV candidate name "Gray") · 206163 "Gray" [fr] 2023-? Matin Calme [] 1 (via CV candidate name "Gray") · 16705 "Cells" 1998-1998 Scott Mills [] 1 (via CV candidate name "Cells")   (dump lookup)
+
+== S7862 Gray is Not a Color  [tier D]   keys: Gray is Not a Color  years 2012-2012  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27342] Gray is Not a Color (2012) (digital-Empire).cbz (37pp)
+   CV candidates:  58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s15 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3 · 86527 "Disney Graphic Novels" 2015 NBM 4 s3 · 109403 "Graphic Novels Krimi" 2013 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels") · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 (via CV candidate name "Graphic Novels as Philosophy") · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 (via CV candidate name "Dr. Seuss Graphic Novels")   (rip lookup)
+   GCD dump:       104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+
+== S8402 Haruki Murakami Manga Stories  [tier C] · gap 40  keys: Haruki Murakami Manga Stories  years 2023-2023  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27350] Haruki Murakami Manga Stories (2023) (digital) (DrVink-DCP).cbz (154pp)
+   ours:    ladder 1; ComicInfo Series: "Haruki Murakami Manga Stories"x1; ComicInfo Publisher: "Tuttle Publishing"x1
+   CV candidates:  130584 "Manga Yokai Stories" 2020 Tuttle Publishing 1 issue 803832 s59 · 130416 "the manga" ? ? 1 issue 804012 s35 · 160732 "Yōkai Buster Murakami" 2024 Shueisha 2 s21 · 62297 "Cerebus Guide to Self Publishing" 1997 Aardvark 1 issue 406746 s15 · 63064 "IDW Publishing Scriptbooks: Angel" 2006 IDW Publishing 1 issue 409512 s15 · 73758 "AV Publishing Preview Book" 2014 AV Publications 1 issue 452529 s15   (v1 search)
+   CV local rip:   120993 "Manga" 2019 Unknown Publisher 1 issue 717709 (via CV candidate name "the manga") · 130416 "the manga" ? ? 1 issue 804012 (via CV candidate name "the manga") · 160732 "Yōkai Buster Murakami" 2024 Shueisha 2 (via CV candidate name "Yōkai Buster Murakami") · 130584 "Manga Yokai Stories" 2020 Tuttle Publishing 1 issue 803832 (via CV candidate name "Manga Yokai Stories") · 56636 "Our Story Thus Far" 1985 Jabberwocky Graphix 3 (via GCD name "Our Story Thus  Far")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 56736 "Our Story Thus  Far" 1983-1988 Jabberwocky Graphix [was ongoing series] 3 on 1/1 files
+   GCD dump:       202716 "Manga" [fr] 2020-2020 Éditions de La Martinière [] 1 (via CV candidate name "the manga") · 76102 "Manga" [en-jp] 1982-1982 Metro Scope [] 1 (via CV candidate name "the manga")   (dump lookup)
+   bridges:        gcd 56736 -> LOCG 189937 "Solace" support 1
+
+== S9002 House of Delusion  [tier D]   keys: House of Delusion  years 2021-2021  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27357] House of Delusion (2021) (digital) (fylgja).cbz (47pp)
+   CV candidates:  58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s15 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3 · 86527 "Disney Graphic Novels" 2015 NBM 4 s3 · 109403 "Graphic Novels Krimi" 2013 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 (via CV candidate name "Graphic Novels as Philosophy") · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 (via CV candidate name "Dr. Seuss Graphic Novels") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels")   (rip lookup)
+   GCD dump:       104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+
+== S9242 I, Witness  [tier D]   keys: I, Witness  years 2012-2012  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27363] I, Witness (2012) (digital) (DrVink).cbz (146pp)
+   ours:    ComicInfo Publisher: "Orca Book Publishers"x1
+   CV candidates:  30495 "Witness" 1948 Marvel 1 issue 187609 s55 · 58327 "Dumb Witness" 2010 HarperCollins 1 issue 390020 s44 · 51154 "Arkadian: No Witness" 2007 Visible Light Entertainment 1 issue 350074 s43 · 168301 "Witness 4 - L'Intégrale" 2014 Sandawe 1 issue 1142531 s43 · 135894 "Judge Dredd: False Witness" 2021 IDW Publishing 1 issue 847434 s42 · 52461 "Eye Witness: Acts of the Spirit" 2006 Head Press Publishing 1 issue 359043 s40   (v1 search)
+   CV local rip:   30495 "Witness" 1948 Marvel 1 issue 187609 (via CV candidate name "Witness") · 58327 "Dumb Witness" 2010 HarperCollins 1 issue 390020 (via CV candidate name "Dumb Witness") · 51154 "Arkadian: No Witness" 2007 Visible Light Entertainment 1 issue 350074 (via CV candidate name "Arkadian: No Witness")   (rip lookup)
+   GCD dump:       582 "The Witness" 1948-1948 Marvel [] 1 (via CV candidate name "Witness") · 46944 "Arkadian: No Witness" 2007-2007 VLE Comics [] 1 (via CV candidate name "Arkadian: No Witness")   (dump lookup)
+
+== S9406 Incubation  [tier D]   keys: Incubation  years 2015-2015  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27370] Incubation (2015) (Charles Burns) (Pigeon Press) (Neon Vincent).cbr (41pp)
+   CV candidates:  58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s15 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3 · 86527 "Disney Graphic Novels" 2015 NBM 4 s3 · 109403 "Graphic Novels Krimi" 2013 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 (via CV candidate name "Graphic Novels as Philosophy") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels") · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 (via CV candidate name "Dr. Seuss Graphic Novels")   (rip lookup)
+   GCD dump:       169805 "Incubation" [de] 1998-1998 IPP Comix [] 1 · 104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+
+== S9703 JANO - Gazoline and the Red Planet  [tier D]   keys: JANO - Gazoline and the Red Planet  years 1989-1989  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27376] JANO - Gazoline and the Red Planet (1989) (scanslation) (Hoyeru).cbr (49pp)
+   CV candidates:  109394 "Gazoline und der rote Planet" 1991 Semmel Verlach 1 issue 663947 s32 · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s25 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 76372 "The Ultimate Graphic Novels Collection" 2011 Hachette 46 s8 · 43400 "Disney Movies The Graphic Novels" 2010 Disney 25 s8 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   109394 "Gazoline und der rote Planet" 1991 Semmel Verlach 1 issue 663947 (via CV candidate name "Gazoline und der rote Planet") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels") · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 (via CV candidate name "Dr. Seuss Graphic Novels")   (rip lookup)
+   GCD dump:       98112 "Gazoline und der rote Planet" [de] 1991-? Semmel Verlach [] 1 (via CV candidate name "Gazoline und der rote Planet") · 104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+
+== S10367 Kindred  [tier D]   keys: Kindred  years 2017-2017  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27384] Kindred (2017) (Digital-Empire).cbr (239pp)
+   ours:    ComicInfo Series: "Kindred"x1; ComicInfo Publisher: "Abrams – Abrams ComicArts"x1
+   CV candidates:  48057 "Predator: Kindred" 1997 Dark Horse Comics 1 issue 331839 s74 · 55120 "Kindred Spirits" 2012 AAM/Markosia 1 issue 375480 s74 · 128044 "Wayward Kindred" 2020 TO Comix Press 1 issue 768808 s74 · 26317 "The Kindred" 1994 Image 4 s62 · 31926 "Predator: Kindred" 1996 Dark Horse Comics 4 s62 · 26202 "The Kindred II" 2002 DC Comics 4 s61   (v1 search)
+   CV local rip:   26317 "The Kindred" 1994 Image 4 · 128044 "Wayward Kindred" 2020 TO Comix Press 1 issue 768808 (via CV candidate name "Wayward Kindred") · 55120 "Kindred Spirits" 2012 AAM/Markosia 1 issue 375480 (via CV candidate name "Kindred Spirits") · 48057 "Predator: Kindred" 1997 Dark Horse Comics 1 issue 331839 (via CV candidate name "Predator: Kindred") · 31926 "Predator: Kindred" 1996 Dark Horse Comics 4 (via CV candidate name "Predator: Kindred")   (rip lookup)
+   GCD dump:       50329 "The Kindred" 1995-1995 Image [] 1 · 13318 "Kindred" 1994-1994 Image [] 4 · 42305 "Predator: Kindred" 1997-1997 Dark Horse [] 1 (via CV candidate name "Predator: Kindred") · 42034 "Predator: Kindred" 1996-1997 Dark Horse [] 4 (via CV candidate name "Predator: Kindred")   (dump lookup)
+
+== S10427 Kirra Burns  [tier C] · gap 39  keys: Kirra Burns  years 2022-2022  1 files / 1 collections
+   folders: [1] Graphic Novels
+   files:   [27385] COL Kirra Burns (2022) (Digital-HD) (LeDuch).cbz (100pp)
+   ours:    ComicInfo Series: "Kirra Burns"x1; ComicInfo Volume: "2022"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "ASAP Comics"x1
+   CV candidates:  53109 "Charles Burns The Hive" 2012 Random House 1 issue 362207 s42 · 64402 "The Malevolent Mr. Burns" 2013 Bongo 1 issue 414059 s42 · 78382 "Robbie Burns: Witch Hunter" 2014 Renegade Arts Entertainment 1 issue 471419 s42 · 82014 "Ed Burns' Dock Walloper" 2008 Liquid Comics 1 issue 488854 s42 · 115594 "Sword Daughter: She Brightly Burns" 2018 Dark Horse Comics 1 issue 693372 s41 · 77274 "The Art of Jim Burns: Hyperluminal" 2014 Titan Comics 1 issue 467117 s40   (v1 search)
+   CV local rip:   78382 "Robbie Burns: Witch Hunter" 2014 Renegade Arts Entertainment 1 issue 471419 (via CV candidate name "Robbie Burns: Witch Hunter") · 64402 "The Malevolent Mr. Burns" 2013 Bongo 1 issue 414059 (via CV candidate name "The Malevolent Mr. Burns") · 53109 "Charles Burns The Hive" 2012 Random House 1 issue 362207 (via CV candidate name "Charles Burns The Hive") · 56636 "Our Story Thus Far" 1985 Jabberwocky Graphix 3 (via GCD name "Our Story Thus  Far")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 56736 "Our Story Thus  Far" 1983-1988 Jabberwocky Graphix [was ongoing series] 3 on 1/1 files
+   GCD dump:       232069 "Robbie Burns Witch Hunter" [fr] 2016-2016 Glénat [] 1 (via CV candidate name "Robbie Burns: Witch Hunter") · 111604 "Robbie Burns: Witch Hunter" [en-ca] 2014-2014 Renegade Arts Entertainment [] 1 (via CV candidate name "Robbie Burns: Witch Hunter")   (dump lookup)
+   bridges:        gcd 56736 -> LOCG 189937 "Solace" support 1
+
+== S10581 Larf - Ashley Spires  [tier D]   keys: Larf - Ashley Spires  years 2012-2012  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27387] Larf - Ashley Spires (2012) (digital) (DrVink).cbz (32pp)
+   ours:    ComicInfo Publisher: "Kids Can Press"x1
+   CV candidates:  49099 "Doomed Presents: Ashley Wood" 2007 IDW Publishing 1 issue 336476 s32 · 24880 "Ashley Dust" 1994 Knight Press 4 s23 · 135718 "Can Can" 1978 Editorial Bruguera 1 issue 845866 s15 · 135722 "Can Can Almanaque" 1964 Editorial Bruguera 1 issue 845877 s15 · 163018 "Kids" 2025 Image 1 issue 1100390 s15 · 135714 "Can Can Almanaque" 1958 Editorial Bruguera 2 s8   (v1 search)
+   CV local rip:   49099 "Doomed Presents: Ashley Wood" 2007 IDW Publishing 1 issue 336476 (via CV candidate name "Doomed Presents: Ashley Wood") · 24880 "Ashley Dust" 1994 Knight Press 4 (via CV candidate name "Ashley Dust") · 135718 "Can Can" 1978 Editorial Bruguera 1 issue 845866 (via CV candidate name "Can Can") · 135717 "Can Can" 1963 Editorial Bruguera 105 (via CV candidate name "Can Can") · 135700 "Can Can" 1958 Editorial Bruguera 125 (via CV candidate name "Can Can")   (rip lookup)
+   GCD dump:       26545 "Doomed Presents: Ashley Wood" 2007-2007 IDW [] 1 (via CV candidate name "Doomed Presents: Ashley Wood") · 49496 "Ashley Dust" 1994-1995 Knight Press [] 4 (via CV candidate name "Ashley Dust") · 193699 "Can Can" [es-cl] 1965-1968 Zig-Zag [] 87 (via CV candidate name "Can Can") · 193700 "Can Can" [es] 1963-1968 Editorial Bruguera [] 230 (via CV candidate name "Can Can") · 193827 "Can Can" [es] 1958-1960 Editorial Bruguera [] 125 (via CV candidate name "Can Can")   (dump lookup)
+
+== S10598 Last On His Feet - Jack Johnson and the Battle of the Century  [tier D]   keys: Last On His Feet - Jack Johnson and the Battle of the Century  years ?-?  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27388] Last On His Feet - Jack Johnson and the Battle of the Century (Liveright 2023) (webrip) (MagicMan-DCP).cbr (324pp)
+   ours:    ComicInfo Series: "Last On His Feet - Jack Johnson and the Battle of the Century"x1; ComicInfo Publisher: "Liveright"x1
+   CV candidates:  45629 "The Last Battle" 2011 Image 1 issue 314270 s70 · 28554 "Century" 1996 Marvel 1 issue 175907 s55 · 70297 "Chronicles of Wormwood: The Last Battle" 2011 Avatar Press 1 issue 438622 s41 · 124366 "Omega's Last Battle" 2020 Hell's Kitchen Comics 1 issue 734186 s41 · 80831 "On His Honor" 2014 Harlequin Comics 1 issue 483090 s41 · 47920 "The Last Ghost on the Earth" 2003 self published 1 issue 330207 s41   (v1 search)
+   CV local rip:   28554 "Century" 1996 Marvel 1 issue 175907 (via CV candidate name "Century") · 28445 "Chronicles of Wormwood: The Last Battle" 2009 Avatar Press 6 (via CV candidate name "Chronicles of Wormwood: The Last Battle") · 45629 "The Last Battle" 2011 Image 1 issue 314270 (via CV candidate name "The Last Battle") · 70297 "Chronicles of Wormwood: The Last Battle" 2011 Avatar Press 1 issue 438622 (via CV candidate name "Chronicles of Wormwood: The Last Battle")   (rip lookup)
+   GCD dump:       46249 "Chronicles of Wormwood: The Last Battle" 2009-2011 Avatar Press [] 6 (via CV candidate name "Chronicles of Wormwood: The Last Battle") · 62634 "The Last Battle" 2011-2011 Image [] 1 (via CV candidate name "The Last Battle") · 100459 "The Last Battle" [de] 2006-? Egmont Ehapa [] 1 (via CV candidate name "The Last Battle")   (dump lookup)
+
+== S10786 Little Henri in Sourland  [tier D]   keys: Little Henri in Sourland  years 2019-2019  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27395] Little Henri in Sourland (2019) (c2c) (fylgja).cbz (36pp)
+   CV candidates:  58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s15 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3 · 86527 "Disney Graphic Novels" 2015 NBM 4 s3 · 109403 "Graphic Novels Krimi" 2013 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 (via CV candidate name "Graphic Novels as Philosophy") · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 (via CV candidate name "Dr. Seuss Graphic Novels") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels")   (rip lookup)
+   GCD dump:       104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+   MU / External:  ExternalWork 464 "Little Henri in Sourland" openlibrary /works/OL32279005W
+
+== S10968 Lost Faces  [tier D]   keys: Lost Faces  years 2000-2000  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27397] Lost Faces (2000) (Mark Beyer Mini) (whocares).cbr (12pp)
+   CV candidates:  140760 "Morgan Lost Scream Novels" 2021 Sergio Bonelli Editore 1 issue 944180 s42 · 129574 "Morgan Lost Dark Novels" 2017 Sergio Bonelli Editore 10 s27 · 129575 "Morgan Lost Black Novels" 2019 Sergio Bonelli Editore 6 s27 · 129937 "Morgan Lost Night Novels" 2019 Sergio Bonelli Editore 8 s27 · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s15 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15   (v1 search)
+   CV local rip:   129574 "Morgan Lost Dark Novels" 2017 Sergio Bonelli Editore 10 (via CV candidate name "Morgan Lost Dark Novels") · 129575 "Morgan Lost Black Novels" 2019 Sergio Bonelli Editore 6 (via CV candidate name "Morgan Lost Black Novels") · 140760 "Morgan Lost Scream Novels" 2021 Sergio Bonelli Editore 1 issue 944180 (via CV candidate name "Morgan Lost Scream Novels")   (rip lookup)
+
+== S12151 Mine  [tier D]   keys: Mine  years ?-?  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27409] Mine (2008, 2014) (digital-Empire).cbz (67pp)
+   CV candidates:  58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s15 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3 · 86527 "Disney Graphic Novels" 2015 NBM 4 s3 · 109403 "Graphic Novels Krimi" 2013 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   77902 "Mine" 2014 Lucha Comics 1 issue 469275 · 134270 "MINE" 2021 Resistance Comics 1 issue 833059 · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels") · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 (via CV candidate name "Graphic Novels as Philosophy") · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 (via CV candidate name "Dr. Seuss Graphic Novels")   (rip lookup)
+   GCD dump:       104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+
+== S12713 Naptime  [tier D]   keys: Naptime  years 2016-2016  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27415] Naptime (2016) (Digital) (DrDoom-Empire).cbz (76pp)
+   CV candidates:  58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s15 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3 · 86527 "Disney Graphic Novels" 2015 NBM 4 s3 · 109403 "Graphic Novels Krimi" 2013 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 (via CV candidate name "Graphic Novels as Philosophy") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels") · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 (via CV candidate name "Dr. Seuss Graphic Novels")   (rip lookup)
+   GCD dump:       104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+
+== S12788 Nevertheless  [tier D]   keys: Nevertheless  years 2020-2020  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27420] Nevertheless (2020) (Scanlation) (phillywilly).cbr (155pp)
+   CV candidates:  58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s15 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3 · 86527 "Disney Graphic Novels" 2015 NBM 4 s3 · 109403 "Graphic Novels Krimi" 2013 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 (via CV candidate name "Graphic Novels as Philosophy") · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 (via CV candidate name "Dr. Seuss Graphic Novels") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels")   (rip lookup)
+   GCD dump:       104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+
+== S12932 Night of the Devil  [tier D]   keys: Night of the Devil  years 2021-2021  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27421] Night of the Devil (2021) (Digital) (phillywilly-Empire).cbr (146pp)
+   CV candidates:  58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s27 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 s15 · 76372 "The Ultimate Graphic Novels Collection" 2011 Hachette 46 s11 · 43400 "Disney Movies The Graphic Novels" 2010 Disney 25 s11 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 (via CV candidate name "Graphic Novels as Philosophy") · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 (via CV candidate name "Dr. Seuss Graphic Novels") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels")   (rip lookup)
+   GCD dump:       104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+
+== S13227 On the Books - A Graphic Tale of Working Woes at NYC's Strand Bookstore  [tier D]   keys: On the Books - A Graphic Tale of Working Woes at NYC's Strand Bookstore  years 2014-2014  2 files / 0 collections
+   folders: [2] Graphic Novels
+   files:   [27430] On the Books - A Graphic Tale of Working Woes at NYC's Strand Bookstore (2014) (Microsom) (digital) (Minutemen-dask).cbr (128pp)
+            [26061] On the Books - A Graphic Tale of Working Woes at NYC's Strand Bookstore (2014) (digital) (Minutemen-dask).cbr (128pp)
+   CV candidates:  109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s28 · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s28 · 86527 "Disney Graphic Novels" 2015 NBM 4 s21 · 109403 "Graphic Novels Krimi" 2013 Süddeutsche Zeitung 4 s21 · 38009 "Disney Junior Graphic Novels" 2006 Disney 3 s18 · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 s18   (v1 search)
+   CV local rip:   86527 "Disney Graphic Novels" 2015 NBM 4 (via CV candidate name "Disney Graphic Novels") · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 (via CV candidate name "Graphic Novels") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels")   (rip lookup)
+   GCD dump:       92652 "Disney Graphic Novels" 2015-2017 NBM [] 6 (via CV candidate name "Disney Graphic Novels") · 94951 "Disney Graphic Novels" 2015-2017 NBM [] 5 (via CV candidate name "Disney Graphic Novels") · 65342 "Graphic Novels" [de] 2012-2012 Süddeutsche Zeitung [] 10 (via CV candidate name "Graphic Novels") · 60514 "Graphic Novels" [de] 2011-2011 Süddeutsche Zeitung [] 11 (via CV candidate name "Graphic Novels") · 104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+
+== S13819 Picnic ruined  [tier D]   keys: Picnic Ruined  years 2013-2013  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27444] Picnic Ruined (2013) (digital-Empire).cbz (56pp)
+   CV candidates:  88815 "Ruined" 2016 Rosy Press 1 issue 519167 s55 · 46992 "Picnic" 2007 Digital Manga Publishing 1 issue 323344 s55 · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s15 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3 · 86527 "Disney Graphic Novels" 2015 NBM 4 s3   (v1 search)
+   CV local rip:   88815 "Ruined" 2016 Rosy Press 1 issue 519167 (via CV candidate name "Ruined") · 46992 "Picnic" 2007 Digital Manga Publishing 1 issue 323344 (via CV candidate name "Picnic") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels")   (rip lookup)
+   GCD dump:       190275 "Picnic" 2007-2007 Digital Manga, Inc. [] 1 (via CV candidate name "Picnic") · 228311 "Ruined" 2023-2023 First Second [] 1 (via CV candidate name "Ruined") · 208896 "Ruined" [de] 2024-2024 Loewe [] 1 (via CV candidate name "Ruined") · 104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+   MU / External:  ExternalWork 466 "Picnic ruined" openlibrary /works/OL32785854W
+
+== S13841 Pistolera  [tier D]   keys: Pistolera  years 2019-2019  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27445] Pistolera (2019) (digital-Empire).cbr (36pp)
+   CV candidates:  58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s15 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3 · 86527 "Disney Graphic Novels" 2015 NBM 4 s3 · 109403 "Graphic Novels Krimi" 2013 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 (via CV candidate name "Graphic Novels as Philosophy") · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 (via CV candidate name "Dr. Seuss Graphic Novels") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels")   (rip lookup)
+   GCD dump:       104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+
+== S13903 Plato's Allegory of the Cave  [tier B]   keys: Plato's Allegory of the Cave  years 2021-2021  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27446] Plato's Allegory of the Cave (2021) (Digital) (Leifman-Empire).cbz (46pp)
+   CV per-file (v1): vol 118070 "Plato's Cave" 2019 Cave Pictures Publishing 1 issue 705263 on 1/1 files
+   CV candidates:  (= per-file) · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s25 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 76372 "The Ultimate Graphic Novels Collection" 2011 Hachette 46 s8 · 43400 "Disney Movies The Graphic Novels" 2010 Disney 25 s8 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3 · 86527 "Disney Graphic Novels" 2015 NBM 4 s3   (v1 search)
+   CV local rip:   (= per-file) · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 (via CV candidate name "Dr. Seuss Graphic Novels") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels")   (rip lookup)
+   GCD dump:       104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+
+== S13940 Polka Dot Pirate  [tier D]   keys: Polka Dot Pirate  years 2016-2016  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27447] Polka Dot Pirate (2016) (Digital-Empire).cbr (28pp)
+   ours:    ComicInfo Series: "Polka Dot Pirate"x1; ComicInfo Publisher: "Bedside Press"x1
+   CV candidates:  87708 "Pirate" 2016 Editorial Saure 2 s48 · 60329 "The Dot" 2013 ID Comics 1 issue 399151 s35 · 123962 "The Pirate" 2019 Harlequin Comics 1 issue 732382 s35 · 171314 "Dot Alice" 2026 Shueisha 1 s35 · 31942 "Dot Dotland" 1974 Harvey 2 s28 · 33715 "Little Dot" 1992 Harvey 7 s20   (v1 search)
+   CV local rip:   87708 "Pirate" 2016 Editorial Saure 2 (via CV candidate name "Pirate") · 60329 "The Dot" 2013 ID Comics 1 issue 399151 (via CV candidate name "The Dot") · 123962 "The Pirate" 2019 Harlequin Comics 1 issue 732382 (via CV candidate name "Pirate")   (rip lookup)
+
+== S14467 Red Leaves  [tier D]   keys: Red Leaves  years 2021-2021  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27455] Red Leaves (2021) (digital) (DrVink).cbz (90pp)
+   CV candidates:  80821 "The Leaves" 2015 Trajectory 1 issue 483080 s44 · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s15 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3 · 86527 "Disney Graphic Novels" 2015 NBM 4 s3 · 109403 "Graphic Novels Krimi" 2013 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   80821 "The Leaves" 2015 Trajectory 1 issue 483080 (via CV candidate name "The Leaves") · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 (via CV candidate name "Dr. Seuss Graphic Novels") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels")   (rip lookup)
+   GCD dump:       104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+
+== S14690 Ripple Effects  [tier D]   keys: Ripple Effects  years 2022-2022  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27458] Ripple Effects (2020) (digital) (DrVink).cbz (190pp)
+   ours:    ComicInfo Publisher: "Fanbase Press"x1; barcode item 27458 [{"type": "EAN13", "data": "9780998797984", "page": "Ripple 
+   CV candidates:  87344 "Random Effects" 1990 Random Press Comics 1 issue 511045 s44 · 122860 "The Ripple Effect" 2019 self published 1 issue 727543 s43 · 122660 "Iron Man: Sound Effects" 2014 Marvel 1 issue 726188 s42 · 69804 "Ripple: A Prediliction for Tina" 2003 Fantagraphics 1 issue 435987 s41 · 112612 "Permanent Press" 2018 Avery Hill Publishing 1 issue 678396 s15 · 144956 "Peggy Press" 1986 Armonia 2 s8   (v1 search)
+   CV local rip:   122860 "The Ripple Effect" 2019 self published 1 issue 727543 (via CV candidate name "The Ripple Effect") · 122660 "Iron Man: Sound Effects" 2014 Marvel 1 issue 726188 (via CV candidate name "Iron Man: Sound Effects") · 87344 "Random Effects" 1990 Random Press Comics 1 issue 511045 (via CV candidate name "Random Effects")   (rip lookup)
+   GCD dump:       180638 "Iron Man: Sound Effects" 2014-2014 Marvel [] 1 (via CV candidate name "Iron Man: Sound Effects") · 44814 "Random Effects" 1990-1990 Random Press Comics [] 1 (via CV candidate name "Random Effects")   (dump lookup)
+   MU / External:  ExternalWork 467 "Ripple Effects" openlibrary /works/OL28080860W
+
+== S15049 Santa's Secret Society  [tier D]   keys: Santa's Secret Society  years 2023-2023  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27463] Santa's Secret Society (2022) (Curiosity) (digital) (Salem-Empire).cbr (120pp)
+   ours:    ComicInfo Series: "Santa's Secret Society"x1; ComicInfo Publisher: "Dynamite Entertainment"x1
+   CV candidates:  123522 "Secret Santas" 2018 Hypnotic Dog Comics 1 issue 730668 s70 · 147471 "Secret Society" 2019 TG Comics 1 issue 964645 s70 · 86446 "Santa's Secret Cave" 1960 W.T. Grant 1 issue 507397 s54 · 103103 "The Not-So Secret Society" 2017 Boom! Studios 1 issue 610546 s53 · 67507 "The Secret Society of Super Villains" 2013 DC Comics 2 s44 · 145923 "The Evil Secret Society of Cats" 2022 Seven Seas Entertainment 3 s39   (v1 search)
+   CV local rip:   147471 "Secret Society" 2019 TG Comics 1 issue 964645 (via CV candidate name "Secret Society") · 123522 "Secret Santas" 2018 Hypnotic Dog Comics 1 issue 730668 (via CV candidate name "Secret Santas") · 86446 "Santa's Secret Cave" 1960 W.T. Grant 1 issue 507397 (via CV candidate name "Santa's Secret Cave")   (rip lookup)
+   GCD dump:       136050 "Secret Santas" 2018-2018 Hypnotic Dog Comics [] 1 (via CV candidate name "Secret Santas") · 93559 "Santa's Secret Cave" 1960-1960 W. T. Grant [] 1 (via CV candidate name "Santa's Secret Cave")   (dump lookup)
+
+== S15119 Saving Mister Creep  [tier D]   keys: Saving Mister Creep  years 2023-2023  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27464] Saving Mister Creep (2023) (digital) (DrVink-DCP).cbz (106pp)
+   CV candidates:  60290 "The Creep" 2013 Dark Horse Comics 1 issue 398968 s35 · 154214 "The Creep" 2022 Image 1 issue 1025316 s35 · 51117 "The Creep" 2012 Dark Horse Comics 5 s20 · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s15 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   154214 "The Creep" 2022 Image 1 issue 1025316 (via CV candidate name "The Creep") · 60290 "The Creep" 2013 Dark Horse Comics 1 issue 398968 (via CV candidate name "The Creep") · 51117 "The Creep" 2012 Dark Horse Comics 5 (via CV candidate name "The Creep")   (rip lookup)
+   GCD dump:       186836 "The Creep" 2022-2022 Image [] 1 (via CV candidate name "The Creep") · 161628 "The Creep" [fr] 2014-2014 Urban Comics [] 1 (via CV candidate name "The Creep") · 73887 "The Creep" 2013-2013 Dark Horse [] 1 (via CV candidate name "The Creep") · 69052 "The Creep" 2012-2012 Dark Horse [] 5 (via CV candidate name "The Creep") · 146209 "Creep" [fr] 2012-2012 Aaarg! [] 1 (via CV candidate name "The Creep")   (dump lookup)
+
+== S15408 Sexy Female Murderesses  [tier D]   keys: Sexy Female Murderesses  years 2018-2018  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27467] Sexy Female Murderesses (2018) (c2c) (fylgja).cbz (95pp)
+   ours:    barcode item 27467 [{"type": "EAN13", "data": "9780648432449", "page": "Sexy Fe
+   CV candidates:  58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s15 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3 · 86527 "Disney Graphic Novels" 2015 NBM 4 s3 · 109403 "Graphic Novels Krimi" 2013 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 (via CV candidate name "Graphic Novels as Philosophy") · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 (via CV candidate name "Dr. Seuss Graphic Novels") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels")   (rip lookup)
+   GCD dump:       104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+
+== S15704 Sisters  [tier D]   keys: Sisters | The Sisters  years 1998-2016  2 files / 0 collections
+   folders: [1] Graphic Novels · [1] Graphic Novels\_Schoolastic & Graphix\Raina Telgemeier
+   files:   [27549] The Sisters 01 - Just Like Family (2016) (jv-DCP).cbr (100pp) | [26948] 02 Sisters (2014) (Digital) (antimist).cbz (211pp)
+   ours:    ladder 1-2
+   CV candidates:  58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s15 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3 · 86527 "Disney Graphic Novels" 2015 NBM 4 s3 · 109403 "Graphic Novels Krimi" 2013 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   125735 "Sisters" 2014 Scholastic Book Services 1 issue 833528 · 91295 "The Sisters" 2016 NBM 7 · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels") · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 (via CV candidate name "Graphic Novels as Philosophy") · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 (via CV candidate name "Dr. Seuss Graphic Novels")   (rip lookup)
+   GCD dump:       58509 "Sisters" [nl-be] 2009-2020 Ballon Media [] 15 · 82531 "Sisters" 2014-2014 Scholastic [] 1 · 166172 "Sisters" [sv-se] 2014-2014 Gaspard förlag [] 1 · 118164 "The Sisters" 2016-? NBM [] 7 · 118165 "The Sisters" 2016-? NBM [] 7 · 212404 "Sisters" [en-au] 2016-2016 Dark Oz [] 1   (dump lookup)
+
+== S15705 Sisters - A Superspy Graphic Novel  [tier C] · gap 21  keys: Sisters - A Superspy Graphic Novel  years 2004-2004  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [26140] 2 Sisters - A Superspy Graphic Novel (Top Shelf) (2004) (Minutemen-DTs).cbz (334pp)
+   ours:    ladder 2
+   CV candidates:  109384 "Graphic Novel" 1988 Abril 29 s55 · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s25 · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 s25 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s23 · 86527 "Disney Graphic Novels" 2015 NBM 4 s16 · 109403 "Graphic Novels Krimi" 2013 Süddeutsche Zeitung 4 s16   (v1 search)
+   CV local rip:   109384 "Graphic Novel" 1988 Abril 29 (via CV candidate name "Graphic Novel") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels") · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 (via CV candidate name "Graphic Novels as Philosophy") · 56636 "Our Story Thus Far" 1985 Jabberwocky Graphix 3 (via GCD name "Our Story Thus  Far")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 56736 "Our Story Thus  Far" 1983-1988 Jabberwocky Graphix [was ongoing series] 3 on 1/1 files
+   GCD dump:       41508 "Graphic Novel" [pt-br] 1988-1992 Editora Abril [] 29 (via CV candidate name "Graphic Novel") · 104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+   bridges:        gcd 56736 -> LOCG 189937 "Solace" support 1
+
+== S15716 Skeleton Key Collected  [tier C] · gap 15  keys: Skeleton Key Collected  years 1998-1998  4 files / 4 collections
+   folders: [4] Graphic Novels
+   files:   [26186] COL Skeleton Key Collected Vol. 01 - Beyond The Threshold.cbz (99pp) | [26106] COL Skeleton Key Collected Vol. 02 - The Celestial Calendar.cbz (204pp)
+            [26105] COL Skeleton Key Collected Vol. 03 - Telling Takes.cbz (99pp) | [26155] COL Skeleton Key Collected Vol. 04 - Cats & Dogs (Amaze Ink) (1998) (even steven).cbr (107pp)
+   CV candidates:  64087 "Skeleton Key" 1995 SLG Publishing ? s55 · 45072 "Skeleton Key" 1996 SLG Publishing ? s55 · 72381 "Skeleton Key" 1999 SLG Publishing ? s55 · 64088 "Skeleton Key Special" 1998 SLG Publishing ? s39 · 48551 "Skeleton Key Color Special" 2012 Dark Horse Comics ? s38 · 62574 "Skeleton Key: The Graphic Novel" 2009 Penguin Group ? s37   (v1 search)
+   CV local rip:   72381 "Skeleton Key" 1999 SLG Publishing 4 (via CV candidate name "Skeleton Key") · 45072 "Skeleton Key" 1996 SLG Publishing 5 (via CV candidate name "Skeleton Key") · 64087 "Skeleton Key" 1995 SLG Publishing 30 (via CV candidate name "Skeleton Key") · 56636 "Our Story Thus Far" 1985 Jabberwocky Graphix 3 (via GCD name "Our Story Thus  Far")   (rip lookup)
+   GCD per-file:   methods round2-folderx3 ⚠  (⚠ copies a folder neighbour's series — verify); series 56736 "Our Story Thus  Far" 1983-1988 Jabberwocky Graphix [was ongoing series] 3 on 3/4 files
+   GCD dump:       27226 "Skeleton Key" 1999-1999 Slave Labor [] 4 (via CV candidate name "Skeleton Key") · 45195 "Skeleton Key" 1996-2001 Slave Labor [] 5 (via CV candidate name "Skeleton Key") · 16427 "Skeleton Key" 1995-1998 Slave Labor [] 30 (via CV candidate name "Skeleton Key") · 44059 "Skeleton Key" 2009-2009 Penguin [] 1 (via CV candidate name "Skeleton Key")   (dump lookup)
+   bridges:        gcd 56736 -> LOCG 189937 "Solace" support 1
+
+== S15849 Solace  [tier C] · by 16  keys: Solace  years 1999-1999  1 files / 1 collections
+   folders: [1] Graphic Novels
+   files:   [27475] COL Solace (2024) (Graphic Novel) (Monolith of Minds) (Digital-HD) (LeDuch).cbz (72pp)
+   ours:    ComicInfo Series: "Solace"x1; ComicInfo Volume: "2024"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Monolith of Minds"x1
+   CV linked:      vol 34927 "Solace" 1999 Avatar Press 2 issues; cached #1-1 (1); yearΔ 0; ratio 0/2; no judged range; v1 per-file: same volume on 1/1 files
+   CV candidates:  (= linked) · 138307 "Monolith" 2021 Magnetic Press 1 issue 880285 s15 · 50775 "The Monolith" 2012 Image 1 issue 347322 s15 · 54711 "Monolith" 1972 Last Gasp 1 issue 372542 s15 · 165170 "Monolith" 2025 Image 1 issue 1116881 s15 · 137143 "Monolith" 2021 Magnetic Press 4 s3 · 4629 "Monolith" 1991 Comico 4 s3   (v1 search)
+   CV local rip:   (= linked) · 11254 "The Monolith" 2004 DC Comics 12 (via CV candidate name "Monolith") · 4629 "Monolith" 1991 Comico 4 (via CV candidate name "Monolith") · 50775 "The Monolith" 2012 Image 1 issue 347322 (via CV candidate name "Monolith") · 56636 "Our Story Thus Far" 1985 Jabberwocky Graphix 3 (via GCD name "Our Story Thus  Far") · 137143 "Monolith" 2021 Magnetic Press 4 (via CV candidate name "Monolith")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 56736 "Our Story Thus  Far" 1983-1988 Jabberwocky Graphix [was ongoing series] 3 on 1/1 files
+   GCD dump:       55416 "Solace" 1999-1999 Avatar Press [] 2 · 228951 "Solace" [hu] 2025-2025 Red Line Comix Group [] 1 · 12195 "The Monolith" 2004-2005 DC [] 12 (via CV candidate name "Monolith") · 4278 "Monolith" 1991-1992 Comico [] 4 (via CV candidate name "Monolith") · 222517 "The Monolith" 2012-2012 Image [] 1 (via CV candidate name "Monolith") · 121525 "Monolith" [fr] 2013-2013 Delcourt [] 1 (via CV candidate name "Monolith")   (dump lookup)
+   bridges:        gcd 56736 -> LOCG 189937 "Solace" support 1
+
+== S15964 Space Story  [tier D]   keys: Space Story  years 2022-2022  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27477] Space Story (2022) (Digital) (XRA-Empire).cbz (162pp)
+   ours:    ComicInfo Series: "Space Story"x1; ComicInfo Publisher: "Ablaze"x1
+   CV candidates:  54032 "Space Story Omnibus" 1955 Collins 1 issue 368526 s74 · 90441 "Doraemon: Nobita no Space Heroes - Eiga Story" 2015 Shogakukan 1 issue 529607 s70 · 121929 "Of Space" 2019 Weaselmeizters 1 issue 721945 s44 · 85812 "Space Brothers" 2015 Kodansha Comics USA 44 s29 · 1887 "Space Adventures" 1958 Charlton 37 s29 · 1534 "Space Adventures" 1952 Charlton 21 s29   (v1 search)
+   CV local rip:   54032 "Space Story Omnibus" 1955 Collins 1 issue 368526 (via CV candidate name "Space Story Omnibus") · 121929 "Of Space" 2019 Weaselmeizters 1 issue 721945 (via CV candidate name "Of Space") · 90441 "Doraemon: Nobita no Space Heroes - Eiga Story" 2015 Shogakukan 1 issue 529607 (via CV candidate name "Doraemon: Nobita no Space Heroes - Eiga Story")   (rip lookup)
+   GCD dump:       186538 "Space Story" 2022-2022 West Margin Press [] 1 · 186540 "Space Story" 2022-2022 West Margin Press [] 1 · 69058 "Space Story Omnibus" [en-gb] 1956-? William Collins [] 1 (via CV candidate name "Space Story Omnibus")   (dump lookup)
+
+== S15973 Spaghetti Midwestern Bricked  [tier D]   keys: Spaghetti Midwestern Bricked  years 2018-2018  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27478] Spaghetti Midwestern Bricked (2018) (Digital) (DrDoom-Empre).cbz (169pp)
+   CV candidates:  58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s15 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3 · 86527 "Disney Graphic Novels" 2015 NBM 4 s3 · 109403 "Graphic Novels Krimi" 2013 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 (via CV candidate name "Graphic Novels as Philosophy") · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 (via CV candidate name "Dr. Seuss Graphic Novels") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels")   (rip lookup)
+   GCD dump:       104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+
+== S16901 Strange Fruit  [tier B]   keys: Strange Fruit  years 2014-2018  2 files / 0 collections
+   folders: [2] Graphic Novels
+   files:   [27481] Strange Fruit, Volume I - Uncelebrated Narratives from Black History (2014) (digital-SD) (fylgja).cbz (161pp)
+            [27482] Strange Fruit, Volume II - More Uncelebrated Narratives from Black History (2018) (digital+) (SD) (fylgja).cbz (109pp)
+   CV per-file (v1): vol 83158 "Strange Fruit" 2015 Boom! Studios 4 on 2/2 files
+   CV candidates:  (= per-file) · 99678 "Strange Fruit" 2015 Kadokawa Shoten 3 s93 · 101217 "Strange Fruit" 2017 Boom! Studios 1 issue 594164 s65 · 147874 "Strange Fruit" 2018 Editorial Panini México 1 issue 967624 s50 · 86680 "BOOM! Box 2015 Mix Tape" 2015 Boom! Studios 1 issue 508489 s45 · 57366 "The Art of Boom! Studios" 2010 Boom! Studios 1 issue 386748 s41 · 117882 "Strange Fruit" 2019 Lion Den Comics 5 s35   (v1 search)
+   CV local rip:   (= per-file) · 99678 "Strange Fruit" 2015 Kadokawa Shoten 3 · 101217 "Strange Fruit" 2017 Boom! Studios 1 issue 594164 · 147874 "Strange Fruit" 2018 Editorial Panini México 1 issue 967624 · 117882 "Strange Fruit" 2019 Lion Den Comics 5   (rip lookup)
+   GCD dump:       90546 "Strange Fruit" 2015-2016 Boom! Studios [] 4 · 113861 "Strange Fruit" 2017-2017 Boom! Studios [] 1 · 121833 "Strange fruit" [fr] 2017-2017 Delcourt [] 1 · 194462 "Strange Fruit" [fr] 2019-2019 Bamboo Édition [] 4 · 218349 "Strange Fruit" [en-gb] 1991-1991 Mystery Man Inc. [] 1   (dump lookup)
+
+== S16978 Strikers - A Graphic Novel  [tier D]   keys: Strikers - A Graphic Novel  years 2023-2023  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27483] Strikers - A Graphic Novel (2023) (digital) (DrVink-DCP).cbz (168pp)
+   ours:    ComicInfo Publisher: "Graphic Universe"x1
+   CV candidates:  109384 "Graphic Novel" 1988 Abril 29 s55 · 32214 "Twilight: The Graphic Novel" 2010 Yen Press 2 s36 · 76297 "The Graveyard Book Graphic Novel" 2014 HarperCollins 2 s35 · 66097 "Eureka Graphic Novel" 1992 Max Bunker Press 3 s32 · 132199 "DUNE: The Graphic Novel" 2020 Harry N. Abrams 3 s31 · 108015 "Vatican Assassin: The Graphic Novel" 2017 Glow-in-the-Dark Radio 4 s30   (v1 search)
+   CV local rip:   109384 "Graphic Novel" 1988 Abril 29 (via CV candidate name "Graphic Novel") · 76297 "The Graveyard Book Graphic Novel" 2014 HarperCollins 2 (via CV candidate name "The Graveyard Book Graphic Novel") · 32214 "Twilight: The Graphic Novel" 2010 Yen Press 2 (via CV candidate name "Twilight: The Graphic Novel")   (rip lookup)
+   GCD dump:       41508 "Graphic Novel" [pt-br] 1988-1992 Editora Abril [] 29 (via CV candidate name "Graphic Novel") · 139643 "Twilight: The Graphic Novel" 2012-2012 Yen Press [] 1 (via CV candidate name "Twilight: The Graphic Novel") · 110968 "Twilight: The Graphic Novel" 2010-2011 Yen Press [] 2 (via CV candidate name "Twilight: The Graphic Novel")   (dump lookup)
+
+== S17785 Teratoid heights  [tier D]   keys: Teratoid Heights  years 2003-2003  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27494] Teratoid Heights (2003) (tunafan).cbr (204pp)
+   CV candidates:  58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s15 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3 · 86527 "Disney Graphic Novels" 2015 NBM 4 s3 · 109403 "Graphic Novels Krimi" 2013 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels") · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 (via CV candidate name "Graphic Novels as Philosophy") · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 (via CV candidate name "Dr. Seuss Graphic Novels")   (rip lookup)
+   GCD dump:       104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+   MU / External:  ExternalWork 470 "Teratoid heights" openlibrary /works/OL32366011W
+
+== S18163 The Bowerbird  [tier D]   keys: The Bowerbird  years 2013-2013  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [26164] The Bowerbird (2013) (digital) (d'argh-Empire).cbr (38pp)
+   CV candidates:  58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s42 · 76372 "The Ultimate Graphic Novels Collection" 2011 Hachette 46 s26 · 43400 "Disney Movies The Graphic Novels" 2010 Disney 25 s26 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   76372 "The Ultimate Graphic Novels Collection" 2011 Hachette 46 (via CV candidate name "The Ultimate Graphic Novels Collection") · 43400 "Disney Movies The Graphic Novels" 2010 Disney 25 (via CV candidate name "Disney Movies The Graphic Novels") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels")   (rip lookup)
+   GCD dump:       95679 "The Ultimate Graphic Novels Collection" [en-gb] 2011-2022 Hachette Partworks [] 240 (via CV candidate name "The Ultimate Graphic Novels Collection") · 162848 "The Ultimate Graphic Novels Collection" [en-gb] 2016-2022 Hachette Partworks [] 170 (via CV candidate name "The Ultimate Graphic Novels Collection") · 104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+
+== S18316 The Curse: A Graphic Ballad  [tier C] · gap 41  keys: The Curse: A Graphic Ballad  years 2024-2024  1 files / 1 collections
+   folders: [1] Graphic Novels
+   files:   [27506] COL The Curse - A Graphic Ballad Vol. 01 (2024) (Self Published) (Digital-HD) (LeDuch).cbz (288pp)
+   ours:    ComicInfo Series: "The Curse: A Graphic Ballad"x1; ComicInfo Volume: "2024"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Self Published"x1
+   CV candidates:  79277 "Curse" 2015 Boom! Studios 1 issue 475502 s55 · 134887 "Ballad of an American: A Graphic Biography of Paul Robeson" 2020 Rutgers University Press 1 issue 840449 s44 · 70913 "Curse" 2014 Boom! Studios 4 s43 · 95299 "Self Storage: The Complete Graphic Novel" 2016 451 Media Group 1 issue 555784 s35 · 153077 ".Self" 2023 Dark Horse Comics 1 issue 1009550 s15 · 71558 "Self-Obsessed" 2014 Image 1 issue 444927 s15   (v1 search)
+   CV local rip:   79277 "Curse" 2015 Boom! Studios 1 issue 475502 (via CV candidate name "Curse") · 70913 "Curse" 2014 Boom! Studios 4 (via CV candidate name "Curse") · 134887 "Ballad of an American: A Graphic Biography of Paul Robeson" 2020 Rutgers University Press 1 issue 840449 (via CV candidate name "Ballad of an American: A Graphic Biography of Paul Robeson") · 56636 "Our Story Thus Far" 1985 Jabberwocky Graphix 3 (via GCD name "Our Story Thus  Far")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 56736 "Our Story Thus  Far" 1983-1988 Jabberwocky Graphix [was ongoing series] 3 on 1/1 files
+   GCD dump:       147581 "Curse" [fr] 2017-2017 Ankama [] 1 (via CV candidate name "Curse") · 78617 "Curse" 2014-2014 Boom! Studios [] 4 (via CV candidate name "Curse") · 167738 "Ballad of an American: A Graphic Biography of Paul Robeson" 2020-2020 Rutgers University Press [] 1 (via CV candidate name "Ballad of an American: A Graphic Biography of Paul Robeson") · 167739 "Ballad of an American: A Graphic Biography of Paul Robeson" 2020-2020 Rutgers University Press [] 1 (via CV candidate name "Ballad of an American: A Graphic Biography of Paul Robeson")   (dump lookup)
+   bridges:        gcd 56736 -> LOCG 189937 "Solace" support 1
+
+== S18375 The Days That Disappear  [tier D]   keys: The Days That Disappear  years 2017-2017  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27510] The Days That Disappear (2017) (Scanlation) (F) (phillywilly).cbr (193pp)
+   CV candidates:  58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s27 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 s15 · 76372 "The Ultimate Graphic Novels Collection" 2011 Hachette 46 s11 · 43400 "Disney Movies The Graphic Novels" 2010 Disney 25 s11 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 (via CV candidate name "Graphic Novels as Philosophy") · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 (via CV candidate name "Dr. Seuss Graphic Novels") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels")   (rip lookup)
+   GCD dump:       104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+
+== S18672 The Ghostkeeper  [tier D]   keys: The Ghostkeeper  years 2024-2024  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27517] The Ghostkeeper (2024) (Digital Rip) (Hourman-DCP).cbr (273pp)
+   CV candidates:  58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s42 · 76372 "The Ultimate Graphic Novels Collection" 2011 Hachette 46 s26 · 43400 "Disney Movies The Graphic Novels" 2010 Disney 25 s26 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   76372 "The Ultimate Graphic Novels Collection" 2011 Hachette 46 (via CV candidate name "The Ultimate Graphic Novels Collection") · 43400 "Disney Movies The Graphic Novels" 2010 Disney 25 (via CV candidate name "Disney Movies The Graphic Novels") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels")   (rip lookup)
+   GCD dump:       162848 "The Ultimate Graphic Novels Collection" [en-gb] 2016-2022 Hachette Partworks [] 170 (via CV candidate name "The Ultimate Graphic Novels Collection") · 95679 "The Ultimate Graphic Novels Collection" [en-gb] 2011-2022 Hachette Partworks [] 240 (via CV candidate name "The Ultimate Graphic Novels Collection") · 104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+   MU / External:  ExternalWork 471 "The Ghostkeeper" openlibrary /works/OL37859149W
+
+== S18781 The Hill  [tier D]   keys: The Hill  years 2016-2016  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27520] The Hill (2016) (digital) (DrVink).cbz (131pp)
+   CV candidates:  58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s42 · 76372 "The Ultimate Graphic Novels Collection" 2011 Hachette 46 s26 · 43400 "Disney Movies The Graphic Novels" 2010 Disney 25 s26 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   149065 "The Hill" 2007 AAM/Markosia 1 issue 979506 · 76372 "The Ultimate Graphic Novels Collection" 2011 Hachette 46 (via CV candidate name "The Ultimate Graphic Novels Collection") · 43400 "Disney Movies The Graphic Novels" 2010 Disney 25 (via CV candidate name "Disney Movies The Graphic Novels") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels")   (rip lookup)
+   GCD dump:       27674 "The Hill" [en-gb] 2007-2007 Markosia Publishing [] 1 · 162848 "The Ultimate Graphic Novels Collection" [en-gb] 2016-2022 Hachette Partworks [] 170 (via CV candidate name "The Ultimate Graphic Novels Collection") · 95679 "The Ultimate Graphic Novels Collection" [en-gb] 2011-2022 Hachette Partworks [] 240 (via CV candidate name "The Ultimate Graphic Novels Collection") · 104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+
+== S18849 The Invisible War - A World War I Tale on Two Scales  [tier D]   keys: The Invisible War - A World War I Tale on Two Scales  years 2016-2016  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27523] The Invisible War - A World War I Tale on Two Scales (2016) (Digital) (XRA-Empire).cbz (84pp)
+   CV candidates:  88555 "Classics Illustrated: World War I" 2016 Classic Comic Store 1 issue 517893 s39 · 68418 "World War 2 Tales" 2005 Chester Comix 1 issue 429076 s35 · 154257 "The Witches of World War II" 2023 TKO Studios 1 issue 1026095 s35 · 50411 "World War II 1946 Annual" 2000 Antarctic Press 1 issue 345545 s31 · 88556 "Classics Illustrated: World War II" 2016 Classic Comic Store 1 issue 517894 s31 · 113882 "Hulk: World War Hulk II" 2018 Marvel 1 issue 686382 s31   (v1 search)
+   CV local rip:   88555 "Classics Illustrated: World War I" 2016 Classic Comic Store 1 issue 517893 (via CV candidate name "Classics Illustrated: World War I") · 154257 "The Witches of World War II" 2023 TKO Studios 1 issue 1026095 (via CV candidate name "The Witches of World War II") · 68418 "World War 2 Tales" 2005 Chester Comix 1 issue 429076 (via CV candidate name "World War 2 Tales")   (rip lookup)
+   GCD dump:       50579 "World War 2 Tales" 2005-2005 Chester Comix [] 1 (via CV candidate name "World War 2 Tales")   (dump lookup)
+
+== S18975 The Little Wooden Robot and the Log  [tier D]   keys: The Little Wooden Robot and the Log  years 2021-2021  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27529] The Little Wooden Robot and the Log (2021) (digital) (DrVink).cbz (40pp)
+   ours:    ComicInfo Publisher: "Neal Porter Books
+"x1
+   CV candidates:  84434 "Little Robot" 2015 First Second Books 1 issue 499822 s70 · 114522 "Robot…" 2011 SelfMadeHero 1 issue 689398 s55 · 47167 "Robot" 2005 Digital Manga Publishing 3 s43 · 99219 "Yule Log" ? 2dcloud 1 issue 583528 s35 · 29380 "Avengers Log" 1994 Marvel 1 issue 181498 s35 · 81056 "Log Horizon" 2015 Yen Press 1 issue 484727 s35   (v1 search)
+   CV local rip:   114522 "Robot…" 2011 SelfMadeHero 1 issue 689398 (via CV candidate name "Robot…") · 47167 "Robot" 2005 Digital Manga Publishing 3 (via CV candidate name "Robot…") · 84434 "Little Robot" 2015 First Second Books 1 issue 499822 (via CV candidate name "Little Robot")   (rip lookup)
+   GCD dump:       139593 "Robot" [sv-se] 2018-? Egmont [] 56 (via CV candidate name "Robot…") · 167552 "Robot" [fr] 2009-2011 Glénat [] 10 (via CV candidate name "Robot…") · 167551 "Robot" [fr] 2006-2006 Kami [] 1 (via CV candidate name "Robot…") · 109661 "Robot" [sv-se] 2005-2017 Reset Media AB [] 156 (via CV candidate name "Robot…") · 193651 "Robot" [es-cl] 1966-1966 Zig-Zag [] 9 (via CV candidate name "Robot…") · 142403 "Little Robot" 2015-2015 First Second [] 1 (via CV candidate name "Little Robot")   (dump lookup)
+
+== S19335 The Patient  [tier D]   keys: The Patient  years 2019-2019  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27541] The Patient (2019) (F) (Scanlation) (phillywilly).cbr (296pp)
+   CV candidates:  58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s42 · 76372 "The Ultimate Graphic Novels Collection" 2011 Hachette 46 s26 · 43400 "Disney Movies The Graphic Novels" 2010 Disney 25 s26 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   76372 "The Ultimate Graphic Novels Collection" 2011 Hachette 46 (via CV candidate name "The Ultimate Graphic Novels Collection") · 43400 "Disney Movies The Graphic Novels" 2010 Disney 25 (via CV candidate name "Disney Movies The Graphic Novels") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels")   (rip lookup)
+   GCD dump:       162848 "The Ultimate Graphic Novels Collection" [en-gb] 2016-2022 Hachette Partworks [] 170 (via CV candidate name "The Ultimate Graphic Novels Collection") · 95679 "The Ultimate Graphic Novels Collection" [en-gb] 2011-2022 Hachette Partworks [] 240 (via CV candidate name "The Ultimate Graphic Novels Collection") · 104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+
+== S19457 The Retreat  [tier B]   keys: The Retreat  years 2010-2010  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27544] The Retreat (2010) (digital-Empire).cbz (34pp)
+   CV per-file (v1): vol 104076 "The Retreat" 2017 Humanoids 2 on 1/1 files
+   CV candidates:  (= per-file) · 84043 "The Retreat" 2015 Consumptive Press 1 issue 498215 s90 · 104075 "The Retreat" 2017 Humanoids 1 issue 619723 s90 · 34213 "Retreat" 2000 NBM 1 issue 225292 s55 · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s42 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   (= per-file) · 84043 "The Retreat" 2015 Consumptive Press 1 issue 498215 · 104075 "The Retreat" 2017 Humanoids 1 issue 619723 · 34213 "Retreat" 2000 NBM 1 issue 225292   (rip lookup)
+   GCD dump:       126126 "The Retreat" 2017-2017 Humanoids [] 1 · 23235 "Retreat" 2000-2000 NBM [] 1   (dump lookup)
+
+== S19495 The Royal Game & Other Stories  [tier D]   keys: The Royal Game  years 2017-2017  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27546] The Royal Game (2017) (Scanlation) (phillywilly).cbr (127pp)
+   CV candidates:  58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s32 · 76372 "The Ultimate Graphic Novels Collection" 2011 Hachette 46 s16 · 43400 "Disney Movies The Graphic Novels" 2010 Disney 25 s16 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   76372 "The Ultimate Graphic Novels Collection" 2011 Hachette 46 (via CV candidate name "The Ultimate Graphic Novels Collection") · 43400 "Disney Movies The Graphic Novels" 2010 Disney 25 (via CV candidate name "Disney Movies The Graphic Novels") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels")   (rip lookup)
+   GCD dump:       162848 "The Ultimate Graphic Novels Collection" [en-gb] 2016-2022 Hachette Partworks [] 170 (via CV candidate name "The Ultimate Graphic Novels Collection") · 95679 "The Ultimate Graphic Novels Collection" [en-gb] 2011-2022 Hachette Partworks [] 240 (via CV candidate name "The Ultimate Graphic Novels Collection") · 104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+   MU / External:  ExternalWork 474 "The Royal Game & Other Stories" openlibrary /works/OL17930435W
+
+== S19716 The Sweetness Between Us  [tier D]   keys: The Sweetness Between Us  years 2024-2024  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27556] The Sweetness Between Us (Sarah Winifred Searle) (2024) (Allen & Unwin) (Digital Rip) (Hourman-DCP).cbr (237pp)
+   CV candidates:  91539 "The Sweetness" 2016 Z2 Comics 5 s55 · 113675 "The Walls Between Us" 2018 Kodansha Comics USA 7 s44 · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s27 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 76372 "The Ultimate Graphic Novels Collection" 2011 Hachette 46 s11 · 43400 "Disney Movies The Graphic Novels" 2010 Disney 25 s11   (v1 search)
+   CV local rip:   91539 "The Sweetness" 2016 Z2 Comics 5 (via CV candidate name "The Sweetness") · 113675 "The Walls Between Us" 2018 Kodansha Comics USA 7 (via CV candidate name "The Walls Between Us") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels")   (rip lookup)
+   GCD dump:       104058 "The Sweetness" 2016-? Z2 Comics [] 4 (via CV candidate name "The Sweetness") · 104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+
+== S20050 They Live in Me  [tier D]   keys: They Live in Me  years ?-?  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27563] They Live in Me (Jesse Jacobs) (Hollow Press, 2017) (c2c) (fylgja).cbz (36pp)
+   CV candidates:  54504 "They Call Me Pusspuss" 1994 Knockabout 1 issue 371516 s43 · 72690 "They Call Me ... The Skul" 1996 Virtual Comics 3 s30 · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s15 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3 · 86527 "Disney Graphic Novels" 2015 NBM 4 s3   (v1 search)
+   CV local rip:   54504 "They Call Me Pusspuss" 1994 Knockabout 1 issue 371516 (via CV candidate name "They Call Me Pusspuss") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels") · 72690 "They Call Me ... The Skul" 1996 Virtual Comics 3 (via CV candidate name "They Call Me ... The Skul")   (rip lookup)
+   GCD dump:       17102 "They Call Me... The Skul" 1996-1996 Byron Preiss Multimedia Company [] 3 (via CV candidate name "They Call Me ... The Skul") · 73047 "They Call Me PussPuss" [en-gb] 1994-1994 Knockabout [] 1 (via CV candidate name "They Call Me Pusspuss") · 104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+
+== S20145 Threadbare  [tier D]   keys: Threadbare  years 2019-2019  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27565] Threadbare (Gareth Brookes) (2019) (digital) (phillywilly-Empire).cbr (29pp)
+   CV candidates:  58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s15 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3 · 86527 "Disney Graphic Novels" 2015 NBM 4 s3 · 109403 "Graphic Novels Krimi" 2013 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 (via CV candidate name "Graphic Novels as Philosophy") · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 (via CV candidate name "Dr. Seuss Graphic Novels") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels")   (rip lookup)
+   GCD dump:       104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+   MU / External:  ExternalWork 477 "Threadbare" openlibrary /works/OL19671412W
+
+== S20369 Traces of Madness - A Graphic Memoir  [tier D]   keys: Traces of Madness - A Graphic Memoir  years ?-?  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27572] Traces of Madness - A Graphic Memoir (Graphic Mundi 2024) (webrip) (MagicMan-DCP).cbr (131pp)
+   ours:    ComicInfo Series: "Traces of Madness - A Graphic Memoir"x1; ComicInfo Publisher: "Graphic Mundi"x1
+   CV candidates:  124411 "Spring Rain: A Graphic Memoir of Love, Madness, and Revolutions" 2020 Griffin Comics 1 issue 734362 s60 · 113459 "Rx: A Graphic Memoir" 2018 Warner Books 1 issue 684794 s45 · 76656 "Tomboy: A Graphic Memoir" 2014 Houghton Mifflin Harcourt 1 issue 463573 s45 · 135725 "Penny: A Graphic Memoir" 2021 Chronicle Books 1 issue 845892 s45 · 84294 "Prison Island: A Graphic Memoir" 2015 Zest Books 1 issue 499128 s43 · 94677 "Flying Couch: A Graphic Memoir" 2016 Black Balloon Publishing 1 issue 552106 s43   (v1 search)
+   CV local rip:   76656 "Tomboy: A Graphic Memoir" 2014 Houghton Mifflin Harcourt 1 issue 463573 (via CV candidate name "Tomboy: A Graphic Memoir") · 113459 "Rx: A Graphic Memoir" 2018 Warner Books 1 issue 684794 (via CV candidate name "Rx: A Graphic Memoir") · 124411 "Spring Rain: A Graphic Memoir of Love, Madness, and Revolutions" 2020 Griffin Comics 1 issue 734362 (via CV candidate name "Spring Rain: A Graphic Memoir of Love, Madness, and Revolutions")   (rip lookup)
+   GCD dump:       92391 "Tomboy: A Graphic Memoir" 2014-2014 Zest Books [] 1 (via CV candidate name "Tomboy: A Graphic Memoir") · 129373 "RX A Graphic Memoir" 2018-2018 Hachette Book Group USA [] 1 (via CV candidate name "Rx: A Graphic Memoir") · 155118 "Spring Rain: A Graphic Memoir of Love, Madness, and Revolutions" 2020-2020 St. Martin's Press [] 1 (via CV candidate name "Spring Rain: A Graphic Memoir of Love, Madness, and Revolutions")   (dump lookup)
+
+== S20457 Tremors of the Buried Moon  [tier D]   keys: Tremors of the Buried Moon  years 2011-2011  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27574] Tremors of the Buried Moon (2011) (digital-Empire).cbz (183pp)
+   CV candidates:  58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s25 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 s15 · 76372 "The Ultimate Graphic Novels Collection" 2011 Hachette 46 s8 · 43400 "Disney Movies The Graphic Novels" 2010 Disney 25 s8 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels") · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 (via CV candidate name "Graphic Novels as Philosophy") · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 (via CV candidate name "Dr. Seuss Graphic Novels")   (rip lookup)
+   GCD dump:       104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+
+== S20750 Understanding  [tier D]   keys: Understanding  years 2018-2018  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27580] Understanding (2018) (digital-Empire).cbz (94pp)
+   CV candidates:  58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s15 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3 · 86527 "Disney Graphic Novels" 2015 NBM 4 s3 · 109403 "Graphic Novels Krimi" 2013 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 (via CV candidate name "Graphic Novels as Philosophy") · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 (via CV candidate name "Dr. Seuss Graphic Novels") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels")   (rip lookup)
+   GCD dump:       104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+
+== S21609 Who Is Ana Mendieta  [tier D]   keys: Who Is Ana Mendieta  years 2011-2011  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27596] Who Is Ana Mendieta (2011) (Digital) (DrDoom-Empire).cbz (56pp)
+   CV candidates:  35885 "Ana" 1991 Fantagraphics 1 issue 237219 s55 · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s15 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3 · 86527 "Disney Graphic Novels" 2015 NBM 4 s3 · 109403 "Graphic Novels Krimi" 2013 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   35885 "Ana" 1991 Fantagraphics 1 issue 237219 (via CV candidate name "Ana") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels") · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 (via CV candidate name "Dr. Seuss Graphic Novels")   (rip lookup)
+   GCD dump:       229207 "Ana" [it] 2008-2008 001 Edizioni [] 1 (via CV candidate name "Ana") · 41845 "Ana" 1991-1991 Fantagraphics [] 1 (via CV candidate name "Ana") · 104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
