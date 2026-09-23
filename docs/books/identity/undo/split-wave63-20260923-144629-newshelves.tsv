@@ -1,0 +1,21 @@
+# shelves from the split lane (new + kept halves) — feed to next_batch.py --revisit-file
+# S<sid>	<key>	run=<json|->	<P- file>	new|kept|kept-whole[	pair=<origin sid>][	moved_cv=<id>,…][	pending_join=<sid>,…]
+# kept-whole = a `split: false` shelf (nothing moved): its F split-needed stands until an identity batch re-reads it as one run
+# pair = the shelf the split took this row's items from (a kept row is its own pair): --revisit-file never cuts a batch inside a pair group
+S64825	Green Lantern (1999)	run={"cv": 4740, "gcd": 4399}	P-023.jsonl	new	pair=20872
+S102410	Tales of the Green Lantern Corps Annual	run={"cv": 21324, "gcd": 33216}	P-023.jsonl	new	pair=20872
+S103870	Suicide Squad v2 (2001)	run={"cv": 19127, "gcd": 10779}	P-023.jsonl	new	pair=17022
+S103869	Suicide Squad Special: War Crimes (2016)	run={"cv": 93683, "gcd": 105770}	P-023.jsonl	new	pair=17022
+S344	Abe Sapien - The Drowning and Other Stories	run={"cv": 20473, "gcd": 31065}	P-023.jsonl	new	pair=101651
+S103862	Abe Sapien: The Haunted Boy (2009)	run={"cv": 29118, "gcd": 40647}	P-023.jsonl	new	pair=101651
+S103861	Abe Sapien: The Abyssal Plain (2010)	run={"cv": 33998, "gcd": 49587}	P-023.jsonl	new	pair=101651
+S103866	Joy Operations 2 (2024)	run={"cv": 158558, "gcd": 213151}	P-023.jsonl	new	pair=9992
+S103867	Minor Threats (2022)	run={"cv": 144737, "gcd": 188484}	P-023.jsonl	new	pair=7019
+S103868	Minor Threats: The Fastest Way Down (2024)	run={"cv": 157524, "gcd": 210695}	P-023.jsonl	new	pair=7019
+S103864	From the World of Minor Threats: The Brood (2024)	run={"cv": 161632, "gcd": 218584}	P-023.jsonl	new	pair=7019
+S103863	From the World of Minor Threats: The Alternates (2023)	run={"cv": 153594, "gcd": 204009}	P-023.jsonl	new	pair=7019
+S20856	Usagi Yojimbo: Crossroads	run={"gcd": 147897}	P-023.jsonl	new	pair=20858
+S17022	moved out -> S103870 "Suicide Squad v2 (2001)"; S103869 "Suicide Squad Special: War Crimes (2016)"	run=-	P-023.jsonl	kept	pair=17022	moved_cv=19127,93683
+S101651	moved out -> S344 "Abe Sapien - The Drowning and Other Stories"; S103862 "Abe Sapien: The Haunted Boy (2009)"; S103861 "Abe Sapien: The Abyssal Plain (2010)"	run=-	P-023.jsonl	kept	pair=101651	moved_cv=20473,29118,33998
+S9992	moved out -> S103866 "Joy Operations 2 (2024)"	run=-	P-023.jsonl	kept	pair=9992	moved_cv=158558
+S7019	moved out -> S103867 "Minor Threats (2022)"; S103868 "Minor Threats: The Fastest Way Down (2024)"; S103864 "From the World of Minor Threats: The Brood (2024)"; S103863 "From the World of Minor Threats: The Alternates (2023)"	run=-	P-023.jsonl	kept	pair=7019	moved_cv=144737,157524,161632,153594

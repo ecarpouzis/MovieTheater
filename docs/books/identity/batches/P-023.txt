@@ -1,0 +1,225 @@
+## Conventions for this batch (32 shown of 112 matched; 349 in LEDGER.md; 6 shelf/shelves: pub:dark-horse ×4 · folder:vn-year ×3 · folder:sequel-subfolder ×2 · pub:dc ×2 · kind:new ×2 · folder:bucket ×1 · pub:delcourt ×1 · kind:foreign ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-228] (3 shelf/shelves) pub:dark-horse pub:dynamite pub:zenescope sig:legacy-stamp sig:split
+- Franchise folders that are genuinely several runs → `R` + split-needed, not residue: James Bond (three ladders),
+  Charmed (reboot + two Zenescope seasons), Green Hornet (three eras), Savage Tales (three publishers on a bare
+  title), Terminator (1999 Dark Horse mini + 2024 Dynamite), Vampirella (ongoing + "Year One"), Kirby: Genesis
+  (main + Dragonsbane), Tomb Raider (two same-numbered relaunches).
+[L-321] (3 shelf/shelves) kind:foreign kind:new pub:dark-horse pub:drawn-quarterly pub:fantagraphics pub:first-second sig:probe sig:split tier:D
+- TIER D (D-004..D-006): one CV volume per LINE vs one GCD row per BOOK is what cuts a tier-D folder into shelves
+  (Maakies, Black Moon Chronicles, Wunderwaffen, Ekho, Moebius Library) — `--issues <line volume>` resolves the whole
+  folder by subtitle; the reverse (GCD keeps the line, CV per book: Don Rosa Library, Complete Crepax, History
+  Comics) → cv=- on the S, per-book CV issues on the I. 2022-25 Fantagraphics / D&Q / First Second / Dark Horse
+  singletons are past the rip's horizon → GCD-only cv=- + provider-missing (~150 of 360). A GCD row with count 0 and a
+  "do not add issues" note naming its constituents IS the finding (R + split with those ids); a GCD row with zero
+  indexed issues but the right title still carries the S, the I takes `gcd=s<series>`. GCD splits a run at a mid-run
+  trademark retitle (Tommy Gun: Wizards 149904 / Machine Gun: Wizards 153050 vs CV's one 120928). LEAD RULING: when
+  the ONLY catalog record of a comic is a third-territory licence (a German Splitter edition of a French album whose
+  original is in neither catalog) link it at 0.7 + provider-missing — the review queue, not an applied identity —
+  so the web lane gets a concrete question instead of a refusal.
+[L-124] (3 shelf/shelves) folder:bucket folder:vn-year pass:item sig:trade-link
+- A `<Title> vN (<year>)` folder holding only a collected edition is the RUN's folder — the run takes the S
+  line, the trade an `I` line; a `_Trades` / `_Minis` / `_One-shots` bucket is the opposite (the book's own
+  count-1 record, minted by BOTH providers, wins).
+[L-191] (3 shelf/shelves) folder:sequel-subfolder folder:vn-year pass:revisit sig:stale-flag
+- On a wave-2 `NN <Title> vN (<year>)` split-out shelf (ids S94xxx+) an `overlap-in-series` flag is stale by
+  construction — the colliding Vol. 01s now sit on sibling shelves (13 of 14 in R-016); the lead dismisses the flag.
+[L-211] (2 shelf/shelves) folder:vn-year pub:dc sig:collision sig:stale-flag
+- An `overlap-in-series` flag on a franchise with many `vN` sibling shelves (Deathstroke, Harley Quinn, Green Lantern,
+  Justice League, JLD, Legion, Lobo) describes the CROSS-SHELF Vol. 01 collision, not conflation on the one shelf —
+  confirmed 14 of 14 in C-013..C-015; the stale-flag note must name the sibling shelf.
+[L-223] (2 shelf/shelves) pub:dark-horse sig:split sig:stale-flag
+- Dark Horse conflated-series flags split about evenly between real conflation (Alabaster, Aliens, American Gods, Barb
+  Wire, Billy the Kid, Canto, Captain Midnight — R + split) and a stale flag on a 2-file shelf holding only ONE of the
+  conflated minis — but check the two files are the SAME mini before calling it stale (Blue Book was not).
+[L-272] (3 shelf/shelves) folder:vn-year
+- A ripper's `vNN` can be offset by one from the album's own subtitle (Carthago Adventures) — the title decides.
+[L-281] (3 shelf/shelves) folder:bucket folder:events folder:vn-year
+- A chronology folder's ORDER prefix ("04 Dragon Ball - Full Color Freeza Arc v01") gets read by the per-file num
+  matcher as the ISSUE number — v01 in folder "04" linked to issue #4; the true mapping is the shelf's own vNN by
+  ordinal. Any "NN Title vNN" bucket naming is this trap.
+[L-013] (5 shelf/shelves) sig:probe
+- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
+  with the other spelling.
+[L-014] (5 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-043] (5 shelf/shelves) sig:probe
+- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
+  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
+[L-050] (5 shelf/shelves) sig:probe
+- When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
+  punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
+  abbreviation the publisher uses ("HSE").
+[L-072] (5 shelf/shelves) sig:probe
+- GCD hides behind the SUBTITLE: "The Hunting Accident", "Giraffes on Horseback Salad", "Undesirables" return
+  nothing under their full titles — re-probe the SHORT title before writing `provider-missing`.
+[L-088] (5 shelf/shelves) sig:probe
+- GCD hides behind a LONGER title too ("… and the Tale of Azkon's Heart", "Holiday Party (One-Shot)"), not only a
+  shorter one — probe both directions before `provider-missing`.
+[L-089] (5 shelf/shelves) sig:probe
+- A facsimile of a SINGLE issue is its own book; a reprint edition of a whole series is not — the original wins.
+[L-095] (5 shelf/shelves) sig:probe
+- A folder that is a ripper's READING ORDER over several separately published arcs (The Ride, Revolution) has no
+  spanning record — the ladder is arc numbers, not issue numbers.
+[L-096] (5 shelf/shelves) sig:probe
+- GCD's exact filing recovers legs the probe misses: singular/plural ("Greeting", "Return"), two words ("Super
+  Hero"), a spelled ordinal ("Fortieth"), a dropped subtitle, or the colon form ("Jinx: Torso") — try each before
+  `provider-missing`.
+[L-118] (5 shelf/shelves) sig:probe
+- A GCD collected series numbers its issues by VOLUME and titles them with the volume SUBTITLE — that, not the
+  page count, places a trade when a shelf holds several volumes of one line.
+[L-125] (5 shelf/shelves) sig:probe
+- A stored link that is the same title a DIFFERENT DECADE later is a new cluster (Fist of Khonshu 2024 on the
+  1985 Moon Knight run; a 1971 Sub-Mariner Annual on the 1998 annual) — years decide, never the title.
+[L-157] (5 shelf/shelves) sig:probe
+- A GCD row with ZERO issues is an empty stub, not a leg (Skull Cat 197154, Rivers of London: Stray Cat Blues 213823,
+  Archer & Armstrong: Revival 164703) → `provider-missing`.
+[L-159] (5 shelf/shelves) sig:probe
+- An exact-name probe can miss a sequel the rip DOES hold: `--contains "Icarus Society"` found CV 143976 after the
+  exact "Prodigy: The Icarus Society" probe returned nothing — try `--contains` on the subtitle before `provider-missing`.
+[L-163] (5 shelf/shelves) sig:probe
+- GCD hides behind a bracketed alternate title: "War Stories: J for Jenny [War Story: J for Jenny]" (10937), "Dance Like
+  Everybody's Watching! [A Zits Treasury]" (132081), "You're Out of Your Mind, Charlie Brown! [Horizontal]" (155990).
+[L-177] (5 shelf/shelves) sig:probe
+- A bracketed publisher series number becomes a phantom ladder entry: Thun'da's "[A1-056]/[A1 073]/[A1 083]" produced
+  ladder 56/73/83 and a ratio 5.00 — read the bracket, not the ladder.
+[L-193] (5 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-204] (5 shelf/shelves) pass:item pass:revisit sig:probe
+- `lookup.py --issues <collected-line volume>` names each TRADE's own ComicVine ISSUE id: 71 of 73 `I` lines in
+  R-018 carry an item-level CV id instead of `cv=-`.
+[L-253] (5 shelf/shelves) sig:probe
+- A subtitle can name a SEQUEL series filed on the first run's shelf (Wild's End "Beyond the Sea" = CV 151678 /
+  GCD 201441, not the 2014 run) — the `C` names the sequel run.
+[L-264] (5 shelf/shelves) sig:probe
+- Title-only (st3) GCD matches reuse ONE gcd id across every volume of a line (Golden City ×10, Windmaker,
+  Tarzan Kubert Years) — re-derive each book from the shelf's own numbered pool.
+[L-267] (5 shelf/shelves) sig:probe
+- A GCD "collected edition" series sits beside the genuine RUN under a different id (Dept H 100362 vs 111468, Harrow
+  County 89353 vs 94662, Sword Daughter 125748 vs 134585) — the `C` names the run; `lookup.py` by title finds it.
+[L-273] (5 shelf/shelves) sig:probe
+- The Adventures of Tintin: every per-file gcd pick (60515/108543) was wrong; the shelf's own gcd pool matched by
+  ENGLISH title was right for all 23 — the pool over the pick, again.
+[L-292] (5 shelf/shelves) sig:probe
+- A stored English digital volume's cached rip may cover only its last issues (Suzuka #13-18 of 18) — the earlier
+  books take gcd-only identities from the GCD series' full list, cv=-.
+[L-294] (5 shelf/shelves) pass:item sig:probe
+- ITEM PASS (X-046..X-048): a shelf can hold TWO published editions of one work with no shared pool (Monster: the
+  18-volume line beside the 2014 "Two-in-One" Perfect Edition) — each edition needs its own pool or an honest
+  no-record, never a mapping across editions. When a shelf's file count exceeds its pool, the excess usually
+  belongs to a CONTINUATION volume the shelf's own `N` names (Ranma 1/2 v22-38 → CV 26409 / GCD 17651) — the pool
+  for it must be pulled (`lookup.py --issues`, `gcd_issue WHERE series_id=?`) before writing no-record. GCD may mint
+  a "collected edition" row for only the FIRST of a same-title pair (Zombie Makeout Club) — the second is gcd=-.
+[L-341] (5 shelf/shelves) sig:probe
+- GCD name shapes that hide a record from an exact probe (R-065): a dropped licensor/author prefix (Insight "H. G.
+  Wells:", FSG "Shirley Jackson's"), a dropped leading "The" (DC "Origin of Hordak", IDW "Dark Judges"), a dropped
+  subtitle (IDW TMNT "Saturday Morning Adventures"), a BRACKETED subtitle (IDW RID 2015 "[Animated Series]"), a spelled
+  volume ordinal ("Comic Book History of Comics Volume 2"), a lengthened title (First Second "Prince of Persia the
+  Graphic Novel"). CV spells "'Til" where rippers write "'till".
+
++80 more matched entries not shown: L-346, L-347, L-113, L-290, L-291, L-016, L-020, L-023, L-029, L-032, L-040, L-060, L-063, L-064, L-070, L-082, L-085, L-092, L-093, L-101, L-114, L-139, L-158, L-188, L-197, L-198, L-199, L-210, L-212, L-214, L-219, L-230, L-233, L-234, L-235, L-236, L-237, L-243, L-265, L-299, L-302, L-310, L-323, L-348, L-007, L-097, L-128, L-135, L-164, L-175, L-181, L-186, L-217, L-244, L-246, L-247, L-248, L-251, L-252, L-258, L-269, L-274, L-275, L-279, L-282, L-285, L-286, L-287, L-288, L-289, L-293, L-309, L-314, L-336, L-065, L-099, L-123, L-194, L-262, L-330 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S102389 Green Lantern Annual  [split]  2 files / 0 collections  decided in R-073 (R)
+   decided: R 102389 | two different annual lines, one book each: item 65177 "Green Lantern Annual 003 (1994)" 54pp is CV 4740 "Green Lantern Annual" (DC 1992, 9) issue 38369 #3 "Ring of Evil" / GCD 4399 (1992-2000, 9) — the run live shelf S64825 stores; item 65176 "Green Lantern Annual 001 (1985)" 40pp (ComicInfo Volume 1960) is the 1960 run's first annual, published as Tales of the Green Lantern Corps Annual #1 — CV 21324 issue 128645 / GCD 33216 issue 558661 — which S102410 stores. Neither book is residue of the other
+   F 102389 split-needed | item 65177 joins S64825 (stores cv=4740 / gcd=4399, B-007: Green Lantern v3 Annuals #7-8); item 65176 joins S102410 "Tales of the Green Lantern Corps Annual" (stores cv=21324, B-012); GCD 2978 "Green Lantern Annual" 1987 #3 is the same 1960-run annual line's #3 (Green Lantern Corps Annual)
+   named: S64825 Green Lantern Annual  2 files  keys: "Green Lantern (1999)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S102410 Tales of the Green Lantern Corps Annual  1 files  keys: "Tales of the Green Lantern Corps Annual"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S64823 "Green Lantern" 364f [shares cv=2839 — S cv=2839 gcd=1448 (R-057 0.95)] keys: "Green Lantern (1960)" | "Green Lantern Corps v1 (1986)" | "Green Lantern v2 (1960)"
+   keys now: "Green Lantern Annual" x2
+   groups (title x folder): 1
+   G1 "Green Lantern Annual" in DC\_Green Lantern\_Completed Series\03 Green Lantern v3 (1990)\Annuals and Specials — 2 file(s), numbers 1, 3, pp 40-54; cv per-file 2839x2; gcd per-file 34735x1; key 'Green Lantern Annual'
+      [65176] Green Lantern Annual 001 (1985) (Digital) (Shadowcat-Empire).cbz (40pp)
+      [65177] Green Lantern Annual 003 (1994) (Digital) (Shadowcat-Empire).cbz (54pp)
+
+== S17022 Suicide Squad  [split]  3 files / 1 collections  decided in R-073 (R)
+   decided: R 17022 | three separately published books, no run: "COL Suicide Squad - Casualties of War (2021)" 298pp = CV 137157 / GCD 173553 (which collects Suicide Squad 2001 #1-12); "Suicide Squad - Director's Cut 001 (2017)" 65pp = CV 100094 "Suicide Squad #1 Director's Cut" / GCD 112908 (68pp); "Suicide Squad Special - War Crimes 001 (2016)" 43pp = CV 93683 / GCD 105770 — each is its own count-1 record in three different folders
+   F 17022 split-needed | three books: 70007 Casualties of War (a trade of Suicide Squad 2001, CV 19127 / GCD 10779 — no live shelf stores that run yet; folder "02 Suicide Squad v2 (2001)"), 70025 "Suicide Squad #1 Director's Cut" (CV 100094 / GCD 112908, _Trades bucket), 70092 "Suicide Squad Special: War Crimes" (CV 93683 / GCD 105770, v5 (2016) Annuals and Specials)
+   nearby: S94544 "Suicide Squad v5 (2016)" 18f [title — S gcd=105496 (C-016 0.9)] keys: "Suicide Squad v5 (2016)"
+   nearby: S94543 "Suicide Squad" 12f [title — S cv=42803 gcd=60928 (R-018 0.95)] keys: "Suicide Squad v4 (2011)" · S94542 "Suicide Squad" 10f [title — S cv=3815 gcd=3385 (C-016 0.9)] keys: "Suicide Squad v1 (1987)"
+   nearby: S17045 "Suicide Squad" 8f [title — S cv=19133 gcd=26358 (A-011 0.95)] keys: "Suicide Squad: Raise the Flag"
+   nearby: S94546 "Suicide Squad" 2f [title — S cv=134141 gcd=170019 (C-016 0.9)] keys: "Suicide Squad v7 (2021)"
+   nearby: S94545 "Suicide Squad" 1f [title — S cv=123666 gcd=153642 (B-013 0.95)] keys: "Suicide Squad v6 (2020)" · S12844 "New Suicide Squad" 4f [title+1 — S cv=75537 gcd=81671 (C-016 0.9)] keys: "New Suicide Squad"
+   nearby: S17029 "Suicide Squad: Rebirth" 4f [title+1 — S gcd=105496 (C-016 0.9)] keys: "Suicide Squad - Rebirth" | "Suicide Squad: Rebirth Deluxe Edition Book 03"
+   nearby: S17023 "Suicide Squad: Blaze" 3f [title+1 — S cv=141574 gcd=180855 (A-011 0.95)] keys: "Suicide Squad - Blaze" | "Suicide Squad: Blaze (2022)"
+   nearby: S4206 "Convergence Suicide Squad" 2f [title+1 — S cv=81340 gcd=88326 (A-008 0.95)] keys: "Convergence - Suicide Squad"
+   nearby: S17033 "Suicide Squad 2021 Annual" 1f [title+1 — S cv=138765 gcd=175814 (A-011 0.95)] keys: "Suicide Squad 2021 Annual (2021)"
+   keys now: "Suicide Squad - Casualties of War" x1 · "Suicide Squad - Director's Cut" x1 · "Suicide Squad" x1
+   groups (title x folder): 3
+   G1 "Suicide Squad - Casualties of War (2021) (digital) (Son of Ultron-Empire)" in DC\_Suicide Squad\02 Suicide Squad v2 (2001) — 1 file(s), 1 COL, pp 298-298; cv per-file 137157x1; gcd per-file 173553x1; key 'Suicide Squad - Casualties of War'
+      [70007] COL Suicide Squad - Casualties of War (2021) (digital) (Son of Ultron-Empire).cbr (298pp)
+         own record cv 137157 / gcd s173553 "Suicide Squad: Casualties of War" (issue 2235506) COLLECTS: gcd=10779 Suicide Squad (2001) #1-12
+   G2 "Suicide Squad - Director's Cut" in DC\_Suicide Squad\06 Suicide Squad v5 (2016)\Annuals and Specials — 1 file(s), numbers 1, pp 65-65; cv per-file 100094x1; gcd per-file 112908x1; key "Suicide Squad - Director's Cut"
+      [70025] Suicide Squad - Director's Cut 001 (2017) (Digital) (Thornn-Empire).cbr (65pp)
+   G3 "Suicide Squad Special - War Crimes" in DC\_Suicide Squad\_Trades, Minis and One-shots — 1 file(s), numbers 1, pp 43-43; cv per-file 93683x1; gcd per-file 105770x1; key 'Suicide Squad'
+      [70092] Suicide Squad Special - War Crimes 001 (2016) (Digital) (Zone-Empire).cbr (43pp)
+
+== S101651 v1 (2008)  [split]  10 files / 0 collections  decided in R-073 (R)
+   decided: R 101651 | four separately published Abe Sapien minis in one ripper's reading-order folder (L-095), numbered 001-010 across them: The Drowning 01-05 (items 14839-14843) = CV 20473 / GCD 31065 (5); The Haunted Boy (14844) = CV 29118 / GCD 40647 (1); The Abyssal Plain 01-02 (14845-14846) = CV 33998 / GCD 49587 (2); The Devil Does Not Jest 01-02 (14847-14848) = CV 43030 / GCD 61240 (2); the per-file 59507 (the 2013 ongoing) and 128305 / 67258 (Delcourt) stamps are wrong
+   F 101651 split-needed | four runs: The Drowning #1-5 (CV 20473 / GCD 31065; live shelf S344 stores cv=20473, B-017), The Haunted Boy (CV 29118 / GCD 40647), The Abyssal Plain #1-2 (CV 33998 / GCD 49587), The Devil Does Not Jest #1-2 (CV 43030 / GCD 61240)
+   named: S344 Abe Sapien: The Drowning  1 files  keys: "Abe Sapien - The Drowning and Other Stories"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S101653 "Abe Sapien" 36f [shares cv=59507 — S cv=59507 gcd=73562 (R-022 0.95)] keys: "v2 (2013)" · S64085 "Abe Sapien (2013)" 9f [shares gcd=32029 — S gcd=32029 (R-022 0.9)] keys: "Abe Sapien (2013)"
+   keys now: "v1 (2008)" x10
+   groups (title x folder): 1
+   G1 "Abe Sapien" in Dark Horse\Hellboy, B.P.R.D. & Related\Abe Sapien (2008)\v1 (2008) — 10 file(s), numbers 1-6, 9-10, pp 24-30; cv per-file 59507x7, 128305x3; gcd per-file 67258x4, 32029x1; key 'v1 (2008)'
+      e.g. Abe Sapien - 001 - The Drowning 01 (of 05) (2008) (Digital) (Empire-G85).cbr
+        14839 #1 2008 27pp · 14840 #2 2008 27pp · 14841 #3 2008 27pp · 14842 #4 2008 27pp · 14843 #5 2008 28pp
+      [14844] Abe Sapien - 006 - The Haunted Boy (2009) (digital) (G85NW-Empire).cbr (30pp)
+      [14845] Abe Sapien - 007 - The Abyssal Plain 01 (2010) (Digital) (Empire-G85).cbr (26pp)
+      [14846] Abe Sapien - 008 - The Abyssal Plain 02 (2010) (Digital) (Empire-G85).cbr (25pp)
+      [14847] Abe Sapien - 009 - The Devil Does Not Jest 01 (of 02) (2011) (digital) (G85NW-Empire).cbr (24pp)
+      [14848] Abe Sapien - 010 - The Devil Does Not Jest 02 (of 02) (2011) (digital) (G85NW-Empire).cbr (24pp)
+
+== S9992 Joy Operations  [split]  4 files / 0 collections  decided in R-073 (R)
+   decided: R 9992 | two books, each ripped twice (Dark Horse\ and Jinxworld (Dark Horse)\ folders): items 15186/37617 "Joy Operations (2022)" 132pp = the trade (CV 145323 / GCD 189078) of the five-issue Joy Operations (CV 140216 / GCD 178391); items 15187/37618 "Joy Operations 2 (2025)" 95pp = the trade (GCD 220333, 2025) of the four-issue sequel Joy Operations 2 (CV 158558 / GCD 213151) — two runs 2:2
+   F 9992 split-needed | Joy Operations (CV 140216 / GCD 178391): items 15186, 37617 stay; Joy Operations 2 (CV 158558 / GCD 213151, no live shelf): items 15187, 37618 move to "Joy Operations 2 (2024)"
+   F 9992 duplicate-shelf | items 15186/37617 and 15187/37618 are the same two files in two folders
+   keys now: "Joy Operations" x4
+   groups (title x folder): 4
+   G1 "Joy Operations" in Dark Horse\Joy Operations (2021) — 1 file(s), numbers 2, pp 95-95; cv per-file 140216x1; gcd per-file 220333x1; key 'Joy Operations'
+      [15187] Joy Operations 2 (2025) (digital) (Son of Ultron-Empire).cbr (95pp)
+   G2 "Joy Operations (2022) (digital) (Son of Ultron-Empire)" in Dark Horse\Joy Operations (2021) — 1 file(s), pp 132-132; cv per-file 145323x1; gcd per-file 189078x1; key 'Joy Operations'
+      [15186] Joy Operations (2022) (digital) (Son of Ultron-Empire).cbr (132pp)
+   G3 "Joy Operations" in Jinxworld (Dark Horse)\Joy Operations (2021) — 1 file(s), numbers 2, pp 95-95; cv per-file 140216x1; gcd per-file 220333x1; key 'Joy Operations'
+      [37618] Joy Operations 2 (2025) (digital) (Son of Ultron-Empire).cbr (95pp)
+   G4 "Joy Operations (2022) (digital) (Son of Ultron-Empire)" in Jinxworld (Dark Horse)\Joy Operations (2021) — 1 file(s), pp 132-132; cv per-file 145323x1; gcd per-file 189078x1; key 'Joy Operations'
+      [37617] Joy Operations (2022) (digital) (Son of Ultron-Empire).cbr (132pp)
+
+== S7019 Minor Threats  [split]  9 files / 2 collections  decided in R-073 (R)
+   decided: R 7019 | five publishing runs in one folder tree, none dominant: Minor Threats #1-4 (CV 144737 / GCD 188484) as its Vol. 01 trade 14531; Minor Threats: The Fastest Way Down (CV 157524 / GCD 210695, 4) as Vol. 02 trade 14532; From the World of Minor Threats: Barfly #1-4 (14525-14528, CV 158808 / GCD 213679); The Brood #1-2 (14529-14530, CV 161632 / GCD 218584); The Alternates trade 15951 (CV 153594 / GCD 204009)
+   F 7019 split-needed | runs: Minor Threats (CV 144737 / GCD 188484) item 14531; Minor Threats: The Fastest Way Down (CV 157524 / GCD 210695) item 14532; Barfly (CV 158808 / GCD 213679) items 14525-14528; The Brood (CV 161632 / GCD 218584) items 14529-14530; The Alternates (CV 153594 / GCD 204009) item 15951 — none has a live shelf
+   keys now: "From the World of Minor Threats - Barfly" x4 · "From the World of Minor Threats - The Brood" x2 · "Minor Threats" x2 · "From the World of Minor Threats - The Alternates" x1
+   groups (title x folder): 4
+   G1 "Minor Threats" in Dark Horse\Minor Threats (2022) — 2 file(s), 2 COL, pp 134-136; cv per-file 152152x1, 144737x1; gcd per-file 202176x2; key 'Minor Threats'
+      [14531] COL Minor Threats Vol. 01 - A Quick End to a Long Beginning (2023) (digital) (F) (Son of Ultron-Empire).cbr (136pp)
+      [14532] COL Minor Threats Vol. 02 - The Fastest Way Down (2024) (digital) (Son of Ultron-Empire).cbr (134pp)
+   G2 "From the World of Minor Threats - Barfly" in Dark Horse\Minor Threats (2022)\From the World of Minor Threats - Barfly (2024) — 4 file(s), numbers 1-4, pp 27-27; cv per-file 144737x4; gcd per-file 213679x4; key 'From the World of Minor Threats - Barfly'
+      e.g. From the World of Minor Threats - Barfly 001 (2024) (digital) (Son of Ultron-Empire).cbr
+        14525 #1 2024 27pp · 14526 #2 2024 27pp · 14527 #3 2024 27pp · 14528 #4 2024 27pp
+   G3 "From the World of Minor Threats - The Alternates (2023) (digital) (Son of Ultron-Empire)" in Dark Horse\Minor Threats (2022)\From the World of Minor Threats - The Alternates (2023) — 1 file(s), pp 139-139; cv per-file 144737x1; gcd per-file 211343x1; key 'From the World of Minor Threats - The Alternates'
+      [15951] From the World of Minor Threats - The Alternates (2023) (digital) (Son of Ultron-Empire).cbr (139pp)
+   G4 "From the World of Minor Threats - The Brood" in Dark Horse\Minor Threats (2022)\From the World of Minor Threats - The Brood (2024) — 2 file(s), numbers 1-2, pp 29-29; cv per-file 144737x2; gcd per-file 218584x2; key 'From the World of Minor Threats - The Brood'
+      [14529] From the World of Minor Threats - The Brood 001 (2024) (digital) (Son of Ultron-Empire).cbr (29pp)
+      [14530] From the World of Minor Threats - The Brood 002 (2025) (digital) (Son of Ultron-Empire).cbr (29pp)
+
+== S20858 Usagi Yojimbo: The Green Dragon  [split]  1 files / 1 collections  decided in R-073 (S)
+   decided: S 20858 cv=- gcd=147897 0.9 | run-wins: "Usagi Yojimbo Vol. 38 - The Green Dragon" is GCD 160732 #38 (2523339, 140pp = our 140pp) whose roll-up is s147897 Usagi Yojimbo (2019) #28-31 — the IDW ongoing CV 119731 / GCD 147897; same shelf-pair as S20856; 0.9 for the S20857 link noted there
+   F 20858 merge-with=20856 | S20856 carries the same gcd=147897 (IDW Usagi Yojimbo 2019); inert while both lines are cv=- (withheld), so the split-needed line below carries the move
+   F 20858 split-needed | item 13713 (Vol. 38) should join S20856 (same gcd=147897, IDW Usagi Yojimbo 2019; Vol. 37 = #23-27, Vol. 38 = #28-31) by a lead-approved join — a cv=- pair cannot merge on the resolve
+   N 20858 withheld cv=119731 — same hold as S20856 (S20857 Origins stores it); S20856 and S20858 are two trades of one run and should merge once cv=119731 is released (a cv=- pair cannot merge)
+   named: S20856 Usagi Yojimbo: Crossroads  1 files  keys: "Usagi Yojimbo: Crossroads"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S20857 "Usagi Yojimbo" 4f [shares cv=119731 (R clause), named S20857 in the decision's R/N lines — S cv=119731 gcd=171924 (C-029 0.9)] keys: "Usagi Yojimbo Origins, Vol. 2: Wanderer's Road" | "Usagi Yojimbo: Origins"
+   nearby: S20847 "Usagi Yojimbo" 47f [title — S gcd=10934 (R-024 0.9)] keys: "Usagi Yojimbo"
+   nearby: S20852 "The Usagi Yojimbo Saga" 5f [title+1 — S cv=77562 gcd=87487 (B-019 0.9)] keys: "The Usagi Yojimbo Saga" | "Usagi Yojimbo Saga"
+   keys now: "Usagi Yojimbo: The Green Dragon" x1
+   groups (title x folder): 1
+   G1 "Usagi Yojimbo" in Dark Horse\Usagi Yojimbo (1987)\_Trade Paper Back Editions — 1 file(s), 1 COL, pp 140-140; cv per-file 156933x1; gcd per-file 160732x1; key 'Usagi Yojimbo: The Green Dragon'
+      [13713] COL Usagi Yojimbo Vol. 38 - The Green Dragon (2023) (digital) (Son of Ultron-Empire).cbr (140pp)
+         own record cv 156933 / gcd s160732 "Usagi Yojimbo" (issue 2523339) COLLECTS: gcd=147897 Usagi Yojimbo (2019) #28-31

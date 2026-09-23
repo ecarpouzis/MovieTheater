@@ -1,4 +1,4 @@
-## Conventions for this batch (38 shown of 143 matched; 338 in LEDGER.md; 44 shelf/shelves: pub:dc ×13 · pub:small-press ×12 · kind:trade-only ×7 · kind:collected-line ×6 · pub:idw ×6 · pub:valiant ×5 · folder:vn-year ×5 · kind:kids ×5)
+## Conventions for this batch (35 shown of 149 matched; 350 in LEDGER.md; 44 shelf/shelves: pub:dc ×13 · pub:small-press ×12 · kind:trade-only ×7 · kind:collected-line ×6 · pub:idw ×6 · pub:valiant ×5 · folder:vn-year ×5 · kind:kids ×5)
 LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
 reading, never a rule applied across a folder. Do not read LEDGER.md whole.
 
@@ -85,6 +85,25 @@ reading, never a rule applied across a folder. Do not read LEDGER.md whole.
   belongs to a CONTINUATION volume the shelf's own `N` names (Ranma 1/2 v22-38 → CV 26409 / GCD 17651) — the pool
   for it must be pulled (`lookup.py --issues`, `gcd_issue WHERE series_id=?`) before writing no-record. GCD may mint
   a "collected edition" row for only the FIRST of a same-title pair (Zombie Makeout Club) — the second is gcd=-.
+[L-341] (40 shelf/shelves) sig:probe
+- GCD name shapes that hide a record from an exact probe (R-065): a dropped licensor/author prefix (Insight "H. G.
+  Wells:", FSG "Shirley Jackson's"), a dropped leading "The" (DC "Origin of Hordak", IDW "Dark Judges"), a dropped
+  subtitle (IDW TMNT "Saturday Morning Adventures"), a BRACKETED subtitle (IDW RID 2015 "[Animated Series]"), a spelled
+  volume ordinal ("Comic Book History of Comics Volume 2"), a lengthened title (First Second "Prince of Persia the
+  Graphic Novel"). CV spells "'Til" where rippers write "'till".
+[L-346] (40 shelf/shelves) sig:probe
+- GCD name shapes (R-071): a run filed with its subtitle DROPPED (Oni "Dead of Winter" 116730, the subtitle moved onto
+  the trade row); ", Chapter II:" where CV writes " II:"; an event prefix ("Doctor Who Event 2016:"); "Special
+  Edition" appended to KODT specials. Titan Doctor Who "Year Two" runs ARE in the fixed CV index (84960 / 87162) — L-152's
+  "not in the ComicVine rip" is obsolete; the "Year Two v04" trades are run-wins into the issue shelves. Marvel event
+  chronology trade shelves (Death of Captain America, New Guard) are run-wins into the main run shelf.
+[L-347] (40 shelf/shelves) sig:probe
+- Name shapes that hid records (R-072): a creators' prefix on BOTH legs ("Paknadel & Trakhanov's Turncoat", Boom);
+  ComiXology Originals writing a symbol as a word ("dotSelf" = ".Self") and one-word GCD spellings ("The AllNighter");
+  biography books that are English editions of Italian BeccoGiallo originals (link the Italian row, L-024); a 2019+
+  Rebellion strip collection as a numbered volume of a GCD book line named for the source weekly ("Wildcat" #2 =
+  Loner); "Magazine" / "Year One" suffixes (Archie, Action Lab) — for a one-volume "Year One", pages / issue size
+  picks the run. A DC deluxe of one run or one one-shot is run-wins (GCD's notes say which).
 [L-051] (13 shelf/shelves) pub:bongo pub:dc pub:small-press sig:probe
 - GCD spellings that hide a hit: Bongo's annual is plainly "Treehouse of Horror" (5435); Miller's 1983 series is
   "Rōnin" (2721); Comico's Primer is "Primer" (14288). DC's Blackest Night revival issues sit in the ORIGINAL
@@ -105,29 +124,8 @@ reading, never a rule applied across a folder. Do not read LEDGER.md whole.
 - Second-rip fragments of shelves already read in earlier batches (Flash Secret Files, Spectre 1992, Teen Titans
   2003/2016, Wonder Woman 1942/2016, Zatanna 1993, Donna Troy) surface as `--all` collisions — `merge-with` after
   grepping the partner's name and count.
-[L-237] (13 shelf/shelves) pass:revisit pub:dc sig:collision sig:comicinfo
-- Action Comics: CV 18005 stops at #904 (2011); the Rebirth continuation #957+ is CV 91078 (ComicInfo `Volume`
-  asserts it) — the "v1 (2016)" and "v1 (2018)" folder shelves are one run (R-019 merge-with).
-[L-245] (13 shelf/shelves) pass:revisit pub:dc sig:collision sig:legacy-stamp sig:split sig:stamp
-- A SHARED STORED ComicVine id is not proof of one run: `merge-with` on it only after the id fits BOTH shelves' own
-  keys and GCD links. C-008 merged the real Flash 1959 shelf into the "The Flash v2 (2007)" folder shelf because both
-  stored CV 1995 — but that shelf's own key and GCD link (26125, 2007-2009) said Flash vol. 2; the stamp was the
-  legacy-number trap. The merged shelf became two runs (R-023, R + split). When a shelf's GCD leg contradicts its
-  stored CV id, the CV id is the suspect, and the merge is `F wrong-cv-link` on the mis-stamped shelf instead.
-[L-046] (12 shelf/shelves) pub:action-lab pub:aftershock pub:small-press sig:probe
-- Small-press American floppies (Action Lab, Aftershock minis, Behemoth) are thin in GCD → `provider-missing` on
-  the GCD side is common and honest.
-[L-139] (12 shelf/shelves) pub:dark-horse pub:millarworld pub:small-press sig:round2 sig:stamp
-- A folder-wide CV stamp exists too: Space Goat's Evil Dead 2 programme (CV 20289 on 37 files) and Millarworld's Dark
-  Horse folder (CV 115757 on the sequel) stamp ONE wrong volume across a folder — the `round2-folder` shape on the CV side.
-[L-140] (12 shelf/shelves) kind:strip pub:lion-forge-magnetic pub:scout pub:small-press sig:probe
-- Bubble Comics (Exlibrium, Major Grom, Igor Grom, Meteora), Space Between, Scout/Roar, Strip For Me, Studio D., Imagine
-  Bin, SAF Comics, Magnetic Press and Lost His Keys Man are total GCD holes — ComicVine-only is the honest answer there.
-[L-148] (12 shelf/shelves) pub:small-press sig:probe
-- GCD files New England Comics' Tick specials under the POSSESSIVE ComicVine drops ("The Tick's Big Romantic Adventure"
-  15953, "The Tick's Big Back to School Special" 15958) — re-probe with `Tick's`.
 
-+105 more matched entries not shown: L-271, L-113, L-016, L-032, L-114, L-210, L-124, L-281, L-085, L-087, L-040, L-153, L-156, L-166, L-199, L-298, L-318, L-064, L-101, L-191, L-269, L-135, L-164, L-186, L-197, L-206, L-211, L-244, L-246, L-247, L-248, L-251, L-258, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-314, L-007, L-175, L-217, L-272, L-290, L-023, L-052, L-229, L-261, L-310, L-029, L-031, L-065, L-099, L-123, L-188, L-194, L-195, L-203, L-205, L-214, L-215, L-223, L-228, L-234, L-242, L-243, L-254, L-255, L-256, L-260, L-262, L-299, L-329, L-330, L-041, L-074, L-083, L-192, L-250, L-006, L-020, L-021, L-022, L-045, L-090, L-112, L-126, L-176, L-178, L-184, L-185, L-219, L-233, L-241, L-266, L-322, L-325, L-333, L-128, L-181, L-336 (grep LEDGER.md for them)
++114 more matched entries not shown: L-237, L-245, L-046, L-139, L-140, L-148, L-271, L-113, L-016, L-032, L-114, L-210, L-124, L-281, L-085, L-087, L-040, L-153, L-156, L-166, L-199, L-298, L-318, L-348, L-064, L-101, L-191, L-269, L-135, L-164, L-186, L-197, L-206, L-211, L-244, L-246, L-247, L-248, L-251, L-258, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-314, L-007, L-175, L-217, L-272, L-290, L-023, L-052, L-229, L-261, L-310, L-029, L-031, L-065, L-099, L-123, L-188, L-194, L-195, L-203, L-205, L-214, L-215, L-223, L-228, L-234, L-242, L-243, L-254, L-255, L-256, L-260, L-262, L-299, L-329, L-330, L-041, L-074, L-083, L-192, L-250, L-006, L-020, L-021, L-022, L-045, L-090, L-112, L-126, L-176, L-178, L-184, L-185, L-219, L-233, L-241, L-266, L-322, L-325, L-333, L-340, L-343, L-128, L-181, L-336 (grep LEDGER.md for them)
 
 ====================================================================================================
 
@@ -503,27 +501,29 @@ reading, never a rule applied across a folder. Do not read LEDGER.md whole.
    GCD dump:       (= per-file) · 3810 "Legion of Super-Heroes" 1989-2000 DC [] 127 (via our own name without the filing suffix "Legion of Super-Heroes") · 34539 "The Legion of Super-Heroes" [en-au] 1984-1985 Federal [] 7 (via our own name without the filing suffix "Legion of Super-Heroes") · 2540 "The Legion of Super-Heroes" 1980-1984 DC [] 55 (via our own name without the filing suffix "Legion of Super-Heroes") · 2099 "Legion of Super-Heroes" 1973-1973 DC [] 4 (via our own name without the filing suffix "Legion of Super-Heroes") · 11990 "Legion of Super-Heroes" 2005-2006 DC [] 15 (via our own name without the filing suffix "Legion of Super-Heroes")   (dump lookup)
    bridges:        gcd 2835 -> LOCG 111213 "Legion of Super-Heroes" support 83
 
-== S10690 Legion of Super-Heroes  [tier C] · gap 4  keys: Legion of Super-Heroes | Legion of Super-Heroes v2 (1980)  years 1980-2021  19 files / 2 collections
+== S10690 Legion of Super-Heroes  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: Legion of Super-Heroes | Legion of Super-Heroes - The Great Darkness Saga | Legion of Super-Heroes v2 (1980)  years 1980-2024  20 files / 2 collections
    split: the KEPT half of the P-004 split — moved out -> S10697 "Legion of Super-Heroes v6 (2010)"; S98213 "Legion of Super-Heroes v3 (1984)"; re-identify what stayed
-   merge-with candidate: S10690 "Legion of Super-Heroes" (19 files) — the P-004 reader left this half here only because it could not move without that join; if it is the same run write `F 10690 merge-with=10690`, otherwise say why not in an N line
-   folders: [12] DC\_Legion of Super-Heroes\03 Legion of Super-Heroes v2 (1980) · [3] DC\_Legion of Super-Heroes\03 Legion of Super-Heroes v2 (1980)\Trades\Annuals and Specials · [2] DC\_Legion of Super-Heroes\03 Legion of Super-Heroes v2 (1980)\Trades · [2] DC\_Legion of Super-Heroes
+   merge-with candidate: S10690 "Legion of Super-Heroes" (20 files) — the P-004 reader left this half here only because it could not move without that join; if it is the same run write `F 10690 merge-with=10690`, otherwise say why not in an N line
+   folders: [12] DC\_Legion of Super-Heroes\03 Legion of Super-Heroes v2 (1980) · [3] DC\_Legion of Super-Heroes\03 Legion of Super-Heroes v2 (1980)\Trades · [3] DC\_Legion of Super-Heroes\03 Legion of Super-Heroes v2 (1980)\Trades\Annuals and Specials · [2] DC\_Legion of Super-Heroes
    files:   [67637] Legion of Super-Heroes 297 (1983) (digital) (Marika-Empire).cbz (26pp)
             Legion of Super-Heroes, 1979-11-00 (#259) (digital) (Glorith-Novus-HD).cbz … Legion of Super-Heroes, 1980-09-00 (#269) (digital) (Glorith-Novus-HD).cbz  (11 files, pp 18-27)
             [67649] COL 01 Legion of Super-Heroes Vol. 01 - Before the Darkness (2020) (digital) (Son of Ultron-Empire).cbr (340pp)
             [67650] COL 02 Legion of Super-Heroes Vol. 02 - Before the Darkness (2021) (digital) (Son of Ultron-Empire).cbr (355pp)
+            [67651] 03 Legion of Super-Heroes - The Great Darkness Saga (2024) (digital) (Son of Ultron-Empire).cbr (193pp)
             [67653] Legion of Super-Heroes Annual, 1982-08-00 (#01) (hybrid) (Glorith-Novus-HD).cbz (43pp)
             [67654] Legion of Super-Heroes Annual, 1983-09-00 (#02) (hybrid) (Glorith-Novus-HD).cbz (42pp)
             [67655] Legion of Super-Heroes Annual, 1984-10-00 (#03) (hybrid) (Glorith-Novus-HD).cbz (43pp)
             [68030] Legion of Super-Heroes - The Curse (2014) (digital) (Son of Ultron-Empire).cbr (544pp) | [68034] Legion of Super-Heroes, 1979-10-25 (#259) (digital) (F) (Glorith-HD).cbz (19pp)
-   ours:    ladder 1-3, 259-269, 297; 1 number(s) name more than one file: 259; judged item 68030 #297-313 conf 0.97; ComicInfo Series: "Legion of Super-Heroes"x16, "Legion of Super-Heroes Annual"x3; ComicInfo Volume: "1980"x16, "1982"x3; ComicInfo Count: "313"x13, "3"x3; ComicInfo Publisher: "DC Comics"x16, "DC"x3; ComicInfo Web: "22926"x1, "20075"x1
+   ours:    ladder 1-3, 259-269, 297; 2 number(s) name more than one file: 3, 259; judged item 67651 #290-294 conf 0.9; judged item 68030 #297-313 conf 0.97; ComicInfo Series: "Legion of Super-Heroes"x16, "Legion of Super-Heroes Annual"x3; ComicInfo Volume: "1980"x16, "1982"x3; ComicInfo Count: "313"x13, "3"x3; ComicInfo Publisher: "DC Comics"x16, "DC"x3; ComicInfo Web: "22926"x1, "20075"x1
    GCD says: [67649] gcd notes 2190669 (#1 of Legion of Super-Heroes: Before the Darkness): The Legion of Super-Heroes (DC, 1980 series) #260-271; Secrets of the Legion of Super-Heroes (DC, 1981 series) #1-3  |  gcd_reprint 2190669: s2540 The Legion of Super-Heroes (1980) #260-271 [26 stories] · s2587 Secrets of the Legion of Super-Heroes (1981) #1-3 [7 stories]
              [67650] gcd notes 2306169 (#2 of Legion of Super-Heroes: Before the Darkness): The Legion of Super-Heroes (DC, 1980 series) #272-283; The Best of DC (DC, 1979 digest series) #24  |  gcd_reprint 2306169: s2540 The Legion of Super-Heroes (1980) #272-283 [25 stories] · s2493 The Best of DC (1979) #24 [3 stories] · s2377 DC Special Series (1977) #21 [2 stories]
-   CV linked:      vol 3033 "The Legion of Super-Heroes" 1980 DC Comics 55 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ 4; ratio 16/? = 0.25; none cached
-   CV per-file (v1): vol 4201 "Legion of Super-Heroes" 1989 DC Comics 127 on 16/19 files
+   CV linked:      vol 3033 "The Legion of Super-Heroes" 1980 DC Comics 55 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 17/?; none cached
+   CV per-file (v1): vol 4201 "Legion of Super-Heroes" 1989 DC Comics 127 on 16/20 files
+   CV candidates:  (= linked) · 68647 "Legion of Super-Heroes: The Great Darkness Saga" 1989 DC Comics 1 issue 431167 s65 · 36970 "Legion of Super-Heroes: The Great Darkness Saga - The Deluxe Edition" 2010 DC Comics 1 issue 246586 s47 · 33225 "Legion of Super-Heroes" 2010 DC Comics 16 s30 · 122626 "Legion of Super-Heroes" 2019 DC Comics 12 s30 · 135350 "Legion of Super-Heroes: The Trial of the Legion" 2021 DC Comics 1 issue 842635 s25 · 133530 "Legion of Super-Heroes: Before the Darkness" 2021 DC Comics 2 s24   (v1 search)
    CV local rip:   (= linked) · 3310 "Legion of Super-Heroes" 1984 DC Comics 63 · 69728 "Legion of Super-Heroes" 1984 Federal 7 · 2616 "Legion of Super-Heroes" 1973 DC Comics 4 · 11059 "Legion of Super-Heroes" 2005 DC Comics 30   (rip lookup)
-   GCD per-file:   series 2835 "Legion of Super-Heroes" 1984-1989 DC [was ongoing series] 63 on 2/19 files; methods numx2
+   GCD per-file:   series 2835 "Legion of Super-Heroes" 1984-1989 DC [was ongoing series] 63 on 2/20 files · series 74348 "Legion of Super-Heroes" 2012-2014 DC [collected edition] 3 on 1/20 files; methods numx2 · collapse-rematchx1
    GCD dump:       (= per-file) · 2540 "The Legion of Super-Heroes" 1980-1984 DC [] 55 · 34539 "The Legion of Super-Heroes" [en-au] 1984-1985 Federal [] 7 · 2099 "Legion of Super-Heroes" 1973-1973 DC [] 4 · 3810 "Legion of Super-Heroes" 1989-2000 DC [] 127 · 11990 "Legion of Super-Heroes" 2005-2006 DC [] 15   (dump lookup)
-   bridges:        gcd 2835 -> LOCG 111213 "Legion of Super-Heroes" support 83
+   bridges:        gcd 2835 -> LOCG 111213 "Legion of Super-Heroes" support 83 · gcd 74348 -> LOCG 111213 "Legion of Super-Heroes" support 2 · gcd 74348 -> OL /works/OL19965723W "The new 52!" isbnSupport 9
 
 == S102729 Aliens vs. Predator Omnibus (2007)  [tier B]   keys: Aliens vs. Predator Omnibus (2007)  years 2007-2007  2 files / 2 collections
    split run: "Aliens vs. Predator Omnibus (2007)" run={"cv": 19078, "gcd": 26704} (new shelf from P-004) — seed the S line from these ids, then verify them

@@ -312,10 +312,17 @@ for path in files:
                           f"{'(was ' + str(was['ProviderKey']) + ' status ' + str(was['Status']) + ')' if was else '(new row)'}")
         else:
             k = primary.get(sid)
+            # A revisit can re-decide a shelf ALREADY held at 0.7 (wave 64: R-075 kept S8242 / S13773 at 0.7, whose
+            # review rows the 09-17 wave wrote) — upsert, and journal the row it replaces.
+            old = ro.execute("SELECT State, Note, DecidedBy, DecidedAt FROM SeriesMatchReview "
+                             "WHERE Scope = 'series' AND Key = ?", (k,)).fetchone()
             batch_plan.append(("""INSERT INTO SeriesMatchReview (Scope, Key, State, Note, DecidedBy, DecidedAt)
-                                  VALUES ('series', ?, 'review', ?, 'identity-pass', ?)""",
+                                  VALUES ('series', ?, 'review', ?, 'identity-pass', ?)
+                                  ON CONFLICT(Scope, Key) DO UPDATE SET State = excluded.State, Note = excluded.Note,
+                                    DecidedBy = excluded.DecidedBy, DecidedAt = excluded.DecidedAt""",
                                (k, f"[{base}] cv={cvv} gcd={gcdv} conf {conf}: {why}", STAMP),
-                               {"table": "SeriesMatchReview", "key": [k], "was": None}))
+                               {"table": "SeriesMatchReview", "key": [k],
+                                "was": dict(zip(("State", "Note", "DecidedBy", "DecidedAt"), old)) if old else None}))
             totals["review"] += 1
             print(f"   [{base}] review S{sid:<6} {names.get(sid,'?')[:40]:<40} cv={cvv} gcd={gcdv} conf {conf} "
                   f"-> SeriesMatchReview(Scope=series, Key={k!r})")

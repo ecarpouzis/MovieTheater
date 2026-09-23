@@ -1,4 +1,4 @@
-## Conventions for this batch (38 shown of 143 matched; 338 in LEDGER.md; 53 shelf/shelves: kind:collected-line ×19 · kind:trade-only ×19 · pub:marvel ×11 · kind:new ×9 · pub:boom ×9 · folder:vn-year ×6 · folder:graphic-novels ×5 · folder:bucket ×5)
+## Conventions for this batch (34 shown of 149 matched; 350 in LEDGER.md; 53 shelf/shelves: kind:trade-only ×19 · kind:collected-line ×19 · pub:marvel ×11 · kind:new ×9 · pub:boom ×9 · folder:vn-year ×6 · folder:graphic-novels ×5 · folder:bucket ×5)
 LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
 reading, never a rule applied across a folder. Do not read LEDGER.md whole.
 
@@ -85,6 +85,25 @@ reading, never a rule applied across a folder. Do not read LEDGER.md whole.
   belongs to a CONTINUATION volume the shelf's own `N` names (Ranma 1/2 v22-38 → CV 26409 / GCD 17651) — the pool
   for it must be pulled (`lookup.py --issues`, `gcd_issue WHERE series_id=?`) before writing no-record. GCD may mint
   a "collected edition" row for only the FIRST of a same-title pair (Zombie Makeout Club) — the second is gcd=-.
+[L-341] (51 shelf/shelves) sig:probe
+- GCD name shapes that hide a record from an exact probe (R-065): a dropped licensor/author prefix (Insight "H. G.
+  Wells:", FSG "Shirley Jackson's"), a dropped leading "The" (DC "Origin of Hordak", IDW "Dark Judges"), a dropped
+  subtitle (IDW TMNT "Saturday Morning Adventures"), a BRACKETED subtitle (IDW RID 2015 "[Animated Series]"), a spelled
+  volume ordinal ("Comic Book History of Comics Volume 2"), a lengthened title (First Second "Prince of Persia the
+  Graphic Novel"). CV spells "'Til" where rippers write "'till".
+[L-346] (51 shelf/shelves) sig:probe
+- GCD name shapes (R-071): a run filed with its subtitle DROPPED (Oni "Dead of Winter" 116730, the subtitle moved onto
+  the trade row); ", Chapter II:" where CV writes " II:"; an event prefix ("Doctor Who Event 2016:"); "Special
+  Edition" appended to KODT specials. Titan Doctor Who "Year Two" runs ARE in the fixed CV index (84960 / 87162) — L-152's
+  "not in the ComicVine rip" is obsolete; the "Year Two v04" trades are run-wins into the issue shelves. Marvel event
+  chronology trade shelves (Death of Captain America, New Guard) are run-wins into the main run shelf.
+[L-347] (51 shelf/shelves) sig:probe
+- Name shapes that hid records (R-072): a creators' prefix on BOTH legs ("Paknadel & Trakhanov's Turncoat", Boom);
+  ComiXology Originals writing a symbol as a word ("dotSelf" = ".Self") and one-word GCD spellings ("The AllNighter");
+  biography books that are English editions of Italian BeccoGiallo originals (link the Italian row, L-024); a 2019+
+  Rebellion strip collection as a numbered volume of a GCD book line named for the source weekly ("Wildcat" #2 =
+  Loner); "Magazine" / "Year One" suffixes (Archie, Action Lab) — for a one-volume "Year One", pages / issue size
+  picks the run. A DC deluxe of one run or one one-shot is run-wins (GCD's notes say which).
 [L-135] (19 shelf/shelves) kind:collected-line
 - An Epic / Complete Collection LINE is found by probing the line name with NO volume subtitle: "Generation X Epic
   Collection" → GCD 174151, shared by four sibling shelves.
@@ -102,32 +121,8 @@ reading, never a rule applied across a folder. Do not read LEDGER.md whole.
 - ITEM PASS (X-001..X-003): on RUN-identity shelves the per-file GCD link reuses the run's own series matched to ONE
   issue by number for vol. 01 only, while later volumes resolve to a real collected-edition series — check whether
   vol. 01's link differs in kind from vol. 02+ before trusting it (Kevin Keller, Mega Man, Klaus, Dark Crystal …).
-[L-247] (19 shelf/shelves) kind:collected-line
-- A `C` that restates the shelf's own run needs its ids repeated in the clause to clear 40 characters; the clause is
-  the evidence, not a pointer. A shelf's own collected LINE and the run it collects are two records (Invisible
-  Kingdom: line GCD 151274 vs run CV 117748 / GCD 142448; Goldie Vance: line CV 94628 vs run CV 89593) — the `C`
-  names the RUN.
-[L-248] (19 shelf/shelves) kind:collected-line
-- Sibling shelves of one franchise can share one real GCD collected-edition line (Fence S6636/S6639/S6640 → 123731);
-  the sibling's landed S is evidence for the weak per-file matches on the others.
-[L-251] (19 shelf/shelves) kind:collected-line
-- Deluxe / Yearbook / Omnibus editions of the shelf's own ongoing with NO judged range get an `N` naming the
-  relationship, never an invented `C` range (the range is containment's to read).
-[L-258] (19 shelf/shelves) kind:collected-line sig:stamp
-- A degenerate packet block can stamp ONE GCD issue id onto every book of a shelf (Green Arrow S97350, six eras of
-  collected lines) — resolve only by each series' full issue list matched by title, never by the stamp.
-[L-269] (19 shelf/shelves) kind:collected-line kind:trade-only
-- An omnibus bundling several minis gets one `C` per mini at that mini's full range; an anthology TPB ("… and
-  Others") is not a numbered run and gets an `N`, not a forced `C`.
-[L-275] (19 shelf/shelves) kind:collected-line pass:item sig:probe sig:trade-link
-- A count-1/2/3 trade record the shelf's `N` called absent is often in the catalogs under a spelling the packet
-  never probed ("The Adventures of …", "Complete Collection", "Deluxe") — probe before writing no-record.
-[L-279] (19 shelf/shelves) kind:collected-line
-- Blade of the Immortal (S23118) is the canonical "line + run" shape: GCD's 31 collected-edition rows are the `I`
-  identities (cv=- — ComicVine mints only the floppy volume), and the floppy run CV 9069 is what every `C` names,
-  ranges #0-206 ascending across the 31 books. A single-leg shelf's books inherit the shelf's 0.9, never more.
 
-+105 more matched entries not shown: L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-314, L-033, L-142, L-113, L-016, L-032, L-114, L-281, L-029, L-085, L-087, L-064, L-101, L-124, L-310, L-047, L-130, L-060, L-136, L-191, L-031, L-076, L-109, L-115, L-117, L-121, L-127, L-129, L-132, L-175, L-196, L-272, L-295, L-296, L-298, L-302, L-306, L-307, L-308, L-313, L-319, L-321, L-327, L-328, L-329, L-332, L-007, L-217, L-008, L-026, L-046, L-051, L-055, L-066, L-116, L-119, L-139, L-140, L-143, L-148, L-152, L-158, L-167, L-168, L-188, L-228, L-249, L-271, L-297, L-331, L-011, L-015, L-040, L-199, L-206, L-212, L-222, L-237, L-245, L-290, L-059, L-082, L-093, L-133, L-182, L-195, L-211, L-065, L-099, L-123, L-194, L-262, L-330, L-041, L-074, L-083, L-192, L-250 (grep LEDGER.md for them)
++115 more matched entries not shown: L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-314, L-033, L-142, L-113, L-016, L-032, L-114, L-281, L-029, L-085, L-087, L-345, L-064, L-101, L-124, L-310, L-047, L-130, L-060, L-136, L-191, L-031, L-076, L-109, L-115, L-117, L-121, L-127, L-129, L-132, L-175, L-196, L-272, L-295, L-296, L-298, L-302, L-306, L-307, L-308, L-313, L-319, L-321, L-327, L-328, L-329, L-332, L-007, L-217, L-008, L-026, L-046, L-051, L-055, L-066, L-116, L-119, L-139, L-140, L-143, L-148, L-152, L-158, L-167, L-168, L-188, L-228, L-249, L-271, L-297, L-331, L-343, L-011, L-015, L-040, L-199, L-206, L-212, L-222, L-237, L-245, L-348, L-290, L-059, L-082, L-093, L-133, L-182, L-195, L-211, L-065, L-099, L-123, L-194, L-262, L-330, L-041, L-074, L-083, L-192, L-250 (grep LEDGER.md for them)
 
 ====================================================================================================
 

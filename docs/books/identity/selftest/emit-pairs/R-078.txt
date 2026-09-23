@@ -1,4 +1,4 @@
-## Conventions for this batch (37 shown of 156 matched; 338 in LEDGER.md; 49 shelf/shelves: pub:dc ×11 · pub:dark-horse ×9 · kind:collected-line ×9 · kind:trade-only ×9 · kind:new ×8 · folder:vn-year ×7 · pub:small-press ×7 · pub:marvel ×7)
+## Conventions for this batch (34 shown of 163 matched; 350 in LEDGER.md; 49 shelf/shelves: pub:dc ×11 · pub:dark-horse ×9 · kind:trade-only ×9 · kind:collected-line ×9 · kind:new ×8 · folder:vn-year ×7 · pub:small-press ×7 · pub:marvel ×7)
 LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
 reading, never a rule applied across a folder. Do not read LEDGER.md whole.
 
@@ -85,6 +85,25 @@ reading, never a rule applied across a folder. Do not read LEDGER.md whole.
   belongs to a CONTINUATION volume the shelf's own `N` names (Ranma 1/2 v22-38 → CV 26409 / GCD 17651) — the pool
   for it must be pulled (`lookup.py --issues`, `gcd_issue WHERE series_id=?`) before writing no-record. GCD may mint
   a "collected edition" row for only the FIRST of a same-title pair (Zombie Makeout Club) — the second is gcd=-.
+[L-341] (44 shelf/shelves) sig:probe
+- GCD name shapes that hide a record from an exact probe (R-065): a dropped licensor/author prefix (Insight "H. G.
+  Wells:", FSG "Shirley Jackson's"), a dropped leading "The" (DC "Origin of Hordak", IDW "Dark Judges"), a dropped
+  subtitle (IDW TMNT "Saturday Morning Adventures"), a BRACKETED subtitle (IDW RID 2015 "[Animated Series]"), a spelled
+  volume ordinal ("Comic Book History of Comics Volume 2"), a lengthened title (First Second "Prince of Persia the
+  Graphic Novel"). CV spells "'Til" where rippers write "'till".
+[L-346] (44 shelf/shelves) sig:probe
+- GCD name shapes (R-071): a run filed with its subtitle DROPPED (Oni "Dead of Winter" 116730, the subtitle moved onto
+  the trade row); ", Chapter II:" where CV writes " II:"; an event prefix ("Doctor Who Event 2016:"); "Special
+  Edition" appended to KODT specials. Titan Doctor Who "Year Two" runs ARE in the fixed CV index (84960 / 87162) — L-152's
+  "not in the ComicVine rip" is obsolete; the "Year Two v04" trades are run-wins into the issue shelves. Marvel event
+  chronology trade shelves (Death of Captain America, New Guard) are run-wins into the main run shelf.
+[L-347] (44 shelf/shelves) sig:probe
+- Name shapes that hid records (R-072): a creators' prefix on BOTH legs ("Paknadel & Trakhanov's Turncoat", Boom);
+  ComiXology Originals writing a symbol as a word ("dotSelf" = ".Self") and one-word GCD spellings ("The AllNighter");
+  biography books that are English editions of Italian BeccoGiallo originals (link the Italian row, L-024); a 2019+
+  Rebellion strip collection as a numbered volume of a GCD book line named for the source weekly ("Wildcat" #2 =
+  Loner); "Magazine" / "Year One" suffixes (Archie, Action Lab) — for a one-volume "Year One", pages / issue size
+  picks the run. A DC deluxe of one run or one one-shot is run-wins (GCD's notes say which).
 [L-212] (11 shelf/shelves) pub:dc sig:collision sig:legacy-stamp
 - A continuation of legacy numbering (#201+ picking up a prior volume's own numbering, Green Lantern Corps S94605→
   S94610) is the SAME run as the prior volume — merge-with, not a separate id.
@@ -104,30 +123,8 @@ reading, never a rule applied across a folder. Do not read LEDGER.md whole.
 [L-029] (9 shelf/shelves) kind:trade-only pub:dark-horse pub:image pub:marvel sig:probe sig:trade-link
 - On trade-only Marvel / Image / Dark Horse shelves the "CV linked" block is the block that misleads (it is the
   collected record); `lookup.py` by the run's name finds the run when the packet names only the collected record.
-[L-046] (8 shelf/shelves) pub:action-lab pub:aftershock pub:small-press sig:probe
-- Small-press American floppies (Action Lab, Aftershock minis, Behemoth) are thin in GCD → `provider-missing` on
-  the GCD side is common and honest.
-[L-033] (7 shelf/shelves) pub:marvel sig:collision sig:probe
-- Krakoa-era Marvel folders are cut into several shelves by the CREATOR name in trade filenames (New Mutants v4
-  → Hickman / Brisson / Vita Ayala; "X-Men by Gerry Duggan"): trades of ONE run in ONE folder → the run is the
-  identity, siblings take `F merge-with`; `lookup.py` by the run's plain name supplies ids the packet lacks. A
-  stored link carried across by the creator name alone (X-Men by Duggan → "Marauders by Duggan") is `wrong-cv-link`.
-[L-051] (7 shelf/shelves) pub:bongo pub:dc pub:small-press sig:probe
-- GCD spellings that hide a hit: Bongo's annual is plainly "Treehouse of Horror" (5435); Miller's 1983 series is
-  "Rōnin" (2721); Comico's Primer is "Primer" (14288). DC's Blackest Night revival issues sit in the ORIGINAL
-  series (Power of SHAZAM! 5246 runs 1995-2010).
-[L-055] (7 shelf/shelves) pub:dc pub:small-press sig:probe
-- ComicVine splits ONE line across two spellings of its own ("Batman Arkham: X" vs "Batman: Arkham: X"). GCD
-  prefixes titles the packet probes without ("Batman: Catwoman Defiant", "The Blue Beetle" for the 2006 series).
-[L-060] (7 shelf/shelves) folder:vn-year pub:caliber pub:dark-horse pub:image pub:marvel sig:stamp
-- A digital re-release can cut each collected volume into chapter files restarting at 1 (Dark Horse's 2014-15
-  Kabuki: seven `vNN` folders = seven different published comics from Caliber / Image / Marvel; v1 stamped one
-  Image volume on all 44 files). Read the chapter files as the runs they came from.
-[L-139] (7 shelf/shelves) pub:dark-horse pub:millarworld pub:small-press sig:round2 sig:stamp
-- A folder-wide CV stamp exists too: Space Goat's Evil Dead 2 programme (CV 20289 on 37 files) and Millarworld's Dark
-  Horse folder (CV 115757 on the sequel) stamp ONE wrong volume across a folder — the `round2-folder` shape on the CV side.
 
-+119 more matched entries not shown: L-140, L-142, L-148, L-271, L-020, L-023, L-135, L-164, L-186, L-188, L-219, L-233, L-243, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-281, L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-314, L-082, L-093, L-113, L-116, L-085, L-124, L-191, L-272, L-016, L-032, L-114, L-064, L-101, L-306, L-310, L-031, L-076, L-109, L-115, L-117, L-127, L-130, L-132, L-136, L-143, L-196, L-295, L-296, L-298, L-299, L-307, L-308, L-313, L-324, L-327, L-328, L-329, L-332, L-002, L-011, L-015, L-040, L-175, L-179, L-195, L-198, L-199, L-210, L-214, L-240, L-242, L-290, L-009, L-012, L-024, L-034, L-048, L-052, L-065, L-068, L-069, L-079, L-099, L-102, L-119, L-123, L-133, L-146, L-169, L-174, L-190, L-194, L-197, L-238, L-262, L-265, L-297, L-319, L-321, L-330, L-331, L-334, L-041, L-054, L-074, L-083, L-192, L-250 (grep LEDGER.md for them)
++129 more matched entries not shown: L-046, L-033, L-051, L-055, L-060, L-139, L-140, L-142, L-148, L-271, L-020, L-023, L-135, L-164, L-186, L-188, L-219, L-233, L-243, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-281, L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-314, L-082, L-093, L-113, L-116, L-085, L-124, L-191, L-272, L-016, L-032, L-114, L-064, L-101, L-306, L-310, L-031, L-076, L-109, L-115, L-117, L-127, L-130, L-132, L-136, L-143, L-196, L-295, L-296, L-298, L-299, L-307, L-308, L-313, L-324, L-327, L-328, L-329, L-332, L-348, L-002, L-011, L-015, L-040, L-175, L-179, L-195, L-198, L-199, L-210, L-214, L-240, L-242, L-290, L-009, L-012, L-024, L-034, L-048, L-052, L-065, L-068, L-069, L-079, L-099, L-102, L-119, L-123, L-133, L-146, L-169, L-174, L-190, L-194, L-197, L-238, L-262, L-265, L-297, L-319, L-321, L-330, L-331, L-334, L-339, L-345, L-350, L-041, L-054, L-074, L-083, L-192, L-250 (grep LEDGER.md for them)
 
 ====================================================================================================
 

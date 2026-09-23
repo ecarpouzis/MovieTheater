@@ -1045,9 +1045,6 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   (Dark Horse "EC Comics & Others Archives", Crime Does Not Pay, Frontline Combat, Magnus, War Against Crime, Savage
   Sword of Conan) takes the archive LINE's own CV/GCD record — the S16653 line-wins ruling; the older "S = the original
   when both legs hold it" line applies only when NO line record exists. The later, dated ruling wins.
-  **SUPERSEDED for single-run archives (lead, 2026-09-23):** the brief's later R-042 ruling (a line that reprints ONE
-  numbered run gives way to the run) wins — Dark Horse SSoC -> Marvel SSoC (wave 52), Doctor Solar Archives -> the 1962
-  run (P-019). The archive LINE keeps its own identity only when it spans SEVERAL runs / titles (EC Archives, L-109).
 
 [L-239] pass:item ruling sig:probe
 - Packet phrase "vol X … 1 issue Y": X is the VOLUME id, Y the ISSUE id — an `I` line wants Y (`lookup.py --issues X`
@@ -1719,3 +1716,14 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
 - Dark Horse FCBD flipbooks are filed on BOTH legs as "A/B - Free Comic Book Day 2006 Special"; Polar is a GCD album line
   (88420) while CV mints a volume per album. D&Q / accented names match ONLY with the accent ("Castrée", not "Castree");
   CV's volume start year can be wrong while its issue date is right (Blabber: volume 2021, issue 2011) (R-073).
+
+[L-350] kind:archive kind:golden-age pub:dark-horse pub:ec-archives
+- L-238 is SUPERSEDED for single-run archives (lead, 2026-09-23): the brief's later R-042 ruling (a line that reprints
+  ONE numbered run gives way to the run) wins — Dark Horse SSoC -> Marvel SSoC (wave 52), Doctor Solar Archives -> the
+  1962 run (P-019). The archive LINE keeps its own identity only when it spans SEVERAL runs / titles (EC Archives, L-109).
+
+[L-351] pub:dynamite sig:probe
+- Dynamite: CV parks The Shadow's #0 and #100 specials in a catch-all volume (75720) — a HULL, not a second run. The 2019
+  Vampirella FCBD file is #0 of the 2019 run (its EAN = GCD's #0 barcode). Filename misspellings ("Jordon") and one-word
+  spellings ("BadGuys") hid real records — probe the corrected / spaced spelling. Quality's American Judge Dredd: CV 3928
+  keeps #1-61 as ONE run while GCD splits it at #8 (3341 / 3511) (R-075).

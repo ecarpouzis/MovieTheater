@@ -1,90 +1,109 @@
-## Conventions for this batch (36 shown of 134 matched; 338 in LEDGER.md; 50 shelf/shelves: kind:collected-line ×17 · kind:trade-only ×17 · pub:idw ×12 · pub:marvel ×12 · folder:vn-year ×9 · pub:dark-horse ×8 · pub:action-lab ×6 · kind:new ×5)
+## Conventions for this batch (33 shown of 141 matched; 350 in LEDGER.md; 49 shelf/shelves: kind:trade-only ×16 · kind:collected-line ×16 · pub:idw ×12 · pub:marvel ×12 · folder:vn-year ×9 · pub:dark-horse ×8 · kind:new ×5 · pub:boom ×5)
 LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
 reading, never a rule applied across a folder. Do not read LEDGER.md whole.
 
-[L-030] (50 shelf/shelves) sig:collision
+[L-030] (49 shelf/shelves) sig:collision
 - One folder split into two shelves by a subtitle in one filename (Analog, Witch Doctor) → `F merge-with=<sid>`.
-[L-151] (50 shelf/shelves) sig:collision sig:withheld
+[L-151] (49 shelf/shelves) sig:collision sig:withheld
 - The withheld rule beats the checker's merge-with remedy text: a stored-link collision with a DIFFERENT comic is
   `cv=-` + `N withheld cv=<id> … S<partner>`, never a merge (S101634 vs S22834); merge-with only for the same comic.
-[L-160] (50 shelf/shelves) pass:revisit sig:withheld
+[L-160] (49 shelf/shelves) pass:revisit sig:withheld
 - A withheld shelf with NO GCD leg to keep becomes `R` + `N withheld cv=<id> … S<partner>` (S4944, S99691) — the
   revisit pair re-links the partner and then the S line can be written.
-[L-193] (47 shelf/shelves) sig:legacy-stamp sig:probe
+[L-193] (46 shelf/shelves) sig:legacy-stamp sig:probe
 - GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
   plain title returns 0 hits — probe with the ordinal or `--contains`.
-[L-014] (43 shelf/shelves) sig:probe sig:round2
+[L-014] (42 shelf/shelves) sig:probe sig:round2
 - `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
   batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
   right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
-[L-013] (42 shelf/shelves) sig:probe
+[L-013] (41 shelf/shelves) sig:probe
 - GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
   with the other spelling.
-[L-043] (42 shelf/shelves) sig:probe
+[L-043] (41 shelf/shelves) sig:probe
 - "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
   CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
-[L-050] (42 shelf/shelves) sig:probe
+[L-050] (41 shelf/shelves) sig:probe
 - When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
   punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
   abbreviation the publisher uses ("HSE").
-[L-072] (42 shelf/shelves) sig:probe
+[L-072] (41 shelf/shelves) sig:probe
 - GCD hides behind the SUBTITLE: "The Hunting Accident", "Giraffes on Horseback Salad", "Undesirables" return
   nothing under their full titles — re-probe the SHORT title before writing `provider-missing`.
-[L-088] (42 shelf/shelves) sig:probe
+[L-088] (41 shelf/shelves) sig:probe
 - GCD hides behind a LONGER title too ("… and the Tale of Azkon's Heart", "Holiday Party (One-Shot)"), not only a
   shorter one — probe both directions before `provider-missing`.
-[L-089] (42 shelf/shelves) sig:probe
+[L-089] (41 shelf/shelves) sig:probe
 - A facsimile of a SINGLE issue is its own book; a reprint edition of a whole series is not — the original wins.
-[L-095] (42 shelf/shelves) sig:probe
+[L-095] (41 shelf/shelves) sig:probe
 - A folder that is a ripper's READING ORDER over several separately published arcs (The Ride, Revolution) has no
   spanning record — the ladder is arc numbers, not issue numbers.
-[L-096] (42 shelf/shelves) sig:probe
+[L-096] (41 shelf/shelves) sig:probe
 - GCD's exact filing recovers legs the probe misses: singular/plural ("Greeting", "Return"), two words ("Super
   Hero"), a spelled ordinal ("Fortieth"), a dropped subtitle, or the colon form ("Jinx: Torso") — try each before
   `provider-missing`.
-[L-118] (42 shelf/shelves) sig:probe
+[L-118] (41 shelf/shelves) sig:probe
 - A GCD collected series numbers its issues by VOLUME and titles them with the volume SUBTITLE — that, not the
   page count, places a trade when a shelf holds several volumes of one line.
-[L-125] (42 shelf/shelves) sig:probe
+[L-125] (41 shelf/shelves) sig:probe
 - A stored link that is the same title a DIFFERENT DECADE later is a new cluster (Fist of Khonshu 2024 on the
   1985 Moon Knight run; a 1971 Sub-Mariner Annual on the 1998 annual) — years decide, never the title.
-[L-157] (42 shelf/shelves) sig:probe
+[L-157] (41 shelf/shelves) sig:probe
 - A GCD row with ZERO issues is an empty stub, not a leg (Skull Cat 197154, Rivers of London: Stray Cat Blues 213823,
   Archer & Armstrong: Revival 164703) → `provider-missing`.
-[L-159] (42 shelf/shelves) sig:probe
+[L-159] (41 shelf/shelves) sig:probe
 - An exact-name probe can miss a sequel the rip DOES hold: `--contains "Icarus Society"` found CV 143976 after the
   exact "Prodigy: The Icarus Society" probe returned nothing — try `--contains` on the subtitle before `provider-missing`.
-[L-163] (42 shelf/shelves) sig:probe
+[L-163] (41 shelf/shelves) sig:probe
 - GCD hides behind a bracketed alternate title: "War Stories: J for Jenny [War Story: J for Jenny]" (10937), "Dance Like
   Everybody's Watching! [A Zits Treasury]" (132081), "You're Out of Your Mind, Charlie Brown! [Horizontal]" (155990).
-[L-177] (42 shelf/shelves) sig:probe
+[L-177] (41 shelf/shelves) sig:probe
 - A bracketed publisher series number becomes a phantom ladder entry: Thun'da's "[A1-056]/[A1 073]/[A1 083]" produced
   ladder 56/73/83 and a ratio 5.00 — read the bracket, not the ladder.
-[L-204] (42 shelf/shelves) pass:item pass:revisit sig:probe
+[L-204] (41 shelf/shelves) pass:item pass:revisit sig:probe
 - `lookup.py --issues <collected-line volume>` names each TRADE's own ComicVine ISSUE id: 71 of 73 `I` lines in
   R-018 carry an item-level CV id instead of `cv=-`.
-[L-253] (42 shelf/shelves) sig:probe
+[L-253] (41 shelf/shelves) sig:probe
 - A subtitle can name a SEQUEL series filed on the first run's shelf (Wild's End "Beyond the Sea" = CV 151678 /
   GCD 201441, not the 2014 run) — the `C` names the sequel run.
-[L-264] (42 shelf/shelves) sig:probe
+[L-264] (41 shelf/shelves) sig:probe
 - Title-only (st3) GCD matches reuse ONE gcd id across every volume of a line (Golden City ×10, Windmaker,
   Tarzan Kubert Years) — re-derive each book from the shelf's own numbered pool.
-[L-267] (42 shelf/shelves) sig:probe
+[L-267] (41 shelf/shelves) sig:probe
 - A GCD "collected edition" series sits beside the genuine RUN under a different id (Dept H 100362 vs 111468, Harrow
   County 89353 vs 94662, Sword Daughter 125748 vs 134585) — the `C` names the run; `lookup.py` by title finds it.
-[L-273] (42 shelf/shelves) sig:probe
+[L-273] (41 shelf/shelves) sig:probe
 - The Adventures of Tintin: every per-file gcd pick (60515/108543) was wrong; the shelf's own gcd pool matched by
   ENGLISH title was right for all 23 — the pool over the pick, again.
-[L-292] (42 shelf/shelves) sig:probe
+[L-292] (41 shelf/shelves) sig:probe
 - A stored English digital volume's cached rip may cover only its last issues (Suzuka #13-18 of 18) — the earlier
   books take gcd-only identities from the GCD series' full list, cv=-.
-[L-294] (42 shelf/shelves) pass:item sig:probe
+[L-294] (41 shelf/shelves) pass:item sig:probe
 - ITEM PASS (X-046..X-048): a shelf can hold TWO published editions of one work with no shared pool (Monster: the
   18-volume line beside the 2014 "Two-in-One" Perfect Edition) — each edition needs its own pool or an honest
   no-record, never a mapping across editions. When a shelf's file count exceeds its pool, the excess usually
   belongs to a CONTINUATION volume the shelf's own `N` names (Ranma 1/2 v22-38 → CV 26409 / GCD 17651) — the pool
   for it must be pulled (`lookup.py --issues`, `gcd_issue WHERE series_id=?`) before writing no-record. GCD may mint
   a "collected edition" row for only the FIRST of a same-title pair (Zombie Makeout Club) — the second is gcd=-.
+[L-341] (41 shelf/shelves) sig:probe
+- GCD name shapes that hide a record from an exact probe (R-065): a dropped licensor/author prefix (Insight "H. G.
+  Wells:", FSG "Shirley Jackson's"), a dropped leading "The" (DC "Origin of Hordak", IDW "Dark Judges"), a dropped
+  subtitle (IDW TMNT "Saturday Morning Adventures"), a BRACKETED subtitle (IDW RID 2015 "[Animated Series]"), a spelled
+  volume ordinal ("Comic Book History of Comics Volume 2"), a lengthened title (First Second "Prince of Persia the
+  Graphic Novel"). CV spells "'Til" where rippers write "'till".
+[L-346] (41 shelf/shelves) sig:probe
+- GCD name shapes (R-071): a run filed with its subtitle DROPPED (Oni "Dead of Winter" 116730, the subtitle moved onto
+  the trade row); ", Chapter II:" where CV writes " II:"; an event prefix ("Doctor Who Event 2016:"); "Special
+  Edition" appended to KODT specials. Titan Doctor Who "Year Two" runs ARE in the fixed CV index (84960 / 87162) — L-152's
+  "not in the ComicVine rip" is obsolete; the "Year Two v04" trades are run-wins into the issue shelves. Marvel event
+  chronology trade shelves (Death of Captain America, New Guard) are run-wins into the main run shelf.
+[L-347] (41 shelf/shelves) sig:probe
+- Name shapes that hid records (R-072): a creators' prefix on BOTH legs ("Paknadel & Trakhanov's Turncoat", Boom);
+  ComiXology Originals writing a symbol as a word ("dotSelf" = ".Self") and one-word GCD spellings ("The AllNighter");
+  biography books that are English editions of Italian BeccoGiallo originals (link the Italian row, L-024); a 2019+
+  Rebellion strip collection as a numbered volume of a GCD book line named for the source weekly ("Wildcat" #2 =
+  Loner); "Magazine" / "Year One" suffixes (Archie, Action Lab) — for a one-volume "Year One", pages / issue size
+  picks the run. A DC deluxe of one run or one one-shot is run-wins (GCD's notes say which).
 [L-033] (12 shelf/shelves) pub:marvel sig:collision sig:probe
 - Krakoa-era Marvel folders are cut into several shelves by the CREATOR name in trade filenames (New Mutants v4
   → Hickman / Brisson / Vita Ayala; "X-Men by Gerry Duggan"): trades of ONE run in ONE folder → the run is the
@@ -98,35 +117,13 @@ reading, never a rule applied across a folder. Do not read LEDGER.md whole.
 - A shelf read in an EARLIER batch may already link the volume you found (a second rip of the same mini in another
   folder): `check_identity --all` catches it as an undeclared merge — write `F <sid> merge-with=<partner>` when the
   partner is the same comic (Iron Fist: Wolverine S9566/S9567; X-Men/Runaways FCBD S22298/S11337).
-[L-302] (12 shelf/shelves) kind:collected-line kind:foreign kind:trade-only pub:action-lab pub:idw pub:image sig:probe sig:trade-link
+[L-302] (11 shelf/shelves) kind:collected-line kind:foreign kind:trade-only pub:action-lab pub:idw pub:image sig:probe sig:trade-link
 - C-031..C-033 (Image / IDW trade shelves): the matches-our-holdings collected-edition trap dominates trade-only
   Image shelves — the run wins; `lookup.py --contains` recovers the English "Outcast by Kirkman & Azaceta" (CV 75114 /
   GCD 81445) when the packet's probes return only foreign editions; genuine different-comics conflations still
   exist (Skyward: Action Lab 2013 vs Image 2018; Zero: Matsumoto vs Kot) — the years and publisher decide.
-[L-135] (17 shelf/shelves) kind:collected-line
-- An Epic / Complete Collection LINE is found by probing the line name with NO volume subtitle: "Generation X Epic
-  Collection" → GCD 174151, shared by four sibling shelves.
-[L-164] (17 shelf/shelves) kind:archive kind:collected-line kind:strip sig:probe
-- Year-by-year archives of a newspaper/web strip (Doonesbury, Dennis the Menace, Rip Kirby, The Little King) have no record
-  in either provider → R + provider-missing; where a provider holds the strip's own collected line (Cyanide & Happiness,
-  Oglaf) pair at 0.9 as a format split.
-[L-186] (17 shelf/shelves) kind:collected-line
-- REMINDER (lead ruling, applied again on Princeless S14096): a collected LINE with its own record (GCD 106434, nine
-  trades) wins over the first mini's run; linking the first four-issue mini to a nine-volume trade shelf is wrong-cv-link.
-[L-244] (17 shelf/shelves) kind:collected-line pass:item
-- A trade collecting TWO minis, and an omnibus, cannot yet be stated by a `C` line (one range, one run, one per item):
-  name the runs on an `N` for now — TOOLS_TODO 17 adds per-run ranges and several `C` per item.
-[L-246] (17 shelf/shelves) kind:collected-line pass:item
-- ITEM PASS (X-001..X-003): on RUN-identity shelves the per-file GCD link reuses the run's own series matched to ONE
-  issue by number for vol. 01 only, while later volumes resolve to a real collected-edition series — check whether
-  vol. 01's link differs in kind from vol. 02+ before trusting it (Kevin Keller, Mega Man, Klaus, Dark Crystal …).
-[L-247] (17 shelf/shelves) kind:collected-line
-- A `C` that restates the shelf's own run needs its ids repeated in the clause to clear 40 characters; the clause is
-  the evidence, not a pointer. A shelf's own collected LINE and the run it collects are two records (Invisible
-  Kingdom: line GCD 151274 vs run CV 117748 / GCD 142448; Goldie Vance: line CV 94628 vs run CV 89593) — the `C`
-  names the RUN.
 
-+98 more matched entries not shown: L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-314, L-046, L-085, L-281, L-064, L-101, L-310, L-029, L-124, L-182, L-191, L-272, L-113, L-188, L-020, L-023, L-152, L-158, L-168, L-219, L-230, L-233, L-234, L-236, L-243, L-016, L-032, L-114, L-297, L-194, L-330, L-031, L-051, L-055, L-065, L-076, L-099, L-109, L-115, L-117, L-119, L-123, L-130, L-132, L-139, L-140, L-148, L-196, L-262, L-271, L-295, L-296, L-298, L-306, L-307, L-308, L-313, L-323, L-327, L-328, L-329, L-331, L-332, L-008, L-011, L-015, L-040, L-047, L-133, L-136, L-197, L-199, L-207, L-210, L-212, L-222, L-237, L-242, L-245, L-249, L-321, L-175, L-041, L-150, L-192 (grep LEDGER.md for them)
++108 more matched entries not shown: L-135, L-164, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-314, L-343, L-345, L-046, L-281, L-085, L-029, L-064, L-101, L-124, L-191, L-272, L-310, L-182, L-188, L-113, L-020, L-023, L-152, L-158, L-168, L-219, L-230, L-233, L-234, L-236, L-243, L-349, L-016, L-032, L-114, L-297, L-194, L-330, L-031, L-051, L-055, L-065, L-076, L-099, L-109, L-115, L-117, L-119, L-123, L-130, L-132, L-139, L-140, L-148, L-196, L-262, L-271, L-295, L-296, L-298, L-306, L-307, L-308, L-313, L-323, L-327, L-328, L-329, L-331, L-332, L-008, L-011, L-015, L-040, L-047, L-133, L-136, L-197, L-199, L-207, L-210, L-212, L-222, L-237, L-242, L-245, L-249, L-321, L-348, L-175, L-041, L-150, L-192 (grep LEDGER.md for them)
 
 ====================================================================================================
 
@@ -446,10 +443,11 @@ reading, never a rule applied across a folder. Do not read LEDGER.md whole.
    GCD per-file:   series 146024 "Voracious: Appetite for Destruction" 2019-2019 Action Lab Comics [limited series] 5 on 2/2 files; methods numx2
    GCD dump:       (= per-file) · 96568 "Voracious" 2016-2016 Action Lab Comics [] 4 (via CV name "Voracious")   (dump lookup)
 
-== S101631 Zombie Tramp  [tier A]   keys: Zombie Tramp v3 (2014)  years 2014-2020  57 files / 9 collections
+== S101631 Zombie Tramp  [tier A]   keys: Zombie Tramp v3 (2014) | Zombie Tramp: Year One (2016)  years 2014-2020  58 files / 10 collections
    split run: "Zombie Tramp v3 (2014)" run=- (new shelf from P-003) — seed the S line from these ids, then verify them
-   folders: [56] Action Lab\Zombie Tramp\Zombie Tramp v3 (2014) · [1] Action Lab\Zombie Tramp
-   files:   [5673] COL Zombie Tramp Vol. 02 (2014) (Digital-Empire).cbz (116pp)
+   split run: "Zombie Tramp: Year One (2016)" run={"cv": 94097} (new shelf from P-003) — seed the S line from these ids, then verify them
+   folders: [56] Action Lab\Zombie Tramp\Zombie Tramp v3 (2014) · [2] Action Lab\Zombie Tramp
+   files:   [5612] COL Zombie Tramp - Year One (2016) (Digital).cbr (319pp) | [5673] COL Zombie Tramp Vol. 02 (2014) (Digital-Empire).cbz (116pp)
             Zombie Tramp 013 (2015) (Digital) (TheArchivist-Empire).cbr … Zombie Tramp 041 (2017) (Digital) (TheArchivist-Empire).cbr  (17 files, pp 22-33)
             [5633] Zombie Tramp 042 (2017) (Digital) (TanCombs).cbr (23pp) | [5634] Zombie Tramp 043 (2018) (Digital) (TanCombs).cbr (23pp)
             [5635] Zombie Tramp 044 (2018) (Digital) (TanCombs).cbr (23pp) | [5636] Zombie Tramp 045 (2018) (Digital) (TanCombs).cbr (22pp)
@@ -468,22 +466,15 @@ reading, never a rule applied across a folder. Do not read LEDGER.md whole.
             [5669] COL Zombie Tramp Vol. 07 - Bitch Craft (2016) (Digital) (TanCombs).cbr (131pp)
             [5670] COL Zombie Tramp Vol. 08 - Pimps, Ho's and Hocus Pocus (2016) (Digital) (TheArchivist-Empire).cbr (134pp)
             [5671] COL Zombie Tramp Vol. 09 - Skanks, Shanks, & Shackles (2016) (F) (Digital-Empire).cbz (103pp)
-   ours:    ladder 13-16, 29-72; ComicInfo Series: "Zombie Tramp"x32; ComicInfo Publisher: "Action Lab"x32
-   CV linked:      vol 75908 "Zombie Tramp" 2014 Action Lab 85 issues; cached #0-84 (85); yearΔ 0; ratio 48/85 = 0.56; no judged range; v1 per-file: same volume on 48/57 files
+   ours:    ladder 13-16, 29-72; ComicInfo Series: "Zombie Tramp"x32, "Zombie Tramp: Year One"x1; ComicInfo Publisher: "Action Lab"x33
+   CV linked:      vol 75908 "Zombie Tramp" 2014 Action Lab 85 issues; cached #0-84 (85); yearΔ 0; ratio 48/85 = 0.56; no judged range; v1 per-file: same volume on 48/58 files
    CV local rip:   (= linked) · 74207 "Zombie Tramp" 2014 Action Lab 1 issue 453657 · 75811 "Zombie Tramp" 2014 Action Lab 1 issue 459916 · 66647 "Zombie Tramp" 2013 Action Lab 1 issue 422846 · 68411 "Zombie Tramp" 2013 Action Lab 4 · 71821 "Zombie Tramp" 2013 Action Lab 8   (rip lookup)
-   GCD per-file:   series 81994 "Zombie Tramp" 2014-2022 Action Lab Comics [ongoing series] 85 on 49/57 files; methods numx49
+   GCD per-file:   series 81994 "Zombie Tramp" 2014-2022 Action Lab Comics [ongoing series] 85 on 49/58 files; methods numx49
    GCD dump:       (= per-file) · 116606 "Zombie Tramp" 2013-? Action Lab Comics [] 23 · 177561 "Zombie Tramp" 2013-2014 Action Lab Comics [] 4 · 178250 "Zombie Tramp" 2012-? Super Real Graphics [] 2 · 177920 "Zombie Tramp" 2009-2010 Super Real Graphics [] 3   (dump lookup)
    bridges:        gcd 81994 -> LOCG 113059 "Zombie Tramp" support 51
 
-== S102723 Zombie Tramp: Year One (2016)  [tier D]   keys: Zombie Tramp: Year One (2016)  years 2016-2016  1 files / 1 collections
-   split run: "Zombie Tramp: Year One (2016)" run={"cv": 94097} (new shelf from P-003) — seed the S line from these ids, then verify them
-   folders: [1] Action Lab\Zombie Tramp
-   files:   [5612] COL Zombie Tramp - Year One (2016) (Digital).cbr (319pp)
-   ours:    ComicInfo Series: "Zombie Tramp: Year One"x1; ComicInfo Publisher: "Action Lab"x1
-   CV local rip:   94097 "Zombie Tramp: Year One" 2016 Action Lab 1 issue 549438 (via our own name without the filing suffix "Zombie Tramp: Year One")   (rip lookup)
-
 == S22811 Zombie Tramp: Easter Special  [tier B]   keys: Zombie Tramp  years 2017-2017  1 files / 0 collections
-   split: the KEPT half of the P-003 split — moved out -> S101631 "Zombie Tramp v3 (2014)"; S102723 "Zombie Tramp: Year One (2016)"; re-identify what stayed
+   split: the KEPT half of the P-003 split — moved out -> S101631 "Zombie Tramp v3 (2014)"; S101631 "Zombie Tramp: Year One (2016)"; re-identify what stayed
    flags: #116 conflated-series [Dismissed] item 5672 — the 2013 run and the 2014 relaunch share this Series
    folders: [1] Action Lab\Zombie Tramp\Zombie Tramp v3 (2014)\Annuals and Specials
    files:   [5994] Zombie Tramp Easter Special (2017) (Digital) (TheArchivist-Empire).cbr (26pp)

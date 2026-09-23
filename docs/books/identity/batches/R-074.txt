@@ -1,0 +1,149 @@
+## Conventions for this batch (36 shown of 57 matched; 349 in LEDGER.md; 2 shelf/shelves: pub:dc ×2 · folder:bucket ×1 · kind:new ×1 · folder:vn-year ×1 · folder:variant-covers ×1 · folder:sequel-subfolder ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-052] (2 shelf/shelves) pub:dc sig:stamp sig:twin
+- The per-file CV matcher picks the LEGACY volume for every New 52 shelf (Batman 1940, Wonder Woman 1942, Nightwing
+  1996, Catwoman 1993) because it matched by issue number — the stored link on a 2011 shelf that names a 1940
+  volume is `wrong-cv-link`, the 2011 volume is in the rip.
+[L-055] (2 shelf/shelves) pub:dc pub:small-press sig:probe
+- ComicVine splits ONE line across two spellings of its own ("Batman Arkham: X" vs "Batman: Arkham: X"). GCD
+  prefixes titles the packet probes without ("Batman: Catwoman Defiant", "The Blue Beetle" for the 2006 series).
+[L-059] (2 shelf/shelves) pub:dc
+- A truncated parsed key reaching a different comic ("Riddle", "Batman - Death", "Once Upon") is `wrong-cv-link`.
+[L-195] (2 shelf/shelves) pub:dc sig:legacy-stamp sig:stamp
+- Trade SUBTITLES tell two same-title relaunches apart when the per-file matcher cannot (Batman Beyond 2015 = Brave
+  New Worlds / City of Yesterday / Wired for Death; 2016 = Escaping the Grave / Rise of the Demon / The Long Payback).
+[L-197] (2 shelf/shelves) pub:dc sig:legacy-stamp sig:stamp
+- The per-file matcher's "wrong RELAUNCH" trap: it stamps the LATER same-title volume onto files dated to the earlier
+  era by issue-number coincidence (Wonder Woman 2016, Batman 2016, JLA v2/v3, Firestorm, Hawk and Dove v5, Atari Force
+  v2, Adventure Comics 2010) — the tell is files whose years or numbers predate or exceed the stamped volume's own.
+[L-206] (2 shelf/shelves) pub:dc sig:probe
+- GCD's "&" spelling hides a run from every "and" probe (Batman & the Outsiders 2019: CV 118841 / GCD 144938, 17
+  issues) — probe both spellings.
+[L-212] (2 shelf/shelves) pub:dc sig:collision sig:legacy-stamp
+- A continuation of legacy numbering (#201+ picking up a prior volume's own numbering, Green Lantern Corps S94605→
+  S94610) is the SAME run as the prior volume — merge-with, not a separate id.
+[L-222] (2 shelf/shelves) pub:dc sig:collision
+- Second-rip fragments of shelves already read in earlier batches (Flash Secret Files, Spectre 1992, Teen Titans
+  2003/2016, Wonder Woman 1942/2016, Zatanna 1993, Donna Troy) surface as `--all` collisions — `merge-with` after
+  grepping the partner's name and count.
+[L-237] (2 shelf/shelves) pass:revisit pub:dc sig:collision sig:comicinfo
+- Action Comics: CV 18005 stops at #904 (2011); the Rebirth continuation #957+ is CV 91078 (ComicInfo `Volume`
+  asserts it) — the "v1 (2016)" and "v1 (2018)" folder shelves are one run (R-019 merge-with).
+[L-245] (2 shelf/shelves) pass:revisit pub:dc sig:collision sig:legacy-stamp sig:split sig:stamp
+- A SHARED STORED ComicVine id is not proof of one run: `merge-with` on it only after the id fits BOTH shelves' own
+  keys and GCD links. C-008 merged the real Flash 1959 shelf into the "The Flash v2 (2007)" folder shelf because both
+  stored CV 1995 — but that shelf's own key and GCD link (26125, 2007-2009) said Flash vol. 2; the stamp was the
+  legacy-number trap. The merged shelf became two runs (R-023, R + split). When a shelf's GCD leg contradicts its
+  stored CV id, the CV id is the suspect, and the merge is `F wrong-cv-link` on the mis-stamped shelf instead.
+[L-257] (2 shelf/shelves) pub:dc sig:twin
+- Modern DC digital lines carry TWIN "Collected Edition" GCD rows for one trade (Detective 77783/77579, Stormwatch
+  65339 stub / 76642, Dark Knights of Steel 189483/203963, I Am Batman 188323/201985) — one `I`, capped at 0.9.
+[L-337] (2 shelf/shelves) pub:dc sig:probe
+- DC: GCD and CV both file relaunches under "&" ("Batgirl & the Birds of Prey", "Red Hood & the Outlaws", "Batman &
+  the Signal") — probe the "&" AND "and" spellings before provider-missing. GCD's collected-edition series for DC
+  relaunch trades are separate same-name rows of 2-5 issues (77516, 115808, 74348, 113651, 33019) whose per-book
+  "collects" notes give exact C ranges. A "GCD says" row on a JLA trade can be a German Panini edition (78606) — void
+  it on an N line (R-062).
+[L-124] (2 shelf/shelves) folder:bucket folder:vn-year pass:item sig:trade-link
+- A `<Title> vN (<year>)` folder holding only a collected edition is the RUN's folder — the run takes the S
+  line, the trade an `I` line; a `_Trades` / `_Minis` / `_One-shots` bucket is the opposite (the book's own
+  count-1 record, minted by BOTH providers, wins).
+[L-281] (2 shelf/shelves) folder:bucket folder:events folder:vn-year
+- A chronology folder's ORDER prefix ("04 Dragon Ball - Full Color Freeza Arc v01") gets read by the per-file num
+  matcher as the ISSUE number — v01 in folder "04" linked to issue #4; the true mapping is the shelf's own vNN by
+  ordinal. Any "NN Title vNN" bucket naming is this trap.
+[L-010] (1 shelf/shelves) folder:variant-covers kind:new pub:dc
+- DC Black Label 2024-25: 1pp variant covers in `\Variant Covers` double the file count; not a second run.
+[L-040] (1 shelf/shelves) folder:bucket folder:events pub:dc pub:papercutz-nbm pub:scout pub:titan pub:valiant sig:twin
+- NBM / Papercutz album lines and Scout one-shots carry TWIN adjacent GCD rows for one book (120209/120210) —
+  cap at 0.9 and name both. Titan's Doctor Who "Year N" volumes number continuously across a Doctor (a ladder
+  starting at #6 is complete). A publisher's read-order crossover folder (Titan `Lost Dimension`, Valiant
+  `_Chronological Valiant`) = DC's `#DC Events` shape.
+[L-198] (1 shelf/shelves) pub:dc
+- ComicVine keeps ONE spanning volume across era-retitled arcs (L.E.G.I.O.N. / R.E.B.E.L.S., Deathstroke "The Hunted",
+  Green Lantern 1960, Detective, Action, All-Star) while GCD names each era its own row — majority GCD era + `N` the
+  rest; no split for that alone.
+[L-199] (1 shelf/shelves) folder:bucket folder:events pub:dc
+- DC's "#DC Events" chronology folders resolve once the cross-referenced-run pattern is seen: a crossover reprint
+  bucket or a tie-in folder filed adjacent to the main run takes the main run's identity with the tie-ins named.
+[L-207] (1 shelf/shelves) pub:dc
+- GCD 60830 "Detective Comics" spans the New 52 AND Rebirth; CV splits them (42594 New 52, 91098 Rebirth) — a New 52
+  sibling shelf must take CV 42594 and be declared before landing, or the shared GCD row misleads.
+[L-211] (1 shelf/shelves) folder:vn-year pub:dc sig:collision sig:stale-flag
+- An `overlap-in-series` flag on a franchise with many `vN` sibling shelves (Deathstroke, Harley Quinn, Green Lantern,
+  Justice League, JLD, Legion, Lobo) describes the CROSS-SHELF Vol. 01 collision, not conflation on the one shelf —
+  confirmed 14 of 14 in C-013..C-015; the stale-flag note must name the sibling shelf.
+[L-256] (1 shelf/shelves) pub:dc sig:barcode
+- The packet's shelf-level `identity:` list of the shelf's own per-book GCD rows (pages + ISBN) outranks a book's
+  own mismatched `linked` pick — read the shelf list first (Detective Comics 2012, Curse of Brimstone, Wonder Twins).
+[L-348] (1 shelf/shelves) pub:dc sig:probe
+- DC (R-073): the rip holds count-1 CV trade records under "Title: Subtitle" (Justice League Vol. 1-8, Teen Titans 2014,
+  Young Justice 2019, Doom Rising, Oz Effect) — probe the SUBTITLE with --contains. One-shots filed by event name ("Flash
+  Special" = the 50th anniversary special, "Joker: Last Laugh Secret Files"). CV keeps Daring New Adventures of Supergirl
+  #1-13 + Supergirl #14-23 as ONE volume (3113); GCD splits 2626 / 2722 — a C line per leg.
+[L-007] (1 shelf/shelves) folder:bucket
+- Crossovers published as separate one-shots (Fear on Four Worlds) are separate GCD records per title.
+[L-013] (2 shelf/shelves) sig:probe
+- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
+  with the other spelling.
+[L-014] (2 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-030] (2 shelf/shelves) sig:collision
+- One folder split into two shelves by a subtitle in one filename (Analog, Witch Doctor) → `F merge-with=<sid>`.
+[L-043] (2 shelf/shelves) sig:probe
+- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
+  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
+[L-050] (2 shelf/shelves) sig:probe
+- When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
+  punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
+  abbreviation the publisher uses ("HSE").
+[L-072] (2 shelf/shelves) sig:probe
+- GCD hides behind the SUBTITLE: "The Hunting Accident", "Giraffes on Horseback Salad", "Undesirables" return
+  nothing under their full titles — re-probe the SHORT title before writing `provider-missing`.
+[L-088] (2 shelf/shelves) sig:probe
+- GCD hides behind a LONGER title too ("… and the Tale of Azkon's Heart", "Holiday Party (One-Shot)"), not only a
+  shorter one — probe both directions before `provider-missing`.
+[L-089] (2 shelf/shelves) sig:probe
+- A facsimile of a SINGLE issue is its own book; a reprint edition of a whole series is not — the original wins.
+[L-095] (2 shelf/shelves) sig:probe
+- A folder that is a ripper's READING ORDER over several separately published arcs (The Ride, Revolution) has no
+  spanning record — the ladder is arc numbers, not issue numbers.
+[L-096] (2 shelf/shelves) sig:probe
+- GCD's exact filing recovers legs the probe misses: singular/plural ("Greeting", "Return"), two words ("Super
+  Hero"), a spelled ordinal ("Fortieth"), a dropped subtitle, or the colon form ("Jinx: Torso") — try each before
+  `provider-missing`.
+[L-118] (2 shelf/shelves) sig:probe
+- A GCD collected series numbers its issues by VOLUME and titles them with the volume SUBTITLE — that, not the
+  page count, places a trade when a shelf holds several volumes of one line.
+[L-125] (2 shelf/shelves) sig:probe
+- A stored link that is the same title a DIFFERENT DECADE later is a new cluster (Fist of Khonshu 2024 on the
+  1985 Moon Knight run; a 1971 Sub-Mariner Annual on the 1998 annual) — years decide, never the title.
+[L-151] (2 shelf/shelves) sig:collision sig:withheld
+- The withheld rule beats the checker's merge-with remedy text: a stored-link collision with a DIFFERENT comic is
+  `cv=-` + `N withheld cv=<id> … S<partner>`, never a merge (S101634 vs S22834); merge-with only for the same comic.
+
++21 more matched entries not shown: L-157, L-159, L-160, L-163, L-175, L-177, L-191, L-193, L-204, L-217, L-253, L-264, L-267, L-272, L-273, L-290, L-292, L-294, L-341, L-346, L-347 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S103859 Batman Day Special Edition (2017)  [tier D]   keys: Batman Day Special Edition (2017)  years 2017-2017  1 files / 0 collections
+   split run: "Batman Day Special Edition (2017)" run={"cv": 104455, "gcd": 117053} (new shelf from P-022) — seed the S line from these ids, then verify them
+   folders: [1] DC\_Batman\_Miniseries and One-shots
+   files:   [62590] Batman Day Special Edition 001 (2017) (digital-Empire).cbr (29pp)
+   ours:    ladder 1
+   CV local rip:   104455 "Batman Day Special Edition" 2017 DC Comics 1 issue 622871 (via our own name without the filing suffix "Batman Day Special Edition") · 104478 "Batman Day Special Edition" 2017 DC Comics 1 issue 622884 (via our own name without the filing suffix "Batman Day Special Edition")   (rip lookup)
+   GCD dump:       117053 "Batman Day Special Edition" 2017-2017 DC [] 1 (via our own name without the filing suffix "Batman Day Special Edition")   (dump lookup)
+
+== S2095 Batman Day  [tier D]   keys: Batman Day  years 2024-2024  2 files / 0 collections
+   split: the KEPT half of the P-022 split — moved out -> S103859 "Batman Day Special Edition (2017)"; re-identify what stayed
+   folders: [2] DC\_Batman\_Completed Series\01 Detective Comics v1 (1937)\Variant Covers
+   files:   [60576] Batman Day 2024 - Detective Comics 027 (2024) (Facsimile Edition Blank Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [60577] Batman Day 2024 - Detective Comics 027 (2024) (Facsimile Edition Bob Kane Foil Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+   ours:    ladder 27; 1 number(s) name more than one file: 27
+   CV candidates:  29754 "Batman: Day of Judgment" 1999 DC Comics 1 issue 183117 s41 · 104478 "Batman Day Special Edition" 2017 DC Comics 1 issue 622884 s41 · 104455 "Batman Day Special Edition" 2017 DC Comics 1 issue 622871 s41 · 130278 "Batman Day Batman: The Adventures Continue" 2020 DC Comics 1 issue 798840 s39 · 150452 "Batman - One Bad Day" 2023 Panini Verlag 8 s21 · 36768 "Superman/Batman: Night and Day" 2010 DC Comics 1 issue 245366 s10   (v1 search)
+   CV local rip:   104455 "Batman Day Special Edition" 2017 DC Comics 1 issue 622871 (via CV candidate name "Batman Day Special Edition") · 104478 "Batman Day Special Edition" 2017 DC Comics 1 issue 622884 (via CV candidate name "Batman Day Special Edition") · 29754 "Batman: Day of Judgment" 1999 DC Comics 1 issue 183117 (via CV candidate name "Batman: Day of Judgment")   (rip lookup)
+   GCD dump:       117053 "Batman Day Special Edition" 2017-2017 DC [] 1 (via CV candidate name "Batman Day Special Edition") · 10168 "Batman: Day of Judgment" 1999-1999 DC [] 1 (via CV candidate name "Batman: Day of Judgment")   (dump lookup)
