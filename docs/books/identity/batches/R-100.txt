@@ -1,0 +1,466 @@
+## Conventions for this batch (37 shown of 141 matched; 363 in LEDGER.md; 17 shelf/shelves: folder:vn-year ×8 · folder:sequel-subfolder ×7 · pub:dc ×6 · kind:collected-line ×5 · pub:boom ×5 · folder:events ×4 · kind:new ×3 · kind:trade-only ×3)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-281] (12 shelf/shelves) folder:bucket folder:events folder:vn-year
+- A chronology folder's ORDER prefix ("04 Dragon Ball - Full Color Freeza Arc v01") gets read by the per-file num
+  matcher as the ISSUE number — v01 in folder "04" linked to issue #4; the true mapping is the shelf's own vNN by
+  ordinal. Any "NN Title vNN" bucket naming is this trap.
+[L-191] (11 shelf/shelves) folder:sequel-subfolder folder:vn-year pass:revisit sig:stale-flag
+- On a wave-2 `NN <Title> vN (<year>)` split-out shelf (ids S94xxx+) an `overlap-in-series` flag is stale by
+  construction — the colliding Vol. 01s now sit on sibling shelves (13 of 14 in R-016); the lead dismisses the flag.
+[L-124] (9 shelf/shelves) folder:bucket folder:vn-year pass:item sig:trade-link
+- A `<Title> vN (<year>)` folder holding only a collected edition is the RUN's folder — the run takes the S
+  line, the trade an `I` line; a `_Trades` / `_Minis` / `_One-shots` bucket is the opposite (the book's own
+  count-1 record, minted by BOTH providers, wins).
+[L-212] (6 shelf/shelves) pub:dc sig:collision sig:legacy-stamp
+- A continuation of legacy numbering (#201+ picking up a prior volume's own numbering, Green Lantern Corps S94605→
+  S94610) is the SAME run as the prior volume — merge-with, not a separate id.
+[L-222] (6 shelf/shelves) pub:dc sig:collision
+- Second-rip fragments of shelves already read in earlier batches (Flash Secret Files, Spectre 1992, Teen Titans
+  2003/2016, Wonder Woman 1942/2016, Zatanna 1993, Donna Troy) surface as `--all` collisions — `merge-with` after
+  grepping the partner's name and count.
+[L-237] (6 shelf/shelves) pass:revisit pub:dc sig:collision sig:comicinfo
+- Action Comics: CV 18005 stops at #904 (2011); the Rebirth continuation #957+ is CV 91078 (ComicInfo `Volume`
+  asserts it) — the "v1 (2016)" and "v1 (2018)" folder shelves are one run (R-019 merge-with).
+[L-245] (6 shelf/shelves) pass:revisit pub:dc sig:collision sig:legacy-stamp sig:split sig:stamp
+- A SHARED STORED ComicVine id is not proof of one run: `merge-with` on it only after the id fits BOTH shelves' own
+  keys and GCD links. C-008 merged the real Flash 1959 shelf into the "The Flash v2 (2007)" folder shelf because both
+  stored CV 1995 — but that shelf's own key and GCD link (26125, 2007-2009) said Flash vol. 2; the stamp was the
+  legacy-number trap. The merged shelf became two runs (R-023, R + split). When a shelf's GCD leg contradicts its
+  stored CV id, the CV id is the suspect, and the merge is `F wrong-cv-link` on the mis-stamped shelf instead.
+[L-030] (17 shelf/shelves) sig:collision
+- One folder split into two shelves by a subtitle in one filename (Analog, Witch Doctor) → `F merge-with=<sid>`.
+[L-151] (17 shelf/shelves) sig:collision sig:withheld
+- The withheld rule beats the checker's merge-with remedy text: a stored-link collision with a DIFFERENT comic is
+  `cv=-` + `N withheld cv=<id> … S<partner>`, never a merge (S101634 vs S22834); merge-with only for the same comic.
+[L-160] (17 shelf/shelves) pass:revisit sig:withheld
+- A withheld shelf with NO GCD leg to keep becomes `R` + `N withheld cv=<id> … S<partner>` (S4944, S99691) — the
+  revisit pair re-links the partner and then the S line can be written.
+[L-272] (8 shelf/shelves) folder:vn-year
+- A ripper's `vNN` can be offset by one from the album's own subtitle (Carthago Adventures) — the title decides.
+[L-052] (5 shelf/shelves) pub:dc sig:stamp sig:twin
+- The per-file CV matcher picks the LEGACY volume for every New 52 shelf (Batman 1940, Wonder Woman 1942, Nightwing
+  1996, Catwoman 1993) because it matched by issue number — the stored link on a 2011 shelf that names a 1940
+  volume is `wrong-cv-link`, the 2011 volume is in the rip.
+[L-193] (15 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-195] (5 shelf/shelves) pub:dc sig:legacy-stamp sig:stamp
+- Trade SUBTITLES tell two same-title relaunches apart when the per-file matcher cannot (Batman Beyond 2015 = Brave
+  New Worlds / City of Yesterday / Wired for Death; 2016 = Escaping the Grave / Rise of the Demon / The Long Payback).
+[L-197] (5 shelf/shelves) pub:dc sig:legacy-stamp sig:stamp
+- The per-file matcher's "wrong RELAUNCH" trap: it stamps the LATER same-title volume onto files dated to the earlier
+  era by issue-number coincidence (Wonder Woman 2016, Batman 2016, JLA v2/v3, Firestorm, Hawk and Dove v5, Atari Force
+  v2, Adventure Comics 2010) — the tell is files whose years or numbers predate or exceed the stamped volume's own.
+[L-210] (5 shelf/shelves) pub:dc sig:legacy-stamp sig:probe sig:stamp
+- The wrong-relaunch trap is near-universal on any DC title with 3+ relaunches (Green Arrow, Green Lantern, Harley
+  Quinn, Justice League, Legion, Lobo, Martian Manhunter, Doom Patrol): the matcher stamps the oldest legacy volume or
+  the largest/most-recent one across every sibling shelf; `lookup.py` by name + year recovers the true id.
+[L-214] (5 shelf/shelves) pub:dc sig:legacy-stamp sig:stamp sig:twin
+- The wrong-relaunch / legacy-volume stamp ran at 70-95% of files on Midnighter, Mister Miracle, Robin, Nightwing,
+  Supergirl, Plastic Man and Suicide Squad shelves in C-016 — assume it on any DC relaunch shelf and verify by year.
+[L-242] (5 shelf/shelves) pub:dc pub:gold-key-dell pub:marvel sig:legacy-stamp sig:stamp
+- Gold Key / Dell / Western funny-animal and Gold Key Star Trek: CV keeps ONE volume across the Dell→Western handover
+  while GCD splits by era (the Daffy Duck / Flintstones / Bugs Bunny shape); a later DC/Marvel volume stamped by
+  issue-number coincidence is the wrong-relaunch trap again.
+[L-290] (7 shelf/shelves) folder:sequel-subfolder pass:item sig:stamp
+- A spin-off filed in its own subfolder on the parent's shelf gets the PARENT's v01 ids stamped by the per-file
+  matcher (Rent-a-(Really Shy!)-Girlfriend on Rent-A-Girlfriend) — `N no-record` (or the shelf note), never the
+  parent's record; it is a misfiling for the lead.
+[L-013] (13 shelf/shelves) sig:probe
+- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
+  with the other spelling.
+[L-014] (13 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-043] (13 shelf/shelves) sig:probe
+- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
+  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
+[L-050] (13 shelf/shelves) sig:probe
+- When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
+  punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
+  abbreviation the publisher uses ("HSE").
+[L-072] (13 shelf/shelves) sig:probe
+- GCD hides behind the SUBTITLE: "The Hunting Accident", "Giraffes on Horseback Salad", "Undesirables" return
+  nothing under their full titles — re-probe the SHORT title before writing `provider-missing`.
+[L-088] (13 shelf/shelves) sig:probe
+- GCD hides behind a LONGER title too ("… and the Tale of Azkon's Heart", "Holiday Party (One-Shot)"), not only a
+  shorter one — probe both directions before `provider-missing`.
+[L-089] (13 shelf/shelves) sig:probe
+- A facsimile of a SINGLE issue is its own book; a reprint edition of a whole series is not — the original wins.
+[L-095] (13 shelf/shelves) sig:probe
+- A folder that is a ripper's READING ORDER over several separately published arcs (The Ride, Revolution) has no
+  spanning record — the ladder is arc numbers, not issue numbers.
+[L-096] (13 shelf/shelves) sig:probe
+- GCD's exact filing recovers legs the probe misses: singular/plural ("Greeting", "Return"), two words ("Super
+  Hero"), a spelled ordinal ("Fortieth"), a dropped subtitle, or the colon form ("Jinx: Torso") — try each before
+  `provider-missing`.
+[L-118] (13 shelf/shelves) sig:probe
+- A GCD collected series numbers its issues by VOLUME and titles them with the volume SUBTITLE — that, not the
+  page count, places a trade when a shelf holds several volumes of one line.
+[L-125] (13 shelf/shelves) sig:probe
+- A stored link that is the same title a DIFFERENT DECADE later is a new cluster (Fist of Khonshu 2024 on the
+  1985 Moon Knight run; a 1971 Sub-Mariner Annual on the 1998 annual) — years decide, never the title.
+[L-157] (13 shelf/shelves) sig:probe
+- A GCD row with ZERO issues is an empty stub, not a leg (Skull Cat 197154, Rivers of London: Stray Cat Blues 213823,
+  Archer & Armstrong: Revival 164703) → `provider-missing`.
+[L-159] (13 shelf/shelves) sig:probe
+- An exact-name probe can miss a sequel the rip DOES hold: `--contains "Icarus Society"` found CV 143976 after the
+  exact "Prodigy: The Icarus Society" probe returned nothing — try `--contains` on the subtitle before `provider-missing`.
+[L-163] (13 shelf/shelves) sig:probe
+- GCD hides behind a bracketed alternate title: "War Stories: J for Jenny [War Story: J for Jenny]" (10937), "Dance Like
+  Everybody's Watching! [A Zits Treasury]" (132081), "You're Out of Your Mind, Charlie Brown! [Horizontal]" (155990).
+[L-177] (13 shelf/shelves) sig:probe
+- A bracketed publisher series number becomes a phantom ladder entry: Thun'da's "[A1-056]/[A1 073]/[A1 083]" produced
+  ladder 56/73/83 and a ratio 5.00 — read the bracket, not the ladder.
+[L-204] (13 shelf/shelves) pass:item pass:revisit sig:probe
+- `lookup.py --issues <collected-line volume>` names each TRADE's own ComicVine ISSUE id: 71 of 73 `I` lines in
+  R-018 carry an item-level CV id instead of `cv=-`.
+[L-253] (13 shelf/shelves) sig:probe
+- A subtitle can name a SEQUEL series filed on the first run's shelf (Wild's End "Beyond the Sea" = CV 151678 /
+  GCD 201441, not the 2014 run) — the `C` names the sequel run.
+[L-264] (13 shelf/shelves) sig:probe
+- Title-only (st3) GCD matches reuse ONE gcd id across every volume of a line (Golden City ×10, Windmaker,
+  Tarzan Kubert Years) — re-derive each book from the shelf's own numbered pool.
+
++104 more matched entries not shown: L-267, L-273, L-292, L-294, L-341, L-346, L-347, L-051, L-055, L-206, L-291, L-113, L-135, L-164, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-309, L-314, L-011, L-015, L-040, L-082, L-093, L-188, L-199, L-211, L-249, L-363, L-016, L-032, L-064, L-085, L-101, L-114, L-175, L-310, L-008, L-009, L-022, L-046, L-047, L-059, L-061, L-068, L-087, L-139, L-140, L-148, L-189, L-216, L-218, L-220, L-256, L-257, L-266, L-271, L-337, L-338, L-348, L-361, L-065, L-099, L-123, L-194, L-262, L-330, L-097, L-252, L-274, L-288, L-293, L-352, L-354, L-021, L-031, L-198, L-203, L-205, L-207, L-215, L-254, L-260, L-299, L-321, L-329, L-342, L-007, L-128, L-181, L-217, L-336 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S103960 Ultimate End (2015)  [tier D]   keys: Ultimate End (2015)  years 2016-2016  1 files / 0 collections
+   split run: "Ultimate End (2015)" run={"cv": 82109, "gcd": 89425} (new shelf from P-033) — seed the S line from these ids, then verify them
+   folders: [1] _Marvel Major Event Chronology (digital)\2015.05 - Secret Wars\03 Battleworld
+   files:   [118107] Ultimate End (2016) (Digital) (Kileko-Empire).cbr (115pp)
+   ours:    judged item 118107 #1-5 conf 0.9
+   CV local rip:   87189 "Ultimate End" 2016 Marvel 1 issue 510509 (via our own name without the filing suffix "Ultimate End") · 82109 "Ultimate End" 2015 Marvel 5 (via our own name without the filing suffix "Ultimate End")   (rip lookup)
+   GCD dump:       95479 "Ultimate End" 2016-2016 Marvel [] 1 (via our own name without the filing suffix "Ultimate End") · 101072 "Ultimate End" [de] 2016-? Panini Deutschland [] 1 (via our own name without the filing suffix "Ultimate End") · 89425 "Ultimate End" 2015-2016 Marvel [] 5 (via our own name without the filing suffix "Ultimate End") · 93714 "Ultimate End" [es-mx] 2015-? Editorial Televisa [] 1 (via our own name without the filing suffix "Ultimate End")   (dump lookup)
+
+== S18524 The End  [tier B]   keys: The End  years 2013-2013  1 files / 0 collections
+   split: the KEPT half of the P-033 split — moved out -> S103960 "Ultimate End (2015)"; re-identify what stayed
+   folders: [1] Fantagraphics
+   files:   [25194] The End (2013) (digital-Empire).cbz (79pp)
+   CV linked:      vol 63308 "The End" 2013 Fantagraphics 1 issues issue 410387  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 0/?; none cached
+   CV candidates:  (= linked) · 52979 "The End" 2007 Fantagraphics 1 issue 361386 s106 · 74172 "The End" 2014 Padraic Productions 1 issue 453609 s94 · 51488 "End" 1998 Slab-O-Concrete 2 s60 · 92835 "End" 2013 Splitter 1 issue 542873 s58 · 81568 "End" 2012 Bao Publishing 1 issue 487036 s58 · 129901 "The End" 2020 Marvel 1 issue 796439 s43   (v1 search)
+   CV local rip:   (= linked) · 92835 "End" 2013 Splitter 1 issue 542873 · 74172 "The End" 2014 Padraic Productions 1 issue 453609 · 81568 "End" 2012 Bao Publishing 1 issue 487036 · 52979 "The End" 2007 Fantagraphics 1 issue 361386 · 129901 "The End" 2020 Marvel 1 issue 796439   (rip lookup)
+   GCD dump:       75012 "The End" 2013-2013 Fantagraphics [] 1 · 88653 "End" [de] 2013-2013 Splitter Verlag [] 1 · 79406 "End" [nl] 2014-? Silvester [] 1 · 124832 "END" [fr] 2012-2012 Soleil [] 1 · 206220 "END" [fr] 2017-2017 Pascal Cataye [] 1 · 142719 "The End" [fr] 2018-2018 Rue de Sèvres [] 1   (dump lookup)
+
+== S103959 Mighty Morphin / Power Rangers Deluxe Edition (2023)  [tier D]   keys: Mighty Morphin / Power Rangers Deluxe Edition (2023)  years 2023-2024  3 files / 3 collections
+   split run: "Mighty Morphin / Power Rangers Deluxe Edition (2023)" run={"cv": 159923, "gcd": 205362} (new shelf from P-033) — seed the S line from these ids, then verify them
+   folders: [3] Boom Studios\Mighty Morphin Power Rangers (2016)\01 Mighty Morphin Power Rangers v1 (2016)\Deluxe Editions
+   files:   [10326] COL Mighty Morphin-Power Rangers - Deluxe Edition - Book 01 (2023) (Digital) (Kileko-Empire).cbz (577pp)
+            [10327] COL Mighty Morphin-Power Rangers - Deluxe Edition - Book 02 (2024) (Digital) (Kileko-Empire).cbz (529pp)
+            [10328] COL Mighty Morphin-Power Rangers - Deluxe Edition - Book 03 (2024) (Digital) (dekabro-Empire).cbz (504pp)
+   ours:    ComicInfo Series: "Mighty Morphin / Power Rangers Book Three Deluxe Edition"x1
+   CV local rip:   159923 "Mighty Morphin / Power Rangers Deluxe Edition" 2023 Boom! Studios 3 (via our own name without the filing suffix "Mighty Morphin / Power Rangers Deluxe Edition")   (rip lookup)
+   GCD dump:       205362 "Mighty Morphin Power Rangers Deluxe Edition" 2023-2024 Boom! Studios [] 3 (via our own name without the filing suffix "Mighty Morphin / Power Rangers Deluxe Edition")   (dump lookup)
+
+== S98522 Mighty Morphin Power Rangers  [tier C] · 3 named, the minority on >= 2 files or >= 10%  keys: Mighty Morphin Power Rangers v1 (2016)  years 2016-2022  24 files / 20 collections
+   split: the KEPT half of the P-033 split — moved out -> S103959 "Mighty Morphin / Power Rangers Deluxe Edition (2023)"; re-identify what stayed
+   folders: [14] Boom Studios\Mighty Morphin Power Rangers (2016)\01 Mighty Morphin Power Rangers v1 (2016) · [7] Boom Studios\Mighty Morphin Power Rangers (2016)\01 Mighty Morphin Power Rangers v1 (2016)\Deluxe Editions · [3] Boom Studios\Mighty Morphin Power Rangers (2016)\01 Mighty Morphin Power Rangers v1 (2016)\Annuals and Specials
+   files:   [10314] Mighty Morphin Power Rangers Annual 001 (2016) (Digital) (Kileko-Empire).cbr (46pp) | [10315] Mighty Morphin Power Rangers Annual 002 (2017) (Digital) (Kileko-Empire).cbr (44pp)
+            [10316] Mighty Morphin Power Rangers Annual 003 (2018) (Digital) (danke-Empire).cbz (44pp) | [10319] Mighty Morphin Power Rangers - Beyond the Grid (2020) (Digital-Empire).cbr (182pp)
+            [10320] COL Mighty Morphin Power Rangers - Beyond the Grid Deluxe Edition (2020) (Digital) (Kileko-Empire).cbz (360pp)
+            [10321] COL Mighty Morphin Power Rangers - Necessary Evil Part One Deluxe Edition (2022) (Digital) (Asgard-Empire).cbz (489pp)
+            [10322] COL Mighty Morphin Power Rangers - Necessary Evil Part Two Deluxe Edition (2022) (Digital) (Kileko-Empire).cbz (450pp)
+            [10323] COL Mighty Morphin Power Rangers - Shattered Grid Deluxe Edition (2019) (Digital) (Kileko-Empire).cbz (484pp)
+            [10324] COL Mighty Morphin Power Rangers - Year One Deluxe Edition (2019) (Digital) (Kileko-Empire).cbz (500pp)
+            [10325] COL Mighty Morphin Power Rangers - Year Two Deluxe Edition (2019) (Digital) (Kileko-Empire).cbz (500pp)
+            [10330] COL Mighty Morphin Power Rangers Vol. 01 (2016) (Digital) (Kileko-Empire).cbr (143pp)
+            [10331] COL Mighty Morphin Power Rangers Vol. 02 (2017) (Digital) (Kileko-Empire).cbr (113pp)
+            [10332] COL Mighty Morphin Power Rangers Vol. 03 (2017) (Digital) (Kileko-Empire).cbr (112pp)
+            [10333] COL Mighty Morphin Power Rangers Vol. 04 (2017) (Digital) (Kileko-Empire).cbr (101pp)
+            [10334] COL Mighty Morphin Power Rangers Vol. 05 (2018) (Digital) (Kileko-Empire).cbr (113pp)
+            [10335] COL Mighty Morphin Power Rangers Vol. 06 (2018) (Digital) (Kileko-Empire).cbr (113pp)
+            [10336] COL Mighty Morphin Power Rangers Vol. 07 - Shattered Grid 01 (2019) (Digital) (Kileko-Empire).cbz (110pp)
+            [10337] COL Mighty Morphin Power Rangers Vol. 08 - Shattered Grid 02 (2019) (Digital) (Kileko-Empire).cbz (109pp)
+            [10338] COL Mighty Morphin Power Rangers Vol. 09 - Beyond the Grid 01 (2019) (Digital) (Kileko-Empire).cbz (99pp)
+            [10339] COL Mighty Morphin Power Rangers Vol. 10 - Beyond the Grid 02 (2020) (Digital) (Kileko-Empire).cbz (117pp)
+            [10340] COL Mighty Morphin Power Rangers Vol. 11 - Necessary Evil 01 (2020) (Digital) (Kileko-Empire).cbz (114pp)
+            [10341] COL Mighty Morphin Power Rangers Vol. 12 - Necessary Evil 02 (2020) (Digital) (Kileko-Empire).cbz (112pp)
+            [10342] COL Mighty Morphin Power Rangers Vol. 13 - Necessary Evil 03 (2020) (Digital) (Kileko-Empire).cbz (103pp)
+            [10343] COL Mighty Morphin Power Rangers Vol. 14 (2021) (Digital) (Kileko-Empire).cbz (127pp)
+   ours:    ladder 1-3; judged item 10319 #31-35 conf 0.95; ComicInfo Series: "Mighty Morphin Power Rangers"x11, "Mighty Morphin Power Rangers: Necessary Evil Part One Deluxe Edition"x1; ComicInfo Publisher: "BOOM! Studios"x12
+   GCD says: [10330] gcd notes 1745709 (#1 of Mighty Morphin Power Rangers): Mighty Morphin Power Rangers (Boom! Studios, 2016 series) #0-4  |  gcd_reprint 1745709: s95502 Mighty Morphin Power Rangers (2016) #0-4 [5 stories]
+             [10333] gcd notes 1745712 (#4 of Mighty Morphin Power Rangers): Mighty Morphin Power Rangers (Boom! Studios, 2016 series) #13-16
+             [10334] gcd notes 1801573 (#5 of Mighty Morphin Power Rangers): Mighty Morphin Power Rangers (Boom! Studios, 2016 series) #17-20
+             [10335] gcd notes 1942403 (#6 of Mighty Morphin Power Rangers): Mighty Morphin Power Rangers (Boom! Studios, 2016 series) #21-24  |  gcd_reprint 1942403: s95502 Mighty Morphin Power Rangers (2016) #22 [1 story]
+             [10336] gcd notes 1942404 (#7 of Mighty Morphin Power Rangers): Mighty Morphin Power Rangers (Boom! Studios, 2016 series) #25-28  |  gcd_reprint 1942404: s95502 Mighty Morphin Power Rangers (2016) #26 [1 story]
+             [10338] gcd notes 2151369 (#9 of Mighty Morphin Power Rangers): Mighty Morphin Power Rangers (Boom! Studios, 2016 series) #31-34
+             [10339] gcd notes 2151370 (#10 of Mighty Morphin Power Rangers): Mighty Morphin Power Rangers (Boom! Studios, 2016 series) #35-39
+             [10340] gcd notes 2151371 (#11 of Mighty Morphin Power Rangers): Mighty Morphin Power Rangers (Boom! Studios, 2016 series) #40-43
+             [10341] gcd notes 2151372 (#12 of Mighty Morphin Power Rangers): Mighty Morphin Power Rangers (Boom! Studios, 2016 series) #44-47
+   CV linked:      vol 87332 "Mighty Morphin Power Rangers" 2016 Boom! Studios 79 issues; cached #0-122 (79); yearΔ 0; ratio 3/79 = 0.04; 1 of 1 judged fit; v1 per-file: same volume on 3/24 files
+   CV local rip:   (= linked) · 94128 "Mighty Morphin Power Rangers" 2016 Boom! Studios 14 · 73583 "Mighty Morphin Power Rangers" 2014 NBM 1 issue 452069 · 135564 "Mighty Morphin/Power Rangers" 2021 Boom! Studios 1 issue 844864 · 166254 "Mighty Morphin Power Rangers" 1997 TM-Semic 7 · 27939 "Mighty Morphin Power Rangers" 1995 Hamilton Comics 4   (rip lookup)
+   GCD per-file:   series 95502 "Mighty Morphin Power Rangers" 2016-2020 Boom! Studios [was ongoing series] 56 on 1/24 files · series 113476 "Mighty Morphin Power Rangers" [de] 2017-? Panini Deutschland [] 3 on 1/24 files · series 199304 "Mighty Morphin Power Rangers" [fr] 2017-2019 Glénat [série continue terminée [was ongoing series]] 4 on 1/24 files; methods numx3
+   GCD dump:       (= per-file) · 117865 "Mighty Morphin Power Rangers" 2016-2021 Boom! Studios [] 13 · 81611 "Mighty Morphin Power Rangers" 2014-2014 NBM [] 2 · 81612 "Mighty Morphin Power Rangers" 2014-2014 NBM [] 2   (dump lookup)
+   bridges:        gcd 95502 -> LOCG 121243 "Mighty Morphin Power Rangers" support 3 · gcd 113476 -> LOCG 121243 "Mighty Morphin Power Rangers" support 3 · gcd 199304 -> LOCG 121243 "Mighty Morphin Power Rangers" support 1
+
+== S103496 Mighty Morphin Power Rangers: Recharged (2022)  [tier C] · ratio 0.17  keys: Mighty Morphin Power Rangers: Recharged (2022)  years 2023-2024  9 files / 5 collections
+   split run: "Mighty Morphin Power Rangers: Recharged (2022)" run=- (new shelf from P-033) — seed the S line from these ids, then verify them
+   folders: [9] Boom Studios\Mighty Morphin Power Rangers (2016)\04 Mighty Morphin Power Rangers v1 (2022)
+   files:   [10356] COL Mighty Morphin Power Rangers - Recharged v01 (2023) (Digital) (Asgard-Empire).cbz (113pp)
+            [10357] COL Mighty Morphin Power Rangers - Recharged v02 (2023) (Digital) (Asgard-Empire).cbz (112pp)
+            [10358] COL Mighty Morphin Power Rangers - Recharged v03 (2024) (Digital) (Asgard-Empire).cbz (113pp)
+            [10359] COL Mighty Morphin Power Rangers - Recharged v04 (2024) (Digital-Empire).cbr (113pp) | [10360] COL Mighty Morphin Power Rangers - Recharged v05 (2024) (Digital-Empire).cbz (112pp)
+            [10361] Mighty Morphin Power Rangers 119 (2024) (Digital) (dekabro-Empire).cbz (24pp) | [10362] Mighty Morphin Power Rangers 120 (2024) (Digital) (dekabro-Empire).cbz (23pp)
+            [10363] Mighty Morphin Power Rangers 121 (2024) (Digital) (dekabro-Empire).cbz (23pp) | [10364] Mighty Morphin Power Rangers 122 (2024) (3 covers) (Digital) (dekabro-Empire).cbz (23pp)
+   ours:    ladder 119-122; ComicInfo Series: "Mighty Morphin Power Rangers"x4, "Mighty Morphin Power Rangers: Recharged"x2; ComicInfo Publisher: "BOOM! Studios"x6
+   CV per-file (v1): vol 87332 "Mighty Morphin Power Rangers" 2016 Boom! Studios 79 on 4/9 files
+   CV local rip:   (= per-file) · 158832 "Mighty Morphin Power Rangers: Recharged" 2022 Boom! Studios 6 (via our own name without the filing suffix "Mighty Morphin Power Rangers: Recharged") · 135564 "Mighty Morphin/Power Rangers" 2021 Boom! Studios 1 issue 844864 (via CV name "Mighty Morphin Power Rangers") · 94128 "Mighty Morphin Power Rangers" 2016 Boom! Studios 14 (via CV name "Mighty Morphin Power Rangers") · 73583 "Mighty Morphin Power Rangers" 2014 NBM 1 issue 452069 (via CV name "Mighty Morphin Power Rangers") · 166254 "Mighty Morphin Power Rangers" 1997 TM-Semic 7 (via CV name "Mighty Morphin Power Rangers")   (rip lookup)
+   GCD per-file:   series 189937 "Mighty Morphin Power Rangers" 2022-2024 Boom! Studios [was ongoing series] 23 on 4/9 files; methods numx4
+   GCD dump:       (= per-file) · 199660 "Mighty Morphin Power Rangers: Recharged" 2023-2024 Boom! Studios [] 6 (via our own name without the filing suffix "Mighty Morphin Power Rangers: Recharged") · 237607 "Mighty Morphin Power Rangers" 2026-? Boom! Studios [] 1 (via CV name "Mighty Morphin Power Rangers") · 113476 "Mighty Morphin Power Rangers" [de] 2017-? Panini Deutschland [] 3 (via CV name "Mighty Morphin Power Rangers") · 199304 "Mighty Morphin Power Rangers" [fr] 2017-2019 Glénat [] 4 (via CV name "Mighty Morphin Power Rangers") · 95502 "Mighty Morphin Power Rangers" 2016-2020 Boom! Studios [] 56 (via CV name "Mighty Morphin Power Rangers")   (dump lookup)
+   bridges:        gcd 189937 -> LOCG 160104 "Mighty Morphin Power Rangers" support 4
+
+== S11054 Lucky Luke: The Complete Collection  [tier B]   keys: Lucky Luke: The Complete Collection  years 2019-2022  5 files / 5 collections
+   split run: "Lucky Luke: The Complete Collection" run=- (new shelf from P-033) — seed the S line from these ids, then verify them
+   folders: [5] Cinebook\Lucky Luke (2019)\Trades
+   files:   [11297] COL Lucky Luke - The Complete Collection v01 (2019) (Cinebook) (digital) (Lynx-Empire).cbr (214pp)
+            [11298] COL Lucky Luke - The Complete Collection v02 (2019) (Cinebook) (digital) (Lynx-Empire).cbr (218pp)
+            [11299] COL Lucky Luke - The Complete Collection v03 (2019) (digital) (Mr Norrell-Empire).cbr (216pp)
+            [11300] COL Lucky Luke - The Complete Collection v04 (2021) (digital) (Mr Norrell-Empire).cbr (146pp)
+            [11301] COL Lucky Luke - The Complete Collection v05 (2021) (digital) (Mr Norrell-Empire).cbr (146pp)
+   ours:    ComicInfo Series: "Lucky Luke: The Complete Collection"x2; ComicInfo Publisher: "Cinebook"x2
+   CV linked:      vol 121268 "Lucky Luke: The Complete Collection" 2019 Cinebook 5 issues; cached #1-5 (5); yearΔ 0; ratio 0/5; no judged range
+   CV candidates:  (= linked) · 48134 "Lucky Luke" 2006 Cinebook 83 s78 · 128638 "Lucky Luke" 2012 Hjemmet 1 issue 779399 s73 · 125625 "Lucky Luke " 1992 Egmont Polska 18 s58 · 165634 "Lucky Luke" 1949 Lucky Comics 73 s57 · 32180 "Lucky Luke" 1949 Lucky Comics 72 s57 · 121341 "Lucky Luke" 1971 Interpresse (DK) 55 s57   (v1 search)
+   CV local rip:   (= linked) · 149698 "Lucky Luke" 2016 Ediciones Kraken 2 (via CV candidate name "Lucky Luke") · 128638 "Lucky Luke" 2012 Hjemmet 1 issue 779399 (via CV candidate name "Lucky Luke") · 128490 "Lucky Luke" 2009 Egmont Polska 5 (via CV candidate name "Lucky Luke") · 48134 "Lucky Luke" 2006 Cinebook 83 (via CV candidate name "Lucky Luke") · 127770 "Lucky Luke" 2003 Bookglobe 31 (via CV candidate name "Lucky Luke")   (rip lookup)
+   GCD dump:       149589 "Lucky Luke - The Complete Collection" [en-gb] 2019-? Cinebook [] 6 · 170962 "Lucky Luke" [pt] 2020-? A Seita [] 5 (via CV candidate name "Lucky Luke") · 216330 "Lucky Luke" [pl] 2016-? Egmont Polska [] 78 (via CV candidate name "Lucky Luke") · 230205 "Lucky Luke" [hu] 2016-? Pesti Könyv [] 25 (via CV candidate name "Lucky Luke") · 221782 "Lucky Luke" [ro] 2023-? Editura Grafic [] 3 (via CV candidate name "Lucky Luke") · 173791 "Lucky Luke" [pt-br] 2014-? Zarabatana Books [] 2 (via CV candidate name "Lucky Luke")   (dump lookup)
+
+== S11051 Lucky Luke  [tier C] · 6 named, the minority on >= 2 files or >= 10%  keys: Lucky Luke | Lucky Luke - Swiss Bliss  years 2006-2022  84 files / 0 collections
+   split: the KEPT half of the P-033 split — moved out -> S11054 "Lucky Luke: The Complete Collection"; re-identify what stayed
+   folders: [83] Cinebook\Lucky Luke (2019) · [1] Cinebook\Lucky Luke (2019)\Trades
+   files:   [11212] Lucky Luke 001 - Billy The Kid (2007, 3rd print) (digital) (The Magicians-Empire).cbr (50pp)
+            [11213] Lucky Luke 002 - Ghost Town (2007, 2nd print) (digital) (The Magicians-Empire).cbr (50pp)
+            [11214] Lucky Luke 003 - Dalton City (2007, 2nd print) (digital) (The Magicians-Empire).cbr (50pp)
+            [11215] Lucky Luke 004 - Jesse James (2008, 2nd print) (digital) (The Magicians-Empire).cbr (50pp)
+            [11216] Lucky Luke 005 - In the Shadows of the Derricks (2007, 2nd print) (digital) (The Magicians-Empire).cbr (50pp)
+            [11217] Lucky Luke 006 - Ma Dalton (2007) (Digital) (Bean-Empire).cbz (49pp) | [11218] Lucky Luke 007 - Barbed Wire on the Prairie (2007) (Digital) (Bean-Empire).cbz (49pp)
+            [11219] Lucky Luke 008 - Calamity Jane (2007) (digital) (The Magicians-Empire).cbr (50pp) | [11220] Lucky Luke 009 - The Wagon Train (2008) (Digital) (Bean-Empire).cbz (49pp)
+            [11221] Lucky Luke 010 - Tortillas for the Daltons (2008) (Digital) (Bean-Empire).cbz (49pp) | [11222] Lucky Luke 011 - Western Circus (2008) (Empire-Lynx).cbr (50pp)
+            [11223] Lucky Luke 012 - The Rivals of Painful Gulch (2008) (digital) (Empire-Lynx).cbr (50pp) | [11224] Lucky Luke 013 - The Tenderfoot (2008) (digital) (Lynx-Empire).cbr (50pp)
+            [11225] Lucky Luke 014 - The Dashing White Cowboy (2008) (digital) (The Magicians-Empire).cbr (50pp)
+            [11226] Lucky Luke 015 - The Daltons in the Blizzard (2009) (digital) (The Magicians-Empire).cbr (50pp)
+            [11227] Lucky Luke 016 - The Black Hills (2009) (digital) (The Magicians-Empire).cbr (50pp) | [11228] Lucky Luke 017 - Apache Canyon (2009) (digital) (The Magicians-Empire).cbr (50pp)
+            [11229] Lucky Luke 018 - The Escort (2009) (digital) (Lynx-Empire).cbr (50pp) | [11230] Lucky Luke 019 - On the Daltons' Trail (2009) (digital) (Lynx-Empire).cbr (50pp)
+            [11231] Lucky Luke 020 - The Oklahoma Land Rush (2009) (digital) (Lynx-Empire).cbr (50pp) | [11232] Lucky Luke 021 - The 20th Cavalry (2010) (digital) (Lynx-Empire).cbr (50pp)
+            [11233] Lucky Luke 022 - Emperor Smith (2010) (digital) (Lynx-Empire).cbr (50pp) | [11234] Lucky Luke 023 - A Cure for the Daltons (2010) (digital) (Lynx-Empire).cbr (50pp)
+            [11235] Lucky Luke 024 - The Judge (2010) (digital) (Lynx-Empire).cbr (50pp) | [11236] Lucky Luke 025 - The Stagecoach (2010) (digital) (Lynx-Empire).cbr (50pp)
+            [11237] Lucky Luke 026 - The Bounty Hunter (2010) (digital) (Lynx-Empire).cbr (50pp) | [11238] Lucky Luke 027 - Lucky Luke Versus Joss Jamon (2011) (Digital) (Lynx-Empire).cbr (52pp)
+            [11239] Lucky Luke 028 - The Dalton Cousins (2011) (Digital) (Lynx-Empire).cbr (52pp) | [11240] Lucky Luke 029 - The Grand Duke (2011) (Digital) (Lynx-Empire).cbr (52pp)
+            [11241] Lucky Luke 030 - The Daltons’ Escape (2011) (Digital) (Lynx-Empire).cbr (52pp) | [11242] Lucky Luke 031 - ... versus the Pinkertons (2011) (digital) (Lynx-Empire).cbr (50pp)
+            [11243] Lucky Luke 032 - Rails on the Prairie (2011) (digital) (Lynx-Empire).cbr (50pp) | [11244] Lucky Luke 033 - The One-Armed Bandid (2012) (digital) (Lynx-Empire).cbr (50pp)
+            [11245] Lucky Luke 034 - The Daltons Always on the Run (2012) (digital) (Lynx-Empire).cbr (50pp) | [11246] Lucky Luke 035 - The Singing Wire (2012) (digital) (Lynx-Empire).cbr (50pp)
+            [11247] Lucky Luke 036 - The Daltons Redeem Themselves (2012) (Cinebook) (digital-HD) (Lynx-Empire).cbr (50pp)
+            [11248] Lucky Luke 037 - Fingers (2012) (Cinebook) (digital-HD) (Lynx-Empire).cbr (48pp)
+            [11249] Lucky Luke 038 - Doc Doxey's Elixir (2012) (Cinebook) (digital-HD) (Lynx-Empire).cbr (50pp)
+            [11250] Lucky Luke 039 - The Man from Washington (2013) (Cinebook) (digital-HD) (Lynx-Empire).cbr (48pp)
+            [11251] Lucky Luke 040 - Phil Wire (2013) (Cinebook) (digital-HD) (Lynx-Empire).cbr (48pp) | [11252] Lucky Luke 041 - The Daily Star (2013) (Cinebook) (digital-HD) (Lynx-Empire).cbr (49pp)
+            [11253] Lucky Luke 042 - Lone Riders (2013) (Cinebook) (digital-HD) (Lynx-Empire).cbr (49pp)
+            [11254] Lucky Luke 043 - The Bluefeet are Coming! (2013) (Cinebook) (digital-HD) (Lynx-Empire).cbr (49pp)
+            [11255] Lucky Luke 044 - ... versus Pat Poker (2013) (Cinebook) (digital-HD) (Lynx-Empire).cbr (49pp)
+            [11256] Lucky Luke 045 - Tying the Knot (2014) (Cinebook) (digital-HD) (Lynx-Empire).cbr (49pp)
+            [11257] Lucky Luke 046 - The Pony Express (2014) (Cinebook) (digital-HD) (Lynx-Empire).cbr (49pp) | [11258] Lucky Luke 047 - Outlaws (2014) (Cinebook) (digital-HD) (Lynx-Empire).cbr (50pp)
+            [11259] Lucky Luke 048 - Dick Digger's Gold Mine (2014) (Cinebook) (digital-HD) (Lynx-Empire).cbr (49pp)
+            [11260] Lucky Luke 049 - The Dalton's Amnesia (2014) (Cinebook-HD) (digital) (Lynx-Empire).cbr (49pp)
+            [11261] Lucky Luke 050 - Seven Stories (2014) (Cinebook) (digital-HD) (Lynx-Empire).cbr (50pp)
+            [11262] Lucky Luke 051 - The Painter (2015) (Cinebook) (digital-HD) (Lynx-Empire).cbr (50pp)
+            [11263] Lucky Luke 052 - The Beautiful Province (2015) (Cinebook) (digital-HD) (Lynx-Empire).cbr (51pp)
+            [11264] Lucky Luke 053 - Nitroglycerin (2015) (Cinebook) (digital-HD) (Lynx-Empire).cbr (50pp) | [11265] Lucky Luke 054 - Rodeo (2015) (Cinebook) (digital-HD) (Lynx-Empire).cbr (66pp)
+            [11266] Lucky Luke 055 - Arizona (2015) (Cinebook) (digital-HD) (Lynx-Empire).cbr (50pp)
+            [11267] Lucky Luke 056 - Under a Western Sky (2015) (Cinebook) (digital-HD) (Lynx-Empire).cbr (50pp)
+            [11268] Lucky Luke 057 - Legends of the West (2016) (Cinebook) (digital-HD) (Lynx-Empire).cbr (50pp) | [11269] Lucky Luke 058 - The Daltons' Stash (Digital) (Cinebook).cbr (49pp)
+            [11270] Lucky Luke 059 - Bride of Lucky Luke (2016) (Digital) (Cinebook).cbr (50pp) | [11271] Lucky Luke 060 - The Ballad of the Daltons (2016) (Digital) (Cinebook).cbr (50pp)
+            [11272] Lucky Luke 061 - Daisy Town (Digital) (Cinebook).cbr (49pp) | [11273] Lucky Luke 062 - The Cursed Ranch (2016) (MagicMan-DCP).cbr (50pp)
+            [11274] Lucky Luke 063 - Sarah Bernhardt (2016) (MagicMan-DCP).cbr (50pp) | [11275] Lucky Luke 064 - The Wedding Crashers (2017) (MagicMan-DCP).cbr (50pp)
+            [11276] Lucky Luke 065 - Ghost Hunt (2017) (MagicMan-DCP).cbr (50pp) | [11277] Lucky Luke 066 - The Promised Land (2017) (MagicMan-DCP).cbr (50pp)
+            [11278] Lucky Luke 067 - Belle Starr (2018) (MagicMan-DCP).cbr (50pp) | [11279] Lucky Luke 068 - Bridge Over the Mississippi (2018) (Cinebook) (Digital-Empire).cbr (49pp)
+            [11280] Lucky Luke 069 - Kid Lucky (2018) (Cinebook) (Digital-Empire).cbr (50pp) | [11281] Lucky Luke 070 - The O.K. Corral (2018) (Cinebook) (Digital-Empire).cbr (50pp)
+            [11282] Lucky Luke 071 - A Cowboy in Paris (2018) (Cinebook) (Digital-Empire).cbr (50pp) | [11283] Lucky Luke 072 - Marcel Dalton (2019) (Cinebook) (Digital-Empire).cbr (50pp)
+            [11284] Lucky Luke 073 - The Prophet (2019) (Cinebook) (Digital-Empire).cbr (50pp) | [11285] Lucky Luke 074 - The Klondike (2020) (digital) (Mr Norrell-Empire).cbr (50pp)
+            [11286] Lucky Luke 075 - Rin Tin Can's Inheritance (2020) (digital) (Mr Norrell-Empire).cbr (50pp) | [11287] Lucky Luke 076 - Oklahoma Jim (2020) (digital) (Mr Norrell-Empire).cbr (50pp)
+            [11288] Lucky Luke 077 - A Cowboy in High Cotton (2021) (digital) (Mr Norrell-Empire).cbr (50pp)
+            [11289] Lucky Luke 078 - The Dalton Uncles (2021) (digital) (Mr Norrell-Empire).cbr (50pp)
+            [11290] Lucky Luke 079 - Steaming Up the Mississippi (2021) (digital) (Mr Norrell-Empire).cbr (50pp) | [11291] Lucky Luke 080 - The Alibi (2021) (digital) (Mr Norrell-Empire).cbr (50pp)
+            [11292] Lucky Luke 081 - The Hanged Man's Rope and Other Stories (2022) (digital) (Mr Norrell-Empire).cbr (50pp)
+            [11293] Lucky Luke 082 - Rin Tin Can's Ark (2022) (digital) (Mr Norrell-Empire).cbr (50pp) | [11294] Lucky Luke 83 - Untamed (Cinebook 2024).cbz (50pp)
+            [11296] Lucky Luke - Swiss Bliss (2021) (digital) (Mr Norrell-Empire).cbr (65pp)
+   ours:    ladder 1-83; ComicInfo Series: "Lucky Luke"x4; ComicInfo Publisher: "Cinebook"x4
+   CV linked:      vol 48134 "Lucky Luke" 2006 Cinebook 83 issues; cached #1-83 (83); yearΔ 0; ratio 83/83 = 1.00; no judged range; v1 per-file: same volume on 84/84 files
+   CV candidates:  (= linked) · 165634 "Lucky Luke" 1949 Lucky Comics 73 s92 · 32180 "Lucky Luke" 1949 Lucky Comics 72 s92 · 88291 "Lucky Luke" 1977 Egmont Ehapa Verlag 88 s92 · 121341 "Lucky Luke" 1971 Interpresse (DK) 55 s85 · 128638 "Lucky Luke" 2012 Hjemmet 1 issue 779399 s85 · 123058 "Lucky Luke" 1977 Semic/Nordisk Forlag AS 56 s85   (v1 search)
+   CV local rip:   (= linked) · 127770 "Lucky Luke" 2003 Bookglobe 31 · 128490 "Lucky Luke" 2009 Egmont Polska 5 · 128638 "Lucky Luke" 2012 Hjemmet 1 issue 779399 · 149698 "Lucky Luke" 2016 Ediciones Kraken 2 · 127601 "lucky luke" 1995 Semic Press AB 1 issue 766005   (rip lookup)
+   GCD per-file:   series 216330 "Lucky Luke" [pl] 2016-? Egmont Polska [] 78 on 16/84 files · series 99684 "Lucky Luke" [hr] 2003-2013 Bookglobe [Ongoing Series] 38 on 8/84 files · series 53882 "Lucky Luke" [no] 1991-? Hjemmet / Egmont [] 47 on 6/84 files · series 168070 "Lucky Luke" [it] 2013-2014 La Gazzetta dello Sport [] 44 on 6/84 files; methods numx40
+   GCD dump:       (= per-file) · 179918 "Lucky Luke" [fr] 2007-2011 France Loisirs [] 15 · 225952 "Lucky Luke" [es] 2005-2006 Planeta DeAgostini [] 27 · 231391 "Lucky Luke" [fi] 2004-2008 Egmont Kustannus [] 20 · 76492 "Lucky Luke" [pl] 2009-2015 Egmont Polska [] 7   (dump lookup)
+
+== S103957 CBLDF Defender v2 (2017)  [tier B]   keys: CBLDF Defender v2 (2017)  years 2015-2015  4 files / 0 collections
+   split run: "CBLDF Defender v2 (2017)" run={"cv": 99852} (new shelf from P-033) — seed the S line from these ids, then verify them
+   flags: #198 label-ambiguous [Pending] item 11473 — four 15-16 pp CBLDF Defender v2 issues carry a collection format
+   folders: [4] Comic Book Legal Defense Fund\CBLDF Defender v2 (2017)
+   files:   [11473] CBLDF Defender v2 001 (2017) (digital) (Son of Ultron-Empire).cbr (16pp) | [11474] CBLDF Defender v2 002 (2017) (digital) (Son of Ultron-Empire).cbr (16pp)
+            [11475] CBLDF Defender v2 003 (2017) (digital) (Son of Ultron-Empire).cbr (15pp) | [11476] CBLDF Defender v2 004 (2017) (digital) (Son of Ultron-Empire).cbr (16pp)
+   ours:    ladder 1-4
+   CV per-file (v1): vol 81139 "CBLDF Defender" 2015 Creator Owned Comics 8 on 4/4 files
+   CV local rip:   (= per-file) · 99852 "CBLDF Defender" 2017 Creator Owned Comics 4 (via our own name without the filing suffix "CBLDF Defender") · 109233 "CBLDF Defender" 2018 Creator Owned Comics 1 issue 663210 (via our own name without the filing suffix "CBLDF Defender")   (rip lookup)
+
+== S3297 CBLDF Defender  [tier B]   keys: CBLDF Defender  years 2015-2016  8 files / 0 collections
+   split: the KEPT half of the P-033 split — moved out -> S103957 "CBLDF Defender v2 (2017)"; re-identify what stayed
+   folders: [8] Comic Book Legal Defense Fund\CBLDF Defender v1 (2015)
+   files:   CBLDF Defender 001 (2015) (digital) (Son of Ultron-Empire).cbr … CBLDF Defender 007 (2016) (digital) (Son of Ultron-Empire).cbr  (7 files, pp 14-17)
+            [11472] CBLDF Defender 008 (2016) (digital-Empire).cbr (16pp)
+   ours:    ladder 1-8
+   CV linked:      vol 81139 "CBLDF Defender" 2015 Creator Owned Comics 8 issues; cached #1-8 (8); yearΔ 0; ratio 8/8 = 1.00; no judged range; v1 per-file: same volume on 8/8 files
+   CV local rip:   (= linked) · 99852 "CBLDF Defender" 2017 Creator Owned Comics 4 · 109233 "CBLDF Defender" 2018 Creator Owned Comics 1 issue 663210   (rip lookup)
+
+== S103961 Wynd: The Power of the Blood (2024)  [tier C] · ratio 0.25  keys: Wynd: The Power of the Blood (2024)  years 2024-2025  2 files / 0 collections
+   split run: "Wynd: The Power of the Blood (2024)" run={"cv": 161163, "gcd": 217569} (new shelf from P-033) — seed the S line from these ids, then verify them
+   folders: [2] Boom Studios\Wynd (2020)\Wynd Book 04 - The Power of the Blood (2024)
+   files:   [11032] Wynd - The Power of the Blood 001 (2024) (digital) (Son of Ultron-Empire).cbr (44pp) | [11033] Wynd - The Power of the Blood 002 (2025) (digital) (Son of Ultron-Empire).cbr (47pp)
+   ours:    ladder 1-2
+   CV per-file (v1): vol 161163 "Wynd: The Power of the Blood" 2024 Boom! Studios 6 on 2/2 files
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD per-file:   series 217569 "Wynd: The Power of the Blood" 2024-2026 Boom! Studios [limited series] 8 on 2/2 files; methods numx2; the dump names no other series
+
+== S22115 Wynd  [tier B]   keys: Wynd | Wynd - The Power of the Blood | Wynd Book Three: The Throne in the Sky  years 2021-2023  3 files / 3 collections
+   split: the KEPT half of the P-033 split — moved out -> S103961 "Wynd: The Power of the Blood (2024)"; re-identify what stayed
+   folders: [3] Boom Studios\Wynd (2020)
+   files:   [11029] COL Wynd Book 01 - The Flight of the Prince (2021) (Digital) (DR & Quinch-Empire).cbr (244pp)
+            [11030] COL Wynd Book 02 - The Secret of the Wings (2022) (Digital) (DR & Quinch-Empire).cbr (231pp)
+            [11031] COL Wynd Book 03 - The Throne in the Sky (2023) (Digital) (DR & Quinch-Empire).cbr (220pp)
+   ours:    judged item 11029 #1-5 conf 0.95; judged item 11031 #1-5 conf 0.95; judged item 11030 #6-10 conf 0.95; ComicInfo Series: "Wynd"x1, "Wynd Book Three: The Throne in the Sky"x1; ComicInfo Publisher: "BOOM! Studios"x2
+   GCD says: [11029] gcd_reprint 2218373: s160929 Wynd (2020) #1-5 [12 stories]
+             [11030] gcd_reprint 2331338: s160929 Wynd (2020) #6-10 [14 stories]
+             [11031] gcd_reprint 2557352: s188469 Wynd: The Throne in the Sky (2022) #1-5 [5 stories]
+   CV linked:      vol 135402 "Wynd" 2021 Boom! Studios 3 issues; cached #2-2 (1); yearΔ 0; ratio 0/3; 2 of 3 judged fit
+   CV candidates:  (= linked) · 127982 "Wynd" 2020 Boom! Studios 10 s105 · 106497 "Castle In the Sky Picture Book" 2017 Viz 1 issue 643236 s54 · 161163 "Wynd: The Power of the Blood" 2024 Boom! Studios 8 s53 · 118745 "BOOM! Studios Free Comic Book Day 2019" 2019 Boom! Studios 1 issue 707835 s42 · 90245 "BOOM! Studios 2016 Summer Blast" 2016 Boom! Studios 1 issue 529160 s41 · 101256 "BOOM! Studios 2017 Summer Blast" 2017 Boom! Studios 1 issue 594530 s41   (v1 search)
+   CV local rip:   (= linked) · 127982 "Wynd" 2020 Boom! Studios 10 · 161163 "Wynd: The Power of the Blood" 2024 Boom! Studios 6 · 106497 "Castle In the Sky Picture Book" 2017 Viz 1 issue 643236 (via CV candidate name "Castle In the Sky Picture Book")   (rip lookup)
+   GCD dump:       172323 "Wynd" 2021-? Boom! Studios [] 4 · 174581 "Wynd" [fr] 2021-2022 Urban Comics [] 2 · 217530 "Wynd" 2021-? Boom! Studios [] 4 · 160929 "Wynd" 2020-2022 Boom! Studios [] 10 · 205065 "WYND" [de] 2023-? Carlsen Comics [DE] [] 3 · 217569 "Wynd: The Power of the Blood" 2024-2026 Boom! Studios [] 8   (dump lookup)
+
+== S101472 Wonder Woman v4 (2012)  [tier C] · gap 69  keys: Wonder Woman v4 (2012)  years 1942-2023  14 files / 10 collections
+   folders: [9] DC\_Wonder Woman\_Completed Series\06 Wonder Woman v4 (2012) · [4] DC\_Wonder Woman\_Completed Series\06 Wonder Woman v4 (2012)\Variant Covers · [1] DC\_Wonder Woman\_Completed Series\06 Wonder Woman v4 (2012)\Deluxe Editions
+   files:   [77922] COL Wonder Woman Book 01 - Blood and Guts - The Deluxe Edition (2023) (digital) (Son of Ultron-Empire).cbr (358pp)
+            [76096] Wonder Woman 039 (2015) (Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [76097] Wonder Woman 040 (2015) (Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [76098] Wonder Woman 051 (2016) (Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [76099] Wonder Woman 052 (2016) (Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [76100] COL Wonder Woman Vol. 01 - Blood (2012) (digital-hd-Empire).cbr (157pp) | [76101] COL Wonder Woman Vol. 02 - Guts (2012) (digital-hd-Empire).cbr (142pp)
+            [76102] COL Wonder Woman Vol. 03 - Iron (2013) (digital-hd-Empire).cbr (175pp) | [76103] COL Wonder Woman Vol. 04 - War (2014) (digital-hd-Empire).cbr (143pp)
+            [76104] COL Wonder Woman Vol. 05 - Flesh (2014) (digital-hd-Empire).cbr (173pp) | [76105] COL Wonder Woman Vol. 06 - Bones (2015) (digital-hd-Empire).cbr (157pp)
+            [76106] COL Wonder Woman Vol. 07 - War-Torn (2015) (digital) (Son of Ultron-Empire).cbr (164pp)
+            [76107] COL Wonder Woman Vol. 08 - A Twist of Fate (2016) (digital) (Son of Ultron-Empire).cbr (180pp)
+            [76108] COL Wonder Woman Vol. 09 - Resurrection (2016) (digital) (Son of Ultron-Empire).cbr (168pp)
+   ours:    ladder 39-40, 51-52; judged item 77922 #0-12 conf 0.97; judged item 76100 #1-6 conf 0.97; judged item 76101 #7-12 conf 0.97; judged item 76103 #19-23 conf 0.97; judged item 76104 #24-29 conf 0.95; judged item 76105 #30-35 conf 0.95; judged item 76106 #36-40 conf 0.95; judged item 76107 #41-47 conf 0.97; judged item 76108 #48-52 conf 0.97; ComicInfo Series: "Wonder Woman"x1; ComicInfo Volume: "2011"x1; ComicInfo Publisher: "DC"x1
+   GCD says: [77922] gcd notes 2571999 (#[nn] of Wonder Woman: Blood and Guts: The Deluxe Edition): Wonder Woman (DC, 2011 series) #0-12  |  gcd_reprint 2571999: s61069 Wonder Woman (2011) #0-12 [26 stories]
+             [76100] gcd_reprint 951101: s61069 Wonder Woman (2011) #1-6 [13 stories]
+             [76101] gcd_reprint 1049331: s61069 Wonder Woman (2011) #7-12 [19 stories]
+             [76102] gcd_reprint 1140951: s61069 Wonder Woman (2011) #0, #13-18 [15 stories]
+             [76103] gcd_reprint 1187792: s61069 Wonder Woman (2011) #19-23 [11 stories]
+             [76104] gcd_reprint 1335446: s61069 Wonder Woman (2011) #23.2, #24-29 [18 stories]
+             [76105] gcd_reprint 1336020: s61069 Wonder Woman (2011) #30-35 [13 stories] · s80309 Secret Origins (2014) #6 [2 stories]
+             [76106] gcd_reprint 1451615: s61069 Wonder Woman (2011) #36-40 [21 stories] · s89719 Wonder Woman Annual (2015) #1 [3 stories]
+             [76107] gcd_reprint 1571440: s61069 Wonder Woman (2011) #41-47 [22 stories]
+             [76108] gcd_reprint 1622014: s61069 Wonder Woman (2011) #48-52 [18 stories] · s102825 Wonder Woman: Rebirth (2016) #1 [3 stories] · s76971 Superman / Wonder Woman (2013) #26 [1 story] · s99282 Justice League Darkseid War Special (2016) #1 [1 story]
+   CV per-file (v1): vol 18525 "Wonder Woman" 1942 DC Comics 329 on 10/14 files · vol 91774 "Wonder Woman" 2016 DC Comics 134 on 2/14 files
+   CV local rip:   (= per-file) · 60884 "Wonder Woman" 1972 Holt, Rinehart and Winston 1 issue 401095 (via our own name without the filing suffix "Wonder Woman") · 78334 "Wonder Woman" 1972 Crown Publishers 1 issue 471244 (via our own name without the filing suffix "Wonder Woman") · 28295 "Wonder Woman" 1981 Murray Comics 1 issue 174117 (via our own name without the filing suffix "Wonder Woman") · 3824 "Wonder Woman" 1987 DC Comics 228 (via our own name without the filing suffix "Wonder Woman") · 147775 "Wonder Woman" 1988 Ediciones Zinco 38 (via our own name without the filing suffix "Wonder Woman")   (rip lookup)
+   GCD per-file:   series 61069 "Wonder Woman" 2011-2016 DC [was ongoing series] 55 on 4/14 files; methods numx4
+   GCD dump:       277 "Wonder Woman" 1942-1986 DC [] 329 (via our own name without the filing suffix "Wonder Woman") · 14622 "Wonder Woman" [en-ca] 1948-1948 National Comics Publications of Canada Ltd [] 5 (via our own name without the filing suffix "Wonder Woman") · 32470 "Wonder Woman" [en-ca] 1949-1949 Simcoe Publishing & Distribution [] 3 (via our own name without the filing suffix "Wonder Woman") · 182531 "Wonder Woman" [en-za] 1963-1963 Mimosa Comics [] 3 (via our own name without the filing suffix "Wonder Woman") · 26525 "Wonder Woman" 1972-1972 Holt, Rinehart and Winston [] 1 (via our own name without the filing suffix "Wonder Woman") · 30820 "Wonder Woman" 1972-1972 Crown Publishers [] 1 (via our own name without the filing suffix "Wonder Woman")   (dump lookup)
+   bridges:        gcd 61069 -> LOCG 111086 "Wonder Woman" support 18
+
+== S21955 Wonder Woman  [tier C] · 2 number(s) x2+, 2 parsed key(s), ratio 1.02  keys: Wonder Woman | Wonder Woman (2016)  years 1941-2018  60 files / 1 collections
+   folders: [23] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\013 Wonder Woman (1-23) · [14] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\098 Wonder Woman (23.1-35) · [12] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\130 Wonder Woman - War torn aftermath and Rebirth leadup · [6] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\121 Wonder Woman - War Torn · [2] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\73 One year later\Wonder Woman - Who is Wonder Woman · [1] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\DC - One Million (1998) · [1] DC\_Wonder Woman\_Trades, Minis and One-shots · [1] DC\_Wonder Woman\_Trades, Minis and One-shots\Wonder Woman by Mike Deodato (2016)
+   files:   [17539] 04_Wonder_Woman_04__2007___CamelotScans-DCP_.cbr (23pp) | [17540] 05_Wonder_Woman_Annual_01__2007___Minutemen-Dizzy_.cbr (35pp)
+            [18036] 21 Wonder Woman 1000000 (1998) (digital) (OkC.O.M.P.U.T.O.-Novus).cbz (24pp) | [18136] Wonder Woman 001 - November 2011.cbr (25pp)
+            [18137] Wonder Woman 002 - December 2011.cbr (21pp) | [18138] Wonder Woman 003 - January 2012.cbr (21pp) | [18139] Wonder Woman 004 - February 2012.cbr (25pp)
+            [18140] Wonder Woman 005 - March 2012.cbr (22pp) | [18141] Wonder Woman 006 - April 2012.cbr (23pp) | [18142] Wonder Woman 007 - May 2012.cbr (22pp)
+            [18143] Wonder Woman 008 - June 2012.cbr (23pp) | [18144] Wonder Woman 009 - July 2012.cbr (22pp) | [18145] Wonder Woman 010 - August 2012.cbr (26pp)
+            [18146] Wonder Woman 011 - September 2012.cbr (23pp) | [18147] Wonder Woman 012 - October 2012.cbr (24pp) | [18148] Wonder Woman 013 - December 2012.cbr (23pp)
+            [18149] Wonder Woman 014 - January 2013.cbr (23pp) | [18150] Wonder Woman 015 - February 2013.cbr (23pp) | [18151] Wonder Woman 016 - March 2013.cbr (23pp)
+            [18152] Wonder Woman 017 - April 2013.cbr (25pp) | [18153] Wonder Woman 018 - May 2013.cbr (25pp) | [18154] Wonder Woman 019 - June 2013.cbr (25pp)
+            [18155] Wonder Woman 020 - July 2013.cbr (25pp) | [18156] Wonder Woman 021 - August 2013.cbr (25pp) | [18157] Wonder Woman 022 - September 2013.cbr (24pp)
+            [18158] Wonder Woman 023 - October 2013.cbr (24pp) | [18598] Wonder Woman 023.1 - November 2013.cbr (24pp) | [18599] Wonder Woman 023.2 - November 2013.cbr (22pp)
+            [18600] Wonder Woman 024 - December 2013.cbr (24pp) | [18601] Wonder Woman 025 - January 2014.cbr (23pp) | [18602] Wonder Woman 026 - February 2014.cbr (24pp)
+            [18603] Wonder Woman 027 - March 2014.cbr (22pp) | [18604] Wonder Woman 028 - April 2014.cbr (24pp) | [18605] Wonder Woman 029 - May 2014.cbr (25pp)
+            [18606] Wonder Woman 030 - June 2014.cbr (23pp) | [18607] Wonder Woman 031 - July 2014.cbr (28pp) | [18608] Wonder Woman 032 - August 2014.cbr (23pp)
+            [18609] Wonder Woman 033 - September 2014.cbr (24pp) | [18610] Wonder Woman 034.cbr (23pp) | [18611] Wonder Woman 035.cbr (24pp) | [18958] Wonder Woman # 36.cbz (22pp)
+            [18959] Wonder Woman # 37.cbz (21pp) | [18960] Wonder Woman # 38.cbr (23pp) | [18961] Wonder Woman # 39.cbz (22pp) | [18962] Wonder Woman # 40.cbz (26pp)
+            [18963] Wonder Woman Annual 001 (2015) (digital) (ThatGuy-Empire).cbz (44pp) | [19033] Wonder Woman # 41 (2015) (digital) (ThatGuy-Empire).cbz (26pp)
+            [19034] Wonder Woman # 42 (2015) (digital) (ThatGuy-Empire).cbz (28pp) | [19035] Wonder Woman # 43 (2015) (Digital-Empire).cbr (27pp)
+            [19036] Wonder Woman # 44 (2015) (Digital-Empire).cbr (27pp) | [19037] Wonder Woman 045 (2015) (Digital-Empire).cbr (25pp) | [19038] Wonder Woman 046 (2016) (Digital-Empire).cbr (26pp)
+            [19039] Wonder Woman 047 (2016) (Digital-Empire).cbr (28pp) | [19040] Wonder Woman 048 (2016) (2 covers) (Digital) (Zone-Empire).cbr (27pp)
+            [19041] Wonder Woman 049 (2016) (Digital) (Thornn-Empire).cbr (27pp) | [19042] Wonder Woman 050 (2016) (Digital) (Thornn-Empire).cbr (46pp)
+            [19043] Wonder Woman 051 (2016) (Digital) (Thornn-Empire).cbr (25pp) | [19044] Wonder Woman 052 (2016) (Digital) (Thornn-Empire).cbr (31pp)
+            [76343] COL Wonder Woman - Year One - The Deluxe Edition (2019) (digital) (Son of Ultron-Empire).cbr (183pp)
+            [77935] Wonder Woman by Mike Deodato (2016) (digital) (Son of Ultron-Empire).cbr (373pp)
+   ours:    ladder 1-23, 23.1, 23.2, 24-52; 2 number(s) name more than one file: 1, 4; judged item 76343 #2-14 conf 0.97; judged item 77935 #85-100 conf 0.9; ComicInfo Series: "Wonder Woman"x1, "Wonder Woman: Year One: The Deluxe Edition"x1; ComicInfo Volume: "1987"x1; ComicInfo Count: "228"x1; ComicInfo Publisher: "DC Comics"x1, "DC"x1
+   GCD says: [76343] gcd notes 2010125 (#[nn] of Wonder Woman: Year One: The Deluxe Edition): Wonder Woman (DC, 2016 Series) #2, #4, #6, #8, #10, #12, #14; a story from Wonder Woman Annual (DC, 2017 Series) #1  |  gcd_reprint 2010125: s103460 Wonder Woman (2016) #2, #4, #6, #8, #10, #12, #14 [21 stories] · s114405 Wonder Woman Annual (2017) #1 [2 stories]
+   CV linked:      vol 42953 "Wonder Woman" 2011 DC Comics 55 issues; cached #0-52 (55); yearΔ 70; ratio 56/55 = 1.02; 1 of 2 judged fit
+   CV per-file (v1): vol 18525 "Wonder Woman" 1942 DC Comics 329 on 52/60 files · vol 91774 "Wonder Woman" 2016 DC Comics 134 on 6/60 files
+   CV local rip:   (= linked) · 60884 "Wonder Woman" 1972 Holt, Rinehart and Winston 1 issue 401095 · 78334 "Wonder Woman" 1972 Crown Publishers 1 issue 471244 · 28295 "Wonder Woman" 1981 Murray Comics 1 issue 174117 · 3824 "Wonder Woman" 1987 DC Comics 228 · 147775 "Wonder Woman" 1988 Ediciones Zinco 38   (rip lookup)
+   GCD per-file:   series 61069 "Wonder Woman" 2011-2016 DC [was ongoing series] 55 on 12/60 files · series 103460 "Wonder Woman" 2016-2023 DC [was ongoing series] 134 on 1/60 files; methods numx13
+   GCD dump:       277 "Wonder Woman" 1942-1986 DC [] 329 · 14622 "Wonder Woman" [en-ca] 1948-1948 National Comics Publications of Canada Ltd [] 5 · 32470 "Wonder Woman" [en-ca] 1949-1949 Simcoe Publishing & Distribution [] 3 · 182531 "Wonder Woman" [en-za] 1963-1963 Mimosa Comics [] 3 · 26525 "Wonder Woman" 1972-1972 Holt, Rinehart and Winston [] 1 · 30820 "Wonder Woman" 1972-1972 Crown Publishers [] 1   (dump lookup)
+   bridges:        gcd 61069 -> LOCG 111086 "Wonder Woman" support 18 · gcd 103460 -> LOCG 111086 "Wonder Woman" support 14
+
+== S100744 The Outsiders v3 (2003)  [tier B]   keys: The Outsiders v3 (2003)  years 2003-2007  44 files / 0 collections
+   folders: [44] DC\The Outsiders\The Outsiders v3 (2003)
+   files:   The Outsiders v3 008 (2004-03) (DeadmanWade-DCP) (digital).cbr … The Outsiders v3 048 (2007-08) (DeadmanWade-DCP) (digital).cbr  (41 files, pp 22-26)
+            [57904] The Outsiders v3 049 (2007-09) (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (22pp) | [57905] The Outsiders v3 050 (2007-11) (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (24pp)
+            [57906] The Outsiders v3 Annual 01 (2007) (EXTREMEST-DCP).cbr (42pp)
+   ours:    ladder 1, 8-50; ComicInfo Series: "The Outsiders"x2; ComicInfo Volume: "2003"x2; ComicInfo Count: "50"x2; ComicInfo Publisher: "DC Comics"x2
+   CV per-file (v1): vol 10415 "Outsiders" 2003 DC Comics 50 on 44/44 files
+   CV local rip:   (= per-file) · 25804 "The Outsiders" 2009 DC Comics 26 (via our own name without the filing suffix "The Outsiders") · 22453 "Outsiders" 1993 DC Comics 26 (via our own name without the filing suffix "The Outsiders") · 3455 "The Outsiders" 1985 DC Comics 28 (via our own name without the filing suffix "The Outsiders") · 149983 "Outsiders" 2021 Ki-oon 1 issue 1030712 (via our own name without the filing suffix "The Outsiders") · 153207 "Outsiders" 2022 Kadokawa Shoten 5 (via our own name without the filing suffix "The Outsiders")   (rip lookup)
+   GCD dump:       11298 "Outsiders" 2003-2007 DC [] 50 (via our own name without the filing suffix "The Outsiders") · 23838 "Outsiders" 2004-2007 DC [] 6 (via our own name without the filing suffix "The Outsiders") · 41064 "Outsiders" [es] 2005-2007 Planeta DeAgostini [] 20 (via our own name without the filing suffix "The Outsiders") · 134902 "Outsiders" [fr] 1998-2000 Glénat [] 3 (via our own name without the filing suffix "The Outsiders") · 34024 "The Outsiders" 2009-2011 DC [] 25 (via our own name without the filing suffix "The Outsiders") · 14162 "Outsiders" 1993-1995 DC [] 26 (via our own name without the filing suffix "The Outsiders")   (dump lookup)
+
+== S58099 Outsiders  [tier C] · 3 number(s) x2+, 2 parsed key(s), ratio 0.58  keys: Outsiders | Outsiders (1993)  years 1985-1995  29 files / 0 collections
+   folders: [8] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\73 One year later\Outsiders - The Good Fight · [7] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\31 Outsiders - Looking for trouble · [5] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\72 During Infinite crisis\03 Outsiders - Crisis Intervention · [3] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\58 Teen Titans Outsiders - The Insiders · [2] DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\144 Blackest Night · [2] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\57 Outsiders - Wanted · [2] DC\The Outsiders
+   files:   [16322] 31 Outsiders 24.cbr (31pp) | [16336] 45 Outsiders 25.cbr (31pp) | Outsiders 01.cbr … Outsiders 23.cbr  (9 files, pp 23-32) | [17244] 02 Outsiders 24.cbr (23pp)
+            [17246] 04 Outsiders 25.cbr (25pp) | [17248] 06 Outsiders 28.cbr (25pp) | Outsiders 29.cbr … Outsiders 41.cbr  (13 files, pp 23-26)
+            [57839] Outsiders Annual 001 (1986) (Digital) (Shadowcat-Empire).cbz (44pp) | [57840] Outsiders Special 001 (1987) (Digital) (Shadowcat-Empire).cbz (38pp)
+   ours:    ladder 1-7, 21, 23-25, 28-41; 3 number(s) name more than one file: 1, 24, 25
+   CV linked:      vol 10415 "Outsiders" 2003 DC Comics 50 issues; cached #1-50 (50); yearΔ 18; ratio 29/50 = 0.58; no judged range
+   CV per-file (v1): vol 22453 "Outsiders" 1993 DC Comics 26 on 27/29 files
+   CV candidates:  (= linked) · 3455 "The Outsiders" 1985 DC Comics 28 s87 · 40726 "The Outsiders Annual" 1986 DC Comics 1 issue 274606 s83 · 154666 "Outsiders" 2024 DC Comics 11 s50 · 25804 "The Outsiders" 2009 DC Comics 26 s37 · 153207 "Outsiders" 2022 Kadokawa Shoten 5 s35 · 149983 "Outsiders" 2021 Ki-oon 1 issue 1030712 s35   (v1 search)
+   CV local rip:   (= linked) · 3455 "The Outsiders" 1985 DC Comics 28 · 25804 "The Outsiders" 2009 DC Comics 26 · 149983 "Outsiders" 2021 Ki-oon 1 issue 1030712 · 153207 "Outsiders" 2022 Kadokawa Shoten 5   (rip lookup)
+   GCD dump:       2989 "The Outsiders" 1985-1988 DC [] 28 · 178215 "Outsiders" [fr] 1985-1985 Les Humanoïdes Associés [] 1 · 14162 "Outsiders" 1993-1995 DC [] 26 · 134902 "Outsiders" [fr] 1998-2000 Glénat [] 3 · 94904 "The Outsiders" 1971-1972 University of Rhode Island [] 2 · 11298 "Outsiders" 2003-2007 DC [] 50   (dump lookup)
+
+== S94554 Batman and Robin  [tier C] · gap 3  keys: Batman & Robin v2 (2011)  years 2009-2013  11 files / 7 collections
+   folders: [7] DC\_Batman\_Completed Series\Batman and Robin\Batman & Robin v2 (2011) · [4] DC\_Batman\_Completed Series\Batman and Robin\Batman & Robin v2 (2011)\Annuals and Specials
+   files:   [62270] Batman and Robin 023.1 - Two-Face (2013) (Digital) (Zone-Empire).cbr (23pp) | [62271] Batman and Robin 023.2 - Court of Owls (2013) (Digital) (Zone-Empire).cbr (24pp)
+            [62272] Batman and Robin 023.3 - Ra's Al Ghil (2013) (Digital) (Zone-Empire).cbr (21pp) | [62273] Batman and Robin 023.4 - Killer Croc (2013) (Digital) (Zone-Empire).cbr (24pp)
+            [62274] COL Batman and Robin Vol. 01 - Born To Kill (2011) (Digital) (Nahga-Empire).cbr (186pp) | [62275] COL Batman and Robin Vol. 02 - Pearl (2013) (Digital) (Zone-Empire).cbr (165pp)
+            [62276] COL Batman and Robin Vol. 03 - Death of the Family (2013) (Digital) (Zone-Empire).cbr (156pp)
+            [62277] COL Batman and Robin Vol. 04 - Requiem for Damian (2014) (Digital) (Zone-Empire).cbr (168pp)
+            [62278] COL Batman and Robin Vol. 05 - The Big Burn (2014) (Digital) (Zone-Empire).cbr (172pp)
+            [62279] COL Batman and Robin Vol. 06 - The Hunt for Robin (2015) (Digital) (Zone-Empire).cbr (187pp)
+            [62280] COL Batman and Robin Vol. 07 - Robin Rises (2015) (Digital) (Zone-Empire).cbr (242pp)
+   ours:    ladder 23; 1 number(s) name more than one file: 23; judged item 62274 #1-8 conf 0.97; judged item 62275 #9-14 conf 0.95; judged item 62276 #15-17 conf 0.95; judged item 62277 #18-23 conf 0.95; judged item 62278 #24-28 conf 0.97; judged item 62279 #29-34 conf 0.97; judged item 62280 #35-40 conf 0.97
+   GCD says: [62274] gcd_reprint 981542: s60920 Batman and Robin (2011) #1-8 [17 stories]
+             [62275] gcd notes 1119064 (#2 of Batman and Robin): Batman and Robin (DC, 2011 series) #0, #9-14  |  gcd_reprint 1119064: s60920 Batman and Robin (2011) #0, #9-14 [15 stories]
+             [62276] gcd_reprint 1165057: s60920 Batman and Robin (2011) #15-17 [7 stories] · s61067 Batman (2011) #17 [2 stories] · s71587 Batman and Robin Annual (2013) #1 [2 stories] · s77146 The Joker: Death of the Family (2013) (unnumbered) [1 story]
+             [62277] gcd_reprint 1212053: s60920 Batman and Robin (2011) #18-23 [13 stories]
+             [62278] gcd_reprint 1429104: s60920 Batman and Robin (2011) #24-28 [14 stories] · s71587 Batman and Robin Annual (2013) #2 [2 stories]
+             [62279] gcd_reprint 1429089: s60920 Batman and Robin (2011) #29-34 [18 stories] · s81828 Robin Rises: Omega (2014) #1 [4 stories]
+             [62280] gcd_reprint 1499601: s60920 Batman and Robin (2011) #35-40 [19 stories] · s85392 Robin Rises: Alpha (2015) #1 [3 stories] · s71587 Batman and Robin Annual (2013) #3 [2 stories] · s80309 Secret Origins (2014) #4 [1 story]
+   CV linked:      vol 50161 "Batman and Robin" 2012 DC Comics 7 issues; cached #1-7 (7); yearΔ 3; ratio 4/7 = 0.57; 1 of 7 judged fit
+   CV per-file (v1): vol 26584 "Batman and Robin" 2009 DC Comics 26 on 9/11 files · vol 50161 "Batman and Robin" 2012 DC Comics 7 on 2/11 files
+   CV local rip:   (= linked) · 42692 "Batman and Robin" 2011 DC Comics 45 · 153462 "Batman and Robin" 2023 DC Comics 27 · 159620 "Batman and Robin" 2024 DC Comics 2 · 167102 "Batman and Robin" 2025 DC Comics 1 issue 1133927   (rip lookup)
+   GCD per-file:   series 60920 "Batman and Robin" 2011-2015 DC [was ongoing series] 45 on 4/11 files; methods numx4
+   GCD dump:       (= per-file) · 36683 "Batman and Robin" 2009-2011 DC [] 26 · 67775 "Batman and Robin" 2010-2012 DC [] 4 · 59715 "Batman and Robin" 2011-2013 DC [] 4 · 67891 "Batman and Robin" 2012-2016 DC [] 7 · 74789 "Batman and Robin" 2013-2016 DC [] 7   (dump lookup)
+   bridges:        gcd 60920 -> LOCG 110416 "Batman and Robin" support 8
+
+== S2139 Batman and Robin  [tier C] · gap 2  keys: Batman and Robin | Robin and Batman  years 2009-2022  42 files / 0 collections
+   folders: [8] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\015 Batman and Robin Vol. 1 Born to Kill · [5] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\107 Batman and Robin - 18 - 23 · [5] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\111 Batman and Robin - Two face · [5] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\112 Robin Rises\Part 3 · [4] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\054 Batman and Robin Vol. 2 Pearl 1 · [4] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\112 Robin Rises\Part 1 · [3] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\112 Robin Rises\Part 5 · [2] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\056 Batman and Robin Vol. 2 Pearl 2 · [2] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\061 Batman and Robin Vol. 3 Death of the Family 1 · [1] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\028 Batman Night of the Owls · [1] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\077 Batman and Robin Vol. 3 Death of the Family 3 · [1] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\083 REQUIEM FOR DAMIAN · [1] DC\_Robin\Robin & Batman (2022)
+   files:   [18166] Batman and Robin 001 - November 2011.cbr (35pp) | [18167] Batman and Robin 002 - December 2011.cbr (22pp) | [18168] Batman and Robin 003 - January 2012.cbr (22pp)
+            [18169] Batman and Robin 004 - February 2012.cbr (23pp) | [18170] Batman and Robin 005 - March 2012.cbr (21pp) | [18171] Batman and Robin 006 - April 2012.cbr (24pp)
+            [18172] Batman and Robin 007 - May 2012.cbr (22pp) | [18173] Batman and Robin 008 - June 2012.cbr (23pp) | [18260] 006 Batman and Robin 009 - July 2012.cbr (21pp)
+            [18383] 001 Batman and Robin 010 - August 2012.cbr (22pp) | [18384] 002 Batman and Robin 011 - September 2012.cbr (22pp) | [18385] 003 Batman and Robin 012 - October 2012.cbr (20pp)
+            [18386] 004 Batman and Robin 000 - November 2012.cbr (21pp) | [18387] Batman and Robin 013 - December 2012.cbr (23pp) | [18388] Batman and Robin 014 - January 2013.cbr (21pp)
+            [18392] Batman and Robin 015 - February 2013.cbr (22pp) | [18393] Batman and Robin 016 - March 2013.cbr (21pp) | [19920] Batman and Robin 017 - April 2013.cbr (23pp)
+            [18427] 002 Batman and Robin 018 - May 2013.cbr (22pp) | [18666] Batman and Robin # 19.cbr (26pp) | [18667] Batman and Robin # 20 (Red Hood).cbr (24pp)
+            [18668] Batman and Robin # 21 (Batgirl).cbr (23pp) | [18669] Batman and Robin # 22 (Catwoman).cbr (23pp) | [18670] Batman and Robin # 23 (Nightwing).cbr (23pp)
+            [18697] Batman and Robin # 24 (Two-Face).cbr (26pp) | [18698] Batman and Robin # 25 (Two-Face).cbr (23pp) | [18699] Batman and Robin # 26 (Two-Face).cbr (22pp)
+            [18700] Batman and Robin # 27 (Two-Face).cbr (22pp) | [18701] Batman and Robin # 28 (Two-Face).cbr (24pp) | [18702] Batman and Robin # 29 (Aquaman).cbr (24pp)
+            [18703] Batman and Robin # 30 (Wonder Woman).cbr (23pp) | [18704] Batman and Robin # 31 (Frankanstein).cbr (28pp) | [18705] Batman and Robin # 32 (Ra's Al Ghul).cbr (23pp)
+            Batman and Robin # 33.cbr … Batman and Robin # 40.cbr  (8 files, pp 21-24) | [69978] Robin & Batman (2022) (Digital) (EJGriffin-Empire).cbz (131pp)
+   ours:    ladder 0-40
+   CV linked:      vol 42692 "Batman and Robin" 2011 DC Comics 45 issues; cached #0-40 (45); yearΔ 2; ratio 41/45 = 0.91; no judged range
+   CV per-file (v1): vol 26584 "Batman and Robin" 2009 DC Comics 26 on 41/42 files
+   CV candidates:  (= linked) · 86736 "Batman and Robin" 1976 Murray Comics 19 s77 · 153462 "Batman and Robin" 2023 DC Comics 30 s53 · 50161 "Batman and Robin" 2012 DC Comics 7 s50 · 144953 "Robin & Batman" 2022 DC Comics 1 issue 945986 s50 · 143432 "DC Pride 2022" 2022 DC Comics 1 issue 929552 s45 · 61509 "Batman & Robin" 2012 Panini Verlag 8 s35   (v1 search)
+   CV local rip:   (= linked) · 50161 "Batman and Robin" 2012 DC Comics 7 · 153462 "Batman and Robin" 2023 DC Comics 27 · 159620 "Batman and Robin" 2024 DC Comics 2 · 167102 "Batman and Robin" 2025 DC Comics 1 issue 1133927   (rip lookup)
+   GCD dump:       36683 "Batman and Robin" 2009-2011 DC [] 26 · 67775 "Batman and Robin" 2010-2012 DC [] 4 · 59715 "Batman and Robin" 2011-2013 DC [] 4 · 60920 "Batman and Robin" 2011-2015 DC [] 45 · 67891 "Batman and Robin" 2012-2016 DC [] 7 · 74789 "Batman and Robin" 2013-2016 DC [] 7   (dump lookup)

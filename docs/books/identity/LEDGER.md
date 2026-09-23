@@ -1824,3 +1824,11 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   Events" shelf holding #41-45 of a New 52 title is a FRAGMENT of the run shelf — merge it in. Deathstroke the
   Terminator 1991 = CV 9645 (#0-60) while GCD splits it 10465 (#1-40) / 15127 The Hunted / 15128 (#48-60); the 1991
   trades (GCD 88153) collect #1-34 (R-098/R-099).
+
+[L-364] pub:dc
+- DC (R-101): GCD's notes can disagree with GCD's own REPRINT ROLL-UP (Batgirl 2016 Son of Penguin: notes "#7-12",
+  roll-up #7-11) — the roll-up and the next volume's range decide; the packet flags RANGE CONTRADICTED only against
+  notes, so wrong judged ranges can hide without the flag. DC Vertigo: a complete short mini in a "vN" subfolder of a
+  Golden/Silver Age title's shelf (Witching Hour 1999, Weird War Tales 1997) is a CO-EQUAL run, not residue. "#DC
+  Events" New 52 read-order folders carry whole runs onto the pre-2011 shelf of the same title (Batgirl 2000). A retitle
+  that continues the numbering stays one run (L-212) even when both catalogues and the folders split it.

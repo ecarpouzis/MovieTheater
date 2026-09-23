@@ -1,0 +1,327 @@
+## Conventions for this batch (33 shown of 38 matched; 363 in LEDGER.md; 4 shelf/shelves: pub:dc ×4 · folder:vn-year ×3 · folder:sequel-subfolder ×2 · kind:golden-age ×1 · folder:variant-covers ×1 · folder:events ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-082] (4 shelf/shelves) pub:dc sig:comicinfo
+- A Glorith-HD rip's ComicInfo `Web` id CAN be a ComicVine ISSUE id of the stored volume (599834, DC 100-Page
+  Spectacular) — Glorith's Web ids are never GCD ids, but check them against the CV rip.
+[L-093] (4 shelf/shelves) pub:dc pub:ec-archives pub:mad sig:comicinfo
+- GCD labels every modern MAD book "EC" where ComicVine and ComicInfo say DC — the same publisher's imprint, not a
+  rejection.
+[L-237] (4 shelf/shelves) pass:revisit pub:dc sig:collision sig:comicinfo
+- Action Comics: CV 18005 stops at #904 (2011); the Rebirth continuation #957+ is CV 91078 (ComicInfo `Volume`
+  asserts it) — the "v1 (2016)" and "v1 (2018)" folder shelves are one run (R-019 merge-with).
+[L-211] (3 shelf/shelves) folder:vn-year pub:dc sig:collision sig:stale-flag
+- An `overlap-in-series` flag on a franchise with many `vN` sibling shelves (Deathstroke, Harley Quinn, Green Lantern,
+  Justice League, JLD, Legion, Lobo) describes the CROSS-SHELF Vol. 01 collision, not conflation on the one shelf —
+  confirmed 14 of 14 in C-013..C-015; the stale-flag note must name the sibling shelf.
+[L-191] (4 shelf/shelves) folder:sequel-subfolder folder:vn-year pass:revisit sig:stale-flag
+- On a wave-2 `NN <Title> vN (<year>)` split-out shelf (ids S94xxx+) an `overlap-in-series` flag is stale by
+  construction — the colliding Vol. 01s now sit on sibling shelves (13 of 14 in R-016); the lead dismisses the flag.
+[L-281] (4 shelf/shelves) folder:bucket folder:events folder:vn-year
+- A chronology folder's ORDER prefix ("04 Dragon Ball - Full Color Freeza Arc v01") gets read by the per-file num
+  matcher as the ISSUE number — v01 in folder "04" linked to issue #4; the true mapping is the shelf's own vNN by
+  ordinal. Any "NN Title vNN" bucket naming is this trap.
+[L-124] (3 shelf/shelves) folder:bucket folder:vn-year pass:item sig:trade-link
+- A `<Title> vN (<year>)` folder holding only a collected edition is the RUN's folder — the run takes the S
+  line, the trade an `I` line; a `_Trades` / `_Minis` / `_One-shots` bucket is the opposite (the book's own
+  count-1 record, minted by BOTH providers, wins).
+[L-197] (2 shelf/shelves) pub:dc sig:legacy-stamp sig:stamp
+- The per-file matcher's "wrong RELAUNCH" trap: it stamps the LATER same-title volume onto files dated to the earlier
+  era by issue-number coincidence (Wonder Woman 2016, Batman 2016, JLA v2/v3, Firestorm, Hawk and Dove v5, Atari Force
+  v2, Adventure Comics 2010) — the tell is files whose years or numbers predate or exceed the stamped volume's own.
+[L-245] (2 shelf/shelves) pass:revisit pub:dc sig:collision sig:legacy-stamp sig:split sig:stamp
+- A SHARED STORED ComicVine id is not proof of one run: `merge-with` on it only after the id fits BOTH shelves' own
+  keys and GCD links. C-008 merged the real Flash 1959 shelf into the "The Flash v2 (2007)" folder shelf because both
+  stored CV 1995 — but that shelf's own key and GCD link (26125, 2007-2009) said Flash vol. 2; the stamp was the
+  legacy-number trap. The merged shelf became two runs (R-023, R + split). When a shelf's GCD leg contradicts its
+  stored CV id, the CV id is the suspect, and the merge is `F wrong-cv-link` on the mis-stamped shelf instead.
+[L-272] (3 shelf/shelves) folder:vn-year
+- A ripper's `vNN` can be offset by one from the album's own subtitle (Carthago Adventures) — the title decides.
+[L-363] (2 shelf/shelves) pub:dc
+- DC New 52 trade lines on GCD are HC/TPB TWIN series (BTDK 78638/78639, Batwoman 66358/71298); CV holds per-trade
+  count-1 volumes that subtitle probes often miss. The retitle cut shows on GCD only (Fury of Firestorm: The Nuclear
+  Men = 61180 #0-12 + 171997 #13-20 = CV 42987's 21); L.E.G.I.O.N. / R.E.B.E.L.S. are split into year series. A "#DC
+  Events" shelf holding #41-45 of a New 52 title is a FRAGMENT of the run shelf — merge it in. Deathstroke the
+  Terminator 1991 = CV 9645 (#0-60) while GCD splits it 10465 (#1-40) / 15127 The Hunted / 15128 (#48-60); the 1991
+  trades (GCD 88153) collect #1-34 (R-098/R-099).
+[L-016] (4 shelf/shelves) sig:comicinfo
+- Glorith rips' ComicInfo `Web` ids are NOT GCD issue ids in our dump (29 checked: missing or unrelated). Never
+  claim 1.0 from one. A ComicInfo `Volume` holding a 6-digit number IS a ComicVine volume id (Lex and the City =
+  162184) — a genuine 1.0 assertion.
+[L-032] (4 shelf/shelves) sig:comicinfo
+- A Marika-Empire rip's ComicInfo `Web` id IS a ComicVine ISSUE id (21/21 resolve to the stored volume) — the
+  1.0 shape. The ripper decides: Glorith's Web ids are not GCD issue ids. Check one against the rip before
+  claiming 1.0 on a new ripper.
+[L-113] (4 shelf/shelves) sig:comicinfo sig:stamp
+- ComicInfo `Volume` holding a 4-digit ComicVine volume id (not a year) is a 1.0 assertion like the 6-digit
+  case (Ka-Zar v2 1974: `Volume 2692` + `Count 20` = CV 2692) and disproves the per-file matcher's pick.
+[L-114] (4 shelf/shelves) sig:comicinfo
+- Marika-Empire and Glorith-HD `Web` ids are ComicVine ISSUE ids of the stored volume (7 of 7 here).
+[L-290] (2 shelf/shelves) folder:sequel-subfolder pass:item sig:stamp
+- A spin-off filed in its own subfolder on the parent's shelf gets the PARENT's v01 ids stamped by the per-file
+  matcher (Rent-a-(Really Shy!)-Girlfriend on Rent-A-Girlfriend) — `N no-record` (or the shelf note), never the
+  parent's record; it is a misfiling for the lead.
+[L-011] (1 shelf/shelves) folder:events pub:dc
+- DC event folders: the leading number is a READING-ORDER position, and the same book is filed again under its own
+  title folder — n issues × 2 files is one run.
+[L-015] (1 shelf/shelves) folder:events pub:dc
+- DC `#DC Events` read-order folders hold a SECOND rip of issues that also live on the title's own shelf — the
+  source of nearly every DC ratio 2.00; residue, not a second run. Event umbrellas (GCD "Convergence", 9) get
+  handed to two-issue tie-in shelves — the hull shape.
+[L-040] (1 shelf/shelves) folder:bucket folder:events pub:dc pub:papercutz-nbm pub:scout pub:titan pub:valiant sig:twin
+- NBM / Papercutz album lines and Scout one-shots carry TWIN adjacent GCD rows for one book (120209/120210) —
+  cap at 0.9 and name both. Titan's Doctor Who "Year N" volumes number continuously across a Doctor (a ladder
+  starting at #6 is complete). A publisher's read-order crossover folder (Titan `Lost Dimension`, Valiant
+  `_Chronological Valiant`) = DC's `#DC Events` shape.
+[L-052] (1 shelf/shelves) pub:dc sig:stamp sig:twin
+- The per-file CV matcher picks the LEGACY volume for every New 52 shelf (Batman 1940, Wonder Woman 1942, Nightwing
+  1996, Catwoman 1993) because it matched by issue number — the stored link on a 2011 shelf that names a 1940
+  volume is `wrong-cv-link`, the 2011 volume is in the rip.
+[L-198] (1 shelf/shelves) pub:dc
+- ComicVine keeps ONE spanning volume across era-retitled arcs (L.E.G.I.O.N. / R.E.B.E.L.S., Deathstroke "The Hunted",
+  Green Lantern 1960, Detective, Action, All-Star) while GCD names each era its own row — majority GCD era + `N` the
+  rest; no split for that alone.
+[L-199] (1 shelf/shelves) folder:bucket folder:events pub:dc
+- DC's "#DC Events" chronology folders resolve once the cross-referenced-run pattern is seen: a crossover reprint
+  bucket or a tie-in folder filed adjacent to the main run takes the main run's identity with the tie-ins named.
+[L-210] (1 shelf/shelves) pub:dc sig:legacy-stamp sig:probe sig:stamp
+- The wrong-relaunch trap is near-universal on any DC title with 3+ relaunches (Green Arrow, Green Lantern, Harley
+  Quinn, Justice League, Legion, Lobo, Martian Manhunter, Doom Patrol): the matcher stamps the oldest legacy volume or
+  the largest/most-recent one across every sibling shelf; `lookup.py` by name + year recovers the true id.
+[L-212] (1 shelf/shelves) pub:dc sig:collision sig:legacy-stamp
+- A continuation of legacy numbering (#201+ picking up a prior volume's own numbering, Green Lantern Corps S94605→
+  S94610) is the SAME run as the prior volume — merge-with, not a separate id.
+[L-216] (1 shelf/shelves) kind:golden-age pub:dc
+- Regional reprint editions (Canadian, Philippine, Australian) recur as small harmless residue on Golden Age DC shelves.
+[L-218] (1 shelf/shelves) kind:golden-age pass:revisit pub:dc sig:legacy-stamp
+- ComicVine keeps Action Comics as ONE volume (18005) across the 1938 run and the 2018 legacy-numbered continuation
+  while GCD splits the eras (97 / 59922) — whether the two era shelves merge is a revisit question (R-019).
+[L-220] (1 shelf/shelves) kind:foreign kind:golden-age pub:dc sig:legacy-stamp sig:stamp
+- The wrong-relaunch / legacy-volume stamp runs in BOTH directions on DC legacy titles: the 1938/1959/1942 volume on
+  modern relaunch files AND a modern or FOREIGN volume on legacy files (a 1976 French Éditions Lug "Titans" reprint,
+  CV 44350, is the per-file majority on every US Titans shelf) — reject on publisher and language.
+[L-128] (2 shelf/shelves) sig:split sig:stale-flag
+- The checker refuses an S line on a shelf with an OPEN conflated-series flag: write `R` + `F split-needed`
+  with the run's own ids in the R clause AND an `N` (`cv=… gcd=…`), so clearing the flag makes it one edit.
+[L-175] (1 shelf/shelves) folder:bucket folder:events pass:item
+- In the chronology folders the RUN rule stands over the bucket rule: `S` = the numbered run, the tie-in's collected
+  record goes on the `I` line (B-072/073, ~90 shelves); the book's own record is the S only where no numbered run exists.
+[L-181] (2 shelf/shelves) sig:split
+- A ripper's CONTINUOUS numbering can hide several published comics: Gung-Ho 001-014 = Gung-Ho (7) + Sexy Beast (4) +
+  Anger (4); the trailing number after each filename subtitle is the real run's number, and a ladder running PAST the
+  linked count is the tell → `R` + split-needed, never `S` the first run.
+[L-336] (2 shelf/shelves) sig:split
+- Before proposing a split key, check the items' CURRENT key (`lookup.py --shelf`) and `--who-stores` both the run's
+  cv and the key: a key already aliased to the parent (a re-merged wave-2 split-out) "would not move" — respell it
+  (P-016 "The Amazing Spider-Man v2 (1999)"); a key already owned by a live run shelf is a JOIN (P-016 Detective v2).
+[L-014] (1 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-064] (1 shelf/shelves) pass:item sig:twin
+- GCD indexes PRINTINGS: the S line takes the first edition both legs agree on; the `I` line takes the printing
+  we hold (page counts match the edition's row). GCD issue ids for books come from `gcd_issue` — prefer the
+  issue id to the `s<series>` form; use `s<series>` only for twin/variant rows.
+
++5 more matched entries not shown: L-085, L-101, L-123, L-150, L-310 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S94963 Adventure Comics  [split]  287 files / 0 collections  decided in R-099 (R)
+   decided: R 94963 | signal e (287 files) hides a second run's issues: 281 files are the 1938 run CV 3105 (cached #32-503) = GCD 98 (1938-1983, 472), but the six "Adventure Comics 516-521 (2010-2011)" (30-33pp, digital, Son of Ultron) are the 2009 volume's legacy-numbered issues — CV 25643 (DC 2009, 27 = #0-12 + #516-529) = GCD 32602 (2009-2011, 27), a run CV 3105 cannot hold (its span ends at #503) and whose other 21 issues live on S94965 — six whole issues of another shelf's run are not residue
+   F 94963 split-needed | the six items "Adventure Comics 516-521 (2010-2011) (digital) (Son of Ultron-Empire)" -> JOIN S94965 (stores cv=25643 gcd=32602, holds #0-12 + #522-529 of the same 2009 volume; key "Adventure Comics v2 (2009)"); everything else stays as cv=3105 gcd=98
+   N 94963 cv=3105 gcd=98 — the S line for the kept 1938 run once #516-521 move (0.9: GCD splits the 1938 run's reprint editions — 150355 en-ph 7 files, 32363 en-ca 1 file — foreign reprints of the same issues)
+   named: S94965 Adventure Comics  30 files  keys: "Adventure Comics" | "Adventure Comics v1 (2010)" | "Adventure Comics v2 (2009)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S439 "Adventure Time Comics" 6f [title+1 — S cv=92538 gcd=104727 (A-005 0.9)] keys: "Adventure Time Comics"
+   nearby: S12789 "New Adventure Comics" 1f [title+1 — S cv=18546 gcd=88 (C-010 0.95)] keys: "New Adventure Comics"
+   keys now: "Adventure Comics v1 (1938)" x287
+   groups (title x folder): 1
+   G1 "Adventure Comics" in DC\Adventure Comics\01 Adventure Comics v1 (1938) — 287 file(s), numbers 35, 52, 66, 81, 87, 94, 102, 108-109, 112-113, 115, 118, 120, 124, 130-133, 137-138, 140-141, 152, 156, 165-168, 170-206, 208-280, 282-290, 300, 304, 306, 309-310, 312, 316, 329, 335, 340-341, 346-349, 352-354, 356-358, 360, 368-370, 374, 381-424, 431, 433-434, 438-440, 446-450, 453-455, 461-462, 464-503, 516-521, pp 8-148; cv per-file 3105x287; gcd per-file 98x243, 150355x7, 32602x6; key 'Adventure Comics v1 (1938)'
+      e.g. Adventure Comics 035 (1939) (c2c) (Superscan+friends).cbz
+        53690 #35 1939 69pp · 53691 #52 1940 68pp · 53692 #66 1941 69pp · 53693 #81 1942 68pp · 53694 #87 1943 75pp · 53695 #94 1944 53pp · 53696 #102 1946 53pp · 53697 #108 1946 53pp
+        53698 #109 1946 53pp · 53699 #112 1947 53pp · 53700 #113 1947 53pp · 53701 #115 1947 53pp · 53702 #118 1947 52pp · 53703 #118 1947 53pp · 53704 #120 1947 53pp · 53705 #124 1948 53pp
+        53706 #130 1948 53pp · 53707 #131 1948 53pp · 53708 #132 1948 53pp · 53709 #133 1948 53pp · 53710 #137 1949 53pp · 53711 #138 1949 53pp · 53712 #140 1949 52pp · 53713 #141 1949 53pp
+        53714 #152 1950 53pp · 53715 #156 1950 53pp · 53716 #165 1951 52pp · 53717 #166 1951 52pp · 53718 #167 1951 52pp · 53719 #168 1951 53pp · 53720 #170 1951 44pp · 53721 #171 1951 44pp
+        53722 #172 1952 45pp · 53723 #173 1952 42pp · 53724 #174 1952 44pp · 53725 #175 1952 44pp · 53726 #176 1952 44pp · 53727 #177 1952 45pp · 53728 #178 1952 44pp · 53729 #179 1952 45pp
+        53730 #180 1952 44pp · 53731 #181 1952 42pp · 53732 #182 1952 44pp · 53733 #183 1952 44pp · 53734 #184 1953 45pp · 53735 #185 1953 44pp · 53736 #186 1953 44pp · 53737 #187 1953 44pp
+        53738 #188 1953 44pp · 53739 #189 1953 44pp · 53740 #190 1953 44pp · 53741 #191 1953 45pp · 53742 #192 1953 44pp · 53743 #193 1953 44pp · 53744 #194 1953 44pp · 53745 #195 1953 44pp
+        53746 #196 1954 44pp · 53747 #197 1954 44pp · 53748 #198 1954 44pp · 53749 #199 1954 34pp · 53750 #200 1954 44pp · 53751 #201 1954 44pp · 53752 #202 1954 44pp · 53753 #203 1954 44pp
+        53754 #204 1954 45pp · 53755 #205 1954 32pp · 53756 #206 1954 37pp · 53757 #208 1955 36pp · 53758 #209 1955 36pp · 53759 #210 1955 36pp · 53760 #211 1955 36pp · 53761 #212 1955 36pp
+        53762 #213 1955 36pp · 53763 #214 1955 36pp · 53764 #215 1955 36pp · 53765 #216 1955 35pp · 53766 #217 1955 36pp · 53767 #218 1955 37pp · 53768 #219 1955 36pp · 53769 #220 1956 36pp
+        53770 #221 1956 36pp · 53771 #222 1956 36pp · 53772 #223 1956 36pp · 53773 #224 1956 35pp · 53774 #225 1956 36pp · 53775 #226 1956 37pp · 53776 #227 1956 36pp · 53777 #228 1956 36pp
+        53778 #229 1956 36pp · 53779 #230 1956 36pp · 53780 #231 1956 37pp · 53781 #232 1957 36pp · 53782 #233 1957 36pp · 53783 #234 1957 36pp · 53784 #235 1957 36pp · 53785 #236 1957 36pp
+        53786 #237 1957 36pp · 53787 #238 1957 36pp · 53788 #239 1957 36pp · 53789 #240 1957 36pp · 53790 #241 1957 36pp · 53791 #242 1957 36pp · 53792 #243 1957 35pp · 53793 #244 1958 36pp
+        53794 #245 1958 36pp · 53795 #246 1958 36pp · 53796 #247 1958 25pp · 53797 #248 1958 36pp · 53798 #249 1958 36pp · 53799 #250 1958 37pp · 53800 #251 1958 36pp · 53801 #252 1958 36pp
+        53802 #253 1958 36pp · 53803 #254 1958 37pp · 53804 #255 1958 36pp · 53805 #256 1959 36pp · 53806 #257 1959 36pp · 53807 #258 1959 37pp · 53808 #259 1959 36pp · 53809 #260 1959 36pp
+        53810 #260 1959 36pp · 53811 #261 1959 36pp · 53812 #261 1959 36pp · 53813 #262 1959 36pp · 53814 #262 1959 36pp · 53815 #263 1959 37pp · 53816 #264 1959 36pp · 53817 #264 1959 36pp
+        53818 #265 1959 36pp · 53819 #265 1959 36pp · 53820 #266 1959 36pp · 53821 #267 1959 27pp · 53822 #268 1959 36pp · 53823 #269 1960 36pp · 53824 #270 1960 36pp · 53825 #271 1960 36pp
+        53826 #272 1960 36pp · 53827 #273 1960 36pp · 53828 #274 1960 36pp · 53829 #275 1960 36pp · 53830 #276 1960 38pp · 53831 #277 1960 36pp · 53832 #278 1960 28pp · 53833 #279 1960 36pp
+        53834 #280 1961 36pp · 53835 #282 1961 14pp · 53836 #283 1961 15pp · 53837 #284 1961 27pp · 53838 #285 1961 26pp · 53839 #286 1961 27pp · 53840 #287 1961 26pp · 53841 #288 1961 26pp
+        53842 #289 1961 26pp · 53843 #290 1961 26pp · 53844 #300 1962 25pp · 53845 #304 1963 25pp · 53846 #306 1963 27pp · 53847 #309 1963 37pp · 53848 #310 1963 26pp · 53849 #312 1963 26pp
+        53850 #316 1964 26pp · 53851 #329 1965 37pp · 53852 #335 1965 37pp · 53853 #340 1966 25pp · 53854 #341 1966 26pp · 53855 #346 1966 24pp · 53856 #347 1966 24pp · 53857 #348 1966 25pp
+        53858 #349 1966 25pp · 53859 #352 1967 24pp · 53860 #353 1967 24pp · 53861 #354 1967 23pp · 53862 #356 1967 26pp · 53863 #357 1967 23pp · 53864 #358 1967 37pp · 53865 #360 1967 25pp
+        53866 #368 1968 25pp · 53867 #369 1968 25pp · 53868 #370 1968 26pp · 53869 #374 1968 24pp · 53870 #381 1969 25pp · 53871 #382 1969 24pp · 53872 #383 1969 25pp · 53873 #384 1969 24pp
+        53874 #385 1969 24pp · 53875 #386 1969 26pp · 53876 #387 1969 26pp · 53877 #388 1970 25pp · 53878 #389 1970 27pp · 53879 #390 1970 59pp · 53880 #391 1970 25pp · 53881 #392 1970 25pp
+        53882 #393 1970 27pp · 53883 #394 1970 25pp · 53884 #395 1970 26pp · 53885 #396 1970 26pp · 53886 #397 1970 23pp · 53887 #398 1970 23pp · 53888 #399 1970 29pp · 53889 #400 1970 23pp
+        53890 #401 1971 25pp · 53891 #402 1971 23pp · 53892 #403 1971 55pp · 53893 #404 1971 23pp · 53894 #405 1971 23pp · 53895 #406 1971 23pp · 53896 #407 1971 23pp · 53897 #408 1971 23pp
+        53898 #409 1971 39pp · 53899 #410 1971 39pp · 53900 #411 1971 32pp · 53901 #412 1971 39pp · 53902 #413 1971 40pp · 53903 #414 1972 40pp · 53904 #415 1972 40pp · 53905 #416 1972 95pp
+        53906 #417 1972 39pp · 53907 #418 1972 40pp · 53908 #419 1972 40pp · 53909 #420 1972 39pp · 53910 #421 1972 25pp · 53911 #422 1972 25pp · 53912 #423 1972 25pp · 53913 #424 1972 24pp
+        53914 #431 1974 21pp · 53915 #433 1974 21pp · 53916 #434 1974 21pp · 53917 #438 1975 21pp · 53918 #439 1975 19pp · 53919 #440 1975 19pp · 53920 #446 1976 13pp · 53921 #447 1976 13pp
+        53922 #448 1976 19pp · 53923 #449 1977 13pp · 53924 #450 1977 13pp · 53925 #453 1977 8pp · 53926 #454 1977 8pp · 53927 #455 1977 8pp · 54001 #461 1979 69pp · 54002 #462 1979 68pp
+        54003 #464 1979 69pp · 54004 #465 1979 55pp · 54005 #466 1979 54pp · 54006 #467 1980 19pp · 54007 #468 1980 20pp · 54008 #469 1980 18pp · 54009 #470 1980 18pp · 54010 #471 1980 18pp
+        54011 #472 1980 18pp · 54012 #473 1980 18pp · 54013 #474 1980 18pp · 54014 #475 1980 26pp · 54015 #476 1980 26pp · 54016 #477 1980 26pp · 54017 #478 1980 26pp · 54032 #492 1982 99pp
+        54033 #493 1982 100pp · 54036 #496 1983 101pp · 54037 #497 1983 100pp · 54038 #498 1983 99pp · 54041 #501 1983 100pp · 54044 #516 2010 31pp · 54045 #517 2010 33pp · 54046 #518 2010 32pp
+        54047 #519 2010 32pp · 54048 #520 2010 30pp · 54049 #521 2011 32pp
+      [54018] Adventure Comics 479-Dial H for Hero 3 stories (03-1981).cbr (25pp)
+      [54019] Adventure Comics 480-Dial H for Hero 3 stories (04-1981).cbr (27pp)
+      [54020] Adventure Comics 481-Dial H for Hero 3 stories (05-1981).cbr (29pp)
+      [54021] Adventure Comics 482-Dial H for Hero 3 stories (06-1981).cbr (29pp)
+      [54022] Adventure Comics 483-Dial H for Hero 2 stories (07-1981).cbr (28pp)
+      [54023] Adventure Comics 484-Dial H for Hero 2 stories (08-1981).cbr (28pp)
+      [54024] Adventure Comics 485-Dial H for Hero ctc (09-1981).cbr (36pp)
+      [54025] Adventure Comics 486-Dial H for Hero 3 stories (10-1981).cbr (27pp)
+      [54026] Adventure Comics 487-Dial H for Hero 2 stories (11-1981).cbr (30pp)
+      [54027] Adventure Comics 488-Dial H for Hero 2 stories (alt) (12-1981).cbr (31pp)
+      [54028] Adventure Comics 488-Dial H for Hero 2 stories ctc (12-1981).cbr (41pp)
+      [54029] Adventure Comics 489-Dial H for Hero 2 stories ctc (11-1982).cbr (36pp)
+      [54030] Adventure Comics 490-Dial H for Hero ctc (02-1982).cbr (36pp)
+      [54031] Adventure Comics 491-Shazam, Superboy, Aquaman, Black Canary, Sandman, Spectre ctc (09-1982).cbr (99pp)
+      [54034] Adventure Comics 494-Challengers, Legion, Aquaman, Shazam, Superman, Spectre ctc (12-1982).cbr (100pp)
+      [54035] Adventure Comics 495-Challengers, Superboy, Aquaman, Shazam, Sandman, Spectre ctc (01-1983).cbr (100pp)
+      [54039] Adventure Comics 499-Plastic Man, Legion, Aquaman, Shazam, Sandman, Spectre ctc (05-1983).cbr (100pp)
+      [54040] Adventure Comics 500-Legion of Super-Heroes 11 stories ctc (06-1983).cbr (148pp)
+      [54042] Adventure Comics 502-Plastic Man, Legion, Aquaman, Shazam, Sandman, Spectre ctc (08-1983).cbr (100pp)
+      [54043] Adventure Comics 503-Legion, Plastic Man, Aquaman, Zatanna, Guardian ctc (09-1983).cbr (100pp)
+
+== S9026 House of Secrets  [split]  165 files / 0 collections  decided in R-099 (R)
+   decided: R 9026 | signal e (165 files) hides a second run's issues: 154 files in "House of Secrets v1 (1956)" + one facsimile are CV 1768 (DC 1956, cached #1-80, stale count) = GCD 1192 (1956-1978, 154, per-file 152), but the ten files in "Vertigo\House of Secrets v2 (1996)" (#16-25, dated 1996-1998, per-file GCD 5511 10/10) are the 1996 Vertigo series CV 5751 / GCD 5511 (25), whose #1-25 live on S9027 (S cv=5751 gcd=5511) — ten whole issues of another shelf's run are not residue
+   F 9026 split-needed | the ten items "House of Secrets 016-025" in folder "Vertigo\House of Secrets v2 (1996)" -> JOIN S9027 (stores cv=5751 gcd=5511; key "House of Secrets (1996)"); the 1956 run's 154 issues + the #92 facsimile stay as cv=1768 gcd=1192
+   N 9026 cv=1768 gcd=1192 — the S line for the kept 1956 run once the Vertigo #16-25 move (0.9: ComicVine splits the run — CV 1768 caches #1-80 and files the 1969 revival as 2435 "House of Secrets" (74) — while GCD 1192 spans #1-154; the lead should check whether S9026 needs cv=2435 for #81-154)
+   named: S9027 House of Secrets  44 files  keys: "House of Secrets (1996)" | "House of Secrets - Facade"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S15308 "Secrets of Haunted House" 46f [title+1 — S cv=2738 gcd=2224 (B-009 0.95)] keys: "Secrets of Haunted House"
+   nearby: S15309 "Secrets of Sinister House" 5f [title+1 — S cv=2554 gcd=2032 (C-010 0.9)] keys: "Secrets of Sinister House"
+   keys now: "House of Secrets (1956)" x90 · "House of Secrets" x75
+   groups (title x folder): 3
+   G1 "House of Secrets" in DC\House of Secrets\House of Secrets v1 (1956) — 154 file(s), numbers 1-154, pp 35-52; cv per-file 1768x154; gcd per-file 1192x151; key 'House of Secrets (1956)' | 'House of Secrets'
+      e.g. House of Secrets 001 (DC) (Nov-Dec 1956) (c2c) (Superscan).cbz
+        55661 #1 1956 37pp · 55662 #2 1957 36pp · 55663 #3 1957 37pp · 55664 #4 1957 37pp · 55665 #5 1957 37pp · 55666 #6 1957 36pp · 55667 #7 1957 37pp · 55668 #8 37pp · 55669 #9 1958 36pp
+        55670 #10 1958 37pp · 55671 #11 1958 36pp · 55672 #12 1958 36pp · 55673 #13 1958 36pp · 55674 #14 1958 36pp · 55675 #15 1958 36pp · 55676 #16 1959 37pp · 55677 #17 1959 36pp
+        55678 #18 1958 36pp · 55679 #19 1959 36pp · 55680 #20 1959 36pp · 55681 #21 1959 36pp · 55682 #22 1959 36pp · 55683 #23 1959 36pp · 55684 #24 1959 36pp · 55685 #25 1959 36pp
+        55686 #26 1959 36pp · 55687 #27 1959 36pp · 55688 #28 1960 36pp · 55689 #29 1960 36pp · 55690 #30 1960 36pp · 55691 #31 1960 36pp · 55692 #32 1960 36pp · 55693 #33 1960 36pp
+        55694 #34 1960 36pp · 55695 #35 1960 36pp · 55696 #36 1960 36pp · 55697 #37 1960 36pp · 55698 #38 1960 36pp · 55699 #39 1960 36pp · 55700 #40 1961 36pp · 55701 #41 1961 36pp
+        55702 #42 1961 36pp · 55703 #43 1961 36pp · 55704 #44 1961 36pp · 55705 #45 1961 36pp · 55706 #46 1961 36pp · 55707 #47 1961 36pp · 55708 #48 1961 36pp · 55709 #49 1961 36pp
+        55710 #50 1961 36pp · 55711 #51 1961 36pp · 55712 #52 1962 36pp · 55713 #53 1962 36pp · 55714 #54 1962 36pp · 55715 #55 1962 37pp · 55716 #56 1962 36pp · 55717 #57 1962 36pp
+        55718 #58 1963 36pp · 55719 #59 1963 36pp · 55720 #60 1963 36pp · 55721 #61 1964 36pp · 55722 #62 1963 36pp · 55723 #63 1963 36pp · 55724 #64 1964 36pp · 55725 #65 1964 ?pp
+        55726 #66 1964 36pp · 55727 #67 1964 37pp · 55728 #68 1964 37pp · 55729 #69 1964 ?pp · 55730 #70 1965 35pp · 55731 #71 1965 ?pp · 55732 #72 1965 36pp · 55733 #73 1965 36pp
+        55734 #74 1965 36pp · 55735 #75 1965 36pp · 55736 #76 1966 36pp · 55737 #77 1966 37pp · 55738 #78 1966 36pp · 55739 #79 1966 36pp · 55740 #80 1966 37pp
+        55741 #81 1969 36pp key="House of Secrets" · 55742 #82 1969 36pp key="House of Secrets" · 55743 #83 1970 36pp key="House of Secrets" · 55744 #84 1970 36pp key="House of Secrets"
+        55745 #85 1970 35pp key="House of Secrets" · 55746 #86 1970 36pp key="House of Secrets" · 55747 #87 1970 36pp key="House of Secrets" · 55748 #88 1970 36pp key="House of Secrets"
+        55749 #89 1970 36pp key="House of Secrets" · 55750 #90 1971 36pp key="House of Secrets" · 55751 #91 1971 36pp key="House of Secrets" · 55752 #92 1971 37pp key="House of Secrets"
+        55753 #93 1971 52pp key="House of Secrets" · 55754 #94 1971 52pp key="House of Secrets" · 55755 #95 1972 52pp key="House of Secrets" · 55756 #96 1972 51pp key="House of Secrets"
+        55757 #97 1972 52pp key="House of Secrets" · 55758 #98 1972 52pp key="House of Secrets" · 55759 #99 1972 36pp key="House of Secrets" · 55760 #100 1972 35pp key="House of Secrets"
+        55761 #101 1972 36pp key="House of Secrets" · 55762 #102 1972 36pp key="House of Secrets" · 55763 #103 1972 36pp key="House of Secrets" · 55764 #104 1973 36pp key="House of Secrets"
+        55765 #105 1973 37pp key="House of Secrets" · 55766 #106 1973 36pp key="House of Secrets" · 55767 #107 1973 36pp key="House of Secrets" · 55768 #108 1973 35pp key="House of Secrets"
+        55769 #109 1973 36pp key="House of Secrets" · 55770 #110 1973 36pp key="House of Secrets" · 55771 #111 1973 36pp key="House of Secrets" · 55772 #112 1973 36pp key="House of Secrets"
+        55773 #113 1973 35pp key="House of Secrets" · 55774 #114 1973 36pp key="House of Secrets" · 55775 #115 1974 36pp key="House of Secrets" · 55776 #116 1974 36pp key="House of Secrets"
+        55777 #117 1974 36pp key="House of Secrets" · 55778 #118 1974 35pp key="House of Secrets" · 55779 #119 1974 35pp key="House of Secrets" · 55780 #120 1974 36pp key="House of Secrets"
+        55781 #121 1974 35pp key="House of Secrets" · 55782 #122 1974 36pp key="House of Secrets" · 55783 #123 1974 37pp key="House of Secrets" · 55784 #124 1974 35pp key="House of Secrets"
+        55785 #125 1974 36pp key="House of Secrets" · 55786 #126 1974 36pp key="House of Secrets" · 55787 #127 1975 35pp key="House of Secrets" · 55788 #128 1975 37pp key="House of Secrets"
+        55789 #129 1975 36pp key="House of Secrets" · 55790 #130 1975 36pp key="House of Secrets" · 55791 #131 1975 36pp key="House of Secrets" · 55792 #132 1975 35pp key="House of Secrets"
+        55793 #133 1975 37pp key="House of Secrets" · 55794 #134 1975 36pp key="House of Secrets" · 55795 #135 1975 36pp key="House of Secrets" · 55796 #136 1975 36pp key="House of Secrets"
+        55797 #137 1975 35pp key="House of Secrets" · 55798 #138 1975 35pp key="House of Secrets" · 55799 #139 1976 37pp key="House of Secrets" · 55800 #140 1976 36pp key="House of Secrets"
+        55801 #141 1976 37pp key="House of Secrets" · 55802 #142 1976 37pp key="House of Secrets" · 55803 #143 1977 37pp key="House of Secrets" · 55804 #144 1977 37pp key="House of Secrets"
+        55805 #145 1977 36pp key="House of Secrets" · 55806 #146 1977 36pp key="House of Secrets" · 55807 #147 1977 38pp key="House of Secrets" · 55808 #148 1977 36pp key="House of Secrets"
+        55809 #149 1978 36pp key="House of Secrets" · 55810 #150 1978 37pp key="House of Secrets" · 55811 #151 1978 37pp key="House of Secrets" · 55812 #152 1978 36pp key="House of Secrets"
+        55813 #153 1978 37pp key="House of Secrets" · 55814 #154 1978 43pp key="House of Secrets"
+   G2 "House of Secrets" in DC\_DC Facsimilie Editions — 1 file(s), numbers 92, pp 36-36; cv per-file 1768x1; gcd per-file 1192x1; key 'House of Secrets'
+      [64001] House of Secrets 092 - Facsimile Edition (1971) (Digital) (Shadowcat-Empire).cbz (36pp)
+   G3 "House of Secrets" in Vertigo\House of Secrets v2 (1996) — 10 file(s), numbers 16-25, pp 23-25; cv per-file 1768x10; gcd per-file 5511x10; key 'House of Secrets (1956)'
+      e.g. House of Secrets 016 (1998) (Digital) (Shadowcat-Empire).cbz
+        112762 #16 1998 25pp · 112763 #17 1998 25pp · 112764 #18 1998 25pp · 112765 #19 1998 25pp · 112766 #20 1998 23pp · 112767 #21 1998 23pp · 112768 #22 1998 23pp · 112769 #23 1998 23pp
+        112770 #24 1998 23pp · 112771 #25 1998 23pp
+
+== S6739 Firestorm, the Nuclear Man  [split]  41 files / 0 collections  decided in R-099 (R)
+   decided: R 6739 | signal e (41 files) hides a second run: 28 files are CV 3789 "Firestorm, the Nuclear Man" (DC 1987, #65-92) = GCD 3357 (1987-1990, 28) in "Firestorm v2 (1982)", but the 13 "Firestorm - The Nuclear Man 2006-2007 (#23-35)" in "Firestorm v3 (2004)" are the 2004 Firestorm run's retitled back half — CV 11157 "Firestorm" (DC 2004, 35) = GCD 15983 (2006-2007, 13, per-file 13/13; GCD splits #1-22 as 12092) — whose #1-22 live on S96886 (S cv=11157 gcd=12092, C-009 0.95); thirteen whole issues of another shelf's run are a co-equal run, not residue
+   F 6739 split-needed | the 13 items "Firestorm - The Nuclear Man, 2006-03-00 (#23)" … "2007-04-00 (#35)" (folder "Firestorm v3 (2004)") -> JOIN S96886 (stores cv=11157, key "Firestorm v3 (2004)", holds #1-22 of the same CV volume); the 27 issues #65-92 + Annual #5 stay as cv=3789 gcd=3357
+   N 6739 cv=3789 gcd=3357 — the S line for the kept 1987 run once #23-35 move (0.9: item 54982 "Firestorm - The Nuclear Man Annual (#05) 1987" is the annual, a separate record)
+   named: S96886 Firestorm  22 files  keys: "Firestorm v3 (2004)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   keys now: "Firestorm, The Nuclear Man" x27 · "Firestorm: The Nuclear Man" x14
+   groups (title x folder): 3
+   G1 "Firestorm - The Nuclear Man Annual" in DC\Firestorm\Firestorm v2 (1982) — 1 file(s), numbers 5, pp 40-40; cv per-file 3789x1; key 'Firestorm: The Nuclear Man'
+      [54982] Firestorm - The Nuclear Man Annual, 1987-07-21 (#05) (digital) (Glorith-HD).cbz (40pp)
+   G2 "Firestorm, The Nuclear Man" in DC\Firestorm\Firestorm v2 (1982) — 27 file(s), numbers 65-70, 72-92, pp 23-25; cv per-file 3789x27; gcd per-file 3357x27; key 'Firestorm, The Nuclear Man'
+      e.g. Firestorm, The Nuclear Man, 1987-09-00 (#65) (digital) (Glorith-Novus-HD).cbz
+        54991 #65 24pp · 54992 #67 24pp · 54993 #66 24pp · 54994 #68 24pp · 54995 #69 24pp · 54996 #70 24pp · 54997 #72 24pp · 54998 #73 24pp · 54999 #74 24pp · 55000 #75 24pp · 55001 #76 25pp
+        55002 #80 24pp · 55003 #77 23pp · 55004 #78 24pp · 55005 #79 24pp · 55006 #81 24pp · 55007 #82 24pp · 55008 #83 24pp · 55009 #84 24pp · 55010 #85 24pp · 55011 #86 24pp · 55012 #87 24pp
+        55013 #88 24pp · 55014 #89 24pp · 55015 #90 24pp · 55016 #91 23pp · 55017 #92 23pp
+   G3 "Firestorm - The Nuclear Man" in DC\Firestorm\Firestorm v3 (2004) — 13 file(s), numbers 23-35, pp 23-24; cv per-file 3789x13; gcd per-file 15983x13; key 'Firestorm: The Nuclear Man'
+      e.g. Firestorm - The Nuclear Man, 2006-03-00 (#23) (digital) (Glorith-Novus-HD).cbz
+        55082 #23 24pp · 55083 #24 24pp · 55084 #25 24pp · 55085 #26 24pp · 55086 #27 24pp · 55087 #28 23pp · 55088 #29 23pp · 55089 #30 24pp · 55090 #31 24pp · 55091 #32 24pp · 55092 #33 24pp
+        55093 #34 24pp · 55094 #35 23pp
+
+== S62538 Crisis on Infinite Earths  [split]  30 files / 5 collections  decided in R-099 (R)
+   decided: R 62538 | signal c (three RANGE CONTRADICTED on 19129-19131) and d (flags #129 / #206 on 19128) expose a co-equal line: the maxi CV 3441 / GCD 2973 (DC 1985-1986, 12) carries the nine HC-part issues, the facsimiles (1pp cover packs cost nothing), the TPB and the 35th Anniversary Deluxe — but the three "COL Crisis on Infinite Earths Companion Deluxe Edition Vol. 01-03" (505/535/528pp) are CV 115046 / GCD 133135 (DC 2018-2019, 3), a line collecting TIE-INS (All-Star Squadron, Infinity Inc., DC Comics Presents, Wonder Woman 1942 …), not the maxi — three whole books of another line with its own record are a co-equal run
+   F 62538 split-needed | items 19129, 19130, 19131 ("COL Crisis on Infinite Earths Companion Deluxe Edition Vol. 01-03", keys "Crisis on Infinite Earths Companion Deluxe" / "... Companion Deluxe Edition") -> "Crisis on Infinite Earths Companion Deluxe Edition (2018)" run cv=115046 gcd=133135 (who-stores cv=115046: per-file only, no shelf); everything else stays as cv=3441 gcd=2973
+   N 62538 cv=3441 gcd=2973 — the S line for the kept maxi once the Companion line moves (0.9: "Crisis on Infinite Earths Crossover Index" 16772 and "#0 - The Untold Story" 16773 are residue)
+   N 62538 flags #129 duplicate-edition and #206 label-ambiguous (item 19128): 16771 (the 2000 TPB) and 19128 (the 2019 35th Anniversary Deluxe) are two editions of the same twelve issues, both legitimately #1-12 — the lead may resolve both as "two editions, same block"
+   N 19129 retract judged range #1-3: the Companion Vol. 01 collects tie-ins (DCP #78, All-Star Squadron #50-60, Fury of Firestorm #41-42, GL #194-198 per GCD 1871484), never Crisis #1-3
+   N 19130 retract judged range #1-5: Vol. 02 collects tie-ins (Detective #558, DCP #86, Swamp Thing #44, Losers Special #1, Infinity Inc. #18-25, New Teen Titans #13-14, JLA #244-245 per GCD 1960075), never Crisis #1-5
+   N 19131 retract judged range #6-8: Vol. 03 collects tie-ins (Amethyst #13, Omega Men #31/#33, Blue Devil #17-18, WW #327-329, DCP #87-88/#94-95, Superman #413-415, LSH #16/#18 per GCD 2023146), never Crisis #6-8
+   nearby: S64823 "Green Lantern" 364f [shares gcd=1448 (collected by item 19129) — S cv=2839 gcd=1448 (R-057 0.95)] keys: "Green Lantern (1960)" | "Green Lantern Corps v1 (1986)" | "Green Lantern v2 (1960)"
+   nearby: S65813 "Superman" 334f [shares gcd=116 (collected by item 19131) — S cv=773 gcd=116 (R-049 0.9)] keys: "Superman (1939)" | "Superman 005F" | "Superman v1 (1939)" | "Superman v1 (2006)"
+   nearby: S66314 "Wonder Woman" 290f [shares gcd=277 (collected by item 19131) — S cv=18525 gcd=277 (R-051 0.95)] keys: "Wonder Woman (1942)" | "Wonder Woman v1 (1942)"
+   nearby: S94644 "Justice League of America" 261f [shares gcd=1449 (collected by item 19130) — S cv=2014 gcd=1449 (C-015 0.95)] keys: "Justice League of America v1 (1960)"
+   nearby: S4520 "DC Comics Presents" 108f [shares gcd=2440 (collected by item 19129) — S cv=2943 gcd=2440 (R-099 0.9)] keys: "DC Comics Presents" | "DC Comics Presents #053 - Superman and House of Mystery" | "DC Comics Presents - Darkseid War" | "DC Comics Presents - The Flash" (+4 more: lookup.py --shelf 4520)
+   nearby: S9456 "Infinity, Inc." 85f [shares gcd=2833 (collected by item 19130) — S cv=3308 gcd=2833 (C-009 0.95)] keys: "Infinity, Inc." | "Infinity, Inc. Annual" | "Infinity, Inc. Special"
+   nearby: S98213 "Legion of Super-Heroes v3 (1984)" 83f [shares gcd=2835 (collected by item 19131) — S cv=3310 gcd=2835 (R-034 0.9)] keys: "Legion of Super-Heroes v3 (1984)"
+   nearby: S764 "All-Star Squadron" 73f [shares gcd=2583 (collected by item 19129) — S cv=3070 gcd=2583 (C-009 0.95)] keys: "All-Star Squadron" | "All-Star Squadron Annual"
+   nearby: S65956 "The Fury of Firestorm" 65f [shares gcd=2628 (collected by item 19129) — S cv=3115 gcd=2628 (R-099 0.9)] keys: "The Fury of Firestorm (1982)" | "The Fury of Firestorm - The Nuclear Men - God Particle (1982)" | "The Fury of Firestorm Annual (1982)"
+   nearby: S19212 "The New Teen Titans" 15f [shares gcd=2842 (collected by item 19130) — S cv=3316 gcd=2842 (C-019 0.9)] keys: "New Teen Titans" | "The New Teen Titans"
+   nearby: S46238 "Legends of the DCU: Crisis on Infinite Earths" 2f [shares gcd=6167 (collected by item 19130) — S cv=25595 gcd=6167 (R-062 1.0)] keys: "Legends of the DC Universe: Crisis on Infinite Earths"
+   nearby: S4872 "Dark Crisis on Infinite Earths" 1f [title+1 — S cv=152100 gcd=201525 (C-009 0.95)] keys: "Dark Crisis On Infinite Earths"
+   keys now: "Crisis on Infinite Earths" x18 · "Crisis On Infinite Earths" x8 · "Crisis on Infinite Earths Companion Deluxe Edition" x2 · "Crisis on Infinite Earths: 35th Anniversary Deluxe Edition" x1 · "Crisis on Infinite Earths Companion Deluxe" x1
+   groups (title x folder): 17
+   G1 "Crisis on Infinite Earths HC Part 01  The Summoning" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\027 Crisis on Infinite Earths — 1 file(s), pp 31-31; cv per-file 3441x1; key 'Crisis on Infinite Earths'
+      [15444] 01 Crisis on Infinite Earths HC Part 01  The Summoning.cbz (31pp)
+   G2 "Crisis on Infinite Earths HC Part 02  Time and Time Again" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\027 Crisis on Infinite Earths — 1 file(s), pp 25-25; cv per-file 3441x1; key 'Crisis on Infinite Earths'
+      [15446] 03 Crisis on Infinite Earths HC Part 02  Time and Time Again.cbz (25pp)
+   G3 "Crisis on Infinite Earths HC Part 03  Oblivion Upon Us" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\027 Crisis on Infinite Earths — 1 file(s), pp 26-26; cv per-file 3441x1; key 'Crisis on Infinite Earths'
+      [15448] 05 Crisis on Infinite Earths HC Part 03  Oblivion Upon Us.cbz (26pp)
+   G4 "Crisis on Infinite Earths HC Part 04  And Thus Shall the World DIE" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\027 Crisis on Infinite Earths — 1 file(s), pp 25-25; cv per-file 3441x1; key 'Crisis on Infinite Earths'
+      [15449] 06 Crisis on Infinite Earths HC Part 04  And Thus Shall the World DIE.cbz (25pp)
+   G5 "Crisis on Infinite Earths HC Part 05  Worlds in Limbo" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\027 Crisis on Infinite Earths — 1 file(s), pp 25-25; cv per-file 3441x1; key 'Crisis on Infinite Earths'
+      [15450] 07 Crisis on Infinite Earths HC Part 05  Worlds in Limbo.cbz (25pp)
+   G6 "Crisis on Infinite Earths HC Part 06  3 Earths 3 Deaths" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\027 Crisis on Infinite Earths — 1 file(s), pp 26-26; cv per-file 3441x1; key 'Crisis on Infinite Earths'
+      [15451] 08 Crisis on Infinite Earths HC Part 06  3 Earths 3 Deaths.cbz (26pp)
+   G7 "Crisis on Infinite Earths HC Part 07  Beyond the Silent Night" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\027 Crisis on Infinite Earths — 1 file(s), pp 43-43; cv per-file 3441x1; key 'Crisis on Infinite Earths'
+      [15452] 09 Crisis on Infinite Earths HC Part 07  Beyond the Silent Night.cbz (43pp)
+   G8 "Crisis on Infinite Earths HC Part 08  A Flash Of The Lightning" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\027 Crisis on Infinite Earths — 1 file(s), pp 26-26; cv per-file 3441x1; key 'Crisis on Infinite Earths'
+      [15453] 10 Crisis on Infinite Earths HC Part 08  A Flash Of The Lightning.cbz (26pp)
+   G9 "Crisis on Infinite Earths HC Part 09  War Zone" in DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\027 Crisis on Infinite Earths — 1 file(s), pp 26-26; cv per-file 3441x1; key 'Crisis on Infinite Earths'
+      [15454] 11 Crisis on Infinite Earths HC Part 09  War Zone.cbz (26pp)
+   G10 "Crisis on Infinite Earths TPB (jxsi-DCP)" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\02 Crisis on Infinite earths — 1 file(s), 1 COL, pp 359-359; cv per-file 25735x1; gcd per-file 16790x1; key 'Crisis on Infinite Earths'
+      [16771] COL Crisis on Infinite Earths TPB (jxsi-DCP).cbr (359pp)
+         own record cv 25735 / gcd s16790 "Crisis on Infinite Earths" (issue 275452) COLLECTS: gcd=2973 Crisis on Infinite Earths (1985) #1-12 · gcd=23255 Crisis on Infinite Earths (1998) (unnumbered)
+   G11 "Crisis_on_Infinite_Earths_Crossover_Index__OCD" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\02 Crisis on Infinite earths — 1 file(s), pp 37-37; cv per-file 3441x1; key 'Crisis on Infinite Earths'
+      [16772] Crisis_on_Infinite_Earths_Crossover_Index__OCD_.cbr (37pp)
+   G12 "Crisis_on_Infinite_Earths__0_-_The_Untold_Story" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\02 Crisis on Infinite earths — 1 file(s), pp 57-57; cv per-file 3441x1; key 'Crisis on Infinite Earths'
+      [16773] Crisis_on_Infinite_Earths__0_-_The_Untold_Story.cbr (57pp)
+   G13 "Crisis on Infinite Earths - 35th Anniversary Deluxe Edition (2019) (digital) (Son of Ultron-Empire)" in DC\#DC Events\Crisis on Infinite Earths (1985) — 1 file(s), 1 COL, pp 460-460; cv per-file 121545x1; gcd per-file 150499x1; key 'Crisis on Infinite Earths: 35th Anniversary Deluxe Edition'
+      [19128] COL Crisis on Infinite Earths - 35th Anniversary Deluxe Edition (2019) (digital) (Son of Ultron-Empire).cbr (460pp)
+         own record cv 121545 / gcd s150499 "Crisis on Infinite Earths: 35th Anniversary Deluxe Edition" (issue 2017071) COLLECTS: gcd=2973 Crisis on Infinite Earths (1985) #1-12 · gcd=92869 Crisis on Infinite Earths Deluxe Edition (2015) (unnumbered) · gcd=24026 History of the DC Universe (2002) (unnumbered) · gcd=23255 Crisis on Infinite Earths (1998) (unnumbered)
+   G14 "Crisis on Infinite Earths Companion Deluxe Edition" in DC\#DC Events\Crisis on Infinite Earths (1985) — 3 file(s), 3 COL, pp 505-535; cv per-file 115046x3; gcd per-file 133135x3; key 'Crisis on Infinite Earths Companion Deluxe Edition' | 'Crisis on Infinite Earths Companion Deluxe'
+      [19129] COL Crisis on Infinite Earths Companion Deluxe Edition Vol. 01 (2018) (digital) (Son of Ultron-Empire).cbr (505pp)  key="Crisis on Infinite Earths Companion Deluxe Edition"
+         own record cv 115046 / gcd s133135 "Crisis on Infinite Earths Companion Deluxe Edition" (issue 1871484) COLLECTS: gcd=2583 All-Star Squadron (1981) #50-60 · gcd=1448 Green Lantern (1960) #194-198 · gcd=2628 The Fury of Firestorm (1982) #41-42 · gcd=2440 DC Comics Presents (1978) #78
+      [19130] COL Crisis on Infinite Earths Companion Deluxe Edition Vol. 02 (2019) (digital) (Son of Ultron-Empire).cbr (535pp)  key="Crisis on Infinite Earths Companion Deluxe Edition"
+         own record cv 115046 / gcd s133135 "Crisis on Infinite Earths Companion Deluxe Edition" (issue 1960075) COLLECTS: gcd=2833 Infinity, Inc. (1984) #18-25 · gcd=2842 The New Teen Titans (1984) #13-14 · gcd=1449 Justice League of America (1960) #244-245 · gcd=6167 Legends of the DCU: Crisis on Infinite Earths (1999) #1
+      [19131] COL Crisis on Infinite Earths Companion Deluxe Edition Vol. 03 (2019) (digital) (Son of Ultron-Empire).cbr (528pp)  key="Crisis on Infinite Earths Companion Deluxe"
+         own record cv 115046 / gcd s133135 "Crisis on Infinite Earths Companion Deluxe Edition" (issue 2023146) COLLECTS: gcd=2440 DC Comics Presents (1978) #87-88, #94-95 · gcd=116 Superman (1939) #413-415 · gcd=277 Wonder Woman (1942) #327-329 · gcd=2835 Legion of Super-Heroes (1984) #16, #18
+   G15 "Crisis On Infinite Earths" in DC\#DC Events\Crisis on Infinite Earths (1985)\Variant Covers — 8 file(s), numbers 3-5, 7, pp 1-1; cv per-file 3441x8; gcd per-file 133135x2; key 'Crisis On Infinite Earths'
+      e.g. Crisis On Infinite Earths 003 (2024) (Facsimile Edition Blank Variant) (Digital) (MikeNY76-Empire).cbz
+        19137 #3 2024 1pp · 19138 #3 2024 1pp · 19139 #4 2024 1pp · 19140 #4 2024 1pp · 19141 #5 2024 1pp · 19142 #5 2024 1pp · 19143 #7 2024 1pp · 19144 #7 2024 1pp
+   G16 "Crisis on Infinite Earths" in DC\#DC Events\Crisis on Infinite Earths (1985)\Variant Covers — 5 file(s), numbers 1-2, pp 1-1; cv per-file 3441x5; gcd per-file 133135x5; key 'Crisis on Infinite Earths'
+      e.g. Crisis on Infinite Earths 001 (2024) (Facsimile Edition (2024) (Blank Variant) (Digital) (MikeNY76-Empire).cbz
+        19132 #1 2024 1pp · 19133 #1 2024 1pp · 19134 #1 2024 1pp · 19135 #2 2024 1pp · 19136 #2 2024 1pp
+   G17 "Crisis on Infinite Earths" in DC\_DC Facsimilie Editions — 1 file(s), numbers 8, pp 36-36; cv per-file 3441x1; gcd per-file 2973x1; key 'Crisis on Infinite Earths'
+      [63921] Crisis on Infinite Earths 008 - Facsimile Edition (1985) (Digital) (Shadowcat-Empire).cbz (36pp)
