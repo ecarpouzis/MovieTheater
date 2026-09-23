@@ -1,0 +1,206 @@
+## Conventions for this batch (37 shown of 89 matched; 355 in LEDGER.md; 5 shelf/shelves: pub:idw ×3 · pub:image ×2 · folder:bucket ×1 · folder:vn-year ×1 · pub:marvel ×1 · kind:trade-only ×1 · kind:collected-line ×1 · pub:lion-forge-magnetic ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-078] (2 shelf/shelves) pub:boom pub:dynamite pub:idw sig:trade-link
+- IDW is the Dynamite/BOOM shape at scale: EVERY mini has a same-title count-1 trade a year later in BOTH
+  providers, and the stored link is that trade on ~1 shelf in 5 (`wrong-cv-link` is the commonest IDW flag). The
+  run is the line below it in "CV candidates".
+[L-086] (2 shelf/shelves) pub:idw pub:image sig:trade-link
+- The count-1 trade-as-stored-link rate is ~1 shelf in 4 on IDW AND Image (101 of 438) — a linker artefact,
+  publisher-independent; expect it everywhere a mini was collected a year later.
+[L-090] (2 shelf/shelves) pub:boom pub:idw pub:image pub:legendary pub:mad-cave sig:trade-link
+- Legendary Comics and Mad Cave mint the same-title count-1 collected record beside every mini in BOTH providers
+  (the Image/IDW/BOOM shape); the stored link is that record on half their shelves, and its `ratio 0/N` LOOKS like
+  a missing rip rather than a wrong record.
+[L-085] (4 shelf/shelves) sig:barcode sig:trade-link sig:twin
+- `gcd_issue` carries the trade's page count AND ISBN: it matched our rips within ±10pp on 100+ books and told
+  two same-title count-1 rows apart (an 8pp ashcan is not a twin of the trade).
+[L-013] (3 shelf/shelves) sig:probe
+- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
+  with the other spelling.
+[L-014] (3 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-026] (1 shelf/shelves) kind:collected-line kind:trade-only pass:item pub:image sig:trade-link
+- Image trade-only shelves carry THREE records for one comic: the RUN (CV volume + a GCD dump row), a GCD
+  "Collected Series" row whose count equals the BOOKS we hold, and a CV count-1 volume named after the trade's
+  subtitle. The per-file GCD leg and the stored CV link both tend to be the COLLECTED record — and their
+  agreement is NOT two legs, because both merely matched our holdings. The dump line names the run: read it.
+  Genuinely volume-published lines (Kill Six Billion Demons, Popgun, Norroway, Blood Stain, Swing) have no run
+  — the collected series IS the identity at 0.95. A later volume collecting a SEQUEL series → 0.9, residue named,
+  and the book still gets its `I` line on the collected series that covers it.
+[L-029] (1 shelf/shelves) kind:trade-only pub:dark-horse pub:image pub:marvel sig:probe sig:trade-link
+- On trade-only Marvel / Image / Dark Horse shelves the "CV linked" block is the block that misleads (it is the
+  collected record); `lookup.py` by the run's name finds the run when the packet names only the collected record.
+[L-043] (3 shelf/shelves) sig:probe
+- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
+  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
+[L-047] (1 shelf/shelves) kind:trade-only pub:boom pub:image sig:trade-link
+- BOOM! trade shelves = the Image three-record trap: run + same-title count-1 record a year later in BOTH
+  providers = the trade; the stored CV link IS that trade on 60 of 450 shelves. Jim Henson's Storyteller: `"The
+  Storyteller: X"` count 4 = the RUN, `"Jim Henson's The Storyteller: X"` count 1 = the trade, all eight titles.
+[L-050] (3 shelf/shelves) sig:probe
+- When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
+  punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
+  abbreviation the publisher uses ("HSE").
+[L-060] (1 shelf/shelves) folder:vn-year pub:caliber pub:dark-horse pub:image pub:marvel sig:stamp
+- A digital re-release can cut each collected volume into chapter files restarting at 1 (Dark Horse's 2014-15
+  Kabuki: seven `vNN` folders = seven different published comics from Caliber / Image / Marvel; v1 stamped one
+  Image volume on all 44 files). Read the chapter files as the runs they came from.
+[L-064] (3 shelf/shelves) pass:item sig:twin
+- GCD indexes PRINTINGS: the S line takes the first edition both legs agree on; the `I` line takes the printing
+  we hold (page counts match the edition's row). GCD issue ids for books come from `gcd_issue` — prefer the
+  issue id to the `s<series>` form; use `s<series>` only for twin/variant rows.
+[L-068] (1 shelf/shelves) kind:foreign pub:ablaze pub:cinebook pub:europe-comics pub:lion-forge-magnetic pub:papercutz-nbm
+- Europe Comics may have an ENGLISH PRINT sister edition in GCD (SelfMadeHero, Cinebook, NBM, Fanfare,
+  Magnetic Press, Ablaze) — the same text, not a translation — which is the better second leg than the
+  original-language row.
+[L-072] (3 shelf/shelves) sig:probe
+- GCD hides behind the SUBTITLE: "The Hunting Accident", "Giraffes on Horseback Salad", "Undesirables" return
+  nothing under their full titles — re-probe the SHORT title before writing `provider-missing`.
+[L-073] (1 shelf/shelves) pub:lion-forge-magnetic
+- A ripper's filename can carry a publisher's title shape ("H. G. Wells - <title>" = Insight/Lion Forge 2018),
+  not the older adaptation the stored link names.
+[L-088] (3 shelf/shelves) sig:probe
+- GCD hides behind a LONGER title too ("… and the Tale of Azkon's Heart", "Holiday Party (One-Shot)"), not only a
+  shorter one — probe both directions before `provider-missing`.
+[L-089] (3 shelf/shelves) sig:probe
+- A facsimile of a SINGLE issue is its own book; a reprint edition of a whole series is not — the original wins.
+[L-091] (1 shelf/shelves) kind:digital pub:lion-forge-magnetic
+- Lion Forge / Magnetic Press is a FORMAT split, not a missing leg: ComicVine serialises each European album into
+  N digital chapters while GCD holds the one collected book (Meka 4↔1, Naja 10↔1). Pair them at 0.9; when our file
+  is the whole album the stored link is the chapter volume.
+[L-095] (3 shelf/shelves) sig:probe
+- A folder that is a ripper's READING ORDER over several separately published arcs (The Ride, Revolution) has no
+  spanning record — the ladder is arc numbers, not issue numbers.
+[L-096] (3 shelf/shelves) sig:probe
+- GCD's exact filing recovers legs the probe misses: singular/plural ("Greeting", "Return"), two words ("Super
+  Hero"), a spelled ordinal ("Fortieth"), a dropped subtitle, or the colon form ("Jinx: Torso") — try each before
+  `provider-missing`.
+[L-101] (3 shelf/shelves) sig:twin
+- Page count tells GCD twins apart (a 32pp sampler vs the 256pp anthology); a count-0 GCD row (236534 "Cells at
+  Work! Lady") is an empty stub, not a leg.
+[L-116] (1 shelf/shelves) folder:vn-year pub:marvel sig:comicinfo sig:legacy-stamp sig:stamp
+- Old Marvel folders cut into `vN (year)` shelves: the per-file matcher picks the wrong DECADE by issue number
+  (Amazing Adventures 1961 on the 1970 run, Ka-Zar 1997 on 1974, Kull 1971 on 1982/1983). The folder's `vN (year)`
+  suffix and ComicInfo `Volume` beat it every time.
+[L-118] (3 shelf/shelves) sig:probe
+- A GCD collected series numbers its issues by VOLUME and titles them with the volume SUBTITLE — that, not the
+  page count, places a trade when a shelf holds several volumes of one line.
+[L-121] (1 shelf/shelves) folder:bucket pub:marvel
+- `_2099 Marvel` shelves carry a truncated key ("Doom", "Ghost Rider") that reaches the 20th-century namesake;
+  the folder's "<Title> 2099" is the identity and both providers hold it.
+[L-125] (3 shelf/shelves) sig:probe
+- A stored link that is the same title a DIFFERENT DECADE later is a new cluster (Fist of Khonshu 2024 on the
+  1985 Moon Knight run; a 1971 Sub-Mariner Annual on the 1998 annual) — years decide, never the title.
+[L-129] (1 shelf/shelves) folder:bucket pub:marvel sig:probe
+- GCD hides behind the definite article too ("Spider-Man vs. The Black Cat" 40812) and behind ComicVine's
+  spelling of a one-shot the parsed key never reached (four Thunderbolts one-shots) — probe the CV name in GCD.
+[L-130] (1 shelf/shelves) pub:marvel sig:legacy-stamp sig:probe
+- `lookup.py --year` separates same-title relaunches (Superior Spider-Man 2018 vs 2013); "Lethal Protector II"
+  is its own 5-issue run in both legs, not the 2022 Lethal Protector.
+[L-140] (1 shelf/shelves) kind:strip pub:lion-forge-magnetic pub:scout pub:small-press sig:probe
+- Bubble Comics (Exlibrium, Major Grom, Igor Grom, Meteora), Space Between, Scout/Roar, Strip For Me, Studio D., Imagine
+  Bin, SAF Comics, Magnetic Press and Lost His Keys Man are total GCD holes — ComicVine-only is the honest answer there.
+[L-157] (3 shelf/shelves) sig:probe
+- A GCD row with ZERO issues is an empty stub, not a leg (Skull Cat 197154, Rivers of London: Stray Cat Blues 213823,
+  Archer & Armstrong: Revival 164703) → `provider-missing`.
+[L-159] (3 shelf/shelves) sig:probe
+- An exact-name probe can miss a sequel the rip DOES hold: `--contains "Icarus Society"` found CV 143976 after the
+  exact "Prodigy: The Icarus Society" probe returned nothing — try `--contains` on the subtitle before `provider-missing`.
+[L-163] (3 shelf/shelves) sig:probe
+- GCD hides behind a bracketed alternate title: "War Stories: J for Jenny [War Story: J for Jenny]" (10937), "Dance Like
+  Everybody's Watching! [A Zits Treasury]" (132081), "You're Out of Your Mind, Charlie Brown! [Horizontal]" (155990).
+[L-177] (3 shelf/shelves) sig:probe
+- A bracketed publisher series number becomes a phantom ladder entry: Thun'da's "[A1-056]/[A1 073]/[A1 083]" produced
+  ladder 56/73/83 and a ratio 5.00 — read the bracket, not the ladder.
+[L-182] (1 shelf/shelves) pub:action-lab pub:image sig:comicinfo
+- Two different comics can share a title on one shelf via two publisher folders (Stillwater: Action Lab 2016 mini vs
+  Image/Skybound 2020 ongoing) — ComicInfo Publisher, not the title, splits them.
+[L-193] (3 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-204] (3 shelf/shelves) pass:item pass:revisit sig:probe
+- `lookup.py --issues <collected-line volume>` names each TRADE's own ComicVine ISSUE id: 71 of 73 `I` lines in
+  R-018 carry an item-level CV id instead of `cv=-`.
+[L-253] (3 shelf/shelves) sig:probe
+- A subtitle can name a SEQUEL series filed on the first run's shelf (Wild's End "Beyond the Sea" = CV 151678 /
+  GCD 201441, not the 2014 run) — the `C` names the sequel run.
+
++52 more matched entries not shown: L-264, L-267, L-273, L-292, L-294, L-302, L-319, L-341, L-346, L-347, L-007, L-016, L-032, L-041, L-113, L-114, L-124, L-135, L-164, L-175, L-186, L-191, L-192, L-217, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-272, L-275, L-279, L-281, L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-310, L-314, L-074, L-083, L-128, L-181, L-194, L-250, L-330, L-336 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S2424 Ben  [split]  6 files / 5 collections  decided in R-083 (S)
+   decided: S 2424 cv=- gcd=77793 0.9 | four of our six books are "Ben 10 Classics Vol. 01-04" = GCD 77793 "Ben 10 Classics" (IDW 2013-2015, 5 rows: #1 Ben Here Before 104pp, #2 It's Ben a Pleasure 104pp, #3 Blast from the Past 124pp, #4 Beauty and the Ben 124pp) with the same subtitles and page counts within 6pp; ComicVine mints one volume per book, no line record, hence cv=-; residue that is a different comic: item 31753 "Ben 10 v01 (2014)" is the trade of IDW's 4-issue Ben 10 (2013) and item 79889 is misfiled (0.9)
+   F 2424 wrong-cv-link | the stored CV 170905 "Ben" (Les 400 Coups 2008, 7) is a French-Canadian album series matched on the bare word "Ben"
+   F 2424 misfiled | item 79889 "Ben 84 - Barry Windsor Smith unpublished Fantastic Four GN (circa 1984-1985)" 48pp belongs under Marvel's Fantastic Four, not Ben 10
+   F 2424 split-needed | join S2426: S2426 holds Vol. 05 "Powerless" of the same line and its S line (A-016) is also cv=- gcd=77793, so the two shelves cannot merge on a cv; the split lane should gather the five Classics books on one key
+   N 2424 the Classics books reprint Cartoon Network Action Pack stories (GCD row 1161345 roll-up: s18723 #4, one story) — an anthology source, so no C line for 30375-30378
+   named: S2426 Ben 10  1 files  keys: "Ben 10 Classics"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S2425 "Ben 10" 1f [title — S cv=117733 gcd=143175 (R-034 0.95)] keys: "Ben 10"
+   keys now: "Ben" x6
+   groups (title x folder): 3
+   G1 "Ben 10 Classics" in IDW\Ben 10 (2013)\Ben 10 Classics (2013) — 4 file(s), 4 COL, pp 98-125; cv per-file 69353x1, 75361x1, 77254x1; gcd per-file 77793x4; key 'Ben'
+      [30375] COL Ben 10 Classics Vol. 01 - Ben Here Before (2013) (digital) (Salem-Empire).cbr (106pp)
+         own record cv 69353 / gcd s77793 "Ben 10 Classics" (issue 1161345) COLLECTS: gcd=18723 Cartoon Network Action Pack (2006) #4
+      [30376] COL Ben 10 Classics Vol. 02 - It's Ben a Pleasure (2014) (digital) (Salem-Empire).cbr (98pp)
+      [30377] COL Ben 10 Classics Vol. 03 - Blast from the Past (2014) (digital) (Salem-Empire).cbr (125pp)
+      [30378] COL Ben 10 Classics Vol. 04 - Beauty and the Ben (2015) (digital) (Salem-Empire).cbr (120pp)
+   G2 "Ben 10" in IDW\Ben 10 (2013)\Ben 10 v1 (2013) — 1 file(s), 1 COL, pp 102-102; cv per-file 73897x1; gcd per-file 218548x1; key 'Ben'
+      [31753] COL Ben 10 v01 (2014) (digital) (Salem-Empire).cbr (102pp)
+   G3 "Ben" in Marvel\_Fantastic Four\_Trades, Minis and One-shots — 1 file(s), numbers 0, pp 48-48; key 'Ben'
+      [79889] Ben 84 - Barry Windsor Smith unpublished Fantastic Four GN (circa 1984-1985) (Webrip) (Lusiphur-DCP).cbz (48pp)
+
+== S7365 Genius, Isolated: The Life and Art of Alex Toth  [split]  3 files / 0 collections  decided in R-083 (R)
+   decided: R 7365 | three separately published IDW books, each its own record on both legs and no line record anywhere: "Genius, Isolated" (2011) = CV 75022 / GCD 81783; "Genius, Illustrated" (2012) = CV 57183 / GCD 142414 (its EAN-13 9781613770245 = the GCD row's ISBN); "Genius, Animated" (2014) = CV 74109 (GCD: "Genius, Animated" and "Cartoon Art of Alex Toth" --contains return 0); the stored CV 75022 names Vol. 1 only, so an S line would hand the other two its id
+   F 7365 split-needed | items 31596 -> "Genius, Illustrated (2012)" cv=57183 gcd=142414; 31597 -> "Genius, Animated (2014)" cv=74109 gcd=-; item 31595 stays as "Genius, Isolated" cv=75022 gcd=81783 — three books, three records
+   N 7365 GCD 198400 / 222500 are the 2022-2023 reissues of Isolated / Illustrated — not our 2011/2013 digital rips
+   keys now: "Genius, Isolated - The Life and Art of Alex Toth" x1 · "Genius, Illustrated - The Life and Art of Alex Toth" x1 · "Genius, Animated - The Cartoon Art of Alex Toth" x1
+   groups (title x folder): 3
+   G1 "Genius, Animated - The Cartoon Art of Alex Toth (2014) (Digital-Empire)" in IDW\The Life & Art of Alex Toth (2011) — 1 file(s), numbers 3, pp 338-338; cv per-file 74109x1; key 'Genius, Animated - The Cartoon Art of Alex Toth'
+      [31597] 03 Genius, Animated - The Cartoon Art of Alex Toth (2014) (Digital-Empire).cbz (338pp)
+   G2 "Genius, Illustrated - The Life and Art of Alex Toth (2012) (Digital-Empire)" in IDW\The Life & Art of Alex Toth (2011) — 1 file(s), numbers 2, pp 354-354; cv per-file 57183x1; gcd per-file 142414x1; key 'Genius, Illustrated - The Life and Art of Alex Toth'
+      [31596] 02 Genius, Illustrated - The Life and Art of Alex Toth (2012) (Digital-Empire).cbz (354pp)
+   G3 "Genius, Isolated - The Life and Art of Alex Toth (2011) (Digital-Empire)" in IDW\The Life & Art of Alex Toth (2011) — 1 file(s), numbers 1, pp 330-330; cv per-file 75022x1; gcd per-file 81783x1; key 'Genius, Isolated - The Life and Art of Alex Toth'
+      [31595] 01 Genius, Isolated - The Life and Art of Alex Toth (2011) (Digital-Empire).cbz (330pp)
+
+== S19479 The Rocketeer  [split]  2 files / 0 collections  decided in R-083 (R)
+   decided: R 19479 | two different IDW books sharing the word "Rocketeer": item 31634 "The Rocketeer (2023)" 36pp = CV 150954 issue 992979 (2023-05) and GCD 201054 "The Rocketeer One-Shot" row 2539393 (2023-05-31, 36pp); item 31644 "The Rocketeer - The Spirit - Pulp Friction (2014)" 99pp = the HC collection CV 73249 issue 451116 / GCD 81251 row 1212863 (108pp) of the 2013 four-issue crossover mini CV 65631 / GCD 75671; an S line on either id would hand the other book a wrong identity
+   F 19479 split-needed | item 31644 -> "The Rocketeer - The Spirit - Pulp Friction (2014)" cv=65631 gcd=75671 (the run its HC collects); item 31634 stays as "The Rocketeer (2023)" cv=150954 gcd=201054
+   N 19479 the C-029 needs-web is answered locally: both books are in both legs under "The Rocketeer One-Shot" and "Pulp Friction"
+   nearby: S14793 "Rocketeer Adventures" 3f [title+1 — S cv=46887 gcd=64473 (R-033 0.95)] keys: "Rocketeer Adventures"
+   nearby: S102672 "Rocketeer Adventures" 1f [title+1 — S cv=40236 gcd=58678 (R-034 0.95)] keys: "Rocketeer Adventures (2011)"
+   keys now: "The Rocketeer" x1 · "The Rocketeer - The-Spirit - Pulp-Friction" x1
+   groups (title x folder): 2
+   G1 "The Rocketeer (2023) (digital) (Son of Ultron-Empire)" in IDW\The Rocketeer — 1 file(s), pp 36-36; cv per-file 150954x1; gcd per-file 201054x1; key 'The Rocketeer'
+      [31634] The Rocketeer (2023) (digital) (Son of Ultron-Empire).cbr (36pp)
+   G2 "The Rocketeer - The-Spirit - Pulp-Friction (2014) (Digital) (DR & Quinch-Empire)" in IDW\The Rocketeer — 1 file(s), pp 99-99; cv per-file 73249x1; gcd per-file 81251x1; key 'The Rocketeer - The-Spirit - Pulp-Friction'
+      [31644] The Rocketeer - The-Spirit - Pulp-Friction (2014) (Digital) (DR & Quinch-Empire).cbr (99pp)
+
+== S6891 Four Eyes  [split]  2 files / 2 collections  decided in R-083 (R)
+   decided: R 6891 | two trades of two co-equal minis, each numbered #1-4: "Four Eyes Vol. 01 - Forged In Flames (2015, 2nd edition)" collects Four Eyes (Image 2008-2010, 4; CV 23221 / GCD 32070) and "Vol. 02 - Hearts of Fire (2016)" collects the sequel Four Eyes: Hearts of Fire (Image 2016, 4; CV 87164 / GCD 95375); no line record spans both (GCD 97708 is the 2010 Forged in Flames trade alone), so an S on CV 23221 hands the sequel's book the first mini's identity (the brief's sequel rule)
+   F 6891 split-needed | item 34962 -> "Four Eyes: Hearts of Fire (2016)" cv=87164 gcd=95375; item 34961 stays as "Four Eyes (2008)" cv=23221 gcd=32070
+   keys now: "Four Eyes" x2
+   groups (title x folder): 1
+   G1 "Four Eyes" in Image\Four Eyes (2008) — 2 file(s), 2 COL, pp 101-109; cv per-file 83131x1, 92364x1; gcd per-file 97708x1, 95375x1; key 'Four Eyes'
+      [34961] COL Four Eyes Vol. 01 - Forged In Flames (2015, 2nd edition) (digital) (Son of Ultron-Empire).cbr (109pp)
+      [34962] COL Four Eyes Vol. 02 - Hearts of Fire (2016) (Digital-Empire).cbz (101pp)
+
+== S12294 Monolith  [split]  7 files / 0 collections  decided in R-083 (R)
+   decided: R 12294 | two co-equal runs: "Monolith 001-004 (2021)" (Magnetic Press folder, 41-51pp) = CV 137143 "Monolith" (Magnetic Press 2021, 4 issues 2021-06..08; its HC is CV 138307 / GCD 176732, 188pp), and "Monolith 01-03 (of 03) (2024)" (Image\Monolith (2024) (Spawn Universe), 24-27pp) = CV 158163 "Monolith" (Image 2024, 3) / GCD 212221 (Image 2024, [limited series], 3 rows 2024-05..07); three whole issues of a different comic are a co-equal run, not residue (L-213); GCD has no row for the Magnetic floppies
+   F 12294 split-needed | items 36920, 36921, 36922 -> "Monolith (2024)" cv=158163 gcd=212221; items 39242-39245 stay as Magnetic Press's "Monolith (2021)" cv=137143 gcd=-
+   F 12294 needs-fetch cv=158163 | CV 158163 (Image 2024, 3) is named from the local rip and has no CvVolume row
+   N 12294 C-034's S 0.7 and "F misfiled" are superseded: the Image files are a separately foldered 3-issue run, which the split lane moves rather than a single misfiled book
+   nearby: S36123 "The Monolith" 1f [title — S cv=50775 gcd=222517 (B-066 0.95)] keys: "The Monolith"
+   keys now: "Monolith" x7
+   groups (title x folder): 2
+   G1 "Monolith" in Image\Monolith (2024) (Spawn Universe) — 3 file(s), numbers 1-3, pp 24-27; cv per-file 137143x3; gcd per-file 212221x3; key 'Monolith'
+      [36920] Monolith 01 (of 03) (2024) (Digital) Zone-Empire).cbr (25pp)
+      [36921] Monolith 02 (of 03) (2024) (Digital) (Zone-Empire).cbr (24pp)
+      [36922] Monolith 03 (of 03) (2024) (Digital) (Zone-Empire).cbr (27pp)
+   G2 "Monolith" in Magnetic Press\Monolith (2021) — 4 file(s), numbers 1-4, pp 41-51; cv per-file 137143x4; key 'Monolith'
+      e.g. Monolith 001 (2021) (digital) (Mr Norrell-Empire).cbr
+        39242 #1 2021 44pp · 39243 #2 2021 45pp · 39244 #3 2021 41pp · 39245 #4 2021 51pp

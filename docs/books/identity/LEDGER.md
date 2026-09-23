@@ -1759,3 +1759,10 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   Kirby. Manga: the hyphen / macron romanisation finds Japanese originals on CV ("Kami-sama no Iu Toori", "G-Senjō");
   the accent finds Yen's English volumes ("Éclair Orange"); dump-only Japanese GCD series (Kingdom 175348) have usable
   issue rows. A "⚠ stored GCD row is another book" is void when the filename carries the line number (R-083).
+
+[L-356] pub:marvel kind:manga sig:probe
+- Marvel: CV sometimes mints a floppy one-shot as "Marvel Voices: X" (no 's), separate from the "Marvel's Voices: X" TPB
+  — probe both. Manga scanlations of UNTRANSLATED work: the Japanese-original row exists when the English title returns
+  nothing (CV "Kizuoibito" = Wounded Man, GCD "Nanbā Faibu" = No. 5) — probe the romanised Japanese title. Titan Star
+  Wars Insider specials are in the CV rip under their subtitle. A packet's `--id` can show a BLANK CV volume name
+  (2909) while `--issues` reveals the real one — check before writing needs-web (R-084).

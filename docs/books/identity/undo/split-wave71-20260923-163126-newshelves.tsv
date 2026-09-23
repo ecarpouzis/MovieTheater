@@ -1,0 +1,15 @@
+# shelves from the split lane (new + kept halves) — feed to next_batch.py --revisit-file
+# S<sid>	<key>	run=<json|->	<P- file>	new|kept|kept-whole[	pair=<origin sid>][	moved_cv=<id>,…][	pending_join=<sid>,…]
+# kept-whole = a `split: false` shelf (nothing moved): its F split-needed stands until an identity batch re-reads it as one run
+# pair = the shelf the split took this row's items from (a kept row is its own pair): --revisit-file never cuts a batch inside a pair group
+S2426	Ben 10 Classics	run={"gcd": 77793}	P-026.jsonl	new	pair=2424
+S103876	Genius, Illustrated: The Life and Art of Alex Toth (2013)	run={"cv": 57183, "gcd": 142414}	P-026.jsonl	new	pair=7365
+S103875	Genius, Animated: The Cartoon Art of Alex Toth (2014)	run={"cv": 74109}	P-026.jsonl	new	pair=7365
+S103878	The Rocketeer/The Spirit: Pulp Friction (2013)	run={"cv": 65631, "gcd": 75671}	P-026.jsonl	new	pair=19479
+S103874	Four Eyes: Hearts of Fire (2016)	run={"cv": 87164, "gcd": 95375}	P-026.jsonl	new	pair=6891
+S103877	Monolith v1 (2024)	run={"cv": 158163, "gcd": 212221}	P-026.jsonl	new	pair=12294
+S2424	moved out -> S2426 "Ben 10 Classics"	run=-	P-026.jsonl	kept	pair=2424
+S7365	moved out -> S103876 "Genius, Illustrated: The Life and Art of Alex Toth (2013)"; S103875 "Genius, Animated: The Cartoon Art of Alex Toth (2014)"	run=-	P-026.jsonl	kept	pair=7365	moved_cv=57183,74109
+S19479	moved out -> S103878 "The Rocketeer/The Spirit: Pulp Friction (2013)"	run=-	P-026.jsonl	kept	pair=19479	moved_cv=65631
+S6891	moved out -> S103874 "Four Eyes: Hearts of Fire (2016)"	run=-	P-026.jsonl	kept	pair=6891	moved_cv=87164
+S12294	moved out -> S103877 "Monolith v1 (2024)"	run=-	P-026.jsonl	kept	pair=12294	moved_cv=158163

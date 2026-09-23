@@ -1,0 +1,994 @@
+## Conventions for this batch (34 shown of 174 matched; 355 in LEDGER.md; 70 shelf/shelves: kind:manga ×35 · pub:marvel ×31 · kind:collected-line ×18 · kind:new ×16 · kind:trade-only ×15 · pub:idw ×10 · pub:star-wars ×8 · folder:vn-year ×7)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-033] (31 shelf/shelves) pub:marvel sig:collision sig:probe
+- Krakoa-era Marvel folders are cut into several shelves by the CREATOR name in trade filenames (New Mutants v4
+  → Hickman / Brisson / Vita Ayala; "X-Men by Gerry Duggan"): trades of ONE run in ONE folder → the run is the
+  identity, siblings take `F merge-with`; `lookup.py` by the run's plain name supplies ids the packet lacks. A
+  stored link carried across by the creator name alone (X-Men by Duggan → "Marauders by Duggan") is `wrong-cv-link`.
+[L-142] (31 shelf/shelves) pub:marvel sig:collision
+- A shelf read in an EARLIER batch may already link the volume you found (a second rip of the same mini in another
+  folder): `check_identity --all` catches it as an undeclared merge — write `F <sid> merge-with=<partner>` when the
+  partner is the same comic (Iron Fist: Wolverine S9566/S9567; X-Men/Runaways FCBD S22298/S11337).
+[L-289] (44 shelf/shelves) kind:collected-line kind:manga pass:item
+- ITEM PASS (X-037..X-039): one GCD issue row can cover TWO of our volumes when GCD's count undershoots (PTSD Radio,
+  Ojojojo) — both books share the id at 0.9; a genuine 2-in-1 omnibus whose header rows read #1-2 / #3-4 maps 1:1
+  at 0.95 (Orb). A 2-vol English omnibus against a 4-vol Japanese original has no safe mapping → `gcd=s<series>`.
+[L-274] (40 shelf/shelves) kind:foreign kind:manga pass:item sig:twin
+- ITEM PASS (X-019..X-021, manga): the per-file GCD pick reuses volume 1's title-only id across EVERY book of a
+  manga shelf whose header already lists N numbered rows (A Bride's Story 12/12, Ajin 17/17, Assassination Classroom
+  21/21) — match the header pool by ordinal, ignore the pick. Per-file CV lands on a foreign twin of the same
+  title even more often (Milky Way, Egmont Ehapa, Glénat, Panini España, Carlsen, Altraverse, the Shogakukan
+  original) — the shelf's identity is the ENGLISH edition; use the header's cv-issues pool.
+[L-288] (40 shelf/shelves) kind:foreign kind:manga pass:item sig:stamp
+- ITEM PASS (X-034..X-036): the reused stamp can jump FOUR times over one shelf (My Hero Academia: 105138 → 204933
+  → 236032 → 228276 over 38 books, CV pinned on foreign 166768 throughout); a shelf can carry NO gcd pick at all
+  (Muhyo & Roji's ×18). The header ladder by ordinal is the only source on manga — no exceptions found in 400 books.
+[L-293] (40 shelf/shelves) kind:foreign kind:manga pass:item sig:stamp
+- ITEM PASS (X-043..X-045, ~30 manga shelves): not one case where the per-file pick was right and the header pool
+  wrong. A foreign GCD leg that undershoots by one (Twin Star Exorcists, 26 vs 27) → the last book takes gcd=-;
+  a Vertical → Kodansha USA imprint split duplicate-stamps the later imprint's id onto the earlier book
+  (Weathering with You) — reject the duplicate, keep it on its own volume.
+[L-283] (36 shelf/shelves) kind:digital kind:manga pass:item
+- A manga whose only catalog runs are indexed by tankōbon VOLUME cannot take a chapter-count `C` range (Dragon Ball
+  Full Color: judged #1-17 are chapters) — `N no-record`, never an invented mapping.
+[L-030] (70 shelf/shelves) sig:collision
+- One folder split into two shelves by a subtitle in one filename (Analog, Witch Doctor) → `F merge-with=<sid>`.
+[L-098] (35 shelf/shelves) kind:manga sig:probe
+- GCD hides English manga behind a LONGER title far more than a shorter one ("Oishinbo a la Carte", "Neon
+  Genesis Evangelion 3-in-1 Edition", "Fairy Tail S: Tales from Fairy Tail") and occasionally a typo ("Fairy Tale:
+  Fairy Girls"); the mirror exists too (no ComicVine Viz volume for JoJo Parts 1-3 while GCD has all six → `cv=-`).
+[L-100] (35 shelf/shelves) kind:manga
+- A publisher change mid-line (Vertical → Kodansha USA) splits the GCD leg while CV keeps one volume (Ajin, CITY,
+  Miss Nagatoro): one S line, the GCD row that holds the wider span, `N` naming the other.
+[L-151] (70 shelf/shelves) sig:collision sig:withheld
+- The withheld rule beats the checker's merge-with remedy text: a stored-link collision with a DIFFERENT comic is
+  `cv=-` + `N withheld cv=<id> … S<partner>`, never a merge (S101634 vs S22834); merge-with only for the same comic.
+[L-160] (70 shelf/shelves) pass:revisit sig:withheld
+- A withheld shelf with NO GCD leg to keep becomes `R` + `N withheld cv=<id> … S<partner>` (S4944, S99691) — the
+  revisit pair re-links the partner and then the S line can be written.
+[L-276] (35 shelf/shelves) kind:manga
+- GCD splits one manga line into a second publisher-branded series for its LAST volumes (Ajin v17, APOSIMZ v07-09:
+  Vertical → Kodansha USA); `SELECT id, number, page_count, isbn, title FROM gcd_issue WHERE series_id=?` on the
+  dump recovers the rows the header pool lacks.
+[L-277] (35 shelf/shelves) kind:manga pass:item sig:stamp
+- ITEM PASS (X-022..X-024, manga): the reused per-file stamp is not always volume 1's id — it can jump to a new
+  wrong series partway through a shelf (Berserk: three wrong series across v02-v41; Bleach cycles four before
+  settling) — always re-derive from the header pool by `#N`, never from a plausible-looking pick.
+[L-278] (35 shelf/shelves) kind:manga
+- Two parallel rip sets of one manga (Berserk .cbz + .cbr) take IDENTICAL per-volume ids from the same ordinal pool.
+[L-280] (35 shelf/shelves) kind:manga pass:item sig:probe
+- ITEM PASS (X-025..X-027, manga): when GCD splits a line in two (an earlier series for v1-N, a later one
+  continuing: Blood on the Tracks 156521 / 171046, CITY 123267 / 172756, Nagatoro 152847 / 171408) the packet's
+  header pool shows only the shelf's STORED series — find the other with `lookup.py --contains` and pull its issues
+  with `gcd_issue WHERE series_id=?`.
+[L-284] (35 shelf/shelves) kind:manga pass:item
+- ITEM PASS (X-028..X-030): a manga tankōbon line that GCD tags [Collected Editions] (Food Wars! GCD 95211) has no
+  chapter-indexed run in either catalog — the `C OWED` marker is satisfied by `N no chapter-run`, the Dragon Ball
+  Full Color ruling; the books ARE the run. Our single volumes against GCD's "two-in-one" record have no safe 1:1
+  mapping → `gcd=s<series>` (Erased 118174), never an invented pairing.
+[L-304] (35 shelf/shelves) kind:manga pass:item
+- On a 60-volume manga run the `I` lines map the shelf's own file order onto the CV/GCD issue-list order (ordinal);
+  that is the accepted precision at this scale — the item pass verified it held on 400+ books.
+[L-344] (35 shelf/shelves) kind:manga
+- Manga (Yen Press / Seven Seas / Kodansha / Viz): the fixed CV index now reaches the count-1 ENGLISH volumes that
+  D-012/D-013 called provider-missing; an English CV record replaces a third-territory GCD licence (a German / French
+  row) as the identity (R-067).
+[L-014] (65 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-193] (64 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-013] (62 shelf/shelves) sig:probe
+- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
+  with the other spelling.
+[L-043] (62 shelf/shelves) sig:probe
+- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
+  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
+[L-050] (62 shelf/shelves) sig:probe
+- When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
+  punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
+  abbreviation the publisher uses ("HSE").
+[L-072] (62 shelf/shelves) sig:probe
+- GCD hides behind the SUBTITLE: "The Hunting Accident", "Giraffes on Horseback Salad", "Undesirables" return
+  nothing under their full titles — re-probe the SHORT title before writing `provider-missing`.
+[L-088] (62 shelf/shelves) sig:probe
+- GCD hides behind a LONGER title too ("… and the Tale of Azkon's Heart", "Holiday Party (One-Shot)"), not only a
+  shorter one — probe both directions before `provider-missing`.
+[L-089] (62 shelf/shelves) sig:probe
+- A facsimile of a SINGLE issue is its own book; a reprint edition of a whole series is not — the original wins.
+[L-095] (62 shelf/shelves) sig:probe
+- A folder that is a ripper's READING ORDER over several separately published arcs (The Ride, Revolution) has no
+  spanning record — the ladder is arc numbers, not issue numbers.
+[L-096] (62 shelf/shelves) sig:probe
+- GCD's exact filing recovers legs the probe misses: singular/plural ("Greeting", "Return"), two words ("Super
+  Hero"), a spelled ordinal ("Fortieth"), a dropped subtitle, or the colon form ("Jinx: Torso") — try each before
+  `provider-missing`.
+[L-118] (62 shelf/shelves) sig:probe
+- A GCD collected series numbers its issues by VOLUME and titles them with the volume SUBTITLE — that, not the
+  page count, places a trade when a shelf holds several volumes of one line.
+[L-125] (62 shelf/shelves) sig:probe
+- A stored link that is the same title a DIFFERENT DECADE later is a new cluster (Fist of Khonshu 2024 on the
+  1985 Moon Knight run; a 1971 Sub-Mariner Annual on the 1998 annual) — years decide, never the title.
+[L-157] (62 shelf/shelves) sig:probe
+- A GCD row with ZERO issues is an empty stub, not a leg (Skull Cat 197154, Rivers of London: Stray Cat Blues 213823,
+  Archer & Armstrong: Revival 164703) → `provider-missing`.
+[L-159] (62 shelf/shelves) sig:probe
+- An exact-name probe can miss a sequel the rip DOES hold: `--contains "Icarus Society"` found CV 143976 after the
+  exact "Prodigy: The Icarus Society" probe returned nothing — try `--contains` on the subtitle before `provider-missing`.
+[L-163] (62 shelf/shelves) sig:probe
+- GCD hides behind a bracketed alternate title: "War Stories: J for Jenny [War Story: J for Jenny]" (10937), "Dance Like
+  Everybody's Watching! [A Zits Treasury]" (132081), "You're Out of Your Mind, Charlie Brown! [Horizontal]" (155990).
+
++140 more matched entries not shown: L-177, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-341, L-346, L-347, L-136, L-242, L-291, L-112, L-127, L-306, L-164, L-106, L-111, L-119, L-135, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-309, L-314, L-109, L-327, L-087, L-187, L-130, L-319, L-281, L-104, L-298, L-313, L-124, L-060, L-085, L-116, L-345, L-064, L-101, L-310, L-191, L-343, L-113, L-027, L-031, L-076, L-115, L-117, L-123, L-132, L-174, L-196, L-265, L-295, L-296, L-307, L-308, L-328, L-329, L-332, L-175, L-272, L-016, L-032, L-114, L-028, L-036, L-103, L-107, L-121, L-129, L-145, L-173, L-297, L-353, L-150, L-097, L-252, L-290, L-352, L-354, L-029, L-034, L-133, L-169, L-323, L-331, L-007, L-217, L-065, L-099, L-126, L-138, L-194, L-241, L-262, L-302, L-315, L-324, L-325, L-330, L-035, L-077, L-084, L-110, L-122, L-128, L-139, L-141, L-181, L-311, L-312, L-316, L-321, L-322, L-326, L-336, L-041, L-054, L-058, L-074, L-083, L-192, L-250 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S18412 The Design Artbook of Lupin III the Woman Called Fujiko Mine  [tier D]   keys: The Design Artbook of Lupin III the Woman Called Fujiko Mine  years ?-?  1 files / 0 collections
+   folders: [1] Manga\Lupin III
+   files:   [45069] The Design Artbook of Lupin III the Woman Called Fujiko Mine.cbr (69pp)
+   CV candidates:  34684 "Lupin III" 2002 Tokyopop 14 s55 · 77902 "Mine" 2014 Lucha Comics 1 issue 469275 s55 · 134270 "MINE" 2021 Resistance Comics 1 issue 833059 s55 · 168036 "Lupin III Anthology" 2021 Dargaud 1 issue 1140698 s41 · 164392 "Lupin III: Greatest Heists" 2021 Seven Seas Entertainment 1 issue 1111526 s35 · 115047 "Dark Souls III Design Works" 2018 UDON 1 issue 691409 s31   (v1 search)
+   CV local rip:   34684 "Lupin III" 2002 Tokyopop 14 (via CV candidate name "Lupin III") · 77902 "Mine" 2014 Lucha Comics 1 issue 469275 (via CV candidate name "Mine") · 134270 "MINE" 2021 Resistance Comics 1 issue 833059 (via CV candidate name "Mine")   (rip lookup)
+   GCD dump:       20939 "Lupin III" 2002-2004 Tokyopop [] 14 (via CV candidate name "Lupin III")   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.2937062937062937
+
+== S83 3-Gatsu no Lion Review Guidebook - Beginner  [tier D]   keys: 3-Gatsu no Lion Review Guidebook - Beginner  years 2007-2007  1 files / 0 collections
+   folders: [1] Manga\March Comes in Like a Lion (2007)\3-Gatsu no Lion Review Guidebook
+   files:   [43636] 3-Gatsu no Lion Review Guidebook - Beginner.cbr (18pp)
+   ours:    ladder 3
+   CV candidates:  72169 "Lion" 1963 Western Publishing 1 issue 447186 s57 · 28019 "Lion" 1952 IPC Magazines Ltd. 1116 s42 · 114507 "Manga Shakespeare: Richard III" 2007 SelfMadeHero 1 issue 689383 s30 · 6603 "Command Review" 1986 Thoughts & Images 4 s28 · 32700 "Comics Review" 1984 Manuscript Press 10 s25 · 124337 "3-Gatsu no Lion" 2008 Hakusensha 19 s15   (v1 search)
+   CV local rip:   72169 "Lion" 1963 Western Publishing 1 issue 447186 (via CV candidate name "Lion") · 28019 "Lion" 1952 IPC Magazines Ltd. 1116 (via CV candidate name "Lion") · 114507 "Manga Shakespeare: Richard III" 2007 SelfMadeHero 1 issue 689383 (via CV candidate name "Manga Shakespeare: Richard III")   (rip lookup)
+   GCD dump:       60575 "Lion" [en-gb] 1970-1971 IPC [] 45 (via CV candidate name "Lion") · 60573 "Lion" [en-gb] 1968-1969 IPC [] 69 (via CV candidate name "Lion") · 1599 "The Lion" 1963-1963 Western [] 1 (via CV candidate name "Lion") · 60571 "Lion" [en-gb] 1960-1966 IPC [] 323 (via CV candidate name "Lion") · 35205 "Lion" [en-gb] 1952-1959 Amalgamated Press [] 390 (via CV candidate name "Lion")   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.502262443438914
+
+== S84 3-Gatsu no Lion Review Guidebook - Intermediate  [tier D]   keys: 3-Gatsu no Lion Review Guidebook - Intermediate  years 2007-2007  1 files / 0 collections
+   folders: [1] Manga\March Comes in Like a Lion (2007)\3-Gatsu no Lion Review Guidebook
+   files:   [43637] 3-Gatsu no Lion Review Guidebook - Intermediate.cbr (21pp)
+   ours:    ladder 3
+   CV candidates:  72169 "Lion" 1963 Western Publishing 1 issue 447186 s57 · 28019 "Lion" 1952 IPC Magazines Ltd. 1116 s42 · 114507 "Manga Shakespeare: Richard III" 2007 SelfMadeHero 1 issue 689383 s30 · 6603 "Command Review" 1986 Thoughts & Images 4 s28 · 32700 "Comics Review" 1984 Manuscript Press 10 s25 · 124337 "3-Gatsu no Lion" 2008 Hakusensha 19 s15   (v1 search)
+   CV local rip:   72169 "Lion" 1963 Western Publishing 1 issue 447186 (via CV candidate name "Lion") · 28019 "Lion" 1952 IPC Magazines Ltd. 1116 (via CV candidate name "Lion") · 114507 "Manga Shakespeare: Richard III" 2007 SelfMadeHero 1 issue 689383 (via CV candidate name "Manga Shakespeare: Richard III")   (rip lookup)
+   GCD dump:       60575 "Lion" [en-gb] 1970-1971 IPC [] 45 (via CV candidate name "Lion") · 60573 "Lion" [en-gb] 1968-1969 IPC [] 69 (via CV candidate name "Lion") · 1599 "The Lion" 1963-1963 Western [] 1 (via CV candidate name "Lion") · 60571 "Lion" [en-gb] 1960-1966 IPC [] 323 (via CV candidate name "Lion") · 35205 "Lion" [en-gb] 1952-1959 Amalgamated Press [] 390 (via CV candidate name "Lion")   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.4871794871794872
+
+== S12240 Mobile Suit Gundam - The Revival of Zeon  [tier D]   keys: Mobile Suit Gundam - The Revival of Zeon  years ?-?  1 files / 0 collections
+   folders: [1] Manga\Mobile Suit Gundam Wing
+   files:   [46381] Mobile Suit Gundam - The Revival of Zeon (Complete).cbz (146pp)
+   CV candidates:  165467 "Mobile Suit Gundam Wing FCBD" 2025 Bandai Entertainment 1 issue 1119428 s39 · 59572 "Mobile Suit Gundam THE ORIGIN" 2013 Vertical Inc. 12 s33 · 170781 "Mobile Suit Gundam - The Origin" 2024 Dupuis 7 s33 · 165646 "Mobile Suit Gundam - The Origin" 2024 Cross Cult 5 s33 · 158776 "Mobile Suit Gundam 0080" 1996 Planeta DeAgostini 4 s33 · 95712 "Mobile Suit Gundam Thunderbolt" 2016 Viz 23 s30   (v1 search)
+   CV local rip:   59572 "Mobile Suit Gundam THE ORIGIN" 2013 Vertical Inc. 12 (via CV candidate name "Mobile Suit Gundam THE ORIGIN") · 165467 "Mobile Suit Gundam Wing FCBD" 2025 Bandai Entertainment 1 issue 1119428 (via CV candidate name "Mobile Suit Gundam Wing FCBD") · 165646 "Mobile Suit Gundam - The Origin" 2024 Cross Cult 3 (via CV candidate name "Mobile Suit Gundam THE ORIGIN")   (rip lookup)
+   GCD dump:       91764 "Mobile Suit Gundam: The Origin" 2013-2015 Vertical [] 12 (via CV candidate name "Mobile Suit Gundam THE ORIGIN") · 103968 "Mobile Suit Gundam: The Origin" [fr] 2006-2018 Pika Édition [] 24 (via CV candidate name "Mobile Suit Gundam THE ORIGIN") · 217051 "Mobile Suit Gundam - The Origin" [de] 2024-? Cross Cult [] 7 (via CV candidate name "Mobile Suit Gundam THE ORIGIN")   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.38866396761133604
+
+== S12528 My Hero Academia - The Official Easy Illustration Guide  [tier D]   keys: My Hero Academia - The Official Easy Illustration Guide  years 2023-2023  1 files / 0 collections
+   folders: [1] Manga\My Hero Academia (2014)
+   files:   [39419] My Hero Academia - The Official Easy Illustration Guide (2023) (Digital) (LuCaZ).cbz (98pp)
+   CV candidates:  96481 "My Hero Academia" 2016 Carlsen Verlag 41 s15 · 166768 "My Hero Academia" 2016 JBC 41 s15 · 105916 "My Hero Academia" 2016 Planeta DeAgostini 20 s15 · 83681 "My Hero Academia" 2015 Viz 42 s15 · 94085 "My Hero Academia" 2016 Ki-oon 41 s15 · 111026 "My Hero Academia: Vigilantes" 2018 Viz 15 s0   (v1 search)
+   CV local rip:   94085 "My Hero Academia" 2016 Ki-oon 39 (via CV candidate name "My Hero Academia") · 96481 "My Hero Academia" 2016 Carlsen Verlag 41 (via CV candidate name "My Hero Academia") · 105916 "My Hero Academia" 2016 Planeta DeAgostini 20 (via CV candidate name "My Hero Academia") · 166768 "My Hero Academia" 2016 JBC 41 (via CV candidate name "My Hero Academia") · 83681 "My Hero Academia" 2015 Viz 42 (via CV candidate name "My Hero Academia")   (rip lookup)
+   GCD dump:       236032 "My Hero Academia" [fr] 2022-2022 Ki-oon [] 1 (via CV candidate name "My Hero Academia") · 228276 "My Hero Academia" [de] 2025-2025 Carlsen Comics [DE] [] 1 (via CV candidate name "My Hero Academia") · 204933 "My Hero Academia" [pt] 2018-? Devir Portugal [] 18 (via CV candidate name "My Hero Academia") · 162217 "My Hero Academia" [es-ar] 2017-? Editorial Ivrea [] ? (via CV candidate name "My Hero Academia") · 105138 "My Hero Academia" [de] 2016-2025 Carlsen Comics [DE] [] 42 (via CV candidate name "My Hero Academia") · 119923 "My Hero Academia" [fr] 2016-? Ki-oon [] 42 (via CV candidate name "My Hero Academia")   (dump lookup)
+   MU / External:  MU 21570978262 "Sexual Guidance Officer" 2024 Manhwa · MuSeriesLink 21570978262 status 1 conf 0.5641025641025642
+
+== S13245 One Piece  [tier C] · 105 files  keys: One Piece | One Piece - Ace's Story The Manga | One Piece - Shokugeki no Sanji  years 1997-2024  105 files / 104 collections
+   folders: [102] Manga\One Piece (1997) · [2] Manga\One Piece (1997)\One Piece - Ace's Story The Manga (2024) · [1] Manga\One Piece (1997)\One Piece - Shokugeki no Sanji (2024)
+   files:   [40858] COL One Piece - Ace's Story The Manga v01 (2024) (Digital) (LuCaZ).cbz (153pp) | [40859] COL One Piece - Ace's Story The Manga v02 (2024) (Digital) (LuCaZ).cbz (145pp)
+            [41997] One Piece - Shokugeki no Sanji (2024) (Digital) (LuCaZ).cbz (227pp) | [40860] COL One Piece v001 (2003) (Digital) (AnHeroGold-Empire).cbz (211pp)
+            [40861] COL One Piece v002 (2003) (Digital) (AnHeroGold-Empire).cbz (197pp) | [40862] COL One Piece v003 (2004) (Digital) (AnHeroGold-Empire).cbz (201pp)
+            [40863] COL One Piece v004 (2004) (Digital) (AnHeroGold-Empire).cbz (193pp) | [40864] COL One Piece v005 (2004) (Digital) (AnHeroGold-Empire).cbz (191pp)
+            [40865] COL One Piece v006 (2005) (Digital) (AnHeroGold-Empire).cbz (189pp) | [40866] COL One Piece v007 (2005) (Digital) (AnHeroGold-Empire).cbz (191pp)
+            [40867] COL One Piece v008 (2005) (Digital) (AnHeroGold-Empire).cbz (189pp) | [40868] COL One Piece v009 (2006) (Digital) (AnHeroGold-Empire).cbz (207pp)
+            [40869] COL One Piece v010 (2006) (Digital) (AnHeroGold-Empire).cbz (189pp) | [40870] COL One Piece v011 (2006) (Digital) (AnHeroGold-Empire).cbz (187pp)
+            [40871] COL One Piece v012 (2006) (Digital) (AnHeroGold-Empire).cbz (191pp) | [40872] COL One Piece v013 (2007) (Digital) (AnHeroGold-Empire).cbz (187pp)
+            [40873] COL One Piece v014 (2007) (Digital) (AnHeroGold-Empire).cbz (187pp) | [40874] COL One Piece v015 (2007) (Digital) (AnHeroGold-Empire).cbz (213pp)
+            [40875] COL One Piece v016 (2007) (Digital) (AnHeroGold-Empire).cbz (189pp) | [40876] COL One Piece v017 (2008) (Digital) (AnHeroGold-Empire).cbz (207pp)
+            [40877] COL One Piece v018 (2008) (Digital) (AnHeroGold-Empire).cbz (225pp) | [40878] COL One Piece v019 (2008) (Digital) (AnHeroGold-Empire).cbz (209pp)
+            [40879] COL One Piece v020 (2009) (Digital) (AnHeroGold-Empire).cbz (207pp) | [40880] COL One Piece v021 (2009) (Digital) (AnHeroGold-Empire).cbz (187pp)
+            [40881] COL One Piece v022 (2009) (Digital) (AnHeroGold-Empire).cbz (207pp) | [40882] COL One Piece v023 (2009) (Digital) (AnHeroGold-Empire).cbz (229pp)
+            [40883] COL One Piece v024 (2010) (Digital) (AnHeroGold-Empire).cbz (209pp) | [40884] COL One Piece v025 (2010) (Digital) (AnHeroGold-Empire).cbz (207pp)
+            [40885] COL One Piece v026 (2010) (Digital) (AnHeroGold-Empire).cbz (193pp) | [40886] COL One Piece v027 (2010) (Digital) (AnHeroGold-Empire).cbz (187pp)
+            [40887] COL One Piece v028 (2010) (Digital) (AnHeroGold-Empire).cbz (185pp) | [40888] COL One Piece v029 (2010) (Digital) (AnHeroGold-Empire).cbz (231pp)
+            [40889] COL One Piece v030 (2010) (Digital) (AnHeroGold-Empire).cbz (207pp) | [40890] COL One Piece v031 (2010) (Digital) (AnHeroGold-Empire).cbz (207pp)
+            [40891] COL One Piece v032 (2010) (Digital) (AnHeroGold-Empire).cbz (211pp) | [40892] COL One Piece v033 (2010) (Digital) (AnHeroGold-Empire).cbz (227pp)
+            [40893] COL One Piece v034 (2010) (Digital) (AnHeroGold-Empire).cbz (231pp) | [40894] COL One Piece v035 (2010) (Digital) (AnHeroGold-Empire).cbz (187pp)
+            [40895] COL One Piece v036 (2010) (Digital) (AnHeroGold-Empire).cbz (209pp) | [40896] COL One Piece v037 (2010) (Digital) (AnHeroGold-Empire).cbz (229pp)
+            [40897] COL One Piece v038 (2010) (Digital) (AnHeroGold-Empire).cbz (207pp) | [40898] COL One Piece v039 (2010) (Digital) (AnHeroGold-Empire).cbz (207pp)
+            [40899] COL One Piece v040 (2010) (Digital) (AnHeroGold-Empire).cbz (225pp) | [40900] COL One Piece v041 (2010) (Digital) (AnHeroGold-Empire).cbz (227pp)
+            [40901] COL One Piece v042 (2010) (Digital) (AnHeroGold-Empire).cbz (207pp) | [40902] COL One Piece v043 (2010) (Digital) (AnHeroGold-Empire).cbz (215pp)
+            [40903] COL One Piece v044 (2010) (Digital) (AnHeroGold-Empire).cbz (227pp) | [40904] COL One Piece v045 (2010) (Digital) (AnHeroGold-Empire).cbz (209pp)
+            [40905] COL One Piece v046 (2010) (Digital) (AnHeroGold-Empire).cbz (199pp) | [40906] COL One Piece v047 (2010) (Digital) (AnHeroGold-Empire).cbz (209pp)
+            [40907] COL One Piece v048 (2010) (Digital) (AnHeroGold-Empire).cbz (227pp) | [40908] COL One Piece v049 (2010) (Digital) (AnHeroGold-Empire).cbz (229pp)
+            [40909] COL One Piece v050 (2010) (Digital) (AnHeroGold-Empire).cbz (207pp) | [40910] COL One Piece v051 (2010) (Digital) (AnHeroGold-Empire).cbz (227pp)
+            [40911] COL One Piece v052 (2010) (Digital) (AnHeroGold-Empire).cbz (209pp) | [40912] COL One Piece v053 (2010) (Digital) (AnHeroGold-Empire).cbz (211pp)
+            [40913] COL One Piece v054 (2010) (Digital) (AnHeroGold-Empire).cbz (209pp) | [40914] COL One Piece v055 (2010) (Digital) (AnHeroGold-Empire).cbz (193pp)
+            [40915] COL One Piece v056 (2011) (Digital) (AnHeroGold-Empire).cbz (205pp) | [40916] COL One Piece v057 (2011) (Digital) (AnHeroGold-Empire).cbz (209pp)
+            [40917] COL One Piece v058 (2011) (Digital) (AnHeroGold-Empire).cbz (205pp) | [40918] COL One Piece v059 (2011) (Digital) (AnHeroGold-Empire).cbz (205pp)
+            [40919] COL One Piece v060 (2012) (Digital) (AnHeroGold-Empire).cbz (209pp) | [40920] COL One Piece v061 (2012) (Digital) (AnHeroGold-Empire).cbz (205pp)
+            [40921] COL One Piece v062 (2012) (Digital) (AnHeroGold-Empire).cbz (213pp) | [40922] COL One Piece v063 (2012) (Digital) (AnHeroGold-Empire).cbz (233pp)
+            [40923] COL One Piece v064 (2012) (Digital) (AnHeroGold-Empire).cbz (209pp) | [40924] COL One Piece v065 (2012) (Digital) (AnHeroGold-Empire).cbz (206pp)
+            [40925] COL One Piece v066 (2013) (Digital) (AnHeroGold-Empire).cbz (209pp) | [40926] COL One Piece v067 (2013) (Digital) (AnHeroGold-Empire).cbz (221pp)
+            [40927] COL One Piece v068 (2013) (Digital) (AnHeroGold-Empire).cbz (219pp) | [40928] COL One Piece v069 (2013) (Digital) (AnHeroGold-Empire).cbz (246pp)
+            [40929] COL One Piece v070 (2014) (Digital) (AnHeroGold-Empire).cbz (204pp) | [40930] COL One Piece v071 (2014) (Digital) (AnHeroGold-Empire).cbz (212pp)
+            [40931] COL One Piece v072 (2014) (Digital) (AnHeroGold-Empire).cbz (206pp) | [40932] COL One Piece v073 (2015) (Digital) (AnHeroGold-Empire).cbz (202pp)
+            [40933] COL One Piece v074 (2015) (Digital) (AnHeroGold-Empire).cbz (226pp) | [40934] COL One Piece v075 (2015) (Digital) (AnHeroGold-Empire).cbz (198pp)
+            [40935] COL One Piece v076 (2015) (Digital) (AnHeroGold-Empire).cbz (207pp) | [40936] COL One Piece v077 (2016) (Digital) (AnHeroGold-Empire).cbz (228pp)
+            [40937] COL One Piece v078 (2016) (Digital) (AnHeroGold-Empire).cbz (202pp) | [40938] COL One Piece v079 (2016) (Digital) (AnHeroGold-Empire).cbz (190pp)
+            [40939] COL One Piece v080 (2016) (Digital) (AnHeroGold-Empire).cbz (204pp) | [40940] COL One Piece v081 (2017) (Digital) (AnHeroGold-Empire).cbz (194pp)
+            [40941] COL One Piece v082 (2017) (Digital) (AnHeroGold-Empire).cbz (211pp) | [40942] COL One Piece v083 (2017) (Digital) (AnHeroGold-Empire).cbz (208pp)
+            [40943] COL One Piece v084 (2017) (Digital) (AnHeroGold-Empire).cbz (188pp) | [40944] COL One Piece v085 (2018) (Digital) (danke-Empire).cbz (177pp)
+            [40945] COL One Piece v086 (2018) (Digital) (danke-Empire).cbz (180pp) | [40946] COL One Piece v087 (2018) (Digital) (danke-Empire).cbz (180pp)
+            [40947] COL One Piece v088 (2018) (Digital) (danke-Empire).cbz (173pp) | [40948] COL One Piece v089 (2019) (Digital) (danke-Empire).cbz (188pp)
+            [40949] COL One Piece v090 (2019) (Digital) (danke-Empire).cbz (172pp) | [40950] COL One Piece v091 (2019) (Digital) (danke-Empire).cbz (195pp)
+            [40951] COL One Piece v092 (2019) (Digital) (danke-Empire).cbz (165pp) | [40952] COL One Piece v093 (2020) (Digital) (danke-Empire).cbz (191pp)
+            [40953] COL One Piece v094 (2020) (Digital) (danke-Empire).cbz (190pp) | [40954] COL One Piece v095 (2020) (Digital) (danke-Empire).cbz (186pp)
+            [40955] COL One Piece v096 (2021) (Digital) (danke-Empire).cbz (180pp) | [40956] COL One Piece v097 (2021) (Digital) (danke-Empire).cbz (176pp)
+            [40957] COL One Piece v098 (2021) (Digital) (danke-Empire).cbz (163pp) | [40958] COL One Piece v099 (2022) (Digital) (1r0n).cbz (166pp)
+            [40959] COL One Piece v100 (2022) (Digital) (1r0n).cbz (190pp) | [40960] COL One Piece v101 (2022) (Digital) (1r0n).cbz (176pp)
+            [40961] COL One Piece v102 (2023) (Digital) (1r0n).cbz (174pp)
+   ours:    judged item 40858 #1-2 conf 0.97; judged item 40859 #3-4 conf 0.97; judged item 40944 #849-858 conf 0.97; judged item 40945 #859-869 conf 0.97; judged item 40946 #870-879 conf 0.97; judged item 40947 #880-889 conf 0.97; judged item 40948 #890-900 conf 0.97; judged item 40949 #901-910 conf 0.97; judged item 40950 #911-921 conf 0.97; judged item 40951 #922-931 conf 0.97; judged item 40952 #932-942 conf 0.97; judged item 40953 #943-953 conf 0.97; judged item 40954 #954-964 conf 0.97; judged item 40955 #965-974 conf 0.97; judged item 40956 #975-984 conf 0.97; judged item 40957 #985-994 conf 0.97; judged item 40958 #995-1004 conf 0.97; judged item 40959 #1005-1015 conf 0.97; judged item 40960 #1016-1025 conf 0.97; judged item 40961 #1026-1035 conf 0.97
+   CV linked:      vol 21397 "One Piece" 1997 Shueisha 115 issues; cached #1-102 (102); yearΔ 0; ratio 0/115; 2 of 20 judged fit
+   CV per-file (v1): vol 157226 "One Piece: Ace’s Story—The Manga" 2024 Viz 2 on 2/105 files · vol 21397 "One Piece" 1997 Shueisha 115 on 1/105 files
+   CV candidates:  (= linked) · 130416 "the manga" ? ? 1 issue 804012 s58 · 49523 "One Piece" ? Editorial Ivrea 6 s53 · 157231 "One Piece: Shokugeki no Sanji" 2024 Viz 1 issue 1048074 s50 · 156118 "Shokugeki no Sanji" 2022 Shueisha 1 issue 1040668 s30 · 160566 "Manga One" 2012 Panini Comics 31 s15 · 60271 "One Piece" 2001 Carlsen Verlag 111 s15   (v1 search)
+   CV local rip:   (= linked) · 130213 "One Piece" 1999 Daewon C.I. 107 · 111241 "One Piece" 2000 Éditions Glénat 110 · 60271 "One Piece" 2001 Carlsen Verlag 109 · 31022 "One Piece" 2003 Viz 110 · 106252 "One Piece" 2004 Planeta DeAgostini 109   (rip lookup)
+   GCD dump:       84440 "One Piece ワンピース" [ja-jp] 1997-? 集英社 [Shueisha] [] 114 · 215585 "One Piece" [th] 1997-? SMM Plus [] 60 · 134887 "One Piece" [fr] 2000-? Glénat [] 111 · 27037 "One Piece" [de] 2001-? Carlsen Comics [DE] [] 112 · 202421 "One Piece" [it] 2001-? Edizioni Star Comics [] 103 · 202420 "One Piece" [in-id] 2002-? Elex Media Komputindo [] 96   (dump lookup)
+   MU / External:  MU 55099564912 "One Piece" 1997 Manga · MuSeriesLink 55099564912 status 1 conf 1.0
+
+== S20294 Tokyo Tarareba Girls Returns 2  [tier B]   keys: Tokyo Tarareba Girls Returns 2  years 2024-2024  4 files / 4 collections
+   folders: [4] Manga\Tokyo Tarareba Girls (2014)\Tokyo Tarareba Girls Returns 2 (2024)
+   files:   [44096] COL Tokyo Tarareba Girls Returns 2 v01 (2024) (Digital) (XRA-Empire).cbz (176pp) | [44097] COL Tokyo Tarareba Girls Returns 2 v02 (2024) (Digital) (XRA-Empire).cbz (172pp)
+            [44098] COL Tokyo Tarareba Girls Returns 2 v03 (2024) (Digital) (XRA-Empire).cbz (172pp) | [44099] COL Tokyo Tarareba Girls Returns 2 v04 (2024) (Digital) (XRA-Empire).cbz (170pp)
+   ours:    ComicInfo Series: "Tokyo Tarareba Girls Returns 2 "x4; ComicInfo Publisher: "Kodansha USA Publishing"x3, "Kodansha Comics"x1
+   CV per-file (v1): vol 130901 "Tokyo Tarareba Girls Returns" 2020 Kodansha Comics USA 1 issue 806880 on 4/4 files
+   CV candidates:  (= per-file) · 99792 "Tokyo Tarareba Musume" 2014 Kodansha 9 s59 · 39102 "Tokyo Boys & Girls" 2005 Viz 5 s46 · 98868 "Tokyo Tarareba Girls" 2017 Kodansha Comics USA 9 s33 · 65487 "Kodansha Comics Digital Sampler - REAL" 2013 Kodansha Comics USA 1 issue 418187 s30 · 65488 "Kodansha Comics Digital Sampler - UNREAL" 2013 Kodansha Comics USA 1 issue 418188 s30 · 78026 "Victorian Secret: Girls of Steampunk - Girls of Summer 2014" 2014 Antarctic Press 1 issue 469745 s26   (v1 search)
+   CV local rip:   (= per-file) · 99792 "Tokyo Tarareba Musume" 2014 Kodansha 9 (via CV candidate name "Tokyo Tarareba Musume") · 39102 "Tokyo Boys & Girls" 2005 Viz 5 (via CV candidate name "Tokyo Boys & Girls")   (rip lookup)
+   GCD dump:       44780 "Tokyo Boys & Girls" 2005-2006 Viz [] 5 (via CV candidate name "Tokyo Boys & Girls")   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.375
+
+== S20371 Tract  [tier D]   keys: Tract  years 2020-2020  1 files / 0 collections
+   folders: [1] Manga\Tract (2020)
+   files:   [45657] Tract (HollowPress) (2020) (tunafan).cbr (68pp)
+   CV candidates:  127708 "Angelhair 2020" 2020 Gentleman & Scholar Comics 1 issue 767020 s30 · 124166 "2020 Visions" 2020 COMICMIX 1 issue 733208 s30 · 122727 "Nighthunter 2020" 2019 JHC Studio 1 issue 726567 s27 · 125474 "2020 Rescue" 2020 Marvel 2 s23 · 170225 "2020 Visions" 2020 Dantes Verlag 2 s23 · 127179 "2020 Ironheart" 2020 Marvel 2 s23   (v1 search)
+   CV local rip:   124166 "2020 Visions" 2020 COMICMIX 1 issue 733208 (via CV candidate name "2020 Visions") · 127708 "Angelhair 2020" 2020 Gentleman & Scholar Comics 1 issue 767020 (via CV candidate name "Angelhair 2020") · 170225 "2020 Visions" 2020 Dantes Verlag 2 (via CV candidate name "2020 Visions") · 122727 "Nighthunter 2020" 2019 JHC Studio 1 issue 726567 (via CV candidate name "Nighthunter 2020") · 22567 "2020 Visions" 2004 Speakeasy Comics 1 issue 135421 (via CV candidate name "2020 Visions") · 5932 "2020 Visions" 1997 DC Comics 12 (via CV candidate name "2020 Visions")   (rip lookup)
+   GCD dump:       164281 "2020 Visions" [de] 2020-? Dantes Verlag [] 2 (via CV candidate name "2020 Visions") · 15724 "2020 Visions" [en-ca] 2005-2005 Speakeasy Comics [] 1 (via CV candidate name "2020 Visions") · 5718 "2020 Visions" 1997-1998 DC [] 12 (via CV candidate name "2020 Visions")   (dump lookup)
+   MU / External:  MU 40456005326 "Tract" 2016 Manga · MuSeriesLink 40456005326 status 1 conf 0.7692307692307693
+
+== S16304 Spirits Flying in The Sky  [tier D]   keys: Spirits Flying in The Sky  years ?-?  1 files / 0 collections
+   folders: [1] Manga\_Daisuke Igarashi
+   files:   [45851] Spirits Flying in The Sky[Illuminati-Manga].cbz (239pp)
+   CV candidates:  63151 "Spirits in the Well" 2010 Creephouse 1 issue 409798 s50 · 36967 "Superman: Panic in the Sky" 1993 DC Comics 1 issue 246561 s49 · 126482 "Superman: Up In the Sky" 2020 DC Comics 1 issue 751053 s49 · 94772 "The Art of Castle in the Sky" 2016 Viz 1 issue 552933 s47 · 153143 "Sunbeams in the Sky" 2023 Yen Press 3 s38 · 25356 "Castle In The Sky" 2003 Viz 4 s38   (v1 search)
+   CV local rip:   36967 "Superman: Panic in the Sky" 1993 DC Comics 1 issue 246561 (via CV candidate name "Superman: Panic in the Sky") · 63151 "Spirits in the Well" 2010 Creephouse 1 issue 409798 (via CV candidate name "Spirits in the Well") · 120032 "Superman: Up In the Sky" 2019 DC Comics 6 (via CV candidate name "Superman: Up In the Sky") · 126482 "Superman: Up In the Sky" 2020 DC Comics 1 issue 751053 (via CV candidate name "Superman: Up In the Sky")   (rip lookup)
+   GCD dump:       23068 "Superman: Panic in the Sky" 1993-1993 DC [] 1 (via CV candidate name "Superman: Panic in the Sky") · 73697 "Spirits in the Well" 2010-2010 Creephouse [] 1 (via CV candidate name "Spirits in the Well") · 103453 "Superman: Panic in the Sky" 2016-2016 DC [] 1 (via CV candidate name "Superman: Panic in the Sky") · 148553 "Superman: Up in the Sky" 2019-2020 DC [] 6 (via CV candidate name "Superman: Up In the Sky") · 159098 "Superman: Up in the Sky" 2020-2020 DC [] 1 (via CV candidate name "Superman: Up In the Sky") · 162961 "Superman - Up in the Sky" [fr] 2020-2020 Urban Comics [] 1 (via CV candidate name "Superman: Up In the Sky")   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.36923076923076925
+
+== S20667 Umwelt  [tier D]   keys: Umwelt  years ?-?  1 files / 1 collections
+   folders: [1] Manga\_Daisuke Igarashi
+   files:   [45852] COL Umwelt v01 [Nondescriptors & Atelier du Noir & Illuminati-Manga].cbz (191pp)
+   ours:    judged item 45852 #1-1 conf 0.97
+   CV candidates:  130416 "the manga" ? ? 1 issue 804012 s15 · 120993 "Manga" 2019 Unknown Publisher 1 issue 717709 s15 · 127976 "Manga! Manga! The World of Japanese Comics" 1983 Kodansha International 1 issue 768546 s15 · 99094 "Manga Times" 1956 Houbunsha 614 s0 · 146751 "Manga Top" 1998 Panini Comics 74 s0 · 146765 "Manga Mix" 2002 Panini Comics 56 s0   (v1 search)
+   CV local rip:   120993 "Manga" 2019 Unknown Publisher 1 issue 717709 (via CV candidate name "the manga") · 127976 "Manga! Manga! The World of Japanese Comics" 1983 Kodansha International 1 issue 768546 (via CV candidate name "Manga! Manga! The World of Japanese Comics") · 130416 "the manga" ? ? 1 issue 804012 (via CV candidate name "the manga")   (rip lookup)
+   GCD dump:       68222 "Manga! Manga! The World of Japanese Comics" [en-jp] 1986-1986 講談社 [Kōdansha] [] 1 (via CV candidate name "Manga! Manga! The World of Japanese Comics") · 76102 "Manga" [en-jp] 1982-1982 Metro Scope [] 1 (via CV candidate name "the manga") · 110886 "Manga! Manga! The World of Japanese Comics" [en-jp] 1983-1983 講談社 [Kōdansha] [] 1 (via CV candidate name "Manga! Manga! The World of Japanese Comics") · 202716 "Manga" [fr] 2020-2020 Éditions de La Martinière [] 1 (via CV candidate name "the manga")   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.3296703296703297
+
+== S10806 LittleForest  [tier D]   keys: LittleForest  years 2002-2002  2 files / 0 collections
+   folders: [2] Manga\_Daisuke Igarashi\Little Forest
+   files:   [45849] LittleForest_v01[Illuminati-Manga][HotCakes].cbz (172pp) | [45850] LittleForest_v02[Illuminati-Manga][HotCakes].cbr (182pp)
+   CV candidates:  94394 "Little Tails: In the Forest" 2016 Magnetic Press 1 issue 551110 s8 · 141641 "The Forest" 2022 Fantagraphics 1 issue 907540 s8 · 119364 "My Little Pony: Spirit of the Forest" 2019 IDW Publishing 3 s8 · 122411 "My Little Pony: Spirit of the Forest" 2019 IDW Publishing 1 issue 724723 s8 · 37557 "The Suicide Forest" 2010 IDW Publishing 4 s8 · 21187 "The Black Forest" 2004 Image 1 issue 127326 s8   (v1 search)
+   CV local rip:   141641 "The Forest" 2022 Fantagraphics 1 issue 907540 (via CV candidate name "The Forest") · 94394 "Little Tails: In the Forest" 2016 Magnetic Press 1 issue 551110 (via CV candidate name "Little Tails: In the Forest") · 119364 "My Little Pony: Spirit of the Forest" 2019 IDW Publishing 3 (via CV candidate name "My Little Pony: Spirit of the Forest") · 122411 "My Little Pony: Spirit of the Forest" 2019 IDW Publishing 1 issue 724723 (via CV candidate name "My Little Pony: Spirit of the Forest")   (rip lookup)
+   GCD dump:       181788 "The Forest" 2022-2022 Fantagraphics [] 1 (via CV candidate name "The Forest") · 146220 "My Little Pony: Spirit of the Forest" 2019-2019 IDW [] 3 (via CV candidate name "My Little Pony: Spirit of the Forest") · 151513 "My Little Pony: Spirit of the Forest" 2019-2019 IDW [] 1 (via CV candidate name "My Little Pony: Spirit of the Forest")   (dump lookup)
+   MU / External:  MuSeriesLink None status 2 conf None
+
+== S17988 The Art of Nausicaa  [tier D]   keys: The Art of Nausicaa  years ?-?  1 files / 0 collections
+   folders: [1] Manga\_Hayao Miyazaki\Nausicaa of the Valley of the Wind\Nausicaa of the Valley of the Wind (Deluxe Edition)
+   files:   [45866] The Art of Nausicaa.cbr (105pp)
+   CV candidates:  73448 "The Art of Osamu Tezuka: God of Manga" 2014 Harry N. Abrams 1 issue 451827 s55 · 118831 "The Art of Nausicaä of the Valley of the Wind" 2019 Viz 1 issue 708031 s53 · 130416 "the manga" ? ? 1 issue 804012 s35 · 144740 "Nausicaä of the Valley of Wind" 2012 Viz 2 s34 · 79755 "Nausicaä of the Valley of Wind" 1990 Viz 2 s34 · 4169 "Nausicaä of the Valley of Wind" 2004 Viz 7 s26   (v1 search)
+   CV local rip:   73448 "The Art of Osamu Tezuka: God of Manga" 2014 Harry N. Abrams 1 issue 451827 (via CV candidate name "The Art of Osamu Tezuka: God of Manga") · 118831 "The Art of Nausicaä of the Valley of the Wind" 2019 Viz 1 issue 708031 (via CV candidate name "The Art of Nausicaä of the Valley of the Wind") · 120993 "Manga" 2019 Unknown Publisher 1 issue 717709 (via CV candidate name "the manga") · 130416 "the manga" ? ? 1 issue 804012 (via CV candidate name "the manga")   (rip lookup)
+   GCD dump:       76102 "Manga" [en-jp] 1982-1982 Metro Scope [] 1 (via CV candidate name "the manga") · 202716 "Manga" [fr] 2020-2020 Éditions de La Martinière [] 1 (via CV candidate name "the manga")   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.3626373626373626
+
+== S12736 Nausicaa Artbook  [tier D]   keys: Nausicaa Artbook  years ?-?  1 files / 0 collections
+   folders: [1] Manga\_Hayao Miyazaki\Nausicaa of the Valley of the Wind\Nausicaa of the Valley of the Wind (Original Viz Edition)
+   files:   [45867] Nausicaa Artbook.cbr (65pp)
+   CV candidates:  134759 "Firefly Artbook" 2021 Titan Comics 1 issue 839630 s44 · 146608 "Artbook X" 2021 GDBM Editeur 1 issue 958058 s44 · 163109 "Rhonda Artbook" 2016 BD Must 1 issue 355818 s44 · 86570 "Murena Artbook" 2015 Dargaud 1 issue 507865 s44 · 107277 "Artbook Thorgal" 2017 Le Lombard 1 issue 648822 s44 · 118831 "The Art of Nausicaä of the Valley of the Wind" 2019 Viz 1 issue 708031 s15   (v1 search)
+   CV local rip:   134759 "Firefly Artbook" 2021 Titan Comics 1 issue 839630 (via CV candidate name "Firefly Artbook") · 146608 "Artbook X" 2021 GDBM Editeur 1 issue 958058 (via CV candidate name "Artbook X") · 163109 "Rhonda Artbook" 2016 BD Must 1 issue 355818 (via CV candidate name "Rhonda Artbook")   (rip lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.4195804195804196
+
+== S1146 Apocalypse Banquet  [tier D]   keys: Apocalypse Banquet  years 1989-1989  1 files / 0 collections
+   folders: [1] Manga\_Hideshi Hino
+   files:   [45876] Apocalypse Banquet (1989) (Hideshi Hino) (Caterpillar).cbr (158pp)
+   CV candidates:  146084 "Bangtrō Summer Banquet" 1994 -Ism Studios 1 issue 954936 s43 · 34921 "Fruits Basket Banquet" 2010 Tokyopop 1 issue 229463 s43 · 79208 "Five Star Banquet" 2014 James Mar Studio 1 issue 475285 s43 · 52271 "Apocalypse" 1991 Apocalypse 8 s40 · 90720 "Scooby Apocalypse" 2016 DC Comics 36 s29 · 170705 "Valkyrie Apocalypse" 2019 Ki-oon 25 s29   (v1 search)
+   CV local rip:   146084 "Bangtrō Summer Banquet" 1994 -Ism Studios 1 issue 954936 (via CV candidate name "Bangtrō Summer Banquet") · 34921 "Fruits Basket Banquet" 2010 Tokyopop 1 issue 229463 (via CV candidate name "Fruits Basket Banquet") · 79208 "Five Star Banquet" 2014 James Mar Studio 1 issue 475285 (via CV candidate name "Five Star Banquet")   (rip lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.4326923076923077
+
+== S5371 Demon of Rashomon  [tier D]   keys: Demon of Rashomon  years 1987-1987  1 files / 0 collections
+   folders: [1] Manga\_Hideshi Hino
+   files:   [45877] Demon of Rashomon (1987) (Hideshi Hino) (Caterpillar).cbr (142pp)
+   CV candidates:  128658 "Demon!" 1978 Portman Distribution 3 s43 · 105349 "Rashomon: A Commissioner Heigo Kobayashi Case" 2017 Dark Horse Comics 1 issue 630479 s30 · 3784 "The Demon" 1987 DC Comics 4 s23 · 4358 "The Demon" 1990 DC Comics 59 s20 · 2548 "The Demon" 1972 DC Comics 16 s20 · 22709 "DemonWars: The Demon Spirit" 2008 Devil's Due 3 s20   (v1 search)
+   CV local rip:   3784 "The Demon" 1987 DC Comics 4 (via CV candidate name "Demon!") · 4358 "The Demon" 1990 DC Comics 59 (via CV candidate name "Demon!") · 128658 "Demon!" 1978 Portman Distribution 3 (via CV candidate name "Demon!") · 2548 "The Demon" 1972 DC Comics 16 (via CV candidate name "Demon!") · 105349 "Rashomon: A Commissioner Heigo Kobayashi Case" 2017 Dark Horse Comics 1 issue 630479 (via CV candidate name "Rashomon: A Commissioner Heigo Kobayashi Case")   (rip lookup)
+   GCD dump:       3351 "The Demon" 1987-1987 DC [] 4 (via CV candidate name "Demon!") · 3981 "The Demon" 1990-1995 DC [] 59 (via CV candidate name "Demon!") · 30629 "Demon!" [en-gb] 1978-1978 Portman Distribution [] 3 (via CV candidate name "Demon!") · 2025 "The Demon" 1972-1974 DC [] 16 (via CV candidate name "Demon!") · 100803 "Demon" 2014-? Jason Shiga [] 21 (via CV candidate name "Demon!") · 94946 "The Demon" 2015-2016 DC [] 2 (via CV candidate name "Demon!")   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.46153846153846156
+
+== S8980 Horror of the Monster  [tier D]   keys: Horror of the Monster  years 1980-1980  1 files / 0 collections
+   folders: [1] Manga\_Hideshi Hino
+   files:   [45878] Horror of the Monster (1980) (Hideshi Hino) (Caterpillar).cbr (196pp)
+   CV candidates:  151596 "The Monster Book of Manga: Boys" 2009 HarperCollins 1 issue 996468 s57 · 95168 "Horror" 1989 Condor Verlag 2 s48 · 149462 "Horror" 1969 Sansoni Editore 28 s40 · 95169 "Horror" 1990 Comic Art 13 s40 · 95170 "Horror" 1972 BSV - Williams 148 s40 · 151574 "Horror" 1977 Edicomic 73 s40   (v1 search)
+   CV local rip:   161872 "Horror" 1978 Nooit Gedacht 8 (via CV candidate name "Horror") · 151574 "Horror" 1977 Edicomic 73 (via CV candidate name "Horror") · 95170 "Horror" 1972 BSV - Williams 148 (via CV candidate name "Horror") · 95171 "Horror" 1972 Der Freibeuter 23 (via CV candidate name "Horror") · 95168 "Horror" 1989 Condor Verlag 2 (via CV candidate name "Horror") · 95169 "Horror" 1990 Comic Art 13 (via CV candidate name "Horror")   (rip lookup)
+   GCD dump:       127225 "Horror" [es] 1981-1989 Zinco [] 98 (via CV candidate name "Horror") · 76250 "Horror" [nl] 1978-1978 Nooit Gedacht [Nooitgedacht] [] 8 (via CV candidate name "Horror") · 197121 "Horror" [es] 1977-1977 Ediciones Actuales [] 6 (via CV candidate name "Horror") · 152731 "Horror" [fr] 1974-1974 Éditions Elisa Presse [] 3 (via CV candidate name "Horror") · 186569 "Horror" [sh-yu] 1986-1991 Dečje novine [] 27 (via CV candidate name "Horror") · 197105 "Horror" [es] 1973-1975 Producciones Editoriales [] 15 (via CV candidate name "Horror")   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.3230769230769231
+
+== S9663 Island of Colors  [tier D]   keys: Island of Colors  years 1976-1976  1 files / 0 collections
+   folders: [1] Manga\_Hideshi Hino
+   files:   [45879] Island of Colors (1976) (Hideshi Hino) (Caterpillar).cbr (196pp)
+   CV candidates:  40613 "Island" 2001 Tokyopop 4 s43 · 111961 "Island" 2018 Bamboo 3 s43 · 96885 "Colors!" 2014 Shogakukan 6 s40 · 83331 "Island" 2015 Image 15 s40 · 60376 "Island" 2002 Panini Verlag 7 s40 · 152428 "Island" 2003 Flashbook 5 s40   (v1 search)
+   CV local rip:   137298 "Island" 1998 Daewon C.I. 1 issue 1042571 (via CV candidate name "Island") · 40613 "Island" 2001 Tokyopop 4 (via CV candidate name "Island") · 129548 "Island" 2001 Enterbrain 1 issue 1042572 (via CV candidate name "Island") · 40612 "Island" 2002 Tokyopop 7 (via CV candidate name "Island") · 60376 "Island" 2002 Panini Verlag 7 (via CV candidate name "Island") · 152428 "Island" 2003 Flashbook 5 (via CV candidate name "Island")   (rip lookup)
+   GCD dump:       20621 "Island" 2001-2001 Tokyopop [] 4 (via CV candidate name "Island") · 20430 "Island" 2002-2003 Tokyopop [] 7 (via CV candidate name "Island") · 101795 "Island" [de] 2002-2003 Panini Deutschland [] 7 (via CV candidate name "Island") · 189128 "Island" [fr] 2003-2004 Panini France [] 7 (via CV candidate name "Island") · 90774 "Island" 2015-2017 Image [] 15 (via CV candidate name "Island") · 135813 "Island" [fr] 2018-2020 Bamboo Édition [] 2 (via CV candidate name "Island")   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.29670329670329676
+
+== S10648 Legend of the Sun  [tier D]   keys: Legend of the Sun  years 1976-1976  1 files / 1 collections
+   folders: [1] Manga\_Hideshi Hino
+   files:   [45880] COL Legend of the Sun v1 (1976) (Hideshi Hino) (Caterpillar).cbr (113pp)
+   CV candidates:  61301 "The Legend of Isis: Manga" ? TidalWave Productions 1 issue 402259 s58 · 108620 "Sun" 2018 Europe Comics 1 issue 659140 s55 · 41602 "Legend" 2005 DC Comics 4 s43 · 45876 "Sun" 1947 Amalgamated Press 270 s40 · 97669 "Legend" 2016 Fujimi Shobo 18 s40 · 90202 "Legend" 2016 Z2 Comics 5 s40   (v1 search)
+   CV local rip:   41602 "Legend" 2005 DC Comics 4 (via CV candidate name "Legend") · 45876 "Sun" 1947 Amalgamated Press 270 (via CV candidate name "Sun") · 41285 "Legend" 2006 Yen Press 10 (via CV candidate name "Legend") · 90202 "Legend" 2016 Z2 Comics 5 (via CV candidate name "Legend") · 97669 "Legend" 2016 Fujimi Shobo 10 (via CV candidate name "Legend") · 108620 "Sun" 2018 Europe Comics 1 issue 659140 (via CV candidate name "Sun")   (rip lookup)
+   GCD dump:       61192 "Sun" [en-gb] 1952-1959 Amalgamated Press [] 395 (via CV candidate name "Sun") · 24085 "Legend" 2005-2005 DC [] 4 (via CV candidate name "Legend") · 61435 "Sun" [en-gb] 1947-1949 J. B. Allen [] 41 (via CV candidate name "Sun") · 55005 "Legend" [de] 2006-2009 Tokyopop (de) [] 10 (via CV candidate name "Legend") · 140099 "Legend" 2006-2007 ICE Kunion [] 3 (via CV candidate name "Legend") · 140098 "Legend" 2008-2010 Yen Press [] 10 (via CV candidate name "Legend")   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.3905325443786982
+
+== S12301 Monster Circus  [tier D]   keys: Monster Circus  years 1991-1991  1 files / 0 collections
+   folders: [1] Manga\_Hideshi Hino
+   files:   [45882] Monster Circus (1991) (Hideshi Hino) (tunafan-Atelier du Noir).cbr (251pp)
+   CV candidates:  82643 "Monster × Monster" 2014 Shogakukan 3 s58 · 141417 "Circus" 2010 Logos 1 issue 904271 s55 · 77014 "Circus" 2014 Parchment Comics 1 issue 466051 s55 · 117261 "The Circus" 2019 self published 1 issue 701577 s44 · 126279 "The Circus" 2020 AAM/Markosia 1 issue 745792 s44 · 151596 "The Monster Book of Manga: Boys" 2009 HarperCollins 1 issue 996468 s40   (v1 search)
+   CV local rip:   74928 "Circus" 1975 Éditions Glénat 149 (via CV candidate name "Circus") · 141417 "Circus" 2010 Logos 1 issue 904271 (via CV candidate name "Circus") · 77014 "Circus" 2014 Parchment Comics 1 issue 466051 (via CV candidate name "Circus") · 117261 "The Circus" 2019 self published 1 issue 701577 (via CV candidate name "Circus") · 120378 "The Circus" 2019 AAM/Markosia 5 (via CV candidate name "Circus") · 126279 "The Circus" 2020 AAM/Markosia 1 issue 745792 (via CV candidate name "Circus")   (rip lookup)
+   GCD dump:       72127 "Circus" [fr] 1975-1989 Glénat [] 145 (via CV candidate name "Circus") · 158306 "Circus" [fr] 2010-2010 Idées+ [] 1 (via CV candidate name "Circus") · 152344 "Circus" [fr] 2012-2012 Clair de Lune [] 1 (via CV candidate name "Circus") · 159584 "The Circus" 2019-2019 Lidan Chen [] 1 (via CV candidate name "Circus") · 177480 "The Circus" [en-de] 2021-2021 MamiVerlag [] 1 (via CV candidate name "Circus")   (dump lookup)
+   MU / External:  MU 17047496509 "Circus Wonder" 1990 Manga · MuSeriesLink 17047496509 status 1 conf 0.5384615384615384
+
+== S13158 Odoronbaa  [tier D]   keys: Odoronbaa  years 1988-1988  1 files / 1 collections
+   folders: [1] Manga\_Hideshi Hino
+   files:   [45883] COL Odoronbaa v1 (1988) (Hideshi Hino) (tunafan).cbr (212pp)
+   CV candidates:  130416 "the manga" ? ? 1 issue 804012 s15 · 120993 "Manga" 2019 Unknown Publisher 1 issue 717709 s15 · 127976 "Manga! Manga! The World of Japanese Comics" 1983 Kodansha International 1 issue 768546 s15 · 99094 "Manga Times" 1956 Houbunsha 614 s0 · 146751 "Manga Top" 1998 Panini Comics 74 s0 · 146765 "Manga Mix" 2002 Panini Comics 56 s0   (v1 search)
+   CV local rip:   127976 "Manga! Manga! The World of Japanese Comics" 1983 Kodansha International 1 issue 768546 (via CV candidate name "Manga! Manga! The World of Japanese Comics") · 120993 "Manga" 2019 Unknown Publisher 1 issue 717709 (via CV candidate name "the manga") · 130416 "the manga" ? ? 1 issue 804012 (via CV candidate name "the manga")   (rip lookup)
+   GCD dump:       68222 "Manga! Manga! The World of Japanese Comics" [en-jp] 1986-1986 講談社 [Kōdansha] [] 1 (via CV candidate name "Manga! Manga! The World of Japanese Comics") · 110886 "Manga! Manga! The World of Japanese Comics" [en-jp] 1983-1983 講談社 [Kōdansha] [] 1 (via CV candidate name "Manga! Manga! The World of Japanese Comics") · 76102 "Manga" [en-jp] 1982-1982 Metro Scope [] 1 (via CV candidate name "the manga") · 202716 "Manga" [fr] 2020-2020 Éditions de La Martinière [] 1 (via CV candidate name "the manga")   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.32967032967032966
+
+== S15828 Snow Woman  [tier D]   keys: Snow Woman  years 1987-1987  1 files / 0 collections
+   folders: [1] Manga\_Hideshi Hino
+   files:   [45884] Snow Woman (1987) (Hideshi Hino) (Caterpillar).cbr (136pp)
+   CV candidates:  38352 "Snow" 2006 Tokyopop 1 issue 257071 s55 · 96237 "Snow" 2012 self published 1 issue 563402 s55 · 168078 "Snow" 2025 Kodansha 2 s48 · 44396 "Snow Angel" 2011 Arcana Studio 1 issue 306002 s44 · 59508 "Snow Angel" 2013 Dark Horse Comics 1 issue 395692 s44 · 89948 "Snow Angel" 2016 Dark Horse Comics 1 issue 527098 s44   (v1 search)
+   CV local rip:   38352 "Snow" 2006 Tokyopop 1 issue 257071 (via CV candidate name "Snow") · 96237 "Snow" 2012 self published 1 issue 563402 (via CV candidate name "Snow") · 168078 "Snow" 2025 Kodansha 2 (via CV candidate name "Snow")   (rip lookup)
+   GCD dump:       81207 "Snow" 2012-2012 Emily Zelasko [] 1 (via CV candidate name "Snow") · 95011 "Snow" [en-ca] 2015-2015 Benjamin Rivers [] 1 (via CV candidate name "Snow")   (dump lookup)
+   MU / External:  MU 66529213601 "Snow Woman" 2022 Manhua · MuSeriesLink 66529213601 status 1 conf 0.7692307692307693
+
+== S15379 Service Area  [tier D]   keys: Service Area  years ?-?  1 files / 0 collections
+   folders: [1] Manga\_Inio Asano
+   files:   [40585] Service Area.cbz (44pp)
+   CV candidates:  32437 "Area 10" 2010 DC Comics 1 issue 204530 s44 · 33984 "Area 88" 1979 Shogakukan 1 issue 1106421 s44 · 166004 "Area D" 2015 Norma Editorial 2 s37 · 158140 "Aliens Area" 2024 Viz 3 s32 · 145280 "Aliens Area" 2022 Shueisha 3 s32 · 11014 "Area 52" 2001 Image 4 s32   (v1 search)
+   CV local rip:   27159 "Area 88" 1987 Viz 42 (via CV candidate name "Area 88") · 32437 "Area 10" 2010 DC Comics 1 issue 204530 (via CV candidate name "Area 10") · 33984 "Area 88" 1979 Shogakukan 1 issue 1106421 (via CV candidate name "Area 88") · 166004 "Area D" 2015 Norma Editorial 2 (via CV candidate name "Area D")   (rip lookup)
+   GCD dump:       14301 "Area 88" 1987-1989 Eclipse; Viz [] 36 (via CV candidate name "Area 88") · 14302 "Area 88" 1988-1989 Viz [] 6 (via CV candidate name "Area 88") · 44258 "Area 88" 1991-1991 Viz [] 1 (via CV candidate name "Area 88") · 48022 "Area 10" 2010-2010 DC [] 1 (via CV candidate name "Area 10") · 92295 "AREA D 異能領域" [ja-jp] 2012-2016 小学館 [Shogakukan] [] 14 (via CV candidate name "Area D") · 99597 "Area D" [de] 2014-2017 Carlsen Comics [DE] [] 14 (via CV candidate name "Area D")   (dump lookup)
+   MU / External:  MU 25316755389 "Service Area" 2018 Manga · MuSeriesLink 25316755389 status 1 conf 0.7692307692307693
+
+== S21551 What if Tokyo  [tier B]   keys: What if Tokyo  years 2016-?  1 files / 0 collections
+   folders: [1] Manga\_Inio Asano
+   files:   [40590] What if Tokyo (Inio Asano).cbz (26pp)
+   CV per-file (v1): vol 87863 "What If?" 2016 Delcourt 1 issue 513819 on 1/1 files
+   CV candidates:  (= per-file) · 88650 "What If?" 2016 Delcourt 2 s63 · 85149 "What If?" 2015 Delcourt 4 s58 · 2918 "What If?" 1977 Marvel 47 s55 · 4249 "What If...?" 1989 Marvel 115 s55 · 19279 "What If? Fantastic Four" 2006 Marvel 1 issue 115704 s53 · 28948 "What If? Secret Wars" 2009 Marvel 1 issue 178295 s53   (v1 search)
+   CV local rip:   (= per-file) · 88650 "What If?" 2016 Delcourt 2 (via CV name "What If?") · 85149 "What If?" 2015 Delcourt 4 (via CV name "What If?") · 4249 "What If...?" 1989 Marvel 115 (via CV name "What If?") · 2918 "What If?" 1977 Marvel 47 (via CV name "What If?")   (rip lookup)
+   GCD dump:       237663 "What if...?" [de] 2026-2026 Egmont Ehapa [] 1 (via CV name "What If?") · 3864 "What If...?" 1989-1998 Marvel [] 115 (via CV name "What If?") · 204261 "What If" [es] 1989-1994 Planeta DeAgostini [] 70 (via CV name "What If?") · 71978 "What If?" [en-au] 1980-1980 Yaffa / Page [] 1 (via CV name "What If?") · 2410 "What If?" 1977-1984 Marvel [] 47 (via CV name "What If?") · 80331 "What If" [en-au] 1977-1977 Yaffa / Page [] 1 (via CV name "What If?")   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.3076923076923077
+
+== S39477 A Gentle Man  [tier D]   keys: A Gentle Man  years ?-?  3 files / 0 collections
+   folders: [3] Manga\_Inio Asano\A Gentle Man
+   files:   [40551] A Gentle Man - c01.cbz (12pp) | [40552] A Gentle Man - c02 [4chan].cbz (14pp) | [40553] A Gentle Man - c03.cbz (12pp)
+   CV candidates:  129818 "A Gentle Noble's Vacation Recommendation" 2020 Tokyopop 10 s40 · 41038 "Train Man: A Shojo Manga" 2006 Random House 1 issue 276676 s40 · 10834 "Gentle Ben" 1968 Dell 5 s28 · 122307 "Gentle Deception" 2019 Harlequin Comics 1 issue 724116 s23 · 127341 "Gentle Savage" 2020 Harlequin Comics 1 issue 763450 s23 · 130416 "the manga" ? ? 1 issue 804012 s3   (v1 search)
+   CV local rip:   10834 "Gentle Ben" 1968 Dell 5 (via CV candidate name "Gentle Ben") · 41038 "Train Man: A Shojo Manga" 2006 Random House 1 issue 276676 (via CV candidate name "Train Man: A Shojo Manga") · 129818 "A Gentle Noble's Vacation Recommendation" 2020 Tokyopop 10 (via CV candidate name "A Gentle Noble's Vacation Recommendation")   (rip lookup)
+   GCD dump:       11751 "Gentle Ben" 1968-1969 Dell [] 5 (via CV candidate name "Gentle Ben") · 137952 "Train Man: A Shojo Manga" 2006-2006 Random House [] 1 (via CV candidate name "Train Man: A Shojo Manga") · 163284 "A Gentle Noble's Vacation Recommendation" 2020-? Tokyopop [] 10 (via CV candidate name "A Gentle Noble's Vacation Recommendation")   (dump lookup)
+   MU / External:  MU 71129528109 "Gentle Man" 1991 Manga · MuSeriesLink 71129528109 status 1 conf 1.0
+
+== S23720 Mujina into the Deep  [tier C] · 2 number(s) x2+, 1 parsed key(s), ratio 1.50  keys: Mujina - Into the Deep  years 2023-2025  9 files / 0 collections
+   folders: [9] Manga\_Inio Asano\Mujina - Into the Deep (2023)
+   files:   Mujina - Into the Deep c000.1.cbz … Mujina - Into the Deep c001.7.cbz  (9 files, pp 25-39)
+   ours:    ladder 1-7; 2 number(s) name more than one file: 1, 2
+   CV linked:      vol 153887 "Mujina into the Deep" 2023 Shogakukan 6 issues; cached #1-5 (5); yearΔ 0; ratio 9/6 = 1.50; no judged range; v1 per-file: same volume on 9/9 files
+   CV candidates:  (= linked) · 165291 "Mujina" 1993 Shogakukan 9 s57 · 134447 "Deep Into the Amazon Jungle" 2021 Margaret K. McElderry Books 1 issue 837538 s55 · 98434 "Fathom: Into the Deep" 2008 Aspen MLT 1 issue 207762 s51 · 77843 "Sock Monkey: Into the Deep Woods" 2014 Fantagraphics 1 issue 469037 s51 · 93552 "Voyage into the Deep" 2004 Harry N. Abrams 1 issue 546856 s50 · 162501 "Mujina into the Deep" 2025 Viz 3 s38   (v1 search)
+   CV local rip:   (= linked) · 163280 "Mujina into the Deep" 2024 Norma Editorial 2 · 162501 "Mujina into the Deep" 2025 Viz 2 · 167592 "Mujina into the Deep" 2025 Dargaud 1 issue 1137576 · 165291 "Mujina" 1993 Shogakukan 9 (via CV candidate name "Mujina") · 134447 "Deep Into the Amazon Jungle" 2021 Margaret K. McElderry Books 1 issue 837538 (via CV candidate name "Deep Into the Amazon Jungle")   (rip lookup)
+   GCD per-file:   series 221313 "Mujina into the Deep" [ja-jp] 2023-? 小学館 [Shogakukan] [ongoing series] 5 on 7/9 files; methods numx7
+   GCD dump:       (= per-file) · 221312 "Mujina into the Deep" 2025-? Viz [] 4 · 222360 "Mujina into the Deep" [de] 2025-? Tokyopop (de) [] 4   (dump lookup)
+   MU / External:  MU 14395070671 "Mujina into the Deep" 2023 Manga · MuSeriesLink 14395070671 status 1 conf 1.0
+
+== S15121 Sayonara Bye-Bye  [tier D]   keys: Sayonara Bye-Bye  years ?-?  1 files / 0 collections
+   folders: [1] Manga\_Inio Asano\Sayonara Bye-Bye
+   files:   [41996] Sayonara Bye-Bye [M3OW].cbz (21pp)
+   CV candidates:  42139 "Bye-Bye, Little." 2002 Shueisha 1 issue 286992 s44 · 128332 "Streamliner: Bye-Bye Lisa Dora" 2020 Magnetic Press 1 issue 772913 s42 · 164989 "Bye-bye Liberty" 2019 Crunchyroll SA 4 s32 · 36199 "Bye Bye Birdie" 2009 Unknown Publisher 1 issue 238634 s15 · 111842 "Robotech: Bye Bye, Mars" 2018 Titan Comics 1 issue 675104 s15 · 145687 "Bye Bye Tristesse" 2012 12 Bis 1 issue 952253 s15   (v1 search)
+   CV local rip:   42139 "Bye-Bye, Little." 2002 Shueisha 1 issue 286992 (via CV candidate name "Bye-Bye, Little.") · 128332 "Streamliner: Bye-Bye Lisa Dora" 2020 Magnetic Press 1 issue 772913 (via CV candidate name "Streamliner: Bye-Bye Lisa Dora") · 164989 "Bye-bye Liberty" 2019 Crunchyroll SA 4 (via CV candidate name "Bye-bye Liberty")   (rip lookup)
+   GCD dump:       146283 "Bye-bye Liberty" [de-ch] 2019-2019 Kazé Manga [] 4 (via CV candidate name "Bye-bye Liberty") · 191651 "Bye Bye Liberty" [fr] 2018-2019 Kurokawa [] 4 (via CV candidate name "Bye-bye Liberty")   (dump lookup)
+   MU / External:  MU 44327177481 "Sayonara Bye Bye" 2017 Manga · MuSeriesLink 44327177481 status 1 conf 0.7692307692307693
+
+== S9691 Itou Junji's Dog Diary  [tier D]   keys: Itou Junji's Dog Diary  years ?-?  1 files / 0 collections
+   folders: [1] Manga\_Junji Ito
+   files:   [42598] Itou Junji's Dog Diary [Itou Junji].cbz (10pp)
+   CV candidates:  122154 "Diary" 2019 Yen Press 1 issue 723690 s55 · 158858 "DOG" 2023 Edizioni BD 1 issue 1063192 s55 · 24048 "Dog" 1991 Rebel Studios 2 s48 · 48101 "Good Dog, Bad Dog" 2010 David Fickling Books 1 issue 332060 s35 · 59012 "The Red Diary / The Re[a]d Diary" 2012 Image 1 issue 393884 s28 · 158507 "Itou Mami Kanzenban" 2006 Jihi Shuppan 2 s21   (v1 search)
+   CV local rip:   24048 "Dog" 1991 Rebel Studios 2 (via CV candidate name "DOG") · 122154 "Diary" 2019 Yen Press 1 issue 723690 (via CV candidate name "Diary") · 158858 "DOG" 2023 Edizioni BD 1 issue 1063192 (via CV candidate name "DOG")   (rip lookup)
+   GCD dump:       24196 "Dog" 1991-1992 Rebel Studios [] 3 (via CV candidate name "DOG") · 151414 "Diary" 2019-2019 Yen Press [] 1 (via CV candidate name "Diary") · 194640 "Dog" [fr] 2011-2011 Éditions de la Cerise [] 1 (via CV candidate name "DOG") · 210349 "Dog" 2014-2014 Wild Angels Publishing [] 1 (via CV candidate name "DOG")   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.46153846153846156
+
+== S6440 Falling  [tier D]   keys: Falling  years ?-?  1 files / 0 collections
+   folders: [1] Manga\_Junji Ito\Falling
+   files:   [43977] Falling.cbz (32pp)
+   CV candidates:  66802 "Angel Falling" 2013 Zenescope Entertainment 1 issue 423732 s74 · 171393 "Falling Star" 2025 Egmont Ehapa Verlag 1 s74 · 77999 "Falling for Jack" 2014 Harlequin Comics 1 issue 469718 s73 · 136066 "Falling For The Frenchman" 2021 Harlequin Comics 1 issue 849106 s72 · 127511 "Falling For The Enemy" 2020 Harlequin Comics 1 issue 765281 s72 · 43225 "Falling Skies" 2011 Dark Horse Comics 2 s67   (v1 search)
+   CV local rip:   66802 "Angel Falling" 2013 Zenescope Entertainment 1 issue 423732 (via CV candidate name "Angel Falling") · 77999 "Falling for Jack" 2014 Harlequin Comics 1 issue 469718 (via CV candidate name "Falling for Jack") · 83381 "Falling Star" 2015 SAUCE! 4 (via CV candidate name "Falling Star")   (rip lookup)
+   GCD dump:       76281 "Angel Falling" 2013-2013 Zenescope Entertainment [] 1 (via CV candidate name "Angel Falling") · 227278 "Falling Star" [de] 2025-2025 Egmont Ehapa [] 1 (via CV candidate name "Falling Star")   (dump lookup)
+   MU / External:  MU 78156338975 "Falling" 2012 Manga · MuSeriesLink 78156338975 status 1 conf 0.7692307692307693
+
+== S9127 Human Chair  [tier D]   keys: Human Chair  years 2007-2007  1 files / 0 collections
+   folders: [1] Manga\_Junji Ito\Human Chair (2007)
+   files:   [43980] Human Chair.cbr (30pp)
+   CV candidates:  31464 "Lobo: In the Chair" 1994 DC Comics 1 issue 196320 s50 · 21716 "Lady Death: Swimsuit 2007" 2007 Avatar Press 1 issue 131003 s30 · 84279 "Human" 2015 self published 1 issue 499123 s15 · 121978 "Human" 2019 Europe Comics 1 issue 722815 s15 · 64705 "Human" 2013 Human Comics 2 s8 · 49641 "The Chair" 2008 Alterna Comics 1 issue 340092 s4   (v1 search)
+   CV local rip:   64705 "Human" 2013 Human Comics 2 (via CV candidate name "Human") · 84279 "Human" 2015 self published 1 issue 499123 (via CV candidate name "Human") · 121978 "Human" 2019 Europe Comics 1 issue 722815 (via CV candidate name "Human") · 21716 "Lady Death: Swimsuit 2007" 2007 Avatar Press 1 issue 131003 (via CV candidate name "Lady Death: Swimsuit 2007") · 31464 "Lobo: In the Chair" 1994 DC Comics 1 issue 196320 (via CV candidate name "Lobo: In the Chair")   (rip lookup)
+   GCD dump:       82532 "Human" 2012-? Human Comics [] 2 (via CV candidate name "Human") · 14706 "Lobo: In the Chair" 1994-1994 DC [] 1 (via CV candidate name "Lobo: In the Chair")   (dump lookup)
+   MU / External:  MU 49840604708 "Human Chair" 2007 Manga · MuSeriesLink 49840604708 status 1 conf 1.0
+
+== S10569 Lady Snowblood Gaiden  [tier D]   keys: Lady Snowblood Gaiden  years 1995-1995  1 files / 1 collections
+   folders: [1] Manga\_Kazuo Koike
+   files:   [45890] COL Lady Snowblood Gaiden v01.cbz (184pp)
+   ours:    judged item 45890 #0-0 conf 0.97; barcode item 45890 [{"type": "EAN13", "data": "9784862254085", "page": "en_v01_
+   CV candidates:  159612 "Lady Snowblood" 2006 Planeta DeAgostini 2 s63 · 79587 "Lady Snowblood" 2006 Carlsen Verlag 3 s58 · 167173 "Lady Snowblood" 2007 Dargaud 3 s58 · 42292 "Lady Snowblood" 2005 Dark Horse Comics 4 s58 · 167165 "Lady Snowblood Regresa" 2009 Planeta DeAgostini 1 issue 1134901 s54 · 167172 "Lady Snowblood Intégrale" 2017 Dargaud 1 issue 1134919 s54   (v1 search)
+   CV local rip:   42292 "Lady Snowblood" 2005 Dark Horse Comics 4 (via CV candidate name "Lady Snowblood") · 79587 "Lady Snowblood" 2006 Carlsen Verlag 3 (via CV candidate name "Lady Snowblood") · 159612 "Lady Snowblood" 2006 Planeta DeAgostini 2 (via CV candidate name "Lady Snowblood") · 167173 "Lady Snowblood" 2007 Dargaud 3 (via CV candidate name "Lady Snowblood")   (rip lookup)
+   GCD dump:       15640 "Lady Snowblood" 2005-2006 Dark Horse [] 4 (via CV candidate name "Lady Snowblood") · 27582 "Lady Snowblood" [de] 2006-2006 Carlsen Comics [DE] [] 3 (via CV candidate name "Lady Snowblood") · 132242 "Lady SnowBlood" [fr] 2007-2008 Dargaud [] 3 (via CV candidate name "Lady Snowblood") · 113824 "Lady Snowblood" [de] 2017-2017 Carlsen Comics [DE] [] 3 (via CV candidate name "Lady Snowblood") · 195942 "Lady Snowblood" [pt-br] 2021-2021 Panini Brasil [] 4 (via CV candidate name "Lady Snowblood")   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.49450549450549447
+
+== S22084 Wounded Man  [tier D]   keys: Wounded Man  years 1982-1982  9 files / 9 collections
+   folders: [9] Manga\_Kazuo Koike\Wounded Man
+   files:   [45946] COL Wounded Man v01.cbz (397pp) | [45947] COL Wounded Man v02.cbz (389pp) | [45948] COL Wounded Man v03.cbz (401pp) | [45949] COL Wounded Man v04.cbz (188pp)
+            [45950] COL Wounded Man v05.cbz (200pp) | [45951] COL Wounded Man v06.cbz (203pp) | [45952] COL Wounded Man v07.cbz (201pp) | [45953] COL Wounded Man v08.cbz (202pp)
+            [45954] COL Wounded Man v09.cbz (199pp)
+   ours:    barcode item 45946 [{"type": "EAN13", "data": "9781588991034", "page": "wounded; barcode item 45947 [{"type": "EAN13", "data": "9781588991041", "page": "wounded; barcode item 45949 [{"type": "EAN13", "data": "9781588991065", "page": "wounded; barcode item 45953 [{"type": "EAN13", "data": "9781588991492", "page": "wounded
+   CV candidates:  126417 "Wounded Worlds" 2020 self published ? s29 · 52045 "Wounded Children" 1983 Chick Publications ? s29 · 71751 "Walking Wounded" 1990 Fox Comics (AU) ? s29 · 41038 "Train Man: A Shojo Manga" 2006 Random House ? s26 · 167715 "X-Men Epic Collection: Wounded Wolf" 2025 Marvel ? s26 · 84318 "Walking Wounded: Uncut Stories from Iraq" 2015 NBM ? s25   (v1 search)
+   CV local rip:   52045 "Wounded Children" 1983 Chick Publications 1 issue 356803 (via CV candidate name "Wounded Children") · 71751 "Walking Wounded" 1990 Fox Comics (AU) 1 issue 445663 (via CV candidate name "Walking Wounded") · 126417 "Wounded Worlds" 2020 self published 2 (via CV candidate name "Wounded Worlds")   (rip lookup)
+   GCD dump:       49056 "Wounded Children" 1983-1983 Chick Publications [] 1 (via CV candidate name "Wounded Children") · 46736 "Walking Wounded" 1990-1990 Fox Comics / Fantagraphics Books [] 1 (via CV candidate name "Walking Wounded")   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.3017751479289941 · ExternalWork 91 "Wounded Man" openlibrary /works/OL37814946W
+
+== S7468 Ghost in the Shell - Stand Alone Complex - Official Log  [tier B]   keys: Ghost in the Shell - Stand Alone Complex - Official Log  years 2011-2011  1 files / 0 collections
+   folders: [1] Manga\_Masamune Shirow\Ghost in the Shell (1991)\Extras
+   files:   [39863] Ghost in the Shell - Stand Alone Complex - Official Log 1.cbr (74pp)
+   ours:    ladder 1
+   CV per-file (v1): vol 41074 "Ghost in the Shell: Stand Alone Complex" 2011 Kodansha Comics USA 5 on 1/1 files
+   CV candidates:  (= per-file) · 21488 "Ghost in the Shell" 1995 Dark Horse Comics 1 issue 129661 s30 · 46395 "The Ghost in the Shell" 2009 Kodansha Comics USA 2 s23 · 94242 "Ghost in the Shell" 1996 Éditions Glénat 4 s18 · 111468 "Ghost in the Shell" 1995 Egmont Ehapa Verlag 3 s18 · 167056 "Ghost in the Shell" 2002 Japonica Polonica Fantastica 3 s18 · 145786 "Ghost in the Shell: Stand Alone Complex 2nd Gig Visual Book" 2006 Hobby Japan 1 issue 953127 s17   (v1 search)
+   CV local rip:   (= per-file) · 46395 "The Ghost in the Shell" 2009 Kodansha Comics USA 2 (via CV candidate name "Ghost in the Shell") · 166985 "The Ghost in the Shell" 2016 JBC 1 issue 1132828 (via CV candidate name "Ghost in the Shell") · 167056 "Ghost in the Shell" 2002 Japonica Polonica Fantastica 3 (via CV candidate name "Ghost in the Shell") · 70816 "Ghost in the Shell" 2001 Dino Comics 1 issue 441783 (via CV candidate name "Ghost in the Shell") · 94242 "Ghost in the Shell" 1996 Éditions Glénat 4 (via CV candidate name "Ghost in the Shell")   (rip lookup)
+   GCD dump:       60785 "Ghost in the Shell Stand Alone Complex" 2011-2014 Kodansha USA [] 5 (via CV name "Ghost in the Shell: Stand Alone Complex") · 75025 "The Ghost in the Shell" 2009-2009 Kodansha USA [] 1 (via CV candidate name "Ghost in the Shell") · 134348 "Ghost in The Shell - Stand Alone Complex" [fr] 2013-2014 Glénat [] 5 (via CV name "Ghost in the Shell: Stand Alone Complex") · 107937 "Ghost in the Shell" [de] 2016-2017 Egmont Ehapa [] 2 (via CV candidate name "Ghost in the Shell") · 149232 "The Ghost in the Shell" [pt-br] 2016-2020 Editora JBC [] 2 (via CV candidate name "Ghost in the Shell") · 113499 "Ghost in the Shell - Stand Alone Complex" [de] 2017-2017 Egmont Ehapa [] 5 (via CV name "Ghost in the Shell: Stand Alone Complex")   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.4072398190045249
+
+== S1708 Ayako  [tier D]   keys: Ayako  years 1972-1972  1 files / 0 collections
+   folders: [1] Manga\_Osamu Tezuka
+   files:   [42862] 01 Ayako [kickthekitty].cbz (362pp)
+   CV candidates:  128885 "Ayako" 2004 Otakuland Distribuciones 2 s83 · 144655 "Ayako" 2019 Edizioni BD 2 s83 · 160316 "Ayako" 2016 Planeta DeAgostini 2 s83 · 104146 "Ayako" 1973 Daitosha 2 s83 · 143658 "Ayako" 2010 Kodansha 2 s83 · 107636 "Ayako" 1981 Kodansha 3 s78   (v1 search)
+   CV local rip:   104146 "Ayako" 1973 Daitosha 2 · 107636 "Ayako" 1981 Kodansha 3 · 128884 "Ayako" 2003 Delcourt 3 · 128885 "Ayako" 2004 Otakuland Distribuciones 2 · 161733 "Ayako" 2004 Hazard Edizioni 3 · 143658 "Ayako" 2010 Kodansha 2   (rip lookup)
+   GCD dump:       120829 "Ayako" [fr] 2003-2004 Delcourt [] 3 · 53946 "Ayako" 2010-2010 Vertical [] 1 · 64906 "Ayako" [nl] 2012-2012 Uitgeverij L [] 3 · 72371 "Ayako" 2013-2013 Vertical [] 1 · 173948 "Ayako" [pt-br] 2018-2018 Veneta [] 1 · 197666 "亜夜子 [Ayako]" [ja-jp] 2019-2020 マイクロマガジン社 [Micro Magazine] [] 3   (dump lookup)
+   MU / External:  MU 67757234996 "Ayako" 1972 Manga · MuSeriesLink 67757234996 status 1 conf 1.0
+
+== S6839 Flower  [tier B]   keys: Flower  years 2000-2002  1 files / 0 collections
+   folders: [1] Manga\_Taiyo Matsumoto\Hana (aka Flower) (2002)
+   files:   [41995] Flower (GWR+Hox).cbr (231pp)
+   CV linked:      vol 107020 "Flower" 2000 Shueisha 10 issues; issue list NOT CACHED; yearΔ 0; ratio 0/10; none cached; v1 per-file: same volume on 1/1 files
+   CV candidates:  (= linked) · 96995 "Flower" 2011 Coremagazine 1 issue 569052 s50 · 165395 "Flower" 2014 Magic Press 1 issue 1119261 s50 · 26492 "Flower of Life" 2007 Digital Manga Publishing 4 s36 · 138422 "Crimson Flower" 2021 Dark Horse Comics 1 issue 881362 s34 · 122142 "Desert Flower" 2019 Torico 1 issue 723658 s34 · 31991 "Flower & Fade" 2007 NBM 1 issue 200752 s33   (v1 search)
+   CV local rip:   (= linked) · 96995 "Flower" 2011 Coremagazine 1 issue 569052 · 165395 "Flower" 2014 Magic Press 1 issue 1119261   (rip lookup)
+   GCD dump:       84464 "Flower～フラワー～" [ja-jp] 2000-2006 集英社 [Shueisha] [] 10 · 99409 "Flower" [de] 2008-? Carlsen Comics [DE] [] 1   (dump lookup)
+   MU / External:  MU 75333313499 "Flower" 2001 Manga · MuSeriesLink 75333313499 status 1 conf 1.0
+
+== S13025 No.5  [tier D]   keys: No.5  years 2000-2000  3 files / 3 collections
+   folders: [3] Manga\_Taiyo Matsumoto\No. 5 (2000) (Incomplete)
+   files:   [40479] COL No.5 v01 (MangaSketchbook).cbz (?pp) | [40480] COL No.5 v03 (GWR).cbr (134pp) | [40481] COL No.5 v04 (GWR).cbr (134pp)
+   ours:    judged item 40479 #2-3 conf 0.97; judged item 40480 #9-12 conf 0.97; judged item 40481 #13-16 conf 0.97
+   CV candidates:  22079 "Manga Shi 2000" 1997 Crusade 3 s26 · 152659 "Manga 2000" 2000 Panini Comics 91 s15 · 4697 "2000+" 1991 Epix 14 s9 · 67113 "No. 5" 2002 Viz 1 issue 424785 s0 · 137684 "No. 5" 2021 Viz 4 s0 · 88536 "2000 AD: Mega-City Five-O!" 2015 Rebellion 1 issue 517605 s0   (v1 search)
+   CV local rip:   67113 "No. 5" 2002 Viz 1 issue 424785 · 137684 "No. 5" 2021 Viz 4 · 152659 "Manga 2000" 2000 Panini Comics 91 (via CV candidate name "Manga 2000") · 22079 "Manga Shi 2000" 1997 Crusade 3 (via CV candidate name "Manga Shi 2000") · 4697 "2000+" 1991 Epix 14 (via CV candidate name "2000+")   (rip lookup)
+   GCD dump:       44501 "No. 5" 2002-2003 Viz [] 2 · 174239 "No. 5" 2021-2022 Viz [] 4 · 46592 "Manga Shi 2000" 1997-1997 Crusade Comics [] 4 (via CV candidate name "Manga Shi 2000") · 4353 "2000+" [sv-se] 1991-1992 Epix [] 18 (via CV candidate name "2000+")   (dump lookup)
+   MU / External:  MuSeriesLink None status 3 conf 0.38461538461538464
+
+== S2983 Bloodshot World  [tier D]   keys: Bloodshot World  years 2024-2024  1 files / 1 collections
+   folders: [1] Markosia
+   files:   [46437] COL Bloodshot World (2024) (Graphic Novel) (Markosia) (Digital-HD) (LeDuch).cbz (119pp)
+   ours:    ComicInfo Series: "Bloodshot World"x1; ComicInfo Volume: "2024"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Markosia"x1
+   CV candidates:  57959 "Bloodshot: Setting The World On Fire" 2013 DMG/Valiant Entertainment 1 issue 388550 s71 · 123399 "Bloodshot" 2019 DMG/Valiant Entertainment 4 s43 · 92253 "Bloodshot" 2013 Panini España 3 s43 · 97408 "Bloodshot Reborn: Bloodshot Island" 2016 DMG/Valiant Entertainment 1 issue 571653 s42 · 11899 "Bloodshot" 1997 Valiant/Acclaim 16 s40 · 50367 "Bloodshot" 2012 DMG/Valiant Entertainment 16 s40   (v1 search)
+   CV local rip:   121568 "Bloodshot" 2019 DMG/Valiant Entertainment 13 (via CV candidate name "Bloodshot") · 123399 "Bloodshot" 2019 DMG/Valiant Entertainment 4 (via CV candidate name "Bloodshot") · 92253 "Bloodshot" 2013 Panini España 3 (via CV candidate name "Bloodshot") · 127232 "Bloodshot" 2013 Bliss Comics 5 (via CV candidate name "Bloodshot") · 50367 "Bloodshot" 2012 DMG/Valiant Entertainment 16 (via CV candidate name "Bloodshot") · 11899 "Bloodshot" 1997 Valiant/Acclaim 16 (via CV candidate name "Bloodshot")   (rip lookup)
+   GCD dump:       212613 "Bloodshot" 2024-? Alien Books [] 1 (via CV candidate name "Bloodshot") · 196313 "Bloodshot" [fr] 2020-2021 Bliss Comics [] 3 (via CV candidate name "Bloodshot") · 150550 "Bloodshot" 2019-2021 Valiant Entertainment [] 26 (via CV candidate name "Bloodshot") · 153588 "Bloodshot" 2019-? Valiant Entertainment [] 4 (via CV candidate name "Bloodshot") · 155783 "Bloodshot" [de] 2018-? Schwerkraft-Verlag [] 2 (via CV candidate name "Bloodshot") · 114434 "Bloodshot" [it] 2017-? Edizioni Star Comics [] 6 (via CV candidate name "Bloodshot")   (dump lookup)
+
+== S12281 Mondo Vixens  [tier D]   keys: Mondo Vixens  years 2025-2025  1 files / 1 collections
+   folders: [1] Markosia
+   files:   [46460] COL Mondo Vixens (2025) (Graphic Novel) (Markosia) (Digital-HD) (LeDuch).cbz (185pp)
+   ours:    ComicInfo Series: "Mondo Vixens"x1; ComicInfo Volume: "2025"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Markosia"x1
+   CV candidates:  52059 "Mondo" 2012 Image 1 issue 356782 s55 · 127599 "Mondo " 2004 Seriepiraterna 1 issue 765980 s55 · 24634 "Elektrik Vixens" 2002 Amryl Entertainment 1 issue 145639 s44 · 35067 "Vampire Vixens" 1993 Acid Rain Studios 1 issue 231260 s44 · 84959 "Dixie Vixens" 2015 Creative Mind Energy 1 issue 501693 s44 · 45975 "Mondo" 2012 Image 3 s43   (v1 search)
+   CV local rip:   45975 "Mondo" 2012 Image 3 (via CV candidate name "Mondo") · 52059 "Mondo" 2012 Image 1 issue 356782 (via CV candidate name "Mondo") · 127599 "Mondo " 2004 Seriepiraterna 1 issue 765980 (via CV candidate name "Mondo") · 24634 "Elektrik Vixens" 2002 Amryl Entertainment 1 issue 145639 (via CV candidate name "Elektrik Vixens")   (rip lookup)
+   GCD dump:       81433 "Mondo" [de] 2013-? Tim Gaedke [] 5 (via CV candidate name "Mondo") · 63528 "Mondo" 2012-2012 Image [] 3 (via CV candidate name "Mondo") · 85456 "Mondo" 2012-2012 Image [] 1 (via CV candidate name "Mondo") · 12229 "Mondo" [sv-se] 2004-2004 Seriepiraterna [] 1 (via CV candidate name "Mondo")   (dump lookup)
+
+== S22831 Zombierama: The Horror Show  [tier D]   keys: Zombierama: The Horror Show  years 2023-2023  1 files / 1 collections
+   folders: [1] Markosia
+   files:   [46478] COL Zombierama - The Horror Show v01 (2023) (Collection) (AAM-Markosia) (Digital-HD) (LeDuch).cbz (91pp)
+   ours:    ComicInfo Series: "Zombierama: The Horror Show"x1; ComicInfo Volume: "2023"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "AAM/Markosia"x1
+   CV candidates:  126283 "Zombierama" 2020 AAM/Markosia 1 issue 745798 s70 · 23244 "Horror Show" 1991 Caliber Comics 1 issue 139783 s70 · 24080 "Horror Show" 2005 Dead Dog 1 issue 143200 s70 · 168200 "Horror Show" 1993 Vidente 1 issue 1141948 s70 · 82565 "The Horror Show" 2015 Broken Icon Comics 3 s58 · 52027 "Snowman: Horror Show" 1998 Avatar Press 1 issue 356609 s44   (v1 search)
+   CV local rip:   126283 "Zombierama" 2020 AAM/Markosia 1 issue 745798 (via CV candidate name "Zombierama") · 82565 "The Horror Show" 2015 Broken Icon Comics 3 (via CV candidate name "Horror Show") · 24080 "Horror Show" 2005 Dead Dog 1 issue 143200 (via CV candidate name "Horror Show") · 168200 "Horror Show" 1993 Vidente 1 issue 1141948 (via CV candidate name "Horror Show") · 23244 "Horror Show" 1991 Caliber Comics 1 issue 139783 (via CV candidate name "Horror Show")   (rip lookup)
+   GCD dump:       93119 "The Horror Show" 2015-? Broken Icon Comics [] 2 (via CV candidate name "Horror Show") · 56105 "The Horror Show" 2005-2005 Dead Dog Comics [] 1 (via CV candidate name "Horror Show") · 21574 "Horror Show" 1991-1991 Caliber Press [] 1 (via CV candidate name "Horror Show")   (dump lookup)
+
+== S20976 Vanquished - Queen of People  [tier D]   keys: Vanquished - Queen of People  years 2023-2023  3 files / 3 collections
+   folders: [3] Markosia\Vanquished - Queen of {Three} People (2023)
+   files:   [46472] COL Vanquished - Queen of {Three} People - Volume 01 (2023) (digital) (DrVink-DCP).cbz (114pp)
+            [46473] COL Vanquished - Queen of {Three} People - Volume 02 (2023) (digital) (DrVink-DCP).cbz (93pp)
+            [46474] COL Vanquished - Queen of {Three} People - Volume 03 (2023) (digital) (DrVink-DCP).cbz (94pp)
+   CV candidates:  133868 "Vanquished: Weird Princ{ess}" 2021 AAM/Markosia 2 s48 · 137927 "Vanquished: Be A {Wo}man" 2021 AAM/Markosia 11 s42 · 132601 "Vanquished: Weird Princ{ess}" 2020 AAM/Markosia 8 s42 · 53287 "Invisible People" 1992 Kitchen Sink 3 s37 · 60785 "AAM/Markosia FCBD 2013" 2013 AAM/Markosia 1 issue 400878 s27 · 144824 "The Ex-People" 2022 Bamboo 2 s20   (v1 search)
+   CV local rip:   133868 "Vanquished: Weird Princ{ess}" 2021 AAM/Markosia 2 (via CV candidate name "Vanquished: Weird Princ{ess}") · 137927 "Vanquished: Be A {Wo}man" 2021 AAM/Markosia 11 (via CV candidate name "Vanquished: Be A {Wo}man") · 132601 "Vanquished: Weird Princ{ess}" 2020 AAM/Markosia 8 (via CV candidate name "Vanquished: Weird Princ{ess}")   (rip lookup)
+
+== S16730 Star Wars: The High Republic Adventures--Echoes of Fear  [tier C] · ratio 0.40  keys: Star Wars: The High Republic Adventures--Echoes of Fear  years 2024-2024  2 files / 0 collections
+   folders: [2] Marvel-IDW Star Wars\Star Wars - The High Republic Adventures - Echoes of Fear (2024)
+   files:   [103904] Star Wars - The High Republic Adventures - Echoes of Fear 002 (2024) (Digital) (Kileko-Empire).cbz (28pp)
+            [103905] Star Wars - The High Republic Adventures - Echoes of Fear 003 (2024) (Digital) (Kileko-Empire).cbz (29pp)
+   ours:    ladder 2-3; ComicInfo Series: "Star Wars: The High Republic Adventures--Echoes of Fear "x2
+   CV per-file (v1): vol 159631 "Star Wars: The High Republic Adventures - Echoes of Fear" 2024 Dark Horse Comics 4 on 2/2 files
+   CV candidates:  (= per-file) · 154553 "Star Wars: The High Republic" 2024 Marvel 10 s85 · 145478 "Star Wars: The High Republic" 2022 Marvel 10 s82 · 133079 "Star Wars: The High Republic" 2021 Marvel 15 s81 · 147135 "Star Wars: The High Republic: The Blade" 2023 Marvel 4 s70 · 140568 "Star Wars: The High Republic Adventures" 2021 IDW Publishing 2 s62 · 153743 "Star Wars The High Republic Adventures" 2021 Marvel UK/Panini UK 3 s55   (v1 search)
+   CV local rip:   (= per-file) · 154553 "Star Wars: The High Republic" 2024 Marvel 10 (via CV candidate name "Star Wars: The High Republic") · 145478 "Star Wars: The High Republic" 2022 Marvel 10 (via CV candidate name "Star Wars: The High Republic") · 133079 "Star Wars: The High Republic" 2021 Marvel 15 (via CV candidate name "Star Wars: The High Republic") · 161880 "Star Wars: The High Republic Adventures (Phase III)" 2024 Dark Horse Comics 4 (via GCD name "Star Wars: The High Republic Adventures Phase III") · 155169 "Star Wars: The High Republic Adventures (Phase III)" 2023 Dark Horse Comics 20 (via GCD name "Star Wars: The High Republic Adventures Phase III")   (rip lookup)
+   GCD per-file:   methods round2-folderx2 ⚠  (⚠ copies a folder neighbour's series — verify); series 214874 "Star Wars: The High Republic Adventures Phase III" 2024-2025 Dark Horse [collected edition] 5 on 2/2 files
+   GCD dump:       203817 "Star Wars: The High Republic" [pt-br] 2023-? Panini Brasil [] 1 (via CV candidate name "Star Wars: The High Republic") · 190281 "Star Wars: The High Republic" 2022-2023 Marvel [] 10 (via CV candidate name "Star Wars: The High Republic") · 168398 "Star Wars: The High Republic" 2021-2022 Marvel [] 15 (via CV candidate name "Star Wars: The High Republic") · 175457 "Star Wars: The High Republic" 2021-2022 Marvel [] 3 (via CV candidate name "Star Wars: The High Republic") · 194489 "Star Wars: The High Republic" [pt-br] 2021-? Panini Brasil [] 7 (via CV candidate name "Star Wars: The High Republic")   (dump lookup)
+   bridges:        gcd 214874 -> LOCG 166549 "Star Wars: The High Republic Adventures Vol. 1 TP" support 5
+
+== S16716 Star Wars: The Action Figure Variant Covers  [tier C] · by 5  keys: Star Wars: The Action Figure Variant Covers (2020)  years 2020-2020  1 files / 0 collections
+   folders: [1] Marvel-IDW Star Wars\_Completed Series and Minis
+   files:   [104006] Star Wars - The Action Figure Variant Covers (2020) (Digital) (Kileko-Empire).cbz (107pp)
+   ours:    ladder 1; ComicInfo Series: "Star Wars: The Action Figure Variant Covers (2020)"x1; ComicInfo Publisher: "Marvel"x1
+   CV linked:      vol 129463 "Star Wars: The Action Figure Variant Covers" 2020 Marvel 1 issues issue 791929; cached #1-1 (1); yearΔ 0; ratio 1/1 = 1.00; no judged range; v1 per-file: same volume on 1/1 files
+   CV candidates:  (= linked) · 126599 "Marvel: The Action Figure Variant Covers" 2020 Marvel 1 issue 755771 s66 · 85138 "Star Wars: The Marvel Covers" 2015 Marvel 1 issue 502135 s62 · 126895 "Deadpool: The Variant Covers" 2020 Marvel 1 issue 760763 s60 · 126701 "Carnage-ized: The Variant Covers" 2020 Marvel 1 issue 759380 s60 · 126702 "Venomized: The Variant Covers" 2020 Marvel 1 issue 759381 s60 · 126600 "Uncanny X-Men: The Variant Covers" 2020 Marvel 1 issue 755772 s54   (v1 search)
+   CV local rip:   (= linked) · 126599 "Marvel: The Action Figure Variant Covers" 2020 Marvel 1 issue 755771 (via CV candidate name "Marvel: The Action Figure Variant Covers") · 85138 "Star Wars: The Marvel Covers" 2015 Marvel 1 issue 502135 (via CV candidate name "Star Wars: The Marvel Covers")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 180965 "Star Wars: The Marvel Covers" 2015-2015 Marvel [] 1 on 1/1 files
+   GCD dump:       (= per-file) · 162989 "Star Wars: The Action Figure Variant Covers" 2020-2020 Marvel [] 1   (dump lookup)
+   bridges:        gcd 180965 -> LOCG 145881 "Star Wars: The Action Figure Variant Covers" support 1
+
+== S67960 Star Wars Vintage Action Figures - A Guide for Collectors  [tier D]   keys: Star Wars Vintage Action Figures - A Guide for Collectors  years 2003-2003  1 files / 0 collections
+   folders: [1] Marvel-IDW Star Wars\_Completed Series and Minis
+   files:   [104009] Star Wars Vintage Action Figures - A Guide for Collectors (2003) (b0bafett-Empire).cbr (268pp)
+
+== S16745 Star Wars: The Mandalorian  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: Star Wars: The Mandalorian  years 2022-2022  2 files / 2 collections
+   folders: [2] Marvel-IDW Star Wars\_Completed Series and Minis\Star Wars - The Mandalorian Season 1 (2022)
+   files:   [104114] COL Star Wars - The Mandalorian - Season One, Part 02 (2023) (Digital) (Kileko-Empire).cbz (133pp)
+            [104115] COL Star Wars - The Mandalorian Vol. 01 - Season One, Part 01 (2023) (Digital) (Kileko-Empire).cbz (135pp)
+   ours:    judged item 104115 #1-4 conf 0.85; ComicInfo Series: "Star Wars: The Mandalorian"x2; ComicInfo Publisher: "Marvel"x2
+   CV linked:      vol 144030 "Star Wars: The Mandalorian" 2022 Marvel 8 issues; cached #1-8 (8); yearΔ 0; ratio 0/8; 1 of 1 judged fit; v1 per-file: same volume on 2/2 files
+   CV candidates:  (= linked) · 146854 "Star Wars: The Mandalorian: Season One" 2022 Marvel 2 s103 · 145569 "Star Wars: The Mandalorian" 2022 Panini Verlag 3 s98 · 149265 "Star Wars: The Mandalorian Season One " 2022 Panini Comics 1 issue 981147 s81 · 151516 "Star Wars: The Mandalorian " 2023 Marvel 8 s53 · 154832 "Star Wars: The Mandalorian Season 2 " 2024 Marvel 2 s48 · 153242 "Star Wars - The Mandalorian" 2023 Panini Verlag 3 s43   (v1 search)
+   CV local rip:   (= linked) · 145569 "Star Wars: The Mandalorian" 2022 Panini Verlag 3 · 151516 "Star Wars: The Mandalorian " 2023 Marvel 8 · 153242 "Star Wars - The Mandalorian" 2023 Panini Verlag 3 · 164516 "Star Wars: The Mandalorian" 2023 Nobi Nobi 2 · 146854 "Star Wars: The Mandalorian: Season One" 2022 Marvel 2 (via CV candidate name "Star Wars: The Mandalorian: Season One")   (rip lookup)
+   GCD per-file:   series 203803 "Star Wars: The Mandalorian" [pt-br] 2023-? Panini Brasil [encadernado] 2 on 1/2 files · series 200503 "Star Wars - The Mandalorian" [fr] 2023-? Nobi Nobi [] 1 on 1/2 files; methods numx2
+   GCD dump:       (= per-file) · 187116 "Star Wars: The Mandalorian" 2022-2023 Marvel [] 8 · 187464 "Star Wars - The Mandalorian" [de] 2022-? Panini Deutschland [] 3 · 192097 "Star Wars: The Mandalorian" 2022-? Marvel [] 4 · 226278 "Star Wars - The Mandalorian" [de] 2025-? Panini Deutschland [] 4   (dump lookup)
+   bridges:        gcd 203803 -> LOCG 156535 "Star Wars: The Mandalorian" support 1 · gcd 200503 -> LOCG 156535 "Star Wars: The Mandalorian" support 1
+
+== S11043 Lucasfilm Fan Club Magazine  [tier D]   keys: Lucasfilm Fan Club Magazine  years 1987-1994  22 files / 0 collections
+   folders: [22] Marvel-IDW Star Wars\_Star Wars Insider (1987)
+   files:   [104409] Lucasfilm Fan Club Magazine 001 (1987) (Sophist).cbr (16pp) | [104410] Lucasfilm Fan Club Magazine 002 (1987) (uks).cbr (16pp)
+            [104411] Lucasfilm Fan Club Magazine 003 (1988) (Sophist).cbr (17pp) | [104412] Lucasfilm Fan Club Magazine 004 (1988) (Sophist).cbr (21pp)
+            [104413] Lucasfilm Fan Club Magazine 005 (1988) (Sophist).cbr (21pp) | [104414] Lucasfilm Fan Club Magazine 006 (1989) (Sophist).cbr (20pp)
+            [104415] Lucasfilm Fan Club Magazine 007 (1989) (JJ).cbr (18pp) | [104416] Lucasfilm Fan Club Magazine 008 (1989) (Sophist).cbr (23pp)
+            [104417] Lucasfilm Fan Club Magazine 009 (1989) (Sophist).cbr (23pp) | [104418] Lucasfilm Fan Club Magazine 010 (1990) (Sophist).cbr (25pp)
+            [104419] Lucasfilm Fan Club Magazine 011 (1990) (Typylot).cbr (25pp) | [104420] Lucasfilm Fan Club Magazine 012 (1990) (Sophist).cbr (25pp)
+            [104421] Lucasfilm Fan Club Magazine 013 (1990) (Sophist).cbr (29pp) | [104422] Lucasfilm Fan Club Magazine 014 (1991) (Sophist).cbr (29pp)
+            [104423] Lucasfilm Fan Club Magazine 015 (1992) (JJ).cbr (28pp) | [104424] Lucasfilm Fan Club Magazine 016 (1992) (Sophist).cbr (21pp)
+            [104425] Lucasfilm Fan Club Magazine 017 (1992) (Sophist).cbr (31pp) | [104426] Lucasfilm Fan Club Magazine 018 (1993) (JJ).cbr (30pp)
+            [104427] Lucasfilm Fan Club Magazine 019 (1993) (Typylot) (edit).cbr (33pp) | [104428] Lucasfilm Fan Club Magazine 020 (1993) (Sophist).cbr (36pp)
+            [104429] Lucasfilm Fan Club Magazine 021 (1994) (Sophist).cbr (37pp) | [104430] Lucasfilm Fan Club Magazine 022 (1994) (Sophist).cbr (36pp)
+   ours:    ladder 1-22
+
+== S16642 Star Wars Insider - The Skywalker Saga - The Official  [tier D]   keys: Star Wars Insider - The Skywalker Saga - The Official  years 2021-2021  1 files / 1 collections
+   folders: [1] Marvel-IDW Star Wars\_Star Wars Insider (1987)\Trades
+   files:   [104639] COL Star Wars Insider - The Skywalker Saga - The Official Collector's Edition (2021) (Digital) (Kileko-Empire).cbz (180pp)
+   CV candidates:  123268 "Star Wars Saga" 2019 Marvel 1 issue 729687 s45 · 122166 "Star Wars: The Skywalker Saga" 2019 Disney 1 issue 723726 s30 · 159646 "Star Wars: The Sith and the Skywalker" 2024 Marvel 1 issue 1068850 s25 · 85139 "Star Wars: Skywalker Strikes" 2015 Marvel 1 issue 502137 s20 · 169018 "Star Wars: The Rise of Skywalker Adaptation" 2025 Marvel 1 issue 1147258 s17 · 124109 "Star Wars: The Rise of Skywalker The Official Collector's Edition" 2020 Titan Comics 1 issue 732828 s16   (v1 search)
+   CV local rip:   122166 "Star Wars: The Skywalker Saga" 2019 Disney 1 issue 723726 (via CV candidate name "Star Wars: The Skywalker Saga") · 123268 "Star Wars Saga" 2019 Marvel 1 issue 729687 (via CV candidate name "Star Wars Saga") · 159646 "Star Wars: The Sith and the Skywalker" 2024 Marvel 1 issue 1068850 (via CV candidate name "Star Wars: The Sith and the Skywalker")   (rip lookup)
+   GCD dump:       153346 "Star Wars Saga" 2020-2020 Marvel [] 1 (via CV candidate name "Star Wars Saga")   (dump lookup)
+
+== S17995 The Art of Star Wars  [tier B]   keys: The Art of Star Wars  years 1979-1979  1 files / 0 collections
+   folders: [1] Marvel-IDW Star Wars\_The Art of Star Wars
+   files:   [104698] The Art of Star Wars (Ballantine Books) (1979).cbr (175pp)
+   CV per-file (v1): vol 121740 "The Marvel Art of Star Wars" 2019 Marvel 1 issue 721172 on 1/1 files
+   CV candidates:  (= per-file) · 127655 "The Art of Star Wars Rebels" 2020 Dark Horse Comics 1 issue 766322 s74 · 2914 "Star Wars" 1977 Marvel 108 s70 · 85138 "Star Wars: The Marvel Covers" 2015 Marvel 1 issue 502135 s64 · 48895 "Star Wars The Clone Wars" 2012 Panini Verlag 1 issue 335641 s49 · 22969 "Star Wars: The Clone Wars" 2008 Dark Horse Comics 12 s34 · 40416 "Star Wars: The Clone Wars" 2010 Titan Comics 49 s34   (v1 search)
+   CV local rip:   2914 "Star Wars" 1977 Marvel 108 (via CV candidate name "Star Wars") · 47796 "Star Wars" 1982 Marvel UK/Panini UK 13 (via CV candidate name "Star Wars") · 127456 "Star Wars" 1982 JuniorPress BV 24 (via CV candidate name "Star Wars") · 156954 "Star Wars" 1984 Egmont Ehapa Verlag 13 (via CV candidate name "Star Wars") · 153006 "Star Wars" 1992 Dark Horse International 10 (via CV candidate name "Star Wars") · 156924 "Star Wars" 1994 Carlsen Verlag 17 (via CV candidate name "Star Wars")   (rip lookup)
+   GCD dump:       150159 "Star Wars" [en-ph] 1979-1980 Alemar's Bookstore [] 4 (via CV candidate name "Star Wars") · 71738 "Star Wars" [en-gb] 1978-1978 Sphere [] 1 (via CV candidate name "Star Wars") · 2406 "Star Wars" 1977-1986 Marvel [] 107 (via CV candidate name "Star Wars") · 96653 "Star Wars" [da-dk] 1977-1981 Interpresse [] 5 (via CV candidate name "Star Wars") · 158615 "Ο Πόλεμος των Άστρων [Star Wars]" [el-gr] 1977-? Kabanas Hellas [] 9 (via CV candidate name "Star Wars") · 182260 "Star Wars" [en-za] 1977-1977 Republican Press [] 1 (via CV candidate name "Star Wars")   (dump lookup)
+
+== S17997 The Art of Star Wars - Visions  [tier B]   keys: The Art of Star Wars - Visions  years 2022-2022  1 files / 0 collections
+   folders: [1] Marvel-IDW Star Wars\_The Art of Star Wars
+   files:   [104700] The Art of Star Wars - Visions (2022) (digital) (The Magicians-Empire).cbr (177pp)
+   CV per-file (v1): vol 145515 "Star Wars: Visions" 2022 Marvel 1 issue 950690 on 1/1 files
+   CV candidates:  (= per-file) · 121740 "The Marvel Art of Star Wars" 2019 Marvel 1 issue 721172 s79 · 164515 "Star Wars: Visions" 2023 Nobi Nobi 1 issue 1111930 s70 · 166363 "Star Wars: Visions" 2023 Square Enix 1 issue 1127624 s70 · 127655 "The Art of Star Wars Rebels" 2020 Dark Horse Comics 1 issue 766322 s64 · 40986 "Star Wars Infinities: Visions of the Blade" 2008 Lucas Online 1 issue 276425 s63 · 166170 "Star Wars: Visions Treasury Edition" 2025 Marvel 1 issue 1125090 s58   (v1 search)
+   CV local rip:   (= per-file) · 164515 "Star Wars: Visions" 2023 Nobi Nobi 1 issue 1111930 (via CV name "Star Wars: Visions") · 166363 "Star Wars: Visions" 2023 Square Enix 1 issue 1127624 (via CV name "Star Wars: Visions") · 121740 "The Marvel Art of Star Wars" 2019 Marvel 1 issue 721172 (via CV candidate name "The Marvel Art of Star Wars")   (rip lookup)
+   GCD dump:       190709 "Star Wars: Visions" 2022-2022 Marvel [] 1 (via CV name "Star Wars: Visions") · 200497 "Star Wars - Visions" [fr] 2023-2023 Nobi Nobi [] 1 (via CV name "Star Wars: Visions") · 201110 "スター･ウォーズ ビジョンズ [Star Wars: Visions]" [ja-jp] 2023-2023 スクウェア・エニックス [Square Enix] [] 1 (via CV name "Star Wars: Visions") · 235964 "Star Wars: Visions" 2026-2026 Marvel [] 1 (via CV name "Star Wars: Visions")   (dump lookup)
+
+== S7538 Giant-Size Super-Stars No. 1 Facsimile Edition  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: Giant-Size Super-Stars #1: Facsimile  years 2023-2024  2 files / 0 collections
+   folders: [1] Marvel\#MARVEL CURRENT ONGOING TITLES\Giant-Sized 50th Anniversary (2024) · [1] Marvel\_Marvel Facsimile Editions
+   files:   [47809] 00 Giant-Size Super-Stars 001 Facsimile 001 (1974, 2024) (digital) (Marika-Empire).cbz (53pp)
+            [83048] Giant-Size Super-Stars 001 - Facsimile (2024) (digital) (Marika-Empire).cbz (53pp)
+   ours:    ladder 1; 1 number(s) name more than one file: 1; ComicInfo Series: "Giant-Size Super-Stars #1: Facsimile"x2; ComicInfo Volume: "2023"x2; ComicInfo Publisher: "Marvel Comics"x2; ComicInfo Web: "1038399"x2
+   CV linked:      vol 155724 "Giant-Size Super-Stars No. 1 Facsimile Edition" 2023 Marvel 1 issues issue 1038399; cached #1-1 (1); yearΔ 0; ratio 2/1 = 2.00; no judged range; v1 per-file: same volume on 2/2 files
+   CV candidates:  (= linked) · 21983 "Giant-Size Super-Stars" 1974 Marvel 1 issue 132601 s80 · 30674 "Giant-Size Marvel" 2005 Marvel 1 issue 189479 s49 · 29129 "Giant-Size Super-Heroes" 1974 Marvel 1 issue 179277 s45 · 2759 "Giant-Size Marvel Triple Action" 1975 Marvel 2 s44 · 22510 "Giant-Size Ms. Marvel" 2006 Marvel 1 issue 135114 s42 · 18922 "Giant-Size Marvel Adventures The Avengers" 2007 Marvel 1 issue 111891 s41   (v1 search)
+   CV local rip:   (= linked) · 21983 "Giant-Size Super-Stars" 1974 Marvel 1 issue 132601 (via CV candidate name "Giant-Size Super-Stars") · 146282 "Moon Knight" 2022 Panini Verlag 1 issue 956147 (via GCD name "Moon Knight") · 155967 "Giant-Size Spider-Man" 2024 Marvel 1 issue 1039579 (via GCD name "Giant-Size Spider-Man") · 137698 "Moon Knight" 2021 Marvel 30 (via GCD name "Moon Knight") · 89613 "Moon Knight" 2016 Marvel 27 (via GCD name "Moon Knight")   (rip lookup)
+   GCD per-file:   methods round2-folderx2 ⚠  (⚠ copies a folder neighbour's series — verify); series 207767 "Giant-Size Spider-Man" 2024-2024 Marvel [one-shot] 1 on 1/2 files · series 185205 "Moon Knight" [fr] 2022-2024 Panini France [série continue terminée [was ongoing series]] 5 on 1/2 files
+   GCD dump:       2174 "Giant-Size Super-Stars" 1974-1974 Marvel [] 1 (via CV candidate name "Giant-Size Super-Stars")   (dump lookup)
+   bridges:        gcd 207767 -> LOCG 118624 "Giant-Size Spider-Man" support 4 · gcd 185205 -> LOCG 112362 "Moon Knight" support 8
+
+== S97893 Iron Man v7 (2024)  [tier C] · gap 2  keys: Iron Man v7 (2024)  years 2023-2025  19 files / 0 collections
+   folders: [15] Marvel\#MARVEL CURRENT ONGOING TITLES\Iron Man v7 (2024)\Variant Covers · [4] Marvel\#MARVEL CURRENT ONGOING TITLES\Iron Man v7 (2024)
+   files:   [48031] Iron Man 001 (2024) (Digital) (Shan-Empire).cbz (28pp) | [48032] Iron Man 002 (2025) (Digital) (Shan-Empire).cbz (23pp)
+            [48033] Iron Man 003 (2025) (Digital) (Shan-Empire).cbz (22pp) | [48034] Iron Man 004 (2025) (Digital) (Shan-Empire).cbz (24pp)
+            [48035] Iron Man 001 (2024) (Dave Bardin Deadly Foes Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48036] Iron Man 001 (2024) (John Tyler Christopher Negative Space Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48037] Iron Man 001 (2024) (Leinil Yu Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48038] Iron Man 001 (2024) (Leinil Yu Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48039] Iron Man 001 (2024) (Mike Mckone Doom Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48040] Iron Man 001 (2024) (Philip Tan Foil Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48041] Iron Man 001 (2024) (Skottie Young Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48042] Iron Man 001 (2024) (Sumit Kumar Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48043] Iron Man 002 (2024) (Dike Ruan Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48044] Iron Man 002 (2024) (Iban Coello The Thing! Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48045] Iron Man 002 (2024) (Taurin Clarke Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48046] Iron Man 003 (2024) (Bengus Marvel Vs Capcom Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48047] Iron Man 003 (2024) (Whilce Portacio Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48048] Iron Man 004 (2025) (Derrick Chew Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48049] Iron Man 004 (2025) (Stefano Caselli Fantastic Four Homage Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+   ours:    ladder 1-4; 4 number(s) name more than one file: 1, 2, 3, 4
+   CV per-file (v1): vol 150441 "Iron Man Epic Collection: The Crossing" 2023 Marvel 1 issue 989798 on 19/19 files
+   CV local rip:   160522 "Iron Man" 2024 Marvel 10 (via our own name without the filing suffix "Iron Man") · 130396 "Iron Man" 2020 Marvel 25 (via our own name without the filing suffix "Iron Man") · 118550 "Iron Man " 2015 Standaard Uitgeverij 9 (via our own name without the filing suffix "Iron Man") · 53725 "Iron Man" 2013 Marvel 29 (via our own name without the filing suffix "Iron Man") · 132644 "Iron Man" 2013 Panini Comics 117 (via our own name without the filing suffix "Iron Man") · 42469 "Iron Man" 2009 Panini Verlag 14 (via our own name without the filing suffix "Iron Man")   (rip lookup)
+   GCD per-file:   series 225092 "Iron Man" 2025-? Marvel [collected edition] 2 on 13/19 files; methods numx13
+   GCD dump:       (= per-file) · 209930 "Iron Man" [es-mx] 2023-? Editorial Panini México [] ? (via our own name without the filing suffix "Iron Man") · 216906 "Iron Man" 2024-2025 Marvel [] 10 (via our own name without the filing suffix "Iron Man") · 174204 "Iron Man" 2021-? Marvel [] 4 (via our own name without the filing suffix "Iron Man") · 225122 "Iron Man" [de] 2025-2026 Panini Deutschland [] 2 (via our own name without the filing suffix "Iron Man") · 225214 "Iron Man" [de] 2025-? Panini Deutschland [] 1 (via our own name without the filing suffix "Iron Man")   (dump lookup)
+   bridges:        gcd 225092 -> OL /works/OL44546060W "None" isbnSupport 4
+
+== S103342 Marvel's Voices: Heritage (2022)  [tier C] · gap 2  keys: Marvel's Voices: Heritage (2022)  years 2020-2020  1 files / 0 collections
+   folders: [1] Marvel\#MARVEL CURRENT ONGOING TITLES\Marvel's Voices (2020)
+   files:   [48111] Marvel's Voices - Heritage 001 (2022) (Digital) (Zone-Empire).cbr (35pp)
+   ours:    ladder 1; ComicInfo Series: "Marvel's Voices: Heritage (2021)"x1; ComicInfo Publisher: "Marvel"x1
+   CV per-file (v1): vol 125120 "Marvel's Voices" 2020 Marvel 1 issue 737760 on 1/1 files
+   CV local rip:   (= per-file) · 148799 "Marvel's Voices: Heritage" 2022 Marvel 1 issue 976271 (via our own name without the filing suffix "Marvel's Voices: Heritage") · 138531 "Marvel's Voices: Identity" 2021 Marvel 1 issue 882075 (via GCD name "Marvel's Voices: Identity") · 143029 "Marvel's Voices: Identity" 2022 Marvel 1 issue 925019 (via GCD name "Marvel's Voices: Identity")   (rip lookup)
+   GCD per-file:   methods round2-seriesx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 185256 "Marvel's Voices: Identity" 2022-2022 Marvel [one-shot] 1 on 1/1 files
+   GCD dump:       156336 "Marvel's Voices" 2020-2020 Marvel [] 2 (via CV name "Marvel's Voices") · 191542 "Marvel's Voices: Heritage" 2022-2022 Marvel [] 1 (via our own name without the filing suffix "Marvel's Voices: Heritage")   (dump lookup)
+
+== S216 A Mighty Marvel Team-Up  [tier B]   keys: A Mighty Marvel Team-Up  years 2019-2019  4 files / 2 collections
+   folders: [2] Marvel\#MARVEL CURRENT ONGOING TITLES\Mighty Marvel Team-Ups (2023) · [2] Marvel\_Spider-Man\__OGNs, Minis & One-shots\Spider-Man - A Mighty Marvel Team-Up (2023)
+   files:   [48127] Spider-Man - Cosmic Chaos! (A Mighty Marvel Team-Up #3) (2024) (Digital) (dekabro-Empire).cbz (104pp)
+            [48128] Spider-Man - Quantum Quest! (A Mighty Marvel Team-Up #2) (2024) (Digital) (dekabro-Empire).cbz (94pp)
+            [95650] COL Spider-Man A Mighty Marvel Team-Up Vol. 01 - Animals Assemble! (2023) (Digital) (dekabro-Empire).cbz (96pp)
+            [95651] COL Spider-Man A Mighty Marvel Team-Up Vol. 02 - Quantum Quest! (2024) (Digital) (dekabro-Empire).cbz (94pp)
+   ours:    ladder 2-3; ComicInfo Series: "A Mighty Marvel Team-Up"x4; ComicInfo Publisher: "Abrams – Amulet Books"x4
+   CV per-file (v1): vol 118139 "Marvel Team-Up" 2019 Marvel 6 on 4/4 files
+   CV candidates:  (= per-file) · 2576 "Marvel Team-Up" 1972 Marvel ? s55 · 47644 "Marvel Team-Up" 1980 Marvel UK/Panini UK ? s55 · 42752 "Marvel Team-Up" 2006 Panini España ? s55 · 6011 "Marvel Team-Up" 1997 Marvel ? s55 · 18024 "Marvel Team-Up" 2004 Marvel ? s55 · 27753 "Mighty Marvel Team-Up Thrillers" 1983 Marvel ? s44   (v1 search)
+   CV local rip:   (= per-file) · 42752 "Marvel Team-Up" 2006 Panini España 18 (via CV name "Marvel Team-Up") · 18024 "Marvel Team-Up" 2004 Marvel 25 (via CV name "Marvel Team-Up") · 6011 "Marvel Team-Up" 1997 Marvel 11 (via CV name "Marvel Team-Up") · 47644 "Marvel Team-Up" 1980 Marvel UK/Panini UK 25 (via CV name "Marvel Team-Up") · 2576 "Marvel Team-Up" 1972 Marvel 150 (via CV name "Marvel Team-Up")   (rip lookup)
+   GCD dump:       143488 "Marvel Team-Up" 2019-2019 Marvel [] 6 (via CV name "Marvel Team-Up") · 29020 "Marvel Team-up" [es] 2006-2007 Panini España [] 18 (via CV name "Marvel Team-Up") · 15313 "Marvel Team-Up" 2005-2006 Marvel [] 25 (via CV name "Marvel Team-Up") · 58608 "Marvel Team-Up" 2005-2007 Marvel [] 4 (via CV name "Marvel Team-Up") · 183826 "Marvel Team-Up" [en-in] 2005-2005 Gotham Entertainment Group [] 5 (via CV name "Marvel Team-Up") · 34596 "Marvel Team-Up" [es] 1998-1999 Planeta DeAgostini [] 11 (via CV name "Marvel Team-Up")   (dump lookup)
+
+== S12079 Miles Morales: Spider-Man  [tier C] · 3 named, the minority on >= 2 files or >= 10%  keys: Miles Morales | Miles Morales - Spider-Man | Miles Morales - Spider-Man v2 (2022) | Miles Morales Spider-Man - Infinity Comic | Miles Morales: Spider-Man  years 2019-2024  99 files / 13 collections
+   flags: #343 label-ambiguous [Pending] item 118629 — items 48144 and 118629 are duplicate copies of Gang War · #625 overlap-in-series [Dismissed] item 48142 — two Miles Morales ladders each contribute a Vol. 01
+   folders: [45] Marvel\#MARVEL CURRENT ONGOING TITLES\Miles Morales - Spider-Man v2 (2022)\Variant Covers · [21] Marvel\#MARVEL CURRENT ONGOING TITLES\_Infinity Comics\Miles Morales Spider-Man - Infinity Comic (2023) · [15] Marvel\#MARVEL CURRENT ONGOING TITLES\Miles Morales - Spider-Man v2 (2022) · [5] Marvel\_Spider-Man (Miles Morales)\Miles Morales - Spider-Man v1 (2019) · [4] _Marvel Major Event Chronology (digital)\2023.11 - Gang War\02 Gang War · [2] Marvel\_Spider-Man (Miles Morales)\_Omnibus Editions · [2] _Marvel Major Event Chronology (digital)\2024.05 - Blood Hunt\02 Tie-ins · [1] Marvel\#MARVEL CURRENT ONGOING TITLES\Miles Morales - Spider-Man v2 (2022)\Annuals and Specials · [1] Marvel\_Spider-Man (Miles Morales) · [1] _Marvel Major Event Chronology (digital)\2020.11 - King in Black\02 Tie-ins\King in Black Singles · [1] _Marvel Major Event Chronology (digital)\2023.11 - Gang War\01 Gang War - First Strike · [1] _Marvel Major Event Chronology (digital)\2023.11 - Gang War\02 Gang War\Trades
+   files:   [48130] Miles Morales - Spider-Man Annual 001 (2024) (Digital) (Shan-Empire).cbz (33pp) | [48131] Miles Morales - Spider-Man 006 (2023) (Digital) (Zone-Empire).cbr (22pp)
+            [48132] Miles Morales - Spider-Man 007 (2023) (Digital) (Zone-Empire).cbr (22pp)
+            Miles Morales - Spider-Man 021 (2024) (Digital) (Shan-Empire).cbz … Miles Morales - Spider-Man 029 (2025) (Digital) (Shan-Empire).cbz  (9 files, pp 22-28)
+            [48142] COL Miles Morales - Spider-Man Vol. 01 - Trial by Spider (2023) (Digital-Empire).cbr (121pp)
+            [48143] COL Miles Morales - Spider-Man Vol. 02 - Bad Blood (2024) (Digital) (Shan-Empire).cbz (110pp)
+            [48144] COL Miles Morales - Spider-Man Vol. 03 - Gang War (2024) (Digital) (Shan-Empire).cbz (112pp)
+            [48145] COL Miles Morales - Spider-Man Vol. 04 - Retribution (2024) (Digital) (Shan-Empire).cbz (136pp)
+            [48146] Miles Morales - Spider-Man 001 (2022) (Blank Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48147] Miles Morales - Spider-Man 001 (2022) (Graffiti Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48148] Miles Morales - Spider-Man 001 (2022) (Tao Variant A) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48149] Miles Morales - Spider-Man 001 (2022) (Tao Variant B) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48150] Miles Morales - Spider-Man 001 (2022) (Zullo Con Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48151] Miles Morales - Spider-Man 003 (2023) (Ivan Tao Variant A) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48153] Miles Morales - Spider-Man 004 (2023) (Bachalo Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48154] Miles Morales - Spider-Man 008 (2023) (Cheung Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48155] Miles Morales - Spider-Man 008 (2023) Jim Cheung Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48156] Miles Morales - Spider-Man 008 (2023) Mico Suayan Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48157] Miles Morales - Spider-Man 009 (2023) (Baldari Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48158] Miles Morales - Spider-Man 010 (2023) Romy Jones Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48159] Miles Morales - Spider-Man 011 (2023) Ben Harvey Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48160] Miles Morales - Spider-Man 014 (2023) Inhyuk Lee Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48161] Miles Morales - Spider-Man 015 (2024) (1-in-25 Alan Quah Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48162] Miles Morales - Spider-Man 017 (2024) (Mateus Manhanini Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48163] Miles Morales - Spider-Man 018 (2024) (Adi Granov Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48164] Miles Morales - Spider-Man 018 (2024) (David Marquez Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48165] Miles Morales - Spider-Man 018 (2024) (Insignia Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48166] Miles Morales - Spider-Man 018 (2024) (Mr. Garcin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48167] Miles Morales - Spider-Man 020 (2024) (Goran Parlov Variant) (Digital) (MikeNY76).cbz (1pp)
+            [48168] Miles Morales - Spider-Man 020 (2024) (Goran Parlov Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48169] Miles Morales - Spider-Man 021 (2024) (1-in-50 Skottie Young's Big Marvels Black & White Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48170] Miles Morales - Spider-Man 021 (2024) (Skottie Young's Big Marvel Variant) (Digital) (MikeNY76).cbz (1pp)
+            [48171] Miles Morales - Spider-Man 021 (2024) (Skottie Young's Big Marvel Virgin Black And White Variant) (Digital) (MikeNY76).cbz (1pp)
+            [48172] Miles Morales - Spider-Man 021 (2024) (Skottie Young's Big Marvels Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48173] Miles Morales - Spider-Man 022 (2024) (Ron Lim Deadpool Kills The Marvel Universe Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48174] Miles Morales - Spider-Man 022 (2024) (Rose Besch Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48175] Miles Morales - Spider-Man 022 (2024) (Rose Besch Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48176] Miles Morales - Spider-Man 023 (2024) (Doaly Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48177] Miles Morales - Spider-Man 023 (2024) (Karen Darboe Disco Dazzler Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48178] Miles Morales - Spider-Man 024 (2024) (Nic Klein Stormbreakers Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48179] Miles Morales - Spider-Man 024 (2024) (Romy Jones Godzilla Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48180] Miles Morales - Spider-Man 025 (2024) (Annie Wu Doom Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48181] Miles Morales - Spider-Man 025 (2024) (Federico Vicentini Design Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48182] Miles Morales - Spider-Man 025 (2024) (Mateus Manhanini New Costume Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48183] Miles Morales - Spider-Man 025 (2024) (Sara Pichelli Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48184] Miles Morales - Spider-Man 026 (2024) (Amanda Conner Marvel Two-In-One Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48185] Miles Morales - Spider-Man 027 (2024) (Todd Nauck Winter Holiday Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48186] Miles Morales - Spider-Man 028 (2025) (Iban Coello Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48187] Miles Morales - Spider-Man 028 (2025) (Mirka Andolfo Madame Web Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48188] Miles Morales - Spider-Man 029 (2025) (Javier Garron Fantastic Four Homage Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48189] Miles Morales - Spider-Man 029 (2025) (Sara Pichelli Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48190] Miles Morales - Spider-Man 039 (2022) (Medina Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48191] Miles Morales - Spider-Man Annual 001 (2024) (Dike Ruan Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [51341] Miles Morales Spider-Man - Infinity Comic 001 (2023) (digital-mobile-Empire).cbz (162pp)
+            [51342] Miles Morales Spider-Man - Infinity Comic 002 (2023) (digital-mobile-Empire).cbz (72pp)
+            [51343] Miles Morales Spider-Man - Infinity Comic 003 (2023) (digital-mobile-Empire).cbz (82pp)
+            [51344] Miles Morales Spider-Man - Infinity Comic 004 (2023) (digital-mobile-Empire).cbz (83pp)
+            [51345] Miles Morales Spider-Man - Infinity Comic 005 (2023) (digital-mobile-Empire).cbz (75pp)
+            [51346] Miles Morales Spider-Man - Infinity Comic 006 (2023) (digital-mobile-Empire).cbz (69pp)
+            [51347] Miles Morales Spider-Man - Infinity Comic 007 (2023) (digital-mobile-Empire).cbz (98pp)
+            [51348] Miles Morales Spider-Man - Infinity Comic 008 (2023) (digital-mobile-Empire).cbz (69pp)
+            [51349] Miles Morales Spider-Man - Infinity Comic 009 (2023) (digital-mobile-Empire).cbz (93pp)
+            [51350] Miles Morales Spider-Man - Infinity Comic 010 (2023) (digital-mobile-Empire).cbz (63pp)
+            [51351] Miles Morales Spider-Man - Infinity Comic 011 (2023) (digital-mobile-Empire).cbz (102pp)
+            [51352] Miles Morales Spider-Man - Infinity Comic 012 (2023) (digital-mobile-Empire).cbz (93pp)
+            [51353] Miles Morales Spider-Man - Infinity Comic 013 (2023) (digital-mobile-Empire).cbz (94pp)
+            [51354] Miles Morales Spider-Man - Infinity Comic 014 (2023) (digital-mobile-Empire).cbz (74pp)
+            [51355] Miles Morales Spider-Man - Infinity Comic 015 (2023) (digital-mobile-Empire).cbz (95pp)
+            [51356] Miles Morales Spider-Man - Infinity Comic 016 (2023) (digital-mobile-Empire).cbz (68pp)
+            [51357] Miles Morales Spider-Man - Infinity Comic 017 (2023) (digital-mobile-Empire).cbz (74pp)
+            [51358] Miles Morales Spider-Man - Infinity Comic 018 (2023) (digital-mobile-Empire).cbz (68pp)
+            [51359] Miles Morales Spider-Man - Infinity Comic 019 (2023) (digital-mobile-Empire).cbz (80pp)
+            [51360] Miles Morales Spider-Man - Infinity Comic 020 (2023) (digital-mobile-Empire).cbz (81pp)
+            [51361] Miles Morales Spider-Man - Infinity Comic 021 (2023) (digital-mobile-Empire).cbz (89pp) | [95824] COL Miles Morales - Spider-Man (2019) (Digital-Empire).cbr (223pp)
+            [95829] COL Miles Morales - Spider-Man Vol. 01 - Straight Out of Brooklyn (2019) (Digital) (Zone-Empire).cbr (135pp)
+            [95830] COL Miles Morales - Spider-Man Vol. 02 - Bring on the Bad Guys (2020) (Digital) (Zone-Empire).cbr (110pp)
+            [95831] COL Miles Morales - Spider-Man Vol. 03 - Family Business (2020) (Digital) (Zone-Empire).cbr (112pp)
+            [95832] COL Miles Morales - Spider-Man Vol. 04 - Ultimatum (2021) (Digital) (Zone-Empire).cbr (133pp)
+            [95833] COL Miles Morales - Spider-Man Vol. 05 - The Clone Saga (2021) (Digital) (Zone-Empire).cbr (165pp)
+            [95847] COL Miles Morales - Spider-Man Omnibus Book 01 (2023) (Digital-Empire).cbz (996pp) | [95848] COL Miles Morales - Spider-Man Omnibus Book 02 (2022) (Digital-Empire).cbr (744pp)
+            [118498] Miles Morales - Spider-Man 023 (2021) (Digital) (Zone-Empire).cbr (24pp) | [118599] 03 Miles Morales - Spider-Man 012 (2024) (Digital-HD) (Shan-Empire).cbz (22pp)
+            [118604] 02 Miles Morales - Spider-Man 013 (2024) (Digital) (Shan-Empire).cbz (25pp) | [118608] 06 Miles Morales - Spider-Man 014 (2024) (Digital) (Shan-Empire).cbz (26pp)
+            [118613] 11 Miles Morales - Spider-Man 015 (2024) (Digital) (Shan-Empire).cbz (23pp) | [118623] 21 Miles Morales - Spider-Man 016 (2024) (Digital) (Shan-Empire).cbz (23pp)
+            [118629] COL Miles Morales - Spider-Man Vol. 03 - Gang War (2024) (Digital) (Shan-Empire).cbz (112pp) | [118648] Miles Morales - Spider-Man 021 (2024) (Digital) (Shan-Empire).cbz (24pp)
+            [118649] Miles Morales - Spider-Man 022 (2024) (Digital) (Shan-Empire).cbz (22pp)
+   ours:    ladder 1-29, 39; 26 number(s) name more than one file: 1, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14; ComicInfo Series: "Miles Morales: Spider-Man"x7, "Miles Morales"x5, "Miles Morales: Spider-Man Omnibus "x1, "Miles Morales: Spider-Man Omnibus"x1; ComicInfo Volume: "2022"x3, "2018"x1; ComicInfo Publisher: "Marvel"x13, "Marvel Entertainment, Inc."x1
+   GCD says: [48142] gcd_reprint 2559519: s193893 Miles Morales: Spider-Man (2023) #2 [33 stories]
+             [48143] gcd_reprint 2611326: s193893 Miles Morales: Spider-Man (2023) (unnumbered) [25 stories]
+             [48144] gcd_reprint 2650883: s193893 Miles Morales: Spider-Man (2023) (unnumbered) [18 stories] · s207767 Giant-Size Spider-Man (2024) #1 [5 stories]
+             [48145] gcd_reprint 2670694: s193893 Miles Morales: Spider-Man (2023) (unnumbered) [20 stories] · s210101 Web of Spider-Man (2024) #1 [2 stories]
+             [95824] gcd_reprint 2000704: s60934 Ultimate Comics Spider-Man (2011) #1-10 [25 stories] · s123924 Marvel Rising (2018) #0 [5 stories]
+             [95829] gcd_reprint 2049827: s135468 Miles Morales: Spider-Man (2019) #1-2 [19 stories]
+             [95830] gcd_reprint 2060205: s135468 Miles Morales: Spider-Man (2019) (unnumbered) [15 stories] · s143706 Free Comic Book Day 2019 (Spider-Man / Venom) (2019) #1 [2 stories]
+             [95831] gcd_reprint 2150916: s135468 Miles Morales: Spider-Man (2019) (unnumbered) [17 stories]
+             [95832] gcd_reprint 2214025: s135468 Miles Morales: Spider-Man (2019) (unnumbered) [21 stories]
+             [95833] gcd_reprint 2262192: s135468 Miles Morales: Spider-Man (2019) (unnumbered) [28 stories]
+             [118629] gcd_reprint 2650883: s193893 Miles Morales: Spider-Man (2023) (unnumbered) [18 stories] · s207767 Giant-Size Spider-Man (2024) #1 [5 stories]
+   CV linked:      vol 146734 "Miles Morales: Spider-Man" 2022 Marvel 40 issues; cached #1-41 (41); yearΔ 3; ratio 86/40 = 2.15; no judged range
+   CV per-file (v1): vol 115897 "Miles Morales: Spider-Man" 2019 Marvel 42 on 73/99 files · vol 146734 "Miles Morales: Spider-Man" 2022 Marvel 40 on 22/99 files · vol 152480 "Miles Morales: Spider-Man" 2023 Marvel UK/Panini UK 1 issue 1003406 on 2/99 files · vol 146077 "Miles Morales: Spider-Man Omnibus" 2022 Marvel 2 on 2/99 files
+   CV candidates:  (= linked) · 120317 "Miles Morales: Spider-Man" 2019 Marvel 1 issue 714443 s105 · 93945 "Spider-Man: Miles Morales" 2016 Marvel 4 s101 · 120946 "Absolute Carnage: Miles Morales" 2019 Marvel 3 s96 · 142105 "Spider-Man: Miles Morales" 2016 Panini Verlag 4 s86 · 154798 "Spider-Man: Miles Morales Collection" 2018 Marvel UK/Panini UK 1 issue 1030629 s86 · 115525 "Miles Morales: Ultimate Spider-Man" 2015 Panini Verlag 2 s70   (v1 search)
+   CV local rip:   (= linked) · 120317 "Miles Morales: Spider-Man" 2019 Marvel 1 issue 714443 · 120946 "Absolute Carnage: Miles Morales" 2019 Marvel 3 (via CV candidate name "Absolute Carnage: Miles Morales") · 124284 "Absolute Carnage: Miles Morales" 2020 Marvel 1 issue 733870 (via CV candidate name "Absolute Carnage: Miles Morales")   (rip lookup)
+   GCD per-file:   series 202517 "Miles Morales: Spider-Man" [en-gb] 2023-? Panini UK [ongoing series] 38 on 57/99 files · series 177294 "Miles Morales : Spider-Man" [fr] 2021-2023 Panini France [série continue terminée [was ongoing series]] 6 on 5/99 files · series 204904 "Miles Morales: Spider-Man" [de] 2023-? Panini Deutschland [ongoing series] 7 on 1/99 files; methods numx63
+   GCD dump:       135468 "Miles Morales: Spider-Man" 2019-2022 Marvel [] 42 · 142366 "Miles Morales: Spider-Man" [es-mx] 2019-? Editorial Televisa [] 6 · 149130 "Miles Morales: Spider-Man" 2019-2019 Marvel [] 1 · 153152 "Miles Morales: Spider-Man" [de] 2019-2023 Panini Deutschland [] 8 · 164118 "Miles Morales - Spider-Man" [de] 2020-2020 Panini Deutschland [] 1 · 188819 "Miles Morales - Spider-Man" [fr] 2020-2020 Panini France [] 1   (dump lookup)
+   bridges:        gcd 177294 -> OL /works/OL24602979W "None" isbnSupport 6
+
+== S94804 The Infinity Watch v1 (2024)  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: The Infinity Watch v1 (2024)  years 2024-2024  2 files / 0 collections
+   folders: [2] Marvel\#MARVEL CURRENT ONGOING TITLES\The Infinity Watch v1 (2024)
+   files:   [48605] 01 Thanos Annual 001 (2024) (Digital) (Shan-Empire).cbz (35pp) | [48610] 06 Incredible Hulk Annual 001 (2024) (Digital) (Shan-Empire).cbz (28pp)
+   ours:    ladder 1; 1 number(s) name more than one file: 1
+   CV per-file (v1): vol 154554 "Thanos" 2024 Marvel 4 on 1/2 files · vol 2406 "The Incredible Hulk" 1968 Marvel ? on 1/2 files
+   CV local rip:   (= per-file) · 161611 "Infinity Watch" 2025 Marvel 5 (via our own name without the filing suffix "The Infinity Watch") · 89188 "The Infinity Watch" 2016 Marvel 2 (via our own name without the filing suffix "The Infinity Watch") · 151522 "Incredible Hulk" 2023 Marvel 30 (via CV name "The Incredible Hulk") · 118536 "Thanos" 2019 Marvel 6 (via CV name "Thanos") · 105325 "Incredible Hulk" 2017 Marvel 9 (via CV name "The Incredible Hulk")   (rip lookup)
+   GCD per-file:   series 205503 "Thanos" 2024-2024 Marvel [limited series] 4 on 1/2 files · series 207950 "Incredible Hulk" 2023-2025 Marvel [collected edition] 6 on 1/2 files; methods numx2
+   GCD dump:       (= per-file) · 218540 "Infinity Watch" 2025-2025 Marvel [] 5 (via our own name without the filing suffix "The Infinity Watch") · 98622 "Infinity Watch" 2016-2016 Marvel [] 2 (via our own name without the filing suffix "The Infinity Watch") · 201474 "Incredible Hulk" 2023-2025 Marvel [] 30 (via CV name "The Incredible Hulk") · 226638 "The Incredible Hulk" [fr] 2023-? Panini France [] 5 (via CV name "The Incredible Hulk")   (dump lookup)
+   bridges:        gcd 205503 -> LOCG 113123 "Thanos" support 1 · gcd 207950 -> LOCG 165670 "The Incredible Hulk" support 16 · gcd 207950 -> OL /works/OL37567770W "None" isbnSupport 14
+
+== S101049 Timeless v1 (2022)  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: Timeless v1 (2022)  years 2017-2022  3 files / 0 collections
+   folders: [3] Marvel\#MARVEL CURRENT ONGOING TITLES\Timeless v1 (2022)
+   files:   [48613] Timeless 001 (2022) (Digital) (Zone-Empire).cbr (42pp) | [48614] Timeless 001 (2023) (Digital) (Zone-Empire).cbr (45pp)
+            [48615] Timeless 001 (2024) (Digital) (Shan-Empire).cbz (42pp)
+   ours:    ladder 1; 1 number(s) name more than one file: 1; ComicInfo Series: "Timeless"x2, "Timeless (2021)"x1; ComicInfo Volume: "2023"x1; ComicInfo Publisher: "Marvel"x3
+   CV per-file (v1): vol 106769 "Timeless Romance" 2017 Soleil 3 on 2/3 files · vol 140623 "Timeless" 2022 Marvel 1 issue 900393 on 1/3 files
+   CV local rip:   (= per-file) · 147148 "Timeless" 2023 Marvel 1 issue 962069 (via our own name without the filing suffix "Timeless") · 155723 "Timeless " 2024 Marvel 1 issue 1038396 (via our own name without the filing suffix "Timeless")   (rip lookup)
+   GCD per-file:   methods numx2 · round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 194497 "Timeless" 2023-2023 Marvel [one-shot] 1 on 2/3 files · series 207323 "Timeless" 2024-2024 Marvel [one-shot] 1 on 1/3 files
+   GCD dump:       (= per-file) · 180073 "Timeless" 2022-2022 Marvel [] 1 (via our own name without the filing suffix "Timeless") · 188446 "Timeless" [de] 2022-2022 Panini Deutschland [] 1 (via our own name without the filing suffix "Timeless") · 205002 "Timeless" [de] 2023-2023 Panini Deutschland [] 1 (via our own name without the filing suffix "Timeless")   (dump lookup)
+   bridges:        gcd 194497 -> LOCG 153185 "Timeless" support 3 · gcd 207323 -> LOCG 153185 "Timeless" support 1
+
+== S102412 Ultimate X-Men v2 (2024)  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: Ultimate X-Men v2 (2024)  years 1997-1997  41 files / 1 collections
+   folders: [35] Marvel\#MARVEL CURRENT ONGOING TITLES\Ultimate Comics (2023)\Ultimate X-Men (2024)\Variant Covers · [6] Marvel\#MARVEL CURRENT ONGOING TITLES\Ultimate Comics (2023)\Ultimate X-Men (2024)
+   files:   [48751] Ultimate X-Men 007 (2024) (Digital) (Shan-Empire).cbz (28pp) | [48752] Ultimate X-Men 008 (2024) (Digital) (Shan-Empire).cbz (28pp)
+            [48753] Ultimate X-Men 009 (2025) (Digital) (Shan-Empire).cbz (28pp) | [48754] Ultimate X-Men 010 (2025) (Digital) (Shan-Empire).cbz (27pp)
+            [48755] Ultimate X-Men 011 (2025) (Digital) (Shan-Empire).cbz (29pp) | [48756] COL Ultimate X-Men by Peach Momoko Vol. 01 - Fears And Hates (2024) (Digital) (Shan-Empire).cbz (162pp)
+            [48757] Ultimate X-Men 001 (2024) (1-in-25 Aka Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48758] Ultimate X-Men 001 (2024) (Blank Cover 4th Printing Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48759] Ultimate X-Men 001 (2024) (Dike Ruan Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48760] Ultimate X-Men 001 (2024) (Mark Brooks Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48761] Ultimate X-Men 001 (2024) (Peach Momoko 4th Printing Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48762] Ultimate X-Men 001 (2024) (Peach Momoko Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48763] Ultimate X-Men 001 (2024) Aka Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48764] Ultimate X-Men 002 (2024) (2nd Printing 1-in-25 Peach Momoko Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48765] Ultimate X-Men 002 (2024) (2nd Printing Peach Momoko Connecting Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48766] Ultimate X-Men 002 (2024) (Mike Choi Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48767] Ultimate X-Men 003 (2024) (2nd Printing 1-in-25 Peach Momoko Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48768] Ultimate X-Men 003 (2024) (2nd Printing Peach Momoko Connecting Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48769] Ultimate X-Men 003 (2024) (Betsy Cola Ultimate Special Variant) (Digital) (MikeNY76).cbz (1pp)
+            [48770] Ultimate X-Men 003 (2024) (Dustin Nguyen Variant) (Digital) (MikeNY76).cbz (1pp) | [48771] Ultimate X-Men 003 (2024) (Peach Momoko Design Variant) (Digital) (MikeNY76).cbz (1pp)
+            [48772] Ultimate X-Men 003 (2024) (Peach Momoko Variant) (Digital) (MikeNY76).cbz (1pp) | [48773] Ultimate X-Men 003 (2024) (Tony Daniel Variant) (Digital) (MikeNY76).cbz (1pp)
+            [48776] Ultimate X-Men 004 (2024) (1-in-10 Peach Momoko Design Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48777] Ultimate X-Men 004 (2024) (Lucas Werneck Variant) (Digital) (MikeNY76).cbz (1pp)
+            [48778] Ultimate X-Men 004 (2024) (Meghan Hetrick Ultimate Special Variant) (Digital) (MikeNY76).cbz (1pp)
+            [48779] Ultimate X-Men 004 (2024) (Peach Momoko Design Variant) (Digital) (MikeNY76).cbz (1pp) | [48780] Ultimate X-Men 004 (2024) (Peach Momoko Variant) (Digital) (MikeNY76).cbz (1pp)
+            [48781] Ultimate X-Men 005 (2024) (Inhyuk Lee Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48782] Ultimate X-Men 005 (2024) (Meghan Hetrick Ultimate Special Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48783] Ultimate X-Men 005 (2024) (Peach Momoko Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48784] Ultimate X-Men 005 (2024) (Pepe Larraz Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48785] Ultimate X-Men 006 (2024) (Meghan Hetrick Ultimate Special Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48786] Ultimate X-Men 006 (2024) (Peach Momoko Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48787] Ultimate X-Men 006 (2024) (Stephanie Hans Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48788] Ultimate X-Men 006 (2024) (Tradd Moore Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48789] Ultimate X-Men 007 (2024) (Dike Ruan Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48790] Ultimate X-Men 007 (2024) (Mike Del Mundo Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48791] Ultimate X-Men 007 (2024) (Peach Momoko Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48792] Ultimate X-Men 007 (2024) (Wes Craig Connecting Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48793] Ultimate X-Men 007 (2024) (Wes Craig Connecting Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+   ours:    ladder 1-11; 7 number(s) name more than one file: 1, 2, 3, 4, 5, 6, 7; judged item 48756 #1-6 conf 0.97
+   CV per-file (v1): vol 43640 "X-Men" 1997 Panini France 169 on 41/41 files
+   CV local rip:   (= per-file) · 43669 "X-Men" 1997 Panini Verlag 48 (via CV name "X-Men") · 45796 "X-Men" 1996 Planeta DeAgostini 105 (via CV name "X-Men") · 7258 "Ultimate X-Men" 2001 Marvel 101 (via our own name without the filing suffix "Ultimate X-Men") · 43672 "X-Men" 2001 Panini Verlag 150 (via CV name "X-Men") · 125813 "Ultimate X-Men" 2001 Panini Comics 53 (via our own name without the filing suffix "Ultimate X-Men")   (rip lookup)
+   GCD per-file:   series 223643 "X-Men" [fr] 2025-2026 Panini France [série continue terminée [was ongoing series]] 30 on 33/41 files · series 221940 "X-Men" [de] 2025-? Panini Deutschland [ongoing series] 4 on 8/41 files; methods numx41
+   GCD dump:       33290 "X-Men" [de] 1997-2000 Panini Deutschland [] 48 (via CV name "X-Men") · 38909 "X-Men" [fr] 1997-2011 Panini France [] 169 (via CV name "X-Men") · 178806 "X-Men" [hr] 1997-1998 Slobodna Dalmacija [] 6 (via CV name "X-Men") · 182418 "אקס-מן: X-Men" [iw-il] 1997-1999 Contact Point [] 23 (via CV name "X-Men") · 10643 "X-Men" [sv-se] 1998-2006 Egmont [] 66 (via CV name "X-Men") · 28279 "X-Men" 1998-1998 Marvel; Wizard [] 1 (via CV name "X-Men")   (dump lookup)
+
+== S21789 Wolverine - Custom Moto Guzzi  [tier D]   keys: Wolverine - Custom Moto Guzzi  years 2022-2022  1 files / 0 collections
+   folders: [1] Marvel\#MARVEL CURRENT ONGOING TITLES\X-Men (Krakoa) (2019)\2020.02.19 - Wolverine v7\Annuals and Specials
+   files:   [49975] Wolverine - Custom Moto Guzzi 001 (2022) (digital) (MidnightRider).cbz (20pp)
+   ours:    ladder 1
+   CV candidates:  70677 "Wolverine Custom Edition" 2013 Marvel 1 issue 441302 s69 · 87808 "Marvel Universe Deadpool & Wolverine" 2016 Marvel 1 issue 513651 s52 · 32136 "Marvel Spotlight: Wolverine" 2009 Marvel 1 issue 201548 s52 · 77209 "Marvel MegaMorphs - Wolverine" 2005 Marvel 1 issue 466836 s51 · 122815 "Marvel Sampler November 2019" 2019 Marvel 1 issue 727262 s45 · 120951 "Marvel Universe Fall 2019 Magazine" 2019 Marvel 1 issue 717524 s45   (v1 search)
+   CV local rip:   87808 "Marvel Universe Deadpool & Wolverine" 2016 Marvel 1 issue 513651 (via CV candidate name "Marvel Universe Deadpool & Wolverine") · 70677 "Wolverine Custom Edition" 2013 Marvel 1 issue 441302 (via CV candidate name "Wolverine Custom Edition") · 32136 "Marvel Spotlight: Wolverine" 2009 Marvel 1 issue 201548 (via CV candidate name "Marvel Spotlight: Wolverine")   (rip lookup)
+   GCD dump:       96684 "Marvel Universe Deadpool & Wolverine" 2016-2016 Marvel [] 1 (via CV candidate name "Marvel Universe Deadpool & Wolverine") · 235370 "Marvel Spotlight: Wolverine" 2009-2009 Marvel [] 1 (via CV candidate name "Marvel Spotlight: Wolverine")   (dump lookup)
+
+== S103482 Marvel Action Classics: Hulk (2019)  [tier C] · ratio 0.08  keys: Marvel Action Classics: Hulk (2019)  years 2018-2018  1 files / 0 collections
+   folders: [1] Marvel\Marvel Action (2018)
+   files:   [99726] Marvel Action Classics - Hulk 001 (2019) (Digital) (Zone-Empire).cbr (46pp)
+   ours:    ladder 1; ComicInfo Series: "Marvel Action Classics: Hulk"x1; ComicInfo Volume: "2019"x1; ComicInfo Publisher: "Marvel"x1
+   CV per-file (v1): vol 115545 "Marvel Action: Spider-Man" 2018 Marvel 12 on 1/1 files
+   CV local rip:   (= per-file) · 124930 "Marvel Action: Spider-Man" 2020 IDW Publishing 3 (via CV name "Marvel Action: Spider-Man") · 134991 "Marvel Action: Spider-Man" 2021 IDW Publishing 5 (via CV name "Marvel Action: Spider-Man")   (rip lookup)
+   GCD per-file:   methods round2-seriesx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 134768 "Marvel Action: Spider-Man" 2018-2019 IDW [was ongoing series] 12 on 1/1 files
+   GCD dump:       (= per-file) · 147896 "Marvel Action: Spider-Man" 2019-2020 IDW [] 5 (via CV name "Marvel Action: Spider-Man") · 156165 "Marvel Action: Spider-Man" 2020-2020 IDW [] 3 (via CV name "Marvel Action: Spider-Man") · 176290 "Marvel Action: Spider-Man" [es] 2020-? Panini España [] ? (via CV name "Marvel Action: Spider-Man") · 190830 "Marvel Action : Spider-Man" [fr] 2020-2022 Panini France [] 6 (via CV name "Marvel Action: Spider-Man") · 171482 "Marvel Action: Spider-Man" 2021-2021 IDW [] 5 (via CV name "Marvel Action: Spider-Man")   (dump lookup)
+   bridges:        gcd 134768 -> LOCG 139301 "Marvel Action: Spider-Man" support 25
+
+== S11351 Marvel Action Classics: Spider-Man Two-In-One  [tier C] · ratio 0.33  keys: Marvel Action Classics: Spider-Man Two-In-One  years 2018-2021  4 files / 0 collections
+   folders: [4] Marvel\Marvel Action (2018)\Marvel Action Classics - Spider-Man Two-In-One (2019)
+   files:   [99727] Marvel Action Classics - Spider-Man Two-In-One 001 (2019) (Digital) (Zone-Empire).cbr (46pp)
+            [99728] Marvel Action Classics - Spider-Man Two-in-One 002 (2019) (Digital) (Zone-Empire).cbr (46pp)
+            [99729] Marvel Action Classics - Spider-Man Two-in-One 003 (2021) (Digital) (Zone-Empire).cbr (46pp)
+            [99730] Marvel Action Classics - Spider-Man Two-in-One 004 (2021) (Digital) (Zone-Empire).cbr (46pp)
+   ours:    ladder 1-4; ComicInfo Series: "Marvel Action Classics: Spider-Man Two-In-One"x2, "Marvel Action Classics: Spider-Man Two-in-One-Action"x2; ComicInfo Volume: "2019"x2; ComicInfo Publisher: "Marvel"x4
+   CV per-file (v1): vol 115545 "Marvel Action: Spider-Man" 2018 Marvel 12 on 2/4 files
+   CV candidates:  (= per-file) · 107157 "Marvel Two-In-One" 2017 Marvel 12 s82 · 2696 "Marvel Two-in-One" 1974 Marvel 100 s72 · 111584 "Marvel Two-In-One Annual" 2018 Marvel 1 issue 673023 s64 · 69218 "Marvel Masterworks: Marvel Two-In-One" 2013 Marvel 8 s59 · 23949 "Essential Marvel Two-In-One" 2006 Marvel 4 s57 · 124930 "Marvel Action: Spider-Man" 2020 IDW Publishing 3 s23   (v1 search)
+   CV local rip:   (= per-file) · 107157 "Marvel Two-In-One" 2017 Marvel 12 (via CV candidate name "Marvel Two-In-One") · 124930 "Marvel Action: Spider-Man" 2020 IDW Publishing 3 (via CV name "Marvel Action: Spider-Man") · 134991 "Marvel Action: Spider-Man" 2021 IDW Publishing 5 (via CV name "Marvel Action: Spider-Man") · 2696 "Marvel Two-in-One" 1974 Marvel 100 (via CV candidate name "Marvel Two-In-One")   (rip lookup)
+   GCD per-file:   methods round2-seriesx2 ⚠  (⚠ copies a folder neighbour's series — verify); series 134768 "Marvel Action: Spider-Man" 2018-2019 IDW [was ongoing series] 12 on 2/4 files
+   GCD dump:       (= per-file) · 147896 "Marvel Action: Spider-Man" 2019-2020 IDW [] 5 (via CV name "Marvel Action: Spider-Man") · 156165 "Marvel Action: Spider-Man" 2020-2020 IDW [] 3 (via CV name "Marvel Action: Spider-Man") · 176290 "Marvel Action: Spider-Man" [es] 2020-? Panini España [] ? (via CV name "Marvel Action: Spider-Man") · 190830 "Marvel Action : Spider-Man" [fr] 2020-2022 Panini France [] 6 (via CV name "Marvel Action: Spider-Man") · 171482 "Marvel Action: Spider-Man" 2021-2021 IDW [] 5 (via CV name "Marvel Action: Spider-Man")   (dump lookup)
+   bridges:        gcd 134768 -> LOCG 139301 "Marvel Action: Spider-Man" support 25
+
+== S11405 Marvel Comics Super Special  [tier C] · ratio 9.75  keys: Marvel Comics Super Special  years 1977-1986  39 files / 0 collections
+   folders: [39] Marvel\Marvel Comics Super Special (1977)
+   files:   [100597] Marvel Comics Super Special 001 (1977) (KISS).cbr (65pp) | [100599] Marvel Comics Super Special 003 (1978) (Close Encounters of the Third Kind).cbr (51pp)
+            [100600] Marvel Comics Super Special 004 (1978) (The Beatles Story) (c2c) (rescan.bluejeff1954 & others).cbr (68pp) | [100601] Marvel Comics Super Special 005 (1978) (KISS).cbr (49pp)
+            [100602] Marvel Comics Super Special 006 (1978) (Jaws 2).cbr (52pp) | [100603] Marvel Comics Super Special 007 (1978) (Sgt. Pepper) (French).cbr (52pp)
+            [100604] Marvel Comics Super Special 008 (1978) (Battlestar Galactica).cbr (52pp) | [100605] Marvel Comics Super Special 009 (1978) (Savage Sword of Conan).cbr (69pp)
+            [100606] Marvel Comics Super Special 011 (1979) (Warriors of the Shadow Realm) (Bchry-DCP).cbz (46pp)
+            [100607] Marvel Comics Super Special 012 (1979) (Warriors of the Shadow Realm) (Bchry-DCP).cbz (48pp)
+            [100608] Marvel Comics Super Special 013 (1979) (Warriors of the Shadow Realm) (Bchry-DCP).cbz (52pp) | [100609] Marvel Comics Super Special 014 (1979) (Meteor).cbr (39pp)
+            [100610] Marvel Comics Super Special 015 (1979) (Star Trek - The Motion Picture).cbr (64pp) | [100611] Marvel Comics Super Special 016 (1980) (The Empire Strikes Back).cbr (100pp)
+            [100612] Marvel Comics Super Special 017 (1980) (Xanadu (c2c) (Cimmerian32).cbr (65pp) | [100613] Marvel Comics Super Special 018 (1981) (Raiders Of The Lost Ark).cbr (68pp)
+            [100614] Marvel Comics Super Special 019 (1981) (For Your Eyes Only).cbr (68pp) | [100615] Marvel Comics Super Special 020 (1981) (Dragonslayer).cbr (65pp)
+            [100616] Marvel Comics Super Special 021 (1982) (Conan The Barbarian).cbr (67pp) | [100617] Marvel Comics Super Special 022 (1982) (Blade Runner).cbr (65pp)
+            [100618] Marvel Comics Super Special 023 (1982) (Annie).cbr (67pp) | [100619] Marvel Comics Super Special 024 (1983) (Dark Crystal) (ABPC).cbr (66pp)
+            [100620] Marvel Comics Super Special 025 (1983) (Rock & Rule) (c2c) (Cimmerian32).cbr (63pp) | [100621] Marvel Comics Super Special 026 (1983) (Octopussy).cbr (67pp)
+            [100622] Marvel Comics Super Special 027 (1983) (Return of the Jedi).cbr (68pp) | [100623] Marvel Comics Super Special 028 (1983) (Krull).cbr (67pp)
+            [100624] Marvel Comics Super Special 029 (1983) (Tarzan of the Apes).cbr (52pp) | [100625] Marvel Comics Super Special 030 (1984) (Indiana Jones and the Temple of Doom).cbr (68pp)
+            [100626] Marvel Comics Super Special 031 (1984) (The Last Starfighter).cbr (68pp) | [100627] Marvel Comics Super Special 032 (1984) (Muppets Take Manhattan).cbr (64pp)
+            [100628] Marvel Comics Super Special 033 (1984) (Buckaroo Banzai).cbr (68pp) | [100629] Marvel Comics Super Special 034 (1984) (Sheena) (ABPC).cbr (68pp)
+            [100630] Marvel Comics Super Special 035 (1984) (Conan The Destroyer).cbr (68pp) | [100631] Marvel Comics Super Special 036 (1984) (Dune).cbr (68pp)
+            [100632] Marvel Comics Super Special 037 (1984) (2010).cbr (49pp) | [100633] Marvel Comics Super Special 038 (1985) (Red Sonja).cbr (52pp)
+            [100634] Marvel Comics Super Special 039 (1985) (Santa Claus - The Movie).cbr (67pp) | [100635] Marvel Comics Super Special 040 (1986) (Labyrinth).cbr (68pp)
+            [100636] Marvel Comics Super Special 041 (1986) (Howard the Duck).cbr (68pp)
+   ours:    ladder 1, 3-9, 11-41
+   CV per-file (v1): vol 2909 "" ? ? ? on 39/39 files
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD per-file:   series 79487 "Marvel Comics Super Special" 1977-1978 Marvel [was ongoing series] 4 on 3/39 files; methods numx3; the dump names no other series
+   bridges:        gcd 79487 -> LOCG 119011 "Marvel Super Special" support 1
+
+== S35656 Marvel Super Special  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: Marvel Super Special  years 1978-2010  8 files / 0 collections
+   folders: [5] Marvel\Marvel Super Special (1977) · [2] Marvel\Marvel Comics Super Special (1977) · [1] Marvel\_Marvel Cosmic\Guardians of the Galaxy\Star-Lord
+   files:   [100598] Marvel Comics Super Special 002 - Savage Sword of Conan (1977) (Digital) (Shadowcat-Empire).cbz (63pp)
+            [100637] Marvel Super Special 010 (1979) (Digital) (Shadowcat-Empire).cbz (40pp) | [101033] Marvel Super Special 001 (Black And White) (2010) (Digital) (Shadowcat-Empire).cbz (103pp)
+            [101034] Marvel Super Special 003 [Marvel] (Close Encounters of the Third Kind).cbr (50pp) | [101035] Marvel Super Special 009 (1978) (Digital) (Shadowcat-Empire).cbz (49pp)
+            [101036] Marvel Super Special 010 (1979) (Digital) (Shadowcat-Empire).cbz (40pp) | [101037] Marvel Super Special 021 (1982) (Digital) (Shadowcat-Empire).cbz (61pp)
+            [82878] 09 Marvel Super Special #10.cbr (68pp)
+   ours:    ladder 1-3, 9-10, 21; 1 number(s) name more than one file: 10; ComicInfo Series: "Marvel Super Special"x3; ComicInfo Volume: "1977"x3; ComicInfo Publisher: "Marvel"x3
+   CV linked:      vol 2909 "" ? ? ? issues; cached #1-41 (41); yearΔ ?; ratio 8/?; no judged range
+   CV per-file (v1): vol 2909 "" ? ? ? on 7/8 files · vol 35659 "Marvel Super Special" 2010 Marvel 1 issue 235732 on 1/8 files
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD per-file:   methods numx4 · round2-seriesx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 2401 "Marvel Super Special" 1978-1986 Marvel [was ongoing series] 37 on 4/8 files · series 70034 "Marvel Super Special" 2010-2010 Marvel [] 1 on 1/8 files; the dump names no other series
+   bridges:        gcd 2401 -> LOCG 119011 "Marvel Super Special" support 5 · gcd 70034 -> LOCG 119011 "Marvel Super Special" support 1
+
+== S12887 Newuniversal+-+Shockfront+01+++  [tier C] · ratio 0.17  keys: Newuniversal+-+Shockfront+01+++  years 2008-2008  1 files / 0 collections
+   folders: [1] Marvel\New Universal
+   files:   [102072] Newuniversal+-+Shockfront+01+(of+06)+(2008)+(Minutemen-ReZone).cbr (24pp)
+   ours:    ladder 6
+   CV candidates:  22786 "Newuniversal: Conqueror" 2008 Marvel 1 issue 136751 s30 · 22404 "Newuniversal: 1959" 2008 Marvel 1 issue 134594 s30 · 35735 "Newuniversal: Everything Went White" 2008 Marvel 1 issue 236451 s30 · 21594 "Newuniversal: Shockfront" 2008 Marvel 2 s23 · 18306 "newuniversal" 2006 Marvel 6 s15 · 36751 "The Boondocks: Fresh for '01...You Suckas!" 2001 Andrews McMeel Publishing 1 issue 245076 s15   (v1 search)
+   CV local rip:   18306 "newuniversal" 2006 Marvel 6 (via GCD name "Newuniversal") · 22404 "Newuniversal: 1959" 2008 Marvel 1 issue 134594 (via CV candidate name "Newuniversal: 1959") · 22786 "Newuniversal: Conqueror" 2008 Marvel 1 issue 136751 (via CV candidate name "Newuniversal: Conqueror") · 35735 "Newuniversal: Everything Went White" 2008 Marvel 1 issue 236451 (via CV candidate name "Newuniversal: Everything Went White")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 20476 "Newuniversal" 2007-2007 Marvel [was ongoing series] 6 on 1/1 files
+   GCD dump:       31529 "newuniversal: 1959" 2008-2008 Marvel [] 1 (via CV candidate name "Newuniversal: 1959") · 31811 "newuniversal: Conqueror" 2008-2008 Marvel [] 1 (via CV candidate name "Newuniversal: Conqueror") · 61874 "newuniversal: Everything Went White" 2008-2008 Marvel [] 1 (via CV candidate name "Newuniversal: Everything Went White") · 60607 "newuniversal: Everything Went White" 2007-2007 Marvel [] 1 (via CV candidate name "Newuniversal: Everything Went White")   (dump lookup)
+   bridges:        gcd 20476 -> LOCG 105607 "newuniversal" support 7
+
+== S20171 ThunderCats - Pocket Comic Book  [tier D]   keys: ThunderCats - Pocket Comic Book  years 1990-1990  1 files / 0 collections
+   folders: [1] Marvel\ThunderCats (1987)
+   files:   [103458] ThunderCats - Pocket Comic Book (1990) (pdf-rip) (watermarked) (TheRastaCrew).cbr (48pp)
+   CV candidates:  150366 "Comic pocket " 1977 Hjemmet 4 s67 · 53666 "Chiller Pocket Book" 1980 Marvel UK/Panini UK 28 s54 · 113526 "Conan Pocket Book" 1980 Marvel UK/Panini UK 13 s54 · 47372 "The Titans Pocket Book" 1980 Marvel UK/Panini UK 13 s53 · 34989 "Star Heroes Pocket Book" 1980 Marvel UK/Panini UK 28 s53 · 62700 "Fantastic Four Pocket Book" 1980 Marvel UK/Panini UK 28 s53   (v1 search)
+   CV local rip:   53666 "Chiller Pocket Book" 1980 Marvel UK/Panini UK 28 (via CV candidate name "Chiller Pocket Book") · 113526 "Conan Pocket Book" 1980 Marvel UK/Panini UK 13 (via CV candidate name "Conan Pocket Book") · 150366 "Comic pocket " 1977 Hjemmet 4 (via CV candidate name "Comic pocket ")   (rip lookup)
+   GCD dump:       75337 "Chiller Pocket Book" [en-gb] 1980-1982 Marvel UK [] 28 (via CV candidate name "Chiller Pocket Book") · 75825 "Conan Pocket Book" [en-gb] 1980-1981 Marvel UK [] 13 (via CV candidate name "Conan Pocket Book") · 22447 "Comic pocket" [no] 1977-1977 Hjemmet / Egmont [] 4 (via CV candidate name "Comic pocket ")   (dump lookup)
+
+== S1566 Avengers 750 Sketchbook  [tier C] · gap 2  keys: Avengers 750 Sketchbook  years 2021-2021  1 files / 0 collections
+   folders: [1] Marvel\_Avengers\14 Avengers v8 (2018)\Annuals and Specials
+   files:   [52949] Secrets of the Avengers #50 (2021) (digital-Empire).cbr (17pp)
+   ours:    ladder 1; ComicInfo Series: "Avengers 750 Sketchbook"x1; ComicInfo Publisher: "Marvel"x1
+   CV candidates:  21298 "Avengers/Invaders Sketchbook" 2008 Marvel 1 issue 128424 s59 · 21101 "Marvel Knights Wave 2 Sketchbook" 1998 Marvel 1 issue 126723 s52 · 99618 "Sketchbook" 2003 Mag Garden 13 s47 · 112374 "Marvel Spotlight July 2018" 2018 Marvel 1 issue 677285 s45 · 21100 "Marvel Knights Sketchbook" 1998 Wizard 1 issue 126722 s39 · 25104 "Angels 750" 2004 Antarctic Press 5 s28   (v1 search)
+   CV local rip:   144093 "Avengers" 2020 Panini Verlag 10 (via GCD name "Avengers") · 119674 "Avengers" 2019 Panini Verlag 61 (via GCD name "Avengers") · 127194 "Avengers" 2019 Panini France 10 (via GCD name "Avengers") · 150431 "Avengers" 2023 Marvel 34 (via GCD name "Avengers") · 110496 "Avengers" 2018 Marvel 66 (via GCD name "Avengers") · 168358 "Avengers" 2024 Panini Verlag 22 (via GCD name "Avengers")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 200634 "Avengers" 2023-2026 Marvel [was ongoing series] 36 on 1/1 files
+   GCD dump:       17757 "Sketchbook" 1994-1994 Freelance Studios [] 1 (via CV candidate name "Sketchbook") · 30579 "Avengers / Invaders Sketchbook" 2008-2008 Marvel [] 1 (via CV candidate name "Avengers/Invaders Sketchbook") · 156744 "Marvel Knights Wave 2 Sketchbook" 1998-1998 Marvel; Wizard [] 1 (via CV candidate name "Marvel Knights Wave 2 Sketchbook")   (dump lookup)
+   bridges:        gcd 200634 -> LOCG 111362 "The Avengers" support 5
+
+== S1523 Avengers - Everyday Heroes  [tier C] · gap 4  keys: Avengers - Everyday Heroes  years 2022-2022  1 files / 0 collections
+   folders: [1] Marvel\_Avengers\_One Shots and Minis
+   files:   [53353] Avengers - Everyday Heroes 01 (2022) (Digital) (MidnightRider).cbz (16pp)
+   ours:    ladder 1
+   CV candidates:  32374 "Marvel Adventures Avengers: Heroes Assembled" 2006 Marvel 1 issue 203738 s67 · 79514 "Marvel Super Heroes Featuring The Avengers" 2012 Marvel UK/Panini UK 6 s51 · 53069 "The Everyday" 2013 Unknown Publisher 1 issue 396638 s35 · 39537 "Marvel Heroes" 2008 Marvel UK/Panini UK 34 s35 · 165737 "Everyday Escape" 2022 Cross Cult 4 s23 · 25713 "Marvel Heroes" 2008 Unknown Publisher 18 s20   (v1 search)
+   CV local rip:   53069 "The Everyday" 2013 Unknown Publisher 1 issue 396638 (via CV candidate name "The Everyday") · 109592 "Avengers: Shards of Infinity" 2018 Marvel 1 issue 664910 (via GCD name "Avengers: Shards of Infinity") · 79514 "Marvel Super Heroes Featuring The Avengers" 2012 Marvel UK/Panini UK 6 (via CV candidate name "Marvel Super Heroes Featuring The Avengers") · 32374 "Marvel Adventures Avengers: Heroes Assembled" 2006 Marvel 1 issue 203738 (via CV candidate name "Marvel Adventures Avengers: Heroes Assembled")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 123359 "Avengers: Shards of Infinity" 2018-2018 Marvel [One-Shot] 1 on 1/1 files
+   GCD dump:       128129 "Everyday" [fr-be] 2005-2005 Casterman [] 1 (via CV candidate name "The Everyday") · 69013 "Marvel Super Heroes Featuring The Avengers" [en-gb] 2012-? Panini UK [] 1 (via CV candidate name "Marvel Super Heroes Featuring The Avengers")   (dump lookup)
+   bridges:        gcd 123359 -> LOCG 136466 "Avengers: Shards of Infinity" support 5
+
+== S20228 Timeslip - The Coming of the Avengers  [tier D]   keys: Timeslip - The Coming of the Avengers  years ?-?  1 files / 0 collections
+   folders: [1] Marvel\_Avengers\_One Shots and Minis
+   files:   [53498] Timeslip - The Coming of the Avengers.cbr (51pp)
+   CV candidates:  38674 "Avengers: The Coming of the Beast" 2011 Marvel 1 issue 259452 s79 · 50030 "Avengers 1: The Coming of the Avengers!" 2012 Marvel 1 issue 343208 s78 · 18533 "Timeslip: The Collection" 1998 Marvel 1 issue 108916 s56 · 47654 "Timeslip Special" 1998 Marvel 1 issue 328309 s50 · 47859 "Avengers Vs. X-Men: It's Coming" 2012 Marvel 1 issue 329745 s47 · 31705 "Spider-Girl Presents Avengers Next: Second Coming" 2006 Marvel 1 issue 198666 s46   (v1 search)
+   CV local rip:   18533 "Timeslip: The Collection" 1998 Marvel 1 issue 108916 (via CV candidate name "Timeslip: The Collection") · 38674 "Avengers: The Coming of the Beast" 2011 Marvel 1 issue 259452 (via CV candidate name "Avengers: The Coming of the Beast")   (rip lookup)
+   GCD dump:       65061 "Avengers 1: The Coming of the Avengers!" 2012-2012 Marvel [] 1 (via CV candidate name "Avengers 1: The Coming of the Avengers!") · 73304 "Avengers: The Coming of the Beast" 2011-2011 Marvel [] 1 (via CV candidate name "Avengers: The Coming of the Beast")   (dump lookup)
+
+== S11388 Marvel Avengers - The Greatest Heroes  [tier B]   keys: Marvel Avengers - The Greatest Heroes  years 2018-2018  1 files / 0 collections
+   folders: [1] Marvel\_Avengers\_Trades
+   files:   [53538] Marvel Avengers - The Greatest Heroes (2018) (Digital-Empire).cbz (72pp)
+   CV per-file (v1): vol 39537 "Marvel Heroes" 2008 Marvel UK/Panini UK 34 on 1/1 files
+   CV candidates:  (= per-file) · 32374 "Marvel Adventures Avengers: Heroes Assembled" 2006 Marvel 1 issue 203738 s64 · 79514 "Marvel Super Heroes Featuring The Avengers" 2012 Marvel UK/Panini UK 6 s61 · 25713 "Marvel Heroes" 2008 Unknown Publisher 18 s55 · 42702 "Marvel Heroes" 2001 Panini France 37 s55 · 42703 "Marvel Heroes" 2009 Panini Verlag 7 s55 · 63622 "Marvel Heroes Greatest Battles" 2008 DK Publishing 1 issue 411602 s50   (v1 search)
+   CV local rip:   (= per-file) · 79514 "Marvel Super Heroes Featuring The Avengers" 2012 Marvel UK/Panini UK 6 (via CV candidate name "Marvel Super Heroes Featuring The Avengers") · 42703 "Marvel Heroes" 2009 Panini Verlag 7 (via CV name "Marvel Heroes") · 25713 "Marvel Heroes" 2008 Marvel 11 (via CV name "Marvel Heroes") · 32374 "Marvel Adventures Avengers: Heroes Assembled" 2006 Marvel 1 issue 203738 (via CV candidate name "Marvel Adventures Avengers: Heroes Assembled") · 42702 "Marvel Heroes" 2001 Panini France 37 (via CV name "Marvel Heroes")   (rip lookup)
+   GCD dump:       69013 "Marvel Super Heroes Featuring The Avengers" [en-gb] 2012-? Panini UK [] 1 (via CV candidate name "Marvel Super Heroes Featuring The Avengers") · 59725 "Marvel Heroes" [fr] 2011-2012 Panini France [] 17 (via CV name "Marvel Heroes") · 220169 "Marvel Heroes" [fr] 2025-? Panini France [] 4 (via CV name "Marvel Heroes") · 52516 "Marvel Heroes" [de] 2009-2010 Panini Deutschland [] 7 (via CV name "Marvel Heroes") · 43090 "Marvel Heroes" [en-gb] 2008-? Panini UK [] 35 (via CV name "Marvel Heroes") · 165628 "Marvel Heroes" [en-ph] 2008-2010 Psicom Publishing [] 20 (via CV name "Marvel Heroes")   (dump lookup)
+
+== S64380 Captain Marvel  [tier C] · gap 34  keys: Captain Marvel (2002) | Captain Marvel v5 (2002)  years 1968-2002  4 files / 4 collections
+   folders: [4] Marvel\_Captain Marvel\05 Captain Marvel v5 (Genis-Vell) (2002)
+   files:   [77611] COL Captain Marvel Vol. 01 - Nothing to Lose (2003) (Digital-Empire).cbr (142pp) | [77612] COL Captain Marvel Vol. 02 - Coven (2003) (Digital-Empire).cbr (136pp)
+            [77613] COL Captain Marvel Vol. 03 - Crazy Like A Fox (2004) (Digital-Empire).cbr (134pp) | [77614] COL Captain Marvel Vol. 04 - Odyssey (2004) (Digital-Empire).cbr (159pp)
+   GCD says: [77611] gcd_reprint 1052380: s10791 Captain Marvel (2002) (unnumbered) [6 stories]
+             [77612] gcd_reprint 552830: s10791 Captain Marvel (2002) (unnumbered) [6 stories]
+             [77613] gcd_reprint 552831: s10791 Captain Marvel (2002) (unnumbered) [6 stories]
+             [77614] gcd_reprint 552832: s10791 Captain Marvel (2002) (unnumbered) [7 stories]
+   CV linked:      vol 18296 "Captain Marvel" 2002 Marvel 25 issues; cached #1-25 (25); yearΔ 34; ratio 0/25; no judged range
+   CV per-file (v1): vol 18296 "Captain Marvel" 2002 Marvel 25 on 2/4 files · vol 2401 "Captain Marvel" 1968 Marvel 62 on 2/4 files
+   CV local rip:   (= linked) · 2326 "Captain Marvel" 1966 M. F. Enterprises 4 · 19319 "Captain Marvel" 1989 Marvel 1 issue 115963 · 19326 "Captain Marvel" 1994 Marvel 1 issue 116006 · 18270 "Captain Marvel" 1995 Marvel 6 · 6458 "Captain Marvel" 2000 Marvel 36   (rip lookup)
+   GCD dump:       1861 "Captain Marvel" 1968-1979 Marvel [] 56 · 1781 "Captain Marvel" 1966-1966 M. F. Enterprises [] 4 · 109267 "Captain Marvel" [en-au] 1976-? Newton Comics [] 1 · 71980 "Captain Marvel" [en-au] 1977-1978 Yaffa / Page [] 8 · 3833 "Captain Marvel" 1989-1989 Marvel [] 1 · 217766 "Captain Marvel" [en-gb] 1945-1945 L. Miller & Son [] 1   (dump lookup)
+
+== S4802 Shadowland: Daredevil  [tier A]   keys: Daredevil - Shadowland  years 2011-2011  2 files / 1 collections
+   folders: [1] Marvel\_Daredevil\_Omnibus Editions · [1] _Marvel Major Event Chronology (digital)\2010.07 - Shadowland\02 Shadowland
+   files:   [46969] COL Daredevil - Shadowland Omnibus (2024, 2nd edition) (Digital-Empire).cbr (1097pp) | [117388] 02 Daredevil - Shadowland (2011) (Digital) (F) (Zone-Empire).cbr (143pp)
+   ours:    ladder 2; ComicInfo Series: "Daredevil: Shadowland"x1; ComicInfo Publisher: "Marvel"x1
+   CV linked:      vol 39421 "Shadowland: Daredevil" 2011 Marvel 1 issues issue 266235; issue list NOT CACHED; yearΔ 0; ratio 1/1 = 1.00; none cached; v1 per-file: same volume on 2/2 files
+   CV candidates:  (= linked) · 108581 "Daredevil: Shadowland Omnibus" 2018 Marvel 1 issue 659057 s82 · 39422 "Shadowland" 2011 Marvel 1 issue 266236 s63 · 34243 "Shadowland" 2010 Marvel 5 s58 · 70862 "Shadowland" 1989 Fantagraphics 2 s55 · 35274 "Shadowland: Elektra" 2010 Marvel 1 issue 232574 s52 · 77081 "Marvel Authentix: Daredevil" 1998 Marvel 1 issue 466265 s51   (v1 search)
+   CV local rip:   (= linked) · 39422 "Shadowland" 2011 Marvel 1 issue 266236 (via CV candidate name "Shadowland") · 34243 "Shadowland" 2010 Marvel 5 (via CV candidate name "Shadowland") · 65888 "Shadowland" 2006 Fantagraphics 1 issue 419720 (via CV candidate name "Shadowland") · 70862 "Shadowland" 1989 Fantagraphics 2 (via CV candidate name "Shadowland") · 108581 "Daredevil: Shadowland Omnibus" 2018 Marvel 1 issue 659057 (via CV candidate name "Daredevil: Shadowland Omnibus")   (rip lookup)
+   GCD per-file:   series 161857 "Shadowland" 2011-2011 ? [] 1 on 1/2 files; methods page-rematchx1
+   GCD dump:       (= per-file) · 225997 "Shadowland: Daredevil" 2011-2011 Marvel [] 1 · 225998 "Shadowland: Daredevil" 2011-2011 Marvel [] 1 · 226002 "Shadowland" 2011-2011 Marvel [] 1 (via CV candidate name "Shadowland") · 50866 "Shadowland" 2010-2011 Marvel [] 5 (via CV candidate name "Shadowland") · 56425 "Shadowland" 2006-2006 Fantagraphics [] 1 (via CV candidate name "Shadowland")   (dump lookup)
+
+== S17528 Tales of Terror: A Graphix Book (Marvel's Rocket and Groot)  [tier D]   keys: Tales of Terror: A Graphix Book (Marvel's Rocket and Groot)  years 2024-2024  1 files / 0 collections
+   folders: [1] Marvel\_Guardians of the Galaxy\_Rocket Raccoon and Groot
+   files:   [80330] Marvel's Rocket and Groot - Tales of Terror - A Graphix Book (2024) (Digital) (dekabro-Empire).cbz (77pp)
+   ours:    ComicInfo Series: "Tales of Terror: A Graphix Book (Marvel's Rocket and Groot)"x1; ComicInfo Publisher: "Scholastic Inc."x1
+   CV candidates:  149608 "Marvel-Verse: Rocket & Groot" 2023 Marvel 1 issue 984757 s45 · 127299 "Terror, Inc." 2008 Marvel 1 issue 763406 s35 · 46366 "Rocket Raccoon and Groot Complete Collection" 2013 Marvel 1 issue 396609 s35 · 157547 "Rocket Raccoon and Groot: Tricks of the Trade" 2016 Marvel UK/Panini UK 1 issue 1050760 s35 · 92386 "Rocket Raccoon & Groot: Tricks of the Trade" 2016 Marvel 1 issue 540081 s35 · 125688 "Rocket Raccoon and Groot: Tall Tails" 2020 Marvel 1 issue 740893 s35   (v1 search)
+   CV local rip:   149608 "Marvel-Verse: Rocket & Groot" 2023 Marvel 1 issue 984757 (via CV candidate name "Marvel-Verse: Rocket & Groot") · 46366 "Rocket Raccoon and Groot Complete Collection" 2013 Marvel 1 issue 396609 (via CV candidate name "Rocket Raccoon and Groot Complete Collection") · 127299 "Terror, Inc." 2008 Marvel 1 issue 763406 (via CV candidate name "Terror, Inc.") · 19041 "Terror, Inc." 2007 Marvel 5 (via CV candidate name "Terror, Inc.") · 4814 "Terror Inc." 1992 Marvel 13 (via CV candidate name "Terror, Inc.")   (rip lookup)
+   GCD dump:       199074 "Marvel-Verse: Rocket & Groot" 2023-2023 Marvel [] 1 (via CV candidate name "Marvel-Verse: Rocket & Groot") · 226919 "Terror Inc." [fr] 2009-2009 Panini France [] 1 (via CV candidate name "Terror, Inc.") · 159582 "Terror Inc." 2008-2008 Marvel [] 1 (via CV candidate name "Terror, Inc.") · 26448 "Terror, Inc." 2007-2008 Marvel [] 5 (via CV candidate name "Terror, Inc.") · 4479 "Terror Inc." 1992-1993 Marvel [] 13 (via CV candidate name "Terror, Inc.")   (dump lookup)
+
+== S16766 Legendary Star-Lord  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: Legendary Star-Lord | Star-Lord  years 2014-2015  24 files / 4 collections
+   flags: #647 overlap-in-series [Dismissed] item 80340 — the cv rows on Vol. 02 and Vol. 04 both start at #6
+   folders: [10] Marvel\_Marvel Cosmic · [4] Marvel\_Guardians of the Galaxy\_Star Lord\01 Legendary Star-Lord (2014) · [4] _Marvel Major Event Chronology (digital)\2015.02 - The Black Vortex\Prelude - Legendary Star-Lord · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\1132 The Black Vortex · [3] _Marvel Major Event Chronology (digital)\2015.02 - The Black Vortex\Variant Covers
+   files:   [80339] COL Legendary Star-Lord Vol. 01 - Face It, I Rule (2015) (Digital) (F) (Zone-Empire).cbr (107pp)
+            [80340] COL Legendary Star-Lord Vol. 02 - Rise of the Black Vortex (2015) (Digital) (F) (Kileko-Empire).cbz (152pp)
+            [80341] COL Legendary Star-Lord Vol. 03 - First Flight (2016) (Digital) (Zone-Empire).cbr (112pp)
+            [80342] COL Legendary Star-Lord Vol. 04 - Out of Orbit (2016) (Digital) (Zone-Empire).cbr (129pp) | [82978] Legendary Star-Lord 001 (2014) (Digital) (Zone-Empire).cbr (22pp)
+            [82979] Legendary Star-Lord 002 (2014) (Digital) (Zone-Empire).cbr (21pp) | [82980] Legendary Star-Lord 003 (2014) (Digital) (Zone-Empire).cbr (23pp)
+            [82981] Legendary Star-Lord 004 (2014) (Digital) (Zone-Empire).cbr (22pp) | [82982] Legendary Star-Lord 007 (2015) (Digital) (Zone-Empire).cbr (21pp)
+            [82983] Legendary Star-Lord 008 (2015) (DIgital) (Zone-Empire).cbr (23pp) | [82984] Legendary Star-Lord 009 (2015) (Digital) (Zone-Empire).cbr (24pp)
+            [82985] Legendary Star-Lord 010 (2015) (Digital) (Zone-Empire).cbr (23pp) | [82986] Legendary Star-Lord 011 (2015) (Digital) (Zone-Empire).cbr (23pp)
+            [82987] Legendary Star-Lord 012 (2015) (Digital) (Zone-Empire).cbr (22pp) | [92902] 003 Legendary Star-Lord 009 (2015) (3 covers) (digital) (Minutemen-Faessla).cbz (25pp)
+            [92908] 009 Legendary Star-Lord 010 (2015) (3 covers) (digital) (Minutemen-Faessla).cbz (24pp)
+            [92911] 012 Legendary Star-Lord 011 (2015) (3 covers) (digital) (Minutemen-Faessla).cbz (24pp) | [118065] Legendary Star-Lord 004 (2014) (Digital) (Zone-Empire).cbr (22pp)
+            [118066] Legendary Star-Lord 005 (2014) (Digital) (Zone-Empire).cbr (22pp) | [118067] Legendary Star-Lord 006 (2015) (Digital) (Zone-Empire).cbr (21pp)
+            [118068] Legendary Star-Lord 007 (2015) (Digital) (Zone-Empire).cbr (21pp) | [118073] Legendary Star-Lord 009 (2015) (Phil Noto Variant) (digital) (Minutemen-Fantomex).cbr (1pp)
+            [118074] Legendary Star-Lord 011 (2015) (digital) (Andrea Sorrentino Cosmically Enhanced variant) (Mintuemen-Mastodon).cbz (1pp)
+            [118075] Legendary Star-Lord 011 (2015) (digital) (James Stokoe WTD variant) (Mintuemen-Mastodon).cbz (1pp)
+   ours:    ladder 1-12; 5 number(s) name more than one file: 4, 7, 9, 10, 11; judged item 80339 #1-5 conf 0.75; judged item 80340 #6-12 conf 0.82; judged item 80342 #6-8 conf 0.82; ComicInfo Series: "Legendary Star-Lord"x2; ComicInfo Publisher: "Marvel"x2
+   CV linked:      vol 75335 "Legendary Star-Lord" 2014 Marvel 12 issues; cached #1-12 (12); yearΔ 0; ratio 20/12 = 1.67; 3 of 3 judged fit; v1 per-file: same volume on 24/24 files
+   CV candidates:  (= linked) · 75413 "Legendary Star-Lord Special Edition" 2014 Marvel 1 issue 458958 s96 · 71458 "Star-Lord: Annihilation - Conquest" 2014 Marvel 1 issue 444537 s88 · 72794 "Star-Lord: Tears For Heaven" 2014 Marvel 1 issue 449601 s87 · 75628 "Star-Lord: Guardian of the Galaxy" 2014 Marvel 1 issue 459396 s86 · 64348 "Star-Lord: The Hollow Crown" 2013 Marvel 1 issue 413966 s84 · 91758 "Legendary Star-Lord: First Flight" 2016 Marvel 1 issue 537235 s41   (v1 search)
+   CV local rip:   (= linked) · 87486 "Star-Lord" 2015 Panini Verlag 2 · 86128 "Star-Lord" 2016 Marvel 8 · 97073 "Star-Lord" 2017 Marvel 6 · 75413 "Legendary Star-Lord Special Edition" 2014 Marvel 1 issue 458958 (via CV candidate name "Legendary Star-Lord Special Edition") · 71458 "Star-Lord: Annihilation - Conquest" 2014 Marvel 1 issue 444537 (via CV candidate name "Star-Lord: Annihilation - Conquest")   (rip lookup)
+   GCD per-file:   series 94129 "Star-Lord" 2016-2016 Marvel [Was ongoing] 8 on 4/24 files · series 89966 "Star-Lord" [de] 2015-2016 Panini Deutschland [] 3 on 3/24 files; methods numx7
+   GCD dump:       (= per-file) · 81545 "Legendary Star-Lord" 2014-2015 Marvel [] 12 · 86152 "Legendary Star-Lord" 2015-2016 Marvel [] 4 · 110624 "Star-Lord" 2017-2017 Marvel [] 6 · 117691 "Star-Lord" [de] 2017-2017 Panini Deutschland [] 1   (dump lookup)
+   bridges:        gcd 94129 -> LOCG 120038 "Star-Lord" support 9 · gcd 89966 -> LOCG 120038 "Star-Lord" support 2
