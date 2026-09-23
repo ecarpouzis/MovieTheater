@@ -1,74 +1,103 @@
-## Conventions for this batch (38 shown of 133 matched; 328 in LEDGER.md; 43 shelf/shelves: kind:trade-only ×13 · kind:collected-line ×13 · pub:dc ×13 · pub:valiant ×7 · pub:small-press ×7 · folder:vn-year ×6 · pub:boom ×5 · kind:kids ×5)
+## Conventions for this batch (38 shown of 143 matched; 336 in LEDGER.md; 44 shelf/shelves: pub:dc ×13 · pub:small-press ×12 · kind:trade-only ×7 · kind:collected-line ×6 · pub:idw ×6 · pub:valiant ×5 · folder:vn-year ×5 · kind:kids ×5)
 LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
 reading, never a rule applied across a folder. Do not read LEDGER.md whole.
 
-[L-030] (43 shelf/shelves) sig:collision
+[L-030] (44 shelf/shelves) sig:collision
 - One folder split into two shelves by a subtitle in one filename (Analog, Witch Doctor) → `F merge-with=<sid>`.
-[L-151] (43 shelf/shelves) sig:collision sig:withheld
+[L-151] (44 shelf/shelves) sig:collision sig:withheld
 - The withheld rule beats the checker's merge-with remedy text: a stored-link collision with a DIFFERENT comic is
   `cv=-` + `N withheld cv=<id> … S<partner>`, never a merge (S101634 vs S22834); merge-with only for the same comic.
-[L-160] (43 shelf/shelves) pass:revisit sig:withheld
+[L-160] (44 shelf/shelves) pass:revisit sig:withheld
 - A withheld shelf with NO GCD leg to keep becomes `R` + `N withheld cv=<id> … S<partner>` (S4944, S99691) — the
   revisit pair re-links the partner and then the S line can be written.
-[L-193] (43 shelf/shelves) sig:legacy-stamp sig:probe
+[L-193] (44 shelf/shelves) sig:legacy-stamp sig:probe
 - GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
   plain title returns 0 hits — probe with the ordinal or `--contains`.
-[L-013] (39 shelf/shelves) sig:probe
+[L-013] (40 shelf/shelves) sig:probe
 - GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
   with the other spelling.
-[L-014] (39 shelf/shelves) sig:probe sig:round2
+[L-014] (40 shelf/shelves) sig:probe sig:round2
 - `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
   batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
   right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
-[L-043] (39 shelf/shelves) sig:probe
+[L-043] (40 shelf/shelves) sig:probe
 - "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
   CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
-[L-050] (39 shelf/shelves) sig:probe
+[L-050] (40 shelf/shelves) sig:probe
 - When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
   punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
   abbreviation the publisher uses ("HSE").
-[L-072] (39 shelf/shelves) sig:probe
+[L-072] (40 shelf/shelves) sig:probe
 - GCD hides behind the SUBTITLE: "The Hunting Accident", "Giraffes on Horseback Salad", "Undesirables" return
   nothing under their full titles — re-probe the SHORT title before writing `provider-missing`.
-[L-082] (13 shelf/shelves) pub:dc sig:comicinfo
-- A Glorith-HD rip's ComicInfo `Web` id CAN be a ComicVine ISSUE id of the stored volume (599834, DC 100-Page
-  Spectacular) — Glorith's Web ids are never GCD ids, but check them against the CV rip.
-[L-088] (39 shelf/shelves) sig:probe
+[L-088] (40 shelf/shelves) sig:probe
 - GCD hides behind a LONGER title too ("… and the Tale of Azkon's Heart", "Holiday Party (One-Shot)"), not only a
   shorter one — probe both directions before `provider-missing`.
-[L-089] (39 shelf/shelves) sig:probe
+[L-089] (40 shelf/shelves) sig:probe
 - A facsimile of a SINGLE issue is its own book; a reprint edition of a whole series is not — the original wins.
-[L-093] (13 shelf/shelves) pub:dc pub:ec-archives pub:mad sig:comicinfo
-- GCD labels every modern MAD book "EC" where ComicVine and ComicInfo say DC — the same publisher's imprint, not a
-  rejection.
-[L-095] (39 shelf/shelves) sig:probe
+[L-095] (40 shelf/shelves) sig:probe
 - A folder that is a ripper's READING ORDER over several separately published arcs (The Ride, Revolution) has no
   spanning record — the ladder is arc numbers, not issue numbers.
-[L-096] (39 shelf/shelves) sig:probe
+[L-096] (40 shelf/shelves) sig:probe
 - GCD's exact filing recovers legs the probe misses: singular/plural ("Greeting", "Return"), two words ("Super
   Hero"), a spelled ordinal ("Fortieth"), a dropped subtitle, or the colon form ("Jinx: Torso") — try each before
   `provider-missing`.
-[L-118] (39 shelf/shelves) sig:probe
+[L-118] (40 shelf/shelves) sig:probe
 - A GCD collected series numbers its issues by VOLUME and titles them with the volume SUBTITLE — that, not the
   page count, places a trade when a shelf holds several volumes of one line.
-[L-125] (39 shelf/shelves) sig:probe
+[L-125] (40 shelf/shelves) sig:probe
 - A stored link that is the same title a DIFFERENT DECADE later is a new cluster (Fist of Khonshu 2024 on the
   1985 Moon Knight run; a 1971 Sub-Mariner Annual on the 1998 annual) — years decide, never the title.
-[L-157] (39 shelf/shelves) sig:probe
+[L-157] (40 shelf/shelves) sig:probe
 - A GCD row with ZERO issues is an empty stub, not a leg (Skull Cat 197154, Rivers of London: Stray Cat Blues 213823,
   Archer & Armstrong: Revival 164703) → `provider-missing`.
-[L-159] (39 shelf/shelves) sig:probe
+[L-159] (40 shelf/shelves) sig:probe
 - An exact-name probe can miss a sequel the rip DOES hold: `--contains "Icarus Society"` found CV 143976 after the
   exact "Prodigy: The Icarus Society" probe returned nothing — try `--contains` on the subtitle before `provider-missing`.
-[L-163] (39 shelf/shelves) sig:probe
+[L-163] (40 shelf/shelves) sig:probe
 - GCD hides behind a bracketed alternate title: "War Stories: J for Jenny [War Story: J for Jenny]" (10937), "Dance Like
   Everybody's Watching! [A Zits Treasury]" (132081), "You're Out of Your Mind, Charlie Brown! [Horizontal]" (155990).
-[L-177] (39 shelf/shelves) sig:probe
+[L-177] (40 shelf/shelves) sig:probe
 - A bracketed publisher series number becomes a phantom ladder entry: Thun'da's "[A1-056]/[A1 073]/[A1 083]" produced
   ladder 56/73/83 and a ratio 5.00 — read the bracket, not the ladder.
-[L-204] (39 shelf/shelves) pass:item pass:revisit sig:probe
+[L-204] (40 shelf/shelves) pass:item pass:revisit sig:probe
 - `lookup.py --issues <collected-line volume>` names each TRADE's own ComicVine ISSUE id: 71 of 73 `I` lines in
   R-018 carry an item-level CV id instead of `cv=-`.
+[L-253] (40 shelf/shelves) sig:probe
+- A subtitle can name a SEQUEL series filed on the first run's shelf (Wild's End "Beyond the Sea" = CV 151678 /
+  GCD 201441, not the 2014 run) — the `C` names the sequel run.
+[L-264] (40 shelf/shelves) sig:probe
+- Title-only (st3) GCD matches reuse ONE gcd id across every volume of a line (Golden City ×10, Windmaker,
+  Tarzan Kubert Years) — re-derive each book from the shelf's own numbered pool.
+[L-267] (40 shelf/shelves) sig:probe
+- A GCD "collected edition" series sits beside the genuine RUN under a different id (Dept H 100362 vs 111468, Harrow
+  County 89353 vs 94662, Sword Daughter 125748 vs 134585) — the `C` names the run; `lookup.py` by title finds it.
+[L-273] (40 shelf/shelves) sig:probe
+- The Adventures of Tintin: every per-file gcd pick (60515/108543) was wrong; the shelf's own gcd pool matched by
+  ENGLISH title was right for all 23 — the pool over the pick, again.
+[L-292] (40 shelf/shelves) sig:probe
+- A stored English digital volume's cached rip may cover only its last issues (Suzuka #13-18 of 18) — the earlier
+  books take gcd-only identities from the GCD series' full list, cv=-.
+[L-294] (40 shelf/shelves) pass:item sig:probe
+- ITEM PASS (X-046..X-048): a shelf can hold TWO published editions of one work with no shared pool (Monster: the
+  18-volume line beside the 2014 "Two-in-One" Perfect Edition) — each edition needs its own pool or an honest
+  no-record, never a mapping across editions. When a shelf's file count exceeds its pool, the excess usually
+  belongs to a CONTINUATION volume the shelf's own `N` names (Ranma 1/2 v22-38 → CV 26409 / GCD 17651) — the pool
+  for it must be pulled (`lookup.py --issues`, `gcd_issue WHERE series_id=?`) before writing no-record. GCD may mint
+  a "collected edition" row for only the FIRST of a same-title pair (Zombie Makeout Club) — the second is gcd=-.
+[L-051] (13 shelf/shelves) pub:bongo pub:dc pub:small-press sig:probe
+- GCD spellings that hide a hit: Bongo's annual is plainly "Treehouse of Horror" (5435); Miller's 1983 series is
+  "Rōnin" (2721); Comico's Primer is "Primer" (14288). DC's Blackest Night revival issues sit in the ORIGINAL
+  series (Power of SHAZAM! 5246 runs 1995-2010).
+[L-055] (13 shelf/shelves) pub:dc pub:small-press sig:probe
+- ComicVine splits ONE line across two spellings of its own ("Batman Arkham: X" vs "Batman: Arkham: X"). GCD
+  prefixes titles the packet probes without ("Batman: Catwoman Defiant", "The Blue Beetle" for the 2006 series).
+[L-082] (13 shelf/shelves) pub:dc sig:comicinfo
+- A Glorith-HD rip's ComicInfo `Web` id CAN be a ComicVine ISSUE id of the stored volume (599834, DC 100-Page
+  Spectacular) — Glorith's Web ids are never GCD ids, but check them against the CV rip.
+[L-093] (13 shelf/shelves) pub:dc pub:ec-archives pub:mad sig:comicinfo
+- GCD labels every modern MAD book "EC" where ComicVine and ComicInfo say DC — the same publisher's imprint, not a
+  rejection.
 [L-212] (13 shelf/shelves) pub:dc sig:collision sig:legacy-stamp
 - A continuation of legacy numbering (#201+ picking up a prior volume's own numbering, Green Lantern Corps S94605→
   S94610) is the SAME run as the prior volume — merge-with, not a separate id.
@@ -85,142 +114,22 @@ reading, never a rule applied across a folder. Do not read LEDGER.md whole.
   stored CV 1995 — but that shelf's own key and GCD link (26125, 2007-2009) said Flash vol. 2; the stamp was the
   legacy-number trap. The merged shelf became two runs (R-023, R + split). When a shelf's GCD leg contradicts its
   stored CV id, the CV id is the suspect, and the merge is `F wrong-cv-link` on the mis-stamped shelf instead.
-[L-253] (39 shelf/shelves) sig:probe
-- A subtitle can name a SEQUEL series filed on the first run's shelf (Wild's End "Beyond the Sea" = CV 151678 /
-  GCD 201441, not the 2014 run) — the `C` names the sequel run.
-[L-264] (39 shelf/shelves) sig:probe
-- Title-only (st3) GCD matches reuse ONE gcd id across every volume of a line (Golden City ×10, Windmaker,
-  Tarzan Kubert Years) — re-derive each book from the shelf's own numbered pool.
-[L-267] (39 shelf/shelves) sig:probe
-- A GCD "collected edition" series sits beside the genuine RUN under a different id (Dept H 100362 vs 111468, Harrow
-  County 89353 vs 94662, Sword Daughter 125748 vs 134585) — the `C` names the run; `lookup.py` by title finds it.
-[L-273] (39 shelf/shelves) sig:probe
-- The Adventures of Tintin: every per-file gcd pick (60515/108543) was wrong; the shelf's own gcd pool matched by
-  ENGLISH title was right for all 23 — the pool over the pick, again.
-[L-292] (39 shelf/shelves) sig:probe
-- A stored English digital volume's cached rip may cover only its last issues (Suzuka #13-18 of 18) — the earlier
-  books take gcd-only identities from the GCD series' full list, cv=-.
-[L-294] (39 shelf/shelves) pass:item sig:probe
-- ITEM PASS (X-046..X-048): a shelf can hold TWO published editions of one work with no shared pool (Monster: the
-  18-volume line beside the 2014 "Two-in-One" Perfect Edition) — each edition needs its own pool or an honest
-  no-record, never a mapping across editions. When a shelf's file count exceeds its pool, the excess usually
-  belongs to a CONTINUATION volume the shelf's own `N` names (Ranma 1/2 v22-38 → CV 26409 / GCD 17651) — the pool
-  for it must be pulled (`lookup.py --issues`, `gcd_issue WHERE series_id=?`) before writing no-record. GCD may mint
-  a "collected edition" row for only the FIRST of a same-title pair (Zombie Makeout Club) — the second is gcd=-.
-[L-113] (33 shelf/shelves) sig:comicinfo sig:stamp
-- ComicInfo `Volume` holding a 4-digit ComicVine volume id (not a year) is a 1.0 assertion like the 6-digit
-  case (Ka-Zar v2 1974: `Volume 2692` + `Count 20` = CV 2692) and disproves the per-file matcher's pick.
-[L-016] (31 shelf/shelves) sig:comicinfo
-- Glorith rips' ComicInfo `Web` ids are NOT GCD issue ids in our dump (29 checked: missing or unrelated). Never
-  claim 1.0 from one. A ComicInfo `Volume` holding a 6-digit number IS a ComicVine volume id (Lex and the City =
-  162184) — a genuine 1.0 assertion.
-[L-032] (31 shelf/shelves) sig:comicinfo
-- A Marika-Empire rip's ComicInfo `Web` id IS a ComicVine ISSUE id (21/21 resolve to the stored volume) — the
-  1.0 shape. The ripper decides: Glorith's Web ids are not GCD issue ids. Check one against the rip before
-  claiming 1.0 on a new ripper.
-[L-114] (31 shelf/shelves) sig:comicinfo
-- Marika-Empire and Glorith-HD `Web` ids are ComicVine ISSUE ids of the stored volume (7 of 7 here).
-[L-210] (9 shelf/shelves) pub:dc sig:legacy-stamp sig:probe sig:stamp
-- The wrong-relaunch trap is near-universal on any DC title with 3+ relaunches (Green Arrow, Green Lantern, Harley
-  Quinn, Justice League, Legion, Lobo, Martian Manhunter, Doom Patrol): the matcher stamps the oldest legacy volume or
-  the largest/most-recent one across every sibling shelf; `lookup.py` by name + year recovers the true id.
-[L-135] (13 shelf/shelves) kind:collected-line
-- An Epic / Complete Collection LINE is found by probing the line name with NO volume subtitle: "Generation X Epic
-  Collection" → GCD 174151, shared by four sibling shelves.
+[L-046] (12 shelf/shelves) pub:action-lab pub:aftershock pub:small-press sig:probe
+- Small-press American floppies (Action Lab, Aftershock minis, Behemoth) are thin in GCD → `provider-missing` on
+  the GCD side is common and honest.
+[L-139] (12 shelf/shelves) pub:dark-horse pub:millarworld pub:small-press sig:round2 sig:stamp
+- A folder-wide CV stamp exists too: Space Goat's Evil Dead 2 programme (CV 20289 on 37 files) and Millarworld's Dark
+  Horse folder (CV 115757 on the sequel) stamp ONE wrong volume across a folder — the `round2-folder` shape on the CV side.
+[L-140] (12 shelf/shelves) kind:strip pub:lion-forge-magnetic pub:scout pub:small-press sig:probe
+- Bubble Comics (Exlibrium, Major Grom, Igor Grom, Meteora), Space Between, Scout/Roar, Strip For Me, Studio D., Imagine
+  Bin, SAF Comics, Magnetic Press and Lost His Keys Man are total GCD holes — ComicVine-only is the honest answer there.
+[L-148] (12 shelf/shelves) pub:small-press sig:probe
+- GCD files New England Comics' Tick specials under the POSSESSIVE ComicVine drops ("The Tick's Big Romantic Adventure"
+  15953, "The Tick's Big Back to School Special" 15958) — re-probe with `Tick's`.
 
-+95 more matched entries not shown: L-164, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-314, L-085, L-051, L-055, L-124, L-281, L-046, L-047, L-064, L-101, L-139, L-140, L-148, L-153, L-156, L-166, L-271, L-298, L-318, L-087, L-310, L-008, L-040, L-188, L-199, L-249, L-191, L-197, L-206, L-211, L-272, L-007, L-175, L-217, L-052, L-229, L-261, L-026, L-029, L-031, L-195, L-203, L-205, L-214, L-215, L-228, L-242, L-254, L-255, L-256, L-260, L-290, L-302, L-065, L-074, L-083, L-099, L-123, L-194, L-250, L-262, L-041, L-192, L-021, L-022, L-023, L-126, L-234, L-241, L-243, L-266, L-299, L-322, L-325, L-128, L-181, L-200 (grep LEDGER.md for them)
++105 more matched entries not shown: L-271, L-113, L-016, L-032, L-114, L-210, L-124, L-281, L-085, L-087, L-040, L-153, L-156, L-166, L-199, L-298, L-318, L-064, L-101, L-191, L-269, L-135, L-164, L-186, L-197, L-206, L-211, L-244, L-246, L-247, L-248, L-251, L-258, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-314, L-007, L-175, L-217, L-272, L-290, L-023, L-052, L-229, L-261, L-310, L-029, L-031, L-065, L-099, L-123, L-188, L-194, L-195, L-203, L-205, L-214, L-215, L-223, L-228, L-234, L-242, L-243, L-254, L-255, L-256, L-260, L-262, L-299, L-329, L-330, L-041, L-074, L-083, L-192, L-250, L-006, L-020, L-021, L-022, L-045, L-090, L-112, L-126, L-176, L-178, L-184, L-185, L-219, L-233, L-241, L-266, L-322, L-325, L-333, L-128, L-181, L-336 (grep LEDGER.md for them)
 
 ====================================================================================================
-
-== S102736 Ben 10: For Science! (2019)  [tier B]   keys: Ben 10: For Science! (2019)  years 2019-2019  1 files / 1 collections
-   split run: "Ben 10: For Science! (2019)" run={"cv": 120302} (new shelf from P-004) — seed the S line from these ids, then verify them
-   folders: [1] Boom Studios\Ben 10 (2019)
-   files:   [9470] COL Ben 10 Vol. 02 - For Science! (2019) (digital) (Salem-Empire).cbr (82pp)
-   ours:    ComicInfo Series: "Ben 10"x1; ComicInfo Publisher: "BOOM! Studios"x1
-   CV linked:      vol 120302 "Ben 10: For Science!" 2019 Boom! Studios 1 issues issue 714276  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 0/?; none cached
-   CV lookups:     the v1 search and the local rip name no volume but the one above
-   GCD dump:       216035 "Ben 10: For Science!" 2019-2019 Boom! Studios [] 1 (via our own name without the filing suffix "Ben 10: For Science!")   (dump lookup)
-
-== S102737 Ben 10: Mecha Madness (2019)  [tier B]   keys: Ben 10: Mecha Madness (2019)  years 2019-2019  1 files / 1 collections
-   split run: "Ben 10: Mecha Madness (2019)" run={"cv": 122802} (new shelf from P-004) — seed the S line from these ids, then verify them
-   folders: [1] Boom Studios\Ben 10 (2019)
-   files:   [9471] COL Ben 10 Vol. 03 - Mecha Madness (2019) (digital) (Salem-Empire).cbr (82pp)
-   ours:    ComicInfo Series: "Ben 10"x1; ComicInfo Publisher: "BOOM! Studios"x1
-   CV linked:      vol 122802 "Ben 10: Mecha Madness" 2019 Boom! Studios 1 issues issue 727086  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 0/?; none cached
-   CV lookups:     the v1 search and the local rip name no volume but the one above
-   GCD dump:       216034 "Ben 10: Mecha Madness" 2019-2019 Boom! Studios [] 1 (via our own name without the filing suffix "Ben 10: Mecha Madness")   (dump lookup)
-
-== S102739 Ben 10: The Manchester Mystery (2020)  [tier B]   keys: Ben 10: The Manchester Mystery (2020)  years 2020-2020  1 files / 1 collections
-   split run: "Ben 10: The Manchester Mystery (2020)" run={"cv": 125468, "gcd": 216033} (new shelf from P-004) — seed the S line from these ids, then verify them
-   folders: [1] Boom Studios\Ben 10 (2019)
-   files:   [9472] COL Ben 10 Vol. 04 - The Manchester Mystery (2020) (digital) (Salem-Empire).cbr (82pp)
-   ours:    ComicInfo Series: "Ben 10"x1; ComicInfo Publisher: "BOOM! Studios"x1
-   CV linked:      vol 125468 "Ben 10: The Manchester Mystery" 2020 Boom! Studios 1 issues issue 739539  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 0/?; none cached
-   CV lookups:     the v1 search and the local rip name no volume but the one above
-   GCD dump:       216033 "Ben 10: The Manchester Mystery" 2020-2020 Boom! Studios [] 1 (via our own name without the filing suffix "Ben 10: The Manchester Mystery")   (dump lookup)
-
-== S102738 Ben 10: The Creature from Serenity Shore (2020)  [tier B]   keys: Ben 10: The Creature from Serenity Shore (2020)  years 2020-2020  1 files / 1 collections
-   split run: "Ben 10: The Creature from Serenity Shore (2020)" run={"cv": 129456, "gcd": 162754} (new shelf from P-004) — seed the S line from these ids, then verify them
-   folders: [1] Boom Studios\Ben 10 (2019)
-   files:   [9473] COL Ben 10 Vol. 05 - The Creature from Serenity Shore (2020) (digital) (Salem-Empire).cbr (81pp)
-   ours:    ComicInfo Series: "Ben 10"x1; ComicInfo Publisher: "BOOM! Studios"x1
-   CV linked:      vol 129456 "Ben 10: The Creature From Serenity Shore" 2020 Boom! Studios 1 issues issue 791891  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 0/?; none cached
-   CV lookups:     the v1 search and the local rip name no volume but the one above
-   GCD dump:       162754 "Ben 10: The Creature from Serenity Shore" 2020-2020 Boom! Studios [] 1 (via our own name without the filing suffix "Ben 10: The Creature from Serenity Shore")   (dump lookup)
-
-== S2425 Ben 10  [tier B]   keys: Ben 10  years 2019-2019  1 files / 1 collections
-   split: the KEPT half of the P-004 split — moved out -> S102736 "Ben 10: For Science! (2019)"; S102737 "Ben 10: Mecha Madness (2019)"; S102739 "Ben 10: The Manchester Mystery (2020)"; S102738 "Ben 10: The Creature from Serenity Shore (2020)"; re-identify what stayed
-   folders: [1] Boom Studios\Ben 10 (2019)
-   files:   [9469] COL Ben 10 Vol. 01 - The Truth is Out There (2019) (Digital-Empire).cbr (80pp)
-   ours:    ComicInfo Series: "Ben 10"x1; ComicInfo Publisher: "BOOM! Studios"x1
-   CV linked:      vol 117733 "Ben 10: The Truth Is Out There" 2019 Boom! Studios 1 issues issue 703885  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 0/?; none cached
-   CV candidates:  69352 "Ben 10" 2013 IDW Publishing 4 s100 · 95838 "Ben 10" 2010 El País 10 s92 · 73897 "Ben 10" 2014 IDW Publishing 1 issue 452864 s86 · 75361 "Ben 10: It's Ben A Pleasure" 2014 IDW Publishing 1 issue 458633 s67 · 80899 "Ben 10 Classics: Beauty and the Ben" 2015 IDW Publishing 1 issue 483375 s66 · 171767 "Ben 10" 2026 Dynamite Entertainment 1 s35   (v1 search)
-   CV local rip:   (= linked) · 73897 "Ben 10" 2014 IDW Publishing 1 issue 452864 · 69352 "Ben 10" 2013 IDW Publishing 4 · 95838 "Ben 10" 2010 El País 10   (rip lookup)
-   GCD dump:       218548 "Ben 10" 2014-2014 IDW [] 1 · 77773 "Ben 10" 2013-2014 IDW [] 4 · 236768 "Ben 10" 2026-? Dynamite Entertainment [] 1 · 117899 "Ben 10 Комикси" [bg] 2010-2010 Егмонт България [Egmont Bulgaria] [] 2 · 118514 "Ben 10" [bg] 2010-2012 Егмонт България [Egmont Bulgaria] [] 28 · 221493 "Ben 10" [hu] 2010-2010 Egmont Hungary [] 2   (dump lookup)
-
-== S102740 Britannia: The Great Fire of Rome (2024)  [tier B]   keys: Britannia: The Great Fire of Rome (2024)  years 2024-2024  1 files / 0 collections
-   split run: "Britannia: The Great Fire of Rome (2024)" run={"gcd": 214117} (new shelf from P-004) — seed the S line from these ids, then verify them
-   folders: [1] Valiant\Britannia (2016)
-   files:   [110834] Britannia - The Great Fire of Rome (2024) (digital) (Son of Ultron-Empire).cbr (66pp)
-   CV linked:      vol 157694 "Britannia: The Great Fire of Rome" 2024 Alien Books 1 issues issue 1051664  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 0/?; none cached
-   CV lookups:     the v1 search and the local rip name no volume but the one above
-   GCD dump:       214117 "Britannia: The Great Fire of Rome" 2024-2024 Alien Books [] 1 (via our own name without the filing suffix "Britannia: The Great Fire of Rome")   (dump lookup)
-
-== S3181 Britannia  [tier D]   keys: Britannia  years 2017-2019  4 files / 4 collections
-   split: the KEPT half of the P-004 split — moved out -> S102740 "Britannia: The Great Fire of Rome (2024)"; re-identify what stayed
-   flags: #49 conflated-series [Dismissed] item 110836 — three Britannia minis share this Series, each numbered from #1
-   folders: [3] Valiant\Britannia (2016)\Britannia v1 (2016) · [1] Valiant\Britannia (2016)\Britannia v1 (2016)\Deluxe Edition
-   files:   [110835] COL Britannia v01 (2017) (digital) (Son of Ultron-Empire).cbr (130pp) | [110836] COL Britannia v02 - We Who Are About to Die (2017) (digital) (Son of Ultron-Empire).cbr (113pp)
-            [110837] COL Britannia v03 - Lost Eagles of Rome (2018) (digital) (Son of Ultron-Empire).cbr (114pp)
-            [111958] COL Britannia Deluxe Edition (2019) (digital) (Son of Ultron-Empire).cbr (350pp)
-   ours:    judged item 110835 #1-4 conf 0.95; judged item 110836 #1-4 conf 0.95; judged item 110837 #1-4 conf 0.95; judged item 111958 #1-4 conf 0.95; ComicInfo Series: "Britannia"x2; ComicInfo Volume: "2016"x1; ComicInfo Publisher: "Valiant"x2
-   GCD says: [110835] gcd_reprint 1709221: s106727 Britannia (2016) #1-4 [14 stories]
-             [110836] gcd_reprint 1882715: s113711 Britannia: We Who Are About to Die (2017) #1-4 [11 stories]
-             [110837] gcd_reprint 1882716: s127217 Britannia: Lost Eagles of Rome (2018) #1 [1 story]
-             [111958] gcd_reprint 2004232: s106727 Britannia (2016) #1-4 [14 stories] · s113711 Britannia: We Who Are About to Die (2017) #1-4 [11 stories] · s127217 Britannia: Lost Eagles of Rome (2018) #1-4 [8 stories]
-   CV candidates:  94261 "Britannia" 2016 DMG/Valiant Entertainment 4 s120 · 68482 "Phonogram: Rue Britannia" 2007 Image 1 issue 430440 s70 · 98885 "Britannia" 2017 DMG/Valiant Entertainment 1 issue 581544 s53 · 78714 "The Valiant" 2014 DMG/Valiant Entertainment 4 s42 · 155324 "Britannia" 2018 Editorial Hidra 1 issue 1034234 s38 · 87352 "Valiant 2016 Preview" 2016 DMG/Valiant Entertainment 1 issue 511085 s33   (v1 search)
-   CV local rip:   98885 "Britannia" 2017 DMG/Valiant Entertainment 1 issue 581544 · 94261 "Britannia" 2016 DMG/Valiant Entertainment 4 · 155324 "Britannia" 2018 Editorial Hidra 1 issue 1034234 · 68482 "Phonogram: Rue Britannia" 2007 Image 1 issue 430440 (via CV candidate name "Phonogram: Rue Britannia")   (rip lookup)
-   GCD dump:       114617 "Britannia" 2017-2017 Valiant Entertainment [] 3 · 106727 "Britannia" 2016-2016 Valiant Entertainment [] 4 · 137662 "Britannia" [fr] 2018-2019 Bliss Comics [] 3 · 160903 "Britannia" [de] 2020-? Schwerkraft-Verlag [] 1   (dump lookup)
-
-== S102744 Casanova: Acedia (2015)  [tier B]   keys: Casanova: Acedia (2015)  years 2015-2017  2 files / 2 collections
-   split run: "Casanova: Acedia (2015)" run={"cv": 79742, "gcd": 86099} (new shelf from P-004) — seed the S line from these ids, then verify them
-   folders: [2] Image\Casanova (2006)
-   files:   [35363] COL Casanova Vol. 04 - Acedia Vol. 01 (2015) (Digital) (Zone-Empire).cbr (140pp) | [35364] COL Casanova Vol. 05 - Acedia Vol. 02 (2017) (Digital) (Zone-Empire).cbr (138pp)
-   CV linked:      vol 79742 "Casanova: Acedia" 2015 Image 8 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 0/?; none cached
-   CV local rip:   (= linked) · 85560 "Casanova: Acedia" 2015 Image 2 (via our own name without the filing suffix "Casanova: Acedia")   (rip lookup)
-   GCD dump:       86099 "Casanova: Acedia" 2015-2017 Image [] 8 (via our own name without the filing suffix "Casanova: Acedia") · 236165 "Casanova: Acedia" 2015-2017 Image [] 2 (via our own name without the filing suffix "Casanova: Acedia")   (dump lookup)
-
-== S3644 Casanova  [tier D]   keys: Casanova  years 2006-2015  3 files / 3 collections
-   split: the KEPT half of the P-004 split — moved out -> S102744 "Casanova: Acedia (2015)"; re-identify what stayed
-   flags: #52 conflated-series [Dismissed] item 35361 — Luxuria, Gula, Avaritia and Acedia are separately-numbered minis under one Series
-   folders: [3] Image\Casanova (2006)
-   files:   [35360] COL Casanova Vol. 01 - Luxuria (2014) (Digital) (Zone-Empire).cbr (220pp) | [35361] COL Casanova Vol. 02 - Gula (2015) (Digital) (Zone-Empire).cbr (228pp)
-            [35362] COL Casanova Vol. 03 - Avaritia (2015, digital edition) (Digital) (Zone-Empire).cbr (150pp)
-   ours:    judged item 35360 #1-7 conf 0.95; judged item 35362 #1-4 conf 0.95; judged item 35361 #8-14 conf 0.9
-   GCD says: [35360] gcd_reprint 1996939: s50863 Casanova (2010) #1-4 [16 stories] · s18441 Casanova (2006) #1-7 [14 stories] · s148781 Casanova: Luxuria (2007) (unnumbered) [1 story] · s62965 Casanova (2011) #1 [1 story]
-   CV candidates:  19000 "Casanova" 2006 Image ? s105 · 27207 "Casanova!" 1991 Aircel Publishing ? s82 · 141535 "Casanova" 1980 L'Isola Trovata ? s79 · 142004 "Casanova Reeks" ? Phofil Book Import ? s54 · 46293 "Casanova" 2011 Marvel ? s35 · 34256 "Casanova" 2010 Marvel ? s35   (v1 search)
-   CV local rip:   19000 "Casanova" 2006 Image 14 · 34256 "Casanova" 2010 Marvel 4 · 46293 "Casanova" 2011 Marvel 1 issue 318896 · 27207 "Casanova!" 1991 Aircel Publishing 10 · 164072 "Casanova" 2022 Norma Editorial 2 · 141535 "Casanova" 1980 L'Isola Trovata 1 issue 905917   (rip lookup)
-   GCD dump:       18441 "Casanova" 2006-2008 Image [] 14 · 50863 "Casanova" 2010-2010 Marvel [] 4 · 62965 "Casanova" 2011-2012 Marvel [] 3 · 71467 "Casanova" [fr] 2013-2015 Urban Comics [] 3 · 148774 "Casanova" 2014-? Image [] 3 · 107629 "Casanova" [de] 1994-? S. Fischer Verlag [] 1   (dump lookup)
 
 == S102767 Divinity II (2016)  [tier B]   keys: Divinity II (2016)  years 2016-2016  1 files / 0 collections
    split run: "Divinity II (2016)" run={"cv": 89778, "gcd": 100119} (new shelf from P-004) — seed the S line from these ids, then verify them
@@ -356,20 +265,19 @@ reading, never a rule applied across a folder. Do not read LEDGER.md whole.
    CV local rip:   (= per-file) · 50154 "He-Man and the Masters of the Universe" 2012 DC Comics 6 (via CV name "He-Man and the Masters of the Universe") · 59980 "He-Man and the Masters of the Universe" 2013 DC Comics 19 (via CV name "He-Man and the Masters of the Universe") · 65194 "He-Man and the Masters of the Universe" 2013 DC Comics 2 (via CV name "He-Man and the Masters of the Universe") · 130860 "He-Man and the Masters of the Universe" 2020 DC Comics 1 issue 806727 (via CV name "He-Man and the Masters of the Universe")   (rip lookup)
    GCD dump:       169530 "He-Man and the Masters of the Universe" [pt-br] 2004-2004 Panini Brasil [] 4 (via CV name "He-Man and the Masters of the Universe") · 172714 "He-Man and the Masters of the Universe" 2011-2012 Dark Horse [] 3 (via CV name "He-Man and the Masters of the Universe") · 66586 "He-Man and the Masters of the Universe" 2012-2013 DC [] 6 (via CV name "He-Man and the Masters of the Universe") · 172713 "He-Man and the Masters of the Universe" 2012-2016 DC [] 5 (via CV name "He-Man and the Masters of the Universe") · 73684 "He-Man and the Masters of the Universe" 2013-2015 DC [] 19 (via CV name "He-Man and the Masters of the Universe") · 90301 "He-Man and the Masters of the Universe" 2013-2015 DC [] 5 (via CV name "He-Man and the Masters of the Universe")   (dump lookup)
 
-== S8477 He-Man and the Masters of the Universe  [tier D]   keys: He-Man and the Masters of the Universe  years 2014-2020  4 files / 4 collections
+== S8477 He-Man and the Masters of the Universe  [tier B]   keys: He-Man and the Masters of the Universe  years 2014-2015  3 files / 3 collections
    split: the KEPT half of the P-004 split — moved out -> S102786 "He-Man and the Lost Dragon (1986)"; re-identify what stayed
-   flags: #601 overlap-in-series [Pending] item 27689 — the 2012 mini and the 2013 ongoing share this Series, both numbered from #1
-   folders: [4] Hanna-Barbera & Licenses\He-Man - Masters of the Universe\He-Man and the Masters of the Universe v1-v2 (2012)
-   files:   [27689] COL He-Man and the Masters of the Universe Vol. 01 (2020) (Digital) (Bean-Empire).cbz (157pp)
-            [27691] COL He-Man and the Masters of the Universe Vol. 03 (2014) (Digital) (Bean-Empire).cbz (156pp)
+   folders: [3] Hanna-Barbera & Licenses\He-Man - Masters of the Universe\He-Man and the Masters of the Universe v1-v2 (2012)
+   files:   [27691] COL He-Man and the Masters of the Universe Vol. 03 (2014) (Digital) (Bean-Empire).cbz (156pp)
             [27692] COL He-Man and the Masters of the Universe Vol. 04 - What Lies Within (2015) (Digital) (Bean-Empire).cbz (136pp)
             [27693] COL He-Man and the Masters of the Universe Vol. 05 - The Blood of Greyskull (2015) (Digital) (Bean-Empire).cbz (158pp)
-   ours:    judged item 27689 #1-6 conf 0.9; judged item 27691 #1-6 conf 0.95; judged item 27692 #7-12 conf 0.95; judged item 27693 #13-19 conf 0.95; ComicInfo Series: "He-Man and the Masters of the Universe"x4; ComicInfo Volume: "2013"x3; ComicInfo Publisher: "DC"x4
+   ours:    judged item 27691 #1-6 conf 0.95; judged item 27692 #7-12 conf 0.95; judged item 27693 #13-19 conf 0.95; ComicInfo Series: "He-Man and the Masters of the Universe"x3; ComicInfo Volume: "2013"x3; ComicInfo Publisher: "DC"x3
    GCD says: [27691] gcd_reprint 1429070: s73684 He-Man and the Masters of the Universe (2013) #1-6 [17 stories]
              [27692] gcd_reprint 1429071: s73684 He-Man and the Masters of the Universe (2013) #7-12 [14 stories]
              [27693] gcd_reprint 1429072: s73684 He-Man and the Masters of the Universe (2013) #13-19 [16 stories]
-   CV candidates:  50154 "He-Man and the Masters of the Universe" 2012 DC Comics 6 s113 · 150305 "He-Man and the Masters of the Universe" 2011 DC Comics 8 s110 · 20441 "He-Man and the Masters of the Universe Magazine" 1985 Mattel 16 s65 · 65194 "He-Man and the Masters of the Universe" 2013 DC Comics 2 s58 · 130860 "He-Man and the Masters of the Universe" 2020 DC Comics 1 issue 806727 s53 · 59980 "He-Man and the Masters of the Universe" 2013 DC Comics 19 s50   (v1 search)
-   CV local rip:   59980 "He-Man and the Masters of the Universe" 2013 DC Comics 19 · 65194 "He-Man and the Masters of the Universe" 2013 DC Comics 2 · 50154 "He-Man and the Masters of the Universe" 2012 DC Comics 6 · 150305 "He-Man and the Masters of the Universe" 2011 DC Comics 8 · 130860 "He-Man and the Masters of the Universe" 2020 DC Comics 1 issue 806727 · 20441 "He-Man and the Masters of the Universe Magazine" 1985 Mattel 16 (via CV candidate name "He-Man and the Masters of the Universe Magazine")   (rip lookup)
+   CV linked:      vol 59980 "He-Man and the Masters of the Universe" 2013 DC Comics 19 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 0/?; none cached
+   CV candidates:  (= linked) · 50154 "He-Man and the Masters of the Universe" 2012 DC Comics 6 s113 · 150305 "He-Man and the Masters of the Universe" 2011 DC Comics 8 s110 · 20441 "He-Man and the Masters of the Universe Magazine" 1985 Mattel 16 s65 · 65194 "He-Man and the Masters of the Universe" 2013 DC Comics 2 s58 · 130860 "He-Man and the Masters of the Universe" 2020 DC Comics 1 issue 806727 s53 · 171916 "He-Man and the Masters of the Universe" 2026 Dark Horse Comics 1 s38   (v1 search)
+   CV local rip:   (= linked) · 65194 "He-Man and the Masters of the Universe" 2013 DC Comics 2 · 50154 "He-Man and the Masters of the Universe" 2012 DC Comics 6 · 150305 "He-Man and the Masters of the Universe" 2011 DC Comics 8 · 130860 "He-Man and the Masters of the Universe" 2020 DC Comics 1 issue 806727 · 20441 "He-Man and the Masters of the Universe Magazine" 1985 Mattel 16 (via CV candidate name "He-Man and the Masters of the Universe Magazine")   (rip lookup)
    GCD dump:       73684 "He-Man and the Masters of the Universe" 2013-2015 DC [] 19 · 90301 "He-Man and the Masters of the Universe" 2013-2015 DC [] 5 · 66586 "He-Man and the Masters of the Universe" 2012-2013 DC [] 6 · 172713 "He-Man and the Masters of the Universe" 2012-2016 DC [] 5 · 172714 "He-Man and the Masters of the Universe" 2011-2012 Dark Horse [] 3 · 169530 "He-Man and the Masters of the Universe" [pt-br] 2004-2004 Panini Brasil [] 4   (dump lookup)
 
 == S102797 John Carpenter Presents Storm Kids: Fetch (2023)  [tier B]   keys: John Carpenter Presents Storm Kids: Fetch (2023)  years 2023-2023  1 files / 0 collections
@@ -616,3 +524,95 @@ reading, never a rule applied across a folder. Do not read LEDGER.md whole.
    GCD per-file:   series 2835 "Legion of Super-Heroes" 1984-1989 DC [was ongoing series] 63 on 2/19 files; methods numx2
    GCD dump:       (= per-file) · 2540 "The Legion of Super-Heroes" 1980-1984 DC [] 55 · 34539 "The Legion of Super-Heroes" [en-au] 1984-1985 Federal [] 7 · 2099 "Legion of Super-Heroes" 1973-1973 DC [] 4 · 3810 "Legion of Super-Heroes" 1989-2000 DC [] 127 · 11990 "Legion of Super-Heroes" 2005-2006 DC [] 15   (dump lookup)
    bridges:        gcd 2835 -> LOCG 111213 "Legion of Super-Heroes" support 83
+
+== S102729 Aliens vs. Predator Omnibus (2007)  [tier B]   keys: Aliens vs. Predator Omnibus (2007)  years 2007-2007  2 files / 2 collections
+   split run: "Aliens vs. Predator Omnibus (2007)" run={"cv": 19078, "gcd": 26704} (new shelf from P-004) — seed the S line from these ids, then verify them
+   folders: [2] Dark Horse\Aliens Vs. Predator
+   files:   [12814] COL Aliens vs. Predator Omnibus v01 (2007) (digital) (The Magicians-Empire).cbr (446pp)
+            [12815] COL Aliens vs. Predator Omnibus v02 (2007) (digital) (The Magicians-Empire).cbr (453pp)
+   GCD says: [12814] gcd notes 376772 (#1 of Aliens vs. Predator Omnibus): [gcd_link_issue](369330), [gcd_link_issue](552792), [gcd_link_issue](710328) [s3301] #146-147  |  gcd_reprint 376772: s3301 Dark Horse Presents (1986) #34-36, #146-147 [6 stories] · s15775 Aliens vs. Predator: War (1995) #0-4 [6 stories] · s21787 Aliens vs. Predator: Eternal (1998) #1-4 [6 stories] · s7329 Aliens vs. Predator (1990) #1-4 [4 stories]
+             [12815] gcd notes 376773 (#2 of Aliens vs. Predator Omnibus): [gcd_link_issue](552790) [s41872] #1-4  |  gcd_reprint 376773: s11529 Aliens / Predator: The Deadliest of the Species (1993) #1-12 [14 stories] · s41872 Aliens vs. Predator: Xenogenesis (1999) #1-4 [5 stories] · s21786 Aliens vs. Predator Annual (1999) #1 [5 stories] · s15774 Aliens vs. Predator: Booty (1996) #1 [2 stories]
+   CV linked:      vol 19078 "Aliens vs. Predator Omnibus" 2007 Dark Horse Comics 2 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 0/?; none cached
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD dump:       26704 "Aliens vs. Predator Omnibus" 2007-2007 Dark Horse [] 2 (via our own name without the filing suffix "Aliens vs. Predator Omnibus")   (dump lookup)
+
+== S14065 Predator vs. Judge Dredd vs. Aliens: Incubus and Other Stories  [tier B]   keys: Predator vs. Judge Dredd vs. Aliens - Incubus and Other Stories  years 2014-2014  3 files / 0 collections
+   split: the KEPT half of the P-004 split — moved out -> S102729 "Aliens vs. Predator Omnibus (2007)"; re-identify what stayed
+   folders: [1] 2000AD\Judge Dredd Complete Case Files + TPBs\Judge Dredd TPBs · [1] Dark Horse\Aliens Vs. Predator\Predator vs. Judge Dredd vs. Aliens (2016) · [1] Misc\Judge Dredd (2013)
+   files:   [4483] Predator vs. Judge Dredd vs. Aliens - Incubus and Other Stories (2014) (digital) (Son of Ultron-Empire).cbr (178pp)
+            [12816] Predator vs. Judge Dredd vs. Aliens - Incubus and Other Stories (2014) (digital) (Son of Ultron II-Empire).cbr (179pp)
+            [106381] Predator vs. Judge Dredd vs. Aliens - Incubus and Other Stories (2014) (digital) (Son of Ultron-Empire).cbr (178pp)
+   CV linked:      vol 77415 "Predator vs. Judge Dredd vs. Aliens: Incubus and Other Stories" 2014 Dark Horse Comics 1 issues issue 467626; issue list NOT CACHED; yearΔ 0; ratio 0/1; none cached
+   CV candidates:  (= linked) · 127780 "Aliens vs. Predator" 2010 Soleil 2 s74 · 48474 "Judge Dredd vs. Aliens: Incubus" 2003 Rebellion 1 issue 333927 s67 · 63160 "Predator vs. Judge Dredd" 1998 Dark Horse Comics 1 issue 409830 s65 · 37039 "Judge Dredd versus Aliens: Incubus" 2003 Dark Horse Comics 4 s56 · 21223 "Aliens vs. Predator vs. The Terminator" 2000 Dark Horse Comics 4 s49 · 20704 "Aliens vs. Predator vs. The Terminator" 2001 Dark Horse Comics 1 issue 124121 s37   (v1 search)
+   CV local rip:   (= linked) · 48474 "Judge Dredd vs. Aliens: Incubus" 2003 Rebellion 1 issue 333927 (via CV candidate name "Judge Dredd vs. Aliens: Incubus") · 63160 "Predator vs. Judge Dredd" 1998 Dark Horse Comics 1 issue 409830 (via CV candidate name "Predator vs. Judge Dredd") · 127780 "Aliens vs. Predator" 2010 Soleil 2 (via CV candidate name "Aliens vs. Predator") · 43082 "Aliens vs. Predator" 1991 Dark Horse Comics 1 issue 293985 (via CV candidate name "Aliens vs. Predator") · 6812 "Aliens vs. Predator" 1990 Dark Horse Comics 5 (via CV candidate name "Aliens vs. Predator")   (rip lookup)
+   GCD dump:       104695 "Predator vs. Judge Dredd vs. Aliens: Incubus and Other Stories" 2014-2014 Dark Horse [] 1 · 42943 "Judge Dredd vs. Aliens: Incubus" 2004-2004 Dark Horse [] 1 (via CV candidate name "Judge Dredd vs. Aliens: Incubus") · 25181 "Judge Dredd vs. Aliens: Incubus" 2003-2003 Dark Horse [] 4 (via CV candidate name "Judge Dredd vs. Aliens: Incubus") · 152988 "Judge Dredd vs. Aliens: Incubus" [en-gb] 2003-2003 Rebellion [] 1 (via CV candidate name "Judge Dredd vs. Aliens: Incubus") · 42301 "Predator vs. Judge Dredd" 1998-1998 Dark Horse [] 1 (via CV candidate name "Predator vs. Judge Dredd") · 42028 "Predator vs. Judge Dredd" 1997-1997 Dark Horse [] 3 (via CV candidate name "Predator vs. Judge Dredd")   (dump lookup)
+
+== S102837 Revolution  [tier B]   keys: Revolution (2016)  years 2016-2017  1 files / 0 collections
+   split run: "Revolution (2016)" run={"cv": 94219, "gcd": 106682} (new shelf from P-004) — seed the S line from these ids, then verify them
+   folders: [1] IDW Hasbro\_Revolution (Hasbro Event) (2016)\01 Revolution
+   files:   [33943] Revolution (2017) (digital) (Knight Ripper-Empire).cbr (144pp)
+   ours:    ComicInfo Series: "Revolution"x1; ComicInfo Publisher: "IDW"x1
+   CV linked:      vol 94219 "Revolution" 2016 IDW Publishing ? issues; cached #1-3 (3); yearΔ 0; ratio 0/?; no judged range
+   CV local rip:   (= linked) · 83203 "Revolution" 2015 DC Comics 4 · 98308 "Revolution" 2017 IDW Publishing 1 issue 578192 · 38187 "Revolution" 2001 Carlsen Comics (DK) 1 issue 255464   (rip lookup)
+   GCD dump:       106682 "Revolution" 2016-2016 IDW [] 5 · 159375 "Revolution" 2017-2017 IDW [] 1 · 57502 "Revolution" [de] 2001-2001 Schreiber & Leser [] 1 · 140509 "Revolution!" [da-dk] 2001-2001 Carlsen [] 1   (dump lookup)
+
+== S102838 Revolution: Heroes (2017)  [tier B]   keys: Revolution: Heroes (2017)  years 2017-2017  1 files / 0 collections
+   split run: "Revolution: Heroes (2017)" run={"cv": 99417, "gcd": 159374} (new shelf from P-004) — seed the S line from these ids, then verify them
+   folders: [1] IDW Hasbro\_Revolution (Hasbro Event) (2016)\02 Tie-ins
+   files:   [32649] Revolution - Heroes (2017) (digital) (Knight Ripper-Empire).cbr (121pp)
+   ours:    ComicInfo Series: "Revolution: Heroes"x1; ComicInfo Publisher: "IDW"x1
+   CV linked:      vol 99417 "Revolution: Heroes" 2017 IDW Publishing 1 issues issue 584899  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 0/?; none cached
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD dump:       159374 "Revolution: Heroes" 2017-2017 IDW [] 1 (via our own name without the filing suffix "Revolution: Heroes")   (dump lookup)
+
+== S14637 Revolution 9  [tier C] · gap 8  keys: Revolution  years 2016-2016  3 files / 0 collections
+   split: the KEPT half of the P-004 split — moved out -> S102837 "Revolution (2016)"; S102838 "Revolution: Heroes (2017)"; re-identify what stayed
+   folders: [3] MadCave (and Maverick)\Revolution 9 (2024)
+   files:   [38039] Revolution 9 001 (2024) (digital) (Knight Ripper-Empire).cbr (32pp) | [38040] Revolution 9 002 (2024) (digital) (Knight Ripper-Empire).cbr (32pp)
+            [38041] Revolution 9 003 (2025) (digital) (Knight Ripper-Empire).cbr (32pp)
+   ours:    ladder 1-3
+   CV linked:      vol 160106 "Revolution 9" 2024 Mad Cave Studios 4 issues; cached #1-4 (4); yearΔ 8; ratio 3/4 = 0.75; no judged range
+   CV per-file (v1): vol 94219 "Revolution" 2016 IDW Publishing ? on 3/3 files
+   CV candidates:  (= linked) · 94391 "Micronauts: Revolution" 2016 IDW Publishing ? s89 · 83203 "Revolution" 2015 DC Comics ? s87 · 38187 "Revolution" 2001 Carlsen Comics (DK) ? s82 · 88232 "Awaiting Revolution" 2016 Awaiting Revolution ? s74 · 83207 "Archie Revolution" 2015 Archie Comics ? s71 · 83532 "The Third: Revolution" 2015 2510 Press ? s70   (v1 search)
+   CV local rip:   (= linked) · 83203 "Revolution" 2015 DC Comics 4 · 98308 "Revolution" 2017 IDW Publishing 1 issue 578192 · 38187 "Revolution" 2001 Carlsen Comics (DK) 1 issue 255464 · 94391 "Micronauts: Revolution" 2016 IDW Publishing 1 issue 551088 (via CV candidate name "Micronauts: Revolution")   (rip lookup)
+   GCD dump:       220210 "Revolution 9" 2024-? Mad Cave Studios [] 5 · 232705 "Revolution 9" 2025-2025 Mad Cave Studios [] 1 · 106682 "Revolution" 2016-2016 IDW [] 5 · 159375 "Revolution" 2017-2017 IDW [] 1 · 57502 "Revolution" [de] 2001-2001 Schreiber & Leser [] 1 · 140509 "Revolution!" [da-dk] 2001-2001 Carlsen [] 1   (dump lookup)
+
+== S102843 Scary Christmas 2 (2021)  [tier D]   keys: Scary Christmas 2 (2021)  years 2021-2021  1 files / 0 collections
+   split run: "Scary Christmas 2 (2021)" run={"gcd": 201277} (new shelf from P-004) — seed the S line from these ids, then verify them
+   folders: [1] American Mythology\Scary Christmas (2019)
+   files:   [6714] Scary Christmas 2 001 (2021) (Digital-HD) (LeDuch).cbz (32pp)
+   ours:    ladder 1; ComicInfo Series: "Scary Christmas 2"x1; ComicInfo Volume: "2021"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "American Mythology Productions"x1
+   GCD dump:       201277 "Scary Christmas 2" 2021-2022 American Mythology Productions [] 3 (via our own name without the filing suffix "Scary Christmas 2")   (dump lookup)
+
+== S102844 Scary Christmas 3 (2022)  [tier D]   keys: Scary Christmas 3 (2022)  years 2022-2022  1 files / 0 collections
+   split run: "Scary Christmas 3 (2022)" run={"gcd": 193931} (new shelf from P-004) — seed the S line from these ids, then verify them
+   folders: [1] American Mythology\Scary Christmas (2019)
+   files:   [6715] Scary Christmas 3 001 (2022) (Digital-HD) (LeDuch).cbz (32pp)
+   ours:    ladder 1; ComicInfo Series: "Scary Christmas 3"x1; ComicInfo Volume: "2022"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "American Mythology Productions"x1
+   GCD dump:       193931 "Scary Christmas 3" 2022-2022 American Mythology Productions [] 1 (via our own name without the filing suffix "Scary Christmas 3")   (dump lookup)
+
+== S102845 Scary Christmas 4 (2023)  [tier D]   keys: Scary Christmas 4 (2023)  years 2023-2023  1 files / 0 collections
+   split run: "Scary Christmas 4 (2023)" run={"gcd": 232847} (new shelf from P-004) — seed the S line from these ids, then verify them
+   folders: [1] American Mythology\Scary Christmas (2019)
+   files:   [6716] Scary Christmas 4 001 (2023) (Digital-HD).cbz (32pp)
+   ours:    ladder 1; ComicInfo Series: "Scary Christmas 4"x1; ComicInfo Volume: "2023"x1; ComicInfo Publisher: "American Mythology Productions"x1
+   GCD dump:       232847 "Scary Christmas 4" 2023-2023 American Mythology Productions [] 1 (via our own name without the filing suffix "Scary Christmas 4")   (dump lookup)
+
+== S102846 Scary Christmas V. Killer Claus  [tier B]   keys: Scary Christmas V: Killer Claus (2024)  years 2024-2024  1 files / 0 collections
+   split run: "Scary Christmas V: Killer Claus (2024)" run={"cv": 161638, "gcd": 218652} (new shelf from P-004) — seed the S line from these ids, then verify them
+   folders: [1] American Mythology\Scary Christmas (2019)
+   files:   [6717] Scary Christmas V - Killer Claus (2024) (F) (One Shot) (American Mythology) (Digital-HD) (LeDuch).cbz (30pp)
+   ours:    ladder 1; ComicInfo Series: "Scary Christmas V: Killer Claus"x1; ComicInfo Volume: "2024"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "American Mythology Productions"x1
+   CV linked:      vol 161638 "Scary Christmas V. Killer Claus" 2024 American Mythology Productions 1 issues issue 1081724; cached #1-1 (1); yearΔ 0; ratio 1/1 = 1.00; no judged range
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD dump:       218652 "Scary Christmas: V. Killer Claus" 2024-2024 American Mythology Productions [] 1   (dump lookup)
+
+== S15143 Scary Christmas  [tier C] · ratio 0.25  keys: Scary Christmas  years 2019-2019  1 files / 0 collections
+   split: the KEPT half of the P-004 split — moved out -> S102843 "Scary Christmas 2 (2021)"; S102844 "Scary Christmas 3 (2022)"; S102845 "Scary Christmas 4 (2023)"; S102846 "Scary Christmas V: Killer Claus (2024)"; re-identify what stayed
+   folders: [1] American Mythology\Scary Christmas (2019)
+   files:   [6713] Scary Christmas 001 (2019) (Digital-HD) (LeDuch).cbz (24pp)
+   ours:    ladder 1; ComicInfo Series: "Scary Christmas"x1; ComicInfo Volume: "2019"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "American Mythology Productions"x1; ComicInfo Web: "730442"x1
+   CV linked:      vol 123436 "Scary Christmas" 2019 American Mythology Productions 4 issues; cached #1-1 (1); yearΔ 0; ratio 1/4 = 0.25; no judged range
+   CV candidates:  (= linked) · 67572 "Scary" 1997 Fantagraphics 1 issue 426257 s60 · 161638 "Scary Christmas V. Killer Claus" 2024 American Mythology Productions 1 issue 1081724 s47 · 93366 "American Mythology Dark" 2016 American Mythology Productions 2 s34 · 73529 "Greek Mythology" 1986 Kion Publications 1 issue 451974 s17 · 133182 "American Mythology Monsters" 2021 American Mythology Productions 3 s0 · 137574 "American Mythology Monsters" 2021 American Mythology Productions 3 s0   (v1 search)
+   CV local rip:   (= linked) · 161638 "Scary Christmas V. Killer Claus" 2024 American Mythology Productions 1 issue 1081724 (via CV candidate name "Scary Christmas V. Killer Claus") · 67572 "Scary" 1997 Fantagraphics 1 issue 426257 (via CV candidate name "Scary")   (rip lookup)
+   GCD dump:       232848 "Scary Christmas" 2021-2021 American Mythology Productions [] 1 · 218652 "Scary Christmas: V. Killer Claus" 2024-2024 American Mythology Productions [] 1 (via CV candidate name "Scary Christmas V. Killer Claus") · 57229 "Scary" 1997-1997 Fantagraphics [] 1 (via CV candidate name "Scary")   (dump lookup)

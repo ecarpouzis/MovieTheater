@@ -1591,3 +1591,45 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   issue number matched against the shelf's own cv/gcd issue pools (queried off the dump) is a clean mechanical
   resolution. A Masterworks / Epic "judged" number can be the collection's VOLUME ordinal, not an issue span → N,
   not a C. One GCD id stamped across several different omnibus shelves (172199 on three) is a stamp, never a leg.
+
+[L-329] pub:dc pub:marvel kind:collected-line
+- DC/Marvel trade lines often store a GCD row that belongs to a FOREIGN or other edition (Urban Comics' French GL
+  2011, a German GL 2023 Vol. 1) — check the stored row's series before using its roll-up. GCD carries twin HC/SC
+  series for most 2006-2016 DC/Marvel trades (77116/77117, 77936/77937) → cap those I lines at 0.9. CV keeps count-1
+  "Title: Subtitle" volumes per trade before ~2016, numbered TPB-line volumes after (R-054).
+
+[L-330] sig:legacy-stamp
+- After a split or relaunch, a shelf's year span (and "year gap" signal) can come from per-file CV stamps of the
+  OLD volume (1965-68 cover dates on a 1999-run shelf) — read the filename years before hunting a foreign file.
+  Per-file stamps survive a Series-row fix; don't read them as evidence against a landed S (R-054, R-058).
+
+[L-331] pub:marvel
+- Amazing Spider-Man: CV 2127 keeps #1-441 AND #500-700 as one volume; GCD splits 1570 (#1-441) from 11288 (1999
+  #1-58 + #500-700) — a #500+ trade on the 1963 shelf needs a C with gcd=11288. Detective Comics: GCD 60830 spans the
+  New 52 #0-52 AND Rebirth #934+ (CV splits 42594 / 91098); a GCD series goes on the S line of the run its
+  numbering STARTS with (lead ruling, waves 45/46).
+
+[L-332] kind:collected-line pub:marvel
+- Epic Collection one-rule (lead, wave 44): each Epic book is its OWN shelf; its S line carries the book's own
+  count-1 CV volume and `gcd=-`; the line's GCD series (74602 ASM, 74592 Iron Man) goes on the book's I line with
+  its ISBN; C lines name the runs reprinted. `lookup.py "<Line> Epic Collection" --contains` lists every volume.
+
+[L-333] pub:2000ad
+- Judge Dredd: the "2000AD #<prog> Judge Dredd" story extracts are fan cuts, NOT a run (C-002/L-185) — R + F
+  not-a-run. Rebellion's Essential Judge Dredd has one CV volume per book and GCD indexes only Vol. 01 (181497) and
+  Vol. 07 (223094) → provider-missing for the line. Strip collections reprint prog STORIES, not whole issues — no C
+  onto 2000 AD issue ranges. Zenith: GCD 86812 is the 4-book line, CV one volume per phase → the Epic shape.
+
+[L-334] pub:aftershock pub:boom sig:probe
+- AfterShock / AMP / Aspen / Boom sequel minis: GCD often DROPS the article or files by ordinal, licensor/creator
+  prefix or the first book's subtitle ("Maniac of New York: Volume 2", "Edgar Rice Burroughs' the Moon Maid…",
+  "Michael Turner's Soulfire Core") — probe `--contains` on a fragment and `--gcd-series` before provider-missing.
+
+[L-335] pub:archie
+- Archie 2019+ "Archie & Friends" one-shots: GCD 188076 is ONE numbered series (Back to School = #3) while CV mints
+  a volume per one-shot — the holiday split (L-056): the GCD row goes on the I line.
+
+[L-336] sig:split
+- Before proposing a split key, check the items' CURRENT key (`lookup.py --shelf`) and `--who-stores` both the run's
+  cv and the key: a key already aliased to the parent (a re-merged wave-2 split-out) "would not move" — respell it
+  (P-016 "The Amazing Spider-Man v2 (1999)"); a key already owned by a live run shelf is a JOIN (P-016 Detective v2).

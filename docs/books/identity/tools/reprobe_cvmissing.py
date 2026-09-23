@@ -9,7 +9,8 @@ about a run that exists. This tool asks exactly that question, and only that: fo
 packet's OWN probe set (`identity_packet._probe_set` — the shelf name, its parsed keys, the suffix-stripped
 variants, the v1 candidates' names, the per-file GCD names) against both keyings, and report the volumes the
 fixed index finds that the old one could not. A hit the old index could ALSO see was already on the packet the
-reader decided on, so it is not news and is not reported.
+reader decided on, so it is not news and is not reported; neither is a hit on the CV the shelf already stores (its
+winning S line or its CvVolumeId) — there the `provider-missing` was about the GCD leg (R-061: 45 of 48 hits).
 
 A hit is `near` when its start year is within `--near` (default 1) of the shelf's first year, else `far` — far
 hits print (a relaunch or a reprint line can start years later) but a lead should read `near` first.
@@ -38,7 +39,7 @@ class Reprobe:
         self.decides, self.winner, _s, _d = idbase.scan_decisions()
 
         # the population: live shelves whose WINNING line is an S with no cv, or carries F provider-missing
-        self.pop, self.why = [], {}
+        self.pop, self.why, self.have = [], {}, {}
         for sid, w in self.winner.items():
             if sid not in ev.shelf_set:
                 continue
@@ -50,6 +51,12 @@ class Reprobe:
             if pm or cvless:
                 self.pop.append(sid)
                 self.why[sid] = "+".join(x for x, on in (("S cv=-", cvless), ("provider-missing", pm)) if on)
+                # the CV this shelf already HAS (its winning S line, its stored CvVolumeId): a hit on it is not
+                # news — R-061 found 45 of 48 "confirmed" hits were exactly this, the provider-missing being
+                # about the GCD leg
+                have = {int(v) for v in (rec["cv"].get(sid), ev.series.get(sid, {}).get("cvVolumeId"))
+                        if str(v or "").isdigit()}
+                self.have[sid] = have
         self.pop.sort()
 
         # the OLD keying (cvref normName) beside the fixed one (norm_name(name)) — identity_packet.Ctx.cv_index
@@ -76,7 +83,7 @@ class Reprobe:
             old = self.old_idx.get(k, ())
             for r in self.new_idx.get(k, ()):
                 vid = r[0]
-                if vid in seen or vid in old:
+                if vid in seen or vid in old or vid in self.have.get(sid, ()):
                     continue
                 seen.add(vid)
                 y = r[3]

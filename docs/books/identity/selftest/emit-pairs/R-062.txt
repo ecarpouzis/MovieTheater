@@ -1,4 +1,4 @@
-## Conventions for this batch (38 shown of 152 matched; 328 in LEDGER.md; 48 shelf/shelves: pub:dc ×26 · kind:collected-line ×15 · kind:trade-only ×14 · kind:new ×11 · folder:vn-year ×10 · folder:sequel-subfolder ×9 · pub:marvel ×7 · folder:graphic-novels ×4)
+## Conventions for this batch (38 shown of 162 matched; 336 in LEDGER.md; 48 shelf/shelves: pub:dc ×26 · kind:collected-line ×14 · kind:trade-only ×13 · kind:new ×11 · folder:vn-year ×10 · folder:sequel-subfolder ×9 · pub:marvel ×7 · folder:graphic-novels ×4)
 LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
 reading, never a rule applied across a folder. Do not read LEDGER.md whole.
 
@@ -18,10 +18,6 @@ reading, never a rule applied across a folder. Do not read LEDGER.md whole.
   stored CV 1995 — but that shelf's own key and GCD link (26125, 2007-2009) said Flash vol. 2; the stamp was the
   legacy-number trap. The merged shelf became two runs (R-023, R + split). When a shelf's GCD leg contradicts its
   stored CV id, the CV id is the suspect, and the merge is `F wrong-cv-link` on the mis-stamped shelf instead.
-[L-014] (48 shelf/shelves) sig:probe sig:round2
-- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
-  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
-  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
 [L-030] (48 shelf/shelves) sig:collision
 - One folder split into two shelves by a subtitle in one filename (Analog, Witch Doctor) → `F merge-with=<sid>`.
 [L-151] (48 shelf/shelves) sig:collision sig:withheld
@@ -30,71 +26,75 @@ reading, never a rule applied across a folder. Do not read LEDGER.md whole.
 [L-160] (48 shelf/shelves) pass:revisit sig:withheld
 - A withheld shelf with NO GCD leg to keep becomes `R` + `N withheld cv=<id> … S<partner>` (S4944, S99691) — the
   revisit pair re-links the partner and then the S line can be written.
-[L-013] (46 shelf/shelves) sig:probe
-- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
-  with the other spelling.
-[L-043] (46 shelf/shelves) sig:probe
-- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
-  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
-[L-050] (46 shelf/shelves) sig:probe
-- When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
-  punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
-  abbreviation the publisher uses ("HSE").
-[L-072] (46 shelf/shelves) sig:probe
-- GCD hides behind the SUBTITLE: "The Hunting Accident", "Giraffes on Horseback Salad", "Undesirables" return
-  nothing under their full titles — re-probe the SHORT title before writing `provider-missing`.
-[L-088] (46 shelf/shelves) sig:probe
-- GCD hides behind a LONGER title too ("… and the Tale of Azkon's Heart", "Holiday Party (One-Shot)"), not only a
-  shorter one — probe both directions before `provider-missing`.
-[L-089] (46 shelf/shelves) sig:probe
-- A facsimile of a SINGLE issue is its own book; a reprint edition of a whole series is not — the original wins.
-[L-095] (46 shelf/shelves) sig:probe
-- A folder that is a ripper's READING ORDER over several separately published arcs (The Ride, Revolution) has no
-  spanning record — the ladder is arc numbers, not issue numbers.
-[L-096] (46 shelf/shelves) sig:probe
-- GCD's exact filing recovers legs the probe misses: singular/plural ("Greeting", "Return"), two words ("Super
-  Hero"), a spelled ordinal ("Fortieth"), a dropped subtitle, or the colon form ("Jinx: Torso") — try each before
-  `provider-missing`.
-[L-118] (46 shelf/shelves) sig:probe
-- A GCD collected series numbers its issues by VOLUME and titles them with the volume SUBTITLE — that, not the
-  page count, places a trade when a shelf holds several volumes of one line.
-[L-125] (46 shelf/shelves) sig:probe
-- A stored link that is the same title a DIFFERENT DECADE later is a new cluster (Fist of Khonshu 2024 on the
-  1985 Moon Knight run; a 1971 Sub-Mariner Annual on the 1998 annual) — years decide, never the title.
-[L-157] (46 shelf/shelves) sig:probe
-- A GCD row with ZERO issues is an empty stub, not a leg (Skull Cat 197154, Rivers of London: Stray Cat Blues 213823,
-  Archer & Armstrong: Revival 164703) → `provider-missing`.
-[L-159] (46 shelf/shelves) sig:probe
-- An exact-name probe can miss a sequel the rip DOES hold: `--contains "Icarus Society"` found CV 143976 after the
-  exact "Prodigy: The Icarus Society" probe returned nothing — try `--contains` on the subtitle before `provider-missing`.
-[L-163] (46 shelf/shelves) sig:probe
-- GCD hides behind a bracketed alternate title: "War Stories: J for Jenny [War Story: J for Jenny]" (10937), "Dance Like
-  Everybody's Watching! [A Zits Treasury]" (132081), "You're Out of Your Mind, Charlie Brown! [Horizontal]" (155990).
-[L-177] (46 shelf/shelves) sig:probe
-- A bracketed publisher series number becomes a phantom ladder entry: Thun'da's "[A1-056]/[A1 073]/[A1 083]" produced
-  ladder 56/73/83 and a ratio 5.00 — read the bracket, not the ladder.
+[L-014] (47 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
 [L-193] (46 shelf/shelves) sig:legacy-stamp sig:probe
 - GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
   plain title returns 0 hits — probe with the ordinal or `--contains`.
-[L-204] (46 shelf/shelves) pass:item pass:revisit sig:probe
+[L-013] (45 shelf/shelves) sig:probe
+- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
+  with the other spelling.
+[L-043] (45 shelf/shelves) sig:probe
+- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
+  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
+[L-050] (45 shelf/shelves) sig:probe
+- When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
+  punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
+  abbreviation the publisher uses ("HSE").
+[L-072] (45 shelf/shelves) sig:probe
+- GCD hides behind the SUBTITLE: "The Hunting Accident", "Giraffes on Horseback Salad", "Undesirables" return
+  nothing under their full titles — re-probe the SHORT title before writing `provider-missing`.
+[L-088] (45 shelf/shelves) sig:probe
+- GCD hides behind a LONGER title too ("… and the Tale of Azkon's Heart", "Holiday Party (One-Shot)"), not only a
+  shorter one — probe both directions before `provider-missing`.
+[L-089] (45 shelf/shelves) sig:probe
+- A facsimile of a SINGLE issue is its own book; a reprint edition of a whole series is not — the original wins.
+[L-095] (45 shelf/shelves) sig:probe
+- A folder that is a ripper's READING ORDER over several separately published arcs (The Ride, Revolution) has no
+  spanning record — the ladder is arc numbers, not issue numbers.
+[L-096] (45 shelf/shelves) sig:probe
+- GCD's exact filing recovers legs the probe misses: singular/plural ("Greeting", "Return"), two words ("Super
+  Hero"), a spelled ordinal ("Fortieth"), a dropped subtitle, or the colon form ("Jinx: Torso") — try each before
+  `provider-missing`.
+[L-118] (45 shelf/shelves) sig:probe
+- A GCD collected series numbers its issues by VOLUME and titles them with the volume SUBTITLE — that, not the
+  page count, places a trade when a shelf holds several volumes of one line.
+[L-125] (45 shelf/shelves) sig:probe
+- A stored link that is the same title a DIFFERENT DECADE later is a new cluster (Fist of Khonshu 2024 on the
+  1985 Moon Knight run; a 1971 Sub-Mariner Annual on the 1998 annual) — years decide, never the title.
+[L-157] (45 shelf/shelves) sig:probe
+- A GCD row with ZERO issues is an empty stub, not a leg (Skull Cat 197154, Rivers of London: Stray Cat Blues 213823,
+  Archer & Armstrong: Revival 164703) → `provider-missing`.
+[L-159] (45 shelf/shelves) sig:probe
+- An exact-name probe can miss a sequel the rip DOES hold: `--contains "Icarus Society"` found CV 143976 after the
+  exact "Prodigy: The Icarus Society" probe returned nothing — try `--contains` on the subtitle before `provider-missing`.
+[L-163] (45 shelf/shelves) sig:probe
+- GCD hides behind a bracketed alternate title: "War Stories: J for Jenny [War Story: J for Jenny]" (10937), "Dance Like
+  Everybody's Watching! [A Zits Treasury]" (132081), "You're Out of Your Mind, Charlie Brown! [Horizontal]" (155990).
+[L-177] (45 shelf/shelves) sig:probe
+- A bracketed publisher series number becomes a phantom ladder entry: Thun'da's "[A1-056]/[A1 073]/[A1 083]" produced
+  ladder 56/73/83 and a ratio 5.00 — read the bracket, not the ladder.
+[L-204] (45 shelf/shelves) pass:item pass:revisit sig:probe
 - `lookup.py --issues <collected-line volume>` names each TRADE's own ComicVine ISSUE id: 71 of 73 `I` lines in
   R-018 carry an item-level CV id instead of `cv=-`.
-[L-253] (46 shelf/shelves) sig:probe
+[L-253] (45 shelf/shelves) sig:probe
 - A subtitle can name a SEQUEL series filed on the first run's shelf (Wild's End "Beyond the Sea" = CV 151678 /
   GCD 201441, not the 2014 run) — the `C` names the sequel run.
-[L-264] (46 shelf/shelves) sig:probe
+[L-264] (45 shelf/shelves) sig:probe
 - Title-only (st3) GCD matches reuse ONE gcd id across every volume of a line (Golden City ×10, Windmaker,
   Tarzan Kubert Years) — re-derive each book from the shelf's own numbered pool.
-[L-267] (46 shelf/shelves) sig:probe
+[L-267] (45 shelf/shelves) sig:probe
 - A GCD "collected edition" series sits beside the genuine RUN under a different id (Dept H 100362 vs 111468, Harrow
   County 89353 vs 94662, Sword Daughter 125748 vs 134585) — the `C` names the run; `lookup.py` by title finds it.
-[L-273] (46 shelf/shelves) sig:probe
+[L-273] (45 shelf/shelves) sig:probe
 - The Adventures of Tintin: every per-file gcd pick (60515/108543) was wrong; the shelf's own gcd pool matched by
   ENGLISH title was right for all 23 — the pool over the pick, again.
-[L-292] (46 shelf/shelves) sig:probe
+[L-292] (45 shelf/shelves) sig:probe
 - A stored English digital volume's cached rip may cover only its last issues (Suzuka #13-18 of 18) — the earlier
   books take gcd-only identities from the GCD series' full list, cv=-.
-[L-294] (46 shelf/shelves) pass:item sig:probe
+[L-294] (45 shelf/shelves) pass:item sig:probe
 - ITEM PASS (X-046..X-048): a shelf can hold TWO published editions of one work with no shared pool (Monster: the
   18-volume line beside the 2014 "Two-in-One" Perfect Edition) — each edition needs its own pool or an honest
   no-record, never a mapping across editions. When a shelf's file count exceeds its pool, the excess usually
@@ -107,28 +107,28 @@ reading, never a rule applied across a folder. Do not read LEDGER.md whole.
 [L-093] (14 shelf/shelves) pub:dc pub:ec-archives pub:mad sig:comicinfo
 - GCD labels every modern MAD book "EC" where ComicVine and ComicInfo say DC — the same publisher's imprint, not a
   rejection.
-[L-164] (16 shelf/shelves) kind:archive kind:collected-line kind:strip sig:probe
+[L-164] (15 shelf/shelves) kind:archive kind:collected-line kind:strip sig:probe
 - Year-by-year archives of a newspaper/web strip (Doonesbury, Dennis the Menace, Rip Kirby, The Little King) have no record
   in either provider → R + provider-missing; where a provider holds the strip's own collected line (Cyanide & Happiness,
   Oglaf) pair at 0.9 as a format split.
-[L-135] (15 shelf/shelves) kind:collected-line
-- An Epic / Complete Collection LINE is found by probing the line name with NO volume subtitle: "Generation X Epic
-  Collection" → GCD 174151, shared by four sibling shelves.
-[L-186] (15 shelf/shelves) kind:collected-line
-- REMINDER (lead ruling, applied again on Princeless S14096): a collected LINE with its own record (GCD 106434, nine
-  trades) wins over the first mini's run; linking the first four-issue mini to a nine-volume trade shelf is wrong-cv-link.
 [L-191] (15 shelf/shelves) folder:sequel-subfolder folder:vn-year pass:revisit sig:stale-flag
 - On a wave-2 `NN <Title> vN (<year>)` split-out shelf (ids S94xxx+) an `overlap-in-series` flag is stale by
   construction — the colliding Vol. 01s now sit on sibling shelves (13 of 14 in R-016); the lead dismisses the flag.
-[L-244] (15 shelf/shelves) kind:collected-line pass:item
+[L-135] (14 shelf/shelves) kind:collected-line
+- An Epic / Complete Collection LINE is found by probing the line name with NO volume subtitle: "Generation X Epic
+  Collection" → GCD 174151, shared by four sibling shelves.
+[L-186] (14 shelf/shelves) kind:collected-line
+- REMINDER (lead ruling, applied again on Princeless S14096): a collected LINE with its own record (GCD 106434, nine
+  trades) wins over the first mini's run; linking the first four-issue mini to a nine-volume trade shelf is wrong-cv-link.
+[L-244] (14 shelf/shelves) kind:collected-line pass:item
 - A trade collecting TWO minis, and an omnibus, cannot yet be stated by a `C` line (one range, one run, one per item):
   name the runs on an `N` for now — TOOLS_TODO 17 adds per-run ranges and several `C` per item.
-[L-246] (15 shelf/shelves) kind:collected-line pass:item
+[L-246] (14 shelf/shelves) kind:collected-line pass:item
 - ITEM PASS (X-001..X-003): on RUN-identity shelves the per-file GCD link reuses the run's own series matched to ONE
   issue by number for vol. 01 only, while later volumes resolve to a real collected-edition series — check whether
   vol. 01's link differs in kind from vol. 02+ before trusting it (Kevin Keller, Mega Man, Klaus, Dark Crystal …).
 
-+114 more matched entries not shown: L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-314, L-281, L-124, L-031, L-210, L-033, L-142, L-306, L-272, L-016, L-032, L-113, L-114, L-055, L-076, L-085, L-109, L-115, L-117, L-132, L-195, L-196, L-197, L-290, L-295, L-296, L-298, L-307, L-308, L-313, L-327, L-328, L-029, L-052, L-064, L-101, L-198, L-310, L-040, L-059, L-175, L-199, L-211, L-008, L-047, L-051, L-060, L-116, L-127, L-167, L-188, L-206, L-228, L-229, L-249, L-257, L-261, L-007, L-011, L-015, L-022, L-046, L-136, L-139, L-140, L-148, L-203, L-205, L-215, L-217, L-254, L-255, L-256, L-260, L-266, L-271, L-299, L-319, L-324, L-023, L-034, L-041, L-056, L-119, L-121, L-126, L-129, L-133, L-169, L-192, L-241, L-242, L-243, L-315, L-325, L-123, L-150, L-165, L-128, L-181 (grep LEDGER.md for them)
++124 more matched entries not shown: L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-281, L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-314, L-124, L-210, L-031, L-033, L-142, L-329, L-113, L-272, L-016, L-032, L-114, L-055, L-085, L-195, L-197, L-290, L-306, L-052, L-064, L-076, L-101, L-109, L-115, L-117, L-132, L-196, L-198, L-295, L-296, L-298, L-307, L-308, L-310, L-313, L-327, L-328, L-332, L-175, L-029, L-040, L-059, L-199, L-211, L-008, L-047, L-051, L-060, L-116, L-127, L-167, L-188, L-206, L-228, L-229, L-249, L-257, L-261, L-319, L-007, L-011, L-015, L-022, L-034, L-046, L-136, L-139, L-140, L-148, L-169, L-203, L-205, L-215, L-217, L-242, L-254, L-255, L-256, L-260, L-266, L-271, L-299, L-023, L-041, L-056, L-119, L-121, L-123, L-126, L-129, L-130, L-133, L-174, L-192, L-241, L-243, L-315, L-324, L-325, L-150, L-165, L-065, L-099, L-128, L-181, L-194, L-262, L-330, L-336 (grep LEDGER.md for them)
 
 ====================================================================================================
 
@@ -566,10 +566,9 @@ reading, never a rule applied across a folder. Do not read LEDGER.md whole.
    CV local rip:   (= linked) · 165945 "Grimm Fairy Tales: April Fools' Edition" 2010 Zenescope Entertainment 1 issue 205175 · 165947 "Grimm Fairy Tales 2012 April Fools' Edition" 2012 Zenescope Entertainment 1 issue 327387 (via CV candidate name "Grimm Fairy Tales 2012 April Fools' Edition")   (rip lookup)
    GCD dump:       46259 "Grimm Fairy Tales: April Fools' Edition" 2009-2010 Zenescope Entertainment [] 2 · 83181 "Grimm Fairy Tales 2012 April Fools' Edition" 2012-2012 Zenescope Entertainment [] 1 (via CV candidate name "Grimm Fairy Tales 2012 April Fools' Edition")   (dump lookup)
 
-== S21879 Wolverine & the X-Men  [tier C] · 107 files  keys: Wolverine and The X-Men | Wolverine and the X-Men | Wolverine and the X-Men 027AU | Wolverine and the X-Men v1 (2011)  years 2011-2015  107 files / 2 collections
+== S21879 Wolverine & the X-Men  [tier C] · 3 named, the minority on >= 2 files or >= 10%  keys: Wolverine and The X-Men | Wolverine and the X-Men | Wolverine and the X-Men 027AU | Wolverine and the X-Men v1 (2011)  years 2011-2014  93 files / 1 collections
    split run: "Wolverine and the X-Men v1 (2011)" run=- (new shelf from P-003) — seed the S line from these ids, then verify them
-   flags: #537 label-ambiguous [Pending] item 118863 — items 85481 and 118863 are duplicate copies of Vol. 02 - Death of Wolverine
-   folders: [42] Marvel\_X-Men\Wolverine and the X-Men\Wolverine and the X-Men v1 (2011) · [10] Marvel\_X-Men\_X-Men Complete Chronology V2\0988 AvX · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\1045 The Hellfire Saga · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\1072 Wolverine and the X-Men Untitled · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\1085 Tomorrow Never Learns · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\1108 Wolverine and the X-Men - Death of Wolverine · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0969 Mutatis Mutandis · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\1023 Savage Learning · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\1011 The Greatest Freakshow on Earth · [4] _Marvel Major Event Chronology (digital)\2011.07 - X-Men - Schism - Regenesis\03 Regenesis\Team Gold (Wolverine) · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0956 Wolverine & The X-Men Regenesis · [2] Marvel\_X-Men\Wolverine and the X-Men\Wolverine and the X-Men v1 (2011)\Annuals and Specials · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\1004 More Pencils More Books More Teacher's Dirty Looks · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\1058 Battle of the Atom · [1] Marvel\_Wolverine\08 Wolverine and the X-Men v1 (2011)\Omnibus Edition · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\1031 Age of Ultron · [1] _Marvel Major Event Chronology (digital)\2014.10 - AXIS\02 Tie-ins\X-Men · [1] _Marvel Major Event Chronology (digital)\2014.11 - X-Men - Death of Wolverine\02 Tie-ins\Wolverine and the X-Men
+   folders: [42] Marvel\_X-Men\Wolverine and the X-Men\Wolverine and the X-Men v1 (2011) · [10] Marvel\_X-Men\_X-Men Complete Chronology V2\0988 AvX · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\1045 The Hellfire Saga · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\1072 Wolverine and the X-Men Untitled · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0969 Mutatis Mutandis · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\1023 Savage Learning · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\1011 The Greatest Freakshow on Earth · [4] _Marvel Major Event Chronology (digital)\2011.07 - X-Men - Schism - Regenesis\03 Regenesis\Team Gold (Wolverine) · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0956 Wolverine & The X-Men Regenesis · [2] Marvel\_X-Men\Wolverine and the X-Men\Wolverine and the X-Men v1 (2011)\Annuals and Specials · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\1004 More Pencils More Books More Teacher's Dirty Looks · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\1058 Battle of the Atom · [1] Marvel\_Wolverine\08 Wolverine and the X-Men v1 (2011)\Omnibus Edition · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\1031 Age of Ultron
    files:   [97999] COL Wolverine & The X-Men by Jason Aaron Omnibus (2014) (Digital) (Kileko-Empire).cbz (894pp) | [85436] Wolverine and the X-Men 027AU (2013) (Digital) (Zone-Empire).cbr (23pp)
             [85437] Wolverine and the X-Men Annual 001 (2014) (Digital) (Zone-Empire).cbr (31pp) | [85438] Wolverine and the X-Men 001 (2011) (F) (Digital) (Zone-Empire).cbr (32pp)
             [85439] Wolverine and the X-Men 002 (2012) (F) (Digital) (Zone-Empire).cbr (25pp)
@@ -584,28 +583,31 @@ reading, never a rule applied across a folder. Do not read LEDGER.md whole.
             [92563] 001 Wolverine and the X-Men Annual 01 (2014) (digital) (Minutemen-PhD).cbr (30pp) | [92564] 002 Wolverine and the X-Men 038 (2014) (digital) (Minutemen-PhD).cbr (21pp)
             [92565] 003 Wolverine and the X-Men 039 (2014) (digital) (Minutemen-PhD).cbr (21pp) | [92566] 004 Wolverine and the X-Men 040 (2014) (digital) (Minutemen-PhD).cbr (23pp)
             [92567] 005 Wolverine and the X-Men 041 (2014) (digital) (Minutemen-PhD).cbr (22pp) | [92568] 006 Wolverine and the X-Men 042 (2014) (digital) (Minutemen-PhD).cbr (30pp)
-            001 Wolverine and the X-Men 001 (2014) (digital) (Minutemen-Faessla).cbz … 006 Wolverine and the X-Men 012 (2015) (digital) (Minutemen-Faessla).cbz  (12 files, pp 21-29)
             [117653] Wolverine & The X-Men 001 (2011) (Digital-Empire).cbr (32pp) | [117654] Wolverine & The X-Men 002 (2012) (Digital) (Zone-Empire).cbr (26pp)
             [117655] Wolverine & The X-Men 003 (2012) (Digital) (Zone-Empire).cbr (24pp) | [117656] Wolverine & The X-Men 004 (2012) (Digital) (Zone-Empire).cbr (25pp)
-            [118034] Wolverine and the X-Men 012 (2015) (Digital) (Zone-Empire).cbr (23pp)
-            [118863] COL Wolverine and the X-Men Vol. 02 - Death of Wolverine (2015) (Digital) (Kileko-Empire).cbz (142pp)
-   ours:    ladder 1-42; 42 number(s) name more than one file: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12; ComicInfo Series: "Wolverine & The X-Men by Jason Aaron Omnibus"x1, "Wolverine and the X-Men"x1; ComicInfo Publisher: "Marvel"x2
+   ours:    ladder 1-42; 42 number(s) name more than one file: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12; ComicInfo Series: "Wolverine & The X-Men by Jason Aaron Omnibus"x1; ComicInfo Publisher: "Marvel"x1
    GCD says: [97999] gcd_reprint 2305094: s61815 Wolverine & the X-Men (2011) #1-35, #38-42 [41 stories] · s77849 Wolverine & the X-Men Annual (2014) #1 [1 story]
-   CV linked:      vol 43539 "Wolverine & the X-Men" 2011 Marvel 43 issues; cached #1-42 (43); yearΔ 0; ratio 104/43 = 2.42; no judged range; v1 per-file: same volume on 103/107 files
+   CV linked:      vol 43539 "Wolverine & the X-Men" 2011 Marvel 43 issues; cached #1-42 (43); yearΔ 0; ratio 91/43 = 2.12; no judged range; v1 per-file: same volume on 90/93 files
    CV candidates:  (= linked) · 72113 "Wolverine & the X-Men" 2014 Marvel 12 s93 · 28620 "Wolverine and the X-Men Magazine" 2009 Marvel 2 s82 · 69573 "Wolverine & the X-Men Annual" 2013 Marvel 1 issue 435070 s77 · 58060 "Marvel Noir: Wolverine & the X-Men" 2013 Marvel 1 issue 388848 s76 · 79793 "Wolverine and the X-Men: Death of Wolverine" 2015 Marvel 1 issue 478156 s75 · 42053 "Wolverine: Wolverine vs. the X-Men" 2011 Marvel 1 issue 286197 s61   (v1 search)
    CV local rip:   (= linked) · 72113 "Wolverine & the X-Men" 2014 Marvel 12 · 47331 "Avengers Vs. X-Men" 2012 Marvel 13 (via GCD name "Avengers vs. X-Men") · 53475 "Avengers Vs. X-Men" 2012 Panini France 6 (via GCD name "Avengers vs. X-Men") · 53793 "Avengers Vs. X-Men" 2012 Marvel 1 issue 366376 (via GCD name "Avengers vs. X-Men") · 55951 "Avengers Vs. X-Men" 2012 Panini Verlag 6 (via GCD name "Avengers vs. X-Men")   (rip lookup)
-   GCD per-file:   methods fulldump-rematchx80 · round2-folderx9 ⚠  (⚠ copies a folder neighbour's series — verify); series 61815 "Wolverine & the X-Men" 2011-2014 [] 43 (dump only) on 80/107 files · series 64737 "Avengers vs. X-Men" 2012-2012 Marvel [limited series] 13 on 4/107 files · series 52076 "Wolverine" 2010-2013 Marvel [was ongoing series] 39 on 4/107 files · series 77507 "Amazing X-Men" 2014-2015 Marvel [was ongoing series] 19 on 1/107 files
+   GCD per-file:   methods fulldump-rematchx80 · round2-folderx8 ⚠  (⚠ copies a folder neighbour's series — verify); series 61815 "Wolverine & the X-Men" 2011-2014 [] 43 (dump only) on 80/93 files · series 64737 "Avengers vs. X-Men" 2012-2012 Marvel [limited series] 13 on 4/93 files · series 52076 "Wolverine" 2010-2013 Marvel [was ongoing series] 39 on 4/93 files
    GCD dump:       (= per-file) · 79392 "Wolverine & the X-Men" 2014-2015 Marvel [] 12 · 157312 "Wolverine & the X-Men" 2014-2015 Marvel [] 2 · 214129 "Wolverine and the X-Men Magazine" 2009-2009 Marvel [] 2 (via CV candidate name "Wolverine and the X-Men Magazine")   (dump lookup)
    bridges:        gcd 64737 -> LOCG 100010 "Avengers vs. X-Men" support 18 · gcd 52076 -> LOCG 112255 "Wolverine" support 45
 
-== S9384 Incredible Hulk By Jason Aaron  [tier B]   keys: Incredible Hulk By Jason Aaron  years 2012-2013  2 files / 2 collections
+== S9384 Incredible Hulk By Jason Aaron  [tier C] · ratio 0.31  keys: Incredible Hulk By Jason Aaron  years 2011-2013  7 files / 2 collections
    split: the KEPT half of the P-003 split — moved out -> S21879 "Wolverine and the X-Men v1 (2011)"; re-identify what stayed
-   folders: [2] Marvel\_Hulk\09 The Incredible Hulk v3 (2011)
+   folders: [5] _Marvel Major Event Chronology (digital)\2011.03 - Fear Itself\03 Shattered Heroes\Incredible Hulk · [2] Marvel\_Hulk\09 The Incredible Hulk v3 (2011)
    files:   [81091] COL Incredible Hulk By Jason Aaron Vol. 01 (2012) (Digital) (Meganubis-Empire).cbr (166pp)
-            [81092] COL Incredible Hulk By Jason Aaron Vol. 02 (2013) (Digital) (Kileko-Empire).cbr (211pp)
+            [81092] COL Incredible Hulk By Jason Aaron Vol. 02 (2013) (Digital) (Kileko-Empire).cbr (211pp) | [117567] Incredible Hulk 001 (2011) (Digital) (Zone-Empire).cbr (23pp)
+            [117568] Incredible Hulk 002 (2012) (Digital) (Zone-Empire) (Ok).cbr (25pp) | [117569] Incredible Hulk 003 (2012) (Digital) (Zone-Empire).cbr (23pp)
+            [117570] Incredible Hulk 004 (2012) (Digital) (Zone-Empire) (Ok).cbr (24pp) | [117571] Incredible Hulk 005 (2012) (Digital) (Zone-Empire) (Ok).cbr (25pp)
+   ours:    ladder 1-5
    GCD says: [81091] gcd_reprint 2612858: s61774 Incredible Hulk (2011) #1-7 [14 stories] · s57075 Fear Itself (2011) #7 [1 story] · s209488 Incredible Hulk by Jason Aaron (2012) #1 [1 story]
              [81092] gcd_reprint 2612859: s61774 Incredible Hulk (2011) #7.1, #8-15 [21 stories] · s209488 Incredible Hulk by Jason Aaron (2012) #2 [1 story]
-   CV linked:      vol 43516 "Incredible Hulk" 2011 Marvel 16 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 0/?; none cached
+   CV linked:      vol 43516 "Incredible Hulk" 2011 Marvel 16 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ 0; ratio 5/? = 0.31; none cached
+   CV per-file (v1): vol 2406 "The Incredible Hulk" 1968 Marvel ? on 5/7 files
    CV candidates:  43268 "Wolverine by Jason Aaron Omnibus" 2011 Marvel 1 issue 295699 s72 · 142682 "The Incredible Hulk Marvel Pocketbook" 2004 Marvel UK/Panini UK 3 s54 · 50328 "The Incredible Hulk By Jason Aaron" 2012 Marvel 2 s49 · 35210 "Marvel Masterworks: The Incredible Hulk" 2003 Marvel 19 s46 · 104948 "Incredible Hulk by Jason Aaron: The Complete Collection" 2017 Marvel 1 issue 628583 s40 · 129259 "Thor by Jason Aaron" 2020 Marvel 2 s25   (v1 search)
-   CV local rip:   (= linked) · 50328 "The Incredible Hulk By Jason Aaron" 2012 Marvel 2 · 24715 "Incredible Hulk" 2009 Marvel 12 (via CV name "Incredible Hulk") · 105325 "Incredible Hulk" 2017 Marvel 9 (via CV name "Incredible Hulk") · 151522 "Incredible Hulk" 2023 Marvel 30 (via CV name "Incredible Hulk") · 6558 "Incredible Hulk" 2000 Marvel 101 (via CV name "Incredible Hulk")   (rip lookup)
-   GCD dump:       209488 "Incredible Hulk by Jason Aaron" 2012-2012 Marvel [] 2 · 209517 "Incredible Hulk by Jason Aaron" 2012-2013 Marvel [] 2 · 61774 "Incredible Hulk" 2011-2012 Marvel [] 16 (via CV name "Incredible Hulk") · 178327 "The Incredible Hulk" 2010-2011 Marvel [] 3 (via CV name "Incredible Hulk") · 228354 "The Incredible Hulk" 2010-2010 Marvel [] 3 (via CV name "Incredible Hulk") · 38633 "Incredible Hulk" 2009-2010 Marvel [] 12 (via CV name "Incredible Hulk")   (dump lookup)
+   CV local rip:   (= linked) · 50328 "The Incredible Hulk By Jason Aaron" 2012 Marvel 2 · 24715 "Incredible Hulk" 2009 Marvel 12 (via CV name "Incredible Hulk") · 105325 "Incredible Hulk" 2017 Marvel 9 (via CV name "Incredible Hulk") · 6558 "Incredible Hulk" 2000 Marvel 101 (via CV name "Incredible Hulk") · 151522 "Incredible Hulk" 2023 Marvel 30 (via CV name "Incredible Hulk")   (rip lookup)
+   GCD per-file:   series 61774 "Incredible Hulk" 2011-2012 Marvel [was ongoing series] 16 on 5/7 files; methods numx5
+   GCD dump:       (= per-file) · 209488 "Incredible Hulk by Jason Aaron" 2012-2012 Marvel [] 2 · 209517 "Incredible Hulk by Jason Aaron" 2012-2013 Marvel [] 2 · 178327 "The Incredible Hulk" 2010-2011 Marvel [] 3 (via CV name "Incredible Hulk") · 228354 "The Incredible Hulk" 2010-2010 Marvel [] 3 (via CV name "Incredible Hulk") · 38633 "Incredible Hulk" 2009-2010 Marvel [] 12 (via CV name "Incredible Hulk")   (dump lookup)
+   bridges:        gcd 61774 -> LOCG 112463 "The Incredible Hulk" support 10

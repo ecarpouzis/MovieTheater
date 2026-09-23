@@ -628,7 +628,8 @@ if old_text is None:
     check(False, f"the pre-move brief is readable from git ({PRE_MOVE_COMMIT})", "git show failed")
 else:
     before = ledger.parse_brief_ledger(old_text)
-    check(len(before) == len(entries) and len(before) > 300,
+    # >= : the lead appends new entries after the move (L-329+, wave 49); every pre-move id must still be there
+    check(len(before) > 300 and len(entries) >= len(before),
           f"LEDGER.md holds every entry the brief held ({len(before)} before, {len(entries)} after)")
     changed = [k for k, (a, b) in enumerate(zip(before, entries), 1) if a != b["text"]]
     check(not changed, "every entry's text is verbatim, in order", f"differs at L-{changed[:5]}")
