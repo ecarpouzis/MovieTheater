@@ -3,7 +3,8 @@
 `python next_batch.py --tier A|B|C|D [--lines 1400]`            (the tier is REQUIRED: a bare run emits nothing)
 `python next_batch.py --redo A-002 A-005 ...`                     regenerate emitted batches, same ids
 `python next_batch.py --revisit 17809 1448 [--note "why"]`        re-read named shelves after a ruling changed
-`python next_batch.py --revisit-file revisit.txt [--note "why"]`  the same, taking the sids from a sheet
+`python next_batch.py --revisit-file revisit.txt [--note "why"]`  the same, taking the sids from a sheet (a
+                                   `check_splits --landed` sheet also puts `split run:` / `split:` lines in the packets)
 `python next_batch.py --items [--books 150] [--dry-run]`          an `X-NNN` batch of BOOKS on decided shelves
 `python next_batch.py --s2-file triage.tsv [--shelves 60]`        the S.2 pass: triaged 0.9s, as `R-NNN` batches
 `python next_batch.py --splits [--shelves 40] [--only 9845,6791]` the split lane: `F split-needed` shelves, `P-NNN`
@@ -360,6 +361,7 @@ if revisit or opt.get("revisit-file"):
     # tier cursor nor the emitted-ids set: those shelves are still spoken for by their original batch, and
     # the original decision file stays on disk as the audit trail (the R- file supersedes it at apply time).
     sids, source = [], "--revisit"
+    split_notes = {}
     rf = opt.get("revisit-file")
     if rf:
         source = os.path.basename(rf)
@@ -373,6 +375,18 @@ if revisit or opt.get("revisit-file"):
             head = line.split()[0].lstrip("S")
             if head.isdigit():
                 sids.append(int(head))
+                # TOOLS_TODO 28e: a `check_splits.py --landed` sheet row (S<sid> TAB key TAB run=… TAB P-file
+                # [TAB new|kept]) puts the split's own answer in the packet, so the reader seeds the S line from
+                # the P- file's `run` ids without opening it, and knows a kept half for what it is
+                col = raw.rstrip("\r\n").split("\t")
+                if len(col) >= 4 and col[2].startswith("run="):
+                    batch = os.path.splitext(col[3].strip())[0]
+                    if (col[4].strip() if len(col) > 4 else "new") == "kept":
+                        note = f"   split: the KEPT half of the {batch} split — {col[1].strip()}; re-identify what stayed"
+                    else:
+                        note = (f"   split run: \"{col[1].strip()}\" {col[2].strip()} (new shelf from {batch}) — "
+                                f"seed the S line from these ids, then verify them")
+                    split_notes.setdefault(int(head), []).append(note)
     sids += [int(x) for x in revisit]
     seen, ordered = set(), []
     for s in sids:                                   # first mention wins; the file's order is the lead's
@@ -386,7 +400,11 @@ if revisit or opt.get("revisit-file"):
     st.setdefault("revisits", [])
     name = f"R-{1 + len(st['revisits']):03d}"
     note = opt.get("note") or f"re-read after a sharpened ruling (source: {source})"
-    n = write_batch(name, [render(s) for s in ids], ids, kind="R")
+    def render_noted(s):
+        b = render(s)
+        return b[:1] + split_notes.get(s, []) + b[1:]
+
+    n = write_batch(name, [render_noted(s) for s in ids], ids, kind="R")
     st["revisits"].append({"batch": name, "ids": ids, "lines": n, "note": note, "source": source,
                            "at": time.strftime("%Y-%m-%d %H:%M:%S")})
     save_state(st)

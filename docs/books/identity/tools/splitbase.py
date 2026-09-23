@@ -171,10 +171,125 @@ def shelf_items(con, sid):
         ORDER BY i.Path, i.FileName""", (sid,)).fetchall()
 
 
+def group_items(rows):
+    """[((title, folder), [row, ...]), ...] in the packet's G1..Gn order. ONE copy: the packet prints these
+    numbers and `check_splits` expands a `{"group": "G3"}` line through this same function (TOOLS_TODO 28c),
+    so the group a reader names is the group the verb receives."""
+    groups = defaultdict(list)
+    for r in rows:
+        groups[(title_of(r[1]), short_path(os.path.dirname(r[2] or "")))].append(r)
+    return [(g, groups[g]) for g in sorted(groups, key=lambda g: (g[1], g[0]))]
+
+
+# ── nearby shelves (TOOLS_TODO 28a) ───────────────────────────────────────────────────────────────
+RX_LEG_ID = re.compile(r"\b(cv|gcd)\s*[=:#]?\s*(\d{2,7})\b", re.I)
+RX_VOLTOK = re.compile(r"^(?:v\d{1,3}|vol|volume|\d+)$")
+
+
+def title_words(s):
+    """A title's words for the nearby match: the resolver's normal form minus years, `vN` and bare numbers —
+    'X-Men: Red (2022)' and 'X-Men - Red v1' are both {x, men, red}."""
+    return frozenset(w for w in normalize_key(s).split() if not RX_VOLTOK.match(w))
+
+
+def leg_ids(text):
+    """cv / gcd ids a decision line names in prose ('CV 3092 / GCD 2605', 'cv=27202') -> {(leg, id)}."""
+    return {(m.group(1).lower(), int(m.group(2))) for m in RX_LEG_ID.finditer(text or "")}
+
+
+class NearIndex:
+    """Every live shelf by its S-line ids (the WINNING decision's `S … cv= gcd=`), by its stored
+    Series.CvVolumeId, and by its title words — built once per run from Evidence (in memory; no per-shelf
+    query). A join the F line did not name (Elric S6101 -> S6105) is found here or nowhere."""
+
+    def __init__(self, ev, decides=None, winner=None):
+        if decides is None or winner is None:
+            decides, winner, _s, _d = idbase.scan_decisions()
+        self.ev = ev
+        self.s_ids = defaultdict(set)         # (leg, id) -> {sid}  from winning S lines
+        self.s_of = {}                        # sid -> (file base, conf)
+        for sid, w in winner.items():
+            rec = decides[w]
+            if sid not in ev.shelf_set or rec["kinds"].get(sid) != "S":
+                continue
+            self.s_of[sid] = (os.path.splitext(os.path.basename(w))[0], rec["confs"].get(sid))
+            if rec["cv"].get(sid):
+                self.s_ids[("cv", rec["cv"][sid])].add(sid)
+            if rec["gcd"].get(sid):
+                self.s_ids[("gcd", rec["gcd"][sid])].add(sid)
+        self.stored_cv = defaultdict(set)
+        self.exact, self.plus1 = defaultdict(set), defaultdict(set)
+        for sid, s in ev.series.items():
+            if s.get("cvVolumeId"):
+                self.stored_cv[s["cvVolumeId"]].add(sid)
+            for t in {s["name"] or ""} | set(ev.keys.get(sid, ())):
+                w = title_words(t)
+                if not w:
+                    continue
+                self.exact[w].add(sid)
+                if len(w) > 1:
+                    for x in w:                     # w minus one word: the shelf is the title plus ONE word
+                        self.plus1[w - {x}].add(sid)
+
+    def s_line(self, sid):
+        """'S cv=… gcd=… (C-054 0.9)' for a shelf with a winning S line, else ''."""
+        if sid not in self.s_of:
+            return ""
+        ids = sorted(f"{leg}={v}" for (leg, v), ss in self.s_ids.items() if sid in ss)
+        b, conf = self.s_of[sid]
+        return f"S {' '.join(ids)} ({b} {conf or '?'})"
+
+    def nearby(self, sid, want_ids, titles, skip=(), cap=12):
+        """-> [token, ...]: live shelves (not `sid`, not `skip`) whose S line or stored cv holds one of
+        `want_ids`, then shelves whose title words equal a run title's (or add one word to it). Id hits first,
+        all of them; title hits capped at `cap`, largest first, with the overflow counted."""
+        ev, skip = self.ev, set(skip) | {sid}
+        why = defaultdict(list)
+        for leg, v in sorted(want_ids):
+            for o in self.s_ids.get((leg, v), ()):
+                why[o].append(f"{leg}={v}")
+            if leg == "cv":
+                for o in self.stored_cv.get(v, ()):
+                    if f"cv={v}" not in why[o]:
+                        why[o].append(f"stored cv={v}")
+        by_id = [o for o in why if o not in skip and o in ev.series]
+        tw = {title_words(t) for t in titles} - {frozenset()}
+        title_hit = defaultdict(str)
+        for w in tw:
+            for o in self.exact.get(w, ()):
+                title_hit[o] = "title"
+            for o in self.plus1.get(w, ()):
+                title_hit.setdefault(o, "title+1")
+        by_title = [o for o in title_hit if o not in skip and o not in why and o in ev.series]
+        by_title.sort(key=lambda o: (title_hit[o] != "title", -ev.size.get(o, 0), o))
+        out = []
+        for o in sorted(by_id, key=lambda o: (-ev.size.get(o, 0), o)):
+            out.append(f"S{o} \"{ev.series[o]['name']}\" {ev.size.get(o, 0)}f [shares {', '.join(why[o])}"
+                       f"{' — ' + self.s_line(o) if o in self.s_of else ''}]")
+        for o in by_title[:cap]:
+            out.append(f"S{o} \"{ev.series[o]['name']}\" {ev.size.get(o, 0)}f [{title_hit[o]}"
+                       f"{' — ' + self.s_line(o) if o in self.s_of else ''}]")
+        if len(by_title) > cap:
+            out.append(f"(+{len(by_title) - cap} more by title)")
+        return out
+
+
+_NEAR = {}
+
+
+def near_index(ev):
+    """One NearIndex per Evidence (the census renders 500 packets; the index is built once)."""
+    if id(ev) not in _NEAR:
+        _NEAR.clear()
+        _NEAR[id(ev)] = NearIndex(ev)
+    return _NEAR[id(ev)]
+
+
 def packet(sid, ev, rec, landing=None):
     """One shelf's split packet: the winning decision (R/S + the split-needed F + every other F + the N lines on
-    the shelf or its books), the shelves the F line names, the keys the files carry, and every item grouped by
-    title x folder with its numbers — the same grouping `propose_split.py` prints.
+    the shelf or its books), the shelves the F line names, the `nearby:` shelves it did not name (TOOLS_TODO 28a),
+    the keys the files carry, and every item grouped by title x folder with its numbers — the same grouping
+    `propose_split.py` prints.
 
     Every item id is printed, because the split's answer is per item and an id a packet hides is an item nobody
     can move. Filenames are NOT all printed: inside a group, 4+ numbered issue files whose names carry the same
@@ -206,7 +321,6 @@ def packet(sid, ev, rec, landing=None):
         okeys = sorted(ev.keys.get(other, ()))
         L.append(f"   named: S{other} {o['name']}  {ev.size.get(other, 0)} files  keys: {' | '.join(okeys) or '(none)'}"
                  f"  <- a key of this shelf may be used to JOIN it")
-    L.append("   keys now: " + " · ".join(f'"{k or "(none)"}" x{n}' for k, n in keys.most_common()))
 
     # per-file provider links, per item — v1's evidence, printed per group so a group's run is visible
     cv, gcd = {}, {}
@@ -216,14 +330,21 @@ def packet(sid, ev, rec, landing=None):
         if sec and str(sec).strip().isdigit():
             (cv if prov == idbase.P_CV else gcd)[iid] = int(sec)
 
-    groups = defaultdict(list)
-    for r in rows:
-        groups[(title_of(r[1]), short_path(os.path.dirname(r[2] or "")))].append(r)
-    order = sorted(groups, key=lambda g: (g[1], g[0]))
+    order = group_items(rows)
+    # nearby (TOOLS_TODO 28a): live shelves the F line did not name but a run of this shelf may belong to —
+    # their S line / stored cv holds an id the F lines or the per-file links name, or their title is a run's
+    want = set()
+    for f in dl["f"]:
+        want |= leg_ids(f)
+    want |= {("cv", v) for v in cv.values()} | {("gcd", v) for v in gcd.values()}
+    near = near_index(ev).nearby(sid, want, [g[0] for g, _rs in order] + [s["name"] or ""], skip=named)
+    if near:
+        L.extend(_wrap(near, "   nearby: ", width=220))
+    L.append("   keys now: " + " · ".join(f'"{k or "(none)"}" x{n}' for k, n in keys.most_common()))
+
     L.append(f"   groups (title x folder): {len(order)}")
     modal = keys.most_common(1)[0][0] if keys else ""
-    for k, g in enumerate(order, 1):
-        rs = groups[g]
+    for k, (g, rs) in enumerate(order, 1):
         nums = [num(r[5]) for r in rs if not r[4] and num(r[5]) is not None]
         pp = [r[3] for r in rs if r[3]]
         cvs = Counter(cv[r[0]] for r in rs if r[0] in cv)

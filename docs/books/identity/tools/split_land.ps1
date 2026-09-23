@@ -4,8 +4,8 @@
 #   pwsh docs/books/identity/tools/split_land.ps1 -Wave 14 P-001 P-002 ...
 #
 # Order, and why:
-#   1. check_splits --all            the named files AND every other P- file (one item, one split; no two spellings
-#                                    of one canonical key across files)
+#   1. check_splits --all --unlanded the named files AND every other P- file (one item, one split; no two spellings
+#                                    of one canonical key across files); a file already landed is refused
 #   2. project each file             books-series-split reads {itemId, key} only; a P- file's shelf lines would be
 #                                    counted as bad lines, so the verb is fed the projection, never the P- file
 #   3. DRY RUN of the verb per file  it must report 0 "not found" and 0 "bad line(s)" — the verb does not exit
@@ -16,8 +16,11 @@
 #   6. wave_fix.ps1 -Resolve         takes a fresh snapshot, runs books-resolve --series (which builds the new
 #                                    Series from the new keys), reseat_flags, merge_refusals, pass2, the chain
 #                                    (reading-order + containment) and every PLAN §8 check
-#   7. check_splits --landed         which shelf each new key became -> a sheet next_batch.py --revisit-file reads,
-#                                    so the new shelves are read into the identity pass with their `run` ids
+#   7. check_splits --landed         which shelf each new key became, and each kept half -> a sheet
+#                                    next_batch.py --revisit-file reads, so BOTH halves are re-read with the `run` ids
+#                                    in their packets (`split run:` / `split:` lines)
+#   8. stale_flags_after_split       READ-ONLY: Pending conflated/overlap flags now on a one-run shelf, with the
+#                                    evidence, for the lead to verify and dismiss by hand (nothing is dismissed here)
 #
 # TOOLS_TODO 27 (d) lists `books-resolve --series` as its own step BEFORE wave_fix. It is deliberately not run
 # here: wave_fix -Resolve runs the resolve itself, AFTER taking the merge_refusals snapshot, and that snapshot is
@@ -66,7 +69,7 @@ New-Item -ItemType Directory -Force $undo | Out-Null
 $script:csvs = @()
 Write-Host "split lane wave ${Wave}: $($Batches -join ', ')"
 
-Step "check_splits --all (the named files, and every P- file against them)" { python "$tools/check_splits.py" @Batches --all }
+Step "check_splits --all (the named files, and every P- file against them)" { python "$tools/check_splits.py" @Batches --all --unlanded }
 
 $verbIn = @{}
 foreach ($b in $Batches) {
@@ -102,6 +105,9 @@ Step "wave_fix.ps1 -Resolve -Wave $Wave (snapshot -> books-resolve --series -> r
 $sheet = "$undo/split-wave$Wave-$stamp-newshelves.tsv"
 Step "check_splits --landed (which shelf each new key became; the sheet feeds next_batch.py --revisit-file)" {
     python "$tools/check_splits.py" --landed @Batches --out $sheet }
+
+Step "stale_flags_after_split (READ-ONLY: flags a split probably made stale; verify, then dismiss by hand)" {
+    python "$tools/stale_flags_after_split.py" --from @Batches --all }
 
 Write-Host ""
 Write-Host "SPLIT LANE LANDED: $($Batches -join ', ')" -ForegroundColor Green

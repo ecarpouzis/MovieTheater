@@ -891,6 +891,129 @@ if SPLIT_SID in split_pop:
           "next_batch --splits (--out / --dry-run) renders P- batches and leaves state.json + batches/ untouched",
           (r.stdout + r.stderr + r2.stderr)[-400:])
 
+# ── part 12: before the big split shelves (TOOLS_TODO 28 a-f) ─────────────────────────────────────────
+import re as _re
+
+print("\nthe split lane, round 2 — nearby, missed joins, group/range moves, landed files, both halves, stale flags")
+XMR, XMR_JOIN = 22296, 94820          # X-Men: Red (2018 Howard + 2022 Ewing); S94820 = the 2022 run's own shelf
+_before12 = _snapshot()
+
+
+def _cs(*argv):
+    return subprocess.run([sys.executable, os.path.join(idbase.HERE, "check_splits.py")] + [str(x) for x in argv],
+                          capture_output=True, text=True, encoding="utf-8", errors="replace")
+
+
+if XMR in split_pop:
+    xblk = splitbase.packet(XMR, ev, split_pop[XMR])
+    near = [l for l in xblk if l.lstrip().startswith("nearby:")]
+    check(any(f"S{XMR_JOIN} " in l and "shares cv=142134" in l for l in near),
+          f"(a) S{XMR}'s packet names S{XMR_JOIN} on its nearby: line (it holds the F line's CV 142134 as its S)",
+          "\n".join(near) or "\n".join(xblk[:8]))
+    # the packet's own G1 ids, read off the TEXT the reader sees — the expansion must reproduce exactly these
+    g1, on = [], False
+    for l in xblk:
+        s = l.strip()
+        if s.startswith("G1 "):
+            on = True
+            continue
+        if on and _re.match(r"G\d+ ", s):
+            break
+        if on:
+            g1 += [int(x) for x in _re.findall(r"(?:^|[\s\[])(\d{4,7})(?=\]| #)", s)]
+    SH = {"shelf": XMR, "split": True, "why": "two X-Men: Red runs share the bare title: the 2018 Howard run (CV "
+          "108548 / GCD 120699) stays; the 2022 Ewing run (CV 142134 / GCD 183739) moves"}
+    RUN = {"cv": 142134, "gcd": 183739}
+    rng = {"range": "#5-6", "match": "X-Men Red", "folder": "Judgement Day", "run": RUN}
+    ids1 = (XMR,)
+    p = write_split("P-910", [SH, {"group": "G1", "files": len(g1), "key": "X-Men Red v2 (2022)", "run": RUN},
+                              dict(rng, key="X-Men Red v2 (2022)")], ids1)
+    r = _cs(p)
+    check(r.returncode == 0 and "0 failure(s)" in r.stdout and "MISSED JOIN" in r.stdout
+          and f"live shelf S{XMR_JOIN}" in r.stdout,
+          f"(b) a run whose cv is S{XMR_JOIN}'s S identity passes with a WARN naming the probable missed join",
+          r.stdout[-600:])
+    vj = os.path.join(OUT, "P-910.verb.jsonl")
+    r = _cs("--project", p, "--out", vj)
+    got = [json.loads(x) for x in open(vj, encoding="utf-8")] if os.path.exists(vj) else []
+    check(len(g1) == 16 and [o["itemId"] for o in got] == g1 + [118589, 118590]
+          and all(o == {"itemId": o["itemId"], "key": "X-Men Red v2 (2022)"} for o in got),
+          "(c) --project expands the G1 line into exactly the 16 item ids the packet prints under G1, and the "
+          "#5-6 range (folder 'Judgement Day') into items 118589 + 118590", f"G1 {g1}; got {[o['itemId'] for o in got]}")
+    jk = "X-Men Red v2 (2022) (Krakoa)"
+    r = _cs(write_split("P-911", [dict(SH, join=[XMR_JOIN]), {"group": "G1", "key": jk, "run": RUN},
+                                  dict(rng, key=jk)], ids1))
+    check(r.returncode == 0 and "0 failure(s), 0 warning(s)" in r.stdout and "1 approved join(s)" in r.stdout,
+          f"(b) the same run JOINING S{XMR_JOIN} by its key passes clean with a lead-approved `join`", r.stdout[-400:])
+    bads12 = [
+        ("bad-join-unapproved", [SH, {"group": "G1", "key": jk}], ids1, "no `join` approves"),
+        ("bad-range-ambiguous", [SH, dict(rng, key="X-Men Red v2 (2022)", folder=None)], ids1, "AMBIGUOUS"),
+        ("bad-range-nothing", [SH, {"range": "#900", "match": "X-Men Red", "key": "X-Men Red v2 (2022)"}], ids1,
+         "matches no numbered issue file"),
+        ("bad-group-unknown", [SH, {"group": "G99", "key": "X-Men Red v2 (2022)"}], ids1, "is none of them"),
+        ("bad-group-drifted", [SH, {"group": "G1", "files": 15, "key": "X-Men Red v2 (2022)"}], ids1,
+         "the shelf changed since the packet"),
+        ("bad-group-twoshelves", [SH, P900[0], {"group": "G1", "key": "X-Men Red v2 (2022)"}] + P900[1:],
+         (XMR, 9845), "ambiguous; add \"from\""),
+        ("bad-group-overlap", [SH, {"group": "G1", "key": "X-Men Red v2 (2022)"},
+                               {"itemId": g1[0] if g1 else 0, "key": "X-Men Red v2 (2022)"}], ids1, "moved twice"),
+    ]
+    for name, lines, ids, want in bads12:
+        lines = [{k: v for k, v in o.items() if v is not None} if isinstance(o, dict) else o for o in lines]
+        r = _cs(write_split(name, lines, ids))
+        check(r.returncode != 0 and want in r.stdout, f"{name}: refused for its own rule ('{want}')", r.stdout[-400:])
+    r = _cs("--project", write_split("bad-project", [SH, {"group": "G99", "key": "X"}], ids1),
+            "--out", os.path.join(OUT, "bad-project.verb.jsonl"))
+    check(r.returncode != 0 and not os.path.exists(os.path.join(OUT, "bad-project.verb.jsonl")),
+          "--project writes NOTHING when a group / range line does not expand", r.stdout[-300:])
+else:
+    check(False, f"S{XMR} is in the split population (the round-2 fixtures need it)")
+
+# a LANDED file is checked as landed (the pre-landing rules are false of it by construction)
+r = _cs("P-001")
+check(r.returncode == 0 and "LANDED" in r.stdout and "0 failure(s)" in r.stdout,
+      "P-001 (landed as wave 14) passes as LANDED — every item carries its key and left its shelf", r.stdout[-300:])
+r = _cs("P-001", "--unlanded")
+check(r.returncode != 0 and "must not land a file twice" in r.stdout,
+      "--unlanded (split_land.ps1) refuses a file that already landed", r.stdout[-300:])
+
+# (e) both halves go to the next R- batch, with the split's answer in the packet
+sheet = os.path.join(OUT, "landed-P-001.tsv")
+r = _cs("--landed", "P-001", "--out", sheet)
+rows = [l.rstrip("\n").split("\t") for l in open(sheet, encoding="utf-8") if not l.startswith("#")] \
+    if os.path.exists(sheet) else []
+new = [c for c in rows if len(c) > 4 and c[4] == "new"]
+kept = [c for c in rows if len(c) > 4 and c[4] == "kept"]
+check(len(new) == 30 and kept and any(c[0] == "S121" and "S102454" in c[1] for c in kept),
+      "(e) --landed lists the 30 new shelves AND the kept halves (S121 kept, its Maps sourcebook -> S102454)",
+      f"{len(new)} new, {len(kept)} kept; {kept[:1]}")
+two = os.path.join(OUT, "landed-two.tsv")
+with open(two, "w", encoding="utf-8") as f:
+    f.write("\n".join("\t".join(c) for c in rows if c[0] in ("S102454", "S121")) + "\n")
+rdir = os.path.join(OUT, "emit-revisit-split")
+r = subprocess.run([sys.executable, os.path.join(idbase.HERE, "next_batch.py"), "--revisit-file", two, "--out", rdir],
+                   capture_output=True, text=True, encoding="utf-8", errors="replace")
+body = "".join(open(os.path.join(rdir, f), encoding="utf-8").read() for f in os.listdir(rdir) if f.endswith(".txt")) \
+    if os.path.isdir(rdir) else ""
+check('split run: "3W3M - Sourcebook 02 - Maps (2024)" run={"cv": 165815}' in body
+      and "split: the KEPT half of the P-001 split" in body,
+      "(e) --revisit-file carries the sheet into the packets: `split run:` on the new shelf, `split:` on the kept half",
+      body[-500:] or r.stdout[-300:])
+
+# (f) the stale-flag report: read-only, chunked, and it finds the one R-030 had to work around
+r = subprocess.run([sys.executable, os.path.join(idbase.HERE, "stale_flags_after_split.py"), "--from", "P-001",
+                    "--include-dismissed", "--all"], capture_output=True, text=True, encoding="utf-8", errors="replace")
+check(r.returncode == 0 and "S102475" in r.stdout and "flag 60 conflated-series" in r.stdout
+      and "'nextCursor'" in r.stdout and "READ-ONLY" in r.stdout,
+      "(f) stale_flags_after_split finds flag 60 on S102475 (Dead Body Road: Bad Blood, alone after P-001)",
+      r.stdout[-400:])
+r = subprocess.run([sys.executable, os.path.join(idbase.HERE, "stale_flags_after_split.py"), "--population",
+                    "--limit", "5"], capture_output=True, text=True, encoding="utf-8", errors="replace")
+check(r.returncode == 0 and "'processed': 5" in r.stdout and "'remaining'" in r.stdout,
+      "(f) the population mode does a bounded chunk and prints {processed, remaining, nextCursor, counts}",
+      r.stdout[-300:])
+check(_snapshot() == _before12, "part 12 wrote nothing to state.json or batches/")
+
 print(f"\n{len(failures)} failure(s)")
 if not KEEP:
     print(f"(files kept in {OUT} — inspect them, they are the worked examples)")

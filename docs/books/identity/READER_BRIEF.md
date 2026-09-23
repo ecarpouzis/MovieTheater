@@ -90,10 +90,11 @@ assertions and the barcodes. **Coverage: every item id in the `.ids` has an `I` 
 `N <itemId> no-record | why` saying what was looked for and where it was not found (≥ 40 characters).** A `C`
 line is not coverage — it says what a book collects, not what it is.
 
-**`P-NNN` = split batch (TOOLS_TODO 27):** shelves flagged `F split-needed`; you name the ITEMS that move to a new
-run, in `decisions/P-NNN.jsonl`: per shelf `{"shelf":<sid>,"split":true|false,"why":"≥ 40 chars"}`, then per MOVED
-item `{"itemId":<id>,"key":"<Title> v<N> (<Year>)","run":{"cv":<vol>,"gcd":<series>}}`. The largest run stays
-unwritten; a key is new or a shelf the F line names. `check_splits.py <name>` to 0; `WORKER_PROMPT_SPLITS.md`.
+**`P-NNN` = split batch:** shelves flagged `F split-needed`; you name the ITEMS that move, in
+`decisions/P-NNN.jsonl` — shelf lines, then item / `group` / `range` lines (grammar: `WORKER_PROMPT_SPLITS.md`).
+The largest run stays unwritten. Key `<Title> v<N> (<Year>)`; a one-shot or special `<Title> (<Year>)` in its OWN
+name, never `#0`. A key is new, a shelf the F line names, or a lead-approved `join`; weigh `nearby:` and every
+WARN. `check_splits.py <name>` to 0.
 
 Confidence — exactly one of: **1.0** the collection asserts it (Web id / ISBN / copyright-page range) and a leg
 agrees · **0.95** two independent legs agree and the arithmetic holds · **0.9** one leg plus our own naming /
