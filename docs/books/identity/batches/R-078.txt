@@ -1,0 +1,595 @@
+## Conventions for this batch (32 shown of 79 matched; 352 in LEDGER.md; 60 shelf/shelves: folder:graphic-novels ×60 · kind:new ×41 · pub:trade-house ×15 · kind:trade-only ×9 · kind:collected-line ×9 · kind:strip ×1 · pub:small-press ×1 · folder:sequel-subfolder ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-013] (60 shelf/shelves) sig:probe
+- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
+  with the other spelling.
+[L-014] (60 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-030] (60 shelf/shelves) sig:collision
+- One folder split into two shelves by a subtitle in one filename (Analog, Witch Doctor) → `F merge-with=<sid>`.
+[L-043] (60 shelf/shelves) sig:probe
+- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
+  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
+[L-050] (60 shelf/shelves) sig:probe
+- When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
+  punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
+  abbreviation the publisher uses ("HSE").
+[L-072] (60 shelf/shelves) sig:probe
+- GCD hides behind the SUBTITLE: "The Hunting Accident", "Giraffes on Horseback Salad", "Undesirables" return
+  nothing under their full titles — re-probe the SHORT title before writing `provider-missing`.
+[L-088] (60 shelf/shelves) sig:probe
+- GCD hides behind a LONGER title too ("… and the Tale of Azkon's Heart", "Holiday Party (One-Shot)"), not only a
+  shorter one — probe both directions before `provider-missing`.
+[L-089] (60 shelf/shelves) sig:probe
+- A facsimile of a SINGLE issue is its own book; a reprint edition of a whole series is not — the original wins.
+[L-095] (60 shelf/shelves) sig:probe
+- A folder that is a ripper's READING ORDER over several separately published arcs (The Ride, Revolution) has no
+  spanning record — the ladder is arc numbers, not issue numbers.
+[L-096] (60 shelf/shelves) sig:probe
+- GCD's exact filing recovers legs the probe misses: singular/plural ("Greeting", "Return"), two words ("Super
+  Hero"), a spelled ordinal ("Fortieth"), a dropped subtitle, or the colon form ("Jinx: Torso") — try each before
+  `provider-missing`.
+[L-118] (60 shelf/shelves) sig:probe
+- A GCD collected series numbers its issues by VOLUME and titles them with the volume SUBTITLE — that, not the
+  page count, places a trade when a shelf holds several volumes of one line.
+[L-125] (60 shelf/shelves) sig:probe
+- A stored link that is the same title a DIFFERENT DECADE later is a new cluster (Fist of Khonshu 2024 on the
+  1985 Moon Knight run; a 1971 Sub-Mariner Annual on the 1998 annual) — years decide, never the title.
+[L-151] (60 shelf/shelves) sig:collision sig:withheld
+- The withheld rule beats the checker's merge-with remedy text: a stored-link collision with a DIFFERENT comic is
+  `cv=-` + `N withheld cv=<id> … S<partner>`, never a merge (S101634 vs S22834); merge-with only for the same comic.
+[L-157] (60 shelf/shelves) sig:probe
+- A GCD row with ZERO issues is an empty stub, not a leg (Skull Cat 197154, Rivers of London: Stray Cat Blues 213823,
+  Archer & Armstrong: Revival 164703) → `provider-missing`.
+[L-159] (60 shelf/shelves) sig:probe
+- An exact-name probe can miss a sequel the rip DOES hold: `--contains "Icarus Society"` found CV 143976 after the
+  exact "Prodigy: The Icarus Society" probe returned nothing — try `--contains` on the subtitle before `provider-missing`.
+[L-160] (60 shelf/shelves) pass:revisit sig:withheld
+- A withheld shelf with NO GCD leg to keep becomes `R` + `N withheld cv=<id> … S<partner>` (S4944, S99691) — the
+  revisit pair re-links the partner and then the S line can be written.
+[L-163] (60 shelf/shelves) sig:probe
+- GCD hides behind a bracketed alternate title: "War Stories: J for Jenny [War Story: J for Jenny]" (10937), "Dance Like
+  Everybody's Watching! [A Zits Treasury]" (132081), "You're Out of Your Mind, Charlie Brown! [Horizontal]" (155990).
+[L-177] (60 shelf/shelves) sig:probe
+- A bracketed publisher series number becomes a phantom ladder entry: Thun'da's "[A1-056]/[A1 073]/[A1 083]" produced
+  ladder 56/73/83 and a ratio 5.00 — read the bracket, not the ladder.
+[L-193] (60 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-204] (60 shelf/shelves) pass:item pass:revisit sig:probe
+- `lookup.py --issues <collected-line volume>` names each TRADE's own ComicVine ISSUE id: 71 of 73 `I` lines in
+  R-018 carry an item-level CV id instead of `cv=-`.
+[L-253] (60 shelf/shelves) sig:probe
+- A subtitle can name a SEQUEL series filed on the first run's shelf (Wild's End "Beyond the Sea" = CV 151678 /
+  GCD 201441, not the 2014 run) — the `C` names the sequel run.
+[L-264] (60 shelf/shelves) sig:probe
+- Title-only (st3) GCD matches reuse ONE gcd id across every volume of a line (Golden City ×10, Windmaker,
+  Tarzan Kubert Years) — re-derive each book from the shelf's own numbered pool.
+[L-267] (60 shelf/shelves) sig:probe
+- A GCD "collected edition" series sits beside the genuine RUN under a different id (Dept H 100362 vs 111468, Harrow
+  County 89353 vs 94662, Sword Daughter 125748 vs 134585) — the `C` names the run; `lookup.py` by title finds it.
+[L-273] (60 shelf/shelves) sig:probe
+- The Adventures of Tintin: every per-file gcd pick (60515/108543) was wrong; the shelf's own gcd pool matched by
+  ENGLISH title was right for all 23 — the pool over the pick, again.
+[L-292] (60 shelf/shelves) sig:probe
+- A stored English digital volume's cached rip may cover only its last issues (Suzuka #13-18 of 18) — the earlier
+  books take gcd-only identities from the GCD series' full list, cv=-.
+[L-294] (60 shelf/shelves) pass:item sig:probe
+- ITEM PASS (X-046..X-048): a shelf can hold TWO published editions of one work with no shared pool (Monster: the
+  18-volume line beside the 2014 "Two-in-One" Perfect Edition) — each edition needs its own pool or an honest
+  no-record, never a mapping across editions. When a shelf's file count exceeds its pool, the excess usually
+  belongs to a CONTINUATION volume the shelf's own `N` names (Ranma 1/2 v22-38 → CV 26409 / GCD 17651) — the pool
+  for it must be pulled (`lookup.py --issues`, `gcd_issue WHERE series_id=?`) before writing no-record. GCD may mint
+  a "collected edition" row for only the FIRST of a same-title pair (Zombie Makeout Club) — the second is gcd=-.
+[L-341] (60 shelf/shelves) sig:probe
+- GCD name shapes that hide a record from an exact probe (R-065): a dropped licensor/author prefix (Insight "H. G.
+  Wells:", FSG "Shirley Jackson's"), a dropped leading "The" (DC "Origin of Hordak", IDW "Dark Judges"), a dropped
+  subtitle (IDW TMNT "Saturday Morning Adventures"), a BRACKETED subtitle (IDW RID 2015 "[Animated Series]"), a spelled
+  volume ordinal ("Comic Book History of Comics Volume 2"), a lengthened title (First Second "Prince of Persia the
+  Graphic Novel"). CV spells "'Til" where rippers write "'till".
+[L-346] (60 shelf/shelves) sig:probe
+- GCD name shapes (R-071): a run filed with its subtitle DROPPED (Oni "Dead of Winter" 116730, the subtitle moved onto
+  the trade row); ", Chapter II:" where CV writes " II:"; an event prefix ("Doctor Who Event 2016:"); "Special
+  Edition" appended to KODT specials. Titan Doctor Who "Year Two" runs ARE in the fixed CV index (84960 / 87162) — L-152's
+  "not in the ComicVine rip" is obsolete; the "Year Two v04" trades are run-wins into the issue shelves. Marvel event
+  chronology trade shelves (Death of Captain America, New Guard) are run-wins into the main run shelf.
+[L-347] (60 shelf/shelves) sig:probe
+- Name shapes that hid records (R-072): a creators' prefix on BOTH legs ("Paknadel & Trakhanov's Turncoat", Boom);
+  ComiXology Originals writing a symbol as a word ("dotSelf" = ".Self") and one-word GCD spellings ("The AllNighter");
+  biography books that are English editions of Italian BeccoGiallo originals (link the Italian row, L-024); a 2019+
+  Rebellion strip collection as a numbered volume of a GCD book line named for the source weekly ("Wildcat" #2 =
+  Loner); "Magazine" / "Year One" suffixes (Archie, Action Lab) — for a one-volume "Year One", pages / issue size
+  picks the run. A DC deluxe of one run or one one-shot is run-wins (GCD's notes say which).
+[L-126] (15 shelf/shelves) kind:kids pub:marvel pub:trade-house
+- Scholastic / Abrams all-ages Marvel books are in ComicVine under the real publisher and in GCD only
+  sometimes — the publisher column, not the title, is the test.
+[L-241] (15 shelf/shelves) kind:kids pub:papercutz-nbm pub:trade-house sig:split sig:stale-flag
+- Juvenile franchise reboots (Geronimo / Thea Stilton: original run, Papercutz HC reissue, Scholastic Graphix reboot)
+  are several co-existing lines on one shelf — R + split, not stale.
+[L-322] (15 shelf/shelves) folder:bucket folder:graphic-novels folder:variant-covers kind:fan pub:heavy-metal pub:trade-house sig:barcode sig:probe sig:twin tier:D
+- TIER D (D-007..D-009): the `Graphic Novels` bucket's publisher sub-folders are TRADE houses — GCD indexes them,
+  the CV rip largely does not (cv=- gcd=<row> + provider-missing at 0.9), and GCD mints TWIN rows for
+  HarperCollins / Andrews McMeel / Abrams / Scholastic books more often than not (0.9). Heavy Metal's 1977-79
+  album line is in both catalogs under the ALBUM's own title — the `Heavy_Metal-19NN-PR-` prefix hides it; probe
+  the bare title. A `\Covers` folder of 1pp index sheets ("84Monthly.cbz") is R + not-a-run (unlike variant-cover
+  packs, which identify their mini). Files tagged "(compilation)", "(panels)", "Portfolio", "(short)", "from
+  <anthology> #NN" are reader extracts → not-a-run. Search `gcd_issue.barcode` on the 11-digit UPC core, not only
+  the EAN-13 / ISBN — it found four barcodes the full-code query missed. `cvref.normName` drops "the" everywhere:
+  probe "Star Trek: Next Generation".
+
++47 more matched entries not shown: L-325, L-164, L-016, L-032, L-113, L-114, L-135, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-314, L-064, L-085, L-101, L-310, L-046, L-051, L-055, L-139, L-140, L-148, L-240, L-271, L-165, L-191, L-290, L-074, L-083, L-123, L-150, L-194, L-250, L-330 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S22847 Zootrope  [tier D]   keys: Zootrope  years 2012-2012  1 files / 0 collections
+   folders: [1] Graphic Novels
+   files:   [27604] Zootrope (2012) (Digital) (BlurPixel-Empire).cbr (40pp)
+   CV candidates:  71564 "Zoötrope" 2014 self published 1 issue 444933 s15 · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s15 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3 · 86527 "Disney Graphic Novels" 2015 NBM 4 s3 · 109403 "Graphic Novels Krimi" 2013 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   71564 "Zoötrope" 2014 self published 1 issue 444933 (via CV candidate name "Zoötrope") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels") · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 (via CV candidate name "Dr. Seuss Graphic Novels")   (rip lookup)
+   GCD dump:       104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+
+== S14925 STEWdio - The Naphic Grovel ARTrilogy of Chuck D  [tier D]   keys: STEWdio - The Naphic Grovel ARTrilogy of Chuck D  years 2023-2023  1 files / 0 collections
+   folders: [1] Graphic Novels\Chuck D (Public Enemy)
+   files:   [27080] STEWdio - The Naphic Grovel ARTrilogy of Chuck D (2023) (digital) (DrVink-DCP).cbz (373pp)
+   ours:    ComicInfo Publisher: "Enemy Books"x1
+   CV candidates:  27012 "Chuck" 2009 DC Comics 1 issue 163298 s55 · 21998 "Chuck" 2008 DC Comics 6 s40 · 166871 "Chuck Beans" 2025 Shueisha 2 s28 · 80448 "The Terminator: Enemy of My Enemy" 2015 Dark Horse Comics 1 issue 481590 s28 · 127511 "Falling For The Enemy" 2020 Harlequin Comics 1 issue 765281 s25 · 3834 "Chuck Norris" 1987 Marvel 4 s23   (v1 search)
+   CV local rip:   27012 "Chuck" 2009 DC Comics 1 issue 163298 (via CV candidate name "Chuck") · 21998 "Chuck" 2008 DC Comics 6 (via CV candidate name "Chuck") · 166871 "Chuck Beans" 2025 Shueisha 2 (via CV candidate name "Chuck Beans")   (rip lookup)
+   GCD dump:       38097 "Chuck" 2009-2009 DC [] 1 (via CV candidate name "Chuck") · 30997 "Chuck" 2008-2009 DC [] 6 (via CV candidate name "Chuck")   (dump lookup)
+
+== S17055 Summer of Hamn - Hollowpointlessness Aiding Mass Nihilism  [tier D]   keys: Summer of Hamn - Hollowpointlessness Aiding Mass Nihilism  years 2023-2023  1 files / 0 collections
+   folders: [1] Graphic Novels\Chuck D (Public Enemy)
+   files:   [27081] Summer of Hamn - Hollowpointlessness Aiding Mass Nihilism (2023) (digital) (DrVink-DCP).cbz (125pp)
+   ours:    ComicInfo Publisher: "Enemy Books"x1
+   CV candidates:  80802 "Black Mass" 2015 N.A.S Studios 1 issue 483061 s35 · 34737 "Stray Bullets: Innocence of Nihilism" 1998 El Capitan 1 issue 227989 s31 · 77866 "Stray Bullets: Innocence of Nihilism" 2014 Image 1 issue 469120 s31 · 72405 "Books of Lore: Summer 1998 Convention Special" 1998 Peregrine Entertainment 1 issue 447964 s27 · 80448 "The Terminator: Enemy of My Enemy" 2015 Dark Horse Comics 1 issue 481590 s21 · 25593 "Midnight, Mass." 2002 DC Comics 8 s20   (v1 search)
+   CV local rip:   80802 "Black Mass" 2015 N.A.S Studios 1 issue 483061 (via CV candidate name "Black Mass") · 77866 "Stray Bullets: Innocence of Nihilism" 2014 Image 1 issue 469120 (via CV candidate name "Stray Bullets: Innocence of Nihilism") · 34737 "Stray Bullets: Innocence of Nihilism" 1998 El Capitan 1 issue 227989 (via CV candidate name "Stray Bullets: Innocence of Nihilism")   (rip lookup)
+   GCD dump:       64746 "Black Mass" [en-ca] 2010-? Mother Books [] 6 (via CV candidate name "Black Mass")   (dump lookup)
+
+== S7152 GabrielleBell.com Archive  [tier D]   keys: GabrielleBell.com Archive  years 2010-2013  6 files / 5 collections
+   folders: [6] Graphic Novels\Gabrielle Bell
+   files:   [26300] GabrielleBell.com Archive Vol. 01 (2008-2009) (Webrip) (F) (COUNTERpaul).cbr (39pp) | [26301] COL GabrielleBell.com Archive Vol. 02 (2010) (Webrip) (F) (COUNTERpaul).cbr (71pp)
+            [26302] COL GabrielleBell.com Archive Vol. 03 (2011) (Webrip) (F) (COUNTERpaul).cbr (65pp) | [26303] COL GabrielleBell.com Archive Vol. 04 (2012) (webrip) (COUNTERpaul).cbr (109pp)
+            [26304] COL GabrielleBell.com Archive Vol. 05 (2013) (webrip) (COUNTERpaul).cbr (70pp) | [26305] COL GabrielleBell.com Archive Vol. 06 (2014-2016) (webrip) (COUNTERpaul).cbr (91pp)
+   ours:    ladder 1
+   CV candidates:  109402 "Graphic Novels" 2011 Süddeutsche Zeitung ? s0 · 147359 "Gabrielle" 2001 Pointe Noire ? s0 · 147393 "Gabrielle" 2001 Soleil ? s0 · 86527 "Disney Graphic Novels" 2015 NBM ? s0 · 58215 "The Discworld Graphic Novels" 2008 Doubleday ? s0 · 97536 "COM" 1967 Mushi Production ? s0   (v1 search)
+   CV local rip:   147359 "Gabrielle" 2001 Pointe Noire 1 issue 963775 (via CV candidate name "Gabrielle") · 147393 "Gabrielle" 2001 Soleil 1 issue 964031 (via CV candidate name "Gabrielle") · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 (via CV candidate name "Graphic Novels")   (rip lookup)
+   GCD dump:       124899 "Gabrielle" [fr] 2001-2001 Soleil [] 1 (via CV candidate name "Gabrielle") · 169195 "Gabrielle" [fr] 2001-2001 Pointe Noire [] 1 (via CV candidate name "Gabrielle") · 60514 "Graphic Novels" [de] 2011-2011 Süddeutsche Zeitung [] 11 (via CV candidate name "Graphic Novels") · 65342 "Graphic Novels" [de] 2012-2012 Süddeutsche Zeitung [] 10 (via CV candidate name "Graphic Novels")   (dump lookup)
+
+== S7290 Gateway City - Baby Won't You Please Come Home - Artist's Edition  [tier D]   keys: Gateway City - Baby Won't You Please Come Home - Artist's Edition  years 2021-2021  1 files / 1 collections
+   folders: [1] Graphic Novels\Gateway City (2018)
+   files:   [27086] COL Gateway City v02 - Baby Won't You Please Come Home - Artist's Edition (2021) (digital-Empire).cbr (60pp)
+   CV candidates:  65410 "Mother, Come Home" 2009 Fantagraphics 1 issue 417952 s50 · 63067 "Grimmy Come Home" 1990 Pharos Books 1 issue 409518 s44 · 61390 "Snoopy, Come Home" 1967 Holt, Rinehart and Winston 1 issue 402596 s43 · 118296 "Gateway City" 2019 Sassafras Press 1 issue 705970 s30 · 105804 "DC Essential Graphic Novels 2018" 2017 DC Comics 1 issue 634510 s27 · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s24   (v1 search)
+   CV local rip:   135271 "Snoopy, Come Home" 2021 Titan Comics 1 issue 842103 (via CV candidate name "Snoopy, Come Home") · 65410 "Mother, Come Home" 2009 Fantagraphics 1 issue 417952 (via CV candidate name "Mother, Come Home") · 63067 "Grimmy Come Home" 1990 Pharos Books 1 issue 409518 (via CV candidate name "Grimmy Come Home") · 61390 "Snoopy, Come Home" 1967 Holt, Rinehart and Winston 1 issue 402596 (via CV candidate name "Snoopy, Come Home")   (rip lookup)
+   GCD dump:       57351 "Mother, Come Home" 2009-2009 Fantagraphics [] 1 (via CV candidate name "Mother, Come Home") · 33131 "Mother, Come Home" 2003-2003 Dark Horse [] 1 (via CV candidate name "Mother, Come Home") · 57476 "Grimmy Come Home" 1990-1990 Pharos Books [] 1 (via CV candidate name "Grimmy Come Home") · 155992 "Snoopy, Come Home" 1972-1972 Henry Holt and Co. [] 1 (via CV candidate name "Snoopy, Come Home") · 30527 "Snoopy, Come Home" 1963-1967 Henry Holt and Co. [] 1 (via CV candidate name "Snoopy, Come Home")   (dump lookup)
+
+== S2366 Be That Way  [tier D]   keys: Be That Way  years 2023-2023  2 files / 0 collections
+   folders: [1] Graphic Novels · [1] Graphic Novels\Hope Larson
+   files:   [27248] Be That Way (2023) (digital) (DrVink-DCP).cbz (272pp) | [27097] Be That Way (2023) (Ferguson) (Digital) (XRA-Empire).cbz (256pp)
+   ours:    ComicInfo Series: "Be That Way"x1; ComicInfo Publisher: "Margaret Ferguson Books"x2
+   CV candidates:  106799 "The Powers That Be!" ? Primal Paper Comics 1 issue 648589 s46 · 45010 "Pogo's Will Be That Was" 1979 Simon and Schuster 1 issue 309901 s45 · 61129 "Powers That Be Preview Edition" 1995 Broadway 3 s45 · 136971 "Power Pack: The Powers That Be" 2021 Marvel 1 issue 862015 s44 · 75470 "Would That Not Be The Case!" 2012 Digital Manga Publishing 1 issue 458941 s44 · 24087 "Powers That Be" 1995 Broadway 6 s42   (v1 search)
+   CV local rip:   24087 "Powers That Be" 1995 Broadway 6 (via CV candidate name "The Powers That Be!") · 61129 "Powers That Be Preview Edition" 1995 Broadway 3 (via CV candidate name "Powers That Be Preview Edition") · 45010 "Pogo's Will Be That Was" 1979 Simon and Schuster 1 issue 309901 (via CV candidate name "Pogo's Will Be That Was") · 106799 "The Powers That Be!" ? Primal Paper Comics 1 issue 648589 (via CV candidate name "The Powers That Be!")   (rip lookup)
+   GCD dump:       7472 "Powers That Be" 1995-1996 Broadway [] 6 (via CV candidate name "The Powers That Be!") · 29756 "Powers That Be Preview Edition" 1995-1995 Broadway [] 3 (via CV candidate name "Powers That Be Preview Edition") · 19980 "Pogo's Will Be That Was" 1979-1979 Simon and Schuster [] 1 (via CV candidate name "Pogo's Will Be That Was")   (dump lookup)
+   MU / External:  ExternalWork 236 "Be That Way" openlibrary /works/OL31141435W
+
+== S9137 Humanity Lost volume one  [tier D]   keys: Humanity Lost volume one  years 2023-2023  1 files / 1 collections
+   folders: [1] Graphic Novels\Humanity Lost (2023)
+   files:   [27979] COL Humanity Lost v01 (2023) (digital) (DrVink-DCP).cbz (151pp)
+   ours:    ComicInfo Series: "Humanity Lost volume one"x1
+   CV candidates:  140760 "Morgan Lost Scream Novels" 2021 Sergio Bonelli Editore 1 issue 944180 s39 · 54759 "Spera Volume One" 2012 Archaia 6 s38 · 156927 "DC Essential Graphic Novels 2023" 2023 DC Comics 1 issue 1045423 s30 · 129575 "Morgan Lost Black Novels" 2019 Sergio Bonelli Editore 6 s23 · 129937 "Morgan Lost Night Novels" 2019 Sergio Bonelli Editore 8 s23 · 129574 "Morgan Lost Dark Novels" 2017 Sergio Bonelli Editore 10 s22   (v1 search)
+   CV local rip:   156927 "DC Essential Graphic Novels 2023" 2023 DC Comics 1 issue 1045423 (via CV candidate name "DC Essential Graphic Novels 2023") · 140760 "Morgan Lost Scream Novels" 2021 Sergio Bonelli Editore 1 issue 944180 (via CV candidate name "Morgan Lost Scream Novels") · 54759 "Spera Volume One" 2012 Archaia 6 (via CV candidate name "Spera Volume One")   (rip lookup)
+
+== S12125 Milo Manara - Bolero  [tier D]   keys: Milo Manara - Bolero  years ?-?  1 files / 0 collections
+   folders: [1] Graphic Novels\Milo Manara
+   files:   [27123] Milo Manara - Bolero (ADULT).cbr (38pp)
+   CV candidates:  144909 "Bolero" 1999 Grifo Edizioni 1 issue 945526 s55 · 147902 "Bolero" 2022 Image 1 issue 967714 s55 · 74648 "Milo Manara Pin-Up Art" 2002 Einaudi 1 issue 455806 s53 · 132146 "Milo Manara: The Definitive Collection" 2020 Humanoids 1 issue 819176 s52 · 163982 "El Arte de Milo Manara" 2023 Norma Editorial 1 issue 1107069 s52 · 144947 "Milo Manara Glamour Book " 1984 Glamour International 2 s46   (v1 search)
+   CV local rip:   141333 "Bolero" 2022 Image 5 (via CV candidate name "Bolero") · 144909 "Bolero" 1999 Grifo Edizioni 1 issue 945526 (via CV candidate name "Bolero") · 147902 "Bolero" 2022 Image 1 issue 967714 (via CV candidate name "Bolero") · 74648 "Milo Manara Pin-Up Art" 2002 Einaudi 1 issue 455806 (via CV candidate name "Milo Manara Pin-Up Art")   (rip lookup)
+   GCD dump:       180462 "Bolero" 2022-2022 Image [] 5 (via CV candidate name "Bolero") · 187592 "Bolero" 2022-2022 Image [] 1 (via CV candidate name "Bolero")   (dump lookup)
+
+== S12126 Milo Manara - Chanel No.5  [tier D]   keys: Milo Manara - Chanel No.5  years ?-?  1 files / 0 collections
+   folders: [1] Graphic Novels\Milo Manara
+   files:   [27124] Milo Manara - Chanel No.5 (ADULT).cbr (74pp)
+   ours:    ladder 5
+   CV candidates:  74648 "Milo Manara Pin-Up Art" 2002 Einaudi 1 issue 455806 s43 · 141254 "Milo" 2008 Delcourt 3 s43 · 132146 "Milo Manara: The Definitive Collection" 2020 Humanoids 1 issue 819176 s42 · 163982 "El Arte de Milo Manara" 2023 Norma Editorial 1 issue 1107069 s42 · 61782 "Manara" 2009 Panini Verlag 18 s40 · 144947 "Milo Manara Glamour Book " 1984 Glamour International 2 s36   (v1 search)
+   CV local rip:   141254 "Milo" 2008 Delcourt 3 (via CV candidate name "Milo") · 74648 "Milo Manara Pin-Up Art" 2002 Einaudi 1 issue 455806 (via CV candidate name "Milo Manara Pin-Up Art") · 132146 "Milo Manara: The Definitive Collection" 2020 Humanoids 1 issue 819176 (via CV candidate name "Milo Manara: The Definitive Collection")   (rip lookup)
+   GCD dump:       121507 "Milo" [fr] 2008-2011 Delcourt [] 3 (via CV candidate name "Milo") · 211540 "Milo" [nl-be] 2024-? Standaard Uitgeverij [] 5 (via CV candidate name "Milo") · 166643 "Milo Manara: The Definitive Collection" 2020-2020 Humanoids [] 1 (via CV candidate name "Milo Manara: The Definitive Collection")   (dump lookup)
+
+== S12129 Milo Manara - Game  [tier D]   keys: Milo Manara - Game  years ?-?  1 files / 0 collections
+   folders: [1] Graphic Novels\Milo Manara
+   files:   [27127] Milo Manara - Game.cbz (64pp)
+   CV candidates:  74648 "Milo Manara Pin-Up Art" 2002 Einaudi 1 issue 455806 s53 · 132146 "Milo Manara: The Definitive Collection" 2020 Humanoids 1 issue 819176 s52 · 163982 "El Arte de Milo Manara" 2023 Norma Editorial 1 issue 1107069 s52 · 144947 "Milo Manara Glamour Book " 1984 Glamour International 2 s46 · 141254 "Milo" 2008 Delcourt 3 s43 · 144727 "Manara" 1997 Galatea 4 s43   (v1 search)
+   CV local rip:   74648 "Milo Manara Pin-Up Art" 2002 Einaudi 1 issue 455806 (via CV candidate name "Milo Manara Pin-Up Art") · 132146 "Milo Manara: The Definitive Collection" 2020 Humanoids 1 issue 819176 (via CV candidate name "Milo Manara: The Definitive Collection") · 163982 "El Arte de Milo Manara" 2023 Norma Editorial 1 issue 1107069 (via CV candidate name "El Arte de Milo Manara")   (rip lookup)
+   GCD dump:       166643 "Milo Manara: The Definitive Collection" 2020-2020 Humanoids [] 1 (via CV candidate name "Milo Manara: The Definitive Collection")   (dump lookup)
+
+== S12134 Milo Manara Cuentos Fantasticos  [tier D]   keys: Milo Manara Cuentos Fantasticos  years ?-?  1 files / 0 collections
+   folders: [1] Graphic Novels\Milo Manara
+   files:   [27132] Milo Manara Cuentos Fantasticos [CRG] [Ravencroft].cbr (61pp)
+   CV candidates:  74648 "Milo Manara Pin-Up Art" 2002 Einaudi 1 issue 455806 s43 · 141254 "Milo" 2008 Delcourt 3 s43 · 144727 "Manara" 1997 Galatea 4 s43 · 132146 "Milo Manara: The Definitive Collection" 2020 Humanoids 1 issue 819176 s42 · 163982 "El Arte de Milo Manara" 2023 Norma Editorial 1 issue 1107069 s42 · 61782 "Manara" 2009 Panini Verlag 18 s40   (v1 search)
+   CV local rip:   61782 "Manara" 2009 Panini Verlag 18 (via CV candidate name "Manara") · 141254 "Milo" 2008 Delcourt 3 (via CV candidate name "Milo") · 144727 "Manara" 1997 Galatea 4 (via CV candidate name "Manara") · 74648 "Milo Manara Pin-Up Art" 2002 Einaudi 1 issue 455806 (via CV candidate name "Milo Manara Pin-Up Art")   (rip lookup)
+   GCD dump:       121507 "Milo" [fr] 2008-2011 Delcourt [] 3 (via CV candidate name "Milo") · 211540 "Milo" [nl-be] 2024-? Standaard Uitgeverij [] 5 (via CV candidate name "Milo")   (dump lookup)
+
+== S9208 I Must Be Dreaming  [tier D]   keys: I Must Be Dreaming  years 2023-2023  1 files / 0 collections
+   folders: [1] Graphic Novels\Roz Chast
+   files:   [27153] I Must Be Dreaming (2023) (digital) (DrVink-DCP).cbz (128pp)
+   ours:    ComicInfo Publisher: "Bloomsbury Publishing"x1
+   CV candidates:  116222 "Dreaming" 2018 Harlequin Comics 1 issue 696184 s55 · 50992 "Duty Must be Done" 2004 Diana Tamblyn 1 issue 348625 s43 · 109251 "Debts Must Be Paid" 2018 self published 1 issue 663260 s43 · 48336 "The Gods Must Be Litigious" 2010 Exhibit A Press 1 issue 333429 s42 · 148848 "Must" 2011 Edizioni Star Comics 151 s40 · 145087 "I Want to be a Wall" 2022 Yen Press 3 s29   (v1 search)
+   CV local rip:   133786 "The Dreaming " 2019 Panini Verlag 2 (via CV candidate name "Dreaming") · 113236 "The Dreaming" 2018 DC Comics 20 (via CV candidate name "Dreaming") · 116222 "Dreaming" 2018 Harlequin Comics 1 issue 696184 (via CV candidate name "Dreaming") · 30075 "The Dreaming" 2005 Tokyopop 3 (via CV candidate name "Dreaming") · 5744 "The Dreaming" 1996 DC Comics 60 (via CV candidate name "Dreaming") · 109251 "Debts Must Be Paid" 2018 self published 1 issue 663260 (via CV candidate name "Debts Must Be Paid")   (rip lookup)
+   GCD dump:       146518 "The Dreaming" 2019-2020 DC [] 3 (via CV candidate name "Dreaming") · 152598 "The Dreaming" [de] 2019-2020 Panini Deutschland [] 2 (via CV candidate name "Dreaming") · 128736 "The Dreaming" 2018-2020 DC [] 20 (via CV candidate name "Dreaming") · 55140 "The Dreaming" [de] 2007-2008 Tokyopop (de) [] 3 (via CV candidate name "Dreaming") · 146425 "The Dreaming" [fr] 2007-2007 Akileos [] 3 (via CV candidate name "Dreaming") · 42553 "The dreaming" [nl] 2006-2006 Van Gennep [] 1 (via CV candidate name "Dreaming")   (dump lookup)
+   MU / External:  ExternalWork 455 "I Must Be Dreaming" openlibrary /works/OL34171939W
+
+== S17901 The Adventures of Hanzo - Wrath of Winter Part  [tier D]   keys: The Adventures of Hanzo - Wrath of Winter Part  years 2023-2023  2 files / 0 collections
+   folders: [2] Graphic Novels\The Adventures of Hanzo (2023)
+   files:   [27161] The Adventures of Hanzo - Wrath of Winter Part 01 (2023) (digital) (DrVink-DCP).cbz (26pp)
+            [27162] The Adventures of Hanzo - Wrath of Winter Part 01 - Artbook (2023) (digital) (DrVink-DCP).cbz (26pp)
+   ours:    ladder 1; 1 number(s) name more than one file: 1; ComicInfo Publisher: "Studio JS LLC"x2
+   CV candidates:  126418 "Wrath" 2020 Wikid Publishing 1 issue 749316 s59 · 90759 "Hanzo" 2011 Shueisha 1 issue 532095 s56 · 5427 "Wrath" 1994 Malibu 9 s43 · 30795 "Pokemon Adventures, Part 3" 2000 Viz 2 s40 · 72331 "4th Hanzo" 2014 self published 1 issue 447725 s37 · 40470 "The Studio" 1979 Dragon's Dream 1 issue 354146 s30   (v1 search)
+   CV local rip:   126418 "Wrath" 2020 Wikid Publishing 1 issue 749316 (via CV candidate name "Wrath") · 90759 "Hanzo" 2011 Shueisha 1 issue 532095 (via CV candidate name "Hanzo") · 5427 "Wrath" 1994 Malibu 9 (via CV candidate name "Wrath")   (rip lookup)
+   GCD dump:       5151 "Wrath" 1994-1994 Malibu [] 9 (via CV candidate name "Wrath")   (dump lookup)
+
+== S21103 Viscere  [tier D]   keys: Viscere  years 2023-2023  1 files / 1 collections
+   folders: [1] Graphic Novels\Viscere - Body Horror (2023)
+   files:   [27989] COL Viscere - Body Horror Vol. 01 (2023) (digital) (DrVink-HD-DCP).cbz (126pp)
+   ours:    ComicInfo Series: "Viscere"x1; ComicInfo Publisher: "Strega Sporca"x1
+   CV candidates:  147629 "Marvel 2023 Calendar" 2023 Marvel 1 issue 966015 s30 · 148226 "Stormbreakers 2023 Sketchbook" 2023 Marvel 1 issue 970691 s30 · 150683 "DC Pride 2023" 2023 DC Comics 1 issue 991768 s30 · 152904 "Superman 2023 Annual" 2023 DC Comics 1 issue 1006570 s30 · 150597 "Valiant: FCBD 2023 Special" 2023 DMG/Valiant Entertainment 1 issue 991035 s30 · 150855 "Star Trek: Annual 2023" 2023 IDW Publishing 1 issue 992560 s30   (v1 search)
+   CV local rip:   147629 "Marvel 2023 Calendar" 2023 Marvel 1 issue 966015 (via CV candidate name "Marvel 2023 Calendar") · 148226 "Stormbreakers 2023 Sketchbook" 2023 Marvel 1 issue 970691 (via CV candidate name "Stormbreakers 2023 Sketchbook") · 150683 "DC Pride 2023" 2023 DC Comics 1 issue 991768 (via CV candidate name "DC Pride 2023")   (rip lookup)
+   GCD dump:       200814 "DC Pride 2023" 2023-2023 DC [] 1 (via CV candidate name "DC Pride 2023") · 223948 "Marvel 2023 Calendar" 2023-2023 Marvel [] 1 (via CV candidate name "Marvel 2023 Calendar")   (dump lookup)
+
+== S21682 Big City Blues  [tier C] · gap 17  keys: Will Eisner - Big City Blues  years 1987-1987  1 files / 0 collections
+   folders: [1] Graphic Novels\Will Eisner
+   files:   [26220] Will Eisner - Big City Blues (1987).cbr (118pp)
+   CV linked:      vol 24752 "Big City Blues" 2004 Ferret Press 1 issues issue 146020; issue list NOT CACHED; yearΔ 17; ratio 0/1; none cached; v1 per-file: same volume on 1/1 files
+   CV candidates:  (= linked) · 38284 "Dick Tracy : Big City Blues" 1990 Unknown Publisher 1 issue 256438 s49 · 43959 "Will Eisner Companion" 2004 DC Comics 1 issue 302155 s41 · 46909 "Will Eisner Presents" 1990 Eclipse 1 issue 323061 s41 · 45847 "Art of Will Eisner" 1982 Kitchen Sink 1 issue 315634 s37 · 47012 "Will Eisner Color Treasury" 1981 Kitchen Sink 1 issue 323438 s37 · 47606 "Will Eisner Edge of Genius" 2007 Pure Imagination 1 issue 327424 s36   (v1 search)
+   CV local rip:   (= linked) · 38284 "Dick Tracy : Big City Blues" 1990 Unknown Publisher 1 issue 256438 (via CV candidate name "Dick Tracy : Big City Blues") · 43959 "Will Eisner Companion" 2004 DC Comics 1 issue 302155 (via CV candidate name "Will Eisner Companion")   (rip lookup)
+   GCD dump:       60009 "Big City Blues" [de] 1987-1987 Reiner-Feest-Verlag [] 1 · 22626 "Dick Tracy Big City Blues" [no] 1990-1990 Hjemmet / Egmont [] 1 (via CV candidate name "Dick Tracy : Big City Blues")   (dump lookup)
+
+== S2303 Batter Royale  [tier D]   keys: Batter Royale  years 2022-2022  1 files / 0 collections
+   folders: [1] Graphic Novels\_Abrams ComicArts (& Amulet, Megascope, Surely)
+   files:   [26338] Batter Royale (2022) (Digital) (XRA-Empire).cbz (247pp)
+   ours:    ComicInfo Series: "Batter Royale"x1; ComicInfo Publisher: "Abrams – Amulet Books"x1
+   CV candidates:  72809 "Batter Up, Charlie Brown!" 2014 Fantagraphics 1 issue 449662 s42 · 163800 "Arcana Royale" 2025 Dark Horse Comics 4 s32 · 54094 "Battle Royale" ? Conrad Editora 3 s32 · 103985 "Battle Royale" 2003 Soleil 15 s29 · 171572 "Astro Royale" 2025 Penguin Random House Grupo Editorial 5 s29 · 29368 "Art of Abrams" 1996 Lightning Comics 1 issue 181465 s15   (v1 search)
+   CV local rip:   163800 "Arcana Royale" 2025 Dark Horse Comics 4 (via CV candidate name "Arcana Royale") · 72809 "Batter Up, Charlie Brown!" 2014 Fantagraphics 1 issue 449662 (via CV candidate name "Batter Up, Charlie Brown!") · 79844 "Battle Royale" 2008 Tokyopop GmbH 5 (via CV candidate name "Battle Royale") · 25028 "Battle Royale" 2003 Tokyopop 15 (via CV candidate name "Battle Royale") · 103985 "Battle Royale" 2003 Soleil 15 (via CV candidate name "Battle Royale") · 50255 "Battle Royale" 2000 Akita Shoten 15 (via CV candidate name "Battle Royale")   (rip lookup)
+   GCD dump:       222999 "Arcana Royale" 2025-2025 Dark Horse [] 4 (via CV candidate name "Arcana Royale") · 230675 "Arcana Royale" 2025-2025 Dark Horse [] 1 (via CV candidate name "Arcana Royale") · 129443 "Battle Royale" [de] 2018-2021 Tokyopop (de) [] 8 (via CV candidate name "Battle Royale") · 80511 "Batter Up, Charlie Brown!" 2014-2014 Fantagraphics [] 1 (via CV candidate name "Batter Up, Charlie Brown!") · 118725 "Battle Royale" [pl] 2012-2015 Waneko [] 15 (via CV candidate name "Battle Royale") · 54842 "Battle Royale" [de] 2008-2009 Tokyopop (de) [] 5 (via CV candidate name "Battle Royale")   (dump lookup)
+   MU / External:  ExternalWork 400 "Batter Royale" openlibrary /works/OL26085846W
+
+== S5441 Devour  [tier B]   keys: Devour  years 2023-2024  1 files / 0 collections
+   folders: [1] Graphic Novels\_Abrams ComicArts (& Amulet, Megascope, Surely)
+   files:   [26342] Devour (2024) (digital) (Mr Norrell-Empire).cbr (209pp)
+   CV linked:      vol 162792 "Devour" 2023 Aleta Ediciones 1 issues issue 1099153; issue list NOT CACHED; yearΔ 0; ratio 0/1; none cached; v1 per-file: same volume on 1/1 files
+   CV candidates:  (= linked) · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s15 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3 · 86527 "Disney Graphic Novels" 2015 NBM 4 s3 · 109403 "Graphic Novels Krimi" 2013 Süddeutsche Zeitung 4 s3 · 39361 "Disney Libri Graphic Novels" 2010 Walt Disney Company Italia 3 s3   (v1 search)
+   CV local rip:   (= linked) · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 (via CV candidate name "Dr. Seuss Graphic Novels") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels")   (rip lookup)
+   GCD dump:       104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+
+== S9038 Houses with a Story  [tier D]   keys: Houses with a Story  years 2023-2023  1 files / 0 collections
+   folders: [1] Graphic Novels\_Abrams ComicArts (& Amulet, Megascope, Surely)
+   files:   [26353] Houses with a Story (2023) (digital) (DrVink-DCP).cbz (128pp)
+   ours:    ComicInfo Publisher: "Amulet Books"x1
+   CV candidates:  51418 "Story of Bread with Miss Sunbeam" 1949 Magazine Enterprises 1 issue 352481 s41 · 54151 "Interview With the Vampire: Claudia's Story" 2012 Headline 1 issue 369155 s41 · 68712 "Bad Houses" 2013 Dark Horse Comics 1 issue 431416 s35 · 159247 "Houses of the Unholy" 2024 Image 1 issue 1066739 s27 · 120911 "Houses of the Holy" 2015 Uncivilized Books 1 issue 717384 s27 · 119792 "The Amulet of Lilith" 2019 Dark Gravity Comics 1 issue 711985 s15   (v1 search)
+   CV local rip:   68712 "Bad Houses" 2013 Dark Horse Comics 1 issue 431416 (via CV candidate name "Bad Houses") · 54151 "Interview With the Vampire: Claudia's Story" 2012 Headline 1 issue 369155 (via CV candidate name "Interview With the Vampire: Claudia's Story") · 51418 "Story of Bread with Miss Sunbeam" 1949 Magazine Enterprises 1 issue 352481 (via CV candidate name "Story of Bread with Miss Sunbeam")   (rip lookup)
+   GCD dump:       77391 "Bad Houses" 2013-2013 Dark Horse [] 1 (via CV candidate name "Bad Houses") · 140148 "Interview with the Vampire: Claudia's Story" 2012-2012 Yen Press [] 1 (via CV candidate name "Interview With the Vampire: Claudia's Story") · 27877 "The Story of Bread with Miss Sunbeam" 1949-1949 Magazine Enterprises [] 1 (via CV candidate name "Story of Bread with Miss Sunbeam")   (dump lookup)
+
+== S15244 Secret Identity - The Fetish Art of Superman's Joe Shuster  [tier D]   keys: Secret Identity - The Fetish Art of Superman's Joe Shuster  years 2009-2009  1 files / 0 collections
+   folders: [1] Graphic Novels\_Abrams ComicArts (& Amulet, Megascope, Surely)
+   files:   [26369] Secret Identity - The Fetish Art of Superman's Joe Shuster (2009) (Abrams ComicArts) (c2c).cbz (160pp)
+   ours:    barcode item 26369 [{"type": "EAN13", "data": "9780810996342", "page": "168 bac
+   CV candidates:  131930 "Joe Shuster" 2018 Carlsen Verlag 1 issue 818286 s70 · 39510 "Secret Identity" 2009 Unknown Publisher 1 issue 267054 s70 · 50697 "Fetish" 1993 Boneyard Press 1 issue 346944 s55 · 51835 "Powers: Secret Identity" 2007 Marvel 1 issue 355738 s41 · 142063 "Superman: Secret Identity" 2021 Panini Verlag 1 issue 913333 s41 · 113064 "Dark & Fetish Art" 2018 Pie Books 1 issue 682596 s35   (v1 search)
+   CV local rip:   39510 "Secret Identity" 2009 Unknown Publisher 1 issue 267054 (via CV candidate name "Secret Identity") · 131930 "Joe Shuster" 2018 Carlsen Verlag 1 issue 818286 (via CV candidate name "Joe Shuster") · 50697 "Fetish" 1993 Boneyard Press 1 issue 346944 (via CV candidate name "Fetish")   (rip lookup)
+   GCD dump:       70541 "Fetish" 2008-2008 Fantagraphics [] 1 (via CV candidate name "Fetish") · 176407 "Fetish" [fr] 2006-2006 Editions Sybaris [] 1 (via CV candidate name "Fetish") · 176412 "Fetish" [it] 2005-2005 Coniglio Editore [] 1 (via CV candidate name "Fetish") · 125164 "Joe Shuster" [de] 2018-2018 Carlsen Comics [DE] [] 1 (via CV candidate name "Joe Shuster") · 217859 "Joe Shuster" [it] 2018-2018 Bao Publishing [] 1 (via CV candidate name "Joe Shuster") · 48782 "Fetish" 1993-1993 Boneyard Press [] 1 (via CV candidate name "Fetish")   (dump lookup)
+
+== S18756 The Harrowing  [tier D]   keys: The Harrowing  years 2024-2024  1 files / 0 collections
+   folders: [1] Graphic Novels\_Abrams ComicArts (& Amulet, Megascope, Surely)
+   files:   [26377] The Harrowing (2024) (digital) (DrVink-DCP).cbz (240pp)
+   CV candidates:  58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s42 · 76372 "The Ultimate Graphic Novels Collection" 2011 Hachette 46 s26 · 43400 "Disney Movies The Graphic Novels" 2010 Disney 25 s26 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   76372 "The Ultimate Graphic Novels Collection" 2011 Hachette 46 (via CV candidate name "The Ultimate Graphic Novels Collection") · 43400 "Disney Movies The Graphic Novels" 2010 Disney 25 (via CV candidate name "Disney Movies The Graphic Novels") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels")   (rip lookup)
+   GCD dump:       162848 "The Ultimate Graphic Novels Collection" [en-gb] 2016-2022 Hachette Partworks [] 170 (via CV candidate name "The Ultimate Graphic Novels Collection") · 95679 "The Ultimate Graphic Novels Collection" [en-gb] 2011-2022 Hachette Partworks [] 240 (via CV candidate name "The Ultimate Graphic Novels Collection") · 104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+   MU / External:  ExternalWork 405 "The Harrowing" openlibrary /works/OL9177352W
+
+== S198 A Great Big Visual Hug  [tier D]   keys: A Great Big Visual Hug  years 2024-2024  1 files / 0 collections
+   folders: [1] Graphic Novels\_Andrews McMeel
+   files:   [26395] A Great Big Visual Hug (2024) (Andrews McMeel) (DCP Webrips).cbr (209pp)
+   CV candidates:  121069 "Big Nate: Hug It Out!" 2019 Andrews McMeel Publishing 1 issue 718089 s36 · 169551 "Hug Kiss Hug" 2023 Kodansha 5 s26 · 109387 "Graphic Storytelling and Visual Narrative" 2008 W. W. Norton & Company 1 issue 663934 s23 · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s15 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   169551 "Hug Kiss Hug" 2023 Kodansha 5 (via CV candidate name "Hug Kiss Hug") · 121069 "Big Nate: Hug It Out!" 2019 Andrews McMeel Publishing 1 issue 718089 (via CV candidate name "Big Nate: Hug It Out!") · 109387 "Graphic Storytelling and Visual Narrative" 2008 W. W. Norton & Company 1 issue 663934 (via CV candidate name "Graphic Storytelling and Visual Narrative")   (rip lookup)
+   GCD dump:       150135 "Big Nate: Hug It Out!" 2019-2019 Andrews McMeel [] 1 (via CV candidate name "Big Nate: Hug It Out!") · 193416 "Graphic Storytelling and Visual Narrative" 2008-? W. W. Norton [] 1 (via CV candidate name "Graphic Storytelling and Visual Narrative")   (dump lookup)
+
+== S6693 Finding the Light  [tier D]   keys: Finding the Light  years 2023-2023  1 files / 0 collections
+   folders: [1] Graphic Novels\_Andrews McMeel
+   files:   [26402] Finding the Light (2023) (digital) (DrVink-DCP).cbz (206pp)
+   CV candidates:  58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s32 · 76372 "The Ultimate Graphic Novels Collection" 2011 Hachette 46 s16 · 43400 "Disney Movies The Graphic Novels" 2010 Disney 25 s16 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   76372 "The Ultimate Graphic Novels Collection" 2011 Hachette 46 (via CV candidate name "The Ultimate Graphic Novels Collection") · 43400 "Disney Movies The Graphic Novels" 2010 Disney 25 (via CV candidate name "Disney Movies The Graphic Novels") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels")   (rip lookup)
+   GCD dump:       162848 "The Ultimate Graphic Novels Collection" [en-gb] 2016-2022 Hachette Partworks [] 170 (via CV candidate name "The Ultimate Graphic Novels Collection") · 95679 "The Ultimate Graphic Novels Collection" [en-gb] 2011-2022 Hachette Partworks [] 240 (via CV candidate name "The Ultimate Graphic Novels Collection") · 104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+
+== S9044 How Not to Get into Heaven  [tier D]   keys: How Not to Get into Heaven  years 2021-2021  1 files / 0 collections
+   folders: [1] Graphic Novels\_Andrews McMeel
+   files:   [26404] How Not to Get into Heaven (2021) (Andrews McMeel) (digital) (DrVink-DCP).cbz (128pp)
+   ours:    ComicInfo Publisher: "Andrews McMeel Publishing"x1
+   CV candidates:  59686 "How to Break into Comics" 2002 self published 1 issue 396237 s43 · 68678 "How to Break Into Comics" 2005 Antarctic Press 1 issue 431256 s43 · 78979 "How Not to Draw Manga" 2004 Antarctic Press 1 issue 474160 s43 · 75569 "How To Get Dumped In Style" 2014 Project-H 1 issue 459235 s42 · 84710 "Get Into Comix" 2015 self published 1 issue 500903 s41 · 51495 "How to Get Rich (and Keep It)" 2003 Chick Publications 1 issue 353222 s41   (v1 search)
+   CV local rip:   68678 "How to Break Into Comics" 2005 Antarctic Press 1 issue 431256 (via CV candidate name "How to Break into Comics") · 78979 "How Not to Draw Manga" 2004 Antarctic Press 1 issue 474160 (via CV candidate name "How Not to Draw Manga") · 59686 "How to Break into Comics" 2002 self published 1 issue 396237 (via CV candidate name "How to Break into Comics")   (rip lookup)
+   GCD dump:       46587 "How to Break into Comics" 2005-2005 Antarctic Press [] 1 (via CV candidate name "How to Break into Comics")   (dump lookup)
+   MU / External:  ExternalWork 407 "How Not to Get into Heaven" openlibrary /works/OL25774705W
+
+== S10614 Lavender Clouds - Comics about Neurodivergence and Mental Health  [tier D]   keys: Lavender Clouds - Comics about Neurodivergence and Mental Health  years 2024-2024  1 files / 0 collections
+   folders: [1] Graphic Novels\_Andrews McMeel
+   files:   [26405] Lavender Clouds - Comics about Neurodivergence and Mental Health (2024) (digital) (DrVink-DCP).cbz (145pp)
+   CV candidates:  118706 "Whispers: A Book About Mental Health" 2019 AAM/Markosia 1 issue 707691 s35 · 76505 "Amazing Facts About Cleanliness and Health" 1955 Monsanto 1 issue 462693 s35 · 121686 "Hardcore Anxiety: A Graphic Guide to Punk Rock and Mental Health" 2019 Microcosm Publishing 1 issue 720919 s29 · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s15 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   118706 "Whispers: A Book About Mental Health" 2019 AAM/Markosia 1 issue 707691 (via CV candidate name "Whispers: A Book About Mental Health") · 121686 "Hardcore Anxiety: A Graphic Guide to Punk Rock and Mental Health" 2019 Microcosm Publishing 1 issue 720919 (via CV candidate name "Hardcore Anxiety: A Graphic Guide to Punk Rock and Mental Health") · 76505 "Amazing Facts About Cleanliness and Health" 1955 Monsanto 1 issue 462693 (via CV candidate name "Amazing Facts About Cleanliness and Health")   (rip lookup)
+   GCD dump:       150773 "Hardcore Anxiety: A Graphic Guide to Punk Rock and Mental Health" 2019-2019 Microcosm Publishing [] 1 (via CV candidate name "Hardcore Anxiety: A Graphic Guide to Punk Rock and Mental Health")   (dump lookup)
+
+== S12099 Milk and Mocha Comics Collection - Our Little Happiness  [tier D]   keys: Milk and Mocha Comics Collection - Our Little Happiness  years 2023-2023  2 files / 0 collections
+   folders: [1] Graphic Novels\_Andrews McMeel · [1] Webcomics and Strips
+   files:   [26407] Milk & Mocha Comics Collection - Our Little Happiness (2023) (Andrews McMeel) (digital) (DrVink-DCP).cbz (128pp)
+            [114053] Milk & Mocha Comics Collection - Our Little Happiness (2023) (Andrews McNeel) (digital) (DrVink-DCP).cbz (128pp)
+   ours:    ComicInfo Publisher: "Andrews McMeel Publishing"x2
+   CV candidates:  61468 "Happiness" 2006 Shogakukan 1 issue 1005430 s48 · 154170 "Happiness" 2017 Tong Li Publishing Co. 4 s48 · 165715 "Happiness" 2023 Cross Cult 5 s43 · 97249 "Happiness" 2015 Kodansha 10 s40 · 148152 "Happiness" 2021 Milky Way Ediciones 10 s40 · 27106 "Milk!" 1997 Sin Factory Comix 63 s40   (v1 search)
+   CV local rip:   165715 "Happiness" 2023 Cross Cult 5 (via CV candidate name "Happiness") · 148152 "Happiness" 2021 Milky Way Ediciones 10 (via CV candidate name "Happiness") · 154170 "Happiness" 2017 Tong Li Publishing Co. 4 (via CV candidate name "Happiness") · 94399 "Happiness" 2016 Kodansha Comics USA 10 (via CV candidate name "Happiness") · 97249 "Happiness" 2015 Kodansha 10 (via CV candidate name "Happiness") · 147969 "Happiness" 2015 Milky Way Ediciones 1 issue 968134 (via CV candidate name "Happiness")   (rip lookup)
+   GCD dump:       204481 "Happiness" [de] 2023-2024 Cross Cult [] 5 (via CV candidate name "Happiness") · 201062 "Happiness" [fr] 2018-2020 Pika Édition [] 10 (via CV candidate name "Happiness") · 119685 "Happiness" 2016-2019 Kodansha USA [] 10 (via CV candidate name "Happiness")   (dump lookup)
+
+== S12481 Murder Book  [tier B]   keys: Murder Book  years 2021-2021  1 files / 0 collections
+   folders: [1] Graphic Novels\_Andrews McMeel
+   files:   [26408] Murder Book - A Graphic Memoir of a True Crime Obsession (2021) (Digital) (XRA-Empire).cbz (326pp)
+   ours:    ComicInfo Series: "Murder Book"x1; ComicInfo Publisher: "Andrews McMeel"x1
+   CV per-file (v1): vol 80931 "Murder Book" 2015 Dark Horse Comics 1 issue 483483 on 1/1 files
+   CV candidates:  (= per-file) · 42457 "Murder Book" 2010 self published 3 s78 · 116217 "Murder" 2018 Collab Creation 1 issue 696178 s55 · 58205 "Murder City" 1990 Malibu 1 issue 389681 s44 · 70541 "McCrory's Christmas Book" 1955 Western Publishing 1 issue 440350 s43 · 35714 "Murder" 1986 Renegade Press 3 s43 · 50963 "McCain: The Comic Book" 2008 Antarctic Press 1 issue 348222 s42   (v1 search)
+   CV local rip:   (= per-file) · 42457 "Murder Book" 2010 self published 3 · 116217 "Murder" 2018 Collab Creation 1 issue 696178 (via CV candidate name "Murder") · 35714 "Murder" 1986 Renegade Press 3 (via CV candidate name "Murder")   (rip lookup)
+   GCD dump:       87693 "Murder Book" 2015-2015 Dark Horse [] 1 · 114240 "Murder" 2017-2017 Robin Snyder and Steve Ditko [] 1 (via CV candidate name "Murder") · 3289 "Murder" 1986-1986 Renegade Press [] 3 (via CV candidate name "Murder")   (dump lookup)
+
+== S19176 The Mysteries  [tier D]   keys: The Mysteries  years 2023-2023  1 files / 0 collections
+   folders: [1] Graphic Novels\_Andrews McMeel
+   files:   [26417] The Mysteries by Bill Watterson & John Kascht (2023) (c2c) (JeffAlbertson-DCP).cbz (82pp)
+   CV candidates:  109390 "Graphic Mysteries" 2006 ? 1 issue 663937 s44 · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s42 · 76372 "The Ultimate Graphic Novels Collection" 2011 Hachette 46 s26 · 43400 "Disney Movies The Graphic Novels" 2010 Disney 25 s26 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   63777 "Mysteries" 1953 Superior Publishers Limited 11 · 109390 "Graphic Mysteries" 2006 ? 1 issue 663937 (via CV candidate name "Graphic Mysteries") · 76372 "The Ultimate Graphic Novels Collection" 2011 Hachette 46 (via CV candidate name "The Ultimate Graphic Novels Collection") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels")   (rip lookup)
+   GCD dump:       66972 "Mysteries" [nl-be] 2006-2007 Casterman [] 2 · 82795 "Mysteries" [fr-be] 2006-2007 Casterman [] 2 · 1000 "Mysteries" [en-ca] 1953-1955 Superior [] 11 · 162848 "The Ultimate Graphic Novels Collection" [en-gb] 2016-2022 Hachette Partworks [] 170 (via CV candidate name "The Ultimate Graphic Novels Collection") · 95679 "The Ultimate Graphic Novels Collection" [en-gb] 2011-2022 Hachette Partworks [] 240 (via CV candidate name "The Ultimate Graphic Novels Collection") · 104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+
+== S62856 Haru  [tier D]   keys: Haru  years 2024-2024  1 files / 1 collections
+   folders: [1] Graphic Novels\_Andrews McMeel\Haru (2024)
+   files:   [27934] COL Haru - Book 01 - Spring (2024) (digital) (DrVink-HD-DCP).cbz (259pp)
+
+== S505 Age  [tier D]   keys: Age  years 2024-2024  1 files / 0 collections
+   folders: [1] Graphic Novels\_Annick Press
+   files:   [27935] Age 16 (2024) (Annick Press) (digital) (DrVink-HD-DCP).cbz (298pp)
+   ours:    ladder 16
+   CV candidates:  134192 "Dragon Age: The First Five Graphic Novels" 2021 Dark Horse Comics 1 issue 832160 s69 · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s15 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3 · 86527 "Disney Graphic Novels" 2015 NBM 4 s3 · 109403 "Graphic Novels Krimi" 2013 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   79312 "The Age" 2015 The Age 1 issue 475648 · 134192 "Dragon Age: The First Five Graphic Novels" 2021 Dark Horse Comics 1 issue 832160 (via CV candidate name "Dragon Age: The First Five Graphic Novels") · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 (via CV candidate name "Dr. Seuss Graphic Novels") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels")   (rip lookup)
+   GCD dump:       170527 "Dragon Age: The First Five Graphic Novels" 2021-2021 Dark Horse [] 1 (via CV candidate name "Dragon Age: The First Five Graphic Novels") · 104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+
+== S6208 Erdoğan - A Graphic Biography: The Rise of Turkey's Modern Autocrat  [tier D]   keys: Erdoğan - A Graphic Biography: The Rise of Turkey's Modern Autocrat  years ?-?  1 files / 0 collections
+   folders: [1] Graphic Novels\_Arsenal Pulp Press
+   files:   [26422] Erdogan - A Graphic Biography (Arsenal 2023) (webrip) (MagicMan-DCP).cbr (318pp)
+   ours:    ComicInfo Series: "Erdoğan - A Graphic Biography: The Rise of Turkey's Modern Autocrat"x1; ComicInfo Publisher: "Arsenal Pulp Press"x1
+   CV candidates:  105278 "Che: A Graphic Biography" 2008 Verso 1 issue 630391 s45 · 127417 "Churchill: A Graphic Biography" 2020 Dead Reckoning 1 issue 764167 s45 · 29769 "Darwin: A Graphic Biography" 2009 Unknown Publisher 1 issue 183197 s45 · 135670 "Hokusai: A Graphic Biography" 2021 Laurence King Publishing 1 issue 845332 s45 · 123854 "The Mighty Elvis: A Graphic Biography" 2020 IDW Publishing 1 issue 731957 s41 · 72829 "Malcolm X: A Graphic Biography" 2006 Farrar, Straus, and Giroux 1 issue 449722 s39   (v1 search)
+   CV local rip:   29769 "Darwin: A Graphic Biography" 2009 Unknown Publisher 1 issue 183197 (via CV candidate name "Darwin: A Graphic Biography") · 105278 "Che: A Graphic Biography" 2008 Verso 1 issue 630391 (via CV candidate name "Che: A Graphic Biography") · 127417 "Churchill: A Graphic Biography" 2020 Dead Reckoning 1 issue 764167 (via CV candidate name "Churchill: A Graphic Biography")   (rip lookup)
+   GCD dump:       83988 "Che: A Graphic Biography" 2009-2009 Farrar, Straus, and Giroux [] 1 (via CV candidate name "Che: A Graphic Biography") · 117720 "Che: A Graphic Biography" [en-gb] 2008-2008 Verso [] 1 (via CV candidate name "Che: A Graphic Biography") · 160039 "Churchill: A Graphic Biography" 2020-2020 Naval Institute Press [] 1 (via CV candidate name "Churchill: A Graphic Biography")   (dump lookup)
+
+== S11915 Men and 12 Rifles - Indochina 1954  [tier D]   keys: Men and 12 Rifles - Indochina 1954  years ?-?  1 files / 0 collections
+   folders: [1] Graphic Novels\_Arsenal Pulp Press
+   files:   [26420] 40 Men and 12 Rifles - Indochina 1954 (Arsenal 2023) (webrip) (MagicMan-DCP).cbr (281pp)
+   ours:    ladder 1954; ComicInfo Series: "40 Men and 12 Rifles - Indochina 1954"x1; ComicInfo Publisher: "Arsenal Pulp Press"x1
+   CV candidates:  163914 "Indochina" 2024 Norma Editorial 1 issue 1106676 s55 · 83645 "Pulp" 2015 HP Comix 1 issue 496672 s15 · 87076 "To A Pulp" 2015 self published 1 issue 510174 s15 · 129107 "Pulp" 2020 Image 1 issue 784469 s15 · 35272 "Arsenal Special" 1996 DC Comics 1 issue 232573 s15 · 56929 "El Arsenal" 2010 Arcana Studio 1 issue 385229 s15   (v1 search)
+   CV local rip:   163914 "Indochina" 2024 Norma Editorial 1 issue 1106676 (via CV candidate name "Indochina") · 81197 "Pulp" 1997 Viz 57 (via CV candidate name "Pulp") · 83645 "Pulp" 2015 HP Comix 1 issue 496672 (via CV candidate name "Pulp") · 87076 "To A Pulp" 2015 self published 1 issue 510174 (via CV candidate name "To A Pulp") · 129107 "Pulp" 2020 Image 1 issue 784469 (via CV candidate name "Pulp")   (rip lookup)
+   GCD dump:       16316 "Pulp" 1997-2002 Viz [] 57 (via CV candidate name "Pulp") · 162456 "Pulp" 2020-2020 Image [] 1 (via CV candidate name "Pulp") · 174555 "Pulp" 2021-2021 Image [] 1 (via CV candidate name "Pulp") · 192698 "Pulp" [pt-br] 2021-2021 Mino [] 1 (via CV candidate name "Pulp")   (dump lookup)
+
+== S1852 Barking  [tier B]   keys: Barking  years 2024-2024  1 files / 1 collections
+   folders: [1] Graphic Novels\_Avery Hill
+   files:   [26425] COL Barking (Lucy Sullivan) (2024) (Avery Hill) (Digital-HD) (LeDuch).cbz (126pp)
+   ours:    ComicInfo Series: "Barking"x1; ComicInfo Volume: "2024"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "Avery Hill"x1
+   CV candidates:  149065 "The Hill" 2007 AAM/Markosia 1 issue 979506 s15 · 134491 "Curtiss Hill" 2021 Dark Horse Comics 1 issue 837687 s15 · 137625 "Curtiss Hill" ? Paquet 1 issue 871801 s15 · 34058 "Batman: The Hill" 2000 DC Comics 1 issue 222075 s15 · 157445 "Resurrection Hill" 2024 Dead Sky Publishing 1 issue 1049767 s15 · 148306 "Moth Hill" 2022 AfterLight Comics 2 s8   (v1 search)
+   CV local rip:   134491 "Curtiss Hill" 2021 Dark Horse Comics 1 issue 837687 (via CV candidate name "Curtiss Hill") · 149065 "The Hill" 2007 AAM/Markosia 1 issue 979506 (via CV candidate name "The Hill") · 137625 "Curtiss Hill" ? Paquet 1 issue 871801 (via CV candidate name "Curtiss Hill")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 212845 "Infinite Wheatpaste" [en-gb] 2024-? Avery Hill [collected edition] 1 on 1/1 files
+   GCD dump:       170968 "Curtiss Hill" 2021-2021 Dark Horse [] 1 (via CV candidate name "Curtiss Hill") · 172811 "Curtiss Hill" [nl] 2021-2021 Dark Dragon Books [] 1 (via CV candidate name "Curtiss Hill") · 205136 "Curtiss Hill" [fr-ch] 2021-2021 Editions Paquet SARL [] 1 (via CV candidate name "Curtiss Hill") · 27674 "The Hill" [en-gb] 2007-2007 Markosia Publishing [] 1 (via CV candidate name "The Hill")   (dump lookup)
+   bridges:        gcd 212845 -> LOCG 192573 "Infinite Wheatpaste Vol. 1: Catalytic Conversions TP" support 6 · gcd 212845 -> OL /works/OL37620714W "None" isbnSupport 6
+
+== S19891 The Victory Motel  [tier D]   keys: The Victory Motel  years ?-?  1 files / 0 collections
+   folders: [1] Graphic Novels\_Avery Hill\Owen D. Pomery
+   files:   [27937] The Victory Motel (2017, 2021) (Owen D. Pomery) (digital) (JeffAlbertson-DCP).cbz (73pp)
+   CV candidates:  58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s32 · 76372 "The Ultimate Graphic Novels Collection" 2011 Hachette 46 s16 · 43400 "Disney Movies The Graphic Novels" 2010 Disney 25 s16 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   43400 "Disney Movies The Graphic Novels" 2010 Disney 25 (via CV candidate name "Disney Movies The Graphic Novels") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels") · 76372 "The Ultimate Graphic Novels Collection" 2011 Hachette 46 (via CV candidate name "The Ultimate Graphic Novels Collection")   (rip lookup)
+   GCD dump:       95679 "The Ultimate Graphic Novels Collection" [en-gb] 2011-2022 Hachette Partworks [] 240 (via CV candidate name "The Ultimate Graphic Novels Collection") · 104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels") · 162848 "The Ultimate Graphic Novels Collection" [en-gb] 2016-2022 Hachette Partworks [] 170 (via CV candidate name "The Ultimate Graphic Novels Collection")   (dump lookup)
+
+== S3375 Candles Page  [tier D]   keys: Candles Page  years 2021-2021  1 files / 0 collections
+   folders: [1] Graphic Novels\_Cast Iron Books
+   files:   [26474] Candles (Kickstarter Edition) (2021) (Cast Iron) (digital) (JeffAlbertson-DCP)_Page_001.cbz (268pp)
+   CV candidates:  58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s15 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3 · 86527 "Disney Graphic Novels" 2015 NBM 4 s3 · 109403 "Graphic Novels Krimi" 2013 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 (via CV candidate name "Graphic Novels as Philosophy") · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 (via CV candidate name "Dr. Seuss Graphic Novels") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels")   (rip lookup)
+   GCD dump:       104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+
+== S18167 The Boy With Nails for Eyes  [tier D]   keys: The Boy With Nails for Eyes  years 2022-2022  1 files / 1 collections
+   folders: [1] Graphic Novels\_Cast Iron Books
+   files:   [26476] COL The Boy With Nails for Eyes Vol. 01 - Bobby (2022) (Cast Iron Books) (digital) (JeffAlbertson-DCP).cbz (311pp)
+   CV candidates:  58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s25 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 s15 · 76372 "The Ultimate Graphic Novels Collection" 2011 Hachette 46 s8 · 43400 "Disney Movies The Graphic Novels" 2010 Disney 25 s8 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 (via CV candidate name "Dr. Seuss Graphic Novels") · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 (via CV candidate name "Graphic Novels as Philosophy") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels")   (rip lookup)
+   GCD dump:       104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+
+== S57274 47 Strings  [tier D]   keys: 47 Strings  years 2021-2021  1 files / 1 collections
+   folders: [1] Graphic Novels\_Gallery 13\_Glenat\47 Strings (2021)
+   files:   [28000] COL 47 Strings - Book 01 (2021) (Scanlation) (phillywilly).cbr (383pp)
+
+== S12414 Mr. Badger and Mrs. Fox  [tier D]   keys: Mr. Badger and Mrs. Fox  years ?-?  1 files / 0 collections
+   folders: [1] Graphic Novels\_Graphic Universe
+   files:   [26502] Mr. Badger and Mrs. Fox 1. The Meeting (Digital) (Graphic Universe).cbr (34pp)
+   CV candidates:  49339 "Mr. and Mrs." 1922 Western Publishing 1 issue 337465 s70 · 64335 "Mr. and Mrs. Superman" 1982 Murray Comics 1 issue 413915 s50 · 84684 "Mr. and Mrs. Pott and Whalesteeth" 1945 Allied Authors and Artists 1 issue 500809 s48 · 3560 "Badger" 1983 First 70 s40 · 36931 "Badger" 1997 Image 11 s40 · 87934 "Badger" 2016 1First Comics 5 s40   (v1 search)
+   CV local rip:   49339 "Mr. and Mrs." 1922 Western Publishing 1 issue 337465 (via CV candidate name "Mr. and Mrs.") · 64335 "Mr. and Mrs. Superman" 1982 Murray Comics 1 issue 413915 (via CV candidate name "Mr. and Mrs. Superman") · 84684 "Mr. and Mrs. Pott and Whalesteeth" 1945 Allied Authors and Artists 1 issue 500809 (via CV candidate name "Mr. and Mrs. Pott and Whalesteeth")   (rip lookup)
+   GCD dump:       34601 "Mr. and Mrs. Superman" [en-au] 1982-1982 K. G. Murray [] 1 (via CV candidate name "Mr. and Mrs. Superman") · 50127 "Mr. and Mrs." 1922-1922 Western [] 1 (via CV candidate name "Mr. and Mrs.") · 91987 "Mr. and Mrs. Pott and Whalesteeth" [en-au] 1945-1945 Allied Authors and Artists [] 1 (via CV candidate name "Mr. and Mrs. Pott and Whalesteeth") · 150746 "Mr. and Mrs. Pott and Whalesteeth" [en-au] 1950-1950 Sun Newspapers Ltd [] 1 (via CV candidate name "Mr. and Mrs. Pott and Whalesteeth")   (dump lookup)
+
+== S12929 Night and Dana  [tier D]   keys: Night and Dana  years 2023-2023  1 files / 0 collections
+   folders: [1] Graphic Novels\_Graphic Universe
+   files:   [26504] Night and Dana (2023) (Graphic Universe) (digital) (DrVink-DCP).cbz (240pp)
+   ours:    ComicInfo Publisher: "Graphic Universe"x1
+   CV candidates:  70958 "Night" 1995 SLG Publishing 1 issue 442464 s55 · 63822 "Night" 2004 Jester Press 4 s43 · 128693 "Night Night, Groot" 2018 Marvel 1 issue 780042 s41 · 120681 "The Night" 2019 Titan Comics 1 issue 716266 s35 · 137357 "Legacy: A House of Night Graphic Novel" 2018 Dark Horse Comics 1 issue 867627 s29 · 158958 "Masters of the Universe: Night of the Leech" 2022 Mattel 1 issue 1063636 s28   (v1 search)
+   CV local rip:   120681 "The Night" 2019 Titan Comics 1 issue 716266 (via CV candidate name "Night") · 63822 "Night" 2004 Jester Press 4 (via CV candidate name "Night") · 70958 "Night" 1995 SLG Publishing 1 issue 442464 (via CV candidate name "Night") · 128693 "Night Night, Groot" 2018 Marvel 1 issue 780042 (via CV candidate name "Night Night, Groot")   (rip lookup)
+   GCD dump:       91573 "Night" 2004-2008 Jester Press [] 5 (via CV candidate name "Night") · 45153 "The Night" 1995-1995 Slave Labor [] 1 (via CV candidate name "Night")   (dump lookup)
+   MU / External:  ExternalWork 417 "Night and Dana" openlibrary /works/OL28861303W
+
+== S20839 Upstaged  [tier D]   keys: Upstaged  years 2024-2024  1 files / 0 collections
+   folders: [1] Graphic Novels\_Hachette
+   files:   [26529] Upstaged (2024) (Hachette) (digital) (DrVink-DCP).cbz (256pp)
+   CV candidates:  58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s15 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3 · 86527 "Disney Graphic Novels" 2015 NBM 4 s3 · 109403 "Graphic Novels Krimi" 2013 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 (via CV candidate name "Dr. Seuss Graphic Novels") · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 (via CV candidate name "Graphic Novels as Philosophy") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels")   (rip lookup)
+   GCD dump:       104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+
+== S188 A For Effort  [tier D]   keys: A For Effort  years 2024-2024  1 files / 0 collections
+   folders: [1] Graphic Novels\_Harper (All Imprints)
+   files:   [26530] A For Effort (2024) (Harper Alley) (Digital Rip) (Hourman-DCP).cbr (217pp)
+   ours:    ComicInfo Series: "A For Effort"x1; ComicInfo Publisher: "HarperAlley"x1
+   CV candidates:  65876 "Nightmare Alley" 2003 Fantagraphics 1 issue 419659 s15 · 93077 "Gasoline Alley" 1976 Avon 1 issue 544405 s15 · 29793 "Blake Harper City Surgeon" 1963 Western Publishing 1 issue 183370 s15 · 58456 "The Last Convert of John Harper" 2013 Kingstone Comics 1 issue 390607 s15 · 35144 "Alley Oop" 2003 Manuscript Press 1 issue 231920 s15 · 35284 "Alley Oop" 1962 Dell 2 s8   (v1 search)
+   CV local rip:   52407 "Gasoline Alley" 2012 IDW Publishing 1 issue 358851 (via CV candidate name "Gasoline Alley") · 65876 "Nightmare Alley" 2003 Fantagraphics 1 issue 419659 (via CV candidate name "Nightmare Alley") · 93077 "Gasoline Alley" 1976 Avon 1 issue 544405 (via CV candidate name "Gasoline Alley") · 29793 "Blake Harper City Surgeon" 1963 Western Publishing 1 issue 183370 (via CV candidate name "Blake Harper City Surgeon") · 93042 "Gasoline Alley" 1950 Star Publications 2 (via CV candidate name "Gasoline Alley") · 93012 "Gasoline Alley" 1929 Reilley & Lee 1 issue 543927 (via CV candidate name "Gasoline Alley")   (rip lookup)
+   GCD dump:       80642 "Gasoline Alley" 2012-2012 IDW [] 1 (via CV candidate name "Gasoline Alley") · 40608 "Nightmare Alley" 2003-2003 Fantagraphics [] 1 (via CV candidate name "Nightmare Alley") · 50175 "Gasoline Alley" 1976-1976 Avon Books [] 1 (via CV candidate name "Gasoline Alley") · 16824 "Gasoline Alley" 1950-1950 Star Publications [1949-1954] [] 2 (via CV candidate name "Gasoline Alley") · 101198 "Gasoline Alley" [en-ca] 1950-? Superior [] 2 (via CV candidate name "Gasoline Alley") · 78722 "Gasoline Alley" 1929-1929 Reilley & Lee [] 1 (via CV candidate name "Gasoline Alley")   (dump lookup)
+
+== S2402 Before 13th  [tier D]   keys: Before 13th  years 2024-2024  1 files / 0 collections
+   folders: [1] Graphic Novels\_Harper (All Imprints)
+   files:   [26538] Before 13th (2024) (Harper-Amistad) (Digital) (XRA-Empire).cbz (211pp)
+   ours:    ComicInfo Series: "Before 13th"x1; ComicInfo Publisher: "HarperCollins"x1
+   CV candidates:  47706 "13th of Never" 2004 SLG Publishing 1 issue 328649 s43 · 117009 "The 13th Stone" 2019 Mallet Productions 1 issue 700390 s43 · 88910 "The 13th Artifact" 2016 Image 1 issue 520225 s43 · 21351 "The 13th Son" 2005 Dark Horse Comics 4 s31 · 41186 "13th Boy" 2009 Yen Press 12 s29 · 25462 "Friday the 13th" 2007 DC Comics 6 s28   (v1 search)
+   CV local rip:   117009 "The 13th Stone" 2019 Mallet Productions 1 issue 700390 (via CV candidate name "The 13th Stone") · 88910 "The 13th Artifact" 2016 Image 1 issue 520225 (via CV candidate name "The 13th Artifact") · 47706 "13th of Never" 2004 SLG Publishing 1 issue 328649 (via CV candidate name "13th of Never")   (rip lookup)
+   GCD dump:       98430 "13th Artifact" 2016-2016 Image [] 1 (via CV candidate name "The 13th Artifact") · 44969 "The 13th of Never" 2004-2004 Slave Labor [] 1 (via CV candidate name "13th of Never")   (dump lookup)
+   MU / External:  ExternalWork 419 "Before 13th" openlibrary /works/OL37865021W
+
+== S3002 Blossoms and Bones - Drawing a Life Back Together  [tier D]   keys: Blossoms and Bones - Drawing a Life Back Together  years 2020-2020  1 files / 0 collections
+   folders: [1] Graphic Novels\_Harper (All Imprints)
+   files:   [26539] Blossoms and Bones - Drawing a Life Back Together (2020) (digital+) (fylgja).cbz (114pp)
+   CV candidates:  27503 "Drawing from Life" 2007 Image 2 s34 · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s15 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3 · 86527 "Disney Graphic Novels" 2015 NBM 4 s3 · 109403 "Graphic Novels Krimi" 2013 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 (via CV candidate name "Dr. Seuss Graphic Novels") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels") · 27503 "Drawing from Life" 2007 Image 2 (via CV candidate name "Drawing from Life")   (rip lookup)
+   GCD dump:       104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels") · 34081 "Drawing from Life" 2007-2007 Image [] 2 (via CV candidate name "Drawing from Life")   (dump lookup)
+
+== S3145 Brave New World  [tier B]   keys: Brave New World  years 2022-2022  1 files / 0 collections
+   folders: [1] Graphic Novels\_Harper (All Imprints)
+   files:   [26540] Brave New World - A Graphic Novel (2022) (Digital) (XRA-Empire).cbz (238pp)
+   ours:    ComicInfo Series: "Brave New World"x1; ComicInfo Publisher: "Harper Collins"x1
+   CV per-file (v1): vol 68007 "Brave New World" 2013 Basstudio 2 on 1/1 files
+   CV candidates:  (= per-file) · 146784 "Brave New World" 2007 Planeta DeAgostini 1 issue 959452 s90 · 52634 "Nobrow: Brave New World" 2012 ? 1 issue 359892 s74 · 27487 "DCU: Brave New World" 2006 DC Comics 1 issue 167602 s74 · 106543 "Secret Empire: Brave New World" 2017 Marvel 1 issue 643039 s73 · 120787 "New World" 2019 Archaia 1 issue 716863 s70 · 52049 "Uncle Sam and the Freedom Fighters: Brave New World" 2008 DC Comics 1 issue 356738 s69   (v1 search)
+   CV local rip:   (= per-file) · 146784 "Brave New World" 2007 Planeta DeAgostini 1 issue 959452 · 52634 "Nobrow: Brave New World" 2012 ? 1 issue 359892 (via CV candidate name "Nobrow: Brave New World")   (rip lookup)
+
+== S7022 Frontera  [tier D]   keys: Frontera  years 2023-2023  1 files / 0 collections
+   folders: [1] Graphic Novels\_Harper (All Imprints)
+   files:   [26556] Frontera (2023) (Harper Alley) (Digital) (XRA-Empire).cbz (239pp)
+   ours:    ComicInfo Series: "Frontera"x1; ComicInfo Publisher: "HarperCollins"x1
+   CV candidates:  105681 "Conan Rey: Lobos de Allende la frontera" 2017 Planeta DeAgostini 1 issue 634029 s69 · 149404 "Frontera Infinita" 2021 ECC Ediciones 4 s62 · 128998 "Collins Boys' Annual" 1953 Collins 1 issue 782596 s30 · 29793 "Blake Harper City Surgeon" 1963 Western Publishing 1 issue 183370 s15 · 58456 "The Last Convert of John Harper" 2013 Kingstone Comics 1 issue 390607 s15 · 70754 "Craig Collins Collected Comics" 2012 Unknown Publisher 1 issue 441549 s15   (v1 search)
+   CV local rip:   149404 "Frontera Infinita" 2021 ECC Ediciones 4 (via CV candidate name "Frontera Infinita") · 105681 "Conan Rey: Lobos de Allende la frontera" 2017 Planeta DeAgostini 1 issue 634029 (via CV candidate name "Conan Rey: Lobos de Allende la frontera") · 128998 "Collins Boys' Annual" 1953 Collins 1 issue 782596 (via CV candidate name "Collins Boys' Annual")   (rip lookup)
+   GCD dump:       75854 "Frontera" [es-ar] 1961-1962 Editorial Ramirez [] 8 · 66107 "Frontera" [es-ar] 1957-1961 Editorial Frontera [] 48 · 178254 "Frontera Infinita" [es] 2021-2021 ECC Ediciones [] 1 (via CV candidate name "Frontera Infinita")   (dump lookup)
+   MU / External:  ExternalWork 423 "Frontera" openlibrary /works/OL12194823W
+
+== S9494 Ink Girls  [tier D]   keys: Ink Girls  years 2023-2023  1 files / 0 collections
+   folders: [1] Graphic Novels\_Harper (All Imprints)
+   files:   [26565] Ink Girls (2023) (Harper Alley) (Digital) (XRA-Empire).cbz (266pp)
+   ours:    ComicInfo Series: "Ink Girls"x1; ComicInfo Publisher: "HarperCollins"x1
+   CV candidates:  121633 "INK" 2019 Lighthouse Comic Studio 1 issue 720387 s55 · 83249 "Ink Tales" 2015 White Cat Press 1 issue 494960 s44 · 63985 "Scrambled Ink" 2008 Dark Horse Comics 1 issue 412674 s44 · 160339 "Ink Sucker" ? 7's Comics 1 issue 1073587 s44 · 137710 "River of Ink" 2021 Humanoids 1 issue 872926 s43 · 58200 "Heroes Ink." 2000 Avalon Communications 2 s37   (v1 search)
+   CV local rip:   121633 "INK" 2019 Lighthouse Comic Studio 1 issue 720387 (via CV candidate name "INK") · 83249 "Ink Tales" 2015 White Cat Press 1 issue 494960 (via CV candidate name "Ink Tales") · 63985 "Scrambled Ink" 2008 Dark Horse Comics 1 issue 412674 (via CV candidate name "Scrambled Ink")   (rip lookup)
+   GCD dump:       60055 "Ink" [nl-be] 2000-2003 Oogachtend [] 13 (via CV candidate name "INK") · 56149 "Ink !" [de-ch] 1993-1996 Swiss Comic Connection [] 9 (via CV candidate name "INK") · 43035 "Scrambled Ink" 2008-2008 Dark Horse [] 1 (via CV candidate name "Scrambled Ink")   (dump lookup)
+
+== S11079 Lunar Boy  [tier D]   keys: Lunar Boy  years 2024-2024  1 files / 0 collections
+   folders: [1] Graphic Novels\_Harper (All Imprints)
+   files:   [26567] Lunar Boy (2024) (Digital) (XRA-Empire).cbz (243pp)
+   ours:    ComicInfo Series: "Lunar Boy"x1; ComicInfo Publisher: "HarperCollins"x1
+   CV candidates:  70792 "Lunar Lizard" 2014 Thrillbent 1 issue 441654 s44 · 154844 "Lunar Lodge" 2023 Dark Horse Comics 1 issue 1030913 s44 · 153830 "Lunar: Yonenki no Owari" 1995 Kadokawa Shoten 1 issue 1019850 s42 · 137760 "The Lunar Ladies" 2021 Scout Comics 2 s36 · 140391 "Lunar Room" 2021 Vault Comics 4 s32 · 128998 "Collins Boys' Annual" 1953 Collins 1 issue 782596 s30   (v1 search)
+   CV local rip:   154844 "Lunar Lodge" 2023 Dark Horse Comics 1 issue 1030913 (via CV candidate name "Lunar Lodge") · 70792 "Lunar Lizard" 2014 Thrillbent 1 issue 441654 (via CV candidate name "Lunar Lizard") · 153830 "Lunar: Yonenki no Owari" 1995 Kadokawa Shoten 1 issue 1019850 (via CV candidate name "Lunar: Yonenki no Owari")   (rip lookup)
+   GCD dump:       206126 "Lunar Lodge" 2023-? Dark Horse [] 1 (via CV candidate name "Lunar Lodge")   (dump lookup)
+
+== S15118 Saving Chupie  [tier D]   keys: Saving Chupie  years 2023-2023  1 files / 0 collections
+   folders: [1] Graphic Novels\_Harper (All Imprints)
+   files:   [26569] Saving Chupie (2023) (Harper Alley) (digital) (DrVink-DCP).cbz (224pp)
+   ours:    ComicInfo Publisher: "HarperAlley"x1
+   CV candidates:  48849 "Saving Point" 2010 RBA Comics 1 issue 335564 s44 · 38164 "Saving Life" 2010 Tokyopop 1 issue 255146 s44 · 137496 "Saving the World" 2021 Tonic Comix LLC 1 issue 869582 s43 · 149027 "Avengers: Saving is a Smash!" 2017 Marvel 1 issue 979264 s41 · 65876 "Nightmare Alley" 2003 Fantagraphics 1 issue 419659 s15 · 93077 "Gasoline Alley" 1976 Avon 1 issue 544405 s15   (v1 search)
+   CV local rip:   137496 "Saving the World" 2021 Tonic Comix LLC 1 issue 869582 (via CV candidate name "Saving the World") · 38164 "Saving Life" 2010 Tokyopop 1 issue 255146 (via CV candidate name "Saving Life") · 48849 "Saving Point" 2010 RBA Comics 1 issue 335564 (via CV candidate name "Saving Point")   (rip lookup)
+   MU / External:  ExternalWork 425 "Saving Chupie" openlibrary /works/OL29160478W
+
+== S15457 Shakti  [tier B]   keys: Shakti  years 2023-2023  2 files / 0 collections
+   folders: [1] Graphic Novels · [1] Graphic Novels\_Harper (All Imprints)
+   files:   [27468] Shakti (2023) (digital) (DrVink).cbz (256pp) | [26570] Shakti (2023) (Harper Alley) (Digital-Empire).cbz (238pp)
+   ours:    ComicInfo Series: "Shakti"x1; ComicInfo Publisher: "HarperCollins"x1, "HarperAlley"x1
+   CV per-file (v1): vol 31914 "Shakti" 1998 Raj Comics 50 on 2/2 files
+   CV candidates:  (= per-file) · 78646 "Priya's Shakti" 2014 Rattapallax 1 issue 472350 s67 · 128998 "Collins Boys' Annual" 1953 Collins 1 issue 782596 s23 · 29793 "Blake Harper City Surgeon" 1963 Western Publishing 1 issue 183370 s8 · 58456 "The Last Convert of John Harper" 2013 Kingstone Comics 1 issue 390607 s8 · 38160 "Dick Tracy: The Collins Casefiles" 2004 Checker Book Publishing Group 3 s8 · 70754 "Craig Collins Collected Comics" 2012 Unknown Publisher 1 issue 441549 s8   (v1 search)
+   CV local rip:   (= per-file) · 78646 "Priya's Shakti" 2014 Rattapallax 1 issue 472350 (via CV candidate name "Priya's Shakti") · 128998 "Collins Boys' Annual" 1953 Collins 1 issue 782596 (via CV candidate name "Collins Boys' Annual")   (rip lookup)
+   GCD dump:       183605 "शक्ति [Shakti]" [hi-in] 1998-2005 Raj Comics [] 1 · 87368 "Priya's Shakti" 2014-? Rattapallax, Inc. [] 1 (via CV candidate name "Priya's Shakti")   (dump lookup)
+
+== S17074 Sunhead  [tier D]   keys: Sunhead  years 2024-2024  1 files / 0 collections
+   folders: [1] Graphic Novels\_Harper (All Imprints)
+   files:   [26573] Sunhead (2024) (digital) (DrVink-HD-DCP).cbz (255pp)
+   CV candidates:  58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s15 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3 · 86527 "Disney Graphic Novels" 2015 NBM 4 s3 · 109403 "Graphic Novels Krimi" 2013 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 (via CV candidate name "Dr. Seuss Graphic Novels") · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 (via CV candidate name "Graphic Novels as Philosophy") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels")   (rip lookup)
+   GCD dump:       104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+   MU / External:  ExternalWork 426 "Sunhead" openlibrary /works/OL37612822W
+
+== S18555 The Faint of Heart  [tier D]   keys: The Faint of Heart  years 2023-2023  1 files / 0 collections
+   folders: [1] Graphic Novels\_Harper (All Imprints)
+   files:   [26576] The Faint of Heart (2023) (Greenwillow-Harper Alley) (Digital) (XRA-Empire).cbz (280pp)
+   ours:    ComicInfo Series: "The Faint of Heart"x1; ComicInfo Publisher: "HarperCollins"x1
+   CV candidates:  71761 "Heart" 1973 self published 1 issue 445693 s55 · 50370 "Heart" 2012 Image 1 issue 345415 s55 · 43809 "Heart" 2011 Image 4 s43 · 58456 "The Last Convert of John Harper" 2013 Kingstone Comics 1 issue 390607 s41 · 87729 "Heart to Heart Annual" ? Murray Comics 1 issue 513105 s35 · 128998 "Collins Boys' Annual" 1953 Collins 1 issue 782596 s30   (v1 search)
+   CV local rip:   50370 "Heart" 2012 Image 1 issue 345415 (via CV candidate name "Heart") · 43809 "Heart" 2011 Image 4 (via CV candidate name "Heart") · 71761 "Heart" 1973 self published 1 issue 445693 (via CV candidate name "Heart")   (rip lookup)
+   GCD dump:       68902 "Heart" 2012-2012 Image [] 1 (via CV candidate name "Heart") · 64464 "Heart" 2011-2012 Image [] 4 (via CV candidate name "Heart") · 16896 "Heart" 1973-1973 John Aulenta [] 1 (via CV candidate name "Heart")   (dump lookup)
+
+== S18642 The Fox Maidens  [tier D]   keys: The Fox Maidens  years 2024-2024  1 files / 0 collections
+   folders: [1] Graphic Novels\_Harper (All Imprints)
+   files:   [26578] The Fox Maidens (2024) (Digital) (XRA-Empire).cbz (321pp)
+   ours:    ComicInfo Series: "The Fox Maidens"x1; ComicInfo Publisher: "HarperCollins"x1
+   CV candidates:  68734 "The Fox" 2013 Archie Comics 5 s55 · 81369 "The Fox" 2015 Archie Comics 5 s55 · 112952 "The Fox: Fox Hunt" 2018 Archie Comics 1 issue 680632 s53 · 143270 "Maidens" 2002 SQP 2 s48 · 148733 "Fox" 1987 Ediciones Zinco 14 s40 · 76834 "Fox" 1986 Edifumetto 11 s40   (v1 search)
+   CV local rip:   81369 "The Fox" 2015 Archie Comics 5 (via CV candidate name "The Fox") · 68734 "The Fox" 2013 Archie Comics 5 (via CV candidate name "The Fox") · 148733 "Fox" 1987 Ediciones Zinco 14 (via CV candidate name "The Fox") · 76834 "Fox" 1986 Edifumetto 11 (via CV candidate name "The Fox") · 112952 "The Fox: Fox Hunt" 2018 Archie Comics 1 issue 680632 (via CV candidate name "The Fox: Fox Hunt")   (rip lookup)
+   GCD dump:       185822 "Fox" [de] 2022-2022 comicplus+ [] 1 (via CV candidate name "The Fox") · 88371 "The Fox" 2015-2015 Archie [] 5 (via CV candidate name "The Fox") · 118859 "The Fox" 2014-? Archie [] 2 (via CV candidate name "The Fox") · 77324 "The Fox" 2013-2014 Archie [] 5 (via CV candidate name "The Fox") · 84536 "Fox" [nl-be] 1997-1998 Glénat [] 7 (via CV candidate name "The Fox") · 134300 "Fox" [fr] 1991-1998 Glénat [] 7 (via CV candidate name "The Fox")   (dump lookup)
+   MU / External:  ExternalWork 428 "The Fox Maidens" openlibrary /works/OL44034591W
+
+== S19314 The Other Side of Tomorrow  [tier D]   keys: The Other Side of Tomorrow  years 2024-2024  1 files / 0 collections
+   folders: [1] Graphic Novels\_Harper (All Imprints)
+   files:   [26587] The Other Side of Tomorrow (2024) (Digital) (XRA-Empire).cbz (226pp)
+   ours:    ComicInfo Series: "The Other Side of Tomorrow"x1; ComicInfo Publisher: "HarperCollins"x1
+   CV candidates:  33015 "The Other Side" 2007 DC Comics 1 issue 212650 s70 · 82442 "The Other Side" 2015 Mildfrenzy Comics 1 issue 491169 s70 · 130528 "The Other Side of the Border" 2020 Europe Comics 1 issue 802953 s61 · 19537 "The Other Side" 2006 DC Comics 5 s55 · 46223 "Ghostbusters: The Other Side" 2009 IDW Publishing 1 issue 318260 s50 · 100737 "Haunted: The Other Side" 2017 Red 5 Comics 1 issue 591936 s50   (v1 search)
+   CV local rip:   82442 "The Other Side" 2015 Mildfrenzy Comics 1 issue 491169 (via CV candidate name "The Other Side") · 33015 "The Other Side" 2007 DC Comics 1 issue 212650 (via CV candidate name "The Other Side") · 19537 "The Other Side" 2006 DC Comics 5 (via CV candidate name "The Other Side") · 130528 "The Other Side of the Border" 2020 Europe Comics 1 issue 802953 (via CV candidate name "The Other Side of the Border")   (rip lookup)
+   GCD dump:       226038 "The Other Side" 2017-2017 Image [] 1 (via CV candidate name "The Other Side") · 24919 "The Other Side" 2007-2007 DC [] 1 (via CV candidate name "The Other Side") · 21941 "The Other Side" 2006-2007 DC [] 5 (via CV candidate name "The Other Side")   (dump lookup)
+
+== S19987 The Worst Ronin  [tier D]   keys: The Worst Ronin  years 2024-2024  2 files / 0 collections
+   folders: [2] Graphic Novels\_Harper (All Imprints)
+   files:   [26591] The Worst Ronin (2024) (Harper Alley) (Digital) (XRA-Empire).cbz (337pp) | [26590] The Worst Ronin (2024) (digital) (DrVink-HD-DCP).cbz (342pp)
+   ours:    ComicInfo Series: "The Worst Ronin"x1; ComicInfo Publisher: "HarperCollins"x1
+   CV candidates:  58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s25 · 76372 "The Ultimate Graphic Novels Collection" 2011 Hachette 46 s16 · 43400 "Disney Movies The Graphic Novels" 2010 Disney 25 s16 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s8 · 86527 "Disney Graphic Novels" 2015 NBM 4 s8 · 109403 "Graphic Novels Krimi" 2013 Süddeutsche Zeitung 4 s8   (v1 search)
+   CV local rip:   76372 "The Ultimate Graphic Novels Collection" 2011 Hachette 46 (via CV candidate name "The Ultimate Graphic Novels Collection") · 43400 "Disney Movies The Graphic Novels" 2010 Disney 25 (via CV candidate name "Disney Movies The Graphic Novels") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels")   (rip lookup)
+   GCD dump:       162848 "The Ultimate Graphic Novels Collection" [en-gb] 2016-2022 Hachette Partworks [] 170 (via CV candidate name "The Ultimate Graphic Novels Collection") · 95679 "The Ultimate Graphic Novels Collection" [en-gb] 2011-2022 Hachette Partworks [] 240 (via CV candidate name "The Ultimate Graphic Novels Collection") · 104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+
+== S20778 Unhappy Camper  [tier D]   keys: Unhappy Camper  years 2024-2024  1 files / 0 collections
+   folders: [1] Graphic Novels\_Harper (All Imprints)
+   files:   [26594] Unhappy Camper (2024) (Digital) (XRA-Empire).cbz (207pp)
+   ours:    ComicInfo Series: "Unhappy Camper"x1; ComicInfo Publisher: "HarperCollins"x1
+   CV candidates:  93089 "Unhappy Gran'ma" 2008 Radbu Productions 1 issue 544439 s44 · 105705 "How to Be Perfectly Unhappy" 2017 Andrews McMeel Publishing 1 issue 634202 s41 · 62994 "Mickey Mouse and the Jolly Camper Brigade" 2013 Disney 1 issue 409336 s39 · 128998 "Collins Boys' Annual" 1953 Collins 1 issue 782596 s30 · 29793 "Blake Harper City Surgeon" 1963 Western Publishing 1 issue 183370 s15 · 58456 "The Last Convert of John Harper" 2013 Kingstone Comics 1 issue 390607 s15   (v1 search)
+   CV local rip:   105705 "How to Be Perfectly Unhappy" 2017 Andrews McMeel Publishing 1 issue 634202 (via CV candidate name "How to Be Perfectly Unhappy") · 62994 "Mickey Mouse and the Jolly Camper Brigade" 2013 Disney 1 issue 409336 (via CV candidate name "Mickey Mouse and the Jolly Camper Brigade") · 93089 "Unhappy Gran'ma" 2008 Radbu Productions 1 issue 544439 (via CV candidate name "Unhappy Gran'ma")   (rip lookup)
+
+== S813 Always Anthony  [tier D]   keys: Always Anthony  years 2024-2024  1 files / 1 collections
+   folders: [1] Graphic Novels\_Harper (All Imprints)\Emmie & Friends (2017)
+   files:   [26554] COL Emmie & Friends Book 08 - Always Anthony (2024) (Digital) (XRA-Empire).cbz (337pp)
+   ours:    ComicInfo Series: "Always Anthony"x1; ComicInfo Publisher: "HarperCollins"x1
+   CV candidates:  73162 "Always the Groomsman" 2013 Harlequin Comics 1 issue 450749 s54 · 31912 "Anthony" 1996 Raj Comics 89 s45 · 58456 "The Last Convert of John Harper" 2013 Kingstone Comics 1 issue 390607 s26 · 70754 "Craig Collins Collected Comics" 2012 Unknown Publisher 1 issue 441549 s26 · 29793 "Blake Harper City Surgeon" 1963 Western Publishing 1 issue 183370 s17 · 38160 "Dick Tracy: The Collins Casefiles" 2004 Checker Book Publishing Group 3 s11   (v1 search)
+   CV local rip:   31912 "Anthony" 1996 Raj Comics 89 (via CV candidate name "Anthony") · 58456 "The Last Convert of John Harper" 2013 Kingstone Comics 1 issue 390607 (via CV candidate name "The Last Convert of John Harper") · 73162 "Always the Groomsman" 2013 Harlequin Comics 1 issue 450749 (via CV candidate name "Always the Groomsman")   (rip lookup)
+   GCD dump:       183494 "एंथोनी [Anthony]" [hi-in] 1996-2005 Raj Comics [] 3 (via CV candidate name "Anthony")   (dump lookup)
+   MU / External:  ExternalWork 422 "Always Anthony" openlibrary /works/OL37618138W
+
+== S6140 Emmie and Friends Book  [tier D]   keys: Emmie and Friends Book  years 2019-2020  2 files / 2 collections
+   folders: [2] Graphic Novels\_Harper (All Imprints)\Emmie & Friends (2017)
+   files:   [26549] COL Emmie & Friends Book 03 - Just Jaime (2019) (Digital) (XRA-Empire).cbz (257pp)
+            [26550] COL Emmie & Friends Book 04 - Becoming Brianna (2020) (Digital) (XRA-Empire).cbz (323pp)
+   CV candidates:  97972 "DC Essential Graphic Novels 2017" 2017 DC Comics 1 issue 576099 s23 · 86527 "Disney Graphic Novels" 2015 NBM 4 s20 · 109403 "Graphic Novels Krimi" 2013 Süddeutsche Zeitung 4 s19 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s18 · 39361 "Disney Libri Graphic Novels" 2010 Walt Disney Company Italia 3 s18 · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s17   (v1 search)
+   CV local rip:   97972 "DC Essential Graphic Novels 2017" 2017 DC Comics 1 issue 576099 (via CV candidate name "DC Essential Graphic Novels 2017") · 86527 "Disney Graphic Novels" 2015 NBM 4 (via CV candidate name "Disney Graphic Novels") · 109403 "Graphic Novels Krimi" 2013 Süddeutsche Zeitung 4 (via CV candidate name "Graphic Novels Krimi")   (rip lookup)
+   GCD dump:       92652 "Disney Graphic Novels" 2015-2017 NBM [] 6 (via CV candidate name "Disney Graphic Novels") · 94951 "Disney Graphic Novels" 2015-2017 NBM [] 5 (via CV candidate name "Disney Graphic Novels") · 92237 "Graphic Novels Krimi" [de] 2013-2013 Süddeutsche Zeitung [] 8 (via CV candidate name "Graphic Novels Krimi")   (dump lookup)
+
+== S18052 The Baker and the Bard - A Cozy Fantasy Adventure  [tier D]   keys: The Baker and the Bard - A Cozy Fantasy Adventure  years 2024-2024  1 files / 0 collections
+   folders: [1] Graphic Novels\_Henry Holt, MacMillan
+   files:   [26599] The Baker and the Bard - A Cozy Fantasy Adventure (2024) (Digital) (XRA-Empire).cbz (162pp)
+   CV candidates:  133599 "Graphic Fantasy" 2021 Image 2 s28 · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s25 · 31752 "Graphic Fantasy" 1982 Ajax Comics Group 3 s23 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 76372 "The Ultimate Graphic Novels Collection" 2011 Hachette 46 s8 · 43400 "Disney Movies The Graphic Novels" 2010 Disney 25 s8   (v1 search)
+   CV local rip:   133599 "Graphic Fantasy" 2021 Image 2 (via CV candidate name "Graphic Fantasy") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels") · 31752 "Graphic Fantasy" 1982 Ajax Comics Group 3 (via CV candidate name "Graphic Fantasy")   (rip lookup)
+   GCD dump:       169275 "Graphic Fantasy" 2021-2021 Image [] 2 (via CV candidate name "Graphic Fantasy") · 104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels") · 32982 "Graphic Fantasy" 1982-1982 Ajax Comics [] 3 (via CV candidate name "Graphic Fantasy") · 222082 "Graphic Fantasy" 1971-1973 D.B. Features [] 4 (via CV candidate name "Graphic Fantasy")   (dump lookup)
+
+== S17479 Table Titans Club  [tier D]   keys: Table Titans Club  years 2024-2024  1 files / 0 collections
+   folders: [1] Graphic Novels\_Holiday House
+   files:   [26602] Table Titans Club (2024) (Holiday House) (Digital Rip) (Hourman-DCP).cbr (226pp)
+   ours:    ComicInfo Series: "Table Titans Club"x1; ComicInfo Publisher: "Holiday House"x1
+   CV candidates:  86791 "Table Titans" 2015 Toonhound Studios 2 s63 · 135834 "Tiny Titans: Pet Club!" 2021 DC Comics 1 issue 846951 s53 · 164704 "Titans" ? Splitter 4 s43 · 44350 "Titans" 1976 Editions Lug 164 s40 · 47616 "Titans" 1975 Marvel UK/Panini UK 58 s40 · 92577 "Titans" 2016 DC Comics 36 s40   (v1 search)
+   CV local rip:   160481 "Titans" 2024 DC Comics 3 (via CV candidate name "Titans") · 150428 "Titans" 2023 DC Comics 31 (via CV candidate name "Titans") · 99424 "Titans" 2017 DC Comics 6 (via CV candidate name "Titans") · 111617 "Titans" 2017 Panini Verlag 4 (via CV candidate name "Titans") · 92577 "Titans" 2016 DC Comics 36 (via CV candidate name "Titans") · 86791 "Table Titans" 2015 Toonhound Studios 2 (via CV candidate name "Table Titans")   (rip lookup)
+   GCD dump:       212663 "Titans" 2024-? DC [] 4 (via CV candidate name "Titans") · 213185 "Titans" [de] 2024-? Panini Deutschland [] 5 (via CV candidate name "Titans") · 227477 "Titans" [fr] 2024-? Éditions Oxymore [] 4 (via CV candidate name "Titans") · 235589 "Titans" [de] 2024-? Panini Deutschland [] 6 (via CV candidate name "Titans") · 200444 "Titans" 2023-2026 DC [] 32 (via CV candidate name "Titans") · 223926 "Titans" [de] 2025-? Splitter Verlag [] 4 (via CV candidate name "Titans")   (dump lookup)
+
+== S18909 The Last Delivery  [tier D]   keys: The Last Delivery  years 2024-2024  1 files / 0 collections
+   folders: [1] Graphic Novels\_Iron Circus
+   files:   [26622] The Last Delivery (Evan Dahm) (2024) (Iron Circus) (Digital) (Dipole-Empire).cbz (135pp)
+   CV candidates:  80233 "Delivery" 2015 Houbunsha 8 s40 · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s32 · 76372 "The Ultimate Graphic Novels Collection" 2011 Hachette 46 s16 · 43400 "Disney Movies The Graphic Novels" 2010 Disney 25 s16 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   80233 "Delivery" 2015 Houbunsha 8 (via CV candidate name "Delivery") · 76372 "The Ultimate Graphic Novels Collection" 2011 Hachette 46 (via CV candidate name "The Ultimate Graphic Novels Collection") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels")   (rip lookup)
+   GCD dump:       144781 "Delivery" [fr] 2008-2008 Tonkam [] 2 (via CV candidate name "Delivery") · 162848 "The Ultimate Graphic Novels Collection" [en-gb] 2016-2022 Hachette Partworks [] 170 (via CV candidate name "The Ultimate Graphic Novels Collection") · 95679 "The Ultimate Graphic Novels Collection" [en-gb] 2011-2022 Hachette Partworks [] 240 (via CV candidate name "The Ultimate Graphic Novels Collection") · 104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)
+
+== S19501 The Russian Detective  [tier D]   keys: The Russian Detective  years 2024-2024  1 files / 0 collections
+   folders: [1] Graphic Novels\_Jonathan Cape
+   files:   [26629] The Russian Detective (2024) (Digital) (phillywilly-Empire).cbz (111pp)
+   CV candidates:  58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 s32 · 76372 "The Ultimate Graphic Novels Collection" 2011 Hachette 46 s16 · 43400 "Disney Movies The Graphic Novels" 2010 Disney 25 s16 · 165515 "Dr. Seuss Graphic Novels" 2025 Penguin Group 1 issue 1120297 s15 · 103658 "Graphic Novels as Philosophy" 2017 University Press of Mississippi 1 issue 616353 s15 · 109402 "Graphic Novels" 2011 Süddeutsche Zeitung 4 s3   (v1 search)
+   CV local rip:   76372 "The Ultimate Graphic Novels Collection" 2011 Hachette 46 (via CV candidate name "The Ultimate Graphic Novels Collection") · 43400 "Disney Movies The Graphic Novels" 2010 Disney 25 (via CV candidate name "Disney Movies The Graphic Novels") · 58215 "The Discworld Graphic Novels" 2008 Doubleday 1 issue 389691 (via CV candidate name "The Discworld Graphic Novels")   (rip lookup)
+   GCD dump:       162848 "The Ultimate Graphic Novels Collection" [en-gb] 2016-2022 Hachette Partworks [] 170 (via CV candidate name "The Ultimate Graphic Novels Collection") · 95679 "The Ultimate Graphic Novels Collection" [en-gb] 2011-2022 Hachette Partworks [] 240 (via CV candidate name "The Ultimate Graphic Novels Collection") · 104196 "The Discworld Graphic Novels" [en-gb] 2008-2008 Transworld Publishers [] 1 (via CV candidate name "The Discworld Graphic Novels")   (dump lookup)

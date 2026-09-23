@@ -1,0 +1,200 @@
+# R-078 — S.2 open tier one: 60 "Graphic Novels" bucket shelves (trade-house OGNs, D-007/D-008/B-032/C-027), each held at 0.7 or R + provider-missing.
+# Re-probed every title exactly and --contains, with accents kept, French/Italian originals of translations and scanlations,
+# licensor/creator words dropped, and the line name where a book is one of a line. Most 2021-2024 US trade-house books
+# (HarperAlley, Andrews McMeel, Amulet, Holiday House, Arsenal Pulp) are genuinely in neither catalog.
+# Recovered: Mr. Badger and Mrs. Fox (Dargaud original, GCD 132352), 47 Strings (Glénat "47 cordes", CV 140241 / GCD 231717),
+# Brave New World: A Graphic Novel (GCD 184323 — B-032 called it absent), Secret Identity (CV 39510's issue title IS our subtitle),
+# Big City Blues (the 1987 German Reiner-Feest edition GCD 60009; CV 24752 is a Ferret Press book).
+
+# --- 0.7s
+S 22847 cv=71564 gcd=- 0.7 | kept at 0.7 with a new reason: re-probe finds CV 71564 "Zoötrope" (self published, issue 444933 dated 2014-02-01) only with the umlaut kept — "Zootrope" --contains returns 0 in both catalogs — so it is the one record of the word anywhere, but our 40pp "Zootrope (2012) (BlurPixel)" digital predates that print date by two years and nothing on the file names a creator or publisher
+F 22847 provider-missing | GCD has no "Zootrope" / "Zoötrope" row in either spelling
+F 22847 needs-web | is the 2012 BlurPixel digital "Zootrope" (40pp) the same work as ComicVine 71564 "Zoötrope", self published, issue dated 2014-02?
+I 27604 cv=444933 gcd=- isbn=- 0.7 | the book is the shelf: CV 71564 "Zoötrope" issue 444933 is the only candidate record, held at the shelf's 0.7 for the 2012 vs 2014 dating
+S 12125 cv=144909 gcd=- 0.7 | kept at 0.7 with a new reason: the only other "Bolero" records are Image's 2022 Wyatt Kennedy mini (CV 141333 5 / 147902 TPB; GCD 180462 / 187592) — not Manara — which leaves CV 144909 "Bolero" (Grifo Edizioni, issue 945526 "Bolero" 1999-11), Grifo being Manara's Italian art-book house; our 38pp "Milo Manara - Bolero (ADULT)" carries no year or publisher to confirm it
+F 12125 provider-missing | GCD has no Grifo "Bolero" and no Manara "Bolero" row in any language
+F 12125 needs-web | is Grifo Edizioni's 1999 "Bolero" (ComicVine issue 945526) a Milo Manara book of about 38 pages?
+I 27123 cv=945526 gcd=- isbn=- 0.7 | the book is the shelf: CV 144909 "Bolero" (Grifo 1999) issue 945526, held at the shelf's 0.7 — nothing on the file confirms the edition
+S 12129 cv=28116 gcd=20806 0.9 | raised: "Milo Manara - Game" is the English rendering of Manara's "Il Gioco", which NBM published as CV 28116 "Click" (NBM 1992, 4 issues) = GCD 20806 "Click" (NBM 1992-2002, 4 rows 52/76/76/60pp) — both legs agree on publisher, start year and count, and the Italian original is CV 142330 / GCD 72958 "Il Gioco"; residue: our unnumbered 64pp rip is one of the four volumes (pages nearest #4's 60pp), which the name cannot pick
+F 12129 merge-with=57280 | S57280 "Click" holds all four NBM volumes (55/78/79/63pp) and stores cv=28116 (--who-stores: Series.CvVolumeId, SeriesKeyLink "Click", 4 per-file links); this shelf is one more unnumbered rip of that line filed under Graphic Novels\Milo Manara
+I 27127 cv=- gcd=s20806 isbn=- 0.9 | one volume of NBM's "Click" (GCD 20806, 4 rows); the volume cannot be named from an unnumbered 64pp file, so the series form stands
+S 21682 cv=- gcd=60009 0.9 | raised onto the German edition: "Will Eisner - Big City Blues (1987)" 118pp matches GCD 60009 "Big City Blues" (Reiner-Feest-Verlag 1987, row 867145 1987-09, 120pp) on exact title, year and page count; Eisner's English original is "Will Eisner's New York the Big City" (Kitchen Sink 1986, GCD 7507 / 61755, 150/148pp) — a different title, year and length from our file; residue: the GCD row carries no credits to confirm Eisner
+F 21682 wrong-cv-link | stored CV 24752 "Big City Blues" is a 2004 Ferret Press book (issue 146020 dated 2003-11) — a different comic seventeen years later, not Eisner
+F 21682 provider-missing | the ComicVine rip holds no Eisner "Big City" / "Big City Blues" volume of 1986-1987
+I 26220 cv=- gcd=867145 isbn=- 0.9 | the book is the shelf: GCD 60009 row 867145 "Big City Blues" (Reiner-Feest 1987-09, 120pp) against our 118pp
+R 5441 | refused: CV 162792 "Devour" (Aleta Ediciones 2023, issue 1099153 dated 2023-03) is a Spanish-language publisher's book and the only name match; our file is a 2024 English 209pp rip filed under _Abrams ComicArts; the other "Devour" is Image's "It Happened on Hyde Street: Devour" (CV 160700 / GCD 217154, 2024-10-30, 60pp) — a 60pp one-shot, not 209pp; nothing ties either record to our book
+F 5441 needs-web | is the 2024 English graphic novel "Devour" (209pp, Abrams ComicArts) a translation of Aleta Ediciones' 2023 "Devour" (ComicVine 162792)?
+F 5441 provider-missing | neither catalog holds an English 2024 "Devour" of about 209 pages
+N 5441 probed "Devour" --contains (Galactus the Devourer, Reheated Lio, Devour O' Baku, It Happened on Hyde Street: Devour) — no English Abrams record
+S 15244 cv=39510 gcd=- 0.9 | raised: CV 39510 "Secret Identity" (2009) issue 267054 is titled "The Fetish Art of Superman's Co-Creator Joe Shuster!" and dated 2009-11 — our file's exact title, subtitle and year ("Secret Identity - The Fetish Art of Superman's Joe Shuster (2009) (Abrams ComicArts)" 160pp); ComicVine's "Unknown Publisher" is a data gap, not a conflict
+F 15244 provider-missing | GCD has no row for it: "Secret Identity" --contains returns only Superman / CSI / Powers titles, "Joe Shuster" only the 2018 Joe Shuster biographies, "Fetish Art" nothing
+I 26369 cv=267054 gcd=- isbn=9780810996342 0.9 | the book is the shelf: CV 39510 issue 267054 "The Fetish Art of Superman's Co-Creator Joe Shuster!" (2009-11); the file's EAN-13 9780810996342 is Abrams' ISBN for it
+
+# --- Rs that became S
+S 3145 cv=- gcd=184323 0.9 | B-032's "neither provider holds it" was wrong: GCD 184323 "Brave New World: A Graphic Novel" (HarperCollins 2022, row 2396079 2022-04-20, 248pp, ISBN 978-0-06-305525-4) is our "Brave New World - A Graphic Novel (2022)" 238pp, ComicInfo Publisher "Harper Collins" — title, publisher and year agree; one leg plus our own naming
+F 3145 provider-missing | ComicVine has no 2022 HarperCollins volume: "Brave New World" --contains returns DCU, Uncle Sam, Nobrow, Basstudio, Planeta and Secret Empire records only
+I 26540 cv=- gcd=2396079 isbn=9780063055254 0.9 | the book is the shelf: GCD 184323 row 2396079 (248pp, ISBN 978-0-06-305525-4) against our 238pp rip
+S 57274 cv=140241 gcd=231717 0.95 | "COL 47 Strings - Book 01 (2021) (Scanlation)" 383pp, filed under _Gallery 13\_Glenat, is the English scanlation of Timothé Le Boucher's "47 cordes": CV 140241 "47 Cordes" (Éditions Glénat 2021, issue 895707 "Première partie" 2021-11-28) and GCD 231717 "47 cordes" (Glénat 2021-?, #1 row 2802586 2021-11, ISBN 978-2-344-04205-2) agree on publisher, year and first part — the original is the identity (L-024 / L-352)
+I 28000 cv=895707 gcd=2802586 isbn=9782344042052 0.95 | Book 01 = "47 cordes" première partie: CV 140241 issue 895707 and GCD 231717 #1 row 2802586 (Glénat 2021-11, ISBN 978-2-344-04205-2)
+S 12414 cv=- gcd=132352 0.9 | "Mr. Badger and Mrs. Fox 1. The Meeting (Graphic Universe)" 34pp is Lerner's English edition of Brigitte Luciani's Dargaud album line "Monsieur Blaireau et Madame Renarde" — GCD 132352 (Dargaud 2006-?, 7 albums), #1 "La rencontre" = "The Meeting"; the original line is the identity (L-024 / L-352); ComicVine holds neither the French nor the English
+F 12414 provider-missing | ComicVine has no "Monsieur Blaireau" or "Mr. Badger" volume; GCD has no English Graphic Universe row
+I 26502 cv=- gcd=1863159 isbn=- 0.9 | book 1 "The Meeting" = GCD 132352 #1 row 1863159 "La rencontre" (Dargaud 2006-05, ISBN 2-205-05678-6), the French original of our English edition
+
+# --- Emmie & Friends: two books on one shelf, each its own record
+R 6140 | two different standalone books of Terri Libenson's Emmie & Friends line, each with its own record and no line record anywhere: "Book 03 - Just Jaime" (2019, 257pp) = CV 128097 "Just Jaime" (HarperCollins 2020, issue 769734 "Volume 3"), and "Book 04 - Becoming Brianna" (2020, 323pp) = CV 128096 "Becoming Brianna" (issue 769733 "Volume 4") / GCD 161572 + 161573 (twin rows); GCD's only line-shaped rows are "Remarkably Ruby (Emmie & Friends)" 184674/184675, one book each
+F 6140 split-needed | item 26550 -> "Becoming Brianna (2020)" cv=128096 gcd=161572; item 26549 "Just Jaime" stays (cv=128097, gcd none) — two books, two records
+I 26549 cv=769734 gcd=- isbn=- 0.9 | Emmie & Friends Book 03 "Just Jaime" = CV 128097 issue 769734 "Volume 3" (HarperCollins 2020-06-24); GCD has no "Just Jaime" row
+I 26550 cv=769733 gcd=s161572 isbn=- 0.9 | Emmie & Friends Book 04 "Becoming Brianna" = CV 128096 issue 769733 "Volume 4" and GCD 161572 (HarperCollins 2020; twin row 161573, neither carries pages)
+N 6140 S813 "Always Anthony" is Emmie & Friends Book 08 (2024) — same line, own book; it is in neither catalog
+
+# --- R + provider-missing that stand (probes named on each N)
+R 14925 | "STEWdio - The Naphic Grovel ARTrilogy of Chuck D (2023)" 373pp, Enemy Books: no record in either catalog under the title or any fragment; the packet's candidates are DC's "Chuck" (CV 27012 / 21998) reached by one word
+F 14925 provider-missing | a 2023 Enemy Books art book neither catalog indexes
+N 14925 probed "STEWdio", "Naphic Grovel", "Chuck D" (GCD: only Z2's Apocalypse 91 rows 179062-4) and "Public Enemy" --contains — nothing for this book
+R 17055 | "Summer of Hamn - Hollowpointlessness Aiding Mass Nihilism (2023)" 125pp, Enemy Books: no record in either catalog; the packet's candidates ("Black Mass", "Stray Bullets: Innocence of Nihilism") are reached by stray words
+F 17055 provider-missing | a 2023 Enemy Books title neither catalog indexes
+N 17055 probed "Summer of Hamn", "Hollowpointlessness" and "Chuck D" --contains — 0 rows for this book on both legs
+R 7152 | "GabrielleBell.com Archive Vol. 01-06 (2008-2016) (webrip)" are six yearly gatherings of Gabrielle Bell's web diary, with no record on either leg; her catalogued print books (Cecil and Jordan, GCD 78681) and the UPM critical study (CV 115997 / GCD 151031) are different books
+F 7152 provider-missing | year-by-year web-strip archives are absent from both catalogs (L-164)
+N 7152 probed "Gabrielle Bell" --contains (both legs), "GabrielleBell" and "Gabrielle Bell" --year 2012 — no archive line
+R 7290 | "Gateway City v02 - Baby Won't You Please Come Home - Artist's Edition (2021)" 60pp: the only "Gateway City" record is CV 118296 (Sassafras Press 2019, count 1) — the FIRST volume, two years earlier; GCD has none; linking v02 to v01's record is the off-by-one shape
+F 7290 provider-missing | neither catalog holds the 2021 second volume or its Artist's Edition
+N 7290 probed "Gateway City" and "Baby Won't You Please Come Home" --contains — CV 118296 only, GCD 0
+R 2366 | "Be That Way (2023)" — two rips (272pp, 256pp) of Hope Larson's Margaret Ferguson Books novel — has no record in either catalog; the packet's candidates are Broadway's "Powers That Be" family
+F 2366 provider-missing | a 2023 Holiday House / Margaret Ferguson book neither catalog indexes
+N 2366 probed "Be That Way" --contains — 0 rows on both legs
+R 9137 | "COL Humanity Lost v01 (2023)" 151pp: no "Humanity Lost" record on either leg; the packet's candidates are Bonelli's "Morgan Lost" family reached by one word
+F 9137 provider-missing | a 2023 title neither catalog indexes
+N 9137 probed "Humanity Lost" --contains — 0 rows on both legs
+R 12126 | "Milo Manara - Chanel No.5 (ADULT)" 74pp: no "Chanel" record in either catalog; the shelf's ladder 5 is the perfume's number
+F 12126 provider-missing | Manara's Chanel advertising comic is indexed by neither catalog
+N 12126 probed "Chanel" and "Chanel N" --contains — 0 rows on both legs
+R 12134 | "Milo Manara Cuentos Fantasticos [CRG]" 61pp is a Spanish-language gathering with no record in either catalog under its Spanish title (accent kept or dropped) or an Italian "Racconti fantastici"
+F 12134 provider-missing | neither catalog indexes a Manara "Cuentos Fantásticos" collection
+N 12134 probed "Cuentos Fantasticos", "Cuentos Fantásticos" and "Racconti fantastici" --contains — 0 rows on both legs
+R 9208 | "I Must Be Dreaming (2023)" 128pp, Roz Chast / Bloomsbury: no record on either leg; every candidate is a "Dreaming" volume (DC 1996 / 2018, Tokyopop, Harlequin)
+F 9208 provider-missing | a 2023 Bloomsbury book neither catalog indexes
+N 9208 probed "I Must Be Dreaming" --contains — 0 rows on both legs
+R 17901 | "The Adventures of Hanzo - Wrath of Winter Part 01 (2023)" 26pp and its 26pp "- Artbook" companion (Studio JS LLC): no record on either leg; candidates are Shueisha's "Hanzo" and Malibu's "Wrath"
+F 17901 provider-missing | a 2023 Studio JS self-published title neither catalog indexes; the second file is its artbook, not a second issue
+N 17901 probed "Adventures of Hanzo" and "Wrath of Winter" --contains — 0 rows on both legs
+R 21103 | "COL Viscere - Body Horror Vol. 01 (2023)" 126pp, Strega Sporca (an Italian house): no "Viscere" record in either catalog, accent-kept or not; the candidates are 2023 annuals reached by the year alone
+F 21103 provider-missing | a 2023 Strega Sporca anthology neither catalog indexes
+N 21103 probed "Viscere", "Viscère", "Viscere" --year 2023 and "Strega Sporca" --contains — 0 rows on both legs
+R 2303 | "Batter Royale (2022)" 247pp, Abrams – Amulet Books: no record in either catalog; candidates are "Battle Royale" editions and "Batter Up, Charlie Brown"
+F 2303 provider-missing | a 2022 Amulet book neither catalog indexes
+N 2303 probed "Batter Royale" --contains — 0 rows on both legs
+R 9038 | "Houses with a Story (2023)" 128pp, Amulet: no record on either leg; candidates are "Bad Houses" and "Houses of the (Un)Holy"
+F 9038 provider-missing | a 2023 Amulet translation of Seiji Yoshida's art book; neither comics catalog indexes it
+N 9038 probed "Houses with a Story" --contains and "Houses" --year 2023 — 0 rows on both legs
+R 18756 | "The Harrowing (2024)" 240pp: the only substring hits are Iron Circus's "The Harrowing of Hell" (CV 129237 / GCD 169259, 2020) and "Green Owl and Harrowing" — different books
+F 18756 provider-missing | a 2024 book neither catalog indexes
+N 18756 probed "Harrowing" --contains on both legs — only the 2020 Iron Circus and 2016 OsbournDraw books
+R 198 | "A Great Big Visual Hug (2024) (Andrews McMeel)" 209pp: no record in either catalog; the packet's candidates are reached by the word "Hug"
+F 198 provider-missing | a 2024 Andrews McMeel collection neither catalog indexes
+N 198 probed "Great Big Visual Hug" and "Visual Hug" --contains — 0 rows on both legs
+R 6693 | "Finding the Light (2023)" 206pp: no record in either catalog; the candidates are the "Graphic Novels" folder-key noise
+F 6693 provider-missing | a 2023 Andrews McMeel book neither catalog indexes
+N 6693 probed "Finding the Light" --contains — 0 rows on both legs
+R 9044 | "How Not to Get into Heaven (2021) (Andrews McMeel)" 128pp: no record in either catalog; candidates "How to Break into Comics", "How Not to Draw Manga" share three words
+F 9044 provider-missing | a 2021 Andrews McMeel collection neither catalog indexes
+N 9044 probed "How Not to Get into Heaven" --contains — 0 rows on both legs
+R 10614 | "Lavender Clouds - Comics about Neurodivergence and Mental Health (2024)" 145pp: no record in either catalog; nearest hit Microcosm's "Hardcore Anxiety" is another book
+F 10614 provider-missing | a 2024 Andrews McMeel collection neither catalog indexes
+N 10614 probed "Lavender Clouds" --contains — 0 rows on both legs
+R 12099 | "Milk & Mocha Comics Collection - Our Little Happiness (2023)" — two 128pp rips of one Andrews McMeel book — has no record in either catalog under "&" or "and"
+F 12099 provider-missing | a 2023 Andrews McMeel webcomic collection neither catalog indexes
+N 12099 probed "Milk & Mocha" and "Milk and Mocha" --contains (L-013) — 0 rows on both legs
+R 12481 | "Murder Book - A Graphic Memoir of a True Crime Obsession (2021)" 326pp, Andrews McMeel: the only "Murder Book" records are CV 42457 (2010 self published, 3) and CV 80931 / GCD 87693 (Dark Horse 2015) — different books
+F 12481 provider-missing | no record for the 2021 Andrews McMeel memoir on either leg
+N 12481 probed "Murder Book" --contains on both legs — the 2010 self-published and 2015 Dark Horse books only; the B-032 wrong-cv-link on CV 80931 stands
+R 19176 | "The Mysteries by Bill Watterson & John Kascht (2023)" 82pp: "Mysteries" returns only 1950s horror titles, Casterman's 2006 "Mysteries" and other books; nothing dated 2022-2024
+F 19176 provider-missing | Watterson and Kascht's 2023 book is in neither catalog
+N 19176 probed "The Mysteries" --contains and "Mysteries" --year 2023 — no 2023 row on either leg
+R 62856 | "COL Haru - Book 01 - Spring (2024)" 259pp: every "Haru" hit is a Haruhi / Haruka / Ao Haru manga or a Japanese magazine; nothing 2023-2024
+F 62856 provider-missing | a 2024 book neither catalog indexes
+N 62856 probed "Haru" --contains and --year 2023 / 2024 — no matching row on either leg
+R 505 | "Age 16 (2024) (Annick Press)" 298pp: no record in either catalog; the parsed key "Age" with ladder 16 is the title's number read as an issue
+F 505 provider-missing | a 2024 Annick Press book neither catalog indexes
+N 505 probed "Age 16" --contains — 0 rows on both legs
+R 6208 | "Erdogan - A Graphic Biography (Arsenal 2023)" 318pp: no record in either catalog under the English title, the accented "Erdoğan", "Autocrat", or French shapes of a translated original
+F 6208 provider-missing | a 2023 Arsenal Pulp Press translation neither catalog indexes
+N 6208 probed "Erdogan", "Erdoğan", "Autocrat", "Turquie" and "nouveau pere" --contains — 0 rows on both legs
+R 11915 | "40 Men and 12 Rifles - Indochina 1954 (Arsenal 2023)" 281pp: no record under the title; the "Indochina"/"Indochine" hits are Norma's 2024 "Indochina" (CV 163914), Delcourt's 2020 two-album "Indochine" (CV 130440) and an Astiberri children's book — none a 281pp 1954 war story in 2023
+F 11915 provider-missing | a 2023 Arsenal Pulp Press translation neither catalog indexes
+N 11915 probed "40 Men and 12 Rifles", "12 Rifles", "Indochina", "Indochine", "fusils" and "Quarante" --contains — nothing that is this book
+R 1852 | "COL Barking (Lucy Sullivan) (2024) (Avery Hill)" 126pp: "Barking" returns only "You're Barking Up the Wrong Tree, Snoopy" and Fantagraphics' "The Buildings are Barking"; the round2-folder link GCD 212845 "Infinite Wheatpaste" is a folder neighbour, not this book
+F 1852 provider-missing | no ComicVine volume and no GCD series for Avery Hill's "Barking"
+N 1852 probed "Barking" --contains on both legs — two other books only
+R 19891 | "The Victory Motel (2017, 2021) (Owen D. Pomery)" 73pp: no record on either leg in either printing
+F 19891 provider-missing | an Avery Hill / Owen D. Pomery book neither catalog indexes
+N 19891 probed "Victory Motel" --contains and "Victory" --year 2017 — 0 rows on both legs
+R 3375 | "Candles (Kickstarter Edition) (2021) (Cast Iron)" 268pp: "Candles" returns only Green Candles, Ninety Candles, Chakan, Clue: Candlestick and McCandless titles
+F 3375 provider-missing | a 2021 Cast Iron Books Kickstarter edition neither catalog holds
+N 3375 probed "Candles" --contains on both legs — other books only
+R 18167 | "COL The Boy With Nails for Eyes Vol. 01 - Bobby (2022) (Cast Iron Books)" 311pp: no record on either leg
+F 18167 provider-missing | a 2022 Cast Iron Books title neither catalog indexes
+N 18167 probed "Boy With Nails for Eyes" and "Nails" --contains — nothing that is this book
+R 12929 | "Night and Dana (2023) (Graphic Universe)" 240pp: no record in either catalog under the English title or a French "Nuit et Dana"; "Dana" hits are unrelated
+F 12929 provider-missing | a 2023 Graphic Universe book neither catalog indexes
+N 12929 probed "Night and Dana", "Nuit et Dana" and "Dana" --contains — nothing that is this book
+R 20839 | "Upstaged (2024) (Hachette)" 256pp: no record in either catalog
+F 20839 provider-missing | a 2024 Hachette book neither catalog indexes
+N 20839 probed "Upstaged" --contains — 0 rows on both legs
+R 188 | "A For Effort (2024) (Harper Alley)" 217pp: no record in either catalog
+F 188 provider-missing | a 2024 HarperAlley book neither catalog indexes
+N 188 probed "A for Effort" --contains — 0 rows on both legs
+R 2402 | "Before 13th (2024) (Harper-Amistad)" 211pp: no record in either catalog
+F 2402 provider-missing | a 2024 Harper/Amistad book neither catalog indexes
+N 2402 probed "Before 13th" --contains — 0 rows on both legs
+R 3002 | "Blossoms and Bones - Drawing a Life Back Together (2020)" 114pp: no record in either catalog
+F 3002 provider-missing | a 2020 Harper book neither catalog indexes
+N 3002 probed "Blossoms and Bones" --contains — 0 rows on both legs
+R 7022 | "Frontera (2023) (Harper Alley)" 239pp: "Frontera" returns Argentine / Mexican magazines (GCD 66107, 75854, 113727), ECC's "Frontera Infinita" and Spanish-language titles — no 2023 HarperAlley book
+F 7022 provider-missing | a 2023 HarperAlley book neither catalog indexes
+N 7022 probed "Frontera" --contains on both legs — other books only
+R 9494 | "Ink Girls (2023) (Harper Alley)" 266pp: no record in either catalog
+F 9494 provider-missing | a 2023 HarperAlley book neither catalog indexes
+N 9494 probed "Ink Girls" --contains — 0 rows on both legs
+R 11079 | "Lunar Boy (2024)" 243pp, HarperCollins: no record in either catalog
+F 11079 provider-missing | a 2024 HarperAlley book neither catalog indexes
+N 11079 probed "Lunar Boy" --contains — 0 rows on both legs
+R 15118 | "Saving Chupie (2023) (Harper Alley)" 224pp: no record in either catalog
+F 15118 provider-missing | a 2023 HarperAlley book neither catalog indexes
+N 15118 probed "Saving Chupie" --contains — 0 rows on both legs
+R 15457 | "Shakti (2023)" — two rips (238pp, 256pp) of the HarperAlley book: "Shakti" returns Raj Comics' 50-issue Hindi series (CV 31914), "Priya's Shakti" (2014) and ACK's "Shakti: Tales of Mother Goddess" (GCD 217040, 2018) — none is this 2023 book
+F 15457 provider-missing | no record for the 2023 HarperAlley "Shakti" on either leg
+N 15457 probed "Shakti" --contains on both legs — other books only; the B-032 wrong-cv-link on CV 31914 stands
+R 17074 | "Sunhead (2024)" 255pp: no record in either catalog
+F 17074 provider-missing | a 2024 Harper book neither catalog indexes
+N 17074 probed "Sunhead" --contains — 0 rows on both legs
+R 18555 | "The Faint of Heart (2023) (Greenwillow-Harper Alley)" 280pp: no record in either catalog
+F 18555 provider-missing | a 2023 Greenwillow/HarperAlley book neither catalog indexes
+N 18555 probed "Faint of Heart" --contains — 0 rows on both legs
+R 18642 | "The Fox Maidens (2024)" 321pp, HarperCollins: no record in either catalog
+F 18642 provider-missing | a 2024 HarperAlley book neither catalog indexes
+N 18642 probed "Fox Maidens" --contains — 0 rows on both legs
+R 19314 | "The Other Side of Tomorrow (2024)" 226pp, HarperCollins: no record in either catalog
+F 19314 provider-missing | a 2024 HarperAlley book neither catalog indexes
+N 19314 probed "Other Side of Tomorrow" --contains — 0 rows on both legs
+R 19987 | "The Worst Ronin (2024)" — two rips (337pp, 342pp) of one HarperAlley book — has no record in either catalog
+F 19987 provider-missing | a 2024 HarperAlley book neither catalog indexes
+N 19987 probed "Worst Ronin" --contains — 0 rows on both legs
+R 20778 | "Unhappy Camper (2024)" 207pp, HarperCollins: no record in either catalog
+F 20778 provider-missing | a 2024 HarperAlley book neither catalog indexes
+N 20778 probed "Unhappy Camper" --contains — 0 rows on both legs
+R 813 | "COL Emmie & Friends Book 08 - Always Anthony (2024)" 337pp: no record for this book; the Emmie & Friends books that ARE catalogued (Just Jaime CV 128097, Becoming Brianna CV 128096 / GCD 161572, Remarkably Ruby CV 152487 / GCD 184674) are one record per book, none for Book 08
+F 813 provider-missing | the eighth Emmie & Friends book (2024) is in neither catalog
+N 813 probed "Always Anthony", "Emmie & Friends", "Emmie and Friends" and "Emmie" --contains — other Emmie books only
+R 18052 | "The Baker and the Bard - A Cozy Fantasy Adventure (2024)" 162pp: no record in either catalog
+F 18052 provider-missing | a 2024 book neither catalog indexes
+N 18052 probed "Baker and the Bard" --contains — 0 rows on both legs
+R 17479 | "Table Titans Club (2024) (Holiday House)" 226pp: "Table Titans" returns CV 86791 (Toonhound 2015, 2) / GCD 95126 (Dork Storm 2015-?, 2) — Scott Kurtz's earlier webcomic collections, a different book from the 2024 middle-grade graphic novel
+F 17479 provider-missing | a 2024 Holiday House book neither catalog indexes
+N 17479 probed "Table Titans" --contains on both legs — the 2015 collections only
+R 18909 | "The Last Delivery (Evan Dahm) (2024) (Iron Circus)" 135pp: no record in either catalog
+F 18909 provider-missing | a 2024 Iron Circus book neither catalog indexes
+N 18909 probed "Last Delivery" --contains — 0 rows on both legs
+R 19501 | "The Russian Detective (2024)" 111pp: no record under the English title or a French "Détective russe"
+F 19501 provider-missing | a 2024 book neither catalog indexes
+N 19501 probed "Russian Detective", "Detective russe", "Détective" --contains and "Russian" --year 2024 — nothing that is this book

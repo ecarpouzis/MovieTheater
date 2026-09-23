@@ -1,0 +1,268 @@
+## Conventions for this batch (34 shown of 141 matched; 352 in LEDGER.md; 12 shelf/shelves: kind:collected-line ×6 · kind:trade-only ×6 · pub:dynamite ×4 · folder:vn-year ×3 · pub:idw ×2 · kind:new ×2 · pub:action-lab ×2 · folder:events ×2)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-291] (7 shelf/shelves) kind:collected-line kind:foreign pass:item
+- ITEM PASS (X-040..X-042): a run you can NAME but whose GCD rows carry no page counts gives no safe per-volume
+  range (SPRIGGAN Deluxe → GCD 188803) — `N`, not a guessed `C`; a per-file link can point at a foreign edition of
+  the WRONG book entirely (Summer Wars: the Complete Edition has its own one-shot record CV 155900 / GCD 142966).
+[L-030] (12 shelf/shelves) sig:collision
+- One folder split into two shelves by a subtitle in one filename (Analog, Witch Doctor) → `F merge-with=<sid>`.
+[L-135] (6 shelf/shelves) kind:collected-line
+- An Epic / Complete Collection LINE is found by probing the line name with NO volume subtitle: "Generation X Epic
+  Collection" → GCD 174151, shared by four sibling shelves.
+[L-151] (12 shelf/shelves) sig:collision sig:withheld
+- The withheld rule beats the checker's merge-with remedy text: a stored-link collision with a DIFFERENT comic is
+  `cv=-` + `N withheld cv=<id> … S<partner>`, never a merge (S101634 vs S22834); merge-with only for the same comic.
+[L-160] (12 shelf/shelves) pass:revisit sig:withheld
+- A withheld shelf with NO GCD leg to keep becomes `R` + `N withheld cv=<id> … S<partner>` (S4944, S99691) — the
+  revisit pair re-links the partner and then the S line can be written.
+[L-164] (6 shelf/shelves) kind:archive kind:collected-line kind:strip sig:probe
+- Year-by-year archives of a newspaper/web strip (Doonesbury, Dennis the Menace, Rip Kirby, The Little King) have no record
+  in either provider → R + provider-missing; where a provider holds the strip's own collected line (Cyanide & Happiness,
+  Oglaf) pair at 0.9 as a format split.
+[L-186] (6 shelf/shelves) kind:collected-line
+- REMINDER (lead ruling, applied again on Princeless S14096): a collected LINE with its own record (GCD 106434, nine
+  trades) wins over the first mini's run; linking the first four-issue mini to a nine-volume trade shelf is wrong-cv-link.
+[L-229] (4 shelf/shelves) pub:disney pub:dynamite sig:collision
+- Same-run continuations split by a folder or a parsed-key token surface as cross-batch collisions → `merge-with`
+  after reading the partner (Disney Masters S21200→S5517, Red Sonja v5 S99463→S14482, Sheena S15521→S15518,
+  BSG Classic trade S2336 ↔ run S94559, Elvira #1 S6117 ↔ #2-5 S6116).
+[L-244] (6 shelf/shelves) kind:collected-line pass:item
+- A trade collecting TWO minis, and an omnibus, cannot yet be stated by a `C` line (one range, one run, one per item):
+  name the runs on an `N` for now — TOOLS_TODO 17 adds per-run ranges and several `C` per item.
+[L-246] (6 shelf/shelves) kind:collected-line pass:item
+- ITEM PASS (X-001..X-003): on RUN-identity shelves the per-file GCD link reuses the run's own series matched to ONE
+  issue by number for vol. 01 only, while later volumes resolve to a real collected-edition series — check whether
+  vol. 01's link differs in kind from vol. 02+ before trusting it (Kevin Keller, Mega Man, Klaus, Dark Crystal …).
+[L-247] (6 shelf/shelves) kind:collected-line
+- A `C` that restates the shelf's own run needs its ids repeated in the clause to clear 40 characters; the clause is
+  the evidence, not a pointer. A shelf's own collected LINE and the run it collects are two records (Invisible
+  Kingdom: line GCD 151274 vs run CV 117748 / GCD 142448; Goldie Vance: line CV 94628 vs run CV 89593) — the `C`
+  names the RUN.
+[L-248] (6 shelf/shelves) kind:collected-line
+- Sibling shelves of one franchise can share one real GCD collected-edition line (Fence S6636/S6639/S6640 → 123731);
+  the sibling's landed S is evidence for the weak per-file matches on the others.
+[L-251] (6 shelf/shelves) kind:collected-line
+- Deluxe / Yearbook / Omnibus editions of the shelf's own ongoing with NO judged range get an `N` naming the
+  relationship, never an invented `C` range (the range is containment's to read).
+[L-258] (6 shelf/shelves) kind:collected-line sig:stamp
+- A degenerate packet block can stamp ONE GCD issue id onto every book of a shelf (Green Arrow S97350, six eras of
+  collected lines) — resolve only by each series' full issue list matched by title, never by the stamp.
+[L-269] (6 shelf/shelves) kind:collected-line kind:trade-only
+- An omnibus bundling several minis gets one `C` per mini at that mini's full range; an anthology TPB ("… and
+  Others") is not a numbered run and gets an `N`, not a forced `C`.
+[L-275] (6 shelf/shelves) kind:collected-line pass:item sig:probe sig:trade-link
+- A count-1/2/3 trade record the shelf's `N` called absent is often in the catalogs under a spelling the packet
+  never probed ("The Adventures of …", "Complete Collection", "Deluxe") — probe before writing no-record.
+[L-279] (6 shelf/shelves) kind:collected-line
+- Blade of the Immortal (S23118) is the canonical "line + run" shape: GCD's 31 collected-edition rows are the `I`
+  identities (cv=- — ComicVine mints only the floppy volume), and the floppy run CV 9069 is what every `C` names,
+  ranges #0-206 ascending across the 31 books. A single-leg shelf's books inherit the shelf's 0.9, never more.
+[L-282] (6 shelf/shelves) kind:collected-line
+- A `gcd=-` / dump-only shelf's books inherit the shelf's 0.9 (Cells at Work! Lady, Dragon Head); an exact edition
+  can exist on GCD alone and be absent from ComicVine entirely (Cat Shit One Omnibus GCD 186621 → 0.9, cv=-).
+[L-285] (6 shelf/shelves) kind:collected-line pass:item sig:stamp
+- ITEM PASS (X-031..X-033): JoJo's Bizarre Adventure part-shelves are double-stamped — per-file CV is the whole-saga
+  hardcover omnibus volume (165667, one issue per PART) and per-file GCD the umbrella whole-saga series (27115) by
+  raw issue number; both wrong for all 37 books. Parts 1-3 have no CV softcover record (cv=-); Parts 4-5 do.
+[L-286] (6 shelf/shelves) kind:collected-line sig:probe
+- A shelf-level "no record" `N` can be wrong for an English product too (Innocent Omnibus: CV 157999 / GCD 206125
+  under "Innocent Omnibus") — probe the edition's own name before inheriting the shelf's gap.
+[L-287] (6 shelf/shelves) kind:collected-line pass:item
+- A series can be wrong on BOTH legs at once (Hunter x Hunter, Inuyashiki, Kakegurui Twin): the header pool by
+  ordinal is the only source; an omnibus with no dedicated record on either leg is `N no-record`, never a mapping.
+[L-289] (6 shelf/shelves) kind:collected-line kind:manga pass:item
+- ITEM PASS (X-037..X-039): one GCD issue row can cover TWO of our volumes when GCD's count undershoots (PTSD Radio,
+  Ojojojo) — both books share the id at 0.9; a genuine 2-in-1 omnibus whose header rows read #1-2 / #3-4 maps 1:1
+  at 0.95 (Orb). A 2-vol English omnibus against a 4-vol Japanese original has no safe mapping → `gcd=s<series>`.
+[L-302] (4 shelf/shelves) kind:collected-line kind:foreign kind:trade-only pub:action-lab pub:idw pub:image sig:probe sig:trade-link
+- C-031..C-033 (Image / IDW trade shelves): the matches-our-holdings collected-edition trap dominates trade-only
+  Image shelves — the run wins; `lookup.py --contains` recovers the English "Outcast by Kirkman & Azaceta" (CV 75114 /
+  GCD 81445) when the packet's probes return only foreign editions; genuine different-comics conflations still
+  exist (Skyward: Action Lab 2013 vs Image 2018; Zero: Matsumoto vs Kot) — the years and publisher decide.
+[L-309] (6 shelf/shelves) kind:collected-line pass:item sig:probe
+- A collected line's own issue rows carry the trade's SUBTITLE as the issue title, so once one book of a line is
+  identified, `--issues <volume>` or `gcd_issue WHERE series_id=?` resolves the whole Vol. 01-N run in one query —
+  "own container id not probed" is never a valid no-record.
+[L-314] (6 shelf/shelves) kind:collected-line pass:item
+- `cvref.normName` drops "the / a / an / of / and" everywhere, not just leading articles — a word-preserving
+  normalizer misses ~90% of exact matches; replicate cvref's tokenizer when matching titles by script. A bare
+  trailing-number fallback (trade "01" → run issue #1) is safe only for mislabeled single-issue files, never for
+  "Vol." / "Book" / dash-subtitled titles (it matched an 824pp omnibus to issue #1). One CV issue id reused across
+  two differently titled books on a shelf is a sign of two eras, not one book. A digital "Collection Book NN"
+  bundle is a different catalog shape from a "Vol. NN" trade and is often uncatalogued — honest no-record.
+[L-014] (10 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-193] (10 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-013] (9 shelf/shelves) sig:probe
+- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
+  with the other spelling.
+[L-023] (3 shelf/shelves) kind:trade-only pub:dark-horse pub:dynamite sig:trade-link
+- 23 stored CV links in three batches pointed at the TPB record (count = the books we hold) instead of the run
+  — heavy on trade-only Dark Horse / Dynamite shelves. Expect it; `F wrong-cv-link`, `S` = the run.
+[L-043] (9 shelf/shelves) sig:probe
+- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
+  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
+[L-050] (9 shelf/shelves) sig:probe
+- When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
+  punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
+  abbreviation the publisher uses ("HSE").
+[L-064] (9 shelf/shelves) pass:item sig:twin
+- GCD indexes PRINTINGS: the S line takes the first edition both legs agree on; the `I` line takes the printing
+  we hold (page counts match the edition's row). GCD issue ids for books come from `gcd_issue` — prefer the
+  issue id to the `s<series>` form; use `s<series>` only for twin/variant rows.
+[L-072] (9 shelf/shelves) sig:probe
+- GCD hides behind the SUBTITLE: "The Hunting Accident", "Giraffes on Horseback Salad", "Undesirables" return
+  nothing under their full titles — re-probe the SHORT title before writing `provider-missing`.
+[L-085] (9 shelf/shelves) sig:barcode sig:trade-link sig:twin
+- `gcd_issue` carries the trade's page count AND ISBN: it matched our rips within ±10pp on 100+ books and told
+  two same-title count-1 rows apart (an 8pp ashcan is not a twin of the trade).
+
++107 more matched entries not shown: L-088, L-089, L-095, L-096, L-101, L-118, L-125, L-157, L-159, L-163, L-177, L-204, L-243, L-253, L-264, L-267, L-273, L-292, L-294, L-341, L-346, L-347, L-113, L-124, L-281, L-310, L-002, L-016, L-032, L-046, L-087, L-114, L-175, L-179, L-182, L-191, L-228, L-242, L-272, L-351, L-011, L-015, L-020, L-027, L-029, L-033, L-034, L-040, L-052, L-060, L-116, L-119, L-130, L-133, L-136, L-142, L-169, L-174, L-188, L-195, L-197, L-199, L-210, L-211, L-212, L-214, L-219, L-222, L-227, L-233, L-237, L-245, L-265, L-297, L-298, L-299, L-313, L-319, L-321, L-323, L-324, L-331, L-343, L-345, L-348, L-007, L-065, L-097, L-099, L-123, L-194, L-217, L-252, L-262, L-274, L-288, L-290, L-293, L-330, L-352, L-074, L-083, L-128, L-150, L-181, L-250, L-336 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S20857 Usagi Yojimbo  [tier B]   keys: Usagi Yojimbo Origins, Vol. 2: Wanderer's Road | Usagi Yojimbo: Origins  years 2019-2019  4 files / 4 collections
+   folders: [4] IDW\Usagi Yojimbo\Usagi Yojimbo Origins (2020)
+   files:   [31707] COL Usagi Yojimbo Origins Vol. 01 - Samurai (2020) (digital) (Son of Ultron-Empire).cbr (171pp)
+            [31708] COL Usagi Yojimbo Origins Vol. 02 - Wanderer's Road (2021) (digital) (Son of Ultron-Empire).cbr (151pp)
+            [31709] COL Usagi Yojimbo Origins Vol. 03 - The Dragon Bellow Conspiracy (2022) (digital) (Son of Ultron-Empire).cbr (177pp)
+            [31710] COL Usagi Yojimbo Origins Vol. 04 - Lone Goat and Kid (2022) (digital) (Son of Ultron-Empire).cbr (155pp)
+   ours:    ComicInfo Series: "Usagi Yojimbo: Origins"x3, "Usagi Yojimbo Origins, Vol. 2: Wanderer's Road"x1; ComicInfo Publisher: "IDW"x4
+   GCD says: [31707] gcd notes 2217617 (#1 of Usagi Yojimbo: Origins): Usagi Yojimbo Color Classics (IDW, 2020 Series) #1-7  |  gcd_reprint 2217617: s155471 Usagi Yojimbo Color Classics (2020) #1-7 [20 stories]
+   CV linked:      vol 119731 "Usagi Yojimbo" 2019 IDW Publishing 31 issues; cached #1-31 (31); yearΔ 0; ratio 0/31; no judged range; v1 per-file: same volume on 4/4 files
+   CV candidates:  (= linked) · 132282 "Usagi Yojimbo: Wanderer's Road" 2020 IDW Publishing 6 s85 · 124600 "Usagi Yojimbo Color Classics" 2020 IDW Publishing 7 s71 · 170197 "Usagi Yojimbo" 2017 Dantes Verlag 27 s66 · 124091 "Usagi Yojimbo" 1998 Planeta DeAgostini 31 s60 · 5845 "Usagi Yojimbo" 1996 Dark Horse Comics 165 s59 · 5183 "Usagi Yojimbo" 1993 Mirage 16 s58   (v1 search)
+   CV local rip:   (= linked) · 170197 "Usagi Yojimbo" 2017 Dantes Verlag 27 · 124091 "Usagi Yojimbo" 1998 Planeta DeAgostini 31 · 5845 "Usagi Yojimbo" 1996 Dark Horse Comics 165 · 5183 "Usagi Yojimbo" 1993 Mirage 16 · 3897 "Usagi Yojimbo" 1987 Fantagraphics 38   (rip lookup)
+   GCD dump:       147897 "Usagi Yojimbo" 2019-2022 IDW [] 31 · 205714 "Usagi Yojimbo" [fr-ch] 2019-? Editions Paquet SARL [] 3 · 124378 "Usagi Yojimbo" [de] 2018-2018 Dantes Verlag [] 1 · 160732 "Usagi Yojimbo" 2020-2023 IDW [] 5 · 219286 "Usagi Yojimbo" [fi] 2020-? Zum Teufel [] 5 · 112332 "Usagi Yojimbo" [de] 2017-? Dantes Verlag [] 27   (dump lookup)
+
+== S20856 Usagi Yojimbo: Crossroads  [tier D]   keys: Usagi Yojimbo: Crossroads  years 2023-2023  2 files / 2 collections
+   folders: [2] Dark Horse\Usagi Yojimbo (1987)\_Trade Paper Back Editions
+   files:   [13712] COL Usagi Yojimbo Vol. 37 - Crossroads (2022) (digital) (Son of Ultron-Empire).cbr (140pp)
+            [13713] COL Usagi Yojimbo Vol. 38 - The Green Dragon (2023) (digital) (Son of Ultron-Empire).cbr (140pp)
+   ours:    ComicInfo Series: "Usagi Yojimbo: Crossroads"x1, "Usagi Yojimbo: The Green Dragon"x1; ComicInfo Publisher: "IDW"x2
+   GCD says: [13712] gcd_reprint 2452880: s147897 Usagi Yojimbo (2019) #23-27 [5 stories]
+             [13713] gcd_reprint 2523339: s147897 Usagi Yojimbo (2019) #28-31 [4 stories]
+   CV candidates:  43045 "Usagi Yojimbo" 1987 Fantagraphics 7 s70 · 3897 "Usagi Yojimbo" 1987 Fantagraphics 38 s70 · 156932 "Usagi Yojimbo: Crossroads" 2022 IDW Publishing 1 issue 1045619 s65 · 119731 "Usagi Yojimbo" 2019 IDW Publishing 31 s30 · 170197 "Usagi Yojimbo" 2017 Dantes Verlag 27 s15 · 5183 "Usagi Yojimbo" 1993 Mirage 16 s15   (v1 search)
+   CV local rip:   156932 "Usagi Yojimbo: Crossroads" 2022 IDW Publishing 1 issue 1045619 · 119731 "Usagi Yojimbo" 2019 IDW Publishing 31 (via CV candidate name "Usagi Yojimbo") · 170197 "Usagi Yojimbo" 2017 Dantes Verlag 27 (via CV candidate name "Usagi Yojimbo") · 124091 "Usagi Yojimbo" 1998 Planeta DeAgostini 31 (via CV candidate name "Usagi Yojimbo") · 5845 "Usagi Yojimbo" 1996 Dark Horse Comics 165 (via CV candidate name "Usagi Yojimbo") · 5183 "Usagi Yojimbo" 1993 Mirage 16 (via CV candidate name "Usagi Yojimbo")   (rip lookup)
+   GCD dump:       214520 "Usagi Yojimbo" [pt-br] 2021-? Hyperion Comics [] 5 (via CV candidate name "Usagi Yojimbo") · 160732 "Usagi Yojimbo" 2020-2023 IDW [] 5 (via CV candidate name "Usagi Yojimbo") · 219286 "Usagi Yojimbo" [fi] 2020-? Zum Teufel [] 5 (via CV candidate name "Usagi Yojimbo") · 147897 "Usagi Yojimbo" 2019-2022 IDW [] 31 (via CV candidate name "Usagi Yojimbo") · 205714 "Usagi Yojimbo" [fr-ch] 2019-? Editions Paquet SARL [] 3 (via CV candidate name "Usagi Yojimbo") · 124378 "Usagi Yojimbo" [de] 2018-2018 Dantes Verlag [] 1 (via CV candidate name "Usagi Yojimbo")   (dump lookup)
+
+== S14098 Princeless: Raven, The Pirate Princess  [tier B]   keys: Princeless - Raven - The Pirate Princess  years 2015-2016  6 files / 6 collections
+   folders: [6] Action Lab\Princeless (2012)\Raven - The Pirate Princess (2015)
+   files:   [5498] COL Princeless - Raven - The Pirate Princess Vol. 01 - Captain Raven and the All-Girl Pirate Crew (2015) (digital-Empire).cbr (111pp)
+            [5499] COL Princeless - Raven - The Pirate Princess Vol. 02 - Free Women (2016) (digital-Empire).cbr (125pp)
+            [5500] COL Princeless - Raven - The Pirate Princess Vol. 03 - Two Boys, Five Girls, and Three Love Stories (2016) (digital-Empire).cbr (77pp)
+            [5501] COL Princeless - Raven - The Pirate Princess Vol. 04 - Ships in the Night (2018) (Digital) (XRA-Empire).cbr (105pp)
+            [5502] COL Princeless - Raven - The Pirate Princess Vol. 05 - Get Lost Together (2018) (Digital) (XRA-Empire).cbr (111pp)
+            [5503] COL Princeless - Raven - The Pirate Princess Vol. 06 - Assault on Golden Rock (2019) (Digital) (XRA-Empire).cbr (162pp)
+   ours:    judged item 5498 #1-4 conf 0.9; judged item 5499 #5-8 conf 0.9; judged item 5500 #9-12 conf 0.9; ComicInfo Series: "Princeless- Raven: The Pirate Princess"x3; ComicInfo Publisher: "Action Lab"x3
+   CV linked:      vol 83148 "Princeless: Raven, The Pirate Princess" 2015 Action Lab 12 issues; cached #1-12 (12); yearΔ 0; ratio 0/12; 3 of 3 judged fit; v1 per-file: same volume on 6/6 files
+   CV candidates:  (= linked) · 117035 "Princeless: Raven the Pirate Princess: Year Three" 2019 Action Lab 9 s41 · 78645 "Princeless: The Pirate Princess" 2014 Action Lab 4 s38 · 105707 "Princeless: Raven The Pirate Princess: Year Two" 2017 Action Lab 13 s36 · 91063 "Princeless: Raven, The Pirate Princess: Free Women" 2016 Action Lab 1 issue 534069 s33 · 114841 "Princeless: Raven The Pirate Princess: Year Two HCF" 2018 Action Lab 1 issue 690361 s32 · 81848 "Princeless: The Pirate Princess" 2015 Action Lab 1 issue 487892 s30   (v1 search)
+   CV local rip:   (= linked) · 117035 "Princeless: Raven the Pirate Princess: Year Three" 2019 Action Lab 9 (via CV candidate name "Princeless: Raven the Pirate Princess: Year Three") · 81848 "Princeless: The Pirate Princess" 2015 Action Lab 1 issue 487892 (via CV candidate name "Princeless: The Pirate Princess") · 78645 "Princeless: The Pirate Princess" 2014 Action Lab 4 (via CV candidate name "Princeless: The Pirate Princess") · 109243 "Princeless: The Pirate Princess" 2018 Action Lab 1 issue 663243 (via CV candidate name "Princeless: The Pirate Princess")   (rip lookup)
+   GCD dump:       90549 "Princeless: Raven, the Pirate Princess" 2015-2016 Action Lab Comics [] 12 · 120710 "Princeless Raven the Pirate Princess" 2016-? Action Lab Comics [] 9 · 86852 "Princeless: The Pirate Princess" 2014-? Action Lab Comics [] 4 (via CV candidate name "Princeless: The Pirate Princess") · 118842 "Princeless: The Pirate Princess" 2014-? Action Lab Comics [] 1 (via CV candidate name "Princeless: The Pirate Princess")   (dump lookup)
+
+== S14410 Raven: The Pirate Princess  [tier D]   keys: Raven: The Pirate Princess  years 2019-2020  2 files / 2 collections
+   folders: [2] Action Lab\Princeless (2012)\Raven - The Pirate Princess (2015)
+   files:   [5504] COL Princeless - Raven - The Pirate Princess Vol. 07 - Date Night (2019) (Digital) (XRA-Empire).cbr (110pp)
+            [5505] COL Princeless - Raven - The Pirate Princess Vol. 08 - Afterglow and Aftermath (2020) (Digital) (XRA-Empire).cbr (116pp)
+   ours:    judged item 5504 #1-4 conf 0.95; judged item 5505 #5-8 conf 0.9; ComicInfo Series: "Raven: The Pirate Princess"x2; ComicInfo Publisher: "Action Lab"x2
+   CV candidates:  91063 "Princeless: Raven, The Pirate Princess: Free Women" 2016 Action Lab 1 issue 534069 s40 · 114841 "Princeless: Raven The Pirate Princess: Year Two HCF" 2018 Action Lab 1 issue 690361 s39 · 66143 "Action Lab Confidential" 2012 Action Lab 1 issue 421092 s38 · 87336 "Princeless: Raven, The Pirate Princess: Captain Raven and the All-Girl Pirate Crew" 2016 Action Lab 1 issue 511038 s35 · 83148 "Princeless: Raven, The Pirate Princess" 2015 Action Lab 12 s34 · 105707 "Princeless: Raven The Pirate Princess: Year Two" 2017 Action Lab 13 s32   (v1 search)
+   CV local rip:   114841 "Princeless: Raven The Pirate Princess: Year Two HCF" 2018 Action Lab 1 issue 690361 (via CV candidate name "Princeless: Raven The Pirate Princess: Year Two HCF") · 91063 "Princeless: Raven, The Pirate Princess: Free Women" 2016 Action Lab 1 issue 534069 (via CV candidate name "Princeless: Raven, The Pirate Princess: Free Women") · 66143 "Action Lab Confidential" 2012 Action Lab 1 issue 421092 (via CV candidate name "Action Lab Confidential")   (rip lookup)
+
+== S101289 Vampirella v5 (2019)  [tier C] · ratio 0.04  keys: Vampirella v5 (2019)  years 2019-2024  2 files / 1 collections
+   folders: [1] Dynamite\Vampirella\_Completed Series\Vampirella v5 (2019)\Annuals and Specials · [1] Dynamite\Vampirella\_Completed Series\Vampirella v5 (2019)
+   files:   [22192] Vampirella 000 (2019) (digital) (Son of Ultron-Empire).cbr (25pp)
+            [22198] COL Vampirella - Seduction of the Innocent v04 - Red Mass (2023) (Digital) (DR & Quinch-Empire).cbr (192pp)
+   ours:    ladder 0; ComicInfo Series: "Vampirella"x1; ComicInfo Volume: "2019"x1; ComicInfo Publisher: "Dynamite Entertainment"x1
+   CV per-file (v1): vol 156869 "Vampirella" 2024 Dynamite Entertainment 10 on 2/2 files
+   CV local rip:   (= per-file) · 120227 "Vampirella" 2019 Dynamite Entertainment 26 (via our own name without the filing suffix "Vampirella") · 98538 "Vampirella" 2017 Dynamite Entertainment 12 (via our own name without the filing suffix "Vampirella") · 138427 "Vampirella" 2021 Dynamite Entertainment 1 issue 881376 (via our own name without the filing suffix "Vampirella") · 88585 "Vampirella" 2016 Dynamite Entertainment 6 (via our own name without the filing suffix "Vampirella") · 74523 "Vampirella" 2014 Dynamite Entertainment 15 (via our own name without the filing suffix "Vampirella")   (rip lookup)
+   GCD per-file:   series 148813 "Vampirella" 2019-2021 Dynamite Entertainment [was ongoing series] 26 on 1/2 files; methods numx1
+   GCD dump:       (= per-file) · 111868 "Vampirella" 2017-2018 Dynamite Entertainment [] 12 (via our own name without the filing suffix "Vampirella") · 119631 "Vampirella" 2017-2018 Dynamite Entertainment [] 2 (via our own name without the filing suffix "Vampirella") · 169778 "Vampirella" 2021-? Dynamite Entertainment [] 4 (via our own name without the filing suffix "Vampirella") · 174946 "Vampirella" 2021-2021 Dynamite Entertainment [] 1 (via our own name without the filing suffix "Vampirella") · 98026 "Vampirella" 2016-2016 Dynamite Entertainment [] 6 (via our own name without the filing suffix "Vampirella")   (dump lookup)
+
+== S20921 Vampirella Kracalactaka  [tier B]   keys: Vampirella Kracalactaka  years 2019-2019  1 files / 0 collections
+   folders: [1] Dynamite\Vampirella\_Minis, Trades and One-shots
+   files:   [22237] Vampirella FCBD (Dynamite) (2019) c2c Kracalactaka.cbz (35pp)
+   ours:    barcode item 22237 [{"type": "EAN13", "data": "0725130278708", "page": "Vampire
+   CV linked:      vol 120227 "Vampirella" 2019 Dynamite Entertainment 26 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 0/?; none cached
+   CV candidates:  77249 "The Art of Vampirella: The Dynamite Years" 2014 Dynamite Entertainment 1 issue 467045 s54 · 105778 "Vampirella: The Dynamite Years Omnibus" 2017 Dynamite Entertainment 4 s44 · 48666 "Johnny Dynamite" 2003 AiT/Planet Lar 1 issue 334678 s15 · 79556 "Black Dynamite" 2015 IDW Publishing 1 issue 476805 s15 · 5389 "Johnny Dynamite" 1994 Dark Horse Comics 4 s3 · 70902 "Black Dynamite" 2014 IDW Publishing 4 s3   (v1 search)
+   CV local rip:   (= linked) · 98538 "Vampirella" 2017 Dynamite Entertainment 12 (via CV name "Vampirella") · 138427 "Vampirella" 2021 Dynamite Entertainment 1 issue 881376 (via CV name "Vampirella") · 88585 "Vampirella" 2016 Dynamite Entertainment 6 (via CV name "Vampirella") · 74523 "Vampirella" 2014 Dynamite Entertainment 15 (via CV name "Vampirella") · 156869 "Vampirella" 2024 Dynamite Entertainment 10 (via CV name "Vampirella")   (rip lookup)
+   GCD dump:       148813 "Vampirella" 2019-2021 Dynamite Entertainment [] 26 (via CV name "Vampirella") · 111868 "Vampirella" 2017-2018 Dynamite Entertainment [] 12 (via CV name "Vampirella") · 119631 "Vampirella" 2017-2018 Dynamite Entertainment [] 2 (via CV name "Vampirella") · 169778 "Vampirella" 2021-? Dynamite Entertainment [] 4 (via CV name "Vampirella") · 174946 "Vampirella" 2021-2021 Dynamite Entertainment [] 1 (via CV name "Vampirella") · 98026 "Vampirella" 2016-2016 Dynamite Entertainment [] 6 (via CV name "Vampirella")   (dump lookup)
+
+== S13822 Pierce Brown's Red Rising: Sons of Ares  [tier B]   keys: Pierce Brown's Red Rising - Sons of Ares  years 2017-2017  2 files / 2 collections
+   folders: [2] Dynamite\Pierce Brown's Red Rising - Sons of Ares (2018)
+   files:   [21364] COL Pierce Brown's Red Rising - Sons of Ares v01 (2018) (digital) (Son of Ultron-Empire).cbr (156pp)
+            [21365] COL Pierce Brown's Red Rising - Sons of Ares v02 - Wrath (2020) (digital) (Son of Ultron-Empire).cbr (126pp)
+   ours:    ComicInfo Series: "Pierce Brown's Red Rising: Sons of Ares"x1; ComicInfo Publisher: "Dynamite Entertainment"x1
+   GCD says: [21364] gcd_reprint 1789821: s114055 Pierce Brown's Red Rising: Sons of Ares (2017) #1-6 [7 stories]
+   CV linked:      vol 101404 "Pierce Brown's Red Rising: Sons of Ares" 2017 Dynamite Entertainment 6 issues; cached #1-6 (6); yearΔ 0; ratio 0/6; no judged range; v1 per-file: same volume on 2/2 files
+   CV candidates:  (= linked) · 109115 "Pierce Brown's Red Rising: Sons of Ares" 2018 Dynamite Entertainment 1 issue 662109 s113 · 31211 "Ares" 2001 Seju Munhwasa 1 issue 194141 s55 · 20332 "Ares" 2006 Marvel 5 s51 · 125145 "Pierce Brown's Red Rising: Sons of Ares: Wrath" 2020 Dynamite Entertainment 1 issue 737848 s42 · 151575 "Pierce Brown's Red Rising: Sons of Ares: Forbidden Song" 2023 Dynamite Entertainment 1 issue 996343 s41 · 96664 "Martian Manhunter: The Red Rising" 2016 DC Comics 1 issue 566686 s36   (v1 search)
+   CV local rip:   (= linked) · 109115 "Pierce Brown's Red Rising: Sons of Ares" 2018 Dynamite Entertainment 1 issue 662109 · 20332 "Ares" 2006 Marvel 5 (via CV candidate name "Ares") · 31211 "Ares" 2001 Seju Munhwasa 1 issue 194141 (via CV candidate name "Ares")   (rip lookup)
+   GCD dump:       114055 "Pierce Brown's Red Rising: Sons of Ares" 2017-2017 Dynamite Entertainment [] 6 · 122712 "Pierce Brown’s Red Rising: Sons of Ares" 2018-2023 Dynamite Entertainment [] 3 · 149621 "Pierce Brown’s Red Rising: Sons of Ares" 2019-2019 Dynamite Entertainment [] 1 · 16522 "Ares" 2006-2006 Marvel [] 5 (via CV candidate name "Ares")   (dump lookup)
+
+== S13823 Pierce Brown's Red Rising - Sons of Ares - Forbidden Song  [tier D]   keys: Pierce Brown's Red Rising - Sons of Ares - Forbidden Song  years 2023-2023  1 files / 1 collections
+   folders: [1] Dynamite\Pierce Brown's Red Rising - Sons of Ares (2018)
+   files:   [21366] COL Pierce Brown's Red Rising - Sons of Ares v03 - Forbidden Song (2023) (digital) (Son of Ultron-Empire).cbr (132pp)
+   CV candidates:  109115 "Pierce Brown's Red Rising: Sons of Ares" 2018 Dynamite Entertainment 1 issue 662109 s100 · 101404 "Pierce Brown's Red Rising: Sons of Ares" 2017 Dynamite Entertainment 6 s82 · 151575 "Pierce Brown's Red Rising: Sons of Ares: Forbidden Song" 2023 Dynamite Entertainment 1 issue 996343 s65 · 31211 "Ares" 2001 Seju Munhwasa 1 issue 194141 s62 · 20332 "Ares" 2006 Marvel 5 s48 · 96664 "Martian Manhunter: The Red Rising" 2016 DC Comics 1 issue 566686 s43   (v1 search)
+   CV local rip:   151575 "Pierce Brown's Red Rising: Sons of Ares: Forbidden Song" 2023 Dynamite Entertainment 1 issue 996343 · 109115 "Pierce Brown's Red Rising: Sons of Ares" 2018 Dynamite Entertainment 1 issue 662109 (via CV candidate name "Pierce Brown's Red Rising: Sons of Ares") · 101404 "Pierce Brown's Red Rising: Sons of Ares" 2017 Dynamite Entertainment 6 (via CV candidate name "Pierce Brown's Red Rising: Sons of Ares")   (rip lookup)
+   GCD dump:       149621 "Pierce Brown’s Red Rising: Sons of Ares" 2019-2019 Dynamite Entertainment [] 1 (via CV candidate name "Pierce Brown's Red Rising: Sons of Ares") · 122712 "Pierce Brown’s Red Rising: Sons of Ares" 2018-2023 Dynamite Entertainment [] 3 (via CV candidate name "Pierce Brown's Red Rising: Sons of Ares") · 114055 "Pierce Brown's Red Rising: Sons of Ares" 2017-2017 Dynamite Entertainment [] 6 (via CV candidate name "Pierce Brown's Red Rising: Sons of Ares")   (dump lookup)
+
+== S94646 Justice League of America v3 (2013)  [tier B]   keys: Justice League of America v3 (2013)  years 2013-2014  4 files / 2 collections
+   folders: [2] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\091 Trinity War · [2] DC\_Justice League\_Completed Series\Justice League of America v3 (2013)
+   files:   [18477] 006 Justice League of America 006 - September 2013.cbr (25pp) | [18482] 011 Justice League of America 007 - October 2013.cbr (27pp)
+            [67323] COL Justice League of America Vol. 01 - World's Most Dangerous (2013) (Digital) (Zone-Empire).cbr (208pp)
+            [67324] COL Justice League of America Vol. 02 - Survivors of Evil (2014) (Digital) (Zone-Empire).cbr (184pp)
+   ours:    ladder 6-7; judged item 67323 #1-7 conf 0.9; judged item 67324 #8-14 conf 0.9
+   GCD says: [67323] gcd_reprint 1156919: s72153 Justice League of America (2013) #1-7 [28 stories] · s61184 Justice League Dark (2011) #22-23 [4 stories] · s60709 Justice League (2011) #22-23 [4 stories]
+             [67324] gcd_reprint 1252405: s72153 Justice League of America (2013) #8-14 [22 stories]
+   CV linked:      vol 57485 "Justice League of America" 2013 DC Comics 18 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 2/?; none cached
+   CV per-file (v1): vol 2014 "Justice League of America" 1960 DC Comics 261 on 2/4 files
+   CV local rip:   (= linked) · 110460 "Justice League of America" 2013 Panini Verlag 4 (via our own name without the filing suffix "Justice League of America") · 82720 "Justice League of America" 2015 DC Comics 10 (via our own name without the filing suffix "Justice League of America") · 150103 "Justice League of America" 2015 Urban Comics 7 (via our own name without the filing suffix "Justice League of America") · 110568 "Justice League of America" 2016 Panini Verlag 5 (via our own name without the filing suffix "Justice League of America") · 99040 "Justice League of America" 2017 DC Comics 29 (via our own name without the filing suffix "Justice League of America")   (rip lookup)
+   GCD dump:       72153 "Justice League of America" 2013-2014 DC [] 18 (via our own name without the filing suffix "Justice League of America") · 77516 "Justice League of America" 2013-2014 DC [] 2 (via our own name without the filing suffix "Justice League of America") · 78606 "Justice League of America" [de] 2014-2014 Panini Deutschland [] 4 (via our own name without the filing suffix "Justice League of America") · 81685 "Justice League of America" 2014-2015 DC [] 2 (via our own name without the filing suffix "Justice League of America") · 90178 "Justice League of America" 2015-2016 DC [] 10 (via our own name without the filing suffix "Justice League of America") · 162477 "Justice League of America" [fr] 2015-2019 Urban Comics [] 7 (via our own name without the filing suffix "Justice League of America")   (dump lookup)
+
+== S103846 The Amazing Spider-Man v2 (1999)  [tier C] · gap 56  keys: The Amazing Spider-Man v2 (1999)  years 1965-1968  46 files / 0 collections
+   folders: [39] Marvel\_Spider-Man\__Amazing Spider-Man\02 Amazing Spider-Man v2 (1999) · [6] _Marvel Major Event Chronology (digital)\2005.12 - Spider-man - The Other\Extra\Amazing Spider-man - Coming Home (2001) (digital-hd-Empire) · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0463 Maximum Security
+   files:   Amazing Spider-Man 020 (2000) (Digital) (AnPymGold - Empire).cbz … Amazing Spider-Man 029 (2001) (Digital) (AnPymGold - Empire).cbz  (10 files, pp 20-40)
+            [94480] Amazing Spider-Man 030 (2001) (digital) (Minutemen-InnerDemons).cbr (22pp) | [94481] Amazing Spider-Man 031 (2001) (digital-hd-Empire).cbr (22pp)
+            [94482] Amazing Spider-Man 032 (2001) (digital-hd-Empire).cbr (22pp) | [94483] Amazing Spider-Man 033 (2001) (digital-hd-Empire).cbr (21pp)
+            [94484] Amazing Spider-Man 034 (2001) (digital-hd-Empire).cbr (23pp) | [94485] Amazing Spider-Man 035 (2001) (digital-hd-Empire).cbr (24pp)
+            [94486] Amazing Spider-Man 036 (2001) (digital) (Minutemen-Faessla).cbz (20pp)
+            Amazing Spider-Man 037 (2002) (digital-hd-Empire).cbr … Amazing Spider-Man 045 (2002) (digital-hd-Empire).cbr  (9 files, pp 21-23)
+            [94496] Amazing Spider-Man 046 (2002) (digital) (Minutemen-InnerDemons).cbr (23pp) | [94497] Amazing Spider-Man 047 (2003) (digital) (Minutemen-InnerDemons).cbr (22pp)
+            [94498] Amazing Spider-Man 048 (2003) (digital) (Minutemen-InnerDemons).cbr (23pp) | [94499] Amazing Spider-Man 049 (2003) (digital) (Minutemen-InnerDemons).cbr (23pp)
+            [94500] Amazing Spider-Man 050 (2003) (digital) (Minutemen-InnerDemons).cbr (23pp) | [94501] Amazing Spider-Man 051 (2003) (Digital) (Kileko-Empire).cbr (22pp)
+            [94502] Amazing Spider-Man 052 (2003) (Digital) (Kileko-Empire).cbr (24pp) | [94503] Amazing Spider-Man 053 (2003) (Digital) (Kileko-Empire).cbr (22pp)
+            [94504] Amazing Spider-Man 054 (2003) (Digital) (AnPymGold - Empire).cbz (22pp) | [94505] Amazing Spider-Man 055 (2003) (Digital) (AnPymGold - Empire).cbz (22pp)
+            [94506] Amazing Spider-Man 056 (2003) (Digital) (AnPymGold - Empire).cbz (22pp) | [94507] Amazing Spider-Man 057 (2003) (Digital) (AnPymGold - Empire).cbz (23pp)
+            [94508] Amazing Spider-Man 058 (2003) (Digital) (AnPymGold - Empire).cbz (22pp) | [89259] 006 Amazing Spider-Man 024 (2000) (Digital) (AnPymGold - Empire).cbz (23pp)
+            Amazing Spider-Man 030 (2001) (digital-hd-Empire).cbr … Amazing Spider-Man 035 (2001) (digital-hd-Empire).cbr  (6 files, pp 21-24)
+   ours:    ladder 20-58; 7 number(s) name more than one file: 24, 30, 31, 32, 33, 34, 35
+   CV linked:      vol 78701 "The Amazing Spider-Man" 1999 Marvel 58 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ 56; ratio 46/? = 0.68; none cached
+   CV per-file (v1): vol 2127 "The Amazing Spider-Man" 1963 Marvel 651 on 46/46 files
+   CV local rip:   (= linked) · 34326 "The Amazing Spider-Man" 1979 Marvel 1 issue 224088 (via our own name without the filing suffix "The Amazing Spider-Man") · 56505 "The Amazing Spider-Man" 1979 Simon and Schuster 1 issue 383545 (via our own name without the filing suffix "The Amazing Spider-Man") · 151406 "The Amazing Spider-Man" 1980 Pocket Books 1 issue 995531 (via our own name without the filing suffix "The Amazing Spider-Man") · 22719 "The Amazing Spider-Man" 1982 Marvel 1 issue 136279 (via our own name without the filing suffix "The Amazing Spider-Man")   (rip lookup)
+   GCD per-file:   methods round2-seriesx43 ⚠  (⚠ copies a folder neighbour's series — verify); series 172683 "Amazing Spider-Man" [en-gb] 2021-? Panini UK [ongoing] 68 on 43/46 files
+   GCD dump:       1570 "The Amazing Spider-Man" 1963-1998 Marvel [] 443 (via our own name without the filing suffix "The Amazing Spider-Man") · 24842 "The Amazing Spider-Man" 1969-1969 Marvel [] 1 (via our own name without the filing suffix "The Amazing Spider-Man") · 149585 "The Amazing Spider-Man" [en-ph] 1974-1974 Goodwill Bookstore [] 2 (via our own name without the filing suffix "The Amazing Spider-Man") · 18606 "The Amazing Spider-Man" [en-au] 1975-1976 Newton Comics [] 17 (via our own name without the filing suffix "The Amazing Spider-Man") · 72382 "The Amazing Spider-Man" [en-au] 1975-1975 Newton Comics [] 1 (via our own name without the filing suffix "The Amazing Spider-Man") · 182246 "The Amazing Spider-Man" [en-za] 1976-1976 Republican Press [] 3 (via our own name without the filing suffix "The Amazing Spider-Man")   (dump lookup)
+   bridges:        gcd 172683 -> LOCG 100043 "The Amazing Spider-Man" support 320
+
+== S7042 Fun Comics  [tier A]   keys: Fun Comics  years 1980-1981  4 files / 0 collections
+   folders: [4] AC Comics\Fun Comics (001-004)
+   files:   [5154] Fun Comics 001 (1980).cbr (37pp) | [5155] Fun Comics 002 (1981).cbr (41pp) | [5156] Fun Comics 003.cbr (44pp) | [5157] Fun Comics 004.cbr (35pp)
+   ours:    ladder 1-4
+   CV linked:      vol 66301 "Fun Comics" 1980 AC Comics ? issues; cached #1-2 (2); yearΔ 0; ratio 4/? = 2.00; no judged range; v1 per-file: same volume on 4/4 files
+   CV candidates:  (= linked) · 129486 "Fun Comics" 1953 Star Publications ? s75 · 119568 "Fabulous Fun Comics" 1990 AC Comics ? s74 · 31822 "Bill Black's Fun Comics" 1982 AC Comics ? s73 · 68390 "Fun Fun Comics" 2013 self published ? s59 · 108779 "Big Fun Comics" 1996 Egmont Ehapa Verlag ? s59 · 62245 "Circus Of Fun Comics" 1945 A.W. Nugent Publishing Co. ? s58   (v1 search)
+   CV local rip:   (= linked) · 129486 "Fun Comics" 1953 Star Publications 4 · 130222 "Fun-Comics " 1951 Nation-Wide Comics 1 issue 798174 · 119568 "Fabulous Fun Comics" 1990 AC Comics 1 issue 710707 (via CV candidate name "Fabulous Fun Comics")   (rip lookup)
+   GCD per-file:   series 19989 "Fun Comics" 1980-1981 AC [limited series] 2 on 2/4 files; methods numx2
+   GCD dump:       (= per-file) · 16823 "Fun Comics" 1953-1953 Star Publications [1949-1954] [] 4 · 84199 "Fun-Comics" 1951-1951 Nation-Wide Publishing [] 4 · 85851 "Fabulous Fun Comics" 1990-1990 AC [] 1 (via CV candidate name "Fabulous Fun Comics")   (dump lookup)
+
+== S2553 Bill Black's Fun Comics  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: Bill Black's Fun Comics  years 1982-2000  4 files / 0 collections
+   folders: [4] AC Comics\Bill Black's Fun Comics (001-004)
+   files:   [4901] Bill Black's Fun Comics 001 (1999) 38p.cbz (38pp) | [4902] Bill Black's Fun Comics 002 (2000) 39p.cbz (39pp) | [4903] Bill Black's Fun Comics 003 (1982) 44p.cbz (44pp)
+            [4904] Bill Black's Fun Comics 004 (1983) 37p.cbz (37pp)
+   ours:    ladder 1-4; ComicInfo Series: "Bill Black's Fun Comics"x4; ComicInfo Publisher: "AC Comics"x4
+   CV linked:      vol 31822 "Bill Black's Fun Comics" 1982 AC Comics 4 issues; cached #1-4 (4); yearΔ 0; ratio 4/4 = 1.00; no judged range; v1 per-file: same volume on 4/4 files
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD per-file:   series 22411 "Bill Black's Fun Comics" 1999-2000 AC [miniseries] 2 on 2/4 files · series 19985 "Bill Black's Fun Comics" 1982-1983 AC [was ongoing series] 2 on 2/4 files; methods numx4; the dump names no other series
+   bridges:        gcd 22411 -> LOCG 140299 "Bill Black's Fun Comics" support 2 · gcd 19985 -> LOCG 140299 "Bill Black's Fun Comics" support 2

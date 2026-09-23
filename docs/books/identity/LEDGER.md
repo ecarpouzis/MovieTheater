@@ -1735,3 +1735,10 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   strip collections sit under the line name "War Picture Library" #[n] (the Wildcat shape, L-347). GCD splits the
   1985-87 GL Corps annual by cover title (33216 / 33217 / 2978) where CV keeps one volume (21324); GCD brackets the
   ripper's running Abe Sapien number ([6], [9]) (R-076/R-077).
+
+[L-353] pub:ac pub:idw pub:dynamite
+- A retitle that CONTINUES the numbering is one run even when both catalogues split it by title (AC: Fun Comics #1-2 ->
+  Bill Black's Fun Comics #3-4, GCD 19985 numbers from #3) — L-212 applied (R-079). IDW "Usagi Yojimbo: Origins" has
+  its own CV line volume (135288) spanning four colour-reprint minis. Dynamite "Seduction of the Innocent vNN" is the
+  2019 Vampirella run's own trade line (GCD 169778). Action Lab's Raven trade line and Red Rising: Sons of Ares are
+  GCD-only volume lines (120710, 122712) while CV mints a count-1 volume per trade.
