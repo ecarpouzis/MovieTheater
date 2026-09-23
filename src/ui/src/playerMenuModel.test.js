@@ -4,8 +4,10 @@ import { describe, it, expect, vi } from "vitest";
 // between the two inline copies: the Off entry's null index, burned-in detection, the selected
 // flag, and the delivered-audio fallback to the first track.
 
+// A Dolby-decoding browser on a 5.1 output: the one shape that ASKS for surround under the
+// audio-output rule (audioOutput.js), so the delivered layout can read "5.1".
 vi.mock("./streamCapabilities", () => ({
-  detectStreamCapabilities: () => ({ maxAudioChannels: 6 }),
+  detectStreamCapabilities: () => ({ maxAudioChannels: 6, supportsAc3: true }),
 }));
 
 import {

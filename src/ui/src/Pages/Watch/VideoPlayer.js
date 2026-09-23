@@ -20,6 +20,8 @@ import { useSubtitleStyle, useCueLift, useSubtitleOffset, formatDelay, SUBTITLE_
 import { SubtitleStyleControls, SubtitleStylePreview, SubtitleSyncControls } from "../../SubtitleStyleEditor";
 import "./VideoPlayer.css";
 import { readStored, writeStored } from "../../utils/storage";
+import { audioOutputOptions } from "../../audioOutput";
+import { detectStreamCapabilities } from "../../streamCapabilities";
 
 // The menu vocabulary (QUALITY_LADDER, formatPlaying, deliveredLayout, codecLabel, channelLayout)
 // moved to playerMenuModel.js — shared with the TV player — and is re-exported here so existing
@@ -55,12 +57,17 @@ function VideoPlayer({
   subtitleTracks = [],
   selectedAudioIndex = null,
   selectedSubtitleIndex = null,
+  audioOutput = "auto",
   onSelectQuality,
   onSelectAudio,
   onSelectSubtitle,
+  onSelectAudioOutput,
   onProgress,
   onBandwidth,
   onStall,
+  // Called with { decode, details } when the stream dies. Returning true means the page is handling
+  // it (a restart under a new cap); otherwise the fatal card shows.
+  onFatal,
   onEnded,
   bufferingLabel = null,
   incident = null,
@@ -76,6 +83,9 @@ function VideoPlayer({
   const hlsRef = useRef(null);
   const clickTimerRef = useRef(null);
   const scrubRef = useRef(null);
+  // Read through a ref so the source effect never holds a stale page handler.
+  const onFatalRef = useRef(onFatal);
+  onFatalRef.current = onFatal;
 
   const [playing, setPlaying] = useState(false);
   const [needsTap, setNeedsTap] = useState(false); // autoplay was blocked
@@ -253,12 +263,44 @@ function VideoPlayer({
       tryPlay();
     };
 
+    // The stream died. A decode failure (the element's MEDIA_ERR_DECODE, or an hls.js MEDIA_ERROR that
+    // survived the engine's staged recovery) is offered to the page first: in Auto it answers by
+    // learning a lower frame-width cap and restarting — the 2026-09-20 tablet died with
+    // PIPELINE_ERROR_DECODE on a 3840-wide HEVC encode and played the 1280-wide one for 98 minutes.
+    // Anything the page declines becomes the fatal card.
+    const failed = (info) => {
+      if (onFatalRef.current?.(info)) return;
+      setFatalError("Playback failed — the stream could not be decoded.");
+    };
+    // On the hls.js branch the ENGINE watches the element's error event and walks its staged recovery
+    // first (streamEngine.createHls), so only a decode failure that survived recovery reaches `failed`.
+    // The native branches (direct play, Safari HLS) have no engine, so they are watched here: one
+    // decode error gets a reload at the same position (what jellyfin-web does for a native element
+    // before it gives up), a second one within this source is the failure. The frame width rides
+    // along so the page's learned cap only applies to a frame wider than its fallback tier.
+    let nativeDecodeErrors = 0;
+    const onElementError = () => {
+      const err = video.error;
+      if (!err) return;
+      const decode = err.code === 3; /* MEDIA_ERR_DECODE */
+      const info = { type: "element", decode, width: video.videoWidth || null, details: err.message || `MediaError ${err.code}` };
+      if (decode && nativeDecodeErrors === 0) {
+        nativeDecodeErrors += 1;
+        const at = video.currentTime;
+        video.load();
+        video.addEventListener("loadedmetadata", () => { if (at > 0.5) video.currentTime = at; tryPlay(); }, { once: true });
+        return;
+      }
+      failed(info);
+    };
+
     let hls = null;
     if (!isHls) {
       // Direct play: the original file, downloaded progressively via range requests — no
       // transcode, near-instant start. Seeking/startAt are plain currentTime (range fetches).
       video.src = src;
       setRemotePlayable(true);
+      video.addEventListener("error", onElementError);
       video.addEventListener("loadedmetadata", seekToStart, { once: true });
     } else if (Hls.isSupported()) {
       // Shared engine: buffer config + error recovery live in createHls (see streamEngine.js) so the
@@ -275,7 +317,7 @@ function VideoPlayer({
         // every resume / quality-audio-subtitle change / ABR adapt, so each restart re-seeds cleanly.
         startPosition: startAt > 0.5 ? startAt : undefined,
         onStall,
-        onFatal: () => setFatalError("Playback failed — the stream could not be decoded."),
+        onFatal: failed,
         onTimelineOffset: (offset) => {
           timelineOffsetRef.current = offset;
           setTimelineOffset(offset);
@@ -295,12 +337,14 @@ function VideoPlayer({
       // Safari: native HLS.
       video.src = src;
       setRemotePlayable(true);
+      video.addEventListener("error", onElementError);
       video.addEventListener("loadedmetadata", seekToStart, { once: true });
     } else {
       setFatalError("This browser can't play HLS video.");
     }
 
     return () => {
+      video.removeEventListener("error", onElementError);
       if (hls) {
         hls.destroy();
         hlsRef.current = null;
@@ -811,13 +855,19 @@ function VideoPlayer({
         {/* The selected sidecar-VTT track only — mounting the whole list fetches the whole list.
             None at all while casting: the receiver was handed its own copies of these urls in the
             load request, and a <track> on a detached element would pull the cue file down a second
-            time (through the same ffmpeg) to render it for nobody. */}
+            time (through the same ffmpeg) to render it for nobody.
+            Keyed by the delivery URL, not the index: every restart (a quality change, an ABR move)
+            mints a new session and a new signed URL for the same index, and an element React keeps
+            gets only its src ATTRIBUTE swapped. Firefox answers that by emptying the cues and
+            fetching nothing (HTMLTrackElement::AfterSetAttr; only the JS .src setter reloads) — the
+            2026-09-18 tablet lost its subtitles on the first quality switch and never got them back
+            until the viewer toggled them by hand. A fresh element loads on mount in every engine. */}
         {!casting &&
           subtitleTracks
             .filter((t) => t.deliveryUrl && t.kind !== "image-pgs" && t.kind !== "ass")
             .filter((t) => String(t.index) === String(selectedSubtitleIndex))
             .map((t) => (
-              <track key={t.index} id={String(t.index)} kind="subtitles" label={t.label} src={t.deliveryUrl} srcLang={t.language || "en"} />
+              <track key={`${t.index}:${t.deliveryUrl}`} id={String(t.index)} kind="subtitles" label={t.label} src={t.deliveryUrl} srcLang={t.language || "en"} />
             ))}
       </video>
 
@@ -1069,6 +1119,28 @@ function VideoPlayer({
                   </>
                 )}
 
+                {/* Surround or stereo: which one this browser ASKS for (audioOutput.js). Auto is
+                    surround only where the browser decodes Dolby; the override exists for the
+                    stereo-probing desktop with 5.1 speakers and the tablet whose 5.1 comes out
+                    garbled. A change restarts the session — the mix is decided server-side. */}
+                {!casting && <div className="vp-menu-section">Audio output</div>}
+                {!casting && audioOutputOptions(audioOutput, detectStreamCapabilities()).map((o) => (
+                  <button
+                    key={o.key}
+                    role="menuitemradio"
+                    aria-checked={o.selected}
+                    className={`vp-menu-item${o.selected ? " vp-menu-item--on" : ""}`}
+                    onClick={() => {
+                      setOpenMenu(null);
+                      if (!o.selected) onSelectAudioOutput?.(o.key);
+                    }}
+                  >
+                    <span className="vp-menu-dot" />
+                    {o.label}
+                    <span className="vp-menu-hint">{o.hint}</span>
+                  </button>
+                ))}
+
                 {subtitleTracks.length > 0 && (
                   <>
                     <div className="vp-menu-section">Subtitles</div>
@@ -1206,7 +1278,8 @@ function VideoPlayer({
                     videoCodec,
                     isHls,
                     isDirectStream,
-                    audio: deliveredAudio(audioTracks, selectedAudioIndex),
+                    // While casting the mix is the receiver profile's, not this browser's rule.
+                    audio: deliveredAudio(audioTracks, selectedAudioIndex, casting ? cast?.maxAudioChannels : null),
                   })}
                 </div>
               </div>

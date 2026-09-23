@@ -1,4 +1,5 @@
-import { detectStreamCapabilities } from "./streamCapabilities";
+import { detectStreamCapabilities, effectiveWidthCap } from "./streamCapabilities";
+import { requestedAudioChannels, readAudioOutput } from "./audioOutput";
 
 // ── Music (music-plan.md §2.4) ──────────────────────────────────────────────
 // The artist/album catalogs ship whole (they're small) and filter client-side;
@@ -388,15 +389,26 @@ export function deviceToken() {
   return cachedDeviceToken;
 }
 
-function startStream({ movieId = null, playableId = null, mediaFileId = null, maxBitrateBps = null, audioStreamIndex = null, subtitleStreamIndex = null, startSeconds = null, forceTranscode = false, capabilities = null }) {
+function startStream({ movieId = null, playableId = null, mediaFileId = null, maxBitrateBps = null, audioStreamIndex = null, subtitleStreamIndex = null, startSeconds = null, forceTranscode = false, capabilities = null, displayCap = false }) {
   // Negotiate the codec profile from this browser's real capabilities (§14.1) so
   // HEVC/AV1-capable clients avoid a needless H.264 re-encode.
   //
   // `capabilities` overrides that probe for a session this browser is not going to DECODE. Casting is
   // the case that exists: the Chromecast is the decoder, so a profile probed from Chrome would let the
   // server copy an HEVC source to a receiver that has never decoded one (see castProfiles.js). The
-  // shape is identical either way, so the server needs no idea which one it got.
-  const caps = capabilities || detectStreamCapabilities();
+  // shape is identical either way, so the server needs no idea which one it got. An override carries
+  // its own channel count and no display cap — the receiver's screen isn't this one.
+  //
+  // For this browser's own sessions two numbers are DECIDED here rather than probed: the channel
+  // count (audioOutput.js — surround only for a browser that decodes Dolby, or by the viewer's
+  // override) and, when `displayCap` is on (the Auto quality modes), the widest frame worth sending
+  // to this screen (streamCapabilities.effectiveWidthCap — the panel's width, or the tier a decode
+  // failure taught us). A hand-picked "Original" sends no cap: that choice means the source untouched.
+  const probe = capabilities || detectStreamCapabilities();
+  const cap = !capabilities && displayCap ? effectiveWidthCap() : null;
+  const caps = capabilities
+    ? probe
+    : { ...probe, maxAudioChannels: requestedAudioChannels(probe, readAudioOutput()), ...(cap ? { maxVideoWidth: cap } : {}) };
   return fetch("/API/Stream/Start", {
     method: "post",
     headers: { "Content-Type": "application/json" },

@@ -1,4 +1,5 @@
 import { detectStreamCapabilities } from "./streamCapabilities";
+import { requestedAudioChannels, readAudioOutput } from "./audioOutput";
 import { isAutoQuality } from "./streamAbr";
 
 // The players' shared menu VOCABULARY and option model. The Watch player's flat dropdown and the
@@ -44,11 +45,14 @@ export function channelLayout(channels) {
   return `${channels}ch`;
 }
 
-// The delivered layout is capped at what this client can actually emit, so a stereo machine reads
-// "2.0" for a 5.1 source (which it gets downmixed) instead of falsely claiming surround.
-export function deliveredLayout(channels) {
+// The delivered layout is capped at what this browser ASKED for (audioOutput.js: surround only for
+// a Dolby-decoding browser or by the viewer's override), so a stereo session reads "2.0" for a 5.1
+// source (which the server mixed down) instead of falsely claiming surround.
+// `maxChannels` overrides the local rule for a session THIS browser did not negotiate — a cast, where
+// the receiver profile's channel count is what the TV was asked for.
+export function deliveredLayout(channels, maxChannels = null) {
   if (!channels) return null;
-  const max = detectStreamCapabilities().maxAudioChannels || 2;
+  const max = maxChannels || requestedAudioChannels(detectStreamCapabilities(), readAudioOutput());
   return channelLayout(Math.min(channels, max));
 }
 
@@ -119,9 +123,9 @@ export function subtitleOptions(subtitleTracks, selectedIndex) {
  * back to the first track when nothing is explicitly selected — both players carried this exact
  * lookup inline, fallback included.
  */
-export function deliveredAudio(audioTracks, selectedIndex) {
+export function deliveredAudio(audioTracks, selectedIndex, maxChannels = null) {
   const tracks = audioTracks || [];
-  return deliveredLayout((tracks.find((t) => t.index === selectedIndex) || tracks[0])?.channels);
+  return deliveredLayout((tracks.find((t) => t.index === selectedIndex) || tracks[0])?.channels, maxChannels);
 }
 
 /**

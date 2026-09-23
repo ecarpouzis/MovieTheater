@@ -4,6 +4,8 @@ import Hls from "hls.js";
 import { MovieAPI } from "../../MovieAPI";
 import { formatTime, TICKS_PER_SECOND } from "../Watch/VideoPlayer";
 import { QUALITY_LADDER, formatPlaying, qualityOptions, audioOptions, subtitleOptions, deliveredAudio, tvStatusLine } from "../../playerMenuModel";
+import { audioOutputOptions, readAudioOutput, writeAudioOutput } from "../../audioOutput";
+import { detectStreamCapabilities, effectiveWidthCap } from "../../streamCapabilities";
 import { useIdleChrome } from "../../useIdleChrome";
 import { createHls, bandwidthSample, canRemotePlay } from "../../streamEngine";
 import { useCastSender } from "../../castSender";
@@ -91,6 +93,8 @@ function TvPage({ userData }) {
   const [timelineOffset, setTimelineOffset] = useState(0);
   const timelineOffsetRef = useRef(0);
   const [audioOpen, setAudioOpen] = useState(false);
+  const [audioOutOpen, setAudioOutOpen] = useState(false);
+  const [audioOutput, setAudioOutput] = useState(() => readAudioOutput());
   const [subsOpen, setSubsOpen] = useState(false);
   const [castOpen, setCastOpen] = useState(false); // receiver-profile accordion (only while casting)
   // Caption appearance — shared with the Watch player (same hook + persisted settings + injected ::cue).
@@ -122,6 +126,13 @@ function TvPage({ userData }) {
 
   // tune() reads the current quality without re-binding on every change.
   const qualityRef = useRef(quality);
+  // What a LOCAL session was negotiated under, beyond cast-vs-local: the audio-output preference
+  // and the Auto frame-width cap both change what the server builds, so a prewarm minted before the
+  // viewer changed either must not be handed to the next item (it would carry the old mix / cap).
+  const localNegotiationKey = useCallback(
+    () => `local:${readAudioOutput()}:${isAutoQuality(qualityRef.current) ? effectiveWidthCap() ?? "" : ""}`,
+    []
+  );
   qualityRef.current = quality;
 
   const channelRef = useRef(null);
@@ -378,12 +389,13 @@ function TvPage({ userData }) {
       // profile (or connecting/disconnecting) in the ~20s before a boundary would silently reuse a
       // session encoded for the wrong decoder — the black-picture failure, arriving at the exact
       // moment the channel changed programme and looking like a channel bug.
-      const negotiatedFor = castingRef.current ? castPrefs.negotiationKey : "local";
+      const negotiatedFor = castingRef.current ? castPrefs.negotiationKey : localNegotiationKey();
       try {
         const r = await MovieAPI.startStream({
           playableId,
           maxBitrateBps: resolveBitrate(),
           capabilities: castingRef.current ? castCapsRef.current : null,
+          displayCap: isAutoQuality(qualityRef.current),
           startSeconds: 0,
           audioStreamIndex,
           subtitleStreamIndex,
@@ -398,7 +410,7 @@ function TvPage({ userData }) {
         /* prewarm is best-effort */
       }
     },
-    [resolveBitrate, castPrefs.negotiationKey]
+    [resolveBitrate, castPrefs.negotiationKey, localNegotiationKey]
   );
 
   // Re-anchor the channel clock from a Now answer. The offset the server states was true about half a
@@ -592,7 +604,7 @@ function TvPage({ userData }) {
             // ...and the same DECODER. A session warmed for this browser cannot be handed to a
             // Chromecast, or vice versa: the codec, container and segment format were all chosen for
             // whichever one was live when the prewarm ran.
-            pw.negotiatedFor === (castingRef.current ? castPrefs.negotiationKey : "local") &&
+            pw.negotiatedFor === (castingRef.current ? castPrefs.negotiationKey : localNegotiationKey()) &&
             nowData.current.offsetSeconds < 8 &&
             // A prewarm is a copy stream; don't reuse it for an item we've escalated to re-encode.
             forceTranscodeItemRef.current !== nowData.current.itemId
@@ -612,6 +624,9 @@ function TvPage({ userData }) {
             maxBitrateBps: resolveBitrate(),
             // The receiver's decode profile when casting; this browser's probe otherwise.
             capabilities: castingRef.current ? castCapsRef.current : null,
+            // Auto only: cap the frame at what this screen can show / this decoder survived
+            // (streamCapabilities.effectiveWidthCap); a hand-picked Original stays the source.
+            displayCap: isAutoQuality(qualityRef.current),
             startSeconds: Math.floor(nowData.current.offsetSeconds),
             audioStreamIndex: audioIndexRef.current,
             subtitleStreamIndex: burnSubIndexRef.current,
@@ -786,7 +801,7 @@ function TvPage({ userData }) {
     // `cast` is deliberately absent, and reached through castRef instead: its identity changes on
     // every remote-player tick (~1/s), so naming it here would rebuild tune() — and everything that
     // depends on tune() — once a second.
-    [stopSession, destroyHls, resolveBitrate, prewarmNext, handleStall, anchorSync, castPrefs.negotiationKey]
+    [stopSession, destroyHls, resolveBitrate, prewarmNext, handleStall, anchorSync, castPrefs.negotiationKey, localNegotiationKey]
   );
   // tune() is invoked from the ABR adapt path (useAdaptiveBitrate onAdapt) via this ref, avoiding a
   // tune/adapt dependency cycle.
@@ -1603,7 +1618,10 @@ function TvPage({ userData }) {
               .filter((t) => t.deliveryUrl && t.kind !== "image-pgs" && t.kind !== "ass")
               .filter((t) => String(t.index) === String(subtitleIndex))
               .map((t) => (
-                <track key={t.index} id={String(t.index)} kind="subtitles" label={t.label} src={t.deliveryUrl} srcLang={t.language || "en"} />
+                // Keyed by URL so a re-tune (new session, new signed URL, same index) REMOUNTS the track:
+                // Firefox never re-fetches a track whose src attribute merely changed (it just drops the
+                // cues) — see the same key in VideoPlayer.js.
+                <track key={`${t.index}:${t.deliveryUrl}`} id={String(t.index)} kind="subtitles" label={t.label} src={t.deliveryUrl} srcLang={t.language || "en"} />
               ))}
         </video>
 
@@ -1751,6 +1769,37 @@ function TvPage({ userData }) {
                   ))}
               </>
             )}
+            {/* Surround or stereo — what this browser ASKS the server for (audioOutput.js). Auto is
+                surround only where the browser decodes Dolby; the override covers the stereo-probing
+                desktop with 5.1 speakers and the tablet whose 5.1 came out garbled. Re-tunes. */}
+            {!casting && (
+              <button
+                className={`tv-channel-item${audioOutOpen ? " tv-channel-item--on" : ""}`}
+                onClick={() => setAudioOutOpen((a) => !a)}
+              >
+                <span className="tv-channel-num">♫</span>
+                Audio output
+                <span className="tv-qopt-hint">{audioOutputOptions(audioOutput).find((o) => o.selected)?.label}</span>
+              </button>
+            )}
+            {!casting && audioOutOpen &&
+              audioOutputOptions(audioOutput, detectStreamCapabilities()).map((o) => (
+                <button
+                  key={o.key}
+                  className={`tv-channel-item tv-channel-item--qopt${o.selected ? " tv-channel-item--on" : ""}`}
+                  onClick={() => {
+                    setAudioOutOpen(false);
+                    if (o.selected) return;
+                    writeAudioOutput(o.key);
+                    setAudioOutput(o.key);
+                    if (channel) tune(channel);
+                  }}
+                >
+                  <span className="tv-channel-num">·</span>
+                  {o.label}
+                  <span className="tv-qopt-hint">{o.hint}</span>
+                </button>
+              ))}
             {subtitleTracks.length > 0 && (
               <>
                 <button
@@ -1853,7 +1902,8 @@ function TvPage({ userData }) {
                     videoCodec: playingVideoCodec,
                     isHls: playingHls,
                     isDirectStream: playingDirect,
-                    audio: deliveredAudio(audioTracks, audioIndex ?? playingAudioIndex),
+                    // While casting the mix is the receiver profile's, not this browser's rule.
+                    audio: deliveredAudio(audioTracks, audioIndex ?? playingAudioIndex, casting ? castPrefs.capabilities?.maxAudioChannels : null),
                   })}
                 </div>
               </>

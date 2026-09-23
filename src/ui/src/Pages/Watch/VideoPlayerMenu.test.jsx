@@ -89,3 +89,52 @@ describe("the Watch settings menu (shared option model)", () => {
     expect(readouts.some((t) => /can't Google Cast/.test(t))).toBe(true);
   });
 });
+
+describe("the Audio output rows (audioOutput.js)", () => {
+  it("lists Auto / Stereo / Surround with the active one marked and reports a pick", () => {
+    const onSelectAudioOutput = vi.fn();
+    const { container } = mountWithMenu({ audioOutput: "stereo", onSelectAudioOutput });
+    const items = [...container.querySelectorAll(".vp-menu-item")];
+    const rows = ["Auto", "Stereo", "Surround"].map((label) =>
+      items.find((el) => el.textContent.startsWith(label) && (el.textContent.includes("Dolby") || el.textContent.includes("2.0") || el.textContent.includes("5.1")))
+    );
+    expect(rows.every(Boolean)).toBe(true);
+    expect(rows[1].classList.contains("vp-menu-item--on")).toBe(true);
+    // Re-picking the active one is a no-op, not a restart.
+    fireEvent.click(rows[1]);
+    expect(onSelectAudioOutput).not.toHaveBeenCalled();
+    fireEvent.click(container.querySelector(".vp-btn-gear"));
+    const again = [...container.querySelectorAll(".vp-menu-item")].find((el) => el.textContent.startsWith("Surround"));
+    fireEvent.click(again);
+    expect(onSelectAudioOutput).toHaveBeenCalledWith("surround");
+  });
+});
+
+describe("the subtitle <track> across a restart", () => {
+  // Every restart mints a new signed URL for the same subtitle index. Firefox does not re-fetch a
+  // track whose src attribute merely changed (it just drops the cues), so the element must be
+  // REPLACED, not updated — the 2026-09-18 tablet lost its subtitles on the first quality switch.
+  it("mounts a fresh element when the delivery url changes for the same index", () => {
+    const first = [{ index: 4, label: "English", deliveryUrl: "/s/tokenA/Stream.vtt" }];
+    const { container, rerender } = render(
+      <VideoPlayer src="/a.m3u8" isHls={false} subtitleTracks={first} selectedSubtitleIndex={4} />
+    );
+    const before = container.querySelector("track");
+    expect(before?.getAttribute("src")).toBe("/s/tokenA/Stream.vtt");
+    const second = [{ index: 4, label: "English", deliveryUrl: "/s/tokenB/Stream.vtt" }];
+    rerender(<VideoPlayer src="/b.m3u8" isHls={false} subtitleTracks={second} selectedSubtitleIndex={4} />);
+    const after = container.querySelector("track");
+    expect(after?.getAttribute("src")).toBe("/s/tokenB/Stream.vtt");
+    expect(after).not.toBe(before);
+  });
+
+  it("keeps the element when nothing about the track changed", () => {
+    const tracks = [{ index: 4, label: "English", deliveryUrl: "/s/tokenA/Stream.vtt" }];
+    const { container, rerender } = render(
+      <VideoPlayer src="/a.m3u8" isHls={false} subtitleTracks={tracks} selectedSubtitleIndex={4} title="x" />
+    );
+    const before = container.querySelector("track");
+    rerender(<VideoPlayer src="/a.m3u8" isHls={false} subtitleTracks={tracks} selectedSubtitleIndex={4} title="y" />);
+    expect(container.querySelector("track")).toBe(before);
+  });
+});

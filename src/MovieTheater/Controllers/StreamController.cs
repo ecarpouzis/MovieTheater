@@ -171,6 +171,15 @@ namespace MovieTheater.Controllers
             public bool SupportsDolbyVision { get; set; } // decodes Dolby Vision → DOVI ranges may pass through
             public bool SupportsMkv { get; set; }         // <video> can play a Matroska container (Chromium yes, Firefox excluded) → direct-play MKV
             public bool SupportsFlac { get; set; }        // decodes FLAC audio → direct-play/copy Blu-ray-remux tracks instead of forcing an HLS session
+            // The highest HEVC level the client admits to (Jellyfin's ×30 scale: 123 = 4.1, 153 = 5.1,
+            // 183 = 6.1). Absent → 183, the old blanket allowance. Chromium answers level probes on
+            // profile alone, so this mostly bites on Safari/iOS; MaxVideoWidth is the Android answer.
+            public int? HevcMaxLevel { get; set; }
+            // The widest frame worth sending this screen (physical pixels, a standard width), sent by
+            // the Auto quality modes only. Becomes a Width condition on every video codec profile, so
+            // a wider source is encoded down instead of copied — a 4K remux to a 2560×1600 tablet was
+            // a stall in every browser and a decode fatal in Chrome (2026-09-18/20). Null = no cap.
+            public int? MaxVideoWidth { get; set; }
 
             // A stable per-browser id (see DeviceFor). Without it every viewer collapses into one
             // Jellyfin session, so the dashboard can't tell who is watching what.
@@ -180,7 +189,9 @@ namespace MovieTheater.Controllers
                 new(SupportsHevc, SupportsAv1, SupportsHdr, SupportsFmp4, SupportsMp3,
                     SupportsAc3, SupportsEac3, MaxAudioChannels ?? 2,
                     SupportsHevcMain10, SupportsAv110Bit, SupportsHeAac, SupportsDolbyVision,
-                    SupportsMkv, SupportsFlac);
+                    SupportsMkv, SupportsFlac,
+                    HevcMaxLevel: HevcMaxLevel is int lvl && lvl > 0 ? lvl : 183,
+                    MaxVideoWidth: MaxVideoWidth is int w && w > 0 ? w : null);
         }
 
         [HttpPost("/API/Stream/Start")]

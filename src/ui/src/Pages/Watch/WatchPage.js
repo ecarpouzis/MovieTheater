@@ -10,6 +10,8 @@ import { useCastProfile } from "../../useCastProfile";
 import { castCeilingBps, castTrackDescriptors, castSubtitleTracks } from "../../castProfiles";
 import "./WatchPage.css";
 import { readStored, writeStored, STREAM_QUALITY_KEY } from "../../utils/storage";
+import { readAudioOutput, writeAudioOutput } from "../../audioOutput";
+import { noteDecodeFailure } from "../../streamCapabilities";
 
 /**
  * /watch/:movieId — the screening room (streaming-plan.md §7).
@@ -60,6 +62,7 @@ function WatchPage({ userData }) {
   const [qualityKey, setQualityKey] = useState(() => readStored(STREAM_QUALITY_KEY) || "auto");
   const [audioIndex, setAudioIndex] = useState(null);
   const [subtitleIndex, setSubtitleIndex] = useState(null);
+  const [audioOutput, setAudioOutput] = useState(() => readAudioOutput());
 
   const sessionRef = useRef(null);
   sessionRef.current = session;
@@ -219,6 +222,9 @@ function WatchPage({ userData }) {
         ...streamTargetRef.current,
         maxBitrateBps,
         capabilities,
+        // Auto only: cap the frame at what this screen can show / this decoder survived
+        // (streamCapabilities.effectiveWidthCap). A hand-picked "Original" means the source untouched.
+        displayCap: isAutoQuality(quality),
         audioStreamIndex: audio,
         // The burned-in image subtitle (null = none), threaded through *every* (re)start so a quality
         // or audio change keeps it — and turning it off actually drops it from the transcode.
@@ -406,6 +412,32 @@ function WatchPage({ userData }) {
     (track) => {
       setAudioIndex(track.index);
       restartAtPosition({ audio: track.index });
+    },
+    [restartAtPosition]
+  );
+
+  // Surround / stereo / auto (audioOutput.js). Persisted per browser; the mix is decided by the
+  // server, so the choice is applied by restarting the session.
+  const handleSelectAudioOutput = useCallback(
+    (key) => {
+      writeAudioOutput(key);
+      setAudioOutput(key);
+      restartAtPosition();
+    },
+    [restartAtPosition]
+  );
+
+  // The stream died. A DECODE failure in Auto gets one answer before the fatal card: learn that this
+  // browser can't take frames that wide (streamCapabilities.noteDecodeFailure lowers the per-browser
+  // ceiling to the universal 1080p tier) and restart under the new cap. The 2026-09-20 tablet died
+  // with PIPELINE_ERROR_DECODE on a 3840-wide HEVC encode and played the 720p one for 98 minutes.
+  // Once the ceiling is already at that tier there is nothing left to learn — the card shows.
+  const handleFatal = useCallback(
+    (info) => {
+      if (!info?.decode || !isAutoQuality(qualityKeyRef.current)) return false;
+      if (!noteDecodeFailure({ width: info.width ?? null })) return false;
+      restartAtPosition();
+      return true;
     },
     [restartAtPosition]
   );
@@ -666,6 +698,9 @@ function WatchPage({ userData }) {
       error: castError || cast.error,
       profileKey: castPrefs.profile.key,
       dolbyPassthrough: castPrefs.dolby,
+      // What the RECEIVER was asked for, so the "Playing" readout reports the TV's mix, not this
+      // browser's audio-output rule.
+      maxAudioChannels: castPrefs.capabilities?.maxAudioChannels ?? null,
       onSelectProfile: castPrefs.selectProfile,
       onToggleDolby: castPrefs.toggleDolby,
       connect: cast.connect,
@@ -780,9 +815,12 @@ function WatchPage({ userData }) {
           selectedAudioIndex={audioIndex ?? session.selectedAudioIndex ?? null}
           selectedSubtitleIndex={effectiveSubtitleIndex}
           cast={castProp}
+          audioOutput={audioOutput}
           onSelectQuality={handleSelectQuality}
           onSelectAudio={handleSelectAudio}
           onSelectSubtitle={handleSelectSubtitle}
+          onSelectAudioOutput={handleSelectAudioOutput}
+          onFatal={handleFatal}
           onProgress={handleProgress}
           onBandwidth={handleBandwidth}
           onStall={handleStall}

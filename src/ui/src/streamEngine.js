@@ -1,5 +1,5 @@
 import Hls from "hls.js";
-import { noteVideoEvent, notePlaylistError, reportFatal } from "./videoIncidents";
+import { noteVideoEvent, notePlaylistError, reportFatal, MEDIA_ERROR_NAMES } from "./videoIncidents";
 
 // ── shared hls.js engine (used by both the Watch player and the TV/channel player) ───────────────
 // One home for the streaming engine the two players share, so a fix to buffering or error recovery
@@ -190,7 +190,9 @@ export function createHls({ backBufferLength = 90, startPosition, onStall, onFat
         details: data.details,
         code: data.response?.code ?? null,
       });
-      onFatal?.();
+      // What kind of death, so a page can answer a decode failure differently from a dead session
+      // (the Watch player retries a decode fatal under a lower frame-width cap once — see WatchPage).
+      onFatal?.({ type: data.type, details: data.details, decode: data.type === Hls.ErrorTypes.MEDIA_ERROR });
     };
 
     if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
@@ -209,27 +211,86 @@ export function createHls({ backBufferLength = 90, startPosition, onStall, onFat
     }
 
     if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-      // Escalate: recoverMediaError → (2nd within 3s) swapAudioCodec + recover → (3rd within 3s) give up.
-      // We COPY video but TRANSCODE audio, so a browser audio-decode mismatch is a likely media error and
-      // swapAudioCodec is the exact escape hatch our old single recoverMediaError() never reached (it just
-      // looped forever → permanent loading bulbs / silently frozen TV).
-      const now = performance.now();
-      if (lastMediaRecoverAt === null || now - lastMediaRecoverAt > RECOVER_WINDOW_MS) {
-        lastMediaRecoverAt = now;
-        hls.recoverMediaError();
-      } else if (lastAudioSwapAt === null || now - lastAudioSwapAt > RECOVER_WINDOW_MS) {
-        lastAudioSwapAt = now;
-        hls.swapAudioCodec();
-        hls.recoverMediaError();
-      } else {
-        giveUp();
-      }
+      recoverMedia(giveUp);
       return;
     }
 
     // OTHER_ERROR (e.g. a mux error) — nothing to recover.
     giveUp();
   });
+
+  // Escalate: recoverMediaError → (2nd within 3s) swapAudioCodec + recover → (3rd within 3s) give up.
+  // We COPY video but TRANSCODE audio, so a browser audio-decode mismatch is a likely media error and
+  // swapAudioCodec is the exact escape hatch our old single recoverMediaError() never reached (it just
+  // looped forever → permanent loading bulbs / silently frozen TV). Shared by hls.js's own MEDIA_ERROR
+  // and the element's decode error below, so both walk the same ladder before anyone gives up.
+  function recoverMedia(giveUp) {
+    const now = performance.now();
+    if (lastMediaRecoverAt === null || now - lastMediaRecoverAt > RECOVER_WINDOW_MS) {
+      lastMediaRecoverAt = now;
+      hls.recoverMediaError();
+    } else if (lastAudioSwapAt === null || now - lastAudioSwapAt > RECOVER_WINDOW_MS) {
+      lastAudioSwapAt = now;
+      hls.swapAudioCodec();
+      hls.recoverMediaError();
+    } else {
+      giveUp();
+    }
+  }
+
+  // The media ELEMENT's own error. hls.js never listens for it (it only reads media.error when an
+  // append fails), so a decoder that rejects what it was fed — Chrome's PIPELINE_ERROR_DECODE on the
+  // 2026-09-20 tablet, 11 s into a 3840-wide HEVC encode — used to leave the picture frozen with no
+  // recovery, no card, and only the incident ring to say why. jellyfin-web handles it beside hls.js
+  // (htmlMediaHelper.onErrorInternal); so does this: a DECODE error walks the same staged recovery,
+  // and only a decode that survives it reaches the page as { decode: true } — which is what lets the
+  // Watch page learn a lower frame-width cap for this browser without a transient glitch teaching it
+  // something false. The other codes (network, src not supported) have nothing to recover.
+  //
+  // Escalation for THIS path is by count, not the 3 s window: a decoder that rejects the stream does
+  // so after it has chewed on it (the tablet died 11 s in), so window-based recovery would recover
+  // forever and the page would never hear about it. Three element decode errors in one instance is
+  // not a glitch. A restart (a new instance) starts the count over.
+  let attachedMedia = null;
+  let elementDecodeErrors = 0;
+  const onElementError = () => {
+    const media = attachedMedia;
+    const err = media?.error;
+    if (!err) return;
+    const name = MEDIA_ERROR_NAMES[err.code] || err.code;
+    const details = `element ${name}${err.message ? `: ${err.message}` : ""}`;
+    noteVideoEvent("element:error", { code: err.code, message: err.message || null });
+    // What was being decoded when it died — the page's learned cap only applies when the frame was
+    // actually wider than the tier it would fall back to.
+    const width = hls.levels?.[0]?.width || media.videoWidth || null;
+    const giveUp = () => {
+      reportFatal(`media element ${details}`, { type: "element", details, code: err.code, width });
+      onFatal?.({ type: "element", details, width, decode: err.code === 3 /* MEDIA_ERR_DECODE */ });
+    };
+    if (err.code !== 3) {
+      giveUp();
+      return;
+    }
+    elementDecodeErrors += 1;
+    if (elementDecodeErrors === 1) hls.recoverMediaError();
+    else if (elementDecodeErrors === 2) {
+      hls.swapAudioCodec();
+      hls.recoverMediaError();
+    } else giveUp();
+  };
+  // hls.js re-attaches the element on every recoverMediaError() and fires MEDIA_DETACHING with an
+  // EMPTY payload (1.6.16), so the element is remembered here: one listener, removed on detach and
+  // on destroy (which detaches), never doubled by a re-attach.
+  const detachListener = () => {
+    attachedMedia?.removeEventListener("error", onElementError);
+    attachedMedia = null;
+  };
+  hls.on(Hls.Events.MEDIA_ATTACHED, (_event, data) => {
+    detachListener();
+    attachedMedia = data?.media || null;
+    attachedMedia?.addEventListener("error", onElementError);
+  });
+  hls.on(Hls.Events.MEDIA_DETACHING, detachListener);
   return hls;
 }
 

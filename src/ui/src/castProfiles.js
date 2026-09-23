@@ -36,8 +36,9 @@
  *  - supportsHeAac TRUE — HE-AAC (SBR) is on Google's supported-media list, so an HE-AAC source may
  *    be copied instead of needlessly re-encoded.
  *
- * maxAudioChannels 6: the server clamps this to [6,8] regardless (BuildWebDeviceProfile deliberately
- * refuses to trust a stereo-reading probe), so 6 is simply the honest value. Cast decodes 5.1 AAC.
+ * maxAudioChannels 6: a cast profile is an override, so this number goes to the server as-is (the
+ * audio-output rule in audioOutput.js only shapes THIS browser's own probe). Cast decodes 5.1 AAC and
+ * mixes it down itself when the TV is stereo, so 6 is the honest value here.
  */
 const BASELINE = {
   supportsHevc: false,

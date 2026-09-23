@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -234,10 +235,6 @@ namespace MovieTheater.Services.Jellyfin
         /// or every viewer collapses into one Jellyfin session.</summary>
         public const string DeviceId = "movietheater-site";
 
-        // VideoLevel is expressed ×30 for HEVC; 183 ≈ level 6.1, generous enough to copy
-        // any 4K HEVC source rather than needlessly re-encode it.
-        private const string HevcMaxLevel = "183";
-
         private static object BuildWebDeviceProfile(long? maxStreamingBitrate, ClientCapabilities caps)
         {
             // HEVC and AV1 can't ride MPEG-TS HLS — they require fMP4 (CMAF) segments,
@@ -256,15 +253,27 @@ namespace MovieTheater.Services.Jellyfin
             if (caps.Av1 && useFmp4) videoCodecs.Add("av1");
             string videoCodec = string.Join(',', videoCodecs);
 
-            // Audio: preserve surround. Floor at 6 channels (5.1) rather than trusting the client's
-            // AudioContext probe: maxChannelCount reads the OS OUTPUT config, which reports 2 on any
-            // stereo-configured desktop even when a 5.1 receiver is attached — and a wrongly-stereo
-            // profile makes Jellyfin downmix server-side through its DownMixAudioBoost volume filter,
-            // which clips loud music into audible distortion. Every MSE browser decodes multichannel
-            // AAC and downmixes cleanly client-side when the output really is stereo, so claiming 6
-            // is safe there and strictly better on a real surround setup (discrete 5.1 survives).
-            // 7.1 (8) is still honored when the client reports it.
-            int maxAudioChannels = Math.Clamp(caps.MaxAudioChannels, 6, 8);
+            // Audio channels: the CLIENT's number, clamped to [2, 8]. Until 2026-09-22 this floored at 6
+            // (5.1) on the theory that every MSE browser decodes multichannel AAC and mixes it down
+            // cleanly itself — true on desktops, false on Chromium/Android, which opens a 6-channel
+            // AudioTrack when the device claims low-latency audio and leaves the mix to the vendor HAL.
+            // The Galaxy Tab S4 (2026-09-18) produced unlistenable audio on every 5.1 title in Chrome
+            // and Edge while Firefox (software stereo mix) played the same streams fine. The client now
+            // decides (audioOutput.js): surround only for a browser that decodes Dolby, stereo
+            // otherwise, viewer override either way. The floor's other reason — Jellyfin's stereo
+            // downmix clipping through DownMixAudioBoost — is gone: Ziggy's encoding.xml runs boost 1
+            // (no volume filter). 7.1 (8) is still honored when the client asks for it.
+            int maxAudioChannels = Math.Clamp(caps.MaxAudioChannels, 2, 8);
+
+            // A frame-width cap for every video codec profile (copy AND encode: Jellyfin applies codec
+            // profile conditions to the transcode target too — StreamBuilder.ApplyTranscodingConditions
+            // sets MaxWidth from a Width condition, and a wider source fails direct play with
+            // VideoResolutionNotSupported). Sent by the Auto modes as the screen's own width, or the tier
+            // a decode failure taught the browser (streamCapabilities.effectiveWidthCap).
+            object[] WithWidthCap(params object[] conditions) =>
+                caps.MaxVideoWidth is int maxWidth
+                    ? conditions.Append(new { Condition = "LessThanEqual", Property = "Width", Value = maxWidth.ToString(), IsRequired = false }).ToArray()
+                    : conditions;
             // FLAC is the audio on most Blu-ray remuxes here; letting a FLAC-capable browser direct-play
             // it is what keeps those files off the HLS path (and its keyframe/segment pitfalls) entirely.
             string directPlayAudio = "aac,mp3" + (caps.Ac3 ? ",ac3" : "") + (caps.Eac3 ? ",eac3" : "")
@@ -332,16 +341,15 @@ namespace MovieTheater.Services.Jellyfin
                 {
                     Type = "Video",
                     Codec = "h264",
-                    Conditions = new object[]
-                    {
+                    Conditions = WithWidthCap(
                         new { Condition = "LessThanEqual", Property = "VideoLevel", Value = "51", IsRequired = false },
                         // Exclude 10-bit H.264 (profile "high 10", i.e. Hi10P — common in fansub anime) and
                         // other exotic profiles from the copy path: browser MSE can't decode them, so a copied
                         // Hi10P source plays as green/garbage/audio-only with no fallback. Failing this
                         // condition forces an 8-bit transcode instead. We don't probe high-10 client support,
                         // so allow only the universally-decodable profiles.
-                        new { Condition = "EqualsAny", Property = "VideoProfile", Value = "high|main|baseline|constrained baseline", IsRequired = false },
-                    },
+                        new { Condition = "EqualsAny", Property = "VideoProfile", Value = "high|main|baseline|constrained baseline", IsRequired = false }
+                    ),
                 },
             };
             if (caps.Hevc && useFmp4)
@@ -350,14 +358,15 @@ namespace MovieTheater.Services.Jellyfin
                 {
                     Type = "Video",
                     Codec = "hevc",
-                    Conditions = new object[]
-                    {
-                        new { Condition = "LessThanEqual", Property = "VideoLevel", Value = HevcMaxLevel, IsRequired = false },
+                    Conditions = WithWidthCap(
+                        // ×30 scale; 183 (level 6.1, the default) copies any 4K source. A client that
+                        // probed lower (Safari/iOS honour the level string) is held to what it admitted.
+                        new { Condition = "LessThanEqual", Property = "VideoLevel", Value = caps.HevcMaxLevel.ToString(CultureInfo.InvariantCulture), IsRequired = false },
                         new { Condition = "EqualsAny", Property = "VideoRangeType", Value = allowedRanges, IsRequired = false },
                         // Only copy 10-bit HEVC (profile "main 10") when the client decoded the Main-10 probe;
                         // otherwise restrict to 8-bit "main" so a Main-only decoder doesn't get garbage.
-                        new { Condition = "EqualsAny", Property = "VideoProfile", Value = caps.HevcMain10 ? "main|main 10" : "main", IsRequired = false },
-                    },
+                        new { Condition = "EqualsAny", Property = "VideoProfile", Value = caps.HevcMain10 ? "main|main 10" : "main", IsRequired = false }
+                    ),
                 });
             }
             if (caps.Av1 && useFmp4)
@@ -373,7 +382,7 @@ namespace MovieTheater.Services.Jellyfin
                 };
                 if (!caps.Av110Bit)
                     av1Conditions.Add(new { Condition = "LessThanEqual", Property = "VideoBitDepth", Value = "8", IsRequired = false });
-                codecProfiles.Add(new { Type = "Video", Codec = "av1", Conditions = av1Conditions.ToArray() });
+                codecProfiles.Add(new { Type = "Video", Codec = "av1", Conditions = WithWidthCap(av1Conditions.ToArray()) });
             }
             if (!caps.HeAac)
             {
@@ -818,7 +827,8 @@ namespace MovieTheater.Services.Jellyfin
         bool Hevc = false, bool Av1 = false, bool Hdr = false, bool Fmp4 = false, bool Mp3 = false,
         bool Ac3 = false, bool Eac3 = false, int MaxAudioChannels = 2,
         bool HevcMain10 = false, bool Av110Bit = false, bool HeAac = false, bool DolbyVision = false,
-        bool Mkv = false, bool Flac = false)
+        bool Mkv = false, bool Flac = false,
+        int HevcMaxLevel = 183, int? MaxVideoWidth = null)
     {
         /// <summary>The pre-§14 universal baseline: H.264 in MPEG-TS, stereo, nothing fancy.</summary>
         public static readonly ClientCapabilities H264Baseline = new();
