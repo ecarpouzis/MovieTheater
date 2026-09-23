@@ -4,6 +4,8 @@ probed with a spelling of YOUR choosing, exact first and then as a substring.
     python lookup.py "Battle Action" [--year 1977] [--contains]
     python lookup.py --issues <cvVolumeId>          the issue ids / numbers of one CV volume
     python lookup.py --collects <gcdIssueId>        what GCD says a trade collects (notes + gcd_reprint)
+    python lookup.py --gcd-issues <gcdSeriesId> [--limit 400] [--variants]   GCD's issue rows of one series (TOOLS_TODO 24)
+    python lookup.py --gcd-series "<name>" [--year YYYY] [--contains]   the same, for the series matching a name
     python lookup.py --batch <file>                 many of the above in one call, one query per line
 
 Exact = the normalised name matches (the packet's own rule). --contains = the normalised name CONTAINS the
@@ -14,6 +16,13 @@ This is a lookup whose results you read; it decides nothing.
 spellings of one title paid that, and a tool round-trip, five times. A batch file holds one query per line in
 exactly the shape of the command line (`"Gen 13" --year 1994 --contains`, `--issues 4050`, `--collects 2213270`);
 blank lines and `#` comments are skipped, and every answer is headed by the query that produced it.
+
+`--gcd-issues` / `--gcd-series` (TOOLS_TODO 24): the R-029 reader had to hand-write read-only SQLite on the GCD
+dump to see a trade line's rows — which book is #3, its page count, its ISBN, what its notes say it collects —
+because the packet shows the rows of the shelf's OWN series only, and a stamped `GCD says` row
+(`⚠ stored GCD row is another book`) is exactly when the reader needs another series' rows. One line per issue:
+id, number, on-sale/key date, pages, ISBN, title, and the parsed "Collects …" clause (gcdnotes.py's parser, the
+same one the packet uses). Variant rows are hidden unless `--variants` (a 12-issue run carries 39 of them).
 """
 import os
 import shlex
@@ -24,6 +33,7 @@ try:
 except Exception:
     pass
 
+import idbase
 from idbase import Evidence, norm_name
 from identity_packet import Ctx
 import gcdnotes
@@ -74,6 +84,62 @@ def collects(gid):
     return out
 
 
+def gcd_issues(sid, limit=400, variants=False):
+    """--gcd-issues <seriesId>: every issue row of one GCD series, in NUMBER order."""
+    g = ctx().gcd
+    if g is None:
+        return ["(no GCD dump on this machine)"]
+    s = g.execute("""SELECT s.id, s.name, s.year_began, s.year_ended, s.issue_count, s.format, p.name, l.code
+                     FROM gcd_series s LEFT JOIN gcd_publisher p ON p.id = s.publisher_id
+                     LEFT JOIN stddata_language l ON l.id = s.language_id WHERE s.id = ?""", (sid,)).fetchone()
+    if not s:
+        return [f"no GCD series {sid} in the dump"]
+    out = [f'GCD series {s[0]} "{s[1]}" {s[2] or "?"}-{s[3] or "?"} {s[6] or "?"} [{s[5] or ""}]'
+           f'{" [" + s[7] + "]" if s[7] and s[7] != "en" else ""} — {s[4] or "?"} issues per GCD']
+    rows = g.execute("""SELECT id, number, coalesce(nullif(on_sale_date,''), key_date), page_count, isbn, barcode,
+                               title, notes, variant_of_id, variant_name
+                        FROM gcd_issue WHERE series_id = ? AND coalesce(deleted,0) = 0""", (sid,)).fetchall()
+    # numeric order: GCD's sort_code is not reliable on small trade series (Austen's 6 came back #6, #5, #1 …)
+    rows.sort(key=lambda r: (idbase.num(r[1]) is None, idbase.num(r[1]) or 0, str(r[1] or ""), r[0]))
+    nvar = sum(1 for r in rows if r[8])
+    if not variants:
+        rows = [r for r in rows if not r[8]]
+    out.append(f"{len(rows)} row(s){' (first ' + str(limit) + ' shown)' if len(rows) > limit else ''}"
+               + (f"; {nvar} variant row(s) {'shown' if variants else 'hidden (--variants shows them)'}" if nvar else ""))
+    for iid, number, date, pages, isbn, barcode, title, notes, var_of, var_name in rows[:limit]:
+        parsed = gcdnotes.parse_notes(notes)
+        says = "; ".join(f"{e['name'] or '?'} {gcdnotes.fmt_ranges(e['ranges'])}" for e in parsed)
+        code = isbn or barcode or ""
+        out.append(f"   issue {iid:<9} #{str(number or '?'):<7} {str(date or ''):<10} "
+                   f"{(str(int(pages)) + 'pp') if pages else '?pp':>6}  {code[:32]:<32} "
+                   f"{(title or '')[:48]}"
+                   + (f"  [variant of {var_of}: {var_name or '?'}]" if var_of else "")
+                   + (f"\n{'':>21}collects: {says[:200]}" if says else ""))
+    return out
+
+
+def gcd_series_named(text, year=None, contains=False, max_series=3, limit=400, variants=False):
+    """--gcd-series "<name>": the series the name matches (the packet's normalized-name rule), then the issue
+    rows of the first `max_series` of them, by year."""
+    probe = norm_name(text)
+    gc = ctx().gcd_index()
+    hits = list(gc.get(probe, ()))
+    if contains:
+        hits += [r for k, rs in gc.items() if probe in k and k != probe for r in rs]
+    if year is not None:
+        hits = [h for h in hits if h[2] is not None and abs(int(h[2]) - year) <= 1]
+    hits = sorted(hits, key=lambda h: (h[2] or 0, h[0]))
+    out = [f"GCD dump — {len(hits)} series for '{probe}'" + (f" year {year}±1" if year else "")]
+    for h in hits[:25]:
+        out.append(f'   {h[0]} "{h[1]}" {h[2] or "?"}-{h[3] or "?"} {h[6] or "?"} [{h[5] or ""}] {h[4] or "?"} issues')
+    for h in hits[:max_series]:
+        out.append("")
+        out += gcd_issues(h[0], limit, variants)
+    if len(hits) > max_series:
+        out.append(f"\n({len(hits) - max_series} more series matched — `--gcd-issues <id>` for any of them)")
+    return out
+
+
 def names(text, year=None, contains=False):
     c, out = ctx(), []
     probe = norm_name(text)
@@ -106,13 +172,18 @@ def run(argv):
         return issues(int(argv[argv.index("--issues") + 1]))
     if "--collects" in argv:
         return collects(int(argv[argv.index("--collects") + 1]))
+    limit = int(argv[argv.index("--limit") + 1]) if "--limit" in argv else 400
+    if "--gcd-issues" in argv:
+        return gcd_issues(int(argv[argv.index("--gcd-issues") + 1].lstrip("s")), limit, "--variants" in argv)
     year = None
     if "--year" in argv:
         year = int(argv[argv.index("--year") + 1])
-    skip = {argv.index("--year") + 1} if "--year" in argv else set()
+    skip = {argv.index(f) + 1 for f in ("--year", "--limit") if f in argv}
     args = [a for k, a in enumerate(argv) if not a.startswith("--") and k not in skip]
     if not args:
         return ["(no name to probe)"]
+    if "--gcd-series" in argv:
+        return gcd_series_named(args[0], year, "--contains" in argv, limit=limit, variants="--variants" in argv)
     return names(args[0], year, "--contains" in argv)
 
 

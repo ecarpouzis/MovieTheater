@@ -751,6 +751,146 @@ r = subprocess.run([sys.executable, os.path.join(idbase.HERE, "triage_09.py"), "
 check("'processed': 40" in r.stdout and "'nextCursor'" in r.stdout and "'remaining'" in r.stdout,
       "triage_09 does a bounded chunk and prints {processed, remaining, nextCursor, counts}", r.stdout[-400:])
 
+
+# ── part 10: GCD lookups and the stamped-row detector (TOOLS_TODO 24 + 25) ─────────────────────────────
+print("\nGCD issue rows on demand, and a stored GCD row that is another book")
+r = subprocess.run([sys.executable, os.path.join(idbase.HERE, "lookup.py"), "--gcd-issues", "32012"],
+                   capture_output=True, text=True, encoding="utf-8", errors="replace")
+check("6 row(s)" in r.stdout and "Bright New Mourning" in r.stdout and "0-7851-1060-7" in r.stdout
+      and r.stdout.index("Hope") < r.stdout.index("Bright New Mourning"),
+      "lookup --gcd-issues lists a series' rows in number order with ISBNs and titles", r.stdout[-400:])
+r = subprocess.run([sys.executable, os.path.join(idbase.HERE, "lookup.py"), "--gcd-series", "Dark Knights of Steel",
+                    "--limit", "2"], capture_output=True, text=True, encoding="utf-8", errors="replace")
+check("series for 'dark knights of steel'" in r.stdout and "collects: Dark Knights of Steel" in r.stdout
+      and "variant row(s) hidden" in r.stdout,
+      "lookup --gcd-series resolves the name, prints each series' rows and their Collects clause", r.stdout[-400:])
+_stamp = {"series": "Harley Quinn", "number": "2", "title": "Friends with Detriments", "pages": 220,
+          "keyDate": "2026-03-03"}
+_w = gcdnotes.stamp_reasons("Harley Quinn Vol. 01 - Hot in the City (2014) (Digital) (Zone-Empire).cbr", 223, _stamp)
+check(sum(w for w, _t in _w) >= gcdnotes.STAMP_SCORE and any("vol 1 vs GCD #2" in t for _w2, t in _w),
+      "a Vol. 01 file carrying GCD's Vol. 2 of a 2025 series is a stamped row", str(_w))
+_fit = {"series": "Wonder Woman", "number": "3", "title": "The Truth", "pages": 180, "keyDate": "2017-10-00"}
+_w = gcdnotes.stamp_reasons("Wonder Woman Vol. 03 - The Truth (2017) (digital) (Son of Ultron-Empire).cbr", 170, _fit)
+check(sum(w for w, _t in _w) < gcdnotes.STAMP_SCORE, "the book's own row is not a stamp", str(_w))
+_w = gcdnotes.stamp_reasons("Wonder Woman by George Perez Vol. 01 (2016) (digital).cbr", 347,
+                            {"series": "Wonder Woman by George Pérez", "number": "1", "title": "", "pages": 356,
+                             "keyDate": "2016-10-00"})
+check(not _w, "an accent (Pérez / Perez) is not a different name", str(_w))
+_w = gcdnotes.stamp_reasons("Green Arrow Vol. 01 - The Death & Life of Oliver Queen (2017) (digital).cbr", 67,
+                            {"series": "Green Arrow", "number": "1", "title": "The Death and Life of Oliver Queen",
+                             "pages": 164, "keyDate": "2017-03-00"})
+check(sum(w for w, _t in _w) < gcdnotes.STAMP_SCORE, "a page gap ALONE (a partial rip) does not mark a row", str(_w))
+
+# ── part 11: the split lane (TOOLS_TODO 27) ───────────────────────────────────────────────────────────
+import json
+import splitbase
+
+print("\nthe split lane — P- packets, P- decisions, and the checker that stands before books-series-split")
+check(splitbase.normalize_key("The Uncanny X-Men") == "uncanny x men"
+      and splitbase.normalize_key("  Jim Butcher's The Dresden Files - Storm Front v2 (2009) ")
+      == "jim butcher s the dresden files storm front v2 2009"
+      and splitbase.normalize_key("Æon ½") == "æon",
+      "normalize_key is SeriesResolver.NormalizeKey (one leading 'the', letters + decimal digits only)")
+split_pop = splitbase.population(ev)
+SPLIT_SID = 9845
+check(SPLIT_SID in split_pop, f"S{SPLIT_SID} (Storm Front, R-029) is in the split population",
+      f"{len(split_pop)} shelves")
+blk = splitbase.packet(SPLIT_SID, ev, split_pop[SPLIT_SID]) if SPLIT_SID in split_pop else []
+_items = [r[0] for r in splitbase.shelf_items(con, SPLIT_SID)]
+check(blk and "[split]" in blk[0] and any(l.lstrip().startswith("F 9845 split-needed") for l in blk)
+      and all(str(i) in "\n".join(blk) for i in _items),
+      "the split packet carries the winning F split-needed line and EVERY item id", "\n".join(blk[:4]))
+land = splitbase.Landing(con, ev.shelf_set)
+_mk = ev.series[midsize]["parsedKey"]
+check(land.land("Jim Butcher's The Dresden Files - Storm Front v2 (2009)")[0] == "new"
+      and (not _mk or midsize in land.land(_mk)[1]),
+      "a fresh key lands NEW; an existing shelf's parsed key lands ON that shelf", f"{_mk!r}")
+
+# the good file — hand-written, the shape a reader writes
+P900 = [
+    {"shelf": 9845, "split": True, "why": "two co-equal 4-issue runs both numbering #1-4: Storm Front Volume 1 (CV "
+     "23697 / GCD 35902, Dabel 2008-2009) stays here with the loose rips; the four 03 Storm Front - Volume 2 files "
+     "(CV 27202; GCD 55645 #1 Dabel + 52657 #2-4 Dynamite, 2009-2010) move to a run of their own"},
+] + [{"itemId": i, "key": "Jim Butcher's The Dresden Files - Storm Front v2 (2009)",
+      "run": {"cv": 27202, "gcd": [55645, 52657]}} for i in (107776, 107777, 107778, 107779)]
+
+
+def write_split(name, lines, ids=(9845,)):
+    p = os.path.join(OUT, name + ".jsonl")
+    with open(p, "w", encoding="utf-8") as f:
+        for o in lines:
+            f.write((o if isinstance(o, str) else json.dumps(o, ensure_ascii=False)) + "\n")
+    with open(os.path.join(OUT, name + ".ids"), "w", encoding="utf-8") as f:
+        f.write("\n".join(str(s) for s in ids) + "\n")
+    return p
+
+
+def run_split(p, *extra):
+    return subprocess.run([sys.executable, os.path.join(idbase.HERE, "check_splits.py"), p] + list(extra),
+                          capture_output=True, text=True, encoding="utf-8", errors="replace")
+
+
+if SPLIT_SID in split_pop:
+    p = write_split("P-900", P900)
+    r = run_split(p)
+    check(r.returncode == 0 and "0 failure(s)" in r.stdout, "P-900 (Storm Front Volume 2 moves out) passes",
+          r.stdout[-500:])
+    vj = os.path.join(OUT, "P-900.verb.jsonl")
+    r = subprocess.run([sys.executable, os.path.join(idbase.HERE, "check_splits.py"), "--project", p, "--out", vj],
+                       capture_output=True, text=True, encoding="utf-8", errors="replace")
+    got = [json.loads(x) for x in open(vj, encoding="utf-8")] if os.path.exists(vj) else []
+    check(len(got) == 4 and all(set(o) == {"itemId", "key"} for o in got),
+          "--project hands books-series-split exactly {itemId, key} per MOVED item (no shelf line)", str(got[:2]))
+
+    other_item = next(iid for iid, sid in con.execute(
+        "SELECT i.Id, i.SeriesId FROM Item i JOIN ComicDetail cd ON cd.ItemId = i.Id WHERE i.SeriesId = ? LIMIT 1",
+        (midsize,)))
+    bads = [
+        ("bad-split-foreign", P900 + [{"itemId": other_item, "key": "Somewhere Else (1999)"}],
+         "not a shelf of this batch"),
+        ("bad-split-collision", [P900[0], {"itemId": 107776, "key": _mk or "Batman"}] + P900[2:],
+         "lands (exact) on live shelf"),
+        ("bad-split-twice", P900 + [P900[1]], "moved twice in this file"),
+        ("bad-split-empties", [P900[0]] + [{"itemId": i, "key": "Storm Front Everything (2008)"} for i in _items],
+         "items move — a split keeps the run that stays"),
+        ("bad-split-nocover", P900[1:], "has no shelf line"),
+        ("bad-split-spelling", P900[:3] + [dict(P900[3], key="Jim Butcher's the Dresden Files: Storm Front v2 (2009)")],
+         "normalize to one canonical key"),
+    ]
+    for name, lines, want in bads:
+        r = run_split(write_split(name, lines))
+        check(r.returncode != 0 and want in r.stdout, f"{name}: refused for its own rule ('{want}')",
+              r.stdout[-400:])
+
+    # walk-back: the verb's undo CSV, reversed into its own input
+    csvp = os.path.join(OUT, "split-undo.csv")
+    with open(csvp, "w", encoding="utf-8", newline="") as f:
+        f.write("ItemId,PreviousParsedSeriesKey,NewParsedSeriesKey,SeriesIdAtSplit\n"
+                "107776,Jim Butcher's The Dresden Files - Storm Front,X v2,9845\n"
+                "107776,X v2,X v3,9845\n")
+    bj = os.path.join(OUT, "split-back.jsonl")
+    subprocess.run([sys.executable, os.path.join(idbase.HERE, "check_splits.py"), "--walkback", csvp, "--out", bj],
+                   capture_output=True, text=True)
+    back = [json.loads(x) for x in open(bj, encoding="utf-8")] if os.path.exists(bj) else []
+    check(back == [{"itemId": 107776, "key": "Jim Butcher's The Dresden Files - Storm Front"}],
+          "--walkback restores each item's ORIGINAL key from the undo CSV", str(back))
+
+    # emission: --splits must be able to render into a scratch dir without touching state.json or batches/
+    before = _snapshot()
+    sdir = os.path.join(OUT, "emit-splits")
+    r = subprocess.run([sys.executable, os.path.join(idbase.HERE, "next_batch.py"), "--splits", "--only",
+                        str(SPLIT_SID), "--out", sdir], capture_output=True, text=True, encoding="utf-8",
+                       errors="replace")
+    r2 = subprocess.run([sys.executable, os.path.join(idbase.HERE, "next_batch.py"), "--splits", "--dry-run"],
+                        capture_output=True, text=True, encoding="utf-8", errors="replace")
+    after = _snapshot()
+    body = open(os.path.join(sdir, "P-001.txt"), encoding="utf-8").read() if os.path.exists(
+        os.path.join(sdir, "P-001.txt")) else ""
+    check(after == before and "'batch': 'P-" in r.stdout and "'batch': 'P-" in r2.stdout
+          and body.startswith("## Conventions for this batch") and "== S9845" in body,
+          "next_batch --splits (--out / --dry-run) renders P- batches and leaves state.json + batches/ untouched",
+          (r.stdout + r.stderr + r2.stderr)[-400:])
+
 print(f"\n{len(failures)} failure(s)")
 if not KEEP:
     print(f"(files kept in {OUT} — inspect them, they are the worked examples)")

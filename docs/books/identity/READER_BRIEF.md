@@ -90,6 +90,11 @@ assertions and the barcodes. **Coverage: every item id in the `.ids` has an `I` 
 `N <itemId> no-record | why` saying what was looked for and where it was not found (≥ 40 characters).** A `C`
 line is not coverage — it says what a book collects, not what it is.
 
+**`P-NNN` = split batch (TOOLS_TODO 27):** shelves flagged `F split-needed`; you name the ITEMS that move to a new
+run, in `decisions/P-NNN.jsonl`: per shelf `{"shelf":<sid>,"split":true|false,"why":"≥ 40 chars"}`, then per MOVED
+item `{"itemId":<id>,"key":"<Title> v<N> (<Year>)","run":{"cv":<vol>,"gcd":<series>}}`. The largest run stays
+unwritten; a key is new or a shelf the F line names. `check_splits.py <name>` to 0; `WORKER_PROMPT_SPLITS.md`.
+
 Confidence — exactly one of: **1.0** the collection asserts it (Web id / ISBN / copyright-page range) and a leg
 agrees · **0.95** two independent legs agree and the arithmetic holds · **0.9** one leg plus our own naming /
 years / count agree, or two legs with one unexplained residue (a special, a #4 beyond both counts) · **0.7** plausible
@@ -184,7 +189,8 @@ F 16797 misfiled | items 82880-82882 ("11 Starlord 1.cbr" … 36-37pp) sit under
   range nests their issues.
 - **Check a `GCD says` row before trusting it (R-029).** The row shown is the book's STORED GCD issue link, and on DC
   and Marvel trade lines that link is often a stamp from another book (WW by Pérez, Uncanny by Austen). If the row's
-  own series or title is not this book, the `⚠ RANGE CONTRADICTED` is void; say so on an `N`.
+  own series or title is not this book, the `⚠ RANGE CONTRADICTED` is void; say so on an `N`. The packet flags
+  `⚠ stored GCD row is another book`; `lookup.py --gcd-issues <series>` / `--gcd-series "<name>"` list rows.
 ## Conventions for your batch (context for reading — never a rule applied across a folder)
 The conventions ledger (328 entries learned batch by batch: which publisher mints a count-1 trade record, which
 folder shape files a book twice, which spelling hides a GCD row) is `LEDGER.md`, every entry TAGGED by publisher /

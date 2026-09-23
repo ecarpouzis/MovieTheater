@@ -6,7 +6,8 @@
 `python next_batch.py --revisit-file revisit.txt [--note "why"]`  the same, taking the sids from a sheet
 `python next_batch.py --items [--books 150] [--dry-run]`          an `X-NNN` batch of BOOKS on decided shelves
 `python next_batch.py --s2-file triage.tsv [--shelves 60]`        the S.2 pass: triaged 0.9s, as `R-NNN` batches
-any of the above + `--out DIR`                                    write the batch into DIR and leave state.json alone
+`python next_batch.py --splits [--shelves 40] [--only 9845,6791]` the split lane: `F split-needed` shelves, `P-NNN`
+any of the above + `--out DIR`                                  write the batch into DIR and leave state.json alone
 any of the above + `--dry-run`                                    the same, into a throwaway temp directory
 `--help` prints this and exits; an unknown option exits with nothing written.
 
@@ -20,6 +21,14 @@ files land in DIR, state.json is not written, and no cursor moves — the next r
 shelves out in folder order, `S2_CEILING` per batch, resumably (state.json `s2`: the shelves already emitted).
 They are named `R-NNN`, not `S2-NNN`: a decision file supersedes an earlier one ONLY when idbase.revisit_rank
 reads an `R-` name, so an `S2-` file re-deciding a 0.9 shelf would be a duplicate decision to the checker.
+
+`--splits` (TOOLS_TODO 27) hands out the shelves whose WINNING decision carries `F split-needed` — refused until
+split, and not fixable by another reading — as `P-NNN` batches: one split packet per shelf (`splitbase.packet`:
+the winning R/S + F + N lines, the shelves the F line names, and every item id grouped by title x folder), filled
+to ~1,400 lines, `SPLIT_CEILING` shelves at most, a packet over 300 lines alone. State lives in state.json
+`splits` exactly as `s2` does. The reader answers in `decisions/P-NNN.jsonl` (checked by `check_splits.py`), not in
+a `.txt`, because the answer IS the input of `books-series-split` — `scan_decisions` reads only `.txt`, so a P-
+file can never be mistaken for a shelf decision. `--only` names the shelves (they must be in the population).
 
 A batch of 120 tier-A shelves can be 400 lines or 4,000 depending on how many of them are 60-file runs that
 do not fold, so a shelf count is not a workload. This fills a batch to ~1,400 packet lines, subject to a
@@ -56,6 +65,9 @@ BOOK_CEILING = 150
 # S.2 shelves were each triaged IN because something about them is wrong or unproven — tier C's reading, so
 # tier C's ceiling.
 S2_CEILING = 60
+# A split shelf costs more per shelf than a reading (the answer is per ITEM), but 236 of the 530 are 1-5 files;
+# lines, not this ceiling, bound most P- batches.
+SPLIT_CEILING = 40
 
 # --redo takes a LIST: after a packet-shape change every pending batch is regenerated in one call, and a
 # batch that has already been read is regenerated with the ids it was emitted with, so a decision file
@@ -65,14 +77,14 @@ S2_CEILING = 60
 # emitted the real batch A-035 and moved cursor A 3971 -> 4011. So: every flag must be known, a tier emission
 # must name its tier, `--help` only prints, and `--dry-run` on ANY mode writes into a throwaway directory.
 KNOWN = {"--tier", "--lines", "--redo", "--revisit", "--revisit-file", "--note", "--items", "--books", "--dry-run",
-         "--s2-file", "--shelves", "--out"}
+         "--s2-file", "--shelves", "--out", "--splits", "--only"}
 if any(a in ("-h", "--help", "/?") for a in sys.argv[1:]):
     print(__doc__)
     raise SystemExit(0)
 unknown = [a for a in sys.argv[1:] if a.startswith("-") and a not in KNOWN]
 if unknown:
     raise SystemExit(f"unknown option(s) {unknown} — nothing emitted.\n{__doc__}")
-MODES = ("--tier", "--redo", "--revisit", "--revisit-file", "--items", "--s2-file")
+MODES = ("--tier", "--redo", "--revisit", "--revisit-file", "--items", "--s2-file", "--splits")
 if not any(m in sys.argv[1:] for m in MODES):
     raise SystemExit(f"name a mode ({' / '.join(MODES)}) — a bare run emits nothing.\n{__doc__}")
 
@@ -255,12 +267,12 @@ def dominant_folders():
     return {sid: c.most_common(1)[0][0] for sid, c in folders.items()}
 
 
-def pack(todo, cap):
+def pack(todo, cap, renderer=None):
     """Fill one batch from `todo` in order: ~TARGET_LINES of packets, at most `cap` shelves, and a shelf whose
     own packet exceeds SOLO_LINES gets a batch to itself (PLAN §7-S)."""
     take, blocks, total = [], [], 0
     for sid in todo[:cap + 8]:
-        block = render(sid)
+        block = (renderer or render)(sid)
         if len(block) + 1 > SOLO_LINES:
             if take:
                 break
@@ -309,6 +321,37 @@ if opt.get("s2-file"):
     save_state(st)
     print({"batch": name, "shelves": len(take), "lines": n, "remaining": len(todo) - len(take),
            "gone since triage": gone})
+    raise SystemExit(0)
+
+if "--splits" in sys.argv:
+    # ── the split lane (TOOLS_TODO 27) ─────────────────────────────────────────────────────────────
+    import splitbase
+    pop = splitbase.population(ev)
+    st.setdefault("splits", [])
+    done = {s for b in st["splits"] for s in b["ids"]}
+    dom = dominant_folders()
+    if opt.get("only"):
+        want = [int(x.strip().lstrip("S")) for x in opt["only"].split(",") if x.strip()]
+        bad = [s for s in want if s not in pop]
+        if bad:
+            raise SystemExit(f"--only: not in the split population (no winning F split-needed on a live shelf): {bad}")
+        todo = [s for s in want if s not in done]
+    else:
+        todo = sorted((s for s in pop if s not in done), key=lambda s: (dom.get(s, ""), s))
+    if not todo:
+        print({"batch": None, "shelves": 0, "remaining": 0, "population": len(pop)})
+        raise SystemExit(0)
+    renderer = lambda sid: splitbase.packet(sid, ev, pop[sid])
+    if opt.get("only"):
+        take, blocks = todo, [renderer(s) for s in todo]
+    else:
+        take, blocks = pack(todo, int(opt.get("shelves") or SPLIT_CEILING), renderer)
+    name = f"P-{1 + len(st['splits']):03d}"
+    n = write_batch(name, blocks, take, kind="P")
+    st["splits"].append({"batch": name, "ids": take, "lines": n, "at": time.strftime("%Y-%m-%d %H:%M:%S")})
+    save_state(st)
+    print({"batch": name, "shelves": len(take), "lines": n, "remaining": len(todo) - len(take),
+           "population": len(pop)})
     raise SystemExit(0)
 
 if revisit or opt.get("revisit-file"):

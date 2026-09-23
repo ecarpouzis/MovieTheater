@@ -136,3 +136,15 @@
     another book` instead of a contradiction, and re-count the 66 contradictions without the stamped ones.
 26. (Decide later) a `C` grammar for disjoint ranges of one run (`#435-436,442-443`) so the N workaround in the
     brief can retire; needs checker + apply + curated-spans-import support.
+# Added 2026-09-22 after wave 13 — the split lane (S.2's biggest open-by-construction set)
+27. **Split lane (`P-NNN` batches).** 508 shelves carry `F split-needed` (proposed runs in the detail) and are
+    refused until split; a blind re-read cannot fix them. Build: (a) `next_batch.py --splits` emits P- batches,
+    one packet per flagged shelf = the winning F split-needed detail + the R line + `propose_split.py`'s grouping
+    (title prefix x folder x numbers) + every item id with folder/filename/pages; big shelves (> 300 lines) alone.
+    (b) The reader writes `decisions/P-NNN.jsonl`: one `{"itemId", "key", "run"}` per item it MOVES (items that
+    stay omit), where `key` is the new ParsedSeriesKey and `run` names CV/GCD ids for the new run when known.
+    (c) `check_splits.py`: every item belongs to its shelf, keys are new or an existing shelf's key named in the
+    F line, no key collides with an unrelated live shelf's ParsedKey, every group >= 1 item, no item twice.
+    (d) The landing (lead / Eric): backup_live -> `books-series-split --apply` per file -> `books-resolve --series`
+    -> wave_fix -Resolve checks -> the NEW shelves go into the next identity batches (their S lines can be seeded
+    from the `run` ids). Walk-back = the verb's CSV. Selftest covers the checker.
