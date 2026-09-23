@@ -1,0 +1,25 @@
+# shelves from the split lane (new + kept halves) — feed to next_batch.py --revisit-file
+# S<sid>	<key>	run=<json|->	<P- file>	new|kept|kept-whole[	pair=<origin sid>][	moved_cv=<id>,…][	pending_join=<sid>,…]
+# kept-whole = a `split: false` shelf (nothing moved): its F split-needed stands until an identity batch re-reads it as one run
+# pair = the shelf the split took this row's items from (a kept row is its own pair): --revisit-file never cuts a batch inside a pair group
+S103744	X-Men by Lee & Kirby Omnibus (2009)	run=-	P-014.jsonl	new	pair=6791
+S101235	Uncanny X-Men v3 (2013)	run=-	P-014.jsonl	new	pair=6791
+S103838	Uncanny X-Men Special (2014)	run={"cv": 74730, "gcd": 81262}	P-014.jsonl	new	pair=6791
+S103837	Uncanny X-Men Omnibus (2006)	run={"cv": 27512, "gcd": 30469}	P-014.jsonl	new	pair=6791
+S103791	Green Lantern Corps (2011)	run=-	P-014.jsonl	new	pair=102449
+S103836	The Green Lantern Corps (1986)	run={"cv": 3600, "gcd": 3148}	P-014.jsonl	new	pair=64823
+S94613	Green Lantern v5 (2011)	run=-	P-014.jsonl	new	pair=64823
+S64826	Green Lantern (2005)	run=-	P-014.jsonl	new	pair=64823
+S94615	Green Lantern v7 (2023)	run=-	P-014.jsonl	new	pair=64823
+S103828	Green Lantern Special (1988)	run={"cv": 4005, "gcd": 3596}	P-014.jsonl	new	pair=64823
+S103833	The Flash v3 (2010)	run={"cv": 32562, "gcd": 47018}	P-014.jsonl	new	pair=94717
+S100573	The Flash v1 (1963)	run=-	P-014.jsonl	new	pair=94717
+S100575	The Flash v5 (2016)	run=-	P-014.jsonl	new	pair=94717
+S100574	The Flash v4 (2011)	run=-	P-014.jsonl	new	pair=94717
+S18597	The Flash 80-Page Giant	run=-	P-014.jsonl	new	pair=94717
+S3101	Booster Gold v2 (2007)	run=-	P-014.jsonl	new	pair=94717
+S103830	Secret Origins Annual (1987)	run={"cv": 3807, "gcd": 3377}	P-014.jsonl	new	pair=94717
+S6791	moved out -> S103744 "X-Men by Lee & Kirby Omnibus (2009)"; S101235 "Uncanny X-Men v3 (2013)"; S103838 "Uncanny X-Men Special (2014)"; S103837 "Uncanny X-Men Omnibus (2006)"	run=-	P-014.jsonl	kept	pair=6791	moved_cv=74730,27512
+S102449	moved out -> S103791 "Green Lantern Corps (2011)"	run=-	P-014.jsonl	kept	pair=102449
+S64823	moved out -> S103836 "The Green Lantern Corps (1986)"; S94613 "Green Lantern v5 (2011)"; S64826 "Green Lantern (2005)"; S94615 "Green Lantern v7 (2023)"; S103828 "Green Lantern Special (1988)"	run=-	P-014.jsonl	kept	pair=64823	moved_cv=3600,4005
+S94717	moved out -> S103833 "The Flash v3 (2010)"; S100573 "The Flash v1 (1963)"; S100575 "The Flash v5 (2016)"; S100574 "The Flash v4 (2011)"; S18597 "The Flash 80-Page Giant"; S3101 "Booster Gold v2 (2007)"; S103830 "Secret Origins Annual (1987)"	run=-	P-014.jsonl	kept	pair=94717	moved_cv=32562,3807
