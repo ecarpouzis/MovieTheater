@@ -158,3 +158,9 @@
     `{"range": "#1-66", "match": "<filename words>", "key": …}` — expanded by check_splits --project into item
     lines, so a 900-file shelf is not hand-typed item by item; (d) brief: the key shape for one-shots and specials
     (`<Title> (<Year>)`, with the special's own name, never `#0`).
+# Added 2026-09-23 after P-002 (80 shelves of 1-6 files)
+29. Split packets: `nearby:` must also probe ids in the decided R clause and the shelf's N lines (P-002 missed
+    S102444 Cosplayers and S9439 Infinity, both named only there); print a trade's COLLECTED-run ids beside its own
+    record (gcd_reprint); a shelf line `pending_join: [sid]` for "stays only because it cannot move without a join",
+    carried into the next R packet as a merge-with prompt.
+30. lookup.py drops "of" from probes ("Legion of Monsters", "Heart of Darkness" → 0 CV hits) — fix the stopword list.
