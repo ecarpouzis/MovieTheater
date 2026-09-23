@@ -1693,3 +1693,10 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   ToS, 23450 TtA) → the line is the S (it spans several titles), one I per book; GCD keeps separate series for second
   printings (FF 61146, ASM 52975) — match by year. Digital-first runs (Daughters of the Dragon 2018, Back to Basics,
   Long Live the King, Purple Daughter) have no GCD series: provider-missing is right.
+
+[L-346] sig:probe
+- GCD name shapes (R-071): a run filed with its subtitle DROPPED (Oni "Dead of Winter" 116730, the subtitle moved onto
+  the trade row); ", Chapter II:" where CV writes " II:"; an event prefix ("Doctor Who Event 2016:"); "Special
+  Edition" appended to KODT specials. Titan Doctor Who "Year Two" runs ARE in the fixed CV index (84960 / 87162) — L-152's
+  "not in the ComicVine rip" is obsolete; the "Year Two v04" trades are run-wins into the issue shelves. Marvel event
+  chronology trade shelves (Death of Captain America, New Guard) are run-wins into the main run shelf.
