@@ -177,6 +177,14 @@ F 16797 misfiled | items 82880-82882 ("11 Starlord 1.cbr" … 36-37pp) sit under
   publisher decide. Image trade-only shelves carry the three-record trap (run + GCD "Collected Series" + a CV
   count-1 volume named after a subtitle) throughout. A SHELF batch with 0 `I` lines is incomplete and is sent back.
 
+- **A range with a gap (lead, R-029).** One `C` states ONE contiguous range per (leg, run). When a book collects two
+  disjoint stretches of the same run (Bright New Mourning: Uncanny #435-436 + #442-443; The Four Horsewomen: WW 2016
+  #82-83 + #750-758), state the LARGER stretch as the `C` and the other on an `N <itemId>` line. Never widen a range
+  across the gap, even where the run has no issues inside it: on a shelf that still holds other runs, the widened
+  range nests their issues.
+- **Check a `GCD says` row before trusting it (R-029).** The row shown is the book's STORED GCD issue link, and on DC
+  and Marvel trade lines that link is often a stamp from another book (WW by Pérez, Uncanny by Austen). If the row's
+  own series or title is not this book, the `⚠ RANGE CONTRADICTED` is void; say so on an `N`.
 ## Conventions for your batch (context for reading — never a rule applied across a folder)
 The conventions ledger (328 entries learned batch by batch: which publisher mints a count-1 trade record, which
 folder shape files a book twice, which spelling hides a GCD row) is `LEDGER.md`, every entry TAGGED by publisher /

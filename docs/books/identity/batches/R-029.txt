@@ -1,0 +1,648 @@
+## Conventions for this batch (31 shown of 174 matched; 328 in LEDGER.md; 12 shelf/shelves: kind:trade-only ×6 · kind:collected-line ×6 · folder:sequel-subfolder ×4 · folder:vn-year ×4 · pub:marvel ×2 · folder:events ×2 · folder:variant-covers ×2 · folder:bucket ×2)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-269] (7 shelf/shelves) kind:collected-line kind:trade-only
+- An omnibus bundling several minis gets one `C` per mini at that mini's full range; an anthology TPB ("… and
+  Others") is not a numbered run and gets an `N`, not a forced `C`.
+[L-291] (7 shelf/shelves) kind:collected-line kind:foreign pass:item
+- ITEM PASS (X-040..X-042): a run you can NAME but whose GCD rows carry no page counts gives no safe per-volume
+  range (SPRIGGAN Deluxe → GCD 188803) — `N`, not a guessed `C`; a per-file link can point at a foreign edition of
+  the WRONG book entirely (Summer Wars: the Complete Edition has its own one-shot record CV 155900 / GCD 142966).
+[L-030] (12 shelf/shelves) sig:collision
+- One folder split into two shelves by a subtitle in one filename (Analog, Witch Doctor) → `F merge-with=<sid>`.
+[L-085] (12 shelf/shelves) sig:barcode sig:trade-link sig:twin
+- `gcd_issue` carries the trade's page count AND ISBN: it matched our rips within ±10pp on 100+ books and told
+  two same-title count-1 rows apart (an 8pp ashcan is not a twin of the trade).
+[L-135] (6 shelf/shelves) kind:collected-line
+- An Epic / Complete Collection LINE is found by probing the line name with NO volume subtitle: "Generation X Epic
+  Collection" → GCD 174151, shared by four sibling shelves.
+[L-151] (12 shelf/shelves) sig:collision sig:withheld
+- The withheld rule beats the checker's merge-with remedy text: a stored-link collision with a DIFFERENT comic is
+  `cv=-` + `N withheld cv=<id> … S<partner>`, never a merge (S101634 vs S22834); merge-with only for the same comic.
+[L-160] (12 shelf/shelves) pass:revisit sig:withheld
+- A withheld shelf with NO GCD leg to keep becomes `R` + `N withheld cv=<id> … S<partner>` (S4944, S99691) — the
+  revisit pair re-links the partner and then the S line can be written.
+[L-164] (6 shelf/shelves) kind:archive kind:collected-line kind:strip sig:probe
+- Year-by-year archives of a newspaper/web strip (Doonesbury, Dennis the Menace, Rip Kirby, The Little King) have no record
+  in either provider → R + provider-missing; where a provider holds the strip's own collected line (Cyanide & Happiness,
+  Oglaf) pair at 0.9 as a format split.
+[L-186] (6 shelf/shelves) kind:collected-line
+- REMINDER (lead ruling, applied again on Princeless S14096): a collected LINE with its own record (GCD 106434, nine
+  trades) wins over the first mini's run; linking the first four-issue mini to a nine-volume trade shelf is wrong-cv-link.
+[L-191] (6 shelf/shelves) folder:sequel-subfolder folder:vn-year pass:revisit sig:stale-flag
+- On a wave-2 `NN <Title> vN (<year>)` split-out shelf (ids S94xxx+) an `overlap-in-series` flag is stale by
+  construction — the colliding Vol. 01s now sit on sibling shelves (13 of 14 in R-016); the lead dismisses the flag.
+[L-244] (6 shelf/shelves) kind:collected-line pass:item
+- A trade collecting TWO minis, and an omnibus, cannot yet be stated by a `C` line (one range, one run, one per item):
+  name the runs on an `N` for now — TOOLS_TODO 17 adds per-run ranges and several `C` per item.
+[L-246] (6 shelf/shelves) kind:collected-line pass:item
+- ITEM PASS (X-001..X-003): on RUN-identity shelves the per-file GCD link reuses the run's own series matched to ONE
+  issue by number for vol. 01 only, while later volumes resolve to a real collected-edition series — check whether
+  vol. 01's link differs in kind from vol. 02+ before trusting it (Kevin Keller, Mega Man, Klaus, Dark Crystal …).
+[L-247] (6 shelf/shelves) kind:collected-line
+- A `C` that restates the shelf's own run needs its ids repeated in the clause to clear 40 characters; the clause is
+  the evidence, not a pointer. A shelf's own collected LINE and the run it collects are two records (Invisible
+  Kingdom: line GCD 151274 vs run CV 117748 / GCD 142448; Goldie Vance: line CV 94628 vs run CV 89593) — the `C`
+  names the RUN.
+[L-248] (6 shelf/shelves) kind:collected-line
+- Sibling shelves of one franchise can share one real GCD collected-edition line (Fence S6636/S6639/S6640 → 123731);
+  the sibling's landed S is evidence for the weak per-file matches on the others.
+[L-251] (6 shelf/shelves) kind:collected-line
+- Deluxe / Yearbook / Omnibus editions of the shelf's own ongoing with NO judged range get an `N` naming the
+  relationship, never an invented `C` range (the range is containment's to read).
+[L-258] (6 shelf/shelves) kind:collected-line sig:stamp
+- A degenerate packet block can stamp ONE GCD issue id onto every book of a shelf (Green Arrow S97350, six eras of
+  collected lines) — resolve only by each series' full issue list matched by title, never by the stamp.
+[L-275] (6 shelf/shelves) kind:collected-line pass:item sig:probe sig:trade-link
+- A count-1/2/3 trade record the shelf's `N` called absent is often in the catalogs under a spelling the packet
+  never probed ("The Adventures of …", "Complete Collection", "Deluxe") — probe before writing no-record.
+[L-279] (6 shelf/shelves) kind:collected-line
+- Blade of the Immortal (S23118) is the canonical "line + run" shape: GCD's 31 collected-edition rows are the `I`
+  identities (cv=- — ComicVine mints only the floppy volume), and the floppy run CV 9069 is what every `C` names,
+  ranges #0-206 ascending across the 31 books. A single-leg shelf's books inherit the shelf's 0.9, never more.
+[L-282] (6 shelf/shelves) kind:collected-line
+- A `gcd=-` / dump-only shelf's books inherit the shelf's 0.9 (Cells at Work! Lady, Dragon Head); an exact edition
+  can exist on GCD alone and be absent from ComicVine entirely (Cat Shit One Omnibus GCD 186621 → 0.9, cv=-).
+[L-285] (6 shelf/shelves) kind:collected-line pass:item sig:stamp
+- ITEM PASS (X-031..X-033): JoJo's Bizarre Adventure part-shelves are double-stamped — per-file CV is the whole-saga
+  hardcover omnibus volume (165667, one issue per PART) and per-file GCD the umbrella whole-saga series (27115) by
+  raw issue number; both wrong for all 37 books. Parts 1-3 have no CV softcover record (cv=-); Parts 4-5 do.
+[L-286] (6 shelf/shelves) kind:collected-line sig:probe
+- A shelf-level "no record" `N` can be wrong for an English product too (Innocent Omnibus: CV 157999 / GCD 206125
+  under "Innocent Omnibus") — probe the edition's own name before inheriting the shelf's gap.
+[L-287] (6 shelf/shelves) kind:collected-line pass:item
+- A series can be wrong on BOTH legs at once (Hunter x Hunter, Inuyashiki, Kakegurui Twin): the header pool by
+  ordinal is the only source; an omnibus with no dedicated record on either leg is `N no-record`, never a mapping.
+[L-289] (6 shelf/shelves) kind:collected-line kind:manga pass:item
+- ITEM PASS (X-037..X-039): one GCD issue row can cover TWO of our volumes when GCD's count undershoots (PTSD Radio,
+  Ojojojo) — both books share the id at 0.9; a genuine 2-in-1 omnibus whose header rows read #1-2 / #3-4 maps 1:1
+  at 0.95 (Orb). A 2-vol English omnibus against a 4-vol Japanese original has no safe mapping → `gcd=s<series>`.
+[L-298] (4 shelf/shelves) kind:collected-line kind:foreign pass:item pub:marvel pub:papercutz-nbm pub:valiant sig:barcode sig:legacy-stamp sig:probe sig:trade-link
+- ITEM PASS (X-052..X-055, the tail): a book's trade record is often findable on its FULL subtitle when the packet's
+  per-file probe returned nothing (~40 recovered: X-Men Legacy: Legion, House of M omnibuses …); Deluxe Editions on
+  Valiant / Marvel shelves usually have their own count-1 record the per-file leg mis-picked. ISBN 978-2 / 978-2-375
+  is French even on English-titled shelves. A Papercutz line can be a SELECTIVE translation of a longer foreign line
+  (Ralph Azham v01-04 = tomes 3/5/8/10) — match by chapter title, never by ordinal.
+[L-309] (6 shelf/shelves) kind:collected-line pass:item sig:probe
+- A collected line's own issue rows carry the trade's SUBTITLE as the issue title, so once one book of a line is
+  identified, `--issues <volume>` or `gcd_issue WHERE series_id=?` resolves the whole Vol. 01-N run in one query —
+  "own container id not probed" is never a valid no-record.
+[L-314] (6 shelf/shelves) kind:collected-line pass:item
+- `cvref.normName` drops "the / a / an / of / and" everywhere, not just leading articles — a word-preserving
+  normalizer misses ~90% of exact matches; replicate cvref's tokenizer when matching titles by script. A bare
+  trailing-number fallback (trade "01" → run issue #1) is safe only for mislabeled single-issue files, never for
+  "Vol." / "Book" / dash-subtitled titles (it matched an 824pp omnibus to issue #1). One CV issue id reused across
+  two differently titled books on a shelf is a sign of two eras, not one book. A digital "Collection Book NN"
+  bundle is a different catalog shape from a "Vol. NN" trade and is often uncatalogued — honest no-record.
+[L-014] (11 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-064] (11 shelf/shelves) pass:item sig:twin
+- GCD indexes PRINTINGS: the S line takes the first edition both legs agree on; the `I` line takes the printing
+  we hold (page counts match the edition's row). GCD issue ids for books come from `gcd_issue` — prefer the
+  issue id to the `s<series>` form; use `s<series>` only for twin/variant rows.
+[L-101] (11 shelf/shelves) sig:twin
+- Page count tells GCD twins apart (a 32pp sampler vs the 256pp anthology); a count-0 GCD row (236534 "Cells at
+  Work! Lady") is an empty stub, not a leg.
+[L-193] (11 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-310] (11 shelf/shelves) pass:revisit sig:gcd-notes sig:stale-flag
+- R-025 (Opus): the GCD dump's `gcd_reprint` + `gcd_story` tables answer "what does this trade collect" outright —
+  join story → reprint → origin issue → series and the `C` range falls out (Elektra #7-22, Casanova Luxuria #1-7,
+  all six Criminal ranges); `gcd_series.notes` states ranges in prose. A GCD line row with `year_ended` NULL and a
+  count BELOW our holdings is NOT coextensive when the provider files the missing books under their own row
+  (Casanova 148774 = 3 vols + Acedia 236165) — two lines, not staleness. Before `F wrong-cv-link` on a revisit read
+  Series.CvVolumeId: the shelf may already carry the right id and re-flagging would clear it. A stored id can belong
+  to a series holding NO comic files (outside the checker's population) — note it, never merge.
+
++143 more matched entries not shown: L-113, L-124, L-272, L-281, L-290, L-013, L-016, L-032, L-043, L-050, L-072, L-088, L-089, L-095, L-096, L-114, L-118, L-125, L-157, L-159, L-163, L-177, L-194, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-029, L-031, L-033, L-076, L-109, L-115, L-117, L-123, L-127, L-132, L-133, L-136, L-142, L-196, L-295, L-296, L-306, L-307, L-308, L-313, L-327, L-328, L-065, L-099, L-262, L-007, L-150, L-175, L-217, L-011, L-015, L-018, L-021, L-022, L-028, L-034, L-036, L-040, L-052, L-060, L-068, L-077, L-082, L-093, L-106, L-111, L-112, L-116, L-119, L-121, L-129, L-130, L-137, L-143, L-144, L-152, L-153, L-156, L-158, L-162, L-166, L-167, L-168, L-169, L-172, L-173, L-174, L-187, L-195, L-197, L-198, L-199, L-202, L-206, L-207, L-210, L-211, L-212, L-216, L-218, L-220, L-222, L-228, L-237, L-241, L-242, L-245, L-255, L-256, L-263, L-266, L-311, L-312, L-315, L-316, L-318, L-319, L-321, L-324, L-325, L-054, L-074, L-083, L-097, L-128, L-181, L-250, L-252, L-274, L-288, L-293, L-041, L-192 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S8068 Grimm Fairy Tales presents Helsing: The Darkness and the Light  [tier C] · gap 3  keys: Grimm Fairy Tales presents Helsing - The Darkness and the Light | Van Helsing - The Darkness and the Light  years 2011-2011  2 files / 0 collections
+   folders: [1] Zenescope\Grimm Fairy Tales - Van Helsing (2014)\01 Helsing (2014) · [1] Zenescope\Van Helsing
+   files:   [115997] Grimm Fairy Tales presents Helsing - The Darkness and the Light (2011) (Digital) (TLK-EMPIRE-HD).cbr (145pp) | [116245] Van Helsing - The Darkness and the Light.cbz (145pp)
+   CV linked:      vol 76459 "Grimm Fairy Tales presents Helsing: The Darkness and the Light" 2014 Zenescope Entertainment 1 issues issue 462535; cached #1-1 (1); yearΔ 3; ratio 0/1; no judged range; v1 per-file: same volume on 1/2 files
+   CV candidates:  (= linked) · 73254 "Grimm Fairy Tales presents Helsing" 2014 Zenescope Entertainment 4 s88 · 133354 "Van Helsing" 2021 Zenescope Entertainment 1 issue 825500 s85 · 74536 "Grimm Fairy Tales presents Godstorm: Age of Darkness" 2014 Zenescope Entertainment 1 issue 455544 s72 · 74907 "Grimm Fairy Tales presents Wonderland: Age of Darkness" 2014 Zenescope Entertainment 1 issue 456612 s72 · 76098 "Grimm Fairy Tales presents Neverland: Age of Darkness" 2014 Zenescope Entertainment 1 issue 461025 s72 · 73915 "Grimm Fairy Tales 2014 Annual" 2014 Zenescope Entertainment 1 issue 452910 s69   (v1 search)
+   CV local rip:   73254 "Grimm Fairy Tales presents Helsing" 2014 Zenescope Entertainment 4 (via CV candidate name "Grimm Fairy Tales presents Helsing") · 133354 "Van Helsing" 2021 Zenescope Entertainment 1 issue 825500 (via CV candidate name "Van Helsing")   (rip lookup)
+   GCD dump:       209919 "Grimm Fairy Tales Presents Helsing: The Darkness and the Light" 2014-2014 Zenescope Entertainment [] 1 · 80321 "Grimm Fairy Tales Presents Helsing" 2014-2014 Zenescope Entertainment [] 4 (via CV candidate name "Grimm Fairy Tales presents Helsing") · 202788 "Van Helsing" [de] 2023-? Zauberstern [] 15 (via CV candidate name "Van Helsing")   (dump lookup)
+
+== S20707 Uncanny X-Men Masterworks  [tier D]   keys: Uncanny X-Men Masterworks  years 2014-2024  16 files / 16 collections
+   folders: [16] Marvel\_Marvel Masterworks\X-Men (1963)
+   files:   [83503] COL Uncanny X-Men Masterworks Vol. 01 (2014) (Digital) (F2) (Kileko-Empire).cbr (180pp)
+            [83504] COL Uncanny X-Men Masterworks Vol. 02 (2014) (Digital) (F) (Kileko-Empire).cbz (187pp)
+            [83505] COL Uncanny X-Men Masterworks Vol. 03 (1993) (Digital) (F2) (Kileko-Empire).cbz (201pp)
+            [83506] COL Uncanny X-Men Masterworks Vol. 04 (2004) (Digital) (F2) (Kileko-Empire).cbz (224pp)
+            [83507] COL Uncanny X-Men Masterworks Vol. 05 (2004) (Digital) (F2) (Kileko-Empire).cbz (307pp)
+            [83508] COL Uncanny X-Men Masterworks Vol. 06 (2008) (Digital) (F2) (Kileko-Empire).cbz (252pp)
+            [83509] COL Uncanny X-Men Masterworks Vol. 07 (2011) (Digital) (F) (Kileko-Empire).cbz (297pp)
+            [83510] COL Uncanny X-Men Masterworks Vol. 08 (2015) (Digital) (F) (Kileko-Empire).cbz (276pp)
+            [83511] COL Uncanny X-Men Masterworks Vol. 09 (2015) (Digital) (F) (Kileko-Empire).cbz (417pp) | [83512] COL Uncanny X-Men Masterworks Vol. 10 (2017) (Digital) (Kileko-Empire).cbr (458pp)
+            [83513] COL Uncanny X-Men Masterworks Vol. 11 (2019) (Digital) (Kileko-Empire).cbr (457pp) | [83514] COL Uncanny X-Men Masterworks Vol. 12 (2020) (Digital) (Kileko-Empire).cbz (466pp)
+            [83515] COL Uncanny X-Men Masterworks Vol. 13 (2021) (Digital) (Kileko-Empire).cbz (449pp) | [83516] COL Uncanny X-Men Masterworks Vol. 14 (2022) (Digital) (Kileko-Empire).cbz (485pp)
+            [83517] COL Uncanny X-Men Masterworks Vol. 15 (2023) (Digital) (Kileko-Empire).cbz (508pp) | [83518] COL Uncanny X-Men Masterworks Vol. 16 (2024) (Digital) (Kileko-Empire).cbz (486pp)
+   ours:    judged item 83507 #5-5 conf 0.97; judged item 83511 #9-9 conf 0.97; judged item 83512 #10-10 conf 0.97; judged item 83513 #11-11 conf 0.97; judged item 83514 #12-12 conf 0.97; judged item 83515 #13-13 conf 0.97; judged item 83516 #14-14 conf 0.97; judged item 83517 #15-15 conf 0.97; judged item 83518 #16-16 conf 0.97; ComicInfo Series: "Uncanny X-Men Masterworks"x15; ComicInfo Publisher: "Marvel"x15
+   CV candidates:  76515 "Uncanny X-Men Masterworks" 1993 Marvel ? s45 · 30807 "Marvel Masterworks: The Uncanny X-Men" 2003 Marvel ? s33 · 43785 "Uncanny X-Men" 2011 Marvel ? s30 · 87825 "Uncanny X-Men" 2016 Marvel ? s30 · 71565 "Uncanny X-Men" 2009 Editorial Televisa ? s15 · 69323 "Uncanny X-Men" 2013 Panini Verlag ? s15   (v1 search)
+   CV local rip:   76515 "Uncanny X-Men Masterworks" 1993 Marvel 1 issue 462768 · 57181 "Uncanny X-Men" 2013 Marvel 36 (via CV candidate name "Uncanny X-Men") · 69323 "Uncanny X-Men" 2013 Panini Verlag 7 (via CV candidate name "Uncanny X-Men") · 71521 "Uncanny X-Men" 2013 Editorial Televisa 18 (via CV candidate name "Uncanny X-Men") · 71529 "Uncanny X-Men" 2012 Editorial Televisa 14 (via CV candidate name "Uncanny X-Men") · 87190 "Uncanny X-Men" 2016 Marvel 19 (via CV candidate name "Uncanny X-Men")   (rip lookup)
+   GCD dump:       70273 "Uncanny X-Men Masterworks" 1993-1993 Marvel [] 1 · 89426 "Uncanny X-Men" 2014-2016 Marvel [] 6 (via CV candidate name "Uncanny X-Men") · 71939 "Uncanny X-Men" 2013-2016 Marvel [] 36 (via CV candidate name "Uncanny X-Men") · 78983 "Uncanny X-Men" [de] 2013-2016 Panini Deutschland [] 7 (via CV candidate name "Uncanny X-Men") · 89427 "Uncanny X-Men" 2013-2015 Marvel [] 6 (via CV candidate name "Uncanny X-Men") · 61973 "Uncanny X-Men" 2012-2012 Marvel [] 20 (via CV candidate name "Uncanny X-Men")   (dump lookup)
+
+== S6791 Flashback - Uncanny X-Men -1  [tier C] · 972 files  keys: Flashback - Uncanny X-Men -1 | The Uncanny X-Men | The Uncanny X-Men -001 | Uncanny X-Men | Uncanny X-men  years 1963-2024  972 files / 11 collections
+   folders: [395] Marvel\_X-Men\Uncanny X-Men\03 Uncanny X-Men v1 (1975) · [66] Marvel\_X-Men\_X-Men Complete Chronology V2\0001 X-Men · [18] Marvel\_X-Men\_X-Men Complete Chronology V2\0017 Untitled · [17] Marvel\_X-Men\_X-Men Complete Chronology V2\0010 The Phoenix Saga · [12] Marvel\_Marvel Cosmic\05b War of Kings Prologue (Inhumans, Vulcan backstory)\003 Rise and Fall of the Shiar Empire · [11] Marvel\_X-Men\_X-Men Complete Chronology V2\0496 X-Corps · [10] Marvel\_X-Men\_X-Men Complete Chronology V2\0048 Secret Wars II · [10] _Marvel Major Event Chronology (digital)\2005.08 - House of M\04 Aftermath - Decimation\Uncanny X-Men · [8] Marvel\_X-Men\_X-Men Complete Chronology V2\0025 Unnamed · [8] Marvel\_X-Men\_X-Men Complete Chronology V2\0783 Manifest Destiny · [8] Marvel\_X-Men\_X-Men Complete Chronology V2\0839 Nation X · [8] _Marvel Major Event Chronology (digital)\1976.04 - X-Men - The Phoenix Saga · [8] _Marvel Major Event Chronology (digital)\1980.01 - X-Men - The Dark Phoenix Saga\Extras\Uncanny X-Men - From the Ashes (1983) (digital) (Minutemen-FactorX) · [7] Marvel\_X-Men\_X-Men Complete Chronology V2\0009 Phoenix Rising · [7] Marvel\_X-Men\_X-Men Complete Chronology V2\0012 Proteus · [7] Marvel\_X-Men\_X-Men Complete Chronology V2\0013 The Dark Phoenix Saga · [7] Marvel\_X-Men\_X-Men Complete Chronology V2\0571 The Draco · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\0018 The Brood · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\0121 Introducing Gambit · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\0610 The End Of History · [6] Marvel\_X-Men\_X-Men Complete Chronology V2\0922 Breaking Point · [6] Marvel\_X-Men\_X-Men TPBs\Uncanny X-Men by Austen · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0008 Second Genesis · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0036 Untitled · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0069 Untitled · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0086 Inferno · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0110 Unnamed · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0329 Zero Tolerance · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0591 She Lies with Angels · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0659 World's End · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0725 Rise and Fall of the Shiar Empire - Part 1 · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0743 Rise and Fall of the Shiar Empire - Part 2 · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0756 Endangered Species · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0772 Divided We Stand · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0816 Sisterhood · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0896 Quarantine · [5] Marvel\_X-Men\_X-Men Non-event Omnibusses · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0040 Untitled · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0053 Freedom is a Four Letter Word · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0056 The Mutant Massacre · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0075 The Sword is Drawn · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0084 A Green and Pleasant Land · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0133 Untitled · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0154 Mikhail Rasputin · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0175 The X-Cutioner's Song · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0447 Untitled · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0485 Poptopia · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0679 House of M · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0877 The Five Lights · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0924 Fear Itself · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0023 Morlocks · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0047 Untitled · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0060 Old Soldiers · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0064 Folly's Gambit · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0072 The Fall of the Mutants · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0077 Earthfall · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0101 Siege Perilous · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0111 Acts of Vengeance · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0116 Untitled · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0129 The X-Tinction Agenda · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0141 The Muir Island Saga · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0148 Bishop's Crossing · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0169 The Death of the Morlocks · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0180 Utitled · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0192 Untitled · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0221 The Phalanx · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0289 Onslaught · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0352 Untitled · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0384 The Hunt for Xavier · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0396 Untitled · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0525 Hope · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0541 Dominant Species · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0645 Chasing Hellfire · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0696 Grey's End · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0707 Wand'ring star · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0716 The First Foursaken · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0768 Messiah Complex · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0865 Second Coming · [3] _Marvel Major Event Chronology (digital)\1991.07 - X-Men - Muir Island Saga · [3] _Marvel Major Event Chronology (digital)\1996.06 - X-Men - Onslaught\Extra\The Hunt for Xavier (1998) · [3] _Marvel Major Event Chronology (digital)\2001.01 - X-Men - Dream's End · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0011 Murderworld · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0014 Wendigo · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0015 Days of Future Past · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0020 The New Mutants · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0033 Untilted · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0114 Untitled · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0163 Untitled · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0198 Death Hunt · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0210 Untitled · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0233 The Phalanx Covenant - Generation Next · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0245 Legionquest · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0252 A Nation Rising · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0276 Warriors of the Ebon Night · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0288 Onslaught Preview · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0311 Untitled · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0318 W'ar · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0347 Untitled · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0362 Reunion · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0392 The Magneto War · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0419 Beauty & the Beast · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0429 Apocalypse - The Twelve · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0435 Untitled · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0441 Untitled · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0472 Unnamed · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0477 Eve of Destruction · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0533 So Lame - The Exiles in Mojoverse · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0549 Rules of Engagement · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0559 Sacred Vows · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0625 The Cruelest Cut · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0671 Mojo Rising · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0823 Utopia · [2] _Marvel Major Event Chronology (digital)\1976.04 - X-Men - The Phoenix Saga\Extra · [2] _Marvel Major Event Chronology (digital)\1997.06 - X-Men - Operation Zero Tolerance\01 Prelude · [2] _Marvel Major Event Chronology (digital)\1999.02 - The Magneto War · [1] Marvel\_Marvel Facsimile Editions\Variant Covers · [1] Marvel\_X-Men\Uncanny X-Men\03 Uncanny X-Men v1 (1975)\Annuals and Specials · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0031 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0096 The Wilding · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0161 Blood Feud · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0193 The Return of Magneto · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0204 Blood Ties · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0224 Malice · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0232 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0240 The Dark Ride · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0247 After Xavier - The Age of Apocolypse · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0260 Evolution · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0263 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0268 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0270 The Red Zone · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0279 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0282 Ozymandias · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0295 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0302 It Begins · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0305 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0323 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0325 Flashback · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0368 Bishop and Deathbird · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0372 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0376 Children of the Atom · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0381 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0390 Unnamed · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0407 Rage Against the Machine · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0413 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0425 Unnamed · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0433 Ages of Apocalypse · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0463 Maximum Security · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0464 Dream's End · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0468 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0481 E is for Extinction · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0536 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0552 Holy War · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0570 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0588 Trial of Juggernaut · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0604 Of Darkest Nights · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0953 Regenesis · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\1103 No End In Sight · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\1143 Storyville · [1] _Marvel Major Event Chronology (digital)\1980.01 - X-Men - The Dark Phoenix Saga\Extras · [1] _Marvel Major Event Chronology (digital)\1993.11 - Blood Ties · [1] _Marvel Major Event Chronology (digital)\2001.01 - X-Men - Dream's End\Extras · [1] _Marvel Major Event Chronology (digital)\2010.04 - The Heroic Age\The Heroic Age - One Shots and Singles
+   files:   Uncanny X-Men 475.cbr … Uncanny X-Men 481.cbr  (7 files, pp 22-26) | [82715] Uncanny X-Men 483.CBR (25pp) | [82716] Uncanny X-Men 484.CBR (24pp) | [82717] Uncanny X-Men 485.CBR (22pp)
+            [82718] Uncanny X-Men 486.CBR (27pp) | [82714] Uncanny X-men 482.cbr (23pp)
+            [83128] Uncanny X-Men 244 (2024) (Facsimile Edition Nicoletta Baldari Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [85989] The Uncanny X-Men -001 (1997) (Digital) (AnHeroGold-Empire).cbz (22pp)
+            The Uncanny X-Men 142 (1981) (Digital) (TLK-EMPIRE-HD).cbr … The Uncanny X-Men 175 (1983) (Digital) (TLK-EMPIRE-HD).cbr  (30 files, pp 23-40)
+            The Uncanny X-Men 176 (1983) (Digital) (AnPymGold-Empire).cbz … The Uncanny X-Men 181 (1984) (Digital) (AnPymGold-Empire).cbz  (6 files, pp 22-24)
+            [84966] The Uncanny X-Men 182 (1984) (Digital) (Zone-Empire).cbr (24pp) | [84967] The Uncanny X-Men 183 (1984) (Digital) (Zone-Empire).cbr (24pp)
+            [84968] The Uncanny X-Men 184 (1984) (Digital) (AnPymGold-Empire).cbz (22pp) | [84969] The Uncanny X-Men 185 (1984) (Digital) (AnPymGold-Empire).cbz (23pp)
+            [84970] The Uncanny X-Men 186 (1984) (Digital) (Zone-Empire).cbr (42pp) | [84971] The Uncanny X-Men 187 (1984) (Digital) (AnPymGold-Empire).cbz (24pp)
+            [84972] The Uncanny X-Men 188 (1984) (Digital) (AnPymGold-Empire).cbz (23pp) | [84973] The Uncanny X-Men 189 (1984) (Digital) (Zone-Empire).cbr (23pp)
+            The Uncanny X-Men 190 (1985) (Digital) (AnPymGold-Empire).cbz … The Uncanny X-Men 195 (1985) (Digital) (AnPymGold-Empire).cbz  (6 files, pp 23-41)
+            [84980] The Uncanny X-Men 196 (1985) (digital) (Marika-Empire).cbz (25pp) | [84981] The Uncanny X-Men 197 (1985) (digital) (Marika-Empire).cbz (25pp)
+            [84982] The Uncanny X-Men 198 (1985) (Digital) (Zone-Empire).cbr (25pp) | [84983] The Uncanny X-Men 199 (1985) (digital) (Marika-Empire).cbz (25pp)
+            [84984] The Uncanny X-Men 200 (1985) (Digital) (TLK-EMPIRE-HD).cbr (42pp) | [84985] The Uncanny X-Men 201 (1986) (digital) (Marika-Empire).cbz (25pp)
+            [84986] The Uncanny X-Men 202 (1986) (Digital) (TLK-EMPIRE-HD).cbr (27pp) | [84987] The Uncanny X-Men 203 (1986) (Digital) (TLK-EMPIRE-HD).cbr (24pp)
+            [84988] The Uncanny X-Men 204 (1986) (Digital) (TLK-EMPIRE-HD).cbr (25pp) | [84989] The Uncanny X-Men 205 (1986) (digital) (Marika-Empire).cbz (24pp)
+            [84990] The Uncanny X-Men 206 (1986) (digital) (Marika-Empire).cbz (25pp) | [84991] The Uncanny X-Men 207 (1986) (Digital) (TLK-EMPIRE-HD).cbr (26pp)
+            [84992] The Uncanny X-Men 208 (1986) (digital) (Marika-Empire).cbz (25pp)
+            The Uncanny X-Men 209 (1986) (Digital) (TLK-EMPIRE-HD).cbr … The Uncanny X-Men 243 (1989) (Digital) (TLK-EMPIRE-HD).cbr  (35 files, pp 23-41)
+            [85028] The Uncanny X-Men 244 (1989) (Digital) (Zone-Empire).cbr (24pp) | [85029] The Uncanny X-Men 245 (1989) (Digital) (AnPymGold-Empire).cbz (24pp)
+            [85030] The Uncanny X-Men 246 (1989) (Digital) (AnPymGold-Empire).cbz (23pp) | [85031] The Uncanny X-Men 247 (1989) (Digital) (AnPymGold-Empire).cbz (22pp)
+            [85032] The Uncanny X-Men 248 (1989) (Digital) (Zone-Empire).cbr (23pp)
+            The Uncanny X-Men 249 (1989) (Digital) (AnPymGold-Empire).cbz … The Uncanny X-Men 255 (1989) (Digital) (AnPymGold-Empire).cbz  (7 files, pp 23-24)
+            [85040] The Uncanny X-Men 256 (1989) (Digital) (Zone-Empire).cbr (25pp) | [85041] The Uncanny X-Men 257 (1990) (Digital) (Zone-Empire).cbr (24pp)
+            [85042] The Uncanny X-Men 258 (1990) (Digital) (Zone-Empire).cbr (25pp)
+            The Uncanny X-Men 259 (1990) (Digital) (AnPymGold-Empire).cbz … The Uncanny X-Men 264 (1990) (Digital) (AnPymGold-Empire).cbz  (6 files, pp 22-24)
+            [85049] The Uncanny X-Men 265 (1990) (Digital) (Zone-Empire).cbr (24pp) | [85050] The Uncanny X-Men 266 (1990) (Digital) (AnPymGold-Empire).cbz (23pp)
+            [85051] The Uncanny X-Men 267 (1990) (Digital) (AnPymGold-Empire).cbz (22pp) | [85052] The Uncanny X-Men 268 (1990) (Digital) (AnHeroGold-Empire).cbz (22pp)
+            [85053] The Uncanny X-Men 269 (1990) (Digital) (Zone-Empire).cbr (23pp) | [85054] The Uncanny X-Men 270 (1990) (Digital) (AnHeroGold-Empire).cbz (20pp)
+            [85055] The Uncanny X-Men 271 (1990) (Digital) (AnHeroGold-Empire).cbz (23pp) | [85056] The Uncanny X-Men 272 (1991) (Digital) (AnHeroGold-Empire).cbz (23pp)
+            The Uncanny X-Men 273 (1991) (Digital) (Zone-Empire).cbr … The Uncanny X-Men 293 (1992) (Digital) (Zone-Empire).cbr  (20 files, pp 22-41)
+            [85078] The Uncanny X-Men 294 (1992) (Digital) (Meganubis-Empire).cbz (25pp) | [85079] The Uncanny X-Men 295 (1992) (Digital) (Meganubis-Empire).cbz (24pp)
+            [85080] The Uncanny X-Men 296 (1993) (Digital) (Meganubis-Empire).cbz (24pp) | [85081] The Uncanny X-Men 297 (1993) (Digital) (Meganubis-Empire).cbz (23pp)
+            [85082] The Uncanny X-Men 298 (1993) (Digital) (Meganubis-Empire).cbz (23pp) | [85083] The Uncanny X-Men 299 (1993) (Digital) (Meganubis-Empire).cbz (23pp)
+            [85084] The Uncanny X-Men 300 (1993) (Digital) (Meganubis-Empire).cbz (53pp) | [85085] The Uncanny X-Men 301 (1993) (Digital) (Meganubis-Empire).cbz (22pp)
+            [85086] The Uncanny X-Men 302 (1993) (Digital) (Meganubis-Empire).cbz (21pp) | [85087] The Uncanny X-Men 303 (1993) (Digital) (Meganubis-Empire).cbz (23pp)
+            [85088] The Uncanny X-Men 304 (1993) (Digital) (Meganubis-Empire).cbz (46pp) | [85089] The Uncanny X-Men 305 (1993) (Digital) (Meganubis-Empire).cbz (23pp)
+            [85090] The Uncanny X-Men 306 (1993) (Digital) (Zone-Empire).cbr (22pp) | [85091] The Uncanny X-Men 307 (1993) (Digital) (AnPymGold-Empire).cbz (20pp)
+            [85092] The Uncanny X-Men 308 (1994) (Digital) (Zone-Empire).cbr (21pp) | [85093] The Uncanny X-Men 309 (1994) (Digital) (Zone-Empire).cbr (19pp)
+            [85094] The Uncanny X-Men 310 (1994) (Digital) (Zone-Empire).cbr (21pp) | [85095] The Uncanny X-Men 311 (1994) (Digital) (AnPymGold-Empire).cbz (21pp)
+            [85096] The Uncanny X-Men 312 (1994) (Digital) (AnPymGold-Empire).cbz (22pp) | [85097] The Uncanny X-Men 313 (1994) (Digital) (AnPymGold-Empire).cbz (22pp)
+            [85098] The Uncanny X-Men 314 (1994) (Digital) (AnPymGold-Empire).cbz (22pp) | [85099] The Uncanny X-Men 315 (1994) (Digital) (Meganubis-Empire).cbz (22pp)
+            The Uncanny X-Men 316 (1994) (Digital) (Zone-Empire).cbr … The Uncanny X-Men 322 (1995) (Digital) (Zone-Empire).cbr  (7 files, pp 22-25)
+            [85107] The Uncanny X-Men 323 (1995) (Digital) (AnPymGold-Empire).cbz (21pp) | [85108] The Uncanny X-Men 324 (1995) (Digital) (AnPymGold-Empire).cbz (23pp)
+            [85109] The Uncanny X-Men 325 (1995) (Digital) (AnPymGold-Empire).cbz (38pp) | [85110] The Uncanny X-Men 326 (1995) (Digital) (AnPymGold-Empire).cbz (22pp)
+            [85111] The Uncanny X-Men 327 (1995) (Digital) (AnHeroGold-Empire).cbz (24pp) | [85112] The Uncanny X-Men 328 (1996) (Digital) (AnHeroGold-Empire).cbz (22pp)
+            The Uncanny X-Men 329 (1996) (Digital) (Zone-Empire).cbr … The Uncanny X-Men 336 (1996) (Digital) (Zone-Empire).cbr  (7 files, pp 19-23)
+            [85121] The Uncanny X-Men 337 (1996) (Digital) (AnPymGold-Empire).cbz (23pp)
+            The Uncanny X-Men 338 (1996) (Digital) (Zone-Empire).cbr … The Uncanny X-Men 345 (1997) (Digital) (Zone-Empire).cbr  (8 files, pp 23-26)
+            [85130] The Uncanny X-Men 346 (1997) (Digital) (AnHeroGold-Empire).cbz (24pp)
+            The Uncanny X-Men 347 (1997) (Digital) (Zone-Empire).cbr … The Uncanny X-Men 371 (1999) (Digital) (Zone-Empire).cbr  (23 files, pp 21-38)
+            The Uncanny X-Men 372 (1999) (Digital) (AnHeroGold-Empire).cbz … The Uncanny X-Men 378 (2000) (Digital) (AnHeroGold-Empire).cbz  (7 files, pp 17-34)
+            [85163] The Uncanny X-Men 379 (2000) (Digital) (AnPymGold - Empire).cbz (21pp) | [85164] The Uncanny X-Men 380 (2000) (Digital) (AnPymGold - Empire).cbz (23pp)
+            The Uncanny X-Men 381 (2000) (Digital) (AnHeroGold-Empire).cbz … The Uncanny X-Men 386 (2000) (Digital) (AnHeroGold-Empire).cbz  (6 files, pp 20-33)
+            [85171] The Uncanny X-Men 387 (2000) (Digital) (AnPymGold - Empire).cbz (24pp) | [85172] The Uncanny X-Men 388 (2001) (Digital) (AnHeroGold-Empire).cbz (24pp)
+            [85173] The Uncanny X-Men 389 (2001) (Digital) (AnHeroGold-Empire).cbz (24pp) | [85174] The Uncanny X-Men 390 (2001) (Digital) (AnHeroGold-Empire).cbz (21pp)
+            [85175] The Uncanny X-Men 391 (2001) (Digital) (Zone-Empire).cbr (22pp) | [85176] The Uncanny X-Men 392 (2001) (Digital) (AnHeroGold-Empire).cbz (22pp)
+            [85177] The Uncanny X-Men 393 (2001) (Digital) (AnHeroGold-Empire).cbz (20pp) | [85178] The Uncanny X-Men 394 (2001) (digital-hd) (Kleio-Empire).cbz (25pp)
+            [85179] The Uncanny X-Men 395 (2001) (digital-hd) (Kleio-Empire).cbz (22pp) | [85180] The Uncanny X-Men 396 (2001) (digital-hd) (Kleio-Empire).cbz (23pp)
+            [85181] The Uncanny X-Men 397 (2001) (digital-hd) (Kleio-Empire).cbz (23pp) | [85182] The Uncanny X-Men 398 (2001) (digital-hd) (Kleio-Empire).cbz (23pp)
+            [85183] The Uncanny X-Men 399 (2001) (digital-hd) (Kleio-Empire).cbz (25pp) | [85184] The Uncanny X-Men 400 (2002) (digital-hd) (Kleio-Empire).cbz (45pp)
+            [85185] The Uncanny X-Men 401 (2002) (digital-hd) (Kleio-Empire).cbz (22pp) | [85186] The Uncanny X-Men 402 (2002) (digital-hd) (Kleio-Empire).cbz (23pp)
+            [85187] The Uncanny X-Men 403 (2002) (digital-hd) (Kleio-Empire).cbz (23pp) | [85188] The Uncanny X-Men 404 (2002) (digital-hd) (Kleio-Empire).cbz (22pp)
+            [85189] The Uncanny X-Men 405 (2002) (digital-hd) (Kleio-Empire).cbz (22pp) | [85190] The Uncanny X-Men 406 (2002) (digital-hd) (Kleio-Empire).cbz (23pp)
+            [85191] The Uncanny X-Men 407 (2002) (digital-hd) (Kleio-Empire).cbz (23pp) | [85192] The Uncanny X-Men 408 (2002) (digital-hd) (Kleio-Empire).cbz (23pp)
+            [85193] The Uncanny X-Men 409 (2002) (digital-hd) (Kleio-Empire).cbz (24pp)
+            The Uncanny X-Men 410 (2002) (Digital) (Meganubis-Empire).cbr … The Uncanny X-Men 443 (2004) (Digital) (Meganubis-Empire).cbr  (34 files, pp 21-37)
+            The Uncanny X-Men 444 (2004) (digital-hd) (Kleio-Empire).cbz … The Uncanny X-Men 474 (2005) (digital-hd) (Kleio-Empire).cbz  (31 files, pp 22-26)
+            The Uncanny X-Men 475 (2006) (Digital) (Zone-Empire).cbr … The Uncanny X-Men 491 (2007) (Digital) (Zone-Empire).cbr  (17 files, pp 22-34)
+            The Uncanny X-Men 492 (2008) (digital-hd) (Kleio-Empire).cbz … The Uncanny X-Men 514 (2009) (digital-hd) (Kleio-Empire).cbz  (23 files, pp 22-41)
+            The Uncanny X-Men 515 (2009) (Digital) (Zone-Empire).cbr … The Uncanny X-Men 522 (2010) (Digital) (Zone-Empire).cbr  (8 files, pp 25-36)
+            The Uncanny X-Men 523 (2010) (digital-hd) (Kleio-Empire).cbz … The Uncanny X-Men 529 (2010) (digital-hd) (Kleio-Empire).cbz  (7 files, pp 22-33)
+            [85314] The Uncanny X-Men 530 (2011) (Digital) (Zone-Empire).cbr (26pp) | [85316] The Uncanny X-Men 532 (2011) (Digital) (Zone-Empire).cbr (25pp)
+            [85317] The Uncanny X-Men 533 (2011) (Digital) (Zone-Empire).cbr (25pp) | [85318] The Uncanny X-Men 534 (2011) (Digital) (Zone-Empire).cbr (25pp)
+            [85319] The Uncanny X-Men 534.1 (2011) (Digital) (Zone-Empire).cbr (27pp) | [85320] The Uncanny X-Men 535 (2011) (Digital) (Zone-Empire).cbr (26pp)
+            [85321] The Uncanny X-Men 536 (2011) (Digital) (Zone-Empire).cbr (25pp) | [85322] The Uncanny X-Men 537 (2011) (Digital) (Zone-Empire).cbr (26pp)
+            [85323] The Uncanny X-Men 538 (2011) (Digital) (Zone-Empire).cbr (26pp) | [85324] The Uncanny X-Men 539 (2011) (Digital) (Zone-Empire).cbr (27pp)
+            [85325] The Uncanny X-Men 540 (2011) (digital-hd) (Kleio-Empire).cbz (23pp) | [85326] The Uncanny X-Men 541 (2011) (digital-hd) (Kleio-Empire).cbz (25pp)
+            [85327] The Uncanny X-Men 542 (2011) (digital-hd) (Kleio-Empire).cbz (23pp) | [85328] The Uncanny X-Men 543 (2011) (digital-hd) (Kleio-Empire).cbz (22pp)
+            [85329] The Uncanny X-Men 544 (2011) (digital-hd) (Kleio-Empire).cbz (22pp)
+            001 Uncanny X-Men 001 (1963) (digital) (Minutemen-Bluntman).cbz … 023 Uncanny X-Men 021 (1966) (digital) (Minutemen-Bluntman).cbz  (21 files, pp 22-26)
+            024 Uncanny X-Men 022 (1966) (digital) (Minutemen-FactorX).cbr … 059 Uncanny X-Men 055 (1969) (digital) (Minutemen-FactorX).cbr  (34 files, pp 20-21)
+            060 Uncanny X-Men 056 (1969) (Digital) (Minutemen-Syl3ntBob).cbz … 010 Uncanny X-Men 096 (1975) (Digital) (Minutemen-Syl3ntBob).cbz  (14 files, pp 20-22)
+            [86656] 012 The Uncanny X-Men #097.cbr (?pp)
+            012 Uncanny X-Men 097 (1976) (Digital) (Minutemen-Syl3ntBob).cbz … 030 Uncanny X-Men 116 (1978) (Digital) (Minutemen-Syl3ntBob).cbz  (20 files, pp 17-19)
+            [86709] 032 Uncanny X-Men 117 (1979) (digital) (Minutemen-Syl3ntBob).cbz (19pp) | [86711] 034 Uncanny X-Men 118 (1979) (digital) (Minutemen-Syl3ntBob).cbz (18pp)
+            [86713] 036 Uncanny X-Men 119 (1979) (digital) (Minutemen-Syl3ntBob).cbz (19pp) | [86715] 038 Uncanny X-Men 120 (1979) (digital) (Minutemen-Syl3ntBob).cbz (19pp)
+            [86717] 040 Uncanny X-Men 121 (1979) (Digital) (Minutemen-Syl3ntBob).cbz (19pp) | [86720] 001 Uncanny X-Men 122 (1979) (Digital) (Minutemen-Syl3ntBob).cbz (20pp)
+            [86722] 003 Uncanny X-Men 123 (1979) (Digital) (Minutemen-Syl3ntBob).cbz (20pp) | [86726] 001 Uncanny X-Men 125 (1979) (Digital) (Minutemen-Syl3ntBob).cbz (19pp)
+            [86728] 003 Uncanny X-Men 126 (1979) (digital) (Minutemen-Syl3ntBob).cbz (19pp)
+            005 Uncanny X-Men 127 (1979) (Digital) (Minutemen-Syl3ntBob).cbz … 002 Uncanny X-Men 140 (1980) (Digital) (Minutemen-Syl3ntBob).cbz  (14 files, pp 19-36)
+            [86769] 004 Uncanny X-Men 141 (1981) (digital) (Minutemen-Syl3ntPhD).cbr (23pp) | [86770] 005 Uncanny X-Men 142 (1981) (digital) (Minutemen-Syl3ntPhD).cbr (22pp)
+            [86777] 001 Uncanny X-Men 143 (1981) (Digital) (Minutemen-Syl3ntBob).cbz (23pp) | [86778] 002 Uncanny X-Men 144 (1981) (digital) (Minutemen-FactorX).cbr (24pp)
+            [86779] 003 Uncanny X-Men 145 (1981) (Digital) (Minutemen-Syl3ntBob).cbz (25pp) | [86780] 004 Uncanny X-Men 146 (1981) (Digital) (Minutemen-Syl3ntBob).cbz (24pp)
+            [86781] 005 Uncanny X-Men 147 (1981) (Digital) (Minutemen-Syl3ntBob).cbz (24pp) | [86786] 010 Uncanny X-Men 148 (1981) (Digital) (Shadowcat-Empire.cbz (23pp)
+            [86787] 011 Uncanny X-Men 149 (1981) (Digital) (Minutemen-Syl3ntBob).cbz (24pp) | [86788] 012 Uncanny X-Men 150 (1981) (digital) (Minutemen-Syl3ntBob).cbz (41pp)
+            020 Uncanny X-Men 151 (1981) (Digital) (Minutemen-Syl3ntBob).cbz … 006 Uncanny X-Men 166 (1983) (Digital) (Minutemen-Syl3ntBob).cbz  (16 files, pp 23-40)
+            019 Uncanny X-Men 167 (1983) (digital) (Minutemen-FactorX).cbr … 002 Uncanny X-Men 180 (1984) (digital) (Minutemen-FactorX).cbr  (14 files, pp 22-39)
+            [86927] 001 Uncanny X-Men 181 (1984) (digital).cbr (23pp) | [86928] 002 Uncanny X-Men 182 (1984) (Digital) (Zone-Empire).cbr (24pp)
+            [86938] 001 Uncanny X-Men 184 (1984) (digital) (Minutemen-Bluntman).cbr (23pp) | [86940] 003 Uncanny X-Men 185 (1984) (digital) (Minutemen-Bluntman).cbr (24pp)
+            [86941] 004 Uncanny X-Men 186 (1984) (digital) (Minutemen-FactorX).cbr (41pp) | [86942] 005 Uncanny X-Men 187 (1984) (digital) (Minutemen-Bluntman).cbr (25pp)
+            [86943] 006 Uncanny X-Men 188 (1984) (digital) (Minutemen-Bluntman).cbr (24pp) | [86962] 002 Uncanny X-Men 189 (1985) (digital) (Minutemen-FactorX).cbr (22pp)
+            007 Uncanny X-Men 190 (1985) (digital) (Minutemen-Bluntman).cbr … 005 Uncanny X-Men 197 (1985) (digital) (Minutemen-Bluntman).cbr  (8 files, pp 24-42)
+            [87009] 006 Uncanny X-Men 198 (1985) (digital) (Minutemen-FactorX).cbr (24pp) | [87012] 009 Uncanny X-Men 199 (1985) (digital) (Minutemen-FactorX).cbr (23pp)
+            [87015] 012 Uncanny X-Men 200 (1985) (digital) (Minutemen-Bluntman).cbr (42pp)
+            015 Uncanny X-Men 201 (1986) (digital) (Minutemen-FactorX).cbr … 004 Uncanny X-Men 209 (1986) (digital) (Minutemen-FactorX).cbr  (9 files, pp 23-26)
+            [87095] 002 Uncanny X-Men 210 (1986) (digital) (Minutemen-Bluntman).cbr (25pp) | [87096] 003 Uncanny X-Men 211 (1986) (digital+) (Minutemen-Syl3ntPhD).cbr (26pp)
+            [87101] 008 Uncanny X-Men 212 (1986) (digital) (Minutemen-Bluntman).cbr (24pp) | [87105] 012 Uncanny X-Men 213 (1987) (digital+) (Minutemen-Syl3ntPhD).cbr (26pp)
+            [87125] 001 Uncanny X-Men 214 (1987) (digital) (Minutemen-Bluntman).cbr (24pp) | [87126] 002 Uncanny X-Men 215 (1987) (digital+) (Minutemen-Syl3ntPhD).cbr (25pp)
+            [87127] 003 Uncanny X-Men 216 (1987) (digital) (Minutemen-Bluntman).cbr (25pp) | [87142] 001 Uncanny X-Men 217 (1987) (digital) (Minutemen-Bluntman).cbr (24pp)
+            [87143] 002 Uncanny X-Men 218 (1987) (digital+) (Minutemen-Syl3ntPhD).cbr (25pp) | [87144] 003 Uncanny X-Men 219 (1987) (digital) (Minutemen-Bluntman).cbr (25pp)
+            003 Uncanny X-Men 220 (1987) (digital+) (Minutemen-Syl3ntPhD).cbr … 003 Uncanny X-Men 227 (1988) (digital+) (Minutemen-Syl3ntPhD).cbr  (8 files, pp 25-41)
+            [87221] 007 Uncanny X-Men 228 (1988) (digital) (Minutemen-Bluntman).cbr (26pp) | [87222] 008 Uncanny X-Men 229 (1988) (digital) (Minutemen-Bluntman).cbr (23pp)
+            [87223] 009 Uncanny X-Men 230 (1988) (hybrid) (Minutemen-Syl3ntBob).cbz (25pp) | [87224] 010 Uncanny X-Men 231 (1988) (hybrid) (Minutemen-Syl3ntBob).cbz (26pp)
+            001 Uncanny X-Men 232 (1988) (digital) (Minutemen-Bluntman).cbr … 015 Uncanny X-Men 243 (1989) (digital) (Minutemen-Bluntman).cbr  (12 files, pp 24-41)
+            [87379] 002 Uncanny X-Men 245 (1989) (Digital) (AnPymGold - Empire).cbz (24pp) | [87391] 001 Uncanny X-Men 246 (1989) (Digital) (AnPymGold - Empire).cbz (23pp)
+            [87393] 003 Uncanny X-Men 248 (1989) (Digital) (Zone-Empire).cbr (23pp)
+            004 Uncanny X-Men 249 (1989) (Digital) (AnPymGold - Empire).cbz … 005 Uncanny X-Men 255 (1989) (Digital) (AnPymGold - Empire).cbz  (6 files, pp 23-24)
+            [87503] 038 Uncanny X-Men 256 (1989) (Digital) (Zone-Empire).cbr (25pp) | [87504] 039 Uncanny X-Men 257 (1990) (Digital) (Zone-Empire).cbr (24pp)
+            [87505] 040 Uncanny X-Men 258 (1990) (Digital) (Zone-Empire).cbr (25pp)
+            001 Uncanny X-Men 259 (1990) (digital+) (Minutemen-Bluntman).cbz … 001 Uncanny X-Men 264 (1990) (digital+) (Minutemen-Bluntman).cbz  (6 files, pp 25-26)
+            [87587] 002 Uncanny X-Men 265 (1990) (Digital) (Zone-Empire).cbr (24pp) | [87588] 003 Uncanny X-Men 266 (1990) (digital+) (Minutemen-Bluntman).cbz (26pp)
+            [87589] 004 Uncanny X-Men 267 (1990) (digital+) (Minutemen-Bluntman).cbz (24pp) | [87590] 005 Uncanny X-Men 268 (1990) (digital+) (Minutemen-Bluntman).cbz (24pp)
+            [87591] 006 Uncanny X-Men 269 (1990) (Digital) (Zone-Empire).cbr (23pp) | [87621] 001 Uncanny X-Men 270 (1990) (digital) (Minutemen-Phantasm).cbr (20pp)
+            [87624] 004 Uncanny X-Men 271 (1990) (digital) (Minutemen-Phantasm).cbr (23pp) | [87627] 007 Uncanny X-Men 272 (1991) (digital) (Minutemen-Phantasm).cbr (23pp)
+            001 Uncanny X-Men 273 (1991) (Digital) (Zone-Empire).cbr … 004 Uncanny X-Men 280 (1991) (Digital) (Zone-Empire).cbr  (7 files, pp 23-41)
+            [87733] 001 Uncanny X-Men 281 (1991) (digital) (Minutemen-Bluntman).cbr (24pp) | [87734] 002 Uncanny X-Men 282 (1991) (digital) (Minutemen-Bluntman).cbr (23pp)
+            [87735] 003 Uncanny X-Men 283 (1991) (digital) (Minutemen-Bluntman).cbr (23pp) | [87760] 001 Uncanny X-Men 284 (1992) (Digital) (Zone-Empire).cbr (23pp)
+            [87761] 002 Uncanny X-Men 285 (1992) (Digital) (Zone-Empire).cbr (23pp) | [87762] 003 Uncanny X-Men 286 (1992) (Digital) (Zone-Empire).cbr (22pp)
+            [87763] 004 Uncanny X-Men 287 (1992) (Digital) (Zone-Empire).cbr (24pp)
+            005 Uncanny X-Men 288 (1992) (digital) (Minutemen-Bluntman).cbr … 003 Uncanny X-Men 293 (1992) (digital) (Minutemen-Bluntman).cbr  (6 files, pp 22-23)
+            [87861] 001 Uncanny X-Men 294 (1992) (digital+) (Minutemen-Bluntman).cbr (26pp) | [87865] 005 Uncanny X-Men 295 (1992) (digital+) (Minutemen-Bluntman).cbr (25pp)
+            [87869] 009 Uncanny X-Men 296 (1993) (digital+) (Minutemen-Bluntman).cbr (25pp) | [87874] 014 Uncanny X-Men 297 (1993) (digital+) (Minutemen-Bluntman).cbr (25pp)
+            [87899] 006 Uncanny X-Men 298 (1993) (digital) (Minutemen-Phantasm).cbr (22pp) | [87900] 007 Uncanny X-Men 299 (1993) (digital) (Minutemen-Phantasm).cbr (22pp)
+            [87904] 011 Uncanny X-Men 300 (1993) (digital) (Minutemen-Phantasm).cbr (52pp) | [87950] 002 Uncanny X-Men 301 (1993) (digital) (Minutemen-Phantasm).cbr (21pp)
+            [87951] 003 Uncanny X-Men 302 (1993) (digital) (Minutemen-Phantasm).cbr (20pp) | [87952] 004 Uncanny X-Men 303 (1993) (digital) (Minutemen-Phantasm).cbr (22pp)
+            [87958] 004 Uncanny X-Men 304 (1993) (digital) (Minutemen-Phantasm).cbr (45pp) | [87979] 005 Uncanny X-Men 305 (1993) (digital) (Minutemen-Phantasm).cbr (22pp)
+            [87980] 006 Uncanny X-Men 306 (1993) (digital) (Minutemen-Bluntman).cbr (22pp) | [88019] 004 Uncanny X-Men 307 (1993) (digital) (Minutemen-Bluntman).cbr (21pp)
+            [88040] 001 Uncanny X-Men 308 (1994) (digital) (Minutemen-Bluntman).cbr (21pp) | [88043] 004 Uncanny X-Men 309 (1994) (digital) (Minutemen-Bluntman).cbr (19pp)
+            [88085] 001 Uncanny X-Men 311 (1994) (digital+) (Minutemen-Bluntman).cbr (22pp) | [88086] 002 Uncanny X-Men 312 (1994) (digital) (Minutemen-Bluntman).cbr (23pp)
+            [88087] 003 Uncanny X-Men 313 (1994) (digital+) (Minutemen-Bluntman).cbr (24pp) | [88101] 004 Uncanny X-Men 314 (1994) (digital+) (Minutemen-Bluntman).cbr (25pp)
+            [88127] 002 Uncanny X-Men 315 (1994) (digital+) (Minutemen-Bluntman).cbr (24pp) | [88130] 001 Uncanny X-Men 316 (1994) (digital) (Minutemen-Phantasm).cbr (24pp)
+            [88132] 003 Uncanny X-Men 317 (1994) (digital) (Minutemen-Phantasm).cbr (23pp) | [88158] 004 Uncanny X-Men 318 (1994) (digital) (Minutemen-Phantasm).cbr (24pp)
+            [88183] 001 Uncanny X-Men 320 (1995) (digital) (Minutemen-Phantasm).cbr (21pp) | [88185] 003 Uncanny X-Men 321 (1995) (digital) (Minutemen-Phantasm).cbr (22pp)
+            [88247] 052 Uncanny X-Men 322 (1995) (digital) (Minutemen-Bluntman).cbr (22pp) | [88261] 001 Uncanny X-Men 323 (1995) (digital) (Minutemen-Bluntman).cbr (22pp)
+            [88262] 002 Uncanny X-Men 324 (1995) (digital) (Minutemen-Bluntman).cbr (24pp) | [88292] 001 Uncanny X-Men 325 (1995) (digital) (Minutemen-Bluntman).cbr (39pp)
+            [88303] 001 Uncanny X-Men 326 (1995) (digital) (Minutemen-Bluntman).cbr (23pp) | [88320] 001 Uncanny X-Men 327 (1995) (digital) (Minutemen-Bluntman).cbr (25pp)
+            [88330] 001 Uncanny X-Men 328 (1996) (digital) (Minutemen-Bluntman).cbr (23pp) | [88352] 001 Uncanny X-Men 329 (1996) (digital) (Minutemen-Bluntman).cbr (20pp)
+            [88353] 002 Uncanny X-Men 330 (1996) (digital) (Minutemen-Bluntman).cbr (19pp) | [88367] 003 Uncanny X-Men 331 (1996) (digital) (Minutemen-Bluntman).cbr (19pp)
+            [88374] 001 Uncanny X-Men 332 (1996) (digital) (Minutemen-Bluntman).cbr (19pp) | [88393] 001 Uncanny X-Men 333 (1996) (digital) (Minutemen-Bluntman).cbr (20pp)
+            [88407] 015 Uncanny X-Men 334 (1996) (digital) (Minutemen-Bluntman).cbr (23pp) | [88412] 002 Uncanny X-Men 335 (1996) (digital) (Minutemen-Bluntman).cbr (23pp)
+            [88424] 014 Uncanny X-Men 336 (1996) (digital) (Minutemen-Bluntman).cbr (23pp) | [88442] 032 Uncanny X-Men 337 (1996) (digital) (Minutemen-Bluntman).cbr (24pp)
+            [88463] 003 Uncanny X-Men 338 (1996) (digital) (Minutemen-Bluntman).cbr (24pp) | [88495] 003 Uncanny X-Men 340 (1997) (digital) (Minutemen-Bluntman).cbr (24pp)
+            [88510] 004 Uncanny X-Men 339 (1996) (digital) (Minutemen-Bluntman).cbr (24pp) | [88556] 012 Uncanny X-Men 341 (1997) (digital) (Minutemen-Bluntman).cbr (24pp)
+            [88557] 013 Uncanny X-Men 342 (1997) (digital) (Minutemen-Bluntman).cbr (23pp) | [88578] 001 Uncanny X-Men 343 (1997) (digital) (Minutemen-Bluntman).cbr (24pp)
+            [88579] 002 Uncanny X-Men 344 (1997) (digital) (Minutemen-Bluntman).cbr (23pp) | [88597] 001 Uncanny X-Men 345 (1997) (digital) (Minutemen-Bluntman).cbr (26pp)
+            [88618] 009 Flashback - Uncanny X-Men -1 (1997) (Digital) (AnHeroGold-Empire).cbz (22pp)
+            001 Uncanny X-Men 346 (1997) (digital) (Minutemen-Bluntman).cbr … 005 Uncanny X-Men 370 (1999) (digital) (Minutemen-Bluntman).cbr  (25 files, pp 21-38)
+            [89004] 001 Uncanny X-Men 371 (1999) (digital) (Minutemen-Bluntman) .cbr (24pp) | [89031] 002 Uncanny X-Men 372 (1999) (digital) (Minutemen-Bluntman).cbr (18pp)
+            [89056] 001 Uncanny X-Men 373 (1999) (digital) (Minutemen-Bluntman).cbr (23pp) | [89057] 002 Uncanny X-Men 374 (1999) (digital) (Minutemen-Bluntman).cbr (23pp)
+            [89076] 001 Uncanny X-Men 375 (1999) (digital) (Minutemen-Bluntman).cbr (35pp) | [89096] 001 Uncanny X-Men 376 (2000) (digital) (Minutemen-Bluntman).cbr (23pp)
+            [89103] 008 Uncanny X-Men 377 (2000) (digital) (Minutemen-Bluntman).cbr (24pp) | [89116] 001 Uncanny X-Men 378 (2000) (digital) (Minutemen-Bluntman).cbr (22pp)
+            [89125] 002 Uncanny X-Men 379 (2000) (digital) (Minutemen-Bluntman).cbr (22pp) | [89130] 007 Uncanny X-Men 380 (2000) (digital) (Minutemen-Bluntman).cbr (24pp)
+            [89163] 003 Uncanny X-Men 381 (2000) (digital) (Minutemen-Bluntman).cbr (21pp) | [89164] 004 Uncanny X-Men 382 (2000) (digital) (Minutemen-Bluntman).cbr (23pp)
+            [89184] 002 Uncanny X-Men 383 (2000) (digital) (Minutemen-Bluntman).cbr (34pp) | [89187] 005 Uncanny X-Men 384 (2000) (digital) (Minutemen-Bluntman).cbr (22pp)
+            [89189] 007 Uncanny X-Men 385 (2000) (digital) (Minutemen-Bluntman).cbr (24pp) | [89192] 010 Uncanny X-Men 386 (2000) (digital) (Minutemen-Bluntman).cbr (24pp)
+            [89258] 005 Uncanny X-Men 387 (2000) (digital) (Minutemen-Bluntman).cbr (25pp) | [89275] 001 Uncanny X-Men 388 (2001) (digital) (Minutemen-Bluntman).cbr (25pp)
+            [89297] 004 Uncanny X-Men 389 (2001) (digital) (Minutemen-Bluntman).cbr (25pp) | [89314] 002 Uncanny X-Men 390 (2001) (digital) (Minutemen-Bluntman).cbr (22pp)
+            [89318] 006 Uncanny X-Men 391 (2001) (digital) (Minutemen-Bluntman).cbr (22pp) | [89335] 002 Uncanny X-Men 392 (2001) (digital) (Minutemen-Bluntman).cbr (23pp)
+            [89337] 004 Uncanny X-Men 393 (2001) (digital) (Minutemen-Bluntman).cbr (21pp) | [89352] 002 Uncanny X-Men 394 (2001) (digital) (Minutemen-Bluntman).cbr (26pp)
+            [89371] 001 Uncanny X-Men 395 (2001) (digital) (Minutemen-Bluntman).cbr (23pp) | [89372] 002 Uncanny X-Men 396 (2001) (digital) (Minutemen-Bluntman).cbr (24pp)
+            [89373] 003 Uncanny X-Men 397 (2001) (digital) (Minutemen-Bluntman).cbr (24pp) | [89374] 004 Uncanny X-Men 398 (2001) (digital) (Minutemen-Bluntman).cbr (24pp)
+            [89424] 001 Uncanny X-Men 399 (2001) (digital) (Minutemen-Bluntman).cbr (26pp) | [89425] 002 Uncanny X-Men 400 (2002) (digital) (Minutemen-Bluntman).cbr (46pp)
+            [89427] 004 Uncanny X-Men 401 (2002) (digital) (Minutemen-Bluntman).cbr (23pp) | [89428] 005 Uncanny X-Men 402 (2002) (digital) (Minutemen-Bluntman).cbr (24pp)
+            [89429] 006 Uncanny X-Men 403 (2002) (digital) (Minutemen-Bluntman).cbr (24pp) | [89430] 007 Uncanny X-Men 404 (2002) (digital) (Minutemen-Bluntman).cbr (23pp)
+            [89431] 008 Uncanny X-Men 405 (2002) (digital) (Minutemen-Bluntman).cbr (23pp) | [89432] 009 Uncanny X-Men 406 (2002) (digital) (Minutemen-Bluntman).cbr (24pp)
+            [89433] 010 Uncanny X-Men 407 (2002) (digital) (Minutemen-Bluntman).cbr (24pp) | [89434] 011 Uncanny X-Men 408 (2002) (digital) (Minutemen-Bluntman).cbr (24pp)
+            [89435] 012 Uncanny X-Men 409 (2002) (digital) (Minutemen-Bluntman).cbr (25pp) | [89566] 001 Uncanny X-Men 410 (2002) (digital) (Minutemen-Bluntman).cbr (24pp)
+            [89568] 003 Uncanny X-Men 412 (2002) (digital) (Minutemen-Bluntman).cbr (26pp) | [89569] 004 Uncanny X-Men 413 (2002) (digital) (Minutemen-PhD).cbr (25pp)
+            [89604] 003 Uncanny X-Men 414 (2002) (digital) (Minutemen-PhD).cbr (24pp) | [89605] 004 Uncanny X-Men 415 (2003) (digital) (Minutemen-PhD).cbr (24pp)
+            001 Uncanny X-Men 416 (2003) (digital) (Minutemen-Bluntman).cbr … 001 Uncanny X-Men 427 (2003) (digital) (Minutemen-Bluntman).cbr  (10 files, pp 23-37)
+            [89759] 001 Uncanny X-Men 428 (2003) (digital) (Minutemen-PhD).cbr (26pp)
+            002 Uncanny X-Men 429 (2003) (digital) (Minutemen-Bluntman).cbr … 005 Uncanny X-Men 534 (2011) (digital) (Minutemen-Bluntman).cbr  (102 files, pp 21-42)
+            [91763] 001 The Uncanny X-Men 534.1 (2011) (Digital) (Zone-Empire).cbr (27pp)
+            002 Uncanny X-Men 535 (2011) (digital) (Minutemen-Bluntman).cbr … 001 Uncanny X-Men 544 (2011) (digital) (Minutemen-Bluntman).cbr  (10 files, pp 23-27)
+            [92741] 001 Uncanny X-Men Special 01 (2014) (digital) (Minutemen-PhD).cbr (30pp) | [92960] 005 Uncanny X-Men 600 (2016) (Digital) (Zone-Empire).cbr (52pp)
+            [92965] COL Uncanny X-Men Omnibus Book 01 (2022) (Digital-Empire).cbz (826pp) | [92966] COL Uncanny X-Men Omnibus Book 02 (2022) (Digital-Empire).cbz (890pp)
+            [92967] COL Uncanny X-Men Omnibus Book 03 (2022) (Digital-Empire).cbz (1032pp) | [92968] COL Uncanny X-Men Omnibus Book 04 (2022) (Digital) (Kileko-Empire).cbz (826pp)
+            [92969] COL Uncanny X-Men Omnibus Book 05 (2023) (Digital) (Kileko-Empire).cbz (1037pp) | [93015] COL Uncanny X-Men by Austen Vol. 01 - Hope (2014) (Digital) (Kileko-Empire).cbr (147pp)
+            [93016] COL Uncanny X-Men by Austen Vol. 02 - Dominant Species (2014) (Digital) (Kileko-Empire).cbr (122pp)
+            [93017] COL Uncanny X-Men by Austen Vol. 03 - Holy War (2014) (Digital) (Kileko-Empire).cbr (184pp)
+            [93018] COL Uncanny X-Men by Austen Vol. 04 - The Draco (2014) (Digital) (Kileko-Empire).cbr (168pp)
+            [93019] COL Uncanny X-Men by Austen Vol. 05 - She Lies With Angels (2014) (Digital) (Kileko-Empire).cbr (121pp)
+            [93020] COL Uncanny X-Men by Austen Vol. 06 - Bright New Mourning (2014) (Digital) (Kileko-Empire).cbr (141pp) | [116337] Uncanny X-Men 001 (1963) (digital) (Minutemen-Bluntman).cbz (25pp)
+            [116338] Uncanny X-Men 014 (1965) (digital) (Minutemen-Bluntman).cbz (22pp)
+            Uncanny X-Men 098 (1976) (Digital) (Minutemen-Syl3ntBob).cbz … Uncanny X-Men 108 (1977) (Digital) (Minutemen-Syl3ntBob).cbz  (8 files, pp 17-19)
+            Uncanny X-Men 168 (1983) (digital) (Minutemen-FactorX).cbr … Uncanny X-Men 176 (1983) (digital) (Minutemen-FactorX).cbr  (8 files, pp 22-39)
+            [116363] Uncanny X-Men 001 (1963) (Digital) (AnHeroGold-Empire).cbr (24pp) | [116440] 01 Uncanny X-Men 278 (1991) (Digital) (Zone-Empire).cbr (24pp)
+            [116441] 02  Uncanny X-Men 279 (1991) (Digital) (Zone-Empire).cbr (24pp) | [116443] 04 Uncanny X-Men 280 (1991) (Digital) (Zone-Empire).cbr (24pp)
+            [116473] 04 Uncanny X-Men v1 307 (1993) (digital) (Minutemen-Bluntman).cbr (21pp) | [116509] 01 Uncanny X-Men 362 (1998) (digital) (Minutemen-Bluntman).cbr (23pp)
+            [116510] 03 Uncanny X-Men 363 (1999) (digital) (Minutemen-Bluntman).cbr (24pp) | [116511] 05 Uncanny X-Men 364 (1999) (digital) (Minutemen-Bluntman).cbr (24pp)
+            [116512] 01 Uncanny X-Men v1 343 (1997) (digital) (Minutemen-Bluntman).cbr (24pp) | [116513] 03 Uncanny X-Men v1 344 (1997) (digital) (Minutemen-Bluntman).cbr (23pp)
+            [116523] 03 Uncanny X-Men 366 (1999) (Digital) (Zone-Empire).cbr (25pp) | [116527] 07 Uncanny X-Men 368 (1999) (Digital) (Zone-Empire).cbr (21pp)
+            [116531] 01 Uncanny X-Men 388 (2001) (Digital) (AnHeroGold-Empire).cbz (24pp) | [116535] 05 Uncanny X-Men 389 (2001) (Digital) (AnHeroGold-Empire).cbz (24pp)
+            [116537] 07 Uncanny X-Men 390 (2001) (Digital) (AnHeroGold-Empire).cbz (21pp) | [116540] Uncanny X-Men 096 (1975) (Digital) (Minutemen-Syl3ntBob).cbz (20pp)
+            The Uncanny X-Men 475 (2006) (digital) (Minutemen-Bluntman).cbr … The Uncanny X-Men 486 (2007) (digital) (Minutemen-Bluntman).cbr  (10 files, pp 22-26)
+            [117356] Uncanny X-Men 526 (2010) (digital) (Minutemen-Bluntman).cbr (34pp)
+   ours:    ladder 1-66, 94-123, 125-534, 534.1, 535-544, 600; 396 number(s) name more than one file: 1, 14, 96, 97, 98, 100, 101, 104, 105, 106, 107, 108; ComicInfo Series: "The Uncanny X-Men"x7, "Uncanny X-Men Omnibus"x3; ComicInfo Volume: "1981"x7; ComicInfo Count: "544"x7; ComicInfo Publisher: "Marvel Comics"x7, "Marvel"x3; ComicInfo Web: "25801"x1, "25896"x1, "26105"x1, "26413"x1
+   GCD says: [92965] gcd notes 521014 (#1 of The Uncanny X-Men Omnibus): Uncanny X-Men #94-131; Giant-Size X-Men #1; Annual #3; On-sale date from Marvel Previews #30  |  gcd_reprint 521014: s1576 The X-Men (1963) #94-131 [115 stories] · s3176 Classic X-Men (1986) #1-37 [37 stories] · s18521 Marvel Masterworks: The Uncanny X-Men (2003) #1-4 [4 stories] · s2249 Giant-Size X-Men (1975) #1 [3 stories]
+             [92966] gcd_reprint 1197950: s2605 The Uncanny X-Men (1981) #142-153 [31 stories] · s1576 The X-Men (1963) #132-141 [27 stories] · s2657 Marvel Fanfare (1982) #1-4 [13 stories] · s7191 X-Men Classic (1990) #46-57 [12 stories]
+             [92967] gcd_reprint 1537786: s2758 The Official Handbook of the Marvel Universe (1983) #1-3, #5-15 [71 stories] · s2605 The Uncanny X-Men (1981) #154-175 [60 stories] · s7191 X-Men Classic (1990) #58-79 [22 stories] · s2750 Magik (Illyana and Storm Limited Series) (1983) #1-4 [8 stories]
+             [92968] gcd_reprint 2202585: s2605 The Uncanny X-Men (1981) #176-193 [47 stories] · s7191 X-Men Classic (1990) #80-97 [18 stories] · s2876 Kitty Pryde and Wolverine (1984) #1-6 [12 stories] · s69795 Marvel Age (1983) #11, #16-17, #32 [6 stories]
+             [92969] gcd_reprint 2544654: s2605 The Uncanny X-Men (1981) #194-209 [42 stories] · s7191 X-Men Classic (1990) #98-110 [13 stories] · s3028 Longshot (1985) #1-6 [12 stories] · s69795 Marvel Age (1983) #29, #31-32, #38, #43 [9 stories]
+             [93015] gcd_reprint 1357243: s71939 Uncanny X-Men (2013) #1-5 [5 stories] · s89427 Uncanny X-Men (2013) #1 [1 story]
+             [93016] gcd_reprint 1357244: s71939 Uncanny X-Men (2013) #6-11 [6 stories] · s89427 Uncanny X-Men (2013) #2 [1 story]
+             [93017] gcd_reprint 1357241: s71939 Uncanny X-Men (2013) #14, #16-18 [6 stories]
+             [93018] gcd_reprint 1357242: s71939 Uncanny X-Men (2013) #19-25 [21 stories]
+             [93019] gcd_reprint 2135825: s71939 Uncanny X-Men (2013) #26-31 [6 stories] · s89427 Uncanny X-Men (2013) #5 [1 story]
+   CV linked:      vol 3092 "The Uncanny X-Men" 1981 Marvel 405 issues; cached #142-544 (405); yearΔ 18; ratio 961/405 = 2.37; no judged range
+   CV per-file (v1): vol 3092 "The Uncanny X-Men" 1981 Marvel 405 on 958/972 files · vol 43785 "Uncanny X-Men" 2011 Marvel 20 on 2/972 files · vol 159189 "Uncanny X-Men" 2024 Marvel 21 on 1/972 files
+   CV candidates:  (= linked) · 87825 "Uncanny X-Men" 2016 Marvel 2 s78 · 40694 "Uncanny X-Men: Quarantine" 2011 Marvel 1 issue 274410 s59 · 76515 "Uncanny X-Men Masterworks" 1993 Marvel 1 issue 462768 s59 · 116708 "Uncanny X-Men Annual" 2019 Marvel 1 issue 698618 s59 · 71565 "Uncanny X-Men" 2009 Editorial Televisa 35 s55 · 69323 "Uncanny X-Men" 2013 Panini Verlag 7 s55   (v1 search)
+   CV local rip:   (= linked) · 71565 "Uncanny X-Men" 2009 Editorial Televisa 35 · 71529 "Uncanny X-Men" 2012 Editorial Televisa 14 · 57181 "Uncanny X-Men" 2013 Marvel 36 · 69323 "Uncanny X-Men" 2013 Panini Verlag 7   (rip lookup)
+   GCD per-file:   methods round2-seriesx424 ⚠ · numx411 · round2-folderx1 ⚠ · page-rematchx1  (⚠ copies a folder neighbour's series — verify); series 2605 "The Uncanny X-Men" 1981-2011 Marvel [was ongoing series] 405 on 822/972 files · series 182092 "The Uncanny X-Men" [tl-ph] 1994-1995 Mahal Kong Pilipinas, Inc. (M.K.P.I.) [ongoing series] 6 on 6/972 files · series 89426 "Uncanny X-Men" 2014-2016 Marvel [collected edition] 6 on 5/972 files · series 89427 "Uncanny X-Men" 2013-2015 Marvel [collected edition] 6 on 2/972 files
+   GCD dump:       (= per-file) · 16369 "The Uncanny X-Men" 1984-1984 Marvel [] 1 · 54196 "The Uncanny X-Men" 1990-1990 Tor Books [] 1 · 150322 "Uncanny X-Men" [en-ph] 1996-1999 Universal Records Publishing [] 9 · 78401 "Uncanny X-Men" [el-gr] 1997-? Modern Times [Μόντερν Τάιμς] [] 3   (dump lookup)
+   bridges:        gcd 2605 -> LOCG 108806 "Uncanny X-Men" support 820 · gcd 182092 -> LOCG 108806 "Uncanny X-Men" support 6 · gcd 89426 -> LOCG 174842 "Uncanny X-Men" support 6 · gcd 89426 -> OL /works/OL21067747W "Marvel now!" isbnSupport 7
+
+== S9845 Jim Butcher's The Dresden Files: Storm Front  [tier A]   keys: Jim Butcher's Dresden Files - Storm Front | Jim Butcher's Dresden Files - Stormfront | Jim Butcher's The Dresden Files - Storm Front  years 2008-2010  13 files / 8 collections
+   flags: label-ambiguous [Pending] item 107772 — the Storm Front Volume 1-2 items are single issues, not collections
+   folders: [5] Misc\The Dresden Files · [4] Misc\The Dresden Files\02 Storm Front - Volume 1 · [4] Misc\The Dresden Files\03 Storm Front - Volume 2
+   files:   [107772] COL Jim Butcher's The Dresden Files - Storm Front - Volume 1 - 01 (2008).cbr (26pp) | [107773] COL Jim Butcher's The Dresden Files - Storm Front - Volume 1 - 02 (2008).cbr (27pp)
+            [107774] COL Jim Butcher's The Dresden Files - Storm Front - Volume 1 - 03 (2009).cbr (26pp) | [107775] COL Jim Butcher's The Dresden Files - Storm Front - Volume 1 - 04 (2009).cbr (31pp)
+            [107776] COL Jim Butcher's The Dresden Files - Storm Front - Volume 2 - 01 (2009).cbr (28pp) | [107777] COL Jim Butcher's The Dresden Files - Storm Front - Volume 2 - 02 (2010).cbr (26pp)
+            [107778] COL Jim Butcher's The Dresden Files - Storm Front - Volume 2 - 03 (2010).cbr (24pp) | [107779] COL Jim Butcher's The Dresden Files - Storm Front - Volume 2 - 04 (2010).cbr (25pp)
+            [107796] Jim Butcher's Dresden Files - Storm Front 02 (of 4) (2008) (The Scangstas-DCP).cbr (27pp)
+            [107797] Jim Butcher's Dresden Files - Stormfront 03 (c2c) (2009) (NeverAngel-DCP).cbz (32pp) | [107798] Jim Butcher's The Dresden Files - Storm Front 004 (2009) (oddBot-DCP).cbz (32pp)
+            [107799] Jim Butcher's The Dresden Files - Storm Front 03 (2009) (Minutemen-Locke & Xer).cbr (27pp)
+            [107801] Jim_Butchers_The_Dresden_Files_-_Storm_Front_01_of_04_2008_Minutemen-RocZone.cbr (27pp)
+   ours:    ladder 2-4; 1 number(s) name more than one file: 3
+   CV linked:      vol 23697 "Jim Butcher's The Dresden Files: Storm Front" 2008 Dabel Brothers Productions 4 issues; cached #1-4 (4); yearΔ 0; ratio 4/4 = 1.00; no judged range
+   CV per-file (v1): vol 23697 "Jim Butcher's The Dresden Files: Storm Front" 2008 Dabel Brothers Productions 4 on 3/13 files · vol 27202 "Jim Butcher's The Dresden Files: Storm Front" 2009 Dynamite Entertainment 4 on 1/13 files
+   CV candidates:  (= linked) · 126689 "Jim Butcher's The Dresden Files: Storm Front" 2020 Dynamite Entertainment 1 issue 759278 s74 · 42541 "Jim Butcher's The Dresden Files: Storm Front: Maelstrom" 2011 Dynamite Entertainment 1 issue 290874 s73 · 69350 "Jim Butcher's Dresden Files: Ghoul Goblin" 2013 Dynamite Entertainment 1 issue 433861 s61 · 77897 "Jim Butcher's The Dresden Files: War Cry" 2014 Dynamite Entertainment 1 issue 469270 s52 · 108736 "Jim Butcher's The Dresden Files: Dog Men" 2018 Dynamite Entertainment 1 issue 660031 s52 · 41563 "Jim Butcher's The Dresden Files: Welcome to the Jungle" 2008 Dabel Brothers Productions 1 issue 281867 s50   (v1 search)
+   CV local rip:   (= linked) · 126689 "Jim Butcher's The Dresden Files: Storm Front" 2020 Dynamite Entertainment 1 issue 759278   (rip lookup)
+   GCD per-file:   methods round2-folderx2 ⚠ · numx2  (⚠ copies a folder neighbour's series — verify); series 35902 "Jim Butcher's The Dresden Files: Storm Front" 2008-2009 Dabel Brothers Productions [limited series] 4 on 4/13 files
+   GCD dump:       (= per-file) · 55645 "Jim Butcher's The Dresden Files: Storm Front" 2009-2009 Dabel Brothers Productions [] 1 · 52657 "Jim Butcher's the Dresden Files: Storm Front" 2010-2010 Dynamite Entertainment [] 3 · 56353 "Jim Butcher's The Dresden Files: Storm Front" 2011-2011 Dynamite Entertainment [] 1   (dump lookup)
+   bridges:        gcd 35902 -> LOCG 131457 "Jim Butcher's The Dresden Files: Storm Front" support 5
+
+== S99550 Rogues! v5 (2018)  [tier D]   keys: Rogues! v5 (2018)  years 2013-2013  6 files / 6 collections
+   folders: [6] Misc\Rogues!\Rogues! v5 (2018)
+   files:   [107267] COL Rogues! Volume 05 001 (2018) (digital) (Minutemen-Excelsior).cbz (26pp) | [107268] COL Rogues! Volume 05 002 (2018) (digital) (Minutemen-Excelsior).cbz (27pp)
+            [107269] COL Rogues! Volume 05 003 (2018) (digital) (Minutemen-Excelsior).cbz (28pp) | [107270] COL Rogues! Volume 05 004 (2018) (digital) (Minutemen-Excelsior).cbz (28pp)
+            [107271] COL Rogues! Volume 05 005 (2018) (digital) (Minutemen-Excelsior).cbz (27pp) | [107272] COL Rogues! Volume 05 006 (2018) (digital) (Minutemen-Excelsior).cbz (29pp)
+   CV local rip:   60302 "Rogues!" 2013 Amigo Comics 6 (via our own name without the filing suffix "Rogues!") · 71398 "Rogues!" 2014 Amigo Comics 5 (via our own name without the filing suffix "Rogues!") · 143532 "Rogues " 2018 Panini Verlag 2 (via our own name without the filing suffix "Rogues!") · 80494 "Rogues!" 2004 Dark Planet Productions Inc. 3 (via our own name without the filing suffix "Rogues!") · 141994 "Rogues" 2022 DC Comics 4 (via our own name without the filing suffix "Rogues!") · 152665 "Rogues" 2022 DC Comics 1 issue 1004602 (via our own name without the filing suffix "Rogues!")   (rip lookup)
+   GCD dump:       79316 "Rogues!" [en-es] 2013-2013 Amigo [] 6 (via our own name without the filing suffix "Rogues!") · 80881 "Rogues!" [en-es] 2014-2014 Amigo [] 5 (via our own name without the filing suffix "Rogues!") · 93451 "Rogues!" [en-es] 2014-? Amigo [] 5 (via our own name without the filing suffix "Rogues!") · 93028 "Rogues!" [en-es] 2015-2016 Amigo [] 5 (via our own name without the filing suffix "Rogues!") · 120239 "Rogues!" [en-es] 2015-? Amigo [] 4 (via our own name without the filing suffix "Rogues!") · 120240 "Rogues!" [en-es] 2018-2018 Amigo [] 6 (via our own name without the filing suffix "Rogues!")   (dump lookup)
+
+== S10239 Kaijumax  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: Kaijumax | Kaijumax Book One | Kaijumax Book Two | Kaijumax Season | Kaijumax Season Five | Kaijumax: Season Three - King of the Monstas | Kaijumax: Season Two  years 2015-2016  7 files / 2 collections
+   folders: [5] Oni Press\Kaijumax (2015) · [2] Oni Press\Kaijumax (2015)\Deluxe Editions
+   files:   [108770] COL Kaijumax Deluxe Edition Book 01 (2018) (digital-Empire).cbr (360pp) | [108771] COL Kaijumax Deluxe Edition Book 02 (2020) (digital-Empire).cbr (331pp)
+            [108772] Kaijumax Season 01 - Terror and Respect (2016) (Digital) (Mephisto-Empire).cbr (169pp) | [108773] Kaijumax Season 02 - The Seamy Underbelly (2017) (digital-Empire).cbr (158pp)
+            [108774] Kaijumax Season 03 - King of the Monstas (2018) (digital-Empire).cbr (153pp) | [108776] Kaijumax Season 05 - The Orange Mile (2021) (digital-Empire).cbr (152pp)
+            [108777] Kaijumax Season 06 - For All Mankind (2022) (digital) (DrVink).cbz (161pp)
+   ours:    ladder 1-3, 5-6; ComicInfo Series: "Kaijumax Book One"x1, "Kaijumax Book Two"x1, "Kaijumax: Season Two"x1, "Kaijumax: Season Three - King of the Monstas"x1; ComicInfo Publisher: "Oni Press"x6
+   CV linked:      vol 81257 "Kaijumax" 2015 Oni Press 6 issues; cached #1-6 (6); yearΔ 0; ratio 5/6 = 0.83; no judged range
+   CV per-file (v1): vol 81257 "Kaijumax" 2015 Oni Press 6 on 4/7 files · vol 90414 "Kaijumax: Season Two" 2016 Oni Press 6 on 1/7 files
+   CV candidates:  (= linked) · 100988 "Kaijumax Season Two: The Seamy Underbelly" 2017 Oni Press 1 issue 593344 s47 · 136481 "Kaijumax Season Five: The Orange Mile" 2021 Oni Press 1 issue 856207 s46 · 111229 "Kaijumax: King of the Monstas" 2018 Oni Press 1 issue 671416 s45 · 33785 "The Oni Press Free-For-All" 2010 Oni Press 1 issue 219616 s41 · 34859 "Oni Press Color Special 2002" 2002 Oni Press 1 issue 229093 s38 · 35127 "Oni Press Color Special 2001" 2001 Oni Press 1 issue 231796 s38   (v1 search)
+   CV local rip:   (= linked) · 122185 "Kaijumax: Season Five" 2019 Oni Press 6   (rip lookup)
+   GCD per-file:   methods round2-seriesx2 ⚠ · numx2  (⚠ copies a folder neighbour's series — verify); series 101755 "Kaijumax: Season Two" 2016-2016 Oni Press [Limited Series] 6 on 3/7 files · series 151254 "Kaijumax: Season Five" 2019-2021 Oni Press [Limited Series] 6 on 1/7 files
+   GCD dump:       (= per-file) · 88347 "Kaijumax" 2015-2016 Oni Press [] 6 · 150551 "Kaijumax" 2016-2022 Oni Press [] 6 · 151861 "Kaijumax" [fr] 2019-? Bliss Comics [] 2   (dump lookup)
+   bridges:        gcd 101755 -> LOCG 116529 "Kaijumax" support 6
+
+== S19635 The Smurfs  [tier C] · gap 52  keys: The Smurfs  years 1958-2019  29 files / 10 collections
+   folders: [28] Papercutz\The Smurfs (1958) · [1] Papercutz\The Smurfs (1958)\Extras
+   files:   [109330] The Smurfs - FCBD 2013 (Digital) (Bean-Empire).cbz (32pp) | [109339] The Smurfs (2014, FCBD) (digital) (Salem-Empire).cbr (32pp)
+            [109349] The Smurfs Vol. 00 - Smurfnapper (2010) (Digital-HD) (Bean-Empire).cbz (24pp) | [109350] The Smurfs Vol. 01 - The Purple Smurfs (2010) (Digital-HD) (Bean-Empire).cbz (58pp)
+            [109351] COL The Smurfs Vol. 02 - The Smurfs and the Magic Flute (2010) (Digital-HD) (Bean-Empire).cbz (66pp)
+            [109352] COL The Smurfs Vol. 03 - The Smurf King (2010) (Digital-HD) (Bean-Empire).cbz (65pp) | [109353] COL The Smurfs Vol. 04 - The Smurfette (2011) (Digital-HD) (Bean-Empire).cbz (65pp)
+            [109354] COL The Smurfs Vol. 05 - The Smurfs and the Egg (2011) (Digital-HD) (Bean-Empire).cbz (65pp)
+            [109355] The Smurfs Vol. 06 - The Smurfs and the Howlibird (2011) (Digital-HD) (Bean-Empire).cbz (56pp)
+            [109356] The Smurfs Vol. 07 - The Astro Smurf (2011) (Digital-HD) (Bean-Empire).cbz (58pp) | [109357] The Smurfs Vol. 08 - The Smurf Apprentice (2011) (Digital-HD) (Bean-Empire).cbz (56pp)
+            [109358] The Smurfs Vol. 09 - Gargamel and the Smurfs (2011) (digital) (Minutemen-Bean).cbz (56pp)
+            [109359] The Smurfs Vol. 10 - The Return of the Smurfette (2012) (digital) (Minutemen-Bean).cbz (58pp)
+            [109360] The Smurfs Vol. 11 - The Smurf Olympics (2012) (digital) (Minutemen-Bean).cbz (57pp) | [109361] The Smurfs Vol. 12 - Smurf vs. Smurf (2012) (digital) (Minutemen-Bean).cbz (57pp)
+            [109362] The Smurfs Vol. 13 - Smurf Soup (2012) (digital) (Salem-Empire).cbr (57pp) | [109363] The Smurfs Vol. 14 - The Baby Smurf (2013) (digital) (Bean-Empire).cbz (54pp)
+            [109364] The Smurfs Vol. 15 - Smurflings (2013) (digital) (Bean-Empire).cbz (58pp) | [109365] The Smurfs Vol. 16 - Aerosmurf (2013) (digital) (Bean-Empire).cbz (58pp)
+            [109366] The Smurfs Vol. 17 - The Strange Awakening of Lazy Smurf (2014) (Digital) (Bean-Empire).cbz (56pp)
+            [109367] The Smurfs Vol. 18 - The Finance Smurf (2014) (Digital) (Bean-Empire).cbz (49pp) | [109368] The Smurfs Vol. 19 - The Jewel Smurfer (2015) (digital) (Salem-Empire).cbr (49pp)
+            [109369] The Smurfs Vol. 20 - Doctor Smurf (2016) (digital) (Salem-Empire).cbr (49pp) | [109370] COL The Smurfs Vol. 21 - The Wild Smurf (2016) (digital) (Salem-Empire).cbr (65pp)
+            [109371] COL The Smurfs Vol. 22 - The Smurf Menace (2017) (digital) (Salem-Empire).cbr (66pp)
+            [109372] COL The Smurfs Vol. 23 - Can't Smurf Progress (2017) (Digital) (Bean-Empire).cbz (65pp)
+            [109373] COL The Smurfs Vol. 24 - The Smurf Reporter (2019) (digital) (Salem-Empire).cbr (65pp)
+            [109374] COL The Smurfs Vol. 25 - The Gambling Smurfs (2019) (digital) (Salem-Empire).cbr (66pp) | [109375] COL The Smurfs Vol. 26 - Smurfs Salad (2019) (digital) (Salem-Empire).cbr (66pp)
+   ours:    ladder 0-1, 6-20, 2013; ComicInfo Series: "The Smurfs"x3; ComicInfo Publisher: "Papercutz"x3; barcode item 109349 [{"type": "EAN13", "data": "0043016042176", "page": "(2010) 
+   GCD says: [109351] gcd_reprint 868858: s28209 Johan et Pirlouit (1954) #9 [1 story]
+             [109352] gcd_reprint 868859: s28372 Les Schtroumpfs (1963) #2 [3 stories]
+             [109353] gcd_reprint 868860: s28372 Les Schtroumpfs (1963) #3 [2 stories]
+             [109354] gcd_reprint 868861: s28372 Les Schtroumpfs (1963) #4 [4 stories]
+   CV linked:      vol 50583 "Smurfs" 2010 NBM 26 issues; cached #1-26 (26); yearΔ 52; ratio 18/26 = 0.69; no judged range; v1 per-file: same volume on 19/29 files
+   CV candidates:  (= linked) · 137961 "The Smurfs Tales" 2021 NBM ? s19 · 64113 "The Smurfs Halloween" 2010 NBM ? s19 · 62890 "The Smurfs Anthology" 2013 NBM ? s19 · 68027 "The Smurfs Christmas" 2013 NBM ? s19 · 86578 "The Smurfs & Friends" 2015 NBM ? s18 · 3150 "Smurfs" 1982 Marvel ? s0   (v1 search)
+   CV local rip:   (= linked) · 3150 "Smurfs" 1982 Marvel 3 · 34259 "Smurfs" 2010 NBM 1 issue 223499 · 64113 "The Smurfs Halloween" 2010 NBM 2 (via CV candidate name "The Smurfs Halloween") · 62890 "The Smurfs Anthology" 2013 NBM 5 (via CV candidate name "The Smurfs Anthology") · 137961 "The Smurfs Tales" 2021 NBM 4 (via CV candidate name "The Smurfs Tales")   (rip lookup)
+   GCD per-file:   series 51201 "The Smurfs" 2010-2010 NBM [one-shot] 1 on 1/29 files; methods numx1
+   GCD dump:       (= per-file) · 2664 "Smurfs" 1982-1983 Marvel [] 3 · 21585 "Smurfs" 1982-1982 Marvel [] 1 · 83492 "The Smurfs Halloween" 2010-? NBM [] 2 (via CV candidate name "The Smurfs Halloween") · 211610 "The Smurfs Anthology" 2013-? NBM [] 5 (via CV candidate name "The Smurfs Anthology") · 174741 "The Smurfs Tales" 2021-? NBM [] 10 (via CV candidate name "The Smurfs Tales")   (dump lookup)
+   bridges:        gcd 51201 -> LOCG 108191 "The Smurfs" support 1
+
+== S22593 X-O Manowar: Retribution  [tier B]   keys: X-O Manowar: Retribution  years 2020-2020  1 files / 1 collections
+   folders: [1] Valiant\X-O Manowar\X-O Manowar Classics
+   files:   [110968] COL X-O Manowar Vol. 01 - Retribution (2020) (digital) (F) (Son of Ultron-Empire).cbr (284pp)
+   ours:    judged item 110968 #0-9 conf 0.95; ComicInfo Series: "X-O Manowar: Retribution"x1; ComicInfo Publisher: "Valiant"x1
+   GCD says: [110968] gcd notes 2595719 (#1 of X-O Manowar): X-O Manowar (Acclaim / Valiant, 1992 series) #1-9, #0; X-O Database (Acclaim / Valiant, 1993 series) #1
+   CV linked:      vol 132481 "X-O Manowar: Retribution" 2020 DMG/Valiant Entertainment 1 issues issue 820623; cached #1-1 (1); yearΔ 0; ratio 0/1; 1 of 1 judged fit
+   CV candidates:  (= linked) · 26046 "X-O Manowar: Retribution" 1993 Valiant/Acclaim 1 issue 153936 s105 · 100101 "X-O Manowar" 2017 DMG/Valiant Entertainment 26 s70 · 101294 "Valiant: X-O Manowar 2017 FCBD Special" 2017 DMG/Valiant Entertainment 1 issue 594570 s66 · 82524 "X-O Manowar: Valiant 25th Anniversary Special" 2015 DMG/Valiant Entertainment 1 issue 491507 s66 · 77190 "Valiant Masters X-O Manowar: Into the Fire" 2014 DMG/Valiant Entertainment 1 issue 466550 s65 · 93714 "X-O Manowar" 2013 Panini España 3 s58   (v1 search)
+   CV local rip:   (= linked) · 26046 "X-O Manowar: Retribution" 1993 Valiant/Acclaim 1 issue 153936 · 126005 "X-O Manowar" 2020 DMG/Valiant Entertainment 9 (via CV candidate name "X-O Manowar") · 136012 "X-O Manowar" 2021 DMG/Valiant Entertainment 2 (via CV candidate name "X-O Manowar") · 100101 "X-O Manowar" 2017 DMG/Valiant Entertainment 26 (via CV candidate name "X-O Manowar") · 93714 "X-O Manowar" 2013 Panini España 3 (via CV candidate name "X-O Manowar")   (rip lookup)
+   GCD dump:       32330 "X-O Manowar [Retribution]" 1993-1993 Acclaim / Valiant [] 1 · 158147 "X-O Manowar" 2020-2021 Valiant Entertainment [] 16 (via CV candidate name "X-O Manowar") · 143552 "X-O Manowar" [de] 2019-? Schwerkraft-Verlag [] 3 (via CV candidate name "X-O Manowar") · 222605 "X-O Manowar" 2021-2021 Valiant Entertainment [] 2 (via CV candidate name "X-O Manowar") · 151862 "X-O Manowar" [fr] 2018-? Bliss Comics [] 3 (via CV candidate name "X-O Manowar") · 191454 "X-O Manowar" [fr] 2022-? Bliss Comics [] 2 (via CV candidate name "X-O Manowar")   (dump lookup)
+
+== S2862 Blade Runner 2019  [tier C] · ratio 0.08  keys: Blade Runner | Blade Runner 2019 | Blade Runner 2019 FCBD  years 2019-2021  6 files / 5 collections
+   flags: label-ambiguous [Pending] item 111858 — items 110050 and 111858 are two rips of Blade Runner 2019 Vol. 01, and a 2039 volume share
+   folders: [3] Titan Comics\Blade Runner\Blade Runner 2019 (2019) · [1] Titan Comics\Blade Runner\Blade Runner 2019 (2019)\Annuals and Specials · [1] Titan Comics\Blade Runner\Blade Runner 2019 (2019)\UHD TPBs · [1] Titan Comics\Blade Runner\Blade Runner 2039 (2023)
+   files:   [111857] Blade Runner 2019 - Free Comic Book Day (2020) (digital) (Son of Ultron-Empire).cbr (23pp)
+            [110050] COL Blade Runner 2019 Vol. 01 - Los Angeles (2019) (digital) (Son of Ultron-Empire).cbr (105pp)
+            [110051] COL Blade Runner 2019 Vol. 02 - Off World (2020) (digital) (DrVink-HD-DCP).cbz (104pp)
+            [110052] COL Blade Runner 2019 Vol. 03 - Home Again, Home Again (2021) (digital) (DrVink-HD-DCP).cbz (125pp)
+            [111858] COL Blade Runner 2019 Vol. 01 - Los Angeles (2019) (digital) (Son of Ultron II-Empire).cbr (110pp)
+            [110060] COL Blade Runner 2039 Vol. 01 - Luv (2023) (digital) (Son of Ultron-Empire).cbr (105pp)
+   ours:    ladder 2019; judged item 110060 #1-4 conf 0.95; judged item 110051 #5-8 conf 0.85; judged item 110052 #9-12 conf 0.85; ComicInfo Series: "Blade Runner 2019"x3, "Blade Runner 2019 FCBD"x1; ComicInfo Publisher: "Titan"x4
+   GCD says: [110060] gcd notes 2654808 (#1 of Blade Runner 2039): Blade Runner 2039 (Titan, 2023 series) #1-4
+   CV linked:      vol 120232 "Blade Runner 2019" 2019 Titan Comics 12 issues; cached #1-12 (12); yearΔ 0; ratio 1/12 = 0.08; 3 of 3 judged fit; v1 per-file: same volume on 5/6 files
+   CV candidates:  (= linked) · 122978 "Blade Runner 2019: Los Angeles" 2019 Titan Comics 1 issue 728398 s95 · 3133 "Blade Runner" 1982 Marvel 2 s92 · 127353 "Blade Runner" 1982 JuniorPress BV 1 issue 763476 s85 · 118772 "Riverdale FCBD Edition 2019" 2019 Archie Comics 1 issue 707862 s58 · 118764 "Lady Mechanika FCBD 2019" 2019 Benitez Productions 1 issue 707854 s58 · 118783 "Valiant: Bloodshot FCBD 2019 Special" 2019 DMG/Valiant Entertainment 1 issue 707873 s57   (v1 search)
+   CV local rip:   (= linked) · 130423 "Blade Runner 2019" 2020 Delcourt 2 · 130624 "Blade Runner 2019" 2020 Panini Verlag 3 · 3133 "Blade Runner" 1982 Marvel 2 · 127353 "Blade Runner" 1982 JuniorPress BV 1 issue 763476 · 122978 "Blade Runner 2019: Los Angeles" 2019 Titan Comics 1 issue 728398 (via CV candidate name "Blade Runner 2019: Los Angeles")   (rip lookup)
+   GCD dump:       148828 "Blade Runner 2019" [en-gb] 2019-2020 Titan [] 12 · 152805 "Blade Runner 2019" [en-gb] 2019-2021 Titan [] 3 · 157917 "Blade Runner 2019" [de] 2020-2021 Panini Deutschland [] 3 · 192427 "Blade Runner 2019" [fr] 2020-2021 Delcourt [] 3 · 229814 "Blade Runner 2019" [hu] 2021-2024 Magnum Opus [] 3 · 2647 "Blade Runner" 1982-1982 Marvel [] 2   (dump lookup)
+
+== S7700 Gold Digger  [tier C] · gap 6  keys: Gold Digger | Gold Digger 009a | Gold Digger 029a | Gold Digger 032a | Gold Digger 032b | Gold Digger 033a | Gold Digger 033b | Gold Digger 034a | Gold Digger 034b | Gold Digger 035a | Gold Digger 035b | Gold Digger 040a | Gold Digger 040b | Gold Digger 050a  years 1999-1999  55 files / 1 collections
+   folders: [54] Misc\Gold Digger\v1 · [1] Misc\Gold Digger\v2
+   files:   [105831] Gold_Digger_Special_-18a.cbr (25pp) | [105832] Gold_Digger_Special_-18b - Halloween Special.cbz (34pp) | [105833] Gold_Digger_Special_-18c - GD Adventures.cbr (27pp)
+            [105834] Gold_Digger_v0_0.cbr (29pp) | [105835] Gold_Digger_v0_1-4_Color_Remix.cbr (134pp) | [105836] Gold_Digger_v1_001_-_004_GN_02.cbr (102pp)
+            [105837] Gold_Digger_v1_005_-_008_GN_03.cbr (104pp) | [105838] Gold_Digger_v1_009a.cbr (26pp) | Gold_Digger_v1_010.cbr … Gold_Digger_v1_028.cbr  (19 files, pp 26-34)
+            [105859] Gold_Digger_v1_029a.cbr (29pp) | [105861] Gold_Digger_v1_030.cbr (30pp) | [105862] Gold_Digger_v1_031.cbr (29pp) | [105863] Gold_Digger_v1_032a.cbr (27pp)
+            [105864] Gold_Digger_v1_032b.cbr (27pp) | [105865] Gold_Digger_v1_033a.cbr (30pp) | [105866] Gold_Digger_v1_033b.cbr (26pp) | [105867] Gold_Digger_v1_034a.cbr (29pp)
+            [105868] Gold_Digger_v1_034b.cbr (26pp) | [105869] Gold_Digger_v1_035a.cbr (26pp) | [105870] Gold_Digger_v1_035b.cbr (25pp) | [105871] Gold_Digger_v1_036.cbr (30pp)
+            [105872] Gold_Digger_v1_037.cbr (27pp) | [105873] Gold_Digger_v1_038.cbr (30pp) | [105874] Gold_Digger_v1_039.cbr (28pp) | [105875] Gold_Digger_v1_040a.cbr (28pp)
+            [105876] Gold_Digger_v1_040b.cbr (28pp) | Gold_Digger_v1_041.cbr … Gold_Digger_v1_049.cbr  (9 files, pp 24-32) | [105886] Gold_Digger_v1_050a.cbr (34pp)
+            [106026] COL Gold Digger v2 035a.cbr (23pp)
+   ours:    ladder 0, 10-28, 30-31, 36-39, 41-49
+   CV linked:      vol 19589 "Gold Digger" 1993 Antarctic Press 50 issues; cached #1-50 (50); yearΔ 6; ratio 35/50 = 0.70; no judged range
+   CV per-file (v1): vol 18720 "Gold Digger" 1999 Antarctic Press 251 on 41/55 files
+   CV candidates:  (= linked) · 27333 "Gold Digger" 1992 Antarctic Press 4 s75 · 31253 "Gold Digger Annual" 1995 Antarctic Press 21 s59 · 64854 "Gold Digger Platinum" 2010 Antarctic Press 6 s59 · 97470 "Gold Digger Gold Brick" 2001 Antarctic Press 10 s58 · 51994 "The Collected Gold Digger" 1994 Antarctic Press 9 s58 · 62780 "Gold Digger: Perfect Memory" 1996 Antarctic Press 5 s58   (v1 search)
+   CV local rip:   (= linked) · 27333 "Gold Digger" 1992 Antarctic Press 4   (rip lookup)
+   GCD dump:       14582 "Gold Digger" 1999-2023 Antarctic Press [] 251 · 96756 "Gold Digger" [de] 2001-2002 Eidalon [] 8 · 96742 "Gold Digger" [de] 2003-2005 Eidalon [] 5 · 14580 "Gold Digger" 1993-1999 Antarctic Press [] 50 · 14581 "Gold Digger" 1992-1993 Antarctic Press [] 4 · 118000 "Gold Digger" [fr] 2007-2007 Wetta-Vestron [] 1   (dump lookup)
+
+== S68158 The EC Artists' Library  [tier C] · 8 volumes  keys: The EC Artists' Library  years 2012-2023  25 files / 25 collections
+   folders: [25] Fantagraphics\The EC Artists' Library (2012)
+   files:   [24976] COL The EC Artists' Library v01 - Corpse on the Imjin! and Other Stories (2012) (Digital) (TLK-EMPIRE-HD).cbr (241pp)
+            [24977] COL The EC Artists' Library v02 - Came the Dawn and Other Stories (2012) (Digital) (TLK-EMPIRE-HD).cbr (209pp)
+            [24978] COL The EC Artists' Library v03 - 50 Girls 50 and Other Stories (2013) (Digital) (TLK-EMPIRE-HD).cbr (266pp)
+            [24979] COL The EC Artists' Library v04 - 'Taint the Meat...It's the Humanity! (2013) (Digital) (TLK-EMPIRE-HD).cbr (225pp)
+            [24980] COL The EC Artists' Library v05 - Fall Guy For Murder and Other Stories (2013) (Digital) (TLK-EMPIRE-HD).cbr (210pp)
+            [24982] COL The EC Artists' Library v07 - Sucker Bait and Other Stories (2014) (Digital) (Bean-Empire).cbz (217pp)
+            [24984] COL The EC Artists' Library v09 - Judgment Day and Other Stories (2014) (Digital) (Bean-Empire).cbz (191pp)
+            [24985] COL The EC Artists' Library v10 - Bomb Run and Other Stories (2014) (Digital) (TLK-EMPIRE-HD).cbr (265pp)
+            [24986] COL The EC Artists' Library v11 - Aces High (2014) (Digital) (TLK-EMPIRE-HD).cbr (211pp)
+            [24987] COL The EC Artists' Library v12 - Spawn of Mars and Other Stories (2015) (Digital) (TLK-EMPIRE-HD).cbr (241pp)
+            [24988] COL The EC Artists' Library v13 - Grave Business and Other Stories (2015) (Digital) (TLK-EMPIRE-HD).cbr (225pp)
+            [24989] COL The EC Artists' Library v14 - Forty Whacks and Other Stories (2015) (Digital) (TLK-EMPIRE-HD).cbr (203pp)
+            [24990] COL The EC Artists' Library v15 - The High Cost of Dying and Other Stories (2016) (Digital) (TLK-EMPIRE-HD).cbr (177pp)
+            [24991] COL The EC Artists' Library v16 - The Living Mummy and Other Stories (Jack Davis) (2016) (Digital) (Bean-Empire) (Fantagraphics).cbz (225pp)
+            [24992] COL The EC Artists' Library v17 - Voodoo Vengeance and Other Stories (Johnny Craig) (2016) (Digital) (Bean-Empire).cbz (217pp)
+            [24993] COL The EC Artists' Library v18 - The Million Year Picnic and Other Stories (Will Elder) (2017) (Digital) (Bean-Empire).cbz (220pp)
+            [24994] COL The EC Artists' Library v19 - The Thing from the Grave and Other Stories (Joe Orlando) (2017) (Digital) (Bean-Empire).cbz (240pp)
+            [24995] COL The EC Artists' Library v20 - Daddy Lost His Head and Other Stories (Jack Kamen) (2017) (Digital) (Bean-Empire).cbz (185pp)
+            [24996] COL The EC Artists' Library v21 - Master Race and Other Stories (Bernie Krigstein) (2018) (Digital) (Bean-Empire).cbz (240pp)
+            [24997] COL The EC Artists' Library v22 - Death Stand and Other Stories (Jack Davis) (2018) (Digital) (Bean-Empire).cbz (277pp)
+            [24998] COL The EC Artists' Library v23 - Doctor of Horror and Other Stories (2018) (Digital) (Bean-Empire).cbz (226pp)
+            [25006] COL The EC Artists' Library v31 - Three for the Money and Other Stories (2021) (Digital) (Bean-Empire).cbz (240pp)
+            [25007] COL The EC Artists' Library v32 - Code Of Honor and Other Stories (2022) (Digital) (Lo Pan).cbr (261pp)
+            [25008] COL The EC Artists' Library v33 - Deadly Beloved and Other Stories (2023) (Digital) (Lo Pan).cbr (273pp)
+            [25009] COL The EC Artists' Library v34 - The Planetoid and Other Stories (2023) (Digital) (danke-Empire).cbz (231pp)
+   ours:    barcode item 24984 [{"type": "EAN13", "data": "9781606997277", "page": "s (2014
+   GCD says: [24984] gcd_reprint 1218639: s1065 Weird Science-Fantasy (1954) #23-25, #27-29 [6 stories] · s835 Weird Fantasy (1951) #17-22 [6 stories] · s836 Weird Science (1951) #17-22 [6 stories] · s913 Shock SuspenStories (1952) #7, #9-10 [3 stories]
+   CV per-file (v1): vol 66580 "Fall Guy For Murder and Other Stories" 2013 Fantagraphics 1 issue 422553 on 1/25 files · vol 47711 "Aces High" 2009 Prion Books 1 issue 328654 on 1/25 files · vol 87949 "The High Cost of Dying and Other Stories" 2016 Fantagraphics 1 issue 514536 on 1/25 files · vol 92757 "The Living Mummy and Other Stories" 2016 Fantagraphics 1 issue 542704 on 1/25 files
+   CV local rip:   (= per-file) · 9435 "Aces High" 1999 Gemstone 5 (via CV name "Aces High") · 1728 "Aces High" 1955 EC 5 (via CV name "Aces High")   (rip lookup)
+   GCD dump:       10223 "Aces High" 1999-1999 Gemstone [] 5 (via CV name "Aces High") · 101609 "Aces High" 1988-1988 Russ Cochran [] 1 (via CV name "Aces High") · 1149 "Aces High" 1955-1955 EC [] 5 (via CV name "Aces High")   (dump lookup)
+
+== S66314 Wonder Woman (1942)  [tier C] · 341 files  keys: Wonder Woman (1942) | Wonder Woman v1 (1942)  years 1942-2021  341 files / 12 collections
+   folders: [289] DC\_Wonder Woman\_Completed Series\02 Wonder Woman v1 (1942) · [9] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\72 During Infinite crisis\01 Wonder Woman - Mission's End · [7] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\130 Wonder Woman - War torn aftermath and Rebirth leadup · [5] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\121 Wonder Woman - War Torn · [5] DC\_Wonder Woman\_Completed Series\08 Wonder Woman v5.2-v1 (2018)\Variant Covers · [4] DC\_Wonder Woman\_Completed Series\08 Wonder Woman v5.2-v1 (2018) · [3] DC\_Wonder Woman\Absolute Wonder Woman v1 (2024) · [3] DC\_Wonder Woman\_Completed Series\08 Wonder Woman v5.2-v1 (2018)\Annuals and Specials · [3] DC\_Wonder Woman\_Trades, Minis and One-shots\Wonder Woman By George Perez (2016) · [2] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\098 Wonder Woman (23.1-35) · [2] DC\_Wonder Woman\_Completed Series\02 Wonder Woman v1 (1942)\Annuals and Specials · [2] DC\_Wonder Woman\_Trades, Minis and One-shots · [2] DC\_Wonder Woman\_Trades, Minis and One-shots\Wonder Woman By John Byrne (2017) · [1] DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\080 Faster Friends · [1] DC\#DC Events\000 Major DC Events - As seen from Oa - Green Lantern Corps\102 Our Worlds at War · [1] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\47 Superman - Sacrifice (After OMAC project 3) · [1] DC\#DC Events\Event Leviathan (2019)\Tie-ins · [1] DC\_Wonder Woman\_Trades, Minis and One-shots\Wonder Woman By Greg Rucka (2016)
+   files:   [15837] 09 Wonder Woman v2 125  Death Watch.cbz (25pp) | [16030] 04 Wonder Woman v2 172  Her Mothers Daughter.cbz (23pp) | [17159] 04 Wonder_Woman_v2__219.cbr (22pp)
+            [17362] Wonder Woman v2 #218.cbz (25pp) | Wonder Woman v2 #219.cbr … Wonder Woman v2 #224.cbr  (6 files, pp 23-25) | [17369] Wonder Woman v2 #225.cbz (25pp)
+            [17370] Wonder Woman v2 #226.cbz (25pp) | [18610] Wonder Woman 034.cbr (23pp) | [18611] Wonder Woman 035.cbr (24pp) | [18958] Wonder Woman # 36.cbz (22pp)
+            [18959] Wonder Woman # 37.cbz (21pp) | [18960] Wonder Woman # 38.cbr (23pp) | [18961] Wonder Woman # 39.cbz (22pp) | [18962] Wonder Woman # 40.cbz (26pp)
+            [19038] Wonder Woman 046 (2016) (Digital-Empire).cbr (26pp) | [19039] Wonder Woman 047 (2016) (Digital-Empire).cbr (28pp)
+            [19040] Wonder Woman 048 (2016) (2 covers) (Digital) (Zone-Empire).cbr (27pp) | [19041] Wonder Woman 049 (2016) (Digital) (Thornn-Empire).cbr (27pp)
+            [19042] Wonder Woman 050 (2016) (Digital) (Thornn-Empire).cbr (46pp) | [19043] Wonder Woman 051 (2016) (Digital) (Thornn-Empire).cbr (25pp)
+            [19044] Wonder Woman 052 (2016) (Digital) (Thornn-Empire).cbr (31pp) | [19172] Wonder Woman Annual 003 (2019) (Digital-Empire).cbr (39pp)
+            [75466] Absolute Wonder Woman 001 (2024) (digital) (Son of Ultron-Empire).cbr (32pp) | [75467] Absolute Wonder Woman 002 (2025) (digital) (Son of Ultron-Empire).cbr (28pp)
+            [75468] Absolute Wonder Woman 003 (2025) (digital) (Son of Ultron-Empire).cbr (30pp) | [75522] Wonder Woman 199 (1972) (c2c) (w 14 pgs original art) (Kracalactaka-a nonny moose).cbz (68pp)
+            [75523] Wonder Woman Special 001 (1992) (Digital) (Shadowcat-Empire).cbz (38pp)
+            Wonder Woman 001 (1942) (Digital) (Shadowcat-Empire).cbz … Wonder Woman 006 (1943) (Digital) (Shadowcat-Empire).cbz  (6 files, pp 48-58) | [75530] Wonder Woman 007 (1943).cbz (60pp)
+            Wonder Woman 008 (1944) (digital) (Glorith-HD).cbz … Wonder Woman 015 (1945) (digital) (Glorith-HD).cbz  (8 files, pp 44-46) | [75539] Wonder Woman 016 (1946) (c2c).cbr (52pp)
+            [75540] Wonder Woman 017 (1946) (c2c).cbr (53pp) | [75541] Wonder Woman 018 (1946) (c2c).cbr (52pp) | [75542] Wonder Woman 019 (1946) (c2c).cbr (52pp)
+            [75543] Wonder Woman 020 (1946) (c2c) (trolleycarz).cbz (52pp) | [75544] Wonder Woman 021 (1947) (c2c).cbr (52pp) | [75545] Wonder Woman 022 (1947) (c2c).cbr (52pp)
+            [75546] Wonder Woman 023 (1947) (c2c) (Twit-DCP).cbr (52pp) | [75547] Wonder Woman 024 (1947) (c2c).cbr (54pp) | [75548] Wonder Woman 025 (1947) (c2c) (trolleycarz).cbr (52pp)
+            [75549] Wonder Woman 026 (1947) (c2c) (trolleycarz).cbz (52pp) | [75550] Wonder Woman 027 (1948) (c2c).cbr (52pp) | [75551] Wonder Woman 028 (1948) (c2c).cbz (52pp)
+            [75552] Wonder Woman 029 (1948) (c2c).cbr (52pp) | [75553] Wonder Woman 030 (1948) (c2c).cbr (52pp) | [75554] Wonder Woman 031 (1948) (c2c) (Teto7totoro).cbr (53pp)
+            [75555] Wonder Woman 032 (1948) (c2c) (Twit-DCP).cbr (52pp) | [75556] Wonder Woman 033 (1949) (c2c).cbr (52pp) | [75557] Wonder Woman 034 (1949) (c2c).cbz (52pp)
+            [75558] Wonder Woman 035 (1949) (c2c).cbz (52pp) | [75559] Wonder Woman 036 (1949) (c2c) (Suffering Sappho).cbr (52pp) | [75560] Wonder Woman 037 (1949) (c2c).cbr (53pp)
+            [75561] Wonder Woman 038 (1949) (c2c).cbr (52pp) | [75562] Wonder Woman 039 (1950) (c2c).cbr (52pp) | [75563] Wonder Woman 040 (1950) (Garth Scan).cbr (49pp)
+            Wonder Woman 041 (1950) (Digital) (Shadowcat-Empire).cbz … Wonder Woman 050 (1952) (Digital) (Shadowcat-Empire).cbz  (10 files, pp 37-46) | [75574] Wonder Woman 051 (1952) (c2c).cbr (44pp)
+            [75575] Wonder Woman 052 (1952) (c2c).cbr (44pp) | [75576] Wonder Woman 053 (1952) (c2c).cbr (44pp) | [75577] Wonder Woman 054 (1952) (c2c) (Twit-DCP).cbr (44pp)
+            [75578] Wonder Woman 055 (1952) (c2c).cbr (44pp) | [75579] Wonder Woman 056 (1952) (c2c).cbr (45pp) | [75580] Wonder Woman 057 (1953) (c2c) (Marionette-undetermined).cbr (44pp)
+            [75581] Wonder Woman 058 (1953) (c2c).cbr (46pp) | [75582] Wonder Woman 059 (1953) (c2c) (Twit-DCP).cbr (36pp) | [75583] Wonder Woman 060 (1953) (c2c).cbr (36pp)
+            [75584] Wonder Woman 061 (1953) (c2c).cbr (36pp) | [75585] Wonder Woman 062 (1953) (c2c) (Jormungand-DCP).cbr (37pp) | [75586] Wonder Woman 063 (1954) (c2c).cbr (37pp)
+            [75587] Wonder Woman 064 (1964) (c2c).cbr (37pp) | [75588] Wonder Woman 065 (1954) (c2c) (SufferingSappho).cbr (36pp) | [75589] Wonder Woman 066 (1954) (c2c) (Marionette-DCP).cbr (37pp)
+            [75590] Wonder Woman 067 (1954) (c2c) (Trollycarz).cbr (36pp) | [75591] Wonder Woman 068 (1954) (c2c).cbr (36pp) | [75592] Wonder Woman 069 (1954) (c2c).cbr (36pp)
+            [75593] Wonder Woman 070 (1954) (c2c).cbr (36pp) | [75594] Wonder Woman 071 (1955) (c2c).cbr (36pp) | [75595] Wonder Woman 072 (1955) (c2c) (Marionette-DCP).cbr (37pp)
+            [75596] Wonder Woman 073 (1955) (c2c).cbr (36pp) | [75597] Wonder Woman 074 (1955) (c2c).cbr (36pp) | [75598] Wonder Woman 075 (1955) (c2c).cbr (36pp)
+            [75599] Wonder Woman 075 (1988) (SpookyResin).cbr (32pp) | [75600] Wonder Woman 076 (1955) (Digital) (Shadowcat-Empire).cbz (30pp)
+            [75601] Wonder Woman 077 (1955) (c2c) (Marionette-DCP).cbr (37pp) | [75602] Wonder Woman 078 (1955) (c2c) (rkay7).cbr (36pp) | [75603] Wonder Woman 079 (1956) (c2c).cbr (36pp)
+            [75604] Wonder Woman 080 (1956) (c2c).cbr (36pp) | [75605] Wonder Woman 081 (1956) (c2c).cbr (36pp) | [75606] Wonder Woman 082 (1956) (c2c).cbr (36pp)
+            [75607] Wonder Woman 083 (1956) (c2c).cbr (36pp) | [75608] Wonder Woman 084 (1956) (c2c) (Garth Scan).cbr (37pp) | [75609] Wonder Woman 085 (1956) (c2c).cbr (36pp)
+            [75610] Wonder Woman 086 (1956) (c2c).cbr (36pp) | [75611] Wonder Woman 087 (1957) (c2c) (Marionette-DCP).cbr (37pp) | [75612] Wonder Woman 088 (1957) (c2c).cbr (36pp)
+            [75613] Wonder Woman 089 (1957) (c2c).cbr (36pp) | [75614] Wonder Woman 089 (1957).cbr (33pp) | [75615] Wonder Woman 090 (1957) (c2c).cbr (36pp)
+            [75616] Wonder Woman 091 (1957) (c2c).cbr (36pp) | [75617] Wonder Woman 092 (1957) (c2c).cbr (36pp) | [75618] Wonder Woman 093 (1957) (c2c).cbr (36pp)
+            [75619] Wonder Woman 094 (1957) (c2c) (Flattermann).cbr (37pp) | [75620] Wonder Woman 095 (1958) (c2c).cbz (36pp) | [75621] Wonder Woman 096 (1958) (c2c).cbz (37pp)
+            [75622] Wonder Woman 097 (1958) (c2c).cbr (36pp) | Wonder Woman 098 (1958) (digital) (Glorith-HD).cbz … Wonder Woman 104 (1958) (digital) (Glorith-HD).cbz  (7 files, pp 27-28)
+            [75630] Wonder Woman 105 (1959) (digital-Empire).cbr (26pp) | [75631] Wonder Woman 106 (1959) (digital) (Glorith-HD).cbz (27pp)
+            [75632] Wonder Woman 107 (1959) (digital) (Glorith-HD).cbz (27pp) | [75633] Wonder Woman 108 (1959) (digital) (Glorith-HD).cbz (26pp)
+            [75634] Wonder Woman 109 (1959) (digital) (Glorith-HD).cbz (27pp) | [75635] Wonder Woman 110 (1959) (digital) (Glorith-HD).cbz (27pp)
+            [75636] Wonder Woman 111 (1960) (c2c) (Flattermann).cbr (37pp) | [75637] Wonder Woman 112 (1959) (digital) (Glorith-HD).cbz (28pp)
+            [75638] Wonder Woman 113 (1960) (Digital) (Shadowcat-Empire).cbz (27pp) | [75639] Wonder Woman 114 (1960) (digital) (Glorith-HD).cbz (30pp)
+            [75640] Wonder Woman 115 (1960) (digital) (Glorith-HD).cbz (29pp) | [75641] Wonder Woman 116 (1960) (digital) (Glorith-HD).cbz (29pp)
+            [75642] Wonder Woman 117 (1960) (digital) (Glorith).cbz (29pp) | [75643] Wonder Woman 118 (1960) (c2c).cbr (36pp) | [75644] Wonder Woman 119 (1960) (digital) (Glorith-HD).cbz (29pp)
+            [75645] Wonder Woman 120 (1960) (digital) (Glorith).cbz (29pp) | [75646] Wonder Woman 121 (1961) (digital) (Glorith-HD).cbz (29pp)
+            [75647] Wonder Woman 122 (1961) (digital) (Glorith-HD).cbz (30pp) | [75648] Wonder Woman 123 (1961) (Digital) (Shadowcat-Empire).cbz (28pp)
+            Wonder Woman 124 (1961) (digital) (Glorith-HD).cbz … Wonder Woman 143 (1963) (digital) (Glorith-HD).cbz  (20 files, pp 27-30)
+            [75669] Wonder Woman 144 (1964) (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (17pp) | [75670] Wonder Woman 145 (1964) (c2c).cbr (36pp)
+            [75671] Wonder Woman 146 (1964) (c2c) (Jaklar-DCP).cbr (36pp) | [75672] Wonder Woman 147 (1964) (c2c) (Jaklar-DCP).cbr (36pp) | [75673] Wonder Woman 148 (1964) (c2c).cbr (36pp)
+            Wonder Woman 149 (1964) (digital) (Glorith-HD).cbz … Wonder Woman 174 (1967) (digital) (Glorith-HD).cbz  (26 files, pp 24-29) | [75700] Wonder Woman 175 (1968) (digital-Empire).cbr (25pp)
+            [75701] Wonder Woman 176 (1968) (digital-Empire).cbr (24pp) | [75702] Wonder Woman 177 (1968) (digital-Empire).cbr (22pp)
+            Wonder Woman 178 (1968) (digital) (Minutemen-Drunk Monk).cbr … Wonder Woman 185 (1969) (digital) (Minutemen-Drunk Monk).cbr  (8 files, pp 24-26)
+            [75711] Wonder Woman 186 (1970) (digital) (Son of Ultron-Empire).cbr (25pp) | [75712] Wonder Woman 187 (1970) (digital) (Son of Ultron-Empire).cbr (25pp)
+            [75713] Wonder Woman 188 (1970) (digital) (Son of Ultron-Empire).cbr (27pp)
+            Wonder Woman 189 (1970) (digital-Empire).cbr … Wonder Woman 197 (1971) (digital-Empire).cbr  (9 files, pp 23-40) | [75723] Wonder Woman 198 (1972) (Digital) (Shadowcat-Empire).cbz (37pp)
+            [75724] Wonder Woman 199 (1972) (c2c) (Kracalactaka-a nonny moose).cbz (52pp) | [75725] Wonder Woman 199 (1972) (digital-Empire).cbr (38pp)
+            [75726] Wonder Woman 200 (1972) (digital-Empire).cbr (37pp) | [75727] Wonder Woman 201 (1972) (digital-Empire).cbr (24pp) | [75728] Wonder Woman 202 (1972) (digital-Empire).cbr (25pp)
+            [75729] Wonder Woman 203 (1972) (digital-Empire).cbr (25pp) | [75730] Wonder Woman 204 (1973) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [75731] Wonder Woman 205 (1973) (Digital) (Shadowcat-Empire).cbz (24pp) | [75732] Wonder Woman 206 (1973) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [75733] Wonder Woman 207 (1973) (Digital) (Shadowcat-Empire).cbz (23pp) | [75734] Wonder Woman 208 (1973) (Digital) (Shadowcat-Empire).cbz (21pp)
+            [75735] Wonder Woman 209 (1974) (Digital) (Shadowcat-Empire).cbz (21pp) | [75736] Wonder Woman 210 (1974) (Digital) (Shadowcat-Empire).cbz (21pp)
+            [75737] Wonder Woman 211 (1974) (Digital) (Shadowcat-Empire).cbz (85pp) | [75738] Wonder Woman 212 (1974) (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (22pp)
+            [75739] Wonder Woman 213 (1974) (digital-Empire).cbr (21pp) | [75740] Wonder Woman 214 (1974) (digital-Empire).cbr (83pp) | [75741] Wonder Woman 215 (1975) (digital-Empire).cbr (21pp)
+            [75742] Wonder Woman 216 (1975) (digital-Empire).cbr (21pp) | [75743] Wonder Woman 217 (1975) (digital-Empire).cbr (50pp)
+            Wonder Woman 218 (1975) (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz … Wonder Woman 223 (1976) (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz  (6 files, pp 20-22)
+            Wonder Woman 224 (1976) (digital-Empire).cbr … Wonder Woman 230 (1977) (digital-Empire).cbr  (7 files, pp 17-18) | [75757] Wonder Woman 231 (1977) (Marionette-DCP).cbr (35pp)
+            [75758] Wonder Woman 232 (1977) (c2c) (DCP).cbz (37pp) | [75759] Wonder Woman 233 (1977).cbz (20pp) | [75760] Wonder Woman 234 (1977) (misterjoel).cbz (20pp)
+            [75761] Wonder Woman 235 (1977).cbr (36pp) | [75762] Wonder Woman 236 (1977).cbz (19pp) | [75763] Wonder Woman 237 (1977) (misterjoel).cbz (20pp)
+            [75764] Wonder Woman 238 (1977) (libertybelle).cbr (21pp) | [75765] Wonder Woman 239 (1978) (libertybelle).cbr (21pp) | [75766] Wonder Woman 240 (1978) (Syd-DCP).cbr (20pp)
+            [75767] Wonder Woman 241 (1978) (Syd-DCP).cbr (20pp) | [75768] Wonder Woman 242 (1978).cbr (36pp) | [75769] Wonder Woman 243 (1978) (misterjoel).cbr (20pp)
+            [75770] Wonder Woman 244 (1978) (libertybelle).cbr (21pp) | [75771] Wonder Woman 245 (1978) (Troia).cbr (20pp) | [75772] Wonder Woman 246 (1978) (Troia).cbr (20pp)
+            [75773] Wonder Woman 247 (1978) (misterjoel).cbr (29pp) | [75774] Wonder Woman 248 (1978) (Troia).cbr (28pp) | [75775] Wonder Woman 249 (1978) (c2c) (Gird-browndog).cbr (43pp)
+            [75776] Wonder Woman 250 (1978) (Brent-NW) (HaCsA).cbr (20pp) | Wonder Woman 285 (1981) (digital-Empire).cbr … Wonder Woman 293 (1982) (digital-Empire).cbr  (9 files, pp 25-29)
+            [75786] Wonder Woman 300 (1983) (Digital) (AnHeroGold-Empire).cbz (74pp) | [75787] Wonder Woman 301 (1983) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [75788] Wonder Woman 302 (1983) (Digital) (Shadowcat-Empire).cbz (24pp) | [75789] Wonder Woman 306 (1983) (digital-Empire).cbr (24pp)
+            [75790] Wonder Woman 307 (1983) (digital-Empire).cbr (24pp) | [75791] Wonder Woman 308 (1983) (digital-Empire).cbr (24pp) | [75792] Wonder Woman 309 (1983) (digital-Empire).cbr (24pp)
+            [75793] Wonder Woman 310 (1983) (digital-Empire).cbr (24pp)
+            Wonder Woman, 1984-01-00 (#311) (Digital) (AnHeroGold-Empire).cbz … Wonder Woman, 1986-02-00 (#329) (Digital) (AnHeroGold-Empire).cbz  (19 files, pp 24-37)
+            [76127] Wonder Woman 001 - Wonder Woman Day Special Edition (2017) (digital-Empire).cbr (23pp)
+            [76128] Wonder Woman 001 Free Comic Book Day 2017 Special Edition (2017) (digital-Empire).cbr (22pp) | [76129] Wonder Woman Annual 003 (2019) (Digital-Empire).cbr (39pp)
+            [76130] Wonder Woman 073 (2019) (Variant Cover - Jenny Frison) (digital-Empire).cbr (1pp) | [76131] Wonder Woman 074 (2019) (Variant Cover - Jenny Frison) (digital-Empire).cbr (1pp)
+            [76132] Wonder Woman 075 (2019) (Variant Cover - Jenny Frison) (digital-Empire).cbr (1pp) | [76133] Wonder Woman 076 (2019) (Variant Cover - Jenny Frison) (Digital) (Phantom-SWA).cbr (1pp)
+            [76134] Wonder Woman 077 (2019) (Variant Cover - Jenny Frison) (Digital) (Phantom-SWA).cbr (1pp)
+            [76135] COL Wonder Woman Vol. 01 - The Just War (2019) (digital) (Son of Ultron-Empire).cbr (189pp)
+            [76137] COL Wonder Woman Vol. 02 - Love is a Battlefield (2020) (digital) (Son of Ultron-Empire).cbr (187pp)
+            [76139] COL Wonder Woman Vol. 04 - The Four Horsewomen (2021) (digital) (Son of Ultron-Empire).cbr (318pp)
+            [76140] COL Wonder Woman Vol. 05 - Lords & Liars (2021) (digital) (Son of Ultron-Empire).cbr (256pp)
+            [76311] COL Wonder Woman - 80 Years of the Amazon Warrior the Deluxe Edition (2021) (digital) (Son of Ultron-Empire).cbr (415pp)
+            [76348] COL Wonder Woman Book 1 - The Last True Hero (2020) (digital) (Son of Ultron-Empire).cbr (401pp)
+            [76350] COL Wonder Woman by George Perez Vol. 01 (2016) (digital) (Son of Ultron-Empire).cbr (347pp)
+            [76351] COL Wonder Woman by George Perez Vol. 02 (2017) (digital) (Son of Ultron-Empire).cbr (289pp)
+            [76352] COL Wonder Woman by George Perez Vol. 03 (2018) (digital) (Son of Ultron-Empire).cbr (263pp)
+            [76357] COL Wonder Woman by Greg Rucka Vol. 02 (2017) (digital) (Son of Ultron-Empire).cbr (308pp)
+            [76359] COL Wonder Woman by John Byrne Vol. 01 (2017) (digital) (Son of Ultron-Empire).cbr (324pp)
+            [76360] COL Wonder Woman by John Byrne Vol. 02 (2018) (digital) (Son of Ultron-Empire).cbr (323pp)
+   ours:    ladder 1-250, 285-293, 300-302, 306-329; 35 number(s) name more than one file: 1, 2, 3, 34, 35, 36, 37, 38, 39, 40, 46, 47; judged item 76350 #1-14 conf 0.95; judged item 76351 #15-20 conf 0.95; judged item 76352 #25-35 conf 0.95; judged item 76135 #58-65 conf 0.97; judged item 76348 #63-76 conf 0.95; judged item 76137 #66-73 conf 0.97; judged item 76359 #101-115 conf 0.97; judged item 76360 #115-124 conf 0.95; judged item 76357 #206-217 conf 0.97; judged item 76140 #759-769 conf 0.97; ComicInfo Series: "Wonder Woman"x154, "Wonder Woman Annual"x2, "Wonder Woman Special"x1, "Wonder Woman Book 1"x1; ComicInfo Volume: "1942"x95, "2016"x4, "2"x2, "1992"x1; ComicInfo Count: "310"x74, "329"x8, "226"x2; ComicInfo Publisher: "DC Comics"x85, "DC"x73; ComicInfo Web: "108796"x1, "108797"x1, "108798"x1, "108799"x1
+   GCD says: [76135] gcd notes 2026898 (#1 of Wonder Woman): Wonder Woman (DC, 2016 series) #58-65  |  gcd_reprint 2026898: s103460 Wonder Woman (2016) #58-65 [33 stories]
+             [76137] gcd notes 2136522 (#2 of Wonder Woman): Wonder Woman (DC, 2016 series) #66-73  |  gcd_reprint 2136522: s103460 Wonder Woman (2016) #66-73 [33 stories]
+             [76139] gcd notes 2218065 (#4 of Wonder Woman): Wonder Woman (DC, 2016 series) #82-83, #750-758; Wonder Woman Annual (DC, 2017 series) #3-4  |  gcd_reprint 2218065: s103460 Wonder Woman (2016) #82-83, #750-758 [33 stories] · s114405 Wonder Woman Annual (2017) #3-4 [6 stories]
+             [76140] gcd notes 2246217 (#5 of Wonder Woman): Wonder Woman #759-769  |  gcd_reprint 2246217: s103460 Wonder Woman (2016) #759-769 [46 stories]
+             [76348] gcd notes 2132187 (#1 of Wonder Woman): Wonder Woman (DC, 1987 series) #63-64, #66-76; Wonder Woman Special (DC, 1992 series) #1; Wonder Woman Annual (DC, 1988 series) #3  |  gcd_reprint 2132187: s3396 Wonder Woman (1987) #63-64, #66-76 [28 stories] · s3827 Wonder Woman Annual (1988) #3 [2 stories] · s4425 Wonder Woman Special (1992) #1 [2 stories]
+             [76350] gcd notes 2132187 (#1 of Wonder Woman): Wonder Woman (DC, 1987 series) #63-64, #66-76; Wonder Woman Special (DC, 1992 series) #1; Wonder Woman Annual (DC, 1988 series) #3  |  gcd_reprint 2132187: s3396 Wonder Woman (1987) #63-64, #66-76 [28 stories] · s3827 Wonder Woman Annual (1988) #3 [2 stories] · s4425 Wonder Woman Special (1992) #1 [2 stories]  |  ⚠ RANGE CONTRADICTED by GCD notes (multi): judged #1-14, GCD says Wonder Woman (DC, 1987 series) #63-64, #66-76; Wonder Woman Special (DC, 1992 series) #1; Wonder Woman Annual (DC, 1988 series) #3
+             [76351] gcd notes 1696199 (#2 of Wonder Woman): Wonder Woman (2016 series) #2, #4, #6, #8, #10, #12  |  gcd_reprint 1696199: s103460 Wonder Woman (2016) #2, #4, #6, #8, #10, #12, #14 [29 stories]  |  ⚠ RANGE CONTRADICTED by GCD notes (offset): judged #15-20, GCD says Wonder Woman (2016 series) #2, #4, #6, #8, #10, #12
+             [76352] gcd_reprint 1774419: s103460 Wonder Woman (2016) #15, #17, #19, #21, #23-25 [22 stories]
+             [76357] gcd notes 1720071 (#2 of Wonder Woman by Greg Rucka): Wonder Woman (DC, 1987 series) #206-217; The Flash (DC, 1987 series) #219  |  gcd_reprint 1720071: s3396 Wonder Woman (1987) #206-217 [25 stories] · s3358 Flash (1987) #219 [2 stories]
+             [76359] gcd notes 1708146 (#1 of Wonder Woman by John Byrne): Wonder Woman (DC, 1987 series) #101-114  |  gcd_reprint 1708146: s3396 Wonder Woman (1987) #101-114 [29 stories]  |  ⚠ RANGE CONTRADICTED by GCD notes (count): judged #101-115, GCD says Wonder Woman (DC, 1987 series) #101-114
+             [76360] gcd_reprint 1822558: s3396 Wonder Woman (1987) #115-124 [20 stories] · s3827 Wonder Woman Annual (1988) #5-6 [5 stories] · s5976 JLA Secret Files (1997) #1 [1 story] · s14740 Wonder Woman Gallery (1996) (unnumbered) [1 story]
+   CV linked:      vol 18525 "Wonder Woman" 1942 DC Comics 329 issues; cached #1-329 (329); yearΔ 0; ratio 329/329 = 1.00; 9 of 10 judged fit; v1 per-file: same volume on 335/341 files
+   CV local rip:   (= linked) · 60884 "Wonder Woman" 1972 Holt, Rinehart and Winston 1 issue 401095 (via our own name without the filing suffix "Wonder Woman") · 78334 "Wonder Woman" 1972 Crown Publishers 1 issue 471244 (via our own name without the filing suffix "Wonder Woman") · 28295 "Wonder Woman" 1981 Murray Comics 1 issue 174117 (via our own name without the filing suffix "Wonder Woman") · 3824 "Wonder Woman" 1987 DC Comics 228 (via our own name without the filing suffix "Wonder Woman") · 147775 "Wonder Woman" 1988 Ediciones Zinco 38 (via our own name without the filing suffix "Wonder Woman")   (rip lookup)
+   GCD per-file:   methods numx311 · round2-seriesx1 ⚠ · collapse-rematchx1  (⚠ copies a folder neighbour's series — verify); series 277 "Wonder Woman" 1942-1986 DC [was ongoing series] 329 on 282/341 files · series 61069 "Wonder Woman" 2011-2016 DC [was ongoing series] 55 on 7/341 files · series 103460 "Wonder Woman" 2016-2023 DC [was ongoing series] 134 on 5/341 files · series 14622 "Wonder Woman" [en-ca] 1948-1948 National Comics Publications of Canada Ltd [] 5 on 4/341 files
+   GCD dump:       (= per-file) · 182531 "Wonder Woman" [en-za] 1963-1963 Mimosa Comics [] 3 (via our own name without the filing suffix "Wonder Woman") · 26525 "Wonder Woman" 1972-1972 Holt, Rinehart and Winston [] 1 (via our own name without the filing suffix "Wonder Woman") · 30820 "Wonder Woman" 1972-1972 Crown Publishers [] 1 (via our own name without the filing suffix "Wonder Woman")   (dump lookup)
+   bridges:        gcd 277 -> LOCG 111086 "Wonder Woman" support 301 · gcd 61069 -> LOCG 111086 "Wonder Woman" support 18 · gcd 103460 -> LOCG 111086 "Wonder Woman" support 14

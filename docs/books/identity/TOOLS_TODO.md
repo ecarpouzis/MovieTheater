@@ -127,3 +127,12 @@
     numbering; (d) an open ContainmentFlag; (e) 21+ files; (f) touched by a landed merge or split since it was
     decided. Print totals per signal and the de-duplicated shelf count. Feed format = what next_batch.py can emit as
     a tier-S2 batch. Signal-free 0.9 shelves stay at 0.9 and are DONE.
+# Added 2026-09-22 after R-029
+24. **lookup.py --gcd-issues <series>** (and `--gcd-series "<name>"`): GCD issue rows with page counts, ISBNs and
+    notes. The R-029 reader had to hand-write read-only SQLite on the GCD dump for exactly this.
+25. **gcdnotes.py: detect stamped rows.** The `GCD says` row comes from the item's stored GCD issue link, which on
+    DC/Marvel trade lines is often another book's row (WW by Pérez Vol. 01-03, Uncanny by Austen 1-6 showed the 2013
+    Bendis trades). Compare the row's series name / issue title / page count to the file; print `⚠ stored GCD row is
+    another book` instead of a contradiction, and re-count the 66 contradictions without the stamped ones.
+26. (Decide later) a `C` grammar for disjoint ranges of one run (`#435-436,442-443`) so the N workaround in the
+    brief can retire; needs checker + apply + curated-spans-import support.
