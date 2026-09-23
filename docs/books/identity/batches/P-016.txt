@@ -1,0 +1,642 @@
+## Conventions for this batch (35 shown of 126 matched; 328 in LEDGER.md; 3 shelf/shelves: folder:vn-year ×2 · folder:sequel-subfolder ×2 · folder:events ×2 · folder:bucket ×2 · folder:graphic-novels ×2 · kind:trade-only ×1 · pub:marvel ×1 · folder:facsimile ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-242] (2 shelf/shelves) pub:dc pub:gold-key-dell pub:marvel sig:legacy-stamp sig:stamp
+- Gold Key / Dell / Western funny-animal and Gold Key Star Trek: CV keeps ONE volume across the Dell→Western handover
+  while GCD splits by era (the Daffy Duck / Flintstones / Bugs Bunny shape); a later DC/Marvel volume stamped by
+  issue-number coincidence is the wrong-relaunch trap again.
+[L-298] (2 shelf/shelves) kind:collected-line kind:foreign pass:item pub:marvel pub:papercutz-nbm pub:valiant sig:barcode sig:legacy-stamp sig:probe sig:trade-link
+- ITEM PASS (X-052..X-055, the tail): a book's trade record is often findable on its FULL subtitle when the packet's
+  per-file probe returned nothing (~40 recovered: X-Men Legacy: Legion, House of M omnibuses …); Deluxe Editions on
+  Valiant / Marvel shelves usually have their own count-1 record the per-file leg mis-picked. ISBN 978-2 / 978-2-375
+  is French even on English-titled shelves. A Papercutz line can be a SELECTIVE translation of a longer foreign line
+  (Ralph Azham v01-04 = tomes 3/5/8/10) — match by chapter title, never by ordinal.
+[L-007] (2 shelf/shelves) folder:bucket
+- Crossovers published as separate one-shots (Fear on Four Worlds) are separate GCD records per title.
+[L-124] (2 shelf/shelves) folder:bucket folder:vn-year pass:item sig:trade-link
+- A `<Title> vN (<year>)` folder holding only a collected edition is the RUN's folder — the run takes the S
+  line, the trade an `I` line; a `_Trades` / `_Minis` / `_One-shots` bucket is the opposite (the book's own
+  count-1 record, minted by BOTH providers, wins).
+[L-175] (2 shelf/shelves) folder:bucket folder:events pass:item
+- In the chronology folders the RUN rule stands over the bucket rule: `S` = the numbered run, the tie-in's collected
+  record goes on the `I` line (B-072/073, ~90 shelves); the book's own record is the S only where no numbered run exists.
+[L-191] (2 shelf/shelves) folder:sequel-subfolder folder:vn-year pass:revisit sig:stale-flag
+- On a wave-2 `NN <Title> vN (<year>)` split-out shelf (ids S94xxx+) an `overlap-in-series` flag is stale by
+  construction — the colliding Vol. 01s now sit on sibling shelves (13 of 14 in R-016); the lead dismisses the flag.
+[L-217] (2 shelf/shelves) folder:bucket sig:collision sig:comicinfo
+- A generic-title bucket shelf ("Robin" S14733) holding scattered issues of an already-dedicated volume takes
+  `merge-with` that volume's shelf even when its ComicInfo tags match on their own.
+[L-272] (2 shelf/shelves) folder:vn-year
+- A ripper's `vNN` can be offset by one from the album's own subtitle (Carthago Adventures) — the title decides.
+[L-281] (2 shelf/shelves) folder:bucket folder:events folder:vn-year
+- A chronology folder's ORDER prefix ("04 Dragon Ball - Full Color Freeza Arc v01") gets read by the per-file num
+  matcher as the ISSUE number — v01 in folder "04" linked to issue #4; the true mapping is the shelf's own vNN by
+  ordinal. Any "NN Title vNN" bucket naming is this trap.
+[L-290] (2 shelf/shelves) folder:sequel-subfolder pass:item sig:stamp
+- A spin-off filed in its own subfolder on the parent's shelf gets the PARENT's v01 ids stamped by the per-file
+  matcher (Rent-a-(Really Shy!)-Girlfriend on Rent-A-Girlfriend) — `N no-record` (or the shelf note), never the
+  parent's record; it is a misfiling for the lead.
+[L-011] (1 shelf/shelves) folder:events pub:dc
+- DC event folders: the leading number is a READING-ORDER position, and the same book is filed again under its own
+  title folder — n issues × 2 files is one run.
+[L-014] (3 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-015] (1 shelf/shelves) folder:events pub:dc
+- DC `#DC Events` read-order folders hold a SECOND rip of issues that also live on the title's own shelf — the
+  source of nearly every DC ratio 2.00; residue, not a second run. Event umbrellas (GCD "Convergence", 9) get
+  handed to two-issue tie-in shelves — the hull shape.
+[L-027] (1 shelf/shelves) kind:foreign pub:marvel
+- Foreign-language stored links are a cluster (Berserk → Glénat's French volume while our 41 books are Dark
+  Horse's; The Marvels → Panini España; Avengers → Panini Verlag): the English pair is in the rip/dump every time.
+[L-028] (1 shelf/shelves) folder:variant-covers pub:marvel
+- Marvel `\Variant Covers` 1pp packs (always of #1) are the whole of every ratio 1.2–2.0 on modern Marvel shelves.
+[L-029] (1 shelf/shelves) kind:trade-only pub:dark-horse pub:image pub:marvel sig:probe sig:trade-link
+- On trade-only Marvel / Image / Dark Horse shelves the "CV linked" block is the block that misleads (it is the
+  collected record); `lookup.py` by the run's name finds the run when the packet names only the collected record.
+[L-031] (1 shelf/shelves) kind:collected-line kind:trade-only pub:dc pub:marvel sig:collision sig:legacy-stamp sig:trade-link
+- A trade of a run that lives on ANOTHER shelf (a Batman Vol. 2 trade whose run is the Batman 2016 shelf):
+  `S` at the run's ids + `F merge-with=<that shelf's sid>` ONLY when that shelf is unambiguous (one title, one
+  numbering) and the trade's range falls inside its ladder. When the run is split across legacy-numbered shelves
+  (Amazing Spider-Man), keep a multi-volume collected LINE both legs carry at 0.9 + `N` naming the run, and a
+  lone count-1 TPB record at 0.7 + `N`. Never link a trade shelf to an ongoing it would merge five shelves into.
+[L-033] (1 shelf/shelves) pub:marvel sig:collision sig:probe
+- Krakoa-era Marvel folders are cut into several shelves by the CREATOR name in trade filenames (New Mutants v4
+  → Hickman / Brisson / Vita Ayala; "X-Men by Gerry Duggan"): trades of ONE run in ONE folder → the run is the
+  identity, siblings take `F merge-with`; `lookup.py` by the run's plain name supplies ids the packet lacks. A
+  stored link carried across by the creator name alone (X-Men by Duggan → "Marauders by Duggan") is `wrong-cv-link`.
+[L-034] (1 shelf/shelves) folder:events pub:marvel sig:round2
+- `_X-Men Complete Chronology` / `_Marvel Major Event Chronology` folders re-file the same books a second and
+  third time — every ratio 2.00 there, never a second run. Crossover blocks get handed one member's series by
+  `round2-folder` (four Age of Apocalypse shelves → "X-Man", a 76-issue hull).
+[L-036] (1 shelf/shelves) folder:skottie folder:variant-covers pub:marvel
+- A shelf that is ONLY 1pp variant covers (Skottie Young) still identifies its comic → run ids + `F partial-rip`.
+[L-040] (1 shelf/shelves) folder:bucket folder:events pub:dc pub:papercutz-nbm pub:scout pub:titan pub:valiant sig:twin
+- NBM / Papercutz album lines and Scout one-shots carry TWIN adjacent GCD rows for one book (120209/120210) —
+  cap at 0.9 and name both. Titan's Doctor Who "Year N" volumes number continuously across a Doctor (a ladder
+  starting at #6 is complete). A publisher's read-order crossover folder (Titan `Lost Dimension`, Valiant
+  `_Chronological Valiant`) = DC's `#DC Events` shape.
+[L-051] (1 shelf/shelves) pub:bongo pub:dc pub:small-press sig:probe
+- GCD spellings that hide a hit: Bongo's annual is plainly "Treehouse of Horror" (5435); Miller's 1983 series is
+  "Rōnin" (2721); Comico's Primer is "Primer" (14288). DC's Blackest Night revival issues sit in the ORIGINAL
+  series (Power of SHAZAM! 5246 runs 1995-2010).
+[L-052] (1 shelf/shelves) pub:dc sig:stamp sig:twin
+- The per-file CV matcher picks the LEGACY volume for every New 52 shelf (Batman 1940, Wonder Woman 1942, Nightwing
+  1996, Catwoman 1993) because it matched by issue number — the stored link on a 2011 shelf that names a 1940
+  volume is `wrong-cv-link`, the 2011 volume is in the rip.
+[L-055] (1 shelf/shelves) pub:dc pub:small-press sig:probe
+- ComicVine splits ONE line across two spellings of its own ("Batman Arkham: X" vs "Batman: Arkham: X"). GCD
+  prefixes titles the packet probes without ("Batman: Catwoman Defiant", "The Blue Beetle" for the 2006 series).
+[L-059] (1 shelf/shelves) pub:dc
+- A truncated parsed key reaching a different comic ("Riddle", "Batman - Death", "Once Upon") is `wrong-cv-link`.
+[L-060] (1 shelf/shelves) folder:vn-year pub:caliber pub:dark-horse pub:image pub:marvel sig:stamp
+- A digital re-release can cut each collected volume into chapter files restarting at 1 (Dark Horse's 2014-15
+  Kabuki: seven `vNN` folders = seven different published comics from Caliber / Image / Marvel; v1 stamped one
+  Image volume on all 44 files). Read the chapter files as the runs they came from.
+[L-068] (1 shelf/shelves) kind:foreign pub:ablaze pub:cinebook pub:europe-comics pub:lion-forge-magnetic pub:papercutz-nbm
+- Europe Comics may have an ENGLISH PRINT sister edition in GCD (SelfMadeHero, Cinebook, NBM, Fanfare,
+  Magnetic Press, Ablaze) — the same text, not a translation — which is the better second leg than the
+  original-language row.
+[L-077] (1 shelf/shelves) folder:facsimile kind:archive kind:foreign pub:marvel sig:round2
+- `_Marvel Facsimile Editions`: all 24 single-book shelves carry the same wrong `round2-folder` GCD series
+  (185205 Moon Knight, Panini France). Foreign-language legs (Panini España/Brasil/France/Deutschland, a Greek
+  edition) are rejected on the publisher column alone.
+[L-082] (1 shelf/shelves) pub:dc sig:comicinfo
+- A Glorith-HD rip's ComicInfo `Web` id CAN be a ComicVine ISSUE id of the stored volume (599834, DC 100-Page
+  Spectacular) — Glorith's Web ids are never GCD ids, but check them against the CV rip.
+[L-093] (1 shelf/shelves) pub:dc pub:ec-archives pub:mad sig:comicinfo
+- GCD labels every modern MAD book "EC" where ComicVine and ComicInfo say DC — the same publisher's imprint, not a
+  rejection.
+[L-106] (1 shelf/shelves) pub:marvel pub:star-wars sig:trade-link
+- The count-1-trade-as-stored-link artefact runs at Marvel too (14 Star Wars shelves in one batch); a collected
+  series whose count equals exactly our two books is the matches-our-holdings trap.
+[L-111] (1 shelf/shelves) pub:marvel pub:star-wars sig:trade-link
+- Star Wars "Marvel Edition" digital trades (Kileko/Zone/Shan-Empire): both providers mint a same-title count-1
+  record the year the trade shipped beside the 4-6 issue run; the stored link is the trade on 36 of 150 shelves.
+[L-112] (1 shelf/shelves) pub:dark-horse pub:marvel pub:star-wars sig:trade-link
+- Episodes IV/V film adaptations have no series record of their own (they sit INSIDE Star Wars 1977); the 2015
+  collected record carries them with an `N`. Episodes I/II/III/VI take the Dark Horse / 1983 Marvel original.
+[L-116] (1 shelf/shelves) folder:vn-year pub:marvel sig:comicinfo sig:legacy-stamp sig:stamp
+- Old Marvel folders cut into `vN (year)` shelves: the per-file matcher picks the wrong DECADE by issue number
+  (Amazing Adventures 1961 on the 1970 run, Ka-Zar 1997 on 1974, Kull 1971 on 1982/1983). The folder's `vN (year)`
+  suffix and ComicInfo `Volume` beat it every time.
+[L-119] (1 shelf/shelves) pub:marvel
+- GCD filing quirks that recovered legs: drop "Comics" from a title, "and" for "&", "Digest" appended, reversed
+  or reordered name lists ("Deadpool / Amazing Spider-Man / Hulk: Identity Wars").
+
++91 more matched entries not shown: L-121, L-127, L-129, L-130, L-133, L-136, L-137, L-142, L-144, L-169, L-172, L-173, L-174, L-187, L-193, L-195, L-197, L-198, L-199, L-206, L-207, L-210, L-211, L-212, L-214, L-216, L-218, L-220, L-222, L-237, L-241, L-245, L-256, L-257, L-261, L-265, L-297, L-299, L-311, L-313, L-319, L-324, L-325, L-327, L-328, L-016, L-032, L-054, L-064, L-065, L-085, L-097, L-099, L-101, L-113, L-114, L-123, L-128, L-150, L-164, L-181, L-194, L-252, L-262, L-269, L-274, L-288, L-291, L-293, L-310, L-013, L-043, L-050, L-072, L-088, L-089, L-095, L-096, L-118, L-125, L-157, L-159, L-163, L-177, L-204, L-253, L-264, L-267, L-273, L-292, L-294 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S4752 The Amazing Spider-Man  [split]  857 files / 19 collections  decided in R-056 (R)
+   decided: R 4752 | VERIFIED ON THE FILES: the shelf still holds a co-equal second run sharing numbers #20-58 with the 1963 run — "02 Amazing Spider-Man v2 (1999)" = "Amazing Spider-Man 020 (2000)" .. "058 (2003)" (39 files, items 94470-94508, 20-40pp) plus chronology second rips "006 Amazing Spider-Man 024 (2000)" (89259) and "Amazing Spider-Man 030-035 (2001)" (116685-116690) = the 1999 relaunch CV 78701 "The Amazing Spider-Man" (Marvel 1999, 58, cached) / GCD 11288 #20-58; they are why #20-58 name two files each. The 1963 run CV 2127 (cached #1-441 + #500-700.x, 651) cannot also be their identity
+   F 4752 split-needed | MOVE items 94470-94508 (the 39 files of "02 Amazing Spider-Man v2 (1999)", #20-58, 2000-2003), 89259 ("006 Amazing Spider-Man 024 (2000)") and 116685, 116686, 116687, 116688, 116689, 116690 ("Amazing Spider-Man 030-035 (2001)" second rips) -> new key 'Amazing Spider-Man v2 (1999)' cv=78701 gcd=11288; everything else STAYS (the 1963 #1-441, "03 ... v1 (2003)" #500-700 incl. 654.1/679.1/699.1, Annuals 1-42, facsimiles, 1pp covers, the Dan Slott trades)
+   N 4752 the gcd choice after the split: the kept shelf's S should be cv=2127 gcd=1570 (GCD 1570 = #1-441, 441 numbers + 379 per-file links; GCD 11288 covers only the #500-700 stretch and the trades, 241 links) — R-050's gcd=11288 described only the Dan Slott trades; residue that caps it at 0.9: the Annuals (CV 2189 / GCD 1635), four Facsimile Editions, Annual 040-042 (2014/2015 relaunch annuals, R-053 N)
+   N 4752 CV 78701 has no CvVolume row (named from the rip): the new shelf will need F needs-fetch cv=78701 at its first S line
+   N 4752 deferred merges INTO this shelf once its split lands and its S line carries cv=2127: S103779 (One Moment in Time = ASM #638-641) and S16089 (Death of the Stacys = ASM #88-90 + #121-122) are one-run reprints (run-wins); S16178 is NOT (it reprints Sensational Spider-Man, see S16178)
+   N 93917 GCD row 2775610 indexes only one story (#619); the book's full range (likely #617-621) is not in our data, so no C line
+   nearby: S20826 "Untold Tales of Spider-Man" 29f [shares gcd=5302 (collected by item 93929) — S cv=5562 gcd=5302 (A-025 0.9)] keys: "Untold Tales of Spider-Man" | "Untold Tales of Spider-Man: Strange Encounter"
+   nearby: S15334 "The Sensational Spider-Man" 13f [named S16178 in the decision's R/N lines (now S15334) — S cv=5788 gcd=5557 (B-059 0.95)] keys: "Sensational Spider-Man" | "Spider-Man by Todd Dezago & Mike Wieringo"
+   nearby: S95052 "The Amazing Spider-Man" 13f [shares cv=73420, shares gcd=80405 — S cv=73420 gcd=80405 (R-053 0.9)] keys: "Amazing Spider-man v3 (2014)"
+   nearby: S883 "Amazing Spider-Man Family" 8f [shares gcd=31600 (collected by item 93914) — S cv=22669 gcd=31600 (A-025 0.95)] keys: "Amazing Spider-Man Family"
+   nearby: S1692 "Avenging Spider-Man" 4f [shares gcd=61993 (collected by item 93930) — S cv=43884 gcd=61993 (C-042 0.9)] keys: "Avenging Spider-Man" | "Avenging Spider-Man: The Complete Collection"
+   nearby: S16234 "Spider-Man: The Gauntlet" 3f [shares gcd=228525 — S gcd=228525 (C-050 0.9)] keys: "Spider-Man: The Gauntlet"
+   nearby: S64135 "Amazing Spider-Man" 3f [shares cv=2189, shares gcd=1635 — S cv=2189 gcd=1635 (C-050 0.7)] keys: "Amazing Spider-Man (2021)"
+   nearby: S16089 "Spider-Man: Death of the Stacys" 2f [named S16089 in the decision's R/N lines — S cv=33398 gcd=27784 (R-056 0.95)] keys: "Spider-Man - Death of the Stacys"
+   nearby: S42165 "The Amazing Spider-Man Annual" 2f [shares cv=2189, shares gcd=1635 — S cv=2189 gcd=1635 (C-050 0.95)] keys: "The Amazing Spider-Man Annual"
+   nearby: S911 "Spider-Man: Swing Shift Director's Cut" 1f [shares gcd=33240 (collected by item 93907) — S cv=31249 gcd=33240 (D-014 0.9)] keys: "Amazing Spider-man Swing Shift"
+   nearby: S16070 "Spider-Island Spotlight" 1f [shares gcd=69142 (collected by item 93925) — S cv=64146 gcd=69142 (B-072 0.95)] keys: "Spider-Island Spotlight"
+   nearby: S16097 "Spider-Man: Kraven's First Hunt" 1f [shares cv=31702, shares gcd=176664 — S cv=31702 gcd=176664 (B-071 0.9)] keys: "Spider-Man - Kraven's First Hunt"
+   nearby: S16116 "Amazing Spider-Man: Spider-Island" 1f [shares cv=45175, shares gcd=178463 — S cv=45175 gcd=178463 (B-072 0.9)] keys: "Spider-Man - Spider-Island"
+   nearby: S21016 "Venom Super Special" 1f [shares gcd=5303 (collected by item 93907) — S cv=22554 gcd=5303 (B-060 0.95)] keys: "Venom Super Special"
+   nearby: S103779 "Spider-Man: One Moment in Time (2011)" 1f [named S103779 in the decision's R/N lines — S gcd=75393 (R-057 0.9)] keys: "Spider-Man: One Moment in Time (2011)"
+   nearby: S95053 "The Amazing Spider-Man" 164f [title — S cv=142577 gcd=184161 (R-057 0.9)] keys: "Amazing Spider-man v6 (2022)"
+   nearby: S95051 "The Amazing Spider-Man" 31f [title — S cv=112161 gcd=126774 (R-057 0.9)] keys: "Amazing Spider-Man v5 (2018)"
+   nearby: S34339 "The Amazing Spider-Man" 13f [title] keys: "Amazing Spider-Man" | "The Amazing Spider-Man"
+   nearby: S103529 "Amazing Spider-Man v4 (2015)" 11f [title — S cv=85076 gcd=92892 (R-053 0.95)] keys: "Amazing Spider-Man v4 (2015)"
+   nearby: S103519 "The Amazing Spider-Man '97 (1997)" 1f [title — S cv=60438 gcd=20854 (R-044 0.95)] keys: "The Amazing Spider-Man '97 (1997)"
+   nearby: S863 "Amazing Spider-Man: Worldwide" 10f [title+1 — S cv=89345 gcd=99294 (B-059 0.9)] keys: "Amazing Spider-Man - Worldwide"
+   nearby: S842 "Amazing Spider-Man: Beyond" 5f [title+1 — S cv=142077 gcd=180479 (A-025 0.9)] keys: "Amazing Spider-Man - Beyond" | "The Amazing Spider-Man Beyond"
+   nearby: S864 "Amazing Spider-Man 2099 Companion" 2f [title+1 — S cv=128891 gcd=176129 (B-059 0.95)] keys: "Amazing Spider-Man 2099 Companion"
+   nearby: S900 "Amazing Spider-Man: Amazing Grace" 2f [title+1 — S cv=93365 gcd=105638 (B-059 0.95)] keys: "Amazing Spider-Man.1 - Amazing Grace" | "Amazing Spider-Man: Amazing Grace"
+   nearby: S848 "Amazing Spider-Man: Hooky" 1f [title+1 — S cv=47832 gcd=65039 (A-025 0.95)] keys: "Amazing Spider-Man - Hooky"
+   nearby: S850 "Spider-Man: Masques" 1f [title+1 — S cv=44977 gcd=74104 (B-059 0.95)] keys: "Amazing Spider-Man - Masques"
+   nearby: S854 "Spider-Man: Perceptions" 1f [title+1 — S cv=49870 gcd=74108 (B-059 0.95)] keys: "Amazing Spider-Man - Perceptions" · (+1 more by title)
+   keys now: "Amazing Spider-Man v1 (1963)" x440 · "Amazing Spider-Man v1 (2003)" x212 · "Amazing Spider-Man (1963)" x141 · "Amazing Spider-Man v2 (1999)" x39 · "Dan Slott Spider-Man" x19 · "The Amazing Spider-Man (1963)" x5 · "Amazing Spider-man (1963)" x1
+   groups (title x folder): 39
+   G1 "Amazing Spider-Man" in Marvel\_Marvel Facsimile Editions — 4 file(s), numbers 238, 252, 254, 347, pp 36-37; cv per-file 150412x1, 118373x1, 2127x1; gcd per-file 184317x1, 144187x1, 210099x1; key 'Amazing Spider-Man (1963)'
+      e.g. Amazing Spider-Man 238 - Facsimile Edition (2022) (Digital) (Shadowcat-Empire).cbz
+        83015 #238 2022 36pp · 83016 #252 2019 36pp · 83018 #254 2024 37pp · 83027 #347 2020 36pp
+   G2 "Amazing Spider-Man" in Marvel\_Marvel Facsimile Editions\Variant Covers — 5 file(s), numbers 257, 260-263, pp 1-1; cv per-file 2127x5; key 'Amazing Spider-Man (1963)'
+      e.g. Amazing Spider-Man 257 (2024) (Facsimile Edition Tony Daniel Variant) (Digital) (MikeNY76).cbz
+        83101 #257 2024 1pp · 83102 #260 2024 1pp · 83103 #261 2024 1pp · 83104 #262 2024 1pp · 83105 #263 2024 1pp
+   G3 "Amazing Spider-Man Annual" in Marvel\_Spider-Man\__Amazing Spider-Man\00 Annuals and Specials — 38 file(s), numbers 1-22, 24-26, 29-30, 32-42, pp 23-74; cv per-file 2189x30, 2127x5, 95808x2; gcd per-file 1635x25, 172683x8, 109549x2; key 'Amazing Spider-Man (1963)'
+      e.g. Amazing Spider-Man Annual 001 (1964) (Digital) (TLK-EMPIRE-HD).cbr
+        93849 #1 1964 74pp · 93850 #2 1965 27pp · 93851 #3 1966 23pp · 93852 #4 1967 52pp · 93853 #5 1968 49pp · 93854 #6 1969 54pp · 93855 #7 1970 67pp · 93856 #8 1971 66pp · 93857 #9 1973 52pp
+        93858 #10 1976 37pp · 93859 #11 1977 36pp · 93860 #12 1978 44pp · 93861 #13 1979 36pp · 93862 #14 1980 36pp · 93863 #15 1981 31pp · 93864 #16 1982 39pp · 93865 #17 1983 40pp
+        93866 #18 1984 40pp · 93867 #19 1985 41pp · 93868 #20 1986 40pp · 93869 #21 1987 44pp · 93870 #22 1988 52pp · 93872 #24 1990 56pp · 93873 #25 1991 55pp · 93874 #26 1992 55pp
+        93877 #29 1995 56pp · 93878 #30 1996 56pp · 93881 #32 1999 37pp · 93882 #33 2000 40pp · 93883 #34 2001 39pp · 93884 #35 2008 39pp · 93885 #36 2009 39pp · 93886 #37 2010 40pp
+        93887 #38 2011 34pp · 93888 #39 2012 44pp · 93889 #40 2015 29pp · 93890 #41 2017 36pp · 93891 #42 2018 41pp
+   G4 "Amazing Spider-man" in Marvel\_Spider-Man\__Amazing Spider-Man\00 Annuals and Specials — 1 file(s), numbers 10, pp 1-1; cv per-file 2127x1; key 'Amazing Spider-man (1963)'
+      [93848] Amazing Spider-man 010 (Alternate Ditko Cover Only) (Nodge).cbr (1pp)
+   G5 "Dan Slott Spider-Man" in Marvel\_Spider-Man\__Amazing Spider-Man\00 TPBs\Dan Slott Era — 19 file(s), 19 COL, pp 102-390; cv per-file 31706x3, 31702x1, 31703x1; gcd per-file 59908x2, 71799x1, 176664x1; key 'Dan Slott Spider-Man'
+      [93907] COL Dan Slott Spider-Man Vol. 01 - Brand New Day Vol. 01 - Brand New Day (2008) (Digital) (F2) (Kileko-Empire).cbz (196pp)
+         own record cv 31706 / gcd s59908 "Spider-Man: Brand New Day" (issue 858684) COLLECTS: gcd=11288 The Amazing Spider-Man (1999) #546-551 · gcd=24030 Free Comic Book Day 2007 (Spider-Man) (2007) #1 · gcd=5303 Venom Super Special (1995) #1 · gcd=33240 Spider-Man: Swing Shift Director's Cut (2008) #1
+      [93908] COL Dan Slott Spider-Man Vol. 02 - Brand New Day Vol. 02 (2009) (Digital) (F2) (Kileko-Empire).cbz (167pp)
+         own record cv 31706 / gcd s59908 "Spider-Man: Brand New Day" (issue 858685) COLLECTS: gcd=11288 The Amazing Spider-Man (1999) #552-558
+      [93909] COL Dan Slott Spider-Man Vol. 03 - Brand New Day Vol. 03 (2009) (Digital-SD) (Kileko-Empire).cbr (127pp)
+         own record cv 31706 / gcd s71799 "Spider-Man: Brand New Day" (issue 1070757) COLLECTS: gcd=11288 The Amazing Spider-Man (1999) #559-563
+      [93910] COL Dan Slott Spider-Man Vol. 04 - Kraven's First Hunt (2009) (Digital) (Zone-Empire).cbr (102pp)
+         own record cv 31702 / gcd s176664 "Spider-Man: Kraven's First Hunt" (issue 2267354) COLLECTS: gcd=11288 The Amazing Spider-Man (1999) #564-567 · gcd=37037 Spider-Man: Brand New Day - Extra (2008) #1
+      [93911] COL Dan Slott Spider-Man Vol. 05 - New Ways To Die (2009) (Digital) (F) (Kileko-Empire).cbz (175pp)
+         own record cv 31703 / gcd s113428 "Spider-Man: New Ways to Die" (issue 2384608) COLLECTS: gcd=11288 The Amazing Spider-Man (1999) #568-573 · gcd=69156 Marvel Spotlight: Spider-Man - Brand New Day (2008) (unnumbered)
+      [93912] COL Dan Slott Spider-Man Vol. 07 - Death and Dating (2009) (Digital) (Kileko-Empire).cbr (171pp)
+         own record cv 31700 / gcd s223095 "Spider-Man: Death and Dating" (issue 2729480) COLLECTS: gcd=11288 The Amazing Spider-Man (1999) #578-583 · gcd=36686 Amazing Spider-Man Annual (2008) (unnumbered) · gcd=59906 Spider-Man: Death and Dating (2009) (unnumbered)
+      [93913] COL Dan Slott Spider-Man Vol. 09 - 24-7 (2010) (Digital) (Kileko-Empire).cbr (153pp)
+         own record cv 30964 / gcd s215244 "Spider-Man: 24/7" (issue 2656521) COLLECTS: gcd=11288 The Amazing Spider-Man (1999) #589-594 · gcd=40934 Amazing Spider-Man: Extra! (2008) #2-3
+      [93914] COL Dan Slott Spider-Man Vol. 11 - Died In Your Arms Tonight (2012) (Digital) (Zone-Empire).cbr (174pp)
+         own record cv 32422 / gcd s161937 "Spider-Man: Died in Your Arms Tonight" (issue 2127405) COLLECTS: gcd=11288 The Amazing Spider-Man (1999) #600-601 · gcd=31600 Amazing Spider-Man Family (2008) #7 · gcd=36686 Amazing Spider-Man Annual (2008) #36
+      [93916] COL Dan Slott Spider-Man Vol. 14 - The Gauntlet Vol. 01 - Electro and Sandman (2010) (Digital) (Kileko-Empire).cbr (177pp)
+         own record cv 32192 / gcd s228525 "Spider-Man: The Gauntlet" (issue 2775144) COLLECTS: gcd=11288 The Amazing Spider-Man (1999) #612-616 · gcd=42178 Dark Reign: The List - Amazing Spider-Man (2010) #1 · gcd=40659 Web of Spider-Man (2009) #2 · gcd=228574 Spider-Man: The Gauntlet (2010) #1  ⚠ the stored GCD row looks like another book — these are ITS contents, not probed
+      [93917] COL Dan Slott Spider-Man Vol. 15 - The Gauntlet Vol. 02 - Rhino and Mysterio (2010) (Digital) (Kileko-Empire).cbr (136pp)
+         own record cv 32699 / gcd s228574 "Spider-Man: The Gauntlet" (issue 2775610) COLLECTS: gcd=11288 The Amazing Spider-Man (1999) #619  ⚠ the stored GCD row looks like another book — these are ITS contents, not probed
+      [93921] COL Dan Slott Spider-Man Vol. 22 - Big Time (2011) (Digital) (Zone-Empire).cbr (147pp)
+         own record cv 39086 / gcd s67153 "Spider-Man: Big Time" (issue 1108253) COLLECTS: gcd=11288 The Amazing Spider-Man (1999) #648-651
+      [93923] COL Dan Slott Spider-Man Vol. 24 - The Fantastic Spider-Man (2012) (Digital) (Kileko-Empire).cbr (165pp)
+         own record cv 42582 / gcd s222777 "Spider-Man: The Fantastic Spider-Man" (issue 2724338) COLLECTS: gcd=11288 The Amazing Spider-Man (1999) #658-662
+      [93924] COL Dan Slott Spider-Man Vol. 25 - The Return of Anti-Venom (2012) (Digital) (Kileko-Empire).cbr (102pp)
+         own record cv 43148 / gcd s222513 "Spider-Man: The Return of Anti-Venom" (issue 2722680) COLLECTS: gcd=11288 The Amazing Spider-Man (1999) #663-665 · gcd=58366 Free Comic Book Day 2011 (Spider-Man) (2011) #1
+      [93925] COL Dan Slott Spider-Man Vol. 26 - Spider-Island (2011) (Digital) (TheHand-Empire).cbr (390pp)
+         own record cv 45175 / gcd s178463 "Spider-Man: Spider-Island" (issue 2281283) COLLECTS: gcd=11288 The Amazing Spider-Man (1999) #666-673 · gcd=56418 Venom (2011) #6-9 · gcd=69142 Spider-Island Spotlight (2011) (unnumbered) · gcd=60768 Amazing Spider-Man: Infested (2011) #1
+      [93926] COL Dan Slott Spider-Man Vol. 27 - Flying Blind (2012) (Digital) (Kileko-Empire).cbr (122pp)
+         own record cv 49081 / gcd s181585 "Spider-Man: Flying Blind" (issue 2350381) COLLECTS: gcd=11288 The Amazing Spider-Man (1999) #674-677 · gcd=60120 Daredevil (2011) #8
+      [93928] COL Dan Slott Spider-Man Vol. 28 - Trouble On The Horizon (2012) (Digital) (Kileko-Empire).cbr (113pp)
+         own record cv 50330 / gcd s181586 "Spider-Man: Trouble on the Horizon" (issue 2355985) COLLECTS: gcd=11288 The Amazing Spider-Man (1999) #678-679, #679.1, #680-681 · gcd=181587 Spider-Man: Trouble on the Horizon (2012) (unnumbered)
+      [93929] COL Dan Slott Spider-Man Vol. 30 - Lizard - No Turning Back (2012) (Digital) (Kileko-Empire).cbr (117pp)
+         own record cv 54370 / gcd s181957 "Spider-Man: Lizard - No Turning Back" (issue 2360649) COLLECTS: gcd=11288 The Amazing Spider-Man (1999) #688-691 · gcd=5302 Untold Tales of Spider-Man (1995) #9
+      [93930] COL Dan Slott Spider-Man Vol. 31 - Danger Zone (2012) (Digital) (Kileko-Empire).cbr (202pp)
+         own record cv 58338 / gcd s150443 "Spider-Man: Danger Zone" (issue 2016543) COLLECTS: gcd=11288 The Amazing Spider-Man (1999) #692-697 · gcd=61993 Avenging Spider-Man (2012) #11
+      [93931] COL Dan Slott Spider-Man Vol. 32 - Dying Wish (2013) (Digital) (F) (Kileko-Empire).cbz (130pp)
+   G6 "Amazing Spider-Man" in Marvel\_Spider-Man\__Amazing Spider-Man\01 Amazing Spider-Man v1 (1963) — 441 file(s), numbers 1-441, pp 17-69; cv per-file 2127x441; gcd per-file 1570x339, 172683x68; key 'Amazing Spider-Man v1 (1963)' | 'The Amazing Spider-Man (1963)'
+      e.g. Amazing Spider-Man 001 (1963) (Digital) (Shadowcat-Empire).cbz
+        94029 #1 1963 27pp · 94030 #2 1963 26pp · 94031 #3 1963 26pp · 94032 #4 1963 25pp · 94033 #5 1963 25pp · 94034 #6 1963 25pp · 94035 #7 1963 25pp · 94036 #8 1964 27pp · 94037 #9 1964 26pp
+        94038 #10 1964 26pp · 94039 #11 1964 25pp · 94040 #12 1964 26pp · 94041 #13 1964 26pp · 94042 #14 1964 26pp · 94043 #15 1964 26pp · 94044 #16 1964 26pp · 94045 #17 1964 26pp
+        94046 #18 1964 26pp · 94047 #19 1964 26pp · 94048 #20 1965 25pp · 94049 #21 1965 25pp · 94050 #22 1965 24pp · 94051 #23 1965 25pp · 94052 #24 1965 24pp · 94053 #25 1965 24pp
+        94054 #26 1965 22pp · 94055 #27 1965 22pp · 94056 #28 1965 22pp · 94057 #29 1965 22pp · 94058 #30 1965 22pp · 94059 #31 1965 22pp · 94060 #32 1966 22pp · 94061 #33 1966 22pp
+        94062 #34 1966 22pp · 94063 #35 1966 22pp · 94064 #36 1966 22pp · 94065 #37 1966 22pp · 94066 #38 1966 22pp · 94067 #39 1966 22pp · 94068 #40 1966 22pp · 94069 #41 1966 22pp
+        94070 #42 1966 22pp · 94071 #43 1966 22pp · 94072 #44 1967 22pp · 94073 #45 1967 22pp · 94074 #46 1967 22pp · 94075 #47 1967 22pp · 94076 #48 1967 22pp · 94077 #49 1967 22pp
+        94078 #50 1967 22pp · 94079 #51 1967 22pp · 94080 #52 1967 22pp · 94081 #53 1967 22pp · 94082 #54 1967 22pp · 94083 #55 1967 22pp · 94084 #56 1968 22pp · 94085 #57 1968 22pp
+        94086 #58 1968 22pp · 94087 #59 1968 22pp · 94088 #60 1968 22pp · 94089 #61 1968 22pp · 94090 #62 1968 22pp · 94091 #63 1968 22pp · 94092 #64 1968 22pp · 94093 #65 1968 22pp
+        94094 #66 1968 22pp · 94095 #67 1968 22pp · 94096 #68 1969 22pp · 94097 #69 1969 22pp · 94098 #70 1969 22pp · 94099 #71 1969 21pp · 94100 #72 1969 21pp · 94101 #73 1969 21pp
+        94102 #74 1969 21pp · 94103 #75 1969 21pp · 94104 #76 1969 21pp · 94105 #77 1969 21pp · 94106 #78 1969 22pp · 94107 #79 1969 22pp · 94108 #80 1970 22pp · 94109 #81 1970 22pp
+        94110 #82 1970 21pp · 94111 #83 1970 21pp · 94112 #84 1970 20pp · 94113 #85 1970 20pp · 94114 #86 1970 20pp · 94115 #87 1970 20pp · 94116 #88 1970 20pp · 94117 #89 1970 20pp
+        94118 #90 1970 20pp · 94119 #91 1970 20pp · 94120 #92 1971 20pp · 94121 #93 1971 20pp · 94122 #94 1971 20pp · 94123 #95 1971 20pp · 94124 #96 1971 20pp · 94125 #97 1971 20pp
+        94126 #98 1971 21pp · 94127 #99 1971 21pp · 94128 #100 1971 21pp · 94129 #101 1971 22pp · 94130 #102 1971 37pp · 94131 #103 1971 26pp · 94132 #104 1972 23pp · 94133 #105 1972 24pp
+        94134 #106 1972 23pp · 94135 #107 1972 23pp · 94136 #108 1972 23pp · 94137 #109 1972 23pp · 94138 #110 1972 21pp · 94139 #111 1972 21pp · 94140 #112 1972 21pp · 94141 #113 1972 21pp
+        94142 #114 1972 21pp · 94143 #115 1972 21pp · 94144 #116 1973 21pp · 94145 #117 1973 21pp · 94146 #118 1973 21pp · 94147 #119 1973 21pp · 94148 #120 1973 21pp · 94149 #121 1973 22pp
+        94150 #122 1973 22pp · 94151 #123 1973 20pp · 94152 #124 1973 20pp · 94153 #125 1973 20pp · 94154 #126 1973 20pp · 94155 #127 1973 20pp · 94156 #128 1974 20pp · 94157 #129 1974 20pp
+        94158 #130 1974 20pp · 94159 #131 1974 20pp · 94160 #132 1974 21pp · 94161 #133 1974 20pp · 94162 #134 1974 20pp · 94163 #135 1974 20pp · 94164 #136 1974 19pp · 94165 #137 1974 19pp
+        94166 #138 1974 19pp · 94167 #139 1974 19pp · 94168 #140 1975 19pp · 94169 #141 1975 19pp · 94170 #142 1975 20pp · 94171 #143 1975 20pp · 94172 #144 1975 20pp · 94173 #145 1975 20pp
+        94174 #146 1975 20pp · 94175 #147 1975 20pp · 94176 #148 1975 20pp · 94177 #149 1975 20pp · 94178 #150 1975 20pp · 94179 #151 1975 20pp · 94180 #152 1976 20pp · 94181 #153 1976 20pp
+        94182 #154 1976 19pp · 94183 #155 1976 19pp · 94184 #156 1976 19pp · 94185 #157 1976 18pp · 94186 #158 1976 18pp · 94187 #159 1976 18pp · 94188 #160 1976 18pp · 94189 #161 1976 19pp
+        94190 #162 1976 20pp · 94191 #163 1977 18pp · 94192 #164 1977 18pp · 94193 #165 1977 18pp · 94194 #166 1977 19pp · 94195 #167 1977 18pp · 94196 #168 1977 18pp · 94197 #169 1977 19pp
+        94198 #170 1977 19pp · 94199 #171 1977 18pp · 94200 #172 1977 20pp · 94201 #173 1977 20pp · 94202 #174 1977 19pp · 94203 #175 1977 19pp · 94204 #176 1978 19pp · 94205 #177 1978 19pp
+        94206 #178 1978 19pp · 94207 #179 1978 19pp · 94208 #180 1978 20pp · 94209 #181 1978 18pp · 94210 #182 1978 19pp · 94211 #183 1978 19pp · 94212 #184 1978 18pp · 94213 #185 1978 19pp
+        94214 #186 1978 19pp · 94215 #187 1978 19pp · 94216 #188 1978 19pp · 94217 #189 1979 20pp · 94218 #190 1979 19pp · 94219 #191 1979 18pp · 94220 #192 1979 19pp · 94221 #193 1979 18pp
+        94222 #194 1979 18pp · 94223 #195 1979 19pp · 94224 #196 1979 18pp · 94225 #197 1979 19pp · 94226 #198 1979 18pp · 94227 #199 1979 18pp · 94228 #200 1980 37pp · 94229 #201 1980 17pp
+        94230 #202 1980 18pp · 94231 #203 1980 19pp · 94232 #204 1980 18pp · 94233 #205 1980 19pp · 94234 #206 1980 19pp · 94235 #207 1980 18pp · 94236 #208 1980 19pp · 94237 #209 1980 19pp
+        94238 #210 1980 24pp · 94239 #211 1980 24pp · 94240 #212 1981 24pp · 94241 #213 1981 24pp · 94242 #214 1981 24pp · 94243 #215 1981 24pp · 94244 #216 1981 24pp · 94245 #217 1981 24pp
+        94246 #218 1981 24pp · 94247 #219 1981 24pp · 94248 #220 1981 24pp · 94249 #221 1981 23pp · 94250 #222 1981 23pp · 94251 #223 1981 24pp · 94252 #224 1982 23pp · 94253 #225 1982 22pp
+        94254 #226 1982 23pp · 94255 #227 1982 23pp · 94256 #228 1982 23pp · 94257 #229 1982 25pp · 94258 #230 1982 24pp · 94259 #231 1982 24pp · 94260 #232 1982 24pp · 94261 #233 1982 24pp
+        94262 #234 1982 24pp · 94263 #235 1982 24pp · 94264 #236 1983 24pp · 94265 #237 1983 24pp · 94266 #238 1983 24pp · 94267 #239 1983 24pp · 94268 #240 1983 23pp · 94269 #241 1983 24pp
+        94270 #242 1983 24pp · 94271 #243 1983 24pp · 94272 #244 1983 24pp · 94273 #245 1983 24pp · 94274 #246 1983 24pp · 94275 #247 1983 24pp · 94276 #248 1984 24pp · 94277 #249 1984 24pp
+        94278 #250 1984 24pp · 94279 #251 1984 22pp · 94280 #252 1984 23pp · 94281 #253 1984 24pp · 94282 #254 1984 24pp · 94283 #255 1984 24pp · 94284 #256 1984 24pp · 94285 #257 1984 24pp
+        94286 #258 1984 25pp · 94287 #259 1984 24pp · 94288 #260 1985 24pp · 94289 #261 1985 24pp · 94290 #262 1985 23pp · 94291 #263 1985 24pp · 94292 #264 1985 24pp · 94293 #265 1985 24pp
+        94294 #266 1985 25pp · 94295 #267 1985 24pp · 94296 #268 1985 24pp · 94297 #269 1985 24pp · 94298 #270 1985 24pp · 94299 #271 1985 24pp · 94300 #272 1986 24pp · 94301 #273 1986 25pp
+        94302 #274 1986 29pp · 94303 #275 1986 39pp · 94304 #276 1986 24pp · 94305 #277 1986 24pp · 94306 #278 1986 24pp · 94307 #279 1986 24pp · 94308 #280 1986 24pp · 94309 #281 1986 24pp
+        94310 #282 1986 24pp · 94311 #283 1986 25pp · 94312 #284 1987 23pp · 94313 #285 1987 24pp · 94314 #286 1987 24pp · 94315 #287 1987 24pp · 94316 #288 1987 23pp · 94317 #289 1987 42pp
+        94318 #290 1987 24pp · 94319 #291 1995 26pp · 94320 #292 1987 25pp · 94321 #293 1987 24pp · 94322 #294 1987 26pp · 94323 #295 1987 24pp · 94324 #296 1988 25pp · 94325 #297 1988 25pp
+        94326 #298 1988 24pp · 94327 #299 1988 24pp · 94328 #300 1988 42pp · 94329 #301 1988 24pp · 94330 #302 1988 24pp · 94331 #303 1988 25pp · 94332 #304 1988 24pp · 94333 #305 1988 24pp
+        94334 #306 1988 24pp · 94335 #307 1988 24pp · 94336 #308 1988 24pp · 94337 #309 1988 24pp · 94338 #310 1988 24pp · 94339 #311 1989 25pp · 94340 #312 1989 24pp · 94341 #313 1989 24pp
+        94342 #314 1989 24pp · 94343 #315 1989 24pp · 94344 #316 1989 24pp · 94345 #317 1989 24pp · 94346 #318 1989 24pp · 94347 #319 1989 24pp · 94348 #320 1989 24pp · 94349 #321 1989 24pp
+        94350 #322 1989 24pp · 94351 #323 1989 23pp · 94352 #324 1989 23pp · 94353 #325 1989 24pp · 94354 #326 1989 24pp · 94355 #327 1989 24pp · 94356 #328 1990 25pp · 94357 #329 1990 24pp
+        94358 #330 1990 23pp · 94359 #331 1990 23pp · 94360 #332 1990 24pp · 94361 #333 1990 23pp · 94362 #334 1990 24pp · 94363 #335 1990 23pp · 94364 #336 1990 24pp · 94365 #337 1990 24pp
+        94366 #338 1990 25pp · 94367 #339 1990 24pp · 94368 #340 1990 24pp · 94369 #341 1990 24pp · 94370 #342 1990 24pp · 94371 #343 1991 24pp · 94372 #344 1991 23pp · 94373 #345 1991 24pp
+        94374 #346 1991 24pp · 94375 #347 1991 24pp · 94376 #348 1991 24pp · 94377 #349 1991 24pp · 94378 #350 1991 39pp · 94379 #351 1991 25pp · 94380 #352 1991 24pp · 94381 #353 1991 24pp
+        94382 #354 1991 25pp · 94383 #355 1991 24pp · 94384 #356 1991 24pp · 94385 #357 1992 23pp · 94386 #358 1992 24pp · 94387 #359 1992 24pp · 94388 #360 1992 24pp · 94389 #361 1992 25pp
+        94390 #362 1992 24pp · 94391 #363 1992 24pp · 94392 #364 1992 24pp · 94393 #365 1992 69pp · 94394 #366 1992 24pp · 94395 #367 1992 25pp · 94396 #368 1992 24pp · 94397 #369 1992 24pp
+        94398 #370 1992 24pp · 94399 #371 1992 24pp · 94400 #372 1993 25pp · 94401 #373 1993 24pp · 94402 #374 1993 24pp · 94403 #375 1993 54pp key="The Amazing Spider-Man (1963)"
+        94404 #376 1993 24pp · 94405 #377 1993 24pp · 94406 #378 1993 25pp · 94407 #379 1993 25pp · 94408 #380 1993 24pp · 94409 #381 1993 25pp · 94410 #382 1993 24pp · 94411 #383 1993 24pp
+        94412 #384 1993 24pp · 94413 #385 1994 25pp · 94414 #386 1994 24pp · 94415 #387 1994 24pp · 94416 #388 1994 56pp · 94417 #389 1994 25pp · 94418 #390 1994 24pp · 94419 #391 1994 24pp
+        94420 #392 1994 25pp · 94421 #393 1994 24pp · 94422 #394 1994 36pp key="The Amazing Spider-Man (1963)" · 94423 #395 1994 25pp · 94424 #396 1994 25pp · 94425 #397 1995 24pp
+        94426 #398 1995 25pp · 94427 #399 1995 24pp · 94428 #400 1995 53pp · 94429 #401 1995 24pp · 94430 #402 1995 23pp · 94431 #403 1995 24pp · 94432 #404 1995 24pp · 94433 #405 1995 24pp
+        94434 #406 1995 24pp · 94435 #407 1996 24pp · 94436 #408 1996 24pp · 94437 #409 1996 23pp · 94438 #410 1996 23pp · 94439 #411 1996 23pp · 94440 #412 1996 22pp · 94441 #413 1996 22pp
+        94442 #414 1996 23pp · 94443 #415 1996 23pp · 94444 #416 1996 22pp · 94445 #417 1996 23pp · 94446 #418 1996 21pp · 94447 #419 1997 23pp · 94448 #420 1997 22pp · 94449 #421 1997 24pp
+        94450 #422 1997 24pp · 94451 #423 1997 24pp · 94452 #424 1997 24pp · 94453 #425 1997 41pp · 94454 #426 1997 24pp · 94455 #427 1997 22pp · 94456 #428 1997 24pp · 94457 #429 1997 25pp
+        94458 #430 1998 24pp · 94459 #431 1998 24pp · 94460 #432 1998 24pp · 94461 #433 1998 24pp · 94462 #434 1998 24pp · 94463 #435 1998 24pp · 94464 #436 1998 24pp · 94465 #437 1998 24pp
+        94466 #438 1998 24pp · 94468 #440 1998 24pp · 94469 #441 1998 24pp
+      [94467] Amazing Spider-Man 439 (1998) (Digital) (Shadowcat-Empire.cbz (24pp)
+   G7 "Amazing Spider-Man" in Marvel\_Spider-Man\__Amazing Spider-Man\02 Amazing Spider-Man v2 (1999) — 39 file(s), numbers 20-58, pp 20-40; cv per-file 2127x39; gcd per-file 172683x36; key 'Amazing Spider-Man v2 (1999)'
+      e.g. Amazing Spider-Man 020 (2000) (Digital) (AnPymGold - Empire).cbz
+        94470 #20 2000 23pp · 94471 #21 2000 22pp · 94472 #22 2000 22pp · 94473 #23 2000 24pp · 94474 #24 2000 23pp · 94475 #25 2001 40pp · 94476 #26 2001 21pp · 94477 #27 2001 20pp
+        94478 #28 2001 22pp · 94479 #29 2001 23pp · 94480 #30 2001 22pp · 94481 #31 2001 22pp · 94482 #32 2001 22pp · 94483 #33 2001 21pp · 94484 #34 2001 23pp · 94485 #35 2001 24pp
+        94486 #36 2001 20pp · 94487 #37 2002 23pp · 94488 #38 2002 23pp · 94489 #39 2002 23pp · 94490 #40 2002 23pp · 94491 #41 2002 22pp · 94492 #42 2002 23pp · 94493 #43 2002 23pp
+        94494 #44 2002 23pp · 94495 #45 2002 21pp · 94496 #46 2002 23pp · 94497 #47 2003 22pp · 94498 #48 2003 23pp · 94499 #49 2003 23pp · 94500 #50 2003 23pp · 94501 #51 2003 22pp
+        94502 #52 2003 24pp · 94503 #53 2003 22pp · 94504 #54 2003 22pp · 94505 #55 2003 22pp · 94506 #56 2003 22pp · 94507 #57 2003 23pp · 94508 #58 2003 22pp
+   G8 "Amazing Spider-Man" in Marvel\_Spider-Man\__Amazing Spider-Man\03 Amazing Spider-Man v1 (2003) — 203 file(s), numbers 1, 500-536, 538-700, pp 20-104; cv per-file 2127x203; gcd per-file 11288x200; key 'Amazing Spider-Man v1 (2003)'
+      e.g. Amazing Spider-Man 500 (2003) (digital) (Minutemen-Faessla).cbz
+        94512 #500 2003 38pp · 94513 #501 2004 22pp · 94514 #502 2004 23pp · 94515 #503 2004 23pp · 94516 #504 2004 21pp · 94517 #505 2004 23pp · 94518 #506 2004 21pp · 94519 #507 2004 22pp
+        94520 #508 2004 24pp · 94521 #509 2004 23pp · 94522 #510 2004 23pp · 94523 #511 2004 22pp · 94524 #512 2004 23pp · 94525 #513 2004 23pp · 94526 #514 2005 23pp · 94527 #515 2005 23pp
+        94528 #516 2005 24pp · 94529 #517 2005 23pp · 94530 #518 2005 24pp · 94531 #519 2005 23pp · 94532 #520 2005 23pp · 94533 #521 2005 23pp · 94534 #522 2005 21pp · 94535 #523 2005 24pp
+        94536 #524 2005 23pp · 94537 #525 2005 24pp · 94538 #526 2006 22pp · 94539 #527 2006 25pp · 94540 #528 2006 24pp · 94541 #529 2006 23pp · 94542 #530 2006 23pp · 94543 #531 2006 23pp
+        94544 #532 2006 23pp · 94545 #533 2006 24pp · 94546 #534 2006 23pp · 94547 #535 2006 21pp · 94548 #536 2006 24pp · 94550 #538 2007 23pp · 94551 #539 2007 26pp · 94552 #540 2007 26pp
+        94553 #541 2007 25pp · 94554 #542 2007 25pp · 94555 #543 2007 24pp · 94556 #544 2006 26pp · 94557 #545 2006 40pp · 94558 #546 2008 38pp · 94559 #547 2008 26pp · 94560 #548 2008 26pp
+        94561 #549 2008 25pp · 94562 #550 2008 26pp · 94563 #551 2008 26pp · 94564 #552 2008 26pp · 94565 #553 2008 25pp · 94566 #554 2008 27pp · 94567 #555 2008 26pp · 94568 #556 2008 26pp
+        94569 #557 2008 25pp · 94570 #558 2008 26pp · 94571 #559 2008 25pp · 94572 #560 2008 26pp · 94573 #561 2008 27pp · 94574 #562 2008 25pp · 94575 #563 2008 26pp · 94576 #564 2008 26pp
+        94577 #565 2008 25pp · 94578 #566 2008 25pp · 94579 #567 2008 26pp · 94580 #568 2008 40pp · 94581 #569 2008 26pp · 94582 #570 2008 27pp · 94583 #571 2008 26pp · 94584 #572 2008 27pp
+        94585 #573 2008 39pp · 94586 #574 2008 26pp · 94587 #575 2008 24pp · 94588 #576 2009 25pp · 94589 #577 2009 42pp · 94590 #578 2009 26pp · 94591 #579 2009 26pp · 94592 #580 2009 26pp
+        94593 #581 2009 26pp · 94594 #582 2009 32pp · 94595 #583 2009 38pp · 94596 #584 2009 31pp · 94597 #585 2009 26pp · 94598 #586 2009 33pp · 94599 #587 2009 33pp · 94600 #588 2009 35pp
+        94601 #589 2009 26pp · 94602 #590 2009 25pp · 94603 #591 2009 27pp · 94604 #592 2009 25pp · 94605 #593 2009 26pp · 94606 #594 2009 27pp · 94607 #595 2009 28pp · 94608 #596 2009 25pp
+        94609 #597 2009 24pp · 94610 #598 2009 27pp · 94611 #599 2009 25pp · 94612 #600 2009 104pp · 94613 #601 2009 30pp · 94614 #602 2009 26pp · 94615 #603 2009 26pp · 94616 #604 2009 27pp
+        94617 #605 2009 51pp · 94618 #606 2009 25pp · 94619 #607 2009 26pp · 94620 #608 2009 26pp · 94621 #609 2009 26pp · 94622 #610 2010 26pp · 94623 #611 2010 24pp · 94624 #612 2010 34pp
+        94625 #613 2010 26pp · 94626 #614 2010 27pp · 94627 #615 2010 26pp · 94628 #616 2010 24pp · 94629 #617 2010 37pp · 94630 #618 2010 24pp · 94631 #619 2010 26pp · 94632 #620 2010 25pp
+        94633 #621 2010 26pp · 94634 #622 2010 36pp · 94635 #623 2010 26pp · 94636 #624 2010 26pp · 94637 #625 2010 27pp · 94638 #626 2010 25pp · 94639 #627 2010 25pp · 94640 #628 2010 33pp
+        94641 #629 2010 29pp · 94642 #630 2010 24pp · 94643 #631 2010 24pp · 94644 #632 2010 25pp · 94645 #633 2010 27pp · 94646 #634 2010 38pp · 94647 #635 2010 37pp · 94648 #636 2010 38pp
+        94649 #637 2010 49pp · 94650 #638 2010 46pp · 94651 #639 2010 35pp · 94652 #640 2010 29pp · 94653 #641 2010 45pp · 94654 #642 2010 27pp · 94655 #643 2010 27pp · 94656 #644 2010 27pp
+        94657 #645 2010 27pp · 94658 #646 2010 25pp · 94659 #647 2010 61pp · 94660 #648 2011 50pp · 94661 #649 2011 34pp · 94662 #650 2011 34pp · 94663 #651 2011 32pp · 94664 #652 2011 33pp
+        94665 #653 2011 34pp · 94666 #654 2011 34pp · 94668 #655 2011 29pp · 94669 #656 2011 32pp · 94670 #657 2011 34pp · 94671 #658 2011 32pp · 94672 #659 2011 35pp · 94673 #660 2011 34pp
+        94674 #661 2011 30pp · 94675 #662 2011 36pp · 94676 #663 2011 38pp · 94677 #664 2011 32pp · 94678 #665 2011 32pp · 94679 #666 2011 33pp · 94680 #667 2011 24pp · 94681 #668 2011 27pp
+        94682 #669 2011 25pp · 94683 #670 2011 28pp · 94684 #671 2011 28pp · 94685 #672 2011 25pp · 94686 #673 2012 26pp · 94687 #674 2012 25pp · 94688 #675 2012 23pp · 94689 #676 2012 24pp
+        94690 #677 2012 24pp · 94691 #678 2012 20pp · 94692 #679 2012 22pp · 94694 #680 2012 20pp · 94695 #681 2012 24pp · 94696 #682 2012 21pp · 94697 #683 2012 20pp · 94698 #684 2012 23pp
+        94699 #685 2012 22pp · 94700 #686 2012 21pp · 94701 #687 2012 23pp · 94702 #688 2012 24pp · 94703 #689 2012 23pp · 94704 #690 2012 24pp · 94705 #691 2012 22pp · 94706 #692 2012 56pp
+        94707 #693 2012 24pp · 94708 #694 2012 24pp · 94709 #695 2012 24pp · 94710 #696 2012 24pp · 94711 #697 2013 24pp · 94712 #698 2013 23pp · 94713 #699 2013 22pp · 94715 #700 2013 97pp
+      [94667] Amazing Spider-Man 654.1 (2011) (Digital) (G85-Empire).cbr (24pp)
+      [94693] Amazing Spider-Man 679.1 (2012) (digital) (Minutemen-Faessla).cbz (24pp)
+      [94714] Amazing Spider-Man 699.1 (2013) (digital) (Minutemen-InnerDemons).cbr (23pp)
+   G9 "Amazing Spider-Man" in Marvel\_Spider-Man\__Amazing Spider-Man\03 Amazing Spider-Man v1 (2003)\Variant Covers — 9 file(s), numbers 2-3, 555, 568, 600, 612-613, 638-639, pp 1-1; cv per-file 2127x9; gcd per-file 11288x7; key 'Amazing Spider-Man v1 (2003)'
+      e.g. Amazing Spider-Man 555 (Variant) (2008) (Digital) (MikeNY76-Empire).cbz
+        94716 #555 2008 1pp · 94717 #568 2008 1pp · 94718 #600 2009 1pp · 94719 #612 2009 1pp · 94720 #613 2009 1pp · 94721 #638 2010 1pp · 94722 #639 2010 1pp
+      [94723] Amazing Spider-Man 700.2 (Variant) (2013) (Digital) (MikeNY76-Empire).cbz (1pp)
+      [94724] Amazing Spider-Man 700.3 (Variant) (2013) (Digital) (MikeNY76-Empire).cbz (1pp)
+   G10 "Amazing Spider-Man" in Marvel\_Spider-Man\__OGNs, Minis & One-shots\Spider-Man - Maximum Clonage (1995) — 1 file(s), numbers 404, pp 24-24; cv per-file 2127x1; gcd per-file 1570x1; key 'Amazing Spider-Man (1963)'
+      [95693] 03 Amazing Spider-Man 404 (1995) (Digital) (Shadowcat-Empire).cbz (24pp)
+   G11 "Amazing Spider-Man" in Marvel\_Venom\11 Venom - Sinner Takes All (1995)\Bride of Venom (First She-Venom Appearance) — 1 file(s), numbers 375, pp 29-29; cv per-file 2127x1; gcd per-file 1570x1; key 'Amazing Spider-Man (1963)'
+      [97980] Amazing Spider-Man 375 (1993) (Digital) (AnPymGold-Empire).cbz (29pp)
+   G12 "Amazing Spider-Man" in Marvel\_X-Men\_X-Men Complete Chronology V2\0006 Various Cameos — 1 file(s), numbers 92, pp 20-20; cv per-file 2127x1; gcd per-file 1570x1; key 'Amazing Spider-Man (1963)'
+      [86622] 007 Amazing Spider-Man 092 (1971) (Digital) (AnPymGold - Empire).cbz (20pp)
+   G13 "Amazing Spider-Man" in Marvel\_X-Men\_X-Men Complete Chronology V2\0008 Second Genesis — 2 file(s), numbers 161-162, pp 18-19; cv per-file 2127x2; gcd per-file 1570x2; key 'Amazing Spider-Man (1963)'
+      [86659] 014 Amazing Spider-Man 161 (1976) (Digital) (AnPymGold - Empire).cbz (18pp)
+      [86660] 015 Amazing Spider-Man 162 (1976) (Digital) (AnPymGold - Empire).cbz (19pp)
+   G14 "Amazing Spider-Man" in Marvel\_X-Men\_X-Men Complete Chronology V2\0012 Proteus — 1 file(s), numbers 203, pp 19-19; cv per-file 2127x1; gcd per-file 1570x1; key 'Amazing Spider-Man (1963)'
+      [86742] 017 Amazing Spider-Man 203 (1980) (Digital) (AnHeroGold-Empire).cbz (19pp)
+   G15 "Amazing Spider-Man" in Marvel\_X-Men\_X-Men Complete Chronology V2\0059 Untitled — 1 file(s), numbers 282, pp 24-24; cv per-file 2127x1; gcd per-file 1570x1; key 'Amazing Spider-Man (1963)'
+      [87120] 001 Amazing Spider-Man 282 (1986) (Digital) (AnPymGold - Empire).cbz (24pp)
+   G16 "Amazing Spider-Man Annual" in Marvel\_X-Men\_X-Men Complete Chronology V2\0078 Evolutionary war — 1 file(s), numbers 22, pp 52-52; cv per-file 2189x1; gcd per-file 1635x1; key 'Amazing Spider-Man (1963)'
+      [87238] 005 Amazing Spider-Man Annual 022 (1988) (Digital) (Shadowcat-Empire).cbz (52pp)
+   G17 "Amazing Spider-Man" in Marvel\_X-Men\_X-Men Complete Chronology V2\0087 Inferno After Effects — 3 file(s), numbers 311-313, pp 23-24; cv per-file 2127x3; gcd per-file 1570x3; key 'Amazing Spider-Man (1963)'
+      [87304] Amazing Spider-Man 311 (1989) (Digital) (AnPymGold - Empire).cbz (24pp)
+      [87305] Amazing Spider-Man 312 (1989) (Digital) (AnPymGold - Empire).cbz (23pp)
+      [87306] Amazing Spider-Man 313 (1989) (Digital) (AnPymGold - Empire).cbz (23pp)
+   G18 "Amazing Spider-Man Annual" in Marvel\_X-Men\_X-Men Complete Chronology V2\0093 Atlantis Attacks — 1 file(s), numbers 23, pp 57-57; cv per-file 2189x1; gcd per-file 1635x1; key 'Amazing Spider-Man (1963)'
+      [87349] 004 Amazing Spider-Man Annual 023 (1989) (Digital) (Shadowcat-Empire).cbz (57pp)
+   G19 "Amazing Spider-Man" in Marvel\_X-Men\_X-Men Complete Chronology V2\0111 Acts of Vengeance — 4 file(s), numbers 326-329, pp 23-24; cv per-file 2127x4; gcd per-file 1570x4; key 'Amazing Spider-Man (1963)'
+      e.g. 014 Amazing Spider-Man 326 (1989) (Digital) (AnPymGold - Empire).cbz
+        87479 #326 1989 24pp · 87514 #327 1989 23pp · 87518 #328 1990 24pp · 87530 #329 1990 24pp
+   G20 "Amazing Spider-Man" in Marvel\_X-Men\_X-Men Complete Chronology V2\0289 Onslaught — 1 file(s), numbers 415, pp 23-23; cv per-file 2127x1; gcd per-file 1570x1; key 'Amazing Spider-Man (1963)'
+      [88436] 026 Amazing Spider-Man 415 (1996) (digital) (Minutemen-Bluntman).cbr (23pp)
+   G21 "Amazing Spider-Man" in Marvel\_X-Men\_X-Men Complete Chronology V2\0311 Untitled — 1 file(s), numbers 420, pp 22-22; cv per-file 2127x1; gcd per-file 1570x1; key 'Amazing Spider-Man (1963)'
+      [88550] 006 Amazing Spider-Man 420 (1997) (Digital) (AnPymGold-Empire).cbz (22pp)
+   G22 "Amazing Spider-Man" in Marvel\_X-Men\_X-Men Complete Chronology V2\0463 Maximum Security — 1 file(s), numbers 24, pp 23-23; cv per-file 2127x1; gcd per-file 172683x1; key 'Amazing Spider-Man (1963)'
+      [89259] 006 Amazing Spider-Man 024 (2000) (Digital) (AnPymGold - Empire).cbz (23pp)
+   G23 "Amazing Spider-Man" in Marvel\_X-Men\_X-Men Complete Chronology V2\0719 Civil War - Phase One — 5 file(s), numbers 529-533, pp 23-24; cv per-file 2127x5; gcd per-file 11288x5; key 'Amazing Spider-Man (1963)'
+      e.g. 004 Amazing Spider-Man 529 (2006) (digital-hd) (Kleio-Empire).cbz
+        90463 #529 2006 23pp · 90464 #530 2006 23pp · 90465 #531 2006 23pp · 90471 #532 2006 23pp · 90477 #533 2006 24pp
+   G24 "Amazing Spider-Man" in Marvel\_X-Men\_X-Men Complete Chronology V2\0723 Civil War - X-Men — 1 file(s), numbers 534, pp 23-23; cv per-file 2127x1; gcd per-file 11288x1; key 'Amazing Spider-Man (1963)'
+      [90514] 016 Amazing Spider-Man 534 (2006) (digital) (Minutemen-Faessla).cbz (23pp)
+   G25 "Amazing Spider-Man" in Marvel\_X-Men\_X-Men Complete Chronology V2\0728 Civil War - Phase Two — 4 file(s), numbers 535-538, pp 21-24; cv per-file 2127x4; gcd per-file 11288x4; key 'Amazing Spider-Man (1963)'
+      e.g. 001 Amazing Spider-Man 535 (2006) (digital) (Minutemen-Faessla).cbz
+        90546 #535 2006 21pp · 90565 #536 2006 24pp · 90583 #537 2007 23pp · 90591 #538 2007 23pp
+   G26 "Amazing Spider-Man Annual" in Marvel\_X-Men\_X-Men Complete Chronology V2\0915 Identity Wars — 1 file(s), numbers 38, pp 34-34; cv per-file 2189x1; key 'Amazing Spider-Man (1963)'
+      [91734] 001 Amazing Spider-Man Annual 038 (2011) (Digital) (Zone-Empire).cbr (34pp)
+   G27 "Amazing Spider-Man" in _Marvel Major Event Chronology (digital)\1973.06 - Spider-man - The Death of Gwen Stacy\Extras — 5 file(s), numbers 14, 31, 39, 53, 59, pp 22-26; cv per-file 2127x5; gcd per-file 172683x5; key 'Amazing Spider-Man (1963)'
+      e.g. Amazing Spider-Man 014 (1964) (Digital) (TLK-EMPIRE-HD).cbr
+        116295 #14 1964 26pp · 116296 #31 1965 22pp · 116297 #39 1966 22pp · 116298 #53 1967 22pp · 116299 #59 1968 22pp
+   G28 "Amazing Spider-Man" in _Marvel Major Event Chronology (digital)\1975.02 - Spider-man - The Clone Saga I — 13 file(s), numbers 139-151, pp 18-19; cv per-file 2127x13; gcd per-file 1570x13; key 'Amazing Spider-Man (1963)'
+      e.g. Amazing Spider-Man 139 (1974) (Digital) (F) (AnPymGold - Empire).cbz
+        116321 #139 1974 18pp · 116322 #140 1975 18pp · 116323 #141 1975 18pp · 116324 #142 1975 19pp · 116325 #143 1975 19pp · 116326 #144 1975 19pp · 116327 #145 1975 19pp · 116328 #146 1975 19pp
+        116329 #147 1975 19pp · 116330 #148 1975 19pp · 116331 #149 1975 19pp · 116332 #150 1975 19pp · 116333 #151 1975 19pp
+   G29 "Amazing Spider-Man" in _Marvel Major Event Chronology (digital)\1975.02 - Spider-man - The Clone Saga I\Extra — 3 file(s), numbers 129, 136-137, pp 18-20; cv per-file 2127x3; gcd per-file 1570x3; key 'Amazing Spider-Man (1963)'
+      [116334] Amazing Spider-Man 129 (1974) (Digital) (AnHeroGold-Empire).cbz (20pp)
+      [116335] Amazing Spider-Man 136 (1974) (Digital) (AnPymGold - Empire).cbz (18pp)
+      [116336] Amazing Spider-Man 137 (1974) (Digital) (AnPymGold - Empire).cbz (18pp)
+   G30 "Amazing Spider-Man" in _Marvel Major Event Chronology (digital)\1986.02 - Daredevil - Born Again\Extra\Amazing Spider-Man 050-52 (1967) — 3 file(s), numbers 50-52, pp 22-22; cv per-file 2127x3; gcd per-file 172683x3; key 'Amazing Spider-Man (1963)'
+      [116394] Amazing Spider-Man 050 (1967) (Digital) (TLK-EMPIRE-HD).cbr (22pp)
+      [116395] Amazing Spider-Man 051 (1967) (Digital) (TLK-EMPIRE-HD).cbr (22pp)
+      [116396] Amazing Spider-Man 052 (1967) (Digital) (TLK-EMPIRE-HD).cbr (22pp)
+   G31 "Amazing Spider-Man" in _Marvel Major Event Chronology (digital)\1987.10 - Spider-man - Kraven's Last Hunt\Extra — 2 file(s), numbers 15, 18, pp 26-26; cv per-file 2127x2; gcd per-file 172683x2; key 'Amazing Spider-Man (1963)'
+      [116400] Amazing Spider-Man 015 (1964) (Digital) (TLK-EMPIRE-HD).cbr (26pp)
+      [116401] Amazing Spider-Man 018 (1964) (Digital) (TLK-EMPIRE-HD).cbr (26pp)
+   G32 "Amazing Spider-Man" in _Marvel Major Event Chronology (digital)\1993.05 - Spider-man - Maximum Carnage\Extra\01 Amazing Spider-man - Venom (1988) (Digital) (AnPymGold-Empire) — 2 file(s), numbers 299-300, pp 23-41; cv per-file 2127x2; gcd per-file 1570x2; key 'Amazing Spider-Man (1963)'
+      [116453] Amazing Spider-Man 299 (1988) (Digital) (AnPymGold - Empire).cbz (23pp)
+      [116454] Amazing Spider-Man 300 (1988) (Digital) (AnPymGold - Empire).cbz (41pp)
+   G33 "Amazing Spider-Man" in _Marvel Major Event Chronology (digital)\1993.05 - Spider-man - Maximum Carnage\Extra\03 Amazing Spider-man - Carnage (1992) (Digital) (AnPymGold-Empire) — 3 file(s), numbers 361-363, pp 23-24; cv per-file 2127x3; gcd per-file 1570x3; key 'Amazing Spider-Man (1963)'
+      [116455] Amazing Spider-Man 361 (1992) (Digital) (AnPymGold-Empire).cbz (24pp)
+      [116456] Amazing Spider-Man 362 (1992) (Digital) (AnPymGold-Empire).cbz (23pp)
+      [116457] Amazing Spider-Man 363 (1992) (Digital) (AnPymGold-Empire).cbz (24pp)
+   G34 "Amazing Spider-Man" in _Marvel Major Event Chronology (digital)\2005.12 - Spider-man - The Other\Extra\Amazing Spider-man - Coming Home (2001) (digital-hd-Empire) — 6 file(s), numbers 30-35, pp 21-24; cv per-file 2127x6; gcd per-file 172683x6; key 'Amazing Spider-Man (1963)'
+      e.g. Amazing Spider-Man 030 (2001) (digital-hd-Empire).cbr
+        116685 #30 2001 22pp · 116686 #31 2001 22pp · 116687 #32 2001 22pp · 116688 #33 2001 21pp · 116689 #34 2001 23pp · 116690 #35 2001 24pp
+   G35 "Amazing Spider-Man" in _Marvel Major Event Chronology (digital)\2006.07 - Civil War\03 Civil War - Spider-Man Unmasked — 1 file(s), numbers 538, pp 23-23; cv per-file 2127x1; gcd per-file 11288x1; key 'Amazing Spider-Man (1963)'
+      [116708] 05 Amazing Spider-Man 538 (2007) (digital-hd) (Kleio-Empire).cbz (23pp)
+   G36 "Amazing Spider-Man" in _Marvel Major Event Chronology (digital)\2007.11 - Spider-man - One More Day\Extra — 6 file(s), numbers 25, 42-43, 257-259, pp 22-24; cv per-file 2127x6; gcd per-file 172683x3, 1570x3; key 'Amazing Spider-Man (1963)'
+      e.g. Amazing Spider-Man 025 (1965) (Digital) (TLK-EMPIRE-HD).cbr
+        116916 #25 1965 24pp · 116917 #42 1966 22pp · 116918 #43 1966 22pp · 116919 #257 1984 23pp · 116920 #258 1984 24pp · 116921 #259 1984 23pp
+   G37 "Amazing Spider-Man" in _Marvel Major Event Chronology (digital)\2007.11 - Spider-man - One More Day\Extra\Spider-man - Brand New Day — 15 file(s), numbers 547-553, 555-556, 558-562, 564, pp 25-27; cv per-file 2127x15; gcd per-file 11288x15; key 'Amazing Spider-Man (1963)'
+      e.g. Amazing Spider-Man 547 (2008) (Digital-HD) (Monafekk-Empire).cbr
+        116923 #547 2008 26pp · 116924 #548 2008 26pp · 116925 #549 2008 25pp · 116926 #550 2008 26pp · 116927 #551 2008 26pp · 116928 #552 2008 26pp · 116929 #553 2008 25pp · 116931 #555 2008 26pp
+        116932 #556 2008 26pp · 116934 #558 2008 26pp · 116935 #559 2008 25pp · 116936 #560 2008 26pp · 116937 #561 2008 27pp · 116938 #562 2008 25pp · 116940 #564 2008 26pp
+   G38 "Amazing Spider-Man" in _Marvel Major Event Chronology (digital)\2008.12 - Dark Reign\Amazing Spider-man — 5 file(s), numbers 595-599, pp 24-28; cv per-file 2127x5; gcd per-file 11288x5; key 'Amazing Spider-Man (1963)'
+      e.g. Amazing Spider-Man 595 (2009) (Digital-HD) (Monafekk-Empire).cbr
+        116999 #595 2009 28pp · 117000 #596 2009 25pp · 117001 #597 2009 24pp · 117002 #598 2009 27pp · 117003 #599 2009 25pp
+   G39 "The Amazing Spider-Man" in _Marvel Major Event Chronology (digital)\2012.11 - Spider-man - Dying Wish — 4 file(s), numbers 3, 698-700, pp 22-97; cv per-file 2127x3, 73420x1; gcd per-file 11288x3, 80405x1; key 'The Amazing Spider-Man (1963)' | 'Amazing Spider-Man v1 (1963)'
+      [117718] 01 The Amazing Spider-Man 698 (2013) (digital) (Minutemen-InnerDemons).cbr (23pp)  key="The Amazing Spider-Man (1963)"
+      [117719] 02 The Amazing Spider-Man 699 (2013) (digital) (Minutemen-InnerDemons).cbr (22pp)  key="The Amazing Spider-Man (1963)"
+      [117720] 03 The Amazing Spider-Man 699.1 (2013) (digital) (Minutemen-InnerDemons).cbr (23pp)
+      [117721] 04 The Amazing Spider-Man 700 (2013) (digital) (Minutemen-InnerDemons).cbr (97pp)  key="The Amazing Spider-Man (1963)"
+
+== S5409 Detective Comics  [split]  966 files / 0 collections  decided in R-056 (R)
+   decided: R 5409 | the shelf holds a co-equal SECOND run on the same numbers #0-52: the New 52 "Detective Comics 001 - November 2011" .. "052 (2016)" (52 files incl. #0 Nov 2012, Annual 001 Oct 2012, #23.2 Harley Quinn, #27 Special Edition 2014; items 18056 .. 19014, 62889, 65838) = CV 42594 "Detective Comics" (DC 2011, 57) / GCD 60830 (DC 2011-?, #0-52 then #934+) — which is why 63 numbers (0-52 …) name two files; C-008's S claimed CV 18058 spans them, but CV 18058 is cached #0-881 of the 1937 numbering only. The 1937 run (CV 18058 / GCD 87, #0-881, 881 files in "01 Detective Comics v1 (1937)") is the majority
+   F 5409 split-needed | MOVE the New 52 run to new key 'Detective Comics v2 (2011)' cv=42594 gcd=60830: items 18056, 18063, 18228, 18229, 18230, 18231, 18232, 18233, 18235, 18257, 18280, 18281, 18282, 18283, 18284, 18285, 19913, 18394, 18395, 19922, 18671-18681, 18714-18718, 18847-18852, 18986, 19009-19014, 65838, 62889; OPTIONAL second group, the Rebirth legacy issues #934, #941-942, #1044-1045 (items 19060, 19074, 19077, 61470, 61471) -> 'Detective Comics (2016)' cv=91098 gcd=60830 (no number collision, so they may stay as residue); everything else STAYS (1937 #0-881 incl. the 1000000 issue, the 1988-2011 Annuals, facsimiles)
+   N 5409 after the split the kept shelf's S is C-008's cv=18058 gcd=87 at 0.9 (Annuals 1-12 are their own series); flag 227 (label-ambiguous) is not a conflated/overlap flag and needs no claim
+   nearby: S94865 "Detective Comics" 97f [shares cv=91098, shares gcd=60830 — S cv=91098 gcd=60830 (R-018 0.9)] keys: "Detective Comics v1 (2016)"
+   nearby: S96415 "Detective Comics" 2f [shares cv=42594, shares gcd=60830 — S cv=42594 gcd=60830 (B-010 0.9)] keys: "Detective Comics (2011)" | "Detective Comics v2 (2011)"
+   nearby: S5412 "Detective Comics 2021 Annual" 1f [title — S cv=140253 gcd=178494 (C-012 0.95)] keys: "Detective Comics 2021 Annual (2021)"
+   nearby: S64246 "Batman - Detective Comics" 12f [title+1 — S cv=96129 gcd=77783 (C-011 0.9)] keys: "Batman: Detective Comics (2012)"
+   nearby: S64247 "Batman: Detective Comics" 3f [title+1 — S cv=121066 gcd=150022 (C-012 0.9)] keys: "Batman: Detective Comics (2019)"
+   nearby: S4188 "Convergence Detective Comics" 2f [title+1 — S cv=81580 gcd=88639 (A-007 0.95)] keys: "Convergence - Detective Comics"
+   nearby: S2226 "Batman: Detective Comics" 1f [title+1 — S cv=150502 gcd=203114 (B-010 0.9)] keys: "Batman: Detective Comics"
+   keys now: "Detective Comics v1 (1937)" x894 · "Detective Comics (1937)" x45 · "Detective Comics" x27
+   groups (title x folder): 31
+   G1 "Detective Comics" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\12 Final Night\The Final Night Reading Order — 1 file(s), numbers 703, pp 24-24; cv per-file 18058x1; key 'Detective Comics (1937)'
+      [16853] 014 Detective Comics 703 (1996-11) (DeadmanWade-DCP) (digital).cbr (24pp)
+   G2 "Detective Comics" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\27 Batman - Bruce wayne murderer_fugitive\01 bruce wayne murderer — 2 file(s), numbers 766-767, pp 31-32; cv per-file 18058x2; key 'Detective Comics (1937)'
+      [16968] 01 Detective Comics 766.cbr (31pp)
+      [16975] 08 Detective Comics 767.cbr (32pp)
+   G3 "01a Detective Comics" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\27 Batman - Bruce wayne murderer_fugitive\02 bruce wayne fugitive — 1 file(s), numbers 768, pp 23-23; cv per-file 18058x1; key 'Detective Comics (1937)'
+      [16982] 01a Detective Comics 768.cbr (23pp)
+   G4 "Detective Comics" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\27 Batman - Bruce wayne murderer_fugitive\02 bruce wayne fugitive — 7 file(s), numbers 769-775, pp 23-33; cv per-file 18058x7; key 'Detective Comics (1937)'
+      e.g. 04 Detective Comics 769.cbr
+        16986 #769 24pp · 16990 #770 25pp · 16994 #771 23pp · 16998 #772 23pp · 17001 #773 24pp · 17002 #774 33pp · 17003 #775 32pp
+   G5 "Detective Comics" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\75 Fifty Two - The Companion — 1 file(s), numbers 350, pp 10-10; cv per-file 18058x1; key 'Detective Comics (1937)'
+      [17598] Detective Comics 350(Elongated Man).cbr (10pp)
+   G6 "Detective_Comics_851__2008___both_covers___GCPD-OCD" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\96 Final Crisis Aftermath\01 RIP Tie-ins — 1 file(s), numbers 851, pp 26-26; cv per-file 18058x1; key 'Detective Comics'
+      [17873] 01 Detective_Comics_851__2008___both_covers___GCPD-OCD_.cbr (26pp)
+   G7 "Detective_Comics_852__2009___Minutemen-Graves" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\96 Final Crisis Aftermath\01 RIP Tie-ins — 1 file(s), numbers 852, pp 25-25; cv per-file 18058x1; key 'Detective Comics'
+      [17875] 03 Detective_Comics_852__2009___Minutemen-Graves_.cbr (25pp)
+   G8 "Detective Comics 1000000 (1998-11) (digital) (OkC.O.M.P.U.T.O.-Novus)" in DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\DC - One Million (1998) — 1 file(s), pp 22-22; cv per-file 18058x1; key 'Detective Comics (1937)'
+      [18033] 18 Detective Comics 1000000 (1998-11) (digital) (OkC.O.M.P.U.T.O.-Novus).cbz (22pp)
+   G9 "Detective Comics" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\001 Forever Evil 1 — 1 file(s), numbers 0, pp 33-33; cv per-file 18058x1; key 'Detective Comics'
+      [18056] 002 Detective Comics 000 - November 2012.cbr (33pp)
+   G10 "Detective Comics" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\002 Zero Year Secret City — 1 file(s), numbers 25, pp 32-32; cv per-file 18058x1; key 'Detective Comics'
+      [18063] 005 Detective Comics 025 - January 2014.cbr (32pp)
+   G11 "Detective Comics" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\024 Batman Detective Comics Vol. 1 Faces of Death — 7 file(s), numbers 1-6, 8, pp 20-31; cv per-file 18058x7; key 'Detective Comics'
+      [18228] Detective Comics 001 - November 2011.cbr (27pp)
+      [18229] Detective Comics 002 - December 2011.cbr (20pp)
+      [18230] Detective Comics 003 - January 2012.cbr (22pp)
+      [18231] Detective Comics 004 - February 2012.cbr (22pp)
+      [18232] Detective Comics 005 - March 2012.cbr (21pp)
+      [18233] Detective Comics 006 - April 2012.cbr (21pp)
+      [18235] Detective Comics 008 - June 2012.cbr (31pp)
+   G12 "Detective Comics" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\028 Batman Night of the Owls — 1 file(s), numbers 9, pp 31-31; cv per-file 18058x1; key 'Detective Comics'
+      [18257] 003 Detective Comics 009 - July 2012.cbr (31pp)
+   G13 "Detective Comics" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\032 Batman Detective Comics Vol. 2 Scare Tactics — 5 file(s), numbers 10-14, pp 29-31; cv per-file 18058x5; key 'Detective Comics'
+      [18280] 001 Detective Comics 010 - August 2012.cbr (30pp)
+      [18281] 002 Detective Comics 011 - September 2012.cbr (30pp)
+      [18282] 003 Detective Comics 012 - October 2012.cbr (29pp)
+      [18284] 005 Detective Comics 013 - December 2012.cbr (31pp)
+      [18285] 006 Detective Comics 014 - January 2013.cbr (30pp)
+   G14 "Detective Comics Annual" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\032 Batman Detective Comics Vol. 2 Scare Tactics — 1 file(s), numbers 1, pp 36-36; cv per-file 18058x1; key 'Detective Comics'
+      [18283] 004 Detective Comics Annual 001 - October 2012.cbr (36pp)
+   G15 "Detective Comics" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\058 Batman Detective Comics Vol. 3 Emperor Penguin 1 — 1 file(s), numbers 15, pp 30-30; cv per-file 18058x1; key 'Detective Comics'
+      [19913] Detective Comics 015 - February 2013.cbr (30pp)
+   G16 "Detective Comics" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\062 Batman Detective Comics Vol. 3 Emperor Penguin 2 — 2 file(s), numbers 16-17, pp 30-31; cv per-file 18058x2; key 'Detective Comics'
+      [18394] Detective Comics 016 - March 2013.cbr (30pp)
+      [18395] Detective Comics 017 - April 2013.cbr (31pp)
+   G17 "Detective Comics" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\082 Batman Detective Comics Vol. 3 Emperor Penguin 2 — 1 file(s), numbers 18, pp 33-33; cv per-file 18058x1; key 'Detective Comics'
+      [19922] Detective Comics 018 - May 2013.cbr (33pp)
+   G18 "Detective Comics" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\108 Detective Comics - 19 - 29 — 11 file(s), numbers 19-29, pp 24-85; cv per-file 18058x11; key 'Detective Comics (1937)'
+      e.g. Detective Comics # 19.cbr
+        18671 #19 72pp · 18672 #20 33pp · 18673 #21 33pp · 18674 #22 33pp · 18675 #23 32pp · 18676 #24 26pp · 18677 #25 32pp · 18678 #26 25pp · 18679 #27 85pp · 18680 #28 25pp · 18681 #29 24pp
+   G19 "Detective Comics" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\113 Detective Comics - Icarus — 5 file(s), numbers 30-34, pp 16-27; cv per-file 18058x5; key 'Detective Comics (1937)'
+      e.g. Detective Comics # 30.cbr
+        18714 #30 22pp · 18715 #31 24pp · 18716 #32 21pp · 18717 #33 27pp · 18718 #34 16pp
+   G20 "Detective Comics" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\118 Batman - Superheavy Part 1 — 6 file(s), numbers 41-46, pp 26-29; cv per-file 18058x6; gcd per-file 60830x6; key 'Detective Comics (1937)'
+      e.g. 05 Detective Comics # 41 (2015) (digital-Empire).cbr
+        18847 #41 2015 26pp · 18848 #42 2015 27pp · 18849 #43 2015 26pp · 18850 #44 2015 27pp · 18851 #45 2015 28pp
+      [18852] 10 Detective Comics 046 (2016) (2 covers) (Digital) (Cypher 2.0-Empire).cbr (29pp)
+   G21 "Detective Comics" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\123 Robin War (2016) — 1 file(s), numbers 47, pp 26-26; cv per-file 18058x1; gcd per-file 60830x1; key 'Detective Comics (1937)'
+      [18986] 03 Detective Comics 047 (2016) (Digital) (Cypher 2.0-Empire).cbr (26pp)
+   G22 "Detective Comics" in DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\126 Batman - Superheavy - Part 2 - Bloom — 6 file(s), numbers 47-52, pp 26-46; cv per-file 18058x6; gcd per-file 60830x6; key 'Detective Comics (1937)'
+      e.g. 01 Detective Comics 047 (2016) (Digital) (Cypher 2.0-Empire).cbr
+        19009 #47 2016 26pp · 19010 #48 2016 28pp · 19011 #49 2016 28pp · 19012 #50 2016 46pp · 19013 #51 2016 27pp · 19014 #52 2016 27pp
+   G23 "Detective Comics" in DC\#DC Events\004 Major DC Events - Rebirth\001 DC Rebirth (2016) — 1 file(s), numbers 934, pp 29-29; cv per-file 18058x1; gcd per-file 60830x1; key 'Detective Comics'
+      [19060] Detective Comics 934 (2016) (2 covers) (Digital) (TLK-EMPIRE-HD).cbr (29pp)
+   G24 "Detective Comics" in DC\#DC Events\004 Major DC Events - Rebirth\002 Night of the Monster Men (2017) — 2 file(s), numbers 941-942, pp 25-25; cv per-file 18058x2; gcd per-file 60830x2; key 'Detective Comics'
+      [19074] 03 Detective Comics 941 (2016) (2 covers) (Digital) (TLK-EMPIRE-HD).cbr (25pp)
+      [19077] 06 Detective Comics 942 (2016) (2 covers) (Digital) (TLK-EMPIRE-HD).cbr (25pp)
+   G25 "Detective Comics" in DC\_Batman\_Completed Series\01 Detective Comics v1 (1937) — 881 file(s), numbers 1-261, 263-881, pp 9-85; cv per-file 18058x881; gcd per-file 87x867, 16502x4, 149680x3; key 'Detective Comics v1 (1937)'
+      e.g. Detective Comics 001 (1937) (Microfiche).cbr
+        59651 #1 1937 68pp · 59652 #2 1937 68pp · 59653 #3 1937 68pp · 59654 #4 1937 68pp · 59655 #5 1937 68pp · 59656 #6 1937 68pp · 59657 #7 1937 68pp · 59658 #8 1937 68pp · 59659 #9 1937 68pp
+        59660 #10 1937 68pp · 59661 #11 1938 68pp · 59662 #12 1938 68pp · 59663 #13 1938 68pp · 59664 #14 1938 68pp · 59665 #15 1938 68pp · 59666 #16 1938 68pp · 59667 #17 1938 68pp
+        59668 #18 1938 68pp · 59669 #19 1938 68pp · 59670 #20 1938 68pp · 59671 #21 1938 68pp · 59672 #22 1938 68pp · 59673 #23 1939 68pp · 59674 #24 1939 68pp · 59675 #25 1939 68pp
+        59676 #26 1939 68pp · 59677 #27 1939 9pp · 59678 #28 1939 9pp · 59679 #29 1939 13pp · 59680 #30 1939 13pp · 59681 #31 1939 13pp · 59682 #32 1939 13pp · 59683 #33 1939 15pp
+        59684 #34 1940 37pp · 59685 #35 1940 58pp · 59686 #36 1940 60pp · 59687 #37 1940 63pp · 59688 #38 1940 59pp · 59689 #39 1940 62pp · 59690 #40 1940 57pp · 59691 #41 1940 59pp
+        59692 #42 1940 61pp · 59693 #43 1940 59pp · 59694 #44 1940 59pp · 59695 #45 1941 52pp · 59696 #46 1941 59pp · 59697 #47 1941 60pp · 59698 #48 1941 53pp · 59699 #49 1941 59pp
+        59700 #50 1941 14pp · 59701 #51 1941 14pp · 59702 #52 1941 13pp · 59703 #53 1941 14pp · 59704 #54 1941 14pp · 59705 #55 1941 14pp · 59706 #56 1941 14pp · 59707 #57 1941 15pp
+        59708 #58 1941 15pp · 59709 #59 1942 15pp · 59710 #60 1942 15pp · 59711 #61 1942 15pp · 59712 #62 1942 15pp · 59713 #63 1942 15pp · 59714 #64 1942 26pp · 59715 #65 1942 27pp
+        59716 #66 1942 26pp · 59717 #67 1942 26pp · 59718 #68 1942 27pp · 59719 #69 1942 27pp · 59720 #70 1942 27pp · 59721 #71 1943 26pp · 59722 #72 1943 26pp · 59723 #73 1943 26pp
+        59724 #74 1943 14pp · 59725 #75 1943 13pp · 59726 #76 1943 13pp · 59727 #77 1943 13pp · 59728 #78 1943 14pp · 59729 #79 1943 13pp · 59730 #80 1943 13pp · 59731 #81 1943 13pp
+        59732 #82 1943 13pp · 59733 #83 1944 54pp · 59734 #84 1944 55pp · 59735 #85 1944 53pp · 59736 #86 1944 54pp · 59737 #87 1944 54pp · 59738 #88 1944 54pp · 59739 #89 1944 53pp
+        59740 #90 1944 45pp · 59741 #91 1944 46pp · 59742 #92 1944 45pp · 59743 #93 1944 42pp · 59744 #94 1945 45pp · 59745 #95 1945 46pp · 59746 #96 1945 13pp · 59747 #97 1945 44pp
+        59748 #98 1945 45pp · 59749 #99 1945 13pp · 59750 #100 1945 13pp · 59751 #101 1945 43pp · 59752 #102 1945 43pp · 59753 #103 1945 43pp · 59754 #104 1945 42pp · 59755 #105 1945 44pp
+        59756 #106 1945 45pp · 59757 #107 1946 13pp · 59758 #108 1946 43pp · 59759 #109 1946 45pp · 59760 #110 1946 45pp · 59761 #111 1946 44pp · 59762 #112 1946 43pp · 59763 #113 1946 41pp
+        59764 #114 1946 44pp · 59765 #115 1946 44pp · 59766 #116 1946 44pp · 59767 #117 1947 45pp · 59768 #118 1947 42pp · 59769 #119 1947 42pp · 59770 #120 1947 46pp · 59771 #121 1947 44pp
+        59772 #122 1947 43pp · 59773 #123 1947 41pp · 59774 #124 1947 41pp · 59775 #125 1947 40pp · 59776 #126 1947 42pp · 59777 #127 1947 42pp · 59778 #128 1947 44pp · 59779 #129 1947 42pp
+        59780 #130 1947 41pp · 59781 #131 1948 41pp · 59782 #132 1948 44pp · 59786 #136 1948 53pp · 59787 #137 1948 52pp · 59788 #138 1948 52pp · 59789 #139 1948 52pp · 59790 #140 1948 40pp
+        59791 #141 1948 52pp · 59792 #142 1948 52pp · 59793 #143 1949 52pp · 59794 #144 1949 52pp · 59795 #145 1949 52pp · 59796 #146 1949 52pp · 59797 #147 1949 51pp · 59798 #148 1949 52pp
+        59799 #149 1949 52pp · 59800 #150 1949 51pp · 59801 #151 1949 37pp · 59802 #152 1949 52pp · 59804 #154 1949 52pp · 59805 #155 1950 53pp · 59806 #156 1949 52pp · 59807 #157 1950 52pp
+        59808 #158 1950 51pp · 59809 #159 1950 52pp · 59810 #160 1950 52pp · 59811 #161 1950 50pp · 59812 #162 1950 52pp · 59813 #163 1950 50pp · 59814 #164 1950 52pp · 59815 #165 1950 50pp
+        59816 #166 1950 52pp · 59817 #167 1951 52pp · 59818 #168 1951 53pp · 59819 #169 1951 52pp · 59820 #170 1951 52pp · 59821 #171 1951 53pp · 59822 #172 1951 52pp · 59823 #173 1951 52pp
+        59824 #174 1951 53pp · 59825 #175 1951 52pp · 59826 #176 1951 52pp · 59827 #177 1951 44pp · 59828 #178 1951 44pp · 59829 #179 1952 44pp · 59830 #180 1952 46pp · 59831 #181 1952 44pp
+        59832 #182 1952 41pp · 59833 #183 1952 44pp · 59834 #184 1952 44pp · 59835 #185 1952 45pp · 59836 #186 1952 44pp · 59837 #187 1952 44pp · 59838 #188 1952 44pp · 59839 #189 1952 44pp
+        59840 #190 1952 42pp · 59841 #191 1953 44pp · 59842 #192 1953 45pp · 59843 #193 1953 32pp · 59844 #194 1953 44pp · 59845 #195 1953 44pp · 59846 #196 1953 44pp · 59847 #197 1953 44pp
+        59848 #198 1953 44pp · 59849 #199 1953 35pp · 59850 #200 1953 37pp · 59851 #201 1953 35pp · 59852 #202 1953 44pp · 59853 #203 1954 44pp · 59854 #204 1954 44pp · 59855 #205 1954 45pp
+        59856 #206 1954 45pp · 59857 #207 1954 35pp · 59858 #208 1954 45pp · 59859 #209 1954 44pp · 59860 #210 1954 44pp · 59861 #211 1954 44pp · 59862 #212 1954 27pp · 59863 #213 1954 37pp
+        59864 #214 1955 36pp · 59865 #215 1955 36pp · 59866 #216 1955 37pp · 59867 #217 1955 36pp · 59868 #218 1955 37pp · 59869 #219 1955 36pp · 59870 #220 1955 36pp · 59871 #221 1955 36pp
+        59872 #222 1955 36pp · 59873 #223 1955 37pp · 59874 #224 1956 34pp · 59875 #225 1955 37pp · 59876 #226 1956 36pp · 59877 #227 1956 37pp · 59878 #228 1956 37pp · 59879 #229 1956 36pp
+        59880 #230 1956 37pp · 59881 #231 1956 37pp · 59882 #232 1956 36pp · 59883 #233 1956 37pp · 59884 #234 1956 37pp · 59885 #235 1956 37pp · 59886 #236 1956 37pp · 59887 #237 1956 37pp
+        59888 #238 1956 37pp · 59889 #239 1957 37pp · 59890 #240 1957 36pp · 59891 #241 1957 37pp · 59892 #242 1957 27pp · 59893 #243 1957 37pp · 59894 #244 1957 37pp · 59895 #245 1957 37pp
+        59896 #246 1957 37pp · 59897 #247 1957 37pp · 59898 #248 1957 37pp · 59899 #249 1957 37pp · 59900 #250 1957 37pp · 59901 #251 1957 37pp · 59902 #252 1958 37pp · 59903 #253 1958 37pp
+        59904 #254 1958 36pp · 59905 #255 1958 37pp · 59906 #256 1958 34pp · 59907 #257 1958 37pp · 59908 #258 1958 37pp · 59909 #259 1958 36pp · 59910 #260 1958 37pp · 59911 #261 1958 39pp
+        59912 #263 1959 37pp · 59913 #263 1959 36pp · 59914 #264 1959 37pp · 59915 #265 1959 37pp · 59916 #266 1959 37pp · 59917 #267 1959 38pp · 59918 #268 1959 37pp · 59919 #269 1959 37pp
+        59920 #270 1959 37pp · 59921 #271 1959 37pp · 59922 #272 1959 37pp · 59923 #273 1959 37pp · 59924 #274 1959 37pp · 59925 #275 1960 37pp · 59926 #276 1960 36pp · 59927 #277 1960 36pp
+        59928 #278 1960 37pp · 59929 #279 1960 37pp · 59930 #280 1960 37pp · 59931 #281 1960 37pp · 59932 #282 1960 37pp · 59933 #283 1960 37pp · 59934 #284 1960 36pp · 59935 #285 1960 37pp
+        59936 #286 1960 37pp · 59937 #287 1961 37pp · 59938 #288 1961 37pp · 59939 #289 1961 37pp · 59940 #290 1961 37pp · 59941 #291 1961 37pp · 59942 #292 1961 37pp · 59943 #293 1961 37pp
+        59944 #294 1961 37pp · 59945 #295 1961 37pp · 59946 #296 1961 36pp · 59947 #297 1961 37pp · 59948 #298 1962 28pp · 59949 #299 1962 29pp · 59950 #300 1962 28pp · 59951 #301 1962 30pp
+        59952 #302 1962 30pp · 59953 #303 1962 31pp · 59954 #304 1962 30pp · 59955 #305 1962 29pp · 59956 #306 1962 28pp · 59957 #307 1962 28pp · 59958 #308 1962 28pp · 59959 #309 1963 28pp
+        59960 #310 1963 28pp · 59961 #311 1963 29pp · 59962 #312 1963 29pp · 59963 #313 1963 27pp · 59964 #314 1963 27pp · 59965 #315 1963 28pp · 59966 #316 1963 28pp · 59967 #317 1963 28pp
+        59968 #318 1963 27pp · 59969 #319 1963 28pp · 59970 #320 1963 28pp · 60001 #321 1963 27pp · 60002 #322 1963 28pp · 60003 #323 1964 27pp · 60004 #324 1964 29pp · 60005 #325 1964 27pp
+        60006 #326 1964 28pp · 60007 #327 1964 27pp · 60008 #328 1964 29pp · 60009 #329 1964 27pp · 60010 #330 1964 26pp · 60011 #331 1964 26pp · 60012 #332 1964 26pp · 60013 #333 1964 26pp
+        60014 #334 1964 27pp · 60015 #335 1965 25pp · 60016 #336 1965 26pp · 60017 #337 1965 27pp · 60018 #338 1965 28pp · 60019 #339 1965 26pp · 60020 #340 1965 26pp · 60021 #341 1965 26pp
+        60022 #342 1965 26pp · 60023 #343 1965 25pp · 60024 #344 1965 25pp · 60025 #345 1966 27pp · 60026 #346 1966 26pp · 60027 #347 1966 26pp · 60028 #348 1966 27pp · 60029 #349 1966 26pp
+        60030 #350 1966 26pp · 60031 #351 1966 25pp · 60032 #352 1966 26pp · 60033 #353 1966 25pp · 60034 #354 1966 25pp · 60035 #355 1966 25pp · 60036 #356 1966 25pp · 60037 #357 1967 25pp
+        60038 #358 1967 25pp · 60039 #359 1967 25pp · 60040 #360 1967 24pp · 60041 #361 1967 24pp · 60042 #362 1967 24pp · 60043 #363 1967 25pp · 60044 #364 1967 24pp · 60045 #365 1967 24pp
+        60046 #366 1967 24pp · 60047 #367 1967 24pp · 60048 #368 1967 24pp · 60049 #369 1967 24pp · 60050 #370 1967 26pp · 60051 #371 1968 25pp · 60052 #372 1968 30pp · 60053 #373 1968 24pp
+        60054 #374 1968 24pp · 60055 #375 1968 24pp · 60056 #376 1968 25pp · 60057 #377 1968 25pp · 60058 #378 1968 24pp · 60059 #379 1968 24pp · 60060 #380 1968 24pp · 60061 #381 1969 25pp
+        60062 #382 1969 24pp · 60063 #383 1969 24pp · 60064 #384 1969 25pp · 60065 #385 1969 24pp · 60066 #386 1969 25pp · 60067 #387 1969 25pp · 60068 #388 1969 25pp · 60069 #389 1969 25pp
+        60070 #390 1969 24pp · 60071 #391 1969 25pp · 60072 #392 1969 36pp · 60073 #393 1970 24pp · 60074 #394 1969 25pp · 60075 #395 1970 26pp · 60076 #396 1970 29pp · 60077 #397 1970 24pp
+        60078 #398 1970 26pp · 60079 #399 1970 26pp · 60080 #400 1970 25pp · 60081 #401 1970 23pp · 60082 #402 1970 25pp · 60083 #403 1970 25pp · 60084 #404 1970 23pp · 60085 #405 1971 29pp
+        60086 #406 1971 23pp · 60087 #407 1971 23pp · 60088 #408 1971 24pp · 60089 #409 1971 23pp · 60090 #410 1971 23pp · 60091 #411 1971 23pp · 60092 #412 1971 23pp · 60093 #413 1971 23pp
+        60094 #414 1971 39pp · 60095 #415 1971 38pp · 60096 #416 1971 38pp · 60097 #417 1972 38pp · 60098 #418 1972 39pp · 60099 #419 1972 38pp · 60100 #420 1972 38pp · 60101 #421 1972 38pp
+        60102 #422 1972 39pp · 60103 #423 1972 38pp · 60104 #424 1972 37pp · 60105 #425 1972 25pp · 60106 #426 1972 25pp · 60107 #427 1972 25pp · 60108 #428 1972 25pp · 60109 #429 1972 25pp
+        60110 #430 1973 24pp · 60111 #431 1973 25pp · 60112 #432 1973 24pp · 60113 #433 1973 24pp · 60114 #434 1973 24pp · 60115 #435 1973 24pp · 60116 #436 1973 24pp · 60117 #437 1973 21pp
+        60118 #438 1974 84pp · 60119 #439 1974 85pp · 60120 #440 1974 84pp · 60121 #441 1974 82pp · 60122 #442 1974 83pp · 60123 #443 1974 81pp · 60124 #444 1975 80pp · 60125 #445 1975 81pp
+        60126 #446 1975 19pp · 60127 #447 1975 19pp · 60128 #448 1975 19pp · 60129 #449 1975 19pp · 60130 #450 1975 19pp · 60131 #451 1975 19pp · 60132 #452 1975 19pp · 60133 #453 1976 19pp
+        60134 #454 1976 19pp · 60135 #455 1976 19pp · 60136 #456 1976 19pp · 60137 #457 1976 19pp · 60138 #458 1976 19pp · 60139 #459 1976 19pp · 60140 #460 1976 17pp · 60141 #461 1976 18pp
+        60142 #462 1976 18pp · 60143 #463 1976 18pp · 60144 #464 1976 18pp · 60145 #465 1977 18pp · 60146 #466 1977 18pp · 60147 #467 1977 17pp · 60148 #468 1977 18pp · 60149 #469 1977 18pp
+        60150 #470 1977 18pp · 60151 #471 1977 18pp · 60152 #472 1977 18pp · 60153 #473 1977 18pp · 60154 #474 1977 18pp · 60155 #475 1978 19pp · 60156 #476 1978 19pp · 60157 #477 1978 19pp
+        60158 #478 1978 18pp · 60159 #479 1978 26pp · 60160 #480 1978 26pp · 60161 #481 1979 66pp · 60162 #482 1979 62pp · 60163 #483 1979 57pp · 60164 #484 1979 67pp · 60165 #485 1979 67pp
+        60166 #486 1979 53pp · 60167 #487 1980 52pp · 60168 #488 1980 52pp · 60169 #489 1980 52pp · 60170 #490 1980 52pp · 60171 #491 1980 52pp · 60172 #492 1980 52pp · 60173 #493 1980 52pp
+        60174 #494 1980 48pp · 60175 #495 1980 52pp · 60176 #496 1981 27pp · 60177 #497 1981 26pp · 60178 #498 1981 26pp · 60179 #499 1981 26pp · 60180 #500 1981 82pp · 60181 #501 1981 26pp
+        60182 #502 1981 26pp · 60183 #503 1981 26pp · 60184 #504 1981 26pp · 60185 #505 1981 26pp · 60186 #506 1981 26pp · 60187 #507 1981 28pp · 60188 #508 1981 28pp · 60189 #509 1981 28pp
+        60190 #510 1982 28pp · 60191 #511 1982 28pp · 60192 #512 1982 25pp · 60193 #513 1982 27pp · 60194 #514 1982 26pp · 60195 #515 1982 27pp · 60196 #516 1982 26pp · 60197 #517 1982 27pp
+        60198 #518 1982 26pp · 60199 #519 1982 24pp · 60200 #520 1983 24pp · 60201 #521 1983 24pp · 60202 #522 1983 24pp · 60203 #523 1983 24pp · 60204 #524 1983 25pp · 60205 #525 1983 24pp
+        60206 #526 1983 56pp · 60207 #527 1983 23pp · 60208 #528 1983 24pp · 60209 #529 1983 24pp · 60210 #530 1983 24pp · 60211 #531 1983 24pp · 60212 #532 1984 24pp · 60213 #533 1984 24pp
+        60214 #534 1984 24pp · 60215 #535 1984 24pp · 60216 #536 1984 25pp · 60217 #537 1984 24pp · 60218 #538 1984 25pp · 60219 #539 1984 24pp · 60220 #540 1984 24pp · 60221 #541 1984 24pp
+        60222 #542 1984 24pp · 60223 #543 1984 24pp · 60224 #544 1985 24pp · 60225 #545 1985 24pp · 60226 #546 1985 35pp · 60227 #547 1985 24pp · 60228 #548 1985 25pp · 60229 #549 1985 25pp
+        60230 #550 1985 25pp · 60231 #551 1985 24pp · 60232 #552 1985 22pp · 60233 #553 1985 24pp · 60234 #554 1985 24pp · 60235 #555 1985 24pp · 60236 #556 1986 24pp · 60237 #557 1986 24pp
+        60238 #558 1986 23pp · 60239 #559 1985 23pp · 60240 #560 1986 23pp · 60241 #561 1986 23pp · 60242 #562 1986 23pp · 60243 #563 1986 35pp · 60244 #564 1986 23pp · 60245 #565 1986 23pp
+        60246 #566 1986 23pp · 60247 #567 1986 23pp · 60248 #568 1986 24pp · 60249 #569 1987 23pp · 60250 #570 1987 23pp · 60251 #571 1987 23pp · 60252 #572 1987 56pp · 60253 #573 1987 23pp
+        60254 #574 1987 23pp · 60255 #575 1987 23pp · 60256 #576 1987 23pp · 60257 #577 1987 22pp · 60258 #578 1987 24pp · 60259 #579 1987 24pp · 60260 #580 1988 23pp · 60261 #581 1988 23pp
+        60262 #582 1988 23pp · 60263 #583 1988 23pp · 60264 #584 1988 23pp · 60265 #585 1988 23pp · 60266 #586 1988 23pp · 60267 #587 1988 23pp · 60268 #588 1988 23pp · 60269 #589 1988 38pp
+        60270 #590 1988 23pp · 60271 #591 1988 23pp · 60272 #592 1988 23pp · 60273 #593 1988 23pp · 60274 #594 1988 23pp · 60275 #595 1989 39pp · 60276 #596 1989 22pp · 60277 #597 1989 23pp
+        60278 #598 1989 78pp · 60279 #599 1989 29pp · 60280 #600 1989 62pp · 60281 #601 1989 23pp · 60282 #602 1989 23pp · 60283 #603 1989 22pp · 60284 #604 1989 23pp · 60285 #605 1989 23pp
+        60286 #606 1989 23pp · 60287 #607 1989 23pp · 60288 #608 1989 23pp · 60289 #609 1989 23pp · 60290 #610 1990 23pp · 60291 #611 1990 23pp · 60292 #612 1990 23pp · 60293 #613 1990 22pp
+        60294 #614 1990 23pp · 60295 #615 1990 23pp · 60296 #616 1990 23pp · 60297 #617 1990 22pp · 60298 #618 1990 23pp · 60299 #619 1990 23pp · 60300 #620 1990 23pp · 60301 #621 1990 23pp
+        60302 #622 1990 23pp · 60303 #623 1990 23pp · 60304 #624 1991 23pp · 60305 #625 1991 23pp · 60306 #626 1991 23pp · 60307 #627 1991 66pp · 60308 #628 1991 23pp · 60309 #629 1991 23pp
+        60310 #630 1991 23pp · 60311 #631 1991 23pp · 60312 #632 1991 23pp · 60313 #633 1991 23pp · 60314 #634 1991 23pp · 60315 #635 1991 23pp · 60316 #636 1991 22pp · 60317 #637 1991 23pp
+        60318 #638 1991 23pp · 60319 #639 1991 23pp · 60320 #640 1992 23pp · 60321 #641 1992 22pp · 60322 #642 24pp · 60323 #643 1992 23pp · 60324 #644 1992 23pp · 60325 #645 1992 22pp
+        60326 #646 1992 23pp · 60327 #647 1992 23pp · 60328 #648 1992 23pp · 60329 #649 1992 23pp · 60330 #650 1992 21pp · 60331 #651 1992 23pp · 60332 #652 1992 23pp · 60333 #653 1992 24pp
+        60334 #654 1993 22pp · 60335 #655 1993 23pp · 60336 #656 1993 23pp · 60337 #657 1993 22pp · 60338 #658 1993 22pp · 60339 #659 1993 23pp · 60340 #660 1993 23pp · 60341 #661 1993 23pp
+        60342 #662 1993 23pp · 60343 #663 1993 23pp · 60344 #664 1993 23pp · 60345 #665 1993 22pp · 60346 #666 1993 23pp · 60347 #667 1993 24pp · 60348 #668 1993 22pp · 60349 #669 1993 22pp
+        60350 #670 1994 23pp · 60351 #671 1994 23pp · 60352 #672 1994 24pp · 60353 #673 1994 22pp · 60354 #674 1994 23pp · 60355 #675 1994 22pp · 60356 #676 1994 39pp · 60357 #677 1994 22pp
+        60358 #678 1994 23pp · 60359 #679 1994 22pp · 60360 #680 1994 22pp · 60361 #681 1995 23pp · 60362 #682 1995 22pp · 60363 #683 1995 23pp · 60364 #684 1995 23pp · 60365 #685 1995 23pp
+        60366 #686 1995 23pp · 60367 #687 1995 23pp · 60368 #688 1995 24pp · 60369 #689 1995 23pp · 60370 #690 1995 22pp · 60371 #691 1995 21pp · 60372 #692 1995 22pp · 60373 #693 1996 23pp
+        60374 #694 1996 22pp · 60375 #695 1996 22pp · 60376 #696 1996 23pp · 60377 #697 1997 22pp · 60378 #698 1996 22pp · 60379 #699 1996 24pp · 60380 #700 1996 38pp · 60381 #701 1996 24pp
+        60382 #702 1996 22pp · 60383 #703 1996 23pp · 60384 #704 1996 23pp · 60385 #705 1997 23pp · 60386 #706 1997 23pp · 60387 #707 1997 23pp · 60388 #708 1997 23pp · 60389 #709 1997 22pp
+        60390 #710 1997 23pp · 60391 #711 1997 22pp · 60392 #712 1997 23pp · 60393 #713 1997 23pp · 60394 #714 1997 23pp · 60395 #715 1997 23pp · 60396 #716 1997 23pp · 60397 #717 1998 22pp
+        60398 #718 1998 23pp · 60399 #719 1998 24pp · 60400 #720 1998 23pp · 60401 #721 1998 22pp · 60402 #722 1998 23pp · 60403 #723 2013 23pp · 60404 #724 2013 23pp · 60405 #725 1998 23pp
+        60406 #726 1998 22pp · 60407 #727 1998 23pp · 60408 #728 1999 23pp · 60409 #729 1999 23pp · 60410 #730 1999 25pp · 60411 #731 1999 24pp · 60412 #732 1999 23pp · 60413 #733 1999 22pp
+        60414 #734 1999 23pp · 60415 #735 1999 22pp · 60416 #736 1999 20pp · 60417 #737 1999 23pp · 60418 #738 1999 22pp · 60419 #739 1999 22pp · 60420 #740 2000 23pp · 60421 #741 2000 31pp
+        60422 #742 2000 31pp · 60423 #743 2000 31pp · 60424 #744 2000 31pp · 60425 #745 2000 30pp · 60426 #746 2000 31pp · 60427 #747 2000 31pp · 60428 #748 2000 30pp · 60429 #749 2000 31pp
+        60430 #750 2000 55pp · 60431 #751 2000 31pp · 60432 #752 2001 30pp · 60433 #753 2001 31pp · 60434 #754 2001 30pp · 60435 #755 2001 31pp · 60436 #756 2001 31pp · 60437 #757 2001 31pp
+        60438 #758 2001 31pp · 60439 #759 2001 31pp · 60440 #760 2001 31pp · 60441 #761 2001 31pp · 60442 #762 2001 31pp · 60443 #763 2001 31pp · 60444 #764 2002 30pp · 60445 #765 2002 30pp
+        60446 #766 2002 29pp · 60447 #767 2002 30pp · 60448 #768 2002 24pp · 60449 #769 2002 31pp · 60450 #770 2002 32pp · 60451 #771 2002 31pp · 60452 #772 2002 29pp · 60453 #773 2002 30pp
+        60454 #774 2002 31pp · 60455 #775 2002 39pp · 60456 #776 2003 23pp · 60457 #777 2003 31pp · 60458 #778 2003 31pp · 60459 #779 2003 31pp · 60460 #780 2003 30pp · 60461 #781 2003 31pp
+        60462 #782 2003 31pp · 60463 #783 2003 31pp · 60464 #784 2003 31pp · 60465 #785 2003 32pp · 60466 #786 2003 32pp · 60467 #787 2003 32pp · 60468 #788 2004 31pp · 60469 #789 2004 31pp
+        60470 #790 2004 32pp · 60471 #791 2004 32pp · 60472 #792 2004 32pp · 60473 #793 2004 32pp · 60474 #794 2004 32pp · 60475 #795 2004 32pp · 60476 #796 2004 32pp · 60477 #797 2004 30pp
+        60478 #798 2004 32pp · 60479 #799 2004 32pp · 60480 #800 2005 40pp · 60481 #801 2005 31pp · 60482 #802 2005 32pp · 60483 #803 2005 32pp · 60484 #804 2005 32pp · 60485 #805 2005 31pp
+        60486 #806 2005 32pp · 60487 #807 2005 32pp · 60488 #808 2005 32pp · 60489 #809 2005 31pp · 60490 #810 2005 31pp · 60491 #811 2005 24pp · 60492 #812 2005 24pp · 60493 #813 2006 24pp
+        60494 #814 2006 24pp · 60495 #815 2006 24pp · 60496 #816 2006 24pp · 60497 #817 2006 22pp · 60498 #818 2006 23pp · 60499 #819 2006 23pp · 60500 #820 2006 23pp · 60501 #821 2006 21pp
+        60502 #822 2006 24pp · 60503 #823 2006 23pp · 60504 #824 2006 24pp · 60505 #825 2007 24pp · 60506 #826 2007 24pp · 60507 #827 2007 24pp · 60508 #828 2007 24pp · 60509 #829 2007 24pp
+        60510 #830 2007 24pp · 60511 #831 2007 24pp · 60512 #832 2007 24pp · 60513 #833 2007 24pp · 60514 #834 2007 24pp · 60515 #835 2007 24pp · 60516 #836 2007 24pp · 60517 #837 2007 24pp
+        60518 #838 2008 23pp · 60519 #839 2008 23pp · 60520 #840 2008 24pp · 60521 #841 2008 24pp · 60522 #842 2008 24pp · 60523 #843 2008 24pp · 60524 #844 2008 24pp · 60525 #845 2008 24pp
+        60526 #846 2008 24pp · 60527 #847 2008 24pp · 60528 #848 2008 24pp · 60529 #849 2008 24pp · 60530 #850 2009 39pp · 60531 #851 2009 23pp · 60532 #852 2009 24pp · 60533 #853 2009 28pp
+        60534 #854 2009 26pp · 60535 #855 2009 27pp · 60536 #856 2009 25pp · 60537 #857 2009 24pp · 60538 #858 2009 29pp · 60539 #859 2010 31pp · 60540 #860 2010 30pp · 60541 #861 2010 28pp
+        60542 #862 2010 30pp · 60543 #863 2010 27pp · 60544 #864 2010 29pp · 60545 #865 2010 32pp · 60546 #866 2010 33pp · 60547 #867 2010 30pp · 60548 #868 2010 31pp · 60549 #869 2010 29pp
+        60550 #870 2010 31pp · 60551 #871 2011 31pp · 60552 #872 2011 33pp · 60553 #873 2011 24pp · 60554 #874 2011 22pp · 60555 #875 2011 23pp · 60556 #876 2011 22pp · 60557 #877 2011 22pp
+        60558 #878 2011 23pp · 60559 #879 2011 22pp · 60560 #880 2011 21pp · 60561 #881 2011 32pp
+      [59783] Detective Comics 133 (1948-03) 52p c2c (Flattermann).cbr (53pp)
+      [59784] Detective Comics 134 (1948-04) Batman only (R) .cbr (13pp)
+      [59785] Detective Comics 135 (1948-05) Batman only (R).cbr (13pp)
+      [59803] Detective Comics 153 (1949 (c2c)).cbz (52pp)
+   G26 "Detective Comics" in DC\_Batman\_Completed Series\01 Detective Comics v1 (1937)\Annuals and Specials — 1 file(s), numbers 0, pp 23-23; cv per-file 18058x1; gcd per-file 87x1; key 'Detective Comics v1 (1937)'
+      [60562] Detective Comics 000 (1994) (Digital) (Shadowcat-Empire).cbz (23pp)
+   G27 "Detective Comics Annual" in DC\_Batman\_Completed Series\01 Detective Comics v1 (1937)\Annuals and Specials — 12 file(s), numbers 1-12, pp 32-57; cv per-file 18058x11, 42594x1; gcd per-file 87x4, 60830x1; key 'Detective Comics v1 (1937)'
+      e.g. Detective Comics Annual 001 (1988) (Digital) (Shadowcat-Empire).cbz
+        60563 #1 1988 39pp · 60564 #2 1989 55pp · 60565 #3 1990 57pp · 60566 #4 1991 56pp · 60567 #5 1992 55pp · 60568 #6 1993 55pp · 60569 #7 1994 56pp · 60570 #8 1995 54pp · 60571 #9 1996 39pp
+        60572 #10 1997 53pp · 60573 #11 2009 32pp · 60574 #12 2011 48pp
+   G28 "Detective Comics" in DC\_Batman\_Completed Series\08 Batman v3.1 (2020)\Batman Vol. 05 - Fear State Tie Ins (2021) — 2 file(s), numbers 1044-1045, pp 33-34; cv per-file 18058x2; gcd per-file 60830x2; key 'Detective Comics'
+      [61470] Detective Comics 1044 (2021) (Digital) (Zone-Empire).cbr (33pp)
+      [61471] Detective Comics 1045 (2022) (Digital) (Zone-Empire).cbr (34pp)
+   G29 "Detective Comics 027 Special Edition (Batman 75 Day Comic) (2014) (digital-Empire)" in DC\_Batman\_Trades, and Graphic Novels — 1 file(s), numbers 27, pp 34-34; cv per-file 18058x1; gcd per-file 60830x1; key 'Detective Comics (1937)'
+      [62889] Detective Comics 027 Special Edition (Batman 75 Day Comic) (2014) (digital-Empire).cbr (34pp)
+   G30 "Detective Comics" in DC\_DC Facsimilie Editions — 1 file(s), numbers 475, pp 36-36; cv per-file 18058x1; gcd per-file 87x1; key 'Detective Comics (1937)'
+      [63922] Detective Comics 475 - Facsimile Edition (2020) (Digital) (Shadowcat-Empire).cbz (36pp)
+   G31 "Detective Comics" in DC\_Harley Quinn\_Minis, One-Shots & Trades — 1 file(s), numbers 23, pp 23-23; cv per-file 18058x1; gcd per-file 60830x1; key 'Detective Comics (1937)'
+      [65838] Detective Comics 023.2 - Featuring Harley Quinn (2013) (digital-empire).cbr (23pp)
+
+== S7408 Geronimo Stilton and the Kingdom of Fantasy  [split]  12 files / 1 collections  decided in R-056 (R)
+   decided: R 7408 | the eleven Scholastic "Geronimo Stilton and the Kingdom of Fantasy 01-11 (2009-2018)" illustrated novels (267-302pp) have no record on either leg (probes "Geronimo Stilton and the Kingdom of Fantasy", "Kingdom of Fantasy" return 0), and the twelfth file is a different comic: item 109310 "COL The Discovery of America HC Papercutz 2007 c2c" 64pp = NBM/Papercutz album #1 (CV 30524 issue 352017 / GCD 62181 row 898656), a second rip of S103678's v01 (109238)
+   F 7408 split-needed | MOVE item 109310 -> JOIN S103678 'Geronimo Stilton (2009)' (the Papercutz albums, cv=30524 gcd=62181 in this wave's R-057); the eleven Kingdom of Fantasy novels (26884-26894) stay
+   F 7408 wrong-cv-link | the Series row's CV 30524 is already cleared, but all 12 files still carry per-file CV 30524 (the NBM album line) — right only for 109310; the novels are Scholastic prose, not that line
+   F 7408 provider-missing | neither ComicVine's rip nor the GCD dump has a record for Scholastic's Geronimo Stilton and the Kingdom of Fantasy novels
+   named: S103678 Geronimo Stilton  18 files  keys: "Geronimo Stilton (2009)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   keys now: "Geronimo Stilton and the Kingdom of Fantasy" x11 · "The Discovery of America Papercutz" x1
+   groups (title x folder): 2
+   G1 "Geronimo Stilton and the Kingdom of Fantasy" in Graphic Novels\_Schoolastic & Graphix\Geronimo Stilton\Geronimo Stilton and the Kingdom of Fantasy (2009) — 11 file(s), numbers 1-11, pp 267-302; cv per-file 30524x11; gcd per-file 62181x1; key 'Geronimo Stilton and the Kingdom of Fantasy'
+      [26884] Geronimo Stilton and the Kingdom of Fantasy 01 - The Kingdom of Fantasy (2009) (jv-DCP).cbr (297pp)
+      [26885] Geronimo Stilton and the Kingdom of Fantasy 02 - The Quest for Paradise (2010) (jv-DCP).cbr (267pp)
+      [26886] Geronimo Stilton and the Kingdom of Fantasy 03 - The Amazing Voyage (2011) (jv-DCP).cbr (288pp)
+      [26887] Geronimo Stilton and the Kingdom of Fantasy 04 - The Dragon Prophecy (2012) (jv-DCP).cbr (302pp)
+      [26888] Geronimo Stilton and the Kingdom of Fantasy 05 - The Volcano of Fire (2013) (jv-DCP).cbr (301pp)
+      [26889] Geronimo Stilton and the Kingdom of Fantasy 06 - The Search for Treasure (2014) (jv-DCP).cbr (284pp)
+      [26890] Geronimo Stilton and the Kingdom of Fantasy 07 - The Enchanted Charms (2015) (jv-DCP).cbr (281pp)
+      [26891] Geronimo Stilton and the Kingdom of Fantasy 08 - The Hour of Magic (2016) (jv-DCP).cbr (288pp)
+      [26892] Geronimo Stilton and the Kingdom of Fantasy 09 - The Wizard's Wand (2016) (jv-DCP).cbr (279pp)
+      [26893] Geronimo Stilton and the Kingdom of Fantasy 10 - The Ship of Secrets (2017) (jv-DCP).cbr (275pp)
+      [26894] Geronimo Stilton and the Kingdom of Fantasy 11 - The Guardian of the Realm (2018) (jv-DCP).cbr (291pp)
+   G2 "The Discovery of America HC Papercutz 2007 c2c (Brainiac48)" in Papercutz — 1 file(s), 1 COL, pp 64-64; cv per-file 30524x1; gcd per-file 62181x1; key 'The Discovery of America Papercutz'
+      [109310] COL The Discovery of America HC Papercutz 2007 c2c (Brainiac48).cbr (64pp)
