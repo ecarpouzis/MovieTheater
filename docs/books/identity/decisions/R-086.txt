@@ -1,0 +1,292 @@
+# R-086 — S.2 tier one: 70 shelves whose winning line was a 0.7 or an R (C-047..C-058 Marvel, A-025/A-026/A-028
+# trade singletons, R-033/R-035, D-014/D-015 misc provider-missing). Every shelf re-probed on both legs: lookup.py
+# exact / --contains / --year, read-only LIKE probes of cv_vol.name, cv_iss.name, gcd_series.name, gcd_issue.title,
+# gcd_story.title and gcd_issue.isbn/barcode, and --collects roll-ups on every trade.
+# Surprises: the packet's "years" header lied on Nova v5 (2013) — every file is the 2013 run, the C-047 "2007" reading
+# came from a franchise-wide per-file CV stamp; Deadpool #900 IS in GCD, as Deadpool Team-Up (40644) #900; CV 53921 is
+# the Fraction Fantastic Four (2013) that S94599 calls provider-missing; the American Jesus / Chrononauts / Jupiter's
+# Circle "conflated" shelves are trade LINES both legs carry; "Spider-Man: The Trial of Venom" is Spider-Man Special
+# Edition #1; the C-051 Thor / Thanos / Spider-Man 2022 "no English id" gaps were probe spellings only.
+
+# ============ Marvel cosmic / Nova ============
+S 98949 cv=57535 gcd=72154 0.95 | the C-047 reading is overturned: every file is the 2013 run, not 2007 — "Nova 001-009 (2013)", "Nova v5 004-006 (2013)", "v5 010 (2014)", #18-20 (2014), #28 (2015) sit inside CV 57535 "Nova" (Marvel 2013, 31 cached 2013-04..2015-07) and GCD 72154 (Marvel 2013-2015, 31 rows); the six trades "Nova Vol. 01-06" (2014-2015) are GCD 79411 rows #1-6 whose roll-ups read s72154 #1-5 … #28-31; per-file CV 18462 (2007, 20/20) is the franchise-wide stamp
+F 98949 wrong-cv-link | per-file CV 18462 "Nova" (2007) on 20/20 files is a franchise stamp; the files are all dated 2013-2015 and match CV 57535 issue for issue
+F 98949 needs-fetch cv=57535 | CV 57535 "Nova" (Marvel 2013, 31) is named from the local rip and has no CvVolume row
+N 98949 C-047's F misfiled and F merge-with=13077 are retracted: the folder "Nova v5 (2013)" is right and S13077's 2007 run is a different comic; the stored GCD row on Vol. 01 (1179173, "Geburt eines Helden") is a German Panini edition, void
+I 84048 cv=424697 gcd=1186003 isbn=9780785166054 0.95 | "Nova Vol. 01 - Origin (2014)" 118pp = CV 67082 "Nova: Origin" issue 424697 "Volume 1" and GCD 79411 #1 row 1186003 "Origin" (2014-02-19, ISBN 978-0-7851-6605-4)
+I 84049 cv=447241 gcd=1186035 isbn=9780785168393 0.95 | "Nova Vol. 02 - Rookie Season (2014)" 110pp = CV 72198 issue 447241 "Volume 2" and GCD 79411 #2 row 1186035 (116pp, ISBN 978-0-7851-6839-3)
+I 84050 cv=453656 gcd=1207352 isbn=9780785189572 0.95 | "Nova Vol. 03 - Nova Corpse (2014)" 168pp = CV 74206 issue 453656 "Volume 3" and GCD 79411 #3 row 1207352 (156pp, ISBN 978-0-7851-8957-2)
+I 84051 cv=474833 gcd=1309745 isbn=9780785189589 0.95 | "Nova Vol. 04 - Original Sin (2014)" 134pp = CV 79094 issue 474833 "Volume 4" and GCD 79411 #4 row 1309745 (140pp, ISBN 978-0-7851-8958-9)
+I 84052 cv=486444 gcd=1339795 isbn=9780785192411 0.95 | "Nova Vol. 05 - AXIS (2015)" 120pp = CV 81419 issue 486444 "Volume 5" and GCD 79411 #5 row 1339795 (124pp, ISBN 978-0-7851-9241-1)
+I 84053 cv=504344 gcd=1485018 isbn=9780785193753 0.95 | "Nova Vol. 06 - Homecoming (2015)" 121pp = CV 85582 issue 504344 "Volume 6" and GCD 79411 #6 row 1485018 (132pp, ISBN 978-0-7851-9375-3)
+C 84053 cv=80598 gcd=87143 #1-1 0.95 | GCD roll-up on row 1485018 reads s87143 Nova Annual (2015) #1 beside s72154 #28-31: Homecoming also collects the one-shot Nova Annual (Marvel 2015, 1 issue; CV 80598 / GCD 87143) #1
+
+# ============ Moon Knight Annual ============
+R 102368 | two different one-shot annuals, each its own record on both legs: item 83720 "Moon Knight Annual 001 (2019)" 30pp = CV 121245 (issue 718762 "Acts of Evil!", 2019-11) / GCD 150276 (row 2015179, 2019-09-11, 40pp); item 83721 "Moon Knight Annual 001 (2023)" 30pp = CV 153237 (issue 1010943 "Contest of Chaos: Part Four") / GCD 203619 (row 2566017, 2023-08-30); C-048's CV 62956 / GCD 191829 is the 2022 annual, which we do not hold, and its "1980-era" residue was the per-file CV 3052 stamp
+F 102368 split-needed | item 83721 -> "Moon Knight Annual (2023)" cv=153237 gcd=203619; item 83720 stays as "Moon Knight Annual (2019)" cv=121245 gcd=150276 (who-stores: neither cv sits on another shelf)
+F 102368 needs-fetch cv=121245 | CV 121245 is named from the local rip and has no CvVolume row
+
+# ============ Ms. Marvel ============
+R 12433 | four identities on one shelf, not one volume: (1) Carol Danvers' Ms. Marvel (2006) = CV 17990 (Marvel 2006, 50) / GCD 16781 (2006-2010, 50) — issue files #6-8 (two rips each), #13-17 (+ a second #13), #34-42, the Ms. Marvel Special (2007) and the "Vol. 05 - Secret Invasion" trade (GCD 33980 #5, roll-up s16781 #25-30), 23 files; (2) Kamala Khan's trade line "Ms. Marvel Vol. 01-10" = GCD 84483 (2014-2018, 10 rows, ISBNs by volume) whose books collect TWO runs — Ms. Marvel (2014) #1-19 (CV 71457 / GCD 78894) in Vol. 01-04 and Ms. Marvel (2016) #1-38 (CV 86114 / GCD 94124) in Vol. 05-10; (3) "Ms. Marvel by G. Willow Wilson Book 01-05" = CV 83966 / GCD 91839 (5 each), a second line spanning both Kamala runs; (4) issue files #7-11 (2016) of the 2016 run; C-048's CV 71457 on 43/43 files is a stamp
+F 12433 split-needed | the Carol Danvers run stays as cv=17990 gcd=16781 (23 files); items 83753-83762 (Vol. 01-10) -> "Ms. Marvel (2014)" cv=- gcd=84483; items 83748-83752 (Book 01-05) -> "Ms. Marvel by G. Willow Wilson (2015)" cv=83966 gcd=91839; items 118166, 118205-118208 (#7-11, 2016) -> "Ms. Marvel v4 (2016)" cv=86114 gcd=94124 (who-stores cv=86114: no S line, only per-file links on S12438)
+F 12433 wrong-cv-link | the stored CV 71457 is the 2014 Kamala run; it covers none of the 23 Carol Danvers files and only four of the trades
+I 83753 cv=468304 gcd=1278833 isbn=9780785190219 0.95 | "Ms. Marvel Vol. 01 - No Normal (2014)" 125pp = CV 77646 issue 468304 "Volume 1" and GCD 84483 #1 row 1278833 (124pp, ISBN 978-0-7851-9021-9)
+I 83754 cv=483086 gcd=1330579 isbn=9780785190226 0.95 | "Vol. 02 - Generation Why (2015)" 137pp = CV 80827 issue 483086 "Volume 2" and GCD 84483 #2 row 1330579 (140pp)
+I 83755 cv=491523 gcd=1388545 isbn=9780785192275 0.95 | "Vol. 03 - Crushed (2015)" 113pp = CV 82512 issue 491523 "Volume 3" and GCD 84483 #3 row 1388545 (116pp)
+I 83756 cv=506177 gcd=1499626 isbn=9780785197362 0.95 | "Vol. 04 - Last Days (2015)" 125pp = CV 86115 issue 506177 "Volume 4" and GCD 84483 #4 row 1499626 (124pp)
+I 83757 cv=537942 gcd=1593853 isbn=9780785196112 0.95 | "Vol. 05 - Super Famous (2016)" 144pp = CV 91897 issue 537942 "Volume 5" and GCD 84483 #5 row 1593853 (146pp)
+I 83758 cv=566718 gcd=1658514 isbn=9780785196129 0.95 | "Vol. 06 - Civil War II (2016)" 136pp = CV 96667 issue 566718 "Volume 6" and GCD 84483 #6 row 1658514 (140pp)
+I 83759 cv=609354 gcd=1722638 isbn=9781302903053 0.95 | "Vol. 07 - Damage Per Second (2017)" 136pp = CV 102921 issue 609354 "Volume 7" and GCD 84483 #7 row 1722638 (140pp)
+I 83760 cv=646192 gcd=1765843 isbn=9781302906085 0.95 | "Vol. 08 - Mecca (2017)" 134pp = CV 106896 issue 646192 "Volume 8" and GCD 84483 #8 row 1765843 (140pp)
+I 83761 cv=677288 gcd=1825126 isbn=9781302910785 0.95 | "Vol. 09 - Teenage Wasteland (2018)" 137pp = CV 112330 issue 677288 "Volume 9" and GCD 84483 #9 row 1825126 (140pp)
+I 83762 cv=704824 gcd=1941789 isbn=9781302912697 0.95 | "Vol. 10 - Time and Again (2019)" 184pp = CV 117980 issue 704824 "Volume 10" and GCD 84483 #10 row 1941789 (188pp)
+I 83748 cv=497951 gcd=1516490 isbn=9780785198284 0.95 | "Ms. Marvel by G. Willow Wilson Book 01 (2015)" 257pp = CV 83966 issue 497951 "Volume 1" and GCD 91839 #1 row 1516490 (264pp)
+I 83749 cv=523260 gcd=1553009 isbn=9780785198369 0.95 | "Book 02 (2016)" 232pp = CV 83966 issue 523260 "Volume 2" (2016-04) and GCD 91839 #2 row 1553009 (240pp)
+I 83750 cv=602179 gcd=1714012 isbn=9781302903619 0.95 | "Book 03 (2017)" 278pp = CV 83966 issue 602179 "Volume 3" (2017-06) and GCD 91839 #3 row 1714012 (2017-06-14)
+I 83751 cv=673025 gcd=1815885 isbn=9781302909130 0.95 | "Book 04 (2018)" 271pp = CV 83966 issue 673025 "Volume 4" (2018-06-13) and GCD 91839 #4 row 1815885 (280pp)
+I 83752 cv=716370 gcd=2009580 isbn=9781302917357 0.95 | "Book 05 (2019)" 320pp = CV 83966 issue 716370 "Volume 5" (2019-08-14) and GCD 91839 #5 row 2009580 (328pp)
+I 117932 cv=166845 gcd=979026 isbn=9780785132998 0.95 | "Ms. Marvel Vol. 05 - Secret Invasion (2009)" 155pp = CV 27389 "Ms. Marvel: Secret Invasion" issue 166845 and GCD 33980 #5 row 979026 "Secret Invasion" (172pp, ISBN 978-0-7851-3299-8)
+I 116724 cv=106352 gcd=338348 isbn=- 0.95 | "Ms. Marvel Special 001 (2007)" 25pp = CV 18158 "Ms. Marvel Special" issue 106352 "Binary" (2007-03) and GCD 21947 row 338348 (2007-03, 36pp)
+C 83753 cv=71457 gcd=78894 #1-5 0.95 | GCD row 1278833 notes: Vol. 01 No Normal collects Ms. Marvel (Marvel 2014 series, 19 issues; CV 71457 / GCD 78894) #1-5
+C 83754 cv=71457 gcd=78894 #6-11 0.95 | GCD row 1330579 notes: Vol. 02 Generation Why collects Ms. Marvel (Marvel 2014 series, 19 issues; CV 71457 / GCD 78894) #6-11
+C 83755 cv=71457 gcd=78894 #12-15 0.95 | GCD row 1388545 notes: Vol. 03 Crushed collects Ms. Marvel (Marvel 2014 series, 19 issues; CV 71457 / GCD 78894) #12-15 (plus S.H.I.E.L.D. 2015 #2)
+C 83756 cv=71457 gcd=78894 #16-19 0.95 | GCD row 1499626 notes: Vol. 04 Last Days collects Ms. Marvel (Marvel 2014 series, 19 issues; CV 71457 / GCD 78894) #16-19 (plus ASM 2014 #7-8)
+C 83757 cv=86114 gcd=94124 #1-6 0.95 | GCD row 1593853 notes: Vol. 05 Super Famous collects Ms. Marvel (Marvel 2016 series, 38 issues; CV 86114 / GCD 94124) #1-6
+C 83762 cv=86114 gcd=94124 #31-38 0.95 | GCD row 1941789 notes: Vol. 10 Time and Again collects Ms. Marvel (Marvel 2016 series, 38 issues; CV 86114 / GCD 94124) #31-38
+C 83748 cv=71457 gcd=78894 #1-11 0.95 | GCD row 1516490 notes: Book 01 collects Ms. Marvel (Marvel 2014 series, 19 issues; CV 71457 / GCD 78894) #1-11 (plus All-New Marvel Now! Point One #1)
+C 83752 cv=86114 gcd=94124 #25-38 0.95 | GCD row 2009580 notes: Book 05 collects Ms. Marvel (Marvel 2016 series, 38 issues; CV 86114 / GCD 94124) #25-38
+C 117932 cv=17990 gcd=16781 #25-30 0.95 | GCD row 979026 notes and roll-up: Vol. 05 Secret Invasion collects Ms. Marvel (Marvel 2006 series, 50 issues; CV 17990 / GCD 16781) #25-30
+N 83758 Vol. 06-09 (items 83758-83761) and Book 02-04 (items 83749-83751) carry no collects note on their GCD rows; their ranges in the 2016 run (and 2014/2016 runs for the Books) are containment's to read — no C written
+N 83753 Vol. 01 also reprints All-New Marvel Now! Point One #1 (GCD note) — a one-story extra, not a C
+
+# ============ Marvel singletons and small shelves ============
+R 10426 | "Kirby Unleashed (2004 edition)" 62pp is the 1971 Jack Kirby portfolio in its 2004 reissue; re-probed "Kirby Unleashed" on cv_vol, cv_iss, gcd_series, gcd_issue titles and gcd_story titles: the only hits are five "Kirby Unleashed!" story rows inside Superman's Pal Jimmy Olsen #146-150 (1972), a different work; "Unleashed" and "Kirby" --contains name no portfolio
+F 10426 provider-missing | neither leg holds the Kirby Unleashed portfolio (probed exact, story titles, issue titles, "Unleashed", "Kirby")
+S 65459 cv=25891 gcd=17969 0.9 | the four "Punisher - Year One 01-04 (of 04) (1994-1995)" files (24-25pp, ComicInfo Series "Punisher: Year One", Volume 1994) = CV 25891 "Punisher: Year One" (Marvel 1994, 4 cached 1994-12..1995-03) and GCD 17969 "The Punisher: Year One" (Marvel 1994-1995, 4 rows); the solicited (of 04) and both counts agree; residue: two misfiled singles of other runs
+F 65459 misfiled | item 53933 "Punisher 2099 013 (1994)" is Punisher 2099 (CV 18467 / GCD 4724) #13; item 88431 "021 Punisher v3 011 (1996)" is Punisher (1995) #11, a second rip of S99393's #11 (flag #376 is true)
+F 65459 wrong-cv-link | the stored CV 18328 "Punisher" (1995, 18) is the v3 ongoing; the shelf's run is the 4-issue Year One mini
+S 94791 cv=2411 gcd=1872 0.95 | "Silver Surfer 001-018 (1968-1970)" (40-42pp for #1-7, 20-22pp after, ComicInfo Volume "1968" x16) = CV 2411 "The Silver Surfer" (Marvel 1968, 18 cached 1968-08..1970-09) and GCD 1872 (Marvel 1968-1970, 18 rows, 68pp giants at #1-3); ladder 1-18 = both counts; the "--year 1968" probe missed because both records carry the article "The"
+F 94791 wrong-cv-link | per-file CV 3857 / GCD 3433 (round2-series) stamp the 1987 148-issue volume on 1968-1970 files
+R 12729 | "National Geographic Readers - Marvel's Spider-Man Bugs Out (2024)" 32pp, ComicInfo Publisher National Geographic — a licensed early reader; re-probed "Bugs Out" (only Fritz the Cat / Harley Quinn / Spidey story titles), "National Geographic" and "Geographic Readers" on every table: nothing
+F 12729 provider-missing | a licensed non-comic kids' reader in neither leg (probed "Bugs Out", "National Geographic", story and issue titles)
+
+# ============ Spider-Man ============
+S 94704 cv=22502 gcd=32184 0.95 | "Spider-Man Loves Mary Jane (Season 2) 001-005 (2008-2009)" = CV 22502 "Spider-Man Loves Mary Jane Season 2" (Marvel 2008, 5 cached 2008-10..2009-02) and GCD 32184 "Spider-Man Loves Mary Jane (Season 2)" (2008-2009, 5 rows, same months); the C-050 probe never tried the "Season 2" name; per-file 18104 / 130243 / 57237 / 59368 are the first season and its digests
+R 64135 | three different books: item 83028 "Amazing Spider-Man Annual 001 - Facsimile Edition (2022)" 77pp, ComicInfo Web 989693 = CV 150410 "Amazing Spider-Man Annual No. 1 Facsimile Edition" issue 989693 / GCD 188477 row 2426732 (76pp) — its own book (L-089); item 93876 "Amazing Spider-Man Annual 028 (1994)" = The Amazing Spider-Man Annual (CV 2189 / GCD 1635); item 118574 "Amazing Spider-Man 010 (2022)" = the 2022 run (CV 142577 / GCD 184161); C-050's S on CV 2189 hands the facsimile and a 2022 issue the annual's identity
+F 64135 split-needed | item 93876 join S42165 (S line C-050: cv=2189 gcd=1635, holds Annual #23/#27 of the same run; key "The Amazing Spider-Man Annual"); item 118574 join S95053 (S line R-057: cv=142577 gcd=184161, the 2022 run; key "Amazing Spider-man v6 (2022)"); item 83028 stays as "Amazing Spider-Man Annual No. 1 Facsimile Edition (2022)" cv=150410 gcd=188477
+I 83028 cv=989693 gcd=2426732 isbn=- 1.0 | ComicInfo Web 989693 is CV 150410's issue "The Sinister Six" (2022-11); GCD 188477 row 2426732 (2022-08-17, 76pp) = our 77pp file
+S 16207 cv=50830 gcd=181589 0.9 | the book is its own identity, not a run's trade: "Dan Slott Spider-Man Vol. 28 - Ends of the Earth (2013)" 180pp = CV 50830 "Spider-Man: Ends of the Earth" (issue 347600) and GCD 181589 (TPB row 2350385, 2013-01-09, 196pp, ISBN 978-0-7851-6006-9; 181588 is the 2012 HC); GCD's notes say it collects THREE titles — ASM (1999 series) #682-687, Amazing Spider-Man: Ends of the Earth #1 and Avenging Spider-Man #8 — so the crossover collection keeps its record (L-031: the ASM run is split across legacy shelves)
+I 93927 cv=347600 gcd=2350385 isbn=9780785160069 0.9 | the (2013) digital rip = GCD 181589's TPB row 2350385 (2013-01, 196pp); CV 50830 issue 347600 is the one CV record for the book (dated to the 2012 HC)
+C 93927 cv=2127 gcd=11288 #682-687 0.95 | GCD notes/roll-up on row 2350385: Ends of the Earth collects The Amazing Spider-Man (GCD 11288 "1999 series", legacy numbering; CV 2127 1963 volume holds #682 issue 322746 and #687 issue 340254) #682-687
+C 93927 cv=48970 gcd=65543 #1-1 0.95 | GCD roll-up on row 2350385: s65543 Amazing Spider-Man: Ends of the Earth (Marvel 2012, one-shot; CV 48970) #1 is collected here too
+N 93927 the book also collects Avenging Spider-Man (2012) #8 (GCD 61993) — one issue, named here rather than as a C
+S 899 cv=73420 gcd=80405 0.9 | the RUN wins and its shelf is clean: "Amazing Spider-Man Vol. 01.1 - Learning to Crawl (2014)" 115pp in folder "05 Amazing Spider-man v3 (2014)" collects the point-one issues #1.1-1.5 "Learning To Crawl Part One-Five" = CV 73420 "The Amazing Spider-Man" (Marvel 2014, 28 cached, issues 452306-466322) / GCD 80405, which is S95052's S line (R-053) holding the same run's Slott-line Vol. 39-43; the book's own record CV 78432 goes on the I line
+F 899 merge-with=95052 | same comic: S95052 stores cv=73420 (key "Amazing Spider-man v3 (2014)") and is one title in one numbering, so L-031's merge condition holds
+I 94734 cv=471579 gcd=- isbn=- 0.9 | "Learning to Crawl" 115pp = CV 78432 "Amazing Spider-Man: Learning To Crawl" issue 471579 "Volume 1.1" (2014-11); GCD has no trade row (the stored row 1466451 is ASM 2015 #1, another book)
+C 94734 cv=73420 #1.1-1.5 0.9 | CV 73420 "The Amazing Spider-Man" (Marvel 2014, 28 issues) lists #1.1-#1.5 as "Learning To Crawl Part One" … "Part Five" (issues 452306-466322): the trade's five chapters
+S 65136 cv=11066 gcd=11998 0.9 | Marvel Knights Spider-Man (2004-2006) = CV 11066 (22 cached) / GCD 11998 (Marvel 2004-2006, 22 rows); the four trades Vol. 01-04 (judged #1-4, #5-8, #9-12, #13-22) are GCD 155997 rows #1-4 whose roll-up reads s11998 #1-4, each its own CV volume (30320-30323); residue: item 95613 "Marvel Knights - Spider-Man 05 (of 05) (2014)" is #5 of the 2013 mini (CV 67919 / GCD 76841)
+F 65136 split-needed | item 95613 join S11448 (S line A-025: cv=67919 gcd=76841, holds #1-4 of the same 2013 mini; key "Marvel Knights - Spider-Man (2013)"); the four 2004 trades stay
+N 65136 label-ambiguous flag #328 is answered, not dismissed here: the files show Vol. 02 "Venomous" (101pp) and Vol. 04 "Wild Blue Yonder" (149pp) are Marvel Knights Spider-Man trades (judged #5-8 / #13-22 of s11998); their own records CV 30321 / 30323 and GCD 2068641 / 2068643 are on the I lines, replacing the JMS rows the flag describes
+I 94820 cv=186694 gcd=2068640 isbn=0785114378 0.95 | Vol. 01 "Down Among the Dead Men" 101pp = CV 30320 issue 186694 and GCD 155997 #1 row 2068640 (100pp, ISBN 0-7851-1437-8)
+I 94821 cv=186695 gcd=2068641 isbn=0785116753 0.95 | Vol. 02 "Venomous" 101pp = CV 30321 "Marvel Knights Spider-Man: Venomous" issue 186695 and GCD 155997 #2 row 2068641 (ISBN 0-7851-1675-3)
+I 94822 cv=186702 gcd=2068642 isbn=0785116761 0.95 | Vol. 03 "The Last Stand" 101pp = CV 30322 issue 186702 and GCD 155997 #3 row 2068642 (ISBN 0-7851-1676-1)
+I 94823 cv=186703 gcd=2068643 isbn=- 0.95 | Vol. 04 "Wild Blue Yonder" 149pp = CV 30323 "Marvel Knights Spider-Man: Wild Blue Yonder" issue 186703 and GCD 155997 #4 row 2068643
+S 41871 cv=3012 gcd=2518 1.0 | ComicInfo Web 20034 on item 94900 is CV 3012 "The Spectacular Spider-Man Annual" issue #2 (1980-08); our #2-4 (1980, 1981, 1984) sit in CV 3012 (Marvel 1979, 14) and GCD 2518 (Marvel 1979-1994, 14 rows, #4 1984-07-24); C-050's GCD 73264 was an Australian Yaffa reprint reached by round2-folder
+F 41871 merge-with=34224 | S34224 "The Spectacular Spider-Man Annual" stores cv=3012 — the same annual run in another folder
+S 99973 cv=145364 gcd=190178 0.9 | Spider-Man (2022) by Dan Slott = CV 145364 "Spider-Man" (Marvel 2022, 11 cached 2022-12..2023-10, #1-7 "End of the Spider-Verse", #8-10 "Maxed Out") and GCD 190178 (Marvel 2022-2023, 11); the 1pp variant covers #1-10 and the trades Vol. 01-02 (judged #1-7, #8-11) all fit; residue: the 2023 Spider-Man Annual (CV 152896 / GCD 203134) caps it at 0.9; the per-file French 43261 / German 197254 are foreign twins
+F 99973 needs-fetch cv=145364 | CV 145364 is named from the local rip and has no CvVolume row
+F 99973 stale-flag=643 | the shelf's files are one run: Vol. 01 "End of the Spider-Verse" (169pp, judged #1-7) and Vol. 02 "Who Is Spider-Boy" (110pp, judged #8-11) are the 2022 run's own trades, and every other file is a 1pp variant of #1-10 or the 2023 annual — no second "Vol. 01" ladder here
+I 95238 cv=993381 gcd=- isbn=- 0.9 | "Spider-Man Vol. 01 - End of the Spider-Verse (2023)" 169pp = CV 151028 issue 993381 "Volume 1" (2023-06-07); GCD holds only Panini UK's edition (215147)
+I 95239 cv=1029826 gcd=- isbn=- 0.9 | "Spider-Man Vol. 02 - Who Is Spider-Boy (2023)" 110pp = CV 154679 "Spider-Man: Who is Spider-Boy?" issue 1029826 "Volume 2" (2023-11-15); no GCD row
+I 95954 cv=1006450 gcd=2562334 isbn=- 0.95 | "Spider-Man Annual 001 (2023)" 30pp = CV 152896 issue 1006450 "Contest of Chaos: Part One" and GCD 203134 row 2562334 (2023-08-09, 36pp)
+S 16129 cv=21781 gcd=15185 0.95 | "Spider-Man - Trial of Venom 001 (1992)" is Spider-Man Special Edition #1 "The Trial of Venom" (the 1992 UNICEF special): CV 21781 "Spider-Man Special Edition" (Marvel 1992, 1 issue 131350 "The Trial of Venom") and GCD 15185 (Marvel 1992, row 260342 whose stories are "The Trial of Venom"); found by a cv_iss / gcd_story title probe
+R 16181 | "Spider-Man in Amazing Adventures (1996)" 20pp giveaway: re-probed "Amazing Adventures" 1994-1998 (only Antarctic's "Amazing Adventures of Professor Jones"), "Spider-Man in", and story / issue titles; the per-file CV 34307 / GCD 10548 "Adventures in Reading Starring the Amazing Spider-Man" (1990-1993) is a different giveaway reached by word overlap
+F 16181 provider-missing | neither leg holds a 1996 "Spider-Man in Amazing Adventures" (probed series, issue and story titles)
+S 16240 cv=27668 gcd=17483 0.95 | "Spider-Man - The Osborn Journal 001 (1997)" 34pp (ComicInfo Volume 1997) = CV 27668 "Osborn Journals" (issue 169250, cover 1997-02) and GCD 17483 "Osborne Journals [Spider-Man: The Osborn Journal]" (row 278689, on sale 1996-12-18, 36pp) — GCD hides it behind a bracketed title (L-163)
+F 16240 wrong-cv-link | GCD per-file 65039 "Amazing Spider-Man: Hooky" is a round2-folder stamp
+
+# ============ Thanos / Thor ============
+S 94802 cv=95750 gcd=109231 0.95 | the RUN wins: "Thanos Vol. 01-03" (2017-2018) collect Thanos (2016) = CV 95750 (Marvel 2016, 18) and GCD 109231 (Marvel 2016-11..2018, 18 rows) — roll-up on Vol. 01 reads s109231 #1-6 and Vol. 03 "Thanos Wins" #13-18; the 1pp "Thanos 005 (2017)" variant is the same run; residue: Vol. 03 also carries Thanos Annual (2018) #1
+F 94802 needs-fetch cv=95750 | no CvVolume row for CV 95750 "Thanos" (Marvel 2016, 18)
+I 96070 cv=605133 gcd=1718731 isbn=9781302905576 0.95 | "Thanos Vol. 01 - Thanos Returns (2017)" 130pp = CV 102487 issue 605133 "Volume 1" and GCD 115148 #1 row 1718731 (140pp, ISBN 978-1-302-90557-6)
+I 96071 cv=649748 gcd=1771218 isbn=9781302905583 0.95 | "Thanos Vol. 02 - The God Quarry (2017)" 117pp = CV 107372 issue 649748 "Volume 2" and GCD 115148 #2 row 1771218 (140pp)
+I 96072 cv=675156 gcd=1820237 isbn=9781302905590 0.95 | "Thanos Vol. 03 - Thanos Wins (2018)" 159pp = CV 111851 "Thanos Wins by Donny Cates" issue 675156 and GCD 126255 row 1820237 (172pp)
+C 96072 cv=110119 gcd=123835 #1-1 0.95 | GCD notes on row 1820237: Thanos Wins also collects Thanos Annual (Marvel 2018, one-shot; CV 110119 / GCD 123835) #1 beside Thanos (2017 series) #13-18
+S 94812 cv=123862 gcd=154263 0.9 | the RUN wins: Thor (2020) by Donny Cates = CV 123862 "Thor" (Marvel 2020, 35) and GCD 154263 (Marvel 2020-2023, 35 rows); the trades "Thor by Donny Cates Vol. 02-05" (judged #7-14, #15-18, #19-24, #27-30) are rows of the creator line CV 131744 / GCD 168846 (6 each), and the 1pp variants #30-35 fit; residue: "Thor - Director's Cut 001 (2020)" 159pp (GCD 154259) caps it at 0.9
+F 94812 needs-fetch cv=123862 | CV 123862 is named from the local rip and has no CvVolume row
+I 96721 cv=862016 gcd=2233861 isbn=9781302920876 0.95 | "Thor by Donny Cates Vol. 02 - Prey (2021)" 165pp = CV 131744 issue 862016 "Volume 2: Prey" and GCD 168846 #2 row 2233861 (180pp)
+I 96722 cv=933986 gcd=2287383 isbn=9781302926120 0.95 | "Vol. 03 - Revelations (2022)" 117pp = CV 131744 issue 933986 "Volume 3" and GCD 168846 #3 row 2287383 (124pp)
+I 96723 cv=959226 gcd=2420045 isbn=9781302926137 0.95 | "Vol. 04 - God of Hammers (2022)" 191pp = CV 131744 issue 959226 "Volume 4" and GCD 168846 #4 row 2420045 (204pp)
+I 96724 cv=999123 gcd=2551713 isbn=9781302932756 0.95 | "Vol. 05 - The Legacy of Thanos (2023)" 123pp = CV 131744 issue 999123 "Volume 5" and GCD 168846 #5 row 2551713 (132pp)
+I 96718 cv=- gcd=2052150 isbn=- 0.9 | "Thor - Director's Cut 001 (2020)" 159pp = GCD 154259 "Thor Director's Cut" row 2052150 (2020-01, 168pp); the CV rip has no volume by that name
+
+# ============ Ultimate handbooks (keep, new reason) ============
+S 66477 cv=65743 gcd=19351 0.7 | kept for review with a new check: items 97050/97051 carry no ComicInfo (ComicEmbedded empty, ParsedSeriesKey from folder only), so the digital "v01" label is the only evidence; release order still maps v01 to The Ultimates & X-Men 2005 (CV 65743 issue 106697 dated 2005-01-25; GCD 19351 row 306202, 52pp) and v02 to the FF & Spider-Man handbook (GCD 19350 row 306201, on sale 2005-08-31); 25+25pp fits either 52pp book
+F 66477 needs-web | which 2005 Ultimate handbook do the digital "v01 001-002" halves hold — The Ultimates & X-Men 2005 or The Fantastic Four & Spider-Man 2005?
+S 102669 cv=65739 gcd=19350 0.7 | kept for review with the same new check: items 97052/97053 carry no ComicInfo, and "v02" maps by release order to The Fantastic Four & Spider-Man 2005 handbook (CV 65739 issue 106680; GCD 19350 row 306201, 2005-08-31, 52pp); 26+25pp fits either book
+F 102669 needs-web | is the digital "Official Handbook of the Ultimate Marvel Universe v02" (2005) the Fantastic Four & Spider-Man handbook?
+
+# ============ X-Men ============
+R 66351 | four books of three different comics under a stray "X-Men (2005)" key: items 97160 / 97162 "Ultimate X-Men Vol. 13 - Magnetic North" / "Vol. 14 - Phoenix" (judged #61-65 / #66-71) are trades of Ultimate X-Men (2001) = CV 7258 / GCD 7826; item 86105 "X-Men - The End Book 01 - Dreamers and Demons" (142pp, roll-up s13418 #1-6) is the trade of the 6-issue X-Men: The End Book 1 = CV 18843 / GCD 13418; item 90386 "X-Men 198 Files 001 (2006)" 52pp = CV 18136 / GCD 34222, its own one-shot; the stored CV 71921 is Editorial Televisa's Mexican "X-Men"
+F 66351 split-needed | items 97160, 97162 join S66149 (S line R-053: cv=7258 gcd=7826, the 2001-2009 run whose Vol. 01-19 it holds; key "Ultimate X-Men v1 (2001)"); item 86105 joins S22309 (S line B-062: cv=18843 gcd=13418, holds the six issues this trade collects; key "X-Men - The End - Dreamers and Demons"); item 90386 stays as "X-Men: The 198 Files (2006)" cv=18136 gcd=34222
+F 66351 wrong-cv-link | stored CV 71921 "X-Men" (Editorial Televisa 2005, 46) is a Mexican reprint series
+I 97160 cv=235543 gcd=- isbn=- 0.9 | "Ultimate X-Men Vol. 13 - Magnetic North (2006)" 125pp = CV 35628 issue 235543 "Vol. 13"; the stored GCD row 1599861 is a German "X-Men" book (Die Zuflucht), void
+I 97162 cv=235546 gcd=- isbn=- 0.9 | "Ultimate X-Men Vol. 14 - Phoenix (2006)" 136pp = CV 35629 "Ultimate X-Men: Phoenix?" issue 235546 (2006-12)
+I 86105 cv=189819 gcd=529056 isbn=9780785116905 0.95 | "X-Men - The End Book 01 - Dreamers and Demons (2006)" 142pp = CV 30746 issue 189819 "TPB" and GCD 70376 #1 row 529056 "Dreamers & Demons" (148pp)
+I 90386 cv=106250 gcd=575837 isbn=- 0.95 | "X-Men 198 Files 001 (2006)" 52pp = CV 18136 "X-Men: The 198 Files" issue 106250 (2006-01-04) and GCD 34222 row 575837 (2006-01-05, 52pp)
+S 21927 cv=10809 gcd=11723 0.9 | the C-052 needs-web is answered locally and the RUN wins: "Wolverine Vol. 10 - The Death of Wolverine (2017)" 165pp in folder "03 Wolverine v3 (2003)" is the 2008 TPB "Wolverine: The Death of Wolverine" (CV 29500 / GCD 61875 row 892316, 164pp) whose roll-up reads s11723 Wolverine (2003) #56-61 — not the 2014 Death of Wolverine mini (CV 79321) C-052 guessed; the run is CV 10809 / GCD 11723, S101456's identity
+F 21927 merge-with=101456 | S101456 stores cv=10809 (key "Wolverine v3 (2003)"), one title in one numbering, and holds this run's other trades
+I 97809 cv=181917 gcd=892316 isbn=9780785126126 0.95 | "The Death of Wolverine" 165pp = CV 29500 issue 181917 "HC/TPB" and GCD 61875 row 892316 (164pp, ISBN 978-0-7851-2612-6); GCD 73828 (168pp) is the other edition
+C 97809 cv=10809 gcd=11723 #56-61 0.95 | GCD roll-up on row 892316: the book collects Wolverine (Marvel 2003-2009, 75 issues; CV 10809 / GCD 11723) #56-61
+S 94670 cv=122666 gcd=151883 0.95 | the C-053 needs-web is answered locally: "06 New Mutants by Vita Ayala Vol. 04 (2023)" 164pp is GCD 198060 row 2510858 (#4, 172pp) whose roll-up reads s151883 New Mutants (2020) #29-33 — the Krakoa run CV 122666 / GCD 151883 (33 each), not the 3-row creator line 174674 (Vol. 1-3 only); the run wins
+F 94670 merge-with=12839 | S12839 stores cv=122666 and holds the same run's issues and Vol. 01-03
+I 84829 cv=- gcd=2510858 isbn=9781302932763 0.9 | "New Mutants by Vita Ayala Vol. 04" 164pp = GCD 198060 "New Mutants" #4 row 2510858 (2023-03-22, 172pp, ISBN 978-1-302-93276-3); CV's line 138157 stops at Vol. 3
+C 84829 cv=122666 gcd=151883 #29-33 0.95 | GCD roll-up on row 2510858: Vol. 04 collects New Mutants (Marvel 2020-2023, 33 issues; CV 122666 / GCD 151883) #29-33
+S 66347 cv=22988 gcd=1951 0.95 | "X-Men Annual 013 (1989)" is #13 of the classic X-Men Annual = CV 22988 "X-Men Annual" (Marvel 1970, 15 cached) and GCD 1951 (Marvel 1970-1991, 15 rows) — S36216's identity (R-046, 1.0 by ComicInfo Web); C-053's "no record for #13" missed the 1970 volume
+F 66347 merge-with=36216 | S36216 stores cv=22988 and holds the same annual #1-12, #14-15
+F 66347 wrong-cv-link | stored CV 57741 is Editora Abril's Brazilian "X-Men"
+S 101519 cv=22988 gcd=1951 1.0 | the collection asserts it: ComicInfo Web 108152 and 107610 are CV 22988 "X-Men Annual" issues #12 "Ressurrection" (1988-10) and #14 "Days of Future Present Part 4" (1990-08) — our "X-Men Annual 012 (1988)" / "014 (1990)"; GCD 1951 (1970-1991, 15) is the same run
+F 101519 merge-with=36216 | S36216 stores cv=22988 (the classic annual, R-046)
+F 101519 wrong-cv-link | per-file CV 57741 (Abril) / 43640 (Panini France) are foreign twins
+R 9906 | "John Byrne's X-Men Elsewhen 001-032 (2019-2022)" is Byrne's unlicensed forum continuation (folder "(John Byrne Fan Fiction)"); re-probed "Elsewhen" on cv_vol, cv_iss, gcd_series, issue and story titles — zero rows anywhere; the candidates are IDW's Artifact Editions and Byrne's 2112 / Next Men
+F 9906 provider-missing | a creator webcomic outside both catalogs (probed "Elsewhen" on every table)
+S 1661 cv=20691 gcd=29823 0.9 | the RUN wins: "X-Men Legacy Vol. 16 Avengers vs. X-Men (2013)" 213pp = the TPB CV 60067 / GCD 173848 (row 2237745, 220pp) whose roll-up reads s29823 X-Men: Legacy (2008) #266-275 — one run, CV 20691 / GCD 29823, S22374's identity (R-056), which holds the run's issues and its Back to School trade
+F 1661 merge-with=22374 | S22374 stores cv=20691; one title in one legacy numbering (#208-275)
+I 86231 cv=397747 gcd=2237745 isbn=9780785165873 0.95 | "Avengers vs. X-Men: X-Men Legacy" 213pp = CV 60067 issue 397747 "TPB" and GCD 173848 row 2237745 (2013-04-17, 220pp)
+C 86231 cv=20691 gcd=29823 #266-275 0.95 | GCD roll-up on row 2237745: the book collects X-Men: Legacy (Marvel 2008-2012, 69 issues; CV 20691 / GCD 29823) #266-275
+S 22496 cv=20691 gcd=29823 0.9 | the RUN wins: "X-Men Legacy Vol. 13 - Five Miles South of The Universe" 151pp = GCD 142006 row 1933161 (TPB 2012-08, 156pp) whose roll-up reads s29823 X-Men: Legacy (2008) #254-260 plus single chapters of Uncanny X-Force #19, Wolverine & the X-Men #1 and X-Factor #230 — dominantly one run, S22374's identity
+F 22496 merge-with=22374 | S22374 stores cv=20691 (X-Men: Legacy 2008)
+I 86229 cv=321186 gcd=1933161 isbn=9780785160687 0.95 | "Five Miles South of the Universe" 151pp = CV 46565 issue 321186 "HC/TPB" and GCD 142006 TPB row 1933161 (156pp); GCD 220869 row 2709784 (160pp) is the HC
+C 86229 cv=20691 gcd=29823 #254-260 0.95 | GCD roll-up on row 1933161: the book collects X-Men: Legacy (Marvel 2008-2012, 69 issues; CV 20691 / GCD 29823) #254-260
+N 86229 it also reprints one crossover chapter each of Uncanny X-Force (2010) #19, Wolverine & the X-Men (2011) #1 and X-Factor (2006) #230
+S 22497 cv=20691 gcd=29823 0.9 | the RUN wins: "X-Men Legacy Vol. 05 - Necrosha" 111pp = GCD 222787 row 2724344 (116pp) whose roll-up reads s29823 X-Men: Legacy (2008) #231-234 plus X Necrosha (2009) #1 — one run, S22374's identity
+F 22497 merge-with=22374 | S22374 stores cv=20691 (X-Men: Legacy 2008)
+I 86223 cv=321193 gcd=2724344 isbn=9780785162988 0.95 | "X-Men Legacy: Necrosha" 111pp = CV 46566 issue 321193 "TPB" and GCD 222787 row 2724344 (116pp, ISBN 978-0-7851-6298-8)
+C 86223 cv=20691 gcd=29823 #231-234 0.95 | GCD roll-up on row 2724344: the book collects X-Men: Legacy (Marvel 2008-2012, 69 issues; CV 20691 / GCD 29823) #231-234
+N 86223 it also reprints X Necrosha (2009) #1 (GCD 39992), the event's one-shot
+R 22417 | "X-Men Vote Comic Strips v01 (2021)" and "v02 (2022)", 10pp each: re-probed "Vote Comic", "X-Men Vote" and "Vote" on series, issue and story titles — nothing; Carlsen's German "The Vote" is unrelated
+F 22417 provider-missing | Marvel's X-Men vote promo strips are in neither leg (probed "Vote Comic", "X-Men Vote")
+R 21889 | "012 Wolverine vs Hercules.cbr" 16pp in the chronology folder "0010 The Phoenix Saga": re-probed "Wolverine vs" (27 CV / GCD series and stories, none Hercules) and "Hercules" story titles; no record of a 16pp Wolverine-vs-Hercules story in either leg
+F 21889 provider-missing | no series, issue or story row by this title on either leg
+S 16102 cv=20622 gcd=18336 0.9 | "010 Spider-Man - Marrow v1 001" 38pp is the 2001 one-shot "Spidey/Marrow" = CV 20622 (Marvel 2001, issue 123573 "Bad to the Bone") / GCD 18336 "Spidey / Marrow" (row 297786, 2000-12-28); found by probing "Marrow"; 38pp against GCD's 52pp is a rip without ads
+N 16102 label-ambiguous flag #421 is answered: the file is the one-shot Spidey/Marrow #1, a single 38pp issue exactly as the flag says; the shelf is one book with no collection to label
+R 102758 | the book IS in GCD after all: "001 Deadpool 900 (2009)" 107pp = GCD 40644 "Deadpool Team-Up" #900 (row 690862, 2009-12, 116pp, stories incl. "Deadpool 900 Cover Gallery") and CV issue 176023 "#900" inside CV 22955 "Deadpool" (2008) — the two legs file it under DIFFERENT runs (GCD: the Team-Up countdown that starts at #900; CV: the 2008 ongoing), and the ripper's folder "0847 Deadpool - Team-Up" sides with GCD
+F 102758 split-needed | join S5134 (S line C-036: gcd=40644, "Deadpool Team-Up", key "Deadpool Team-Up") per GCD and the folder — LEAD DECISION: CV 22955 (S64541's run) disagrees
+I 91348 cv=176023 gcd=690862 isbn=- 0.95 | "Deadpool 900 (2009)" 107pp = CV issue 176023 "900th commemorative issue!" (2009-12) and GCD row 690862 (#900, 2009-12, 116pp)
+S 6482 cv=53921 gcd=69567 0.95 | "005 Fantastic Four 005AU (2013)" 24pp = Fantastic Four (2013) #5AU on both legs: CV 53921 "Fantastic Four" (Marvel 2013, 17 incl. issue 395247 #5AU) and GCD 69567 (Marvel 2013-2014, 17 rows incl. row 1096843 #5AU, 32pp)
+F 6482 split-needed | join S94599 (S line C-044: cv=- gcd=69567, key "Fantastic Four v4 (2013)", holds #1-16 of the same run) — a cv=- target cannot merge, so the issue moves by join
+N 6482 CV 53921 "Fantastic Four" (Marvel 2013, 17 cached #1-16 + #5AU) is the Fraction run S94599 called provider-missing on the CV leg (C-044); its S line should carry cv=53921
+R 22318 | "X-Men - The Xavier Files - Justine Karman (1994)" 112pp carries EAN-13 9780679861775 (Random House); re-probed the ISBN (with and without hyphens) against gcd_issue.isbn / barcode, "Xavier Files" and "Justine Karman" on every table: nothing
+F 22318 provider-missing | a 1994 Random House X-Men file book, absent from both legs (probed ISBN 0679861775, "Xavier Files", "Justine Karman")
+
+# ============ Hulk ============
+R 9069 | three different books: item 81188 "Hulk - The End (2008)" 154pp = the 2008 collection CV 30110 "Incredible Hulk: The End" (issue 185384) / GCD 74066 "Hulk: The End" (row 1108615); item 116693 "01 Hulk - Planet Hulk Prelude (2010)" 162pp = GCD 69541 (row 1027492, 172pp) collecting Incredible Hulk (2000 series) #88-91 and Fantastic Four #533-535 — two runs, so its own record; item 51959 "Hulk 001 (2014) (Skottie Young Variant Cover Only)" 2pp is a cover of Hulk (2014) = CV 73100 / GCD 80197
+F 9069 split-needed | item 51959 join S97666 (S line C-045: cv=73100 gcd=80197, "Hulk v3 (2013)"); item 116693 -> "Hulk: Planet Hulk Prelude (2010)" gcd=69541; item 81188 stays as "Hulk: The End (2008)" cv=30110 gcd=74066
+I 81188 cv=185384 gcd=1108615 isbn=9780785130260 0.9 | "Hulk - The End (2008)" 154pp = CV 30110 issue 185384 "HC/TPB" (2008-02) and GCD 74066 row 1108615 (2008-01-16, ISBN 978-0-7851-3026-0)
+I 116693 cv=- gcd=1027492 isbn=9780785143772 0.95 | "Planet Hulk Prelude (2010)" 162pp = GCD 69541 row 1027492 (2010-07-21, 172pp, ISBN 978-0-7851-4377-2); CV has only the 2006 edition (30284)
+C 116693 gcd=7053 #88-91 0.95 | GCD notes on row 1027492 (judged #88-91): Planet Hulk Prelude collects Incredible Hulk (Marvel 2000 series, GCD 7053) #88-91
+C 116693 gcd=11218 #533-535 0.9 | GCD notes / roll-up on row 1027492: Planet Hulk Prelude also collects Fantastic Four (Marvel 1998 series, legacy numbering, GCD 11218) #533-535
+
+# ============ Millarworld (Image / Dark Horse) lines ============
+S 946 cv=65439 gcd=72378 0.9 | a trade LINE both legs carry, not three conflated runs: CV 65439 "American Jesus" (Image 2009) holds exactly the three books — #1 "Book One: Chosen" 2009, #2 "Book Two: The New Messiah" 2020, #3 "Book Three: Revelation" 2023 — and GCD 72378 (Image) rows #1 Chosen (100pp) and #2 The New Messiah (96pp) = our Book 01 100pp / Book 02 98pp; each book collects a different mini (C lines); residue: the 242pp omnibus "The Chosen One" (CV 154734 / GCD 204698) caps it at 0.9
+F 946 stale-flag=23 | the files show four books of ONE line (American Jesus Book 01-03 + the Chosen One omnibus), no issue files; the three minis each live inside a Book, which the C lines state — nothing is conflated on the shelf
+I 104701 cv=418062 gcd=1087060 isbn=9781607060062 0.95 | "American Jesus Book 01 - Chosen (2009)" 100pp = CV 65439 #1 issue 418062 "Book One: Chosen" and GCD 72378 #1 row 1087060 (100pp)
+I 104702 cv=762375 gcd=2256562 isbn=9781534315129 0.95 | "Book 02 - The New Messiah (2020)" 98pp = CV 65439 #2 issue 762375 and GCD 72378 #2 row 2256562 (96pp)
+I 104703 cv=977666 gcd=- isbn=- 0.9 | "Book 03 - Revelation (2023)" 94pp = CV 65439 #3 issue 977666 "Book Three: Revelation" (2023-03); GCD's line stops at #2
+I 105943 cv=1030216 gcd=2571740 isbn=9781534399167 0.95 | "The Chosen One - The American Jesus Trilogy (2023)" 242pp = CV 154734 issue 1030216 "TPB" and GCD 204698 row 2571740 (2023-10-04)
+C 104702 cv=123670 gcd=153668 #1-3 0.95 | Book 02 collects American Jesus: The New Messiah (Image 2019-2020, 3 issues; CV 123670 / GCD 153668) #1-3 — judged #1-3, 98pp
+C 104703 cv=145742 gcd=191600 #1-3 0.95 | Book 03 collects American Jesus: Revelation (Image 2022-2023, 3 issues; CV 145742 / GCD 191600) #1-3 — judged #1-3, 94pp
+C 105943 cv=123670 gcd=153668 #1-3 0.9 | the Trilogy omnibus collects American Jesus: The New Messiah (Image 2019-2020, 3 issues; CV 123670 / GCD 153668) #1-3 among its three books
+C 105943 cv=145742 gcd=191600 #1-3 0.9 | the Trilogy omnibus also collects American Jesus: Revelation (Image 2022-2023, 3 issues; CV 145742 / GCD 191600) #1-3
+N 104701 Book 01 Chosen's original 3-issue mini (2004-2005) has no issue-level series in either leg — no C; the omnibus's first third is the same material
+S 3857 cv=- gcd=157664 0.9 | a trade LINE: GCD 157664 "Chrononauts" (Image 2015-?, 2 rows: #1 2015-09-09 124pp, #2 2020-03-18) = our "Chrononauts Vol. 01 (2015)" 120pp and "Vol. 02 - Futureshock (2020)" 129pp; CV mints a volume per book (84416 "Volume 1", 125794 "Volume Two"), hence cv=-; each volume collects a different mini (C lines)
+F 3857 stale-flag=54 | the files show two books of ONE line (Chrononauts Vol. 01-02, both trades, no issue files); the two minis each live inside a volume, which the C lines state
+I 104704 cv=499790 gcd=2087722 isbn=9781632154064 0.95 | "Chrononauts Vol. 01 (2015)" 120pp = CV 84416 issue 499790 "Volume 1" (2015-09) and GCD 157664 #1 row 2087722 (124pp)
+I 104705 cv=742014 gcd=2087723 isbn=- 0.95 | "Chrononauts Vol. 02 - Futureshock (2020)" 129pp = CV 125794 issue 742014 "Volume Two" (2020-03-18) and GCD 157664 #2 row 2087723 (2020-03-18)
+C 104704 cv=80714 gcd=87406 #1-4 0.95 | Vol. 01 collects Chrononauts (Image 2015, 4 issues; CV 80714 / GCD 87406) #1-4 — judged #1-4, 120pp
+C 104705 cv=122459 gcd=151484 #1-4 0.95 | Vol. 02 collects Chrononauts: Futureshock (Image 2019, 4 issues; CV 122459 / GCD 151484) #1-4 — judged #1-4, 129pp
+S 10089 cv=85113 gcd=107675 0.95 | a trade LINE both legs carry: CV 85113 "Jupiter's Circle" (Image 2015, 2: "Book One" 2015-10, "Book Two" 2016-06) and GCD 107675 (Image 2015-2016, 2 rows: 148pp / 156pp) = our Vol. 01 (2015) 146pp and Vol. 02 (2016) 153pp; each volume collects one season (C lines)
+F 10089 stale-flag=85 | the files show two books of ONE line (Jupiter's Circle Vol. 01-02, no issue files); the two six-issue seasons each live inside a volume, which the C lines state
+I 104713 cv=502188 gcd=1633328 isbn=9781632155566 0.95 | "Jupiter's Circle Vol. 01 (2015)" 146pp = CV 85113 issue 502188 "Book One" and GCD 107675 #1 row 1633328 (148pp)
+I 104714 cv=537965 gcd=1639557 isbn=9781632157072 0.95 | "Jupiter's Circle Vol. 02 (2016)" 153pp = CV 85113 issue 537965 "Book Two" and GCD 107675 #2 row 1639557 (156pp)
+C 104713 cv=81244 gcd=88257 #1-6 0.95 | Vol. 01 collects Jupiter's Circle season one (Image 2015, 6 issues 2015-04..09; CV 81244 / GCD 88257) #1-6 — judged #1-6
+C 104714 cv=86239 gcd=94542 #1-6 0.95 | Vol. 02 collects Jupiter's Circle season two (Image 2015-2016, 6 issues; CV 86239 / GCD 94542 "volume 2") #1-6 — judged #1-6
+S 12769 cv=147426 gcd=194936 0.9 | the RUN wins and the edition is now read: "02 Nemesis - Reloaded (2024)" in "Millarworld (Dark Horse)\Nemesis" is Dark Horse's 2024 reissue of the Nemesis Reloaded TPB (GCD 213616, row 2645519, 2024-07-10) — Image's 2023 TPB is CV 152185 / GCD 202185 — and that book reprints ONE run, Nemesis Reloaded = CV 147426 / GCD 194936 (Image 2023, 5 each); the file is a 9pp fragment (partial-rip stands)
+F 12769 partial-rip | 9pp of a five-issue trade: a preview or truncated rip of the 2024 Dark Horse edition
+F 12769 needs-fetch cv=147426 | CV 147426 is named from the local rip and has no CvVolume row
+I 104743 cv=- gcd=2645519 isbn=9781506744469 0.7 | the (2024) Dark Horse folder places this fragment in GCD 213616 "Nemesis: Reloaded" row 2645519 (2024-07-10, ISBN 9781506744469); CV holds only Image's 2023 TPB (152185), so no CV issue
+R 19033 | two co-equal runs: four trades "The Magic Order Vol. 01-04" (167-177pp) are the collected line — Vol. 02 (2022) = Image's GCD 144130 #2 row 2405817 (2022-05-25), Vol. 01/03/04 (2024) = Dark Horse's reissue line GCD 213614 rows #1/#3/#4 (2024-07..12) — each collecting a different six-issue season; and four issue files "The Magic Order V 001-004 (2024-2025)" = CV 160099 "The Magic Order 5" / GCD 215734 "The Magic Order V" (Dark Horse, 6 each, 2024-09..2025-07)
+F 19033 split-needed | items 104782-104785 (V #1-4) -> "The Magic Order V (2024)" cv=160099 gcd=215734 (who-stores cv=160099: no shelf); the four trades stay as the Magic Order collected line (GCD 213614 / 144130)
+I 104786 cv=- gcd=2645533 isbn=9781506745220 0.9 | "The Magic Order Vol. 01 (2024)" 177pp = Dark Horse's GCD 213614 #1 row 2645533 (2024-07-10)
+I 104787 cv=- gcd=2405817 isbn=- 0.9 | "The Magic Order Vol. 02 (2022)" 167pp = Image's GCD 144130 #2 row 2405817 (2022-05-25)
+I 104788 cv=- gcd=2666171 isbn=9781506745244 0.9 | "The Magic Order Vol. 03 (2024)" 169pp = Dark Horse's GCD 213614 #3 row 2666171 (2024-10-09)
+I 104789 cv=- gcd=2686637 isbn=9781506745251 0.9 | "The Magic Order Vol. 04 (2024)" 176pp = Dark Horse's GCD 213614 #4 row 2686637 (2024-12-11)
+C 104786 cv=111537 gcd=125925 #1-6 0.9 | Vol. 01 collects The Magic Order (Image 2018-2019, 6 issues; CV 111537 / GCD 125925) #1-6 — 177pp for six issues
+C 104787 cv=140006 gcd=177843 #1-6 0.9 | Vol. 02 collects The Magic Order 2 (Image 2021-2022, 6 issues; CV 140006 / GCD 177843) #1-6 — 167pp for six issues
+C 104788 cv=144224 gcd=187596 #1-6 0.9 | Vol. 03 collects The Magic Order 3 (Image 2022, 6 issues; CV 144224 / GCD 187596) #1-6 — 169pp for six issues
+C 104789 cv=147596 gcd=195520 #1-6 0.9 | Vol. 04 collects The Magic Order 4 (Image 2023, 6 issues; CV 147596 / GCD 195520) #1-6 — 176pp for six issues
+
+# ============ Harvey Pekar web strips (Smith Magazine, 2009-2010 webrips) ============
+R 8405 | "Harvey Pekar - Aging (2010-01-13) (Webrip)" 6pp, one dated instalment of Pekar's web strip; re-probed "Pekar" (series: only Doubleday's 1986/1987 American Splendor books and Top Shelf's 2012 Harvey Pekar's Cleveland), "Pekar Project" and the instalment title on story / issue titles: nothing
+F 8405 provider-missing | a dated web strip, absent from both legs (probed "Pekar", "Pekar Project", the instalment title)
+R 8406 | "Harvey Pekar - Auto Didact (2010-01-13) (Webrip)" 1pp web-strip instalment; the "Pekar" / "Pekar Project" / title probes on series, issue and story titles return no row for it
+F 8406 provider-missing | a dated web strip, absent from both legs (probed "Pekar", "Pekar Project", the instalment title)
+R 8407 | "Harvey Pekar - Back in the Day (2009-09-08) (Webrip)" 1pp web-strip instalment; Action Lab's 2011 "Back in the Day" is a different book, and the Pekar probes return nothing
+F 8407 provider-missing | a dated web strip, absent from both legs (probed "Pekar", "Pekar Project", the instalment title)
+R 8408 | "Harvey Pekar - Garbage Collection Dispute (2010-10-14) (Webrip)" 15pp web-strip instalment; the title probe returns no story row, and Conundrum's "Garbage" (2016) is unrelated
+F 8408 provider-missing | a dated web strip, absent from both legs (probed "Pekar", "Pekar Project", the instalment title)
+R 8409 | "Harvey Pekar - Groping for Answers (2009-11-25) (Webrip)" 5pp web-strip instalment; no series, issue or story row by that title or under Pekar's name
+F 8409 provider-missing | a dated web strip, absent from both legs (probed "Pekar", "Pekar Project", the instalment title)
+R 8410 | "Harvey Pekar - I.Q. (2009-09-08) (Webrip)" 4pp web-strip instalment; no series, issue or story row under Pekar's name matches
+F 8410 provider-missing | a dated web strip, absent from both legs (probed "Pekar", "Pekar Project", the instalment title)
+R 8411 | "Harvey Pekar - Jewish Chops (2010-09-08) (Webrip)" 4pp web-strip instalment; the title probe on gcd_story returns nothing, nor does "Pekar"
+F 8411 provider-missing | a dated web strip, absent from both legs (probed "Pekar", "Pekar Project", the instalment title)
+R 8412 | "Harvey Pekar - Jungle Music (2009-10-05) (Webrip)" 4pp web-strip instalment; the only "Jungle Music" story row is a 1982 Far Side panel, and "Pekar" names nothing newer than 2012
+F 8412 provider-missing | a dated web strip, absent from both legs (probed "Pekar", "Pekar Project", the instalment title)
+R 8413 | "Harvey Pekar - Kibbitzin' About How Life Got Incorporated part 1-2 (2010)" 8pp + 5pp web-strip instalments; no series, issue or story row by that title or under Pekar's name
+F 8413 provider-missing | a dated web strip, absent from both legs (probed "Pekar", "Pekar Project", the instalment title)
+R 8414 | "Harvey Pekar - Muncie, Indiana part 1-2 (2010-03)" 7pp + 10pp web-strip instalments; the title probe on story rows returns nothing, nor does "Pekar"
+F 8414 provider-missing | a dated web strip, absent from both legs (probed "Pekar", "Pekar Project", the instalment title)
+R 8415 | "Harvey Pekar - Reciprocity (2009-11-25) (Webrip)" 4pp web-strip instalment; the only "Reciprocity" story rows are 1881 Judge / 1902 Successful Farming cartoons
+F 8415 provider-missing | a dated web strip, absent from both legs (probed "Pekar", "Pekar Project", the instalment title)
+R 8416 | "Harvey Pekar - Searchin' (2009-09-08) (Webrip)" 3pp web-strip instalment; no series, issue or story row by that title or under Pekar's name
+F 8416 provider-missing | a dated web strip, absent from both legs (probed "Pekar", "Pekar Project", the instalment title)
+R 8417 | "Harvey Pekar - Sweeping Problem (2009-10-05) (Webrip)" 1pp web-strip instalment; no series, issue or story row by that title or under Pekar's name
+F 8417 provider-missing | a dated web strip, absent from both legs (probed "Pekar", "Pekar Project", the instalment title)
+R 8418 | "Harvey Pekar - Two Working Stiffs (2010-02-09) (Webrip)" 4pp web-strip instalment; no series, issue or story row by that title or under Pekar's name
+F 8418 provider-missing | a dated web strip, absent from both legs (probed "Pekar", "Pekar Project", the instalment title)
+R 8419 | "Harvey Pekar - Untitled (2010-08-11) (Webrip)" 8pp web-strip instalment with no title to probe; "Pekar" names only the 1986/1987 Doubleday books and the 2012 Cleveland GN
+F 8419 provider-missing | a dated web strip, absent from both legs (probed "Pekar", "Pekar Project")
+R 8420 | "Harvey Pekar - Zen Comics (2009-09-21) (Webrip)" 2pp web-strip instalment; the stored CV 88512 / GCD 95418 "Zen Comics" (Tuttle 1974) is Ioanna Salajan's cartoon book reached by title alone (GCD also has German 177271 and Kolibri 144310 editions of it); Pekar's strip is in neither leg
+F 8420 wrong-cv-link | the stored CV 88512 is the 1974 Tuttle "Zen Comics", a different work by a different author
+F 8420 provider-missing | a dated web strip, absent from both legs (probed "Pekar", "Pekar Project", "Zen Comics")
+R 66459 | "Harvey Pekar - Legendary Vienna (2009-09-21) (Webrip)" 3pp web-strip instalment; no series, issue or story row by that title or under Pekar's name
+F 66459 provider-missing | a dated web strip, absent from both legs (probed "Pekar", "Pekar Project", the instalment title)
+
+# ============ Misc (D-015) ============
+R 1398 | "Asterix - Asterix and the Vikings (2006)" 71pp, the 2006 film album; re-probed "Asterix and the Vikings" on series, issue and story titles — zero rows; the English album lines (GCD 20005, 60362) list every numbered album but not the film book
+F 1398 provider-missing | the 2006 film album has no English record on either leg (probed exact title on every table)
+R 68137 | "The Complete Guide to Asterix [Hodder Children's Books] (1995)" 104pp, a licensed guide; re-probed "Guide to Asterix" on series, issue and story titles: nothing
+F 68137 provider-missing | a licensed guide book, absent from both legs (probed "Guide to Asterix" everywhere)
+R 2860 | "Blade Maidens 000-002 (2021-2022) (blademaidens.com)" self-published webcomic; re-probed "Blade Maidens" on every table: zero rows
+F 2860 provider-missing | a webcomic outside both legs (probed "Blade Maidens" on series, issue and story titles)
+R 3107 | "Bootleg Spider-Man 01 (2022) / 02 (2023) (c2c)", an unlicensed parody; re-probed "Bootleg Spider" on every table: zero rows
+F 3107 provider-missing | an unlicensed parody comic in neither leg (probed "Bootleg Spider")
+R 19903 | three different works on one shelf: item 46470 "The Walk (2023)" 50pp (Markosia folder, ComicInfo Publisher Markosia) = CV 156096 "The Walk" (AAM/Markosia 2023, issue 1040715), no GCD row; item 110654 "TKO Shorts 009 - The Walk (2021)" 22pp = TKO Shorts #9 = CV 134210 issue 864509 "The Walk" / GCD 166431 row 2227791 (24pp), S17456's run; items 105028 / 105029 "The Walk (Original Strip Format / Page Format)" 2pp each in "Building Stories - Chris Ware\The Walk" are two formats of a Chris Ware strip with no record; the stored CV 122111 "Walk of the Dead" is unrelated
+F 19903 split-needed | item 110654 join S17456 (S line B-067: cv=134210 gcd=166431, TKO Shorts #1-8; key "TKO Shorts"); item 46470 -> "The Walk (2023)" cv=156096; items 105028, 105029 (Chris Ware) stay
+F 19903 wrong-cv-link | stored CV 122111 "Walk of the Dead" (Splitter 2016) is an unrelated zombie comic matched by the word "Walk"
+I 46470 cv=1040715 gcd=- isbn=- 0.9 | "The Walk (2023)" 50pp in the Markosia folder = CV 156096 "The Walk" (AAM/Markosia 2023) issue 1040715; GCD has no row
+I 110654 cv=864509 gcd=2227791 isbn=9781952203695 0.95 | "TKO Shorts 009 - The Walk (2021)" 22pp = CV 134210 #9 issue 864509 "The Walk" and GCD 166431 #9 row 2227791 (24pp, ISBN 978-1-952203-69-5)
+R 4037 | "Collected Animated Cerebus.cbz" 48pp; re-probed "Animated Cerebus": the only rows are the story "The Animated Cerebus Portfolio" inside Cerebus #48 and Journey #1 (1983) — a portfolio feature, not this 48pp collection
+F 4037 provider-missing | no series or issue row for the Collected Animated Cerebus (probed series, issue and story titles)
+R 4017 | "Codex Seraphinius.cbz" 359pp is Serafini's Codex Seraphinianus, an illustrated encyclopedia; re-probed "Seraphin" on every table: one French "Seraphin le dauphin" issue title only
+F 4017 provider-missing | a non-comic art book in neither leg (probed "Seraphin", "Codex Seraphin")
+S 4234 cv=- gcd=68535 0.7 | a better candidate than D-015's, still short of certain: our eleven English fan scanlations are numbered and titled like the 2009-2011 Italian Rizzoli-Lizard edition (01 Early Years … 03 Caribbean Suite, 04 Under the Pirate Flag, 06 Lagoon of Mysteries — the Italian split of "Sotto il segno del Capricorno" — 07 The Celts, 10 Fable of Venice; "(Pratt, 2009/2010/2011)"), and GCD 68535 "Corto Maltese" (Rizzoli Libri, it, 2009-2012, 10 rows) titles its one indexed row #7 "Le Celtiche" (2010, 120pp) = our 07 The Celts; the other nine rows are untitled and 10 < our 11; D-015's GCD 61967 (Casterman 1975-1992) is refuted — its rows include Tango and Mû and lack La giovinezza
+F 4234 needs-web | do GCD 68535's untitled rows #1-10 follow the Rizzoli-Lizard 2009-2011 order our scanlations use (La giovinezza, Una ballata del mare salato, Suite caribeana, …), and is our 11 (Samarkand) beyond it?
+N 4234 no English line spans the eleven: IDW's GCD 117009 (12, 2014-2020) keeps "Under the Sign of Capricorn" whole and omits Caribbean Suite / Pirate Flag / Lagoon as separate books; NBM's 3316 (8, 1986) likewise
+R 4304 | "Crazy Latte Thing Called Love (2024) (One Shot) (Pesto Comics)" 40pp, ComicInfo Pesto Comics / Count 1; re-probed "Crazy Latte" on every table: zero rows
+F 4304 provider-missing | a 2024 Pesto Comics one-shot in neither leg (probed "Crazy Latte")
+R 5005 | "Day of the Flying Head 01-02 (2017) (Hollow Press)" 36pp each, Shintaro Kago; re-probed "Flying Head": only 1950s-1970s horror story titles (Forbidden Worlds #9 etc.); Hollow Press is absent from both legs
+F 5005 provider-missing | Hollow Press is indexed by neither leg (probed "Flying Head", "Hollow Press")
+R 66448 | "Digger Unearthed The Complete Tenth Anniversary Collection (2022)" 803pp, Ursula Vernon's webcomic; re-probed "Digger": GCD 226984 "Digger" (Sofawolf 2005-2011) exists but has ZERO issues (an empty stub, L-157), and nothing names the 2022 collection
+F 66448 provider-missing | GCD 226984 is a zero-issue stub and no 2022 edition exists in either leg (probed "Digger", "Digger Unearthed")

@@ -1766,3 +1766,12 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   nothing (CV "Kizuoibito" = Wounded Man, GCD "Nanbā Faibu" = No. 5) — probe the romanised Japanese title. Titan Star
   Wars Insider specials are in the CV rip under their subtitle. A packet's `--id` can show a BLANK CV volume name
   (2909) while `--issues` reveals the real one — check before writing needs-web (R-084).
+
+[L-357] pub:marvel pub:image sig:probe
+- Marvel (R-086): CV mints one volume per creator "Book" line (Ms. Marvel Book 1-5 = CV 83966 / GCD 91839); "Trial of
+  Venom" = Spider-Man Special Edition #1; Deadpool #900 is Deadpool Team-Up #900 on GCD (40644) though CV puts it in
+  Deadpool 2008; Osborn Journal is filed under a bracketed alternate title. Image / Millarworld: CV 65439 "American
+  Jesus" and 85113 "Jupiter's Circle" are the trade LINES (issues named "Book One/Two"), not the minis — their conflated
+  flags are stale (L-318); Dark Horse's 2024 Millarworld reissues are a NEW GCD line beside the Image originals (Magic
+  Order 213614) — match by the file's year. A packet's "years a-b" can come from per-file stamps (read filenames). In a
+  `lookup.py --batch` file a multi-word name must be QUOTED or only its first word is probed.

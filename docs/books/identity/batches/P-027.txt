@@ -1,0 +1,389 @@
+## Conventions for this batch (31 shown of 149 matched; 356 in LEDGER.md; 6 shelf/shelves: pub:marvel ×5 · kind:collected-line ×3 · folder:vn-year ×3 · folder:sequel-subfolder ×2 · folder:events ×2 · kind:manga ×1 · kind:trade-only ×1 · kind:digital ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-127] (4 shelf/shelves) pub:marvel sig:comicinfo
+- A ComicInfo `Volume` holding a 5-digit ComicVine id (Hulk Comic 37309) is the same 1.0 assertion as the 4- and
+  6-digit cases.
+[L-136] (4 shelf/shelves) pub:marvel sig:comicinfo
+- Marika-Empire and Glorith-HD ComicInfo `Web` ids are ComicVine ISSUE ids of the stored volume (8 of 8 in B-061..063:
+  45305/109026 → X-Men Unlimited #20/#34; 124309, 70469-70471 → Hidden Years #1-4) — each a clean 1.0.
+[L-281] (5 shelf/shelves) folder:bucket folder:events folder:vn-year
+- A chronology folder's ORDER prefix ("04 Dragon Ball - Full Color Freeza Arc v01") gets read by the per-file num
+  matcher as the ISSUE number — v01 in folder "04" linked to issue #4; the true mapping is the shelf's own vNN by
+  ordinal. Any "NN Title vNN" bucket naming is this trap.
+[L-060] (3 shelf/shelves) folder:vn-year pub:caliber pub:dark-horse pub:image pub:marvel sig:stamp
+- A digital re-release can cut each collected volume into chapter files restarting at 1 (Dark Horse's 2014-15
+  Kabuki: seven `vNN` folders = seven different published comics from Caliber / Image / Marvel; v1 stamped one
+  Image volume on all 44 files). Read the chapter files as the runs they came from.
+[L-116] (3 shelf/shelves) folder:vn-year pub:marvel sig:comicinfo sig:legacy-stamp sig:stamp
+- Old Marvel folders cut into `vN (year)` shelves: the per-file matcher picks the wrong DECADE by issue number
+  (Amazing Adventures 1961 on the 1970 run, Ka-Zar 1997 on 1974, Kull 1971 on 1982/1983). The folder's `vN (year)`
+  suffix and ComicInfo `Volume` beat it every time.
+[L-306] (3 shelf/shelves) kind:collected-line kind:new pass:item pub:marvel sig:probe
+- `lookup.py --issues <volume>` returns the trade's own "Vol. N: <subtitle>" name — title + number matching our label
+  is the fastest confirmation of a found CV id. 2024-2025 trades are the single largest genuine no-record cause
+  (too new for the static rip / dump); a "Classic" / Epic / Masterworks line with a CV volume and no GCD counterpart
+  (or vice versa) takes `gcd=-` / `cv=-` honestly.
+[L-319] (3 shelf/shelves) folder:bucket folder:events folder:variant-covers pub:marvel pub:zenescope sig:round2 sig:stamp
+- C-064..C-065 (Marvel event chronologies, the tier C tail): GCD indexes Zenescope's year-restarting "Grimm Tales
+  of Terror" as "Volume N" series per year (82049 / 93359 / 111761 / 123675). On "_Marvel Major Event Chronology"
+  tie-in shelves the per-file GCD matcher reuses one franchise-wide round2 stamp (Savage Avengers 144638 on six King
+  In Black singles) — the dump's exact title + year row every time. 2024 "Blood Hunt" one-shots are 1pp
+  variant-cover packs at ratios up to 8 and still identify cleanly by the exact-title pair.
+[L-345] (3 shelf/shelves) pub:marvel sig:probe
+- Marvel on GCD (R-069): "&" for "and" (Infinity Gauntlet, Gods & Gladiators, Rise & Fall); runs filed under an imprint
+  or shortened name ("Punisher MAX: …", "Ant-Man and Wasp Prelude", "Spider-Man: Spider's Shadow") — a trade's
+  `--collects` roll-up names the run's GCD id fastest; a special's name carries its cover year ("Punisher: X-Mas Special
+  2006"). Masterworks lines HAVE a CV line volume with "Volume N" issues (23402 ASM, 35197 FF, 35188 Sub-Mariner, 59106
+  ToS, 23450 TtA) → the line is the S (it spans several titles), one I per book; GCD keeps separate series for second
+  printings (FF 61146, ASM 52975) — match by year. Digital-first runs (Daughters of the Dragon 2018, Back to Basics,
+  Long Live the King, Purple Daughter) have no GCD series: provider-missing is right.
+[L-124] (4 shelf/shelves) folder:bucket folder:vn-year pass:item sig:trade-link
+- A `<Title> vN (<year>)` folder holding only a collected edition is the RUN's folder — the run takes the S
+  line, the trade an `I` line; a `_Trades` / `_Minis` / `_One-shots` bucket is the opposite (the book's own
+  count-1 record, minted by BOTH providers, wins).
+[L-191] (4 shelf/shelves) folder:sequel-subfolder folder:vn-year pass:revisit sig:stale-flag
+- On a wave-2 `NN <Title> vN (<year>)` split-out shelf (ids S94xxx+) an `overlap-in-series` flag is stale by
+  construction — the colliding Vol. 01s now sit on sibling shelves (13 of 14 in R-016); the lead dismisses the flag.
+[L-031] (2 shelf/shelves) kind:collected-line kind:trade-only pub:dc pub:marvel sig:collision sig:legacy-stamp sig:trade-link
+- A trade of a run that lives on ANOTHER shelf (a Batman Vol. 2 trade whose run is the Batman 2016 shelf):
+  `S` at the run's ids + `F merge-with=<that shelf's sid>` ONLY when that shelf is unambiguous (one title, one
+  numbering) and the trade's range falls inside its ladder. When the run is split across legacy-numbered shelves
+  (Amazing Spider-Man), keep a multi-volume collected LINE both legs carry at 0.9 + `N` naming the run, and a
+  lone count-1 TPB record at 0.7 + `N`. Never link a trade shelf to an ongoing it would merge five shelves into.
+[L-034] (2 shelf/shelves) folder:events pub:marvel sig:round2
+- `_X-Men Complete Chronology` / `_Marvel Major Event Chronology` folders re-file the same books a second and
+  third time — every ratio 2.00 there, never a second run. Crossover blocks get handed one member's series by
+  `round2-folder` (four Age of Apocalypse shelves → "X-Man", a 76-issue hull).
+[L-076] (2 shelf/shelves) kind:collected-line pub:marvel sig:collision
+- ComicVine mints a VOLUME PER BOOK on Epic Collection / Masterworks lines while GCD keeps one series for the
+  line — that splits one folder into many shelves → `F merge-with` between the siblings, naming the GCD line.
+[L-109] (2 shelf/shelves) kind:collected-line pub:marvel pub:star-wars
+- RULING (lead, 2026-09-10, from S16653 Star Wars Legends Epic Collections): the ARCHIVE ruling (take the run's
+  records) applies only when the collected line has NO record of its own. When either provider carries the
+  line (Epic Collection, Omnibus, Masterworks…) the LINE wins at 0.9 with an `N` naming the run — never link a
+  trade shelf to an ongoing it would merge into.
+[L-115] (2 shelf/shelves) kind:collected-line pub:marvel
+- Creator-named collected lines both legs carry with a multi-volume count (FF by Ryan North 6, Deadpool by Ziglar
+  3) take the line at 0.9 + `N` naming the run — the run record is usually absent from rip and dump.
+[L-117] (2 shelf/shelves) kind:collected-line pub:marvel sig:probe
+- Epic Collection / Modern Era Epic LINES: probe the line name WITHOUT the volume subtitle — six "empty" packets
+  held a GCD line row that way (Black Widow Epic 158119, Carnage Epic 183078, Daredevil Modern Era 209809).
+[L-119] (2 shelf/shelves) pub:marvel
+- GCD filing quirks that recovered legs: drop "Comics" from a title, "and" for "&", "Digest" appended, reversed
+  or reordered name lists ("Deadpool / Amazing Spider-Man / Hulk: Identity Wars").
+[L-130] (2 shelf/shelves) pub:marvel sig:legacy-stamp sig:probe
+- `lookup.py --year` separates same-title relaunches (Superior Spider-Man 2018 vs 2013); "Lethal Protector II"
+  is its own 5-issue run in both legs, not the 2022 Lethal Protector.
+[L-132] (2 shelf/shelves) kind:collected-line pub:marvel
+- Epic Collection shape is total at Marvel: CV mints a volume per BOOK, GCD keeps one line row; the CV per-book
+  issues are labelled "Volume N" and match filenames volume-for-volume — the cheapest per-book verification.
+[L-135] (3 shelf/shelves) kind:collected-line
+- An Epic / Complete Collection LINE is found by probing the line name with NO volume subtitle: "Generation X Epic
+  Collection" → GCD 174151, shared by four sibling shelves.
+[L-164] (3 shelf/shelves) kind:archive kind:collected-line kind:strip sig:probe
+- Year-by-year archives of a newspaper/web strip (Doonesbury, Dennis the Menace, Rip Kirby, The Little King) have no record
+  in either provider → R + provider-missing; where a provider holds the strip's own collected line (Cyanide & Happiness,
+  Oglaf) pair at 0.9 as a format split.
+[L-169] (2 shelf/shelves) folder:events pub:marvel sig:trade-link
+- `_Marvel Major Event Chronology (digital)` is one folder per tie-in holding that tie-in's collected edition: the
+  count-1-trade-as-stored-link artefact runs at 86 of 202 shelves there, the highest rate in any single folder.
+[L-175] (3 shelf/shelves) folder:bucket folder:events pass:item
+- In the chronology folders the RUN rule stands over the bucket rule: `S` = the numbered run, the tie-in's collected
+  record goes on the `I` line (B-072/073, ~90 shelves); the book's own record is the S only where no numbered run exists.
+[L-186] (3 shelf/shelves) kind:collected-line
+- REMINDER (lead ruling, applied again on Princeless S14096): a collected LINE with its own record (GCD 106434, nine
+  trades) wins over the first mini's run; linking the first four-issue mini to a nine-volume trade shelf is wrong-cv-link.
+[L-193] (6 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-196] (2 shelf/shelves) kind:collected-line pass:item pub:marvel
+- LEAD RULING (S15513 She-Hulk): a creator-named collected LINE wins the shelf only when it is COEXTENSIVE with the
+  shelf; a line that also collects a sequel series (Sensational She-Hulk volumes on the same line) is `I` lines on the
+  line, and the run is the S.
+[L-244] (3 shelf/shelves) kind:collected-line pass:item
+- A trade collecting TWO minis, and an omnibus, cannot yet be stated by a `C` line (one range, one run, one per item):
+  name the runs on an `N` for now — TOOLS_TODO 17 adds per-run ranges and several `C` per item.
+[L-246] (3 shelf/shelves) kind:collected-line pass:item
+- ITEM PASS (X-001..X-003): on RUN-identity shelves the per-file GCD link reuses the run's own series matched to ONE
+  issue by number for vol. 01 only, while later volumes resolve to a real collected-edition series — check whether
+  vol. 01's link differs in kind from vol. 02+ before trusting it (Kevin Keller, Mega Man, Klaus, Dark Crystal …).
+[L-247] (3 shelf/shelves) kind:collected-line
+- A `C` that restates the shelf's own run needs its ids repeated in the clause to clear 40 characters; the clause is
+  the evidence, not a pointer. A shelf's own collected LINE and the run it collects are two records (Invisible
+  Kingdom: line GCD 151274 vs run CV 117748 / GCD 142448; Goldie Vance: line CV 94628 vs run CV 89593) — the `C`
+  names the RUN.
+[L-248] (3 shelf/shelves) kind:collected-line
+- Sibling shelves of one franchise can share one real GCD collected-edition line (Fence S6636/S6639/S6640 → 123731);
+  the sibling's landed S is evidence for the weak per-file matches on the others.
+[L-251] (3 shelf/shelves) kind:collected-line
+- Deluxe / Yearbook / Omnibus editions of the shelf's own ongoing with NO judged range get an `N` naming the
+  relationship, never an invented `C` range (the range is containment's to read).
+
++118 more matched entries not shown: L-258, L-269, L-272, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-291, L-295, L-296, L-297, L-298, L-307, L-308, L-309, L-313, L-314, L-327, L-328, L-329, L-331, L-332, L-343, L-013, L-014, L-043, L-050, L-072, L-088, L-089, L-095, L-096, L-118, L-125, L-157, L-159, L-163, L-177, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-341, L-346, L-347, L-016, L-032, L-064, L-085, L-101, L-113, L-114, L-274, L-283, L-288, L-290, L-293, L-310, L-027, L-028, L-035, L-036, L-106, L-110, L-111, L-112, L-121, L-122, L-126, L-129, L-138, L-141, L-173, L-174, L-187, L-241, L-242, L-265, L-312, L-315, L-316, L-322, L-324, L-325, L-326, L-007, L-058, L-097, L-098, L-100, L-217, L-252, L-276, L-277, L-278, L-280, L-284, L-304, L-344, L-352, L-354, L-041, L-065, L-099, L-123, L-128, L-181, L-192, L-194, L-262, L-330, L-336 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S13245 One Piece  [split]  105 files / 104 collections  decided in R-084 (R)
+   decided: R 13245 | the C-034 needs-web is answered locally, and the answer is a split: our 102 English volumes "One Piece v001-v102 (2003-2023)" are Viz's English edition = CV 31022 "One Piece" (Viz 2003, 110, cached #1-110) and GCD 17495 (Viz 2003-?, 111 rows) — both legs agree on publisher, start year 2003 and a count above our ladder, and v001's 2003 matches both first rows; but two more Viz works sit in subfolders: "One Piece - Ace's Story The Manga v01-v02 (2024)" = CV 157226 / GCD 209907 (Viz 2024, 2 each) and "One Piece - Shokugeki no Sanji (2024)" = CV 157231 / GCD 209908 (Viz 2024, 1) — two whole books of a different comic with its own record are a co-equal run (RESIDUE ruling), so no S can be written until they move
+   F 13245 split-needed | items 40858, 40859 -> "One Piece: Ace's Story - The Manga (2024)" cv=157226 gcd=209907; item 41997 -> "One Piece: Shokugeki no Sanji (2024)" cv=157231 gcd=209908; items 40860-40961 (v001-v102) stay as Viz's One Piece cv=31022 gcd=17495
+   F 13245 wrong-cv-link | the stored CV 21397 "One Piece" (Shueisha 1997, 115) is the Japanese original; our books are Viz's English volumes, CV 31022 (L-344: the English record replaces it)
+   F 13245 needs-fetch cv=31022 | CV 31022 "One Piece" (Viz 2003, 110) is named from the local rip and has no CvVolume row
+   keys now: "One Piece" x102 · "One Piece - Ace's Story The Manga" x2 · "One Piece - Shokugeki no Sanji" x1
+   groups (title x folder): 3
+   G1 "One Piece" in Manga\One Piece (1997) — 102 file(s), 102 COL, pp 163-246; cv per-file 31022x102; gcd per-file 17495x102; key 'One Piece'
+      [40860] COL One Piece v001 (2003) (Digital) (AnHeroGold-Empire).cbz (211pp)
+         own record cv 31022 / gcd s17495 "One Piece" (issue 288866) COLLECTS: gcd=84440 One Piece ワンピース (1997) #1
+      [40861] COL One Piece v002 (2003) (Digital) (AnHeroGold-Empire).cbz (197pp)
+         own record cv 31022 / gcd s17495 "One Piece" (issue 288867) COLLECTS: gcd=30636 Shonen Jump (2003) #8-9
+      [40862] COL One Piece v003 (2004) (Digital) (AnHeroGold-Empire).cbz (201pp)
+         own record cv 31022 / gcd s17495 "One Piece" (issue 288868) COLLECTS: gcd=30636 Shonen Jump (2003) #10
+      [40863] COL One Piece v004 (2004) (Digital) (AnHeroGold-Empire).cbz (193pp)
+      [40864] COL One Piece v005 (2004) (Digital) (AnHeroGold-Empire).cbz (191pp)
+      [40865] COL One Piece v006 (2005) (Digital) (AnHeroGold-Empire).cbz (189pp)
+      [40866] COL One Piece v007 (2005) (Digital) (AnHeroGold-Empire).cbz (191pp)
+      [40867] COL One Piece v008 (2005) (Digital) (AnHeroGold-Empire).cbz (189pp)
+         own record cv 31022 / gcd s17495 "One Piece" (issue 288873) COLLECTS: gcd=84440 One Piece ワンピース (1997) #8
+      [40868] COL One Piece v009 (2006) (Digital) (AnHeroGold-Empire).cbz (207pp)
+      [40869] COL One Piece v010 (2006) (Digital) (AnHeroGold-Empire).cbz (189pp)
+      [40870] COL One Piece v011 (2006) (Digital) (AnHeroGold-Empire).cbz (187pp)
+         own record cv 31022 / gcd s17495 "One Piece" (issue 667507) COLLECTS: gcd=30636 Shonen Jump (2003) (unnumbered)
+      [40871] COL One Piece v012 (2006) (Digital) (AnHeroGold-Empire).cbz (191pp)
+      [40872] COL One Piece v013 (2007) (Digital) (AnHeroGold-Empire).cbz (187pp)
+      [40873] COL One Piece v014 (2007) (Digital) (AnHeroGold-Empire).cbz (187pp)
+      [40874] COL One Piece v015 (2007) (Digital) (AnHeroGold-Empire).cbz (213pp)
+      [40875] COL One Piece v016 (2007) (Digital) (AnHeroGold-Empire).cbz (189pp)
+      [40876] COL One Piece v017 (2008) (Digital) (AnHeroGold-Empire).cbz (207pp)
+      [40877] COL One Piece v018 (2008) (Digital) (AnHeroGold-Empire).cbz (225pp)
+      [40878] COL One Piece v019 (2008) (Digital) (AnHeroGold-Empire).cbz (209pp)
+         own record cv 31022 / gcd s17495 "One Piece" (issue 667515) COLLECTS: gcd=30636 Shonen Jump (2003) (unnumbered)
+      [40879] COL One Piece v020 (2009) (Digital) (AnHeroGold-Empire).cbz (207pp)
+      [40880] COL One Piece v021 (2009) (Digital) (AnHeroGold-Empire).cbz (187pp)
+         own record cv 31022 / gcd s17495 "One Piece" (issue 667517) COLLECTS: gcd=30636 Shonen Jump (2003) (unnumbered)
+      [40881] COL One Piece v022 (2009) (Digital) (AnHeroGold-Empire).cbz (207pp)
+      [40882] COL One Piece v023 (2009) (Digital) (AnHeroGold-Empire).cbz (229pp)
+      [40883] COL One Piece v024 (2010) (Digital) (AnHeroGold-Empire).cbz (209pp)
+      [40884] COL One Piece v025 (2010) (Digital) (AnHeroGold-Empire).cbz (207pp)
+      [40885] COL One Piece v026 (2010) (Digital) (AnHeroGold-Empire).cbz (193pp)
+      [40886] COL One Piece v027 (2010) (Digital) (AnHeroGold-Empire).cbz (187pp)
+      [40887] COL One Piece v028 (2010) (Digital) (AnHeroGold-Empire).cbz (185pp)
+      [40888] COL One Piece v029 (2010) (Digital) (AnHeroGold-Empire).cbz (231pp)
+      [40889] COL One Piece v030 (2010) (Digital) (AnHeroGold-Empire).cbz (207pp)
+      [40890] COL One Piece v031 (2010) (Digital) (AnHeroGold-Empire).cbz (207pp)
+      [40891] COL One Piece v032 (2010) (Digital) (AnHeroGold-Empire).cbz (211pp)
+      [40892] COL One Piece v033 (2010) (Digital) (AnHeroGold-Empire).cbz (227pp)
+      [40893] COL One Piece v034 (2010) (Digital) (AnHeroGold-Empire).cbz (231pp)
+      [40894] COL One Piece v035 (2010) (Digital) (AnHeroGold-Empire).cbz (187pp)
+      [40895] COL One Piece v036 (2010) (Digital) (AnHeroGold-Empire).cbz (209pp)
+      [40896] COL One Piece v037 (2010) (Digital) (AnHeroGold-Empire).cbz (229pp)
+      [40897] COL One Piece v038 (2010) (Digital) (AnHeroGold-Empire).cbz (207pp)
+      [40898] COL One Piece v039 (2010) (Digital) (AnHeroGold-Empire).cbz (207pp)
+      [40899] COL One Piece v040 (2010) (Digital) (AnHeroGold-Empire).cbz (225pp)
+      [40900] COL One Piece v041 (2010) (Digital) (AnHeroGold-Empire).cbz (227pp)
+      [40901] COL One Piece v042 (2010) (Digital) (AnHeroGold-Empire).cbz (207pp)
+      [40902] COL One Piece v043 (2010) (Digital) (AnHeroGold-Empire).cbz (215pp)
+      [40903] COL One Piece v044 (2010) (Digital) (AnHeroGold-Empire).cbz (227pp)
+      [40904] COL One Piece v045 (2010) (Digital) (AnHeroGold-Empire).cbz (209pp)
+      [40905] COL One Piece v046 (2010) (Digital) (AnHeroGold-Empire).cbz (199pp)
+      [40906] COL One Piece v047 (2010) (Digital) (AnHeroGold-Empire).cbz (209pp)
+      [40907] COL One Piece v048 (2010) (Digital) (AnHeroGold-Empire).cbz (227pp)
+      [40908] COL One Piece v049 (2010) (Digital) (AnHeroGold-Empire).cbz (229pp)
+      [40909] COL One Piece v050 (2010) (Digital) (AnHeroGold-Empire).cbz (207pp)
+      [40910] COL One Piece v051 (2010) (Digital) (AnHeroGold-Empire).cbz (227pp)
+      [40911] COL One Piece v052 (2010) (Digital) (AnHeroGold-Empire).cbz (209pp)
+      [40912] COL One Piece v053 (2010) (Digital) (AnHeroGold-Empire).cbz (211pp)
+      [40913] COL One Piece v054 (2010) (Digital) (AnHeroGold-Empire).cbz (209pp)
+      [40914] COL One Piece v055 (2010) (Digital) (AnHeroGold-Empire).cbz (193pp)
+      [40915] COL One Piece v056 (2011) (Digital) (AnHeroGold-Empire).cbz (205pp)
+      [40916] COL One Piece v057 (2011) (Digital) (AnHeroGold-Empire).cbz (209pp)
+      [40917] COL One Piece v058 (2011) (Digital) (AnHeroGold-Empire).cbz (205pp)
+      [40918] COL One Piece v059 (2011) (Digital) (AnHeroGold-Empire).cbz (205pp)
+      [40919] COL One Piece v060 (2012) (Digital) (AnHeroGold-Empire).cbz (209pp)
+         own record cv 31022 / gcd s17495 "One Piece" (issue 904068) COLLECTS: gcd=30636 Shonen Jump (2003) (unnumbered)
+      [40920] COL One Piece v061 (2012) (Digital) (AnHeroGold-Empire).cbz (205pp)
+      [40921] COL One Piece v062 (2012) (Digital) (AnHeroGold-Empire).cbz (213pp)
+      [40922] COL One Piece v063 (2012) (Digital) (AnHeroGold-Empire).cbz (233pp)
+      [40923] COL One Piece v064 (2012) (Digital) (AnHeroGold-Empire).cbz (209pp)
+      [40924] COL One Piece v065 (2012) (Digital) (AnHeroGold-Empire).cbz (206pp)
+      [40925] COL One Piece v066 (2013) (Digital) (AnHeroGold-Empire).cbz (209pp)
+      [40926] COL One Piece v067 (2013) (Digital) (AnHeroGold-Empire).cbz (221pp)
+      [40927] COL One Piece v068 (2013) (Digital) (AnHeroGold-Empire).cbz (219pp)
+      [40928] COL One Piece v069 (2013) (Digital) (AnHeroGold-Empire).cbz (246pp)
+      [40929] COL One Piece v070 (2014) (Digital) (AnHeroGold-Empire).cbz (204pp)
+      [40930] COL One Piece v071 (2014) (Digital) (AnHeroGold-Empire).cbz (212pp)
+      [40931] COL One Piece v072 (2014) (Digital) (AnHeroGold-Empire).cbz (206pp)
+      [40932] COL One Piece v073 (2015) (Digital) (AnHeroGold-Empire).cbz (202pp)
+      [40933] COL One Piece v074 (2015) (Digital) (AnHeroGold-Empire).cbz (226pp)
+      [40934] COL One Piece v075 (2015) (Digital) (AnHeroGold-Empire).cbz (198pp)
+      [40935] COL One Piece v076 (2015) (Digital) (AnHeroGold-Empire).cbz (207pp)
+      [40936] COL One Piece v077 (2016) (Digital) (AnHeroGold-Empire).cbz (228pp)
+      [40937] COL One Piece v078 (2016) (Digital) (AnHeroGold-Empire).cbz (202pp)
+      [40938] COL One Piece v079 (2016) (Digital) (AnHeroGold-Empire).cbz (190pp)
+      [40939] COL One Piece v080 (2016) (Digital) (AnHeroGold-Empire).cbz (204pp)
+      [40940] COL One Piece v081 (2017) (Digital) (AnHeroGold-Empire).cbz (194pp)
+      [40941] COL One Piece v082 (2017) (Digital) (AnHeroGold-Empire).cbz (211pp)
+      [40942] COL One Piece v083 (2017) (Digital) (AnHeroGold-Empire).cbz (208pp)
+      [40943] COL One Piece v084 (2017) (Digital) (AnHeroGold-Empire).cbz (188pp)
+      [40944] COL One Piece v085 (2018) (Digital) (danke-Empire).cbz (177pp)
+      [40945] COL One Piece v086 (2018) (Digital) (danke-Empire).cbz (180pp)
+      [40946] COL One Piece v087 (2018) (Digital) (danke-Empire).cbz (180pp)
+      [40947] COL One Piece v088 (2018) (Digital) (danke-Empire).cbz (173pp)
+      [40948] COL One Piece v089 (2019) (Digital) (danke-Empire).cbz (188pp)
+      [40949] COL One Piece v090 (2019) (Digital) (danke-Empire).cbz (172pp)
+      [40950] COL One Piece v091 (2019) (Digital) (danke-Empire).cbz (195pp)
+      [40951] COL One Piece v092 (2019) (Digital) (danke-Empire).cbz (165pp)
+      [40952] COL One Piece v093 (2020) (Digital) (danke-Empire).cbz (191pp)
+      [40953] COL One Piece v094 (2020) (Digital) (danke-Empire).cbz (190pp)
+      [40954] COL One Piece v095 (2020) (Digital) (danke-Empire).cbz (186pp)
+      [40955] COL One Piece v096 (2021) (Digital) (danke-Empire).cbz (180pp)
+      [40956] COL One Piece v097 (2021) (Digital) (danke-Empire).cbz (176pp)
+      [40957] COL One Piece v098 (2021) (Digital) (danke-Empire).cbz (163pp)
+      [40958] COL One Piece v099 (2022) (Digital) (1r0n).cbz (166pp)
+         own record cv 31022 / gcd s17495 "One Piece" (issue 2398990) COLLECTS: gcd=84440 One Piece ワンピース (1997) #99
+      [40959] COL One Piece v100 (2022) (Digital) (1r0n).cbz (190pp)
+      [40960] COL One Piece v101 (2022) (Digital) (1r0n).cbz (176pp)
+      [40961] COL One Piece v102 (2023) (Digital) (1r0n).cbz (174pp)
+   G2 "One Piece - Ace's Story The Manga" in Manga\One Piece (1997)\One Piece - Ace's Story The Manga (2024) — 2 file(s), 2 COL, pp 145-153; cv per-file 157226x2; gcd per-file 209907x2; key "One Piece - Ace's Story The Manga"
+      [40858] COL One Piece - Ace's Story The Manga v01 (2024) (Digital) (LuCaZ).cbz (153pp)
+      [40859] COL One Piece - Ace's Story The Manga v02 (2024) (Digital) (LuCaZ).cbz (145pp)
+   G3 "One Piece - Shokugeki no Sanji (2024) (Digital) (LuCaZ)" in Manga\One Piece (1997)\One Piece - Shokugeki no Sanji (2024) — 1 file(s), pp 227-227; cv per-file 157231x1; gcd per-file 209908x1; key 'One Piece - Shokugeki no Sanji'
+      [41997] One Piece - Shokugeki no Sanji (2024) (Digital) (LuCaZ).cbz (227pp)
+
+== S12079 Miles Morales: Spider-Man  [split]  99 files / 13 collections  decided in R-084 (R)
+   decided: R 12079 | several runs on one shelf: (1) Miles Morales: Spider-Man (2022) = CV 146734 / GCD 193893 — issues #6-7, #12-16, #21-29, the Annual (CV 159323 / GCD 214634) and ~45 one-page variants, plus Cody Ziglar's trade line Vol. 01-04 (CV 152759 / GCD 202709; Vol. 03 ripped twice, flag #343); (2) the 21 "Miles Morales Spider-Man - Infinity Comic 001-021 (2023) (digital-mobile)" chapters (63-162pp), which neither leg indexes (GCD indexes no Marvel Infinity Comics, L-343; CV's nearest is the 2025 "Astonishing" 166117); (3) the 2019 run's books — trades Vol. 01-05 (GCD 148840 #1-5, roll-ups s135468), "#23 (2021)" and the two Saladin Ahmed omnibuses (CV 146077 / GCD 191850) — whose run CV 115897 / GCD 135468 is already S94783's identity (C-050, holding Vol. 06-08); (4) item 95824, the 2019 "Miles Morales: Spider-Man" collection of Ultimate Comics Spider-Man (2011) #1-10 (GCD 149130); no one S can carry all four
+   F 12079 split-needed | items 95829, 95830, 95831, 95832, 95833 (Vol. 01-05), 118498 (#23 2021), 95847, 95848 (Omnibus Book 01-02) and 48190 (a #39 variant) join S94783 (S line C-050: cv=115897 gcd=135468, the 2019 run whose Vol. 06-08 it holds); items 51341-51361 (Infinity Comic 001-021) -> "Miles Morales: Spider-Man Infinity Comic (2023)" with no record; item 95824 -> "Miles Morales: Spider-Man (2019)" gcd=149130 (a collection of Ultimate Comics Spider-Man #1-10); the 2022 run (issues, annual, variants, Vol. 01-04) stays as cv=146734 gcd=193893
+   F 12079 provider-missing | the 2023 Miles Morales: Spider-Man Infinity Comic has no ComicVine volume and no GCD row (probed "Miles Morales" --contains, "Infinity Comic")
+   N 12079 flag #343 (48144 and 118629 are duplicate rips of Gang War) is TRUE and stays pending — both I lines name the same book; A-020's wrong-cv-link on the Infinity Comic chapters still stands
+   named: S94783 Miles Morales: Spider-Man  3 files  keys: "Miles Morales - Spider-Man v1 (2019)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S20604 "Ultimate Comics Spider-Man" 11f [shares gcd=60934 (collected by item 95824) — S cv=42821 gcd=60934 (C-064 0.9)] keys: "Ultimate Comics Spider-Man"
+   nearby: S66475 "Miles Morales: Ultimate Spider-Man" 8f [shares gcd=80565 (collected by item 95847) — S cv=73678 gcd=80565 (D-020 0.95)] keys: "Miles Morales - Ultimate Spider-Man"
+   nearby: S103778 "Spider-Man v2 (2016)" 5f [shares gcd=96682 (collected by item 95848) — S cv=87820 gcd=96682 (R-050 0.95)] keys: "Spider-Man v2 (2016)"
+   nearby: S7537 "Giant-Size Spider-Man" 4f [shares gcd=207767 (collected by item 48144) — S cv=155967 gcd=207767 (R-037 0.95)] keys: "Giant-Size Spider-Man" | "Giant-Size Spider-Man (2024)"
+   nearby: S6958 "Free Comic Book Day 2019 (Spider-Man/Venom)" 1f [shares gcd=143706 (collected by item 95830) — S cv=118758 gcd=143706 (A-025 0.95)] keys: "Free Comic Book Day 2019 (Spider-Man/Venom)"
+   nearby: S16251 "Spider-Men" 1f [shares gcd=66298 (collected by item 95847) — S cv=49395 gcd=66298 (B-072 0.95)] keys: "Spider-Men"
+   nearby: S16252 "Spider-Men II" 1f [shares gcd=115396 (collected by item 95848) — S cv=102777 gcd=115396 (B-058 0.95)] keys: "Spider-Men II"
+   nearby: S16106 "Spider-Man: Miles Morales" 4f [title — S cv=93945 gcd=106166 (A-025 0.9)] keys: "Spider-Man - Miles Morales"
+   keys now: "Miles Morales - Spider-Man v2 (2022)" x61 · "Miles Morales Spider-Man - Infinity Comic" x21 · "Miles Morales - Spider-Man" x10 · "Miles Morales" x5 · "Miles Morales: Spider-Man" x2
+   groups (title x folder): 13
+   G1 "Miles Morales - Spider-Man" in Marvel\#MARVEL CURRENT ONGOING TITLES\Miles Morales - Spider-Man v2 (2022) — 15 file(s), 4 COL, numbers 6-7, 21-29, pp 22-136; cv per-file 115897x11, 152759x4; gcd per-file 202517x10, 202709x4, 204904x1; key 'Miles Morales - Spider-Man v2 (2022)'
+      e.g. Miles Morales - Spider-Man 006 (2023) (Digital) (Zone-Empire).cbr
+        48131 #6 2023 22pp · 48132 #7 2023 22pp · 48133 #21 2024 24pp · 48134 #22 2024 22pp · 48135 #23 2024 22pp · 48136 #24 2024 22pp · 48137 #25 2024 28pp · 48138 #26 2025 23pp
+        48139 #27 2025 24pp · 48140 #28 2025 24pp · 48141 #29 2025 22pp
+      [48142] COL Miles Morales - Spider-Man Vol. 01 - Trial by Spider (2023) (Digital-Empire).cbr (121pp)
+         own record cv 152759 / gcd s202709 "Miles Morales: Spider-Man by Cody Ziglar" (issue 2559519) COLLECTS: gcd=193893 Miles Morales: Spider-Man (2023) #2
+      [48143] COL Miles Morales - Spider-Man Vol. 02 - Bad Blood (2024) (Digital) (Shan-Empire).cbz (110pp)
+         own record cv 152759 / gcd s202709 "Miles Morales: Spider-Man by Cody Ziglar" (issue 2611326) COLLECTS: gcd=193893 Miles Morales: Spider-Man (2023) (unnumbered)
+      [48144] COL Miles Morales - Spider-Man Vol. 03 - Gang War (2024) (Digital) (Shan-Empire).cbz (112pp)
+         own record cv 152759 / gcd s202709 "Miles Morales: Spider-Man by Cody Ziglar" (issue 2650883) COLLECTS: gcd=193893 Miles Morales: Spider-Man (2023) (unnumbered) · gcd=207767 Giant-Size Spider-Man (2024) #1
+      [48145] COL Miles Morales - Spider-Man Vol. 04 - Retribution (2024) (Digital) (Shan-Empire).cbz (136pp)
+         own record cv 152759 / gcd s202709 "Miles Morales: Spider-Man by Cody Ziglar" (issue 2670694) COLLECTS: gcd=193893 Miles Morales: Spider-Man (2023) (unnumbered) · gcd=210101 Web of Spider-Man (2024) #1
+   G2 "Miles Morales - Spider-Man Annual" in Marvel\#MARVEL CURRENT ONGOING TITLES\Miles Morales - Spider-Man v2 (2022)\Annuals and Specials — 1 file(s), numbers 1, pp 33-33; cv per-file 152480x1; gcd per-file 202517x1; key 'Miles Morales - Spider-Man v2 (2022)'
+      [48130] Miles Morales - Spider-Man Annual 001 (2024) (Digital) (Shan-Empire).cbz (33pp)
+   G3 "Miles Morales - Spider-Man" in Marvel\#MARVEL CURRENT ONGOING TITLES\Miles Morales - Spider-Man v2 (2022)\Variant Covers — 44 file(s), numbers 1, 3-4, 8-11, 14-15, 17-18, 20-29, 39, pp 1-1; cv per-file 115897x44; gcd per-file 202517x38, 177294x5; key 'Miles Morales - Spider-Man v2 (2022)'
+      e.g. Miles Morales - Spider-Man 001 (2022) (Blank Variant) (Digital) (MikeNY76-Empire).cbz
+        48146 #1 2022 1pp · 48147 #1 2022 1pp · 48148 #1 2022 1pp · 48149 #1 2022 1pp · 48150 #1 2022 1pp · 48151 #3 2023 1pp · 48153 #4 2023 1pp · 48154 #8 2023 1pp · 48157 #9 2023 1pp
+        48161 #15 2024 1pp · 48162 #17 2024 1pp · 48163 #18 2024 1pp · 48164 #18 2024 1pp · 48165 #18 2024 1pp · 48166 #18 2024 1pp · 48167 #20 2024 1pp · 48168 #20 2024 1pp · 48169 #21 2024 1pp
+        48170 #21 2024 1pp · 48171 #21 2024 1pp · 48172 #21 2024 1pp · 48173 #22 2024 1pp · 48174 #22 2024 1pp · 48175 #22 2024 1pp · 48176 #23 2024 1pp · 48177 #23 2024 1pp · 48178 #24 2024 1pp
+        48179 #24 2024 1pp · 48180 #25 2024 1pp · 48181 #25 2024 1pp · 48182 #25 2024 1pp · 48183 #25 2024 1pp · 48184 #26 2024 1pp · 48185 #27 2024 1pp · 48186 #28 2025 1pp · 48187 #28 2025 1pp
+        48188 #29 2025 1pp · 48189 #29 2025 1pp · 48190 #39 2022 1pp
+      [48155] Miles Morales - Spider-Man 008 (2023) Jim Cheung Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [48156] Miles Morales - Spider-Man 008 (2023) Mico Suayan Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [48158] Miles Morales - Spider-Man 010 (2023) Romy Jones Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [48159] Miles Morales - Spider-Man 011 (2023) Ben Harvey Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+      [48160] Miles Morales - Spider-Man 014 (2023) Inhyuk Lee Variant (Digital) (MikeNY76-Empire).cbz (1pp)
+   G4 "Miles Morales - Spider-Man Annual" in Marvel\#MARVEL CURRENT ONGOING TITLES\Miles Morales - Spider-Man v2 (2022)\Variant Covers — 1 file(s), numbers 1, pp 1-1; cv per-file 152480x1; gcd per-file 202517x1; key 'Miles Morales - Spider-Man v2 (2022)'
+      [48191] Miles Morales - Spider-Man Annual 001 (2024) (Dike Ruan Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+   G5 "Miles Morales Spider-Man - Infinity Comic" in Marvel\#MARVEL CURRENT ONGOING TITLES\_Infinity Comics\Miles Morales Spider-Man - Infinity Comic (2023) — 21 file(s), numbers 1-21, pp 63-162; cv per-file 146734x21; key 'Miles Morales Spider-Man - Infinity Comic'
+      e.g. Miles Morales Spider-Man - Infinity Comic 001 (2023) (digital-mobile-Empire).cbz
+        51341 #1 2023 162pp · 51342 #2 2023 72pp · 51343 #3 2023 82pp · 51344 #4 2023 83pp · 51345 #5 2023 75pp · 51346 #6 2023 69pp · 51347 #7 2023 98pp · 51348 #8 2023 69pp · 51349 #9 2023 93pp
+        51350 #10 2023 63pp · 51351 #11 2023 102pp · 51352 #12 2023 93pp · 51353 #13 2023 94pp · 51354 #14 2023 74pp · 51355 #15 2023 95pp · 51356 #16 2023 68pp · 51357 #17 2023 74pp
+        51358 #18 2023 68pp · 51359 #19 2023 80pp · 51360 #20 2023 81pp · 51361 #21 2023 89pp
+   G6 "Miles Morales - Spider-Man (2019) (Digital-Empire)" in Marvel\_Spider-Man (Miles Morales) — 1 file(s), 1 COL, pp 223-223; cv per-file 120317x1; gcd per-file 149130x1; key 'Miles Morales - Spider-Man'
+      [95824] COL Miles Morales - Spider-Man (2019) (Digital-Empire).cbr (223pp)
+         own record cv 120317 / gcd s149130 "Miles Morales: Spider-Man" (issue 2000704) COLLECTS: gcd=60934 Ultimate Comics Spider-Man (2011) #1-10 · gcd=123924 Marvel Rising (2018) #0
+   G7 "Miles Morales - Spider-Man" in Marvel\_Spider-Man (Miles Morales)\Miles Morales - Spider-Man v1 (2019) — 5 file(s), 5 COL, pp 110-165; cv per-file 120258x1, 123869x1, 128894x1; gcd per-file 148840x5; key 'Miles Morales'
+      [95829] COL Miles Morales - Spider-Man Vol. 01 - Straight Out of Brooklyn (2019) (Digital) (Zone-Empire).cbr (135pp)
+         own record cv 120258 / gcd s148840 "Miles Morales" (issue 2049827) COLLECTS: gcd=135468 Miles Morales: Spider-Man (2019) #1-2
+      [95830] COL Miles Morales - Spider-Man Vol. 02 - Bring on the Bad Guys (2020) (Digital) (Zone-Empire).cbr (110pp)
+         own record cv 123869 / gcd s148840 "Miles Morales" (issue 2060205) COLLECTS: gcd=135468 Miles Morales: Spider-Man (2019) (unnumbered) · gcd=143706 Free Comic Book Day 2019 (Spider-Man / Venom) (2019) #1
+      [95831] COL Miles Morales - Spider-Man Vol. 03 - Family Business (2020) (Digital) (Zone-Empire).cbr (112pp)
+         own record cv 128894 / gcd s148840 "Miles Morales" (issue 2150916) COLLECTS: gcd=135468 Miles Morales: Spider-Man (2019) (unnumbered)
+      [95832] COL Miles Morales - Spider-Man Vol. 04 - Ultimatum (2021) (Digital) (Zone-Empire).cbr (133pp)
+         own record cv 134054 / gcd s148840 "Miles Morales" (issue 2214025) COLLECTS: gcd=135468 Miles Morales: Spider-Man (2019) (unnumbered)
+      [95833] COL Miles Morales - Spider-Man Vol. 05 - The Clone Saga (2021) (Digital) (Zone-Empire).cbr (165pp)
+         own record cv 138986 / gcd s148840 "Miles Morales" (issue 2262192) COLLECTS: gcd=135468 Miles Morales: Spider-Man (2019) (unnumbered)
+   G8 "Miles Morales - Spider-Man Omnibus" in Marvel\_Spider-Man (Miles Morales)\_Omnibus Editions — 2 file(s), 2 COL, pp 744-996; cv per-file 146077x2; gcd per-file 191850x2; key 'Miles Morales: Spider-Man'
+      [95847] COL Miles Morales - Spider-Man Omnibus Book 01 (2023) (Digital-Empire).cbz (996pp)
+         own record cv 146077 / gcd s191850 "Miles Morales: Spider-Man Omnibus" (issue 2446287) COLLECTS: gcd=60934 Ultimate Comics Spider-Man (2011) #2-16, #16.1, #17-28, #200 · gcd=80565 Miles Morales: Ultimate Spider-Man (2014) #1-12 · gcd=66298 Spider-Men (2012) #1-5 · gcd=77621 Cataclysm: Ultimate Spider-Man (2014) #1-3
+      [95848] COL Miles Morales - Spider-Man Omnibus Book 02 (2022) (Digital-Empire).cbr (744pp)
+         own record cv 146077 / gcd s191850 "Miles Morales: Spider-Man Omnibus" (issue 2466949) COLLECTS: gcd=96682 Spider-Man (2016) #1-21, #234-240 · gcd=115396 Spider-Men II (2017) #1-5 · gcd=93075 Spider-Gwen (2015) #16-18 · gcd=116985 Generations: Miles Morales Spider-Man & Peter Parker Spider-Man (2017) #1
+   G9 "Miles Morales - Spider-Man" in _Marvel Major Event Chronology (digital)\2020.11 - King in Black\02 Tie-ins\King in Black Singles — 1 file(s), numbers 23, pp 24-24; cv per-file 146734x1; key 'Miles Morales - Spider-Man'
+      [118498] Miles Morales - Spider-Man 023 (2021) (Digital) (Zone-Empire).cbr (24pp)
+   G10 "Miles Morales - Spider-Man" in _Marvel Major Event Chronology (digital)\2023.11 - Gang War\01 Gang War - First Strike — 1 file(s), numbers 12, pp 22-22; cv per-file 115897x1; gcd per-file 202517x1; key 'Miles Morales - Spider-Man'
+      [118599] 03 Miles Morales - Spider-Man 012 (2024) (Digital-HD) (Shan-Empire).cbz (22pp)
+   G11 "Miles Morales - Spider-Man" in _Marvel Major Event Chronology (digital)\2023.11 - Gang War\02 Gang War — 4 file(s), numbers 13-16, pp 23-26; cv per-file 115897x4; gcd per-file 202517x4; key 'Miles Morales - Spider-Man'
+      e.g. 02 Miles Morales - Spider-Man 013 (2024) (Digital) (Shan-Empire).cbz
+        118604 #13 2024 25pp · 118608 #14 2024 26pp · 118613 #15 2024 23pp · 118623 #16 2024 23pp
+   G12 "Miles Morales - Spider-Man" in _Marvel Major Event Chronology (digital)\2023.11 - Gang War\02 Gang War\Trades — 1 file(s), 1 COL, pp 112-112; cv per-file 152759x1; gcd per-file 202709x1; key 'Miles Morales - Spider-Man'
+      [118629] COL Miles Morales - Spider-Man Vol. 03 - Gang War (2024) (Digital) (Shan-Empire).cbz (112pp)
+         own record cv 152759 / gcd s202709 "Miles Morales: Spider-Man by Cody Ziglar" (issue 2650883) COLLECTS: gcd=193893 Miles Morales: Spider-Man (2023) (unnumbered) · gcd=207767 Giant-Size Spider-Man (2024) #1
+   G13 "Miles Morales - Spider-Man" in _Marvel Major Event Chronology (digital)\2024.05 - Blood Hunt\02 Tie-ins — 2 file(s), numbers 21-22, pp 22-24; cv per-file 115897x2; gcd per-file 202517x2; key 'Miles Morales - Spider-Man'
+      [118648] Miles Morales - Spider-Man 021 (2024) (Digital) (Shan-Empire).cbz (24pp)
+      [118649] Miles Morales - Spider-Man 022 (2024) (Digital) (Shan-Empire).cbz (22pp)
+
+== S101049 Timeless v1 (2022)  [split]  3 files / 0 collections  decided in R-084 (R)
+   decided: R 101049 | three different Marvel one-shots share the bare title "Timeless", each its own record on both legs: item 48613 "Timeless 001 (2022)" = CV 140623 issue 900393 / GCD 180073 row 2295790; item 48614 "Timeless 001 (2023)" = CV 147148 issue 962069 / GCD 194497 row 2470995; item 48615 "Timeless 001 (2024)" = CV 155723 issue 1038396 / GCD 207323 row 2592115 — an S on CV 140623 hands the 2023 and 2024 books the 2022 book's identity
+   F 101049 split-needed | item 48613 join S20226 (S line B-073: cv=140623 gcd=180073, holds another rip of the 2022 one-shot); item 48614 join S20225 (S line C-041: cv=147148 gcd=194497, holds another rip of the 2023 one-shot); item 48615 stays as "Timeless (2024)" cv=155723 gcd=207323
+   N 101049 C-036's merge-with=20226 is superseded by the split: only one of the three books is S20226's
+   named: S20226 Timeless  1 files  keys: "Timeless (2021)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S20225 Timeless  1 files  keys: "Timeless"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   keys now: "Timeless v1 (2022)" x3
+   groups (title x folder): 1
+   G1 "Timeless" in Marvel\#MARVEL CURRENT ONGOING TITLES\Timeless v1 (2022) — 3 file(s), numbers 1, pp 42-45; cv per-file 140623x1, 147148x1, 155723x1; gcd per-file 180073x1, 194497x1, 207323x1; key 'Timeless v1 (2022)'
+      [48613] Timeless 001 (2022) (Digital) (Zone-Empire).cbr (42pp)
+      [48614] Timeless 001 (2023) (Digital) (Zone-Empire).cbr (45pp)
+      [48615] Timeless 001 (2024) (Digital) (Shan-Empire).cbz (42pp)
+
+== S94804 The Infinity Watch v1 (2024)  [split]  2 files / 0 collections  decided in R-084 (R)
+   decided: R 94804 | the folder "The Infinity Watch v1 (2024)" holds two annuals of two titles, each with its own record on both legs: item 48605 "01 Thanos Annual 001 (2024)" 35pp = CV 158598 "Thanos Annual" (2024, issue 1060862 "The Infinity Watch; The Death Stone Saga: Chapter One") / GCD 213291 (2024, row 2640725, 44pp); item 48610 "06 Incredible Hulk Annual 001 (2024)" 28pp = CV 159483 "Incredible Hulk Annual" (2024, issue 1067979 "…The Death Stone Saga: Chapter Six") / GCD 214854 (2024, row 2654290, 36pp); the per-file CV 154554 (Thanos 2024 mini) and 2406 (the 1968 Hulk run) are wrong
+   F 94804 split-needed | item 48610 -> "Incredible Hulk Annual (2024)" cv=159483 gcd=214854; item 48605 stays as "Thanos Annual (2024)" cv=158598 gcd=213291 — two Infinity Watch crossover annuals, no spanning record (CV 161611 / GCD 218540 "Infinity Watch" 2025 is the later mini)
+   nearby: S9455 "Infinity Watch" 6f [shares cv=161611, shares gcd=218540 — S cv=161611 gcd=218540 (A-020 0.95)] keys: "Infinity Watch"
+   nearby: S34388 "The Incredible Hulk Annual" 4f [title — S cv=2860 gcd=2348 (C-045 0.9)] keys: "The Incredible Hulk Annual" | "X-Man and The Incredible Hulk Annual"
+   nearby: S18842 "Warlock and the Infinity Watch" 2f [title — S cv=4818 gcd=4483 (B-053 0.95)] keys: "The Infinity Watch"
+   nearby: S21918 "Wolverine: Infinity Watch" 1f [title+1 — S cv=117231 gcd=140643 (B-072 0.95)] keys: "Wolverine: Infinity Watch"
+   keys now: "The Infinity Watch v1 (2024)" x2
+   groups (title x folder): 2
+   G1 "Incredible Hulk Annual" in Marvel\#MARVEL CURRENT ONGOING TITLES\The Infinity Watch v1 (2024) — 1 file(s), numbers 1, pp 28-28; cv per-file 159483x1; gcd per-file 214854x1; key 'The Infinity Watch v1 (2024)'
+      [48610] 06 Incredible Hulk Annual 001 (2024) (Digital) (Shan-Empire).cbz (28pp)
+   G2 "Thanos Annual" in Marvel\#MARVEL CURRENT ONGOING TITLES\The Infinity Watch v1 (2024) — 1 file(s), numbers 1, pp 35-35; cv per-file 158598x1; gcd per-file 213291x1; key 'The Infinity Watch v1 (2024)'
+      [48605] 01 Thanos Annual 001 (2024) (Digital) (Shan-Empire).cbz (35pp)
+
+== S216 A Mighty Marvel Team-Up  [split]  4 files / 2 collections  decided in R-084 (R)
+   decided: R 216 | four files, three different Abrams/Amulet books of "A Mighty Marvel Team-Up" (#1 Animals Assemble!, #2 Quantum Quest! twice, #3 Cosmic Chaos!), and no LINE record exists on either leg — each book is minted alone: #1 = CV 154129 "Spider-Man: Animals Assemble!" (Abrams 2023) / GCD 201303; #2 = CV 155948 "Spider-Man: Quantum Quest!" (Abrams 2024), no GCD row; #3 "Cosmic Chaos!" in neither leg; the per-file CV 118139 is Marvel Team-Up (2019), a truncated-key match
+   F 216 split-needed | item 95650 -> "Spider-Man: Animals Assemble! (2023)" cv=154129 gcd=201303; item 48127 -> "Spider-Man: Cosmic Chaos! (2024)" (no record); items 48128 and 95651 (two rips of Quantum Quest!) stay as "Spider-Man: Quantum Quest!" cv=155948
+   F 216 provider-missing | neither leg holds the Mighty Marvel Team-Up LINE, GCD lacks #2-#3 and ComicVine lacks #3 (probed "Mighty Marvel Team-Up", "Quantum Quest", "Cosmic Chaos", "Animals Assemble")
+   N 48127 no-record | "Spider-Man - Cosmic Chaos! (A Mighty Marvel Team-Up #3) (2024)" 104pp: "Cosmic Chaos" returns only a Green Lanterns story title on either leg
+   nearby: S16080 "Spider-Man: Animals Assemble!" 1f [shares cv=154129 — S cv=154129 (B-058 0.9)] keys: "Spider-Man - Animals Assemble!"
+   keys now: "A Mighty Marvel Team-Up" x4
+   groups (title x folder): 3
+   G1 "Spider-Man - Cosmic Chaos! (A Mighty Marvel Team-Up" in Marvel\#MARVEL CURRENT ONGOING TITLES\Mighty Marvel Team-Ups (2023) — 1 file(s), numbers 3, pp 104-104; cv per-file 118139x1; key 'A Mighty Marvel Team-Up'
+      [48127] Spider-Man - Cosmic Chaos! (A Mighty Marvel Team-Up #3) (2024) (Digital) (dekabro-Empire).cbz (104pp)
+   G2 "Spider-Man - Quantum Quest! (A Mighty Marvel Team-Up" in Marvel\#MARVEL CURRENT ONGOING TITLES\Mighty Marvel Team-Ups (2023) — 1 file(s), numbers 2, pp 94-94; cv per-file 155948x1; key 'A Mighty Marvel Team-Up'
+      [48128] Spider-Man - Quantum Quest! (A Mighty Marvel Team-Up #2) (2024) (Digital) (dekabro-Empire).cbz (94pp)
+   G3 "Spider-Man A Mighty Marvel Team-Up" in Marvel\_Spider-Man\__OGNs, Minis & One-shots\Spider-Man - A Mighty Marvel Team-Up (2023) — 2 file(s), 2 COL, pp 94-96; cv per-file 154129x1, 155948x1; gcd per-file 201303x1; key 'A Mighty Marvel Team-Up'
+      [95650] COL Spider-Man A Mighty Marvel Team-Up Vol. 01 - Animals Assemble! (2023) (Digital) (dekabro-Empire).cbz (96pp)
+      [95651] COL Spider-Man A Mighty Marvel Team-Up Vol. 02 - Quantum Quest! (2024) (Digital) (dekabro-Empire).cbz (94pp)
+
+== S4802 Shadowland: Daredevil  [split]  2 files / 1 collections  decided in R-084 (R)
+   decided: R 4802 | two different collected editions with different identities: item 117388 "02 Daredevil - Shadowland (2011)" 143pp = the TPB "Shadowland: Daredevil" (CV 39421 issue 266235 "HC/TPB"; GCD 225997 row 2756366, 148pp, 2011-08-10, ISBN 978-0-7851-4522-6 — the 152pp 225998 row 2756367 of 2011-02-16 is the HC) collecting Daredevil (1998) #508-512 + Shadowland: After the Fall #1; item 46969 "Daredevil - Shadowland Omnibus (2024, 2nd edition)" 1097pp = CV 108581 / GCD 120694 "Daredevil: Shadowland Omnibus" (2018 first edition, 1120pp), which spans Daredevil #500-512, the Shadowland mini and its tie-ins; an S on CV 39421 hands the omnibus the TPB's identity
+   F 4802 split-needed | item 46969 -> "Daredevil: Shadowland Omnibus (2018)" cv=108581 gcd=120694; item 117388 stays as "Shadowland: Daredevil" cv=39421 gcd=225997 (a trade of ONE run, Daredevil 1998 #508-512 — run-wins would later move it to the Daredevil v2 shelf S96254)
+   F 4802 needs-fetch cv=108581 | CV 108581 "Daredevil: Shadowland Omnibus" is named from the local rip and has no CvVolume row
+   N 4802 A-023's provider-missing is answered: GCD 225997 / 225998 are told apart by page count and date (TPB 148pp 2011-08 vs HC 152pp 2011-02)
+   named: S96254 Daredevil  43 files  keys: "Daredevil v2 (1998)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   keys now: "Daredevil - Shadowland" x2
+   groups (title x folder): 2
+   G1 "Daredevil - Shadowland Omnibus (2024, 2nd edition) (Digital-Empire)" in Marvel\_Daredevil\_Omnibus Editions — 1 file(s), 1 COL, pp 1097-1097; cv per-file 39421x1; gcd per-file 120694x1; key 'Daredevil - Shadowland'
+      [46969] COL Daredevil - Shadowland Omnibus (2024, 2nd edition) (Digital-Empire).cbr (1097pp)
+   G2 "Daredevil - Shadowland (2011) (Digital) (F) (Zone-Empire)" in _Marvel Major Event Chronology (digital)\2010.07 - Shadowland\02 Shadowland — 1 file(s), numbers 2, pp 143-143; cv per-file 39421x1; gcd per-file 225997x1; key 'Daredevil - Shadowland'
+      [117388] 02 Daredevil - Shadowland (2011) (Digital) (F) (Zone-Empire).cbr (143pp)
