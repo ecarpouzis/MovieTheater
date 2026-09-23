@@ -46,9 +46,11 @@ shelf from it. Your answer is exactly that list. Each packet shows:
 - One key per new run, spelled identically on every line: `<Title> v<N> (<Year>)` or `<Title> (<Year>)`. A
   one-shot or special takes its OWN name — `Aquaman Secret Files & Origins 2003 (2003)`, `Uncanny X-Men Special
   (2014)` — never the parent's key with `#0`. Never an existing shelf's key unless the F line names that shelf
-  or the shelf line carries a lead-approved `"join": [<sid>]` (for a `nearby:` shelf the F line missed — ask
-  the lead in your report if you cannot get the approval in-session; do not add it on your own). What STAYS only
-  because it cannot move without an unapproved join goes on the shelf line as `"pending_join": [<sid>]` — it
+  or the shelf line carries `"join": [<sid>]` (for a `nearby:` shelf the F line missed). **A join is approved when
+  its evidence is in the shelf line's `why`** — the target's S line (or stored cv, checked with `lookup.py
+  --who-stores`) holds the exact run, or it already holds another rip of the same book; list every join in your
+  report and the lead reviews the list before landing (lead ruling, P-002..P-006). What STAYS only
+  because it cannot move without a join you cannot evidence goes on the shelf line as `"pending_join": [<sid>]` — it
   moves nothing, and the next identity batch prints it as a `merge-with candidate:`. Two spellings
   that differ only in case or punctuation are ONE key to the resolver and the checker refuses them.
 - Many items at once (a 900-file shelf is not typed item by item):
