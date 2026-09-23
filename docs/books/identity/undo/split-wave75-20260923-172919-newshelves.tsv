@@ -1,0 +1,33 @@
+# shelves from the split lane (new + kept halves) — feed to next_batch.py --revisit-file
+# S<sid>	<key>	run=<json|->	<P- file>	new|kept|kept-whole[	pair=<origin sid>][	moved_cv=<id>,…][	pending_join=<sid>,…]
+# kept-whole = a `split: false` shelf (nothing moved): its F split-needed stands until an identity batch re-reads it as one run
+# pair = the shelf the split took this row's items from (a kept row is its own pair): --revisit-file never cuts a batch inside a pair group
+S64380	Captain Marvel v5 (2002)	run={"cv": 18296, "gcd": 10791}	P-028.jsonl	new	pair=64379
+S103899	Star-Lord (2015)	run={"cv": 86128, "gcd": 94129}	P-028.jsonl	new	pair=16766
+S103896	Ms. Marvel (2014)	run={"gcd": 84483}	P-028.jsonl	new	pair=12433
+S103897	Ms. Marvel by G. Willow Wilson (2015)	run={"cv": 83966, "gcd": 91839}	P-028.jsonl	new	pair=12433
+S103898	Ms. Marvel v4 (2016)	run={"cv": 86114, "gcd": 94124}	P-028.jsonl	new	pair=12433
+S103895	Moon Knight Annual (2023)	run={"cv": 153237, "gcd": 203619}	P-028.jsonl	new	pair=102368
+S42165	The Amazing Spider-Man Annual	run={"cv": 2189, "gcd": 1635}	P-028.jsonl	new	pair=64135
+S95053	Amazing Spider-man v6 (2022)	run={"cv": 142577, "gcd": 184161}	P-028.jsonl	new	pair=64135
+S11448	Marvel Knights - Spider-Man (2013)	run={"cv": 67919, "gcd": 76841}	P-028.jsonl	new	pair=65136
+S66149	Ultimate X-Men v1 (2001)	run={"cv": 7258, "gcd": 7826}	P-028.jsonl	new	pair=66351
+S22309	X-Men - The End - Dreamers and Demons	run={"cv": 18843, "gcd": 13418}	P-028.jsonl	new	pair=66351
+S6482	Fantastic Four v4 (2013)	run={"cv": 53921, "gcd": 69567}	P-028.jsonl	new	pair=6482
+S17456	TKO Shorts	run={"cv": 134210, "gcd": 166431}	P-028.jsonl	new	pair=19903
+S103903	The Walk (2023)	run={"cv": 156096}	P-028.jsonl	new	pair=19903
+S103902	The Magic Order V (2024)	run={"cv": 160099, "gcd": 215734}	P-028.jsonl	new	pair=19033
+S97666	Hulk v3 (2013)	run={"cv": 73100, "gcd": 80197}	P-028.jsonl	new	pair=9069
+S103893	Hulk: Planet Hulk Prelude (2010)	run={"gcd": 69541}	P-028.jsonl	new	pair=9069
+S5134	Deadpool Team-Up	run={"gcd": 40644}	P-028.jsonl	new	pair=102758
+S64379	moved out -> S64380 "Captain Marvel v5 (2002)"	run=-	P-028.jsonl	kept	pair=64379	moved_cv=18296
+S16766	moved out -> S103899 "Star-Lord (2015)"	run=-	P-028.jsonl	kept	pair=16766	moved_cv=86128
+S12433	moved out -> S103896 "Ms. Marvel (2014)"; S103897 "Ms. Marvel by G. Willow Wilson (2015)"; S103898 "Ms. Marvel v4 (2016)"	run=-	P-028.jsonl	kept	pair=12433	moved_cv=83966,86114
+S102368	moved out -> S103895 "Moon Knight Annual (2023)"	run=-	P-028.jsonl	kept	pair=102368	moved_cv=153237
+S64135	moved out -> S42165 "The Amazing Spider-Man Annual"; S95053 "Amazing Spider-man v6 (2022)"	run=-	P-028.jsonl	kept	pair=64135	moved_cv=2189,142577
+S65136	moved out -> S11448 "Marvel Knights - Spider-Man (2013)"	run=-	P-028.jsonl	kept	pair=65136	moved_cv=67919
+S66351	moved out -> S66149 "Ultimate X-Men v1 (2001)"; S22309 "X-Men - The End - Dreamers and Demons"	run=-	P-028.jsonl	kept	pair=66351	moved_cv=7258,18843
+S6482	moved out -> S6482 "Fantastic Four v4 (2013)"	run=-	P-028.jsonl	kept	pair=6482	moved_cv=53921
+S19903	moved out -> S17456 "TKO Shorts"; S103903 "The Walk (2023)"	run=-	P-028.jsonl	kept	pair=19903	moved_cv=134210,156096
+S19033	moved out -> S103902 "The Magic Order V (2024)"	run=-	P-028.jsonl	kept	pair=19033	moved_cv=160099
+S9069	moved out -> S97666 "Hulk v3 (2013)"; S103893 "Hulk: Planet Hulk Prelude (2010)"	run=-	P-028.jsonl	kept	pair=9069	moved_cv=73100

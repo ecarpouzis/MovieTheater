@@ -1,0 +1,438 @@
+## Conventions for this batch (27 shown of 143 matched; 357 in LEDGER.md; 12 shelf/shelves: pub:marvel ×10 · folder:events ×8 · folder:sequel-subfolder ×6 · folder:vn-year ×4 · kind:foreign ×4 · folder:variant-covers ×2 · folder:bucket ×2 · kind:collected-line ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-136] (9 shelf/shelves) pub:marvel sig:comicinfo
+- Marika-Empire and Glorith-HD ComicInfo `Web` ids are ComicVine ISSUE ids of the stored volume (8 of 8 in B-061..063:
+  45305/109026 → X-Men Unlimited #20/#34; 124309, 70469-70471 → Hidden Years #1-4) — each a clean 1.0.
+[L-319] (9 shelf/shelves) folder:bucket folder:events folder:variant-covers pub:marvel pub:zenescope sig:round2 sig:stamp
+- C-064..C-065 (Marvel event chronologies, the tier C tail): GCD indexes Zenescope's year-restarting "Grimm Tales
+  of Terror" as "Volume N" series per year (82049 / 93359 / 111761 / 123675). On "_Marvel Major Event Chronology"
+  tie-in shelves the per-file GCD matcher reuses one franchise-wide round2 stamp (Savage Avengers 144638 on six King
+  In Black singles) — the dump's exact title + year row every time. 2024 "Blood Hunt" one-shots are 1pp
+  variant-cover packs at ratios up to 8 and still identify cleanly by the exact-title pair.
+[L-034] (8 shelf/shelves) folder:events pub:marvel sig:round2
+- `_X-Men Complete Chronology` / `_Marvel Major Event Chronology` folders re-file the same books a second and
+  third time — every ratio 2.00 there, never a second run. Crossover blocks get handed one member's series by
+  `round2-folder` (four Age of Apocalypse shelves → "X-Man", a 76-issue hull).
+[L-169] (8 shelf/shelves) folder:events pub:marvel sig:trade-link
+- `_Marvel Major Event Chronology (digital)` is one folder per tie-in holding that tie-in's collected edition: the
+  count-1-trade-as-stored-link artefact runs at 86 of 202 shelves there, the highest rate in any single folder.
+[L-127] (7 shelf/shelves) pub:marvel sig:comicinfo
+- A ComicInfo `Volume` holding a 5-digit ComicVine id (Hulk Comic 37309) is the same 1.0 assertion as the 4- and
+  6-digit cases.
+[L-281] (10 shelf/shelves) folder:bucket folder:events folder:vn-year
+- A chronology folder's ORDER prefix ("04 Dragon Ball - Full Color Freeza Arc v01") gets read by the per-file num
+  matcher as the ISSUE number — v01 in folder "04" linked to issue #4; the true mapping is the shelf's own vNN by
+  ordinal. Any "NN Title vNN" bucket naming is this trap.
+[L-033] (6 shelf/shelves) pub:marvel sig:collision sig:probe
+- Krakoa-era Marvel folders are cut into several shelves by the CREATOR name in trade filenames (New Mutants v4
+  → Hickman / Brisson / Vita Ayala; "X-Men by Gerry Duggan"): trades of ONE run in ONE folder → the run is the
+  identity, siblings take `F merge-with`; `lookup.py` by the run's plain name supplies ids the packet lacks. A
+  stored link carried across by the creator name alone (X-Men by Duggan → "Marauders by Duggan") is `wrong-cv-link`.
+[L-133] (6 shelf/shelves) pub:marvel sig:probe
+- GCD splits a compound word ComicVine joins: "X-Men: Clan Destine" (5570) is invisible to a "ClanDestine" probe,
+  and 32535 "ClanDestine vs. The X-Men" is the collected edition, not the mini.
+[L-142] (6 shelf/shelves) pub:marvel sig:collision
+- A shelf read in an EARLIER batch may already link the volume you found (a second rip of the same mini in another
+  folder): `check_identity --all` catches it as an undeclared merge — write `F <sid> merge-with=<partner>` when the
+  partner is the same comic (Iron Fist: Wolverine S9566/S9567; X-Men/Runaways FCBD S22298/S11337).
+[L-175] (9 shelf/shelves) folder:bucket folder:events pass:item
+- In the chronology folders the RUN rule stands over the bucket rule: `S` = the numbered run, the tie-in's collected
+  record goes on the `I` line (B-072/073, ~90 shelves); the book's own record is the S only where no numbered run exists.
+[L-343] (6 shelf/shelves) pub:dark-horse pub:idw pub:marvel sig:probe
+- More GCD name shapes (R-067): Dark Horse High Republic Adventures inserts "(Phase III)" and uses a comma form
+  ("…Adventures, The Nameless Terror"); IDW / Disney / Marvel Illustrated drop a leading "The" or "A Graphic Novel";
+  Marvel's Dark Tower strips punctuation ("Drawing of Three"). GCD indexes NO Marvel Infinity Comics (gcd=- stands).
+  An Image-style deluxe / "Complete" edition of ONE run merges into the run shelf (Department of Truth).
+[L-345] (6 shelf/shelves) pub:marvel sig:probe
+- Marvel on GCD (R-069): "&" for "and" (Infinity Gauntlet, Gods & Gladiators, Rise & Fall); runs filed under an imprint
+  or shortened name ("Punisher MAX: …", "Ant-Man and Wasp Prelude", "Spider-Man: Spider's Shadow") — a trade's
+  `--collects` roll-up names the run's GCD id fastest; a special's name carries its cover year ("Punisher: X-Mas Special
+  2006"). Masterworks lines HAVE a CV line volume with "Volume N" issues (23402 ASM, 35197 FF, 35188 Sub-Mariner, 59106
+  ToS, 23450 TtA) → the line is the S (it spans several titles), one I per book; GCD keeps separate series for second
+  printings (FF 61146, ASM 52975) — match by year. Digital-first runs (Daughters of the Dragon 2018, Back to Basics,
+  Long Live the King, Purple Daughter) have no GCD series: provider-missing is right.
+[L-119] (5 shelf/shelves) pub:marvel
+- GCD filing quirks that recovered legs: drop "Comics" from a title, "and" for "&", "Digest" appended, reversed
+  or reordered name lists ("Deadpool / Amazing Spider-Man / Hulk: Identity Wars").
+[L-130] (5 shelf/shelves) pub:marvel sig:legacy-stamp sig:probe
+- `lookup.py --year` separates same-title relaunches (Superior Spider-Man 2018 vs 2013); "Lethal Protector II"
+  is its own 5-issue run in both legs, not the 2022 Lethal Protector.
+[L-298] (5 shelf/shelves) kind:collected-line kind:foreign pass:item pub:marvel pub:papercutz-nbm pub:valiant sig:barcode sig:legacy-stamp sig:probe sig:trade-link
+- ITEM PASS (X-052..X-055, the tail): a book's trade record is often findable on its FULL subtitle when the packet's
+  per-file probe returned nothing (~40 recovered: X-Men Legacy: Legion, House of M omnibuses …); Deluxe Editions on
+  Valiant / Marvel shelves usually have their own count-1 record the per-file leg mis-picked. ISBN 978-2 / 978-2-375
+  is French even on English-titled shelves. A Papercutz line can be a SELECTIVE translation of a longer foreign line
+  (Ralph Azham v01-04 = tomes 3/5/8/10) — match by chapter title, never by ordinal.
+[L-313] (5 shelf/shelves) kind:collected-line kind:foreign pub:marvel sig:collision sig:probe sig:round2 sig:split sig:stamp
+- C-052..C-054 (X-Men family): the per-file CV matcher stamps a FOREIGN publisher's same-title volume across whole
+  franchises (Panini Comics "Wolverine" 69993 on nearly every Wolverine / X-Force / Cable / X-23 vN shelf; Panini
+  España "X-Men" 56940 on unrelated X-Men v3 trades) — `lookup.py --year <folder year>` recovers the English id
+  every time. The "_X-Book Epic Collections" folder: CV per book (issue id in the packet), one GCD line row per
+  franchise, round2-folder stamps it AND it is right ("the dump names no other series") — 26 singletons chained by
+  merge-with. The classic X-Men / Uncanny X-Men Annual line (#3-21, 1979-94) has no unified record on either leg →
+  R + split-needed, duplicate fragments merge-with it.
+[L-357] (5 shelf/shelves) pub:image pub:marvel sig:probe
+- Marvel (R-086): CV mints one volume per creator "Book" line (Ms. Marvel Book 1-5 = CV 83966 / GCD 91839); "Trial of
+  Venom" = Spider-Man Special Edition #1; Deadpool #900 is Deadpool Team-Up #900 on GCD (40644) though CV puts it in
+  Deadpool 2008; Osborn Journal is filed under a bracketed alternate title. Image / Millarworld: CV 65439 "American
+  Jesus" and 85113 "Jupiter's Circle" are the trade LINES (issues named "Book One/Two"), not the minis — their conflated
+  flags are stale (L-318); Dark Horse's 2024 Millarworld reissues are a NEW GCD line beside the Image originals (Magic
+  Order 213614) — match by the file's year. A packet's "years a-b" can come from per-file stamps (read filenames). In a
+  `lookup.py --batch` file a multi-word name must be QUOTED or only its first word is probed.
+[L-191] (7 shelf/shelves) folder:sequel-subfolder folder:vn-year pass:revisit sig:stale-flag
+- On a wave-2 `NN <Title> vN (<year>)` split-out shelf (ids S94xxx+) an `overlap-in-series` flag is stale by
+  construction — the colliding Vol. 01s now sit on sibling shelves (13 of 14 in R-016); the lead dismisses the flag.
+[L-027] (4 shelf/shelves) kind:foreign pub:marvel
+- Foreign-language stored links are a cluster (Berserk → Glénat's French volume while our 41 books are Dark
+  Horse's; The Marvels → Panini España; Avengers → Panini Verlag): the English pair is in the rip/dump every time.
+[L-060] (4 shelf/shelves) folder:vn-year pub:caliber pub:dark-horse pub:image pub:marvel sig:stamp
+- A digital re-release can cut each collected volume into chapter files restarting at 1 (Dark Horse's 2014-15
+  Kabuki: seven `vNN` folders = seven different published comics from Caliber / Image / Marvel; v1 stamped one
+  Image volume on all 44 files). Read the chapter files as the runs they came from.
+[L-116] (4 shelf/shelves) folder:vn-year pub:marvel sig:comicinfo sig:legacy-stamp sig:stamp
+- Old Marvel folders cut into `vN (year)` shelves: the per-file matcher picks the wrong DECADE by issue number
+  (Amazing Adventures 1961 on the 1970 run, Ka-Zar 1997 on 1974, Kull 1971 on 1982/1983). The folder's `vN (year)`
+  suffix and ComicInfo `Volume` beat it every time.
+[L-242] (4 shelf/shelves) pub:dc pub:gold-key-dell pub:marvel sig:legacy-stamp sig:stamp
+- Gold Key / Dell / Western funny-animal and Gold Key Star Trek: CV keeps ONE volume across the Dell→Western handover
+  while GCD splits by era (the Daffy Duck / Flintstones / Bugs Bunny shape); a later DC/Marvel volume stamped by
+  issue-number coincidence is the wrong-relaunch trap again.
+[L-265] (4 shelf/shelves) kind:foreign pub:delcourt pub:europe-comics pub:marvel
+- Delcourt / Soleil English-digital shelves pair the English CV volume with the French GCD original at 0.9 (the
+  Europe Comics shape) — except when GCD's same-name row is an unrelated book (Spin Angels → Marvel's GCD 53252).
+[L-290] (6 shelf/shelves) folder:sequel-subfolder pass:item sig:stamp
+- A spin-off filed in its own subfolder on the parent's shelf gets the PARENT's v01 ids stamped by the per-file
+  matcher (Rent-a-(Really Shy!)-Girlfriend on Rent-A-Girlfriend) — `N no-record` (or the shelf note), never the
+  parent's record; it is a misfiling for the lead.
+[L-124] (5 shelf/shelves) folder:bucket folder:vn-year pass:item sig:trade-link
+- A `<Title> vN (<year>)` folder holding only a collected edition is the RUN's folder — the run takes the S
+  line, the trade an `I` line; a `_Trades` / `_Minis` / `_One-shots` bucket is the opposite (the book's own
+  count-1 record, minted by BOTH providers, wins).
+[L-291] (5 shelf/shelves) kind:collected-line kind:foreign pass:item
+- ITEM PASS (X-040..X-042): a run you can NAME but whose GCD rows carry no page counts gives no safe per-volume
+  range (SPRIGGAN Deluxe → GCD 188803) — `N`, not a guessed `C`; a per-file link can point at a foreign edition of
+  the WRONG book entirely (Summer Wars: the Complete Edition has its own one-shot record CV 155900 / GCD 142966).
+[L-174] (3 shelf/shelves) pub:marvel sig:legacy-stamp sig:stamp
+- A legacy-renumbered run is its own volume in both legs (Captain Marvel #125-129 = CV 105506 / GCD 117972; GotG
+  #146-150 = GCD 118041); the per-file matcher reaches the 1960s/1990s namesake by issue number every time.
+
++116 more matched entries not shown: L-297, L-016, L-032, L-097, L-113, L-114, L-252, L-272, L-274, L-288, L-293, L-352, L-354, L-014, L-064, L-085, L-101, L-193, L-310, L-013, L-028, L-036, L-043, L-050, L-072, L-088, L-089, L-095, L-096, L-118, L-121, L-125, L-129, L-157, L-159, L-163, L-173, L-177, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-331, L-341, L-346, L-347, L-007, L-123, L-164, L-217, L-031, L-065, L-076, L-077, L-099, L-103, L-106, L-107, L-109, L-111, L-112, L-115, L-117, L-132, L-134, L-139, L-145, L-155, L-187, L-194, L-196, L-230, L-262, L-295, L-296, L-305, L-306, L-307, L-308, L-311, L-312, L-315, L-316, L-318, L-324, L-327, L-328, L-329, L-330, L-332, L-054, L-128, L-135, L-181, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-309, L-314, L-336, L-150 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S64379 Captain Marvel  [split]  37 files / 0 collections  decided in R-085 (S)
+   decided: S 64379 cv=6458 gcd=6296 0.9 | Captain Marvel v4 (Genis-Vell) = CV 6458 (Marvel 2000, 36 cached #0-35) and GCD 6296 (Marvel 2000-2002, 35 rows #1-35); ComicInfo Volume "2000" x30 and the folder "04 Captain Marvel v4 (Genis-Vell) (2000)" agree; per-file CV 2401 (the 1968 run, 22/37) is the wrong-decade stamp L-116 describes; residue: the #0 (1999, GCD's Wizard one-shot 20972), a duplicate #12 rip in the X-Men chronology (89263), and two files of the 2002 run (below)
+   F 64379 split-needed | items 77590 "Captain Marvel 015 (2003)" and 77591 "Captain Marvel 016 (2004)" (23pp each) are the 2002 run's #15 (CV 18296 issue 152555, 2003-10) and #16 (issue 125654, 2004-01) — the 2000 run's #15-16 are dated 2001-03 / 2001-04 (CV 80553/80554, GCD 100382/100383) and per-file CV put 18296 on exactly two files; join S64380 (S line R-084: cv=18296 gcd=10791, stored cv 18296, key "Captain Marvel (2002)")
+   N 64379 the 2000 run's own #15-16 are then absent from our ladder; item 89263 "010 Captain Marvel 012 (2000)" is a second rip of #12 filed under the X-Men Complete Chronology
+   named: S64380 Captain Marvel  4 files  keys: "Captain Marvel (2002)" | "Captain Marvel v5 (2002)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S95969 "Captain Marvel" 75f [shares cv=2401 — S cv=2401 gcd=1861 (R-008 0.95)] keys: "Captain Marvel (1968)" | "Captain Marvel v1 (1968)"
+   nearby: S64384 "Captain Marvel" 23f [title — S cv=154291 gcd=205183 (C-046 0.95)] keys: "Captain Marvel (2023)" | "Captain Marvel v11 (2023)"
+   nearby: S94570 "Captain Marvel" 21f [title — S cv=116365 gcd=137204 (R-043 0.95)] keys: "Captain Marvel v10 (2019)"
+   nearby: S95970 "Captain Marvel" 9f [title — S cv=105506 gcd=117972 (B-054 0.95)] keys: "Captain Marvel" | "Captain Marvel v1 (2017)"
+   nearby: S64381 "Captain Marvel" 6f [title — S cv=19633 gcd=27472 (A-023 0.95)] keys: "Captain Marvel (2007)" | "Secret Invasion - Captain Marvel"
+   nearby: S95973 "Captain Marvel" 6f [title — S cv=50575 gcd=67081 (R-043 0.95)] keys: "Captain Marvel v7 (2012)"
+   nearby: S64382 "Captain Marvel" 5f [title — S cv=72272 gcd=79503 (R-043 0.95)] keys: "Captain Marvel (2014)" | "Captain Marvel v8 (2014)"
+   nearby: S95975 "Captain Marvel v9 (2016)" 3f [title — S cv=87428 gcd=95738 (R-043 0.95)] keys: "Captain Marvel v9 (2016)"
+   nearby: S3544 "Captain Marvel Adventures" 40f [title+1 — S cv=898 gcd=249 (C-016 0.95)] keys: "Captain Marvel Adventures" | "Captain Marvel Adventures 007f" | "Captain Marvel Adventures 011F" | "Captain Marvel Adventures 012f" (+2 more: lookup.py --shelf 3544)
+   nearby: S19131 "The Mighty Captain Marvel" 7f [title+1 — S cv=97062 gcd=110621 (C-064 0.9)] keys: "The Mighty Captain Marvel"
+   nearby: S11347 "Marvel Action: Captain Marvel" 6f [title+1 — S cv=120751 gcd=149789 (B-051 0.95)] keys: "Marvel Action Captain Marvel"
+   nearby: S11348 "Marvel Action: Captain Marvel" 6f [title+1 — S cv=134216 gcd=170279 (R-043 0.95)] keys: "Marvel Action Captain Marvel (2021-)"
+   nearby: S11473 "Marvel Masterworks - Captain Marvel" 6f [title+1 — S gcd=18626 (C-048 0.9)] keys: "Marvel Masterworks - Captain Marvel" · (+2 more by title)
+   keys now: "Captain Marvel v4 (2000)" x36 · "Captain Marvel (2000)" x1
+   groups (title x folder): 3
+   G1 "Captain Marvel" in Marvel\_Captain Marvel\04 Captain Marvel v4 (Genis-Vell) (2000) — 35 file(s), numbers 1-35, pp 22-24; cv per-file 2401x21, 6458x12, 18296x2; gcd per-file 6296x33; key 'Captain Marvel v4 (2000)'
+      e.g. Captain Marvel 001 (2000) (Digital) (Shadowcat-Empire).cbz
+        77576 #1 2000 23pp · 77577 #2 2000 23pp · 77578 #3 2000 23pp · 77579 #4 2000 23pp · 77580 #5 2000 23pp · 77581 #6 2000 23pp · 77582 #7 2000 23pp · 77583 #8 2000 23pp · 77584 #9 2000 22pp
+        77585 #10 2000 23pp · 77586 #11 2000 23pp · 77587 #12 2000 23pp · 77588 #13 2001 23pp · 77589 #14 2001 23pp · 77590 #15 2003 23pp · 77591 #16 2004 23pp · 77592 #17 2001 23pp
+        77593 #18 2001 23pp · 77594 #19 2001 23pp · 77595 #20 2001 23pp · 77596 #21 2001 24pp · 77597 #22 2001 24pp · 77598 #23 2001 24pp · 77599 #24 2001 23pp · 77600 #25 2002 23pp
+        77601 #26 2002 23pp · 77602 #27 2002 23pp · 77603 #28 2002 22pp · 77604 #29 2002 23pp · 77605 #30 2002 23pp · 77606 #31 2002 22pp · 77607 #32 2002 24pp · 77608 #33 2002 23pp
+        77609 #34 2002 24pp · 77610 #35 2002 23pp
+   G2 "Captain Marvel" in Marvel\_Captain Marvel\04 Captain Marvel v4 (Genis-Vell) (2000)\Annuals and Specials — 1 file(s), numbers 0, pp 17-17; cv per-file 6458x1; gcd per-file 20972x1; key 'Captain Marvel v4 (2000)'
+      [77982] Captain Marvel 000 (1999) (Digital-Empire).cbz (17pp)
+   G3 "Captain Marvel" in Marvel\_X-Men\_X-Men Complete Chronology V2\0463 Maximum Security — 1 file(s), numbers 12, pp 23-23; cv per-file 6458x1; gcd per-file 6296x1; key 'Captain Marvel (2000)'
+      [89263] 010 Captain Marvel 012 (2000) (Digital) (AnPymGold - Empire).cbz (23pp)
+
+== S16766 Legendary Star-Lord  [split]  24 files / 4 collections  decided in R-085 (R)
+   decided: R 16766 | LEAD RULING (R-084 revisit): the issues and Vol. 01-02 are Legendary Star-Lord (CV 75335 Marvel 2014, 12 cached / GCD 81545 2014-2015, 12 rows — issue files #1-12 with second rips and three 1pp variants), but Vol. 03 "First Flight" (112pp, GCD roll-up s94129 #1-5) and Vol. 04 "Out of Orbit" (129pp, roll-up s94129 #6-8) collect the sequel Star-Lord = CV 86128 (Marvel 2016, 8 cached, "Year One" #1-5 / "Out of Orbit" #6-8) / GCD 94129 (2015-11-18..2016-06-29, 8 rows) — two whole trades of a different run with its own record are co-equal under the RESIDUE ruling, as Doctor Solar's Archives were
+   F 16766 split-needed | items 80341 (Vol. 03 First Flight) and 80342 (Vol. 04 Out of Orbit) -> "Star-Lord (2015)" cv=86128 gcd=94129 (who-stores cv=86128 / gcd=94129: no shelf holds either); the Legendary Star-Lord issues, variants and Vol. 01-02 stay as cv=75335 gcd=81545
+   F 16766 needs-fetch cv=86128 | CV 86128 "Star-Lord" (Marvel 2016, 8) is named from the local rip and has no CvVolume row
+   N 80342 Vol. 04 also reprints The Avengers (1963) #28, #51 and #174 (GCD roll-up) — disjoint backmatter, stated here, not as a C
+   nearby: S64185 "The Avengers" 517f [shares gcd=1571 (collected by item 80342) — S cv=2128 gcd=1571 (C-046 0.9)] keys: "Avengers" | "Avengers (1963)" | "Avengers v1 (1963)" | "The Avengers"
+   keys now: "Star-Lord" x22 · "Legendary Star-Lord" x2
+   groups (title x folder): 5
+   G1 "Legendary Star-Lord" in Marvel\_Guardians of the Galaxy\_Star Lord\01 Legendary Star-Lord (2014) — 4 file(s), 4 COL, pp 107-152; cv per-file 79617x1, 83522x1, 91758x1; gcd per-file 86152x4; key 'Legendary Star-Lord' | 'Star-Lord'
+      [80339] COL Legendary Star-Lord Vol. 01 - Face It, I Rule (2015) (Digital) (F) (Zone-Empire).cbr (107pp)  key="Legendary Star-Lord"
+         own record cv 79617 / gcd s86152 "Legendary Star-Lord" (issue 1310958) COLLECTS: gcd=81545 Legendary Star-Lord (2014) #1-5
+      [80340] COL Legendary Star-Lord Vol. 02 - Rise of the Black Vortex (2015) (Digital) (F) (Kileko-Empire).cbz (152pp)  key="Legendary Star-Lord"
+         own record cv 83522 / gcd s86152 "Legendary Star-Lord" (issue 1438498) COLLECTS: gcd=81545 Legendary Star-Lord (2014) #6-12
+      [80341] COL Legendary Star-Lord Vol. 03 - First Flight (2016) (Digital) (Zone-Empire).cbr (112pp)
+         own record cv 91758 / gcd s86152 "Legendary Star-Lord" (issue 1583766) COLLECTS: gcd=94129 Star-Lord (2016) #1-5
+      [80342] COL Legendary Star-Lord Vol. 04 - Out of Orbit (2016) (Digital) (Zone-Empire).cbr (129pp)
+         own record cv 95020 / gcd s86152 "Legendary Star-Lord" (issue 1639310) COLLECTS: gcd=94129 Star-Lord (2016) #6-8 · gcd=1571 The Avengers (1963) #28, #51, #174
+   G2 "Legendary Star-Lord" in Marvel\_Marvel Cosmic — 10 file(s), numbers 1-4, 7-12, pp 21-24; cv per-file 75335x10; gcd per-file 89966x3, 94129x2; key 'Star-Lord'
+      e.g. Legendary Star-Lord 001 (2014) (Digital) (Zone-Empire).cbr
+        82978 #1 2014 22pp · 82979 #2 2014 21pp · 82980 #3 2014 23pp · 82981 #4 2014 22pp · 82982 #7 2015 21pp · 82983 #8 2015 23pp · 82984 #9 2015 24pp · 82985 #10 2015 23pp · 82986 #11 2015 23pp
+        82987 #12 2015 22pp
+   G3 "Legendary Star-Lord" in Marvel\_X-Men\_X-Men Complete Chronology V2\1132 The Black Vortex — 3 file(s), numbers 9-11, pp 24-25; cv per-file 75335x3; key 'Star-Lord'
+      [92902] 003 Legendary Star-Lord 009 (2015) (3 covers) (digital) (Minutemen-Faessla).cbz (25pp)
+      [92908] 009 Legendary Star-Lord 010 (2015) (3 covers) (digital) (Minutemen-Faessla).cbz (24pp)
+      [92911] 012 Legendary Star-Lord 011 (2015) (3 covers) (digital) (Minutemen-Faessla).cbz (24pp)
+   G4 "Legendary Star-Lord" in _Marvel Major Event Chronology (digital)\2015.02 - The Black Vortex\Prelude - Legendary Star-Lord — 4 file(s), numbers 4-7, pp 21-22; cv per-file 75335x4; gcd per-file 94129x2; key 'Star-Lord'
+      e.g. Legendary Star-Lord 004 (2014) (Digital) (Zone-Empire).cbr
+        118065 #4 2014 22pp · 118066 #5 2014 22pp · 118067 #6 2015 21pp · 118068 #7 2015 21pp
+   G5 "Legendary Star-Lord" in _Marvel Major Event Chronology (digital)\2015.02 - The Black Vortex\Variant Covers — 3 file(s), numbers 9, 11, pp 1-1; cv per-file 75335x3; key 'Star-Lord'
+      [118073] Legendary Star-Lord 009 (2015) (Phil Noto Variant) (digital) (Minutemen-Fantomex).cbr (1pp)
+      [118074] Legendary Star-Lord 011 (2015) (digital) (Andrea Sorrentino Cosmically Enhanced variant) (Mintuemen-Mastodon).cbz (1pp)
+      [118075] Legendary Star-Lord 011 (2015) (digital) (James Stokoe WTD variant) (Mintuemen-Mastodon).cbz (1pp)
+
+== S12433 Ms. Marvel  [split]  43 files / 16 collections  decided in R-086 (R)
+   decided: R 12433 | four identities on one shelf, not one volume: (1) Carol Danvers' Ms. Marvel (2006) = CV 17990 (Marvel 2006, 50) / GCD 16781 (2006-2010, 50) — issue files #6-8 (two rips each), #13-17 (+ a second #13), #34-42, the Ms. Marvel Special (2007) and the "Vol. 05 - Secret Invasion" trade (GCD 33980 #5, roll-up s16781 #25-30), 23 files; (2) Kamala Khan's trade line "Ms. Marvel Vol. 01-10" = GCD 84483 (2014-2018, 10 rows, ISBNs by volume) whose books collect TWO runs — Ms. Marvel (2014) #1-19 (CV 71457 / GCD 78894) in Vol. 01-04 and Ms. Marvel (2016) #1-38 (CV 86114 / GCD 94124) in Vol. 05-10; (3) "Ms. Marvel by G. Willow Wilson Book 01-05" = CV 83966 / GCD 91839 (5 each), a second line spanning both Kamala runs; (4) issue files #7-11 (2016) of the 2016 run; C-048's CV 71457 on 43/43 files is a stamp
+   F 12433 split-needed | the Carol Danvers run stays as cv=17990 gcd=16781 (23 files); items 83753-83762 (Vol. 01-10) -> "Ms. Marvel (2014)" cv=- gcd=84483; items 83748-83752 (Book 01-05) -> "Ms. Marvel by G. Willow Wilson (2015)" cv=83966 gcd=91839; items 118166, 118205-118208 (#7-11, 2016) -> "Ms. Marvel v4 (2016)" cv=86114 gcd=94124 (who-stores cv=86114: no S line, only per-file links on S12438)
+   F 12433 wrong-cv-link | the stored CV 71457 is the 2014 Kamala run; it covers none of the 23 Carol Danvers files and only four of the trades
+   N 83758 Vol. 06-09 (items 83758-83761) and Book 02-04 (items 83749-83751) carry no collects note on their GCD rows; their ranges in the 2016 run (and 2014/2016 runs for the Books) are containment's to read — no C written
+   N 83753 Vol. 01 also reprints All-New Marvel Now! Point One #1 (GCD note) — a one-story extra, not a C
+   named: S12438 Ms. Marvel Mutant Menace  4 files  keys: "Ms. Marvel Mutant Menace"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S95052 "The Amazing Spider-Man" 14f [shares gcd=80405 (collected by item 83749) — S cv=73420 gcd=80405 (R-053 0.9)] keys: "Amazing Spider-Man.1 - Learning to Crawl" | "Amazing Spider-man v3 (2014)"
+   nearby: S14894 "S.H.I.E.L.D." 3f [shares gcd=85526 (collected by item 83749) — S cv=79159 gcd=85526 (R-037 0.95)] keys: "S.H.I.E.L.D."
+   nearby: S740 "All-New Marvel Now! Point One" 1f [shares gcd=78583 (collected by item 83748) — S cv=70702 gcd=78583 (A-024 0.95)] keys: "All-New Marvel Now! Point One"
+   nearby: S12443 "The Magnificent Ms. Marvel" 4f [title+1 — S cv=117593 gcd=142252 (A-024 0.9)] keys: "Ms. Marvel by Saladin Ahmed"
+   nearby: S11491 "Marvel Masterworks: Ms. Marvel" 2f [title+1 — S cv=77643 gcd=93490 (B-057 0.95)] keys: "Marvel Masterworks - Ms. Marvel"
+   nearby: S11741 "Marvel-Verse: Ms. Marvel" 1f [title+1 — S cv=147011 (B-058 0.9)] keys: "Marvel-Verse - Ms. Marvel"
+   nearby: S12431 "Ms. Marvel Annual" 1f [title+1 — S cv=159124 gcd=214079 (B-049 0.95)] keys: "Ms Marvel Annual"
+   keys now: "Ms. Marvel" x39 · "Ms. Marvel by G. Willow Wilson" x4
+   groups (title x folder): 12
+   G1 "Ms. Marvel" in Marvel\_Ms. Marvel\03 Ms. Marvel v3-v4 (Kamala Khan) (2014) — 10 file(s), 10 COL, pp 113-184; cv per-file 77646x1, 80827x1, 82512x1; gcd per-file 84483x10; key 'Ms. Marvel'
+      [83753] COL Ms. Marvel Vol. 01 - No Normal (2014) (Digital) (Kileko-Empire).cbr (125pp)
+         own record cv 77646 / gcd s84483 "Ms. Marvel" (issue 1278833) COLLECTS: gcd=78894 Ms. Marvel (2014) #1-5 · gcd=78583 All-New Marvel Now! Point One (2014) #1
+      [83754] COL Ms. Marvel Vol. 02 - Generation Why (2015) (Digital) (Kileko-Empire).cbr (137pp)
+         own record cv 80827 / gcd s84483 "Ms. Marvel" (issue 1330579) COLLECTS: gcd=78894 Ms. Marvel (2014) #6-11
+      [83755] COL Ms. Marvel Vol. 03 - Crushed (2015) (Digital) (F) (Kileko-Empire).cbz (113pp)
+         own record cv 82512 / gcd s84483 "Ms. Marvel" (issue 1388545) COLLECTS: gcd=78894 Ms. Marvel (2014) #12-15 · gcd=85526 S.H.I.E.L.D. (2015) #2
+      [83756] COL Ms. Marvel Vol. 04 - Last Days (2015) (Digital) (F) (Kileko-Empire).cbz (125pp)
+         own record cv 86115 / gcd s84483 "Ms. Marvel" (issue 1499626) COLLECTS: gcd=78894 Ms. Marvel (2014) #16-19 · gcd=80405 The Amazing Spider-Man (2014) #7-8
+      [83757] COL Ms. Marvel Vol. 05 - Super Famous (2016) (Digital) (F) (Kileko-Empire).cbz (144pp)
+         own record cv 91897 / gcd s84483 "Ms. Marvel" (issue 1593853) COLLECTS: gcd=94124 Ms. Marvel (2016) #1-6
+      [83758] COL Ms. Marvel Vol. 06 - Civil War II (2016) (Digital) (F) (Kileko-Empire).cbz (136pp)
+         own record cv 96667 / gcd s84483 "Ms. Marvel" (issue 1658514) COLLECTS: gcd=94124 Ms. Marvel (2016) #7-12
+      [83759] COL Ms. Marvel Vol. 07 - Damage Per Second (2017) (Digital) (F) (Kileko-Empire).cbz (136pp)
+         own record cv 102921 / gcd s84483 "Ms. Marvel" (issue 1722638) COLLECTS: gcd=94124 Ms. Marvel (2016) #13-18
+      [83760] COL Ms. Marvel Vol. 08 - Mecca (2017) (Digital) (F) (Zone-Empire).cbr (134pp)
+         own record cv 106896 / gcd s84483 "Ms. Marvel" (issue 1765843) COLLECTS: gcd=94124 Ms. Marvel (2016) #19-24
+      [83761] COL Ms. Marvel Vol. 09 - Teenage Wasteland (2018) (Digital) (Kileko-Empire).cbr (137pp)
+         own record cv 112330 / gcd s84483 "Ms. Marvel" (issue 1825126) COLLECTS: gcd=94124 Ms. Marvel (2016) #25-30
+      [83762] COL Ms. Marvel Vol. 10 - Time and Again (2019) (Digital) (Kileko-Empire).cbz (184pp)
+         own record cv 117980 / gcd s84483 "Ms. Marvel" (issue 1941789) COLLECTS: gcd=94124 Ms. Marvel (2016) #31-38
+   G2 "Ms. Marvel by G. Willow Wilson" in Marvel\_Ms. Marvel\03 Ms. Marvel v3-v4 (Kamala Khan) (2014)\Deluxe Editions — 5 file(s), 5 COL, pp 232-320; cv per-file 83966x5; gcd per-file 91839x5; key 'Ms. Marvel by G. Willow Wilson' | 'Ms. Marvel'
+      [83748] COL Ms. Marvel by G. Willow Wilson Book 01 (2015) (Digital) (Zone-Empire).cbr (257pp)  key="Ms. Marvel by G. Willow Wilson"
+         own record cv 83966 / gcd s91839 "Ms. Marvel" (issue 1516490) COLLECTS: gcd=78894 Ms. Marvel (2014) #1-9 · gcd=78583 All-New Marvel Now! Point One (2014) #1
+      [83749] COL Ms. Marvel by G. Willow Wilson Book 02 (2016) (Digital) (Zone-Empire).cbr (232pp)  key="Ms. Marvel by G. Willow Wilson"
+         own record cv 83966 / gcd s91839 "Ms. Marvel" (issue 1553009) COLLECTS: gcd=78894 Ms. Marvel (2014) #12-19 · gcd=80405 The Amazing Spider-Man (2014) #7-8 · gcd=85526 S.H.I.E.L.D. (2015) #2
+      [83750] COL Ms. Marvel by G. Willow Wilson Book 03 (2017) (Digital) (Zone-Empire).cbr (278pp)  key="Ms. Marvel by G. Willow Wilson"
+         own record cv 83966 / gcd s91839 "Ms. Marvel" (issue 1714012) COLLECTS: gcd=94124 Ms. Marvel (2016) #1-12
+      [83751] COL Ms. Marvel by G. Willow Wilson Book 04 (2018) (Digital) (Zone-Empire).cbr (271pp)  key="Ms. Marvel by G. Willow Wilson"
+         own record cv 83966 / gcd s91839 "Ms. Marvel" (issue 1815885) COLLECTS: gcd=94124 Ms. Marvel (2016) #13-24
+      [83752] COL Ms. Marvel by G. Willow Wilson Book 05 (2019) (Digital) (Zone-Empire).cbr (320pp)
+         own record cv 83966 / gcd s91839 "Ms. Marvel" (issue 2009580) COLLECTS: gcd=94124 Ms. Marvel (2016) #25-38
+   G3 "Ms. Marvel" in Marvel\_X-Men\_X-Men Complete Chronology V2\0723 Civil War - X-Men — 2 file(s), numbers 6-7, pp 20-23; cv per-file 71457x2; gcd per-file 16781x2; key 'Ms. Marvel'
+      [90516] 018 Ms. Marvel 006 (2006) (digital-Empire).cbz (23pp)
+      [90517] 019 Ms. Marvel 007 (2006) (digital-Empire).cbz (20pp)
+   G4 "Ms. Marvel" in Marvel\_X-Men\_X-Men Complete Chronology V2\0728 Civil War - Phase Two — 1 file(s), numbers 8, pp 22-22; cv per-file 71457x1; gcd per-file 16781x1; key 'Ms. Marvel'
+      [90557] 012 Ms. Marvel 008 (2006) (digital-Empire).cbz (22pp)
+   G5 "Ms. Marvel" in _Marvel Major Event Chronology (digital)\2006.07 - Civil War\07 Tie-ins\Civil War - Ms. Marvel — 3 file(s), numbers 6-8, pp 20-23; cv per-file 71457x3; gcd per-file 16781x3; key 'Ms. Marvel'
+      [116721] Ms. Marvel 006 (2006) (digital-Empire).cbz (23pp)
+      [116722] Ms. Marvel 007 (2006) (digital-Empire).cbz (20pp)
+      [116723] Ms. Marvel 008 (2006) (digital-Empire).cbz (22pp)
+   G6 "Ms. Marvel Special" in _Marvel Major Event Chronology (digital)\2006.07 - Civil War\07 Tie-ins\Civil War - Ms. Marvel — 1 file(s), numbers 1, pp 25-25; cv per-file 18158x1; gcd per-file 21947x1; key 'Ms. Marvel'
+      [116724] Ms. Marvel Special 001 (2007) (digital) (cypher-empire).cbr (25pp)
+   G7 "Ms. Marvel" in _Marvel Major Event Chronology (digital)\2007.06 - The Initiative\Ms. Marvel — 5 file(s), numbers 13-17, pp 24-24; cv per-file 71457x5; gcd per-file 16781x5; key 'Ms. Marvel'
+      e.g. Ms. Marvel 013 (2007) (digital-Empire).cbz
+        116806 #13 2007 24pp · 116807 #14 2007 24pp · 116808 #15 2007 24pp · 116809 #16 2007 24pp · 116810 #17 2007 24pp
+   G8 "Ms. Marvel" in _Marvel Major Event Chronology (digital)\2007.08 - World War Hulk\02 Tie-ins\World War Hulk - Marvel Universe — 1 file(s), numbers 13, pp 24-24; cv per-file 71457x1; gcd per-file 16781x1; key 'Ms. Marvel'
+      [116888] Ms. Marvel 013 (2007) (digital-Empire).cbz (24pp)
+   G9 "Ms. Marvel" in _Marvel Major Event Chronology (digital)\2008.06 - Secret Invasion\03 Tie-ins\Ms. Marvel — 1 file(s), 1 COL, pp 155-155; cv per-file 27389x1; gcd per-file 33980x1; key 'Ms. Marvel'
+      [117932] COL Ms. Marvel Vol. 05 - Secret Invasion (2009) (Digital) (Kileko-Empire).cbz (155pp)
+         own record cv 27389 / gcd s33980 "Ms. Marvel" (issue 979026) COLLECTS: gcd=16781 Ms. Marvel (2006) #25-30 · gcd=37059 Ms. Marvel (2006) #5
+   G10 "Ms. Marvel" in _Marvel Major Event Chronology (digital)\2008.12 - Dark Reign\Ms. Marvel — 9 file(s), numbers 34-42, pp 22-26; cv per-file 71457x9; gcd per-file 16781x9; key 'Ms. Marvel'
+      e.g. Ms. Marvel 034 (2009) (digital-Empire).cbz
+        117087 #34 2009 23pp · 117088 #35 2009 23pp · 117089 #36 2009 26pp · 117090 #37 2009 26pp · 117091 #38 2009 23pp · 117092 #39 2009 23pp · 117093 #40 2009 23pp · 117094 #41 2009 23pp
+        117095 #42 2009 22pp
+   G11 "Ms. Marvel" in _Marvel Major Event Chronology (digital)\2016.06 - Civil War II\00 Road to Civil War II — 1 file(s), numbers 7, pp 24-24; cv per-file 71457x1; gcd per-file 94124x1; key 'Ms. Marvel'
+      [118166] Ms. Marvel 007 (2016) (Digital) (Zone-Empire).cbr (24pp)
+   G12 "Ms. Marvel" in _Marvel Major Event Chronology (digital)\2016.06 - Civil War II\02 Tie-Ins\Ms. Marvel — 4 file(s), numbers 8-11, pp 24-25; cv per-file 71457x4; gcd per-file 94124x4; key 'Ms. Marvel'
+      e.g. Ms. Marvel 008 (2016) (Digital) (Zone-Empire).cbr
+        118205 #8 2016 25pp · 118206 #9 2016 24pp · 118207 #10 2016 24pp · 118208 #11 2016 24pp
+
+== S102368 Moon Knight Annual  [split]  2 files / 0 collections  decided in R-086 (R)
+   decided: R 102368 | two different one-shot annuals, each its own record on both legs: item 83720 "Moon Knight Annual 001 (2019)" 30pp = CV 121245 (issue 718762 "Acts of Evil!", 2019-11) / GCD 150276 (row 2015179, 2019-09-11, 40pp); item 83721 "Moon Knight Annual 001 (2023)" 30pp = CV 153237 (issue 1010943 "Contest of Chaos: Part Four") / GCD 203619 (row 2566017, 2023-08-30); C-048's CV 62956 / GCD 191829 is the 2022 annual, which we do not hold, and its "1980-era" residue was the per-file CV 3052 stamp
+   F 102368 split-needed | item 83721 -> "Moon Knight Annual (2023)" cv=153237 gcd=203619; item 83720 stays as "Moon Knight Annual (2019)" cv=121245 gcd=150276 (who-stores: neither cv sits on another shelf)
+   F 102368 needs-fetch cv=121245 | CV 121245 is named from the local rip and has no CvVolume row
+   nearby: S94845 "Moon Knight" 15f [shares cv=3052 — S cv=3052 gcd=2562 (C-048 0.95)] keys: "Moon Knight v1 (1980)"
+   keys now: "Moon Knight Annual" x2
+   groups (title x folder): 1
+   G1 "Moon Knight Annual" in Marvel\_Moon Knight\13 Moon Knight v9 (2021)\Annuals and Specials — 2 file(s), numbers 1, pp 30-30; cv per-file 3052x1, 146282x1; gcd per-file 185205x1; key 'Moon Knight Annual'
+      [83720] Moon Knight Annual 001 (2019) (Digital) (Zone-Empire).cbr (30pp)
+      [83721] Moon Knight Annual 001 (2023) (Digital) (Li'l-Empire).cbr (30pp)
+
+== S64135 Amazing Spider-Man  [split]  3 files / 1 collections  decided in R-086 (R)
+   decided: R 64135 | three different books: item 83028 "Amazing Spider-Man Annual 001 - Facsimile Edition (2022)" 77pp, ComicInfo Web 989693 = CV 150410 "Amazing Spider-Man Annual No. 1 Facsimile Edition" issue 989693 / GCD 188477 row 2426732 (76pp) — its own book (L-089); item 93876 "Amazing Spider-Man Annual 028 (1994)" = The Amazing Spider-Man Annual (CV 2189 / GCD 1635); item 118574 "Amazing Spider-Man 010 (2022)" = the 2022 run (CV 142577 / GCD 184161); C-050's S on CV 2189 hands the facsimile and a 2022 issue the annual's identity
+   F 64135 split-needed | item 93876 join S42165 (S line C-050: cv=2189 gcd=1635, holds Annual #23/#27 of the same run; key "The Amazing Spider-Man Annual"); item 118574 join S95053 (S line R-057: cv=142577 gcd=184161, the 2022 run; key "Amazing Spider-man v6 (2022)"); item 83028 stays as "Amazing Spider-Man Annual No. 1 Facsimile Edition (2022)" cv=150410 gcd=188477
+   named: S42165 The Amazing Spider-Man Annual  2 files  keys: "The Amazing Spider-Man Annual"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S95053 The Amazing Spider-Man  164 files  keys: "Amazing Spider-man v6 (2022)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby:
+   nearby: S4752 "The Amazing Spider-Man" 814f [title — S cv=2127 gcd=1570 (R-058 0.9)] keys: "Amazing Spider-Man (1963)" | "Amazing Spider-man (1963)" | "Dan Slott Spider-Man" | "Spider-Man - Death of the Stacys" (+2 more: lookup.py --shelf 4752)
+   nearby: S103846 "The Amazing Spider-Man v2 (1999)" 46f [title — S cv=78701 gcd=11288 (R-079 0.95)] keys: "The Amazing Spider-Man v2 (1999)"
+   nearby: S95051 "The Amazing Spider-Man" 31f [title — S cv=112161 gcd=126774 (R-057 0.9)] keys: "Amazing Spider-Man v5 (2018)"
+   nearby: S95052 "The Amazing Spider-Man" 14f [title — S cv=73420 gcd=80405 (R-053 0.9)] keys: "Amazing Spider-Man.1 - Learning to Crawl" | "Amazing Spider-man v3 (2014)"
+   nearby: S34339 "The Amazing Spider-Man" 13f [title] keys: "Amazing Spider-Man" | "The Amazing Spider-Man"
+   nearby: S103529 "Amazing Spider-Man v4 (2015)" 11f [title — S cv=85076 gcd=92892 (R-053 0.95)] keys: "Amazing Spider-Man v4 (2015)"
+   nearby: S103519 "The Amazing Spider-Man '97 (1997)" 1f [title — S cv=60438 gcd=20854 (R-044 0.95)] keys: "The Amazing Spider-Man '97 (1997)"
+   nearby: S863 "Amazing Spider-Man: Worldwide" 10f [title+1 — S cv=89345 gcd=99294 (B-059 0.9)] keys: "Amazing Spider-Man - Worldwide"
+   nearby: S883 "Amazing Spider-Man Family" 8f [title+1 — S cv=22669 gcd=31600 (A-025 0.95)] keys: "Amazing Spider-Man Family"
+   nearby: S842 "Amazing Spider-Man: Beyond" 5f [title+1 — S cv=142077 gcd=180479 (A-025 0.9)] keys: "Amazing Spider-Man - Beyond" | "The Amazing Spider-Man Beyond"
+   nearby: S864 "Amazing Spider-Man 2099 Companion" 2f [title+1 — S cv=128891 gcd=176129 (B-059 0.95)] keys: "Amazing Spider-Man 2099 Companion"
+   nearby: S900 "Amazing Spider-Man: Amazing Grace" 2f [title+1 — S cv=93365 gcd=105638 (B-059 0.95)] keys: "Amazing Spider-Man.1 - Amazing Grace" | "Amazing Spider-Man: Amazing Grace" · (+5 more by title)
+   keys now: "Amazing Spider-Man (2021)" x3
+   groups (title x folder): 3
+   G1 "Amazing Spider-Man Annual" in Marvel\_Marvel Facsimile Editions — 1 file(s), 1 COL, pp 77-77; cv per-file 150410x1; gcd per-file 188477x1; key 'Amazing Spider-Man (2021)'
+      [83028] COL Amazing Spider-Man Annual 001 - Facsimile Edition (2022) (digital) (Marika-Empire).cbz (77pp)
+         own record cv 150410 / gcd s188477 "Amazing Spider-Man Annual No. 1 Facsimile Edition" (issue 2426732) COLLECTS: gcd=1635 The Amazing Spider-Man Annual (1964) #1
+   G2 "Amazing Spider-Man Annual" in Marvel\_Spider-Man\__Amazing Spider-Man\00 Annuals and Specials — 1 file(s), numbers 28, pp 55-55; cv per-file 152139x1; gcd per-file 172683x1; key 'Amazing Spider-Man (2021)'
+      [93876] Amazing Spider-Man Annual 028 (1994) (Digital) (Shadowcat-Empire).cbz (55pp)
+   G3 "Amazing Spider-Man" in _Marvel Major Event Chronology (digital)\2022.07 - A.X.E. - Judgement Day\02 Tie-ins — 1 file(s), numbers 10, pp 26-26; cv per-file 152139x1; gcd per-file 172683x1; key 'Amazing Spider-Man (2021)'
+      [118574] Amazing Spider-Man 010 (2022) (Digital) (Zone-Empire).cbr (26pp)
+
+== S65136 Marvel Knights Spider-Man  [split]  5 files / 4 collections  decided in R-086 (S)
+   decided: S 65136 cv=11066 gcd=11998 0.9 | Marvel Knights Spider-Man (2004-2006) = CV 11066 (22 cached) / GCD 11998 (Marvel 2004-2006, 22 rows); the four trades Vol. 01-04 (judged #1-4, #5-8, #9-12, #13-22) are GCD 155997 rows #1-4 whose roll-up reads s11998 #1-4, each its own CV volume (30320-30323); residue: item 95613 "Marvel Knights - Spider-Man 05 (of 05) (2014)" is #5 of the 2013 mini (CV 67919 / GCD 76841)
+   F 65136 split-needed | item 95613 join S11448 (S line A-025: cv=67919 gcd=76841, holds #1-4 of the same 2013 mini; key "Marvel Knights - Spider-Man (2013)"); the four 2004 trades stay
+   N 65136 label-ambiguous flag #328 is answered, not dismissed here: the files show Vol. 02 "Venomous" (101pp) and Vol. 04 "Wild Blue Yonder" (149pp) are Marvel Knights Spider-Man trades (judged #5-8 / #13-22 of s11998); their own records CV 30321 / 30323 and GCD 2068641 / 2068643 are on the I lines, replacing the JMS rows the flag describes
+   named: S11448 Marvel Knights: Spider-Man  6 files  keys: "Marvel Knights - Spider-Man (2013)" | "Marvel Knights Spider-Man - Fight Night"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S16172 "Marvel Knights: Spider-Man & Wolverine" 8f [title+1 — S cv=28491 gcd=13911 (C-056 0.95)] keys: "Spider-Man and Wolverine"
+   keys now: "Marvel Knights - Spider-Man (2004)" x5
+   groups (title x folder): 2
+   G1 "Marvel Knights Spider-Man" in Marvel\_Spider-Man\__Completed Series\Marvel Knights Spider-Man v1 (2004) — 4 file(s), 4 COL, pp 101-149; cv per-file 30320x1, 30321x1, 30322x1; gcd per-file 155997x4; key 'Marvel Knights - Spider-Man (2004)'
+      [94820] COL Marvel Knights Spider-Man Vol. 01 - Down Among the Dead Men (2004) (Digital) (Kileko-Empire).cbr (101pp)
+         own record cv 30320 / gcd s155997 "Marvel Knights Spider-Man" (issue 2068640) COLLECTS: gcd=11998 Marvel Knights Spider-Man (2004) #1-4
+      [94821] COL Marvel Knights Spider-Man Vol. 02 - Venomous (2005) (Digital) (Kileko-Empire).cbr (101pp)
+         own record cv 30321 / gcd s155997 "Marvel Knights Spider-Man" (issue 2068641) COLLECTS: gcd=11998 Marvel Knights Spider-Man (2004) #5-8
+      [94822] COL Marvel Knights Spider-Man Vol. 03 - The Last Stand (2005) (Digital) (Kileko-Empire).cbr (101pp)
+         own record cv 30322 / gcd s155997 "Marvel Knights Spider-Man" (issue 2068642) COLLECTS: gcd=11998 Marvel Knights Spider-Man (2004) #9-12
+      [94823] COL Marvel Knights Spider-Man Vol. 04 - Wild Blue Yonder (2006) (Digital) (Kileko-Empire).cbr (149pp)
+         own record cv 30323 / gcd s155997 "Marvel Knights Spider-Man" (issue 2068643) COLLECTS: gcd=11998 Marvel Knights Spider-Man (2004) #13-18
+   G2 "Marvel Knights - Spider-Man" in Marvel\_Spider-Man\__OGNs, Minis & One-shots\Marvel Knights Spider-Man v2 — 1 file(s), numbers 5, pp 19-19; cv per-file 11066x1; gcd per-file 76841x1; key 'Marvel Knights - Spider-Man (2004)'
+      [95613] Marvel Knights - Spider-Man 05 (of 05) (2014) (digital) (Minutemen-PhD).cbr (19pp)
+
+== S66351 X-Men (2005)  [split]  4 files / 3 collections  decided in R-086 (R)
+   decided: R 66351 | four books of three different comics under a stray "X-Men (2005)" key: items 97160 / 97162 "Ultimate X-Men Vol. 13 - Magnetic North" / "Vol. 14 - Phoenix" (judged #61-65 / #66-71) are trades of Ultimate X-Men (2001) = CV 7258 / GCD 7826; item 86105 "X-Men - The End Book 01 - Dreamers and Demons" (142pp, roll-up s13418 #1-6) is the trade of the 6-issue X-Men: The End Book 1 = CV 18843 / GCD 13418; item 90386 "X-Men 198 Files 001 (2006)" 52pp = CV 18136 / GCD 34222, its own one-shot; the stored CV 71921 is Editorial Televisa's Mexican "X-Men"
+   F 66351 split-needed | items 97160, 97162 join S66149 (S line R-053: cv=7258 gcd=7826, the 2001-2009 run whose Vol. 01-19 it holds; key "Ultimate X-Men v1 (2001)"); item 86105 joins S22309 (S line B-062: cv=18843 gcd=13418, holds the six issues this trade collects; key "X-Men - The End - Dreamers and Demons"); item 90386 stays as "X-Men: The 198 Files (2006)" cv=18136 gcd=34222
+   F 66351 wrong-cv-link | stored CV 71921 "X-Men" (Editorial Televisa 2005, 46) is a Mexican reprint series
+   named: S66149 Ultimate X-Men  54 files  keys: "Ultimate X-Men (2006)" | "Ultimate X-Men (2024)" | "Ultimate X-Men v1 (2001)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S22309 X-Men: The End: Book 1: Dreamers & Demons  6 files  keys: "X-Men - The End - Dreamers and Demons"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S66349 "X-Men" 244f [title — S cv=4605 gcd=4254 (R-057 0.9)] keys: "Flashback - X-Men -1" | "X-Men" | "X-Men (1996)" | "X-Men (1997)" (+2 more: lookup.py --shelf 66349)
+   nearby: S103816 "X-Men (2004)" 107f [title — S cv=10731 gcd=11638 (R-053 0.9)] keys: "X-Men (2004)" | "X-Men: Day of the Atom (2005)"
+   nearby: S102431 "X-Men v7 (2024)" 75f [title — S gcd=223643 (C-037 0.9)] keys: "X-Men v7 (2024)"
+   nearby: S66353 "X-Men" 67f [title — S cv=137402 gcd=173727 (R-053 0.9)] keys: "X-Men (2021)" | "X-Men (2021-)" | "X-Men (2024)" | "X-Men by Gerry Duggan" (+1 more: lookup.py --shelf 66353)
+   nearby: S66352 "X-Men" 52f [title — S cv=34221 gcd=50867 (R-047 0.95)] keys: "X-Men (2010)" | "X-Men v3 (2010)"
+   nearby: S102412 "Ultimate X-Men v2 (2024)" 41f [title — S cv=157127 gcd=209649 (R-084 0.95)] keys: "Ultimate X-Men v2 (2024)" · S101522 "X-Men" 31f [title — S cv=62383 gcd=74679 (C-057 0.9)] keys: "X-Men v4 (2013)"
+   nearby: S22330 "X-Men 2099" 30f [title — S cv=18073 gcd=4752 (R-047 0.9)] keys: "X-Men 2099" | "X-Men 2099 Oasis" · S102430 "X-Men" 27f [title — S cv=122077 gcd=151123 (R-053 0.95)] keys: "X-Men v5 (2019)"
+   nearby: S36216 "Uncanny X-men Annual" 25f [title — S cv=22988 gcd=1951 (R-046 1.0)] keys: "Uncanny X-Men Annual" | "Uncanny X-men Annual" | "X-Men (1989)" | "X-Men v1 (1963)"
+   nearby: S22227 "X-Men '97" 22f [title — S cv=157399 gcd=210438 (B-061 0.95)] keys: "X-Men '97" | "X-Men '97: Great X-Pectations" · S22222 "X-Men '92" 4f [title — S cv=89284 gcd=98748 (R-015 0.9)] keys: "X-Men '92"
+   nearby: (+106 more by title)
+   keys now: "X-Men (2005)" x4
+   groups (title x folder): 3
+   G1 "Ultimate X-Men" in Marvel\_Ultimate Comics\Ultimate X-Men (2001)\01 Ultimate X-Men (2001) — 2 file(s), 2 COL, pp 125-136; cv per-file 35628x1, 35629x1; gcd per-file 103927x1, 35124x1; key 'X-Men (2005)'
+      [97160] COL Ultimate X-Men Vol. 13 - Magnetic North (2006) (Digital) (Kileko-Empire).cbr (125pp)
+         own record cv 35628 / gcd s103927 "X-Men" (issue 1599861) COLLECTS: gcd=93586 Extraordinary X-Men (2016) #1-5  ⚠ the stored GCD row looks like another book — these are ITS contents, not probed
+      [97162] COL Ultimate X-Men Vol. 14 - Phoenix (2006) (Digital) (Kileko-Empire).cbr (136pp)
+   G2 "X-Men - The End" in Marvel\_X-Men\X-Men - The End (2006) — 1 file(s), 1 COL, pp 142-142; cv per-file 30746x1; gcd per-file 70376x1; key 'X-Men (2005)'
+      [86105] COL X-Men - The End Book 01 - Dreamers and Demons (2006) (Digital) (F) (Asgard-Empire).cbz (142pp)
+         own record cv 30746 / gcd s70376 "X-Men: The End" (issue 529056) COLLECTS: gcd=13418 X-Men: The End (2004) #1-6
+   G3 "X-Men 198 Files" in Marvel\_X-Men\_X-Men Complete Chronology V2\0700 X-Men - The 198 — 1 file(s), numbers 1, pp 52-52; cv per-file 18136x1; gcd per-file 34222x1; key 'X-Men (2005)'
+      [90386] 006 X-Men 198 Files 001 (2006) (Digital) (Shadowcat-Empire).cbz (52pp)
+
+== S6482 Fantastic Four 005AU  [split]  1 files / 0 collections  decided in R-086 (S)
+   decided: S 6482 cv=53921 gcd=69567 0.95 | "005 Fantastic Four 005AU (2013)" 24pp = Fantastic Four (2013) #5AU on both legs: CV 53921 "Fantastic Four" (Marvel 2013, 17 incl. issue 395247 #5AU) and GCD 69567 (Marvel 2013-2014, 17 rows incl. row 1096843 #5AU, 32pp)
+   F 6482 split-needed | join S94599 (S line C-044: cv=- gcd=69567, key "Fantastic Four v4 (2013)", holds #1-16 of the same run) — a cv=- target cannot merge, so the issue moves by join
+   N 6482 CV 53921 "Fantastic Four" (Marvel 2013, 17 cached #1-16 + #5AU) is the Fraction run S94599 called provider-missing on the CV leg (C-044); its S line should carry cv=53921
+   named: S94599 Fantastic Four v4 (2013)  16 files  keys: "Fantastic Four v4 (2013)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S522 "Age of Ultron" 12f [shares gcd=72634 — S cv=58436 gcd=72634 (A-028 0.95)] keys: "Age of Ultron" | "Age of Ultron 10AI"
+   keys now: "Fantastic Four 005AU" x1
+   groups (title x folder): 1
+   G1 "Fantastic Four 005AU (2013) (digital) (Minutemen-Faessla)" in Marvel\_X-Men\_X-Men Complete Chronology V2\1031 Age of Ultron — 1 file(s), numbers 5, pp 24-24; gcd per-file 72634x1; key 'Fantastic Four 005AU'
+      [92349] 005 Fantastic Four 005AU (2013) (digital) (Minutemen-Faessla).cbz (24pp)
+
+== S19903 The Walk  [split]  4 files / 0 collections  decided in R-086 (R)
+   decided: R 19903 | three different works on one shelf: item 46470 "The Walk (2023)" 50pp (Markosia folder, ComicInfo Publisher Markosia) = CV 156096 "The Walk" (AAM/Markosia 2023, issue 1040715), no GCD row; item 110654 "TKO Shorts 009 - The Walk (2021)" 22pp = TKO Shorts #9 = CV 134210 issue 864509 "The Walk" / GCD 166431 row 2227791 (24pp), S17456's run; items 105028 / 105029 "The Walk (Original Strip Format / Page Format)" 2pp each in "Building Stories - Chris Ware\The Walk" are two formats of a Chris Ware strip with no record; the stored CV 122111 "Walk of the Dead" is unrelated
+   F 19903 split-needed | item 110654 join S17456 (S line B-067: cv=134210 gcd=166431, TKO Shorts #1-8; key "TKO Shorts"); item 46470 -> "The Walk (2023)" cv=156096; items 105028, 105029 (Chris Ware) stay
+   F 19903 wrong-cv-link | stored CV 122111 "Walk of the Dead" (Splitter 2016) is an unrelated zombie comic matched by the word "Walk"
+   named: S17456 TKO Shorts  8 files  keys: "River of Sin" | "Roofstompers" | "TKO Shorts" | "The Father of All Things"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S15430 "Shadow Walk" 1f [title+1 — S cv=69604 gcd=107072 (B-042 0.9)] keys: "Shadow Walk"
+   keys now: "The Walk" x4
+   groups (title x folder): 4
+   G1 "The Walk (2023) (digital) (DrVink-DCP)" in Markosia — 1 file(s), pp 50-50; cv per-file 156096x1; key 'The Walk'
+      [46470] The Walk (2023) (digital) (DrVink-DCP).cbz (50pp)
+   G2 "The Walk (Original Strip Format)" in Misc\Building Stories - Chris Ware\The Walk — 1 file(s), pp 2-2; cv per-file 122111x1; key 'The Walk'
+      [105028] The Walk (Original Strip Format).cbr (2pp)
+   G3 "The Walk (Page Format)" in Misc\Building Stories - Chris Ware\The Walk — 1 file(s), pp 2-2; cv per-file 122111x1; key 'The Walk'
+      [105029] The Walk (Page Format).cbz (2pp)
+   G4 "TKO Shorts" in TKO Studios\TKO Shorts (2020) — 1 file(s), numbers 9, pp 22-22; cv per-file 134210x1; gcd per-file 166431x1; key 'The Walk'
+      [110654] TKO Shorts 009 - The Walk (2021) (digital) (Mr Norrell-Empire).cbr (22pp)
+
+== S19033 The Magic Order  [split]  8 files / 4 collections  decided in R-086 (R)
+   decided: R 19033 | two co-equal runs: four trades "The Magic Order Vol. 01-04" (167-177pp) are the collected line — Vol. 02 (2022) = Image's GCD 144130 #2 row 2405817 (2022-05-25), Vol. 01/03/04 (2024) = Dark Horse's reissue line GCD 213614 rows #1/#3/#4 (2024-07..12) — each collecting a different six-issue season; and four issue files "The Magic Order V 001-004 (2024-2025)" = CV 160099 "The Magic Order 5" / GCD 215734 "The Magic Order V" (Dark Horse, 6 each, 2024-09..2025-07)
+   F 19033 split-needed | items 104782-104785 (V #1-4) -> "The Magic Order V (2024)" cv=160099 gcd=215734 (who-stores cv=160099: no shelf); the four trades stay as the Magic Order collected line (GCD 213614 / 144130)
+   keys now: "The Magic Order V" x4 · "The Magic Order" x3 · "The Magic Order Volume 1" x1
+   groups (title x folder): 2
+   G1 "The Magic Order" in Millarworld (Dark Horse)\The Magic Order (2018) — 4 file(s), 4 COL, pp 167-177; cv per-file 111537x4; gcd per-file 213614x3, 144130x1; key 'The Magic Order Volume 1' | 'The Magic Order'
+      [104786] COL The Magic Order Vol. 01 (2024) (Digital) (XRA-Empire).cbz (177pp)  key="The Magic Order Volume 1"
+      [104787] COL The Magic Order Vol. 02 (2022) (Digital) (XRA-Empire).cbz (167pp)  key="The Magic Order"
+      [104788] COL The Magic Order Vol. 03 (2024) (digital) (Son of Ultron-Empire).cbr (169pp)  key="The Magic Order"
+      [104789] COL The Magic Order Vol. 04 (2024) (digital) (Son of Ultron-Empire).cbr (176pp)  key="The Magic Order"
+   G2 "The Magic Order V" in Millarworld (Dark Horse)\The Magic Order (2018)\The Magic Order V (2024) — 4 file(s), numbers 1-4, pp 26-27; cv per-file 111537x4; gcd per-file 215734x4; key 'The Magic Order V'
+      e.g. The Magic Order V 001 (2024) (digital) (Son of Ultron-Empire).cbr
+        104782 #1 2024 27pp · 104783 #2 2024 26pp · 104784 #3 2024 26pp · 104785 #4 2025 26pp
+
+== S9069 Hulk  [split]  3 files / 1 collections  decided in R-086 (R)
+   decided: R 9069 | three different books: item 81188 "Hulk - The End (2008)" 154pp = the 2008 collection CV 30110 "Incredible Hulk: The End" (issue 185384) / GCD 74066 "Hulk: The End" (row 1108615); item 116693 "01 Hulk - Planet Hulk Prelude (2010)" 162pp = GCD 69541 (row 1027492, 172pp) collecting Incredible Hulk (2000 series) #88-91 and Fantastic Four #533-535 — two runs, so its own record; item 51959 "Hulk 001 (2014) (Skottie Young Variant Cover Only)" 2pp is a cover of Hulk (2014) = CV 73100 / GCD 80197
+   F 9069 split-needed | item 51959 join S97666 (S line C-045: cv=73100 gcd=80197, "Hulk v3 (2013)"); item 116693 -> "Hulk: Planet Hulk Prelude (2010)" gcd=69541; item 81188 stays as "Hulk: The End (2008)" cv=30110 gcd=74066
+   named: S97666 Hulk  3 files  keys: "Hulk v3 (2013)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S9076 "Hulk: Future Imperfect" 2f [shares gcd=4456 (collected by item 81188) — S cv=4793 gcd=4456 (B-056 0.9)] keys: "Hulk - Future Imperfect"
+   nearby: S64928 "Hulk" 52f [title — S cv=20291 gcd=28683 (C-046 0.9)] keys: "Hulk (2008)" | "Hulk v2 (2008)" · S64929 "Hulk" 3f [title — S cv=140213 gcd=178445 (C-045 0.9)] keys: "Hulk (2022)"
+   nearby: S94635 "Hulk v1 (1998)" 1f [title — S gcd=178327 (B-056 0.9)] keys: "Hulk v1 (1998)" · S103681 "Hulk (1999)" 1f [title — S cv=6779 gcd=7292 (R-047 0.95)] keys: "Hulk (1999)"
+   nearby: S18826 "The Incredible Hulk" 425f [title+1 — S cv=2406 gcd=1866 (R-047 0.9)] keys: "The Incredible Hulk" | "The Incredible Hulk v1 (1968)"
+   nearby: S94719 "Incredible Hulk" 91f [title+1 — S cv=6558 gcd=7053 (R-047 0.9)] keys: "The Incredible Hulk v2 (1999)" · S9087 "Hulk Comic" 75f [title+1 — S cv=37309 gcd=30582 (B-056 1.0)] keys: "Hulk Comic"
+   nearby: S94838 "Incredible Hulk v4 (2023)" 62f [title+1 — S gcd=207950 (C-036 0.9)] keys: "Incredible Hulk v4 (2023)"
+   nearby: S18815 "The Immortal Hulk" 20f [title+1 — S cv=111425 gcd=134262 (C-045 0.9)] keys: "Immortal Hulk" | "The Immortal Hulk"
+   nearby: S99760 "She-Hulk" 19f [title+1 — S cv=18293 gcd=15104 (R-043 0.95)] keys: "She-Hulk v2 (2005)"
+   nearby: S9099 "Wolverine/Hulk" 11f [title+1 — S cv=18569 gcd=10551 (C-045 0.95)] keys: "Hulk Wolverine" | "Wolverine and Hulk"
+   nearby: S9410 "Indestructible Hulk" 11f [title+1 — S cv=54112 gcd=70029 (C-064 0.9)] keys: "Indestructible Hulk" | "Indestructible Hulk by Mark Waid: The Complete Collection" · (+18 more by title)
+   keys now: "Hulk" x3
+   groups (title x folder): 3
+   G1 "Hulk - The End (2008) (Digital-Empire)" in Marvel\_Hulk\_Minis, OGNs and Trades — 1 file(s), 1 COL, pp 154-154; cv per-file 30110x1; gcd per-file 74066x1; key 'Hulk'
+      [81188] COL Hulk - The End (2008) (Digital-Empire).cbr (154pp)
+         own record cv 30110 / gcd s74066 "Hulk: The End" (issue 1108615) COLLECTS: gcd=4456 Hulk: Future Imperfect (1992) #1-2 · gcd=7637 Heroes (2001) #1 · gcd=10347 Incredible Hulk: The End (2002) #1
+   G2 "Hulk" in Marvel\__Skottie Young Covers — 1 file(s), numbers 1, pp 2-2; cv per-file 73100x1; gcd per-file 80197x1; key 'Hulk'
+      [51959] Hulk 001 (2014) (Skottie Young Variant Cover Only) (Monafekk-Empire).cbr (2pp)
+   G3 "Hulk - Planet Hulk Prelude (2010) (Digital) (F) (Kileko-Empire)" in _Marvel Major Event Chronology (digital)\2006.04 - Planet Hulk — 1 file(s), numbers 1, pp 162-162; cv per-file 57084x1; gcd per-file 69541x1; key 'Hulk'
+      [116693] 01 Hulk - Planet Hulk Prelude (2010) (Digital) (F) (Kileko-Empire).cbz (162pp)
+
+== S102758 Deadpool #900 (2009)  [split]  1 files / 0 collections  decided in R-086 (R)
+   decided: R 102758 | the book IS in GCD after all: "001 Deadpool 900 (2009)" 107pp = GCD 40644 "Deadpool Team-Up" #900 (row 690862, 2009-12, 116pp, stories incl. "Deadpool 900 Cover Gallery") and CV issue 176023 "#900" inside CV 22955 "Deadpool" (2008) — the two legs file it under DIFFERENT runs (GCD: the Team-Up countdown that starts at #900; CV: the 2008 ongoing), and the ripper's folder "0847 Deadpool - Team-Up" sides with GCD
+   F 102758 split-needed | join S5134 (S line C-036: gcd=40644, "Deadpool Team-Up", key "Deadpool Team-Up") per GCD and the folder — LEAD DECISION: CV 22955 (S64541's run) disagrees
+   named: S5134 Deadpool Team-Up  38 files  keys: "Deadpool Team-Up"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   named: S64541 Deadpool  87 files  keys: "Deadpool (2008)" | "Deadpool v2 (2008)" | "Deadpool v3 (2008)"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S64540 "Deadpool" 124f [title — S cv=6000 gcd=5791 (C-043 0.9)] keys: "Deadpool (1997)" | "Deadpool - Flashback" | "Deadpool v1 (1997)"
+   nearby: S96324 "Deadpool" 66f [title — S cv=53726 gcd=69743 (C-043 0.9)] keys: "Deadpool v3 (2013)" | "Deadpool v4 (2012)"
+   nearby: S64542 "Deadpool" 58f [title — S cv=157504 gcd=210709 (C-046 0.95)] keys: "Deadpool (2024)" | "Deadpool v10 (2024)"
+   nearby: S102375 "Deadpool" 9f [title — S cv=85750 gcd=93585 (C-064 0.95)] keys: "Deadpool v5 (2015)" · S102372 "Deadpool" 8f [title — S cv=59624 gcd=5003 (C-043 0.95)] keys: "Deadpool v1 (1994)"
+   nearby: S10377 "Deadpool" 4f [title — S cv=122987 gcd=152889 (A-023 0.9)] keys: "Deadpool by Kelly Thompson (2023)" | "Deadpool v8 (2020)" | "King Deadpool"
+   nearby: S5145 "Deadpool" 2f [title — S cv=145766 gcd=192494 (B-055 0.95)] keys: "Deadpool by Alyssa Wong" · S5080 "Deadpool" 1f [title — S cv=79775 gcd=207018 (R-035 0.95)] keys: "Deadpool"
+   nearby: S102757 "Deadpool #1000 (2010)" 1f [title — S gcd=52109 (R-035 0.9)] keys: "Deadpool #1000 (2010)"
+   nearby: S3322 "Cable & Deadpool" 67f [title+1 — S cv=18070 gcd=17566 (C-056 0.95)] keys: "Cable & Deadpool" | "Cable and Deadpool" | "Deadpool & Cable Ultimate Collection Book 1" | "Deadpool & Cable Ultimate Collection Book 2" (+3 more: lookup.py --shelf 3322)
+   nearby: S5111 "Deadpool Classic" 25f [title+1 — S cv=21748 gcd=60236 (C-043 0.9)] keys: "Deadpool Classic" | "Deadpool Classic Companion"
+   nearby: S5113 "Deadpool Corps" 15f [title+1 — S cv=32441 gcd=46836 (A-027 0.9)] keys: "Deadpool Corps" · (+17 more by title)
+   keys now: "Deadpool #900 (2009)" x1
+   groups (title x folder): 1
+   G1 "Deadpool" in Marvel\_X-Men\_X-Men Complete Chronology V2\0847 Deadpool - Team-Up — 1 file(s), numbers 900, pp 107-107; cv per-file 22955x1; gcd per-file 40644x1; key 'Deadpool #900 (2009)'
+      [91348] 001 Deadpool 900 (2009) (Digital) (AnPymGold-Empire).cbz (107pp)
