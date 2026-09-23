@@ -1,0 +1,163 @@
+## Conventions for this batch (37 shown of 41 matched; 340 in LEDGER.md; 3 shelf/shelves: pub:archie ×2 · kind:new ×2 · pub:europe-comics ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-049] (2 shelf/shelves) kind:kids kind:strip pub:archie pub:boom
+- BOOM's licensed-kids folders (Ben 10, Ice Age, Garfield, BOOM! Box Mix Tape) file a new record per book/year in
+  both providers — the Archie holiday-annual shape; the year in the filename selects.
+[L-056] (2 shelf/shelves) pub:archie pub:dc sig:probe
+- The Archie-holiday split runs BOTH ways: GCD mints six one-shot series for DC's Earth-Prime week while CV keeps
+  one 6-issue volume — whichever provider spans the shelf carries the S line; the other takes `provider-missing`.
+[L-120] (2 shelf/shelves) kind:weekly pub:archie pub:marvel
+- Marvel UK: GCD keeps ONE series across a weekly's title changes ("Super Spider-Man" 2407, 153 issues) while CV
+  mints a volume per title; the quarterly "ThunderCats Collected Comics" is ONE CV volume and FIVE GCD series
+  (one per season) — the Archie holiday split with ComicVine on the spanning side.
+[L-156] (2 shelf/shelves) pub:archie pub:valiant
+- Acclaim's Eternal Warriors is the Archie-holiday split with ComicVine on the spanning side: CV 26146 count 6 vs six
+  separate GCD one-shot series (15146, 21569-21572, 21589).
+[L-335] (2 shelf/shelves) pub:archie
+- Archie 2019+ "Archie & Friends" one-shots: GCD 188076 is ONE numbered series (Back to School = #3) while CV mints
+  a volume per one-shot — the holiday split (L-056): the GCD row goes on the I line.
+[L-009] (1 shelf/shelves) kind:foreign pub:cinebook pub:europe-comics
+- Cinebook: one ~50pp album per file; both providers hold Dargaud / Splitter / Epsilon / Panini rows of the same
+  album — the PUBLISHER column is the only test. GCD's span = the file years.
+[L-013] (3 shelf/shelves) sig:probe
+- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
+  with the other spelling.
+[L-014] (3 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-024] (1 shelf/shelves) kind:foreign pub:europe-comics
+- Europe Comics (digital English imprint of Dargaud / Dupuis / Le Lombard): ComicVine has a volume per shelf; GCD has
+  NO Europe Comics rows. **Eric's ruling: the original-language GCD row is the right comic in the wrong language —
+  link it** (at 0.9, naming the language edition) rather than `gcd=-`; when the dump holds two language editions,
+  take the original publisher's.
+[L-030] (3 shelf/shelves) sig:collision
+- One folder split into two shelves by a subtitle in one filename (Analog, Witch Doctor) → `F merge-with=<sid>`.
+[L-043] (3 shelf/shelves) sig:probe
+- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
+  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
+[L-050] (3 shelf/shelves) sig:probe
+- When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
+  punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
+  abbreviation the publisher uses ("HSE").
+[L-068] (1 shelf/shelves) kind:foreign pub:ablaze pub:cinebook pub:europe-comics pub:lion-forge-magnetic pub:papercutz-nbm
+- Europe Comics may have an ENGLISH PRINT sister edition in GCD (SelfMadeHero, Cinebook, NBM, Fanfare,
+  Magnetic Press, Ablaze) — the same text, not a translation — which is the better second leg than the
+  original-language row.
+[L-072] (3 shelf/shelves) sig:probe
+- GCD hides behind the SUBTITLE: "The Hunting Accident", "Giraffes on Horseback Salad", "Undesirables" return
+  nothing under their full titles — re-probe the SHORT title before writing `provider-missing`.
+[L-088] (3 shelf/shelves) sig:probe
+- GCD hides behind a LONGER title too ("… and the Tale of Azkon's Heart", "Holiday Party (One-Shot)"), not only a
+  shorter one — probe both directions before `provider-missing`.
+[L-089] (3 shelf/shelves) sig:probe
+- A facsimile of a SINGLE issue is its own book; a reprint edition of a whole series is not — the original wins.
+[L-095] (3 shelf/shelves) sig:probe
+- A folder that is a ripper's READING ORDER over several separately published arcs (The Ride, Revolution) has no
+  spanning record — the ladder is arc numbers, not issue numbers.
+[L-096] (3 shelf/shelves) sig:probe
+- GCD's exact filing recovers legs the probe misses: singular/plural ("Greeting", "Return"), two words ("Super
+  Hero"), a spelled ordinal ("Fortieth"), a dropped subtitle, or the colon form ("Jinx: Torso") — try each before
+  `provider-missing`.
+[L-102] (1 shelf/shelves) kind:foreign kind:manga pub:europe-comics
+- Where GCD has no English row for a manga, readers have linked the same work's Japanese original (else the
+  European edition) at 0.9 with the language named — the Europe Comics ruling extended to manga, CONFIRMED by
+  Eric 2026-09-10: the right comic in another language beats no leg.
+[L-118] (3 shelf/shelves) sig:probe
+- A GCD collected series numbers its issues by VOLUME and titles them with the volume SUBTITLE — that, not the
+  page count, places a trade when a shelf holds several volumes of one line.
+[L-125] (3 shelf/shelves) sig:probe
+- A stored link that is the same title a DIFFERENT DECADE later is a new cluster (Fist of Khonshu 2024 on the
+  1985 Moon Knight run; a 1971 Sub-Mariner Annual on the 1998 annual) — years decide, never the title.
+[L-151] (3 shelf/shelves) sig:collision sig:withheld
+- The withheld rule beats the checker's merge-with remedy text: a stored-link collision with a DIFFERENT comic is
+  `cv=-` + `N withheld cv=<id> … S<partner>`, never a merge (S101634 vs S22834); merge-with only for the same comic.
+[L-157] (3 shelf/shelves) sig:probe
+- A GCD row with ZERO issues is an empty stub, not a leg (Skull Cat 197154, Rivers of London: Stray Cat Blues 213823,
+  Archer & Armstrong: Revival 164703) → `provider-missing`.
+[L-159] (3 shelf/shelves) sig:probe
+- An exact-name probe can miss a sequel the rip DOES hold: `--contains "Icarus Society"` found CV 143976 after the
+  exact "Prodigy: The Icarus Society" probe returned nothing — try `--contains` on the subtitle before `provider-missing`.
+[L-160] (3 shelf/shelves) pass:revisit sig:withheld
+- A withheld shelf with NO GCD leg to keep becomes `R` + `N withheld cv=<id> … S<partner>` (S4944, S99691) — the
+  revisit pair re-links the partner and then the S line can be written.
+[L-163] (3 shelf/shelves) sig:probe
+- GCD hides behind a bracketed alternate title: "War Stories: J for Jenny [War Story: J for Jenny]" (10937), "Dance Like
+  Everybody's Watching! [A Zits Treasury]" (132081), "You're Out of Your Mind, Charlie Brown! [Horizontal]" (155990).
+[L-177] (3 shelf/shelves) sig:probe
+- A bracketed publisher series number becomes a phantom ladder entry: Thun'da's "[A1-056]/[A1 073]/[A1 083]" produced
+  ladder 56/73/83 and a ratio 5.00 — read the bracket, not the ladder.
+[L-193] (3 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-204] (3 shelf/shelves) pass:item pass:revisit sig:probe
+- `lookup.py --issues <collected-line volume>` names each TRADE's own ComicVine ISSUE id: 71 of 73 `I` lines in
+  R-018 carry an item-level CV id instead of `cv=-`.
+[L-253] (3 shelf/shelves) sig:probe
+- A subtitle can name a SEQUEL series filed on the first run's shelf (Wild's End "Beyond the Sea" = CV 151678 /
+  GCD 201441, not the 2014 run) — the `C` names the sequel run.
+[L-264] (3 shelf/shelves) sig:probe
+- Title-only (st3) GCD matches reuse ONE gcd id across every volume of a line (Golden City ×10, Windmaker,
+  Tarzan Kubert Years) — re-derive each book from the shelf's own numbered pool.
+[L-265] (1 shelf/shelves) kind:foreign pub:delcourt pub:europe-comics pub:marvel
+- Delcourt / Soleil English-digital shelves pair the English CV volume with the French GCD original at 0.9 (the
+  Europe Comics shape) — except when GCD's same-name row is an unrelated book (Spin Angels → Marvel's GCD 53252).
+[L-267] (3 shelf/shelves) sig:probe
+- A GCD "collected edition" series sits beside the genuine RUN under a different id (Dept H 100362 vs 111468, Harrow
+  County 89353 vs 94662, Sword Daughter 125748 vs 134585) — the `C` names the run; `lookup.py` by title finds it.
+[L-273] (3 shelf/shelves) sig:probe
+- The Adventures of Tintin: every per-file gcd pick (60515/108543) was wrong; the shelf's own gcd pool matched by
+  ENGLISH title was right for all 23 — the pool over the pick, again.
+[L-292] (3 shelf/shelves) sig:probe
+- A stored English digital volume's cached rip may cover only its last issues (Suzuka #13-18 of 18) — the earlier
+  books take gcd-only identities from the GCD series' full list, cv=-.
+[L-294] (3 shelf/shelves) pass:item sig:probe
+- ITEM PASS (X-046..X-048): a shelf can hold TWO published editions of one work with no shared pool (Monster: the
+  18-volume line beside the 2014 "Two-in-One" Perfect Edition) — each edition needs its own pool or an honest
+  no-record, never a mapping across editions. When a shelf's file count exceeds its pool, the excess usually
+  belongs to a CONTINUATION volume the shelf's own `N` names (Ranma 1/2 v22-38 → CV 26409 / GCD 17651) — the pool
+  for it must be pulled (`lookup.py --issues`, `gcd_issue WHERE series_id=?`) before writing no-record. GCD may mint
+  a "collected edition" row for only the FIRST of a same-title pair (Zombie Makeout Club) — the second is gcd=-.
+[L-339] (1 shelf/shelves) kind:foreign pub:europe-comics
+- Europe Comics: "provider-missing in any language" was WRONG on 12 of 22 shelves (R-063). Probe the French title
+  with accents dropped (normalisation turns "é" into a space) and the Dutch Dupuis / Silvester or German Salleck
+  editions; link the original / other-language row per L-024 / L-068. Dupuis Dutch lines are often filed twice
+  (125966/125967 — the pair differs in ISBN, the second carries page counts). Europe Comics can split one French album
+  into two parts (Les Filles de Salem 132027 = Daughters of Salem Parts I-II).
+
++4 more matched entries not shown: L-016, L-032, L-113, L-114 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S103857 Sabrina Anniversary Spectacular (2022)  [tier D]   keys: Sabrina Anniversary Spectacular (2022)  years 2022-2022  1 files / 0 collections
+   split run: "Sabrina Anniversary Spectacular (2022)" run={"cv": 158030, "gcd": 189098} (new shelf from P-018) — seed the S line from these ids, then verify them
+   folders: [1] Archie\Sabrina the Teenage Witch
+   files:   [7637] Sabrina the Teenage Witch Anniversary Spectacular 001 (2022) (digital) (DrVink).cbz (30pp)
+   ours:    ladder 0; ComicInfo Series: "Sabrina the Teenage Witch (2019-)"x1; ComicInfo Publisher: "Archie"x1
+   CV local rip:   158030 "Sabrina Anniversary Spectacular" 2022 Archie Comics 1 issue 1054303 (via our own name without the filing suffix "Sabrina Anniversary Spectacular")   (rip lookup)
+   GCD dump:       189098 "Sabrina Anniversary Spectacular" 2022-2022 Archie [] 1 (via our own name without the filing suffix "Sabrina Anniversary Spectacular")   (dump lookup)
+
+== S14950 Sabrina the Teenage Witch (2019-)  [tier D]   keys: Sabrina the Teenage Witch (2019-)  years 2023-2023  1 files / 0 collections
+   split: the KEPT half of the P-018 split — moved out -> S103857 "Sabrina Anniversary Spectacular (2022)"; re-identify what stayed
+   folders: [1] Archie\Sabrina the Teenage Witch
+   files:   [7638] Sabrina the Teenage Witch Annual Spectacular 001 (2023) (digital) (DrVink).cbz (34pp)
+   ours:    ladder 1; ComicInfo Series: "Sabrina the Teenage Witch (2019-)"x1; ComicInfo Publisher: "Archie"x1
+   CV candidates:  123014 "Sabrina the Teenage Witch" 2019 Archie Comics 1 issue 728535 s78 · 46806 "Sabrina the Teenage Witch" 1996 Archie Comics 1 issue 322680 s78 · 101929 "The Complete Sabrina The Teenage Witch" 2017 Archie Comics 2 s76 · 117988 "Sabrina the Teenage Witch" 2019 Archie Comics 5 s73 · 126147 "Sabrina the Teenage Witch" 2020 Archie Comics 5 s73 · 22714 "Sabrina the Teenage Witch" 2003 Archie Comics 67 s70   (v1 search)
+   CV local rip:   126147 "Sabrina the Teenage Witch" 2020 Archie Comics 5 (via CV candidate name "Sabrina the Teenage Witch") · 117988 "Sabrina the Teenage Witch" 2019 Archie Comics 5 (via CV candidate name "Sabrina the Teenage Witch") · 123014 "Sabrina the Teenage Witch" 2019 Archie Comics 1 issue 728535 (via CV candidate name "Sabrina the Teenage Witch") · 22714 "Sabrina the Teenage Witch" 2003 Archie Comics 67 (via CV candidate name "Sabrina the Teenage Witch") · 11042 "Sabrina the Teenage Witch" 1997 Archie Comics 32 (via CV candidate name "Sabrina the Teenage Witch") · 46806 "Sabrina the Teenage Witch" 1996 Archie Comics 1 issue 322680 (via CV candidate name "Sabrina the Teenage Witch")   (rip lookup)
+   GCD dump:       160328 "Sabrina the Teenage Witch" 2020-2021 Archie [] 5 (via CV candidate name "Sabrina the Teenage Witch") · 143162 "Sabrina the Teenage Witch" 2019-2019 Archie [] 5 (via CV candidate name "Sabrina the Teenage Witch") · 152911 "Sabrina the Teenage Witch" 2019-2019 Archie [] 1 (via CV candidate name "Sabrina the Teenage Witch") · 86275 "Sabrina the Teenage Witch" 2003-2009 Archie [] 67 (via CV candidate name "Sabrina the Teenage Witch") · 11973 "Sabrina the Teenage Witch" 1997-1999 Archie [] 32 (via CV candidate name "Sabrina the Teenage Witch") · 19972 "Sabrina the Teenage Witch" 1996-1996 Archie [] 1 (via CV candidate name "Sabrina the Teenage Witch")   (dump lookup)
+
+== S19980 The World of Thorgal: Kriss of Valnor  [tier B]   keys: The World of Thorgal - Kriss of Valnor  years 2020-2021  8 files / 0 collections
+   folders: [8] Europe Comics\Thorgal\Thorgal - Kriss of Valnor (2020)
+   files:   [23476] The World of Thorgal - Kriss of Valnor 001 - I Forget Nothing! (2020) (digital) (Mr Norrell-Empire).cbr (58pp)
+            [23477] The World of Thorgal - Kriss of Valnor 002 - The Valkyries' Judgement (2020) (digital) (Mr Norrell-Empire).cbr (49pp)
+            [23478] The World of Thorgal - Kriss of Valnor 003 - Worthy of a Queen (2021) (digital) (Mr Norrell-Empire).cbr (50pp)
+            [23479] The World of Thorgal - Kriss of Valnor 004 - Alliances (2021) (digital) (Mr Norrell-Empire).cbr (50pp)
+            [23480] The World of Thorgal - Kriss of Valnor 005 - Red as the Raheborg (2021) (digital) (Mr Norrell-Empire).cbr (50pp)
+            [23481] The World of Thorgal - Kriss of Valnor 006 - The Island of Lost Children (2021) (digital) (Mr Norrell-Empire).cbr (60pp)
+            [23482] The World of Thorgal - Kriss of Valnor 007 - The Mountain of Time (2021) (digital) (Mr Norrell-Empire).cbr (58pp)
+            [23483] The World of Thorgal - Kriss of Valnor 008 - The Master of Justice (2021) (digital) (Mr Norrell-Empire).cbr (50pp)
+   ours:    ladder 1-8
+   CV linked:      vol 130273 "The World of Thorgal: Kriss of Valnor" 2020 Europe Comics 8 issues; cached #1-8 (8); yearΔ 0; ratio 8/8 = 1.00; no judged range; v1 per-file: same volume on 8/8 files
+   CV lookups:     the v1 search and the local rip name no volume but the one above

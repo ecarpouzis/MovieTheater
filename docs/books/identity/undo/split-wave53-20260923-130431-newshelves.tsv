@@ -1,0 +1,6 @@
+# shelves from the split lane (new + kept halves) — feed to next_batch.py --revisit-file
+# S<sid>	<key>	run=<json|->	<P- file>	new|kept|kept-whole[	pair=<origin sid>][	moved_cv=<id>,…][	pending_join=<sid>,…]
+# kept-whole = a `split: false` shelf (nothing moved): its F split-needed stands until an identity batch re-reads it as one run
+# pair = the shelf the split took this row's items from (a kept row is its own pair): --revisit-file never cuts a batch inside a pair group
+S103858	Doctor Solar, Man of the Atom (1962)	run={"cv": 2091, "gcd": 1529}	P-019.jsonl	new	pair=5607
+S5607	moved out -> S103858 "Doctor Solar, Man of the Atom (1962)"	run=-	P-019.jsonl	kept	pair=5607	moved_cv=2091

@@ -1045,6 +1045,9 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   (Dark Horse "EC Comics & Others Archives", Crime Does Not Pay, Frontline Combat, Magnus, War Against Crime, Savage
   Sword of Conan) takes the archive LINE's own CV/GCD record — the S16653 line-wins ruling; the older "S = the original
   when both legs hold it" line applies only when NO line record exists. The later, dated ruling wins.
+  **SUPERSEDED for single-run archives (lead, 2026-09-23):** the brief's later R-042 ruling (a line that reprints ONE
+  numbered run gives way to the run) wins — Dark Horse SSoC -> Marvel SSoC (wave 52), Doctor Solar Archives -> the 1962
+  run (P-019). The archive LINE keeps its own identity only when it spans SEVERAL runs / titles (EC Archives, L-109).
 
 [L-239] pass:item ruling sig:probe
 - Packet phrase "vol X … 1 issue Y": X is the VOLUME id, Y the ISSUE id — an `I` line wants Y (`lookup.py --issues X`
@@ -1657,3 +1660,16 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   Horse's Savage Sword of Conan volumes each reprint ONE Marvel run (CV 2701 / GCD 2187) → run-wins, C per volume
   from GCD's notes. MOTU mini-comics: CV files the whole line as ONE 49-issue volume (20533) while GCD mints a series
   per mini-comic — the L-056 split with CV on the spanning side: the CV id goes on the I line (R-063).
+
+[L-341] sig:probe
+- GCD name shapes that hide a record from an exact probe (R-065): a dropped licensor/author prefix (Insight "H. G.
+  Wells:", FSG "Shirley Jackson's"), a dropped leading "The" (DC "Origin of Hordak", IDW "Dark Judges"), a dropped
+  subtitle (IDW TMNT "Saturday Morning Adventures"), a BRACKETED subtitle (IDW RID 2015 "[Animated Series]"), a spelled
+  volume ordinal ("Comic Book History of Comics Volume 2"), a lengthened title (First Second "Prince of Persia the
+  Graphic Novel"). CV spells "'Til" where rippers write "'till".
+
+[L-342] pub:fantagraphics
+- Fantagraphics singletons are often ONE numbered row of a GCD line (EC Artists' Library, Freak Brothers Follies) while
+  CV mints a volume per book — probe the LINE name before provider-missing. A line spanning several works keeps its
+  own identity; a one-volume edition / omnibus of ONE run on its own shelf is a merge into the live run shelf (Bone,
+  Mask of Fudo, Tenement — R-065).
