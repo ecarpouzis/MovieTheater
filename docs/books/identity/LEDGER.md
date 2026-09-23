@@ -1742,3 +1742,11 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   its own CV line volume (135288) spanning four colour-reprint minis. Dynamite "Seduction of the Innocent vNN" is the
   2019 Vampirella run's own trade line (GCD 169778). Action Lab's Raven trade line and Red Rising: Sons of Ares are
   GCD-only volume lines (120710, 122712) while CV mints a count-1 volume per trade.
+
+[L-354] kind:foreign sig:probe
+- A book that sits INSIDE a line is fastest found by the dump's `gcd_issue.title` / `gcd_story.title` and cvref's
+  `cv_iss.name` (Colección Humanoides #9 "Corazas"; Alef-Thau's "Diamantha!" by its chapter titles). Heavy Metal
+  "Related_Publications" albums are English editions of Humanoïdes / Norma / Glénat books — link the original by chapter
+  or subtitle match (L-024). Norma is Royo's HOME publisher (the original, not a third territory). Scholastic prose
+  chapter-book lines (Geronimo / Thea Stilton spin-offs) are absent under their Italian titles too: provider-missing
+  is final. Quarto's Saturday AM GCD rows are still 0-row stubs (R-081).

@@ -1,0 +1,162 @@
+# R-081: S.2 tier one — 60 shelves whose winning line was an R (mostly provider-missing, D-008..D-011 tier-D singletons from Graphic Novels\_<Publisher> folders, the Scholastic Geronimo/Thea Stilton prose lines, Heavy Metal "Related_Publications" albums) or an S held at 0.7.
+# Re-probed every leg: lookup.py exact + --contains on titles, subtitles, series words, French/Italian/Spanish originals; plus read-only LIKE over gcd_issue.title / gcd_story.title and cvref cv_iss.name / cv_vol.name. Wins: Rodin (English record now in the rip), Best of Enemies (CV 49070 + the French original), Piggy (GCD), Verse (#1 on both legs), Corazas (Colección Humanoides #9), Diamantha (= Alef-Thau album 1 by chapter), Cerebus #161 (merge into the run), G.I. Joe: Cobra v2 (GCD 58954; the old merge-with named the wrong run).
+
+S 283 cv=125137 gcd=156585 0.95 | NBM's English edition is now on both legs: CV 125137 "Rodin: Fugit Amor, An Intimate Portrait" (NBM 2020, 1 issue 737822 2020-02-20) and GCD 156585 (same title, NBM 2020, 1 row 2078649) agree on publisher, year and count with our "A. Rodin (NMB 2020)" 114pp; D-008's French-only 0.7 is superseded
+I 26634 cv=737822 gcd=2078649 isbn=- 0.95 | "A. Rodin (NMB 2020)" 114pp = CV issue 737822 (volume 125137, NBM 2020-02-20) and GCD row 2078649 (series 156585, NBM 2020); GCD gives no page count or ISBN
+F 283 needs-fetch cv=125137 | CV 125137 "Rodin: Fugit Amor, An Intimate Portrait" (NBM 2020) is named from the rip only
+N 283 the French original is GCD 206809 "A. Rodin - Fugit Amor, portrait intime" (21g 2017); the English record replaces it
+
+S 2458 cv=49070 gcd=81451 0.9 | CV 49070 "Best of Enemies: A History of US and Middle East Relations" (SelfMadeHero 2012, 3 issues: #1 336384 "Part One: 1783-1953", #2 469002 "Part Two: 1953-1984", #3 656802 "Part Three: 1984-2013") is exactly our three volumes by span and year; the GCD leg is the French original 81451 "Les meilleurs ennemis" (Futuropolis 2011-2016, 3 rows, same three spans) linked per L-024 — the only residue is the language of the GCD leg
+I 27005 cv=336384 gcd=1218371 isbn=- 0.9 | "Best of Enemies v01 - 1783-1953" (2012, 118pp) = CV issue 336384 "Part One: 1783-1953" (2012-05-31) and the French original's row 1218371 "Première partie 1783/1953" (Futuropolis 2011)
+I 27006 cv=469002 gcd=1218372 isbn=- 0.9 | "Best of Enemies v02 - 1953-1984" (2014, 106pp) = CV issue 469002 "Part Two: 1953-1984" (2014-10-31) and the French original's row 1218372 "Deuxième partie 1953/1984" (Futuropolis 2014)
+I 27007 cv=656802 gcd=1849031 isbn=- 0.9 | "Best of Enemies v03 (1984-2013)" (2018, 98pp) = CV issue 656802 "Part Three: 1984-2013" (2018-01-31) and the French original's row 1849031 "Troisième Partie 1984/2013" (Futuropolis 2016)
+F 2458 needs-fetch cv=49070 | CV 49070 (SelfMadeHero 2012, 3) is named from the rip only
+F 2458 wrong-cv-link | all three files still carry per-file CV 34367 "Airboy 1942: Best of Enemies" (Moonstone 2009, 1), a Golden-Age aviation one-shot; the right volume is CV 49070
+N 2458 B-033's "ComicVine has no volume named Best of Enemies" is obsolete — the fixed rip holds 49070; GCD has no English SelfMadeHero row (probed "Best of Enemies" --contains: only Airboy 41101)
+
+S 13757 cv=- gcd=216421 0.9 | GCD 216421 "Piggy: Permanent Detention" (Scholastic 2023, 1 row 2666442) is our "COL Piggy v01 - Permanent Detention (2023) (Schoolastic)" 128pp with ComicInfo Publisher "Scholastic Inc." — title, publisher and year agree; D-009 probed "Permanent Detention" and "Piggy" but not the colon form; ComicVine has no Piggy volume (--contains "Piggy": Retrofit 2015, Scout 2023 only)
+I 27956 cv=- gcd=2666442 isbn=- 0.9 | "COL Piggy v01 - Permanent Detention (2023)" 128pp = GCD row 2666442 of series 216421 (Scholastic 2023); no page count or ISBN on the row
+N 13757 GCD files the book twice (216421 / 216423, rows 2666442 / 2666444 — two bindings); 216421 taken as the lower id. The sequel "Piggy: Desert Nightmare" is GCD 216422 / 216426 (2024), not on this shelf
+
+S 63893 cv=139287 gcd=179021 0.9 | CV 139287 "Verse" (Vault 2021, 2 issues: #1 886924 "Book One: The Broken Half" 2021-09-01, #2 1005775) and GCD 179021 "Verse" (Vault 2021-?, 1 row 2284958 "The Broken Half" 180pp, ISBN 9781638490104) agree on #1 with our "Verse Book 01 - The Broken Half" 179pp (within 1pp); residue: GCD's count 1 stops before our Book 02 and CV titles #2 "The Second Age" where our file says "The Second Gate"
+I 27055 cv=886924 gcd=2284958 isbn=9781638490104 0.95 | "Verse Book 01 - The Broken Half (2021)" 179pp = CV issue 886924 "Book One: The Broken Half" and GCD row 2284958 "The Broken Half" 180pp (Vault 2021-09-28)
+I 27056 cv=1005775 gcd=- isbn=- 0.9 | "Verse Book 02 - The Second Gate (2022)" 259pp = CV issue 1005775 #2 of volume 139287 (titled "The Second Age" there); GCD's 179021 has no #2 row
+F 63893 needs-fetch cv=139287 | CV 139287 "Verse" (Vault 2021, 2) is named from the rip only
+N 63893 GCD 236585 "Verse" [fr] (Komics Initiative 2023-?, 3) is the French edition, the other per-file pick — not the identity
+
+S 11954 cv=162372 gcd=38003 0.9 | our file names its line — "Metal Hurlant Corazas Coleccion Humanoides By Ayala" — and GCD 38003 "Colección Humanoides" (Eurocomic 1981-1989, 32 rows) has #9 row 648374 titled "Corazas" (1983); CV 162372 "Colección Humanoides" (Eurocomic 1981, 8 cached #1-8 "Exterminador 17" … "Armalite 16") is the same line, its count stopping one short of our #9; a line of different albums is its own identity
+I 29391 cv=- gcd=648374 isbn=- 0.9 | "Metal Hurlant Corazas Coleccion Humanoides" 52pp = GCD row 648374 "Corazas", Colección Humanoides #9 (Eurocomic 1983); CV's line volume 162372 caches #1-8 only, so there is no CV issue id
+F 11954 needs-fetch cv=162372 | CV 162372 "Colección Humanoides" (Eurocomic 1981) is named from the rip only, and its cache stops at #8
+N 11954 D-011's probe of "Coleccion Humanoides" missed because the record spells "Colección" with the accent (L-349: accented names match only with the accent)
+
+S 8702 cv=- gcd=76807 0.9 | "Heavy_Metal-Diamantha-Arno_And_Jodorowsky" 55pp is Alef-Thau album 1: GCD 52395 (Carlsen, German) #1 row 778973 is titled "Diamantha!" (60pp) and its five chapters (9/9/12/12/10pp) are exactly the five chapters of the French original's #1 "L'enfant tronc" (GCD 76807 "Les aventures d'Alef-Thau", Humanoïdes 1983-1998, 8 rows; row 1142925 64pp, chapters Le vermisseau / La chasse au louth / La tour dieu / L'effroi à grand spectacle / Lorsque l'effroi triomphe, 9/9/12/12/10pp); Jodorowsky + Arno is the Alef-Thau team; the original publisher's row per L-024
+I 29406 cv=- gcd=1142925 isbn=- 0.9 | the album = "Les aventures d'Alef-Thau" #1 "L'enfant tronc" (GCD row 1142925, Humanoïdes 1983, 64pp, ISBN 2-7316-0217-1), chapter-for-chapter the German "Diamantha!" (CV issue 979607 of Carlsen volume 149080 / GCD row 778973)
+F 8702 needs-web | which English edition is this 55pp "Diamantha" (a Heavy Metal serialisation of Alef-Thau #1?) — neither leg holds an English Alef-Thau
+N 8702 the German Carlsen line (CV 149080 "Alef-Thau" 1986, 6 / GCD 52395) is the only record whose #1 carries the title "Diamantha!"; it is the bridge, not the identity
+
+S 3727 cv=2930 gcd=2424 0.95 | "(1992) Cerebus the Aardvark #161 [First Appearance]" is Cerebus #161 (1992, the issue with Bone's first appearance, which is why it sits in Bone (Full Color)\Misc): CV 2930 and GCD 2424 "Cerebus" (Aardvark-Vanaheim 1977-2004, 298) both hold #161, and S3722 already carries exactly cv=2930 gcd=2424 (C-058, 301 files)
+F 3727 merge-with=3722 | the one file is Cerebus #161 of the run S3722 holds (shared cv=2930); a one-file shelf cut off by its folder
+F 3727 misfiled | item 26822 sits under Graphic Novels\_Schoolastic & Graphix\Bone (1991)\Bone (Full Color)\Misc; its run is S3722's Cerebus
+
+S 7098 cv=- gcd=58954 0.9 | "G.I. Joe - Cobra v2 009-012 (2012)" are #9-12 of IDW's SECOND G.I. Joe: Cobra run (2011-2013), not the 2010 13-issue mini: GCD 58954 "G.I. Joe: Cobra" (IDW 2011-2012, 9 rows, #9 905542 2012-01-18) is that run and its #9 date matches our 2012 #9; residue: GCD's count 9 stops below our #10-12, and ComicVine has no volume for the 2011 run (cvref "G.I. Joe%Cobra%": 31328 is 2010, 60151 is the 2-issue trade line)
+F 7098 wrong-cv-link | all four files carry per-file CV 31328 "G.I. Joe: Cobra" (IDW 2010, 13) whose #9-12 are dated 2010-10 … 2011-01 — the first run; our files are the 2012 "v2" issues
+F 7098 provider-missing | the ComicVine rip has no volume for IDW's 2011 G.I. Joe: Cobra ongoing
+N 7098 C-028's merge-with=64739 is WITHDRAWN: S64739 is the main "G.I. Joe v2" run (CV 40103, R-043), a different title from G.I. Joe: Cobra — merging would put Cobra #9-12 on the G.I. Joe #9-12 numbers
+
+S 11950 cv=85439 gcd=83092 0.9 | raised from 0.7: CV 85439 "Metabarons Genesis: Castaka" (Humanoids 2015, 2) names #2 503639 "Book 2: The Rival Twins", our filename word for word, and S11949 (book one, same `03 Castaka (2014)` folder) already carries cv=85439 gcd=83092 — the merge target; the GCD side stays the named residue: 83092 (2014-03, ISBN 978-1-59465-053-6) is noted "Limited numbered edition with slipcase", i.e. the line's own edition, and GCD mints no row titled for book two (126998 2015 / 126999 2016 are untitled [nn] rows)
+I 30022 cv=503639 gcd=- isbn=- 0.9 | "COL Metabarons Genesis - Castaka v02 - The Rival Twins" 55pp = CV issue 503639 "Book 2: The Rival Twins" (volume 85439, 2015-10-31); which of GCD's untitled rows 1825200 / 1825201 is this book cannot be read from the dump
+F 11950 merge-with=11949 | one two-book line cut into two shelves by the subtitle: same folder, same CV volume 85439 on both S lines (S11949's F merge-with=11950 is the other half of this pair)
+
+S 11058 cv=134958 gcd=- 0.9 | raised from 0.7, B-034's needs-web answered in our own data: the GCD dump shows Heavy Metal Magazine #300 (issue 2230289) carrying "Lucy Hope, Chapter One", and CV 134958 "Lucy" (Glénat 2019, 1 issue 840822) is titled "L'Espoir" = "Hope" — our "Lucy (Heavy Metal compilation)" 72pp is Heavy Metal's English gathering of the Glénat album "Lucy: L'Espoir", the original-language record linked per L-024; residue: the English edition itself has no record
+I 29938 cv=840822 gcd=- isbn=- 0.9 | "Lucy (Heavy Metal compilation)" 72pp = the Glénat original's CV issue 840822 "L'Espoir" (volume 134958, 2019-06-01), serialised in English as "Lucy Hope" from Heavy Metal Magazine #300 (GCD issue 2230289)
+N 11058 the English serialisation lives in Heavy Metal Magazine (GCD 110631 #300); our compilation is not an issue of that magazine, so the album's record is the identity
+
+S 8534 cv=66970 gcd=- 0.9 | raised from 0.7: Luis Royo is Spanish and Norma Editorial is his home publisher, so CV 66970 "Dome" (Norma 2006, 1 issue 424301 "HC") is the ORIGINAL-language edition of the book our 85pp "Heavy Metal - Luis Royo Dome" prints in English, not a third-territory licence — L-024 links that row at 0.9; residue: the English printing has no record (GCD credits for Luis Royo list no Dome; "Dome" --contains finds only other books)
+I 29395 cv=424301 gcd=- isbn=- 0.9 | "Heavy Metal - Luis Royo Dome" 85pp = the Norma original's CV issue 424301 (volume 66970, 2006 HC); Heavy Metal's English edition has no row on either leg
+
+S 12160 cv=- gcd=202003 0.7 | kept at 0.7 for a NEW reason: GCD 202003 "Mingus" (Presque Lune 2022, 1 row 2554053, ISBN 978-2-917897-90-4) is not certainly the original — NBM's 2023 "Mingus" is, as far as our data goes, a translation whose source language is unproven, and if its source is an Italian original the French row is a third-territory licence (L-024 links only the original); re-probed "Mingus" --contains on both legs (only 202003) and GCD credits for the creators (none)
+I 26662 cv=- gcd=2554053 isbn=- 0.7 | "Mingus (2023) (NBM)" 160pp; the only row of the work is the French edition's 2554053 (Presque Lune 2022-11), no page count to compare
+F 12160 needs-web | is NBM's English "Mingus" (2023) translated from Presque Lune's French edition (2022) as the original, or from an earlier Italian original of which the French is itself a translation?
+F 12160 provider-missing | neither leg holds NBM's English edition
+
+S 22937 cv=122211 gcd=- 0.7 | kept at 0.7 for a NEW reason: the dates refuse CV 122211 as the scanned edition — our scan is dated 2018 while 122211's only issue 723843 "Le Major - Expanded Edition" (Book Palace) went on sale 2019-10-23, so the scanlation was made from an EARLIER expanded edition; 122211 remains the same work's nearest record, and CV 164640 "Mœbius Library: The Major" (Dark Horse 2024-07-29, issue 1065276) is the official English edition, later again; GCD holds no "Le Major" (only 207070 "Le Major et les extraterrestres", 5C 2013, another book)
+F 22937 needs-web | which edition of Moebius's "Le Major" (expanded, with extras, 343pp) did the 2018 fylgja/Hoyeru scanlation use — a French Stardom / Moebius Production printing?
+F 22937 provider-missing | no record of the edition scanned; the book's own record is not in our data
+
+S 8714 cv=- gcd=188422 0.7 | kept at 0.7 for a NEW reason: the English candidates are now probed and refused by arithmetic — GCD 77284 Heavy Metal Special Editions #2 "F.A.K.K.2 Movie Special" (1999-07, 122pp, row 1155145) and its CV twin 35025 #199902 are the magazine special already on S8537, 122pp against our 76pp album; CV 51259 "FAKK 2 Movie Special" (Heavy Metal 2012 HC) is a later reprint of the special; GCD credits for Bisley list no F.A.K.K.2 album; so the album's only rows remain Éditions USA's French "Fakk 2" 188422 (1998) / 188419 (2000) and the German 70343
+F 8714 provider-missing | no English record of Bisley's F.A.K.K.2 album on either leg; which Éditions USA printing corresponds is still the web lane's question (D-010's N stands)
+
+S 20159 cv=- gcd=199417 0.7 | an R becomes a review-queue S: GCD 199417 "Freud - Le moment venu" (La Boîte à Bulles 2023-01, 1 row 2522871, ISBN 978-2-84953-447-2) is a 2023 French book on Freud's last days ("the moment having come"), the same year and subject as our Humanoids / Life Drawn "Through Clouds of Smoke - Freud's Final Days" (2023, 133pp) — Life Drawn publishes English editions of French graphic biographies; no page count, creator credit or English title in the dump confirms the pairing
+F 20159 needs-web | is Humanoids' "Through Clouds of Smoke: Freud's Final Days" (2023) the English edition of La Boîte à Bulles' "Freud - Le moment venu" (2023)?
+F 20159 provider-missing | neither leg holds the English Life Drawn edition (probed "Clouds of Smoke", "Freud" --contains on both legs, gcd_story titles)
+
+R 22695 | "Young Hag (Isabel Greenberg) (2024) (Jonathan Cape)" 252pp: re-probed "Young Hag" and "Hag" --contains on both legs, gcd_issue/gcd_story titles and cvref issue names, and GCD credits for Isabel Greenberg (Glass Town 2020, Gaia 2022 — no Young Hag); the EAN 9781787334052 matches no row; CV 124180 "Hag" (American Gothic 2020) is another comic
+F 22695 provider-missing | a 2024 Jonathan Cape book in neither catalog
+R 3366 | "Absolute Zeros - Camp Launchpad (2024) (Little, Brown Ink)" 228pp: "Absolute Zeros", "Camp Launchpad", "Launchpad" probed exactly, --contains and as issue titles — the hits are Darkwing Duck / DuckTales stories and bare "Camp" volumes (HMH 2019, Edition Alfons), none this book
+F 3366 provider-missing | a 2024 Little, Brown Ink book in neither catalog
+R 4715 | "Daddy and the Beanstalk (2023) (Little, Brown Ink)" 96pp: the full title and "Beanstalk" --contains on both legs return only Oggie / Batman / Mickey / Alley Oop beanstalk books and Jack-and-the-Beanstalk stories; the "Daddy" albums (Splitter, Glénat, Oily) are other books
+F 4715 provider-missing | a 2023 Little, Brown Ink book in neither catalog
+R 7847 | "Graphic Science - Seven Journeys of Discovery (2017) (Myriad)" 268pp: "Graphic Science" and "Seven Journeys" --contains, and as issue / story titles, find only the 1978 "Oracle, The Magazine of Graphic Science-Fiction & Fantasy" (GCD 79719); the packet's "Graphic Novels" rows are folder-word noise
+F 7847 provider-missing | a 2017 Myriad Editions book in neither catalog
+R 4968 | "Darkly She Goes (2023) (NBM)" 150pp: "Darkly She Goes" and "Darkly" --contains on both legs return only A Scanner Darkly, Warlands: Darklyte and A Muse Through a Mirror Darkly; no issue or story title carries it, and GCD credits for Mallié list only Le grand mort / Op zoek naar de tijdvogel — the French original could not be named from our data
+F 4968 provider-missing | NBM's 2023 translation is in neither catalog under this title, and no French original surfaced
+R 6757 | "Fists Raised - 10 Stories of Sports Star Activists (NBM 2022)" 195pp: "Fists Raised" and a French "Poings" --contains return 0 on both legs, and no issue or story title matches; the packet's candidates are "Graphic Novels" folder noise
+F 6757 provider-missing | a 2022 NBM translation in neither catalog under any title probed
+R 7776 | "Good - From the Amazon Jungle to Suburbia and Back (NBM 2024)" 213pp: the subtitle ("Amazon Jungle to Suburbia", "Jungle to Suburbia") returns 0 on both legs and in issue / story titles; the "Amazon" volumes (Comico 1989, DC 1996, Dark Horse 2009) are other comics
+F 7776 provider-missing | a 2024 NBM book in neither catalog
+R 35838 | "Red Harvest - A Graphic Novel of the Terror Famine in Soviet Ukraine (NBM 2023)" 155pp: "Red Harvest" --contains returns 0 volumes; as an issue / story title it is only Swamp Thing #11-17 (2000), The Spider #3 (1992), Hinterkind #8 and Dead Letters #10; GCD credits for Michael Cherkas list The Silent Invasion (NBM 2018) and anthologies, not this book
+F 35838 provider-missing | a 2023 NBM book in neither catalog
+R 19616 | "Silverwing - The Graphic Novel (2023)" 224pp (Simon & Schuster): "Silverwing" --contains on both legs and in issue titles returns only Now Comics' 1987 "Silverwing Special" (CV 72889 / GCD 21426), another comic
+F 19616 provider-missing | the 2023 Silverwing adaptation is in neither catalog
+R 921 | "Amber Brown Is Not a Crayon (2024)" 117pp (Putnam): "Amber Brown" --contains and as an issue title returns 0 on both legs; the candidates are IDW's / Glénat's "Amber Blake"
+F 921 provider-missing | a 2024 Putnam book in neither catalog
+R 14232 | "Punk Rock Karaoke (2024)" 251pp: exact, --contains, issue and story titles all 0; the candidates are "Punk Rock Jesus", "Punk Rock and Trailer Parks", "Punk Rock & Mobile Homes"
+F 14232 provider-missing | a 2024 Penguin book in neither catalog
+R 6746 | "First Test (2024)" 159pp (Random House Graphic): "First Test" as a volume returns only Deadbone's "First Testament" (GCD 111448 / 51641); as an issue title it is story titles inside Adventure Comics, Superior Sam, World's End Harem and We Ants — none this book
+F 6746 provider-missing | a 2024 Random House Graphic book in neither catalog
+R 6900 | "Fox Point's Own Gemma Hopper (2023)" 255pp (Knopf): "Gemma Hopper" --contains and as issue / story titles return 0; the candidates are the "Fox" volumes and "Gemma Bovery"
+F 6900 provider-missing | a 2023 Knopf book in neither catalog
+R 12888 | "Next Stop (2024)" 272pp (Random House Graphic): "Next Stop" --contains returns "Keith Haring: Next Stop Art" (CV 55150) and "Big Nate: Next Stop, Superstardom!" (GCD 200799); as an issue title only story titles in Superboy, Deadpool, Farscape etc. — none this book
+F 12888 provider-missing | a 2024 Random House Graphic book in neither catalog
+R 102542 | "Saturday AM Annual 2024 (2024)" 219pp: "Saturday AM" and "Saturday AM Annual" --contains find only GCD 192178 "Saturday AM Annual 2023" (Quarto, row 2448268, 2022) — the previous annual, not ours; ComicVine has no Saturday AM volume
+F 102542 provider-missing | neither leg indexes the Saturday AM Annual 2024
+R 15071 | Gunhild v01-v02 (Saturday AM / Rockport 2023-2024, 224pp / 223pp): GCD 226888 "Gunhild" (Quarto 2023-?) still has 0 rows (L-157: an empty stub, not a leg); 226836 is the Danish Cobolt edition (row 2763695 "Ildjætten Gunhild"); "Gunhild" --contains in ComicVine returns 0
+F 15071 provider-missing | no English record of Quarto/Saturday AM's Gunhild with issues on either leg
+R 15072 | Titan King v01-v02 (Saturday AM / Rockport 2022-2023, 224pp each): GCD 188684 "Titan King" (Quarto 2022-?) still has 0 rows (L-157: not a leg); ComicVine and cvref issue names return 0 for "Titan King"
+F 15072 provider-missing | no record of Quarto/Saturday AM's Titan King with issues on either leg
+R 704 | "All Is Nat Lost (2024)" 241pp (Graphix): "Nat Lost" --contains and issue / story titles return 0 on both legs; every candidate is another "<X>: A Graphic Novel"
+F 704 provider-missing | a 2024 Graphix book in neither catalog
+R 4285 | "Courage to Dream - Tales of Hope in the Holocaust (2023)" 241pp (Graphix): "Courage to Dream" --contains and issue / story titles return 0; the candidates are "American Dream: Beyond Courage" and other "Courage" titles
+F 4285 provider-missing | a 2023 Graphix book in neither catalog
+R 7382 | the kept half is Scholastic's illustrated chapter-book line "Geronimo Stilton 01-30 (2004-2007)" (114-138pp): re-probed "Geronimo Stilton" --contains on both legs — every hit is a comics line (NBM 30524 / 62181 albums, Bakermat 53765/53766, Cartaphilus 225647, Reporter, 3-in-1, Scholastic's 2020 Graphic Novel 161255/126666) with other titles; the prose novels are indexed by neither
+F 7382 provider-missing | Scholastic's Geronimo Stilton chapter books are in neither comics catalog
+R 7401 | "Geronimo Stilton Cavemice Series 01-10 (2013-2016)" (~125pp prose): "Cavemice" and the Italian "Preistotopi" return 0 on both legs and as issue names; only the NBM / Scholastic comics lines carry the name
+F 7401 provider-missing | Scholastic's Cavemice line is in neither catalog
+R 7402 | "Geronimo Stilton Classic Tales - A Christmas Carol (2019)" 207pp: "Geronimo Stilton" --contains lists no Classic Tales volume; the "A Christmas Carol" candidates are other adaptations (Capstone, Markosia, Classical Comics, Campfire, IDW)
+F 7402 provider-missing | Scholastic's Classic Tales line is in neither catalog
+R 7403 | "Geronimo Stilton Journey Through Time 01-06, 08 (2014-2021)" (~280pp prose): "Journey Through Time" as a volume is only the 1984 Doctor Who special; the Italian "Viaggio nel tempo" returns 0
+F 7403 provider-missing | Scholastic's Journey Through Time line is in neither catalog
+R 7404 | "Geronimo Stilton Micekings 01-07 (2016-2018)": "Micekings" and the Italian "Vichingotopi" return 0 on both legs and as issue names
+F 7404 provider-missing | Scholastic's Micekings line is in neither catalog
+R 7406 | "Geronimo Stilton Spacemice Series 01-08, 11 (2014-2017)": "Spacemice" and the Italian "Cosmotopi" return 0 on both legs and as issue names
+F 7406 provider-missing | Scholastic's Spacemice line is in neither catalog
+R 103680 | "Geronimo Stilton Special Edition 01 - A Christmas Tale / 02 - Christmas Catastrophe (2011)" (71pp / 115pp Scholastic prose): the per-file CV 30524 and GCD 225647 (Hungarian Cartaphilus, matched by number) are comic albums with other titles; "Geronimo Stilton" --contains lists no Special Edition line except NBM's Reporter collection 220322 (2022), another book
+F 103680 provider-missing | Scholastic's Geronimo Stilton Special Edition books are in neither catalog
+R 7408 | "Geronimo Stilton and the Kingdom of Fantasy 01-11 (2009-2018)" (267-302pp prose): "Kingdom of Fantasy" and the Italian "Regno della Fantasia" return 0 on both legs and as issue / story titles; the per-file CV 30524 / GCD 62181 is the NBM album line (R-056/R-058 stand)
+F 7408 provider-missing | Scholastic's Kingdom of Fantasy novels are in neither catalog
+R 9278 | "If You Traveled on the Underground Railroad (2022)" 77pp (Scholastic Press): "Underground Railroad" --contains returns 0 volumes; as issue / story titles only Batman's "Underground Railroad" arcs, Wimmen's Comix and Classics Illustrated #169 stories
+F 9278 provider-missing | a 2022 Scholastic Press book in neither catalog
+R 13558 | "Parachute Kids (Betty O. Tang) (2023)" 289pp (Graphix): "Parachute Kids" --contains and issue / story titles return 0 on both legs
+F 13558 provider-missing | a 2023 Graphix book in neither catalog
+R 14106 | "Princess Truly 01 - I Am a Super Girl! / 02 - Off I Go! (2019)" 46pp / 44pp: "Princess Truly" --contains and issue / story titles return 0 on both legs
+F 14106 provider-missing | Scholastic's Princess Truly readers are in neither catalog
+R 17076 | "Sunshine - A Graphic Novel (2023)" 218pp (Graphix, Krosoczka): "Sunshine" --year 2023 finds only Advent Comics' one-shot (GCD 183591 2022 / CV 111265 2018); the 1938 Target weekly and the many "Sunshine" story titles are other things
+F 17076 provider-missing | a 2023 Graphix book in neither catalog
+R 19203 | "The New Girl (2024)" 273pp (Scholastic): "New Girl" --contains returns Kick-Ass: The New Girl (Image 2018) and Spider-Man Loves Mary Jane: The New Girl; the issue titles "The New Girl" belong to Chloe, Elle(s), Baby-Sitters Club etc.
+F 19203 provider-missing | a 2024 Graphix book in neither catalog
+R 20027 | the kept half is Scholastic's "Thea Stilton" illustrated novels #1-11, #13-30 (2009-2019, 167-178pp): "Thea Stilton" / "Tea Stilton" --contains find only NBM's comic line (CV 60100 / 109461, GCD 74183 / 140394) and two Hungarian Cartaphilus books — other books with other titles
+F 20027 provider-missing | Scholastic's numbered Thea Stilton novels are in neither catalog
+R 103610 | "Thea Stilton Special Edition 01-06 (2012-2017)" (287-306pp prose, + a second rip of 01): the per-file GCD 74183 is NBM's comic line, a number match only (its rows are 60-68pp albums with other titles); "Thea Stilton" --contains lists no Special Edition
+F 103610 provider-missing | Scholastic's Thea Stilton Special Edition line is in neither catalog
+R 103611 | "Thea Stilton and the Treasure Seekers 01 (2019)" 314pp: "Treasure Seekers" --contains returns 0 volumes; as a story title only Charlton / Marvel / Alan Class horror shorts
+F 103611 provider-missing | Scholastic's Treasure Seekers book is in neither catalog
+R 5722 | "Don't Go Without Me (2020) (Shortbox)" 107pp: exact, --contains and issue / story titles return 0 on both legs; the only near hit is Fantagraphics' "Don't Call Me Stupid!"
+F 5722 provider-missing | a 2020 ShortBox book in neither catalog
+R 102617 | "COL Spy School - The Graphic Novel v03 - Evil Spy School (2024)" 184pp: "Evil Spy" and "Spy School" --contains find only GCD's two v1 rows 181392 / 181781 "Spy School the Graphic Novel" (S&S 2022, one row each — S6277's book), Arcana's CV 49900 (the per-file stamp) and SpyBoy
+F 102617 provider-missing | neither leg holds the 2024 Evil Spy School: The Graphic Novel
+R 102676 | "COL Spy School - The Graphic Novel v02 - Spy Camp (2023)" 318pp: "Spy Camp" --contains returns 0 on both legs and as issue titles; GCD's "Spy School the Graphic Novel" rows 181392 / 181781 are volume 1 only
+F 102676 provider-missing | neither leg holds the 2023 Spy Camp: The Graphic Novel
+R 14367 | "COL Rainbow! v01 (2024)" 226pp (Tapas): "Rainbow" --year 2024 returns only Cross Cult's German "Rainbow" (GCD 227144, 2025, a manga reprint); the other "Rainbow" rows are Amalgamated 1914, Egmont UK 1988 and French manga editions; "Sunny" --contains 2024 finds nothing by Sunny and Gloomy
+F 14367 provider-missing | a 2024 Tapas book in neither catalog
+R 3202 | "The Brothers Flick - The Impossible Doors (2022)" 201pp (Wonderbound): "Brothers Flick", "Impossible Doors" and "Wonderbound" --contains return 0 on both legs and as issue titles
+F 3202 provider-missing | Wonderbound's list is in neither catalog for this title
+R 7500 | "Ghoster Heights (2022)" 203pp (Wonderbound): "Ghoster" --contains finds only CV 124718 "Ghoster" (self-published 2020), another book; GCD 0
+F 7500 provider-missing | a 2022 Wonderbound book in neither catalog
+R 6695 | "COL Finger Cakes Vol. 01 - A Comics Anthology (2023) (Prone Books)" 105pp: "Finger Cakes" --contains and issue / story titles return 0 on both legs
+F 6695 provider-missing | a 2023 Prone Books anthology in neither catalog
+R 22938 | "moebius - the Hunted Hunter (2008) (scantilation)" 58pp: "Hunted Hunter" --contains returns 0 volumes; as a story title it is only Golden-Age shorts (Wow Comics #18, Supersnipe #10, Ruff and Reddy #10, Men of Mystery #88) — none by Moebius; no French title is named by the file to probe
+F 22938 provider-missing | a Moebius short in fan translation; neither catalog holds it under any title we can name
+R 35496 | "Heavy_Metal-Moebius-Stories.cbr" 113pp names no album: "Moebius" --contains on both legs lists the Epic, Graphitti, Titan, Dark Horse, Humanoïdes and Moebius Library books, none titled "Stories" (the only "Stories" volume, Moebius 0 "The Horny Goof & Other Underground Stories", is Dark Horse 1990, not a Heavy Metal book); Heavy Metal Presents Moebius (CV 35034, 1981) is a single magazine special whose page count we cannot compare
+F 35496 provider-missing | neither catalog holds a 113pp Heavy Metal "Moebius Stories"
+R 18693 | "The Golden Voice - The Ballad of Cambodian Rock's Lost Queen (Humanoids 2023)" 200pp: "Golden Voice" --contains finds only CV 102659 "Golden Voices: Frank Sinatra"; issue / story titles give only "The Killer with the Golden Voice!" (World's Finest #32) and a Tinkle story; a Spanish / French title was probed without a hit
+F 18693 provider-missing | a 2023 Humanoids / Life Drawn book in neither catalog
