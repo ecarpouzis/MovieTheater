@@ -148,3 +148,13 @@
     (d) The landing (lead / Eric): backup_live -> `books-series-split --apply` per file -> `books-resolve --series`
     -> wave_fix -Resolve checks -> the NEW shelves go into the next identity batches (their S lines can be seeded
     from the `run` ids). Walk-back = the verb's CSV. Selftest covers the checker.
+# Added 2026-09-22 after the P-001 pilot (30 two-file shelves; 119k tokens, 13 tool calls, ~2.5 min)
+28. **Before the big split shelves (Judge Dredd S10002, Uncanny X-Men S6791, X-Men S66349, the 101-300 file band):**
+    (a) packet: a `nearby:` line listing live shelves whose key/title shares the run's title words or whose S line
+    holds a cv/gcd id named in the F line or the groups (the Elric S6101 → S6105 join was missed for lack of it);
+    (b) check_splits: WARN when an item line's `run` cv/gcd id is already the S identity of another live shelf that
+    the F line does not name — a probable missed join; allow a lead-approved join via a `{"shelf": N, "join": [sid,
+    …]}` field instead of editing the F line; (c) a group/range move syntax — `{"group": "G3", "key": …}` or
+    `{"range": "#1-66", "match": "<filename words>", "key": …}` — expanded by check_splits --project into item
+    lines, so a 900-file shelf is not hand-typed item by item; (d) brief: the key shape for one-shots and specials
+    (`<Title> (<Year>)`, with the special's own name, never `#0`).

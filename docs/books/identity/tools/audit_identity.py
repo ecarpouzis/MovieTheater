@@ -23,6 +23,9 @@ Presented, not resolved (PLAN §5.10): if the lead wants either stated the stric
 
 `python audit_identity.py [--verbose]`
 """
+import csv
+import glob
+import os
 import sqlite3
 import sys
 
@@ -175,6 +178,15 @@ CHECKS = [
      GROUP BY i.SeriesId HAVING count(DISTINCT l.SecondaryKey) > 1""", True),
 ]
 
+# A key a landed SPLIT retired is a decision that took effect, exactly like a merged-away shelf: the split lane
+# re-keys the items (books-series-split), so a decision on the old key can name no shelf afterwards. Wave 14's
+# pilot raised one — B-069's clear-link on 'Get Jiro! - Blood and Sushi' (S7410), whose only item P-001 re-keyed.
+# The walk-back CSVs are the record of every key a split retired.
+SPLIT_RETIRED = set()
+for _f in glob.glob(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "undo", "split-*.csv")):
+    with open(_f, encoding="utf-8", newline="") as _h:
+        SPLIT_RETIRED.update(r["PreviousParsedSeriesKey"] for r in csv.DictReader(_h))
+
 fails = 0
 for label, sql, lead in CHECKS:
     try:
@@ -182,6 +194,8 @@ for label, sql, lead in CHECKS:
     except sqlite3.OperationalError as e:
         print(f"  SKIP  {label}\n        ({e})")
         continue
+    if label.startswith("an identity decision whose key names no shelf"):
+        rows = [r for r in rows if r[1] not in SPLIT_RETIRED]
     tag = ("lead" if lead else "FAIL") if rows else " ok "
     print(f"  {tag}  {len(rows):>6,}  {label}")
     if not lead:

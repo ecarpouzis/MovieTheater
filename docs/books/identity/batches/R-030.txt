@@ -1,0 +1,616 @@
+## Conventions for this batch (37 shown of 143 matched; 328 in LEDGER.md; 60 shelf/shelves: kind:trade-only ×21 · kind:collected-line ×21 · pub:dc ×18 · kind:new ×11 · folder:bucket ×9 · pub:boom ×6 · pub:titan ×6 · pub:small-press ×5)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-030] (60 shelf/shelves) sig:collision
+- One folder split into two shelves by a subtitle in one filename (Analog, Witch Doctor) → `F merge-with=<sid>`.
+[L-151] (60 shelf/shelves) sig:collision sig:withheld
+- The withheld rule beats the checker's merge-with remedy text: a stored-link collision with a DIFFERENT comic is
+  `cv=-` + `N withheld cv=<id> … S<partner>`, never a merge (S101634 vs S22834); merge-with only for the same comic.
+[L-160] (60 shelf/shelves) pass:revisit sig:withheld
+- A withheld shelf with NO GCD leg to keep becomes `R` + `N withheld cv=<id> … S<partner>` (S4944, S99691) — the
+  revisit pair re-links the partner and then the S line can be written.
+[L-212] (18 shelf/shelves) pub:dc sig:collision sig:legacy-stamp
+- A continuation of legacy numbering (#201+ picking up a prior volume's own numbering, Green Lantern Corps S94605→
+  S94610) is the SAME run as the prior volume — merge-with, not a separate id.
+[L-222] (18 shelf/shelves) pub:dc sig:collision
+- Second-rip fragments of shelves already read in earlier batches (Flash Secret Files, Spectre 1992, Teen Titans
+  2003/2016, Wonder Woman 1942/2016, Zatanna 1993, Donna Troy) surface as `--all` collisions — `merge-with` after
+  grepping the partner's name and count.
+[L-237] (18 shelf/shelves) pass:revisit pub:dc sig:collision sig:comicinfo
+- Action Comics: CV 18005 stops at #904 (2011); the Rebirth continuation #957+ is CV 91078 (ComicInfo `Volume`
+  asserts it) — the "v1 (2016)" and "v1 (2018)" folder shelves are one run (R-019 merge-with).
+[L-245] (18 shelf/shelves) pass:revisit pub:dc sig:collision sig:legacy-stamp sig:split sig:stamp
+- A SHARED STORED ComicVine id is not proof of one run: `merge-with` on it only after the id fits BOTH shelves' own
+  keys and GCD links. C-008 merged the real Flash 1959 shelf into the "The Flash v2 (2007)" folder shelf because both
+  stored CV 1995 — but that shelf's own key and GCD link (26125, 2007-2009) said Flash vol. 2; the stamp was the
+  legacy-number trap. The merged shelf became two runs (R-023, R + split). When a shelf's GCD leg contradicts its
+  stored CV id, the CV id is the suspect, and the merge is `F wrong-cv-link` on the mis-stamped shelf instead.
+[L-013] (51 shelf/shelves) sig:probe
+- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
+  with the other spelling.
+[L-014] (51 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-043] (51 shelf/shelves) sig:probe
+- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
+  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
+[L-050] (51 shelf/shelves) sig:probe
+- When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
+  punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
+  abbreviation the publisher uses ("HSE").
+[L-072] (51 shelf/shelves) sig:probe
+- GCD hides behind the SUBTITLE: "The Hunting Accident", "Giraffes on Horseback Salad", "Undesirables" return
+  nothing under their full titles — re-probe the SHORT title before writing `provider-missing`.
+[L-088] (51 shelf/shelves) sig:probe
+- GCD hides behind a LONGER title too ("… and the Tale of Azkon's Heart", "Holiday Party (One-Shot)"), not only a
+  shorter one — probe both directions before `provider-missing`.
+[L-089] (51 shelf/shelves) sig:probe
+- A facsimile of a SINGLE issue is its own book; a reprint edition of a whole series is not — the original wins.
+[L-095] (51 shelf/shelves) sig:probe
+- A folder that is a ripper's READING ORDER over several separately published arcs (The Ride, Revolution) has no
+  spanning record — the ladder is arc numbers, not issue numbers.
+[L-096] (51 shelf/shelves) sig:probe
+- GCD's exact filing recovers legs the probe misses: singular/plural ("Greeting", "Return"), two words ("Super
+  Hero"), a spelled ordinal ("Fortieth"), a dropped subtitle, or the colon form ("Jinx: Torso") — try each before
+  `provider-missing`.
+[L-118] (51 shelf/shelves) sig:probe
+- A GCD collected series numbers its issues by VOLUME and titles them with the volume SUBTITLE — that, not the
+  page count, places a trade when a shelf holds several volumes of one line.
+[L-125] (51 shelf/shelves) sig:probe
+- A stored link that is the same title a DIFFERENT DECADE later is a new cluster (Fist of Khonshu 2024 on the
+  1985 Moon Knight run; a 1971 Sub-Mariner Annual on the 1998 annual) — years decide, never the title.
+[L-157] (51 shelf/shelves) sig:probe
+- A GCD row with ZERO issues is an empty stub, not a leg (Skull Cat 197154, Rivers of London: Stray Cat Blues 213823,
+  Archer & Armstrong: Revival 164703) → `provider-missing`.
+[L-159] (51 shelf/shelves) sig:probe
+- An exact-name probe can miss a sequel the rip DOES hold: `--contains "Icarus Society"` found CV 143976 after the
+  exact "Prodigy: The Icarus Society" probe returned nothing — try `--contains` on the subtitle before `provider-missing`.
+[L-163] (51 shelf/shelves) sig:probe
+- GCD hides behind a bracketed alternate title: "War Stories: J for Jenny [War Story: J for Jenny]" (10937), "Dance Like
+  Everybody's Watching! [A Zits Treasury]" (132081), "You're Out of Your Mind, Charlie Brown! [Horizontal]" (155990).
+[L-177] (51 shelf/shelves) sig:probe
+- A bracketed publisher series number becomes a phantom ladder entry: Thun'da's "[A1-056]/[A1 073]/[A1 083]" produced
+  ladder 56/73/83 and a ratio 5.00 — read the bracket, not the ladder.
+[L-193] (51 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-204] (51 shelf/shelves) pass:item pass:revisit sig:probe
+- `lookup.py --issues <collected-line volume>` names each TRADE's own ComicVine ISSUE id: 71 of 73 `I` lines in
+  R-018 carry an item-level CV id instead of `cv=-`.
+[L-253] (51 shelf/shelves) sig:probe
+- A subtitle can name a SEQUEL series filed on the first run's shelf (Wild's End "Beyond the Sea" = CV 151678 /
+  GCD 201441, not the 2014 run) — the `C` names the sequel run.
+[L-264] (51 shelf/shelves) sig:probe
+- Title-only (st3) GCD matches reuse ONE gcd id across every volume of a line (Golden City ×10, Windmaker,
+  Tarzan Kubert Years) — re-derive each book from the shelf's own numbered pool.
+[L-267] (51 shelf/shelves) sig:probe
+- A GCD "collected edition" series sits beside the genuine RUN under a different id (Dept H 100362 vs 111468, Harrow
+  County 89353 vs 94662, Sword Daughter 125748 vs 134585) — the `C` names the run; `lookup.py` by title finds it.
+[L-273] (51 shelf/shelves) sig:probe
+- The Adventures of Tintin: every per-file gcd pick (60515/108543) was wrong; the shelf's own gcd pool matched by
+  ENGLISH title was right for all 23 — the pool over the pick, again.
+[L-292] (51 shelf/shelves) sig:probe
+- A stored English digital volume's cached rip may cover only its last issues (Suzuka #13-18 of 18) — the earlier
+  books take gcd-only identities from the GCD series' full list, cv=-.
+[L-294] (51 shelf/shelves) pass:item sig:probe
+- ITEM PASS (X-046..X-048): a shelf can hold TWO published editions of one work with no shared pool (Monster: the
+  18-volume line beside the 2014 "Two-in-One" Perfect Edition) — each edition needs its own pool or an honest
+  no-record, never a mapping across editions. When a shelf's file count exceeds its pool, the excess usually
+  belongs to a CONTINUATION volume the shelf's own `N` names (Ranma 1/2 v22-38 → CV 26409 / GCD 17651) — the pool
+  for it must be pulled (`lookup.py --issues`, `gcd_issue WHERE series_id=?`) before writing no-record. GCD may mint
+  a "collected edition" row for only the FIRST of a same-title pair (Zombie Makeout Club) — the second is gcd=-.
+[L-135] (21 shelf/shelves) kind:collected-line
+- An Epic / Complete Collection LINE is found by probing the line name with NO volume subtitle: "Generation X Epic
+  Collection" → GCD 174151, shared by four sibling shelves.
+[L-164] (21 shelf/shelves) kind:archive kind:collected-line kind:strip sig:probe
+- Year-by-year archives of a newspaper/web strip (Doonesbury, Dennis the Menace, Rip Kirby, The Little King) have no record
+  in either provider → R + provider-missing; where a provider holds the strip's own collected line (Cyanide & Happiness,
+  Oglaf) pair at 0.9 as a format split.
+[L-186] (21 shelf/shelves) kind:collected-line
+- REMINDER (lead ruling, applied again on Princeless S14096): a collected LINE with its own record (GCD 106434, nine
+  trades) wins over the first mini's run; linking the first four-issue mini to a nine-volume trade shelf is wrong-cv-link.
+[L-244] (21 shelf/shelves) kind:collected-line pass:item
+- A trade collecting TWO minis, and an omnibus, cannot yet be stated by a `C` line (one range, one run, one per item):
+  name the runs on an `N` for now — TOOLS_TODO 17 adds per-run ranges and several `C` per item.
+[L-246] (21 shelf/shelves) kind:collected-line pass:item
+- ITEM PASS (X-001..X-003): on RUN-identity shelves the per-file GCD link reuses the run's own series matched to ONE
+  issue by number for vol. 01 only, while later volumes resolve to a real collected-edition series — check whether
+  vol. 01's link differs in kind from vol. 02+ before trusting it (Kevin Keller, Mega Man, Klaus, Dark Crystal …).
+[L-247] (21 shelf/shelves) kind:collected-line
+- A `C` that restates the shelf's own run needs its ids repeated in the clause to clear 40 characters; the clause is
+  the evidence, not a pointer. A shelf's own collected LINE and the run it collects are two records (Invisible
+  Kingdom: line GCD 151274 vs run CV 117748 / GCD 142448; Goldie Vance: line CV 94628 vs run CV 89593) — the `C`
+  names the RUN.
+[L-248] (21 shelf/shelves) kind:collected-line
+- Sibling shelves of one franchise can share one real GCD collected-edition line (Fence S6636/S6639/S6640 → 123731);
+  the sibling's landed S is evidence for the weak per-file matches on the others.
+
++106 more matched entries not shown: L-251, L-258, L-269, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-291, L-309, L-314, L-055, L-197, L-016, L-032, L-113, L-114, L-047, L-206, L-064, L-085, L-101, L-188, L-195, L-310, L-007, L-008, L-040, L-052, L-059, L-082, L-093, L-124, L-140, L-152, L-158, L-168, L-175, L-199, L-217, L-249, L-257, L-281, L-046, L-051, L-139, L-148, L-271, L-012, L-048, L-049, L-056, L-087, L-120, L-156, L-190, L-029, L-031, L-033, L-121, L-127, L-129, L-136, L-142, L-203, L-205, L-215, L-254, L-255, L-260, L-299, L-319, L-191, L-290, L-002, L-026, L-133, L-179, L-256, L-302, L-323, L-020, L-021, L-023, L-068, L-073, L-091, L-126, L-182, L-211, L-219, L-229, L-233, L-241, L-243, L-297, L-322, L-325, L-123, L-150, L-272, L-128, L-181, L-200 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S102454 3W3M - Sourcebook 02 - Maps (2024)  [tier D]   keys: 3W3M - Sourcebook 02 - Maps (2024)  years 2024-2024  1 files / 0 collections
+   folders: [1] Substack, Kickstarters, etc Comics\3 Worlds, 3 Moons (Hickman, Ewing, etc) (2022)\Sourcebooks
+   files:   [109719] 3W3M - Sourcebook 02 - Maps (2024) (digital-Empire).cbr (192pp)
+   ours:    ladder 2
+
+== S102455 Abbott: 1973 (2021)  [tier B]   keys: Abbott: 1973 (2021)  years 2018-2018  1 files / 1 collections
+   folders: [1] Boom Studios\Abbott (2018)
+   files:   [9377] COL Abbott Vol. 02 - 1973 (2021) (digital) (Son of Ultron-Empire).cbr (127pp)
+   CV per-file (v1): vol 108090 "Abbott" 2018 Boom! Studios 5 on 1/1 files
+   CV local rip:   (= per-file) · 114693 "Abbott" 2018 Boom! Studios 1 issue 689813 (via CV name "Abbott") · 133334 "Abbott: 1973" 2021 Boom! Studios 5 (via our own name without the filing suffix "Abbott: 1973") · 139456 "Abbott 1973" 2021 Boom! Studios 1 issue 888777 (via our own name without the filing suffix "Abbott: 1973")   (rip lookup)
+   GCD dump:       120388 "Abbott" 2018-2018 Boom! Studios [] 5 (via CV name "Abbott") · 168793 "Abbott: 1973" 2021-2021 Boom! Studios [] 5 (via our own name without the filing suffix "Abbott: 1973") · 173363 "Abbott" 2021-2021 Boom! Studios [] 1 (via CV name "Abbott") · 176682 "Abbott: 1973" 2021-2021 Boom! Studios [] 1 (via our own name without the filing suffix "Abbott: 1973")   (dump lookup)
+
+== S102456 Aquaman Secret Files & Origins 2003 (2003)  [tier B]   keys: Aquaman Secret Files & Origins 2003 (2003)  years 2003-2003  1 files / 0 collections
+   folders: [1] DC\_Aquaman\_Trades, Minis and One-shots
+   files:   [58801] Aquaman - Secret Files (2003) (Digital) (Shadowcat-Empire).cbz (39pp)
+   CV per-file (v1): vol 25774 "Aquaman Secret Files" 1998 DC Comics 1 issue 162429 on 1/1 files
+   CV local rip:   (= per-file) · 146628 "Aquaman: Secret Files & Origins 2003" 2003 DC Comics 1 issue 152062 (via our own name without the filing suffix "Aquaman Secret Files & Origins 2003")   (rip lookup)
+   GCD dump:       5951 "Aquaman Secret Files" 1998-1998 DC [] 1 (via CV name "Aquaman Secret Files")   (dump lookup)
+
+== S102457 Avatar: The Last Airbender - Toph Beifong's Metalbending Academy (2021)  [tier B]   keys: Avatar: The Last Airbender - Toph Beifong's Metalbending Academy (2021)  years 2021-2021  1 files / 0 collections
+   folders: [1] Dark Horse\Avatar - The Last Airbender\08 Toph Beifong's Metalbending Academy (2021)
+   files:   [13939] Avatar - The Last Airbender - Toph Beifong's Metalbending Academy (2021) (digital) (Son of Ultron-Empire).cbr (78pp)
+   ours:    ComicInfo Series: "Avatar: The Last Airbender"x1; ComicInfo Publisher: "Dark Horse"x1
+   CV per-file (v1): vol 19410 "Avatar: The Last Airbender" 2006 Tokyopop 8 on 1/1 files
+   GCD dump:       237620 "Avatar: The Last Airbender" [hu] 2021-? Szukits [] 6 (via CV name "Avatar: The Last Airbender") · 155552 "Avatar: The Last Airbender" 2006-2008 Tokyopop [] 8 (via CV name "Avatar: The Last Airbender")   (dump lookup)
+
+== S102458 Avengers/X-Men: Bloodties (2012)  [tier D]   keys: Avengers/X-Men: Bloodties (2012)  years 2012-2012  1 files / 0 collections
+   folders: [1] Marvel\_Avengers\_Trades
+   files:   [53536] Avengers-X-Men - Bloodties (2012) (Digital) (Relic-Empire).cbz (164pp)
+   ours:    ComicInfo Series: "Avengers/X-Men"x1; ComicInfo Publisher: "Marvel"x1
+   CV local rip:   56960 "Avengers/X-Men: Bloodties" 1995 Marvel 1 issue 385385 (via our own name without the filing suffix "Avengers/X-Men: Bloodties")   (rip lookup)
+   GCD dump:       73334 "Avengers / X-Men: Bloodties" 2011-2011 Marvel [] 1 (via our own name without the filing suffix "Avengers/X-Men: Bloodties") · 50499 "Avengers / X-Men: Bloodties" 1995-1995 Marvel [] 1 (via our own name without the filing suffix "Avengers/X-Men: Bloodties")   (dump lookup)
+
+== S102459 Bad Dreams in the Night (2024)  [tier B]   keys: Bad Dreams in the Night (2024)  years 2024-2024  1 files / 0 collections
+   folders: [1] Graphic Novels\_Andrews McMeel
+   files:   [26396] Bad Dreams in the Night (2024) (digital) (DrVink-DCP).cbz (250pp)
+   CV per-file (v1): vol 82914 "Bad Dreams" 2015 Red 5 Comics 1 issue 493534 on 1/1 files
+   CV local rip:   (= per-file) · 73289 "Bad Dreams" 2014 Red 5 Comics 5 (via CV name "Bad Dreams")   (rip lookup)
+   GCD dump:       212841 "Bad Dreams in the Night" 2024-2024 Andrews McMeel [] 1 (via our own name without the filing suffix "Bad Dreams in the Night") · 194561 "Bad Dreams" [en-ca] 2015-2015 Red 5 Comics, Ltd. [] 1 (via CV name "Bad Dreams") · 80412 "Bad Dreams" [en-ca] 2014-2014 Red 5 Comics, Ltd. [] 5 (via CV name "Bad Dreams")   (dump lookup)
+
+== S102461 Batman: City of Bane: The Complete Collection (2020)  [tier B]   keys: Batman: City of Bane: The Complete Collection (2020)  years 2020-2020  1 files / 1 collections
+   folders: [1] DC\_Batman\_Completed Series\05 Batman v3 (2016)\_Deluxe Editions
+   files:   [61397] COL Batman - City of Bane - The Complete Collection (2020) (digital) (Son of Ultron-Empire).cbr (338pp)
+   ours:    ComicInfo Series: "Batman: City of Bane: The Complete Collection"x1; ComicInfo Publisher: "DC"x1
+   GCD says: [61397] gcd notes 2176238 (#[nn] of Batman: City of Bane: The Complete Collection): Batman (DC, 2016 series) #75-85; Batman Annual (DC, 2017 series) #4  |  gcd_reprint 2176238: s103016 Batman (2016) #75-85 [35 stories] · s109697 Batman Annual (2017) #4 [2 stories]
+   CV per-file (v1): vol 33242 "Batman: Bane" 1997 DC Comics 1 issue 214855 on 1/1 files
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD dump:       167677 "Batman: City of Bane: The Complete Collection" 2020-2020 DC [] 1 (via our own name without the filing suffix "Batman: City of Bane: The Complete Collection") · 14768 "Batman: Bane" 1997-1997 DC [] 1 (via CV name "Batman: Bane")   (dump lookup)
+
+== S102460 Batman: Batgirl (1998)  [tier B]   keys: Batman: Batgirl (1998)  years 1997-1997  1 files / 0 collections
+   folders: [1] DC\_Batgirl
+   files:   [58997] Batman - Batgirl (1998-06) 01 (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (24pp)
+   ours:    ladder 1; ComicInfo Series: "Batman: Batgirl"x1; ComicInfo Volume: "1998"x1; ComicInfo Count: "1"x1; ComicInfo Publisher: "DC Comics"x1
+   CV per-file (v1): vol 28021 "Batman: Batgirl" 1997 DC Comics 1 issue 171822 on 1/1 files
+   CV local rip:   (= per-file) · 25378 "Batman: Batgirl" 1998 DC Comics 1 issue 149829 (via our own name without the filing suffix "Batman: Batgirl")   (rip lookup)
+   GCD per-file:   series 10166 "Batman: Batgirl" 1998-1998 DC [One-Shot] 1 on 1/1 files; methods numx1
+   GCD dump:       (= per-file) · 10165 "Batman: Batgirl" 1997-1997 DC [] 1 (via our own name without the filing suffix "Batman: Batgirl") · 156617 "Batman: Batgirl" [pt-br] 2004-2004 Mythos Editora [] 1 (via our own name without the filing suffix "Batman: Batgirl")   (dump lookup)
+   bridges:        gcd 10166 -> LOCG 119528 "Batman: Batgirl" support 2
+
+== S102462 Batman: The Vengeance of Bane II (1995)  [tier B]   keys: Batman: The Vengeance of Bane II (1995)  years 1995-1995  1 files / 0 collections
+   folders: [1] DC\_Batman\_Miniseries and One-shots\Batman - Vengeance of Bane (1993)
+   files:   [62575] Batman - Vengeance of Bane 02 (of 02) (1995) (digital) (Minutemen-Excelsior).cbz (56pp)
+   ours:    ladder 2; ComicInfo Series: "Batman: Vengeance of Bane"x1; ComicInfo Publisher: "DC"x1
+   CV per-file (v1): vol 21857 "Batman: Vengeance of Bane Special" 1993 DC Comics 1 issue 131755 on 1/1 files
+   GCD dump:       10181 "Batman: The Vengeance of Bane II" 1995-1995 DC [] 1 (via our own name without the filing suffix "Batman: The Vengeance of Bane II") · 14747 "Batman: Vengeance of Bane Special" 1993-1993 DC [] 1 (via CV name "Batman: Vengeance of Bane Special")   (dump lookup)
+
+== S102463 Bill & Ted's Most Triumphant Return (2015)  [tier B]   keys: Bill & Ted's Most Triumphant Return (2015)  years 2016-2016  1 files / 1 collections
+   folders: [1] Boom Studios\Bill and Ted
+   files:   [9495] COL Bill & Ted Vol. 01 - Bill & Ted's Most Triumphant Return (2016) (Digital) (Kileko-Empire).cbr (164pp)
+   CV per-file (v1): vol 88193 "Bill & Ted Go To Hell" 2016 Boom! Studios 4 on 1/1 files
+   CV local rip:   (= per-file) · 88194 "Bill & Ted's Most Triumphant Return" 2016 Boom! Studios 1 issue 516132 (via our own name without the filing suffix "Bill & Ted's Most Triumphant Return") · 80611 "Bill & Ted's Most Triumphant Return" 2015 Boom! Studios 6 (via our own name without the filing suffix "Bill & Ted's Most Triumphant Return") · 100968 "Bill & Ted Go To Hell" 2017 Boom! Studios 1 issue 593301 (via CV name "Bill & Ted Go To Hell")   (rip lookup)
+   GCD per-file:   series 97262 "Bill & Ted Go to Hell" 2016-2016 [] 4 (dump only) on 1/1 files; methods fulldump-rematchx1
+   GCD dump:       (= per-file) · 87376 "Bill & Ted's Most Triumphant Return" 2015-2015 Boom! Studios [] 6 (via our own name without the filing suffix "Bill & Ted's Most Triumphant Return") · 224419 "Bill & Ted Go to Hell" 2017-2017 Boom! Studios [] 1 (via CV name "Bill & Ted Go To Hell")   (dump lookup)
+
+== S102464 Breaklands Season Three (2023)  [tier D]   keys: Breaklands Season Three (2023)  years 2023-2023  1 files / 0 collections
+   folders: [1] ComiXology Originals\Breaklands (2019)
+   files:   [11509] Breaklands Season 03 - The City (2023) (Digital-Empire).cbr (131pp)
+   ours:    ladder 3
+
+== S102465 Carson of Venus: Fear on Four Worlds (2018)  [tier B]   keys: Carson of Venus: Fear on Four Worlds (2018)  years 2018-2018  1 files / 0 collections
+   folders: [1] American Mythology\Fear on Four Worlds (2018)
+   files:   [6679] 01 Carson of Venus 001 Fear on Four Worlds Part 1 (2018) (American Mythology) (c2c) (ComicsCastle).cbr (36pp)
+   ours:    ladder 1
+   CV per-file (v1): vol 115723 "Carson of Venus: Pirates of Venus" 2018 American Mythology Productions 2 on 1/1 files
+   CV local rip:   114077 "Pellucidar" 2018 American Mythology Productions 1 issue 687065 (via GCD name "Pellucidar")   (rip lookup)
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 154683 "Pellucidar" 2019-? American Mythology Productions [] 1 on 1/1 files; the dump names no other series
+   bridges:        gcd 154683 -> OL /works/OL21364163W "None" isbnSupport 3
+
+== S102466 Cat-Man Retro Comics #0 (1997)  [tier B]   keys: Cat-Man Retro Comics #0 (1997)  years 1997-1997  1 files / 0 collections
+   folders: [1] AC Comics\Cat-Man Retro Comics (000)(1997)
+   files:   [5916] Cat-Man Retro Comics 000 (1997).cbz (44pp)
+   ours:    ladder 0
+   CV per-file (v1): vol 125714 "Original Cat-Man and Kitten Retro Comics" 1997 AC Comics 1 issue 741105 on 1/1 files
+   GCD per-file:   series 16456 "Cat-Man Retro Comics" 1997-1997 AC [one-shot] 1 on 1/1 files; methods numx1
+   GCD dump:       25122 "Original Cat-Man and Kitten Retro Comics" 1997-1997 AC [] 1 (via CV name "Original Cat-Man and Kitten Retro Comics")   (dump lookup)
+
+== S102467 Chilling Adventures Presents: Madam Satan - Hell on Earth (2023)  [tier B]   keys: Chilling Adventures Presents: Madam Satan - Hell on Earth (2023)  years 2023-2023  1 files / 0 collections
+   folders: [1] Archie\Chilling Aventures Presents... (2022)
+   files:   [7571] Chilling Adventures Presents ... Madam Satan - Hell on Earth 001 (2023) (digital) (Salem-Empire).cbr (34pp)
+   ours:    ladder 1
+   CV per-file (v1): vol 154117 "Chilling Adventures Presents... Madam Satan: Hell on Earth" 2023 Archie Comics 1 issue 1024667 on 1/1 files
+   CV lookups:     the v1 search and the local rip name no volume but the one above
+   GCD per-file:   methods round2-folderx1 ⚠  (⚠ copies a folder neighbour's series — verify); series 190674 "Chilling Adventures of Salem" 2022-2022 Archie [one-shot] 1 on 1/1 files; the dump names no other series
+   bridges:        gcd 190674 -> LOCG 160130 "Chilling Adventures of Salem" support 8
+
+== S102468 Chilling Adventures in Sorcery Collection (2018)  [tier B]   keys: Chilling Adventures in Sorcery Collection (2018)  years 2017-2017  1 files / 1 collections
+   folders: [1] Archie\Sabrina the Teenage Witch
+   files:   [7631] COL Chilling Adventures in Sorcery (2017) (Digital) (Bean-Empire).cbz (192pp)
+   CV per-file (v1): vol 2627 "Chilling Adventures in Sorcery" 1973 Archie Comics 3 on 1/1 files
+   CV local rip:   (= per-file) · 107497 "Chilling Adventures In Sorcery" 2018 Archie Comics 1 issue 650952 (via CV name "Chilling Adventures in Sorcery") · 139977 "Chilling Adventures In Sorcery" 2021 Archie Comics 1 issue 892566 (via CV name "Chilling Adventures in Sorcery")   (rip lookup)
+   GCD dump:       119901 "Chilling Adventures in Sorcery" 2018-2018 Archie [] 1 (via CV name "Chilling Adventures in Sorcery") · 177600 "Chilling Adventures in Sorcery" 2021-2021 Archie [] 1 (via CV name "Chilling Adventures in Sorcery") · 2111 "Chilling Adventures in Sorcery" 1973-1974 Archie [] 3 (via CV name "Chilling Adventures in Sorcery")   (dump lookup)
+
+== S102469 Cinderella: Fables Are Forever (2011)  [tier D]   keys: Cinderella: Fables Are Forever (2011)  years 2012-2012  1 files / 1 collections
+   folders: [1] Vertigo\Fables (2002)\Cinderella (2010)
+   files:   [112547] COL Cinderella Vol. 02 - Fables are Forever (2012) (digital-Empire).cbr (155pp)
+   CV local rip:   48064 "Cinderella: Fables Are Forever" 2012 DC Comics 1 issue 331912 (via our own name without the filing suffix "Cinderella: Fables Are Forever") · 38880 "Cinderella: Fables are Forever" 2011 DC Comics 6 (via our own name without the filing suffix "Cinderella: Fables Are Forever")   (rip lookup)
+   GCD dump:       65160 "Cinderella: Fables Are Forever" 2012-2012 DC [] 1 (via our own name without the filing suffix "Cinderella: Fables Are Forever") · 55584 "Cinderella: Fables Are Forever" 2011-2011 DC [] 6 (via our own name without the filing suffix "Cinderella: Fables Are Forever")   (dump lookup)
+
+== S102470 Conan the Barbarian FCBD 2024 (2024)  [tier D]   keys: Conan the Barbarian FCBD 2024 (2024)  years 2024-2024  1 files / 0 collections
+   folders: [1] Titan Comics\Conan the Barbarian (2023)\Conan the Barbarian (2023)\Annuals and Specials
+   files:   [110087] Conan the Barbarian FCBD 2024 - Battle of the Black Stone (2024) (Digital) (dekabro-Empire).cbz (21pp)
+   ours:    ComicInfo Series: "Conan the Barbarian FCBD 2024: Battle of the Black Stone"x1; ComicInfo Publisher: "Titan"x1
+
+== S102471 DC Holiday Special 2017 (2018)  [tier B]   keys: DC Holiday Special 2017 (2018)  years 2018-2018  1 files / 0 collections
+   folders: [1] DC\_DC Holiday Specials\Christmas (& New Years)
+   files:   [64017] DC Holiday Special 2017 (2018) (digital) (F) (Son of Ultron-Empire).cbr (96pp)
+   ours:    ladder 2017
+   CV per-file (v1): vol 30387 "DC Holiday Special '09" 2010 DC Comics 1 issue 187207 on 1/1 files
+   CV local rip:   (= per-file) · 106672 "DC Holiday Special 2017" 2017 DC Comics 1 issue 644474 (via our own name without the filing suffix "DC Holiday Special 2017")   (rip lookup)
+   GCD dump:       119021 "DC Holiday Special 2017" 2018-2018 DC [] 1 (via our own name without the filing suffix "DC Holiday Special 2017") · 40209 "DC Holiday Special '09" 2010-2010 DC [] 1 (via CV name "DC Holiday Special '09")   (dump lookup)
+
+== S102472 DCU Holiday Special 2010 (2010)  [tier B]   keys: DCU Holiday Special 2010 (2010)  years 2009-2009  1 files / 0 collections
+   folders: [1] DC\_DC Holiday Specials\Christmas (& New Years)
+   files:   [64026] DCU Holiday Special 2010 001 (2008) (Digital) (Shadowcat-Empire).cbz (46pp)
+   ours:    ladder 1
+   CV per-file (v1): vol 24878 "DCU Holiday Special" 2009 DC Comics 1 issue 146813 on 1/1 files
+   CV local rip:   (= per-file) · 37345 "DCU Holiday Special 2010" 2011 DC Comics 1 issue 248496 (via our own name without the filing suffix "DCU Holiday Special 2010")   (rip lookup)
+   GCD per-file:   series 33152 "DCU Holiday Special" 2009-2009 DC [one-shot] 1 on 1/1 files; methods numx1
+   GCD dump:       (= per-file) · 53791 "DCU Holiday Special 2010" 2011-2011 DC [] 1 (via our own name without the filing suffix "DCU Holiday Special 2010")   (dump lookup)
+   bridges:        gcd 33152 -> LOCG 148813 "DC's Very Merry Multiverse" support 1
+
+== S102473 DCeased: Unkillables (2020)  [tier B]   keys: DCeased: Unkillables (2020)  years 2021-2021  1 files / 0 collections
+   folders: [1] DC\_DCeased (2019)
+   files:   [64216] DCeased - Unkillables (2021) (digital) (Son of Ultron-Empire).cbr (143pp)
+   CV per-file (v1): vol 122959 "DCeased" 2019 DC Comics 1 issue 728306 on 1/1 files
+   CV local rip:   (= per-file) · 125115 "DCeased: Unkillables" 2020 DC Comics 3 (via our own name without the filing suffix "DCeased: Unkillables") · 129769 "DCeased: Unkillables" 2020 DC Comics 1 issue 795895 (via our own name without the filing suffix "DCeased: Unkillables") · 130834 "DCeased" 2020 Urban Comics 1 issue 805886 (via CV name "DCeased") · 118648 "DCeased" 2019 DC Comics 6 (via CV name "DCeased")   (rip lookup)
+   GCD dump:       171162 "DCeased" 2021-2021 DC [] 1 (via CV name "DCeased") · 173960 "DCeased: Unkillables" 2021-2021 DC [] 1 (via our own name without the filing suffix "DCeased: Unkillables") · 156319 "DCeased: Unkillables" 2020-2020 DC [] 3 (via our own name without the filing suffix "DCeased: Unkillables") · 161640 "DCeased" [fr] 2020-2020 Urban Comics [] 1 (via CV name "DCeased") · 163209 "DCeased: Unkillables" 2020-2020 DC [] 1 (via our own name without the filing suffix "DCeased: Unkillables") · 183170 "DCeased" [nl] 2022-? Dark Dragon Books [] 2 (via CV name "DCeased")   (dump lookup)
+
+== S102474 Dark Souls: Legends of the Flame (2016)  [tier B]   keys: Dark Souls: Legends of the Flame (2016)  years 2016-2016  1 files / 1 collections
+   folders: [1] Titan Comics\Dark Souls (2016)
+   files:   [110142] COL Dark Souls v03 - Legends of the Flame (2017) (digital) (F) (Lynx-Empire).cbr (112pp)
+   ours:    ComicInfo Series: "Dark Souls"x1; ComicInfo Publisher: "Titan"x1
+   CV per-file (v1): vol 89772 "Dark Souls: The Breath of Andolus" 2016 Titan Comics 4 on 1/1 files
+   GCD dump:       106776 "Dark Souls: Legends of the Flame" [en-gb] 2016-2016 Titan [] 2 (via our own name without the filing suffix "Dark Souls: Legends of the Flame") · 100118 "Dark Souls: The Breath of Andolus" [en-gb] 2016-2016 Titan [] 4 (via CV name "Dark Souls: The Breath of Andolus")   (dump lookup)
+
+== S102475 Dead Body Road: Bad Blood (2020)  [tier C] · several runs number from #1  keys: Dead Body Road: Bad Blood (2020)  years 2021-2021  1 files / 1 collections
+   flags: conflated-series [Pending] item 36404 — Dead Body Road and Dead Body Road: Bad Blood share this Series
+   folders: [1] Image\Dead Body Road (2014)
+   files:   [36404] COL Dead Body Road Vol. 02 - Bad Blood (2021) (Digital) (DR & Quinch-Empire).cbr (140pp)
+   CV local rip:   133458 "Dead Body Road: Bad Blood" 2021 Image 1 issue 826528 (via our own name without the filing suffix "Dead Body Road: Bad Blood") · 128167 "Dead Body Road: Bad Blood" 2020 Image 6 (via our own name without the filing suffix "Dead Body Road: Bad Blood")   (rip lookup)
+   GCD dump:       161180 "Dead Body Road: Bad Blood" 2020-2020 Image [] 6 (via our own name without the filing suffix "Dead Body Road: Bad Blood")   (dump lookup)
+
+== S102476 Dungeons & Dragons: Ravenloft - Orphan of Agony Isle (2022)  [tier B]   keys: Dungeons & Dragons: Ravenloft - Orphan of Agony Isle (2022)  years 2023-2023  1 files / 0 collections
+   folders: [1] IDW\Dungeons & Dragons\_Completed Series\Dungeons & Dragons - Ravenloft (2022)
+   files:   [30501] Dungeons & Dragons - Ravenloft - Orphan of Agony Isle (2023) (Digital) (DR & Quinch-Empire).cbr (96pp)
+   ours:    ComicInfo Series: "Dungeons & Dragons: Ravenloft—Orphan of Agony Isle"x1; ComicInfo Publisher: "IDW"x1
+   CV per-file (v1): vol 144024 "Dungeons & Dragons: Ravenloft - Orphan of Agony Isle" 2022 IDW Publishing 4 on 1/1 files
+   GCD dump:       197779 "Dungeons & Dragons: Ravenloft - Orphan of Agony Isle" 2023-2023 IDW [] 1 (via our own name without the filing suffix "Dungeons & Dragons: Ravenloft - Orphan of Agony Isle") · 186623 "Dungeons & Dragons: Ravenloft - Orphan of Agony Isle" 2022-2022 IDW [] 4 (via our own name without the filing suffix "Dungeons & Dragons: Ravenloft - Orphan of Agony Isle")   (dump lookup)
+
+== S102477 Edgar Allan Poe's Snifter of Terror Season Two (2019)  [tier B]   keys: Edgar Allan Poe's Snifter of Terror Season Two (2019)  years 2020-2020  1 files / 1 collections
+   folders: [1] Ahoy Comics\Edgar Allan Poe's Snifter of Terror (2019)
+   files:   [6492] COL Edgar Allan Poe's Snifter of Terror Vol. 02 (2020) (digital) (Son of Ultron-Empire).cbr (183pp)
+   ours:    ComicInfo Series: "Edgar Allan Poe's Snifter of Terror"x1; ComicInfo Publisher: "AHOY Comics"x1
+   CV per-file (v1): vol 121760 "Edgar Allan Poe's Snifter of Terror" 2019 Ahoy Comics 2 on 1/1 files
+   GCD per-file:   series 164566 "Edgar Allan Poe's Snifter of Terror" 2019-2020 AHOY Comics [collected edition] 2 on 1/1 files; methods numx1
+   GCD dump:       (= per-file) · 150982 "Edgar Allan Poe's Snifter of Terror Season Two" 2019-2020 AHOY Comics [] 6 (via our own name without the filing suffix "Edgar Allan Poe's Snifter of Terror Season Two") · 133026 "Edgar Allan Poe's Snifter of Terror" 2018-2019 AHOY Comics [] 6 (via CV name "Edgar Allan Poe's Snifter of Terror")   (dump lookup)
+   bridges:        gcd 164566 -> LOCG 138962 "Edgar Allan Poe's Snifter of Terror" support 2
+
+== S102478 Elephantmen 2261: The Pentalion Job (2019)  [tier B]   keys: Elephantmen 2261: The Pentalion Job (2019)  years 2018-2018  1 files / 1 collections
+   folders: [1] ComiXology Originals\Elephantmen\Elephantmen 2261 (2018)
+   files:   [11531] COL Elephantmen 2261 Vol. 02 - The Pentalion Job (2019) (digital) (Son of Ultron-Empire).cbr (129pp)
+   ours:    ComicInfo Series: "Elephantmen: 2261"x1; ComicInfo Publisher: "Comicraft"x1
+   CV per-file (v1): vol 111307 "Elephantmen 2261: The Death of Shorty" 2018 Comicraft 5 on 1/1 files
+
+== S102479 Elric - Titan Album Line (2014)  [tier D]   keys: Elric - Titan Album Line (2014)  years 2015-2015  1 files / 1 collections
+   folders: [1] Titan Comics\Elric
+   files:   [110361] COL Elric v2 - Stormbringer (2015) (Digital) (phillywilly-Empire).cbr (63pp)
+
+== S102483 Whatever After (2024)  [tier B]   keys: Whatever After (2024)  years 2023-2023  1 files / 1 collections
+   folders: [1] Graphic Novels\_Schoolastic & Graphix\Whatever After (2024)
+   files:   [27969] COL Whatever After v01 - Fairest of All (2024) (Digital-Empire).cbz (157pp)
+   ours:    ComicInfo Series: "Fairest of All: A Graphic Novel"x1; ComicInfo Publisher: "Scholastic Inc."x1
+   CV per-file (v1): vol 150761 "Fairest of All" 2023 Disney-Hyperion 1 issue 992072 on 1/1 files
+
+== S102480 Faithless III (2022)  [tier B]   keys: Faithless III (2022)  years 2019-2019  1 files / 1 collections
+   folders: [1] Boom Studios\Faithless (2019)
+   files:   [9713] COL Faithless Vol. 03 (2022) (digital) (Son of Ultron-Empire).cbr (158pp)
+   CV per-file (v1): vol 118245 "Faithless" 2019 Boom! Studios 6 on 1/1 files
+   CV local rip:   (= per-file) · 123769 "Faithless" 2019 Boom! Studios 1 issue 731672 (via CV name "Faithless") · 136869 "Faithless " 2020 Panini Verlag 2 (via CV name "Faithless") · 141603 "Faithless III" 2022 Boom! Studios 6 (via our own name without the filing suffix "Faithless III") · 150068 "Faithless III" 2023 Boom! Studios 1 issue 987396 (via our own name without the filing suffix "Faithless III")   (rip lookup)
+   GCD dump:       144038 "Faithless" 2019-2019 Boom! Studios [] 6 (via CV name "Faithless") · 180712 "Faithless" 2019-2019 Boom! Studios [] 1 (via CV name "Faithless") · 166257 "Faithless" [de] 2020-? Panini Deutschland [] 2 (via CV name "Faithless") · 181155 "Faithless III" 2022-2022 Boom! Studios [] 6 (via our own name without the filing suffix "Faithless III") · 196942 "Faithless III" 2023-2023 Boom! Studios [] 1 (via our own name without the filing suffix "Faithless III")   (dump lookup)
+
+== S102481 Generations - Catalyst Prime (2017)  [tier D]   keys: Generations - Catalyst Prime (2017)  years 2017-2017  1 files / 0 collections
+   folders: [1] Lion Forge-Catalyst Prime\Generations (2017)
+   files:   [37966] Generations (2017) (Lion Forge Comics) (Digital-Empire).cbr (145pp)
+
+== S102482 Get Jiro!: Blood and Sushi (2015)  [tier D]   keys: Get Jiro!: Blood and Sushi (2015)  years 2015-2015  1 files / 0 collections
+   folders: [1] Vertigo\Get Jiro! (2012)
+   files:   [112674] 02 Get Jiro! - Blood & Sushi (2015) (Digital) (Mephisto-Empire).cbr (160pp)
+   ours:    ladder 2
+   CV local rip:   85431 "Get Jiro: Blood and Sushi" 2015 DC Comics 1 issue 503532 (via our own name without the filing suffix "Get Jiro!: Blood & Sushi")   (rip lookup)
+   GCD dump:       93280 "Get Jiro!: Blood and Sushi" 2015-2015 DC [] 1 (via our own name without the filing suffix "Get Jiro!: Blood and Sushi") · 108556 "Get Jiro!: Blood & Sushi" 2016-2016 DC [] 1 (via our own name without the filing suffix "Get Jiro!: Blood & Sushi")   (dump lookup)
+
+== S121 3W3M - Sourcebook  [tier D]   keys: 3W3M - Sourcebook  years 2022-2022  1 files / 0 collections
+   folders: [1] Substack, Kickstarters, etc Comics\3 Worlds, 3 Moons (Hickman, Ewing, etc) (2022)\Sourcebooks
+   files:   [109718] 3W3M - Sourcebook 01 - Systems (2022) (digital-Empire).cbr (187pp)
+   ours:    ladder 1
+   CV candidates:  36189 "Crimson Sourcebook" 1999 DC Comics 1 issue 238990 s42 · 21512 "Stormwatch Sourcebook" 1994 Image 1 issue 129857 s40 · 39413 "Comics' Greatest World: Sourcebook" 1993 Dark Horse Comics 1 issue 266218 s38 · 63278 "ETC Comics" 2004 ETC 3 s29 · 143254 "Action Comics 2022 Annual" 2022 DC Comics 1 issue 928348 s23 · 146565 "Detective Comics 2022 Annual" 2022 DC Comics 1 issue 957908 s23   (v1 search)
+   CV local rip:   36189 "Crimson Sourcebook" 1999 DC Comics 1 issue 238990 (via CV candidate name "Crimson Sourcebook") · 21512 "Stormwatch Sourcebook" 1994 Image 1 issue 129857 (via CV candidate name "Stormwatch Sourcebook") · 39413 "Comics' Greatest World: Sourcebook" 1993 Dark Horse Comics 1 issue 266218 (via CV candidate name "Comics' Greatest World: Sourcebook")   (rip lookup)
+   GCD dump:       14780 "Crimson Sourcebook" 1999-1999 DC [] 1 (via CV candidate name "Crimson Sourcebook") · 15931 "Stormwatch Sourcebook" 1994-1994 Image [] 1 (via CV candidate name "Stormwatch Sourcebook") · 56586 "Comics' Greatest World Sourcebook" 1993-1993 Dark Horse [] 1 (via CV candidate name "Comics' Greatest World: Sourcebook")   (dump lookup)
+
+== S340 Abbott  [tier A]   keys: Abbott  years 2018-2018  1 files / 1 collections
+   folders: [1] Boom Studios\Abbott (2018)
+   files:   [9376] COL Abbott Vol. 01 (2021, 2nd print) (digital) (Son of Ultron-Empire).cbr (128pp)
+   ours:    judged item 9376 #1-5 conf 0.7
+   CV linked:      vol 108090 "Abbott" 2018 Boom! Studios 5 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); cached #1-2 (2); yearΔ 0; ratio 0/?; 1 of 1 judged fit; v1 per-file: same volume on 1/1 files
+   CV candidates:  (= linked) · 114693 "Abbott" 2018 Boom! Studios 1 issue 689813 s113 · 154113 "Abbott: 1979" 2023 Boom! Studios 5 s37 · 90245 "BOOM! Studios 2016 Summer Blast" 2016 Boom! Studios 1 issue 529160 s35 · 101256 "BOOM! Studios 2017 Summer Blast" 2017 Boom! Studios 1 issue 594530 s35 · 77851 "Boom! Studios Halloween Fright Fest Mini-Comic" 2014 Boom! Studios 3 s34 · 57366 "The Art of Boom! Studios" 2010 Boom! Studios 1 issue 386748 s33   (v1 search)
+   CV local rip:   (= linked) · 114693 "Abbott" 2018 Boom! Studios 1 issue 689813 · 154113 "Abbott: 1979" 2023 Boom! Studios 5 (via CV candidate name "Abbott: 1979") · 160042 "Abbott: 1979" 2024 Boom! Studios 1 issue 1071618 (via CV candidate name "Abbott: 1979")   (rip lookup)
+   GCD per-file:   series 120388 "Abbott" 2018-2018 Boom! Studios [limited series] 5 on 1/1 files; methods numx1
+   GCD dump:       (= per-file) · 173363 "Abbott" 2021-2021 Boom! Studios [] 1 · 204663 "Abbott: 1979" 2023-2024 Boom! Studios [] 5 (via CV candidate name "Abbott: 1979") · 213585 "Abbott: 1979" 2024-2024 Boom! Studios [] 1 (via CV candidate name "Abbott: 1979")   (dump lookup)
+   bridges:        gcd 120388 -> LOCG 134787 "Abbott" support 2
+
+== S1167 Aquaman Secret Files  [tier B]   keys: Aquaman - Secret Files  years 1998-1998  1 files / 0 collections
+   folders: [1] DC\_Aquaman\_Trades, Minis and One-shots
+   files:   [58800] Aquaman - Secret Files (1998) (Digital) (Shadowcat-Empire).cbz (37pp)
+   CV linked:      vol 25774 "Aquaman Secret Files" 1998 DC Comics 1 issues issue 162429; issue list NOT CACHED; yearΔ 0; ratio 0/1; none cached; v1 per-file: same volume on 1/1 files
+   CV candidates:  (= linked) · 146628 "Aquaman: Secret Files & Origins 2003" 2003 DC Comics 1 issue 152062 s80 · 37272 "Secret Files" 1996 Angel Entertainment 3 s63 · 24100 "Secret Files and Origins Guide to the DC Universe" 2002 DC Comics 2 s63 · 23376 "Flash Secret Files" 1997 DC Comics 3 s62 · 19710 "Batman Secret Files" 1997 DC Comics 1 issue 118200 s62 · 25292 "Final Crisis: Secret Files" 2009 DC Comics 1 issue 149282 s61   (v1 search)
+   CV local rip:   (= linked) · 37272 "Secret Files" 1996 Angel Entertainment 3 (via CV candidate name "Secret Files") · 146628 "Aquaman: Secret Files & Origins 2003" 2003 DC Comics 1 issue 152062 (via CV candidate name "Aquaman: Secret Files & Origins 2003")   (rip lookup)
+   GCD dump:       5951 "Aquaman Secret Files" 1998-1998 DC [] 1 · 37191 "Secret Files" 1996-1996 Angel Entertainment [] 3 (via CV candidate name "Secret Files")   (dump lookup)
+
+== S1495 Avatar: The Last Airbender  [tier B]   keys: Avatar: The Last Airbender  years 2021-2021  1 files / 1 collections
+   folders: [1] Dark Horse\Avatar - The Last Airbender\04 The Rift (2014)
+   files:   [13935] COL Avatar - The Last Airbender - The Rift Omnibus (2021) (digital) (Son of Ultron-Empire).cbr (233pp)
+   ours:    ComicInfo Series: "Avatar: The Last Airbender"x1; ComicInfo Publisher: "Dark Horse"x1
+   CV linked:      vol 19410 "Avatar: The Last Airbender" 2006 Tokyopop 8 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 0/?; none cached; v1 per-file: same volume on 1/1 files
+   CV candidates:  (= linked) · 72117 "Nickelodeon Avatar: The Last Airbender - The Rift" 2014 Dark Horse Comics 3 s95 · 45001 "Nickelodeon Avatar: The Last Airbender - The Promise" 2012 Dark Horse Comics 3 s92 · 59182 "Nickelodeon Avatar: The Last Airbender - The Search" 2013 Dark Horse Comics 3 s92 · 34865 "The Last Airbender" 2010 Random House 1 issue 229146 s74 · 116035 "Nickelodeon Avatar: The Last Airbender - Imbalance" 2018 Dark Horse Comics 3 s41 · 121713 "Nickelodeon Avatar: The Last Airbender - Team Avatar Tales" 2019 Dark Horse Comics 1 issue 721082 s39   (v1 search)
+   GCD dump:       237620 "Avatar: The Last Airbender" [hu] 2021-? Szukits [] 6 · 155552 "Avatar: The Last Airbender" 2006-2008 Tokyopop [] 8 · 86451 "Nickelodeon Avatar: The Last Airbender - The Rift" 2014-2014 Dark Horse [] 3 (via CV candidate name "Nickelodeon Avatar: The Last Airbender - The Rift") · 73027 "Nickelodeon Avatar: The Last Airbender - The Search" 2013-2013 Dark Horse [] 3 (via CV candidate name "Nickelodeon Avatar: The Last Airbender - The Search") · 66718 "Nickelodeon Avatar: The Last Airbender - The Promise" 2012-2012 Dark Horse [] 3 (via CV candidate name "Nickelodeon Avatar: The Last Airbender - The Promise")   (dump lookup)
+
+== S1671 Avengers/X-Men  [tier D]   keys: Avengers/X-Men  years 2009-2009  1 files / 0 collections
+   folders: [1] Marvel\_Avengers\_Trades
+   files:   [53537] Avengers-X-Men - Utopia (2010) (Digital) (F) (Kileko-Empire).cbz (358pp)
+   ours:    ComicInfo Series: "Avengers/X-Men"x1; ComicInfo Publisher: "Marvel"x1
+   CV candidates:  30200 "Avengers/X-Men: Utopia" 2009 Marvel 1 issue 186229 s82 · 56960 "Avengers/X-Men: Bloodties" 1995 Marvel 1 issue 385385 s82 · 25148 "Avengers: Avengers/X-Men - Bloodties" 2012 Marvel 1 issue 148447 s81 · 36626 "Avengers/X-Men: Maximum Security" 2010 Marvel 1 issue 243329 s81 · 125823 "X-Men/Avengers: Onslaught" 2020 Marvel 3 s23 · 47331 "Avengers Vs. X-Men" 2012 Marvel 13 s15   (v1 search)
+   CV local rip:   30200 "Avengers/X-Men: Utopia" 2009 Marvel 1 issue 186229 (via CV candidate name "Avengers/X-Men: Utopia") · 25148 "Avengers: Avengers/X-Men - Bloodties" 2012 Marvel 1 issue 148447 (via CV candidate name "Avengers: Avengers/X-Men - Bloodties") · 56960 "Avengers/X-Men: Bloodties" 1995 Marvel 1 issue 385385 (via CV candidate name "Avengers/X-Men: Bloodties")   (rip lookup)
+   GCD dump:       134925 "Avengers / X-Men: Utopia" 2009-2009 Marvel [] 1 (via CV candidate name "Avengers/X-Men: Utopia") · 72846 "Avengers / X-Men: Utopia" 2010-2010 Marvel [] 1 (via CV candidate name "Avengers/X-Men: Utopia") · 73334 "Avengers / X-Men: Bloodties" 2011-2011 Marvel [] 1 (via CV candidate name "Avengers/X-Men: Bloodties") · 50499 "Avengers / X-Men: Bloodties" 1995-1995 Marvel [] 1 (via CV candidate name "Avengers/X-Men: Bloodties")   (dump lookup)
+
+== S1783 Bad Dreams  [tier B]   keys: Bad Dreams | Bad Dreams in the Night  years 2015-2015  1 files / 0 collections
+   folders: [1] Red5 Comics
+   files:   [109388] Bad Dreams (2015) (digital) (DrVink-DCP).cbz (171pp)
+   CV linked:      vol 82914 "Bad Dreams" 2015 Red 5 Comics 1 issues issue 493534; issue list NOT CACHED; yearΔ 0; ratio 0/1; none cached
+   CV candidates:  (= linked) · 73289 "Bad Dreams" 2014 Red 5 Comics 5 s75 · 123435 "Queen of Bad Dreams" 2019 Vault Comics 1 issue 730440 s73 · 118525 "Queen of Bad Dreams" 2019 Vault Comics 5 s58 · 47267 "Bad Comics" 1994 Fantagraphics 1 issue 324404 s44 · 46124 "Bad Comics" 1990 Cat-Head Comics 1 issue 317232 s44 · 123640 "The Bad Bad Place" 2019 Soaring Penguin Press 1 issue 731199 s42   (v1 search)
+   CV local rip:   (= linked) · 73289 "Bad Dreams" 2014 Red 5 Comics 5   (rip lookup)
+   GCD dump:       194561 "Bad Dreams" [en-ca] 2015-2015 Red 5 Comics, Ltd. [] 1 · 80412 "Bad Dreams" [en-ca] 2014-2014 Red 5 Comics, Ltd. [] 5 · 212841 "Bad Dreams in the Night" 2024-2024 Andrews McMeel [] 1 · 145177 "Queen of Bad Dreams" 2019-2019 Vault [] 5 (via CV candidate name "Queen of Bad Dreams") · 179096 "Queen of Bad Dreams" 2019-2019 Vault [] 1 (via CV candidate name "Queen of Bad Dreams")   (dump lookup)
+
+== S2210 Batman: Bane  [tier B]   keys: Batman: Bane  years 1997-1997  1 files / 0 collections
+   folders: [1] DC\_Batman\_Miniseries and One-shots
+   files:   [62496] Batman - Bane (1997) (Digital) (Shadowcat-Empire).cbz (48pp)
+   ours:    ComicInfo Series: "Batman: Bane"x1; ComicInfo Volume: "1997"x1; ComicInfo Publisher: "DC"x1
+   CV linked:      vol 33242 "Batman: Bane" 1997 DC Comics 1 issues issue 214855; issue list NOT CACHED; yearΔ 0; ratio 0/1; none cached; v1 per-file: same volume on 1/1 files
+   CV candidates:  (= linked) · 46042 "Batman Versus Bane" 2012 DC Comics 1 issue 316755 s89 · 21857 "Batman: Vengeance of Bane Special" 1993 DC Comics 1 issue 131755 s87 · 28220 "Batman: Vengeance of Bane II" 1995 DC Comics 1 issue 173539 s87 · 9382 "Batman: Bane of the Demon" 1998 DC Comics 4 s75 · 93721 "Batman gegen Bane" 2013 Panini Verlag 1 issue 547439 s74 · 118892 "Batman: Bane Der Eroberer" 2018 Panini Verlag 1 issue 708115 s73   (v1 search)
+   CV local rip:   (= linked) · 46042 "Batman Versus Bane" 2012 DC Comics 1 issue 316755 (via CV candidate name "Batman Versus Bane")   (rip lookup)
+   GCD dump:       14768 "Batman: Bane" 1997-1997 DC [] 1 · 14747 "Batman: Vengeance of Bane Special" 1993-1993 DC [] 1 (via CV candidate name "Batman: Vengeance of Bane Special") · 110157 "Batman versus Bane" 2012-2012 DC [] 1 (via CV candidate name "Batman Versus Bane")   (dump lookup)
+
+== S2211 Batman: Batgirl  [tier A]   keys: Batman: Batgirl  years 1997-1997  1 files / 0 collections
+   folders: [1] DC\_Batgirl
+   files:   [58996] Batman - Batgirl (1997-01) 01 (digital) (OkC.O.M.P.U.T.O.-Novus-HD).cbz (51pp)
+   ours:    ladder 1; ComicInfo Series: "Batman: Batgirl"x1; ComicInfo Volume: "1997"x1; ComicInfo Publisher: "DC Comics"x1
+   CV linked:      vol 28021 "Batman: Batgirl" 1997 DC Comics 1 issues issue 171822; cached #1-1 (1); yearΔ 0; ratio 1/1 = 1.00; no judged range; v1 per-file: same volume on 1/1 files
+   CV candidates:  (= linked) · 25378 "Batman: Batgirl" 1998 DC Comics 1 issue 149829 s98 · 69953 "DC Comics Essentials: Batman" 2013 DC Comics 1 issue 436490 s50 · 36283 "DC Comics Presents: Batman" 2010 DC Comics 3 s50 · 29418 "DC Comics Presents: Batman" 2004 DC Comics 1 issue 181614 s50 · 82223 "DC Sneak Peek: Batgirl" 2015 DC Comics 1 issue 489851 s50 · 122546 "DC Comics - The Legend of Batman Special" 2018 Eaglemoss Publications 3 s32   (v1 search)
+   CV local rip:   (= linked) · 25378 "Batman: Batgirl" 1998 DC Comics 1 issue 149829 · 69953 "DC Comics Essentials: Batman" 2013 DC Comics 1 issue 436490 (via CV candidate name "DC Comics Essentials: Batman")   (rip lookup)
+   GCD per-file:   series 10166 "Batman: Batgirl" 1998-1998 DC [One-Shot] 1 on 1/1 files; methods numx1
+   GCD dump:       (= per-file) · 10165 "Batman: Batgirl" 1997-1997 DC [] 1 · 156617 "Batman: Batgirl" [pt-br] 2004-2004 Mythos Editora [] 1   (dump lookup)
+   bridges:        gcd 10166 -> LOCG 119528 "Batman: Batgirl" support 2
+
+== S2295 Batman: Vengeance of Bane Special  [tier A]   keys: Batman: Vengeance of Bane  years 1993-1993  1 files / 0 collections
+   folders: [1] DC\_Batman\_Miniseries and One-shots\Batman - Vengeance of Bane (1993)
+   files:   [62574] Batman - Vengeance of Bane 01 (of 02) (1993) (digital) (Minutemen-Excelsior).cbz (56pp)
+   ours:    ladder 1; ComicInfo Series: "Batman: Vengeance of Bane"x1; ComicInfo Publisher: "DC"x1
+   CV linked:      vol 21857 "Batman: Vengeance of Bane Special" 1993 DC Comics 1 issues issue 131755; cached #1-1 (1); yearΔ 0; ratio 1/1 = 1.00; no judged range; v1 per-file: same volume on 1/1 files
+   CV candidates:  (= linked) · 28220 "Batman: Vengeance of Bane II" 1995 DC Comics 1 issue 173539 s42 · 33242 "Batman: Bane" 1997 DC Comics 1 issue 214855 s38 · 9382 "Batman: Bane of the Demon" 1998 DC Comics 4 s26 · 46042 "Batman Versus Bane" 2012 DC Comics 1 issue 316755 s12 · 126972 "Bane" 2020 UAComix 1 issue 761340 s8 · 75418 "The Bane" 2014 Terminus Comics 4 s0   (v1 search)
+   CV local rip:   33242 "Batman: Bane" 1997 DC Comics 1 issue 214855 (via CV candidate name "Batman: Bane")   (rip lookup)
+   GCD per-file:   series 14747 "Batman: Vengeance of Bane Special" 1993-1993 [] 1 (dump only) on 1/1 files; methods fulldump-rematchx1
+   GCD dump:       (= per-file) · 14768 "Batman: Bane" 1997-1997 DC [] 1 (via CV candidate name "Batman: Bane")   (dump lookup)
+
+== S2554 Bill & Ted Go To Hell  [tier A]   keys: Bill and Ted  years 2016-2016  1 files / 1 collections
+   folders: [1] Boom Studios\Bill and Ted
+   files:   [9496] COL Bill & Ted Vol. 02 - Bill & Ted Go To Hell (2017) (Digital) (Kileko-Empire).cbr (114pp)
+   CV linked:      vol 88193 "Bill & Ted Go To Hell" 2016 Boom! Studios 4 issues; cached #1-2 (2); yearΔ 0; ratio 0/4; no judged range; v1 per-file: same volume on 1/1 files
+   CV candidates:  (= linked) · 129089 "Bill & Ted Omnibus" 2020 Boom! Studios 1 issue 784135 s82 · 100968 "Bill & Ted Go To Hell" 2017 Boom! Studios 1 issue 593301 s80 · 116240 "Bill & Ted Save the Universe" 2019 Boom! Studios 1 issue 696281 s80 · 102243 "Bill & Ted Save The Universe" 2017 Boom! Studios 5 s75 · 130174 "Bill & Ted Are Doomed" 2020 Dark Horse Comics 4 s66 · 134581 "Bill & Ted Are Doomed" 2021 Dark Horse Comics 1 issue 838036 s66   (v1 search)
+   CV local rip:   (= linked) · 100968 "Bill & Ted Go To Hell" 2017 Boom! Studios 1 issue 593301 · 129089 "Bill & Ted Omnibus" 2020 Boom! Studios 1 issue 784135 (via CV candidate name "Bill & Ted Omnibus")   (rip lookup)
+   GCD per-file:   series 97262 "Bill & Ted Go to Hell" 2016-2016 [] 4 (dump only) on 1/1 files; methods fulldump-rematchx1
+   GCD dump:       (= per-file) · 224419 "Bill & Ted Go to Hell" 2017-2017 Boom! Studios [] 1 · 162752 "Bill & Ted Omnibus" 2020-2020 Boom! Studios [] 1 (via CV candidate name "Bill & Ted Omnibus")   (dump lookup)
+
+== S3157 Breaklands Season  [tier D]   keys: Breaklands Season  years 2021-2021  1 files / 0 collections
+   folders: [1] ComiXology Originals\Breaklands (2019)
+   files:   [11508] Breaklands Season 02 - The Citadel (2021) (Digital-Empire).cbr (119pp)
+   ours:    ladder 2
+   CV candidates:  121148 "Breaklands" 2019 Justin Jordan 5 s58 · 125846 "Breaklands Season One: The Chase" 2020 Dark Horse Comics 1 issue 742586 s25 · 136293 "Breaklands Season Two: The Citadel" 2021 Justin Jordan 1 issue 853440 s25 · 132198 "Breaklands Season Two" 2020 Justin Jordan 5 s22 · 112431 "ComiXology Originals 2018 Preview Book" 2018 Comicraft 1 issue 677777 s20 · 22360 "The Originals" 2004 DC Comics 1 issue 134351 s15   (v1 search)
+   CV local rip:   121148 "Breaklands" 2019 Justin Jordan 5 (via CV candidate name "Breaklands") · 149518 "Breaklands" 2023 Justin Jordan 4 (via CV candidate name "Breaklands")   (rip lookup)
+   GCD dump:       170526 "Breaklands" 2021-2021 Dark Horse [] 1 (via CV candidate name "Breaklands")   (dump lookup)
+
+== S3632 Carson of Venus  [tier B]   keys: Carson of Venus  years 2018-2018  1 files / 0 collections
+   folders: [1] American Mythology\Carson of Venus\01 Carson of Venus - Realm of the Dead (2020)
+   files:   [6663] Carson of Venus - Realm of the Dead 01 (of 03) (2020) (digital) (Son of Ultron-Empire).cbr (22pp)
+   ours:    ladder 1; ComicInfo Series: "Carson of Venus"x1; ComicInfo Publisher: "American Mythology Productions"x1
+   CV linked:      vol 115723 "Carson of Venus: Pirates of Venus" 2018 American Mythology Productions 2 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); cached #1-1 (1); yearΔ ?; ratio 1/?; no judged range; v1 per-file: same volume on 1/1 files
+   CV candidates:  (= linked) · 112571 "Carson of Venus" 2018 American Mythology Productions 1 issue 678476 s113 · 6244 "Tarzan/Carson of Venus" 1998 Dark Horse Comics 4 s53 · 93366 "American Mythology Dark" 2016 American Mythology Productions 2 s42 · 116366 "Carson of Venus: The Flames Beyond" 2019 American Mythology Productions 3 s40 · 124976 "Carson of Venus: The Eye of Amtor" 2020 American Mythology Productions 3 s39 · 125496 "Carson of Venus: Realm of the Dead" 2020 American Mythology Productions 3 s39   (v1 search)
+   GCD dump:       6068 "Tarzan / Carson of Venus" 1998-1998 Dark Horse [] 4 (via CV candidate name "Tarzan/Carson of Venus")   (dump lookup)
+
+== S3674 Original Cat-Man and Kitten Retro Comics  [tier A]   keys: Cat-Man Retro Comics | Original Cat-Man and Kitten Retro Comics  years 1997-1997  1 files / 0 collections
+   folders: [1] AC Comics\Original Cat-Man and Kitten Retro Comics (1997)
+   files:   [5953] Original Cat-Man and Kitten Retro Comics 003 (1997) 45p.cbz (45pp)
+   ours:    ladder 3; ComicInfo Series: "Original Cat-Man and Kitten Retro Comics"x1; ComicInfo Publisher: "AC Comics"x1
+   CV linked:      vol 125714 "Original Cat-Man and Kitten Retro Comics" 1997 AC Comics 1 issues issue 741105; cached #3-3 (1); yearΔ 0; ratio 1/1 = 1.00; no judged range; v1 per-file: same volume on 1/1 files
+   CV candidates:  (= linked) · 21438 "Retro Comics" 1997 AC Comics 5 s85 · 25835 "Cat-Man Comics" 1941 Holyoke 33 s57 · 47264 "Top Comics Top Cat" 1967 Western Publishing 1 issue 324397 s34 · 50652 "All-Hero Retro Comics" 1998 AC Comics 1 issue 346756 s29 · 32583 "All-Hero Retro Comics Annual" 1998 AC Comics 1 issue 206773 s28 · 65786 "King-Cat Comics and Stories" 1989 Spit and a Half 40 s27   (v1 search)
+   CV local rip:   (= linked) · 21438 "Retro Comics" 1997 AC Comics 5 (via CV candidate name "Retro Comics") · 25835 "Cat-Man Comics" 1941 Holyoke 33 (via CV candidate name "Cat-Man Comics")   (rip lookup)
+   GCD per-file:   series 25122 "Original Cat-Man and Kitten Retro Comics" 1997-1997 AC [] 1 on 1/1 files; methods numx1
+   GCD dump:       (= per-file) · 16456 "Cat-Man Retro Comics" 1997-1997 AC [] 1 · 215013 "Cat-Man Comics" [en-gb] 2024-? PS Artbooks [] 6 (via CV candidate name "Cat-Man Comics") · 255 "Cat-Man Comics" 1942-1943 Holyoke [] 11 (via CV candidate name "Cat-Man Comics") · 61787 "Cat-Man Comics" 1941-1946 Temerson / Helnit / Continental [] 22 (via CV candidate name "Cat-Man Comics")   (dump lookup)
+
+== S3827 Madam Satan  [tier A]   keys: Chilling Adventures Presents ... Madam Satan - Hell on Earth | Madam Satan (One-Shot)  years 2020-2020  1 files / 0 collections
+   folders: [1] Archie\Madam Satan (2020)
+   files:   [7988] Madam Satan 001 (2020) (digital) (Salem-Empire).cbr (33pp)
+   ours:    ladder 1; ComicInfo Series: "Madam Satan (One-Shot)"x1; ComicInfo Publisher: "Archie"x1
+   CV linked:      vol 131339 "Madam Satan" 2020 Archie Comics 1 issues issue 813086; cached #1-1 (1); yearΔ 0; ratio 1/1 = 1.00; no judged range; v1 per-file: same volume on 1/1 files
+   CV candidates:  (= linked) · 145294 "Chilling Adventures Presents: Weirder Mysteries" 2022 Archie Comics 1 issue 949179 s69 · 154117 "Chilling Adventures Presents... Madam Satan: Hell on Earth" 2023 Archie Comics 1 issue 1024667 s65 · 125159 "Archie Meets the B-52s One-Shot" 2020 Archie Comics 1 issue 737905 s61 · 100580 "Little Archie, One-Shot" 2017 Archie Comics 1 issue 590855 s59 · 105356 "Spawn: Hell On Earth" 2017 Image 1 issue 630603 s56 · 46994 "Groo: Hell On Earth" 2008 Dark Horse Comics 1 issue 323349 s53   (v1 search)
+   CV local rip:   (= linked) · 154117 "Chilling Adventures Presents... Madam Satan: Hell on Earth" 2023 Archie Comics 1 issue 1024667 · 145294 "Chilling Adventures Presents: Weirder Mysteries" 2022 Archie Comics 1 issue 949179 (via CV candidate name "Chilling Adventures Presents: Weirder Mysteries")   (rip lookup)
+   GCD per-file:   series 165340 "Madam Satan" 2020-2020 [] 1 (dump only) on 1/1 files; methods fulldump-rematchx1
+   GCD dump:       (= per-file) · 190161 "Chilling Adventures Presents: Weirder Mysteries" 2022-2022 Archie [] 1 (via CV candidate name "Chilling Adventures Presents: Weirder Mysteries")   (dump lookup)
+
+== S3833 Chilling Adventures in Sorcery  [tier B]   keys: Chilling Adventures in Sorcery  years 2021-2021  1 files / 0 collections
+   folders: [1] Archie\Chilling Adventures in Sorcery (2021)
+   files:   [7564] Chilling Adventures in Sorcery 001 (2021) (digital) (Salem-Empire).cbr (29pp)
+   ours:    ladder 1; ComicInfo Series: "Chilling Adventures in Sorcery"x1; ComicInfo Publisher: "Archie"x1
+   CV per-file (v1): vol 2627 "Chilling Adventures in Sorcery" 1973 Archie Comics 3 on 1/1 files
+   CV candidates:  (= per-file) · 139977 "Chilling Adventures In Sorcery" 2021 Archie Comics 1 issue 892566 s113 · 107497 "Chilling Adventures In Sorcery" 2018 Archie Comics 1 issue 650952 s109 · 2563 "Chilling Adventures in Sorcery as Told by Sabrina" 1972 Archie Comics 2 s88 · 77529 "Chilling Adventures of Sabrina Plus" 2014 Archie Comics 1 issue 467942 s60 · 71690 "Sorcery" 1978 Gredown 2 s57 · 77407 "Chilling Adventures of Sabrina" 2014 Archie Comics 9 s53   (v1 search)
+   CV local rip:   (= per-file) · 139977 "Chilling Adventures In Sorcery" 2021 Archie Comics 1 issue 892566 · 107497 "Chilling Adventures In Sorcery" 2018 Archie Comics 1 issue 650952   (rip lookup)
+   GCD per-file:   series 177600 "Chilling Adventures in Sorcery" 2021-2021 Archie [one-shot] 1 on 1/1 files; methods numx1
+   GCD dump:       (= per-file) · 119901 "Chilling Adventures in Sorcery" 2018-2018 Archie [] 1 · 2111 "Chilling Adventures in Sorcery" 1973-1974 Archie [] 3   (dump lookup)
+   bridges:        gcd 177600 -> LOCG 152764 "Chilling Adventures in Sorcery" support 1
+
+== S3866 Cinderella  [tier D]   keys: Cinderella  years 2010-2010  1 files / 1 collections
+   folders: [1] Vertigo\Fables (2002)\Cinderella (2010)
+   files:   [112546] COL Cinderella Vol. 01 - From Fabletown With Love (2010) (Digital TPB) (Nahga-Empire).cbr (142pp)
+   CV candidates:  64768 "Cinderella" 1982 Western Publishing 1 issue 415598 s89 · 49244 "Cinderella" 1965 Western Publishing 1 issue 336954 s85 · 72031 "Cinderella" 2005 Tokyopop 1 issue 446688 s43 · 55416 "Cinderella" 2012 Disney 1 issue 377211 s43 · 35696 "SPX 2002" 2002 Comic Book Legal Defense Fund 1 issue 236131 s23 · 142941 "Vértigo" 1986 Editorial Nueva Frontera 4 s15   (v1 search)
+   CV local rip:   55416 "Cinderella" 2012 Disney 1 issue 377211 · 72031 "Cinderella" 2005 Tokyopop 1 issue 446688 · 64768 "Cinderella" 1982 Western Publishing 1 issue 415598 · 49244 "Cinderella" 1965 Western Publishing 1 issue 336954   (rip lookup)
+   GCD dump:       107304 "Cinderella" [de] 1991-1991 Xenos Verlag [] 2 · 175446 "Cinderella" 1972-1972 Pendulum Press [] 1 · 18571 "Cinderella" 1965-1965 Western [] 1   (dump lookup)
+
+== S4110 Conan: The Barbarian FCBD  [tier B]   keys: Conan The Barbarian FCBD  years 2023-2023  1 files / 0 collections
+   folders: [1] Titan Comics\Conan the Barbarian (2023)\Conan the Barbarian (2023)\Annuals and Specials
+   files:   [110086] Conan - The Barbarian FCBD (2023) (digital) (NeverAngel-Empire).cbr (21pp)
+   ours:    ComicInfo Series: "Conan The Barbarian FCBD"x1; ComicInfo Publisher: "Titan"x1
+   CV linked:      vol 150405 "Conan: The Barbarian FCBD" 2023 Titan Comics 1 issues issue 989560; issue list NOT CACHED; yearΔ 0; ratio 0/1; none cached
+   CV candidates:  (= linked) · 152857 "Conan the Barbarian" 2023 Titan Comics 31 s85 · 115185 "Conan the Barbarian " 2003 Gotham Entertainment Group 1 issue 691727 s76 · 116245 "Conan the Barbarian" 2019 Marvel 25 s66 · 158057 "Conan: The Barbarian FCBD" 2024 Titan Comics 1 issue 1054434 s65 · 2471 "Conan the Barbarian" 1970 Marvel 275 s57 · 114988 "Conan the Barbarian" 1975 Newton Comics 11 s57   (v1 search)
+   GCD dump:       211754 "Conan: The Barbarian FCBD" [en-gb] 2024-2024 Titan [] 1 · 202916 "Conan: The Barbarian" [en-gb] 2023-? Titan [] 30 (via CV candidate name "Conan the Barbarian") · 208813 "Conan the Barbarian" [en-gb] 2024-? Titan [] 4 (via CV candidate name "Conan the Barbarian") · 136765 "Conan the Barbarian" 2019-2021 Marvel [] 25 (via CV candidate name "Conan the Barbarian") · 148576 "Conan the Barbarian" 2019-2020 Marvel [] 2 (via CV candidate name "Conan the Barbarian") · 63224 "Conan the Barbarian" 2012-2014 Dark Horse [] 25 (via CV candidate name "Conan the Barbarian")   (dump lookup)
+
+== S4551 DC Holiday Special '09  [tier B]   keys: DC Holiday Special  years 2010-2010  1 files / 0 collections
+   folders: [1] DC\_DC Holiday Specials\Christmas (& New Years)
+   files:   [64016] DC Holiday Special 2009 (2010) (digital) (ActionComics-DCP).cbr (71pp)
+   ours:    ladder 2009
+   CV linked:      vol 30387 "DC Holiday Special '09" 2010 DC Comics 1 issues issue 187207; issue list NOT CACHED; yearΔ 0; ratio 1/1 = 1.00; none cached; v1 per-file: same volume on 1/1 files
+   CV candidates:  (= linked) · 96654 "DC Rebirth Holiday Special" 2016 DC Comics 1 issue 566675 s82 · 106672 "DC Holiday Special 2017" 2017 DC Comics 1 issue 644474 s82 · 2392 "DC Special" 1968 DC Comics 15 s70 · 2730 "DC Special" 1975 DC Comics 14 s70 · 122617 "DC Holiday Nightmares" 2019 DC Comics 1 issue 725992 s62 · 28504 "DC Universe Holiday Bash" 1997 DC Comics 1 issue 175628 s61   (v1 search)
+   CV local rip:   (= linked) · 96654 "DC Rebirth Holiday Special" 2016 DC Comics 1 issue 566675 (via CV candidate name "DC Rebirth Holiday Special") · 106672 "DC Holiday Special 2017" 2017 DC Comics 1 issue 644474 (via CV candidate name "DC Holiday Special 2017")   (rip lookup)
+   GCD dump:       40209 "DC Holiday Special '09" 2010-2010 DC [] 1 · 110397 "DC Rebirth Holiday Special" 2017-2017 DC [] 1 (via CV candidate name "DC Rebirth Holiday Special") · 119021 "DC Holiday Special 2017" 2018-2018 DC [] 1 (via CV candidate name "DC Holiday Special 2017")   (dump lookup)
+
+== S4678 DCU Holiday Special  [tier A]   keys: DCU Holiday Special  years 2009-2009  1 files / 0 collections
+   folders: [1] DC\_DC Holiday Specials\Christmas (& New Years)
+   files:   [64025] DCU Holiday Special 2008 001 (2008) (Digital) (Shadowcat-Empire).cbz (70pp)
+   ours:    ladder 1
+   CV linked:      vol 24878 "DCU Holiday Special" 2009 DC Comics 1 issues issue 146813; cached #1-1 (1); yearΔ 0; ratio 1/1 = 1.00; no judged range; v1 per-file: same volume on 1/1 files
+   CV candidates:  (= linked) · 28505 "DCU Infinite Holiday Special" 2007 DC Comics 1 issue 175631 s82 · 37345 "DCU Holiday Special 2010" 2011 DC Comics 1 issue 248496 s82 · 23491 "DCU Halloween Special" 2008 DC Comics 1 issue 140890 s62 · 30387 "DC Holiday Special '09" 2010 DC Comics 1 issue 187207 s61 · 96654 "DC Rebirth Holiday Special" 2016 DC Comics 1 issue 566675 s61 · 106672 "DC Holiday Special 2017" 2017 DC Comics 1 issue 644474 s61   (v1 search)
+   CV local rip:   (= linked) · 37345 "DCU Holiday Special 2010" 2011 DC Comics 1 issue 248496 (via CV candidate name "DCU Holiday Special 2010") · 28505 "DCU Infinite Holiday Special" 2007 DC Comics 1 issue 175631 (via CV candidate name "DCU Infinite Holiday Special")   (rip lookup)
+   GCD per-file:   series 33152 "DCU Holiday Special" 2009-2009 DC [one-shot] 1 on 1/1 files; methods numx1
+   GCD dump:       (= per-file) · 53791 "DCU Holiday Special 2010" 2011-2011 DC [] 1 (via CV candidate name "DCU Holiday Special 2010") · 21056 "DCU Infinite Holiday Special" 2007-2007 DC [] 1 (via CV candidate name "DCU Infinite Holiday Special")   (dump lookup)
+   bridges:        gcd 33152 -> LOCG 148813 "DC's Very Merry Multiverse" support 1
+
+== S4681 DCeased  [tier B]   keys: DCeased - Dead Planet  years 2019-2021  1 files / 0 collections
+   folders: [1] DC\_DCeased (2019)
+   files:   [64214] DCeased - Dead Planet (2021) (digital) (Son of Ultron-Empire).cbr (202pp)
+   CV linked:      vol 122959 "DCeased" 2019 DC Comics 1 issues issue 728306; issue list NOT CACHED; yearΔ 0; ratio 0/1; none cached; v1 per-file: same volume on 1/1 files
+   CV candidates:  (= linked) · 118648 "DCeased" 2019 DC Comics 6 s70 · 135655 "DCeased: Dead Planet" 2021 DC Comics 1 issue 845253 s65 · 39376 "Planet Of The Living Dead" 2011 Antarctic Press 1 issue 266025 s62 · 43071 "Battle for the Planet of the Living Dead" 2011 Antarctic Press 1 issue 293906 s59 · 128420 "DCeased: Dead Planet" 2020 DC Comics 7 s50 · 130834 "DCeased" 2020 Urban Comics 1 issue 805886 s15   (v1 search)
+   CV local rip:   (= linked) · 118648 "DCeased" 2019 DC Comics 6 · 130834 "DCeased" 2020 Urban Comics 1 issue 805886 · 128420 "DCeased: Dead Planet" 2020 DC Comics 7 · 135655 "DCeased: Dead Planet" 2021 DC Comics 1 issue 845253   (rip lookup)
+   GCD dump:       144592 "DCeased" 2019-2019 DC [] 6 · 152884 "DCeased" 2019-2019 DC [] 1 · 161640 "DCeased" [fr] 2020-2020 Urban Comics [] 1 · 171162 "DCeased" 2021-2021 DC [] 1 · 183170 "DCeased" [nl] 2022-? Dark Dragon Books [] 2 · 161686 "DCeased: Dead Planet" 2020-2021 DC [] 7   (dump lookup)
+
+== S4940 Dark Souls  [tier B]   keys: Dark Souls  years 2016-2016  1 files / 1 collections
+   folders: [1] Titan Comics\Dark Souls (2016)
+   files:   [110140] COL Dark Souls v01 - The Breath of Andolus (2016) (digital) (F) (Lynx-Empire).cbr (104pp)
+   ours:    ComicInfo Series: "Dark Souls"x1; ComicInfo Publisher: "Titan"x1
+   CV linked:      vol 89772 "Dark Souls: The Breath of Andolus" 2016 Titan Comics 4 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); cached #1-3 (2); yearΔ ?; ratio 0/?; no judged range; v1 per-file: same volume on 1/1 files
+   CV candidates:  (= linked) · 94112 "Dark Souls: Legends of the Flame" 2016 Titan Comics 2 s101 · 100568 "Dark Souls: Tales of Ember" 2017 Titan Comics 2 s47 · 115388 "Dark Souls Omnibus" 2018 Titan Comics 1 issue 692498 s42 · 156697 "Dark Souls: The Willow King" 2024 Titan Comics 4 s40 · 168950 "Dark Souls: Mother of Mourning" 2025 Titan Comics 4 s40 · 111036 "Dark Souls: The Age of Fire" 2018 Titan Comics 4 s39   (v1 search)
+   CV local rip:   129576 "Dark Souls" 2018 Panini Verlag 5   (rip lookup)
+   GCD dump:       116663 "Dark Souls" [fr] 2016-? Hachette [] 2 · 198248 "Dark Souls" [en-gb] 2016-2019 Titan [] 5 · 123728 "Dark Souls" [de] 2018-2019 Panini Deutschland [] 5 · 100118 "Dark Souls: The Breath of Andolus" [en-gb] 2016-2016 Titan [] 4 (via CV name "Dark Souls: The Breath of Andolus") · 106776 "Dark Souls: Legends of the Flame" [en-gb] 2016-2016 Titan [] 2 (via CV candidate name "Dark Souls: Legends of the Flame") · 113315 "Dark Souls: Tales of Ember" [en-gb] 2017-2017 Titan [] 2 (via CV candidate name "Dark Souls: Tales of Ember")   (dump lookup)
+
+== S5031 Dead Body Road  [tier B]   keys: Dead Body Road  years 2014-2014  1 files / 1 collections
+   folders: [1] Image\Dead Body Road (2014)
+   files:   [36403] COL Dead Body Road Vol. 01 (2014) (Digital) (DR & Quinch-Empire).cbr (127pp)
+   ours:    judged item 36403 #1-6 conf 0.95
+   CV candidates:  75150 "Dead Body Road" 2014 Image 1 issue 457678 s113 · 69855 "Dead Body Road" 2013 Image 6 s105 · 77337 "Over My Dead Body" 2014 Space Goat Productions 1 issue 467228 s61 · 101437 "Dead Body Road" 2016 Delcourt 1 issue 595363 s43 · 171063 "Dead Body Road" 2022 ECC Ediciones 1 s43 · 106196 "Dead Body Road" 2015 Planeta DeAgostini 1 issue 639336 s43   (v1 search)
+   CV local rip:   75150 "Dead Body Road" 2014 Image 1 issue 457678 · 69855 "Dead Body Road" 2013 Image 6 · 106196 "Dead Body Road" 2015 Planeta DeAgostini 1 issue 639336 · 101437 "Dead Body Road" 2016 Delcourt 1 issue 595363 · 77337 "Over My Dead Body" 2014 Space Goat Productions 1 issue 467228 (via CV candidate name "Over My Dead Body") · 124260 "Over My Dead Body" 2020 Image 1 issue 733681 (via CV candidate name "Over My Dead Body")   (rip lookup)
+   GCD per-file:   series 78029 "Dead Body Road" 2013-2014 Image [6 Issue Mini-Series] 6 on 1/1 files; methods numx1
+   GCD dump:       (= per-file) · 121005 "Dead Body Road" [fr] 2016-2016 Delcourt [] 1 · 154705 "Over My Dead Body" 2020-2020 Image [] 1 (via CV candidate name "Over My Dead Body") · 190773 "Over My Dead Body" 2022-2022 HarperCollins [] 1 (via CV candidate name "Over My Dead Body")   (dump lookup)
+   bridges:        gcd 78029 -> LOCG 111578 "Dead Body Road" support 2
+
+== S5932 Dungeons & Dragons: Ravenloft—Caravan of Curses  [tier B]   keys: Dungeons & Dragons: Ravenloft—Caravan of Curses  years 2024-2024  1 files / 0 collections
+   folders: [1] IDW\Dungeons & Dragons\_Completed Series\Dungeons & Dragons - Ravenloft (2022)
+   files:   [30500] Dungeons & Dragons - Ravenloft - Caravan of Curses (2024) (Digital) (Wanpanman-Empire).cbz (75pp)
+   ours:    ComicInfo Series: "Dungeons & Dragons: Ravenloft—Caravan of Curses"x1; ComicInfo Publisher: "IDW"x1
+   CV linked:      vol 144024 "Dungeons & Dragons: Ravenloft - Orphan of Agony Isle" 2022 IDW Publishing 4 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); issue list NOT CACHED; yearΔ ?; ratio 0/?; none cached; v1 per-file: same volume on 1/1 files
+   CV candidates:  (= linked) · 90079 "Dungeons & Dragons" 2016 IDW Publishing 5 s80 · 34871 "Dungeons & Dragons" 2010 IDW Publishing 16 s78 · 145868 "Dungeons & Dragons Annual 2022" 2022 IDW Publishing 1 issue 953753 s73 · 141656 "Dungeons & Dragons " 2019 Panini Verlag 3 s69 · 53421 "Curses" 2006 Drawn & Quarterly 1 issue 363337 s62 · 127515 "Dungeons & Dragons" 1988 JuniorPress BV 4 s60   (v1 search)
+   CV local rip:   141656 "Dungeons & Dragons " 2019 Panini Verlag 3 (via CV candidate name "Dungeons & Dragons") · 90079 "Dungeons & Dragons" 2016 IDW Publishing 5 (via CV candidate name "Dungeons & Dragons") · 34871 "Dungeons & Dragons" 2010 IDW Publishing 16 (via CV candidate name "Dungeons & Dragons") · 127515 "Dungeons & Dragons" 1988 JuniorPress BV 4 (via CV candidate name "Dungeons & Dragons") · 145868 "Dungeons & Dragons Annual 2022" 2022 IDW Publishing 1 issue 953753 (via CV candidate name "Dungeons & Dragons Annual 2022")   (rip lookup)
+   GCD dump:       210791 "Dungeons & Dragons: Ravenloft Caravan of Curses" 2024-2024 IDW [] 1 · 138091 "Dungeons & Dragons" [de] 2019-? Panini Deutschland [] 3 (via CV candidate name "Dungeons & Dragons") · 191388 "Dungeons & Dragons" [fr] 2019-2019 Panini France [] 2 (via CV candidate name "Dungeons & Dragons") · 191928 "Dungeons & Dragons" [pt-br] 2019-2020 Panini Brasil [] 3 (via CV candidate name "Dungeons & Dragons") · 101008 "Dungeons & Dragons" 2016-2016 IDW [] 5 (via CV candidate name "Dungeons & Dragons") · 70290 "Dungeons & Dragons" 2012-2013 IDW [] 3 (via CV candidate name "Dungeons & Dragons")   (dump lookup)
+
+== S6011 Edgar Allan Poe's Snifter of Terror  [tier A]   keys: Edgar Allan Poe's Snifter of Terror  years 2019-2019  1 files / 1 collections
+   folders: [1] Ahoy Comics\Edgar Allan Poe's Snifter of Terror (2019)
+   files:   [6491] COL Edgar Allan Poe's Snifter of Terror Vol. 01 (2019) (digital) (Son of Ultron-Empire).cbr (187pp)
+   ours:    ComicInfo Series: "Edgar Allan Poe's Snifter of Terror"x1; ComicInfo Publisher: "AHOY Comics"x1
+   GCD says: [6491] gcd_reprint 2157076: s133026 Edgar Allan Poe's Snifter of Terror (2018) #1-6 [37 stories] · s144854 Dragonfly & Dragonflyman [Free Comic Book Day] (2019) #1 [1 story] · s139941 Captain Ginger (2018) #2 [1 story] · s139940 High Heaven (2018) #5 [1 story]
+   CV linked:      vol 121760 "Edgar Allan Poe's Snifter of Terror" 2019 Ahoy Comics 2 issues; cached #1-2 (2); yearΔ 0; ratio 0/2; no judged range; v1 per-file: same volume on 1/1 files
+   CV candidates:  (= linked) · 114884 "Edgar Allan Poe's Snifter of Terror" 2018 Ahoy Comics 6 s105 · 121846 "Edgar Allan Poe's Snifter of Terror, Season Two" 2019 Ahoy Comics 6 s91 · 103553 "Edgar Allan Poe's The Black Cat" 2017 SST Publications 1 issue 615370 s47 · 72781 "Edgar Allan Poe's The Premature Burial" 2014 Dark Horse Comics 1 issue 449568 s46 · 62561 "Edgar Allan Poe's The Bells" 1999 Caliber Comics 1 issue 407394 s42 · 139114 "Edgar Allan Poe's Snifter of Blood" 2021 Ahoy Comics 1 issue 885574 s32   (v1 search)
+   GCD per-file:   series 164566 "Edgar Allan Poe's Snifter of Terror" 2019-2020 AHOY Comics [collected edition] 2 on 1/1 files; methods numx1
+   GCD dump:       (= per-file) · 133026 "Edgar Allan Poe's Snifter of Terror" 2018-2019 AHOY Comics [] 6 · 150982 "Edgar Allan Poe's Snifter of Terror Season Two" 2019-2020 AHOY Comics [] 6 (via CV candidate name "Edgar Allan Poe's Snifter of Terror, Season Two")   (dump lookup)
+   bridges:        gcd 164566 -> LOCG 138962 "Edgar Allan Poe's Snifter of Terror" support 2
+
+== S6088 Elephantmen 2261: The Death of Shorty  [tier B]   keys: Elephantmen: 2261  years 2018-2018  1 files / 1 collections
+   folders: [1] ComiXology Originals\Elephantmen\Elephantmen 2261 (2018)
+   files:   [11530] COL Elephantmen 2261 Vol. 01 - The Death of Shorty (2018) (digital) (Son of Ultron-Empire).cbr (116pp)
+   ours:    ComicInfo Series: "Elephantmen: 2261"x1; ComicInfo Publisher: "Comicraft"x1
+   CV linked:      vol 111307 "Elephantmen 2261: The Death of Shorty" 2018 Comicraft 5 issues; cached #1-5 (5); yearΔ 0; ratio 0/5; no judged range; v1 per-file: same volume on 1/1 files
+   CV candidates:  (= linked) · 115880 "Elephantmen 2261: Holiday Special" 2018 Comicraft 1 issue 694950 s96 · 50765 "Elephantmen" 2010 Image 2 s65 · 50763 "Elephantmen" 2007 Image 6 s52 · 20056 "Elephantmen" 2006 Image 81 s48 · 118678 "Elephantmen 2261: The Pentalion Job" 2019 Comicraft 4 s40 · 118677 "Elephantmen 2261: The Death of Shorty" 2019 Comicraft 1 issue 707567 s39   (v1 search)
+   CV local rip:   50765 "Elephantmen" 2010 Image 2 (via CV candidate name "Elephantmen") · 50763 "Elephantmen" 2007 Image 6 (via CV candidate name "Elephantmen") · 20056 "Elephantmen" 2006 Image 81 (via CV candidate name "Elephantmen") · 115880 "Elephantmen 2261: Holiday Special" 2018 Comicraft 1 issue 694950 (via CV candidate name "Elephantmen 2261: Holiday Special")   (rip lookup)
+   GCD dump:       71193 "Elephantmen" [fr] 2013-? Delcourt [] 2 (via CV candidate name "Elephantmen") · 60886 "Elephantmen" 2007-2013 Image [] 6 (via CV candidate name "Elephantmen") · 18797 "Elephantmen" 2006-2018 Image [] 81 (via CV candidate name "Elephantmen")   (dump lookup)
+
+== S6101 Elric - Stormbringer  [tier B]   keys: Elric - Stormbringer  years 2021-2021  1 files / 0 collections
+   folders: [1] Titan Comics\Elric
+   files:   [110362] The Michael Moorcock Library - Elric - Stormbringer (2021) (Digital) (Bean-Empire).cbz (208pp)
+   ours:    ComicInfo Series: "Elric: Stormbringer"x1; ComicInfo Publisher: "Titan"x1
+   CV linked:      vol 6101 "Elric: Stormbringer" 1997 Dark Horse Comics 7 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); cached #2-2 (1); yearΔ ?; ratio 0/?; no judged range
+   CV candidates:  (= linked) · 152731 "Elric: Stormbringer" 2022 Pipoca & Nanquim 1 issue 1005207 s83 · 121566 "Elric: Stormbringer: Deluxe Edition" 2019 Titan Comics 1 issue 720145 s81 · 136926 "The Michael Moorcock Library: Elric: Stormbringer" 2021 Titan Comics 1 issue 861271 s79 · 76999 "Elric" 2014 Titan Comics 2 s70 · 93405 "Elric" 1973 Windy City Comics Group 1 issue 546128 s48 · 142276 "Elric" 2013 Yermo Ediciones y Publicaciones 4 s48   (v1 search)
+   CV local rip:   (= linked) · 152731 "Elric: Stormbringer" 2022 Pipoca & Nanquim 1 issue 1005207 · 136926 "The Michael Moorcock Library: Elric: Stormbringer" 2021 Titan Comics 1 issue 861271 (via CV candidate name "The Michael Moorcock Library: Elric: Stormbringer") · 121566 "Elric: Stormbringer: Deluxe Edition" 2019 Titan Comics 1 issue 720145 (via CV candidate name "Elric: Stormbringer: Deluxe Edition")   (rip lookup)
+   GCD dump:       188532 "Elric: Stormbringer" [pt-br] 2022-2022 Pipoca & Nanquim [] 1 · 150552 "Elric Stormbringer" [en-gb] 2019-2019 Titan [] 1 · 32548 "Elric: Stormbringer" 1998-1998 Dark Horse [] 1 · 32853 "Elric. Stormbringer" [es] 1998-1998 Planeta DeAgostini [] 7 · 5906 "Elric: Stormbringer" 1997-1997 Dark Horse; Topps [] 7   (dump lookup)
+
+== S6394 Fairest of All  [tier B]   keys: Fairest of All - A Villains Graphic Novel  years 2023-2023  1 files / 0 collections
+   folders: [1] Disney\_Movies+Shows\Disney Villains (2023) (Dynamite)
+   files:   [20344] Fairest of All - A Villains Graphic Novel (2023) (GreenGiant-DCP).cbr (131pp)
+   ours:    ComicInfo Series: "Fairest of All - A Villains Graphic Novel"x1; ComicInfo Publisher: "Disney Hyperion"x1
+   CV linked:      vol 150761 "Fairest of All" 2023 Disney-Hyperion 1 issues issue 992072; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range; v1 per-file: same volume on 1/1 files
+   CV candidates:  (= linked) · 139153 "Evil Thing: A Villains Graphic Novel" 2021 Disney-Hyperion 1 issue 885961 s59 · 113257 "Shot All To Hell: A Graphic Novel" 2018 Insight Editions 1 issue 683962 s57 · 18184 "Fairest" 2012 DC Comics 33 s49 · 153358 "Disney/Pixar Elemental: The Graphic Novel" 2023 Random House 1 issue 1012280 s46 · 149358 "Disney Encanto: The Graphic Novel " 2022 Random House 1 issue 982080 s43 · 149355 "Disney • Pixar Lightyear: The Graphic Novel " 2022 Random House 1 issue 982071 s40   (v1 search)
+   GCD dump:       200045 "Fairest of All: A Villains Graphic Novel" 2023-2023 Hyperion [] 1 · 176405 "Evil Thing: A Villains Graphic Novel" 2021-2021 Hyperion [] 1 (via CV candidate name "Evil Thing: A Villains Graphic Novel") · 128894 "Shot All to Hell: A Graphic Novel" 2018-2018 Insight Editions [] 1 (via CV candidate name "Shot All To Hell: A Graphic Novel")   (dump lookup)
+
+== S6417 Faithless  [tier A]   keys: Faithless  years 2019-2019  1 files / 1 collections
+   folders: [1] Boom Studios\Faithless (2019)
+   files:   [9711] COL Faithless Vol. 01 (2019) (digital) (Son of Ultron-Empire).cbr (162pp)
+   ours:    ComicInfo Series: "Faithless"x1; ComicInfo Publisher: "BOOM! Studios"x1
+   CV linked:      vol 118245 "Faithless" 2019 Boom! Studios 6 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); cached #1-3 (2); yearΔ 0; ratio 0/?; no judged range; v1 per-file: same volume on 1/1 files
+   CV candidates:  (= linked) · 123769 "Faithless" 2019 Boom! Studios 1 issue 731672 s113 · 136869 "Faithless " 2020 Panini Verlag 2 s50 · 118745 "BOOM! Studios Free Comic Book Day 2019" 2019 Boom! Studios 1 issue 707835 s38 · 127811 "Faithless II" 2020 Boom! Studios 6 s37 · 101256 "BOOM! Studios 2017 Summer Blast" 2017 Boom! Studios 1 issue 594530 s35 · 90245 "BOOM! Studios 2016 Summer Blast" 2016 Boom! Studios 1 issue 529160 s34   (v1 search)
+   CV local rip:   (= linked) · 123769 "Faithless" 2019 Boom! Studios 1 issue 731672 · 136869 "Faithless " 2020 Panini Verlag 2   (rip lookup)
+   GCD per-file:   series 144038 "Faithless" 2019-2019 Boom! Studios [limited series] 6 on 1/1 files; methods numx1
+   GCD dump:       (= per-file) · 180712 "Faithless" 2019-2019 Boom! Studios [] 1 · 166257 "Faithless" [de] 2020-? Panini Deutschland [] 2   (dump lookup)
+   bridges:        gcd 144038 -> LOCG 141280 "Faithless" support 2
+
+== S7357 Generations  [tier D]   keys: Generations  years 2017-2017  1 files / 0 collections
+   folders: [1] Marvel\_Marvel Legacy + Generations One-shots (2017)
+   files:   [83148] Generations (2017) (Digital) (F) (Zone-Empire).cbr (309pp)
+   ours:    ComicInfo Series: "Generations"x1; ComicInfo Publisher: "Marvel"x1
+   CV candidates:  104942 "Generations" 2017 Lion Forge Comics 1 issue 628677 s98 · 106290 "Generations" 2017 Marvel 1 issue 641403 s98 · 101258 "Catalyst Prime: The Event" 2017 Lion Forge Comics 1 issue 594532 s23 · 68008 "Catalyst Prime" 2013 Lion Forge Comics 3 s19 · 72038 "Catalyst Prime: Quincredible" 2014 Lion Forge Comics 6 s14 · 64681 "Catalyst Comix" 2013 Dark Horse Comics 9 s11   (v1 search)
+   CV local rip:   104942 "Generations" 2017 Lion Forge Comics 1 issue 628677 · 106290 "Generations" 2017 Marvel 1 issue 641403   (rip lookup)
+   GCD dump:       118897 "Generations" 2017-2017 Marvel [] 1 · 141633 "Generations" 2017-2017 Lion Forge [] 1 · 124337 "Generations" [de] 2018-2018 Panini Deutschland [] 2 · 126582 "Generations" 2018-2018 Marvel [] 1   (dump lookup)
+
+== S7410 Get Jiro!  [tier D]   keys: Get Jiro!  years 2012-2012  1 files / 0 collections
+   folders: [1] Vertigo\Get Jiro! (2012)
+   files:   [112673] 01 Get Jiro! (2012) (Digital) (Zone-Empire).cbr (163pp)
+   ours:    ladder 1
+   CV candidates:  46032 "Get Jiro!" 2012 DC Comics 1 issue 342900 s105 · 81920 "Get!" 2012 Digital Manga Publishing 2 s63 · 85431 "Get Jiro: Blood and Sushi" 2015 DC Comics 1 issue 503532 s32 · 45767 "Vertigo Preview 2012" 2012 DC Comics 1 issue 315212 s30 · 153979 "Vertigo Hits" 2012 RW Edizioni 73 s15 · 41566 "Vertigo" 2009 Panini Brasil 33 s11   (v1 search)
+   CV local rip:   46032 "Get Jiro!" 2012 DC Comics 1 issue 342900 · 81920 "Get!" 2012 Digital Manga Publishing 2 (via CV candidate name "Get!")   (rip lookup)
+   GCD dump:       66556 "Get Jiro!" 2012-2012 DC [] 1 · 74120 "Get Jiro!" 2013-2013 DC [] 1 · 147926 "Get Jiro!" [pt] 2019-2019 Levoir [] 2 · 93280 "Get Jiro!: Blood and Sushi" 2015-2015 DC [] 1 (via CV candidate name "Get Jiro: Blood and Sushi")   (dump lookup)
