@@ -792,30 +792,55 @@ check(splitbase.normalize_key("The Uncanny X-Men") == "uncanny x men"
       and splitbase.normalize_key("Æon ½") == "æon",
       "normalize_key is SeriesResolver.NormalizeKey (one leading 'the', letters + decimal digits only)")
 split_pop = splitbase.population(ev)
-SPLIT_SID = 9845
-check(SPLIT_SID in split_pop, f"S{SPLIT_SID} (Storm Front, R-029) is in the split population",
-      f"{len(split_pop)} shelves")
-blk = splitbase.packet(SPLIT_SID, ev, split_pop[SPLIT_SID]) if SPLIT_SID in split_pop else []
-_items = [r[0] for r in splitbase.shelf_items(con, SPLIT_SID)]
-check(blk and "[split]" in blk[0] and any(l.lstrip().startswith("F 9845 split-needed") for l in blk)
+_p_emitted = splitbase.p_emissions()
+_again = splitbase.readmitted(split_pop, _p_emitted)
+
+
+def _f_named(s, rec=None):
+    """the shelves the winning (or given) F split-needed line of `s` names"""
+    got = set()
+    for t in splitbase.decision_lines((rec or split_pop[s])["file"], s)["split"]:
+        got |= {int(x) for x in splitbase.RX_SREF.findall(t)}
+    return got
+
+
+def _split_fixture_ok(s):
+    """A shelf the part-11 fixtures can stand on, picked from the CURRENT population (the fixtures once named
+    S9845 Storm Front, which the lane has since split): 5-400 files (four move, the rest stay), not already handed
+    out by a P- batch unless re-admitted (`next_batch --splits --only` must render it), and an F line naming
+    neither S9439 (the missed-join fixture) nor the midsize shelf (the collision fixture)."""
+    if s not in split_pop or (s in _p_emitted and s not in _again) or s in (9439, midsize):
+        return False
+    return 5 <= ev.size.get(s, 0) <= 400 and not (_f_named(s) & {9439, midsize})
+
+
+SPLIT_SID = 9845 if _split_fixture_ok(9845) else next((s for s in sorted(split_pop) if _split_fixture_ok(s)), None)
+check(SPLIT_SID is not None, "the split population holds a shelf the split fixtures can stand on "
+      "(5-400 files, not yet handed out, F line naming neither S9439 nor the midsize shelf)", f"{len(split_pop)} shelves")
+print(f"  (split fixture shelf: S{SPLIT_SID})")
+blk = splitbase.packet(SPLIT_SID, ev, split_pop[SPLIT_SID]) if SPLIT_SID else []
+_sf_rows = splitbase.shelf_items(con, SPLIT_SID) if SPLIT_SID else []
+_items = [r[0] for r in _sf_rows]
+check(blk and "[split]" in blk[0] and any(re.match(rf"F\s+S?{SPLIT_SID}\s+split-needed\b", l.lstrip()) for l in blk)
       and all(str(i) in "\n".join(blk) for i in _items),
-      "the split packet carries the winning F split-needed line and EVERY item id", "\n".join(blk[:4]))
+      f"the split packet (S{SPLIT_SID}) carries the winning F split-needed line and EVERY item id", "\n".join(blk[:4]))
 land = splitbase.Landing(con, ev.shelf_set)
 _mk = ev.series[midsize]["parsedKey"]
-check(land.land("Jim Butcher's The Dresden Files - Storm Front v2 (2009)")[0] == "new"
-      and (not _mk or midsize in land.land(_mk)[1]),
+SF_KEY = "Selftest Split Fixture v2 (2099)"          # a key no shelf carries: it must land NEW
+check(land.land(SF_KEY)[0] == "new" and (not _mk or midsize in land.land(_mk)[1]),
       "a fresh key lands NEW; an existing shelf's parsed key lands ON that shelf", f"{_mk!r}")
 
-# the good file — hand-written, the shape a reader writes
+# the good file — the shape a reader writes: the LAST four files of the shelf move to a run of their own, the rest
+# stay. The run ids are real catalogue rows (Storm Front v2's, the fixture's first home: CV 27202, GCD 55645 + 52657).
+_mv = _items[-4:] if len(_items) >= 5 else []
 P900 = [
-    {"shelf": 9845, "split": True, "why": "two co-equal 4-issue runs both numbering #1-4: Storm Front Volume 1 (CV "
-     "23697 / GCD 35902, Dabel 2008-2009) stays here with the loose rips; the four 03 Storm Front - Volume 2 files "
-     "(CV 27202; GCD 55645 #1 Dabel + 52657 #2-4 Dynamite, 2009-2010) move to a run of their own"},
-] + [{"itemId": i, "key": "Jim Butcher's The Dresden Files - Storm Front v2 (2009)",
-      "run": {"cv": 27202, "gcd": [55645, 52657]}} for i in (107776, 107777, 107778, 107779)]
+    {"shelf": SPLIT_SID, "split": True, "why": "fixture: two runs share the shelf; the run in force stays here with "
+     f"its loose rips and the last {len(_mv)} files move to a run of their own (CV 27202 / GCD 55645 + 52657)"},
+] + [{"itemId": i, "key": SF_KEY, "run": {"cv": 27202, "gcd": [55645, 52657]}} for i in _mv]
 
 
-def write_split(name, lines, ids=(9845,)):
+def write_split(name, lines, ids=None):
+    ids = (SPLIT_SID,) if ids is None else ids
     p = os.path.join(OUT, name + ".jsonl")
     with open(p, "w", encoding="utf-8") as f:
         for o in lines:
@@ -830,10 +855,11 @@ def run_split(p, *extra):
                           capture_output=True, text=True, encoding="utf-8", errors="replace")
 
 
-if SPLIT_SID in split_pop:
+_splits_dry = ""
+if SPLIT_SID and _mv:
     p = write_split("P-900", P900)
     r = run_split(p)
-    check(r.returncode == 0 and "0 failure(s)" in r.stdout, "P-900 (Storm Front Volume 2 moves out) passes",
+    check(r.returncode == 0 and "0 failure(s)" in r.stdout, f"P-900 (S{SPLIT_SID}: its last {len(_mv)} files move out) passes",
           r.stdout[-500:])
     vj = os.path.join(OUT, "P-900.verb.jsonl")
     r = subprocess.run([sys.executable, os.path.join(idbase.HERE, "check_splits.py"), "--project", p, "--out", vj],
@@ -848,13 +874,13 @@ if SPLIT_SID in split_pop:
     bads = [
         ("bad-split-foreign", P900 + [{"itemId": other_item, "key": "Somewhere Else (1999)"}],
          "not a shelf of this batch"),
-        ("bad-split-collision", [P900[0], {"itemId": 107776, "key": _mk or "Batman"}] + P900[2:],
+        ("bad-split-collision", [P900[0], {"itemId": _mv[0], "key": _mk or "Batman"}] + P900[2:],
          "lands (exact) on live shelf"),
         ("bad-split-twice", P900 + [P900[1]], "moved twice in this file"),
-        ("bad-split-empties", [P900[0]] + [{"itemId": i, "key": "Storm Front Everything (2008)"} for i in _items],
+        ("bad-split-empties", [P900[0]] + [{"itemId": i, "key": "Selftest Everything (2098)"} for i in _items],
          "items move — a split keeps the run that stays"),
         ("bad-split-nocover", P900[1:], "has no shelf line"),
-        ("bad-split-spelling", P900[:3] + [dict(P900[3], key="Jim Butcher's the Dresden Files: Storm Front v2 (2009)")],
+        ("bad-split-spelling", P900[:3] + [dict(P900[3], key="Selftest Split Fixture: v2 (2099)")],
          "normalize to one canonical key"),
     ]
     for name, lines, want in bads:
@@ -878,16 +904,20 @@ if SPLIT_SID in split_pop:
     # emission: --splits must be able to render into a scratch dir without touching state.json or batches/
     before = _snapshot()
     sdir = os.path.join(OUT, "emit-splits")
+    if os.path.isdir(sdir):
+        for f_ in os.listdir(sdir):
+            os.remove(os.path.join(sdir, f_))
     r = subprocess.run([sys.executable, os.path.join(idbase.HERE, "next_batch.py"), "--splits", "--only",
                         str(SPLIT_SID), "--out", sdir], capture_output=True, text=True, encoding="utf-8",
                        errors="replace")
     r2 = subprocess.run([sys.executable, os.path.join(idbase.HERE, "next_batch.py"), "--splits", "--dry-run"],
                         capture_output=True, text=True, encoding="utf-8", errors="replace")
+    _splits_dry = r2.stdout
     after = _snapshot()
-    body = open(os.path.join(sdir, "P-001.txt"), encoding="utf-8").read() if os.path.exists(
-        os.path.join(sdir, "P-001.txt")) else ""
+    body = "".join(open(os.path.join(sdir, f_), encoding="utf-8").read() for f_ in sorted(os.listdir(sdir))
+                   if re.match(r"^P-\d+\.txt$", f_)) if os.path.isdir(sdir) else ""
     check(after == before and "'batch': 'P-" in r.stdout and "'batch': 'P-" in r2.stdout
-          and body.startswith("## Conventions for this batch") and "== S9845" in body,
+          and body.startswith("## Conventions for this batch") and f"== S{SPLIT_SID} " in body,
           "next_batch --splits (--out / --dry-run) renders P- batches and leaves state.json + batches/ untouched",
           (r.stdout + r.stderr + r2.stderr)[-400:])
 
@@ -895,7 +925,6 @@ if SPLIT_SID in split_pop:
 import re as _re
 
 print("\nthe split lane, round 2 — nearby, missed joins, group/range moves, landed files, both halves, stale flags")
-XMR, XMR_JOIN = 22296, 94820          # X-Men: Red (2018 Howard + 2022 Ewing); S94820 = the 2022 run's own shelf
 _before12 = _snapshot()
 
 
@@ -904,15 +933,81 @@ def _cs(*argv):
                           capture_output=True, text=True, encoding="utf-8", errors="replace")
 
 
-if XMR in split_pop:
-    # Rendered against C-037, the decision these fixtures were written from: wave 17's R-031 re-decided S22296
-    # and its F line now NAMES S94820 ("JOIN S94820"), which rightly takes it off nearby: and silences the WARN.
-    _c037 = os.path.join(idbase.DECISIONS, "C-037.txt")
-    xblk = splitbase.packet(XMR, ev, {"file": _c037, "kind": "R"} if os.path.exists(_c037) else split_pop[XMR])
-    near = [l for l in xblk if l.lstrip().startswith("nearby:")]
-    check(any(f"S{XMR_JOIN} " in l and "shares cv=142134" in l for l in near),
-          f"(a) S{XMR}'s packet names S{XMR_JOIN} on its nearby: line (it holds the F line's CV 142134 as its S)",
-          "\n".join(near) or "\n".join(xblk[:8]))
+def _wset(s):
+    return set(splitbase.normalize_key(s or "").split())
+
+
+def _range_hits(rows, a, b, mw, fw):
+    """check_splits' range rule, restated: numbered issue files (no collections) in #a-b whose filename carries every
+    `match` word and whose folder carries every `folder` word -> [(itemId, number)] in shelf order"""
+    out = []
+    for r in rows:
+        x = idbase.num(r[5])
+        if r[4] or x is None or not a <= x <= b:
+            continue
+        if mw <= _wset(splitbase.RX_EXT.sub("", r[1] or "")) and (not fw or fw <= _wset(os.path.dirname(r[2] or ""))):
+            out.append((r[0], x))
+    return out
+
+
+def _round2_fixture():
+    """The round-2 fixtures once stood on X-Men: Red (S22296: a 16-file G1 and the '#5-6 X-Men Red / Judgement Day'
+    range), which the lane has since split. Picked now from the CURRENT population: a shelf (not the part-11 one)
+    with a G1 group and, OUTSIDE it, a range of 1-2 numbers that `match` (the group's title) + `folder` (its leaf
+    folder) name unambiguously, leaving files behind — preferring one that is AMBIGUOUS without the folder, so the
+    bad-range-ambiguous fixture trips on a real double. -> (sid, G1 rows, range spec, ids, ambiguous?) or None."""
+    best = None
+    for s in sorted(split_pop):
+        if s == SPLIT_SID or not 3 <= ev.size.get(s, 0) <= 600:
+            continue
+        rows = splitbase.shelf_items(con, s)
+        groups = splitbase.group_items(rows)
+        if len(groups) < 2:
+            continue
+        g1 = {r[0] for r in groups[0][1]}
+        for (title, folder), grs in groups[1:]:
+            mw, leaf = _wset(title), os.path.basename((folder or "").rstrip("\\/"))
+            fw = _wset(leaf)
+            if not mw or not fw:
+                continue
+            nums = sorted({x for x in (idbase.num(r[5]) for r in grs if not r[4]) if x is not None})
+            for a, b in [(nums[i], nums[i + 1]) for i in range(len(nums) - 1)] + [(x, x) for x in nums]:
+                hits = _range_hits(rows, a, b, mw, fw)
+                ids = [i for i, _x in hits]
+                if not ids or set(ids) & g1 or len({x for _i, x in hits}) != len(hits) \
+                        or len(g1) + len(ids) >= len(rows):
+                    continue
+                loose = _range_hits(rows, a, b, mw, set())
+                amb = len({x for _i, x in loose}) != len(loose)
+                spec = {"range": f"#{idbase.fmt_num(a)}-{idbase.fmt_num(b)}" if b != a else f"#{idbase.fmt_num(a)}",
+                        "match": title, "folder": leaf}
+                cand = (s, groups[0][1], spec, ids, amb)
+                if amb and len(ids) == 2:
+                    return cand
+                if best is None or (amb and not best[4]):
+                    best = cand
+    return best
+
+
+def _ambiguous_elsewhere():
+    """-> (sid, spec) — any shelf of the population where one number is carried by two files of one title"""
+    for s in sorted(split_pop):
+        if not 2 <= ev.size.get(s, 0) <= 600:
+            continue
+        rows = splitbase.shelf_items(con, s)
+        for (title, _folder), grs in splitbase.group_items(rows):
+            mw = _wset(title)
+            for x in sorted({x for x in (idbase.num(r[5]) for r in grs if not r[4]) if x is not None}):
+                if mw and len(_range_hits(rows, x, x, mw, set())) > 1:
+                    return s, {"range": f"#{idbase.fmt_num(x)}", "match": title}
+    return None
+
+
+R2 = _round2_fixture()
+if R2:
+    XMR, _g1rows, _rspec, _rids, _ramb = R2
+    print(f"  (round-2 fixture shelf: S{XMR}; range {_rspec})")
+    xblk = splitbase.packet(XMR, ev, split_pop[XMR])
     # the packet's own G1 ids, read off the TEXT the reader sees — the expansion must reproduce exactly these
     g1, on = [], False
     for l in xblk:
@@ -924,63 +1019,99 @@ if XMR in split_pop:
             break
         if on:
             g1 += [int(x) for x in _re.findall(r"(?:^|[\s\[])(\d{4,7})(?=\]| #)", s)]
-    SH = {"shelf": XMR, "split": True, "why": "two X-Men: Red runs share the bare title: the 2018 Howard run (CV "
-          "108548 / GCD 120699) stays; the 2022 Ewing run (CV 142134 / GCD 183739) moves"}
-    RUN = {"cv": 142134, "gcd": 183739}
-    rng = {"range": "#5-6", "match": "X-Men Red", "folder": "Judgement Day", "run": RUN}
+    SH = {"shelf": XMR, "split": True, "why": "fixture: two runs share the shelf; the run in force stays, and the G1 "
+          "group plus a numbered range of another run move to a key of their own"}
+    K2 = "Selftest Round Two v2 (2097)"
+    rng = dict(_rspec)
     ids1 = (XMR,)
-    p = write_split("P-910", [SH, {"group": "G1", "files": len(g1), "key": "X-Men Red v2 (2022)", "run": RUN},
-                              dict(rng, key="X-Men Red v2 (2022)")], ids1)
+    p = write_split("P-910", [SH, {"group": "G1", "files": len(g1), "key": K2}, dict(rng, key=K2)], ids1)
     r = _cs(p)
-    check(r.returncode == 0 and "0 failure(s)" in r.stdout,
-          f"(c) P-910's group + range lines pass (S{XMR_JOIN} is named by R-031's F line since wave 17)",
+    check(r.returncode == 0 and "0 failure(s)" in r.stdout, f"(c) P-910's group + range lines pass (S{XMR})",
           r.stdout[-600:])
-    # (b) the missed-join WARN, on a shelf whose F line names no join: Storm Front S9845 stating a run whose cv
-    # is S9439's S identity (Infinity, CV 66319) — and the same move by S9439's own key is REFUSED unapproved
-    if SPLIT_SID in split_pop and 9439 in ev.series:
-        r = _cs(write_split("P-912", [P900[0]] + [dict(o, run={"cv": 66319}) for o in P900[1:]]))
-        check(r.returncode == 0 and "0 failure(s)" in r.stdout and "MISSED JOIN" in r.stdout
-              and "live shelf S9439" in r.stdout,
-              "(b) a run whose cv is S9439's S identity passes with a WARN naming the probable missed join",
-              r.stdout[-600:])
-        _ik = ev.series[9439]["parsedKey"] or "Infinity"
-        r = _cs(write_split("bad-join-unapproved", [P900[0]] + [dict(o, key=_ik) for o in P900[1:]]))
-        check(r.returncode != 0 and "no `join` approves" in r.stdout,
-              "bad-join-unapproved: refused for its own rule ('no `join` approves')", r.stdout[-400:])
     vj = os.path.join(OUT, "P-910.verb.jsonl")
     r = _cs("--project", p, "--out", vj)
     got = [json.loads(x) for x in open(vj, encoding="utf-8")] if os.path.exists(vj) else []
-    check(len(g1) == 16 and [o["itemId"] for o in got] == g1 + [118589, 118590]
-          and all(o == {"itemId": o["itemId"], "key": "X-Men Red v2 (2022)"} for o in got),
-          "(c) --project expands the G1 line into exactly the 16 item ids the packet prints under G1, and the "
-          "#5-6 range (folder 'Judgement Day') into items 118589 + 118590", f"G1 {g1}; got {[o['itemId'] for o in got]}")
-    jk = "X-Men Red v2 (2022) (Krakoa)"
-    r = _cs(write_split("P-911", [dict(SH, join=[XMR_JOIN]), {"group": "G1", "key": jk, "run": RUN},
-                                  dict(rng, key=jk)], ids1))
-    check(r.returncode == 0 and "0 failure(s), 0 warning(s)" in r.stdout and "1 approved join(s)" in r.stdout,
-          f"(b) the same run JOINING S{XMR_JOIN} by its key passes clean with a lead-approved `join`", r.stdout[-400:])
+    check(g1 and g1 == [r_[0] for r_ in _g1rows] and [o["itemId"] for o in got] == g1 + _rids
+          and all(o == {"itemId": o["itemId"], "key": K2} for o in got),
+          f"(c) --project expands the G1 line into exactly the {len(g1)} item ids the packet prints under G1, and the "
+          f"{rng['range']} range (match '{rng['match']}', folder '{rng['folder']}') into items {_rids}",
+          f"G1 {g1}; got {[o['itemId'] for o in got]}")
+    # (b) the same moves JOINING a live shelf by its exact key pass clean with a lead-approved `join`
+    _xn = _f_named(XMR)
+    J2 = next((j for j in [midsize] + sorted(ev.shelf_set) if j != XMR and j not in _xn
+               and ev.series.get(j, {}).get("parsedKey")
+               and land.live(land.land(ev.series[j]["parsedKey"])[1]) == {j}), None)
+    if J2:
+        jk = ev.series[J2]["parsedKey"]
+        r = _cs(write_split("P-911", [dict(SH, join=[J2]), {"group": "G1", "key": jk}, dict(rng, key=jk)], ids1))
+        check(r.returncode == 0 and "0 failure(s), 0 warning(s)" in r.stdout and "1 approved join(s)" in r.stdout,
+              f"(b) the same moves JOINING S{J2} by its exact key pass clean with a lead-approved `join`",
+              r.stdout[-400:])
+        r = _cs(write_split("bad-join-missing", [SH, {"group": "G1", "key": jk}, dict(rng, key=jk)], ids1))
+        check(r.returncode != 0 and "no `join` approves" in r.stdout,
+              f"...and without the `join`, the same key on S{J2} is refused", r.stdout[-400:])
+    amb = (XMR, {k: v for k, v in rng.items() if k != "folder"}) if _ramb else _ambiguous_elsewhere()
     bads12 = [
-        ("bad-range-ambiguous", [SH, dict(rng, key="X-Men Red v2 (2022)", folder=None)], ids1, "AMBIGUOUS"),
-        ("bad-range-nothing", [SH, {"range": "#900", "match": "X-Men Red", "key": "X-Men Red v2 (2022)"}], ids1,
+        ("bad-range-nothing", [SH, {"range": "#9000", "match": rng["match"], "key": K2}], ids1,
          "matches no numbered issue file"),
-        ("bad-group-unknown", [SH, {"group": "G99", "key": "X-Men Red v2 (2022)"}], ids1, "is none of them"),
-        ("bad-group-drifted", [SH, {"group": "G1", "files": 15, "key": "X-Men Red v2 (2022)"}], ids1,
+        ("bad-group-unknown", [SH, {"group": "G999", "key": K2}], ids1, "is none of them"),
+        ("bad-group-drifted", [SH, {"group": "G1", "files": len(g1) + 1, "key": K2}], ids1,
          "the shelf changed since the packet"),
-        ("bad-group-twoshelves", [SH, P900[0], {"group": "G1", "key": "X-Men Red v2 (2022)"}] + P900[1:],
-         (XMR, 9845), "ambiguous; add \"from\""),
-        ("bad-group-overlap", [SH, {"group": "G1", "key": "X-Men Red v2 (2022)"},
-                               {"itemId": g1[0] if g1 else 0, "key": "X-Men Red v2 (2022)"}], ids1, "moved twice"),
+        ("bad-group-overlap", [SH, {"group": "G1", "key": K2}, {"itemId": g1[0] if g1 else 0, "key": K2}], ids1,
+         "moved twice"),
     ]
+    if SPLIT_SID and _mv:
+        bads12.append(("bad-group-twoshelves", [SH, P900[0], {"group": "G1", "key": K2}] + P900[1:],
+                       (XMR, SPLIT_SID), "ambiguous; add \"from\""))
+    if amb:
+        _ash = SH if amb[0] == XMR else dict(SH, shelf=amb[0])
+        bads12.append(("bad-range-ambiguous", [_ash, dict(amb[1], key=K2)], (amb[0],), "AMBIGUOUS"))
+    else:
+        print("  (bad-range-ambiguous skipped: no shelf of the population carries one number twice under one title)")
     for name, lines, ids, want in bads12:
-        lines = [{k: v for k, v in o.items() if v is not None} if isinstance(o, dict) else o for o in lines]
         r = _cs(write_split(name, lines, ids))
         check(r.returncode != 0 and want in r.stdout, f"{name}: refused for its own rule ('{want}')", r.stdout[-400:])
-    r = _cs("--project", write_split("bad-project", [SH, {"group": "G99", "key": "X"}], ids1),
-            "--out", os.path.join(OUT, "bad-project.verb.jsonl"))
-    check(r.returncode != 0 and not os.path.exists(os.path.join(OUT, "bad-project.verb.jsonl")),
+    _bp = os.path.join(OUT, "bad-project.verb.jsonl")
+    if os.path.exists(_bp):
+        os.remove(_bp)
+    r = _cs("--project", write_split("bad-project", [SH, {"group": "G999", "key": "X"}], ids1), "--out", _bp)
+    check(r.returncode != 0 and not os.path.exists(_bp),
           "--project writes NOTHING when a group / range line does not expand", r.stdout[-300:])
 else:
-    check(False, f"S{XMR} is in the split population (the round-2 fixtures need it)")
+    check(False, "the split population holds a shelf with a G1 group and a nameable range outside it "
+          "(the round-2 fixtures need one)")
+
+# (a) nearby: a shelf whose winning S line holds an id the F line names is put on nearby:, keys verbatim (36) —
+# proved on a fixture decision, so it does not wait on a live shelf still carrying the flag it was written from
+_near_ix = splitbase.near_index(ev)
+_A = next(((v, next(iter(o))) for (leg, v), o in sorted(_near_ix.s_ids.items())
+           if leg == "cv" and len(o) == 1 and next(iter(o)) in ev.series and next(iter(o)) != SPLIT_SID), None)
+if SPLIT_SID and _A:
+    fx12 = os.path.join(OUT, "C-912.txt")
+    with open(fx12, "w", encoding="utf-8") as f:
+        f.write(f"# selftest: a split shelf whose F line names a run by its CV id only\n"
+                f"R {SPLIT_SID} | fixture: two runs share the shelf, the second is CV {_A[0]}\n"
+                f"F {SPLIT_SID} split-needed | proposed: the second run moves to its own key, cv={_A[0]}\n")
+    xb = splitbase.packet(SPLIT_SID, ev, {"file": fx12, "kind": "R"})
+    nl = [l for l in xb if l.lstrip().startswith("nearby:") and f"S{_A[1]} " in l]
+    check(nl and f"shares cv={_A[0]}" in nl[0],
+          f"(a) the packet names S{_A[1]} on its nearby: line (it holds the F line's CV {_A[0]} as its S)",
+          "\n".join(l for l in xb if "nearby:" in l)[:400] or "\n".join(xb[:8]))
+    _kj = sorted(ev.keys.get(_A[1], ()))[:4]
+    check(nl and _kj and all(json.dumps(k, ensure_ascii=False) in nl[0] for k in _kj),
+          f"36: nearby: prints S{_A[1]}'s ParsedKey(s) verbatim, quoted", (nl or [""])[0][:400])
+# (b) the missed-join WARN, on a shelf whose F line names no join: the part-11 shelf stating a run whose cv is
+# S9439's S identity (Infinity, CV 66319) — and the same move by S9439's own key is REFUSED unapproved
+if SPLIT_SID and _mv and 9439 in ev.series:
+    r = _cs(write_split("P-912", [P900[0]] + [dict(o, run={"cv": 66319}) for o in P900[1:]]))
+    check(r.returncode == 0 and "0 failure(s)" in r.stdout and "MISSED JOIN" in r.stdout
+          and "live shelf S9439" in r.stdout,
+          "(b) a run whose cv is S9439's S identity passes with a WARN naming the probable missed join",
+          r.stdout[-600:])
+    _ik = ev.series[9439]["parsedKey"] or "Infinity"
+    r = _cs(write_split("bad-join-unapproved", [P900[0]] + [dict(o, key=_ik) for o in P900[1:]]))
+    check(r.returncode != 0 and "no `join` approves" in r.stdout,
+          "bad-join-unapproved: refused for its own rule ('no `join` approves')", r.stdout[-400:])
 
 # a LANDED file is checked as landed (the pre-landing rules are false of it by construction)
 r = _cs("P-001")
@@ -1061,7 +1192,7 @@ else:
     check(False, "29: S1527 / S9439 / S102444 are live (the fixtures need them)")
 
 # 29c: pending_join — accepted, moves nothing, and must name a live shelf other than itself
-if SPLIT_SID in split_pop:
+if SPLIT_SID and _mv:
     r = run_split(write_split("P-929", [dict(P900[0], pending_join=[9439])] + P900[1:]))
     check(r.returncode == 0 and "0 failure(s)" in r.stdout, "29c: a shelf line with pending_join passes", r.stdout[-300:])
     for name, pj in (("bad-pj-self", [SPLIT_SID]), ("bad-pj-dead", [999999991]), ("bad-pj-shape", "9439")):
@@ -1253,13 +1384,6 @@ if _empty:
 r = _py("lookup.py", "--id", "gcd=12140", "cv=25753")
 check('gcd=12140 "Astro City Special"' in r.stdout and "cv=25753 " in r.stdout,
       "36: lookup --id names a GCD series and a CV volume in one call", r.stdout[:300])
-if XMR in split_pop and XMR_JOIN in ev.series:
-    _c037 = os.path.join(idbase.DECISIONS, "C-037.txt")
-    xb = splitbase.packet(XMR, ev, {"file": _c037, "kind": "R"} if os.path.exists(_c037) else split_pop[XMR])
-    nl = " ".join(l for l in xb if l.lstrip().startswith("nearby:"))
-    _kj = sorted(ev.keys.get(XMR_JOIN, ()))[:4]
-    check(_kj and all(json.dumps(k, ensure_ascii=False) in nl for k in _kj),
-          f"36: nearby: prints S{XMR_JOIN}'s ParsedKey(s) verbatim, quoted", nl[:400])
 if 1527 in ev.series:
     fx36 = os.path.join(OUT, "C-936.txt")
     with open(fx36, "w", encoding="utf-8") as f:
@@ -1369,6 +1493,175 @@ check(r.returncode == 0 and "0 refused" in r.stdout and re.search(rf"link\s+S{co
       "37: apply_identity's dry run accepts the S + stale-flag file (S and dismissal land in one wave)",
       (r.stdout + r.stderr)[-400:])
 check(_snapshot() == _before14, "part 14 wrote nothing to state.json or batches/")
+
+# ── part 15: after wave 31 (TOOLS_TODO 38, 39; landed P- files stay green) ──────────────────────────────
+print("\nafter wave 31 — landed P- files stay green, merge-with that cannot land, kept-whole rows, re-admitted splits")
+_before15 = _snapshot()
+import check_splits as _csm
+
+_pfiles = sorted(os.path.join(idbase.DECISIONS, f) for f in os.listdir(idbase.DECISIONS)
+                 if re.match(r"^P-\d+\.jsonl$", f))
+
+
+def _plines(p):
+    return [json.loads(x) for x in open(p, encoding="utf-8") if x.strip()]
+
+
+def _copy_p(tag, p, lines):
+    """a P- file under OUT/<tag>/ with its REAL name — the undo CSVs are found by it — and its lines as given"""
+    d = os.path.join(OUT, tag)
+    os.makedirs(d, exist_ok=True)
+    q = os.path.join(d, os.path.basename(p))
+    with open(q, "w", encoding="utf-8") as f:
+        for o in lines:
+            f.write(json.dumps(o, ensure_ascii=False) + "\n")
+    return q
+
+
+# 1a: a landed file whose items a LATER split re-moved is history; an item with no such record never moved
+_live_item = dict(((r_[0], r_[1]) for r_ in con.execute(
+    "SELECT i.Id, cd.ParsedSeriesKey FROM Item i JOIN ComicDetail cd ON cd.ItemId = i.Id "
+    "WHERE i.Kind = 0 AND coalesce(i.IsExcluded,0) = 0")))
+H = None
+for _p in _pfiles:
+    _lt = _csm.later_moves(_p)
+    _ls = _plines(_p)
+    _h = next((k for k, o in enumerate(_ls) if isinstance(o.get("itemId"), int)
+               and any(r_[1] == o.get("key") for r_ in _lt.get(o["itemId"], ()))), None)
+    _d = next((k for k, o in enumerate(_ls) if isinstance(o.get("itemId"), int)
+               and _live_item.get(o["itemId"]) == o.get("key")), None)
+    if _h is not None and _d is not None:
+        H = (_p, _ls, _h, _d)
+        break
+if H:
+    _p, _ls, _h, _d = H
+    _pn = os.path.splitext(os.path.basename(_p))[0]
+    r = _cs(_copy_p("hist", _p, _ls))
+    check(r.returncode == 0 and "0 failure(s)" in r.stdout and "LANDED" in r.stdout
+          and "re-moved AFTER this landing by the later split" in r.stdout,
+          f"landed {_pn}: item {_ls[_h]['itemId']}, re-moved by a LATER split (its undo CSV row), is history, not "
+          f"PARTIALLY LANDED", r.stdout[-500:])
+    _bad = [dict(o) for o in _ls]
+    _bad[_h]["key"] = "Selftest Never Moved (2096)"
+    r = _cs(_copy_p("hist-badrecord", _p, _bad))
+    check(r.returncode != 0 and "PARTIALLY LANDED" in r.stdout,
+          f"...but the later record must take the item from THIS file's key: a line whose key no record carries "
+          f"FAILS as half-landed", r.stdout[-400:])
+    _bad = [dict(o) for o in _ls]
+    _bad[_d]["key"] = "Selftest Never Moved (2096)"
+    r = _cs(_copy_p("hist-halflanded", _p, _bad))
+    check(r.returncode != 0 and "PARTIALLY LANDED" in r.stdout and "never moved" in r.stdout,
+          f"a genuinely half-landed {_pn} (item {_ls[_d]['itemId']} never took its key, no later record) still FAILS",
+          r.stdout[-400:])
+else:
+    print("  (landed-history fixture skipped: no landed P- file has an item a later split re-moved)")
+
+# 1b: a `join` target a landed wave merged away is history when SeriesMerge records it; an unknown id still fails
+_ix15 = splitbase.near_index(ev)
+J = None
+for _p in _pfiles:
+    if _csm.landed_rows(_p) is None:
+        continue
+    _ls = _plines(_p)
+    for k, o in enumerate(_ls):
+        dead = [x for x in (o.get("join") or []) if isinstance(x, int) and x not in ev.series
+                and _ix15.live_of(x) is not None]
+        if "shelf" in o and dead:
+            J = (_p, _ls, k, dead[0])
+            break
+    if J:
+        break
+if J:
+    _p, _ls, k, x = J
+    _pn = os.path.splitext(os.path.basename(_p))[0]
+    r = _cs(_copy_p("joinmerged", _p, _ls))
+    check(r.returncode == 0 and "0 failure(s)" in r.stdout and f"target S{x} was merged into S{_ix15.live_of(x)}" in r.stdout,
+          f"landed {_pn}: its `join` S{x}, merged away since (SeriesMerge), is history, not a failure", r.stdout[-400:])
+    _bad = [dict(o) for o in _ls]
+    _bad[k]["join"] = [999999991 if y == x else y for y in _bad[k]["join"]]
+    r = _cs(_copy_p("joindead", _p, _bad))
+    check(r.returncode != 0 and "no SeriesMerge row carries it" in r.stdout,
+          f"...a landed `join` naming an id no SeriesMerge row carries still FAILS", r.stdout[-400:])
+else:
+    print("  (merged-join fixture skipped: no landed P- file joins a shelf merged away since)")
+
+# 38: F A merge-with=B when BOTH winning S lines carry cv=- can never land -> WARN pointing at the split lane
+_cvless = sorted(s for s, v in ck37.win_s_cv.items() if v is None and s in ck37.shelves)
+_A38 = next((s for s in _cvless if _d13[_w13[s]]["gcd"].get(s)), None)
+_B38 = next((s for s in _cvless if s != _A38), None)
+if _A38 and _B38:
+    _g38 = _d13[_w13[_A38]]["gcd"][_A38]
+
+    def _w38(name, cv):
+        p38 = os.path.join(OUT, name + ".txt")
+        with open(os.path.join(OUT, name + ".ids"), "w", encoding="utf-8") as f:
+            f.write(f"{_A38}\n")
+        with open(p38, "w", encoding="utf-8") as f:
+            f.write(f"# selftest: merge-with between two CV-less shelves (TOOLS_TODO 38)\n"
+                    f"S {_A38} cv={cv} gcd={_g38} 0.9 | {E}\n"
+                    f"F {_A38} merge-with={_B38} | fixture: the two shelves are one run by the GCD record alone\n")
+        return check_identity.parse(p38, ck37, [])
+    o38 = _w38("R-938", "-")
+    check(any("can never take effect" in w and f"merge-with={_B38}" in w and "split-needed" in w
+              for w in o38.get("warn", ())),
+          f"38: F {_A38} merge-with={_B38} with cv=- on both winning S lines WARNS, pointing at a split-lane join",
+          str(o38.get("warn")))
+    o38 = _w38("R-939", vol_a)
+    check(not o38.get("warn"), f"38: ...and not once this file's S line gives S{_A38} a CV (cv={vol_a})",
+          str(o38.get("warn")))
+else:
+    check(False, "38: two live shelves whose winning S lines carry cv=- exist (the fixture needs them)")
+
+# 39b: re-admission is 'the winning decision is not the one the last P- packet was rendered from'
+_X39 = SPLIT_SID or next(iter(sorted(split_pop)), None)
+if _X39:
+    _now39 = os.path.splitext(os.path.basename(split_pop[_X39]["file"]))[0]
+    check(splitbase.readmitted({_X39: split_pop[_X39]}, {_X39: ("P-999", _now39)}) == {}
+          and splitbase.readmitted({_X39: split_pop[_X39]}, {_X39: ("P-999", "A-000")})
+          == {_X39: ("P-999", "A-000", _now39)} and splitbase.readmitted({_X39: split_pop[_X39]}, {}) == {},
+          "39b: a handed-out shelf is re-admitted only when its winning decision is NEWER than its P- packet's",
+          str(splitbase.readmitted({_X39: split_pop[_X39]}, {_X39: ("P-999", "A-000")})))
+check(all(_p_emitted[s][1] != w[2] and w[2] == os.path.splitext(os.path.basename(split_pop[s]["file"]))[0]
+          for s, w in _again.items())
+      and all(f"re-admitted S{s}:" in _splits_dry for s in _again),
+      f"39b: next_batch --splits re-admits the shelves a later revisit re-flagged ({sorted(_again)})",
+      _splits_dry[:400])
+# 39a: --landed lists each `split: false` shelf whose flag still stands as a kept-whole row; a re-flagged one is not
+_kw_file, _kw_want, _kw_not = None, [], []
+for _p in _pfiles:
+    _ls = _plines(_p)
+    _w = [o["shelf"] for o in _ls if o.get("split") is False and o.get("shelf") in split_pop
+          and o["shelf"] not in _again and ev.size.get(o["shelf"], 0)]
+    if _w:
+        _kw_file, _kw_want = _p, _w
+        _kw_not = [o["shelf"] for o in _ls if o.get("split") is False and o.get("shelf") in _again]
+        if _kw_not:
+            break
+if _kw_file:
+    _pn = os.path.splitext(os.path.basename(_kw_file))[0]
+    sh39 = os.path.join(OUT, f"landed-kw-{_pn}.tsv")
+    _cs("--landed", _kw_file, "--out", sh39)
+    kw = [c for c in _rows(sh39) if len(c) > 4 and c[4] == "kept-whole"]
+    check(sorted(int(c[0][1:]) for c in kw) == sorted(_kw_want) and all(_kv(c).get("pair") == c[0][1:] for c in kw)
+          and not any(int(c[0][1:]) in _kw_not for c in _rows(sh39)),
+          f"39a: --landed {_pn} lists its kept-whole shelves {sorted(_kw_want)} (and not the re-flagged {_kw_not})",
+          str([c[:1] + c[3:] for c in kw]))
+    one = os.path.join(OUT, "landed-kw-one.tsv")
+    with open(one, "w", encoding="utf-8") as f:
+        f.write("\t".join(kw[0]) + "\n" if kw else "")
+    kdir = os.path.join(OUT, "emit-kw")
+    if os.path.isdir(kdir):
+        for f_ in os.listdir(kdir):
+            os.remove(os.path.join(kdir, f_))
+    r = _py("next_batch.py", "--revisit-file", one, "--out", kdir)
+    body = "".join(open(os.path.join(kdir, f_), encoding="utf-8").read() for f_ in os.listdir(kdir)
+                   if f_.endswith(".txt")) if os.path.isdir(kdir) else ""
+    check(kw and f"KEPT WHOLE by the {_pn} split reader" in body and "decide the shelf as ONE run" in body,
+          "39a: --revisit-file carries the kept-whole row into the R packet (decide it as ONE run)",
+          body[:300] or r.stdout[-300:])
+else:
+    print("  (39a skipped: no P- file holds a split: false shelf whose flag still stands)")
+check(_snapshot() == _before15, "part 15 wrote nothing to state.json or batches/")
 
 print(f"\n{len(failures)} failure(s)")
 if not KEEP:

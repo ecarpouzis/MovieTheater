@@ -1,5 +1,6 @@
 # shelves from the split lane (new + kept halves) — feed to next_batch.py --revisit-file
-# S<sid>	<key>	run=<json|->	<P- file>	new|kept[	pair=<origin sid>][	moved_cv=<id>,…][	pending_join=<sid>,…]
+# S<sid>	<key>	run=<json|->	<P- file>	new|kept|kept-whole[	pair=<origin sid>][	moved_cv=<id>,…][	pending_join=<sid>,…]
+# kept-whole = a `split: false` shelf (nothing moved): its F split-needed stands until an identity batch re-reads it as one run
 # pair = the shelf the split took this row's items from (a kept row is its own pair): --revisit-file never cuts a batch inside a pair group
 S1436	Astro City Metrobook Book	run=-	P-004.jsonl	new	pair=1431
 S102733	Astro City Special (2004)	run={"cv": 25753, "gcd": 12140}	P-004.jsonl	new	pair=1431
@@ -175,7 +176,7 @@ S8477	moved out -> S102786 "He-Man and the Lost Dragon (1986)"	run=-	P-004.jsonl
 S9908	moved out -> S102797 "John Carpenter Presents Storm Kids: Fetch (2023)"; S102798 "John Carpenter Presents Storm Kids: Hyperbreed (2020)"; S102799 "John Carpenter Presents Storm Kids: Monica Bleue - A Werewolf Story (2019)"; S102800 "John Carpenter Presents Storm Kids: The Grimms Town Terror Tales - Rise of the Candy Creeper (2021)"	run=-	P-004.jsonl	kept	pair=9908	moved_cv=128213,123297,133746
 S10202	moved out -> S102805 "Justice Leagues: Justice League of Aliens (2001)"; S102806 "Justice Leagues: Justice League of Amazons (2001)"; S102807 "Justice Leagues: Justice League of Arkham (2001)"; S102808 "Justice Leagues: Justice League of Atlantis (2001)"	run=-	P-004.jsonl	kept	pair=10202	moved_cv=25421,24044,20437,25422
 S10424	moved out -> S102811 "Kirby: Genesis (2011)"	run=-	P-004.jsonl	kept	pair=10424	moved_cv=40342
-S10690	moved out -> S10697 "Legion of Super-Heroes v6 (2010)"; S98213 "Legion of Super-Heroes v3 (1984)"	run=-	P-004.jsonl	kept	pair=10690	pending_join=98212
+S10690	moved out -> S10697 "Legion of Super-Heroes v6 (2010)"; S98213 "Legion of Super-Heroes v3 (1984)"	run=-	P-004.jsonl	kept	pair=10690	pending_join=10690
 S14065	moved out -> S102729 "Aliens vs. Predator Omnibus (2007)"	run=-	P-004.jsonl	kept	pair=14065	moved_cv=19078
 S14637	moved out -> S102837 "Revolution (2016)"; S102838 "Revolution: Heroes (2017)"	run=-	P-004.jsonl	kept	pair=14637	moved_cv=94219,99417
 S15143	moved out -> S102843 "Scary Christmas 2 (2021)"; S102844 "Scary Christmas 3 (2022)"; S102845 "Scary Christmas 4 (2023)"; S102846 "Scary Christmas V: Killer Claus (2024)"	run=-	P-004.jsonl	kept	pair=15143	moved_cv=161638
@@ -230,3 +231,5 @@ S7820	moved out -> S2233 "Batman: Gotham Knights"	run=-	P-004.jsonl	kept	pair=78
 S8190	moved out -> S102784 "Gun Honey (2021)"; S102785 "Gun Honey: Blood for Blood (2022)"; S8504 "Heat Seeker: Combustion (2024)"	run=-	P-004.jsonl	kept	pair=8190	moved_cv=139282,144801
 S9853	moved out -> S102774 "Fraggle Rock v2 (2011)"	run=-	P-004.jsonl	kept	pair=9853	moved_cv=38606
 S15318	moved out -> S102851 "Seeds of Anxiety (2004)"	run=-	P-004.jsonl	kept	pair=15318
+S5939	kept whole (split: false): NOT split: the six books are exactly IDW's collected line GCD 95013 'Dungeons & Dragons: The Legend of Drizzt' (2015-2017, 6 rows by subtitle: #1 Homeland 136pp…	run=-	P-004.jsonl	kept-whole	pair=5939
+S6410	kept whole (split: false): NOT split: the four trades Vol. 01-04 are exactly Valiant's Faith collected line GCD 114627 (#1 Hollywood and Vine 146pp, #2 California Scheming, #3 Superstar, …	run=-	P-004.jsonl	kept-whole	pair=6410

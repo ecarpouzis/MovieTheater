@@ -334,6 +334,13 @@ if "--splits" in sys.argv:
     pop = splitbase.population(ev)
     st.setdefault("splits", [])
     done = {s for b in st["splits"] for s in b["ids"]}
+    # TOOLS_TODO 39b: a shelf a later revisit RE-flagged split-needed (its winning decision is not the one its last
+    # P- packet was rendered from) is handed out again; one whose flag in force is the one its P- answer answered
+    # ("keep", split: false) is not — that one goes to an identity batch via check_splits --landed (39a)
+    again = splitbase.readmitted(pop)
+    done -= set(again)
+    for s, (pn, then, now) in sorted(again.items()):
+        print(f"   re-admitted S{s}: last handed out in {pn} (decided in {then}); re-flagged split-needed by {now}")
     dom = dominant_folders()
     if opt.get("only"):
         want = [int(x.strip().lstrip("S")) for x in opt["only"].split(",") if x.strip()]
@@ -402,8 +409,16 @@ if revisit or revisit_files:
                 moved_cv.setdefault(sid, set()).update(int(x) for x in extra["moved_cv"].split(",") if x.strip().isdigit())
             if len(col) >= 4 and col[2].startswith("run="):
                 batch = os.path.splitext(col[3].strip())[0]
-                if (col[4].strip() if len(col) > 4 else "new") == "kept":
+                kind = col[4].strip() if len(col) > 4 else "new"
+                if kind == "kept":
                     note = f"   split: the KEPT half of the {batch} split — {col[1].strip()}; re-identify what stayed"
+                elif kind == "kept-whole":
+                    # TOOLS_TODO 39a: the split reader answered `split: false` — the flag in force was answered
+                    # "keep", so this read decides the WHOLE shelf as one run (the residue named) and retires it
+                    note = (f"   split: KEPT WHOLE by the {batch} split reader (split: false, nothing moved) — "
+                            f"{col[1].strip().removeprefix('kept whole (split: false): ')}; decide the shelf as ONE "
+                            f"run (S, residue named in the clause) so its F split-needed is retired, or R if it "
+                            f"still cannot be one")
                 else:
                     note = (f"   split run: \"{col[1].strip()}\" {col[2].strip()} (new shelf from {batch}) — "
                             f"seed the S line from these ids, then verify them")

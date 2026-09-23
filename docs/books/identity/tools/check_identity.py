@@ -66,6 +66,10 @@ class Checker:
         # fail the audit-trail copy of it in the older batch (R-016 refused S66039 over A-022's S).
         _d, _w, _sup, _dup = idbase.scan_decisions()
         self.superseded_pairs = {(sid, os.path.basename(f)) for sid, olds in _sup.items() for f in olds}
+        # TOOLS_TODO 38: every shelf whose WINNING decision is an S line -> its cv (None = `cv=-`), so a
+        # merge-with between two shelves that can never share a CV is seen before a wave carries it
+        self.win_s_cv = {sid: _d[w]["cv"].get(sid) for sid, w in _w.items() if _d[w]["kinds"].get(sid) == "S"}
+        self.win_s_file = {sid: os.path.splitext(os.path.basename(_w[sid]))[0] for sid in self.win_s_cv}
 
     def item_exists(self, iid):
         if self.items is None:
@@ -187,7 +191,8 @@ def parse(path, ck, errors):
     items_batch = idbase.is_item_batch(path)
     decided, out = {}, {"S": [], "R": [], "F": [], "I": [], "C": [], "N": [], "landed": [],
                         "no_record": set(), "kind": "X" if items_batch else "S"}
-    cv_seen, gcd_seen, merges = {}, {}, set()
+    cv_seen, gcd_seen, merges, merge_lines = {}, {}, set(), []
+    out["warn"] = []
     # (itemId, leg, key) -> line number. Since TOOLS_TODO 17 a book may carry SEVERAL `C` lines — one per
     # (leg, run) — so the thing that may not be said twice is a run, not an item.
     collected = {}
@@ -239,6 +244,9 @@ def parse(path, ck, errors):
             out["F"].append((sid, head[1], why))
             if head[1].startswith("merge-with="):
                 merges.add(sid)
+                tgt = head[1].split("=", 1)[1].lstrip("S")
+                if tgt.isdigit():
+                    merge_lines.append((loc, sid, int(tgt)))
             if flag == "stale-flag":
                 # TOOLS_TODO 37: "this open conflated / overlap flag is stale" — lets the S on the same shelf
                 # stand in THIS file; wave_land.ps1 lands it only if the lead approved the id (stale_flags.py)
@@ -411,6 +419,30 @@ def parse(path, ck, errors):
     for gid, sids in gcd_seen.items():
         if len(set(sids)) > 1 and not (set(sids) & merges):
             errors.append(f"{base}: shelves {sorted(set(sids))} share gcd={gid} with no 'F <sid> merge-with=' line")
+
+    # TOOLS_TODO 38: `F A merge-with=B` lands only through a SHARED CV (the resolve merges on canonical key `cv:<id>`),
+    # so when the winning S lines of BOTH shelves carry cv=- the line can never take effect (R-044's S14555 ->
+    # S103376: two GCD-only shelves of one OGN line). A WARN, not a failure — the S lines themselves may be right —
+    # pointing at the lane that CAN move the books: a split with a lead-approved `join`. This file's own S line wins
+    # for a shelf it decides; a merge-with line a later revisit superseded is audit trail and is not re-warned.
+    local_cv = {s[0]: s[1] for s in out["S"]}
+    for loc, sid, tgt in merge_lines:
+        if (sid, base) in ck.superseded_pairs or tgt not in ck.shelves or sid not in ck.shelves:
+            continue
+        sides = []
+        for s in (sid, tgt):
+            if s in local_cv and (s, base) not in ck.superseded_pairs:
+                sides.append((local_cv[s], "this file"))
+            elif s in ck.win_s_cv:
+                sides.append((ck.win_s_cv[s], ck.win_s_file[s]))
+            else:
+                sides.append(("?", None))
+        if all(cv is None for cv, _f in sides):
+            out["warn"].append(
+                f"{loc}: F {sid} merge-with={tgt} can never take effect — both shelves' winning S lines carry cv=- "
+                f"(S{sid} in {sides[0][1]}, S{tgt} in {sides[1][1]}) and the resolve merges only on a shared CV. Move "
+                f"the books by the split lane instead: F {sid} split-needed naming S{tgt}, and a P- line joining its key "
+                f"with a lead-approved \"join\": [{tgt}] (R-043/R-046's S14555 -> S103376)")
 
     # A `C` line belongs to the file that READ that book's shelf. Without this a batch could rewrite the
     # containment of a shelf nobody in this pass looked at — and a Curated span is what the file
@@ -606,7 +638,7 @@ def main():
         print("no decision files")
         return 0
     ck = Checker()
-    total, all_landed = 0, []
+    total, all_landed, nwarn = 0, [], 0
     for path in files:
         errors = []
         out = parse(path, ck, errors)
@@ -620,6 +652,9 @@ def main():
         all_landed.extend((os.path.basename(path), sid, new) for sid, new in out["landed"])
         for e in errors:
             print(f"        {e}")
+        for w in out.get("warn", ()):
+            print(f"        WARN {w}")
+        nwarn += len(out.get("warn", ()))
 
     if every:
         # Deciding a shelf twice is normally the bug the coverage contract exists to catch. Deciding it
@@ -747,7 +782,7 @@ def main():
             print(f"          {f:<14} S{sid} -> merged into S{new}")
         if len(merged) > 12:
             print(f"          ... and {len(merged)-12} more")
-    print(f"{len(files)} file(s), {total} failure(s)")
+    print(f"{len(files)} file(s), {total} failure(s)" + (f", {nwarn} warning(s)" if nwarn else ""))
     return 1 if total else 0
 
 

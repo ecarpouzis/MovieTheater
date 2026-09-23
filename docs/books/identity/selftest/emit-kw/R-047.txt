@@ -1,0 +1,137 @@
+## Conventions for this batch (29 shown of 38 matched; 328 in LEDGER.md; 1 shelf/shelves: pub:berger ×1 · kind:collected-line ×1 · kind:trade-only ×1 · pub:dark-horse ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-020] (1 shelf/shelves) kind:archive kind:collected-line pub:dark-horse
+- Reprint LIBRARY / omnibus lines over a run split across publishers (Fear Agent Final Edition, Kabuki Library,
+  Madman Library) have no single run record → the collected line at 0.9 with an `N` naming the underlying run.
+[L-023] (1 shelf/shelves) kind:trade-only pub:dark-horse pub:dynamite sig:trade-link
+- 23 stored CV links in three batches pointed at the TPB record (count = the books we hold) instead of the run
+  — heavy on trade-only Dark Horse / Dynamite shelves. Expect it; `F wrong-cv-link`, `S` = the run.
+[L-029] (1 shelf/shelves) kind:trade-only pub:dark-horse pub:image pub:marvel sig:probe sig:trade-link
+- On trade-only Marvel / Image / Dark Horse shelves the "CV linked" block is the block that misleads (it is the
+  collected record); `lookup.py` by the run's name finds the run when the packet names only the collected record.
+[L-188] (1 shelf/shelves) kind:collected-line kind:trade-only pub:berger pub:boom pub:dark-horse sig:trade-link
+- The matches-our-holdings collected-edition trap dominates Boom! / Berger Books trade-only shelves: a stored or
+  per-file count-N pick where N equals OUR trade count is almost always the trade record; the run's true (larger)
+  count is usually one candidate away.
+[L-219] (1 shelf/shelves) kind:collected-line pass:item pass:revisit pub:dark-horse sig:barcode sig:stale-flag sig:trade-link
+- A shelf holding ONE TRADE PER MINI of a chain (Blue Book "1961" / "1947", Brain Boy / The Men from G.E.S.T.A.L.T.,
+  Briggs Land / Lone Wolves, Vox Machina Origins I / II, Baltimore's minis + its #1-40 trade line) is SEVERAL runs
+  numbering from #1 — its conflated flag is TRUE of the shelf, never stale; `R` + split unless a provider holds a
+  collected LINE record coextensive with the shelf (then S the line, minis on `N`). Sonnet called 7 of these stale in
+  C-021; the lead sent them to R-020. **ERIC'S RULING 2026-09-16: ONE leg's coextensive line record is enough** —
+  the S carries that line at 0.9 (`cv=-` when ComicVine has no line volume), each book's own ComicVine count-1
+  volume / issue id, ISBN and LOCG bridge go on its `I` line, the minis underneath are named on `N` lines, and the
+  flag is declared stale so the lead can dismiss it. Refusing such a shelf recorded nothing; the correct data is the
+  line PLUS the per-book records. A shelf holding ISSUE files of several minis (Baltimore, Lobster Johnson) or
+  several publishers' runs (Angel) is still `R` + split — no single record describes it.
+[L-233] (1 shelf/shelves) kind:collected-line pass:item pass:revisit pub:dark-horse sig:trade-link
+- ComicVine does NOT index Dark Horse TRADE LINES: a plain "Hellboy" / "B.P.R.D." volume query returns nothing; CV
+  mints a count-1 volume per BOOK while GCD keeps one collected series per title (R-021: six of seven shelves).
+  RULED by Eric 2026-09-16 (see the chain-of-minis ruling above): the GCD line alone is the identity at 0.9, CV's
+  per-book volumes go on the `I` lines. R-020..R-022's one-leg refusals were flipped to S by the R-023 pass.
+[L-243] (1 shelf/shelves) kind:collected-line pass:item pass:revisit pub:dark-horse pub:dynamite sig:trade-link
+- Under the one-leg ruling every Dark Horse / Dynamite chain-of-minis shelf in R-020..R-022 became `S cv=- gcd=<line>
+  0.9` + `F wrong-cv-link` (the stored id was the FIRST mini's run in every case) + minis on N + a `C` per trade —
+  except the issue-file chains (Baltimore, Lobster Johnson), the several-publisher shelf (Angel), a shelf mixing one
+  season's issues with another's books (Angel & Faith), and Ash (three count-1 records, no line on either leg).
+[L-135] (1 shelf/shelves) kind:collected-line
+- An Epic / Complete Collection LINE is found by probing the line name with NO volume subtitle: "Generation X Epic
+  Collection" → GCD 174151, shared by four sibling shelves.
+[L-164] (1 shelf/shelves) kind:archive kind:collected-line kind:strip sig:probe
+- Year-by-year archives of a newspaper/web strip (Doonesbury, Dennis the Menace, Rip Kirby, The Little King) have no record
+  in either provider → R + provider-missing; where a provider holds the strip's own collected line (Cyanide & Happiness,
+  Oglaf) pair at 0.9 as a format split.
+[L-186] (1 shelf/shelves) kind:collected-line
+- REMINDER (lead ruling, applied again on Princeless S14096): a collected LINE with its own record (GCD 106434, nine
+  trades) wins over the first mini's run; linking the first four-issue mini to a nine-volume trade shelf is wrong-cv-link.
+[L-244] (1 shelf/shelves) kind:collected-line pass:item
+- A trade collecting TWO minis, and an omnibus, cannot yet be stated by a `C` line (one range, one run, one per item):
+  name the runs on an `N` for now — TOOLS_TODO 17 adds per-run ranges and several `C` per item.
+[L-246] (1 shelf/shelves) kind:collected-line pass:item
+- ITEM PASS (X-001..X-003): on RUN-identity shelves the per-file GCD link reuses the run's own series matched to ONE
+  issue by number for vol. 01 only, while later volumes resolve to a real collected-edition series — check whether
+  vol. 01's link differs in kind from vol. 02+ before trusting it (Kevin Keller, Mega Man, Klaus, Dark Crystal …).
+[L-247] (1 shelf/shelves) kind:collected-line
+- A `C` that restates the shelf's own run needs its ids repeated in the clause to clear 40 characters; the clause is
+  the evidence, not a pointer. A shelf's own collected LINE and the run it collects are two records (Invisible
+  Kingdom: line GCD 151274 vs run CV 117748 / GCD 142448; Goldie Vance: line CV 94628 vs run CV 89593) — the `C`
+  names the RUN.
+[L-248] (1 shelf/shelves) kind:collected-line
+- Sibling shelves of one franchise can share one real GCD collected-edition line (Fence S6636/S6639/S6640 → 123731);
+  the sibling's landed S is evidence for the weak per-file matches on the others.
+[L-251] (1 shelf/shelves) kind:collected-line
+- Deluxe / Yearbook / Omnibus editions of the shelf's own ongoing with NO judged range get an `N` naming the
+  relationship, never an invented `C` range (the range is containment's to read).
+[L-258] (1 shelf/shelves) kind:collected-line sig:stamp
+- A degenerate packet block can stamp ONE GCD issue id onto every book of a shelf (Green Arrow S97350, six eras of
+  collected lines) — resolve only by each series' full issue list matched by title, never by the stamp.
+[L-269] (1 shelf/shelves) kind:collected-line kind:trade-only
+- An omnibus bundling several minis gets one `C` per mini at that mini's full range; an anthology TPB ("… and
+  Others") is not a numbered run and gets an `N`, not a forced `C`.
+[L-275] (1 shelf/shelves) kind:collected-line pass:item sig:probe sig:trade-link
+- A count-1/2/3 trade record the shelf's `N` called absent is often in the catalogs under a spelling the packet
+  never probed ("The Adventures of …", "Complete Collection", "Deluxe") — probe before writing no-record.
+[L-279] (1 shelf/shelves) kind:collected-line
+- Blade of the Immortal (S23118) is the canonical "line + run" shape: GCD's 31 collected-edition rows are the `I`
+  identities (cv=- — ComicVine mints only the floppy volume), and the floppy run CV 9069 is what every `C` names,
+  ranges #0-206 ascending across the 31 books. A single-leg shelf's books inherit the shelf's 0.9, never more.
+[L-282] (1 shelf/shelves) kind:collected-line
+- A `gcd=-` / dump-only shelf's books inherit the shelf's 0.9 (Cells at Work! Lady, Dragon Head); an exact edition
+  can exist on GCD alone and be absent from ComicVine entirely (Cat Shit One Omnibus GCD 186621 → 0.9, cv=-).
+[L-285] (1 shelf/shelves) kind:collected-line pass:item sig:stamp
+- ITEM PASS (X-031..X-033): JoJo's Bizarre Adventure part-shelves are double-stamped — per-file CV is the whole-saga
+  hardcover omnibus volume (165667, one issue per PART) and per-file GCD the umbrella whole-saga series (27115) by
+  raw issue number; both wrong for all 37 books. Parts 1-3 have no CV softcover record (cv=-); Parts 4-5 do.
+[L-286] (1 shelf/shelves) kind:collected-line sig:probe
+- A shelf-level "no record" `N` can be wrong for an English product too (Innocent Omnibus: CV 157999 / GCD 206125
+  under "Innocent Omnibus") — probe the edition's own name before inheriting the shelf's gap.
+[L-287] (1 shelf/shelves) kind:collected-line pass:item
+- A series can be wrong on BOTH legs at once (Hunter x Hunter, Inuyashiki, Kakegurui Twin): the header pool by
+  ordinal is the only source; an omnibus with no dedicated record on either leg is `N no-record`, never a mapping.
+[L-289] (1 shelf/shelves) kind:collected-line kind:manga pass:item
+- ITEM PASS (X-037..X-039): one GCD issue row can cover TWO of our volumes when GCD's count undershoots (PTSD Radio,
+  Ojojojo) — both books share the id at 0.9; a genuine 2-in-1 omnibus whose header rows read #1-2 / #3-4 maps 1:1
+  at 0.95 (Orb). A 2-vol English omnibus against a 4-vol Japanese original has no safe mapping → `gcd=s<series>`.
+[L-291] (1 shelf/shelves) kind:collected-line kind:foreign pass:item
+- ITEM PASS (X-040..X-042): a run you can NAME but whose GCD rows carry no page counts gives no safe per-volume
+  range (SPRIGGAN Deluxe → GCD 188803) — `N`, not a guessed `C`; a per-file link can point at a foreign edition of
+  the WRONG book entirely (Summer Wars: the Complete Edition has its own one-shot record CV 155900 / GCD 142966).
+[L-309] (1 shelf/shelves) kind:collected-line pass:item sig:probe
+- A collected line's own issue rows carry the trade's SUBTITLE as the issue title, so once one book of a line is
+  identified, `--issues <volume>` or `gcd_issue WHERE series_id=?` resolves the whole Vol. 01-N run in one query —
+  "own container id not probed" is never a valid no-record.
+[L-314] (1 shelf/shelves) kind:collected-line pass:item
+- `cvref.normName` drops "the / a / an / of / and" everywhere, not just leading articles — a word-preserving
+  normalizer misses ~90% of exact matches; replicate cvref's tokenizer when matching titles by script. A bare
+  trailing-number fallback (trade "01" → run issue #1) is safe only for mislabeled single-issue files, never for
+  "Vol." / "Book" / dash-subtitled titles (it matched an 824pp omnibus to issue #1). One CV issue id reused across
+  two differently titled books on a shelf is a sign of two eras, not one book. A digital "Collection Book NN"
+  bundle is a different catalog shape from a "Vol. NN" trade and is often uncatalogued — honest no-record.
+[L-016] (1 shelf/shelves) sig:comicinfo
+- Glorith rips' ComicInfo `Web` ids are NOT GCD issue ids in our dump (29 checked: missing or unrelated). Never
+  claim 1.0 from one. A ComicInfo `Volume` holding a 6-digit number IS a ComicVine volume id (Lex and the City =
+  162184) — a genuine 1.0 assertion.
+[L-030] (1 shelf/shelves) sig:collision
+- One folder split into two shelves by a subtitle in one filename (Analog, Witch Doctor) → `F merge-with=<sid>`.
+
++9 more matched entries not shown: L-032, L-064, L-085, L-101, L-113, L-114, L-151, L-160, L-310 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S15497 She Could Fly  [tier A]   keys: She Could Fly  years 2018-2018  3 files / 3 collections
+   split: KEPT WHOLE by the P-003 split reader (split: false, nothing moved) — L-186 beats RESIDUE: GCD 142299 She Could Fly [collected edition] 2019-2021 count 3 is #1 Obsessive Propulsion (issue 1936197), #2 The Lost Pilot (2246657), #3 …; decide the shelf as ONE run (S, residue named in the clause) so its F split-needed is retired, or R if it still cannot be one
+   folders: [3] Berger Books\She Could Fly (2018)
+   files:   [8855] COL She Could Fly Vol. 01 - Obsessive Propulsion (2019) (digital) (Son of Ultron-Empire).cbr (146pp)
+            [8856] COL She Could Fly Vol. 02 - The Lost Pilot (2019) (digital) (Son of Ultron-Empire).cbr (127pp)
+            [8857] COL She Could Fly Vol. 03 - Fight or Flight (2021) (digital) (Son of Ultron-Empire).cbr (107pp)
+   ours:    ComicInfo Series: "She Could Fly"x3; ComicInfo Publisher: "Dark Horse"x3
+   GCD says: [8855] gcd_reprint 1936197: s126788 She Could Fly (2018) #1-4 [9 stories]
+             [8856] gcd_reprint 2246657: s143830 She Could Fly: The Lost Pilot (2019) #1-5 [11 stories]
+   CV linked:      vol 112201 "She Could Fly" 2018 Dark Horse Comics 4 issues; cached #1-3 (3); yearΔ 0; ratio 0/4; no judged range; v1 per-file: same volume on 3/3 files
+   CV candidates:  (= linked) · 117604 "She Could Fly" 2019 Dark Horse Comics 1 issue 703000 s53 · 118267 "She Could Fly: The Lost Pilot" 2019 Dark Horse Comics 5 s40 · 123252 "She Could Fly: The Lost Pilot" 2019 Dark Horse Comics 1 issue 729563 s35 · 140483 "She Could Fly: Fight or Flight" 2021 Dark Horse Comics 1 issue 898849 s35 · 5829 "A Decade of Dark Horse" 1996 Dark Horse Comics 4 s35 · 19043 "Dark Horse Presents Annual" 1997 Dark Horse Comics 4 s35   (v1 search)
+   CV local rip:   (= linked) · 117604 "She Could Fly" 2019 Dark Horse Comics 1 issue 703000 · 118267 "She Could Fly: The Lost Pilot" 2019 Dark Horse Comics 5 (via CV candidate name "She Could Fly: The Lost Pilot") · 123252 "She Could Fly: The Lost Pilot" 2019 Dark Horse Comics 1 issue 729563 (via CV candidate name "She Could Fly: The Lost Pilot")   (rip lookup)
+   GCD per-file:   series 142299 "She Could Fly" 2019-2021 Dark Horse [collected edition] 3 on 3/3 files; methods numx3
+   GCD dump:       (= per-file) · 126788 "She Could Fly" 2018-2018 Dark Horse [] 4 · 143830 "She Could Fly: The Lost Pilot" 2019-2019 Dark Horse [] 5 (via CV candidate name "She Could Fly: The Lost Pilot")   (dump lookup)
+   bridges:        gcd 142299 -> LOCG 137528 "She Could Fly" support 3 · gcd 142299 -> OL /works/OL20163422W "None" isbnSupport 3

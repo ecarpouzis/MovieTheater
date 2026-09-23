@@ -113,6 +113,44 @@ def population(ev, decides=None, winner=None):
     return out
 
 
+RX_P_HEAD = re.compile(r"^== S(\d+)\b.*\bdecided in (\S+)")
+RX_P_BATCH = re.compile(r"^P-(\d+)\.txt$")
+
+
+def p_emissions():
+    """{sid: (P-name, decided-in)} — the LAST P- packet each shelf was handed out in, and the decision file that
+    packet was rendered from, read off the packet's own header (`== S22811 … decided in C-003 (R)`). The packet is
+    the record of what the split reader saw; state.json only says the shelf was emitted."""
+    out = {}
+    if not os.path.isdir(idbase.BATCHES):
+        return out
+    for n, f in sorted((int(m.group(1)), f) for f in os.listdir(idbase.BATCHES) for m in [RX_P_BATCH.match(f)] if m):
+        for raw in open(os.path.join(idbase.BATCHES, f), encoding="utf-8"):
+            m = RX_P_HEAD.match(raw)
+            if m:
+                out[int(m.group(1))] = (os.path.splitext(f)[0], m.group(2))
+    return out
+
+
+def readmitted(pop, emitted=None):
+    """TOOLS_TODO 39b: {sid: (P-name, decided-in then, winner now)} — shelves of the split population that a P- batch
+    already handed out, but whose WINNING decision is a different file from the one that packet was rendered from: a
+    later revisit re-flagged them split-needed (R-033 re-flagging S22811 and S19456 after P-003, R-034 S8477 after
+    P-004), so the P- answer they got is not an answer to the flag in force. A shelf whose winning line is still the
+    one its packet showed (kept `split: false` under L-186) is NOT re-admitted — its answer was "keep", and
+    `check_splits --landed` routes it to an identity batch as a `kept-whole` row (39a)."""
+    emitted = p_emissions() if emitted is None else emitted
+    out = {}
+    for sid, rec in pop.items():
+        if sid not in emitted:
+            continue
+        pname, then = emitted[sid]
+        now = os.path.splitext(os.path.basename(rec["file"]))[0]
+        if now != then:
+            out[sid] = (pname, then, now)
+    return out
+
+
 # ── where a key lands ─────────────────────────────────────────────────────────────────────────────
 class Landing:
     """The resolver's three lookups, replayed read-only (see the module docstring)."""
