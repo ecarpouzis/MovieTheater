@@ -9,7 +9,7 @@ data until you're fully confident."*
 ## The packet (one per shelf)
 ```
 == S<sid> <name>  [tier]  keys: <parsed keys>  years a-b  n files / c collections     ← the shelf
-   flags:   ContainmentFlag rows (only if any)      folders: [count] <path under 5 - Comics\>
+   flags:   ContainmentFlag rows `#<id> <flag> [state]` (only if any)      folders: [count] <path under 5 - Comics\>
    files:   every filename with page count; runs of ≥6 same-skeleton names fold to "first … last (n, pp lo–hi)"
    ours:    ladder of numbered issue files; judged ranges (from the containment pass, read off the books);
             ComicInfo Series/Volume/Count/Publisher/Web; barcodes/ISBNs
@@ -51,7 +51,8 @@ Arithmetic beats assertion: a 4-issue volume is not a 50-issue run whatever its 
 S <sid> cv=<volumeId>|- gcd=<gcdSeriesId>|- <conf> | WHAT agreed (which two independent things, or which leg + which of our own assertions) and which arithmetic held
 R <sid> | the candidates seen and why each was rejected
 F <sid> <flag> | detail        flags: split-needed · wrong-cv-link · needs-fetch cv=<id> · misfiled · not-a-run ·
-                               provider-missing · merge-with=<sid> · duplicate-shelf · partial-rip · mobile-rip · needs-web
+                               provider-missing · merge-with=<sid> · duplicate-shelf · partial-rip · mobile-rip · needs-web ·
+                               stale-flag=<flagId> (below)
 I <itemId> cv=<issueId>|- gcd=<issueId>|- isbn=<isbn>|- <conf> | evidence     (a BOOK's own record — see the rule below)
 C <itemId> cv=<volumeId>|- gcd=<seriesId>|- [mu=<id>] [barney=<key>] [inducks=<code>] [marvel=<id>] #<a>-<b> <conf> | evidence   (what the book COLLECTS)
 N <sid> note worth keeping
@@ -78,15 +79,12 @@ legs that DO agree on the numbering still belong on one line (`cv=… gcd=… #1
 (leg, run) twice — that is two answers to one question. The book's own span takes the FIRST line's range.
 
 **An `X-NNN` batch is an ITEM batch (2026-09-16, TOOLS_TODO 16), and its `.ids` are BOOKS, not shelves.** Each
-block is a shelf whose identity is already DECIDED — its `S` line is restated at the top with the volume /
-series it was linked to, and the shelf's own `N` notes come with it, because on a chain-of-minis shelf that is
-where the reader who decided it wrote down which mini is which. You do not re-decide the shelf: an `X-` file
-carries ONLY `I`, `C` and `N` lines, and an `S` or `R` in one is a failure. What you answer is the BOOKS listed
-under `books:` — for each, its own record (`I`) and, where it collects a run that is not the shelf's own
-identity, what it collects (`C`). The packet gives you the pool those answers come out of: the linked volume's
-ISSUE ids, the GCD series' issue rows with page counts and ISBNs (our rips match within ±10pp, and that is the
-strongest per-book check there is), the judged ranges and which of them already name a run, the ComicInfo
-assertions and the barcodes. **Coverage: every item id in the `.ids` has an `I` line, or an explicit
+block is a shelf whose identity is already DECIDED — its `S` line and `N` notes (which mini is which) restated at
+the top. You do not re-decide the shelf: an `X-` file carries ONLY `I`, `C` and `N` lines; an `S` or `R` in one is a
+failure. Answer the BOOKS under `books:` — each one's own record (`I`) and, where it collects a run that is not the
+shelf's identity, what it collects (`C`) — from the packet's pool: the volume's ISSUE ids, the GCD issue rows with
+page counts and ISBNs (our rips match within ±10pp — the strongest per-book check), the judged ranges, ComicInfo,
+barcodes. **Coverage: every item id in the `.ids` has an `I` line, or an explicit
 `N <itemId> no-record | why` saying what was looked for and where it was not found (≥ 40 characters).** A `C`
 line is not coverage — it says what a book collects, not what it is.
 
@@ -147,9 +145,9 @@ F 16797 misfiled | items 82880-82882 ("11 Starlord 1.cbr" … 36-37pp) sit under
 - **The web is closed** (comics.org, comicvine.gamespot.com, leagueofcomicgeeks.com all 403 the fetch tool). Do not
   try. If a shelf genuinely needs an outside answer, write `F <sid> needs-web | the exact question` and decide the
   shelf at 0.7 or `R`. Local lookups with another spelling: `python lookup.py "<name>" [--year YYYY] [--contains]`
-  from `docs\books\identity\tools` (a few seconds to load) — and `python lookup.py --batch <file>` answers a file
-  of such queries (one per line, same shape, plus `--issues <vol>` / `--collects <gcd issue>`) in ONE call: put
-  every spelling you mean to try in the file rather than paying the load once per spelling.
+  from `docs\books\identity\tools` — and `python lookup.py --batch <file>` answers a file of such queries (one per
+  line, same shape, plus `--issues <vol>` / `--collects <gcd issue>`) in ONE call: put every spelling in the file.
+  `--shelf <sid>`, `--who-stores cv=<id>`, `--id cv=|cvi=|gcd=|gcdi=<id>`: who holds what, no sqlite.
 
 **Promoted from the conventions ledger (2026-09-22) — these hold on every shelf, so they live here, verbatim:**
 - `<Publisher>\<Title> (<year>)\<Title> NNN (<year>) (digital) (<ripper>).cbz` is the house shape; the name carries
@@ -164,6 +162,11 @@ F 16797 misfiled | items 82880-82882 ("11 Starlord 1.cbr" … 36-37pp) sit under
   vertical rip is the 8-chapter Infinite Comic, not the 4-issue print mini.
 - cvref's `normName` DROPS "of" (and the leading article) but keeps from/with/in: an exact `lookup.py` probe containing
   "of" ("Sea of Thieves", "Books of Magic", "Year of Valiant") returns 0 CV hits on volumes plainly there — drop the "of".
+  (OBSOLETE since TOOLS_TODO 30: lookup keeps "of" — probe the name as printed.)
+- **A STALE open conflated/overlap flag (TODO 37):** write the `S` plus `F <sid> stale-flag=<id> | what the files
+  show` per open flag (`#id` on `flags:`, ≥ 40 chars) — not R + F. The lead approves; the landing dismisses it.
+- **`merge-with` merges only via a SHARED cv**: a `cv=-` target never merges (wave 21: S10690 → S98212) — give
+  both S lines the same cv, or say why not.
 - RESIDUE, defined (lead ruling after Secret Six S15276): a duplicate rip, an annual, a one-shot, a single misfiled
   book, or ONE trade of a run that lives on another shelf. Two or more whole trades of a DIFFERENT run with its own
   record are a co-equal run — `R` + split-needed even at 6:2 — and the shelf's overlap flag is NOT stale.
@@ -193,12 +196,9 @@ F 16797 misfiled | items 82880-82882 ("11 Starlord 1.cbr" … 36-37pp) sit under
   own series or title is not this book, the `⚠ RANGE CONTRADICTED` is void; say so on an `N`. The packet flags
   `⚠ stored GCD row is another book`; `lookup.py --gcd-issues <series>` / `--gcd-series "<name>"` list rows.
 ## Conventions for your batch (context for reading — never a rule applied across a folder)
-The conventions ledger (328 entries learned batch by batch: which publisher mints a count-1 trade record, which
-folder shape files a book twice, which spelling hides a GCD row) is `LEDGER.md`, every entry TAGGED by publisher /
-folder shape / kind / tier / packet signal. **Do not read it whole.** Your batch file opens with a
-`## Conventions for this batch` block: the entries whose tags match the shelves in THAT batch, verbatim, with their
-`[L-NNN]` ids. Read that block after this brief and before the first packet. If a shelf reminds you of a convention
-the block does not carry, `grep` LEDGER.md for the publisher or the folder word — never load the file.
+The conventions ledger is `LEDGER.md` (328 tagged entries). **Do not read it whole.** Your batch file opens with a
+`## Conventions for this batch` block: the entries whose tags match THAT batch's shelves, verbatim, with their
+`[L-NNN]` ids — read it before the first packet; for anything else, `grep` LEDGER.md for the publisher or folder word.
 
 ## Report back (≤ 25 lines)
 Per batch `{shelves, S by confidence, R, F by flag, I}`; conventions learned (one line each, naming the publisher

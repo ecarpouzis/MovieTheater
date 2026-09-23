@@ -1167,6 +1167,209 @@ else:
     check(False, "31: a live refused shelf with a stored cv exists (the fixtures need one)")
 check(_snapshot() == _before13, "part 13 wrote nothing to state.json or batches/")
 
+# ── part 14: after R-032 / waves 19-21 (TOOLS_TODO 33, 34, 35, 36, 37) ───────────────────────────────────
+print("\nafter R-032 — split pairs kept together, --shelf / --who-stores / --id, empty partners, one-wave stale flags")
+_before14 = _snapshot()
+
+
+def _py(tool, *argv):
+    return subprocess.run([sys.executable, os.path.join(idbase.HERE, tool)] + [str(x) for x in argv],
+                          capture_output=True, text=True, encoding="utf-8", errors="replace")
+
+
+# 33a: --landed rows carry pair=<origin sid>; the kept half is its own pair and lists the runs that left it
+sh3, sh4 = os.path.join(OUT, "landed-P-003.tsv"), os.path.join(OUT, "landed-P-004.tsv")
+_cs("--landed", "P-003", "--out", sh3)
+_cs("--landed", "P-004", "--out", sh4)
+
+
+def _rows(p):
+    return [l.rstrip("\n").split("\t") for l in open(p, encoding="utf-8") if l.startswith("S")] if os.path.exists(p) else []
+
+
+def _kv(c):
+    return dict(x.split("=", 1) for x in c[5:] if "=" in x)
+
+
+r4 = _rows(sh4)
+astro_new = [c for c in r4 if c[4] == "new" and _kv(c).get("pair") == "1431"]
+astro_kept = [c for c in r4 if c[0] == "S1431" and c[4] == "kept"]
+check(len(astro_new) >= 3 and astro_kept and _kv(astro_kept[0]).get("pair") == "1431"
+      and "25753" in _kv(astro_kept[0]).get("moved_cv", "").split(","),
+      "33a: --landed P-004 pairs Astro City's new shelves with S1431 (pair=1431) and lists moved_cv 25753 on the "
+      "kept row", f"{len(astro_new)} new; kept {astro_kept[:1]}")
+check(all("pair" in _kv(c) for c in r4), "33a: every P-004 sheet row carries a pair=", "")
+# the sheets + extra rows go in ONE call, cut by a small line budget into several R- batches, no group cut
+extra = os.path.join(OUT, "extra-rows.txt")
+with open(extra, "w", encoding="utf-8") as f:
+    f.write(f"S{good_a}\textra row: a shelf with no pair\n")
+edir = os.path.join(OUT, "emit-pairs")
+if os.path.isdir(edir):
+    for f_ in os.listdir(edir):
+        os.remove(os.path.join(edir, f_))
+r = _py("next_batch.py", "--revisit-file", extra, sh3, sh4, "--lines", "500", "--out", edir)
+ids_files = sorted(f for f in os.listdir(edir) if f.endswith(".ids")) if os.path.isdir(edir) else []
+where = {}
+for f_ in ids_files:
+    for x in open(os.path.join(edir, f_), encoding="utf-8").read().split():
+        where[int(x)] = f_
+groups33 = {}
+for c in _rows(sh3) + _rows(sh4):
+    p = _kv(c).get("pair")
+    if p:
+        groups33.setdefault(int(p), set()).add(int(c[0][1:]))
+cut33 = [g for g, m in groups33.items() if len({where[s] for s in m if s in where}) > 1]
+check(len(ids_files) >= 3 and not cut33 and good_a in where and "'groups cut': 0" in r.stdout,
+      "33a: --revisit-file takes two sheets + an extra-rows file, cuts them into several R- batches at --lines 500, "
+      "and no pair group straddles two batches", f"{len(ids_files)} batches; cut {cut33[:5]}; {r.stdout[-300:]}")
+# 33b: a kept half still storing a moved run's cv is told so on its packet
+KB = next((s for s in (64503, good_b) if s in ev.series and ev.series[s]["cvVolumeId"]), None)
+if KB:
+    kv_ = ev.series[KB]["cvVolumeId"]
+    kb_sheet = os.path.join(OUT, "landed-kept-fixture.tsv")
+    with open(kb_sheet, "w", encoding="utf-8") as f:
+        f.write(f"S{KB}\tmoved out -> (fixture)\trun=-\tP-999.jsonl\tkept\tpair={KB}\tmoved_cv={kv_}\n")
+    kdir = os.path.join(OUT, "emit-kept")
+    r = _py("next_batch.py", "--revisit-file", kb_sheet, "--out", kdir)
+    body = "".join(open(os.path.join(kdir, f_), encoding="utf-8").read() for f_ in os.listdir(kdir)
+                   if f_.endswith(".txt")) if os.path.isdir(kdir) else ""
+    check(f"stored cv {kv_} = the moved run's" in body and f"F {KB} wrong-cv-link" in body,
+          f"33b: the kept half S{KB} (stored cv {kv_} = a moved run's) carries the wrong-cv-link prompt",
+          body[:300] or r.stdout[-300:])
+
+# 34: lookup --shelf / --who-stores; 36: --id, and ParsedKeys verbatim on nearby: / named:
+r = _py("lookup.py", "--shelf", 1431, "--limit", 3)
+_k1431 = sorted(ev.keys.get(1431, ()))
+check(r.returncode == 0 and all(json.dumps(k, ensure_ascii=False) in r.stdout for k in _k1431)
+      and "stored cv:" in r.stdout and "in force:" in r.stdout,
+      "34: lookup --shelf 1431 prints every key quoted verbatim, the stored cv and the lines in force", r.stdout[:400])
+_empty = con.execute(f"""SELECT Id, CvVolumeId FROM Series WHERE CvVolumeId IS NOT NULL
+                         AND coalesce(CanonicalKey,'') NOT LIKE 'book:%' AND Id NOT IN ({idbase.SHELF_SQL})
+                         ORDER BY Id LIMIT 1""").fetchone()
+if _empty:
+    r = _py("lookup.py", "--who-stores", f"cv={_empty[1]}")
+    check(r.returncode == 0 and f"S{_empty[0]} " in r.stdout and "EMPTY" in r.stdout,
+          f"34: lookup --who-stores cv={_empty[1]} lists the EMPTY Series row S{_empty[0]} storing it", r.stdout[:400])
+r = _py("lookup.py", "--id", "gcd=12140", "cv=25753")
+check('gcd=12140 "Astro City Special"' in r.stdout and "cv=25753 " in r.stdout,
+      "36: lookup --id names a GCD series and a CV volume in one call", r.stdout[:300])
+if XMR in split_pop and XMR_JOIN in ev.series:
+    _c037 = os.path.join(idbase.DECISIONS, "C-037.txt")
+    xb = splitbase.packet(XMR, ev, {"file": _c037, "kind": "R"} if os.path.exists(_c037) else split_pop[XMR])
+    nl = " ".join(l for l in xb if l.lstrip().startswith("nearby:"))
+    _kj = sorted(ev.keys.get(XMR_JOIN, ()))[:4]
+    check(_kj and all(json.dumps(k, ensure_ascii=False) in nl for k in _kj),
+          f"36: nearby: prints S{XMR_JOIN}'s ParsedKey(s) verbatim, quoted", nl[:400])
+if 1527 in ev.series:
+    fx36 = os.path.join(OUT, "C-936.txt")
+    with open(fx36, "w", encoding="utf-8") as f:
+        f.write("R 1527 | fixture: two runs on one shelf, the HC must JOIN the event's shelf by its exact key\n"
+                "F 1527 split-needed | the HC moves to S9439 (join)\n")
+    b36 = splitbase.packet(1527, ev, {"file": fx36, "kind": "R"})
+    named = [l for l in b36 if l.lstrip().startswith("named: S9439")]
+    check(named and all(json.dumps(k, ensure_ascii=False) in named[0] for k in ev.keys.get(9439, ())),
+          "36: named: prints S9439's ParsedKey(s) verbatim, quoted", "\n".join(named) or "\n".join(b36[:6]))
+
+# 35: a stored CvVolumeId on an EMPTY live Series row is a merge partner (wave 19: S96256 -> empty S64503)
+if _empty and OTHER31 in ev.series:
+    msg35 = f"EMPTY Series row (no files; it survives the resolve) S{_empty[0]}"
+    r = _ci("R-935", f"S {OTHER31} cv={_empty[1]} gcd=- 0.9 | {LONG13}\n", [OTHER31])
+    check(r.returncode != 0 and msg35 in r.stdout,
+          f"35: S{OTHER31} cv={_empty[1]} = the stored cv of EMPTY S{_empty[0]} FAILS as an undeclared merge",
+          r.stdout[-500:])
+    r = _ci("R-936", f"S {OTHER31} cv={_empty[1]} gcd=- 0.9 | {LONG13}\n"
+                     f"F {OTHER31} merge-with={_empty[0]} | the empty row is this run's own old shelf\n", [OTHER31])
+    check(msg35 not in r.stdout, "35: declared with F merge-with=, it passes", r.stdout[-400:])
+
+# 37: one-wave stale flags — the checker, the gate, and the dismissal against a COPY of the flag table
+_open = [r_[0] for r_ in con.execute(
+    "SELECT Id FROM ContainmentFlag WHERE SeriesId = ? AND Flag IN ('conflated-series','overlap-in-series') "
+    "AND (ReviewState IS NULL OR ReviewState IN ('','Pending','Open')) ORDER BY Id", (conflated,))]
+_other = con.execute("SELECT Id FROM ContainmentFlag WHERE SeriesId <> ? AND Flag = 'conflated-series' "
+                     "AND (ReviewState IS NULL OR ReviewState IN ('','Pending','Open')) LIMIT 1", (conflated,)).fetchone()
+EV37 = ("every file on this shelf is one run: one folder, one ladder #1-12, one publisher and one start year; the "
+        "flag's second run is a duplicate rip")
+
+
+def _w37(name, body):
+    with open(os.path.join(OUT, name + ".ids"), "w", encoding="utf-8") as f:
+        f.write(f"{conflated}\n")
+    p = os.path.join(OUT, name + ".txt")
+    with open(p, "w", encoding="utf-8") as f:
+        f.write("# selftest: stale-flag fixture (TOOLS_TODO 37)\n" + body)
+    errs = []
+    check_identity.parse(p, ck37, errs)
+    return p, errs
+
+
+ck37 = check_identity.Checker()
+S37 = f"S {conflated} cv={vol_a} gcd=- 0.9 | {E}\n"
+claims37 = "".join(f"F {conflated} stale-flag={fid} | {EV37}\n" for fid in _open)
+p_ok, errs = _w37("R-937", S37 + claims37)
+check(_open and not errs, f"37: an S on conflated S{conflated} passes when EVERY open flag ({_open}) is claimed stale",
+      str(errs))
+if len(_open) > 1:
+    _p, errs = _w37("bad-stale-partial", S37 + f"F {conflated} stale-flag={_open[0]} | {EV37}\n")
+    check(any("OPEN conflated-series" in e and f"flag {_open[1]}" in e for e in errs),
+          "37: claiming only some of the open flags still refuses the S, naming the unclaimed one", str(errs))
+if _other:
+    _p, errs = _w37("bad-stale-other", S37 + claims37 + f"F {conflated} stale-flag={_other[0]} | {EV37}\n")
+    check(any("not on S" in e for e in errs), "37: a claim naming ANOTHER shelf's open flag is refused", str(errs))
+_p, errs = _w37("bad-stale-short", S37 + "".join(f"F {conflated} stale-flag={fid} | stale\n" for fid in _open))
+check(any("stale-flag claim needs evidence" in e for e in errs), "37: a claim needs >= 40 chars of evidence", str(errs))
+# the gate and the dismissal, against a COPY of the flag table — never the live DB
+import sqlite3 as _sq
+cp37 = os.path.join(OUT, "flags-copy.db")
+if os.path.exists(cp37):
+    os.remove(cp37)
+_c = _sq.connect(cp37)
+_cols = [r_[1] for r_ in con.execute("PRAGMA table_info(ContainmentFlag)")]
+_c.execute(f"CREATE TABLE ContainmentFlag ({', '.join(_cols)})")
+_c.executemany(f"INSERT INTO ContainmentFlag VALUES ({','.join('?' * len(_cols))})",
+               con.execute("SELECT * FROM ContainmentFlag").fetchall())
+_c.commit()
+_c.close()
+appr = os.path.join(OUT, "stale-approved.txt")
+with open(appr, "w", encoding="utf-8") as f:
+    f.write("# selftest: nothing approved yet\n")
+r = _py("stale_flags.py", "--gate", p_ok, "--approved", appr, "--db", cp37)
+check(r.returncode != 0 and "NOT in the approved list" in r.stdout and "STOP" in r.stdout,
+      "37: the gate STOPS on an unapproved claim (wave_land would halt before the backup)", r.stdout[-400:])
+r = _py("stale_flags.py", "--dismiss", p_ok, "--approved", appr, "--db", cp37, "--apply", "--undo-dir",
+        os.path.join(OUT, "undo37"))
+_st = _sq.connect(cp37).execute(f"SELECT count(*) FROM ContainmentFlag WHERE Id IN ({','.join('?' * len(_open))}) "
+                                 "AND ReviewState = 'Dismissed'", _open).fetchone()[0] if _open else 0
+check(r.returncode != 0 and _st == 0, "37: --dismiss --apply refuses too, and writes nothing, while unapproved",
+      r.stdout[-300:])
+with open(appr, "w", encoding="utf-8") as f:
+    f.write("# selftest: the lead read the shelf's files\n" + "".join(f"{fid}  S{conflated}\n" for fid in _open))
+r = _py("stale_flags.py", "--gate", p_ok, "--approved", appr, "--db", cp37)
+check(r.returncode == 0 and "APPROVED" in r.stdout, "37: the gate passes once every claimed flag is approved",
+      r.stdout[-300:])
+r = _py("stale_flags.py", "--dismiss", p_ok, "--approved", appr, "--db", cp37, "--apply", "--undo-dir",
+        os.path.join(OUT, "undo37"))
+_rows37 = _sq.connect(cp37).execute(
+    f"SELECT ReviewState, Note, DecidedBy FROM ContainmentFlag WHERE Id IN ({','.join('?' * len(_open))})",
+    _open).fetchall() if _open else []
+check(r.returncode == 0 and _rows37 and all(s == "Dismissed" and EV37 in n and "lead-verified (R-937)" in n
+                                            and b == "identity-pass" for s, n, b in _rows37),
+      "37: --dismiss --apply dismisses exactly the approved flags on the COPY (Note = evidence + lead-verified)",
+      f"{_rows37} {r.stdout[-300:]}")
+_live = con.execute(f"SELECT count(*) FROM ContainmentFlag WHERE Id IN ({','.join('?' * len(_open))}) "
+                    "AND (ReviewState IS NULL OR ReviewState IN ('','Pending','Open'))", _open).fetchone()[0] \
+    if _open else -1
+check(_live == len(_open), "37: the LIVE flags are untouched (the fixture wrote only its copy)", f"{_live}")
+r = _py("stale_flags.py", "--dismiss", p_ok, "--approved", appr, "--db", cp37, "--apply", "--undo-dir",
+        os.path.join(OUT, "undo37"))
+check(r.returncode == 0 and "already Dismissed" in r.stdout and "nothing to dismiss" in r.stdout,
+      "37: a re-run is idempotent (already Dismissed, nothing written twice)", r.stdout[-300:])
+# ...and the S the claim lets stand is what apply_identity (dry run) would land in the same wave
+r = _py("apply_identity.py", p_ok)
+check(r.returncode == 0 and "0 refused" in r.stdout and re.search(rf"link\s+S{conflated}\s", r.stdout) and "stale-flag=" in r.stdout,
+      "37: apply_identity's dry run accepts the S + stale-flag file (S and dismissal land in one wave)",
+      (r.stdout + r.stderr)[-400:])
+check(_snapshot() == _before14, "part 14 wrote nothing to state.json or batches/")
+
 print(f"\n{len(failures)} failure(s)")
 if not KEEP:
     print(f"(files kept in {OUT} — inspect them, they are the worked examples)")

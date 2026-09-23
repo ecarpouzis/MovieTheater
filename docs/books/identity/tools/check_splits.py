@@ -141,12 +141,35 @@ def _int(x):
     return isinstance(x, int) and not isinstance(x, bool)
 
 
-def expand_moves(con, lines, batch, errors, rows_cache=None):
+def landed_rows(path):
+    """{(source shelf, new key): [itemId, ...]} from the verb's newest undo CSV for this P- file, or None when the
+    file never went through `books-series-split`. A LANDED file's group / range lines cannot be re-expanded against
+    the live shelf — the items they named have left it and its groups renumbered (P-003's `G2` of S726, P-004's 249
+    failures after wave 20) — so they are expanded from the landing's own record instead."""
+    base = os.path.splitext(os.path.basename(path))[0]
+    csvs = sorted(f for f in os.listdir(idbase.UNDO)
+                  if f.startswith(f"split-{base}-") and f.endswith(".csv")) if os.path.isdir(idbase.UNDO) else []
+    if not csvs:
+        return None
+    import csv
+    out = defaultdict(list)
+    with open(os.path.join(idbase.UNDO, csvs[-1]), encoding="utf-8", newline="") as f:
+        for row in csv.DictReader(f):
+            if row.get("SeriesIdAtSplit", "").isdigit() and row.get("ItemId", "").isdigit():
+                out[(int(row["SeriesIdAtSplit"]), row["NewParsedSeriesKey"])].append(int(row["ItemId"]))
+    return out
+
+
+def expand_moves(con, lines, batch, errors, rows_cache=None, landed=None):
     """Every MOVE the file states, in file order: item lines as written, group / range lines expanded into item
     lines (TOOLS_TODO 28c). -> [(loc, {"itemId", "key", "run"?})]. Deterministic: the rows are
     `splitbase.shelf_items` order and the groups `splitbase.group_items` — the packet's own functions.
-    A spec that is ambiguous or matches nothing is an error and expands to nothing."""
+    A spec that is ambiguous or matches nothing is an error and expands to nothing.
+    `landed` (landed_rows): the file has been through the verb, so a group / range line takes the items its
+    (source, key) moved per the undo CSV, less the ones item lines state — the first such line claims them all."""
     rows_cache = {} if rows_cache is None else rows_cache
+    explicit = {o["itemId"] for _k, o in lines if "itemId" in o and _int(o.get("itemId"))}
+    claimed = set()
 
     def rows_of(sid):
         if sid not in rows_cache:
@@ -186,6 +209,15 @@ def expand_moves(con, lines, batch, errors, rows_cache=None):
             src = next(iter(batch))
         elif not _int(src) or src not in batch:
             errors.append(f"{loc}: `from` {src!r} is not a shelf of this batch")
+            continue
+        if landed is not None and (src, o["key"]) in landed:
+            got = [i for i in landed[(src, o["key"])] if i not in explicit and i not in claimed]
+            claimed.update(got)
+            for iid in got:
+                item = {"itemId": iid, "key": o["key"]}
+                if "run" in o:
+                    item["run"] = o["run"]
+                out.append((loc, item))
             continue
         rows = rows_of(src)
         if kind == "group":
@@ -411,7 +443,7 @@ def _check_file(path, cx, errors, seen_items=None, seen_norm=None, warnings=None
                     pj_errors.append(f"line {k}: S{sid} `pending_join` names {bad} — not a live comic shelf "
                                      f"other than itself")
         shelf_line[sid] = (k, o)
-    moves = expand_moves(cx.ev.con, lines, batch, errors, cx.rows_cache)
+    moves = expand_moves(cx.ev.con, lines, batch, errors, cx.rows_cache, landed_rows(path))
 
     for sid in sorted(batch - set(shelf_line)):
         errors.append(f"S{sid} is in the batch and has no shelf line — every shelf is answered, split or not")
@@ -699,25 +731,50 @@ def landed(paths, out=None):
             if not gone and src in pending:
                 gone = ["nothing (split: false)"]
             pj = [now_of(x) for x in pending.get(src, [])]
-            kept.append((src if src in live and n else None, src, n, b, gone, list(dict.fromkeys(pj))))
-    for sid, key, run, n, b in rows:
-        print(f"  {('S' + str(sid)) if sid else '(no shelf yet)':<9} {n:>4} item(s)  {key}  run={json.dumps(run) if run else '-'}  [{b}]")
-    for sid, src, n, b, _g, pj in kept:
+            # TOOLS_TODO 33b: the CV ids of the runs that LEFT this shelf — a kept half still storing one of them
+            # is the collision R-032 had to withhold 10 ids over
+            mcv = [int(seen[k]["cv"]) for _s, k in new_of
+                   if src in src_of.get(k, ()) and isinstance(seen[k], dict) and str(seen[k].get("cv", "")).isdigit()]
+            kept.append((src if src in live and n else None, src, n, b, gone, list(dict.fromkeys(pj)),
+                         list(dict.fromkeys(mcv))))
+        # TOOLS_TODO 33a: each new key's PAIR — the shelf its items left (followed through merges), so
+        # next_batch --revisit-file never hands one half of a split to one reader and the other half to another
+        for i in range(len(rows) - len(new_of), len(rows)):
+            sid, key, run, n, bb = rows[i]
+            srcs = sorted(src_of.get(key, ()))
+            rows[i] = (sid, key, run, n, bb, now_of(srcs[0]) if srcs else None)
+    for sid, key, run, n, b, pair in rows:
+        print(f"  {('S' + str(sid)) if sid else '(no shelf yet)':<9} {n:>4} item(s)  {key}  run={json.dumps(run) if run else '-'}  [{b}]"
+              + (f"  pair S{pair}" if pair else ""))
+    stored = {}
+    if kept:
+        ks = sorted({k[0] for k in kept if k[0]})
+        if ks:
+            stored = dict(con.execute(f"SELECT Id, CvVolumeId FROM Series WHERE Id IN ({','.join('?' * len(ks))})", ks))
+    for sid, src, n, b, _g, pj, mcv in kept:
+        clash = stored.get(sid) if sid and stored.get(sid) in mcv else None
         print(f"  {('S' + str(sid)) if sid else '(gone)':<9} {n:>4} item(s)  (kept half of S{src})  [{b}]"
-              + (f"  pending join -> {', '.join('S' + str(x) for x in pj)}" if pj else ""))
+              + (f"  pending join -> {', '.join('S' + str(x) for x in pj)}" if pj else "")
+              + (f"  ⚠ stored cv {clash} = the moved run's" if clash else ""))
     missing = [r for r in rows if not r[0] or not r[3]]
     print(f"{len(rows)} key(s); {len(missing)} not yet on a shelf of their own (run books-resolve --series); "
           f"{len(kept)} kept half/halves, {sum(1 for k in kept if not k[0])} holding no files")
     if out:
         with open(out, "w", encoding="utf-8") as f:
             f.write("# shelves from the split lane (new + kept halves) — feed to next_batch.py --revisit-file\n")
-            f.write("# S<sid>\t<key>\trun=<json|->\t<P- file>\tnew|kept[\tpending_join=<sid>,…]\n")
-            for sid, key, run, n, b in rows:
+            f.write("# S<sid>\t<key>\trun=<json|->\t<P- file>\tnew|kept[\tpair=<origin sid>][\tmoved_cv=<id>,…]"
+                    "[\tpending_join=<sid>,…]\n")
+            f.write("# pair = the shelf the split took this row's items from (a kept row is its own pair): "
+                    "--revisit-file never cuts a batch inside a pair group\n")
+            for sid, key, run, n, b, pair in rows:
                 if sid:
-                    f.write(f"S{sid}\t{key}\trun={json.dumps(run) if run else '-'}\t{b}\tnew\n")
-            for sid, src, n, b, gone, pj in kept:
+                    f.write(f"S{sid}\t{key}\trun={json.dumps(run) if run else '-'}\t{b}\tnew"
+                            + (f"\tpair={pair}" if pair else "") + "\n")
+            for sid, src, n, b, gone, pj, mcv in kept:
                 if sid:
                     f.write(f"S{sid}\tmoved out -> {'; '.join(gone) or '(unknown: no undo CSV)'}\trun=-\t{b}\tkept"
+                            f"\tpair={src}"
+                            + (f"\tmoved_cv={','.join(str(x) for x in mcv)}" if mcv else "")
                             + (f"\tpending_join={','.join(str(x) for x in pj)}" if pj else "") + "\n")
         print(f"sheet -> {out}")
     return 1 if missing else 0

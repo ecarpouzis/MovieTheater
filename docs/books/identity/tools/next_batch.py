@@ -3,8 +3,11 @@
 `python next_batch.py --tier A|B|C|D [--lines 1400]`            (the tier is REQUIRED: a bare run emits nothing)
 `python next_batch.py --redo A-002 A-005 ...`                     regenerate emitted batches, same ids
 `python next_batch.py --revisit 17809 1448 [--note "why"]`        re-read named shelves after a ruling changed
-`python next_batch.py --revisit-file revisit.txt [--note "why"]`  the same, taking the sids from a sheet (a
-                                   `check_splits --landed` sheet also puts `split run:` / `split:` / `merge-with candidate:` lines in the packets)
+`python next_batch.py --revisit-file a.tsv [b.tsv ...] [--revisit 17809 ...] [--lines 1400] [--shelves N] [--note "why"]`
+                                   the same, taking the sids from one or more sheets plus any extra ids (a
+                                   `check_splits --landed` sheet also puts `split run:` / `split:` / `merge-with candidate:` /
+                                   `⚠ stored cv … = the moved run's` lines in the packets). Emits as many R- batches as the
+                                   line budget needs, and never cuts a PAIR group (`pair=<origin sid>`, TOOLS_TODO 33)
 `python next_batch.py --items [--books 150] [--dry-run]`          an `X-NNN` batch of BOOKS on decided shelves
 `python next_batch.py --s2-file triage.tsv [--shelves 60]`        the S.2 pass: triaged 0.9s, as `R-NNN` batches
 `python next_batch.py --splits [--shelves 40] [--only 9845,6791]` the split lane: `F split-needed` shelves, `P-NNN`
@@ -46,6 +49,7 @@ Second, every id is re-validated against the live DB at emission (PLAN §7-S): a
 Ordering inside a tier is by the shelf's dominant folder, then by id, because PLAN §4.6 says the folder is
 context: a reader who has just read `DC\\Batman (1940)` is the right reader for `DC\\Batman Annual (1961)`.
 """
+import json
 import os
 import sys
 import time
@@ -89,12 +93,12 @@ MODES = ("--tier", "--redo", "--revisit", "--revisit-file", "--items", "--s2-fil
 if not any(m in sys.argv[1:] for m in MODES):
     raise SystemExit(f"name a mode ({' / '.join(MODES)}) — a bare run emits nothing.\n{__doc__}")
 
-opt, redo, revisit = {}, [], []
+opt, redo, revisit, revisit_files = {}, [], [], []
 k = 1
 while k < len(sys.argv):
     a = sys.argv[k]
-    if a in ("--redo", "--revisit"):
-        bucket = redo if a == "--redo" else revisit
+    if a in ("--redo", "--revisit", "--revisit-file"):
+        bucket = {"--redo": redo, "--revisit": revisit, "--revisit-file": revisit_files}[a]
         k += 1
         while k < len(sys.argv) and not sys.argv[k].startswith("--"):
             bucket.append(sys.argv[k])
@@ -355,57 +359,80 @@ if "--splits" in sys.argv:
            "population": len(pop)})
     raise SystemExit(0)
 
-if revisit or opt.get("revisit-file"):
+if revisit or revisit_files:
     # A revisit re-decides shelves that were already read, because the RULING changed — not because the
     # packets were wrong. So it emits fresh packets for exactly the named shelves and touches neither the
     # tier cursor nor the emitted-ids set: those shelves are still spoken for by their original batch, and
     # the original decision file stays on disk as the audit trail (the R- file supersedes it at apply time).
-    sids, source = [], "--revisit"
-    split_notes = {}
-    rf = opt.get("revisit-file")
-    if rf:
-        source = os.path.basename(rf)
+    #
+    # TOOLS_TODO 33: several sheets (and extra `--revisit` ids) go into ONE emission, cut into as many R-
+    # batches as the line budget needs — and never inside a PAIR group. A split's new shelf and the kept half
+    # it came from (`check_splits --landed`'s `pair=<origin sid>`) share a CV volume until one of them is
+    # re-identified; read by two readers, each half's "run wins" S collides with the other's stored link
+    # (R-032 withheld 10 cv ids over exactly that, L-151).
+    sids, sources = [], []
+    split_notes, pair_of, moved_cv = {}, {}, {}
+    for rf in revisit_files:
+        sources.append(os.path.basename(rf))
         path = rf if os.path.isfile(rf) else os.path.join(idbase.ROOT, rf)
         if not os.path.isfile(path):
-            raise SystemExit(f"no such revisit file: {rf}")
+            raise SystemExit(f"no such revisit file: {rf} — nothing emitted")
         for raw in open(path, encoding="utf-8"):
             line = raw.strip()
             if not line or line.startswith("#"):
                 continue
             head = line.split()[0].lstrip("S")
-            if head.isdigit():
-                sids.append(int(head))
-                # TOOLS_TODO 28e: a `check_splits.py --landed` sheet row (S<sid> TAB key TAB run=… TAB P-file
-                # [TAB new|kept]) puts the split's own answer in the packet, so the reader seeds the S line from
-                # the P- file's `run` ids without opening it, and knows a kept half for what it is
-                col = raw.rstrip("\r\n").split("\t")
-                if len(col) >= 4 and col[2].startswith("run="):
-                    batch = os.path.splitext(col[3].strip())[0]
-                    if (col[4].strip() if len(col) > 4 else "new") == "kept":
-                        note = f"   split: the KEPT half of the {batch} split — {col[1].strip()}; re-identify what stayed"
-                    else:
-                        note = (f"   split run: \"{col[1].strip()}\" {col[2].strip()} (new shelf from {batch}) — "
-                                f"seed the S line from these ids, then verify them")
-                    split_notes.setdefault(int(head), []).append(note)
-                    # TOOLS_TODO 29: the P- shelf line's `pending_join` — what stayed here stays only because it
-                    # could not move without a join; the re-identification is where that join is decided
-                    for c in col[5:]:
-                        c = c.strip()
-                        if not c.startswith("pending_join="):
-                            continue
-                        for x in c.split("=", 1)[1].split(","):
-                            x = x.strip().lstrip("S")
-                            if not x.isdigit():
-                                continue
-                            o = ev.series.get(int(x))
-                            split_notes[int(head)].append(
-                                f"   merge-with candidate: S{x}"
-                                + (f" \"{o['name']}\" ({ev.size.get(int(x), 0)} files)" if o else
-                                   " (no longer a file-holding shelf — find where it went)")
-                                + f" — the {batch} reader left this half here only because it could not move "
-                                  f"without that join; if it is the same run write `F {head} merge-with={x}`, "
-                                  f"otherwise say why not in an N line")
-    sids += [int(x) for x in revisit]
+            if not head.isdigit():
+                continue
+            sid = int(head)
+            sids.append(sid)
+            # TOOLS_TODO 28e: a `check_splits.py --landed` sheet row (S<sid> TAB key TAB run=… TAB P-file
+            # [TAB new|kept [TAB pair= / moved_cv= / pending_join=]]) puts the split's own answer in the packet,
+            # so the reader seeds the S line from the P- file's `run` ids without opening it, and knows a kept
+            # half for what it is
+            col = raw.rstrip("\r\n").split("\t")
+            extra = {}
+            for c in col[5:]:
+                k, _, v = c.strip().partition("=")
+                if v:
+                    extra[k] = v
+            if extra.get("pair", "").lstrip("S").isdigit():
+                pair_of[sid] = int(extra["pair"].lstrip("S"))
+            if extra.get("moved_cv"):
+                moved_cv.setdefault(sid, set()).update(int(x) for x in extra["moved_cv"].split(",") if x.strip().isdigit())
+            if len(col) >= 4 and col[2].startswith("run="):
+                batch = os.path.splitext(col[3].strip())[0]
+                if (col[4].strip() if len(col) > 4 else "new") == "kept":
+                    note = f"   split: the KEPT half of the {batch} split — {col[1].strip()}; re-identify what stayed"
+                else:
+                    note = (f"   split run: \"{col[1].strip()}\" {col[2].strip()} (new shelf from {batch}) — "
+                            f"seed the S line from these ids, then verify them")
+                    try:
+                        run = json.loads(col[2].strip()[4:]) if col[2].strip() != "run=-" else None
+                    except ValueError:
+                        run = None
+                    if isinstance(run, dict) and str(run.get("cv", "")).isdigit() and sid in pair_of:
+                        # the new half's run cv, remembered against its origin (the kept half) for 33b below
+                        moved_cv.setdefault(pair_of[sid], set()).add(int(run["cv"]))
+                split_notes.setdefault(sid, []).append(note)
+                # TOOLS_TODO 29: the P- shelf line's `pending_join` — what stayed here stays only because it
+                # could not move without a join; the re-identification is where that join is decided
+                for x in extra.get("pending_join", "").split(","):
+                    x = x.strip().lstrip("S")
+                    if not x.isdigit():
+                        continue
+                    o = ev.series.get(int(x))
+                    split_notes[sid].append(
+                        f"   merge-with candidate: S{x}"
+                        + (f" \"{o['name']}\" ({ev.size.get(int(x), 0)} files)" if o else
+                           " (no longer a file-holding shelf — find where it went)")
+                        + f" — the {batch} reader left this half here only because it could not move "
+                          f"without that join; if it is the same run write `F {head} merge-with={x}`, "
+                          f"otherwise say why not in an N line")
+    sids += [int(str(x).lstrip("S")) for x in revisit]
+    if revisit:
+        sources.append("--revisit")
+    source = " + ".join(sources) or "--revisit"
     seen, ordered = set(), []
     for s in sids:                                   # first mention wins; the file's order is the lead's
         if s not in seen:
@@ -415,23 +442,86 @@ if revisit or opt.get("revisit-file"):
     ids = [s for s in ordered if s in ev.shelf_set]
     if not ids:
         raise SystemExit(f"none of the {len(ordered)} named shelf/shelves is a file-holding comic shelf today")
-    st.setdefault("revisits", [])
-    name = f"R-{1 + len(st['revisits']):03d}"
-    note = opt.get("note") or f"re-read after a sharpened ruling (source: {source})"
+
+    # TOOLS_TODO 33b: a kept half still storing the CV volume of a run that MOVED off it — the run's new shelf
+    # will claim that id, and the resolve merges the two back together unless this half sheds it
+    for s in ids:
+        stored = ev.series[s].get("cvVolumeId")
+        if stored and stored in moved_cv.get(s, ()):
+            split_notes.setdefault(s, []).append(
+                f"   ⚠ stored cv {stored} = the moved run's — the run that left this shelf is CV {stored}; unless "
+                f"this half IS that run, write `F {s} wrong-cv-link` and give the S line this half's own id "
+                f"(or cv=-) so the new shelf can keep {stored}")
+
+    # pair groups: union-find over (row, its pair) — a shelf listed on two sheets joins both groups
+    parent = {}
+
+    def find(x):
+        parent.setdefault(x, x)
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    for s in ids:
+        find(s)
+        if s in pair_of:
+            a, b = find(s), find(pair_of[s])
+            if a != b:
+                parent[b] = a
+    groups, order = {}, []
+    for s in ids:                                    # a group sits where its FIRST member was listed
+        r = find(s)
+        if r not in groups:
+            groups[r] = []
+            order.append(r)
+        groups[r].append(s)
+
     def render_noted(s):
         b = render(s)
         return b[:1] + split_notes.get(s, []) + b[1:]
 
-    n = write_batch(name, [render_noted(s) for s in ids], ids, kind="R")
-    st["revisits"].append({"batch": name, "ids": ids, "lines": n, "note": note, "source": source,
-                           "at": time.strftime("%Y-%m-%d %H:%M:%S")})
+    cap = int(opt["shelves"]) if opt.get("shelves") else None
+    batches, cur, cur_lines = [], [], 0
+    for r in order:
+        blocks = [(s, render_noted(s)) for s in groups[r]]
+        glines = sum(len(b) + 1 for _s, b in blocks)
+        over = cur and (cur_lines + glines > target or (cap and len(cur) + len(blocks) > cap))
+        if over:
+            batches.append(cur)
+            cur, cur_lines = [], 0
+        cur += blocks
+        cur_lines += glines
+    if cur:
+        batches.append(cur)
+
+    st.setdefault("revisits", [])
+    note = opt.get("note") or f"re-read after a sharpened ruling (source: {source})"
+    emitted = []
+    for bl in batches:
+        name = f"R-{1 + len(st['revisits']):03d}"
+        bids = [s for s, _b in bl]
+        n = write_batch(name, [b for _s, b in bl], bids, kind="R")
+        rec = {"batch": name, "ids": bids, "lines": n, "note": note, "source": source,
+               "at": time.strftime("%Y-%m-%d %H:%M:%S")}
+        pairs = [[m for m in groups[g] if m in set(bids)] for g in order if set(groups[g]) & set(bids)]
+        pairs = [g for g in pairs if len(g) > 1]
+        if pairs:
+            rec["pairs"] = pairs
+        st["revisits"].append(rec)
+        emitted.append((name, bids, n, len(pairs)))
     save_state(st)
-    print({"batch": name, "shelves": len(ids), "lines": n, "gone": len(gone), "note": note})
+    cut = [g for g in order if len({i for i, (_nm, b, _n, _p) in enumerate(emitted) if set(groups[g]) & set(b)}) > 1]
+    print({"batches": [e[0] for e in emitted], "shelves": len(ids), "pair groups": sum(1 for g in order if len(groups[g]) > 1),
+           "groups cut": len(cut), "gone": len(gone), "note": note})
+    for name, bids, n, np_ in emitted:
+        print(f"   {name}: {len(bids)} shelves, {n} lines, {np_} pair group(s)")
     if gone:
         print(f"   skipped (no longer a file-holding comic shelf): {gone}")
     for sid in ids:
         t, why, detail = ev.tier(sid)
-        print(f"   S{sid:<7} [tier {t}] {ev.series[sid]['name'][:46]:<46} {why}{(' — ' + detail) if detail else ''}")
+        print(f"   S{sid:<7} [tier {t}] {ev.series[sid]['name'][:46]:<46} {why}{(' — ' + detail) if detail else ''}"
+              + (f"  pair S{pair_of[sid]}" if sid in pair_of else ""))
     raise SystemExit(0)
 
 if redo:

@@ -226,7 +226,9 @@ def packet(sid, ev, ctx):
     opens = ev.flags.get(sid, ())
     if opens:
         L.append("   flags: " + " · ".join(
-            f"{f['flag']} [{f['state'] or 'Pending'}]{' item ' + str(f['itemId']) if f['itemId'] else ''}"
+            # the flag's id (TOOLS_TODO 37): a stale conflated / overlap flag is claimed by it, `F <sid> stale-flag=<id>`
+            f"{'#' + str(f['id']) + ' ' if f.get('id') else ''}{f['flag']} [{f['state'] or 'Pending'}]"
+            f"{' item ' + str(f['itemId']) if f['itemId'] else ''}"
             f"{' — ' + f['detail'][:90] if f['detail'] else ''}" for f in opens))
 
     rows = con.execute("""

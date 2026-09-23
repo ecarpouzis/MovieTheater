@@ -7,6 +7,11 @@ probed with a spelling of YOUR choosing, exact first and then as a substring.
     python lookup.py --gcd-issues <gcdSeriesId> [--limit 400] [--variants]   GCD's issue rows of one series (TOOLS_TODO 24)
     python lookup.py --gcd-series "<name>" [--year YYYY] [--contains]   the same, for the series matching a name
     python lookup.py --batch <file>                 many of the above in one call, one query per line
+    python lookup.py --shelf <sid> [--limit 40]     one shelf: keys (verbatim), files, stored cv/gcd, key links,
+                                                    open flags (with their ids), the S/R/F lines in force (TOOLS_TODO 34)
+    python lookup.py --who-stores cv=<id>|gcd=<id>  every Series row storing it — file-holding or EMPTY — plus the
+                                                    keys whose SeriesKeyLink names it, per-file links, S lines (TODO 34)
+    python lookup.py --id cv=<vol> cvi=<issue> gcd=<series> gcdi=<issue>   name, publisher, year, count (TODO 36)
 
 Exact = the normalised name matches (the packet's own rule; both indexes are keyed by `idbase.norm_name`, so a
 probe keeps its "of" / "the" / "and" exactly as the record's name does — TOOLS_TODO 30). --contains = the normalised name CONTAINS the
@@ -25,7 +30,9 @@ because the packet shows the rows of the shelf's OWN series only, and a stamped 
 id, number, on-sale/key date, pages, ISBN, title, and the parsed "Collects …" clause (gcdnotes.py's parser, the
 same one the packet uses). Variant rows are hidden unless `--variants` (a 12-issue run carries 39 of them).
 """
+import json
 import os
+import re
 import shlex
 import sys
 
@@ -167,8 +174,262 @@ def names(text, year=None, contains=False):
     return out
 
 
+# ── TOOLS_TODO 34 / 36: shelves and ids, read off books.db (read-only) — no Evidence load ─────────────
+# R-032's reader spent ~12 calls building a shelf's keys / stored ids / line in force by hand, and the P-003 and
+# P-004 readers each wrote a scratch sqlite helper to see a shelf's ParsedKey verbatim (a `join` key must match
+# EXACTLY). These answer from one read-only connection; nothing here loads the name indexes.
+_hot, _dec = [], []
+LINK_STATUS = {1: "Matched", 5: "Manual", 6: "Cleared"}
+
+
+def hot():
+    if not _hot:
+        _hot.append(idbase.open_hot())
+    return _hot[0]
+
+
+def decisions():
+    if not _dec:
+        _dec.append(idbase.scan_decisions())
+    return _dec[0]
+
+
+def q(s):
+    """A key exactly as stored — quoted, so trailing spaces and odd punctuation are visible."""
+    return json.dumps(s, ensure_ascii=False)
+
+
+def shelf_keys(sid):
+    c = hot()
+    ks = {r[0] for r in c.execute("SELECT ParsedKey FROM SeriesAlias WHERE SeriesId = ? AND ParsedKey IS NOT NULL",
+                                  (sid,))}
+    own = c.execute("SELECT ParsedKey FROM Series WHERE Id = ?", (sid,)).fetchone()
+    if own and own[0]:
+        ks.add(own[0])
+    return sorted(ks), (own[0] if own else None)
+
+
+def files_of(sid):
+    return hot().execute("""SELECT i.Id, i.FileName, coalesce(i.PageCount,0), coalesce(cd.IsCollection,0)
+                            FROM Item i LEFT JOIN ComicDetail cd ON cd.ItemId = i.Id
+                            WHERE i.SeriesId = ? AND i.Kind = 0 AND coalesce(i.IsExcluded,0) = 0
+                            ORDER BY i.Path, i.FileName""", (sid,)).fetchall()
+
+
+def merged_into(sid):
+    c, seen = hot(), set()
+    while sid not in seen:
+        seen.add(sid)
+        r = c.execute("SELECT NewSeriesId FROM SeriesMerge WHERE OldSeriesId = ? AND NewSeriesId IS NOT NULL "
+                      "ORDER BY MergedAt DESC LIMIT 1", (sid,)).fetchone()
+        if not r:
+            return sid
+        if c.execute("SELECT 1 FROM Series WHERE Id = ?", (r[0],)).fetchone():
+            return r[0]
+        sid = r[0]
+    return sid
+
+
+def lines_in_force(sid):
+    """(file base, [the S/R/F lines for `sid` in the WINNING decision file], [earlier files]) — idbase's precedence."""
+    decides, winner, superseded, _d = decisions()
+    w = winner.get(sid)
+    if not w:
+        return None, [], []
+    out = []
+    for raw in open(w, encoding="utf-8"):
+        t = raw.strip()
+        m = re.match(r"^([SRF])\s+S?(\d+)\b", t)
+        if m and int(m.group(2)) == sid:
+            out.append(t)
+    return (os.path.splitext(os.path.basename(w))[0], out,
+            [os.path.splitext(os.path.basename(f))[0] for f in superseded.get(sid, ())])
+
+
+def id_info(leg, v):
+    """--id: one line naming a provider id — cv (volume), cvi (CV issue), gcd (series), gcdi (GCD issue)."""
+    c = ctx_light()
+    if leg == "cv":
+        r = hot().execute("SELECT Name, StartYear, PublisherName, CountOfIssues FROM CvVolume WHERE Id = ?",
+                          (v,)).fetchone()
+        held = bool(r)
+        if not r and c["cvref"] is not None:
+            r = c["cvref"].execute("SELECT name, year, publisherName, issueCount FROM cv_vol WHERE volId = ?",
+                                   (v,)).fetchone()
+        if not r:
+            return f"cv={v}: no such ComicVine volume in CvVolume or cvref"
+        n = c["cvref"].execute("SELECT count(*) FROM cv_iss WHERE volId = ?", (v,)).fetchone()[0] \
+            if c["cvref"] is not None else "?"
+        return (f'cv={v} "{r[0]}" {r[1] or "?"} {r[2] or "?"} — {r[3] or "?"} issues ({n} cached)'
+                f'{"" if held else "  [not in CvVolume: named from the rip — F needs-fetch]"}')
+    if leg == "cvi":
+        r = c["cvref"].execute("SELECT volId, number, name, coverDate FROM cv_iss WHERE issueId = ?",
+                               (v,)).fetchone() if c["cvref"] is not None else None
+        if not r:
+            r = hot().execute("SELECT VolumeId, IssueNumber, NULL, NULL FROM CvIssue WHERE Id = ?", (v,)).fetchone()
+        if not r:
+            return f"cvi={v}: no such ComicVine issue in cvref or CvIssue"
+        return f"cvi={v} #{r[1] or '?'} {r[3] or ''} {(r[2] or '')[:50]} — of {id_info('cv', r[0])}"
+    if leg == "gcd":
+        g = c["gcd"]
+        r = g.execute("""SELECT s.name, s.year_began, s.year_ended, p.name, s.issue_count, s.format
+                         FROM gcd_series s LEFT JOIN gcd_publisher p ON p.id = s.publisher_id WHERE s.id = ?""",
+                      (v,)).fetchone() if g is not None else None
+        if not r:
+            r = hot().execute("SELECT Name, YearBegan, YearEnded, Publisher, IssueCount, Format FROM legs.GcdSeries "
+                              "WHERE GcdSeriesId = ?", (v,)).fetchone()
+        if not r:
+            return f"gcd={v}: no such GCD series in the dump or legs.GcdSeries"
+        return f'gcd={v} "{r[0]}" {r[1] or "?"}-{r[2] or "?"} {r[3] or "?"} [{r[5] or ""}] — {r[4] or "?"} issues'
+    if leg == "gcdi":
+        g = c["gcd"]
+        r = g.execute("SELECT series_id, number, coalesce(nullif(on_sale_date,''), key_date), page_count, title "
+                      "FROM gcd_issue WHERE id = ?", (v,)).fetchone() if g is not None else None
+        if not r:
+            r = hot().execute("SELECT GcdSeriesId, NULL, NULL, NULL, NULL FROM legs.GcdIssue WHERE GcdIssueId = ?",
+                              (v,)).fetchone()
+        if not r:
+            return f"gcdi={v}: no such GCD issue in the dump or legs.GcdIssue"
+        pp = f"{int(r[3])}pp " if r[3] else ""
+        return f"gcdi={v} #{r[1] or '?'} {r[2] or ''} {pp}{(r[4] or '')[:40]} — of {id_info('gcd', r[0])}"
+    return f"{leg}={v}: unknown kind (cv= cvi= gcd= gcdi=)"
+
+
+_light = {}
+
+
+def ctx_light():
+    """The dumps alone (no name index): --id must answer in well under a second."""
+    if not _light:
+        _light["cvref"] = idbase.open_cv_ref()
+        _light["gcd"] = idbase.open_gcd_dump()
+    return _light
+
+
+def shelf(sid, limit=40):
+    c, out = hot(), []
+    row = c.execute("""SELECT Id, coalesce(DisplayNameOverride, Name), CanonicalKey, CvVolumeId, YearStart, YearEnd
+                       FROM Series WHERE Id = ?""", (sid,)).fetchone()
+    if not row:
+        now = merged_into(sid)
+        if now != sid:
+            out.append(f"S{sid} was merged away by a landed wave -> S{now} (shown below)")
+            base, lines, _o = lines_in_force(sid)
+            if base:
+                out.append(f"   S{sid}'s lines in force: {base}")
+                out += [f"      {t[:300]}" for t in lines]
+            return out + shelf(now, limit)
+        return [f"S{sid}: no such Series row, and SeriesMerge has no record of it"]
+    fs = files_of(sid)
+    keys, own = shelf_keys(sid)
+    out.append(f'S{sid} "{row[1]}"  canonical {row[2]}  years {row[4] or "?"}-{row[5] or "?"}  '
+               f'{len(fs)} file(s) / {sum(1 for f in fs if f[3])} collection(s)'
+               + ("  — EMPTY: a Series row holding no comic files (still a resolve SURVIVOR for its canonical key)"
+                  if not fs else ""))
+    out.append(f"   stored cv: {id_info('cv', row[3]) if row[3] else '(none)'}")
+    out.append(f"   keys ({len(keys)}), verbatim:")
+    for k in keys:
+        links = c.execute("SELECT Provider, ProviderKey, Status FROM SeriesKeyLink WHERE ParsedKey = ? "
+                          "AND Provider IN (0, 3) ORDER BY Provider", (k,)).fetchall()
+        n = c.execute("SELECT count(*) FROM Item i JOIN ComicDetail cd ON cd.ItemId = i.Id WHERE i.SeriesId = ? "
+                      "AND cd.ParsedSeriesKey = ?", (sid, k)).fetchone()[0]
+        lk = "; ".join(f"{'cv' if p == 0 else 'gcd'}={pk if pk is not None else '-'} "
+                       f"{LINK_STATUS.get(st, 'status ' + str(st))}" for p, pk, st in links) or "no cv/gcd key link"
+        out.append(f"      {q(k)}{'  (Series.ParsedKey)' if k == own else ''}  {n} file(s)  [{lk}]")
+    per = {}
+    for prov, sec, cnt in c.execute("""SELECT l.Provider, l.SecondaryKey, count(*) FROM ItemProviderLink l
+                                       JOIN Item i ON i.Id = l.ItemId
+                                       WHERE i.SeriesId = ? AND l.Status IN (1, 5) AND l.Provider IN (0, 3)
+                                       GROUP BY l.Provider, l.SecondaryKey ORDER BY 3 DESC""", (sid,)):
+        per.setdefault("cv" if prov == 0 else "gcd", []).append(f"{sec}x{cnt}")
+    for leg in ("cv", "gcd"):
+        if per.get(leg):
+            out.append(f"   per-file {leg}: {', '.join(per[leg][:8])}{' …' if len(per[leg]) > 8 else ''}")
+    for fid, iid, flag, state, detail in c.execute(
+            "SELECT Id, ItemId, Flag, ReviewState, Detail FROM ContainmentFlag WHERE SeriesId = ? ORDER BY Id", (sid,)):
+        if state in idbase.OPEN_FLAG_STATES:
+            out.append(f"   OPEN flag {fid} {flag} (item {iid}): {(detail or '')[:120]}")
+    base, lines, older = lines_in_force(sid)
+    if base:
+        out.append(f"   in force: {base}" + (f"  (supersedes {', '.join(older)})" if older else ""))
+        for t in lines:
+            out.append(f"      {t[:300]}{' …' if len(t) > 300 else ''}")
+    else:
+        out.append("   in force: (no decision file names this shelf)")
+    for iid, fn, pp, col in fs[:limit]:
+        out.append(f"   [{iid}]{' COL' if col else ''} {fn} ({pp or '?'}pp)")
+    if len(fs) > limit:
+        out.append(f"   … {len(fs) - limit} more file(s) (--limit N)")
+    return out
+
+
+def who_stores(spec):
+    """--who-stores cv=<id>|gcd=<id>: every place the id sits — the question behind every undeclared merge."""
+    leg, _, v = spec.partition("=")
+    if leg not in ("cv", "gcd") or not v.strip().lstrip("s").isdigit():
+        return [f"--who-stores wants cv=<volumeId> or gcd=<seriesId>, got {spec!r}"]
+    v = int(v.strip().lstrip("s"))
+    c, out = hot(), [id_info(leg, v)]
+    prov = idbase.P_CV if leg == "cv" else idbase.P_GCD
+
+    def label(sid):
+        r = c.execute("SELECT coalesce(DisplayNameOverride, Name) FROM Series WHERE Id = ?", (sid,)).fetchone()
+        if not r:
+            now = merged_into(sid)
+            return f"S{sid} (gone{'; merged into S' + str(now) if now != sid else ''})"
+        n = len(files_of(sid))
+        return f'S{sid} "{r[0]}" {n}f' + ("  EMPTY" if not n else "")
+
+    if leg == "cv":
+        rows = c.execute("SELECT Id FROM Series WHERE CvVolumeId = ? ORDER BY Id", (v,)).fetchall()
+        out.append(f"Series.CvVolumeId = {v}: {len(rows)} row(s)")
+        for (sid,) in rows:
+            out.append(f"   {label(sid)}")
+    links = c.execute("""SELECT k.ParsedKey, k.Status,
+                                (SELECT Id FROM Series WHERE ParsedKey = k.ParsedKey LIMIT 1),
+                                (SELECT SeriesId FROM SeriesAlias WHERE ParsedKey = k.ParsedKey LIMIT 1)
+                         FROM SeriesKeyLink k WHERE k.Provider = ? AND k.ProviderKey = ?
+                         ORDER BY k.ParsedKey""", (prov, v)).fetchall()
+    out.append(f"SeriesKeyLink {leg}={v}: {len(links)} key(s)")
+    for k, st, own, al in links:
+        sid = own if own is not None else al
+        out.append(f"   {q(k)} {LINK_STATUS.get(st, 'status ' + str(st))} -> "
+                   + (label(sid) + (" (alias)" if own is None else "") if sid is not None else "(no Series owns this key)"))
+    per = c.execute("""SELECT i.SeriesId, count(*) FROM ItemProviderLink l JOIN Item i ON i.Id = l.ItemId
+                       WHERE l.Provider = ? AND l.Status IN (1, 5) AND (l.SecondaryKey = ? OR l.SecondaryKey = ?)
+                         AND i.Kind = 0 AND coalesce(i.IsExcluded,0) = 0
+                       GROUP BY i.SeriesId ORDER BY 2 DESC""", (prov, str(v), v)).fetchall()
+    out.append(f"per-file links {leg}={v}: {sum(n for _s, n in per)} file(s) on {len(per)} shelf/shelves")
+    for sid, n in per[:15]:
+        out.append(f"   {label(sid)}: {n} file(s)")
+    decides, winner, _s, _d = decisions()
+    s_lines = []
+    for p, rec in decides.items():
+        for sid, x in rec[leg].items():
+            if x == v:
+                s_lines.append((sid, os.path.splitext(os.path.basename(p))[0], winner.get(sid) == p))
+    out.append(f"S lines naming {leg}={v}: {len(s_lines)}")
+    for sid, b, wins in sorted(s_lines):
+        out.append(f"   {label(sid)}  {b}{'' if wins else '  (superseded)'}")
+    return out
+
+
 def run(argv):
     """One query in command-line shape -> its answer lines."""
+    limit = int(argv[argv.index("--limit") + 1]) if "--limit" in argv else None
+    if "--shelf" in argv:
+        return shelf(int(argv[argv.index("--shelf") + 1].lstrip("S")), limit or 40)
+    if "--who-stores" in argv:
+        return who_stores(argv[argv.index("--who-stores") + 1])
+    if "--id" in argv:
+        out = []
+        for t in argv[argv.index("--id") + 1:]:
+            if t.startswith("--"):
+                break
+            leg, _, v = t.partition("=")
+            v = v.lstrip("s")
+            out.append(id_info(leg, int(v)) if v.isdigit() else f"{t}: want cv=|cvi=|gcd=|gcdi=<number>")
+        return out or ["--id wants cv=<vol> cvi=<issue> gcd=<series> gcdi=<issue>"]
     if "--issues" in argv:
         return issues(int(argv[argv.index("--issues") + 1]))
     if "--collects" in argv:

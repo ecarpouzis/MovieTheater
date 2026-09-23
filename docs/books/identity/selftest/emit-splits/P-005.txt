@@ -1,0 +1,86 @@
+## Conventions for this batch (15 shown of 15 matched; 328 in LEDGER.md; 1 shelf/shelves: folder:sequel-subfolder ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-191] (1 shelf/shelves) folder:sequel-subfolder folder:vn-year pass:revisit sig:stale-flag
+- On a wave-2 `NN <Title> vN (<year>)` split-out shelf (ids S94xxx+) an `overlap-in-series` flag is stale by
+  construction — the colliding Vol. 01s now sit on sibling shelves (13 of 14 in R-016); the lead dismisses the flag.
+[L-290] (1 shelf/shelves) folder:sequel-subfolder pass:item sig:stamp
+- A spin-off filed in its own subfolder on the parent's shelf gets the PARENT's v01 ids stamped by the per-file
+  matcher (Rent-a-(Really Shy!)-Girlfriend on Rent-A-Girlfriend) — `N no-record` (or the shelf note), never the
+  parent's record; it is a misfiling for the lead.
+[L-014] (1 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-064] (1 shelf/shelves) pass:item sig:twin
+- GCD indexes PRINTINGS: the S line takes the first edition both legs agree on; the `I` line takes the printing
+  we hold (page counts match the edition's row). GCD issue ids for books come from `gcd_issue` — prefer the
+  issue id to the `s<series>` form; use `s<series>` only for twin/variant rows.
+[L-065] (1 shelf/shelves) sig:stamp
+- Ladder coincidence: two runs with the same issue COUNT (X 1994 vs X 2013, both 25) fool the per-file matcher;
+  the year in the filenames decides.
+[L-085] (1 shelf/shelves) sig:barcode sig:trade-link sig:twin
+- `gcd_issue` carries the trade's page count AND ISBN: it matched our rips within ±10pp on 100+ books and told
+  two same-title count-1 rows apart (an 8pp ashcan is not a twin of the trade).
+[L-099] (1 shelf/shelves) sig:stamp
+- A spin-off family carries the PARENT run per-file (all eight Fairy Tail side shelves stamped 46777) — reject.
+[L-101] (1 shelf/shelves) sig:twin
+- Page count tells GCD twins apart (a 32pp sampler vs the 256pp anthology); a count-0 GCD row (236534 "Cells at
+  Work! Lady") is an empty stub, not a leg.
+[L-113] (1 shelf/shelves) sig:comicinfo sig:stamp
+- ComicInfo `Volume` holding a 4-digit ComicVine volume id (not a year) is a 1.0 assertion like the 6-digit
+  case (Ka-Zar v2 1974: `Volume 2692` + `Count 20` = CV 2692) and disproves the per-file matcher's pick.
+[L-123] (1 shelf/shelves) sig:round2 sig:stamp
+- `round2-folder` / `round2-series` was wrong on 10 of 13 shelves carrying it in B-053..B-055, including one link
+  stamped on four sibling one-shot shelves in one folder — verify each by title + count + years, never by method.
+[L-150] (1 shelf/shelves) sig:round2
+- `round2-folder` was wrong on every shelf carrying it in B-064..066 (Tank Girl Colour Classics ×2 right by accident;
+  Rotten & Zombies vs Cheerleaders got "Hack/Slash Meets Zombies vs Cheerleaders", a different crossover) — still ⚠ never a leg.
+[L-193] (1 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-194] (1 shelf/shelves) sig:legacy-stamp
+- A legacy-renumbered arc collected under its own title ("Punisher: War Machine") belongs to the parent volume's
+  count: CV 90118 / GCD 100917 count 28 = #1-17 + #218-228 — the arithmetic that split S66039.
+[L-262] (1 shelf/shelves) sig:stamp
+- A single-book "collected volume" shelf's S line often carries the book's own CV issue id — use it over a
+  mismatched per-file pick.
+[L-310] (1 shelf/shelves) pass:revisit sig:gcd-notes sig:stale-flag
+- R-025 (Opus): the GCD dump's `gcd_reprint` + `gcd_story` tables answer "what does this trade collect" outright —
+  join story → reprint → origin issue → series and the `C` range falls out (Elektra #7-22, Casanova Luxuria #1-7,
+  all six Criminal ranges); `gcd_series.notes` states ranges in prose. A GCD line row with `year_ended` NULL and a
+  count BELOW our holdings is NOT coextensive when the provider files the missing books under their own row
+  (Casanova 148774 = 3 vols + Acedia 236165) — two lines, not staleness. Before `F wrong-cv-link` on a revisit read
+  Series.CvVolumeId: the shelf may already carry the right id and re-flagging would clear it. A stored id can belong
+  to a series holding NO comic files (outside the checker's population) — note it, never merge.
+
+====================================================================================================
+
+== S9845 Jim Butcher's The Dresden Files: Storm Front  [split]  13 files / 8 collections  decided in R-029 (R)
+   decided: R 9845 | two runs that both number #1-4 sit here: "02 Storm Front - Volume 1" (items 107772-107775, 2008-2009) plus the loose "Storm Front 01 (of 04)" … "004 (2009)" rips (107796-107799, 107801) = CV 23697 (Dabel 2008, 4, Nov 2008-Apr 2009) / GCD 35902 (Dabel 2008-2009, 4); and "03 Storm Front - Volume 2" (107776-107779, 2009-2010) = CV 27202 (2009, 4, Jul 2009-Jul 2010), which GCD splits by publisher: 55645 (Dabel 2009, #1) + 52657 (Dynamite 2010, #2-4). The old S on CV 23697 / GCD 35902 stamps Volume 1 on Volume 2; the previous reader's "52657 and 55645 are printings of the same content" is wrong — the dates run on from Volume 1's #4
+   F 9845 split-needed | proposed runs: [Volume 1] items 107772-107775, 107796, 107797, 107798, 107799, 107801 → CV 23697 / GCD 35902; [Volume 2] items 107776-107779 → CV 27202 / GCD 55645 (#1) + GCD 52657 (#2-4)
+   N 9845 | the ContainmentFlag on 107772 is right: all eight "COL … Volume N - 0x" files are 24-31pp single issues, not collections; C-008's F merge-with=5865 (S5865, S9840, S9841 as fragments) was not re-read here and should be judged with this split
+   nearby:
+   nearby: S9839 "Jim Butcher's The Dresden Files Welcome to the Jungle" 7f [named S5865 in the decision's R/N lines (now S9839) — S cv=21417 gcd=35901 (A-029 0.95)] keys: "Dresden Files" | "Dresden+Files+02+++" | "Jim Butcher's - The Dresden Files - Welcome to the Jungle"
+   keys now: "Jim Butcher's The Dresden Files - Storm Front" x11 · "Jim Butcher's Dresden Files - Storm Front" x1 · "Jim Butcher's Dresden Files - Stormfront" x1
+   groups (title x folder): 6
+   G1 "Jim Butcher's Dresden Files - Storm Front" in Misc\The Dresden Files — 1 file(s), numbers 2, pp 27-27; cv per-file 27202x1; gcd per-file 35902x1; key "Jim Butcher's Dresden Files - Storm Front"
+      [107796] Jim Butcher's Dresden Files - Storm Front 02 (of 4) (2008) (The Scangstas-DCP).cbr (27pp)
+   G2 "Jim Butcher's Dresden Files - Stormfront" in Misc\The Dresden Files — 1 file(s), numbers 3, pp 32-32; gcd per-file 35902x1; key "Jim Butcher's Dresden Files - Stormfront"
+      [107797] Jim Butcher's Dresden Files - Stormfront 03 (c2c) (2009) (NeverAngel-DCP).cbz (32pp)
+   G3 "Jim Butcher's The Dresden Files - Storm Front" in Misc\The Dresden Files — 2 file(s), numbers 3-4, pp 27-32; cv per-file 23697x2; gcd per-file 35902x2; key "Jim Butcher's The Dresden Files - Storm Front"
+      [107798] Jim Butcher's The Dresden Files - Storm Front 004 (2009) (oddBot-DCP).cbz (32pp)
+      [107799] Jim Butcher's The Dresden Files - Storm Front 03 (2009) (Minutemen-Locke & Xer).cbr (27pp)
+   G4 "Jim_Butchers_The_Dresden_Files_-_Storm_Front_01_of_04_2008_Minutemen-RocZone" in Misc\The Dresden Files — 1 file(s), pp 27-27; cv per-file 23697x1; key "Jim Butcher's The Dresden Files - Storm Front"
+      [107801] Jim_Butchers_The_Dresden_Files_-_Storm_Front_01_of_04_2008_Minutemen-RocZone.cbr (27pp)
+   G5 "Jim Butcher's The Dresden Files - Storm Front" in Misc\The Dresden Files\02 Storm Front - Volume 1 — 4 file(s), 4 COL, pp 26-31; cv per-file 23697x4; gcd per-file 35902x4; key "Jim Butcher's The Dresden Files - Storm Front"
+      [107772] COL Jim Butcher's The Dresden Files - Storm Front - Volume 1 - 01 (2008).cbr (26pp)
+      [107773] COL Jim Butcher's The Dresden Files - Storm Front - Volume 1 - 02 (2008).cbr (27pp)
+      [107774] COL Jim Butcher's The Dresden Files - Storm Front - Volume 1 - 03 (2009).cbr (26pp)
+      [107775] COL Jim Butcher's The Dresden Files - Storm Front - Volume 1 - 04 (2009).cbr (31pp)
+   G6 "Jim Butcher's The Dresden Files - Storm Front" in Misc\The Dresden Files\03 Storm Front - Volume 2 — 4 file(s), 4 COL, pp 24-28; cv per-file 27202x4; gcd per-file 52657x3, 55645x1; key "Jim Butcher's The Dresden Files - Storm Front"
+      [107776] COL Jim Butcher's The Dresden Files - Storm Front - Volume 2 - 01 (2009).cbr (28pp)
+      [107777] COL Jim Butcher's The Dresden Files - Storm Front - Volume 2 - 02 (2010).cbr (26pp)
+      [107778] COL Jim Butcher's The Dresden Files - Storm Front - Volume 2 - 03 (2010).cbr (24pp)
+      [107779] COL Jim Butcher's The Dresden Files - Storm Front - Volume 2 - 04 (2010).cbr (25pp)

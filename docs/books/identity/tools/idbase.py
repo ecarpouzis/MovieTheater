@@ -51,7 +51,12 @@ ITEM_SQL = """SELECT count(*) FROM Item i WHERE i.Kind = 0 AND coalesce(i.IsExcl
 CONFIDENCES = ("1.0", "0.95", "0.9", "0.7")
 FLAGS = {"conflated-series", "split-needed", "merge-with", "wrong-cv-link", "needs-fetch",
          "not-a-run", "provider-missing", "misfiled", "duplicate-shelf", "partial-rip", "mobile-rip",
-         "needs-web"}
+         "needs-web", "stale-flag"}
+# TOOLS_TODO 37: the open ContainmentFlag kinds that refuse an S until they are gone — or claimed stale in the same
+# file (`F <sid> stale-flag=<flagId> | evidence`), approved by the lead (stale-approved.txt) and dismissed by the
+# landing (stale_flags.py, called from wave_land.ps1) right before the S is applied
+STALE_KINDS = ("conflated-series", "overlap-in-series")
+STALE_APPROVED = os.path.join(ROOT, "stale-approved.txt")
 OPEN_FLAG_STATES = (None, "", "Pending", "Open")
 
 RX_NUM = re.compile(r"^\s*(\d{1,5})(?:\.(\d+))?\s*$")
@@ -277,10 +282,10 @@ class Evidence:
 
         # open flags. ReviewState is NULL/'Pending' while the question stands; anything else was answered.
         self.flags = defaultdict(list)
-        for sid, iid, flag, detail, state in c.execute(
-                "SELECT SeriesId, ItemId, Flag, Detail, ReviewState FROM ContainmentFlag WHERE SeriesId IS NOT NULL"):
+        for fid, sid, iid, flag, detail, state in c.execute(
+                "SELECT Id, SeriesId, ItemId, Flag, Detail, ReviewState FROM ContainmentFlag WHERE SeriesId IS NOT NULL"):
             if sid in self.shelf_set:
-                self.flags[sid].append({"itemId": iid, "flag": flag, "detail": detail, "state": state,
+                self.flags[sid].append({"id": fid, "itemId": iid, "flag": flag, "detail": detail, "state": state,
                                         "open": state in OPEN_FLAG_STATES})
 
         self.tier_cache = {}

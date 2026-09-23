@@ -22,6 +22,7 @@ means it (S6791's 1963 run gathering S66349's issues), a silent merge when not.
 The census is chunked by shelf id with a cursor (global rule: nothing iterates a whole population in one
 call): each chunk prints `{processed, remaining, nextCursor, counts}`; `--all` drives the chunks and totals.
 """
+import json
 import os
 import re
 import sys
@@ -192,6 +193,17 @@ def title_words(s):
     return frozenset(w for w in normalize_key(s).split() if not RX_VOLTOK.match(w))
 
 
+def keys_verbatim(ev, sid, cap=None):
+    """TOOLS_TODO 36: a shelf's ParsedKey(s) EXACTLY as stored, each quoted — a `join` key must match one of them
+    character for character, and the P-003 / P-004 readers each wrote a sqlite helper to see them."""
+    ks = sorted(ev.keys.get(sid, ()))
+    if not ks:
+        return "keys: (none)"
+    shown = ks if cap is None else ks[:cap]
+    return ("keys: " + " | ".join(json.dumps(k, ensure_ascii=False) for k in shown)
+            + (f" (+{len(ks) - len(shown)} more: lookup.py --shelf {sid})" if len(ks) > len(shown) else ""))
+
+
 def leg_ids(text):
     """cv / gcd ids a decision line names in prose ('CV 3092 / GCD 2605', 'cv=27202') -> {(leg, id)}."""
     return {(m.group(1).lower(), int(m.group(2))) for m in RX_LEG_ID.finditer(text or "")}
@@ -288,10 +300,10 @@ class NearIndex:
         out = []
         for o in sorted(by_id, key=lambda o: (-ev.size.get(o, 0), o)):
             out.append(f"S{o} \"{ev.series[o]['name']}\" {ev.size.get(o, 0)}f [{', '.join(why[o])}"
-                       f"{' — ' + self.s_line(o) if o in self.s_of else ''}]")
+                       f"{' — ' + self.s_line(o) if o in self.s_of else ''}] {keys_verbatim(ev, o, 4)}")
         for o in by_title[:cap]:
             out.append(f"S{o} \"{ev.series[o]['name']}\" {ev.size.get(o, 0)}f [{title_hit[o]}"
-                       f"{' — ' + self.s_line(o) if o in self.s_of else ''}]")
+                       f"{' — ' + self.s_line(o) if o in self.s_of else ''}] {keys_verbatim(ev, o, 4)}")
         if len(by_title) > cap:
             out.append(f"(+{len(by_title) - cap} more by title)")
         return out
@@ -381,9 +393,8 @@ def packet(sid, ev, rec, landing=None):
         if o is None:
             L.append(f"   named: S{other} (not a file-holding shelf today)")
             continue
-        okeys = sorted(ev.keys.get(other, ()))
-        L.append(f"   named: S{other} {o['name']}  {ev.size.get(other, 0)} files  keys: {' | '.join(okeys) or '(none)'}"
-                 f"  <- a key of this shelf may be used to JOIN it")
+        L.append(f"   named: S{other} {o['name']}  {ev.size.get(other, 0)} files  {keys_verbatim(ev, other)}"
+                 f"  <- a key of this shelf may be used to JOIN it (exactly as quoted)")
 
     # per-file provider links, per item — v1's evidence, printed per group so a group's run is visible
     cv, gcd = {}, {}

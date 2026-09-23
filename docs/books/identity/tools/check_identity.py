@@ -12,7 +12,8 @@ duplicated shelf and catastrophic for two different runs, so it is refused unles
 Grammar (PLAN §7-S, and SPAN_RUN_IDS.md for `C`):
     S <sid> cv=<volumeId>|- gcd=<gcdSeriesId>|- <conf> | <evidence>
     R <sid> | <why no identity can be stored>
-    F <sid> <flag> | <detail>
+    F <sid> <flag> | <detail>      (`F <sid> stale-flag=<ContainmentFlag.Id> | evidence` lets an S stand on a shelf
+                                    with that open conflated / overlap flag — TOOLS_TODO 37, landed via stale_flags.py)
     I <itemId> cv=<issueId>|- gcd=<issueId>|- isbn=<isbn>|- <conf> | <evidence>
     C <itemId> cv=<volumeId>|- gcd=<seriesId>|- [mu=] [barney=] [inducks=] [marvel=] #<a>-<b> <conf> | <evidence>
     N <sid|itemId> <note>          (`N <itemId> no-record | why` is an item batch's refusal)
@@ -51,9 +52,16 @@ class Checker:
                 "SELECT OldSeriesId, NewSeriesId FROM SeriesMerge ORDER BY MergedAt"):
             self.merged[old] = new
         self.all_series = {r[0] for r in self.con.execute("SELECT Id FROM Series")}
-        self.conflated = {r[0] for r in self.con.execute(
-            """SELECT SeriesId FROM ContainmentFlag WHERE Flag IN ('conflated-series','overlap-in-series') AND SeriesId IS NOT NULL
-               AND (ReviewState IS NULL OR ReviewState IN ('','Pending','Open'))""")}
+        # TOOLS_TODO 37: which open flag ids refuse an S on each shelf, and every flag's row, so a
+        # `F <sid> stale-flag=<id>` claim can be checked against the flag it names
+        self.conflated = defaultdict(set)
+        self.flag_rows = {}
+        for fid, sid, flag, state in self.con.execute(
+                "SELECT Id, SeriesId, Flag, ReviewState FROM ContainmentFlag WHERE Flag IN ('conflated-series','overlap-in-series')"):
+            is_open = state in idbase.OPEN_FLAG_STATES
+            self.flag_rows[fid] = (sid, flag, state, is_open)
+            if is_open and sid is not None:
+                self.conflated[sid].add(fid)
         # An S a later REVISIT file has overridden is no longer the line in force: the open-flag rule must not
         # fail the audit-trail copy of it in the older batch (R-016 refused S66039 over A-022's S).
         _d, _w, _sup, _dup = idbase.scan_decisions()
@@ -185,6 +193,8 @@ def parse(path, ck, errors):
     collected = {}
     c_shelves = []          # (loc, itemId, shelf) — checked against `want`/`decided` once the file is read
     i_items = set()         # every item this file gives an `I` line, for the item batch's coverage
+    stale_claims = defaultdict(set)   # sid -> flag ids this file claims stale (TOOLS_TODO 37)
+    conflated_s = []                  # (loc, sid): an S on a shelf carrying an open conflated / overlap flag
 
     for n, raw in enumerate(open(path, encoding="utf-8"), 1):
         line = raw.strip()
@@ -229,6 +239,22 @@ def parse(path, ck, errors):
             out["F"].append((sid, head[1], why))
             if head[1].startswith("merge-with="):
                 merges.add(sid)
+            if flag == "stale-flag":
+                # TOOLS_TODO 37: "this open conflated / overlap flag is stale" — lets the S on the same shelf
+                # stand in THIS file; wave_land.ps1 lands it only if the lead approved the id (stale_flags.py)
+                fid = head[1].partition("=")[2]
+                row = ck.flag_rows.get(int(fid)) if fid.isdigit() else None
+                if not fid.isdigit():
+                    errors.append(f"{loc}: stale-flag needs a flag id — `F {sid} stale-flag=<ContainmentFlag.Id> | evidence`")
+                elif row is None:
+                    errors.append(f"{loc}: stale-flag={fid} is not a conflated-series / overlap-in-series ContainmentFlag")
+                elif row[3] and row[0] != sid and sid in ck.shelves:
+                    errors.append(f"{loc}: stale-flag={fid} is an open flag on S{row[0]}, not on S{sid}")
+                if len(why) < MIN_EVIDENCE:
+                    errors.append(f"{loc}: a stale-flag claim needs evidence of at least {MIN_EVIDENCE} characters — "
+                                  f"what the files show that the flag's detail got wrong (it becomes the dismissal Note)")
+                if fid.isdigit():
+                    stale_claims[sid].add(int(fid))
             continue
 
         if kind == "R":
@@ -270,8 +296,7 @@ def parse(path, ck, errors):
                 errors.append(f"{loc}: evidence clause is {len(why)} characters, minimum {MIN_EVIDENCE} — "
                               f"name WHAT agreed and the arithmetic that held")
             if sid in ck.conflated and (sid, base) not in ck.superseded_pairs:
-                errors.append(f"{loc}: S on S{sid}, which carries an OPEN conflated-series / overlap-in-series flag — a shelf "
-                              f"that is several runs has no one identity (PLAN §3.3); write F + R")
+                conflated_s.append((loc, sid))        # judged once the file is read: the F line may follow
             if cvv is not None:
                 if not cvv.isdigit() or not ck.cv_volume_exists(int(cvv)):
                     errors.append(f"{loc}: unknown ComicVine volume id {cvv} — not in CvVolume, the local "
@@ -366,6 +391,18 @@ def parse(path, ck, errors):
                     errors.append(f"{loc}: unknown MangaUpdates series id {ids['mu']} — not in MuSeries")
             out["C"].append((iid, ids, a, b, conf, why))
             continue
+
+    # An S on a shelf with an OPEN conflated / overlap flag stands only when this file claims EVERY such flag stale
+    # (TOOLS_TODO 37) — a shelf that is several runs has no one identity (PLAN §3.3), so the claim is the reader
+    # saying the flag is wrong, and the landing dismisses it (lead-approved) in the same wave as the S.
+    for loc, sid in conflated_s:
+        missing = sorted(ck.conflated[sid] - stale_claims.get(sid, set()))
+        if missing:
+            errors.append(f"{loc}: S on S{sid}, which carries an OPEN conflated-series / overlap-in-series flag "
+                          f"({', '.join('flag ' + str(f) for f in missing)}) — a shelf that is several runs has no one "
+                          f"identity (PLAN §3.3); write F + R, or, if the flag is STALE, "
+                          f"'F {sid} stale-flag={missing[0]} | what the files show' (one line per flag)")
+    out["stale"] = {s: sorted(v) for s, v in stale_claims.items()}
 
     for vid, sids in cv_seen.items():
         if len(set(sids)) > 1 and not (set(sids) & merges):
@@ -488,9 +525,19 @@ def refused_partner_rule(ck, files, checked):
             if any(fl.split("=")[0] == "wrong-cv-link" for fl in rec.get("flags_full", {}).get(sid, ())):
                 continue                            # apply rule 1 clears its link: no partner
             refused.add(sid)
-    if not refused:
-        return 0
     carries = defaultdict(dict)                     # V -> {partner: how}
+    # TOOLS_TODO 35: an EMPTY live Series row (no comic files) still storing V is a partner too — it keeps its
+    # canonical key `cv:V`, so the resolve makes it the SURVIVOR of any shelf this wave links to V (wave 19:
+    # S96256, R-032 cv=144027, merged undeclared into the empty S64503). Nothing apply does clears it (its
+    # "frees" arm reads file-holding shelves only), so only a declared merge-with or a pre-landing clear answers it.
+    empty = set()
+    for sid, vid in ck.con.execute("SELECT Id, CvVolumeId FROM Series WHERE CvVolumeId IS NOT NULL "
+                                   "AND coalesce(CanonicalKey,'') NOT LIKE 'book:%'"):
+        if sid not in ck.shelves:
+            empty.add(sid)
+            carries[int(vid)][sid] = "stored CvVolumeId of an EMPTY Series row (no files; it survives the resolve)"
+    if not refused and not empty:
+        return 0
     q = ",".join("?" * len(refused))
     for sid, vid in ck.con.execute(f"SELECT Id, CvVolumeId FROM Series WHERE CvVolumeId IS NOT NULL AND Id IN ({q})",
                                    sorted(refused)):
@@ -513,7 +560,7 @@ def refused_partner_rule(ck, files, checked):
             if fw.get(sid) != np_ or vid not in carries:
                 continue
             for partner, how in sorted(carries[vid].items()):
-                if partner == sid or fw.get(partner) == np_:
+                if partner == sid or (partner not in empty and fw.get(partner) == np_):
                     continue                        # refused in this same file: apply's "frees" arm clears it
                 if partner in targets.get(sid, ()) or sid in targets.get(partner, ()):
                     continue                        # declared
@@ -522,16 +569,22 @@ def refused_partner_rule(ck, files, checked):
     name = lambda s: (ck.con.execute("SELECT coalesce(DisplayNameOverride, Name) FROM Series WHERE Id=?",
                                      (s,)).fetchone() or ("?",))[0]
     for sid, vid, partner, how, base in fails:
+        if partner in empty:
+            print(f"        FAIL cv={vid} on S{sid} ({base}) is the {how} S{partner} '{name(partner)}' — the resolve "
+                  f"MERGES S{sid} into it (wave 19: S96256 -> empty S64503). Declare 'F {sid} merge-with={partner}' if "
+                  f"it is the same comic; otherwise write cv=- and 'N {sid} withheld cv={vid} — … S{partner} …' and ask "
+                  f"the lead for a pre-landing clear of S{partner}'s stored link")
+            continue
         print(f"        FAIL cv={vid} on S{sid} ({base}) is the {how} of REFUSED shelf S{partner} '{name(partner)}' — "
               f"a refusal does not clear its link, so the resolve MERGES S{sid} into it (wave 17: S15478 -> "
               f"S47160). Declare 'F {sid} merge-with={partner}' if it is the same comic; otherwise write cv=- and "
               f"'N {sid} withheld cv={vid} — … S{partner} …', or re-decide S{partner} in the same file")
     if infos:
-        print(f"        info: {len(infos)} LANDED S line(s) matched a refused shelf's link with no merge-with "
-              f"(TOOLS_TODO 31) — history: those waves already ran their resolve")
+        print(f"        info: {len(infos)} LANDED S line(s) matched a refused shelf's or an EMPTY row's link with no "
+              f"merge-with (TOOLS_TODO 31 / 35) — history: those waves already ran their resolve")
         for sid, vid, partner, how, base in infos[:20]:
             gone = ck.merged.get(sid)
-            print(f"          {base:<10} S{sid} cv={vid} -> refused S{partner} ({how})"
+            print(f"          {base:<10} S{sid} cv={vid} -> {'EMPTY' if partner in empty else 'refused'} S{partner} ({how})"
                   f"{'; S' + str(sid) + ' merged into S' + str(gone) if gone else ''}")
         if len(infos) > 20:
             print(f"          ... and {len(infos) - 20} more")

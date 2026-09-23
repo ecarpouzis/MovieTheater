@@ -2,7 +2,8 @@
 #
 #   pwsh docs/books/identity/tools/wave_land.ps1 -Wave 2 A-001 A-002 A-003 ...
 #
-# Order (TOOLS_TODO 9, learned from wave 1): check -> backup -> apply -> SNAPSHOT -> resolve ->
+# Order (TOOLS_TODO 9, learned from wave 1; 37 added the stale-flag gate + dismissals):
+# check -> stale-flag gate -> backup -> stale-flag dismissals -> apply -> SNAPSHOT -> resolve ->
 # merge_refusals -> check_decisions -> pass2 -> curated-spans-import -> chain3 -> the §8 checks. The
 # containment repair sits AFTER the resolve because the merge it repairs does not exist until then, and
 # the snapshot sits BEFORE it because the old shelf ids stop existing when it runs.
@@ -58,7 +59,13 @@ if ($missing) {
 Write-Host "wave: $($Batches -join ', ')  (kinds: $((($Batches | ForEach-Object { $_.Substring(0,1) }) | Sort-Object -Unique) -join ' '))"
 
 Step "check_identity --all (cross-file merge and duplicate rules, not just this wave's grammar)" { python "$tools/check_identity.py" --all }
+# TOOLS_TODO 37: a reader's `F <sid> stale-flag=<flagId> | evidence` lets an S stand on a shelf carrying that open
+# conflated / overlap flag. The gate prints every claim and STOPS unless the lead has read the shelf's files and
+# listed the flag id in identity/stale-approved.txt; after the backup, exactly the approved flags are dismissed
+# (Note = the reader's evidence + 'lead-verified') so the S and its dismissal land in the same wave.
+Step "stale-flag gate (every claim approved in identity/stale-approved.txt, or STOP)" { python "$tools/stale_flags.py" --gate @files }
 Step "backup_live (SQLite online backup of books.db + books-legs.db)" { python "$ctools/backup_live.py" }
+Step "stale-flag dismissals (exactly the approved claims; the DB write this wave's S lines stand on)" { python "$tools/stale_flags.py" --dismiss @files --apply }
 Step "apply_identity --apply (undo jsonl flushed per batch; prints the MERGE EXPOSURE list)" { python "$tools/apply_identity.py" @files --apply }
 
 # The merge does not exist until the resolve makes it, so the containment repair cannot run before it —

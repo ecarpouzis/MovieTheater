@@ -19,4 +19,9 @@ until it prints 0 failing, then the next batch. Report back as the brief says.
 Write a `C` line (the brief's grammar) for every collected edition whose range counts in a run other than the
 shelf's own identity — chains of minis, trade and omnibus lines, archive lines — naming the run on every leg you can.
 The packet's `GCD says:` line is GCD's own "Collects X #a-b" for a trade; a `⚠ RANGE CONTRADICTED` there is a
-judged range to re-read, not to overwrite blindly. Batch your name probes: `python lookup.py --batch <file>`.
+judged range to re-read, not to overwrite blindly. Batch your name probes: `python lookup.py --batch <file>`;
+`lookup.py --shelf <sid>` / `--who-stores cv=<id>` / `--id cv=<id>` answer "who else holds this id" in one call.
+
+An open conflated / overlap flag you find STALE: write the `S` and `F <sid> stale-flag=<flagId> | the files' evidence`
+(one per open flag, id from the packet's `flags: #<id>`) — never R + `F conflated-series` for a later wave. A
+`merge-with` needs both shelves to carry the SAME cv on their S lines; a `cv=-` target does not merge.
