@@ -1,0 +1,886 @@
+## Conventions for this batch (37 shown of 187 matched; 328 in LEDGER.md; 36 shelf/shelves: folder:vn-year ×16 · kind:collected-line ×13 · kind:trade-only ×12 · pub:marvel ×11 · pub:fantagraphics ×8 · folder:sequel-subfolder ×7 · folder:events ×6 · kind:foreign ×6)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-030] (36 shelf/shelves) sig:collision
+- One folder split into two shelves by a subtitle in one filename (Analog, Witch Doctor) → `F merge-with=<sid>`.
+[L-151] (36 shelf/shelves) sig:collision sig:withheld
+- The withheld rule beats the checker's merge-with remedy text: a stored-link collision with a DIFFERENT comic is
+  `cv=-` + `N withheld cv=<id> … S<partner>`, never a merge (S101634 vs S22834); merge-with only for the same comic.
+[L-160] (36 shelf/shelves) pass:revisit sig:withheld
+- A withheld shelf with NO GCD leg to keep becomes `R` + `N withheld cv=<id> … S<partner>` (S4944, S99691) — the
+  revisit pair re-links the partner and then the S line can be written.
+[L-191] (18 shelf/shelves) folder:sequel-subfolder folder:vn-year pass:revisit sig:stale-flag
+- On a wave-2 `NN <Title> vN (<year>)` split-out shelf (ids S94xxx+) an `overlap-in-series` flag is stale by
+  construction — the colliding Vol. 01s now sit on sibling shelves (13 of 14 in R-016); the lead dismisses the flag.
+[L-281] (17 shelf/shelves) folder:bucket folder:events folder:vn-year
+- A chronology folder's ORDER prefix ("04 Dragon Ball - Full Color Freeza Arc v01") gets read by the per-file num
+  matcher as the ISSUE number — v01 in folder "04" linked to issue #4; the true mapping is the shelf's own vNN by
+  ordinal. Any "NN Title vNN" bucket naming is this trap.
+[L-033] (11 shelf/shelves) pub:marvel sig:collision sig:probe
+- Krakoa-era Marvel folders are cut into several shelves by the CREATOR name in trade filenames (New Mutants v4
+  → Hickman / Brisson / Vita Ayala; "X-Men by Gerry Duggan"): trades of ONE run in ONE folder → the run is the
+  identity, siblings take `F merge-with`; `lookup.py` by the run's plain name supplies ids the packet lacks. A
+  stored link carried across by the creator name alone (X-Men by Duggan → "Marauders by Duggan") is `wrong-cv-link`.
+[L-142] (11 shelf/shelves) pub:marvel sig:collision
+- A shelf read in an EARLIER batch may already link the volume you found (a second rip of the same mini in another
+  folder): `check_identity --all` catches it as an undeclared merge — write `F <sid> merge-with=<partner>` when the
+  partner is the same comic (Iron Fist: Wolverine S9566/S9567; X-Men/Runaways FCBD S22298/S11337).
+[L-124] (16 shelf/shelves) folder:bucket folder:vn-year pass:item sig:trade-link
+- A `<Title> vN (<year>)` folder holding only a collected edition is the RUN's folder — the run takes the S
+  line, the trade an `I` line; a `_Trades` / `_Minis` / `_One-shots` bucket is the opposite (the book's own
+  count-1 record, minted by BOTH providers, wins).
+[L-193] (32 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-272] (16 shelf/shelves) folder:vn-year
+- A ripper's `vNN` can be offset by one from the album's own subtitle (Carthago Adventures) — the title decides.
+[L-291] (16 shelf/shelves) kind:collected-line kind:foreign pass:item
+- ITEM PASS (X-040..X-042): a run you can NAME but whose GCD rows carry no page counts gives no safe per-volume
+  range (SPRIGGAN Deluxe → GCD 188803) — `N`, not a guessed `C`; a per-file link can point at a foreign edition of
+  the WRONG book entirely (Summer Wars: the Complete Edition has its own one-shot record CV 155900 / GCD 142966).
+[L-014] (30 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-164] (15 shelf/shelves) kind:archive kind:collected-line kind:strip sig:probe
+- Year-by-year archives of a newspaper/web strip (Doonesbury, Dennis the Menace, Rip Kirby, The Little King) have no record
+  in either provider → R + provider-missing; where a provider holds the strip's own collected line (Cyanide & Happiness,
+  Oglaf) pair at 0.9 as a format split.
+[L-013] (28 shelf/shelves) sig:probe
+- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
+  with the other spelling.
+[L-043] (28 shelf/shelves) sig:probe
+- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
+  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
+[L-050] (28 shelf/shelves) sig:probe
+- When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
+  punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
+  abbreviation the publisher uses ("HSE").
+[L-072] (28 shelf/shelves) sig:probe
+- GCD hides behind the SUBTITLE: "The Hunting Accident", "Giraffes on Horseback Salad", "Undesirables" return
+  nothing under their full titles — re-probe the SHORT title before writing `provider-missing`.
+[L-088] (28 shelf/shelves) sig:probe
+- GCD hides behind a LONGER title too ("… and the Tale of Azkon's Heart", "Holiday Party (One-Shot)"), not only a
+  shorter one — probe both directions before `provider-missing`.
+[L-089] (28 shelf/shelves) sig:probe
+- A facsimile of a SINGLE issue is its own book; a reprint edition of a whole series is not — the original wins.
+[L-095] (28 shelf/shelves) sig:probe
+- A folder that is a ripper's READING ORDER over several separately published arcs (The Ride, Revolution) has no
+  spanning record — the ladder is arc numbers, not issue numbers.
+[L-096] (28 shelf/shelves) sig:probe
+- GCD's exact filing recovers legs the probe misses: singular/plural ("Greeting", "Return"), two words ("Super
+  Hero"), a spelled ordinal ("Fortieth"), a dropped subtitle, or the colon form ("Jinx: Torso") — try each before
+  `provider-missing`.
+[L-118] (28 shelf/shelves) sig:probe
+- A GCD collected series numbers its issues by VOLUME and titles them with the volume SUBTITLE — that, not the
+  page count, places a trade when a shelf holds several volumes of one line.
+[L-125] (28 shelf/shelves) sig:probe
+- A stored link that is the same title a DIFFERENT DECADE later is a new cluster (Fist of Khonshu 2024 on the
+  1985 Moon Knight run; a 1971 Sub-Mariner Annual on the 1998 annual) — years decide, never the title.
+[L-157] (28 shelf/shelves) sig:probe
+- A GCD row with ZERO issues is an empty stub, not a leg (Skull Cat 197154, Rivers of London: Stray Cat Blues 213823,
+  Archer & Armstrong: Revival 164703) → `provider-missing`.
+[L-159] (28 shelf/shelves) sig:probe
+- An exact-name probe can miss a sequel the rip DOES hold: `--contains "Icarus Society"` found CV 143976 after the
+  exact "Prodigy: The Icarus Society" probe returned nothing — try `--contains` on the subtitle before `provider-missing`.
+[L-163] (28 shelf/shelves) sig:probe
+- GCD hides behind a bracketed alternate title: "War Stories: J for Jenny [War Story: J for Jenny]" (10937), "Dance Like
+  Everybody's Watching! [A Zits Treasury]" (132081), "You're Out of Your Mind, Charlie Brown! [Horizontal]" (155990).
+[L-177] (28 shelf/shelves) sig:probe
+- A bracketed publisher series number becomes a phantom ladder entry: Thun'da's "[A1-056]/[A1 073]/[A1 083]" produced
+  ladder 56/73/83 and a ratio 5.00 — read the bracket, not the ladder.
+[L-204] (28 shelf/shelves) pass:item pass:revisit sig:probe
+- `lookup.py --issues <collected-line volume>` names each TRADE's own ComicVine ISSUE id: 71 of 73 `I` lines in
+  R-018 carry an item-level CV id instead of `cv=-`.
+[L-253] (28 shelf/shelves) sig:probe
+- A subtitle can name a SEQUEL series filed on the first run's shelf (Wild's End "Beyond the Sea" = CV 151678 /
+  GCD 201441, not the 2014 run) — the `C` names the sequel run.
+[L-264] (28 shelf/shelves) sig:probe
+- Title-only (st3) GCD matches reuse ONE gcd id across every volume of a line (Golden City ×10, Windmaker,
+  Tarzan Kubert Years) — re-derive each book from the shelf's own numbered pool.
+[L-267] (28 shelf/shelves) sig:probe
+- A GCD "collected edition" series sits beside the genuine RUN under a different id (Dept H 100362 vs 111468, Harrow
+  County 89353 vs 94662, Sword Daughter 125748 vs 134585) — the `C` names the run; `lookup.py` by title finds it.
+[L-269] (14 shelf/shelves) kind:collected-line kind:trade-only
+- An omnibus bundling several minis gets one `C` per mini at that mini's full range; an anthology TPB ("… and
+  Others") is not a numbered run and gets an `N`, not a forced `C`.
+[L-273] (28 shelf/shelves) sig:probe
+- The Adventures of Tintin: every per-file gcd pick (60515/108543) was wrong; the shelf's own gcd pool matched by
+  ENGLISH title was right for all 23 — the pool over the pick, again.
+[L-292] (28 shelf/shelves) sig:probe
+- A stored English digital volume's cached rip may cover only its last issues (Suzuka #13-18 of 18) — the earlier
+  books take gcd-only identities from the GCD series' full list, cv=-.
+[L-294] (28 shelf/shelves) pass:item sig:probe
+- ITEM PASS (X-046..X-048): a shelf can hold TWO published editions of one work with no shared pool (Monster: the
+  18-volume line beside the 2014 "Two-in-One" Perfect Edition) — each edition needs its own pool or an honest
+  no-record, never a mapping across editions. When a shelf's file count exceeds its pool, the excess usually
+  belongs to a CONTINUATION volume the shelf's own `N` names (Ranma 1/2 v22-38 → CV 26409 / GCD 17651) — the pool
+  for it must be pulled (`lookup.py --issues`, `gcd_issue WHERE series_id=?`) before writing no-record. GCD may mint
+  a "collected edition" row for only the FIRST of a same-title pair (Zombie Makeout Club) — the second is gcd=-.
+[L-060] (9 shelf/shelves) folder:vn-year pub:caliber pub:dark-horse pub:image pub:marvel sig:stamp
+- A digital re-release can cut each collected volume into chapter files restarting at 1 (Dark Horse's 2014-15
+  Kabuki: seven `vNN` folders = seven different published comics from Caliber / Image / Marvel; v1 stamped one
+  Image volume on all 44 files). Read the chapter files as the runs they came from.
+[L-116] (9 shelf/shelves) folder:vn-year pub:marvel sig:comicinfo sig:legacy-stamp sig:stamp
+- Old Marvel folders cut into `vN (year)` shelves: the per-file matcher picks the wrong DECADE by issue number
+  (Amazing Adventures 1961 on the 1970 run, Ka-Zar 1997 on 1974, Kull 1971 on 1982/1983). The folder's `vN (year)`
+  suffix and ComicInfo `Volume` beat it every time.
+
++150 more matched entries not shown: L-135, L-186, L-244, L-246, L-247, L-248, L-251, L-258, L-275, L-279, L-282, L-285, L-286, L-287, L-289, L-309, L-314, L-021, L-321, L-031, L-136, L-212, L-222, L-237, L-245, L-064, L-085, L-101, L-113, L-016, L-032, L-114, L-310, L-119, L-127, L-130, L-297, L-298, L-306, L-313, L-319, L-274, L-288, L-290, L-293, L-027, L-034, L-076, L-082, L-093, L-097, L-109, L-115, L-117, L-132, L-169, L-175, L-196, L-252, L-265, L-295, L-296, L-307, L-308, L-324, L-327, L-328, L-133, L-242, L-255, L-065, L-099, L-123, L-194, L-262, L-011, L-015, L-018, L-028, L-029, L-036, L-040, L-051, L-052, L-055, L-059, L-087, L-090, L-162, L-165, L-173, L-174, L-195, L-197, L-199, L-206, L-211, L-214, L-220, L-257, L-260, L-261, L-263, L-007, L-217, L-008, L-023, L-077, L-106, L-111, L-112, L-121, L-129, L-143, L-152, L-158, L-168, L-171, L-172, L-187, L-202, L-203, L-205, L-207, L-208, L-210, L-215, L-229, L-243, L-254, L-299, L-311, L-312, L-316, L-054, L-098, L-100, L-128, L-150, L-181, L-276, L-277, L-278, L-280, L-283, L-284, L-304, L-074, L-083, L-250 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S94672 New Warriors v2 (1999)  [tier C] · gap 9  keys: New Warriors v2 (1999)  years 1990-1999  12 files / 0 collections
+   split run: "New Warriors v2 (1999)" run=- (new shelf from P-008) — seed the S line from these ids, then verify them
+   flags: #481 label-ambiguous [Pending] item 102157 — New Warriors v2 000-010 are single issues, not collections
+   folders: [11] Marvel\New Warriors\New Warriors v2 (1999) · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0425 Unnamed
+   files:   [102157] New Warriors v2 000 (1999) (c2c) (ArtNet-DCP).cbz (19pp) | [102158] New Warriors v2 001 (1999).cbz (41pp) | [102159] New Warriors v2 002 (1999).cbz (23pp)
+            [102160] New Warriors v2 003 (1999).cbr (23pp) | [102161] New Warriors v2 004 (2000).cbz (24pp) | [102162] New Warriors v2 005 (2000).cbz (24pp)
+            [102163] New Warriors v2 006 (2000).cbz (24pp) | [102164] New Warriors v2 007 (2000).cbr (23pp) | [102165] New Warriors v2 008 (2000).cbz (31pp)
+            [102166] New Warriors v2 009 (2000).cbz (23pp) | [102167] New Warriors v2 010 (2000).cbz (23pp) | [89080] 005 New Warriors v2 #05.cbr (24pp)
+   ours:    ladder 0-10; 1 number(s) name more than one file: 5
+   CV per-file (v1): vol 4407 "The New Warriors" 1990 Marvel 75 on 12/12 files
+   CV local rip:   (= per-file) · 59121 "New Warriors" 1991 Planeta DeAgostini 46 (via our own name without the filing suffix "New Warriors") · 57840 "New Warriors" 1995 Planeta DeAgostini 7 (via our own name without the filing suffix "New Warriors") · 58263 "New Warriors" 1996 Planeta DeAgostini 14 (via our own name without the filing suffix "New Warriors") · 6787 "The New Warriors" 1999 Marvel 11 (via our own name without the filing suffix "New Warriors") · 18016 "New Warriors" 2005 Marvel 6 (via our own name without the filing suffix "New Warriors")   (rip lookup)
+   GCD per-file:   series 7302 "New Warriors" 1999-2000 Marvel [was ongoing series] 10 on 10/12 files · series 7301 "New Warriors" 1999-1999 Marvel; Wizard [one-shot; giveaway] 1 on 1/12 files; methods numx11
+   GCD dump:       (= per-file) · 4035 "The New Warriors" 1990-1996 Marvel [] 75 (via our own name without the filing suffix "New Warriors") · 34115 "The New Warriors" [es] 1991-1995 Planeta DeAgostini [] 47 (via our own name without the filing suffix "New Warriors") · 5440 "New Warriors" [it] 1995-1995 Marvel Italia [] 6 (via our own name without the filing suffix "New Warriors") · 34116 "The New Warriors" [es] 1995-1995 Planeta DeAgostini [] 7 (via our own name without the filing suffix "New Warriors") · 34117 "The New Warriors" [es] 1996-1997 Planeta DeAgostini [] 14 (via our own name without the filing suffix "New Warriors")   (dump lookup)
+   bridges:        gcd 7302 -> LOCG 108061 "The New Warriors" support 14
+
+== S98866 New Warriors v5 (2014)  [tier B]   keys: New Warriors v5 (2014)  years 2014-2014  2 files / 2 collections
+   split run: "New Warriors v5 (2014)" run={"cv": 71802, "gcd": 79116} (new shelf from P-008) — seed the S line from these ids, then verify them
+   flags: #661 overlap-in-series [Dismissed] item 102188 — the 2014 Vol. 01 gcd 1-6 collides with the 1990 run the Series holds
+   folders: [2] Marvel\New Warriors\New Warriors v5 (2014)
+   files:   [102188] COL New Warriors Vol. 01 - The Kids Are All Fight (2014) (digital) (Minutemen-Excelsior).cbz (134pp)
+            [102189] COL New Warriors Vol. 02 - Always and Forever (2015) (digital) (Minutemen-Excelsior).cbz (133pp)
+   GCD says: [102189] gcd_reprint 1385543: s79116 New Warriors (2014) #7-12 [7 stories]
+   CV per-file (v1): vol 71802 "New Warriors" 2014 Marvel 12 on 2/2 files
+   CV local rip:   (= per-file) · 18671 "New Warriors" 2007 Marvel 20 (via our own name without the filing suffix "New Warriors") · 18016 "New Warriors" 2005 Marvel 6 (via our own name without the filing suffix "New Warriors") · 6787 "The New Warriors" 1999 Marvel 11 (via our own name without the filing suffix "New Warriors") · 58263 "New Warriors" 1996 Planeta DeAgostini 14 (via our own name without the filing suffix "New Warriors") · 57840 "New Warriors" 1995 Planeta DeAgostini 7 (via our own name without the filing suffix "New Warriors")   (rip lookup)
+   GCD per-file:   series 89871 "New Warriors" 2014-2015 Marvel [collected edition] 2 on 2/2 files; methods page-rematchx1 · numx1
+   GCD dump:       (= per-file) · 79116 "New Warriors" 2014-2015 Marvel [] 12 (via our own name without the filing suffix "New Warriors") · 25084 "New Warriors" 2007-2009 Marvel [] 20 (via our own name without the filing suffix "New Warriors") · 21467 "New Warriors" 2005-2006 Marvel [] 6 (via our own name without the filing suffix "New Warriors") · 7301 "New Warriors" 1999-1999 Marvel; Wizard [] 1 (via our own name without the filing suffix "New Warriors") · 7302 "New Warriors" 1999-2000 Marvel [] 10 (via our own name without the filing suffix "New Warriors")   (dump lookup)
+   bridges:        gcd 89871 -> LOCG 108061 "The New Warriors" support 1
+
+== S103499 New Warriors Ashcan Edition (1994)  [tier D]   keys: New Warriors Ashcan Edition (1994)  years 1994-1994  1 files / 0 collections
+   split run: "New Warriors Ashcan Edition (1994)" run={"cv": 57754, "gcd": 54565} (new shelf from P-008) — seed the S line from these ids, then verify them
+   folders: [1] Marvel\New Warriors\New Warriors v1 (1990)\Annuals and Specials
+   files:   [102078] The New Warriors Ashcan Edition 001 (1994) (digital) (Marika-Empire).cbz (10pp)
+   ours:    ladder 1; ComicInfo Series: "The New Warriors Ashcan Edition"x1; ComicInfo Volume: "1994"x1; ComicInfo Publisher: "Marvel"x1; ComicInfo Web: "387869"x1
+   CV local rip:   57754 "The New Warriors Ashcan Edition" 1994 Marvel 1 issue 387869 (via our own name without the filing suffix "New Warriors Ashcan Edition")   (rip lookup)
+   GCD dump:       54565 "The New Warriors Ashcan Edition" 1994-1994 Marvel [] 1 (via our own name without the filing suffix "New Warriors Ashcan Edition")   (dump lookup)
+
+== S12855 New Warriors  [tier C] · ratio 0.31  keys: New Warriors  years 1990-1996  23 files / 0 collections
+   split: the KEPT half of the P-008 split — moved out -> S94672 "New Warriors v2 (1999)"; S98866 "New Warriors v5 (2014)"; S103499 "New Warriors Ashcan Edition (1994)"; re-identify what stayed
+   merge-with candidate: S94671 "The New Warriors" (61 files) — the P-008 reader left this half here only because it could not move without that join; if it is the same run write `F 12855 merge-with=94671`, otherwise say why not in an N line
+   folders: [18] Marvel\New Warriors\New Warriors v1 (1990) · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0212 Child's Play · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0142 Kings of Pain · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0180 Utitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0210 Untitled
+   files:   New Warriors 054 (1994) (digital) (Marika-Empire).cbz … New Warriors 075 (1996) (digital) (Marika-Empire).cbz  (15 files, pp 21-39)
+            [102154] The New Warriors 018 (1991) (digital) (Marika-Empire).cbz (25pp) | [102155] The New Warriors 019 (1992) (digital) (Marika-Empire).cbz (23pp)
+            [102156] The New Warriors 020 (1992) (digital) (Marika-Empire).cbz (24pp) | [87700] 002 New Warriors Annual 01 (1991) (digital) (Minutemen-Bluntman).cbr (55pp)
+            [87894] 001 New Warriors 031 (1993) (Digital) (AnHeroGold-Empire).cbz (25pp) | [88045] 006 New Warriors #44.cbr (20pp)
+            [88050] 002 New Warriors 045 (1994) (Digital) (AnHeroGold-Empire).cbz (21pp) | [88052] 004 New Warriors 046 (1994) (Digital) (AnHeroGold-Empire).cbz (22pp)
+   ours:    ladder 1, 18-20, 31, 44-46, 54-60, 68-75; ComicInfo Series: "The New Warriors"x18; ComicInfo Volume: "1990"x18; ComicInfo Count: "75"x18; ComicInfo Publisher: "Marvel Comics"x15, "Marvel"x3; ComicInfo Web: "70247"x1, "70248"x1, "70249"x1, "70250"x1
+   CV per-file (v1): vol 4407 "The New Warriors" 1990 Marvel 75 on 23/23 files
+   CV local rip:   (= per-file) · 59121 "New Warriors" 1991 Planeta DeAgostini 46 · 57840 "New Warriors" 1995 Planeta DeAgostini 7 · 58263 "New Warriors" 1996 Planeta DeAgostini 14 · 6787 "The New Warriors" 1999 Marvel 11 · 18016 "New Warriors" 2005 Marvel 6   (rip lookup)
+   GCD per-file:   series 4035 "The New Warriors" 1990-1996 Marvel [was ongoing series] 75 on 17/23 files · series 34115 "The New Warriors" [es] 1991-1995 Planeta DeAgostini [] 47 on 1/23 files; methods numx18
+   GCD dump:       (= per-file) · 5440 "New Warriors" [it] 1995-1995 Marvel Italia [] 6 · 34116 "The New Warriors" [es] 1995-1995 Planeta DeAgostini [] 7 · 34117 "The New Warriors" [es] 1996-1997 Planeta DeAgostini [] 14 · 7301 "New Warriors" 1999-1999 Marvel; Wizard [] 1   (dump lookup)
+   bridges:        gcd 4035 -> LOCG 108061 "The New Warriors" support 17 · gcd 34115 -> LOCG 108061 "The New Warriors" support 1
+
+== S103456 E.C. Segar's Popeye (2006)  [tier B]   keys: E.C. Segar's Popeye (2006)  years 1948-1949  6 files / 6 collections
+   split run: "E.C. Segar's Popeye (2006)" run={"cv": 47699, "gcd": 41100} (new shelf from P-008) — seed the S line from these ids, then verify them
+   flags: #95 conflated-series [Dismissed] item 118003 — two Popeye strip ladders both number from v01
+   folders: [6] Fantagraphics\Popeye\Popeye (2006)
+   files:   [118003] COL Popeye v01 - I Yam What I Yam! (Fantagraphics 2006) (300DPI) (c2c) (bizon&MickRC-SZ).cbz (189pp)
+            [118004] COL Popeye v02 - Well, Blow Me Down! (Fantagraphics 2007) (300DPI) (c2c) (bizon&MickRC-SZ).cbz (179pp)
+            [118005] COL Popeye v03 - Let's You And Him Fight! (Fantagraphics 2008) (300DPI) (c2c) (bizon&MickRC-SZ).cbz (164pp)
+            [118006] COL Popeye v04 - Plunder Island (Fantagraphics 2009) (300DPI) (c2c) (bizon&MickRC-SZ).cbz (172pp) | [25988] COL Popeye v05 - Wha's a Jeep (Fantagraphics 2011).cbz (167pp)
+            [118007] COL Popeye v06 - Me Li'l Swee'pea (Fantagraphics 2012) (300DPI) (c2c) (bizon&MickRC-SZ).cbz (194pp)
+   CV per-file (v1): vol 1174 "Popeye" 1948 Western Publishing 168 on 6/6 files
+   CV local rip:   (= per-file) · 144136 "Popeye" 1949 Wilson Publishing 4 (via CV name "Popeye") · 48325 "Popeye" 1953 Editora Brasil-América Limitada 56 (via CV name "Popeye") · 143936 "Popeye" 1941 Hispano Americana de Ediciones 12 (via CV name "Popeye") · 142516 "Popeye" 1935 David McKay 1 issue 918852 (via CV name "Popeye") · 68437 "Popeye" 1967 Yaffa / Page 1 issue 430284 (via CV name "Popeye")   (rip lookup)
+   GCD dump:       541 "Popeye" 1948-1962 Dell [] 65 (via CV name "Popeye") · 15628 "Popeye" [en-ca] 1949-1950 Wilson Publishing [] 8 (via CV name "Popeye") · 84893 "Popeye" [en-gb] 1950-? World Distributors [] 24 (via CV name "Popeye") · 86053 "Popeye" [en-nz] 1950-1950 Feature Productions [] 8 (via CV name "Popeye") · 90827 "Popeye" [en-au] 1950-? Frew Publications [] 4 (via CV name "Popeye") · 29400 "Popeye" [pt-br] 1953-1961 Editora Brasil-América [EBAL] [] 100 (via CV name "Popeye")   (dump lookup)
+
+== S13955 The E.C. Segar Popeye Sundays  [tier C] · gap 73  keys: Popeye - The E. C. Segar Popeye Sundays - Swee'Pea and Eugene the Jeep  years 1948-2024  4 files / 4 collections
+   split run: "Popeye - The E. C. Segar Popeye Sundays - Swee'Pea and Eugene the Jeep" run=- (new shelf from P-008) — seed the S line from these ids, then verify them
+   folders: [4] Fantagraphics\Popeye\Popeye - The E. C. Segar Popeye Sundays (2021)
+   files:   [24890] COL Popeye - The E. C. Segar Popeye Sundays v01 - Olive Oyl and Her Sweety (2021) (digital) (F) (Salem-Empire).cbr (118pp)
+            [24891] COL Popeye - The E. C. Segar Popeye Sundays v02 - Wimpy and His Hamburgers (2022) (digital) (Salem-Empire).cbr (102pp)
+            [24892] COL Popeye - The E. C. Segar Popeye Sundays v03 - The Sea Hag & Alice the Goon (2023) (digital) (Salem-Empire).cbr (130pp)
+            [24893] COL Popeye - The E. C. Segar Popeye Sundays v04 - Swee'Pea & Eugene the Jeep (2024) (digital) (Salem-Empire).cbr (149pp)
+   ours:    ComicInfo Series: "Popeye"x3; ComicInfo Publisher: "Fantagraphics"x3
+   CV linked:      vol 139195 "The E.C. Segar Popeye Sundays" 2021 Fantagraphics 4 issues; cached #1-4 (4); yearΔ 73; ratio 0/4; no judged range
+   CV per-file (v1): vol 1174 "Popeye" 1948 Western Publishing 168 on 3/4 files
+   CV candidates:  (= linked) · 69260 "Popeye and the Jeep" 1982 Tony Raiola 1 issue 433509 s72 · 144834 "Popeye" 2017 La Gazzetta dello Sport 60 s51 · 127489 "Popeye" 1978 Magic Press 4 s45 · 144136 "Popeye" 1949 Wilson Publishing 4 s45 · 48325 "Popeye" 1953 Editora Brasil-América Limitada 56 s42 · 144185 "Popeye" 1983 Egmont Ehapa Verlag 14 s42   (v1 search)
+   CV local rip:   (= linked) · 144136 "Popeye" 1949 Wilson Publishing 4 (via CV name "Popeye") · 48325 "Popeye" 1953 Editora Brasil-América Limitada 56 (via CV name "Popeye") · 143936 "Popeye" 1941 Hispano Americana de Ediciones 12 (via CV name "Popeye") · 142516 "Popeye" 1935 David McKay 1 issue 918852 (via CV name "Popeye")   (rip lookup)
+   GCD dump:       541 "Popeye" 1948-1962 Dell [] 65 (via CV name "Popeye") · 15628 "Popeye" [en-ca] 1949-1950 Wilson Publishing [] 8 (via CV name "Popeye") · 84893 "Popeye" [en-gb] 1950-? World Distributors [] 24 (via CV name "Popeye") · 86053 "Popeye" [en-nz] 1950-1950 Feature Productions [] 8 (via CV name "Popeye") · 90827 "Popeye" [en-au] 1950-? Frew Publications [] 4 (via CV name "Popeye") · 29400 "Popeye" [pt-br] 1953-1961 Editora Brasil-América [EBAL] [] 100 (via CV name "Popeye")   (dump lookup)
+
+== S13949 Popeye  [tier B]   keys: Popeye  years 1935-2024  18 files / 0 collections
+   split: the KEPT half of the P-008 split — moved out -> S103456 "E.C. Segar's Popeye (2006)"; S13955 "Popeye - The E. C. Segar Popeye Sundays - Swee'Pea and Eugene the Jeep"; re-identify what stayed
+   folders: [18] Webcomics and Strips\Popeye\Popeye (by year)
+   files:   [114258] Popeye (1935) (Clark Kent).cbz (308pp) | [114259] Popeye (1936) (Clark Kent).cbz (314pp) | [114260] Popeye (1937) (Clark Kent).cbz (236pp)
+            [114261] Popeye (1938) (Clark Kent).cbz (311pp) | [114262] Popeye (1939) (Dailies) (Clark Kent).cbz (312pp) | [114263] Popeye (1939) (Sundays) (Clark Kent).cbz (53pp)
+            [114264] Popeye (1996) (Sundays) (Clark Kent).cbz (52pp) | [114265] Popeye (1997) (Sundays) (Clark Kent).cbz (52pp) | [114266] Popeye (1998) (Sundays) (Clark Kent).cbz (52pp)
+            [114267] Popeye (1999) (Dailies) (Clark Kent) (Incomplete).cbz (27pp) | [114268] Popeye (2019) (Dailies) (Clark Kent).cbz (314pp)
+            [114269] Popeye (2020) (Dailies) (Clark Kent).cbz (313pp) | [114270] Popeye (2020) (Sundays) (Clark Kent).cbz (52pp) | [114271] Popeye (2022) (Dailies) (Clark Kent).cbz (313pp)
+            [114272] Popeye (2022) (Sundays) (Clark Kent).cbz (52pp) | [114273] Popeye (2023) (Sundays) (Clark Kent).cbz (53pp) | [114274] Popeye (2024) (Dailies) (Clark Kent).cbz (314pp)
+            [114275] Popeye (2024) (Sundays) (Clark Kent).cbz (52pp)
+   CV linked:      vol 1174 "Popeye" 1948 Western Publishing 168 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); cached #1-6 (6); yearΔ ?; ratio 0/?; no judged range; v1 per-file: same volume on 18/18 files
+   CV candidates:  (= linked) · 144834 "Popeye" 2017 La Gazzetta dello Sport 60 s89 · 144185 "Popeye" 1983 Egmont Ehapa Verlag 14 s85 · 143936 "Popeye" 1941 Hispano Americana de Ediciones 12 s85 · 48325 "Popeye" 1953 Editora Brasil-América Limitada 56 s80 · 127489 "Popeye" 1978 Magic Press 4 s77 · 144136 "Popeye" 1949 Wilson Publishing 4 s77   (v1 search)
+   CV local rip:   (= linked) · 142516 "Popeye" 1935 David McKay 1 issue 918852 · 143936 "Popeye" 1941 Hispano Americana de Ediciones 12 · 144136 "Popeye" 1949 Wilson Publishing 4 · 48325 "Popeye" 1953 Editora Brasil-América Limitada 56 · 68437 "Popeye" 1967 Yaffa / Page 1 issue 430284   (rip lookup)
+   GCD dump:       26690 "Popeye" 1935-1935 David McKay [] 2 · 172850 "Popeye" [es] 1941-1942 Hispano Americana de Ediciones SA [] 12 · 181751 "Popeye" [es] 1943-1943 Hispano Americana de Ediciones SA [] 14 · 541 "Popeye" 1948-1962 Dell [] 65 · 15628 "Popeye" [en-ca] 1949-1950 Wilson Publishing [] 8 · 84893 "Popeye" [en-gb] 1950-? World Distributors [] 24   (dump lookup)
+
+== S95051 Amazing Spider-Man v5 (2018)  [tier C] · 4 named, the minority on >= 2 files or >= 10%  keys: Amazing Spider-Man v5 (2018)  years 1963-2022  16 files / 14 collections
+   split run: "Amazing Spider-Man v5 (2018)" run=- (new shelf from P-008) — seed the S line from these ids, then verify them
+   folders: [13] Marvel\_Spider-Man\__Amazing Spider-Man\07 Amazing Spider-Man v5.1 (2018) · [2] Marvel\_Spider-Man\__Amazing Spider-Man\07 Amazing Spider-Man v5.1 (2018)\Annuals and Specials · [1] Marvel\_Spider-Man\__Amazing Spider-Man\07 Amazing Spider-Man v5.1 (2018)\Omnibus Editions
+   files:   [94750] COL Amazing Spider-Man Vol. 01 - Back To Basics (2019) (Digital) (Asgard-Empire).cbr (149pp)
+            [94751] COL Amazing Spider-Man Vol. 02 - Friends and Foes (2019) (Digital) (Zone-Empire).cbr (122pp)
+            [94752] COL Amazing Spider-Man Vol. 03 - Lifetime Achievement (2019) (Digital) (Zone-Empire).cbr (113pp)
+            [94753] COL Amazing Spider-Man Vol. 04 - Hunted (2019) (Digital) (Zone-Empire).cbr (299pp)
+            [94754] COL Amazing Spider-Man Vol. 05 - Behind the Scenes (2019) (Digital) (Zone-Empire).cbr (154pp)
+            [94756] COL Amazing Spider-Man Vol. 07 - 2099 (2020) (Digital) (F) (Zone-Empire).cbr (112pp)
+            [94759] COL Amazing Spider-Man Vol. 09 - Sins Rising (2020) (Digital) (EJGriffin-Empire).cbz (138pp)
+            [94760] COL Amazing Spider-Man Vol. 10 - Green Goblin Returns (2020) (Digital) (EJGriffin-Empire).cbz (160pp)
+            [94761] COL Amazing Spider-Man Vol. 11 - Last Remains (2021) (Digital) (EJGriffin-Empire).cbz (164pp)
+            [94763] COL Amazing Spider-Man Vol. 12 - Shattered Web (2021) (Digital) (EJGriffin-Empire).cbz (128pp)
+            [94764] COL Amazing Spider-Man Vol. 13 - King's Ransom (2021) (Digital) (EJGriffin-Empire).cbz (166pp)
+            [94765] COL Amazing Spider-Man Vol. 14 - Chameleon Conspiracy (2021) (Digital) (EJGriffin-Empire).cbz (143pp)
+            [94767] COL Amazing Spider-Man Vol. 15 - What Cost Victory (2021) (Digital-Empire).cbr (174pp) | [94770] Amazing Spider-Man Annual 001 (2018) (Digital) (Zone-Empire).cbr (34pp)
+            [94771] Amazing Spider-Man Annual 002 (2021) (Digital) (Zone-Empire).cbr (31pp) | [95941] COL The Amazing Spider-Man by Nick Spencer Omnibus Book 01 (2023) (hd-webrip) (JTR).cbz (1297pp)
+   ours:    ladder 1-2; ComicInfo Series: "Amazing Spider-Man"x3, "The Amazing Spider-Man"x2, "Amazing Spider-Man Annual"x1; ComicInfo Publisher: "Marvel"x6
+   GCD says: [94750] gcd_reprint 2305280: s80405 The Amazing Spider-Man (2014) #1 [1 story]  |  ⚠ stored GCD row is another book: our subtitle 'Back To Basics' vs GCD title 'Une chance d'être en vie' — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+   CV per-file (v1): vol 152139 "Amazing Spider-Man" 2021 Marvel UK/Panini UK 31 on 9/16 files · vol 110451 "Amazing Spider-Man" 2018 Panini Comics 1 issue 668442 on 2/16 files · vol 2127 "The Amazing Spider-Man" 1963 Marvel 651 on 2/16 files · vol 112161 "The Amazing Spider-Man" 2018 Marvel 106 on 2/16 files
+   CV local rip:   (= per-file) · 34326 "The Amazing Spider-Man" 1979 Marvel 1 issue 224088 (via our own name without the filing suffix "Amazing Spider-Man") · 56505 "The Amazing Spider-Man" 1979 Simon and Schuster 1 issue 383545 (via our own name without the filing suffix "Amazing Spider-Man") · 151406 "The Amazing Spider-Man" 1980 Pocket Books 1 issue 995531 (via our own name without the filing suffix "Amazing Spider-Man") · 22719 "The Amazing Spider-Man" 1982 Marvel 1 issue 136279 (via our own name without the filing suffix "Amazing Spider-Man") · 78701 "The Amazing Spider-Man" 1999 Marvel 58 (via our own name without the filing suffix "Amazing Spider-Man")   (rip lookup)
+   GCD per-file:   series 194339 "Amazing Spider-Man" [fr] 2020-2024 Panini France [recueil [collected edition]] 11 on 5/16 files · series 184161 "The Amazing Spider-Man" 2022-2025 [] 72 (dump only) on 5/16 files · series 180779 "Amazing Spider-Man" [fr] 2020-2025 Panini France [recueil [collected edition]] 6 on 1/16 files · series 172683 "Amazing Spider-Man" [en-gb] 2021-? Panini UK [ongoing] 68 on 1/16 files; methods numx7 · fulldump-rematchx5
+   GCD dump:       1570 "The Amazing Spider-Man" 1963-1998 Marvel [] 443 (via our own name without the filing suffix "Amazing Spider-Man") · 24842 "The Amazing Spider-Man" 1969-1969 Marvel [] 1 (via our own name without the filing suffix "Amazing Spider-Man") · 149585 "The Amazing Spider-Man" [en-ph] 1974-1974 Goodwill Bookstore [] 2 (via our own name without the filing suffix "Amazing Spider-Man") · 18606 "The Amazing Spider-Man" [en-au] 1975-1976 Newton Comics [] 17 (via our own name without the filing suffix "Amazing Spider-Man") · 72382 "The Amazing Spider-Man" [en-au] 1975-1975 Newton Comics [] 1 (via our own name without the filing suffix "Amazing Spider-Man") · 182246 "The Amazing Spider-Man" [en-za] 1976-1976 Republican Press [] 3 (via our own name without the filing suffix "Amazing Spider-Man")   (dump lookup)
+   bridges:        gcd 194339 -> LOCG 100043 "The Amazing Spider-Man" support 6 · gcd 180779 -> LOCG 100043 "The Amazing Spider-Man" support 1
+
+== S64133 The Amazing Spider-Man  [tier C] · 869 files  keys: Amazing Spider-Man (1963) | Amazing Spider-Man v1 (1963) | Amazing Spider-Man v1 (2003) | Amazing Spider-Man v2 (1999) | Amazing Spider-man (1963) | The Amazing Spider-Man (1963)  years 1963-2014  869 files / 3 collections
+   split run: "Amazing Spider-Man v1 (1963)" run=- (new shelf from P-008) — seed the S line from these ids, then verify them
+   flags: #151 label-ambiguous [Pending] item 118417 — items 94755 and 118417 are duplicate copies of Vol. 06 - Absolute Carnage
+   folders: [441] Marvel\_Spider-Man\__Amazing Spider-Man\01 Amazing Spider-Man v1 (1963) · [203] Marvel\_Spider-Man\__Amazing Spider-Man\03 Amazing Spider-Man v1 (2003) · [39] Marvel\_Spider-Man\__Amazing Spider-Man\00 Annuals and Specials · [39] Marvel\_Spider-Man\__Amazing Spider-Man\02 Amazing Spider-Man v2 (1999) · [15] _Marvel Major Event Chronology (digital)\2007.11 - Spider-man - One More Day\Extra\Spider-man - Brand New Day · [13] _Marvel Major Event Chronology (digital)\1975.02 - Spider-man - The Clone Saga I · [9] Marvel\_Spider-Man\__Amazing Spider-Man\03 Amazing Spider-Man v1 (2003)\Variant Covers · [7] _Marvel Major Event Chronology (digital)\2020.07 - Amazing Spider-Man - Sins Rising · [6] _Marvel Major Event Chronology (digital)\2005.12 - Spider-man - The Other\Extra\Amazing Spider-man - Coming Home (2001) (digital-hd-Empire) · [6] _Marvel Major Event Chronology (digital)\2007.11 - Spider-man - One More Day\Extra · [6] _Marvel Major Event Chronology (digital)\2023.11 - Gang War\02 Gang War · [5] Marvel\_Marvel Facsimile Editions\Variant Covers · [5] Marvel\_X-Men\_X-Men Complete Chronology V2\0719 Civil War - Phase One · [5] _Marvel Major Event Chronology (digital)\1973.06 - Spider-man - The Death of Gwen Stacy\Extras · [5] _Marvel Major Event Chronology (digital)\2008.12 - Dark Reign\Amazing Spider-man · [5] _Marvel Major Event Chronology (digital)\2021.07 - Spider-Man - Sinister War · [4] Marvel\_Marvel Facsimile Editions · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0111 Acts of Vengeance · [4] Marvel\_X-Men\_X-Men Complete Chronology V2\0728 Civil War - Phase Two · [4] _Marvel Major Event Chronology (digital)\2012.11 - Spider-man - Dying Wish · [4] _Marvel Major Event Chronology (digital)\2017.04 - Secret Empire\02 Tie-ins\Amazing Spider-Man · [3] Marvel\_X-Men\_X-Men Complete Chronology V2\0087 Inferno After Effects · [3] _Marvel Major Event Chronology (digital)\1975.02 - Spider-man - The Clone Saga I\Extra · [3] _Marvel Major Event Chronology (digital)\1986.02 - Daredevil - Born Again\Extra\Amazing Spider-Man 050-52 (1967) · [3] _Marvel Major Event Chronology (digital)\1993.05 - Spider-man - Maximum Carnage\Extra\03 Amazing Spider-man - Carnage (1992) (Digital) (AnPymGold-Empire) · [2] Marvel\_X-Men\_X-Men Complete Chronology V2\0008 Second Genesis · [2] _Marvel Major Event Chronology (digital)\1987.10 - Spider-man - Kraven's Last Hunt\Extra · [2] _Marvel Major Event Chronology (digital)\1993.05 - Spider-man - Maximum Carnage\Extra\01 Amazing Spider-man - Venom (1988) (Digital) (AnPymGold-Empire) · [2] _Marvel Major Event Chronology (digital)\2014.04 - Original Sin\02 Tie-ins\Amazing Spider-Man · [2] _Marvel Major Event Chronology (digital)\2023.11 - Gang War\01 Gang War - First Strike · [1] Marvel\#MARVEL CURRENT ONGOING TITLES\The Infinity Watch v1 (2024) · [1] Marvel\_Spider-Man\__Amazing Spider-Man\07 Amazing Spider-Man v5.1 (2018) · [1] Marvel\_Spider-Man\__OGNs, Minis & One-shots\Spider-Man - Maximum Clonage (1995) · [1] Marvel\_Spider-Man\__Omnibus Editions · [1] Marvel\_Venom\11 Venom - Sinner Takes All (1995)\Bride of Venom (First She-Venom Appearance) · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0006 Various Cameos · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0012 Proteus · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0059 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0078 Evolutionary war · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0093 Atlantis Attacks · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0289 Onslaught · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0311 Untitled · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0463 Maximum Security · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0723 Civil War - X-Men · [1] Marvel\_X-Men\_X-Men Complete Chronology V2\0915 Identity Wars · [1] _Marvel Major Event Chronology (digital)\2006.07 - Civil War\03 Civil War - Spider-Man Unmasked · [1] _Marvel Major Event Chronology (digital)\2019.08 - Absolute Carnage v2 · [1] _Marvel Major Event Chronology (digital)\2022.12 - Spider-Man Dark Web\Spinning Into Dark Web
+   files:   [48606] 02 Amazing Spider-Man Annual 001 (2024) (Digital) (Shan-Empire).cbz (29pp) | [83015] Amazing Spider-Man 238 - Facsimile Edition (2022) (Digital) (Shadowcat-Empire).cbz (36pp)
+            [83016] Amazing Spider-Man 252 - Facsimile Edition (2019) (Digital) (Shadowcat-Empire).cbz (36pp)
+            [83018] Amazing Spider-Man 254 - Facsimile Edition (2024) (digital) (Marika-Empire).cbz (37pp)
+            [83027] Amazing Spider-Man 347 - Facsimile Edition (2020) (Digital) (Shadowcat-Empire).cbz (36pp)
+            [83101] Amazing Spider-Man 257 (2024) (Facsimile Edition Tony Daniel Variant) (Digital) (MikeNY76).cbz (1pp)
+            [83102] Amazing Spider-Man 260 (2024) (Facsimile Edition Skan Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [83103] Amazing Spider-Man 261 (2024) (Facsimile Edition Alan Quah Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [83104] Amazing Spider-Man 262 (2024) (Facsimile Edition Ben Harvey Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [83105] Amazing Spider-Man 263 (2024) (Facsimile Edition Inhyuk Lee Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [93849] Amazing Spider-Man Annual 001 (1964) (Digital) (TLK-EMPIRE-HD).cbr (74pp) | [93850] Amazing Spider-Man Annual 002 (1965) (Digital) (Shadowcat-Empire).cbz (27pp)
+            [93851] Amazing Spider-Man Annual 003 (1966) (Digital) (TLK-EMPIRE-HD).cbr (23pp) | [93852] Amazing Spider-Man Annual 004 (1967) (Digital) (TLK-EMPIRE-HD).cbr (52pp)
+            [93853] Amazing Spider-Man Annual 005 (1968) (Digital) (TLK-EMPIRE-HD).cbr (49pp) | [93854] Amazing Spider-Man Annual 006 (1969) (Digital) (Shadowcat-Empire).cbz (54pp)
+            [93855] Amazing Spider-Man Annual 007 (1970).cbr (67pp) | [93856] Amazing Spider-Man Annual 008 (1971).cbr (66pp)
+            [93857] Amazing Spider-Man Annual 009 (1973) (c2c) (edits) (Delboy2k7-DCP).cbz (52pp) | [93858] Amazing Spider-Man Annual 010 (1976) (Digital) (TLK-EMPIRE-HD).cbr (37pp)
+            [93859] Amazing Spider-Man Annual 011 (1977) (Digital) (Zone-Empire).cbr (36pp) | [93860] Amazing Spider-Man Annual 012 (1978) (Digital-Empire).cbz (44pp)
+            [93861] Amazing Spider-Man Annual 013 (1979) (Digital) (Shadowcat-Empire).cbz (36pp) | [93862] Amazing Spider-Man Annual 014 (1980) (Digital) (Shadowcat-Empire).cbz (36pp)
+            [93863] Amazing Spider-Man Annual 015 (1981).cbz (31pp) | [93864] Amazing Spider-Man Annual 016 (1982) (Digital) (Shadowcat-Empire).cbz (39pp)
+            [93865] Amazing Spider-Man Annual 017 (1983) (Digital) (Shadowcat-Empire).cbz (40pp) | [93866] Amazing Spider-Man Annual 018 (1984) (Digital-Empire).cbz (40pp)
+            [93867] Amazing Spider-Man Annual 019 (1985) (Digital) (Shadowcat-Empire).cbz (41pp) | [93868] Amazing Spider-Man Annual 020 (1986) (Digital) (Shadowcat-Empire).cbz (40pp)
+            [93869] Amazing Spider-Man Annual 021 (1987) (Digital) (AnHeroGold-Empire).cbz (44pp) | [93870] Amazing Spider-Man Annual 022 (1988) (Digital) (Shadowcat-Empire).cbz (52pp)
+            [93872] Amazing Spider-Man Annual 024 (1990) (Digital) (Shadowcat-Empire).cbz (56pp) | [93873] Amazing Spider-Man Annual 025 (1991) (Digital) (AnHeroGold-Empire).cbz (55pp)
+            [93874] Amazing Spider-Man Annual 026 (1992) (Digital) (AnHeroGold-Empire).cbz (55pp) | [93877] Amazing Spider-Man Annual 029 (1995).cbr (56pp)
+            [93878] Amazing Spider-Man Annual 030 (1996).cbr (56pp) | [93881] Amazing Spider-Man Annual 032 (1999) (Digital) (Shadowcat-Empire).cbz (37pp)
+            [93882] Amazing Spider-Man Annual 033 (2000) (Digital) (Shadowcat-Empire).cbz (40pp) | [93883] Amazing Spider-Man Annual 034 (2001) (Digital) (Shadowcat-Empire).cbz (39pp)
+            [93884] Amazing Spider-Man Annual 035 (2008) (greengiant-DCP).cbr (39pp) | [93885] Amazing Spider-Man Annual 036 (2009) (Digital) (Zone-Empire).cbr (39pp)
+            [93886] Amazing Spider-Man Annual 037 (2010) (Digital) (AnPymGold-Empire).cbz (40pp) | [93887] Amazing Spider-Man Annual 038 (2011) (digital) (Minutemen-Faessla).cbz (34pp)
+            [93888] Amazing Spider-Man Annual 039 (2012) (digital) (Minutemen-Faessla).cbz (44pp) | [93889] Amazing Spider-Man Annual 040 (2015) (digital) (Minutemen-InnerDemons).cbr (29pp)
+            [93890] Amazing Spider-Man Annual 041 (2017) (digital) (Minutemen-Faessla).cbz (36pp) | [93891] Amazing Spider-Man Annual 042 (2018) (Digital) (Zone-Empire).cbr (41pp)
+            [93848] Amazing Spider-man 010 (Alternate Ditko Cover Only) (Nodge).cbr (1pp)
+            Amazing Spider-Man 001 (1963) (Digital) (Shadowcat-Empire).cbz … Amazing Spider-Man 007 (1963) (Digital) (Shadowcat-Empire).cbz  (7 files, pp 25-27)
+            [94036] Amazing Spider-Man 008 (1964) (Digital) (TLK-EMPIRE-HD).cbr (27pp)
+            Amazing Spider-Man 009 (1964) (Digital) (Shadowcat-Empire).cbz … Amazing Spider-Man 050 (1967) (Digital) (Shadowcat-Empire).cbz  (42 files, pp 22-26)
+            Amazing Spider-Man 051 (1967) (Digital) (TLK-EMPIRE-HD).cbr … Amazing Spider-Man 070 (1969) (Digital) (TLK-EMPIRE-HD).cbr  (20 files, pp 22-22)
+            [94099] Amazing Spider-Man 071 (1969) (Digital) (Waverider-Empire).cbz (21pp)
+            Amazing Spider-Man 072 (1969) (Digital) (AnHeroGold-Empire).cbr … Amazing Spider-Man 077 (1969) (Digital) (AnHeroGold-Empire).cbr  (6 files, pp 21-21)
+            [94106] Amazing Spider-Man 078 (1969) (Digital) (Zone-Empire).cbr (22pp) | [94107] Amazing Spider-Man 079 (1969) (Digital) (Zone-Empire).cbr (22pp)
+            [94108] Amazing Spider-Man 080 (1970) (Digital) (Zone-Empire).cbr (22pp) | [94109] Amazing Spider-Man 081 (1970) (Digital) (Zone-Empire).cbr (22pp)
+            Amazing Spider-Man 082 (1970) (Digital) (AnHeroGold-Empire).cbz … Amazing Spider-Man 097 (1971) (Digital) (AnHeroGold-Empire).cbz  (16 files, pp 20-21)
+            Amazing Spider-Man 098 (1971) (Digital) (Zone-Empire).cbr … Amazing Spider-Man 109 (1972) (Digital) (Zone-Empire).cbr  (12 files, pp 21-37)
+            Amazing Spider-Man 110 (1972) (Digital) (AnHeroGold-Empire).cbz … Amazing Spider-Man 120 (1973) (Digital) (AnHeroGold-Empire).cbz  (11 files, pp 21-21)
+            [94149] Amazing Spider-Man 121 (1973) (Digital) (Zone-Empire).cbr (22pp) | [94150] Amazing Spider-Man 122 (1973) (Digital) (Zone-Empire).cbr (22pp)
+            Amazing Spider-Man 123 (1973) (Digital) (AnHeroGold-Empire).cbz … Amazing Spider-Man 131 (1974) (Digital) (AnHeroGold-Empire).cbz  (9 files, pp 20-20)
+            Amazing Spider-Man 132 (1974) (Digital) (Zone-Empire).cbr … Amazing Spider-Man 155 (1976) (Digital) (Zone-Empire).cbr  (24 files, pp 19-21)
+            [94184] Amazing Spider-Man 156 (1976) (Digital) (AnHeroGold-Empire).cbz (19pp) | [94185] Amazing Spider-Man 157 (1976) (Digital) (AnHeroGold-Empire).cbz (18pp)
+            [94186] Amazing Spider-Man 158 (1976) (Digital) (AnHeroGold-Empire).cbz (18pp) | [94187] Amazing Spider-Man 159 (1976) (Digital) (AnHeroGold-Empire).cbz (18pp)
+            [94188] Amazing Spider-Man 160 (1976) (Digital) (AnHeroGold-Empire).cbz (18pp) | [94189] Amazing Spider-Man 161 (1976) (Digital) (TLK-EMPIRE-HD).cbr (19pp)
+            [94190] Amazing Spider-Man 162 (1976) (Digital) (TLK-EMPIRE-HD).cbr (20pp)
+            Amazing Spider-Man 163 (1977) (Digital) (AnHeroGold-Empire).cbz … Amazing Spider-Man 171 (1977) (Digital) (AnHeroGold-Empire).cbz  (9 files, pp 18-19)
+            Amazing Spider-Man 172 (1977) (Digital) (Zone-Empire).cbr … Amazing Spider-Man 180 (1978) (Digital) (Zone-Empire).cbr  (9 files, pp 19-20)
+            Amazing Spider-Man 181 (1978) (Digital) (AnHeroGold-Empire).cbz … Amazing Spider-Man 188 (1978) (Digital) (AnHeroGold-Empire).cbz  (8 files, pp 18-19)
+            [94217] Amazing Spider-Man 189 (1979) (Digital) (TLK-EMPIRE-HD).cbr (20pp) | [94218] Amazing Spider-Man 190 (1979) (Digital) (Shadowcat-Empire).cbz (19pp)
+            [94219] Amazing Spider-Man 191 (1979) (Digital) (AnHeroGold-Empire).cbz (18pp) | [94220] Amazing Spider-Man 192 (1979) (Digital) (AnHeroGold-Empire).cbz (19pp)
+            [94221] Amazing Spider-Man 193 (1979) (Digital) (AnHeroGold-Empire).cbz (18pp) | [94222] Amazing Spider-Man 194 (1979) (Digital) (AnHeroGold-Empire).cbz (18pp)
+            [94223] Amazing Spider-Man 195 (1979) (Digital) (AnHeroGold-Empire).cbz (19pp) | [94224] Amazing Spider-Man 196 (1979) (Digital) (AnHeroGold-Empire).cbz (18pp)
+            [94225] Amazing Spider-Man 197 (1979) (Digital) (AnHeroGold-Empire).cbz (19pp) | [94226] Amazing Spider-Man 198 (1979) (Digital) (AnHeroGold-Empire).cbz (18pp)
+            [94227] Amazing Spider-Man 199 (1979) (Digital) (AnHeroGold-Empire).cbz (18pp) | [94228] Amazing Spider-Man 200 (1980) (Digital) (AnHeroGold-Empire).cbz (37pp)
+            [94229] Amazing Spider-Man 201 (1980) (Digital) (AnHeroGold-Empire).cbz (17pp) | [94230] Amazing Spider-Man 202 (1980) (Digital) (AnHeroGold-Empire).cbz (18pp)
+            [94231] Amazing Spider-Man 203 (1980) (Digital) (AnHeroGold-Empire).cbz (19pp) | [94232] Amazing Spider-Man 204 (1980) (Digital) (AnHeroGold-Empire).cbz (18pp)
+            [94233] Amazing Spider-Man 205 (1980) (Digital) (AnHeroGold-Empire).cbz (19pp) | [94234] Amazing Spider-Man 206 (1980) (Digital) (AnHeroGold-Empire).cbz (19pp)
+            Amazing Spider-Man 207 (1980) (Digital) (Shadowcat-Empire).cbz … Amazing Spider-Man 223 (1981) (Digital) (Shadowcat-Empire).cbz  (17 files, pp 18-24)
+            [94252] Amazing Spider-Man 224 (1982) (Digital) (AnHeroGold-Empire).cbz (23pp) | [94253] Amazing Spider-Man 225 (1982) (Digital) (AnHeroGold-Empire).cbz (22pp)
+            [94254] Amazing Spider-Man 226 (1982) (Digital) (AnHeroGold-Empire).cbz (23pp) | [94255] Amazing Spider-Man 227 (1982) (Digital) (AnHeroGold-Empire).cbz (23pp)
+            [94256] Amazing Spider-Man 228 (1982) (Digital) (AnHeroGold-Empire).cbz (23pp) | [94257] Amazing Spider-Man 229 (1982) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [94258] Amazing Spider-Man 230 (1982) (Digital) (Shadowcat-Empire).cbz (24pp)
+            Amazing Spider-Man 231 (1982) (Digital) (AnHeroGold-Empire).cbz … Amazing Spider-Man 252 (1984) (Digital) (AnHeroGold-Empire).cbz  (22 files, pp 22-24)
+            Amazing Spider-Man 253 (1984) (Digital) (Shadowcat-Empire).cbz … Amazing Spider-Man 283 (1986) (Digital) (Shadowcat-Empire).cbz  (31 files, pp 23-39)
+            [94312] Amazing Spider-Man 284 (1987) (Digital-Empire).cbr (23pp)
+            Amazing Spider-Man 285 (1987) (Digital) (Shadowcat-Empire).cbz … Amazing Spider-Man 329 (1990) (Digital) (Shadowcat-Empire).cbz  (45 files, pp 23-42)
+            [94358] Amazing Spider-Man 330 (1990) (Digital) (AnHeroGold-Empire).cbz (23pp) | [94359] Amazing Spider-Man 331 (1990) (Digital) (AnHeroGold-Empire).cbz (23pp)
+            [94360] Amazing Spider-Man 332 (1990) (Digital) (AnHeroGold-Empire).cbz (24pp) | [94361] Amazing Spider-Man 333 (1990) (Digital) (AnHeroGold-Empire).cbz (23pp)
+            Amazing Spider-Man 334 (1990) (Digital) (Shadowcat-Empire).cbz … Amazing Spider-Man 349 (1991) (Digital) (Shadowcat-Empire).cbz  (16 files, pp 23-25)
+            [94378] Amazing Spider-Man 350 (1991) (digital-Empire).cbr (39pp) | [94379] Amazing Spider-Man 351 (1991) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [94380] Amazing Spider-Man 352 (1991) (Digital) (Shadowcat-Empire).cbz (24pp) | [94381] Amazing Spider-Man 353 (1991) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94382] Amazing Spider-Man 354 (1991) (Digital) (Shadowcat-Empire).cbz (25pp) | [94383] Amazing Spider-Man 355 (1991) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94384] Amazing Spider-Man 356 (1991) (Digital) (Shadowcat-Empire).cbz (24pp) | [94385] Amazing Spider-Man 357 (1992) (Digital) (Shadowcat-Empire).cbz (23pp)
+            [94386] Amazing Spider-Man 358 (1992) (Digital) (Shadowcat-Empire).cbz (24pp) | [94387] Amazing Spider-Man 359 (1992) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94388] Amazing Spider-Man 360 (1992) (Digital) (Shadowcat-Empire).cbz (24pp) | [94389] Amazing Spider-Man 361 (1992) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [94390] Amazing Spider-Man 362 (1992) (Digital) (Shadowcat-Empire).cbz (24pp) | [94391] Amazing Spider-Man 363 (1992) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94392] Amazing Spider-Man 364 (1992) (Digital) (Shadowcat-Empire).cbz (24pp) | [94393] Amazing Spider-Man 365 (1992) (Digital) (Shadowcat-Empire).cbz (69pp)
+            [94394] Amazing Spider-Man 366 (1992) (Digital) (Shadowcat-Empire).cbz (24pp) | [94395] Amazing Spider-Man 367 (1992) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [94396] Amazing Spider-Man 368 (1992) (Digital) (Shadowcat-Empire).cbz (24pp) | [94397] Amazing Spider-Man 369 (1992) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94398] Amazing Spider-Man 370 (1992) (Digital) (Shadowcat-Empire).cbz (24pp) | [94399] Amazing Spider-Man 371 (1992) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94400] Amazing Spider-Man 372 (1993) (Digital) (Shadowcat-Empire).cbz (25pp) | [94401] Amazing Spider-Man 373 (1993) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94402] Amazing Spider-Man 374 (1993) (Digital) (Shadowcat-Empire).cbz (24pp) | [94403] Amazing Spider-Man 375 (1993) (digital) (Marika-Empire).cbz (54pp)
+            [94404] Amazing Spider-Man 376 (1993) (Digital) (Shadowcat-Empire).cbz (24pp) | [94405] Amazing Spider-Man 377 (1993) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94406] Amazing Spider-Man 378 (1993) (Digital) (Shadowcat-Empire).cbz (25pp) | [94407] Amazing Spider-Man 379 (1993) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [94408] Amazing Spider-Man 380 (1993) (Digital) (Shadowcat-Empire).cbz (24pp) | [94409] Amazing Spider-Man 381 (1993) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [94410] Amazing Spider-Man 382 (1993) (Digital) (Shadowcat-Empire).cbz (24pp) | [94411] Amazing Spider-Man 383 (1993) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94412] Amazing Spider-Man 384 (1993) (Digital) (Shadowcat-Empire).cbz (24pp) | [94413] Amazing Spider-Man 385 (1994) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [94414] Amazing Spider-Man 386 (1994) (Digital) (Shadowcat-Empire).cbz (24pp) | [94415] Amazing Spider-Man 387 (1994) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94416] Amazing Spider-Man 388 (1994) (Digital) (Shadowcat-Empire).cbz (56pp) | [94417] Amazing Spider-Man 389 (1994) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [94418] Amazing Spider-Man 390 (1994) (Digital) (Shadowcat-Empire).cbz (24pp) | [94419] Amazing Spider-Man 391 (1994) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94420] Amazing Spider-Man 392 (1994) (Digital) (Shadowcat-Empire).cbz (25pp) | [94421] Amazing Spider-Man 393 (1994) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94422] Amazing Spider-Man 394 (1994) (digital) (Marika-Empire).cbz (36pp) | [94423] Amazing Spider-Man 395 (1994) (Digital) (Shadowcat-Empire).cbz (25pp)
+            [94424] Amazing Spider-Man 396 (1994) (Digital) (Shadowcat-Empire).cbz (25pp) | [94425] Amazing Spider-Man 397 (1995) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94426] Amazing Spider-Man 398 (1995) (Digital) (Shadowcat-Empire).cbz (25pp) | [94427] Amazing Spider-Man 399 (1995) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94428] Amazing Spider-Man 400 (1995) (Digital) (Shadowcat-Empire).cbz (53pp) | [94429] Amazing Spider-Man 401 (1995) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94430] Amazing Spider-Man 402 (1995) (Digital) (Shadowcat-Empire).cbz (23pp) | [94431] Amazing Spider-Man 403 (1995) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94432] Amazing Spider-Man 404 (1995) (Digital) (Shadowcat-Empire).cbz (24pp) | [94433] Amazing Spider-Man 405 (1995) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94434] Amazing Spider-Man 406 (1995) (Digital) (Shadowcat-Empire).cbz (24pp)
+            Amazing Spider-Man 407 (1996) (Digital) (AnHeroGold-Empire).cbz … Amazing Spider-Man 414 (1996) (Digital) (AnHeroGold-Empire).cbz  (8 files, pp 22-24)
+            [94443] Amazing Spider-Man 415 (1996) (Digital) (Shadowcat-Empire).cbz (23pp) | [94444] Amazing Spider-Man 416 (1996) (Digital) (Shadowcat-Empire).cbz (22pp)
+            [94445] Amazing Spider-Man 417 (1996) (Digital) (AnHeroGold-Empire).cbz (23pp) | [94446] Amazing Spider-Man 418 (1996) (Digital) (AnHeroGold-Empire).cbz (21pp)
+            Amazing Spider-Man 419 (1997) (Digital) (Shadowcat-Empire).cbz … Amazing Spider-Man 438 (1998) (Digital) (Shadowcat-Empire).cbz  (20 files, pp 22-41)
+            [94467] Amazing Spider-Man 439 (1998) (Digital) (Shadowcat-Empire.cbz (24pp) | [94468] Amazing Spider-Man 440 (1998) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [94469] Amazing Spider-Man 441 (1998) (Digital) (Shadowcat-Empire).cbz (24pp)
+            Amazing Spider-Man 020 (2000) (Digital) (AnPymGold - Empire).cbz … Amazing Spider-Man 029 (2001) (Digital) (AnPymGold - Empire).cbz  (10 files, pp 20-40)
+            [94480] Amazing Spider-Man 030 (2001) (digital) (Minutemen-InnerDemons).cbr (22pp) | [94481] Amazing Spider-Man 031 (2001) (digital-hd-Empire).cbr (22pp)
+            [94482] Amazing Spider-Man 032 (2001) (digital-hd-Empire).cbr (22pp) | [94483] Amazing Spider-Man 033 (2001) (digital-hd-Empire).cbr (21pp)
+            [94484] Amazing Spider-Man 034 (2001) (digital-hd-Empire).cbr (23pp) | [94485] Amazing Spider-Man 035 (2001) (digital-hd-Empire).cbr (24pp)
+            [94486] Amazing Spider-Man 036 (2001) (digital) (Minutemen-Faessla).cbz (20pp)
+            Amazing Spider-Man 037 (2002) (digital-hd-Empire).cbr … Amazing Spider-Man 045 (2002) (digital-hd-Empire).cbr  (9 files, pp 21-23)
+            [94496] Amazing Spider-Man 046 (2002) (digital) (Minutemen-InnerDemons).cbr (23pp) | [94497] Amazing Spider-Man 047 (2003) (digital) (Minutemen-InnerDemons).cbr (22pp)
+            [94498] Amazing Spider-Man 048 (2003) (digital) (Minutemen-InnerDemons).cbr (23pp) | [94499] Amazing Spider-Man 049 (2003) (digital) (Minutemen-InnerDemons).cbr (23pp)
+            [94500] Amazing Spider-Man 050 (2003) (digital) (Minutemen-InnerDemons).cbr (23pp) | [94501] Amazing Spider-Man 051 (2003) (Digital) (Kileko-Empire).cbr (22pp)
+            [94502] Amazing Spider-Man 052 (2003) (Digital) (Kileko-Empire).cbr (24pp) | [94503] Amazing Spider-Man 053 (2003) (Digital) (Kileko-Empire).cbr (22pp)
+            [94504] Amazing Spider-Man 054 (2003) (Digital) (AnPymGold - Empire).cbz (22pp) | [94505] Amazing Spider-Man 055 (2003) (Digital) (AnPymGold - Empire).cbz (22pp)
+            [94506] Amazing Spider-Man 056 (2003) (Digital) (AnPymGold - Empire).cbz (22pp) | [94507] Amazing Spider-Man 057 (2003) (Digital) (AnPymGold - Empire).cbz (23pp)
+            [94508] Amazing Spider-Man 058 (2003) (Digital) (AnPymGold - Empire).cbz (22pp)
+            Amazing Spider-Man 500 (2003) (digital) (Minutemen-Faessla).cbz … Amazing Spider-Man 518 (2005) (digital) (Minutemen-Faessla).cbz  (19 files, pp 21-38)
+            Amazing Spider-Man 519 (2005) (digital) (Minutemen-Endriago).cbz … Amazing Spider-Man 524 (2005) (digital) (Minutemen-Endriago).cbz  (6 files, pp 21-24)
+            Amazing Spider-Man 525 (2005) (Digital-HD) (Kleio-Empire).cbz … Amazing Spider-Man 545 (2006) (Digital-HD) (Kleio-Empire).cbz  (20 files, pp 21-40)
+            Amazing Spider-Man 546 (2008) (Digital-HD) (Monafekk-Empire).cbr … Amazing Spider-Man 589 (2009) (Digital-HD) (Monafekk-Empire).cbr  (44 files, pp 24-42)
+            [94602] Amazing Spider-Man 590 (2009) (Digital) (F) (Monafekk-Empire).cbr (25pp) | [94603] Amazing Spider-Man 591 (2009) (Digital) (F) (Monafekk-Empire).cbr (27pp)
+            Amazing Spider-Man 592 (2009) (Digital-HD) (Monafekk-Empire).cbr … Amazing Spider-Man 599 (2009) (Digital-HD) (Monafekk-Empire).cbr  (8 files, pp 24-28)
+            [94612] Amazing Spider-Man 600 (2009) (Digital) (G85-Empire).cbr (104pp) | [94613] Amazing Spider-Man 601 (2009) (Digital) (G85-Empire).cbr (30pp)
+            [94614] Amazing Spider-Man 602 (2009) (Digital) (G85-Empire).cbr (26pp) | [94615] Amazing Spider-Man 603 (2009) (Digital) (G85-Empire).cbr (26pp)
+            [94616] Amazing Spider-Man 604 (2009) (Digital) (G85-Empire).cbr (27pp) | [94617] Amazing Spider-Man 605 (2009) (Digital) (G85-Empire).cbr (51pp)
+            [94618] Amazing Spider-Man 606 (2009) (Digital) (G85-Empire).cbr (25pp) | [94619] Amazing Spider-Man 607 (2009) (Digital) (G85-Empire).cbr (26pp)
+            [94620] Amazing Spider-Man 608 (2009) (Digital) (G85-Empire).cbr (26pp) | [94621] Amazing Spider-Man 609 (2009) (Digital) (G85-Empire).cbr (26pp)
+            [94622] Amazing Spider-Man 610 (2010) (Digital) (G85-Empire).cbr (26pp) | [94623] Amazing Spider-Man 611 (2010) (Digital) (G85-Empire).cbr (24pp)
+            [94624] Amazing Spider-Man 612 (2010) (Digital) (G85-Empire).cbr (34pp) | [94625] Amazing Spider-Man 613 (2010) (Digital) (G85-Empire).cbr (26pp)
+            [94626] Amazing Spider-Man 614 (2010) (Digital) (G85-Empire).cbr (27pp) | [94627] Amazing Spider-Man 615 (2010) (Digital) (G85-Empire).cbr (26pp)
+            [94628] Amazing Spider-Man 616 (2010) (Digital) (G85-Empire).cbr (24pp) | [94629] Amazing Spider-Man 617 (2010) (Digital) (G85-Empire).cbr (37pp)
+            [94630] Amazing Spider-Man 618 (2010) (Digital) (G85-Empire).cbr (24pp) | [94631] Amazing Spider-Man 619 (2010) (Digital) (G85-Empire).cbr (26pp)
+            [94632] Amazing Spider-Man 620 (2010) (Digital) (G85-Empire).cbr (25pp) | [94633] Amazing Spider-Man 621 (2010) (Digital) (G85-Empire).cbr (26pp)
+            [94634] Amazing Spider-Man 622 (2010) (Digital) (G85-Empire).cbr (36pp) | [94635] Amazing Spider-Man 623 (2010) (Digital) (G85-Empire).cbr (26pp)
+            [94636] Amazing Spider-Man 624 (2010) (Digital) (G85-Empire).cbr (26pp) | [94637] Amazing Spider-Man 625 (2010) (Digital) (G85-Empire).cbr (27pp)
+            [94638] Amazing Spider-Man 626 (2010) (Digital) (G85-Empire).cbr (25pp) | [94639] Amazing Spider-Man 627 (2010) (Digital) (G85-Empire).cbr (25pp)
+            [94640] Amazing Spider-Man 628 (2010) (Digital) (G85-Empire).cbr (33pp) | [94641] Amazing Spider-Man 629 (2010) (Digital) (G85-Empire).cbr (29pp)
+            [94642] Amazing Spider-Man 630 (2010) (Digital) (G85-Empire).cbr (24pp) | [94643] Amazing Spider-Man 631 (2010) (Digital) (G85-Empire).cbr (24pp)
+            [94644] Amazing Spider-Man 632 (2010) (Digital) (G85-Empire).cbr (25pp) | [94645] Amazing Spider-Man 633 (2010) (Digital) (G85-Empire).cbr (27pp)
+            [94646] Amazing Spider-Man 634 (2010) (Digital) (G85-Empire).cbr (38pp) | [94647] Amazing Spider-Man 635 (2010) (Digital) (G85-Empire).cbr (37pp)
+            [94648] Amazing Spider-Man 636 (2010) (Digital) (G85-Empire).cbr (38pp) | [94649] Amazing Spider-Man 637 (2010) (Digital) (G85-Empire).cbr (49pp)
+            [94650] Amazing Spider-Man 638 (2010) (Digital) (G85-Empire).cbr (46pp) | [94651] Amazing Spider-Man 639 (2010) (Digital) (G85-Empire).cbr (35pp)
+            [94652] Amazing Spider-Man 640 (2010) (digital) (Minutemen-InnerDemons).cbr (29pp) | [94653] Amazing Spider-Man 641 (2010) (Digital) (G85-Empire).cbr (45pp)
+            [94654] Amazing Spider-Man 642 (2010) (Digital) (G85-Empire).cbr (27pp) | [94655] Amazing Spider-Man 643 (2010) (Digital) (G85-Empire).cbr (27pp)
+            [94656] Amazing Spider-Man 644 (2010) (Digital) (G85-Empire).cbr (27pp) | [94657] Amazing Spider-Man 645 (2010) (Digital) (G85-Empire).cbr (27pp)
+            [94658] Amazing Spider-Man 646 (2010) (Digital) (G85-Empire).cbr (25pp) | [94659] Amazing Spider-Man 647 (2010) (Digital) (G85-Empire).cbr (61pp)
+            [94660] Amazing Spider-Man 648 (2011) (Digital) (G85-Empire).cbr (50pp) | [94661] Amazing Spider-Man 649 (2011) (Digital) (G85-Empire).cbr (34pp)
+            [94662] Amazing Spider-Man 650 (2011) (Digital) (G85-Empire).cbr (34pp) | [94663] Amazing Spider-Man 651 (2011) (Digital) (G85-Empire).cbr (32pp)
+            [94664] Amazing Spider-Man 652 (2011) (Digital) (G85-Empire).cbr (33pp) | [94665] Amazing Spider-Man 653 (2011) (Digital) (G85-Empire).cbr (34pp)
+            [94666] Amazing Spider-Man 654 (2011) (Digital) (G85-Empire).cbr (34pp) | [94667] Amazing Spider-Man 654.1 (2011) (Digital) (G85-Empire).cbr (24pp)
+            Amazing Spider-Man 655 (2011) (Digital) (G85-Empire).cbr … Amazing Spider-Man 665 (2011) (Digital) (G85-Empire).cbr  (11 files, pp 29-38)
+            Amazing Spider-Man 666 (2011) (digital) (Minutemen-Faessla).cbz … Amazing Spider-Man 679 (2012) (digital) (Minutemen-Faessla).cbz  (14 files, pp 20-33)
+            [94693] Amazing Spider-Man 679.1 (2012) (digital) (Minutemen-Faessla).cbz (24pp)
+            Amazing Spider-Man 680 (2012) (digital) (Minutemen-Faessla).cbz … Amazing Spider-Man 687 (2012) (digital) (Minutemen-Faessla).cbz  (8 files, pp 20-24)
+            [94702] Amazing Spider-Man 688 (2012) (digital) (Minutemen-InnerDemons).cbr (24pp) | [94703] Amazing Spider-Man 689 (2012) (digital) (Minutemen-InnerDemons).cbr (23pp)
+            [94704] Amazing Spider-Man 690 (2012) (digital) (Minutemen-InnerDemons).cbr (24pp) | [94705] Amazing Spider-Man 691 (2012) (digital) (Minutemen-InnerDemons).cbr (22pp)
+            [94706] Amazing Spider-Man 692 (2012) (digital) (Minutemen-InnerDemons).cbr (56pp) | [94707] Amazing Spider-Man 693 (2012) (digital) (Minutemen-InnerDemons).cbr (24pp)
+            [94708] Amazing Spider-Man 694 (2012) (digital) (Minutemen-InnerDemons).cbr (24pp) | [94709] Amazing Spider-Man 695 (2012) (digital) (Minutemen-InnerDemons).cbr (24pp)
+            [94710] Amazing Spider-Man 696 (2012) (digital) (Minutemen-InnerDemons).cbr (24pp) | [94711] Amazing Spider-Man 697 (2013) (digital) (Minutemen-InnerDemons).cbr (24pp)
+            [94712] Amazing Spider-Man 698 (2013) (digital) (Minutemen-InnerDemons).cbr (23pp) | [94713] Amazing Spider-Man 699 (2013) (digital) (Minutemen-InnerDemons).cbr (22pp)
+            [94714] Amazing Spider-Man 699.1 (2013) (digital) (Minutemen-InnerDemons).cbr (23pp) | [94715] Amazing Spider-Man 700 (2013) (digital) (Minutemen-InnerDemons).cbr (97pp)
+            [94716] Amazing Spider-Man 555 (Variant) (2008) (Digital) (MikeNY76-Empire).cbz (1pp) | [94717] Amazing Spider-Man 568 (Variant) (2008) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [94718] Amazing Spider-Man 600 (Ross Cover) (2009) (Digital) (MikeNY76-Empire).cbz (1pp) | [94719] Amazing Spider-Man 612 (Variant) (2009) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [94720] Amazing Spider-Man 613 (Variant) (2009) (Digital) (MikeNY76-Empire).cbz (1pp) | [94721] Amazing Spider-Man 638 (Variant) (2010) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [94722] Amazing Spider-Man 639 (Variant) (2010) (Digital) (MikeNY76-Empire).cbz (1pp) | [94723] Amazing Spider-Man 700.2 (Variant) (2013) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [94724] Amazing Spider-Man 700.3 (Variant) (2013) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [94755] COL Amazing Spider-Man Vol. 06 - Absolute Carnage (2020) (Digital) (Zone-Empire).cbr (108pp) | [95693] 03 Amazing Spider-Man 404 (1995) (Digital) (Shadowcat-Empire).cbz (24pp)
+            [95789] COL Amazing Spider-Man by Nick Spencer Omnibus Book 01 (2023) (hd-webrip) (JTR).cbz (1297pp) | [97980] Amazing Spider-Man 375 (1993) (Digital) (AnPymGold-Empire).cbz (29pp)
+            [86622] 007 Amazing Spider-Man 092 (1971) (Digital) (AnPymGold - Empire).cbz (20pp) | [86659] 014 Amazing Spider-Man 161 (1976) (Digital) (AnPymGold - Empire).cbz (18pp)
+            [86660] 015 Amazing Spider-Man 162 (1976) (Digital) (AnPymGold - Empire).cbz (19pp) | [86742] 017 Amazing Spider-Man 203 (1980) (Digital) (AnHeroGold-Empire).cbz (19pp)
+            [87120] 001 Amazing Spider-Man 282 (1986) (Digital) (AnPymGold - Empire).cbz (24pp) | [87238] 005 Amazing Spider-Man Annual 022 (1988) (Digital) (Shadowcat-Empire).cbz (52pp)
+            [87304] Amazing Spider-Man 311 (1989) (Digital) (AnPymGold - Empire).cbz (24pp) | [87305] Amazing Spider-Man 312 (1989) (Digital) (AnPymGold - Empire).cbz (23pp)
+            [87306] Amazing Spider-Man 313 (1989) (Digital) (AnPymGold - Empire).cbz (23pp) | [87349] 004 Amazing Spider-Man Annual 023 (1989) (Digital) (Shadowcat-Empire).cbz (57pp)
+            [87479] 014 Amazing Spider-Man 326 (1989) (Digital) (AnPymGold - Empire).cbz (24pp) | [87514] 049 Amazing Spider-Man 327 (1989) (Digital) (AnPymGold - Empire).cbz (23pp)
+            [87518] 053 Amazing Spider-Man 328 (1990) (Digital) (AnPymGold - Empire).cbz (24pp) | [87530] 065 Amazing Spider-Man 329 (1990) (Digital) (AnPymGold - Empire).cbz (24pp)
+            [88436] 026 Amazing Spider-Man 415 (1996) (digital) (Minutemen-Bluntman).cbr (23pp) | [88550] 006 Amazing Spider-Man 420 (1997) (Digital) (AnPymGold-Empire).cbz (22pp)
+            [89259] 006 Amazing Spider-Man 024 (2000) (Digital) (AnPymGold - Empire).cbz (23pp) | [90463] 004 Amazing Spider-Man 529 (2006) (digital-hd) (Kleio-Empire).cbz (23pp)
+            [90464] 005 Amazing Spider-Man 530 (2006) (digital-hd) (Kleio-Empire).cbz (23pp) | [90465] 006 Amazing Spider-Man 531 (2006) (digital-hd) (Kleio-Empire).cbz (23pp)
+            [90471] 012 Amazing Spider-Man 532 (2006) (digital) (Minutemen-Faessla).cbz (23pp) | [90477] 018 Amazing Spider-Man 533 (2006) (digital) (Minutemen-Faessla).cbz (24pp)
+            [90514] 016 Amazing Spider-Man 534 (2006) (digital) (Minutemen-Faessla).cbz (23pp) | [90546] 001 Amazing Spider-Man 535 (2006) (digital) (Minutemen-Faessla).cbz (21pp)
+            [90565] 020 Amazing Spider-Man 536 (2006) (digital) (Minutemen-Faessla).cbz (24pp) | [90583] 038 Amazing Spider-Man 537 (2007) (digital) (Minutemen-Endriago).cbz (23pp)
+            [90591] 046 Amazing Spider-Man 538 (2007) (digital-hd) (Kleio-Empire).cbz (23pp) | [91734] 001 Amazing Spider-Man Annual 038 (2011) (Digital) (Zone-Empire).cbr (34pp)
+            [116295] Amazing Spider-Man 014 (1964) (Digital) (TLK-EMPIRE-HD).cbr (26pp) | [116296] Amazing Spider-Man 031 (1965) (Digital) (TLK-EMPIRE-HD).cbr (22pp)
+            [116297] Amazing Spider-Man 039 (1966) (Digital) (TLK-EMPIRE-HD).cbr (22pp) | [116298] Amazing Spider-Man 053 (1967) (Digital) (TLK-EMPIRE-HD).cbr (22pp)
+            [116299] Amazing Spider-Man 059 (1968) (Digital) (TLK-EMPIRE-HD).cbr (22pp) | [116321] Amazing Spider-Man 139 (1974) (Digital) (F) (AnPymGold - Empire).cbz (18pp)
+            Amazing Spider-Man 140 (1975) (Digital) (AnPymGold - Empire).cbz … Amazing Spider-Man 151 (1975) (Digital) (AnPymGold - Empire).cbz  (12 files, pp 18-19)
+            [116334] Amazing Spider-Man 129 (1974) (Digital) (AnHeroGold-Empire).cbz (20pp) | [116335] Amazing Spider-Man 136 (1974) (Digital) (AnPymGold - Empire).cbz (18pp)
+            [116336] Amazing Spider-Man 137 (1974) (Digital) (AnPymGold - Empire).cbz (18pp) | [116394] Amazing Spider-Man 050 (1967) (Digital) (TLK-EMPIRE-HD).cbr (22pp)
+            [116395] Amazing Spider-Man 051 (1967) (Digital) (TLK-EMPIRE-HD).cbr (22pp) | [116396] Amazing Spider-Man 052 (1967) (Digital) (TLK-EMPIRE-HD).cbr (22pp)
+            [116400] Amazing Spider-Man 015 (1964) (Digital) (TLK-EMPIRE-HD).cbr (26pp) | [116401] Amazing Spider-Man 018 (1964) (Digital) (TLK-EMPIRE-HD).cbr (26pp)
+            [116453] Amazing Spider-Man 299 (1988) (Digital) (AnPymGold - Empire).cbz (23pp) | [116454] Amazing Spider-Man 300 (1988) (Digital) (AnPymGold - Empire).cbz (41pp)
+            [116455] Amazing Spider-Man 361 (1992) (Digital) (AnPymGold-Empire).cbz (24pp) | [116456] Amazing Spider-Man 362 (1992) (Digital) (AnPymGold-Empire).cbz (23pp)
+            [116457] Amazing Spider-Man 363 (1992) (Digital) (AnPymGold-Empire).cbz (24pp)
+            Amazing Spider-Man 030 (2001) (digital-hd-Empire).cbr … Amazing Spider-Man 035 (2001) (digital-hd-Empire).cbr  (6 files, pp 21-24)
+            [116708] 05 Amazing Spider-Man 538 (2007) (digital-hd) (Kleio-Empire).cbz (23pp) | [116916] Amazing Spider-Man 025 (1965) (Digital) (TLK-EMPIRE-HD).cbr (24pp)
+            [116917] Amazing Spider-Man 042 (1966) (Digital) (TLK-EMPIRE-HD).cbr (22pp) | [116918] Amazing Spider-Man 043 (1966) (Digital) (TLK-EMPIRE-HD).cbr (22pp)
+            [116919] Amazing Spider-Man 257 (1984) (Digital) (AnPymGold - Empire).cbz (23pp) | [116920] Amazing Spider-Man 258 (1984) (Digital) (AnPymGold - Empire).cbz (24pp)
+            [116921] Amazing Spider-Man 259 (1984) (Digital) (AnPymGold - Empire).cbz (23pp)
+            Amazing Spider-Man 547 (2008) (Digital-HD) (Monafekk-Empire).cbr … Amazing Spider-Man 599 (2009) (Digital-HD) (Monafekk-Empire).cbr  (20 files, pp 24-28)
+            [117718] 01 The Amazing Spider-Man 698 (2013) (digital) (Minutemen-InnerDemons).cbr (23pp) | [117719] 02 The Amazing Spider-Man 699 (2013) (digital) (Minutemen-InnerDemons).cbr (22pp)
+            [117720] 03 The Amazing Spider-Man 699.1 (2013) (digital) (Minutemen-InnerDemons).cbr (23pp) | [117721] 04 The Amazing Spider-Man 700 (2013) (digital) (Minutemen-InnerDemons).cbr (97pp)
+            [117767] 013 - Amazing Spider-Man 004 (2014) (Digital) (Darkness-Empire).cbr (22pp) | [117768] 014 - Amazing Spider-Man 005 (2014) (Digital) (Darkness-Empire).cbr (23pp)
+            [118297] Amazing Spider-Man 025 (Superior Octopus Only) (2017) (Digital) (Zone-Empire).cbz (11pp) | [118298] Amazing Spider-Man 029 (2017) (Digital) (Zone-Empire).cbr (23pp)
+            [118299] Amazing Spider-Man 030 (2017) (Digital) (F) (Zone-Empire).cbr (22pp) | [118300] Amazing Spider-Man 031 (2017) (Digital) (Zone-Empire).cbr (24pp)
+            [118417] COL The Amazing Spider-Man v06 - Absolute Carnage (2020) (Digital) (Zone-Empire).cbr (108pp) | [118443] 00 Amazing Spider-Man 037 (2020) (Digital) (Zone-Empire).cbr (23pp)
+            [118444] 01 Amazing Spider-Man 044 (2020) (Digital) (Zone-Empire).cbr (23pp) | [118446] 03 Amazing Spider-Man 045 (2020) (Digital) (Zone-Empire).cbr (33pp)
+            [118447] 04 Amazing Spider-Man 046 (2020) (Digital) (Zone-Empire).cbr (26pp) | [118448] 05 Amazing Spider-Man 047 (2020) (Digital) (Zone-Empire).cbr (24pp)
+            [118449] 06 Amazing Spider-Man 048 (2020) (Digital) (Zone-Empire).cbr (25pp) | [118451] 08 Amazing Spider-Man 049 (2020) (Digital) (Zone-Empire).cbr (89pp)
+            [118530] 01 Amazing Spider-Man 070 (2021) (Digital) (Zone-Empire).cbr (23pp) | [118532] 03 Amazing Spider-Man 071 (2021) (Digital) (Zone-Empire).cbr (22pp)
+            [118535] 06 Amazing Spider-Man 072 (2021) (Digital) (Zone-Empire).cbr (23pp) | [118537] 08 Amazing Spider-Man 073 (2021) (Digital) (Zone-Empire).cbr (30pp)
+            [118538] 09 Amazing Spider-Man 074 (2021) (Digital) (Zone-Empire).cbr (82pp) | [118594] Amazing Spider-Man 014 (2023) (Digital) (Zone-Empire).cbr (35pp)
+            [118597] 01 Amazing Spider-Man 037 (2024) (Digital-HD) (Shan-Empire).cbz (25pp) | [118598] 02 Amazing Spider-Man 038 (2024) (Digital-HD) (Shan-Empire).cbz (25pp)
+            01 Amazing Spider-Man 039 (2024) (Digital) (Shan-Empire).cbz … 23 Amazing Spider-Man 044 (2024) (Digital) (Shan-Empire).cbz  (6 files, pp 23-36)
+   ours:    ladder 1-441, 500-700; 150 number(s) name more than one file: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12; judged item 95789 #1-43 conf 0.97; judged item 94755 #29-31 conf 0.97; judged item 118417 #29-31 conf 0.97; ComicInfo Series: "Amazing Spider-Man"x20, "The Amazing Spider-Man"x3, "Amazing Spider-Man Annual"x1, "The Amazing Spider-Man cvv2127"x1; ComicInfo Volume: "2018"x10, "1963"x7, "2022"x3; ComicInfo Count: "681"x2; ComicInfo Publisher: "Marvel"x24, "Marvel Comics"x1; ComicInfo Web: "64599"x1, "64433"x1
+   GCD says: [95789] gcd_reprint 2476517: s126774 Amazing Spider-Man (2018) #12-13 [48 stories] · s124158 Free Comic Book Day 2018 (Amazing Spider-Man / Guardians of the Galaxy) (2018) #1 [2 stories] · s151259 Amazing Spider-Man: Full Circle (2019) #1 [1 story]
+   CV linked:      vol 2127 "The Amazing Spider-Man" 1963 Marvel 651 issues; cached #1-700.5 (651); yearΔ 0; ratio 866/651 = 1.33; 3 of 3 judged fit
+   CV per-file (v1): vol 2127 "The Amazing Spider-Man" 1963 Marvel 651 on 867/869 files · vol 73420 "The Amazing Spider-Man" 2014 Marvel 28 on 1/869 files
+   CV local rip:   (= linked) · 34326 "The Amazing Spider-Man" 1979 Marvel 1 issue 224088 · 56505 "The Amazing Spider-Man" 1979 Simon and Schuster 1 issue 383545 · 151406 "The Amazing Spider-Man" 1980 Pocket Books 1 issue 995531 · 22719 "The Amazing Spider-Man" 1982 Marvel 1 issue 136279 · 78701 "The Amazing Spider-Man" 1999 Marvel 58   (rip lookup)
+   GCD per-file:   methods fulldump-rematchx615 · round2-seriesx154 ⚠ · numx20  (⚠ copies a folder neighbour's series — verify); series 1570 "The Amazing Spider-Man" 1963-1998 Marvel [was ongoing series] 443 on 379/869 files · series 11288 "The Amazing Spider-Man" 1999-2014 Marvel [was ongoing series] 267 on 241/869 files · series 172683 "Amazing Spider-Man" [en-gb] 2021-? Panini UK [ongoing] 68 on 163/869 files · series 92892 "Amazing Spider-Man" 2015-2018 Marvel [was ongoing series] 51 on 4/869 files
+   GCD dump:       (= per-file) · 24842 "The Amazing Spider-Man" 1969-1969 Marvel [] 1 · 149585 "The Amazing Spider-Man" [en-ph] 1974-1974 Goodwill Bookstore [] 2 · 18606 "The Amazing Spider-Man" [en-au] 1975-1976 Newton Comics [] 17 · 72382 "The Amazing Spider-Man" [en-au] 1975-1975 Newton Comics [] 1 · 182246 "The Amazing Spider-Man" [en-za] 1976-1976 Republican Press [] 3   (dump lookup)
+   bridges:        gcd 1570 -> LOCG 100043 "The Amazing Spider-Man" support 2 · gcd 11288 -> LOCG 126492 "The Amazing Spider-Man" support 3 · gcd 172683 -> LOCG 100043 "The Amazing Spider-Man" support 320
+
+== S95052 Amazing Spider-man v3 (2014)  [tier C] · gap 52  keys: Amazing Spider-man v3 (2014)  years 1963-2018  6 files / 3 collections
+   split run: "Amazing Spider-man v3 (2014)" run=- (new shelf from P-008) — seed the S line from these ids, then verify them
+   folders: [3] Marvel\_Spider-Man\__Amazing Spider-Man\05 Amazing Spider-man v3 (2014) · [2] Marvel\_Spider-Man\__Amazing Spider-Man\05 Amazing Spider-man v3 (2014)\Annuals and Specials · [1] _Marvel Major Event Chronology (digital)\2018.04 - The Return of Wolverine\00 End Credit Scenes
+   files:   [94736] COL Amazing Spider-Man Vol. 03 - Spider-Verse (2015) (Digital) (Zone-Empire).cbr (143pp)
+            [94737] COL Amazing Spider-Man Vol. 04 - Graveyard Shift (2015) (Digital) (F) (Zone-Empire).cbr (100pp)
+            [94738] COL Amazing Spider-Man Vol. 05 - Spiral (2015) (Digital) (F) (Zone-Empire).cbr (107pp)
+            [94739] Amazing Spider-Man 015 (2015) (Comicxposure B&W Connecting Variant Only) (digital) (Minutemen-Mastodon).cbz (1pp)
+            [94740] Amazing Spider-Man Special 001 (2015) (Digital) (Zone-Empire).cbr (33pp) | [118375] 03 Amazing Spider-Man 794 (2018) (Digital) (Zone-Empire).cbr (24pp)
+   ours:    ladder 1, 15, 794; judged item 94736 #9-15 conf 0.97; judged item 94737 #16-18 conf 0.97; judged item 94738 #16-20 conf 0.92; ComicInfo Series: "Amazing Spider-Man"x1; ComicInfo Publisher: "Marvel"x1
+   CV per-file (v1): vol 2127 "The Amazing Spider-Man" 1963 Marvel 651 on 6/6 files
+   CV local rip:   (= per-file) · 34326 "The Amazing Spider-Man" 1979 Marvel 1 issue 224088 (via our own name without the filing suffix "Amazing Spider-man") · 56505 "The Amazing Spider-Man" 1979 Simon and Schuster 1 issue 383545 (via our own name without the filing suffix "Amazing Spider-man") · 151406 "The Amazing Spider-Man" 1980 Pocket Books 1 issue 995531 (via our own name without the filing suffix "Amazing Spider-man") · 22719 "The Amazing Spider-Man" 1982 Marvel 1 issue 136279 (via our own name without the filing suffix "Amazing Spider-man") · 78701 "The Amazing Spider-Man" 1999 Marvel 58 (via our own name without the filing suffix "Amazing Spider-man")   (rip lookup)
+   GCD per-file:   series 92892 "Amazing Spider-Man" 2015-2018 Marvel [was ongoing series] 51 on 3/6 files; methods numx3
+   GCD dump:       1570 "The Amazing Spider-Man" 1963-1998 Marvel [] 443 (via our own name without the filing suffix "Amazing Spider-man") · 24842 "The Amazing Spider-Man" 1969-1969 Marvel [] 1 (via our own name without the filing suffix "Amazing Spider-man") · 149585 "The Amazing Spider-Man" [en-ph] 1974-1974 Goodwill Bookstore [] 2 (via our own name without the filing suffix "Amazing Spider-man") · 18606 "The Amazing Spider-Man" [en-au] 1975-1976 Newton Comics [] 17 (via our own name without the filing suffix "Amazing Spider-man") · 72382 "The Amazing Spider-Man" [en-au] 1975-1975 Newton Comics [] 1 (via our own name without the filing suffix "Amazing Spider-man") · 182246 "The Amazing Spider-Man" [en-za] 1976-1976 Republican Press [] 3 (via our own name without the filing suffix "Amazing Spider-man")   (dump lookup)
+   bridges:        gcd 92892 -> LOCG 100043 "The Amazing Spider-Man" support 16
+
+== S103519 The Amazing Spider-Man '97 (1997)  [tier B]   keys: The Amazing Spider-Man '97 (1997)  years 1997-1997  1 files / 0 collections
+   split run: "The Amazing Spider-Man '97 (1997)" run={"cv": 60438, "gcd": 20854} (new shelf from P-008) — seed the S line from these ids, then verify them
+   folders: [1] Marvel\_Spider-Man\__Amazing Spider-Man\00 Annuals and Specials
+   files:   [93879] Amazing Spider-Man Annual 031a (1997).cbz (42pp)
+   CV per-file (v1): vol 2127 "The Amazing Spider-Man" 1963 Marvel 651 on 1/1 files
+   CV local rip:   60438 "The Amazing Spider-Man '97" 1997 Marvel 1 issue 143309 (via our own name without the filing suffix "The Amazing Spider-Man '97") · 78701 "The Amazing Spider-Man" 1999 Marvel 58 (via CV name "The Amazing Spider-Man") · 154391 "The Amazing Spider-Man" 2011 El Universo 9 (via CV name "The Amazing Spider-Man") · 22719 "The Amazing Spider-Man" 1982 Marvel 1 issue 136279 (via CV name "The Amazing Spider-Man") · 73420 "The Amazing Spider-Man" 2014 Marvel 28 (via CV name "The Amazing Spider-Man") · 151406 "The Amazing Spider-Man" 1980 Pocket Books 1 issue 995531 (via CV name "The Amazing Spider-Man")   (rip lookup)
+   GCD dump:       20854 "The Amazing Spider-Man '97" 1997-1997 Marvel [] 1 (via our own name without the filing suffix "The Amazing Spider-Man '97") · 72219 "The Amazing Spider-Man" [cs-cz] 1997-1998 Unicorn Comics CZ [] 6 (via CV name "The Amazing Spider-Man") · 78295 "Amazing Spider-Man" [el-gr] 1997-? Modern Times [Μόντερν Τάιμς] [] 22 (via CV name "The Amazing Spider-Man") · 182613 "The Amazing Spider-Man" [en-ph] 1996-1996 Universal Records Publishing [] 1 (via CV name "The Amazing Spider-Man") · 11288 "The Amazing Spider-Man" 1999-2014 Marvel [] 267 (via CV name "The Amazing Spider-Man") · 102396 "The Amazing Spider-Man" [de] 2000-2000 Panini Deutschland [] 1 (via CV name "The Amazing Spider-Man")   (dump lookup)
+
+== S34339 The Amazing Spider-Man  [tier C] · gap 23  keys: Amazing Spider-Man | The Amazing Spider-Man  years 1998-2023  13 files / 2 collections
+   split: the KEPT half of the P-008 split — moved out -> S95051 "Amazing Spider-Man v5 (2018)"; S64133 "Amazing Spider-Man v1 (1963)"; S95052 "Amazing Spider-man v3 (2014)"; S103519 "The Amazing Spider-Man '97 (1997)"; re-identify what stayed
+   folders: [11] Webcomics and Strips\The Amazing Spider-Man (Daily) · [1] Marvel\_Spider-Man\__Amazing Spider-Man\00 Annuals and Specials · [1] Marvel\_Spider-Man\__Omnibus Editions
+   files:   [93880] Amazing Spider-Man Annual 031b (1998) (TheFool-DCP).cbr (51pp) | [95791] COL Amazing Spider-Man Omnibus Book 01 (2022) (digital).cbz (1141pp)
+            The Amazing Spider-Man (2013) (DCP Webrips).cbr … The Amazing Spider-Man (2022) (DCP Webrips).cbr  (10 files, pp 365-366)
+            [114490] COL The Amazing Spider-Man (2023) (DCP Webrips).cbr (294pp)
+   ours:    judged item 95791 #1-10 conf 0.82; judged item 114490 #1-19 conf 0.82
+   CV per-file (v1): vol 2127 "The Amazing Spider-Man" 1963 Marvel 651 on 12/13 files
+   CV local rip:   78701 "The Amazing Spider-Man" 1999 Marvel 58 · 154391 "The Amazing Spider-Man" 2011 El Universo 9 · 22719 "The Amazing Spider-Man" 1982 Marvel 1 issue 136279 · 73420 "The Amazing Spider-Man" 2014 Marvel 28 · 85076 "The Amazing Spider-Man" 2015 Marvel 51 · 87154 "The Amazing Spider-Man" 2016 Marvel 2   (rip lookup)
+   GCD per-file:   series 172199 "Amazing Spider-Man" [fr] 2021-2021 Panini France [série continue terminée [was ongoing series]] 9 on 1/13 files; methods numx1
+   GCD dump:       11288 "The Amazing Spider-Man" 1999-2014 Marvel [] 267 · 72219 "The Amazing Spider-Man" [cs-cz] 1997-1998 Unicorn Comics CZ [] 6 · 78295 "Amazing Spider-Man" [el-gr] 1997-? Modern Times [Μόντερν Τάιμς] [] 22 · 102396 "The Amazing Spider-Man" [de] 2000-2000 Panini Deutschland [] 1 · 182613 "The Amazing Spider-Man" [en-ph] 1996-1996 Universal Records Publishing [] 1 · 64945 "Amazing Spider-Man" 2001-2006 Marvel [] 10   (dump lookup)
+   bridges:        gcd 172199 -> LOCG 100043 "The Amazing Spider-Man" support 11 · gcd 172199 -> OL /works/OL24350680W "None" isbnSupport 10
+
+== S103479 Loveless (2005)  [tier C] · 3 named, the minority on >= 2 files or >= 10%  keys: Loveless (2005)  years 2002-2017  24 files / 0 collections
+   split run: "Loveless (2005)" run={"cv": 18343, "gcd": 13730} (new shelf from P-008) — seed the S line from these ids, then verify them
+   folders: [24] Vertigo\Loveless
+   files:   Loveless 001 (2005) (digital) (Son of Ultron-Empire).cbr … Loveless 024 (2008) (digital) (Son of Ultron-Empire).cbr  (24 files, pp 23-34)
+   ours:    ladder 1-24
+   CV per-file (v1): vol 103472 "Loveless" 2002 Ichijinsha 13 on 24/24 files
+   CV local rip:   (= per-file) · 18343 "Loveless" 2005 DC Comics 24 (via our own name without the filing suffix "Loveless") · 37093 "Loveless" 2006 Viz 13 (via our own name without the filing suffix "Loveless") · 146969 "Loveless" 2006 Egmont Ehapa Verlag 13 (via our own name without the filing suffix "Loveless") · 40879 "Loveless" 2008 Panini Verlag 4 (via our own name without the filing suffix "Loveless") · 52871 "Loveless" 2012 Viz 4 (via our own name without the filing suffix "Loveless")   (rip lookup)
+   GCD per-file:   series 13730 "Loveless" 2005-2008 DC [Was Ongoing Series] 24 on 13/24 files · series 20938 "Loveless" 2006-2008 Tokyopop [was ongoing series] 8 on 7/24 files · series 99908 "Loveless" [de] 2006-2018 Egmont Ehapa [] 13 on 4/24 files; methods numx24
+   GCD dump:       (= per-file) · 180066 "Loveless ラブレス" [ja-jp] 2002-? 一迅社 [Ichijinsha] [] 13 (via our own name without the filing suffix "Loveless") · 18170 "Loveless" 2006-2008 DC [] 3 (via our own name without the filing suffix "Loveless") · 52271 "Loveless" [de] 2008-2010 Panini Deutschland [] 4 (via our own name without the filing suffix "Loveless")   (dump lookup)
+   bridges:        gcd 13730 -> LOCG 104902 "Loveless" support 13 · gcd 20938 -> LOCG 104902 "Loveless" support 5 · gcd 99908 -> LOCG 104902 "Loveless" support 4
+
+== S11029 Loveless  [tier B]   keys: Loveless  years 2002-2020  4 files / 4 collections
+   split: the KEPT half of the P-008 split — moved out -> S103479 "Loveless (2005)"; re-identify what stayed
+   folders: [4] Manga\Loveless (2002)
+   files:   [45063] COL Loveless Omnibus v01 (2020) (Digital) (danke-Empire).cbz (429pp) | [45064] COL Loveless Omnibus v02 (2020) (Digital) (danke-Empire).cbz (431pp)
+            [45065] COL Loveless Omnibus v03 (2020) (Digital) (danke-Empire).cbz (435pp) | [45066] COL Loveless Omnibus v04 (2020) (Digital) (danke-Empire).cbz (399pp)
+   ours:    judged item 45063 #1-9 conf 0.97; judged item 45064 #10-26 conf 0.97; judged item 45065 #27-43 conf 0.97; judged item 45066 #44-64 conf 0.97
+   CV linked:      vol 103472 "Loveless" 2002 Ichijinsha 13 issues; cached #1-13 (13); yearΔ 0; ratio 0/13; 2 of 4 judged fit; v1 per-file: same volume on 4/4 files
+   CV local rip:   (= linked) · 18343 "Loveless" 2005 DC Comics 24 · 37093 "Loveless" 2006 Viz 13 · 146969 "Loveless" 2006 Egmont Ehapa Verlag 13 · 40879 "Loveless" 2008 Panini Verlag 4 · 52871 "Loveless" 2012 Viz 4   (rip lookup)
+   GCD dump:       180066 "Loveless ラブレス" [ja-jp] 2002-? 一迅社 [Ichijinsha] [] 13 · 13730 "Loveless" 2005-2008 DC [] 24 · 18170 "Loveless" 2006-2008 DC [] 3 · 20938 "Loveless" 2006-2008 Tokyopop [] 8 · 99908 "Loveless" [de] 2006-2018 Egmont Ehapa [] 13 · 52271 "Loveless" [de] 2008-2010 Panini Deutschland [] 4   (dump lookup)
+   MU / External:  MU 46318082044 "Loveless" 2002 Manga · MuSeriesLink 46318082044 status 1 conf 1.0
+
+== S65356 Nightwing  [tier C] · 116 files  keys: Nightwing (1996) | Nightwing The Resurrection of Ra s Al Ghul part | Nightwing v2 (1996)  years 1996-2024  116 files / 9 collections
+   split run: "Nightwing v2 (1996)" run=- (new shelf from P-008) — seed the S line from these ids, then verify them
+   folders: [83] DC\_Nightwing-Dick Grayson\01 Nightwing v1 (1995) + v2 (1996) · [8] DC\_Nightwing-Dick Grayson\01 Nightwing v1 (1995) + v2 (1996)\v1+v2 TPBs · [5] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\73 One year later\Nightwing - Brothers in blood · [3] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\27 Batman - Bruce wayne murderer_fugitive\01 bruce wayne murderer · [3] DC\_Nightwing-Dick Grayson\01 Nightwing v1 (1995) + v2 (1996)\Annuals and Specials · [2] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\27 Batman - Bruce wayne murderer_fugitive\02 bruce wayne fugitive · [2] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\83 Resurrection of Ra's Al Ghul · [2] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\96 Final Crisis Aftermath\01 RIP Tie-ins · [2] DC\#DC Events\004 Major DC Events - Rebirth\002 Night of the Monster Men (2017) · [2] DC\_Batman\_Completed Series\08 Batman v3.1 (2020)\Batman Vol. 05 - Fear State Tie Ins (2021) · [1] DC\#DC Events\001 Major DC Events - Post Crisis - Pre New 52\DC - One Million (1998) · [1] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\028 Batman Night of the Owls · [1] DC\_Nightwing-Dick Grayson\_Trades, Minis and One-shots · [1] DC\_Nightwing-Dick Grayson\_Trades, Minis and One-shots\The Flash Plus Nightwing (1996)
+   files:   [16970] 03 Nightwing #065.cbr (24pp) | [16976] 09 Nightwing #066.cbr (24pp) | [16977] 09b Nightwing #067.cbr (24pp) | [16988] 06 Nightwing 68.cbr (24pp)
+            [16991] 09 Nightwing 69.cbr (25pp) | [17495] Nightwing_118__2006_.cbr (24pp) | [17496] Nightwing_119__2006_.cbr (24pp) | [17497] Nightwing_120__2006_.cbr (24pp)
+            [17498] Nightwing_121__2006_.cbr (24pp) | [17499] Nightwing_122__2006_.cbr (24pp) | [17683] 02 138__Nightwing__The_Resurrection_of_Ra_s_Al_Ghul_part_2__Countdown_24_.cbr (34pp)
+            [17687] 06 139__Nightwing__The_Resurrection_of_Ra_s_Al_Ghul_part_6__Countdown_20_.cbr (24pp) | [17877] 05 Nightwing_152__2009___GCPD-OCD_.cbr (29pp)
+            [17878] 06 Nightwing_153__2009___GreenRacer-DCP_.cbr (27pp) | [18020] 04 Nightwing (1998-11) 1000000 (digital) (OkC.O.M.P.U.T.O.-Novus).cbz (24pp)
+            [18264] 010 Nightwing 008 - June 2012.cbz (22pp) | [19073] 02 Nightwing 005 (2016) (2 covers) (Digital) (Zone-Empire).cbr (26pp)
+            [19076] 05 Nightwing 006 (2016) (2 covers) (Digital) (Zone-Empire).cbr (24pp) | [61476] Nightwing 084 (2021) (Digital) (Zone-Empire).cbr (26pp)
+            [61477] Nightwing 085 (2021) (Digital) (Zone-Empire).cbr (28pp) | [68477] Nightwing 000.5 (1997) (HD) (digital-Empire).cbr (20pp)
+            [68478] Nightwing 80-Page Giant 001 (2000) (HD) (digital-Empire).cbr (70pp) | [68479] Nightwing Annual 02 (2007) (HD) (digital-Empire).cbz (38pp)
+            Nightwing 071 (2002) (Digital) (AnHeroGold-Empire).cbz … Nightwing 100 (2005) (Digital) (AnHeroGold-Empire).cbz  (30 files, pp 22-32)
+            Nightwing 101 (2005) (HD) (digital-Empire).cbr … Nightwing 106 (2005) (HD) (digital-Empire).cbr  (6 files, pp 23-23)
+            Nightwing 107 (2005) (Digital) (AnHeroGold-Empire).cbz … Nightwing 117 (2006) (Digital) (AnHeroGold-Empire).cbz  (11 files, pp 23-24)
+            Nightwing 118 (2006) (HD) (digital-Empire).cbz … Nightwing 153 (2009) (HD) (digital-Empire).cbz  (36 files, pp 22-40)
+            [68564] COL Nightwing Vol. 01 - Bludhaven (2014) (digital) (Son of Ultron-Empire).cbr (287pp)
+            [68565] COL Nightwing Vol. 02 - Rough Justice (2015) (digital) (Son of Ultron-Empire).cbr (293pp)
+            [68566] COL Nightwing Vol. 03 - False Starts (2015) (digital) (Son of Ultron-Empire).cbr (291pp)
+            [68567] COL Nightwing Vol. 04 - Love and Bullets (2016) (digital) (Son of Ultron-Empire).cbr (297pp)
+            [68568] COL Nightwing Vol. 05 - The Hunt for Oracle (2016) (digital) (Son of Ultron-Empire).cbr (332pp)
+            [68569] COL Nightwing Vol. 06 - To Serve and Protect (2017) (digital) (Son of Ultron-Empire).cbr (257pp)
+            [68570] COL Nightwing Vol. 07 - Shrike (2018) (digital) (Son of Ultron-Empire).cbr (255pp)
+            [68571] COL Nightwing Vol. 08 - Lethal Force (2018) (digital) (Son of Ultron-Empire).cbr (243pp)
+            [68780] COL Nightwing - Year One - 20th Anniversary Deluxe Edition (2024) (digital) (Son of Ultron-Empire).cbr (207pp)
+            [69963] The Flash Plus Nightwing 001 (1996) (digital-Empire).cbz (39pp)
+   ours:    ladder 0-2, 5-6, 8, 65-69, 71-153; 12 number(s) name more than one file: 1, 2, 6, 84, 85, 118, 119, 120, 121, 122, 152, 153; ComicInfo Series: "Nightwing"x5; ComicInfo Volume: "1996"x2, "2016"x2, "2011"x1; ComicInfo Count: "153"x1; ComicInfo Publisher: "DC"x3, "DC Comics"x2
+   GCD says: [68564] gcd_reprint 1389228: s5516 Nightwing (1996) #1-8 [17 stories] · s5244 Nightwing (1995) #1-4 [8 stories] · s23145 Nightwing (1998) (unnumbered) [1 story]
+             [68565] gcd_reprint 1389229: s5516 Nightwing (1996) #9-18 [21 stories] · s12449 Nightwing Annual (1997) #1 [2 stories]
+             [68566] gcd_reprint 1516907: s5516 Nightwing (1996) #19-25 [15 stories] · s14159 Nightwing and Huntress (1998) #1-4 [8 stories] · s30344 Wizard Presents: Nightwing (1997) (unnumbered) [3 stories]
+             [68568] gcd_reprint 1641209: s5516 Nightwing (1996) #35-46 [25 stories] · s6991 Birds of Prey (1999) #20-21 [4 stories]
+             [68570] gcd_reprint 1784519: s5516 Nightwing (1996) #54-60 [15 stories] · s17843 Nightwing: The Target (2001) #1 [2 stories] · s11690 Nightwing: Our Worlds at War (2001) #1 [2 stories]
+   CV linked:      vol 5755 "Nightwing" 1996 DC Comics 155 issues; cached #1-153 (155); yearΔ 0; ratio 106/155 = 0.68; no judged range
+   CV per-file (v1): vol 5755 "Nightwing" 1996 DC Comics 155 on 110/116 files · vol 92569 "Nightwing" 2016 DC Comics 138 on 2/116 files · vol 142685 "Nightwing" 2008 Planeta DeAgostini 9 on 1/116 files · vol 134503 "Nightwing" 2013 Urban Comics 5 on 1/116 files
+   CV candidates:  31003 "Batman: The Resurrection Of Ra's Al Ghul" 2008 DC Comics 1 issue 192100 s54 · 34687 "The Saga of Ra's Al Ghul" 1988 DC Comics 4 s49 · 21686 "Year One: Batman/Ra's al Ghul" 2006 DC Comics 2 s46 · 117730 "Batman Arkham: Ra's Al Ghul" 2019 DC Comics 1 issue 703917 s39 · 145253 "Batman vs. Ra's Al Ghul" 2022 DC Comics 1 issue 948864 s39 · 135214 "Batman Arkham: Talia al Ghul" 2021 DC Comics 1 issue 841675 s39   (v1 search)
+   CV local rip:   (= linked) · 5514 "Nightwing" 1995 DC Comics 4 · 132018 "Nightwing" 2009 Planeta DeAgostini 7 · 142687 "Nightwing" 2009 Planeta DeAgostini 7 · 42720 "Nightwing" 2011 DC Comics 31   (rip lookup)
+   GCD per-file:   series 5516 "Nightwing" 1996-2009 DC [was ongoing series] 154 on 84/116 files · series 104515 "Nightwing" 2016-? DC [ongoing series] 138 on 4/116 files · series 61072 "Nightwing" 2011-2014 DC [was ongoing series] 31 on 1/116 files · series 40938 "Nightwing" [es] 2008-2008 Planeta DeAgostini [was ongoing series] 7 on 1/116 files; methods numx90 · page-rematchx1
+   GCD dump:       (= per-file) · 5244 "Nightwing" 1995-1995 DC [] 4 · 23145 "Nightwing" 1998-2005 DC [] 7 · 41047 "Nightwing" [es] 2009-2010 Planeta DeAgostini [] 7   (dump lookup)
+   bridges:        gcd 5516 -> LOCG 111812 "Nightwing" support 95 · gcd 104515 -> LOCG 111812 "Nightwing" support 152 · gcd 61072 -> LOCG 111812 "Nightwing" support 1
+
+== S12955 Nightwing  [tier B]   keys: Nightwing  years 2011-2014  19 files / 0 collections
+   split: the KEPT half of the P-008 split — moved out -> S65356 "Nightwing v2 (1996)"; re-identify what stayed
+   merge-with candidate: S94871 "Nightwing" (5 files) — the P-008 reader left this half here only because it could not move without that join; if it is the same run write `F 12955 merge-with=94871`, otherwise say why not in an N line
+   folders: [7] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\017 Nightwing Vol. 1 Traps and Trapezes · [4] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\030 Nightwing Vol. 2 Night of the Owls · [2] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\052 Nightwing Vol. 3 Death of the Family 1 · [2] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\063 Nightwing Vol. 3 Death of the Family 2 · [1] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\002 Zero Year Secret City · [1] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\028 Batman Night of the Owls · [1] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\068 Nightwing Vol. 3 Death of the Family 3 · [1] DC\#DC Events\002 Major DC Events - The New 52 Trinity Read Order\079 Nightwing Vol. 3 Death of the Family 4
+   files:   [18067] 009 Nightwing 025 - January 2014.cbr (31pp) | [18180] Nightwing 001 - November 2011.cbr (19pp) | [18181] Nightwing 002 - December 2011.cbr (20pp)
+            [18182] Nightwing 003 - January 2012.cbz (22pp) | [18183] Nightwing 004 - February 2012.cbz (21pp) | [18184] Nightwing 005 - March 2012.cbz (22pp)
+            [18185] Nightwing 006 - April 2012.cbz (22pp) | [18186] Nightwing 007 - May 2012.cbz (23pp) | [18265] 011 Nightwing 009 - July 2012.cbr (22pp)
+            [18271] 001 Nightwing 010 - August 2012.cbr (23pp) | [18272] 002 Nightwing 011 - September 2012.cbr (22pp) | [18273] 003 Nightwing 012 - October 2012.cbr (21pp)
+            [18274] 004 Nightwing 000 - November 2012.cbr (22pp) | [18379] Nightwing 013 - December 2012.cbr (22pp) | [18380] Nightwing 014 - January 2013.cbr (21pp)
+            [18396] Nightwing 015 - February 2013.cbr (21pp) | [18397] Nightwing 016 - March 2013.cbr (20pp) | [19917] Nightwing 017 - April 2013.cbr (23pp)
+            [18423] 001 Nightwing 018 - May 2013.cbr (24pp)
+   ours:    ladder 0-7, 9-18, 25
+   CV per-file (v1): vol 5755 "Nightwing" 1996 DC Comics 155 on 19/19 files
+   CV local rip:   42720 "Nightwing" 2011 DC Comics 31 · 78708 "Nightwing" 2012 DC Comics 5 · 127258 "Nightwing" 2012 ECC Ediciones 37 · 132018 "Nightwing" 2009 Planeta DeAgostini 7 · 134503 "Nightwing" 2013 Urban Comics 5 · 142687 "Nightwing" 2009 Planeta DeAgostini 7   (rip lookup)
+   GCD dump:       61072 "Nightwing" 2011-2014 DC [] 31 · 68047 "Nightwing" [es] 2012-? ECC Ediciones [] 7 · 69710 "Nightwing" [fr] 2012-2015 Urban Comics [] 5 · 75657 "Nightwing" 2012-2014 DC [] 5 · 41047 "Nightwing" [es] 2009-2010 Planeta DeAgostini [] 7 · 40938 "Nightwing" [es] 2008-2008 Planeta DeAgostini [] 7   (dump lookup)
+
+== S103528 Wasteland v2 (2006)  [tier C] · gap 19  keys: Wasteland v2 (2006)  years 1988-2006  11 files / 11 collections
+   split run: "Wasteland v2 (2006)" run={"cv": 17996, "gcd": 18782} (new shelf from P-008) — seed the S line from these ids, then verify them
+   folders: [11] Oni Press\Wasteland (2007)
+   files:   [109038] COL Wasteland Vol. 01 - Cities in Dust (2007) (digital-Empire).cbr (163pp) | [109039] COL Wasteland Vol. 02 - Shades of God (2007) (HD) (digital-Empire).cbr (141pp)
+            [109040] COL Wasteland Vol. 03 - Black Steel in the Hour of Chaos (2008) (HD) (digital-Empire).cbr (122pp)
+            [109041] COL Wasteland Vol. 04 - Dog Tribe (2009) (HD) (digital-Empire).cbr (100pp) | [109042] COL Wasteland Vol. 05 - Tales of the Uninvited (2009) (HD) (digital-Empire).cbr (127pp)
+            [109043] COL Wasteland Vol. 06 - The Enemy Within (2011) (digital-Empire).cbr (154pp) | [109044] COL Wasteland Vol. 07 - Under the God (2012) (digital-Empire).cbr (147pp)
+            [109045] COL Wasteland Vol. 08 - Lost in the Ozone (2013) (Digital) (Zone-Empire).cbr (134pp) | [109046] COL Wasteland Vol. 09 - A Thousand Lies (2014) (Digital) (Zone-Empire).cbr (150pp)
+            [109047] COL Wasteland Vol. 10 - Last Exit for the Lost (2014) (Digital) (Zone-Empire).cbr (180pp) | [109048] COL Wasteland Vol. 11 - Floodland (2015) (Digital) (Asgard-Empire).cbz (208pp)
+   ours:    ComicInfo Series: "Wasteland"x5; ComicInfo Publisher: "Oni Press"x5
+   GCD says: [109038] gcd_reprint 944816: s18782 Wasteland (2006) #1 [1 story]
+             [109039] gcd_reprint 944817: s18782 Wasteland (2006) #11 [1 story]
+             [109040] gcd_reprint 944818: s18782 Wasteland (2006) #19 [1 story]
+             [109044] gcd_reprint 976021: s18782 Wasteland (2006) #33 [1 story]
+   CV per-file (v1): vol 3821 "Wasteland" 1987 DC Comics 18 on 9/11 files · vol 17996 "Wasteland" 2006 Oni Press 60 on 2/11 files
+   CV local rip:   (= per-file) · 41008 "The Wasteland" 1990 DC Comics 1 issue 276543 (via our own name without the filing suffix "Wasteland")   (rip lookup)
+   GCD per-file:   series 65537 "Wasteland" 2007-2014 Oni Press [] 10 on 4/11 files; methods numx4
+   GCD dump:       (= per-file) · 3391 "Wasteland" 1987-1989 DC [] 18 (via our own name without the filing suffix "Wasteland") · 22962 "The Wasteland" 1989-1989 DC [] 1 (via our own name without the filing suffix "Wasteland") · 81769 "The Wasteland" 1990-1990 HarperCollins [] 1 (via our own name without the filing suffix "Wasteland") · 212015 "Wasteland" [es] 1990-1990 Zinco [] 1 (via our own name without the filing suffix "Wasteland") · 18782 "Wasteland" 2006-2015 Oni Press [] 60 (via our own name without the filing suffix "Wasteland")   (dump lookup)
+   bridges:        gcd 65537 -> LOCG 124098 "Wasteland" support 10 · gcd 65537 -> OL /works/OL22302703W "None" isbnSupport 3
+
+== S21297 Wasteland  [tier A]   keys: Wasteland  years 1987-1989  18 files / 0 collections
+   split: the KEPT half of the P-008 split — moved out -> S103528 "Wasteland v2 (2006)"; re-identify what stayed
+   folders: [18] DC\Wasteland (1987)
+   files:   [58172] Wasteland 001 (1987) (Digital) (Shadowcat-Empire).cbz (29pp) | [58173] Wasteland 002 (1988) (Digital) (Shadowcat-Empire).cbz (28pp)
+            [58174] Wasteland 003 (1988) (Digital) (Shadowcat-Empire).cbz (30pp) | [58175] Wasteland 004 (1988) (Digital) (Shadowcat-Empire).cbz (28pp)
+            [58176] Wasteland 005 (1988) (Digital) (Shadowcat-Empire).cbz (28pp) | [58177] Wasteland 006 (1988) (2 covers) (Digital) (Shadowcat-Empire).cbz (31pp)
+            Wasteland 007 (1988) (Digital) (Shadowcat-Empire).cbz … Wasteland 018 (1989) (Digital) (Shadowcat-Empire).cbz  (12 files, pp 28-28)
+   ours:    ladder 1-18; ComicInfo Series: "Wasteland"x17; ComicInfo Publisher: "DC"x17
+   CV linked:      vol 3821 "Wasteland" 1987 DC Comics 18 issues; cached #1-18 (18); yearΔ 0; ratio 18/18 = 1.00; no judged range; v1 per-file: same volume on 18/18 files
+   CV local rip:   (= linked) · 41008 "The Wasteland" 1990 DC Comics 1 issue 276543 · 17996 "Wasteland" 2006 Oni Press 60   (rip lookup)
+   GCD per-file:   series 3391 "Wasteland" 1987-1989 DC [was ongoing series] 18 on 18/18 files; methods numx18
+   GCD dump:       (= per-file) · 22962 "The Wasteland" 1989-1989 DC [] 1 · 81769 "The Wasteland" 1990-1990 HarperCollins [] 1 · 212015 "Wasteland" [es] 1990-1990 Zinco [] 1 · 18782 "Wasteland" 2006-2015 Oni Press [] 60 · 65537 "Wasteland" 2007-2014 Oni Press [] 10   (dump lookup)
+   bridges:        gcd 3391 -> LOCG 124098 "Wasteland" support 18
+
+== S103459 Flash Gordon (2024)  [tier C] · gap 16  keys: Flash Gordon (2024)  years 2008-2009  5 files / 0 collections
+   split run: "Flash Gordon (2024)" run={"cv": 158146, "gcd": 214095} (new shelf from P-008) — seed the S line from these ids, then verify them
+   folders: [5] MadCave (and Maverick)\Flash Gordon (2024)\Flash Gordon v1 (2024)
+   files:   [37857] Flash Gordon 001 (2024) (digital) (Son of Ultron-Empire).cbr (33pp) | [37858] Flash Gordon 002 (2024) (digital) (Son of Ultron-Empire).cbr (32pp)
+            [37859] Flash Gordon 003 (2024) (digital) (Son of Ultron-Empire).cbr (32pp) | [37860] Flash Gordon 004 (2024) (digital) (Son of Ultron-Empire).cbr (33pp)
+            [37861] Flash Gordon 005 (2024) (2 covers) (digital) (Son of Ultron-Empire).cbr (34pp)
+   ours:    ladder 1-5
+   CV per-file (v1): vol 23142 "Flash Gordon" 2008 Ardden Entertainment 7 on 5/5 files
+   CV local rip:   (= per-file) · 37396 "Flash Gordon" 2004 Checker Book Publishing Group 7 (via our own name without the filing suffix "Flash Gordon") · 72935 "Flash Gordon" 2014 Dynamite Entertainment 8 (via our own name without the filing suffix "Flash Gordon") · 123020 "Flash Gordon" 2018 Hannibal Verlag 2 (via our own name without the filing suffix "Flash Gordon") · 5544 "Flash Gordon" 1995 Marvel 2 (via our own name without the filing suffix "Flash Gordon") · 154690 "Flash Gordon " 2023 Zauberstern Comics 12 (via our own name without the filing suffix "Flash Gordon")   (rip lookup)
+   GCD per-file:   series 214095 "Flash Gordon" 2024-? Mad Cave Studios [ongoing series] 17 on 5/5 files; methods numx5
+   GCD dump:       30519 "Flash Gordon" 2008-2009 Ardden Entertainment [] 7 (via our own name without the filing suffix "Flash Gordon") · 74557 "Flash Gordon" [en-gb] 2012-2013 Titan [] 4 (via our own name without the filing suffix "Flash Gordon") · 182809 "Flash Gordon" [it] 2013-? Editoriale Cosmo [] 4 (via our own name without the filing suffix "Flash Gordon") · 80065 "Flash Gordon" 2014-2015 Dynamite Entertainment [] 8 (via our own name without the filing suffix "Flash Gordon") · 131413 "Flash Gordon" [de] 2018-? Hannibal [] 3 (via our own name without the filing suffix "Flash Gordon") · 5282 "Flash Gordon" 1995-1995 Marvel [] 2 (via our own name without the filing suffix "Flash Gordon")   (dump lookup)
+   bridges:        gcd 214095 -> LOCG 103080 "Flash Gordon" support 5
+
+== S103460 Flash Gordon FCBD (2024)  [tier C] · gap 16  keys: Flash Gordon FCBD (2024)  years 2008-2008  1 files / 0 collections
+   split run: "Flash Gordon FCBD (2024)" run={"gcd": 211776} (new shelf from P-008) — seed the S line from these ids, then verify them
+   folders: [1] MadCave (and Maverick)\Flash Gordon (2024)\Flash Gordon v1 (2024)
+   files:   [37856] Flash Gordon 000 FCBD (2024) (Digital-Empire).cbr (31pp)
+   ours:    ladder 0
+   CV per-file (v1): vol 23142 "Flash Gordon" 2008 Ardden Entertainment 7 on 1/1 files
+   CV local rip:   (= per-file) · 37396 "Flash Gordon" 2004 Checker Book Publishing Group 7 (via CV name "Flash Gordon") · 72935 "Flash Gordon" 2014 Dynamite Entertainment 8 (via CV name "Flash Gordon") · 123020 "Flash Gordon" 2018 Hannibal Verlag 2 (via CV name "Flash Gordon") · 5544 "Flash Gordon" 1995 Marvel 2 (via CV name "Flash Gordon") · 154690 "Flash Gordon " 2023 Zauberstern Comics 12 (via CV name "Flash Gordon")   (rip lookup)
+   GCD per-file:   series 211776 "Flash Gordon" 2024-2024 Mad Cave Studios [giveaway] 1 on 1/1 files; methods numx1
+   GCD dump:       30519 "Flash Gordon" 2008-2009 Ardden Entertainment [] 7 (via CV name "Flash Gordon") · 74557 "Flash Gordon" [en-gb] 2012-2013 Titan [] 4 (via CV name "Flash Gordon") · 182809 "Flash Gordon" [it] 2013-? Editoriale Cosmo [] 4 (via CV name "Flash Gordon") · 80065 "Flash Gordon" 2014-2015 Dynamite Entertainment [] 8 (via CV name "Flash Gordon") · 131413 "Flash Gordon" [de] 2018-? Hannibal [] 3 (via CV name "Flash Gordon") · 5282 "Flash Gordon" 1995-1995 Marvel [] 2 (via CV name "Flash Gordon")   (dump lookup)
+   bridges:        gcd 211776 -> LOCG 103080 "Flash Gordon" support 1
+
+== S103458 Flash Gordon (2014)  [tier B]   keys: Flash Gordon (2014)  years 2008-2008  1 files / 1 collections
+   split run: "Flash Gordon (2014)" run={"cv": 72935, "gcd": 80065} (new shelf from P-008) — seed the S line from these ids, then verify them
+   folders: [1] Dynamite\Flash Gordon\Flash Gordon (2014)
+   files:   [21890] COL Flash Gordon Omnibus Book 01 - The Man From Earth (2015) (Digital) (DR & Quinch-Empire).cbr (283pp)
+   ours:    ComicInfo Series: "Flash Gordon Omnibus"x1; ComicInfo Publisher: "Dynamite Entertainment"x1
+   CV per-file (v1): vol 72935 "Flash Gordon" 2014 Dynamite Entertainment 8 on 1/1 files
+   CV local rip:   (= per-file) · 23142 "Flash Gordon" 2008 Ardden Entertainment 7 (via our own name without the filing suffix "Flash Gordon") · 37396 "Flash Gordon" 2004 Checker Book Publishing Group 7 (via our own name without the filing suffix "Flash Gordon") · 123020 "Flash Gordon" 2018 Hannibal Verlag 2 (via our own name without the filing suffix "Flash Gordon") · 5544 "Flash Gordon" 1995 Marvel 2 (via our own name without the filing suffix "Flash Gordon") · 154690 "Flash Gordon " 2023 Zauberstern Comics 12 (via our own name without the filing suffix "Flash Gordon")   (rip lookup)
+   GCD dump:       30519 "Flash Gordon" 2008-2009 Ardden Entertainment [] 7 (via our own name without the filing suffix "Flash Gordon") · 74557 "Flash Gordon" [en-gb] 2012-2013 Titan [] 4 (via our own name without the filing suffix "Flash Gordon") · 182809 "Flash Gordon" [it] 2013-? Editoriale Cosmo [] 4 (via our own name without the filing suffix "Flash Gordon") · 80065 "Flash Gordon" 2014-2015 Dynamite Entertainment [] 8 (via our own name without the filing suffix "Flash Gordon") · 131413 "Flash Gordon" [de] 2018-? Hannibal [] 3 (via our own name without the filing suffix "Flash Gordon") · 5282 "Flash Gordon" 1995-1995 Marvel [] 2 (via our own name without the filing suffix "Flash Gordon")   (dump lookup)
+
+== S18268 The Complete Flash Gordon Library  [tier C] · gap 4  keys: The Complete Flash Gordon Library  years 2008-2015  2 files / 1 collections
+   split run: "The Complete Flash Gordon Library" run=- (new shelf from P-008) — seed the S line from these ids, then verify them
+   folders: [2] Titan Comics\Flash Gordon (1934)
+   files:   [110380] Flash Gordon Sundays - The Storm Queen of Valkir (2015) (Digital) (Bean-Empire).cbz (226pp)
+            [110381] COL The Complete Flash Gordon Library Vol. 01 - On the Planet Mongo (2012) (c2c) (fylgja+anonymous).cbz (213pp)
+   ours:    ComicInfo Series: "The Complete Flash Gordon Library"x1; ComicInfo Publisher: "Titan"x1
+   GCD says: [110381] gcd_reprint 1115297: s74553 Flash Gordon - L'intégrale (2013) #1 [1 story]
+   CV linked:      vol 52629 "The Complete Flash Gordon Library" 2012 Random House 4 issues; cached #1-4 (4); yearΔ 4; ratio 0/4; no judged range
+   CV per-file (v1): vol 52629 "The Complete Flash Gordon Library" 2012 Random House 4 on 1/2 files · vol 23142 "Flash Gordon" 2008 Ardden Entertainment 7 on 1/2 files
+   CV candidates:  (= linked) · 29866 "Flash Gordon" 1965 Western Publishing 1 issue 183823 s30 · 57853 "Flash Gordon" 1967 Nostalgia Press 1 issue 388205 s30 · 159823 "Flash Gordon" 1979 Abril 2 s23 · 58483 "Flash Gordon, The Complete Daily Strip" 1988 Kitchen Sink 1 issue 390883 s21 · 154684 "Flash Gordon" 1979 Edizioni Fratelli Spada 4 s18 · 140611 "Flash Gordon" 1974 Ediciones Vértice 44 s15   (v1 search)
+   CV local rip:   (= linked) · 37396 "Flash Gordon" 2004 Checker Book Publishing Group 7 (via CV name "Flash Gordon") · 72935 "Flash Gordon" 2014 Dynamite Entertainment 8 (via CV name "Flash Gordon") · 123020 "Flash Gordon" 2018 Hannibal Verlag 2 (via CV name "Flash Gordon") · 5544 "Flash Gordon" 1995 Marvel 2 (via CV name "Flash Gordon")   (rip lookup)
+   GCD per-file:   series 74557 "Flash Gordon" [en-gb] 2012-2013 Titan [Graphic Novel] 4 on 1/2 files; methods numx1
+   GCD dump:       (= per-file) · 30519 "Flash Gordon" 2008-2009 Ardden Entertainment [] 7 (via CV name "Flash Gordon") · 182809 "Flash Gordon" [it] 2013-? Editoriale Cosmo [] 4 (via CV name "Flash Gordon") · 80065 "Flash Gordon" 2014-2015 Dynamite Entertainment [] 8 (via CV name "Flash Gordon") · 131413 "Flash Gordon" [de] 2018-? Hannibal [] 3 (via CV name "Flash Gordon") · 5282 "Flash Gordon" 1995-1995 Marvel [] 2 (via CV name "Flash Gordon")   (dump lookup)
+   bridges:        gcd 74557 -> LOCG 161055 "Flash Gordon Vol. 1: Mongo, the Planet of Doom HC" support 6 · gcd 74557 -> OL /works/OL17561091W "None" isbnSupport 7
+
+== S6772 Flash Gordon  [tier B]   keys: Flash Gordon  years 1934-2023  22 files / 0 collections
+   split: the KEPT half of the P-008 split — moved out -> S103459 "Flash Gordon (2024)"; S103460 "Flash Gordon FCBD (2024)"; S103458 "Flash Gordon (2014)"; S18268 "The Complete Flash Gordon Library"; re-identify what stayed
+   folders: [22] Webcomics and Strips\Flash Gordon
+   files:   [113757] Flash Gordon (1955) (DCP Webrips).cbr (365pp) | [113758] Flash Gordon (1957) (DCP Webrips).cbr (365pp) | [113759] Flash Gordon (1960) (323) (DCP Webrips).cbr (323pp)
+            [113760] Flash Gordon (1961) (214) (DCP Webrips).cbr (214pp) | [113761] Flash Gordon (1962) (335) (DCP Webrips).cbr (335pp) | [113762] Flash Gordon (1966) (DCP Webrips).cbr (365pp)
+            [113763] Flash Gordon (2004 Sundays) (DCP webrips).cbr (52pp) | [113764] Flash Gordon (2005 Sundays) (DCP webrips).cbr (52pp)
+            [113765] Flash Gordon (2006 Sundays) (DCP webrips).cbr (53pp) | [113766] Flash Gordon (2007 Sundays) (DCP webrips).cbr (52pp)
+            [113767] Flash Gordon (2013 Sundays) (DCP Webrips).cbr (52pp) | [113768] Flash Gordon (2014) (DCP Webrips).cbr (52pp) | [113769] Flash Gordon (2015) (DCP Webrips).cbr (52pp)
+            [113770] Flash Gordon (2015) (DCP Webrips).cbz (52pp) | [113771] Flash Gordon (2016) (DCP Webrips).cbr (52pp) | [113772] Flash Gordon (2017) (DCP Webrips).cbr (53pp)
+            [113773] Flash Gordon (2018) (DCP Webrips).cbr (52pp) | [113774] Flash Gordon (2019) (DCP Webrips).cbr (52pp) | [113775] Flash Gordon (2020) (DCP Webrips).cbr (52pp)
+            [113776] Flash Gordon (2021) (DCP Webrips).cbr (52pp) | [113777] Flash Gordon (2022) (DCP Webrips).cbr (52pp) | [113778] Flash Gordon (2023) (DCP Webrips).cbr (113pp)
+   ours:    ComicInfo Series: "Flash Gordon"x1
+   CV per-file (v1): vol 23142 "Flash Gordon" 2008 Ardden Entertainment 7 on 22/22 files
+   CV candidates:  (= per-file) · 140611 "Flash Gordon" 1974 Ediciones Vértice ? s30 · 154690 "Flash Gordon " 2023 Zauberstern Comics ? s30 · 37396 "Flash Gordon" 2004 Checker Book Publishing Group ? s30 · 154684 "Flash Gordon" 1979 Edizioni Fratelli Spada ? s30 · 159823 "Flash Gordon" 1979 Abril ? s30 · 29866 "Flash Gordon" 1965 Western Publishing ? s30   (v1 search)
+   CV local rip:   37662 "Flash Gordon" 1953 Dell 1 issue 249975 · 61477 "Flash Gordon" 1956 Atlas Publications Pty. Ltd. 8 · 29866 "Flash Gordon" 1965 Western Publishing 1 issue 183823 · 2964 "Flash Gordon" 1966 Western Publishing 37 · 57853 "Flash Gordon" 1967 Nostalgia Press 1 issue 388205 · 79165 "Flash Gordon" 1972 A.W. Bruna & Zoon 4   (rip lookup)
+   GCD dump:       719 "Flash Gordon" 1950-1951 Harvey [] 4 · 28991 "Flash Gordon" [en-ca] 1950-1951 Super Publishing [] 2 · 73868 "Flash Gordon" [en-nz] 1950-? Feature Productions [] 10 · 88807 "Flash Gordon" [en-au] 1950-? Atlas [] 8 · 497 "Flash Gordon" 1953-1953 Dell [] 1 · 67677 "Flash Gordon" [en-gb] 1953-1953 World Distributors [] 3   (dump lookup)
+
+== S103466 Hellblazer (1988)  [tier B]   keys: Hellblazer (1988)  years 2013-2022  26 files / 26 collections
+   split run: "Hellblazer (1988)" run={"cv": 4008, "gcd": 3599} (new shelf from P-008) — seed the S line from these ids, then verify them
+   folders: [26] Vertigo\Hellblazer (1988)
+   files:   [112712] COL John Constantine, Hellblazer Vol. 01 - Original Sins (2011) (Digital) (Zone-Empire).cbr (272pp)
+            [112713] COL John Constantine, Hellblazer Vol. 02 - The Devil You Know (2011) (Digital) (Zone-Empire).cbr (251pp)
+            [112714] COL John Constantine, Hellblazer Vol. 03 - The Fear Machine (2012) (Digital) (Zone-Empire).cbr (225pp)
+            [112715] COL John Constantine, Hellblazer Vol. 04 - The Family Man (2012) (Digital) (Zone-Empire).cbr (285pp)
+            [112716] COL John Constantine, Hellblazer Vol. 05 - Dangerous Habits (2013) (Digital) (Zone-Empire).cbr (336pp)
+            [112717] COL John Constantine, Hellblazer Vol. 06 - Bloodlines (2013) (Digital) (Zone-Empire).cbr (396pp)
+            [112718] COL John Constantine, Hellblazer Vol. 07 - Tainted Love (2014) (Digital) (Zone-Empire).cbr (319pp)
+            [112719] COL John Constantine, Hellblazer Vol. 08 - Rake at the Gates of Hell (2014) (Digital) (Zone-Empire).cbr (386pp)
+            [112720] COL John Constantine, Hellblazer Vol. 09 - Critical Mass (2014) (Digital) (Zone-Empire).cbr (324pp)
+            [112721] COL John Constantine, Hellblazer Vol. 10 - In the Line of Fire (2015) (Digital) (Zone-Empire).cbr (285pp)
+            [112722] COL John Constantine, Hellblazer Vol. 11 - Last Man Standing (2015) (Digital) (Zone-Empire).cbr (332pp)
+            [112723] COL John Constantine, Hellblazer Vol. 12 - How to Play with Fire (2016) (Digital) (Zone-Empire).cbr (318pp)
+            [112724] COL John Constantine, Hellblazer Vol. 13 - Haunted (2016) (Digital) (Zone-Empire).cbr (335pp)
+            [112725] COL John Constantine, Hellblazer Vol. 14 - Good Intentions (2016) (Digital) (Zone-Empire).cbr (385pp)
+            [112726] COL John Constantine, Hellblazer Vol. 15 - Highwater (2017) (Digital-Empire).cbr (319pp)
+            [112727] COL John Constantine, Hellblazer Vol. 16 - The Wild Card (2017) (Digital-Empire).cbr (327pp)
+            [112728] COL John Constantine, Hellblazer Vol. 17 - Out of Season (2017) (Digital-Empire).cbr (321pp)
+            [112729] COL John Constantine, Hellblazer Vol. 18 - The Gift (2018) (Digital-Empire).cbr (324pp)
+            [112730] COL John Constantine, Hellblazer Vol. 19 - Red Right Hand (2018) (Digital-Empire).cbr (322pp)
+            [112731] COL John Constantine, Hellblazer Vol. 20 - Systems of Control (2019) (Digital-Empire).cbr (323pp)
+            [112732] COL John Constantine, Hellblazer Vol. 21 - The Laughing Magician (2019) (Digital-Empire).cbr (344pp)
+            [112733] COL John Constantine, Hellblazer Vol. 22 - Regeneration (2020) (Digital-Empire).cbr (390pp)
+            [112734] COL John Constantine, Hellblazer Vol. 23 - No Future (2020) (Digital) (EJGriffin-Empire).cbz (384pp)
+            [112735] COL John Constantine, Hellblazer Vol. 24 - Sectioned (2021) (Digital) (EJGriffin-Empire).cbz (345pp)
+            [112736] COL John Constantine, Hellblazer Vol. 25 - Another Season (2021) (Digital) (EJGriffin-Empire).cbz (347pp)
+            [112737] COL John Constantine, Hellblazer Vol. 26 - The Curse of the Constantines (2022) (Digital) (EJGriffin-Empire).cbz (349pp)
+   ours:    ComicInfo Series: "John Constantine, Hellblazer"x2; ComicInfo Publisher: "DC"x2
+   CV per-file (v1): vol 123099 "John Constantine: Hellblazer" 2019 DC Comics 12 on 26/26 files
+   CV local rip:   93381 "The Hellblazer" 2016 DC Comics 24 (via our own name without the filing suffix "Hellblazer") · 100370 "The Hellblazer" 2017 DC Comics 4 (via our own name without the filing suffix "Hellblazer") · 39530 "Hellblazer" 2005 Planeta DeAgostini 32 (via our own name without the filing suffix "Hellblazer") · 70033 "Hellblazer" 1998 Verlag Schreiber & Leser 11 (via our own name without the filing suffix "Hellblazer") · 39742 "Hellblazer" 1992 Ediciones Zinco 1 issue 268020 (via our own name without the filing suffix "Hellblazer") · 39679 "Hellblazer" 1990 Ediciones Zinco 5 (via our own name without the filing suffix "Hellblazer")   (rip lookup)
+   GCD dump:       84989 "Hellblazer" [es] 2015-2017 ECC Ediciones [] 18 (via our own name without the filing suffix "Hellblazer") · 105635 "Hellblazer" 2016-2018 DC [] 24 (via our own name without the filing suffix "Hellblazer") · 113114 "Hellblazer" 2017-2019 DC [] 4 (via our own name without the filing suffix "Hellblazer") · 116021 "Hellblazer" [de] 2017-2019 Panini Deutschland [] 4 (via our own name without the filing suffix "Hellblazer") · 120649 "Hellblazer" [pt-br] 2017-2019 Panini Brasil [] 4 (via our own name without the filing suffix "Hellblazer") · 41186 "Hellblazer" [es] 2005-2008 Planeta DeAgostini [] 32 (via our own name without the filing suffix "Hellblazer")   (dump lookup)
+
+== S57842 John Constantine - Hellblazer  [tier C] · ratio 0.17  keys: John Constantine - Hellblazer | John Constantine, Hellblazer  years 2020-2021  4 files / 2 collections
+   split: the KEPT half of the P-008 split — moved out -> S103466 "Hellblazer (1988)"; re-identify what stayed
+   flags: #611 overlap-in-series [Dismissed] item 19487 — two Hellblazer ladders each contribute a Vol. 01
+   folders: [2] DC Black Label\John Constantine - Hellblazer v1 (2020) · [2] DC Black Label\John Constantine - Hellblazer v1 (2020)\Variant Covers
+   files:   [19487] COL John Constantine - Hellblazer Vol. 01 - Marks of Woe (2020) (digital) (Son of Ultron-Empire).cbr (213pp)
+            [19488] COL John Constantine - Hellblazer Vol. 02 - The Best Version of You (2021) (digital) (Son of Ultron-Empire).cbr (164pp)
+            [19489] John Constantine - Hellblazer 001 (2019) (Variant Cover) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [19490] John Constantine - Hellblazer 001 (2020) (Variant Cover) (Digital) (Phantom-SWA).cbr (1pp)
+   ours:    ladder 1; 1 number(s) name more than one file: 1; judged item 19487 #1-6 conf 0.9; judged item 19488 #7-12 conf 0.9; ComicInfo Series: "John Constantine, Hellblazer"x1; ComicInfo Volume: "2019"x1; ComicInfo Publisher: "DC"x1
+   CV linked:      vol 123099 "John Constantine: Hellblazer" 2019 DC Comics 12 issues  (NO CvVolume ROW — named from the local rip; Phase C.1 must fetch it); cached #1-12 (12); yearΔ 0; ratio 2/? = 0.17; 2 of 2 judged fit; v1 per-file: same volume on 2/4 files
+   CV candidates:  (= linked) · 130650 "John Constantine: Hellblazer" 2020 DC Comics 2 s98 · 141816 "John Constantine: Hellblazer" 2020 Panini Verlag 2 s98 · 40878 "John Constantine - Hellblazer" 2007 Panini Verlag 10 s86 · 124254 "John Constantine, Hellblazer: Regeneration" 2020 DC Comics 1 issue 733623 s77 · 90412 "John Constantine, Hellblazer: Haunted" 2016 DC Comics 1 issue 529630 s73 · 66901 "John Constantine, Hellblazer: Bloodlines" 2013 DC Comics 1 issue 424033 s72   (v1 search)
+   CV local rip:   (= linked) · 130650 "John Constantine: Hellblazer" 2020 DC Comics 2 · 141816 "John Constantine: Hellblazer" 2020 Panini Verlag 2 · 40878 "John Constantine - Hellblazer" 2007 Panini Verlag 10   (rip lookup)
+   GCD per-file:   series 153074 "John Constantine: Hellblazer" 2020-2021 DC [was ongoing series] 12 on 2/4 files; methods numx2
+   GCD dump:       (= per-file) · 164330 "John Constantine: Hellblazer" 2020-2021 DC [] 2 · 166256 "John Constantine – Hellblazer" [de] 2020-? Panini Deutschland [] 2 · 231015 "John Constantine: Hellblazer" [es] 2025-? Panini España [] ? · 81376 "John Constantine Hellblazer" [es-mx] 2014-? Editorial Televisa [] 31 · 80455 "John Constantine, Hellblazer" 2011-2022 DC [] 26   (dump lookup)
+   bridges:        gcd 153074 -> LOCG 143990 "John Constantine: Hellblazer" support 3
+
+== S103476 Love and Rockets: New Stories (2008)  [tier C] · 2 volumes  keys: Love and Rockets: New Stories (2008)  years 1983-2009  8 files / 0 collections
+   split run: "Love and Rockets: New Stories (2008)" run={"cv": 43605, "gcd": 35512} (new shelf from P-008) — seed the S line from these ids, then verify them
+   folders: [8] Fantagraphics\Love and Rockets (1982) (+Los Bros Hernandez Miscellaney)\Love & Rockets v3 - New Stories (2008)
+   files:   [24645] Love & Rockets - New Stories 001 (2008) (digital-Empire).cbz (102pp) | [24646] Love & Rockets - New Stories 002 (2009) (digital-Empire).cbz (102pp)
+            [24647] Love & Rockets - New Stories 003 (2010) (digital-Empire).cbz (102pp) | [24648] Love & Rockets - New Stories 004 (2011) (digital-Empire).cbz (102pp)
+            [24649] Love & Rockets - New Stories 005 (2012) (digital-Empire).cbz (102pp) | [24650] Love & Rockets - New Stories 006 (2013) (digital-Empire).cbr (104pp)
+            [24651] Love & Rockets - New Stories 007 (2015) (digital-Empire).cbz (104pp) | [24652] Love & Rockets - New Stories 008 (2016) (digital-Empire).cbr (103pp)
+   ours:    ladder 1-8
+   CV per-file (v1): vol 7000 "Love and Rockets" 1982 Fantagraphics 50 on 6/8 files · vol 43605 "Love and Rockets: New Stories" 2008 Fantagraphics 8 on 2/8 files
+   CV local rip:   (= per-file) · 20719 "Love and Rockets" 2001 Fantagraphics 20 (via CV name "Love and Rockets") · 95057 "Love and Rockets" 2016 Fantagraphics 16 (via CV name "Love and Rockets")   (rip lookup)
+   GCD dump:       7533 "Love and Rockets" 1982-1996 Fantagraphics [] 53 (via CV name "Love and Rockets") · 61668 "Love and Rockets" 1981-1981 Los Bros. Hernandez [] 1 (via CV name "Love and Rockets") · 220045 "Love and Rockets" [pt-br] 1991-1992 Record [] 4 (via CV name "Love and Rockets") · 85897 "Love and Rockets" [it] 1998-2010 Magic Press [] 19 (via CV name "Love and Rockets") · 17785 "Love and Rockets" 2001-2007 Fantagraphics [] 20 (via CV name "Love and Rockets") · 85896 "Love and Rockets" [en-gb] 2007-2008 Titan [] 7 (via CV name "Love and Rockets")   (dump lookup)
+
+== S94659 Love and Rockets  [tier C] · 2 named, the minority on >= 2 files or >= 10%  keys: Love & Rockets v4 (2016) | Love and Rockets (2016)  years 1984-2017  15 files / 0 collections
+   split run: "Love & Rockets v4 (2016)" run=- (new shelf from P-008) — seed the S line from these ids, then verify them
+   folders: [15] Fantagraphics\Love and Rockets (1982) (+Los Bros Hernandez Miscellaney)\Love & Rockets v4 (2016)
+   files:   Love and Rockets 001 (2016) (digital) (Salem-Empire).cbr … Love and Rockets 015 (2024) (digital) (Salem-Empire).cbr  (15 files, pp 35-40)
+   ours:    ladder 1-15; ComicInfo Series: "Love and Rockets"x5, "Love and Rockets Vol. IV"x1, "Love and Rockets VOL. IV"x1; ComicInfo Publisher: "Fantagraphics"x7
+   CV linked:      vol 95057 "Love and Rockets" 2016 Fantagraphics 16 issues; cached #1-17 (17); yearΔ 32; ratio 15/16 = 0.94; no judged range
+   CV per-file (v1): vol 7000 "Love and Rockets" 1982 Fantagraphics 50 on 11/15 files · vol 95057 "Love and Rockets" 2016 Fantagraphics 16 on 4/15 files
+   CV local rip:   (= linked) · 20719 "Love and Rockets" 2001 Fantagraphics 20   (rip lookup)
+   GCD per-file:   methods numx13 · round2-seriesx2 ⚠  (⚠ copies a folder neighbour's series — verify); series 108322 "Love and Rockets" 2016-? Fantagraphics [ongoing series] 17 on 13/15 files · series 7533 "Love and Rockets" 1982-1996 Fantagraphics [was ongoing series] 53 on 2/15 files
+   GCD dump:       (= per-file) · 61668 "Love and Rockets" 1981-1981 Los Bros. Hernandez [] 1 · 220045 "Love and Rockets" [pt-br] 1991-1992 Record [] 4 · 85897 "Love and Rockets" [it] 1998-2010 Magic Press [] 19 · 17785 "Love and Rockets" 2001-2007 Fantagraphics [] 20 · 85896 "Love and Rockets" [en-gb] 2007-2008 Titan [] 7   (dump lookup)
+   bridges:        gcd 108322 -> LOCG 125899 "Love and Rockets" support 13 · gcd 7533 -> LOCG 125899 "Love and Rockets" support 64
+
+== S103478 Love and Rockets: The Covers (2013)  [tier D]   keys: Love and Rockets: The Covers (2013)  years 2013-2013  1 files / 1 collections
+   split run: "Love and Rockets: The Covers (2013)" run={"cv": 67241, "gcd": 80067} (new shelf from P-008) — seed the S line from these ids, then verify them
+   folders: [1] Fantagraphics\Love and Rockets (1982) (+Los Bros Hernandez Miscellaney)
+   files:   [24670] COL Love and Rockets - The Covers (2013) (digital-Empire).cbr (133pp)
+   GCD says: [24670] gcd_reprint 1197282: s7533 Love and Rockets (1982) #1-50 [84 stories] · s40038 The Complete Love & Rockets (1985) #1-9, #11-15 [16 stories] · s61668 Love and Rockets (1981) #1 [2 stories] · s54592 The Reticent Heart and Other Stories (1988) (unnumbered) [1 story]
+   CV local rip:   67241 "Love and Rockets: The Covers" 2013 Fantagraphics 1 issue 425108 (via our own name without the filing suffix "Love and Rockets: The Covers")   (rip lookup)
+   GCD dump:       80067 "Love and Rockets: The Covers" 2013-2013 Fantagraphics [] 1 (via our own name without the filing suffix "Love and Rockets: The Covers")   (dump lookup)
+
+== S103525 The Love and Rockets Companion (2013)  [tier D]   keys: The Love and Rockets Companion (2013)  years 2013-2013  2 files / 0 collections
+   split run: "The Love and Rockets Companion (2013)" run={"cv": 65099, "gcd": 114344} (new shelf from P-008) — seed the S line from these ids, then verify them
+   folders: [1] Fantagraphics\Love and Rockets (1982) (+Los Bros Hernandez Miscellaney)\Love and Rockets Library (2007) · [1] Fantagraphics\Love and Rockets (1982) (+Los Bros Hernandez Miscellaney)
+   files:   [24671] The Love and Rockets Companion - 30 Years (and Counting) (2013) (Digital-Empire).cbr (361pp) | [24693] The Love and Rockets Companion (2013) (digital) (Minutemen-dask).cbr (361pp)
+   ours:    ComicInfo Series: "The Love and Rockets Companion: 30 Years (and Counting)"x1; ComicInfo Publisher: "Fantagraphics"x1
+
+== S103477 Love and Rockets: Stories FCBD (2016)  [tier B]   keys: Love and Rockets: Stories FCBD (2016)  years 1982-2016  2 files / 0 collections
+   split run: "Love and Rockets: Stories FCBD (2016)" run={"cv": 90264, "gcd": 101189} (new shelf from P-008) — seed the S line from these ids, then verify them
+   folders: [1] Fantagraphics\Love and Rockets (1982) (+Los Bros Hernandez Miscellaney)\Love & Rockets v3 - New Stories (2008) · [1] Fantagraphics\Love and Rockets (1982) (+Los Bros Hernandez Miscellaney)
+   files:   [24653] Love & Rockets Sampler FCBD (2016) (Digital) (TLK-EMPIRE-HD).cbr (39pp) | [24669] Love and Rockets - Stories (2016, FCBD edition) (digital-Empire).cbr (38pp)
+   CV per-file (v1): vol 7000 "Love and Rockets" 1982 Fantagraphics 50 on 2/2 files
+   CV local rip:   (= per-file) · 20719 "Love and Rockets" 2001 Fantagraphics 20 (via CV name "Love and Rockets") · 95057 "Love and Rockets" 2016 Fantagraphics 16 (via CV name "Love and Rockets")   (rip lookup)
+   GCD dump:       7533 "Love and Rockets" 1982-1996 Fantagraphics [] 53 (via CV name "Love and Rockets") · 61668 "Love and Rockets" 1981-1981 Los Bros. Hernandez [] 1 (via CV name "Love and Rockets") · 220045 "Love and Rockets" [pt-br] 1991-1992 Record [] 4 (via CV name "Love and Rockets") · 85897 "Love and Rockets" [it] 1998-2010 Magic Press [] 19 (via CV name "Love and Rockets") · 17785 "Love and Rockets" 2001-2007 Fantagraphics [] 20 (via CV name "Love and Rockets") · 85896 "Love and Rockets" [en-gb] 2007-2008 Titan [] 7 (via CV name "Love and Rockets")   (dump lookup)
+
+== S65085 Love and Rockets (1982)  [tier B]   keys: Love and Rockets (1982) | The Love and Rockets (1982)  years 1982-2018  15 files / 15 collections
+   split: the KEPT half of the P-008 split — moved out -> S103476 "Love and Rockets: New Stories (2008)"; S94659 "Love & Rockets v4 (2016)"; S103478 "Love and Rockets: The Covers (2013)"; S103525 "The Love and Rockets Companion (2013)"; S103477 "Love and Rockets: Stories FCBD (2016)"; re-identify what stayed
+   folders: [15] Fantagraphics\Love and Rockets (1982) (+Los Bros Hernandez Miscellaney)\Love and Rockets Library (2007)
+   files:   [24672] COL The Love and Rockets Library Vol. 01 - Locas #1 - Maggie the Mechanic (2007) (digital-Empire).cbz (277pp)
+            [24673] COL The Love and Rockets Library Vol. 02 - Locas #2 - The Girl From H.O.P.P.E.R.S. (2007) (digital-Empire).cbz (290pp)
+            [24674] COL The Love and Rockets Library Vol. 03 - Locas #3 - Perla La Loca (2007) (digital-Empire).cbz (290pp)
+            [24675] COL The Love and Rockets Library Vol. 04 - Palomar & Luba #1 - Heartbreak Soup (2007) (digital-Empire).cbz (292pp)
+            [24676] COL The Love and Rockets Library Vol. 05 - Palomar & Luba #2 - Human Diastrophism (2007) (digital-Empire).cbz (256pp)
+            [24677] COL The Love and Rockets Library Vol. 06 - Palomar & Luba #3 - Beyond Palomar (2007) (digital-Empire).cbz (260pp)
+            [24678] COL The Love and Rockets Library Vol. 07 - Amor Y Cohetes (2008) (digital-HD-Empire).cbz (289pp)
+            [24679] COL The Love and Rockets Library Vol. 08 - Locas #4 - Penny Century (2010) (digital-Empire).cbz (257pp)
+            [24680] COL The Love and Rockets Library Vol. 09 - Locas #5 - Esperanza (2011) (digital-Empire).cbz (250pp)
+            [24681] COL The Love and Rockets Library Vol. 10 - Palomar & Luba #4 - Luba and Her Family (2014) (digital-Empire).cbz (229pp)
+            [24682] COL The Love and Rockets Library Vol. 11 - Palomar & Luba #5 - Ofelia (2015) (digital-Empire).cbz (252pp)
+            [24683] COL The Love and Rockets Library Vol. 12 - Comics Dementia (2016) (digital-Empire).cbr (224pp)
+            [24684] COL The Love and Rockets Library Vol. 13 - Locas #6 - Angels and Magpies (2017) (digital-Empire).cbr (272pp)
+            [24685] COL The Love and Rockets Library Vol. 14 - Palomar & Luba #6 - Three Sisters (2018) (digital-Empire).cbr (297pp)
+            [24686] COL The Love and Rockets Library Vol. 15 - Children of Palomar and Other Tales (2023) (digital) (DrVink).cbz (282pp)
+   ours:    ComicInfo Series: "The Love and Rockets Library"x2; ComicInfo Publisher: "Fantagraphics"x2
+   GCD says: [24672] gcd_reprint 796266: s7533 Love and Rockets (1982) #1-3, #5-11, #13-15 [25 stories] · s3092 Mechanics (1985) #1-2 [4 stories] · s40038 The Complete Love & Rockets (1985) #1-3 [4 stories] · s3241 Anything Goes! (1986) #2 [1 story]
+             [24673] gcd_reprint 812080: s7533 Love and Rockets (1982) #13-32 [32 stories] · s40038 The Complete Love & Rockets (1985) #5 [1 story]
+             [24674] gcd_reprint 812257: s7533 Love and Rockets (1982) #33-50 [28 stories]
+             [24675] gcd_reprint 360723: s7533 Love and Rockets (1982) #3-10, #12-20 [23 stories] · s40038 The Complete Love & Rockets (1985) #1-2 [3 stories] · s17785 Love and Rockets (2001) #6 [1 story]
+             [24676] gcd_reprint 812261: s7533 Love and Rockets (1982) #21, #41-48, #50 [15 stories] · s40038 The Complete Love & Rockets (1985) #8, #14 [5 stories] · s3241 Anything Goes! (1986) #4 [1 story] · s53395 Ten Years of Love and Rockets (1992) (unnumbered) [1 story]
+             [24677] gcd_reprint 812262: s40038 The Complete Love & Rockets (1985) (unnumbered) [1 story] · s56261 The Complete Love & Rockets (1985) #12 [1 story]
+             [24678] gcd_reprint 795882: s7533 Love and Rockets (1982) #1-5, #9, #11-12, #16-17, #19, #21, #27-29, #41-43, #45-46, #49-50 [42 stories] · s40038 The Complete Love & Rockets (1985) #4, #15 [2 stories] · s53395 Ten Years of Love and Rockets (1992) (unnumbered) [1 story] · s44476 Escape (1986) #16 [1 story]
+             [24679] gcd_reprint 812255: s36557 Penny Century (1997) #1-7 [24 stories] · s5595 Whoa, Nellie! (1996) #1-3 [3 stories] · s5848 Maggie and Hopey Color Special (1997) #1 [2 stories] · s17785 Love and Rockets (2001) #5 [1 story]
+             [24680] gcd_reprint 868373: s17785 Love and Rockets (2001) #1-4, #6-19 [35 stories]
+             [24681] gcd_reprint 1252410: s36559 Luba (1998) #1-4 [19 stories] · s5594 New Love (1996) #1-6 [11 stories] · s18217 Luba's Comics and Stories (2000) #1 [2 stories] · s32906 Measles (1998) #1, #6 [2 stories]
+             [24682] gcd_reprint 1334783: s36559 Luba (1998) #3-10 [34 stories] · s18217 Luba's Comics and Stories (2000) #2-5 [9 stories] · s32906 Measles (1998) #3 [1 story] · s40038 The Complete Love & Rockets (1985) (unnumbered) [1 story]
+             [24683] gcd_reprint 1536897: s5594 New Love (1996) #1-6 [33 stories] · s17785 Love and Rockets (2001) #1-6, #8, #10-11, #14, #19 [20 stories] · s66341 The Comics Journal Special Edition (2001) #1, #4 [2 stories] · s19191 Mome (2005) #19 [1 story]
+             [24684] gcd_reprint 1766669: s35512 Love and Rockets: New Stories (2008) #3-4 [7 stories] · s66649 God and Science: Return of the Ti-Girls (2012) (unnumbered) [5 stories] · s17785 Love and Rockets (2001) #20 [2 stories]
+             [24685] gcd_reprint 1835383: s17785 Love and Rockets (2001) #6, #11-18, #20 [26 stories] · s40038 The Complete Love & Rockets (1985) (unnumbered) [15 stories] · s18217 Luba's Comics and Stories (2000) #3-4, #6-8 [8 stories]
+             [24686] gcd_reprint 2486192: s17785 Love and Rockets (2001) #1-7, #9-10 [9 stories] · s21669 New Tales of Old Palomar (2006) #1-3 [5 stories] · s35512 Love and Rockets: New Stories (2008) #1 [1 story] · s5594 New Love (1996) #6 [1 story]
+   CV per-file (v1): vol 7000 "Love and Rockets" 1982 Fantagraphics 50 on 12/15 files
+   CV local rip:   (= per-file) · 20719 "Love and Rockets" 2001 Fantagraphics 20 (via our own name without the filing suffix "Love and Rockets") · 95057 "Love and Rockets" 2016 Fantagraphics 16 (via our own name without the filing suffix "Love and Rockets")   (rip lookup)
+   GCD dump:       7533 "Love and Rockets" 1982-1996 Fantagraphics [] 53 (via our own name without the filing suffix "Love and Rockets") · 61668 "Love and Rockets" 1981-1981 Los Bros. Hernandez [] 1 (via our own name without the filing suffix "Love and Rockets") · 220045 "Love and Rockets" [pt-br] 1991-1992 Record [] 4 (via our own name without the filing suffix "Love and Rockets") · 85897 "Love and Rockets" [it] 1998-2010 Magic Press [] 19 (via our own name without the filing suffix "Love and Rockets") · 17785 "Love and Rockets" 2001-2007 Fantagraphics [] 20 (via our own name without the filing suffix "Love and Rockets") · 85896 "Love and Rockets" [en-gb] 2007-2008 Titan [] 7 (via our own name without the filing suffix "Love and Rockets")   (dump lookup)
+
+== S103498 Namor v1 (2003)  [tier B]   keys: Namor v1 (2003)  years 2003-2004  12 files / 0 collections
+   split run: "Namor v1 (2003)" run={"cv": 22134, "gcd": 10988} (new shelf from P-008) — seed the S line from these ids, then verify them
+   folders: [12] Marvel\_Namor-The Sub-Mariner\05 Namor v1 (2003)
+   files:   Namor 001 (2003) (Digital) (Shadowcat-Empire).cbz … Namor 012 (2004) (Digital) (Shadowcat-Empire).cbz  (12 files, pp 21-25)
+   ours:    ladder 1-12
+   CV per-file (v1): vol 22134 "Namor" 2003 Marvel ? on 12/12 files
+   CV local rip:   (= per-file) · 158868 "Namor" 2024 Marvel 8 (via our own name without the filing suffix "Namor") · 151838 "Namor" 1970 Ediciones Vértice 33 (via our own name without the filing suffix "Namor")   (rip lookup)
+   GCD per-file:   series 10988 "Namor" 2003-2004 Marvel [was ongoing series] 12 on 12/12 files; methods numx12
+   GCD dump:       (= per-file) · 78825 "Namor" [it] 1990-1992 Play Press [] 23 (via our own name without the filing suffix "Namor") · 213755 "Namor" 2024-2025 Marvel [] 8 (via our own name without the filing suffix "Namor") · 43301 "Namor" [fr] 1979-1980 Arédit-Artima [] 10 (via our own name without the filing suffix "Namor") · 44111 "Namor" [pt-br] 1975-1976 Editora Bloch [] 10 (via our own name without the filing suffix "Namor") · 29210 "Namor" [es] 1974-1974 Ediciones Vértice [] 2 (via our own name without the filing suffix "Namor")   (dump lookup)
+   bridges:        gcd 10988 -> LOCG 116585 "Namor" support 12
+
+== S65327 Namor  [tier C] · ratio 2.25  keys: Namor (2024)  years 2024-2025  18 files / 0 collections
+   split: the KEPT half of the P-008 split — moved out -> S103498 "Namor v1 (2003)"; re-identify what stayed
+   folders: [11] Marvel\#MARVEL CURRENT ONGOING TITLES\Namor v2 (2024)\Variant Covers · [7] Marvel\#MARVEL CURRENT ONGOING TITLES\Namor v2 (2024)
+   files:   Namor 001 (2024) (Digital) (Shan-Empire).cbz … Namor 007 (2025) (Digital) (Shan-Empire).cbz  (7 files, pp 30-34)
+            [48217] Namor 001 (2024) (Alex Maleev Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48218] Namor 001 (2024) (Alex Maleev Virgin Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48219] Namor 001 (2024) (Elizabeth Torque Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48220] Namor 001 (2024) (Joshua Cassara Deadpool Kills The Marvel Universe Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48221] Namor 001 (2024) (Joshua Cassara Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48222] Namor 002 (2024) (Lucas Werneck Stormbreakers Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48223] Namor 002 (2024) (P. Craig Russell Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48224] Namor 003 (2024) (Fabrizio De Tommaso Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48225] Namor 004 (2024) (Alessandro Cappuccio Variant) (Digital) (MikeNY76-Empire).cbz (1pp) | [48226] Namor 005 (2024) (Marc Aspinall Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+            [48227] Namor 006 (2025) (Gerald Parel Variant) (Digital) (MikeNY76-Empire).cbz (1pp)
+   ours:    ladder 1-7; 6 number(s) name more than one file: 1, 2, 3, 4, 5, 6
+   CV linked:      vol 158868 "Namor" 2024 Marvel 8 issues; cached #1-7 (7); yearΔ 0; ratio 18/8 = 2.25; no judged range; v1 per-file: same volume on 18/18 files
+   CV local rip:   (= linked) · 22134 "Namor" 2003 Marvel 12 · 151838 "Namor" 1970 Ediciones Vértice 33   (rip lookup)
+   GCD per-file:   series 213755 "Namor" 2024-2025 Marvel [limited series] 8 on 18/18 files; methods numx18
+   GCD dump:       (= per-file) · 10988 "Namor" 2003-2004 Marvel [] 12 · 78825 "Namor" [it] 1990-1992 Play Press [] 23 · 43301 "Namor" [fr] 1979-1980 Arédit-Artima [] 10 · 44111 "Namor" [pt-br] 1975-1976 Editora Bloch [] 10 · 29210 "Namor" [es] 1974-1974 Ediciones Vértice [] 2   (dump lookup)
+   bridges:        gcd 213755 -> LOCG 116585 "Namor" support 18
+
+== S103455 Dynamo 5: Sins of the Father (2010)  [tier B]   keys: Dynamo 5: Sins of the Father (2010)  years 2007-2007  5 files / 0 collections
+   split run: "Dynamo 5: Sins of the Father (2010)" run={"cv": 33945, "gcd": 52755} (new shelf from P-008) — seed the S line from these ids, then verify them
+   folders: [5] Image\Dynamo 5\Dynamo 5 - Sins of the Father (Complete)
+   files:   [35313] Dynamo 5 - Sins of the Father - #1 of 5.cbz (31pp) | [35314] Dynamo 5 - Sins of the Father - #2 of 5.cbz (30pp) | [35315] Dynamo 5 - Sins of the Father - #3 of 5.cbz (29pp)
+            [35316] Dynamo 5 - Sins of the Father - #4 of 5.cbz (31pp) | [35317] Dynamo 5 - Sins of the Father - #5 of 5.cbr (33pp)
+   ours:    ladder 1-5
+   CV per-file (v1): vol 18396 "Dynamo 5" 2007 Image 26 on 5/5 files
+   CV local rip:   (= per-file) · 33945 "Dynamo 5: Sins of the Father" 2010 Image 5 (via our own name without the filing suffix "Dynamo 5: Sins of the Father") · 64600 "Dynamo 5: Sins of the Father" 2011 Image 1 issue 414849 (via our own name without the filing suffix "Dynamo 5: Sins of the Father")   (rip lookup)
+   GCD dump:       22523 "Dynamo 5" 2007-2009 Image [] 26 (via CV name "Dynamo 5") · 51476 "Dynamo 5" 2007-2011 Image [] 5 (via CV name "Dynamo 5") · 52755 "Dynamo 5: Sins of the Father" 2010-2010 Image [] 5 (via our own name without the filing suffix "Dynamo 5: Sins of the Father")   (dump lookup)
+
+== S5960 Dynamo 5  [tier A]   keys: Dynamo  years 2007-2010  26 files / 0 collections
+   split: the KEPT half of the P-008 split — moved out -> S103455 "Dynamo 5: Sins of the Father (2010)"; re-identify what stayed
+   folders: [26] Image\Dynamo 5
+   files:   Dynamo 5 - #0.cbr … Dynamo 5 - #24.cbr  (25 files, pp 17-33) | [35312] Dynamo 5 - Holiday Special 2010.cbz (32pp)
+   ours:    ladder 0-24, 2010; barcode item 35312 [{"type": "EAN13", "data": "0709853009580", "page": "ecial 2
+   CV linked:      vol 18396 "Dynamo 5" 2007 Image 26 issues; cached #0-25 (26); yearΔ 0; ratio 26/26 = 1.00; no judged range; v1 per-file: same volume on 26/26 files
+   CV candidates:  (= linked) · 2316 "Dynamo" 1966 Tower 4 s75 · 21812 "Dynamo 5 Annual" 2008 Image 1 issue 131456 s73 · 54631 "Image Firsts: Dynamo 5" 2011 Image 1 issue 372310 s72 · 64600 "Dynamo 5: Sins of the Father" 2011 Image 1 issue 414849 s70 · 3707 "Dynamo Joe" 1986 First 15 s62 · 23588 "Crimson Dynamo" 2003 Marvel 6 s59   (v1 search)
+   CV local rip:   (= linked) · 2316 "Dynamo" 1966 Tower 4 · 21812 "Dynamo 5 Annual" 2008 Image 1 issue 131456 (via CV candidate name "Dynamo 5 Annual")   (rip lookup)
+   GCD per-file:   series 22523 "Dynamo 5" 2007-2009 [] 26 (dump only) on 20/26 files; methods fulldump-rematchx20
+   GCD dump:       (= per-file) · 51476 "Dynamo 5" 2007-2011 Image [] 5 · 1771 "Dynamo" 1966-1967 Tower [] 4 · 72337 "Dynamo 5 Annual" 2008-2008 Image [] 1 (via CV candidate name "Dynamo 5 Annual")   (dump lookup)
+
+== S14555 Regular Show: Hydration  [tier B]   keys: Regular Show - Hydration  years 2014-2014  1 files / 0 collections
+   folders: [1] Boom Studios\Reguar Show (2014)\Annuals, Specials and OGNs
+   files:   [10607] Regular Show - Hydration (2014) (digital OGN) (Minutemen-Slayer).cbr (161pp)
+   CV linked:      vol 76877 "Regular Show: Hydration" 2014 Boom! Studios 1 issues issue 465040; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range; v1 per-file: same volume on 1/1 files
+   CV candidates:  (= linked) · 73115 "Regular Show" 2014 Boom! Studios 10 s85 · 74800 "Regular Show: 2014 Annual" 2014 Boom! Studios 1 issue 456258 s83 · 61288 "Regular Show" 2013 Boom! Studios 40 s82 · 68955 "Regular Show: Skips" 2013 Boom! Studios 6 s66 · 57366 "The Art of Boom! Studios" 2010 Boom! Studios 1 issue 386748 s41 · 102477 "Regular Show: Wrasslesplosion" 2017 Boom! Studios 1 issue 605145 s29   (v1 search)
+   CV local rip:   (= linked) · 73115 "Regular Show" 2014 Boom! Studios 10 (via CV candidate name "Regular Show") · 61288 "Regular Show" 2013 Boom! Studios 40 (via CV candidate name "Regular Show") · 74800 "Regular Show: 2014 Annual" 2014 Boom! Studios 1 issue 456258 (via CV candidate name "Regular Show: 2014 Annual")   (rip lookup)
+   GCD dump:       93394 "Regular Show" 2014-2018 Boom! Studios [] 10 (via CV candidate name "Regular Show") · 74424 "Regular Show" 2013-2016 Boom! Studios [] 40 (via CV candidate name "Regular Show") · 81381 "Regular Show: 2014 Annual" 2014-2014 Boom! Studios [] 1 (via CV candidate name "Regular Show: 2014 Annual")   (dump lookup)
