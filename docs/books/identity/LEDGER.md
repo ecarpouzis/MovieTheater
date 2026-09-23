@@ -1673,3 +1673,14 @@ a tag no shelf can produce makes the entry unreachable, and selftest fails on it
   CV mints a volume per book — probe the LINE name before provider-missing. A line spanning several works keeps its
   own identity; a one-volume edition / omnibus of ONE run on its own shelf is a merge into the live run shelf (Bone,
   Mask of Fudo, Tenement — R-065).
+
+[L-343] pub:dark-horse pub:idw pub:marvel sig:probe
+- More GCD name shapes (R-067): Dark Horse High Republic Adventures inserts "(Phase III)" and uses a comma form
+  ("…Adventures, The Nameless Terror"); IDW / Disney / Marvel Illustrated drop a leading "The" or "A Graphic Novel";
+  Marvel's Dark Tower strips punctuation ("Drawing of Three"). GCD indexes NO Marvel Infinity Comics (gcd=- stands).
+  An Image-style deluxe / "Complete" edition of ONE run merges into the run shelf (Department of Truth).
+
+[L-344] kind:manga
+- Manga (Yen Press / Seven Seas / Kodansha / Viz): the fixed CV index now reaches the count-1 ENGLISH volumes that
+  D-012/D-013 called provider-missing; an English CV record replaces a third-territory GCD licence (a German / French
+  row) as the identity (R-067).

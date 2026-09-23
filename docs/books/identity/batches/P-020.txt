@@ -1,0 +1,158 @@
+## Conventions for this batch (34 shown of 37 matched; 342 in LEDGER.md; 2 shelf/shelves: kind:new ×1 · pub:fantagraphics ×1 · folder:graphic-novels ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-021] (1 shelf/shelves) pub:dark-horse pub:disney pub:dstlry pub:dynamite pub:fantagraphics pub:idw
+- The Disney folder is publisher-agnostic (Joe Books, Dark Horse, IDW, Dynamite, Fantagraphics, Yen Press on one
+  shelf) — the provider's publisher column is the only test. DSTLRY filenames' "(N covers)" is a cover count.
+[L-321] (1 shelf/shelves) kind:foreign kind:new pub:dark-horse pub:drawn-quarterly pub:fantagraphics pub:first-second sig:probe sig:split tier:D
+- TIER D (D-004..D-006): one CV volume per LINE vs one GCD row per BOOK is what cuts a tier-D folder into shelves
+  (Maakies, Black Moon Chronicles, Wunderwaffen, Ekho, Moebius Library) — `--issues <line volume>` resolves the whole
+  folder by subtitle; the reverse (GCD keeps the line, CV per book: Don Rosa Library, Complete Crepax, History
+  Comics) → cv=- on the S, per-book CV issues on the I. 2022-25 Fantagraphics / D&Q / First Second / Dark Horse
+  singletons are past the rip's horizon → GCD-only cv=- + provider-missing (~150 of 360). A GCD row with count 0 and a
+  "do not add issues" note naming its constituents IS the finding (R + split with those ids); a GCD row with zero
+  indexed issues but the right title still carries the S, the I takes `gcd=s<series>`. GCD splits a run at a mid-run
+  trademark retitle (Tommy Gun: Wizards 149904 / Machine Gun: Wizards 153050 vs CV's one 120928). LEAD RULING: when
+  the ONLY catalog record of a comic is a third-territory licence (a German Splitter edition of a French album whose
+  original is in neither catalog) link it at 0.7 + provider-missing — the review queue, not an applied identity —
+  so the web lane gets a concrete question instead of a refusal.
+[L-342] (1 shelf/shelves) pub:fantagraphics
+- Fantagraphics singletons are often ONE numbered row of a GCD line (EC Artists' Library, Freak Brothers Follies) while
+  CV mints a volume per book — probe the LINE name before provider-missing. A line spanning several works keeps its
+  own identity; a one-volume edition / omnibus of ONE run on its own shelf is a merge into the live run shelf (Bone,
+  Mask of Fudo, Tenement — R-065).
+[L-013] (2 shelf/shelves) sig:probe
+- GCD spells `&` where CV writes `and` (Flashpoint: Deathstroke, Frankenstein) — a dump lookup that misses may hit
+  with the other spelling.
+[L-014] (2 shelf/shelves) sig:probe sig:round2
+- `round2-folder` / `round2-series` links: wrong in 23 of 23 checked; four would have MERGED two shelves in one
+  batch (Rose and Thorn ← Eternity; Cybernetic Summer ← Dog Days of Summer). Where the dump does not name the
+  right per-title series, write `gcd=-` + `F provider-missing` rather than take the hull.
+[L-043] (2 shelf/shelves) sig:probe
+- "The dump names no other series" often means the packet probed the wrong SPELLING: re-probe `lookup.py` with the
+  CV record's own title (found a GCD series on 27 of 450 tier-B shelves).
+[L-050] (2 shelf/shelves) sig:probe
+- When the packet's lookups miss, re-probe `lookup.py` WITHOUT a licensor prefix ("Jim Henson's"), with the exact
+  punctuation of the record ("Good Apollo. I'm a Burning Star IV"), as one word ("Ruinworld"), or by the
+  abbreviation the publisher uses ("HSE").
+[L-072] (2 shelf/shelves) sig:probe
+- GCD hides behind the SUBTITLE: "The Hunting Accident", "Giraffes on Horseback Salad", "Undesirables" return
+  nothing under their full titles — re-probe the SHORT title before writing `provider-missing`.
+[L-088] (2 shelf/shelves) sig:probe
+- GCD hides behind a LONGER title too ("… and the Tale of Azkon's Heart", "Holiday Party (One-Shot)"), not only a
+  shorter one — probe both directions before `provider-missing`.
+[L-089] (2 shelf/shelves) sig:probe
+- A facsimile of a SINGLE issue is its own book; a reprint edition of a whole series is not — the original wins.
+[L-095] (2 shelf/shelves) sig:probe
+- A folder that is a ripper's READING ORDER over several separately published arcs (The Ride, Revolution) has no
+  spanning record — the ladder is arc numbers, not issue numbers.
+[L-096] (2 shelf/shelves) sig:probe
+- GCD's exact filing recovers legs the probe misses: singular/plural ("Greeting", "Return"), two words ("Super
+  Hero"), a spelled ordinal ("Fortieth"), a dropped subtitle, or the colon form ("Jinx: Torso") — try each before
+  `provider-missing`.
+[L-118] (2 shelf/shelves) sig:probe
+- A GCD collected series numbers its issues by VOLUME and titles them with the volume SUBTITLE — that, not the
+  page count, places a trade when a shelf holds several volumes of one line.
+[L-125] (2 shelf/shelves) sig:probe
+- A stored link that is the same title a DIFFERENT DECADE later is a new cluster (Fist of Khonshu 2024 on the
+  1985 Moon Knight run; a 1971 Sub-Mariner Annual on the 1998 annual) — years decide, never the title.
+[L-157] (2 shelf/shelves) sig:probe
+- A GCD row with ZERO issues is an empty stub, not a leg (Skull Cat 197154, Rivers of London: Stray Cat Blues 213823,
+  Archer & Armstrong: Revival 164703) → `provider-missing`.
+[L-159] (2 shelf/shelves) sig:probe
+- An exact-name probe can miss a sequel the rip DOES hold: `--contains "Icarus Society"` found CV 143976 after the
+  exact "Prodigy: The Icarus Society" probe returned nothing — try `--contains` on the subtitle before `provider-missing`.
+[L-163] (2 shelf/shelves) sig:probe
+- GCD hides behind a bracketed alternate title: "War Stories: J for Jenny [War Story: J for Jenny]" (10937), "Dance Like
+  Everybody's Watching! [A Zits Treasury]" (132081), "You're Out of Your Mind, Charlie Brown! [Horizontal]" (155990).
+[L-177] (2 shelf/shelves) sig:probe
+- A bracketed publisher series number becomes a phantom ladder entry: Thun'da's "[A1-056]/[A1 073]/[A1 083]" produced
+  ladder 56/73/83 and a ratio 5.00 — read the bracket, not the ladder.
+[L-193] (2 shelf/shelves) sig:legacy-stamp sig:probe
+- GCD spells a relaunch's volume ordinal into the NAME ("I Hate Fairyland Volume 2", 192611), so `--year 2022` on the
+  plain title returns 0 hits — probe with the ordinal or `--contains`.
+[L-204] (2 shelf/shelves) pass:item pass:revisit sig:probe
+- `lookup.py --issues <collected-line volume>` names each TRADE's own ComicVine ISSUE id: 71 of 73 `I` lines in
+  R-018 carry an item-level CV id instead of `cv=-`.
+[L-253] (2 shelf/shelves) sig:probe
+- A subtitle can name a SEQUEL series filed on the first run's shelf (Wild's End "Beyond the Sea" = CV 151678 /
+  GCD 201441, not the 2014 run) — the `C` names the sequel run.
+[L-264] (2 shelf/shelves) sig:probe
+- Title-only (st3) GCD matches reuse ONE gcd id across every volume of a line (Golden City ×10, Windmaker,
+  Tarzan Kubert Years) — re-derive each book from the shelf's own numbered pool.
+[L-267] (2 shelf/shelves) sig:probe
+- A GCD "collected edition" series sits beside the genuine RUN under a different id (Dept H 100362 vs 111468, Harrow
+  County 89353 vs 94662, Sword Daughter 125748 vs 134585) — the `C` names the run; `lookup.py` by title finds it.
+[L-273] (2 shelf/shelves) sig:probe
+- The Adventures of Tintin: every per-file gcd pick (60515/108543) was wrong; the shelf's own gcd pool matched by
+  ENGLISH title was right for all 23 — the pool over the pick, again.
+[L-292] (2 shelf/shelves) sig:probe
+- A stored English digital volume's cached rip may cover only its last issues (Suzuka #13-18 of 18) — the earlier
+  books take gcd-only identities from the GCD series' full list, cv=-.
+[L-294] (2 shelf/shelves) pass:item sig:probe
+- ITEM PASS (X-046..X-048): a shelf can hold TWO published editions of one work with no shared pool (Monster: the
+  18-volume line beside the 2014 "Two-in-One" Perfect Edition) — each edition needs its own pool or an honest
+  no-record, never a mapping across editions. When a shelf's file count exceeds its pool, the excess usually
+  belongs to a CONTINUATION volume the shelf's own `N` names (Ranma 1/2 v22-38 → CV 26409 / GCD 17651) — the pool
+  for it must be pulled (`lookup.py --issues`, `gcd_issue WHERE series_id=?`) before writing no-record. GCD may mint
+  a "collected edition" row for only the FIRST of a same-title pair (Zombie Makeout Club) — the second is gcd=-.
+[L-341] (2 shelf/shelves) sig:probe
+- GCD name shapes that hide a record from an exact probe (R-065): a dropped licensor/author prefix (Insight "H. G.
+  Wells:", FSG "Shirley Jackson's"), a dropped leading "The" (DC "Origin of Hordak", IDW "Dark Judges"), a dropped
+  subtitle (IDW TMNT "Saturday Morning Adventures"), a BRACKETED subtitle (IDW RID 2015 "[Animated Series]"), a spelled
+  volume ordinal ("Comic Book History of Comics Volume 2"), a lengthened title (First Second "Prince of Persia the
+  Graphic Novel"). CV spells "'Til" where rippers write "'till".
+[L-016] (1 shelf/shelves) sig:comicinfo
+- Glorith rips' ComicInfo `Web` ids are NOT GCD issue ids in our dump (29 checked: missing or unrelated). Never
+  claim 1.0 from one. A ComicInfo `Volume` holding a 6-digit number IS a ComicVine volume id (Lex and the City =
+  162184) — a genuine 1.0 assertion.
+[L-032] (1 shelf/shelves) sig:comicinfo
+- A Marika-Empire rip's ComicInfo `Web` id IS a ComicVine ISSUE id (21/21 resolve to the stored volume) — the
+  1.0 shape. The ripper decides: Glorith's Web ids are not GCD issue ids. Check one against the rip before
+  claiming 1.0 on a new ripper.
+[L-064] (1 shelf/shelves) pass:item sig:twin
+- GCD indexes PRINTINGS: the S line takes the first edition both legs agree on; the `I` line takes the printing
+  we hold (page counts match the edition's row). GCD issue ids for books come from `gcd_issue` — prefer the
+  issue id to the `s<series>` form; use `s<series>` only for twin/variant rows.
+[L-074] (1 shelf/shelves) pass:item sig:barcode
+- An EAN-13 read off the page that equals a GCD issue's ISBN is a 1.0 on the `I` line even when the S line takes
+  another territory's record.
+[L-083] (1 shelf/shelves) pass:item sig:barcode
+- A file's EAN-13 that equals a GCD issue's UPC (0761941202327 ↔ 76194120232700111) is a 1.0 on the `I` line.
+[L-085] (1 shelf/shelves) sig:barcode sig:trade-link sig:twin
+- `gcd_issue` carries the trade's page count AND ISBN: it matched our rips within ±10pp on 100+ books and told
+  two same-title count-1 rows apart (an 8pp ashcan is not a twin of the trade).
+[L-101] (1 shelf/shelves) sig:twin
+- Page count tells GCD twins apart (a 32pp sampler vs the 256pp anthology); a count-0 GCD row (236534 "Cells at
+  Work! Lady") is an empty stub, not a leg.
+
++3 more matched entries not shown: L-113, L-114, L-250 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S18508 The Bitter End and Other Stories  [split]  1 files / 0 collections  decided in R-065 (S)
+   decided: S 18508 cv=- gcd=69863 0.9 | GCD 69863 "The Fantagraphics EC Artists' Library" (Fantagraphics 2012-?, 39 rows) row #35 2588659 is titled "The Bitter End and Other Stories", 234pp against our 238pp rip with ISBN 978-1-68396-892-4, and CV 156753's single issue 1044351 is labelled "The EC Artists' Library Vol. 35" — both legs place this book as volume 35 of the line S68158 holds (26 volumes, S cv=- gcd=69863); CV mints a count-1 volume per book, so the book's CV record goes on the I line and the S is the line
+   F 18508 split-needed | proposed: item 25187 (The Bitter End and Other Stories, EC Artists' Library #35) moves to S68158's key "The EC Artists' Library" with a lead-approved join [68158] — S68158 is GCD 69863 with 26 volumes, both S lines are cv=-, so no merge-with can land it
+   F 18508 merge-with=68158 | same line as S68158 (GCD 69863 #35 of 39) and S22789 (#8); stated for the collision check only — both are cv=-, so the split-needed line above is what moves the book
+   N 18508 withdraws D-005's F provider-missing: the GCD row exists as #35 of the line 69863, not as a series of its own; the reprobe hit CV 160248 "Marvel and Fantagraphics Present Stories from the Atlas Comics Library: FCBD 2024" is a different book (rejected)
+   N 18508 JOIN candidate for the lead: item 25187 belongs on S68158 "The EC Artists' Library" (S cv=- gcd=69863, R-042); merge-with cannot carry it because both S lines are cv=- (no series-level CV volume exists) — a split-lane move of item 25187 to key "The EC Artists' Library" does
+   named: S68158 The EC Artists' Library  26 files  keys: "The EC Artists' Library"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S22789 "Zero Hour and Other Stories" 1f [shares gcd=69863 — S gcd=69863 (R-065 0.9)] keys: "Zero Hour and Other Stories"
+   keys now: "The EC Comics Library" x1
+   groups (title x folder): 1
+   G1 "The Bitter End and Other Stories (2024) (digital) (DrVink-DCP)" in Fantagraphics — 1 file(s), pp 238-238; cv per-file 156753x1; gcd per-file 69863x1; key 'The EC Comics Library'
+      [25187] The Bitter End and Other Stories (2024) (digital) (DrVink-DCP).cbz (238pp)
+
+== S22789 Zero Hour and Other Stories  [split]  1 files / 0 collections  decided in R-065 (S)
+   decided: S 22789 cv=- gcd=69863 0.9 | our file's EAN-13 9781606997048 equals gcd_issue 1179284's ISBN 978-1-60699-704-8 — row #8 of GCD 69863 "The Fantagraphics EC Artists' Library" (2012-?, 39), titled "Zero Hour and Other Stories" — so the shelf is one book of that line, whose home shelf is S68158 (S cv=- gcd=69863); the reprobe hit CV 71478 "Jack Kamen: Zero Hour and Other Stories" (Fantagraphics 2014, 1) is CONFIRMED as the book's own record and goes on the I line
+   F 22789 provider-missing | ComicVine indexes no series-level volume for the Fantagraphics EC Artists' Library; it has only the per-book records (71478 here, 156753 for #35)
+   F 22789 split-needed | proposed: item 26113 (Zero Hour and Other Stories, EC Artists' Library #8) moves to S68158's key "The EC Artists' Library" with a lead-approved join [68158] — S68158 is GCD 69863 with 26 volumes, both S lines are cv=-, so no merge-with can land it
+   F 22789 merge-with=68158 | same line as S68158 (GCD 69863 #8 of 39) and S18508 (#35); stated for the collision check only — both are cv=-, so the split-needed line above is what moves the book
+   N 22789 JOIN candidate for the lead: item 26113 belongs on S68158 "The EC Artists' Library" beside S18508's #35; both S lines are cv=- so merge-with cannot carry it — a split-lane move to key "The EC Artists' Library" does. CV 71874 (count 3) holds the book's individual stories, not the book
+   named: S68158 The EC Artists' Library  26 files  keys: "The EC Artists' Library"  <- a key of this shelf may be used to JOIN it (exactly as quoted)
+   nearby: S18508 "The Bitter End and Other Stories" 1f [shares gcd=69863, named S18508 in the decision's R/N lines — S gcd=69863 (R-065 0.9)] keys: "The EC Comics Library"
+   keys now: "Zero Hour and Other Stories" x1
+   groups (title x folder): 1
+   G1 "Zero Hour and Other Stories (2014) (Digital) (Bean-Empire)" in Graphic Novels — 1 file(s), pp 169-169; cv per-file 71478x1; gcd per-file 69863x1; key 'Zero Hour and Other Stories'
+      [26113] Zero Hour and Other Stories (2014) (Digital) (Bean-Empire).cbz (169pp)

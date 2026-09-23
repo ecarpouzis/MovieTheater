@@ -1,0 +1,169 @@
+## Conventions for this batch (27 shown of 73 matched; 342 in LEDGER.md; 4 shelf/shelves: kind:trade-only ×3 · kind:collected-line ×3 · pub:dark-horse ×2 · kind:archive ×2 · pub:ec-archives ×2 · pub:fantagraphics ×2 · kind:new ×1)
+LEDGER.md entries matching this batch's shelves, best first (ledger.py explains the match). Context for
+reading, never a rule applied across a folder. Do not read LEDGER.md whole.
+
+[L-164] (4 shelf/shelves) kind:archive kind:collected-line kind:strip sig:probe
+- Year-by-year archives of a newspaper/web strip (Doonesbury, Dennis the Menace, Rip Kirby, The Little King) have no record
+  in either provider → R + provider-missing; where a provider holds the strip's own collected line (Cyanide & Happiness,
+  Oglaf) pair at 0.9 as a format split.
+[L-020] (2 shelf/shelves) kind:archive kind:collected-line pub:dark-horse
+- Reprint LIBRARY / omnibus lines over a run split across publishers (Fear Agent Final Edition, Kabuki Library,
+  Madman Library) have no single run record → the collected line at 0.9 with an `N` naming the underlying run.
+[L-021] (2 shelf/shelves) pub:dark-horse pub:disney pub:dstlry pub:dynamite pub:fantagraphics pub:idw
+- The Disney folder is publisher-agnostic (Joe Books, Dark Horse, IDW, Dynamite, Fantagraphics, Yen Press on one
+  shelf) — the provider's publisher column is the only test. DSTLRY filenames' "(N covers)" is a cover count.
+[L-069] (2 shelf/shelves) kind:archive pass:item pub:dark-horse pub:ec-archives
+- Archive / reprint lines (EC Archives, Dark Horse archives) — RULING: when both legs also hold the ORIGINAL
+  series, the S line is the original (the run wins) and the `I` line is the archive printing we hold; only
+  when the original is in neither leg does the archive line carry the S at 0.9 with an `N` naming what it
+  reprints. Do not let the stored link decide which shape you write.
+[L-093] (2 shelf/shelves) pub:dc pub:ec-archives pub:mad sig:comicinfo
+- GCD labels every modern MAD book "EC" where ComicVine and ComicInfo say DC — the same publisher's imprint, not a
+  rejection.
+[L-135] (3 shelf/shelves) kind:collected-line
+- An Epic / Complete Collection LINE is found by probing the line name with NO volume subtitle: "Generation X Epic
+  Collection" → GCD 174151, shared by four sibling shelves.
+[L-186] (3 shelf/shelves) kind:collected-line
+- REMINDER (lead ruling, applied again on Princeless S14096): a collected LINE with its own record (GCD 106434, nine
+  trades) wins over the first mini's run; linking the first four-issue mini to a nine-volume trade shelf is wrong-cv-link.
+[L-238] (2 shelf/shelves) kind:archive kind:golden-age pub:dark-horse pub:ec-archives
+- ARCHIVE shape, stated once (after C-025): a shelf that is PURELY the collected trades of a Golden-Age original
+  (Dark Horse "EC Comics & Others Archives", Crime Does Not Pay, Frontline Combat, Magnus, War Against Crime, Savage
+  Sword of Conan) takes the archive LINE's own CV/GCD record — the S16653 line-wins ruling; the older "S = the original
+  when both legs hold it" line applies only when NO line record exists. The later, dated ruling wins.
+  **SUPERSEDED for single-run archives (lead, 2026-09-23):** the brief's later R-042 ruling (a line that reprints ONE
+  numbered run gives way to the run) wins — Dark Horse SSoC -> Marvel SSoC (wave 52), Doctor Solar Archives -> the 1962
+  run (P-019). The archive LINE keeps its own identity only when it spans SEVERAL runs / titles (EC Archives, L-109).
+[L-244] (3 shelf/shelves) kind:collected-line pass:item
+- A trade collecting TWO minis, and an omnibus, cannot yet be stated by a `C` line (one range, one run, one per item):
+  name the runs on an `N` for now — TOOLS_TODO 17 adds per-run ranges and several `C` per item.
+[L-246] (3 shelf/shelves) kind:collected-line pass:item
+- ITEM PASS (X-001..X-003): on RUN-identity shelves the per-file GCD link reuses the run's own series matched to ONE
+  issue by number for vol. 01 only, while later volumes resolve to a real collected-edition series — check whether
+  vol. 01's link differs in kind from vol. 02+ before trusting it (Kevin Keller, Mega Man, Klaus, Dark Crystal …).
+[L-247] (3 shelf/shelves) kind:collected-line
+- A `C` that restates the shelf's own run needs its ids repeated in the clause to clear 40 characters; the clause is
+  the evidence, not a pointer. A shelf's own collected LINE and the run it collects are two records (Invisible
+  Kingdom: line GCD 151274 vs run CV 117748 / GCD 142448; Goldie Vance: line CV 94628 vs run CV 89593) — the `C`
+  names the RUN.
+[L-248] (3 shelf/shelves) kind:collected-line
+- Sibling shelves of one franchise can share one real GCD collected-edition line (Fence S6636/S6639/S6640 → 123731);
+  the sibling's landed S is evidence for the weak per-file matches on the others.
+[L-251] (3 shelf/shelves) kind:collected-line
+- Deluxe / Yearbook / Omnibus editions of the shelf's own ongoing with NO judged range get an `N` naming the
+  relationship, never an invented `C` range (the range is containment's to read).
+[L-258] (3 shelf/shelves) kind:collected-line sig:stamp
+- A degenerate packet block can stamp ONE GCD issue id onto every book of a shelf (Green Arrow S97350, six eras of
+  collected lines) — resolve only by each series' full issue list matched by title, never by the stamp.
+[L-269] (3 shelf/shelves) kind:collected-line kind:trade-only
+- An omnibus bundling several minis gets one `C` per mini at that mini's full range; an anthology TPB ("… and
+  Others") is not a numbered run and gets an `N`, not a forced `C`.
+[L-270] (2 shelf/shelves) kind:archive kind:golden-age pass:item pub:ec-archives sig:probe
+- ITEM PASS (X-016..X-018): an archive line's `C` run is the reprinted Golden-Age ORIGINAL, and it is usually in
+  the catalogs even when the shelf's `N` said "no record" (Creepy cv 2194 / gcd 1640, Crime Does Not Pay 943 / 296,
+  Eerie 2300 / 1755, Frontline Combat 1443 / 834, Magnus 2157 / 1600, War Against Crime 11807 / 12814) — probe.
+[L-275] (3 shelf/shelves) kind:collected-line pass:item sig:probe sig:trade-link
+- A count-1/2/3 trade record the shelf's `N` called absent is often in the catalogs under a spelling the packet
+  never probed ("The Adventures of …", "Complete Collection", "Deluxe") — probe before writing no-record.
+[L-279] (3 shelf/shelves) kind:collected-line
+- Blade of the Immortal (S23118) is the canonical "line + run" shape: GCD's 31 collected-edition rows are the `I`
+  identities (cv=- — ComicVine mints only the floppy volume), and the floppy run CV 9069 is what every `C` names,
+  ranges #0-206 ascending across the 31 books. A single-leg shelf's books inherit the shelf's 0.9, never more.
+[L-282] (3 shelf/shelves) kind:collected-line
+- A `gcd=-` / dump-only shelf's books inherit the shelf's 0.9 (Cells at Work! Lady, Dragon Head); an exact edition
+  can exist on GCD alone and be absent from ComicVine entirely (Cat Shit One Omnibus GCD 186621 → 0.9, cv=-).
+[L-285] (3 shelf/shelves) kind:collected-line pass:item sig:stamp
+- ITEM PASS (X-031..X-033): JoJo's Bizarre Adventure part-shelves are double-stamped — per-file CV is the whole-saga
+  hardcover omnibus volume (165667, one issue per PART) and per-file GCD the umbrella whole-saga series (27115) by
+  raw issue number; both wrong for all 37 books. Parts 1-3 have no CV softcover record (cv=-); Parts 4-5 do.
+[L-286] (3 shelf/shelves) kind:collected-line sig:probe
+- A shelf-level "no record" `N` can be wrong for an English product too (Innocent Omnibus: CV 157999 / GCD 206125
+  under "Innocent Omnibus") — probe the edition's own name before inheriting the shelf's gap.
+[L-287] (3 shelf/shelves) kind:collected-line pass:item
+- A series can be wrong on BOTH legs at once (Hunter x Hunter, Inuyashiki, Kakegurui Twin): the header pool by
+  ordinal is the only source; an omnibus with no dedicated record on either leg is `N no-record`, never a mapping.
+[L-289] (3 shelf/shelves) kind:collected-line kind:manga pass:item
+- ITEM PASS (X-037..X-039): one GCD issue row can cover TWO of our volumes when GCD's count undershoots (PTSD Radio,
+  Ojojojo) — both books share the id at 0.9; a genuine 2-in-1 omnibus whose header rows read #1-2 / #3-4 maps 1:1
+  at 0.95 (Orb). A 2-vol English omnibus against a 4-vol Japanese original has no safe mapping → `gcd=s<series>`.
+[L-291] (3 shelf/shelves) kind:collected-line kind:foreign pass:item
+- ITEM PASS (X-040..X-042): a run you can NAME but whose GCD rows carry no page counts gives no safe per-volume
+  range (SPRIGGAN Deluxe → GCD 188803) — `N`, not a guessed `C`; a per-file link can point at a foreign edition of
+  the WRONG book entirely (Summer Wars: the Complete Edition has its own one-shot record CV 155900 / GCD 142966).
+[L-309] (3 shelf/shelves) kind:collected-line pass:item sig:probe
+- A collected line's own issue rows carry the trade's SUBTITLE as the issue title, so once one book of a line is
+  identified, `--issues <volume>` or `gcd_issue WHERE series_id=?` resolves the whole Vol. 01-N run in one query —
+  "own container id not probed" is never a valid no-record.
+[L-314] (3 shelf/shelves) kind:collected-line pass:item
+- `cvref.normName` drops "the / a / an / of / and" everywhere, not just leading articles — a word-preserving
+  normalizer misses ~90% of exact matches; replicate cvref's tokenizer when matching titles by script. A bare
+  trailing-number fallback (trade "01" → run issue #1) is safe only for mislabeled single-issue files, never for
+  "Vol." / "Book" / dash-subtitled titles (it matched an 824pp omnibus to issue #1). One CV issue id reused across
+  two differently titled books on a shelf is a sign of two eras, not one book. A digital "Collection Book NN"
+  bundle is a different catalog shape from a "Vol. NN" trade and is often uncatalogued — honest no-record.
+[L-321] (2 shelf/shelves) kind:foreign kind:new pub:dark-horse pub:drawn-quarterly pub:fantagraphics pub:first-second sig:probe sig:split tier:D
+- TIER D (D-004..D-006): one CV volume per LINE vs one GCD row per BOOK is what cuts a tier-D folder into shelves
+  (Maakies, Black Moon Chronicles, Wunderwaffen, Ekho, Moebius Library) — `--issues <line volume>` resolves the whole
+  folder by subtitle; the reverse (GCD keeps the line, CV per book: Don Rosa Library, Complete Crepax, History
+  Comics) → cv=- on the S, per-book CV issues on the I. 2022-25 Fantagraphics / D&Q / First Second / Dark Horse
+  singletons are past the rip's horizon → GCD-only cv=- + provider-missing (~150 of 360). A GCD row with count 0 and a
+  "do not add issues" note naming its constituents IS the finding (R + split with those ids); a GCD row with zero
+  indexed issues but the right title still carries the S, the I takes `gcd=s<series>`. GCD splits a run at a mid-run
+  trademark retitle (Tommy Gun: Wizards 149904 / Machine Gun: Wizards 153050 vs CV's one 120928). LEAD RULING: when
+  the ONLY catalog record of a comic is a third-territory licence (a German Splitter edition of a French album whose
+  original is in neither catalog) link it at 0.7 + provider-missing — the review queue, not an applied identity —
+  so the web lane gets a concrete question instead of a refusal.
+
++46 more matched entries not shown: L-342, L-013, L-014, L-030, L-043, L-050, L-054, L-072, L-088, L-089, L-095, L-096, L-118, L-125, L-151, L-157, L-159, L-160, L-163, L-177, L-193, L-204, L-253, L-264, L-267, L-273, L-292, L-294, L-341, L-023, L-029, L-064, L-085, L-101, L-188, L-219, L-233, L-243, L-299, L-310, L-016, L-032, L-113, L-114, L-194, L-330 (grep LEDGER.md for them)
+
+====================================================================================================
+
+== S103858 Doctor Solar, Man of the Atom (1962)  [tier D]   keys: Doctor Solar, Man of the Atom (1962)  years 2010-2015  4 files / 4 collections
+   split run: "Doctor Solar, Man of the Atom (1962)" run={"cv": 2091, "gcd": 1529} (new shelf from P-019) — seed the S line from these ids, then verify them
+   folders: [4] EC Comics & Others Archives (Dark Horse)\Doctor Solar, Man of the Atom (1962)\Doctor Solar, Man of the Atom (1962)
+   files:   [22607] COL Doctor Solar, Man of the Atom Archives v01 (2010) (digital) (Mr Norrell-Empire).cbr (214pp)
+            [22608] COL Doctor Solar, Man of the Atom Archives v02 (2014) (digital) (Mr Norrell-Empire).cbr (216pp)
+            [22609] COL Doctor Solar, Man of the Atom Archives v03 (2014) (digital) (Mr Norrell-Empire).cbr (204pp)
+            [22610] COL Doctor Solar, Man of the Atom Archives v04 (2015) (digital) (Mr Norrell-Empire).cbr (242pp)
+   GCD says: [22607] gcd notes 945012 (#1 of Doctor Solar, Man of the Atom Archives): ? #1-7  |  gcd_reprint 945012: s1529 Doctor Solar, Man of the Atom (1962) #1-7 [25 stories]
+   CV local rip:   34401 "Doctor Solar, Man of the Atom" 2010 Dark Horse Comics 8 (via our own name without the filing suffix "Doctor Solar, Man of the Atom") · 48999 "Doctor Solar, Man Of The Atom" 2011 Dark Horse Comics 2 (via our own name without the filing suffix "Doctor Solar, Man of the Atom") · 2091 "Doctor Solar, Man of the Atom" 1962 Western Publishing 31 (via our own name without the filing suffix "Doctor Solar, Man of the Atom")   (rip lookup)
+   GCD dump:       51414 "Doctor Solar, Man of the Atom" 2010-2011 Dark Horse [] 8 (via our own name without the filing suffix "Doctor Solar, Man of the Atom") · 77850 "Doctor Solar, Man of the Atom" 2011-2012 Dark Horse [] 2 (via our own name without the filing suffix "Doctor Solar, Man of the Atom") · 31583 "Doctor Solar, Man of the Atom" 2004-2007 Dark Horse [] 4 (via our own name without the filing suffix "Doctor Solar, Man of the Atom") · 1529 "Doctor Solar, Man of the Atom" 1962-1982 Western [] 31 (via our own name without the filing suffix "Doctor Solar, Man of the Atom")   (dump lookup)
+
+== S5607 Doctor Solar - Man of the Atom  [tier C] · gap 48  keys: Doctor Solar - Man of the Atom  years 1962-2010  9 files / 0 collections
+   split: the KEPT half of the P-019 split — moved out -> S103858 "Doctor Solar, Man of the Atom (1962)"; re-identify what stayed
+   folders: [9] EC Comics & Others Archives (Dark Horse)\Doctor Solar, Man of the Atom (1962)\Doctor Solar, Man of the Atom (2010)
+   files:   Doctor Solar - Man of the Atom 001 (2010) (Digital) (G85-Empire).cbr … Doctor Solar - Man of the Atom 008 (2011) (Digital) (G85-Empire).cbr  (8 files, pp 25-43)
+            [22619] Doctor Solar - Man of the Atom FCBD (2010) (G85-Empire).cbr (13pp)
+   ours:    ladder 1-8
+   CV per-file (v1): vol 2091 "Doctor Solar, Man of the Atom" 1962 Western Publishing 31 on 8/9 files
+   CV local rip:   (= per-file) · 34401 "Doctor Solar, Man of the Atom" 2010 Dark Horse Comics 8 · 48999 "Doctor Solar, Man Of The Atom" 2011 Dark Horse Comics 2   (rip lookup)
+   GCD per-file:   series 51414 "Doctor Solar, Man of the Atom" 2010-2011 Dark Horse [was ongoing series] 8 on 8/9 files; methods numx8
+   GCD dump:       (= per-file) · 1529 "Doctor Solar, Man of the Atom" 1962-1982 Western [] 31 · 31583 "Doctor Solar, Man of the Atom" 2004-2007 Dark Horse [] 4 · 77850 "Doctor Solar, Man of the Atom" 2011-2012 Dark Horse [] 2   (dump lookup)
+   bridges:        gcd 51414 -> LOCG 117103 "Doctor Solar, Man of the Atom" support 8
+
+== S18549 The Fabulous Furry Freak Brothers  [tier C] · gap 3  keys: The Fabulous Furry Freak Brothers | The Fabulous Furry Freak Brothers - The 7th Voyage of Fabulous Furry Freak Brothers and Other Follies | UCC - The Fabulous Furry Freak Brothers T00 Gilbert Shelton en | UCC - The Fabulous Furry Freak Brothers T01 Gilbert Shelton en | UCC - The Fabulous Furry Freak Brothers T02 Gilbert Shelton en | UCC - The Fabulous Furry Freak Brothers T03 Gilbert Shelton en | UCC - The Fabulous Furry Freak Brothers T04 Gilbert Shelton en | UCC - The Fabulous Furry Freak Brothers T05 Gilbert Shelton en | UCC - The Fabulous Furry Freak Brothers T06 Gilbert Shelton en | UCC - The Fabulous Furry Freak Brothers T07 Gilbert Shelton en | UCC - The Fabulous Furry Freak Brothers T08 Gilbert Shelton en | UCC - The Fabulous Furry Freak Brothers T09 Gilbert Shelton en | UCC - The Fabulous Furry Freak Brothers T10 Gilbert Shelton en | UCC - The Fabulous Furry Freak Brothers T11 Gilbert Shelton en | UCC - The Fabulous Furry Freak Brothers T12 Gilbert Shelton en | UCC - The Fabulous Furry Freak Brothers T13 Gilbert Shelton en  years 1968-2024  17 files / 3 collections
+   folders: [14] Misc\Underground\Gilbert Shelton Collection\The Fabulous Furry Freak Brothers · [3] Fantagraphics\The Fabulous Furry Freak Brothers
+   files:   [25010] COL The Fabulous Furry Freak Brothers v02 - The 7th Voyage of Fabulous Furry Freak Brothers and Other Follies (2024) (Fantagraphics) (digital) (DrVink-DCP).cbz (148pp)
+            [25011] COL The Fabulous Furry Freak Brothers v04 - Grass Roots and Other Follies (2023) (digital) (DrVink).cbz (146pp)
+            [25013] COL The Fabulous Furry Freak Brothers v06 - The Idiots Abroad and Other Follies (2022) (digital) (DrVink).cbz (145pp)
+            [108147] UCC_-_The_Fabulous_Furry_Freak_Brothers_T00__Gilbert_Shelton___en_.cbr (28pp) | [108148] UCC_-_The_Fabulous_Furry_Freak_Brothers_T01__Gilbert_Shelton___en_.cbr (53pp)
+            [108149] UCC_-_The_Fabulous_Furry_Freak_Brothers_T02__Gilbert_Shelton___en_.cbr (53pp) | [108150] UCC_-_The_Fabulous_Furry_Freak_Brothers_T03__Gilbert_Shelton___en_.cbr (35pp)
+            [108151] UCC_-_The_Fabulous_Furry_Freak_Brothers_T04__Gilbert_Shelton___en_.cbr (52pp) | [108152] UCC_-_The_Fabulous_Furry_Freak_Brothers_T05__Gilbert_Shelton___en_.cbr (52pp)
+            [108153] UCC_-_The_Fabulous_Furry_Freak_Brothers_T06__Gilbert_Shelton___en_.cbr (52pp) | [108154] UCC_-_The_Fabulous_Furry_Freak_Brothers_T07__Gilbert_Shelton___en_.cbr (52pp)
+            [108155] UCC_-_The_Fabulous_Furry_Freak_Brothers_T08__Gilbert_Shelton___en_.cbr (35pp) | [108156] UCC_-_The_Fabulous_Furry_Freak_Brothers_T09__Gilbert_Shelton___en_.cbr (26pp)
+            [108157] UCC_-_The_Fabulous_Furry_Freak_Brothers_T10__Gilbert_Shelton___en_.cbr (37pp) | [108158] UCC_-_The_Fabulous_Furry_Freak_Brothers_T11__Gilbert_Shelton___en_.cbr (37pp)
+            [108159] UCC_-_The_Fabulous_Furry_Freak_Brothers_T12__Gilbert_Shelton___en_.cbr (37pp) | [108160] UCC_-_The_Fabulous_Furry_Freak_Brothers_T13__Gilbert_Shelton___en_.cbr (37pp)
+   ours:    ComicInfo Series: "The Fabulous Furry Freak Brothers"x2; ComicInfo Publisher: "Fantagraphics"x2
+   GCD says: [25010] gcd_reprint 2622793: s15815 The Fabulous Furry Freak Brothers (1971) #1, #3-4 [74 stories] · s17294 Fat Freddy's Cat (1977) #1-2 [8 stories] · s46411 The Best of The Rip Off Press (1973) #2, #4 [6 stories] · s17229 Mother's Oats Comix (1969) #3 [2 stories]  |  ⚠ stored GCD row is another book: our vol 2 vs GCD #7 — the notes above are that book's, not this one's (find this book's own row: lookup.py --gcd-issues <series>)
+   CV linked:      vol 40267 "The Fabulous Furry Freak Brothers" 1971 Rip Off Press 14 issues; cached #0-13 (14); yearΔ 3; ratio 0/14; no judged range
+   CV candidates:  (= linked) · 160718 "The Fabulous Furry Freak Brothers: High Times and Misdemeanors" 2024 Fantagraphics 1 issue 1075817 s79 · 121154 "The Fabulous Furry Freak Brothers Compendium" 2019 Knockabout 1 issue 718309 s67 · 118713 "The Fabulous Furry Freak Brothers Omnibus" 2008 Knockabout 1 issue 707717 s67 · 74847 "Collected Adventures of The Fabulous Furry Freak Brothers" ? Rip Off Press 1 issue 456380 s65 · 26586 "Thoroughly Ripped With The Fabulous Furry Freak Brothers" 1981 Rip Off Press 1 issue 222939 s65 · 53655 "Fabulous Furry Freak Brothers in The Idiots Abroad" 1987 Rip Off Press 1 issue 364888 s65   (v1 search)
+   CV local rip:   (= linked) · 121154 "The Fabulous Furry Freak Brothers Compendium" 2019 Knockabout 1 issue 718309 (via CV candidate name "The Fabulous Furry Freak Brothers Compendium") · 160718 "The Fabulous Furry Freak Brothers: High Times and Misdemeanors" 2024 Fantagraphics 1 issue 1075817 (via CV candidate name "The Fabulous Furry Freak Brothers: High Times and Misdemeanors")   (rip lookup)
+   GCD dump:       15815 "The Fabulous Furry Freak Brothers" 1971-2003 Rip Off Press [] 13 · 56068 "The Fabulous Furry Freak Brothers" [en-gb] 1976-1992 Knockabout [] 11 · 67639 "The Fabulous Furry Freak Brothers" [en-gb] 1976-1976 Hassle Free Press [] 5 · 82498 "The Fabulous Furry Freak Brothers" [de] 1987-1993 Rotbuch Verlag [] 5 · 102658 "The Fabulous Furry Freak Brothers" [de] 2003-2008 BSE Verlag [] 6 · 83774 "Fabulous Furry Freak Brothers" [pt-br] 2004-2005 Conrad [] ?   (dump lookup)
+
+== S18551 The Fabulous Furry Freak Brothers: In the 21st Century and Other Follies  [tier B]   keys: The Fabulous Furry Freak Brothers - The Freak Brothers in the 21st Century and Other Follies  years 2023-2023  1 files / 1 collections
+   folders: [1] Fantagraphics\The Fabulous Furry Freak Brothers
+   files:   [25012] COL The Fabulous Furry Freak Brothers v05 - The Freak Brothers in the 21st Century and Other Follies (2024) (digital) (DrVink-DCP).cbz (148pp)
+   GCD says: [25012] gcd_reprint 2486195: s17295 Fat Freddy's Comics & Stories (1983) #1-2 [28 stories] · s15815 The Fabulous Furry Freak Brothers (1971) #6-7 [13 stories] · s17118 Rip Off Comix (1977) #7-12, #15, #21 [13 stories] · s17294 Fat Freddy's Cat (1977) #5 [13 stories]
+   CV linked:      vol 147711 "The Fabulous Furry Freak Brothers: In the 21st Century and Other Follies" 2023 Fantagraphics 1 issues issue 966817; cached #1-1 (1); yearΔ 0; ratio 0/1; no judged range
+   CV candidates:  (= linked) · 142359 "The Fabulous Furry Freak Brothers: The Idiots Abroad and Other Follies" 2022 Fantagraphics 1 issue 917957 s64 · 149296 "The Fabulous Furry Freak Brothers: Grass Roots and Other Follies" 2023 Fantagraphics 1 issue 981299 s62 · 40267 "The Fabulous Furry Freak Brothers" 1971 Rip Off Press 14 s55 · 121154 "The Fabulous Furry Freak Brothers Compendium" 2019 Knockabout 1 issue 718309 s48 · 118713 "The Fabulous Furry Freak Brothers Omnibus" 2008 Knockabout 1 issue 707717 s48 · 53655 "Fabulous Furry Freak Brothers in The Idiots Abroad" 1987 Rip Off Press 1 issue 364888 s45   (v1 search)
+   CV local rip:   (= linked) · 149296 "The Fabulous Furry Freak Brothers: Grass Roots and Other Follies" 2023 Fantagraphics 1 issue 981299 (via CV candidate name "The Fabulous Furry Freak Brothers: Grass Roots and Other Follies") · 142359 "The Fabulous Furry Freak Brothers: The Idiots Abroad and Other Follies" 2022 Fantagraphics 1 issue 917957 (via CV candidate name "The Fabulous Furry Freak Brothers: The Idiots Abroad and Other Follies")   (rip lookup)

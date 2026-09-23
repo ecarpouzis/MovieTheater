@@ -1,0 +1,304 @@
+# R-067 — S.2 re-probe batch, 60 shelves previously won with cv=- and/or F provider-missing (Image, Legendary,
+# Lion Forge/Magnetic, Mad Cave, Manga, Markosia, Marvel-IDW Star Wars, Marvel Infinity Comics, Marvel misc).
+# Re-read each for both legs. Yields: CV per-book records for the Yen Press / Seven Seas / Kodansha / Viz manga the
+# fixed index now finds; GCD name shapes again (Dark Horse "(Phase III)" inserted, IDW Annual without "The", Disney
+# dropped subtitle "A Graphic Novel", Marvel Illustrated without "The", Dark Tower with no punctuation and "of Three");
+# three runs found for trades/relaunches (Trial of Magneto CV 138343, Men of Wrath CV 77248, Kull 1983 CV 3229) and two
+# run-wins (Infinity 8 albums -> the 24-issue Lion Forge run; Dept of Truth Complete Conspiracy -> the 2020 run S18409).
+# Marvel Infinity Comics remain absent from GCD; most reprobe hits here are sibling books or the print trade.
+
+S 12147 cv=56301 gcd=- 0.9 | CV 56301 "Mind The Gap Ashcan" (Image 2012, count 1, issue 382335) is exactly our one 21pp 2012 c2c file "Mind The Gap Ashcan" in Image\Mind the Gap (2012); 21pp is an ashcan, not an issue of the 17-issue ongoing (CV 46064 / GCD 63778)
+F 12147 provider-missing | a "Mind the Gap" --contains probe of the GCD dump returns only the ongoing 63778 (17), its trade line 69296 (3) and Image Firsts 75631 — no ashcan row
+N 12147 reprobe hits rejected: CV 53105 "Mind the Gap: Intimate Strangers" (2012, 1) is the first trade and CV 61196 "Mind the Gap Number 1" (2012, 1, issue 317010 'Prologue: Hello') is the #1 special, neither is the 21pp ashcan
+I 33123 cv=382335 gcd=- 0.9 | singleton: the 21pp ashcan is CV issue 382335 of volume 56301 "Mind The Gap Ashcan" (Image 2012); no GCD row exists for it
+
+S 13202 cv=138564 gcd=- 0.9 | CV 138564 "Old Head" (Image 2021, count 1, issue 882530) is the only record of this title and matches our one 137pp file "Old Head (2021) (Digital) (Dipole-Empire)" in Image\Old Head (2021)
+F 13202 provider-missing | an "Old Head" --contains probe of the GCD dump returns 0 rows
+N 13202 reprobe hit rejected: CV 133605 "Image Firsts: The Old Guard" (2021, 1) is a different Image book reached by the word "Old"
+I 36964 cv=882530 gcd=- 0.9 | singleton OGN: CV issue 882530 of volume 138564 "Old Head" (Image 2021) against our 137pp rip; GCD has no row
+
+S 66494 cv=130740 gcd=164382 0.9 | RUN WINS (R-042): "The Complete Conspiracy" is Image's deluxe line of ONE run, The Department of Truth (CV 130740 Image 2020, 38 / GCD 164382 Image 2020-?, 38) — Book 01 (501pp) is a hardcover of that run's opening arcs, and the live run shelf S18409 already carries cv=130740 gcd=164382 (C-033); 0.9 for the Wild Fictions companion (a different comic, the 2022 special's material)
+F 66494 merge-with=18409 | same run: S18409 "The Department of Truth" (S cv=130740 gcd=164382, 11 files: Vol. 01-05 + variant covers) — the Complete Conspiracy deluxe books are editions of that run, as L-342 rules for Bone / Mask of Fudo / Tenement
+N 66494 reprobe hit CV 153934 "Department of Truth: The Complete Conspiracy" (Image 2023, 1, issue 1021383 'Volume 1') CONFIRMED as Book 01's own record, and CV 162066 "…The Complete Conspiracy: Wild Fictions" (2024, 1, issue 1091223) as the Vol. 01.5 record; both go on I lines, not the S; this replaces C-033's cv=- gcd=200046 line identity
+I 37941 cv=1021383 gcd=2527111 0.95 | Book 01: CV 153934 issue 1021383 ("Volume 1", 2023-05-01) and GCD 200046 "The Department of Truth: The Complete Conspiracy" row #1 2527111 (2023-05-03) — both legs date it May 2023, our 501pp 2023 rip
+I 37349 cv=1091223 gcd=- 0.9 | "Vol. 01.5 - The Complete Conspiracy - Wild Fictions" (2024, 222pp) = CV 162066 issue 1091223 (Image 2024-09); GCD has no row for this hardcover — 194177 "The Department of Truth: Wild Fictions Special" is the 2022 56pp one-shot, a different book
+N 37941 no C: the book's range in The Department of Truth run is not stated anywhere in our data (GCD 2527111 carries no reprint roll-up, no judged range) — containment reads it off the book
+
+S 6710 cv=119642 gcd=147436 0.95 | the re-probe hit CV 119642 "Firebrand: The Initiation of Natali Presano" (Legendary Comics 2019, 1, issue 711381 'Season One', 2019-06-13) and GCD 147436 (Legendary 2019, 1, issue 1975972, ISBN 978-1-68116-055-9) are the same book on both legs — our filename's whole title, publisher and year, ComicInfo Series "Firebrand" / Publisher "Legendary"
+N 6710 withdraws D-012's F provider-missing: ComicVine holds the book as 119642 (reachable since TODO 30); DC's 1996 "Firebrand" (CV 34387 / GCD 13979) is a different comic
+F 6710 needs-fetch cv=119642 | CV 119642 is named from the rip, no CvVolume row
+I 37648 cv=711381 gcd=1975972 isbn=9781681160559 0.95 | the single 2019 Legendary book: CV 119642 issue 711381 and GCD 147436 issue 1975972 (ISBN 978-1-68116-055-9) against our 169pp rip
+
+S 3626 cv=120941 gcd=- 0.9 | CV 120941 "Carnival Row: Sparrowhawk" (Legendary Comics 2019, 1, issue 717469) and ComicInfo Series "Carnival Row: Sparrowhawk" / Publisher "Legendary" on our one 25pp 2019 file agree; Boom!'s "Sparrowhawk" is another comic
+F 3626 provider-missing | a "Carnival Row" --contains probe of the GCD dump returns only 196353 "Tales of Carnival Row" (Legendary 2022), a different later book
+N 3626 reprobe hit rejected: CV 120940 "Carnival Row: From the Dark" (Legendary 2019, 1) is the sibling tie-in, not Sparrowhawk
+I 37646 cv=717469 gcd=- 0.9 | singleton: CV issue 717469 of volume 120941 "Carnival Row: Sparrowhawk" (Legendary 2019) against our 25pp rip
+
+S 9440 cv=109321 gcd=123174 0.95 | RUN WINS (R-042): our six albums v03-v08 collect ONE run, Lion Forge's Infinity 8 (CV 109321, 2018, 24 issues cached #1-24 = eight 3-part arcs; GCD 123174 Lion Forge 2018-2020, the 36pp single issues), and our judged ranges #7-9 / #10-12 / #13-15 / #16-18 / #19-21 / #22-24 are exactly CV's arc titles (#7-9 'The Gospel According to Emma' … #22-24 'Until the End'); the stored cv is already 109321
+N 9440 supersedes C-034's S cv=- gcd=127131: GCD 127131 (Lion Forge 2018-?, 5) is the collected-album LINE and CV mints one count-1 volume per album — both go on the I lines; the Rue de Sèvres 123523/123524 rows are the French originals
+N 9440 reprobe hits CV 111829 "Infinity 8: Love and Mummies" (Volume One) and CV 114438 "…Back To the Führer!" (Volume Two) are the albums of v01/v02, which this shelf does not hold — rejected as identities
+I 37710 cv=701350 gcd=1926997 0.95 | v03 The Gospel According to Emma: CV 117217 issue 701350 ('Volume Three', 2019-02-21) and GCD 127131 #3 1926997 (2019-02-20), our 96pp rip
+I 37711 cv=712866 gcd=1987884 0.95 | v04 Symbolic Guerrilla: CV 119985 issue 712866 ('Volume Four', 2019-07-02) and GCD 127131 #4 1987884 (2019-07-10), our 93pp rip
+I 37712 cv=723710 gcd=2026983 0.95 | v05 Apocalypse Day: CV 122161 issue 723710 ('Volume Five', 2019-10-22) and GCD 127131 #5 2026983 (2019-10-23), our 94pp rip
+I 37713 cv=738868 gcd=- 0.9 | v06 Ultimate Knowledge: CV 125329 issue 738868 ('Volume 6', Magnetic Press 2020-02-28); GCD's album line 127131 stops at #5
+I 37714 cv=768185 gcd=- 0.9 | v07 All for Nothing: CV 127865 issue 768185 ('Volume Seven', Magnetic Press 2020-06-15); GCD's album line stops at #5
+I 37715 cv=798943 gcd=- 0.9 | v08 Until the End: CV 130291 issue 798943 ('Volume Eight', Magnetic Press 2020-09-15), our 94pp rip; X-057's cv=695696 was run issue #8 of 109321, not the album, and its gcd 1939546 a French row — corrected
+C 37710 cv=109321 gcd=123174 #7-9 0.95 | v03 collects Infinity 8 (Lion Forge 2018, 24; CV 109321 / GCD 123174) #7-9, CV's three 'The Gospel According to Emma' parts, matching the judged range #7-9 and the album title
+C 37715 cv=109321 #22-24 0.95 | v08 collects Infinity 8 (Lion Forge 2018, 24; CV 109321) #22-24, CV's three 'Until the End' parts (2020-07..08), matching the judged range #22-24 and the album title
+
+S 18444 cv=107648 gcd=120208 0.95 | the re-probe hit CV 107648 "The Dream of the Butterfly" (Lion Forge 2018, 2: #1 652684 'Rabbits of the Moon' 2018-01-31, #2 676004 'Dreaming a Revolution' 2018-07-04) and GCD 120208 (Lion Forge 2018-?, 2, same two titles, same July 2018 date for #2) are the same two-book line on both legs; our file is v02 "Dreaming a Revolution"
+F 18444 merge-with=18445 | S18445 is v01 of the same two-book line in the same folder; both S lines carry cv=107648 gcd=120208
+F 18444 needs-fetch cv=107648 | the line's CV volume has no CvVolume row — named from the rip
+N 18444 withdraws D-012's CV-side provider-missing (the line is CV 107648); reprobe hit CV 101258 "Catalyst Prime: The Event" is an unrelated Lion Forge one-shot — rejected
+I 37810 cv=676004 gcd=1823060 isbn=9781941302552 0.95 | v02 Dreaming a Revolution: CV 107648 #2 issue 676004 and GCD 120208 #2 1823060 (ISBN 9781941302552), both July 2018, our 113pp rip
+
+S 18445 cv=107648 gcd=120208 0.95 | v01 of the same line: CV 107648 #1 652684 'Rabbits of the Moon' (2018-01-31) and GCD 120208 #1 1776449 'Rabbits of the Moon' (2018-01-10, ISBN 9781941302392) = our "v01 - Rabbits on the Moon" (2017) but for a preposition; two legs, publisher Lion Forge, count 2
+F 18445 merge-with=18444 | S18444 holds v02 of the same two-book line (cv=107648 gcd=120208)
+N 18445 withdraws D-012's F provider-missing — CV holds the line as 107648; reprobe hit CV 101258 "Catalyst Prime: The Event" rejected (unrelated Lion Forge one-shot)
+I 37809 cv=652684 gcd=1776449 isbn=9781941302392 0.95 | v01 Rabbits of the Moon: CV 107648 #1 issue 652684 and GCD 120208 #1 1776449 (ISBN 9781941302392), January 2018, our 113pp rip
+
+S 9359 cv=147523 gcd=- 0.9 | CV 147523 "In the Shadow of the Throne" (Mad Cave Studios 2022, 1, issue 965161) is the only record of this book and matches our one 171pp 2022 file under MadCave (and Maverick)
+F 9359 provider-missing | a "Shadow of the Throne" --contains probe of the GCD dump returns 0 rows
+N 9359 reprobe hit rejected: CV 144723 "Wynd: The Throne in the Sky" (Boom! 2022, 5) is another comic reached by the word "Throne"
+I 37884 cv=965161 gcd=- 0.9 | singleton: CV issue 965161 of volume 147523 (Mad Cave 2022) against our 171pp rip; no GCD row
+
+S 491 cv=138492 gcd=- 0.9 | CV 138492 "After the Fall" (Magnetic Press 2021, 3, cached #1-3) is filled exactly by our ladder 1-3 (2021, 31-32pp) with ComicInfo Series "After the Fall" / Publisher "Magnetic Press" on all three files
+F 491 provider-missing | "After the Fall" --year 2021 returns 0 GCD rows; GCD's After the Fall rows are Angel, Spike, Wildstorm, Shadowland and Apes books
+N 491 reprobe hits rejected: CV 139211 "After the Fall" (Magnetic Press 2021, 1, issue 886102, 2021-09-27) is the collected edition of this run, which we do not hold; CV 130453 (Goldfinger Platinum Factory 2020) is another comic
+
+S 22974 cv=126683 gcd=- 0.9 | the re-probe hit CV 126683 "Éclair Blanche: A Girls' Love Anthology That Resonates In Your Heart" (Yen Press 2020, 1, issue 759238 'Volume 2', 2020-05-06) is our "Éclair Blanche (2020)" 264pp — the English Yen Press book itself, replacing D-012's German Altraverse licence 142650 (0.7)
+F 22974 provider-missing | GCD holds only the German Altraverse "Éclair blanche" (142650) and "Éclair" (136191); no Yen Press English row
+N 22974 the Yen Press Éclair line is one CV volume per book (111122 Éclair 2018, 126683 Blanche 'Volume 2', 128159 Bleue 'Volume 3', 130611 Rouge 'Volume 4', 131897 Orange) with no series-level record on either leg, so the Eclairs (2020) shelves keep separate per-book identities
+I 44525 cv=759238 gcd=- 0.9 | the book: CV 126683 issue 759238 ('Volume 2', Yen Press 2020-05-06) against our 264pp rip
+
+S 22975 cv=128159 gcd=- 0.9 | the re-probe hit CV 128159 "Éclair Bleue: A Girls' Love Anthology That Resonates in Your Heart" (Yen Press 2020, 1, issue 770044 'Volume 3', 2020-06-25) is our "Éclair Bleue (2020)" 257pp — the English book itself, replacing D-012's German licence 148818 (0.7)
+F 22975 provider-missing | GCD holds only the German Altraverse "Éclair bleue" (148818); no Yen Press English row
+I 44526 cv=770044 gcd=- 0.9 | the book: CV 128159 issue 770044 ('Volume 3', Yen Press 2020-06-25) against our 257pp rip
+
+S 22976 cv=130611 gcd=- 0.9 | the re-probe hit CV 130611 "Éclair Rouge: A Girls' Love Anthology That Resonates in Your Heart" (Yen Press 2020, 1, issue 804009 'Volume 4', 2020-09-25) is our "Éclair Rouge (2020)" 255pp — the English book itself, replacing D-012's German licence 152476 (0.7)
+F 22976 provider-missing | GCD holds only the German Altraverse "Éclair rouge" (152476); no Yen Press English row
+I 44528 cv=804009 gcd=- 0.9 | the book: CV 130611 issue 804009 ('Volume 4', Yen Press 2020-09-25) against our 255pp rip
+
+R 6323 | "Exon Depot (1992) (Hoyeru)" 15pp, Masamune Shirow's short: an "Exon" --contains probe returns 0 rows in both the CV rip and the GCD dump; the reprobe hit CV 34509 "Sales To Astonish: The Comic Book, Summer 1992" (Marvel 1992) was reached by the year and Dark Horse's "Intron Depot" (CV 21497) is Shirow's art-book line, a different work; MangaUpdates 53262802208 (1.0) is the only record
+F 6323 provider-missing | neither catalog holds "Exon Depot"
+
+S 8400 cv=36655 gcd=- 0.9 | the re-probe hit CV 36655 "Haru Hana: The Complete Collection" (Tokyopop 2010, 1, issue 243667, 2010-03-01) is our "COL Haru Hana – The Complete Collection (2010)" 527pp — title, year and omnibus shape agree; this replaces D-012's French Tonkam licence GCD 144943 (0.7), a three-volume edition in another territory
+F 8400 provider-missing | GCD holds only the French Tonkam "Haru Hana" (144943, 3); no English Complete Collection row
+F 8400 needs-fetch cv=36655 | named from the rip, no CvVolume row
+N 8400 second reprobe hit CV 149733 "Haru Hana: The Complete Collection" (Viz 2015, 1, 'TPB') is a later reissue five years off our 2010 file — rejected
+I 44802 cv=243667 gcd=- 0.9 | the omnibus: CV 36655 issue 243667 (Tokyopop 2010-03-01) against our 527pp 2010 rip
+
+S 66462 cv=128359 gcd=161591 0.95 | the re-probe hit CV 128359 "I Had That Same Dream Again: The Complete Manga Collection" (Seven Seas 2020, 1, issue 773211, 2020-07-04) and GCD 161591 (Seven Seas 2020, 1, issue 2124680, 2020-07, ISBN 978-1-64505-491-7) are the same book on both legs, our filename's whole title and year
+N 66462 withdraws D-012's F provider-missing — ComicVine holds the book as 128359
+I 44855 cv=773211 gcd=2124680 isbn=9781645054917 0.95 | the single July-2020 Seven Seas omnibus: CV issue 773211 and GCD issue 2124680 against our 523pp rip
+
+S 67392 cv=120082 gcd=148683 0.95 | the re-probe hit CV 120082 "Magus of the Library" (Kodansha Comics USA 2019, 8 cached #1-8) and GCD 148683 (Kodansha USA 2019-?, 8) agree on publisher, start year and count, and their #1-#7 dates match on both legs (2019-07-09 … 2024-05) against our v01-v07 (2019-2024); judged chapter ranges #1-34 are the ripper's, not either leg's numbering
+N 67392 withdraws D-012's F provider-missing (CV holds the English line as 120082); second reprobe hit CV 163542 (Carlsen Verlag 2019, 7) is the German licence — rejected
+F 67392 needs-fetch cv=120082 | named from the rip, no CvVolume row
+I 43627 cv=713330 gcd=1987924 isbn=9781632368232 1.0 | v01: ISBN 9781632368232 = GCD 1987924 (#1, 2019-07-09); CV 120082 #1 issue 713330 same date
+I 43628 cv=719883 gcd=2017454 isbn=9781632368454 1.0 | v02: ISBN 9781632368454 = GCD 2017454 (#2, 2019-09-24); CV 120082 #2 issue 719883 same date
+I 43629 cv=738478 gcd=2078229 isbn=9781632368461 1.0 | v03: ISBN 9781632368461 = GCD 2078229 (#3, 2020-02-25); CV 120082 #3 issue 738478 (2020-02-26)
+I 43630 cv=826357 gcd=2277674 isbn=9781632369161 1.0 | v04: ISBN 9781632369161 = GCD 2277674 (#4, 2021-01-26); CV 120082 #4 issue 826357 same date
+I 43631 cv=894118 gcd=2287893 isbn=9781646512133 1.0 | v05: ISBN 9781646512133 = GCD 2287893 (#5, 2021-12); CV 120082 #5 issue 894118 (2021-11-17)
+I 43632 cv=975632 gcd=2503776 isbn=9781646514052 1.0 | v06: ISBN 9781646514052 = GCD 2503776 (#6, 2023-03-07); CV 120082 #6 issue 975632 same date
+I 43633 cv=1056673 gcd=2634902 isbn=9781646515820 1.0 | v07: ISBN 9781646515820 = GCD 2634902 (#7, 2024-05-28); CV 120082 #7 issue 1056673 (2024-05-25)
+
+S 12586 cv=158675 gcd=209431 0.95 | the re-probe hit CV 158675 "My Name is Shingo: The Perfect Edition" (Viz 2024, 6 cached 'Vol. 1'-'Vol. 6') and GCD 209431 (Viz 2024-?, 6) agree on publisher, start year and count; ComicInfo Series "My Name Is Shingo" / Publisher "Viz Media" on all three files, our v01-v03 (2024) inside the six
+N 12586 withdraws D-012's F provider-missing — CV holds the Perfect Edition as 158675
+F 12586 needs-fetch cv=158675 | named from the rip, no CvVolume row
+I 43675 cv=1081429 gcd=2615614 isbn=9781974742721 0.95 | v01: CV 158675 #1 issue 1081429 ('Vol. 1', 2024) and GCD 209431 #1 2615614 (2024-02-27, ISBN 978-1-9747-4272-1), our 304pp rip
+I 43676 cv=1061794 gcd=2643249 isbn=9781974745852 0.95 | v02: CV 158675 #2 issue 1061794 ('Vol. 2', 2024-06) and GCD 209431 #2 2643249 (2024-06-25, ISBN 978-1-9747-4585-2), our 480pp rip
+I 43677 cv=1075322 gcd=2670469 isbn=9781974747504 0.95 | v03: CV 158675 #3 issue 1075322 ('Vol. 3', 2024-10) and GCD 209431 #3 2670469 (2024-10-22, ISBN 978-1-9747-4750-4), our 288pp rip
+
+S 66478 cv=169855 gcd=201390 0.95 | the re-probe hit CV 169855 "Qualia the Purple: The Complete Manga Collection" (Seven Seas 2023, 1, issue 1151097) and GCD 201390 (Seven Seas 2023, 1, issue 2546495) are the same book on both legs — our filename's whole title and year, one 605pp omnibus
+N 66478 withdraws D-013's F provider-missing — ComicVine holds the omnibus as 169855
+F 66478 needs-fetch cv=169855 | named from the rip, no CvVolume row
+I 43777 cv=1151097 gcd=2546495 0.95 | the single 605pp omnibus: CV 169855 issue 1151097 (2023-06) and GCD 201390 issue 2546495 (2023)
+
+S 17866 cv=130015 gcd=- 0.9 | CV 130015 "That Time I Got Reincarnated (Again!) as a Workaholic Slime" (Kodansha Comics USA 2020, 2) is exactly our two 2020 danke-Empire volumes (judged #1-9, #10-19); a "Workaholic" --contains probe returns that one CV row and no GCD row
+F 17866 provider-missing | GCD has no Workaholic Slime row in any language
+N 17866 reprobe hits rejected: CV 166755 (JBC 2020, 22) and CV 103594 (Kodansha USA 2017) are the PARENT "That Time I Got Reincarnated as a Slime" line in Portuguese and English, not this spin-off
+I 45432 cv=796997 gcd=- 0.9 | v01: CV 130015 #1 issue 796997 against our 129pp 2020 rip; no GCD row
+I 45433 cv=806878 gcd=- 0.9 | v02: CV 130015 #2 issue 806878 against our 162pp 2020 rip; no GCD row
+
+S 19633 cv=120382 gcd=- 0.9 | CV 120382 "The Slime Diaries: That Time I Got Reincarnated As A Slime" (Kodansha Comics USA 2019, 7) carries our five danke-Empire volumes dated 2019-2021 (judged #1-45 contiguous); a "Slime Diaries" --contains probe returns that one CV row and no GCD row
+F 19633 provider-missing | GCD has no Slime Diaries row in any language
+N 19633 reprobe hits rejected: CV 166755 (JBC 2020) and CV 103594 (Kodansha USA 2017) are the parent Slime line, not the Slime Diaries spin-off
+I 45481 cv=714498 gcd=- 0.9 | v01: CV 120382 #1 issue 714498 against our 132pp 2019 rip
+I 45482 cv=718473 gcd=- 0.9 | v02: CV 120382 #2 issue 718473 against our 153pp 2019 rip
+I 45483 cv=768359 gcd=- 0.9 | v03: CV 120382 #3 issue 768359 against our 157pp 2020 rip
+I 45484 cv=819437 gcd=- 0.9 | v04: CV 120382 #4 issue 819437 against our 157pp 2020 rip
+I 45485 cv=874177 gcd=- 0.9 | v05: CV 120382 #5 issue 874177 against our 129pp 2021 rip
+
+R 8301 | "COL Hanaotoko v01-v03 (MangaScreener)" are scanlations of Taiyo Matsumoto's three-volume Hanaotoko: a "Hanaotoko" --contains probe returns 0 rows in both the CV rip and the GCD dump; the reprobe hits CV 34508 / 34509 "Sales To Astonish: The Comic Book, Autumn / Summer 1992" (Marvel) were reached by the folder year 1992 and are Marvel catalogues — rejected; MangaUpdates 63640361859 (1.0) is the only record
+F 8301 provider-missing | untranslated three-volume Matsumoto work, absent from both catalogs
+
+S 14883 cv=110060 gcd=- 0.9 | CV 110060 "Running From The Devil: A Memoir of a Boy Possessed" (AAM/Markosia 2018, 1, issue 667159) against our single 142pp "Running from the Devil (2018) (Markosia)" file — title, publisher and year
+F 14883 provider-missing | a "Running from the Devil" --contains probe of the GCD dump returns 0 rows
+N 14883 reprobe hit rejected: CV 113650 "Running from the Storm" (Harlequin 2018, 1) is a different book
+I 46461 cv=667159 gcd=- 0.9 | singleton: CV issue 667159 of volume 110060 (AAM/Markosia 2018) against our 142pp rip; GCD holds no record
+
+S 17619 cv=76615 gcd=- 0.9 | the run wins: our single 81pp graphic novel collects CV 76615 "Tao-Boy and Engine" (AAM/Markosia 2014, 3), three issues at roughly 27 pages; ComicInfo Web 466087 names the collected book (CV 77050), which goes on the I line
+F 17619 provider-missing | a "Tao-Boy" --contains probe of the GCD dump returns 0 rows
+N 17619 reprobe hit CV 77050 "Tao-Boy and Engine" (AAM/Markosia 2014, 1, issue 466087) is the book's own collected-edition record, asserted by its ComicInfo Web — the I line, not the S
+I 46463 cv=466087 gcd=- 1.0 | the book itself, asserted by its own ComicInfo Web "466087" = CV issue 466087 of volume 77050, the 2014 AAM/Markosia collected edition, our 81pp rip
+
+S 16731 cv=157717 gcd=210800 0.95 | CV 157717 "Star Wars: The High Republic Adventures - Saber for Hire" (Dark Horse 2024, 4, cached #1-4) and GCD 210800 "Star Wars: The High Republic Adventures (Phase III) - Saber for Hire" (Dark Horse 2024, 4 rows #1-4, 36pp) agree on publisher, year and count; our four 2024 floppies 001-004 (27-31pp) with ComicInfo Series "…Saber for Hire" / Publisher "Dark Horse" fill it exactly
+N 16731 withdraws B-048's F provider-missing: GCD files the mini with "(Phase III)" inserted before the subtitle, so the plain title never matched
+N 16731 reprobe hits rejected: CV 164419 "…Saber for Hire" (Dark Horse 2025, 1, issue 1111529) is the trade of this mini (GCD 220537), not held here; CV 159631 Echoes of Fear, 154553 / 145478 / 133079 The High Republic are sibling Dark Horse / Marvel series
+
+R 16525 | "Star Wars - Dawn of Rebellion - The Visual Guide (2023) (Kileko-Empire)" 146pp is a DK-style reference book: "Dawn of Rebellion" returns 0 rows in both catalogs and "Visual Guide" only DK's Catwoman, Ghost Rider, Star Wars Ultimate, Batman Arkham and Yen Press's your name. guides; the reprobe hits CV 152418 "Star Wars: Return of The Jedi - The Rebellion" (Marvel 2023), 126383 "Age of Rebellion" and 118395 "Age of Rebellion Special" are Marvel comics reached by the word "Rebellion" — rejected
+F 16525 provider-missing | a 2023 licensed reference book, absent from both catalogs
+
+S 16704 cv=142775 gcd=- 0.9 | the run wins: CV 142775 "Star Wars: Obi-Wan" (Marvel 2022, 5, cached #1-5) is the five-issue mini our single 115pp "Obi-Wan - A Jedi's Purpose" collects, ComicInfo Series "Star Wars: Obi-Wan - A Jedi's Purpose" / Publisher "Marvel"
+F 16704 provider-missing | "Star Wars: Obi-Wan" --year 2022 returns only Panini Brasil 203838 in the GCD dump; GCD holds the trade (193836) but no row for the Marvel five-issue run
+N 16704 reprobe hits: CV 147288 "Star Wars: Obi-Wan: A Jedi's Purpose" (2022, 1, issue 963449) is this book's own collected record — the I line; CV 92390 "Obi-Wan and Anakin" (2016) is another mini — rejected
+I 104022 cv=963449 gcd=2465502 isbn=9781302947132 0.95 | the trade: CV 147288 issue 963449 and GCD 193836 "Star Wars: Obi-Wan - A Jedi's Purpose" row 2465502 (2022-12-14, 124pp, ISBN 978-1-302-94713-2) against our 115pp rip
+
+S 16603 cv=157238 gcd=- 0.9 | stored CV 157238 "Star Wars: The High Republic: Character Encyclopedia" (DK Publishing 2023, 1, issue 1048174) against our single 202pp 2023 file of that title, a DK reference book rather than a comic
+F 16603 provider-missing | a "Character Encyclopedia" --contains probe of the GCD dump returns 0 rows; GCD indexes none of DK's encyclopedias
+N 16603 reprobe hits CV 145478 / 154553 / 133079 "Star Wars: The High Republic" are Marvel's comic series (2022, 2024, 2021), not the DK encyclopedia — rejected
+I 104096 cv=1048174 gcd=- 0.9 | singleton: CV issue 1048174 of volume 157238 (DK 2023) against our 202pp rip
+
+S 16600 cv=148593 gcd=196831 0.95 | the run wins and GCD now holds it: CV 148593 "Star Wars: The High Republic Adventures - The Nameless Terror" (Dark Horse 2023, 4, 2023-02..05) and GCD 196831 "Star Wars: The High Republic Adventures, The Nameless Terror" (Dark Horse 2023, 4, 2023-02-22..05-17) agree issue for issue; our single 127pp file collects that four-issue mini
+N 16600 withdraws B-048's F provider-missing: GCD files the run with a comma ("…Adventures, The Nameless Terror") and the trade separately as 204248
+N 16600 reprobe hits rejected: CV 155570 is this book's own trade record (I line); CV 147135 / 151711 "The High Republic: The Blade" and 145478 / 154553 / 133079 "The High Republic" are other Marvel series
+I 104097 cv=1036847 gcd=2569187 isbn=9781506735672 0.95 | the trade: CV 155570 issue 1036847 ('TPB', 2023-09) and GCD 204248 row 2569187 (2023-09-20, ISBN 9781506735672) against our 127pp rip
+
+S 16722 cv=140461 gcd=179511 0.95 | CV 140461 "Star Wars: The High Republic Adventures Annual 2021" (IDW 2021, 1, issue 898530) and GCD 179511 "Star Wars High Republic Adventures Annual 2021" (IDW 2021, 1, issue 2287752, 2021-12-15, 48pp) are the same annual on both legs; the file asserts ComicInfo Series "Star Wars: The High Republic Adventures Annual 2021" / Publisher "IDW", 45pp
+N 16722 withdraws B-048's F provider-missing: GCD drops the leading "The" ("Star Wars High Republic Adventures Annual 2021"); the reprobe hit CV 138431 FCBD 2021 (GCD 174909) is another special — rejected
+I 104102 cv=898530 gcd=2287752 0.95 | singleton annual: CV 140461 issue 898530 and GCD 179511 issue 2287752 (48pp) against our 45pp rip
+
+R 16669 | forty "Star Wars Webcomic - Chapter NN - <Title>" files (2015-2016, 19-56pp) retelling Episodes IV-VI chapter by chapter: "Star Wars Webcomic" returns 0 rows in both catalogs; the per-file CV 79398 is Marvel's 2015 Star Wars ongoing reached by issue numbers 1-40 (the ladder-coincidence lie) and the reprobe hit CV 85138 "Star Wars: The Marvel Covers" (2015, 1) is a covers book — rejected
+F 16669 provider-missing | the Star Wars webcomic is in neither catalog
+
+S 16595 cv=136436 gcd=- 0.9 | CV 136436 "Star Wars Episode V: The Empire Strikes Back: The 40th Anniversary Special Edition" (Titan 2021, 1, issue 856019) reproduces our filename "…The 40th Anniversary Special Edition (2021)" 148pp exactly
+F 16595 provider-missing | a "40th Anniversary" --contains probe of the GCD dump returns Marvel's covers book 177752 and other franchises, no Titan Special Edition
+N 16595 reprobe hits rejected: CV 137047 is Titan's neighbouring "40th Anniversary Collector's Edition"; CV 66017 (Tokyopop 2005), 28818 (Dark Horse 1997), 47795 (Marvel UK 1980), 58063 (Marvel Special Edition 1980) are earlier adaptations
+I 104329 cv=856019 gcd=- 0.9 | singleton: CV issue 856019 of volume 136436 (Titan 2021) against our 148pp rip
+
+S 16596 cv=103752 gcd=- 0.9 | stored CV 103752 "Star Wars: The Force Awakens Graphic Novel Adaptation" (IDW 2017, 1, issue 617496) names our 144pp "Star Wars - The Force Awakens Graphic Novel (2017)" by title, publisher and year
+F 16596 provider-missing | a "Force Awakens Graphic Novel" --contains probe of the GCD dump returns 0 rows
+N 16596 reprobe hits rejected: CV 91772 (Marvel 2016, 6) is Marvel's comic adaptation and 96310 its trade; 86107 is Shattered Empire — all Marvel, not IDW's graphic novel
+I 104330 cv=617496 gcd=- 0.9 | singleton: CV issue 617496 of volume 103752 (IDW 2017) against our 144pp rip
+
+R 16605 | "Star Wars - The Last Jedi - The Official Movie Companion (2018) (Kileko-Empire)" 98pp is a Titan magazine special: "Movie Companion" returns only 113469 "Black Panther: The Official Movie Companion" in the CV rip and 0 GCD rows; the reprobe hits CV 110763 / 115084 (Marvel's Last Jedi Adaptation and its trade), 110935 (Titan's Interview: The Official Debrief) and 107162 (Titan's Official Collector's Edition) are other books — rejected
+F 16605 provider-missing | Titan's Star Wars movie companions are absent from both catalogs
+
+S 16612 cv=88774 gcd=109206 0.95 | CV 88774 "Star Wars: The Original Trilogy: A Graphic Novel" (Disney 2016, 1, issue 518945, 2016-03-31) and GCD 109206 "Star Wars: The Original Trilogy" (Disney 2016-?, 1, issue 1649364, 2016-03, 216pp, ISBN 978-1-4847-3784-2) are the same book — publisher, month and page count agree with our 212pp 2016 file
+N 16612 withdraws B-049's F provider-missing: GCD drops the subtitle "A Graphic Novel" (L-341 shape); 234475 is the 2025 Panini UK reissue
+N 16612 reprobe hits rejected: CV 101414 "The Prequel Trilogy: A Graphic Novel" (Disney 2017) is the companion book; CV 124292 "The Original Trilogy: The Movie Adaptations" (Marvel 2020) is Marvel's reprint omnibus
+I 104333 cv=518945 gcd=1649364 isbn=9781484737842 0.95 | singleton: CV 88774 issue 518945 and GCD 109206 issue 1649364 (216pp, ISBN 978-1-4847-3784-2) against our 212pp rip
+
+S 17996 cv=86787 gcd=- 0.9 | CV 86787 "The Art of Star Wars: The Force Awakens" (Harry N. Abrams 2015, 1, issue 508981) matches our 262pp 2015 file by title, publisher and year
+F 17996 provider-missing | an "Art of Star Wars" --contains probe of the GCD dump returns 0 rows
+N 17996 reprobe hits rejected: CV 91772 / 96310 are Marvel's Force Awakens comic adaptation, 121740 "The Marvel Art of Star Wars" (2019) a different art book
+I 104699 cv=508981 gcd=- 0.9 | singleton art book: CV issue 508981 of volume 86787 against our 262pp rip
+
+S 22548 cv=138343 gcd=175646 0.95 | the run wins and ComicVine now holds it: the re-probe hit CV 138343 "X-Men: The Trial of Magneto" (Marvel 2021, 5, cached #1-5 2021-10..2022-02) and GCD 175646 (Marvel 2021-2022, 5, #1-5 2021-08..12) agree on publisher, year and count; our single 147pp trade collects that five-issue mini
+F 22548 needs-fetch cv=138343 | named from the rip, no CvVolume row
+N 22548 the other reprobe hits (CV 122502 Trial of the Juggernaut, 114280 Magneto War, 92400 Trial of Gambit) are other X-Men books — rejected; CV 141831 (2022, 1) is this book's own trade record
+I 49978 cv=910534 gcd=2372067 isbn=9781302932176 0.95 | the trade: CV 141831 issue 910534 ('TPB', 2022-03-10) and GCD 182500 row 2372067 (2022-03-09, 156pp, ISBN 978-1-302-93217-6) against our 147pp rip
+
+S 3543 cv=154352 gcd=- 0.9 | stored CV 154352 "Captain Marvel: The Last of the Marvels Infinity Comic" (Marvel 2023, 12, cached #1-12) against our complete ladder 1-12 at ratio 1.00
+F 3543 provider-missing | "Last of the Marvels" --contains returns 0 GCD rows; GCD does not index Marvel's Infinity Comics (an "Infinity Comic" probe returns only an unrelated 2005 ashcan)
+N 3543 reprobe hit rejected: CV 147477 "Captain Marvel: The Last Of The Marvels" (2022, 1, issue 964810 'Volume 7') is the print ongoing's Vol. 7 trade, not the Infinity Comic
+
+S 5157 cv=158628 gcd=- 0.9 | stored CV 158628 "Deadpool vs. Wolverine Slash 'Em Up – Infinity Comic" (Marvel 2024, 6 cached #1-6) against our complete ladder 1-6 on 6/6 files
+F 5157 provider-missing | GCD does not index Marvel's Infinity Comics; its only "Slash 'Em Up" row is 222164, the 2025 print edition
+N 5157 reprobe hit rejected: CV 158749 "Deadpool vs. Wolverine: The Deep End Infinity Comic" (2024, 5) is another Infinity Comic; CV 163014 / GCD 222164 "Deadpool vs. Wolverine: Slash 'Em Up" (2025, 1) is the print collection, not these files
+
+S 5636 cv=149245 gcd=- 0.9 | the sixteen files are ONE serial in two rips: "Doctor Strange The Last Days of Magic - Infinity Comic 001-008 (2023)" (F) and plain, identical chapter page counts = CV 149245 "Doctor Strange: The Last Days of Magic Infinity Comic" (Marvel 2023, 8), our ladder 1-8 exactly; the stored cv is already 149245
+F 5636 needs-fetch cv=149245 | named from the rip, no CvVolume row
+F 5636 provider-missing | GCD indexes no Infinity Comic serial; its Last Days of Magic rows (100623, 101932, 104524) are the 2016 print one-shots
+N 5636 reprobe hit CV 143368 "Doctor Strange: The Way of the Weird Infinity Comic" (2022, 7) is the per-file stamp from the folder name one rip sits in — the filenames are Last Days of Magic 1-8 in both folders, a ladder of 8 against a 7-issue volume; rejected (also CV 89927 / 94623, the 2016 print one-shots)
+
+S 6233 cv=141397 gcd=- 0.9 | CV 141397 "Eternals: The 500 Year War: Infinity Comic" (Marvel 2022, 7, cached #1-7) matches the folder name and our complete ladder 1-7; the per-file 133080 (the 2021 print Eternals) came from a truncated key
+F 6233 provider-missing | a "500 Year War" --contains probe returns 0 GCD rows
+N 6233 reprobe hits rejected: CV 153227 "Marvel Platinum: The Definitive Eternals" (Panini UK 2021) is a UK reprint book; CV 123710 "The Eternals: Secrets From The Marvel Universe" (2019) a one-shot
+
+S 8170 cv=150126 gcd=- 0.9 | stored CV 150126 "Guardians of the Galaxy: Somebody's Got to Do It Infinity Comic" (Marvel 2023, 24, cached #1-24) against our complete ladder 1-24 at ratio 1.00
+F 8170 provider-missing | GCD's only "Somebody's Got to Do It" row is 176101 (Marvel 2020, 1), the print trade of the 2019 run
+N 8170 reprobe hits rejected: CV 153613 "Guardians of the Galaxy Modern Era Epic Collection: Somebody's Got to Do It" (2023, 1) is a print Epic Collection; CV 92960 "Guardians of Infinity" (2016) another book
+
+S 9009 cv=159506 gcd=- 0.9 | stored CV 159506 "House of Harkness Infinity Comic" (Marvel 2024, 15 cached #1-15) against our complete ladder 1-15 on 15/15 files
+F 9009 provider-missing | a "House of Harkness" --contains probe returns 0 GCD rows
+N 9009 reprobe hit rejected: CV 155946 "House of X Infinity Comic" (2023, 6) is another Infinity Comic
+
+S 10262 cv=148490 gcd=- 0.9 | stored CV 148490 "Kang the Conqueror: Only Myself Left to Conquer Infinity Comic" (Marvel 2023, 10 cached #1-10) against our complete ladder 1-10 on 10/10 files ("0010" is #10)
+F 10262 provider-missing | GCD's only "Only Myself Left to Conquer" row is 181094 (Marvel 2021, 1), the print one-shot
+N 10262 reprobe hits rejected: CV 143608 (2022, 1) is the print one-shot / trade, CV 138345 "Kang the Conqueror" (2021, 5) the print mini
+
+S 12041 cv=141651 gcd=- 0.9 | our single file is "Ghost Ridin' to Love" and CV 141651 "Mighty Marvel Holiday Special: Ghost Ridin' to Love: Infinity Comic" (Marvel 2022, 1, issue 907771) names it exactly
+F 12041 provider-missing | a "Mighty Marvel Holiday Special" --contains probe returns 0 GCD rows
+N 12041 reprobe hit rejected: CV 139834 "…Halloween with the Rhino Infinity Comic" (2021) is a different holiday special of the same Infinity line
+I 51336 cv=907771 gcd=- 0.9 | singleton: CV issue 907771 of volume 141651 against our 42pp rip
+
+S 12043 cv=141428 gcd=- 0.9 | stored CV 141428 "Mighty Marvel Holiday Special: Happy Holidays, Mr. Howlett: Infinity Comic" (Marvel 2021, 1, issue 904293) reproduces our single file's subtitle, ratio 1.00
+F 12043 provider-missing | a "Mighty Marvel Holiday Special" --contains probe returns 0 GCD rows
+N 12043 reprobe hit rejected: CV 139834 "…Halloween with the Rhino" is a different special
+I 51338 cv=904293 gcd=- 0.9 | singleton: CV issue 904293 of volume 141428 against our 80pp rip
+
+S 12044 cv=141427 gcd=- 0.9 | stored CV 141427 "Mighty Marvel Holiday Special: Iceman's New Year's Resolutions: Infinity Comic" (Marvel 2021, 1, issue 904292) reproduces our single file's subtitle, ratio 1.00
+F 12044 provider-missing | a "Mighty Marvel Holiday Special" --contains probe returns 0 GCD rows
+N 12044 reprobe hit rejected: CV 139834 "…Halloween with the Rhino" is a different special
+I 51339 cv=904292 gcd=- 0.9 | singleton: CV issue 904292 of volume 141427 against our 59pp rip
+
+S 12045 cv=141650 gcd=- 0.9 | our single file is "Year of the Wong" and CV 141650 "Mighty Marvel Holiday Special: Year of the Wong: Infinity Comic" (Marvel 2022, 1, issue 907769) names it exactly
+F 12045 provider-missing | a "Mighty Marvel Holiday Special" --contains probe returns 0 GCD rows
+N 12045 reprobe hit rejected: CV 139834 "…Halloween with the Rhino" is a different special
+I 51340 cv=907769 gcd=- 0.9 | singleton: CV issue 907769 of volume 141650 against our 30pp rip
+
+S 12435 cv=153253 gcd=- 0.9 | stored CV 153253 "Ms. Marvel: The New Mutant Infinity Comic" (Marvel 2023, 4, cached #1-4) against our complete ladder 1-4 at ratio 1.00
+F 12435 provider-missing | GCD's two "Ms. Marvel: The New Mutant" rows (203582 count 4, 210149 count 2) are the PRINT mini and its trades
+N 12435 reprobe hits rejected: CV 153238 (2023, 4) is the print mini (shelf S12429) and CV 157335 (2024, 2) its trades
+
+S 5489 cv=105514 gcd=- 0.9 | CV 105514 "Disney Big Hero 6: Heroes of San Fransokyo" (Joe Books 2017, 1, issue 632585) is our filename exactly, one 51pp 2017 file
+F 5489 provider-missing | "San Fransokyo" returns 0 GCD rows; GCD's Big Hero 6 rows are Marvel, Yen Press, Egmont and IDW books
+N 5489 reprobe hit rejected: CV 137358 "Disney Big Hero 6: The Series Cinestory Comic" (Joe Books 2018) is a different book
+I 98423 cv=632585 gcd=- 0.9 | singleton: CV issue 632585 of volume 105514 against our 51pp rip
+
+S 98165 cv=3229 gcd=2749 0.95 | the re-probe hit CV 3229 "Kull the Conqueror" (Marvel 1983, 10: #1 1983-05, #2 1983-07, #3 1983-12, #4 1984-02) and GCD 2749 (Marvel 1983-1985, 10) agree on publisher, start year and count; ComicInfo Volume "1983" on all four files, our 001-003 (1983) and 004 (1984) match CV's cover dates
+F 98165 needs-fetch cv=3229 | named from the rip, no CvVolume row
+N 98165 B-051's clause "the ComicVine rip holds no 1983 Kull volume" is withdrawn — 3229 is it; the per-file stamp 2513 (1971, 10) is twelve years off and CV 3140 (1982, 2) is v2 — both rejected
+
+S 10631 cv=116069 gcd=- 0.9 | the run underneath our 128pp trade is CV 116069 "League of Legends: Ashe: Warmother Special Edition" (Marvel 2018, 4), the four-part digital serial GCD's own trade row names ("collects digital comics League of Legends: Ashe - Warmother #1-4")
+F 10631 provider-missing | GCD indexes the collection (180439) but not the digital serial
+N 10631 reprobe hits: CV 119151 (2019, 1, issue 709205 'TPB') is the book's own trade record — the I line; CV 146955 "League of Legends" (Panini Verlag 2019, 3) is the German edition — rejected
+I 99586 cv=709205 gcd=2301790 isbn=9781302918569 0.95 | the trade: CV 119151 issue 709205 (2019-05-15) and GCD 180439 row 2301790 (2019-05-15, 148pp, ISBN 978-1-302-91856-9) against our 128pp rip
+
+S 10632 cv=118835 gcd=- 0.9 | stored CV 118835 "League of Legends: Lux" (Marvel 2019, 5, cached #1-5) against our complete ladder 1-5 at ratio 1.00, the filenames reading "01 (of 05)"
+F 10632 provider-missing | GCD indexes the Lux collection (177404) and a Panini Brasil edition, not the five-issue digital serial
+N 10632 reprobe hits rejected: CV 122673 (2019, 1, 'TPB') is the trade, not held here; CV 146955 is the German Panini edition
+
+S 10633 cv=122938 gcd=- 0.9 | stored CV 122938 "League of Legends: Zed" (Marvel 2019, cached #1-6) against our complete ladder 1-6 on 6/6 files, "(of 06)"
+F 10633 provider-missing | GCD indexes the Zed collection (175641) and a Panini Brasil edition, not the six-issue digital serial
+N 10633 reprobe hits rejected: CV 130787 (2020, 1, 'TPB') is the trade, not held here; CV 146955 is the German Panini edition
+
+S 11395 cv=100582 gcd=- 0.9 | CV 100582 "Marvel Cinematic Universe Guidebook: The Avengers Initiative" (Marvel 2017, 1, issue 590797) matches our single 188pp 2017 file on title and year
+F 11395 provider-missing | a "Cinematic Universe" --contains probe returns only 130878 "Marvel Cinematic Universe Omnibus" in the GCD dump
+N 11395 reprobe hits rejected: CV 88386 "…Marvel's The Avengers" and 90706 "…Marvel's Ant-Man" (2016) are the earlier single-film Guidebook books
+I 100164 cv=590797 gcd=- 0.9 | singleton: CV issue 590797 of volume 100582 against our 188pp rip
+
+S 11396 cv=107508 gcd=- 0.9 | CV 107508 "Marvel Cinematic Universe Guidebook: It's All Connected" (Marvel 2018, 1, issue 650921) matches our single 122pp 2018 file on title and year
+F 11396 provider-missing | a "Cinematic Universe" --contains probe returns no Guidebook row in the GCD dump
+N 11396 reprobe hits rejected: CV 100582 (The Avengers Initiative, 2017) and 90706 (Ant-Man, 2016) are sibling Guidebooks
+I 100165 cv=650921 gcd=- 0.9 | singleton: CV issue 650921 of volume 107508 against our 122pp rip
+
+R 11663 | "Marvel Vampires Handbook (2010)" 69pp: "Vampires Handbook" returns 0 rows in both catalogs; the reprobe hit CV 44093 "Vampires: The Marvel Undead" (2011, GCD 62208) and the packet's CV 27832 "Marvel Pets Handbook" / 39472 "Marvel Vampires Poster Book" are different books — rejected
+F 11663 provider-missing | Marvel's 2010 Vampires Handbook is in neither catalog
+
+S 11428 cv=20676 gcd=32028 0.95 | CV 20676 "Marvel Illustrated: The Picture Of Dorian Gray" (Marvel 2008, 6, cached #1-6) and GCD 32028 "Marvel Illustrated: Picture of Dorian Gray" (Marvel 2008, 6) agree on publisher, year and count; our six "(of 06)" Minutemen files 1-6 fill it exactly
+N 11428 withdraws B-052's F provider-missing: GCD drops "The" ("Picture of Dorian Gray"); 52854 (2008, 1) and 237453 (2009, 1) are its collected editions
+N 11428 reprobe hits rejected: CV 52313 (2007, 1) is Marvel's collected record, CV 45956 (SelfMadeHero 2008) and 52622 (IDW 2012) other adaptations
+
+S 11920 cv=77248 gcd=83261 0.95 | the run: the re-probe hit CV 77248 "Men of Wrath" (Marvel 2014, 5, #1 2014-10 … #5 2015-02) and GCD 83261 (Marvel 2014-2015, 5, per-file on 7/8) agree on publisher, year and count, and our "01-05 (of 05)" 2014-2015 files fill #1-5; the residue is the run's own trade (Image 2019 reprint, item 27408) and two 1pp variant covers, which cost nothing
+N 11920 withdraws C-039's F needs-web — CV 77248 answers "ComicVine's own volume for the 2014-2015 Marvel mini"
+F 11920 wrong-cv-link | the per-file / stored CV 115403 "Men of Wrath" (Image 2018, 1, issue 692436 'HC') is the Image reprint hardcover — the I line of item 27408, not the run
+F 11920 needs-fetch cv=77248 | named from the rip, no CvVolume row
+N 11920 reprobe hit CV 81417 "Men of Wrath" (Marvel 2015, 1, 'TPB', GCD 140364 140pp) is Marvel's own trade, not the Image hardcover we hold — rejected
+I 27408 cv=692436 gcd=1872985 isbn=9781534308596 0.95 | the Image hardcover: CV 115403 issue 692436 ('HC', 2018-11-20) and GCD 133771 row 1872985 (2018-11-14, ISBN 978-1-5343-0859-6) against our 142pp "Men of Wrath (2019)" rip with ComicInfo Publisher "Image Comics"
+
+S 18348 cv=84267 gcd=92143 0.95 | CV 84267 "Dark Tower: The Drawing of the Three - Lady of Shadows" (Marvel 2015, 5, #1 2015-11 … #5 2016-03) and GCD 92143 "Dark Tower The Drawing of Three Lady of Shadows" (Marvel 2015-2016, 5) agree on publisher, years and count; our five "(of 05)" files 1-5 (2015-2016) fill it
+N 18348 withdraws B-052's F provider-missing: GCD files the run with no punctuation and "of Three" ("Dark Tower The Drawing of Three Lady of Shadows"), found by a "Lady of Shadows" --contains probe; 98476 (2016, 1, 132pp) is the trade
+N 18348 reprobe hits rejected: CV 80894 / 84419 are House of Cards (the previous arc) and its trade; CV 88919 (2016, 1, issue 520199 'TPB') is this arc's trade, not held here
